@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"law-oa-go/internal/models"
-	"law-oa-go/internal/middleware"
 
 	"gorm.io/gorm"
+	"log/slog"
 )
 
 // QueryResult 查询结果
@@ -83,7 +83,11 @@ func (qe *QueryExecutor) ExecuteConcurrentQueries(ctx context.Context, queries .
 func (s *CaseService) GetCaseStatsOptimized(ctx context.Context) (*CaseStatsResponse, error) {
 	start := time.Now()
 	defer func() {
-		middleware.RecordDBMetrics("get_case_stats", "cases", time.Since(start), nil)
+		// TODO: 记录数据库指标，避免循环依赖
+		s.logger.InfoContext(ctx, "database query completed", 
+			"operation", "get_case_stats", 
+			"table", "cases", 
+			"duration", time.Since(start).String())
 	}()
 
 	executor := NewQueryExecutor(s.db, s.logger)
