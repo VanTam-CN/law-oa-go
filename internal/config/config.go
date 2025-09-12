@@ -10,14 +10,14 @@ import (
 
 // Config 应用配置
 type Config struct {
-	Environment    string              `mapstructure:"environment"`
-	Port           string              `mapstructure:"port"`
-	Database       DatabaseConfig      `mapstructure:"database"`
-	Redis          RedisConfig         `mapstructure:"redis"`
-	Elasticsearch  ElasticsearchConfig `mapstructure:"elasticsearch"`
-	JWT            JWTConfig           `mapstructure:"jwt"`
-	Log            LogConfig           `mapstructure:"log"`
-	CORS           CORSConfig          `mapstructure:"cors"`
+	Environment   string              `mapstructure:"environment"`
+	Port          string              `mapstructure:"port"`
+	Database      DatabaseConfig      `mapstructure:"database"`
+	Redis         RedisConfig         `mapstructure:"redis"`
+	Elasticsearch ElasticsearchConfig `mapstructure:"elasticsearch"`
+	JWT           JWTConfig           `mapstructure:"jwt"`
+	Log           LogConfig           `mapstructure:"log"`
+	CORS          CORSConfig          `mapstructure:"cors"`
 }
 
 // DatabaseConfig 数据库配置
@@ -50,9 +50,9 @@ type ElasticsearchConfig struct {
 
 // JWTConfig JWT配置
 type JWTConfig struct {
-	Secret     string `mapstructure:"secret"`
-	ExpiresIn  int    `mapstructure:"expiresIn"`
-	RefreshIn  int    `mapstructure:"refreshIn"`
+	Secret    string `mapstructure:"secret"`
+	ExpiresIn int    `mapstructure:"expiresIn"`
+	RefreshIn int    `mapstructure:"refreshIn"`
 }
 
 // LogConfig 日志配置
@@ -112,24 +112,32 @@ func Load() (*Config, error) {
 	viper.AutomaticEnv()
 
 	// 绑定环境变量到配置结构
-	viper.BindEnv("environment", "ENVIRONMENT")
-	viper.BindEnv("port", "PORT")
-	viper.BindEnv("database.host", "DB_HOST")
-	viper.BindEnv("database.port", "DB_PORT")
-	viper.BindEnv("database.username", "DB_USERNAME")
-	viper.BindEnv("database.password", "DB_PASSWORD")
-	viper.BindEnv("database.database", "DB_DATABASE")
-	viper.BindEnv("redis.host", "REDIS_HOST")
-	viper.BindEnv("redis.port", "REDIS_PORT")
-	viper.BindEnv("redis.password", "REDIS_PASSWORD")
-	viper.BindEnv("redis.db", "REDIS_DB")
-	viper.BindEnv("elasticsearch.host", "ES_HOST")
-	viper.BindEnv("elasticsearch.port", "ES_PORT")
-	viper.BindEnv("elasticsearch.username", "ES_USERNAME")
-	viper.BindEnv("elasticsearch.password", "ES_PASSWORD")
-	viper.BindEnv("jwt.secret", "JWT_SECRET")
-	viper.BindEnv("jwt.expiresIn", "JWT_EXPIRES_IN")
-	viper.BindEnv("jwt.refreshIn", "JWT_REFRESH_IN")
+	bindings := map[string]string{
+		"environment":            "ENVIRONMENT",
+		"port":                   "PORT",
+		"database.host":          "DB_HOST",
+		"database.port":          "DB_PORT",
+		"database.username":      "DB_USERNAME",
+		"database.password":      "DB_PASSWORD",
+		"database.database":      "DB_DATABASE",
+		"redis.host":             "REDIS_HOST",
+		"redis.port":             "REDIS_PORT",
+		"redis.password":         "REDIS_PASSWORD",
+		"redis.db":               "REDIS_DB",
+		"elasticsearch.host":     "ES_HOST",
+		"elasticsearch.port":     "ES_PORT",
+		"elasticsearch.username": "ES_USERNAME",
+		"elasticsearch.password": "ES_PASSWORD",
+		"jwt.secret":             "JWT_SECRET",
+		"jwt.expiresIn":          "JWT_EXPIRES_IN",
+		"jwt.refreshIn":          "JWT_REFRESH_IN",
+	}
+
+	for key, env := range bindings {
+		if err := viper.BindEnv(key, env); err != nil {
+			return nil, fmt.Errorf("failed to bind env var %s to key %s: %w", env, key, err)
+		}
+	}
 
 	// 读取配置文件
 	viper.SetConfigName("config")
@@ -221,16 +229,16 @@ func (c *Config) Validate() error {
 	if c.JWT.Secret == "" || c.JWT.Secret == "your-secret-key" {
 		return fmt.Errorf("JWT secret must be configured and cannot be the default value")
 	}
-	
+
 	// 验证JWT密钥长度
 	if len(c.JWT.Secret) < 32 {
 		return fmt.Errorf("JWT secret must be at least 32 characters long")
 	}
-	
+
 	// 验证数据库配置
 	if c.Database.Host == "" || c.Database.Username == "" || c.Database.Database == "" {
 		return fmt.Errorf("database configuration is incomplete")
 	}
-	
+
 	return nil
 }

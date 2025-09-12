@@ -3,9 +3,9 @@ package handlers
 import (
 	"strconv"
 
+	"github.com/gin-gonic/gin"
 	"law-oa-go/internal/common"
 	"law-oa-go/internal/services"
-	"github.com/gin-gonic/gin"
 )
 
 type CaseHandler struct {
@@ -181,10 +181,10 @@ func (h *CaseHandler) ListCases(c *gin.Context) {
 	}
 
 	response := common.PageResponse{
-		Data:     cases,
-		Total:    total,
-		Page:     page,
-		Size: pageSize,
+		Data:  cases,
+		Total: total,
+		Page:  page,
+		Size:  pageSize,
 	}
 
 	common.Success(c, response)

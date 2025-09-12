@@ -6,9 +6,10 @@ import (
 	"encoding/base64"
 	"testing"
 
+	"law-oa-go/internal/models"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"law-oa-go/internal/models"
 )
 
 // TestEncryptionService_NewEncryptionService 测试加密服务创建
@@ -102,7 +103,7 @@ func TestEncryptionService_AES_EncryptDecrypt(t *testing.T) {
 		// 测试被篡改的密文
 		validCiphertext, err := service.EncryptAES("test")
 		require.NoError(t, err)
-		
+
 		// 篡改密文
 		tamperedCiphertext := validCiphertext[:len(validCiphertext)-1] + "X"
 		_, err = service.DecryptAES(tamperedCiphertext)
@@ -279,11 +280,11 @@ func TestEncryptionService_UserDataEncryption(t *testing.T) {
 		require.NoError(t, err)
 
 		originalUser := &models.User{
-			ID:       1,
-			Name:     "张三",
-			Email:    "zhangsan@example.com",
-			Phone:    "13800138000",
-			Role:     "user",
+			ID:    1,
+			Name:  "张三",
+			Email: "zhangsan@example.com",
+			Phone: "13800138000",
+			Role:  "user",
 		}
 
 		// 复制用户数据用于测试
@@ -400,7 +401,7 @@ func TestEncryptionService_UtilityFunctions(t *testing.T) {
 		for length := 16; length <= 64; length += 16 {
 			token, err := service.GenerateSecureToken(length)
 			require.NoError(t, err)
-			assert.Len(t, token, length*2) // 十六进制编码，长度翻倍
+			assert.Len(t, token, length*2)         // 十六进制编码，长度翻倍
 			assert.Regexp(t, "^[a-f0-9]+$", token) // 确保是十六进制字符
 		}
 

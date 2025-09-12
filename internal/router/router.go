@@ -1,11 +1,10 @@
 package router
 
 import (
-	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
-	"github.com/redis/go-redis/v9"
 	"github.com/elastic/go-elasticsearch/v8"
-	
+	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
 	"law-oa-go/internal/handlers"
 	"law-oa-go/internal/middleware"
 	"law-oa-go/internal/services"
@@ -25,15 +24,15 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *redis.Client, esClient *ela
 
 	// API路由组
 	api := app.Group("/api/v1")
-	
+
 	// 健康检查
 	api.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"status": "ok",
+			"status":  "ok",
 			"message": "Service is healthy",
 		})
 	})
-	
+
 	// 认证相关路由（无需认证）
 	auth := api.Group("/auth")
 	{
@@ -65,7 +64,7 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *redis.Client, esClient *ela
 			adminUsers.PUT("/:id", userHandler.UpdateUser)
 			adminUsers.DELETE("/:id", userHandler.DeleteUser)
 		}
-		
+
 		// 客户相关路由
 		clients := protected.Group("/clients")
 		{
@@ -76,7 +75,7 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *redis.Client, esClient *ela
 			clients.DELETE("/:id", clientHandler.DeleteClient)
 			clients.GET("/stats", clientHandler.GetClientStats)
 		}
-		
+
 		// 案件相关路由
 		cases := protected.Group("/cases")
 		{
@@ -89,7 +88,7 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *redis.Client, esClient *ela
 			cases.POST("/:id/assign", caseHandler.AssignLawyer)
 			cases.POST("/:id/status", caseHandler.UpdateCaseStatus)
 		}
-		
+
 		// 文档相关路由（占位符）
 		documents := protected.Group("/documents")
 		{
@@ -99,28 +98,28 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *redis.Client, esClient *ela
 					"data":    []string{},
 				})
 			})
-			
+
 			documents.GET("/:id", func(c *gin.Context) {
 				c.JSON(200, gin.H{
 					"message": "Get document by ID",
 					"data":    map[string]interface{}{},
 				})
 			})
-			
+
 			documents.POST("", func(c *gin.Context) {
 				c.JSON(201, gin.H{
 					"message": "Create document",
 					"data":    map[string]interface{}{},
 				})
 			})
-			
+
 			documents.PUT("/:id", func(c *gin.Context) {
 				c.JSON(200, gin.H{
 					"message": "Update document",
 					"data":    map[string]interface{}{},
 				})
 			})
-			
+
 			documents.DELETE("/:id", func(c *gin.Context) {
 				c.JSON(200, gin.H{
 					"message": "Delete document",
@@ -128,7 +127,7 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *redis.Client, esClient *ela
 				})
 			})
 		}
-		
+
 		// 性能测试路由
 		performance := protected.Group("/performance")
 		performance.Use(middleware.RoleMiddleware("admin"))
@@ -139,7 +138,7 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *redis.Client, esClient *ela
 					"data":    map[string]interface{}{},
 				})
 			})
-			
+
 			performance.GET("/database", func(c *gin.Context) {
 				c.JSON(200, gin.H{
 					"message": "Database performance test",
@@ -148,7 +147,7 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *redis.Client, esClient *ela
 			})
 		}
 	}
-	
+
 	// 404处理
 	app.NoRoute(func(c *gin.Context) {
 		c.JSON(404, gin.H{

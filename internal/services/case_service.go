@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"law-oa-go/internal/models"
-	"law-oa-go/internal/common"
 	"gorm.io/gorm"
+	"law-oa-go/internal/common"
+	"law-oa-go/internal/models"
 )
 
 type CaseService struct {

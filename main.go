@@ -32,13 +32,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/swaggo/files"
-	"github.com/swaggo/gin-swagger"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+	_ "law-oa-go/docs" // Swagger docs
 	"law-oa-go/internal/config"
 	"law-oa-go/internal/database"
 	"law-oa-go/internal/middleware"
 	"law-oa-go/internal/router"
-	_ "law-oa-go/docs" // Swagger docs
 )
 
 func main() {
@@ -70,41 +70,41 @@ func main() {
 
 	// 应用核心中间件（按照最佳实践顺序）
 	app.Use(middleware.RequestIDMiddleware()) // 请求ID追踪
-	app.Use(middleware.Logger())             // 日志记录
-	app.Use(middleware.Recovery())           // 崩溃恢复
-	app.Use(middleware.SecurityHeaders())    // 安全头
-	app.Use(middleware.CORS())               // 跨域设置
-	app.Use(middleware.RateLimiter())        // 限流控制
-	
+	app.Use(middleware.Logger())              // 日志记录
+	app.Use(middleware.Recovery())            // 崩溃恢复
+	app.Use(middleware.SecurityHeaders())     // 安全头
+	app.Use(middleware.CORS())                // 跨域设置
+	app.Use(middleware.RateLimiter())         // 限流控制
+
 	// 应用性能监控中间件
 	app.Use(middleware.PrometheusMiddleware())
-	
+
 	// 应用缓存中间件
 	app.Use(middleware.CacheMiddleware(middleware.CacheConfig{
-		TTL:          5 * time.Minute,
-		SkipHeader:   "X-Cache-Skip",
+		TTL:        5 * time.Minute,
+		SkipHeader: "X-Cache-Skip",
 	}))
 
 	// 初始化路由
-	router.Init(app, 
-		database.GetOptimizedDB().DB, 
-		database.GetCacheService().GetClient(), 
+	router.Init(app,
+		database.GetOptimizedDB().DB,
+		database.GetCacheService().GetClient(),
 		database.GetElasticsearchClient())
 
 	// 添加性能监控端点
 	app.GET("/metrics", gin.WrapH(promhttp.Handler()))
-	
+
 	// 添加Swagger文档端点
 	if !cfg.IsProduction() {
 		app.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	}
-	
+
 	// 添加健康检查端点
 	app.GET("/health", func(c *gin.Context) {
 		health := database.Health()
 		c.JSON(http.StatusOK, health)
 	})
-	
+
 	// 添加性能测试端点
 	app.GET("/performance/cache", func(c *gin.Context) {
 		cacheService := database.GetCacheService()
@@ -112,7 +112,7 @@ func main() {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Cache service not available"})
 			return
 		}
-		
+
 		// 简单的缓存性能测试
 		start := time.Now()
 		testData := map[string]interface{}{
@@ -120,23 +120,23 @@ func main() {
 			"name":  "性能测试数据",
 			"value": "这是一个缓存性能测试",
 		}
-		
+
 		ctx := c.Request.Context()
 		key := "performance:test"
-		
+
 		// 测试设置
 		if err := cacheService.Set(ctx, key, testData, time.Minute); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Cache set failed"})
 			return
 		}
-		
+
 		// 测试获取
 		var result map[string]interface{}
 		if err := cacheService.Get(ctx, key, &result); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Cache get failed"})
 			return
 		}
-		
+
 		duration := time.Since(start)
 		c.JSON(http.StatusOK, gin.H{
 			"duration_ms": duration.Milliseconds(),
@@ -147,8 +147,9 @@ func main() {
 
 	// 优雅关闭服务器
 	server := &http.Server{
-		Addr:    ":" + cfg.Port,
-		Handler: app,
+		Addr:              ":" + cfg.Port,
+		Handler:           app,
+		ReadHeaderTimeout: 20 * time.Second, // 防止 Slowloris 攻击
 	}
 
 	// 启动服务器

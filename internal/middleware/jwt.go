@@ -2,12 +2,13 @@ package middleware
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
-	"law-oa-go/internal/config"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
+	"law-oa-go/internal/config"
 )
 
 var jwtSecret []byte

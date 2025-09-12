@@ -6,8 +6,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/redis/go-redis/v9"
 	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -30,10 +30,10 @@ func Init(cfg config.DatabaseConfig) (*gorm.DB, error) {
 
 	// 配置GORM
 	gormConfig := &gorm.Config{
-		Logger:                 logger.Default.LogMode(logger.Warn), // 生产环境优化
-		PrepareStmt:            true,  // 启用预编译语句
-		SkipDefaultTransaction: false, // 保持事务安全
-		DisableForeignKeyConstraintWhenMigrating: true, // 禁用自动外键
+		Logger:                                   logger.Default.LogMode(logger.Warn), // 生产环境优化
+		PrepareStmt:                              true,                                // 启用预编译语句
+		SkipDefaultTransaction:                   false,                               // 保持事务安全
+		DisableForeignKeyConstraintWhenMigrating: true,                                // 禁用自动外键
 	}
 
 	// 连接数据库
@@ -49,10 +49,10 @@ func Init(cfg config.DatabaseConfig) (*gorm.DB, error) {
 	}
 
 	// 配置连接池（按照GORM最佳实践）
-	sqlDB.SetMaxOpenConns(100)                      // 最大连接数
-	sqlDB.SetMaxIdleConns(10)                       // 最大空闲连接数
-	sqlDB.SetConnMaxLifetime(1 * time.Hour)         // 连接最大生命周期
-	sqlDB.SetConnMaxIdleTime(30 * time.Minute)      // 连接最大空闲时间
+	sqlDB.SetMaxOpenConns(100)                 // 最大连接数
+	sqlDB.SetMaxIdleConns(10)                  // 最大空闲连接数
+	sqlDB.SetConnMaxLifetime(1 * time.Hour)    // 连接最大生命周期
+	sqlDB.SetConnMaxIdleTime(30 * time.Minute) // 连接最大空闲时间
 
 	log.Println("数据库连接成功")
 	return db, nil
@@ -69,7 +69,7 @@ func InitRedis(cfg config.RedisConfig) (*redis.Client, error) {
 	// 测试连接
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
+
 	_, err := rdb.Ping(ctx).Result()
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
@@ -104,7 +104,6 @@ func InitElasticsearch(cfg config.ElasticsearchConfig) (*elasticsearch.Client, e
 	log.Println("Elasticsearch连接成功")
 	return es, nil
 }
-
 
 // Health 健康检查所有组件
 func Health() map[string]interface{} {

@@ -8,9 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"law-oa-go/internal/common"
-
 	"github.com/gin-gonic/gin"
+	"law-oa-go/internal/common"
 )
 
 // RequestSignatureMiddleware 请求签名验证中间件
@@ -99,14 +98,14 @@ func validateAPIKey(apiKey string) bool {
 	if len(apiKey) < 32 {
 		return false
 	}
-	
+
 	// 检查是否包含非法字符
 	for _, c := range apiKey {
 		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_') {
 			return false
 		}
 	}
-	
+
 	return true
 }
 
@@ -114,11 +113,11 @@ func validateAPIKey(apiKey string) bool {
 func calculateSignature(body []byte, timestamp, apiKey string) string {
 	// 构建签名字符串
 	stringToSign := timestamp + ":" + string(body)
-	
+
 	// 使用HMAC-SHA256计算签名
 	h := hmac.New(sha256.New, []byte(apiKey))
 	h.Write([]byte(stringToSign))
-	
+
 	return hex.EncodeToString(h.Sum(nil))
 }
 
@@ -175,7 +174,7 @@ func RateLimitByAPIKey() gin.HandlerFunc {
 		// 这里可以根据API Key查询用户的限流配置
 		// 然后应用相应的限流策略
 		// 为了示例，我们使用默认的限流
-		
+
 		c.Next()
 	}
 }

@@ -207,10 +207,10 @@ func (h *ClientHandler) ListClients(c *gin.Context) {
 	}
 
 	response := common.PageResponse{
-		Data:     clients,
-		Total:    total,
-		Page:     page,
-		Size:    pageSize,
+		Data:  clients,
+		Total: total,
+		Page:  page,
+		Size:  pageSize,
 	}
 
 	c.JSON(http.StatusOK, response)

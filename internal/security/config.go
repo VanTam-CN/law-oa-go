@@ -1,38 +1,39 @@
 package security
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
-	"law-oa-go/internal/cache"
 	"log"
 	"os"
 	"sync"
 	"time"
 
 	"github.com/spf13/viper"
+	"law-oa-go/internal/cache"
 )
 
 // SecurityConfig 安全配置
 type SecurityConfig struct {
 	// JWT配置
 	JWT JWTConfig `json:"jwt" yaml:"jwt"`
-	
+
 	// 加密配置
 	Encryption EncryptionConfig `json:"encryption" yaml:"encryption"`
-	
+
 	// API安全配置
 	APISecurity APISecurityConfig `json:"api_security" yaml:"api_security"`
-	
+
 	// 认证配置
 	Auth AuthConfig `json:"auth" yaml:"auth"`
-	
+
 	// 审计配置
 	Audit AuditLogConfig `json:"audit" yaml:"audit"`
-	
+
 	// RBAC配置
 	RBAC RBACConfig `json:"rbac" yaml:"rbac"`
-	
+
 	// 验证配置
 	Validation ValidationConfig `json:"validation" yaml:"validation"`
 }
@@ -49,104 +50,104 @@ type JWTConfig struct {
 
 // EncryptionConfig 加密配置
 type EncryptionConfig struct {
-	AESKey                string        `json:"aes_key" yaml:"aes_key"`
-	RSAPrivateKey         string        `json:"rsa_private_key" yaml:"rsa_private_key"`
-	RSAPublicKey          string        `json:"rsa_public_key" yaml:"rsa_public_key"`
-	DataKeyRotationDays   int           `json:"data_key_rotation_days" yaml:"data_key_rotation_days"`
-	EnableFieldEncryption bool          `json:"enable_field_encryption" yaml:"enable_field_encryption"`
-	SensitiveFields       []string      `json:"sensitive_fields" yaml:"sensitive_fields"`
-	HashAlgorithm         string        `json:"hash_algorithm" yaml:"hash_algorithm"`
+	AESKey                string   `json:"aes_key" yaml:"aes_key"`
+	RSAPrivateKey         string   `json:"rsa_private_key" yaml:"rsa_private_key"`
+	RSAPublicKey          string   `json:"rsa_public_key" yaml:"rsa_public_key"`
+	DataKeyRotationDays   int      `json:"data_key_rotation_days" yaml:"data_key_rotation_days"`
+	EnableFieldEncryption bool     `json:"enable_field_encryption" yaml:"enable_field_encryption"`
+	SensitiveFields       []string `json:"sensitive_fields" yaml:"sensitive_fields"`
+	HashAlgorithm         string   `json:"hash_algorithm" yaml:"hash_algorithm"`
 }
 
 // APISecurityConfig API安全配置
 type APISecurityConfig struct {
-	EnableRateLimit      bool          `json:"enable_rate_limit" yaml:"enable_rate_limit"`
-	EnableIPWhitelist    bool          `json:"enable_ip_whitelist" yaml:"enable_ip_whitelist"`
-	EnableIPBlacklist    bool          `json:"enable_ip_blacklist" yaml:"enable_ip_blacklist"`
-	EnableRequestSigning bool          `json:"enable_request_signing" yaml:"enable_request_signing"`
-	EnableAPIThrottling  bool          `json:"enable_api_throttling" yaml:"enable_api_throttling"`
-	EnableWAFProtection  bool          `json:"enable_waf_protection" yaml:"enable_waf_protection"`
-	EnableDDoSProtection bool          `json:"enable_ddos_protection" yaml:"enable_ddos_protection"`
-	EnableRequestValidation bool        `json:"enable_request_validation" yaml:"enable_request_validation"`
-	EnableCORS           bool          `json:"enable_cors" yaml:"enable_cors"`
-	EnableCSRF           bool          `json:"enable_csrf" yaml:"enable_csrf"`
-	RateLimitWindow      time.Duration `json:"rate_limit_window" yaml:"rate_limit_window"`
-	RateLimitMaxRequests int           `json:"rate_limit_max_requests" yaml:"rate_limit_max_requests"`
-	WhitelistedIPs       []string      `json:"whitelisted_ips" yaml:"whitelisted_ips"`
-	BlacklistedIPs       []string      `json:"blacklisted_ips" yaml:"blacklisted_ips"`
-	AllowedOrigins       []string      `json:"allowed_origins" yaml:"allowed_origins"`
-	AllowedMethods       []string      `json:"allowed_methods" yaml:"allowed_methods"`
-	AllowedHeaders       []string      `json:"allowed_headers" yaml:"allowed_headers"`
-	MaxRequestSize       int64         `json:"max_request_size" yaml:"max_request_size"`
+	EnableRateLimit         bool          `json:"enable_rate_limit" yaml:"enable_rate_limit"`
+	EnableIPWhitelist       bool          `json:"enable_ip_whitelist" yaml:"enable_ip_whitelist"`
+	EnableIPBlacklist       bool          `json:"enable_ip_blacklist" yaml:"enable_ip_blacklist"`
+	EnableRequestSigning    bool          `json:"enable_request_signing" yaml:"enable_request_signing"`
+	EnableAPIThrottling     bool          `json:"enable_api_throttling" yaml:"enable_api_throttling"`
+	EnableWAFProtection     bool          `json:"enable_waf_protection" yaml:"enable_waf_protection"`
+	EnableDDoSProtection    bool          `json:"enable_ddos_protection" yaml:"enable_ddos_protection"`
+	EnableRequestValidation bool          `json:"enable_request_validation" yaml:"enable_request_validation"`
+	EnableCORS              bool          `json:"enable_cors" yaml:"enable_cors"`
+	EnableCSRF              bool          `json:"enable_csrf" yaml:"enable_csrf"`
+	RateLimitWindow         time.Duration `json:"rate_limit_window" yaml:"rate_limit_window"`
+	RateLimitMaxRequests    int           `json:"rate_limit_max_requests" yaml:"rate_limit_max_requests"`
+	WhitelistedIPs          []string      `json:"whitelisted_ips" yaml:"whitelisted_ips"`
+	BlacklistedIPs          []string      `json:"blacklisted_ips" yaml:"blacklisted_ips"`
+	AllowedOrigins          []string      `json:"allowed_origins" yaml:"allowed_origins"`
+	AllowedMethods          []string      `json:"allowed_methods" yaml:"allowed_methods"`
+	AllowedHeaders          []string      `json:"allowed_headers" yaml:"allowed_headers"`
+	MaxRequestSize          int64         `json:"max_request_size" yaml:"max_request_size"`
 }
 
 // AuthConfig 认证配置
 type AuthConfig struct {
-	EnableDeviceCheck     bool     `json:"enable_device_check" yaml:"enable_device_check"`
-	EnableIPCheck         bool     `json:"enable_ip_check" yaml:"enable_ip_check"`
-	EnableRateLimit       bool     `json:"enable_rate_limit" yaml:"enable_rate_limit"`
-	SkipAuthPaths         []string `json:"skip_auth_paths" yaml:"skip_auth_paths"`
-	SkipAuthPrefixes      []string `json:"skip_auth_prefixes" yaml:"skip_auth_prefixes"`
-	RequiredRoles         []string `json:"required_roles" yaml:"required_roles"`
-	SessionTimeout        time.Duration `json:"session_timeout" yaml:"session_timeout"`
-	MaxConcurrentSessions int      `json:"max_concurrent_sessions" yaml:"max_concurrent_sessions"`
+	EnableDeviceCheck     bool           `json:"enable_device_check" yaml:"enable_device_check"`
+	EnableIPCheck         bool           `json:"enable_ip_check" yaml:"enable_ip_check"`
+	EnableRateLimit       bool           `json:"enable_rate_limit" yaml:"enable_rate_limit"`
+	SkipAuthPaths         []string       `json:"skip_auth_paths" yaml:"skip_auth_paths"`
+	SkipAuthPrefixes      []string       `json:"skip_auth_prefixes" yaml:"skip_auth_prefixes"`
+	RequiredRoles         []string       `json:"required_roles" yaml:"required_roles"`
+	SessionTimeout        time.Duration  `json:"session_timeout" yaml:"session_timeout"`
+	MaxConcurrentSessions int            `json:"max_concurrent_sessions" yaml:"max_concurrent_sessions"`
 	PasswordPolicy        PasswordPolicy `json:"password_policy" yaml:"password_policy"`
 }
 
 // PasswordPolicy 密码策略
 type PasswordPolicy struct {
-	MinLength           int      `json:"min_length" yaml:"min_length"`
-	MaxLength           int      `json:"max_length" yaml:"max_length"`
-	RequireUppercase    bool     `json:"require_uppercase" yaml:"require_uppercase"`
-	RequireLowercase    bool     `json:"require_lowercase" yaml:"require_lowercase"`
-	RequireNumbers      bool     `json:"require_numbers" yaml:"require_numbers"`
-	RequireSpecialChars bool     `json:"require_special_chars" yaml:"require_special_chars"`
-	ForbidCommonPasswords bool   `json:"forbid_common_passwords" yaml:"forbid_common_passwords"`
-	ForbidPersonalInfo  bool     `json:"forbid_personal_info" yaml:"forbid_personal_info"`
-	ExpiryDays          int      `json:"expiry_days" yaml:"expiry_days"`
-	HistoryCount        int      `json:"history_count" yaml:"history_count"`
-	FailedAttempts      int      `json:"failed_attempts" yaml:"failed_attempts"`
-	LockoutDuration     time.Duration `json:"lockout_duration" yaml:"lockout_duration"`
+	MinLength             int           `json:"min_length" yaml:"min_length"`
+	MaxLength             int           `json:"max_length" yaml:"max_length"`
+	RequireUppercase      bool          `json:"require_uppercase" yaml:"require_uppercase"`
+	RequireLowercase      bool          `json:"require_lowercase" yaml:"require_lowercase"`
+	RequireNumbers        bool          `json:"require_numbers" yaml:"require_numbers"`
+	RequireSpecialChars   bool          `json:"require_special_chars" yaml:"require_special_chars"`
+	ForbidCommonPasswords bool          `json:"forbid_common_passwords" yaml:"forbid_common_passwords"`
+	ForbidPersonalInfo    bool          `json:"forbid_personal_info" yaml:"forbid_personal_info"`
+	ExpiryDays            int           `json:"expiry_days" yaml:"expiry_days"`
+	HistoryCount          int           `json:"history_count" yaml:"history_count"`
+	FailedAttempts        int           `json:"failed_attempts" yaml:"failed_attempts"`
+	LockoutDuration       time.Duration `json:"lockout_duration" yaml:"lockout_duration"`
 }
 
 // AuditConfig 审计配置
 type AuditConfig struct {
-	EnableAuditLog       bool           `json:"enable_audit_log" yaml:"enable_audit_log"`
-	LogDatabase          bool           `json:"log_database" yaml:"log_database"`
-	LogToFile            bool           `json:"log_to_file" yaml:"log_to_file"`
-	LogToSyslog          bool           `json:"log_to_syslog" yaml:"log_to_syslog"`
-	EnableRealTimeAlert  bool           `json:"enable_real_time_alert" yaml:"enable_real_time_alert"`
+	EnableAuditLog       bool             `json:"enable_audit_log" yaml:"enable_audit_log"`
+	LogDatabase          bool             `json:"log_database" yaml:"log_database"`
+	LogToFile            bool             `json:"log_to_file" yaml:"log_to_file"`
+	LogToSyslog          bool             `json:"log_to_syslog" yaml:"log_to_syslog"`
+	EnableRealTimeAlert  bool             `json:"enable_real_time_alert" yaml:"enable_real_time_alert"`
 	SensitiveEventTypes  []AuditEventType `json:"sensitive_event_types" yaml:"sensitive_event_types"`
 	RequiredEventTypes   []AuditEventType `json:"required_event_types" yaml:"required_event_types"`
-	RetentionDays        int            `json:"retention_days" yaml:"retention_days"`
-	MaxBatchSize         int            `json:"max_batch_size" yaml:"max_batch_size"`
-	BatchTimeout         time.Duration  `json:"batch_timeout" yaml:"batch_timeout"`
-	EnableCompression    bool           `json:"enable_compression" yaml:"enable_compression"`
-	EncryptSensitiveData bool           `json:"encrypt_sensitive_data" yaml:"encrypt_sensitive_data"`
+	RetentionDays        int              `json:"retention_days" yaml:"retention_days"`
+	MaxBatchSize         int              `json:"max_batch_size" yaml:"max_batch_size"`
+	BatchTimeout         time.Duration    `json:"batch_timeout" yaml:"batch_timeout"`
+	EnableCompression    bool             `json:"enable_compression" yaml:"enable_compression"`
+	EncryptSensitiveData bool             `json:"encrypt_sensitive_data" yaml:"encrypt_sensitive_data"`
 }
 
 // RBACConfig RBAC配置
 type RBACConfig struct {
-	EnableRBAC             bool          `json:"enable_rbac" yaml:"enable_rbac"`
-	EnablePermissionCache  bool          `json:"enable_permission_cache" yaml:"enable_permission_cache"`
-	PermissionCacheTTL    time.Duration `json:"permission_cache_ttl" yaml:"permission_cache_ttl"`
-	EnableRoleHierarchy   bool          `json:"enable_role_hierarchy" yaml:"enable_role_hierarchy"`
-	EnableDynamicRoles     bool          `json:"enable_dynamic_roles" yaml:"enable_dynamic_roles"`
-	DefaultRoles          []string      `json:"default_roles" yaml:"default_roles"`
-	SuperAdminRoles        []string      `json:"super_admin_roles" yaml:"super_admin_roles"`
-	EnablePermissionLogging bool         `json:"enable_permission_logging" yaml:"enable_permission_logging"`
+	EnableRBAC              bool          `json:"enable_rbac" yaml:"enable_rbac"`
+	EnablePermissionCache   bool          `json:"enable_permission_cache" yaml:"enable_permission_cache"`
+	PermissionCacheTTL      time.Duration `json:"permission_cache_ttl" yaml:"permission_cache_ttl"`
+	EnableRoleHierarchy     bool          `json:"enable_role_hierarchy" yaml:"enable_role_hierarchy"`
+	EnableDynamicRoles      bool          `json:"enable_dynamic_roles" yaml:"enable_dynamic_roles"`
+	DefaultRoles            []string      `json:"default_roles" yaml:"default_roles"`
+	SuperAdminRoles         []string      `json:"super_admin_roles" yaml:"super_admin_roles"`
+	EnablePermissionLogging bool          `json:"enable_permission_logging" yaml:"enable_permission_logging"`
 }
 
 // ValidationConfig 验证配置
 type ValidationConfig struct {
-	EnableInputValidation  bool                   `json:"enable_input_validation" yaml:"enable_input_validation"`
-	EnableSQLInjectionCheck bool                 `json:"enable_sql_injection_check" yaml:"enable_sql_injection_check"`
-	EnableXSSCheck         bool                   `json:"enable_xss_check" yaml:"enable_xss_check"`
-	ValidationRules        map[string]interface{} `json:"validation_rules" yaml:"validation_rules"`
-	CustomValidators       []string              `json:"custom_validators" yaml:"custom_validators"`
-	MaxStringLength        int                   `json:"max_string_length" yaml:"max_string_length"`
-	MaxFileSize           int64                 `json:"max_file_size" yaml:"max_file_size"`
-	AllowedFileTypes       []string              `json:"allowed_file_types" yaml:"allowed_file_types"`
+	EnableInputValidation   bool                   `json:"enable_input_validation" yaml:"enable_input_validation"`
+	EnableSQLInjectionCheck bool                   `json:"enable_sql_injection_check" yaml:"enable_sql_injection_check"`
+	EnableXSSCheck          bool                   `json:"enable_xss_check" yaml:"enable_xss_check"`
+	ValidationRules         map[string]interface{} `json:"validation_rules" yaml:"validation_rules"`
+	CustomValidators        []string               `json:"custom_validators" yaml:"custom_validators"`
+	MaxStringLength         int                    `json:"max_string_length" yaml:"max_string_length"`
+	MaxFileSize             int64                  `json:"max_file_size" yaml:"max_file_size"`
+	AllowedFileTypes        []string               `json:"allowed_file_types" yaml:"allowed_file_types"`
 }
 
 // ConfigManager 配置管理器
@@ -243,7 +244,7 @@ func (cm *ConfigManager) GetConfig() *SecurityConfig {
 
 	// 尝试从缓存获取
 	var cachedConfig SecurityConfig
-	if err := cm.cache.Get(nil, "security_config", &cachedConfig); err == nil {
+	if err := cm.cache.Get(context.Background(), "security_config", &cachedConfig); err == nil {
 		return &cachedConfig
 	}
 
@@ -286,46 +287,46 @@ func (cm *ConfigManager) setDefaultConfig() {
 			HashAlgorithm:         "sha256",
 		},
 		APISecurity: APISecurityConfig{
-			EnableRateLimit:        true,
-			EnableIPWhitelist:      false,
-			EnableIPBlacklist:      true,
-			EnableRequestSigning:   false,
-			EnableAPIThrottling:    true,
-			EnableWAFProtection:    true,
-			EnableDDoSProtection:   true,
+			EnableRateLimit:         true,
+			EnableIPWhitelist:       false,
+			EnableIPBlacklist:       true,
+			EnableRequestSigning:    false,
+			EnableAPIThrottling:     true,
+			EnableWAFProtection:     true,
+			EnableDDoSProtection:    true,
 			EnableRequestValidation: true,
-			EnableCORS:            true,
-			EnableCSRF:            true,
-			RateLimitWindow:       time.Minute,
-			RateLimitMaxRequests:  100,
-			WhitelistedIPs:        []string{},
-			BlacklistedIPs:        []string{},
-			AllowedOrigins:        []string{"http://localhost:3000"},
-			AllowedMethods:        []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-			AllowedHeaders:        []string{"*"},
-			MaxRequestSize:        10 * 1024 * 1024, // 10MB
+			EnableCORS:              true,
+			EnableCSRF:              true,
+			RateLimitWindow:         time.Minute,
+			RateLimitMaxRequests:    100,
+			WhitelistedIPs:          []string{},
+			BlacklistedIPs:          []string{},
+			AllowedOrigins:          []string{"http://localhost:3000"},
+			AllowedMethods:          []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+			AllowedHeaders:          []string{"*"},
+			MaxRequestSize:          10 * 1024 * 1024, // 10MB
 		},
 		Auth: AuthConfig{
-			EnableDeviceCheck:      true,
-			EnableIPCheck:          true,
-			EnableRateLimit:        true,
-			SkipAuthPaths:          []string{"/health", "/metrics"},
-			SkipAuthPrefixes:       []string{"/api/public/"},
-			SessionTimeout:         24 * time.Hour,
-			MaxConcurrentSessions:  3,
+			EnableDeviceCheck:     true,
+			EnableIPCheck:         true,
+			EnableRateLimit:       true,
+			SkipAuthPaths:         []string{"/health", "/metrics"},
+			SkipAuthPrefixes:      []string{"/api/public/"},
+			SessionTimeout:        24 * time.Hour,
+			MaxConcurrentSessions: 3,
 			PasswordPolicy: PasswordPolicy{
-				MinLength:            8,
-				MaxLength:            128,
-				RequireUppercase:     true,
-				RequireLowercase:     true,
-				RequireNumbers:       true,
-				RequireSpecialChars:  true,
+				MinLength:             8,
+				MaxLength:             128,
+				RequireUppercase:      true,
+				RequireLowercase:      true,
+				RequireNumbers:        true,
+				RequireSpecialChars:   true,
 				ForbidCommonPasswords: true,
-				ForbidPersonalInfo:   true,
-				ExpiryDays:           90,
-				HistoryCount:         5,
-				FailedAttempts:       5,
-				LockoutDuration:      30 * time.Minute,
+				ForbidPersonalInfo:    true,
+				ExpiryDays:            90,
+				HistoryCount:          5,
+				FailedAttempts:        5,
+				LockoutDuration:       30 * time.Minute,
 			},
 		},
 		Audit: AuditLogConfig{
@@ -343,22 +344,22 @@ func (cm *ConfigManager) setDefaultConfig() {
 			EncryptSensitiveData: true,
 		},
 		RBAC: RBACConfig{
-			EnableRBAC:            true,
-			EnablePermissionCache: true,
-			PermissionCacheTTL:    time.Hour,
-			EnableRoleHierarchy:   true,
-			EnableDynamicRoles:     false,
-			DefaultRoles:          []string{"user"},
-			SuperAdminRoles:       []string{"super_admin"},
+			EnableRBAC:              true,
+			EnablePermissionCache:   true,
+			PermissionCacheTTL:      time.Hour,
+			EnableRoleHierarchy:     true,
+			EnableDynamicRoles:      false,
+			DefaultRoles:            []string{"user"},
+			SuperAdminRoles:         []string{"super_admin"},
 			EnablePermissionLogging: true,
 		},
 		Validation: ValidationConfig{
-			EnableInputValidation:  true,
+			EnableInputValidation:   true,
 			EnableSQLInjectionCheck: true,
-			EnableXSSCheck:        true,
-			MaxStringLength:        1000,
-			MaxFileSize:           50 * 1024 * 1024, // 50MB
-			AllowedFileTypes:       []string{".jpg", ".jpeg", ".png", ".gif", ".pdf", ".doc", ".docx", ".xls", ".xlsx"},
+			EnableXSSCheck:          true,
+			MaxStringLength:         1000,
+			MaxFileSize:             50 * 1024 * 1024, // 50MB
+			AllowedFileTypes:        []string{".jpg", ".jpeg", ".png", ".gif", ".pdf", ".doc", ".docx", ".xls", ".xlsx"},
 		},
 	}
 }
@@ -432,7 +433,7 @@ func (cm *ConfigManager) validateConfig() error {
 // cacheConfig 缓存配置
 func (cm *ConfigManager) cacheConfig() {
 	if cm.cache != nil {
-		cm.cache.Set(nil, "security_config", cm.config, time.Hour)
+		cm.cache.Set(context.Background(), "security_config", cm.config, time.Hour)
 	}
 }
 

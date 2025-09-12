@@ -2,8 +2,9 @@ package validators
 
 import (
 	"errors"
-	"law-oa-go/internal/models"
 	"regexp"
+
+	"law-oa-go/internal/models"
 )
 
 // 律师验证器
@@ -21,12 +22,12 @@ func (v *LawyerValidator) ValidateLawyer(lawyer *models.User, isUpdate bool) err
 	if len(lawyer.Name) > 100 {
 		return errors.New("律师姓名不能超过100个字符")
 	}
-	
+
 	// 验证角色
 	if lawyer.Role != "lawyer" {
 		return errors.New("用户角色必须为律师")
 	}
-	
+
 	// 验证邮箱
 	if lawyer.Email == "" {
 		return errors.New("律师邮箱不能为空")
@@ -35,7 +36,7 @@ func (v *LawyerValidator) ValidateLawyer(lawyer *models.User, isUpdate bool) err
 	if !emailRegex.MatchString(lawyer.Email) {
 		return errors.New("律师邮箱格式不正确")
 	}
-	
+
 	// 验证手机号（如果提供）
 	if lawyer.Phone != "" {
 		phoneRegex := regexp.MustCompile(`^1[3-9]\d{9}$`)
@@ -43,7 +44,7 @@ func (v *LawyerValidator) ValidateLawyer(lawyer *models.User, isUpdate bool) err
 			return errors.New("律师手机号格式不正确")
 		}
 	}
-	
+
 	// 验证状态
 	if lawyer.Status == "" {
 		return errors.New("律师状态不能为空")
@@ -55,7 +56,7 @@ func (v *LawyerValidator) ValidateLawyer(lawyer *models.User, isUpdate bool) err
 	if !validStatuses[lawyer.Status] {
 		return errors.New("无效的律师状态")
 	}
-	
+
 	return nil
 }
 
@@ -65,7 +66,7 @@ func (v *LawyerValidator) ValidateSearchParams(searchTerm, status string) error 
 	if len(searchTerm) > 100 {
 		return errors.New("搜索词不能超过100个字符")
 	}
-	
+
 	// 验证状态过滤
 	if status != "" {
 		validStatuses := map[string]bool{
@@ -76,7 +77,7 @@ func (v *LawyerValidator) ValidateSearchParams(searchTerm, status string) error 
 			return errors.New("无效的状态过滤")
 		}
 	}
-	
+
 	return nil
 }
 

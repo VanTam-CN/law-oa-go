@@ -35,7 +35,7 @@ func LoggingMiddleware(logger *slog.Logger) gin.HandlerFunc {
 		start := time.Now()
 		path := c.Request.URL.Path
 		raw := c.Request.URL.RawQuery
-		
+
 		// 记录请求开始
 		logger.Info("Request started",
 			"method", c.Request.Method,

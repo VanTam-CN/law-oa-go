@@ -96,11 +96,11 @@ var (
 func BusinessMetricsMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
-		
+
 		c.Next()
-		
+
 		duration := time.Since(start)
-		
+
 		// 根据路由路径记录业务指标
 		switch c.FullPath() {
 		case "/api/v1/cases":
@@ -141,7 +141,7 @@ func RecordSlowQuery(operation, table string, duration time.Duration) {
 	} else if duration > 2*time.Second {
 		threshold = "2s"
 	}
-	
+
 	dbSlowQueriesTotal.WithLabelValues(operation, table, threshold).Inc()
 }
 

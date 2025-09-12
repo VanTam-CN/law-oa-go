@@ -68,10 +68,10 @@ func (uf *UserFactory) CreateLawyerUser() map[string]interface{} {
 // CreateInvalidUser 创建无效用户数据
 func (uf *UserFactory) CreateInvalidUser() map[string]interface{} {
 	return map[string]interface{}{
-		"name":     "", // 空名称
+		"name":     "",              // 空名称
 		"email":    "invalid-email", // 无效邮箱
-		"password": "123", // 弱密码
-		"role":     "invalid_role", // 无效角色
+		"password": "123",           // 弱密码
+		"role":     "invalid_role",  // 无效角色
 	}
 }
 
@@ -136,10 +136,10 @@ func (cf *CaseFactory) CreateClosedCase() map[string]interface{} {
 // CreateInvalidCase 创建无效案件数据
 func (cf *CaseFactory) CreateInvalidCase() map[string]interface{} {
 	return map[string]interface{}{
-		"title":     "", // 空标题
-		"client_id": uint(0), // 无效客户端ID
-		"lawyer_id": uint(0), // 无效律师ID
-		"case_type": "invalid_type", // 无效案件类型
+		"title":     "",                 // 空标题
+		"client_id": uint(0),            // 无效客户端ID
+		"lawyer_id": uint(0),            // 无效律师ID
+		"case_type": "invalid_type",     // 无效案件类型
 		"priority":  "invalid_priority", // 无效优先级
 	}
 }
@@ -189,11 +189,11 @@ func (cf *ClientFactory) CreateIndividualClient() map[string]interface{} {
 // CreateInvalidClient 创建无效客户数据
 func (cf *ClientFactory) CreateInvalidClient() map[string]interface{} {
 	return map[string]interface{}{
-		"name":    "", // 空名称
-		"contact": "", // 空联系人
-		"phone":   "123", // 无效电话
+		"name":    "",              // 空名称
+		"contact": "",              // 空联系人
+		"phone":   "123",           // 无效电话
 		"email":   "invalid-email", // 无效邮箱
-		"type":    "invalid_type", // 无效类型
+		"type":    "invalid_type",  // 无效类型
 	}
 }
 

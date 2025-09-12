@@ -3,7 +3,6 @@ package security
 import (
 	"context"
 	"fmt"
-	"law-oa-go/internal/cache"
 	"log"
 	"strings"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"gorm.io/gorm"
+	"law-oa-go/internal/cache"
 )
 
 var (
@@ -36,17 +36,17 @@ var (
 type AuditEventType string
 
 const (
-	EventTypeLogin         AuditEventType = "login"
-	EventTypeLogout        AuditEventType = "logout"
-	EventTypePasswordReset AuditEventType = "password_reset"
+	EventTypeLogin            AuditEventType = "login"
+	EventTypeLogout           AuditEventType = "logout"
+	EventTypePasswordReset    AuditEventType = "password_reset"
 	EventTypePermissionChange AuditEventType = "permission_change"
-	EventTypeDataAccess    AuditEventType = "data_access"
-	EventTypeDataModify    AuditEventType = "data_modify"
-	EventTypeDataDelete    AuditEventType = "data_delete"
-	EventTypeSystemConfig  AuditEventType = "system_config"
-	EventTypeSecurityEvent AuditEventType = "security_event"
-	EventTypeAPIAccess     AuditEventType = "api_access"
-	EventTypeFileOperation AuditEventType = "file_operation"
+	EventTypeDataAccess       AuditEventType = "data_access"
+	EventTypeDataModify       AuditEventType = "data_modify"
+	EventTypeDataDelete       AuditEventType = "data_delete"
+	EventTypeSystemConfig     AuditEventType = "system_config"
+	EventTypeSecurityEvent    AuditEventType = "security_event"
+	EventTypeAPIAccess        AuditEventType = "api_access"
+	EventTypeFileOperation    AuditEventType = "file_operation"
 )
 
 // AuditEventSeverity 审计事件严重程度
@@ -61,42 +61,42 @@ const (
 
 // AuditEvent 审计事件
 type AuditEvent struct {
-	ID          uint                `json:"id" gorm:"primaryKey"`
-	UserID      uint                `json:"user_id" gorm:"index"`
-	Username    string              `json:"username" gorm:"index"`
-	EventType   AuditEventType       `json:"event_type" gorm:"index"`
-	Severity    AuditEventSeverity   `json:"severity" gorm:"index"`
-	Action      string              `json:"action"`
-	Resource    string              `json:"resource"`
-	ResourceID  string              `json:"resource_id"`
-	IPAddress   string              `json:"ip_address"`
-	UserAgent   string              `json:"user_agent"`
-	DeviceID    string              `json:"device_id"`
-	SessionID   string              `json:"session_id"`
-	Description string              `json:"description"`
-	Details     map[string]interface{} `json:"details" gorm:"type:json"`
-	Status      string              `json:"status"`
-	ErrorMessage string             `json:"error_message,omitempty"`
-	Location    string              `json:"location"`
-	Timestamp   time.Time           `json:"timestamp" gorm:"index"`
-	CreatedAt   time.Time           `json:"created_at"`
-	UpdatedAt   time.Time           `json:"updated_at"`
+	ID           uint                   `json:"id" gorm:"primaryKey"`
+	UserID       uint                   `json:"user_id" gorm:"index"`
+	Username     string                 `json:"username" gorm:"index"`
+	EventType    AuditEventType         `json:"event_type" gorm:"index"`
+	Severity     AuditEventSeverity     `json:"severity" gorm:"index"`
+	Action       string                 `json:"action"`
+	Resource     string                 `json:"resource"`
+	ResourceID   string                 `json:"resource_id"`
+	IPAddress    string                 `json:"ip_address"`
+	UserAgent    string                 `json:"user_agent"`
+	DeviceID     string                 `json:"device_id"`
+	SessionID    string                 `json:"session_id"`
+	Description  string                 `json:"description"`
+	Details      map[string]interface{} `json:"details" gorm:"type:json"`
+	Status       string                 `json:"status"`
+	ErrorMessage string                 `json:"error_message,omitempty"`
+	Location     string                 `json:"location"`
+	Timestamp    time.Time              `json:"timestamp" gorm:"index"`
+	CreatedAt    time.Time              `json:"created_at"`
+	UpdatedAt    time.Time              `json:"updated_at"`
 }
 
 // AuditConfig 审计配置
 type AuditLogConfig struct {
-	EnableAuditLog          bool
-	LogDatabase            bool
-	LogToFile               bool
-	LogToSyslog             bool
-	EnableRealTimeAlert     bool
-	SensitiveEventTypes     []AuditEventType
-	RequiredEventTypes      []AuditEventType
-	RetentionDays           int
-	MaxBatchSize            int
-	BatchTimeout            time.Duration
-	EnableCompression       bool
-	EncryptSensitiveData    bool
+	EnableAuditLog       bool
+	LogDatabase          bool
+	LogToFile            bool
+	LogToSyslog          bool
+	EnableRealTimeAlert  bool
+	SensitiveEventTypes  []AuditEventType
+	RequiredEventTypes   []AuditEventType
+	RetentionDays        int
+	MaxBatchSize         int
+	BatchTimeout         time.Duration
+	EnableCompression    bool
+	EncryptSensitiveData bool
 }
 
 // AuditService 审计服务
@@ -138,7 +138,7 @@ func (s *AuditService) startWorkers() {
 // worker 工作协程
 func (s *AuditService) worker(id int) {
 	log.Printf("Audit worker %d started", id)
-	
+
 	batch := make([]*AuditEvent, 0, s.config.MaxBatchSize)
 	timer := time.NewTimer(s.config.BatchTimeout)
 	defer timer.Stop()
@@ -147,20 +147,20 @@ func (s *AuditService) worker(id int) {
 		select {
 		case event := <-s.eventChan:
 			batch = append(batch, event)
-			
+
 			if len(batch) >= s.config.MaxBatchSize {
 				s.processBatch(batch)
 				batch = batch[:0]
 				timer.Reset(s.config.BatchTimeout)
 			}
-			
+
 		case <-timer.C:
 			if len(batch) > 0 {
 				s.processBatch(batch)
 				batch = batch[:0]
 			}
 			timer.Reset(s.config.BatchTimeout)
-			
+
 		case <-s.stopChan:
 			// 处理剩余事件
 			if len(batch) > 0 {
@@ -238,12 +238,12 @@ func (s *AuditService) checkForAlerts(events []*AuditEvent) {
 		if event.EventType == EventTypeSecurityEvent {
 			s.triggerSecurityAlert(event)
 		}
-		
+
 		// 检查失败登录
 		if event.EventType == EventTypeLogin && event.Status == "failed" {
 			s.checkLoginFailures(event)
 		}
-		
+
 		// 检查敏感操作
 		if s.isSensitiveEvent(event) {
 			s.triggerSensitiveOperationAlert(event)
@@ -260,7 +260,7 @@ func (s *AuditService) triggerSecurityAlert(event *AuditEvent) {
 // checkLoginFailures 检查登录失败
 func (s *AuditService) checkLoginFailures(event *AuditEvent) {
 	key := fmt.Sprintf("login_failures:%s:%s", event.IPAddress, event.Username)
-	
+
 	var count int
 	if s.cacheService != nil {
 		if err := s.cacheService.Get(context.Background(), key, &count); err == nil {
@@ -274,7 +274,7 @@ func (s *AuditService) checkLoginFailures(event *AuditEvent) {
 		log.Printf("LOGIN FAILURE ALERT: User %s failed login from %s (no cache available)", event.Username, event.IPAddress)
 		return
 	}
-	
+
 	// 如果5分钟内失败超过5次，触发告警
 	if count >= 5 {
 		log.Printf("BRUTE FORCE ALERT: Multiple failed login attempts from %s for user %s", event.IPAddress, event.Username)
@@ -336,11 +336,11 @@ func (s *AuditService) encryptSensitiveData(event *AuditEvent) *AuditEvent {
 	if event.IPAddress != "" {
 		event.IPAddress = s.maskIPAddress(event.IPAddress)
 	}
-	
+
 	if event.UserAgent != "" {
 		event.UserAgent = s.maskUserAgent(event.UserAgent)
 	}
-	
+
 	return event
 }
 
@@ -365,17 +365,17 @@ func (s *AuditService) maskUserAgent(ua string) string {
 // LogLogin 记录登录事件
 func (s *AuditService) LogLogin(userID uint, username, ipAddress, userAgent, deviceID, sessionID, status, errorMessage string) error {
 	event := &AuditEvent{
-		UserID:      userID,
-		Username:    username,
-		EventType:   EventTypeLogin,
-		Severity:    s.getLoginSeverity(status),
-		Action:      "user_login",
-		IPAddress:   ipAddress,
-		UserAgent:   userAgent,
-		DeviceID:    deviceID,
-		SessionID:   sessionID,
-		Description: fmt.Sprintf("User %s login attempt", username),
-		Status:      status,
+		UserID:       userID,
+		Username:     username,
+		EventType:    EventTypeLogin,
+		Severity:     s.getLoginSeverity(status),
+		Action:       "user_login",
+		IPAddress:    ipAddress,
+		UserAgent:    userAgent,
+		DeviceID:     deviceID,
+		SessionID:    sessionID,
+		Description:  fmt.Sprintf("User %s login attempt", username),
+		Status:       status,
 		ErrorMessage: errorMessage,
 		Details: map[string]interface{}{
 			"login_method": "password",
@@ -669,43 +669,43 @@ func (s *AuditService) decryptEventData(event *AuditEvent) {
 
 // AuditLogFilter 审计日志过滤器
 type AuditLogFilter struct {
-	UserID    uint             `json:"user_id"`
-	Username  string           `json:"username"`
-	EventType AuditEventType   `json:"event_type"`
+	UserID    uint               `json:"user_id"`
+	Username  string             `json:"username"`
+	EventType AuditEventType     `json:"event_type"`
 	Severity  AuditEventSeverity `json:"severity"`
-	StartTime time.Time        `json:"start_time"`
-	EndTime   time.Time        `json:"end_time"`
-	IPAddress string           `json:"ip_address"`
-	Page      int              `json:"page"`
-	PageSize  int              `json:"page_size"`
-	SortBy    string           `json:"sort_by"`
-	SortOrder string           `json:"sort_order"`
+	StartTime time.Time          `json:"start_time"`
+	EndTime   time.Time          `json:"end_time"`
+	IPAddress string             `json:"ip_address"`
+	Page      int                `json:"page"`
+	PageSize  int                `json:"page_size"`
+	SortBy    string             `json:"sort_by"`
+	SortOrder string             `json:"sort_order"`
 }
 
 // AuditMiddleware 审计中间件
 func (s *AuditService) AuditMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
-		
+
 		// 获取用户信息
 		userID, _ := c.Get("user_id")
 		username, _ := c.Get("username")
-		
+
 		// 处理请求
 		c.Next()
-		
+
 		// 记录API访问事件
 		if s.config.EnableAuditLog {
 			var uid uint
 			if userID != nil {
 				uid = userID.(uint)
 			}
-			
+
 			var uname string
 			if username != nil {
 				uname = username.(string)
 			}
-			
+
 			s.LogAPIAccess(
 				uid,
 				uname,
@@ -716,7 +716,7 @@ func (s *AuditService) AuditMiddleware() gin.HandlerFunc {
 				fmt.Sprintf("%d", c.Writer.Status()),
 			)
 		}
-		
+
 		auditLogDuration.WithLabelValues("middleware").Observe(time.Since(start).Seconds())
 	}
 }
@@ -731,25 +731,25 @@ func (s *AuditService) Stop() {
 // GetAuditStats 获取审计统计信息
 func (s *AuditService) GetAuditStats() map[string]interface{} {
 	stats := make(map[string]interface{})
-	
+
 	// 获取今日事件数量
 	today := time.Now().Truncate(24 * time.Hour)
 	tomorrow := today.Add(24 * time.Hour)
-	
+
 	var todayCount int64
 	s.db.Model(&AuditEvent{}).Where("timestamp >= ? AND timestamp < ?", today, tomorrow).Count(&todayCount)
 	stats["today_events"] = todayCount
-	
+
 	// 获取本周事件数量
 	weekStart := today.AddDate(0, 0, -int(today.Weekday()))
 	var weekCount int64
 	s.db.Model(&AuditEvent{}).Where("timestamp >= ?", weekStart).Count(&weekCount)
 	stats["week_events"] = weekCount
-	
+
 	// 获取安全事件数量
 	var securityCount int64
 	s.db.Model(&AuditEvent{}).Where("event_type = ?", EventTypeSecurityEvent).Count(&securityCount)
 	stats["security_events"] = securityCount
-	
+
 	return stats
 }

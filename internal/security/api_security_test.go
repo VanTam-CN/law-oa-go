@@ -17,14 +17,14 @@ func TestAPISecurityService_NewAPISecurityService(t *testing.T) {
 	t.Run("创建API安全服务", func(t *testing.T) {
 		config := &SecurityConfig{
 			APISecurity: APISecurityConfig{
-				EnableRateLimit:       true,
+				EnableRateLimit:      true,
 				EnableCORS:           true,
 				EnableCSRF:           true,
-				EnableWAFProtection:   true,
-				EnableDDoSProtection:  true,
-				EnableRequestSigning:  false,
-				EnableIPWhitelist:     false,
-				EnableIPBlacklist:     true,
+				EnableWAFProtection:  true,
+				EnableDDoSProtection: true,
+				EnableRequestSigning: false,
+				EnableIPWhitelist:    false,
+				EnableIPBlacklist:    true,
 				RateLimitWindow:      time.Minute,
 				RateLimitMaxRequests: 100,
 				MaxRequestSize:       10 * 1024 * 1024,
@@ -71,7 +71,7 @@ func TestAPISecurityService_SecurityMiddleware(t *testing.T) {
 		config := &SecurityConfig{
 			APISecurity: APISecurityConfig{
 				EnableRateLimit: true,
-				EnableCORS:     true,
+				EnableCORS:      true,
 			},
 		}
 		service := NewAPISecurityService(config)
@@ -79,13 +79,13 @@ func TestAPISecurityService_SecurityMiddleware(t *testing.T) {
 		// 创建带中间件的路由
 		gin.SetMode(gin.TestMode)
 		router := gin.New()
-		
+
 		// 添加CORS中间件
 		router.Use(service.ApplyCORS())
-		
+
 		// 添加安全中间件
 		router.Use(service.SecurityMiddleware())
-		
+
 		router.GET("/api/protected", func(c *gin.Context) {
 			c.JSON(200, gin.H{"message": "protected resource"})
 		})
@@ -109,8 +109,8 @@ func TestAPISecurityService_SecurityMiddleware(t *testing.T) {
 				method: "OPTIONS",
 				path:   "/api/protected",
 				headers: map[string]string{
-					"Origin": "http://localhost:3000",
-					"Access-Control-Request-Method": "GET",
+					"Origin":                         "http://localhost:3000",
+					"Access-Control-Request-Method":  "GET",
 					"Access-Control-Request-Headers": "Authorization",
 				},
 				expectedStatus: 204,
@@ -121,12 +121,12 @@ func TestAPISecurityService_SecurityMiddleware(t *testing.T) {
 			t.Run(tc.name, func(t *testing.T) {
 				w := httptest.NewRecorder()
 				req := httptest.NewRequest(tc.method, tc.path, nil)
-				
+
 				// 设置请求头
 				for key, value := range tc.headers {
 					req.Header.Set(key, value)
 				}
-				
+
 				router.ServeHTTP(w, req)
 				assert.Equal(t, tc.expectedStatus, w.Code)
 			})
@@ -140,13 +140,13 @@ func TestAPISecurityService_ValidateRequest(t *testing.T) {
 		config := &SecurityConfig{
 			APISecurity: APISecurityConfig{
 				EnableRequestValidation: true,
-				MaxRequestSize:         1024, // 1KB
+				MaxRequestSize:          1024, // 1KB
 			},
 		}
 		service := NewAPISecurityService(config)
 
 		gin.SetMode(gin.TestMode)
-		
+
 		testCases := []struct {
 			name     string
 			setupReq func() *http.Request
@@ -189,7 +189,7 @@ func TestAPISecurityService_IPWhitelistBlacklist(t *testing.T) {
 		config := &SecurityConfig{
 			APISecurity: APISecurityConfig{
 				EnableIPWhitelist: true,
-				WhitelistedIPs:   []string{"192.168.1.100", "10.0.0.1", "127.0.0.1"},
+				WhitelistedIPs:    []string{"192.168.1.100", "10.0.0.1", "127.0.0.1"},
 			},
 		}
 		service := NewAPISecurityService(config)
@@ -217,7 +217,7 @@ func TestAPISecurityService_IPWhitelistBlacklist(t *testing.T) {
 		config := &SecurityConfig{
 			APISecurity: APISecurityConfig{
 				EnableIPBlacklist: true,
-				BlacklistedIPs:   []string{"192.168.1.100", "10.0.0.1", "127.0.0.1"},
+				BlacklistedIPs:    []string{"192.168.1.100", "10.0.0.1", "127.0.0.1"},
 			},
 		}
 		service := NewAPISecurityService(config)
@@ -246,8 +246,8 @@ func TestAPISecurityService_IPWhitelistBlacklist(t *testing.T) {
 			APISecurity: APISecurityConfig{
 				EnableIPWhitelist: false,
 				EnableIPBlacklist: false,
-				WhitelistedIPs:   []string{"192.168.1.100"},
-				BlacklistedIPs:   []string{"192.168.1.200"},
+				WhitelistedIPs:    []string{"192.168.1.100"},
+				BlacklistedIPs:    []string{"192.168.1.200"},
 			},
 		}
 		service := NewAPISecurityService(config)
@@ -266,7 +266,7 @@ func TestAPISecurityService_CheckRateLimit(t *testing.T) {
 		config := &SecurityConfig{
 			APISecurity: APISecurityConfig{
 				EnableRateLimit:      true,
-				RateLimitWindow:     time.Minute,
+				RateLimitWindow:      time.Minute,
 				RateLimitMaxRequests: 5,
 			},
 		}
@@ -313,7 +313,7 @@ func TestAPISecurityService_DetectWAFAttack(t *testing.T) {
 		service := NewAPISecurityService(config)
 
 		gin.SetMode(gin.TestMode)
-		
+
 		testCases := []struct {
 			name     string
 			setupReq func() *http.Request
@@ -368,7 +368,7 @@ func TestAPISecurityService_ValidateCSRFToken(t *testing.T) {
 		service := NewAPISecurityService(config)
 
 		gin.SetMode(gin.TestMode)
-		
+
 		testCases := []struct {
 			name         string
 			setupContext func() *gin.Context
@@ -544,8 +544,8 @@ func TestAPISecurityService_Integration(t *testing.T) {
 				EnableRateLimit:      true,
 				EnableCORS:           true,
 				EnableCSRF:           true,
-				EnableWAFProtection:   true,
-				EnableDDoSProtection:  true,
+				EnableWAFProtection:  true,
+				EnableDDoSProtection: true,
 				MaxRequestSize:       1024 * 1024, // 1MB
 			},
 		}
@@ -553,17 +553,17 @@ func TestAPISecurityService_Integration(t *testing.T) {
 
 		gin.SetMode(gin.TestMode)
 		router := gin.New()
-		
+
 		// 应用所有安全中间件
 		router.Use(service.ApplyCORS())
 		router.Use(service.SecurityMiddleware())
-		
+
 		// 设置CSRF令牌到会话
 		router.Use(func(c *gin.Context) {
 			c.Set("csrf_token", "test-csrf-token")
 			c.Next()
 		})
-		
+
 		router.POST("/api/secure", func(c *gin.Context) {
 			c.JSON(200, gin.H{"message": "secure endpoint accessed"})
 		})
@@ -580,10 +580,10 @@ func TestAPISecurityService_Integration(t *testing.T) {
 				method: "POST",
 				path:   "/api/secure",
 				headers: map[string]string{
-					"Content-Type":     "application/json",
-					"X-CSRF-Token":    "test-csrf-token",
-					"Authorization":   "Bearer valid-token",
-					"Origin":          "http://localhost:3000",
+					"Content-Type":  "application/json",
+					"X-CSRF-Token":  "test-csrf-token",
+					"Authorization": "Bearer valid-token",
+					"Origin":        "http://localhost:3000",
 				},
 				expectedStatus: 200,
 			},
@@ -600,12 +600,12 @@ func TestAPISecurityService_Integration(t *testing.T) {
 			t.Run(tc.name, func(t *testing.T) {
 				w := httptest.NewRecorder()
 				req := httptest.NewRequest(tc.method, tc.path, nil)
-				
+
 				// 设置请求头
 				for key, value := range tc.headers {
 					req.Header.Set(key, value)
 				}
-				
+
 				router.ServeHTTP(w, req)
 				assert.Equal(t, tc.expectedStatus, w.Code)
 			})
@@ -618,7 +618,7 @@ func BenchmarkAPISecurityService_IsIPWhitelisted(b *testing.B) {
 	config := &SecurityConfig{
 		APISecurity: APISecurityConfig{
 			EnableIPWhitelist: true,
-			WhitelistedIPs:   []string{"192.168.1.100", "10.0.0.1", "127.0.0.1"},
+			WhitelistedIPs:    []string{"192.168.1.100", "10.0.0.1", "127.0.0.1"},
 		},
 	}
 	service := NewAPISecurityService(config)
@@ -673,8 +673,8 @@ func setupTestAPISecurityService(t *testing.T) *APISecurityService {
 			EnableRateLimit:      true,
 			EnableCORS:           true,
 			EnableCSRF:           true,
-			EnableWAFProtection:   true,
-			EnableDDoSProtection:  true,
+			EnableWAFProtection:  true,
+			EnableDDoSProtection: true,
 			MaxRequestSize:       10 * 1024 * 1024,
 			AllowedOrigins:       []string{"http://localhost:3000"},
 			AllowedMethods:       []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},

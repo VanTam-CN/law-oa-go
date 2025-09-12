@@ -9,10 +9,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"law-oa-go/internal/common"
 	"law-oa-go/internal/middleware"
-
-	"github.com/gin-gonic/gin"
 )
 
 type Server struct {
@@ -34,7 +33,7 @@ func NewServer() *Server {
 	}
 
 	router := gin.New()
-	
+
 	// 添加中间件
 	router.Use(middleware.Recovery())
 	router.Use(middleware.PrometheusMiddleware())
@@ -46,12 +45,12 @@ func NewServer() *Server {
 
 	// 创建HTTP服务器配置
 	httpServer := &http.Server{
-		Addr:         ":" + common.GetEnv("PORT", "8080"),
-		Handler:      router,
-		ReadTimeout:  15 * time.Second,    // 读取超时
-		WriteTimeout: 15 * time.Second,    // 写入超时
-		IdleTimeout:  120 * time.Second,   // 空闲连接超时
-		MaxHeaderBytes: 1 << 20,          // 1MB header限制
+		Addr:           ":" + common.GetEnv("PORT", "8080"),
+		Handler:        router,
+		ReadTimeout:    15 * time.Second,  // 读取超时
+		WriteTimeout:   15 * time.Second,  // 写入超时
+		IdleTimeout:    120 * time.Second, // 空闲连接超时
+		MaxHeaderBytes: 1 << 20,           // 1MB header限制
 	}
 
 	return &Server{
@@ -63,7 +62,7 @@ func NewServer() *Server {
 
 func (s *Server) Start() error {
 	s.logger.Info("Starting HTTP server", "address", s.httpServer.Addr)
-	
+
 	// 启动服务器
 	go func() {
 		if err := s.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {

@@ -62,10 +62,10 @@ func NewOptimizedDatabase(cfg *config.Config) (*OptimizedDatabase, error) {
 
 	// 配置连接池
 	poolConfig := &ConnectionPoolConfig{
-		MaxOpenConns:    100, // 最大打开连接数
-		MaxIdleConns:    10,  // 最大空闲连接数
-		ConnMaxLifetime: 30 * time.Minute, // 连接最大生命周期
-		ConnMaxIdleTime: 5 * time.Minute,  // 连接最大空闲时间
+		MaxOpenConns:    100,                    // 最大打开连接数
+		MaxIdleConns:    10,                     // 最大空闲连接数
+		ConnMaxLifetime: 30 * time.Minute,       // 连接最大生命周期
+		ConnMaxIdleTime: 5 * time.Minute,        // 连接最大空闲时间
 		SlowThreshold:   100 * time.Millisecond, // 慢查询阈值
 	}
 
@@ -151,13 +151,13 @@ func (od *OptimizedDatabase) Stats() map[string]interface{} {
 	}
 	stats := sqlDB.Stats()
 	return map[string]interface{}{
-		"max_open_conns":     stats.MaxOpenConnections,
-		"open_conns":         stats.OpenConnections,
-		"in_use":             stats.InUse,
-		"idle":               stats.Idle,
-		"wait_count":         stats.WaitCount,
-		"wait_duration":      stats.WaitDuration,
-		"max_idle_closed":    stats.MaxIdleClosed,
+		"max_open_conns":      stats.MaxOpenConnections,
+		"open_conns":          stats.OpenConnections,
+		"in_use":              stats.InUse,
+		"idle":                stats.Idle,
+		"wait_count":          stats.WaitCount,
+		"wait_duration":       stats.WaitDuration,
+		"max_idle_closed":     stats.MaxIdleClosed,
 		"max_lifetime_closed": stats.MaxLifetimeClosed,
 	}
 }
@@ -174,7 +174,7 @@ func (od *OptimizedDatabase) Close() error {
 // WithRetry 带重试的数据库操作
 func (od *OptimizedDatabase) WithRetry(maxRetries int, operation func() error) error {
 	var lastErr error
-	
+
 	for i := 0; i < maxRetries; i++ {
 		if err := operation(); err != nil {
 			lastErr = err
@@ -186,14 +186,14 @@ func (od *OptimizedDatabase) WithRetry(maxRetries int, operation func() error) e
 			return nil
 		}
 	}
-	
+
 	return lastErr
 }
 
 // TransactionWithRetry 带重试的事务操作
 func (od *OptimizedDatabase) TransactionWithRetry(maxRetries int, fn func(*gorm.DB) error) error {
 	var lastErr error
-	
+
 	for i := 0; i < maxRetries; i++ {
 		if err := od.DB.Transaction(fn); err != nil {
 			lastErr = err
@@ -205,23 +205,23 @@ func (od *OptimizedDatabase) TransactionWithRetry(maxRetries int, fn func(*gorm.
 			return nil
 		}
 	}
-	
+
 	return lastErr
 }
 
 // OptimizedExecute 优化执行SQL
 func (od *OptimizedDatabase) OptimizedExecute(sql string, args ...interface{}) error {
 	start := time.Now()
-	
+
 	err := od.WithRetry(3, func() error {
 		return od.DB.Exec(sql, args...).Error
 	})
-	
+
 	duration := time.Since(start)
 	if duration > od.Config.SlowThreshold {
 		fmt.Printf("[SLOW QUERY] %s took %v\n", sql, duration)
 	}
-	
+
 	return err
 }
 
@@ -232,14 +232,14 @@ func (od *OptimizedDatabase) GetStatsForPrometheus() map[string]float64 {
 		return map[string]float64{"error": 1}
 	}
 	stats := sqlDB.Stats()
-	
+
 	return map[string]float64{
 		"open_connections":    float64(stats.OpenConnections),
-		"in_use":            float64(stats.InUse),
-		"idle":              float64(stats.Idle),
-		"wait_count":        float64(stats.WaitCount),
-		"wait_seconds":      float64(stats.WaitDuration) / float64(time.Second),
-		"max_idle_closed":   float64(stats.MaxIdleClosed),
+		"in_use":              float64(stats.InUse),
+		"idle":                float64(stats.Idle),
+		"wait_count":          float64(stats.WaitCount),
+		"wait_seconds":        float64(stats.WaitDuration) / float64(time.Second),
+		"max_idle_closed":     float64(stats.MaxIdleClosed),
 		"max_lifetime_closed": float64(stats.MaxLifetimeClosed),
 	}
 }
@@ -270,7 +270,7 @@ func NewConnectionPoolOptimizer(db *OptimizedDatabase) *ConnectionPoolOptimizer 
 // OptimizeForWorkload 根据工作负载优化连接池
 func (cpo *ConnectionPoolOptimizer) OptimizeForWorkload(workloadType string) {
 	sqlDB, _ := cpo.db.DB.DB()
-	
+
 	switch workloadType {
 	case "read_heavy":
 		// 读密集型工作负载
@@ -299,7 +299,7 @@ func (cpo *ConnectionPoolOptimizer) MonitorConnections() {
 	for range ticker.C {
 		sqlDB, _ := cpo.db.DB.DB()
 		stats := sqlDB.Stats()
-		
+
 		// 动态调整连接池大小
 		if float64(stats.InUse) > float64(stats.MaxOpenConnections)*0.8 {
 			// 如果使用率超过80%，增加连接数

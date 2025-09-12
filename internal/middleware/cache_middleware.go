@@ -36,10 +36,10 @@ var (
 
 // CacheConfig 缓存配置
 type CacheConfig struct {
-	TTL           time.Duration
-	SkipHeader    string
-	KeyGenerator  func(*gin.Context) string
-	ShouldCache   func(*gin.Context) bool
+	TTL          time.Duration
+	SkipHeader   string
+	KeyGenerator func(*gin.Context) string
+	ShouldCache  func(*gin.Context) bool
 }
 
 // CacheMiddleware 缓存中间件
@@ -47,7 +47,7 @@ func CacheMiddleware(config CacheConfig) gin.HandlerFunc {
 	if config.TTL == 0 {
 		config.TTL = 5 * time.Minute // 默认5分钟
 	}
-	
+
 	if config.SkipHeader == "" {
 		config.SkipHeader = "X-Cache-Skip"
 	}
@@ -76,15 +76,15 @@ func CacheMiddleware(config CacheConfig) gin.HandlerFunc {
 		// 尝试从缓存获取
 		var cachedResponse []byte
 		err := cache.DefaultCacheService.Get(c.Request.Context(), cacheKey, &cachedResponse)
-		
+
 		if err == nil {
 			// 缓存命中
 			cacheHits.WithLabelValues(endpoint).Inc()
-			
+
 			// 设置缓存头
 			c.Header("X-Cache", "HIT")
 			c.Header("X-Cache-Key", cacheKey)
-			
+
 			// 解析缓存的响应
 			var response map[string]interface{}
 			if err := json.Unmarshal(cachedResponse, &response); err == nil {
@@ -92,7 +92,7 @@ func CacheMiddleware(config CacheConfig) gin.HandlerFunc {
 				if status, ok := response["status"].(float64); ok {
 					c.Status(int(status))
 				}
-				
+
 				// 发送响应
 				c.Data(http.StatusOK, "application/json", cachedResponse)
 				c.Abort()
@@ -115,7 +115,7 @@ func CacheMiddleware(config CacheConfig) gin.HandlerFunc {
 		if c.Request.Method == "GET" && writer.statusCode == http.StatusOK {
 			// 构建响应数据
 			response := map[string]interface{}{
-				"status": writer.statusCode,
+				"status":  writer.statusCode,
 				"data":    writer.body,
 				"headers": c.Writer.Header(),
 			}
@@ -159,17 +159,17 @@ func (w *responseWriter) WriteHeader(statusCode int) {
 func defaultKeyGenerator(c *gin.Context) string {
 	// 构建基础键: method:path
 	key := fmt.Sprintf("%s:%s", c.Request.Method, c.FullPath())
-	
+
 	// 添加查询参数
 	if c.Request.URL.RawQuery != "" {
 		key += ":" + c.Request.URL.RawQuery
 	}
-	
+
 	// 添加用户ID（如果已认证）
 	if userID := getUserID(c); userID > 0 {
 		key += ":" + strconv.FormatUint(uint64(userID), 10)
 	}
-	
+
 	return cache.APIKeyGenerator.GenerateKey("response", key)
 }
 
@@ -179,7 +179,7 @@ func defaultShouldCache(c *gin.Context) bool {
 	if c.Request.Method != "GET" {
 		return false
 	}
-	
+
 	// 不缓存包含特定路径的请求
 	skipPaths := []string{"/api/auth", "/api/upload", "/api/export"}
 	for _, path := range skipPaths {
@@ -187,7 +187,7 @@ func defaultShouldCache(c *gin.Context) bool {
 			return false
 		}
 	}
-	
+
 	// 只缓存成功的响应
 	return c.Writer.Status() == http.StatusOK
 }
@@ -209,7 +209,7 @@ func getEndpointKey(c *gin.Context) string {
 	if path == "" {
 		path = c.Request.URL.Path
 	}
-	
+
 	// 简化路径，例如 /api/users/123 -> /api/users/{id}
 	parts := strings.Split(path, "/")
 	for i, part := range parts {
@@ -217,7 +217,7 @@ func getEndpointKey(c *gin.Context) string {
 			parts[i] = "{id}"
 		}
 	}
-	
+
 	return strings.Join(parts, "/")
 }
 
@@ -253,34 +253,34 @@ func CacheByRole(ttl time.Duration) gin.HandlerFunc {
 func CacheQueryResults(ctx context.Context, key string, ttl time.Duration, fetchFunc func() (interface{}, error), dest interface{}) error {
 	start := time.Now()
 	endpoint := "query"
-	
+
 	// 尝试从缓存获取
 	if err := cache.DefaultCacheService.Get(ctx, key, dest); err == nil {
 		cacheHits.WithLabelValues(endpoint).Inc()
 		cacheResponseDuration.WithLabelValues("get", endpoint).Observe(time.Since(start).Seconds())
 		return nil
 	}
-	
+
 	// 缓存未命中
 	cacheMisses.WithLabelValues(endpoint).Inc()
-	
+
 	// 获取数据
 	value, err := fetchFunc()
 	if err != nil {
 		return err
 	}
-	
+
 	// 设置缓存
 	if err := cache.DefaultCacheService.Set(ctx, key, value, ttl); err != nil {
 		fmt.Printf("Warning: failed to cache query results for %s: %v\n", key, err)
 	}
-	
+
 	// 将值设置到目标变量
 	data, err := json.Marshal(value)
 	if err != nil {
 		return err
 	}
-	
+
 	cacheResponseDuration.WithLabelValues("set", endpoint).Observe(time.Since(start).Seconds())
 	return json.Unmarshal(data, dest)
 }

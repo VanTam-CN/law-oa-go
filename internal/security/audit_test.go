@@ -6,10 +6,11 @@ import (
 	"testing"
 	"time"
 
+	"law-oa-go/test/mock"
+
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"law-oa-go/test/mock"
 )
 
 // auditLogConfigToConfig 将AuditLogConfig转换为AuditConfig
@@ -34,11 +35,11 @@ func auditLogConfigToConfig(logConfig *AuditLogConfig) *AuditConfig {
 func TestAuditService_NewAuditService(t *testing.T) {
 	t.Run("创建审计服务 - 启用审计", func(t *testing.T) {
 		logConfig := &AuditLogConfig{
-			EnableAuditLog:    true,
-			LogDatabase:      true,
-			MaxBatchSize:     100,
-			BatchTimeout:     5 * time.Second,
-			RetentionDays:    365,
+			EnableAuditLog:     true,
+			LogDatabase:        true,
+			MaxBatchSize:       100,
+			BatchTimeout:       5 * time.Second,
+			RetentionDays:      365,
 			RequiredEventTypes: []AuditEventType{EventTypeLogin, EventTypeLogout},
 		}
 
@@ -72,9 +73,9 @@ func TestAuditService_LogEvent(t *testing.T) {
 	t.Run("记录基本审计事件", func(t *testing.T) {
 		logConfig := &AuditLogConfig{
 			EnableAuditLog: true,
-			LogDatabase:     false, // 避免数据库错误
-			MaxBatchSize:    10,
-			BatchTimeout:    100 * time.Millisecond,
+			LogDatabase:    false, // 避免数据库错误
+			MaxBatchSize:   10,
+			BatchTimeout:   100 * time.Millisecond,
 		}
 
 		config := auditLogConfigToConfig(logConfig)
@@ -127,9 +128,9 @@ func TestAuditService_SpecificEventMethods(t *testing.T) {
 	t.Run("测试各种事件记录方法", func(t *testing.T) {
 		logConfig := &AuditLogConfig{
 			EnableAuditLog: true,
-			LogDatabase:     false,
-			MaxBatchSize:    10,
-			BatchTimeout:    100 * time.Millisecond,
+			LogDatabase:    false,
+			MaxBatchSize:   10,
+			BatchTimeout:   100 * time.Millisecond,
 		}
 
 		config := auditLogConfigToConfig(logConfig)
@@ -138,9 +139,9 @@ func TestAuditService_SpecificEventMethods(t *testing.T) {
 		service := NewAuditService(config, mockDB.DB, cacheService)
 
 		testCases := []struct {
-			name    string
-			method  func() error
-			verify  func(t *testing.T)
+			name   string
+			method func() error
+			verify func(t *testing.T)
 		}{
 			{
 				name: "记录登录事件",
@@ -191,7 +192,7 @@ func TestAuditService_SpecificEventMethods(t *testing.T) {
 				name: "记录数据修改事件",
 				method: func() error {
 					changes := map[string]interface{}{
-						"email": "old@example.com -> new@example.com",
+						"email":  "old@example.com -> new@example.com",
 						"status": "inactive -> active",
 					}
 					return service.LogDataModify(1, "testuser", "user_profile", "1", "update", "192.168.1.100", changes)
@@ -256,9 +257,9 @@ func TestAuditService_QueryAuditLogs(t *testing.T) {
 	t.Run("基本查询功能", func(t *testing.T) {
 		logConfig := &AuditLogConfig{
 			EnableAuditLog: false, // 禁用审计日志，避免后台worker干扰查询测试
-			LogDatabase:     false, // 禁用数据库，简化测试
-			MaxBatchSize:    10,
-			BatchTimeout:    100 * time.Millisecond,
+			LogDatabase:    false, // 禁用数据库，简化测试
+			MaxBatchSize:   10,
+			BatchTimeout:   100 * time.Millisecond,
 		}
 
 		config := auditLogConfigToConfig(logConfig)
@@ -267,8 +268,8 @@ func TestAuditService_QueryAuditLogs(t *testing.T) {
 		service := NewAuditService(config, mockDB.DB, cacheService)
 
 		filter := AuditLogFilter{
-			UserID:   1,
-			Username: "testuser",
+			UserID:    1,
+			Username:  "testuser",
 			EventType: EventTypeLogin,
 			StartTime: time.Now().Add(-24 * time.Hour),
 			EndTime:   time.Now(),
@@ -287,7 +288,7 @@ func TestAuditService_QueryAuditLogs(t *testing.T) {
 	t.Run("查询过滤条件", func(t *testing.T) {
 		logConfig := &AuditLogConfig{
 			EnableAuditLog: false, // 禁用审计日志，避免后台worker干扰查询测试
-			LogDatabase:     false, // 禁用数据库，简化测试
+			LogDatabase:    false, // 禁用数据库，简化测试
 		}
 
 		config := auditLogConfigToConfig(logConfig)
@@ -370,9 +371,9 @@ func TestAuditService_AuditMiddleware(t *testing.T) {
 	t.Run("审计中间件基本功能", func(t *testing.T) {
 		logConfig := &AuditLogConfig{
 			EnableAuditLog: true,
-			LogDatabase:     false,
-			MaxBatchSize:    10,
-			BatchTimeout:    100 * time.Millisecond,
+			LogDatabase:    false,
+			MaxBatchSize:   10,
+			BatchTimeout:   100 * time.Millisecond,
 		}
 
 		config := auditLogConfigToConfig(logConfig)
@@ -419,12 +420,12 @@ func TestAuditService_AuditMiddleware(t *testing.T) {
 			t.Run(tc.name, func(t *testing.T) {
 				w := httptest.NewRecorder()
 				c := tc.setupCtx()
-				
+
 				// 替换上下文
 				router.ServeHTTP(w, c.Request)
-				
+
 				assert.Equal(t, 200, w.Code)
-				
+
 				// 等待审计事件被处理
 				time.Sleep(50 * time.Millisecond)
 			})
@@ -436,12 +437,12 @@ func TestAuditService_AuditMiddleware(t *testing.T) {
 func TestAuditService_SecurityAlerts(t *testing.T) {
 	t.Run("安全事件告警", func(t *testing.T) {
 		logConfig := &AuditLogConfig{
-			EnableAuditLog:       true,
-			LogDatabase:          false,
-			EnableRealTimeAlert:  true,
-			SensitiveEventTypes:  []AuditEventType{EventTypeSecurityEvent, EventTypePermissionChange},
-			MaxBatchSize:         10,
-			BatchTimeout:         100 * time.Millisecond,
+			EnableAuditLog:      true,
+			LogDatabase:         false,
+			EnableRealTimeAlert: true,
+			SensitiveEventTypes: []AuditEventType{EventTypeSecurityEvent, EventTypePermissionChange},
+			MaxBatchSize:        10,
+			BatchTimeout:        100 * time.Millisecond,
 		}
 
 		config := auditLogConfigToConfig(logConfig)
@@ -470,11 +471,11 @@ func TestAuditService_SecurityAlerts(t *testing.T) {
 
 	t.Run("登录失败告警", func(t *testing.T) {
 		logConfig := &AuditLogConfig{
-			EnableAuditLog: true,
-			LogDatabase:     false,
+			EnableAuditLog:      true,
+			LogDatabase:         false,
 			EnableRealTimeAlert: true,
-			MaxBatchSize:    10,
-			BatchTimeout:    100 * time.Millisecond,
+			MaxBatchSize:        10,
+			BatchTimeout:        100 * time.Millisecond,
 		}
 
 		config := auditLogConfigToConfig(logConfig)
@@ -494,12 +495,12 @@ func TestAuditService_SecurityAlerts(t *testing.T) {
 
 	t.Run("敏感操作告警", func(t *testing.T) {
 		logConfig := &AuditLogConfig{
-			EnableAuditLog: true,
-			LogDatabase:     false,
+			EnableAuditLog:      true,
+			LogDatabase:         false,
 			EnableRealTimeAlert: true,
 			SensitiveEventTypes: []AuditEventType{EventTypePermissionChange},
-			MaxBatchSize:    10,
-			BatchTimeout:    100 * time.Millisecond,
+			MaxBatchSize:        10,
+			BatchTimeout:        100 * time.Millisecond,
 		}
 
 		config := auditLogConfigToConfig(logConfig)
@@ -573,9 +574,9 @@ func TestAuditService_Concurrency(t *testing.T) {
 	t.Run("并发事件记录", func(t *testing.T) {
 		logConfig := &AuditLogConfig{
 			EnableAuditLog: true,
-			LogDatabase:     false,
-			MaxBatchSize:    50,
-			BatchTimeout:    200 * time.Millisecond,
+			LogDatabase:    false,
+			MaxBatchSize:   50,
+			BatchTimeout:   200 * time.Millisecond,
 		}
 
 		config := auditLogConfigToConfig(logConfig)
@@ -627,9 +628,9 @@ func TestAuditService_Stop(t *testing.T) {
 	t.Run("正常停止服务", func(t *testing.T) {
 		logConfig := &AuditLogConfig{
 			EnableAuditLog: true,
-			LogDatabase:     false,
-			MaxBatchSize:    10,
-			BatchTimeout:    100 * time.Millisecond,
+			LogDatabase:    false,
+			MaxBatchSize:   10,
+			BatchTimeout:   100 * time.Millisecond,
 		}
 
 		config := auditLogConfigToConfig(logConfig)
@@ -676,7 +677,7 @@ func TestAuditService_GetAuditStats(t *testing.T) {
 	t.Run("获取审计统计信息", func(t *testing.T) {
 		logConfig := &AuditLogConfig{
 			EnableAuditLog: true,
-			LogDatabase:     false,
+			LogDatabase:    false,
 		}
 
 		config := auditLogConfigToConfig(logConfig)
@@ -709,15 +710,15 @@ func TestAuditService_GetAuditStats(t *testing.T) {
 func BenchmarkAuditService_LogEvent(b *testing.B) {
 	logConfig := &AuditLogConfig{
 		EnableAuditLog: true,
-		LogDatabase:     false,
-		MaxBatchSize:    100,
-		BatchTimeout:    time.Second,
+		LogDatabase:    false,
+		MaxBatchSize:   100,
+		BatchTimeout:   time.Second,
 	}
 
 	config := auditLogConfigToConfig(logConfig)
-		mockDB, _ := mock.NewMockDB()
-		cacheService := createTestCacheService()
-		service := NewAuditService(config, mockDB.DB, cacheService)
+	mockDB, _ := mock.NewMockDB()
+	cacheService := createTestCacheService()
+	service := NewAuditService(config, mockDB.DB, cacheService)
 
 	event := &AuditEvent{
 		UserID:      1,
@@ -739,15 +740,15 @@ func BenchmarkAuditService_LogEvent(b *testing.B) {
 func BenchmarkAuditService_LoginSpecific(b *testing.B) {
 	logConfig := &AuditLogConfig{
 		EnableAuditLog: true,
-		LogDatabase:     false,
-		MaxBatchSize:    100,
-		BatchTimeout:    time.Second,
+		LogDatabase:    false,
+		MaxBatchSize:   100,
+		BatchTimeout:   time.Second,
 	}
 
 	config := auditLogConfigToConfig(logConfig)
-		mockDB, _ := mock.NewMockDB()
-		cacheService := createTestCacheService()
-		service := NewAuditService(config, mockDB.DB, cacheService)
+	mockDB, _ := mock.NewMockDB()
+	cacheService := createTestCacheService()
+	service := NewAuditService(config, mockDB.DB, cacheService)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -758,19 +759,19 @@ func BenchmarkAuditService_LoginSpecific(b *testing.B) {
 func BenchmarkAuditService_QueryAuditLogs(b *testing.B) {
 	logConfig := &AuditLogConfig{
 		EnableAuditLog: true,
-		LogDatabase:     false,
+		LogDatabase:    false,
 	}
 
 	config := auditLogConfigToConfig(logConfig)
-		mockDB, _ := mock.NewMockDB()
-		cacheService := createTestCacheService()
-		service := NewAuditService(config, mockDB.DB, cacheService)
+	mockDB, _ := mock.NewMockDB()
+	cacheService := createTestCacheService()
+	service := NewAuditService(config, mockDB.DB, cacheService)
 
 	filter := AuditLogFilter{
-		UserID:   1,
+		UserID:    1,
 		EventType: EventTypeLogin,
-		Page:     1,
-		PageSize: 10,
+		Page:      1,
+		PageSize:  10,
 	}
 
 	b.ResetTimer()

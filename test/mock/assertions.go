@@ -27,21 +27,21 @@ func NewAssertionHelper(t *testing.T) *AssertionHelper {
 func (ah *AssertionHelper) AssertUser(expected, actual interface{}, msg ...string) {
 	expectedMap, ok1 := expected.(map[string]interface{})
 	actualMap, ok2 := actual.(map[string]interface{})
-	
+
 	require.True(ah.t, ok1, "Expected must be a map[string]interface{}")
 	require.True(ah.t, ok2, "Actual must be a map[string]interface{}")
-	
+
 	message := "User data mismatch"
 	if len(msg) > 0 {
 		message = msg[0]
 	}
-	
+
 	// 检查必填字段
 	assert.Equal(ah.t, expectedMap["name"], actualMap["name"], message+" - name")
 	assert.Equal(ah.t, expectedMap["email"], actualMap["email"], message+" - email")
 	assert.Equal(ah.t, expectedMap["role"], actualMap["role"], message+" - role")
 	assert.Equal(ah.t, expectedMap["status"], actualMap["status"], message+" - status")
-	
+
 	// 检查时间字段（如果存在）
 	if _, ok1 := expectedMap["created_at"]; ok1 {
 		if actualCreatedAt, ok2 := actualMap["created_at"]; ok2 {
@@ -54,15 +54,15 @@ func (ah *AssertionHelper) AssertUser(expected, actual interface{}, msg ...strin
 func (ah *AssertionHelper) AssertCase(expected, actual interface{}, msg ...string) {
 	expectedMap, ok1 := expected.(map[string]interface{})
 	actualMap, ok2 := actual.(map[string]interface{})
-	
+
 	require.True(ah.t, ok1, "Expected must be a map[string]interface{}")
 	require.True(ah.t, ok2, "Actual must be a map[string]interface{}")
-	
+
 	message := "Case data mismatch"
 	if len(msg) > 0 {
 		message = msg[0]
 	}
-	
+
 	// 检查必填字段
 	assert.Equal(ah.t, expectedMap["title"], actualMap["title"], message+" - title")
 	assert.Equal(ah.t, expectedMap["description"], actualMap["description"], message+" - description")
@@ -77,15 +77,15 @@ func (ah *AssertionHelper) AssertCase(expected, actual interface{}, msg ...strin
 func (ah *AssertionHelper) AssertClient(expected, actual interface{}, msg ...string) {
 	expectedMap, ok1 := expected.(map[string]interface{})
 	actualMap, ok2 := actual.(map[string]interface{})
-	
+
 	require.True(ah.t, ok1, "Expected must be a map[string]interface{}")
 	require.True(ah.t, ok2, "Actual must be a map[string]interface{}")
-	
+
 	message := "Client data mismatch"
 	if len(msg) > 0 {
 		message = msg[0]
 	}
-	
+
 	// 检查必填字段
 	assert.Equal(ah.t, expectedMap["name"], actualMap["name"], message+" - name")
 	assert.Equal(ah.t, expectedMap["contact"], actualMap["contact"], message+" - contact")
@@ -101,7 +101,7 @@ func (ah *AssertionHelper) AssertError(expectedError string, actual error, msg .
 	if len(msg) > 0 {
 		message = msg[0]
 	}
-	
+
 	if expectedError == "" {
 		assert.NoError(ah.t, actual, message+" - expected no error")
 	} else {
@@ -116,9 +116,9 @@ func (ah *AssertionHelper) AssertSuccess(actual interface{}, msg ...string) {
 	if len(msg) > 0 {
 		message = msg[0]
 	}
-	
+
 	assert.NotNil(ah.t, actual, message+" - response should not be nil")
-	
+
 	// 检查是否是map类型
 	if actualMap, ok := actual.(map[string]interface{}); ok {
 		assert.NotContains(ah.t, actualMap, "error", message+" - should not contain error field")
@@ -134,10 +134,10 @@ func (ah *AssertionHelper) AssertHTTPResponse(expectedStatusCode int, actual int
 	if len(msg) > 0 {
 		message = msg[0]
 	}
-	
+
 	actualMap, ok := actual.(map[string]interface{})
 	require.True(ah.t, ok, "HTTP response must be a map[string]interface{}")
-	
+
 	if code, exists := actualMap["code"]; exists {
 		assert.Equal(ah.t, float64(expectedStatusCode), code, message+" - status code mismatch")
 	}
@@ -149,7 +149,7 @@ func (ah *AssertionHelper) AssertTimeRecent(actualTime interface{}, maxDuration 
 	if len(msg) > 0 {
 		message = msg[0]
 	}
-	
+
 	var t time.Time
 	switch v := actualTime.(type) {
 	case time.Time:
@@ -159,16 +159,16 @@ func (ah *AssertionHelper) AssertTimeRecent(actualTime interface{}, maxDuration 
 		require.NoError(ah.t, err, message+" - time parsing failed")
 		t = parsed
 	default:
-		ah.t.Fatal(message+" - unsupported time type")
+		ah.t.Fatal(message + " - unsupported time type")
 	}
-	
+
 	now := time.Now()
 	duration := now.Sub(t)
 	if duration < 0 {
 		duration = -duration
 	}
-	
-	assert.True(ah.t, duration <= maxDuration, 
+
+	assert.True(ah.t, duration <= maxDuration,
 		fmt.Sprintf("%s - time difference %v exceeds max duration %v", message, duration, maxDuration))
 }
 
@@ -178,7 +178,7 @@ func (ah *AssertionHelper) AssertMapContains(expected, actual map[string]interfa
 	if len(msg) > 0 {
 		message = msg[0]
 	}
-	
+
 	for key, expectedValue := range expected {
 		actualValue, exists := actual[key]
 		assert.True(ah.t, exists, fmt.Sprintf("%s - key '%s' not found", message, key))
@@ -192,13 +192,13 @@ func (ah *AssertionHelper) AssertJSONEqual(expected, actual interface{}, msg ...
 	if len(msg) > 0 {
 		message = msg[0]
 	}
-	
+
 	expectedJSON, err := json.Marshal(expected)
 	require.NoError(ah.t, err, message+" - failed to marshal expected")
-	
+
 	actualJSON, err := json.Marshal(actual)
 	require.NoError(ah.t, err, message+" - failed to marshal actual")
-	
+
 	assert.JSONEq(ah.t, string(expectedJSON), string(actualJSON), message)
 }
 
@@ -208,11 +208,11 @@ func (ah *AssertionHelper) AssertSliceLength(expectedLength int, actual interfac
 	if len(msg) > 0 {
 		message = msg[0]
 	}
-	
+
 	val := reflect.ValueOf(actual)
-	require.True(ah.t, val.Kind() == reflect.Slice || val.Kind() == reflect.Array, 
+	require.True(ah.t, val.Kind() == reflect.Slice || val.Kind() == reflect.Array,
 		message+" - actual must be a slice or array")
-	
+
 	assert.Equal(ah.t, expectedLength, val.Len(), message+" - length mismatch")
 }
 
@@ -222,10 +222,10 @@ func (ah *AssertionHelper) AssertMapHasKey(key string, actual interface{}, msg .
 	if len(msg) > 0 {
 		message = msg[0]
 	}
-	
+
 	actualMap, ok := actual.(map[string]interface{})
 	require.True(ah.t, ok, message+" - actual must be a map[string]interface{}")
-	
+
 	_, exists := actualMap[key]
 	assert.True(ah.t, exists, message)
 }
@@ -236,10 +236,10 @@ func (ah *AssertionHelper) AssertMapNotHasKey(key string, actual interface{}, ms
 	if len(msg) > 0 {
 		message = msg[0]
 	}
-	
+
 	actualMap, ok := actual.(map[string]interface{})
 	require.True(ah.t, ok, message+" - actual must be a map[string]interface{}")
-	
+
 	_, exists := actualMap[key]
 	assert.False(ah.t, exists, message)
 }
@@ -250,9 +250,9 @@ func (ah *AssertionHelper) AssertType(expectedType reflect.Type, actual interfac
 	if len(msg) > 0 {
 		message = msg[0]
 	}
-	
+
 	actualType := reflect.TypeOf(actual)
-	assert.Equal(ah.t, expectedType, actualType, 
+	assert.Equal(ah.t, expectedType, actualType,
 		fmt.Sprintf("%s - expected %v, got %v", message, expectedType, actualType))
 }
 
@@ -262,7 +262,7 @@ func (ah *AssertionHelper) AssertNotNil(actual interface{}, msg ...string) {
 	if len(msg) > 0 {
 		message = msg[0]
 	}
-	
+
 	assert.NotNil(ah.t, actual, message)
 }
 
@@ -272,7 +272,7 @@ func (ah *AssertionHelper) AssertNil(actual interface{}, msg ...string) {
 	if len(msg) > 0 {
 		message = msg[0]
 	}
-	
+
 	assert.Nil(ah.t, actual, message)
 }
 
@@ -282,7 +282,7 @@ func (ah *AssertionHelper) AssertNotEmpty(actual string, msg ...string) {
 	if len(msg) > 0 {
 		message = msg[0]
 	}
-	
+
 	assert.NotEmpty(ah.t, actual, message)
 }
 
@@ -292,7 +292,7 @@ func (ah *AssertionHelper) AssertEmpty(actual string, msg ...string) {
 	if len(msg) > 0 {
 		message = msg[0]
 	}
-	
+
 	assert.Empty(ah.t, actual, message)
 }
 
@@ -302,7 +302,7 @@ func (ah *AssertionHelper) AssertPositive(actual interface{}, msg ...string) {
 	if len(msg) > 0 {
 		message = msg[0]
 	}
-	
+
 	assert.Positive(ah.t, actual, message)
 }
 
@@ -312,7 +312,7 @@ func (ah *AssertionHelper) AssertNegative(actual interface{}, msg ...string) {
 	if len(msg) > 0 {
 		message = msg[0]
 	}
-	
+
 	assert.Negative(ah.t, actual, message)
 }
 
@@ -322,7 +322,7 @@ func (ah *AssertionHelper) AssertZero(actual interface{}, msg ...string) {
 	if len(msg) > 0 {
 		message = msg[0]
 	}
-	
+
 	assert.Zero(ah.t, actual, message)
 }
 

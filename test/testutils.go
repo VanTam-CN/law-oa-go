@@ -173,7 +173,7 @@ func StructToMap(obj interface{}) (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var result map[string]interface{}
 	err = json.Unmarshal(data, &result)
 	return result, err

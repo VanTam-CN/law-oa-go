@@ -77,7 +77,7 @@ func CORS() gin.HandlerFunc {
 func CORSWithConfig(config CORSConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		origin := c.Request.Header.Get("Origin")
-		
+
 		// 检查是否在允许的域名列表中
 		allowed := false
 		for _, allowedOrigin := range config.AllowedOrigins {
@@ -86,11 +86,11 @@ func CORSWithConfig(config CORSConfig) gin.HandlerFunc {
 				break
 			}
 		}
-		
+
 		if allowed {
 			c.Header("Access-Control-Allow-Origin", origin)
 		}
-		
+
 		c.Header("Access-Control-Allow-Methods", strings.Join(config.AllowedMethods, ", "))
 		c.Header("Access-Control-Allow-Headers", strings.Join(config.AllowedHeaders, ", "))
 		c.Header("Access-Control-Allow-Credentials", "true")
@@ -151,7 +151,7 @@ func SecurityHeaders() gin.HandlerFunc {
 		c.Header("X-XSS-Protection", "1; mode=block")
 		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
 		c.Header("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';")
-		
+
 		c.Next()
 	}
 }

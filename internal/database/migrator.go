@@ -67,7 +67,7 @@ func NewMigrator(cfg *config.DatabaseConfig, migrationsPath string) (*Migrator, 
 // Up 执行所有待执行的迁移
 func (m *Migrator) Up() error {
 	log.Println("开始执行数据库迁移...")
-	
+
 	err := m.migrate.Up()
 	if err != nil && err != migrate.ErrNoChange {
 		return fmt.Errorf("failed to run migrations: %w", err)
@@ -85,7 +85,7 @@ func (m *Migrator) Up() error {
 // Down 回滚所有迁移
 func (m *Migrator) Down() error {
 	log.Println("开始回滚数据库迁移...")
-	
+
 	err := m.migrate.Down()
 	if err != nil && err != migrate.ErrNoChange {
 		return fmt.Errorf("failed to rollback migrations: %w", err)
@@ -107,7 +107,7 @@ func (m *Migrator) Steps(n int) error {
 	} else {
 		log.Printf("开始回滚 %d 步迁移...", -n)
 	}
-	
+
 	err := m.migrate.Steps(n)
 	if err != nil && err != migrate.ErrNoChange {
 		return fmt.Errorf("failed to run %d steps: %w", n, err)
@@ -125,7 +125,7 @@ func (m *Migrator) Steps(n int) error {
 // Goto 迁移到指定版本
 func (m *Migrator) Goto(version uint) error {
 	log.Printf("开始迁移到版本 %d...", version)
-	
+
 	err := m.migrate.Migrate(version)
 	if err != nil && err != migrate.ErrNoChange {
 		return fmt.Errorf("failed to migrate to version %d: %w", version, err)
@@ -153,7 +153,7 @@ func (m *Migrator) Version() (uint, bool, error) {
 // Force 强制设置数据库版本（用于修复损坏的迁移状态）
 func (m *Migrator) Force(version int) error {
 	log.Printf("强制设置数据库版本为 %d...", version)
-	
+
 	err := m.migrate.Force(version)
 	if err != nil {
 		return fmt.Errorf("failed to force version %d: %w", version, err)
@@ -166,7 +166,7 @@ func (m *Migrator) Force(version int) error {
 // Drop 删除所有表（危险操作）
 func (m *Migrator) Drop() error {
 	log.Println("警告：开始删除所有数据库表...")
-	
+
 	err := m.migrate.Drop()
 	if err != nil {
 		return fmt.Errorf("failed to drop database: %w", err)

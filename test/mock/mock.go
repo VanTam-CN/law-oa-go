@@ -173,7 +173,7 @@ func (m *MockCacheService) Set(ctx interface{}, key string, value interface{}, t
 // Get 模拟获取缓存
 func (m *MockCacheService) Get(ctx interface{}, key string, value interface{}) error {
 	args := m.Called(ctx, key, value)
-	
+
 	// 如果有预设的返回值，设置到value中
 	if args.Get(0) != nil {
 		val := reflect.ValueOf(value).Elem()
@@ -184,7 +184,7 @@ func (m *MockCacheService) Get(ctx interface{}, key string, value interface{}) e
 			val.Set(retVal)
 		}
 	}
-	
+
 	return args.Error(1)
 }
 

@@ -76,7 +76,7 @@ func AuditMiddleware() gin.HandlerFunc {
 		if userID > 0 {
 			action := getActionFromRequest(c.Request.Method, c.Request.URL.Path)
 			resource := getResourceFromPath(c.Request.URL.Path)
-			
+
 			auditLogger.LogUserAction(
 				c.Request.Context(),
 				userID,
@@ -114,7 +114,7 @@ func containsSensitiveData(path string) bool {
 		"/auth/register",
 		"/users/change-password",
 	}
-	
+
 	for _, sensitivePath := range sensitivePaths {
 		if path == sensitivePath || path == "/api/v1"+sensitivePath {
 			return true
@@ -177,7 +177,7 @@ func getResourceFromPath(path string) string {
 func splitPath(path string) []string {
 	var parts []string
 	current := ""
-	
+
 	for _, char := range path {
 		if char == '/' {
 			if current != "" {
@@ -188,11 +188,11 @@ func splitPath(path string) []string {
 			current += string(char)
 		}
 	}
-	
+
 	if current != "" {
 		parts = append(parts, current)
 	}
-	
+
 	return parts
 }
 
@@ -202,17 +202,17 @@ func shouldLogSecurityEvent(path string, statusCode int) bool {
 	if (path == "/api/v1/auth/login" || path == "/api/v1/auth/register") && statusCode >= 400 {
 		return true
 	}
-	
+
 	// 权限相关的错误
 	if statusCode == 401 || statusCode == 403 {
 		return true
 	}
-	
+
 	// 服务器错误
 	if statusCode >= 500 {
 		return true
 	}
-	
+
 	return false
 }
 
@@ -234,7 +234,7 @@ func getSecurityEventSeverity(statusCode int) string {
 func DataMaskingMiddleware() gin.HandlerFunc {
 	return gin.HandlerFunc(func(c *gin.Context) {
 		c.Next()
-		
+
 		// 在响应中脱敏敏感数据
 		// 这里可以根据需要实现响应数据的脱敏逻辑
 	})

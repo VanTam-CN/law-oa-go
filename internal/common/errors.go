@@ -8,33 +8,33 @@ import (
 // 定义具体的业务错误类型
 var (
 	// 用户相关错误
-	ErrUserNotFound      = errors.New("user not found")
-	ErrInvalidPassword   = errors.New("invalid password")
-	ErrEmailExists       = errors.New("email already exists")
-	ErrWeakPassword      = errors.New("password too weak")
-	ErrInvalidRole       = errors.New("invalid role")
-	
+	ErrUserNotFound    = errors.New("user not found")
+	ErrInvalidPassword = errors.New("invalid password")
+	ErrEmailExists     = errors.New("email already exists")
+	ErrWeakPassword    = errors.New("password too weak")
+	ErrInvalidRole     = errors.New("invalid role")
+
 	// 客户相关错误
-	ErrClientNotFound    = errors.New("client not found")
-	ErrInvalidEmail      = errors.New("invalid email format")
-	ErrInvalidPhone      = errors.New("invalid phone format")
-	
+	ErrClientNotFound = errors.New("client not found")
+	ErrInvalidEmail   = errors.New("invalid email format")
+	ErrInvalidPhone   = errors.New("invalid phone format")
+
 	// 案件相关错误
 	ErrCaseNotFound      = errors.New("case not found")
 	ErrLawyerNotFound    = errors.New("lawyer not found")
 	ErrInvalidCaseStatus = errors.New("invalid case status")
-	
+
 	// 通用错误
-	ErrRecordNotFound    = errors.New("record not found")
-	ErrDuplicateKey      = errors.New("duplicate key violation")
-	ErrInvalidInput      = errors.New("invalid input")
-	ErrUnauthorized      = errors.New("unauthorized")
-	ErrForbidden         = errors.New("forbidden")
-	ErrInternalServer    = errors.New("internal server error")
-	ErrValidationFailed  = errors.New("validation failed")
-	ErrDatabaseError     = errors.New("database error")
-	ErrCacheError        = errors.New("cache error")
-	ErrExternalService   = errors.New("external service error")
+	ErrRecordNotFound   = errors.New("record not found")
+	ErrDuplicateKey     = errors.New("duplicate key violation")
+	ErrInvalidInput     = errors.New("invalid input")
+	ErrUnauthorized     = errors.New("unauthorized")
+	ErrForbidden        = errors.New("forbidden")
+	ErrInternalServer   = errors.New("internal server error")
+	ErrValidationFailed = errors.New("validation failed")
+	ErrDatabaseError    = errors.New("database error")
+	ErrCacheError       = errors.New("cache error")
+	ErrExternalService  = errors.New("external service error")
 )
 
 // BusinessError 业务错误结构
@@ -102,7 +102,7 @@ func NewDatabaseError(operation string, err error) *BusinessError {
 	return &BusinessError{
 		Code:    "DATABASE_ERROR",
 		Message: fmt.Sprintf("Database operation failed: %s", operation),
-		Err:     fmt.Errorf("%w: %v", ErrDatabaseError, err),
+		Err:     fmt.Errorf("%w: %w", ErrDatabaseError, err),
 	}
 }
 
@@ -110,7 +110,7 @@ func NewInternalError(message string, err error) *BusinessError {
 	return &BusinessError{
 		Code:    "INTERNAL_ERROR",
 		Message: message,
-		Err:     fmt.Errorf("%w: %v", ErrInternalServer, err),
+		Err:     fmt.Errorf("%w: %w", ErrInternalServer, err),
 	}
 }
 

@@ -5,9 +5,10 @@ import (
 	"testing"
 	"time"
 
+	"law-oa-go/internal/models"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"law-oa-go/internal/models"
 )
 
 // TestTokenManager_NewTokenManager 测试TokenManager创建
@@ -90,12 +91,12 @@ func TestTokenManager_VerifyToken(t *testing.T) {
 		accessClaims, err := tokenManager.VerifyToken(context.Background(), tokenDetails.AccessToken)
 		require.NoError(t, err)
 		assert.NotNil(t, accessClaims)
-		
+
 		// 访问payload中的用户信息
 		payload, ok := (*accessClaims)["payload"].(map[string]interface{})
 		require.True(t, ok, "Payload should be a map")
 		assert.Equal(t, float64(user.ID), payload["user_id"])
-		assert.Equal(t, user.Name, payload["username"])  // 注意：User模型用的是Name字段
+		assert.Equal(t, user.Name, payload["username"]) // 注意：User模型用的是Name字段
 		assert.Equal(t, user.Email, payload["email"])
 		assert.Equal(t, user.Role, payload["role"])
 	})

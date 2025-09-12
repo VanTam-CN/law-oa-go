@@ -2,8 +2,9 @@ package validators
 
 import (
 	"errors"
-	"law-oa-go/internal/models"
 	"regexp"
+
+	"law-oa-go/internal/models"
 )
 
 type ClientValidator struct{}

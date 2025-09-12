@@ -19,18 +19,17 @@ var (
 		Help:    "Duration of RBAC operations",
 		Buckets: []float64{0.001, 0.01, 0.1, 1, 10},
 	}, []string{"operation"})
-	
+
 	rbacErrors = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "rbac_errors_total",
 		Help: "Total number of RBAC errors",
 	}, []string{"operation"})
-	
+
 	permissionChecks = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "rbac_permission_checks_total",
 		Help: "Total number of permission checks",
 	})
 )
-
 
 // RBACService RBAC服务
 type RBACService struct {
@@ -85,12 +84,12 @@ func (s *RBACService) checkRolePermission(role, permissionKey string) bool {
 			"document:view", "document:upload", "document:update", "document:download"},
 		"user": {"case:view", "client:view", "document:view", "document:download"},
 	}
-	
+
 	permissions, exists := rolePermissions[role]
 	if !exists {
 		return false
 	}
-	
+
 	for _, perm := range permissions {
 		if perm == permissionKey {
 			return true
@@ -113,7 +112,7 @@ func (s *RBACService) getRolePermissions(role string) []string {
 			"document:view", "document:upload", "document:update", "document:download"},
 		"user": {"case:view", "client:view", "document:view", "document:download"},
 	}
-	
+
 	return rolePermissions[role]
 }
 

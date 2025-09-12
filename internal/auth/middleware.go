@@ -3,13 +3,14 @@ package auth
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"law-oa-go/internal/cache"
-	"net/http"
-	"strings"
-	"time"
 )
 
 var (
@@ -18,12 +19,12 @@ var (
 		Help:    "Duration of auth middleware operations",
 		Buckets: []float64{0.001, 0.01, 0.1, 1, 10},
 	}, []string{"operation"})
-	
+
 	authMiddlewareErrors = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "auth_middleware_errors_total",
 		Help: "Total number of auth middleware errors",
 	}, []string{"operation", "type"})
-	
+
 	authAttempts = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "auth_attempts_total",
 		Help: "Total number of authentication attempts",
@@ -49,13 +50,13 @@ func EnhancedAuthMiddleware(config AuthConfig) gin.HandlerFunc {
 		defer func() {
 			authMiddlewareDuration.WithLabelValues("enhanced_auth").Observe(time.Since(start).Seconds())
 		}()
-		
+
 		// 检查是否跳过认证
 		if shouldSkipAuth(c, config.SkipAuthPaths, config.SkipAuthPrefixes) {
 			c.Next()
 			return
 		}
-		
+
 		// 获取认证头
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -69,7 +70,7 @@ func EnhancedAuthMiddleware(config AuthConfig) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		
+
 		// 检查Bearer前缀
 		if !strings.HasPrefix(authHeader, "Bearer ") {
 			authAttempts.WithLabelValues("invalid_format").Inc()
@@ -82,9 +83,9 @@ func EnhancedAuthMiddleware(config AuthConfig) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		
+
 		tokenString := authHeader[7:] // 去掉"Bearer "前缀
-		
+
 		// 检查令牌是否在黑名单中
 		if config.TokenManager.IsTokenBlacklisted(c.Request.Context(), tokenString) {
 			authAttempts.WithLabelValues("blacklisted").Inc()
@@ -97,7 +98,7 @@ func EnhancedAuthMiddleware(config AuthConfig) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		
+
 		// 验证令牌
 		payload, err := config.TokenManager.ValidateAccess(c.Request.Context(), tokenString, config.RequiredRoles)
 		if err != nil {
@@ -111,7 +112,7 @@ func EnhancedAuthMiddleware(config AuthConfig) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		
+
 		// 设备检查
 		if config.EnableDeviceCheck {
 			if !validateDevice(c, payload, config.CacheService) {
@@ -126,7 +127,7 @@ func EnhancedAuthMiddleware(config AuthConfig) gin.HandlerFunc {
 				return
 			}
 		}
-		
+
 		// IP地址检查
 		if config.EnableIPCheck {
 			if !validateIP(c, payload, config.CacheService) {
@@ -141,7 +142,7 @@ func EnhancedAuthMiddleware(config AuthConfig) gin.HandlerFunc {
 				return
 			}
 		}
-		
+
 		// 速率限制
 		if config.EnableRateLimit {
 			if !checkRateLimit(c, payload, config.CacheService) {
@@ -156,7 +157,7 @@ func EnhancedAuthMiddleware(config AuthConfig) gin.HandlerFunc {
 				return
 			}
 		}
-		
+
 		// 将用户信息存储到上下文中
 		c.Set("user_id", payload.UserID)
 		c.Set("username", payload.Username)
@@ -166,10 +167,10 @@ func EnhancedAuthMiddleware(config AuthConfig) gin.HandlerFunc {
 		c.Set("ip", payload.IP)
 		c.Set("user_agent", payload.UserAgent)
 		c.Set("token_payload", payload)
-		
+
 		// 更新用户最后活动时间
 		go updateUserActivity(context.Background(), payload, config.CacheService)
-		
+
 		authAttempts.WithLabelValues("success").Inc()
 		c.Next()
 	}
@@ -182,11 +183,11 @@ func RefreshTokenMiddleware(tokenManager *TokenManager) gin.HandlerFunc {
 		defer func() {
 			authMiddlewareDuration.WithLabelValues("refresh_token").Observe(time.Since(start).Seconds())
 		}()
-		
+
 		var req struct {
 			RefreshToken string `json:"refresh_token" binding:"required"`
 		}
-		
+
 		if err := c.ShouldBindJSON(&req); err != nil {
 			authMiddlewareErrors.WithLabelValues("refresh", "invalid_request").Inc()
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -197,7 +198,7 @@ func RefreshTokenMiddleware(tokenManager *TokenManager) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		
+
 		tokenDetails, err := tokenManager.RefreshTokens(c.Request.Context(), req.RefreshToken)
 		if err != nil {
 			authMiddlewareErrors.WithLabelValues("refresh", "failed").Inc()
@@ -209,7 +210,7 @@ func RefreshTokenMiddleware(tokenManager *TokenManager) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		
+
 		c.JSON(http.StatusOK, gin.H{
 			"code":    200,
 			"message": "令牌刷新成功",
@@ -229,7 +230,7 @@ func RoleBasedAuthMiddleware(tokenManager *TokenManager, requiredRoles []string)
 		defer func() {
 			authMiddlewareDuration.WithLabelValues("role_based_auth").Observe(time.Since(start).Seconds())
 		}()
-		
+
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
 			authMiddlewareErrors.WithLabelValues("role_auth", "missing_token").Inc()
@@ -240,9 +241,9 @@ func RoleBasedAuthMiddleware(tokenManager *TokenManager, requiredRoles []string)
 			c.Abort()
 			return
 		}
-		
+
 		tokenString := authHeader[7:]
-		
+
 		payload, err := tokenManager.ValidateAccess(c.Request.Context(), tokenString, requiredRoles)
 		if err != nil {
 			authMiddlewareErrors.WithLabelValues("role_auth", "permission_denied").Inc()
@@ -254,12 +255,12 @@ func RoleBasedAuthMiddleware(tokenManager *TokenManager, requiredRoles []string)
 			c.Abort()
 			return
 		}
-		
+
 		c.Set("user_id", payload.UserID)
 		c.Set("username", payload.Username)
 		c.Set("role", payload.Role)
 		c.Set("token_payload", payload)
-		
+
 		c.Next()
 	}
 }
@@ -276,11 +277,11 @@ func SecurityHeadersMiddleware() gin.HandlerFunc {
 		c.Header("X-Permitted-Cross-Domain-Policies", "none")
 		c.Header("X-Download-Options", "noopen")
 		c.Header("X-Content-Security-Policy", "default-src 'self'")
-		
+
 		// 移除敏感头部
 		c.Header("Server", "")
 		c.Header("X-Powered-By", "")
-		
+
 		c.Next()
 	}
 }
@@ -293,13 +294,13 @@ func CSRFProtectionMiddleware() gin.HandlerFunc {
 			c.Next()
 			return
 		}
-		
+
 		// 检查CSRF Token
 		csrfToken := c.GetHeader("X-CSRF-Token")
 		if csrfToken == "" {
 			csrfToken = c.PostForm("csrf_token")
 		}
-		
+
 		if csrfToken == "" {
 			authMiddlewareErrors.WithLabelValues("csrf", "missing_token").Inc()
 			c.JSON(http.StatusForbidden, gin.H{
@@ -310,7 +311,7 @@ func CSRFProtectionMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		
+
 		// 从会话中获取CSRF令牌并验证
 		sessionCSRF, exists := c.Get("csrf_token")
 		if !exists || sessionCSRF != csrfToken {
@@ -323,7 +324,7 @@ func CSRFProtectionMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		
+
 		c.Next()
 	}
 }
@@ -331,21 +332,21 @@ func CSRFProtectionMiddleware() gin.HandlerFunc {
 // shouldSkipAuth 检查是否跳过认证
 func shouldSkipAuth(c *gin.Context, skipPaths, skipPrefixes []string) bool {
 	path := c.Request.URL.Path
-	
+
 	// 检查精确匹配
 	for _, skipPath := range skipPaths {
 		if path == skipPath {
 			return true
 		}
 	}
-	
+
 	// 检查前缀匹配
 	for _, prefix := range skipPrefixes {
 		if strings.HasPrefix(path, prefix) {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -354,20 +355,20 @@ func validateDevice(c *gin.Context, payload *TokenPayload, cacheService *cache.C
 	if payload.DeviceID == "" {
 		return true // 如果没有设备ID，跳过验证
 	}
-	
+
 	deviceKey := fmt.Sprintf("user_device:%d:%s", payload.UserID, payload.DeviceID)
 	var deviceInfo map[string]interface{}
-	
+
 	err := cacheService.Get(c.Request.Context(), deviceKey, &deviceInfo)
 	if err != nil {
 		return false
 	}
-	
+
 	// 验证设备信息
 	if storedDeviceID, ok := deviceInfo["device_id"].(string); ok && storedDeviceID != payload.DeviceID {
 		return false
 	}
-	
+
 	return true
 }
 
@@ -376,42 +377,42 @@ func validateIP(c *gin.Context, payload *TokenPayload, cacheService *cache.Cache
 	if payload.IP == "" {
 		return true // 如果没有IP信息，跳过验证
 	}
-	
+
 	currentIP := c.ClientIP()
 	if payload.IP != currentIP {
 		// 检查是否在同一子网（可选的宽松验证）
 		// 这里可以根据需要实现更复杂的IP验证逻辑
 		return false
 	}
-	
+
 	return true
 }
 
 // checkRateLimit 检查速率限制
 func checkRateLimit(c *gin.Context, payload *TokenPayload, cacheService *cache.CacheService) bool {
 	rateLimitKey := fmt.Sprintf("rate_limit:%d:%s", payload.UserID, c.ClientIP())
-	
+
 	var count int
 	err := cacheService.Get(c.Request.Context(), rateLimitKey, &count)
 	if err != nil {
 		count = 0
 	}
-	
+
 	// 简单的速率限制：每分钟最多100次请求
 	if count >= 100 {
 		return false
 	}
-	
+
 	// 增加计数
 	cacheService.Set(c.Request.Context(), rateLimitKey, count+1, time.Minute)
-	
+
 	return true
 }
 
 // updateUserActivity 更新用户活动信息
 func updateUserActivity(ctx context.Context, payload *TokenPayload, cacheService *cache.CacheService) {
 	deviceKey := fmt.Sprintf("user_device:%d:%s", payload.UserID, payload.DeviceID)
-	
+
 	var deviceInfo map[string]interface{}
 	err := cacheService.Get(ctx, deviceKey, &deviceInfo)
 	if err == nil {

@@ -158,7 +158,7 @@ func (s *UserService) ChangePassword(ctx context.Context, userID uint, currentPa
 	}
 
 	if err := s.validatePassword(newPassword); err != nil {
-		return fmt.Errorf("%w: %v", common.ErrWeakPassword, err)
+		return fmt.Errorf("%w: %w", common.ErrWeakPassword, err)
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
@@ -209,7 +209,7 @@ func (s *UserService) validatePassword(password string) error {
 	}
 
 	hasUpper := regexp.MustCompile(`[A-Z]`).MatchString(password)
-	hasLower := regexp.MustCompile(`[a-z]`).MatchString(password)  // 修复：使用正确的小写字母正则
+	hasLower := regexp.MustCompile(`[a-z]`).MatchString(password) // 修复：使用正确的小写字母正则
 	hasNumber := regexp.MustCompile(`[0-9]`).MatchString(password)
 
 	if !hasUpper || !hasLower || !hasNumber {

@@ -16,15 +16,15 @@ import (
 type RateLimitConfig struct {
 	RedisClient *redis.Client
 	KeyPrefix   string
-	Limit       int64         // 请求限制数量
-	Window      time.Duration // 时间窗口
+	Limit       int64                   // 请求限制数量
+	Window      time.Duration           // 时间窗口
 	SkipFunc    func(*gin.Context) bool // 跳过限流的条件
 }
 
 // RateLimitMiddleware 高级限流中间件
 func RateLimitMiddleware(config RateLimitConfig) gin.HandlerFunc {
 	auditLogger := logger.NewAuditLogger()
-	
+
 	return func(c *gin.Context) {
 		// 检查是否跳过限流
 		if config.SkipFunc != nil && config.SkipFunc(c) {
@@ -34,7 +34,7 @@ func RateLimitMiddleware(config RateLimitConfig) gin.HandlerFunc {
 
 		// 生成限流键
 		key := generateRateLimitKey(c, config.KeyPrefix)
-		
+
 		// 检查限流
 		allowed, remaining, resetTime, err := checkRateLimit(c, config.RedisClient, key, config.Limit, config.Window)
 		if err != nil {
@@ -55,17 +55,17 @@ func RateLimitMiddleware(config RateLimitConfig) gin.HandlerFunc {
 		if !allowed {
 			// 记录限流事件
 			auditLogger.LogSecurityEvent(c.Request.Context(), "rate_limit_exceeded", "medium", map[string]interface{}{
-				"client_ip":   c.ClientIP(),
-				"user_agent":  c.GetHeader("User-Agent"),
-				"path":        c.Request.URL.Path,
-				"method":      c.Request.Method,
-				"limit":       config.Limit,
-				"window":      config.Window.String(),
+				"client_ip":  c.ClientIP(),
+				"user_agent": c.GetHeader("User-Agent"),
+				"path":       c.Request.URL.Path,
+				"method":     c.Request.Method,
+				"limit":      config.Limit,
+				"window":     config.Window.String(),
 			})
 
 			c.JSON(http.StatusTooManyRequests, gin.H{
-				"error":   "Rate limit exceeded",
-				"message": fmt.Sprintf("Too many requests. Limit: %d per %v", config.Limit, config.Window),
+				"error":       "Rate limit exceeded",
+				"message":     fmt.Sprintf("Too many requests. Limit: %d per %v", config.Limit, config.Window),
 				"retry_after": resetTime.Unix(),
 			})
 			c.Abort()
@@ -88,22 +88,22 @@ func generateRateLimitKey(c *gin.Context, prefix string) string {
 // checkRateLimit 检查限流
 func checkRateLimit(c *gin.Context, client *redis.Client, key string, limit int64, window time.Duration) (bool, int64, time.Time, error) {
 	ctx := c.Request.Context()
-	
+
 	// 使用Redis的INCR和EXPIRE命令实现滑动窗口限流
 	pipe := client.Pipeline()
-	
+
 	// 增加计数
 	incrCmd := pipe.Incr(ctx, key)
 	// 设置过期时间
 	_ = pipe.Expire(ctx, key, window)
-	
+
 	_, err := pipe.Exec(ctx)
 	if err != nil {
 		return false, 0, time.Time{}, err
 	}
 
 	count := incrCmd.Val()
-	
+
 	// 如果是第一次请求，确保设置了过期时间
 	if count == 1 {
 		client.Expire(ctx, key, window)
@@ -114,9 +114,9 @@ func checkRateLimit(c *gin.Context, client *redis.Client, key string, limit int6
 	if remaining < 0 {
 		remaining = 0
 	}
-	
+
 	resetTime := time.Now().Add(window)
-	
+
 	return count <= limit, remaining, resetTime, nil
 }
 
@@ -158,7 +158,7 @@ func APIRateLimitMiddleware(limit int64, window time.Duration, redisClient *redi
 // BruteForceProtectionMiddleware 暴力破解保护
 func BruteForceProtectionMiddleware(redisClient *redis.Client) gin.HandlerFunc {
 	auditLogger := logger.NewAuditLogger()
-	
+
 	return func(c *gin.Context) {
 		// 只对登录接口进行暴力破解保护
 		if c.Request.URL.Path != "/api/v1/auth/login" {
@@ -168,7 +168,7 @@ func BruteForceProtectionMiddleware(redisClient *redis.Client) gin.HandlerFunc {
 
 		clientIP := c.ClientIP()
 		key := fmt.Sprintf("brute_force:%s", clientIP)
-		
+
 		// 检查是否已被锁定
 		locked, err := redisClient.Exists(c.Request.Context(), key+":locked").Result()
 		if err == nil && locked > 0 {
@@ -195,11 +195,11 @@ func BruteForceProtectionMiddleware(redisClient *redis.Client) gin.HandlerFunc {
 			if err == nil {
 				// 设置过期时间
 				redisClient.Expire(c.Request.Context(), key, 15*time.Minute)
-				
+
 				// 如果失败次数超过阈值，锁定账户
 				if count >= 5 {
 					redisClient.Set(c.Request.Context(), key+":locked", "1", 30*time.Minute)
-					
+
 					auditLogger.LogSecurityEvent(c.Request.Context(), "brute_force_detected", "critical", map[string]interface{}{
 						"client_ip":     clientIP,
 						"user_agent":    c.GetHeader("User-Agent"),

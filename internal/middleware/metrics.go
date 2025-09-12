@@ -142,7 +142,7 @@ var (
 func PrometheusMiddleware() gin.HandlerFunc {
 	return gin.HandlerFunc(func(c *gin.Context) {
 		start := time.Now()
-		
+
 		// 增加活跃连接数
 		activeConnections.Inc()
 		defer activeConnections.Dec()
@@ -175,7 +175,7 @@ func PrometheusMiddleware() gin.HandlerFunc {
 func RecordDBMetrics(operation, table string, duration time.Duration, err error) {
 	dbQueriesTotal.WithLabelValues(operation, table).Inc()
 	dbQueryDuration.WithLabelValues(operation, table).Observe(duration.Seconds())
-	
+
 	if err != nil {
 		errorsTotal.WithLabelValues("database_error", "db").Inc()
 	}
@@ -188,33 +188,32 @@ func RecordCacheMetrics(operation, cacheType string, hit bool, duration time.Dur
 	} else {
 		cacheMissesTotal.WithLabelValues(cacheType).Inc()
 	}
-	
+
 	cacheOperationDuration.WithLabelValues(operation, cacheType).Observe(duration.Seconds())
-	
+
 	if err != nil {
 		errorsTotal.WithLabelValues("cache_error", "redis").Inc()
 	}
 }
 
 // UpdateBusinessMetrics 更新业务指标
-func UpdateBusinessMetrics(usersByRole map[string]map[string]int64, 
-	casesByStatus map[string]map[string]int64, 
+func UpdateBusinessMetrics(usersByRole map[string]map[string]int64,
+	casesByStatus map[string]map[string]int64,
 	clientsByStatus map[string]int64) {
-	
 	// 更新用户指标
 	for role, statusMap := range usersByRole {
 		for status, count := range statusMap {
 			usersTotal.WithLabelValues(role, status).Set(float64(count))
 		}
 	}
-	
+
 	// 更新案件指标
 	for status, priorityMap := range casesByStatus {
 		for priority, count := range priorityMap {
 			casesTotal.WithLabelValues(status, priority).Set(float64(count))
 		}
 	}
-	
+
 	// 更新客户指标
 	for status, count := range clientsByStatus {
 		clientsTotal.WithLabelValues(status).Set(float64(count))

@@ -1,6 +1,7 @@
 package security
 
 import (
+	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
@@ -14,8 +15,6 @@ import (
 	"errors"
 	"fmt"
 	"hash"
-	"law-oa-go/internal/cache"
-	"law-oa-go/internal/models"
 	"regexp"
 	"strings"
 	"time"
@@ -25,6 +24,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/crypto/scrypt"
 	"gorm.io/gorm"
+	"law-oa-go/internal/cache"
+	"law-oa-go/internal/models"
 )
 
 var (
@@ -47,22 +48,22 @@ var (
 
 // EncryptionConfig 加密配置
 type EncryptionServiceConfig struct {
-	AESKey             string
-	RSAPrivateKey      string
-	RSAPublicKey       string
-	DataKeyRotationDays int
+	AESKey                string
+	RSAPrivateKey         string
+	RSAPublicKey          string
+	DataKeyRotationDays   int
 	EnableFieldEncryption bool
-	SensitiveFields     []string
+	SensitiveFields       []string
 }
 
 // EncryptionService 加密服务
 type EncryptionService struct {
-	config       *EncryptionConfig
-	aesKey       []byte
+	config        *EncryptionConfig
+	aesKey        []byte
 	rsaPrivateKey *rsa.PrivateKey
 	rsaPublicKey  *rsa.PublicKey
-	cacheService *cache.CacheService
-	db           *gorm.DB
+	cacheService  *cache.CacheService
+	db            *gorm.DB
 }
 
 // NewEncryptionService 创建加密服务
@@ -521,18 +522,18 @@ func (s *EncryptionService) DecryptUserData(userData *models.User) error {
 func (s *EncryptionService) SanitizeInput(input string) string {
 	// 移除潜在的恶意字符
 	sanitized := regexp.MustCompile(`[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]`).ReplaceAllString(input, "")
-	
+
 	// 防止SQL注入模式
 	sqlPatterns := []string{
 		`(?i)(union\s+select|insert\s+into|delete\s+from|update\s+set|drop\s+table)`,
 		`(?i)(or\s+1\s*=\s*1|or\s+1\s*=\s*'1'|or\s+1\s*=\s*"1")`,
 		`(?i)(;|--|\/\*|\*\/|@@|@)`,
 	}
-	
+
 	for _, pattern := range sqlPatterns {
 		sanitized = regexp.MustCompile(pattern).ReplaceAllString(sanitized, "")
 	}
-	
+
 	return strings.TrimSpace(sanitized)
 }
 
@@ -576,7 +577,7 @@ func (s *EncryptionService) RotateKey() error {
 
 	// 清除相关缓存
 	if s.cacheService != nil {
-		s.cacheService.ClearPattern(nil, "encryption:*")
+		s.cacheService.ClearPattern(context.Background(), "encryption:*")
 	}
 
 	// 记录密钥旋转事件
@@ -595,9 +596,9 @@ func (s *EncryptionService) GetKeyFingerprint() string {
 func (s *EncryptionService) GetEncryptionStatus() map[string]interface{} {
 	return map[string]interface{}{
 		"field_encryption_enabled": s.config.EnableFieldEncryption,
-		"key_rotation_days":       s.config.DataKeyRotationDays,
-		"sensitive_fields_count": len(s.config.SensitiveFields),
-		"aes_key_fingerprint":    s.GetKeyFingerprint(),
-		"rsa_key_size":           s.rsaPublicKey.Size(),
+		"key_rotation_days":        s.config.DataKeyRotationDays,
+		"sensitive_fields_count":   len(s.config.SensitiveFields),
+		"aes_key_fingerprint":      s.GetKeyFingerprint(),
+		"rsa_key_size":             s.rsaPublicKey.Size(),
 	}
 }

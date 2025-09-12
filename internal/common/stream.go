@@ -48,35 +48,35 @@ func (sr *StreamResponse) Render(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Transfer-Encoding", "chunked")
 	w.Header().Set("X-Accel-Buffering", "no") // 禁用Nginx缓冲
-	
+
 	// 写入响应头
 	w.Write([]byte(`{"data": [`))
-	
+
 	first := true
 	encoder := json.NewEncoder(w)
-	
+
 	for data := range sr.Data {
 		if !first {
 			w.Write([]byte(","))
 		}
 		first = false
-		
+
 		if err := encoder.Encode(data); err != nil {
 			return err
 		}
-		
+
 		// 立即刷新缓冲区
 		if f, ok := w.(http.Flusher); ok {
 			f.Flush()
 		}
 	}
-	
+
 	w.Write([]byte(`]}`))
-	
+
 	if f, ok := w.(http.Flusher); ok {
 		f.Flush()
 	}
-	
+
 	return nil
 }
 
@@ -84,24 +84,24 @@ func (sr *StreamResponse) Render(w http.ResponseWriter) error {
 func StreamSuccess(c *gin.Context, dataChan <-chan interface{}) {
 	response := NewStreamResponse()
 	defer response.Close()
-	
+
 	// 启动goroutine转发数据
 	go func() {
 		for data := range dataChan {
 			response.Send(data)
 		}
 	}()
-	
+
 	c.Render(http.StatusOK, response)
 }
 
 // StreamPaginatedResponse 流式分页响应
 type StreamPaginatedResponse struct {
-	Total    int64         `json:"total"`
-	Page     int           `json:"page"`
-	PageSize int           `json:"page_size"`
+	Total    int64            `json:"total"`
+	Page     int              `json:"page"`
+	PageSize int              `json:"page_size"`
 	Data     chan interface{} `json:"-"`
-	Done     chan bool      `json:"-"`
+	Done     chan bool        `json:"-"`
 }
 
 // NewStreamPaginatedResponse 创建新的流式分页响应
@@ -141,7 +141,7 @@ func (sr *StreamPaginatedResponse) Render(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Transfer-Encoding", "chunked")
 	w.Header().Set("X-Accel-Buffering", "no")
-	
+
 	// 写入响应头
 	header := map[string]interface{}{
 		"total":     sr.Total,
@@ -149,39 +149,39 @@ func (sr *StreamPaginatedResponse) Render(w http.ResponseWriter) error {
 		"page_size": sr.PageSize,
 		"data":      []interface{}{},
 	}
-	
+
 	headerData, err := json.Marshal(header)
 	if err != nil {
 		return err
 	}
-	
+
 	w.Write(headerData[:len(headerData)-2]) // 去掉最后的"]}
 	w.Write([]byte(`,"data":[`))
-	
+
 	first := true
 	encoder := json.NewEncoder(w)
-	
+
 	for data := range sr.Data {
 		if !first {
 			w.Write([]byte(","))
 		}
 		first = false
-		
+
 		if err := encoder.Encode(data); err != nil {
 			return err
 		}
-		
+
 		if f, ok := w.(http.Flusher); ok {
 			f.Flush()
 		}
 	}
-	
+
 	w.Write([]byte(`]}}`))
-	
+
 	if f, ok := w.(http.Flusher); ok {
 		f.Flush()
 	}
-	
+
 	return nil
 }
 
@@ -189,12 +189,12 @@ func (sr *StreamPaginatedResponse) Render(w http.ResponseWriter) error {
 func StreamPaginatedSuccess(c *gin.Context, total int64, page, pageSize int, dataChan <-chan interface{}) {
 	response := NewStreamPaginatedResponse(total, page, pageSize)
 	defer response.Close()
-	
+
 	go func() {
 		for data := range dataChan {
 			response.Send(data)
 		}
 	}()
-	
+
 	c.Render(http.StatusOK, response)
 }

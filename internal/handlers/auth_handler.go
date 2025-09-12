@@ -3,10 +3,10 @@ package handlers
 import (
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"law-oa-go/internal/common"
 	"law-oa-go/internal/middleware"
 	"law-oa-go/internal/services"
-	"github.com/gin-gonic/gin"
 )
 
 type AuthHandler struct {
@@ -107,9 +107,9 @@ func (h *AuthHandler) Register(c *gin.Context) {
 			common.BadRequest(c, "Registration failed: Email address is already registered")
 			return
 		}
-		if err.Error() == "invalid email format" || 
-		   err.Error() == "password too weak" || 
-		   err.Error() == "invalid role" {
+		if err.Error() == "invalid email format" ||
+			err.Error() == "password too weak" ||
+			err.Error() == "invalid role" {
 			common.BadRequest(c, "Validation failed: "+err.Error())
 			return
 		}

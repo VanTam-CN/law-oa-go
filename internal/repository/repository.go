@@ -32,7 +32,7 @@ func NewBaseRepository[T any](db *gorm.DB) *BaseRepository[T] {
 // Create 创建实体
 func (r *BaseRepository[T]) Create(ctx context.Context, entity *T) error {
 	if err := r.db.WithContext(ctx).Create(entity).Error; err != nil {
-		return fmt.Errorf("%w: %v", common.ErrDatabaseError, err)
+		return fmt.Errorf("%w: %w", common.ErrDatabaseError, err)
 	}
 	return nil
 }
@@ -45,7 +45,7 @@ func (r *BaseRepository[T]) GetByID(ctx context.Context, id uint) (*T, error) {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("%w: id=%d", common.ErrRecordNotFound, id)
 		}
-		return nil, fmt.Errorf("%w: %v", common.ErrDatabaseError, err)
+		return nil, fmt.Errorf("%w: %w", common.ErrDatabaseError, err)
 	}
 	return &entity, nil
 }
@@ -55,7 +55,7 @@ func (r *BaseRepository[T]) Update(ctx context.Context, id uint, updates map[str
 	var entity T
 	result := r.db.WithContext(ctx).Model(&entity).Where("id = ?", id).Updates(updates)
 	if result.Error != nil {
-		return fmt.Errorf("%w: %v", common.ErrDatabaseError, result.Error)
+		return fmt.Errorf("%w: %w", common.ErrDatabaseError, result.Error)
 	}
 	if result.RowsAffected == 0 {
 		return fmt.Errorf("%w: id=%d", common.ErrRecordNotFound, id)
@@ -68,7 +68,7 @@ func (r *BaseRepository[T]) Delete(ctx context.Context, id uint) error {
 	var entity T
 	result := r.db.WithContext(ctx).Delete(&entity, id)
 	if result.Error != nil {
-		return fmt.Errorf("%w: %v", common.ErrDatabaseError, result.Error)
+		return fmt.Errorf("%w: %w", common.ErrDatabaseError, result.Error)
 	}
 	if result.RowsAffected == 0 {
 		return fmt.Errorf("%w: id=%d", common.ErrRecordNotFound, id)
@@ -82,7 +82,7 @@ func (r *BaseRepository[T]) List(ctx context.Context, offset, limit int, conditi
 	var total int64
 
 	query := r.db.WithContext(ctx).Model(new(T))
-	
+
 	// 应用条件
 	for key, value := range conditions {
 		query = query.Where(key, value)
@@ -90,12 +90,12 @@ func (r *BaseRepository[T]) List(ctx context.Context, offset, limit int, conditi
 
 	// 获取总数
 	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, fmt.Errorf("%w: %v", common.ErrDatabaseError, err)
+		return nil, 0, fmt.Errorf("%w: %w", common.ErrDatabaseError, err)
 	}
 
 	// 获取数据
 	if err := query.Offset(offset).Limit(limit).Find(&entities).Error; err != nil {
-		return nil, 0, fmt.Errorf("%w: %v", common.ErrDatabaseError, err)
+		return nil, 0, fmt.Errorf("%w: %w", common.ErrDatabaseError, err)
 	}
 
 	return entities, total, nil
@@ -105,13 +105,13 @@ func (r *BaseRepository[T]) List(ctx context.Context, offset, limit int, conditi
 func (r *BaseRepository[T]) Count(ctx context.Context, conditions map[string]interface{}) (int64, error) {
 	var count int64
 	query := r.db.WithContext(ctx).Model(new(T))
-	
+
 	for key, value := range conditions {
 		query = query.Where(key, value)
 	}
 
 	if err := query.Count(&count).Error; err != nil {
-		return 0, fmt.Errorf("%w: %v", common.ErrDatabaseError, err)
+		return 0, fmt.Errorf("%w: %w", common.ErrDatabaseError, err)
 	}
 
 	return count, nil
@@ -134,7 +134,7 @@ func (r *BaseRepository[T]) BatchCreate(ctx context.Context, entities []*T, batc
 func (r *BaseRepository[T]) FindWithPreload(ctx context.Context, id uint, preloads ...string) (*T, error) {
 	var entity T
 	query := r.db.WithContext(ctx)
-	
+
 	for _, preload := range preloads {
 		query = query.Preload(preload)
 	}
@@ -144,7 +144,7 @@ func (r *BaseRepository[T]) FindWithPreload(ctx context.Context, id uint, preloa
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("%w: id=%d", common.ErrRecordNotFound, id)
 		}
-		return nil, fmt.Errorf("%w: %v", common.ErrDatabaseError, err)
+		return nil, fmt.Errorf("%w: %w", common.ErrDatabaseError, err)
 	}
 
 	return &entity, nil
@@ -203,7 +203,7 @@ func (qb *QueryBuilder[T]) Preload(column string, conditions ...interface{}) *Qu
 func (qb *QueryBuilder[T]) Find(ctx context.Context) ([]*T, error) {
 	var entities []*T
 	if err := qb.query.WithContext(ctx).Find(&entities).Error; err != nil {
-		return nil, fmt.Errorf("%w: %v", common.ErrDatabaseError, err)
+		return nil, fmt.Errorf("%w: %w", common.ErrDatabaseError, err)
 	}
 	return entities, nil
 }
@@ -216,7 +216,7 @@ func (qb *QueryBuilder[T]) First(ctx context.Context) (*T, error) {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("%w", common.ErrRecordNotFound)
 		}
-		return nil, fmt.Errorf("%w: %v", common.ErrDatabaseError, err)
+		return nil, fmt.Errorf("%w: %w", common.ErrDatabaseError, err)
 	}
 	return &entity, nil
 }
@@ -225,7 +225,7 @@ func (qb *QueryBuilder[T]) First(ctx context.Context) (*T, error) {
 func (qb *QueryBuilder[T]) Count(ctx context.Context) (int64, error) {
 	var count int64
 	if err := qb.query.WithContext(ctx).Count(&count).Error; err != nil {
-		return 0, fmt.Errorf("%w: %v", common.ErrDatabaseError, err)
+		return 0, fmt.Errorf("%w: %w", common.ErrDatabaseError, err)
 	}
 	return count, nil
 }

@@ -43,16 +43,16 @@ func (s *MockService) Count() int {
 
 func TestMockService(t *testing.T) {
 	service := NewMockService()
-	
+
 	// 测试添加和获取
 	service.Add("test", "value")
 	value, exists := service.Get("test")
 	assert.True(t, exists, "键应该存在")
 	assert.Equal(t, "value", value, "值应该正确")
-	
+
 	// 测试计数
 	assert.Equal(t, 1, service.Count(), "计数应该为1")
-	
+
 	// 测试删除
 	service.Delete("test")
 	_, exists = service.Get("test")
@@ -63,7 +63,7 @@ func TestMockService(t *testing.T) {
 func TestMockService_ConcurrentAccess(t *testing.T) {
 	service := NewMockService()
 	var wg sync.WaitGroup
-	
+
 	// 并发添加数据
 	for i := 0; i < 100; i++ {
 		wg.Add(1)
@@ -73,10 +73,10 @@ func TestMockService_ConcurrentAccess(t *testing.T) {
 			service.Add(key, "value"+string(rune('0'+index%10)))
 		}(i)
 	}
-	
+
 	// 等待所有goroutine完成
 	wg.Wait()
-	
+
 	// 验证数据（由于key冲突，实际数量可能少于100）
 	count := service.Count()
 	assert.GreaterOrEqual(t, count, 1, "至少应该有一些数据")
@@ -85,11 +85,11 @@ func TestMockService_ConcurrentAccess(t *testing.T) {
 
 func TestMockService_InvalidOperations(t *testing.T) {
 	service := NewMockService()
-	
+
 	// 测试获取不存在的键
 	_, exists := service.Get("nonexistent")
 	assert.False(t, exists, "不存在的键应该返回false")
-	
+
 	// 测试删除不存在的键（不应该panic）
 	service.Delete("nonexistent")
 	assert.Equal(t, 0, service.Count(), "计数应该为0")

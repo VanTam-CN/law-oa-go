@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"law-oa-go/internal/models"
 	"gorm.io/gorm"
+	"law-oa-go/internal/models"
 )
 
 // BatchService 批量操作服务
@@ -82,11 +82,10 @@ func (s *BatchService) BatchFindByIDs(ctx context.Context, model interface{}, id
 }
 
 // BatchProcessWithCallback 批量处理数据（带回调）
-func (s *BatchService) BatchProcessWithCallback(ctx context.Context, 
-	query *gorm.DB, 
-	batchSize int, 
+func (s *BatchService) BatchProcessWithCallback(ctx context.Context,
+	query *gorm.DB,
+	batchSize int,
 	callback func(batch interface{}) error) error {
-	
 	if batchSize <= 0 {
 		batchSize = 1000
 	}

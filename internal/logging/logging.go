@@ -10,13 +10,12 @@ import (
 	"strings"
 	"sync"
 	"time"
-	
+
 	"github.com/gin-gonic/gin"
 	"github.com/natefinch/lumberjack"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gorm.io/gorm"
-	
 	"law-oa-go/internal/config"
 )
 
@@ -41,30 +40,30 @@ var logLevelNames = map[LogLevel]string{
 
 // LogEntry 日志条目
 type LogEntry struct {
-	ID          uint      `json:"id" gorm:"primaryKey"`
-	Timestamp   time.Time `json:"timestamp"`
-	Level       LogLevel   `json:"level"`
-	LevelName   string    `json:"level_name"`
-	Message     string    `json:"message"`
-	Service     string    `json:"service"`
-	Function    string    `json:"function"`
-	File        string    `json:"file"`
-	Line        int       `json:"line"`
-	UserID      *uint     `json:"user_id,omitempty"`
-	Username    string    `json:"username,omitempty"`
-	RequestID   string    `json:"request_id,omitempty"`
-	IPAddress   string    `json:"ip_address,omitempty"`
-	UserAgent   string    `json:"user_agent,omitempty"`
-	Method      string    `json:"method,omitempty"`
-	Path        string    `json:"path,omitempty"`
-	StatusCode  int       `json:"status_code,omitempty"`
-	Duration    float64   `json:"duration,omitempty"`
-	Error       string    `json:"error,omitempty"`
-	Stacktrace  string    `json:"stacktrace,omitempty"`
-	Tags        []string  `json:"tags,omitempty" gorm:"type:json"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty" gorm:"type:json"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID         uint                   `json:"id" gorm:"primaryKey"`
+	Timestamp  time.Time              `json:"timestamp"`
+	Level      LogLevel               `json:"level"`
+	LevelName  string                 `json:"level_name"`
+	Message    string                 `json:"message"`
+	Service    string                 `json:"service"`
+	Function   string                 `json:"function"`
+	File       string                 `json:"file"`
+	Line       int                    `json:"line"`
+	UserID     *uint                  `json:"user_id,omitempty"`
+	Username   string                 `json:"username,omitempty"`
+	RequestID  string                 `json:"request_id,omitempty"`
+	IPAddress  string                 `json:"ip_address,omitempty"`
+	UserAgent  string                 `json:"user_agent,omitempty"`
+	Method     string                 `json:"method,omitempty"`
+	Path       string                 `json:"path,omitempty"`
+	StatusCode int                    `json:"status_code,omitempty"`
+	Duration   float64                `json:"duration,omitempty"`
+	Error      string                 `json:"error,omitempty"`
+	Stacktrace string                 `json:"stacktrace,omitempty"`
+	Tags       []string               `json:"tags,omitempty" gorm:"type:json"`
+	Metadata   map[string]interface{} `json:"metadata,omitempty" gorm:"type:json"`
+	CreatedAt  time.Time              `json:"created_at"`
+	UpdatedAt  time.Time              `json:"updated_at"`
 }
 
 // LogFilter 日志过滤器
@@ -76,7 +75,7 @@ type LogFilter struct {
 	Users       []uint     `json:"users,omitempty"`
 	Usernames   []string   `json:"usernames,omitempty"`
 	RequestIDs  []string   `json:"request_ids,omitempty"`
-	IPAddresses []string  `json:"ip_addresses,omitempty"`
+	IPAddresses []string   `json:"ip_addresses,omitempty"`
 	Methods     []string   `json:"methods,omitempty"`
 	Paths       []string   `json:"paths,omitempty"`
 	StatusCodes []int      `json:"status_codes,omitempty"`
@@ -90,28 +89,28 @@ type LogFilter struct {
 
 // LogStats 日志统计
 type LogStats struct {
-	TotalCount      int64                    `json:"total_count"`
-	LevelCounts     map[LogLevel]int64       `json:"level_counts"`
-	ServiceCounts   map[string]int64         `json:"service_counts"`
-	UserCounts      map[string]int64         `json:"user_counts"`
-	IPCounts        map[string]int64         `json:"ip_counts"`
-	MethodCounts    map[string]int64         `json:"method_counts"`
-	ErrorCounts     map[string]int64         `json:"error_counts"`
-	HourlyStats     map[string]int64         `json:"hourly_stats"`
-	DailyStats      map[string]int64         `json:"daily_stats"`
+	TotalCount    int64              `json:"total_count"`
+	LevelCounts   map[LogLevel]int64 `json:"level_counts"`
+	ServiceCounts map[string]int64   `json:"service_counts"`
+	UserCounts    map[string]int64   `json:"user_counts"`
+	IPCounts      map[string]int64   `json:"ip_counts"`
+	MethodCounts  map[string]int64   `json:"method_counts"`
+	ErrorCounts   map[string]int64   `json:"error_counts"`
+	HourlyStats   map[string]int64   `json:"hourly_stats"`
+	DailyStats    map[string]int64   `json:"daily_stats"`
 }
 
 // LogConfig 日志配置
 type LogConfig struct {
 	Level         LogLevel `json:"level"`
-	Format        string   `json:"format"`        // json, text
-	Output        string   `json:"output"`        // console, file, both
+	Format        string   `json:"format"` // json, text
+	Output        string   `json:"output"` // console, file, both
 	FilePath      string   `json:"file_path"`
-	MaxSize       int      `json:"max_size"`      // MB
+	MaxSize       int      `json:"max_size"` // MB
 	MaxBackups    int      `json:"max_backups"`
-	MaxAge        int      `json:"max_age"`       // days
+	MaxAge        int      `json:"max_age"` // days
 	Compress      bool     `json:"compress"`
-	EnableConsole bool    `json:"enable_console"`
+	EnableConsole bool     `json:"enable_console"`
 	EnableFile    bool     `json:"enable_file"`
 	EnableDB      bool     `json:"enable_db"`
 	EnableES      bool     `json:"enable_es"`
@@ -119,20 +118,20 @@ type LogConfig struct {
 
 // LoggingService 日志服务
 type LoggingService struct {
-	config       *config.Config
-	db           *gorm.DB
-	zapLogger    *zap.Logger
-	logConfig    *LogConfig
-	
+	config    *config.Config
+	db        *gorm.DB
+	zapLogger *zap.Logger
+	logConfig *LogConfig
+
 	// 日志队列
-	logQueue     chan *LogEntry
-	bufferPool   sync.Pool
-	
+	logQueue   chan *LogEntry
+	bufferPool sync.Pool
+
 	// 上下文
-	ctx          context.Context
-	cancel       context.CancelFunc
-	wg           sync.WaitGroup
-	
+	ctx    context.Context
+	cancel context.CancelFunc
+	wg     sync.WaitGroup
+
 	// 正则缓存
 	keywordRegex *regexp.Regexp
 }
@@ -140,7 +139,7 @@ type LoggingService struct {
 // NewLoggingService 创建日志服务
 func NewLoggingService(cfg *config.Config, db *gorm.DB) (*LoggingService, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	// 默认日志配置
 	logConfig := &LogConfig{
 		Level:         INFO,
@@ -156,37 +155,37 @@ func NewLoggingService(cfg *config.Config, db *gorm.DB) (*LoggingService, error)
 		EnableDB:      true,
 		EnableES:      false,
 	}
-	
+
 	// 创建Zap日志器
 	zapLogger, err := createZapLogger(logConfig)
 	if err != nil {
 		cancel()
-		return nil, fmt.Errorf("创建日志器失败: %v", err)
+		return nil, fmt.Errorf("创建日志器失败: %w", err)
 	}
-	
+
 	service := &LoggingService{
-		config:     cfg,
-		db:         db,
-		zapLogger:  zapLogger,
-		logConfig:  logConfig,
-		logQueue:   make(chan *LogEntry, 10000),
-		ctx:        ctx,
-		cancel:     cancel,
+		config:    cfg,
+		db:        db,
+		zapLogger: zapLogger,
+		logConfig: logConfig,
+		logQueue:  make(chan *LogEntry, 10000),
+		ctx:       ctx,
+		cancel:    cancel,
 	}
-	
+
 	// 初始化缓冲池
 	service.bufferPool.New = func() interface{} {
 		return make([]byte, 0, 1024)
 	}
-	
+
 	// 自动创建表
 	if err := service.autoMigrate(); err != nil {
 		zapLogger.Error("数据库迁移失败", zap.Error(err))
 	}
-	
+
 	// 启动日志处理器
 	service.startLogProcessor()
-	
+
 	return service, nil
 }
 
@@ -207,12 +206,12 @@ func createZapLogger(config *LogConfig) (*zap.Logger, error) {
 		EncodeDuration: zapcore.SecondsDurationEncoder,
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
-	
+
 	var core zapcore.Core
-	
+
 	// 创建多个核心
 	var cores []zapcore.Core
-	
+
 	// 控制台输出
 	if config.EnableConsole {
 		consoleCore := zapcore.NewCore(
@@ -224,7 +223,7 @@ func createZapLogger(config *LogConfig) (*zap.Logger, error) {
 		)
 		cores = append(cores, consoleCore)
 	}
-	
+
 	// 文件输出
 	if config.EnableFile {
 		fileWriter := zapcore.AddSync(&lumberjack.Logger{
@@ -234,7 +233,7 @@ func createZapLogger(config *LogConfig) (*zap.Logger, error) {
 			MaxAge:     config.MaxAge,
 			Compress:   config.Compress,
 		})
-		
+
 		fileCore := zapcore.NewCore(
 			zapcore.NewJSONEncoder(encoderConfig),
 			fileWriter,
@@ -244,14 +243,14 @@ func createZapLogger(config *LogConfig) (*zap.Logger, error) {
 		)
 		cores = append(cores, fileCore)
 	}
-	
+
 	// 组合核心
 	if len(cores) > 0 {
 		core = zapcore.NewTee(cores...)
 	} else {
 		core = zapcore.NewNopCore()
 	}
-	
+
 	// 创建日志器
 	logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
 	return logger, nil
@@ -264,7 +263,7 @@ func (s *LoggingService) startLogProcessor() {
 		s.wg.Add(1)
 		go s.logWorker()
 	}
-	
+
 	// 启动清理协程
 	s.wg.Add(1)
 	go s.cleanupWorker()
@@ -273,7 +272,7 @@ func (s *LoggingService) startLogProcessor() {
 // logWorker 日志工作协程
 func (s *LoggingService) logWorker() {
 	defer s.wg.Done()
-	
+
 	for {
 		select {
 		case entry := <-s.logQueue:
@@ -287,10 +286,10 @@ func (s *LoggingService) logWorker() {
 // cleanupWorker 清理工作协程
 func (s *LoggingService) cleanupWorker() {
 	defer s.wg.Done()
-	
+
 	ticker := time.NewTicker(24 * time.Hour)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-ticker.C:
@@ -307,7 +306,7 @@ func (s *LoggingService) processLogEntry(entry *LogEntry) {
 	if s.logConfig.EnableDB {
 		go s.saveLogToDB(entry)
 	}
-	
+
 	// 发送到Elasticsearch
 	if s.logConfig.EnableES {
 		go s.sendLogToES(entry)
@@ -317,7 +316,7 @@ func (s *LoggingService) processLogEntry(entry *LogEntry) {
 // saveLogToDB 保存日志到数据库
 func (s *LoggingService) saveLogToDB(entry *LogEntry) {
 	if err := s.db.Create(entry).Error; err != nil {
-		s.zapLogger.Error("保存日志到数据库失败", 
+		s.zapLogger.Error("保存日志到数据库失败",
 			zap.Error(err),
 			zap.Uint("log_id", entry.ID),
 			zap.String("message", entry.Message))
@@ -334,7 +333,7 @@ func (s *LoggingService) sendLogToES(entry *LogEntry) {
 func (s *LoggingService) cleanupOldLogs() {
 	// 清理30天前的日志
 	cutoff := time.Now().AddDate(0, 0, -30)
-	
+
 	if err := s.db.Where("created_at < ?", cutoff).Delete(&LogEntry{}).Error; err != nil {
 		s.zapLogger.Error("清理旧日志失败", zap.Error(err))
 	}
@@ -348,27 +347,27 @@ func (s *LoggingService) Log(level LogLevel, message string, fields ...zap.Field
 		file = "unknown"
 		line = 0
 	}
-	
+
 	fn := runtime.FuncForPC(pc)
 	function := "unknown"
 	if fn != nil {
 		function = fn.Name()
 	}
-	
+
 	// 创建日志条目
 	entry := &LogEntry{
-		Timestamp:  time.Now(),
-		Level:      level,
-		LevelName:  logLevelNames[level],
-		Message:    message,
-		Service:    "law-oa",
-		Function:   function,
-		File:       file,
-		Line:       line,
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
+		Timestamp: time.Now(),
+		Level:     level,
+		LevelName: logLevelNames[level],
+		Message:   message,
+		Service:   "law-oa",
+		Function:  function,
+		File:      file,
+		Line:      line,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
-	
+
 	// 发送到Zap
 	switch level {
 	case DEBUG:
@@ -382,7 +381,7 @@ func (s *LoggingService) Log(level LogLevel, message string, fields ...zap.Field
 	case FATAL:
 		s.zapLogger.Fatal(message, fields...)
 	}
-	
+
 	// 异步处理
 	select {
 	case s.logQueue <- entry:
@@ -419,68 +418,68 @@ func (s *LoggingService) Fatal(message string, fields ...zap.Field) {
 // WithContext 创建带上下文的日志器
 func (s *LoggingService) WithContext(c *gin.Context) *ContextLogger {
 	return &ContextLogger{
-		service:    s,
-		context:    c,
-		requestID:  c.GetString("request_id"),
-		userID:     c.GetUint("user_id"),
-		username:   c.GetString("username"),
-		ipAddress:  c.ClientIP(),
-		userAgent:  c.Request.UserAgent(),
-		method:     c.Request.Method,
-		path:       c.Request.URL.Path,
-		startTime:  time.Now(),
+		service:   s,
+		context:   c,
+		requestID: c.GetString("request_id"),
+		userID:    c.GetUint("user_id"),
+		username:  c.GetString("username"),
+		ipAddress: c.ClientIP(),
+		userAgent: c.Request.UserAgent(),
+		method:    c.Request.Method,
+		path:      c.Request.URL.Path,
+		startTime: time.Now(),
 	}
 }
 
 // QueryLogs 查询日志
 func (s *LoggingService) QueryLogs(filter LogFilter) ([]*LogEntry, int64, error) {
 	query := s.db.Model(&LogEntry{})
-	
+
 	// 应用过滤器
 	if filter.StartTime != nil {
 		query = query.Where("timestamp >= ?", *filter.StartTime)
 	}
-	
+
 	if filter.EndTime != nil {
 		query = query.Where("timestamp <= ?", *filter.EndTime)
 	}
-	
+
 	if len(filter.Levels) > 0 {
 		query = query.Where("level IN ?", filter.Levels)
 	}
-	
+
 	if len(filter.Services) > 0 {
 		query = query.Where("service IN ?", filter.Services)
 	}
-	
+
 	if len(filter.Users) > 0 {
 		query = query.Where("user_id IN ?", filter.Users)
 	}
-	
+
 	if len(filter.Usernames) > 0 {
 		query = query.Where("username IN ?", filter.Usernames)
 	}
-	
+
 	if len(filter.RequestIDs) > 0 {
 		query = query.Where("request_id IN ?", filter.RequestIDs)
 	}
-	
+
 	if len(filter.IPAddresses) > 0 {
 		query = query.Where("ip_address IN ?", filter.IPAddresses)
 	}
-	
+
 	if len(filter.Methods) > 0 {
 		query = query.Where("method IN ?", filter.Methods)
 	}
-	
+
 	if len(filter.Paths) > 0 {
 		query = query.Where("path IN ?", filter.Paths)
 	}
-	
+
 	if len(filter.StatusCodes) > 0 {
 		query = query.Where("status_code IN ?", filter.StatusCodes)
 	}
-	
+
 	if len(filter.Keywords) > 0 {
 		conditions := make([]string, 0, len(filter.Keywords))
 		args := make([]interface{}, 0, len(filter.Keywords))
@@ -490,20 +489,20 @@ func (s *LoggingService) QueryLogs(filter LogFilter) ([]*LogEntry, int64, error)
 		}
 		query = query.Where(strings.Join(conditions, " OR "), args...)
 	}
-	
+
 	if len(filter.Tags) > 0 {
 		// JSON查询支持PostgreSQL
 		if s.db.Dialector.Name() == "postgres" {
 			query = query.Where("tags::jsonb ?| ARRAY[?]", strings.Join(filter.Tags, ","))
 		}
 	}
-	
+
 	// 获取总数
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-	
+
 	// 排序
 	if filter.SortBy != "" {
 		order := filter.SortOrder
@@ -514,7 +513,7 @@ func (s *LoggingService) QueryLogs(filter LogFilter) ([]*LogEntry, int64, error)
 	} else {
 		query = query.Order("timestamp desc")
 	}
-	
+
 	// 分页
 	if filter.Limit > 0 {
 		query = query.Limit(filter.Limit)
@@ -522,13 +521,13 @@ func (s *LoggingService) QueryLogs(filter LogFilter) ([]*LogEntry, int64, error)
 	if filter.Offset > 0 {
 		query = query.Offset(filter.Offset)
 	}
-	
+
 	// 查询数据
 	var logs []*LogEntry
 	if err := query.Find(&logs).Error; err != nil {
 		return nil, 0, err
 	}
-	
+
 	return logs, total, nil
 }
 
@@ -544,15 +543,15 @@ func (s *LoggingService) GetLogStats(startTime, endTime time.Time) (*LogStats, e
 		HourlyStats:   make(map[string]int64),
 		DailyStats:    make(map[string]int64),
 	}
-	
+
 	// 基础查询
 	baseQuery := s.db.Model(&LogEntry{}).Where("timestamp BETWEEN ? AND ?", startTime, endTime)
-	
+
 	// 总数
 	if err := baseQuery.Count(&stats.TotalCount).Error; err != nil {
 		return nil, err
 	}
-	
+
 	// 按级别统计
 	var levelStats []struct {
 		Level LogLevel
@@ -564,7 +563,7 @@ func (s *LoggingService) GetLogStats(startTime, endTime time.Time) (*LogStats, e
 	for _, stat := range levelStats {
 		stats.LevelCounts[stat.Level] = stat.Count
 	}
-	
+
 	// 按服务统计
 	var serviceStats []struct {
 		Service string
@@ -576,7 +575,7 @@ func (s *LoggingService) GetLogStats(startTime, endTime time.Time) (*LogStats, e
 	for _, stat := range serviceStats {
 		stats.ServiceCounts[stat.Service] = stat.Count
 	}
-	
+
 	// 按用户统计
 	var userStats []struct {
 		Username string
@@ -588,7 +587,7 @@ func (s *LoggingService) GetLogStats(startTime, endTime time.Time) (*LogStats, e
 	for _, stat := range userStats {
 		stats.UserCounts[stat.Username] = stat.Count
 	}
-	
+
 	// 按IP统计
 	var ipStats []struct {
 		IPAddress string
@@ -600,7 +599,7 @@ func (s *LoggingService) GetLogStats(startTime, endTime time.Time) (*LogStats, e
 	for _, stat := range ipStats {
 		stats.IPCounts[stat.IPAddress] = stat.Count
 	}
-	
+
 	// 按方法统计
 	var methodStats []struct {
 		Method string
@@ -612,7 +611,7 @@ func (s *LoggingService) GetLogStats(startTime, endTime time.Time) (*LogStats, e
 	for _, stat := range methodStats {
 		stats.MethodCounts[stat.Method] = stat.Count
 	}
-	
+
 	// 按错误统计
 	var errorStats []struct {
 		Error string
@@ -624,7 +623,7 @@ func (s *LoggingService) GetLogStats(startTime, endTime time.Time) (*LogStats, e
 	for _, stat := range errorStats {
 		stats.ErrorCounts[stat.Error] = stat.Count
 	}
-	
+
 	// 按小时统计
 	var hourlyStats []struct {
 		Hour  string
@@ -636,7 +635,7 @@ func (s *LoggingService) GetLogStats(startTime, endTime time.Time) (*LogStats, e
 	for _, stat := range hourlyStats {
 		stats.HourlyStats[stat.Hour] = stat.Count
 	}
-	
+
 	// 按天统计
 	var dailyStats []struct {
 		Day   string
@@ -648,7 +647,7 @@ func (s *LoggingService) GetLogStats(startTime, endTime time.Time) (*LogStats, e
 	for _, stat := range dailyStats {
 		stats.DailyStats[stat.Day] = stat.Count
 	}
-	
+
 	return stats, nil
 }
 
@@ -661,7 +660,7 @@ func (s *LoggingService) autoMigrate() error {
 func (s *LoggingService) Close() {
 	s.cancel()
 	s.wg.Wait()
-	
+
 	if err := s.zapLogger.Sync(); err != nil {
 		log.Printf("同步日志器失败: %v", err)
 	}
@@ -669,17 +668,17 @@ func (s *LoggingService) Close() {
 
 // ContextLogger 上下文日志器
 type ContextLogger struct {
-	service    *LoggingService
-	context    *gin.Context
-	requestID  string
-	userID     uint
-	username   string
-	ipAddress  string
-	userAgent  string
-	method     string
-	path       string
-	startTime  time.Time
-	fields     []zap.Field
+	service   *LoggingService
+	context   *gin.Context
+	requestID string
+	userID    uint
+	username  string
+	ipAddress string
+	userAgent string
+	method    string
+	path      string
+	startTime time.Time
+	fields    []zap.Field
 }
 
 // WithField 添加字段
@@ -754,27 +753,27 @@ func (cl *ContextLogger) log(level LogLevel, message string) {
 		file = "unknown"
 		line = 0
 	}
-	
+
 	fn := runtime.FuncForPC(pc)
 	function := "unknown"
 	if fn != nil {
 		function = fn.Name()
 	}
-	
+
 	// 创建日志条目
 	entry := &LogEntry{
-		Timestamp:  time.Now(),
-		Level:      level,
-		LevelName:  logLevelNames[level],
-		Message:    message,
-		Service:    "law-oa",
-		Function:   function,
-		File:       file,
-		Line:       line,
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
+		Timestamp: time.Now(),
+		Level:     level,
+		LevelName: logLevelNames[level],
+		Message:   message,
+		Service:   "law-oa",
+		Function:  function,
+		File:      file,
+		Line:      line,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
-	
+
 	// 设置上下文字段
 	if cl.requestID != "" {
 		entry.RequestID = cl.requestID
@@ -797,20 +796,20 @@ func (cl *ContextLogger) log(level LogLevel, message string) {
 	if cl.path != "" {
 		entry.Path = cl.path
 	}
-	
+
 	// 计算请求持续时间
 	if !cl.startTime.IsZero() {
 		entry.Duration = time.Since(cl.startTime).Seconds()
 	}
-	
+
 	// 从上下文获取状态码
 	if cl.context != nil {
 		entry.StatusCode = cl.context.Writer.Status()
 	}
-	
+
 	// 发送到Zap
 	cl.service.zapLogger.Info(message, cl.fields...)
-	
+
 	// 异步处理
 	select {
 	case cl.service.logQueue <- entry:
@@ -828,39 +827,39 @@ func (s *LoggingService) LoggingMiddleware() gin.HandlerFunc {
 			requestID = generateRequestID()
 			c.Set("request_id", requestID)
 		}
-		
+
 		// 创建上下文日志器
 		logger := s.WithContext(c)
 		c.Set("logger", logger)
-		
+
 		// 记录请求开始
 		logger.WithFields(map[string]interface{}{
-			"method":    c.Request.Method,
-			"path":      c.Request.URL.Path,
-			"query":     c.Request.URL.RawQuery,
+			"method":     c.Request.Method,
+			"path":       c.Request.URL.Path,
+			"query":      c.Request.URL.RawQuery,
 			"user_agent": c.Request.UserAgent(),
-			"ip":        c.ClientIP(),
+			"ip":         c.ClientIP(),
 		}).Info("请求开始")
-		
+
 		// 处理请求
 		c.Next()
-		
+
 		// 记录请求结束
 		duration := time.Since(start)
 		status := c.Writer.Status()
-		
+
 		fields := map[string]interface{}{
-			"method":     c.Request.Method,
-			"path":       c.Request.URL.Path,
-			"status":     status,
-			"duration":   duration.Seconds(),
-			"size":       c.Writer.Size(),
+			"method":   c.Request.Method,
+			"path":     c.Request.URL.Path,
+			"status":   status,
+			"duration": duration.Seconds(),
+			"size":     c.Writer.Size(),
 		}
-		
+
 		if len(c.Errors) > 0 {
 			fields["error"] = c.Errors.String()
 		}
-		
+
 		if status >= 400 {
 			logger.WithFields(fields).Error("请求失败")
 		} else {

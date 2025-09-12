@@ -6,152 +6,151 @@ import (
 	"fmt"
 	"log"
 	"runtime"
+	"strconv"
 	"sync"
 	"time"
-	
+
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/disk"
-	"strconv"
 	"github.com/shirou/gopsutil/v3/mem"
 	"github.com/shirou/gopsutil/v3/net"
 	"gorm.io/gorm"
-	
 	"law-oa-go/internal/config"
 )
 
 // SystemMetrics 系统指标
 type SystemMetrics struct {
-	Timestamp    time.Time `json:"timestamp"`
-	
+	Timestamp time.Time `json:"timestamp"`
+
 	// CPU指标
-	CPUUsage     float64   `json:"cpu_usage"`
-	CPUCount     int32     `json:"cpu_count"`
-	CPUFreq      float64   `json:"cpu_freq"`
-	
+	CPUUsage float64 `json:"cpu_usage"`
+	CPUCount int32   `json:"cpu_count"`
+	CPUFreq  float64 `json:"cpu_freq"`
+
 	// 内存指标
-	MemoryTotal  uint64    `json:"memory_total"`
-	MemoryUsed   uint64    `json:"memory_used"`
-	MemoryUsage  float64   `json:"memory_usage"`
-	
+	MemoryTotal uint64  `json:"memory_total"`
+	MemoryUsed  uint64  `json:"memory_used"`
+	MemoryUsage float64 `json:"memory_usage"`
+
 	// 磁盘指标
-	DiskTotal    uint64    `json:"disk_total"`
-	DiskUsed     uint64    `json:"disk_used"`
-	DiskUsage    float64   `json:"disk_usage"`
-	DiskIORead   uint64    `json:"disk_io_read"`
-	DiskIOWrite  uint64    `json:"disk_io_write"`
-	
+	DiskTotal   uint64  `json:"disk_total"`
+	DiskUsed    uint64  `json:"disk_used"`
+	DiskUsage   float64 `json:"disk_usage"`
+	DiskIORead  uint64  `json:"disk_io_read"`
+	DiskIOWrite uint64  `json:"disk_io_write"`
+
 	// 网络指标
-	NetBytesSent uint64    `json:"net_bytes_sent"`
-	NetBytesRecv uint64    `json:"net_bytes_recv"`
-	
+	NetBytesSent uint64 `json:"net_bytes_sent"`
+	NetBytesRecv uint64 `json:"net_bytes_recv"`
+
 	// Go运行时指标
-	Goroutines   int       `json:"goroutines"`
-	GCGC         uint32    `json:"gc_gc"`
-	GCPause      uint64    `json:"gc_pause"`
-	
+	Goroutines int    `json:"goroutines"`
+	GCGC       uint32 `json:"gc_gc"`
+	GCPause    uint64 `json:"gc_pause"`
+
 	// 应用指标
-	RequestCount int64     `json:"request_count"`
-	ErrorCount   int64     `json:"error_count"`
-	AvgResponse  float64   `json:"avg_response_time"`
-	
+	RequestCount int64   `json:"request_count"`
+	ErrorCount   int64   `json:"error_count"`
+	AvgResponse  float64 `json:"avg_response_time"`
+
 	// 数据库指标
-	DBConnections int       `json:"db_connections"`
-	DBSlowQueries int       `json:"db_slow_queries"`
-	
+	DBConnections int `json:"db_connections"`
+	DBSlowQueries int `json:"db_slow_queries"`
+
 	// Redis指标
-	RedisUsedMemory uint64  `json:"redis_used_memory"`
-	RedisConnections int    `json:"redis_connections"`
-	RedisKeyspaceHits int64 `json:"redis_keyspace_hits"`
-	RedisKeyspaceMisses int64 `json:"redis_keyspace_misses"`
+	RedisUsedMemory     uint64 `json:"redis_used_memory"`
+	RedisConnections    int    `json:"redis_connections"`
+	RedisKeyspaceHits   int64  `json:"redis_keyspace_hits"`
+	RedisKeyspaceMisses int64  `json:"redis_keyspace_misses"`
 }
 
 // AlertRule 告警规则
 type AlertRule struct {
-	ID          string  `json:"id"`
-	Name        string  `json:"name"`
-	Metric      string  `json:"metric"`
-	Operator    string  `json:"operator"` // >, <, >=, <=, ==, !=
-	Threshold   float64 `json:"threshold"`
-	Duration    int     `json:"duration"` // 持续时间（秒）
-	Level       string  `json:"level"`   // info, warning, error, critical
-	Enabled     bool    `json:"enabled"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	Metric    string    `json:"metric"`
+	Operator  string    `json:"operator"` // >, <, >=, <=, ==, !=
+	Threshold float64   `json:"threshold"`
+	Duration  int       `json:"duration"` // 持续时间（秒）
+	Level     string    `json:"level"`    // info, warning, error, critical
+	Enabled   bool      `json:"enabled"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // Alert 告警
 type Alert struct {
-	ID          string    `json:"id"`
-	RuleID      string    `json:"rule_id"`
-	RuleName    string    `json:"rule_name"`
-	Level       string    `json:"level"`
-	Message     string    `json:"message"`
-	Value       float64   `json:"value"`
-	Threshold   float64   `json:"threshold"`
-	Status      string    `json:"status"` // active, resolved
-	StartedAt   time.Time `json:"started_at"`
-	ResolvedAt  *time.Time `json:"resolved_at,omitempty"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID         string     `json:"id"`
+	RuleID     string     `json:"rule_id"`
+	RuleName   string     `json:"rule_name"`
+	Level      string     `json:"level"`
+	Message    string     `json:"message"`
+	Value      float64    `json:"value"`
+	Threshold  float64    `json:"threshold"`
+	Status     string     `json:"status"` // active, resolved
+	StartedAt  time.Time  `json:"started_at"`
+	ResolvedAt *time.Time `json:"resolved_at,omitempty"`
+	CreatedAt  time.Time  `json:"created_at"`
 }
 
 // MonitoringService 监控服务
 type MonitoringService struct {
-	config      *config.Config
-	db          *gorm.DB
-	
+	config *config.Config
+	db     *gorm.DB
+
 	// Prometheus指标
 	requestTotal    *prometheus.CounterVec
 	requestDuration *prometheus.HistogramVec
 	errorTotal      *prometheus.CounterVec
-	
+
 	// 应用指标
-	requestCount    int64
-	errorCount      int64
-	responseTimes   []float64
-	
+	requestCount  int64
+	errorCount    int64
+	responseTimes []float64
+
 	// 系统指标缓存
-	lastMetrics     *SystemMetrics
-	metricsCache    []*SystemMetrics
-	
+	lastMetrics  *SystemMetrics
+	metricsCache []*SystemMetrics
+
 	// 告警相关
-	alertRules      []*AlertRule
-	activeAlerts    map[string]*Alert
-	alertHistory    []*Alert
-	
+	alertRules   []*AlertRule
+	activeAlerts map[string]*Alert
+	alertHistory []*Alert
+
 	// 并发控制
-	mu             sync.RWMutex
-	ctx            context.Context
-	cancel         context.CancelFunc
+	mu     sync.RWMutex
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 // NewMonitoringService 创建监控服务
 func NewMonitoringService(cfg *config.Config, db *gorm.DB) *MonitoringService {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	service := &MonitoringService{
-		config:       cfg,
-		db:          db,
-		requestCount: 0,
+		config:        cfg,
+		db:            db,
+		requestCount:  0,
 		responseTimes: make([]float64, 0, 1000),
-		metricsCache: make([]*SystemMetrics, 0, 1440), // 保存24小时数据
-		activeAlerts: make(map[string]*Alert),
-		alertHistory: make([]*Alert, 0),
-		ctx:          ctx,
-		cancel:       cancel,
+		metricsCache:  make([]*SystemMetrics, 0, 1440), // 保存24小时数据
+		activeAlerts:  make(map[string]*Alert),
+		alertHistory:  make([]*Alert, 0),
+		ctx:           ctx,
+		cancel:        cancel,
 	}
-	
+
 	// 初始化Prometheus指标
 	service.initPrometheusMetrics()
-	
+
 	// 加载告警规则
 	service.loadAlertRules()
-	
+
 	// 启动监控
 	go service.startMonitoring()
-	
+
 	return service
 }
 
@@ -164,7 +163,7 @@ func (s *MonitoringService) initPrometheusMetrics() {
 		},
 		[]string{"method", "endpoint", "status"},
 	)
-	
+
 	s.requestDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name:    "law_oa_http_request_duration_seconds",
@@ -173,7 +172,7 @@ func (s *MonitoringService) initPrometheusMetrics() {
 		},
 		[]string{"method", "endpoint"},
 	)
-	
+
 	s.errorTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "law_oa_http_errors_total",
@@ -181,7 +180,7 @@ func (s *MonitoringService) initPrometheusMetrics() {
 		},
 		[]string{"method", "endpoint", "error_type"},
 	)
-	
+
 	// 注册指标
 	prometheus.MustRegister(s.requestTotal)
 	prometheus.MustRegister(s.requestDuration)
@@ -192,10 +191,10 @@ func (s *MonitoringService) initPrometheusMetrics() {
 func (s *MonitoringService) startMonitoring() {
 	// 立即收集一次指标
 	s.collectMetrics()
-	
+
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-ticker.C:
@@ -211,49 +210,49 @@ func (s *MonitoringService) collectMetrics() {
 	metrics := &SystemMetrics{
 		Timestamp: time.Now(),
 	}
-	
+
 	// 收集CPU指标
 	cpuPercent, _ := cpu.Percent(time.Second, false)
 	if len(cpuPercent) > 0 {
 		metrics.CPUUsage = cpuPercent[0]
 	}
-	
+
 	cpuInfo, _ := cpu.Info()
 	if len(cpuInfo) > 0 {
 		metrics.CPUCount = cpuInfo[0].Cores
 		metrics.CPUFreq = float64(cpuInfo[0].Mhz)
 	}
-	
+
 	// 收集内存指标
 	memInfo, _ := mem.VirtualMemory()
 	metrics.MemoryTotal = memInfo.Total
 	metrics.MemoryUsed = memInfo.Used
 	metrics.MemoryUsage = memInfo.UsedPercent
-	
+
 	// 收集磁盘指标
 	diskInfo, _ := disk.Usage("/")
 	metrics.DiskTotal = diskInfo.Total
 	metrics.DiskUsed = diskInfo.Used
 	metrics.DiskUsage = diskInfo.UsedPercent
-	
+
 	// 收集网络指标
 	netIO, _ := net.IOCounters(false)
 	if len(netIO) > 0 {
 		metrics.NetBytesSent = netIO[0].BytesSent
 		metrics.NetBytesRecv = netIO[0].BytesRecv
 	}
-	
+
 	// 收集Go运行时指标
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 	metrics.Goroutines = runtime.NumGoroutine()
 	metrics.GCGC = m.NumGC
 	metrics.GCPause = m.PauseTotalNs
-	
+
 	// 收集应用指标
 	metrics.RequestCount = s.requestCount
 	metrics.ErrorCount = s.errorCount
-	
+
 	if len(s.responseTimes) > 0 {
 		var sum float64
 		for _, t := range s.responseTimes {
@@ -261,18 +260,18 @@ func (s *MonitoringService) collectMetrics() {
 		}
 		metrics.AvgResponse = sum / float64(len(s.responseTimes))
 	}
-	
+
 	// 收集数据库指标
 	s.collectDBMetrics(metrics)
-	
+
 	// 收集Redis指标
 	s.collectRedisMetrics(metrics)
-	
+
 	// 更新缓存
 	s.mu.Lock()
 	s.lastMetrics = metrics
 	s.metricsCache = append(s.metricsCache, metrics)
-	
+
 	// 保留最近24小时的数据
 	cutoff := time.Now().Add(-24 * time.Hour)
 	i := 0
@@ -283,11 +282,11 @@ func (s *MonitoringService) collectMetrics() {
 		i++
 	}
 	s.metricsCache = s.metricsCache[i:]
-	
+
 	// 检查告警
 	s.checkAlerts(metrics)
 	s.mu.Unlock()
-	
+
 	// 保存到数据库
 	go s.saveMetricsToDB(metrics)
 }
@@ -299,7 +298,7 @@ func (s *MonitoringService) collectDBMetrics(metrics *SystemMetrics) {
 		dbStats = db.Stats()
 		metrics.DBConnections = dbStats.OpenConnections
 	}
-	
+
 	// 这里可以添加慢查询统计
 	// metrics.DBSlowQueries = s.getSlowQueryCount()
 }
@@ -317,12 +316,12 @@ func (s *MonitoringService) checkAlerts(metrics *SystemMetrics) {
 		if !rule.Enabled {
 			continue
 		}
-		
+
 		value := s.getMetricValue(metrics, rule.Metric)
 		if value == nil {
 			continue
 		}
-		
+
 		triggered := false
 		switch rule.Operator {
 		case ">":
@@ -338,7 +337,7 @@ func (s *MonitoringService) checkAlerts(metrics *SystemMetrics) {
 		case "!=":
 			triggered = *value != rule.Threshold
 		}
-		
+
 		if triggered {
 			s.triggerAlert(rule, *value, metrics.Timestamp)
 		} else {
@@ -372,24 +371,24 @@ func (s *MonitoringService) getMetricValue(metrics *SystemMetrics, metric string
 // triggerAlert 触发告警
 func (s *MonitoringService) triggerAlert(rule *AlertRule, value float64, timestamp time.Time) {
 	alertID := fmt.Sprintf("%s_%d", rule.ID, timestamp.Unix())
-	
+
 	if _, exists := s.activeAlerts[alertID]; !exists {
 		alert := &Alert{
-			ID:         alertID,
-			RuleID:     rule.ID,
-			RuleName:   rule.Name,
-			Level:      rule.Level,
-			Message:    fmt.Sprintf("%s: %.2f %s %.2f", rule.Name, value, rule.Operator, rule.Threshold),
-			Value:      value,
-			Threshold:  rule.Threshold,
-			Status:     "active",
-			StartedAt:  timestamp,
-			CreatedAt:  timestamp,
+			ID:        alertID,
+			RuleID:    rule.ID,
+			RuleName:  rule.Name,
+			Level:     rule.Level,
+			Message:   fmt.Sprintf("%s: %.2f %s %.2f", rule.Name, value, rule.Operator, rule.Threshold),
+			Value:     value,
+			Threshold: rule.Threshold,
+			Status:    "active",
+			StartedAt: timestamp,
+			CreatedAt: timestamp,
 		}
-		
+
 		s.activeAlerts[alertID] = alert
 		s.alertHistory = append(s.alertHistory, alert)
-		
+
 		// 发送告警通知
 		go s.sendAlertNotification(alert)
 	}
@@ -417,19 +416,19 @@ func (s *MonitoringService) sendAlertNotification(alert *Alert) {
 func (s *MonitoringService) RecordRequest(method, endpoint string, statusCode int, duration time.Duration) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	s.requestCount++
 	s.responseTimes = append(s.responseTimes, duration.Seconds())
-	
+
 	// 保留最近1000个响应时间
 	if len(s.responseTimes) > 1000 {
 		s.responseTimes = s.responseTimes[1:]
 	}
-	
+
 	// 记录Prometheus指标
 	s.requestTotal.WithLabelValues(method, endpoint, strconv.Itoa(statusCode)).Inc()
 	s.requestDuration.WithLabelValues(method, endpoint).Observe(duration.Seconds())
-	
+
 	if statusCode >= 400 {
 		s.errorCount++
 		errorType := "client_error"
@@ -451,7 +450,7 @@ func (s *MonitoringService) GetSystemMetrics() *SystemMetrics {
 func (s *MonitoringService) GetMetricsHistory(start, end time.Time) []*SystemMetrics {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	
+
 	var result []*SystemMetrics
 	for _, metrics := range s.metricsCache {
 		if metrics.Timestamp.After(start) && metrics.Timestamp.Before(end) {
@@ -465,7 +464,7 @@ func (s *MonitoringService) GetMetricsHistory(start, end time.Time) []*SystemMet
 func (s *MonitoringService) GetActiveAlerts() []*Alert {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	
+
 	alerts := make([]*Alert, 0, len(s.activeAlerts))
 	for _, alert := range s.activeAlerts {
 		alerts = append(alerts, alert)
@@ -477,11 +476,11 @@ func (s *MonitoringService) GetActiveAlerts() []*Alert {
 func (s *MonitoringService) GetAlertHistory(limit int) []*Alert {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	
+
 	if limit <= 0 || limit > len(s.alertHistory) {
 		limit = len(s.alertHistory)
 	}
-	
+
 	return s.alertHistory[len(s.alertHistory)-limit:]
 }
 
@@ -549,10 +548,10 @@ func float64Ptr(f float64) *float64 {
 func (s *MonitoringService) PrometheusMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
-		
+
 		// 处理请求
 		c.Next()
-		
+
 		// 记录指标
 		duration := time.Since(start)
 		s.RecordRequest(c.Request.Method, c.FullPath(), c.Writer.Status(), duration)

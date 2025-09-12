@@ -13,7 +13,7 @@ import (
 
 func main() {
 	var (
-		_             = flag.String("config", "config.yaml", "配置文件路径")
+		_              = flag.String("config", "config.yaml", "配置文件路径")
 		migrationsPath = flag.String("migrations", "./migrations", "迁移文件目录")
 		command        = flag.String("command", "up", "迁移命令: up, down, steps, goto, version, force, drop, status")
 		steps          = flag.Int("steps", 0, "迁移步数（用于steps命令）")
@@ -94,7 +94,7 @@ func main() {
 			}
 			return "正常"
 		}())
-		
+
 		// 显示已应用的迁移
 		migrations, migrationsErr := migrator.GetAppliedMigrations()
 		if migrationsErr != nil {
@@ -134,7 +134,7 @@ func createMigrationFiles(migrationsPath, name string) error {
 		if file.IsDir() {
 			continue
 		}
-		
+
 		fileName := file.Name()
 		if len(fileName) >= 6 {
 			versionStr := fileName[:6]
@@ -150,7 +150,7 @@ func createMigrationFiles(migrationsPath, name string) error {
 	// 创建up文件
 	upFile := fmt.Sprintf("%s/%s_%s.up.sql", migrationsPath, versionStr, name)
 	upContent := fmt.Sprintf("-- %s up migration\n\n-- Add your SQL statements here\n", name)
-	
+
 	if err := os.WriteFile(upFile, []byte(upContent), 0644); err != nil {
 		return fmt.Errorf("创建up文件失败: %w", err)
 	}
@@ -158,7 +158,7 @@ func createMigrationFiles(migrationsPath, name string) error {
 	// 创建down文件
 	downFile := fmt.Sprintf("%s/%s_%s.down.sql", migrationsPath, versionStr, name)
 	downContent := fmt.Sprintf("-- %s down migration\n\n-- Add your rollback SQL statements here\n", name)
-	
+
 	if err := os.WriteFile(downFile, []byte(downContent), 0644); err != nil {
 		return fmt.Errorf("创建down文件失败: %w", err)
 	}

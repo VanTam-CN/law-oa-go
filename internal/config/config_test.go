@@ -344,7 +344,7 @@ func TestConfig_GetPort(t *testing.T) {
 func TestConfig_Load_WithMockFactory(t *testing.T) {
 	t.Run("使用Mock工厂测试配置加载", func(t *testing.T) {
 		_ = mock.NewTestDataFactory()
-		
+
 		// 保存当前环境变量
 		originalEnv := saveEnvironmentVariables()
 		defer restoreEnvironmentVariables(originalEnv)
@@ -458,7 +458,7 @@ func clearConfigEnvironmentVariables() {
 // convertMapToYAML 将map转换为YAML字符串（简化版）
 func convertMapToYAML(data map[string]interface{}) string {
 	result := ""
-	
+
 	for key, value := range data {
 		switch v := value.(type) {
 		case string:
@@ -472,7 +472,7 @@ func convertMapToYAML(data map[string]interface{}) string {
 			}
 		}
 	}
-	
+
 	return result
 }
 
@@ -486,7 +486,7 @@ func BenchmarkConfig_Load(b *testing.B) {
 	os.Setenv("JWT_SECRET", "benchmark-jwt-secret-that-is-at-least-32-characters-long")
 
 	b.ResetTimer()
-	
+
 	for i := 0; i < b.N; i++ {
 		_, err := Load()
 		if err != nil {
@@ -510,7 +510,7 @@ func BenchmarkConfig_GetDatabaseDSN(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	
+
 	for i := 0; i < b.N; i++ {
 		_ = config.GetDatabaseDSN()
 	}
@@ -525,7 +525,7 @@ func BenchmarkConfig_GetRedisAddr(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	
+
 	for i := 0; i < b.N; i++ {
 		_ = config.GetRedisAddr()
 	}

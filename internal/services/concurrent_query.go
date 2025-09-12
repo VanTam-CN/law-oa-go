@@ -3,13 +3,12 @@ package services
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"sync"
 	"time"
 
-	"law-oa-go/internal/models"
-
 	"gorm.io/gorm"
-	"log/slog"
+	"law-oa-go/internal/models"
 )
 
 // QueryResult 查询结果
@@ -46,7 +45,7 @@ func (qe *QueryExecutor) ExecuteConcurrentQueries(ctx context.Context, queries .
 		wg.Add(1)
 		go func(idx int, q func(context.Context) QueryResult[any]) {
 			defer wg.Done()
-			
+
 			result := q(ctx)
 			if result.Err != nil {
 				select {
@@ -123,11 +122,11 @@ func (s *CaseService) GetCaseStatsOptimized(ctx context.Context) (*CaseStatsResp
 	}
 
 	stats := &CaseStatsResponse{
-		TotalCases:      results[0].(int64),
-		ActiveCases:     results[1].(int64),
-		PendingCases:    results[2].(int64),
-		ClosedCases:     results[3].(int64),
-		UrgentCases:     results[4].(int64),
+		TotalCases:   results[0].(int64),
+		ActiveCases:  results[1].(int64),
+		PendingCases: results[2].(int64),
+		ClosedCases:  results[3].(int64),
+		UrgentCases:  results[4].(int64),
 	}
 
 	return stats, nil
