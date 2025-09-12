@@ -1,0 +1,222 @@
+# Kubernetes命名空间
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: law-oa
+  labels:
+    name: law-oa
+---
+# ConfigMap配置
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: law-oa-config
+  namespace: law-oa
+data:
+  config.yaml: |
+    environment: production
+    port: "8080"
+    log_level: info
+    enable_swagger: false
+    
+    database:
+      host: mysql-service
+      port: "3306"
+      username: root
+      password: password
+      database: law_oa
+      charset: utf8mb4
+      parse_time: true
+      loc: Local
+    
+    redis:
+      host: redis-service
+      port: "6379"
+      password: ""
+      db: 0
+    
+    elasticsearch:
+      host: http://elasticsearch-service:9200
+      username: ""
+      password: ""
+    
+    jwt:
+      secret: your-jwt-secret-key-change-in-production
+      expire: 3600
+---
+# Secret配置
+apiVersion: v1
+kind: Secret
+metadata:
+  name: law-oa-secrets
+  namespace: law-oa
+type: Opaque
+data:
+  jwt-secret: eW91ci1qd3Qtc2VjcmV0LWtleS1jaGFuZ2UtaW4tcHJvZHVjdGlvbg==
+  db-password: cGFzc3dvcmQ=
+  redis-password: ""
+---
+# 应用部署
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: law-oa-app
+  namespace: law-oa
+  labels:
+    app: law-oa-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: law-oa-app
+  template:
+    metadata:
+      labels:
+        app: law-oa-app
+    spec:
+      containers:
+      - name: law-oa-app
+        image: law-oa-go:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: GIN_MODE
+          value: "release"
+        - name: PORT
+          value: "8080"
+        - name: DB_HOST
+          value: "mysql-service"
+        - name: DB_PORT
+          value: "3306"
+        - name: DB_USER
+          value: "root"
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: law-oa-secrets
+              key: db-password
+        - name: DB_NAME
+          value: "law_oa"
+        - name: REDIS_HOST
+          value: "redis-service"
+        - name: REDIS_PORT
+          value: "6379"
+        - name: ES_HOST
+          value: "http://elasticsearch-service:9200"
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: law-oa-secrets
+              key: jwt-secret
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config.yaml
+          subPath: config.yaml
+        - name: logs-volume
+          mountPath: /app/logs
+      volumes:
+      - name: config-volume
+        configMap:
+          name: law-oa-config
+      - name: logs-volume
+        emptyDir: {}
+      restartPolicy: Always
+---
+# 服务暴露
+apiVersion: v1
+kind: Service
+metadata:
+  name: law-oa-service
+  namespace: law-oa
+  labels:
+    app: law-oa-app
+spec:
+  selector:
+    app: law-oa-app
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+  type: ClusterIP
+---
+# Ingress配置
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: law-oa-ingress
+  namespace: law-oa
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+  - hosts:
+    - api.lawoa.com
+    secretName: lawoa-tls
+  rules:
+  - host: api.lawoa.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: law-oa-service
+            port:
+              number: 80
+---
+# HPA自动扩缩容
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: law-oa-hpa
+  namespace: law-oa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: law-oa-app
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

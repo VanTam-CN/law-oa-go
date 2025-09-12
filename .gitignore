@@ -1,0 +1,228 @@
+# 二进制文件
+main
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# 测试二进制文件
+*.test
+
+# 输出目录
+/bin/
+/pkg/
+
+# Go模块依赖
+vendor/
+
+# Go工作空间
+go.work
+
+# 环境配置文件
+.env
+.env.local
+.env.production
+.env.development
+
+# 日志文件
+*.log
+logs/
+log/
+
+# 配置文件
+config.yaml
+config.local.yaml
+config.production.yaml
+
+# 临时文件
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# IDE和编辑器文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS系统文件
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux系统文件
+*~
+
+# Windows系统文件
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# 上传文件
+uploads/
+upload/
+static/upload/
+static/uploads/
+
+# 缓存文件
+cache/
+tmp/
+temp/
+
+# 构建输出
+dist/
+build/
+out/
+
+# Docker相关
+.dockerignore
+
+# Kubernetes配置
+k8s/secrets/
+*.kubeconfig
+
+# 证书文件
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# 测试覆盖率文件
+coverage.out
+coverage.html
+coverage.xml
+
+# 性能测试结果
+bench.out
+benchmark.txt
+
+# 文档生成
+docs/api/
+docs/swagger/
+
+# 备份文件
+*.bak
+*.backup
+
+# 压缩文件
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Node.js (如果有前端)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python (如果有脚本)
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# 监控和日志收集
+*.pid
+*.seed
+*.pid.lock
+
+# 运行时数据
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# 日志聚合
+*.log
+logs/
+
+# Prometheus指标数据
+metrics/
+prometheus/
+
+# Jaeger追踪数据
+jaeger/
+
+# 本地开发数据库
+*.sqlite
+*.db
+
+# AWS配置文件
+.aws/
+credentials
+
+# Google Cloud配置文件
+.gcloud/
+
+# 备份和迁移
+backup/
+migrations/backup/
+
+# 第三方工具配置
+.air.toml
+.realize.yaml
+Compose.yaml
+compose.yaml
+
+# 热重载工具
+air/
+.watcher/
+
+# 测试数据
+test/data/
+testdata/
+
+# 文档生成工具
+docs/swagger.json
+docs/swagger.yaml
+
+# API密钥和敏感信息
+secrets/
+keys/
+
+# 本地配置
+.local/
+.local.properties
+
+# 开发工具配置
+.vscode/settings.json
+.idea/workspace.xml
+
+# 系统文件
+.fuse_hidden*
+
+# 目录文件
+.directory
+
+# KDE菜单文件
+*.menu
+
+# 桌面文件
+Desktop/
+
+# 缩略图文件
+Thumbs.db
+
+# 文件属性文件或文件夹
+Desktop.ini
+
+# 回收站文件
+$RECYCLE.BIN/
+
+# Windows链接文件
+*.lnk

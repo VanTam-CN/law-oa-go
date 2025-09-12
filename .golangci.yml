@@ -1,0 +1,291 @@
+# GolangCI-Lint 配置文件
+# 适用于法务OA系统的Go代码质量检查
+
+run:
+  # 超时时间
+  timeout: 5m
+  # 并发数
+  concurrency: 4
+  # 跳过的目录
+  skip-dirs:
+    - vendor
+    - tmp
+    - bin
+    - docs
+    - migrations
+  # 跳过的文件
+  skip-files:
+    - ".*\\.pb\\.go$"
+    - ".*_test\\.go$"
+  # Go版本
+  go: "1.23"
+
+# 输出配置
+output:
+  # 输出格式: colored-line-number|line-number|json|tab|checkstyle|code-climate
+  format: colored-line-number
+  # 打印行号
+  print-issued-lines: true
+  # 打印检查器名称
+  print-linter-name: true
+  # 去重
+  uniq-by-line: true
+
+# 问题配置
+issues:
+  # 排除默认的排除规则
+  exclude-use-default: false
+  # 最大问题数量，0表示无限制
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  # 新代码检查
+  new: false
+  # 排除规则
+  exclude-rules:
+    # 排除测试文件的某些检查
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+        - funlen
+    # 排除main.go的某些检查
+    - path: main\.go
+      linters:
+        - gochecknoinits
+    # 排除配置文件的某些检查
+    - path: config/
+      linters:
+        - gochecknoglobals
+
+# 启用的检查器
+linters:
+  # 禁用所有默认检查器
+  disable-all: true
+  # 启用的检查器
+  enable:
+    # 基础检查
+    - errcheck      # 检查未处理的错误
+    - gosimple      # 简化代码建议
+    - govet         # Go官方检查器
+    - ineffassign   # 检查无效赋值
+    - staticcheck   # 静态分析检查
+    - typecheck     # 类型检查
+    - unused        # 检查未使用的代码
+    
+    # 代码风格
+    - gofmt         # 格式化检查
+    - goimports     # import排序检查
+    - gci           # import分组检查
+    - misspell      # 拼写检查
+    - whitespace    # 空白字符检查
+    
+    # 代码质量
+    - gocyclo       # 圈复杂度检查
+    - funlen        # 函数长度检查
+    - gocognit      # 认知复杂度检查
+    - nestif        # 嵌套if检查
+    - dupl          # 重复代码检查
+    
+    # 安全检查
+    - gosec         # 安全检查
+    - bodyclose     # HTTP响应体关闭检查
+    - sqlclosecheck # SQL连接关闭检查
+    
+    # 错误处理
+    - errorlint     # 错误处理检查
+    - errname       # 错误命名检查
+    - wrapcheck     # 错误包装检查
+    
+    # 性能检查
+    - prealloc      # 预分配检查
+    - makezero      # make零值检查
+    
+    # 最佳实践
+    - goconst       # 常量检查
+    - gocritic      # 代码评审检查
+    - revive        # 代码风格检查
+    - stylecheck    # 样式检查
+    - unconvert     # 不必要的类型转换
+    - unparam       # 未使用的参数
+
+# 检查器配置
+linters-settings:
+  # 错误检查配置
+  errcheck:
+    # 检查类型断言
+    check-type-assertions: true
+    # 检查空白标识符
+    check-blank: true
+    # 排除的函数
+    exclude-functions:
+      - io/ioutil.ReadFile
+      - io.Copy(*bytes.Buffer)
+      - io.Copy(os.Stdout)
+
+  # 圈复杂度配置
+  gocyclo:
+    # 最小复杂度
+    min-complexity: 15
+
+  # 函数长度配置
+  funlen:
+    # 最大行数
+    lines: 80
+    # 最大语句数
+    statements: 50
+
+  # 认知复杂度配置
+  gocognit:
+    # 最小复杂度
+    min-complexity: 20
+
+  # 嵌套if配置
+  nestif:
+    # 最小复杂度
+    min-complexity: 5
+
+  # 重复代码配置
+  dupl:
+    # 最小重复行数
+    threshold: 100
+
+  # 安全检查配置
+  gosec:
+    # 排除的规则
+    excludes:
+      - G204  # 子进程启动
+      - G304  # 文件路径
+    # 配置
+    config:
+      G301: "0644"
+      G302: "0644"
+      G306: "0644"
+
+  # 常量检查配置
+  goconst:
+    # 最小长度
+    min-len: 3
+    # 最小出现次数
+    min-occurrences: 3
+    # 忽略测试文件
+    ignore-tests: true
+
+  # 代码评审配置
+  gocritic:
+    # 启用的检查
+    enabled-checks:
+      - appendAssign
+      - assignOp
+      - badCall
+      - badCond
+      - captLocal
+      - caseOrder
+      - defaultCaseOrder
+      - dupArg
+      - dupBranchBody
+      - dupCase
+      - dupSubExpr
+      - elseif
+      - emptyFallthrough
+      - flagDeref
+      - ifElseChain
+      - regexpMust
+      - singleCaseSwitch
+      - sloppyLen
+      - switchTrue
+      - typeSwitchVar
+      - underef
+      - unlambda
+      - unslice
+      - valSwap
+      - wrapperFunc
+
+  # revive配置
+  revive:
+    # 规则
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: exported
+      - name: if-return
+      - name: increment-decrement
+      - name: var-naming
+      - name: var-declaration
+      - name: package-comments
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: errorf
+      - name: empty-block
+      - name: superfluous-else
+      - name: unused-parameter
+      - name: unreachable-code
+      - name: redefines-builtin-id
+
+  # 样式检查配置
+  stylecheck:
+    # 检查
+    checks: ["all", "-ST1000", "-ST1003", "-ST1016", "-ST1020", "-ST1021", "-ST1022"]
+
+  # import检查配置
+  gci:
+    # 本地模块前缀
+    local-prefixes: github.com/your-org/law-oa-go
+
+  # 拼写检查配置
+  misspell:
+    # 语言
+    locale: US
+    # 忽略的单词
+    ignore-words:
+      - colour
+      - centre
+      - licence
+
+  # 预分配检查配置
+  prealloc:
+    # 简单模式
+    simple: true
+    # 范围循环
+    range-loops: true
+    # for循环
+    for-loops: false
+
+  # 错误包装检查配置
+  wrapcheck:
+    # 忽略的包
+    ignorePkgs:
+      - github.com/pkg/errors
+    # 忽略的接口
+    ignoreTypes:
+      - .+Error
+      - error
+    # 忽略的签名
+    ignoreSigs:
+      - .Errorf(
+      - errors.New(
+      - errors.Unwrap(
+      - .Wrap(
+      - .Wrapf(
+
+# 严重性配置
+severity:
+  # 默认严重性
+  default-severity: error
+  # 规则严重性
+  rules:
+    - linters:
+        - dupl
+      severity: info
+    - linters:
+        - goconst
+      severity: info
