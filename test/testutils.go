@@ -3,6 +3,7 @@ package test
 import (
 	"database/sql/driver"
 	"encoding/json"
+	"net/http"
 	"testing"
 	"time"
 
@@ -59,11 +60,15 @@ type testResponseWriter struct {
 	headers    map[string]string
 }
 
-func (w *testResponseWriter) Header() gin.Header {
+func (w *testResponseWriter) Header() http.Header {
 	if w.headers == nil {
 		w.headers = make(map[string]string)
 	}
-	return gin.Header(w.headers)
+	header := make(http.Header)
+	for k, v := range w.headers {
+		header[k] = []string{v}
+	}
+	return header
 }
 
 func (w *testResponseWriter) Write(data []byte) (int, error) {

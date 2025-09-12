@@ -35,17 +35,17 @@ func NewClientHandler(clientService *services.ClientService) *ClientHandler {
 func (h *ClientHandler) CreateClient(c *gin.Context) {
 	var req services.CreateClientRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.BadRequest(c, "Invalid request format", err.Error())
+		common.BadRequest(c, "Invalid request format: "+err.Error())
 		return
 	}
 
 	client, err := h.clientService.CreateClient(c.Request.Context(), &req)
 	if err != nil {
 		if common.IsValidationError(err) {
-			common.BadRequest(c, "Validation failed", err.Error())
+			common.BadRequest(c, "Validation failed: "+err.Error())
 			return
 		}
-		common.InternalServerError(c, "Failed to create client", err.Error())
+		common.InternalServerError(c, "Failed to create client: "+err.Error())
 		return
 	}
 
@@ -70,17 +70,17 @@ func (h *ClientHandler) GetClient(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		common.BadRequest(c, "Invalid client ID", "Client ID must be a valid number")
+		common.BadRequest(c, "Invalid client ID: Client ID must be a valid number")
 		return
 	}
 
 	client, err := h.clientService.GetClientByID(c.Request.Context(), uint(id))
 	if err != nil {
 		if common.IsNotFoundError(err) {
-			common.NotFound(c, "Client not found", "The requested client does not exist")
+			common.NotFound(c, "Client not found: The requested client does not exist")
 			return
 		}
-		common.InternalServerError(c, "Failed to get client", err.Error())
+		common.InternalServerError(c, "Failed to get client: "+err.Error())
 		return
 	}
 
@@ -106,27 +106,27 @@ func (h *ClientHandler) UpdateClient(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		common.BadRequest(c, "Invalid client ID", "Client ID must be a valid number")
+		common.BadRequest(c, "Invalid client ID: Client ID must be a valid number")
 		return
 	}
 
 	var req services.UpdateClientRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.BadRequest(c, "Invalid request format", err.Error())
+		common.BadRequest(c, "Invalid request format: "+err.Error())
 		return
 	}
 
 	client, err := h.clientService.UpdateClient(c.Request.Context(), uint(id), &req)
 	if err != nil {
 		if common.IsNotFoundError(err) {
-			common.NotFound(c, "Client not found", "The requested client does not exist")
+			common.NotFound(c, "Client not found: The requested client does not exist")
 			return
 		}
 		if common.IsValidationError(err) {
-			common.BadRequest(c, "Validation failed", err.Error())
+			common.BadRequest(c, "Validation failed: "+err.Error())
 			return
 		}
-		common.InternalServerError(c, "Failed to update client", err.Error())
+		common.InternalServerError(c, "Failed to update client: "+err.Error())
 		return
 	}
 
@@ -151,17 +151,17 @@ func (h *ClientHandler) DeleteClient(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		common.BadRequest(c, "Invalid client ID", "Client ID must be a valid number")
+		common.BadRequest(c, "Invalid client ID: Client ID must be a valid number")
 		return
 	}
 
 	err = h.clientService.DeleteClient(c.Request.Context(), uint(id))
 	if err != nil {
 		if common.IsNotFoundError(err) {
-			common.NotFound(c, "Client not found", "The requested client does not exist")
+			common.NotFound(c, "Client not found: The requested client does not exist")
 			return
 		}
-		common.InternalServerError(c, "Failed to delete client", err.Error())
+		common.InternalServerError(c, "Failed to delete client: "+err.Error())
 		return
 	}
 
@@ -187,13 +187,13 @@ func (h *ClientHandler) DeleteClient(c *gin.Context) {
 func (h *ClientHandler) ListClients(c *gin.Context) {
 	var req services.ClientListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		common.BadRequest(c, "Invalid query parameters", err.Error())
+		common.BadRequest(c, "Invalid query parameters: "+err.Error())
 		return
 	}
 
 	clients, total, err := h.clientService.ListClients(c.Request.Context(), &req)
 	if err != nil {
-		common.InternalServerError(c, "Failed to list clients", err.Error())
+		common.InternalServerError(c, "Failed to list clients: "+err.Error())
 		return
 	}
 
@@ -210,7 +210,7 @@ func (h *ClientHandler) ListClients(c *gin.Context) {
 		Data:     clients,
 		Total:    total,
 		Page:     page,
-		PageSize: pageSize,
+		Size:    pageSize,
 	}
 
 	c.JSON(http.StatusOK, response)
@@ -230,7 +230,7 @@ func (h *ClientHandler) ListClients(c *gin.Context) {
 func (h *ClientHandler) GetClientStats(c *gin.Context) {
 	stats, err := h.clientService.GetClientStats(c.Request.Context())
 	if err != nil {
-		common.InternalServerError(c, "Failed to get client statistics", err.Error())
+		common.InternalServerError(c, "Failed to get client statistics: "+err.Error())
 		return
 	}
 

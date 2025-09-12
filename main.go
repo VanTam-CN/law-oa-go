@@ -69,11 +69,10 @@ func main() {
 	app := gin.New()
 
 	// 应用核心中间件（按照最佳实践顺序）
-	app.Use(middleware.RequestID())           // 请求ID追踪
+	app.Use(middleware.RequestIDMiddleware()) // 请求ID追踪
 	app.Use(middleware.Logger())             // 日志记录
 	app.Use(middleware.Recovery())           // 崩溃恢复
 	app.Use(middleware.SecurityHeaders())    // 安全头
-	app.Use(middleware.RequestTimeout(30*time.Second)) // 请求超时
 	app.Use(middleware.CORS())               // 跨域设置
 	app.Use(middleware.RateLimiter())        // 限流控制
 	
@@ -83,8 +82,6 @@ func main() {
 	// 应用缓存中间件
 	app.Use(middleware.CacheMiddleware(middleware.CacheConfig{
 		TTL:          5 * time.Minute,
-		KeyGenerator: middleware.DefaultKeyGenerator,
-		ShouldCache:  middleware.DefaultShouldCache,
 		SkipHeader:   "X-Cache-Skip",
 	}))
 

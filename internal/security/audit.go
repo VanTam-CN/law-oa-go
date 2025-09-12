@@ -2,12 +2,9 @@ package security
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"law-oa-go/internal/cache"
-	"law-oa-go/internal/models"
 	"log"
-	"net/http"
 	"strings"
 	"time"
 
@@ -87,7 +84,7 @@ type AuditEvent struct {
 }
 
 // AuditConfig 审计配置
-type AuditConfig struct {
+type AuditLogConfig struct {
 	EnableAuditLog          bool
 	LogDatabase            bool
 	LogToFile               bool
@@ -265,13 +262,18 @@ func (s *AuditService) checkLoginFailures(event *AuditEvent) {
 	key := fmt.Sprintf("login_failures:%s:%s", event.IPAddress, event.Username)
 	
 	var count int
-	if err := s.cacheService.Get(context.Background(), key, &count); err == nil {
-		count++
+	if s.cacheService != nil {
+		if err := s.cacheService.Get(context.Background(), key, &count); err == nil {
+			count++
+		} else {
+			count = 1
+		}
+		s.cacheService.Set(context.Background(), key, count, time.Hour)
 	} else {
-		count = 1
+		// 没有缓存服务，直接记录日志
+		log.Printf("LOGIN FAILURE ALERT: User %s failed login from %s (no cache available)", event.Username, event.IPAddress)
+		return
 	}
-	
-	s.cacheService.Set(context.Background(), key, count, time.Hour)
 	
 	// 如果5分钟内失败超过5次，触发告警
 	if count >= 5 {
@@ -589,6 +591,11 @@ func (s *AuditService) QueryAuditLogs(filter AuditLogFilter) ([]*AuditEvent, int
 	defer func() {
 		auditLogDuration.WithLabelValues("query_logs").Observe(time.Since(start).Seconds())
 	}()
+
+	// 如果数据库日志记录被禁用，返回空结果
+	if !s.config.LogDatabase {
+		return []*AuditEvent{}, int64(0), nil
+	}
 
 	var events []*AuditEvent
 	var total int64

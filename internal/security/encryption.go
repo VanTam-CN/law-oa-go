@@ -14,7 +14,6 @@ import (
 	"errors"
 	"fmt"
 	"hash"
-	"io"
 	"law-oa-go/internal/cache"
 	"law-oa-go/internal/models"
 	"regexp"
@@ -47,7 +46,7 @@ var (
 )
 
 // EncryptionConfig 加密配置
-type EncryptionConfig struct {
+type EncryptionServiceConfig struct {
 	AESKey             string
 	RSAPrivateKey      string
 	RSAPublicKey       string
@@ -236,8 +235,8 @@ func (s *EncryptionService) DecryptAES(ciphertext string) (string, error) {
 		return "", errors.New("ciphertext too short")
 	}
 
-	nonce, ciphertext := data[:nonceSize], data[nonceSize:]
-	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
+	nonce, ciphertextBytes := data[:nonceSize], data[nonceSize:]
+	plaintext, err := gcm.Open(nil, nonce, ciphertextBytes, nil)
 	if err != nil {
 		encryptionErrors.WithLabelValues("aes_decrypt", "decryption").Inc()
 		return "", fmt.Errorf("failed to decrypt: %w", err)
@@ -467,12 +466,12 @@ func (s *EncryptionService) EncryptUserData(userData *models.User) error {
 	}
 
 	// 加密自定义字段
-	if userData.Remark != "" {
-		encrypted, err := s.EncryptField(userData.Remark, "remark")
+	if userData.Phone != "" {
+		encrypted, err := s.EncryptField(userData.Phone, "remark")
 		if err != nil {
 			return fmt.Errorf("failed to encrypt remark: %w", err)
 		}
-		userData.Remark = encrypted
+		userData.Phone = encrypted
 	}
 
 	return nil
@@ -507,12 +506,12 @@ func (s *EncryptionService) DecryptUserData(userData *models.User) error {
 	}
 
 	// 解密自定义字段
-	if userData.Remark != "" {
-		decrypted, err := s.DecryptField(userData.Remark, "remark")
+	if userData.Phone != "" {
+		decrypted, err := s.DecryptField(userData.Phone, "remark")
 		if err != nil {
 			return fmt.Errorf("failed to decrypt remark: %w", err)
 		}
-		userData.Remark = decrypted
+		userData.Phone = decrypted
 	}
 
 	return nil
@@ -573,12 +572,12 @@ func (s *EncryptionService) RotateKey() error {
 		return fmt.Errorf("failed to generate new key: %w", err)
 	}
 
-	// 保存旧密钥用于解密现有数据
-	oldKey := s.aesKey
 	s.aesKey = newKey
 
 	// 清除相关缓存
-	s.cacheService.ClearPattern(nil, "encryption:*")
+	if s.cacheService != nil {
+		s.cacheService.ClearPattern(nil, "encryption:*")
+	}
 
 	// 记录密钥旋转事件
 	// TODO: 记录到安全审计日志

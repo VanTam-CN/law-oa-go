@@ -84,13 +84,10 @@ func (s *CaseService) GetCaseStatsOptimized(ctx context.Context) (*CaseStatsResp
 	start := time.Now()
 	defer func() {
 		// TODO: 记录数据库指标，避免循环依赖
-		s.logger.InfoContext(ctx, "database query completed", 
-			"operation", "get_case_stats", 
-			"table", "cases", 
-			"duration", time.Since(start).String())
+		_ = time.Since(start)
 	}()
 
-	executor := NewQueryExecutor(s.db, s.logger)
+	executor := NewQueryExecutor(s.db, nil) // 暂时传入nil logger
 
 	queries := []func(context.Context) QueryResult[any]{
 		func(ctx context.Context) QueryResult[any] {

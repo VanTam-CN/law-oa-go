@@ -1,7 +1,9 @@
 package middleware
 
 import (
+	"crypto/rand"
 	"log/slog"
+	"math/big"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -15,6 +17,17 @@ type responseLogger struct {
 func (r *responseLogger) Write(b []byte) (int, error) {
 	*r.body = append(*r.body, b...)
 	return r.ResponseWriter.Write(b)
+}
+
+// generateRandomString 生成随机字符串
+func generateRandomString(length int) string {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	b := make([]byte, length)
+	for i := range b {
+		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
+		b[i] = charset[n.Int64()]
+	}
+	return string(b)
 }
 
 func LoggingMiddleware(logger *slog.Logger) gin.HandlerFunc {

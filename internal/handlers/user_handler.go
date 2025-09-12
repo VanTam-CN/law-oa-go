@@ -40,13 +40,13 @@ func NewUserHandler(userService *services.UserService) *UserHandler {
 func (h *UserHandler) ListUsers(c *gin.Context) {
 	var req services.UserListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		common.BadRequest(c, "Invalid query parameters", err.Error())
+		common.BadRequest(c, "Invalid query parameters: "+err.Error())
 		return
 	}
 
 	users, total, err := h.userService.ListUsers(c.Request.Context(), &req)
 	if err != nil {
-		common.InternalServerError(c, "Failed to list users", err.Error())
+		common.InternalServerError(c, "Failed to list users: "+err.Error())
 		return
 	}
 
@@ -60,10 +60,10 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 	}
 
 	response := common.PageResponse{
-		Data:     users,
-		Total:    total,
-		Page:     page,
-		PageSize: pageSize,
+		Data:  users,
+		Total: total,
+		Page:  page,
+		Size:  pageSize,
 	}
 
 	c.JSON(http.StatusOK, response)
@@ -88,17 +88,17 @@ func (h *UserHandler) GetUser(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		common.BadRequest(c, "Invalid user ID", "User ID must be a valid number")
+		common.BadRequest(c, "Invalid user ID: User ID must be a valid number")
 		return
 	}
 
 	user, err := h.userService.GetUserProfile(c.Request.Context(), uint(id))
 	if err != nil {
 		if common.IsNotFoundError(err) {
-			common.NotFound(c, "User not found", "The requested user does not exist")
+			common.NotFound(c, "User not found: The requested user does not exist")
 			return
 		}
-		common.InternalServerError(c, "Failed to get user", err.Error())
+		common.InternalServerError(c, "Failed to get user: "+err.Error())
 		return
 	}
 
@@ -122,17 +122,17 @@ func (h *UserHandler) GetUser(c *gin.Context) {
 func (h *UserHandler) CreateUser(c *gin.Context) {
 	var req services.CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.BadRequest(c, "Invalid request format", err.Error())
+		common.BadRequest(c, "Invalid request format: "+err.Error())
 		return
 	}
 
 	user, err := h.userService.CreateUser(c.Request.Context(), &req)
 	if err != nil {
 		if common.IsValidationError(err) {
-			common.BadRequest(c, "Validation failed", err.Error())
+			common.BadRequest(c, "Validation failed: "+err.Error())
 			return
 		}
-		common.InternalServerError(c, "Failed to create user", err.Error())
+		common.InternalServerError(c, "Failed to create user: "+err.Error())
 		return
 	}
 
@@ -159,27 +159,27 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		common.BadRequest(c, "Invalid user ID", "User ID must be a valid number")
+		common.BadRequest(c, "Invalid user ID: User ID must be a valid number")
 		return
 	}
 
 	var req services.UpdateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.BadRequest(c, "Invalid request format", err.Error())
+		common.BadRequest(c, "Invalid request format: "+err.Error())
 		return
 	}
 
 	user, err := h.userService.UpdateUser(c.Request.Context(), uint(id), &req)
 	if err != nil {
 		if common.IsNotFoundError(err) {
-			common.NotFound(c, "User not found", "The requested user does not exist")
+			common.NotFound(c, "User not found: The requested user does not exist")
 			return
 		}
 		if common.IsValidationError(err) {
-			common.BadRequest(c, "Validation failed", err.Error())
+			common.BadRequest(c, "Validation failed: "+err.Error())
 			return
 		}
-		common.InternalServerError(c, "Failed to update user", err.Error())
+		common.InternalServerError(c, "Failed to update user: "+err.Error())
 		return
 	}
 
@@ -205,17 +205,17 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		common.BadRequest(c, "Invalid user ID", "User ID must be a valid number")
+		common.BadRequest(c, "Invalid user ID: User ID must be a valid number")
 		return
 	}
 
 	err = h.userService.DeleteUser(c.Request.Context(), uint(id))
 	if err != nil {
 		if common.IsNotFoundError(err) {
-			common.NotFound(c, "User not found", "The requested user does not exist")
+			common.NotFound(c, "User not found: The requested user does not exist")
 			return
 		}
-		common.InternalServerError(c, "Failed to delete user", err.Error())
+		common.InternalServerError(c, "Failed to delete user: "+err.Error())
 		return
 	}
 

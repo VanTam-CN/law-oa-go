@@ -36,12 +36,12 @@ func NewServer() *Server {
 	router := gin.New()
 	
 	// 添加中间件
-	router.Use(middleware.RecoveryMiddleware())
+	router.Use(middleware.Recovery())
 	router.Use(middleware.PrometheusMiddleware())
 	router.Use(middleware.RequestIDMiddleware())
-	router.Use(middleware.RateLimitMiddleware())
-	router.Use(middleware.SecurityMiddleware())
-	router.Use(middleware.CORSMiddleware())
+	router.Use(middleware.RateLimiter())
+	router.Use(middleware.SecurityHeaders())
+	router.Use(middleware.CORS())
 	router.Use(middleware.LoggingMiddleware(logger))
 
 	// 创建HTTP服务器配置

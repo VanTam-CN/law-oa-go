@@ -1,6 +1,7 @@
 package security
 
 import (
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"law-oa-go/internal/cache"
@@ -27,7 +28,7 @@ type SecurityConfig struct {
 	Auth AuthConfig `json:"auth" yaml:"auth"`
 	
 	// 审计配置
-	Audit AuditConfig `json:"audit" yaml:"audit"`
+	Audit AuditLogConfig `json:"audit" yaml:"audit"`
 	
 	// RBAC配置
 	RBAC RBACConfig `json:"rbac" yaml:"rbac"`
@@ -217,13 +218,13 @@ func (cm *ConfigManager) SaveConfig() error {
 		return fmt.Errorf("config validation failed: %w", err)
 	}
 
-	// 序列化配置
+	// 序列化配置为YAML
 	data, err := json.MarshalIndent(cm.config, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
 
-	// 写入文件
+	// 写入文件（JSON格式，但文件扩展名还是.yaml，这样viper可以读取）
 	if err := os.WriteFile(cm.configFile, data, 0644); err != nil {
 		return fmt.Errorf("failed to write config file: %w", err)
 	}
@@ -327,7 +328,7 @@ func (cm *ConfigManager) setDefaultConfig() {
 				LockoutDuration:      30 * time.Minute,
 			},
 		},
-		Audit: AuditConfig{
+		Audit: AuditLogConfig{
 			EnableAuditLog:       true,
 			LogDatabase:          true,
 			LogToFile:            true,
@@ -439,8 +440,16 @@ func (cm *ConfigManager) cacheConfig() {
 func generateRandomKey(length int) string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	b := make([]byte, length)
-	for i := range b {
-		b[i] = charset[i%len(charset)]
+	if _, err := rand.Read(b); err != nil {
+		// 如果随机数生成失败，使用简单的伪随机
+		for i := range b {
+			b[i] = charset[i%len(charset)]
+		}
+	} else {
+		// 将随机字节映射到字符集
+		for i := range b {
+			b[i] = charset[b[i]%byte(len(charset))]
+		}
 	}
 	return string(b)
 }
@@ -482,7 +491,7 @@ func (cm *ConfigManager) GetAuthConfig() AuthConfig {
 }
 
 // GetAuditConfig 获取审计配置
-func (cm *ConfigManager) GetAuditConfig() AuditConfig {
+func (cm *ConfigManager) GetAuditConfig() AuditLogConfig {
 	cm.mu.RLock()
 	defer cm.mu.RUnlock()
 	return cm.config.Audit

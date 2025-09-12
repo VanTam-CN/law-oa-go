@@ -13,7 +13,7 @@ import (
 
 func main() {
 	var (
-		configPath     = flag.String("config", "config.yaml", "配置文件路径")
+		_             = flag.String("config", "config.yaml", "配置文件路径")
 		migrationsPath = flag.String("migrations", "./migrations", "迁移文件目录")
 		command        = flag.String("command", "up", "迁移命令: up, down, steps, goto, version, force, drop, status")
 		steps          = flag.Int("steps", 0, "迁移步数（用于steps命令）")

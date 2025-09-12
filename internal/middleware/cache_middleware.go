@@ -18,13 +18,13 @@ import (
 // 缓存相关的Prometheus指标
 var (
 	cacheHits = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "cache_hits_total",
-		Help: "Total number of cache hits",
+		Name: "cache_middleware_hits_total",
+		Help: "Total number of cache hits from middleware",
 	}, []string{"endpoint"})
 
 	cacheMisses = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "cache_misses_total",
-		Help: "Total number of cache misses",
+		Name: "cache_middleware_misses_total",
+		Help: "Total number of cache misses from middleware",
 	}, []string{"endpoint"})
 
 	cacheResponseDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{

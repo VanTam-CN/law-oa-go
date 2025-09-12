@@ -6,18 +6,14 @@ import (
 	"encoding/hex"
 	"fmt"
 	"time"
-	
-	"github.com/gin-gonic/gin"
+
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/redis/go-redis/v9"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"golang.org/x/crypto/bcrypt"
 	"law-oa-go/internal/config"
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/cache"
-	"net/http"
-	"strings"
 )
 
 var (
@@ -322,7 +318,7 @@ func (tm *TokenManager) RefreshTokens(ctx context.Context, refreshToken string) 
 	
 	// 从Redis获取用户ID
 	refreshKey := fmt.Sprintf("refresh_token:%s", uuid)
-	userID, err := tm.redisClient.Get(ctx, refreshKey).Result()
+	_, err = tm.redisClient.Get(ctx, refreshKey).Result()
 	if err != nil {
 		jwtAuthErrors.WithLabelValues("refresh_not_found").Inc()
 		return nil, fmt.Errorf("refresh token not found or expired")

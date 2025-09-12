@@ -36,6 +36,13 @@ func (sr *StreamResponse) Close() {
 	close(sr.Data)
 }
 
+// WriteContentType 实现gin.Render接口
+func (sr *StreamResponse) WriteContentType(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Transfer-Encoding", "chunked")
+	w.Header().Set("X-Accel-Buffering", "no")
+}
+
 // Render 实现gin.Render接口
 func (sr *StreamResponse) Render(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -120,6 +127,13 @@ func (sr *StreamPaginatedResponse) Send(data interface{}) {
 func (sr *StreamPaginatedResponse) Close() {
 	close(sr.Done)
 	close(sr.Data)
+}
+
+// WriteContentType 实现gin.Render接口
+func (sr *StreamPaginatedResponse) WriteContentType(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Transfer-Encoding", "chunked")
+	w.Header().Set("X-Accel-Buffering", "no")
 }
 
 // Render 实现gin.Render接口

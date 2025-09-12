@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"net/http"
 	"strconv"
 
 	"law-oa-go/internal/common"
@@ -91,27 +90,27 @@ func (h *CaseHandler) UpdateCase(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		common.BadRequest(c, "Invalid case ID", "Case ID must be a valid number")
+		common.BadRequest(c, "Invalid case ID: Case ID must be a valid number")
 		return
 	}
 
 	var req services.UpdateCaseRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.BadRequest(c, "Invalid request format", err.Error())
+		common.BadRequest(c, "Invalid request format: "+err.Error())
 		return
 	}
 
-	caseResp, err := h.caseService.UpdateCase(c.Request.Context(), uint(id), &req)
+	caseResp, err := h.caseService.UpdateCase(uint(id), &req)
 	if err != nil {
 		if err.Error() == "case not found" {
-			common.NotFound(c, "Case not found", "The requested case does not exist")
+			common.NotFound(c, "Case not found: The requested case does not exist")
 			return
 		}
 		if err.Error() == "lawyer not found" {
-			common.BadRequest(c, "Validation failed", err.Error())
+			common.BadRequest(c, "Validation failed: "+err.Error())
 			return
 		}
-		common.InternalServerError(c, "Failed to update case", err.Error())
+		common.InternalServerError(c, "Failed to update case: "+err.Error())
 		return
 	}
 
@@ -122,17 +121,17 @@ func (h *CaseHandler) DeleteCase(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		common.BadRequest(c, "Invalid case ID", "Case ID must be a valid number")
+		common.BadRequest(c, "Invalid case ID: Case ID must be a valid number")
 		return
 	}
 
-	err = h.caseService.DeleteCase(c.Request.Context(), uint(id))
+	err = h.caseService.DeleteCase(uint(id))
 	if err != nil {
 		if err.Error() == "case not found" {
-			common.NotFound(c, "Case not found", "The requested case does not exist")
+			common.NotFound(c, "Case not found: The requested case does not exist")
 			return
 		}
-		common.InternalServerError(c, "Failed to delete case", err.Error())
+		common.InternalServerError(c, "Failed to delete case: "+err.Error())
 		return
 	}
 
@@ -162,13 +161,13 @@ func (h *CaseHandler) DeleteCase(c *gin.Context) {
 func (h *CaseHandler) ListCases(c *gin.Context) {
 	var req services.CaseListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		common.BadRequest(c, "Invalid query parameters", err.Error())
+		common.BadRequest(c, "Invalid query parameters: "+err.Error())
 		return
 	}
 
-	cases, total, err := h.caseService.ListCases(c.Request.Context(), &req)
+	cases, total, err := h.caseService.ListCases(&req)
 	if err != nil {
-		common.InternalServerError(c, "Failed to list cases", err.Error())
+		common.InternalServerError(c, "Failed to list cases: "+err.Error())
 		return
 	}
 
@@ -185,7 +184,7 @@ func (h *CaseHandler) ListCases(c *gin.Context) {
 		Data:     cases,
 		Total:    total,
 		Page:     page,
-		PageSize: pageSize,
+		Size: pageSize,
 	}
 
 	common.Success(c, response)
@@ -194,7 +193,7 @@ func (h *CaseHandler) ListCases(c *gin.Context) {
 func (h *CaseHandler) GetCaseStats(c *gin.Context) {
 	stats, err := h.caseService.GetCaseStats(c.Request.Context())
 	if err != nil {
-		common.InternalServerError(c, "Failed to get case statistics", err.Error())
+		common.InternalServerError(c, "Failed to get case statistics: "+err.Error())
 		return
 	}
 
@@ -205,7 +204,7 @@ func (h *CaseHandler) AssignLawyer(c *gin.Context) {
 	idStr := c.Param("id")
 	caseID, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		common.BadRequest(c, "Invalid case ID", "Case ID must be a valid number")
+		common.BadRequest(c, "Invalid case ID: Case ID must be a valid number")
 		return
 	}
 
@@ -213,21 +212,21 @@ func (h *CaseHandler) AssignLawyer(c *gin.Context) {
 		LawyerID uint `json:"lawyer_id" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.BadRequest(c, "Invalid request format", err.Error())
+		common.BadRequest(c, "Invalid request format: "+err.Error())
 		return
 	}
 
-	err = h.caseService.AssignLawyer(c.Request.Context(), uint(caseID), req.LawyerID)
+	err = h.caseService.AssignLawyer(uint(caseID), req.LawyerID)
 	if err != nil {
 		if err.Error() == "case not found" {
-			common.NotFound(c, "Case not found", "The requested case does not exist")
+			common.NotFound(c, "Case not found: The requested case does not exist")
 			return
 		}
 		if err.Error() == "lawyer not found" {
-			common.BadRequest(c, "Validation failed", err.Error())
+			common.BadRequest(c, "Validation failed: "+err.Error())
 			return
 		}
-		common.InternalServerError(c, "Failed to assign lawyer", err.Error())
+		common.InternalServerError(c, "Failed to assign lawyer: "+err.Error())
 		return
 	}
 
@@ -238,7 +237,7 @@ func (h *CaseHandler) UpdateCaseStatus(c *gin.Context) {
 	idStr := c.Param("id")
 	caseID, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		common.BadRequest(c, "Invalid case ID", "Case ID must be a valid number")
+		common.BadRequest(c, "Invalid case ID: Case ID must be a valid number")
 		return
 	}
 
@@ -246,21 +245,21 @@ func (h *CaseHandler) UpdateCaseStatus(c *gin.Context) {
 		Status string `json:"status" binding:"required,oneof=pending active closed suspended"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.BadRequest(c, "Invalid request format", err.Error())
+		common.BadRequest(c, "Invalid request format: "+err.Error())
 		return
 	}
 
-	err = h.caseService.UpdateCaseStatus(c.Request.Context(), uint(caseID), req.Status)
+	err = h.caseService.UpdateCaseStatus(uint(caseID), req.Status)
 	if err != nil {
 		if err.Error() == "case not found" {
-			common.NotFound(c, "Case not found", "The requested case does not exist")
+			common.NotFound(c, "Case not found: The requested case does not exist")
 			return
 		}
 		if err.Error() == "invalid case status" {
-			common.BadRequest(c, "Validation failed", err.Error())
+			common.BadRequest(c, "Validation failed: "+err.Error())
 			return
 		}
-		common.InternalServerError(c, "Failed to update case status", err.Error())
+		common.InternalServerError(c, "Failed to update case status: "+err.Error())
 		return
 	}
 

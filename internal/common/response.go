@@ -1,6 +1,7 @@
 package common
 
 import (
+	"io"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -89,4 +90,34 @@ func InternalServerError(c *gin.Context, message string) {
 // ValidationError 参数验证错误
 func ValidationError(c *gin.Context, message string) {
 	BadRequest(c, "参数验证失败: "+message)
+}
+
+// NewRequestBodyBuffer 创建请求体缓冲区
+func NewRequestBodyBuffer(body []byte) *RequestBodyBuffer {
+	return &RequestBodyBuffer{
+		body:   body,
+		offset: 0,
+	}
+}
+
+// RequestBodyBuffer 请求体缓冲区
+type RequestBodyBuffer struct {
+	body   []byte
+	offset int
+}
+
+// Read 实现io.Reader接口
+func (r *RequestBodyBuffer) Read(p []byte) (n int, err error) {
+	if r.offset >= len(r.body) {
+		return 0, io.EOF
+	}
+	n = copy(p, r.body[r.offset:])
+	r.offset += n
+	return n, nil
+}
+
+// Close 实现io.Closer接口
+func (r *RequestBodyBuffer) Close() error {
+	r.offset = 0
+	return nil
 }

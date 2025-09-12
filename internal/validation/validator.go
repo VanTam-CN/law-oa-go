@@ -416,7 +416,7 @@ func (v *Validator) SQLInjectionProtectionMiddleware() gin.HandlerFunc {
 		}
 		
 		// 检查查询参数
-		for key, values := range c.Request.URL.Query() {
+		for _, values := range c.Request.URL.Query() {
 			for _, value := range values {
 				if v.detectSQLInjection(value) {
 					validationErrors.WithLabelValues("sql_injection", "query").Inc()
@@ -434,7 +434,7 @@ func (v *Validator) SQLInjectionProtectionMiddleware() gin.HandlerFunc {
 		// 检查POST数据
 		if c.Request.Method == "POST" || c.Request.Method == "PUT" {
 			if err := c.Request.ParseForm(); err == nil {
-				for key, values := range c.Request.PostForm {
+				for _, values := range c.Request.PostForm {
 					for _, value := range values {
 						if v.detectSQLInjection(value) {
 							validationErrors.WithLabelValues("sql_injection", "post").Inc()
@@ -476,7 +476,7 @@ func (v *Validator) XSSProtectionMiddleware() gin.HandlerFunc {
 		}
 		
 		// 检查查询参数
-		for key, values := range c.Request.URL.Query() {
+		for _, values := range c.Request.URL.Query() {
 			for _, value := range values {
 				if v.detectXSS(value) {
 					validationErrors.WithLabelValues("xss", "query").Inc()
@@ -494,7 +494,7 @@ func (v *Validator) XSSProtectionMiddleware() gin.HandlerFunc {
 		// 检查POST数据
 		if c.Request.Method == "POST" || c.Request.Method == "PUT" {
 			if err := c.Request.ParseForm(); err == nil {
-				for key, values := range c.Request.PostForm {
+				for _, values := range c.Request.PostForm {
 					for _, value := range values {
 						if v.detectXSS(value) {
 							validationErrors.WithLabelValues("xss", "post").Inc()
@@ -561,7 +561,7 @@ func (v *Validator) DatabaseInjectionProtection() gin.HandlerFunc {
 		}()
 		
 		// 检查数据库查询参数
-		for key, values := range c.Request.URL.Query() {
+		for _, values := range c.Request.URL.Query() {
 			for _, value := range values {
 				if v.detectDatabaseInjection(value) {
 					validationErrors.WithLabelValues("database_injection", "query").Inc()
