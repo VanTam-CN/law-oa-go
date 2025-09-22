@@ -7,6 +7,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"gorm.io/driver/mysql"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"law-oa-go/internal/config"
@@ -48,17 +49,8 @@ type OptimizedDatabase struct {
 
 // NewOptimizedDatabase 创建优化后的数据库连接
 func NewOptimizedDatabase(cfg *config.Config) (*OptimizedDatabase, error) {
-	// 构建DSN
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=%v&loc=%s",
-		cfg.Database.Username,
-		cfg.Database.Password,
-		cfg.Database.Host,
-		cfg.Database.Port,
-		cfg.Database.Database,
-		cfg.Database.Charset,
-		cfg.Database.ParseTime,
-		cfg.Database.Loc,
-	)
+	var db *gorm.DB
+	var err error
 
 	// 配置连接池
 	poolConfig := &ConnectionPoolConfig{
@@ -81,8 +73,26 @@ func NewOptimizedDatabase(cfg *config.Config) (*OptimizedDatabase, error) {
 		),
 	}
 
-	// 连接数据库
-	db, err := gorm.Open(mysql.Open(dsn), gormConfig)
+	// 根据驱动类型连接数据库
+	if cfg.Database.Driver == "sqlite" {
+		// SQLite连接
+		dsn := cfg.Database.Database
+		db, err = gorm.Open(sqlite.Open(dsn), gormConfig)
+	} else {
+		// MySQL连接（默认）
+		dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=%v&loc=%s",
+			cfg.Database.Username,
+			cfg.Database.Password,
+			cfg.Database.Host,
+			cfg.Database.Port,
+			cfg.Database.Database,
+			cfg.Database.Charset,
+			cfg.Database.ParseTime,
+			cfg.Database.Loc,
+		)
+		db, err = gorm.Open(mysql.Open(dsn), gormConfig)
+	}
+
 	if err != nil {
 		dbConnectionErrors.WithLabelValues(cfg.Database.Database).Inc()
 		return nil, fmt.Errorf("failed to connect to database: %w", err)

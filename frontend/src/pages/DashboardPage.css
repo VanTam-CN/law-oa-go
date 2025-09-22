@@ -1,0 +1,215 @@
+/* 仪表板样式优化 */
+
+/* 仪表板头部 */
+.dashboard-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 2rem;
+  border-radius: 15px;
+  color: white;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem !important;
+}
+
+.dashboard-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-subtitle {
+  font-size: 1rem;
+  opacity: 0.9;
+  margin: 0;
+}
+
+/* 现代化统计卡片 */
+.stat-card-modern {
+  border-radius: 15px !important;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  position: relative;
+}
+
+.stat-card-modern:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1) !important;
+}
+
+.stat-card-modern::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.3), rgba(255,255,255,0.1));
+}
+
+.stat-number {
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-trend {
+  display: flex;
+  align-items: center;
+  font-size: 0.75rem;
+  opacity: 0.9;
+}
+
+.stat-icon-container {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 15px;
+  flex-shrink: 0;
+}
+
+/* 卡片通用样式 */
+.card {
+  border-radius: 15px !important;
+  border: none !important;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08) !important;
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12) !important;
+}
+
+.card-header {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+  font-weight: 600;
+}
+
+/* 活动列表样式 */
+.activity-item {
+  padding: 1rem;
+  border-radius: 10px;
+  background: #f8f9fa;
+  transition: all 0.3s ease;
+}
+
+.activity-item:hover {
+  background: #e9ecef;
+  transform: translateX(5px);
+}
+
+.activity-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.activity-content h6 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.activity-content p {
+  font-size: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+/* 截止日期列表样式 */
+.deadline-item {
+  border-radius: 10px;
+  border: 1px solid #e9ecef;
+  transition: all 0.3s ease;
+}
+
+.deadline-item:hover {
+  border-color: #007bff;
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
+}
+
+.deadline-item h6 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+/* 图表占位符样式 */
+.chart-placeholder {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border-radius: 10px;
+  border: 2px dashed #dee2e6;
+}
+
+.chart-placeholder i {
+  opacity: 0.5;
+}
+
+/* 响应式优化 */
+@media (max-width: 768px) {
+  .dashboard-header {
+    padding: 1.5rem;
+  }
+
+  .dashboard-title {
+    font-size: 1.5rem;
+  }
+
+  .stat-number {
+    font-size: 2rem;
+  }
+
+  .stat-icon-container {
+    width: 50px;
+    height: 50px;
+  }
+
+  .stat-icon-container i {
+    font-size: 1.5rem !important;
+  }
+}
+
+/* 动画效果 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stat-card-modern {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.stat-card-modern:nth-child(1) { animation-delay: 0.1s; }
+.stat-card-modern:nth-child(2) { animation-delay: 0.2s; }
+.stat-card-modern:nth-child(3) { animation-delay: 0.3s; }
+.stat-card-modern:nth-child(4) { animation-delay: 0.4s; }
+
+/* 渐变背景 */
+.bg-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+.bg-success {
+  background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%) !important;
+}
+
+.bg-warning {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+}
+
+.bg-info {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
+}

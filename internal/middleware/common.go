@@ -2,13 +2,14 @@ package middleware
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"law-oa-go/internal/infrastructure"
+	"law-oa-go/internal/logger"
 )
 
 // RateLimiter 限流中间件
@@ -61,7 +62,7 @@ type CORSConfig struct {
 // DefaultCORSConfig 默认CORS配置
 func DefaultCORSConfig() CORSConfig {
 	return CORSConfig{
-		AllowedOrigins: []string{"http://localhost:3000", "http://localhost:8080"}, // 开发环境默认域名
+		AllowedOrigins: []string{"http://localhost:3000", "http://localhost:8080", "http://localhost:3003"}, // 开发环境默认域名
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders: []string{"Content-Type", "Authorization", "X-Request-ID"},
 		MaxAge:         "86400",
@@ -129,9 +130,17 @@ func Logger() gin.HandlerFunc {
 func Recovery() gin.HandlerFunc {
 	return gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
 		if err, ok := recovered.(error); ok {
-			log.Printf("Panic recovered: %v", err)
+			logger.Logger.Error("Panic recovered",
+				zap.Error(err),
+				zap.String("path", c.Request.URL.Path),
+				zap.String("method", c.Request.Method),
+			)
 		} else {
-			log.Printf("Panic recovered: %v", recovered)
+			logger.Logger.Error("Panic recovered",
+				zap.Any("recovered", recovered),
+				zap.String("path", c.Request.URL.Path),
+				zap.String("method", c.Request.Method),
+			)
 		}
 
 		c.JSON(http.StatusInternalServerError, gin.H{

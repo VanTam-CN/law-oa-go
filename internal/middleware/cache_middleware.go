@@ -12,7 +12,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"go.uber.org/zap"
 	"law-oa-go/internal/cache"
+	"law-oa-go/internal/logger"
 )
 
 // 缓存相关的Prometheus指标
@@ -75,8 +77,23 @@ func CacheMiddleware(config CacheConfig) gin.HandlerFunc {
 
 		// 尝试从缓存获取
 		var cachedResponse []byte
+		if cache.DefaultCacheService == nil || cache.DefaultCacheService.Client() == nil {
+			// 缓存服务未初始化
+			c.Header("X-Cache", "DISABLED")
+			c.Next()
+			return
+		}
+		
+		// 添加额外的保护，防止 nil pointer dereference
+		defer func() {
+			if r := recover(); r != nil {
+				// 捕获 panic，记录日志但不中断请求
+				c.Header("X-Cache", "ERROR")
+				c.Next()
+			}
+		}()
+		
 		err := cache.DefaultCacheService.Get(c.Request.Context(), cacheKey, &cachedResponse)
-
 		if err == nil {
 			// 缓存命中
 			cacheHits.WithLabelValues(endpoint).Inc()
@@ -112,7 +129,7 @@ func CacheMiddleware(config CacheConfig) gin.HandlerFunc {
 		c.Next()
 
 		// 只缓存成功的GET请求
-		if c.Request.Method == "GET" && writer.statusCode == http.StatusOK {
+		if c.Request.Method == "GET" && writer.statusCode == http.StatusOK && cache.DefaultCacheService != nil && cache.DefaultCacheService.Client() != nil {
 			// 构建响应数据
 			response := map[string]interface{}{
 				"status":  writer.statusCode,
@@ -124,7 +141,11 @@ func CacheMiddleware(config CacheConfig) gin.HandlerFunc {
 			responseData, _ := json.Marshal(response)
 			if err := cache.DefaultCacheService.Set(c.Request.Context(), cacheKey, responseData, config.TTL); err != nil {
 				// 缓存设置失败不影响主要功能
-				fmt.Printf("Warning: failed to cache response for %s: %v\n", cacheKey, err)
+				logger.Logger.Warn("Failed to cache response",
+					zap.String("cache_key", cacheKey),
+					zap.Error(err),
+					zap.String("endpoint", endpoint),
+				)
 			}
 		}
 
@@ -255,10 +276,12 @@ func CacheQueryResults(ctx context.Context, key string, ttl time.Duration, fetch
 	endpoint := "query"
 
 	// 尝试从缓存获取
-	if err := cache.DefaultCacheService.Get(ctx, key, dest); err == nil {
-		cacheHits.WithLabelValues(endpoint).Inc()
-		cacheResponseDuration.WithLabelValues("get", endpoint).Observe(time.Since(start).Seconds())
-		return nil
+	if cache.DefaultCacheService != nil && cache.DefaultCacheService.Client() != nil {
+		if err := cache.DefaultCacheService.Get(ctx, key, dest); err == nil {
+			cacheHits.WithLabelValues(endpoint).Inc()
+			cacheResponseDuration.WithLabelValues("get", endpoint).Observe(time.Since(start).Seconds())
+			return nil
+		}
 	}
 
 	// 缓存未命中
@@ -271,8 +294,13 @@ func CacheQueryResults(ctx context.Context, key string, ttl time.Duration, fetch
 	}
 
 	// 设置缓存
-	if err := cache.DefaultCacheService.Set(ctx, key, value, ttl); err != nil {
-		fmt.Printf("Warning: failed to cache query results for %s: %v\n", key, err)
+	if cache.DefaultCacheService != nil && cache.DefaultCacheService.Client() != nil {
+		if err := cache.DefaultCacheService.Set(ctx, key, value, ttl); err != nil {
+			logger.Logger.Warn("Failed to cache query results",
+				zap.String("cache_key", key),
+				zap.Error(err),
+			)
+		}
 	}
 
 	// 将值设置到目标变量
@@ -287,9 +315,11 @@ func CacheQueryResults(ctx context.Context, key string, ttl time.Duration, fetch
 
 // InvalidateCache 使缓存失效的工具函数
 func InvalidateCache(ctx context.Context, patterns []string) error {
-	for _, pattern := range patterns {
-		if err := cache.DefaultCacheService.ClearPattern(ctx, pattern); err != nil {
-			return fmt.Errorf("failed to clear cache pattern %s: %w", pattern, err)
+	if cache.DefaultCacheService != nil && cache.DefaultCacheService.Client() != nil {
+		for _, pattern := range patterns {
+			if err := cache.DefaultCacheService.ClearPattern(ctx, pattern); err != nil {
+				return fmt.Errorf("failed to clear cache pattern %s: %w", pattern, err)
+			}
 		}
 	}
 	return nil

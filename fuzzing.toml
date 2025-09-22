@@ -1,0 +1,375 @@
+# Fuzzing测试配置
+# 用于控制Fuzzing测试的行为和参数
+
+# Fuzzing测试全局配置
+[fuzzing]
+# 是否启用Fuzzing测试
+enabled = true
+
+# 默认Fuzzing时间
+default_duration = "60s"
+
+# 默认并行进程数
+default_fuzzers = 4
+
+# 默认最小化时间
+default_minimize_time = "10s"
+
+# 输出目录
+output_dir = "fuzzing_results"
+
+# 是否启用详细日志
+verbose_logging = false
+
+# 是否保留crashers文件
+keep_crashers = true
+
+# 是否自动生成报告
+auto_generate_report = true
+
+# 各组件Fuzzing配置
+[components.security]
+enabled = true
+duration = "120s"
+fuzzers = 6
+minimize_time = "15s"
+# JWT验证Fuzzing
+[components.security.jwt_validation]
+enabled = true
+seed_corpus = "testdata/fuzz/jwt_corpus.txt"
+max_input_length = 10000
+timeout = "5s"
+
+[components.validators]
+enabled = true
+duration = "90s"
+fuzzers = 4
+minimize_time = "10s"
+# 验证器Fuzzing
+[components.validators.case_validator]
+enabled = true
+seed_corpus = "testdata/fuzz/json_corpus.txt"
+max_input_length = 5000
+timeout = "3s"
+
+[components.validators.client_validator]
+enabled = true
+seed_corpus = "testdata/fuzz/json_corpus.txt"
+max_input_length = 5000
+timeout = "3s"
+
+[components.validators.lawyer_validator]
+enabled = true
+seed_corpus = "testdata/fuzz/json_corpus.txt"
+max_input_length = 5000
+timeout = "3s"
+
+[components.repositories]
+enabled = true
+duration = "120s"
+fuzzers = 4
+minimize_time = "15s"
+# 数据库查询Fuzzing
+[components.repositories.query_builder]
+enabled = true
+seed_corpus = "testdata/fuzz/query_corpus.txt"
+max_input_length = 2000
+timeout = "10s"
+# SQL注入检测特殊配置
+[components.repositories.query_builder.sql_injection]
+enabled = true
+patterns = [
+    "'",
+    "OR 1=1",
+    "DROP TABLE",
+    "UNION SELECT",
+    ";--",
+    "/*",
+    "xp_cmdshell",
+    "waitfor delay"
+]
+
+[components.cache]
+enabled = true
+duration = "90s"
+fuzzers = 4
+minimize_time = "10s"
+# 缓存服务Fuzzing
+[components.cache.cache_service]
+enabled = true
+seed_corpus = "testdata/fuzz/cache_corpus.txt"
+max_input_length = 10000
+timeout = "5s"
+
+[components.cache.layered_cache]
+enabled = true
+seed_corpus = "testdata/fuzz/cache_corpus.txt"
+max_input_length = 10000
+timeout = "5s"
+
+[components.concurrency]
+enabled = true
+duration = "150s"
+fuzzers = 6
+minimize_time = "20s"
+# 并发组件Fuzzing
+[components.concurrency.worker_pool]
+enabled = true
+seed_corpus = "testdata/fuzz/concurrency_corpus.txt"
+max_input_length = 2000
+timeout = "10s"
+
+[components.concurrency.circuit_breaker]
+enabled = true
+seed_corpus = "testdata/fuzz/concurrency_corpus.txt"
+max_input_length = 1000
+timeout = "5s"
+
+[components.concurrency.rate_limiter]
+enabled = true
+seed_corpus = "testdata/fuzz/concurrency_corpus.txt"
+max_input_length = 1000
+timeout = "5s"
+
+# 语料库管理配置
+[corpus]
+# 语料库目录
+directory = "testdata/fuzz"
+
+# 是否自动收集生产数据
+auto_collect_production_data = true
+
+# 生产数据收集配置
+[corpus.production_collection]
+enabled = true
+# 生产日志文件路径
+log_files = [
+    "/var/log/application.log",
+    "/var/log/nginx/access.log",
+    "./logs/application.log"
+]
+# 数据收集间隔（小时）
+collect_interval = 24
+# 最大样本数
+max_samples_per_source = 100
+# 脱敏规则
+sanitization_rules = [
+    {pattern = "Bearer\\s+[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+", replacement = "JWT_SAMPLE_TOKEN"},
+    {pattern = "password\\s*=\\s*[^&]+", replacement = "password=***"},
+    {pattern = "token\\s*=\\s*[^&]+", replacement = "token=***"},
+    {pattern = "secret\\s*=\\s*[^&]+", replacement = "secret=***"},
+    {pattern = "\\b\\d{4}[- ]?\\d{4}[- ]?\\d{4}[- ]?\\d{4}\\b", replacement = "CREDIT_CARD_NUMBER"},
+    {pattern = "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b", replacement = "EMAIL_ADDRESS"}
+]
+
+# 语料库质量检查
+[corpus.quality]
+min_samples_per_corpus = 50
+max_samples_per_corpus = 1000
+min_average_length = 5
+max_average_length = 500
+
+# Crash处理配置
+[crash_handling]
+# 发现crash时的处理方式
+crash_action = "report_and_continue"  # options: "fail_fast", "report_and_continue", "continue_only"
+
+# 是否自动重启失败的Fuzzing测试
+auto_restart = true
+
+# 最大重启次数
+max_restarts = 3
+
+# 重启间隔
+restart_interval = "30s"
+
+# Crash报告配置
+[crash_reporting]
+# 报告格式
+formats = ["markdown", "json"]
+
+# 是否生成Jira工单
+generate_jira_tickets = false
+
+# Jira配置
+[crash_reporting.jira]
+enabled = false
+api_url = "https://your-jira-instance.com/rest/api/2"
+username = ""
+api_token = ""
+project_key = "SEC"
+issue_type = "Bug"
+priority_mapping = {
+    critical = "Highest",
+    high = "High",
+    medium = "Medium",
+    low = "Low"
+}
+
+# 性能监控配置
+[monitoring]
+# 是否启用性能监控
+enabled = true
+
+# 性能指标收集间隔
+metrics_interval = "10s"
+
+# 内存限制（MB）
+memory_limit = 4096
+
+# CPU限制（核心数）
+cpu_limit = 4
+
+# 性能阈值告警
+[monitoring.thresholds]
+memory_usage_percent = 80
+cpu_usage_percent = 90
+crash_rate_per_hour = 10
+response_time_ms = 1000
+
+# CI/CD集成配置
+[cicd]
+# GitHub Actions配置
+[cicd.github_actions]
+enabled = true
+# 触发条件
+trigger_on_push = true
+trigger_on_pull_request = true
+trigger_on_schedule = true
+# 定时运行（cron格式）
+schedule = "0 1 * * *"
+# 分支过滤
+branches = ["main", "develop"]
+
+# 快速Fuzzing配置（用于PR）
+[cicd.quick_fuzzing]
+enabled = true
+duration = "30s"
+fuzzers = 2
+components = ["security", "validators"]
+
+# 完整Fuzzing配置（用于夜间构建）
+[cicd.full_fuzzing]
+enabled = true
+duration = "300s"
+fuzzers = 8
+components = ["all"]
+
+# 质量门禁
+[cicd.quality_gate]
+enabled = true
+# 最大允许的critical crashes
+max_critical_crashes = 0
+# 最大允许的high crashes
+max_high_crashes = 2
+# 最小测试覆盖率
+min_coverage_percent = 70
+# 最大执行时间
+max_execution_time = "10m"
+
+# 安全扫描配置
+[security_scan]
+enabled = true
+
+# 静态分析工具
+[security_scan.static_analysis]
+enabled = true
+tools = ["gosec", "semgrep", "bandit"]
+
+# 动态分析工具
+[security_scan.dynamic_analysis]
+enabled = true
+tools = ["fuzzing", "property_testing"]
+
+# 漏洞数据库
+[security_scan.vulnerability_database]
+enabled = true
+sources = ["cve", "nvd", "ghsa"]
+
+# 报告集成
+[reporting]
+# 报告生成配置
+[reporting.generation]
+enabled = true
+formats = ["markdown", "json", "html"]
+include_source_code = true
+include_stack_trace = true
+include_fix_suggestions = true
+
+# 报告分发
+[reporting.distribution]
+email_enabled = false
+slack_enabled = false
+webhook_enabled = false
+
+# 存储配置
+[storage]
+# 本地存储
+[storage.local]
+enabled = true
+base_directory = "./fuzzing_results"
+retention_days = 30
+
+# 云存储（可选）
+[storage.cloud]
+enabled = false
+provider = "s3"  # options: "s3", "gcs", "azure"
+bucket = ""
+region = ""
+access_key = ""
+secret_key = ""
+
+# 开发环境配置
+[environments.development]
+fuzzing_enabled = true
+duration = "30s"
+fuzzers = 2
+corpus_collection = false
+reporting_enabled = false
+
+# 测试环境配置
+[environments.testing]
+fuzzing_enabled = true
+duration = "60s"
+fuzzers = 4
+corpus_collection = true
+reporting_enabled = true
+
+# 生产环境配置
+[environments.production]
+fuzzing_enabled = false
+duration = "0s"
+fuzzers = 0
+corpus_collection = true
+reporting_enabled = true
+
+# 高级配置
+[advanced]
+# 并发控制
+concurrency_control = {
+    max_concurrent_tests = 4,
+    max_concurrent_fuzzers = 8,
+    resource_sharing = true
+}
+
+# 内存管理
+memory_management = {
+    gc_interval = "1m",
+    max_heap_size = "2GB",
+    enable_memory_profiling = true
+}
+
+# 网络配置
+network_config = {
+    timeout = "30s",
+    retry_attempts = 3,
+    retry_delay = "1s",
+    proxy_url = ""
+}
+
+# 调试配置
+[debug]
+enabled = false
+log_level = "info"
+profiling_enabled = false
+debug_symbols = true

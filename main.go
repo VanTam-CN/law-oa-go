@@ -24,19 +24,24 @@ package main
 import (
 	"context"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	_ "law-oa-go/docs" // Swagger docs
+	"law-oa-go/internal/cache"
 	"law-oa-go/internal/config"
 	"law-oa-go/internal/database"
+	"law-oa-go/internal/health"
+	"law-oa-go/internal/metrics"
 	"law-oa-go/internal/middleware"
 	"law-oa-go/internal/router"
 )
@@ -53,8 +58,107 @@ func main() {
 		log.Fatal("性能优化组件初始化失败:", err)
 	}
 
+	// 初始化全局缓存服务（用于中间件）- 使用数据库模块的缓存服务
+	if cacheService := database.GetCacheService(); cacheService != nil {
+		cache.DefaultCacheService = cacheService
+		log.Println("使用数据库模块的缓存服务")
+	} else {
+		// 如果数据库模块的缓存服务不可用，则创建新的
+		if err := cache.InitCache(); err != nil {
+			log.Printf("缓存服务初始化失败，将禁用缓存功能: %v", err)
+		} else {
+			log.Println("缓存服务初始化成功")
+		}
+	}
+	
+	// 验证缓存服务是否真的初始化了
+	if cache.DefaultCacheService == nil {
+		log.Fatal("缓存服务初始化失败：DefaultCacheService 仍然为 nil")
+	} else {
+		log.Println("缓存服务验证成功")
+	}
+
 	// 初始化JWT
 	middleware.InitJWT(cfg)
+
+	// 初始化监控服务
+	monitorConfig := metrics.DefaultMonitorConfig
+	if cfg.IsProduction() {
+		monitorConfig.EnableRealTimeAlerts = true
+		monitorConfig.MetricsCollectionInterval = 30 * time.Second
+	} else {
+		monitorConfig.EnableRealTimeAlerts = false
+		monitorConfig.MetricsCollectionInterval = 10 * time.Second
+	}
+
+	if err := metrics.InitDefaultMonitorService(monitorConfig); err != nil {
+		log.Fatal("监控服务初始化失败:", err)
+	}
+
+	// 获取监控服务实例
+	monitorService := metrics.GetDefaultMonitorService()
+
+	// 初始化健康检查系统
+	healthConfig := &health.DefaultHealthConfig
+	if cfg.IsProduction() {
+		healthConfig.CheckInterval = 30 * time.Second
+		healthConfig.FailureThreshold = 3
+		healthConfig.EnableExternalAPICheck = true
+		healthConfig.ElasticsearchTimeout = 5 * time.Second
+	} else {
+		healthConfig.CheckInterval = 15 * time.Second
+		healthConfig.FailureThreshold = 2
+		healthConfig.EnableExternalAPICheck = false
+		healthConfig.ElasticsearchTimeout = 3 * time.Second
+	}
+
+	healthChecker := health.NewHealthChecker(healthConfig, slog.Default())
+
+	// 注册健康检查
+	if db := database.GetOptimizedDB(); db != nil && db.DB != nil {
+		// 从GORM DB获取底层sql.DB
+		if sqlDB, err := db.DB.DB(); err == nil {
+			healthChecker.RegisterCheck(health.NewDatabaseHealthCheck(sqlDB, healthConfig.DatabaseTimeout))
+		}
+	}
+
+	if cacheService := database.GetCacheService(); cacheService != nil {
+		healthChecker.RegisterCheck(health.NewCacheHealthCheck(cacheService, healthConfig.CacheTimeout))
+	}
+
+	// 初始化Elasticsearch客户端
+	var esClient *elasticsearch.Client
+	
+	esClient, err = database.InitElasticsearch(cfg.Elasticsearch)
+	if err != nil {
+		log.Printf("Elasticsearch初始化失败: %v, 将使用数据库搜索回退", err)
+		esClient = nil
+	} else {
+		log.Println("Elasticsearch客户端初始化成功")
+		// 注册ES健康检查
+		healthChecker.RegisterCheck(health.NewElasticsearchHealthCheck(esClient, healthConfig.ElasticsearchTimeout))
+	}
+
+	// 注册并发服务检查（暂时注释，需要重构MonitorService）
+	// if monitorService != nil && monitorService.concurrencyService != nil {
+	// 	// 使用监控服务的并发服务（如果有）
+	// 	healthChecker.RegisterCheck(health.NewConcurrencyHealthCheck(monitorService.concurrencyService, healthConfig.ConcurrencyTimeout))
+	// }
+
+	// 注册存储检查
+	healthChecker.RegisterCheck(health.NewStorageHealthCheck(healthConfig.StoragePath, healthConfig.StorageTimeout))
+
+	// 注册外部API检查（生产环境）
+	if cfg.IsProduction() && healthConfig.EnableExternalAPICheck {
+		healthChecker.RegisterCheck(health.NewExternalAPIHealthCheck(healthConfig.ExternalServiceURL, healthConfig.ExternalAPITimeout))
+	}
+
+	// 启动健康检查器
+	healthChecker.Start()
+	defer healthChecker.Stop()
+
+	// 创建健康检查中间件
+	healthMiddleware := health.NewHealthMiddleware(healthChecker, "1.0.0", cfg.Environment)
 
 	// 设置 Gin 模式（按照最佳实践）
 	if cfg.IsProduction() {
@@ -75,6 +179,9 @@ func main() {
 	app.Use(middleware.SecurityHeaders())     // 安全头
 	app.Use(middleware.CORS())                // 跨域设置
 	app.Use(middleware.RateLimiter())         // 限流控制
+
+	// 应用错误处理中间件（必须在Recovery之后，其他中间件之前）
+	app.Use(middleware.DefaultErrorHandlingMiddleware(slog.Default()))
 
 	// 应用性能监控中间件
 	app.Use(middleware.PrometheusMiddleware())
@@ -99,10 +206,136 @@ func main() {
 		app.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	}
 
-	// 添加健康检查端点
-	app.GET("/health", func(c *gin.Context) {
-		health := database.Health()
-		c.JSON(http.StatusOK, health)
+	// 添加基础健康检查端点
+	app.GET("/health", healthMiddleware.HealthCheckHandler)
+	app.GET("/health/live", healthMiddleware.LivenessHandler)
+	app.GET("/health/ready", healthMiddleware.ReadinessHandler)
+
+	// 添加详细健康检查端点
+	app.GET("/api/v1/health", healthMiddleware.HealthCheckHandler)
+	app.GET("/api/v1/health/detailed", healthMiddleware.DetailedHealthCheckHandler)
+	app.GET("/api/v1/health/metrics", healthMiddleware.HealthCheckMetricsHandler)
+	app.GET("/api/v1/health/dependencies", healthMiddleware.DependencyHealthHandler)
+	app.GET("/api/v1/health/history", healthMiddleware.HealthCheckHistoryHandler)
+
+	// 添加健康状态页面
+	app.GET("/health/status", healthMiddleware.HealthStatusPageHandler)
+
+	// 添加健康指标导出端点
+	app.GET("/metrics/health", healthMiddleware.ExportHealthMetricsHandler)
+
+	// 添加优雅关闭端点（仅限管理员访问）
+	// adminGroup := app.Group("/admin")
+	// adminGroup.Use(middleware.AdminAuthMiddleware())
+	// adminGroup.POST("/shutdown", healthMiddleware.GracefulShutdownHandler)
+
+	// 临时添加关闭端点用于测试（不使用管理员认证）
+	app.POST("/admin/shutdown", healthMiddleware.GracefulShutdownHandler)
+
+	// 添加监控状态端点
+	app.GET("/api/v1/monitor/status", func(c *gin.Context) {
+		if monitorService != nil {
+			status := monitorService.GetStatus()
+			c.JSON(http.StatusOK, gin.H{
+				"success": true,
+				"data":    status,
+			})
+		} else {
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"success": false,
+				"error":   "Monitor service not available",
+			})
+		}
+	})
+
+	// 添加监控仪表板端点
+	app.GET("/api/v1/monitor/dashboard", func(c *gin.Context) {
+		if monitorService != nil {
+			dashboard := monitorService.GetDashboardData()
+			c.JSON(http.StatusOK, gin.H{
+				"success": true,
+				"data":    dashboard,
+			})
+		} else {
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"success": false,
+				"error":   "Monitor service not available",
+			})
+		}
+	})
+
+	// 添加性能统计端点
+	app.GET("/api/v1/monitor/performance", func(c *gin.Context) {
+		if monitorService != nil {
+			stats := monitorService.GetPerformanceStats()
+			c.JSON(http.StatusOK, gin.H{
+				"success": true,
+				"data":    stats,
+			})
+		} else {
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"success": false,
+				"error":   "Monitor service not available",
+			})
+		}
+	})
+
+	// 添加告警端点
+	app.GET("/api/v1/monitor/alerts", func(c *gin.Context) {
+		if monitorService != nil {
+			alerts := monitorService.GetAlerts()
+			c.JSON(http.StatusOK, gin.H{
+				"success": true,
+				"data":    alerts,
+			})
+		} else {
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"success": false,
+				"error":   "Monitor service not available",
+			})
+		}
+	})
+
+	// 添加解决告警端点
+	app.POST("/api/v1/monitor/alerts/:id/resolve", func(c *gin.Context) {
+		if monitorService == nil {
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"success": false,
+				"error":   "Monitor service not available",
+			})
+			return
+		}
+
+		alertID := c.Param("id")
+		resolved := monitorService.ResolveAlert(alertID)
+
+		if resolved {
+			c.JSON(http.StatusOK, gin.H{
+				"success": true,
+				"message": "Alert resolved successfully",
+			})
+		} else {
+			c.JSON(http.StatusNotFound, gin.H{
+				"success": false,
+				"error":   "Alert not found",
+			})
+		}
+	})
+
+	// 添加强制GC端点
+	app.POST("/api/v1/monitor/gc", func(c *gin.Context) {
+		if monitorService != nil {
+			monitorService.ForceGC()
+			c.JSON(http.StatusOK, gin.H{
+				"success": true,
+				"message": "Garbage collection triggered successfully",
+			})
+		} else {
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"success": false,
+				"error":   "Monitor service not available",
+			})
+		}
 	})
 
 	// 添加性能测试端点

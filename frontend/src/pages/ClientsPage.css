@@ -1,0 +1,282 @@
+/* 客户管理页面样式优化 */
+
+/* 现代化统计卡片 */
+.stat-card-modern {
+  border-radius: 15px !important;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  position: relative;
+}
+
+.stat-card-modern:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1) !important;
+}
+
+.stat-card-modern::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.3), rgba(255,255,255,0.1));
+}
+
+.stat-number {
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-trend {
+  display: flex;
+  align-items: center;
+  font-size: 0.75rem;
+  opacity: 0.9;
+}
+
+.stat-icon-container {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 15px;
+  flex-shrink: 0;
+}
+
+/* 卡片通用样式 */
+.card {
+  border-radius: 15px !important;
+  border: none !important;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08) !important;
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12) !important;
+}
+
+.card-header {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+  font-weight: 600;
+}
+
+/* 表格样式优化 */
+.table {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.table thead th {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+}
+
+.table tbody tr {
+  transition: all 0.3s ease;
+}
+
+.table tbody tr:hover {
+  background-color: rgba(102, 126, 234, 0.05);
+  transform: scale(1.01);
+}
+
+.table tbody td {
+  vertical-align: middle;
+  padding: 1rem;
+}
+
+/* 客户头像样式 */
+.bg-light.rounded-circle {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white;
+}
+
+/* 操作按钮样式 */
+.btn-group-sm > .btn, .btn-sm {
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-outline-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
+}
+
+.btn-outline-info:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(23, 162, 184, 0.3);
+}
+
+.btn-outline-danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
+}
+
+/* 模态框样式优化 */
+.modal-content {
+  border-radius: 15px;
+  border: none;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 15px 15px 0 0;
+  border: none;
+}
+
+.modal-header .btn-close {
+  filter: brightness(0) invert(1);
+}
+
+.modal-title {
+  font-weight: 600;
+}
+
+/* 表单控件样式 */
+.form-control, .form-select {
+  border-radius: 10px;
+  border: 2px solid #e9ecef;
+  transition: all 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+/* 徽章样式 */
+.badge {
+  border-radius: 8px;
+  font-weight: 500;
+  padding: 0.5rem 0.75rem;
+}
+
+/* 搜索栏样式 */
+.input-group {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.input-group .form-control {
+  border: 2px solid #e9ecef;
+  border-right: none;
+}
+
+.input-group .btn {
+  border: 2px solid #e9ecef;
+  border-left: none;
+}
+
+/* 空状态样式 */
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+}
+
+.empty-state i {
+  opacity: 0.5;
+}
+
+.empty-state h5 {
+  color: #6c757d;
+  margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+  color: #6c757d;
+  margin-bottom: 1.5rem;
+}
+
+/* 客户类型徽章特殊样式 */
+.badge.bg-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+.badge.bg-info {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
+}
+
+/* 动画效果 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stat-card-modern {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.stat-card-modern:nth-child(1) { animation-delay: 0.1s; }
+.stat-card-modern:nth-child(2) { animation-delay: 0.2s; }
+.stat-card-modern:nth-child(3) { animation-delay: 0.3s; }
+.stat-card-modern:nth-child(4) { animation-delay: 0.4s; }
+
+/* 响应式优化 */
+@media (max-width: 768px) {
+  .stat-number {
+    font-size: 2rem;
+  }
+
+  .stat-icon-container {
+    width: 50px;
+    height: 50px;
+  }
+
+  .stat-icon-container i {
+    font-size: 1.5rem !important;
+  }
+
+  .table thead th {
+    font-size: 0.75rem;
+  }
+
+  .table tbody td {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* 渐变背景 */
+.bg-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+.bg-success {
+  background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%) !important;
+}
+
+.bg-warning {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+}
+
+.bg-info {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
+}

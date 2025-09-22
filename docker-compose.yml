@@ -1,16 +1,23 @@
 version: '3.8'
 
 services:
-  # Go 应用
-  app:
+  # Go 应用 (后端)
+  backend:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: law-oa-app
+      args:
+        BUILD_COMMIT: ${BUILD_COMMIT:-local}
+        BUILD_DATE: ${BUILD_DATE:-$(date)}
+        BUILD_TARGET: ${BUILD_TARGET:-standard}
+        PGO_PROFILE: ${PGO_PROFILE:-default.pgo}
+    container_name: law-oa-backend
     ports:
       - "8080:8080"
     environment:
-      - ENVIRONMENT=development
+      - GIN_MODE=${GIN_MODE:-debug}
+      - TZ=Asia/Shanghai
+      - ENVIRONMENT=${ENVIRONMENT:-development}
       - DB_HOST=mysql
       - DB_PORT=3306
       - DB_USER=root
@@ -22,14 +29,41 @@ services:
       - REDIS_DB=0
       - ES_HOST=http://elasticsearch:9200
       - JWT_SECRET=your-secret-key-change-in-production
+      - APP_ENV=${APP_ENV:-development}
     depends_on:
-      - mysql
-      - redis
-      - elasticsearch
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_started
     networks:
       - law-oa-network
     volumes:
+      - ./config:/app/config
       - ./logs:/app/logs
+      - ./uploads:/app/uploads
+      - profiles:/app/profiles  # 挂载PGO配置文件目录
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      timeout: 10s
+      retries: 5
+      interval: 30s
+      start_period: 15s
+    restart: unless-stopped
+
+  # React 应用 (前端)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: law-oa-frontend
+    ports:
+      - "3003:3003"
+    depends_on:
+      - backend
+    networks:
+      - law-oa-network
     restart: unless-stopped
 
   # MySQL 数据库
@@ -48,6 +82,12 @@ services:
       - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - law-oa-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppassword"]
+      timeout: 20s
+      retries: 10
+      interval: 30s
+      start_period: 10s
     restart: unless-stopped
     command: --default-authentication-plugin=mysql_native_password
 
@@ -61,6 +101,12 @@ services:
       - redis_data:/data
     networks:
       - law-oa-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      timeout: 10s
+      retries: 5
+      interval: 30s
+      start_period: 5s
     restart: unless-stopped
 
   # Elasticsearch
@@ -94,28 +140,14 @@ services:
       - law-oa-network
     restart: unless-stopped
 
-  # Nginx (可选，用于反向代理)
-  nginx:
-    image: nginx:alpine
-    container_name: law-oa-nginx
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./nginx/ssl:/etc/nginx/ssl
-    depends_on:
-      - app
-    networks:
-      - law-oa-network
-    restart: unless-stopped
-
 volumes:
   mysql_data:
     driver: local
   redis_data:
     driver: local
   elasticsearch_data:
+    driver: local
+  profiles:
     driver: local
 
 networks:

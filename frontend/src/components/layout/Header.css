@@ -1,0 +1,64 @@
+.header {
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  z-index: 1030;
+}
+
+.header .navbar-brand {
+  font-weight: 600;
+}
+
+.header .nav-link {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.header .nav-link:hover {
+  color: white !important;
+}
+
+.header .user-avatar {
+  width: 32px;
+  height: 32px;
+}
+
+.header .user-avatar .avatar {
+  width: 32px;
+  height: 32px;
+  font-size: 0.8rem;
+}
+
+.header .notification-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform: translate(50%, -50%);
+  font-size: 0.6rem;
+  padding: 0.25em 0.4em;
+}
+
+.search-bar {
+  width: 300px;
+}
+
+@media (max-width: 768px) {
+  .header .navbar-brand span {
+    display: none;
+  }
+  
+  .search-bar {
+    width: 200px;
+  }
+  
+  .header .user-info {
+    display: none;
+  }
+}
+
+@media (max-width: 576px) {
+  .search-bar {
+    width: 150px;
+  }
+  
+  .header .nav-link-text {
+    display: none;
+  }
+}

@@ -7,31 +7,80 @@ import (
 	"gorm.io/gorm"
 	"law-oa-go/internal/handlers"
 	"law-oa-go/internal/middleware"
+	"law-oa-go/internal/repositories"
 	"law-oa-go/internal/services"
+	"time"
 )
 
+// RouterConfig 路由器配置
+type RouterConfig struct {
+	DB             *gorm.DB
+	Redis          *redis.Client
+	Elasticsearch  *elasticsearch.Client
+	AllowedOrigins []string
+	RateLimit      int
+	Timeout        time.Duration
+}
+
+// NewRouter 创建新的路由器
+func NewRouter(config *RouterConfig) *gin.Engine {
+	app := gin.Default()
+
+	// 基础中间件
+	app.Use(middleware.Logger())
+	app.Use(middleware.Recovery())
+
+	// CORS中间件
+	corsConfig := middleware.CORSConfig{
+		AllowedOrigins: config.AllowedOrigins,
+		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders: []string{"Content-Type", "Authorization", "X-Request-ID"},
+		MaxAge:         "86400",
+	}
+	app.Use(middleware.CORSWithConfig(corsConfig))
+
+	// 限流中间件
+	rateLimitConfig := middleware.RateLimitConfig{
+		RedisClient: config.Redis,
+		KeyPrefix:   "rate_limit:",
+		Limit:       int64(config.RateLimit),
+		Window:      time.Minute,
+		SkipFunc:    nil,
+	}
+	app.Use(middleware.RateLimitMiddleware(rateLimitConfig))
+
+	// 初始化路由
+	Init(app, config.DB, config.Redis, config.Elasticsearch)
+
+	return app
+}
+
 func Init(app *gin.Engine, db *gorm.DB, redisClient *redis.Client, esClient *elasticsearch.Client) {
+	// 初始化Repository
+	userRepo := repositories.NewUserRepository(db)
+	clientRepo := repositories.NewClientRepository(db)
+	docRepo := repositories.NewDocumentRepository(db) // Assuming this exists
+
 	// 初始化服务
-	userService := services.NewUserService(db)
-	clientService := services.NewClientService(db)
+	userService := services.NewUserService(userRepo)
+	clientService := services.NewClientService(clientRepo)
 	caseService := services.NewCaseService(db)
+	documentService := services.NewDocumentService(docRepo, "./uploads") // Assuming storage dir
+	searchService := services.NewSearchService(esClient, "lawoa_")
 
 	// 初始化处理器
 	authHandler := handlers.NewAuthHandler(userService)
 	userHandler := handlers.NewUserHandler(userService)
 	clientHandler := handlers.NewClientHandler(clientService)
 	caseHandler := handlers.NewCaseHandler(caseService)
+	documentHandler := handlers.NewDocumentHandler(documentService)
+	searchHandler := handlers.NewSearchHandler(searchService)
+	dashboardHandler := handlers.NewDashboardHandler(userService, clientService, caseService)
 
 	// API路由组
 	api := app.Group("/api/v1")
 
-	// 健康检查
-	api.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"status":  "ok",
-			"message": "Service is healthy",
-		})
-	})
+	// 健康检查 - 移到main.go中统一管理
 
 	// 认证相关路由（无需认证）
 	auth := api.Group("/auth")
@@ -89,43 +138,32 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *redis.Client, esClient *ela
 			cases.POST("/:id/status", caseHandler.UpdateCaseStatus)
 		}
 
-		// 文档相关路由（占位符）
+		// 文档相关路由
 		documents := protected.Group("/documents")
 		{
-			documents.GET("", func(c *gin.Context) {
-				c.JSON(200, gin.H{
-					"message": "Get all documents",
-					"data":    []string{},
-				})
-			})
+			documents.POST("", documentHandler.UploadDocument)
+			documents.GET("/:id", documentHandler.GetDocument)
+			documents.PUT("/:id", documentHandler.UpdateDocument)
+			documents.DELETE("/:id", documentHandler.DeleteDocument)
+			documents.GET("", documentHandler.ListDocuments)
+			documents.GET("/stats", documentHandler.GetDocumentStats)
+			documents.GET("/:id/download", documentHandler.DownloadDocument)
+		}
 
-			documents.GET("/:id", func(c *gin.Context) {
-				c.JSON(200, gin.H{
-					"message": "Get document by ID",
-					"data":    map[string]interface{}{},
-				})
-			})
+		// 搜索相关路由
+		search := protected.Group("/search")
+		{
+			search.GET("", searchHandler.Search)
+			search.GET("/suggestions", searchHandler.GetSearchSuggestions)
+			search.POST("/reindex", searchHandler.ReindexAll)
+		}
 
-			documents.POST("", func(c *gin.Context) {
-				c.JSON(201, gin.H{
-					"message": "Create document",
-					"data":    map[string]interface{}{},
-				})
-			})
-
-			documents.PUT("/:id", func(c *gin.Context) {
-				c.JSON(200, gin.H{
-					"message": "Update document",
-					"data":    map[string]interface{}{},
-				})
-			})
-
-			documents.DELETE("/:id", func(c *gin.Context) {
-				c.JSON(200, gin.H{
-					"message": "Delete document",
-					"data":    map[string]interface{}{},
-				})
-			})
+		// 仪表盘相关路由
+		dashboard := protected.Group("/dashboard")
+		{
+			dashboard.GET("/statistics", dashboardHandler.GetStatistics)
+			dashboard.GET("/todos", dashboardHandler.GetTodos)
+			dashboard.GET("/activities", dashboardHandler.GetActivities)
 		}
 
 		// 性能测试路由

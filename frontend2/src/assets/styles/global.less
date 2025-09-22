@@ -1,0 +1,206 @@
+/* Global styles for Law Firm OA System */
+
+:root {
+  /* 律所专业配色方案 */
+  --primary-color: #1c4e80;        /* 深蓝色 - 专业、信任 */
+  --primary-light: #2d5aa0;        /* 浅蓝色 */
+  --secondary-color: #8b5a3c;      /* 棕色 - 稳重、权威 */
+  --accent-color: #c5a572;         /* 金色 - 高端、品质 */
+  --success-color: #52c41a;        /* 成功绿 */
+  --warning-color: #faad14;        /* 警告橙 */
+  --error-color: #ff4d4f;          /* 错误红 */
+  --text-primary: #262626;         /* 主要文字 */
+  --text-secondary: #595959;       /* 次要文字 */
+  --text-disabled: #bfbfbf;        /* 禁用文字 */
+  --background-color: #f8f9fa;     /* 背景色 */
+  --surface-color: #ffffff;        /* 表面色 */
+  --border-color: #e8e8e8;         /* 边框色 */
+  --shadow-light: 0 2px 8px rgba(28, 78, 128, 0.08);
+  --shadow-medium: 0 4px 16px rgba(28, 78, 128, 0.12);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif, 'Apple Color Emoji',
+    'Segoe UI Emoji', 'Segoe UI Symbol';
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background-color: var(--background-color);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.ant-layout {
+  min-height: 100vh;
+  background-color: var(--background-color);
+}
+
+.ant-layout-content {
+  padding: 24px;
+  background: var(--surface-color);
+  border-radius: 8px;
+  margin: 16px;
+  box-shadow: var(--shadow-light);
+}
+
+/* 律所专业主题样式 */
+
+/* 主要按钮样式 */
+.ant-btn-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  
+  &:hover, &:focus {
+    background-color: var(--primary-light);
+    border-color: var(--primary-light);
+  }
+}
+
+/* 侧边栏样式 */
+.ant-layout-sider {
+  background: linear-gradient(180deg, var(--primary-color) 0%, var(--primary-light) 100%);
+  box-shadow: var(--shadow-medium);
+}
+
+.ant-menu-inline {
+  background: transparent;
+  border-right: none;
+  
+  .ant-menu-item {
+    color: rgba(255, 255, 255, 0.85);
+    margin: 4px 8px;
+    border-radius: 6px;
+    
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+    
+    &.ant-menu-item-selected {
+      background-color: var(--accent-color);
+      color: #fff;
+    }
+  }
+  
+  .ant-menu-submenu-title {
+    color: rgba(255, 255, 255, 0.85);
+    margin: 4px 8px;
+    border-radius: 6px;
+    
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+  }
+}
+
+/* 头部样式 */
+.ant-layout-header {
+  background: var(--surface-color);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: var(--shadow-light);
+}
+
+/* Custom styles */
+.page-header {
+  margin-bottom: 24px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.form-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px;
+  background: var(--surface-color);
+  border-radius: 8px;
+  box-shadow: var(--shadow-light);
+  border: 1px solid var(--border-color);
+}
+
+.table-container {
+  background: var(--surface-color);
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: var(--shadow-light);
+  border: 1px solid var(--border-color);
+}
+
+.search-form {
+  margin-bottom: 16px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.action-buttons {
+  margin-bottom: 16px;
+  text-align: right;
+}
+
+.status-tag {
+  &.active {
+    color: var(--success-color);
+    background: #f6ffed;
+    border-color: #b7eb8f;
+  }
+  
+  &.inactive {
+    color: var(--warning-color);
+    background: #fffbe6;
+    border-color: #ffe58f;
+  }
+  
+  &.closed {
+    color: var(--error-color);
+    background: #fff2f0;
+    border-color: #ffccc7;
+  }
+}
+
+/* 卡片样式 */
+.ant-card {
+  border-radius: 8px;
+  box-shadow: var(--shadow-light);
+  border: 1px solid var(--border-color);
+}
+
+/* 表格样式 */
+.ant-table {
+  .ant-table-thead > tr > th {
+    background-color: #fafafa;
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .ant-layout-content {
+    padding: 16px;
+  }
+  
+  .form-container {
+    padding: 16px;
+  }
+  
+  .table-container {
+    padding: 16px;
+  }
+}

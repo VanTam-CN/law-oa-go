@@ -4,20 +4,20 @@ import (
 	"context"
 	"errors"
 	"regexp"
-	"strings"
 	"time"
 
 	"gorm.io/gorm"
-	"law-oa-go/internal/common"
+	customErrors "law-oa-go/internal/errors"
 	"law-oa-go/internal/models"
+	"law-oa-go/internal/repositories"
 )
 
 type ClientService struct {
-	db *gorm.DB
+	clientRepo repositories.ClientRepository
 }
 
-func NewClientService(db *gorm.DB) *ClientService {
-	return &ClientService{db: db}
+func NewClientService(clientRepo repositories.ClientRepository) *ClientService {
+	return &ClientService{clientRepo: clientRepo}
 }
 
 type CreateClientRequest struct {
@@ -57,6 +57,7 @@ type ClientListRequest struct {
 	PageSize int    `form:"page_size" binding:"omitempty,min=1,max=100"`
 	Status   string `form:"status" binding:"omitempty,oneof=active inactive"`
 	Search   string `form:"search"`
+	Company  string `form:"company"`
 }
 
 type ClientStatsResponse struct {
@@ -72,9 +73,12 @@ func (s *ClientService) CreateClient(ctx context.Context, req *CreateClientReque
 	}
 
 	if req.Email != "" {
-		var existingClient models.Client
-		if err := s.db.WithContext(ctx).Where("email = ?", req.Email).First(&existingClient).Error; err == nil {
-			return nil, common.NewValidationError("email already exists", "The email address is already registered")
+		existingClient, err := s.clientRepo.FindByEmail(ctx, req.Email)
+		if err != nil {
+			return nil, customErrors.NewDatabaseError("check_email_existence", "Failed to check email existence", err)
+		}
+		if existingClient != nil {
+			return nil, customErrors.NewBusinessError("email_exists", "Email already exists", nil)
 		}
 	}
 
@@ -88,80 +92,78 @@ func (s *ClientService) CreateClient(ctx context.Context, req *CreateClientReque
 		Status:  "active",
 	}
 
-	if err := s.db.WithContext(ctx).Create(client).Error; err != nil {
-		return nil, common.NewDatabaseError("create client", err)
+	if err := s.clientRepo.Create(ctx, client); err != nil {
+		return nil, customErrors.NewDatabaseError("create_client", "Failed to create client", err)
 	}
 
 	return s.toClientResponse(client), nil
 }
 
 func (s *ClientService) GetClientByID(ctx context.Context, id uint) (*ClientResponse, error) {
-	var client models.Client
-	err := s.db.WithContext(ctx).First(&client, id).Error
+	client, err := s.clientRepo.FindByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, common.NewNotFoundError("client")
-		}
-		return nil, common.NewDatabaseError("get client", err)
+		return nil, customErrors.NewDatabaseError("get_client", "Failed to get client", err)
+	}
+	if client == nil {
+		return nil, customErrors.NewNotFoundError("client", "Client not found", nil)
 	}
 
-	return s.toClientResponse(&client), nil
+	return s.toClientResponse(client), nil
 }
 
 func (s *ClientService) UpdateClient(ctx context.Context, id uint, req *UpdateClientRequest) (*ClientResponse, error) {
-	var client models.Client
-	if err := s.db.WithContext(ctx).First(&client, id).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, common.NewNotFoundError("client")
-		}
-		return nil, common.NewDatabaseError("find client", err)
+	client, err := s.clientRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, customErrors.NewDatabaseError("find_client", "Failed to find client", err)
+	}
+	if client == nil {
+		return nil, customErrors.NewNotFoundError("client", "Client not found", nil)
 	}
 
-	updates := make(map[string]interface{})
 	if req.Name != nil {
-		updates["name"] = *req.Name
+		client.Name = *req.Name
 	}
 	if req.Email != nil {
 		if *req.Email != client.Email && *req.Email != "" {
-			var existingClient models.Client
-			if err := s.db.WithContext(ctx).Where("email = ? AND id != ?", *req.Email, id).First(&existingClient).Error; err == nil {
-				return nil, common.NewValidationError("email already exists", "The email address is already in use")
+			existingClient, err := s.clientRepo.FindByEmail(ctx, *req.Email)
+			if err != nil {
+				return nil, customErrors.NewDatabaseError("check_email_existence", "Failed to check email existence", err)
+			}
+			if existingClient != nil && existingClient.ID != id {
+				return nil, customErrors.NewBusinessError("email_exists", "Email already exists", nil)
 			}
 		}
-		updates["email"] = *req.Email
+		client.Email = *req.Email
 	}
 	if req.Phone != nil {
-		updates["phone"] = *req.Phone
+		client.Phone = *req.Phone
 	}
 	if req.Address != nil {
-		updates["address"] = *req.Address
+		client.Address = *req.Address
 	}
 	if req.Company != nil {
-		updates["company"] = *req.Company
+		client.Company = *req.Company
 	}
 	if req.Notes != nil {
-		updates["notes"] = *req.Notes
+		client.Notes = *req.Notes
 	}
 	if req.Status != nil {
-		updates["status"] = *req.Status
+		client.Status = *req.Status
 	}
 
-	if len(updates) > 0 {
-		if err := s.db.WithContext(ctx).Model(&client).Updates(updates).Error; err != nil {
-			return nil, common.NewDatabaseError("update client", err)
-		}
+	if err := s.clientRepo.Update(ctx, client); err != nil {
+		return nil, customErrors.NewDatabaseError("update_client", "Failed to update client", err)
 	}
 
 	return s.GetClientByID(ctx, id)
 }
 
 func (s *ClientService) DeleteClient(ctx context.Context, id uint) error {
-	result := s.db.WithContext(ctx).Delete(&models.Client{}, id)
-	if result.Error != nil {
-		return common.NewDatabaseError("delete client", result.Error)
-	}
-	if result.RowsAffected == 0 {
-		return common.NewNotFoundError("client")
+	if err := s.clientRepo.Delete(ctx, id); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return customErrors.NewNotFoundError("client", "Client not found", nil)
+		}
+		return customErrors.NewDatabaseError("delete_client", "Failed to delete client", err)
 	}
 	return nil
 }
@@ -176,70 +178,52 @@ func (s *ClientService) ListClients(ctx context.Context, req *ClientListRequest)
 		pageSize = req.PageSize
 	}
 
-	query := s.db.WithContext(ctx).Model(&models.Client{})
-
-	if req.Status != "" {
-		query = query.Where("status = ?", req.Status)
-	}
-	if req.Search != "" {
-		searchTerm := "%" + strings.ToLower(req.Search) + "%"
-		query = query.Where("LOWER(name) LIKE ? OR LOWER(email) LIKE ? OR LOWER(phone) LIKE ?", searchTerm, searchTerm, searchTerm)
+	params := &repositories.ClientListParams{
+		Page:     page,
+		PageSize: pageSize,
+		Status:   req.Status,
+		Search:   req.Search,
 	}
 
-	var total int64
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, common.NewDatabaseError("count clients", err)
-	}
-
-	var clients []models.Client
-	offset := (page - 1) * pageSize
-	if err := query.Offset(offset).Limit(pageSize).Order("created_at DESC").Find(&clients).Error; err != nil {
-		return nil, 0, common.NewDatabaseError("list clients", err)
+	clients, total, err := s.clientRepo.List(ctx, params)
+	if err != nil {
+		return nil, 0, customErrors.NewDatabaseError("list_clients", "Failed to list clients", err)
 	}
 
 	responses := make([]*ClientResponse, len(clients))
 	for i, client := range clients {
-		responses[i] = s.toClientResponse(&client)
+		responses[i] = s.toClientResponse(client)
 	}
 
 	return responses, total, nil
 }
 
 func (s *ClientService) GetClientStats(ctx context.Context) (*ClientStatsResponse, error) {
-	stats := &ClientStatsResponse{}
-
-	if err := s.db.WithContext(ctx).Model(&models.Client{}).Count(&stats.TotalClients).Error; err != nil {
-		return nil, common.NewDatabaseError("count total clients", err)
+	stats, err := s.clientRepo.GetStats(ctx)
+	if err != nil {
+		return nil, customErrors.NewDatabaseError("get_client_stats", "Failed to get client stats", err)
 	}
 
-	if err := s.db.WithContext(ctx).Model(&models.Client{}).Where("status = ?", "active").Count(&stats.ActiveClients).Error; err != nil {
-		return nil, common.NewDatabaseError("count active clients", err)
-	}
-
-	if err := s.db.WithContext(ctx).Model(&models.Client{}).Where("status = ?", "inactive").Count(&stats.InactiveClients).Error; err != nil {
-		return nil, common.NewDatabaseError("count inactive clients", err)
-	}
-
-	startOfMonth := time.Now().AddDate(0, 0, -time.Now().Day()+1).Truncate(24 * time.Hour)
-	if err := s.db.WithContext(ctx).Model(&models.Client{}).Where("created_at >= ?", startOfMonth).Count(&stats.NewClientsThisMonth).Error; err != nil {
-		return nil, common.NewDatabaseError("count new clients this month", err)
-	}
-
-	return stats, nil
+	return &ClientStatsResponse{
+		TotalClients:        stats.TotalClients,
+		ActiveClients:       stats.ActiveClients,
+		InactiveClients:     stats.InactiveClients,
+		NewClientsThisMonth: stats.NewClientsThisMonth,
+	}, nil
 }
 
 func (s *ClientService) validateClientRequest(req *CreateClientRequest) error {
 	if req.Email != "" {
 		emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 		if !emailRegex.MatchString(req.Email) {
-			return common.NewValidationError("invalid email format", "Please provide a valid email address")
+			return customErrors.NewValidationError("email", "invalid_email_format", "Invalid email format", "Please provide a valid email address")
 		}
 	}
 
 	if req.Phone != "" {
 		phoneRegex := regexp.MustCompile(`^[\d\s\-\+\(\)]+$`)
 		if !phoneRegex.MatchString(req.Phone) {
-			return common.NewValidationError("invalid phone format", "Please provide a valid phone number")
+			return customErrors.NewValidationError("phone", "invalid_phone_format", "Invalid phone format", "Please provide a valid phone number")
 		}
 	}
 

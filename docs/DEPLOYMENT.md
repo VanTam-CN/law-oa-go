@@ -1,18 +1,62 @@
-# Go 版本部署指南
+# 法律事务所自动化系统 - 部署指南
 
 ## 概述
 
-Law OA Go 是基于 Go 语言重构的律师事务所办公自动化系统，提供更高的性能、更好的可维护性和更简单的部署流程。
+Law OA Go 是基于 Go 语言开发的法律事务所自动化系统，采用单体架构设计。本指南提供基础的部署流程和配置说明。
+
+## 部署架构
+
+### 系统架构图
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Web服务器层                              │
+│              ┌─────────────┐                                │
+│              │   Nginx     │                                │
+│              │  Web Server │                                │
+│              └─────────────┘                                │
+├─────────────────────────────────────────────────────────────┤
+│                    应用层                                    │
+│              ┌─────────────┐                                │
+│              │   Law OA    │                                │
+│              │      Go     │                                │
+│              └─────────────┘                                │
+├─────────────────────────────────────────────────────────────┤
+│                    数据层                                    │
+│  ┌─────────────┐ ┌─────────────┐                          │
+│  │   MySQL     │ │   Redis     │                          │
+│  │    Database │ │   Cache     │                          │
+│  └─────────────┘ └─────────────┘                          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 部署策略
+
+1. **单机部署**: 简单直接的单体应用部署
+2. **手动部署**: 基础的部署脚本和配置管理
+3. **基础监控**: 应用状态监控和日志记录
+4. **数据备份**: 基本的数据库备份策略
 
 ## 快速开始
 
 ### 1. 环境要求
 
-- Go 1.21+
-- Docker & Docker Compose
-- MySQL 8.0+
-- Redis 7+
-- Elasticsearch 8.8+
+#### 系统要求
+- **操作系统**: Linux (Ubuntu 20.04+ / CentOS 8+)
+- **CPU**: 最少 2 核心
+- **内存**: 最少 2GB
+- **磁盘**: 最少 20GB
+
+#### 软件依赖
+- **Go**: 1.23+ (开发环境)
+- **Docker**: 20.10+ (可选)
+- **MySQL**: 8.0+ (生产环境)
+- **Redis**: 6.0+ (可选)
+- **Nginx**: 1.20+ (可选)
+
+#### 网络要求
+- **端口开放**: 8080 (应用端口)
+- **防火墙配置**: 允许必要端口通信
 
 ### 2. 克隆项目
 
@@ -21,91 +65,207 @@ git clone <repository-url>
 cd law-oa-go
 ```
 
-### 3. 初始化项目
+### 3. 配置环境变量
 
 ```bash
-./dev.sh init
+# 复制环境变量模板（如果存在）
+cp .env.example .env 2>/dev/null || echo "Creating .env file..."
+
+# 编辑配置文件
+vim .env
 ```
 
-### 4. 配置环境变量
+### 4. 初始化数据库
 
 ```bash
-cp .env.example .env
-# 编辑 .env 文件，配置数据库连接等信息
+# 创建数据库
+mysql -u root -p -e "CREATE DATABASE law_oa CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+# 运行数据库迁移（如果有迁移文件）
+go run cmd/migrate/main.go
 ```
 
-### 5. 启动开发环境
+### 5. 启动应用
 
 ```bash
-./dev.sh start
-```
-
-### 6. 访问应用
-
-- API 地址: http://localhost:8080
-- 健康检查: http://localhost:8080/health
-
-## 开发命令
-
-```bash
-# 初始化项目
-./dev.sh init
-
-# 启动开发环境
-./dev.sh start
-
-# 停止开发环境
-./dev.sh stop
-
-# 构建项目
-./dev.sh build
-
-# 运行测试
-./dev.sh test
-
-# 运行代码检查
-./dev.sh lint
+# 编译应用
+go build -o law-oa-go cmd/server/main.go
 
 # 运行应用
-./dev.sh run
-
-# 生成文档
-./dev.sh docs
-
-# 清理项目
-./dev.sh clean
-
-# 显示帮助
-./dev.sh help
+./law-oa-go
 ```
+
+### 6. 验证部署
+
+```bash
+# 检查应用健康状态
+curl http://localhost:8080/health
+```
+
+### 7. 访问服务
+
+- **API服务**: http://localhost:8080
+- **健康检查**: http://localhost:8080/health
 
 ## 生产环境部署
 
-### 1. 使用 Docker 部署
+### 1. 部署前准备
+
+#### 系统初始化
 
 ```bash
-# 构建镜像
-docker build -t law-oa-go .
+# 更新系统
+sudo apt update && sudo apt upgrade -y
 
-# 启动服务
-docker-compose up -d
+# 安装必要工具
+sudo apt install -y curl wget git vim
+
+# 创建应用用户
+sudo useradd -m -s /bin/bash appuser
+sudo usermod -aG sudo appuser
+
+# 创建部署目录
+sudo mkdir -p /opt/law-oa-go/{bin,config,logs,backups}
+sudo chown -R appuser:appuser /opt/law-oa-go
 ```
 
-### 2. 直接部署
+#### 数据库准备
 
 ```bash
-# 构建应用
-./dev.sh build
+# 安装MySQL
+sudo apt install -y mysql-server
 
-# 配置生产环境变量
-export ENVIRONMENT=production
-export PORT=8080
-export DB_HOST=production-db-host
-export DB_PASSWORD=secure-password
-export JWT_SECRET=very-secure-secret-key
+# 创建数据库和用户
+sudo mysql -e "CREATE DATABASE law_oa CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+sudo mysql -e "CREATE USER 'law_oa_user'@'localhost' IDENTIFIED BY 'secure_password';"
+sudo mysql -e "GRANT ALL PRIVILEGES ON law_oa.* TO 'law_oa_user'@'localhost';"
+sudo mysql -e "FLUSH PRIVILEGES;"
 
-# 运行应用
-./main
+# 重启MySQL
+sudo systemctl restart mysql
+```
+
+#### Redis准备（可选）
+
+```bash
+# 安装Redis
+sudo apt install -y redis-server
+
+# 重启Redis
+sudo systemctl restart redis
+```
+
+### 2. 手动部署
+
+```bash
+# 克隆代码
+git clone <repository-url> /opt/law-oa-go/source
+cd /opt/law-oa-go/source
+
+# 配置环境
+cp .env.production .env
+vim .env
+
+# 编译应用
+go build -o /opt/law-oa-go/bin/law-oa-go cmd/server/main.go
+
+# 创建服务配置
+sudo tee /etc/systemd/system/law-oa-go.service > /dev/null <<EOF
+[Unit]
+Description=Law OA Go Service
+After=network.target mysql.service
+
+[Service]
+Type=simple
+User=appuser
+WorkingDirectory=/opt/law-oa-go
+ExecStart=/opt/law-oa-go/bin/law-oa-go
+Restart=always
+RestartSec=5
+Environment=ENVIRONMENT=production
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# 启动服务
+sudo systemctl daemon-reload
+sudo systemctl enable law-oa-go
+sudo systemctl start law-oa-go
+```
+
+### 3. Docker部署方式（可选）
+
+#### Docker Compose部署
+
+```yaml
+# docker-compose.yml
+version: '3.8'
+
+services:
+  app:
+    image: law-oa-go:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - ENVIRONMENT=production
+      - DB_HOST=mysql
+      - DB_PASSWORD=${DB_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      - mysql
+    volumes:
+      - ./config:/app/config
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      - MYSQL_DATABASE=law_oa
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    restart: unless-stopped
+
+  redis:
+    image: redis:6-alpine
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  redis_data:
+```
+
+### 4. Nginx配置（可选）
+
+#### 简单反向代理配置
+
+```nginx
+# /etc/nginx/sites-available/law-oa-go
+server {
+    listen 80;
+    server_name api.lawfirm.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /health {
+        proxy_pass http://127.0.0.1:8080/health;
+        access_log off;
+    }
+}
 ```
 
 ## 配置说明
@@ -122,27 +282,18 @@ LOG_LEVEL=info
 DB_HOST=localhost
 DB_PORT=3306
 DB_USER=root
-DB_PASSWORD=password
+DB_PASSWORD=your_secure_password
 DB_NAME=law_oa
-
-# Redis 配置
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=
-REDIS_DB=0
-
-# Elasticsearch 配置
-ES_HOST=http://localhost:9200
-ES_USERNAME=
-ES_PASSWORD=
 
 # JWT 配置
 JWT_SECRET=your-secret-key-change-in-production
 JWT_EXPIRE=3600
 
-# 限流配置
-RATE_LIMIT_REQUESTS=100
-RATE_LIMIT_DURATION=60
+# Redis 配置（可选）
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+REDIS_DB=0
 ```
 
 ### 配置文件配置
@@ -154,25 +305,17 @@ RATE_LIMIT_DURATION=60
 environment: production
 port: "8080"
 log_level: info
-enable_swagger: false
 
 # 数据库配置
 database:
   host: localhost
   port: "3306"
   username: root
-  password: password
+  password: your_secure_password
   database: law_oa
   charset: utf8mb4
   parse_time: true
   loc: Local
-
-# Redis 配置
-redis:
-  host: localhost
-  port: "6379"
-  password: ""
-  db: 0
 
 # JWT 配置
 jwt:
@@ -196,8 +339,7 @@ jwt:
 - **响应**:
   ```json
   {
-    "code": 200,
-    "message": "登录成功",
+    "success": true,
     "data": {
       "token": "jwt-token",
       "user": {
@@ -205,6 +347,11 @@ jwt:
         "username": "admin",
         "email": "admin@lawfirm.com"
       }
+    },
+    "meta": {
+      "timestamp": "2024-01-01T00:00:00Z",
+      "version": "v1",
+      "server": "law-oa-go"
     }
   }
   ```
@@ -216,19 +363,20 @@ jwt:
 - **查询参数**:
   - `page`: 页码 (默认: 1)
   - `size`: 每页大小 (默认: 10)
-  - `case_name`: 案件名称 (可选)
-  - `case_type`: 案件类型 (可选)
-  - `status`: 状态 (可选)
 - **响应**:
   ```json
   {
-    "code": 200,
-    "message": "获取成功",
+    "success": true,
     "data": {
       "cases": [...],
       "total": 100,
       "page": 1,
       "size": 10
+    },
+    "meta": {
+      "timestamp": "2024-01-01T00:00:00Z",
+      "version": "v1",
+      "server": "law-oa-go"
     }
   }
   ```
@@ -255,26 +403,45 @@ jwt:
 
 ### 应用监控
 
-- **健康检查**: `GET /health`
-- **统计信息**: `GET /api/v1/stats/dashboard`
+#### 健康检查端点
+
+```bash
+# 基础健康检查
+curl http://localhost:8080/health
+```
 
 ### 日志管理
 
-项目使用结构化日志记录，支持以下日志级别：
-- DEBUG
-- INFO
-- WARN
-- ERROR
+#### 简单日志配置
 
-日志输出到控制台，支持 JSON 格式。
+```bash
+# 应用日志
+/var/log/law-oa-go/app.log
+
+# 系统日志
+journalctl -u law-oa-go -f
+```
+
+#### 日志轮转配置
+
+```bash
+# /etc/logrotate.d/law-oa-go
+/var/log/law-oa-go/*.log {
+    daily
+    missingok
+    rotate 7
+    compress
+    notifempty
+    create 0644 appuser appuser
+}
+```
 
 ## 性能优化
 
-### 缓存策略
+### 缓存策略（可选）
 
 - 使用 Redis 缓存热点数据
 - 优化数据库查询
-- 使用 Elasticsearch 进行全文搜索
 
 ### 数据库优化
 
@@ -302,83 +469,184 @@ jwt:
 - CORS 跨域配置
 - 请求频率限制
 
+## 备份和恢复
+
+### 数据库备份
+
+#### 简单备份脚本
+
+```bash
+#!/bin/bash
+# /scripts/backup-database.sh
+
+DB_HOST="localhost"
+DB_PORT="3306"
+DB_NAME="law_oa"
+DB_USER="root"
+BACKUP_DIR="/backup/database"
+DATE=$(date +%Y%m%d_%H%M%S)
+BACKUP_FILE="${BACKUP_DIR}/law_oa_${DATE}.sql"
+RETENTION_DAYS=7
+
+# 创建备份目录
+mkdir -p ${BACKUP_DIR}
+
+# 创建数据库备份
+echo "Creating database backup..."
+mysqldump -h ${DB_HOST} -P ${DB_PORT} -u ${DB_USER} -p ${DB_NAME} > ${BACKUP_FILE}
+
+# 清理旧备份
+find ${BACKUP_DIR} -name "law_oa_*.sql" -mtime +${RETENTION_DAYS} -delete
+
+echo "Backup completed: ${BACKUP_FILE}"
+```
+
+### 恢复流程
+
+#### 数据库恢复
+
+```bash
+#!/bin/bash
+# /scripts/restore-database.sh
+
+BACKUP_FILE=$1
+DB_HOST="localhost"
+DB_PORT="3306"
+DB_NAME="law_oa"
+DB_USER="root"
+
+if [ -z "$BACKUP_FILE" ]; then
+    echo "Usage: $0 <backup_file>"
+    exit 1
+fi
+
+# 停止应用服务
+systemctl stop law-oa-go
+
+# 恢复数据库
+echo "Restoring database..."
+mysql -h ${DB_HOST} -P ${DB_PORT} -u ${DB_USER} -p ${DB_NAME} < ${BACKUP_FILE}
+
+# 启动应用服务
+systemctl start law-oa-go
+
+echo "Database restore completed"
+```
+
+## 安全考虑
+
+### 系统安全
+
+#### 防火墙配置
+
+```bash
+# 安装ufw
+sudo apt install ufw
+
+# 配置防火墙规则
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+
+# 允许必要端口
+sudo ufw allow ssh
+sudo ufw allow 8080
+
+# 启用防火墙
+sudo ufw enable
+```
+
+#### 系统加固
+
+```bash
+# 系统更新
+sudo apt update && sudo apt upgrade -y
+
+# 配置SSH安全
+sudo vim /etc/ssh/sshd_config
+# 修改: PermitRootLogin no
+# 修改: PasswordAuthentication no
+
+# 重启SSH服务
+sudo systemctl restart sshd
+```
+
+### 应用安全
+
+#### 环境变量安全
+
+```bash
+# 使用环境变量文件
+export DB_PASSWORD="your_secure_password"
+export JWT_SECRET="your_very_secure_jwt_secret"
+```
+
 ## 故障排除
 
-### 常见问题
+### 常见问题诊断
 
-1. **数据库连接失败**
-   - 检查数据库服务是否启动
-   - 验证连接参数是否正确
-   - 确认网络连接正常
+#### 1. 应用启动失败
 
-2. **Redis 连接失败**
-   - 检查 Redis 服务状态
-   - 验证 Redis 配置
-   - 检查防火墙设置
+```bash
+# 检查应用状态
+systemctl status law-oa-go
 
-3. **Elasticsearch 连接失败**
-   - 检查 ES 服务状态
-   - 验证 ES 配置
-   - 检查索引是否存在
+# 查看应用日志
+journalctl -u law-oa-go -f
 
-4. **JWT 认证失败**
-   - 检查 JWT 密钥配置
-   - 验证令牌格式
-   - 确认令牌未过期
+# 检查依赖服务
+systemctl status mysql
+```
 
-### 日志查看
+#### 2. 数据库连接问题
+
+```bash
+# 测试数据库连接
+mysql -h localhost -u root -p -e "SELECT 1;"
+
+# 检查数据库状态
+sudo systemctl status mysql
+```
+
+#### 3. 性能问题
+
+```bash
+# 检查系统资源
+top
+free -h
+df -h
+```
+
+### 日志分析
 
 ```bash
 # 查看应用日志
-./dev.sh run
+journalctl -u law-oa-go -f
 
-# 查看 Docker 日志
-docker-compose logs -f app
-
-# 查看 Nginx 日志
-docker-compose logs -f nginx
+# 查看错误日志
+journalctl -u law-oa-go --since "1 hour ago" | grep ERROR
 ```
-
-## 开发指南
-
-### 代码规范
-
-- 遵循 Go 官方代码规范
-- 使用 golangci-lint 进行代码检查
-- 编写单元测试
-- 使用 godoc 格式编写注释
-
-### 数据库操作
-
-- 使用 GORM 进行数据库操作
-- 遵循数据库迁移最佳实践
-- 使用事务保证数据一致性
-
-### 错误处理
-
-- 使用自定义错误类型
-- 记录错误日志
-- 提供友好的错误信息
-
-## 贡献指南
-
-1. Fork 项目
-2. 创建功能分支
-3. 提交更改
-4. 推送到分支
-5. 创建 Pull Request
 
 ## 技术栈
 
-- **后端框架**: Gin (Go Web Framework)
-- **数据库**: MySQL 8.0
-- **缓存**: Redis 7
-- **搜索引擎**: Elasticsearch 8.8
+### 核心技术
+
+- **语言**: Go 1.23+
+- **Web框架**: Gin
+- **数据库**: MySQL 8.0+
+- **缓存**: Redis 6.0+ (可选)
 - **ORM**: GORM
+
+### 部署和运维
+
+- **容器化**: Docker (可选)
+- **Web服务器**: Nginx (可选)
+
+### 安全
+
 - **认证**: JWT
-- **容器化**: Docker & Docker Compose
-- **代理**: Nginx
+- **授权**: RBAC
+- **加密**: TLS 1.3
 
-## 许可证
+---
 
-MIT License
+**注意**: 本文档为简化版部署指南，适用于单体应用架构。

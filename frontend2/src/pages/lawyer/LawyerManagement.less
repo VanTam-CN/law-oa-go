@@ -1,0 +1,129 @@
+.lawyer-management {
+  .stats-row {
+    margin-bottom: 24px;
+    
+    .ant-card {
+      .ant-statistic {
+        .ant-statistic-title {
+          font-size: 14px;
+          color: #666;
+        }
+        
+        .ant-statistic-content {
+          .ant-statistic-content-value {
+            font-size: 24px;
+            font-weight: 600;
+          }
+        }
+      }
+    }
+  }
+
+  .search-card {
+    margin-bottom: 16px;
+    
+    .ant-form {
+      .ant-form-item {
+        margin-bottom: 16px;
+        
+        .ant-input,
+        .ant-select {
+          min-width: 120px;
+        }
+      }
+    }
+  }
+
+  .ant-table {
+    .ant-table-thead > tr > th {
+      background-color: #f5f5f5;
+      font-weight: 600;
+    }
+
+    .ant-table-tbody > tr:hover > td {
+      background-color: #f0f8ff;
+    }
+
+    .action-column {
+      .ant-btn {
+        padding: 4px 8px;
+        height: 32px;
+        
+        &:hover {
+          background-color: #f0f0f0;
+        }
+      }
+    }
+  }
+
+  .ant-modal {
+    .ant-modal-body {
+      .ant-form {
+        .ant-form-item {
+          margin-bottom: 16px;
+        }
+      }
+    }
+  }
+
+  .specialty-tags {
+    .ant-tag {
+      margin-bottom: 8px;
+    }
+  }
+
+  .lawyer-detail {
+    .detail-header {
+      text-align: center;
+      margin-bottom: 24px;
+      
+      .ant-avatar {
+        margin-bottom: 16px;
+      }
+      
+      h2 {
+        margin: 16px 0 8px;
+        color: #1a1a1a;
+      }
+    }
+
+    .ant-descriptions {
+      .ant-descriptions-item-label {
+        font-weight: 600;
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    .stats-row {
+      .ant-col {
+        margin-bottom: 16px;
+      }
+    }
+
+    .search-card {
+      .ant-form {
+        .ant-form-item {
+          width: 100%;
+          
+          .ant-input,
+          .ant-select {
+            width: 100%;
+          }
+        }
+      }
+    }
+
+    .ant-table {
+      .ant-table-thead > tr > th {
+        font-size: 12px;
+        padding: 8px;
+      }
+
+      .ant-table-tbody > tr > td {
+        font-size: 12px;
+        padding: 8px;
+      }
+    }
+  }
+}

@@ -1,326 +1,63 @@
-# 服务间通信配置
+# 🚫 文档已标记为不正确 - 项目实际为单体架构
 
-## gRPC服务定义
+## ⚠️ 重要提醒
 
-### 用户服务proto文件
-```protobuf
-// proto/user_service.proto
-syntax = "proto3";
+**本文档描述的微服务配置与项目实际情况完全不符。项目目前采用的是单体架构，不存在服务间通信配置。**
 
-package user_service;
-option go_package = "./pb";
+保留此文档仅作为未来架构演进参考，请勿将其作为当前项目配置的准确描述。
 
-service UserService {
-  rpc GetUser(GetUserRequest) returns (GetUserResponse);
-  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
-  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse);
-  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
-}
+## 当前实际配置
 
-message GetUserRequest {
-  uint64 user_id = 1;
-}
+### 应用配置
+- **配置文件**: `config/config.yaml`
+- **环境变量**: 通过`.env`文件管理
+- **数据库配置**: 单一数据库连接
+- **认证配置**: JWT密钥配置
+- **日志配置**: 统一日志格式和输出
 
-message GetUserResponse {
-  uint64 id = 1;
-  string name = 2;
-  string email = 3;
-  string role = 4;
-  string status = 5;
-  string created_at = 6;
-  string updated_at = 7;
-}
-
-message CreateUserRequest {
-  string name = 1;
-  string email = 2;
-  string password = 3;
-  string role = 4;
-}
-
-message CreateUserResponse {
-  uint64 id = 1;
-  string name = 2;
-  string email = 3;
-  string role = 4;
-  string status = 5;
-  string created_at = 6;
-}
-
-message UpdateUserRequest {
-  uint64 user_id = 1;
-  string name = 2;
-  string email = 3;
-  string role = 4;
-  string status = 5;
-}
-
-message UpdateUserResponse {
-  uint64 id = 1;
-  string name = 2;
-  string email = 3;
-  string role = 4;
-  string status = 5;
-  string updated_at = 6;
-}
-
-message ListUsersRequest {
-  int32 page = 1;
-  int32 page_size = 2;
-  string status = 3;
-  string role = 4;
-}
-
-message ListUsersResponse {
-  repeated GetUserResponse users = 1;
-  int64 total = 2;
-  int32 page = 3;
-  int32 page_size = 4;
-}
-```
-
-### 案件服务proto文件
-```protobuf
-// proto/case_service.proto
-syntax = "proto3";
-
-package case_service;
-option go_package = "./pb";
-
-service CaseService {
-  rpc GetCase(GetCaseRequest) returns (GetCaseResponse);
-  rpc CreateCase(CreateCaseRequest) returns (CreateCaseResponse);
-  rpc UpdateCase(UpdateCaseRequest) returns (UpdateCaseResponse);
-  rpc ListCases(ListCasesRequest) returns (ListCasesResponse);
-  rpc GetCaseStats(GetCaseStatsRequest) returns (GetCaseStatsResponse);
-}
-
-message GetCaseRequest {
-  uint64 case_id = 1;
-}
-
-message GetCaseResponse {
-  uint64 id = 1;
-  string case_no = 2;
-  string case_name = 3;
-  string case_type = 4;
-  string status = 5;
-  string priority = 6;
-  uint64 client_id = 7;
-  uint64 lawyer_id = 8;
-  string created_at = 9;
-  string updated_at = 10;
-}
-
-message CreateCaseRequest {
-  string case_no = 1;
-  string case_name = 2;
-  string case_type = 3;
-  string priority = 4;
-  uint64 client_id = 5;
-  uint64 lawyer_id = 6;
-  string description = 7;
-}
-
-message CreateCaseResponse {
-  uint64 id = 1;
-  string case_no = 2;
-  string case_name = 3;
-  string case_type = 4;
-  string status = 5;
-  string priority = 6;
-  uint64 client_id = 7;
-  uint64 lawyer_id = 8;
-  string created_at = 9;
-}
-
-message UpdateCaseRequest {
-  uint64 case_id = 1;
-  string case_name = 2;
-  string case_type = 3;
-  string status = 4;
-  string priority = 5;
-  uint64 lawyer_id = 6;
-  string description = 7;
-}
-
-message UpdateCaseResponse {
-  uint64 id = 1;
-  string case_no = 2;
-  string case_name = 3;
-  string case_type = 4;
-  string status = 5;
-  string priority = 6;
-  uint64 client_id = 7;
-  uint64 lawyer_id = 8;
-  string updated_at = 9;
-}
-
-message ListCasesRequest {
-  int32 page = 1;
-  int32 page_size = 2;
-  string status = 3;
-  string case_type = 4;
-  string priority = 5;
-  uint64 client_id = 6;
-  uint64 lawyer_id = 7;
-  string search = 8;
-}
-
-message ListCasesResponse {
-  repeated GetCaseResponse cases = 1;
-  int64 total = 2;
-  int32 page = 3;
-  int32 page_size = 4;
-}
-
-message GetCaseStatsRequest {}
-
-message GetCaseStatsResponse {
-  int64 total_cases = 1;
-  int64 active_cases = 2;
-  int64 pending_cases = 3;
-  int64 closed_cases = 4;
-  int64 urgent_cases = 5;
-}
-```
-
-## 服务配置文件
-
-### 用户服务配置
+### 配置结构
 ```yaml
-# config/user-service.yaml
-server:
-  port: 8080
-  mode: "production"
+# config/config.yaml
+app:
+  name: "law-oa-go"
+  version: "1.0.0"
+  debug: true
 
 database:
-  host: "mysql-user-service"
+  driver: "mysql"
+  host: "localhost"
   port: 3306
+  database: "law_oa"
   username: "root"
-  password: "password"
-  database: "law_oa_users"
-  max_connections: 50
-  max_idle_connections: 10
-  connection_lifetime: "5m"
-
-grpc:
-  port: 9090
-  max_message_size: 10485760  # 10MB
-
-redis:
-  host: "redis-user-service"
-  port: 6379
   password: ""
-  db: 0
 
-jaeger:
-  enabled: true
-  service_name: "user-service"
-  agent_host: "jaeger-agent"
-  agent_port: 6831
+server:
+  port: 8080
+  timeout: 30s
+
+jwt:
+  secret: "your-secret-key"
+  expires_in: 24h
 
 logging:
   level: "info"
   format: "json"
-  output: "stdout"
-
-metrics:
-  enabled: true
-  port: 9091
 ```
 
-### 网关服务配置
-```yaml
-# config/gateway-service.yaml
-server:
-  port: 8080
-  mode: "production"
+---
 
-services:
-  user_service:
-    url: "http://user-service:8080"
-    timeout: "5s"
-    retries: 3
-  
-  case_service:
-    url: "http://case-service:8080"
-    timeout: "10s"
-    retries: 3
-  
-  client_service:
-    url: "http://client-service:8080"
-    timeout: "5s"
-    retries: 3
-  
-  auth_service:
-    url: "http://auth-service:8080"
-    timeout: "3s"
-    retries: 3
+## 原文档内容（仅供参考）
 
-rate_limit:
-  enabled: true
-  requests_per_minute: 100
-  burst: 10
+以下是原始文档内容，**请勿用于当前项目**：
 
-cors:
-  allowed_origins:
-    - "https://app.lawoa.com"
-    - "https://admin.lawoa.com"
-  allowed_methods:
-    - "GET"
-    - "POST"
-    - "PUT"
-    - "DELETE"
-    - "OPTIONS"
-  allowed_headers:
-    - "Content-Type"
-    - "Authorization"
-    - "X-Request-ID"
+### gRPC服务定义
+- 用户服务proto文件
+- 案件服务proto文件
+- 客户服务proto文件
 
-circuit_breaker:
-  enabled: true
-  timeout: "30s"
-  max_concurrent_requests: 100
-  error_threshold_percentage: 50
-  recovery_timeout: "30s"
-```
+### 服务间通信
+- gRPC配置
+- 消息队列配置
+- 服务发现配置
 
-## 部署脚本
-
-### 构建和部署脚本
-```bash
-#!/bin/bash
-# scripts/deploy-microservices.sh
-
-set -e
-
-echo "开始部署微服务架构..."
-
-# 构建所有服务镜像
-echo "构建服务镜像..."
-docker-compose -f docker-compose.microservices.yml build
-
-# 推送到镜像仓库
-echo "推送镜像到仓库..."
-docker-compose -f docker-compose.microservices.yml push
-
-# 部署到Kubernetes
-echo "部署到Kubernetes..."
-kubectl apply -f k8s/namespace.yaml
-kubectl apply -f k8s/configmaps/
-kubectl apply -f k8s/secrets/
-kubectl apply -f k8s/databases/
-kubectl apply -f k8s/services/
-kubectl apply -f k8s/deployments/
-
-# 等待服务就绪
-echo "等待服务就绪..."
-kubectl wait --for=condition=available --timeout=300s deployment/gateway-service -n law-oa
-kubectl wait --for=condition=available --timeout=300s deployment/user-service -n law-oa
-kubectl wait --for=condition=available --timeout=300s deployment/case-service -n law-oa
-kubectl wait --for=condition=available --timeout=300s deployment/client-service -n law-oa
-kubectl wait --for=condition=available --timeout=300s deployment/auth-service -n law-oa
-
-echo "部署完成！"
-```
+**注意：上述内容为规划中的配置，并非当前实现。**

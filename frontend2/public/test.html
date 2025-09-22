@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard Test</title>
+</head>
+<body>
+    <h1>Dashboard API Test</h1>
+    <div id="result">Loading...</div>
+    
+    <script>
+        // 设置token
+        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTcyNTM5MTU4MCwiZXhwIjoxNzI1NDc3OTh9.KQGzXh4qZ9gJ3fJ4kL6n7pJ8X9dV6wH8gY5tV3uZc2w';
+        
+        // 测试API
+        fetch('/api/dashboard/statistics', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('result').innerHTML = `
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+        })
+        .catch(error => {
+            document.getElementById('result').innerHTML = `Error: ${error.message}`;
+        });
+    </script>
+</body>
+</html>

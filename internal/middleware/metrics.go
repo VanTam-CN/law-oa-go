@@ -37,46 +37,6 @@ var (
 		},
 	)
 
-	// 数据库连接池指标
-	dbConnectionsActive = promauto.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "db_connections_active",
-			Help: "Number of active database connections",
-		},
-	)
-
-	dbConnectionsIdle = promauto.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "db_connections_idle",
-			Help: "Number of idle database connections",
-		},
-	)
-
-	dbConnectionsWaiting = promauto.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "db_connections_waiting",
-			Help: "Number of waiting database connections",
-		},
-	)
-
-	// 数据库查询指标
-	dbQueriesTotal = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "db_queries_total",
-			Help: "Total number of database queries",
-		},
-		[]string{"operation", "table"},
-	)
-
-	dbQueryDuration = promauto.NewHistogramVec(
-		prometheus.HistogramOpts{
-			Name:    "db_query_duration_seconds",
-			Help:    "Database query duration in seconds",
-			Buckets: []float64{0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 2, 5},
-		},
-		[]string{"operation", "table"},
-	)
-
 	// Redis缓存指标
 	cacheHitsTotal = promauto.NewCounterVec(
 		prometheus.CounterOpts{
@@ -171,16 +131,6 @@ func PrometheusMiddleware() gin.HandlerFunc {
 	})
 }
 
-// RecordDBMetrics 记录数据库指标
-func RecordDBMetrics(operation, table string, duration time.Duration, err error) {
-	dbQueriesTotal.WithLabelValues(operation, table).Inc()
-	dbQueryDuration.WithLabelValues(operation, table).Observe(duration.Seconds())
-
-	if err != nil {
-		errorsTotal.WithLabelValues("database_error", "db").Inc()
-	}
-}
-
 // RecordCacheMetrics 记录缓存指标
 func RecordCacheMetrics(operation, cacheType string, hit bool, duration time.Duration, err error) {
 	if hit {
@@ -218,13 +168,6 @@ func UpdateBusinessMetrics(usersByRole map[string]map[string]int64,
 	for status, count := range clientsByStatus {
 		clientsTotal.WithLabelValues(status).Set(float64(count))
 	}
-}
-
-// UpdateDBConnectionMetrics 更新数据库连接池指标
-func UpdateDBConnectionMetrics(active, idle, waiting int) {
-	dbConnectionsActive.Set(float64(active))
-	dbConnectionsIdle.Set(float64(idle))
-	dbConnectionsWaiting.Set(float64(waiting))
 }
 
 // RecordError 记录错误

@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"law-oa-go/internal/common"
+	"law-oa-go/internal/errors"
 	"law-oa-go/internal/services"
 )
 
@@ -26,29 +27,25 @@ func NewCaseHandler(caseService *services.CaseService) *CaseHandler {
 // @Produce json
 // @Security BearerAuth
 // @Param request body services.CreateCaseRequest true "创建案件请求"
-// @Success 200 {object} common.Response{data=services.CaseResponse} "创建成功"
-// @Failure 400 {object} common.Response "请求参数错误"
-// @Failure 401 {object} common.Response "未授权"
-// @Failure 500 {object} common.Response "内部错误"
+// @Success 200 {object} common.APIResponse{data=services.CaseResponse} "创建成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 401 {object} common.APIResponse "未授权"
+// @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /cases [post]
 func (h *CaseHandler) CreateCase(c *gin.Context) {
 	var req services.CreateCaseRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.BadRequest(c, "Invalid request format: "+err.Error())
+		_ = c.Error(errors.NewValidationError("request_binding", "request_binding", "Invalid request format: "+err.Error(), "Invalid request format"))
 		return
 	}
 
 	caseResp, err := h.caseService.CreateCase(c.Request.Context(), &req)
 	if err != nil {
-		if err.Error() == "client not found" || err.Error() == "lawyer not found" {
-			common.BadRequest(c, "Validation failed: "+err.Error())
-			return
-		}
-		common.InternalServerError(c, "Failed to create case: "+err.Error())
+		_ = c.Error(err)
 		return
 	}
 
-	common.Success(c, caseResp)
+	common.APISuccess(c, caseResp)
 }
 
 // GetCase godoc
@@ -59,83 +56,96 @@ func (h *CaseHandler) CreateCase(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "案件ID"
-// @Success 200 {object} common.Response{data=services.CaseResponse} "获取成功"
-// @Failure 400 {object} common.Response "请求参数错误"
-// @Failure 401 {object} common.Response "未授权"
-// @Failure 404 {object} common.Response "案件不存在"
-// @Failure 500 {object} common.Response "内部错误"
+// @Success 200 {object} common.APIResponse{data=services.CaseResponse} "获取成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 401 {object} common.APIResponse "未授权"
+// @Failure 404 {object} common.APIResponse "案件不存在"
+// @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /cases/{id} [get]
 func (h *CaseHandler) GetCase(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		common.BadRequest(c, "Invalid case ID: Case ID must be a valid number")
+		_ = c.Error(errors.NewValidationError("id_validation", "id_validation", "Invalid case ID: Case ID must be a valid number", "Invalid case ID: Case ID must be a valid number"))
 		return
 	}
 
 	caseResp, err := h.caseService.GetCaseByID(c.Request.Context(), uint(id))
 	if err != nil {
-		if err.Error() == "case not found" {
-			common.NotFound(c, "Case not found: The requested case does not exist")
-			return
-		}
-		common.InternalServerError(c, "Failed to get case: "+err.Error())
+		_ = c.Error(err)
 		return
 	}
 
-	common.Success(c, caseResp)
+	common.APISuccess(c, caseResp)
 }
 
+// UpdateCase godoc
+// @Summary 更新案件
+// @Description 更新指定案件的信息
+// @Tags 案件管理
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "案件ID"
+// @Param request body services.UpdateCaseRequest true "更新案件请求"
+// @Success 200 {object} common.APIResponse{data=services.CaseResponse} "更新成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 401 {object} common.APIResponse "未授权"
+// @Failure 404 {object} common.APIResponse "案件不存在"
+// @Failure 500 {object} common.APIResponse "内部错误"
+// @Router /cases/{id} [put]
 func (h *CaseHandler) UpdateCase(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		common.BadRequest(c, "Invalid case ID: Case ID must be a valid number")
+		_ = c.Error(errors.NewValidationError("id_validation", "id_validation", "Invalid case ID: Case ID must be a valid number", "Invalid case ID: Case ID must be a valid number"))
 		return
 	}
 
 	var req services.UpdateCaseRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.BadRequest(c, "Invalid request format: "+err.Error())
+		_ = c.Error(errors.NewValidationError("request_binding", "request_binding", "Invalid request format: "+err.Error(), "Invalid request format"))
 		return
 	}
 
-	caseResp, err := h.caseService.UpdateCase(uint(id), &req)
+	caseResp, err := h.caseService.UpdateCase(c.Request.Context(), uint(id), &req)
 	if err != nil {
-		if err.Error() == "case not found" {
-			common.NotFound(c, "Case not found: The requested case does not exist")
-			return
-		}
-		if err.Error() == "lawyer not found" {
-			common.BadRequest(c, "Validation failed: "+err.Error())
-			return
-		}
-		common.InternalServerError(c, "Failed to update case: "+err.Error())
+		_ = c.Error(err)
 		return
 	}
 
-	common.Success(c, caseResp)
+	common.APISuccess(c, caseResp)
 }
 
+// DeleteCase godoc
+// @Summary 删除案件
+// @Description 删除指定的案件
+// @Tags 案件管理
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "案件ID"
+// @Success 200 {object} common.APIResponse "删除成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 401 {object} common.APIResponse "未授权"
+// @Failure 404 {object} common.APIResponse "案件不存在"
+// @Failure 500 {object} common.APIResponse "内部错误"
+// @Router /cases/{id} [delete]
 func (h *CaseHandler) DeleteCase(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		common.BadRequest(c, "Invalid case ID: Case ID must be a valid number")
+		_ = c.Error(errors.NewValidationError("id_validation", "id_validation", "Invalid case ID: Case ID must be a valid number", "Invalid case ID: Case ID must be a valid number"))
 		return
 	}
 
-	err = h.caseService.DeleteCase(uint(id))
+	err = h.caseService.DeleteCase(c.Request.Context(), uint(id))
 	if err != nil {
-		if err.Error() == "case not found" {
-			common.NotFound(c, "Case not found: The requested case does not exist")
-			return
-		}
-		common.InternalServerError(c, "Failed to delete case: "+err.Error())
+		_ = c.Error(err)
 		return
 	}
 
-	common.Success(c, gin.H{"message": "Case deleted successfully"})
+	common.APISuccess(c, gin.H{"message": "Case deleted successfully"})
 }
 
 // ListCases godoc
@@ -153,21 +163,21 @@ func (h *CaseHandler) DeleteCase(c *gin.Context) {
 // @Param client_id query int false "客户ID"
 // @Param lawyer_id query int false "律师ID"
 // @Param search query string false "搜索关键词"
-// @Success 200 {object} common.PageResponse{data=[]services.CaseResponse} "获取成功"
-// @Failure 400 {object} common.Response "请求参数错误"
-// @Failure 401 {object} common.Response "未授权"
-// @Failure 500 {object} common.Response "内部错误"
+// @Success 200 {object} common.APIResponse{data=[]services.CaseResponse} "获取成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 401 {object} common.APIResponse "未授权"
+// @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /cases [get]
 func (h *CaseHandler) ListCases(c *gin.Context) {
 	var req services.CaseListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		common.BadRequest(c, "Invalid query parameters: "+err.Error())
+		_ = c.Error(errors.NewValidationError("query_binding", "query_binding", "Invalid query parameters: "+err.Error(), "Invalid query parameters"))
 		return
 	}
 
-	cases, total, err := h.caseService.ListCases(&req)
+	cases, total, err := h.caseService.ListCases(c.Request.Context(), &req)
 	if err != nil {
-		common.InternalServerError(c, "Failed to list cases: "+err.Error())
+		_ = c.Error(err)
 		return
 	}
 
@@ -180,31 +190,50 @@ func (h *CaseHandler) ListCases(c *gin.Context) {
 		pageSize = req.PageSize
 	}
 
-	response := common.PageResponse{
-		Data:  cases,
-		Total: total,
-		Page:  page,
-		Size:  pageSize,
-	}
-
-	common.Success(c, response)
+	common.APISuccessWithPage(c, cases, total, page, pageSize)
 }
 
+// GetCaseStats godoc
+// @Summary 获取案件统计
+// @Description 获取案件相关的统计数据
+// @Tags 案件管理
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} common.APIResponse{data=services.CaseStatsResponse} "获取成功"
+// @Failure 401 {object} common.APIResponse "未授权"
+// @Failure 500 {object} common.APIResponse "内部错误"
+// @Router /cases/stats [get]
 func (h *CaseHandler) GetCaseStats(c *gin.Context) {
 	stats, err := h.caseService.GetCaseStats(c.Request.Context())
 	if err != nil {
-		common.InternalServerError(c, "Failed to get case statistics: "+err.Error())
+		_ = c.Error(err)
 		return
 	}
 
-	common.Success(c, stats)
+	common.APISuccess(c, stats)
 }
 
+// AssignLawyer godoc
+// @Summary 分配律师
+// @Description 为案件分配律师
+// @Tags 案件管理
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "案件ID"
+// @Param request body object true "分配律师请求"
+// @Success 200 {object} common.APIResponse "分配成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 401 {object} common.APIResponse "未授权"
+// @Failure 404 {object} common.APIResponse "案件不存在"
+// @Failure 500 {object} common.APIResponse "内部错误"
+// @Router /cases/{id}/assign-lawyer [post]
 func (h *CaseHandler) AssignLawyer(c *gin.Context) {
 	idStr := c.Param("id")
 	caseID, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		common.BadRequest(c, "Invalid case ID: Case ID must be a valid number")
+		_ = c.Error(errors.NewValidationError("id_validation", "id_validation", "Invalid case ID: Case ID must be a valid number", "Invalid case ID: Case ID must be a valid number"))
 		return
 	}
 
@@ -212,32 +241,39 @@ func (h *CaseHandler) AssignLawyer(c *gin.Context) {
 		LawyerID uint `json:"lawyer_id" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.BadRequest(c, "Invalid request format: "+err.Error())
+		_ = c.Error(errors.NewValidationError("request_binding", "request_binding", "Invalid request format: "+err.Error(), "Invalid request format"))
 		return
 	}
 
-	err = h.caseService.AssignLawyer(uint(caseID), req.LawyerID)
+	err = h.caseService.AssignLawyer(c.Request.Context(), uint(caseID), req.LawyerID)
 	if err != nil {
-		if err.Error() == "case not found" {
-			common.NotFound(c, "Case not found: The requested case does not exist")
-			return
-		}
-		if err.Error() == "lawyer not found" {
-			common.BadRequest(c, "Validation failed: "+err.Error())
-			return
-		}
-		common.InternalServerError(c, "Failed to assign lawyer: "+err.Error())
+		_ = c.Error(err)
 		return
 	}
 
-	common.Success(c, gin.H{"message": "Lawyer assigned successfully"})
+	common.APISuccess(c, gin.H{"message": "Lawyer assigned successfully"})
 }
 
+// UpdateCaseStatus godoc
+// @Summary 更新案件状态
+// @Description 更新指定案件的状态
+// @Tags 案件管理
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "案件ID"
+// @Param request body object true "状态更新请求"
+// @Success 200 {object} common.APIResponse "更新成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 401 {object} common.APIResponse "未授权"
+// @Failure 404 {object} common.APIResponse "案件不存在"
+// @Failure 500 {object} common.APIResponse "内部错误"
+// @Router /cases/{id}/status [put]
 func (h *CaseHandler) UpdateCaseStatus(c *gin.Context) {
 	idStr := c.Param("id")
 	caseID, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		common.BadRequest(c, "Invalid case ID: Case ID must be a valid number")
+		_ = c.Error(errors.NewValidationError("id_validation", "id_validation", "Invalid case ID: Case ID must be a valid number", "Invalid case ID: Case ID must be a valid number"))
 		return
 	}
 
@@ -245,23 +281,15 @@ func (h *CaseHandler) UpdateCaseStatus(c *gin.Context) {
 		Status string `json:"status" binding:"required,oneof=pending active closed suspended"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.BadRequest(c, "Invalid request format: "+err.Error())
+		_ = c.Error(errors.NewValidationError("request_binding", "request_binding", "Invalid request format: "+err.Error(), "Invalid request format"))
 		return
 	}
 
-	err = h.caseService.UpdateCaseStatus(uint(caseID), req.Status)
+	err = h.caseService.UpdateCaseStatus(c.Request.Context(), uint(caseID), req.Status)
 	if err != nil {
-		if err.Error() == "case not found" {
-			common.NotFound(c, "Case not found: The requested case does not exist")
-			return
-		}
-		if err.Error() == "invalid case status" {
-			common.BadRequest(c, "Validation failed: "+err.Error())
-			return
-		}
-		common.InternalServerError(c, "Failed to update case status: "+err.Error())
+		_ = c.Error(err)
 		return
 	}
 
-	common.Success(c, gin.H{"message": "Case status updated successfully"})
+	common.APISuccess(c, gin.H{"message": "Case status updated successfully"})
 }

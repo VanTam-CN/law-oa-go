@@ -56,15 +56,6 @@ var (
 		[]string{"client_type"},
 	)
 
-	// 数据库性能指标
-	dbSlowQueriesTotal = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "db_slow_queries_total",
-			Help: "Total number of slow database queries",
-		},
-		[]string{"operation", "table", "threshold"},
-	)
-
 	// 缓存性能指标
 	cacheHitRate = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
@@ -131,18 +122,6 @@ func BusinessMetricsMiddleware() gin.HandlerFunc {
 // RecordCaseUpdate 记录案件更新
 func RecordCaseUpdate(caseType, updateType string) {
 	caseUpdatesTotal.WithLabelValues(caseType, updateType).Inc()
-}
-
-// RecordSlowQuery 记录慢查询
-func RecordSlowQuery(operation, table string, duration time.Duration) {
-	threshold := "1s"
-	if duration > 5*time.Second {
-		threshold = "5s"
-	} else if duration > 2*time.Second {
-		threshold = "2s"
-	}
-
-	dbSlowQueriesTotal.WithLabelValues(operation, table, threshold).Inc()
 }
 
 // UpdateActiveUsers 更新活跃用户数

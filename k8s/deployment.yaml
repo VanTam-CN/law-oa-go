@@ -35,11 +35,6 @@ data:
       password: ""
       db: 0
     
-    elasticsearch:
-      host: http://elasticsearch-service:9200
-      username: ""
-      password: ""
-    
     jwt:
       secret: your-jwt-secret-key-change-in-production
       expire: 3600

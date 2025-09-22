@@ -1,0 +1,527 @@
+name: Fuzzing测试工作流
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # 每天凌晨1点运行Fuzzing测试
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Fuzzing测试类型'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+        - all
+        - security
+        - validators
+        - repositories
+        - cache
+        - concurrency
+      duration:
+        description: 'Fuzzing持续时间 (秒)'
+        required: false
+        default: '60'
+        type: string
+      fuzzers:
+        description: '并行Fuzzing进程数'
+        required: false
+        default: '4'
+        type: string
+
+env:
+  GO_VERSION: '1.23'
+  FUZZ_TIME: ${{ github.event.inputs.duration || '60' }}
+  FUZZERS: ${{ github.event.inputs.fuzzers || '4' }}
+  TEST_TYPE: ${{ github.event.inputs.test_type || 'all' }}
+
+jobs:
+  # 检查Fuzzing支持
+  check-fuzzing:
+    name: 检查Fuzzing支持
+    runs-on: ubuntu-latest
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+
+    - name: 设置Go环境
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        cache: true
+
+    - name: 检查Go版本和Fuzzing支持
+      run: |
+        go version
+        echo "检查Fuzzing支持..."
+        if go help | grep -q "fuzz"; then
+          echo "✓ Fuzzing支持已启用"
+        else
+          echo "✗ Fuzzing支持未启用，请使用Go 1.23+"
+          exit 1
+        fi
+
+  # 安全组件Fuzzing
+  security-fuzzing:
+    name: 安全组件Fuzzing
+    runs-on: ubuntu-latest
+    needs: check-fuzzing
+    if: ${{ env.TEST_TYPE == 'all' || env.TEST_TYPE == 'security' }}
+    strategy:
+      matrix:
+        test: ['jwt-validation']
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+
+    - name: 设置Go环境
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        cache: true
+
+    - name: 下载依赖
+      run: |
+        go mod download
+        go mod tidy
+
+    - name: 设置Redis
+      run: |
+        sudo systemctl start redis-server
+
+    - name: 设置脚本权限
+      run: |
+        chmod +x scripts/fuzzing_test.sh
+
+    - name: 运行JWT验证Fuzzing
+      if: matrix.test == 'jwt-validation'
+      run: |
+        ./scripts/fuzzing_test.sh -s -t ${{ env.FUZZ_TIME }}s -f ${{ env.FUZZERS }} -o security-fuzzing-results
+
+    - name: 检查Crashers
+      run: |
+        if find security-fuzzing-results -name "*crashers*" | grep -q .; then
+          echo "❌ 发现安全组件Crashers！"
+          find security-fuzzing-results -name "*crashers*" -exec echo "Crasher文件: {}" \;
+          exit 1
+        else
+          echo "✅ 安全组件Fuzzing测试通过"
+        fi
+
+    - name: 上传安全Fuzzing结果
+      uses: actions/upload-artifact@v3
+      with:
+        name: security-fuzzing-results-${{ matrix.test }}
+        path: security-fuzzing-results/
+
+  # 验证器Fuzzing
+  validators-fuzzing:
+    name: 验证器Fuzzing
+    runs-on: ubuntu-latest
+    needs: check-fuzzing
+    if: ${{ env.TEST_TYPE == 'all' || env.TEST_TYPE == 'validators' }}
+    strategy:
+      matrix:
+        test: ['case-validator', 'client-validator', 'lawyer-validator']
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+
+    - name: 设置Go环境
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        cache: true
+
+    - name: 下载依赖
+      run: |
+        go mod download
+        go mod tidy
+
+    - name: 设置脚本权限
+      run: |
+        chmod +x scripts/fuzzing_test.sh
+
+    - name: 运行案件验证器Fuzzing
+      if: matrix.test == 'case-validator'
+      run: |
+        go test -fuzz=Fuzz_CaseValidator_Validate -fuzztime=${{ env.FUZZ_TIME }}s ./internal/validators/
+
+    - name: 运行客户端验证器Fuzzing
+      if: matrix.test == 'client-validator'
+      run: |
+        go test -fuzz=Fuzz_ClientValidator_Validate -fuzztime=${{ env.FUZZ_TIME }}s ./internal/validators/
+
+    - name: 运行律师验证器Fuzzing
+      if: matrix.test == 'lawyer-validator'
+      run: |
+        go test -fuzz=Fuzz_LawyerValidator_Validate -fuzztime=${{ env.FUZZ_TIME }}s ./internal/validators/
+
+    - name: 上传验证器Fuzzing结果
+      uses: actions/upload-artifact@v3
+      with:
+        name: validators-fuzzing-results-${{ matrix.test }}
+        path: fuzzing-results/
+
+  # 数据库Fuzzing
+  repositories-fuzzing:
+    name: 数据库Fuzzing
+    runs-on: ubuntu-latest
+    needs: check-fuzzing
+    if: ${{ env.TEST_TYPE == 'all' || env.TEST_TYPE == 'repositories' }}
+    strategy:
+      matrix:
+        test: ['query-where', 'query-like', 'query-order']
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+
+    - name: 设置Go环境
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        cache: true
+
+    - name: 下载依赖
+      run: |
+        go mod download
+        go mod tidy
+
+    - name: 设置数据库
+      run: |
+        sudo systemctl start mysql
+        mysql -u root -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
+
+    - name: 设置脚本权限
+      run: |
+        chmod +x scripts/fuzzing_test.sh
+
+    - name: 运行Where查询Fuzzing
+      if: matrix.test == 'query-where'
+      run: |
+        go test -fuzz=Fuzz_QueryBuilder_Where -fuzztime=${{ env.FUZZ_TIME }}s ./internal/repositories/
+
+    - name: 运行Like查询Fuzzing
+      if: matrix.test == 'query-like'
+      run: |
+        go test -fuzz=Fuzz_QueryBuilder_Like -fuzztime=${{ env.FUZZ_TIME }}s ./internal/repositories/
+
+    - name: 运行Order查询Fuzzing
+      if: matrix.test == 'query-order'
+      run: |
+        go test -fuzz=Fuzz_QueryBuilder_Order -fuzztime=${{ env.FUZZ_TIME }}s ./internal/repositories/
+
+    - name: 上传数据库Fuzzing结果
+      uses: actions/upload-artifact@v3
+      with:
+        name: repositories-fuzzing-results-${{ matrix.test }}
+        path: fuzzing-results/
+
+  # 缓存Fuzzing
+  cache-fuzzing:
+    name: 缓存Fuzzing
+    runs-on: ubuntu-latest
+    needs: check-fuzzing
+    if: ${{ env.TEST_TYPE == 'all' || env.TEST_TYPE == 'cache' }}
+    strategy:
+      matrix:
+        test: ['cache-service', 'cache-expiration', 'cache-concurrent', 'layered-cache']
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+
+    - name: 设置Go环境
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        cache: true
+
+    - name: 下载依赖
+      run: |
+        go mod download
+        go mod tidy
+
+    - name: 设置Redis
+      run: |
+        sudo systemctl start redis-server
+
+    - name: 设置脚本权限
+      run: |
+        chmod +x scripts/fuzzing_test.sh
+
+    - name: 运行缓存服务Fuzzing
+      if: matrix.test == 'cache-service'
+      run: |
+        go test -fuzz=Fuzz_CacheService_SetAndGet -fuzztime=${{ env.FUZZ_TIME }}s ./internal/cache/
+
+    - name: 运行缓存过期Fuzzing
+      if: matrix.test == 'cache-expiration'
+      run: |
+        go test -fuzz=Fuzz_CacheService_SetWithExpiration -fuzztime=${{ env.FUZZ_TIME }}s ./internal/cache/
+
+    - name: 运行缓存并发Fuzzing
+      if: matrix.test == 'cache-concurrent'
+      run: |
+        go test -fuzz=Fuzz_CacheService_ConcurrentAccess -fuzztime=${{ env.FUZZ_TIME }}s ./internal/cache/
+
+    - name: 运行分层缓存Fuzzing
+      if: matrix.test == 'layered-cache'
+      run: |
+        go test -fuzz=Fuzz_LayeredCache_Get -fuzztime=${{ env.FUZZ_TIME }}s ./internal/cache/
+
+    - name: 上传缓存Fuzzing结果
+      uses: actions/upload-artifact@v3
+      with:
+        name: cache-fuzzing-results-${{ matrix.test }}
+        path: fuzzing-results/
+
+  # 并发Fuzzing
+  concurrency-fuzzing:
+    name: 并发Fuzzing
+    runs-on: ubuntu-latest
+    needs: check-fuzzing
+    if: ${{ env.TEST_TYPE == 'all' || env.TEST_TYPE == 'concurrency' }}
+    strategy:
+      matrix:
+        test: ['worker-pool', 'circuit-breaker', 'rate-limiter', 'concurrent-service']
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+
+    - name: 设置Go环境
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        cache: true
+
+    - name: 下载依赖
+      run: |
+        go mod download
+        go mod tidy
+
+    - name: 设置脚本权限
+      run: |
+        chmod +x scripts/fuzzing_test.sh
+
+    - name: 运行WorkerPool Fuzzing
+      if: matrix.test == 'worker-pool'
+      run: |
+        go test -fuzz=Fuzz_WorkerPool_SubmitTask -fuzztime=${{ env.FUZZ_TIME }}s ./internal/concurrency/
+
+    - name: 运行断路器Fuzzing
+      if: matrix.test == 'circuit-breaker'
+      run: |
+        go test -fuzz=Fuzz_CircuitBreaker_Execute -fuzztime=${{ env.FUZZ_TIME }}s ./internal/concurrency/
+
+    - name: 运行速率限制器Fuzzing
+      if: matrix.test == 'rate-limiter'
+      run: |
+        go test -fuzz=Fuzz_RateLimiter_Allow -fuzztime=${{ env.FUZZ_TIME }}s ./internal/concurrency/
+
+    - name: 运行并发服务Fuzzing
+      if: matrix.test == 'concurrent-service'
+      run: |
+        go test -fuzz=Fuzz_ConcurrentService_SubmitTask -fuzztime=${{ env.FUZZ_TIME }}s ./internal/concurrency/
+
+    - name: 上传并发Fuzzing结果
+      uses: actions/upload-artifact@v3
+      with:
+        name: concurrency-fuzzing-results-${{ matrix.test }}
+        path: fuzzing-results/
+
+  # 完整Fuzzing测试
+  comprehensive-fuzzing:
+    name: 完整Fuzzing测试
+    runs-on: ubuntu-latest
+    needs: check-fuzzing
+    if: ${{ env.TEST_TYPE == 'all' }}
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+
+    - name: 设置Go环境
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        cache: true
+
+    - name: 下载依赖
+      run: |
+        go mod download
+        go mod tidy
+
+    - name: 设置Redis
+      run: |
+        sudo systemctl start redis-server
+
+    - name: 设置数据库
+      run: |
+        sudo systemctl start mysql
+        mysql -u root -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
+
+    - name: 设置脚本权限
+      run: |
+        chmod +x scripts/fuzzing_test.sh
+
+    - name: 运行完整Fuzzing测试
+      run: |
+        ./scripts/fuzzing_test.sh -a -t ${{ env.FUZZ_TIME }}s -f ${{ env.FUZZERS }} -o comprehensive-fuzzing-results
+
+    - name: 检查所有Crashers
+      run: |
+        echo "检查Fuzzing测试结果..."
+        total_crashers=$(find comprehensive-fuzzing-results -name "*crashers*" 2>/dev/null | wc -l)
+        if [ "$total_crashers" -gt 0 ]; then
+          echo "❌ 发现 $total_crashers 个Crashers！"
+          find comprehensive-fuzzing-results -name "*crashers*" -exec echo "Crasher文件: {}" \;
+          exit 1
+        else
+          echo "✅ Fuzzing测试完成，未发现Crashers"
+        fi
+
+    - name: 生成Fuzzing报告
+      run: |
+        if [ -f "comprehensive-fuzzing-results/fuzzing-report.md" ]; then
+          echo "Fuzzing测试报告已生成"
+          cat comprehensive-fuzzing-results/fuzzing-report.md
+        else
+          echo "# Fuzzing测试报告" > fuzzing-report.md
+          echo "## 测试时间: $(date)" >> fuzzing-report.md
+          echo "## 测试类型: 完整Fuzzing测试" >> fuzzing-report.md
+          echo "## 持续时间: ${{ env.FUZZ_TIME }}秒" >> fuzzing-report.md
+          echo "## 并行进程: ${{ env.FUZZERS }}" >> fuzzing-report.md
+          echo "" >> fuzzing-report.md
+          echo "## 测试结果" >> fuzzing-report.md
+          echo "✅ 所有Fuzzing测试通过，未发现Crashers" >> fuzzing-report.md
+          echo "" >> fuzzing-report.md
+          echo "## 测试覆盖范围" >> fuzzing-report.md
+          echo "- 安全组件: JWT验证" >> fuzzing-report.md
+          echo "- 验证器: 案件、客户端、律师" >> fuzzing-report.md
+          echo "- 数据库: 查询构建器" >> fuzzing-report.md
+          echo "- 缓存: 缓存服务、分层缓存" >> fuzzing-report.md
+          echo "- 并发: WorkerPool、断路器、速率限制器" >> fuzzing-report.md
+        fi
+
+    - name: 上传完整Fuzzing结果
+      uses: actions/upload-artifact@v3
+      with:
+        name: comprehensive-fuzzing-results
+        path: |
+          comprehensive-fuzzing-results/
+          fuzzing-report.md
+
+  # Fuzzing测试汇总报告
+  fuzzing-summary:
+    name: Fuzzing测试汇总报告
+    runs-on: ubuntu-latest
+    needs: [security-fuzzing, validators-fuzzing, repositories-fuzzing, cache-fuzzing, concurrency-fuzzing, comprehensive-fuzzing]
+    if: always()
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+
+    - name: 下载所有Fuzzing结果
+      uses: actions/download-artifact@v3
+
+    - name: 生成Fuzzing汇总报告
+      run: |
+        echo "# Fuzzing测试汇总报告" > fuzzing-summary-report.md
+        echo "## 生成时间: $(date)" >> fuzzing-summary-report.md
+        echo "## 测试配置" >> fuzzing-summary-report.md
+        echo "- Go版本: ${{ env.GO_VERSION }}" >> fuzzing-summary-report.md
+        echo "- 测试类型: ${{ env.TEST_TYPE }}" >> fuzzing-summary-report.md
+        echo "- 持续时间: ${{ env.FUZZ_TIME }}秒" >> fuzzing-summary-report.md
+        echo "- 并行进程: ${{ env.FUZZERS }}" >> fuzzing-summary-report.md
+        echo "" >> fuzzing-summary-report.md
+
+        echo "## 安全组件测试" >> fuzzing-summary-report.md
+        if find . -name "security-fuzzing-results-*" -type d | grep -q .; then
+          total_crashers=$(find . -path "*/security-fuzzing-results-*/*crashers*" | wc -l)
+          if [ "$total_crashers" -gt 0 ]; then
+            echo "❌ 发现 $total_crashers 个安全组件Crashers" >> fuzzing-summary-report.md
+          else
+            echo "✅ 安全组件Fuzzing测试通过" >> fuzzing-summary-report.md
+          fi
+        else
+          echo "- 未运行安全组件测试" >> fuzzing-summary-report.md
+        fi
+        echo "" >> fuzzing-summary-report.md
+
+        echo "## 验证器测试" >> fuzzing-summary-report.md
+        if find . -name "validators-fuzzing-results-*" -type d | grep -q .; then
+          total_crashers=$(find . -path "*/validators-fuzzing-results-*/*crashers*" | wc -l)
+          if [ "$total_crashers" -gt 0 ]; then
+            echo "❌ 发现 $total_crashers 个验证器Crashers" >> fuzzing-summary-report.md
+          else
+            echo "✅ 验证器Fuzzing测试通过" >> fuzzing-summary-report.md
+          fi
+        else
+          echo "- 未运行验证器测试" >> fuzzing-summary-report.md
+        fi
+        echo "" >> fuzzing-summary-report.md
+
+        echo "## 数据库测试" >> fuzzing-summary-report.md
+        if find . -name "repositories-fuzzing-results-*" -type d | grep -q .; then
+          total_crashers=$(find . -path "*/repositories-fuzzing-results-*/*crashers*" | wc -l)
+          if [ "$total_crashers" -gt 0 ]; then
+            echo "❌ 发现 $total_crashers 个数据库Crashers" >> fuzzing-summary-report.md
+          else
+            echo "✅ 数据库Fuzzing测试通过" >> fuzzing-summary-report.md
+          fi
+        else
+          echo "- 未运行数据库测试" >> fuzzing-summary-report.md
+        fi
+        echo "" >> fuzzing-summary-report.md
+
+        echo "## 缓存测试" >> fuzzing-summary-report.md
+        if find . -name "cache-fuzzing-results-*" -type d | grep -q .; then
+          total_crashers=$(find . -path "*/cache-fuzzing-results-*/*crashers*" | wc -l)
+          if [ "$total_crashers" -gt 0 ]; then
+            echo "❌ 发现 $total_crashers 个缓存Crashers" >> fuzzing-summary-report.md
+          else
+            echo "✅ 缓存Fuzzing测试通过" >> fuzzing-summary-report.md
+          fi
+        else
+          echo "- 未运行缓存测试" >> fuzzing-summary-report.md
+        fi
+        echo "" >> fuzzing-summary-report.md
+
+        echo "## 并发测试" >> fuzzing-summary-report.md
+        if find . -name "concurrency-fuzzing-results-*" -type d | grep -q .; then
+          total_crashers=$(find . -path "*/concurrency-fuzzing-results-*/*crashers*" | wc -l)
+          if [ "$total_crashers" -gt 0 ]; then
+            echo "❌ 发现 $total_crashers 个并发Crashers" >> fuzzing-summary-report.md
+          else
+            echo "✅ 并发Fuzzing测试通过" >> fuzzing-summary-report.md
+          fi
+        else
+          echo "- 未运行并发测试" >> fuzzing-summary-report.md
+        fi
+        echo "" >> fuzzing-summary-report.md
+
+        echo "## 建议和后续步骤" >> fuzzing-summary-report.md
+        echo "1. **定期运行**: 建议每周运行一次完整Fuzzing测试" >> fuzzing-summary-report.md
+        echo "2. **监控Crashers**: 如果发现Crashers，及时分析并修复" >> fuzzing-summary-report.md
+        echo "3. **增加语料库**: 根据实际使用情况增加种子语料库" >> fuzzing-summary-report.md
+        echo "4. **集成CI/CD**: 将Fuzzing测试集成到持续集成流程中" >> fuzzing-summary-report.md
+
+    - name: 上传Fuzzing汇总报告
+      uses: actions/upload-artifact@v3
+      with:
+        name: fuzzing-summary-report
+        path: fuzzing-summary-report.md
+
+    - name: 如果发现Crashers则失败
+      if: always()
+      run: |
+        total_crashers=$(find . -path "*/*crashers*" | wc -l)
+        if [ "$total_crashers" -gt 0 ]; then
+          echo "❌ Fuzzing测试发现 $total_crashers 个Crashers，需要修复"
+          exit 1
+        else
+          echo "✅ 所有Fuzzing测试通过"
+        fi

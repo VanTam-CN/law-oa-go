@@ -1,0 +1,515 @@
+/* 
+ * 律所OA系统设计规范 - Design Tokens
+ * 律所行业专业设计系统，像素级规范
+ * 基于企业级设计原则，确保视觉一致性和专业性
+ */
+
+:root {
+  /* =============================================================================
+     1. 基础间距系统 (Spacing System) - 8px 基准单位
+     ============================================================================= */
+  
+  /* 8px 倍数系统 */
+  --space-0-5: 4px;      /* 0.5x - 最小间距 */
+  --space-1: 8px;        /* 1x - 基础单位 */
+  --space-1-5: 12px;     /* 1.5x - 小间距 */
+  --space-2: 16px;       /* 2x - 标准间距 */
+  --space-3: 24px;       /* 3x - 中等间距 */
+  --space-4: 32px;       /* 4x - 大间距 */
+  --space-5: 40px;       /* 5x - 特大间距 */
+  --space-6: 48px;       /* 6x - 超大间距 */
+  --space-8: 64px;       /* 8x - 页面级间距 */
+  --space-10: 80px;      /* 10x - 章节间距 */
+  --space-12: 96px;      /* 12x - 区块间距 */
+
+  /* =============================================================================
+     2. 专业色彩系统 (Color System) - 律所行业专用
+     ============================================================================= */
+  
+  /* 主色调 - 深蓝系（专业、权威、信任） */
+  --color-primary-50: #E6F7FF;    /* 最浅蓝 - 背景用 */
+  --color-primary-100: #BAE7FF;   /* 浅蓝 */
+  --color-primary-200: #91D5FF;   /* 中浅蓝 */
+  --color-primary-300: #69C0FF;   /* 中蓝 */
+  --color-primary-400: #40A9FF;   /* 亮蓝 */
+  --color-primary-500: #1677FF;   /* 主蓝 - 主要品牌色 */
+  --color-primary-600: #0958D9;   /* 深蓝 */
+  --color-primary-700: #003EB3;   /* 更深蓝 */
+  --color-primary-800: #002C8C;   /* 浓蓝 */
+  --color-primary-900: #001D66;   /* 最深蓝 */
+  
+  /* 辅助色 - 金色系（高端、品质、成功） */
+  --color-accent-50: #FFF7E6;     /* 最浅金 */
+  --color-accent-100: #FFE7BA;     /* 浅金 */
+  --color-accent-200: #FFD591;     /* 中浅金 */
+  --color-accent-300: #FFC069;     /* 中金 */
+  --color-accent-400: #FFA940;     /* 亮金 */
+  --color-accent-500: #FA8C16;     /* 主金 */
+  --color-accent-600: #D46B08;     /* 深金 */
+  --color-accent-700: #AD4E00;     /* 浓金 */
+  --color-accent-800: #873800;     /* 暗金 */
+  --color-accent-900: #612500;     /* 最暗金 */
+  
+  /* 语义化颜色 */
+  --color-success-50: #F6FFED;     /* 最浅绿 */
+  --color-success-100: #D9F7BE;    /* 浅绿 */
+  --color-success-200: #B7EB8F;    /* 中浅绿 */
+  --color-success-300: #95DE64;    /* 中绿 */
+  --color-success-400: #73D13D;    /* 亮绿 */
+  --color-success-500: #52C41A;    /* 主绿 */
+  --color-success-600: #389E0D;    /* 深绿 */
+  --color-success-700: #237804;    /* 浓绿 */
+  --color-success-800: #135200;    /* 暗绿 */
+  --color-success-900: #092B00;    /* 最暗绿 */
+  
+  --color-warning-50: #FFF7E6;     /* 最浅橙 */
+  --color-warning-100: #FFE7BA;    /* 浅橙 */
+  --color-warning-200: #FFD591;    /* 中浅橙 */
+  --color-warning-300: #FFC069;    /* 中橙 */
+  --color-warning-400: #FFA940;    /* 亮橙 */
+  --color-warning-500: #FAAD14;    /* 主橙 */
+  --color-warning-600: #D48806;    /* 深橙 */
+  --color-warning-700: #AD6800;    /* 浓橙 */
+  --color-warning-800: #874D00;    /* 暗橙 */
+  --color-warning-900: #613400;    /* 最暗橙 */
+  
+  --color-error-50: #FFF1F0;      /* 最浅红 */
+  --color-error-100: #FFCCC7;     /* 浅红 */
+  --color-error-200: #FFA39E;     /* 中浅红 */
+  --color-error-300: #FF7875;     /* 中红 */
+  --color-error-400: #FF4D4F;     /* 亮红 */
+  --color-error-500: #F5222D;     /* 主红 */
+  --color-error-600: #CF1322;     /* 深红 */
+  --color-error-700: #A8071A;     /* 浓红 */
+  --color-error-800: #820014;     /* 暗红 */
+  --color-error-900: #5C0011;     /* 最暗红 */
+  
+  /* 中性色系 - 专业灰度 */
+  --color-gray-50: #FAFAFA;       /* 最浅灰 */
+  --color-gray-100: #F5F5F5;     /* 浅灰背景 */
+  --color-gray-200: #F0F0F0;     /* 边框灰 */
+  --color-gray-300: #D9D9D9;     /* 分割线灰 */
+  --color-gray-400: #BFBFBF;     /* 禁用灰 */
+  --color-gray-500: #8C8C8C;     /* 次要文字灰 */
+  --color-gray-600: #595959;     /* 正文灰 */
+  --color-gray-700: #262626;     /* 标题灰 */
+  --color-gray-800: #1F1F1F;     /* 深标题灰 */
+  --color-gray-900: #141414;     /* 最深灰 */
+  
+  /* 功能色映射 - 语义化命名 */
+  --color-primary: var(--color-primary-500);
+  --color-primary-hover: var(--color-primary-600);
+  --color-primary-light: var(--color-primary-100);
+  --color-primary-dark: var(--color-primary-700);
+  
+  --color-accent: var(--color-accent-500);
+  --color-accent-hover: var(--color-accent-600);
+  
+  --color-success: var(--color-success-500);
+  --color-success-hover: var(--color-success-600);
+  --color-success-light: var(--color-success-100);
+  
+  --color-warning: var(--color-warning-500);
+  --color-warning-hover: var(--color-warning-600);
+  --color-warning-light: var(--color-warning-100);
+  
+  --color-error: var(--color-error-500);
+  --color-error-hover: var(--color-error-600);
+  --color-error-light: var(--color-error-100);
+  
+  --color-info: var(--color-primary-400);
+  --color-info-hover: var(--color-primary-500);
+  
+  /* 背景色系统 */
+  --color-bg-page: var(--color-gray-100);        /* 页面背景 */
+  --color-bg-container: var(--color-gray-50);      /* 容器背景 */
+  --color-bg-card: #FFFFFF;                       /* 卡片背景 */
+  --color-bg-hover: var(--color-gray-100);         /* 悬停背景 */
+  --color-bg-active: var(--color-gray-200);        /* 激活背景 */
+  
+  /* 文字色系统 */
+  --color-text-primary: var(--color-gray-700);      /* 主要文字 */
+  --color-text-secondary: var(--color-gray-500);   /* 次要文字 */
+  --color-text-tertiary: var(--color-gray-400);   /* 辅助文字 */
+  --color-text-disabled: var(--color-gray-400);    /* 禁用文字 */
+  --color-text-link: var(--color-primary-500);     /* 链接文字 */
+  --color-text-inverse: #FFFFFF;                    /* 反色文字 */
+  
+  /* 边框色系统 */
+  --color-border-base: var(--color-gray-200);      /* 基础边框 */
+  --color-border-split: var(--color-gray-300);     /* 分割线 */
+  --color-border-hover: var(--color-primary-300);   /* 悬停边框 */
+  --color-border-active: var(--color-primary-500);  /* 激活边框 */
+
+  /* =============================================================================
+     3. 字体系统 (Typography System) - 专业可读性
+     ============================================================================= */
+  
+  /* 字体尺寸 */
+  --font-size-xs: 11px;         /* 最小文字 - 注释、标签 */
+  --font-size-sm: 12px;         /* 小文字 - 辅助信息 */
+  --font-size-base: 14px;       /* 基础文字 - 正文 */
+  --font-size-lg: 16px;         /* 大文字 - 小标题 */
+  --font-size-xl: 18px;         /* 特大文字 - 中标题 */
+  --font-size-2xl: 20px;        /* 超大文字 - 大标题 */
+  --font-size-3xl: 24px;        /* 页面标题 */
+  --font-size-4xl: 32px;        /* 大标题 */
+  --font-size-5xl: 48px;        /* 超大标题 */
+  
+  /* 行高系统 */
+  --line-height-tight: 1.25;    /* 紧凑行高 */
+  --line-height-base: 1.5;      /* 基础行高 */
+  --line-height-relaxed: 1.75;  /* 宽松行高 */
+  
+  /* 字重系统 */
+  --font-weight-light: 300;      /* 轻体 */
+  --font-weight-normal: 400;    /* 常规 */
+  --font-weight-medium: 500;    /* 中等 */
+  --font-weight-semibold: 600;  /* 半粗 */
+  --font-weight-bold: 700;      /* 粗体 */
+  
+  /* 字间距 */
+  --letter-spacing-tight: -0.025em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.025em;
+  
+  /* =============================================================================
+     4. 圆角系统 (Border Radius) - 现代感与专业性平衡
+     ============================================================================= */
+  
+  --radius-none: 0px;           /* 无圆角 */
+  --radius-sm: 4px;             /* 小圆角 */
+  --radius-md: 6px;             /* 中圆角 */
+  --radius-lg: 8px;             /* 大圆角 */
+  --radius-xl: 12px;            /* 超大圆角 */
+  --radius-2xl: 16px;           /* 超级圆角 */
+  --radius-full: 9999px;        /* 完全圆角 */
+
+  /* =============================================================================
+     5. 阴影系统 (Box Shadow) - 层次感与专业性
+     ============================================================================= */
+  
+  /* 微弱阴影 */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.03),
+                0 1px 6px -1px rgba(0, 0, 0, 0.02),
+                0 2px 4px 0 rgba(0, 0, 0, 0.01);
+  
+  /* 标准阴影 */
+  --shadow-md: 0 1px 3px 0 rgba(0, 0, 0, 0.10),
+                0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  
+  /* 中等阴影 */
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.10),
+                0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  
+  /* 强阴影 */
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.10),
+                0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  
+  /* 超强阴影 */
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  
+  /* 内阴影 */
+  --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+  
+  /* 有色阴影 */
+  --shadow-colored: 0 10px 15px -3px rgba(22, 119, 255, 0.10),
+                   0 4px 6px -2px rgba(22, 119, 255, 0.05);
+
+  /* =============================================================================
+     6. 动画系统 (Animation) - 专业的交互反馈
+     ============================================================================= */
+  
+  /* 动画时长 */
+  --duration-fast: 150ms;        /* 快速动画 */
+  --duration-normal: 300ms;      /* 正常动画 */
+  --duration-slow: 500ms;        /* 慢速动画 */
+  
+  /* 缓动函数 */
+  --ease-out: cubic-bezier(0.4, 0, 0.2, 1);          /* 缓出 */
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);           /* 缓入 */
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);     /* 缓入缓出 */
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55); /* 弹跳 */
+  
+  /* =============================================================================
+     7. 透明度系统 (Opacity) - 视觉层次
+     ============================================================================= */
+  
+  --opacity-disabled: 0.5;       /* 禁用状态 */
+  --opacity-loading: 0.65;       /* 加载状态 */
+  --opacity-hover: 0.8;          /* 悬停状态 */
+  --opacity-focus: 0.9;         /* 焦点状态 */
+
+  /* =============================================================================
+     8. 层级系统 (Z-Index) - 确保正确的层级关系
+     ============================================================================= */
+  
+  --z-index-dropdown: 1000;      /* 下拉菜单 */
+  --z-index-sticky: 1020;        /* 吸顶元素 */
+  --z-index-fixed: 1030;         /* 固定元素 */
+  --z-index-modal-backdrop: 1040; /* 模态框背景 */
+  --z-index-modal: 1050;         /* 模态框 */
+  --z-index-popover: 1060;       /* 弹出层 */
+  --z-index-tooltip: 1070;       /* 工具提示 */
+  --z-index-notification: 1080;  /* 通知消息 */
+
+  /* =============================================================================
+     9. 尺寸系统 (Sizing) - 统一的尺寸规范
+     ============================================================================= */
+  
+  /* 组件高度 */
+  --size-xs: 24px;               /* 超小组件 */
+  --size-sm: 32px;               /* 小组件 */
+  --size-md: 40px;               /* 中组件 */
+  --size-lg: 48px;               /* 大组件 */
+  --size-xl: 56px;               /* 超大组件 */
+  
+  /* 图标尺寸 */
+  --icon-size-xs: 14px;
+  --icon-size-sm: 16px;
+  --icon-size-md: 20px;
+  --icon-size-lg: 24px;
+  --icon-size-xl: 32px;
+
+  /* =============================================================================
+     10. 断点系统 (Breakpoints) - 响应式设计
+     ============================================================================= */
+  
+  --screen-xs: 480px;            /* 手机竖屏 */
+  --screen-sm: 576px;            /* 手机横屏 */
+  --screen-md: 768px;            /* 平板 */
+  --screen-lg: 992px;            /* 小桌面 */
+  --screen-xl: 1200px;           /* 桌面 */
+  --screen-2xl: 1600px;          /* 大桌面 */
+
+  /* =============================================================================
+     11. 网格系统 (Grid) - 12列响应式网格
+     ============================================================================= */
+  
+  --grid-columns: 12;             /* 网格列数 */
+  --grid-gap: var(--space-2);     /* 网格间距 */
+
+  /* =============================================================================
+     12. 状态颜色映射 (Status Colors) - 语义化状态
+     ============================================================================= */
+  
+  /* 优先级颜色 */
+  --color-priority-high: var(--color-error-500);
+  --color-priority-medium: var(--color-warning-500);
+  --color-priority-low: var(--color-success-500);
+  
+  /* 业务状态颜色 */
+  --color-status-active: var(--color-success-500);
+  --color-status-inactive: var(--color-gray-400);
+  --color-status-pending: var(--color-warning-500);
+  --color-status-processing: var(--color-primary-500);
+  --color-status-success: var(--color-success-500);
+  --color-status-error: var(--color-error-500);
+  --color-status-warning: var(--color-warning-500);
+  --color-status-info: var(--color-info);
+
+  /* =============================================================================
+     13. 渐变系统 (Gradients) - 增强视觉效果
+     ============================================================================= */
+  
+  /* 主色调渐变 */
+  --gradient-primary: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
+  --gradient-primary-light: linear-gradient(135deg, var(--color-primary-400) 0%, var(--color-primary-600) 100%);
+  
+  /* 成功色调渐变 */
+  --gradient-success: linear-gradient(135deg, var(--color-success-500) 0%, var(--color-success-700) 100%);
+  
+  /* 警告色调渐变 */
+  --gradient-warning: linear-gradient(135deg, var(--color-warning-500) 0%, var(--color-warning-700) 100%);
+  
+  /* 错误色调渐变 */
+  --gradient-error: linear-gradient(135deg, var(--color-error-500) 0%, var(--color-error-700) 100%);
+  
+  /* 中性色调渐变 */
+  --gradient-gray: linear-gradient(135deg, var(--color-gray-100) 0%, var(--color-gray-200) 100%);
+
+  /* =============================================================================
+     14. 特殊效果 (Special Effects) - 增强用户体验
+     ============================================================================= */
+  
+  /* 玻璃态效果 */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  
+  /* 模糊效果 */
+  --blur-sm: blur(2px);
+  --blur-md: blur(4px);
+  --blur-lg: blur(8px);
+  --blur-xl: blur(16px);
+  
+  /* =============================================================================
+     15. 兼容性别名 (Legacy Aliases) - 保持向后兼容
+     ============================================================================= */
+  
+  /* 旧版本变量名映射 */
+  --primary-color: var(--color-primary);
+  --secondary-color: var(--color-accent);
+  --success-color: var(--color-success);
+  --warning-color: var(--color-warning);
+  --error-color: var(--color-error);
+  --info-color: var(--color-info);
+  --text-color: var(--color-text-primary);
+  --text-secondary: var(--color-text-secondary);
+  --background-color: var(--color-bg-page);
+  --surface-color: var(--color-bg-container);
+  --border-color: var(--color-border-base);
+  --shadow-light: var(--shadow-sm);
+  --shadow-medium: var(--shadow-md);
+}
+
+/* =============================================================================
+   16. 暗色模式支持 (Dark Mode) - 可选的夜间模式
+   ============================================================================= */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* 暗色模式背景色 */
+    --color-bg-page: #0f0f0f;
+    --color-bg-container: #1a1a1a;
+    --color-bg-card: #262626;
+    --color-bg-hover: #303030;
+    --color-bg-active: #404040;
+    
+    /* 暗色模式文字色 */
+    --color-text-primary: #e5e5e5;
+    --color-text-secondary: #a0a0a0;
+    --color-text-tertiary: #808080;
+    --color-text-disabled: #606060;
+    
+    /* 暗色模式边框色 */
+    --color-border-base: #404040;
+    --color-border-split: #303030;
+    
+    /* 暗色模式阴影调整 */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 1px 3px 0 rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* =============================================================================
+   17. 高对比度模式 (High Contrast) - 无障碍支持
+   ============================================================================= */
+
+@media (prefers-contrast: high) {
+  :root {
+    /* 增强对比度 */
+    --color-text-primary: #000000;
+    --color-text-secondary: #333333;
+    --color-border-base: #666666;
+    
+    /* 增强阴影 */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+  }
+}
+
+/* =============================================================================
+   18. 减少动画模式 (Reduce Motion) - 无障碍支持
+   ============================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    /* 减少动画时长 */
+    --duration-fast: 0ms;
+    --duration-normal: 0ms;
+    --duration-slow: 0ms;
+  }
+  
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* =============================================================================
+   19. 打印样式 (Print Styles) - 优化打印效果
+   ============================================================================= */
+
+@media print {
+  :root {
+    /* 打印时使用黑色文字 */
+    --color-text-primary: #000000;
+    --color-text-secondary: #333333;
+    
+    /* 移除背景色 */
+    --color-bg-page: #ffffff;
+    --color-bg-container: #ffffff;
+    --color-bg-card: #ffffff;
+    
+    /* 移除阴影 */
+    --shadow-sm: none;
+    --shadow-md: none;
+    --shadow-lg: none;
+  }
+  
+  /* 避免不必要的元素打印 */
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* =============================================================================
+   20. 使用说明 (Usage Documentation)
+   ============================================================================= */
+
+/*
+  设计系统使用指南：
+  
+  1. 间距使用：
+     - 使用 --space-* 变量确保一致性
+     - 优先使用 --space-2 (16px) 作为基础间距
+     - 组件内部间距使用 --space-1 到 --space-4
+  
+  2. 颜色使用：
+     - 主要元素使用 --color-primary-* 系列
+     - 状态信息使用语义化颜色 --color-success/warning/error
+     - 文字使用 --color-text-primary/secondary/tertiary
+  
+  3. 字体使用：
+     - 正文使用 --font-size-base (14px)
+     - 标题使用 --font-size-lg 到 --font-size-3xl
+     - 辅助文字使用 --font-size-sm
+  
+  4. 圆角使用：
+     - 卡片使用 --radius-lg (8px)
+     - 按钮使用 --radius-md (6px)
+     - 输入框使用 --radius-sm (4px)
+  
+  5. 阴影使用：
+     - 卡片悬停使用 --shadow-md
+     - 弹出层使用 --shadow-lg
+     - 模态框使用 --shadow-xl
+  
+  6. 动画使用：
+     - 快速交互使用 --duration-fast
+     - 页面过渡使用 --duration-normal
+     - 特殊效果使用 --duration-slow
+  
+  示例：
+    .my-component {
+      padding: var(--space-3);
+      background: var(--color-bg-card);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      transition: all var(--duration-normal) var(--ease-out);
+    }
+  
+  这个设计系统确保了：
+    ✅ 视觉一致性
+    ✅ 专业的外观
+    ✅ 优秀的可读性
+    ✅ 响应式支持
+    ✅ 无障碍兼容
+    ✅ 性能优化
+    ✅ 维护性良好
+*/

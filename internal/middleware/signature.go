@@ -4,12 +4,14 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
-	"log/slog"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"law-oa-go/internal/common"
+	"law-oa-go/internal/errors"
+	"law-oa-go/internal/logger"
 )
 
 // RequestSignatureMiddleware 请求签名验证中间件
@@ -30,7 +32,7 @@ func RequestSignatureMiddleware() gin.HandlerFunc {
 		apiKey := c.GetHeader("X-API-Key")
 
 		if timestamp == "" || signature == "" || apiKey == "" {
-			common.Unauthorized(c, "Missing required headers: X-Timestamp, X-Signature, X-API-Key")
+			_ = c.Error(errors.NewValidationError("headers", "missing_headers", "Missing required headers", "X-Timestamp, X-Signature, X-API-Key are required"))
 			c.Abort()
 			return
 		}
@@ -38,21 +40,21 @@ func RequestSignatureMiddleware() gin.HandlerFunc {
 		// 验证时间戳（防止重放攻击）
 		requestTime, err := time.Parse(time.RFC3339, timestamp)
 		if err != nil {
-			common.BadRequest(c, "Invalid timestamp format")
+			_ = c.Error(errors.NewValidationError("timestamp", "invalid_timestamp_format", "Invalid timestamp format", "Timestamp must be in RFC3339 format"))
 			c.Abort()
 			return
 		}
 
 		// 时间戳有效期5分钟
 		if time.Since(requestTime) > 5*time.Minute || time.Until(requestTime) > 5*time.Minute {
-			common.BadRequest(c, "Timestamp expired or invalid")
+			_ = c.Error(errors.NewValidationError("timestamp", "timestamp_expired", "Timestamp expired or invalid", "Timestamp must be within 5 minutes of current time"))
 			c.Abort()
 			return
 		}
 
 		// 验证API Key
 		if !validateAPIKey(apiKey) {
-			common.Unauthorized(c, "Invalid API key")
+			_ = c.Error(errors.NewAuthorizationError("invalid_api_key", "Invalid API key", "valid_api_key", "invalid_api_key"))
 			c.Abort()
 			return
 		}
@@ -60,7 +62,7 @@ func RequestSignatureMiddleware() gin.HandlerFunc {
 		// 验证签名
 		body, err := c.GetRawData()
 		if err != nil {
-			common.BadRequest(c, "Failed to read request body")
+			_ = c.Error(errors.NewValidationError("body", "body_read_failed", "Failed to read request body", "Unable to read request body for signature calculation"))
 			c.Abort()
 			return
 		}
@@ -73,18 +75,17 @@ func RequestSignatureMiddleware() gin.HandlerFunc {
 
 		// 验证签名
 		if !hmac.Equal([]byte(signature), []byte(expectedSignature)) {
-			common.Unauthorized(c, "Invalid signature")
+			_ = c.Error(errors.NewAuthorizationError("invalid_signature", "Invalid signature", "valid_signature", "invalid_signature"))
 			c.Abort()
 			return
 		}
 
 		// 记录验证成功
-		logger := c.MustGet("logger").(*slog.Logger)
-		logger.Info("Request signature verified",
-			"path", c.Request.URL.Path,
-			"method", c.Request.Method,
-			"api_key", apiKey[:8]+"...", // 只显示前8位
-			"timestamp", timestamp,
+		logger.Logger.Info("Request signature verified",
+			zap.String("path", c.Request.URL.Path),
+			zap.String("method", c.Request.Method),
+			zap.String("api_key", apiKey[:8]+"..."), // 只显示前8位
+			zap.String("timestamp", timestamp),
 		)
 
 		c.Next()
@@ -126,14 +127,14 @@ func WebhookSignatureMiddleware(secret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		signature := c.GetHeader("X-Webhook-Signature")
 		if signature == "" {
-			common.Unauthorized(c, "Missing webhook signature")
+			_ = c.Error(errors.NewAuthorizationError("missing_webhook_signature", "Missing webhook signature", "webhook_signature", "none"))
 			c.Abort()
 			return
 		}
 
 		body, err := c.GetRawData()
 		if err != nil {
-			common.BadRequest(c, "Failed to read webhook body")
+			_ = c.Error(errors.NewValidationError("body", "webhook_body_read_failed", "Failed to read webhook body", "Unable to read webhook body for signature validation"))
 			c.Abort()
 			return
 		}
@@ -144,7 +145,7 @@ func WebhookSignatureMiddleware(secret string) gin.HandlerFunc {
 		// 验证签名
 		expectedSignature := calculateWebhookSignature(body, secret)
 		if !hmac.Equal([]byte(signature), []byte(expectedSignature)) {
-			common.Unauthorized(c, "Invalid webhook signature")
+			_ = c.Error(errors.NewAuthorizationError("invalid_webhook_signature", "Invalid webhook signature", "valid_webhook_signature", "invalid_webhook_signature"))
 			c.Abort()
 			return
 		}

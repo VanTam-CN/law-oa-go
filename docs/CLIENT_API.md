@@ -219,44 +219,11 @@ Authorization: Bearer <token>
 }
 ```
 
-### 7. 搜索客户
 
-**请求**
-```http
-GET /api/v1/clients/search?keyword=张三
-Authorization: Bearer <token>
-```
 
-**响应**
-```json
-{
-  "code": 200,
-  "message": "搜索成功",
-  "data": {
-    "clients": [
-      {
-        "id": 1,
-        "client_name": "张三",
-        "phone": "13800138001",
-        "email": "zhangsan@example.com",
-        "client_type": "individual",
-        "company": "",
-        "id_card": "110101199001011234",
-        "address": "北京市朝阳区",
-        "contact_person": "",
-        "status": "active",
-        "remark": "",
-        "created_at": "2024-01-01 10:00:00",
-        "updated_at": "2024-01-01 10:00:00",
-        "case_count": 3
-      }
-    ],
-    "total": 1
-  }
-}
-```
+### 8. 批量导入客户 (待实现)
 
-### 8. 批量导入客户
+> **注意：** 此功能当前未实现。
 
 **请求**
 ```http

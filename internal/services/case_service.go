@@ -76,7 +76,7 @@ type CaseStatsResponse struct {
 }
 
 func (s *CaseService) CreateCase(ctx context.Context, req *CreateCaseRequest) (*CaseResponse, error) {
-	if err := s.validateCaseRequest(req); err != nil {
+	if err := s.validateCaseRequest(ctx, req); err != nil {
 		return nil, err
 	}
 
@@ -114,9 +114,9 @@ func (s *CaseService) GetCaseByID(ctx context.Context, id uint) (*CaseResponse, 
 	return s.toCaseResponse(&caseModel), nil
 }
 
-func (s *CaseService) UpdateCase(id uint, req *UpdateCaseRequest) (*CaseResponse, error) {
+func (s *CaseService) UpdateCase(ctx context.Context, id uint, req *UpdateCaseRequest) (*CaseResponse, error) {
 	var caseModel models.Case
-	if err := s.db.First(&caseModel, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&caseModel, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("case not found")
 		}
@@ -131,7 +131,7 @@ func (s *CaseService) UpdateCase(id uint, req *UpdateCaseRequest) (*CaseResponse
 		updates["description"] = *req.Description
 	}
 	if req.LawyerID != nil {
-		if err := s.validateLawyerExists(*req.LawyerID); err != nil {
+		if err := s.validateLawyerExists(ctx, *req.LawyerID); err != nil {
 			return nil, err
 		}
 		updates["lawyer_id"] = *req.LawyerID
@@ -147,7 +147,7 @@ func (s *CaseService) UpdateCase(id uint, req *UpdateCaseRequest) (*CaseResponse
 	}
 
 	if len(updates) > 0 {
-		if err := s.db.Model(&caseModel).Updates(updates).Error; err != nil {
+		if err := s.db.WithContext(ctx).Model(&caseModel).Updates(updates).Error; err != nil {
 			return nil, fmt.Errorf("failed to update case: %w", err)
 		}
 	}
@@ -155,8 +155,8 @@ func (s *CaseService) UpdateCase(id uint, req *UpdateCaseRequest) (*CaseResponse
 	return s.GetCaseByID(context.Background(), id)
 }
 
-func (s *CaseService) DeleteCase(id uint) error {
-	result := s.db.Delete(&models.Case{}, id)
+func (s *CaseService) DeleteCase(ctx context.Context, id uint) error {
+	result := s.db.WithContext(ctx).Delete(&models.Case{}, id)
 	if result.Error != nil {
 		return fmt.Errorf("failed to delete case: %w", result.Error)
 	}
@@ -166,7 +166,7 @@ func (s *CaseService) DeleteCase(id uint) error {
 	return nil
 }
 
-func (s *CaseService) ListCases(req *CaseListRequest) ([]*CaseResponse, int64, error) {
+func (s *CaseService) ListCases(ctx context.Context, req *CaseListRequest) ([]*CaseResponse, int64, error) {
 	page := 1
 	pageSize := 20
 	if req.Page > 0 {
@@ -176,7 +176,7 @@ func (s *CaseService) ListCases(req *CaseListRequest) ([]*CaseResponse, int64, e
 		pageSize = req.PageSize
 	}
 
-	query := s.db.Model(&models.Case{}).Preload("Client").Preload("Lawyer")
+	query := s.db.WithContext(ctx).Model(&models.Case{}).Preload("Client").Preload("Lawyer")
 
 	if req.Status != "" {
 		query = query.Where("status = ?", req.Status)
@@ -281,12 +281,12 @@ func (s *CaseService) GetCaseStats(ctx context.Context) (*CaseStatsResponse, err
 	return stats, nil
 }
 
-func (s *CaseService) AssignLawyer(caseID, lawyerID uint) error {
-	if err := s.validateLawyerExists(lawyerID); err != nil {
+func (s *CaseService) AssignLawyer(ctx context.Context, caseID, lawyerID uint) error {
+	if err := s.validateLawyerExists(ctx, lawyerID); err != nil {
 		return err
 	}
 
-	result := s.db.Model(&models.Case{}).Where("id = ?", caseID).Update("lawyer_id", lawyerID)
+	result := s.db.WithContext(ctx).Model(&models.Case{}).Where("id = ?", caseID).Update("lawyer_id", lawyerID)
 	if result.Error != nil {
 		return fmt.Errorf("failed to assign lawyer: %w", result.Error)
 	}
@@ -296,7 +296,7 @@ func (s *CaseService) AssignLawyer(caseID, lawyerID uint) error {
 	return nil
 }
 
-func (s *CaseService) UpdateCaseStatus(caseID uint, status string) error {
+func (s *CaseService) UpdateCaseStatus(ctx context.Context, caseID uint, status string) error {
 	validStatuses := map[string]bool{
 		"pending":   true,
 		"active":    true,
@@ -308,7 +308,7 @@ func (s *CaseService) UpdateCaseStatus(caseID uint, status string) error {
 		return errors.New("invalid case status")
 	}
 
-	result := s.db.Model(&models.Case{}).Where("id = ?", caseID).Update("status", status)
+	result := s.db.WithContext(ctx).Model(&models.Case{}).Where("id = ?", caseID).Update("status", status)
 	if result.Error != nil {
 		return fmt.Errorf("failed to update case status: %w", result.Error)
 	}
@@ -318,21 +318,21 @@ func (s *CaseService) UpdateCaseStatus(caseID uint, status string) error {
 	return nil
 }
 
-func (s *CaseService) validateCaseRequest(req *CreateCaseRequest) error {
+func (s *CaseService) validateCaseRequest(ctx context.Context, req *CreateCaseRequest) error {
 	var client models.Client
-	if err := s.db.First(&client, req.ClientID).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&client, req.ClientID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return errors.New("client not found")
 		}
 		return fmt.Errorf("failed to validate client: %w", err)
 	}
 
-	return s.validateLawyerExists(req.LawyerID)
+	return s.validateLawyerExists(ctx, req.LawyerID)
 }
 
-func (s *CaseService) validateLawyerExists(lawyerID uint) error {
+func (s *CaseService) validateLawyerExists(ctx context.Context, lawyerID uint) error {
 	var user models.User
-	err := s.db.Where("id = ? AND role = ?", lawyerID, "lawyer").First(&user).Error
+	err := s.db.WithContext(ctx).Where("id = ? AND role = ?", lawyerID, "lawyer").First(&user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return errors.New("lawyer not found")

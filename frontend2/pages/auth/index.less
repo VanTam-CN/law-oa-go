@@ -1,0 +1,128 @@
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+}
+
+.login-card .ant-card-head-title {
+  text-align: center;
+  font-size: 24px;
+  font-weight: bold;
+  color: #1a1a1a;
+}
+
+.login-footer {
+  text-align: center;
+  color: #666;
+  margin-top: 16px;
+}
+
+.login-footer .ant-btn-link {
+  padding: 0;
+  height: auto;
+  font-size: 14px;
+}
+
+.ant-form-item-label > label {
+  font-weight: 500;
+  color: #333;
+}
+
+.ant-input-prefix {
+  color: #667eea;
+  margin-right: 8px;
+}
+
+.ant-input:focus,
+.ant-input-focused {
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+.ant-btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  height: 44px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.ant-btn-primary:hover {
+  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.ant-checkbox-wrapper {
+  color: #666;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .login-container {
+    padding: 10px;
+  }
+  
+  .login-card {
+    max-width: 100%;
+  }
+  
+  .login-card .ant-card-head-title {
+    font-size: 20px;
+  }
+  
+  .ant-btn-primary {
+    height: 40px;
+    font-size: 14px;
+  }
+}
+
+/* 动画效果 */
+.login-card {
+  animation: slideInUp 0.6s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 表单项动画 */
+.ant-form-item {
+  animation: fadeIn 0.5s ease-out;
+  animation-fill-mode: both;
+}
+
+.ant-form-item:nth-child(1) { animation-delay: 0.1s; }
+.ant-form-item:nth-child(2) { animation-delay: 0.2s; }
+.ant-form-item:nth-child(3) { animation-delay: 0.3s; }
+.ant-form-item:nth-child(4) { animation-delay: 0.4s; }
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}

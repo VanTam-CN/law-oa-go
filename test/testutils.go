@@ -1,9 +1,12 @@
 package test
 
 import (
+	"context"
 	"database/sql/driver"
 	"encoding/json"
 	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -13,6 +16,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"law-oa-go/internal/models"
+	"law-oa-go/internal/services"
 )
 
 // TestDB 测试数据库
@@ -177,4 +182,137 @@ func StructToMap(obj interface{}) (map[string]interface{}, error) {
 	var result map[string]interface{}
 	err = json.Unmarshal(data, &result)
 	return result, err
+}
+
+// AssertSuccessResponse 断言成功响应
+func AssertSuccessResponse(t *testing.T, w *httptest.ResponseRecorder) *require.Assertions {
+	req := Require(t)
+	req.Equal(http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	req.NoError(err)
+	req.Equal(true, response["success"])
+
+	return req
+}
+
+// CreateTestUser 创建测试用户
+func CreateTestUser(t *testing.T) *models.User {
+	return &models.User{
+		ID:        uint(1),
+		Name:      "测试用户",
+		Email:     "test@example.com",
+		Password:  "$2a$10$hashedpassword", // bcrypt hash
+		Role:      "user",
+		Phone:     "1234567890",
+		Status:    "active",
+		CreatedAt: TestTime(),
+		UpdatedAt: TestTime(),
+	}
+}
+
+// CreateTestUserB 为基准测试创建测试用户
+func CreateTestUserB(b *testing.B) *models.User {
+	return &models.User{
+		ID:        uint(1),
+		Name:      "测试用户",
+		Email:     "test@example.com",
+		Password:  "$2a$10$hashedpassword", // bcrypt hash
+		Role:      "user",
+		Phone:     "1234567890",
+		Status:    "active",
+		CreatedAt: TestTime(),
+		UpdatedAt: TestTime(),
+	}
+}
+
+// AuthTokenCache 认证令牌缓存，避免重复数据库查询
+var AuthTokenCache = make(map[string]string)
+
+// GetAuthToken 获取认证令牌（带缓存）
+func GetAuthToken(t *testing.T, userService *services.UserService, email, password string) string {
+	// 检查缓存
+	if token, exists := AuthTokenCache[email]; exists {
+		return token
+	}
+
+	// 缓存未命中，执行认证
+	_, err := userService.AuthenticateUser(context.Background(), email, password)
+	Require(t).NoError(err)
+
+	// 生成并缓存token
+	token := "test-token-" + RandomString(16)
+	AuthTokenCache[email] = token
+
+	return token
+}
+
+// GetAuthTokenB 为基准测试获取认证令牌（带缓存）
+func GetAuthTokenB(b *testing.B, userService *services.UserService, email, password string) string {
+	// 检查缓存
+	if token, exists := AuthTokenCache[email]; exists {
+		return token
+	}
+
+	// 缓存未命中，执行认证
+	_, err := userService.AuthenticateUser(context.Background(), email, password)
+	if err != nil {
+		b.Logf("Warning: Authentication failed: %v", err)
+	}
+
+	// 生成并缓存token
+	token := "test-token-" + RandomString(16)
+	AuthTokenCache[email] = token
+
+	return token
+}
+
+// ClearAuthTokenCache 清理认证令牌缓存（测试清理用）
+func ClearAuthTokenCache() {
+	AuthTokenCache = make(map[string]string)
+}
+
+// PreloadTestAuthTokens 预加载测试认证令牌（性能测试专用）
+func PreloadTestAuthTokens(t *testing.T, userService *services.UserService, emails []string) {
+	for _, email := range emails {
+		if _, exists := AuthTokenCache[email]; !exists {
+			// 首先创建用户（如果不存在）
+			createReq := &services.CreateUserRequest{
+				Name:     "Test User " + email,
+				Email:    email,
+				Password: "Password123!",
+				Role:     "user",
+				Phone:    "1234567890",
+			}
+
+			// 尝试创建用户，忽略已存在错误
+			_, err := userService.CreateUser(context.Background(), createReq)
+			if err != nil && !strings.Contains(err.Error(), "already exists") {
+				Require(t).NoError(err)
+			}
+
+			// 然后认证获取令牌
+			_, err = userService.AuthenticateUser(context.Background(), email, "Password123!")
+			Require(t).NoError(err)
+
+			token := "test-token-" + email
+			AuthTokenCache[email] = token
+		}
+	}
+}
+
+// CreateTestClient 创建测试客户
+func CreateTestClient(t *testing.T) *models.Client {
+	return &models.Client{
+		ID:        uint(1),
+		Name:      "测试客户",
+		Email:     "client@example.com",
+		Phone:     "9876543210",
+		Address:   "测试地址",
+		Company:   "测试公司",
+		Status:    "active",
+		CreatedAt: TestTime(),
+		UpdatedAt: TestTime(),
+	}
 }

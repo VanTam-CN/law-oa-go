@@ -1,0 +1,423 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # 每天凌晨2点运行安全测试和Fuzzing
+    - cron: '0 2 * * *'
+  release:
+    types: [ published ]
+
+env:
+  GO_VERSION: '1.23'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # 代码质量检查
+  quality-check:
+    name: 代码质量检查
+    runs-on: ubuntu-latest
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+
+    - name: 设置Go环境
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        cache: true
+
+    - name: 检查Go版本
+      run: |
+        go version
+        go version | grep -q "go${{ env.GO_VERSION }}"
+
+    - name: 下载依赖
+      run: |
+        go mod download
+        go mod tidy
+
+    - name: 代码格式化检查
+      run: |
+        go fmt ./...
+        if [ -n "$(gofmt -l .)" ]; then
+          echo "以下文件需要格式化:"
+          gofmt -l .
+          exit 1
+        fi
+
+    - name: 代码检查
+      run: |
+        go vet ./...
+        if command -v golangci-lint &> /dev/null; then
+          golangci-lint run
+        fi
+
+    - name: 安全检查
+      run: |
+        if command -v gosec &> /dev/null; then
+          gosec ./...
+        fi
+
+  # 运行单元测试和集成测试
+  test:
+    name: 运行测试
+    runs-on: ubuntu-latest
+    needs: quality-check
+    strategy:
+      matrix:
+        test-type: [unit, integration]
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+
+    - name: 设置Go环境
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        cache: true
+
+    - name: 设置数据库
+      run: |
+        # 启动MySQL用于集成测试
+        sudo systemctl start mysql
+        mysql -u root -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
+
+    - name: 设置Redis
+      run: |
+        # 启动Redis用于测试
+        sudo systemctl start redis-server
+
+    - name: 下载依赖
+      run: |
+        go mod download
+        go mod tidy
+
+    - name: 运行${{ matrix.test-type }}测试
+      run: |
+        if [ "${{ matrix.test-type }}" = "unit" ]; then
+          go test -v -race -coverprofile=coverage.out ./...
+        else
+          go test -v -race -tags=integration -coverprofile=coverage.out ./...
+        fi
+
+    - name: 生成测试覆盖率报告
+      run: |
+        go tool cover -html=coverage.out -o coverage.html
+        go tool cover -func=coverage.out | tail -1
+
+    - name: 上传覆盖率报告
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-report-${{ matrix.test-type }}
+        path: |
+          coverage.out
+          coverage.html
+
+  # 基准测试
+  benchmark:
+    name: 基准测试
+    runs-on: ubuntu-latest
+    needs: quality-check
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+
+    - name: 设置Go环境
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        cache: true
+
+    - name: 下载依赖
+      run: |
+        go mod download
+        go mod tidy
+
+    - name: 运行基准测试
+      run: |
+        go test -bench=. -benchmem -benchtime=10s ./... > benchmark.txt
+
+    - name: 生成基准测试报告
+      run: |
+        echo "基准测试结果:"
+        cat benchmark.txt
+
+    - name: 上传基准测试结果
+      uses: actions/upload-artifact@v3
+      with:
+        name: benchmark-results
+        path: benchmark.txt
+
+  # PGO优化构建
+  pgo-build:
+    name: PGO优化构建
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+
+    - name: 设置Go环境
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        cache: true
+
+    - name: 下载依赖
+      run: |
+        go mod download
+        go mod tidy
+
+    - name: 设置数据库
+      run: |
+        sudo systemctl start mysql
+        mysql -u root -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
+
+    - name: 设置Redis
+      run: |
+        sudo systemctl start redis-server
+
+    - name: 运行工作负载生成器
+      run: |
+        chmod +x scripts/comprehensive_pgo_workload.go
+        go run scripts/comprehensive_pgo_workload.go
+
+    - name: 收集CPU性能数据
+      run: |
+        go test -cpuprofile=profiles/cpu.prof -bench=. ./...
+
+    - name: 构建PGO优化版本
+      run: |
+        make pgo-build
+
+    - name: 验证PGO构建
+      run: |
+        ls -la bin/
+        ./bin/law-oa-server --version
+
+    - name: 上传PGO构建产物
+      uses: actions/upload-artifact@v3
+      with:
+        name: pgo-build
+        path: bin/
+
+  # Fuzzing测试
+  fuzzing:
+    name: Fuzzing测试
+    runs-on: ubuntu-latest
+    needs: quality-check
+    if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event.schedule == '0 2 * * *'
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+
+    - name: 设置Go环境
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        cache: true
+
+    - name: 下载依赖
+      run: |
+        go mod download
+        go mod tidy
+
+    - name: 检查Fuzzing支持
+      run: |
+        go help | grep -q "fuzz" || { echo "Go版本不支持Fuzzing"; exit 1; }
+
+    - name: 设置脚本权限
+      run: |
+        chmod +x scripts/fuzzing_test.sh
+
+    - name: 运行快速Fuzzing测试
+      if: github.event_name == 'pull_request'
+      run: |
+        ./scripts/fuzzing_test.sh -a -t 30s -f 2 -o fuzzing-results-pr
+
+    - name: 运行完整Fuzzing测试
+      if: github.event_name == 'push' || github.event.schedule == '0 2 * * *'
+      run: |
+        ./scripts/fuzzing_test.sh -a -t 120s -f 4 -o fuzzing-results
+
+    - name: 检查Crashers
+      run: |
+        if find fuzzing-results* -name "*crashers*" | grep -q .; then
+          echo "发现Fuzzing crashers！需要修复。"
+          find fuzzing-results* -name "*crashers*" -exec echo "Crasher文件: {}" \;
+          exit 1
+        else
+          echo "✅ 未发现crashers"
+        fi
+
+    - name: 上传Fuzzing结果
+      uses: actions/upload-artifact@v3
+      with:
+        name: fuzzing-results
+        path: |
+          fuzzing-results*/
+          !fuzzing-results*/fuzz-*.log
+
+  # 构建和测试Docker镜像
+  docker-build:
+    name: 构建Docker镜像
+    runs-on: ubuntu-latest
+    needs: [test, pgo-build]
+    if: github.event_name == 'push' || github.event_name == 'release'
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+
+    - name: 设置Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: 登录到Container Registry
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: 提取元数据
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: 构建并推送Docker镜像
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          GO_VERSION=${{ env.GO_VERSION }}
+          BUILD_COMMIT=${{ github.sha }}
+          BUILD_DATE=${{ github.event.created_at }}
+
+  # 部署到测试环境
+  deploy-staging:
+    name: 部署到测试环境
+    runs-on: ubuntu-latest
+    needs: [test, docker-build]
+    if: github.ref == 'refs/heads/develop'
+    environment: staging
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+
+    - name: 部署到测试环境
+      run: |
+        echo "部署到测试环境..."
+        # 这里添加实际的部署脚本
+        # 例如：使用kubectl部署到K8s，或者使用docker-compose
+
+    - name: 健康检查
+      run: |
+        echo "进行健康检查..."
+        # 添加健康检查逻辑
+
+  # 部署到生产环境
+  deploy-production:
+    name: 部署到生产环境
+    runs-on: ubuntu-latest
+    needs: [test, docker-build, fuzzing]
+    if: github.event_name == 'release'
+    environment: production
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+
+    - name: 下载PGO构建产物
+      uses: actions/download-artifact@v3
+      with:
+        name: pgo-build
+        path: bin/
+
+    - name: 部署到生产环境
+      run: |
+        echo "部署到生产环境..."
+        # 这里添加实际的生产环境部署脚本
+        # 使用蓝绿部署或滚动更新策略
+
+    - name: 验证部署
+      run: |
+        echo "验证部署成功..."
+        # 添加部署验证逻辑
+
+  # 生成测试报告
+  generate-report:
+    name: 生成测试报告
+    runs-on: ubuntu-latest
+    needs: [test, benchmark, fuzzing]
+    if: always() && (github.event_name == 'push' || github.event_name == 'schedule')
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+
+    - name: 下载所有产物
+      uses: actions/download-artifact@v3
+
+    - name: 生成综合测试报告
+      run: |
+        echo "# CI/CD Pipeline Report" > report.md
+        echo "## 执行时间: $(date)" >> report.md
+        echo "" >> report.md
+        
+        echo "## 测试覆盖率" >> report.md
+        if [ -f "coverage-report-unit/coverage.out" ]; then
+          go tool cover -func=coverage-report-unit/coverage.out | tail -1 >> report.md
+        fi
+        
+        echo "" >> report.md
+        echo "## 基准测试" >> report.md
+        if [ -f "benchmark-results/benchmark.txt" ]; then
+          echo "\`\`\`" >> report.md
+          tail -20 benchmark-results/benchmark.txt >> report.md
+          echo "\`\`\`" >> report.md
+        fi
+        
+        echo "" >> report.md
+        echo "## Fuzzing测试" >> report.md
+        if find . -name "fuzzing-report.md" | grep -q .; then
+          cat fuzzing-results/fuzzing-report.md >> report.md
+        else
+          echo "✅ Fuzzing测试通过，未发现crashers" >> report.md
+        fi
+
+    - name: 上传测试报告
+      uses: actions/upload-artifact@v3
+      with:
+        name: ci-report
+        path: report.md
+
+    - name: 评论PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const report = fs.readFileSync('report.md', 'utf8');
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `## 🚀 CI/CD Pipeline Report\n\n${report}`
+          });

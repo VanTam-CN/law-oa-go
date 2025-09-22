@@ -67,12 +67,10 @@ linters:
   enable:
     # 基础检查
     - errcheck      # 检查未处理的错误
-    - gosimple      # 简化代码建议
     - govet         # Go官方检查器
     - ineffassign   # 检查无效赋值
-    - staticcheck   # 静态分析检查
     - typecheck     # 类型检查
-    - unused        # 检查未使用的代码
+    # 注意：gosimple、unused、staticcheck暂时禁用（Go 1.23兼容性问题）
     
     # 代码风格
     - gofmt         # 格式化检查

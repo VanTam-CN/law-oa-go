@@ -1,5 +1,5 @@
 # 多阶段构建
-FROM golang:1.21-alpine AS builder
+FROM golang:1.23-alpine AS builder
 
 # 设置工作目录
 WORKDIR /app
@@ -16,8 +16,23 @@ RUN go mod download
 # 复制源代码
 COPY . .
 
-# 构建应用
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o law-oa main.go
+# 构建参数
+ARG BUILD_COMMIT=unknown
+ARG BUILD_DATE=unknown
+ARG BUILD_TARGET=standard
+ARG PGO_PROFILE=default.pgo
+
+# 根据构建目标选择构建方式
+RUN if [ "$BUILD_TARGET" = "pgo" ] && [ -f "$PGO_PROFILE" ]; then \
+        echo "使用PGO优化构建..." && \
+        go build -pgo=$PGO_PROFILE -ldflags="-s -w -X main.Version=${BUILD_COMMIT} -X main.BuildTime=${BUILD_DATE}" -o law-oa .; \
+    else \
+        echo "使用标准构建..." && \
+        go build -ldflags="-s -w -X main.Version=${BUILD_COMMIT} -X main.BuildTime=${BUILD_DATE}" -o law-oa .; \
+    fi
+
+# 验证构建
+RUN ./law-oa --version
 
 # 运行阶段
 FROM alpine:latest

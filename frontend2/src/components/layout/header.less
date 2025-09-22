@@ -1,0 +1,539 @@
+/* 
+ * 律所OA系统Header组件样式
+ * 基于设计标记系统的专业Header样式
+ */
+
+/* =============================================================================
+   1. Header容器 (Header Container) - 主要容器样式
+   ============================================================================= */
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--size-lg) !important;
+  padding: 0 var(--space-4) !important;
+  background-color: var(--color-bg-card) !important;
+  border-bottom: 1px solid var(--color-border-base) !important;
+  box-shadow: var(--shadow-sm) !important;
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  left: var(--sidebar-width, 220px) !important;
+  z-index: var(--z-index-fixed) !important;
+  transition: all var(--duration-normal) var(--ease-out);
+}
+
+/* =============================================================================
+   2. 左侧区域 (Header Left) - 面包屑等
+   ============================================================================= */
+
+.header-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+/* =============================================================================
+   3. 右侧区域 (Header Right) - 用户操作区
+   ============================================================================= */
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* =============================================================================
+   4. 头部操作按钮 (Header Actions) - 通用操作按钮样式
+   ============================================================================= */
+
+.header-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-md);
+  height: var(--size-md);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+  position: relative;
+  
+  &:hover {
+    background-color: var(--color-bg-hover);
+    color: var(--color-primary);
+  }
+  
+  &.active {
+    background-color: var(--color-primary-50);
+    color: var(--color-primary);
+  }
+  
+  .action-icon {
+    font-size: var(--icon-size-md);
+    color: inherit;
+    transition: color var(--duration-fast);
+  }
+}
+
+/* =============================================================================
+   5. 通知中心 (Notification Center) - 通知相关样式
+   ============================================================================= */
+
+.notification-badge {
+  .ant-badge-count {
+    background-color: var(--color-error) !important;
+    color: var(--color-text-inverse) !important;
+    font-size: var(--font-size-xs) !important;
+    font-weight: var(--font-weight-semibold) !important;
+    box-shadow: var(--shadow-sm) !important;
+    min-width: 18px !important;
+    height: 18px !important;
+    line-height: 18px !important;
+    padding: 0 4px !important;
+    border-radius: 9px !important;
+  }
+}
+
+/* 通知下拉菜单样式 */
+.ant-dropdown {
+  .notification-header {
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--color-border-split);
+    
+    .notification-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-2);
+      
+      span:first-child {
+        font-size: var(--font-size-lg);
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text-primary);
+      }
+      
+      .unread-count {
+        background-color: var(--color-error);
+        color: var(--color-text-inverse);
+        padding: var(--space-0-5) var(--space-2);
+        border-radius: var(--radius-full);
+        font-size: var(--font-size-xs);
+        font-weight: var(--font-weight-medium);
+      }
+    }
+    
+    .notification-actions {
+      display: flex;
+      gap: var(--space-3);
+      
+      .action-link {
+        font-size: var(--font-size-sm);
+        color: var(--color-primary);
+        cursor: pointer;
+        transition: color var(--duration-fast);
+        
+        &:hover {
+          color: var(--color-primary-hover);
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+  
+  /* 通知项样式 */
+  .notification-item {
+    display: flex;
+    align-items: flex-start;
+    padding: var(--space-3) var(--space-4);
+    min-width: 320px;
+    max-width: 400px;
+    cursor: pointer;
+    transition: background-color var(--duration-fast) var(--ease-out);
+    border-left: 3px solid transparent;
+    
+    &.unread {
+      background-color: var(--color-primary-50);
+      border-left-color: var(--color-primary);
+      
+      &:hover {
+        background-color: var(--color-primary-100);
+      }
+    }
+    
+    &.read {
+      border-left-color: transparent;
+      
+      &:hover {
+        background-color: var(--color-bg-hover);
+      }
+    }
+    
+    .notification-content {
+      flex: 1;
+      min-width: 0;
+      margin-right: var(--space-2);
+    }
+    
+    .notification-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-1);
+    }
+    
+    .notification-type {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+      padding: var(--space-0-5) var(--space-2);
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      
+      .anticon {
+        font-size: var(--icon-size-sm);
+      }
+    }
+    
+    .notification-time {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+    }
+    
+    .notification-title-text {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-primary);
+      margin-bottom: var(--space-0-5);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .notification-description {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      line-height: var(--line-height-base);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+    
+    .notification-actions {
+      display: flex;
+      align-items: center;
+      
+      .delete-btn {
+        font-size: var(--icon-size-sm);
+        color: var(--color-text-tertiary);
+        cursor: pointer;
+        transition: color var(--duration-fast);
+        padding: var(--space-1);
+        border-radius: var(--radius-sm);
+        
+        &:hover {
+          color: var(--color-error);
+          background-color: var(--color-error-50);
+        }
+      }
+    }
+  }
+  
+  /* 加载状态 */
+  .notification-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-6) var(--space-4);
+    gap: var(--space-2);
+    
+    span {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-tertiary);
+    }
+  }
+  
+  /* 错误状态 */
+  .notification-error {
+    padding: var(--space-6) var(--space-4);
+  }
+  
+  /* 空状态 */
+  .notification-empty {
+    padding: var(--space-6) var(--space-4);
+  }
+  
+  /* 查看全部按钮 */
+  .view-all-btn {
+    text-align: center;
+    padding: var(--space-3);
+    color: var(--color-primary);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+    
+    &:hover {
+      background-color: var(--color-primary-50);
+      color: var(--color-primary-hover);
+    }
+  }
+}
+
+/* =============================================================================
+   6. 用户菜单 (User Menu) - 用户信息样式
+   ============================================================================= */
+
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+  
+  &:hover {
+    background-color: var(--color-bg-hover);
+  }
+  
+  .user-avatar {
+    border: 2px solid var(--color-border-base);
+    transition: border-color var(--duration-fast);
+    
+    &:hover {
+      border-color: var(--color-primary);
+    }
+  }
+  
+  .user-name {
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* 用户下拉菜单样式 */
+.ant-dropdown {
+  .ant-dropdown-menu {
+    border-radius: var(--radius-lg) !important;
+    box-shadow: var(--shadow-lg) !important;
+    border: 1px solid var(--color-border-base) !important;
+    
+    .ant-dropdown-menu-item {
+      padding: var(--space-2) var(--space-3) !important;
+      border-radius: var(--radius-md) !important;
+      margin: var(--space-0-5) !important;
+      transition: all var(--duration-fast) var(--ease-out) !important;
+      
+      &:hover {
+        background-color: var(--color-primary-50) !important;
+        color: var(--color-primary) !important;
+      }
+      
+      .anticon {
+        font-size: var(--icon-size-md) !important;
+        margin-right: var(--space-2) !important;
+      }
+    }
+    
+    .ant-dropdown-menu-item-divider {
+      margin: var(--space-1) var(--space-2) !important;
+      background-color: var(--color-border-split) !important;
+    }
+  }
+}
+
+/* =============================================================================
+   7. 响应式设计 (Responsive Design) - 移动端适配
+   ============================================================================= */
+
+/* 平板设备 */
+@media (max-width: 1024px) {
+  .app-header {
+    left: var(--sidebar-width-collapsed, 80px) !important;
+  }
+  
+  .user-name {
+    max-width: 60px;
+  }
+  
+  .notification-item {
+    min-width: 280px;
+    max-width: 320px;
+  }
+}
+
+/* 手机设备 */
+@media (max-width: 768px) {
+  .app-header {
+    left: 0 !important;
+    padding: 0 var(--space-2) !important;
+  }
+  
+  .header-right {
+    gap: var(--space-2);
+  }
+  
+  .user-name {
+    display: none;
+  }
+  
+  .notification-item {
+    min-width: 260px;
+    max-width: 280px;
+  }
+  
+  .notification-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
+  }
+}
+
+/* =============================================================================
+   8. 动画效果 (Animations) - 交互动画
+   ============================================================================= */
+
+/* 头部滑入动画 */
+@keyframes headerSlideIn {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.app-header {
+  animation: headerSlideIn var(--duration-normal) var(--ease-out);
+}
+
+/* 通知徽章动画 */
+@keyframes badgePulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.notification-badge .ant-badge-count {
+  animation: badgePulse 2s ease-in-out infinite;
+}
+
+/* =============================================================================
+   9. 主题适配 (Theme Adaptation) - 暗色模式支持
+   ============================================================================= */
+
+/* 暗色模式 */
+@media (prefers-color-scheme: dark) {
+  .app-header {
+    background-color: var(--color-bg-card) !important;
+    border-bottom-color: var(--color-border-base) !important;
+  }
+  
+  .notification-item {
+    &.unread {
+      background-color: var(--color-primary-900);
+      border-left-color: var(--color-primary-400);
+    }
+  }
+  
+  .user-menu {
+    &:hover {
+      background-color: var(--color-bg-hover);
+    }
+  }
+}
+
+/* =============================================================================
+   10. 无障碍支持 (Accessibility) - 辅助功能
+   ============================================================================= */
+
+/* 键盘导航 */
+.header-action:focus,
+.user-menu:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* 高对比度模式 */
+@media (prefers-contrast: high) {
+  .header-action {
+    border: 1px solid var(--color-border-base);
+    
+    &:hover {
+      border-color: var(--color-primary);
+    }
+  }
+  
+  .user-menu {
+    border: 1px solid var(--color-border-base);
+    
+    &:hover {
+      border-color: var(--color-primary);
+    }
+  }
+}
+
+/* 减少动画模式 */
+@media (prefers-reduced-motion: reduce) {
+  .app-header {
+    animation: none;
+  }
+  
+  .notification-badge .ant-badge-count {
+    animation: none;
+  }
+  
+  .header-action,
+  .user-menu {
+    transition: none;
+  }
+}
+
+/* =============================================================================
+   11. 打印样式 (Print Styles) - 打印优化
+   ============================================================================= */
+
+@media print {
+  .app-header {
+    position: relative !important;
+    box-shadow: none !important;
+    border-bottom: 1px solid var(--color-gray-300) !important;
+  }
+  
+  .header-action,
+  .user-menu {
+    display: none !important;
+  }
+}
+
+/* =============================================================================
+   12. 兼容性别名 (Legacy Aliases) - 保持向后兼容
+   ============================================================================= */
+
+/* 旧版本样式兼容 */
+.app-header {
+  /* 兼容旧的颜色变量 */
+  --header-bg: var(--color-bg-card);
+  --header-border: var(--color-border-base);
+  --header-text: var(--color-text-primary);
+  --header-hover: var(--color-bg-hover);
+}

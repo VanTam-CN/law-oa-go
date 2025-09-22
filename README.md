@@ -134,11 +134,19 @@ Law OA Go 是一个基于 Go 1.23+ 构建的现代化律师事务所办公自动
 - **缓存**: Redis 7+ (高性能缓存)
 - **搜索**: Elasticsearch 8+ (搜索引擎)
 
+#### 前端核心
+- **框架**: React 18 + TypeScript
+- **UI库**: Bootstrap 5 + React Bootstrap
+- **路由**: React Router v6
+- **状态管理**: React Context API
+- **HTTP客户端**: Axios
+
 #### 开发工具
-- **测试**: Go testing + 集成测试
-- **代码检查**: golangci-lint (已配置)
+- **后端测试**: Go testing + 集成测试
+- **前端测试**: Jest + React Testing Library
+- **代码检查**: golangci-lint (后端) + ESLint/TSLint (前端)
 - **API 文档**: Swagger/OpenAPI 3.0
-- **依赖管理**: Go Modules
+- **依赖管理**: Go Modules (后端) + npm (前端)
 - **构建工具**: Make + Docker
 
 #### 运维部署
@@ -157,11 +165,12 @@ Law OA Go 是一个基于 Go 1.23+ 构建的现代化律师事务所办公自动
 
 ---
 
-## 🚀 快速开始
+### 🚀 快速开始
 
 ### 📋 环境要求
 
 - **Go**: 1.23 或更高版本
+- **Node.js**: 16+ (前端开发)
 - **Docker**: 20.10+ (推荐使用Docker部署)
 - **MySQL**: 8.0+ (或使用Docker)
 - **Redis**: 7+ (或使用Docker)
@@ -176,26 +185,35 @@ cd law-oa-go
 
 #### 2. 环境配置
 ```bash
-# 复制环境变量模板
+# 复制后端环境变量模板
 cp .env.example .env
+
+# 复制前端环境变量模板
+cp frontend/.env.example frontend/.env
 
 # 编辑环境变量 (根据实际需求修改)
 vim .env
+vim frontend/.env
 ```
 
 #### 3. 使用Docker快速启动 (推荐)
 ```bash
-# 启动所有服务 (MySQL, Redis, Elasticsearch, 应用)
+# 启动所有服务 (MySQL, Redis, Elasticsearch, 前端, 后端)
 docker-compose up -d
 
 # 查看服务状态
 docker-compose ps
 
-# 查看应用日志
-docker-compose logs -f law-oa-go
+# 查看后端应用日志
+docker-compose logs -f backend
+
+# 查看前端应用日志
+docker-compose logs -f frontend
 ```
 
 #### 4. 本地开发启动
+
+##### 后端开发启动
 ```bash
 # 安装依赖
 go mod download && go mod tidy
@@ -206,20 +224,41 @@ docker-compose up -d mysql redis elasticsearch
 # 运行数据库迁移
 go run cmd/migrate/main.go
 
-# 启动应用
+# 启动后端应用
 go run main.go
 
 # 或使用开发脚本
 ./dev.sh run
 ```
 
+##### 前端开发启动
+```bash
+# 进入前端目录
+cd frontend
+
+# 安装依赖
+npm install
+
+# 启动前端开发服务器
+npm start
+
+# 或使用启动脚本
+./start.sh
+```
+
 #### 5. 验证安装
 ```bash
-# 检查健康状态
+# 检查后端健康状态
 curl http://localhost:8080/health
 
-# 检查API响应
+# 检查后端API响应
 curl http://localhost:8080/api/v1/ping
+
+# 访问前端应用 (开发模式)
+open http://localhost:3003
+
+# 访问前端应用 (Docker模式)
+open http://localhost:3003
 
 # 访问API文档 (如果配置了Swagger)
 open http://localhost:8080/swagger/index.html
@@ -301,17 +340,29 @@ law-oa-go/
 │   ├── cache/                # 缓存操作
 │   ├── common/               # 公共组件
 │   └── utils/                # 工具函数
+├── frontend/                 # 前端应用
+│   ├── public/               # 静态资源
+│   ├── src/                  # 源代码
+│   │   ├── components/       # React组件
+│   │   ├── pages/            # 页面组件
+│   │   ├── services/         # API服务
+│   │   ├── contexts/         # React上下文
+│   │   ├── types/            # TypeScript类型定义
+│   │   └── ...
+│   ├── package.json          # npm依赖配置
+│   └── ...
 ├── docs/                     # 文档
 ├── scripts/                  # 构建和部署脚本
 ├── configs/                  # 配置文件
 ├── docker-compose.yml        # Docker Compose配置
-├── Dockerfile               # Docker镜像构建
+├── Dockerfile               # 后端Docker镜像构建
 ├── Makefile                 # 构建命令
 └── .golangci.yml            # 代码检查配置
 ```
 
 ### 🧪 测试
 
+#### 后端测试
 ```bash
 # 运行所有测试
 make test
@@ -329,8 +380,24 @@ go test -coverprofile=coverage.out ./...
 go tool cover -html=coverage.out -o coverage.html
 ```
 
+#### 前端测试
+```bash
+# 进入前端目录
+cd frontend
+
+# 运行所有测试
+npm test
+
+# 运行测试并生成覆盖率报告
+npm test -- --coverage
+
+# 运行端到端测试
+npm run test:e2e
+```
+
 ### 🔧 代码质量
 
+#### 后端代码质量
 ```bash
 # 代码格式化
 make fmt
@@ -346,8 +413,24 @@ golangci-lint run
 go vet ./...
 ```
 
+#### 前端代码质量
+```bash
+# 进入前端目录
+cd frontend
+
+# 代码格式化
+npm run format
+
+# 代码检查
+npm run lint
+
+# TypeScript类型检查
+npm run type-check
+```
+
 ### 📦 构建
 
+#### 后端构建
 ```bash
 # 构建应用
 make build
@@ -359,6 +442,21 @@ docker build -t law-oa-go:latest .
 
 # 清理构建文件
 make clean
+```
+
+#### 前端构建
+```bash
+# 进入前端目录
+cd frontend
+
+# 构建生产版本
+npm run build
+
+# 构建 Docker 镜像
+docker build -t law-oa-frontend:latest .
+
+# 清理构建文件
+npm run clean
 ```
 
 ---
@@ -453,7 +551,7 @@ Authorization: Bearer YOUR_JWT_TOKEN
 
 #### 1. 使用 Docker Compose
 ```bash
-# 启动所有服务
+# 启动所有服务 (包括前端、后端、数据库等)
 docker-compose up -d
 
 # 查看服务状态
@@ -468,15 +566,24 @@ docker-compose down
 
 #### 2. 单独构建镜像
 ```bash
-# 构建应用镜像
+# 构建后端应用镜像
 docker build -t law-oa-go:latest .
 
-# 运行容器
+# 构建前端应用镜像
+docker build -t law-oa-frontend:latest ./frontend
+
+# 运行后端容器
 docker run -d \
   --name law-oa-go \
   -p 8080:8080 \
   --env-file .env \
   law-oa-go:latest
+
+# 运行前端容器
+docker run -d \
+  --name law-oa-frontend \
+  -p 3000:80 \
+  law-oa-frontend:latest
 ```
 
 ### 🌐 传统部署

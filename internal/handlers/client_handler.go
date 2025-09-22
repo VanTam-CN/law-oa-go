@@ -1,11 +1,9 @@
 package handlers
 
 import (
-	"net/http"
-	"strconv"
-
 	"github.com/gin-gonic/gin"
 	"law-oa-go/internal/common"
+	"law-oa-go/internal/errors"
 	"law-oa-go/internal/services"
 )
 
@@ -27,29 +25,16 @@ func NewClientHandler(clientService *services.ClientService) *ClientHandler {
 // @Produce json
 // @Security BearerAuth
 // @Param request body services.CreateClientRequest true "创建客户请求"
-// @Success 200 {object} common.Response{data=services.ClientResponse} "创建成功"
-// @Failure 400 {object} common.Response "请求参数错误"
-// @Failure 401 {object} common.Response "未授权"
-// @Failure 500 {object} common.Response "内部错误"
+// @Success 200 {object} common.APIResponse{data=services.ClientResponse} "创建成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 401 {object} common.APIResponse "未授权"
+// @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /clients [post]
 func (h *ClientHandler) CreateClient(c *gin.Context) {
-	var req services.CreateClientRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		common.BadRequest(c, "Invalid request format: "+err.Error())
-		return
-	}
-
-	client, err := h.clientService.CreateClient(c.Request.Context(), &req)
-	if err != nil {
-		if common.IsValidationError(err) {
-			common.BadRequest(c, "Validation failed: "+err.Error())
-			return
-		}
-		common.InternalServerError(c, "Failed to create client: "+err.Error())
-		return
-	}
-
-	common.Success(c, client)
+	handler := APICreateHandler(func(c *gin.Context, req *services.CreateClientRequest) (*services.ClientResponse, error) {
+		return h.clientService.CreateClient(c.Request.Context(), req)
+	}, "client")
+	handler(c)
 }
 
 // GetClient godoc
@@ -60,31 +45,17 @@ func (h *ClientHandler) CreateClient(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "客户ID"
-// @Success 200 {object} common.Response{data=services.ClientResponse} "获取成功"
-// @Failure 400 {object} common.Response "请求参数错误"
-// @Failure 401 {object} common.Response "未授权"
-// @Failure 404 {object} common.Response "客户不存在"
-// @Failure 500 {object} common.Response "内部错误"
+// @Success 200 {object} common.APIResponse{data=services.ClientResponse} "获取成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 401 {object} common.APIResponse "未授权"
+// @Failure 404 {object} common.APIResponse "客户不存在"
+// @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /clients/{id} [get]
 func (h *ClientHandler) GetClient(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		common.BadRequest(c, "Invalid client ID: Client ID must be a valid number")
-		return
-	}
-
-	client, err := h.clientService.GetClientByID(c.Request.Context(), uint(id))
-	if err != nil {
-		if common.IsNotFoundError(err) {
-			common.NotFound(c, "Client not found: The requested client does not exist")
-			return
-		}
-		common.InternalServerError(c, "Failed to get client: "+err.Error())
-		return
-	}
-
-	common.Success(c, client)
+	handler := APIGetHandler(func(c *gin.Context, id uint) (*services.ClientResponse, error) {
+		return h.clientService.GetClientByID(c.Request.Context(), id)
+	}, "client")
+	handler(c)
 }
 
 // UpdateClient godoc
@@ -96,41 +67,17 @@ func (h *ClientHandler) GetClient(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path int true "客户ID"
 // @Param request body services.UpdateClientRequest true "更新客户请求"
-// @Success 200 {object} common.Response{data=services.ClientResponse} "更新成功"
-// @Failure 400 {object} common.Response "请求参数错误"
-// @Failure 401 {object} common.Response "未授权"
-// @Failure 404 {object} common.Response "客户不存在"
-// @Failure 500 {object} common.Response "内部错误"
+// @Success 200 {object} common.APIResponse{data=services.ClientResponse} "更新成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 401 {object} common.APIResponse "未授权"
+// @Failure 404 {object} common.APIResponse "客户不存在"
+// @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /clients/{id} [put]
 func (h *ClientHandler) UpdateClient(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		common.BadRequest(c, "Invalid client ID: Client ID must be a valid number")
-		return
-	}
-
-	var req services.UpdateClientRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		common.BadRequest(c, "Invalid request format: "+err.Error())
-		return
-	}
-
-	client, err := h.clientService.UpdateClient(c.Request.Context(), uint(id), &req)
-	if err != nil {
-		if common.IsNotFoundError(err) {
-			common.NotFound(c, "Client not found: The requested client does not exist")
-			return
-		}
-		if common.IsValidationError(err) {
-			common.BadRequest(c, "Validation failed: "+err.Error())
-			return
-		}
-		common.InternalServerError(c, "Failed to update client: "+err.Error())
-		return
-	}
-
-	common.Success(c, client)
+	handler := APIUpdateHandler(func(c *gin.Context, id uint, req *services.UpdateClientRequest) (*services.ClientResponse, error) {
+		return h.clientService.UpdateClient(c.Request.Context(), id, req)
+	}, "client")
+	handler(c)
 }
 
 // DeleteClient godoc
@@ -141,31 +88,17 @@ func (h *ClientHandler) UpdateClient(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "客户ID"
-// @Success 200 {object} common.Response "删除成功"
-// @Failure 400 {object} common.Response "请求参数错误"
-// @Failure 401 {object} common.Response "未授权"
-// @Failure 404 {object} common.Response "客户不存在"
-// @Failure 500 {object} common.Response "内部错误"
+// @Success 200 {object} common.APIResponse "删除成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 401 {object} common.APIResponse "未授权"
+// @Failure 404 {object} common.APIResponse "客户不存在"
+// @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /clients/{id} [delete]
 func (h *ClientHandler) DeleteClient(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		common.BadRequest(c, "Invalid client ID: Client ID must be a valid number")
-		return
-	}
-
-	err = h.clientService.DeleteClient(c.Request.Context(), uint(id))
-	if err != nil {
-		if common.IsNotFoundError(err) {
-			common.NotFound(c, "Client not found: The requested client does not exist")
-			return
-		}
-		common.InternalServerError(c, "Failed to delete client: "+err.Error())
-		return
-	}
-
-	common.Success(c, gin.H{"message": "Client deleted successfully"})
+	handler := APIDeleteHandler(func(c *gin.Context, id uint) error {
+		return h.clientService.DeleteClient(c.Request.Context(), id)
+	}, "client")
+	handler(c)
 }
 
 // ListClients godoc
@@ -179,41 +112,16 @@ func (h *ClientHandler) DeleteClient(c *gin.Context) {
 // @Param page_size query int false "每页数量" default(20)
 // @Param status query string false "客户状态" Enums(active,inactive)
 // @Param search query string false "搜索关键词"
-// @Success 200 {object} common.PageResponse{data=[]services.ClientResponse} "获取成功"
-// @Failure 400 {object} common.Response "请求参数错误"
-// @Failure 401 {object} common.Response "未授权"
-// @Failure 500 {object} common.Response "内部错误"
+// @Success 200 {object} common.APIResponse{data=[]services.ClientResponse} "获取成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 401 {object} common.APIResponse "未授权"
+// @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /clients [get]
 func (h *ClientHandler) ListClients(c *gin.Context) {
-	var req services.ClientListRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
-		common.BadRequest(c, "Invalid query parameters: "+err.Error())
-		return
-	}
-
-	clients, total, err := h.clientService.ListClients(c.Request.Context(), &req)
-	if err != nil {
-		common.InternalServerError(c, "Failed to list clients: "+err.Error())
-		return
-	}
-
-	page := 1
-	pageSize := 20
-	if req.Page > 0 {
-		page = req.Page
-	}
-	if req.PageSize > 0 {
-		pageSize = req.PageSize
-	}
-
-	response := common.PageResponse{
-		Data:  clients,
-		Total: total,
-		Page:  page,
-		Size:  pageSize,
-	}
-
-	c.JSON(http.StatusOK, response)
+	handler := APIListHandler(func(c *gin.Context, req *services.ClientListRequest) ([]*services.ClientResponse, int64, error) {
+		return h.clientService.ListClients(c.Request.Context(), req)
+	}, "clients")
+	handler(c)
 }
 
 // GetClientStats godoc
@@ -223,16 +131,16 @@ func (h *ClientHandler) ListClients(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} common.Response{data=services.ClientStatsResponse} "获取成功"
-// @Failure 401 {object} common.Response "未授权"
-// @Failure 500 {object} common.Response "内部错误"
+// @Success 200 {object} common.APIResponse{data=services.ClientStatsResponse} "获取成功"
+// @Failure 401 {object} common.APIResponse "未授权"
+// @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /clients/stats [get]
 func (h *ClientHandler) GetClientStats(c *gin.Context) {
 	stats, err := h.clientService.GetClientStats(c.Request.Context())
 	if err != nil {
-		common.InternalServerError(c, "Failed to get client statistics: "+err.Error())
+		_ = c.Error(errors.NewInternalError("client_stats_error", "Failed to get client statistics", err))
 		return
 	}
 
-	common.Success(c, stats)
+	common.APISuccess(c, stats)
 }

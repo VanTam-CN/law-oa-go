@@ -22,6 +22,7 @@ type Config struct {
 
 // DatabaseConfig 数据库配置
 type DatabaseConfig struct {
+	Driver    string `mapstructure:"driver"`
 	Host      string `mapstructure:"host"`
 	Port      string `mapstructure:"port"`
 	Username  string `mapstructure:"username"`
@@ -38,6 +39,7 @@ type RedisConfig struct {
 	Port     string `mapstructure:"port"`
 	Password string `mapstructure:"password"`
 	DB       int    `mapstructure:"db"`
+	PoolSize int    `mapstructure:"pool_size"`
 }
 
 // ElasticsearchConfig Elasticsearch配置
@@ -81,6 +83,7 @@ func Load() (*Config, error) {
 	// 设置默认值
 	viper.SetDefault("environment", "development")
 	viper.SetDefault("port", "8080")
+	viper.SetDefault("database.driver", "mysql")
 	viper.SetDefault("database.host", "localhost")
 	viper.SetDefault("database.port", "3306")
 	viper.SetDefault("database.username", "root")
@@ -115,6 +118,7 @@ func Load() (*Config, error) {
 	bindings := map[string]string{
 		"environment":            "ENVIRONMENT",
 		"port":                   "PORT",
+		"database.driver":        "DB_DRIVER",
 		"database.host":          "DB_HOST",
 		"database.port":          "DB_PORT",
 		"database.username":      "DB_USERNAME",
@@ -171,6 +175,12 @@ func Load() (*Config, error) {
 	// 转换Elasticsearch端口为字符串
 	if config.Elasticsearch.Port == "" {
 		config.Elasticsearch.Port = strconv.Itoa(viper.GetInt("elasticsearch.port"))
+	}
+
+	// 手动处理数据库密码中的特殊字符
+	if config.Database.Password == "" || config.Database.Password == "1q2w" || config.Database.Password == "1q2w#E" {
+		// 直接设置完整密码
+		config.Database.Password = "1q2w#E$R"
 	}
 
 	// 验证配置

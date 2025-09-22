@@ -254,10 +254,11 @@ func InitOptimizedComponents(cfg *config.Config) error {
 	// 初始化查询优化器
 	QueryOptimizerInst = NewQueryOptimizer(OptimizedDB.DB, CacheService)
 
-	// 初始化Elasticsearch
+	// 初始化Elasticsearch（可选）
 	ElasticsearchClient, err = InitElasticsearch(cfg.Elasticsearch)
 	if err != nil {
-		return fmt.Errorf("failed to initialize Elasticsearch: %w", err)
+		fmt.Printf("Elasticsearch连接失败，跳过初始化: %v\n", err)
+		// 不返回错误，Elasticsearch是可选的
 	}
 
 	log.Println("所有优化组件初始化完成")

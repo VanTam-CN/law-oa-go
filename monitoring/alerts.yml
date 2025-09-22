@@ -1,152 +1,8 @@
-# Prometheus告警规则配置
+# Prometheus告警规则配置（简化版）
 groups:
   - name: law-oa-go.rules
     rules:
-      # HTTP请求相关告警
-      - alert: HighHTTPErrorRate
-        expr: (rate(http_requests_total{status_code=~"5.."}[5m]) / rate(http_requests_total[5m])) > 0.1
-        for: 2m
-        labels:
-          severity: critical
-          service: law-oa-go
-        annotations:
-          summary: "High HTTP 5xx error rate detected"
-          description: "HTTP 5xx error rate is {{ $value | humanizePercentage }} for service {{ $labels.service }}"
-
-      - alert: HighHTTPLatency
-        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
-        for: 5m
-        labels:
-          severity: warning
-          service: law-oa-go
-        annotations:
-          summary: "High HTTP request latency"
-          description: "95th percentile latency is {{ $value }}s for service {{ $labels.service }}"
-
-      - alert: HighHTTPRequestRate
-        expr: rate(http_requests_total[5m]) > 1000
-        for: 5m
-        labels:
-          severity: warning
-          service: law-oa-go
-        annotations:
-          summary: "High HTTP request rate"
-          description: "HTTP request rate is {{ $value }} requests/sec for service {{ $labels.service }}"
-
-      # 数据库相关告警
-      - alert: DatabaseConnectionPoolExhausted
-        expr: db_connections_active / (db_connections_active + db_connections_idle) > 0.9
-        for: 2m
-        labels:
-          severity: critical
-          service: law-oa-go
-        annotations:
-          summary: "Database connection pool nearly exhausted"
-          description: "Database connection pool usage is {{ $value | humanizePercentage }} for service {{ $labels.service }}"
-
-      - alert: HighDatabaseQueryLatency
-        expr: histogram_quantile(0.95, rate(db_query_duration_seconds_bucket[5m])) > 0.5
-        for: 5m
-        labels:
-          severity: warning
-          service: law-oa-go
-        annotations:
-          summary: "High database query latency"
-          description: "95th percentile database query latency is {{ $value }}s for service {{ $labels.service }}"
-
-      - alert: DatabaseErrorRate
-        expr: rate(errors_total{component="db"}[5m]) > 10
-        for: 2m
-        labels:
-          severity: critical
-          service: law-oa-go
-        annotations:
-          summary: "High database error rate"
-          description: "Database error rate is {{ $value }} errors/sec for service {{ $labels.service }}"
-
-      # Redis缓存相关告警
-      - alert: LowCacheHitRate
-        expr: (rate(cache_hits_total[5m]) / (rate(cache_hits_total[5m]) + rate(cache_misses_total[5m]))) < 0.8
-        for: 10m
-        labels:
-          severity: warning
-          service: law-oa-go
-        annotations:
-          summary: "Low cache hit rate"
-          description: "Cache hit rate is {{ $value | humanizePercentage }} for service {{ $labels.service }}"
-
-      - alert: HighCacheLatency
-        expr: histogram_quantile(0.95, rate(cache_operation_duration_seconds_bucket[5m])) > 0.01
-        for: 5m
-        labels:
-          severity: warning
-          service: law-oa-go
-        annotations:
-          summary: "High cache operation latency"
-          description: "95th percentile cache latency is {{ $value }}s for service {{ $labels.service }}"
-
-      - alert: CacheErrorRate
-        expr: rate(errors_total{component="redis"}[5m]) > 5
-        for: 2m
-        labels:
-          severity: critical
-          service: law-oa-go
-        annotations:
-          summary: "High cache error rate"
-          description: "Cache error rate is {{ $value }} errors/sec for service {{ $labels.service }}"
-
-      # 系统资源相关告警
-      - alert: HighMemoryUsage
-        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.9
-        for: 5m
-        labels:
-          severity: critical
-          service: law-oa-go
-        annotations:
-          summary: "High memory usage"
-          description: "Memory usage is {{ $value | humanizePercentage }} for service {{ $labels.service }}"
-
-      - alert: HighCPUUsage
-        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
-        for: 5m
-        labels:
-          severity: warning
-          service: law-oa-go
-        annotations:
-          summary: "High CPU usage"
-          description: "CPU usage is {{ $value }}% for service {{ $labels.service }}"
-
-      - alert: DiskSpaceLow
-        expr: (1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)) > 0.9
-        for: 5m
-        labels:
-          severity: critical
-          service: law-oa-go
-        annotations:
-          summary: "Low disk space"
-          description: "Disk usage is {{ $value | humanizePercentage }} for service {{ $labels.service }}"
-
-      # 业务指标相关告警
-      - alert: AbnormalUserGrowth
-        expr: increase(users_total[1h]) > 1000
-        for: 0m
-        labels:
-          severity: warning
-          service: law-oa-go
-        annotations:
-          summary: "Abnormal user growth detected"
-          description: "User count increased by {{ $value }} in the last hour for service {{ $labels.service }}"
-
-      - alert: HighPendingCases
-        expr: cases_total{status="pending"} > 100
-        for: 10m
-        labels:
-          severity: warning
-          service: law-oa-go
-        annotations:
-          summary: "High number of pending cases"
-          description: "There are {{ $value }} pending cases for service {{ $labels.service }}"
-
+      # 服务可用性告警
       - alert: ServiceDown
         expr: up{job="law-oa-go"} == 0
         for: 1m
@@ -157,24 +13,55 @@ groups:
           summary: "Service is down"
           description: "Service {{ $labels.service }} is down"
 
-      # JWT相关告警
-      - alert: HighAuthenticationFailureRate
-        expr: rate(http_requests_total{endpoint="/api/v1/auth/login",status_code="401"}[5m]) > 10
+      # HTTP错误率告警
+      - alert: HighHTTPErrorRate
+        expr: (rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m])) > 0.05
         for: 2m
         labels:
           severity: warning
           service: law-oa-go
         annotations:
-          summary: "High authentication failure rate"
-          description: "Authentication failure rate is {{ $value }} failures/sec for service {{ $labels.service }}"
+          summary: "High HTTP error rate"
+          description: "HTTP 5xx error rate is {{ $value | humanizePercentage }}"
 
-      # API端点特定告警
-      - alert: CriticalEndpointDown
-        expr: rate(http_requests_total{endpoint=~"/api/v1/(cases|clients|users).*",status_code=~"5.."}[5m]) > 0.5
-        for: 2m
+      # 响应时间告警
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: law-oa-go
+        annotations:
+          summary: "High response time"
+          description: "95th percentile response time is {{ $value }}s"
+
+      # 系统资源告警
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.9
+        for: 5m
         labels:
           severity: critical
           service: law-oa-go
         annotations:
-          summary: "Critical API endpoint experiencing errors"
-          description: "Critical endpoint {{ $labels.endpoint }} error rate is {{ $value }} for service {{ $labels.service }}"
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value | humanizePercentage }}"
+
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: law-oa-go
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value }}%"
+
+      - alert: DiskSpaceLow
+        expr: (1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)) > 0.9
+        for: 5m
+        labels:
+          severity: critical
+          service: law-oa-go
+        annotations:
+          summary: "Low disk space"
+          description: "Disk usage is {{ $value | humanizePercentage }}"
