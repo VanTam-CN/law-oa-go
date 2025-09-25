@@ -51,4 +51,7 @@ export const dashboardService = {
   
   // 获取待办事项
   getTodos: () => get<TodoItem[]>('/dashboard/todos'),
+  
+  // 获取当前用户信息
+  getCurrentUser: () => get<any>('/users/profile'),
 };

@@ -15,6 +15,44 @@ export interface ApprovalItem {
   currentApproverId?: number;
 }
 
+// 模拟数据
+const mockApprovals: ApprovalItem[] = [
+  {
+    id: 1,
+    type: 'leave',
+    title: '请假申请',
+    content: '因个人原因需请假3天',
+    applicant: '张三',
+    applicantId: 1,
+    department: '技术部',
+    createTime: '2024-01-15T09:00:00Z',
+    status: 'pending',
+    urgency: 'normal',
+    currentApprover: '李四',
+    currentApproverId: 2
+  },
+  {
+    id: 2,
+    type: 'expense',
+    title: '费用报销',
+    content: '出差费用报销，共计2800元',
+    applicant: '王五',
+    applicantId: 3,
+    department: '市场部',
+    createTime: '2024-01-14T14:30:00Z',
+    status: 'pending',
+    urgency: 'urgent',
+    currentApprover: '赵六',
+    currentApproverId: 4
+  }
+];
+
+const mockApprovalStats = {
+  pendingCount: 5,
+  myPendingCount: 2,
+  myTotalCount: 12
+};
+
 export interface ApprovalDetail extends ApprovalItem {
   records: ApprovalRecord[];
 }
@@ -51,7 +89,16 @@ export interface CreateApprovalParams {
  * @returns 审批列表
  */
 export const getApprovals = (type: 'pending' | 'my'): Promise<ApprovalItem[]> => {
-  return get<ApprovalItem[]>(`/approvals/${type}`);
+  // 开发环境返回模拟数据
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      if (type === 'pending') {
+        resolve(mockApprovals.filter(item => item.status === 'pending'));
+      } else {
+        resolve(mockApprovals);
+      }
+    }, 300);
+  });
 };
 
 /**
@@ -60,7 +107,30 @@ export const getApprovals = (type: 'pending' | 'my'): Promise<ApprovalItem[]> =>
  * @returns 审批详情
  */
 export const getApprovalDetail = (id: number): Promise<ApprovalDetail> => {
-  return get<ApprovalDetail>(`/approvals/detail/${id}`);
+  // 开发环境返回模拟数据
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const approval = mockApprovals.find(item => item.id === id);
+      if (approval) {
+        resolve({
+          ...approval,
+          records: [
+            {
+              id: 1,
+              approvalId: id,
+              approver: '李四',
+              approverId: 2,
+              action: 'approve' as const,
+              comment: '同意申请',
+              createTime: '2024-01-15T10:00:00Z'
+            }
+          ]
+        });
+      } else {
+        throw new Error('审批不存在');
+      }
+    }, 300);
+  });
 };
 
 /**
@@ -69,7 +139,18 @@ export const getApprovalDetail = (id: number): Promise<ApprovalDetail> => {
  * @returns 创建结果
  */
 export const createApproval = (params: CreateApprovalParams): Promise<ApprovalItem> => {
-  return post<ApprovalItem>('/approvals', params);
+  // 开发环境返回模拟数据
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const newApproval: ApprovalItem = {
+        id: Date.now(),
+        ...params,
+        createTime: new Date().toISOString(),
+        status: 'pending'
+      };
+      resolve(newApproval);
+    }, 300);
+  });
 };
 
 /**
@@ -80,7 +161,12 @@ export const createApproval = (params: CreateApprovalParams): Promise<ApprovalIt
  * @returns 操作结果
  */
 export const handleApproval = (id: number, action: 'approve' | 'reject', comment: string): Promise<any> => {
-  return post<any>(`/approvals/${id}/${action}`, { comment });
+  // 开发环境返回模拟数据
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({ success: true, message: `审批${action === 'approve' ? '通过' : '拒绝'}成功` });
+    }, 300);
+  });
 };
 
 /**
@@ -89,7 +175,12 @@ export const handleApproval = (id: number, action: 'approve' | 'reject', comment
  * @returns 操作结果
  */
 export const cancelApproval = (id: number): Promise<any> => {
-  return post<any>(`/approvals/${id}/cancel`);
+  // 开发环境返回模拟数据
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({ success: true, message: '撤回成功' });
+    }, 300);
+  });
 };
 
 /**
@@ -97,5 +188,10 @@ export const cancelApproval = (id: number): Promise<any> => {
  * @returns 统计数据
  */
 export const getApprovalStats = (): Promise<ApprovalStats> => {
-  return get<ApprovalStats>('/approvals/stats');
+  // 开发环境返回模拟数据
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(mockApprovalStats);
+    }, 300);
+  });
 };

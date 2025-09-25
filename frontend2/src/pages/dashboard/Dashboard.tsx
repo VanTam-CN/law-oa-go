@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './Dashboard.module.css';
-import { dashboardService } from '../../services/dashboard';
+import { dashboardService } from '@/services/dashboard';
 import { 
   Row, 
   Col, 
@@ -98,136 +98,39 @@ const priorityMap: Record<string, string> = {
   low: '低'
 };
 
-// 模拟数据
+// 模拟数据 - 仅作为降级方案使用
 const mockStatistics = {
-  totalProjects: 24,
-  completedProjects: 18,
-  pendingApprovals: 5,
-  activeClients: 8,
-  projectStatus: {
-    '进行中': 12,
-    '已完成': 8,
-    '已暂停': 3,
-    '已取消': 1
-  },
-  approvalStatus: {
-    '待审批': 5,
-    '已通过': 15,
-    '已拒绝': 2,
-    '已撤销': 1
-  },
+  totalProjects: 0,
+  completedProjects: 0,
+  pendingApprovals: 0,
+  activeClients: 0,
+  projectStatus: {},
+  approvalStatus: {},
   financeStats: {
-    totalRevenue: 2500000,
-    totalExpenses: 1800000
+    totalRevenue: 0,
+    totalExpenses: 0
   }
 };
 
-const mockTodos = [
-  {
-    id: 1,
-    title: '审批张三的请假申请',
-    priority: 'high',
-    deadline: '2024-01-15',
-    assignee: '李四',
-    completed: false
-  },
-  {
-    id: 2,
-    title: '更新项目进度报告',
-    priority: 'medium',
-    deadline: '2024-01-16',
-    assignee: '王五',
-    completed: false
-  },
-  {
-    id: 3,
-    title: '客户会议准备',
-    priority: 'high',
-    deadline: '2024-01-14',
-    assignee: '赵六',
-    completed: false
-  },
-  {
-    id: 4,
-    title: '整理合同文档',
-    priority: 'low',
-    deadline: '2024-01-18',
-    assignee: '钱七',
-    completed: false
-  }
-];
-
-const mockActivities = [
-  {
-    id: 1,
-    type: 'approval',
-    title: '李四审批了项目A的预算申请',
-    user: '李四',
-    status: '已通过',
-    createdAt: '10分钟前'
-  },
-  {
-    id: 2,
-    type: 'project',
-    title: '王五更新了项目B的进度',
-    user: '王五',
-    status: '进行中',
-    createdAt: '30分钟前'
-  },
-  {
-    id: 3,
-    type: 'finance',
-    title: '赵六提交了费用报销申请',
-    user: '赵六',
-    status: '待审批',
-    createdAt: '1小时前'
-  },
-  {
-    id: 4,
-    type: 'approval',
-    title: '张三完成了客户合同审查',
-    user: '张三',
-    status: '已通过',
-    createdAt: '2小时前'
-  },
-  {
-    id: 5,
-    type: 'project',
-    title: '钱七启动了新的诉讼案件',
-    user: '钱七',
-    status: '进行中',
-    createdAt: '3小时前'
-  },
-  {
-    id: 6,
-    type: 'finance',
-    title: '孙八更新了财务报表',
-    user: '孙八',
-    status: '已完成',
-    createdAt: '4小时前'
-  }
-];
-
-// 扩展活动列表用于无缝滚动
-const extendedActivities = [...mockActivities, ...mockActivities];
-
+const mockTodos = [];
+const mockActivities = [];
 const mockUser = {
-  real_name: '张三',
+  real_name: '用户',
   avatar: null
 };
 
 const mockKPIs = {
-  netProfit: 700000,
-  profitMargin: 28.0,
-  completionRate: 75.0
+  netProfit: 0,
+  profitMargin: 0,
+  completionRate: 0
 };
 
 interface DashboardProps {
-  statistics?: typeof mockStatistics;
-  todos?: typeof mockTodos;
-  activities?: typeof mockActivities;
-  user?: typeof mockUser;
-  kpis?: typeof mockKPIs;
+  statistics?: any;
+  todos?: any[];
+  activities?: any[];
+  user?: any;
+  kpis?: any;
   loading?: boolean;
 }
 
@@ -236,8 +139,8 @@ const Dashboard: React.FC<DashboardProps> = () => {
   const [statistics, setStatistics] = useState<any>(null);
   const [todos, setTodos] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
-  const [user, setUser] = useState<any>(mockUser);
-  const [kpis, setKpis] = useState<any>(mockKPIs);
+  const [user, setUser] = useState<any>(null);
+  const [kpis, setKpis] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   // 获取仪表盘数据
@@ -247,15 +150,17 @@ const Dashboard: React.FC<DashboardProps> = () => {
         setLoading(true);
 
         // 并行获取所有数据
-        const [statsData, todosData, activitiesData] = await Promise.all([
+        const [statsData, todosData, activitiesData, userData] = await Promise.all([
           dashboardService.getStatistics(),
           dashboardService.getTodos(),
-          dashboardService.getActivities()
+          dashboardService.getActivities(),
+          dashboardService.getCurrentUser().catch(() => ({ real_name: '用户', avatar: null }))
         ]);
 
         setStatistics(statsData);
         setTodos(todosData || []);
         setActivities(activitiesData || []);
+        setUser(userData);
 
         // 计算KPI数据
         if (statsData) {
@@ -271,11 +176,12 @@ const Dashboard: React.FC<DashboardProps> = () => {
         }
       } catch (error) {
         console.error('获取仪表盘数据失败:', error);
-        // 发生错误时使用mock数据作为降级方案
-        setStatistics(mockStatistics);
-        setTodos(mockTodos);
-        setActivities(mockActivities);
-        setKpis(mockKPIs);
+        // 发生错误时使用空数据作为降级方案
+        setStatistics(null);
+        setTodos([]);
+        setActivities([]);
+        setUser({ real_name: '用户', avatar: null });
+        setKpis(null);
       } finally {
         setLoading(false);
       }
@@ -338,7 +244,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
     const urgentTodos = todos.filter(todo => 
       !todo.completed && 
       todo.priority === 'high' && 
-      new Date(todo.deadline) < new Date()
+      todo.deadline && new Date(todo.deadline) < new Date()
     ).length;
     const pendingApprovals = statistics?.pendingApprovals || 0;
     

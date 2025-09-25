@@ -12,6 +12,7 @@ import (
 	"gorm.io/gorm"
 	"law-oa-go/internal/cache"
 	"law-oa-go/internal/config"
+	"law-oa-go/internal/models"
 )
 
 // 数据库查询相关的Prometheus指标
@@ -242,6 +243,23 @@ func InitOptimizedComponents(cfg *config.Config) error {
 		return fmt.Errorf("failed to initialize optimized database: %w", err)
 	}
 
+	// 跳过自动迁移，使用现有数据库结构
+	// err = OptimizedDB.DB.AutoMigrate(
+	// 	&models.User{},
+	// 	&models.Client{},
+	// 	&models.Case{},
+	// 	&models.Document{},
+	// )
+	// if err != nil {
+	// 	return fmt.Errorf("failed to auto migrate database: %w", err)
+	// }
+
+	// 初始化种子数据
+	err = initSeedData(OptimizedDB.DB)
+	if err != nil {
+		return fmt.Errorf("failed to initialize seed data: %w", err)
+	}
+
 	// 初始化Redis缓存服务
 	redisClient, err := InitRedis(cfg.Redis)
 	if err != nil {
@@ -283,4 +301,71 @@ func GetQueryOptimizer() *QueryOptimizer {
 // GetElasticsearchClient 获取Elasticsearch客户端实例
 func GetElasticsearchClient() *elasticsearch.Client {
 	return ElasticsearchClient
+}
+
+// initSeedData 初始化种子数据
+func initSeedData(db *gorm.DB) error {
+	// 检查是否已有管理员用户
+	var userCount int64
+	if err := db.Model(&models.User{}).Count(&userCount).Error; err != nil {
+		return err
+	}
+
+	// 如果已有数据，则跳过初始化
+	if userCount > 0 {
+		return nil
+	}
+
+	// 生成密码哈希
+	passwordHash := "$2a$12$G.DTHR2xYdtpmqvjjNJGYOjLIRp2FGWI.sKZDWlD4BN7bDHWQy9eG" // password
+
+	// 创建管理员用户
+	adminUser := &models.User{
+		Name:     "admin",
+		Password: passwordHash,
+		Email:    "admin@example.com",
+		Role:     "admin",
+		Status:   "active",
+	}
+	if err := db.Create(adminUser).Error; err != nil {
+		return err
+	}
+
+	// 创建测试客户
+	clients := []*models.Client{
+		{Name: "张三", Phone: "13800138001", Email: "zhangsan@example.com", Address: "北京市朝阳区", Status: "active"},
+		{Name: "李四", Phone: "13800138002", Email: "lisi@example.com", Address: "北京市海淀区", Status: "active"},
+		{Name: "王五公司", Phone: "13800138003", Email: "wangwu@example.com", Company: "王五科技有限公司", Address: "北京市西城区", Status: "active"},
+	}
+	for _, client := range clients {
+		if err := db.Create(client).Error; err != nil {
+			return err
+		}
+	}
+
+	// 创建测试案件 (需要先创建一个律师用户)
+	lawyerUser := &models.User{
+		Name:     "lawyer1",
+		Password: passwordHash,
+		Email:    "lawyer1@example.com",
+		Role:     "lawyer",
+		Status:   "active",
+	}
+	if err := db.Create(lawyerUser).Error; err != nil {
+		return err
+	}
+
+	cases := []*models.Case{
+		{Title: "张三借款合同纠纷", CaseType: "借款合同", ClientID: clients[0].ID, LawyerID: lawyerUser.ID, Status: "active", Description: "张三与李四之间的借款合同纠纷案件，涉及金额50万元。"},
+		{Title: "王五公司劳动合同纠纷", CaseType: "劳动合同", ClientID: clients[1].ID, LawyerID: lawyerUser.ID, Status: "pending", Description: "王五公司与员工之间的劳动合同纠纷，涉及经济补偿金。"},
+		{Title: "赵六房屋买卖合同纠纷", CaseType: "房屋买卖", ClientID: clients[2].ID, LawyerID: lawyerUser.ID, Status: "active", Description: "赵六与开发商之间的房屋买卖合同纠纷，涉及房屋质量问题。"},
+	}
+	for _, caseItem := range cases {
+		if err := db.Create(caseItem).Error; err != nil {
+			return err
+		}
+	}
+
+	log.Println("种子数据初始化完成")
+	return nil
 }

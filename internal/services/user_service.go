@@ -228,6 +228,24 @@ func (s *UserService) ChangePassword(ctx context.Context, userID uint, currentPa
 	return nil
 }
 
+// UpdateUserAvatar 更新用户头像
+func (s *UserService) UpdateUserAvatar(ctx context.Context, userID uint, avatarPath string) (*UserProfile, error) {
+	user, err := s.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		return nil, customErrors.NewDatabaseError("find_user", "Failed to find user", err)
+	}
+	if user == nil {
+		return nil, customErrors.NewNotFoundError("user", "User not found", nil)
+	}
+
+	user.Avatar = avatarPath
+	if err := s.userRepo.Update(ctx, user); err != nil {
+		return nil, customErrors.NewDatabaseError("update_avatar", "Failed to update avatar", err)
+	}
+
+	return s.toUserProfile(user), nil
+}
+
 func (s *UserService) validateUserRequest(req *CreateUserRequest) error {
 	if err := s.validateEmail(req.Email); err != nil {
 		return err
