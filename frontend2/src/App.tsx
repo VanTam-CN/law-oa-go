@@ -2,7 +2,6 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ConfigProvider } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
-import './assets/styles/design-tokens.css';
 
 // 布局
 import MainLayout from './layouts/MainLayout';
@@ -48,6 +47,7 @@ import FinanceManagement from './pages/finance/FinanceManagement';
 // 个人中心和设置
 import Profile from './pages/profile/Profile';
 import Settings from './pages/settings/Settings';
+import PermissionTestPage from './pages/PermissionTestPage';
 
 // API测试页面
 import ApiTest from './pages/ApiTest';
@@ -66,22 +66,19 @@ import { AuthProvider } from './context/AuthContext';
 const App: React.FC = () => {
   return (
     <ConfigProvider locale={zhCN}>
-      <Routes>
-        {/* 独立测试路由 - 不依赖AuthProvider */}
-        <Route path="/simple-test" element={<SimpleTest />} />
-        <Route path="/auth-test" element={<AuthTest />} />
-        
-        <Route path="/login" element={<LoginPage />} />
-        
-        {/* 临时测试路由 */}
-        <Route path="/test-direct" element={<DirectTest />} />
-        
-        {/* 主布局下的路由 */}
-        <Route path="/" element={
-          <AuthProvider>
-            <MainLayout />
-          </AuthProvider>
-        }>
+      <AuthProvider>
+        <Routes>
+          {/* 独立测试路由 - 不依赖AuthProvider */}
+          <Route path="/simple-test" element={<SimpleTest />} />
+          <Route path="/auth-test" element={<AuthTest />} />
+          
+          <Route path="/login" element={<LoginPage />} />
+          
+          {/* 临时测试路由 */}
+          <Route path="/test-direct" element={<DirectTest />} />
+          
+          {/* 主布局下的路由 */}
+          <Route path="/" element={<MainLayout />}>
           <Route index element={<DashboardPage />} />
           <Route path="dashboard" element={<DashboardPage />} />
           
@@ -124,6 +121,9 @@ const App: React.FC = () => {
           {/* API测试页面 */}
           <Route path="api-test" element={<ApiTest />} />
           
+          {/* 权限测试页面 */}
+          <Route path="permission-test" element={<PermissionTestPage />} />
+          
           {/* 测试页面 */}
           <Route path="test" element={<TestPage />} />
           <Route path="minimal" element={<MinimalTest />} />
@@ -133,6 +133,7 @@ const App: React.FC = () => {
         {/* 404页面 */}
         <Route path="*" element={<Navigate to="/simple-test" replace />} />
       </Routes>
+      </AuthProvider>
     </ConfigProvider>
   );
   /*

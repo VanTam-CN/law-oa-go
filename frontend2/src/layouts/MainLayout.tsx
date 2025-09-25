@@ -30,45 +30,7 @@ const MainLayout: React.FC = () => {
 
   // 如果未登录，重定向到登录页
   if (!user) {
-    // 在开发环境中，创建一个默认用户以避免登录要求
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('Development mode: Using default user to bypass login requirement');
-      // 创建一个默认用户对象供组件使用
-      const defaultUser = {
-        id: 1,
-        username: 'dev_user',
-        real_name: '开发用户',
-        email: 'dev@example.com',
-        role: 'ADMIN',
-        department: '技术部'
-      };
-      
-      return (
-        <Layout style={{ minHeight: '100vh' }}>
-          <Sidebar 
-            collapsed={collapsed} 
-            setCollapsed={setCollapsed} 
-            onWidthChange={handleSidebarWidthChange}
-          />
-          <Layout style={{ marginLeft: 0 }}>
-            <Header />
-            <Content style={{ 
-              margin: '80px 16px 24px 16px', 
-              marginLeft: 'var(--sidebar-width, 220px)',
-              padding: 24, 
-              background: '#fff', 
-              minHeight: 280,
-              position: 'relative',
-              zIndex: 1
-            }}>
-              <Outlet />
-            </Content>
-          </Layout>
-        </Layout>
-      );
-    } else {
-      return <Navigate to="/login" replace />;
-    }
+    return <Navigate to="/login" replace />;
   }
 
   return (
