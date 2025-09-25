@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Layout, Menu, message, Badge } from 'antd';
 import {
   FileDoneOutlined,
@@ -39,6 +39,7 @@ interface MenuItem {
   onClick?: () => void;
   badge?: number;
   color?: string;
+  permission?: string;
 }
 
 interface SidebarProps {
@@ -50,7 +51,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChange }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
   // 监听折叠状态变化，通知父组件
@@ -114,14 +115,15 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
     return openKeys;
   };
 
-  // 菜单项配置
-  const menuItems: MenuItem[] = [
+  // 基础菜单项配置
+  const baseMenuItems: MenuItem[] = [
     {
       key: 'dashboard',
       label: '工作台',
       icon: <DashboardOutlined />,
       onClick: () => navigate('/dashboard'),
-      color: 'var(--color-primary)'
+      color: 'var(--color-primary)',
+      permission: 'dashboard:view'
     },
     {
       key: 'business',
@@ -133,38 +135,44 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
           key: 'project',
           label: '项目管理',
           icon: <AppstoreOutlined />,
-          onClick: () => navigate('/project')
+          onClick: () => navigate('/project'),
+          permission: 'project:manage'
         },
         {
           key: 'case',
           label: '案件管理',
           icon: <SolutionOutlined />,
           onClick: () => navigate('/case'),
-          badge: 3
+          badge: 3,
+          permission: 'case:manage'
         },
         {
           key: 'client',
           label: '客户管理',
           icon: <TeamOutlined />,
-          onClick: () => navigate('/client')
+          onClick: () => navigate('/client'),
+          permission: 'client:manage'
         },
         {
           key: 'lawyer',
           label: '律师管理',
           icon: <UserOutlined />,
-          onClick: () => navigate('/lawyer')
+          onClick: () => navigate('/lawyer'),
+          permission: 'lawyer:manage'
         },
         {
           key: 'conflict',
           label: '利益冲突检查',
           icon: <FileSearchOutlined />,
-          onClick: () => navigate('/conflict')
+          onClick: () => navigate('/conflict'),
+          permission: 'conflict:check'
         },
         {
           key: 'file',
           label: '文件管理',
           icon: <CloudUploadOutlined />,
-          onClick: () => navigate('/file')
+          onClick: () => navigate('/file'),
+          permission: 'file:manage'
         }
       ]
     },
@@ -174,7 +182,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
       icon: <FileDoneOutlined />,
       onClick: () => navigate('/approval'),
       badge: 5,
-      color: 'var(--color-warning)'
+      color: 'var(--color-warning)',
+      permission: 'approval:manage'
     },
     {
       key: 'tools',
@@ -186,31 +195,36 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
           key: 'law-search',
           label: '法条查询',
           icon: <SearchOutlined />,
-          onClick: () => navigate('/tools/law-search')
+          onClick: () => navigate('/tools/law-search'),
+          permission: 'law:search'
         },
         {
           key: 'case-search',
           label: '案例检索',
           icon: <DatabaseOutlined />,
-          onClick: () => message.info('案例检索功能开发中...')
+          onClick: () => message.info('案例检索功能开发中...'),
+          permission: 'case:search'
         },
         {
           key: 'company-search',
           label: '企业信息查询',
           icon: <BankOutlined />,
-          onClick: () => message.info('企业信息查询功能开发中...')
+          onClick: () => message.info('企业信息查询功能开发中...'),
+          permission: 'company:search'
         },
         {
           key: 'calendar',
           label: '日程安排',
           icon: <ScheduleOutlined />,
-          onClick: () => navigate('/calendar')
+          onClick: () => navigate('/calendar'),
+          permission: 'calendar:manage'
         },
         {
           key: 'documents',
           label: '文档模板',
           icon: <FileTextOutlined />,
-          onClick: () => navigate('/documents')
+          onClick: () => navigate('/documents'),
+          permission: 'document:template'
         }
       ]
     },
@@ -219,30 +233,66 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
       label: '财务管理',
       icon: <CalculatorOutlined />,
       onClick: () => navigate('/finance'),
-      color: 'var(--color-error)'
+      color: 'var(--color-error)',
+      permission: 'finance:manage'
     },
     {
       key: 'reports',
       label: '统计报表',
       icon: <BarChartOutlined />,
       onClick: () => navigate('/reports'),
-      color: 'var(--color-accent)'
+      color: 'var(--color-accent)',
+      permission: 'report:view'
     },
     {
       key: 'user',
       label: '用户管理',
       icon: <UserOutlined />,
       onClick: () => navigate('/user'),
-      color: 'var(--color-text-secondary)'
+      color: 'var(--color-text-secondary)',
+      permission: 'user:manage'
     },
     {
       key: 'settings',
       label: '系统设置',
       icon: <SettingOutlined />,
       onClick: () => navigate('/settings'),
-      color: 'var(--color-text-secondary)'
+      color: 'var(--color-text-secondary)',
+      permission: 'system:manage'
     }
   ];
+
+  // 根据权限过滤菜单项
+  const menuItems = useMemo(() => {
+    const filterMenuItems = (items: MenuItem[]): MenuItem[] => {
+      return items.filter(item => {
+        // 如果是父级菜单，检查是否有可访问的子菜单
+        if (item.children) {
+          const filteredChildren = filterMenuItems(item.children);
+          return filteredChildren.length > 0;
+        }
+        
+        // 如果有权限要求，检查权限
+        if (item.permission) {
+          return hasPermission(item.permission);
+        }
+        
+        // 默认显示
+        return true;
+      }).map(item => {
+        // 递归处理子菜单
+        if (item.children) {
+          return {
+            ...item,
+            children: filterMenuItems(item.children)
+          };
+        }
+        return item;
+      });
+    };
+    
+    return filterMenuItems(baseMenuItems);
+  }, [hasPermission]);
 
   // 渲染菜单项
   const renderMenuItems = (items: MenuItem[]): any[] => {

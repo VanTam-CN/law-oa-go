@@ -98,32 +98,58 @@ const LawyerManagement: React.FC = () => {
     setLoading(true);
     try {
       console.log('开始获取律师列表，参数:', queryParams);
-      const response = await fetch(`/api/lawfirm/lawyers?name=${queryParams.name}&department=${queryParams.department}&status=${queryParams.status}&specialty=${queryParams.specialty}&pageNum=${queryParams.pageNum}&pageSize=${queryParams.pageSize}`);
+      const token = localStorage.getItem('token');
+      console.log('当前token:', token);
+      
+      if (!token) {
+        console.error('未找到认证token');
+        message.error('请先登录');
+        navigate('/login');
+        return;
+      }
+      
+      const response = await fetch(`/api/lawfirm/lawyers?name=${queryParams.name}&department=${queryParams.department}&status=${queryParams.status}&specialty=${queryParams.specialty}&pageNum=${queryParams.pageNum}&pageSize=${queryParams.pageSize}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
       const data = await response.json();
       
+      console.log('API响应状态:', response.status);
       console.log('API响应数据:', data);
       
-      if (data.code === 0 && data.data) {
-        const convertedLawyers = data.data.list.map((lawyer: any) => ({
-          id: lawyer.lawyerId,
-          name: lawyer.lawyerName,
-          licenseNumber: lawyer.licenseNo,
-          specialty: lawyer.specialty ? lawyer.specialty.split(/[,、]/).filter(Boolean) : [],
-          experience: 5,
-          status: lawyer.delFlag === '0' ? 'active' : 'inactive',
+      if (response.status === 401) {
+        console.error('认证失败，token可能已过期');
+        message.error('登录已过期，请重新登录');
+        localStorage.removeItem('token');
+        navigate('/login');
+        return;
+      }
+      
+      // 处理新的后端响应格式
+      if (data.success === true && data.data) {
+        const lawyersList = data.data || [];
+        const convertedLawyers = lawyersList.map((lawyer: any) => ({
+          id: lawyer.id || lawyer.lawyerId,
+          name: lawyer.name || lawyer.lawyerName,
+          licenseNumber: lawyer.license_number || lawyer.licenseNo,
+          specialty: lawyer.specialty ? (Array.isArray(lawyer.specialty) ? lawyer.specialty : lawyer.specialty.split(/[,、]/).filter(Boolean)) : [],
+          experience: lawyer.experience || 5,
+          status: lawyer.status || (lawyer.del_flag === '0' ? 'active' : 'inactive'),
           department: lawyer.department || '',
           position: lawyer.position || '',
           phone: lawyer.phone,
           email: lawyer.email,
-          gender: 'male',
-          joinDate: '2020-01-01',
-          profile: '',
-          avatar: '',
+          gender: lawyer.gender || 'male',
+          joinDate: lawyer.join_date || lawyer.joinDate || '2020-01-01',
+          profile: lawyer.profile || '',
+          avatar: lawyer.avatar || '',
           ...lawyer
         }));
         console.log('转换后的律师数据:', convertedLawyers);
         setLawyers(convertedLawyers);
-        setTotal(data.data.total || 0);
+        setTotal(lawyersList.length || 0);
       } else {
         throw new Error('API返回数据格式错误');
       }
@@ -139,15 +165,36 @@ const LawyerManagement: React.FC = () => {
   // 获取律师统计
   const fetchStats = async () => {
     try {
-      const response = await fetch('/api/lawfirm/lawyers/stats');
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/lawfirm/lawyers/stats', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
       const data = await response.json();
       
-      if (data.code === 0 && data.data) {
+      if (data.success === true && data.data) {
         console.log('统计数据:', data.data);
         setStats(data.data);
+      } else {
+        // 如果没有stats接口，使用默认值
+        setStats({
+          total: lawyers.length,
+          active: lawyers.filter(l => l.status === 'active').length,
+          inactive: lawyers.filter(l => l.status === 'inactive').length,
+          onLeave: lawyers.filter(l => l.status === 'on_leave').length
+        });
       }
     } catch (error: any) {
       console.error('获取统计数据失败:', error);
+      // 使用默认统计
+      setStats({
+        total: lawyers.length,
+        active: lawyers.filter(l => l.status === 'active').length,
+        inactive: lawyers.filter(l => l.status === 'inactive').length,
+        onLeave: lawyers.filter(l => l.status === 'on_leave').length
+      });
     }
   };
 

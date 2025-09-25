@@ -2,7 +2,7 @@ import { post, get } from './http';
 
 // 用户登录接口参数类型
 interface LoginParams {
-  username: string;
+  email: string;
   password: string;
   remember?: boolean;
 }
@@ -38,7 +38,7 @@ interface UserInfo {
  * @returns 登录响应
  */
 export const login = (data: LoginParams): Promise<LoginResponse> => {
-  return post<LoginResponse>('/login', data);
+  return post<LoginResponse>('/auth/login', data);
 };
 
 /**

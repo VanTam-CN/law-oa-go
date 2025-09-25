@@ -7,7 +7,7 @@ import useAuth from '@/hooks/useAuth';
 import './Login.less';
 
 interface LoginFormValues {
-  username: string;
+  email: string;
   password: string;
   remember: boolean;
 }
@@ -23,27 +23,43 @@ const LoginPage: React.FC = () => {
       setLoading(true);
       const response = await login(values);
       
+      console.log('Login response:', response);
+      
       // 处理后端返回的token格式
       const token = response.token || response.data?.token;
-      const user = response.user || { 
-        id: 1, 
-        username: values.username, 
-        real_name: 'Admin', 
-        email: 'admin@example.com', 
-        role: 'admin', 
-        department: 'IT' 
-      };
+      const userData = response.user || response.data?.user;
       
-      if (token) {
+      if (token && userData) {
+        // 构造用户对象，映射后端字段到前端需要的格式
+        const user = {
+          id: userData.id,
+          username: userData.email, // 使用email作为username
+          real_name: userData.name,
+          email: userData.email,
+          role: userData.role,
+          phone: userData.phone,
+          avatar: userData.avatar,
+          status: userData.status,
+          department: '',
+          created_at: userData.created_at
+        };
+        
+        console.log('Processed user:', user);
+        
         authLogin(token, user);
         message.success('登录成功');
-        navigate('/');
+        
+        // 等待一下让角色权限加载完成
+        setTimeout(() => {
+          navigate('/');
+        }, 500);
       } else {
+        console.error('Token or user missing:', { token, user: userData });
         throw new Error('未获取到有效的登录凭证');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login failed:', error);
-      message.error('登录失败，请检查用户名和密码');
+      message.error(error.response?.data?.message || '登录失败，请检查用户名和密码');
     } finally {
       setLoading(false);
     }
@@ -60,13 +76,13 @@ const LoginPage: React.FC = () => {
           size="large"
         >
           <Form.Item
-            name="username"
-            rules={[{ required: true, message: '请输入用户名' }]}
+            name="email"
+            rules={[{ required: true, message: '请输入邮箱' }]}
           >
             <Input 
               prefix={<UserOutlined />} 
-              placeholder="用户名" 
-              autoComplete="username"
+              placeholder="邮箱" 
+              autoComplete="email"
             />
           </Form.Item>
           <Form.Item

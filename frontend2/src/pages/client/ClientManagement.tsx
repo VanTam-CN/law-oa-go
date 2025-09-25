@@ -28,8 +28,28 @@ import {
   ReloadOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { clientService, Client, ClientStats } from '@/services/client';
+import { clientService } from '@/api/client';
 import './ClientManagement.less';
+
+interface Client {
+  id?: number;
+  name: string;
+  type: string;
+  contact: string;
+  phone: string;
+  email: string;
+  address: string;
+  status: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface ClientStats {
+  total: number;
+  active: number;
+  inactive: number;
+  byType: Record<string, number>;
+}
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -59,8 +79,8 @@ const ClientManagement: React.FC = () => {
     setLoading(true);
     try {
       const res = await clientService.getClientList(queryParams);
-      setClients(res.list);
-      setTotal(res.total);
+      setClients(res.data || res.list || []);
+      setTotal(res.pagination?.total || res.total || 0);
     } catch (error) {
       message.error('获取客户列表失败');
     } finally {
@@ -154,7 +174,7 @@ const ClientManagement: React.FC = () => {
         await clientService.updateClient(editingClient.id!, values);
         message.success('更新成功');
       } else {
-        await clientService.addClient(values);
+        await clientService.createClient(values);
         message.success('新增成功');
       }
       setModalVisible(false);

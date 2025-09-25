@@ -47,8 +47,8 @@ import {
   KeyOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { userService } from '@/services/user';
-import { roleService } from '@/services/role';
+import { userService } from '@/api/user';
+import { roleService } from '@/api/role';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 
@@ -106,70 +106,10 @@ const UserManagement: React.FC = () => {
   const loadUsers = async () => {
     setLoading(true);
     try {
-      // 使用静态数据避免API调用失败
-      const staticUsers: User[] = [
-        {
-          userId: 1,
-          username: 'admin',
-          realName: '系统管理员',
-          email: 'admin@lawfirm.com',
-          phone: '13800138000',
-          status: '0',
-          userType: '1',
-          position: '系统管理员',
-          employeeId: 'EMP001',
-          roleIds: [1],
-          departmentName: '管理部',
-          roleNames: ['管理员'],
-          admin: true
-        },
-        {
-          userId: 2,
-          username: 'lawyer1',
-          realName: '张律师',
-          email: 'zhang@lawfirm.com',
-          phone: '13800138001',
-          status: '0',
-          userType: '2',
-          position: '高级律师',
-          employeeId: 'EMP002',
-          roleIds: [2],
-          departmentName: '诉讼部',
-          roleNames: ['律师'],
-          admin: false
-        },
-        {
-          userId: 3,
-          username: 'assistant1',
-          realName: '李助理',
-          email: 'li@lawfirm.com',
-          phone: '13800138002',
-          status: '0',
-          userType: '3',
-          position: '律师助理',
-          employeeId: 'EMP003',
-          roleIds: [3],
-          departmentName: '诉讼部',
-          roleNames: ['助理'],
-          admin: false
-        },
-        {
-          userId: 4,
-          username: 'admin1',
-          realName: '王行政',
-          email: 'wang@lawfirm.com',
-          phone: '13800138003',
-          status: '0',
-          userType: '4',
-          position: '行政专员',
-          employeeId: 'EMP004',
-          roleIds: [4],
-          departmentName: '行政部',
-          roleNames: ['行政'],
-          admin: false
-        }
-      ];
-      setUsers(staticUsers);
+      const response = await userService.getUserList();
+      if (response && response.list) {
+        setUsers(response.list);
+      }
     } catch (error) {
       console.error('加载用户列表失败:', error);
       message.error('获取用户列表失败');
@@ -181,44 +121,27 @@ const UserManagement: React.FC = () => {
   // 加载角色列表
   const loadRoles = async () => {
     try {
-      // 使用静态角色数据
-      const staticRoles: Role[] = [
-        {
-          roleId: 1,
-          roleName: '系统管理员',
-          roleKey: 'admin',
-          status: '1'
-        },
-        {
-          roleId: 2,
-          roleName: '律师',
-          roleKey: 'lawyer',
-          status: '1'
-        },
-        {
-          roleId: 3,
-          roleName: '助理',
-          roleKey: 'assistant',
-          status: '1'
-        },
-        {
-          roleId: 4,
-          roleName: '行政',
-          roleKey: 'admin_staff',
-          status: '1'
-        }
-      ];
-      setRoles(staticRoles);
+      const response = await roleService.getRoleList();
+      if (response && response.list) {
+        setRoles(response.list);
+      }
     } catch (error) {
       console.error('加载角色列表失败:', error);
+      message.error('获取角色列表失败');
     }
   };
 
   // 加载统计数据
   const loadStats = async () => {
     try {
-      // 模拟统计数据
-      const mockStats: UserStats = {
+      const response = await userService.getUserStats();
+      if (response) {
+        setStats(response);
+      }
+    } catch (error) {
+      console.error('加载统计数据失败:', error);
+      // 如果没有统计数据API，则根据当前用户数据计算
+      const calculatedStats: UserStats = {
         total: users.length,
         active: users.filter(u => u.status === '0').length,
         inactive: users.filter(u => u.status === '1').length,
@@ -234,9 +157,7 @@ const UserManagement: React.FC = () => {
           '行政部': users.filter(u => u.departmentId === 4).length,
         }
       };
-      setStats(mockStats);
-    } catch (error) {
-      console.error('加载统计数据失败:', error);
+      setStats(calculatedStats);
     }
   };
 
@@ -255,12 +176,6 @@ const UserManagement: React.FC = () => {
   const handleAdd = () => {
     setEditingUser(null);
     form.resetFields();
-    // 设置默认值
-    form.setFieldsValue({
-      employeeId: `EMP${String(users.length + 1).padStart(3, '0')}`,
-      status: '0',
-      userType: '3'
-    });
     setModalVisible(true);
   };
 
@@ -280,10 +195,10 @@ const UserManagement: React.FC = () => {
   // 删除用户
   const handleDelete = async (userId: number) => {
     try {
-      // 模拟删除用户
-      const updatedUsers = users.filter(user => user.userId !== userId);
-      setUsers(updatedUsers);
+      await userService.deleteUser(userId);
       message.success('删除成功');
+      loadUsers();
+      loadStats();
     } catch (error) {
       console.error('删除用户失败:', error);
       message.error('删除失败');
@@ -296,31 +211,19 @@ const UserManagement: React.FC = () => {
       const values = await form.validateFields();
       setLoading(true);
       
-      // 模拟保存用户
       if (editingUser) {
         // 更新用户
-        const updatedUsers = users.map(user => 
-          user.userId === editingUser.userId 
-            ? { ...user, ...values }
-            : user
-        );
-        setUsers(updatedUsers);
+        await userService.updateUser(editingUser.userId!, values);
         message.success('更新成功');
       } else {
         // 新增用户
-        const newUser: User = {
-          ...values,
-          userId: users.length + 1,
-          employeeId: values.employeeId || `EMP${String(users.length + 1).padStart(3, '0')}`,
-          roleIds: [1],
-          departmentName: '管理部',
-          roleNames: ['用户']
-        };
-        setUsers([...users, newUser]);
+        await userService.createUser(values);
         message.success('创建成功');
       }
       
       setModalVisible(false);
+      loadUsers();
+      loadStats();
     } catch (error) {
       console.error('保存用户失败:', error);
       message.error('保存失败');
@@ -333,14 +236,10 @@ const UserManagement: React.FC = () => {
   const toggleUserStatus = async (user: User) => {
     try {
       const newStatus = user.status === '0' ? '1' : '0';
-      // 模拟更新用户状态
-      const updatedUsers = users.map(u => 
-        u.userId === user.userId 
-          ? { ...u, status: newStatus as '0' | '1' }
-          : u
-      );
-      setUsers(updatedUsers);
+      await userService.changeUserStatus(user.userId!, newStatus);
       message.success('状态更新成功');
+      loadUsers();
+      loadStats();
     } catch (error) {
       console.error('更新用户状态失败:', error);
       message.error('状态更新失败');
@@ -744,34 +643,10 @@ const RoleManagementContent: React.FC = () => {
   const loadRoles = async () => {
     setLoading(true);
     try {
-      // 使用静态角色数据
-      const staticRoles: Role[] = [
-        {
-          roleId: 1,
-          roleName: '系统管理员',
-          roleKey: 'admin',
-          status: '1'
-        },
-        {
-          roleId: 2,
-          roleName: '律师',
-          roleKey: 'lawyer',
-          status: '1'
-        },
-        {
-          roleId: 3,
-          roleName: '助理',
-          roleKey: 'assistant',
-          status: '1'
-        },
-        {
-          roleId: 4,
-          roleName: '行政',
-          roleKey: 'admin_staff',
-          status: '1'
-        }
-      ];
-      setRoles(staticRoles);
+      const response = await roleService.getRoleList();
+      if (response && response.list) {
+        setRoles(response.list);
+      }
     } catch (error) {
       console.error('加载角色列表失败:', error);
       message.error('获取角色列表失败');
@@ -789,27 +664,18 @@ const RoleManagementContent: React.FC = () => {
       const values = await form.validateFields();
       setLoading(true);
       
-      // 模拟保存角色
       if (editingRole) {
         // 更新角色
-        const updatedRoles = roles.map(role => 
-          role.roleId === editingRole.roleId 
-            ? { ...role, ...values }
-            : role
-        );
-        setRoles(updatedRoles);
+        await roleService.updateRole(editingRole.roleId, values);
         message.success('更新成功');
       } else {
         // 新增角色
-        const newRole: Role = {
-          ...values,
-          roleId: roles.length + 1
-        };
-        setRoles([...roles, newRole]);
+        await roleService.createRole(values);
         message.success('创建成功');
       }
       
       setModalVisible(false);
+      loadRoles();
     } catch (error) {
       console.error('保存角色失败:', error);
       message.error('保存失败');

@@ -47,7 +47,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
-import { caseAPI } from '@/services/lawfirm';
+import { getCaseList, createCase, updateCase, deleteCase } from '@/api/case';
 import { get } from '@/services/http';
 
 // 扩展dayjs插件
@@ -151,249 +151,7 @@ const CaseManagement: React.FC = () => {
     total: 0,
   });
 
-  // 丰富的模拟数据 - 基于样例数据
-  const mockCases: Case[] = [
-    {
-      caseId: 1,
-      caseNo: 'CIV2025010001',
-      caseName: '张三与李四借款纠纷',
-      caseType: 'CIVIL',
-      clientName: '张三',
-      lawyerName: '张律师',
-      status: '2',
-      description: '民间借贷纠纷案件，涉及金额50万元',
-      createTime: '2024-12-01 10:30:00',
-      updateTime: '2025-01-15 15:45:00'
-    },
-    {
-      caseId: 2,
-      caseNo: 'CIV2025010002',
-      caseName: '王五房屋买卖合同纠纷',
-      caseType: 'CIVIL',
-      clientName: '王五',
-      lawyerName: '杨律师',
-      status: '1',
-      description: '房屋买卖合同纠纷，涉及金额300万元',
-      createTime: '2024-12-15 09:15:00',
-      updateTime: '2024-12-20 14:30:00'
-    },
-    {
-      caseId: 3,
-      caseNo: 'CIV2025010003',
-      caseName: 'ABC公司劳动合同争议',
-      caseType: 'CIVIL',
-      clientName: 'ABC科技有限公司',
-      lawyerName: '刘律师',
-      status: '1',
-      description: '劳动合同纠纷案件，涉及赔偿金额80万元',
-      createTime: '2024-12-20 08:00:00',
-      updateTime: '2024-12-25 16:00:00'
-    },
-    {
-      caseId: 4,
-      caseNo: 'CIV2025010004',
-      caseName: '赵六离婚财产分割',
-      caseType: 'CIVIL',
-      clientName: '赵六',
-      lawyerName: '陈律师',
-      status: '0',
-      description: '离婚财产分割案件，涉及夫妻共同财产约500万元',
-      createTime: '2025-01-05 11:00:00',
-      updateTime: '2025-01-05 11:00:00'
-    },
-    {
-      caseId: 5,
-      caseNo: 'CIV2025010005',
-      caseName: '孙七交通事故损害赔偿',
-      caseType: 'CIVIL',
-      clientName: '孙七',
-      lawyerName: '张律师',
-      status: '2',
-      description: '交通事故损害赔偿案件，涉及赔偿金额120万元',
-      createTime: '2024-11-20 15:30:00',
-      updateTime: '2025-01-10 10:00:00'
-    },
-    {
-      caseId: 6,
-      caseNo: 'COM2025010001',
-      caseName: 'ABC公司合同纠纷',
-      caseType: 'COMMERCIAL',
-      clientName: 'ABC科技有限公司',
-      lawyerName: '王律师',
-      status: '1',
-      description: '商业合同纠纷案件，涉及金额200万元',
-      createTime: '2024-12-10 09:00:00',
-      updateTime: '2024-12-18 17:00:00'
-    },
-    {
-      caseId: 7,
-      caseNo: 'COM2025010002',
-      caseName: 'DEF公司股权纠纷',
-      caseType: 'COMMERCIAL',
-      clientName: 'DEF贸易集团',
-      lawyerName: '赵律师',
-      status: '1',
-      description: '股权转让纠纷案件，涉及金额1000万元',
-      createTime: '2024-12-05 14:00:00',
-      updateTime: '2024-12-15 16:30:00'
-    },
-    {
-      caseId: 8,
-      caseNo: 'COM2025010003',
-      caseName: 'GHI公司投资协议纠纷',
-      caseType: 'COMMERCIAL',
-      clientName: 'GHI投资公司',
-      lawyerName: '赵律师',
-      status: '0',
-      description: '投资协议纠纷案件，涉及金额5000万元',
-      createTime: '2025-01-08 10:00:00',
-      updateTime: '2025-01-08 10:00:00'
-    },
-    {
-      caseId: 9,
-      caseNo: 'COM2025010004',
-      caseName: 'JKL律所服务合同纠纷',
-      caseType: 'COMMERCIAL',
-      clientName: 'JKL律师事务所',
-      lawyerName: '王律师',
-      status: '3',
-      description: '法律服务合同纠纷案件，涉及金额150万元',
-      createTime: '2024-10-15 09:30:00',
-      updateTime: '2024-12-20 11:00:00'
-    },
-    {
-      caseId: 10,
-      caseNo: 'COM2025010005',
-      caseName: 'MNO公司商业秘密侵权',
-      caseType: 'COMMERCIAL',
-      clientName: 'MNO咨询集团',
-      lawyerName: '孙律师',
-      status: '1',
-      description: '商业秘密侵权案件，涉及金额800万元',
-      createTime: '2024-12-25 13:00:00',
-      updateTime: '2024-12-30 15:00:00'
-    },
-    {
-      caseId: 11,
-      caseNo: 'CRI2025010001',
-      caseName: '张三诈骗案',
-      caseType: 'CRIMINAL',
-      clientName: '张三',
-      lawyerName: '李律师',
-      status: '1',
-      description: '诈骗案件，涉案金额100万元',
-      createTime: '2024-11-15 08:30:00',
-      updateTime: '2024-12-01 16:00:00'
-    },
-    {
-      caseId: 12,
-      caseNo: 'CRI2025010002',
-      caseName: '李四职务侵占案',
-      caseType: 'CRIMINAL',
-      clientName: 'ABC科技有限公司',
-      lawyerName: '李律师',
-      status: '2',
-      description: '职务侵占案件，涉案金额200万元',
-      createTime: '2024-10-20 10:00:00',
-      updateTime: '2024-12-30 14:30:00'
-    },
-    {
-      caseId: 13,
-      caseNo: 'CRI2025010003',
-      caseName: '王五故意伤害案',
-      caseType: 'CRIMINAL',
-      clientName: '王五',
-      lawyerName: '李律师',
-      status: '0',
-      description: '故意伤害案件，被害人轻伤',
-      createTime: '2025-01-12 09:00:00',
-      updateTime: '2025-01-12 09:00:00'
-    },
-    {
-      caseId: 14,
-      caseNo: 'ADM2025010001',
-      caseName: 'ABC公司行政处罚纠纷',
-      caseType: 'ADMINISTRATIVE',
-      clientName: 'ABC科技有限公司',
-      lawyerName: '刘律师',
-      status: '1',
-      description: '行政处罚纠纷案件，涉及罚款金额50万元',
-      createTime: '2024-12-18 11:00:00',
-      updateTime: '2024-12-28 15:30:00'
-    },
-    {
-      caseId: 15,
-      caseNo: 'ADM2025010002',
-      caseName: '赵六行政复议案',
-      caseType: 'ADMINISTRATIVE',
-      clientName: '赵六',
-      lawyerName: '刘律师',
-      status: '2',
-      description: '行政复议案件，涉及土地使用权争议',
-      createTime: '2024-11-25 14:00:00',
-      updateTime: '2025-01-05 10:00:00'
-    },
-    {
-      caseId: 16,
-      caseNo: 'ADV2025010001',
-      caseName: 'GHI公司合规咨询',
-      caseType: 'ADVISORY',
-      clientName: 'GHI投资公司',
-      lawyerName: '王律师',
-      status: '3',
-      description: '企业合规咨询项目，帮助GHI公司建立完善的合规管理体系',
-      createTime: '2024-12-01 09:00:00',
-      updateTime: '2024-12-31 17:00:00'
-    },
-    {
-      caseId: 17,
-      caseNo: 'ADV2025010002',
-      caseName: 'MNO公司并购咨询',
-      caseType: 'ADVISORY',
-      clientName: 'MNO咨询集团',
-      lawyerName: '赵律师',
-      status: '1',
-      description: '企业并购咨询项目，为MNO公司提供目标公司尽职调查和交易结构设计服务',
-      createTime: '2025-01-01 10:00:00',
-      updateTime: '2025-01-10 16:00:00'
-    },
-    {
-      caseId: 18,
-      caseNo: 'REV2025010001',
-      caseName: 'JKL律所合同审查',
-      caseType: 'REVIEW',
-      clientName: 'JKL律师事务所',
-      lawyerName: '张律师',
-      status: '3',
-      description: '合同审查项目，为JKL律所审查各类业务合同，提供法律风险分析和修改建议',
-      createTime: '2024-11-10 08:00:00',
-      updateTime: '2024-12-15 18:00:00'
-    },
-    {
-      caseId: 19,
-      caseNo: 'REV2025010002',
-      caseName: 'DEF公司文件审查',
-      caseType: 'REVIEW',
-      clientName: 'DEF贸易集团',
-      lawyerName: '张律师',
-      status: '2',
-      description: '法律文件审查项目，审查DEF公司的重要合同和法律文件，确保法律合规性',
-      createTime: '2024-12-20 13:00:00',
-      updateTime: '2025-01-08 11:00:00'
-    },
-    {
-      caseId: 20,
-      caseNo: 'REV2025010003',
-      caseName: 'ABC公司上市文件审查',
-      caseType: 'REVIEW',
-      clientName: 'ABC科技有限公司',
-      lawyerName: '赵律师',
-      status: '1',
-      description: '上市文件审查项目，协助ABC公司准备IPO相关的法律文件和合规审查',
-      createTime: '2025-01-03 09:30:00',
-      updateTime: '2025-01-15 14:00:00'
-    }
-  ];
+  // 演示数据已移除，使用真实API数据
 
   useEffect(() => {
     fetchCases();
@@ -626,33 +384,33 @@ const CaseManagement: React.FC = () => {
       
       // 调用真实的API
       // 通过开关控制是否请求客户/律师列表，避免本地后端未实现导致 404
-      const useAuxiliaryLists = false;
+      const useAuxiliaryLists = true;
       if (!useAuxiliaryLists) {
-        const caseRes = await caseAPI.getList(params);
-        const mappedRows = (caseRes.rows || []).map((item: any) => ({
-          caseId: item.caseId ?? 0,
+        const caseRes = await getCaseList(params);
+        const mappedRows = (caseRes.data || []).map((item: any) => ({
+          caseId: item.id ?? item.caseId ?? 0,
           caseNo: item.caseNo ?? '',
-          caseName: item.caseName ?? '',
-          caseType: item.caseType ?? '',
+          caseName: item.title ?? item.caseName ?? '',
+          caseType: item.case_type ?? item.caseType ?? '',
           clientName: (item as any).clientName ?? '',
           lawyerName: (item as any).lawyerName ?? '',
           principalInfo: (item as any).principalInfo ?? '',
           opponentInfo: (item as any).opponentInfo ?? '',
           status: item.status ?? '',
           description: item.description ?? '',
-          createTime: (item as any).createTime ?? '',
-          updateTime: (item as any).updateTime ?? '',
+          createTime: (item as any).created_at ?? (item as any).createTime ?? '',
+          updateTime: (item as any).updated_at ?? (item as any).updateTime ?? '',
           caseAmount: (item as any).caseAmount,
         })) as Case[];
         setCases(mappedRows);
         setPagination({
           ...pagination,
-          total: caseRes.total
+          total: caseRes.pagination?.total || caseRes.total || 0
         });
       } else {
         // 并行获取案件、客户、律师列表，构建映射后合并姓名字段
         const [caseRes, clientRes, lawyerRes] = await Promise.all([
-          caseAPI.getList(params),
+          getCaseList(params),
           get<any>('/clients', { pageNum: 1, pageSize: 9999 }).catch(() => ({ data: { list: [] } })),
           get<any>('/lawfirm/lawyers', { pageNum: 1, pageSize: 9999 }).catch(() => ({ data: { list: [] } })),
         ]);
@@ -668,31 +426,31 @@ const CaseManagement: React.FC = () => {
           const name = (l as any).lawyerName ?? (l as any).name ?? '';
           if (id != null) lawyerMap.set(id, name);
         }
-        const mappedRows = (caseRes.rows || []).map((item: any) => {
-          const clientId = item.clientId ?? (item as any).client_id;
-          const lawyerId = item.lawyerId ?? (item as any).lawyer_id;
+        const mappedRows = (caseRes.data || []).map((item: any) => {
+          const clientId = item.client_id ?? item.clientId ?? (item as any).client_id;
+          const lawyerId = item.lawyer_id ?? item.lawyerId ?? (item as any).lawyer_id;
           const clientNameFromApi = (item as any).clientName;
           const lawyerNameFromApi = (item as any).lawyerName;
           return {
-            caseId: item.caseId ?? 0,
+            caseId: item.id ?? item.caseId ?? 0,
             caseNo: item.caseNo ?? '',
-            caseName: item.caseName ?? '',
-            caseType: item.caseType ?? '',
+            caseName: item.title ?? item.caseName ?? '',
+            caseType: item.case_type ?? item.caseType ?? '',
             clientName: clientNameFromApi ?? (clientId != null ? (clientMap.get(clientId) ?? '') : ''),
             lawyerName: lawyerNameFromApi ?? (lawyerId != null ? (lawyerMap.get(lawyerId) ?? '') : ''),
             principalInfo: (item as any).principalInfo ?? '',
             opponentInfo: (item as any).opponentInfo ?? '',
             status: item.status ?? '',
             description: item.description ?? '',
-            createTime: (item as any).createTime ?? '',
-            updateTime: (item as any).updateTime ?? '',
+            createTime: (item as any).created_at ?? (item as any).createTime ?? '',
+            updateTime: (item as any).updated_at ?? (item as any).updateTime ?? '',
             caseAmount: (item as any).caseAmount,
           } as Case;
         });
         setCases(mappedRows);
         setPagination({
           ...pagination,
-          total: caseRes.total
+          total: caseRes.pagination?.total || caseRes.total || 0
         });
       }
     } catch (error) {
@@ -736,12 +494,9 @@ const CaseManagement: React.FC = () => {
 
   const handleDelete = async (id: number) => {
     try {
-      // 这里应该调用API删除数据
-      // await caseService.deleteCase(id);
-      
-      // 模拟删除
-      setCases(cases.filter(item => item.caseId !== id));
+      await deleteCase(id);
       message.success('删除成功');
+      fetchCases();
     } catch (error) {
       message.error('删除失败');
     }
@@ -764,11 +519,11 @@ const CaseManagement: React.FC = () => {
           ...submitData,
           caseId: editingCase.caseId,
         };
-        await caseAPI.update(updateData);
+        await updateCase(updateData.caseId, updateData);
         message.success('案件更新成功');
       } else {
         // 新增案件 - 调用真实API
-        await caseAPI.create(submitData);
+        await createCase(submitData);
         message.success('案件创建成功');
       }
       
