@@ -22,6 +22,7 @@ import {
   FaPenToSquare,
   FaTrash,
   FaFileLines,
+  FaFile,
   FaUser,
   FaCalendar,
   FaClock,
@@ -39,28 +40,22 @@ import {
   FaXmark,
   FaCircleInfo
 } from "react-icons/fa6";
+import { caseService } from "../services/caseService";
+import { Case } from "../types";
+import { useToast } from "../components/Toast";
 
-// 案件详情接口
-interface CaseDetail {
-  caseId: number;
-  caseNo: string;
-  caseName: string;
-  caseType: string;
-  clientName: string;
-  clientPhone: string;
-  clientEmail: string;
-  clientAddress: string;
-  lawyerName: string;
-  lawyerPhone: string;
-  lawyerEmail: string;
-  status: string;
-  description: string;
-  createTime: string;
-  updateTime: string;
-  expectedAmount: number;
-  actualAmount: number;
+// 使用后端API的Case类型，前端显示用的扩展属性
+interface CaseDetail extends Case {
+  clientName?: string;
+  clientPhone?: string;
+  clientEmail?: string;
+  clientAddress?: string;
+  lawyerName?: string;
+  lawyerPhone?: string;
+  lawyerEmail?: string;
   principalInfo?: string;
   opponentInfo?: string;
+  caseId?: number; // 兼容旧代码
 }
 
 // 案件文档接口
@@ -95,16 +90,18 @@ interface CaseExpense {
 const CaseDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const toast = useToast();
   const [caseData, setCaseData] = useState<CaseDetail | null>(null);
   const [documents, setDocuments] = useState<CaseDocument[]>([]);
   const [timeline, setTimeline] = useState<CaseTimeline[]>([]);
   const [expenses, setExpenses] = useState<CaseExpense[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("basic");
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState<Partial<CaseDetail>>({});
 
-  // 模拟API调用 - 获取案件详情
+  // 获取案件详情
   useEffect(() => {
     if (id) {
       fetchCaseDetail(parseInt(id));
@@ -113,102 +110,50 @@ const CaseDetailPage: React.FC = () => {
 
   const fetchCaseDetail = async (caseId: number) => {
     setLoading(true);
-    try {
-      // 模拟API调用 - 实际项目中应该调用真实的API
-      await new Promise(resolve => setTimeout(resolve, 1000));
+    setError(null);
 
-      // 模拟数据
-      const mockCaseData: CaseDetail = {
-        caseId: caseId,
-        caseNo: `CASE-${String(caseId).padStart(4, '0')}`,
-        caseName: "合同纠纷案",
-        caseType: "CIVIL",
-        clientName: "张三",
-        clientPhone: "13800138000",
-        clientEmail: "zhangsan@example.com",
-        clientAddress: "北京市朝阳区某某街道123号",
-        lawyerName: "李律师",
-        lawyerPhone: "13900139000",
-        lawyerEmail: "li.lawyer@example.com",
-        status: "1",
-        description: "这是一起关于合同纠纷的案件，涉及金额较大，需要仔细处理。",
-        createTime: "2024-01-15 10:30:00",
-        updateTime: "2024-01-20 15:45:00",
-        expectedAmount: 500000,
-        actualAmount: 450000,
-        principalInfo: "委托人：张三\n身份证号：110101199001011234\n联系方式：13800138000\n住址：北京市朝阳区某某街道123号",
-        opponentInfo: "对方当事人：某公司\n统一社会信用代码：91110108XXXXXXXXXX\n法定代表人：王五\n联系方式：010-12345678\n地址：北京市海淀区某某大厦10层"
+    try {
+      // 调用真实的API获取案件详情
+      const caseData = await caseService.getCase(caseId);
+
+      // 转换数据格式以适配前端显示
+      const formattedCaseData: CaseDetail = {
+        ...caseData,
+        caseId: caseData.id,
+        clientName: caseData.client?.name || caseData.client?.company || caseData.clientName || "未知客户",
+        clientPhone: caseData.client?.phone || caseData.clientPhone || "",
+        clientEmail: caseData.client?.email || caseData.clientEmail || "",
+        clientAddress: caseData.client?.address || caseData.clientAddress || "",
+        lawyerName: caseData.lawyer?.name || caseData.lawyerName || "未分配",
+        lawyerPhone: caseData.lawyer?.phone || caseData.lawyerPhone || "",
+        lawyerEmail: caseData.lawyer?.email || caseData.lawyerEmail || "",
+        principalInfo: caseData.principal_info || caseData.principalInfo || "",
+        opponentInfo: caseData.opponent_info || caseData.opponentInfo || "",
       };
 
-      const mockDocuments: CaseDocument[] = [
-        {
-          id: 1,
-          name: "合同原件.pdf",
-          type: "PDF",
-          size: "2.5MB",
-          uploadTime: "2024-01-15 10:30:00",
-          uploader: "李律师"
-        },
-        {
-          id: 2,
-          name: "证据清单.docx",
-          type: "Word",
-          size: "1.2MB",
-          uploadTime: "2024-01-16 14:20:00",
-          uploader: "张三"
-        }
-      ];
+      // 设置案件数据
+      setCaseData(formattedCaseData);
+      setEditForm(formattedCaseData);
 
-      const mockTimeline: CaseTimeline[] = [
-        {
-          id: 1,
-          time: "2024-01-15 10:30:00",
-          event: "案件创建",
-          user: "系统",
-          description: "案件已在系统中创建"
-        },
-        {
-          id: 2,
-          time: "2024-01-16 09:00:00",
-          event: "律师指派",
-          user: "管理员",
-          description: "李律师被指派处理此案件"
-        },
-        {
-          id: 3,
-          time: "2024-01-17 14:30:00",
-          event: "客户会面",
-          user: "李律师",
-          description: "与客户进行首次会面，了解案件详情"
-        }
-      ];
+      // TODO: 后续添加获取文档、时间线、费用等数据的API调用
+      // 目前先使用空数组，等后端接口完善后再集成
+      setDocuments([]);
+      setTimeline([]);
+      setExpenses([]);
 
-      const mockExpenses: CaseExpense[] = [
-        {
-          id: 1,
-          date: "2024-01-16",
-          type: "诉讼费",
-          amount: 10000,
-          description: "法院诉讼费",
-          status: "已支付"
-        },
-        {
-          id: 2,
-          date: "2024-01-17",
-          type: "律师费",
-          amount: 50000,
-          description: "律师代理费",
-          status: "未支付"
-        }
-      ];
-
-      setCaseData(mockCaseData);
-      setDocuments(mockDocuments);
-      setTimeline(mockTimeline);
-      setExpenses(mockExpenses);
-      setEditForm(mockCaseData);
-    } catch (error) {
+    } catch (error: any) {
       console.error("获取案件详情失败:", error);
+      const errorMessage = error.message || "获取案件详情失败";
+      setError(errorMessage);
+      setCaseData(null);
+
+      // 显示错误提示
+      toast.showToast({
+        type: 'error',
+        title: '加载失败',
+        message: errorMessage,
+        persistent: true
+      });
     } finally {
       setLoading(false);
     }
@@ -225,39 +170,119 @@ const CaseDetailPage: React.FC = () => {
     if (!caseData) return;
 
     try {
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // 构建更新数据，只包含有变化的字段
+      const updateData: any = {};
 
-      setCaseData({ ...caseData, ...editForm, updateTime: new Date().toLocaleString() });
+      if (editForm.title !== undefined && editForm.title !== caseData.title) {
+        updateData.title = editForm.title;
+      }
+      if (editForm.description !== undefined && editForm.description !== caseData.description) {
+        updateData.description = editForm.description;
+      }
+      if (editForm.case_type !== undefined && editForm.case_type !== caseData.case_type) {
+        updateData.case_type = editForm.case_type;
+      }
+      if (editForm.status !== undefined && editForm.status !== caseData.status) {
+        updateData.status = editForm.status;
+      }
+      if (editForm.priority !== undefined && editForm.priority !== caseData.priority) {
+        updateData.priority = editForm.priority;
+      }
+      if (editForm.lawyer_id !== undefined && editForm.lawyer_id !== caseData.lawyer_id) {
+        updateData.lawyer_id = editForm.lawyer_id;
+      }
+
+      // 如果没有变化，直接关闭模态框
+      if (Object.keys(updateData).length === 0) {
+        setShowEditModal(false);
+        toast.showToast({
+          type: 'info',
+          title: '无变化',
+          message: '案件信息没有发生变化',
+          duration: 2000
+        });
+        return;
+      }
+
+      // 调用真实的API更新案件
+      const updatedCase = await caseService.updateCase(caseData.id, updateData);
+
+      // 更新本地数据，确保正确格式化
+      const updatedFormattedData: CaseDetail = {
+        ...caseData,
+        ...updatedCase,
+        caseId: updatedCase.id || caseData.id,
+        clientName: updatedCase.client?.name || updatedCase.client?.company || caseData.clientName,
+        clientPhone: updatedCase.client?.phone || caseData.clientPhone,
+        clientEmail: updatedCase.client?.email || caseData.clientEmail,
+        clientAddress: updatedCase.client?.address || caseData.clientAddress,
+        lawyerName: updatedCase.lawyer?.name || caseData.lawyerName,
+        lawyerPhone: updatedCase.lawyer?.phone || caseData.lawyerPhone,
+        lawyerEmail: updatedCase.lawyer?.email || caseData.lawyerEmail,
+        principalInfo: updatedCase.principal_info || caseData.principalInfo,
+        opponentInfo: updatedCase.opponent_info || caseData.opponentInfo,
+      };
+
+      setCaseData(updatedFormattedData);
+      setEditForm(updatedFormattedData);
       setShowEditModal(false);
 
       // 显示成功消息
-      alert("案件信息已更新");
-    } catch (error) {
+      toast.showToast({
+        type: 'success',
+        title: '操作成功',
+        message: '案件信息已更新',
+        duration: 3000
+      });
+    } catch (error: any) {
       console.error("更新案件失败:", error);
-      alert("更新失败，请重试");
+      toast.showToast({
+        type: 'error',
+        title: '更新失败',
+        message: error.message || "请重试",
+        persistent: true
+      });
     }
   };
 
   const handleDelete = async () => {
     if (!caseData) return;
 
-    if (window.confirm("确定要删除这个案件吗？此操作不可撤销。")) {
+    if (window.confirm(`确定要删除案件"${caseData.title}"吗？\n\n此操作不可撤销，请谨慎操作！`)) {
       try {
-        // 模拟API调用
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // 调用真实的API删除案件
+        await caseService.deleteCase(caseData.id);
 
-        alert("删除成功");
-        navigate("/cases");
-      } catch (error) {
+        toast.showToast({
+          type: 'success',
+          title: '操作成功',
+          message: '案件删除成功',
+          duration: 2000
+        });
+
+        // 延迟导航，让用户看到成功提示
+        setTimeout(() => {
+          navigate("/cases");
+        }, 1000);
+      } catch (error: any) {
         console.error("删除案件失败:", error);
-        alert("删除失败，请重试");
+        toast.showToast({
+          type: 'error',
+          title: '删除失败',
+          message: error.message || "请重试",
+          persistent: true
+        });
       }
     }
   };
 
   const getStatusBadge = (status: string) => {
     const statusMap = {
+      'pending': { text: '待处理', variant: 'warning' },
+      'active': { text: '进行中', variant: 'primary' },
+      'closed': { text: '已结案', variant: 'success' },
+      'suspended': { text: '已暂停', variant: 'secondary' },
+      // 兼容旧的数字状态
       '0': { text: '未开始', variant: 'secondary' },
       '1': { text: '进行中', variant: 'primary' },
       '2': { text: '已结案', variant: 'success' },
@@ -269,18 +294,51 @@ const CaseDetailPage: React.FC = () => {
 
   const getCaseTypeBadge = (type: string) => {
     const typeMap = {
-      'CIVIL': { text: '民事案件', variant: 'primary' },
-      'COMMERCIAL': { text: '商事案件', variant: 'warning' },
-      'CRIMINAL': { text: '刑事案件', variant: 'danger' },
-      'ADMINISTRATIVE': { text: '行政案件', variant: 'info' }
+      'civil': { text: '民事案件', variant: 'primary' },
+      'commercial': { text: '商事案件', variant: 'warning' },
+      'criminal': { text: '刑事案件', variant: 'danger' },
+      'administrative': { text: '行政案件', variant: 'info' }
     };
     const config = typeMap[type as keyof typeof typeMap] || { text: '其他', variant: 'secondary' };
     return <Badge bg={config.variant}>{config.text}</Badge>;
   };
 
+  const getPriorityBadge = (priority: string) => {
+    const priorityMap = {
+      'low': { text: '低', variant: 'secondary' },
+      'medium': { text: '中', variant: 'info' },
+      'high': { text: '高', variant: 'warning' },
+      'urgent': { text: '紧急', variant: 'danger' }
+    };
+    const config = priorityMap[priority as keyof typeof priorityMap] || { text: '普通', variant: 'secondary' };
+    return <Badge bg={config.variant}>{config.text}</Badge>;
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "未知";
+    try {
+      return new Date(dateString).toLocaleString('zh-CN');
+    } catch (error) {
+      return dateString;
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setEditForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleRetry = () => {
+    const caseId = parseInt(id || '0');
+    if (caseId > 0) {
+      toast.showToast({
+        type: 'info',
+        title: '正在重试',
+        message: '正在重新获取案件信息...',
+        duration: 1000
+      });
+      fetchCaseDetail(caseId);
+    }
   };
 
   if (loading) {
@@ -292,12 +350,26 @@ const CaseDetailPage: React.FC = () => {
     );
   }
 
-  if (!caseData) {
+  if (!caseData && !loading) {
     return (
       <div className="text-center py-5">
-        <FaCircleInfo className="fas fa-exclamation-triangle fa-3x text-warning mb-3" />
-        <h5>案件不存在</h5>
-        <p className="text-muted">请求的案件无法找到</p>
+        {error ? (
+          <>
+            <FaCircleInfo className="fas fa-exclamation-circle fa-3x text-danger mb-3" />
+            <h5>加载失败</h5>
+            <p className="text-muted">{error}</p>
+            <Button variant="primary" onClick={handleRetry} className="me-2">
+              <FaArrowsRotate className="me-2" />
+              重试
+            </Button>
+          </>
+        ) : (
+          <>
+            <FaCircleInfo className="fas fa-exclamation-triangle fa-3x text-warning mb-3" />
+            <h5>案件不存在</h5>
+            <p className="text-muted">请求的案件无法找到</p>
+          </>
+        )}
         <Button variant="primary" onClick={() => navigate("/cases")}>
           <FaArrowLeft className="me-2" />
           返回案件列表
@@ -305,6 +377,29 @@ const CaseDetailPage: React.FC = () => {
       </div>
     );
   }
+
+  if (error) {
+    return (
+      <div className="text-center py-5">
+        <FaCircleInfo className="fas fa-exclamation-circle fa-3x text-danger mb-3" />
+        <h5>加载失败</h5>
+        <p className="text-muted">{error}</p>
+        <div className="mt-3">
+          <Button variant="primary" onClick={handleRetry} className="me-2">
+            <FaArrowsRotate className="me-2" />
+            重试
+          </Button>
+          <Button variant="outline-secondary" onClick={() => navigate("/cases")}>
+            <FaArrowLeft className="me-2" />
+            返回案件列表
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // 在这一点上，caseData保证不为null，因为前面的条件检查已经处理了null情况
+  if (!caseData) return null;
 
   return (
     <div>
@@ -315,7 +410,7 @@ const CaseDetailPage: React.FC = () => {
             <FaArrowLeft className="me-2" />
             返回案件列表
           </Button>
-          <h1>案件 #{caseData.caseNo}: {caseData.caseName}</h1>
+          <h1>案件 #{caseData.id}: {caseData.title}</h1>
         </div>
         <div className="d-flex">
           <Dropdown className="me-2">
@@ -352,7 +447,7 @@ const CaseDetailPage: React.FC = () => {
       {/* 状态标签 */}
       <div className="mb-4">
         {getStatusBadge(caseData.status)}
-        {getCaseTypeBadge(caseData.caseType)}
+        {getCaseTypeBadge(caseData.case_type)}
       </div>
 
       {/* 主要内容区域 */}
@@ -367,50 +462,52 @@ const CaseDetailPage: React.FC = () => {
                     <Col md={6}>
                       <div className="mb-3">
                         <small className="text-muted">案件编号</small>
-                        <div className="fw-bold">{caseData.caseNo}</div>
+                        <div className="fw-bold">#{caseData.id}</div>
                       </div>
                       <div className="mb-3">
                         <small className="text-muted">案件名称</small>
-                        <div className="fw-bold">{caseData.caseName}</div>
+                        <div className="fw-bold">{caseData.title}</div>
                       </div>
                       <div className="mb-3">
                         <small className="text-muted">案件类型</small>
-                        <div>{getCaseTypeBadge(caseData.caseType)}</div>
+                        <div>{getCaseTypeBadge(caseData.case_type)}</div>
                       </div>
                       <div className="mb-3">
                         <small className="text-muted">状态</small>
                         <div>{getStatusBadge(caseData.status)}</div>
                       </div>
+                      <div className="mb-3">
+                        <small className="text-muted">优先级</small>
+                        <div>{getPriorityBadge(caseData.priority)}</div>
+                      </div>
                     </Col>
                     <Col md={6}>
-                      <div className="mb-3">
-                        <small className="text-muted">预计金额</small>
-                        <div className="fw-bold">
-                          <FaDollarSign className="me-1" />
-                          ¥{caseData.expectedAmount.toLocaleString()}
-                        </div>
-                      </div>
-                      <div className="mb-3">
-                        <small className="text-muted">实际金额</small>
-                        <div className="fw-bold">
-                          <FaDollarSign className="me-1" />
-                          ¥{caseData.actualAmount.toLocaleString()}
-                        </div>
-                      </div>
                       <div className="mb-3">
                         <small className="text-muted">创建时间</small>
                         <div className="fw-bold">
                           <FaCalendar className="me-1" />
-                          {caseData.createTime}
+                          {formatDate(caseData.created_at)}
                         </div>
                       </div>
                       <div className="mb-3">
                         <small className="text-muted">更新时间</small>
                         <div className="fw-bold">
                           <FaClock className="me-1" />
-                          {caseData.updateTime}
+                          {formatDate(caseData.updated_at)}
                         </div>
                       </div>
+                      {caseData.lawyer_id && (
+                        <div className="mb-3">
+                          <small className="text-muted">律师ID</small>
+                          <div className="fw-bold">{caseData.lawyer_id}</div>
+                        </div>
+                      )}
+                      {caseData.client_id && (
+                        <div className="mb-3">
+                          <small className="text-muted">客户ID</small>
+                          <div className="fw-bold">{caseData.client_id}</div>
+                        </div>
+                      )}
                     </Col>
                   </Row>
 
@@ -419,7 +516,7 @@ const CaseDetailPage: React.FC = () => {
                       <div className="mb-3">
                         <small className="text-muted">案件描述</small>
                         <div className="p-3 bg-light rounded">
-                          {caseData.description}
+                          {caseData.description || "暂无描述"}
                         </div>
                       </div>
                     </Col>
@@ -718,8 +815,8 @@ const CaseDetailPage: React.FC = () => {
                   <Form.Label>案件名称</Form.Label>
                   <Form.Control
                     type="text"
-                    name="caseName"
-                    value={editForm.caseName || ''}
+                    name="title"
+                    value={editForm.title || ''}
                     onChange={handleInputChange}
                   />
                 </Form.Group>
@@ -728,14 +825,15 @@ const CaseDetailPage: React.FC = () => {
                 <Form.Group className="mb-3">
                   <Form.Label>案件类型</Form.Label>
                   <Form.Select
-                    name="caseType"
-                    value={editForm.caseType || ''}
+                    name="case_type"
+                    value={editForm.case_type || ''}
                     onChange={handleInputChange}
                   >
-                    <option value="CIVIL">民事案件</option>
-                    <option value="COMMERCIAL">商事案件</option>
-                    <option value="CRIMINAL">刑事案件</option>
-                    <option value="ADMINISTRATIVE">行政案件</option>
+                    <option value="">请选择案件类型</option>
+                    <option value="civil">民事案件</option>
+                    <option value="commercial">商事案件</option>
+                    <option value="criminal">刑事案件</option>
+                    <option value="administrative">行政案件</option>
                   </Form.Select>
                 </Form.Group>
               </Col>
@@ -750,47 +848,28 @@ const CaseDetailPage: React.FC = () => {
                     value={editForm.status || ''}
                     onChange={handleInputChange}
                   >
-                    <option value="0">未开始</option>
-                    <option value="1">进行中</option>
-                    <option value="2">已结案</option>
-                    <option value="3">已归档</option>
+                    <option value="">请选择状态</option>
+                    <option value="pending">待处理</option>
+                    <option value="active">进行中</option>
+                    <option value="closed">已结案</option>
+                    <option value="suspended">已暂停</option>
                   </Form.Select>
                 </Form.Group>
               </Col>
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>预计金额</Form.Label>
-                  <Form.Control
-                    type="number"
-                    name="expectedAmount"
-                    value={editForm.expectedAmount || ''}
+                  <Form.Label>优先级</Form.Label>
+                  <Form.Select
+                    name="priority"
+                    value={editForm.priority || ''}
                     onChange={handleInputChange}
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>客户姓名</Form.Label>
-                  <Form.Control
-                    type="text"
-                    name="clientName"
-                    value={editForm.clientName || ''}
-                    onChange={handleInputChange}
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>律师姓名</Form.Label>
-                  <Form.Control
-                    type="text"
-                    name="lawyerName"
-                    value={editForm.lawyerName || ''}
-                    onChange={handleInputChange}
-                  />
+                  >
+                    <option value="">请选择优先级</option>
+                    <option value="low">低</option>
+                    <option value="medium">中</option>
+                    <option value="high">高</option>
+                    <option value="urgent">紧急</option>
+                  </Form.Select>
                 </Form.Group>
               </Col>
             </Row>
