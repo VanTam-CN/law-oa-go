@@ -55,7 +55,7 @@ type ChangePasswordRequest struct {
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		_ = c.Error(errors.NewValidationError("request_binding", "request_binding", "Invalid request format: "+err.Error(), "Invalid request format"))
+		_ = c.Error(errors.NewValidationError("request_binding", "request_binding", "Invalid request format", "Invalid request format"))
 		return
 	}
 
@@ -94,7 +94,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req services.CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		_ = c.Error(errors.NewValidationError("request_binding", "request_binding", "Invalid request format: "+err.Error(), "Invalid request format"))
+		_ = c.Error(errors.NewValidationError("request_binding", "request_binding", "Invalid request format", "Invalid request format"))
 		return
 	}
 
@@ -170,7 +170,7 @@ func (h *AuthHandler) UpdateProfile(c *gin.Context) {
 
 	var req services.UpdateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		_ = c.Error(errors.NewValidationError("request_binding", "request_binding", "Invalid request format: "+err.Error(), "Invalid request format"))
+		_ = c.Error(errors.NewValidationError("request_binding", "request_binding", "Invalid request format", "Invalid request format"))
 		return
 	}
 
@@ -205,7 +205,7 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 
 	var req ChangePasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		_ = c.Error(errors.NewValidationError("request_binding", "request_binding", "Invalid request format: "+err.Error(), "Invalid request format"))
+		_ = c.Error(errors.NewValidationError("request_binding", "request_binding", "Invalid request format", "Invalid request format"))
 		return
 	}
 
@@ -233,7 +233,7 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	var req RefreshTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		_ = c.Error(errors.NewValidationError("request_binding", "request_binding", "Invalid request format: "+err.Error(), "Invalid request format"))
+		_ = c.Error(errors.NewValidationError("request_binding", "request_binding", "Invalid request format", "Invalid request format"))
 		return
 	}
 

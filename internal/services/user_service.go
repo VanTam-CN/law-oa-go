@@ -16,6 +16,14 @@ import (
 	"law-oa-go/internal/repositories"
 )
 
+// 预编译的正则表达式（避免重复编译，提升性能）
+var (
+	upperRegex  = regexp.MustCompile(`[A-Z]`)
+	lowerRegex  = regexp.MustCompile(`[a-z]`)
+	numberRegex = regexp.MustCompile(`[0-9]`)
+	emailRegex  = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+)
+
 type UserService struct {
 	userRepo       repositories.UserRepository
 	concurrentSvc  *concurrency.ConcurrentService
@@ -64,6 +72,7 @@ func (s *UserService) GetConcurrentMetrics() *concurrency.PoolMetricsSnapshot {
 }
 
 type CreateUserRequest struct {
+	Username string `json:"username" binding:"required,min=1,max=50"`
 	Name     string `json:"name" binding:"required,min=1,max=100"`
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=6"`
@@ -113,6 +122,7 @@ func (s *UserService) CreateUser(ctx context.Context, req *CreateUserRequest) (*
 	}
 
 	user := &models.User{
+		Username: req.Username,
 		Name:     req.Name,
 		Email:    req.Email,
 		Password: string(hashedPassword),
@@ -269,7 +279,7 @@ func (s *UserService) validateUserRequest(req *CreateUserRequest) error {
 }
 
 func (s *UserService) validateEmail(email string) error {
-	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+	// 使用预编译的正则表达式，避免重复编译提升性能
 	if !emailRegex.MatchString(email) {
 		return customErrors.NewValidationError("email", "invalid_email_format", "Invalid email format", "Please provide a valid email address")
 	}
@@ -281,9 +291,10 @@ func (s *UserService) validatePassword(password string) error {
 		return customErrors.NewValidationError("password", "password_too_short", "Password too short", "Password must be at least 8 characters long")
 	}
 
-	hasUpper := regexp.MustCompile(`[A-Z]`).MatchString(password)
-	hasLower := regexp.MustCompile(`[a-z]`).MatchString(password) // 修复：使用正确的小写字母正则
-	hasNumber := regexp.MustCompile(`[0-9]`).MatchString(password)
+	// 使用预编译的正则表达式，避免重复编译提升性能
+	hasUpper := upperRegex.MatchString(password)
+	hasLower := lowerRegex.MatchString(password)
+	hasNumber := numberRegex.MatchString(password)
 
 	if !hasUpper || !hasLower || !hasNumber {
 		return customErrors.NewValidationError("password", "password_too_weak", "Password too weak", "Password must contain at least one uppercase letter, one lowercase letter, and one number")
@@ -355,55 +366,43 @@ func (s *UserService) DeleteUser(ctx context.Context, userID uint) error {
 	return nil
 }
 
-// BatchCreateUsers 批量创建用户（并发版本）
+// BatchCreateUsers 批量创建用户（优化版本 - 解决N+1查询问题）
 func (s *UserService) BatchCreateUsers(ctx context.Context, requests []*CreateUserRequest) ([]*UserProfile, error) {
 	if len(requests) == 0 {
 		return nil, customErrors.NewValidationError("requests", "empty_request", "No users to create", "Batch create request is empty")
 	}
 
-	// 创建并发任务
-	tasks := make([]concurrency.Task, len(requests))
-	results := make([]*UserProfile, len(requests))
-	var wg sync.WaitGroup
-	var mu sync.Mutex
-	errChan := make(chan error, len(requests))
-
-	for i, req := range requests {
-		wg.Add(1)
-		i, req := i, req // 闭包捕获
-		task := &concurrency.DatabaseTask{
-			TaskID:       fmt.Sprintf("create_user_%d", i),
-			TaskType:     "create_user",
-			TaskPriority: 3,
-			Operation: func(ctx context.Context) error {
-				return s.concurrentSafe.Execute(ctx, func() error {
-					return s.createSingleUser(ctx, req, &results[i], &mu)
-				})
-			},
-			Context: ctx,
-		}
-		tasks[i] = task
-
-		// 直接执行任务（避免使用worker pool的额外开销）
-		go func(task concurrency.Task) {
-			defer wg.Done()
-			if err := task.Execute(ctx); err != nil {
-				errChan <- err
-			}
-		}(task)
+	// 1. 批量验证所有请求
+	if err := s.batchValidateRequests(requests); err != nil {
+		return nil, err
 	}
 
-	wg.Wait()
-	close(errChan)
-
-	// 检查错误
-	for err := range errChan {
-		if err != nil {
-			return nil, customErrors.NewInternalError("batch_create_failed", "Batch create users failed", err)
-		}
+	// 2. 批量检查邮箱重复（解决N+1查询问题）
+	emails := s.extractEmails(requests)
+	existingEmails, err := s.userRepo.FindExistingEmails(ctx, emails)
+	if err != nil {
+		return nil, customErrors.NewDatabaseError("check_existing_emails", "Failed to check existing emails", err)
 	}
 
-	return results, nil
+	// 3. 检查是否有重复邮箱
+	if len(existingEmails) > 0 {
+		return nil, customErrors.NewBusinessError("emails_exist",
+			fmt.Sprintf("Email addresses already exist: %v", existingEmails), nil)
+	}
+
+	// 4. 批量创建用户
+	users, err := s.batchPrepareUsers(requests)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.userRepo.BatchCreate(ctx, users); err != nil {
+		return nil, customErrors.NewDatabaseError("batch_create_users", "Failed to batch create users", err)
+	}
+
+	// 5. 转换为用户配置文件格式
+	profiles := s.batchConvertToProfiles(users)
+	return profiles, nil
 }
 
 // createSingleUser 创建单个用户（内部方法）
@@ -461,8 +460,18 @@ func (s *UserService) BatchUpdateUsers(ctx context.Context, updates map[uint]*Up
 		return nil, customErrors.NewValidationError("updates", "empty_request", "No users to update", "Batch update request is empty")
 	}
 
-	tasks := make([]concurrency.Task, 0, len(updates))
-	results := make([]*UserProfile, len(updates))
+	results := make([]*UserProfile, 0, len(updates))
+
+	// 使用并发安全的批量更新
+	if err := s.executeBatchUpdates(ctx, updates, &results); err != nil {
+		return nil, err
+	}
+
+	return results, nil
+}
+
+// executeBatchUpdates 执行并发批量更新
+func (s *UserService) executeBatchUpdates(ctx context.Context, updates map[uint]*UpdateUserRequest, results *[]*UserProfile) error {
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	errChan := make(chan error, len(updates))
@@ -470,25 +479,13 @@ func (s *UserService) BatchUpdateUsers(ctx context.Context, updates map[uint]*Up
 	for userID, req := range updates {
 		wg.Add(1)
 		userID, req := userID, req // 闭包捕获
-		task := &concurrency.DatabaseTask{
-			TaskID:       fmt.Sprintf("update_user_%d", userID),
-			TaskType:     "update_user",
-			TaskPriority: 2,
-			Operation: func(ctx context.Context) error {
-				return s.concurrentSafe.Execute(ctx, func() error {
-					return s.updateSingleUser(ctx, userID, req, &results, &mu)
-				})
-			},
-			Context: ctx,
-		}
-		tasks = append(tasks, task)
 
-		go func(task concurrency.Task) {
+		go func(id uint, request *UpdateUserRequest) {
 			defer wg.Done()
-			if err := task.Execute(ctx); err != nil {
+			if err := s.updateSingleUserSafe(ctx, id, request, results, &mu); err != nil {
 				errChan <- err
 			}
-		}(task)
+		}(userID, req)
 	}
 
 	wg.Wait()
@@ -497,11 +494,18 @@ func (s *UserService) BatchUpdateUsers(ctx context.Context, updates map[uint]*Up
 	// 检查错误
 	for err := range errChan {
 		if err != nil {
-			return nil, customErrors.NewInternalError("batch_update_failed", "Batch update users failed", err)
+			return customErrors.NewInternalError("batch_update_failed", "Batch update users failed", err)
 		}
 	}
 
-	return results, nil
+	return nil
+}
+
+// updateSingleUserSafe 并发安全的单用户更新
+func (s *UserService) updateSingleUserSafe(ctx context.Context, userID uint, req *UpdateUserRequest, results *[]*UserProfile, mu *sync.Mutex) error {
+	return s.concurrentSafe.Execute(ctx, func() error {
+		return s.updateSingleUser(ctx, userID, req, results, mu)
+	})
 }
 
 // updateSingleUser 更新单个用户（内部方法）
@@ -715,4 +719,65 @@ func (s *UserService) BatchChangePassword(ctx context.Context, changes map[uint]
 	}
 
 	return nil
+}
+
+// batchValidateRequests 批量验证用户请求
+func (s *UserService) batchValidateRequests(requests []*CreateUserRequest) error {
+	for i, req := range requests {
+		if err := s.validateUserRequest(req); err != nil {
+			return customErrors.NewValidationError(
+				fmt.Sprintf("request_%d", i),
+				"invalid_request",
+				fmt.Sprintf("Invalid request at index %d: %v", i, err),
+				"One or more requests are invalid",
+			)
+		}
+	}
+	return nil
+}
+
+// extractEmails 提取所有邮箱地址
+func (s *UserService) extractEmails(requests []*CreateUserRequest) []string {
+	emails := make([]string, len(requests))
+	for i, req := range requests {
+		emails[i] = req.Email
+	}
+	return emails
+}
+
+// batchPrepareUsers 批量准备用户数据
+func (s *UserService) batchPrepareUsers(requests []*CreateUserRequest) ([]*models.User, error) {
+	users := make([]*models.User, len(requests))
+
+	for i, req := range requests {
+		// 密码哈希
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return nil, customErrors.NewInternalError(
+				fmt.Sprintf("hash_password_%d", i),
+				"Failed to hash password",
+				err,
+			)
+		}
+
+		users[i] = &models.User{
+			Name:     req.Name,
+			Email:    req.Email,
+			Password: string(hashedPassword),
+			Role:     req.Role,
+			Phone:    req.Phone,
+			Status:   "active",
+		}
+	}
+
+	return users, nil
+}
+
+// batchConvertToProfiles 批量转换为用户配置文件
+func (s *UserService) batchConvertToProfiles(users []*models.User) []*UserProfile {
+	profiles := make([]*UserProfile, len(users))
+	for i, user := range users {
+		profiles[i] = s.toUserProfile(user)
+	}
+	return profiles
 }

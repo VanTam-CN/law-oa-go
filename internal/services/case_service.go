@@ -13,21 +13,28 @@ import (
 )
 
 type CaseService struct {
-	db *gorm.DB
+	db                  *gorm.DB
+	conflictService     ConflictService
+	enableConflictCheck bool
 }
 
-func NewCaseService(db *gorm.DB) *CaseService {
-	return &CaseService{db: db}
+func NewCaseService(db *gorm.DB, conflictService ConflictService, enableConflictCheck bool) *CaseService {
+	return &CaseService{
+		db:                  db,
+		conflictService:     conflictService,
+		enableConflictCheck: enableConflictCheck,
+	}
 }
 
 type CreateCaseRequest struct {
-	Title       string `json:"title" binding:"required,min=1,max=200"`
-	Description string `json:"description" binding:"max=2000"`
-	ClientID    uint   `json:"client_id" binding:"required"`
-	LawyerID    uint   `json:"lawyer_id" binding:"required"`
-	CaseType    string `json:"case_type" binding:"required,oneof=civil criminal commercial administrative"`
-	Priority    string `json:"priority" binding:"required,oneof=low medium high urgent"`
-	Status      string `json:"status" binding:"omitempty,oneof=pending active closed suspended"`
+	Title             string `json:"title" binding:"required,min=1,max=200"`
+	Description       string `json:"description" binding:"max=2000"`
+	ClientID          uint   `json:"client_id" binding:"required"`
+	LawyerID          uint   `json:"lawyer_id" binding:"required"`
+	CaseType          string `json:"case_type" binding:"required,oneof=civil criminal commercial administrative"`
+	Priority          string `json:"priority" binding:"required,oneof=low medium high urgent"`
+	Status            string `json:"status" binding:"omitempty,oneof=pending active closed suspended"`
+	SkipConflictCheck *bool  `json:"skip_conflict_check"` // 可选：跳过冲突检查
 }
 
 type UpdateCaseRequest struct {
@@ -40,18 +47,28 @@ type UpdateCaseRequest struct {
 }
 
 type CaseResponse struct {
-	ID          uint      `json:"id"`
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	ClientID    uint      `json:"client_id"`
-	ClientName  string    `json:"client_name"`
-	LawyerID    uint      `json:"lawyer_id"`
-	LawyerName  string    `json:"lawyer_name"`
-	CaseType    string    `json:"case_type"`
-	Priority    string    `json:"priority"`
-	Status      string    `json:"status"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID                  uint                          `json:"id"`
+	CaseNumber          string                        `json:"case_number,omitempty"`
+	Title               string                        `json:"title"`
+	Description         string                        `json:"description"`
+	ClientID            uint                          `json:"client_id"`
+	ClientName          string                        `json:"client_name,omitempty"`
+	LawyerID            uint                          `json:"lawyer_id"`
+	LawyerName          string                        `json:"lawyer_name,omitempty"`
+	CaseType            string                        `json:"case_type"`
+	Priority            string                        `json:"priority"`
+	Status              string                        `json:"status"`
+	StartDate           *time.Time                    `json:"start_date,omitempty"`
+	EndDate             *time.Time                    `json:"end_date,omitempty"`
+	CreatedAt           time.Time                     `json:"created_at"`
+	UpdatedAt           time.Time                     `json:"updated_at"`
+	CaseAmount          *float64                      `json:"case_amount,omitempty"`
+	ExpectedEndDate     *time.Time                    `json:"expected_end_date,omitempty"`
+	PrincipalInfo       string                        `json:"principal_info,omitempty"`
+	OpponentInfo        string                        `json:"opponent_info,omitempty"`
+	Client              *models.Client                `json:"client,omitempty"`
+	Lawyer              *models.User                  `json:"lawyer,omitempty"`
+	ConflictCheckResult *models.ConflictCheckResponse `json:"conflict_check_result,omitempty"`
 }
 
 type CaseListRequest struct {
@@ -80,6 +97,73 @@ func (s *CaseService) CreateCase(ctx context.Context, req *CreateCaseRequest) (*
 		return nil, err
 	}
 
+	// 执行冲突检测（如果需要）
+	conflictResult, err := s.performConflictCheck(ctx, req)
+	if err != nil {
+		fmt.Printf("Conflict check failed: %v\n", err)
+	}
+
+	// 创建案件模型
+	caseModel := s.buildCaseModel(req, conflictResult)
+
+	// 保存案件
+	if err := s.saveCase(ctx, caseModel); err != nil {
+		return nil, err
+	}
+
+	// 获取完整的案件信息并添加冲突检测结果
+	return s.getCaseWithConflictResult(context.Background(), caseModel.ID, conflictResult)
+}
+
+// performConflictCheck 执行冲突检测
+func (s *CaseService) performConflictCheck(ctx context.Context, req *CreateCaseRequest) (*models.ConflictCheckResponse, error) {
+	if !s.enableConflictCheck || (req.SkipConflictCheck != nil && *req.SkipConflictCheck) {
+		return nil, nil
+	}
+
+	// 获取客户信息
+	client, err := s.getClientForConflictCheck(ctx, req.ClientID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 构建冲突检测请求
+	conflictRequest := s.buildConflictCheckRequest(req, client)
+
+	// 执行冲突检测
+	return s.conflictService.CheckConflict(ctx, conflictRequest)
+}
+
+// getClientForConflictCheck 获取客户信息用于冲突检测
+func (s *CaseService) getClientForConflictCheck(ctx context.Context, clientID uint) (*models.Client, error) {
+	var client models.Client
+	if err := s.db.WithContext(ctx).First(&client, clientID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("client not found")
+		}
+		return nil, fmt.Errorf("failed to get client for conflict check: %w", err)
+	}
+	return &client, nil
+}
+
+// buildConflictCheckRequest 构建冲突检测请求
+func (s *CaseService) buildConflictCheckRequest(req *CreateCaseRequest, client *models.Client) *models.ConflictCheckRequest {
+	return &models.ConflictCheckRequest{
+		ClientID:                  fmt.Sprintf("%d", req.ClientID),
+		ClientName:                client.Name,
+		CaseName:                  req.Title,
+		CaseType:                  req.CaseType,
+		ClientType:                "individual", // 默认值，根据实际情况调整
+		UserID:                    0,            // TODO: 从上下文获取用户ID
+		RequestTime:               time.Now(),
+		SearchYears:               5, // 默认搜索5年
+		SearchDepth:               "deep",
+		IncludeCorporateRelations: true,
+	}
+}
+
+// buildCaseModel 构建案件模型
+func (s *CaseService) buildCaseModel(req *CreateCaseRequest, conflictResult *models.ConflictCheckResponse) *models.Case {
 	caseModel := &models.Case{
 		Title:       req.Title,
 		Description: req.Description,
@@ -90,15 +174,48 @@ func (s *CaseService) CreateCase(ctx context.Context, req *CreateCaseRequest) (*
 		Status:      "pending",
 	}
 
+	// 使用请求中的状态
 	if req.Status != "" {
 		caseModel.Status = req.Status
 	}
 
+	// 根据冲突检测结果调整状态
+	s.adjustCaseStatusByConflict(caseModel, conflictResult)
+
+	return caseModel
+}
+
+// adjustCaseStatusByConflict 根据冲突检测结果调整案件状态
+func (s *CaseService) adjustCaseStatusByConflict(caseModel *models.Case, conflictResult *models.ConflictCheckResponse) {
+	if conflictResult != nil && conflictResult.HasConflict {
+		if conflictResult.RiskAssessment != nil &&
+			(conflictResult.RiskAssessment.OverallRisk == "HIGH" || conflictResult.RiskAssessment.RequiresApproval) {
+			caseModel.Status = "pending" // 强制设置为待审核状态
+		}
+	}
+}
+
+// saveCase 保存案件
+func (s *CaseService) saveCase(ctx context.Context, caseModel *models.Case) error {
 	if err := s.db.WithContext(ctx).Create(caseModel).Error; err != nil {
-		return nil, fmt.Errorf("failed to create case: %w", err)
+		return fmt.Errorf("failed to create case: %w", err)
+	}
+	return nil
+}
+
+// getCaseWithConflictResult 获取案件信息并添加冲突检测结果
+func (s *CaseService) getCaseWithConflictResult(ctx context.Context, caseID uint, conflictResult *models.ConflictCheckResponse) (*CaseResponse, error) {
+	caseResponse, err := s.GetCaseByID(ctx, caseID)
+	if err != nil {
+		return nil, err
 	}
 
-	return s.GetCaseByID(context.Background(), caseModel.ID)
+	// 添加冲突检测结果
+	if conflictResult != nil {
+		caseResponse.ConflictCheckResult = conflictResult
+	}
+
+	return caseResponse, nil
 }
 
 func (s *CaseService) GetCaseByID(ctx context.Context, id uint) (*CaseResponse, error) {
@@ -352,16 +469,37 @@ func (s *CaseService) toCaseResponse(caseModel *models.Case) *CaseResponse {
 		CaseType:    caseModel.CaseType,
 		Priority:    caseModel.Priority,
 		Status:      caseModel.Status,
+		StartDate:   caseModel.StartDate,
+		EndDate:     caseModel.EndDate,
 		CreatedAt:   caseModel.CreatedAt,
 		UpdatedAt:   caseModel.UpdatedAt,
 	}
 
+	// 处理客户信息
 	if caseModel.Client != nil {
-		response.ClientName = caseModel.Client.Name
+		// 创建一个简化的客户对象用于序列化
+		response.Client = &models.Client{
+			ID:       caseModel.Client.ID,
+			Name:     caseModel.Client.ClientName, // 使用ClientName字段
+			Email:    caseModel.Client.Email,
+			Phone:    caseModel.Client.Phone,
+			Address:  caseModel.Client.Address,
+			Company:  caseModel.Client.Company,
+			Status:   caseModel.Client.Status,
+		}
+		// 优先使用company字段，如果为空则使用name字段
+		if caseModel.Client.Company != "" {
+			response.ClientName = caseModel.Client.Company
+		} else {
+			response.ClientName = caseModel.Client.ClientName
+		}
 	}
 
+	// 处理律师信息
 	if caseModel.Lawyer != nil {
 		response.LawyerName = caseModel.Lawyer.Name
+		// 包含完整的律师对象
+		response.Lawyer = caseModel.Lawyer
 	}
 
 	return response

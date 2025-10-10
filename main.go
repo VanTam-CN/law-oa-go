@@ -41,8 +41,9 @@ import (
 	"law-oa-go/internal/config"
 	"law-oa-go/internal/database"
 	"law-oa-go/internal/health"
-	"law-oa-go/internal/metrics"
 	"law-oa-go/internal/middleware"
+	"law-oa-go/internal/metrics"
+	"law-oa-go/internal/models"
 	"law-oa-go/internal/router"
 )
 
@@ -184,7 +185,7 @@ func main() {
 	app.Use(middleware.DefaultErrorHandlingMiddleware(slog.Default()))
 
 	// 应用性能监控中间件
-	app.Use(middleware.PrometheusMiddleware())
+	app.Use(metrics.PrometheusMiddleware())
 
 	// 应用缓存中间件
 	app.Use(middleware.CacheMiddleware(middleware.CacheConfig{
@@ -197,6 +198,20 @@ func main() {
 		database.GetOptimizedDB().DB,
 		database.GetCacheService().GetClient(),
 		database.GetElasticsearchClient())
+
+	// 初始化RBAC数据
+	if err := database.InitRBACData(database.GetOptimizedDB().DB); err != nil {
+		log.Printf("RBAC数据初始化失败: %v", err)
+	} else {
+		log.Println("RBAC数据初始化成功")
+	}
+
+	// 自动迁移数据库模型
+	if err := database.GetOptimizedDB().DB.AutoMigrate(&models.User{}); err != nil {
+		log.Printf("用户表自动迁移失败: %v", err)
+	} else {
+		log.Println("用户表自动迁移成功")
+	}
 
 	// 添加性能监控端点
 	app.GET("/metrics", gin.WrapH(promhttp.Handler()))
@@ -354,18 +369,17 @@ func main() {
 			"value": "这是一个缓存性能测试",
 		}
 
-		ctx := c.Request.Context()
 		key := "performance:test"
 
 		// 测试设置
-		if err := cacheService.Set(ctx, key, testData, time.Minute); err != nil {
+		if err := cacheService.Set(key, testData, time.Minute); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Cache set failed"})
 			return
 		}
 
 		// 测试获取
 		var result map[string]interface{}
-		if err := cacheService.Get(ctx, key, &result); err != nil {
+		if err := cacheService.Get(key, &result); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Cache get failed"})
 			return
 		}

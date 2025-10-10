@@ -298,6 +298,27 @@ class UserService {
       );
     }
   }
+
+  // 获取律师列表
+  async getLawyers(): Promise<UserListResponse> {
+    try {
+      return await apiClient.get<UserListResponse>("/admin/users", {
+        params: {
+          role: "lawyer",
+          page_size: 100, // 获取所有律师
+        },
+        useCache: true,
+        cacheTTL: 5 * 60 * 1000, // 5分钟缓存
+      });
+    } catch (error: any) {
+      console.error("获取律师列表失败:", error);
+      throw new AppError(
+        error.message || "获取律师列表失败",
+        error.code || "GET_LAWYERS_ERROR",
+        error.statusCode || 500,
+      );
+    }
+  }
 }
 
 // 导出单例实例
@@ -329,5 +350,6 @@ export const batchUpdateUserStatus = (userIds: number[], status: string) =>
   userService.batchUpdateUserStatus(userIds, status);
 export const exportUsers = (params?: UserListRequest) =>
   userService.exportUsers(params);
+export const getLawyers = () => userService.getLawyers();
 
 export default userService;

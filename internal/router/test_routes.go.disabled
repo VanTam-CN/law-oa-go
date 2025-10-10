@@ -1,0 +1,77 @@
+package router
+
+import (
+	"github.com/gin-gonic/gin"
+	"law-oa-go/internal/handlers"
+	"law-oa-go/internal/middleware"
+)
+
+// SetupTestRoutes 设置测试相关路由
+func SetupTestRoutes(r *gin.Engine, testHandler *handlers.TestHandler, authMiddleware gin.HandlerFunc) {
+	// 测试路由组
+	testGroup := r.Group("/api/v1/test")
+	testGroup.Use(authMiddleware) // 需要认证
+	testGroup.Use(middleware.RequestID()) // 添加请求ID
+	{
+		// 测试套件管理
+		suites := testGroup.Group("/suites")
+		{
+			suites.POST("", testHandler.CreateTestSuite)           // 创建测试套件
+			suites.GET("", testHandler.ListTestSuites)           // 获取测试套件列表
+			suites.GET("/:id", testHandler.GetTestSuite)          // 获取测试套件详情
+			suites.PUT("/:id", testHandler.UpdateTestSuite)       // 更新测试套件
+			suites.DELETE("/:id", testHandler.DeleteTestSuite)    // 删除测试套件
+			suites.POST("/:id/run", testHandler.RunTestSuite)     // 运行测试套件
+		}
+
+		// 测试用例管理
+		cases := testGroup.Group("/cases")
+		{
+			cases.POST("", testHandler.CreateTestCase)            // 创建测试用例
+			cases.GET("", testHandler.ListTestCases)            // 获取测试用例列表
+			cases.GET("/:id", testHandler.GetTestCase)          // 获取测试用例详情
+			cases.PUT("/:id", testHandler.UpdateTestCase)       // 更新测试用例
+			cases.DELETE("/:id", testHandler.DeleteTestCase)    // 删除测试用例
+			cases.POST("/:id/run", testHandler.RunTestCase)      // 运行测试用例
+		}
+
+		// 测试执行管理
+		executions := testGroup.Group("/executions")
+		{
+			executions.GET("", testHandler.ListExecutions)                    // 获取执行列表
+			executions.GET("/:id", testHandler.GetExecution)                  // 获取执行详情
+			executions.POST("/:id/cancel", testHandler.CancelExecution)        // 取消执行
+			executions.GET("/:id/results", testHandler.GetTestResults)        // 获取执行结果
+		}
+
+		// 测试结果管理
+		results := testGroup.Group("/results")
+		{
+			results.GET("/:id", testHandler.GetTestResult)  // 获取测试结果详情
+		}
+
+		// 系统监控
+		scheduler := testGroup.Group("/scheduler")
+		{
+			scheduler.GET("/status", testHandler.GetSchedulerStatus) // 获取调度器状态
+		}
+	}
+
+	// 公开的测试路由（不需要认证，用于健康检查等）
+	publicTestGroup := r.Group("/api/v1/test/public")
+	{
+		publicTestGroup.GET("/health", func(c *gin.Context) {
+			c.JSON(200, gin.H{
+				"status": "healthy",
+				"service": "testing-engine",
+				"version": "1.0.0",
+			})
+		})
+	}
+}
+
+// RegisterTestSwaggerDocs 注册测试相关的Swagger文档
+func RegisterTestSwaggerDocs() {
+	// 这里可以添加Swagger文档注册逻辑
+	// 例如使用swaggo库注册API文档
+}

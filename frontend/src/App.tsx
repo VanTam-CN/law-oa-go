@@ -39,10 +39,16 @@ import ProjectManagementPage from "./pages/ProjectManagementPage";
 import FinanceManagementPage from "./pages/FinanceManagementPage";
 import FileManagementPage from "./pages/FileManagementPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
+import ErrorBoundary from "./components/ErrorBoundary";
+import ToastProvider, { useToast } from "./components/Toast";
+import errorHandler from "./utils/errorHandler";
 import "./App.css";
 
 // Import Font Awesome CSS
 import "font-awesome/css/font-awesome.min.css";
+
+// 设置错误处理器
+errorHandler.setToastEnabled(true);
 
 // Auth wrapper component
 const AuthWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -56,11 +62,14 @@ const AuthWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   useEffect(() => {
     console.log('AuthWrapper state:', { token, loading, isAuthenticated, error, isDevMode });
-    if (token && !isAuthenticated && !loading) {
+    // 在开发模式下跳过getCurrentUser调用，避免不必要的API请求和重定向
+    if (token && !isAuthenticated && !loading && !isDevMode) {
       console.log('Getting current user...');
       dispatch(getCurrentUser());
+    } else if (isDevMode && token) {
+      console.log('🛠️ 开发者模式：跳过getCurrentUser调用');
     }
-  }, [token, isAuthenticated, loading, dispatch]);
+  }, [token, isAuthenticated, loading, dispatch, isDevMode]);
 
   // 开发者模式下直接渲染内容
   if (isDevMode) {
@@ -84,49 +93,53 @@ const AuthWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 function App() {
   return (
-    <Provider store={store}>
-      <DevToolsReminder />
-      <AuthWrapper>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/" element={<AppLayout />}>
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/clients" element={<ClientsPage />} />
-            <Route path="/cases" element={<CasesPage />} />
-            <Route path="/case-management" element={<CaseManagementPage />} />
-            <Route path="/case-detail/:id" element={<CaseDetailPage />} />
-            <Route path="/create-case" element={<CreateCasePage />} />
-            <Route path="/users" element={<UsersPage />} />
-            <Route path="/admin/users" element={<AdminUsersPage />} />
-            <Route path="/lawyer-management" element={<LawyerManagementPage />} />
-            <Route path="/client-management" element={<ClientManagementPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/documents" element={<DocumentsPage />} />
-            <Route path="/calendar" element={<CalendarPage />} />
-            <Route path="/reports" element={<ReportsPage />} />
-            <Route path="/tasks" element={<TasksPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/help" element={<HelpPage />} />
-            <Route path="/access-denied" element={<AccessDeniedPage />} />
-            <Route path="/approval" element={<ApprovalManagementPage />} />
-            <Route path="/approval-detail/:id" element={<ApprovalDetailPage />} />
-            <Route path="/create-approval" element={<CreateApprovalPage />} />
-            <Route path="/tools" element={<ToolsPage />} />
-            <Route path="/fee-calculator" element={<LitigationFeeCalculatorPage />} />
-            <Route path="/law-search" element={<LawSearchPage />} />
-            <Route path="/project" element={<ProjectManagementPage />} />
-            <Route path="/finance" element={<FinanceManagementPage />} />
-            <Route path="/file" element={<FileManagementPage />} />
-            <Route path="/analytics" element={<AnalyticsPage />} />
-          </Route>
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </AuthWrapper>
-    </Provider>
+    <ErrorBoundary>
+      <Provider store={store}>
+        <ToastProvider>
+          <DevToolsReminder />
+          <AuthWrapper>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/" element={<AppLayout />}>
+                <Route index element={<Navigate to="/dashboard" replace />} />
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/clients" element={<ClientsPage />} />
+                <Route path="/cases" element={<CasesPage />} />
+                <Route path="/case-management" element={<CaseManagementPage />} />
+                <Route path="/case-detail/:id" element={<CaseDetailPage />} />
+                <Route path="/create-case" element={<CreateCasePage />} />
+                <Route path="/users" element={<UsersPage />} />
+                <Route path="/admin/users" element={<AdminUsersPage />} />
+                <Route path="/lawyer-management" element={<LawyerManagementPage />} />
+                <Route path="/client-management" element={<ClientManagementPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/documents" element={<DocumentsPage />} />
+                <Route path="/calendar" element={<CalendarPage />} />
+                <Route path="/reports" element={<ReportsPage />} />
+                <Route path="/tasks" element={<TasksPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/help" element={<HelpPage />} />
+                <Route path="/access-denied" element={<AccessDeniedPage />} />
+                <Route path="/approval" element={<ApprovalManagementPage />} />
+                <Route path="/approval-detail/:id" element={<ApprovalDetailPage />} />
+                <Route path="/create-approval" element={<CreateApprovalPage />} />
+                <Route path="/tools" element={<ToolsPage />} />
+                <Route path="/fee-calculator" element={<LitigationFeeCalculatorPage />} />
+                <Route path="/law-search" element={<LawSearchPage />} />
+                <Route path="/project" element={<ProjectManagementPage />} />
+                <Route path="/finance" element={<FinanceManagementPage />} />
+                <Route path="/file" element={<FileManagementPage />} />
+                <Route path="/analytics" element={<AnalyticsPage />} />
+              </Route>
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+          </AuthWrapper>
+        </ToastProvider>
+      </Provider>
+    </ErrorBoundary>
   );
 }
 

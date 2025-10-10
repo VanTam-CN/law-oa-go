@@ -1,0 +1,122 @@
+# 代码审查工具 Dockerfile
+# Law OA Go 项目 - 包含所有静态分析工具和配置
+
+FROM golang:1.23-alpine AS go-builder
+
+# 设置环境变量
+ENV GOPROXY=https://goproxy.io,direct
+ENV GOSUMDB=off
+ENV CGO_ENABLED=0
+
+# 安装必要的系统包
+RUN apk add --no-cache \
+    git \
+    curl \
+    wget \
+    bash \
+    jq \
+    ca-certificates \
+    tzdata \
+    nodejs \
+    npm \
+    gcc \
+    musl-dev
+
+# 设置工作目录
+WORKDIR /workspace
+
+# 复制 Go 模块文件
+COPY go.mod go.sum ./
+
+# 下载依赖
+RUN go mod download
+
+# 安装 Go 静态分析工具
+RUN go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest && \
+    go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest && \
+    go install honnef.co/go/tools/cmd/staticcheck@latest && \
+    go install golang.org/x/vuln/cmd/govulncheck@latest && \
+    go install github.com/fzipp/gocyclo/cmd/gocyclo@latest && \
+    go install github.com/gordonklaus/ineffassign@latest && \
+    go install github.com/daixiang0/gci@latest
+
+# 安装前端工具
+RUN npm install -g \
+    eslint \
+    @typescript-eslint/parser \
+    @typescript-eslint/eslint-plugin \
+    eslint-plugin-react \
+    eslint-plugin-react-hooks \
+    eslint-plugin-jsx-a11y \
+    eslint-plugin-import \
+    eslint-plugin-security \
+    eslint-plugin-sonarjs \
+    prettier \
+    @typescript-eslint/typescript-estree
+
+# 复制项目配置文件
+COPY .golangci.yml sonar-project.properties ./
+
+# 复制脚本文件
+COPY scripts/ ./scripts/
+
+# 设置脚本权限
+RUN chmod +x scripts/*.sh
+
+# 创建必要的目录
+RUN mkdir -p reports/quality reports/sonar cache
+
+# 代码审查工具基础镜像
+FROM alpine:3.18 AS code-review
+
+# 安装运行时依赖
+RUN apk add --no-cache \
+    git \
+    curl \
+    wget \
+    bash \
+    jq \
+    ca-certificates \
+    nodejs \
+    npm \
+    openssh-client
+
+# 从构建阶段复制工具
+COPY --from=go-builder /go/bin/* /usr/local/bin/
+
+# 从构建阶段复制 node_modules
+COPY --from=go-builder /usr/local/lib/node_modules /usr/local/lib/node_modules
+COPY --from=go-builder /usr/local/bin/node /usr/local/bin/
+COPY --from=go-builder /usr/local/bin/npm /usr/local/bin/
+
+# 创建工作目录
+WORKDIR /workspace
+
+# 复制配置文件
+COPY .golangci.yml sonar-project.properties ./
+COPY scripts/ ./scripts/
+
+# 创建必要的目录
+RUN mkdir -p reports/quality reports/sonar cache
+
+# 设置环境变量
+ENV PATH="/usr/local/bin:/usr/local/sbin:/usr/sbin:/sbin:/bin:/usr/games:/usr/local/games:/workspace/scripts"
+ENV GOCACHE=/cache/go-build
+ENV GOMODCACHE=/cache/go-mod
+
+# 创建非 root 用户
+RUN addgroup -g 1000 reviewer && \
+    adduser -D -s /bin/bash -u 1000 -G reviewer reviewer
+
+# 设置目录权限
+RUN chown -R reviewer:reviewer /workspace /cache /usr/local/lib/node_modules
+
+# 切换到非 root 用户
+USER reviewer
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD golangci-lint version || exit 1
+
+# 默认命令
+CMD ["/bin/bash"]

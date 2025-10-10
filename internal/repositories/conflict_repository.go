@@ -1,0 +1,322 @@
+package repositories
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"time"
+
+	"law-oa-go/internal/models"
+	"gorm.io/gorm"
+	"github.com/redis/go-redis/v9"
+)
+
+// ConflictRepository 冲突检测数据仓库接口
+type ConflictRepository interface {
+	// 保存冲突检测记录
+	SaveCheckRecord(ctx context.Context, record *models.ConflictCheckRecord) error
+	// 获取冲突检测历史
+	GetCheckHistory(ctx context.Context, clientID string, limit int) ([]*models.ConflictCheckRecord, error)
+	// 获取冲突案例
+	GetConflictCases(ctx context.Context, params *ConflictSearchParams) ([]*models.ConflictCase, error)
+	// 获取客户关系
+	GetClientRelations(ctx context.Context, clientID string) ([]*models.ClientRelation, error)
+	// 保存冲突案例
+	SaveConflictCases(ctx context.Context, cases []*models.ConflictCase) error
+	// 获取冲突规则
+	GetConflictRules(ctx context.Context, activeOnly bool) ([]*models.ConflictRule, error)
+	// 保存冲突规则
+	SaveConflictRule(ctx context.Context, rule *models.ConflictRule) error
+	// 更新冲突规则
+	UpdateConflictRule(ctx context.Context, rule *models.ConflictRule) error
+	// 获取MCP标准
+	GetMCPStandards(ctx context.Context, activeOnly bool) (*models.MCPStandards, error)
+	// 保存MCP标准
+	SaveMCPStandards(ctx context.Context, standards *models.MCPStandards) error
+	// 获取统计信息
+	GetConflictStats(ctx context.Context, clientID string) (*ConflictStats, error)
+}
+
+// ConflictSearchParams 冲突案例搜索参数
+type ConflictSearchParams struct {
+	ClientID     string    `json:"clientId"`
+	CaseType     string    `json:"caseType"`
+	RiskLevel    string    `json:"riskLevel"`
+	StartDate    time.Time `json:"startDate"`
+	EndDate      time.Time `json:"endDate"`
+	Page         int       `json:"page"`
+	PageSize     int       `json:"pageSize"`
+}
+
+// ConflictStats 冲突检测统计
+type ConflictStats struct {
+	TotalChecks     int64   `json:"totalChecks"`
+	ConflictChecks  int64   `json:"conflictChecks"`
+	HighRiskChecks  int64   `json:"highRiskChecks"`
+	AverageDuration float64 `json:"averageDuration"`
+	LastCheckTime   time.Time `json:"lastCheckTime"`
+}
+
+// conflictRepository 冲突检测数据仓库实现
+type conflictRepository struct {
+	db    *gorm.DB
+	redis *redis.Client
+}
+
+// NewConflictRepository 创建新的冲突检测数据仓库
+func NewConflictRepository(db *gorm.DB, redis *redis.Client) ConflictRepository {
+	return &conflictRepository{
+		db:    db,
+		redis: redis,
+	}
+}
+
+// SaveCheckRecord 保存冲突检测记录
+func (r *conflictRepository) SaveCheckRecord(ctx context.Context, record *models.ConflictCheckRecord) error {
+	if err := r.db.WithContext(ctx).Create(record).Error; err != nil {
+		return fmt.Errorf("保存冲突检测记录失败: %w", err)
+	}
+
+	// 缓存最近的结果
+	if r.redis != nil {
+		cacheKey := fmt.Sprintf("conflict:last_check:%s", record.ClientID)
+		r.redis.Set(ctx, cacheKey, record, 24*time.Hour)
+	}
+
+	return nil
+}
+
+// GetCheckHistory 获取冲突检测历史
+func (r *conflictRepository) GetCheckHistory(ctx context.Context, clientID string, limit int) ([]*models.ConflictCheckRecord, error) {
+	var records []*models.ConflictCheckRecord
+
+	query := r.db.WithContext(ctx).Where("client_id = ?", clientID).
+		Order("check_time DESC")
+
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
+
+	if err := query.Find(&records).Error; err != nil {
+		return nil, fmt.Errorf("获取冲突检测历史失败: %w", err)
+	}
+
+	return records, nil
+}
+
+// GetConflictCases 获取冲突案例
+func (r *conflictRepository) GetConflictCases(ctx context.Context, params *ConflictSearchParams) ([]*models.ConflictCase, error) {
+	var cases []*models.ConflictCase
+
+	query := r.db.WithContext(ctx).Model(&models.ConflictCase{})
+
+	if params.ClientID != "" {
+		query = query.Where("client_id = ?", params.ClientID)
+	}
+	if params.CaseType != "" {
+		query = query.Where("case_type = ?", params.CaseType)
+	}
+	if params.RiskLevel != "" {
+		query = query.Where("risk_level = ?", params.RiskLevel)
+	}
+	if !params.StartDate.IsZero() {
+		query = query.Where("created_at >= ?", params.StartDate)
+	}
+	if !params.EndDate.IsZero() {
+		query = query.Where("created_at <= ?", params.EndDate)
+	}
+
+	// 分页
+	if params.Page > 0 && params.PageSize > 0 {
+		offset := (params.Page - 1) * params.PageSize
+		query = query.Offset(offset).Limit(params.PageSize)
+	}
+
+	// 按时间倒序
+	query = query.Order("created_at DESC")
+
+	if err := query.Find(&cases).Error; err != nil {
+		return nil, fmt.Errorf("获取冲突案例失败: %w", err)
+	}
+
+	return cases, nil
+}
+
+// GetClientRelations 获取客户关系
+func (r *conflictRepository) GetClientRelations(ctx context.Context, clientID string) ([]*models.ClientRelation, error) {
+	var relations []*models.ClientRelation
+
+	// 缓存检查
+	if r.redis != nil {
+		cacheKey := fmt.Sprintf("conflict:client_relations:%s", clientID)
+		if cached, err := r.redis.Get(ctx, cacheKey).Result(); err == nil {
+			// 这里应该从缓存反序列化，简化处理
+			_ = cached
+		}
+	}
+
+	if err := r.db.WithContext(ctx).
+		Where("client_id = ? AND active = ?", clientID, true).
+		Find(&relations).Error; err != nil {
+		return nil, fmt.Errorf("获取客户关系失败: %w", err)
+	}
+
+	// 缓存结果
+	if r.redis != nil && len(relations) > 0 {
+		cacheKey := fmt.Sprintf("conflict:client_relations:%s", clientID)
+		r.redis.Set(ctx, cacheKey, relations, 2*time.Hour)
+	}
+
+	return relations, nil
+}
+
+// SaveConflictCases 保存冲突案例
+func (r *conflictRepository) SaveConflictCases(ctx context.Context, cases []*models.ConflictCase) error {
+	if len(cases) == 0 {
+		return nil
+	}
+
+	// 批量插入
+	if err := r.db.WithContext(ctx).CreateInBatches(cases, 100).Error; err != nil {
+		return fmt.Errorf("批量保存冲突案例失败: %w", err)
+	}
+
+	return nil
+}
+
+// GetConflictRules 获取冲突规则
+func (r *conflictRepository) GetConflictRules(ctx context.Context, activeOnly bool) ([]*models.ConflictRule, error) {
+	var rules []*models.ConflictRule
+
+	query := r.db.WithContext(ctx).Model(&models.ConflictRule{})
+	if activeOnly {
+		query = query.Where("active = ?", true)
+	}
+
+	// 按优先级排序
+	query = query.Order("priority DESC")
+
+	if err := query.Find(&rules).Error; err != nil {
+		return nil, fmt.Errorf("获取冲突规则失败: %w", err)
+	}
+
+	return rules, nil
+}
+
+// SaveConflictRule 保存冲突规则
+func (r *conflictRepository) SaveConflictRule(ctx context.Context, rule *models.ConflictRule) error {
+	// 验证规则
+	if err := rule.Validate(); err != nil {
+		return fmt.Errorf("规则验证失败: %w", err)
+	}
+
+	if err := r.db.WithContext(ctx).Create(rule).Error; err != nil {
+		return fmt.Errorf("保存冲突规则失败: %w", err)
+	}
+
+	// 清除缓存
+	if r.redis != nil {
+		r.redis.Del(ctx, "conflict:rules:active")
+	}
+
+	return nil
+}
+
+// UpdateConflictRule 更新冲突规则
+func (r *conflictRepository) UpdateConflictRule(ctx context.Context, rule *models.ConflictRule) error {
+	// 验证规则
+	if err := rule.Validate(); err != nil {
+		return fmt.Errorf("规则验证失败: %w", err)
+	}
+
+	if err := r.db.WithContext(ctx).Save(rule).Error; err != nil {
+		return fmt.Errorf("更新冲突规则失败: %w", err)
+	}
+
+	// 清除缓存
+	if r.redis != nil {
+		r.redis.Del(ctx, "conflict:rules:active")
+	}
+
+	return nil
+}
+
+// GetMCPStandards 获取MCP标准
+func (r *conflictRepository) GetMCPStandards(ctx context.Context, activeOnly bool) (*models.MCPStandards, error) {
+	var standards models.MCPStandards
+
+	query := r.db.WithContext(ctx).Model(&models.MCPStandards{})
+	if activeOnly {
+		query = query.Where("active = ?", true)
+	}
+
+	if err := query.Order("last_updated DESC").First(&standards).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrMCPStandardsNotFound
+		}
+		return nil, fmt.Errorf("获取MCP标准失败: %w", err)
+	}
+
+	return &standards, nil
+}
+
+// SaveMCPStandards 保存MCP标准
+func (r *conflictRepository) SaveMCPStandards(ctx context.Context, standards *models.MCPStandards) error {
+	if err := r.db.WithContext(ctx).Save(standards).Error; err != nil {
+		return fmt.Errorf("保存MCP标准失败: %w", err)
+	}
+
+	// 清除缓存
+	if r.redis != nil {
+		r.redis.Del(ctx, "conflict:mcp_standards:active")
+	}
+
+	return nil
+}
+
+// GetConflictStats 获取统计信息
+func (r *conflictRepository) GetConflictStats(ctx context.Context, clientID string) (*ConflictStats, error) {
+	stats := &ConflictStats{}
+
+	// 基础查询
+	query := r.db.WithContext(ctx).Model(&models.ConflictCheckRecord{})
+	if clientID != "" {
+		query = query.Where("client_id = ?", clientID)
+	}
+
+	// 总检查次数
+	if err := query.Count(&stats.TotalChecks).Error; err != nil {
+		return nil, fmt.Errorf("获取总检查次数失败: %w", err)
+	}
+
+	// 有冲突的检查次数
+	if err := query.Where("has_conflict = ?", true).Count(&stats.ConflictChecks).Error; err != nil {
+		return nil, fmt.Errorf("获取冲突检查次数失败: %w", err)
+	}
+
+	// 高风险检查次数
+	if err := query.Where("risk_level IN ?", []string{"HIGH", "CRITICAL"}).Count(&stats.HighRiskChecks).Error; err != nil {
+		return nil, fmt.Errorf("获取高风险检查次数失败: %w", err)
+	}
+
+	// 平均持续时间
+	var avgDuration float64
+	if err := query.Select("AVG(duration)").Scan(&avgDuration).Error; err != nil {
+		return nil, fmt.Errorf("获取平均持续时间失败: %w", err)
+	}
+	stats.AverageDuration = avgDuration
+
+	// 最后检查时间
+	var lastCheck time.Time
+	if err := query.Select("MAX(check_time)").Scan(&lastCheck).Error; err != nil {
+		return nil, fmt.Errorf("获取最后检查时间失败: %w", err)
+	}
+	stats.LastCheckTime = lastCheck
+
+	return stats, nil
+}
+
+// 自定义错误
+var (
+	ErrMCPStandardsNotFound = errors.New("MCP标准未找到")
+)

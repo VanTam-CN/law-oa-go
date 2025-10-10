@@ -80,7 +80,7 @@ func NewOptimizedDatabase(cfg *config.Config) (*OptimizedDatabase, error) {
 		db, err = gorm.Open(sqlite.Open(dsn), gormConfig)
 	} else {
 		// MySQL连接（默认）
-		dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=%v&loc=%s",
+		dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=%v&loc=%s&tls=skip-verify",
 			cfg.Database.Username,
 			cfg.Database.Password,
 			cfg.Database.Host,

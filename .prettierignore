@@ -1,0 +1,43 @@
+# 依赖
+node_modules/
+vendor/
+
+# 构建输出
+dist/
+build/
+coverage/
+
+# 日志文件
+*.log
+
+# 环境文件
+.env*
+
+# 数据库迁移
+migrations/
+
+# 文档
+docs/
+*.md
+
+# 配置文件
+*.config.js
+*.config.ts
+
+# 测试文件
+**/test-results/
+**/playwright-report/
+**/test-results-legacy/
+
+# 临时文件
+*.tmp
+*.temp
+
+# Go相关
+*.pb.go
+*.prof
+
+# 前端框架特定文件
+.next/
+.nuxt/
+.svelte-kit/

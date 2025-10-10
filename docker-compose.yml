@@ -1,5 +1,14 @@
 version: '3.8'
 
+# 网络配置
+networks:
+  law-oa-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16
+
 services:
   # Go 应用 (后端)
   backend:
@@ -19,7 +28,7 @@ services:
       - TZ=Asia/Shanghai
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - DB_HOST=mysql
-      - DB_PORT=3306
+      - DB_PORT=33060
       - DB_USER=root
       - DB_PASSWORD=password
       - DB_NAME=law_oa
@@ -68,10 +77,10 @@ services:
 
   # MySQL 数据库
   mysql:
-    image: mysql:8.0
+    image: law-oa/mysql:8.0
     container_name: law-oa-mysql
     ports:
-      - "3306:3306"
+      - "33060:3306"
     environment:
       - MYSQL_ROOT_PASSWORD=password
       - MYSQL_DATABASE=law_oa
@@ -93,7 +102,7 @@ services:
 
   # Redis 缓存
   redis:
-    image: redis:7-alpine
+    image: law-oa/redis:7-alpine
     container_name: law-oa-redis
     ports:
       - "6379:6379"
@@ -111,7 +120,7 @@ services:
 
   # Elasticsearch
   elasticsearch:
-    image: elasticsearch:8.8.0
+    image: law-oa/elasticsearch:8.8.0
     container_name: law-oa-elasticsearch
     ports:
       - "9200:9200"
@@ -128,7 +137,7 @@ services:
 
   # Kibana (可选，用于 Elasticsearch 管理)
   kibana:
-    image: kibana:8.8.0
+    image: law-oa/kibana:8.8.0
     container_name: law-oa-kibana
     ports:
       - "5601:5601"

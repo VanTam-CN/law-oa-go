@@ -17,10 +17,16 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  # 代码质量检查
-  quality-check:
-    name: 代码质量检查
+  # 集成静态分析
+  integrated-static-analysis:
+    name: 集成静态分析
     runs-on: ubuntu-latest
+    outputs:
+      go-issues: ${{ steps.analysis.outputs.go-issues }}
+      go-critical: ${{ steps.analysis.outputs.go-critical }}
+      frontend-errors: ${{ steps.analysis.outputs.frontend-errors }}
+      quality-gate: ${{ steps.analysis.outputs.quality-gate }}
+      gate-passed: ${{ steps.analysis.outputs.gate-passed }}
     steps:
     - name: 检出代码
       uses: actions/checkout@v4
@@ -30,6 +36,15 @@ jobs:
       with:
         go-version: ${{ env.GO_VERSION }}
         cache: true
+
+    - name: 设置Node.js环境
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: |
+          frontend/package-lock.json
+          frontend-vue/package-lock.json
 
     - name: 检查Go版本
       run: |
@@ -41,33 +56,52 @@ jobs:
         go mod download
         go mod tidy
 
-    - name: 代码格式化检查
+    - name: 安装静态分析工具
       run: |
-        go fmt ./...
-        if [ -n "$(gofmt -l .)" ]; then
-          echo "以下文件需要格式化:"
-          gofmt -l .
-          exit 1
+        # Go 工具
+        go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+        go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
+        go install golang.org/x/vuln/cmd/govulncheck@latest
+        go install honnef.co/go/tools/cmd/staticcheck@latest
+        
+        # Node.js 工具
+        npm install -g eslint @typescript-eslint/parser @typescript-eslint/eslint-plugin
+
+    - name: 安装前端依赖
+      run: |
+        if [ -d "frontend" ]; then
+          cd frontend && npm ci
+        fi
+        if [ -d "frontend-vue" ]; then
+          cd frontend-vue && npm ci
         fi
 
-    - name: 代码检查
+    - name: 运行集成静态分析
+      id: analysis
       run: |
-        go vet ./...
-        if command -v golangci-lint &> /dev/null; then
-          golangci-lint run
-        fi
+        chmod +x scripts/ci-static-analysis.sh
+        ./scripts/ci-static-analysis.sh
 
-    - name: 安全检查
+    - name: 上传分析报告
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: static-analysis-reports-${{ github.run_number }}
+        path: ci-reports/
+        retention-days: 30
+
+    - name: 生成分析摘要
+      if: always()
       run: |
-        if command -v gosec &> /dev/null; then
-          gosec ./...
+        if [ -f "ci-reports/ci-summary.md" ]; then
+          cat ci-reports/ci-summary.md >> $GITHUB_STEP_SUMMARY
         fi
 
   # 运行单元测试和集成测试
   test:
     name: 运行测试
     runs-on: ubuntu-latest
-    needs: quality-check
+    needs: integrated-static-analysis
     strategy:
       matrix:
         test-type: [unit, integration]
@@ -122,7 +156,7 @@ jobs:
   benchmark:
     name: 基准测试
     runs-on: ubuntu-latest
-    needs: quality-check
+    needs: integrated-static-analysis
     steps:
     - name: 检出代码
       uses: actions/checkout@v4
@@ -211,7 +245,7 @@ jobs:
   fuzzing:
     name: Fuzzing测试
     runs-on: ubuntu-latest
-    needs: quality-check
+    needs: integrated-static-analysis
     if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event.schedule == '0 2 * * *'
     steps:
     - name: 检出代码

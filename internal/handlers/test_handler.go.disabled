@@ -1,0 +1,1436 @@
+package handlers
+
+import (
+	"context"
+	"strconv"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"law-oa-go/internal/common"
+	"law-oa-go/internal/middleware"
+	"law-oa-go/internal/testing"
+)
+
+// TestHandler 测试处理器
+type TestHandler struct {
+	testService testing.TestService
+	logger      middleware.Logger
+}
+
+// NewTestHandler 创建测试处理器
+func NewTestHandler(testService testing.TestService, logger middleware.Logger) *TestHandler {
+	return &TestHandler{
+		testService: testService,
+		logger:      logger,
+	}
+}
+
+// 测试套件相关请求/响应结构
+
+// CreateTestSuiteRequest 创建测试套件请求
+type CreateTestSuiteRequest struct {
+	Name        string                 `json:"name" binding:"required,min=1,max=100"`
+	Description string                 `json:"description" binding:"max=500"`
+	Environment string                 `json:"environment" binding:"omitempty,oneof=dev test staging prod"`
+	Timeout     int                    `json:"timeout" binding:"omitempty,min=1,max=3600"` // 秒
+	Parallel    bool                   `json:"parallel"`
+	MaxWorkers  int                    `json:"max_workers" binding:"omitempty,min=1,max=100"`
+	Retries     int                    `json:"retries" binding:"omitempty,min=0,max=10"`
+	RetryDelay  int                    `json:"retry_delay" binding:"omitempty,min=1,max=300"` // 秒
+	Variables   map[string]interface{} `json:"variables"`
+	Headers     map[string]string      `json:"headers"`
+	Tags        []string               `json:"tags"`
+}
+
+// UpdateTestSuiteRequest 更新测试套件请求
+type UpdateTestSuiteRequest struct {
+	Name        string                 `json:"name" binding:"omitempty,min=1,max=100"`
+	Description string                 `json:"description" binding:"omitempty,max=500"`
+	Environment string                 `json:"environment" binding:"omitempty,oneof=dev test staging prod"`
+	Timeout     int                    `json:"timeout" binding:"omitempty,min=1,max=3600"`
+	Parallel    bool                   `json:"parallel"`
+	MaxWorkers  int                    `json:"max_workers" binding:"omitempty,min=1,max=100"`
+	Retries     int                    `json:"retries" binding:"omitempty,min=0,max=10"`
+	RetryDelay  int                    `json:"retry_delay" binding:"omitempty,min=1,max=300"`
+	Variables   map[string]interface{} `json:"variables"`
+	Headers     map[string]string      `json:"headers"`
+	Tags        []string               `json:"tags"`
+}
+
+// TestSuiteListResponse 测试套件列表响应
+type TestSuiteListResponse struct {
+	ID          string                 `json:"id"`
+	Name        string                 `json:"name"`
+	Description string                 `json:"description"`
+	Environment string                 `json:"environment"`
+	Status      string                 `json:"status"`
+	TestCount   int                    `json:"test_count"`
+	CreatedAt   time.Time              `json:"created_at"`
+	UpdatedAt   time.Time              `json:"updated_at"`
+	Tags        []string               `json:"tags"`
+}
+
+// 测试用例相关请求/响应结构
+
+// CreateTestCaseRequest 创建测试用例请求
+type CreateTestCaseRequest struct {
+	SuiteID     string                 `json:"suite_id" binding:"required"`
+	Name        string                 `json:"name" binding:"required,min=1,max=100"`
+	Description string                 `json:"description" binding:"max=500"`
+	Type        string                 `json:"type" binding:"required,oneof=api ui performance integration e2e"`
+	Method      string                 `json:"method" binding:"omitempty,oneof=GET POST PUT DELETE PATCH HEAD OPTIONS"`
+	URL         string                 `json:"url" binding:"required"`
+	Headers     map[string]string      `json:"headers"`
+	Body        interface{}            `json:"body"`
+	Timeout     int                    `json:"timeout" binding:"omitempty,min=1,max=3600"`
+	Tags        []string               `json:"tags"`
+	Metadata    map[string]interface{} `json:"metadata"`
+	Expected    *TestExpectedRequest   `json:"expected"`
+	Steps       []TestStepRequest      `json:"steps"`
+	Setup       []TestStepRequest      `json:"setup"`
+	Teardown    []TestStepRequest      `json:"teardown"`
+}
+
+// UpdateTestCaseRequest 更新测试用例请求
+type UpdateTestCaseRequest struct {
+	SuiteID     string                 `json:"suite_id" binding:"omitempty"`
+	Name        string                 `json:"name" binding:"omitempty,min=1,max=100"`
+	Description string                 `json:"description" binding:"omitempty,max=500"`
+	Type        string                 `json:"type" binding:"omitempty,oneof=api ui performance integration e2e"`
+	Method      string                 `json:"method" binding:"omitempty,oneof=GET POST PUT DELETE PATCH HEAD OPTIONS"`
+	URL         string                 `json:"url" binding:"omitempty"`
+	Headers     map[string]string      `json:"headers"`
+	Body        interface{}            `json:"body"`
+	Timeout     int                    `json:"timeout" binding:"omitempty,min=1,max=3600"`
+	Tags        []string               `json:"tags"`
+	Metadata    map[string]interface{} `json:"metadata"`
+	Expected    *TestExpectedRequest   `json:"expected"`
+	Steps       []TestStepRequest      `json:"steps"`
+	Setup       []TestStepRequest      `json:"setup"`
+	Teardown    []TestStepRequest      `json:"teardown"`
+}
+
+// TestExpectedRequest 测试期望请求
+type TestExpectedRequest struct {
+	Status       int                    `json:"status" binding:"omitempty,min=100,max=599"`
+	Body         interface{}            `json:"body"`
+	Headers      map[string]string      `json:"headers"`
+	BodyContains []string               `json:"body_contains"`
+	ResponseTime int                    `json:"response_time"` // 毫秒
+	ContentType  string                 `json:"content_type"`
+	Metadata     map[string]interface{} `json:"metadata"`
+}
+
+// TestStepRequest 测试步骤请求
+type TestStepRequest struct {
+	Name       string                 `json:"name" binding:"required,min=1,max=100"`
+	Type       string                 `json:"type" binding:"required,oneof=navigate click fill wait assert screenshot javascript"`
+	Action     string                 `json:"action" binding:"required"`
+	Target     string                 `json:"target"`
+	Value      interface{}            `json:"value"`
+	Expected   interface{}            `json:"expected"`
+	Wait       int                    `json:"wait"` // 毫秒
+	Screenshot bool                   `json:"screenshot"`
+	Metadata   map[string]interface{} `json:"metadata"`
+}
+
+// TestCaseListResponse 测试用例列表响应
+type TestCaseListResponse struct {
+	ID          string                 `json:"id"`
+	SuiteID     string                 `json:"suite_id"`
+	Name        string                 `json:"name"`
+	Description string                 `json:"description"`
+	Type        string                 `json:"type"`
+	Method      string                 `json:"method"`
+	URL         string                 `json:"url"`
+	Status      string                 `json:"status"`
+	CreatedAt   time.Time              `json:"created_at"`
+	UpdatedAt   time.Time              `json:"updated_at"`
+	Tags        []string               `json:"tags"`
+}
+
+// 测试执行相关请求/响应结构
+
+// RunTestSuiteRequest 运行测试套件请求
+type RunTestSuiteRequest struct {
+	Timeout     int                    `json:"timeout" binding:"omitempty,min=1,max=3600"`
+	Environment string                 `json:"environment" binding:"omitempty,oneof=dev test staging prod"`
+	Variables   map[string]interface{} `json:"variables"`
+	Tags        []string               `json:"tags"`
+	Priority    int                    `json:"priority" binding:"omitempty,min=1,max=10"`
+	Parallel    bool                   `json:"parallel"`
+}
+
+// RunTestCaseRequest 运行测试用例请求
+type RunTestCaseRequest struct {
+	Timeout     int                    `json:"timeout" binding:"omitempty,min=1,max=3600"`
+	Environment string                 `json:"environment" binding:"omitempty,oneof=dev test staging prod"`
+	Variables   map[string]interface{} `json:"variables"`
+}
+
+// TestExecutionResponse 测试执行响应
+type TestExecutionResponse struct {
+	ID           string                 `json:"id"`
+	SuiteID      string                 `json:"suite_id"`
+	CaseID       string                 `json:"case_id"`
+	Status       string                 `json:"status"`
+	StartTime    time.Time              `json:"start_time"`
+	EndTime      *time.Time             `json:"end_time"`
+	Duration     int                    `json:"duration"` // 秒
+	TotalTests   int                    `json:"total_tests"`
+	PassedTests  int                    `json:"passed_tests"`
+	FailedTests  int                    `json:"failed_tests"`
+	SkippedTests int                    `json:"skipped_tests"`
+	Progress     float64                `json:"progress"`
+	Config       map[string]interface{} `json:"config"`
+	CreatedAt    time.Time              `json:"created_at"`
+	UpdatedAt    *time.Time             `json:"updated_at"`
+}
+
+// TestResultResponse 测试结果响应
+type TestResultResponse struct {
+	ID          string                 `json:"id"`
+	TestCaseID  string                 `json:"test_case_id"`
+	ExecutionID string                 `json:"execution_id"`
+	Name        string                 `json:"name"`
+	Type        string                 `json:"type"`
+	Status      string                 `json:"status"`
+	StartTime   time.Time              `json:"start_time"`
+	EndTime     *time.Time             `json:"end_time"`
+	Duration    int                    `json:"duration"` // 毫秒
+	Passed      bool                   `json:"passed"`
+	Error       *common.APIError       `json:"error,omitempty"`
+	Assertions  []TestAssertionResponse `json:"assertions,omitempty"`
+	Metadata    map[string]interface{} `json:"metadata"`
+	Screenshots []string               `json:"screenshots"`
+	Logs        []string               `json:"logs"`
+	CreatedAt   time.Time              `json:"created_at"`
+	UpdatedAt   *time.Time             `json:"updated_at"`
+}
+
+// TestAssertionResponse 测试断言响应
+type TestAssertionResponse struct {
+	Name         string      `json:"name"`
+	Type         string      `json:"type"`
+	Actual       interface{} `json:"actual"`
+	Expected     interface{} `json:"expected"`
+	Passed       bool        `json:"passed"`
+	ErrorMessage string      `json:"error_message,omitempty"`
+}
+
+// SchedulerStatusResponse 调度器状态响应
+type SchedulerStatusResponse struct {
+	Running            bool                     `json:"running"`
+	QueueSize          int                      `json:"queue_size"`
+	RunningTestsCount  int                      `json:"running_tests_count"`
+	CompletedTestsCount int                      `json:"completed_tests_count"`
+	MaxConcurrent      int                      `json:"max_concurrent"`
+	OldestQueuedTime   int                      `json:"oldest_queued_time"` // 秒
+	RunningTests       []RunningTestResponse    `json:"running_tests"`
+}
+
+// RunningTestResponse 运行中测试响应
+type RunningTestResponse struct {
+	TestID      string        `json:"test_id"`
+	ExecutionID string        `json:"execution_id"`
+	Status      string        `json:"status"`
+	Progress    float64       `json:"progress"`
+	StartTime   time.Time     `json:"start_time"`
+	Duration    int           `json:"duration"` // 秒
+}
+
+// 测试套件管理
+
+// CreateTestSuite godoc
+// @Summary 创建测试套件
+// @Description 创建新的测试套件
+// @Tags 测试套件
+// @Accept json
+// @Produce json
+// @Param request body CreateTestSuiteRequest true "创建测试套件请求"
+// @Success 201 {object} common.APIResponse{data=testing.TestSuite} "创建成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 401 {object} common.APIResponse "未授权"
+// @Failure 500 {object} common.APIResponse "服务器错误"
+// @Router /api/v1/test/suites [post]
+// @Security BearerAuth
+func (h *TestHandler) CreateTestSuite(c *gin.Context) {
+	var req CreateTestSuiteRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.logger.Error("Invalid request body", "error", err)
+		c.JSON(400, common.NewErrorResponse("INVALID_REQUEST", "请求参数错误", err.Error()))
+		return
+	}
+
+	// 创建测试套件
+	testSuite := &testing.TestSuite{
+		Name:        req.Name,
+		Description: req.Description,
+		Environment: req.Environment,
+		Timeout:     time.Duration(req.Timeout) * time.Second,
+		Parallel:    req.Parallel,
+		MaxWorkers:  req.MaxWorkers,
+		Retries:     req.Retries,
+		RetryDelay:  time.Duration(req.RetryDelay) * time.Second,
+		Variables:   req.Variables,
+		Headers:     req.Headers,
+		Tags:        req.Tags,
+	}
+
+	if err := h.testService.CreateTestSuite(c.Request.Context(), testSuite); err != nil {
+		h.logger.Error("Failed to create test suite", "error", err, "name", req.Name)
+		c.JSON(500, common.NewErrorResponse("INTERNAL_ERROR", "创建测试套件失败", err.Error()))
+		return
+	}
+
+	h.logger.Info("Test suite created successfully", "id", testSuite.ID, "name", testSuite.Name)
+	c.JSON(201, common.NewSuccessResponse(testSuite))
+}
+
+// GetTestSuite godoc
+// @Summary 获取测试套件
+// @Description 根据ID获取测试套件详情
+// @Tags 测试套件
+// @Accept json
+// @Produce json
+// @Param id path string true "测试套件ID"
+// @Success 200 {object} common.APIResponse{data=testing.TestSuite} "获取成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 404 {object} common.APIResponse "测试套件不存在"
+// @Failure 500 {object} common.APIResponse "服务器错误"
+// @Router /api/v1/test/suites/{id} [get]
+// @Security BearerAuth
+func (h *TestHandler) GetTestSuite(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(400, common.NewErrorResponse("INVALID_REQUEST", "测试套件ID不能为空"))
+		return
+	}
+
+	testSuite, err := h.testService.GetTestSuite(c.Request.Context(), id)
+	if err != nil {
+		if err.Error() == "test suite not found" {
+			c.JSON(404, common.NewErrorResponse("NOT_FOUND", "测试套件不存在"))
+			return
+		}
+		h.logger.Error("Failed to get test suite", "error", err, "id", id)
+		c.JSON(500, common.NewErrorResponse("INTERNAL_ERROR", "获取测试套件失败", err.Error()))
+		return
+	}
+
+	c.JSON(200, common.NewSuccessResponse(testSuite))
+}
+
+// ListTestSuites godoc
+// @Summary 获取测试套件列表
+// @Description 分页获取测试套件列表，支持过滤
+// @Tags 测试套件
+// @Accept json
+// @Produce json
+// @Param page query int false "页码" default(1)
+// @Param page_size query int false "每页数量" default(20)
+// @Param name query string false "套件名称过滤"
+// @Param environment query string false "环境过滤"
+// @Param status query string false "状态过滤"
+// @Param tag query string false "标签过滤"
+// @Success 200 {object} common.APIResponse{data=[]TestSuiteListResponse,pagination=common.PaginationInfo} "获取成功"
+// @Failure 500 {object} common.APIResponse "服务器错误"
+// @Router /api/v1/test/suites [get]
+// @Security BearerAuth
+func (h *TestHandler) ListTestSuites(c *gin.Context) {
+	// 解析查询参数
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+
+	offset := (page - 1) * pageSize
+
+	filter := &testing.TestSuiteFilter{
+		Name:        c.Query("name"),
+		Environment: c.Query("environment"),
+		Status:      c.Query("status"),
+		Tags:        []string{c.Query("tag")},
+		Limit:       pageSize,
+		Offset:      offset,
+	}
+
+	testSuites, err := h.testService.ListTestSuites(c.Request.Context(), filter)
+	if err != nil {
+		h.logger.Error("Failed to list test suites", "error", err)
+		c.JSON(500, common.NewErrorResponse("INTERNAL_ERROR", "获取测试套件列表失败", err.Error()))
+		return
+	}
+
+	// 转换为响应格式
+	response := make([]TestSuiteListResponse, len(testSuites))
+	for i, suite := range testSuites {
+		response[i] = TestSuiteListResponse{
+			ID:          suite.ID,
+			Name:        suite.Name,
+			Description: suite.Description,
+			Environment: suite.Environment,
+			Status:      suite.Status,
+			TestCount:   suite.TestCount,
+			CreatedAt:   suite.CreatedAt,
+			UpdatedAt:   suite.UpdatedAt,
+			Tags:        suite.Tags,
+		}
+	}
+
+	// 构建分页信息
+	pagination := &common.PaginationInfo{
+		Page:       page,
+		PageSize:   pageSize,
+		Total:      int64(len(response)), // 这里需要从服务获取实际总数
+		TotalPages: (len(response) + pageSize - 1) / pageSize,
+		HasNext:    len(response) == pageSize,
+		HasPrev:    page > 1,
+	}
+
+	c.JSON(200, common.NewPaginatedResponse(response, pagination))
+}
+
+// UpdateTestSuite godoc
+// @Summary 更新测试套件
+// @Description 更新测试套件信息
+// @Tags 测试套件
+// @Accept json
+// @Produce json
+// @Param id path string true "测试套件ID"
+// @Param request body UpdateTestSuiteRequest true "更新测试套件请求"
+// @Success 200 {object} common.APIResponse{data=testing.TestSuite} "更新成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 404 {object} common.APIResponse "测试套件不存在"
+// @Failure 500 {object} common.APIResponse "服务器错误"
+// @Router /api/v1/test/suites/{id} [put]
+// @Security BearerAuth
+func (h *TestHandler) UpdateTestSuite(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(400, common.NewErrorResponse("INVALID_REQUEST", "测试套件ID不能为空"))
+		return
+	}
+
+	var req UpdateTestSuiteRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.logger.Error("Invalid request body", "error", err)
+		c.JSON(400, common.NewErrorResponse("INVALID_REQUEST", "请求参数错误", err.Error()))
+		return
+	}
+
+	// 获取现有测试套件
+	testSuite, err := h.testService.GetTestSuite(c.Request.Context(), id)
+	if err != nil {
+		if err.Error() == "test suite not found" {
+			c.JSON(404, common.NewErrorResponse("NOT_FOUND", "测试套件不存在"))
+			return
+		}
+		h.logger.Error("Failed to get test suite", "error", err, "id", id)
+		c.JSON(500, common.NewErrorResponse("INTERNAL_ERROR", "获取测试套件失败", err.Error()))
+		return
+	}
+
+	// 更新字段
+	if req.Name != "" {
+		testSuite.Name = req.Name
+	}
+	if req.Description != "" {
+		testSuite.Description = req.Description
+	}
+	if req.Environment != "" {
+		testSuite.Environment = req.Environment
+	}
+	if req.Timeout > 0 {
+		testSuite.Timeout = time.Duration(req.Timeout) * time.Second
+	}
+	testSuite.Parallel = req.Parallel
+	if req.MaxWorkers > 0 {
+		testSuite.MaxWorkers = req.MaxWorkers
+	}
+	testSuite.Retries = req.Retries
+	if req.RetryDelay > 0 {
+		testSuite.RetryDelay = time.Duration(req.RetryDelay) * time.Second
+	}
+	if req.Variables != nil {
+		testSuite.Variables = req.Variables
+	}
+	if req.Headers != nil {
+		testSuite.Headers = req.Headers
+	}
+	if req.Tags != nil {
+		testSuite.Tags = req.Tags
+	}
+
+	if err := h.testService.UpdateTestSuite(c.Request.Context(), testSuite); err != nil {
+		h.logger.Error("Failed to update test suite", "error", err, "id", id)
+		c.JSON(500, common.NewErrorResponse("INTERNAL_ERROR", "更新测试套件失败", err.Error()))
+		return
+	}
+
+	h.logger.Info("Test suite updated successfully", "id", testSuite.ID, "name", testSuite.Name)
+	c.JSON(200, common.NewSuccessResponse(testSuite))
+}
+
+// DeleteTestSuite godoc
+// @Summary 删除测试套件
+// @Description 删除测试套件及其所有测试用例
+// @Tags 测试套件
+// @Accept json
+// @Produce json
+// @Param id path string true "测试套件ID"
+// @Success 200 {object} common.APIResponse "删除成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 404 {object} common.APIResponse "测试套件不存在"
+// @Failure 409 {object} common.APIResponse "测试套件正在使用中"
+// @Failure 500 {object} common.APIResponse "服务器错误"
+// @Router /api/v1/test/suites/{id} [delete]
+// @Security BearerAuth
+func (h *TestHandler) DeleteTestSuite(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(400, common.NewErrorResponse("INVALID_REQUEST", "测试套件ID不能为空"))
+		return
+	}
+
+	if err := h.testService.DeleteTestSuite(c.Request.Context(), id); err != nil {
+		if err.Error() == "test suite not found" {
+			c.JSON(404, common.NewErrorResponse("NOT_FOUND", "测试套件不存在"))
+			return
+		}
+		if err.Error() == "cannot delete test suite with running tests" {
+			c.JSON(409, common.NewErrorResponse("CONFLICT", "无法删除正在使用的测试套件"))
+			return
+		}
+		h.logger.Error("Failed to delete test suite", "error", err, "id", id)
+		c.JSON(500, common.NewErrorResponse("INTERNAL_ERROR", "删除测试套件失败", err.Error()))
+		return
+	}
+
+	h.logger.Info("Test suite deleted successfully", "id", id)
+	c.JSON(200, common.NewSuccessResponse(map[string]string{"message": "测试套件删除成功"}))
+}
+
+// 测试用例管理
+
+// CreateTestCase godoc
+// @Summary 创建测试用例
+// @Description 创建新的测试用例
+// @Tags 测试用例
+// @Accept json
+// @Produce json
+// @Param request body CreateTestCaseRequest true "创建测试用例请求"
+// @Success 201 {object} common.APIResponse{data=testing.TestCase} "创建成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 404 {object} common.APIResponse "测试套件不存在"
+// @Failure 500 {object} common.APIResponse "服务器错误"
+// @Router /api/v1/test/cases [post]
+// @Security BearerAuth
+func (h *TestHandler) CreateTestCase(c *gin.Context) {
+	var req CreateTestCaseRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.logger.Error("Invalid request body", "error", err)
+		c.JSON(400, common.NewErrorResponse("INVALID_REQUEST", "请求参数错误", err.Error()))
+		return
+	}
+
+	// 转换测试期望
+	var expected *testing.TestExpected
+	if req.Expected != nil {
+		expected = &testing.TestExpected{
+			Status:       req.Expected.Status,
+			Body:         req.Expected.Body,
+			Headers:      req.Expected.Headers,
+			BodyContains: req.Expected.BodyContains,
+			ResponseTime: time.Duration(req.Expected.ResponseTime) * time.Millisecond,
+			ContentType:  req.Expected.ContentType,
+			Metadata:     req.Expected.Metadata,
+		}
+	}
+
+	// 转换测试步骤
+	steps := h.convertTestSteps(req.Steps)
+	setup := h.convertTestSteps(req.Setup)
+	teardown := h.convertTestSteps(req.Teardown)
+
+	// 创建测试用例
+	testCase := &testing.TestCase{
+		SuiteID:     req.SuiteID,
+		Name:        req.Name,
+		Description: req.Description,
+		Type:        testing.TestType(req.Type),
+		Method:      req.Method,
+		URL:         req.URL,
+		Headers:     req.Headers,
+		Body:        req.Body,
+		Timeout:     time.Duration(req.Timeout) * time.Second,
+		Tags:        req.Tags,
+		Metadata:    req.Metadata,
+		Expected:    expected,
+		Steps:       steps,
+		Setup:       setup,
+		Teardown:    teardown,
+	}
+
+	if err := h.testService.CreateTestCase(c.Request.Context(), testCase); err != nil {
+		if err.Error() == "test suite not found" {
+			c.JSON(404, common.NewErrorResponse("NOT_FOUND", "测试套件不存在"))
+			return
+		}
+		h.logger.Error("Failed to create test case", "error", err, "name", req.Name)
+		c.JSON(500, common.NewErrorResponse("INTERNAL_ERROR", "创建测试用例失败", err.Error()))
+		return
+	}
+
+	h.logger.Info("Test case created successfully", "id", testCase.ID, "name", testCase.Name)
+	c.JSON(201, common.NewSuccessResponse(testCase))
+}
+
+// GetTestCase godoc
+// @Summary 获取测试用例
+// @Description 根据ID获取测试用例详情
+// @Tags 测试用例
+// @Accept json
+// @Produce json
+// @Param id path string true "测试用例ID"
+// @Success 200 {object} common.APIResponse{data=testing.TestCase} "获取成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 404 {object} common.APIResponse "测试用例不存在"
+// @Failure 500 {object} common.APIResponse "服务器错误"
+// @Router /api/v1/test/cases/{id} [get]
+// @Security BearerAuth
+func (h *TestHandler) GetTestCase(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(400, common.NewErrorResponse("INVALID_REQUEST", "测试用例ID不能为空"))
+		return
+	}
+
+	testCase, err := h.testService.GetTestCase(c.Request.Context(), id)
+	if err != nil {
+		if err.Error() == "test case not found" {
+			c.JSON(404, common.NewErrorResponse("NOT_FOUND", "测试用例不存在"))
+			return
+		}
+		h.logger.Error("Failed to get test case", "error", err, "id", id)
+		c.JSON(500, common.NewErrorResponse("INTERNAL_ERROR", "获取测试用例失败", err.Error()))
+		return
+	}
+
+	c.JSON(200, common.NewSuccessResponse(testCase))
+}
+
+// ListTestCases godoc
+// @Summary 获取测试用例列表
+// @Description 分页获取测试用例列表，支持过滤
+// @Tags 测试用例
+// @Accept json
+// @Produce json
+// @Param page query int false "页码" default(1)
+// @Param page_size query int false "每页数量" default(20)
+// @Param suite_id query string false "测试套件ID过滤"
+// @Param name query string false "用例名称过滤"
+// @Param type query string false "测试类型过滤"
+// @Param status query string false "状态过滤"
+// @Param tag query string false "标签过滤"
+// @Success 200 {object} common.APIResponse{data=[]TestCaseListResponse,pagination=common.PaginationInfo} "获取成功"
+// @Failure 500 {object} common.APIResponse "服务器错误"
+// @Router /api/v1/test/cases [get]
+// @Security BearerAuth
+func (h *TestHandler) ListTestCases(c *gin.Context) {
+	// 解析查询参数
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+
+	offset := (page - 1) * pageSize
+
+	filter := &testing.TestCaseFilter{
+		SuiteID: c.Query("suite_id"),
+		Name:    c.Query("name"),
+		Type:    testing.TestType(c.Query("type")),
+		Status:  c.Query("status"),
+		Tags:    []string{c.Query("tag")},
+		Limit:   pageSize,
+		Offset:  offset,
+	}
+
+	testCases, err := h.testService.ListTestCases(c.Request.Context(), filter)
+	if err != nil {
+		h.logger.Error("Failed to list test cases", "error", err)
+		c.JSON(500, common.NewErrorResponse("INTERNAL_ERROR", "获取测试用例列表失败", err.Error()))
+		return
+	}
+
+	// 转换为响应格式
+	response := make([]TestCaseListResponse, len(testCases))
+	for i, testCase := range testCases {
+		response[i] = TestCaseListResponse{
+			ID:          testCase.ID,
+			SuiteID:     testCase.SuiteID,
+			Name:        testCase.Name,
+			Description: testCase.Description,
+			Type:        string(testCase.Type),
+			Method:      testCase.Method,
+			URL:         testCase.URL,
+			Status:      testCase.Status,
+			CreatedAt:   testCase.CreatedAt,
+			UpdatedAt:   testCase.UpdatedAt,
+			Tags:        testCase.Tags,
+		}
+	}
+
+	// 构建分页信息
+	pagination := &common.PaginationInfo{
+		Page:       page,
+		PageSize:   pageSize,
+		Total:      int64(len(response)), // 这里需要从服务获取实际总数
+		TotalPages: (len(response) + pageSize - 1) / pageSize,
+		HasNext:    len(response) == pageSize,
+		HasPrev:    page > 1,
+	}
+
+	c.JSON(200, common.NewPaginatedResponse(response, pagination))
+}
+
+// UpdateTestCase godoc
+// @Summary 更新测试用例
+// @Description 更新测试用例信息
+// @Tags 测试用例
+// @Accept json
+// @Produce json
+// @Param id path string true "测试用例ID"
+// @Param request body UpdateTestCaseRequest true "更新测试用例请求"
+// @Success 200 {object} common.APIResponse{data=testing.TestCase} "更新成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 404 {object} common.APIResponse "测试用例不存在"
+// @Failure 500 {object} common.APIResponse "服务器错误"
+// @Router /api/v1/test/cases/{id} [put]
+// @Security BearerAuth
+func (h *TestHandler) UpdateTestCase(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(400, common.NewErrorResponse("INVALID_REQUEST", "测试用例ID不能为空"))
+		return
+	}
+
+	var req UpdateTestCaseRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.logger.Error("Invalid request body", "error", err)
+		c.JSON(400, common.NewErrorResponse("INVALID_REQUEST", "请求参数错误", err.Error()))
+		return
+	}
+
+	// 获取现有测试用例
+	testCase, err := h.testService.GetTestCase(c.Request.Context(), id)
+	if err != nil {
+		if err.Error() == "test case not found" {
+			c.JSON(404, common.NewErrorResponse("NOT_FOUND", "测试用例不存在"))
+			return
+		}
+		h.logger.Error("Failed to get test case", "error", err, "id", id)
+		c.JSON(500, common.NewErrorResponse("INTERNAL_ERROR", "获取测试用例失败", err.Error()))
+		return
+	}
+
+	// 更新字段
+	if req.SuiteID != "" {
+		testCase.SuiteID = req.SuiteID
+	}
+	if req.Name != "" {
+		testCase.Name = req.Name
+	}
+	if req.Description != "" {
+		testCase.Description = req.Description
+	}
+	if req.Type != "" {
+		testCase.Type = testing.TestType(req.Type)
+	}
+	if req.Method != "" {
+		testCase.Method = req.Method
+	}
+	if req.URL != "" {
+		testCase.URL = req.URL
+	}
+	if req.Headers != nil {
+		testCase.Headers = req.Headers
+	}
+	if req.Body != nil {
+		testCase.Body = req.Body
+	}
+	if req.Timeout > 0 {
+		testCase.Timeout = time.Duration(req.Timeout) * time.Second
+	}
+	if req.Tags != nil {
+		testCase.Tags = req.Tags
+	}
+	if req.Metadata != nil {
+		testCase.Metadata = req.Metadata
+	}
+	if req.Expected != nil {
+		testCase.Expected = &testing.TestExpected{
+			Status:       req.Expected.Status,
+			Body:         req.Expected.Body,
+			Headers:      req.Expected.Headers,
+			BodyContains: req.Expected.BodyContains,
+			ResponseTime: time.Duration(req.Expected.ResponseTime) * time.Millisecond,
+			ContentType:  req.Expected.ContentType,
+			Metadata:     req.Expected.Metadata,
+		}
+	}
+	if req.Steps != nil {
+		testCase.Steps = h.convertTestSteps(req.Steps)
+	}
+	if req.Setup != nil {
+		testCase.Setup = h.convertTestSteps(req.Setup)
+	}
+	if req.Teardown != nil {
+		testCase.Teardown = h.convertTestSteps(req.Teardown)
+	}
+
+	if err := h.testService.UpdateTestCase(c.Request.Context(), testCase); err != nil {
+		h.logger.Error("Failed to update test case", "error", err, "id", id)
+		c.JSON(500, common.NewErrorResponse("INTERNAL_ERROR", "更新测试用例失败", err.Error()))
+		return
+	}
+
+	h.logger.Info("Test case updated successfully", "id", testCase.ID, "name", testCase.Name)
+	c.JSON(200, common.NewSuccessResponse(testCase))
+}
+
+// DeleteTestCase godoc
+// @Summary 删除测试用例
+// @Description 删除测试用例
+// @Tags 测试用例
+// @Accept json
+// @Produce json
+// @Param id path string true "测试用例ID"
+// @Success 200 {object} common.APIResponse "删除成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 404 {object} common.APIResponse "测试用例不存在"
+// @Failure 409 {object} common.APIResponse "测试用例正在使用中"
+// @Failure 500 {object} common.APIResponse "服务器错误"
+// @Router /api/v1/test/cases/{id} [delete]
+// @Security BearerAuth
+func (h *TestHandler) DeleteTestCase(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(400, common.NewErrorResponse("INVALID_REQUEST", "测试用例ID不能为空"))
+		return
+	}
+
+	if err := h.testService.DeleteTestCase(c.Request.Context(), id); err != nil {
+		if err.Error() == "test case not found" {
+			c.JSON(404, common.NewErrorResponse("NOT_FOUND", "测试用例不存在"))
+			return
+		}
+		if err.Error() == "cannot delete test case with running tests" {
+			c.JSON(409, common.NewErrorResponse("CONFLICT", "无法删除正在使用的测试用例"))
+			return
+		}
+		h.logger.Error("Failed to delete test case", "error", err, "id", id)
+		c.JSON(500, common.NewErrorResponse("INTERNAL_ERROR", "删除测试用例失败", err.Error()))
+		return
+	}
+
+	h.logger.Info("Test case deleted successfully", "id", id)
+	c.JSON(200, common.NewSuccessResponse(map[string]string{"message": "测试用例删除成功"}))
+}
+
+// convertTestSteps 转换测试步骤
+func (h *TestHandler) convertTestSteps(steps []TestStepRequest) []testing.TestStep {
+	if steps == nil {
+		return nil
+	}
+
+	result := make([]testing.TestStep, len(steps))
+	for i, step := range steps {
+		result[i] = testing.TestStep{
+			Name:       step.Name,
+			Type:       step.Type,
+			Action:     step.Action,
+			Target:     step.Target,
+			Value:      step.Value,
+			Expected:   step.Expected,
+			Wait:       time.Duration(step.Wait) * time.Millisecond,
+			Screenshot: step.Screenshot,
+			Metadata:   step.Metadata,
+		}
+	}
+	return result
+}
+
+// 测试执行管理
+
+// RunTestSuite godoc
+// @Summary 运行测试套件
+// @Description 运行指定的测试套件
+// @Tags 测试执行
+// @Accept json
+// @Produce json
+// @Param id path string true "测试套件ID"
+// @Param request body RunTestSuiteRequest false "运行选项"
+// @Success 200 {object} common.APIResponse{data=TestExecutionResponse} "运行成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 404 {object} common.APIResponse "测试套件不存在"
+// @Failure 500 {object} common.APIResponse "服务器错误"
+// @Router /api/v1/test/suites/{id}/run [post]
+// @Security BearerAuth
+func (h *TestHandler) RunTestSuite(c *gin.Context) {
+	suiteID := c.Param("id")
+	if suiteID == "" {
+		c.JSON(400, common.NewErrorResponse("INVALID_REQUEST", "测试套件ID不能为空"))
+		return
+	}
+
+	var req RunTestSuiteRequest
+	c.ShouldBindJSON(&req) // 可选参数
+
+	// 构建运行选项
+	options := &testing.RunOptions{
+		Environment: req.Environment,
+		Variables:   req.Variables,
+		Tags:        req.Tags,
+		Priority:    req.Priority,
+		Parallel:    req.Parallel,
+	}
+
+	if req.Timeout > 0 {
+		options.Timeout = time.Duration(req.Timeout) * time.Second
+	}
+
+	execution, err := h.testService.RunTestSuite(c.Request.Context(), suiteID, options)
+	if err != nil {
+		if err.Error() == "test suite not found" {
+			c.JSON(404, common.NewErrorResponse("NOT_FOUND", "测试套件不存在"))
+			return
+		}
+		h.logger.Error("Failed to run test suite", "error", err, "suite_id", suiteID)
+		c.JSON(500, common.NewErrorResponse("INTERNAL_ERROR", "运行测试套件失败", err.Error()))
+		return
+	}
+
+	// 转换为响应格式
+	response := TestExecutionResponse{
+		ID:           execution.ID,
+		SuiteID:      execution.SuiteID,
+		CaseID:       execution.CaseID,
+		Status:       string(execution.Status),
+		StartTime:    execution.StartTime,
+		EndTime:      execution.EndTime,
+		Duration:     int(execution.Duration.Seconds()),
+		TotalTests:   execution.TotalTests,
+		PassedTests:  execution.PassedTests,
+		FailedTests:  execution.FailedTests,
+		SkippedTests: execution.SkippedTests,
+		Progress:     execution.Progress,
+		Config:       execution.Config,
+		CreatedAt:    execution.CreatedAt,
+		UpdatedAt:    execution.UpdatedAt,
+	}
+
+	h.logger.Info("Test suite execution started", "execution_id", execution.ID, "suite_id", suiteID)
+	c.JSON(200, common.NewSuccessResponse(response))
+}
+
+// RunTestCase godoc
+// @Summary 运行测试用例
+// @Description 运行指定的测试用例
+// @Tags 测试执行
+// @Accept json
+// @Produce json
+// @Param id path string true "测试用例ID"
+// @Param request body RunTestCaseRequest false "运行选项"
+// @Success 200 {object} common.APIResponse{data=TestExecutionResponse} "运行成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 404 {object} common.APIResponse "测试用例不存在"
+// @Failure 500 {object} common.APIResponse "服务器错误"
+// @Router /api/v1/test/cases/{id}/run [post]
+// @Security BearerAuth
+func (h *TestHandler) RunTestCase(c *gin.Context) {
+	caseID := c.Param("id")
+	if caseID == "" {
+		c.JSON(400, common.NewErrorResponse("INVALID_REQUEST", "测试用例ID不能为空"))
+		return
+	}
+
+	var req RunTestCaseRequest
+	c.ShouldBindJSON(&req) // 可选参数
+
+	// 构建运行选项
+	options := &testing.RunOptions{
+		Environment: req.Environment,
+		Variables:   req.Variables,
+	}
+
+	if req.Timeout > 0 {
+		options.Timeout = time.Duration(req.Timeout) * time.Second
+	}
+
+	execution, err := h.testService.RunTestCase(c.Request.Context(), caseID, options)
+	if err != nil {
+		if err.Error() == "test case not found" {
+			c.JSON(404, common.NewErrorResponse("NOT_FOUND", "测试用例不存在"))
+			return
+		}
+		h.logger.Error("Failed to run test case", "error", err, "case_id", caseID)
+		c.JSON(500, common.NewErrorResponse("INTERNAL_ERROR", "运行测试用例失败", err.Error()))
+		return
+	}
+
+	// 转换为响应格式
+	response := TestExecutionResponse{
+		ID:           execution.ID,
+		SuiteID:      execution.SuiteID,
+		CaseID:       execution.CaseID,
+		Status:       string(execution.Status),
+		StartTime:    execution.StartTime,
+		EndTime:      execution.EndTime,
+		Duration:     int(execution.Duration.Seconds()),
+		TotalTests:   execution.TotalTests,
+		PassedTests:  execution.PassedTests,
+		FailedTests:  execution.FailedTests,
+		SkippedTests: execution.SkippedTests,
+		Progress:     execution.Progress,
+		Config:       execution.Config,
+		CreatedAt:    execution.CreatedAt,
+		UpdatedAt:    execution.UpdatedAt,
+	}
+
+	h.logger.Info("Test case execution started", "execution_id", execution.ID, "case_id", caseID)
+	c.JSON(200, common.NewSuccessResponse(response))
+}
+
+// GetExecution godoc
+// @Summary 获取测试执行详情
+// @Description 根据ID获取测试执行详情
+// @Tags 测试执行
+// @Accept json
+// @Produce json
+// @Param id path string true "执行ID"
+// @Success 200 {object} common.APIResponse{data=TestExecutionResponse} "获取成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 404 {object} common.APIResponse "执行记录不存在"
+// @Failure 500 {object} common.APIResponse "服务器错误"
+// @Router /api/v1/test/executions/{id} [get]
+// @Security BearerAuth
+func (h *TestHandler) GetExecution(c *gin.Context) {
+	executionID := c.Param("id")
+	if executionID == "" {
+		c.JSON(400, common.NewErrorResponse("INVALID_REQUEST", "执行ID不能为空"))
+		return
+	}
+
+	execution, err := h.testService.GetExecution(c.Request.Context(), executionID)
+	if err != nil {
+		if err.Error() == "test execution not found" {
+			c.JSON(404, common.NewErrorResponse("NOT_FOUND", "执行记录不存在"))
+			return
+		}
+		h.logger.Error("Failed to get test execution", "error", err, "execution_id", executionID)
+		c.JSON(500, common.NewErrorResponse("INTERNAL_ERROR", "获取执行记录失败", err.Error()))
+		return
+	}
+
+	// 转换为响应格式
+	response := TestExecutionResponse{
+		ID:           execution.ID,
+		SuiteID:      execution.SuiteID,
+		CaseID:       execution.CaseID,
+		Status:       string(execution.Status),
+		StartTime:    execution.StartTime,
+		EndTime:      execution.EndTime,
+		Duration:     int(execution.Duration.Seconds()),
+		TotalTests:   execution.TotalTests,
+		PassedTests:  execution.PassedTests,
+		FailedTests:  execution.FailedTests,
+		SkippedTests: execution.SkippedTests,
+		Progress:     execution.Progress,
+		Config:       execution.Config,
+		CreatedAt:    execution.CreatedAt,
+		UpdatedAt:    execution.UpdatedAt,
+	}
+
+	c.JSON(200, common.NewSuccessResponse(response))
+}
+
+// ListExecutions godoc
+// @Summary 获取测试执行列表
+// @Description 分页获取测试执行列表，支持过滤
+// @Tags 测试执行
+// @Accept json
+// @Produce json
+// @Param page query int false "页码" default(1)
+// @Param page_size query int false "每页数量" default(20)
+// @Param suite_id query string false "测试套件ID过滤"
+// @Param case_id query string false "测试用例ID过滤"
+// @Param status query string false "状态过滤"
+// @Param started_after query string false "开始时间过滤（RFC3339格式）"
+// @Param started_before query string false "开始时间过滤（RFC3339格式）"
+// @Success 200 {object} common.APIResponse{data=[]TestExecutionResponse,pagination=common.PaginationInfo} "获取成功"
+// @Failure 500 {object} common.APIResponse "服务器错误"
+// @Router /api/v1/test/executions [get]
+// @Security BearerAuth
+func (h *TestHandler) ListExecutions(c *gin.Context) {
+	// 解析查询参数
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+
+	offset := (page - 1) * pageSize
+
+	// 解析时间过滤参数
+	var startedAfter, startedBefore *time.Time
+	if startedAfterStr := c.Query("started_after"); startedAfterStr != "" {
+		if t, err := time.Parse(time.RFC3339, startedAfterStr); err == nil {
+			startedAfter = &t
+		}
+	}
+	if startedBeforeStr := c.Query("started_before"); startedBeforeStr != nil {
+		if t, err := time.Parse(time.RFC3339, *startedBeforeStr); err == nil {
+			startedBefore = &t
+		}
+	}
+
+	filter := &testing.TestExecutionFilter{
+		SuiteID:      c.Query("suite_id"),
+		CaseID:       c.Query("case_id"),
+		Status:       testing.TestStatus(c.Query("status")),
+		StartedAfter: startedAfter,
+		StartedBefore: startedBefore,
+		Limit:        pageSize,
+		Offset:       offset,
+	}
+
+	executions, err := h.testService.ListExecutions(c.Request.Context(), filter)
+	if err != nil {
+		h.logger.Error("Failed to list test executions", "error", err)
+		c.JSON(500, common.NewErrorResponse("INTERNAL_ERROR", "获取执行列表失败", err.Error()))
+		return
+	}
+
+	// 转换为响应格式
+	response := make([]TestExecutionResponse, len(executions))
+	for i, execution := range executions {
+		response[i] = TestExecutionResponse{
+			ID:           execution.ID,
+			SuiteID:      execution.SuiteID,
+			CaseID:       execution.CaseID,
+			Status:       string(execution.Status),
+			StartTime:    execution.StartTime,
+			EndTime:      execution.EndTime,
+			Duration:     int(execution.Duration.Seconds()),
+			TotalTests:   execution.TotalTests,
+			PassedTests:  execution.PassedTests,
+			FailedTests:  execution.FailedTests,
+			SkippedTests: execution.SkippedTests,
+			Progress:     execution.Progress,
+			Config:       execution.Config,
+			CreatedAt:    execution.CreatedAt,
+			UpdatedAt:    execution.UpdatedAt,
+		}
+	}
+
+	// 构建分页信息
+	pagination := &common.PaginationInfo{
+		Page:       page,
+		PageSize:   pageSize,
+		Total:      int64(len(response)), // 这里需要从服务获取实际总数
+		TotalPages: (len(response) + pageSize - 1) / pageSize,
+		HasNext:    len(response) == pageSize,
+		HasPrev:    page > 1,
+	}
+
+	c.JSON(200, common.NewPaginatedResponse(response, pagination))
+}
+
+// CancelExecution godoc
+// @Summary 取消测试执行
+// @Description 取消正在运行的测试执行
+// @Tags 测试执行
+// @Accept json
+// @Produce json
+// @Param id path string true "执行ID"
+// @Success 200 {object} common.APIResponse "取消成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 404 {object} common.APIResponse "执行记录不存在"
+// @Failure 409 {object} common.APIResponse "执行已完成，无法取消"
+// @Failure 500 {object} common.APIResponse "服务器错误"
+// @Router /api/v1/test/executions/{id}/cancel [post]
+// @Security BearerAuth
+func (h *TestHandler) CancelExecution(c *gin.Context) {
+	executionID := c.Param("id")
+	if executionID == "" {
+		c.JSON(400, common.NewErrorResponse("INVALID_REQUEST", "执行ID不能为空"))
+		return
+	}
+
+	if err := h.testService.CancelExecution(c.Request.Context(), executionID); err != nil {
+		if err.Error() == "test execution not found" {
+			c.JSON(404, common.NewErrorResponse("NOT_FOUND", "执行记录不存在"))
+			return
+		}
+		if err.Error() == "test execution already completed" {
+			c.JSON(409, common.NewErrorResponse("CONFLICT", "执行已完成，无法取消"))
+			return
+		}
+		h.logger.Error("Failed to cancel test execution", "error", err, "execution_id", executionID)
+		c.JSON(500, common.NewErrorResponse("INTERNAL_ERROR", "取消执行失败", err.Error()))
+		return
+	}
+
+	h.logger.Info("Test execution cancelled successfully", "execution_id", executionID)
+	c.JSON(200, common.NewSuccessResponse(map[string]string{"message": "执行已取消"}))
+}
+
+// GetTestResults godoc
+// @Summary 获取测试结果
+// @Description 获取指定执行的测试结果列表
+// @Tags 测试执行
+// @Accept json
+// @Produce json
+// @Param execution_id path string true "执行ID"
+// @Param page query int false "页码" default(1)
+// @Param page_size query int false "每页数量" default(20)
+// @Success 200 {object} common.APIResponse{data=[]TestResultResponse,pagination=common.PaginationInfo} "获取成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 404 {object} common.APIResponse "执行记录不存在"
+// @Failure 500 {object} common.APIResponse "服务器错误"
+// @Router /api/v1/test/executions/{execution_id}/results [get]
+// @Security BearerAuth
+func (h *TestHandler) GetTestResults(c *gin.Context) {
+	executionID := c.Param("execution_id")
+	if executionID == "" {
+		c.JSON(400, common.NewErrorResponse("INVALID_REQUEST", "执行ID不能为空"))
+		return
+	}
+
+	// 验证执行是否存在
+	_, err := h.testService.GetExecution(c.Request.Context(), executionID)
+	if err != nil {
+		if err.Error() == "test execution not found" {
+			c.JSON(404, common.NewErrorResponse("NOT_FOUND", "执行记录不存在"))
+			return
+		}
+		h.logger.Error("Failed to get test execution", "error", err, "execution_id", executionID)
+		c.JSON(500, common.NewErrorResponse("INTERNAL_ERROR", "获取执行记录失败", err.Error()))
+		return
+	}
+
+	// 解析分页参数
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+
+	offset := (page - 1) * pageSize
+
+	filter := &testing.TestResultFilter{
+		ExecutionID: executionID,
+		Limit:       pageSize,
+		Offset:      offset,
+	}
+
+	results, err := h.testService.GetTestResults(c.Request.Context(), executionID)
+	if err != nil {
+		h.logger.Error("Failed to get test results", "error", err, "execution_id", executionID)
+		c.JSON(500, common.NewErrorResponse("INTERNAL_ERROR", "获取测试结果失败", err.Error()))
+		return
+	}
+
+	// 转换为响应格式
+	response := make([]TestResultResponse, len(results))
+	for i, result := range results {
+		var apiError *common.APIError
+		if result.Error != nil {
+			apiError = &common.APIError{
+				Code:    result.Error.Type,
+				Message: result.Error.Message,
+				Details: result.Error.Details,
+			}
+		}
+
+		// 转换断言
+		assertions := make([]TestAssertionResponse, len(result.Assertions))
+		for j, assertion := range result.Assertions {
+			assertions[j] = TestAssertionResponse{
+				Name:         assertion.Name,
+				Type:         assertion.Type,
+				Actual:       assertion.Actual,
+				Expected:     assertion.Expected,
+				Passed:       assertion.Passed,
+				ErrorMessage: assertion.ErrorMessage,
+			}
+		}
+
+		response[i] = TestResultResponse{
+			ID:          result.ID,
+			TestCaseID:  result.TestCaseID,
+			ExecutionID: result.ExecutionID,
+			Name:        result.Name,
+			Type:        string(result.Type),
+			Status:      string(result.Status),
+			StartTime:   result.StartTime,
+			EndTime:     result.EndTime,
+			Duration:    int(result.Duration.Milliseconds()),
+			Passed:      result.Passed,
+			Error:       apiError,
+			Assertions:  assertions,
+			Metadata:    result.Metadata,
+			Screenshots: result.Screenshots,
+			Logs:        result.Logs,
+			CreatedAt:   result.CreatedAt,
+			UpdatedAt:   result.UpdatedAt,
+		}
+	}
+
+	// 构建分页信息
+	pagination := &common.PaginationInfo{
+		Page:       page,
+		PageSize:   pageSize,
+		Total:      int64(len(response)), // 这里需要从服务获取实际总数
+		TotalPages: (len(response) + pageSize - 1) / pageSize,
+		HasNext:    len(response) == pageSize,
+		HasPrev:    page > 1,
+	}
+
+	c.JSON(200, common.NewPaginatedResponse(response, pagination))
+}
+
+// GetTestResult godoc
+// @Summary 获取测试结果详情
+// @Description 根据ID获取测试结果详情
+// @Tags 测试执行
+// @Accept json
+// @Produce json
+// @Param id path string true "结果ID"
+// @Success 200 {object} common.APIResponse{data=TestResultResponse} "获取成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 404 {object} common.APIResponse "测试结果不存在"
+// @Failure 500 {object} common.APIResponse "服务器错误"
+// @Router /api/v1/test/results/{id} [get]
+// @Security BearerAuth
+func (h *TestHandler) GetTestResult(c *gin.Context) {
+	resultID := c.Param("id")
+	if resultID == "" {
+		c.JSON(400, common.NewErrorResponse("INVALID_REQUEST", "结果ID不能为空"))
+		return
+	}
+
+	result, err := h.testService.GetTestResult(c.Request.Context(), resultID)
+	if err != nil {
+		if err.Error() == "test result not found" {
+			c.JSON(404, common.NewErrorResponse("NOT_FOUND", "测试结果不存在"))
+			return
+		}
+		h.logger.Error("Failed to get test result", "error", err, "result_id", resultID)
+		c.JSON(500, common.NewErrorResponse("INTERNAL_ERROR", "获取测试结果失败", err.Error()))
+		return
+	}
+
+	// 转换为响应格式
+	var apiError *common.APIError
+	if result.Error != nil {
+		apiError = &common.APIError{
+			Code:    result.Error.Type,
+			Message: result.Error.Message,
+			Details: result.Error.Details,
+		}
+	}
+
+	// 转换断言
+	assertions := make([]TestAssertionResponse, len(result.Assertions))
+	for i, assertion := range result.Assertions {
+		assertions[i] = TestAssertionResponse{
+			Name:         assertion.Name,
+			Type:         assertion.Type,
+			Actual:       assertion.Actual,
+			Expected:     assertion.Expected,
+			Passed:       assertion.Passed,
+			ErrorMessage: assertion.ErrorMessage,
+		}
+	}
+
+	response := TestResultResponse{
+		ID:          result.ID,
+		TestCaseID:  result.TestCaseID,
+		ExecutionID: result.ExecutionID,
+		Name:        result.Name,
+		Type:        string(result.Type),
+		Status:      string(result.Status),
+		StartTime:   result.StartTime,
+		EndTime:     result.EndTime,
+		Duration:    int(result.Duration.Milliseconds()),
+		Passed:      result.Passed,
+		Error:       apiError,
+		Assertions:  assertions,
+		Metadata:    result.Metadata,
+		Screenshots: result.Screenshots,
+		Logs:        result.Logs,
+		CreatedAt:   result.CreatedAt,
+		UpdatedAt:   result.UpdatedAt,
+	}
+
+	c.JSON(200, common.NewSuccessResponse(response))
+}
+
+// GetSchedulerStatus godoc
+// @Summary 获取调度器状态
+// @Description 获取测试调度器的当前状态和统计信息
+// @Tags 系统监控
+// @Accept json
+// @Produce json
+// @Success 200 {object} common.APIResponse{data=SchedulerStatusResponse} "获取成功"
+// @Failure 500 {object} common.APIResponse "服务器错误"
+// @Router /api/v1/test/scheduler/status [get]
+// @Security BearerAuth
+func (h *TestHandler) GetSchedulerStatus(c *gin.Context) {
+	status := h.testService.GetSchedulerStatus()
+
+	// 转换运行中测试
+	runningTests := make([]RunningTestResponse, len(status.RunningTests))
+	for i, test := range status.RunningTests {
+		runningTests[i] = RunningTestResponse{
+			TestID:      test.TestID,
+			ExecutionID: test.ExecutionID,
+			Status:      string(test.Status),
+			Progress:    test.Progress,
+			StartTime:   test.StartTime,
+			Duration:    int(test.Duration.Seconds()),
+		}
+	}
+
+	response := SchedulerStatusResponse{
+		Running:            status.Running,
+		QueueSize:          status.QueueSize,
+		RunningTestsCount:  status.RunningTestsCount,
+		CompletedTestsCount: status.CompletedTestsCount,
+		MaxConcurrent:      status.MaxConcurrent,
+		OldestQueuedTime:   int(status.OldestQueuedTime.Seconds()),
+		RunningTests:       runningTests,
+	}
+
+	c.JSON(200, common.NewSuccessResponse(response))
+}

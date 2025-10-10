@@ -1,0 +1,371 @@
+{
+  "startTime": "2025-09-28T06:35:24.001Z",
+  "tests": [
+    {
+      "name": "项目目录结构",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.003Z",
+      "details": "所有必需目录存在"
+    },
+    {
+      "name": "关键文件: package.json",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.003Z",
+      "details": "文件存在"
+    },
+    {
+      "name": "关键文件: vite.config.ts",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.004Z",
+      "details": "文件存在"
+    },
+    {
+      "name": "关键文件: tsconfig.json",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.004Z",
+      "details": "文件存在"
+    },
+    {
+      "name": "关键文件: index.html",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.004Z",
+      "details": "文件存在"
+    },
+    {
+      "name": "关键文件: src/App.tsx",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.004Z",
+      "details": "文件存在"
+    },
+    {
+      "name": "依赖包: react",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.004Z",
+      "details": "版本: ^18.2.0"
+    },
+    {
+      "name": "依赖包: react-dom",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.004Z",
+      "details": "版本: ^18.2.0"
+    },
+    {
+      "name": "依赖包: antd",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.004Z",
+      "details": "版本: ^5.16.1"
+    },
+    {
+      "name": "依赖包: axios",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.004Z",
+      "details": "版本: ^1.12.2"
+    },
+    {
+      "name": "依赖包: react-router-dom",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.004Z",
+      "details": "版本: ^7.8.2"
+    },
+    {
+      "name": "依赖包: typescript",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.004Z",
+      "details": "版本: ^5.0.2"
+    },
+    {
+      "name": "依赖包: vite",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.004Z",
+      "details": "版本: ^5.1.0"
+    },
+    {
+      "name": "页面组件: Login.tsx",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.004Z",
+      "details": "组件文件存在"
+    },
+    {
+      "name": "页面组件: Dashboard.tsx",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.004Z",
+      "details": "组件文件存在"
+    },
+    {
+      "name": "页面组件: CaseManagement.tsx",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.004Z",
+      "details": "组件文件存在"
+    },
+    {
+      "name": "页面组件: ClientManagement.tsx",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.004Z",
+      "details": "组件文件存在"
+    },
+    {
+      "name": "页面组件: LawyerManagement.tsx",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.004Z",
+      "details": "组件文件存在"
+    },
+    {
+      "name": "页面组件: FinanceManagement.tsx",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.004Z",
+      "details": "组件文件存在"
+    },
+    {
+      "name": "页面组件: ApprovalList.tsx",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.004Z",
+      "details": "组件文件存在"
+    },
+    {
+      "name": "页面组件: ConflictCheck.tsx",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.004Z",
+      "details": "组件文件存在"
+    },
+    {
+      "name": "页面组件: ToolsPage.tsx",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.004Z",
+      "details": "组件文件存在"
+    },
+    {
+      "name": "服务文件: auth.ts",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.004Z",
+      "details": "服务文件存在"
+    },
+    {
+      "name": "服务文件: http.ts",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.004Z",
+      "details": "服务文件存在"
+    },
+    {
+      "name": "服务文件: api.ts",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.004Z",
+      "details": "服务文件存在"
+    },
+    {
+      "name": "登录服务",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.004Z",
+      "details": "包含登录功能"
+    },
+    {
+      "name": "登出服务",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.004Z",
+      "details": "包含登出功能"
+    },
+    {
+      "name": "路由器配置",
+      "status": "failed",
+      "timestamp": "2025-09-28T06:35:24.004Z",
+      "details": "缺少BrowserRouter"
+    },
+    {
+      "name": "路由配置",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.004Z",
+      "details": "包含Routes配置"
+    },
+    {
+      "name": "路由定义",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.004Z",
+      "details": "包含Route定义"
+    },
+    {
+      "name": "认证上下文",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.004Z",
+      "details": "AuthContext存在"
+    },
+    {
+      "name": "认证Hook",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.004Z",
+      "details": "useAuth存在"
+    },
+    {
+      "name": "AuthProvider",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.004Z",
+      "details": "包含AuthProvider"
+    },
+    {
+      "name": "HTTP服务",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.005Z",
+      "details": "HTTP服务存在"
+    },
+    {
+      "name": "API配置",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.005Z",
+      "details": "API配置存在"
+    },
+    {
+      "name": "Axios配置",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.005Z",
+      "details": "包含Axios配置"
+    },
+    {
+      "name": "拦截器配置",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.005Z",
+      "details": "包含拦截器配置"
+    },
+    {
+      "name": "设计令牌",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.005Z",
+      "details": "设计令牌存在"
+    },
+    {
+      "name": "登录页样式",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.005Z",
+      "details": "登录页样式存在"
+    },
+    {
+      "name": "CSS变量",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.005Z",
+      "details": "包含CSS变量"
+    },
+    {
+      "name": "Vite配置",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.005Z",
+      "details": "Vite配置存在"
+    },
+    {
+      "name": "TypeScript配置",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.005Z",
+      "details": "TS配置存在"
+    },
+    {
+      "name": "React插件",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.005Z",
+      "details": "包含React插件"
+    },
+    {
+      "name": "代理配置",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.005Z",
+      "details": "包含代理配置"
+    },
+    {
+      "name": "PRD功能: 用户认证",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.005Z",
+      "details": "功能已实现"
+    },
+    {
+      "name": "PRD功能: 仪表盘",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.005Z",
+      "details": "功能已实现"
+    },
+    {
+      "name": "PRD功能: 案件管理",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.005Z",
+      "details": "功能已实现"
+    },
+    {
+      "name": "PRD功能: 客户管理",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.005Z",
+      "details": "功能已实现"
+    },
+    {
+      "name": "PRD功能: 律师管理",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.005Z",
+      "details": "功能已实现"
+    },
+    {
+      "name": "PRD功能: 财务管理",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.005Z",
+      "details": "功能已实现"
+    },
+    {
+      "name": "PRD功能: 审批流程",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.005Z",
+      "details": "功能已实现"
+    },
+    {
+      "name": "PRD功能: 利益冲突检查",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.005Z",
+      "details": "功能已实现"
+    },
+    {
+      "name": "PRD功能: 法律工具",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.005Z",
+      "details": "功能已实现"
+    },
+    {
+      "name": "PRD功能: 文件管理",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.005Z",
+      "details": "功能已实现"
+    },
+    {
+      "name": "PRD功能: 用户管理",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.005Z",
+      "details": "功能已实现"
+    },
+    {
+      "name": "媒体查询",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.005Z",
+      "details": "包含媒体查询"
+    },
+    {
+      "name": "断点配置",
+      "status": "failed",
+      "timestamp": "2025-09-28T06:35:24.005Z",
+      "details": "缺少断点配置"
+    },
+    {
+      "name": "Token管理",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.005Z",
+      "details": "包含Token管理"
+    },
+    {
+      "name": "权限检查",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.005Z",
+      "details": "包含权限检查"
+    },
+    {
+      "name": "认证头",
+      "status": "passed",
+      "timestamp": "2025-09-28T06:35:24.005Z",
+      "details": "包含认证头设置"
+    }
+  ],
+  "summary": {
+    "total": 60,
+    "passed": 58,
+    "failed": 2,
+    "skipped": 0
+  }
+}

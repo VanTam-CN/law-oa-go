@@ -1,0 +1,14 @@
+{
+  "filePath": ".claude/specs/chrome-devtools-validation/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-09-30T02:38:41.709Z",
+      "trigger": "initial",
+      "approvalId": "approval_1759199921706_w7s867o1h",
+      "approvalTitle": "Chrome DevTools系统全面验证功能设计文档"
+    }
+  ]
+}

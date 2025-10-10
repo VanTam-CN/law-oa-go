@@ -2,8 +2,10 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8"
@@ -17,7 +19,7 @@ import (
 // Init 初始化数据库连接
 func Init(cfg config.DatabaseConfig) (*gorm.DB, error) {
 	// 构建DSN
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=%v&loc=%s",
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=%v&loc=%s&tls=skip-verify",
 		cfg.Username,
 		cfg.Password,
 		cfg.Host,
@@ -48,11 +50,8 @@ func Init(cfg config.DatabaseConfig) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to get sql.DB: %w", err)
 	}
 
-	// 配置连接池（按照GORM最佳实践）
-	sqlDB.SetMaxOpenConns(100)                 // 最大连接数
-	sqlDB.SetMaxIdleConns(10)                  // 最大空闲连接数
-	sqlDB.SetConnMaxLifetime(1 * time.Hour)    // 连接最大生命周期
-	sqlDB.SetConnMaxIdleTime(30 * time.Minute) // 连接最大空闲时间
+	// 配置连接池（根据环境和负载优化）
+	configureConnectionPool(sqlDB)
 
 	log.Println("数据库连接成功")
 	return db, nil
@@ -214,4 +213,46 @@ func GetRedis() interface{} {
 		return CacheService.GetClient()
 	}
 	return nil
+}
+
+// configureConnectionPool 根据环境配置数据库连接池
+func configureConnectionPool(sqlDB *sql.DB) {
+	// 获取环境变量，默认为development
+	env := os.Getenv("ENVIRONMENT")
+	if env == "" {
+		env = "development"
+	}
+
+	switch env {
+	case "production":
+		// 生产环境配置：保守的连接数，较短的连接生命周期
+		sqlDB.SetMaxOpenConns(25)                  // 最大连接数，避免数据库压力
+		sqlDB.SetMaxIdleConns(25)                  // 空闲连接数与最大连接数相等
+		sqlDB.SetConnMaxLifetime(5 * time.Minute)  // 连接最大生命周期，避免长时间占用
+		sqlDB.SetConnMaxIdleTime(1 * time.Minute)  // 空闲连接超时，快速释放资源
+
+	case "staging":
+		// 预发布环境配置：适中的连接数
+		sqlDB.SetMaxOpenConns(20)
+		sqlDB.SetMaxIdleConns(20)
+		sqlDB.SetConnMaxLifetime(10 * time.Minute)
+		sqlDB.SetConnMaxIdleTime(2 * time.Minute)
+
+	case "testing":
+		// 测试环境配置：较少的连接数
+		sqlDB.SetMaxOpenConns(5)
+		sqlDB.SetMaxIdleConns(5)
+		sqlDB.SetConnMaxLifetime(30 * time.Minute)
+		sqlDB.SetConnMaxIdleTime(5 * time.Minute)
+
+	default: // development
+		// 开发环境配置：平衡性能和资源使用
+		sqlDB.SetMaxOpenConns(15)                  // 适中的连接数
+		sqlDB.SetMaxIdleConns(15)                  // 空闲连接数与最大连接数相等
+		sqlDB.SetConnMaxLifetime(30 * time.Minute) // 连接最大生命周期
+		sqlDB.SetConnMaxIdleTime(5 * time.Minute)  // 空闲连接超时
+	}
+
+	log.Printf("数据库连接池配置完成 - 环境: %s, 最大连接数: %d, 最大空闲连接数: %d",
+		env, sqlDB.Stats().MaxOpenConnections, sqlDB.Stats().Idle)
 }

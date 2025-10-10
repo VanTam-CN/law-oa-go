@@ -1,0 +1,856 @@
+package validators
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/url"
+	"regexp"
+	"strings"
+
+	"github.com/go-playground/validator/v10"
+	"law-oa-go/internal/testing"
+)
+
+// TestValidator 测试验证器
+type TestValidator struct {
+	validate *validator.Validate
+}
+
+// NewTestValidator 创建测试验证器
+func NewTestValidator() *TestValidator {
+	v := validator.New()
+
+	// 注册自定义验证函数
+	v.RegisterValidation("test_name", validateTestName)
+	v.RegisterValidation("test_url", validateTestURL)
+	v.RegisterValidation("test_environment", validateTestEnvironment)
+	v.RegisterValidation("test_type", validateTestType)
+	v.RegisterValidation("test_step_type", validateTestStepType)
+	v.RegisterValidation("test_http_method", validateHTTPMethod)
+	v.RegisterValidation("test_priority", validateTestPriority)
+	v.RegisterValidation("test_timeout", validateTestTimeout)
+	v.RegisterValidation("test_tags", validateTestTags)
+
+	return &TestValidator{
+		validate: v,
+	}
+}
+
+// ValidateStruct 验证结构体
+func (v *TestValidator) ValidateStruct(obj interface{}) error {
+	if err := v.validate.Struct(obj); err != nil {
+		return fmt.Errorf("validation failed: %w", err)
+	}
+	return nil
+}
+
+// ValidateTestSuite 验证测试套件
+func (v *TestValidator) ValidateTestSuite(suite *testing.TestSuite) error {
+	if suite == nil {
+		return fmt.Errorf("test suite cannot be nil")
+	}
+
+	// 基础字段验证
+	if err := v.validate.Struct(suite); err != nil {
+		return fmt.Errorf("invalid test suite: %w", err)
+	}
+
+	// 自定义验证逻辑
+	if suite.Name == "" {
+		return fmt.Errorf("test suite name cannot be empty")
+	}
+
+	if len(suite.Name) > 100 {
+		return fmt.Errorf("test suite name too long (max 100 characters)")
+	}
+
+	if len(suite.Description) > 500 {
+		return fmt.Errorf("test suite description too long (max 500 characters)")
+	}
+
+	// 验证环境
+	validEnvironments := []string{"dev", "test", "staging", "prod"}
+	if suite.Environment != "" {
+		envValid := false
+		for _, env := range validEnvironments {
+			if suite.Environment == env {
+				envValid = true
+				break
+			}
+		}
+		if !envValid {
+			return fmt.Errorf("invalid environment: %s", suite.Environment)
+		}
+	}
+
+	// 验证超时时间
+	if suite.Timeout <= 0 {
+		return fmt.Errorf("timeout must be positive")
+	}
+	if suite.Timeout > 3600*1e9 { // 1小时（纳秒）
+		return fmt.Errorf("timeout too long (max 1 hour)")
+	}
+
+	// 验证工作线程数
+	if suite.MaxWorkers <= 0 {
+		return fmt.Errorf("max workers must be positive")
+	}
+	if suite.MaxWorkers > 100 {
+		return fmt.Errorf("max workers too many (max 100)")
+	}
+
+	// 验证重试配置
+	if suite.Retries < 0 {
+		return fmt.Errorf("retries cannot be negative")
+	}
+	if suite.Retries > 10 {
+		return fmt.Errorf("retries too many (max 10)")
+	}
+
+	if suite.RetryDelay <= 0 {
+		return fmt.Errorf("retry delay must be positive")
+	}
+	if suite.RetryDelay > 300*1e9 { // 5分钟（纳秒）
+		return fmt.Errorf("retry delay too long (max 5 minutes)")
+	}
+
+	// 验证变量
+	if suite.Variables != nil {
+		for key, value := range suite.Variables {
+			if key == "" {
+				return fmt.Errorf("variable key cannot be empty")
+			}
+			if strings.Contains(key, " ") {
+				return fmt.Errorf("variable key cannot contain spaces: %s", key)
+			}
+			if !isValidVariableValue(value) {
+				return fmt.Errorf("invalid variable value for key %s", key)
+			}
+		}
+	}
+
+	// 验证请求头
+	if suite.Headers != nil {
+		if err := validateHeaders(suite.Headers); err != nil {
+			return fmt.Errorf("invalid headers: %w", err)
+		}
+	}
+
+	// 验证标签
+	if suite.Tags != nil {
+		for _, tag := range suite.Tags {
+			if tag == "" {
+				return fmt.Errorf("tag cannot be empty")
+			}
+			if len(tag) > 50 {
+				return fmt.Errorf("tag too long (max 50 characters): %s", tag)
+			}
+			if !isValidTagName(tag) {
+				return fmt.Errorf("invalid tag format: %s", tag)
+			}
+		}
+	}
+
+	return nil
+}
+
+// ValidateTestCase 验证测试用例
+func (v *TestValidator) ValidateTestCase(testCase *testing.TestCase) error {
+	if testCase == nil {
+		return fmt.Errorf("test case cannot be nil")
+	}
+
+	// 基础字段验证
+	if err := v.validate.Struct(testCase); err != nil {
+		return fmt.Errorf("invalid test case: %w", err)
+	}
+
+	// 自定义验证逻辑
+	if testCase.Name == "" {
+		return fmt.Errorf("test case name cannot be empty")
+	}
+
+	if len(testCase.Name) > 100 {
+		return fmt.Errorf("test case name too long (max 100 characters)")
+	}
+
+	if len(testCase.Description) > 500 {
+		return fmt.Errorf("test case description too long (max 500 characters)")
+	}
+
+	// 验证测试类型
+	validTypes := []string{"api", "ui", "performance", "integration", "e2e"}
+	typeValid := false
+	for _, t := range validTypes {
+		if string(testCase.Type) == t {
+			typeValid = true
+			break
+		}
+	}
+	if !typeValid {
+		return fmt.Errorf("invalid test type: %s", testCase.Type)
+	}
+
+	// 验证套件ID
+	if testCase.SuiteID == "" {
+		return fmt.Errorf("test case suite ID cannot be empty")
+	}
+
+	// 根据测试类型进行特定验证
+	switch testCase.Type {
+	case testing.TestTypeAPI:
+		if err := v.validateAPITestCase(testCase); err != nil {
+			return fmt.Errorf("invalid API test case: %w", err)
+		}
+	case testing.TestTypeUI:
+		if err := v.validateUITestCase(testCase); err != nil {
+			return fmt.Errorf("invalid UI test case: %w", err)
+		}
+	case testing.TestTypePerformance:
+		if err := v.validatePerformanceTestCase(testCase); err != nil {
+			return fmt.Errorf("invalid performance test case: %w", err)
+		}
+	case testing.TestTypeIntegration:
+		if err := v.validateIntegrationTestCase(testCase); err != nil {
+			return fmt.Errorf("invalid integration test case: %w", err)
+		}
+	case testing.TestTypeE2E:
+		if err := v.validateE2ETestCase(testCase); err != nil {
+			return fmt.Errorf("invalid E2E test case: %w", err)
+		}
+	}
+
+	// 验证测试步骤
+	if testCase.Steps != nil {
+		for i, step := range testCase.Steps {
+			if err := v.validateTestStep(&step, i+1); err != nil {
+				return fmt.Errorf("invalid step %d: %w", i+1, err)
+			}
+		}
+	}
+
+	// 验证设置步骤
+	if testCase.Setup != nil {
+		for i, step := range testCase.Setup {
+			if err := v.validateTestStep(&step, i+1); err != nil {
+				return fmt.Errorf("invalid setup step %d: %w", i+1, err)
+			}
+		}
+	}
+
+	// 验证清理步骤
+	if testCase.Teardown != nil {
+		for i, step := range testCase.Teardown {
+			if err := v.validateTestStep(&step, i+1); err != nil {
+				return fmt.Errorf("invalid teardown step %d: %w", i+1, err)
+			}
+		}
+	}
+
+	// 验证期望
+	if testCase.Expected != nil {
+		if err := v.validateTestExpected(testCase.Expected); err != nil {
+			return fmt.Errorf("invalid test expectations: %w", err)
+		}
+	}
+
+	// 验证超时时间
+	if testCase.Timeout <= 0 {
+		return fmt.Errorf("timeout must be positive")
+	}
+	if testCase.Timeout > 3600*1e9 { // 1小时（纳秒）
+		return fmt.Errorf("timeout too long (max 1 hour)")
+	}
+
+	// 验证元数据
+	if testCase.Metadata != nil {
+		for key, value := range testCase.Metadata {
+			if key == "" {
+				return fmt.Errorf("metadata key cannot be empty")
+			}
+			if !isValidMetadataKey(key) {
+				return fmt.Errorf("invalid metadata key format: %s", key)
+			}
+			if !isValidMetadataValue(value) {
+				return fmt.Errorf("invalid metadata value for key %s", key)
+			}
+		}
+	}
+
+	// 验证标签
+	if testCase.Tags != nil {
+		for _, tag := range testCase.Tags {
+			if tag == "" {
+				return fmt.Errorf("tag cannot be empty")
+			}
+			if len(tag) > 50 {
+				return fmt.Errorf("tag too long (max 50 characters): %s", tag)
+			}
+			if !isValidTagName(tag) {
+				return fmt.Errorf("invalid tag format: %s", tag)
+			}
+		}
+	}
+
+	return nil
+}
+
+// validateAPITestCase 验证API测试用例
+func (v *TestValidator) validateAPITestCase(testCase *testing.TestCase) error {
+	// 验证HTTP方法
+	if testCase.Method == "" {
+		return fmt.Errorf("HTTP method cannot be empty for API test")
+	}
+
+	validMethods := []string{"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}
+	methodValid := false
+	for _, method := range validMethods {
+		if testCase.Method == method {
+			methodValid = true
+			break
+		}
+	}
+	if !methodValid {
+		return fmt.Errorf("invalid HTTP method: %s", testCase.Method)
+	}
+
+	// 验证URL
+	if testCase.URL == "" {
+		return fmt.Errorf("URL cannot be empty for API test")
+	}
+
+	if err := validateURL(testCase.URL); err != nil {
+		return fmt.Errorf("invalid URL: %w", err)
+	}
+
+	// 验证请求头
+	if testCase.Headers != nil {
+		if err := validateHeaders(testCase.Headers); err != nil {
+			return fmt.Errorf("invalid headers: %w", err)
+		}
+	}
+
+	// 验证请求体
+	if testCase.Body != nil {
+		if err := validateRequestBody(testCase.Body); err != nil {
+			return fmt.Errorf("invalid request body: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// validateUITestCase 验证UI测试用例
+func (v *TestValidator) validateUITestCase(testCase *testing.TestCase) error {
+	// UI测试必须至少有一个步骤
+	if len(testCase.Steps) == 0 {
+		return fmt.Errorf("UI test must have at least one step")
+	}
+
+	// 验证至少有一个导航步骤
+	hasNavigate := false
+	for _, step := range testCase.Steps {
+		if step.Type == "navigate" {
+			hasNavigate = true
+			break
+		}
+	}
+	if !hasNavigate {
+		return fmt.Errorf("UI test must have at least one navigate step")
+	}
+
+	return nil
+}
+
+// validatePerformanceTestCase 验证性能测试用例
+func (v *TestValidator) validatePerformanceTestCase(testCase *testing.TestCase) error {
+	// 性能测试必须设置URL或步骤
+	if testCase.URL == "" && len(testCase.Steps) == 0 {
+		return fmt.Errorf("performance test must have URL or steps defined")
+	}
+
+	// 性能测试建议设置响应时间期望
+	if testCase.Expected != nil && testCase.Expected.ResponseTime <= 0 {
+		return fmt.Errorf("performance test should have response time expectation")
+	}
+
+	return nil
+}
+
+// validateIntegrationTestCase 验证集成测试用例
+func (v *TestValidator) validateIntegrationTestCase(testCase *testing.TestCase) error {
+	// 集成测试应该有多个步骤
+	if len(testCase.Steps) < 2 {
+		return fmt.Errorf("integration test should have at least 2 steps")
+	}
+
+	return nil
+}
+
+// validateE2ETestCase 验证端到端测试用例
+func (v *TestValidator) validateE2ETestCase(testCase *testing.TestCase) error {
+	// E2E测试应该模拟完整用户流程
+	if len(testCase.Steps) < 3 {
+		return fmt.Errorf("E2E test should have at least 3 steps")
+	}
+
+	return nil
+}
+
+// validateTestStep 验证测试步骤
+func (v *TestValidator) validateTestStep(step *testing.TestStep, stepNumber int) error {
+	if step.Name == "" {
+		return fmt.Errorf("step name cannot be empty")
+	}
+
+	if len(step.Name) > 100 {
+		return fmt.Errorf("step name too long (max 100 characters): step %d", stepNumber)
+	}
+
+	// 验证步骤类型
+	validStepTypes := []string{"navigate", "click", "fill", "wait", "assert", "screenshot", "javascript"}
+	typeValid := false
+	for _, stepType := range validStepTypes {
+		if step.Type == stepType {
+			typeValid = true
+			break
+		}
+	}
+	if !typeValid {
+		return fmt.Errorf("invalid step type: %s (step %d)", step.Type, stepNumber)
+	}
+
+	// 验证动作
+	if step.Action == "" {
+		return fmt.Errorf("step action cannot be empty (step %d)", stepNumber)
+	}
+
+	// 根据步骤类型进行特定验证
+	switch step.Type {
+	case "navigate":
+		if step.Target == "" {
+			return fmt.Errorf("navigate step must have target (step %d)", stepNumber)
+		}
+		if err := validateURL(step.Target); err != nil {
+			return fmt.Errorf("invalid navigation URL (step %d): %w", stepNumber, err)
+		}
+	case "click", "fill":
+		if step.Target == "" {
+			return fmt.Errorf("step must have target for %s action (step %d)", step.Type, stepNumber)
+		}
+	case "fill":
+		if step.Value == nil {
+			return fmt.Errorf("fill step must have value (step %d)", stepNumber)
+		}
+	case "wait":
+		if step.Wait <= 0 {
+			return fmt.Errorf("wait step must have positive wait time (step %d)", stepNumber)
+		}
+	case "assert":
+		if step.Expected == nil {
+			return fmt.Errorf("assert step must have expected value (step %d)", stepNumber)
+		}
+	case "javascript":
+		if step.Action == "" {
+			return fmt.Errorf("javascript step must have script (step %d)", stepNumber)
+		}
+	}
+
+	return nil
+}
+
+// validateTestExpected 验证测试期望
+func (v *TestValidator) validateTestExpected(expected *testing.TestExpected) error {
+	// 验证状态码
+	if expected.Status != 0 {
+		if expected.Status < 100 || expected.Status > 599 {
+			return fmt.Errorf("invalid status code: %d", expected.Status)
+		}
+	}
+
+	// 验证响应时间
+	if expected.ResponseTime > 0 && expected.ResponseTime > 300000 { // 5分钟（毫秒）
+		return fmt.Errorf("response time expectation too long (max 5 minutes)")
+	}
+
+	// 验证内容类型
+	if expected.ContentType != "" {
+		validContentTypes := []string{
+			"application/json",
+			"text/html",
+			"text/plain",
+			"application/xml",
+			"text/xml",
+			"application/x-www-form-urlencoded",
+			"multipart/form-data",
+		}
+		contentTypeValid := false
+		for _, ct := range validContentTypes {
+			if strings.Contains(expected.ContentType, ct) {
+				contentTypeValid = true
+				break
+			}
+		}
+		if !contentTypeValid {
+			return fmt.Errorf("invalid content type: %s", expected.ContentType)
+		}
+	}
+
+	// 验证请求头
+	if expected.Headers != nil {
+		if err := validateHeaders(expected.Headers); err != nil {
+			return fmt.Errorf("invalid expected headers: %w", err)
+		}
+	}
+
+	// 验证包含的文本
+	if expected.BodyContains != nil {
+		for _, text := range expected.BodyContains {
+			if text == "" {
+				return fmt.Errorf("body contains text cannot be empty")
+			}
+			if len(text) > 1000 {
+				return fmt.Errorf("body contains text too long (max 1000 characters): %s", text)
+			}
+		}
+	}
+
+	return nil
+}
+
+// 自定义验证函数
+
+func validateTestName(fl validator.FieldLevel) bool {
+	name := fl.Field().String()
+	if name == "" {
+		return false
+	}
+	if len(name) > 100 {
+		return false
+	}
+	return true
+}
+
+func validateTestURL(fl validator.FieldLevel) bool {
+	urlStr := fl.Field().String()
+	if urlStr == "" {
+		return true // 可以为空，具体验证逻辑在业务层
+	}
+	return validateURL(urlStr) == nil
+}
+
+func validateTestEnvironment(fl validator.FieldLevel) bool {
+	env := fl.Field().String()
+	if env == "" {
+		return true
+	}
+	validEnvironments := []string{"dev", "test", "staging", "prod"}
+	for _, validEnv := range validEnvironments {
+		if env == validEnv {
+			return true
+		}
+	}
+	return false
+}
+
+func validateTestType(fl validator.FieldLevel) bool {
+	testType := fl.Field().String()
+	validTypes := []string{"api", "ui", "performance", "integration", "e2e"}
+	for _, validType := range validTypes {
+		if testType == validType {
+			return true
+		}
+	}
+	return false
+}
+
+func validateTestStepType(fl validator.FieldLevel) bool {
+	stepType := fl.Field().String()
+	validTypes := []string{"navigate", "click", "fill", "wait", "assert", "screenshot", "javascript"}
+	for _, validType := range validTypes {
+		if stepType == validType {
+			return true
+		}
+	}
+	return false
+}
+
+func validateHTTPMethod(fl validator.FieldLevel) bool {
+	method := fl.Field().String()
+	if method == "" {
+		return false
+	}
+	validMethods := []string{"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}
+	for _, validMethod := range validMethods {
+		if method == validMethod {
+			return true
+		}
+	}
+	return false
+}
+
+func validateTestPriority(fl validator.FieldLevel) bool {
+	priority := fl.Field().Int()
+	return priority >= 1 && priority <= 10
+}
+
+func validateTestTimeout(fl validator.FieldLevel) bool {
+	timeout := fl.Field().Int()
+	return timeout > 0 && timeout <= 3600
+}
+
+func validateTestTags(fl validator.FieldLevel) bool {
+	tags := fl.Field().Interface()
+	if tags == nil {
+		return true
+	}
+
+	tagSlice, ok := tags.([]string)
+	if !ok {
+		return false
+	}
+
+	for _, tag := range tagSlice {
+		if tag == "" {
+			return false
+		}
+		if len(tag) > 50 {
+			return false
+		}
+		if !isValidTagName(tag) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// 辅助验证函数
+
+func validateURL(urlStr string) error {
+	// 如果是相对URL，先转换为绝对URL
+	if !strings.HasPrefix(urlStr, "http://") && !strings.HasPrefix(urlStr, "https://") {
+		urlStr = "http://localhost:8080" + urlStr
+	}
+
+	parsedURL, err := url.Parse(urlStr)
+	if err != nil {
+		return err
+	}
+
+	if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
+		return fmt.Errorf("invalid URL scheme: %s", parsedURL.Scheme)
+	}
+
+	if parsedURL.Host == "" {
+		return fmt.Errorf("URL host cannot be empty")
+	}
+
+	return nil
+}
+
+func validateHeaders(headers map[string]string) error {
+	for key, value := range headers {
+		if key == "" {
+			return fmt.Errorf("header key cannot be empty")
+		}
+		if strings.Contains(key, " ") {
+			return fmt.Errorf("header key cannot contain spaces: %s", key)
+		}
+		if !isValidHeaderKey(key) {
+			return fmt.Errorf("invalid header key format: %s", key)
+		}
+		if value == "" {
+			return fmt.Errorf("header value cannot be empty for key: %s", key)
+		}
+	}
+	return nil
+}
+
+func validateRequestBody(body interface{}) error {
+	// 检查请求体大小
+	bodyStr, ok := body.(string)
+	if ok && len(bodyStr) > 10*1024*1024 { // 10MB
+		return fmt.Errorf("request body too large (max 10MB)")
+	}
+
+	// 检查JSON格式（如果是字符串）
+	if ok && strings.Contains(strings.ToLower(bodyStr), "json") {
+		if !isValidJSON(bodyStr) {
+			return fmt.Errorf("invalid JSON format in request body")
+		}
+	}
+
+	return nil
+}
+
+func isValidVariableValue(value interface{}) bool {
+	switch v := value.(type) {
+	case string, int, int8, int16, int32, int64, float32, float64, bool:
+		return true
+	case []interface{}:
+		for _, item := range v {
+			if !isValidVariableValue(item) {
+				return false
+			}
+		}
+		return true
+	case map[string]interface{}:
+		for _, item := range v {
+			if !isValidVariableValue(item) {
+				return false
+			}
+		}
+		return true
+	default:
+		return false
+	}
+}
+
+func isValidMetadataKey(key string) bool {
+	// 元数据键应该符合命名规范
+	if strings.Contains(key, " ") {
+		return false
+	}
+
+	// 可以包含字母、数字、下划线、连字符、点
+	matched, _ := regexp.MatchString(`^[a-zA-Z0-9_.-]+$`, key)
+	return matched
+}
+
+func isValidMetadataValue(value interface{}) bool {
+	// 元数据值必须是JSON可序列化的
+	switch value.(type) {
+	case string, int, int8, int16, int32, int64, float32, float64, bool:
+		return true
+	case []interface{}, map[string]interface{}:
+		return true
+	default:
+		return false
+	}
+}
+
+func isValidTagName(tag string) bool {
+	// 标签应该只包含字母、数字、连字符和下划线
+	matched, _ := regexp.MatchString(`^[a-zA-Z0-9_-]+$`, tag)
+	return matched
+}
+
+func isValidHeaderKey(key string) bool {
+	// HTTP头部键应该符合HTTP规范
+	if strings.Contains(key, " ") {
+		return false
+	}
+
+	// 应该以字母开头，只包含字母、数字、连字符
+	matched, _ := regexp.MatchString(`^[a-zA-Z][a-zA-Z0-9-]*$`, key)
+	return matched
+}
+
+func isValidJSON(str string) bool {
+	var js interface{}
+	return json.Unmarshal([]byte(str), &js) == nil
+}
+
+// ValidateTestExecution 验证测试执行
+func (v *TestValidator) ValidateTestExecution(execution *testing.TestExecution) error {
+	if execution == nil {
+		return fmt.Errorf("test execution cannot be nil")
+	}
+
+	// 验证执行ID
+	if execution.ID == "" {
+		return fmt.Errorf("execution ID cannot be empty")
+	}
+
+	// 验证状态
+	validStatuses := []string{"pending", "running", "passed", "failed", "skipped", "error", "timeout"}
+	statusValid := false
+	for _, status := range validStatuses {
+		if string(execution.Status) == status {
+			statusValid = true
+			break
+		}
+	}
+	if !statusValid {
+		return fmt.Errorf("invalid execution status: %s", execution.Status)
+	}
+
+	// 验证测试数量
+	if execution.TotalTests < 0 {
+		return fmt.Errorf("total tests cannot be negative")
+	}
+
+	// 验证通过测试数量
+	if execution.PassedTests < 0 {
+		return fmt.Errorf("passed tests cannot be negative")
+	}
+
+	// 验证失败测试数量
+	if execution.FailedTests < 0 {
+		return fmt.Errorf("failed tests cannot be negative")
+	}
+
+	// 验证跳过测试数量
+	if execution.SkippedTests < 0 {
+		return fmt.Errorf("skipped tests cannot be negative")
+	}
+
+	// 验证进度
+	if execution.Progress < 0 || execution.Progress > 100 {
+		return fmt.Errorf("progress must be between 0 and 100")
+	}
+
+	return nil
+}
+
+// ValidateTestResult 验证测试结果
+func (v *TestValidator) ValidateTestResult(result *testing.TestResult) error {
+	if result == nil {
+		return fmt.Errorf("test result cannot be nil")
+	}
+
+	// 验证结果ID
+	if result.ID == "" {
+		return fmt.Errorf("result ID cannot be empty")
+	}
+
+	// 验证状态
+	validStatuses := []string{"pending", "running", "passed", "failed", "skipped", "error", "timeout"}
+	statusValid := false
+	for _, status := range validStatuses {
+		if string(result.Status) == status {
+			statusValid = true
+			break
+		}
+	}
+	if !statusValid {
+		return fmt.Errorf("invalid result status: %s", result.Status)
+	}
+
+	// 验证测试用例ID
+	if result.TestCaseID == "" {
+		return fmt.Errorf("test case ID cannot be empty")
+	}
+
+	// 验证执行ID
+	if result.ExecutionID == "" {
+		return fmt.Errorf("execution ID cannot be empty")
+	}
+
+	// 验证时间
+	if result.StartTime.IsZero() {
+		return fmt.Errorf("start time cannot be empty")
+	}
+
+	if !result.EndTime.IsZero() && result.EndTime.Before(result.StartTime) {
+		return fmt.Errorf("end time cannot be before start time")
+	}
+
+	// 验证持续时间
+	if result.Duration < 0 {
+		return fmt.Errorf("duration cannot be negative")
+	}
+
+	return nil
+}

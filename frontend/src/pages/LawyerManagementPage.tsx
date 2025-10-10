@@ -68,6 +68,8 @@ const LawyerManagementPage: React.FC = () => {
   const [modalTitle, setModalTitle] = useState<string>('');
   const [editingLawyer, setEditingLawyer] = useState<Lawyer | null>(null);
   const [stats, setStats] = useState<LawyerStats | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState<number>(0);
 
   // 查询参数
   const [queryParams, setQueryParams] = useState({
@@ -153,11 +155,19 @@ const LawyerManagementPage: React.FC = () => {
   };
 
   // 获取律师列表
-  const fetchLawyers = async () => {
+  const fetchLawyers = async (isRetry: boolean = false) => {
     setLoading(true);
+    setError(null);
+
     try {
-      // 模拟API调用
+      // 模拟API调用 - 在开发模式下增加稳定性
+      console.log('🛠️ 开发模式：加载律师列表（模拟数据）');
       await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // 模拟偶发性错误（用于测试重试机制）
+      if (Math.random() < 0.1 && !isRetry && retryCount < 2) {
+        throw new Error('模拟网络错误，触发重试机制');
+      }
 
       // 过滤数据
       let filteredLawyers = mockLawyers;
@@ -187,8 +197,26 @@ const LawyerManagementPage: React.FC = () => {
 
       setLawyers(paginatedLawyers);
       setTotal(filteredLawyers.length);
+      setRetryCount(0); // 重置重试计数
+      console.log(`✅ 律师列表加载完成：${paginatedLawyers.length} 条记录`);
     } catch (error) {
       console.error('获取律师列表失败:', error);
+
+      // 重试机制
+      if (retryCount < 2 && !isRetry) {
+        console.log(`🔄 第 ${retryCount + 1} 次重试...`);
+        setRetryCount(retryCount + 1);
+        setTimeout(() => {
+          fetchLawyers(true);
+        }, 1000 * (retryCount + 1)); // 递增延迟
+        return;
+      }
+
+      // 在开发模式下提供降级处理
+      console.warn('🛠️ 开发模式：使用默认数据作为降级方案');
+      setError(`加载律师列表失败，使用模拟数据: ${error instanceof Error ? error.message : '未知错误'}`);
+      setLawyers(mockLawyers.slice(0, queryParams.pageSize));
+      setTotal(mockLawyers.length);
     } finally {
       setLoading(false);
     }
@@ -198,10 +226,15 @@ const LawyerManagementPage: React.FC = () => {
   const fetchStats = async () => {
     try {
       // 模拟API调用
+      console.log('🛠️ 开发模式：加载律师统计数据');
       await new Promise(resolve => setTimeout(resolve, 500));
       setStats(mockStats);
+      console.log('✅ 律师统计数据加载完成');
     } catch (error) {
       console.error('获取统计数据失败:', error);
+      // 在开发模式下提供降级处理
+      console.warn('🛠️ 开发模式：使用默认统计数据');
+      setStats(mockStats);
     }
   };
 
@@ -225,6 +258,15 @@ const LawyerManagementPage: React.FC = () => {
       pageNum: 1,
       pageSize: 10
     });
+    setError(null);
+  };
+
+  // 手动重试
+  const handleRetry = () => {
+    console.log('🔄 用户手动重试...');
+    setRetryCount(0);
+    setError(null);
+    fetchLawyers();
   };
 
   // 获取状态标签
@@ -323,11 +365,25 @@ const LawyerManagementPage: React.FC = () => {
 
   return (
     <div>
+      {/* 开发模式指示器 */}
+      {process.env.NODE_ENV === 'development' && (
+        <Alert variant="info" className="mb-3">
+          <small>
+            🛠️ 开发模式：律师管理页面正在使用模拟数据运行
+          </small>
+        </Alert>
+      )}
+
       {/* 头部 */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h1>律师管理</h1>
-          <p className="text-muted">管理律师事务所的律师信息</p>
+          <p className="text-muted">
+            管理律师事务所的律师信息
+            {process.env.NODE_ENV === 'development' && (
+              <small className="text-info ms-2">(开发模式 - 模拟数据)</small>
+            )}
+          </p>
         </div>
         <Button variant="primary" onClick={handleAdd}>
           <FaPlus className="me-2" />
@@ -446,13 +502,48 @@ const LawyerManagementPage: React.FC = () => {
         </Card.Body>
       </Card>
 
+      {/* 错误提示和重试 */}
+      {error && (
+        <Alert variant="warning" className="mb-4">
+          <div className="d-flex justify-content-between align-items-center">
+            <div>
+              <strong>⚠️ 加载错误:</strong> {error}
+              <div className="small text-muted mt-1">
+                {retryCount > 0 && `已自动重试 ${retryCount} 次`}
+              </div>
+            </div>
+            <Button variant="outline-warning" size="sm" onClick={handleRetry}>
+              <FaSync className="me-1" />
+              手动重试
+            </Button>
+          </div>
+        </Alert>
+      )}
+
       {/* 律师列表 */}
       <Card>
         <Card.Body>
           {loading ? (
             <div className="text-center py-5">
-              <Spinner animation="border" />
-              <p className="mt-2">加载中...</p>
+              <div className="mb-3">
+                <Spinner animation="border" role="status" style={{ width: '3rem', height: '3rem' }}>
+                  <span className="visually-hidden">加载中...</span>
+                </Spinner>
+              </div>
+              <h5 className="text-muted mb-2">
+                {retryCount > 0 ? `正在重试... (${retryCount}/2)` : '正在加载律师列表...'}
+              </h5>
+              <p className="text-muted small mb-0">
+                {process.env.NODE_ENV === 'development' ? '🛠️ 开发模式：使用模拟数据' : '请稍候，正在获取最新数据'}
+              </p>
+              {retryCount > 0 && (
+                <div className="mt-2">
+                  <small className="text-info">
+                    <FaSync className="me-1" />
+                    自动重试第 {retryCount} 次
+                  </small>
+                </div>
+              )}
             </div>
           ) : (
             <>
@@ -530,6 +621,26 @@ const LawyerManagementPage: React.FC = () => {
                   ))}
                 </tbody>
               </Table>
+
+              {/* 空数据状态 */}
+              {!loading && lawyers.length === 0 && (
+                <div className="text-center py-5">
+                  <FaUserTie className="text-muted mb-3" style={{ fontSize: '3rem' }} />
+                  <h5 className="text-muted mb-2">暂无律师数据</h5>
+                  <p className="text-muted small mb-3">
+                    {queryParams.name || queryParams.department || queryParams.status
+                      ? '没有找到符合筛选条件的律师，请尝试调整搜索条件'
+                      : '系统还没有律师数据，点击上方"新增律师"按钮添加第一位律师'
+                    }
+                  </p>
+                  {!queryParams.name && !queryParams.department && !queryParams.status && (
+                    <Button variant="primary" onClick={handleAdd}>
+                      <FaPlus className="me-2" />
+                      新增律师
+                    </Button>
+                  )}
+                </div>
+              )}
 
               {/* 分页 */}
               <div className="d-flex justify-content-between align-items-center mt-3">

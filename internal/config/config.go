@@ -10,14 +10,15 @@ import (
 
 // Config 应用配置
 type Config struct {
-	Environment   string              `mapstructure:"environment"`
-	Port          string              `mapstructure:"port"`
-	Database      DatabaseConfig      `mapstructure:"database"`
-	Redis         RedisConfig         `mapstructure:"redis"`
-	Elasticsearch ElasticsearchConfig `mapstructure:"elasticsearch"`
-	JWT           JWTConfig           `mapstructure:"jwt"`
-	Log           LogConfig           `mapstructure:"log"`
-	CORS          CORSConfig          `mapstructure:"cors"`
+	Environment       string                    `mapstructure:"environment"`
+	Port              string                    `mapstructure:"port"`
+	Database          DatabaseConfig            `mapstructure:"database"`
+	Redis             RedisConfig               `mapstructure:"redis"`
+	Elasticsearch     ElasticsearchConfig       `mapstructure:"elasticsearch"`
+	JWT               JWTConfig                 `mapstructure:"jwt"`
+	Log               LogConfig                 `mapstructure:"log"`
+	CORS              CORSConfig                `mapstructure:"cors"`
+	ConflictDetection *ConflictDetectionConfig   `mapstructure:"conflictDetection"`
 }
 
 // DatabaseConfig 数据库配置
@@ -106,10 +107,21 @@ func Load() (*Config, error) {
 	viper.SetDefault("log.level", "info")
 	viper.SetDefault("log.format", "json")
 	viper.SetDefault("log.output", "stdout")
-	viper.SetDefault("cors.allowedOrigins", []string{"http://localhost:3000", "http://localhost:8080"})
+	viper.SetDefault("cors.allowedOrigins", []string{"http://localhost:3003", "http://localhost:8080"})
 	viper.SetDefault("cors.allowedMethods", []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})
 	viper.SetDefault("cors.allowedHeaders", []string{"Content-Type", "Authorization", "X-Request-ID"})
 	viper.SetDefault("cors.maxAge", "86400")
+
+	// 冲突检测配置默认值
+	viper.SetDefault("conflictDetection.enabled", true)
+	viper.SetDefault("conflictDetection.autoCheckOnCaseCreation", true)
+	viper.SetDefault("conflictDetection.defaultSearchYears", 5)
+	viper.SetDefault("conflictDetection.defaultSearchDepth", "deep")
+	viper.SetDefault("conflictDetection.includeCorporateRelations", true)
+	viper.SetDefault("conflictDetection.highRiskThreshold", 0.7)
+	viper.SetDefault("conflictDetection.mediumRiskThreshold", 0.4)
+	viper.SetDefault("conflictDetection.requireApprovalForHighRisk", true)
+	viper.SetDefault("conflictDetection.allowSkipConflictCheck", true)
 
 	// 从环境变量读取配置
 	viper.AutomaticEnv()
@@ -160,6 +172,11 @@ func Load() (*Config, error) {
 	var config Config
 	if err := viper.Unmarshal(&config); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
+	}
+
+	// 如果冲突检测配置为空，使用默认配置
+	if config.ConflictDetection == nil {
+		config.ConflictDetection = DefaultConflictDetectionConfig()
 	}
 
 	// 转换数据库端口为字符串
@@ -248,6 +265,13 @@ func (c *Config) Validate() error {
 	// 验证数据库配置
 	if c.Database.Host == "" || c.Database.Username == "" || c.Database.Database == "" {
 		return fmt.Errorf("database configuration is incomplete")
+	}
+
+	// 验证冲突检测配置
+	if c.ConflictDetection != nil {
+		if err := c.ConflictDetection.Validate(); err != nil {
+			return fmt.Errorf("conflict detection configuration is invalid: %w", err)
+		}
 	}
 
 	return nil

@@ -1,0 +1,40 @@
+# Elasticsearch配置文件
+
+# 集群名称
+cluster.name: law-oa-cluster
+
+# 节点名称
+node.name: law-oa-node-1
+
+# 网络配置
+network.host: 0.0.0.0
+http.port: 9200
+transport.tcp.port: 9300
+
+# 发现配置
+discovery.type: single-node
+
+# 路径配置
+path.data: /usr/share/elasticsearch/data
+path.logs: /usr/share/elasticsearch/logs
+path.repo: /usr/share/elasticsearch/snapshots
+
+# 内存配置
+bootstrap.memory_lock: true
+
+# 安全配置
+xpack.security.enabled: false
+xpack.security.enrollment.enabled: false
+
+# 监控配置
+xpack.monitoring.collection.enabled: true
+
+# 插件配置
+plugin.mandatory: analysis-ik,analysis-pinyin
+
+# 索引配置
+action.auto_create_index: true
+action.destructive_requires_name: true
+
+# JVM参数通过环境变量设置
+# ES_JAVA_OPTS: "-Xms512m -Xmx512m"

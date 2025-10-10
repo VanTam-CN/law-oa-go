@@ -1,0 +1,125 @@
+{
+  "summary": {
+    "startTime": "2025-10-09T15:59:39.140Z",
+    "endTime": "2025-10-09T15:59:50.442Z",
+    "duration": "11s",
+    "totalScenarios": 5,
+    "passedScenarios": 1,
+    "failedScenarios": 4,
+    "successRate": "20%"
+  },
+  "scenarios": [
+    {
+      "name": "新用户首次访问",
+      "passed": false,
+      "steps": [
+        "访问系统首页",
+        "查找登录/注册入口"
+      ],
+      "issues": [
+        "执行错误: SyntaxError: Failed to execute 'querySelector' on 'Document': 'a[href*=\"login\"], button:contains(\"登录\"), .login-btn' is not a valid selector."
+      ],
+      "timestamp": "2025-10-09T15:59:42.564Z"
+    },
+    {
+      "name": "管理员工作流程",
+      "passed": false,
+      "steps": [
+        "访问管理系统",
+        "查找管理功能入口",
+        "检查用户管理功能",
+        "检查系统设置",
+        "查看数据统计"
+      ],
+      "issues": [
+        "未找到管理功能入口",
+        "未找到用户管理功能",
+        "未找到系统设置",
+        "未找到数据统计功能"
+      ],
+      "timestamp": "2025-10-09T15:59:45.862Z"
+    },
+    {
+      "name": "律师工作流程",
+      "passed": false,
+      "steps": [
+        "访问律师工作台",
+        "查找案件管理功能",
+        "查找客户管理功能",
+        "查找文档管理功能",
+        "查找日程安排功能",
+        "检查搜索功能"
+      ],
+      "issues": [
+        "未找到案件管理功能",
+        "未找到客户管理功能",
+        "未找到文档管理功能",
+        "未找到日程安排功能",
+        "未找到搜索功能"
+      ],
+      "timestamp": "2025-10-09T15:59:49.141Z"
+    },
+    {
+      "name": "系统性能测试",
+      "passed": true,
+      "steps": [
+        "页面加载时间测试",
+        "API响应时间测试"
+      ],
+      "issues": [],
+      "timestamp": "2025-10-09T15:59:49.155Z"
+    },
+    {
+      "name": "可访问性测试",
+      "passed": false,
+      "steps": [
+        "检查图片alt属性",
+        "检查标题层级",
+        "检查表单标签"
+      ],
+      "issues": [
+        "页面缺少H1标题",
+        "3 个输入框缺少标签"
+      ],
+      "timestamp": "2025-10-09T15:59:50.442Z"
+    }
+  ],
+  "recommendations": [
+    {
+      "scenario": "新用户首次访问",
+      "issues": [
+        "执行错误: SyntaxError: Failed to execute 'querySelector' on 'Document': 'a[href*=\"login\"], button:contains(\"登录\"), .login-btn' is not a valid selector."
+      ],
+      "priority": "medium"
+    },
+    {
+      "scenario": "管理员工作流程",
+      "issues": [
+        "未找到管理功能入口",
+        "未找到用户管理功能",
+        "未找到系统设置",
+        "未找到数据统计功能"
+      ],
+      "priority": "high"
+    },
+    {
+      "scenario": "律师工作流程",
+      "issues": [
+        "未找到案件管理功能",
+        "未找到客户管理功能",
+        "未找到文档管理功能",
+        "未找到日程安排功能",
+        "未找到搜索功能"
+      ],
+      "priority": "high"
+    },
+    {
+      "scenario": "可访问性测试",
+      "issues": [
+        "页面缺少H1标题",
+        "3 个输入框缺少标签"
+      ],
+      "priority": "medium"
+    }
+  ]
+}

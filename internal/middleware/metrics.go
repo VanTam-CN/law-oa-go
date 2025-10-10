@@ -13,7 +13,7 @@ var (
 	// HTTP请求总数
 	httpRequestsTotal = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "http_requests_total",
+			Name: "law_oa_http_requests_total",
 			Help: "Total number of HTTP requests",
 		},
 		[]string{"method", "endpoint", "status_code"},
@@ -22,7 +22,7 @@ var (
 	// HTTP请求持续时间
 	httpRequestDuration = promauto.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name:    "http_request_duration_seconds",
+			Name:    "law_oa_http_request_duration_seconds",
 			Help:    "HTTP request duration in seconds",
 			Buckets: prometheus.DefBuckets,
 		},
@@ -32,7 +32,7 @@ var (
 	// 当前活跃连接数
 	activeConnections = promauto.NewGauge(
 		prometheus.GaugeOpts{
-			Name: "http_active_connections",
+			Name: "law_oa_http_active_connections",
 			Help: "Number of active HTTP connections",
 		},
 	)
@@ -40,7 +40,7 @@ var (
 	// Redis缓存指标
 	cacheHitsTotal = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "cache_hits_total",
+			Name: "law_oa_cache_hits_total",
 			Help: "Total number of cache hits",
 		},
 		[]string{"cache_type"},
@@ -48,7 +48,7 @@ var (
 
 	cacheMissesTotal = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "cache_misses_total",
+			Name: "law_oa_cache_misses_total",
 			Help: "Total number of cache misses",
 		},
 		[]string{"cache_type"},
@@ -56,7 +56,7 @@ var (
 
 	cacheOperationDuration = promauto.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name:    "cache_operation_duration_seconds",
+			Name:    "law_oa_cache_operation_duration_seconds",
 			Help:    "Cache operation duration in seconds",
 			Buckets: []float64{0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1},
 		},
@@ -66,7 +66,7 @@ var (
 	// 业务指标
 	usersTotal = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "users_total",
+			Name: "law_oa_users_total",
 			Help: "Total number of users",
 		},
 		[]string{"role", "status"},
@@ -74,7 +74,7 @@ var (
 
 	casesTotal = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "cases_total",
+			Name: "law_oa_cases_total",
 			Help: "Total number of cases",
 		},
 		[]string{"status", "priority"},
@@ -82,7 +82,7 @@ var (
 
 	clientsTotal = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "clients_total",
+			Name: "law_oa_clients_total",
 			Help: "Total number of clients",
 		},
 		[]string{"status"},

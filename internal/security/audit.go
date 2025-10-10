@@ -1,7 +1,6 @@
 package security
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"strings"
@@ -263,12 +262,12 @@ func (s *AuditService) checkLoginFailures(event *AuditEvent) {
 
 	var count int
 	if s.cacheService != nil {
-		if err := s.cacheService.Get(context.Background(), key, &count); err == nil {
+		if err := s.cacheService.Get(key, &count); err == nil {
 			count++
 		} else {
 			count = 1
 		}
-		s.cacheService.Set(context.Background(), key, count, time.Hour)
+		s.cacheService.Set(key, count, time.Hour)
 	} else {
 		// 没有缓存服务，直接记录日志
 		log.Printf("LOGIN FAILURE ALERT: User %s failed login from %s (no cache available)", event.Username, event.IPAddress)

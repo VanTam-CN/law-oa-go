@@ -1,0 +1,14 @@
+{
+  "filePath": ".claude/spec-workflow/specs/case-management-data-display-fix/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-10-09T08:03:34.629Z",
+      "trigger": "initial",
+      "approvalId": "approval_1759997014626_ll50yioue",
+      "approvalTitle": "案件管理界面数据显示修复设计文档"
+    }
+  ]
+}

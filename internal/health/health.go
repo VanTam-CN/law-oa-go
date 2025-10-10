@@ -389,7 +389,7 @@ func (cc *CacheHealthCheck) Check(ctx context.Context) *HealthCheckResult {
 	testKey := "health_check"
 	testValue := time.Now().String()
 
-	err := cc.cache.Set(ctx, testKey, testValue, time.Minute)
+	err := cc.cache.Set(testKey, testValue, time.Minute)
 	if err != nil {
 		result.Status = StatusDegraded
 		result.Message = fmt.Sprintf("缓存设置失败: %v", err)
@@ -398,7 +398,7 @@ func (cc *CacheHealthCheck) Check(ctx context.Context) *HealthCheckResult {
 	}
 
 	var retrievedValue string
-	err = cc.cache.Get(ctx, testKey, &retrievedValue)
+	err = cc.cache.Get(testKey, &retrievedValue)
 	if err != nil {
 		result.Status = StatusDegraded
 		result.Message = fmt.Sprintf("缓存获取失败: %v", err)
@@ -414,7 +414,7 @@ func (cc *CacheHealthCheck) Check(ctx context.Context) *HealthCheckResult {
 	}
 
 	// 清理测试数据
-	cc.cache.Delete(ctx, testKey)
+	cc.cache.Delete(testKey)
 
 	result.Details = map[string]interface{}{
 		"test_passed": true,

@@ -1,7 +1,6 @@
 package security
 
 import (
-	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
@@ -577,7 +576,7 @@ func (s *EncryptionService) RotateKey() error {
 
 	// 清除相关缓存
 	if s.cacheService != nil {
-		s.cacheService.ClearPattern(context.Background(), "encryption:*")
+		s.cacheService.ClearPattern("encryption:*")
 	}
 
 	// 记录密钥旋转事件

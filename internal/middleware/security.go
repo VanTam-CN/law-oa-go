@@ -79,7 +79,7 @@ func createDefaultSecurityConfig(cfg *config.Config) *security.SecurityConfig {
 			RateLimitMaxRequests:    100,
 			WhitelistedIPs:          []string{},
 			BlacklistedIPs:          []string{},
-			AllowedOrigins:          []string{"http://localhost:3000"},
+			AllowedOrigins:          []string{"http://localhost:3003"},
 			AllowedMethods:          []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 			AllowedHeaders:          []string{"*"},
 			MaxRequestSize:          10 * 1024 * 1024, // 10MB

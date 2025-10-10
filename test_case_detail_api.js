@@ -8,7 +8,7 @@ let authToken = '';
 async function login() {
   try {
     const response = await axios.post(`${BASE_URL}/auth/login`, {
-      username: 'admin',
+      email: 'admin@example.com',
       password: 'admin123'
     });
 

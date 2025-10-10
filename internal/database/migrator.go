@@ -20,7 +20,7 @@ type Migrator struct {
 // NewMigrator 创建迁移器
 func NewMigrator(cfg *config.DatabaseConfig, migrationsPath string) (*Migrator, error) {
 	// 构建DSN
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=%v&loc=%s&multiStatements=true",
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=%v&loc=%s&multiStatements=true&tls=skip-verify",
 		cfg.Username,
 		cfg.Password,
 		cfg.Host,

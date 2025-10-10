@@ -23,7 +23,7 @@ class APIClient {
   constructor() {
     this.client = axios.create({
       baseURL:
-        process.env.REACT_APP_API_BASE_URL || "http://localhost:8080/api/v1",
+        process.env.REACT_APP_API_BASE_URL || "http://localhost:8080/api",
       timeout: 30000,
       headers: {
         "Content-Type": "application/json",
@@ -225,8 +225,16 @@ class APIClient {
     localStorage.removeItem("token");
     localStorage.removeItem("refreshToken");
 
+    // 在开发模式下避免自动重定向到登录页面
+    const isDevMode = process.env.NODE_ENV === 'development';
+    if (isDevMode) {
+      console.warn('🛠️ 开发者模式：认证错误但跳过自动重定向到登录页面');
+      return;
+    }
+
     // 避免在登录页面无限重定向
     if (window.location.pathname !== "/login") {
+      console.log('认证失败，重定向到登录页面');
       window.location.href = "/login";
     }
   }

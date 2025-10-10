@@ -1,0 +1,168 @@
+{
+  "summary": {
+    "startTime": "2025-10-09T15:54:12.863Z",
+    "endTime": "2025-10-09T15:54:27.245Z",
+    "duration": "14s",
+    "totalTests": 12,
+    "passedTests": 5,
+    "failedTests": 7,
+    "successRate": "42%"
+  },
+  "errors": [
+    {
+      "test": "后端详细健康检查",
+      "error": null
+    },
+    {
+      "test": "仪表盘统计API",
+      "error": "HTTP 401: Unauthorized"
+    },
+    {
+      "test": "律师列表API",
+      "error": "HTTP 401: Unauthorized"
+    },
+    {
+      "test": "客户列表API",
+      "error": "HTTP 401: Unauthorized"
+    },
+    {
+      "test": "案件列表API",
+      "error": "HTTP 401: Unauthorized"
+    },
+    {
+      "test": "前端API请求",
+      "error": null
+    },
+    {
+      "test": "用户登录流程",
+      "error": "No element found for selector: input[name=\"email\"]"
+    }
+  ],
+  "details": [
+    {
+      "timestamp": "2025-10-09T15:54:12.863Z",
+      "type": "info",
+      "message": "开始端到端功能测试..."
+    },
+    {
+      "timestamp": "2025-10-09T15:54:12.864Z",
+      "type": "info",
+      "message": "前端地址: http://localhost:5174"
+    },
+    {
+      "timestamp": "2025-10-09T15:54:12.864Z",
+      "type": "info",
+      "message": "后端地址: http://localhost:8080"
+    },
+    {
+      "timestamp": "2025-10-09T15:54:12.864Z",
+      "type": "info",
+      "message": "开始测试后端服务健康状态..."
+    },
+    {
+      "timestamp": "2025-10-09T15:54:12.886Z",
+      "type": "success",
+      "message": "✅ 后端健康检查 - 通过"
+    },
+    {
+      "timestamp": "2025-10-09T15:54:12.891Z",
+      "type": "error",
+      "message": "❌ 后端详细健康检查 - 失败: null"
+    },
+    {
+      "timestamp": "2025-10-09T15:54:14.894Z",
+      "type": "info",
+      "message": "开始测试后端API接口..."
+    },
+    {
+      "timestamp": "2025-10-09T15:54:14.901Z",
+      "type": "error",
+      "message": "网络请求失败: http://localhost:8080/api/v1/dashboard/statistics - HTTP 401: Unauthorized"
+    },
+    {
+      "timestamp": "2025-10-09T15:54:14.901Z",
+      "type": "error",
+      "message": "❌ 仪表盘统计API - 失败: HTTP 401: Unauthorized"
+    },
+    {
+      "timestamp": "2025-10-09T15:54:14.903Z",
+      "type": "error",
+      "message": "网络请求失败: http://localhost:8080/api/lawyers - HTTP 401: Unauthorized"
+    },
+    {
+      "timestamp": "2025-10-09T15:54:14.903Z",
+      "type": "error",
+      "message": "❌ 律师列表API - 失败: HTTP 401: Unauthorized"
+    },
+    {
+      "timestamp": "2025-10-09T15:54:14.905Z",
+      "type": "error",
+      "message": "网络请求失败: http://localhost:8080/api/clients - HTTP 401: Unauthorized"
+    },
+    {
+      "timestamp": "2025-10-09T15:54:14.905Z",
+      "type": "error",
+      "message": "❌ 客户列表API - 失败: HTTP 401: Unauthorized"
+    },
+    {
+      "timestamp": "2025-10-09T15:54:14.906Z",
+      "type": "error",
+      "message": "网络请求失败: http://localhost:8080/api/cases - HTTP 401: Unauthorized"
+    },
+    {
+      "timestamp": "2025-10-09T15:54:14.906Z",
+      "type": "error",
+      "message": "❌ 案件列表API - 失败: HTTP 401: Unauthorized"
+    },
+    {
+      "timestamp": "2025-10-09T15:54:16.908Z",
+      "type": "info",
+      "message": "开始测试数据库连接..."
+    },
+    {
+      "timestamp": "2025-10-09T15:54:16.912Z",
+      "type": "success",
+      "message": "✅ 数据库连接 - 通过"
+    },
+    {
+      "timestamp": "2025-10-09T15:54:16.912Z",
+      "type": "success",
+      "message": "✅ Redis缓存连接 - 通过"
+    },
+    {
+      "timestamp": "2025-10-09T15:54:18.912Z",
+      "type": "info",
+      "message": "开始测试前端页面加载..."
+    },
+    {
+      "timestamp": "2025-10-09T15:54:21.725Z",
+      "type": "success",
+      "message": "✅ 前端页面标题 - 通过"
+    },
+    {
+      "timestamp": "2025-10-09T15:54:21.725Z",
+      "type": "success",
+      "message": "✅ 前端控制台错误检查 - 通过"
+    },
+    {
+      "timestamp": "2025-10-09T15:54:21.725Z",
+      "type": "error",
+      "message": "❌ 前端API请求 - 失败: null"
+    },
+    {
+      "timestamp": "2025-10-09T15:54:21.725Z",
+      "type": "info",
+      "message": "前端页面加载完成，共发起 106 个请求，其中 0 个API请求"
+    },
+    {
+      "timestamp": "2025-10-09T15:54:23.897Z",
+      "type": "info",
+      "message": "开始测试认证流程..."
+    },
+    {
+      "timestamp": "2025-10-09T15:54:25.152Z",
+      "type": "error",
+      "message": "❌ 用户登录流程 - 失败: No element found for selector: input[name=\"email\"]"
+    }
+  ]
+}

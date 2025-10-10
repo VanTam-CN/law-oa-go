@@ -1,7 +1,6 @@
 package security
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
@@ -244,7 +243,7 @@ func (cm *ConfigManager) GetConfig() *SecurityConfig {
 
 	// 尝试从缓存获取
 	var cachedConfig SecurityConfig
-	if err := cm.cache.Get(context.Background(), "security_config", &cachedConfig); err == nil {
+	if err := cm.cache.Get("security_config", &cachedConfig); err == nil {
 		return &cachedConfig
 	}
 
@@ -301,7 +300,7 @@ func (cm *ConfigManager) setDefaultConfig() {
 			RateLimitMaxRequests:    100,
 			WhitelistedIPs:          []string{},
 			BlacklistedIPs:          []string{},
-			AllowedOrigins:          []string{"http://localhost:3000"},
+			AllowedOrigins:          []string{"http://localhost:3003"},
 			AllowedMethods:          []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 			AllowedHeaders:          []string{"*"},
 			MaxRequestSize:          10 * 1024 * 1024, // 10MB
@@ -433,7 +432,7 @@ func (cm *ConfigManager) validateConfig() error {
 // cacheConfig 缓存配置
 func (cm *ConfigManager) cacheConfig() {
 	if cm.cache != nil {
-		cm.cache.Set(context.Background(), "security_config", cm.config, time.Hour)
+		cm.cache.Set("security_config", cm.config, time.Hour)
 	}
 }
 

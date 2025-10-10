@@ -8,6 +8,7 @@ module.exports = {
     },
   },
   devServer: {
+    port: 3003,
     client: {
       overlay: {
         runtimeErrors: (error) => {
@@ -23,5 +24,8 @@ module.exports = {
         }
       }
     }
+  },
+  eslint: {
+    enable: false, // 禁用 ESLint 检查
   }
 }

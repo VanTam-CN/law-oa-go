@@ -398,7 +398,7 @@ export interface Case {
   description: string;
   client_id: number;
   client_name?: string;
-  lawyer_id: number | null;
+  lawyer_id: number;
   lawyer_name?: string;
   case_type: string;
   priority: string;
@@ -416,11 +416,22 @@ export interface Case {
     name: string;
     email?: string;
     phone?: string;
+    address?: string;
+    company?: string;
+    status?: string;
   };
   lawyer?: {
     id: number;
     name: string;
     email?: string;
+    role?: string;
+    phone?: string;
+    status?: string;
+  };
+  conflict_check_result?: {
+    has_conflict: boolean;
+    risk_level?: string;
+    details?: any;
   };
 }
 
@@ -433,6 +444,7 @@ export interface CaseListRequest {
   search?: string;
   client_id?: number;
   lawyer_id?: number;
+  // 后端不支持的字段暂时保留，但不在API调用中使用
   start_date?: string;
   end_date?: string;
   urgent_only?: boolean;
@@ -448,22 +460,25 @@ export interface CreateCaseRequest {
   lawyer_id?: number;
   case_type: string;
   priority: string;
-  status: string;
+  status?: string;
+  // 后端暂时不支持的字段，保留但不用于API调用
   start_date?: string;
   expected_end_date?: string;
   case_amount?: number;
   principal_info?: string;
   opponent_info?: string;
+  skip_conflict_check?: boolean;
 }
 
 export interface UpdateCaseRequest {
   title?: string;
   description?: string;
-  client_id?: number;
   lawyer_id?: number;
   case_type?: string;
   priority?: string;
   status?: string;
+  // 后端暂时不支持的字段，保留但不用于API调用
+  client_id?: number;
   start_date?: string;
   end_date?: string;
   expected_end_date?: string;

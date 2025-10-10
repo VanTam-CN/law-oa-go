@@ -9,6 +9,7 @@ import {
   UpdateCaseStatusRequest,
 } from "../types";
 import { AppError } from "../types/errors";
+import errorHandler from "../utils/errorHandler";
 
 class CaseService {
   // 获取案件列表（分页）
@@ -22,18 +23,68 @@ class CaseService {
     };
   }> {
     try {
+      // 只传递后端支持的参数，过滤掉不支持的参数
+      const filteredParams: any = {};
+
+      if (params?.page) {
+        filteredParams.page = params.page;
+      }
+      if (params?.page_size) {
+        filteredParams.page_size = params.page_size;
+      }
+      if (params?.status) {
+        filteredParams.status = params.status;
+      }
+      if (params?.case_type) {
+        filteredParams.case_type = params.case_type;
+      }
+      if (params?.priority) {
+        filteredParams.priority = params.priority;
+      }
+      if (params?.search) {
+        filteredParams.search = params.search;
+      }
+      if (params?.client_id) {
+        filteredParams.client_id = params.client_id;
+      }
+      if (params?.lawyer_id) {
+        filteredParams.lawyer_id = params.lawyer_id;
+      }
+
       return await apiClient.getPaginated<Case>("/cases", {
-        params,
-        
+        params: filteredParams,
       });
     } catch (error: any) {
       console.error("获取案件列表失败:", error);
+
+      // 使用全局错误处理器处理错误
+      if (error.statusCode) {
+        errorHandler.handleApiError(error.statusCode, error.message || "获取案件列表失败", "获取案件列表");
+      } else {
+        errorHandler.handleNetworkError(error, "获取案件列表");
+      }
+
       throw new AppError(
         error.message || "获取案件列表失败",
         error.code || "GET_CASES_ERROR",
         error.statusCode || 500,
       );
     }
+
+    // 在返回之前验证响应数据
+    if (response && response.data) {
+      const invalidCases = response.data.filter((caseItem: Case) => {
+        const validation = validateCase(caseItem);
+        return !validation.isValid;
+      });
+
+      if (invalidCases.length > 0) {
+        console.warn(`发现 ${invalidCases.length} 条无效的案件数据，已在服务层验证`);
+        // 记录警告但不抛出错误，让前端能够处理部分有效数据
+      }
+    }
+
+    return response;
   }
 
   // 获取案件详情
@@ -55,7 +106,27 @@ class CaseService {
   // 创建案件
   async createCase(data: CreateCaseRequest): Promise<Case> {
     try {
-      return await apiClient.post<Case>("/cases", data, {
+      // 只传递后端支持的参数，过滤掉不支持的参数
+      const filteredParams: any = {
+        title: data.title,
+        description: data.description,
+        client_id: data.client_id,
+        case_type: data.case_type,
+        priority: data.priority,
+      };
+
+      // 可选参数
+      if (data.lawyer_id !== undefined) {
+        filteredParams.lawyer_id = data.lawyer_id;
+      }
+      if (data.status) {
+        filteredParams.status = data.status;
+      }
+      if (data.skip_conflict_check !== undefined) {
+        filteredParams.skip_conflict_check = data.skip_conflict_check;
+      }
+
+      return await apiClient.post<Case>("/cases", filteredParams, {
       });
     } catch (error: any) {
       console.error("创建案件失败:", error);
@@ -70,7 +141,30 @@ class CaseService {
   // 更新案件
   async updateCase(id: number, data: UpdateCaseRequest): Promise<Case> {
     try {
-      return await apiClient.put<Case>(`/cases/${id}`, data, {
+      // 只传递后端支持的参数，过滤掉不支持的参数
+      const filteredParams: any = {};
+
+      // 可选参数
+      if (data.title !== undefined) {
+        filteredParams.title = data.title;
+      }
+      if (data.description !== undefined) {
+        filteredParams.description = data.description;
+      }
+      if (data.lawyer_id !== undefined) {
+        filteredParams.lawyer_id = data.lawyer_id;
+      }
+      if (data.case_type !== undefined) {
+        filteredParams.case_type = data.case_type;
+      }
+      if (data.priority !== undefined) {
+        filteredParams.priority = data.priority;
+      }
+      if (data.status !== undefined) {
+        filteredParams.status = data.status;
+      }
+
+      return await apiClient.put<Case>(`/cases/${id}`, filteredParams, {
       });
     } catch (error: any) {
       console.error("更新案件失败:", error);
@@ -170,9 +264,34 @@ class CaseService {
     };
   }> {
     try {
+      // 只传递后端支持的参数，过滤掉不支持的参数
+      const filteredParams: any = {};
+
+      if (params?.page) {
+        filteredParams.page = params.page;
+      }
+      if (params?.page_size) {
+        filteredParams.page_size = params.page_size;
+      }
+      if (params?.status) {
+        filteredParams.status = params.status;
+      }
+      if (params?.case_type) {
+        filteredParams.case_type = params.case_type;
+      }
+      if (params?.priority) {
+        filteredParams.priority = params.priority;
+      }
+      if (params?.search) {
+        filteredParams.search = params.search;
+      }
+      if (params?.client_id) {
+        filteredParams.client_id = params.client_id;
+      }
+
       return await apiClient.getPaginated<Case>("/cases/my", {
-        params,
-        
+        params: filteredParams,
+
       });
     } catch (error: any) {
       console.error("获取我的案件失败:", error);
@@ -198,9 +317,34 @@ class CaseService {
     };
   }> {
     try {
+      // 只传递后端支持的参数，过滤掉不支持的参数
+      const filteredParams: any = {};
+
+      if (params?.page) {
+        filteredParams.page = params.page;
+      }
+      if (params?.page_size) {
+        filteredParams.page_size = params.page_size;
+      }
+      if (params?.status) {
+        filteredParams.status = params.status;
+      }
+      if (params?.case_type) {
+        filteredParams.case_type = params.case_type;
+      }
+      if (params?.priority) {
+        filteredParams.priority = params.priority;
+      }
+      if (params?.search) {
+        filteredParams.search = params.search;
+      }
+      if (params?.lawyer_id) {
+        filteredParams.lawyer_id = params.lawyer_id;
+      }
+
       return await apiClient.getPaginated<Case>(`/clients/${client_id}/cases`, {
-        params,
-        
+        params: filteredParams,
+
       });
     } catch (error: any) {
       console.error("获取客户案件失败:", error);
@@ -226,13 +370,36 @@ class CaseService {
     };
   }> {
     try {
-      const searchParams = {
-        ...params,
+      // 只传递后端支持的参数，过滤掉不支持的参数
+      const searchParams: any = {
         search: query,
       };
+
+      if (params?.page) {
+        searchParams.page = params.page;
+      }
+      if (params?.page_size) {
+        searchParams.page_size = params.page_size;
+      }
+      if (params?.status) {
+        searchParams.status = params.status;
+      }
+      if (params?.case_type) {
+        searchParams.case_type = params.case_type;
+      }
+      if (params?.priority) {
+        searchParams.priority = params.priority;
+      }
+      if (params?.client_id) {
+        searchParams.client_id = params.client_id;
+      }
+      if (params?.lawyer_id) {
+        searchParams.lawyer_id = params.lawyer_id;
+      }
+
       return await apiClient.getPaginated<Case>("/cases/search", {
         params: searchParams,
-        
+
       });
     } catch (error: any) {
       console.error("搜索案件失败:", error);
@@ -428,8 +595,36 @@ class CaseService {
   // 导出案件数据
   async exportCases(params?: CaseListRequest): Promise<Blob> {
     try {
+      // 只传递后端支持的参数，过滤掉不支持的参数
+      const filteredParams: any = {};
+
+      if (params?.page) {
+        filteredParams.page = params.page;
+      }
+      if (params?.page_size) {
+        filteredParams.page_size = params.page_size;
+      }
+      if (params?.status) {
+        filteredParams.status = params.status;
+      }
+      if (params?.case_type) {
+        filteredParams.case_type = params.case_type;
+      }
+      if (params?.priority) {
+        filteredParams.priority = params.priority;
+      }
+      if (params?.search) {
+        filteredParams.search = params.search;
+      }
+      if (params?.client_id) {
+        filteredParams.client_id = params.client_id;
+      }
+      if (params?.lawyer_id) {
+        filteredParams.lawyer_id = params.lawyer_id;
+      }
+
       const response = await apiClient.getClient().get("/cases/export", {
-        params,
+        params: filteredParams,
         responseType: "blob",
       });
       return response.data;

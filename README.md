@@ -43,11 +43,12 @@ Law OA Go 是一个基于 Go 1.23+ 构建的现代化律师事务所办公自动
 | 💰 财务管理 | ⏳ 规划中 | 0% | 0% | 未开始开发 |
 | 🔧 基础设施 | ✅ 优化 | 100% | 90% | API响应格式统一、监控简化、架构修正 |
 
-**当前版本**: v2.1.0  
-**最后更新**: 2025-09-15  
-**维护状态**: 🟢 活跃维护  
-**编译状态**: ✅ 编译通过  
+**当前版本**: v2.1.0
+**最后更新**: 2025-09-28
+**维护状态**: 🟢 活跃维护
+**编译状态**: ✅ 编译通过
 **架构优化**: ✅ 已完成审计建议修正
+**项目清理**: ✅ 已完成多余文件清理
 
 ---
 
@@ -134,12 +135,26 @@ Law OA Go 是一个基于 Go 1.23+ 构建的现代化律师事务所办公自动
 - **缓存**: Redis 7+ (高性能缓存)
 - **搜索**: Elasticsearch 8+ (搜索引擎)
 
-#### 前端核心
+#### 前端架构
+项目包含两个前端实现，供不同需求选择：
+
+**主要前端 (frontend/) - Bootstrap版本**
 - **框架**: React 18 + TypeScript
 - **UI库**: Bootstrap 5 + React Bootstrap
 - **路由**: React Router v6
-- **状态管理**: React Context API
+- **状态管理**: Redux Toolkit
 - **HTTP客户端**: Axios
+- **构建工具**: CRACO (Create React App Configuration)
+- **国际化**: i18next
+
+**备选前端 (frontend-vue/) - Ant Design版本**
+- **框架**: React 18 + TypeScript
+- **UI库**: Ant Design 5.x
+- **路由**: React Router v7
+- **图表库**: ECharts + Recharts
+- **构建工具**: Vite
+- **HTTP客户端**: Axios
+- **样式**: Less + CSS Modules
 
 #### 开发工具
 - **后端测试**: Go testing + 集成测试
@@ -198,17 +213,20 @@ vim frontend/.env
 
 #### 3. 使用Docker快速启动 (推荐)
 ```bash
-# 启动所有服务 (MySQL, Redis, Elasticsearch, 前端, 后端)
-docker-compose up -d
+# 启动开发环境 (推荐使用开发环境脚本)
+./scripts/start-dev.sh start
+
+# 或者手动启动所有服务 (MySQL, Redis, Elasticsearch, 前端, 后端)
+docker-compose -f docker-compose.dev.yml up -d
 
 # 查看服务状态
-docker-compose ps
+docker-compose -f docker-compose.dev.yml ps
 
 # 查看后端应用日志
-docker-compose logs -f backend
+docker-compose -f docker-compose.dev.yml logs -f backend
 
 # 查看前端应用日志
-docker-compose logs -f frontend
+docker-compose -f docker-compose.dev.yml logs -f frontend
 ```
 
 #### 4. 本地开发启动
@@ -219,7 +237,7 @@ docker-compose logs -f frontend
 go mod download && go mod tidy
 
 # 启动数据库服务 (如果没有使用Docker)
-docker-compose up -d mysql redis elasticsearch
+docker-compose -f docker-compose.dev.yml up -d mysql redis elasticsearch
 
 # 运行数据库迁移
 go run cmd/migrate/main.go
@@ -232,6 +250,8 @@ go run main.go
 ```
 
 ##### 前端开发启动
+
+**Bootstrap版本 (frontend/)**
 ```bash
 # 进入前端目录
 cd frontend
@@ -239,11 +259,23 @@ cd frontend
 # 安装依赖
 npm install
 
-# 启动前端开发服务器
+# 启动前端开发服务器 (端口3000)
 npm start
 
 # 或使用启动脚本
 ./start.sh
+```
+
+**Ant Design版本 (frontend-vue/)**
+```bash
+# 进入前端目录
+cd frontend-vue
+
+# 安装依赖
+npm install
+
+# 启动前端开发服务器 (端口5173)
+npm run dev
 ```
 
 #### 5. 验证安装
@@ -254,7 +286,10 @@ curl http://localhost:8080/health
 # 检查后端API响应
 curl http://localhost:8080/api/v1/ping
 
-# 访问前端应用 (开发模式)
+# 访问前端应用 (Bootstrap版本)
+open http://localhost:3003
+
+# 访问前端应用 (Ant Design版本)
 open http://localhost:3003
 
 # 访问前端应用 (Docker模式)
@@ -340,7 +375,7 @@ law-oa-go/
 │   ├── cache/                # 缓存操作
 │   ├── common/               # 公共组件
 │   └── utils/                # 工具函数
-├── frontend/                 # 前端应用
+├── frontend/                 # 前端应用 (Bootstrap版本)
 │   ├── public/               # 静态资源
 │   ├── src/                  # 源代码
 │   │   ├── components/       # React组件
@@ -348,6 +383,14 @@ law-oa-go/
 │   │   ├── services/         # API服务
 │   │   ├── contexts/         # React上下文
 │   │   ├── types/            # TypeScript类型定义
+│   │   └── ...
+│   ├── package.json          # npm依赖配置
+│   └── ...
+├── frontend-vue/             # 前端应用 (Ant Design版本)
+│   ├── src/                  # 源代码
+│   │   ├── components/       # React组件
+│   │   ├── pages/            # 页面组件
+│   │   ├── api/              # API服务
 │   │   └── ...
 │   ├── package.json          # npm依赖配置
 │   └── ...
@@ -381,6 +424,8 @@ go tool cover -html=coverage.out -o coverage.html
 ```
 
 #### 前端测试
+
+**Bootstrap版本 (frontend/)**
 ```bash
 # 进入前端目录
 cd frontend
@@ -390,9 +435,15 @@ npm test
 
 # 运行测试并生成覆盖率报告
 npm test -- --coverage
+```
 
-# 运行端到端测试
-npm run test:e2e
+**Ant Design版本 (frontend-vue/)**
+```bash
+# 进入前端目录
+cd frontend-vue
+
+# 运行测试 (如配置)
+npm run test
 ```
 
 ### 🔧 代码质量
@@ -549,19 +600,34 @@ Authorization: Bearer YOUR_JWT_TOKEN
 
 ### 🐳 Docker 部署 (推荐)
 
-#### 1. 使用 Docker Compose
+#### 1. 开发环境部署
 ```bash
-# 启动所有服务 (包括前端、后端、数据库等)
-docker-compose up -d
+# 使用开发环境脚本启动 (推荐)
+./scripts/start-dev.sh start
 
 # 查看服务状态
-docker-compose ps
+./scripts/start-dev.sh status
 
 # 查看日志
-docker-compose logs -f
+./scripts/start-dev.sh logs
 
 # 停止服务
-docker-compose down
+./scripts/start-dev.sh stop
+```
+
+#### 2. 使用 Docker Compose
+```bash
+# 启动开发环境服务
+docker-compose -f docker-compose.dev.yml up -d
+
+# 查看服务状态
+docker-compose -f docker-compose.dev.yml ps
+
+# 查看日志
+docker-compose -f docker-compose.dev.yml logs -f
+
+# 停止服务
+docker-compose -f docker-compose.dev.yml down
 ```
 
 #### 2. 单独构建镜像
@@ -582,8 +648,65 @@ docker run -d \
 # 运行前端容器
 docker run -d \
   --name law-oa-frontend \
-  -p 3000:80 \
+  -p 3003:80 \
   law-oa-frontend:latest
+```
+
+### 🔧 管理脚本
+
+项目提供了多个管理脚本来简化开发和部署流程：
+
+#### 开发环境管理脚本
+```bash
+# 启动开发环境
+./scripts/start-dev.sh start
+
+# 停止开发环境
+./scripts/start-dev.sh stop
+
+# 重启开发环境
+./scripts/start-dev.sh restart
+
+# 查看服务状态
+./scripts/start-dev.sh status
+
+# 查看日志
+./scripts/start-dev.sh logs
+./scripts/start-dev.sh logs backend
+```
+
+#### Docker镜像管理脚本
+```bash
+# 构建所有镜像
+./scripts/docker-manage.sh build
+
+# 构建特定镜像
+./scripts/docker-manage.sh build backend
+
+# 推送镜像到仓库
+./scripts/docker-manage.sh push
+
+# 清理未使用的镜像
+./scripts/docker-manage.sh cleanup
+
+# 查看镜像列表
+./scripts/docker-manage.sh list
+```
+
+#### 集成测试脚本
+```bash
+# 运行完整集成测试
+./scripts/test-integration.sh test
+
+# 测试特定组件
+./scripts/test-integration.sh frontend
+./scripts/test-integration.sh backend
+./scripts/test-integration.sh database
+./scripts/test-integration.sh redis
+./scripts/test-integration.sh elasticsearch
+
+# 生成测试报告
+./scripts/test-integration.sh test
 ```
 
 ### 🌐 传统部署
@@ -625,7 +748,7 @@ APP_DEBUG=false
 
 # 数据库配置
 DB_HOST=localhost
-DB_PORT=3306
+DB_PORT=33060
 DB_NAME=law_oa_go
 DB_USER=root
 DB_PASSWORD=your-password
@@ -724,6 +847,6 @@ curl http://localhost:8080/metrics
 
 Made with ❤️ by Law OA Go Team
 
-**项目状态**: 🟢 生产就绪 | **架构优化**: ✅ 已完成 | **最后更新**: 2025-09-15
+**项目状态**: 🟢 生产就绪 | **架构优化**: ✅ 已完成 | **项目清理**: ✅ 已完成 | **最后更新**: 2025-09-28
 
 </div>

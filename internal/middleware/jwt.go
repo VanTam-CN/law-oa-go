@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -11,11 +12,50 @@ import (
 	"law-oa-go/internal/config"
 )
 
-var jwtSecret []byte
+// JWTManager 线程安全的JWT管理器
+type JWTManager struct {
+	secret []byte
+	mu     sync.RWMutex
+}
 
-// InitJWT 初始化 JWT 密钥
+var jwtManager *JWTManager
+var once sync.Once
+
+// InitJWT 初始化 JWT 密钥管理器
 func InitJWT(cfg *config.Config) {
-	jwtSecret = []byte(cfg.JWT.Secret)
+	once.Do(func() {
+		jwtManager = &JWTManager{
+			secret: []byte(cfg.JWT.Secret),
+		}
+	})
+}
+
+// getJWTManager 获取JWT管理器单例
+func getJWTManager() *JWTManager {
+	if jwtManager == nil {
+		panic("JWT manager not initialized. Call InitJWT first.")
+	}
+	return jwtManager
+}
+
+// getSecret 获取密钥（线程安全）
+func (j *JWTManager) getSecret() []byte {
+	j.mu.RLock()
+	defer j.mu.RUnlock()
+	return j.secret
+}
+
+// updateSecret 更新密钥（线程安全）
+func (j *JWTManager) updateSecret(newSecret string) {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	j.secret = []byte(newSecret)
+}
+
+// RotateSecret 轮换密钥（线程安全）
+func RotateSecret(newSecret string) {
+	manager := getJWTManager()
+	manager.updateSecret(newSecret)
 }
 
 // JWTClaims JWT 声明
@@ -40,7 +80,8 @@ func GenerateToken(userID uint, username, role string) (string, time.Time, error
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(jwtSecret)
+	manager := getJWTManager()
+	tokenString, err := token.SignedString(manager.getSecret())
 	return tokenString, expiresAt, err
 }
 
@@ -51,8 +92,9 @@ func ValidateToken(tokenString string) (*JWTClaims, error) {
 
 // ParseToken 解析 JWT 令牌
 func ParseToken(tokenString string) (*JWTClaims, error) {
+	manager := getJWTManager()
 	token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return jwtSecret, nil
+		return manager.getSecret(), nil
 	})
 
 	if err != nil {

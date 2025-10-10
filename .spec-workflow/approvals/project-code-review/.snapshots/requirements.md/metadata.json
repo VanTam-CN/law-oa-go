@@ -1,0 +1,14 @@
+{
+  "filePath": ".claude/specs/project-code-review/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-09-30T06:27:02.745Z",
+      "trigger": "initial",
+      "approvalId": "approval_1759213622730_2ko2bj5r2",
+      "approvalTitle": "项目技术审查需求文档审批"
+    }
+  ]
+}

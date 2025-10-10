@@ -39,7 +39,7 @@ func main() {
 		DB:             db,
 		Redis:          redisClient,
 		Elasticsearch:  esClient,
-		AllowedOrigins: []string{"http://localhost:3000", "http://localhost:8080"},
+		AllowedOrigins: []string{"http://localhost:3003", "http://localhost:8080"},
 		RateLimit:      100,
 		Timeout:        30 * time.Second,
 	}
@@ -58,27 +58,49 @@ func main() {
 // initDatabase 初始化数据库连接
 func initDatabase(cfg *config.Config) (*gorm.DB, error) {
 	dsn := cfg.GetDatabaseDSN()
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+
+	// 优化GORM配置
+	gormConfig := &gorm.Config{
+		PrepareStmt:            true,  // 预编译语句缓存
+		SkipDefaultTransaction: true,  // 跳过默认事务
+		DisableForeignKeyConstraintWhenMigrating: true, // 禁用外键约束检查（提高性能）
+	}
+
+	db, err := gorm.Open(mysql.Open(dsn), gormConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	// 设置连接池
+	// 优化连接池配置
 	sqlDB, err := db.DB()
 	if err != nil {
 		return nil, err
 	}
 
-	sqlDB.SetMaxIdleConns(10)
-	sqlDB.SetMaxOpenConns(100)
-	sqlDB.SetConnMaxLifetime(time.Hour)
+	// 根据环境动态调整连接池大小
+	maxOpenConns := 50
+	maxIdleConns := 10
+	connMaxLifetime := 30 * time.Minute
+	connMaxIdleTime := 5 * time.Minute
+
+	if cfg.IsProduction() {
+		maxOpenConns = 100
+		maxIdleConns = 20
+		connMaxLifetime = time.Hour
+	}
+
+	sqlDB.SetMaxIdleConns(maxIdleConns)
+	sqlDB.SetMaxOpenConns(maxOpenConns)
+	sqlDB.SetConnMaxLifetime(connMaxLifetime)
+	sqlDB.SetConnMaxIdleTime(connMaxIdleTime)
 
 	// 测试连接
 	if err := sqlDB.Ping(); err != nil {
 		return nil, err
 	}
 
-	log.Println("Database connected successfully")
+	log.Printf("Database connected successfully (Pool: %d idle/%d max, Lifetime: %v)",
+		maxIdleConns, maxOpenConns, connMaxLifetime)
 	return db, nil
 }
 

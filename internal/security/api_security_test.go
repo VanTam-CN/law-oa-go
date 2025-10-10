@@ -30,7 +30,7 @@ func TestAPISecurityService_NewAPISecurityService(t *testing.T) {
 				MaxRequestSize:       10 * 1024 * 1024,
 				WhitelistedIPs:       []string{},
 				BlacklistedIPs:       []string{"192.168.1.100"},
-				AllowedOrigins:       []string{"http://localhost:3000"},
+				AllowedOrigins:       []string{"http://localhost:3003"},
 				AllowedMethods:       []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 				AllowedHeaders:       []string{"*"},
 			},
@@ -109,7 +109,7 @@ func TestAPISecurityService_SecurityMiddleware(t *testing.T) {
 				method: "OPTIONS",
 				path:   "/api/protected",
 				headers: map[string]string{
-					"Origin":                         "http://localhost:3000",
+					"Origin":                         "http://localhost:3003",
 					"Access-Control-Request-Method":  "GET",
 					"Access-Control-Request-Headers": "Authorization",
 				},
@@ -432,7 +432,7 @@ func TestAPISecurityService_CORS(t *testing.T) {
 			APISecurity: APISecurityConfig{
 				EnableCORS: true,
 				AllowedOrigins: []string{
-					"http://localhost:3000",
+					"http://localhost:3003",
 					"https://example.com",
 				},
 				AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -463,7 +463,7 @@ func TestAPISecurityService_CORS(t *testing.T) {
 				name:           "简单请求",
 				method:         "GET",
 				path:           "/api/test",
-				origin:         "http://localhost:3000",
+				origin:         "http://localhost:3003",
 				expectedStatus: 200,
 				expectedHeader: map[string]string{
 					"Access-Control-Allow-Origin":  "*",
@@ -526,7 +526,7 @@ func TestAPISecurityService_CORS(t *testing.T) {
 
 		w := httptest.NewRecorder()
 		req := httptest.NewRequest("GET", "/api/test", nil)
-		req.Header.Set("Origin", "http://localhost:3000")
+		req.Header.Set("Origin", "http://localhost:3003")
 
 		router.ServeHTTP(w, req)
 
@@ -583,7 +583,7 @@ func TestAPISecurityService_Integration(t *testing.T) {
 					"Content-Type":  "application/json",
 					"X-CSRF-Token":  "test-csrf-token",
 					"Authorization": "Bearer valid-token",
-					"Origin":        "http://localhost:3000",
+					"Origin":        "http://localhost:3003",
 				},
 				expectedStatus: 200,
 			},
@@ -591,7 +591,7 @@ func TestAPISecurityService_Integration(t *testing.T) {
 				name:           "预检请求",
 				method:         "OPTIONS",
 				path:           "/api/secure",
-				headers:        map[string]string{"Origin": "http://localhost:3000"},
+				headers:        map[string]string{"Origin": "http://localhost:3003"},
 				expectedStatus: 204,
 			},
 		}
@@ -676,7 +676,7 @@ func setupTestAPISecurityService(t *testing.T) *APISecurityService {
 			EnableWAFProtection:  true,
 			EnableDDoSProtection: true,
 			MaxRequestSize:       10 * 1024 * 1024,
-			AllowedOrigins:       []string{"http://localhost:3000"},
+			AllowedOrigins:       []string{"http://localhost:3003"},
 			AllowedMethods:       []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 			AllowedHeaders:       []string{"Content-Type", "Authorization"},
 		},

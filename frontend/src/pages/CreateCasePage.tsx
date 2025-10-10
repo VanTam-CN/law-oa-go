@@ -33,6 +33,8 @@ import {
 import {
   MagnifyingGlassIcon
 } from "@heroicons/react/24/outline";
+import { enhancedConflictService, ConflictAnalysis } from "../services/enhancedConflictService";
+import { caseService } from "../services/caseService";
 
 // 案件表单数据接口
 interface CaseFormData {
@@ -190,93 +192,135 @@ const CreateCasePage: React.FC = () => {
     try {
       const selectedClient = clients.find(c => c.id === formData.client_id);
 
-      // 模拟检查步骤
-      const checkSteps = [
-        {
-          step: 1,
-          stepName: '检索委托人信息',
-          progress: 10,
-          details: [
-            `正在检索委托人: ${selectedClient?.name || '未知'}`,
-            `委托人类型: ${selectedClient?.type === 'COMPANY' ? '企业客户' : '个人客户'}`,
-            `联系方式: ${selectedClient?.phone || '未提供'}`
-          ]
-        },
-        {
-          step: 2,
-          stepName: '检索历史案件',
-          progress: 30,
-          details: [
-            '正在检索该委托人的历史案件...',
-            '查询时间范围: 2020年1月 - 至今',
-            '检索字段: 委托人姓名、证件号码、企业统一社会信用代码'
-          ]
-        },
-        {
-          step: 3,
-          stepName: '检索对方当事人',
-          progress: 50,
-          details: [
-            `正在检索对方当事人: ${formData.otherParties.join('、') || '未填写'}`,
-            '检索范围: 所有历史案件的当事人信息',
-            '匹配方式: 姓名完全匹配 + 模糊匹配'
-          ]
-        },
-        {
-          step: 4,
-          stepName: '分析潜在冲突',
-          progress: 90,
-          details: [
-            '正在分析潜在利益冲突...',
-            '检查同一案件中的对立当事人',
-            '检查关联案件中的利益关系',
-            '应用冲突检索规则引擎'
-          ]
-        },
-        {
-          step: 5,
-          stepName: '生成检索报告',
-          progress: 100,
-          details: [
-            '正在生成详细检索报告...',
-            '汇总检索结果',
-            '标记风险等级'
-          ]
-        }
-      ];
+      // 步骤1：获取历史案件数据
+      setConflictCheckProgress({
+        step: 1,
+        stepName: '获取历史案件数据',
+        progress: 20,
+        details: [
+          `正在检索委托人: ${selectedClient?.name || '未知'}`,
+          `委托人类型: ${selectedClient?.type === 'COMPANY' ? '企业客户' : '个人客户'}`,
+          '从数据库加载历史案件信息...'
+        ],
+        isCompleted: false
+      });
 
-      // 模拟逐步检索过程
-      for (let i = 0; i < checkSteps.length; i++) {
-        const step = checkSteps[i];
-        setConflictCheckProgress({
-          ...step,
-          isCompleted: i === checkSteps.length - 1
-        });
+      const historicalCases = await caseService.getAllCases();
+      console.log('获取到历史案件:', historicalCases.length);
 
-        await new Promise(resolve => setTimeout(resolve, 800));
-      }
+      // 转换为前端需要的格式
+      const formattedCases = historicalCases.map(case_ => ({
+        id: case_.id.toString(),
+        title: case_.title,
+        description: case_.description || '',
+        clientId: case_.client_id?.toString() || '',
+        clientName: case_.client?.name || '',
+        clientType: (case_.client?.company ? 'COMPANY' : 'PERSON') as 'PERSON' | 'COMPANY',
+        caseType: case_.case_type || '',
+        status: case_.status || '',
+        priority: case_.priority || '',
+        lawyerId: case_.lawyer_id?.toString() || '',
+        lawyerName: case_.lawyer?.name || '',
+        createdAt: case_.created_at || '',
+        updatedAt: case_.updated_at || '',
+        opposingParties: [] // TODO: 从案件描述中提取对方当事人
+      }));
 
-      // 模拟检查结果
-      const mockResult = {
-        hasConflict: false,
+      // 设置历史案例数据到冲突检测服务
+      enhancedConflictService.setHistoricalCases(formattedCases);
+
+      // 步骤2：执行多层次匹配分析
+      setConflictCheckProgress({
+        step: 2,
+        stepName: '执行多层次匹配分析',
+        progress: 60,
+        details: [
+          '精确匹配：检查客户名称和对方当事人的完全匹配',
+          '模糊匹配：使用智能算法检测名称相似性',
+          '语音匹配：处理音译和方言名称差异',
+          '实体关联：检查企业关联和相关方关系',
+          `检查对象: ${formData.otherParties.join('、') || '无'}`
+        ],
+        isCompleted: false
+      });
+
+      // 执行增强的冲突检测
+      const analysis: ConflictAnalysis = await enhancedConflictService.checkConflict({
+        clientId: formData.client_id,
+        clientName: selectedClient?.name || '',
+        clientType: (selectedClient?.type || 'PERSON') as 'PERSON' | 'COMPANY',
+        otherParties: formData.otherParties,
+        caseName: formData.caseName,
+        caseType: formData.caseType
+      });
+
+      // 步骤3：风险评估和报告生成
+      setConflictCheckProgress({
+        step: 3,
+        stepName: '风险评估和报告生成',
+        progress: 90,
+        details: [
+          `检测到 ${analysis.conflictMatches.length} 个潜在冲突`,
+          `高风险冲突: ${analysis.highRiskMatches.length} 个`,
+          `中等风险冲突: ${analysis.mediumRiskMatches.length} 个`,
+          `低风险冲突: ${analysis.lowRiskMatches.length} 个`,
+          `整体风险等级: ${analysis.riskAssessment.overallRisk}`,
+          `风险评分: ${(analysis.riskAssessment.riskScore * 100).toFixed(1)}%`
+        ],
+        isCompleted: false
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // 步骤4：完成
+      setConflictCheckProgress({
+        step: 4,
+        stepName: '冲突检测完成',
+        progress: 100,
+        details: [
+          '分析结果已生成',
+          '建议已制定',
+          `耗时: ${analysis.analysisDuration}ms`
+        ],
+        isCompleted: true
+      });
+
+      // 转换结果为前端需要的格式
+      const result = {
+        hasConflict: analysis.conflictMatches.length > 0,
         checkDetails: {
-          totalCasesChecked: 156,
-          clientHistoryCases: 3,
-          relatedPartiesChecked: formData.otherParties.length,
-          corporateRelationsChecked: selectedClient?.type === 'COMPANY' ? 5 : 0,
-          timeRange: '2020年1月 - 至今',
-          riskAssessment: '低风险'
+          totalCasesChecked: analysis.totalCasesChecked,
+          clientHistoryCases: analysis.clientHistoryCases,
+          relatedPartiesChecked: analysis.relatedPartiesChecked,
+          corporateRelationsChecked: analysis.corporateRelations,
+          timeRange: analysis.searchTimeRange,
+          riskAssessment: `${analysis.riskAssessment.overallRisk} (风险评分: ${(analysis.riskAssessment.riskScore * 100).toFixed(1)}%)`
         },
-        conflictCases: [],
-        recommendations: [
-          '未发现明显利益冲突',
-          '建议在案件处理过程中持续监控潜在冲突',
-          '定期更新利益冲突检查记录'
-        ]
+        conflictCases: analysis.conflictMatches.map(match => ({
+          caseId: match.caseId,
+          caseName: match.caseName,
+          conflictType: match.conflictType,
+          riskLevel: match.riskLevel,
+          matchScore: match.matchScore,
+          matchReasons: match.matchReasons,
+          conflictDetails: match.conflictDetails,
+          caseStatus: match.caseStatus,
+          clientId: match.clientId,
+          opposingParties: match.opposingParties,
+          matchedEntities: match.matchedEntities
+        })),
+        recommendations: analysis.recommendations,
+        riskAssessment: analysis.riskAssessment
       };
 
-      setConflictCheckResult(mockResult);
-      setFormData(prev => ({ ...prev, conflictCheck: 'NO_CONFLICT' }));
+      setConflictCheckResult(result);
+
+      // 更新表单冲突检查状态
+      if (analysis.riskAssessment.requiresApproval) {
+        setFormData(prev => ({ ...prev, conflictCheck: 'CONFLICT_RESOLVED' }));
+      } else {
+        setFormData(prev => ({ ...prev, conflictCheck: 'NO_CONFLICT' }));
+      }
 
     } catch (error) {
       console.error('冲突检查失败:', error);

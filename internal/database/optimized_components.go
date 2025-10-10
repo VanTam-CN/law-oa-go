@@ -60,7 +60,7 @@ func (qo *QueryOptimizer) CachedQuery(ctx context.Context, cacheKey string, ttl 
 	operation := "select"
 
 	// 尝试从缓存获取
-	if err := qo.cache.Get(ctx, cacheKey, dest); err == nil {
+	if err := qo.cache.Get(cacheKey, dest); err == nil {
 		dbQueryCount.WithLabelValues(operation+"_cache", table).Inc()
 		return nil
 	}
@@ -83,7 +83,7 @@ func (qo *QueryOptimizer) CachedQuery(ctx context.Context, cacheKey string, ttl 
 	}
 
 	// 缓存结果
-	if err := qo.cache.Set(ctx, cacheKey, dest, ttl); err != nil {
+	if err := qo.cache.Set(cacheKey, dest, ttl); err != nil {
 		fmt.Printf("Warning: failed to cache query results for %s: %v\n", cacheKey, err)
 	}
 
@@ -178,7 +178,7 @@ func (qo *QueryOptimizer) OptimizedUpdate(ctx context.Context, tableName string,
 	// 清除相关缓存
 	if qo.cache != nil {
 		cachePattern := fmt.Sprintf("lawoa:%s:*", tableName)
-		if err := qo.cache.ClearPattern(ctx, cachePattern); err != nil {
+		if err := qo.cache.ClearPattern(cachePattern); err != nil {
 			fmt.Printf("Warning: failed to clear cache for table %s: %v\n", tableName, err)
 		}
 	}
@@ -210,7 +210,7 @@ func (qo *QueryOptimizer) OptimizedDelete(ctx context.Context, tableName string,
 	// 清除相关缓存
 	if qo.cache != nil {
 		cachePattern := fmt.Sprintf("lawoa:%s:*", tableName)
-		if err := qo.cache.ClearPattern(ctx, cachePattern); err != nil {
+		if err := qo.cache.ClearPattern(cachePattern); err != nil {
 			fmt.Printf("Warning: failed to clear cache for table %s: %v\n", tableName, err)
 		}
 	}

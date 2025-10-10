@@ -62,7 +62,7 @@ type CORSConfig struct {
 // DefaultCORSConfig 默认CORS配置
 func DefaultCORSConfig() CORSConfig {
 	return CORSConfig{
-		AllowedOrigins: []string{"http://localhost:3000", "http://localhost:8080", "http://localhost:3003"}, // 开发环境默认域名
+		AllowedOrigins: []string{"http://localhost:3003", "http://localhost:8080"}, // 开发环境默认域名
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders: []string{"Content-Type", "Authorization", "X-Request-ID"},
 		MaxAge:         "86400",

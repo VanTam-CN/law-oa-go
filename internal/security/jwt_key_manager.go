@@ -187,7 +187,7 @@ func (jkm *JWTKeyManager) CreateTokens(ctx context.Context, user *models.User, d
 		"last_active":  now,
 	}
 
-	err = jkm.cacheService.Set(ctx, deviceKey, deviceInfo, jkm.securityConfig.JWT.RefreshTokenTTL)
+	err = jkm.cacheService.Set(deviceKey, deviceInfo, jkm.securityConfig.JWT.RefreshTokenTTL)
 	if err != nil {
 		// 不影响主要功能，只记录警告
 		fmt.Printf("Warning: failed to store device info: %v\n", err)

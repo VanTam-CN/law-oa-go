@@ -108,10 +108,11 @@ func (r *UserRepositoryImpl) List(ctx context.Context, params *UserListParams) (
 		queryBuilder = queryBuilder.Where("status = ?", params.Status)
 	}
 	if params.Search != "" {
-		// 性能优化：智能搜索策略
-		searchLower := strings.ToLower(params.Search)
+		// 输入验证和清理（防止SQL注入和XSS）
+		cleanSearch := r.sanitizeSearchInput(params.Search)
+		searchLower := strings.ToLower(cleanSearch)
 
-		if len(params.Search) >= 3 {
+		if len(cleanSearch) >= 3 {
 			// 对于3个字符以上的搜索，使用后缀匹配以利用索引
 			suffixTerm := searchLower + "%"
 			queryBuilder = queryBuilder.Where("LOWER(name) LIKE ? OR LOWER(email) LIKE ?", suffixTerm, suffixTerm)
@@ -136,4 +137,59 @@ func (r *UserRepositoryImpl) List(ctx context.Context, params *UserListParams) (
 	}
 
 	return users, total, nil
+}
+
+// FindExistingEmails 批量查找已存在的邮箱（解决N+1查询问题）
+func (r *UserRepositoryImpl) FindExistingEmails(ctx context.Context, emails []string) ([]string, error) {
+	if len(emails) == 0 {
+		return []string{}, nil
+	}
+
+	var existingEmails []string
+	err := r.db.WithContext(ctx).
+		Model(&models.User{}).
+		Where("email IN ?", emails).
+		Pluck("email", &existingEmails).Error
+
+	if err != nil {
+		return nil, NewRepositoryError("find_existing_emails", "user", err)
+	}
+
+	return existingEmails, nil
+}
+
+// BatchCreate 批量创建用户（优化性能）
+func (r *UserRepositoryImpl) BatchCreate(ctx context.Context, users []*models.User) error {
+	if len(users) == 0 {
+		return nil
+	}
+
+	// 使用GORM的Create方法进行批量插入
+	if err := r.db.WithContext(ctx).Create(&users).Error; err != nil {
+		return NewRepositoryError("batch_create", "user", err)
+	}
+
+	return nil
+}
+
+// sanitizeSearchInput 清理搜索输入，防止SQL注入和XSS攻击
+func (r *UserRepositoryImpl) sanitizeSearchInput(input string) string {
+	// 移除危险字符
+	dangerousChars := []string{
+		"'", "\"", ";", "--", "/*", "*/", "xp_", "sp_",
+		"<", ">", "(", ")", "{", "}", "[", "]",
+		"=", "!=", "<>", ">", "<", ">=", "<=",
+	}
+
+	cleaned := input
+	for _, char := range dangerousChars {
+		cleaned = strings.ReplaceAll(cleaned, char, "")
+	}
+
+	// 限制搜索长度，防止过长输入
+	if len(cleaned) > 100 {
+		cleaned = cleaned[:100]
+	}
+
+	return strings.TrimSpace(cleaned)
 }

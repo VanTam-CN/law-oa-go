@@ -1,11 +1,11 @@
-# GolangCI-Lint 配置文件
-# 适用于法务OA系统的Go代码质量检查
+# GolangCI-Lint 优化配置文件
+# Law OA Go 项目静态分析配置 - 优化版本 v1.1
 
 run:
-  # 超时时间
-  timeout: 5m
-  # 并发数
-  concurrency: 4
+  # 超时时间 - 增加以支持更全面的分析
+  timeout: 10m
+  # 并发数 - 根据 CPU 核心数自动调整
+  concurrency: 0
   # 跳过的目录
   skip-dirs:
     - vendor
@@ -13,12 +13,21 @@ run:
     - bin
     - docs
     - migrations
+    - node_modules
+    - dist
+    - build
+    - .git
   # 跳过的文件
   skip-files:
     - ".*\\.pb\\.go$"
-    - ".*_test\\.go$"
+    - ".*\\.gen\\.go$"
+    - ".*mock.*\\.go$"
   # Go版本
   go: "1.23"
+  # 构建标签
+  build-tags:
+    - integration
+    - e2e
 
 # 输出配置
 output:
@@ -59,54 +68,86 @@ issues:
       linters:
         - gochecknoglobals
 
-# 启用的检查器
+# 启用的检查器 - 优化配置
 linters:
   # 禁用所有默认检查器
   disable-all: true
-  # 启用的检查器
+  # 启用的检查器 - 按优先级和影响分组
   enable:
-    # 基础检查
+    # 🔴 关键检查器 - 必须通过
     - errcheck      # 检查未处理的错误
     - govet         # Go官方检查器
     - ineffassign   # 检查无效赋值
     - typecheck     # 类型检查
-    # 注意：gosimple、unused、staticcheck暂时禁用（Go 1.23兼容性问题）
+    - staticcheck   # 静态分析检查
+    - unused        # 未使用代码检查
+    - gosimple      # 简化代码建议
     
-    # 代码风格
+    # 🟡 重要检查器 - 代码质量
     - gofmt         # 格式化检查
     - goimports     # import排序检查
     - gci           # import分组检查
     - misspell      # 拼写检查
     - whitespace    # 空白字符检查
-    
-    # 代码质量
     - gocyclo       # 圈复杂度检查
     - funlen        # 函数长度检查
     - gocognit      # 认知复杂度检查
     - nestif        # 嵌套if检查
-    - dupl          # 重复代码检查
     
-    # 安全检查
+    # 🔒 安全检查器
     - gosec         # 安全检查
     - bodyclose     # HTTP响应体关闭检查
     - sqlclosecheck # SQL连接关闭检查
+    - rowserrcheck  # SQL rows.Err检查
+    - noctx         # HTTP请求context检查
     
-    # 错误处理
-    - errorlint     # 错误处理检查
-    - errname       # 错误命名检查
-    - wrapcheck     # 错误包装检查
-    
-    # 性能检查
+    # ⚡ 性能检查器
     - prealloc      # 预分配检查
     - makezero      # make零值检查
+    - sloglint      # 结构化日志检查
     
-    # 最佳实践
+    # 📝 代码风格和最佳实践
     - goconst       # 常量检查
     - gocritic      # 代码评审检查
     - revive        # 代码风格检查
     - stylecheck    # 样式检查
     - unconvert     # 不必要的类型转换
     - unparam       # 未使用的参数
+    - dupl          # 重复代码检查
+    
+    # 🔧 错误处理增强
+    - errorlint     # 错误处理检查
+    - errname       # 错误命名检查
+    - wrapcheck     # 错误包装检查
+    - errchkjson    # JSON错误检查
+    
+    # 🧹 代码清理
+    - asciicheck    # ASCII字符检查
+    - bidichk       # Unicode双向字符检查
+    - containedctx  # context包含检查
+    - contextcheck  # context使用检查
+    - decorder      # 声明顺序检查
+    - exportloopref # 循环变量导出检查
+    - forcetypeassert # 强制类型断言检查
+    - goheader      # 文件头检查
+    - gomnd         # 魔法数字检查
+    - gomoddirectives # go.mod指令检查
+    - gomodguard    # go.mod依赖检查
+    - importas      # import别名检查
+    - loggercheck   # 日志器检查
+    - maintidx      # 维护性指数检查
+    - nakedret      # 裸返回检查
+    - nilnil        # nil比较检查
+    - nolintlint    # nolint注释检查
+    - nonamedreturns # 命名返回检查
+    - predeclared   # 预声明标识符检查
+    - promlinter    # Prometheus指标检查
+    - reassign      # 重新赋值检查
+    - tenv          # 测试环境检查
+    - testableexamples # 可测试示例检查
+    - tparallel     # 并行测试检查
+    - usestdlibvars # 标准库变量使用检查
+    - wastedassign  # 浪费赋值检查
 
 # 检查器配置
 linters-settings:
@@ -274,6 +315,77 @@ linters-settings:
       - errors.Unwrap(
       - .Wrap(
       - .Wrapf(
+
+  # 新增配置项
+  # 魔法数字检查配置
+  gomnd:
+    # 忽略的数字
+    ignored-numbers:
+      - '0'
+      - '1'
+      - '2'
+      - '3'
+      - '10'
+      - '100'
+      - '1000'
+    # 忽略的函数
+    ignored-functions:
+      - 'math.*'
+      - 'http.StatusText'
+      - 'make'
+    # 检查的设置
+    settings:
+      mnd:
+        checks:
+          - argument
+          - case
+          - condition
+          - operation
+          - return
+          - assign
+
+  # 文件头检查配置
+  goheader:
+    values:
+      const:
+        COMPANY: Law OA Go Project
+        LICENSE: MIT
+    template: |-
+      Copyright (c) {{ YEAR }} {{ COMPANY }}
+      Licensed under {{ LICENSE }}
+
+  # 导入别名检查配置
+  importas:
+    no-unaliased: true
+    alias:
+      - pkg: github.com/gin-gonic/gin
+        alias: gin
+      - pkg: github.com/golang-jwt/jwt/v5
+        alias: jwt
+      - pkg: gorm.io/gorm
+        alias: gorm
+
+  # 维护性指数配置
+  maintidx:
+    under: 20
+
+  # 裸返回检查配置
+  nakedret:
+    max-func-lines: 30
+
+  # nolint注释检查配置
+  nolintlint:
+    allow-unused: false
+    require-explanation: true
+    require-specific: true
+
+  # 并行测试检查配置
+  tparallel:
+    ignoreMissing: false
+
+  # 测试环境检查配置
+  tenv:
+    all: true
 
 # 严重性配置
 severity:
