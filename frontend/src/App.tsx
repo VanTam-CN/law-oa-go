@@ -28,6 +28,7 @@ import CaseManagementPage from "./pages/CaseManagementPage";
 import CaseDetailPage from "./pages/CaseDetailPage";
 import CreateCasePage from "./pages/CreateCasePage";
 import LawyerManagementPage from "./pages/LawyerManagementPage";
+import LawyerDetailPage from "./pages/LawyerDetailPage";
 import ClientManagementPage from "./pages/ClientManagementPage";
 import ApprovalManagementPage from "./pages/ApprovalManagementPage";
 import ApprovalDetailPage from "./pages/ApprovalDetailPage";
@@ -114,6 +115,7 @@ function App() {
                 <Route path="/users" element={<UsersPage />} />
                 <Route path="/admin/users" element={<AdminUsersPage />} />
                 <Route path="/lawyer-management" element={<LawyerManagementPage />} />
+                <Route path="/lawyer/:id" element={<LawyerDetailPage />} />
                 <Route path="/client-management" element={<ClientManagementPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/documents" element={<DocumentsPage />} />

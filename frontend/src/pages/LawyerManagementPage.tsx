@@ -33,32 +33,8 @@ import {
 import {
   MagnifyingGlassIcon
 } from "@heroicons/react/24/outline";
+import lawyerService, { Lawyer, LawyerStats } from "../services/lawyerService";
 
-// 律师接口
-interface Lawyer {
-  id?: number;
-  name?: string;
-  phone?: string;
-  email?: string;
-  licenseNumber?: string;
-  department?: string;
-  position?: string;
-  status?: string;
-  specialty?: string[];
-  experience?: number;
-  gender?: string;
-  joinDate?: string;
-  profile?: string;
-  avatar?: string;
-}
-
-// 律师统计接口
-interface LawyerStats {
-  total: number;
-  active: number;
-  inactive: number;
-  onLeave: number;
-}
 
 const LawyerManagementPage: React.FC = () => {
   const navigate = useNavigate();
@@ -83,122 +59,25 @@ const LawyerManagementPage: React.FC = () => {
 
   const [total, setTotal] = useState<number>(0);
 
-  // 模拟数据
-  const mockLawyers: Lawyer[] = [
-    {
-      id: 1,
-      name: '张律师',
-      phone: '13800138001',
-      email: 'zhang.lawyer@example.com',
-      licenseNumber: '123456789012345',
-      department: '民事诉讼部',
-      position: '合伙人',
-      status: 'active',
-      specialty: ['合同纠纷', '侵权责任'],
-      experience: 15,
-      gender: 'male',
-      joinDate: '2010-01-15',
-      profile: '资深律师，专注于民事诉讼领域'
-    },
-    {
-      id: 2,
-      name: '李律师',
-      phone: '13800138002',
-      email: 'li.lawyer@example.com',
-      licenseNumber: '123456789012346',
-      department: '刑事辩护部',
-      position: '合伙人',
-      status: 'active',
-      specialty: ['刑事辩护', '知识产权'],
-      experience: 12,
-      gender: 'male',
-      joinDate: '2012-03-20',
-      profile: '专业刑事辩护律师'
-    },
-    {
-      id: 3,
-      name: '王律师',
-      phone: '13800138003',
-      email: 'wang.lawyer@example.com',
-      licenseNumber: '123456789012347',
-      department: '公司法务部',
-      position: '资深律师',
-      status: 'active',
-      specialty: ['公司法务', '劳动争议'],
-      experience: 8,
-      gender: 'female',
-      joinDate: '2016-06-10',
-      profile: '公司法务专家'
-    },
-    {
-      id: 4,
-      name: '赵律师',
-      phone: '13800138004',
-      email: 'zhao.lawyer@example.com',
-      licenseNumber: '123456789012348',
-      department: '行政诉讼部',
-      position: '律师',
-      status: 'on_leave',
-      specialty: ['行政诉讼', '行政复议'],
-      experience: 5,
-      gender: 'male',
-      joinDate: '2019-09-01',
-      profile: '行政诉讼专业律师'
-    }
-  ];
-
-  const mockStats: LawyerStats = {
-    total: 4,
-    active: 3,
-    inactive: 0,
-    onLeave: 1
-  };
-
   // 获取律师列表
   const fetchLawyers = async (isRetry: boolean = false) => {
     setLoading(true);
     setError(null);
 
     try {
-      // 模拟API调用 - 在开发模式下增加稳定性
-      console.log('🛠️ 开发模式：加载律师列表（模拟数据）');
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('📡 调用律师列表API');
+      const response = await lawyerService.getLawyers({
+        page: queryParams.pageNum,
+        pageSize: queryParams.pageSize,
+        name: queryParams.name || undefined,
+        department: queryParams.department || undefined,
+        status: queryParams.status || undefined
+      });
 
-      // 模拟偶发性错误（用于测试重试机制）
-      if (Math.random() < 0.1 && !isRetry && retryCount < 2) {
-        throw new Error('模拟网络错误，触发重试机制');
-      }
-
-      // 过滤数据
-      let filteredLawyers = mockLawyers;
-
-      if (queryParams.name) {
-        filteredLawyers = filteredLawyers.filter(lawyer =>
-          lawyer.name?.toLowerCase().includes(queryParams.name.toLowerCase())
-        );
-      }
-
-      if (queryParams.department) {
-        filteredLawyers = filteredLawyers.filter(lawyer =>
-          lawyer.department === queryParams.department
-        );
-      }
-
-      if (queryParams.status) {
-        filteredLawyers = filteredLawyers.filter(lawyer =>
-          lawyer.status === queryParams.status
-        );
-      }
-
-      // 分页
-      const startIndex = (queryParams.pageNum - 1) * queryParams.pageSize;
-      const endIndex = startIndex + queryParams.pageSize;
-      const paginatedLawyers = filteredLawyers.slice(startIndex, endIndex);
-
-      setLawyers(paginatedLawyers);
-      setTotal(filteredLawyers.length);
+      setLawyers(response.data);
+      setTotal(response.total);
       setRetryCount(0); // 重置重试计数
-      console.log(`✅ 律师列表加载完成：${paginatedLawyers.length} 条记录`);
+      console.log(`✅ 律师列表加载完成：${response.data.length} 条记录`);
     } catch (error) {
       console.error('获取律师列表失败:', error);
 
@@ -212,11 +91,7 @@ const LawyerManagementPage: React.FC = () => {
         return;
       }
 
-      // 在开发模式下提供降级处理
-      console.warn('🛠️ 开发模式：使用默认数据作为降级方案');
-      setError(`加载律师列表失败，使用模拟数据: ${error instanceof Error ? error.message : '未知错误'}`);
-      setLawyers(mockLawyers.slice(0, queryParams.pageSize));
-      setTotal(mockLawyers.length);
+      setError(`加载律师列表失败: ${error instanceof Error ? error.message : '未知错误'}`);
     } finally {
       setLoading(false);
     }
@@ -225,16 +100,13 @@ const LawyerManagementPage: React.FC = () => {
   // 获取律师统计
   const fetchStats = async () => {
     try {
-      // 模拟API调用
-      console.log('🛠️ 开发模式：加载律师统计数据');
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setStats(mockStats);
+      console.log('📡 调用律师统计API');
+      const statsData = await lawyerService.getLawyerStats();
+      setStats(statsData);
       console.log('✅ 律师统计数据加载完成');
     } catch (error) {
       console.error('获取统计数据失败:', error);
-      // 在开发模式下提供降级处理
-      console.warn('🛠️ 开发模式：使用默认统计数据');
-      setStats(mockStats);
+      setError(`获取统计数据失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
   };
 
@@ -314,15 +186,15 @@ const LawyerManagementPage: React.FC = () => {
   const handleDelete = async (lawyer: Lawyer) => {
     if (window.confirm(`确定要删除${lawyer.name}吗？`)) {
       try {
-        // 模拟API调用
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        alert('删除成功');
-        fetchLawyers();
-        fetchStats();
+        if (lawyer.id) {
+          await lawyerService.deleteLawyer(lawyer.id);
+          console.log(`✅ 律师 ${lawyer.name} 删除成功`);
+          fetchLawyers();
+          fetchStats();
+        }
       } catch (error) {
         console.error('删除失败:', error);
-        alert('删除失败，请重试');
+        alert(`删除失败: ${error instanceof Error ? error.message : '未知错误'}`);
       }
     }
   };
@@ -339,8 +211,46 @@ const LawyerManagementPage: React.FC = () => {
     if (!editingLawyer) return;
 
     try {
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (editingLawyer.id) {
+        // 更新律师
+        await lawyerService.updateLawyer(editingLawyer.id, {
+          name: editingLawyer.name,
+          phone: editingLawyer.phone,
+          email: editingLawyer.email,
+          licenseNumber: editingLawyer.licenseNumber,
+          department: editingLawyer.department,
+          position: editingLawyer.position,
+          status: editingLawyer.status,
+          experience: editingLawyer.experience,
+          profile: editingLawyer.profile,
+          address: editingLawyer.address,
+          education: editingLawyer.education,
+          achievements: editingLawyer.achievements,
+          hourlyRate: editingLawyer.hourlyRate,
+          consultationHours: editingLawyer.consultationHours
+        });
+        console.log('✅ 律师更新成功');
+      } else {
+        // 创建律师
+        await lawyerService.createLawyer({
+          name: editingLawyer.name || '',
+          username: editingLawyer.name?.toLowerCase().replace(/\s+/g, '_') || '',
+          phone: editingLawyer.phone || '',
+          email: editingLawyer.email || '',
+          licenseNumber: editingLawyer.licenseNumber || '',
+          department: editingLawyer.department,
+          position: editingLawyer.position,
+          status: editingLawyer.status || 'active',
+          experience: editingLawyer.experience,
+          profile: editingLawyer.profile,
+          address: editingLawyer.address,
+          education: editingLawyer.education,
+          achievements: editingLawyer.achievements,
+          hourlyRate: editingLawyer.hourlyRate,
+          consultationHours: editingLawyer.consultationHours
+        });
+        console.log('✅ 律师创建成功');
+      }
 
       alert(editingLawyer.id ? '更新成功' : '新增成功');
       setModalVisible(false);
@@ -348,7 +258,7 @@ const LawyerManagementPage: React.FC = () => {
       fetchStats();
     } catch (error) {
       console.error('保存失败:', error);
-      alert('保存失败，请重试');
+      alert(`保存失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
   };
 
@@ -365,14 +275,6 @@ const LawyerManagementPage: React.FC = () => {
 
   return (
     <div>
-      {/* 开发模式指示器 */}
-      {process.env.NODE_ENV === 'development' && (
-        <Alert variant="info" className="mb-3">
-          <small>
-            🛠️ 开发模式：律师管理页面正在使用模拟数据运行
-          </small>
-        </Alert>
-      )}
 
       {/* 头部 */}
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -380,9 +282,6 @@ const LawyerManagementPage: React.FC = () => {
           <h1>律师管理</h1>
           <p className="text-muted">
             管理律师事务所的律师信息
-            {process.env.NODE_ENV === 'development' && (
-              <small className="text-info ms-2">(开发模式 - 模拟数据)</small>
-            )}
           </p>
         </div>
         <Button variant="primary" onClick={handleAdd}>
@@ -534,7 +433,7 @@ const LawyerManagementPage: React.FC = () => {
                 {retryCount > 0 ? `正在重试... (${retryCount}/2)` : '正在加载律师列表...'}
               </h5>
               <p className="text-muted small mb-0">
-                {process.env.NODE_ENV === 'development' ? '🛠️ 开发模式：使用模拟数据' : '请稍候，正在获取最新数据'}
+                请稍候，正在获取最新数据
               </p>
               {retryCount > 0 && (
                 <div className="mt-2">
