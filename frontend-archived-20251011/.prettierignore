@@ -13,6 +13,10 @@ coverage/
 
 # Environment files
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # Public files
 public/
@@ -36,9 +40,6 @@ Thumbs.db
 **/*.spec.tsx
 
 # Config files that should maintain their formatting
-vite.config.ts
-vitest.config.ts
-tsconfig.json
-
-# Spec workflow files
-.spec-workflow/
+craco.config.js
+tailwind.config.js
+postcss.config.js

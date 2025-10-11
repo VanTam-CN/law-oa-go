@@ -1,150 +1,317 @@
-import React, { useState } from "react";
-import {
-  Navbar,
-  Nav,
-  NavDropdown,
-  Container,
-  Badge,
-  Button,
-} from "react-bootstrap";
-import { LinkContainer } from "react-router-bootstrap";
-import { useSelector, useDispatch } from "react-redux";
-import { useNavigate } from "react-router-dom";
-import { RootState } from "../../store";
-import { logout } from "../../store/slices/authSlice";
-import UserAvatar from "../ui/UserAvatar";
-import NotificationBadge from "../ui/NotificationBadge";
-import SearchBar from "../common/SearchBar";
-import "./Header.css";
+import React, { useState } from 'react';
+import { Layout, Dropdown, Space, Badge, Avatar, Menu, Spin, Empty } from 'antd';
+import { 
+  BellOutlined, 
+  UserOutlined, 
+  LogoutOutlined, 
+  SettingOutlined, 
+  CheckOutlined, 
+  DeleteOutlined,
+  FullscreenOutlined,
+  FullscreenExitOutlined,
+  QuestionCircleOutlined
+} from '@ant-design/icons';
+import useAuth from '@/hooks/useAuth';
+import useNotifications from '@/hooks/useNotifications';
+import { useNavigate } from 'react-router-dom';
+import type { MenuProps } from 'antd';
+import './header.less';
 
-const Header: React.FC = () => {
-  const { user } = useSelector((state: RootState) => state.auth);
-  const dispatch = useDispatch();
+const { Header } = Layout;
+
+interface Notification {
+  id: number;
+  title: string;
+  content: string;
+  type: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+const AppHeader: React.FC = () => {
+  const { user, logout } = useAuth();
+  const { 
+    notifications, 
+    stats, 
+    loading, 
+    error, 
+    markAsRead, 
+    markAllAsRead, 
+    deleteNotification 
+  } = useNotifications();
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState(3);
-  const [messages, setMessages] = useState(5);
 
-  const handleSearch = (query: string, config: any) => {
-    console.log("Searching for:", query, config);
-    navigate(`/search?q=${encodeURIComponent(query)}`);
+  const [notificationVisible, setNotificationVisible] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // 用户菜单项
+  const userMenuItems: MenuProps['items'] = [
+    {
+      key: 'profile',
+      icon: <UserOutlined />,
+      label: '个人中心',
+      onClick: () => navigate('/profile'),
+    },
+    {
+      key: 'settings',
+      icon: <SettingOutlined />,
+      label: '系统设置',
+      onClick: () => navigate('/settings'),
+    },
+    {
+      type: 'divider',
+    },
+    {
+      key: 'help',
+      icon: <QuestionCircleOutlined />,
+      label: '帮助中心',
+      onClick: () => navigate('/help'),
+    },
+    {
+      key: 'logout',
+      icon: <LogoutOutlined />,
+      label: '退出登录',
+      onClick: logout,
+    },
+  ];
+
+  // 格式化通知时间
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 1) return '刚刚';
+    if (minutes < 60) return `${minutes}分钟前`;
+    if (hours < 24) return `${hours}小时前`;
+    if (days < 7) return `${days}天前`;
+    return date.toLocaleDateString();
   };
 
-  const handleLogout = () => {
-    dispatch(logout() as any);
-    navigate("/login");
+  // 获取通知类型配置
+  const getNotificationConfig = (type: string) => {
+    const configs = {
+      approval: {
+        icon: <CheckOutlined />,
+        color: 'var(--color-success)',
+        bgColor: 'var(--color-success-100)',
+        label: '审批'
+      },
+      project: {
+        icon: <BellOutlined />,
+        color: 'var(--color-primary)',
+        bgColor: 'var(--color-primary-100)',
+        label: '项目'
+      },
+      system: {
+        icon: <SettingOutlined />,
+        color: 'var(--color-warning)',
+        bgColor: 'var(--color-warning-100)',
+        label: '系统'
+      },
+      finance: {
+        icon: <UserOutlined />,
+        color: 'var(--color-error)',
+        bgColor: 'var(--color-error-100)',
+        label: '财务'
+      },
+      default: {
+        icon: <BellOutlined />,
+        color: 'var(--color-text-secondary)',
+        bgColor: 'var(--color-gray-100)',
+        label: '通知'
+      }
+    };
+    return configs[type as keyof typeof configs] || configs.default;
   };
 
-  const getRoleBadgeClass = (role: string) => {
-    switch (role) {
-      case "admin":
-        return "bg-danger";
-      case "lawyer":
-        return "bg-primary";
-      case "user":
-        return "bg-info";
-      default:
-        return "bg-secondary";
+  // 处理通知项点击
+  const handleNotificationClick = (notification: Notification) => {
+    if (!notification.isRead) {
+      markAsRead(notification.id);
     }
   };
 
-  // Get role display text
-  const getRoleText = (role: string) => {
-    switch (role) {
-      case "admin":
-        return "Administrator";
-      case "lawyer":
-        return "Lawyer";
-      case "user":
-        return "User";
-      default:
-        return role;
+  // 处理标记全部已读
+  const handleMarkAllAsRead = () => {
+    markAllAsRead();
+    setNotificationVisible(false);
+  };
+
+  // 处理删除通知
+  const handleDeleteNotification = (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    deleteNotification(id);
+  };
+
+  // 处理全屏切换
+  const handleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
     }
   };
+
+  // 通知菜单项
+  const notificationItems: MenuProps['items'] = [
+    {
+      key: 'header',
+      label: (
+        <div className="notification-header">
+          <div className="notification-title">
+            <span>通知中心</span>
+            {stats.unread > 0 && (
+              <span className="unread-count">{stats.unread} 未读</span>
+            )}
+          </div>
+          {stats.total > 0 && (
+            <div className="notification-actions">
+              <span 
+                className="action-link"
+                onClick={handleMarkAllAsRead}
+              >
+                全部已读
+              </span>
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      type: 'divider',
+    },
+    ...(loading ? [{
+      key: 'loading',
+      label: (
+        <div className="notification-loading">
+          <Spin size="small" />
+          <span>加载中...</span>
+        </div>
+      ),
+    }] : error ? [{
+      key: 'error',
+      label: (
+        <div className="notification-error">
+          <Empty description={error} />
+        </div>
+      ),
+    }] : notifications.length === 0 ? [{
+      key: 'empty',
+      label: (
+        <div className="notification-empty">
+          <Empty description="暂无通知" />
+        </div>
+      ),
+    }] : notifications.map((notification: Notification) => {
+      const config = getNotificationConfig(notification.type);
+      return {
+        key: `notification-${notification.id}`,
+        label: (
+          <div 
+            className={`notification-item ${notification.isRead ? 'read' : 'unread'}`}
+            onClick={() => handleNotificationClick(notification)}
+          >
+            <div className="notification-content">
+              <div className="notification-meta">
+                <div className="notification-type" style={{ backgroundColor: config.bgColor, color: config.color }}>
+                  {config.icon}
+                  <span>{config.label}</span>
+                </div>
+                <span className="notification-time">{formatTime(notification.createdAt)}</span>
+              </div>
+              <div className="notification-title-text">{notification.title}</div>
+              <div className="notification-description">{notification.content}</div>
+            </div>
+            <div className="notification-actions">
+              <DeleteOutlined 
+                className="delete-btn"
+                onClick={(e) => handleDeleteNotification(notification.id, e)}
+              />
+            </div>
+          </div>
+        ),
+      };
+    })),
+    ...(notifications.length > 0 ? [{
+      type: 'divider',
+    }, {
+      key: 'view-all',
+      label: (
+        <div className="view-all-btn">
+          查看全部通知
+        </div>
+      ),
+    }] : [])
+  ];
 
   return (
-    <Navbar variant="dark" expand="lg" fixed="top" className="header">
-      <Container fluid>
-        <LinkContainer to="/dashboard">
-          <Navbar.Brand className="d-flex align-items-center">
-            <div
-              className="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2"
-              style={{ width: "32px", height: "32px" }}
-            >
-              <i className="fas fa-balance-scale text-white"></i>
-            </div>
-            <span className="d-none d-md-block">Law OA System</span>
-          </Navbar.Brand>
-        </LinkContainer>
-        <Navbar.Toggle aria-controls="basic-navbar-nav" />
-        <Navbar.Collapse id="basic-navbar-nav">
-          <Nav className="me-auto">
-            <SearchBar
-              onSubmit={handleSearch}
-              placeholder="Search clients, cases, documents..."
-              enableNavigation={true}
-              showAdvancedToggle={true}
-              size="sm"
-              variant="outline-secondary"
-            />
-          </Nav>
-          <Nav className="d-flex align-items-center">
-            <Nav.Link href="/notifications" className="position-relative me-3">
-              <i className="fas fa-bell fa-lg"></i>
-              <NotificationBadge count={notifications} />
-            </Nav.Link>
-            <Nav.Link href="/messages" className="position-relative me-3">
-              <i className="fas fa-envelope fa-lg"></i>
-              <NotificationBadge count={messages} variant="primary" />
-            </Nav.Link>
-            <NavDropdown
-              title={
-                <div className="d-flex align-items-center">
-                  <UserAvatar
-                    name={user?.name || "User"}
-                    size="sm"
-                    className="me-2"
-                  />
-                  <span className="d-none d-md-block">{user?.name}</span>
-                  <Badge
-                    bg={getRoleBadgeClass(user?.role || "user")}
-                    className="ms-2 d-none d-md-block"
-                  >
-                    {getRoleText(user?.role || "user")}
-                  </Badge>
-                </div>
+    <Header className="app-header">
+      <div className="header-left">
+        {/* 面包屑或其他左侧内容可以在这里添加 */}
+      </div>
+      
+      <div className="header-right">
+        <Space size="large">
+          {/* 全屏切换 */}
+          <div 
+            className="header-action"
+            onClick={handleFullscreen}
+            title={isFullscreen ? "退出全屏" : "全屏"}
+          >
+            {isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
+          </div>
+          
+          {/* 通知中心 */}
+          <Dropdown 
+            menu={{ 
+              items: notificationItems,
+              onClick: ({ key }) => {
+                if (key === 'view-all') {
+                  navigate('/notifications');
+                }
               }
-              id="user-dropdown"
-              align="end"
-            >
-              <LinkContainer to="/profile">
-                <NavDropdown.Item>
-                  <i className="fas fa-user me-2"></i>
-                  My Profile
-                </NavDropdown.Item>
-              </LinkContainer>
-              <LinkContainer to="/settings">
-                <NavDropdown.Item>
-                  <i className="fas fa-cog me-2"></i>
-                  Settings
-                </NavDropdown.Item>
-              </LinkContainer>
-              <NavDropdown.Divider />
-              <LinkContainer to="/help">
-                <NavDropdown.Item>
-                  <i className="fas fa-question-circle me-2"></i>
-                  Help Center
-                </NavDropdown.Item>
-              </LinkContainer>
-              <NavDropdown.Item onClick={handleLogout}>
-                <i className="fas fa-sign-out-alt me-2"></i>
-                Logout
-              </NavDropdown.Item>
-            </NavDropdown>
-          </Nav>
-        </Navbar.Collapse>
-      </Container>
-    </Navbar>
+            }} 
+            placement="bottomRight"
+            onOpenChange={setNotificationVisible}
+            open={notificationVisible}
+            trigger={['click']}
+          >
+            <div className={`header-action ${notificationVisible ? 'active' : ''}`}>
+              <Badge 
+                count={stats.unread > 0 ? stats.unread : 0} 
+                size="small"
+                className="notification-badge"
+              >
+                <BellOutlined className="action-icon" />
+              </Badge>
+            </div>
+          </Dropdown>
+          
+          {/* 用户菜单 */}
+          <Dropdown 
+            menu={{ items: userMenuItems }} 
+            placement="bottomRight"
+            trigger={['click']}
+          >
+            <div className="user-menu">
+              <Avatar 
+                size="small" 
+                icon={<UserOutlined />}
+                className="user-avatar"
+              />
+              <span className="user-name">{user?.real_name || '用户'}</span>
+            </div>
+          </Dropdown>
+        </Space>
+      </div>
+    </Header>
   );
 };
 
-export default Header;
+export default AppHeader;

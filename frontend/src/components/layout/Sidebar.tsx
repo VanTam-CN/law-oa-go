@@ -1,336 +1,417 @@
-import React, { useState } from "react";
-import { Nav, Badge } from "react-bootstrap";
-import { LinkContainer } from "react-router-bootstrap";
-import { useSelector } from "react-redux";
-import { RootState } from "../../store";
-import LanguageSwitcher from "./LanguageSwitcher";
-import "./Sidebar.css";
+import React, { useEffect, useState, useMemo } from 'react';
+import { Layout, Menu, message, Badge } from 'antd';
+import {
+  FileDoneOutlined,
+  ProjectOutlined,
+  SettingOutlined,
+  ToolOutlined,
+  MoneyCollectOutlined,
+  DashboardOutlined,
+  UserOutlined,
+  BankOutlined,
+  TeamOutlined,
+  FileTextOutlined,
+  SearchOutlined,
+  DatabaseOutlined,
+  CloudUploadOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+  AppstoreOutlined,
+  CalculatorOutlined,
+  FileSearchOutlined,
+  ScheduleOutlined,
+  BarChartOutlined,
+  SolutionOutlined,
+  FileProtectOutlined,
+  AuditOutlined
+} from '@ant-design/icons';
+import { useNavigate, useLocation } from 'react-router-dom';
+import useAuth from '@/hooks/useAuth';
+import './sidebar.less';
+
+const { Sider } = Layout;
+
+interface MenuItem {
+  key: string;
+  label: string;
+  icon?: React.ReactNode;
+  children?: MenuItem[];
+  onClick?: () => void;
+  badge?: number;
+  color?: string;
+  permission?: string;
+}
 
 interface SidebarProps {
   collapsed: boolean;
+  setCollapsed: (collapsed: boolean) => void;
+  onWidthChange?: (width: number) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
-  const { user } = useSelector((state: RootState) => state.auth);
-  const [activeKey, setActiveKey] = useState("dashboard");
+const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChange }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user, hasPermission } = useAuth();
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
-  const getRoleBadgeClass = (role: string) => {
-    switch (role) {
-      case "admin":
-        return "bg-danger";
-      case "lawyer":
-        return "bg-primary";
-      case "user":
-        return "bg-info";
-      default:
-        return "bg-secondary";
+  // 监听折叠状态变化，通知父组件
+  useEffect(() => {
+    if (onWidthChange) {
+      onWidthChange(collapsed ? 80 : 240);
     }
+  }, [collapsed, onWidthChange]);
+
+  // 根据当前路径获取选中的菜单项
+  const getSelectedKeys = () => {
+    const path = location.pathname;
+    const keyMap: Record<string, string> = {
+      '/dashboard': 'dashboard',
+      '/approval': 'approval',
+      '/project': 'project',
+      '/case': 'case',
+      '/client': 'client',
+      '/lawyer': 'lawyer',
+      '/conflict': 'conflict',
+      '/file': 'file',
+      '/user': 'user',
+      '/tools': 'tools',
+      '/tools/law-search': 'law-search',
+      '/finance': 'finance',
+      '/reports': 'reports',
+      '/calendar': 'calendar',
+      '/documents': 'documents',
+      '/settings': 'settings'
+    };
+
+    // 精确匹配
+    if (keyMap[path]) return [keyMap[path]];
+    
+    // 模糊匹配
+    for (const [route, key] of Object.entries(keyMap)) {
+      if (path.startsWith(route) && path !== route) {
+        return [key];
+      }
+    }
+    
+    return [];
   };
 
-  // Get role display text
-  const getRoleText = (role: string) => {
-    switch (role) {
-      case "admin":
-        return "Administrator";
-      case "lawyer":
-        return "Lawyer";
-      case "user":
-        return "User";
-      default:
-        return role;
+  // 获取展开的子菜单
+  const getOpenKeys = () => {
+    const path = location.pathname;
+    const openKeys: string[] = [];
+    
+    if (path.startsWith('/project') || path.startsWith('/case') || 
+        path.startsWith('/client') || path.startsWith('/lawyer') || 
+        path.startsWith('/conflict') || path.startsWith('/file')) {
+      openKeys.push('business');
     }
+    
+    if (path.startsWith('/tools') || path.startsWith('/reports') || 
+        path.startsWith('/calendar') || path.startsWith('/documents')) {
+      openKeys.push('tools');
+    }
+    
+    return openKeys;
   };
 
-  // Get status display text
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "active":
-        return "Active";
-      case "inactive":
-        return "Inactive";
-      default:
-        return status;
+  // 基础菜单项配置
+  const baseMenuItems: MenuItem[] = [
+    {
+      key: 'dashboard',
+      label: '工作台',
+      icon: <DashboardOutlined />,
+      onClick: () => navigate('/dashboard'),
+      color: 'var(--color-primary)',
+      permission: 'dashboard:view'
+    },
+    {
+      key: 'business',
+      label: '业务管理',
+      icon: <ProjectOutlined />,
+      color: 'var(--color-success)',
+      children: [
+        {
+          key: 'project',
+          label: '项目管理',
+          icon: <AppstoreOutlined />,
+          onClick: () => navigate('/project'),
+          permission: 'project:manage'
+        },
+        {
+          key: 'case',
+          label: '案件管理',
+          icon: <SolutionOutlined />,
+          onClick: () => navigate('/case'),
+          badge: 3,
+          permission: 'case:manage'
+        },
+        {
+          key: 'client',
+          label: '客户管理',
+          icon: <TeamOutlined />,
+          onClick: () => navigate('/client'),
+          permission: 'client:manage'
+        },
+        {
+          key: 'lawyer',
+          label: '律师管理',
+          icon: <UserOutlined />,
+          onClick: () => navigate('/lawyer'),
+          permission: 'lawyer:manage'
+        },
+        {
+          key: 'conflict',
+          label: '利益冲突检查',
+          icon: <FileSearchOutlined />,
+          onClick: () => navigate('/conflict'),
+          permission: 'conflict:check'
+        },
+        {
+          key: 'file',
+          label: '文件管理',
+          icon: <CloudUploadOutlined />,
+          onClick: () => navigate('/file'),
+          permission: 'file:manage'
+        }
+      ]
+    },
+    {
+      key: 'approval',
+      label: '审批中心',
+      icon: <FileDoneOutlined />,
+      onClick: () => navigate('/approval'),
+      badge: 5,
+      color: 'var(--color-warning)',
+      permission: 'approval:manage'
+    },
+    {
+      key: 'tools',
+      label: '办公工具',
+      icon: <ToolOutlined />,
+      color: 'var(--color-info)',
+      children: [
+        {
+          key: 'law-search',
+          label: '法条查询',
+          icon: <SearchOutlined />,
+          onClick: () => navigate('/tools/law-search'),
+          permission: 'law:search'
+        },
+        {
+          key: 'case-search',
+          label: '案例检索',
+          icon: <DatabaseOutlined />,
+          onClick: () => message.info('案例检索功能开发中...'),
+          permission: 'case:search'
+        },
+        {
+          key: 'company-search',
+          label: '企业信息查询',
+          icon: <BankOutlined />,
+          onClick: () => message.info('企业信息查询功能开发中...'),
+          permission: 'company:search'
+        },
+        {
+          key: 'calendar',
+          label: '日程安排',
+          icon: <ScheduleOutlined />,
+          onClick: () => navigate('/calendar'),
+          permission: 'calendar:manage'
+        },
+        {
+          key: 'documents',
+          label: '文档模板',
+          icon: <FileTextOutlined />,
+          onClick: () => navigate('/documents'),
+          permission: 'document:template'
+        }
+      ]
+    },
+    {
+      key: 'finance',
+      label: '财务管理',
+      icon: <CalculatorOutlined />,
+      onClick: () => navigate('/finance'),
+      color: 'var(--color-error)',
+      permission: 'finance:manage'
+    },
+    {
+      key: 'reports',
+      label: '统计报表',
+      icon: <BarChartOutlined />,
+      onClick: () => navigate('/reports'),
+      color: 'var(--color-accent)',
+      permission: 'report:view'
+    },
+    {
+      key: 'user',
+      label: '用户管理',
+      icon: <UserOutlined />,
+      onClick: () => navigate('/user'),
+      color: 'var(--color-text-secondary)',
+      permission: 'user:manage'
+    },
+    {
+      key: 'settings',
+      label: '系统设置',
+      icon: <SettingOutlined />,
+      onClick: () => navigate('/settings'),
+      color: 'var(--color-text-secondary)',
+      permission: 'system:manage'
     }
-  };
-
-  const menuItems = [
-    // 基础功能
-    {
-      key: "dashboard",
-      icon: "fas fa-tachometer-alt",
-      label: "仪表板",
-      path: "/dashboard",
-    },
-
-    // 案件管理分组
-    {
-      key: "case-management",
-      icon: "fas fa-gavel",
-      label: "案件管理",
-      path: "/case-management",
-    },
-    {
-      key: "create-case",
-      icon: "fas fa-plus-circle",
-      label: "创建案件",
-      path: "/create-case",
-      indent: true,
-    },
-
-    // 客户与律师管理
-    {
-      key: "client-management",
-      icon: "fas fa-users",
-      label: "客户管理",
-      path: "/client-management",
-    },
-    {
-      key: "lawyer-management",
-      icon: "fas fa-user-tie",
-      label: "律师管理",
-      path: "/lawyer-management",
-    },
-
-    // 业务管理
-    {
-      key: "approval",
-      icon: "fas fa-clipboard-check",
-      label: "审批流程",
-      path: "/approval",
-    },
-    {
-      key: "project",
-      icon: "fas fa-project-diagram",
-      label: "项目管理",
-      path: "/project",
-    },
-    {
-      key: "finance",
-      icon: "fas fa-chart-line",
-      label: "财务管理",
-      path: "/finance",
-    },
-
-    // 文档与工具
-    {
-      key: "file",
-      icon: "fas fa-folder-open",
-      label: "文件管理",
-      path: "/file",
-    },
-    {
-      key: "tools",
-      icon: "fas fa-tools",
-      label: "专业工具",
-      path: "/tools",
-      subItems: [
-        { key: "fee-calculator", label: "诉讼费计算", path: "/fee-calculator" },
-        { key: "law-search", label: "法条查询", path: "/law-search" },
-      ],
-    },
-
-    // 分析报告
-    {
-      key: "analytics",
-      icon: "fas fa-chart-pie",
-      label: "数据分析",
-      path: "/analytics",
-    },
-
-    // 原有功能
-    {
-      key: "calendar",
-      icon: "fas fa-calendar-alt",
-      label: "日历",
-      path: "/calendar",
-    },
-    {
-      key: "tasks",
-      icon: "fas fa-tasks",
-      label: "任务",
-      path: "/tasks",
-    },
-    {
-      key: "documents",
-      icon: "fas fa-file-contract",
-      label: "文档",
-      path: "/documents",
-    },
-    {
-      key: "reports",
-      icon: "fas fa-file-alt",
-      label: "报告",
-      path: "/reports",
-    },
-
-    // 系统管理
-    {
-      key: "users",
-      icon: "fas fa-user-shield",
-      label: "用户管理",
-      path: "/users",
-      adminOnly: true,
-    },
   ];
 
+  // 根据权限过滤菜单项
+  const menuItems = useMemo(() => {
+    const filterMenuItems = (items: MenuItem[]): MenuItem[] => {
+      return items.filter(item => {
+        // 如果是父级菜单，检查是否有可访问的子菜单
+        if (item.children) {
+          const filteredChildren = filterMenuItems(item.children);
+          return filteredChildren.length > 0;
+        }
+        
+        // 如果有权限要求，检查权限
+        if (item.permission) {
+          return hasPermission(item.permission);
+        }
+        
+        // 默认显示
+        return true;
+      }).map(item => {
+        // 递归处理子菜单
+        if (item.children) {
+          return {
+            ...item,
+            children: filterMenuItems(item.children)
+          };
+        }
+        return item;
+      });
+    };
+    
+    return filterMenuItems(baseMenuItems);
+  }, [hasPermission]);
+
+  // 渲染菜单项
+  const renderMenuItems = (items: MenuItem[]): any[] => {
+    return items.map(item => {
+      const itemStyle: React.CSSProperties = {
+        transition: 'all var(--duration-fast) var(--ease-out)',
+        borderRadius: 'var(--radius-md)',
+        margin: 'var(--space-0-5) var(--space-1)'
+      };
+
+      if (item.children) {
+        return {
+          key: item.key,
+          icon: item.icon,
+          label: (
+            <div className="menu-item-wrapper">
+              <span className="menu-item-label">{item.label}</span>
+              {item.badge && (
+                <Badge 
+                  count={item.badge} 
+                  size="small"
+                  className="menu-item-badge"
+                />
+              )}
+            </div>
+          ),
+          children: renderMenuItems(item.children),
+          style: itemStyle,
+          className: 'sidebar-submenu'
+        };
+      }
+
+      return {
+        key: item.key,
+        icon: item.icon,
+        label: (
+          <div className="menu-item-wrapper">
+            <span className="menu-item-label">{item.label}</span>
+            {item.badge && (
+              <Badge 
+                count={item.badge} 
+                size="small"
+                className="menu-item-badge"
+              />
+            )}
+          </div>
+        ),
+        onClick: item.onClick,
+        style: itemStyle,
+        className: 'sidebar-menu-item'
+      };
+    });
+  };
+
   return (
-    <div
-      className={`sidebar bg-dark text-white ${collapsed ? "collapsed" : ""}`}
+    <Sider
+      collapsible
+      collapsed={collapsed}
+      onCollapse={setCollapsed}
+      width={240}
+      collapsedWidth={80}
+      className="app-sidebar"
+      trigger={null}
     >
-      <div className="sidebar-header p-3 border-bottom border-secondary">
-        {!collapsed && (
-          <div className="d-flex align-items-center">
-            <div
-              className="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3"
-              style={{ width: "40px", height: "40px" }}
-            >
-              <i className="fas fa-balance-scale text-white"></i>
+      {/* Logo区域 */}
+      <div className="sidebar-logo">
+        <div className="logo-container">
+          {collapsed ? (
+            <div className="logo-collapsed">
+              <span className="logo-text">LF</span>
             </div>
-            <div>
-              <h5 className="mb-0">Law OA</h5>
-              <small className="text-muted">Legal Practice Management</small>
+          ) : (
+            <div className="logo-expanded">
+              <div className="logo-icon">⚖️</div>
+              <div className="logo-text">
+                <div className="logo-title">律所OA系统</div>
+                <div className="logo-subtitle">专业 · 高效 · 智能</div>
+              </div>
             </div>
-          </div>
-        )}
-        {collapsed && (
-          <div className="text-center">
-            <div
-              className="bg-primary rounded-circle d-flex align-items-center justify-content-center mx-auto"
-              style={{ width: "40px", height: "40px" }}
-            >
-              <i className="fas fa-balance-scale text-white"></i>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
+        
+        {/* 折叠按钮 */}
+        <div 
+          className="sidebar-trigger"
+          onClick={() => setCollapsed(!collapsed)}
+        >
+          {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+        </div>
       </div>
 
-      <Nav className="flex-column p-2" activeKey={activeKey}>
-        {menuItems.map((item) => {
-          if (item.adminOnly && user?.role !== "admin") {
-            return null;
-          }
+      {/* 菜单区域 */}
+      <div className="sidebar-menu-container">
+        <Menu
+          mode="inline"
+          selectedKeys={getSelectedKeys()}
+          defaultOpenKeys={getOpenKeys()}
+          items={renderMenuItems(menuItems)}
+          className="sidebar-menu"
+          inlineCollapsed={collapsed}
+          expandIcon={<span className="menu-expand-icon">▼</span>}
+        />
+      </div>
 
-          if (item.subItems) {
-            // 处理带子菜单的项
-            return (
-              <div key={item.key} className="sidebar-submenu">
-                <LinkContainer
-                  to={item.path}
-                  onClick={() => setActiveKey(item.key)}
-                >
-                  <Nav.Link className="text-white sidebar-link">
-                    <div className="d-flex align-items-center">
-                      <div className="sidebar-icon rounded-circle d-flex align-items-center justify-content-center me-3">
-                        <i className={item.icon}></i>
-                      </div>
-                      {!collapsed && (
-                        <span className="sidebar-text">{item.label}</span>
-                      )}
-                    </div>
-                  </Nav.Link>
-                </LinkContainer>
-
-                {!collapsed && (
-                  <div className="submenu-items ms-4">
-                    {item.subItems.map((subItem) => (
-                      <LinkContainer
-                        key={subItem.key}
-                        to={subItem.path}
-                        onClick={() => setActiveKey(subItem.key)}
-                      >
-                        <Nav.Link className="text-white sidebar-sublink">
-                          <div className="d-flex align-items-center">
-                            <div className="sidebar-subicon rounded-circle d-flex align-items-center justify-content-center me-2">
-                              <i className="fas fa-angle-right"></i>
-                            </div>
-                            <span className="sidebar-text">{subItem.label}</span>
-                          </div>
-                        </Nav.Link>
-                      </LinkContainer>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          }
-
-          // 处理普通菜单项
-          return (
-            <LinkContainer
-              key={item.key}
-              to={item.path}
-              onClick={() => setActiveKey(item.key)}
-            >
-              <Nav.Link className={`text-white sidebar-link ${item.indent ? 'sidebar-indented' : ''}`}>
-                <div className="d-flex align-items-center">
-                  <div className={`sidebar-icon rounded-circle d-flex align-items-center justify-content-center ${item.indent ? 'me-2' : 'me-3'}`}>
-                    <i className={item.icon}></i>
-                  </div>
-                  {!collapsed && (
-                    <span className="sidebar-text">{item.label}</span>
-                  )}
-                </div>
-              </Nav.Link>
-            </LinkContainer>
-          );
-        })}
-      </Nav>
-
+      {/* 底部信息 */}
       {!collapsed && (
-        <div className="sidebar-footer mt-auto p-3 border-top border-secondary">
-          <div className="user-info mb-3">
-            <div className="d-flex align-items-center">
-              <div
-                className="bg-light rounded-circle d-flex align-items-center justify-content-center me-3"
-                style={{ width: "32px", height: "32px" }}
-              >
-                <i className="fas fa-user text-muted"></i>
-              </div>
-              <div className="flex-grow-1">
-                <div className="fw-bold small">{user?.name}</div>
-                <div className="d-flex align-items-center">
-                  <Badge
-                    bg={getRoleBadgeClass(user?.role || "user")}
-                    className="me-2"
-                  >
-                    {getRoleText(user?.role || "user")}
-                  </Badge>
-                  <Badge bg="success">
-                    {getStatusText(user?.status || "active")}
-                  </Badge>
-                </div>
-              </div>
+        <div className="sidebar-footer">
+          <div className="footer-info">
+            <div className="version-info">
+              <span className="version-label">版本</span>
+              <span className="version-number">v2.0.0</span>
             </div>
-          </div>
-
-          <div className="quick-actions">
-            <LinkContainer to="/profile">
-              <Nav.Link className="text-white p-2 rounded mb-2">
-                <i className="fas fa-user me-2"></i>
-                Profile
-              </Nav.Link>
-            </LinkContainer>
-            <LinkContainer to="/settings">
-              <Nav.Link className="text-white p-2 rounded mb-2">
-                <i className="fas fa-cog me-2"></i>
-                Settings
-              </Nav.Link>
-            </LinkContainer>
-            <LinkContainer to="/help">
-              <Nav.Link className="text-white p-2 rounded">
-                <i className="fas fa-question-circle me-2"></i>
-                Help
-              </Nav.Link>
-            </LinkContainer>
-
-            {/* Language Switcher */}
-            <div className="mt-3 pt-3 border-top border-secondary">
-              <LanguageSwitcher />
+            <div className="user-info">
+              <span className="user-role">{user?.role_name || '用户'}</span>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </Sider>
   );
 };
 
