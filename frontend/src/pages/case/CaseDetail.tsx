@@ -103,45 +103,39 @@ const CaseDetail: React.FC = () => {
   const fetchCaseDetail = async () => {
     setLoading(true);
     try {
-      // 由于后端详情接口有问题，暂时从列表接口中获取单个案件数据
-      const listResponse = await caseAPI.getList({ pageNum: 1, pageSize: 999 });
-      
-      if (listResponse && listResponse.rows) {
-        const caseData = listResponse.rows.find((item: any) => item.caseId === Number(id));
-        
-        if (caseData) {
-          // 将API返回的数据转换为详情页面需要的格式
-          const caseDetail: Case = {
-            caseId: caseData.caseId || 0,
-            caseNo: caseData.caseNo || '',
-            caseName: caseData.caseName || '',
-            caseType: caseData.caseType || '',
-            clientName: caseData.clientName || '',
-            clientPhone: '', // API可能不包含此字段
-            clientEmail: '', // API可能不包含此字段
-            clientAddress: '', // API可能不包含此字段
-            lawyerName: caseData.lawyerName || '',
-            lawyerPhone: '', // API可能不包含此字段
-            lawyerEmail: '', // API可能不包含此字段
-            status: caseData.status || '',
-            description: caseData.description || '',
-            createTime: caseData.createTime || '',
-            updateTime: caseData.updateTime || '',
-            expectedAmount: caseData.contractAmount || 0,
-            actualAmount: 0,
-            principalInfo: caseData.principalInfo || '',
-            opponentInfo: caseData.opponentInfo || ''
-          };
-          
-          setCaseDetail(caseDetail);
-          // 暂时使用空数组的文档和时间线，后续可以添加相应的API
-          setDocuments([]);
-          setTimeline([]);
-        } else {
-          message.error('未找到该案件');
-        }
+      // 直接使用案件详情API
+      const caseResponse = await caseAPI.getById(Number(id));
+
+      if (caseResponse) {
+        // 将API返回的数据转换为详情页面需要的格式
+        const caseDetail: Case = {
+          caseId: caseResponse.id || 0,
+          caseNo: '', // 后端暂无案件编号字段
+          caseName: caseResponse.title || '',
+          caseType: caseResponse.caseType || '',
+          clientName: caseResponse.clientName || '',
+          clientPhone: caseResponse.client?.phone || '',
+          clientEmail: caseResponse.client?.email || '',
+          clientAddress: caseResponse.client?.address || '',
+          lawyerName: caseResponse.lawyerName || '',
+          lawyerPhone: caseResponse.lawyer?.phone || '',
+          lawyerEmail: caseResponse.lawyer?.email || '',
+          status: caseResponse.status || '',
+          description: caseResponse.description || '',
+          createTime: caseResponse.createdAt ? dayjs(caseResponse.createdAt).format('YYYY-MM-DD HH:mm:ss') : '',
+          updateTime: caseResponse.updatedAt ? dayjs(caseResponse.updatedAt).format('YYYY-MM-DD HH:mm:ss') : '',
+          expectedAmount: 0, // 后端暂无此字段
+          actualAmount: 0,
+          principalInfo: '', // 后端暂无此字段
+          opponentInfo: '' // 后端暂无此字段
+        };
+
+        setCaseDetail(caseDetail);
+        // 暂时使用空数组的文档和时间线，后续可以添加相应的API
+        setDocuments([]);
+        setTimeline([]);
       } else {
-        message.error('获取案件列表失败');
+        message.error('未找到该案件');
       }
     } catch (error) {
       console.error('获取案件详情失败:', error);

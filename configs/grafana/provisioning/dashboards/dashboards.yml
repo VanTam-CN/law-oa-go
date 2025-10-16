@@ -1,0 +1,37 @@
+# Grafana仪表板配置
+apiVersion: 1
+
+# 仪表板提供者配置
+providers:
+  # 律所OA系统仪表板
+  - name: 'law-oa-dashboards'
+    orgId: 1
+    folder: '律师事务所OA系统'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
+
+  # 系统监控仪表板
+  - name: 'system-dashboards'
+    orgId: 1
+    folder: '系统监控'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/system
+
+  # 业务监控仪表板
+  - name: 'business-dashboards'
+    orgId: 1
+    folder: '业务监控'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/business

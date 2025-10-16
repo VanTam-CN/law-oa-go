@@ -54,7 +54,7 @@ func PerformanceMiddleware() gin.HandlerFunc {
 		)
 
 		// 记录慢请求
-		if duration > 1*time.Second {
+		if duration > 1*time.Second && logger.Logger != nil {
 			logger.Logger.Warn("Slow request detected",
 				zap.String("method", method),
 				zap.String("path", path),
@@ -66,7 +66,7 @@ func PerformanceMiddleware() gin.HandlerFunc {
 		}
 
 		// 记录错误请求
-		if statusCode >= 400 {
+		if statusCode >= 400 && logger.Logger != nil {
 			logger.Logger.Error("HTTP error request",
 				zap.String("method", method),
 				zap.String("path", path),

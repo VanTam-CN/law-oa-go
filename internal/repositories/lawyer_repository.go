@@ -8,6 +8,7 @@ import (
 
 type LawyerRepository interface {
 	List(ctx context.Context, params *LawyerListParams) ([]*models.User, int64, error)
+	Delete(ctx context.Context, id uint) error
 }
 
 type LawyerRepositoryImpl struct {
@@ -48,4 +49,21 @@ func (r *LawyerRepositoryImpl) List(ctx context.Context, params *LawyerListParam
 	}
 
 	return result, total, nil
+}
+
+func (r *LawyerRepositoryImpl) Delete(ctx context.Context, id uint) error {
+	// 直接尝试删除律师（软删除），GORM会自动处理记录不存在的情况
+	result := r.db.WithContext(ctx).Where("id = ? AND role = ?", id, "lawyer").Delete(&models.User{})
+
+	// 检查是否影响了任何行
+	if result.Error != nil {
+		return result.Error
+	}
+
+	// 如果没有行被影响，说明律师不存在
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+
+	return nil
 }

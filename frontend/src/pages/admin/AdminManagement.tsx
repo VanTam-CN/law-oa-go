@@ -455,7 +455,7 @@ const AdminManagement: React.FC = () => {
         onOk={() => form.submit()}
         onCancel={() => setModalVisible(false)}
         width={600}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form
           form={form}

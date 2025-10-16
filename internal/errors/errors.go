@@ -115,6 +115,9 @@ type BusinessError struct {
 }
 
 func (e *BusinessError) HTTPStatus() int {
+	if e.code == "NOT_FOUND" {
+		return http.StatusNotFound
+	}
 	return http.StatusBadRequest
 }
 

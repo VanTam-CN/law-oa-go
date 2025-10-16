@@ -1,0 +1,238 @@
+# Alertmanager配置
+global:
+  # SMTP配置
+  smtp_smarthost: 'smtp.example.com:587'
+  smtp_from: 'alerts@law-oa.com'
+  smtp_auth_username: 'alerts@law-oa.com'
+  smtp_auth_password: '${SMTP_PASSWORD}'
+
+  # 默认模板
+  templates:
+    - '/etc/alertmanager/templates/*.tmpl'
+
+# 路由配置
+route:
+  # 默认接收器
+  receiver: 'default'
+
+  # 分组配置
+  group_by: ['alertname', 'cluster', 'service']
+
+  # 分组等待时间
+  group_wait: 10s
+
+  # 分组间隔
+  group_interval: 10s
+
+  # 重复告警间隔
+  repeat_interval: 1h
+
+  # 路由规则
+  routes:
+    # 系统严重告警
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 5s
+      repeat_interval: 30m
+      continue: true
+
+    # 警告级别告警
+    - match:
+        severity: warning
+      receiver: 'warning-alerts'
+      group_wait: 30s
+      repeat_interval: 2h
+      continue: true
+
+    # 数据库相关告警
+    - match:
+        service: mysql
+      receiver: 'database-alerts'
+      group_wait: 10s
+      repeat_interval: 1h
+      continue: true
+
+    # 应用服务告警
+    - match:
+        service: law-oa-app
+      receiver: 'application-alerts'
+      group_wait: 10s
+      repeat_interval: 45m
+      continue: true
+
+    # 安全相关告警
+    - match:
+        service: auth
+      receiver: 'security-alerts'
+      group_wait: 5s
+      repeat_interval: 15m
+      continue: true
+
+# 抑制规则
+inhibit_rules:
+  # 如果应用服务宕机，抑制其他相关告警
+  - source_match:
+      alertname: ApplicationDown
+      service: law-oa-app
+    target_match:
+      service: law-oa-app
+    equal: ['instance']
+
+# 接收器配置
+receivers:
+  # 默认接收器
+  - name: 'default'
+    email_configs:
+      - to: 'admin@law-oa.com'
+        subject: '[律所OA] {{ .GroupLabels.alertname }} 告警'
+        body: |
+          {{ range .Alerts }}
+          告警名称: {{ .Annotations.summary }}
+          告警描述: {{ .Annotations.description }}
+          告警级别: {{ .Labels.severity }}
+          开始时间: {{ .StartsAt }}
+          {{ if .EndsAt }}结束时间: {{ .EndsAt }}{{ end }}
+          运行手册: {{ .Annotations.runbook_url }}
+          {{ end }}
+        require_tls: true
+
+  # 严重告警接收器
+  - name: 'critical-alerts'
+    email_configs:
+      - to: 'critical@law-oa.com,ops@law-oa.com'
+        subject: '[紧急] 律所OA系统严重告警 - {{ .GroupLabels.alertname }}'
+        body: |
+          🚨 严重告警 🚨
+
+          告警组: {{ .GroupLabels }}
+
+          {{ range .Alerts }}
+          告警名称: {{ .Annotations.summary }}
+          告警描述: {{ .Annotations.description }}
+          影响服务: {{ .Labels.service }}
+          实例: {{ .Labels.instance }}
+          开始时间: {{ .StartsAt }}
+          {{ if .EndsAt }}结束时间: {{ .EndsAt }}{{ end }}
+
+          📖 运行手册: {{ .Annotations.runbook_url }}
+
+          请立即处理此告警！
+          {{ end }}
+        require_tls: true
+
+    # 短信通知（需要配置SMS网关）
+    # webhook_configs:
+    #   - url: 'http://sms-gateway:8080/send'
+    #     send_resolved: true
+
+  # 警告告警接收器
+  - name: 'warning-alerts'
+    email_configs:
+      - to: 'dev@law-oa.com'
+        subject: '[警告] 律所OA系统告警 - {{ .GroupLabels.alertname }}'
+        body: |
+          ⚠️ 警告告警 ⚠️
+
+          {{ range .Alerts }}
+          告警名称: {{ .Annotations.summary }}
+          告警描述: {{ .Annotations.description }}
+          服务: {{ .Labels.service }}
+          开始时间: {{ .StartsAt }}
+          {{ if .EndsAt }}结束时间: {{ .EndsAt }}{{ end }}
+
+          📖 处理指南: {{ .Annotations.runbook_url }}
+          {{ end }}
+        require_tls: true
+
+  # 数据库告警接收器
+  - name: 'database-alerts'
+    email_configs:
+      - to: 'dba@law-oa.com,dev@law-oa.com'
+        subject: '[数据库] 律所OA数据库告警 - {{ .GroupLabels.alertname }}'
+        body: |
+          🗄️ 数据库告警 🗄️
+
+          {{ range .Alerts }}
+          告警名称: {{ .Annotations.summary }}
+          告警描述: {{ .Annotations.description }}
+          数据库实例: {{ .Labels.instance }}
+          开始时间: {{ .StartsAt }}
+          {{ if .EndsAt }}结束时间: {{ .EndsAt }}{{ end }}
+
+          📖 数据库运维手册: {{ .Annotations.runbook_url }}
+          {{ end }}
+        require_tls: true
+
+  # 应用告警接收器
+  - name: 'application-alerts'
+    email_configs:
+      - to: 'dev@law-oa.com,ops@law-oa.com'
+        subject: '[应用] 律所OA应用告警 - {{ .GroupLabels.alertname }}'
+        body: |
+          🖥️ 应用告警 🖥️
+
+          {{ range .Alerts }}
+          告警名称: {{ .Annotations.summary }}
+          告警描述: {{ .Annotations.description }}
+          应用实例: {{ .Labels.instance }}
+          开始时间: {{ .StartsAt }}
+          {{ if .EndsAt }}结束时间: {{ .EndsAt }}{{ end }}
+
+          📖 应用运维手册: {{ .Annotations.runbook_url }}
+          {{ end }}
+        require_tls: true
+
+  # 安全告警接收器
+  - name: 'security-alerts'
+    email_configs:
+      - to: 'security@law-oa.com,admin@law-oa.com'
+        subject: '[安全] 律所OA安全告警 - {{ .GroupLabels.alertname }}'
+        body: |
+          🔒 安全告警 🔒
+
+          {{ range .Alerts }}
+          告警名称: {{ .Annotations.summary }}
+          告警描述: {{ .Annotations.description }}
+          安全事件: {{ .Labels.alertname }}
+          开始时间: {{ .StartsAt }}
+          {{ if .EndsAt }}结束时间: {{ .EndsAt }}{{ end }}
+
+          🚨 请立即调查此安全事件！
+          📖 安全响应手册: {{ .Annotations.runbook_url }}
+          {{ end }}
+        require_tls: true
+
+    # 安全事件需要立即通知
+    webhook_configs:
+      - url: 'http://security-bot:8080/alert'
+        send_resolved: true
+
+# 时间间隔配置
+time_intervals:
+  # 工作时间
+  - name: 'business-hours'
+    time_intervals:
+      - times:
+          - start_time: '09:00'
+            end_time: '18:00'
+        weekdays: ['monday:friday']
+
+  # 非工作时间
+  - name: 'non-business-hours'
+    time_intervals:
+      - times:
+          - start_time: '18:01'
+            end_time: '08:59'
+        weekdays: ['monday:friday']
+      - weekdays: ['saturday', 'sunday']
+
+# 静默配置示例（可以通过API或UI动态管理）
+# silence:
+#   - matchers:
+#       - name: alertname
+#         value: HighCPUUsage
+#     startsAt: 2024-01-01T10:00:00Z
+#     endsAt: 2024-01-01T12:00:00Z
+#     createdBy: admin@law-oa.com
+#     comment: "维护期间静默CPU告警"

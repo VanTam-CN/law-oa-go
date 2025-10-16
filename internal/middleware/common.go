@@ -129,18 +129,20 @@ func Logger() gin.HandlerFunc {
 // Recovery 恢复中间件
 func Recovery() gin.HandlerFunc {
 	return gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
-		if err, ok := recovered.(error); ok {
-			logger.Logger.Error("Panic recovered",
-				zap.Error(err),
-				zap.String("path", c.Request.URL.Path),
-				zap.String("method", c.Request.Method),
-			)
-		} else {
-			logger.Logger.Error("Panic recovered",
-				zap.Any("recovered", recovered),
-				zap.String("path", c.Request.URL.Path),
-				zap.String("method", c.Request.Method),
-			)
+		if logger.Logger != nil {
+			if err, ok := recovered.(error); ok {
+				logger.Logger.Error("Panic recovered",
+					zap.Error(err),
+					zap.String("path", c.Request.URL.Path),
+					zap.String("method", c.Request.Method),
+				)
+			} else {
+				logger.Logger.Error("Panic recovered",
+					zap.Any("recovered", recovered),
+					zap.String("path", c.Request.URL.Path),
+					zap.String("method", c.Request.Method),
+				)
+			}
 		}
 
 		c.JSON(http.StatusInternalServerError, gin.H{

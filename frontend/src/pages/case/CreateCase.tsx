@@ -7,7 +7,6 @@ import {
   DatePicker,
   InputNumber,
   Upload,
-  Button,
   Steps,
   Row,
   Col,
@@ -22,7 +21,9 @@ import {
   List,
   Tag,
   Progress,
-  AutoComplete
+  AutoComplete,
+  Switch,
+  Button
 } from 'antd';
 import {
   PlusOutlined,
@@ -34,14 +35,18 @@ import {
   UserOutlined,
   SearchOutlined,
   ExclamationCircleOutlined,
-  CheckCircleOutlined
+  CheckCircleOutlined,
+  SettingOutlined,
+  CompressOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { CaseCreationService, CaseValidationService } from '@/services/caseCreation';
 import { ConflictCheckService, ConflictCheckResultProcessor } from '@/services/conflictCheck';
 import { get } from '@/services/api';
+import CompactCaseForm from '@/components/case/CompactCaseForm';
 import './CreateCase.module.css';
+import '@/styles/unified-management.less';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -107,6 +112,9 @@ const CreateCase: React.FC<CreateCaseProps> = ({
   const [clients, setClients] = useState<any[]>([]);
   const [lawyers, setLawyers] = useState<any[]>([]);
   const [dataLoading, setDataLoading] = useState(false);
+
+  // 新增：紧凑表单模式控制
+  const [useCompactForm, setUseCompactForm] = useState(false);
 
   // 获取客户和律师数据
   const fetchDropdownData = async () => {
@@ -422,7 +430,7 @@ const CreateCase: React.FC<CreateCaseProps> = ({
     }
   };
 
-  // 表单提交
+  // 原始表单提交
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
@@ -437,7 +445,7 @@ const CreateCase: React.FC<CreateCaseProps> = ({
 
       // 使用案件创建服务
       const result = await CaseCreationService.createCase(values);
-      
+
       if (result.success) {
         message.success(result.message);
         onSuccess?.();
@@ -452,6 +460,49 @@ const CreateCase: React.FC<CreateCaseProps> = ({
     } finally {
       setLoading(false);
     }
+  };
+
+  // 紧凑表单提交处理
+  const handleCompactFormSubmit = async (values: any) => {
+    try {
+      setLoading(true);
+
+      // 使用数据验证服务
+      const validation = CaseValidationService.validateAll(values);
+      if (!validation.isValid) {
+        message.error(`数据验证失败: ${validation.errors.join(', ')}`);
+        return;
+      }
+
+      // 使用案件创建服务
+      const result = await CaseCreationService.createCase(values);
+
+      if (result.success) {
+        message.success(result.message);
+        onSuccess?.();
+        form.resetFields();
+        setCurrentStep(0);
+      } else {
+        message.error(result.message);
+      }
+    } catch (error) {
+      console.error('创建失败:', error);
+      message.error('案件创建失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 紧凑表单取消处理
+  const handleCompactFormCancel = () => {
+    if (onCancel) {
+      onCancel();
+    }
+  };
+
+  // 紧凑表单冲突检查处理
+  const handleCompactConflictCheck = async (clientId: string, otherParties: string[]) => {
+    return performConflictCheck(clientId, otherParties);
   };
 
   // 文件上传处理
@@ -1033,69 +1084,101 @@ const CreateCase: React.FC<CreateCaseProps> = ({
 
   return (
     <Modal
-      title="新建立案"
+      title={
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>新建立案</span>
+          <Space>
+            <Text type="secondary" style={{ fontSize: '14px' }}>
+              {useCompactForm ? '1080p优化模式' : '标准模式'}
+            </Text>
+            <Switch
+              checked={useCompactForm}
+              onChange={setUseCompactForm}
+              checkedChildren={<CompressOutlined />}
+              unCheckedChildren={<SettingOutlined />}
+              size="small"
+            />
+          </Space>
+        </div>
+      }
       open={visible}
       onCancel={onCancel}
       footer={null}
-      width={1000}
-      destroyOnClose
+      width={useCompactForm ? 1200 : 1000}
+      destroyOnHidden
     >
-      <div className="create-case-container">
-        <Steps current={currentStep} style={{ marginBottom: 24 }}>
-          {steps.map((step, index) => (
-            <Step key={index} title={step.title} icon={step.icon} />
-          ))}
-        </Steps>
+      {useCompactForm ? (
+        // 紧凑表单模式
+        <CompactCaseForm
+          clients={clients}
+          lawyers={lawyers}
+          caseTypes={caseTypes}
+          riskCategories={riskCategories}
+          onSubmit={handleCompactFormSubmit}
+          onCancel={handleCompactFormCancel}
+          onConflictCheck={handleCompactConflictCheck}
+          loading={loading}
+          dataLoading={dataLoading}
+        />
+      ) : (
+        // 原始标准模式
+        <div className="create-case-container">
+          <Steps current={currentStep} style={{ marginBottom: 24 }}>
+            {steps.map((step, index) => (
+              <Step key={index} title={step.title} icon={step.icon} />
+            ))}
+          </Steps>
 
-        <Form
-          form={form}
-          layout="vertical"
-          requiredMark="optional"
-        >
-          {renderStepContent()}
-        </Form>
+          <Form
+            form={form}
+            layout="vertical"
+            requiredMark="optional"
+          >
+            {renderStepContent()}
+          </Form>
 
-        <Divider />
+          <Divider />
 
-        <Row justify="space-between">
-          <Col>
-            {currentStep > 0 && (
-              <Button onClick={() => setCurrentStep(currentStep - 1)}>
-                上一步
-              </Button>
-            )}
-          </Col>
-          <Col>
-            <Space>
-              <Button onClick={onCancel}>
-                取消
-              </Button>
-              {currentStep < steps.length - 1 ? (
-                <Button
-                  type="primary"
-                  onClick={async () => {
-                    const isValid = await validateStep(currentStep);
-                    if (isValid) {
-                      setCurrentStep(currentStep + 1);
-                    }
-                  }}
-                >
-                  下一步
-                </Button>
-              ) : (
-                <Button
-                  type="primary"
-                  loading={loading}
-                  onClick={handleSubmit}
-                  icon={<CheckCircleOutlined />}
-                >
-                  创建案件
+          <Row justify="space-between">
+            <Col>
+              {currentStep > 0 && (
+                <Button onClick={() => setCurrentStep(currentStep - 1)}>
+                  上一步
                 </Button>
               )}
-            </Space>
-          </Col>
-        </Row>
-      </div>
+            </Col>
+            <Col>
+              <Space>
+                <Button onClick={onCancel}>
+                  取消
+                </Button>
+                {currentStep < steps.length - 1 ? (
+                  <Button
+                    type="primary"
+                    onClick={async () => {
+                      const isValid = await validateStep(currentStep);
+                      if (isValid) {
+                        setCurrentStep(currentStep + 1);
+                      }
+                    }}
+                  >
+                    下一步
+                  </Button>
+                ) : (
+                  <Button
+                    type="primary"
+                    loading={loading}
+                    onClick={handleSubmit}
+                    icon={<CheckCircleOutlined />}
+                  >
+                    创建案件
+                  </Button>
+                )}
+              </Space>
+            </Col>
+          </Row>
+        </div>
+      )}
     </Modal>
   );
 };

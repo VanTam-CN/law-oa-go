@@ -8,8 +8,10 @@ import (
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"law-oa-go/internal/config"
+	"law-oa-go/internal/middleware"
 	"law-oa-go/internal/router"
 )
 
@@ -31,6 +33,9 @@ func main() {
 
 	// 初始化Elasticsearch连接
 	esClient := initElasticsearch(cfg)
+
+	// 初始化JWT
+	middleware.InitJWT(cfg)
 
 	// 初始化监控（待实现）
 
@@ -66,9 +71,22 @@ func initDatabase(cfg *config.Config) (*gorm.DB, error) {
 		DisableForeignKeyConstraintWhenMigrating: true, // 禁用外键约束检查（提高性能）
 	}
 
-	db, err := gorm.Open(mysql.Open(dsn), gormConfig)
-	if err != nil {
-		return nil, err
+	var db *gorm.DB
+	var err error
+
+	// 根据数据库类型选择驱动
+	if cfg.Database.Driver == "postgres" {
+		db, err = gorm.Open(postgres.Open(dsn), gormConfig)
+		if err != nil {
+			return nil, err
+		}
+		log.Printf("Connected to PostgreSQL database: %s", cfg.Database.Database)
+	} else {
+		db, err = gorm.Open(mysql.Open(dsn), gormConfig)
+		if err != nil {
+			return nil, err
+		}
+		log.Printf("Connected to MySQL database: %s", cfg.Database.Database)
 	}
 
 	// 优化连接池配置

@@ -1,0 +1,211 @@
+# 告警规则配置
+groups:
+  # 系统可用性告警
+  - name: system_availability
+    rules:
+      # 应用服务不可用
+      - alert: ApplicationDown
+        expr: up{job="law-oa-app"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: law-oa-app
+        annotations:
+          summary: "律师事务所OA系统应用服务不可用"
+          description: "应用服务 {{ $labels.instance }} 已停机超过1分钟"
+          runbook_url: "https://docs.law-oa.com/runbooks/application-down"
+
+      # 数据库连接失败
+      - alert: DatabaseConnectionFailed
+        expr: mysql_up == 0
+        for: 30s
+        labels:
+          severity: critical
+          service: mysql
+        annotations:
+          summary: "MySQL数据库连接失败"
+          description: "无法连接到MySQL数据库服务器"
+          runbook_url: "https://docs.law-oa.com/runbooks/database-connection"
+
+      # Redis连接失败
+      - alert: RedisConnectionFailed
+        expr: redis_up == 0
+        for: 30s
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Redis缓存服务不可用"
+          description: "无法连接到Redis缓存服务器"
+          runbook_url: "https://docs.law-oa.com/runbooks/redis-connection"
+
+  # 性能告警
+  - name: performance
+    rules:
+      # 高CPU使用率
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "CPU使用率过高"
+          description: "实例 {{ $labels.instance }} CPU使用率超过80%，当前值: {{ $value }}%"
+          runbook_url: "https://docs.law-oa.com/runbooks/high-cpu"
+
+      # 高内存使用率
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "内存使用率过高"
+          description: "实例 {{ $labels.instance }} 内存使用率超过85%，当前值: {{ $value }}%"
+          runbook_url: "https://docs.law-oa.com/runbooks/high-memory"
+
+      # 磁盘空间不足
+      - alert: LowDiskSpace
+        expr: (1 - (node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"})) * 100 > 90
+        for: 2m
+        labels:
+          severity: critical
+          service: system
+        annotations:
+          summary: "磁盘空间不足"
+          description: "实例 {{ $labels.instance }} 磁盘 {{ $labels.mountpoint }} 使用率超过90%，当前值: {{ $value }}%"
+          runbook_url: "https://docs.law-oa.com/runbooks/low-disk"
+
+      # 应用响应时间过长
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 3m
+        labels:
+          severity: warning
+          service: law-oa-app
+        annotations:
+          summary: "应用响应时间过长"
+          description: "95%的请求响应时间超过2秒，当前值: {{ $value }}秒"
+          runbook_url: "https://docs.law-oa.com/runbooks/high-response-time"
+
+  # 业务指标告警
+  - name: business_metrics
+    rules:
+      # API错误率过高
+      - alert: HighAPIErrorRate
+        expr: (rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m])) * 100 > 5
+        for: 2m
+        labels:
+          severity: warning
+          service: law-oa-app
+        annotations:
+          summary: "API错误率过高"
+          description: "API错误率超过5%，当前值: {{ $value }}%"
+          runbook_url: "https://docs.law-oa.com/runbooks/high-error-rate"
+
+      # 数据库连接数过多
+      - alert: TooManyDatabaseConnections
+        expr: mysql_global_status_threads_connected / mysql_global_variables_max_connections * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: mysql
+        annotations:
+          summary: "数据库连接数过多"
+          description: "MySQL连接数超过最大连接数的80%，当前值: {{ $value }}%"
+          runbook_url: "https://docs.law-oa.com/runbooks/db-connections"
+
+      # Redis内存使用率过高
+      - alert: HighRedisMemoryUsage
+        expr: (redis_memory_used_bytes / redis_memory_max_bytes) * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Redis内存使用率过高"
+          description: "Redis内存使用率超过90%，当前值: {{ $value }}%"
+          runbook_url: "https://docs.law-oa.com/runbooks/redis-memory"
+
+  # 安全告警
+  - name: security
+    rules:
+      # 异常登录尝试
+      - alert: SuspiciousLoginAttempts
+        expr: rate(http_requests_total{method="POST",path="/auth/login",status="401"}[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          service: auth
+        annotations:
+          summary: "检测到异常登录尝试"
+          description: "5分钟内登录失败次数超过10次，可能存在暴力破解攻击"
+          runbook_url: "https://docs.law-oa.com/runbooks/suspicious-login"
+
+      # API请求频率异常
+      - alert: UnusualAPIRequestRate
+        expr: rate(http_requests_total[5m]) > 100
+        for: 3m
+        labels:
+          severity: warning
+          service: law-oa-app
+        annotations:
+          summary: "API请求频率异常"
+          description: "API请求频率异常高，可能存在攻击或系统异常"
+          runbook_url: "https://docs.law-oa.com/runbooks/unusual-requests"
+
+  # 数据库告警
+  - name: database
+    rules:
+      # 慢查询
+      - alert: SlowQueries
+        expr: rate(mysql_global_status_slow_queries[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: mysql
+        annotations:
+          summary: "检测到慢查询"
+          description: "MySQL慢查询频率过高，需要优化"
+          runbook_url: "https://docs.law-oa.com/runbooks/slow-queries"
+
+      # 数据库锁等待
+      - alert: DatabaseLockWaits
+        expr: mysql_global_status_table_locks_waited > 10
+        for: 1m
+        labels:
+          severity: warning
+          service: mysql
+        annotations:
+          summary: "数据库锁等待过多"
+          description: "数据库表锁等待次数过多，可能影响性能"
+          runbook_url: "https://docs.law-oa.com/runbooks/lock-waits"
+
+  # 应用业务告警
+  - name: application_business
+    rules:
+      # 案件创建失败率过高
+      - alert: HighCaseCreationFailureRate
+        expr: (rate(http_requests_total{method="POST",path="/cases",status=~"4..|5.."}[5m]) / rate(http_requests_total{method="POST",path="/cases"}[5m])) * 100 > 10
+        for: 3m
+        labels:
+          severity: warning
+          service: law-oa-app
+        annotations:
+          summary: "案件创建失败率过高"
+          description: "案件创建API失败率超过10%，当前值: {{ $value }}%"
+          runbook_url: "https://docs.law-oa.com/runbooks/case-creation-failure"
+
+      # 冲突检测服务异常
+      - alert: ConflictDetectionServiceDown
+        expr: up{job="conflict-detection"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: conflict-detection
+        annotations:
+          summary: "冲突检测服务不可用"
+          description: "利益冲突检测服务已停机，影响案件创建流程"
+          runbook_url: "https://docs.law-oa.com/runbooks/conflict-detection-down"

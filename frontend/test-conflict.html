@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>冲突检查功能测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #1890ff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #40a9ff;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            background-color: #f6f6f6;
+        }
+        .success {
+            border: 1px solid #52c41a;
+            color: #52c41a;
+        }
+        .error {
+            border: 1px solid #ff4d4f;
+            color: #ff4d4f;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 冲突检查功能测试</h1>
+        <p>测试新的冲突检查API参数转换功能</p>
+
+        <form id="conflictForm">
+            <div class="form-group">
+                <label for="caseName">案件名称:</label>
+                <input type="text" id="caseName" value="测试案件名称" required>
+            </div>
+
+            <div class="form-group">
+                <label for="caseType">案件类型:</label>
+                <select id="caseType" required>
+                    <option value="CIVIL">民事</option>
+                    <option value="COMMERCIAL" selected>商事</option>
+                    <option value="CRIMINAL">刑事</option>
+                    <option value="ADMINISTRATIVE">行政</option>
+                    <option value="ARBITRATION">仲裁</option>
+                    <option value="CONSULTATION">咨询</option>
+                    <option value="OTHER">其他</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="clientName">客户名称:</label>
+                <input type="text" id="clientName" value="测试客户有限公司" required>
+            </div>
+
+            <div class="form-group">
+                <label for="opponentInfo">对方当事人:</label>
+                <input type="text" id="opponentInfo" value="对方当事人A,对方当事人B">
+            </div>
+
+            <div class="form-group">
+                <label for="searchYears">搜索年限:</label>
+                <input type="number" id="searchYears" value="5" min="1" max="20">
+            </div>
+
+            <button type="submit">🚀 执行冲突检查</button>
+        </form>
+
+        <div id="result"></div>
+    </div>
+
+    <script type="module">
+        // 模拟冲突检查函数 (简化版本用于测试)
+        async function performConflictCheck(formData) {
+            console.log('🚀 调用冲突检查API:', formData);
+
+            // 这里我们会调用实际的API，但为了演示，我们模拟转换过程
+            const transformedData = {
+                clientId: '1',
+                clientName: formData.clientName,
+                caseName: formData.caseName,
+                caseType: formData.caseType.toLowerCase(), // 关键：转换为大写到小写
+                clientType: formData.clientName.includes('公司') ? 'COMPANY' : 'PERSON',
+                otherParties: formData.opponentInfo ? formData.opponentInfo.split(',').map(p => p.trim()) : [],
+                searchYears: formData.searchYears || 5,
+                includeCorporateRelations: formData.includeCorporateRelations !== false,
+                searchDepth: formData.searchDepth || 'STANDARD',
+                userId: '1',
+                requestTime: new Date().toISOString()
+            };
+
+            console.log('✅ 转换后的数据:', transformedData);
+
+            try {
+                const response = await fetch('/api/conflict/check', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(transformedData)
+                });
+
+                const result = await response.json();
+                console.log('📥 API响应:', result);
+                return result;
+            } catch (error) {
+                console.error('💥 API调用失败:', error);
+                return {
+                    success: false,
+                    message: error.message,
+                    error: error.toString()
+                };
+            }
+        }
+
+        // 表单提交处理
+        document.getElementById('conflictForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = {
+                caseName: document.getElementById('caseName').value,
+                caseType: document.getElementById('caseType').value,
+                clientName: document.getElementById('clientName').value,
+                opponentInfo: document.getElementById('opponentInfo').value,
+                searchYears: parseInt(document.getElementById('searchYears').value),
+                searchDepth: 'STANDARD',
+                includeCorporateRelations: true
+            };
+
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = '正在检查...';
+            resultDiv.className = 'result';
+
+            try {
+                const result = await performConflictCheck(formData);
+
+                if (result.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ 成功!\n\n${JSON.stringify(result, null, 2)}`;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `❌ 失败!\n\n${JSON.stringify(result, null, 2)}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `💥 错误: ${error.message}`;
+            }
+        });
+
+        // 自动执行测试
+        window.addEventListener('load', () => {
+            console.log('🎯 页面加载完成，准备自动测试...');
+            setTimeout(() => {
+                document.getElementById('conflictForm').dispatchEvent(new Event('submit'));
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

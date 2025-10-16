@@ -1,0 +1,569 @@
+package services
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log"
+	"math"
+	"strings"
+	"time"
+
+	"law-oa-go/internal/models"
+	"law-oa-go/internal/repositories"
+
+	"github.com/gin-gonic/gin"
+)
+
+// RiskAssessmentService 风险评估服务
+type RiskAssessmentService struct {
+	repo repositories.Repositories
+}
+
+// RiskFactors 风险因子
+type RiskFactors struct {
+	ConflictType        string  `json:"conflict_type"`         // 冲突类型
+	CasePriority        string  `json:"case_priority"`         // 案件优先级
+	CaseStatus          string  `json:"case_status"`           // 案件状态
+	ClientRelationship  string  `json:"client_relationship"`   // 客户关系
+	IndustryOverlap     float64 `json:"industry_overlap"`      // 行业重叠度
+	TimeProximity       int     `json:"time_proximity"`        // 时间接近度（天）
+	FinancialImpact     string  `json:"financial_impact"`      // 财务影响
+	PublicInterest      bool    `json:"public_interest"`       // 是否涉及公共利益
+}
+
+// RiskAssessmentResult 风险评估结果
+type RiskAssessmentResult struct {
+	OverallRiskScore    int                    `json:"overall_risk_score"`
+	RiskLevel           string                 `json:"risk_level"`
+	RiskFactors         RiskFactors             `json:"risk_factors"`
+	RiskBreakdown       map[string]int         `json:"risk_breakdown"`
+	MitigationStrategies []string              `json:"mitigation_strategies"`
+	ConfidenceScore     float64                `json:"confidence_score"`
+	AssessmentTime      string                 `json:"assessment_time"`
+	RecommendedActions  []string               `json:"recommended_actions"`
+}
+
+// NewRiskAssessmentService 创建风险评估服务
+func NewRiskAssessmentService(repo repositories.Repositories) *RiskAssessmentService {
+	return &RiskAssessmentService{
+		repo: repo,
+	}
+}
+
+// AssessRisk 评估风险
+func (s *RiskAssessmentService) AssessRisk(ctx *gin.Context, conflictCase *models.Case, newRequest *ConflictCheckRequest) (*RiskAssessmentResult, error) {
+	log.Printf("=== 开始风险评估: 案件%d vs 新请求 ===", conflictCase.ID)
+
+	// 1. 收集风险因子
+	riskFactors := s.collectRiskFactors(conflictCase, newRequest)
+
+	// 2. 计算各项风险分数
+	riskBreakdown := s.calculateRiskBreakdown(riskFactors)
+
+	// 3. 计算总体风险分数
+	overallScore := s.calculateOverallRiskScore(riskBreakdown)
+
+	// 4. 确定风险等级
+	riskLevel := s.determineRiskLevel(overallScore)
+
+	// 5. 生成缓解策略
+	strategies := s.generateMitigationStrategies(riskFactors, riskBreakdown)
+
+	// 6. 生成推荐行动
+	actions := s.generateRecommendedActions(riskLevel, riskFactors)
+
+	// 7. 计算置信度分数
+	confidence := s.calculateConfidenceScore(riskFactors, riskBreakdown)
+
+	result := &RiskAssessmentResult{
+		OverallRiskScore:     overallScore,
+		RiskLevel:            riskLevel,
+		RiskFactors:          riskFactors,
+		RiskBreakdown:        riskBreakdown,
+		MitigationStrategies: strategies,
+		ConfidenceScore:      confidence,
+		AssessmentTime:       time.Now().Format("2006-01-02 15:04:05"),
+		RecommendedActions:   actions,
+	}
+
+	log.Printf("风险评估完成: 案件%d, 总分: %d, 等级: %s, 置信度: %.2f%%",
+		conflictCase.ID, overallScore, riskLevel, confidence*100)
+
+	return result, nil
+}
+
+// collectRiskFactors 收集风险因子
+func (s *RiskAssessmentService) collectRiskFactors(conflictCase *models.Case, newRequest *ConflictCheckRequest) RiskFactors {
+	factors := RiskFactors{
+		CasePriority:       conflictCase.Priority,
+		CaseStatus:         conflictCase.Status,
+		ClientRelationship: s.determineClientRelationship(conflictCase, newRequest),
+		FinancialImpact:    s.estimateFinancialImpact(conflictCase),
+		PublicInterest:     s.assessPublicInterest(conflictCase, newRequest),
+		TimeProximity:      s.calculateTimeProximity(conflictCase),
+		IndustryOverlap:    s.calculateIndustryOverlap(conflictCase, newRequest),
+		ConflictType:       s.determineConflictType(conflictCase, newRequest),
+	}
+
+	log.Printf("风险因子收集完成: %+v", factors)
+	return factors
+}
+
+// determineClientRelationship 确定客户关系类型
+func (s *RiskAssessmentService) determineClientRelationship(conflictCase *models.Case, newRequest *ConflictCheckRequest) string {
+	// 检查是否为同一客户
+	if strings.EqualFold(conflictCase.ClientName, newRequest.ClientName) {
+		return "same_client"
+	}
+
+	// 检查是否为关联公司
+	if s.areRelatedCompanies(conflictCase.ClientName, newRequest.ClientName) {
+		return "related_companies"
+	}
+
+	// 检查是否为竞争关系
+	if s.hasCompetitiveRelationship(newRequest.ClientName, conflictCase.ClientName) {
+		return "competitor"
+	}
+
+	// 检查是否为供应链关系
+	if s.hasSupplyChainRelationship(conflictCase.ClientName, newRequest.ClientName) {
+		return "supply_chain"
+	}
+
+	return "unrelated"
+}
+
+// areRelatedCompanies 检查是否为关联公司
+func (s *RiskAssessmentService) areRelatedCompanies(company1, company2 string) bool {
+	// 定义关联公司映射
+	relatedMappings := map[string][]string{
+		"阿里巴巴集团": {"淘宝", "天猫", "支付宝", "蚂蚁金服", "蚂蚁集团", "阿里云", "菜鸟网络"},
+		"腾讯":        {"微信", "QQ", "腾讯云", "腾讯游戏", "腾讯视频", "腾讯音乐", "微信支付"},
+		"字节跳动":    {"抖音", "TikTok", "今日头条", "西瓜视频", "飞书", "懂车帝"},
+		"京东":        {"京东物流", "京东数科", "京东健康"},
+	}
+
+	// 正向检查
+	if related, exists := relatedMappings[company1]; exists {
+		for _, relatedCompany := range related {
+			if strings.Contains(company2, relatedCompany) {
+				return true
+			}
+		}
+	}
+
+	// 反向检查
+	if related, exists := relatedMappings[company2]; exists {
+		for _, relatedCompany := range related {
+			if strings.Contains(company1, relatedCompany) {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// hasCompetitiveRelationship 检查竞争关系（复用之前的方法）
+func (s *RiskAssessmentService) hasCompetitiveRelationship(company1, company2 string) bool {
+	competitivePairs := map[string][]string{
+		"阿里巴巴": {"腾讯", "字节跳动", "京东", "拼多多", "美团"},
+		"腾讯":     {"阿里巴巴", "字节跳动", "百度", "网易"},
+		"字节跳动": {"阿里巴巴", "腾讯", "百度", "快手"},
+		"京东":     {"阿里巴巴", "拼多多", "唯品会"},
+	}
+
+	if competitors, exists := competitivePairs[company1]; exists {
+		for _, competitor := range competitors {
+			if strings.Contains(company2, competitor) {
+				return true
+			}
+		}
+	}
+
+	if competitors, exists := competitivePairs[company2]; exists {
+		for _, competitor := range competitors {
+			if strings.Contains(company1, competitor) {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// hasSupplyChainRelationship 检查供应链关系
+func (s *RiskAssessmentService) hasSupplyChainRelationship(company1, company2 string) bool {
+	// 定义供应链关系映射
+	supplyChainMappings := map[string][]string{
+		"阿里巴巴": {"耐克", "阿迪达斯", "联合利华", "宝洁"}, // 平台与品牌方
+		"京东":    {"联想", "海尔", "美的"},               // 零售商与制造商
+		"腾讯":    {"京东", "拼多多", "美团"},             // 投资关系
+	}
+
+	if suppliers, exists := supplyChainMappings[company1]; exists {
+		for _, supplier := range suppliers {
+			if strings.Contains(company2, supplier) {
+				return true
+			}
+		}
+	}
+
+	if suppliers, exists := supplyChainMappings[company2]; exists {
+		for _, supplier := range suppliers {
+			if strings.Contains(company1, supplier) {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// estimateFinancialImpact 估算财务影响
+func (s *RiskAssessmentService) estimateFinancialImpact(conflictCase *models.Case) string {
+	// 基于案件类型和优先级估算财务影响
+	if conflictCase.Priority == "urgent" || conflictCase.Priority == "high" {
+		return "high"
+	}
+
+	switch conflictCase.CaseType {
+	case "商事", "commercial":
+		return "medium"
+	case "民事", "civil":
+		return "low"
+	default:
+		return "medium"
+	}
+}
+
+// assessPublicInterest 评估公共利益影响
+func (s *RiskAssessmentService) assessPublicInterest(conflictCase *models.Case, newRequest *ConflictCheckRequest) bool {
+	// 涉及公共利益的关键词
+	publicInterestKeywords := []string{
+		"政府", "公务员", "事业单位", "公共利益", "安全", "环境",
+		"食品", "药品", "儿童", "老人", "残疾人", "消费者权益",
+		"反垄断", "不正当竞争", "证券", "银行", "保险",
+	}
+
+	caseText := strings.ToLower(conflictCase.Title + " " + conflictCase.Description)
+	requestText := strings.ToLower(newRequest.ClientName + " " + newRequest.OpposingParty)
+
+	for _, keyword := range publicInterestKeywords {
+		if strings.Contains(caseText, keyword) || strings.Contains(requestText, keyword) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// calculateTimeProximity 计算时间接近度
+func (s *RiskAssessmentService) calculateTimeProximity(conflictCase *models.Case) int {
+	if conflictCase.CreatedAt.IsZero() {
+		return 365 // 默认值，表示很久以前
+	}
+
+	days := int(time.Since(conflictCase.CreatedAt).Hours() / 24)
+	return days
+}
+
+// calculateIndustryOverlap 计算行业重叠度
+func (s *RiskAssessmentService) calculateIndustryOverlap(conflictCase *models.Case, newRequest *ConflictCheckRequest) float64 {
+	// 简化的行业重叠度计算
+	if conflictCase.CaseType == newRequest.CaseType {
+		return 1.0
+	}
+
+	// 定义相关案件类型映射
+	relatedTypes := map[string][]string{
+		"商事":     {"民事", "仲裁"},
+		"民事":     {"商事", "仲裁"},
+		"仲裁":     {"商事", "民事"},
+		"刑事":     {"行政"},
+		"行政":     {"刑事"},
+	}
+
+	if related, exists := relatedTypes[conflictCase.CaseType]; exists {
+		for _, relatedType := range related {
+			if relatedType == newRequest.CaseType {
+				return 0.7
+			}
+		}
+	}
+
+	return 0.0
+}
+
+// determineConflictType 确定冲突类型
+func (s *RiskAssessmentService) determineConflictType(conflictCase *models.Case, newRequest *ConflictCheckRequest) string {
+	if strings.EqualFold(conflictCase.ClientName, newRequest.ClientName) {
+		return "direct_client_conflict"
+	}
+
+	if strings.EqualFold(conflictCase.ClientName, newRequest.OpposingParty) ||
+		strings.EqualFold(conflictCase.OpposingParty, newRequest.ClientName) {
+		return "adverse_party_conflict"
+	}
+
+	if s.hasCompetitiveRelationship(newRequest.ClientName, conflictCase.ClientName) {
+		return "competitive_conflict"
+	}
+
+	return "potential_conflict"
+}
+
+// calculateRiskBreakdown 计算风险分数细分
+func (s *RiskAssessmentService) calculateRiskBreakdown(factors RiskFactors) map[string]int {
+	breakdown := make(map[string]int)
+
+	// 冲突类型风险分数
+	breakdown["conflict_type"] = s.calculateConflictTypeRisk(factors.ConflictType)
+
+	// 客户关系风险分数
+	breakdown["client_relationship"] = s.calculateClientRelationshipRisk(factors.ClientRelationship)
+
+	// 案件优先级风险分数
+	breakdown["case_priority"] = s.calculateCasePriorityRisk(factors.CasePriority)
+
+	// 时间接近度风险分数
+	breakdown["time_proximity"] = s.calculateTimeProximityRisk(factors.TimeProximity)
+
+	// 行业重叠度风险分数
+	breakdown["industry_overlap"] = int(factors.IndustryOverlap * 30)
+
+	// 财务影响风险分数
+	breakdown["financial_impact"] = s.calculateFinancialImpactRisk(factors.FinancialImpact)
+
+	// 公共利益风险分数
+	if factors.PublicInterest {
+		breakdown["public_interest"] = 25
+	} else {
+		breakdown["public_interest"] = 0
+	}
+
+	log.Printf("风险分数细分: %+v", breakdown)
+	return breakdown
+}
+
+// calculateConflictTypeRisk 计算冲突类型风险分数
+func (s *RiskAssessmentService) calculateConflictTypeRisk(conflictType string) int {
+	riskScores := map[string]int{
+		"direct_client_conflict":  100,
+		"adverse_party_conflict":  85,
+		"competitive_conflict":     70,
+		"potential_conflict":       40,
+	}
+
+	if score, exists := riskScores[conflictType]; exists {
+		return score
+	}
+	return 30
+}
+
+// calculateClientRelationshipRisk 计算客户关系风险分数
+func (s *RiskAssessmentService) calculateClientRelationshipRisk(relationship string) int {
+	riskScores := map[string]int{
+		"same_client":        100,
+		"related_companies":  80,
+		"competitor":         60,
+		"supply_chain":       40,
+		"unrelated":          10,
+	}
+
+	if score, exists := riskScores[relationship]; exists {
+		return score
+	}
+	return 20
+}
+
+// calculateCasePriorityRisk 计算案件优先级风险分数
+func (s *RiskAssessmentService) calculateCasePriorityRisk(priority string) int {
+	riskScores := map[string]int{
+		"urgent":   25,
+		"high":     20,
+		"medium":   10,
+		"low":      5,
+		"":         10,
+	}
+
+	if score, exists := riskScores[priority]; exists {
+		return score
+	}
+	return 10
+}
+
+// calculateTimeProximityRisk 计算时间接近度风险分数
+func (s *RiskAssessmentService) calculateTimeProximityRisk(days int) int {
+	if days <= 30 {
+		return 20 // 最近一个月内风险较高
+	} else if days <= 90 {
+		return 15 // 三个月内中等风险
+	} else if days <= 365 {
+		return 10 // 一年内低风险
+	} else {
+		return 5   // 超过一年风险很低
+	}
+}
+
+// calculateFinancialImpactRisk 计算财务影响风险分数
+func (s *RiskAssessmentService) calculateFinancialImpactRisk(impact string) int {
+	riskScores := map[string]int{
+		"high":   20,
+		"medium": 15,
+		"low":    5,
+		"":       10,
+	}
+
+	if score, exists := riskScores[impact]; exists {
+		return score
+	}
+	return 10
+}
+
+// calculateOverallRiskScore 计算总体风险分数
+func (s *RiskAssessmentService) calculateOverallRiskScore(breakdown map[string]int) int {
+	total := 0
+	for _, score := range breakdown {
+		total += score
+	}
+
+	// 使用对数函数防止线性增长，保持分数在合理范围内
+	adjustedScore := int(math.Round(float64(total) * 0.7)) // 调整系数
+
+	// 确保分数在0-100范围内
+	if adjustedScore > 100 {
+		adjustedScore = 100
+	}
+	if adjustedScore < 0 {
+		adjustedScore = 0
+	}
+
+	return adjustedScore
+}
+
+// determineRiskLevel 确定风险等级
+func (s *RiskAssessmentService) determineRiskLevel(score int) string {
+	if score >= 80 {
+		return "CRITICAL"
+	} else if score >= 60 {
+		return "HIGH"
+	} else if score >= 40 {
+		return "MEDIUM"
+	} else if score >= 20 {
+		return "LOW"
+	}
+	return "MINIMAL"
+}
+
+// generateMitigationStrategies 生成缓解策略
+func (s *RiskAssessmentService) generateMitigationStrategies(factors RiskFactors, breakdown map[string]int) []string {
+	strategies := []string{}
+
+	// 基于冲突类型的策略
+	switch factors.ConflictType {
+	case "direct_client_conflict":
+		strategies = append(strategies, "立即停止与客户的接触，寻求法律意见")
+		strategies = append(strategies, "评估是否需要退出其中一个案件")
+	case "adverse_party_conflict":
+		strategies = append(strategies, "建立信息隔离墙")
+		strategies = append(strategies, "获得客户明确书面同意")
+	case "competitive_conflict":
+		strategies = append(strategies, "评估商业机密保护措施")
+		strategies = append(strategies, "限制案件信息访问范围")
+	}
+
+	// 基于客户关系的策略
+	switch factors.ClientRelationship {
+	case "same_client":
+		strategies = append(strategies, "必须避免代理同一客户的不同利益")
+	case "related_companies":
+		strategies = append(strategies, "审查关联公司之间的利益冲突")
+		strategies = append(strategies, "考虑分派给不同律师团队")
+	}
+
+	// 基于公共利益的策略
+	if factors.PublicInterest {
+		strategies = append(strategies, "加强合规审查程序")
+		strategies = append(strategies, "考虑向监管机构报告")
+	}
+
+	// 基于时间接近度的策略
+	if factors.TimeProximity <= 30 {
+		strategies = append(strategies, "加强近期案件的审查力度")
+	}
+
+	if len(strategies) == 0 {
+		strategies = append(strategies, "持续监控案件进展")
+		strategies = append(strategies, "定期重新评估风险状况")
+	}
+
+	return strategies
+}
+
+// generateRecommendedActions 生成推荐行动
+func (s *RiskAssessmentService) generateRecommendedActions(riskLevel string, factors RiskFactors) []string {
+	actions := []string{}
+
+	switch riskLevel {
+	case "CRITICAL":
+		actions = append(actions, "🚨 立即拒绝受理新案件")
+		actions = append(actions, "🚨 向律师事务所管理委员会报告")
+		actions = append(actions, "🚨 记录详细的冲突分析报告")
+	case "HIGH":
+		actions = append(actions, "⚠️ 强烈建议拒绝受理")
+		actions = append(actions, "⚠️ 寻求资深律师法律意见")
+		actions = append(actions, "⚠️ 如确需受理，必须获得客户书面豁免")
+	case "MEDIUM":
+		actions = append(actions, "📋 进行详细风险评估")
+		actions = append(actions, "📋 与客户充分沟通风险")
+		actions = append(actions, "📋 建立信息隔离机制")
+	case "LOW":
+		actions = append(actions, "✓ 可以受理，但需持续监控")
+		actions = append(actions, "✓ 定期检查案件进展")
+	default:
+		actions = append(actions, "✓ 风险极低，正常推进")
+	}
+
+	return actions
+}
+
+// calculateConfidenceScore 计算置信度分数
+func (s *RiskAssessmentService) calculateConfidenceScore(factors RiskFactors, breakdown map[string]int) float64 {
+	confidence := 1.0
+
+	// 基于数据完整性调整置信度
+	if factors.CaseStatus == "" {
+		confidence -= 0.1
+	}
+	if factors.CasePriority == "" {
+		confidence -= 0.1
+	}
+	if factors.FinancialImpact == "" {
+		confidence -= 0.1
+	}
+
+	// 基于风险分数分布调整置信度
+	highRiskCount := 0
+	for _, score := range breakdown {
+		if score >= 50 {
+			highRiskCount++
+		}
+	}
+
+	if highRiskCount > 2 {
+		confidence += 0.1 // 多个高风险因子增加置信度
+	}
+
+	// 确保置信度在0-1范围内
+	if confidence > 1.0 {
+		confidence = 1.0
+	}
+	if confidence < 0.3 {
+		confidence = 0.3
+	}
+
+	return confidence
+}

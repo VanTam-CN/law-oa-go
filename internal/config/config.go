@@ -32,6 +32,7 @@ type DatabaseConfig struct {
 	Charset   string `mapstructure:"charset"`
 	ParseTime bool   `mapstructure:"parseTime"`
 	Loc       string `mapstructure:"loc"`
+	SSLMode   string `mapstructure:"sslmode"`
 }
 
 // RedisConfig Redis配置
@@ -84,15 +85,16 @@ func Load() (*Config, error) {
 	// 设置默认值
 	viper.SetDefault("environment", "development")
 	viper.SetDefault("port", "8080")
-	viper.SetDefault("database.driver", "mysql")
+	viper.SetDefault("database.driver", "postgres")
 	viper.SetDefault("database.host", "localhost")
-	viper.SetDefault("database.port", "3306")
-	viper.SetDefault("database.username", "root")
-	viper.SetDefault("database.password", "")
-	viper.SetDefault("database.database", "law_oa")
-	viper.SetDefault("database.charset", "utf8mb4")
+	viper.SetDefault("database.port", "5432")
+	viper.SetDefault("database.username", "law_oa_user")
+	viper.SetDefault("database.password", "law_oa_password")
+	viper.SetDefault("database.database", "law_oa_db")
+	viper.SetDefault("database.charset", "utf8")
 	viper.SetDefault("database.parseTime", true)
-	viper.SetDefault("database.loc", "Local")
+	viper.SetDefault("database.loc", "UTC")
+	viper.SetDefault("database.sslmode", "disable")
 	viper.SetDefault("redis.host", "localhost")
 	viper.SetDefault("redis.port", "6379")
 	viper.SetDefault("redis.password", "")
@@ -210,6 +212,19 @@ func Load() (*Config, error) {
 
 // GetDatabaseDSN 获取数据库DSN
 func (c *Config) GetDatabaseDSN() string {
+	if c.Database.Driver == "postgres" {
+		return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s TimeZone=%s",
+			c.Database.Host,
+			c.Database.Port,
+			c.Database.Username,
+			c.Database.Password,
+			c.Database.Database,
+			c.Database.SSLMode,
+			c.Database.Loc,
+		)
+	}
+
+	// MySQL兼容模式
 	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=%v&loc=%s",
 		c.Database.Username,
 		c.Database.Password,

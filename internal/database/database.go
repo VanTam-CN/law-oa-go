@@ -11,6 +11,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"law-oa-go/internal/config"
@@ -18,17 +19,9 @@ import (
 
 // Init 初始化数据库连接
 func Init(cfg config.DatabaseConfig) (*gorm.DB, error) {
-	// 构建DSN
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=%v&loc=%s&tls=skip-verify",
-		cfg.Username,
-		cfg.Password,
-		cfg.Host,
-		cfg.Port,
-		cfg.Database,
-		cfg.Charset,
-		cfg.ParseTime,
-		cfg.Loc,
-	)
+	var dsn string
+	var db *gorm.DB
+	var err error
 
 	// 配置GORM
 	gormConfig := &gorm.Config{
@@ -38,10 +31,29 @@ func Init(cfg config.DatabaseConfig) (*gorm.DB, error) {
 		DisableForeignKeyConstraintWhenMigrating: true,                                // 禁用自动外键
 	}
 
-	// 连接数据库
-	db, err := gorm.Open(mysql.Open(dsn), gormConfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	// 根据数据库类型构建DSN和连接
+	if cfg.Driver == "postgres" {
+		// PostgreSQL DSN
+		dsn = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=UTC",
+			cfg.Host, cfg.Port, cfg.Username, cfg.Password, cfg.Database)
+
+		// 连接PostgreSQL
+		db, err = gorm.Open(postgres.Open(dsn), gormConfig)
+		if err != nil {
+			return nil, fmt.Errorf("failed to connect to PostgreSQL: %w", err)
+		}
+		log.Println("使用PostgreSQL数据库")
+	} else {
+		// MySQL DSN (向后兼容)
+		dsn = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=%v&loc=%s&tls=skip-verify",
+			cfg.Username, cfg.Password, cfg.Host, cfg.Port, cfg.Database, cfg.Charset, cfg.ParseTime, cfg.Loc)
+
+		// 连接MySQL
+		db, err = gorm.Open(mysql.Open(dsn), gormConfig)
+		if err != nil {
+			return nil, fmt.Errorf("failed to connect to MySQL: %w", err)
+		}
+		log.Println("使用MySQL数据库")
 	}
 
 	// 获取底层sql.DB并配置连接池
@@ -53,7 +65,7 @@ func Init(cfg config.DatabaseConfig) (*gorm.DB, error) {
 	// 配置连接池（根据环境和负载优化）
 	configureConnectionPool(sqlDB)
 
-	log.Println("数据库连接成功")
+	log.Printf("数据库连接成功 - 类型: %s", cfg.Driver)
 	return db, nil
 }
 

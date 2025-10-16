@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# 运行lint-staged
+echo "🔍 Running lint-staged..."
+npx --no-install lint-staged
+
+# 运行TypeScript类型检查
+echo "🔍 Running TypeScript type check..."
+npm run type-check
+
+# 检查是否有未格式化的文件
+echo "📝 Checking code formatting..."
+npm run format:check
+
+echo "✅ Pre-commit checks passed!"

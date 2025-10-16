@@ -77,7 +77,7 @@ func (h *DashboardHandler) GetStatistics(c *gin.Context) {
 		"completedProjects": caseStats.ClosedCases,
 		"pendingApprovals": 0, // 暂时设为0，后续可以添加审批系统
 		"activeClients": clientStats.ActiveClients,
-		"totalClients": clientStats.TotalClients,
+		"totalClients": clientStats.Total,
 		"projectStatus": map[string]interface{}{
 			"进行中": caseStats.ActiveCases,
 			"已完成": caseStats.ClosedCases,

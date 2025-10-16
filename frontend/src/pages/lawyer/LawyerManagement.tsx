@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Table,
   Card,
+  Table,
   Button,
   Space,
   Tag,
@@ -9,214 +9,106 @@ import {
   Form,
   Input,
   Select,
-  InputNumber,
   message,
   Popconfirm,
-  Statistic,
+  Tooltip,
   Row,
   Col,
-  Tooltip,
-  Avatar,
-  Spin,
-  Alert
+  Statistic
 } from 'antd';
+
+const { TextArea } = Input;
 import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   EyeOutlined,
-  UserOutlined,
-  PhoneOutlined,
-  MailOutlined,
   SearchOutlined,
-  ReloadOutlined,
+  UserOutlined,
   CheckCircleOutlined,
-  UserSwitchOutlined,
-  PauseCircleOutlined
+  ClockCircleOutlined,
+  ReloadOutlined
 } from '@ant-design/icons';
-import type { ColumnsType } from 'antd/es/table';
-import { useNavigate } from 'react-router-dom';
-import dayjs from 'dayjs';
-import { dataService } from '@/services/dataService';
-import { StandardPage, StandardTable, createStandardColumns } from '@/components/ui';
-import { DESIGN_TOKENS, BUSINESS_STATUS } from '@/constants/design-system';
+import { lawyerService } from '@/services/lawyer';
 
-const { Option } = Select;
-
+// 🔧 修复：统一律师接口定义，与后端LawyerResponse保持一致
 interface Lawyer {
   id?: number;
-  name?: string;
-  phone?: string;
-  email?: string;
-  licenseNumber?: string;
-  department?: string;
-  position?: string;
-  status?: string;
-  specialty?: string[];
-  experience?: number;
-  gender?: string;
-  joinDate?: string;
-  profile?: string;
+  name: string;
+  phone: string;
+  email: string;
   avatar?: string;
+  status?: string;
+  licenseNumber?: string;  // 执业证号
+  specialty?: string;      // 专业领域
+  department?: string;     // 部门
+  position?: string;       // 职位
+  gender?: string;         // 性别
+  experience?: number;     // 从业年限
+  joinDate?: string;       // 入职日期
+  profile?: string;        // 个人简介
+  created_at?: string;     // 创建时间
 }
 
-interface LawyerStats {
-  total: number;
-  active: number;
-  inactive: number;
-  onLeave: number;
-}
 
 const LawyerManagement: React.FC = () => {
-  console.log('LawyerManagement 组件正在渲染');
-  const navigate = useNavigate();
-  const [lawyers, setLawyers] = useState<Lawyer[]>([]);
+  // 统一的状态管理
   const [loading, setLoading] = useState<boolean>(false);
-  const [modalVisible, setModalVisible] = useState<boolean>(false);
-  const [modalTitle, setModalTitle] = useState<string>('');
-  const [editingLawyer, setEditingLawyer] = useState<Lawyer | null>(null);
-  const [stats, setStats] = useState<LawyerStats | null>(null);
+  const [data, setData] = useState<Lawyer[]>([]);
+  const [visible, setVisible] = useState<boolean>(false);
+  const [editingItem, setEditingItem] = useState<Lawyer | null>(null);
+  const [viewMode, setViewMode] = useState<boolean>(false); // 查看模式
   const [form] = Form.useForm();
   
-  console.log('当前状态:', { 
-    lawyers: lawyers.length, 
-    loading, 
-    stats
-  });
+  // 统一的搜索状态
+  const [searchText, setSearchText] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
   
-  // 查询参数
-  const [queryParams, setQueryParams] = useState({
-    name: '',
-    department: '',
-    status: '',
-    specialty: '',
-    pageNum: 1,
-    pageSize: 10
+  // 统一的分页状态
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
   });
-  
-  const [total, setTotal] = useState<number>(0);
 
-  // 获取律师列表
-  const fetchLawyers = async () => {
-    setLoading(true);
-    try {
-      const response = await dataService.getLawyers({
-        page: queryParams.pageNum,
-        page_size: queryParams.pageSize,
-        search: queryParams.name,
-        department: queryParams.department,
-        status: queryParams.status,
-        specialty: queryParams.specialty,
-      });
-
-      setLawyers(response.data);
-      setTotal(response.total);
-
-      // 计算统计数据
-      const activeCount = response.data.filter(lawyer => lawyer.status === 'active').length;
-      const inactiveCount = response.data.filter(lawyer => lawyer.status === 'inactive').length;
-      const onLeaveCount = response.data.filter(lawyer => lawyer.status === 'on_leave').length;
-
-      setStats({
-        total: response.total,
-        active: activeCount,
-        inactive: inactiveCount,
-        onLeave: onLeaveCount,
-      });
-    } catch (error) {
-      console.error('获取律师列表失败:', error);
-      message.error('获取律师列表失败，请稍后重试');
-
-      // 重置数据
-      setLawyers([]);
-      setTotal(0);
-      setStats({
-        total: 0,
-        active: 0,
-        inactive: 0,
-        onLeave: 0,
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
-  useEffect(() => {
-    fetchLawyers();
-  }, [queryParams]);
-
-  // 搜索
-  const handleSearch = () => {
-    setQueryParams({ ...queryParams, pageNum: 1 });
-  };
-
-  // 重置搜索
-  const handleReset = () => {
-    setQueryParams({
-      name: '',
-      department: '',
-      status: '',
-      specialty: '',
-      pageNum: 1,
-      pageSize: 10
-    });
-  };
-
-  // 获取状态标签
-  const getStatusTag = (status: string) => {
-    const statusConfig = {
-      active: { text: '在职', color: DESIGN_TOKENS.colors.success, icon: <CheckCircleOutlined /> },
-      inactive: { text: '离职', color: DESIGN_TOKENS.colors.error, icon: <UserSwitchOutlined /> },
-      on_leave: { text: '休假', color: DESIGN_TOKENS.colors.warning, icon: <PauseCircleOutlined /> }
-    };
-    const config = statusConfig[status as keyof typeof statusConfig] || { text: '未知', color: DESIGN_TOKENS.colors.textTertiary, icon: null };
-    return (
-      <Tag
-        color={config.color}
-        icon={config.icon}
-        style={{
-          borderRadius: DESIGN_TOKENS.radius.sm,
-          fontSize: DESIGN_TOKENS.typography.xs.fontSize,
-          fontWeight: '500',
-        }}
-      >
-        {config.text}
-      </Tag>
-    );
-  };
-
-  // 表格列定义
-  const columns: ColumnsType<Lawyer> = [
-    createStandardColumns.createUserColumn('name', '姓名', 120, true),
+  // 表格列定义 - 移到组件内部以访问状态
+  const columns: any[] = [
     {
-      title: '联系电话',
-      dataIndex: 'phone',
-      key: 'phone',
-      render: (text: string) => (
+      title: '姓名',
+      dataIndex: 'name',
+      key: 'name',
+      render: (text: string, record: Lawyer) => (
         <Space>
-          <PhoneOutlined />
-          <span>{text}</span>
+          {record.avatar ? (
+            <img src={record.avatar} alt={text} style={{ width: 24, height: 24, borderRadius: '50%' }} />
+          ) : (
+            <UserOutlined />
+          )}
+          {text}
         </Space>
       ),
+    },
+    {
+      title: '手机号',
+      dataIndex: 'phone',
+      key: 'phone',
     },
     {
       title: '邮箱',
       dataIndex: 'email',
       key: 'email',
-      render: (text: string) => (
-        <Space>
-          <MailOutlined />
-          <span>{text}</span>
-        </Space>
-      ),
     },
     {
       title: '执业证号',
       dataIndex: 'licenseNumber',
       key: 'licenseNumber',
-      width: 150,
-      ellipsis: true,
+      render: (text: string) => text || '-',
+    },
+    {
+      title: '专业领域',
+      dataIndex: 'specialty',
+      key: 'specialty',
     },
     {
       title: '部门',
@@ -232,47 +124,56 @@ const LawyerManagement: React.FC = () => {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
-      render: (status: string) => getStatusTag(status),
+      render: (status: string) => {
+        const statusConfig = {
+          active: { color: 'green', text: '活跃' },
+          inactive: { color: 'red', text: '非活跃' },
+          on_leave: { color: 'orange', text: '休假' },
+        };
+        const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.inactive;
+        return <Tag color={config.color}>{config.text}</Tag>;
+      },
+    },
+    {
+      title: '从业年限',
+      dataIndex: 'experience',
+      key: 'experience',
+      render: (experience: number) => experience ? `${experience}年` : '-',
     },
     {
       title: '操作',
       key: 'action',
       width: 200,
-      render: (_, record) => (
+      render: (_: any, record: Lawyer) => (
         <Space size="middle">
           <Tooltip title="查看详情">
-            <Button 
-              type="link" 
-              icon={<EyeOutlined />} 
-              onClick={() => navigate(`/lawyer/${record.id}`)}
+            <Button
+              type="link"
+              icon={<EyeOutlined />}
+              onClick={() => handleViewDetails(record)}
             />
           </Tooltip>
           <Tooltip title="编辑">
-            <Button 
-              type="link" 
-              icon={<EditOutlined />} 
+            <Button
+              type="link"
+              icon={<EditOutlined />}
               onClick={() => {
-                setModalTitle('编辑律师');
-                setEditingLawyer(record);
+                setEditingItem(record);
                 form.setFieldsValue(record);
-                setModalVisible(true);
+                setVisible(true);
               }}
             />
           </Tooltip>
           <Tooltip title="删除">
             <Popconfirm
-              title="确定要删除这位律师吗？"
-              onConfirm={() => {
-                // 简化删除逻辑
-                message.success('删除成功');
-                fetchLawyers();
-              }}
+              title="确定要删除这条记录吗？"
+              onConfirm={() => handleDelete(record.id!)}
               okText="确定"
               cancelText="取消"
             >
-              <Button 
-                type="link" 
-                danger 
+              <Button
+                type="link"
+                danger
                 icon={<DeleteOutlined />}
               />
             </Popconfirm>
@@ -282,35 +183,68 @@ const LawyerManagement: React.FC = () => {
     },
   ];
 
-  // 打开新增律师弹窗
-  const handleAdd = () => {
-    setModalTitle('新增律师');
-    setEditingLawyer(null);
-    form.resetFields();
-    setModalVisible(true);
-  };
-
-  // 提交表单
-  const handleSubmit = async () => {
+  // 🔧 修复：优化律师数据获取逻辑
+  const fetchData = async () => {
+    setLoading(true);
     try {
-      const values = await form.validateFields();
-      setLoading(true);
+      // 构建查询参数 - 使用正确的参数名
+      const params: any = {
+        page: pagination.current,
+        page_size: pagination.pageSize,
+      };
 
-      if (editingLawyer) {
-        await dataService.updateLawyer(editingLawyer.id!, values);
-        message.success('律师信息更新成功');
-      } else {
-        await dataService.createLawyer(values);
-        message.success('律师创建成功');
+      if (searchText) {
+        params.search = searchText; // 修复：使用search而不是keyword
       }
 
-      setModalVisible(false);
-      setEditingLawyer(null);
-      form.resetFields();
-      fetchLawyers();
-    } catch (error) {
-      console.error('保存律师信息失败:', error);
-      message.error('保存失败，请重试');
+      if (statusFilter) {
+        params.status = statusFilter;
+      }
+
+      console.log('获取律师数据...', params);
+
+      // 调用API
+      const response = await lawyerService.getLawyerList(params);
+      console.log('律师数据响应:', response);
+
+      // 🔧 修复：处理多种可能的API响应格式
+      let lawyerData = [];
+      let totalCount = 0;
+
+      if (response && response.list) {
+        // 标准格式：{list: [...], total: number}
+        lawyerData = response.list;
+        totalCount = response.total || response.list.length;
+      } else if (response && Array.isArray(response)) {
+        // 直接返回数组格式
+        lawyerData = response;
+        totalCount = response.length;
+      } else if (response && response.data) {
+        // 新API格式：{data: [...], pagination: {...}}
+        lawyerData = response.data;
+        totalCount = response.pagination?.total || response.data.length;
+      } else {
+        console.warn('未知的数据格式:', response);
+        lawyerData = [];
+        totalCount = 0;
+      }
+
+      console.log('处理后的律师数据:', lawyerData);
+      console.log('总数:', totalCount);
+
+      setData(lawyerData);
+      setPagination({
+        ...pagination,
+        total: totalCount,
+      });
+
+      if (lawyerData.length === 0) {
+        message.info('暂无律师数据');
+      }
+    } catch (error: any) {
+      console.error('获取律师数据失败:', error);
+      message.error('获取律师数据失败: ' + (error.message || '未知错误'));
+      setData([]);
     } finally {
       setLoading(false);
     }
@@ -319,175 +253,138 @@ const LawyerManagement: React.FC = () => {
   // 删除律师
   const handleDelete = async (id: number) => {
     try {
-      await dataService.deleteLawyer(id);
-      message.success('律师删除成功');
-      fetchLawyers();
-    } catch (error) {
+      await lawyerService.deleteLawyer(id);
+      message.success('删除成功');
+      fetchData();
+    } catch (error: any) {
       console.error('删除律师失败:', error);
-      message.error('删除失败，请重试');
+      message.error('删除失败: ' + (error.message || '未知错误'));
     }
   };
 
-  return (
-    <StandardPage
-      title="律师管理"
-      subtitle="管理律所律师信息，包括基本信息、专业领域和工作状态"
-      showRefresh
-      onRefresh={fetchLawyers}
-      showAdd
-      onAdd={() => {
-        setEditingLawyer(null);
-        form.resetFields();
-        setModalTitle('新增律师');
-        setModalVisible(true);
-      }}
-    >
+  // 新增律师
+  const handleAdd = () => {
+    setEditingItem(null);
+    setViewMode(false); // 设置为编辑模式
+    form.resetFields();
+    setVisible(true);
+  };
 
-      {/* 统计卡片 */}
-      <Row gutter={[16, 16]} style={{ marginBottom: DESIGN_TOKENS.spacing.xxl }}>
+  // 查看律师详情
+  const handleViewDetails = (record: Lawyer) => {
+    setEditingItem(record);
+    setViewMode(true); // 设置为查看模式
+    form.setFieldsValue(record);
+    setVisible(true);
+  };
+
+  // 编辑律师
+  const handleEdit = (record: Lawyer) => {
+    setEditingItem(record);
+    setViewMode(false); // 设置为编辑模式
+    form.setFieldsValue(record);
+    setVisible(true);
+  };
+
+  // 提交表单
+  const handleSubmit = async () => {
+    try {
+      const values = await form.validateFields();
+      if (editingItem) {
+        await lawyerService.updateLawyer(editingItem.id!, values);
+        message.success('更新成功');
+      } else {
+        await lawyerService.createLawyer(values);
+        message.success('新增成功');
+      }
+      setVisible(false);
+      fetchData();
+    } catch (error: any) {
+      console.error('提交失败:', error);
+      message.error(error.message || '操作失败');
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [searchText, statusFilter, pagination.current, pagination.pageSize]);
+
+  return (
+    <div className="lawyer-management">
+      {/* 统一的统计卡片 */}
+      <Row gutter={[16, 16]} className="stats-row">
         <Col xs={24} sm={12} md={6}>
-          <Card
-            style={{
-              background: DESIGN_TOKENS.colors.bgCard,
-              border: `1px solid ${DESIGN_TOKENS.colors.borderBase}`,
-              borderRadius: DESIGN_TOKENS.radius.lg,
-              boxShadow: DESIGN_TOKENS.shadows.sm,
-              textAlign: 'center',
-            }}
-          >
-            <Statistic
-              title="律师总数"
-              value={stats?.total || 0}
-              prefix={<UserOutlined style={{ color: DESIGN_TOKENS.colors.primary }} />}
-              valueStyle={{ color: DESIGN_TOKENS.colors.primary }}
+          <Card>
+            <Statistic 
+              title="律师总数" 
+              value={data.length} 
+              prefix={<UserOutlined />} 
             />
           </Card>
         </Col>
         <Col xs={24} sm={12} md={6}>
-          <Card
-            style={{
-              background: DESIGN_TOKENS.colors.bgCard,
-              border: `1px solid ${DESIGN_TOKENS.colors.borderBase}`,
-              borderRadius: DESIGN_TOKENS.radius.lg,
-              boxShadow: DESIGN_TOKENS.shadows.sm,
-              textAlign: 'center',
-            }}
-          >
-            <Statistic
-              title="在职律师"
-              value={stats?.active || 0}
-              valueStyle={{ color: DESIGN_TOKENS.colors.success }}
-              prefix={<CheckCircleOutlined style={{ color: DESIGN_TOKENS.colors.success }} />}
+          <Card>
+            <Statistic 
+              title="活跃数量" 
+              value={data.filter(item => item.status === 'active').length} 
+              valueStyle={{ color: '#3f8600' }}
             />
           </Card>
         </Col>
         <Col xs={24} sm={12} md={6}>
-          <Card
-            style={{
-              background: DESIGN_TOKENS.colors.bgCard,
-              border: `1px solid ${DESIGN_TOKENS.colors.borderBase}`,
-              borderRadius: DESIGN_TOKENS.radius.lg,
-              boxShadow: DESIGN_TOKENS.shadows.sm,
-              textAlign: 'center',
-            }}
-          >
-            <Statistic
-              title="休假律师"
-              value={stats?.onLeave || 0}
-              valueStyle={{ color: DESIGN_TOKENS.colors.warning }}
-              prefix={<PauseCircleOutlined style={{ color: DESIGN_TOKENS.colors.warning }} />}
+          <Card>
+            <Statistic 
+              title="本月新增" 
+              value={0} 
+              prefix={<ClockCircleOutlined />} 
             />
           </Card>
         </Col>
         <Col xs={24} sm={12} md={6}>
-          <Card
-            style={{
-              background: DESIGN_TOKENS.colors.bgCard,
-              border: `1px solid ${DESIGN_TOKENS.colors.borderBase}`,
-              borderRadius: DESIGN_TOKENS.radius.lg,
-              boxShadow: DESIGN_TOKENS.shadows.sm,
-              textAlign: 'center',
-            }}
-          >
-            <Statistic
-              title="离职律师"
-              value={stats?.inactive || 0}
-              valueStyle={{ color: DESIGN_TOKENS.colors.error }}
-              prefix={<UserSwitchOutlined style={{ color: DESIGN_TOKENS.colors.error }} />}
+          <Card>
+            <Statistic 
+              title="待处理" 
+              value={0} 
+              prefix={<CheckCircleOutlined />} 
             />
           </Card>
         </Col>
       </Row>
 
-      {/* 搜索表单 */}
-      <Card
-        style={{
-          marginBottom: DESIGN_TOKENS.spacing.xxl,
-          background: DESIGN_TOKENS.colors.bgCard,
-          border: `1px solid ${DESIGN_TOKENS.colors.borderBase}`,
-          borderRadius: DESIGN_TOKENS.radius.lg,
-          boxShadow: DESIGN_TOKENS.shadows.sm,
-        }}
-      >
+      {/* 统一的搜索表单 */}
+      <Card className="search-card">
         <Form layout="inline">
-          <Form.Item label="姓名">
-            <Input
-              placeholder="请输入律师姓名"
-              value={queryParams.name}
-              onChange={(e) => setQueryParams({ ...queryParams, name: e.target.value })}
+          <Form.Item label="搜索">
+            <Input 
+              placeholder="搜索律师信息" 
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
               allowClear
-              style={{ borderRadius: DESIGN_TOKENS.radius.sm }}
+              style={{ width: 250 }}
             />
           </Form.Item>
-          <Form.Item label="部门">
-            <Select
-              placeholder="请选择部门"
-              value={queryParams.department}
-              onChange={(value) => setQueryParams({ ...queryParams, department: value })}
-              allowClear
-              style={{ borderRadius: DESIGN_TOKENS.radius.sm }}
-            >
-              <Option value="民事诉讼部">民事诉讼部</Option>
-              <Option value="公司法务部">公司法务部</Option>
-              <Option value="刑事辩护部">刑事辩护部</Option>
-              <Option value="知识产权部">知识产权部</Option>
-            </Select>
-          </Form.Item>
           <Form.Item label="状态">
-            <Select
-              placeholder="请选择状态"
-              value={queryParams.status}
-              onChange={(value) => setQueryParams({ ...queryParams, status: value })}
+            <Select 
+              style={{ width: 120 }}
+              value={statusFilter}
+              onChange={setStatusFilter}
               allowClear
-              style={{ borderRadius: DESIGN_TOKENS.radius.sm }}
+              placeholder="全部"
             >
-              <Option value="active">在职</Option>
-              <Option value="on_leave">休假</Option>
-              <Option value="inactive">离职</Option>
+              <Select.Option value="active">活跃</Select.Option>
+              <Select.Option value="inactive">非活跃</Select.Option>
             </Select>
           </Form.Item>
           <Form.Item>
             <Space>
-              <Button
-                type="primary"
-                icon={<SearchOutlined />}
-                onClick={handleSearch}
-                style={{
-                  borderRadius: DESIGN_TOKENS.radius.md,
-                  background: `linear-gradient(135deg, ${DESIGN_TOKENS.colors.primary} 0%, ${DESIGN_TOKENS.colors.primaryHover} 100%)`,
-                  border: 'none',
-                }}
-              >
+              <Button type="primary" icon={<SearchOutlined />} onClick={fetchData}>
                 搜索
               </Button>
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={handleReset}
-                style={{
-                  borderRadius: DESIGN_TOKENS.radius.md,
-                  border: `1px solid ${DESIGN_TOKENS.colors.borderBase}`,
-                }}
-              >
+              <Button icon={<ReloadOutlined />} onClick={() => {
+                setSearchText('');
+                setStatusFilter('');
+                fetchData();
+              }}>
                 重置
               </Button>
             </Space>
@@ -495,32 +392,32 @@ const LawyerManagement: React.FC = () => {
         </Form>
       </Card>
 
-      {/* 律师列表 */}
+      {/* 统一的数据表格 */}
       <Card 
         title="律师列表" 
         extra={
           <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-            新增律师
+            新建律师
           </Button>
         }
       >
         <Table
           columns={columns}
-          dataSource={lawyers}
+          dataSource={data}
           rowKey="id"
           loading={loading}
           pagination={{
-            current: queryParams.pageNum,
-            pageSize: queryParams.pageSize,
-            total: total,
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: pagination.total,
             showSizeChanger: true,
             showQuickJumper: true,
             showTotal: (total, range) => 
               `第 ${range[0]}-${range[1]} 条/共 ${total} 条`,
             onChange: (page, size) => {
-              setQueryParams({
-                ...queryParams,
-                pageNum: page,
+              setPagination({
+                ...pagination,
+                current: page,
                 pageSize: size || 10
               });
             }
@@ -530,16 +427,29 @@ const LawyerManagement: React.FC = () => {
 
       {/* 新增/编辑弹窗 */}
       <Modal
-        title={modalTitle}
-        open={modalVisible}
-        onOk={handleSubmit}
-        onCancel={() => setModalVisible(false)}
+        title={
+          editingItem ?
+            (viewMode ? '律师详情' : '编辑律师') :
+            '新增律师'
+        }
+        open={visible}
+        onOk={viewMode ? undefined : handleSubmit}
+        onCancel={() => {
+          setVisible(false);
+          setViewMode(false);
+        }}
         width={600}
-        destroyOnClose
+        destroyOnHidden
+        footer={viewMode ? [
+          <Button key="close" onClick={() => setVisible(false)}>
+            关闭
+          </Button>
+        ] : undefined}
       >
         <Form
           form={form}
           layout="vertical"
+          disabled={viewMode}
         >
           <Form.Item
             label="姓名"
@@ -548,33 +458,95 @@ const LawyerManagement: React.FC = () => {
           >
             <Input placeholder="请输入姓名" />
           </Form.Item>
-          
+
           <Form.Item
-            label="联系电话"
+            label="手机号"
             name="phone"
-            rules={[{ required: true, message: '请输入联系电话' }]}
+            rules={[{ required: true, message: '请输入手机号' }]}
           >
-            <Input placeholder="请输入联系电话" />
+            <Input placeholder="请输入手机号" />
           </Form.Item>
-          
+
           <Form.Item
             label="邮箱"
             name="email"
-            rules={[{ required: true, message: '请输入邮箱' }]}
+            rules={[
+              { required: true, message: '请输入邮箱' },
+              { type: 'email', message: '请输入有效的邮箱地址' }
+            ]}
           >
             <Input placeholder="请输入邮箱" />
           </Form.Item>
-          
+
           <Form.Item
             label="执业证号"
             name="licenseNumber"
-            rules={[{ required: true, message: '请输入执业证号' }]}
           >
             <Input placeholder="请输入执业证号" />
           </Form.Item>
+
+          <Form.Item
+            label="专业领域"
+            name="specialty"
+            rules={[{ required: true, message: '请输入专业领域' }]}
+          >
+            <Input placeholder="请输入专业领域" />
+          </Form.Item>
+
+          <Form.Item
+            label="部门"
+            name="department"
+            rules={[{ required: true, message: '请输入部门' }]}
+          >
+            <Input placeholder="请输入部门" />
+          </Form.Item>
+
+          <Form.Item
+            label="职位"
+            name="position"
+            rules={[{ required: true, message: '请输入职位' }]}
+          >
+            <Input placeholder="请输入职位" />
+          </Form.Item>
+
+          <Form.Item
+            label="性别"
+            name="gender"
+          >
+            <Select placeholder="请选择性别">
+              <Select.Option value="male">男</Select.Option>
+              <Select.Option value="female">女</Select.Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            label="从业年限"
+            name="experience"
+          >
+            <Input type="number" placeholder="请输入从业年限" />
+          </Form.Item>
+
+          <Form.Item
+            label="状态"
+            name="status"
+            rules={[{ required: true, message: '请选择状态' }]}
+          >
+            <Select placeholder="请选择状态">
+              <Select.Option value="active">活跃</Select.Option>
+              <Select.Option value="inactive">非活跃</Select.Option>
+              <Select.Option value="on_leave">休假</Select.Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            label="个人简介"
+            name="profile"
+          >
+            <TextArea rows={3} placeholder="请输入个人简介" />
+          </Form.Item>
         </Form>
       </Modal>
-    </StandardPage>
+    </div>
   );
 };
 

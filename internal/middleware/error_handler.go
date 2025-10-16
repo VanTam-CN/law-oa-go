@@ -153,13 +153,15 @@ func (eh *ErrorHandler) logError(appErr errors.AppError, c *gin.Context) {
 	}
 
 	// 根据严重程度选择日志级别
-	switch appErr.Severity() {
-	case errors.SeverityCritical, errors.SeverityHigh:
-		eh.logger.Error("Application error", convertSlogAttrsToAny(attrs)...)
-	case errors.SeverityMedium:
-		eh.logger.Warn("Application warning", convertSlogAttrsToAny(attrs)...)
-	default:
-		eh.logger.Info("Application info", convertSlogAttrsToAny(attrs)...)
+	if eh.logger != nil {
+		switch appErr.Severity() {
+		case errors.SeverityCritical, errors.SeverityHigh:
+			eh.logger.Error("Application error", convertSlogAttrsToAny(attrs)...)
+		case errors.SeverityMedium:
+			eh.logger.Warn("Application warning", convertSlogAttrsToAny(attrs)...)
+		default:
+			eh.logger.Info("Application info", convertSlogAttrsToAny(attrs)...)
+		}
 	}
 }
 
@@ -256,13 +258,15 @@ func (eh *ErrorHandler) triggerAlert(appErr errors.AppError, c *gin.Context) {
 	// 例如：发送到Slack、邮件、PagerDuty等
 
 	// 对于演示，我们只记录告警日志
-	eh.logger.Error("ALERT TRIGGERED",
-		slog.String("error_code", appErr.Code()),
-		slog.String("error_message", appErr.Message()),
-		slog.String("severity", eh.severityToString(appErr.Severity())),
-		slog.String("request_id", c.GetString("request_id")),
-		slog.String("endpoint", c.Request.URL.Path),
-	)
+	if eh.logger != nil {
+		eh.logger.Error("ALERT TRIGGERED",
+			slog.String("error_code", appErr.Code()),
+			slog.String("error_message", appErr.Message()),
+			slog.String("severity", eh.severityToString(appErr.Severity())),
+			slog.String("request_id", c.GetString("request_id")),
+			slog.String("endpoint", c.Request.URL.Path),
+		)
+	}
 }
 
 // 将严重程度转换为字符串

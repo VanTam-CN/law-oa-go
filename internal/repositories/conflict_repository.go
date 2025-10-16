@@ -11,14 +11,16 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// ConflictRepository 冲突检测数据仓库接口
-type ConflictRepository interface {
+// BasicConflictRepository 基础冲突检测数据仓库接口
+type BasicConflictRepository interface {
 	// 保存冲突检测记录
 	SaveCheckRecord(ctx context.Context, record *models.ConflictCheckRecord) error
 	// 获取冲突检测历史
 	GetCheckHistory(ctx context.Context, clientID string, limit int) ([]*models.ConflictCheckRecord, error)
 	// 获取冲突案例
 	GetConflictCases(ctx context.Context, params *ConflictSearchParams) ([]*models.ConflictCase, error)
+	// 获取潜在冲突案例（从主案件表）
+	GetPotentialConflicts(ctx context.Context, clientID string, lawyerID uint, otherParties []string) ([]*models.ConflictCase, error)
 	// 获取客户关系
 	GetClientRelations(ctx context.Context, clientID string) ([]*models.ClientRelation, error)
 	// 保存冲突案例
@@ -64,7 +66,7 @@ type conflictRepository struct {
 }
 
 // NewConflictRepository 创建新的冲突检测数据仓库
-func NewConflictRepository(db *gorm.DB, redis *redis.Client) ConflictRepository {
+func NewConflictRepository(db *gorm.DB, redis *redis.Client) BasicConflictRepository {
 	return &conflictRepository{
 		db:    db,
 		redis: redis,
@@ -140,6 +142,151 @@ func (r *conflictRepository) GetConflictCases(ctx context.Context, params *Confl
 	}
 
 	return cases, nil
+}
+
+// GetPotentialConflicts 获取潜在冲突案例（从主案件表）
+func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID string, lawyerID uint, otherParties []string) ([]*models.ConflictCase, error) {
+	var conflictCases []*models.ConflictCase
+
+	// 查询主案件表，查找同一律师代理的其他案件
+	// 这里需要导入 Case 模型，但为了简单起见，我们直接使用 SQL 查询
+	query := `
+		SELECT
+			c.id as case_id,
+			c.title as case_name,
+			c.case_type,
+			c.description,
+			cl.name as client_name,
+			cl.type as client_type,
+			u.name as lawyer_name,
+			c.created_at,
+			c.lawyer_id
+		FROM cases c
+		JOIN clients cl ON c.client_id = cl.id
+		JOIN users u ON c.lawyer_id = u.id
+		WHERE c.lawyer_id = ? AND c.client_id != ?
+		AND c.deleted_at IS NULL
+		ORDER BY c.created_at DESC
+		LIMIT 50
+	`
+
+	rows, err := r.db.WithContext(ctx).Raw(query, lawyerID, clientID).Rows()
+	if err != nil {
+		return nil, fmt.Errorf("查询潜在冲突案例失败: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var caseModel models.Case
+		var clientName, clientType, lawyerName string
+		var lawyerID uint
+
+		err := rows.Scan(
+			&caseModel.ID,
+			&caseModel.Title,
+			&caseModel.CaseType,
+			&caseModel.Description,
+			&clientName,
+			&clientType,
+			&lawyerName,
+			&caseModel.CreatedAt,
+			&lawyerID,
+		)
+		if err != nil {
+			continue
+		}
+
+		// 创建冲突案例对象
+		conflictCase := &models.ConflictCase{
+			ID:              fmt.Sprintf("case_%d", caseModel.ID),
+			CaseID:          fmt.Sprintf("%d", caseModel.ID),
+			CaseName:        caseModel.Title,
+			Description:      caseModel.Description,
+			ClientID:        fmt.Sprintf("%d", caseModel.ClientID),
+			RiskLevel:       "MEDIUM", // 默认中等风险
+			ConflictType:    "代理冲突",
+			CaseStatus:      "active",
+			CreatedAt:       caseModel.CreatedAt,
+		}
+
+		conflictCases = append(conflictCases, conflictCase)
+	}
+
+	// 如果提供了其他当事人信息，也查询相关的案件
+	if len(otherParties) > 0 {
+		for _, party := range otherParties {
+			// 查询包含对方当事人名称的案件描述
+			partyQuery := `
+				SELECT
+					c.id as case_id,
+					c.title as case_name,
+					c.case_type,
+					c.description,
+					cl.name as client_name,
+					cl.type as client_type,
+					u.name as lawyer_name,
+					c.created_at,
+					c.lawyer_id
+				FROM cases c
+				JOIN clients cl ON c.client_id = cl.id
+				JOIN users u ON c.lawyer_id = u.id
+				WHERE c.deleted_at IS NULL
+				AND (c.title ILIKE ? OR c.description ILIKE ?)
+				ORDER BY c.created_at DESC
+				LIMIT 20
+			`
+
+			partyRows, err := r.db.WithContext(ctx).Raw(partyQuery,
+				"%"+party+"%", "%"+party+"%").Rows()
+			if err != nil {
+				continue
+			}
+
+			for partyRows.Next() {
+				var caseModel models.Case
+				var clientName, clientType, lawyerName string
+				var foundLawyerID uint
+
+				err := partyRows.Scan(
+					&caseModel.ID,
+					&caseModel.Title,
+					&caseModel.CaseType,
+					&caseModel.Description,
+					&clientName,
+					&clientType,
+					&lawyerName,
+					&caseModel.CreatedAt,
+					&foundLawyerID,
+				)
+				if err != nil {
+					continue
+				}
+
+				// 如果是同一个律师的案件，跳过（已经在上面查过了）
+				if foundLawyerID == lawyerID {
+					continue
+				}
+
+				// 创建冲突案例对象
+				conflictCase := &models.ConflictCase{
+					ID:              fmt.Sprintf("case_%d", caseModel.ID),
+					CaseID:          fmt.Sprintf("%d", caseModel.ID),
+					CaseName:        caseModel.Title,
+					Description:      caseModel.Description,
+					ClientID:        fmt.Sprintf("%d", caseModel.ClientID),
+					RiskLevel:       "HIGH", // 对方当事人冲突，高风险
+					ConflictType:    "对方当事人冲突",
+					CaseStatus:      "active",
+					CreatedAt:       caseModel.CreatedAt,
+				}
+
+				conflictCases = append(conflictCases, conflictCase)
+			}
+			partyRows.Close()
+		}
+	}
+
+	return conflictCases, nil
 }
 
 // GetClientRelations 获取客户关系

@@ -108,6 +108,9 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *redis.Client, esClient *ela
 	riskAssessor := services.NewRiskAssessor(nil, ruleEngine)
 	conflictService := services.NewConflictService(conflictRepo, mcpClient, ruleEngine, riskAssessor)
 
+	// 初始化仓储
+	repos := repositories.NewRepositories(db)
+
 	// 初始化服务
 	userService := services.NewUserService(userRepo)
 	clientService := services.NewClientService(clientRepo)
@@ -116,6 +119,10 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *redis.Client, esClient *ela
 	searchService := services.NewSearchService(esClient, "lawoa_")
 	lawyerService := services.NewLawyerService(lawyerRepo)
 	rbacService := services.NewRBACService(db)
+
+	// 初始化增强的冲突检测服务V2
+	enhancedConflictRepo := repositories.NewConflictExtendedRepository(db)
+	enhancedConflictService := services.NewEnhancedConflictServiceV2(enhancedConflictRepo)
 
 	// 初始化处理器
 	authHandler := handlers.NewAuthHandler(userService)
@@ -129,7 +136,7 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *redis.Client, esClient *ela
 	lawyerHandler := handlers.NewLawyerHandler(lawyerService)
 	approvalHandler := handlers.NewApprovalHandler()
 	rbacHandler := handlers.NewRBACHandler(rbacService)
-	conflictHandler := handlers.NewConflictHandler(conflictService)
+	conflictHandler := handlers.NewConflictHandler(conflictService, enhancedConflictService)
 	notificationHandler := handlers.NewNotificationHandler()
 
 	// API路由组
@@ -247,20 +254,24 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *redis.Client, esClient *ela
 	apiAuthenticated.DELETE("/admin/users/:id", userHandler.DeleteUser)
 
 	// 兼容前端的冲突检测路由 (需要认证)
-	apiAuthenticated.POST("/conflict/check", conflictHandler.CheckConflict)
+	apiAuthenticated.POST("/conflict/check", conflictHandler.EnhancedConflictCheck) // 使用增强的冲突检测
 	apiAuthenticated.GET("/conflict/stats", conflictHandler.GetConflictStats)
 	apiAuthenticated.GET("/conflict/rules", conflictHandler.GetConflictRules)
 	apiAuthenticated.GET("/conflict/standards", conflictHandler.GetMCPStandards)
+	apiAuthenticated.POST("/conflict/initialize", conflictHandler.InitializeConflictData) // 初始化数据
+	apiAuthenticated.GET("/conflict/statistics", conflictHandler.GetConflictStatistics) // 获取统计信息
 
 	// 律师相关路由
 	lawyersV1 := apiV1.Group("/lawfirm/lawyers")
 	{
 		lawyersV1.GET("", lawyerHandler.ListLawyers)
 		lawyersV1.GET("/stats", lawyerHandler.GetLawyerStats)
+		lawyersV1.DELETE("/:id", lawyerHandler.DeleteLawyer)
 	}
 	// 兼容前端的律师管理路由 (需要认证)
 	apiAuthenticated.GET("/lawfirm/lawyers", lawyerHandler.ListLawyers)
 	apiAuthenticated.GET("/lawfirm/lawyers/stats", lawyerHandler.GetLawyerStats)
+	apiAuthenticated.DELETE("/lawfirm/lawyers/:id", lawyerHandler.DeleteLawyer)
 
 	// 案件相关路由
 	casesV1 := apiV1.Group("/cases")

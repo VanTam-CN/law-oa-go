@@ -1,0 +1,165 @@
+{
+  "summary": {
+    "total": 22,
+    "passed": 11,
+    "failed": 11,
+    "success_rate": "50.00%"
+  },
+  "details": [
+    {
+      "test": "登录页面访问",
+      "passed": false,
+      "message": "需要认证（正常）",
+      "details": null,
+      "timestamp": "2025-10-11T07:31:32.361Z"
+    },
+    {
+      "test": "用户登录",
+      "passed": true,
+      "message": "登录成功，用户: Admin User",
+      "details": null,
+      "timestamp": "2025-10-11T07:31:32.433Z"
+    },
+    {
+      "test": "认证状态检查",
+      "passed": false,
+      "message": "认证状态异常",
+      "details": null,
+      "timestamp": "2025-10-11T07:31:32.435Z"
+    },
+    {
+      "test": "律师列表查看",
+      "passed": true,
+      "message": "成功获取律师列表，共6条记录",
+      "details": null,
+      "timestamp": "2025-10-11T07:31:32.437Z"
+    },
+    {
+      "test": "添加新律师",
+      "passed": false,
+      "message": "添加律师失败: Request failed with status code 404",
+      "details": null,
+      "timestamp": "2025-10-11T07:31:32.439Z"
+    },
+    {
+      "test": "律师搜索功能",
+      "passed": true,
+      "message": "律师搜索功能正常",
+      "details": null,
+      "timestamp": "2025-10-11T07:31:32.442Z"
+    },
+    {
+      "test": "客户列表查看",
+      "passed": true,
+      "message": "成功获取客户列表，共10条记录",
+      "details": null,
+      "timestamp": "2025-10-11T07:31:32.444Z"
+    },
+    {
+      "test": "添加新客户",
+      "passed": true,
+      "message": "成功添加客户: 北京测试科技有限公司",
+      "details": null,
+      "timestamp": "2025-10-11T07:31:32.449Z"
+    },
+    {
+      "test": "客户搜索功能",
+      "passed": true,
+      "message": "客户搜索功能正常",
+      "details": null,
+      "timestamp": "2025-10-11T07:31:32.453Z"
+    },
+    {
+      "test": "案件列表查看",
+      "passed": true,
+      "message": "成功获取案件列表，共10条记录",
+      "details": null,
+      "timestamp": "2025-10-11T07:31:32.456Z"
+    },
+    {
+      "test": "添加新案件",
+      "passed": false,
+      "message": "添加案件失败: Request failed with status code 422",
+      "details": null,
+      "timestamp": "2025-10-11T07:31:32.458Z"
+    },
+    {
+      "test": "案件搜索功能",
+      "passed": true,
+      "message": "案件搜索功能正常",
+      "details": null,
+      "timestamp": "2025-10-11T07:31:32.460Z"
+    },
+    {
+      "test": "案件筛选功能",
+      "passed": false,
+      "message": "案件筛选功能异常",
+      "details": null,
+      "timestamp": "2025-10-11T07:31:32.461Z"
+    },
+    {
+      "test": "利益冲突检测",
+      "passed": false,
+      "message": "冲突检测失败: Request failed with status code 404",
+      "details": null,
+      "timestamp": "2025-10-11T07:31:32.462Z"
+    },
+    {
+      "test": "冲突检测历史",
+      "passed": false,
+      "message": "获取冲突检测历史失败",
+      "details": null,
+      "timestamp": "2025-10-11T07:31:32.463Z"
+    },
+    {
+      "test": "案件统计报表",
+      "passed": false,
+      "message": "获取案件统计失败",
+      "details": null,
+      "timestamp": "2025-10-11T07:31:32.463Z"
+    },
+    {
+      "test": "律师工作量统计",
+      "passed": false,
+      "message": "获取律师统计失败",
+      "details": null,
+      "timestamp": "2025-10-11T07:31:32.464Z"
+    },
+    {
+      "test": "客户统计报表",
+      "passed": false,
+      "message": "获取客户统计失败",
+      "details": null,
+      "timestamp": "2025-10-11T07:31:32.464Z"
+    },
+    {
+      "test": "用户权限检查",
+      "passed": false,
+      "message": "获取权限信息失败",
+      "details": null,
+      "timestamp": "2025-10-11T07:31:32.465Z"
+    },
+    {
+      "test": "系统配置获取",
+      "passed": true,
+      "message": "系统配置接口未实现（可选功能）",
+      "details": null,
+      "timestamp": "2025-10-11T07:31:32.466Z"
+    },
+    {
+      "test": "案件数据导出",
+      "passed": true,
+      "message": "数据导出功能未实现（可选功能）",
+      "details": null,
+      "timestamp": "2025-10-11T07:31:32.466Z"
+    },
+    {
+      "test": "数据备份功能",
+      "passed": true,
+      "message": "数据备份功能未实现（可选功能）",
+      "details": null,
+      "timestamp": "2025-10-11T07:31:32.467Z"
+    }
+  ],
+  "timestamp": "2025-10-11T07:31:32.467Z"
+}

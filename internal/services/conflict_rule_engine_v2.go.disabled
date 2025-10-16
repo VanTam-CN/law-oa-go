@@ -1,0 +1,310 @@
+package services
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log"
+	"regexp"
+	"strings"
+	"time"
+
+	"law-oa-go/internal/models"
+	"law-oa-go/internal/repositories"
+)
+
+// ConflictRuleEngineV2 重构的冲突规则引擎
+type ConflictRuleEngineV2 struct {
+	repo           repositories.EnhancedRepositoryInterface
+	cachedRules    []models.EnhancedConflictRule
+	lastCacheUpdate time.Time
+	logger         *log.Logger
+}
+
+// NewConflictRuleEngineV2 创建新的冲突规则引擎
+func NewConflictRuleEngineV2(repo repositories.EnhancedRepositoryInterface) *ConflictRuleEngineV2 {
+	return &ConflictRuleEngineV2{
+		repo:        repo,
+		logger:      log.Default(),
+	}
+}
+
+// ApplyRules 应用冲突检测规则
+func (e *ConflictRuleEngineV2) ApplyRules(ctx context.Context, request *repositories.AdvancedConflictCheckRequest, conflictCases []*models.Case) (*repositories.RuleApplicationResult, error) {
+	result := &repositories.RuleApplicationResult{
+		AppliedRules:     make([]*repositories.RuleApplication, 0),
+		AdditionalRisks:  make([]string, 0),
+		Recommendations:  make([]string, 0),
+		RuleConflicts:    make([]string, 0),
+		ApplicationTime:  time.Now(),
+	}
+
+	// 获取活跃规则
+	rules, err := e.getActiveRules(ctx)
+	if err != nil {
+		e.logger.Printf("获取冲突规则失败: %v", err)
+		return result, nil
+	}
+
+	// 应用每个规则
+	for _, rule := range rules {
+		application := e.applyRule(rule, request, conflictCases)
+		if application != nil {
+			result.AppliedRules = append(result.AppliedRules, application)
+
+			// 收集额外风险
+			if len(application.RiskFactors) > 0 {
+				result.AdditionalRisks = append(result.AdditionalRisks, application.RiskFactors...)
+			}
+
+			// 收集建议
+			if len(application.Recommendations) > 0 {
+				result.Recommendations = append(result.Recommendations, application.Recommendations...)
+			}
+
+			// 检查规则冲突
+			if application.Conflicts {
+				result.RuleConflicts = append(result.RuleConflicts, fmt.Sprintf("规则 %s 存在冲突", rule.Name))
+			}
+		}
+	}
+
+	// 应用内置规则
+	builtInResults := e.applyBuiltInRules(request, conflictCases)
+	result.AdditionalRisks = append(result.AdditionalRisks, builtInResults.Risks...)
+	result.Recommendations = append(result.Recommendations, builtInResults.Recommendations...)
+
+	e.logger.Printf("规则应用完成 - 应用规则数: %d, 额外风险数: %d, 建议数: %d",
+		len(result.AppliedRules), len(result.AdditionalRisks), len(result.Recommendations))
+
+	return result, nil
+}
+
+// getActiveRules 获取活跃规则
+func (e *ConflictRuleEngineV2) getActiveRules(ctx context.Context) ([]models.EnhancedConflictRule, error) {
+	// 缓存5分钟
+	if time.Since(e.lastCacheUpdate) < 5*time.Minute && len(e.cachedRules) > 0 {
+		return e.cachedRules, nil
+	}
+
+	rules, err := e.repo.GetActiveConflictRules(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	e.cachedRules = rules
+	e.lastCacheUpdate = time.Now()
+
+	return rules, nil
+}
+
+// applyRule 应用单个规则
+func (e *ConflictRuleEngineV2) applyRule(rule models.EnhancedConflictRule, request *repositories.AdvancedConflictCheckRequest, conflictCases []*models.Case) *repositories.RuleApplication {
+	application := &repositories.RuleApplication{
+		RuleID:       rule.ID,
+		RuleName:     rule.Name,
+		RuleType:     rule.Type,
+		Priority:     rule.Priority,
+		Matched:      false,
+		RiskFactors:  make([]string, 0),
+		Recommendations: make([]string, 0),
+		Conflicts:    false,
+	}
+
+	// 解析规则条件
+	conditions, err := e.parseRuleConditions(rule.Conditions)
+	if err != nil {
+		e.logger.Printf("解析规则条件失败: %v", err)
+		return nil
+	}
+
+	// 检查条件匹配
+	matched, riskFactors := e.evaluateConditions(conditions, request, conflictCases)
+	if matched {
+		application.Matched = true
+		application.RiskFactors = riskFactors
+		application.Recommendations = e.extractRecommendations(rule.Conditions)
+	}
+
+	return application
+}
+
+// parseRuleConditions 解析规则条件
+func (e *ConflictRuleEngineV2) parseRuleConditions(conditions json.RawMessage) (map[string]interface{}, error) {
+	var parsed map[string]interface{}
+	err := json.Unmarshal(conditions, &parsed)
+	if err != nil {
+		return nil, fmt.Errorf("解析规则条件失败: %v", err)
+	}
+	return parsed, nil
+}
+
+// evaluateConditions 评估条件
+func (e *ConflictRuleEngineV2) evaluateConditions(conditions map[string]interface{}, request *repositories.AdvancedConflictCheckRequest, conflictCases []*models.Case) (bool, []string) {
+	riskFactors := make([]string, 0)
+	matched := true
+
+	// 检查案件类型条件
+	if caseType, ok := conditions["case_types"]; ok {
+		if caseTypeList, ok := caseType.([]interface{}); ok {
+			found := false
+			for _, ct := range caseTypeList {
+				if ctStr, ok := ct.(string); ok && ctStr == request.CaseType {
+					found = true
+					break
+				}
+			}
+			if !found {
+				matched = false
+			} else {
+				riskFactors = append(riskFactors, fmt.Sprintf("案件类型 %s 匹配风险条件", request.CaseType))
+			}
+		}
+	}
+
+	// 检查客户行业条件
+	if request.ClientIndustry != "" {
+		if industry, ok := conditions["high_risk_industries"]; ok {
+			if industryList, ok := industry.([]interface{}); ok {
+				for _, ind := range industryList {
+					if indStr, ok := ind.(string); ok && strings.Contains(request.ClientIndustry, indStr) {
+						riskFactors = append(riskFactors, fmt.Sprintf("高风险行业: %s", request.ClientIndustry))
+						break
+					}
+				}
+			}
+		}
+	}
+
+	// 检查冲突案件数量
+	if minConflicts, ok := conditions["min_conflicts"]; ok {
+		if minConf, ok := minConflicts.(float64); ok && len(conflictCases) >= int(minConf) {
+			riskFactors = append(riskFactors, fmt.Sprintf("冲突案件数量 %d 超过阈值 %d", len(conflictCases), int(minConf)))
+		}
+	}
+
+	// 检查关键词匹配
+	if keywords, ok := conditions["client_keywords"]; ok {
+		if keywordList, ok := keywords.([]interface{}); ok {
+			for _, kw := range keywordList {
+				if kwStr, ok := kw.(string); ok {
+					if strings.Contains(strings.ToLower(request.ClientName), strings.ToLower(kwStr)) ||
+					   strings.Contains(strings.ToLower(request.OpposingParty), strings.ToLower(kwStr)) {
+						riskFactors = append(riskFactors, fmt.Sprintf("关键词匹配: %s", kwStr))
+						break
+					}
+				}
+			}
+		}
+	}
+
+	return matched, riskFactors
+}
+
+// extractRecommendations 提取建议
+func (e *ConflictRuleEngineV2) extractRecommendations(conditions json.RawMessage) []string {
+	var parsed map[string]interface{}
+	json.Unmarshal(conditions, &parsed)
+
+	recommendations := make([]string, 0)
+
+	if recs, ok := parsed["recommendations"]; ok {
+		if recList, ok := recs.([]interface{}); ok {
+			for _, rec := range recList {
+				if recStr, ok := rec.(string); ok {
+					recommendations = append(recommendations, recStr)
+				}
+			}
+		}
+	}
+
+	return recommendations
+}
+
+// applyBuiltInRules 应用内置规则
+func (e *ConflictRuleEngineV2) applyBuiltInRules(request *repositories.AdvancedConflictCheckRequest, conflictCases []*models.Case) *repositories.BuiltInRuleResult {
+	result := &repositories.BuiltInRuleResult{
+		Risks:          make([]string, 0),
+		Recommendations: make([]string, 0),
+	}
+
+	// 内置规则1: 检查客户名称相似性
+	if e.isNameSimilar(request.ClientName, request.OpposingParty, 0.8) {
+		result.Risks = append(result.Risks, "客户与对方当事人名称高度相似")
+		result.Recommendations = append(result.Recommendations, "建议进行详细的关联关系调查")
+	}
+
+	// 内置规则2: 检查高风险行业组合
+	if e.isHighRiskIndustryCombination(request.ClientIndustry, request.CaseType) {
+		result.Risks = append(result.Risks, "高风险行业与案件类型组合")
+		result.Recommendations = append(result.Recommendations, "建议加强审查和监督措施")
+	}
+
+	// 内置规则3: 检查搜索深度与风险匹配度
+	if request.SearchDepth == "basic" && len(conflictCases) > 0 {
+		result.Risks = append(result.Risks, "基础搜索发现冲突，建议进行深度搜索")
+		result.Recommendations = append(result.Recommendations, "建议使用comprehensive搜索深度重新检测")
+	}
+
+	return result
+}
+
+// isNameSimilar 判断名称相似性
+func (e *ConflictRuleEngineV2) isNameSimilar(name1, name2 string, threshold float64) bool {
+	if name1 == "" || name2 == "" {
+		return false
+	}
+
+	name1Lower := strings.ToLower(name1)
+	name2Lower := strings.ToLower(name2)
+
+	// 简单的包含关系检查
+	if strings.Contains(name1Lower, name2Lower) || strings.Contains(name2Lower, name1Lower) {
+		return true
+	}
+
+	// 检查是否有共同的子字符串（长度大于3）
+	words1 := strings.Fields(name1Lower)
+	words2 := strings.Fields(name2Lower)
+
+	for _, w1 := range words1 {
+		if len(w1) <= 3 {
+			continue
+		}
+		for _, w2 := range words2 {
+			if len(w2) <= 3 {
+				continue
+			}
+			if w1 == w2 {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// isHighRiskIndustryCombination 检查高风险行业组合
+func (e *ConflictRuleEngineV2) isHighRiskIndustryCombination(industry, caseType string) bool {
+	highRiskCombos := map[string][]string{
+		"金融":     {"criminal", "administrative"},
+		"医疗健康":  {"criminal", "commercial"},
+		"教育":     {"criminal"},
+		"科技、媒体和通信": {"criminal", "administrative"},
+	}
+
+	industryLower := strings.ToLower(industry)
+	caseTypeLower := strings.ToLower(caseType)
+
+	for ind, caseTypes := range highRiskCombos {
+		if strings.Contains(industryLower, strings.ToLower(ind)) {
+			for _, ct := range caseTypes {
+				if caseTypeLower == ct {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
+}

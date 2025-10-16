@@ -1,0 +1,14 @@
+{
+  "filePath": ".claude/specs/conflict-check-fix/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-10-16T02:25:36.625Z",
+      "trigger": "initial",
+      "approvalId": "approval_1760581536619_cg3tcwlsk",
+      "approvalTitle": "利益冲突检查功能修复任务分解文档"
+    }
+  ]
+}

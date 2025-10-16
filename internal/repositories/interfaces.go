@@ -139,6 +139,7 @@ type ClientListParams struct {
 	PageSize int
 	Status   string
 	Search   string
+	Type     string
 	Company  string
 }
 
@@ -172,3 +173,5 @@ type CaseStats struct {
 	HighPriority   int64
 	UrgentCases    int64
 }
+
+

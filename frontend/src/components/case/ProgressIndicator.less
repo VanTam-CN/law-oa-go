@@ -1,0 +1,860 @@
+/**
+ * ProgressIndicator组件样式
+ * 支持1080p优化和响应式设计
+ */
+
+.progress-indicator {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+
+  // 主要容器布局
+  .progress-steps-card {
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: box-shadow 0.3s ease;
+
+    &:hover {
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    }
+
+    .ant-card-body {
+      padding: 24px;
+    }
+  }
+
+  .progress-bar-card {
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+    .ant-card-body {
+      padding: 20px 24px;
+    }
+  }
+
+  .progress-stats-card {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+    .ant-card-body {
+      padding: 24px;
+    }
+  }
+
+  // 步骤样式
+  .progress-steps-card {
+    .ant-steps {
+      .ant-steps-item {
+        .ant-steps-item-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 16px;
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          transition: all 0.3s ease;
+
+          .ant-steps-icon {
+            font-size: 16px;
+          }
+        }
+
+        .ant-steps-item-content {
+          .ant-steps-item-title {
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 1.4;
+            color: #262626;
+          }
+
+          .ant-steps-item-description {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #8c8c8c;
+            margin-top: 4px;
+          }
+        }
+
+        // 步骤状态样式
+        &.ant-steps-item-process {
+          .ant-steps-item-icon {
+            background-color: #1890ff;
+            border-color: #1890ff;
+            color: #fff;
+
+            .ant-steps-icon {
+              color: #fff;
+            }
+          }
+
+          .ant-steps-item-title {
+            color: #1890ff;
+          }
+        }
+
+        &.ant-steps-item-finish {
+          .ant-steps-item-icon {
+            background-color: #52c41a;
+            border-color: #52c41a;
+            color: #fff;
+
+            .ant-steps-icon {
+              color: #fff;
+            }
+          }
+
+          .ant-steps-item-title {
+            color: #52c41a;
+          }
+        }
+
+        &.ant-steps-item-error {
+          .ant-steps-item-icon {
+            background-color: #ff4d4f;
+            border-color: #ff4d4f;
+            color: #fff;
+
+            .ant-steps-icon {
+              color: #fff;
+            }
+          }
+
+          .ant-steps-item-title {
+            color: #ff4d4f;
+          }
+        }
+
+        &.ant-steps-item-wait {
+          .ant-steps-item-icon {
+            background-color: #f5f5f5;
+            border-color: #d9d9d9;
+            color: #8c8c8c;
+
+            .ant-steps-icon {
+              color: #8c8c8c;
+            }
+          }
+
+          // 可点击状态
+          &:not(.ant-steps-item-disabled) {
+            .ant-steps-item-icon,
+            .ant-steps-item-content {
+              cursor: pointer;
+              transition: all 0.3s ease;
+            }
+
+            &:hover {
+              .ant-steps-item-icon {
+                transform: scale(1.1);
+                box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+              }
+
+              .ant-steps-item-title {
+                color: #1890ff;
+              }
+            }
+          }
+        }
+
+        &.ant-steps-item-disabled {
+          .ant-steps-item-icon {
+            background-color: #f5f5f5;
+            border-color: #d9d9d9;
+            color: #bfbfbf;
+            cursor: not-allowed;
+          }
+
+          .ant-steps-item-title {
+            color: #bfbfbf;
+          }
+
+          .ant-steps-item-description {
+            color: #d9d9d9;
+          }
+        }
+      }
+
+      // 自定义步骤标题样式
+      .progress-step-title {
+        .anticon {
+          margin-right: 8px;
+          font-size: 16px;
+        }
+
+        .ant-typography {
+          margin: 0;
+        }
+      }
+
+      .progress-step-description {
+        .ant-typography {
+          margin: 0;
+          line-height: 1.5;
+        }
+      }
+    }
+  }
+
+  // 进度条样式
+  .progress-bar-card {
+    .ant-progress {
+      .ant-progress-text {
+        font-size: 16px;
+        font-weight: 600;
+        color: #262626;
+      }
+
+      .ant-progress-bg {
+        background: #f0f0f0;
+        border-radius: 8px;
+      }
+
+      .ant-progress-success-bg {
+        background: linear-gradient(90deg, #52c41a 0%, #73d13d 100%);
+      }
+
+      .ant-progress-bg {
+        background: linear-gradient(90deg, #1890ff 0%, #40a9ff 100%);
+      }
+    }
+  }
+
+  // 统计信息样式
+  .progress-stats-card {
+    .progress-stats-content {
+      .stats-main {
+        .stats-title {
+          margin-bottom: 16px !important;
+          color: #262626;
+        }
+
+        .stats-overview {
+          margin-bottom: 16px;
+          padding: 16px;
+          background: #fafafa;
+          border-radius: 8px;
+          border: 1px solid #f0f0f0;
+
+          .stat-item {
+            text-align: center;
+            flex: 1;
+
+            .ant-typography {
+              display: block;
+            }
+
+            .stat-value {
+              font-size: 20px;
+              font-weight: 700;
+              color: #1890ff;
+            }
+          }
+        }
+
+        .stats-alerts {
+          margin-bottom: 16px;
+
+          .stats-alert {
+            border-radius: 6px;
+            margin-bottom: 8px;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+            &:last-child {
+              margin-bottom: 0;
+            }
+          }
+        }
+
+        .stats-actions {
+          .action-icon {
+            font-size: 20px;
+            color: #8c8c8c;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+
+            &:hover {
+              color: #1890ff;
+              background-color: #f0f8ff;
+            }
+
+            &:active {
+              color: #1677ff;
+              background-color: #e6f7ff;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 1080p紧凑模式
+  &.progress-indicator-compact {
+    .progress-steps-card,
+    .progress-bar-card,
+    .progress-stats-card {
+      margin-bottom: 12px;
+      border-radius: 6px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+
+      &:hover {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .ant-card-body {
+        padding: 16px;
+      }
+    }
+
+    .progress-bar-card {
+      .ant-card-body {
+        padding: 14px 16px;
+      }
+
+      .ant-progress {
+        .ant-progress-text {
+          font-size: 14px;
+        }
+      }
+    }
+
+    .progress-stats-card {
+      .progress-stats-content {
+        .stats-main {
+          .stats-title {
+            font-size: 18px !important;
+            margin-bottom: 12px !important;
+          }
+
+          .stats-overview {
+            padding: 12px;
+            border-radius: 6px;
+
+            .stat-item {
+              .stat-value {
+                font-size: 18px;
+              }
+            }
+          }
+
+          .stats-alerts {
+            .stats-alert {
+              padding: 8px 12px;
+              font-size: 12px;
+            }
+          }
+
+          .stats-actions {
+            .action-icon {
+              font-size: 18px;
+              padding: 6px;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 垂直布局
+  &.progress-vertical {
+    .progress-steps-card,
+    .progress-bar-card,
+    .progress-stats-card {
+      margin-right: 0;
+      margin-left: 0;
+    }
+
+    .progress-steps-card {
+      .ant-steps {
+        .ant-steps-item {
+          .ant-steps-item-icon {
+            width: 36px;
+            height: 36px;
+            font-size: 14px;
+          }
+
+          .ant-steps-item-content {
+            .ant-steps-item-title {
+              font-size: 14px;
+            }
+
+            .ant-steps-item-description {
+              font-size: 12px;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 优化提示
+  .progress-optimization-hint {
+    margin-top: 16px;
+
+    .ant-alert {
+      border-radius: 6px;
+      background: #f0f5ff;
+      border: 1px solid #adc6ff;
+      padding: 12px 16px;
+
+      .ant-alert-message {
+        font-weight: 500;
+        color: #0958d9;
+        font-size: 14px;
+      }
+
+      .ant-alert-description {
+        color: #0958d9;
+        font-size: 13px;
+        opacity: 0.9;
+      }
+    }
+  }
+}
+
+// 响应式设计
+@media (max-width: 1200px) {
+  .progress-indicator {
+    .progress-steps-card {
+      .ant-card-body {
+        padding: 20px;
+      }
+    }
+
+    .progress-stats-card {
+      .ant-card-body {
+        padding: 20px;
+      }
+    }
+  }
+}
+
+@media (max-width: 992px) {
+  .progress-indicator {
+    .progress-steps-card {
+      margin-bottom: 16px;
+
+      .ant-card-body {
+        padding: 18px;
+      }
+
+      .ant-steps {
+        .ant-steps-item {
+          .ant-steps-item-icon {
+            width: 36px;
+            height: 36px;
+            font-size: 14px;
+          }
+
+          .ant-steps-item-content {
+            .ant-steps-item-title {
+              font-size: 15px;
+            }
+
+            .ant-steps-item-description {
+              font-size: 13px;
+            }
+          }
+        }
+      }
+    }
+
+    .progress-bar-card {
+      margin-bottom: 16px;
+
+      .ant-card-body {
+        padding: 16px;
+      }
+    }
+
+    .progress-stats-card {
+      .ant-card-body {
+        padding: 20px;
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .progress-indicator {
+    .progress-steps-card,
+    .progress-bar-card,
+    .progress-stats-card {
+      margin-bottom: 12px;
+      border-radius: 6px;
+    }
+
+    .progress-steps-card {
+      .ant-card-body {
+        padding: 16px;
+      }
+
+      .ant-steps {
+        .ant-steps-item {
+          .ant-steps-item-icon {
+            width: 32px;
+            height: 32px;
+            font-size: 12px;
+          }
+
+          .ant-steps-item-content {
+            .ant-steps-item-title {
+              font-size: 14px;
+            }
+
+            .ant-steps-item-description {
+              font-size: 12px;
+            }
+          }
+        }
+      }
+    }
+
+    .progress-bar-card {
+      .ant-card-body {
+        padding: 14px;
+      }
+
+      .ant-progress {
+        .ant-progress-text {
+          font-size: 14px;
+        }
+      }
+    }
+
+    .progress-stats-card {
+      .ant-card-body {
+        padding: 16px;
+      }
+
+      .progress-stats-content {
+        .stats-main {
+          .stats-title {
+            font-size: 16px !important;
+            margin-bottom: 12px !important;
+          }
+
+          .stats-overview {
+            padding: 12px;
+
+            .stat-item {
+              .stat-value {
+                font-size: 16px;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  &.progress-horizontal {
+    .progress-steps-card {
+      .ant-steps {
+        .ant-steps-item {
+          .progress-step-title {
+            .anticon {
+              font-size: 14px;
+            }
+
+            .ant-typography {
+              font-size: 14px;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 576px) {
+  .progress-indicator {
+    .progress-steps-card {
+      .ant-card-body {
+        padding: 12px;
+      }
+
+      .ant-steps {
+        .ant-steps-item {
+          .ant-steps-item-icon {
+            width: 28px;
+            height: 28px;
+            font-size: 12px;
+          }
+
+          .ant-steps-item-content {
+            .ant-steps-item-title {
+              font-size: 13px;
+            }
+
+            .ant-steps-item-description {
+              font-size: 11px;
+            }
+          }
+        }
+      }
+    }
+
+    .progress-bar-card {
+      .ant-card-body {
+        padding: 12px;
+      }
+
+      .ant-progress {
+        .ant-progress-text {
+          font-size: 13px;
+        }
+      }
+    }
+
+    .progress-stats-card {
+      .ant-card-body {
+        padding: 16px;
+      }
+
+      .progress-stats-content {
+        .stats-main {
+          .stats-title {
+            font-size: 15px !important;
+          }
+
+          .stats-overview {
+            padding: 10px;
+
+            .stat-item {
+              .stat-value {
+                font-size: 15px;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    &.progress-horizontal {
+      .progress-steps-card {
+        .ant-steps {
+          .ant-steps-item {
+            .progress-step-title {
+              .anticon {
+                font-size: 12px;
+              }
+
+              .ant-typography {
+                font-size: 13px;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// 深色主题支持
+@media (prefers-color-scheme: dark) {
+  .progress-indicator {
+    .progress-steps-card,
+    .progress-bar-card,
+    .progress-stats-card {
+      background: #141414;
+      border-color: #434343;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .progress-steps-card {
+      .ant-steps {
+        .ant-steps-item {
+          .ant-steps-item-content {
+            .ant-steps-item-title {
+              color: #fff;
+            }
+
+            .ant-steps-item-description {
+              color: #a6a6a6;
+            }
+          }
+        }
+      }
+    }
+
+    .progress-stats-card {
+      .progress-stats-content {
+        .stats-main {
+          .stats-title {
+            color: #fff;
+          }
+
+          .stats-overview {
+            background: #262626;
+            border-color: #404040;
+
+            .stat-item {
+              .stat-value {
+                color: #1890ff;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .progress-optimization-hint {
+      background: #1f1f1f;
+      border-color: #4096ff;
+
+      .ant-alert {
+        background: #1a1a1a;
+        border-color: #303030;
+
+        .ant-alert-message {
+          color: #4096ff;
+        }
+
+        .ant-alert-description {
+          color: #4096ff;
+          opacity: 0.8;
+        }
+      }
+    }
+  }
+}
+
+// 动画效果
+.progress-indicator {
+  .progress-steps-card {
+    .ant-steps {
+      .ant-steps-item {
+        transition: all 0.3s ease;
+
+        &.ant-steps-item-process {
+          .ant-steps-item-icon {
+            animation: pulse 2s infinite;
+          }
+        }
+      }
+    }
+  }
+
+  .progress-bar-card {
+    .ant-progress {
+      .ant-progress-bg {
+        transition: all 0.6s ease;
+      }
+    }
+  }
+
+  .progress-stats-card {
+    .progress-stats-content {
+      .stats-overview {
+        .stat-item {
+          transition: all 0.3s ease;
+
+          &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          }
+        }
+      }
+
+      .stats-actions {
+        .action-icon {
+          transition: all 0.3s ease;
+        }
+      }
+    }
+  }
+}
+
+// 脉冲动画
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(24, 144, 255, 0.7);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgba(24, 144, 255, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(24, 144, 255, 0);
+  }
+}
+
+// 高对比度模式支持
+@media (prefers-contrast: high) {
+  .progress-indicator {
+    .progress-steps-card,
+    .progress-bar-card,
+    .progress-stats-card {
+      border-width: 2px;
+    }
+
+    .progress-steps-card {
+      .ant-steps {
+        .ant-steps-item {
+          .ant-steps-item-icon {
+            border-width: 2px;
+          }
+        }
+      }
+    }
+  }
+}
+
+// 无障碍支持
+.progress-indicator {
+  // 焦点可见性
+  .progress-step-title {
+    &:focus-visible {
+      .anticon {
+        outline: 2px solid #1890ff;
+        outline-offset: 2px;
+      }
+    }
+  }
+
+  // 键盘导航提示
+  .stats-actions {
+    .action-icon {
+      &:focus-visible {
+        outline: 2px solid #1890ff;
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
+
+      &[aria-label="跳转到下一个未完成步骤"]:hover,
+      &[aria-label="刷新进度"]:hover {
+        background-color: #e6f7ff;
+        color: #1890ff;
+      }
+    }
+  }
+}
+
+// 打印样式
+@media print {
+  .progress-indicator {
+    .progress-optimization-hint {
+      display: none;
+    }
+
+    .progress-stats-content {
+      .stats-actions {
+        display: none;
+      }
+    }
+
+    .progress-steps-card,
+    .progress-bar-card,
+    .progress-stats-card {
+      box-shadow: none;
+      border: 1px solid #d9d9d9;
+    }
+  }
+}

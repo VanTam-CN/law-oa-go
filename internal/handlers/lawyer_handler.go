@@ -57,6 +57,27 @@ func (h *LawyerHandler) GetLawyerStats(c *gin.Context) {
 			"行政部门": 1,
 		},
 	}
-	
+
 	common.APISuccess(c, stats)
+}
+
+// DeleteLawyer godoc
+// @Summary 删除律师
+// @Description 根据ID删除律师
+// @Tags 律师管理
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "律师ID"
+// @Success 200 {object} common.APIResponse "删除成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 401 {object} common.APIResponse "未授权"
+// @Failure 404 {object} common.APIResponse "律师不存在"
+// @Failure 500 {object} common.APIResponse "内部错误"
+// @Router /lawfirm/lawyers/{id} [delete]
+func (h *LawyerHandler) DeleteLawyer(c *gin.Context) {
+	handler := APIDeleteHandler(func(c *gin.Context, id uint) error {
+		return h.lawyerService.DeleteLawyer(c.Request.Context(), id)
+	}, "lawyer")
+	handler(c)
 }

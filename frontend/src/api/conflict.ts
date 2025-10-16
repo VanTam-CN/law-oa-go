@@ -1,4 +1,9 @@
 import { get, post } from '../services/http';
+import {
+  ConflictCheckFormData,
+  transformToConflictCheckRequest,
+  debugConflictCheckRequest
+} from '@/utils/conflictTransform';
 
 export interface ConflictCheckRequest {
   clientId?: number;
@@ -59,24 +64,39 @@ export const conflictAPI = {
   // 执行利益冲突检查
   check: async (request: ConflictCheckRequest): Promise<ConflictCheckResponse> => {
     try {
-      const response = await post<ConflictCheckResponse>('/conflict/check', {
-        clientId: request.clientId?.toString() || '1',
-        clientName: request.clientName || '测试客户',
+      // 🔄 使用新的参数转换工具来处理案件类型等字段
+      const formData: ConflictCheckFormData = {
         caseName: request.caseName || '测试案件',
         caseType: request.caseType || 'civil',
-        clientType: 'PERSON', // 必填字段，使用正确的枚举值
-        otherParties: request.opponentInfo ? [request.opponentInfo] : [],
+        clientName: request.clientName || '测试客户',
+        opponentInfo: request.opponentInfo,
         searchYears: request.searchYears || 5,
-        searchDepth: request.searchDepth || 'deep',
-        includeCorporateRelations: request.includeCorporateRelations || true,
-        userId: '1', // 必填字段
-        requestTime: new Date().toISOString()
-      });
-      
+        searchDepth: request.searchDepth === 'deep' ? 'DEEP' as const : 'STANDARD' as const,
+        includeCorporateRelations: request.includeCorporateRelations || true
+      };
+
+      // 转换为后端期望的格式
+      const { request: transformedRequest } = transformToConflictCheckRequest(formData);
+      debugConflictCheckRequest(transformedRequest);
+
+      // 补充其他必需字段
+      const finalRequest = {
+        ...transformedRequest,
+        clientId: request.clientId?.toString() || transformedRequest.clientId,
+        causeOfAction: request.causeOfAction
+      };
+
+      // 调试：输出最终发送的请求
+      console.group('🚀 发送到后端的最终请求');
+      console.log('请求体:', JSON.stringify(finalRequest, null, 2));
+      console.log('案件类型检查:', finalRequest.caseType, typeof finalRequest.caseType);
+      console.groupEnd();
+
+      const response = await post<ConflictCheckResponse>('/conflict/check', finalRequest);
       return response;
     } catch (error) {
       console.error('利益冲突检查API调用失败:', error);
-      
+
       // 返回真实的后端分析结果（基于实际数据）
       return {
         checkId: `CC_${Date.now()}`,

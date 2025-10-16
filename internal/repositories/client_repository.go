@@ -84,19 +84,40 @@ func (r *ClientRepositoryImpl) List(ctx context.Context, params *ClientListParam
 	if params.Status != "" {
 		query = query.Where("status = ?", params.Status)
 	}
+	if params.Type != "" {
+		query = query.Where("type = ?", params.Type)
+	}
 	if params.Search != "" {
-		// 性能优化：智能搜索策略
-		searchLower := strings.ToLower(params.Search)
+		// 改进的搜索策略：支持多词搜索
+		searchTerms := strings.Fields(strings.TrimSpace(params.Search))
 
-		if len(params.Search) >= 3 {
-			// 对于3个字符以上的搜索，使用后缀匹配以利用索引
-			suffixTerm := searchLower + "%"
-			query = query.Where("LOWER(name) LIKE ? OR LOWER(email) LIKE ? OR LOWER(phone) LIKE ?", suffixTerm, suffixTerm, suffixTerm)
-		} else {
-			// 对于短搜索词，使用完整匹配但限制搜索范围
+		if len(searchTerms) == 1 {
+			// 单词搜索：使用传统LIKE搜索
+			searchLower := strings.ToLower(params.Search)
+			// 统一使用完整匹配，支持真正的模糊搜索
 			fullSearchTerm := "%" + searchLower + "%"
-			// 优先搜索姓名，因为这是最常用的搜索字段
-			query = query.Where("LOWER(name) LIKE ? OR LOWER(email) LIKE ?", fullSearchTerm, fullSearchTerm)
+			// 搜索姓名、邮箱、电话和公司字段
+			query = query.Where("LOWER(name) LIKE ? OR LOWER(email) LIKE ? OR LOWER(phone) LIKE ? OR LOWER(company) LIKE ?",
+				fullSearchTerm, fullSearchTerm, fullSearchTerm, fullSearchTerm)
+		} else {
+			// 多词搜索：为每个词创建独立的搜索条件，然后组合
+			searchConditions := make([]string, 0, len(searchTerms)*3)
+			searchArgs := make([]interface{}, 0, len(searchTerms)*3)
+
+			for _, term := range searchTerms {
+				if strings.TrimSpace(term) != "" {
+					searchLower := strings.ToLower(term)
+					fullSearchTerm := "%" + searchLower + "%"
+					searchConditions = append(searchConditions, "LOWER(name) LIKE ?", "LOWER(email) LIKE ?", "LOWER(phone) LIKE ?", "LOWER(company) LIKE ?")
+					searchArgs = append(searchArgs, fullSearchTerm, fullSearchTerm, fullSearchTerm, fullSearchTerm)
+				}
+			}
+
+			if len(searchConditions) > 0 {
+				// 使用OR连接所有搜索条件，这样只要包含任何一个词就能匹配
+				combinedCondition := strings.Join(searchConditions, " OR ")
+				query = query.Where("("+combinedCondition+")", searchArgs...)
+			}
 		}
 	}
 

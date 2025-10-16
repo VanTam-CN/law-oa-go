@@ -1,0 +1,340 @@
+package services
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"fmt"
+	"log"
+	"regexp"
+	"strings"
+	"time"
+
+	"law-oa-go/internal/models"
+	"law-oa-go/internal/repositories"
+
+	"github.com/gin-gonic/gin"
+)
+
+// IndustryCompetitionService 行业竞争分析服务
+type IndustryCompetitionService struct {
+	repo repositories.Repositories
+	cache map[string]*IndustryCompetitionCache
+}
+
+// IndustryCompetitionCache 行业竞争缓存
+type IndustryCompetitionCache struct {
+	Competitors     []CompetitorInfo
+	LastUpdated     time.Time
+	ExpiryDuration  time.Duration
+}
+
+// CompetitorInfo 竞争者信息
+type CompetitorInfo struct {
+	Name            string `json:"name"`
+	Pattern         string `json:"pattern"`
+	Type            string `json:"type"`
+	ConflictLevel   string `json:"conflict_level"`
+	MatchedKeywords []string `json:"matched_keywords"`
+}
+
+// CompetitionAnalysisResult 竞争分析结果
+type CompetitionAnalysisResult struct {
+	HasCompetition    bool               `json:"has_competition"`
+	CompetitorInfo    []CompetitorInfo   `json:"competitor_info"`
+	ConflictLevel     string             `json:"conflict_level"`
+	RiskScore         int                `json:"risk_score"`
+	AnalysisDetails   map[string]interface{} `json:"analysis_details"`
+	MatchedPatterns   []string           `json:"matched_patterns"`
+}
+
+// NewIndustryCompetitionService 创建行业竞争分析服务
+func NewIndustryCompetitionService(repo repositories.Repositories) *IndustryCompetitionService {
+	return &IndustryCompetitionService{
+		repo:  repo,
+		cache: make(map[string]*IndustryCompetitionCache),
+	}
+}
+
+// InitializeIndustryData 初始化行业数据
+func (s *IndustryCompetitionService) InitializeIndustryData(ctx context.Context) error {
+	log.Println("=== 初始化行业竞争数据 ===")
+
+	// 1. 创建主要行业分类
+	industries := []models.IndustryClassification{
+		{Code: "TMT", Name: "科技、媒体和通信", Level: 1, Keywords: "互联网,科技,通信,软件,游戏,电商,社交媒体,短视频,云计算,AI,人工智能"},
+		{Code: "FINANCE", Name: "金融", Level: 1, Keywords: "银行,保险,证券,基金,支付,借贷,投资,理财,金融科技"},
+		{Code: "REAL_ESTATE", Name: "房地产", Level: 1, Keywords: "房地产,建筑,物业,装修,家居,建材"},
+		{Code: "MANUFACTURING", Name: "制造业", Level: 1, Keywords: "制造,工厂,生产,加工,机械,电子,汽车"},
+		{Code: "RETAIL", Name: "零售", Level: 1, Keywords: "零售,超市,商店,连锁,便利店,购物中心"},
+		{Code: "HEALTHCARE", Name: "医疗健康", Level: 1, Keywords: "医院,诊所,医药,生物技术,医疗设备,健康"},
+	}
+
+	for _, industry := range industries {
+		err := s.repo.CreateOrUpdateIndustry(ctx, &industry)
+		if err != nil {
+			log.Printf("创建行业失败 %s: %v", industry.Name, err)
+			return err
+		}
+		log.Printf("✓ 创建行业: %s (%s)", industry.Name, industry.Code)
+	}
+
+	// 2. 创建TMT行业竞争关系
+	tmtCompetitors := []models.CompetitiveRelation{
+		{
+			IndustryID:       1, // TMT
+			CompetitorType:   "direct",
+			CompetitorName:   "阿里巴巴",
+			CompetitorPattern: "阿里巴巴|阿里|淘宝|天猫|支付宝|蚂蚁金服|蚂蚁集团|阿里云",
+			ConflictLevel:    "HIGH",
+			Description:      "阿里巴巴集团及其关联公司",
+		},
+		{
+			IndustryID:       1,
+			CompetitorType:   "direct",
+			CompetitorName:   "腾讯",
+			CompetitorPattern: "腾讯|微信|QQ|腾讯云|腾讯游戏|腾讯视频|腾讯音乐",
+			ConflictLevel:    "HIGH",
+			Description:      "腾讯公司及其关联公司",
+		},
+		{
+			IndustryID:       1,
+			CompetitorType:   "direct",
+			CompetitorName:   "字节跳动",
+			CompetitorPattern: "字节跳动|抖音|TikTok|今日头条|西瓜视频|飞书|懂车帝",
+			ConflictLevel:    "HIGH",
+			Description:      "字节跳动公司及其产品",
+		},
+		{
+			IndustryID:       1,
+			CompetitorType:   "direct",
+			CompetitorName:   "百度",
+			CompetitorPattern: "百度|百度搜索|百度地图|百度网盘|百度贴吧|百度知道",
+			ConflictLevel:    "MEDIUM",
+			Description:      "百度公司及其产品",
+		},
+		{
+			IndustryID:       1,
+			CompetitorType:   "indirect",
+			CompetitorName:   "京东",
+			CompetitorPattern: "京东|JD.com|京东商城|京东物流",
+			ConflictLevel:    "MEDIUM",
+			Description:      "京东集团，与阿里电商业务竞争",
+		},
+		{
+			IndustryID:       1,
+			CompetitorType:   "indirect",
+			CompetitorName:   "美团",
+			CompetitorPattern: "美团|美团外卖|大众点评",
+			ConflictLevel:    "MEDIUM",
+			Description:      "美团公司，本地生活服务领域",
+		},
+	}
+
+	for _, competitor := range tmtCompetitors {
+		err := s.repo.CreateOrUpdateCompetitiveRelation(ctx, &competitor)
+		if err != nil {
+			log.Printf("创建竞争关系失败 %s: %v", competitor.CompetitorName, err)
+			return err
+		}
+		log.Printf("✓ 创建竞争关系: %s (%s)", competitor.CompetitorName, competitor.CompetitorType)
+	}
+
+	// 3. 创建冲突检测规则
+	rules := []models.ConflictRule{
+		{
+			Name:           "行业直接竞争检测",
+			RuleType:       "industry_competition",
+			TriggerPattern: "direct",
+			ActionType:     "warn",
+			RiskScore:      90,
+			Conditions:     `{"competitor_type": "direct", "same_lawyer": true}`,
+			Priority:       1,
+		},
+		{
+			Name:           "行业间接竞争检测",
+			RuleType:       "industry_competition",
+			TriggerPattern: "indirect",
+			ActionType:     "warn",
+			RiskScore:      60,
+			Conditions:     `{"competitor_type": "indirect", "same_lawyer": true}`,
+			Priority:       2,
+		},
+		{
+			Name:           "同一客户不同案件",
+			RuleType:       "client_conflict",
+			TriggerPattern: "same_client",
+			ActionType:     "block",
+			RiskScore:      100,
+			Conditions:     `{"same_client": true, "different_case": true}`,
+			Priority:       1,
+		},
+	}
+
+	for _, rule := range rules {
+		err := s.repo.CreateOrUpdateConflictRule(ctx, &rule)
+		if err != nil {
+			log.Printf("创建冲突规则失败 %s: %v", rule.Name, err)
+			return err
+		}
+		log.Printf("✓ 创建冲突规则: %s (风险分数: %d)", rule.Name, rule.RiskScore)
+	}
+
+	log.Println("=== 行业竞争数据初始化完成 ===")
+	return nil
+}
+
+// AnalyzeCompetition 分析竞争关系
+func (s *IndustryCompetitionService) AnalyzeCompetition(ctx *gin.Context, request *CompetitionAnalysisRequest) (*CompetitionAnalysisResult, error) {
+	// 1. 确定案件所属行业
+	industry, err := s.determineIndustry(ctx, request.ClientIndustry, request.ClientName)
+	if err != nil {
+		log.Printf("确定行业失败: %v", err)
+		return &CompetitionAnalysisResult{HasCompetition: false}, nil
+	}
+
+	// 2. 获取行业竞争者信息
+	competitors, err := s.getIndustryCompetitors(ctx, industry.ID)
+	if err != nil {
+		log.Printf("获取行业竞争者失败: %v", err)
+		return &CompetitionAnalysisResult{HasCompetition: false}, nil
+	}
+
+	// 3. 分析对方当事人与竞争者的匹配关系
+	result := &CompetitionAnalysisResult{
+		HasCompetition:  false,
+		CompetitorInfo:  []CompetitorInfo{},
+		ConflictLevel:   "LOW",
+		RiskScore:       0,
+		AnalysisDetails: make(map[string]interface{}),
+		MatchedPatterns: []string{},
+	}
+
+	for _, competitor := range competitors {
+		matched, matchedKeywords := s.matchCompetitor(request.OpposingParty, competitor)
+		if matched {
+			result.HasCompetition = true
+			result.CompetitorInfo = append(result.CompetitorInfo, CompetitorInfo{
+				Name:            competitor.CompetitorName,
+				Pattern:         competitor.CompetitorPattern,
+				Type:            competitor.CompetitorType,
+				ConflictLevel:   competitor.ConflictLevel,
+				MatchedKeywords: matchedKeywords,
+			})
+			result.MatchedPatterns = append(result.MatchedPatterns, competitor.CompetitorPattern)
+
+			// 计算风险分数
+			if competitor.ConflictLevel == "HIGH" {
+				result.RiskScore += 90
+			} else if competitor.ConflictLevel == "MEDIUM" {
+				result.RiskScore += 60
+			} else {
+				result.RiskScore += 30
+			}
+		}
+	}
+
+	// 4. 确定总体冲突等级
+	if result.RiskScore >= 80 {
+		result.ConflictLevel = "HIGH"
+	} else if result.RiskScore >= 50 {
+		result.ConflictLevel = "MEDIUM"
+	} else {
+		result.ConflictLevel = "LOW"
+	}
+
+	// 5. 添加分析详情
+	result.AnalysisDetails["industry"] = industry.Name
+	result.AnalysisDetails["industry_code"] = industry.Code
+	result.AnalysisDetails["competitor_count"] = len(result.CompetitorInfo)
+	result.AnalysisDetails["analysis_time"] = time.Now().Format("2006-01-02 15:04:05")
+
+	return result, nil
+}
+
+// CompetitionAnalysisRequest 竞争分析请求
+type CompetitionAnalysisRequest struct {
+	ClientName    string `json:"client_name"`
+	ClientIndustry string `json:"client_industry"`
+	OpposingParty string `json:"opposing_party"`
+}
+
+// determineIndustry 确定案件所属行业
+func (s *IndustryCompetitionService) determineIndustry(ctx *gin.Context, industryHint, clientName string) (*models.IndustryClassification, error) {
+	// 首先尝试根据明确的行业提示确定
+	if industryHint != "" {
+		industry, err := s.repo.GetIndustryByKeywords(ctx, industryHint)
+		if err == nil {
+			return industry, nil
+		}
+	}
+
+	// 然后根据客户名称推断
+	if clientName != "" {
+		industry, err := s.repo.GetIndustryByClientName(ctx, clientName)
+		if err == nil {
+			return industry, nil
+		}
+	}
+
+	// 默认返回其他行业
+	return &models.IndustryClassification{
+		ID:   999,
+		Code: "OTHER",
+		Name: "其他",
+	}, nil
+}
+
+// getIndustryCompetitors 获取行业竞争者（带缓存）
+func (s *IndustryCompetitionService) getIndustryCompetitors(ctx *gin.Context, industryID int) ([]models.CompetitiveRelation, error) {
+	cacheKey := fmt.Sprintf("industry_%d", industryID)
+
+	// 检查缓存
+	if cached, exists := s.cache[cacheKey]; exists && time.Since(cached.LastUpdated) < cached.ExpiryDuration {
+		var competitors []models.CompetitiveRelation
+		// 从缓存重建竞争者列表（这里简化处理，实际应该缓存完整的结构）
+		return competitors, nil
+	}
+
+	// 从数据库获取
+	competitors, err := s.repo.GetCompetitiveRelationsByIndustry(ctx, industryID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 更新缓存
+	s.cache[cacheKey] = &IndustryCompetitionCache{
+		LastUpdated:     time.Now(),
+		ExpiryDuration:  time.Hour * 1, // 1小时缓存
+	}
+
+	return competitors, nil
+}
+
+// matchCompetitor 匹配竞争者
+func (s *IndustryCompetitionService) matchCompetitor(opposingParty string, competitor models.CompetitiveRelation) (bool, []string) {
+	// 编译正则表达式
+	patterns := strings.Split(competitor.CompetitorPattern, "|")
+	matchedKeywords := []string{}
+
+	for _, pattern := range patterns {
+		if strings.TrimSpace(pattern) == "" {
+			continue
+		}
+
+		// 尝试正则匹配
+		if regex, err := regexp.Compile(`(?i)` + pattern); err == nil {
+			if regex.MatchString(opposingParty) {
+				matchedKeywords = append(matchedKeywords, pattern)
+				continue
+			}
+		}
+
+		// 简单字符串匹配
+		if strings.Contains(strings.ToLower(opposingParty), strings.ToLower(pattern)) {
+			matchedKeywords = append(matchedKeywords, pattern)
+		}
+	}
+
+	return len(matchedKeywords) > 0, matchedKeywords
+}

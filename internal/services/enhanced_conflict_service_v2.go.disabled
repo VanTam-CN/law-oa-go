@@ -1,0 +1,360 @@
+package services
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log"
+	"math"
+	"regexp"
+	"strings"
+	"time"
+
+	"law-oa-go/internal/models"
+	"law-oa-go/internal/repositories"
+
+	"github.com/gin-gonic/gin"
+)
+
+// EnhancedConflictServiceV2 重构的增强冲突检测服务
+type EnhancedConflictServiceV2 struct {
+	repo                     repositories.EnhancedConflictRepository
+	industryCompetitionSvc   *IndustryCompetitionServiceV2
+	riskAssessmentService    *RiskAssessmentServiceV2
+	conflictRuleEngine       *ConflictRuleEngineV2
+	logger                  *log.Logger
+}
+
+// NewEnhancedConflictServiceV2 创建新的增强冲突检测服务
+func NewEnhancedConflictServiceV2(repo repositories.EnhancedConflictRepository) *EnhancedConflictServiceV2 {
+	return &EnhancedConflictServiceV2{
+		repo:                   repo,
+		industryCompetitionSvc: NewIndustryCompetitionServiceV2(repo),
+		riskAssessmentService:  NewRiskAssessmentServiceV2(repo),
+		conflictRuleEngine:     NewConflictRuleEngineV2(repo),
+		logger:                 log.Default(),
+	}
+}
+
+// CheckConflictsV2 执行冲突检测 (重构版本)
+func (s *EnhancedConflictServiceV2) CheckConflictsV2(ctx *gin.Context, request *repositories.AdvancedConflictCheckRequest) (*repositories.ConflictAnalysisResult, error) {
+	startTime := time.Now()
+
+	// 1. 请求验证
+	validation := repositories.ValidateConflictRequest(request)
+	if !validation.IsValid {
+		return nil, fmt.Errorf("请求验证失败: %v", validation.Errors)
+	}
+
+	// 2. 生成请求ID
+	requestID := fmt.Sprintf("REQ_%d_%d", startTime.Unix(), request.LawyerID)
+
+	s.logger.Printf("🔍 开始增强冲突检测 - RequestID: %s, 律师: %d, 客户: %s", requestID, request.LawyerID, request.ClientName)
+
+	// 3. 初始化结果结构
+	result := &repositories.ConflictAnalysisResult{
+		RequestID:       requestID,
+		HasConflicts:    false,
+		ConflictLevel:   "NONE",
+		RiskScore:       0,
+		ConflictCases:   make([]*repositories.ConflictCaseDetail, 0),
+		Recommendations: make([]string, 0),
+		AnalysisSummary: &repositories.AnalysisSummary{
+			TotalCasesChecked:   0,
+			DirectConflicts:     0,
+			IndustryConflicts:   0,
+			NameSimilarityCases: 0,
+			RelatedConflicts:    0,
+			SearchScope:         request.SearchDepth,
+			SearchTimeRange:     fmt.Sprintf("%d年", request.SearchYears),
+		},
+		DetectionTime: startTime,
+	}
+
+	// 4. 检测各种类型的冲突
+	err := s.detectConflictTypes(ctx, request, result)
+	if err != nil {
+		s.logger.Printf("❌ 冲突检测失败: %v", err)
+		return nil, err
+	}
+
+	// 5. 计算总体风险等级
+	result.RiskScore = s.calculateOverallRiskScore(result)
+	result.ConflictLevel = s.determineRiskLevel(result.RiskScore)
+
+	// 6. 生成建议
+	result.Recommendations = s.generateRecommendations(result)
+
+	// 7. 设置持续时间
+	result.Duration = time.Since(startTime).Milliseconds()
+	result.DetectionTime = time.Now()
+
+	s.logger.Printf("✅ 冲突检测完成 - RequestID: %s, 发现冲突: %v, 风险等级: %s, 用时: %dms",
+		requestID, result.HasConflicts, result.ConflictLevel, result.Duration)
+
+	return result, nil
+}
+
+// detectConflictTypes 检测各种类型的冲突
+func (s *EnhancedConflictServiceV2) detectConflictTypes(ctx context.Context, request *repositories.AdvancedConflictCheckRequest, result *repositories.ConflictAnalysisResult) error {
+	// 1. 检测直接客户冲突
+	directConflicts, err := s.repo.GetPotentialConflicts(ctx, request.LawyerID, request.ClientName, request.OpposingParty)
+	if err != nil {
+		s.logger.Printf("检测直接冲突失败: %v", err)
+	} else {
+		for _, conflictCase := range directConflicts {
+			caseDetail := &repositories.ConflictCaseDetail{
+				Case:           conflictCase,
+				ConflictType:   "direct_client_conflict",
+				RiskScore:      90, // 直接冲突风险高
+				ConflictReason:  "检测到直接客户冲突",
+				ImpactLevel:    "HIGH",
+			}
+			result.ConflictCases = append(result.ConflictCases, caseDetail)
+			result.AnalysisSummary.DirectConflicts++
+		}
+	}
+
+	// 2. 检测行业竞争冲突
+	if request.ClientIndustry != "" {
+		industryConflicts, err := s.repo.GetPotentialConflictsAdvanced(ctx, request)
+		if err != nil {
+			s.logger.Printf("检测行业冲突失败: %v", err)
+		} else {
+			for _, conflictCase := range industryConflicts {
+				caseDetail := &repositories.ConflictCaseDetail{
+					Case:           conflictCase,
+					ConflictType:   "industry_competition",
+					RiskScore:      75, // 行业冲突风险中等偏高
+					ConflictReason:  "检测到行业竞争关系",
+					ImpactLevel:    "MEDIUM",
+				}
+				result.ConflictCases = append(result.ConflictCases, caseDetail)
+				result.AnalysisSummary.IndustryConflicts++
+			}
+		}
+	}
+
+	// 3. 检测名称相似性冲突
+	nameSimilarityConflicts := s.detectNameSimilarityConflicts(ctx, request, result)
+	for _, caseDetail := range nameSimilarityConflicts {
+		result.ConflictCases = append(result.ConflictCases, caseDetail)
+		result.AnalysisSummary.NameSimilarityCases++
+	}
+
+	// 4. 检测相关方冲突
+	if request.IncludeRelated {
+		relatedConflicts := s.detectRelatedConflicts(ctx, request, result)
+		for _, caseDetail := range relatedConflicts {
+			result.ConflictCases = append(result.ConflictCases, caseDetail)
+			result.AnalysisSummary.RelatedConflicts++
+		}
+	}
+
+	// 5. 更新冲突状态
+	result.HasConflicts = len(result.ConflictCases) > 0
+	result.AnalysisSummary.TotalCasesChecked = result.AnalysisSummary.DirectConflicts +
+		result.AnalysisSummary.IndustryConflicts +
+		result.AnalysisSummary.NameSimilarityCases +
+		result.AnalysisSummary.RelatedConflicts
+
+	return nil
+}
+
+// detectNameSimilarityConflicts 检测名称相似性冲突
+func (s *EnhancedConflictServiceV2) detectNameSimilarityConflicts(ctx context.Context, request *repositories.AdvancedConflictCheckRequest, result *repositories.ConflictAnalysisResult) []*repositories.ConflictCaseDetail {
+	// 实现基于编辑距离的名称相似性检测
+	var conflicts []*repositories.ConflictCaseDetail
+
+	// 模拟实现 - 实际应该查询数据库
+	if s.isNameSimilar(request.ClientName, request.OpposingParty, 0.8) {
+		// 创建虚拟案件用于演示
+		virtualCase := &models.Case{
+			ID:            9999,
+			Title:        "相似客户案件",
+			Description:   "检测到客户名称高度相似",
+			ClientID:     1,
+			CaseType:     request.CaseType,
+			Status:       "in_progress",
+			OpposingParty: request.OpposingParty,
+			ClientName:   request.ClientName,
+			CreatedAt:    time.Now(),
+			UpdatedAt:    time.Now(),
+		}
+
+		conflicts = append(conflicts, &repositories.ConflictCaseDetail{
+			Case:           virtualCase,
+			ConflictType:   "name_similarity",
+			RiskScore:      60,
+			ConflictReason:  "检测到客户名称高度相似",
+			ImpactLevel:    "MEDIUM",
+		})
+	}
+
+	return conflicts
+}
+
+// detectRelatedConflicts 检测相关方冲突
+func (s *EnhancedConflictServiceV2) detectRelatedConflicts(ctx context.Context, request *repositories.AdvancedConflictCheckRequest, result *repositories.ConflictAnalysisResult) []*repositories.ConflictCaseDetail {
+	// 实现相关方冲突检测逻辑
+	var conflicts []*repositories.ConflictCaseDetail
+
+	// 模拟实现 - 实际应该查询企业关联信息
+	if request.TeamMembers != nil && len(request.TeamMembers) > 0 {
+		for _, member := range request.TeamMembers {
+			// 检查团队成员的潜在冲突
+			// 这里应该查询团队成员的代理案件
+		}
+	}
+
+	return conflicts
+}
+
+// isNameSimilar 判断两个名称是否相似
+func (s *EnhancedConflictServiceV2) isNameSimilar(name1, name2 string, threshold float64) bool {
+	if name1 == "" || name2 == "" {
+		return false
+	}
+
+	distance := s.levenshteinDistance(strings.ToLower(name1), strings.ToLower(name2))
+	maxLen := maxV2(len(name1), len(name2))
+	if maxLen == 0 {
+		return true
+	}
+
+	similarity := 1.0 - float64(distance)/float64(maxLen)
+	return similarity >= threshold
+}
+
+// levenshteinDistance 计算编辑距离
+func (s *EnhancedConflictServiceV2) levenshteinDistance(s1, s2 string) int {
+	if len(s1) < len(s2) {
+		s1, s2 = s2, s1
+	}
+	if len(s2) == 0 {
+		return len(s1)
+	}
+
+	previousRow := make([]int, len(s2)+1)
+	for i := 0; i <= len(s2); i++ {
+		previousRow[i] = i
+	}
+
+	for i, c1 := range s1 {
+		currentRow := previousRow[0] + 1
+		previousRow[0] = i + 1
+
+		for j, c2 := range s2 {
+			insertCost := previousRow[j] + 1
+			deleteCost := currentRow[j] + 1
+			replaceCost := previousRow[j]
+
+			if c1 != c2 {
+				replaceCost++
+			}
+
+			currentRow[j] = minV2(minV2(insertCost, deleteCost), replaceCost)
+			previousRow[j] = currentRow[j]
+		}
+	}
+
+	return previousRow[len(s2)]
+}
+
+func minV2(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func maxV2(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+// calculateOverallRiskScore 计算总体风险分数
+func (s *EnhancedConflictServiceV2) calculateOverallRiskScore(result *repositories.ConflictAnalysisResult) int {
+	if len(result.ConflictCases) == 0 {
+		return 0
+	}
+
+	totalScore := 0
+	weightSum := 0
+
+	// 根据冲突类型加权计算风险分数
+	for _, conflict := range result.ConflictCases {
+		var weight float64
+		switch conflict.ConflictType {
+		case "direct_client_conflict":
+			weight = 1.0 // 最高权重
+		case "industry_competition":
+			weight = 0.8
+		case "name_similarity":
+			weight = 0.6
+		case "related_conflicts":
+			weight = 0.4
+		default:
+			weight = 0.5
+		}
+
+		totalScore += int(float64(conflict.RiskScore) * weight)
+		weightSum += weight
+	}
+
+	if weightSum > 0 {
+		return totalScore / int(weightSum)
+	}
+	return totalScore
+}
+
+// determineRiskLevel 确定风险等级
+func (s *EnhancedConflictServiceV2) determineRiskLevel(score int) string {
+	switch {
+	case score >= 80:
+		return "HIGH"
+	case score >= 60:
+		return "MEDIUM"
+	case score >= 40:
+		return "LOW"
+	default:
+		return "NONE"
+	}
+}
+
+// generateRecommendations 生成建议
+func (s *EnhancedConflictServiceV2) generateRecommendations(result *repositories.ConflictAnalysisResult) []string {
+	recommendations := make([]string, 0)
+
+	if result.HasConflicts {
+		recommendations = append(recommendations, "⚠️ 检测到潜在利益冲突，建议进行详细审查")
+		recommendations = append(recommendations, "📋 建议咨询律师或合规部门确认")
+
+		if result.ConflictLevel == "HIGH" {
+			recommendations = append(recommendations, "🚨 高风险冲突，强烈建议避免接受此案件")
+		}
+
+		// 根据冲突类型添加具体建议
+		conflictTypes := make(map[string]bool)
+		for _, conflict := range result.ConflictCases {
+			conflictTypes[conflict.ConflictType] = true
+		}
+
+		if conflictTypes["industry_competition"] {
+			recommendations = append(recommendations, "🏭 检测到行业竞争关系，建议评估市场影响")
+		}
+
+		if conflictTypes["direct_client_conflict"] {
+			recommendations = append(recommendations, "👥 检测到直接客户冲突，必须避免代理")
+		}
+	} else {
+		recommendations = append(recommendations, "✅ 未发现明显利益冲突")
+		recommendations = append(recommendations, "📝 建议在案件进行过程中持续监控")
+	}
+
+	recommendations = append(recommendations, "🔍 如发现新的相关信息，请及时进行补充检查")
+
+	return recommendations
+}

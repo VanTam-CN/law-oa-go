@@ -16,7 +16,7 @@ export interface Client {
   source?: string;
   createdAt?: string;
   updatedAt?: string;
-  remark?: string;
+  notes?: string;
 }
 
 export interface ClientListResponse {
@@ -44,8 +44,22 @@ export interface ClientQueryParams {
 
 export const clientService = {
   // 获取客户列表
-  getClientList: (params: ClientQueryParams) =>
-    get<ClientListResponse>('/clients', params),
+  getClientList: (params: ClientQueryParams) => {
+    // 参数映射：前端字段名 -> 后端期望的字段名
+    const mappedParams = {
+      page: params.pageNum || 1,
+      page_size: Math.min(params.pageSize || 10, 100), // 🔧 修复：限制最大值为100，符合后端验证规则
+      search: params.name, // 🔧 修复：将前端的name映射为后端的search
+      type: params.type,
+      status: params.status
+    };
+    // 移除空值参数，但保留空字符串以支持搜索所有客户
+    const filteredParams = Object.fromEntries(
+      Object.entries(mappedParams).filter(([_, value]) => value !== undefined)
+    );
+    console.log('客户搜索参数:', filteredParams); // 调试日志
+    return get<ClientListResponse>('/clients', filteredParams);
+  },
 
   // 获取客户详情
   getClient: (id: number) => get<Client>(`/clients/${id}`),

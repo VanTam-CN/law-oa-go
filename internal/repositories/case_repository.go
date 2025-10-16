@@ -83,19 +83,34 @@ func (r *CaseRepositoryImpl) List(ctx context.Context, params *CaseListParams) (
 		query = query.Where("lawyer_id = ?", params.LawyerID)
 	}
 	if params.Search != "" {
-		// 性能优化：智能搜索策略
-		searchLower := strings.ToLower(params.Search)
+		// 改进的搜索策略：支持多词搜索
+		searchTerms := strings.Fields(strings.TrimSpace(params.Search))
 
-		if len(params.Search) >= 3 {
-			// 对于3个字符以上的搜索，使用包含匹配以保持兼容性
-			// 在实际项目中，可以考虑使用全文索引来优化性能
+		if len(searchTerms) == 1 {
+			// 单词搜索：使用传统LIKE搜索
+			searchLower := strings.ToLower(params.Search)
 			fullSearchTerm := "%" + searchLower + "%"
 			query = query.Where("LOWER(title) LIKE ? OR LOWER(description) LIKE ?", fullSearchTerm, fullSearchTerm)
 		} else {
-			// 对于短搜索词，使用完整匹配但限制搜索范围
-			fullSearchTerm := "%" + searchLower + "%"
-			// 优先搜索标题，因为标题更重要且通常较短
-			query = query.Where("LOWER(title) LIKE ? OR LOWER(description) LIKE ?", fullSearchTerm, fullSearchTerm)
+			// 多词搜索：为每个词创建独立的搜索条件，然后组合
+			// 这样可以找到包含所有搜索词的记录
+			searchConditions := make([]string, 0, len(searchTerms)*2)
+			searchArgs := make([]interface{}, 0, len(searchTerms)*2)
+
+			for _, term := range searchTerms {
+				if strings.TrimSpace(term) != "" {
+					searchLower := strings.ToLower(term)
+					fullSearchTerm := "%" + searchLower + "%"
+					searchConditions = append(searchConditions, "LOWER(title) LIKE ?", "LOWER(description) LIKE ?")
+					searchArgs = append(searchArgs, fullSearchTerm, fullSearchTerm)
+				}
+			}
+
+			if len(searchConditions) > 0 {
+				// 使用OR连接所有搜索条件，这样只要包含任何一个词就能匹配
+				combinedCondition := strings.Join(searchConditions, " OR ")
+				query = query.Where("("+combinedCondition+")", searchArgs...)
+			}
 		}
 	}
 

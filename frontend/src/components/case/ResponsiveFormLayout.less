@@ -1,0 +1,351 @@
+// 响应式表单布局样式 - 专为1080p显示器优化
+.responsive-form-layout {
+  width: 100%;
+  min-height: 100vh;
+  background: #fff;
+  transition: all 0.3s ease;
+
+  // 基础行样式
+  .responsive-form-row {
+    margin-bottom: var(--form-gap, 16px);
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  // 表单项样式
+  .responsive-form-item {
+    padding: var(--form-padding, 16px);
+    transition: all 0.2s ease;
+
+    // 响应式内边距优化
+    .ant-form-item {
+      margin-bottom: var(--form-gap, 16px);
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+
+    // 标签样式优化
+    .ant-form-item-label {
+      font-weight: 500;
+      color: rgba(0, 0, 0, 0.85);
+
+      // 1080p紧凑模式下减少标签宽度
+      .responsive-form-layout-compact & {
+        min-width: 80px;
+        font-size: 13px;
+      }
+    }
+
+    // 输入控件样式
+    .ant-input,
+    .ant-select-selector,
+    .ant-picker,
+    .ant-input-number,
+    .ant-cascader-picker,
+    .ant-tree-select-selector {
+      transition: all 0.2s ease;
+
+      &:hover {
+        border-color: #4096ff;
+      }
+
+      &:focus,
+      &.ant-input-focused {
+        border-color: #1890ff;
+        box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+      }
+    }
+  }
+
+  // 紧凑模式样式
+  &.responsive-form-layout-compact {
+    --form-gap: 12px;
+    --form-padding: 12px;
+
+    .responsive-form-item {
+      .ant-form-item {
+        margin-bottom: var(--form-gap, 12px);
+      }
+
+      .ant-form-item-label {
+        padding-bottom: 4px;
+      }
+
+      // 减少组件高度
+      .ant-input,
+      .ant-select-selector,
+      .ant-picker,
+      .ant-input-number {
+        height: 32px;
+        font-size: 13px;
+        line-height: 30px;
+      }
+
+      .ant-btn {
+        height: 32px;
+        font-size: 13px;
+        padding: 4px 12px;
+      }
+    }
+  }
+
+  // 不同断点下的优化
+  &.responsive-form-layout-xs {
+    // 超小屏幕：单列布局
+    max-width: 480px;
+    margin: 0 auto;
+
+    .responsive-form-item {
+      width: 100%;
+    }
+  }
+
+  &.responsive-form-layout-sm {
+    // 小屏幕：单列布局
+    max-width: 576px;
+    margin: 0 auto;
+
+    .responsive-form-item {
+      width: 100%;
+    }
+  }
+
+  &.responsive-form-layout-md {
+    // 中等屏幕：双列布局
+    max-width: 768px;
+    margin: 0 auto;
+
+    .responsive-form-item {
+      &:nth-child(odd) {
+        clear: both;
+      }
+    }
+  }
+
+  &.responsive-form-layout-lg {
+    // 1080p大屏幕：优化布局
+    max-width: 1920px;
+    margin: 0 auto;
+    padding: 16px 24px;
+
+    // 针对1080p的特殊优化
+    .responsive-form-row {
+      .ant-row {
+        margin-left: calc(var(--form-gap, 12px) * -1);
+        margin-right: calc(var(--form-gap, 12px) * -1);
+      }
+    }
+
+    // 三列布局优化
+    .responsive-form-item {
+      flex: 0 0 calc(33.333% - var(--form-gap, 12px));
+
+      &:nth-child(3n) {
+        margin-right: 0;
+      }
+    }
+
+    // 双列布局优化
+    &:not(.responsive-form-layout-columns-3) .responsive-form-item {
+      flex: 0 0 calc(50% - var(--form-gap, 12px));
+
+      &:nth-child(2n) {
+        margin-right: 0;
+      }
+    }
+  }
+
+  &.responsive-form-layout-xl {
+    // 超大屏幕：多列布局
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px 32px;
+
+    // 四列布局支持
+    .responsive-form-layout-columns-4 .responsive-form-item {
+      flex: 0 0 calc(25% - var(--form-gap, 16px));
+
+      &:nth-child(4n) {
+        margin-right: 0;
+      }
+    }
+
+    // 三列布局优化
+    .responsive-form-layout-columns-3 .responsive-form-item {
+      flex: 0 0 calc(33.333% - var(--form-gap, 16px));
+
+      &:nth-child(3n) {
+        margin-right: 0;
+      }
+    }
+  }
+
+  &.responsive-form-layout-xxl {
+    // 超超大屏幕：更多列布局
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 24px 40px;
+  }
+
+  // 响应式提示样式
+  .responsive-hint {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(24, 144, 255, 0.9);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    animation: slideInUp 0.3s ease-out;
+    opacity: 0;
+    transform: translateY(20px);
+
+    &.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .responsive-hint-text {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    // 5秒后自动隐藏
+    @keyframes fadeOut {
+      0% { opacity: 1; }
+      70% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    &.fade-out {
+      animation: fadeOut 2s ease-in-out 3s forwards;
+    }
+  }
+
+  // 1080p特定优化
+  @media screen and (min-width: 992px) and (max-width: 1200px) {
+    &.responsive-form-layout-lg {
+      // 减少外边距，充分利用屏幕空间
+      padding: 12px 16px;
+
+      // 优化表单间距
+      .responsive-form-row {
+        margin-bottom: 12px;
+      }
+
+      // 紧凑的标签样式
+      .ant-form-item-label {
+        font-size: 13px;
+        line-height: 1.4;
+        margin-bottom: 4px;
+      }
+
+      // 减少控件高度
+      .ant-input,
+      .ant-select-selector,
+      .ant-picker {
+        height: 36px;
+        font-size: 14px;
+      }
+
+      // 优化按钮尺寸
+      .ant-btn {
+        height: 36px;
+        padding: 6px 16px;
+        font-size: 14px;
+      }
+
+      // 减少卡片内边距
+      .ant-card {
+        .ant-card-body {
+          padding: 16px;
+        }
+      }
+    }
+  }
+
+  // 高度优化的滚动
+  &.responsive-form-layout-scrollable {
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+
+    // 美化滚动条
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 3px;
+
+      &:hover {
+        background: #a8a8a8;
+      }
+    }
+  }
+
+  // 焦点状态
+  &:focus-within {
+    .responsive-form-item {
+      border-radius: 6px;
+      background: rgba(24, 144, 255, 0.02);
+
+      &:focus {
+        background: rgba(24, 144, 255, 0.05);
+      }
+    }
+  }
+
+  // 性能优化：减少重排和重绘
+  .responsive-form-item {
+    contain: layout style;
+    will-change: transform;
+  }
+
+  // 无障碍支持
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+}
+
+// 动画定义
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// 深色模式支持
+@media (prefers-color-scheme: dark) {
+  .responsive-form-layout {
+    background: #1f1f1f;
+    color: #fff;
+
+    .responsive-hint {
+      background: rgba(64, 150, 255, 0.9);
+    }
+  }
+}

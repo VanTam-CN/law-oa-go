@@ -1,0 +1,225 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "律师事务所OA系统 - 系统概览",
+    "tags": ["law-oa", "overview", "system"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "系统健康状态",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "up{job=\"law-oa-app\"}",
+            "legendFormat": "应用服务",
+            "refId": "A"
+          },
+          {
+            "expr": "mysql_up",
+            "legendFormat": "MySQL数据库",
+            "refId": "B"
+          },
+          {
+            "expr": "redis_up",
+            "legendFormat": "Redis缓存",
+            "refId": "C"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "green", "value": 1}
+              ]
+            },
+            "mappings": [
+              {"options": {"0": {"text": "宕机", "color": "red"}}, "type": "value"},
+              {"options": {"1": {"text": "正常", "color": "green"}}, "type": "value"}
+            ],
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "API请求率",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "rate(http_requests_total[5m])",
+            "legendFormat": "{{method}} {{path}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {"label": "请求/秒", "min": 0}
+        ]
+      },
+      {
+        "id": 3,
+        "title": "API响应时间",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "P50",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "P95",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "P99",
+            "refId": "C"
+          }
+        ],
+        "yAxes": [
+          {"label": "秒", "min": 0}
+        ]
+      },
+      {
+        "id": 4,
+        "title": "错误率",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "targets": [
+          {
+            "expr": "rate(http_requests_total{status=~\"4..\"}[5m]) / rate(http_requests_total[5m]) * 100",
+            "legendFormat": "4xx错误率",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(http_requests_total{status=~\"5..\"}[5m]) / rate(http_requests_total[5m]) * 100",
+            "legendFormat": "5xx错误率",
+            "refId": "B"
+          }
+        ],
+        "yAxes": [
+          {"label": "百分比", "min": 0, "max": 100}
+        ]
+      },
+      {
+        "id": 5,
+        "title": "CPU使用率",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 16},
+        "targets": [
+          {
+            "expr": "100 - (avg by(instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+            "legendFormat": "{{instance}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {"label": "百分比", "min": 0, "max": 100}
+        ]
+      },
+      {
+        "id": 6,
+        "title": "内存使用率",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 6, "x": 6, "y": 16},
+        "targets": [
+          {
+            "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+            "legendFormat": "{{instance}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {"label": "百分比", "min": 0, "max": 100}
+        ]
+      },
+      {
+        "id": 7,
+        "title": "磁盘使用率",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 6, "x": 12, "y": 16},
+        "targets": [
+          {
+            "expr": "(1 - (node_filesystem_avail_bytes{fstype!=\"tmpfs\"} / node_filesystem_size_bytes{fstype!=\"tmpfs\"})) * 100",
+            "legendFormat": "{{instance}} {{mountpoint}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {"label": "百分比", "min": 0, "max": 100}
+        ]
+      },
+      {
+        "id": 8,
+        "title": "网络流量",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 6, "x": 18, "y": 16},
+        "targets": [
+          {
+            "expr": "rate(node_network_receive_bytes_total[5m]) * 8",
+            "legendFormat": "入站 {{instance}}",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(node_network_transmit_bytes_total[5m]) * 8",
+            "legendFormat": "出站 {{instance}}",
+            "refId": "B"
+          }
+        ],
+        "yAxes": [
+          {"label": "bits/sec", "min": 0}
+        ]
+      },
+      {
+        "id": 9,
+        "title": "MySQL连接数",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
+        "targets": [
+          {
+            "expr": "mysql_global_status_threads_connected",
+            "legendFormat": "当前连接数",
+            "refId": "A"
+          },
+          {
+            "expr": "mysql_global_variables_max_connections",
+            "legendFormat": "最大连接数",
+            "refId": "B"
+          }
+        ],
+        "yAxes": [
+          {"label": "连接数", "min": 0}
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Redis内存使用",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
+        "targets": [
+          {
+            "expr": "redis_memory_used_bytes",
+            "legendFormat": "已使用内存",
+            "refId": "A"
+          },
+          {
+            "expr": "redis_memory_max_bytes",
+            "legendFormat": "最大内存",
+            "refId": "B"
+          }
+        ],
+        "yAxes": [
+          {"label": "字节", "min": 0}
+        ]
+      }
+    ],
+    "time": {"from": "now-1h", "to": "now"},
+    "refresh": "30s"
+  }
+}

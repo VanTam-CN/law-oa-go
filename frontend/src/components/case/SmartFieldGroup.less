@@ -1,0 +1,585 @@
+/**
+ * SmartFieldGroup组件样式
+ * 支持1080p优化和响应式设计
+ */
+
+.smart-field-group {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+
+  // 折叠面板样式
+  .smart-field-collapse {
+    .ant-collapse-item {
+      border: 1px solid #d9d9d9;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      overflow: hidden;
+      transition: all 0.3s ease;
+
+      &:hover {
+        border-color: #4096ff;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      }
+
+      .ant-collapse-header {
+        padding: 16px 20px;
+        background: #fafafa;
+        border-bottom: 1px solid #f0f0f0;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+
+        &:hover {
+          background: #f5f5f5;
+        }
+
+        .smart-group-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          width: 100%;
+
+          .group-title-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            .group-icon {
+              display: flex;
+              align-items: center;
+              color: #1890ff;
+              font-size: 16px;
+            }
+
+            .group-title {
+              font-weight: 600;
+              font-size: 16px;
+              color: #262626;
+              flex: 1;
+            }
+          }
+
+          .collapse-toggle-icon {
+            color: #8c8c8c;
+            font-size: 14px;
+            transition: transform 0.3s ease;
+            margin-left: 8px;
+          }
+
+          .compact-indicator {
+            opacity: 0.8;
+            font-size: 12px;
+          }
+        }
+      }
+
+      .ant-collapse-content {
+        border-top: none;
+        background: #fff;
+
+        .ant-collapse-content-box {
+          padding: 20px;
+        }
+      }
+
+      &.active {
+        .ant-collapse-header {
+          background: #e6f7ff;
+          border-bottom-color: #91caff;
+
+          .collapse-toggle-icon {
+            color: #1890ff;
+            transform: rotate(180deg);
+          }
+        }
+      }
+    }
+  }
+
+  // 分组内容样式
+  .smart-group-content {
+    .smart-group-description {
+      margin-bottom: 20px;
+      padding: 12px 16px;
+      background: #f9f9f9;
+      border-left: 4px solid #1890ff;
+      border-radius: 4px;
+
+      .group-description-text {
+        margin: 0;
+        color: #595959;
+        font-size: 14px;
+        line-height: 1.6;
+      }
+    }
+
+    .smart-fields-container {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+
+      .smart-field {
+        margin-bottom: 0;
+
+        .ant-form-item-label {
+          label {
+            font-weight: 500;
+            color: #262626;
+          }
+        }
+
+        .ant-form-item-explain-error {
+          font-size: 12px;
+          margin-top: 4px;
+        }
+
+        &.smart-field-priority-high {
+          .ant-form-item-label label {
+            color: #1890ff;
+            font-weight: 600;
+          }
+        }
+
+        &.smart-field-priority-low {
+          opacity: 0.8;
+
+          .ant-form-item-label label {
+            color: #8c8c8c;
+          }
+        }
+      }
+    }
+  }
+
+  // 空状态样式
+  .smart-field-group-empty {
+    margin: 20px 0;
+    border-radius: 8px;
+  }
+
+  // 优化提示样式
+  .smart-field-optimization-hint {
+    margin-top: 16px;
+    border-radius: 6px;
+    background: #f0f5ff;
+    border: 1px solid #adc6ff;
+
+    .ant-alert {
+      border: none;
+      background: transparent;
+      padding: 12px 16px;
+
+      .ant-alert-message {
+        font-weight: 500;
+        color: #0958d9;
+      }
+
+      .ant-alert-description {
+        color: #0958d9;
+        opacity: 0.8;
+      }
+    }
+  }
+
+  // 1080p紧凑模式样式
+  &.smart-field-group-compact {
+    .smart-field-collapse {
+      .ant-collapse-item {
+        margin-bottom: 12px;
+        border-radius: 6px;
+
+        .ant-collapse-header {
+          padding: 12px 16px;
+          background: #fafafa;
+
+          .smart-group-header {
+            .group-title-content {
+              .group-icon {
+                font-size: 14px;
+              }
+
+              .group-title {
+                font-size: 14px;
+              }
+            }
+
+            .collapse-toggle-icon {
+              font-size: 12px;
+            }
+          }
+        }
+
+        .ant-collapse-content {
+          .ant-collapse-content-box {
+            padding: 16px;
+          }
+        }
+      }
+    }
+
+    .smart-group-content {
+      .smart-group-description {
+        margin-bottom: 16px;
+        padding: 10px 12px;
+
+        .group-description-text {
+          font-size: 13px;
+        }
+      }
+
+      .smart-fields-container {
+        gap: 12px;
+
+        .smart-field {
+          .ant-form-item-label {
+            label {
+              font-size: 13px;
+            }
+          }
+
+          .ant-form-item-explain-error {
+            font-size: 11px;
+          }
+
+          .ant-input,
+          .ant-select-selector,
+          .ant-picker {
+            height: 32px;
+            font-size: 13px;
+          }
+
+          .ant-input-number {
+            height: 32px;
+
+            input {
+              height: 30px;
+              font-size: 13px;
+            }
+          }
+        }
+      }
+    }
+
+    .smart-field-optimization-hint {
+      margin-top: 12px;
+      border-radius: 4px;
+
+      .ant-alert {
+        padding: 10px 12px;
+
+        .ant-alert-message {
+          font-size: 13px;
+        }
+
+        .ant-alert-description {
+          font-size: 12px;
+        }
+      }
+    }
+  }
+}
+
+// 响应式设计
+@media (max-width: 1200px) {
+  .smart-field-group {
+    .smart-field-collapse {
+      .ant-collapse-item {
+        .ant-collapse-header {
+          padding: 14px 18px;
+
+          .smart-group-header {
+            .group-title-content {
+              .group-title {
+                font-size: 15px;
+              }
+            }
+          }
+        }
+
+        .ant-collapse-content {
+          .ant-collapse-content-box {
+            padding: 18px;
+          }
+        }
+      }
+    }
+
+    .smart-group-content {
+      .smart-fields-container {
+        gap: 14px;
+      }
+    }
+  }
+}
+
+@media (max-width: 992px) {
+  .smart-field-group {
+    .smart-field-collapse {
+      .ant-collapse-item {
+        margin-bottom: 14px;
+
+        .ant-collapse-header {
+          padding: 13px 16px;
+
+          .smart-group-header {
+            .group-title-content {
+              gap: 6px;
+
+              .group-icon {
+                font-size: 14px;
+              }
+
+              .group-title {
+                font-size: 14px;
+              }
+            }
+          }
+        }
+
+        .ant-collapse-content {
+          .ant-collapse-content-box {
+            padding: 16px;
+          }
+        }
+      }
+    }
+
+    .smart-group-content {
+      .smart-group-description {
+        margin-bottom: 16px;
+        padding: 10px 14px;
+
+        .group-description-text {
+          font-size: 13px;
+        }
+      }
+
+      .smart-fields-container {
+        gap: 14px;
+
+        .smart-field {
+          .ant-form-item-label label {
+            font-size: 13px;
+          }
+
+          .ant-input,
+          .ant-select-selector,
+          .ant-picker {
+            height: 36px;
+          }
+
+          .ant-input-number {
+            height: 36px;
+
+            input {
+              height: 34px;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .smart-field-group {
+    .smart-field-collapse {
+      .ant-collapse-item {
+        margin-bottom: 12px;
+        border-radius: 6px;
+
+        .ant-collapse-header {
+          padding: 12px 14px;
+
+          .smart-group-header {
+            .group-title-content {
+              .group-title {
+                font-size: 13px;
+              }
+            }
+
+            .collapse-toggle-icon {
+              font-size: 12px;
+            }
+
+            .compact-indicator {
+              display: none;
+            }
+          }
+        }
+
+        .ant-collapse-content {
+          .ant-collapse-content-box {
+            padding: 14px;
+          }
+        }
+      }
+    }
+
+    .smart-group-content {
+      .smart-group-description {
+        margin-bottom: 14px;
+        padding: 8px 12px;
+
+        .group-description-text {
+          font-size: 12px;
+        }
+      }
+
+      .smart-fields-container {
+        gap: 12px;
+
+        .smart-field {
+          .ant-form-item-label label {
+            font-size: 12px;
+          }
+
+          .ant-input,
+          .ant-select-selector,
+          .ant-picker {
+            height: 32px;
+            font-size: 12px;
+          }
+
+          .ant-input-number {
+            height: 32px;
+
+            input {
+              height: 30px;
+              font-size: 12px;
+            }
+          }
+        }
+      }
+    }
+
+    .smart-field-optimization-hint {
+      margin-top: 10px;
+
+      .ant-alert {
+        padding: 8px 12px;
+
+        .ant-alert-message {
+          font-size: 12px;
+        }
+
+        .ant-alert-description {
+          font-size: 11px;
+        }
+      }
+    }
+  }
+}
+
+// 深色主题支持
+@media (prefers-color-scheme: dark) {
+  .smart-field-group {
+    .smart-field-collapse {
+      .ant-collapse-item {
+        border-color: #434343;
+        background: #141414;
+
+        .ant-collapse-header {
+          background: #1f1f1f;
+          border-bottom-color: #303030;
+
+          .smart-group-header {
+            .group-title-content {
+              .group-title {
+                color: #fff;
+              }
+            }
+          }
+        }
+
+        .ant-collapse-content {
+          background: #141414;
+        }
+      }
+    }
+
+    .smart-group-content {
+      .smart-group-description {
+        background: #262626;
+        border-left-color: #1890ff;
+
+        .group-description-text {
+          color: #a6a6a6;
+        }
+      }
+    }
+  }
+}
+
+// 动画效果
+.smart-field-group {
+  .smart-field-collapse {
+    .ant-collapse-item {
+      .ant-collapse-content {
+        overflow: hidden;
+        transition: all 0.3s ease;
+      }
+    }
+  }
+
+  // 字段显示/隐藏动画
+  .smart-field {
+    transition: all 0.3s ease;
+    opacity: 1;
+    transform: translateY(0);
+
+    &.field-hidden {
+      opacity: 0;
+      transform: translateY(-10px);
+      height: 0;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    &.field-visible {
+      animation: fadeInUp 0.3s ease;
+    }
+  }
+}
+
+// 淡入动画
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// 高对比度模式支持
+@media (prefers-contrast: high) {
+  .smart-field-group {
+    .smart-field-collapse {
+      .ant-collapse-item {
+        border-width: 2px;
+
+        .ant-collapse-header {
+          border-bottom-width: 2px;
+
+          .smart-group-header {
+            .group-title-content {
+              .group-title {
+                font-weight: 700;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .smart-group-content {
+      .smart-group-description {
+        border-left-width: 3px;
+      }
+    }
+  }
+}

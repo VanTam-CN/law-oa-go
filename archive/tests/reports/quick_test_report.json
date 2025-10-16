@@ -1,0 +1,59 @@
+{
+  "results": {
+    "login": true,
+    "cases": {
+      "success": true,
+      "total": 20,
+      "cases": 10
+    },
+    "clients": {
+      "success": true,
+      "clients": 0
+    },
+    "lawyers": {
+      "success": true,
+      "lawyers": 0
+    },
+    "conflict": {
+      "success": true,
+      "hasConflict": false
+    },
+    "dataIntegrity": {
+      "success": true,
+      "clientLinkRate": 0,
+      "lawyerLinkRate": 0,
+      "missingClientNames": 0,
+      "missingLawyerNames": 0
+    }
+  },
+  "issues": [
+    "案件-客户关联率过低: 0.0%",
+    "案件-律师关联率过低: 0.0%"
+  ],
+  "fixes": [
+    {
+      "priority": "medium",
+      "issue": "数据关联不完整",
+      "solution": "检查数据库外键约束和数据完整性",
+      "file": "migrations/"
+    },
+    {
+      "priority": "medium",
+      "issue": "数据关联不完整",
+      "solution": "检查数据库外键约束和数据完整性",
+      "file": "migrations/"
+    },
+    {
+      "priority": "high",
+      "issue": "前端数据显示问题",
+      "solution": "修复前端API调用和数据映射逻辑",
+      "file": "frontend/src/pages/case/CaseManagement.tsx"
+    },
+    {
+      "priority": "medium",
+      "issue": "界面风格不统一",
+      "solution": "统一各页面的UI组件和样式",
+      "file": "frontend/src/pages/"
+    }
+  ]
+}

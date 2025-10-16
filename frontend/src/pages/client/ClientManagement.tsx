@@ -28,17 +28,23 @@ import {
   ReloadOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { clientService } from '@/api/client';
+import { clientService } from '@/services/client';
 import './ClientManagement.less';
 
 interface Client {
   id?: number;
   name: string;
   type: string;
-  contact: string;
   phone: string;
   email: string;
   address: string;
+  idCard?: string;
+  company?: string;
+  industry?: string;
+  contactPerson?: string;
+  contactPhone?: string;
+  source?: string;
+  notes?: string;
   status: string;
   createdAt?: string;
   updatedAt?: string;
@@ -62,6 +68,9 @@ const ClientManagement: React.FC = () => {
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [stats, setStats] = useState<ClientStats | null>(null);
   const [form] = Form.useForm();
+
+  // 监听客户类型字段变化
+  const clientType = Form.useWatch('type', form);
   
   // 查询参数
   const [queryParams, setQueryParams] = useState({
@@ -71,6 +80,13 @@ const ClientManagement: React.FC = () => {
     pageNum: 1,
     pageSize: 10
   });
+
+  // 搜索表单状态
+  const [searchForm, setSearchForm] = useState({
+    name: '',
+    type: '',
+    status: ''
+  });
   
   const [total, setTotal] = useState<number>(0);
 
@@ -79,9 +95,50 @@ const ClientManagement: React.FC = () => {
     setLoading(true);
     try {
       const res = await clientService.getClientList(queryParams);
-      setClients(res.data || res.list || []);
-      setTotal(res.pagination?.total || res.total || 0);
+      console.log('客户列表API响应:', res); // 调试日志
+
+      // 处理新API格式的响应数据
+      let clientData = [];
+      let totalCount = 0;
+
+      if (res.success) {
+        // 新API格式：{success: true, data: [...], pagination: {...}}
+        clientData = res.data || [];
+        totalCount = res.pagination?.total || 0;
+      } else if (res.data) {
+        // 兼容格式：{data: [...], pagination: {...}}
+        clientData = res.data;
+        totalCount = res.pagination?.total || res.total || 0;
+      } else if (res.list) {
+        // 旧格式：{list: [...], total: ...}
+        clientData = res.list;
+        totalCount = res.total || 0;
+      } else if (Array.isArray(res)) {
+        // 直接是数组
+        clientData = res;
+        totalCount = res.length;
+      }
+
+      // 🔧 修复：字段映射 - 将后端的下划线字段名映射为前端的驼峰命名
+      const mappedClientData = clientData.map((client: any) => ({
+        ...client,
+        idCard: client.id_card,        // 后端 id_card -> 前端 idCard
+        contactPerson: client.contact_person,  // 后端 contact_person -> 前端 contactPerson
+        contactPhone: client.contact_phone,    // 后端 contact_phone -> 前端 contactPhone
+        createdAt: client.created_at,          // 后端 created_at -> 前端 createdAt
+        updatedAt: client.updated_at,          // 后端 updated_at -> 前端 updatedAt
+      }));
+
+      console.log('映射后的客户数据:', mappedClientData);
+      console.log('总数:', totalCount);
+
+      setClients(mappedClientData);
+      setTotal(totalCount);
+
+      // 获取统计数据
+      fetchStats();
     } catch (error) {
+      console.error('获取客户列表失败:', error);
       message.error('获取客户列表失败');
     } finally {
       setLoading(false);
@@ -92,15 +149,50 @@ const ClientManagement: React.FC = () => {
   const fetchStats = async () => {
     try {
       const res = await clientService.getClientStats();
-      setStats(res);
+      console.log('客户统计API响应:', res); // 调试日志
+
+      // 处理统计数据的多种格式
+      let statsData = null;
+
+      if (res.success) {
+        // 新API格式：{success: true, data: {...}}
+        statsData = res.data;
+      } else if (res.data) {
+        // 兼容格式：{data: {...}}
+        statsData = res.data;
+      } else if (res.total_clients !== undefined) {
+        // 后端直接返回的格式：{total_clients, active_clients, inactive_clients, new_clients_this_month}
+        // 基于现有客户数据计算类型统计
+        const personalCount = clients.filter(client => client.type === '个人').length;
+        const enterpriseCount = clients.filter(client => client.type === '企业').length;
+
+        statsData = {
+          total: res.total_clients,
+          statusStats: {
+            active: res.active_clients,
+            inactive: res.inactive_clients
+          },
+          typeStats: {
+            '个人': personalCount,
+            '企业': enterpriseCount
+          },
+          monthlyNew: res.new_clients_this_month
+        };
+      } else if (res.total !== undefined) {
+        // 直接是统计数据对象
+        statsData = res;
+      }
+
+      console.log('处理后的统计数据:', statsData);
+      setStats(statsData);
     } catch (error) {
+      console.error('获取统计数据失败:', error);
       message.error('获取统计数据失败');
     }
   };
 
   useEffect(() => {
     fetchClients();
-    fetchStats();
   }, [queryParams]);
 
   // 打开新增客户弹窗
@@ -108,6 +200,8 @@ const ClientManagement: React.FC = () => {
     setModalTitle('新增客户');
     setEditingClient(null);
     form.resetFields();
+    // 设置默认客户类型为个人
+    form.setFieldsValue({ type: '个人' });
     setModalVisible(true);
   };
 
@@ -119,27 +213,44 @@ const ClientManagement: React.FC = () => {
     setModalVisible(true);
   };
 
+  // 🔧 修复：智能判断客户类型的辅助函数
+  const getClientType = (record: Client): '个人' | '企业' => {
+    if (record.type === '企业') {
+      return '企业';
+    } else if (!record.type || record.type === '') {
+      // 如果类型为空，根据公司名称字段判断
+      return record.company && record.company.trim() !== '' ? '企业' : '个人';
+    }
+    return '个人';
+  };
+
   // 查看客户详情
   const handleView = (record: Client) => {
+    const clientType = getClientType(record);
+
     Modal.info({
       title: '客户详情',
       width: 600,
       content: (
         <div className="client-detail">
-          <p><strong>客户名称：</strong>{record.name}</p>
-          <p><strong>客户类型：</strong>{record.type === '个人' ? '个人' : '企业'}</p>
-          <p><strong>联系电话：</strong>{record.phone}</p>
-          <p><strong>电子邮箱：</strong>{record.email}</p>
-          {record.type === '个人' && record.idCard && (
+          <p><strong>客户名称：</strong>{record.name || '未命名客户'}</p>
+          <p><strong>客户类型：</strong>
+            <Tag color={clientType === '个人' ? 'blue' : 'purple'}>
+              {clientType}
+            </Tag>
+          </p>
+          <p><strong>联系电话：</strong>{record.phone || '-'}</p>
+          <p><strong>电子邮箱：</strong>{record.email || '-'}</p>
+          {clientType === '个人' && record.idCard && (
             <p><strong>身份证号：</strong>{record.idCard}</p>
           )}
-          <p><strong>地址：</strong>{record.address}</p>
-          {record.type === '企业' && (
+          <p><strong>地址：</strong>{record.address || '-'}</p>
+          {clientType === '企业' && (
             <>
-              <p><strong>公司名称：</strong>{record.company}</p>
-              <p><strong>所属行业：</strong>{record.industry}</p>
-              <p><strong>联系人：</strong>{record.contactPerson}</p>
-              <p><strong>联系电话：</strong>{record.contactPhone}</p>
+              <p><strong>公司名称：</strong>{record.company || '-'}</p>
+              <p><strong>所属行业：</strong>{record.industry || '-'}</p>
+              <p><strong>联系人：</strong>{record.contactPerson || '-'}</p>
+              <p><strong>联系电话：</strong>{record.contactPhone || '-'}</p>
             </>
           )}
           <p><strong>客户来源：</strong>{record.source || '-'}</p>
@@ -148,7 +259,10 @@ const ClientManagement: React.FC = () => {
               {record.status === 'active' ? '活跃' : '非活跃'}
             </Tag>
           </p>
-          <p><strong>备注：</strong>{record.remark || '-'}</p>
+          {record.createdAt && (
+            <p><strong>创建时间：</strong>{new Date(record.createdAt).toLocaleString()}</p>
+          )}
+          <p><strong>备注：</strong>{record.notes || '-'}</p>
         </div>
       )
     });
@@ -160,7 +274,6 @@ const ClientManagement: React.FC = () => {
       await clientService.deleteClient(id);
       message.success('删除成功');
       fetchClients();
-      fetchStats();
     } catch (error) {
       message.error('删除失败');
     }
@@ -179,7 +292,6 @@ const ClientManagement: React.FC = () => {
       }
       setModalVisible(false);
       fetchClients();
-      fetchStats();
     } catch (error: any) {
       message.error(error.message || '操作失败');
     }
@@ -187,18 +299,30 @@ const ClientManagement: React.FC = () => {
 
   // 搜索
   const handleSearch = () => {
-    setQueryParams({ ...queryParams, pageNum: 1 });
+    setQueryParams({
+      ...queryParams,
+      name: searchForm.name,
+      type: searchForm.type,
+      status: searchForm.status,
+      pageNum: 1
+    });
   };
 
   // 重置搜索
   const handleReset = () => {
-    setQueryParams({
+    const resetParams = {
       name: '',
       type: '',
       status: '',
       pageNum: 1,
       pageSize: 10
+    };
+    setSearchForm({
+      name: '',
+      type: '',
+      status: ''
     });
+    setQueryParams(resetParams);
   };
 
   // 表格列定义
@@ -207,22 +331,61 @@ const ClientManagement: React.FC = () => {
       title: '客户名称',
       dataIndex: 'name',
       key: 'name',
-      render: (text: string, record: Client) => (
-        <Space>
-          {record.type === '个人' ? <UserOutlined /> : <BankOutlined />}
-          {text}
-        </Space>
-      ),
+      render: (text: string, record: Client) => {
+        // 🔧 修复：更智能的图标选择逻辑
+        let isEnterprise = false;
+
+        if (record.type === '企业') {
+          isEnterprise = true;
+        } else if (!record.type || record.type === '') {
+          // 如果类型为空，根据公司名称字段判断
+          isEnterprise = record.company && record.company.trim() !== '';
+        }
+
+        return (
+          <Space>
+            {isEnterprise ? <BankOutlined /> : <UserOutlined />}
+            <span style={{ fontWeight: isEnterprise ? 'bold' : 'normal' }}>
+              {text || '未命名客户'}
+            </span>
+          </Space>
+        );
+      },
     },
     {
       title: '客户类型',
       dataIndex: 'type',
       key: 'type',
-      render: (type: string) => (
-        <Tag color={type === '个人' ? 'blue' : 'purple'}>
-          {type === '个人' ? '个人' : '企业'}
-        </Tag>
-      ),
+      render: (type: string, record: Client) => {
+        // 🔧 修复：更智能的类型判断和显示
+        let displayType = type;
+        let color = 'blue'; // 默认个人客户颜色
+
+        // 如果数据库中类型为空，根据名称和其他字段智能判断
+        if (!type || type === '') {
+          if (record.company && record.company.trim() !== '') {
+            displayType = '企业';
+            color = 'purple';
+          } else {
+            displayType = '个人';
+            color = 'blue';
+          }
+        } else if (type === '个人') {
+          color = 'blue';
+        } else if (type === '企业') {
+          color = 'purple';
+        } else {
+          // 处理其他可能的类型值
+          displayType = type;
+          color = 'green';
+        }
+
+        return (
+          <Tag color={color}>
+            {displayType}
+          </Tag>
+        );
+      },
     },
     {
       title: '联系电话',
@@ -335,18 +498,18 @@ const ClientManagement: React.FC = () => {
       <Card className="search-card">
         <Form layout="inline">
           <Form.Item label="客户名称">
-            <Input 
-              placeholder="请输入客户名称" 
-              value={queryParams.name}
-              onChange={(e) => setQueryParams({ ...queryParams, name: e.target.value })}
+            <Input
+              placeholder="请输入客户名称"
+              value={searchForm.name}
+              onChange={(e) => setSearchForm({ ...searchForm, name: e.target.value })}
               allowClear
             />
           </Form.Item>
           <Form.Item label="客户类型">
-            <Select 
+            <Select
               style={{ width: 120 }}
-              value={queryParams.type}
-              onChange={(value) => setQueryParams({ ...queryParams, type: value })}
+              value={searchForm.type}
+              onChange={(value) => setSearchForm({ ...searchForm, type: value })}
               allowClear
               placeholder="全部"
             >
@@ -355,10 +518,10 @@ const ClientManagement: React.FC = () => {
             </Select>
           </Form.Item>
           <Form.Item label="客户状态">
-            <Select 
+            <Select
               style={{ width: 120 }}
-              value={queryParams.status}
-              onChange={(value) => setQueryParams({ ...queryParams, status: value })}
+              value={searchForm.status}
+              onChange={(value) => setSearchForm({ ...searchForm, status: value })}
               allowClear
               placeholder="全部"
             >
@@ -419,7 +582,7 @@ const ClientManagement: React.FC = () => {
         onOk={handleSubmit}
         onCancel={() => setModalVisible(false)}
         width={600}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form
           form={form}
@@ -437,7 +600,7 @@ const ClientManagement: React.FC = () => {
           </Form.Item>
 
           <Form.Item
-            label={form.getFieldValue('type') === '企业' ? '公司名称' : '客户姓名'}
+            label={clientType === '企业' ? '公司名称' : '客户姓名'}
             name="name"
             rules={[{ required: true, message: '请输入名称' }]}
           >
@@ -463,7 +626,7 @@ const ClientManagement: React.FC = () => {
             <Input placeholder="请输入电子邮箱" />
           </Form.Item>
 
-          {form.getFieldValue('type') === '个人' && (
+          {clientType === '个人' && (
             <Form.Item
               label="身份证号"
               name="idCard"
@@ -475,7 +638,7 @@ const ClientManagement: React.FC = () => {
             </Form.Item>
           )}
 
-          {form.getFieldValue('type') === '企业' && (
+          {clientType === '企业' && (
             <>
               <Form.Item
                 label="所属行业"
@@ -532,7 +695,7 @@ const ClientManagement: React.FC = () => {
 
           <Form.Item
             label="备注"
-            name="remark"
+            name="notes"
           >
             <TextArea placeholder="请输入备注信息" rows={3} />
           </Form.Item>

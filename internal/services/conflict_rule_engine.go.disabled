@@ -1,0 +1,528 @@
+package services
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log"
+	"regexp"
+	"strings"
+	"time"
+
+	"law-oa-go/internal/models"
+	"law-oa-go/internal/repositories"
+
+	"github.com/gin-gonic/gin"
+)
+
+// ConflictRuleEngine 冲突规则引擎
+type ConflictRuleEngine struct {
+	repo         repositories.Repositories
+	ruleCache    map[string]*RuleCache
+	lastCacheUpdate time.Time
+	cacheExpiry  time.Duration
+}
+
+// RuleCache 规则缓存
+type RuleCache struct {
+	Rules       []models.ConflictRule
+	LastUpdated time.Time
+}
+
+// RuleExecutionContext 规则执行上下文
+type RuleExecutionContext struct {
+	Request       *ConflictCheckRequest
+	ConflictCases []*models.Case
+	RiskFactors   RiskFactors
+	Variables     map[string]interface{}
+}
+
+// RuleExecutionResult 规则执行结果
+type RuleExecutionResult struct {
+	RuleID       string                 `json:"rule_id"`
+	RuleName     string                 `json:"rule_name"`
+	ActionType   string                 `json:"action_type"`
+	Triggered    bool                   `json:"triggered"`
+	RiskScore    int                    `json:"risk_score"`
+	Conditions   map[string]interface{} `json:"conditions"`
+	Message      string                 `json:"message"`
+	ExecutedAt   string                 `json:"executed_at"`
+}
+
+// NewConflictRuleEngine 创建冲突规则引擎
+func NewConflictRuleEngine(repo repositories.Repositories) *ConflictRuleEngine {
+	return &ConflictRuleEngine{
+		repo:        repo,
+		ruleCache:   make(map[string]*RuleCache),
+		cacheExpiry: time.Hour * 1, // 1小时缓存
+	}
+}
+
+// ExecuteRules 执行规则引擎
+func (e *ConflictRuleEngine) ExecuteRules(ctx *gin.Context, executionCtx *RuleExecutionContext) ([]RuleExecutionResult, error) {
+	log.Printf("=== 开始执行冲突规则引擎 ===")
+
+	// 1. 获取活跃规则
+	rules, err := e.getActiveRules(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("获取规则失败: %w", err)
+	}
+
+	// 2. 准备执行上下文
+	e.prepareExecutionContext(executionCtx)
+
+	// 3. 执行规则
+	var results []RuleExecutionResult
+	for _, rule := range rules {
+		result := e.executeRule(rule, executionCtx)
+		results = append(results, result)
+
+		if result.Triggered {
+			log.Printf("规则触发: %s (风险分数: %d, 动作: %s)",
+				result.RuleName, result.RiskScore, result.ActionType)
+		}
+	}
+
+	// 4. 按优先级和风险分数排序结果
+	e.sortResults(results)
+
+	log.Printf("规则引擎执行完成，共执行 %d 条规则，触发 %d 条", len(rules), e.countTriggeredRules(results))
+	return results, nil
+}
+
+// getActiveRules 获取活跃规则（带缓存）
+func (e *ConflictRuleEngine) getActiveRules(ctx *gin.Context) ([]models.ConflictRule, error) {
+	cacheKey := "active_rules"
+
+	// 检查缓存
+	if cached, exists := e.ruleCache[cacheKey]; exists && time.Since(cached.LastUpdated) < e.cacheExpiry {
+		return cached.Rules, nil
+	}
+
+	// 从数据库获取 - 暂时使用空规则集，因为规则表还未实现
+	rules := []models.ConflictRule{}
+	// TODO: 实现规则仓库后启用
+	// rules, err := e.repo.GetActiveConflictRules(ctx)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// 更新缓存
+	e.ruleCache[cacheKey] = &RuleCache{
+		Rules:       rules,
+		LastUpdated: time.Now(),
+	}
+
+	log.Printf("从数据库加载 %d 条活跃规则", len(rules))
+	return rules, nil
+}
+
+// prepareExecutionContext 准备执行上下文
+func (e *ConflictRuleEngine) prepareExecutionContext(executionCtx *RuleExecutionContext) {
+	// 初始化变量
+	executionCtx.Variables = make(map[string]interface{})
+
+	// 基础请求信息
+	executionCtx.Variables["lawyer_id"] = executionCtx.Request.LawyerID
+	executionCtx.Variables["client_name"] = strings.ToLower(executionCtx.Request.ClientName)
+	executionCtx.Variables["opposing_party"] = strings.ToLower(executionCtx.Request.OpposingParty)
+	executionCtx.Variables["case_type"] = executionCtx.Request.CaseType
+	executionCtx.Variables["search_depth"] = executionCtx.Request.SearchDepth
+
+	// 冲突案件统计
+	executionCtx.Variables["conflict_count"] = len(executionCtx.ConflictCases)
+	executionCtx.Variables["has_conflicts"] = len(executionCtx.ConflictCases) > 0
+
+	// 案件类型统计
+	caseTypeCount := make(map[string]int)
+	for _, conflictCase := range executionCtx.ConflictCases {
+		caseTypeCount[conflictCase.CaseType]++
+	}
+	executionCtx.Variables["case_type_distribution"] = caseTypeCount
+
+	// 客户名称列表
+	clientNames := []string{}
+	for _, conflictCase := range executionCtx.ConflictCases {
+		clientNames = append(clientNames, strings.ToLower(conflictCase.ClientName))
+	}
+	executionCtx.Variables["existing_client_names"] = clientNames
+
+	// 对方当事人列表
+	opposingParties := []string{}
+	for _, conflictCase := range executionCtx.ConflictCases {
+		if conflictCase.OpposingParty != "" {
+			opposingParties = append(opposingParties, strings.ToLower(conflictCase.OpposingParty))
+		}
+	}
+	executionCtx.Variables["existing_opposing_parties"] = opposingParties
+
+	log.Printf("执行上下文准备完成，变量数量: %d", len(executionCtx.Variables))
+}
+
+// executeRule 执行单个规则
+func (e *ConflictRuleEngine) executeRule(rule models.ConflictRule, ctx *RuleExecutionContext) RuleExecutionResult {
+	result := RuleExecutionResult{
+		RuleID:     rule.ID,
+		RuleName:   rule.Name,
+		ActionType: "analysis", // 从Actions中获取
+		Triggered:  false,
+		RiskScore:  rule.Priority, // 使用Priority作为风险分数
+		ExecutedAt: time.Now().Format("2006-01-02 15:04:05"),
+	}
+
+	// 解析规则条件
+	var conditions map[string]interface{}
+	conditionsBytes, err := json.Marshal(rule.Conditions)
+	if err != nil {
+		log.Printf("序列化规则条件失败 %s: %v", rule.Name, err)
+		result.Message = "规则条件序列化失败"
+		return result
+	}
+	if err := json.Unmarshal(conditionsBytes, &conditions); err != nil {
+		log.Printf("解析规则条件失败 %s: %v", rule.Name, err)
+		result.Message = "规则条件解析失败"
+		return result
+	}
+	result.Conditions = conditions
+
+	// 根据规则类型执行不同的检查逻辑
+	triggered := false
+	switch rule.Type {
+	case "client_conflict":
+		triggered = e.checkClientConflictRule(rule, ctx)
+	case "industry_competition":
+		triggered = e.checkIndustryCompetitionRule(rule, ctx)
+	case "case_type_conflict":
+		triggered = e.checkCaseTypeConflictRule(rule, ctx)
+	case "time_proximity":
+		triggered = e.checkTimeProximityRule(rule, ctx)
+	case "risk_threshold":
+		triggered = e.checkRiskThresholdRule(rule, ctx)
+	default:
+		triggered = e.checkGenericRule(rule, ctx)
+	}
+
+	result.Triggered = triggered
+	if triggered {
+		result.Message = e.generateRuleMessage(rule, ctx)
+	}
+
+	return result
+}
+
+// checkClientConflictRule 检查客户冲突规则
+func (e *ConflictRuleEngine) checkClientConflictRule(rule models.ConflictRule, ctx *RuleExecutionContext) bool {
+	clientName := ctx.Variables["client_name"].(string)
+	opposingParty := ctx.Variables["opposing_party"].(string)
+	existingClients := ctx.Variables["existing_client_names"].([]string)
+	existingOpposing := ctx.Variables["existing_opposing_parties"].([]string)
+
+	// 检查是否与现有客户相同
+	for _, existingClient := range existingClients {
+		if e.stringMatch(clientName, existingClient) {
+			return true
+		}
+	}
+
+	// 检查是否与现有对方当事人相同
+	for _, existingOpposing := range existingOpposing {
+		if e.stringMatch(clientName, existingOpposing) {
+			return true
+		}
+	}
+
+	// 检查对方当事人是否与现有客户相同
+	for _, existingClient := range existingClients {
+		if e.stringMatch(opposingParty, existingClient) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// checkIndustryCompetitionRule 检查行业竞争规则
+func (e *ConflictRuleEngine) checkIndustryCompetitionRule(rule models.ConflictRule, ctx *RuleExecutionContext) bool {
+	clientName := ctx.Variables["client_name"].(string)
+	opposingParty := ctx.Variables["opposing_party"].(string)
+
+	// 定义竞争关系映射
+	competitivePairs := map[string][]string{
+		"阿里巴巴": {"腾讯", "字节跳动", "京东", "拼多多", "美团"},
+		"阿里":     {"腾讯", "字节跳动", "京东", "拼多多", "美团"},
+		"腾讯":     {"阿里巴巴", "字节跳动", "百度", "网易"},
+		"字节跳动": {"阿里巴巴", "腾讯", "百度", "快手"},
+		"京东":     {"阿里巴巴", "拼多多", "唯品会"},
+	}
+
+	// 检查竞争关系
+	if competitors, exists := competitivePairs[clientName]; exists {
+		for _, competitor := range competitors {
+			if strings.Contains(opposingParty, competitor) {
+				return true
+			}
+		}
+	}
+
+	if competitors, exists := competitivePairs[opposingParty]; exists {
+		for _, competitor := range competitors {
+			if strings.Contains(clientName, competitor) {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// checkCaseTypeConflictRule 检查案件类型冲突规则
+func (e *ConflictRuleEngine) checkCaseTypeConflictRule(rule models.ConflictRule, ctx *RuleExecutionContext) bool {
+	caseType := ctx.Variables["case_type"].(string)
+	caseTypeDist := ctx.Variables["case_type_distribution"].(map[string]int)
+
+	// 检查是否有相同类型的案件
+	if count, exists := caseTypeDist[caseType]; exists && count > 0 {
+		return true
+	}
+
+	// 检查相关案件类型
+	relatedTypes := map[string][]string{
+		"商事":     {"民事", "仲裁"},
+		"民事":     {"商事", "仲裁"},
+		"仲裁":     {"商事", "民事"},
+		"刑事":     {"行政"},
+		"行政":     {"刑事"},
+	}
+
+	if related, exists := relatedTypes[caseType]; exists {
+		for _, relatedType := range related {
+			if count, exists := caseTypeDist[relatedType]; exists && count > 0 {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// checkTimeProximityRule 检查时间接近度规则
+func (e *ConflictRuleEngine) checkTimeProximityRule(rule models.ConflictRule, ctx *RuleExecutionContext) bool {
+	// 检查是否有最近30天内的案件
+	recentCaseCount := 0
+	thirtyDaysAgo := time.Now().AddDate(0, 0, -30)
+
+	for _, conflictCase := range ctx.ConflictCases {
+		if conflictCase.CreatedAt.After(thirtyDaysAgo) {
+			recentCaseCount++
+		}
+	}
+
+	return recentCaseCount > 0
+}
+
+// checkRiskThresholdRule 检查风险阈值规则
+func (e *ConflictRuleEngine) checkRiskThresholdRule(rule models.ConflictRule, ctx *RuleExecutionContext) bool {
+	// 基础风险分数计算
+	baseRiskScore := 0
+
+	// 冲突数量影响
+	conflictCount := ctx.Variables["conflict_count"].(int)
+	if conflictCount > 0 {
+		baseRiskScore += conflictCount * 20
+	}
+
+	// 案件类型影响
+	caseType := ctx.Variables["case_type"].(string)
+	if caseType == "商事" {
+		baseRiskScore += 30
+	} else if caseType == "民事" {
+		baseRiskScore += 20
+	}
+
+	// 搜索深度影响
+	searchDepth := ctx.Variables["search_depth"].(string)
+	if searchDepth == "comprehensive" {
+		baseRiskScore += 10
+	}
+
+	return baseRiskScore >= rule.Priority
+}
+
+// checkGenericRule 检查通用规则
+func (e *ConflictRuleEngine) checkGenericRule(rule models.ConflictRule, ctx *RuleExecutionContext) bool {
+	// 从条件中获取触发模式
+	var conditions map[string]interface{}
+	conditionsBytes, err := json.Marshal(rule.Conditions)
+	if err != nil {
+		return false
+	}
+	if err := json.Unmarshal(conditionsBytes, &conditions); err != nil {
+		return false
+	}
+
+	pattern, ok := conditions["trigger_pattern"].(string)
+	if !ok || pattern == "" {
+		return false
+	}
+
+	// 检查是否匹配客户名称
+	clientName := ctx.Variables["client_name"].(string)
+	if e.patternMatch(clientName, pattern) {
+		return true
+	}
+
+	// 检查是否匹配对方当事人
+	opposingParty := ctx.Variables["opposing_party"].(string)
+	if e.patternMatch(opposingParty, pattern) {
+		return true
+	}
+
+	return false
+}
+
+// stringMatch 字符串匹配
+func (e *ConflictRuleEngine) stringMatch(str1, str2 string) bool {
+	return strings.EqualFold(strings.TrimSpace(str1), strings.TrimSpace(str2))
+}
+
+// patternMatch 模式匹配
+func (e *ConflictRuleEngine) patternMatch(text, pattern string) bool {
+	// 尝试正则表达式匹配
+	if regex, err := regexp.Compile(`(?i)` + pattern); err == nil {
+		return regex.MatchString(text)
+	}
+
+	// 简单字符串包含匹配
+	return strings.Contains(strings.ToLower(text), strings.ToLower(pattern))
+}
+
+// generateRuleMessage 生成规则消息
+func (e *ConflictRuleEngine) generateRuleMessage(rule models.ConflictRule, ctx *RuleExecutionContext) string {
+	var messages []string
+
+	switch rule.Type {
+	case "client_conflict":
+		messages = append(messages, "检测到客户利益冲突")
+	case "industry_competition":
+		messages = append(messages, "检测到行业竞争冲突")
+	case "case_type_conflict":
+		messages = append(messages, "检测到案件类型冲突")
+	case "time_proximity":
+		messages = append(messages, "检测到时间接近的冲突案件")
+	case "risk_threshold":
+		messages = append(messages, "风险分数超过阈值")
+	default:
+		messages = append(messages, "触发冲突检测规则")
+	}
+
+	conflictCount := ctx.Variables["conflict_count"].(int)
+	if conflictCount > 0 {
+		messages = append(messages, fmt.Sprintf("涉及 %d 个冲突案件", conflictCount))
+	}
+
+	return strings.Join(messages, "：")
+}
+
+// sortResults 按优先级和风险分数排序结果
+func (e *ConflictRuleEngine) sortResults(results []RuleExecutionResult) {
+	// 按风险分数降序排序，分数相同的按规则ID排序
+	for i := 0; i < len(results)-1; i++ {
+		for j := i + 1; j < len(results); j++ {
+			if (results[j].RiskScore > results[i].RiskScore) ||
+				(results[j].RiskScore == results[i].RiskScore && results[j].RuleID < results[i].RuleID) {
+				results[i], results[j] = results[j], results[i]
+			}
+		}
+	}
+}
+
+// countTriggeredRules 统计触发的规则数量
+func (e *ConflictRuleEngine) countTriggeredRules(results []RuleExecutionResult) int {
+	count := 0
+	for _, result := range results {
+		if result.Triggered {
+			count++
+		}
+	}
+	return count
+}
+
+// AddCustomRule 添加自定义规则
+func (e *ConflictRuleEngine) AddCustomRule(ctx *gin.Context, rule *models.ConflictRule) error {
+	rule.Active = true
+	rule.CreatedAt = time.Now()
+	rule.UpdatedAt = time.Now()
+
+	// TODO: 实现规则仓库方法
+	// err := e.repo.CreateOrUpdateConflictRule(ctx, rule)
+	// if err != nil {
+	// 	return fmt.Errorf("添加自定义规则失败: %w", err)
+	// }
+
+	// 清除缓存以强制重新加载
+	e.ruleCache = make(map[string]*RuleCache)
+
+	log.Printf("添加自定义规则成功: %s (风险分数: %d)", rule.Name, rule.Priority)
+	return nil
+}
+
+// UpdateRule 更新规则
+func (e *ConflictRuleEngine) UpdateRule(ctx *gin.Context, rule *models.ConflictRule) error {
+	rule.UpdatedAt = time.Now()
+
+	// TODO: 实现规则仓库方法
+	// err := e.repo.CreateOrUpdateConflictRule(ctx, rule)
+	// if err != nil {
+	// 	return fmt.Errorf("更新规则失败: %w", err)
+	// }
+
+	// 清除缓存以强制重新加载
+	e.ruleCache = make(map[string]*RuleCache)
+
+	log.Printf("更新规则成功: %s", rule.Name)
+	return nil
+}
+
+// DeactivateRule 停用规则
+func (e *ConflictRuleEngine) DeactivateRule(ctx *gin.Context, ruleID int) error {
+	// 这里需要实现停用规则的逻辑
+	// 由于当前接口限制，这里只是记录日志
+	log.Printf("停用规则: ID %d", ruleID)
+	return nil
+}
+
+// GetRuleStatistics 获取规则统计信息
+func (e *ConflictRuleEngine) GetRuleStatistics(ctx *gin.Context) (map[string]interface{}, error) {
+	rules, err := e.getActiveRules(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	stats := map[string]interface{}{
+		"total_rules":    len(rules),
+		"active_rules":   0,
+		"rule_types":     make(map[string]int),
+		"risk_levels":    make(map[string]int),
+		"last_updated":   time.Now().Format("2006-01-02 15:04:05"),
+	}
+
+	for _, rule := range rules {
+		if rule.Active {
+			stats["active_rules"] = stats["active_rules"].(int) + 1
+		}
+
+		ruleTypes := stats["rule_types"].(map[string]int)
+		ruleTypes[rule.Type]++
+
+		riskLevels := stats["risk_levels"].(map[string]int)
+		if rule.Priority >= 80 {
+			riskLevels["HIGH"]++
+		} else if rule.Priority >= 50 {
+			riskLevels["MEDIUM"]++
+		} else {
+			riskLevels["LOW"]++
+		}
+	}
+
+	return stats, nil
+}

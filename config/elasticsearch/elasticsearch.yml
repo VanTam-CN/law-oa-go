@@ -1,0 +1,19 @@
+# Elasticsearch 8.x 最简配置文件
+# 适用于Law OA Go项目
+
+# 集群配置
+cluster.name: law-oa-cluster
+node.name: law-oa-node
+
+# 网络配置
+network.host: 0.0.0.0
+http.port: 9200
+
+# 发现配置
+discovery.type: single-node
+
+# 内存配置
+bootstrap.memory_lock: false
+
+# 安全配置
+xpack.security.enabled: false

@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/create-case-ui-optimization/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-10-15T14:20:49.359Z",
+      "trigger": "initial",
+      "approvalId": "approval_1760538049357_167q8664k",
+      "approvalTitle": "新建案件UI优化设计文档审批"
+    }
+  ]
+}

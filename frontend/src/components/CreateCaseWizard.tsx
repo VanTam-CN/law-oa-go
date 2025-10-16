@@ -56,6 +56,7 @@ import {
 } from "@ant-design/icons";
 import { get } from "@/services/api";
 import { conflictAPI } from "@/api/conflict";
+import ConflictCheckResult from "./conflict/ConflictCheckResult";
 
 interface CaseInfo {
   caseNo?: string;
@@ -143,6 +144,7 @@ const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({
   const [formData, setFormData] = useState<Partial<CaseInfo>>({});
   const [conflictResult, setConflictResult] =
     useState<ConflictCheckResult | null>(null);
+  const [conflictConfirmed, setConflictConfirmed] = useState(false);
 
   // 步骤定义
   const steps = [
@@ -227,12 +229,12 @@ const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({
         setLawyers(formattedLawyers);
       }
 
-      // 设置案件类型数据
+      // 设置案件类型数据 (使用小写code以匹配后端期望)
       setCaseTypes([
-        { id: "CIVIL", name: "民事案件", code: "CIVIL" },
-        { id: "COMMERCIAL", name: "商事案件", code: "COMMERCIAL" },
-        { id: "CRIMINAL", name: "刑事案件", code: "CRIMINAL" },
-        { id: "ADMINISTRATIVE", name: "行政案件", code: "ADMINISTRATIVE" },
+        { id: "CIVIL", name: "民事案件", code: "civil" },
+        { id: "COMMERCIAL", name: "商事案件", code: "commercial" },
+        { id: "CRIMINAL", name: "刑事案件", code: "criminal" },
+        { id: "ADMINISTRATIVE", name: "行政案件", code: "administrative" },
       ]);
 
       setProjectTypes([
@@ -265,6 +267,15 @@ const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({
       if (currentStep === 2) {
         // 在团队分配步骤后，自动进行利益冲突检查
         await performConflictCheck(newFormData);
+        // 检查完成后，自动跳转到冲突分析结果页面（第3步）
+        setCurrentStep(3);
+        return;
+      }
+
+      // 如果当前是利益冲突检查步骤（第3步），需要确认用户已经确认了冲突结果
+      if (currentStep === 3 && !conflictConfirmed) {
+        message.warning("请先确认利益冲突检查结果后再继续");
+        return;
       }
 
       setCurrentStep(currentStep + 1);
@@ -276,6 +287,13 @@ const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({
   // 上一步
   const handlePrev = () => {
     setCurrentStep(currentStep - 1);
+  };
+
+  // 处理利益冲突检查确认
+  const handleConflictConfirm = () => {
+    setConflictConfirmed(true);
+    setCurrentStep(3); // 确保停留在冲突结果页面
+    message.success('利益冲突检查结果已确认');
   };
 
   // 执行利益冲突检查
@@ -294,7 +312,7 @@ const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({
         clientId: caseData.clientId || undefined,
         clientName: clients.find(c => c.clientId === caseData.clientId)?.clientName,
         caseName: caseData.caseName,
-        caseType: caseData.caseType,
+        caseType: caseData.caseType, // API内部会自动转换为小写
         opponentInfo: caseData.opponentInfo,
         lawyerId: caseData.lawyerId || undefined,
         causeOfAction: caseData.causeOfAction,
@@ -306,48 +324,48 @@ const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({
       // 转换后端响应为前端格式
       const convertedResult = {
         status: result.hasConflict ? "warning" : "passed",
-        score: Math.round(result.riskAssessment.riskScore),
+        score: Math.round(result.riskAssessment?.riskScore || 0),
         checkTime: result.checkTime,
         checker: "智能冲突检查系统",
-        totalChecked: result.checkStatistics.totalCasesChecked,
-        conflicts: result.conflictCases.map(c => ({
-          id: c.caseId,
-          type: c.conflictType,
-          level: c.riskLevel,
-          description: c.description,
-          relatedCase: `案件: ${c.caseName}`,
+        totalChecked: result.checkStatistics?.totalCasesChecked || 0,
+        conflicts: (result.conflictCases || []).map(c => ({
+          id: c.caseId || 'unknown',
+          type: c.conflictType || 'unknown',
+          level: c.riskLevel || 'low',
+          description: c.description || '无描述',
+          relatedCase: `案件: ${c.caseName || '未知案件'}`,
           recommendation: "建议详细了解相关情况",
-          details: c.description,
-          foundTime: result.checkTime,
-          impact: c.riskLevel === 'HIGH' ? '高影响' : c.riskLevel === 'MEDIUM' ? '中等影响' : '轻微影响',
-          probability: c.riskLevel === 'HIGH' ? 85 : c.riskLevel === 'MEDIUM' ? 65 : 30,
-          severity: c.riskLevel === 'HIGH' ? 4 : c.riskLevel === 'MEDIUM' ? 3 : 2,
+          details: c.description || '无详细信息',
+          foundTime: result.checkTime || new Date().toLocaleString(),
+          impact: (c.riskLevel || 'low') === 'HIGH' ? '高影响' : (c.riskLevel || 'low') === 'MEDIUM' ? '中等影响' : '轻微影响',
+          probability: (c.riskLevel || 'low') === 'HIGH' ? 85 : (c.riskLevel || 'low') === 'MEDIUM' ? 65 : 30,
+          severity: (c.riskLevel || 'low') === 'HIGH' ? 4 : (c.riskLevel || 'low') === 'MEDIUM' ? 3 : 2,
           evidence: [{
             type: "系统检查记录",
-            description: c.description,
-            date: result.checkTime.split(' ')[0],
-            caseNumber: c.caseId
+            description: c.description || '系统检查记录',
+            date: (result.checkTime || new Date().toISOString()).split(' ')[0],
+            caseNumber: c.caseId || 'unknown'
           }]
         })),
-        summary: result.recommendations.join('；'),
-        riskFactors: result.riskAssessment.riskFactors.map((factor, index) => ({
+        summary: (result.recommendations || []).join('；'),
+        riskFactors: (result.riskAssessment?.riskFactors || []).map((factor, index) => ({
           factor: factor,
           weight: 25,
-          score: Math.round(result.riskAssessment.riskScore),
+          score: Math.round(result.riskAssessment?.riskScore || 0),
           description: factor
         })),
-        recommendations: result.recommendations.map(rec => ({
-          priority: result.riskAssessment.overallRisk === 'HIGH' ? 'high' : 'medium',
+        recommendations: (result.recommendations || []).map(rec => ({
+          priority: (result.riskAssessment?.overallRisk || 'LOW') === 'HIGH' ? 'high' : 'medium',
           action: rec,
           description: rec,
           timeline: "接受委托前"
         })),
-        relatedCases: result.conflictCases.map(c => ({
-          caseId: c.caseId,
-          caseName: c.caseName,
-          status: c.status,
-          relationship: c.conflictType,
-          riskLevel: c.riskLevel === 'HIGH' ? '高' : c.riskLevel === 'MEDIUM' ? '中' : '低'
+        relatedCases: (result.conflictCases || []).map(c => ({
+          caseId: c.caseId || 'unknown',
+          caseName: c.caseName || '未知案件',
+          status: c.status || 'unknown',
+          relationship: c.conflictType || 'unknown',
+          riskLevel: (c.riskLevel || 'low') === 'HIGH' ? '高' : (c.riskLevel || 'low') === 'MEDIUM' ? '中' : '低'
         })),
         complianceNotes: "根据《律师执业管理办法》相关规定进行检查"
       };
@@ -1245,574 +1263,54 @@ const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({
           </Space>
         </Card>
       ) : conflictResult ? (
-        <Space direction="vertical" style={{ width: "100%" }} size="large">
-          {/* 检查结果概览 */}
-          <Card
-            style={{
-              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-              border: `2px solid ${
-                conflictResult.status === "passed"
-                  ? "#52c41a"
-                  : conflictResult.status === "warning"
-                    ? "#faad14"
-                    : "#ff4d4f"
-              }`,
-            }}
-          >
-            <Row gutter={24} align="middle">
-              <Col span={6} style={{ textAlign: "center" }}>
-                <div
-                  style={{
-                    width: "120px",
-                    height: "120px",
-                    borderRadius: "50%",
-                    background: `linear-gradient(135deg, ${
-                      conflictResult.status === "passed"
-                        ? "#52c41a, #73d13d"
-                        : conflictResult.status === "warning"
-                          ? "#faad14, #ffc53d"
-                          : "#ff4d4f, #ff7875"
-                    })`,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    margin: "0 auto",
-                  }}
-                >
-                  <div style={{ color: "white", textAlign: "center" }}>
-                    <div style={{ fontSize: "32px", fontWeight: "bold" }}>
-                      {conflictResult.score}
-                    </div>
-                    <div style={{ fontSize: "14px" }}>风险评分</div>
-                  </div>
-                </div>
-              </Col>
-              <Col span={18}>
-                <Space
-                  direction="vertical"
-                  size="middle"
-                  style={{ width: "100%" }}
-                >
-                  <div>
-                    <Title level={3} style={{ margin: 0, color: "#262626" }}>
-                      {conflictResult.status === "passed"
-                        ? "✅ 检查通过"
-                        : conflictResult.status === "warning"
-                          ? "⚠️ 需要注意"
-                          : "❌ 存在冲突"}
-                    </Title>
-                    <Text type="secondary">
-                      检查时间:{" "}
-                      {conflictResult.checkTime || new Date().toLocaleString()}{" "}
-                      | 检查人员: {conflictResult.checker || "系统自动检查"}
-                    </Text>
-                  </div>
-                  <Alert
-                    message={conflictResult.summary}
-                    type={
-                      conflictResult.status === "passed"
-                        ? "success"
-                        : conflictResult.status === "warning"
-                          ? "warning"
-                          : "error"
-                    }
-                    showIcon
-                    style={{ margin: 0 }}
-                  />
-                  <div>
-                    <Space wrap>
-                      <Statistic
-                        title="检查项目"
-                        value={conflictResult.totalChecked || 4}
-                        prefix={<BarChartOutlined />}
-                        valueStyle={{ fontSize: "16px" }}
-                      />
-                      <Statistic
-                        title="发现冲突"
-                        value={conflictResult.conflicts?.length || 0}
-                        prefix={<AlertOutlined />}
-                        valueStyle={{ fontSize: "16px", color: "#fa541c" }}
-                      />
-                      <Statistic
-                        title="风险等级"
-                        value={
-                          conflictResult.status === "passed"
-                            ? "低"
-                            : conflictResult.status === "warning"
-                              ? "中"
-                              : "高"
-                        }
-                        prefix={<SecurityScanOutlined />}
-                        valueStyle={{
-                          fontSize: "16px",
-                          color:
-                            conflictResult.status === "passed"
-                              ? "#52c41a"
-                              : conflictResult.status === "warning"
-                                ? "#faad14"
-                                : "#ff4d4f",
-                        }}
-                      />
-                    </Space>
-                  </div>
-                </Space>
-              </Col>
-            </Row>
-          </Card>
-
-          {/* 风险因素分析 */}
-          {conflictResult.riskFactors &&
-            conflictResult.riskFactors.length > 0 && (
-              <Card
-                title={
-                  <Space>
-                    <BarChartOutlined style={{ color: "#1890ff" }} />
-                    <span>风险因素分析</span>
-                  </Space>
-                }
-                size="small"
-                style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
-              >
-                <Row gutter={[16, 16]}>
-                  {conflictResult.riskFactors.map((factor, index) => (
-                    <Col span={12} key={index}>
-                      <Card size="small" style={{ height: "100%" }}>
-                        <Space direction="vertical" style={{ width: "100%" }}>
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                            }}
-                          >
-                            <Text strong>{factor.factor}</Text>
-                            <Tag
-                              color={
-                                factor.score >= 80
-                                  ? "red"
-                                  : factor.score >= 60
-                                    ? "orange"
-                                    : "green"
-                              }
-                            >
-                              {factor.score}分
-                            </Tag>
-                          </div>
-                          <Progress
-                            percent={factor.score}
-                            size="small"
-                            strokeColor={
-                              factor.score >= 80
-                                ? "#ff4d4f"
-                                : factor.score >= 60
-                                  ? "#faad14"
-                                  : "#52c41a"
-                            }
-                          />
-                          <Text type="secondary" style={{ fontSize: "12px" }}>
-                            权重: {factor.weight}% | {factor.description}
-                          </Text>
-                        </Space>
-                      </Card>
-                    </Col>
-                  ))}
-                </Row>
-              </Card>
-            )}
-
-          {/* 详细冲突信息 */}
-          {conflictResult.conflicts && conflictResult.conflicts.length > 0 && (
-            <Card
-              title={
-                <Space>
-                  <AlertOutlined style={{ color: "#fa541c" }} />
-                  <span>冲突详情分析</span>
-                  <Badge
-                    count={conflictResult.conflicts.length}
-                    style={{ backgroundColor: "#fa541c" }}
-                  />
-                </Space>
-              }
-              size="small"
-              style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
-            >
-              <Collapse accordion>
-                {conflictResult.conflicts.map((conflict, index) => (
-                  <Panel
-                    header={
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          width: "100%",
-                        }}
-                      >
-                        <Space>
-                          <Tag
-                            color={
-                              conflict.level === "high"
-                                ? "red"
-                                : conflict.level === "medium"
-                                  ? "orange"
-                                  : "blue"
-                            }
-                          >
-                            {conflict.level === "high"
-                              ? "高风险"
-                              : conflict.level === "medium"
-                                ? "中风险"
-                                : "低风险"}
-                          </Tag>
-                          <Tag color="default">
-                            {conflict.type === "client"
-                              ? "客户冲突"
-                              : conflict.type === "opponent"
-                                ? "对方冲突"
-                                : conflict.type === "lawyer"
-                                  ? "律师冲突"
-                                  : "案件冲突"}
-                          </Tag>
-                          <Text strong>{conflict.description}</Text>
-                        </Space>
-                        <Space>
-                          {conflict.probability && (
-                            <Tooltip title="发生概率">
-                              <Tag color="purple">{conflict.probability}%</Tag>
-                            </Tooltip>
-                          )}
-                          {conflict.severity && (
-                            <Tooltip title="严重程度">
-                              <Rate
-                                disabled
-                                defaultValue={conflict.severity}
-                                count={5}
-                                style={{ fontSize: "12px" }}
-                              />
-                            </Tooltip>
-                          )}
-                        </Space>
-                      </div>
-                    }
-                    key={conflict.id || index}
-                  >
-                    <Space
-                      direction="vertical"
-                      style={{ width: "100%" }}
-                      size="middle"
-                    >
-                      {/* 冲突基本信息 */}
-                      <Descriptions column={2} size="small" bordered>
-                        <Descriptions.Item label="冲突类型">
-                          <Tag color="blue">
-                            {conflict.type === "client"
-                              ? "客户冲突"
-                              : conflict.type === "opponent"
-                                ? "对方冲突"
-                                : conflict.type === "lawyer"
-                                  ? "律师冲突"
-                                  : "案件冲突"}
-                          </Tag>
-                        </Descriptions.Item>
-                        <Descriptions.Item label="风险等级">
-                          <Tag
-                            color={
-                              conflict.level === "high"
-                                ? "red"
-                                : conflict.level === "medium"
-                                  ? "orange"
-                                  : "green"
-                            }
-                          >
-                            {conflict.level === "high"
-                              ? "高风险"
-                              : conflict.level === "medium"
-                                ? "中风险"
-                                : "低风险"}
-                          </Tag>
-                        </Descriptions.Item>
-                        <Descriptions.Item label="发现时间">
-                          {conflict.foundTime || "刚刚"}
-                        </Descriptions.Item>
-                        <Descriptions.Item label="影响程度">
-                          {conflict.impact || "中等"}
-                        </Descriptions.Item>
-                      </Descriptions>
-
-                      {/* 详细描述 */}
-                      <div>
-                        <Text strong>详细描述：</Text>
-                        <Paragraph
-                          style={{
-                            marginTop: 8,
-                            padding: "12px",
-                            background: "#fafafa",
-                            borderRadius: "6px",
-                          }}
-                        >
-                          {conflict.details || conflict.description}
-                        </Paragraph>
-                      </div>
-
-                      {/* 相关证据 */}
-                      {conflict.evidence && conflict.evidence.length > 0 && (
-                        <div>
-                          <Text strong>相关证据：</Text>
-                          <List
-                            size="small"
-                            dataSource={conflict.evidence}
-                            renderItem={(evidence, idx) => (
-                              <List.Item>
-                                <Space>
-                                  <Badge color="blue" />
-                                  <div>
-                                    <Text>{evidence.description}</Text>
-                                    {evidence.caseNumber && (
-                                      <div>
-                                        <Text
-                                          type="secondary"
-                                          style={{ fontSize: "12px" }}
-                                        >
-                                          案件编号: {evidence.caseNumber} |
-                                          日期: {evidence.date}
-                                        </Text>
-                                      </div>
-                                    )}
-                                  </div>
-                                </Space>
-                              </List.Item>
-                            )}
-                            style={{ marginTop: 8 }}
-                          />
-                        </div>
-                      )}
-
-                      {/* 处理建议 */}
-                      <Alert
-                        message="处理建议"
-                        description={conflict.recommendation}
-                        type="info"
-                        showIcon
-                        icon={<BulbOutlined />}
-                      />
-
-                      {/* 相关案件 */}
-                      {conflict.relatedCase && (
-                        <div>
-                          <Text strong>相关案件：</Text>
-                          <Card
-                            size="small"
-                            style={{ marginTop: 8, background: "#f0f2f5" }}
-                          >
-                            <Space>
-                              <HistoryOutlined />
-                              <Text>{conflict.relatedCase}</Text>
-                            </Space>
-                          </Card>
-                        </div>
-                      )}
-                    </Space>
-                  </Panel>
-                ))}
-              </Collapse>
-            </Card>
-          )}
-
-          {/* 处理建议 */}
-          <Card
-            title={
-              <Space>
-                <BulbOutlined style={{ color: "#52c41a" }} />
-                <span>处理建议与合规要求</span>
-              </Space>
-            }
-            size="small"
-            style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
-          >
-            <Row gutter={16}>
-              <Col span={12}>
-                <Card size="small" title="即时建议" style={{ height: "100%" }}>
-                  <Space direction="vertical" style={{ width: "100%" }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                      }}
-                    >
-                      <Text strong>风险等级</Text>
-                      <Tag
-                        color={
-                          conflictResult.status === "passed"
-                            ? "green"
-                            : conflictResult.status === "warning"
-                              ? "orange"
-                              : "red"
-                        }
-                      >
-                        {conflictResult.status === "passed"
-                          ? "✅ 无冲突"
-                          : conflictResult.status === "warning"
-                            ? "⚠️ 需要注意"
-                            : "❌ 存在冲突"}
-                      </Tag>
-                    </div>
-                    <Divider style={{ margin: "12px 0" }} />
-                    <div>
-                      <Text strong>建议操作：</Text>
-                      <Paragraph style={{ marginTop: 8 }}>
-                        {conflictResult.status === "passed"
-                          ? "✅ 可以正常接受委托，无需特殊处理措施。"
-                          : conflictResult.status === "warning"
-                            ? "⚠️ 建议在充分披露相关情况后谨慎接受委托，并采取必要的风险控制措施。"
-                            : "❌ 建议拒绝委托或采取回避措施，避免潜在的利益冲突风险。"}
-                      </Paragraph>
-                    </div>
-                  </Space>
-                </Card>
-              </Col>
-              <Col span={12}>
-                <Card size="small" title="合规要求" style={{ height: "100%" }}>
-                  <Space direction="vertical" style={{ width: "100%" }}>
-                    <Alert
-                      message="律师执业规范"
-                      description={
-                        conflictResult.complianceNotes ||
-                        "根据《律师执业管理办法》相关规定，律师应当避免利益冲突，确保客户利益不受损害。"
-                      }
-                      type="warning"
-                      showIcon
-                      style={{ fontSize: "12px" }}
-                    />
-                    {conflictResult.recommendations && (
-                      <div>
-                        <Text strong>具体措施：</Text>
-                        <List
-                          size="small"
-                          dataSource={conflictResult.recommendations}
-                          renderItem={(rec, idx) => (
-                            <List.Item>
-                              <Space>
-                                <Tag
-                                  color={
-                                    rec.priority === "high"
-                                      ? "red"
-                                      : rec.priority === "medium"
-                                        ? "orange"
-                                        : "blue"
-                                  }
-                                >
-                                  {rec.priority === "high"
-                                    ? "高优先级"
-                                    : rec.priority === "medium"
-                                      ? "中优先级"
-                                      : "低优先级"}
-                                </Tag>
-                                <div>
-                                  <div>
-                                    <Text strong>{rec.action}</Text>
-                                  </div>
-                                  <div>
-                                    <Text
-                                      type="secondary"
-                                      style={{ fontSize: "12px" }}
-                                    >
-                                      {rec.description}
-                                    </Text>
-                                  </div>
-                                  {rec.timeline && (
-                                    <div>
-                                      <Text
-                                        type="secondary"
-                                        style={{ fontSize: "11px" }}
-                                      >
-                                        时限: {rec.timeline}
-                                      </Text>
-                                    </div>
-                                  )}
-                                </div>
-                              </Space>
-                            </List.Item>
-                          )}
-                          style={{ marginTop: 8 }}
-                        />
-                      </div>
-                    )}
-                  </Space>
-                </Card>
-              </Col>
-            </Row>
-          </Card>
-
-          {/* 相关案件 */}
-          {conflictResult.relatedCases &&
-            conflictResult.relatedCases.length > 0 && (
-              <Card
-                title={
-                  <Space>
-                    <HistoryOutlined style={{ color: "#722ed1" }} />
-                    <span>相关案件信息</span>
-                  </Space>
-                }
-                size="small"
-                style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
-              >
-                <Table
-                  dataSource={conflictResult.relatedCases}
-                  columns={[
-                    {
-                      title: "案件编号",
-                      dataIndex: "caseId",
-                      key: "caseId",
-                      render: (text) => <Text code>{text}</Text>,
-                    },
-                    {
-                      title: "案件名称",
-                      dataIndex: "caseName",
-                      key: "caseName",
-                    },
-                    {
-                      title: "状态",
-                      dataIndex: "status",
-                      key: "status",
-                      render: (status) => (
-                        <Tag
-                          color={status === "进行中" ? "processing" : "default"}
-                        >
-                          {status}
-                        </Tag>
-                      ),
-                    },
-                    {
-                      title: "关联关系",
-                      dataIndex: "relationship",
-                      key: "relationship",
-                    },
-                    {
-                      title: "风险等级",
-                      dataIndex: "riskLevel",
-                      key: "riskLevel",
-                      render: (level) => (
-                        <Tag
-                          color={
-                            level === "高"
-                              ? "red"
-                              : level === "中"
-                                ? "orange"
-                                : "green"
-                          }
-                        >
-                          {level}
-                        </Tag>
-                      ),
-                    },
-                  ]}
-                  pagination={false}
-                  size="small"
-                />
-              </Card>
-            )}
-        </Space>
+        <ConflictCheckResult
+          checkId={conflictResult.checkId || `check-${Date.now()}`}
+          hasConflict={conflictResult.status !== "passed"}
+          conflictCases={conflictResult.conflicts?.map(conflict => ({
+            id: conflict.id,
+            caseId: conflict.id,
+            caseName: conflict.relatedCase?.replace('案件: ', '') || conflict.description,
+            caseNo: conflict.evidence?.[0]?.caseNumber,
+            conflictType: conflict.type === "client" ? "客户冲突" :
+                        conflict.type === "opponent" ? "对方冲突" :
+                        conflict.type === "lawyer" ? "律师冲突" : "案件冲突",
+            riskLevel: conflict.level === "high" ? "HIGH" :
+                       conflict.level === "medium" ? "MEDIUM" : "LOW",
+            description: conflict.description,
+            caseStatus: "进行中",
+            clientId: conflict.id,
+            clientName: conflict.relatedCase || "未知客户",
+            opposingParties: [],
+            conflictDetails: conflict.details || conflict.description,
+            createdAt: conflict.foundTime || new Date().toISOString(),
+            lawyerName: conflictResult.checker,
+            lawyerId: conflictResult.lawyerId
+          })) || []}
+          checkStatistics={{
+            totalCasesChecked: conflictResult.totalChecked || 0,
+            clientHistoryCases: conflictResult.totalChecked || 0,
+            relatedPartiesChecked: 0,
+            corporateRelationsChecked: 0,
+            timeRange: "5年",
+            searchScope: "全面搜索",
+            startTime: conflictResult.checkTime || new Date().toISOString(),
+            endTime: new Date().toISOString()
+          }}
+          riskAssessment={{
+            overallRisk: conflictResult.status === "passed" ? "MINIMAL" :
+                         conflictResult.status === "warning" ? "MEDIUM" : "HIGH",
+            riskScore: conflictResult.score / 100,
+            riskReason: conflictResult.summary,
+            requiresApproval: conflictResult.status !== "passed",
+            riskFactors: conflictResult.riskFactors?.map(f => f.factor) || [],
+            mitigation: conflictResult.recommendations?.map(r => r.action) || []
+          }}
+          recommendations={conflictResult.recommendations?.map(r => r.action || r.description) || []}
+          checkTime={conflictResult.checkTime || new Date().toISOString()}
+          duration={3000}
+          onConfirm={handleConflictConfirm}
+          onRetry={() => performConflictCheck(formData)}
+        />
       ) : (
         <Card
           style={{
@@ -2303,7 +1801,7 @@ const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({
                   </Space>
                 </Button>
               )}
-              {currentStep < steps.length - 1 && (
+              {currentStep < steps.length - 1 && (currentStep !== 3 || conflictConfirmed) && (
                 <Button
                   type="primary"
                   size="large"
@@ -2321,6 +1819,11 @@ const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({
                       <>
                         <SafetyOutlined />
                         <span>检查冲突并继续</span>
+                      </>
+                    ) : currentStep === 3 && conflictConfirmed ? (
+                      <>
+                        <span>下一步</span>
+                        <RocketOutlined />
                       </>
                     ) : (
                       <>

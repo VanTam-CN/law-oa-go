@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"law-oa-go/internal/common"
@@ -35,7 +36,36 @@ func NewCaseHandler(caseService *services.CaseService) *CaseHandler {
 func (h *CaseHandler) CreateCase(c *gin.Context) {
 	var req services.CreateCaseRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		_ = c.Error(errors.NewValidationError("request_binding", "request_binding", "Invalid request format: "+err.Error(), "Invalid request format"))
+		// 提供更详细的验证错误信息
+		fieldErrors := make(map[string]string)
+
+		// 手动检查常见字段错误
+		if err.Error() == "EOF" {
+			fieldErrors["request_body"] = "请求体不能为空"
+		} else {
+			// 解析具体的字段验证错误
+			errMsg := err.Error()
+			if strings.Contains(errMsg, "title") {
+				fieldErrors["title"] = "案件名称不能为空且长度不超过200字符"
+			}
+			if strings.Contains(errMsg, "client_id") {
+				fieldErrors["client_id"] = "请选择有效的委托客户"
+			}
+			if strings.Contains(errMsg, "lawyer_id") {
+				fieldErrors["lawyer_id"] = "请选择有效的负责律师"
+			}
+			if strings.Contains(errMsg, "case_type") {
+				fieldErrors["case_type"] = "请选择有效的案件类型"
+			}
+			if strings.Contains(errMsg, "priority") {
+				fieldErrors["priority"] = "请选择有效的优先级"
+			}
+			if strings.Contains(errMsg, "required") {
+				fieldErrors["required_fields"] = "请确保所有必填字段都已填写"
+			}
+		}
+
+		common.APIValidationError(c, "请求参数验证失败", fieldErrors)
 		return
 	}
 
@@ -104,7 +134,24 @@ func (h *CaseHandler) UpdateCase(c *gin.Context) {
 
 	var req services.UpdateCaseRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		_ = c.Error(errors.NewValidationError("request_binding", "request_binding", "Invalid request format: "+err.Error(), "Invalid request format"))
+		// 提供更详细的验证错误信息
+		fieldErrors := make(map[string]string)
+
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "title") {
+			fieldErrors["title"] = "案件名称长度不能超过200字符"
+		}
+		if strings.Contains(errMsg, "case_type") {
+			fieldErrors["case_type"] = "请选择有效的案件类型"
+		}
+		if strings.Contains(errMsg, "priority") {
+			fieldErrors["priority"] = "请选择有效的优先级"
+		}
+		if strings.Contains(errMsg, "status") {
+			fieldErrors["status"] = "请选择有效的案件状态"
+		}
+
+		common.APIValidationError(c, "更新参数验证失败", fieldErrors)
 		return
 	}
 
@@ -171,7 +218,52 @@ func (h *CaseHandler) DeleteCase(c *gin.Context) {
 func (h *CaseHandler) ListCases(c *gin.Context) {
 	var req services.CaseListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		_ = c.Error(errors.NewValidationError("query_binding", "query_binding", "Invalid query parameters: "+err.Error(), "Invalid query parameters"))
+		// 提供更详细的查询参数验证错误信息
+		fieldErrors := make(map[string]string)
+
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "page") {
+			fieldErrors["page"] = "页码必须是大于0的整数"
+		}
+		if strings.Contains(errMsg, "page_size") {
+			fieldErrors["page_size"] = "每页数量必须是1-100之间的整数"
+		}
+		if strings.Contains(errMsg, "status") {
+			fieldErrors["status"] = "案件状态无效，有效值：pending,active,closed,suspended"
+		}
+		if strings.Contains(errMsg, "case_type") {
+			fieldErrors["case_type"] = "案件类型无效，有效值：civil,criminal,commercial,administrative"
+		}
+		if strings.Contains(errMsg, "priority") {
+			fieldErrors["priority"] = "优先级无效，有效值：low,medium,high,urgent"
+		}
+		if strings.Contains(errMsg, "client_id") {
+			fieldErrors["client_id"] = "客户ID必须是有效的数字"
+		}
+		if strings.Contains(errMsg, "lawyer_id") {
+			fieldErrors["lawyer_id"] = "律师ID必须是有效的数字"
+		}
+
+		common.APIValidationError(c, "查询参数验证失败", fieldErrors)
+		return
+	}
+
+	// 验证筛选参数的组合合理性
+	if req.Status != "" && req.Status != "pending" && req.Status != "active" &&
+	   req.Status != "closed" && req.Status != "suspended" {
+		common.APIBadRequest(c, "无效的案件状态筛选条件", "案件状态必须是：pending,active,closed,suspended 之一")
+		return
+	}
+
+	if req.CaseType != "" && req.CaseType != "civil" && req.CaseType != "criminal" &&
+	   req.CaseType != "commercial" && req.CaseType != "administrative" {
+		common.APIBadRequest(c, "无效的案件类型筛选条件", "案件类型必须是：civil,criminal,commercial,administrative 之一")
+		return
+	}
+
+	if req.Priority != "" && req.Priority != "low" && req.Priority != "medium" &&
+	   req.Priority != "high" && req.Priority != "urgent" {
+		common.APIBadRequest(c, "无效的优先级筛选条件", "优先级必须是：low,medium,high,urgent 之一")
 		return
 	}
 
@@ -188,6 +280,12 @@ func (h *CaseHandler) ListCases(c *gin.Context) {
 	}
 	if req.PageSize > 0 {
 		pageSize = req.PageSize
+	}
+
+	// 如果没有找到任何案件，返回友好的提示信息
+	if len(cases) == 0 {
+		common.APISuccessWithPage(c, cases, total, page, pageSize)
+		return
 	}
 
 	common.APISuccessWithPage(c, cases, total, page, pageSize)

@@ -52,6 +52,11 @@ export const addLawyer = (data: Lawyer): Promise<Lawyer> => {
   return post<Lawyer>('/lawfirm/lawyers', data);
 };
 
+// 兼容前端页面调用的方法名
+export const createLawyer = (data: Lawyer): Promise<Lawyer> => {
+  return post<Lawyer>('/lawfirm/lawyers', data);
+};
+
 /**
  * 更新律师信息
  */
@@ -85,6 +90,7 @@ export const lawyerService = {
   getLawyerList,
   getLawyerDetail,
   addLawyer,
+  createLawyer,
   updateLawyer,
   deleteLawyer,
   getLawyerStats,

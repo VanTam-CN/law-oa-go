@@ -78,6 +78,7 @@ const CaseManagement: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<string>('');
   const [lawyerFilter, setLawyerFilter] = useState<string>('');
   const [clientFilter, setClientFilter] = useState<string>('');
+  const [priorityFilter, setPriorityFilter] = useState<string>('');
   
   // 下拉选项
   const [lawyerOptions, setLawyerOptions] = useState<{ label: string; value: string | number }[]>([]);
@@ -97,27 +98,31 @@ const CaseManagement: React.FC = () => {
 
   useEffect(() => {
     fetchCases();
-  }, [pagination.current, pagination.pageSize, searchText, statusFilter, typeFilter, lawyerFilter, clientFilter]);
+  }, [pagination.current, pagination.pageSize, searchText, statusFilter, typeFilter, lawyerFilter, clientFilter, priorityFilter]);
 
   const loadOptions = async () => {
     try {
       const [clientRes, lawyerRes] = await Promise.all([
-        get<any>('/clients', { pageNum: 1, pageSize: 9999 }).catch(() => ({ data: { list: [] } })),
-        get<any>('/lawfirm/lawyers', { pageNum: 1, pageSize: 9999 }).catch(() => ({ data: { list: [] } })),
+        get<any>('/clients', { pageNum: 1, pageSize: 100 }).catch(() => ({ data: [] })),
+        get<any>('/lawfirm/lawyers', { pageNum: 1, pageSize: 100 }).catch(() => ({ data: [] })),
       ]);
       
-      const cOpts = (clientRes?.data?.list ?? []).map((c: any) => ({
-        label: c.name ?? c.clientName ?? c.company ?? '',
-        value: c.id ?? c.clientId,
+      // 修复客户选项解析 - 使用company字段作为显示名称
+      const cOpts = (clientRes?.data ?? []).map((c: any) => ({
+        label: c.company || c.name || `客户${c.id}`,
+        value: c.id,
       })).filter((o: any) => o.label && o.value !== undefined);
       
-      const lOpts = (lawyerRes?.data?.list ?? []).map((l: any) => ({
-        label: l.name ?? l.lawyerName ?? '',
-        value: l.id ?? l.lawyerId,
+      // 修复律师选项解析
+      const lOpts = (lawyerRes?.data ?? []).map((l: any) => ({
+        label: l.name || `律师${l.id}`,
+        value: l.id,
       })).filter((o: any) => o.label && o.value !== undefined);
       
       setClientOptions(cOpts);
       setLawyerOptions(lOpts);
+      
+      console.log('加载选项成功:', { clients: cOpts.length, lawyers: lOpts.length });
     } catch (error) {
       console.error('加载选项失败:', error);
     }
@@ -126,43 +131,63 @@ const CaseManagement: React.FC = () => {
   const fetchCases = async () => {
     setLoading(true);
     try {
+      // 构建查询参数
       const params: any = {
         page: pagination.current,
         page_size: pagination.pageSize,
       };
-      
-      if (searchText) params.search = searchText;
-      if (statusFilter) params.status = statusFilter;
-      if (typeFilter) params.case_type = typeFilter;
+
+      // 添加筛选条件
+      if (searchText && searchText.trim()) {
+        params.search = searchText.trim();
+      }
+      if (statusFilter) {
+        params.status = statusFilter;
+      }
+      if (typeFilter) {
+        params.case_type = typeFilter;
+      }
+      if (priorityFilter) {
+        params.priority = priorityFilter;
+      }
       if (lawyerFilter) {
+        // 优化律师筛选：直接使用值而不是通过名称匹配
         const lawyerOption = lawyerOptions.find(opt => opt.label === lawyerFilter);
-        if (lawyerOption) params.lawyer_id = lawyerOption.value;
+        if (lawyerOption && lawyerOption.value) {
+          params.lawyer_id = Number(lawyerOption.value);
+        }
       }
       if (clientFilter) {
+        // 优化客户筛选：直接使用值而不是通过名称匹配
         const clientOption = clientOptions.find(opt => opt.label === clientFilter);
-        if (clientOption) params.client_id = clientOption.value;
+        if (clientOption && clientOption.value) {
+          params.client_id = Number(clientOption.value);
+        }
       }
+
+      console.log('筛选参数:', params);
       
       const [caseRes, clientRes, lawyerRes] = await Promise.all([
         getCaseList(params),
-        get<any>('/clients', { pageNum: 1, pageSize: 9999 }).catch(() => ({ data: { list: [] } })),
-        get<any>('/lawfirm/lawyers', { pageNum: 1, pageSize: 9999 }).catch(() => ({ data: { list: [] } })),
+        get<any>('/clients', { pageNum: 1, pageSize: 100 }).catch(() => ({ data: [] })),
+        get<any>('/lawfirm/lawyers', { pageNum: 1, pageSize: 100 }).catch(() => ({ data: [] })),
       ]);
       
-      // 构建映射
+      // 构建映射 - 修复数据结构解析
       const clientMap = new Map<string | number, string>();
-      const clientList = clientRes?.data?.list || clientRes?.data || [];
+      const clientList = clientRes?.data || [];
       for (const c of clientList) {
-        const id = c.id ?? c.clientId;
-        const name = c.name ?? c.clientName ?? c.company ?? '';
+        const id = c.id;
+        // 客户名称优先使用company字段，因为name字段为空
+        const name = c.company || c.name || `客户${c.id}`;
         if (id != null && name) clientMap.set(id, name);
       }
       
       const lawyerMap = new Map<string | number, string>();
-      const lawyerList = lawyerRes?.data?.list || lawyerRes?.data || [];
+      const lawyerList = lawyerRes?.data || [];
       for (const l of lawyerList) {
-        const id = l.id ?? l.lawyerId;
-        const name = l.name ?? l.lawyerName ?? '';
+        const id = l.id;
+        const name = l.name || `律师${l.id}`;
         if (id != null && name) lawyerMap.set(id, name);
       }
       
@@ -248,17 +273,20 @@ const CaseManagement: React.FC = () => {
   const handleSubmit = async (values: CaseFormData) => {
     try {
       setLoading(true);
-      
+
+      // 确保数据格式正确，并添加调试日志
       const submitData = {
-        title: values.caseName,
+        caseName: values.caseName,
         description: values.description || '',
-        client_id: values.clientId,
-        lawyer_id: values.lawyerId,
-        case_type: values.caseType,
+        clientId: values.clientId,
+        lawyerId: values.lawyerId,
+        caseType: values.caseType,
         priority: 'medium',
         status: values.status || 'pending'
       };
-      
+
+      console.log('表单提交数据:', submitData);
+
       if (editingCase) {
         await updateCase(editingCase.caseId, submitData);
         message.success('案件更新成功');
@@ -266,14 +294,30 @@ const CaseManagement: React.FC = () => {
         await createCase(submitData);
         message.success('案件创建成功');
       }
-      
+
       setVisible(false);
       setEditingCase(null);
       form.resetFields();
       fetchCases();
     } catch (error) {
       console.error('保存案件失败:', error);
-      message.error('保存失败，请重试');
+
+      // 提供更详细的错误信息
+      if (error instanceof Error) {
+        if (error.message.includes('案件名称')) {
+          message.error('案件名称不能为空');
+        } else if (error.message.includes('委托客户')) {
+          message.error('请选择有效的委托客户');
+        } else if (error.message.includes('负责律师')) {
+          message.error('请选择有效的负责律师');
+        } else if (error.message.includes('案件类型')) {
+          message.error('请选择案件类型');
+        } else {
+          message.error(`保存失败: ${error.message}`);
+        }
+      } else {
+        message.error('保存失败，请重试');
+      }
     } finally {
       setLoading(false);
     }
@@ -482,8 +526,22 @@ const CaseManagement: React.FC = () => {
               <Option value="administrative">行政案件</Option>
             </Select>
           </Form.Item>
+          <Form.Item label="优先级">
+            <Select
+              style={{ width: 120 }}
+              value={priorityFilter}
+              onChange={setPriorityFilter}
+              allowClear
+              placeholder="全部"
+            >
+              <Option value="low">低</Option>
+              <Option value="medium">中</Option>
+              <Option value="high">高</Option>
+              <Option value="urgent">紧急</Option>
+            </Select>
+          </Form.Item>
           <Form.Item label="负责律师">
-            <Select 
+            <Select
               style={{ width: 120 }}
               value={lawyerFilter}
               onChange={setLawyerFilter}
@@ -503,6 +561,7 @@ const CaseManagement: React.FC = () => {
                 setSearchText('');
                 setStatusFilter('');
                 setTypeFilter('');
+                setPriorityFilter('');
                 setLawyerFilter('');
                 setClientFilter('');
                 fetchCases();
@@ -576,7 +635,7 @@ const CaseManagement: React.FC = () => {
           form.resetFields();
         }}
         width={600}
-        destroyOnClose
+        destroyOnHidden
         confirmLoading={loading}
       >
         <Form

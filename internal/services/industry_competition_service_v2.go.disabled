@@ -1,0 +1,339 @@
+package services
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"strings"
+	"time"
+
+	"law-oa-go/internal/models"
+	"law-oa-go/internal/repositories"
+)
+
+// IndustryCompetitionServiceV2 重构的行业竞争分析服务
+type IndustryCompetitionServiceV2 struct {
+	repo   repositories.EnhancedRepositoryInterface
+	logger *log.Logger
+}
+
+// NewIndustryCompetitionServiceV2 创建新的行业竞争分析服务
+func NewIndustryCompetitionServiceV2(repo repositories.EnhancedRepositoryInterface) *IndustryCompetitionServiceV2 {
+	return &IndustryCompetitionServiceV2{
+		repo:   repo,
+		logger: log.Default(),
+	}
+}
+
+// AnalyzeIndustryCompetition 分析行业竞争关系
+func (s *IndustryCompetitionServiceV2) AnalyzeIndustryCompetition(ctx context.Context, lawyerID int, clientIndustry string, opposingParty string) (*repositories.CompetitionAnalysis, error) {
+	analysis := &repositories.CompetitionAnalysis{
+		HasCompetition: false,
+		CompetitorInfo: make([]*repositories.CompetitorInfo, 0),
+		IndustryAnalysis: make(map[string]interface{}),
+		MarketPosition:    "UNKNOWN",
+		RiskFactors:       make([]string, 0),
+	}
+
+	// 1. 获取客户行业信息
+	industry, err := s.repo.GetIndustryByClientName(ctx, clientIndustry)
+	if err != nil {
+		s.logger.Printf("获取行业信息失败: %v", err)
+		return analysis, nil
+	}
+
+	if industry == nil {
+		s.logger.Printf("未找到行业信息: %s", clientIndustry)
+		return analysis, nil
+	}
+
+	// 2. 分析竞争对手
+	competitors, err := s.repo.GetCompetitiveRelationsByIndustry(ctx, industry.ID)
+	if err != nil {
+		s.logger.Printf("获取竞争关系失败: %v", err)
+		return analysis, nil
+	}
+
+	// 3. 检测与对方当事人的竞争关系
+	for _, competitor := range competitors {
+		if s.isCompetitor(competitor, opposingParty) {
+			competitorInfo := &repositories.CompetitorInfo{
+				CompanyName:     competitor.CompetitorName,
+				Industry:        industry.Name,
+				ConflictLevel:   competitor.ConflictLevel,
+				MatchedKeywords: s.extractKeywords(opposingParty, competitor.CompetitorPattern),
+				RelationType:    competitor.CompetitorType,
+				RiskScore:       s.calculateCompetitorRisk(competitor, opposingParty),
+			}
+
+			analysis.HasCompetition = true
+			analysis.CompetitorInfo = append(analysis.CompetitorInfo, competitorInfo)
+			analysis.RiskFactors = append(analysis.RiskFactors, fmt.Sprintf("与%s存在竞争关系", competitor.CompetitorName))
+		}
+	}
+
+	// 4. 分析行业整体竞争格局
+	analysis.IndustryAnalysis = s.analyzeIndustryContext(ctx, industry)
+
+	// 5. 确定市场位置
+	analysis.MarketPosition = s.determineMarketPosition(analysis)
+
+	s.logger.Printf("行业竞争分析完成 - 发现竞争: %v, 竞争者数量: %d",
+		analysis.HasCompetition, len(analysis.CompetitorInfo))
+
+	return analysis, nil
+}
+
+// GetIndustryByClientName 根据客户名称获取行业信息
+func (s *IndustryCompetitionServiceV2) GetIndustryByClientName(ctx context.Context, clientName string) (*models.IndustryClassification, error) {
+	// 实现基于关键词的行业检测
+	industryKeywords := map[string]string{
+		"阿里巴巴": "科技、媒体和通信",
+		"阿里":    "科技、媒体和通信",
+		"淘宝":    "科技、媒体和通信",
+		"天猫":    "科技、媒体和通信",
+		"支付宝":  "科技、媒体和通信",
+		"腾讯":    "科技、媒体和通信",
+		"微信":    "科技、媒体和通信",
+		"字节跳动": "科技、媒体和通信",
+		"抖音":    "科技、媒体和通信",
+	"TikTok":  "科技、媒体和通信",
+	"百度":    "科技、媒体和通信",
+		"京东":    "科技、媒体和通信",
+		"美团":    "科技、媒体和通信",
+		"滴滴":    "科技、媒体和通信",
+		"小米":    "科技、媒体和通信",
+		"华为":    "科技、媒体和通信",
+		"银行":    "金融",
+		"保险":    "金融",
+	"证券":    "金融",
+	"基金":    "金融",
+	"信托":    "金融",
+	"医院":    "医疗健康",
+	"诊所":    "医疗健康",
+	"制药":    "医疗健康",
+	"学校":    "教育",
+	"大学":    "教育",
+	"培训":    "教育",
+	"电力":    "能源",
+	"石油":    "能源",
+	"天然气":  "能源",
+	"煤炭":    "能源",
+	"建筑":    "房地产",
+	"房地产":  "房地产",
+	"开发商":  "房地产",
+	}
+
+	clientNameLower := strings.ToLower(clientName)
+	for keyword, industry := range industryKeywords {
+		if strings.Contains(clientNameLower, strings.ToLower(keyword)) {
+			return &models.IndustryClassification{
+				ID:          s.generateIndustryID(industry),
+				Name:        industry,
+				Code:        strings.ToUpper(strings.Replace(keyword, " ", "_")),
+				Level:       1,
+				Description:  fmt.Sprintf("基于关键词检测的行业分类: %s", keyword),
+				Keywords:    keyword,
+				CreatedAt:   time.Now(),
+				UpdatedAt:   time.Now(),
+			}
+		}
+	}
+
+	return &models.IndustryClassification{
+		ID:          s.generateIndustryID("其他"),
+		Name:        "其他",
+		Code:        "OTHER",
+		Level:       1,
+		Description:  "未分类行业",
+		Keywords:    "",
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}, nil
+}
+
+// isCompetitor 判断是否为竞争对手
+func (s *IndustryCompetitionServiceV2) isCompetitor(competitor models.CompetitiveRelation, opposingParty string) bool {
+	opposingPartyLower := strings.ToLower(opposingParty)
+	competitorNameLower := strings.ToLower(competitor.CompetitorName)
+	pattern := strings.ToLower(competitor.CompetitorPattern)
+
+	// 精确匹配
+	if opposingPartyLower == competitorNameLower {
+		return true
+	}
+
+	// 模式匹配
+	if pattern != "" && strings.Contains(opposingPartyLower, pattern) {
+		return true
+	}
+
+	// 关键词匹配
+	competitorKeywords := strings.Split(competitor.CompetitorName, " ")
+	for _, keyword := range competitorKeywords {
+		if strings.Contains(opposingPartyLower, strings.ToLower(keyword)) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// extractKeywords 提取匹配的关键词
+func (s *IndustryCompetitionServiceV2) extractKeywords(text, pattern string) []string {
+	// 实现关键词提取逻辑
+	keywords := make([]string, 0)
+
+	if pattern != "" {
+		patternLower := strings.ToLower(pattern)
+		textLower := strings.ToLower(text)
+
+		// 简单的关键词匹配
+		words := strings.Fields(textLower)
+		for _, word := range words {
+			if strings.Contains(patternLower, word) || strings.Contains(word, patternLower) {
+				keywords = append(keywords, word)
+			}
+		}
+	}
+
+	return keywords
+}
+
+// calculateCompetitorRisk 计算竞争对手风险分数
+func (s *IndustryCompetitionServiceV2) calculateCompetitorRisk(competitor models.CompetitiveRelation, opposingParty string) int {
+	baseScore := 50
+
+	// 根据冲突等级调整
+	switch competitor.ConflictLevel {
+	case "HIGH":
+		baseScore = 90
+	case "MEDIUM":
+		baseScore = 70
+	case "LOW":
+		baseScore = 50
+	}
+
+	// 根据竞争者类型调整
+	switch competitor.CompetitorType {
+	case "direct":
+		baseScore += 20
+	case "indirect":
+		baseScore += 10
+	case "substitute":
+		baseScore -= 10
+	}
+
+	// 根据匹配精度调整
+	if s.isCompetitor(competitor, opposingParty) {
+		baseScore += 10
+	}
+
+	// 确保分数在合理范围内
+	if baseScore > 100 {
+		baseScore = 100
+	}
+	if baseScore < 0 {
+		baseScore = 0
+	}
+
+	return baseScore
+}
+
+// analyzeIndustryContext 分析行业整体环境
+func (s *IndustryCompetitionServiceV2) analyzeIndustryContext(ctx context.Context, industry *models.IndustryClassification) map[string]interface{} {
+	context := make(map[string]interface{})
+
+	// 行业基本信息
+	context["industry_name"] = industry.Name
+	context["industry_code"] = industry.Code
+	context["industry_level"] = industry.Level
+
+	// 竞争激烈程度评估
+	context["competition_level"] = s.assessCompetitionLevel(industry)
+
+	// 监管环境
+	context["regulatory_environment"] = s.assessRegulatoryEnvironment(industry)
+
+	// 技术趋势
+	context["technology_trends"] = s.assessTechnologyTrends(industry)
+
+	return context
+}
+
+// assessCompetitionLevel 评估竞争激烈程度
+func (s *IndustryCompetitionServiceV2) assessCompetitionLevel(industry *models.IndustryClassification) string {
+	// 根据行业代码评估竞争激烈程度
+	switch industry.Code {
+	case "TMT", "FINANCE", "E_COMMERCE":
+		return "HIGH"
+	case "HEALTHCARE", "EDUCATION", "ENERGY":
+		return "MEDIUM"
+	default:
+		return "LOW"
+	}
+}
+
+// assessRegulatoryEnvironment 评估监管环境
+func (s *IndustryCompetitionServiceV2) assessRegulatoryEnvironment(industry *models.IndustryClassification) string {
+	// 根据行业评估监管严格程度
+	switch industry.Code {
+	case "FINANCE", "HEALTHCARE", "EDUCATION":
+		return "STRICT"
+	case "TMT":
+		return "MODERATE"
+	default:
+		return "RELAXED"
+	}
+}
+
+// assessTechnologyTrends 评估技术趋势
+func (s *IndustryCompetitionServiceV2) assessTechnologyTrends(industry *models.IndustryClassification) []string {
+	trends := make([]string, 0)
+
+	// 根据行业添加相关技术趋势
+	switch industry.Code {
+	case "TMT":
+		trends = []string{"AI/机器学习", "云计算", "5G", "物联网", "区块链"}
+	case "FINANCE":
+		trends = []string{"数字货币", "开放银行", "AI风控", "移动支付", "监管科技"}
+	case "HEALTHCARE":
+		trends = []string{"远程医疗", "AI诊断", "精准医疗", "健康大数据", "医疗机器人"}
+	case "EDUCATION":
+		trends = []string{"在线教育", "AI个性化学习", "虚拟现实", "微课", "学习分析"}
+	default:
+		trends = []string{"数字化转型", "自动化", "大数据分析"}
+	}
+
+	return trends
+}
+
+// determineMarketPosition 确定市场位置
+func (s *IndustryCompetitionServiceV2) determineMarketPosition(analysis *repositories.CompetitionAnalysis) string {
+	if !analysis.HasCompetition {
+		return "MONOPOLY"
+	}
+
+	if len(analysis.CompetitorInfo) >= 5 {
+		return "HIGHLY_COMPETITIVE"
+	}
+
+	if len(analysis.CompetitorInfo) >= 3 {
+		return "COMPETITIVE"
+	}
+
+	return "EMERGING"
+}
+
+// generateIndustryID 生成行业ID
+func (s *IndustryCompetitionServiceV2) generateIndustryID(industryName string) int {
+	// 简单的哈希函数实现
+	hash := 0
+	for _, char := range industryName {
+		hash = hash*31 + int(char)
+	}
+	if hash < 0 {
+		hash = -hash
+	}
+	return hash % 10000 + 1 // 确保1-10000范围内
+}
