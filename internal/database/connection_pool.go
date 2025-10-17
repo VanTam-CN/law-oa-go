@@ -16,11 +16,6 @@ import (
 
 // 数据库连接池相关的Prometheus指标
 var (
-	dbConnections = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "db_connections_active",
-		Help: "Number of active database connections",
-	}, []string{"database"})
-
 	dbConnectionWaitTime = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "db_connection_wait_seconds",
 		Help:    "Time spent waiting for database connections",
@@ -127,8 +122,7 @@ func NewOptimizedDatabase(cfg *config.Config) (*OptimizedDatabase, error) {
 		defer ticker.Stop()
 
 		for range ticker.C {
-			stats := sqlDB.Stats()
-			dbConnections.WithLabelValues(cfg.Database.Database).Set(float64(stats.OpenConnections))
+			// 连接监控已移至performance_optimizer.go
 		}
 	}()
 

@@ -7,37 +7,12 @@ import (
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	"gorm.io/gorm"
 	"law-oa-go/internal/cache"
 	"law-oa-go/internal/config"
 	"law-oa-go/internal/models"
 )
 
-// 数据库查询相关的Prometheus指标
-var (
-	dbQueryDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
-		Name:    "db_query_duration_seconds",
-		Help:    "Duration of database queries",
-		Buckets: prometheus.DefBuckets,
-	}, []string{"operation", "table"})
-
-	dbQueryCount = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "db_query_count_total",
-		Help: "Total number of database queries",
-	}, []string{"operation", "table"})
-
-	dbQueryErrors = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "db_query_errors_total",
-		Help: "Total number of database query errors",
-	}, []string{"operation", "table"})
-
-	dbSlowQueries = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "db_slow_queries_total",
-		Help: "Total number of slow database queries (>100ms)",
-	}, []string{"operation", "table"})
-)
 
 // QueryOptimizer 查询优化器
 type QueryOptimizer struct {
@@ -227,10 +202,12 @@ func getTableNameFromDest(dest interface{}) string {
 
 // 全局变量存储优化后的组件
 var (
-	OptimizedDB         *OptimizedDatabase
-	CacheService        *cache.CacheService
-	QueryOptimizerInst  *QueryOptimizer
-	ElasticsearchClient *elasticsearch.Client
+	OptimizedDB              *OptimizedDatabase
+	CacheService             *cache.CacheService
+	AdvancedCacheService     *cache.AdvancedCacheService
+	QueryOptimizerInst       *QueryOptimizer
+	PerformanceOptimizerInst  *PerformanceOptimizer
+	ElasticsearchClient       *elasticsearch.Client
 )
 
 // InitOptimizedComponents 初始化所有优化组件
@@ -269,17 +246,35 @@ func InitOptimizedComponents(cfg *config.Config) error {
 	// 初始化缓存服务
 	CacheService = cache.NewCacheService(redisClient, "lawoa")
 
+	// 初始化高级缓存服务
+	AdvancedCacheService = cache.NewAdvancedCacheService(redisClient, "lawoa_advanced", 30*time.Minute)
+
 	// 初始化查询优化器
 	QueryOptimizerInst = NewQueryOptimizer(OptimizedDB.DB, CacheService)
+
+	// 初始化性能优化器
+	PerformanceOptimizerInst = NewPerformanceOptimizer(OptimizedDB.DB, AdvancedCacheService)
 
 	// 初始化Elasticsearch（可选）
 	ElasticsearchClient, err = InitElasticsearch(cfg.Elasticsearch)
 	if err != nil {
 		fmt.Printf("Elasticsearch连接失败，跳过初始化: %v\n", err)
 		// 不返回错误，Elasticsearch是可选的
+	} else {
+		// 初始化Elasticsearch优化器
+		esConfig := DefaultESConfig()
+		esConfig.Addresses = []string{fmt.Sprintf("http://%s:%s", cfg.Elasticsearch.Host, cfg.Elasticsearch.Port)}
+		esConfig.Username = cfg.Elasticsearch.Username
+		esConfig.Password = cfg.Elasticsearch.Password
+
+		_, err = NewElasticsearchOptimizer(esConfig)
+		if err != nil {
+			fmt.Printf("Elasticsearch优化器初始化失败: %v\n", err)
+			// 不返回错误，优化器是可选的
+		}
 	}
 
-	log.Println("所有优化组件初始化完成")
+	log.Println("所有优化组件初始化完成 - 包含高级缓存和性能优化器")
 	return nil
 }
 
@@ -301,6 +296,16 @@ func GetQueryOptimizer() *QueryOptimizer {
 // GetElasticsearchClient 获取Elasticsearch客户端实例
 func GetElasticsearchClient() *elasticsearch.Client {
 	return ElasticsearchClient
+}
+
+// GetAdvancedCacheService 获取高级缓存服务实例
+func GetAdvancedCacheService() *cache.AdvancedCacheService {
+	return AdvancedCacheService
+}
+
+// GetPerformanceOptimizer 获取性能优化器实例
+func GetPerformanceOptimizer() *PerformanceOptimizer {
+	return PerformanceOptimizerInst
 }
 
 // initSeedData 初始化种子数据

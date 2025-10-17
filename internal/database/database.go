@@ -69,12 +69,24 @@ func Init(cfg config.DatabaseConfig) (*gorm.DB, error) {
 	return db, nil
 }
 
-// InitRedis 初始化Redis连接
+// InitRedis 初始化Redis连接 - 性能优化版本
 func InitRedis(cfg config.RedisConfig) (*redis.Client, error) {
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%s", cfg.Host, cfg.Port),
-		Password: cfg.Password,
-		DB:       cfg.DB,
+		Addr:            fmt.Sprintf("%s:%s", cfg.Host, cfg.Port),
+		Password:        cfg.Password,
+		DB:              cfg.DB,
+
+		// 连接池优化配置
+		PoolSize:        100,          // 连接池大小
+		MinIdleConns:    10,           // 最小空闲连接
+		MaxRetries:      3,            // 最大重试次数
+		DialTimeout:     5 * time.Second,  // 连接超时
+		ReadTimeout:     3 * time.Second,  // 读取超时
+		WriteTimeout:    3 * time.Second,  // 写入超时
+		PoolTimeout:     4 * time.Second,  // 获取连接超时
+
+	// 性能优化配置（使用Redis v9兼容的选项）
+		ConnMaxIdleTime: 5 * time.Minute, // 空闲超时
 	})
 
 	// 测试连接
@@ -86,7 +98,7 @@ func InitRedis(cfg config.RedisConfig) (*redis.Client, error) {
 		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
 	}
 
-	log.Println("Redis连接成功")
+	log.Printf("Redis连接成功 - 连接池大小: %d, 最小空闲: %d", rdb.Options().PoolSize, rdb.Options().MinIdleConns)
 	return rdb, nil
 }
 
