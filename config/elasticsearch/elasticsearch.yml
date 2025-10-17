@@ -1,5 +1,5 @@
-# Elasticsearch 8.x 最简配置文件
-# 适用于Law OA Go项目
+# Elasticsearch 8.x 配置文件
+# 适用于Law OA Go项目 - 法条搜索系统
 
 # 集群配置
 cluster.name: law-oa-cluster
@@ -17,3 +17,30 @@ bootstrap.memory_lock: false
 
 # 安全配置
 xpack.security.enabled: false
+
+# 索引配置
+indices.query.bool.max_clause_count: 4096
+
+# 中文分词插件配置
+index.analysis.analyzer.default.type: ik_max_word
+index.analysis.search_analyzer.default.type: ik_smart
+
+# 路径配置
+path.data: /usr/share/elasticsearch/data
+path.logs: /usr/share/elasticsearch/logs
+
+# 日志配置
+logger.level: INFO
+logger.org.elasticsearch.discovery: WARN
+logger.org.elasticsearch.cluster.routing.allocation.decider: WARN
+
+# 性能配置
+thread_pool.write.queue_size: 1000
+thread_pool.search.queue_size: 1000
+
+# 监控配置
+xpack.monitoring.collection.enabled: true
+xpack.monitoring.elasticsearch.collection.enabled: true
+
+# JVM 配置 (通过环境变量设置)
+# - ES_JAVA_OPTS=-Xms2g -Xmx2g

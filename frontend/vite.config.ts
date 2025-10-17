@@ -17,6 +17,7 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,
+        secure: false,
         rewrite: (path) => path,
         configure: (proxy, options) => {
           proxy.on('error', (err, req, res) => {

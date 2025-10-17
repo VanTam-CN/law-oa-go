@@ -351,8 +351,19 @@ func initSeedData(db *gorm.DB) error {
 		Role:     "lawyer",
 		Status:   "active",
 	}
-	if err := db.Create(lawyerUser).Error; err != nil {
-		return err
+
+	// 检查用户是否已存在，如果不存在则创建
+	var existingUser models.User
+	if err := db.Where("email = ?", lawyerUser.Email).First(&existingUser).Error; err != nil {
+		// 用户不存在，创建新用户
+		if err := db.Create(lawyerUser).Error; err != nil {
+			log.Printf("创建律师用户失败: %v", err)
+			return err
+		}
+	} else {
+		// 用户已存在，使用现有用户
+		lawyerUser = &existingUser
+		log.Println("律师用户已存在，跳过创建")
 	}
 
 	cases := []*models.Case{

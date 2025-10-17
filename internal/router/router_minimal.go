@@ -14,14 +14,11 @@ import (
 	"gorm.io/gorm"
 )
 
-// Init 初始化完整的路由系统
-func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interface{}) {
-	log.Println("初始化完整路由系统...")
+// InitMinimal 初始化最小化路由（仅包含法条搜索基本功能）
+func InitMinimal(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interface{}) {
+	log.Println("初始化最小化路由系统...")
 
-	// 初始化基础仓储
-	userRepo := repositories.NewUserRepository(db)
-
-	// 初始化法条相关仓储
+	// 初始化法条相关Repository
 	legalStatuteRepo := repositories.NewLegalStatuteRepository(db)
 	legalCategoryRepo := repositories.NewLegalCategoryRepository(db)
 	legalTagRepo := repositories.NewLegalTagRepository(db)
@@ -35,26 +32,28 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 		}
 	}
 
-	// 初始化服务
-	userService := services.NewUserService(userRepo)
+	// 初始化法条服务
 	legalStatuteService := services.NewLegalStatuteService(db, legalStatuteRepo, legalCategoryRepo, legalTagRepo, legalEsRepo)
 
-	// 初始化处理器
-	authHandler := handlers.NewAuthHandler(userService)
-	userHandler := handlers.NewUserHandler(userService)
+	// 初始化法条处理器
 	legalStatuteHandler := handlers.NewLegalStatuteHandler(legalStatuteService)
 
-	// 公开路由组
+	// 公开路由 - 认证和法条搜索
 	public := app.Group("/api/v1")
 	{
-		// 认证路由
+		// 认证相关路由
 		auth := public.Group("/auth")
 		{
+			// 创建用户服务用于认证
+			userRepo := repositories.NewUserRepository(db)
+			userService := services.NewUserService(userRepo)
+			authHandler := handlers.NewAuthHandler(userService)
+
 			auth.POST("/login", authHandler.Login)
 			auth.POST("/register", authHandler.Register)
 		}
 
-		// 法条搜索（公开）
+		// 法条搜索（公开，方便测试）
 		legal := public.Group("/legal")
 		{
 			legal.GET("/statutes/search", legalStatuteHandler.SearchStatutes)
@@ -65,21 +64,10 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 		}
 	}
 
-	// 需要认证的路由组
+	// 需要认证的法条路由
 	protected := app.Group("/api/v1")
 	protected.Use(middleware.AuthMiddleware())
 	{
-		// 用户管理
-		users := protected.Group("/admin/users")
-		{
-			users.GET("", userHandler.ListUsers)
-			users.GET("/:id", userHandler.GetUser)
-			users.POST("", userHandler.CreateUser)
-			users.PUT("/:id", userHandler.UpdateUser)
-			users.DELETE("/:id", userHandler.DeleteUser)
-		}
-
-		// 法条管理（需要认证）
 		legal := protected.Group("/legal")
 		{
 			legal.POST("/statutes", legalStatuteHandler.CreateStatute)
@@ -88,6 +76,13 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 		}
 	}
 
-	
-	log.Println("完整路由系统初始化完成")
+	// 健康检查（避免冲突，使用不同路径）
+	app.GET("/health-minimal", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status":  "ok",
+			"message": "法条搜索系统运行正常",
+		})
+	})
+
+	log.Println("最小化路由系统初始化完成")
 }

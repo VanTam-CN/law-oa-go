@@ -1,0 +1,198 @@
+[
+  {
+    "category": {
+      "code": "CIVIL_LAW",
+      "id": 1,
+      "name": "民法"
+    },
+    "chapter": "第七章 侵权责任",
+    "content": "个人之间形成劳务关系，提供劳务一方因劳务造成他人损害的，由接受劳务一方承担侵权责任。接受劳务一方承担侵权责任后，可以向有故意或者重大过失的提供劳务一方追偿。提供劳务一方因劳务受到损害的，根据双方各自的过错承担相应的责任。",
+    "content_length": 330,
+    "created_at": "2025-10-16T23:09:12+08:00",
+    "effective_date": "2025-10-16",
+    "favorite_count": 0,
+    "hierarchy_level": 3,
+    "id": 1,
+    "keywords": [
+      "侵权责任",
+      "劳务关系",
+      "损害赔偿"
+    ],
+    "law_name": "中华人民共和国民法典",
+    "search_weight": 1,
+    "section": "第一节 损害赔偿",
+    "status": "active",
+    "statute_number": "民法典第一千一百九十二条",
+    "tags": [
+      "常用",
+      "基础"
+    ],
+    "title": "个人劳务关系中的侵权责任",
+    "updated_at": "2025-10-16T23:09:12+08:00",
+    "view_count": 0
+  },
+  {
+    "category": {
+      "code": "CIVIL_LAW",
+      "id": 1,
+      "name": "民法"
+    },
+    "chapter": "第七章 侵权责任",
+    "content": "产品投入流通后发现存在缺陷的，生产者、销售者应当及时采取警示、召回等补救措施。未及时采取补救措施或者补救措施不力造成损害扩大的，对扩大的损害也应当承担侵权责任。",
+    "content_length": 240,
+    "created_at": "2025-10-16T23:09:12+08:00",
+    "effective_date": "2025-10-16",
+    "favorite_count": 0,
+    "hierarchy_level": 3,
+    "id": 2,
+    "keywords": [
+      "产品责任",
+      "缺陷产品",
+      "召回",
+      "警示"
+    ],
+    "law_name": "中华人民共和国民法典",
+    "search_weight": 1,
+    "section": "第四节 产品责任",
+    "status": "active",
+    "statute_number": "民法典第一千二百零六条",
+    "tags": [
+      "重要",
+      "常用"
+    ],
+    "title": "产品责任",
+    "updated_at": "2025-10-16T23:09:12+08:00",
+    "view_count": 0
+  },
+  {
+    "category": {
+      "code": "COMMERCIAL_LAW",
+      "id": 3,
+      "name": "商法"
+    },
+    "chapter": "第一章 总则",
+    "content": "公司是企业法人，有独立的法人财产，享有法人财产权。公司以其全部财产对公司的债务承担责任。有限责任公司的股东以其认缴的出资额为限对公司承担责任；股份有限公司的股东以其认购的股份为限对公司承担责任。",
+    "content_length": 291,
+    "created_at": "2025-10-16T23:09:12+08:00",
+    "effective_date": "2025-10-16",
+    "favorite_count": 0,
+    "hierarchy_level": 2,
+    "id": 3,
+    "keywords": [
+      "公司",
+      "法人财产",
+      "有限责任",
+      "股份责任"
+    ],
+    "law_name": "中华人民共和国公司法",
+    "search_weight": 1,
+    "section": "",
+    "status": "active",
+    "statute_number": "公司法第三条",
+    "tags": [
+      "基础",
+      "重要"
+    ],
+    "title": "公司定义及法律责任",
+    "updated_at": "2025-10-16T23:09:12+08:00",
+    "view_count": 0
+  },
+  {
+    "category": {
+      "code": "COMMERCIAL_LAW",
+      "id": 3,
+      "name": "商法"
+    },
+    "chapter": "第一章 总则",
+    "content": "公司股东依法享有资产收益、参与重大决策和选择管理者等权利。公司股东应当遵守法律、行政法规和公司章程，依法行使股东权利，不得滥用股东权利损害公司或者其他股东的利益。",
+    "content_length": 243,
+    "created_at": "2025-10-16T23:09:12+08:00",
+    "effective_date": "2025-10-16",
+    "favorite_count": 0,
+    "hierarchy_level": 2,
+    "id": 4,
+    "keywords": [
+      "股东权利",
+      "资产收益",
+      "重大决策",
+      "管理者选择"
+    ],
+    "law_name": "中华人民共和国公司法",
+    "search_weight": 1,
+    "section": "",
+    "status": "active",
+    "statute_number": "公司法第四条",
+    "tags": [
+      "基础",
+      "重要"
+    ],
+    "title": "股东权利",
+    "updated_at": "2025-10-16T23:09:12+08:00",
+    "view_count": 0
+  },
+  {
+    "category": {
+      "code": "LABOR_LAW",
+      "id": 4,
+      "name": "劳动法"
+    },
+    "chapter": "第四章 解除和终止劳动合同",
+    "content": "劳动者有下列情形之一的，用人单位可以解除劳动合同：（一）在试用期间被证明不符合录用条件的；（二）严重违反用人单位的规章制度的；（三）严重失职，营私舞弊，给用人单位造成重大损害的；（四）劳动者同时与其他用人单位建立劳动关系，对完成本单位的工作任务造成严重影响，或者经用人单位提出，拒不改正的；（五）因欺诈、胁迫等手段使对方在违背真实意思的情况下订立或者变更劳动合同，致使劳动合同无效的。",
+    "content_length": 576,
+    "created_at": "2025-10-16T23:09:12+08:00",
+    "effective_date": "2025-10-16",
+    "favorite_count": 0,
+    "hierarchy_level": 2,
+    "id": 5,
+    "keywords": [
+      "解除劳动合同",
+      "试用期",
+      "规章制度",
+      "重大损害"
+    ],
+    "law_name": "中华人民共和国劳动合同法",
+    "search_weight": 1,
+    "section": "",
+    "status": "active",
+    "statute_number": "劳动合同法第三十九条",
+    "tags": [
+      "常用",
+      "重要"
+    ],
+    "title": "用人单位单方解除劳动合同",
+    "updated_at": "2025-10-16T23:09:12+08:00",
+    "view_count": 0
+  },
+  {
+    "category": {
+      "code": "LABOR_LAW",
+      "id": 4,
+      "name": "劳动法"
+    },
+    "chapter": "第五章 特别规定",
+    "content": "经济补偿按劳动者在本单位工作的年限，每满一年支付一个月工资的标准向劳动者支付。六个月以上不满一年的，按一年计算；不满六个月的，向劳动者支付半个月工资的经济补偿。",
+    "content_length": 240,
+    "created_at": "2025-10-16T23:09:12+08:00",
+    "effective_date": "2025-10-16",
+    "favorite_count": 0,
+    "hierarchy_level": 2,
+    "id": 6,
+    "keywords": [
+      "经济补偿",
+      "工作年限",
+      "工资标准"
+    ],
+    "law_name": "中华人民共和国劳动合同法",
+    "search_weight": 1,
+    "section": "第一节 集体合同",
+    "status": "active",
+    "statute_number": "劳动合同法第四十七条",
+    "tags": [
+      "常用",
+      "基础"
+    ],
+    "title": "经济补偿的计算",
+    "updated_at": "2025-10-16T23:09:12+08:00",
+    "view_count": 0
+  }
+]

@@ -7,6 +7,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -78,6 +79,16 @@ func NewOptimizedDatabase(cfg *config.Config) (*OptimizedDatabase, error) {
 		// SQLite连接
 		dsn := cfg.Database.Database
 		db, err = gorm.Open(sqlite.Open(dsn), gormConfig)
+	} else if cfg.Database.Driver == "postgres" {
+		// PostgreSQL连接
+		dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=UTC",
+			cfg.Database.Host,
+			cfg.Database.Port,
+			cfg.Database.Username,
+			cfg.Database.Password,
+			cfg.Database.Database,
+		)
+		db, err = gorm.Open(postgres.Open(dsn), gormConfig)
 	} else {
 		// MySQL连接（默认）
 		dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=%v&loc=%s&tls=skip-verify",

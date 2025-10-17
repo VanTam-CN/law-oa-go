@@ -193,7 +193,7 @@ func main() {
 		SkipHeader: "X-Cache-Skip",
 	}))
 
-	// 初始化路由
+	// 初始化路由系统
 	router.Init(app,
 		database.GetOptimizedDB().DB,
 		database.GetCacheService().GetClient(),

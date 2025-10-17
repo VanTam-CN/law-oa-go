@@ -153,6 +153,16 @@ func AuthMiddleware() gin.HandlerFunc {
 	}
 }
 
+// GetUserID 从Gin上下文中获取用户ID
+func GetUserID(c *gin.Context) int {
+	if userID, exists := c.Get("user_id"); exists {
+		if id, ok := userID.(int); ok {
+			return id
+		}
+	}
+	return 0 // 默认返回0，表示未登录或无效用户
+}
+
 // RoleMiddleware 角色权限中间件
 func RoleMiddleware(roles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {

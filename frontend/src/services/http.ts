@@ -5,7 +5,7 @@ import { getAuthToken } from '@/utils/auth';
 
 // 创建axios实例
 const service = axios.create({
-  baseURL: '/api',
+  baseURL: 'http://localhost:8080/api',
   timeout: 10000,
   paramsSerializer: {
     indexes: null,
