@@ -69,7 +69,7 @@ func (s *SearchService) Search(ctx context.Context, req *SearchRequest) (*Search
 
 	// Validate request
 	if req.Query == "" {
-		return nil, errors.NewValidationError("query", "empty_query", "Search query cannot be empty", "Please provide a search query")
+		return nil, errors.ValidationErrorWithDetails("query", "Search query cannot be empty", "Please provide a search query", []string{"required_field"})
 	}
 
 	// Set defaults
@@ -97,7 +97,7 @@ func (s *SearchService) Search(ctx context.Context, req *SearchRequest) (*Search
 	// Execute search using raw ES client
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(searchQuery); err != nil {
-		return nil, errors.NewInternalError("search_encoding", "Failed to encode search query", err)
+		return nil, errors.InternalError("Failed to encode search query", err)
 	}
 
 	res, err := s.esClient.Search(
@@ -106,23 +106,23 @@ func (s *SearchService) Search(ctx context.Context, req *SearchRequest) (*Search
 		s.esClient.Search.WithBody(&buf),
 	)
 	if err != nil {
-		return nil, errors.NewInternalError("search_execution", "Failed to execute search", err)
+		return nil, errors.InternalError("Failed to execute search", err)
 	}
 	defer res.Body.Close()
 
 	if res.IsError() {
-		return nil, errors.NewInternalError("search_response", "Elasticsearch returned error", fmt.Errorf("status: %s", res.Status()))
+		return nil, errors.InternalError("Elasticsearch returned error", fmt.Errorf("status: %s", res.Status()))
 	}
 
 	// Parse search results
 	var esResult map[string]interface{}
 	if err := json.NewDecoder(res.Body).Decode(&esResult); err != nil {
-		return nil, errors.NewInternalError("search_parsing", "Failed to parse search response", err)
+		return nil, errors.InternalError("Failed to parse search response", err)
 	}
 
 	searchResults, total, err := s.parseSearchResults(esResult)
 	if err != nil {
-		return nil, errors.NewInternalError("search_parsing", "Failed to parse search results", err)
+		return nil, errors.InternalError("Failed to parse search results", err)
 	}
 
 	executionTime := time.Since(startTime)

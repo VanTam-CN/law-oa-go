@@ -1,0 +1,27 @@
+---
+# Law OA Go - 命名空间模板
+# 企业级Kubernetes命名空间配置
+
+{{- if .Values.namespace.enabled }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.namespace.name | default "law-oa" }}
+  labels:
+    {{- include "law-oa-go.labels" . | nindent 4 }}
+    app.kubernetes.io/component: namespace
+    environment: {{ .Values.global.environment | default "production" }}
+    managed-by: helm
+    project: law-oa-go
+  annotations:
+    description: "Law OA Go 应用命名空间"
+    {{- with .Values.namespace.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- if .Values.commonAnnotations }}
+    {{- toYaml .Values.commonAnnotations | nindent 4 }}
+    {{- end }}
+spec:
+  finalizers:
+    - kubernetes
+{{- end }}

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>律师下拉框修复验证</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .debug-item {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 3px;
+        }
+        .error { color: red; background: #ffe6e6; }
+        .success { color: green; background: #e6ffe6; }
+        .warning { color: orange; background: #fff3cd; }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button:hover { background: #0056b3; }
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .lawyer-item {
+            padding: 8px;
+            border: 1px solid #eee;
+            margin: 2px 0;
+            border-radius: 3px;
+            background: #fafafa;
+        }
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 律师下拉框修复验证测试</h1>
+
+        <div class="section">
+            <h2>1. 认证状态检查</h2>
+            <div id="auth-status" class="loading">检查中...</div>
+            <button onclick="testAuth()">测试认证</button>
+        </div>
+
+        <div class="section">
+            <h2>2. 律师API测试</h2>
+            <div id="lawyer-api-test" class="loading">等待测试...</div>
+            <button onclick="testLawyerAPI()">测试律师API</button>
+        </div>
+
+        <div class="section">
+            <h2>3. 律师下拉框模拟</h2>
+            <p>模拟新增案件页面中的主办律师下拉框：</p>
+            <select id="lawyer-dropdown">
+                <option value="">请选择主办律师...</option>
+            </select>
+            <div id="dropdown-status" class="debug-item" style="margin-top: 10px;">
+                准备填充数据...
+            </div>
+            <button onclick="populateLawyerDropdown()">填充律师数据</button>
+        </div>
+
+        <div class="section">
+            <h2>4. 律师列表显示</h2>
+            <div id="lawyer-list" class="loading">暂无数据</div>
+        </div>
+
+        <div class="section">
+            <h2>5. 综合测试结果</h2>
+            <div id="test-results" class="debug-item">
+                等待完整测试...
+            </div>
+            <button onclick="runFullTest()">运行完整测试</button>
+        </div>
+    </div>
+
+    <script>
+        let authToken = null;
+        let currentUser = null;
+        let lawyerData = [];
+
+        // 模拟前端的token存储和获取
+        function getAuthToken() {
+            return localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+        }
+
+        function setAuthToken(token) {
+            localStorage.setItem('auth_token', token);
+            authToken = token;
+        }
+
+        // 获取用户信息
+        function getUserInfo() {
+            const userInfo = localStorage.getItem('law_oa_user_info');
+            return userInfo ? JSON.parse(userInfo) : null;
+        }
+
+        // 测试认证状态
+        async function testAuth() {
+            const authStatus = document.getElementById('auth-status');
+            authStatus.innerHTML = '<div class="loading">测试认证中...</div>';
+
+            // 检查本地存储的token
+            const storedToken = getAuthToken();
+            const storedUser = getUserInfo();
+
+            let statusHtml = '<div class="debug-item">';
+            statusHtml += `<strong>存储的Token:</strong> ${storedToken ? '✅ 存在' : '❌ 不存在'}`;
+            if (storedToken) {
+                statusHtml += `<br><small>长度: ${storedToken.length}, 前30字符: ${storedToken.substring(0, 30)}...</small>`;
+            }
+            statusHtml += '</div>';
+
+            statusHtml += '<div class="debug-item">';
+            statusHtml += `<strong>用户信息:</strong> ${storedUser ? '✅ 存在' : '❌ 不存在'}`;
+            if (storedUser) {
+                statusHtml += `<br><small>姓名: ${storedUser.name}, 邮箱: ${storedUser.email}, 角色: ${storedUser.role}</small>`;
+            }
+            statusHtml += '</div>';
+
+            // 如果没有token，尝试登录
+            if (!storedToken) {
+                statusHtml += '<div class="debug-item warning">尝试自动登录...</div>';
+                authStatus.innerHTML = statusHtml;
+
+                try {
+                    const loginResponse = await fetch('http://localhost:8080/api/v1/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: 'admin@lawoa.com',
+                            password: 'admin123'
+                        })
+                    });
+
+                    const loginData = await loginResponse.json();
+                    if (loginData.success && loginData.data.token) {
+                        setAuthToken(loginData.data.token);
+                        localStorage.setItem('law_oa_user_info', JSON.stringify(loginData.data.user));
+                        authToken = loginData.data.token;
+                        currentUser = loginData.data.user;
+
+                        statusHtml += '<div class="debug-item success">✅ 自动登录成功！</div>';
+                    } else {
+                        statusHtml += '<div class="debug-item error">❌ 自动登录失败</div>';
+                    }
+                } catch (error) {
+                    statusHtml += `<div class="debug-item error">❌ 登录请求失败: ${error.message}</div>`;
+                }
+            } else {
+                authToken = storedToken;
+                currentUser = storedUser;
+                statusHtml += '<div class="debug-item success">✅ 使用已存储的认证信息</div>';
+            }
+
+            // 验证token有效性
+            if (authToken) {
+                try {
+                    const meResponse = await fetch('http://localhost:8080/api/v1/auth/me', {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+
+                    if (meResponse.ok) {
+                        const meData = await meResponse.json();
+                        statusHtml += '<div class="debug-item success">✅ Token验证成功</div>';
+                    } else {
+                        statusHtml += '<div class="debug-item error">❌ Token验证失败</div>';
+                    }
+                } catch (error) {
+                    statusHtml += `<div class="debug-item error">❌ Token验证错误: ${error.message}</div>`;
+                }
+            }
+
+            authStatus.innerHTML = statusHtml;
+        }
+
+        // 测试律师API
+        async function testLawyerAPI() {
+            const apiTest = document.getElementById('lawyer-api-test');
+            apiTest.innerHTML = '<div class="loading">测试律师API中...</div>';
+
+            if (!authToken) {
+                await testAuth();
+            }
+
+            if (!authToken) {
+                apiTest.innerHTML = '<div class="error">❌ 没有有效的认证token</div>';
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:8080/api/v1/lawfirm/lawyers?page=1&page_size=999', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    lawyerData = data.data || [];
+                    apiTest.innerHTML = `
+                        <div class="debug-item success">
+                            <strong>✅ API调用成功</strong><br>
+                            <small>状态码: ${response.status}, 律师数量: ${lawyerData.length}</small>
+                        </div>
+                    `;
+
+                    // 显示律师列表
+                    displayLawyerList();
+                } else {
+                    apiTest.innerHTML = `
+                        <div class="debug-item error">
+                            <strong>❌ API调用失败</strong><br>
+                            <small>错误: ${data.message || '未知错误'}</small>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                apiTest.innerHTML = `
+                    <div class="debug-item error">
+                        <strong>❌ API请求失败</strong><br>
+                        <small>错误: ${error.message}</small>
+                    </div>
+                `;
+            }
+        }
+
+        // 显示律师列表
+        function displayLawyerList() {
+            const lawyerList = document.getElementById('lawyer-list');
+            if (lawyerData.length === 0) {
+                lawyerList.innerHTML = '<div class="warning">⚠️ 没有律师数据</div>';
+                return;
+            }
+
+            let listHtml = `<div class="debug-item success"><strong>✅ 律师数据 (${lawyerData.length}位律师)</strong></div>`;
+            lawyerData.slice(0, 5).forEach(lawyer => {
+                listHtml += `
+                    <div class="lawyer-item">
+                        <strong>${lawyer.name}</strong> (${lawyer.email})<br>
+                        <small>电话: ${lawyer.phone || '未设置'}, 状态: ${lawyer.status}</small>
+                    </div>
+                `;
+            });
+
+            if (lawyerData.length > 5) {
+                listHtml += `<div class="debug-item">...还有${lawyerData.length - 5}位律师</div>`;
+            }
+
+            lawyerList.innerHTML = listHtml;
+        }
+
+        // 填充律师下拉框
+        function populateLawyerDropdown() {
+            const dropdown = document.getElementById('lawyer-dropdown');
+            const status = document.getElementById('dropdown-status');
+
+            if (lawyerData.length === 0) {
+                status.innerHTML = '<div class="warning">⚠️ 没有律师数据可填充，请先测试API</div>';
+                return;
+            }
+
+            // 清空现有选项
+            dropdown.innerHTML = '<option value="">请选择主办律师...</option>';
+
+            // 添加律师选项
+            lawyerData.forEach(lawyer => {
+                const option = document.createElement('option');
+                option.value = lawyer.id;
+                option.textContent = `${lawyer.name} (${lawyer.email})`;
+                dropdown.appendChild(option);
+            });
+
+            status.innerHTML = `
+                <div class="debug-item success">
+                    <strong>✅ 下拉框填充成功</strong><br>
+                    <small>共填充${lawyerData.length}位律师</small>
+                </div>
+            `;
+
+            // 模拟选择事件
+            dropdown.addEventListener('change', function() {
+                if (this.value) {
+                    const selectedLawyer = lawyerData.find(l => l.id == this.value);
+                    status.innerHTML = `
+                        <div class="debug-item success">
+                            <strong>✅ 已选择律师</strong><br>
+                            <small>${selectedLawyer.name} - ${selectedLawyer.email}</small>
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        // 运行完整测试
+        async function runFullTest() {
+            const results = document.getElementById('test-results');
+            results.innerHTML = '<div class="loading">🔄 运行完整测试...</div>';
+
+            try {
+                // 步骤1: 测试认证
+                await testAuth();
+
+                // 步骤2: 测试律师API
+                await testLawyerAPI();
+
+                // 步骤3: 填充下拉框
+                populateLawyerDropdown();
+
+                // 生成测试报告
+                const timestamp = new Date().toLocaleString();
+                let reportHtml = `
+                    <div class="debug-item success">
+                        <strong>🎉 完整测试完成 - ${timestamp}</strong><br><br>
+                        <strong>测试结果摘要：</strong><br>
+                        ✅ 认证状态: ${authToken ? '正常' : '异常'}<br>
+                        ✅ API调用: ${lawyerData.length > 0 ? '正常' : '异常'}<br>
+                        ✅ 数据获取: ${lawyerData.length}位律师<br>
+                        ✅ 下拉框填充: ${document.getElementById('lawyer-dropdown').options.length > 1 ? '成功' : '失败'}<br><br>
+                        <strong>结论：</strong>律师下拉框修复${lawyerData.length > 0 ? '成功' : '失败'}
+                    </div>
+                `;
+
+                results.innerHTML = reportHtml;
+
+            } catch (error) {
+                results.innerHTML = `
+                    <div class="debug-item error">
+                        <strong>❌ 测试过程中出现错误</strong><br>
+                        <small>${error.message}</small>
+                    </div>
+                `;
+            }
+        }
+
+        // 页面加载时自动运行基础检查
+        window.onload = function() {
+            console.log('律师下拉框修复验证页面加载完成');
+            testAuth();
+        };
+    </script>
+</body>
+</html>

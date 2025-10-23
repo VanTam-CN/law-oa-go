@@ -1,9 +1,10 @@
 import React from 'react';
-import { Card, Form, Input, Button, Checkbox, message } from 'antd';
+import { Card, Form, Input, Button, Checkbox } from 'antd';
+import { message } from '@/utils/messageHelper';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
-import { login } from '@/services/auth';
-import useAuth from '@/hooks/useAuth';
+import { useNavigate } from 'react-router';
+import { login, setToken } from '@/services/auth';
+import { useAppStore } from '@/stores/useAppStore';
 import './Login.less';
 
 interface LoginFormValues {
@@ -14,7 +15,7 @@ interface LoginFormValues {
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login: authLogin } = useAuth();
+  const { login: appStoreLogin } = useAppStore();
   const [form] = Form.useForm<LoginFormValues>();
   const [loading, setLoading] = React.useState(false);
   
@@ -32,24 +33,27 @@ const LoginPage: React.FC = () => {
       if (token && userData) {
         // 构造用户对象，映射后端字段到前端需要的格式
         const user = {
-          id: userData.id,
+          id: userData.id.toString(),
           username: userData.email, // 使用email作为username
-          real_name: userData.name,
+          realName: userData.name,
           email: userData.email,
-          role: userData.role,
+          roles: [userData.role], // useAppStore期望的roles是数组
+          permissions: [], // 可以根据角色设置默认权限
           phone: userData.phone,
           avatar: userData.avatar,
-          status: userData.status,
-          department: '',
-          created_at: userData.created_at
+          isActive: userData.status === 'active',
+          lastLoginAt: new Date().toISOString(),
+          createdAt: userData.created_at
         };
-        
+
         console.log('Processed user:', user);
-        
-        authLogin(token, user);
+
+        // 设置token到storage
+        setToken(token);
+        appStoreLogin(user, token);
         message.success('登录成功');
-        
-        // 等待一下让角色权限加载完成
+
+        // 等待一下让状态更新完成
         setTimeout(() => {
           navigate('/');
         }, 500);

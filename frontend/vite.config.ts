@@ -58,7 +58,7 @@ export default defineConfig({
         manualChunks: {
           vendor: ['react', 'react-dom'],
           antd: ['antd'],
-          router: ['react-router-dom'],
+          router: ['react-router'],
           utils: ['lodash', 'dayjs'],
         },
       },
@@ -69,13 +69,16 @@ export default defineConfig({
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true,
-        drop_debugger: true,
+        drop_console: false,
+        drop_debugger: false,
+      },
+      mangle: {
+        reserved: ['message', 'console', 'error'],
       },
     },
   },
   optimizeDeps: {
-    include: ['react', 'react-dom', 'antd', 'react-router-dom'],
+    include: ['react', 'react-dom', 'antd', 'react-router'],
   },
   test: {
     globals: true,

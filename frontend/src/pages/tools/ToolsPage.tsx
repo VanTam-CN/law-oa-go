@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { Card, Row, Col, Button, Divider, message } from 'antd';
 import { 
   CalculatorOutlined, 

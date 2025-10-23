@@ -8,14 +8,14 @@ import (
 type ConflictCheckRequest struct {
 	ClientID                string    `json:"clientId" validate:"required"`
 	ClientName              string    `json:"clientName" validate:"required"`
-	ClientType              string    `json:"clientType" validate:"oneof=PERSON COMPANY"`
+	ClientType              string    `json:"clientType" validate:"oneof=PERSON COMPANY ANY"`
 	OtherParties            []string  `json:"otherParties"`
 	CaseName                string    `json:"caseName" validate:"required"`
 	CaseType                string    `json:"caseType" validate:"required"`
 	SearchYears             int       `json:"searchYears"`
 	IncludeCorporateRelations bool     `json:"includeCorporateRelations"`
 	SearchDepth             string    `json:"searchDepth" validate:"oneof=BASIC STANDARD DEEP"`
-	UserID                  uint      `json:"userId"`
+	UserID                  string    `json:"userId"` // 改为字符串类型，前端会发送字符串
 	RequestTime             time.Time `json:"requestTime"`
 }
 
@@ -47,6 +47,16 @@ type ConflictCase struct {
 	OpposingParties  JSONStringArray   `json:"opposingParties" gorm:"type:json"`
 	ConflictDetails  string            `json:"conflictDetails"`
 	CreatedAt        time.Time         `json:"createdAt"`
+}
+
+// RuleMatch 规则匹配结果
+type RuleMatch struct {
+	RuleID     string  `json:"ruleId"`
+	RuleName   string  `json:"ruleName"`
+	Matched    bool    `json:"matched"`
+	RiskScore  float64 `json:"riskScore"`
+	Reason     string  `json:"reason"`
+	Confidence float64 `json:"confidence"`
 }
 
 // ConflictRule 冲突检测规则

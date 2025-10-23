@@ -1,0 +1,110 @@
+---
+# Law OA Go - 主应用部署模板
+# 企业级Kubernetes Deployment配置
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "law-oa-go.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "law-oa-go.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+  annotations:
+    {{- include "law-oa-go.podAnnotations" . | nindent 4 }}
+    kubernetes.io/change-cause: {{ .Release.Revision | quote }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: {{ .Values.strategy.type }}
+    rollingUpdate:
+      maxUnavailable: {{ .Values.strategy.rollingUpdate.maxUnavailable }}
+      maxSurge: {{ .Values.strategy.rollingUpdate.maxSurge }}
+  selector:
+    matchLabels:
+      {{- include "law-oa-go.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "law-oa-go.podLabels" . | nindent 8 }}
+      annotations:
+        {{- include "law-oa-go.podAnnotations" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "law-oa-go.serviceAccountName" . }}
+      {{- if .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml .Values.global.imagePullSecrets | nindent 8 }}
+      {{- end }}
+      {{- if .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml .Values.image.pullSecrets | nindent 8 }}
+      {{- end }}
+      {{- if .Values.pod.securityContext }}
+      securityContext:
+        {{- toYaml .Values.pod.securityContext | nindent 8 }}
+      {{- end }}
+      {{- if .Values.initContainers }}
+      initContainers:
+        {{- include "law-oa-go.initContainers" . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ include "law-oa-go.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: {{ include "law-oa-go.httpPortName" . }}
+              containerPort: {{ .Values.service.ports.http | default 8080 }}
+              protocol: TCP
+            - name: {{ include "law-oa-go.grpcPortName" . }}
+              containerPort: {{ .Values.service.ports.grpc | default 9090 }}
+              protocol: TCP
+            - name: {{ include "law-oa-go.metricsPortName" . }}
+              containerPort: {{ .Values.service.ports.metrics | default 8081 }}
+              protocol: TCP
+          env:
+            {{- include "law-oa-go.env" . | nindent 12 }}
+          {{- if .Values.containerSecurityContext }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          {{- end }}
+          {{- if .Values.resources }}
+          resources:
+            {{- include "law-oa-go.resources" . | nindent 12 }}
+          {{- end }}
+          {{- if .Values.healthcheck.enabled }}
+          livenessProbe:
+            {{- toYaml .Values.healthcheck.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.healthcheck.readinessProbe | nindent 12 }}
+          startupProbe:
+            {{- toYaml .Values.healthcheck.startupProbe | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            {{- include "law-oa-go.volumeMounts" . | nindent 12 }}
+          {{- if .Values.lifecycle }}
+          lifecycle:
+            {{- toYaml .Values.lifecycle | nindent 12 }}
+          {{- end }}
+        {{- if .Values.sidecars }}
+        {{- include "law-oa-go.sidecars" . | nindent 8 }}
+        {{- end }}
+      volumes:
+        {{- include "law-oa-go.volumes" . | nindent 8 }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+        {{- include "law-oa-go.nodeSelector" . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.affinity }}
+      affinity:
+        {{- include "law-oa-go.affinity" . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.tolerations }}
+      tolerations:
+        {{- include "law-oa-go.tolerations" . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName | quote }}
+      {{- end }}
+      {{- if .Values.pod.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ .Values.pod.terminationGracePeriodSeconds }}
+      {{- end }}

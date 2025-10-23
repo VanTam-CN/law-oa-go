@@ -1,111 +1,716 @@
-# 法律事务所自动化系统 - 部署指南
+# Law OA Go 企业级部署指南
 
-## 概述
+<div align="center">
 
-Law OA Go 是基于 Go 语言开发的法律事务所自动化系统，采用单体架构设计。本指南提供基础的部署流程和配置说明。
+![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Kubernetes](https://img.shields.io/badge/Kubernetes-Ready-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white)
+![Helm](https://img.shields.io/badge/Helm-Ready-0F1685?style=for-the-badge&logo=helm&logoColor=white)
+![Production](https://img.shields.io/badge/Production-Grade-green.svg?style=for-the-badge)
 
-## 部署架构
+**生产环境部署最佳实践**
 
-### 系统架构图
+[环境准备](#-环境准备) • [Docker部署](#-docker部署) • [Kubernetes部署](#-kubernetes部署) • [Helm部署](#-helm部署) • [监控配置](#-监控配置) • [安全配置](#-安全配置)
+
+</div>
+
+---
+
+## 📋 目录
+
+- [1. 环境准备](#1-环境准备)
+- [2. Docker部署](#2-docker部署)
+- [3. Kubernetes部署](#3-kubernetes部署)
+- [4. Helm部署](#4-helm部署)
+- [5. 监控配置](#5-监控配置)
+- [6. 安全配置](#6-安全配置)
+- [7. 性能优化](#7-性能优化)
+- [8. 备份策略](#8-备份策略)
+- [9. 故障排除](#9-故障排除)
+
+---
+
+## 🏗️ 部署架构
+
+### 企业级系统架构
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Web服务器层                              │
+│                     负载均衡层                               │
 │              ┌─────────────┐                                │
-│              │   Nginx     │                                │
-│              │  Web Server │                                │
+│              │   Ingress   │                                │
+│              │  Controller │                                │
 │              └─────────────┘                                │
 ├─────────────────────────────────────────────────────────────┤
-│                    应用层                                    │
+│                     应用层                                   │
 │              ┌─────────────┐                                │
-│              │   Law OA    │                                │
-│              │      Go     │                                │
-│              └─────────────┘                                │
+│              │   Law OA    │     ┌─────────────┐            │
+│              │      Go     │     │  Frontend   │            │
+│              │    Backend  │     │   React     │            │
+│              └─────────────┘     └─────────────┘            │
 ├─────────────────────────────────────────────────────────────┤
-│                    数据层                                    │
-│  ┌─────────────┐ ┌─────────────┐                          │
-│  │   MySQL     │ │   Redis     │                          │
-│  │    Database │ │   Cache     │                          │
-│  └─────────────┘ └─────────────┘                          │
+│                     数据层                                   │
+│  ┌─────────────┐ ┌─────────────┐  ┌─────────────────┐      │
+│  │   MySQL     │ │   Redis     │  │  Elasticsearch  │      │
+│  │   Primary   │ │   Cache     │  │     Search      │      │
+│  └─────────────┘ └─────────────┘  └─────────────────┘      │
+├─────────────────────────────────────────────────────────────┤
+│                    监控和日志层                               │
+│  ┌─────────────┐ ┌─────────────┐  ┌─────────────────┐      │
+│  │ Prometheus  │ │   Grafana   │  │     Jaeger      │      │
+│  │   Metrics   │ │ Dashboard  │  │   Tracing       │      │
+│  └─────────────┘ └─────────────┘  └─────────────────┘      │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ### 部署策略
 
-1. **单机部署**: 简单直接的单体应用部署
-2. **手动部署**: 基础的部署脚本和配置管理
-3. **基础监控**: 应用状态监控和日志记录
-4. **数据备份**: 基本的数据库备份策略
+1. **容器化部署**: 基于Docker的多阶段构建优化
+2. **编排部署**: Kubernetes集群管理和自动扩缩容
+3. **包管理**: Helm Charts版本控制和配置管理
+4. **CI/CD流水线**: GitHub Actions自动化构建和部署
+5. **监控告警**: Prometheus + Grafana全链路监控
+6. **日志收集**: 结构化日志和集中式日志管理
+7. **安全加固**: 网络策略、RBAC、Pod安全策略
 
-## 快速开始
+---
 
-### 1. 环境要求
+## 1. 环境准备
 
-#### 系统要求
-- **操作系统**: Linux (Ubuntu 20.04+ / CentOS 8+)
-- **CPU**: 最少 2 核心
-- **内存**: 最少 2GB
-- **磁盘**: 最少 20GB
+### 1.1 系统要求
 
-#### 软件依赖
-- **Go**: 1.23+ (开发环境)
-- **Docker**: 20.10+ (可选)
-- **MySQL**: 8.0+ (生产环境)
-- **Redis**: 6.0+ (可选)
-- **Nginx**: 1.20+ (可选)
+#### 最低配置
+- **CPU**: 2核心
+- **内存**: 4GB RAM
+- **存储**: 50GB SSD
+- **网络**: 100Mbps
 
-#### 网络要求
-- **端口开放**: 8080 (应用端口)
-- **防火墙配置**: 允许必要端口通信
+#### 推荐配置
+- **CPU**: 4核心以上
+- **内存**: 8GB RAM以上
+- **存储**: 200GB SSD以上
+- **网络**: 1Gbps以上
 
-### 2. 克隆项目
+#### 生产环境配置
+- **CPU**: 8核心以上
+- **内存**: 16GB RAM以上
+- **存储**: 500GB NVMe SSD以上
+- **网络**: 10Gbps以上
 
+### 1.2 依赖软件
+
+#### 必需软件
 ```bash
+# Docker 20.10+
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+
+# Docker Compose v2.0+
+sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+
+# Git 2.30+
+sudo apt-get update
+sudo apt-get install git -y
+```
+
+#### Kubernetes环境（可选）
+```bash
+# kubectl 1.29+
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+# Helm 3.14+
+curl https://get.helm.sh/helm-v3.14.0-linux-amd64.tar.gz | tar xz
+sudo mv linux-amd64/helm /usr/local/bin/
+```
+
+### 1.3 网络和防火墙
+
+#### 端口要求
+```bash
+# 应用端口
+8080/tcp  # Go API服务
+3003/tcp  # React前端
+
+# 数据库端口
+3306/tcp  # MySQL
+5432/tcp  # PostgreSQL
+6379/tcp  # Redis
+9200/tcp  # Elasticsearch
+
+# 监控端口
+9090/tcp  # Prometheus
+3000/tcp  # Grafana
+14268/tcp # Jaeger
+```
+
+#### 防火墙配置
+```bash
+# Ubuntu/Debian
+sudo ufw allow 8080/tcp
+sudo ufw allow 3003/tcp
+sudo ufw allow from 10.0.0.0/8 to any port 3306
+sudo ufw allow from 10.0.0.0/8 to any port 5432
+sudo ufw allow from 10.0.0.0/8 to any port 6379
+
+# CentOS/RHEL
+sudo firewall-cmd --permanent --add-port=8080/tcp
+sudo firewall-cmd --permanent --add-port=3003/tcp
+sudo firewall-cmd --reload
+```
+
+---
+
+## 2. Docker部署
+
+### 2.1 快速部署
+
+#### 使用Docker Compose
+```bash
+# 1. 克隆项目
 git clone <repository-url>
 cd law-oa-go
-```
 
-### 3. 配置环境变量
-
-```bash
-# 复制环境变量模板（如果存在）
-cp .env.example .env 2>/dev/null || echo "Creating .env file..."
-
-# 编辑配置文件
+# 2. 配置环境变量
+cp .env.example .env
 vim .env
-```
 
-### 4. 初始化数据库
+# 3. 启动所有服务
+docker compose up -d
 
-```bash
-# 创建数据库
-mysql -u root -p -e "CREATE DATABASE law_oa CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-
-# 运行数据库迁移（如果有迁移文件）
-go run cmd/migrate/main.go
-```
-
-### 5. 启动应用
-
-```bash
-# 编译应用
-go build -o law-oa-go cmd/server/main.go
-
-# 运行应用
-./law-oa-go
-```
-
-### 6. 验证部署
-
-```bash
-# 检查应用健康状态
+# 4. 验证部署
+docker compose ps
 curl http://localhost:8080/health
 ```
 
-### 7. 访问服务
+#### 企业级Docker Compose配置
+```yaml
+# docker-compose.yml
+version: '3.8'
 
-- **API服务**: http://localhost:8080
-- **健康检查**: http://localhost:8080/health
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    ports:
+      - "8080:8080"
+    environment:
+      - GIN_MODE=release
+      - DB_HOST=mysql
+      - REDIS_HOST=redis
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  redis_data:
+  es_data:
+  prometheus_data:
+  grafana_data:
+```
+
+### 2.2 多阶段构建优化
+
+#### 生产环境Dockerfile特性
+- **多阶段构建**: 减少镜像大小和提高安全性
+- **非root用户**: 增强容器安全性
+- **健康检查**: 内置应用健康状态监控
+- **安全扫描**: 集成漏洞检测阶段
+
+#### 构建命令
+```bash
+# 构建生产镜像
+docker build -t law-oa-go:2.1.0 --target production .
+
+# 构建开发镜像
+docker build -t law-oa-go:dev --target development .
+
+# 安全扫描
+docker build -t law-oa-go:scan --target security-scanner .
+```
+
+### 2.3 容器管理
+
+#### 常用命令
+```bash
+# 查看容器状态
+docker compose ps
+
+# 查看日志
+docker compose logs -f app
+
+# 进入容器
+docker compose exec app sh
+
+# 重启服务
+docker compose restart app
+
+# 更新服务
+docker compose pull
+docker compose up -d
+
+# 清理资源
+docker system prune -f
+docker volume prune -f
+```
+
+#### 性能监控
+```bash
+# 查看资源使用
+docker stats
+
+# 查看容器详情
+docker inspect law-oa-go_app_1
+
+# 监控健康状态
+curl http://localhost:8080/health
+```
+
+---
+
+## 3. Kubernetes部署
+
+### 3.1 准备工作
+
+#### 创建命名空间
+```yaml
+# namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: law-oa
+  labels:
+    name: law-oa
+    environment: production
+```
+
+#### 配置ConfigMap
+```yaml
+# configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: law-oa-config
+  namespace: law-oa
+data:
+  config.yaml: |
+    server:
+      port: 8080
+      mode: release
+    database:
+      host: mysql
+      port: 3306
+      name: law_oa
+    redis:
+      host: redis
+      port: 6379
+    logging:
+      level: info
+      format: json
+```
+
+#### 配置Secret
+```yaml
+# secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: law-oa-secret
+  namespace: law-oa
+type: Opaque
+data:
+  db-password: <base64-encoded-password>
+  jwt-secret: <base64-encoded-jwt-secret>
+  redis-password: <base64-encoded-redis-password>
+```
+
+### 3.2 应用部署
+
+#### 企业级Deployment配置
+```yaml
+# deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: law-oa-app
+  namespace: law-oa
+  labels:
+    app: law-oa-app
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  selector:
+    matchLabels:
+      app: law-oa-app
+  template:
+    metadata:
+      labels:
+        app: law-oa-app
+    spec:
+      containers:
+      - name: law-oa-app
+        image: law-registry.com/law-oa-go:2.1.0
+        ports:
+        - containerPort: 8080
+        env:
+        - name: GIN_MODE
+          value: "release"
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: law-oa-secret
+              key: db-password
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: 2000m
+            memory: 2Gi
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 65534
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+```
+
+#### Service配置
+```yaml
+# service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: law-oa-service
+  namespace: law-oa
+  labels:
+    app: law-oa-service
+spec:
+  selector:
+    app: law-oa-app
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  type: ClusterIP
+```
+
+#### Ingress配置
+```yaml
+# ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: law-oa-ingress
+  namespace: law-oa
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+spec:
+  tls:
+  - hosts:
+    - api.lawoa.com
+    secretName: law-oa-tls
+  rules:
+  - host: api.lawoa.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: law-oa-service
+            port:
+              number: 8080
+```
+
+### 3.3 自动扩缩容
+
+#### HPA配置
+```yaml
+# hpa.yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: law-oa-hpa
+  namespace: law-oa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: law-oa-app
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+```
+
+### 3.4 部署命令
+
+```bash
+# 应用所有配置
+kubectl apply -f k8s/
+
+# 查看部署状态
+kubectl get pods -n law-oa
+kubectl get services -n law-oa
+kubectl get ingress -n law-oa
+
+# 查看日志
+kubectl logs -f deployment/law-oa-app -n law-oa
+
+# 扩容应用
+kubectl scale deployment law-oa-app --replicas=5 -n law-oa
+
+# 更新应用
+kubectl set image deployment/law-oa-app law-oa-app=law-registry.com/law-oa-go:2.1.1 -n law-oa
+
+# 回滚应用
+kubectl rollout undo deployment/law-oa-app -n law-oa
+```
+
+---
+
+## 4. Helm部署
+
+### 4.1 安装Chart
+
+```bash
+# 添加仓库
+helm repo add law-oa https://charts.lawoa.com
+helm repo update
+
+# 安装应用
+helm install law-oa law-oa/law-oa-go \
+  --namespace law-oa \
+  --create-namespace \
+  --set image.tag=2.1.0 \
+  --set ingress.host=api.lawoa.com \
+  --set resources.requests.cpu=500m \
+  --set resources.requests.memory=1Gi
+
+# 自定义配置安装
+helm install law-oa ./helm/law-oa-go \
+  --namespace law-oa \
+  --create-namespace \
+  --values helm/law-oa-go/values-prod.yaml
+```
+
+### 4.2 配置管理
+
+#### 生产环境配置
+```yaml
+# values-prod.yaml
+global:
+  environment: production
+  imageRegistry: law-registry.com
+
+image:
+  repository: law-oa-go
+  tag: 2.1.0
+  pullPolicy: IfNotPresent
+
+replicaCount: 5
+autoscaling:
+  enabled: true
+  minReplicas: 5
+  maxReplicas: 20
+
+resources:
+  limits:
+    cpu: 4000m
+    memory: 4Gi
+  requests:
+    cpu: 1000m
+    memory: 2Gi
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: api.lawoa.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: law-oa-tls
+      hosts:
+        - api.lawoa.com
+
+mysql:
+  enabled: true
+  auth:
+    rootPassword: "prod-root-password"
+    database: "law_oa_prod"
+    username: "law_oa_user"
+    password: "prod-user-password"
+  primary:
+    persistence:
+      enabled: true
+      size: 500Gi
+
+redis:
+  enabled: true
+  auth:
+    enabled: true
+    password: "prod-redis-password"
+  master:
+    persistence:
+      enabled: true
+      size: 50Gi
+
+elasticsearch:
+  enabled: true
+  replicas: 3
+  volumeClaimTemplate:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 200Gi
+```
+
+### 4.3 Chart管理
+
+```bash
+# 列出已安装的charts
+helm list -n law-oa
+
+# 更新应用
+helm upgrade law-oa ./helm/law-oa-go \
+  --namespace law-oa \
+  --values helm/law-oa-go/values-prod.yaml \
+  --set image.tag=2.1.1
+
+# 回滚应用
+helm rollback law-oa 1 -n law-oa
+
+# 卸载应用
+helm uninstall law-oa -n law-oa
+
+# 测试Chart
+helm install law-oa-test ./helm/law-oa-go \
+  --namespace law-oa-test \
+  --create-namespace \
+  --dry-run \
+  --debug
+```
 
 ## 生产环境部署
 
@@ -626,27 +1231,71 @@ journalctl -u law-oa-go -f
 journalctl -u law-oa-go --since "1 hour ago" | grep ERROR
 ```
 
-## 技术栈
+---
 
-### 核心技术
+## 📞 技术支持
 
-- **语言**: Go 1.23+
-- **Web框架**: Gin
-- **数据库**: MySQL 8.0+
-- **缓存**: Redis 6.0+ (可选)
-- **ORM**: GORM
+### 联系方式
+- **技术支持邮箱**: support@lawoa.com
+- **紧急故障热线**: +86-xxx-xxxx-xxxx
+- **技术文档**: https://docs.lawoa.com
+- **问题反馈**: https://github.com/law-oa-go/issues
 
-### 部署和运维
+### 服务级别协议（SLA）
+- **P1-紧急故障**: 15分钟响应，4小时解决
+- **P2-重要问题**: 30分钟响应，8小时解决
+- **P3-一般问题**: 2小时响应，24小时解决
+- **P4-功能请求**: 1个工作日响应，按优先级排期
 
-- **容器化**: Docker (可选)
-- **Web服务器**: Nginx (可选)
-
-### 安全
-
-- **认证**: JWT
-- **授权**: RBAC
-- **加密**: TLS 1.3
+### 扩展阅读
+- **📖 企业级运维指南**: [DEPLOYMENT_ENTERPRISE.md](./DEPLOYMENT_ENTERPRISE.md)
+  - 详细的监控配置（Prometheus + Grafana）
+  - 完整的安全配置（网络策略、RBAC、Pod安全）
+  - 性能优化策略（数据库、缓存、应用调优）
+  - 备份和灾难恢复方案
+  - CI/CD流水线配置
+  - 故障排除和恢复流程
 
 ---
 
-**注意**: 本文档为简化版部署指南，适用于单体应用架构。
+## 🛠️ 技术栈
+
+### 核心技术
+- **语言**: Go 1.23+
+- **Web框架**: Gin
+- **数据库**: MySQL 8.0+ / PostgreSQL 15+
+- **缓存**: Redis 7.0+
+- **搜索**: Elasticsearch 8.11+
+- **ORM**: GORM v1.30
+
+### 部署和运维
+- **容器化**: Docker & Docker Compose
+- **编排**: Kubernetes 1.29+
+- **包管理**: Helm 3.14+
+- **监控**: Prometheus + Grafana
+- **日志**: ELK Stack
+- **追踪**: Jaeger
+
+### 安全
+- **认证**: JWT (golang-jwt/v5)
+- **授权**: RBAC
+- **加密**: TLS 1.3
+- **扫描**: Trivy 安全扫描
+
+### CI/CD
+- **版本控制**: Git + GitHub
+- **流水线**: GitHub Actions
+- **镜像仓库**: Harbor / Docker Hub
+- **部署策略**: 蓝绿部署、金丝雀发布
+
+---
+
+<div align="center">
+
+**Law OA Go 部署指南**
+
+🚀 企业级律师事务所办公自动化系统
+
+版本: v2.1.0 | 最后更新: 2025-10-17
+
+</div>

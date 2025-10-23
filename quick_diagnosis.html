@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>快速诊断 - 清除缓存重新测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        .button:hover { background: #0056b3; }
+        .error { color: red; }
+        .success { color: green; }
+        .warning { color: orange; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>🔧 律师下拉框问题快速诊断</h1>
+
+    <div class="section">
+        <h2>1. 清除浏览器缓存</h2>
+        <p><strong>重要提示：</strong>请先清除浏览器缓存和localStorage，然后重新测试</p>
+        <button class="button" onclick="clearCache()">清除缓存</button>
+        <button class="button" onclick="window.open('http://localhost:3003','_blank')">打开前端应用</button>
+    </div>
+
+    <div class="section">
+        <h2>2. 重新登录测试</h2>
+        <p>如果清除缓存后仍有问题，请重新登录：</p>
+        <button class="button" onclick="testLogin()">测试登录</button>
+        <div id="login-result"></div>
+    </div>
+
+    <div class="section">
+        <h2>3. API直接测试</h2>
+        <button class="button" onclick="testAPI()">测试律师API</button>
+        <div id="api-result"></div>
+    </div>
+
+    <div class="section">
+        <h2>4. 操作步骤</h2>
+        <ol>
+            <li>点击"清除缓存"按钮</li>
+            <li>刷新浏览器页面（Ctrl+F5 或 Cmd+Shift+R）</li>
+            <li>重新登录系统</li>
+            <li>访问新增案件页面</li>
+            <li>检查律师下拉框是否显示数据</li>
+        </ol>
+    </div>
+
+    <script>
+        function clearCache() {
+            // 清除localStorage
+            localStorage.clear();
+            sessionStorage.clear();
+
+            alert('缓存已清除！请刷新页面（Ctrl+F5）并重新登录。');
+
+            // 打开前端应用
+            setTimeout(() => {
+                window.open('http://localhost:3003','_blank');
+            }, 1000);
+        }
+
+        async function testLogin() {
+            const resultDiv = document.getElementById('login-result');
+            resultDiv.innerHTML = '<div>测试登录中...</div>';
+
+            try {
+                const response = await fetch('http://localhost:8080/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'admin@lawoa.com',
+                        password: 'admin123'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.data.token) {
+                    // 存储新的认证信息
+                    localStorage.setItem('auth_token', data.data.token);
+                    localStorage.setItem('law_oa_user_info', JSON.stringify(data.data.user));
+
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ 登录成功！<br>
+                            Token: ${data.data.token.substring(0, 30)}...<br>
+                            用户: ${data.data.user.name}<br>
+                            <button class="button" onclick="window.open('http://localhost:3003','_blank')">打开前端应用</button>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ 登录失败: ${data.message}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ 登录请求失败: ${error.message}</div>`;
+            }
+        }
+
+        async function testAPI() {
+            const resultDiv = document.getElementById('api-result');
+            resultDiv.innerHTML = '<div>测试API中...</div>';
+
+            const token = localStorage.getItem('auth_token');
+            if (!token) {
+                resultDiv.innerHTML = '<div class="warning">⚠️ 请先登录获取token</div>';
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:8080/api/v1/lawfirm/lawyers?page=1&page_size=5', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ API测试成功！<br>
+                            返回${data.data.length}位律师<br>
+                            <pre>${JSON.stringify(data.data.slice(0, 2), null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ API测试失败: ${data.message}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ API请求失败: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

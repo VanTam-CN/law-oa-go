@@ -1,8 +1,8 @@
-import { message } from 'antd';
+import { message } from '@/utils/messageHelper';
 import { getToken } from './auth';
 
 // API配置
-const API_BASE_URL = '/api';
+const API_BASE_URL = 'http://localhost:8080/api/v1'; // 直接指向后端服务
 const DEFAULT_TIMEOUT = 30000;
 const MAX_RETRIES = 3;
 

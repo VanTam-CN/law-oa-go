@@ -2,12 +2,12 @@ package services
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
 
-	customErrors "law-oa-go/internal/errors"
+	stderrors "errors"
+	"law-oa-go/internal/errors"
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/repositories"
 	"gorm.io/gorm"
@@ -126,8 +126,8 @@ func (s *LawyerService) toLawyerResponse(lawyer *models.User) *LawyerResponse {
 
 func (s *LawyerService) DeleteLawyer(ctx context.Context, id uint) error {
 	if err := s.lawyerRepo.Delete(ctx, id); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return customErrors.NewNotFoundError("lawyer", "Lawyer not found", id)
+		if stderrors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.NotFoundError("lawyer", "Lawyer not found", id)
 		}
 		return err
 	}

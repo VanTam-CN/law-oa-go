@@ -209,6 +209,18 @@ func (r *CaseRepositoryImpl) AssignLawyer(ctx context.Context, caseID, lawyerID 
 	return nil
 }
 
+// UpdateLawyer 更新案件主办律师
+func (r *CaseRepositoryImpl) UpdateLawyer(ctx context.Context, caseID, lawyerID uint) error {
+	result := r.db.WithContext(ctx).Model(&models.Case{}).Where("id = ?", caseID).Update("lawyer_id", lawyerID)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
 // UpdateStatus 更新案件状态
 func (r *CaseRepositoryImpl) UpdateStatus(ctx context.Context, caseID uint, status string) error {
 	result := r.db.WithContext(ctx).Model(&models.Case{}).Where("id = ?", caseID).Update("status", status)
@@ -219,4 +231,9 @@ func (r *CaseRepositoryImpl) UpdateStatus(ctx context.Context, caseID uint, stat
 		return gorm.ErrRecordNotFound
 	}
 	return nil
+}
+
+// GetDB 获取数据库连接
+func (r *CaseRepositoryImpl) GetDB() *gorm.DB {
+	return r.db
 }

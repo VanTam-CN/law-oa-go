@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Form, Input, Button, Select, Table, Tag, Alert, Spin, message, Space, Divider } from 'antd';
+import { Card, Form, Input, Button, Select, Table, Tag, Alert, Spin, Space, Divider } from 'antd';
+import { message } from '@/utils/messageHelper';
 import { SearchOutlined, ExclamationCircleOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { getUserList } from '@/services/user';
 import { getProjectTypes } from '@/services/project';

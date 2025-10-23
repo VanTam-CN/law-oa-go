@@ -97,26 +97,35 @@ const ClientManagement: React.FC = () => {
       const res = await clientService.getClientList(queryParams);
       console.log('客户列表API响应:', res); // 调试日志
 
-      // 处理新API格式的响应数据
+      // 🔧 修复：处理后端实际API响应格式
+      // 后端返回格式：{success: true, data: {clients: [...], pagination: {...}}}
       let clientData = [];
       let totalCount = 0;
 
-      if (res.success) {
-        // 新API格式：{success: true, data: [...], pagination: {...}}
-        clientData = res.data || [];
-        totalCount = res.pagination?.total || 0;
-      } else if (res.data) {
-        // 兼容格式：{data: [...], pagination: {...}}
+      if (res.success && res.data) {
+        // 新API格式：数据在res.data.clients中
+        clientData = res.data.clients || [];
+        totalCount = res.data.pagination?.total || 0;
+        console.log('使用新API格式解析，clients数量:', clientData.length);
+      } else if (res.data && res.data.clients) {
+        // 兼容格式：直接从data.clients获取
+        clientData = res.data.clients;
+        totalCount = res.data.pagination?.total || 0;
+        console.log('使用兼容格式解析，clients数量:', clientData.length);
+      } else if (res.data && Array.isArray(res.data)) {
+        // 直接是数组数据
         clientData = res.data;
+        totalCount = res.data.length;
+        console.log('使用数组格式解析，clients数量:', clientData.length);
+      } else if (res.clients && Array.isArray(res.clients)) {
+        // 旧格式：clients字段直接包含数据
+        clientData = res.clients;
         totalCount = res.pagination?.total || res.total || 0;
-      } else if (res.list) {
-        // 旧格式：{list: [...], total: ...}
-        clientData = res.list;
-        totalCount = res.total || 0;
-      } else if (Array.isArray(res)) {
-        // 直接是数组
-        clientData = res;
-        totalCount = res.length;
+        console.log('使用旧格式解析，clients数量:', clientData.length);
+      } else {
+        console.warn('未识别的响应格式:', res);
+        clientData = [];
+        totalCount = 0;
       }
 
       // 🔧 修复：字段映射 - 将后端的下划线字段名映射为前端的驼峰命名
@@ -151,36 +160,74 @@ const ClientManagement: React.FC = () => {
       const res = await clientService.getClientStats();
       console.log('客户统计API响应:', res); // 调试日志
 
-      // 处理统计数据的多种格式
+      // 🔧 修复：处理后端统计数据的实际格式
       let statsData = null;
 
-      if (res.success) {
-        // 新API格式：{success: true, data: {...}}
-        statsData = res.data;
-      } else if (res.data) {
-        // 兼容格式：{data: {...}}
-        statsData = res.data;
+      console.log('统计数据原始响应:', res); // 调试日志
+
+      if (res.success && res.data) {
+        // 新API格式：{success: true, data: {total_clients, active_clients, ...}}
+        statsData = {
+          total: res.data.total_clients || 0,
+          statusStats: {
+            active: res.data.active_clients || 0,
+            inactive: res.data.inactive_clients || 0
+          },
+          typeStats: {
+            '个人': res.data.personal_clients || 0,
+            '企业': res.data.enterprise_clients || 0
+          },
+          monthlyNew: res.data.new_clients_this_month || 0
+        };
+        console.log('使用新API格式解析统计数据:', statsData);
+      } else if (res.data && res.data.total_clients !== undefined) {
+        // 兼容格式：直接在data中包含统计字段
+        const data = res.data;
+        statsData = {
+          total: data.total_clients || 0,
+          statusStats: {
+            active: data.active_clients || 0,
+            inactive: data.inactive_clients || 0
+          },
+          typeStats: {
+            '个人': data.personal_clients || 0,
+            '企业': data.enterprise_clients || 0
+          },
+          monthlyNew: data.new_clients_this_month || 0
+        };
+        console.log('使用兼容格式解析统计数据:', statsData);
       } else if (res.total_clients !== undefined) {
-        // 后端直接返回的格式：{total_clients, active_clients, inactive_clients, new_clients_this_month}
-        // 基于现有客户数据计算类型统计
+        // 后端直接返回格式：{total_clients, active_clients, ...}
+        // 基于现有客户数据计算类型统计（如果后端没有提供）
         const personalCount = clients.filter(client => client.type === '个人').length;
         const enterpriseCount = clients.filter(client => client.type === '企业').length;
 
         statsData = {
           total: res.total_clients,
           statusStats: {
-            active: res.active_clients,
-            inactive: res.inactive_clients
+            active: res.active_clients || 0,
+            inactive: res.inactive_clients || 0
           },
           typeStats: {
-            '个人': personalCount,
-            '企业': enterpriseCount
+            '个人': res.personal_clients || personalCount,
+            '企业': res.enterprise_clients || enterpriseCount
           },
-          monthlyNew: res.new_clients_this_month
+          monthlyNew: res.new_clients_this_month || 0
         };
+        console.log('使用后端直接格式解析统计数据:', statsData);
       } else if (res.total !== undefined) {
         // 直接是统计数据对象
         statsData = res;
+        console.log('使用直接统计数据对象:', statsData);
+      } else {
+        console.warn('未识别的统计数据格式:', res);
+        // 提供默认值防止页面报错
+        statsData = {
+          total: 0,
+          statusStats: { active: 0, inactive: 0 },
+          typeStats: { '个人': 0, '企业': 0 },
+          monthlyNew: 0
+        };
       }
 
       console.log('处理后的统计数据:', statsData);

@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Layout, Menu, message, Badge } from 'antd';
+import { Layout, Menu, Badge } from 'antd';
+import { message } from '@/utils/messageHelper';
 import {
   FileDoneOutlined,
   ProjectOutlined,
@@ -25,8 +26,8 @@ import {
   FileProtectOutlined,
   AuditOutlined
 } from '@ant-design/icons';
-import { useNavigate, useLocation } from 'react-router-dom';
-import useAuth from '@/hooks/useAuth';
+import { useNavigate, useLocation } from 'react-router';
+import { useAppStore, hasRole } from '@/stores/useAppStore';
 import './sidebar.less';
 
 const { Sider } = Layout;
@@ -51,8 +52,35 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChange }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, hasPermission } = useAuth();
+  const { user } = useAppStore();
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+
+  // 简单的权限检查函数
+  const hasPermission = (permission: string): boolean => {
+    if (!user) return false;
+    // 管理员拥有所有权限
+    if (user.roles.includes('admin')) return true;
+    // 简单的权限映射
+    const permissionMap: Record<string, string[]> = {
+      'dashboard.view': ['admin', 'lawyer', 'user'],
+      'user.view': ['admin'],
+      'user.manage': ['admin'],
+      'case.view': ['admin', 'lawyer'],
+      'case.manage': ['admin', 'lawyer'],
+      'client.view': ['admin', 'lawyer'],
+      'client.manage': ['admin', 'lawyer'],
+      'project.view': ['admin', 'lawyer'],
+      'project.manage': ['admin'],
+      'conflict.check': ['admin', 'lawyer'],
+      'file.view': ['admin', 'lawyer'],
+      'file.manage': ['admin', 'lawyer'],
+      'finance.view': ['admin'],
+      'finance.manage': ['admin'],
+    };
+
+    const requiredRoles = permissionMap[permission];
+    return requiredRoles ? requiredRoles.some(role => user.roles.includes(role)) : false;
+  };
 
   // 监听折叠状态变化，通知父组件
   useEffect(() => {

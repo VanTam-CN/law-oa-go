@@ -20,6 +20,8 @@ type User struct {
 	Phone     string         `json:"phone" gorm:"size:20"`
 	Avatar    string         `json:"avatar" gorm:"size:255"`
 	Status    string         `json:"status" gorm:"size:20;default:'active'"`
+	Department string        `json:"department" gorm:"column:department;size:50;default:'综合部'"` // 部门
+	Seniority  string         `json:"seniority" gorm:"column:seniority;size:20;default:'初级'"`    // 职级：初级/中级/高级/合伙人
 }
 
 // Client 客户模型

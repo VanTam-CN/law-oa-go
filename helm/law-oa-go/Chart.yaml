@@ -1,0 +1,75 @@
+# Law OA Go - 企业级Helm Chart配置
+# 基于最新Helm 3最佳实践和生产环境优化策略
+
+apiVersion: v2
+name: law-oa-go
+description: Law OA Go - 律师事务所办公自动化系统
+type: application
+version: 2.1.0
+appVersion: "2.1.0"
+
+# Chart元数据
+home: https://github.com/law-oa/law-oa-go
+sources:
+  - https://github.com/law-oa/law-oa-go
+  - https://docs.lawoa.com
+maintainers:
+  - name: Law OA Team
+    email: team@lawoa.com
+    url: https://lawoa.com
+
+# 依赖关系
+dependencies:
+  - name: mysql
+    version: 9.14.4
+    repository: https://charts.bitnami.com/bitnami
+    condition: mysql.enabled
+  - name: redis
+    version: 18.1.5
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled
+  - name: elasticsearch
+    version: 19.13.0
+    repository: https://helm.elastic.co
+    condition: elasticsearch.enabled
+  - name: kibana
+    version: 10.4.4
+    repository: https://helm.elastic.co
+    condition: kibana.enabled
+  - name: jaeger
+    version: 0.70.0
+    repository: https://jaegertracing.github.io/helm-charts
+    condition: jaeger.enabled
+  - name: prometheus
+    version: 25.8.0
+    repository: https://prometheus-community.github.io/helm-charts
+    condition: prometheus.enabled
+  - name: grafana
+    version: 7.0.17
+    repository: https://grafana.github.io/helm-charts
+    condition: grafana.enabled
+  - name: ingress-nginx
+    version: 4.8.3
+    repository: https://kubernetes.github.io/ingress-nginx
+    condition: ingress-nginx.enabled
+
+# 关键词
+keywords:
+  - law
+  - oa
+  - office
+  - automation
+  - management
+  - golang
+  - microservices
+  - enterprise
+
+# 注解
+annotations:
+  category: Business
+  licenses: MIT
+  images: |
+    - name: law-oa-go
+      image: law-registry.com/law-oa-go:2.1.0
+  documentation: https://docs.lawoa.com
+  changelog: https://github.com/law-oa/law-oa-go/blob/main/CHANGELOG.md

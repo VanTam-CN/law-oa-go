@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { message } from 'antd';
+import { useNavigate } from 'react-router';
+import { message } from '@/utils/messageHelper';
 import { getCurrentUser } from '@/services/auth';
 import { getCurrentUserRoles, getCurrentUserPermissions } from '@/services/role';
 import { getToken, setToken, removeToken, setUserInfo, getUserInfo, removeUserInfo, setPermissions, getPermissions, setRoles, getRoles, removePermissions, removeRoles } from '@/utils/storage';
@@ -442,23 +442,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (isDevMode) {
         console.log('🛠️ 开发者模式：使用简化认证流程');
 
-        // 在开发模式下，如果有token就直接使用，不调用API
-        if (storedToken) {
-          console.log('🛠️ 开发者模式：使用存储的token，跳过API验证');
-          const devUser = storedUser || {
-            id: 1,
-            username: 'dev_user',
-            real_name: '开发用户',
-            email: 'dev@example.com',
-            role: 'admin',
-            department: '开发部门'
-          };
+        // 在开发模式下，如果有token和用户信息就直接使用，不调用API
+        if (storedToken && storedUser) {
+          console.log('🛠️ 开发者模式：使用存储的token和用户信息，跳过API验证');
+          const devUser = storedUser;
 
           setTokenState(storedToken);
           setUser(devUser);
           setUserInfo(devUser);
           // 加载角色和权限
           await loadUserRolesAndPermissions(devUser);
+        } else if (storedToken) {
+          console.log('🛠️ 开发者模式：有token但缺少用户信息，尝试从API获取');
+          try {
+            const userInfo = await getCurrentUser();
+            setUser(userInfo);
+            setUserInfo(userInfo);
+            // 加载角色和权限
+            await loadUserRolesAndPermissions(userInfo);
+          } catch (error) {
+            console.error('开发模式下获取用户信息失败:', error);
+            // 如果获取用户信息失败，清除token但不跳转
+            removeToken();
+            removeUserInfo();
+            removeRoles();
+            removePermissions();
+            setUser(null);
+            setTokenState(null);
+            setRolesState([]);
+            setPermissionsState([]);
+          }
         } else {
           console.log('🛠️ 开发者模式：没有token，保持未登录状态');
         }

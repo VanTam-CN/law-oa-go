@@ -1,24 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import './Dashboard.module.css';
 import { dataService } from '@/services/dataService';
-import { 
-  Row, 
-  Col, 
-  Card, 
-  Statistic, 
-  List, 
-  Timeline, 
-  Tag, 
-  Button, 
-  Avatar, 
-  Typography, 
-  Space, 
+import { useAppStore } from '@/stores/useAppStore';
+import {
+  Row,
+  Col,
+  Card,
+  Statistic,
+  List,
+  Timeline,
+  Tag,
+  Button,
+  Avatar,
+  Typography,
+  Space,
   Divider,
   Badge,
   Dropdown,
   Menu,
-  Progress
+  Progress,
+  message
 } from 'antd';
 import {
   UserOutlined,
@@ -126,6 +128,9 @@ const Dashboard: React.FC<DashboardProps> = () => {
   // 导航功能
   const navigate = useNavigate();
 
+  // 全局状态管理
+  const { user: currentUser } = useAppStore();
+
   // 状态管理
   const [statistics, setStatistics] = useState<any>(null);
   const [todos, setTodos] = useState<any[]>([]);
@@ -141,12 +146,14 @@ const Dashboard: React.FC<DashboardProps> = () => {
         setLoading(true);
 
         // 并行获取所有数据
-        const [statsData, todosData, activitiesData, userData] = await Promise.all([
+        const [statsData, todosData, activitiesData] = await Promise.all([
           dataService.getDashboardStatistics(),
           dataService.getDashboardTodos(),
-          dataService.getDashboardActivities(),
-          authService.getCurrentUser().catch(() => ({ real_name: '用户', avatar: null }))
+          dataService.getDashboardActivities()
         ]);
+
+        // 使用全局状态的用户信息
+        const userData = currentUser || { real_name: '用户', avatar: null };
 
         setStatistics(statsData);
         setTodos(todosData);

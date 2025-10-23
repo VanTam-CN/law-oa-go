@@ -1,0 +1,238 @@
+package handlers
+
+import (
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+	"law-oa-go/internal/common"
+	"law-oa-go/internal/services"
+)
+
+type CaseHandler struct {
+	caseService *services.CaseService
+}
+
+func NewCaseHandler(caseService *services.CaseService) *CaseHandler {
+	return &CaseHandler{
+		caseService: caseService,
+	}
+}
+
+// CreateCase godoc
+// @Summary 创建案件
+// @Description 创建新的法律案件
+// @Tags 案件管理
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body services.CreateCaseRequest true "创建案件请求"
+// @Success 200 {object} common.APIResponse{data=services.CaseResponse} "创建成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 401 {object} common.APIResponse "未授权"
+// @Failure 500 {object} common.APIResponse "内部错误"
+// @Router /cases [post]
+func (h *CaseHandler) CreateCase(c *gin.Context) {
+	var req services.CreateCaseRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.APIBadRequest(c, "请求参数错误", "请检查所有必填字段")
+		return
+	}
+
+	caseResp, err := h.caseService.CreateCase(c.Request.Context(), &req)
+	if err != nil {
+		common.APIInternalServerError(c, "创建案件失败", err.Error())
+		return
+	}
+
+	common.APISuccess(c, caseResp)
+}
+
+// GetCase godoc
+// @Summary 获取案件详情
+// @Description 根据ID获取案件详细信息
+// @Tags 案件管理
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "案件ID"
+// @Success 200 {object} common.APIResponse{data=services.CaseResponse} "获取成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 401 {object} common.APIResponse "未授权"
+// @Failure 404 {object} common.APIResponse "案件不存在"
+// @Failure 500 {object} common.APIResponse "内部错误"
+// @Router /cases/{id} [get]
+func (h *CaseHandler) GetCase(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		common.APIBadRequest(c, "请求参数错误", "案件ID必须是有效数字")
+		return
+	}
+
+	caseResp, err := h.caseService.GetCaseByID(c.Request.Context(), uint(id))
+	if err != nil {
+		common.APINotFound(c, "案件不存在", "指定的案件ID不存在")
+		return
+	}
+
+	common.APISuccess(c, caseResp)
+}
+
+// UpdateCase godoc
+// @Summary 更新案件
+// @Description 更新指定案件的信息
+// @Tags 案件管理
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "案件ID"
+// @Param request body services.UpdateCaseRequest true "更新案件请求"
+// @Success 200 {object} common.APIResponse{data=services.CaseResponse} "更新成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 401 {object} common.APIResponse "未授权"
+// @Failure 404 {object} common.APIResponse "案件不存在"
+// @Failure 500 {object} common.APIResponse "内部错误"
+// @Router /cases/{id} [put]
+func (h *CaseHandler) UpdateCase(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		common.APIBadRequest(c, "请求参数错误", "案件ID必须是有效数字")
+		return
+	}
+
+	var req services.UpdateCaseRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.APIBadRequest(c, "请求参数错误", "请检查所有字段")
+		return
+	}
+
+	caseResp, err := h.caseService.UpdateCase(c.Request.Context(), uint(id), &req)
+	if err != nil {
+		common.APIInternalServerError(c, "更新案件失败", err.Error())
+		return
+	}
+
+	common.APISuccess(c, caseResp)
+}
+
+// DeleteCase godoc
+// @Summary 删除案件
+// @Description 删除指定的案件
+// @Tags 案件管理
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "案件ID"
+// @Success 200 {object} common.APIResponse "删除成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 401 {object} common.APIResponse "未授权"
+// @Failure 404 {object} common.APIResponse "案件不存在"
+// @Failure 500 {object} common.APIResponse "内部错误"
+// @Router /cases/{id} [delete]
+func (h *CaseHandler) DeleteCase(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		common.APIBadRequest(c, "请求参数错误", "案件ID必须是有效数字")
+		return
+	}
+
+	err = h.caseService.DeleteCase(c.Request.Context(), uint(id))
+	if err != nil {
+		common.APIInternalServerError(c, "删除案件失败", err.Error())
+		return
+	}
+
+	common.APISuccess(c, gin.H{"message": "案件删除成功"})
+}
+
+// ListCases godoc
+// @Summary 获取案件列表
+// @Description 分页获取案件列表，支持过滤和搜索
+// @Tags 案件管理
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param page query int false "页码" default(1)
+// @Param page_size query int false "每页数量" default(20)
+// @Param search query string false "搜索关键词"
+// @Success 200 {object} common.APIResponse{data=services.ListCasesResponse} "获取成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 401 {object} common.APIResponse "未授权"
+// @Failure 500 {object} common.APIResponse "内部错误"
+// @Router /cases [get]
+func (h *CaseHandler) ListCases(c *gin.Context) {
+	var req services.ListCasesRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		common.APIBadRequest(c, "查询参数错误", "请检查查询参数")
+		return
+	}
+
+	response, err := h.caseService.ListCases(c.Request.Context(), &req)
+	if err != nil {
+		common.APIInternalServerError(c, "获取案件列表失败", err.Error())
+		return
+	}
+
+	common.APISuccess(c, response)
+}
+
+// GetLawyers godoc
+// @Summary 获取律师列表
+// @Description 获取律师用户列表，用于案件管理中的律师选择
+// @Tags 案件管理
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param page query int false "页码" default(1)
+// @Param page_size query int false "每页数量" default(100)
+// @Success 200 {object} common.APIResponse{data=[]services.UserResponse} "获取成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 401 {object} common.APIResponse "未授权"
+// @Failure 500 {object} common.APIResponse "内部错误"
+// @Router /lawfirm/lawyers [get]
+func (h *CaseHandler) GetLawyers(c *gin.Context) {
+	page := 1
+	pageSize := 100
+
+	if pageStr := c.Query("page"); pageStr != "" {
+		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+			page = p
+		}
+	}
+
+	if pageSizeStr := c.Query("page_size"); pageSizeStr != "" {
+		if ps, err := strconv.Atoi(pageSizeStr); err == nil && ps > 0 && ps <= 100 {
+			pageSize = ps
+		}
+	}
+
+	lawyers, err := h.caseService.GetLawyers(c.Request.Context(), page, pageSize)
+	if err != nil {
+		common.APIInternalServerError(c, "获取律师列表失败", err.Error())
+		return
+	}
+
+	common.APISuccess(c, lawyers)
+}
+
+// GetCaseTypes godoc
+// @Summary 获取案件类型列表
+// @Description 获取所有可用的案件类型和案由
+// @Tags 案件管理
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} common.APIResponse{data=[]services.CaseTypeResponse} "获取成功"
+// @Failure 401 {object} common.APIResponse "未授权"
+// @Failure 500 {object} common.APIResponse "内部错误"
+// @Router /case-types [get]
+func (h *CaseHandler) GetCaseTypes(c *gin.Context) {
+	caseTypes, err := h.caseService.GetCaseTypes(c.Request.Context())
+	if err != nil {
+		common.APIInternalServerError(c, "获取案件类型失败", err.Error())
+		return
+	}
+
+	common.APISuccess(c, caseTypes)
+}

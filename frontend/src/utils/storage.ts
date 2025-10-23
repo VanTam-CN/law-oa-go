@@ -4,7 +4,7 @@
 import type { Role, Permission } from '@/services/role';
 
 // Token相关操作
-const TOKEN_KEY = 'law_oa_token';
+const TOKEN_KEY = 'auth_token';
 
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);

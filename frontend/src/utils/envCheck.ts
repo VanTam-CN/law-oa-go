@@ -52,7 +52,7 @@ export class EnvironmentChecker {
     }
     
     // 检查认证Token
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('auth_token');
     if (!token) {
       issues.push('缺少认证Token，可能影响API调用');
     }

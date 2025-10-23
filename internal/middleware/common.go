@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"law-oa-go/internal/errors"
 	"law-oa-go/internal/infrastructure"
 	"law-oa-go/internal/logger"
 )
@@ -227,49 +228,66 @@ func CORSWithConfig(config CORSConfig) gin.HandlerFunc {
 	}
 }
 
-// Logger 日志中间件
+// Logger 日志中间件（保持向后兼容）
 func Logger() gin.HandlerFunc {
-	return gin.LoggerWithConfig(gin.LoggerConfig{
-		Formatter: func(param gin.LogFormatterParams) string {
-			return fmt.Sprintf("%s - [%s] \"%s %s %s %d %s \"%s\" %s\"\n",
-				param.ClientIP,
-				param.TimeStamp.Format("2006/01/02 - 15:04:05"),
-				param.Method,
-				param.Path,
-				param.Request.Proto,
-				param.StatusCode,
-				param.Latency,
-				param.Request.UserAgent(),
-				param.ErrorMessage,
-			)
-		},
-		Output: gin.DefaultWriter,
+	return LoggerWithFormatter()
+}
+
+// LoggerWithFormatter 格式化日志中间件（符合Gin最佳实践）
+func LoggerWithFormatter() gin.HandlerFunc {
+	return gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
+		// 使用结构化日志格式，便于日志分析工具处理
+		return fmt.Sprintf("%s - [%s] \"%s %s %s\" %d %s \"%s\" %s\n",
+			param.ClientIP,
+			param.TimeStamp.Format(time.RFC1123), // 使用标准时间格式
+			param.Method,
+			param.Path,
+			param.Request.Proto,
+			param.StatusCode,
+			param.Latency,
+			param.Request.UserAgent(),
+			param.ErrorMessage,
+		)
 	})
 }
 
-// Recovery 恢复中间件
+// Recovery 恢复中间件（改进版本，符合Gin最佳实践）
 func Recovery() gin.HandlerFunc {
 	return gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
+		// 记录详细的错误信息
 		if logger.Logger != nil {
 			if err, ok := recovered.(error); ok {
 				logger.Logger.Error("Panic recovered",
 					zap.Error(err),
 					zap.String("path", c.Request.URL.Path),
 					zap.String("method", c.Request.Method),
+					zap.String("clientIP", c.ClientIP()),
+					zap.String("userAgent", c.Request.UserAgent()),
 				)
 			} else {
 				logger.Logger.Error("Panic recovered",
 					zap.Any("recovered", recovered),
 					zap.String("path", c.Request.URL.Path),
 					zap.String("method", c.Request.Method),
+					zap.String("clientIP", c.ClientIP()),
+					zap.String("userAgent", c.Request.UserAgent()),
 				)
 			}
 		}
 
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": "服务器内部错误",
-		})
+		// 根据环境返回不同的错误信息
+		if c.GetHeader("Accept") == "application/json" {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"error": gin.H{
+					"code":    500,
+					"message": "服务器内部错误",
+					"type":    "internal_server_error",
+				},
+			})
+		} else {
+			c.String(http.StatusInternalServerError, "服务器内部错误")
+		}
 
 		c.Abort()
 	})
@@ -313,4 +331,17 @@ func SecurityHeaders() gin.HandlerFunc {
 
 		c.Next()
 	}
+}
+
+// 全局错误处理器管理器
+var GlobalErrorHandlerManager *errors.ErrorHandlerManager
+
+// SetErrorHandlerManager 设置全局错误处理器管理器
+func SetErrorHandlerManager(manager *errors.ErrorHandlerManager) {
+	GlobalErrorHandlerManager = manager
+}
+
+// GetErrorHandlerManager 获取全局错误处理器管理器
+func GetErrorHandlerManager() *errors.ErrorHandlerManager {
+	return GlobalErrorHandlerManager
 }

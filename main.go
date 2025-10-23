@@ -40,6 +40,7 @@ import (
 	"law-oa-go/internal/cache"
 	"law-oa-go/internal/config"
 	"law-oa-go/internal/database"
+	"law-oa-go/internal/errors"
 	"law-oa-go/internal/health"
 	"law-oa-go/internal/middleware"
 	"law-oa-go/internal/metrics"
@@ -78,6 +79,22 @@ func main() {
 	} else {
 		log.Println("缓存服务验证成功")
 	}
+
+	// 初始化增强错误处理器
+	var errorConfig errors.ErrorHandlerConfig
+	if cfg.IsProduction() {
+		errorConfig = errors.ProductionErrorHandlerConfig()
+		log.Println("使用生产环境错误处理配置")
+	} else {
+		errorConfig = errors.DefaultErrorHandlerConfig()
+		log.Println("使用开发环境错误处理配置")
+	}
+
+	// 创建错误处理器管理器
+	errorManager := errors.NewErrorHandlerManager(slog.Default(), errorConfig)
+
+	// 将错误处理器管理器设置到全局中间件中（供后续使用）
+	middleware.SetErrorHandlerManager(errorManager)
 
 	// 初始化JWT
 	middleware.InitJWT(cfg)
@@ -173,16 +190,16 @@ func main() {
 	// 创建 Gin 引擎
 	app := gin.New()
 
-	// 应用核心中间件（按照最佳实践顺序）
+	// 应用核心中间件（按照Gin最佳实践顺序：先处理通用中间件，再处理业务逻辑）
 	app.Use(middleware.RequestIDMiddleware()) // 请求ID追踪
-	app.Use(middleware.Logger())              // 日志记录
+	app.Use(middleware.LoggerWithFormatter()) // 使用格式化日志中间件
 	app.Use(middleware.Recovery())            // 崩溃恢复
 	app.Use(middleware.SecurityHeaders())     // 安全头
 	app.Use(middleware.CORS())                // 跨域设置
 	app.Use(middleware.RateLimiter())         // 限流控制
 
-	// 应用错误处理中间件（必须在Recovery之后，其他中间件之前）
-	app.Use(middleware.DefaultErrorHandlingMiddleware(slog.Default()))
+	// 使用基本的错误处理中间件
+	app.Use(gin.Recovery())
 
 	// 应用性能监控中间件
 	app.Use(metrics.PrometheusMiddleware())

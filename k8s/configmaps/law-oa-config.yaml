@@ -1,0 +1,498 @@
+# Law OA Go 系统 - 配置映射
+# 基于最新Kubernetes ConfigMap最佳实践
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: law-oa-config
+  namespace: law-oa
+  labels:
+    app: law-oa
+    component: config
+    environment: production
+    project: law-oa-go
+    managed-by: kubectl
+  annotations:
+    description: "Law OA Go 系统应用配置"
+    config-version: "v2.1.0"
+
+data:
+  # 应用配置文件
+  config.yaml: |
+    # Law OA Go 应用配置
+    # 生产环境配置
+
+    # 服务器配置
+    server:
+      host: "0.0.0.0"
+      port: 8080
+      read_timeout: 30s
+      write_timeout: 30s
+      idle_timeout: 60s
+      max_header_bytes: 1048576
+      trusted_proxies:
+        - "10.0.0.0/8"
+        - "172.16.0.0/12"
+        - "192.168.0.0/16"
+
+    # 数据库配置
+    database:
+      host: "${DB_HOST}"
+      port: ${DB_PORT}
+      user: "${DB_USER}"
+      password: "${DB_PASSWORD}"
+      name: "${DB_NAME}"
+      charset: "utf8mb4"
+      parse_time: true
+      loc: "Local"
+      max_idle_conns: 10
+      max_open_conns: 100
+      conn_max_lifetime: 3600s
+      conn_max_idle_time: 1800s
+
+    # Redis配置
+    redis:
+      host: "${REDIS_HOST}"
+      port: ${REDIS_PORT}
+      password: "${REDIS_PASSWORD}"
+      db: 0
+      pool_size: 10
+      min_idle_conns: 5
+      dial_timeout: 5s
+      read_timeout: 3s
+      write_timeout: 3s
+      pool_timeout: 4s
+      idle_timeout: 300s
+      idle_check_frequency: 60s
+
+    # Elasticsearch配置
+    elasticsearch:
+      hosts:
+        - "${ES_HOST}"
+      username: "${ES_USERNAME:-}"
+      password: "${ES_PASSWORD:-}"
+      index_prefix: "law_oa"
+      max_retries: 3
+      sniff_enabled: false
+      sniff_interval: 5m
+
+    # JWT配置
+    jwt:
+      secret: "${JWT_SECRET}"
+      access_token_ttl: 15m
+      refresh_token_ttl: 168h
+      issuer: "law-oa-go"
+      audience: "law-oa-users"
+
+    # 日志配置
+    logging:
+      level: "info"
+      format: "json"
+      output: "stdout"
+      error_output: "stderr"
+      enable_caller: true
+      enable_stacktrace: false
+      log_request_id: true
+      log_user_agent: true
+      log_request_body: false
+      log_response_body: false
+
+    # 监控配置
+    monitoring:
+      metrics_enabled: true
+      metrics_path: "/metrics"
+      profiling_enabled: false
+      pprof_path: "/debug/pprof"
+      health_check_path: "/health"
+      ready_check_path: "/ready"
+
+    # 追踪配置
+    tracing:
+      enabled: true
+      service_name: "law-oa-backend"
+      service_version: "v2.1.0"
+      jaeger_endpoint: "${JAEGER_ENDPOINT}"
+      sampler_type: "probabilistic"
+      sampler_param: 0.1
+      zipkin_endpoint: "${ZIPKIN_ENDPOINT:-}"
+
+    # 文件上传配置
+    upload:
+      max_file_size: 10485760  # 10MB
+      allowed_extensions:
+        - "jpg"
+        - "jpeg"
+        - "png"
+        - "pdf"
+        - "doc"
+        - "docx"
+        - "xls"
+        - "xlsx"
+      storage_path: "/app/uploads"
+      temp_path: "/tmp"
+
+    # CORS配置
+    cors:
+      allowed_origins:
+        - "https://lawoa.com"
+        - "https://www.lawoa.com"
+      allowed_methods:
+        - "GET"
+        - "POST"
+        - "PUT"
+        - "DELETE"
+        - "OPTIONS"
+      allowed_headers:
+        - "Origin"
+        - "Content-Type"
+        - "Accept"
+        - "Authorization"
+        - "X-Requested-With"
+      exposed_headers:
+        - "X-Total-Count"
+        - "X-Request-ID"
+      allow_credentials: true
+      max_age: 86400
+
+    # 限流配置
+    rate_limiting:
+      enabled: true
+      requests_per_minute: 60
+      burst: 10
+      per_ip: true
+      per_user: true
+
+    # 安全配置
+    security:
+      tls_enabled: false
+      tls_cert_file: ""
+      tls_key_file: ""
+      min_tls_version: "1.2"
+      trusted_ca_file: ""
+      session_timeout: 3600s
+      csrf_protection: true
+      xss_protection: true
+      content_type_nosniff: true
+      frame_options: "DENY"
+      hsts_enabled: true
+      hsts_max_age: 31536000
+
+    # 缓存配置
+    cache:
+      enabled: true
+      default_ttl: 300s
+      cleanup_interval: 600s
+      max_size: 1000
+      enable_compression: true
+
+    # 通知配置
+    notifications:
+      email_enabled: false
+      sms_enabled: false
+      push_enabled: false
+      smtp_host: ""
+      smtp_port: 587
+      smtp_username: ""
+      smtp_password: ""
+      smtp_from: ""
+
+  # 应用配置片段
+  app.yaml: |
+    # 应用基础配置
+    app:
+      name: "Law OA Go"
+      version: "v2.1.0"
+      environment: "production"
+      debug: false
+      timezone: "Asia/Shanghai"
+
+    # 业务配置
+    business:
+      default_page_size: 20
+      max_page_size: 100
+      password_min_length: 8
+      password_require_special: true
+      session_timeout: 3600
+      max_login_attempts: 5
+      lockout_duration: 900
+
+  # 数据库连接配置
+  database.yaml: |
+    # 数据库连接配置
+    db_host: "mysql-service.law-oa.svc.cluster.local"
+    db_port: "3306"
+    db_name: "law_oa"
+    db_charset: "utf8mb4"
+    db_max_idle_conns: "10"
+    db_max_open_conns: "100"
+    db_conn_max_lifetime: "3600"
+
+  # Redis配置
+  redis.yaml: |
+    # Redis连接配置
+    redis_host: "redis-service.law-oa.svc.cluster.local"
+    redis_port: "6379"
+    redis_db: "0"
+    redis_pool_size: "10"
+    redis_min_idle_conns: "5"
+    redis_dial_timeout: "5s"
+    redis_read_timeout: "3s"
+    redis_write_timeout: "3s"
+
+  # Elasticsearch配置
+  elasticsearch.yaml: |
+    # Elasticsearch连接配置
+    elasticsearch_host: "http://elasticsearch-service.law-oa-logging.svc.cluster.local:9200"
+    elasticsearch_index_prefix: "law_oa"
+    elasticsearch_max_retries: "3"
+    elasticsearch_sniff_enabled: "false"
+
+  # Jaeger配置
+  jaeger.yaml: |
+    # Jaeger追踪配置
+    jaeger_endpoint: "http://jaeger-service.law-oa-monitoring.svc.cluster.local:14268/api/traces"
+    jaeger_service_name: "law-oa-backend"
+    jaeger_service_version: "v2.1.0"
+    jaeger_sampler_type: "probabilistic"
+    jaeger_sampler_param: "0.1"
+
+  # 监控配置
+  monitoring.yaml: |
+    # 应用监控配置
+    metrics_enabled: "true"
+    metrics_path: "/metrics"
+    profiling_enabled: "false"
+    health_check_path: "/health"
+    ready_check_path: "/ready"
+
+  # 日志配置
+  logging.yaml: |
+    # 应用日志配置
+    log_level: "info"
+    log_format: "json"
+    log_output: "stdout"
+    log_enable_caller: "true"
+    log_enable_stacktrace: "false"
+
+---
+# Nginx配置
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: law-oa
+  labels:
+    app: law-oa
+    component: nginx
+    environment: production
+    project: law-oa-go
+  annotations:
+    description: "Law OA Go Nginx负载均衡配置"
+
+data:
+  nginx.conf: |
+    user nginx;
+    worker_processes auto;
+    error_log /var/log/nginx/error.log warn;
+    pid /var/run/nginx.pid;
+
+    events {
+        worker_connections 1024;
+        use epoll;
+        multi_accept on;
+    }
+
+    http {
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+
+        # 日志格式
+        log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                        '$status $body_bytes_sent "$http_referer" '
+                        '"$http_user_agent" "$http_x_forwarded_for" '
+                        'rt=$request_time uct="$upstream_connect_time" '
+                        'uht="$upstream_header_time" urt="$upstream_response_time"';
+
+        access_log /var/log/nginx/access.log main;
+
+        # 基础配置
+        sendfile on;
+        tcp_nopush on;
+        tcp_nodelay on;
+        keepalive_timeout 65;
+        types_hash_max_size 2048;
+        client_max_body_size 10M;
+
+        # Gzip压缩
+        gzip on;
+        gzip_vary on;
+        gzip_min_length 1024;
+        gzip_proxied any;
+        gzip_comp_level 6;
+        gzip_types
+            text/plain
+            text/css
+            text/xml
+            text/javascript
+            application/json
+            application/javascript
+            application/xml+rss
+            application/atom+xml
+            image/svg+xml;
+
+        # 上游服务器
+        upstream law_oa_backend {
+            least_conn;
+            server law-oa-backend-service.law-oa.svc.cluster.local:8080 max_fails=3 fail_timeout=30s;
+            keepalive 32;
+        }
+
+        upstream law_oa_frontend {
+            server law-oa-frontend-service.law-oa.svc.cluster.local:80 max_fails=3 fail_timeout=30s;
+        }
+
+        # 限流配置
+        limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
+        limit_req_zone $binary_remote_addr zone=login:10m rate=1r/s;
+
+        # 主服务器配置
+        server {
+            listen 80;
+            server_name lawoa.com www.lawoa.com api.lawoa.com;
+
+            # 安全头
+            add_header X-Frame-Options "SAMEORIGIN" always;
+            add_header X-Content-Type-Options "nosniff" always;
+            add_header X-XSS-Protection "1; mode=block" always;
+            add_header Referrer-Policy "no-referrer-when-downgrade" always;
+            add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline'" always;
+
+            # API代理
+            location /api/ {
+                limit_req zone=api burst=20 nodelay;
+
+                proxy_pass http://law_oa_backend/;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_set_header X-Request-ID $request_id;
+
+                proxy_connect_timeout 30s;
+                proxy_send_timeout 30s;
+                proxy_read_timeout 30s;
+
+                proxy_buffering on;
+                proxy_buffer_size 4k;
+                proxy_buffers 8 4k;
+                proxy_busy_buffers_size 8k;
+
+                # 健康检查
+                location /api/health {
+                    access_log off;
+                    proxy_pass http://law_oa_backend/health;
+                }
+            }
+
+            # 登录限流
+            location /api/auth/login {
+                limit_req zone=login burst=5 nodelay;
+
+                proxy_pass http://law_oa_backend/auth/login;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+            }
+
+            # 前端应用
+            location / {
+                proxy_pass http://law_oa_frontend/;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+
+                # 缓存静态资源
+                location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+                    expires 1y;
+                    add_header Cache-Control "public, immutable";
+                }
+            }
+
+            # 健康检查
+            location /health {
+                access_log off;
+                return 200 "healthy\n";
+                add_header Content-Type text/plain;
+            }
+        }
+    }
+
+---
+# Fluent Bit配置
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluent-bit-config
+  namespace: law-oa
+  labels:
+    app: law-oa
+    component: logging
+    environment: production
+    project: law-oa-go
+  annotations:
+    description: "Law OA Go Fluent Bit日志收集配置"
+
+data:
+  fluent-bit.conf: |
+    [SERVICE]
+        Flush         5
+        Log_Level     info
+        Daemon        off
+        Parsers_File  parsers.conf
+        HTTP_Server   On
+        HTTP_Listen   0.0.0.0
+        HTTP_Port     2020
+
+    [INPUT]
+        Name              tail
+        Path              /app/logs/*.log
+        Parser            json
+        Tag               lawoa.backend.*
+        Refresh_Interval  5
+        Mem_Buf_Limit     50MB
+        Skip_Long_Lines   On
+
+    [OUTPUT]
+        Name  forward
+        Match *
+        Host  fluentd-service.law-oa-logging.svc.cluster.local
+        Port  24224
+
+    [FILTER]
+        Name                kubernetes
+        Match               lawoa.backend.*
+        Kube_URL            https://kubernetes.default.svc:443
+        Kube_CA_File        /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        Kube_Token_File     /var/run/secrets/kubernetes.io/serviceaccount/token
+        Kube_Tag_Prefix     lawoa.var.log.containers.
+        Merge_Log           On
+        Keep_Log            Off
+        K8S-Logging.Parser  On
+        K8S-Logging.Exclude On
+
+    [FILTER]
+        Name                modify
+        Match               lawoa.backend.*
+        Add                 environment production
+        Add                 app_name law-oa-backend
+        Add                 project law-oa-go
+
+  parsers.conf: |
+    [PARSER]
+        Name        json
+        Format      json
+        Time_Key    timestamp
+        Time_Format %Y-%m-%dT%H:%M:%S.%L
+        Time_Keep   On

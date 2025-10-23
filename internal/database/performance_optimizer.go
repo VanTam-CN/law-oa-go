@@ -16,33 +16,33 @@ import (
 // 数据库性能相关的Prometheus指标
 var (
 	dbQueryDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
-		Name:    "db_query_duration_seconds",
+		Name:    "app_db_query_duration_seconds",
 		Help:    "Duration of database queries",
 		Buckets: []float64{0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10},
 	}, []string{"operation", "table", "query_type"})
 
 	dbQueryCount = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "db_query_count_total",
+		Name: "app_db_query_count_total",
 		Help: "Total number of database queries",
 	}, []string{"operation", "table", "query_type"})
 
 	dbQueryErrors = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "db_query_errors_total",
+		Name: "app_db_query_errors_total",
 		Help: "Total number of database query errors",
 	}, []string{"operation", "table", "query_type"})
 
 	dbSlowQueries = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "db_slow_queries_total",
+		Name: "app_db_slow_queries_total",
 		Help: "Total number of slow database queries",
 	}, []string{"operation", "table", "query_type"})
 
 	dbConnections = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "db_connections_active",
+		Name: "app_db_connections_active",
 		Help: "Number of active database connections",
 	}, []string{"type"})
 
 	dbCacheHitRate = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "db_cache_hit_rate",
+		Name: "app_db_cache_hit_rate",
 		Help: "Database query cache hit rate",
 	}, []string{"table"})
 )

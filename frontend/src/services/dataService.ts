@@ -4,9 +4,8 @@
  * 提供一致的数据获取和处理逻辑
  */
 
-import { message } from 'antd';
+import { message } from '@/utils/messageHelper';
 import { get, post, put, del } from './api';
-import { authService } from './authService';
 
 // =============================================================================
 // 1. API错误处理和响应处理
@@ -218,7 +217,7 @@ class DataService {
     total: number;
   }> {
     try {
-      const response = await this.get<ApiResponse<any[]>>('/lawyers', params);
+      const response = await this.get<ApiResponse<any[]>>('/lawfirm/lawyers', params);
 
       return {
         data: response.data || [],
@@ -247,7 +246,7 @@ class DataService {
 
   async getLawyerById(id: number): Promise<any> {
     try {
-      const response = await this.get<any>(`/lawyers/${id}`);
+      const response = await this.get<any>(`/lawfirm/lawyers/${id}`);
       return response;
     } catch (error) {
       console.error('获取律师详情失败:', error);
@@ -257,7 +256,7 @@ class DataService {
 
   async createLawyer(data: any): Promise<any> {
     try {
-      const response = await this.post<any>('/lawyers', data);
+      const response = await this.post<any>('/lawfirm/lawyers', data);
       return response;
     } catch (error) {
       console.error('创建律师失败:', error);
@@ -267,7 +266,7 @@ class DataService {
 
   async updateLawyer(id: number, data: any): Promise<any> {
     try {
-      const response = await this.put<any>(`/lawyers/${id}`, data);
+      const response = await this.put<any>(`/lawfirm/lawyers/${id}`, data);
       return response;
     } catch (error) {
       console.error('更新律师失败:', error);
@@ -277,7 +276,7 @@ class DataService {
 
   async deleteLawyer(id: number): Promise<void> {
     try {
-      await this.delete(`/lawyers/${id}`);
+      await this.delete(`/lawfirm/lawyers/${id}`);
     } catch (error) {
       console.error('删除律师失败:', error);
       throw handleApiError(error);
@@ -302,15 +301,15 @@ class DataService {
     total: number;
   }> {
     try {
-      const response = await this.get<ApiResponse<any[]>>('/cases', params);
+      const response = await this.get<{cases: any[], pagination: any}>('/cases', params);
 
       return {
-        data: response.data || [],
+        data: response.cases || [],
         pagination: response.pagination || {
           page: 1,
           page_size: 10,
           total: 0,
-          total_pages: 0,
+          total_page: 0,
         },
         total: response.pagination?.total || 0,
       };
@@ -322,7 +321,7 @@ class DataService {
           page: 1,
           page_size: 10,
           total: 0,
-          total_pages: 0,
+          total_page: 0,
         },
         total: 0,
       };
@@ -488,15 +487,15 @@ class DataService {
     total: number;
   }> {
     try {
-      const response = await this.get<ApiResponse<any[]>>('/clients', params);
+      const response = await this.get<{clients: any[], pagination: any}>('/clients', params);
 
       return {
-        data: response.data || [],
+        data: response.clients || [],
         pagination: response.pagination || {
           page: 1,
           page_size: 10,
           total: 0,
-          total_pages: 0,
+          total_page: 0,
         },
         total: response.pagination?.total || 0,
       };
@@ -508,7 +507,7 @@ class DataService {
           page: 1,
           page_size: 10,
           total: 0,
-          total_pages: 0,
+          total_page: 0,
         },
         total: 0,
       };

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>前端认证状态调试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .debug-item { margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 3px; }
+        .error { color: red; background: #ffe6e6; }
+        .success { color: green; background: #e6ffe6; }
+        .warning { color: orange; background: #fff3cd; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>🔍 前端认证状态调试工具</h1>
+
+    <div class="section">
+        <h2>1. 本地存储状态检查</h2>
+        <div id="storage-status">检查中...</div>
+    </div>
+
+    <div class="section">
+        <h2>2. Token有效性验证</h2>
+        <div id="token-validation">验证中...</div>
+    </div>
+
+    <div class="section">
+        <h2>3. API调用测试</h2>
+        <div id="api-tests">测试中...</div>
+    </div>
+
+    <div class="section">
+        <h2>4. 修复操作</h2>
+        <button onclick="clearAndReset()">清除所有认证数据并重置</button>
+        <button onclick="setValidToken()">设置有效的测试Token</button>
+        <button onclick="testFix()">测试修复效果</button>
+    </div>
+
+    <div class="section">
+        <h2>5. 调试日志</h2>
+        <pre id="debug-log">等待操作...</pre>
+    </div>
+
+    <script>
+        let debugLog = '';
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = `[${timestamp}] ${message}`;
+            debugLog += entry + '\n';
+            document.getElementById('debug-log').textContent = debugLog;
+            console.log(entry);
+        }
+
+        function checkStorage() {
+            log('开始检查本地存储状态...');
+
+            // 检查token
+            const token = localStorage.getItem('auth_token');
+            const userInfo = localStorage.getItem('law_oa_user_info');
+
+            let storageHtml = '<div class="debug-item">';
+            storageHtml += `<strong>Token:</strong> ${token ? '✅ 存在' : '❌ 不存在'}`;
+            if (token) {
+                storageHtml += `<br><small>长度: ${token.length}, 前50字符: ${token.substring(0, 50)}...</small>`;
+            }
+            storageHtml += '</div>';
+
+            storageHtml += '<div class="debug-item">';
+            storageHtml += `<strong>用户信息:</strong> ${userInfo ? '✅ 存在' : '❌ 不存在'}`;
+            if (userInfo) {
+                try {
+                    const user = JSON.parse(userInfo);
+                    storageHtml += `<br><small>ID: ${user.id}, 角色: ${user.role}, 邮箱: ${user.email}</small>`;
+                } catch (e) {
+                    storageHtml += `<br><small class="error">解析失败: ${e.message}</small>`;
+                }
+            }
+            storageHtml += '</div>';
+
+            document.getElementById('storage-status').innerHTML = storageHtml;
+
+            return { token, userInfo: userInfo ? JSON.parse(userInfo) : null };
+        }
+
+        async function validateToken(token) {
+            log(`开始验证token有效性...`);
+
+            try {
+                const response = await fetch('http://localhost:8080/api/v1/auth/me', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    log('✅ Token验证成功', 'success');
+                    return { valid: true, data };
+                } else {
+                    log(`❌ Token验证失败: ${response.status} ${response.statusText}`, 'error');
+                    return { valid: false, error: `${response.status} ${response.statusText}` };
+                }
+            } catch (error) {
+                log(`❌ Token验证请求失败: ${error.message}`, 'error');
+                return { valid: false, error: error.message };
+            }
+        }
+
+        async function testAPIs(token) {
+            log('开始测试API调用...');
+
+            const tests = [
+                { name: '客户管理', url: '/clients', method: 'GET' },
+                { name: '案件管理', url: '/cases', method: 'GET' },
+                { name: '律师管理', url: '/lawfirm/lawyers', method: 'GET' },
+                { name: '用户管理', url: '/admin/users', method: 'GET' }
+            ];
+
+            let resultsHtml = '';
+
+            for (const test of tests) {
+                try {
+                    log(`测试 ${test.name} API...`);
+                    const response = await fetch(`http://localhost:8080/api/v1${test.url}`, {
+                        method: test.method,
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    const data = await response.json();
+                    const success = data.success;
+
+                    resultsHtml += `<div class="debug-item ${success ? 'success' : 'error'}">`;
+                    resultsHtml += `<strong>${test.name}:</strong> ${success ? '✅ 成功' : '❌ 失败'}`;
+                    if (!success) {
+                        resultsHtml += `<br><small>错误: ${data.message || '未知错误'}</small>`;
+                    }
+                    resultsHtml += '</div>';
+
+                    log(`${test.name} API: ${success ? '成功' : '失败'}`);
+                } catch (error) {
+                    resultsHtml += `<div class="debug-item error">`;
+                    resultsHtml += `<strong>${test.name}:</strong> ❌ 请求失败`;
+                    resultsHtml += `<br><small>错误: ${error.message}</small>`;
+                    resultsHtml += '</div>';
+
+                    log(`${test.name} API: 请求失败 - ${error.message}`, 'error');
+                }
+            }
+
+            document.getElementById('api-tests').innerHTML = resultsHtml;
+        }
+
+        function clearAndReset() {
+            log('清除所有认证数据...');
+
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('law_oa_user_info');
+            localStorage.removeItem('law_oa_roles');
+            localStorage.removeItem('law_oa_permissions');
+
+            log('认证数据已清除', 'warning');
+            checkStorage();
+        }
+
+        async function setValidToken() {
+            log('设置有效的测试Token...');
+
+            // 先登录获取有效token
+            try {
+                const loginResponse = await fetch('http://localhost:8080/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@lawoa.com',
+                        password: 'admin123'
+                    })
+                });
+
+                const data = await loginResponse.json();
+
+                if (data.success && data.data.token && data.data.user) {
+                    // 存储token和用户信息
+                    localStorage.setItem('auth_token', data.data.token);
+                    localStorage.setItem('law_oa_user_info', JSON.stringify(data.data.user));
+
+                    log('✅ 有效Token和用户信息已存储', 'success');
+                    log(`Token: ${data.data.token.substring(0, 50)}...`);
+                    log(`用户: ${data.data.user.name} (${data.data.user.email})`);
+
+                    checkStorage();
+                    await validateToken(data.data.token);
+                } else {
+                    log('❌ 登录失败', 'error');
+                }
+            } catch (error) {
+                log(`❌ 设置Token失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function testFix() {
+            log('测试修复效果...');
+
+            const { token, userInfo } = checkStorage();
+
+            if (!token || !userInfo) {
+                log('❌ 没有有效的认证信息，请先设置Token', 'error');
+                return;
+            }
+
+            log('验证Token有效性...');
+            const validation = await validateToken(token);
+
+            if (validation.valid) {
+                log('Token验证通过，测试API调用...');
+                await testAPIs(token);
+                log('✅ 修复测试完成！', 'success');
+            } else {
+                log(`❌ Token验证失败: ${validation.error}`, 'error');
+            }
+        }
+
+        // 页面加载时执行检查
+        window.onload = async function() {
+            log('=== 前端认证状态调试工具启动 ===');
+
+            const { token, userInfo } = checkStorage();
+
+            if (token && userInfo) {
+                log('发现存储的认证信息，开始验证...');
+                await validateToken(token);
+                await testAPIs(token);
+            } else {
+                log('没有发现有效的认证信息', 'warning');
+            }
+        };
+    </script>
+</body>
+</html>

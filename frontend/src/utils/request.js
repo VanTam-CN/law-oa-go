@@ -3,7 +3,7 @@ import { message } from 'antd';
 import { getToken } from './storage';
 
 const service = axios.create({
-  baseURL: '/api',
+  baseURL: '/api/v1',
   timeout: 10000
 });
 
@@ -62,7 +62,7 @@ service.interceptors.response.use(
         case 401:
           message.error('未授权，请重新登录');
           // 清除token并跳转到登录页
-          localStorage.removeItem('token');
+          localStorage.removeItem('auth_token');
           window.location.href = '/login';
           break;
         case 403:

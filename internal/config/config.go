@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
@@ -33,6 +34,12 @@ type DatabaseConfig struct {
 	ParseTime bool   `mapstructure:"parseTime"`
 	Loc       string `mapstructure:"loc"`
 	SSLMode   string `mapstructure:"sslmode"`
+	// 性能优化配置
+	MaxOpenConns       int           `mapstructure:"maxOpen_conns"`
+	MaxIdleConns       int           `mapstructure:"max_idle_conns"`
+	ConnMaxLifetime    time.Duration `mapstructure:"conn_max_lifetime"`
+	ConnMaxIdleTime    time.Duration `mapstructure:"conn_max_idle_time"`
+	EnablePerformance  bool          `mapstructure:"enable_performance"`
 }
 
 // RedisConfig Redis配置
@@ -113,6 +120,13 @@ func Load() (*Config, error) {
 	viper.SetDefault("cors.allowedMethods", []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})
 	viper.SetDefault("cors.allowedHeaders", []string{"Content-Type", "Authorization", "X-Request-ID"})
 	viper.SetDefault("cors.maxAge", "86400")
+
+	// 数据库性能配置默认值
+	viper.SetDefault("database.maxOpen_conns", 25)
+	viper.SetDefault("database.max_idle_conns", 5)
+	viper.SetDefault("database.conn_max_lifetime", "30m")
+	viper.SetDefault("database.conn_max_idle_time", "5m")
+	viper.SetDefault("database.enable_performance", true)
 
 	// 冲突检测配置默认值
 	viper.SetDefault("conflictDetection.enabled", true)
@@ -290,4 +304,122 @@ func (c *Config) Validate() error {
 	}
 
 	return nil
+}
+
+// GetDatabasePerformanceConfig 获取数据库性能优化配置
+func (c *Config) GetDatabasePerformanceConfig() DatabasePerformanceConfig {
+	// 根据环境自动调整性能参数
+	baseConfig := DatabasePerformanceConfig{
+		MaxOpenConns:       c.Database.MaxOpenConns,
+		MaxIdleConns:       c.Database.MaxIdleConns,
+		ConnMaxLifetime:    c.Database.ConnMaxLifetime,
+		ConnMaxIdleTime:    c.Database.ConnMaxIdleTime,
+		EnablePerformance:  c.Database.EnablePerformance,
+	}
+
+	// 环境特定优化
+	switch c.Environment {
+	case "production":
+		if baseConfig.MaxOpenConns == 0 {
+			baseConfig.MaxOpenConns = 100
+		}
+		if baseConfig.MaxIdleConns == 0 {
+			baseConfig.MaxIdleConns = 10
+		}
+		if baseConfig.ConnMaxLifetime == 0 {
+			baseConfig.ConnMaxLifetime = time.Hour
+		}
+		if baseConfig.ConnMaxIdleTime == 0 {
+			baseConfig.ConnMaxIdleTime = 10 * time.Minute
+		}
+	case "staging":
+		if baseConfig.MaxOpenConns == 0 {
+			baseConfig.MaxOpenConns = 50
+		}
+		if baseConfig.MaxIdleConns == 0 {
+			baseConfig.MaxIdleConns = 15
+		}
+		if baseConfig.ConnMaxLifetime == 0 {
+			baseConfig.ConnMaxLifetime = 30 * time.Minute
+		}
+		if baseConfig.ConnMaxIdleTime == 0 {
+			baseConfig.ConnMaxIdleTime = 5 * time.Minute
+		}
+	case "testing":
+		if baseConfig.MaxOpenConns == 0 {
+			baseConfig.MaxOpenConns = 5
+		}
+		if baseConfig.MaxIdleConns == 0 {
+			baseConfig.MaxIdleConns = 2
+		}
+		if baseConfig.ConnMaxLifetime == 0 {
+			baseConfig.ConnMaxLifetime = 5 * time.Minute
+		}
+		if baseConfig.ConnMaxIdleTime == 0 {
+			baseConfig.ConnMaxIdleTime = time.Minute
+		}
+	default: // development
+		if baseConfig.MaxOpenConns == 0 {
+			baseConfig.MaxOpenConns = 25
+		}
+		if baseConfig.MaxIdleConns == 0 {
+			baseConfig.MaxIdleConns = 5
+		}
+		if baseConfig.ConnMaxLifetime == 0 {
+			baseConfig.ConnMaxLifetime = 30 * time.Minute
+		}
+		if baseConfig.ConnMaxIdleTime == 0 {
+			baseConfig.ConnMaxIdleTime = 5 * time.Minute
+		}
+	}
+
+	return baseConfig
+}
+
+// DatabasePerformanceConfig 数据库性能配置
+type DatabasePerformanceConfig struct {
+	MaxOpenConns       int
+	MaxIdleConns       int
+	ConnMaxLifetime    time.Duration
+	ConnMaxIdleTime    time.Duration
+	EnablePerformance  bool
+}
+
+// GetDriver 获取数据库驱动（向后兼容方法）
+func (c *DatabaseConfig) GetDriver() string {
+	if c.Driver != "" {
+		return c.Driver
+	}
+	return "postgres" // 默认使用PostgreSQL
+}
+
+// GetCharset 获取字符集（向后兼容方法）
+func (c *DatabaseConfig) GetCharset() string {
+	if c.Charset != "" {
+		return c.Charset
+	}
+	return "utf8"
+}
+
+// GetParseTime 获取解析时间设置（向后兼容方法）
+func (c *DatabaseConfig) GetParseTime() bool {
+	return c.ParseTime
+}
+
+// GetLoc 获取时区（向后兼容方法）
+func (c *DatabaseConfig) GetLoc() string {
+	if c.Loc != "" {
+		return c.Loc
+	}
+	return "UTC"
+}
+
+// GetHost 获取主机（向后兼容方法）
+func (c *DatabaseConfig) GetHost() string {
+	return c.Host
+}
+
+// GetPort 获取端口（向后兼容方法）
+func (c *DatabaseConfig) GetPort() string {
+	return c.Port
 }

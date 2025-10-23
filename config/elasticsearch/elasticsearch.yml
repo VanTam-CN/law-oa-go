@@ -21,9 +21,8 @@ xpack.security.enabled: false
 # 索引配置
 indices.query.bool.max_clause_count: 4096
 
-# 中文分词插件配置
-index.analysis.analyzer.default.type: ik_max_word
-index.analysis.search_analyzer.default.type: ik_smart
+# 注意：中文分词配置需要通过索引模板或API设置
+# 不能在节点级别配置 index.analysis.*
 
 # 路径配置
 path.data: /usr/share/elasticsearch/data

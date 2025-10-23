@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -88,12 +89,12 @@ func NewDocumentService(docRepo repositories.DocumentRepository, storageDir stri
 func (s *DocumentService) UploadDocument(ctx context.Context, req *DocumentUploadRequest) (*Document, error) {
 	// Validate request
 	if req.File == nil {
-		return nil, errors.NewValidationError("file", "missing_file", "File is required", "Please provide a file to upload")
+		return nil, errors.ValidationErrorWithDetails("file", "File is required", "Please provide a file to upload", []string{"missing_file"})
 	}
 
 	// Validate file size (max 50MB)
 	if req.File.Size > 50*1024*1024 {
-		return nil, errors.NewValidationError("file", "file_too_large", "File too large", "File size must be less than 50MB")
+		return nil, errors.ValidationErrorWithDetails("file", "File too large", "File size must be less than 50MB", []string{"file_too_large"})
 	}
 
 	// Validate file type
@@ -112,7 +113,7 @@ func (s *DocumentService) UploadDocument(ctx context.Context, req *DocumentUploa
 
 	mimeType := req.File.Header.Get("Content-Type")
 	if !allowedTypes[mimeType] {
-		return nil, errors.NewValidationError("file", "unsupported_file_type", "Unsupported file type", "Only PDF, Word, Excel, text, and image files are allowed")
+		return nil, errors.ValidationErrorWithDetails("file", "Unsupported file type", "Only PDF, Word, Excel, text, and image files are allowed", []string{"unsupported_file_type"})
 	}
 
 	// Create document model
@@ -146,9 +147,25 @@ func (s *DocumentService) UploadDocument(ctx context.Context, req *DocumentUploa
 	filename := fmt.Sprintf("%d_%s", time.Now().Unix(), req.File.Filename)
 	docModel.Filepath = filepath.Join(s.storageDir, filename)
 
-	// Save document to database
+	// Save document to database first
 	if err := s.docRepo.Create(ctx, docModel); err != nil {
-		return nil, errors.NewDatabaseError("create_document", "Failed to create document record", err)
+		return nil, errors.DatabaseError("create_document", "Failed to create document record", err)
+	}
+
+	// Open uploaded file
+	src, err := req.File.Open()
+	if err != nil {
+		// Clean up database record if file save fails
+		s.docRepo.Delete(ctx, docModel.ID)
+		return nil, errors.InternalError("Failed to open uploaded file", err)
+	}
+	defer src.Close()
+
+	// Save file to storage
+	if err := s.saveToFile(src, docModel.Filepath); err != nil {
+		// Clean up database record if file save fails
+		s.docRepo.Delete(ctx, docModel.ID)
+		return nil, errors.InternalError("Failed to save file", err)
 	}
 
 	// Convert to response
@@ -160,9 +177,9 @@ func (s *DocumentService) GetDocumentByID(ctx context.Context, id uint) (*Docume
 	docModel, err := s.docRepo.FindByID(ctx, id)
 	if err != nil {
 		if err == repositories.ErrDocumentNotFound {
-			return nil, errors.NewNotFoundError("document", "Document not found", id)
+			return nil, errors.NotFoundError("document", "Document not found", id)
 		}
-		return nil, errors.NewDatabaseError("get_document", "Failed to get document", err)
+		return nil, errors.DatabaseError("get_document", "Failed to get document", err)
 	}
 
 	return s.toDocument(docModel), nil
@@ -194,7 +211,7 @@ func (s *DocumentService) ListDocuments(ctx context.Context, req *DocumentListRe
 
 	docModels, total, err := s.docRepo.List(ctx, params)
 	if err != nil {
-		return nil, 0, errors.NewDatabaseError("list_documents", "Failed to list documents", err)
+		return nil, 0, errors.DatabaseError("list_documents", "Failed to list documents", err)
 	}
 
 	documents := make([]*Document, len(docModels))
@@ -210,9 +227,9 @@ func (s *DocumentService) UpdateDocument(ctx context.Context, id uint, req *Docu
 	docModel, err := s.docRepo.FindByID(ctx, id)
 	if err != nil {
 		if err == repositories.ErrDocumentNotFound {
-			return nil, errors.NewNotFoundError("document", "Document not found", id)
+			return nil, errors.NotFoundError("document", "Document not found", id)
 		}
-		return nil, errors.NewDatabaseError("get_document", "Failed to get document", err)
+		return nil, errors.DatabaseError("get_document", "Failed to get document", err)
 	}
 
 	// Update fields
@@ -232,7 +249,7 @@ func (s *DocumentService) UpdateDocument(ctx context.Context, id uint, req *Docu
 	docModel.UpdatedAt = time.Now()
 
 	if err := s.docRepo.Update(ctx, docModel); err != nil {
-		return nil, errors.NewDatabaseError("update_document", "Failed to update document", err)
+		return nil, errors.DatabaseError("update_document", "Failed to update document", err)
 	}
 
 	return s.toDocument(docModel), nil
@@ -240,17 +257,24 @@ func (s *DocumentService) UpdateDocument(ctx context.Context, id uint, req *Docu
 
 // DeleteDocument deletes a document
 func (s *DocumentService) DeleteDocument(ctx context.Context, id uint) error {
-	_, err := s.docRepo.FindByID(ctx, id)
+	docModel, err := s.docRepo.FindByID(ctx, id)
 	if err != nil {
 		if err == repositories.ErrDocumentNotFound {
-			return errors.NewNotFoundError("document", "Document not found", id)
+			return errors.NotFoundError("document", "Document not found", id)
 		}
-		return errors.NewDatabaseError("get_document", "Failed to get document", err)
+		return errors.DatabaseError("get_document", "Failed to get document", err)
 	}
 
 	// Delete document from database
 	if err := s.docRepo.Delete(ctx, id); err != nil {
-		return errors.NewDatabaseError("delete_document", "Failed to delete document", err)
+		return errors.DatabaseError("delete_document", "Failed to delete document", err)
+	}
+
+	// Delete file from storage
+	if err := s.deleteFile(docModel.Filepath); err != nil {
+		// Log error but don't fail the operation
+		// In production, you might want to use a proper logger
+		fmt.Printf("Warning: Failed to delete file %s: %v\n", docModel.Filepath, err)
 	}
 
 	return nil
@@ -260,7 +284,7 @@ func (s *DocumentService) DeleteDocument(ctx context.Context, id uint) error {
 func (s *DocumentService) GetDocumentStats(ctx context.Context) (*DocumentStats, error) {
 	stats, err := s.docRepo.GetStats(ctx)
 	if err != nil {
-		return nil, errors.NewDatabaseError("get_document_stats", "Failed to get document statistics", err)
+		return nil, errors.DatabaseError("get_document_stats", "Failed to get document statistics", err)
 	}
 
 	// Convert category map
@@ -288,15 +312,15 @@ func (s *DocumentService) DownloadDocument(ctx context.Context, id uint) (io.Rea
 	docModel, err := s.docRepo.FindByID(ctx, id)
 	if err != nil {
 		if err == repositories.ErrDocumentNotFound {
-			return nil, nil, errors.NewNotFoundError("document", "Document not found", id)
+			return nil, nil, errors.NotFoundError("document", "Document not found", id)
 		}
-		return nil, nil, errors.NewDatabaseError("get_document", "Failed to get document", err)
+		return nil, nil, errors.DatabaseError("get_document", "Failed to get document", err)
 	}
 
 	// Open file for reading
 	file, err := s.openFile(docModel.Filepath)
 	if err != nil {
-		return nil, nil, errors.NewInternalError("file_open", "Failed to open document file", err)
+		return nil, nil, errors.InternalError("Failed to open document file", err)
 	}
 
 	return file, s.toDocument(docModel), nil
@@ -331,22 +355,47 @@ func (s *DocumentService) toDocument(model *models.Document) *Document {
 }
 
 // saveToFile saves uploaded file to filesystem
-func (s *DocumentService) saveToFile(src multipart.File, dst string) (string, error) {
-	// Implementation would save the file to the destination path
-	// For now, returning the destination path as a placeholder
-	return dst, nil
+func (s *DocumentService) saveToFile(src multipart.File, dst string) error {
+	// Create directory if it doesn't exist
+	dir := filepath.Dir(dst)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("failed to create directory %s: %w", dir, err)
+	}
+
+	// Create destination file
+	dstFile, err := os.Create(dst)
+	if err != nil {
+		return fmt.Errorf("failed to create file %s: %w", dst, err)
+	}
+	defer dstFile.Close()
+
+	// Copy content
+	_, err = io.Copy(dstFile, src)
+	if err != nil {
+		// Clean up the file if copy fails
+		os.Remove(dst)
+		return fmt.Errorf("failed to copy file content: %w", err)
+	}
+
+	return nil
 }
 
 // deleteFile deletes a file from filesystem
 func (s *DocumentService) deleteFile(filepath string) error {
-	// Implementation would delete the file from the filesystem
-	// For now, returning nil as a placeholder
-	return nil
+	// Check if file exists before attempting to delete
+	if _, err := os.Stat(filepath); os.IsNotExist(err) {
+		// File doesn't exist, which is not an error
+		return nil
+	}
+
+	return os.Remove(filepath)
 }
 
 // openFile opens a file for reading
 func (s *DocumentService) openFile(filepath string) (io.ReadCloser, error) {
-	// Implementation would open the file for reading
-	// For now, returning nil as a placeholder
-	return nil, nil
+	file, err := os.Open(filepath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open file %s: %w", filepath, err)
+	}
+	return file, nil
 }

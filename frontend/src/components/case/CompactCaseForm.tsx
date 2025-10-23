@@ -93,7 +93,7 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
   readonly = false,
   disabled = false,
   loading = false
-}) = {
+}) => {
   // 合并配置
   const finalConfig = useMemo<FormConfig>(() => ({
     ...DEFAULT_FORM_CONFIG,

@@ -13,21 +13,22 @@ import {
   Col,
   Radio,
   Checkbox,
+  ConfigProvider,
+  Tag,
+  Avatar,
   Space,
+  Typography,
   Divider,
   message,
   Spin,
   Alert,
   Progress,
   Timeline,
-  Tag,
   Descriptions,
   Statistic,
   Badge,
   Tooltip,
-  Avatar,
   List,
-  Typography,
   Result,
   Collapse,
   Table,
@@ -55,6 +56,7 @@ import {
   StarOutlined,
 } from "@ant-design/icons";
 import { get } from "@/services/api";
+import { clientService } from "@/services/client";
 import { conflictAPI } from "@/api/conflict";
 import ConflictCheckResult from "./conflict/ConflictCheckResult";
 
@@ -121,12 +123,14 @@ interface CreateCaseWizardProps {
   visible: boolean;
   onCancel: () => void;
   onSuccess: () => void;
+  appMessage?: any;
 }
 
 const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({
   visible,
   onCancel,
   onSuccess,
+  appMessage,
 }) => {
   const [form] = Form.useForm();
   const [currentStep, setCurrentStep] = useState(0);
@@ -191,69 +195,266 @@ const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({
 
   const loadInitialData = async () => {
     console.log('CreateCaseWizard开始加载数据...');
+    setLoading(true);
+
     try {
-      const [clientsResponse, lawyersResponse] = await Promise.all([
-        get('/clients', { pageNum: 1, pageSize: 9999 }),
-        get('/lawfirm/lawyers', { pageNum: 1, pageSize: 9999 }),
-      ]);
+      // 获取客户数据 - 使用clientService确保与客户管理界面一致
+      console.log('获取客户数据...');
+      const clientsResponse = await clientService.getClientList({
+        pageNum: 1,
+        pageSize: 9999
+      });
+      console.log('客户API响应:', clientsResponse);
 
-      console.log('API响应:', { clientsResponse, lawyersResponse });
+      // 客户数据处理 - 基于实际API响应格式
+      let clientData = [];
+      let totalCount = 0;
 
-      // 处理客户数据
-      if (clientsResponse?.data) {
-        const formattedClients = clientsResponse.data.map((client: any) => ({
+      // 🔧 修复：HTTP拦截器处理后的实际格式：{clients: [...], pagination: {total: 14, ...}}
+      if (clientsResponse.clients && Array.isArray(clientsResponse.clients)) {
+        // HTTP拦截器转换后的标准格式：数据在clients字段中
+        clientData = clientsResponse.clients;
+        totalCount = clientsResponse.pagination?.total || clientsResponse.total || 0;
+        console.log('使用HTTP拦截器标准格式解析，clients数量:', clientData.length);
+      } else if (clientsResponse.success && clientsResponse.data) {
+        // 备用格式：数据在res.data.clients中
+        clientData = clientsResponse.data.clients || [];
+        totalCount = clientsResponse.data.pagination?.total || 0;
+        console.log('使用备用API格式解析，clients数量:', clientData.length);
+      } else if (clientsResponse.data && clientsResponse.data.clients) {
+        // 兼容格式：直接从data.clients获取
+        clientData = clientsResponse.data.clients;
+        totalCount = clientsResponse.data.pagination?.total || 0;
+        console.log('使用兼容格式解析，clients数量:', clientData.length);
+      } else if (clientsResponse.data && Array.isArray(clientsResponse.data)) {
+        // 直接是数组数据
+        clientData = clientsResponse.data;
+        totalCount = clientsResponse.data.length;
+        console.log('使用数组格式解析，clients数量:', clientData.length);
+      } else if (clientsResponse.list && Array.isArray(clientsResponse.list)) {
+        // 备用格式：数据在list字段中
+        clientData = clientsResponse.list;
+        totalCount = clientsResponse.total || 0;
+        console.log('使用list格式解析，clients数量:', clientData.length);
+      } else if (clientsResponse.code === 0 && clientsResponse.data) {
+        // 旧格式：数据在data中
+        clientData = clientsResponse.data.list || clientsResponse.data.clients || [];
+        totalCount = clientsResponse.data.total || 0;
+        console.log('使用旧API格式解析，clients数量:', clientData.length);
+      } else {
+        console.warn('未识别的响应格式:', clientsResponse);
+        console.log('响应结构分析:', {
+          hasClients: !!clientsResponse?.clients,
+          hasData: !!clientsResponse?.data,
+          hasList: !!clientsResponse?.list,
+          hasPagination: !!clientsResponse?.pagination,
+          dataKeys: clientsResponse?.data ? Object.keys(clientsResponse.data) : [],
+          responseType: typeof clientsResponse,
+          isArray: Array.isArray(clientsResponse)
+        });
+        clientData = [];
+        totalCount = 0;
+      }
+
+      if (clientData.length > 0) {
+        // 字段映射 - 将后端的下划线字段名映射为前端的驼峰命名
+        const mappedClientData = clientData.map((client: any) => ({
+          ...client,
+          idCard: client.id_card,        // 后端 id_card -> 前端 idCard
+          contactPerson: client.contact_person,  // 后端 contact_person -> 前端 contactPerson
+          contactPhone: client.contact_phone,    // 后端 contact_phone -> 前端 contactPhone
+          createdAt: client.created_at,          // 后端 created_at -> 前端 createdAt
+          updatedAt: client.updated_at,          // 后端 updated_at -> 前端 updatedAt
+        }));
+
+        // 格式化数据以适配组件需求
+        const formattedClients = mappedClientData.map((client: any) => ({
           clientId: client.id,
           clientName: client.name || client.company || `客户${client.id}`,
           phone: client.phone || '未提供',
           email: client.email || '',
-          clientType: client.company ? '企业' : '个人',
+          clientType: client.type || (client.company ? '企业' : '个人'),
           company: client.company || '',
-          address: client.address || ''
+          address: client.address || '',
+          status: client.status || 'active',
+          // 保留原始字段以备需要
+          idCard: client.idCard,
+          contactPerson: client.contactPerson,
+          contactPhone: client.contactPhone,
+          source: client.source,
+          notes: client.notes,
+          createdAt: client.createdAt,
+          updatedAt: client.updatedAt
         }));
         console.log('格式化客户数据:', formattedClients);
+        console.log('客户总数:', totalCount);
         setClients(formattedClients);
+      } else {
+        console.log('客户数据格式不正确或为空:', clientsResponse);
+        console.log('响应结构分析:', {
+          hasSuccess: !!clientsResponse?.success,
+          hasData: !!clientsResponse?.data,
+          dataKeys: clientsResponse?.data ? Object.keys(clientsResponse.data) : [],
+          responseType: typeof clientsResponse,
+          isArray: Array.isArray(clientsResponse)
+        });
+        (appMessage || message).error('客户数据加载失败，请检查API连接和响应格式');
       }
 
-      // 处理律师数据
-      if (lawyersResponse?.data) {
-        const formattedLawyers = lawyersResponse.data.map((lawyer: any) => ({
+      // 获取律师数据
+      console.log('获取律师数据...');
+      let lawyersResponse = null;
+
+      try {
+        console.log('尝试律师端点: /lawfirm/lawyers');
+        lawyersResponse = await get('/lawfirm/lawyers', { page: 1, page_size: 100 });
+        console.log('律师API成功:', lawyersResponse);
+      } catch (error) {
+        console.error('律师API失败:', error);
+        lawyersResponse = null;
+      }
+
+      // 律师数据处理
+      if (lawyersResponse?.data?.list && Array.isArray(lawyersResponse.data.list)) {
+        const formattedLawyers = lawyersResponse.data.list.map((lawyer: any) => ({
           lawyerId: lawyer.id,
-          lawyerName: lawyer.name,
-          phone: lawyer.phone || '',
+          lawyerName: lawyer.name || `律师${lawyer.id}`,
+          phone: lawyer.phone || '未提供',
           email: lawyer.email || '',
-          position: '律师',
-          department: '律师事务所',
-          specialty: '法律咨询'
+          position: lawyer.position || '律师',
+          department: lawyer.department || '律师事务所',
+          specialty: lawyer.specialty || '法律咨询'
         }));
         console.log('格式化律师数据:', formattedLawyers);
         setLawyers(formattedLawyers);
+      } else if (lawyersResponse?.data && Array.isArray(lawyersResponse.data)) {
+        const formattedLawyers = lawyersResponse.data.map((lawyer: any) => ({
+          lawyerId: lawyer.id,
+          lawyerName: lawyer.name || `律师${lawyer.id}`,
+          phone: lawyer.phone || '未提供',
+          email: lawyer.email || '',
+          position: lawyer.position || '律师',
+          department: lawyer.department || '律师事务所',
+          specialty: lawyer.specialty || '法律咨询'
+        }));
+        console.log('格式化律师数据:', formattedLawyers);
+        setLawyers(formattedLawyers);
+      } else if (lawyersResponse && Array.isArray(lawyersResponse)) {
+        // 🔧 新增：处理HTTP拦截器转换后的格式 - 直接是律师数组
+        const formattedLawyers = lawyersResponse.map((lawyer: any) => ({
+          lawyerId: lawyer.id,
+          lawyerName: lawyer.name || `律师${lawyer.id}`,
+          phone: lawyer.phone || '未提供',
+          email: lawyer.email || '',
+          position: lawyer.position || '律师',
+          department: lawyer.department || '律师事务所',
+          specialty: lawyer.specialty || '法律咨询'
+        }));
+        console.log('使用HTTP拦截器转换格式解析，律师数量:', formattedLawyers.length);
+        console.log('格式化律师数据:', formattedLawyers);
+        setLawyers(formattedLawyers);
+      } else {
+        console.log('律师数据格式不正确或为空:', lawyersResponse);
+        console.log('律师响应结构分析:', {
+          hasSuccess: !!lawyersResponse?.success,
+          hasData: !!lawyersResponse?.data,
+          dataKeys: lawyersResponse?.data ? Object.keys(lawyersResponse.data) : [],
+          responseType: typeof lawyersResponse,
+          isArray: Array.isArray(lawyersResponse),
+          code: lawyersResponse?.code,
+          msg: lawyersResponse?.msg
+        });
+
+        // 临时处理：律师API不可用时的提示
+        (appMessage || message).warning('律师数据暂时无法加载，您可以稍后再试或联系管理员修复律师API');
+        console.warn('律师API端点问题：所有尝试的端点都返回错误。请检查以下端点：');
+        console.warn('- /lawfirm/lawyers');
+        console.warn('- /lawyers');
+        console.warn('- /users/lawyers');
       }
 
-      // 设置案件类型数据 (使用小写code以匹配后端期望)
+      // 设置案件类型数据 - 优先确保有默认值
       setCaseTypes([
-        { id: "CIVIL", name: "民事案件", code: "civil" },
-        { id: "COMMERCIAL", name: "商事案件", code: "commercial" },
-        { id: "CRIMINAL", name: "刑事案件", code: "criminal" },
-        { id: "ADMINISTRATIVE", name: "行政案件", code: "administrative" },
+        { id: 1, name: "民事案件", code: "civil" },
+        { id: 2, name: "商事案件", code: "commercial" },
+        { id: 3, name: "刑事案件", code: "criminal" },
+        { id: 4, name: "行政案件", code: "administrative" },
+        { id: 5, name: "劳动案件", code: "labor" },
+        { id: 6, name: "知识产权案件", code: "intellectual" },
+        { id: 7, name: "金融案件", code: "financial" },
       ]);
 
+      // 尝试从后端获取案件类型数据（可选）
+      try {
+        const caseTypesResponse = await get('/case-types');
+        if (caseTypesResponse?.data && Array.isArray(caseTypesResponse.data)) {
+          const formattedCaseTypes = caseTypesResponse.data.map((type: any) => ({
+            id: type.id,
+            name: type.name,
+            code: type.code || type.name.toLowerCase()
+          }));
+          console.log('使用后端案件类型数据:', formattedCaseTypes);
+          setCaseTypes(formattedCaseTypes);
+        } else if (caseTypesResponse && Array.isArray(caseTypesResponse)) {
+          // 🔧 新增：处理HTTP拦截器转换后的格式 - 直接是案件类型数组
+          const formattedCaseTypes = caseTypesResponse.map((type: any) => ({
+            id: type.id,
+            name: type.name,
+            code: type.code || type.name.toLowerCase()
+          }));
+          console.log('使用HTTP拦截器转换格式解析案件类型:', formattedCaseTypes);
+          setCaseTypes(formattedCaseTypes);
+        }
+      } catch (error) {
+        console.log('案件类型API调用失败，使用默认类型:', error);
+      }
+
+      // 项目类型和收费方式使用固定数据
       setProjectTypes([
-        { id: "CASE", name: "诉讼案件", code: "CASE" },
-        { id: "ADVISORY", name: "法律顾问", code: "ADVISORY" },
-        { id: "REVIEW", name: "合同审查", code: "REVIEW" },
-        { id: "CIVIL", name: "民事诉讼", code: "CIVIL" },
-        { id: "COMMERCIAL", name: "商业诉讼", code: "COMMERCIAL" },
-        { id: "CRIMINAL", name: "刑事诉讼", code: "CRIMINAL" },
+        { id: 1, name: "新项目", code: "new" },
+        { id: 2, name: "进行中项目", code: "ongoing" },
+        { id: 3, name: "已完成项目", code: "completed" },
+        { id: 4, name: "暂停项目", code: "suspended" },
       ]);
 
       setBillingMethods([
-        { id: "FIXED", name: "定额收费", code: "FIXED" },
-        { id: "HOURLY", name: "按时收费", code: "HOURLY" },
-        { id: "RISK", name: "风险代理", code: "RISK" },
-        { id: "MIXED", name: "混合收费", code: "MIXED" },
+        { id: 1, name: "定额收费", code: "FIXED" },
+        { id: 2, name: "按时收费", code: "HOURLY" },
+        { id: 3, name: "风险代理", code: "RISK" },
+        { id: 4, name: "混合收费", code: "MIXED" },
       ]);
+
+      console.log('数据加载完成');
+
     } catch (error) {
-      message.error("加载初始数据失败");
+      console.error('加载数据失败:', error);
+      (appMessage || message).error('数据加载失败，请刷新页面重试');
+
+      // 只设置基本的静态数据，不设置模拟的客户和律师
+      setCaseTypes([
+        { id: 1, name: "民事案件", code: "civil" },
+        { id: 2, name: "商事案件", code: "commercial" },
+        { id: 3, name: "刑事案件", code: "criminal" },
+        { id: 4, name: "行政案件", code: "administrative" },
+        { id: 5, name: "劳动案件", code: "labor" },
+        { id: 6, name: "知识产权案件", code: "intellectual" },
+      ]);
+
+      setProjectTypes([
+        { id: 1, name: "新项目", code: "new" },
+        { id: 2, name: "进行中项目", code: "ongoing" },
+        { id: 3, name: "已完成项目", code: "completed" },
+        { id: 4, name: "暂停项目", code: "suspended" },
+      ]);
+
+      setBillingMethods([
+        { id: 1, name: "定额收费", code: "FIXED" },
+        { id: 2, name: "按时收费", code: "HOURLY" },
+        { id: 3, name: "风险代理", code: "RISK" },
+        { id: 4, name: "混合收费", code: "MIXED" },
+      ]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -274,7 +475,7 @@ const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({
 
       // 如果当前是利益冲突检查步骤（第3步），需要确认用户已经确认了冲突结果
       if (currentStep === 3 && !conflictConfirmed) {
-        message.warning("请先确认利益冲突检查结果后再继续");
+        (appMessage || message).warning("请先确认利益冲突检查结果后再继续");
         return;
       }
 
@@ -293,7 +494,7 @@ const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({
   const handleConflictConfirm = () => {
     setConflictConfirmed(true);
     setCurrentStep(3); // 确保停留在冲突结果页面
-    message.success('利益冲突检查结果已确认');
+    (appMessage || message).success('利益冲突检查结果已确认');
   };
 
   // 执行利益冲突检查
@@ -553,11 +754,11 @@ const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({
       if (!response.ok) {
         throw new Error('创建案件失败');
       }
-      message.success("案件创建成功");
+      (appMessage || message).success("案件创建成功");
       onSuccess();
       onCancel();
     } catch (error) {
-      message.error("创建案件失败");
+      (appMessage || message).error("创建案件失败");
     } finally {
       setLoading(false);
     }
@@ -566,18 +767,18 @@ const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({
   // 渲染基本信息步骤
   const renderBasicInfo = () => (
     <div
-      style={{ background: "#fafafa", padding: "24px", borderRadius: "8px" }}
+      style={{ background: "#fafafa", padding: "16px", borderRadius: "8px" }}
     >
-      <div style={{ marginBottom: "24px", textAlign: "center" }}>
+      <div style={{ marginBottom: "16px", textAlign: "center" }}>
         <Avatar
-          size={64}
+          size={48}
           icon={<FileTextOutlined />}
-          style={{ backgroundColor: "#1890ff", marginBottom: "16px" }}
+          style={{ backgroundColor: "#1890ff", marginBottom: "12px" }}
         />
-        <Title level={4} style={{ margin: 0, color: "#1890ff" }}>
+        <Title level={5} style={{ margin: 0, color: "#1890ff", fontSize: "16px" }}>
           案件基本信息
         </Title>
-        <Text type="secondary">
+        <Text type="secondary" style={{ fontSize: "12px" }}>
           请填写案件的基础信息，这些信息将用于后续的冲突检查
         </Text>
       </div>
@@ -724,481 +925,398 @@ const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({
   // 渲染当事人信息步骤
   const renderPartyInfo = () => (
     <div
-      style={{ background: "#fafafa", padding: "24px", borderRadius: "8px" }}
+      style={{ background: "#fafafa", padding: "16px", borderRadius: "8px" }}
     >
-      <div style={{ marginBottom: "24px", textAlign: "center" }}>
+      <div style={{ marginBottom: "16px", textAlign: "center" }}>
         <Avatar
-          size={64}
+          size={48}
           icon={<UserOutlined />}
-          style={{ backgroundColor: "#52c41a", marginBottom: "16px" }}
+          style={{ backgroundColor: "#52c41a", marginBottom: "12px" }}
         />
-        <Title level={4} style={{ margin: 0, color: "#52c41a" }}>
+        <Title level={5} style={{ margin: 0, color: "#52c41a", fontSize: "16px" }}>
           当事人信息
         </Title>
-        <Text type="secondary">
+        <Text type="secondary" style={{ fontSize: "12px" }}>
           准确的当事人信息是进行利益冲突检查的关键依据
         </Text>
       </div>
 
-      <Space direction="vertical" style={{ width: "100%" }} size="large">
-        <Card
-          title={
-            <Space>
-              <UserOutlined style={{ color: "#52c41a" }} />
-              <span>委托人信息</span>
-              <Badge count="重要" style={{ backgroundColor: "#f50" }} />
-            </Space>
-          }
-          size="small"
-          style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
-        >
-          <Row gutter={[16, 16]}>
-            <Col span={12}>
-              <Form.Item
-                label={
-                  <Space>
-                    <span>委托人</span>
-                    <Tooltip title="选择现有客户或联系管理员添加新客户">
-                      <InfoCircleOutlined style={{ color: "#52c41a" }} />
-                    </Tooltip>
-                  </Space>
+      <Card
+        title={
+          <Space>
+            <UserOutlined style={{ color: "#52c41a" }} />
+            <span>当事人信息</span>
+          </Space>
+        }
+        size="small"
+        style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
+      >
+        <Row gutter={[16, 16]}>
+          <Col span={12}>
+            <Form.Item
+              label={
+                <Space>
+                  <span>委托人</span>
+                  <Tooltip title="选择现有客户或联系管理员添加新客户">
+                    <InfoCircleOutlined style={{ color: "#52c41a" }} />
+                  </Tooltip>
+                </Space>
+              }
+              name="clientId"
+              rules={[{ required: true, message: "请选择委托人" }]}
+            >
+              <Select
+                placeholder="请选择委托人"
+                showSearch
+                size="large"
+                filterOption={(input, option) =>
+                  !!(
+                    option?.children &&
+                    option.children
+                      .toString()
+                      .toLowerCase()
+                      .indexOf(input.toLowerCase()) >= 0
+                  )
                 }
-                name="clientId"
-                rules={[{ required: true, message: "请选择委托人" }]}
               >
-                <Select
-                  placeholder="请选择委托人"
-                  showSearch
-                  size="large"
-                  filterOption={(input, option) =>
-                    !!(
-                      option?.children &&
-                      option.children
-                        .toString()
-                        .toLowerCase()
-                        .indexOf(input.toLowerCase()) >= 0
-                    )
-                  }
-                >
-                  {clients?.map((client) => (
-                    <Option key={client.clientId} value={client.clientId}>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                        }}
+                {clients?.map((client) => (
+                  <Option key={client.clientId} value={client.clientId}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Space>
+                        <Avatar size="small" icon={<UserOutlined />} />
+                        <span>{client.clientName}</span>
+                      </Space>
+                      <Tag
+                        color={
+                          client.clientType === "个人" ? "blue" : "orange"
+                        }
                       >
-                        <Space>
-                          <Avatar size="small" icon={<UserOutlined />} />
-                          <span>{client.clientName}</span>
-                        </Space>
-                        <Tag
-                          color={
-                            client.clientType === "个人" ? "blue" : "orange"
-                          }
-                        >
-                          {client.clientType}
-                        </Tag>
-                      </div>
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label={
-                  <Space>
-                    <span>合同金额</span>
-                    <Text type="secondary">(用于风险评估)</Text>
-                  </Space>
+                        {client.clientType}
+                      </Tag>
+                    </div>
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label={
+                <Space>
+                  <span>合同金额</span>
+                  <Text type="secondary">(用于风险评估)</Text>
+                </Space>
+              }
+              name="contractAmount"
+            >
+              <InputNumber
+                style={{ width: "100%" }}
+                size="large"
+                placeholder="请输入合同金额"
+                formatter={(value) =>
+                  `¥ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                 }
-                name="contractAmount"
-              >
-                <InputNumber
-                  style={{ width: "100%" }}
-                  size="large"
-                  placeholder="请输入合同金额"
-                  formatter={(value) =>
-                    `¥ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                  }
-                  parser={(value) => value!.replace(/¥\s?|(,*)/g, "") as any}
-                  min={0}
-                  precision={2}
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-        </Card>
-
-        <Card
-          title={
-            <Space>
-              <AlertOutlined style={{ color: "#fa8c16" }} />
-              <span>对方当事人信息</span>
-              <Badge
-                count="冲突检查关键"
-                style={{ backgroundColor: "#fa8c16" }}
+                parser={(value) => value!.replace(/¥\s?|(,*)/g, "") as any}
+                min={0}
+                precision={2}
               />
-            </Space>
-          }
-          size="small"
-          style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
-        >
-          <Alert
-            message="重要提示"
-            description="对方当事人信息将用于利益冲突检查，请尽可能详细填写"
-            type="warning"
-            showIcon
-            style={{ marginBottom: 16 }}
-          />
+            </Form.Item>
+          </Col>
+        </Row>
 
-          <Row gutter={[16, 16]}>
-            <Col span={24}>
-              <Form.Item
-                label={
-                  <Space>
-                    <span>对方当事人信息</span>
-                    <Tooltip title="包括姓名/公司名称、联系方式、地址等">
-                      <InfoCircleOutlined style={{ color: "#fa8c16" }} />
-                    </Tooltip>
-                  </Space>
-                }
-                name="opponentInfo"
-                rules={[
-                  { required: true, message: "请输入对方当事人信息" },
-                  { min: 5, message: "请至少输入5个字符" },
-                ]}
-              >
-                <TextArea
-                  rows={4}
-                  placeholder="请详细输入对方当事人信息，包括：&#10;1. 姓名/公司全称&#10;2. 联系方式&#10;3. 地址&#10;4. 其他相关信息"
-                  showCount
-                  maxLength={300}
-                />
-              </Form.Item>
-            </Col>
-          </Row>
+        <Row gutter={[16, 16]}>
+          <Col span={24}>
+            <Form.Item
+              label={
+                <Space>
+                  <span>对方当事人信息</span>
+                  <Tooltip title="包括姓名/公司名称、联系方式、地址等">
+                    <InfoCircleOutlined style={{ color: "#fa8c16" }} />
+                  </Tooltip>
+                </Space>
+              }
+              name="opponentInfo"
+              rules={[
+                { required: true, message: "请输入对方当事人信息" },
+                { min: 5, message: "请至少输入5个字符" },
+              ]}
+            >
+              <TextArea
+                rows={4}
+                placeholder="请详细输入对方当事人信息，包括：&#10;1. 姓名/公司全称&#10;2. 联系方式&#10;3. 地址&#10;4. 其他相关信息"
+                showCount
+                maxLength={300}
+              />
+            </Form.Item>
+          </Col>
+        </Row>
 
-          <Row gutter={[16, 16]}>
-            <Col span={24}>
-              <Form.Item
-                label={
-                  <Space>
-                    <span>案由</span>
-                    <Tooltip title="法律关系的性质和争议的焦点">
-                      <InfoCircleOutlined style={{ color: "#fa8c16" }} />
-                    </Tooltip>
-                  </Space>
-                }
-                name="causeOfAction"
-                rules={[{ required: true, message: "请输入案由" }]}
-              >
-                <Input
-                  placeholder="例：合同纠纷、侵权责任纠纷、劳动争议等"
-                  size="large"
-                  prefix={<FileTextOutlined style={{ color: "#bfbfbf" }} />}
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-        </Card>
-      </Space>
+        <Row gutter={[16, 16]}>
+          <Col span={24}>
+            <Form.Item
+              label={
+                <Space>
+                  <span>案由</span>
+                  <Tooltip title="法律关系的性质和争议的焦点">
+                    <InfoCircleOutlined style={{ color: "#fa8c16" }} />
+                  </Tooltip>
+                </Space>
+              }
+              name="causeOfAction"
+              rules={[{ required: true, message: "请输入案由" }]}
+            >
+              <Input
+                placeholder="例：合同纠纷、侵权责任纠纷、劳动争议等"
+                size="large"
+                prefix={<FileTextOutlined style={{ color: "#bfbfbf" }} />}
+              />
+            </Form.Item>
+          </Col>
+        </Row>
+      </Card>
     </div>
   );
 
   // 渲染团队分配步骤
   const renderTeamAssignment = () => (
     <div
-      style={{ background: "#fafafa", padding: "24px", borderRadius: "8px" }}
+      style={{ background: "#fafafa", padding: "16px", borderRadius: "8px" }}
     >
-      <div style={{ marginBottom: "24px", textAlign: "center" }}>
+      <div style={{ marginBottom: "16px", textAlign: "center" }}>
         <Avatar
-          size={64}
+          size={48}
           icon={<TeamOutlined />}
-          style={{ backgroundColor: "#722ed1", marginBottom: "16px" }}
+          style={{ backgroundColor: "#722ed1", marginBottom: "12px" }}
         />
-        <Title level={4} style={{ margin: 0, color: "#722ed1" }}>
+        <Title level={5} style={{ margin: 0, color: "#722ed1", fontSize: "16px" }}>
           团队分配
         </Title>
-        <Text type="secondary">合理的团队配置是案件成功的重要保障</Text>
+        <Text type="secondary" style={{ fontSize: "12px" }}>
+          合理的团队配置是案件成功的重要保障
+        </Text>
       </div>
 
-      <Space direction="vertical" style={{ width: "100%" }} size="large">
-        <Card
-          title={
-            <Space>
-              <TeamOutlined style={{ color: "#722ed1" }} />
-              <span>律师团队</span>
-              <Badge count="核心" style={{ backgroundColor: "#722ed1" }} />
-            </Space>
-          }
-          size="small"
-          style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
-        >
-          <Row gutter={[16, 16]}>
-            <Col span={12}>
-              <Form.Item
-                label={
-                  <Space>
-                    <span>主办律师</span>
-                    <Tooltip title="负责案件整体把控和主要工作">
-                      <InfoCircleOutlined style={{ color: "#722ed1" }} />
-                    </Tooltip>
-                  </Space>
+      <Card
+        title={
+          <Space>
+            <TeamOutlined style={{ color: "#722ed1" }} />
+            <span>团队分配</span>
+          </Space>
+        }
+        size="small"
+        style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
+      >
+        <Row gutter={[16, 16]}>
+          <Col span={12}>
+            <Form.Item
+              label={
+                <Space>
+                  <span>主办律师</span>
+                  <Tooltip title="负责案件整体把控和主要工作">
+                    <InfoCircleOutlined style={{ color: "#722ed1" }} />
+                  </Tooltip>
+                </Space>
+              }
+              name="lawyerId"
+              rules={[{ required: true, message: "请选择主办律师" }]}
+            >
+              <Select
+                placeholder="请选择主办律师"
+                size="large"
+                showSearch
+                filterOption={(input, option) =>
+                  !!(
+                    option?.children &&
+                    option.children
+                      .toString()
+                      .toLowerCase()
+                      .indexOf(input.toLowerCase()) >= 0
+                  )
                 }
-                name="lawyerId"
-                rules={[{ required: true, message: "请选择主办律师" }]}
               >
-                <Select
-                  placeholder="请选择主办律师"
-                  size="large"
-                  showSearch
-                  filterOption={(input, option) =>
-                    !!(
-                      option?.children &&
-                      option.children
-                        .toString()
-                        .toLowerCase()
-                        .indexOf(input.toLowerCase()) >= 0
-                    )
-                  }
-                >
-                  {lawyers?.map((lawyer) => (
-                    <Option key={lawyer.lawyerId} value={lawyer.lawyerId}>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                        }}
-                      >
-                        <Space>
-                          <Avatar size="small" icon={<UserOutlined />} />
-                          <div>
-                            <div>{lawyer.lawyerName}</div>
-                            <Text type="secondary" style={{ fontSize: "12px" }}>
-                              {lawyer.department} · {lawyer.specialty}
-                            </Text>
-                          </div>
-                        </Space>
-                        <Tag color="purple">{lawyer.position}</Tag>
-                      </div>
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label={
-                  <Space>
-                    <span>协办律师</span>
-                    <Text type="secondary">(可选)</Text>
-                  </Space>
-                }
-                name="assistingLawyerId"
-              >
-                <Select
-                  placeholder="请选择协办律师"
-                  allowClear
-                  size="large"
-                  showSearch
-                  filterOption={(input, option) =>
-                    !!(
-                      option?.children &&
-                      option.children
-                        ?.toString()
-                        .toLowerCase()
-                        .indexOf(input.toLowerCase()) >= 0
-                    )
-                  }
-                >
-                  {lawyers?.map((lawyer) => (
-                    <Option key={lawyer.lawyerId} value={lawyer.lawyerId}>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                        }}
-                      >
-                        <Space>
-                          <Avatar size="small" icon={<UserOutlined />} />
-                          <div>
-                            <div>{lawyer.lawyerName}</div>
-                            <Text type="secondary" style={{ fontSize: "12px" }}>
-                              {lawyer.department} · {lawyer.specialty}
-                            </Text>
-                          </div>
-                        </Space>
-                        <Tag color="cyan">{lawyer.position}</Tag>
-                      </div>
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={[16, 16]}>
-            <Col span={24}>
-              <Form.Item
-                label={
-                  <Space>
-                    <span>其他团队成员</span>
-                    <Tooltip title="律师助理、实习生等其他参与人员">
-                      <InfoCircleOutlined style={{ color: "#722ed1" }} />
-                    </Tooltip>
-                  </Space>
-                }
-                name="teamMembers"
-              >
-                <Input
-                  placeholder="例：张助理、李实习生（用逗号分隔）"
-                  size="large"
-                  prefix={<TeamOutlined style={{ color: "#bfbfbf" }} />}
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-        </Card>
-
-        <Card
-          title={
-            <Space>
-              <BarChartOutlined style={{ color: "#fa541c" }} />
-              <span>收费信息</span>
-            </Space>
-          }
-          size="small"
-          style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
-        >
-          <Row gutter={[16, 16]}>
-            <Col span={12}>
-              <Form.Item
-                label="收费方式"
-                name="billingMethod"
-                rules={[{ required: true, message: "请选择收费方式" }]}
-              >
-                <Select placeholder="请选择收费方式" size="large">
-                  {billingMethods?.map((method) => (
-                    <Option key={method.id} value={method.code}>
+                {lawyers?.map((lawyer) => (
+                  <Option key={lawyer.lawyerId} value={lawyer.lawyerId}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
                       <Space>
-                        <Tag color="orange">{method.code}</Tag>
-                        {method.name}
+                        <Avatar size="small" icon={<UserOutlined />} />
+                        <div>
+                          <div>{lawyer.lawyerName}</div>
+                          <Text type="secondary" style={{ fontSize: "12px" }}>
+                            {lawyer.department} · {lawyer.specialty}
+                          </Text>
+                        </div>
                       </Space>
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <div style={{ padding: "8px 0" }}>
-                <Text type="secondary">
-                  收费方式将影响案件的财务管理和风险评估
-                </Text>
-              </div>
-            </Col>
-          </Row>
-        </Card>
+                      <Tag color="purple">{lawyer.position}</Tag>
+                    </div>
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label={
+                <Space>
+                  <span>协办律师</span>
+                  <Text type="secondary">(可选)</Text>
+                </Space>
+              }
+              name="assistingLawyerId"
+            >
+              <Select
+                placeholder="请选择协办律师"
+                allowClear
+                size="large"
+                showSearch
+                filterOption={(input, option) =>
+                  !!(
+                    option?.children &&
+                    option.children
+                      ?.toString()
+                      .toLowerCase()
+                      .indexOf(input.toLowerCase()) >= 0
+                  )
+                }
+              >
+                {lawyers?.map((lawyer) => (
+                  <Option key={lawyer.lawyerId} value={lawyer.lawyerId}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Space>
+                        <Avatar size="small" icon={<UserOutlined />} />
+                        <div>
+                          <div>{lawyer.lawyerName}</div>
+                          <Text type="secondary" style={{ fontSize: "12px" }}>
+                            {lawyer.department} · {lawyer.specialty}
+                          </Text>
+                        </div>
+                      </Space>
+                      <Tag color="cyan">{lawyer.position}</Tag>
+                    </div>
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+        </Row>
 
-        <Card
-          title={
-            <Space>
-              <SecurityScanOutlined style={{ color: "#f5222d" }} />
-              <span>风险评估标记</span>
-              <Badge count="重要" style={{ backgroundColor: "#f5222d" }} />
-            </Space>
-          }
-          size="small"
-          style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
-        >
-          <Alert
-            message="风险标记说明"
-            description="以下标记将影响案件的优先级和处理流程，请根据实际情况谨慎选择"
-            type="info"
-            showIcon
-            style={{ marginBottom: 16 }}
-          />
+        <Row gutter={[16, 16]}>
+          <Col span={12}>
+            <Form.Item
+              label="收费方式"
+              name="billingMethod"
+              rules={[{ required: true, message: "请选择收费方式" }]}
+            >
+              <Select placeholder="请选择收费方式" size="large">
+                {billingMethods?.map((method) => (
+                  <Option key={method.id} value={method.code}>
+                    <Space>
+                      <Tag color="orange">{method.code}</Tag>
+                      {method.name}
+                    </Space>
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label={
+                <Space>
+                  <span>其他团队成员</span>
+                  <Tooltip title="律师助理、实习生等其他参与人员">
+                    <InfoCircleOutlined style={{ color: "#722ed1" }} />
+                  </Tooltip>
+                </Space>
+              }
+              name="teamMembers"
+            >
+              <Input
+                placeholder="例：张助理、李实习生（用逗号分隔）"
+                size="large"
+                prefix={<TeamOutlined style={{ color: "#bfbfbf" }} />}
+              />
+            </Form.Item>
+          </Col>
+        </Row>
 
-          <Row gutter={[16, 16]}>
-            <Col span={8}>
-              <Card
-                size="small"
-                style={{ textAlign: "center", border: "1px dashed #ff4d4f" }}
-              >
-                <Form.Item
-                  name="isMajorRisk"
-                  valuePropName="checked"
-                  style={{ margin: 0 }}
-                >
-                  <Checkbox>
-                    <Space direction="vertical" size="small">
-                      <AlertOutlined
-                        style={{ fontSize: "24px", color: "#ff4d4f" }}
-                      />
-                      <Text strong>重大风险案件</Text>
-                      <Text type="secondary" style={{ fontSize: "12px" }}>
-                        涉及重大利益或复杂法律问题
-                      </Text>
-                    </Space>
-                  </Checkbox>
-                </Form.Item>
-              </Card>
-            </Col>
-            <Col span={8}>
-              <Card
-                size="small"
-                style={{ textAlign: "center", border: "1px dashed #fa8c16" }}
-              >
-                <Form.Item
-                  name="isMassCase"
-                  valuePropName="checked"
-                  style={{ margin: 0 }}
-                >
-                  <Checkbox>
-                    <Space direction="vertical" size="small">
-                      <TeamOutlined
-                        style={{ fontSize: "24px", color: "#fa8c16" }}
-                      />
-                      <Text strong>群体性案件</Text>
-                      <Text type="secondary" style={{ fontSize: "12px" }}>
-                        涉及多个当事人或社会影响较大
-                      </Text>
-                    </Space>
-                  </Checkbox>
-                </Form.Item>
-              </Card>
-            </Col>
-            <Col span={8}>
-              <Card
-                size="small"
-                style={{ textAlign: "center", border: "1px dashed #722ed1" }}
-              >
-                <Form.Item
-                  name="isSensitiveCase"
-                  valuePropName="checked"
-                  style={{ margin: 0 }}
-                >
-                  <Checkbox>
-                    <Space direction="vertical" size="small">
-                      <EyeOutlined
-                        style={{ fontSize: "24px", color: "#722ed1" }}
-                      />
-                      <Text strong>敏感案件</Text>
-                      <Text type="secondary" style={{ fontSize: "12px" }}>
-                        涉及政治、宗教或其他敏感因素
-                      </Text>
-                    </Space>
-                  </Checkbox>
-                </Form.Item>
-              </Card>
-            </Col>
-          </Row>
-        </Card>
-      </Space>
+        <Row gutter={[16, 16]}>
+          <Col span={8}>
+            <Form.Item
+              name="isMajorRisk"
+              valuePropName="checked"
+              style={{ marginBottom: 0 }}
+            >
+              <Checkbox>
+                <Space direction="vertical" size="small" style={{ textAlign: 'center' }}>
+                  <AlertOutlined
+                    style={{ fontSize: "20px", color: "#ff4d4f" }}
+                  />
+                  <Text strong>重大风险案件</Text>
+                  <Text type="secondary" style={{ fontSize: "11px" }}>
+                    涉及重大利益或复杂法律问题
+                  </Text>
+                </Space>
+              </Checkbox>
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item
+              name="isMassCase"
+              valuePropName="checked"
+              style={{ marginBottom: 0 }}
+            >
+              <Checkbox>
+                <Space direction="vertical" size="small" style={{ textAlign: 'center' }}>
+                  <TeamOutlined
+                    style={{ fontSize: "20px", color: "#fa8c16" }}
+                  />
+                  <Text strong>群体性案件</Text>
+                  <Text type="secondary" style={{ fontSize: "11px" }}>
+                    涉及多个当事人或社会影响较大
+                  </Text>
+                </Space>
+              </Checkbox>
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item
+              name="isSensitiveCase"
+              valuePropName="checked"
+              style={{ marginBottom: 0 }}
+            >
+              <Checkbox>
+                <Space direction="vertical" size="small" style={{ textAlign: 'center' }}>
+                  <EyeOutlined
+                    style={{ fontSize: "20px", color: "#722ed1" }}
+                  />
+                  <Text strong>敏感案件</Text>
+                  <Text type="secondary" style={{ fontSize: "11px" }}>
+                    涉及政治、宗教或其他敏感因素
+                  </Text>
+                </Space>
+              </Checkbox>
+            </Form.Item>
+          </Col>
+        </Row>
+      </Card>
     </div>
   );
 
@@ -1474,14 +1592,14 @@ const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({
                   <Text>
                     {
                       lawyers.find(
-                        (l) => l.lawyerId === formData.assistingLawyerId,
-                      )?.lawyerName
+                        (l) => l.id === formData.assistingLawyerId,
+                      )?.name
                     }
                   </Text>
                   <Tag color="cyan">
                     {
                       lawyers.find(
-                        (l) => l.lawyerId === formData.assistingLawyerId,
+                        (l) => l.id === formData.assistingLawyerId,
                       )?.position
                     }
                   </Tag>
@@ -1681,54 +1799,113 @@ const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({
   };
 
   return (
-    <Modal
-      title={
-        <div style={{ textAlign: "center", padding: "10px 0" }}>
-          <Space>
-            <Avatar
-              icon={<RocketOutlined />}
-              style={{ backgroundColor: "#1890ff" }}
-            />
-            <div>
-              <Title level={4} style={{ margin: 0, color: "#1890ff" }}>
-                智能案件创建向导
-              </Title>
-              <Text type="secondary">分步骤创建案件，智能冲突检查</Text>
-            </div>
-          </Space>
-        </div>
-      }
-      open={visible}
-      onCancel={onCancel}
-      width={1200}
-      footer={null}
-      destroyOnClose
-      style={{ top: 20 }}
-      styles={{ body: { padding: "0 24px 24px 24px" } }}
+    <>
+      {/* 🎯 Modal层级修复说明：现在使用全局CSS方案，移除内联样式以避免冲突 */}
+      <ConfigProvider
+        theme={{
+          token: {
+            // 🎯 统一字体大小和间距，确保界面比例协调
+            fontSize: 14,
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+            borderRadius: 6,
+            // 🎯 优化组件间距 - 紧凑布局
+            padding: 12,
+            margin: 12,
+            // 🎯 统一颜色主题
+            colorPrimary: '#1890ff',
+            colorSuccess: '#52c41a',
+            colorWarning: '#faad14',
+            colorError: '#ff4d4f',
+          },
+          components: {
+            // 🎯 针对Modal组件的特殊配置
+            Modal: {
+              contentBg: '#ffffff',
+              headerBg: '#fafafa',
+              borderRadiusLG: 8,
+              zIndexPopup: 2002,  // 确保Modal弹窗的z-index
+            },
+            // 🎯 针对Form组件的特殊配置
+            Form: {
+              labelColor: '#262626',
+              itemMarginBottom: 16,
+            },
+          },
+        }}
+      >
+      <Modal
+        title={
+          <div style={{ textAlign: "center", padding: "10px 0" }}>
+            <Space>
+              <Avatar
+                icon={<RocketOutlined />}
+                style={{ backgroundColor: "#1890ff" }}
+              />
+              <div>
+                <Title level={4} style={{ margin: 0, color: "#1890ff" }}>
+                  智能案件创建向导
+                </Title>
+                <Text type="secondary">分步骤创建案件，智能冲突检查</Text>
+              </div>
+            </Space>
+          </div>
+        }
+        open={visible}
+        onCancel={onCancel}
+        // 🎯 响应式宽度：优化适配不同屏幕尺寸
+        width={{
+          xs: '95vw',
+          sm: '85vw',
+          md: '75vw',
+          lg: '800px',    // 1080p优化：800px宽度
+          xl: '850px',
+          xxl: '900px'
+        }}
+        // 🎯 使用 centered 属性实现完美居中
+        centered
+        footer={null}
+        destroyOnClose
+        // 🎯 Modal层级修复：使用全局CSS方案
+        getContainer={() => document.body}
+        // 🎯 简化样式配置，让全局CSS生效
+        styles={{
+          body: {
+            padding: "0 24px 24px 24px",
+            height: '85vh',            // 使用固定高度
+            maxHeight: '90vh',         // 设置上限防止超出屏幕
+            overflowY: 'auto',
+            display: 'flex',
+            flexDirection: 'column'
+          }
+        }}
+        // 🎯 添加自定义CSS类，便于全局CSS定位
+        className="create-case-wizard-modal"
     >
-      <div>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         {/* 步骤指示器 */}
         <div
           style={{
             background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-            margin: "0 -24px 32px -24px",
-            padding: "24px",
+            margin: "0 -24px 16px -24px",  // 进一步减少下边距
+            padding: "12px 24px",          // 减少垂直padding
             borderRadius: "0 0 12px 12px",
+            flexShrink: 0                   // 防止压缩
           }}
         >
           <Steps
             current={currentStep}
+            size="small"                     // 使用small尺寸减少占用空间
             style={{
               background: "rgba(255,255,255,0.1)",
-              padding: "20px",
+              padding: "8px 12px",         // 进一步减少padding
               borderRadius: "8px",
               backdropFilter: "blur(10px)",
             }}
             progressDot={(dot, { status, index }) => (
               <div
                 style={{
-                  width: "32px",
-                  height: "32px",
+                  width: "20px",                   // 进一步缩小圆点尺寸
+                  height: "20px",
                   borderRadius: "50%",
                   background:
                     status === "finish"
@@ -1741,7 +1918,7 @@ const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({
                   justifyContent: "center",
                   color: "white",
                   fontWeight: "bold",
-                  fontSize: "14px",
+                  fontSize: "10px",                // 进一步缩小字体尺寸
                 }}
               >
                 {status === "finish" ? (
@@ -1758,12 +1935,12 @@ const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({
               <Step
                 key={index}
                 title={
-                  <span style={{ color: "white", fontWeight: "bold" }}>
+                  <span style={{ color: "white", fontWeight: "bold", fontSize: "12px" }}>
                     {step.title}
                   </span>
                 }
                 description={
-                  <span style={{ color: "rgba(255,255,255,0.8)" }}>
+                  <span style={{ color: "rgba(255,255,255,0.8)", fontSize: "10px" }}>
                     {step.description}
                   </span>
                 }
@@ -1772,19 +1949,21 @@ const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({
           </Steps>
         </div>
 
-        {/* 表单内容 */}
-        <Form form={form} layout="vertical" initialValues={formData}>
-          {renderStepContent()}
-        </Form>
+        {/* 表单内容区域 - 可滚动 */}
+        <div style={{ flex: 1, overflowY: 'auto', marginBottom: '16px' }}>
+          <Form form={form} layout="vertical" initialValues={formData}>
+            {renderStepContent()}
+          </Form>
+        </div>
 
-        {/* 操作按钮 */}
+        {/* 操作按钮 - 固定在底部 */}
         <div
           style={{
-            marginTop: 32,
-            padding: "20px 0",
+            padding: "12px 0",               // 减少padding
             borderTop: "1px solid #f0f0f0",
             background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
-            margin: "32px -24px -24px -24px",
+            margin: "0 -24px -24px -24px",  // 调整边距
+            flexShrink: 0,                  // 防止压缩
             borderRadius: "0 0 8px 8px",
           }}
         >
@@ -1877,6 +2056,8 @@ const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({
         </div>
       </div>
     </Modal>
+    </ConfigProvider>
+    </>
   );
 };
 

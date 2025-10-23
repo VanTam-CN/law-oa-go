@@ -1,0 +1,97 @@
+# Law OA Go 系统 - 命名空间配置
+# 基于最新Kubernetes最佳实践
+
+---
+# 主应用命名空间
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: law-oa
+  labels:
+    name: law-oa
+    environment: production
+    project: law-oa-go
+    component: application
+    managed-by: kubectl
+    security-level: high
+  annotations:
+    description: "Law OA Go 系统主命名空间 - 生产环境应用部署"
+    contact: "devops@lawoa.com"
+    created-by: "law-oa-deployment"
+    last-updated: "2024-01-01T00:00:00Z"
+
+---
+# 监控命名空间
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: law-oa-monitoring
+  labels:
+    name: law-oa-monitoring
+    environment: production
+    project: law-oa-go
+    component: monitoring
+    managed-by: kubectl
+    security-level: medium
+  annotations:
+    description: "Law OA Go 系统监控栈命名空间 - Prometheus, Grafana, Jaeger"
+    contact: "devops@lawoa.com"
+    created-by: "law-oa-deployment"
+    last-updated: "2024-01-01T00:00:00Z"
+
+---
+# 日志命名空间
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: law-oa-logging
+  labels:
+    name: law-oa-logging
+    environment: production
+    project: law-oa-go
+    component: logging
+    managed-by: kubectl
+    security-level: medium
+  annotations:
+    description: "Law OA Go 系统日志栈命名空间 - Elasticsearch, Kibana, Logstash"
+    contact: "devops@lawoa.com"
+    created-by: "law-oa-deployment"
+    last-updated: "2024-01-01T00:00:00Z"
+
+---
+# 开发环境命名空间
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: law-oa-dev
+  labels:
+    name: law-oa-dev
+    environment: development
+    project: law-oa-go
+    component: application
+    managed-by: kubectl
+    security-level: low
+  annotations:
+    description: "Law OA Go 系统开发环境命名空间"
+    contact: "developers@lawoa.com"
+    created-by: "law-oa-deployment"
+    last-updated: "2024-01-01T00:00:00Z"
+
+---
+# 测试环境命名空间
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: law-oa-staging
+  labels:
+    name: law-oa-staging
+    environment: staging
+    project: law-oa-go
+    component: application
+    managed-by: kubectl
+    security-level: medium
+  annotations:
+    description: "Law OA Go 系统预发布环境命名空间"
+    contact: "qa@lawoa.com"
+    created-by: "law-oa-deployment"
+    last-updated: "2024-01-01T00:00:00Z"

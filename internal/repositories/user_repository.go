@@ -193,3 +193,24 @@ func (r *UserRepositoryImpl) sanitizeSearchInput(input string) string {
 
 	return strings.TrimSpace(cleaned)
 }
+
+// GetLawyers 获取律师用户列表
+func (r *UserRepositoryImpl) GetLawyers(ctx context.Context, page, pageSize int) ([]models.User, error) {
+	var lawyers []models.User
+
+	offset := (page - 1) * pageSize
+
+	err := r.db.WithContext(ctx).
+		Where("role = ?", "lawyer").
+		Where("status = ?", "active").
+		Offset(offset).
+		Limit(pageSize).
+		Order("created_at DESC").
+		Find(&lawyers).Error
+
+	if err != nil {
+		return nil, NewRepositoryError("get_lawyers", "user", err)
+	}
+
+	return lawyers, nil
+}

@@ -1,99 +1,81 @@
 package handlers
 
 import (
-	"strconv"
+	"law-oa-go/internal/common"
 
 	"github.com/gin-gonic/gin"
-	"law-oa-go/internal/common"
 )
 
-// Notification 通知结构体
-type Notification struct {
-	ID        int    `json:"id"`
-	Type      string `json:"type"`
-	Title     string `json:"title"`
-	Content   string `json:"content"`
-	IsRead    bool   `json:"isRead"`
-	CreatedAt string `json:"createdAt"`
-	RelatedID *int   `json:"relatedId,omitempty"`
-}
-
-// NotificationStats 通知统计
-type NotificationStats struct {
-	Total  int               `json:"total"`
-	Unread int               `json:"unread"`
-	ByType map[string]int    `json:"byType"`
-}
-
-// NotificationHandler 通知处理器
 type NotificationHandler struct{}
 
-// NewNotificationHandler 创建通知处理器
 func NewNotificationHandler() *NotificationHandler {
 	return &NotificationHandler{}
 }
 
+type Notification struct {
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	Content     string `json:"content"`
+	Type        string `json:"type"`
+	Status      string `json:"status"`
+	CreatedAt   string `json:"created_at"`
+	ReadAt      *string `json:"read_at,omitempty"`
+}
+
+type NotificationStats struct {
+	Total   int `json:"total"`
+	Unread  int `json:"unread"`
+	Read    int `json:"read"`
+}
+
 // GetNotifications 获取通知列表
 func (h *NotificationHandler) GetNotifications(c *gin.Context) {
-	// 返回空的通知列表，避免前端404错误
-	notifications := []Notification{}
+	// 模拟通知数据
+	notifications := []Notification{
+		{
+			ID:        "1",
+			Title:     "新案件分配",
+			Content:   "您有一个新的案件需要处理",
+			Type:      "case",
+			Status:    "unread",
+			CreatedAt: "2025-10-20T14:00:00Z",
+		},
+		{
+			ID:        "2",
+			Title:     "客户消息",
+			Content:   "客户张三发来了一条新消息",
+			Type:      "message",
+			Status:    "unread",
+			CreatedAt: "2025-10-20T13:30:00Z",
+		},
+		{
+			ID:        "3",
+			Title:     "系统通知",
+			Content:   "系统将于今晚进行维护",
+			Type:      "system",
+			Status:    "read",
+			CreatedAt: "2025-10-20T12:00:00Z",
+			ReadAt:    stringPtr("2025-10-20T13:00:00Z"),
+		},
+	}
 
-	common.APISuccess(c, notifications)
+	common.APISuccess(c, gin.H{
+		"notifications": notifications,
+		"total":         len(notifications),
+	})
 }
 
 // GetNotificationStats 获取通知统计
 func (h *NotificationHandler) GetNotificationStats(c *gin.Context) {
-	// 返回空的统计数据，避免前端404错误
 	stats := NotificationStats{
-		Total:  0,
-		Unread: 0,
-		ByType: map[string]int{
-			"approval": 0,
-			"project":  0,
-			"system":   0,
-			"finance":  0,
-		},
+		Total:  3,
+		Unread: 2,
+		Read:   1,
 	}
 
 	common.APISuccess(c, stats)
 }
 
-// MarkAsRead 标记通知为已读
-func (h *NotificationHandler) MarkAsRead(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		common.APIBadRequest(c, "Invalid notification ID")
-		return
-	}
-
-	// 暂时返回成功，不做实际处理
-	common.APISuccess(c, map[string]interface{}{
-		"id":     id,
-		"isRead": true,
-	})
-}
-
-// MarkAllAsRead 标记所有通知为已读
-func (h *NotificationHandler) MarkAllAsRead(c *gin.Context) {
-	// 暂时返回成功，不做实际处理
-	common.APISuccess(c, map[string]interface{}{
-		"message": "All notifications marked as read",
-	})
-}
-
-// DeleteNotification 删除通知
-func (h *NotificationHandler) DeleteNotification(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		common.APIBadRequest(c, "Invalid notification ID")
-		return
-	}
-
-	// 暂时返回成功，不做实际处理
-	common.APISuccess(c, map[string]interface{}{
-		"id":      id,
-		"deleted": true,
-	})
+func stringPtr(s string) *string {
+	return &s
 }

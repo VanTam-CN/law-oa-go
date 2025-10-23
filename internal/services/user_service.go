@@ -2,16 +2,15 @@ package services
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"regexp"
 	"sync"
 	"time"
 
+	stderrors "errors"
 	"golang.org/x/crypto/bcrypt"
-	"law-oa-go/internal/common"
-	"law-oa-go/internal/concurrency"
-	customErrors "law-oa-go/internal/errors"
+		"law-oa-go/internal/concurrency"
+	"law-oa-go/internal/errors"
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/repositories"
 )
@@ -106,19 +105,19 @@ func (s *UserService) CreateUser(ctx context.Context, req *CreateUserRequest) (*
 	// 检查邮箱是否已存在
 	existingUser, err := s.userRepo.FindByEmail(ctx, req.Email)
 	if err != nil {
-		if errors.Is(err, repositories.ErrUserNotFound) {
+		if stderrors.Is(err, repositories.ErrUserNotFound) {
 			// 用户不存在，可以创建
 		} else {
-			return nil, customErrors.NewDatabaseError("check_email_existence", "Failed to check email existence", err)
+			return nil, errors.DatabaseError("check_email_existence", "Failed to check email existence", err)
 		}
 	}
 	if existingUser != nil {
-		return nil, customErrors.NewBusinessError("email_exists", "Email address already exists", nil)
+		return nil, errors.BusinessError("email", "exists", "Email address already exists")
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, customErrors.NewInternalError("password_hash_error", "Failed to hash password", err)
+		return nil, errors.InternalError("Failed to hash password", err)
 	}
 
 	user := &models.User{
@@ -132,7 +131,7 @@ func (s *UserService) CreateUser(ctx context.Context, req *CreateUserRequest) (*
 	}
 
 	if err := s.userRepo.Create(ctx, user); err != nil {
-		return nil, customErrors.NewDatabaseError("create_user", "Failed to create user", err)
+		return nil, errors.DatabaseError("create_user", "Failed to create user", err)
 	}
 
 	return s.toUserProfile(user), nil
@@ -141,17 +140,17 @@ func (s *UserService) CreateUser(ctx context.Context, req *CreateUserRequest) (*
 func (s *UserService) AuthenticateUser(ctx context.Context, email, password string) (*UserProfile, error) {
 	user, err := s.userRepo.FindByEmail(ctx, email)
 	if err != nil {
-		if errors.Is(err, repositories.ErrUserNotFound) {
-			return nil, customErrors.NewNotFoundError("user", "User not found: "+email, nil)
+		if stderrors.Is(err, repositories.ErrUserNotFound) {
+			return nil, errors.NotFoundError("user", "User not found: "+email, nil)
 		}
-		return nil, customErrors.NewDatabaseError("authenticate_user", "Failed to authenticate user", err)
+		return nil, errors.DatabaseError("authenticate_user", "Failed to authenticate user", err)
 	}
 	if user == nil || user.Status != "active" {
-		return nil, customErrors.NewNotFoundError("user", "User not found: "+email, nil)
+		return nil, errors.NotFoundError("user", "User not found: "+email, nil)
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-		return nil, customErrors.NewValidationError("password", "invalid_password", "Invalid password", "The provided password is incorrect")
+		return nil, errors.ValidationErrorWithDetails("password", "Invalid password", "The provided password is incorrect", []string{"invalid_password"})
 	}
 
 	return s.toUserProfile(user), nil
@@ -160,10 +159,10 @@ func (s *UserService) AuthenticateUser(ctx context.Context, email, password stri
 func (s *UserService) GetUserProfile(ctx context.Context, userID uint) (*UserProfile, error) {
 	user, err := s.userRepo.FindByID(ctx, userID)
 	if err != nil {
-		return nil, customErrors.NewDatabaseError("get_user_profile", "Failed to get user profile", err)
+		return nil, errors.DatabaseError("get_user_profile", "Failed to get user profile", err)
 	}
 	if user == nil {
-		return nil, customErrors.NewNotFoundError("user", "User not found", nil)
+		return nil, errors.NotFoundError("user", "User not found", nil)
 	}
 
 	return s.toUserProfile(user), nil
@@ -172,24 +171,24 @@ func (s *UserService) GetUserProfile(ctx context.Context, userID uint) (*UserPro
 func (s *UserService) UpdateUser(ctx context.Context, userID uint, req *UpdateUserRequest) (*UserProfile, error) {
 	user, err := s.userRepo.FindByID(ctx, userID)
 	if err != nil {
-		return nil, customErrors.NewDatabaseError("find_user", "Failed to find user", err)
+		return nil, errors.DatabaseError("find_user", "Failed to find user", err)
 	}
 	if user == nil {
-		return nil, customErrors.NewNotFoundError("user", "User not found", nil)
+		return nil, errors.NotFoundError("user", "User not found", nil)
 	}
 
 	// 检查邮箱是否已被其他用户使用
 	if req.Email != nil && *req.Email != user.Email {
 		existingUser, err := s.userRepo.FindByEmail(ctx, *req.Email)
 		if err != nil {
-			if errors.Is(err, repositories.ErrUserNotFound) {
+			if stderrors.Is(err, repositories.ErrUserNotFound) {
 				// 邮箱不存在，可以使用
 			} else {
-				return nil, customErrors.NewDatabaseError("check_email_existence", "Failed to check email existence", err)
+				return nil, errors.DatabaseError("check_email_existence", "Failed to check email existence", err)
 			}
 		}
 		if existingUser != nil && existingUser.ID != userID {
-			return nil, customErrors.NewBusinessError("email_exists", "Email already exists", nil)
+			return nil, errors.BusinessError("email", "exists", "Email already exists")
 		}
 		user.Email = *req.Email
 	}
@@ -202,7 +201,7 @@ func (s *UserService) UpdateUser(ctx context.Context, userID uint, req *UpdateUs
 	}
 
 	if err := s.userRepo.Update(ctx, user); err != nil {
-		return nil, customErrors.NewDatabaseError("update_user", "Failed to update user", err)
+		return nil, errors.DatabaseError("update_user", "Failed to update user", err)
 	}
 
 	return s.GetUserProfile(ctx, userID)
@@ -211,28 +210,28 @@ func (s *UserService) UpdateUser(ctx context.Context, userID uint, req *UpdateUs
 func (s *UserService) ChangePassword(ctx context.Context, userID uint, currentPassword, newPassword string) error {
 	user, err := s.userRepo.FindByID(ctx, userID)
 	if err != nil {
-		return customErrors.NewDatabaseError("find_user", "Failed to find user", err)
+		return errors.DatabaseError("find_user", "Failed to find user", err)
 	}
 	if user == nil {
-		return customErrors.NewNotFoundError("user", "User not found", nil)
+		return errors.NotFoundError("user", "User not found", nil)
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(currentPassword)); err != nil {
-		return customErrors.NewValidationError("password", "invalid_current_password", "Current password is incorrect", "The current password provided is incorrect")
+		return errors.ValidationErrorWithDetails("password", "Current password is incorrect", "The current password provided is incorrect", []string{"invalid_current_password"})
 	}
 
 	if err := s.validatePassword(newPassword); err != nil {
-		return customErrors.NewValidationError("password", "weak_password", "Password too weak", "Password does not meet security requirements: "+err.Error())
+		return errors.ValidationErrorWithDetails("password", "weak_password", "Password too weak", []string{"Password does not meet security requirements: " + err.Error()})
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
-		return customErrors.NewInternalError("password_hash_error", "Failed to hash password", err)
+		return errors.InternalError("Failed to hash password", err)
 	}
 
 	user.Password = string(hashedPassword)
 	if err := s.userRepo.Update(ctx, user); err != nil {
-		return customErrors.NewDatabaseError("update_password", "Failed to update password", err)
+		return errors.DatabaseError("update_password", "Failed to update password", err)
 	}
 
 	return nil
@@ -242,15 +241,15 @@ func (s *UserService) ChangePassword(ctx context.Context, userID uint, currentPa
 func (s *UserService) UpdateUserAvatar(ctx context.Context, userID uint, avatarPath string) (*UserProfile, error) {
 	user, err := s.userRepo.FindByID(ctx, userID)
 	if err != nil {
-		return nil, customErrors.NewDatabaseError("find_user", "Failed to find user", err)
+		return nil, errors.DatabaseError("find_user", "Failed to find user", err)
 	}
 	if user == nil {
-		return nil, customErrors.NewNotFoundError("user", "User not found", nil)
+		return nil, errors.NotFoundError("user", "User not found", nil)
 	}
 
 	user.Avatar = avatarPath
 	if err := s.userRepo.Update(ctx, user); err != nil {
-		return nil, customErrors.NewDatabaseError("update_avatar", "Failed to update avatar", err)
+		return nil, errors.DatabaseError("update_avatar", "Failed to update avatar", err)
 	}
 
 	return s.toUserProfile(user), nil
@@ -272,7 +271,7 @@ func (s *UserService) validateUserRequest(req *CreateUserRequest) error {
 	}
 
 	if !validRoles[req.Role] {
-		return customErrors.NewValidationError("role", "invalid_role", "Invalid role", "Role must be one of: admin, lawyer, user")
+		return errors.ValidationErrorWithDetails("role",  "invalid_role",  "Invalid role", []string{ "Role must be one of: admin, lawyer, user"})
 	}
 
 	return nil
@@ -281,14 +280,14 @@ func (s *UserService) validateUserRequest(req *CreateUserRequest) error {
 func (s *UserService) validateEmail(email string) error {
 	// 使用预编译的正则表达式，避免重复编译提升性能
 	if !emailRegex.MatchString(email) {
-		return customErrors.NewValidationError("email", "invalid_email_format", "Invalid email format", "Please provide a valid email address")
+		return errors.ValidationErrorWithDetails("email",  "invalid_email_format",  "Invalid email format", []string{ "Please provide a valid email address"})
 	}
 	return nil
 }
 
 func (s *UserService) validatePassword(password string) error {
 	if len(password) < 8 {
-		return customErrors.NewValidationError("password", "password_too_short", "Password too short", "Password must be at least 8 characters long")
+		return errors.ValidationErrorWithDetails("password",  "password_too_short",  "Password too short", []string{ "Password must be at least 8 characters long"})
 	}
 
 	// 使用预编译的正则表达式，避免重复编译提升性能
@@ -297,7 +296,7 @@ func (s *UserService) validatePassword(password string) error {
 	hasNumber := numberRegex.MatchString(password)
 
 	if !hasUpper || !hasLower || !hasNumber {
-		return customErrors.NewValidationError("password", "password_too_weak", "Password too weak", "Password must contain at least one uppercase letter, one lowercase letter, and one number")
+		return errors.ValidationErrorWithDetails("password",  "password_too_weak",  "Password too weak", []string{ "Password must contain at least one uppercase letter, one lowercase letter, and one number"})
 	}
 
 	return nil
@@ -345,7 +344,7 @@ func (s *UserService) ListUsers(ctx context.Context, req *UserListRequest) ([]*U
 
 	users, total, err := s.userRepo.List(ctx, params)
 	if err != nil {
-		return nil, 0, customErrors.NewDatabaseError("list_users", "Failed to list users", err)
+		return nil, 0, errors.DatabaseError("list_users", "Failed to list users", err)
 	}
 
 	profiles := make([]*UserProfile, len(users))
@@ -358,10 +357,10 @@ func (s *UserService) ListUsers(ctx context.Context, req *UserListRequest) ([]*U
 
 func (s *UserService) DeleteUser(ctx context.Context, userID uint) error {
 	if err := s.userRepo.Delete(ctx, userID); err != nil {
-		if errors.Is(err, repositories.ErrUserNotFound) {
-			return customErrors.NewNotFoundError("user", "User not found", nil)
+		if stderrors.Is(err, repositories.ErrUserNotFound) {
+			return errors.NotFoundError("user", "User not found", nil)
 		}
-		return common.NewDatabaseError("delete user", err)
+		return errors.DatabaseError("delete_user", "Failed to delete user", err)
 	}
 	return nil
 }
@@ -369,7 +368,7 @@ func (s *UserService) DeleteUser(ctx context.Context, userID uint) error {
 // BatchCreateUsers 批量创建用户（优化版本 - 解决N+1查询问题）
 func (s *UserService) BatchCreateUsers(ctx context.Context, requests []*CreateUserRequest) ([]*UserProfile, error) {
 	if len(requests) == 0 {
-		return nil, customErrors.NewValidationError("requests", "empty_request", "No users to create", "Batch create request is empty")
+		return nil, errors.ValidationErrorWithDetails("requests",  "empty_request",  "No users to create", []string{ "Batch create request is empty"})
 	}
 
 	// 1. 批量验证所有请求
@@ -381,13 +380,12 @@ func (s *UserService) BatchCreateUsers(ctx context.Context, requests []*CreateUs
 	emails := s.extractEmails(requests)
 	existingEmails, err := s.userRepo.FindExistingEmails(ctx, emails)
 	if err != nil {
-		return nil, customErrors.NewDatabaseError("check_existing_emails", "Failed to check existing emails", err)
+		return nil, errors.DatabaseError("check_existing_emails", "Failed to check existing emails", err)
 	}
 
 	// 3. 检查是否有重复邮箱
 	if len(existingEmails) > 0 {
-		return nil, customErrors.NewBusinessError("emails_exist",
-			fmt.Sprintf("Email addresses already exist: %v", existingEmails), nil)
+		return nil, errors.BusinessError("email", "exist", fmt.Sprintf("Email addresses already exist: %v", existingEmails))
 	}
 
 	// 4. 批量创建用户
@@ -397,7 +395,7 @@ func (s *UserService) BatchCreateUsers(ctx context.Context, requests []*CreateUs
 	}
 
 	if err := s.userRepo.BatchCreate(ctx, users); err != nil {
-		return nil, customErrors.NewDatabaseError("batch_create_users", "Failed to batch create users", err)
+		return nil, errors.DatabaseError("batch_create_users", "Failed to batch create users", err)
 	}
 
 	// 5. 转换为用户配置文件格式
@@ -414,19 +412,19 @@ func (s *UserService) createSingleUser(ctx context.Context, req *CreateUserReque
 	// 检查邮箱是否已存在
 	existingUser, err := s.userRepo.FindByEmail(ctx, req.Email)
 	if err != nil {
-		if errors.Is(err, repositories.ErrUserNotFound) {
+		if stderrors.Is(err, repositories.ErrUserNotFound) {
 			// 用户不存在，可以创建
 		} else {
-			return customErrors.NewDatabaseError("check_email_existence", "Failed to check email existence", err)
+			return errors.DatabaseError("check_email_existence", "Failed to check email existence", err)
 		}
 	}
 	if existingUser != nil {
-		return customErrors.NewBusinessError("email_exists", "Email address already exists", nil)
+		return errors.BusinessError("email", "exists", "Email address already exists")
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return customErrors.NewInternalError("password_hash_error", "Failed to hash password", err)
+		return errors.InternalError("Failed to hash password", err)
 	}
 
 	user := &models.User{
@@ -439,7 +437,7 @@ func (s *UserService) createSingleUser(ctx context.Context, req *CreateUserReque
 	}
 
 	if err := s.userRepo.Create(ctx, user); err != nil {
-		return customErrors.NewDatabaseError("create_user", "Failed to create user", err)
+		return errors.DatabaseError("create_user", "Failed to create user", err)
 	}
 
 	userProfile, err := s.GetUserProfile(ctx, user.ID)
@@ -457,7 +455,7 @@ func (s *UserService) createSingleUser(ctx context.Context, req *CreateUserReque
 // BatchUpdateUsers 批量更新用户（并发版本）
 func (s *UserService) BatchUpdateUsers(ctx context.Context, updates map[uint]*UpdateUserRequest) ([]*UserProfile, error) {
 	if len(updates) == 0 {
-		return nil, customErrors.NewValidationError("updates", "empty_request", "No users to update", "Batch update request is empty")
+		return nil, errors.ValidationErrorWithDetails("updates",  "empty_request",  "No users to update", []string{ "Batch update request is empty"})
 	}
 
 	results := make([]*UserProfile, 0, len(updates))
@@ -494,7 +492,7 @@ func (s *UserService) executeBatchUpdates(ctx context.Context, updates map[uint]
 	// 检查错误
 	for err := range errChan {
 		if err != nil {
-			return customErrors.NewInternalError("batch_update_failed", "Batch update users failed", err)
+			return errors.InternalError("Batch update users failed", err)
 		}
 	}
 
@@ -512,24 +510,24 @@ func (s *UserService) updateSingleUserSafe(ctx context.Context, userID uint, req
 func (s *UserService) updateSingleUser(ctx context.Context, userID uint, req *UpdateUserRequest, results *[]*UserProfile, mu *sync.Mutex) error {
 	user, err := s.userRepo.FindByID(ctx, userID)
 	if err != nil {
-		return customErrors.NewDatabaseError("find_user", "Failed to find user", err)
+		return errors.DatabaseError("find_user", "Failed to find user", err)
 	}
 	if user == nil {
-		return customErrors.NewNotFoundError("user", "User not found", nil)
+		return errors.NotFoundError("user", "User not found", nil)
 	}
 
 	// 检查邮箱是否已被其他用户使用
 	if req.Email != nil && *req.Email != user.Email {
 		existingUser, err := s.userRepo.FindByEmail(ctx, *req.Email)
 		if err != nil {
-			if errors.Is(err, repositories.ErrUserNotFound) {
+			if stderrors.Is(err, repositories.ErrUserNotFound) {
 				// 邮箱不存在，可以使用
 			} else {
-				return customErrors.NewDatabaseError("check_email_existence", "Failed to check email existence", err)
+				return errors.DatabaseError("check_email_existence", "Failed to check email existence", err)
 			}
 		}
 		if existingUser != nil && existingUser.ID != userID {
-			return customErrors.NewBusinessError("email_exists", "Email already exists", nil)
+			return errors.BusinessError("email", "exists", "Email already exists")
 		}
 		user.Email = *req.Email
 	}
@@ -542,7 +540,7 @@ func (s *UserService) updateSingleUser(ctx context.Context, userID uint, req *Up
 	}
 
 	if err := s.userRepo.Update(ctx, user); err != nil {
-		return customErrors.NewDatabaseError("update_user", "Failed to update user", err)
+		return errors.DatabaseError("update_user", "Failed to update user", err)
 	}
 
 	userProfile, err := s.GetUserProfile(ctx, userID)
@@ -560,7 +558,7 @@ func (s *UserService) updateSingleUser(ctx context.Context, userID uint, req *Up
 // BatchDeleteUsers 批量删除用户（并发版本）
 func (s *UserService) BatchDeleteUsers(ctx context.Context, userIDs []uint) error {
 	if len(userIDs) == 0 {
-		return customErrors.NewValidationError("user_ids", "empty_request", "No users to delete", "Batch delete request is empty")
+		return errors.ValidationErrorWithDetails("user_ids",  "empty_request",  "No users to delete", []string{ "Batch delete request is empty"})
 	}
 
 	tasks := make([]concurrency.Task, len(userIDs))
@@ -597,7 +595,7 @@ func (s *UserService) BatchDeleteUsers(ctx context.Context, userIDs []uint) erro
 	// 检查错误
 	for err := range errChan {
 		if err != nil {
-			return customErrors.NewInternalError("batch_delete_failed", "Batch delete users failed", err)
+			return errors.InternalError("Batch delete users failed", err)
 		}
 	}
 
@@ -607,7 +605,7 @@ func (s *UserService) BatchDeleteUsers(ctx context.Context, userIDs []uint) erro
 // ConcurrentBatchGetUsers 并发批量获取用户信息
 func (s *UserService) ConcurrentBatchGetUsers(ctx context.Context, userIDs []uint) ([]*UserProfile, error) {
 	if len(userIDs) == 0 {
-		return nil, customErrors.NewValidationError("user_ids", "empty_request", "No users to get", "Batch get request is empty")
+		return nil, errors.ValidationErrorWithDetails("user_ids",  "empty_request",  "No users to get", []string{ "Batch get request is empty"})
 	}
 
 	tasks := make([]concurrency.Task, len(userIDs))
@@ -654,7 +652,7 @@ func (s *UserService) ConcurrentBatchGetUsers(ctx context.Context, userIDs []uin
 	// 检查错误
 	for err := range errChan {
 		if err != nil {
-			return nil, customErrors.NewInternalError("batch_get_failed", "Batch get users failed", err)
+			return nil, errors.InternalError("Batch get users failed", err)
 		}
 	}
 
@@ -672,7 +670,7 @@ func (s *UserService) ConcurrentBatchGetUsers(ctx context.Context, userIDs []uin
 // BatchChangePassword 批量修改密码（并发版本）
 func (s *UserService) BatchChangePassword(ctx context.Context, changes map[uint]map[string]string) error {
 	if len(changes) == 0 {
-		return customErrors.NewValidationError("changes", "empty_request", "No password changes to process", "Batch password change request is empty")
+		return errors.ValidationErrorWithDetails("changes",  "empty_request",  "No password changes to process", []string{ "Batch password change request is empty"})
 	}
 
 	tasks := make([]concurrency.Task, 0, len(changes))
@@ -691,7 +689,7 @@ func (s *UserService) BatchChangePassword(ctx context.Context, changes map[uint]
 					currentPassword, ok1 := changeData["current_password"]
 					newPassword, ok2 := changeData["new_password"]
 					if !ok1 || !ok2 {
-						return customErrors.NewValidationError("password_change_data", "invalid_password_change_data", "Invalid password change data", fmt.Sprintf("Invalid password change data for user %d", userID))
+					return errors.ValidationErrorWithDetails("password_change_data", "Invalid password change data", fmt.Sprintf("Invalid password change data for user %d", userID), []string{"invalid_password_change_data"})
 					}
 					return s.ChangePassword(ctx, userID, currentPassword, newPassword)
 				})
@@ -714,7 +712,7 @@ func (s *UserService) BatchChangePassword(ctx context.Context, changes map[uint]
 	// 检查错误
 	for err := range errChan {
 		if err != nil {
-			return customErrors.NewInternalError("batch_change_password_failed", "Batch change password failed", err)
+			return errors.InternalError("Batch change password failed", err)
 		}
 	}
 
@@ -725,11 +723,11 @@ func (s *UserService) BatchChangePassword(ctx context.Context, changes map[uint]
 func (s *UserService) batchValidateRequests(requests []*CreateUserRequest) error {
 	for i, req := range requests {
 		if err := s.validateUserRequest(req); err != nil {
-			return customErrors.NewValidationError(
+			return errors.ValidationErrorWithDetails(
 				fmt.Sprintf("request_%d", i),
-				"invalid_request",
 				fmt.Sprintf("Invalid request at index %d: %v", i, err),
 				"One or more requests are invalid",
+				[]string{"invalid_request"},
 			)
 		}
 	}
@@ -753,11 +751,7 @@ func (s *UserService) batchPrepareUsers(requests []*CreateUserRequest) ([]*model
 		// 密码哈希
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 		if err != nil {
-			return nil, customErrors.NewInternalError(
-				fmt.Sprintf("hash_password_%d", i),
-				"Failed to hash password",
-				err,
-			)
+			return nil, errors.InternalError("Failed to hash password", err)
 		}
 
 		users[i] = &models.User{

@@ -3,10 +3,12 @@ package repositories
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"context"
 
 	"law-oa-go/internal/models"
+	"gorm.io/gorm"
 )
 
 // Repository Sentinel Errors
@@ -84,6 +86,8 @@ type UserRepository interface {
 	Delete(ctx context.Context, id uint) error
 	// List 用户列表查询
 	List(ctx context.Context, params *UserListParams) ([]*models.User, int64, error)
+	// GetLawyers 获取律师用户列表
+	GetLawyers(ctx context.Context, page, pageSize int) ([]models.User, error)
 }
 
 // ClientRepository 客户数据仓库接口
@@ -120,8 +124,12 @@ type CaseRepository interface {
 	GetStats(ctx context.Context) (*CaseStats, error)
 	// AssignLawyer 分配律师
 	AssignLawyer(ctx context.Context, caseID, lawyerID uint) error
+	// UpdateLawyer 更新案件主办律师
+	UpdateLawyer(ctx context.Context, caseID, lawyerID uint) error
 	// UpdateStatus 更新案件状态
 	UpdateStatus(ctx context.Context, caseID uint, status string) error
+	// GetDB 获取数据库连接（用于原始SQL查询）
+	GetDB() *gorm.DB
 }
 
 // UserListParams 用户列表查询参数
@@ -172,6 +180,18 @@ type CaseStats struct {
 	SuspendedCases int64
 	HighPriority   int64
 	UrgentCases    int64
+}
+
+// CacheRepository 缓存数据仓库接口
+type CacheRepository interface {
+	// Get 获取缓存值
+	Get(ctx context.Context, key string) (string, error)
+	// Set 设置缓存值
+	Set(ctx context.Context, key string, value string, expiration time.Duration) error
+	// Delete 删除缓存值
+	Delete(ctx context.Context, key string) error
+	// DeletePattern 删除匹配模式的缓存值
+	DeletePattern(ctx context.Context, pattern string) error
 }
 
 

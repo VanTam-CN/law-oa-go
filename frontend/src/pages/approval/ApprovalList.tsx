@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Card, Button, Tag, Space, Tabs, message, Badge } from 'antd';
 import { PlusOutlined, CheckCircleOutlined, CloseCircleOutlined, SyncOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { getApprovals, cancelApproval, getApprovalStats, ApprovalItem } from '@/services/approval';
 import type { TabsProps } from 'antd';
 import './ApprovalList.less';

@@ -1,264 +1,264 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"time"
 
-	"law-oa-go/internal/config"
-	"law-oa-go/internal/database"
-	"law-oa-go/internal/models"
-
-	"github.com/joho/godotenv"
-	"gorm.io/gorm"
+	_ "github.com/lib/pq"
 )
 
 func main() {
-	// 加载环境变量
-	if err := godotenv.Load(".env"); err != nil {
-		log.Println("Warning: .env file not found")
-	}
-
-	// 加载配置
-	cfg, err := config.Load()
+	// 数据库连接
+	db, err := sql.Open("postgres", "host=localhost port=5432 user=law_oa_user password=1q2w#E$R dbname=law_oa_db sslmode=disable")
 	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+		log.Fatal("数据库连接失败:", err)
+	}
+	defer db.Close()
+
+	fmt.Println("=== 创建利益冲突测试数据 ===")
+
+	// 首先检查现有数据
+	fmt.Println("\n📊 检查现有数据...")
+	var lawyerCount, clientCount, caseCount int
+
+	db.QueryRow("SELECT COUNT(*) FROM users WHERE role = 'lawyer' OR role = 'LAWYER'").Scan(&lawyerCount)
+	db.QueryRow("SELECT COUNT(*) FROM clients").Scan(&clientCount)
+	db.QueryRow("SELECT COUNT(*) FROM cases").Scan(&caseCount)
+
+	fmt.Printf("现有律师数量: %d\n", lawyerCount)
+	fmt.Printf("现有客户数量: %d\n", clientCount)
+	fmt.Printf("现有案件数量: %d\n", caseCount)
+
+	if lawyerCount == 0 || clientCount < 3 {
+		fmt.Println("❌ 数据不足，需要至少1个律师和3个客户来创建冲突场景")
+		return
 	}
 
-	// 连接数据库
-	db, err := database.Init(cfg.Database)
+	// 获取第一个律师ID
+	var lawyerID uint
+	db.QueryRow("SELECT id FROM users WHERE role = 'lawyer' OR role = 'LAWYER' LIMIT 1").Scan(&lawyerID)
+	fmt.Printf("使用律师ID: %d\n", lawyerID)
+
+	// 创建冲突场景1：同一律师代理对立客户
+	fmt.Println("\n🎯 场景1：同一律师代理对立客户（腾讯 vs 字节跳动）")
+
+	// 获取或创建客户
+	var tencentClientID, bytedanceClientID uint
+
+	// 查找现有客户
+	err = db.QueryRow("SELECT id FROM clients WHERE name LIKE '%腾讯%' LIMIT 1").Scan(&tencentClientID)
 	if err != nil {
-		log.Fatalf("数据库连接失败: %v", err)
-	}
-
-	// 自动迁移所有模型
-	if err := db.AutoMigrate(
-		&models.User{},
-		&models.Client{},
-		&models.Case{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败: %v", err)
-	}
-
-	fmt.Println("🎯 开始创建利益冲突验证测试数据")
-	fmt.Println("==================================")
-
-	// 1. 清理现有测试数据
-	fmt.Println("🧹 清理现有测试数据...")
-	cleanupTestData(db)
-
-	// 2. 创建律师数据
-	fmt.Println("\n👨‍⚖️ 创建律师数据...")
-	lawyers := createLawyers(db)
-
-	// 3. 创建客户数据（包含潜在利益冲突的客户）
-	fmt.Println("\n👥 创建客户数据...")
-	clients := createClients(db)
-
-	// 4. 创建案件数据（包含利益冲突案例）
-	fmt.Println("\n⚖️ 创建案件数据...")
-	createCases(db, lawyers, clients)
-
-	// 输出测试数据总结
-	fmt.Println("\n📊 测试数据创建完成！")
-	fmt.Println("==========================")
-	fmt.Printf("✅ 创建了 %d 名律师\n", len(lawyers))
-	fmt.Printf("✅ 创建了 %d 个客户\n", len(clients))
-	fmt.Println("\n🎯 利益冲突测试场景：")
-	fmt.Println("1. 张三律师 同时代理 'ABC科技有限公司' 和 'XYZ软件公司'（商业竞争关系）")
-	fmt.Println("2. 李四律师 同时代理 '王五' 和 '赵六'（离婚案件，双方对立）")
-	fmt.Println("\n🔑 验证账号信息：")
-	fmt.Println("律师账号: zhangsan/lisi (密码: 123456)")
-	fmt.Println("管理员账号: admin/admin123")
-	fmt.Println("\n🌐 访问地址: http://localhost:3003")
-	fmt.Println("🔗 冲突检测API: http://localhost:8080/api/v1/conflict/check")
-}
-
-func cleanupTestData(db *gorm.DB) {
-	// 按外键依赖顺序删除数据
-	_ = db.Unscoped().Where("username LIKE 'test%'").Delete(&models.User{})
-	_ = db.Unscoped().Where("name LIKE '测试%' OR company LIKE '测试%'").Delete(&models.Client{})
-	_ = db.Unscoped().Where("title LIKE '测试%'").Delete(&models.Case{})
-}
-
-func createLawyers(db *gorm.DB) []*models.User {
-	lawyers := []models.User{
-		{
-			Username: "zhangsan_test",
-			Name:     "张三",
-			Email:    "zhangsan@lawfirm.com",
-			Password: "$2a$10$example_hashed_password_1",
-			Role:     "lawyer",
-			Phone:    "13800138001",
-			Status:   "active",
-		},
-		{
-			Username: "lisi_test",
-			Name:     "李四",
-			Email:    "lisi@lawfirm.com",
-			Password: "$2a$10$example_hashed_password_2",
-			Role:     "lawyer",
-			Phone:    "13800138002",
-			Status:   "active",
-		},
-	}
-
-	createdLawyers := make([]*models.User, 0)
-	for i := range lawyers {
-		if err := db.Create(&lawyers[i]).Error; err != nil {
-			log.Printf("创建律师失败: %v", err)
+		// 创建腾讯客户
+		err = db.QueryRow(`
+			INSERT INTO clients (name, type, contact_person, phone, email, created_at, updated_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)
+			RETURNING id`,
+			"腾讯科技有限公司", "COMPANY", "李经理", "13800138001", "legal@tencent.com", time.Now(), time.Now(),
+		).Scan(&tencentClientID)
+		if err != nil {
+			log.Printf("创建腾讯客户失败: %v", err)
 		} else {
-			createdLawyers = append(createdLawyers, &lawyers[i])
-			fmt.Printf("   ✅ 创建律师: %s (ID: %d)\n", lawyers[i].Name, lawyers[i].ID)
+			fmt.Printf("✅ 创建腾讯客户，ID: %d\n", tencentClientID)
+		}
+	} else {
+		fmt.Printf("✅ 找到腾讯客户，ID: %d\n", tencentClientID)
+	}
+
+	err = db.QueryRow("SELECT id FROM clients WHERE name LIKE '%字节%' LIMIT 1").Scan(&bytedanceClientID)
+	if err != nil {
+		// 创建字节跳动客户
+		err = db.QueryRow(`
+			INSERT INTO clients (name, type, contact_person, phone, email, created_at, updated_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)
+			RETURNING id`,
+			"字节跳动科技有限公司", "COMPANY", "王总", "13800138002", "legal@bytedance.com", time.Now(), time.Now(),
+		).Scan(&bytedanceClientID)
+		if err != nil {
+			log.Printf("创建字节跳动客户失败: %v", err)
+		} else {
+			fmt.Printf("✅ 创建字节跳动客户，ID: %d\n", bytedanceClientID)
+		}
+	} else {
+		fmt.Printf("✅ 找到字节跳动客户，ID: %d\n", bytedanceClientID)
+	}
+
+	// 创建冲突案件
+	if tencentClientID > 0 && bytedanceClientID > 0 {
+		// 为腾讯创建案件（已存在，跳过）
+		var tencentCaseCount int
+		db.QueryRow("SELECT COUNT(*) FROM cases WHERE client_id = $1 AND lawyer_id = $2", tencentClientID, lawyerID).Scan(&tencentCaseCount)
+
+		if tencentCaseCount == 0 {
+			_, err = db.Exec(`
+				INSERT INTO cases (title, case_type, description, client_id, lawyer_id, status, created_at, updated_at)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+				"腾讯诉字节跳动不正当竞争案", "commercial",
+				"腾讯公司起诉字节跳动公司涉嫌不正当竞争，要求停止侵权并赔偿损失。对方当事人：字节跳动科技有限公司",
+				tencentClientID, lawyerID, "active", time.Now().AddDate(0, -6, 0), time.Now(),
+			)
+			if err != nil {
+				log.Printf("创建腾讯案件失败: %v", err)
+			} else {
+				fmt.Println("✅ 创建腾讯案件")
+			}
+		} else {
+			fmt.Printf("✅ 腾讯已有案件: %d个\n", tencentCaseCount)
+		}
+
+		// 为字节跳动创建新案件（这将触发冲突）
+		var bytedanceCaseCount int
+		db.QueryRow("SELECT COUNT(*) FROM cases WHERE client_id = $1 AND lawyer_id = $2", bytedanceClientID, lawyerID).Scan(&bytedanceCaseCount)
+
+		if bytedanceCaseCount == 0 {
+			_, err = db.Exec(`
+				INSERT INTO cases (title, case_type, description, client_id, lawyer_id, status, created_at, updated_at)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+				"字节跳动诉腾讯滥用市场支配地位案", "commercial",
+				"字节跳动公司起诉腾讯公司涉嫌滥用市场支配地位，垄断互联网市场。对方当事人：腾讯科技有限公司",
+				bytedanceClientID, lawyerID, "active", time.Now(), time.Now(),
+			)
+			if err != nil {
+				log.Printf("创建字节跳动案件失败: %v", err)
+			} else {
+				fmt.Println("✅ 创建字节跳动案件（这将触发冲突！)")
+			}
+		} else {
+			fmt.Printf("✅ 字节跳动已有案件: %d个\n", bytedanceCaseCount)
 		}
 	}
-	return createdLawyers
-}
 
-func createClients(db *gorm.DB) []*models.Client {
-	clients := []models.Client{
-		// 张三律师的客户 - 潜在冲突1
-		{
-			Name:     "测试-ABC科技有限公司",
-			Type:     "企业",
-			Email:    "contact@abc-tech.com",
-			Phone:    "010-12345678",
-			Address:  "北京市朝阳区科技园区A座",
-			Company:  "ABC科技有限公司",
-			Industry: "软件开发",
-			Status:   "active",
-		},
-		// 张三律师的客户 - 潜在冲突2
-		{
-			Name:     "测试-XYZ软件公司",
-			Type:     "企业",
-			Email:    "contact@xyz-soft.com",
-			Phone:    "010-87654321",
-			Address:  "北京市海淀区软件园B座",
-			Company:  "XYZ软件公司",
-			Industry: "软件开发",
-			Status:   "active",
-		},
-		// 李四律师的客户 - 离婚案件冲突
-		{
-			Name:    "测试-王五",
-			Type:    "个人",
-			Email:   "wangwu@email.com",
-			Phone:   "13900138003",
-			Address: "北京市朝阳区幸福小区1号楼",
-			IDCard:  "110101199001011234",
-			Status:  "active",
-		},
-		// 李四律师的客户 - 离婚案件冲突
-		{
-			Name:    "测试-赵六",
-			Type:    "个人",
-			Email:   "zhaoliu@email.com",
-			Phone:   "13900138004",
-			Address: "北京市朝阳区幸福小区2号楼",
-			IDCard:  "110101199002022345",
-			Status:  "active",
-		},
-		// 普通客户 - 无冲突
-		{
-			Name:    "测试-周小明",
-			Type:    "个人",
-			Email:   "zhouxm@email.com",
-			Phone:   "13900138005",
-			Address: "北京市西城区新街口外大街",
-			IDCard:  "110101199003033456",
-			Status:  "active",
-		},
+	// 场景2：同一律师代理有利益关联的客户
+	fmt.Println("\n🎯 场景2：同一律师代理关联公司客户")
+
+	// 创建阿里巴巴和蚂蚁金服（关联公司）
+	var alibabaClientID, antClientID uint
+
+	err = db.QueryRow("SELECT id FROM clients WHERE name LIKE '%阿里巴巴%' LIMIT 1").Scan(&alibabaClientID)
+	if err != nil {
+		err = db.QueryRow(`
+			INSERT INTO clients (name, type, contact_person, phone, email, created_at, updated_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)
+			RETURNING id`,
+			"阿里巴巴集团控股有限公司", "COMPANY", "张法务", "13800138003", "legal@alibaba.com", time.Now(), time.Now(),
+		).Scan(&alibabaClientID)
+		if err == nil {
+			fmt.Printf("✅ 创建阿里巴巴客户，ID: %d\n", alibabaClientID)
+		}
+	} else {
+		fmt.Printf("✅ 找到阿里巴巴客户，ID: %d\n", alibabaClientID)
 	}
 
-	createdClients := make([]*models.Client, 0)
-	for i := range clients {
-		if err := db.Create(&clients[i]).Error; err != nil {
-			log.Printf("创建客户失败: %v", err)
-		} else {
-			createdClients = append(createdClients, &clients[i])
-			fmt.Printf("   ✅ 创建客户: %s (ID: %d)\n", clients[i].Name, clients[i].ID)
+	err = db.QueryRow("SELECT id FROM clients WHERE name LIKE '%蚂蚁%' LIMIT 1").Scan(&antClientID)
+	if err != nil {
+		err = db.QueryRow(`
+			INSERT INTO clients (name, type, contact_person, phone, email, created_at, updated_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)
+			RETURNING id`,
+			"蚂蚁科技集团股份有限公司", "COMPANY", "赵法务", "13800138004", "legal@antgroup.com", time.Now(), time.Now(),
+		).Scan(&antClientID)
+		if err == nil {
+			fmt.Printf("✅ 创建蚂蚁金服客户，ID: %d\n", antClientID)
+		}
+	} else {
+		fmt.Printf("✅ 找到蚂蚁金服客户，ID: %d\n", antClientID)
+	}
+
+	if alibabaClientID > 0 && antClientID > 0 {
+		var alibabaCaseCount int
+		db.QueryRow("SELECT COUNT(*) FROM cases WHERE client_id = $1 AND lawyer_id = $2", alibabaClientID, lawyerID).Scan(&alibabaCaseCount)
+
+		if alibabaCaseCount == 0 {
+			_, err = db.Exec(`
+				INSERT INTO cases (title, case_type, description, client_id, lawyer_id, status, created_at, updated_at)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+				"阿里巴巴电商平台合作协议纠纷", "commercial",
+				"阿里巴巴与某电商平台合作协议纠纷案",
+				alibabaClientID, lawyerID, "active", time.Now().AddDate(0, -3, 0), time.Now(),
+			)
+			if err == nil {
+				fmt.Println("✅ 创建阿里巴巴案件")
+			}
+		}
+
+		var antCaseCount int
+		db.QueryRow("SELECT COUNT(*) FROM cases WHERE client_id = $1 AND lawyer_id = $2", antClientID, lawyerID).Scan(&antCaseCount)
+
+		if antCaseCount == 0 {
+			_, err = db.Exec(`
+				INSERT INTO cases (title, case_type, description, client_id, lawyer_id, status, created_at, updated_at)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+				"蚂蚁金服金融牌照申请", "financial",
+				"蚂蚁金服申请金融牌照相关法律事务",
+				antClientID, lawyerID, "active", time.Now(), time.Now(),
+			)
+			if err == nil {
+				fmt.Println("✅ 创建蚂蚁金服案件（可能触发关联冲突）")
+			}
 		}
 	}
-	return createdClients
-}
 
-func createCases(db *gorm.DB, lawyers []*models.User, clients []*models.Client) {
-	// 为了方便分配，建立映射
-	clientMap := make(map[string]*models.Client)
-	for _, client := range clients {
-		clientMap[client.Name] = client
+	// 验证创建结果
+	fmt.Println("\n📋 验证冲突场景...")
+
+	rows, err := db.Query(`
+		SELECT
+			c.id, c.title, c.case_type, cl.name as client_name, cl.type as client_type,
+			c.created_at, c.lawyer_id
+		FROM cases c
+		JOIN clients cl ON c.client_id = cl.id
+		WHERE c.lawyer_id = $1
+		ORDER BY c.created_at DESC
+		LIMIT 10`, lawyerID)
+	if err != nil {
+		log.Printf("查询失败: %v", err)
+		return
+	}
+	defer rows.Close()
+
+	var cases []struct {
+		ID         int
+		Title      string
+		CaseType   string
+		ClientName string
+		ClientType string
+		CreatedAt  time.Time
+		LawyerID   int
 	}
 
-	lawyerMap := make(map[string]*models.User)
-	for _, lawyer := range lawyers {
-		lawyerMap[lawyer.Name] = lawyer
-	}
-
-	now := time.Now()
-	cases := []models.Case{
-		// 张三律师的案件 - 潜在冲突1
-		{
-			Title:       "测试-ABC科技公司软件著作权纠纷案",
-			Description: "ABC科技公司诉XYZ软件公司软件著作权侵权纠纷",
-			ClientID:    clientMap["测试-ABC科技有限公司"].ID,
-			LawyerID:    lawyerMap["张三"].ID,
-			CaseType:    "知识产权纠纷",
-			Priority:    "high",
-			Status:      "active",
-			StartDate:   &now,
-		},
-		// 张三律师的案件 - 潜在冲突2
-		{
-			Title:       "测试-XYZ软件公司商业秘密保护案",
-			Description: "XYZ软件公司商业秘密被侵犯的保护案件",
-			ClientID:    clientMap["测试-XYZ软件公司"].ID,
-			LawyerID:    lawyerMap["张三"].ID,
-			CaseType:    "商业秘密纠纷",
-			Priority:    "high",
-			Status:      "active",
-			StartDate:   &now,
-		},
-		// 李四律师的案件 - 离婚冲突1
-		{
-			Title:       "测试-王五诉赵六离婚纠纷案",
-			Description: "王五起诉赵六离婚，涉及财产分割和子女抚养权",
-			ClientID:    clientMap["测试-王五"].ID,
-			LawyerID:    lawyerMap["李四"].ID,
-			CaseType:    "婚姻家庭纠纷",
-			Priority:    "medium",
-			Status:      "active",
-			StartDate:   &now,
-		},
-		// 李四律师的案件 - 离婚冲突2
-		{
-			Title:       "测试-赵六诉王五离婚反诉案",
-			Description: "赵六对王五提起的离婚诉讼进行反诉",
-			ClientID:    clientMap["测试-赵六"].ID,
-			LawyerID:    lawyerMap["李四"].ID,
-			CaseType:    "婚姻家庭纠纷",
-			Priority:    "medium",
-			Status:      "active",
-			StartDate:   &now,
-		},
-		// 普通案件 - 无冲突
-		{
-			Title:       "测试-周小明劳动合同纠纷案",
-			Description: "周小明与前公司的劳动合同纠纷",
-			ClientID:    clientMap["测试-周小明"].ID,
-			LawyerID:    lawyerMap["李四"].ID,
-			CaseType:    "劳动纠纷",
-			Priority:    "low",
-			Status:      "active",
-			StartDate:   &now,
-		},
-	}
-
-	for i := range cases {
-		if err := db.Create(&cases[i]).Error; err != nil {
-			log.Printf("创建案件失败: %v", err)
-		} else {
-			fmt.Printf("   ✅ 创建案件: %s (ID: %d)\n", cases[i].Title, cases[i].ID)
+	for rows.Next() {
+		var c struct {
+			ID         int
+			Title      string
+			CaseType   string
+			ClientName string
+			ClientType string
+			CreatedAt  time.Time
+			LawyerID   int
 		}
+		err := rows.Scan(&c.ID, &c.Title, &c.CaseType, &c.ClientName, &c.ClientType, &c.CreatedAt, &c.LawyerID)
+		if err != nil {
+			log.Printf("扫描失败: %v", err)
+			continue
+		}
+		cases = append(cases, c)
+	}
+
+	fmt.Printf("\n律师ID %d 代理的案件列表:\n", lawyerID)
+	for i, c := range cases {
+		fmt.Printf("%d. %s (%s) - 客户: %s (%s)\n", i+1, c.Title, c.CaseType, c.ClientName, c.ClientType)
+	}
+
+	if len(cases) >= 2 {
+		fmt.Printf("\n🎉 成功创建冲突场景！律师ID %d 代理了 %d 个案件，将触发利益冲突检测\n", lawyerID, len(cases))
+		fmt.Println("\n📝 测试步骤:")
+		fmt.Println("1. 在前端创建新案件")
+		fmt.Println("2. 选择上述律师代理新案件")
+		fmt.Println("3. 选择任意现有客户作为新案件的客户")
+		fmt.Println("4. 进入利益冲突检查步骤")
+		fmt.Println("5. 应该能看到具体的冲突案例详情！")
+	} else {
+		fmt.Println("❌ 冲突场景创建失败，需要至少2个案件")
 	}
 }

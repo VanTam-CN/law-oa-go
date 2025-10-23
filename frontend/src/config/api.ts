@@ -12,7 +12,7 @@ const ENV = (import.meta as any).env?.MODE || 'development';
 
 // 生产环境API配置
 const PRODUCTION_CONFIG: ApiConfig = {
-  baseURL: '/api', 
+  baseURL: '/api/v1',
   timeout: 30000, // 30秒超时
   retryTimes: 2,
   retryDelay: 1000
@@ -20,7 +20,7 @@ const PRODUCTION_CONFIG: ApiConfig = {
 
 // 开发环境API配置
 const DEVELOPMENT_CONFIG: ApiConfig = {
-  baseURL: '/api', // 开发环境使用代理
+  baseURL: 'http://localhost:8080/api/v1', // 直接指向后端服务
   timeout: 10000,
   retryTimes: 1,
   retryDelay: 500
@@ -80,7 +80,7 @@ export class ApiClient {
         signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+          'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`,
           ...options.headers
         }
       });

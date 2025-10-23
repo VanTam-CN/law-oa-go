@@ -71,7 +71,7 @@ export const changePassword = (data: { old_password: string; new_password: strin
  * @returns token字符串或null
  */
 export const getToken = (): string | null => {
-  return localStorage.getItem('law_oa_token');
+  return localStorage.getItem('auth_token');
 };
 
 /**
@@ -79,12 +79,12 @@ export const getToken = (): string | null => {
  * @param token token字符串
  */
 export const setToken = (token: string): void => {
-  localStorage.setItem('law_oa_token', token);
+  localStorage.setItem('auth_token', token);
 };
 
 /**
  * 清除token
  */
 export const clearToken = (): void => {
-  localStorage.removeItem('law_oa_token');
+  localStorage.removeItem('auth_token');
 };

@@ -25,6 +25,8 @@ import {
   Switch,
   Button
 } from 'antd';
+
+const { Option } = Select;
 import {
   PlusOutlined,
   UploadOutlined,
@@ -39,12 +41,12 @@ import {
   SettingOutlined,
   CompressOutlined
 } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import dayjs from 'dayjs';
 import { CaseCreationService, CaseValidationService } from '@/services/caseCreation';
 import { ConflictCheckService, ConflictCheckResultProcessor } from '@/services/conflictCheck';
 import { get } from '@/services/api';
-import CompactCaseForm from '@/components/case/CompactCaseForm';
+import CompactCaseFormWrapper from '@/components/case/CompactCaseFormWrapper';
 import './CreateCase.module.css';
 import '@/styles/unified-management.less';
 
@@ -113,7 +115,7 @@ const CreateCase: React.FC<CreateCaseProps> = ({
   const [lawyers, setLawyers] = useState<any[]>([]);
   const [dataLoading, setDataLoading] = useState(false);
 
-  // 新增：紧凑表单模式控制
+  // 新增：紧凑表单模式控制（暂时禁用，确保兼容性）
   const [useCompactForm, setUseCompactForm] = useState(false);
 
   // 获取客户和律师数据
@@ -122,14 +124,24 @@ const CreateCase: React.FC<CreateCaseProps> = ({
     setDataLoading(true);
     try {
       const [clientsResponse, lawyersResponse] = await Promise.all([
-        get('/clients', { pageNum: 1, pageSize: 9999 }),
-        get('/lawfirm/lawyers', { pageNum: 1, pageSize: 9999 })
+        get('/clients', { page: 1, page_size: 9999 }),
+        get('/lawfirm/lawyers', { page: 1, page_size: 9999 })
       ]);
 
       console.log('API响应:', { clientsResponse, lawyersResponse });
 
-      if (clientsResponse?.data) {
-        const formattedClients = clientsResponse.data.map((client: any) => ({
+      // 处理客户数据 - 兼容不同的响应格式
+      let clientData = [];
+      if (clientsResponse?.clients) {
+        clientData = clientsResponse.clients;
+      } else if (clientsResponse?.data) {
+        clientData = clientsResponse.data;
+      } else if (Array.isArray(clientsResponse)) {
+        clientData = clientsResponse;
+      }
+
+      if (clientData.length > 0) {
+        const formattedClients = clientData.map((client: any) => ({
           id: client.id.toString(),
           name: client.name || client.company || `客户${client.id}`,
           type: client.company ? 'COMPANY' : 'PERSON',
@@ -141,8 +153,16 @@ const CreateCase: React.FC<CreateCaseProps> = ({
         setClients(formattedClients);
       }
 
+      // 处理律师数据 - 兼容不同的响应格式
+      let lawyerData = [];
       if (lawyersResponse?.data) {
-        const formattedLawyers = lawyersResponse.data.map((lawyer: any) => ({
+        lawyerData = lawyersResponse.data;
+      } else if (Array.isArray(lawyersResponse)) {
+        lawyerData = lawyersResponse;
+      }
+
+      if (lawyerData.length > 0) {
+        const formattedLawyers = lawyerData.map((lawyer: any) => ({
           id: lawyer.id.toString(),
           name: lawyer.name,
           level: 'SENIOR', // 默认级别，可以根据需要调整
@@ -170,42 +190,67 @@ const CreateCase: React.FC<CreateCaseProps> = ({
     }
   }, [visible]);
 
+  // 添加案件类型和项目类型的fallback数据
+  const fallbackCaseTypes = [
+    { value: '民事案件', label: '民事案件' },
+    { value: '商事案件', label: '商事案件' },
+    { value: '刑事案件', label: '刑事案件' },
+    { value: '行政案件', label: '行政案件' },
+    { value: '知识产权', label: '知识产权案件' },
+    { value: '劳动案件', label: '劳动案件' }
+  ];
+
+  const fallbackProjectTypes = [
+    { value: '新项目', label: '新项目' },
+    { value: '进行中项目', label: '进行中项目' },
+    { value: '已完成项目', label: '已完成项目' }
+  ];
+
   const caseTypes = [
-    { 
-      value: 'CIVIL', 
-      label: '民事案件', 
+    {
+      value: '知识产权',
+      label: '知识产权案件',
       causes: [
-        '合同纠纷', '侵权责任', '婚姻家庭', '继承纠纷', 
+        '商标侵权纠纷', '专利侵权纠纷', '著作权侵权纠纷', '商业秘密侵权纠纷',
+        '不正当竞争纠纷', '技术合同纠纷', '知识产权许可合同纠纷', '知识产权质押合同纠纷',
+        '知识产权转让合同纠纷', '知识产权行政纠纷', '网络域名纠纷', '植物新品种权纠纷'
+      ]
+    },
+    {
+      value: '民事案件',
+      label: '民事案件',
+      causes: [
+        '合同纠纷', '侵权责任', '婚姻家庭', '继承纠纷',
         '物权纠纷', '人格权纠纷', '劳动争议', '负欠纠纷',
         '不当得利纠纷', '无因管理纠纷', '医疗纠纷', '交通事故赔偿纠纷'
-      ] 
+      ]
     },
-    { 
-      value: 'COMMERCIAL', 
-      label: '商事案件', 
+    {
+      value: '商事案件',
+      label: '商事案件',
       causes: [
-        '公司纠纷', '金融纠纷', '知识产权', '投资纠纷',
+        '公司纠纷', '金融纠纷', '投资纠纷',
         '证券纠纷', '保险纠纷', '票据纠纷', '信托纠纷',
-        '担保物权纠纷', '不正当竞争纠纷', '破产纠纷', '租赁合同纠纷'
-      ] 
+        '担保物权纠纷', '破产纠纷', '租赁合同纠纷'
+      ]
     },
-    { 
-      value: 'CRIMINAL', 
-      label: '刑事案件', 
+    {
+      value: '刑事案件',
+      label: '刑事案件',
       causes: [
         '经济犯罪', '职务犯罪', '暴力犯罪', '网络犯罪',
         '毒品犯罪', '财产犯罪', '政务犯罪', '破坏社会主义市场经济秩序罪',
         '侵犯公民人身权利、民主权利罪', '危害公共安全罪'
-      ] 
+      ]
     },
-    { 
-      value: 'ADMINISTRATIVE', 
-      label: '行政案件', 
+    {
+      value: '行政案件',
+      label: '行政案件',
       causes: [
         '行政处罚', '行政许可', '信息公开', '征收补偿',
         '政府采购', '土地使用权', '环保执法', '税务争议',
         '城市管理', '教育行政', '卫生行政', '公安行政'
-      ] 
+      ]
     }
   ];
 
@@ -561,8 +606,8 @@ const CreateCase: React.FC<CreateCaseProps> = ({
     switch (currentStep) {
       case 0:
         return (
-          <Card title="案件基本信息" className="step-card">
-            <Row gutter={16}>
+          <Card title="案件基本信息" className="step-card" size="small" style={{ marginBottom: 16 }}>
+            <Row gutter={12}>
               <Col span={24}>
                 <Form.Item
                   label="案件名称"
@@ -639,7 +684,7 @@ const CreateCase: React.FC<CreateCaseProps> = ({
                       form.setFieldsValue({ causeOfAction: undefined });
                     }}
                   >
-                    {caseTypes.map(type => (
+                    {(caseTypes.length > 0 ? caseTypes : fallbackCaseTypes).map(type => (
                       <Option key={type.value} value={type.value}>
                         {type.label}
                       </Option>
@@ -704,8 +749,8 @@ const CreateCase: React.FC<CreateCaseProps> = ({
 
       case 1:
         return (
-          <Card title="内部管理信息" className="step-card">
-            <Row gutter={16}>
+          <Card title="内部管理信息" className="step-card" size="small" style={{ marginBottom: 16 }}>
+            <Row gutter={12}>
               <Col span={12}>
                 <Form.Item
                   label="主办律师"
@@ -716,14 +761,16 @@ const CreateCase: React.FC<CreateCaseProps> = ({
                     placeholder={dataLoading ? "正在加载..." : "选择主办律师"}
                     loading={dataLoading}
                     notFoundContent={dataLoading ? "正在加载..." : "暂无数据"}
+                    listHeight={200}
+                    style={{ width: '100%' }}
                   >
                     {lawyers.map(lawyer => (
                       <Option key={lawyer.id} value={lawyer.id}>
-                        <Space>
-                          <UserOutlined />
-                          {lawyer.name}
-                          <Tag color="orange">律师</Tag>
-                        </Space>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <UserOutlined style={{ color: '#1890ff' }} />
+                          <span style={{ flex: 1 }}>{lawyer.name}</span>
+                          <Tag color="orange" size="small">律师</Tag>
+                        </div>
                       </Option>
                     ))}
                   </Select>
@@ -741,10 +788,17 @@ const CreateCase: React.FC<CreateCaseProps> = ({
                     placeholder={dataLoading ? "正在加载..." : "选择协办律师（可选）"}
                     loading={dataLoading}
                     notFoundContent={dataLoading ? "正在加载..." : "暂无数据"}
+                    listHeight={200}
+                    style={{ width: '100%' }}
+                    maxTagCount={3}
                   >
                     {lawyers.map(lawyer => (
                       <Option key={lawyer.id} value={lawyer.id}>
-                        {lawyer.name}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <UserOutlined style={{ color: '#1890ff' }} />
+                          <span style={{ flex: 1 }}>{lawyer.name}</span>
+                          <Tag color="green" size="small">协办</Tag>
+                        </div>
                       </Option>
                     ))}
                   </Select>
@@ -805,13 +859,14 @@ const CreateCase: React.FC<CreateCaseProps> = ({
 
       case 2:
         return (
-          <Card title="合规与风险控制" className="step-card">
+          <Card title="合规与风险控制" className="step-card" size="small" style={{ marginBottom: 16 }}>
             <Alert
               message="风险控制提醒"
               description="请认真进行利益冲突检查和风险评估，这是律师执业的基本要求。"
               type="warning"
               showIcon
-              style={{ marginBottom: 16 }}
+              style={{ marginBottom: 12 }}
+              size="small"
             />
 
             <Row gutter={16}>
@@ -994,13 +1049,14 @@ const CreateCase: React.FC<CreateCaseProps> = ({
 
       case 3:
         return (
-          <Card title="文档管理" className="step-card">
+          <Card title="文档管理" className="step-card" size="small" style={{ marginBottom: 16 }}>
             <Alert
               message="文档上传要求"
               description="请上传必要的案件文档，单个文件大小不超过10MB，支持PDF、DOC、DOCX格式。"
               type="info"
               showIcon
-              style={{ marginBottom: 16 }}
+              style={{ marginBottom: 12 }}
+              size="small"
             />
 
             <Row gutter={16}>
@@ -1104,12 +1160,19 @@ const CreateCase: React.FC<CreateCaseProps> = ({
       open={visible}
       onCancel={onCancel}
       footer={null}
-      width={useCompactForm ? 1200 : 1000}
+      width={{
+        xs: '95vw',
+        sm: '90vw',
+        md: '85vw',
+        lg: useCompactForm ? '1000px' : '850px',
+        xl: useCompactForm ? '1100px' : '950px',
+        xxl: useCompactForm ? '1200px' : '1050px'
+      }}
       destroyOnHidden
     >
       {useCompactForm ? (
         // 紧凑表单模式
-        <CompactCaseForm
+        <CompactCaseFormWrapper
           clients={clients}
           lawyers={lawyers}
           caseTypes={caseTypes}
@@ -1123,11 +1186,17 @@ const CreateCase: React.FC<CreateCaseProps> = ({
       ) : (
         // 原始标准模式
         <div className="create-case-container">
-          <Steps current={currentStep} style={{ marginBottom: 24 }}>
+          <div className="compact-steps" style={{ marginBottom: 16 }}>
             {steps.map((step, index) => (
-              <Step key={index} title={step.title} icon={step.icon} />
+              <div key={index} className={`compact-step ${currentStep === index ? 'active' : currentStep > index ? 'finish' : 'wait'}`}>
+                <div className="step-icon">
+                  {step.icon}
+                </div>
+                <div className="step-title">{step.title}</div>
+                {index < steps.length - 1 && <div className="step-line" />}
+              </div>
             ))}
-          </Steps>
+          </div>
 
           <Form
             form={form}
@@ -1137,7 +1206,7 @@ const CreateCase: React.FC<CreateCaseProps> = ({
             {renderStepContent()}
           </Form>
 
-          <Divider />
+          <Divider style={{ margin: '16px 0' }} />
 
           <Row justify="space-between">
             <Col>

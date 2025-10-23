@@ -1,164 +1,646 @@
-version: '3.8'
-
-# 网络配置
-networks:
-  law-oa-network:
-    driver: bridge
-    ipam:
-      driver: default
-      config:
-        - subnet: 172.20.0.0/16
+# 现代化 Docker Compose 配置 - Law OA Go 系统
+# 使用最新 Docker Compose 语法和最佳实践
 
 services:
-  # Go 应用 (后端)
+  # Go 应用后端服务
   backend:
     build:
       context: .
       dockerfile: Dockerfile
+      target: production  # 使用生产阶段构建
       args:
         BUILD_COMMIT: ${BUILD_COMMIT:-local}
-        BUILD_DATE: ${BUILD_DATE:-$(date)}
+        BUILD_DATE: ${BUILD_DATE:-$(date -u +"%Y-%m-%dT%H:%M:%SZ")}
         BUILD_TARGET: ${BUILD_TARGET:-standard}
         PGO_PROFILE: ${PGO_PROFILE:-default.pgo}
+      cache_from:
+        - law-oa-go:latest
+      labels:
+        - "com.lawoa.build.target=production"
+    image: law-oa-go:${IMAGE_TAG:-latest}
     container_name: law-oa-backend
     ports:
-      - "8080:8080"
+      - "${BACKEND_PORT:-8080}:8080"
     environment:
-      - GIN_MODE=${GIN_MODE:-debug}
+      # 运行环境配置
+      - GIN_MODE=${GIN_MODE:-release}
       - TZ=Asia/Shanghai
-      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - PORT=8080
+
+      # 数据库配置
       - DB_HOST=mysql
-      - DB_PORT=33060
-      - DB_USER=root
-      - DB_PASSWORD=password
-      - DB_NAME=law_oa
+      - DB_PORT=3306
+      - DB_USER=${DB_USER:-lawuser}
+      - DB_PASSWORD=${DB_PASSWORD:-lawpass}
+      - DB_NAME=${DB_NAME:-law_oa}
+
+      # Redis配置
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - REDIS_PASSWORD=
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
       - REDIS_DB=0
+
+      # Elasticsearch配置
       - ES_HOST=http://elasticsearch:9200
-      - JWT_SECRET=your-secret-key-change-in-production
-      - APP_ENV=${APP_ENV:-development}
+      - ES_USERNAME=${ES_USERNAME:-}
+      - ES_PASSWORD=${ES_PASSWORD:-}
+
+      # 安全配置
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-in-production}
+      - APP_SECRET=${APP_SECRET:-your-app-secret-change-in-production}
+
+      # 监控和追踪配置
+      - METRICS_ENABLED=${METRICS_ENABLED:-true}
+      - TRACING_ENABLED=${TRACING_ENABLED:-true}
+      - JAEGER_ENDPOINT=${JAEGER_ENDPOINT:-http://jaeger:14268/api/traces}
+
     depends_on:
       mysql:
         condition: service_healthy
       redis:
         condition: service_healthy
       elasticsearch:
-        condition: service_started
+        condition: service_healthy
     networks:
       - law-oa-network
     volumes:
-      - ./config:/app/config
-      - ./logs:/app/logs
-      - ./uploads:/app/uploads
-      - profiles:/app/profiles  # 挂载PGO配置文件目录
+      # 配置和数据持久化
+      - ./config:/app/config:ro  # 只读挂载配置
+      - uploads_data:/app/uploads  # 上传文件持久化
+      - logs_data:/app/logs       # 日志持久化
+
+      # 开发环境代码挂载 (通过环境变量控制)
+      - ${SOURCE_MOUNT:-./internal:/app/src:delegated}
+
+    # 健康检查配置
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "/app/law-oa-go", "healthcheck"]
       timeout: 10s
       retries: 5
       interval: 30s
-      start_period: 15s
+      start_period: 30s
+
+    # 重启策略
     restart: unless-stopped
 
-  # React 应用 (前端)
+    # 安全配置
+    security_opt:
+      - no-new-privileges:true
+    read_only: ${READ_ONLY:-false}
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+    # 标签
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=Host(`backend.lawoa.localhost`)"
+      - "traefik.http.services.backend.loadbalancer.server.port=8080"
+      - "com.lawoa.service.type=backend"
+      - "com.lawoa.version=${IMAGE_TAG:-latest}"
+
+  # React 前端应用
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: production
+      cache_from:
+        - law-oa-frontend:latest
+      args:
+        - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8080}
+        - REACT_APP_ENVIRONMENT=${ENVIRONMENT:-production}
+    image: law-oa-frontend:${IMAGE_TAG:-latest}
     container_name: law-oa-frontend
     ports:
-      - "3003:3003"
+      - "${FRONTEND_PORT:-3003}:80"
+    environment:
+      - TZ=Asia/Shanghai
+      - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8080}
+      - REACT_APP_ENVIRONMENT=${ENVIRONMENT:-production}
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - law-oa-network
     restart: unless-stopped
 
-  # MySQL 数据库
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
+      timeout: 10s
+      retries: 3
+      interval: 30s
+      start_period: 30s
+
+    # 安全配置
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    cap_drop:
+      - ALL
+
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+    # 标签
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`lawoa.localhost`)"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+      - "com.lawoa.service.type=frontend"
+      - "com.lawoa.version=${IMAGE_TAG:-latest}"
+
+  # MySQL 数据库服务
   mysql:
-    image: law-oa/mysql:8.0
+    image: mysql:8.0
     container_name: law-oa-mysql
     ports:
-      - "33060:3306"
+      - "${MYSQL_PORT:-33060}:3306"
     environment:
-      - MYSQL_ROOT_PASSWORD=password
-      - MYSQL_DATABASE=law_oa
-      - MYSQL_USER=lawuser
-      - MYSQL_PASSWORD=lawpass
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-lawroot2024}
+      - MYSQL_DATABASE=${DB_NAME:-law_oa}
+      - MYSQL_USER=${DB_USER:-lawuser}
+      - MYSQL_PASSWORD=${DB_PASSWORD:-lawpass}
+      - TZ=Asia/Shanghai
+      # MySQL 性能优化配置
+      - MYSQL_INNODB_BUFFER_POOL_SIZE=256M
+      - MYSQL_MAX_CONNECTIONS=200
+      - MYSQL_QUERY_CACHE_SIZE=32M
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./config/mysql/conf.d:/etc/mysql/conf.d:ro
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
       - law-oa-network
+
+    # 健康检查配置
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppassword"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-lawroot2024}"]
       timeout: 20s
       retries: 10
       interval: 30s
-      start_period: 10s
-    restart: unless-stopped
-    command: --default-authentication-plugin=mysql_native_password
+      start_period: 60s
 
-  # Redis 缓存
+    # 重启策略
+    restart: unless-stopped
+
+    # 命令配置 (使用现代MySQL认证)
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --innodb-buffer-pool-size=256M
+      --max-connections=200
+      --query-cache-size=32M
+      --slow-query-log=1
+      --slow-query-log-file=/var/log/mysql/slow.log
+      --long-query-time=2
+
+    # 安全配置
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+    # 标签
+    labels:
+      - "com.lawoa.service.type=database"
+      - "com.lawoa.database.type=mysql"
+
+  # Redis 缓存服务
   redis:
-    image: law-oa/redis:7-alpine
+    image: redis:7-alpine
     container_name: law-oa-redis
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
+    environment:
+      - TZ=Asia/Shanghai
     volumes:
       - redis_data:/data
+      - ./config/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
     networks:
       - law-oa-network
+
+    # 健康检查配置
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       timeout: 10s
       retries: 5
       interval: 30s
-      start_period: 5s
+      start_period: 10s
+
+    # 重启策略
     restart: unless-stopped
 
-  # Elasticsearch
+    # Redis 配置命令
+    command: redis-server /usr/local/etc/redis/redis.conf --appendonly yes
+
+    # 安全配置
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+    # 标签
+    labels:
+      - "com.lawoa.service.type=cache"
+      - "com.lawoa.cache.type=redis"
+
+  # Elasticsearch 搜索引擎
   elasticsearch:
-    image: law-oa/elasticsearch:8.8.0
+    image: elasticsearch:8.11.0
     container_name: law-oa-elasticsearch
     ports:
-      - "9200:9200"
-      - "9300:9300"
+      - "${ELASTICSEARCH_PORT:-9200}:9200"
+      - "${ELASTICSEARCH_NODE_PORT:-9300}:9300"
     environment:
+      - node.name=law-oa-es-node
+      - cluster.name=law-oa-cluster
       - discovery.type=single-node
-      - xpack.security.enabled=false
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=${ELASTICSEARCH_SECURITY_ENABLED:-false}
+      - xpack.security.enrollment.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m -Dlog4j2.formatMsgNoLookups=true"
+      - TZ=Asia/Shanghai
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
+      - ./config/elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
     networks:
       - law-oa-network
+
+    # 健康检查配置
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      timeout: 10s
+      retries: 20
+      interval: 30s
+      start_period: 60s
+
+    # 重启策略
     restart: unless-stopped
 
-  # Kibana (可选，用于 Elasticsearch 管理)
+    # 安全配置
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - SETGID
+      - SETUID
+
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+    # 标签
+    labels:
+      - "com.lawoa.service.type=search"
+      - "com.lawoa.search.type=elasticsearch"
+
+  # Kibana 日志分析平台
   kibana:
-    image: law-oa/kibana:8.8.0
+    image: kibana:8.11.0
     container_name: law-oa-kibana
     ports:
-      - "5601:5601"
+      - "${KIBANA_PORT:-5601}:5601"
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - SERVER_NAME=law-oa-kibana
+      - SERVER_HOST=0.0.0.0
+      - TZ=Asia/Shanghai
+      - XPACK_SECURITY_ENABLED=${ELASTICSEARCH_SECURITY_ENABLED:-false}
     depends_on:
-      - elasticsearch
+      elasticsearch:
+        condition: service_healthy
     networks:
       - law-oa-network
+
+    # 健康检查配置
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      timeout: 10s
+      retries: 10
+      interval: 30s
+      start_period: 60s
+
+    # 重启策略
     restart: unless-stopped
 
-volumes:
-  mysql_data:
-    driver: local
-  redis_data:
-    driver: local
-  elasticsearch_data:
-    driver: local
-  profiles:
-    driver: local
+    # 安全配置
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    # 标签
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.kibana.rule=Host(`kibana.lawoa.localhost`)"
+      - "traefik.http.services.kibana.loadbalancer.server.port=5601"
+      - "com.lawoa.service.type=analytics"
+      - "com.lawoa.analytics.type=kibana"
+
+  # Jaeger 分布式追踪
+  jaeger:
+    image: jaegertracing/all-in-one:1.50
+    container_name: law-oa-jaeger
+    ports:
+      - "${JAEGER_UI_PORT:-16686}:16686"  # Jaeger UI
+      - "${JAEGER_COLLECTOR_PORT:-14268}:14268"  # HTTP collector
+      - "${JAEGER_AGENT_PORT:-6831}:6831/udp"   # UDP agent
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - SPAN_STORAGE_TYPE=memory
+      - TZ=Asia/Shanghai
+    networks:
+      - law-oa-network
+
+    # 健康检查配置
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:14269/"]
+      timeout: 5s
+      retries: 5
+      interval: 30s
+      start_period: 30s
+
+    # 重启策略
+    restart: unless-stopped
+
+    # 安全配置
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+    # 标签
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jaeger.rule=Host(`jaeger.lawoa.localhost`)"
+      - "traefik.http.services.jaeger.loadbalancer.server.port=16686"
+      - "com.lawoa.service.type=tracing"
+      - "com.lawoa.tracing.type=jaeger"
+
+  # Prometheus 监控系统
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    container_name: law-oa-prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    volumes:
+      - prometheus_data:/prometheus
+      - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./config/prometheus/rules:/etc/prometheus/rules:ro
+    networks:
+      - law-oa-network
+
+    # 健康检查配置
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+      timeout: 5s
+      retries: 5
+      interval: 30s
+      start_period: 30s
+
+    # 重启策略
+    restart: unless-stopped
+
+    # 安全配置
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    # 标签
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prometheus.rule=Host(`prometheus.lawoa.localhost`)"
+      - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+      - "com.lawoa.service.type=monitoring"
+      - "com.lawoa.monitoring.type=prometheus"
+
+  # Grafana 可视化平台
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: law-oa-grafana
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin2024}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+      - TZ=Asia/Shanghai
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./config/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    networks:
+      - law-oa-network
+
+    # 健康检查配置
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      timeout: 5s
+      retries: 5
+      interval: 30s
+      start_period: 60s
+
+    # 重启策略
+    restart: unless-stopped
+
+    # 安全配置
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+    # 标签
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.lawoa.localhost`)"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+      - "com.lawoa.service.type=visualization"
+      - "com.lawoa.visualization.type=grafana"
+
+# 网络配置
 networks:
   law-oa-network:
+    name: law-oa-network
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
+
+# 数据持久化卷
+volumes:
+  mysql_data:
+    name: law-oa-mysql-data
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_DIR:-./data}/mysql
+
+  redis_data:
+    name: law-oa-redis-data
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_DIR:-./data}/redis
+
+  elasticsearch_data:
+    name: law-oa-elasticsearch-data
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_DIR:-./data}/elasticsearch
+
+  prometheus_data:
+    name: law-oa-prometheus-data
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_DIR:-./data}/prometheus
+
+  grafana_data:
+    name: law-oa-grafana-data
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_DIR:-./data}/grafana
+
+  uploads_data:
+    name: law-oa-uploads-data
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_DIR:-./data}/uploads
+
+  logs_data:
+    name: law-oa-logs-data
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_DIR:-./data}/logs
+

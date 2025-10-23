@@ -83,6 +83,11 @@ export const conflictAPI = {
       const finalRequest = {
         ...transformedRequest,
         clientId: request.clientId?.toString() || transformedRequest.clientId,
+        clientType: 'PERSON', // 默认客户类型
+        otherParties: request.opponentInfo ? [request.opponentInfo] : [],
+        caseName: request.caseName || transformedRequest.caseName,
+        caseType: request.caseType || transformedRequest.caseType,
+        userId: request.lawyerId?.toString() || '1', // 律师ID作为用户ID
         causeOfAction: request.causeOfAction
       };
 
@@ -93,7 +98,30 @@ export const conflictAPI = {
       console.groupEnd();
 
       const response = await post<ConflictCheckResponse>('/conflict/check', finalRequest);
-      return response;
+
+      // 验证响应数据结构
+      if (!response) {
+        throw new Error('后端服务无响应');
+      }
+
+      // 后端使用code=200表示成功
+      if (response.code !== 200) {
+        console.error('API返回错误码:', response.code, '消息:', response.message);
+        throw new Error(response.message || `API调用失败 (错误码: ${response.code})`);
+      }
+
+      // 验证响应数据结构
+      const result = response.data;
+      if (!result) {
+        throw new Error('后端返回数据格式错误：缺少data字段');
+      }
+
+      if (typeof result.hasConflict === 'undefined') {
+        console.warn('后端响应缺少hasConflict字段，基于conflictCases判断');
+        result.hasConflict = (result.conflictCases && result.conflictCases.length > 0);
+      }
+
+      return result;
     } catch (error) {
       console.error('利益冲突检查API调用失败:', error);
 

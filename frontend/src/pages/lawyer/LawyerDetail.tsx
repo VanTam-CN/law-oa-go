@@ -37,7 +37,7 @@ import {
   UserSwitchOutlined,
   EyeOutlined
 } from '@ant-design/icons';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import { lawyerService, Lawyer } from '@/services/lawyer';
 import dayjs from 'dayjs';
 

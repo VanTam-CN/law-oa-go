@@ -1,0 +1,573 @@
+# Law OA Go - 默认配置值
+# 企业级Helm Charts配置 - 生产环境优化
+
+# 全局配置
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
+  labels: {}
+  annotations: {}
+
+# 镜像配置
+image:
+  registry: law-registry.com
+  repository: law-oa-go
+  tag: "2.1.0"
+  pullPolicy: IfNotPresent
+  pullSecrets: []
+
+# 副本和滚动更新配置
+replicaCount: 3
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 25%
+    maxSurge: 25%
+
+# 资源配置
+resources:
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+    ephemeral-storage: 4Gi
+  requests:
+    cpu: 500m
+    memory: 1Gi
+    ephemeral-storage: 1Gi
+
+# 水平Pod自动缩放
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Percent
+          value: 10
+          periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Percent
+          value: 50
+          periodSeconds: 60
+      selectPolicy: Max
+
+# Pod配置
+pod:
+  annotations: {}
+  labels: {}
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    runAsGroup: 65534
+    fsGroup: 65534
+    seccompProfile:
+      type: RuntimeDefault
+  terminationGracePeriodSeconds: 60
+  priorityClassName: ""
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - law-oa-go
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - backend
+            topologyKey: kubernetes.io/hostname
+  nodeSelector:
+    kubernetes.io/os: linux
+    node-type: application
+  tolerations:
+    - key: "application"
+      operator: "Equal"
+      value: "true"
+      effect: "NoSchedule"
+
+# 容器安全配置
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+  runAsNonRoot: true
+  runAsUser: 65534
+  runAsGroup: 65534
+
+# 服务配置
+service:
+  type: ClusterIP
+  ports:
+    http: 8080
+    https: 8443
+    grpc: 9090
+    metrics: 8081
+  annotations: {}
+  sessionAffinity: None
+
+# Ingress配置
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+  hosts:
+    - host: api.lawoa.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: law-oa-go-tls
+      hosts:
+        - api.lawoa.com
+
+# 环境变量
+env:
+  - name: GIN_MODE
+    value: "release"
+  - name: ENVIRONMENT
+    value: "production"
+  - name: TZ
+    value: "Asia/Shanghai"
+  - name: LOG_LEVEL
+    value: "info"
+  - name: VERSION
+    value: "2.1.0"
+  - name: METRICS_ENABLED
+    value: "true"
+  - name: TRACING_ENABLED
+    value: "true"
+  - name: HEALTH_CHECK_ENABLED
+    value: "true"
+
+# Pod信息注入
+podInfo:
+  enabled: true
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9090"
+    prometheus.io/path: "/metrics"
+    prometheus.io/scheme: "http"
+    sidecar.istio.io/inject: "false"
+
+# 持久化存储
+persistence:
+  enabled: true
+  uploads:
+    enabled: true
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 100Gi
+    annotations: {}
+  logs:
+    enabled: true
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 50Gi
+    annotations: {}
+
+# 数据库配置
+mysql:
+  enabled: true
+  auth:
+    rootPassword: "lawroot2024"
+    database: "law_oa"
+    username: "lawuser"
+    password: "lawpass"
+  primary:
+    persistence:
+      enabled: true
+      size: 100Gi
+      storageClass: ""
+    resources:
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+      requests:
+        cpu: 500m
+        memory: 1Gi
+    configuration: |
+      [mysqld]
+      default-authentication-plugin=mysql_native_password
+      character-set-server=utf8mb4
+      collation-server=utf8mb4_unicode_ci
+      innodb-buffer-pool-size=2G
+      max-connections=500
+      query-cache-size=64M
+      slow-query-log=1
+      slow-query-log-file=/var/log/mysql/slow.log
+      long-query-time=2
+
+# Redis配置
+redis:
+  enabled: true
+  auth:
+    enabled: false
+    password: ""
+  master:
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: ""
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+      requests:
+        cpu: 250m
+        memory: 512Mi
+    configuration: |
+      appendonly yes
+      maxmemory 1gb
+      maxmemory-policy allkeys-lru
+      save 900 1
+      save 300 10
+      save 60 10000
+
+# Elasticsearch配置
+elasticsearch:
+  enabled: true
+  replicas: 3
+  minimumMasterNodes: 2
+  volumeClaimTemplate:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 100Gi
+    storageClassName: ""
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+    requests:
+      cpu: 500m
+      memory: 2Gi
+  esConfig:
+    xpack.security.enabled: false
+    xpack.monitoring.collection.enabled: true
+    xpack.watcher.enabled: false
+
+# Kibana配置
+kibana:
+  enabled: true
+  replicas: 1
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+  elasticsearchHosts: "http://elasticsearch:9200"
+
+# Jaeger配置
+jaeger:
+  enabled: true
+  provisionDataStore:
+    cassandra: false
+    elasticsearch: true
+  storage:
+    type: elasticsearch
+    elasticsearch:
+      host: elasticsearch
+      port: 9200
+      indexPrefix: jaeger
+      scheme: http
+  collector:
+    replicaCount: 1
+    resources:
+      limits:
+        cpu: 500m
+        memory: 1Gi
+      requests:
+        cpu: 250m
+        memory: 512Mi
+  query:
+    replicaCount: 1
+    resources:
+      limits:
+        cpu: 500m
+        memory: 1Gi
+      requests:
+        cpu: 250m
+        memory: 512Mi
+
+# Prometheus配置
+prometheus:
+  enabled: true
+  server:
+    replicaCount: 1
+    resources:
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+      requests:
+        cpu: 500m
+        memory: 1Gi
+    persistentVolume:
+      enabled: true
+      size: 100Gi
+      storageClass: ""
+    retention: "15d"
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+# Grafana配置
+grafana:
+  enabled: true
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+  adminUser: admin
+  adminPassword: admin2024
+  persistence:
+    enabled: true
+    size: 20Gi
+    storageClass: ""
+  plugins:
+    - grafana-clock-panel
+    - grafana-simple-json-datasource
+
+# 健康检查配置
+healthcheck:
+  enabled: true
+  livenessProbe:
+    httpGet:
+      path: /health/live
+      port: http
+    initialDelaySeconds: 30
+    periodSeconds: 30
+    timeoutSeconds: 10
+    successThreshold: 1
+    failureThreshold: 3
+  readinessProbe:
+    httpGet:
+      path: /health/ready
+      port: http
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 3
+  startupProbe:
+    httpGet:
+      path: /health
+      port: http
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 30
+
+# 初始化容器
+initContainers:
+  enabled: true
+  waitForDatabase:
+    enabled: true
+    image: busybox:1.36
+    resources:
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 50m
+        memory: 64Mi
+  waitForRedis:
+    enabled: true
+    image: busybox:1.36
+    resources:
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 50m
+        memory: 64Mi
+  waitForElasticsearch:
+    enabled: true
+    image: busybox:1.36
+    resources:
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 50m
+        memory: 64Mi
+  migration:
+    enabled: true
+    command: ["./law-oa-go", "migrate", "up"]
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+      requests:
+        cpu: 500m
+        memory: 512Mi
+
+# Sidecar容器
+sidecars:
+  logCollector:
+    enabled: true
+    image: fluent/fluent-bit:2.2
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+# 服务账户配置
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# RBAC配置
+rbac:
+  create: true
+  rules:
+    - apiGroups: [""]
+      resources: ["configmaps", "secrets"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: [""]
+      resources: ["pods", "services", "endpoints"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["apps"]
+      resources: ["deployments", "replicasets"]
+      verbs: ["get", "list", "watch"]
+
+# Pod中断预算
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+  # maxUnavailable: 1
+
+# Pod监控
+podMonitor:
+  enabled: true
+  interval: 30s
+  scrapeTimeout: 10s
+
+# 服务监控
+serviceMonitor:
+  enabled: true
+  interval: 30s
+  scrapeTimeout: 10s
+
+# 网络策略
+networkPolicy:
+  enabled: true
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: law-oa-go
+      - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 9090
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: law-oa-go
+      - to: []
+        ports:
+          - protocol: TCP
+            port: 53
+          - protocol: UDP
+            port: 53
+      - to:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+        ports:
+          - protocol: TCP
+            port: 443
+
+# Pod安全策略
+podSecurityPolicy:
+  enabled: true
+  privileged: false
+  allowPrivilegeEscalation: false
+  requiredDropCapabilities:
+    - ALL
+  volumes:
+    - 'configMap'
+    - 'emptyDir'
+    - 'projected'
+    - 'secret'
+    - 'downwardAPI'
+    - 'persistentVolumeClaim'
+  runAsUser:
+    rule: 'MustRunAsNonRoot'
+  seLinux:
+    rule: 'RunAsAny'
+  fsGroup:
+    rule: 'RunAsAny'
+
+# 预算控制
+budget:
+  minAvailable: 2
+  maxUnavailable: 1
+
+# 额外的标签和注解
+commonLabels: {}
+commonAnnotations: {}
+
+# 额外的清单
+extraManifests: []
+
+# 测试配置
+tests:
+  enabled: true
+
+# 开发环境配置
+development:
+  enabled: false
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+  autoscaling:
+    enabled: false
+  persistence:
+    uploads:
+      size: 10Gi
+    logs:
+      size: 5Gi

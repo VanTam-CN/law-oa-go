@@ -16,7 +16,7 @@ func APICreateHandler[ReqT any, ResT any](
 	return func(c *gin.Context) {
 		var req ReqT
 		if err := c.ShouldBindJSON(&req); err != nil {
-			_ = c.Error(errors.NewValidationError("request_binding", "request_binding", "Invalid request format: "+err.Error(), "Invalid request format"))
+			_ = c.Error(errors.ValidationErrorWithDetails("request_binding", "Invalid request format: "+err.Error(), "Invalid request format", []string{"request_binding"}))
 			return
 		}
 
@@ -38,7 +38,7 @@ func APIListHandler[ReqT any, ResT any](
 	return func(c *gin.Context) {
 		var req ReqT
 		if err := c.ShouldBindQuery(&req); err != nil {
-			_ = c.Error(errors.NewValidationError("query_binding", "query_binding", "Invalid query parameters: "+err.Error(), "Invalid query parameters"))
+			_ = c.Error(errors.ValidationErrorWithDetails("query_binding", "Invalid query parameters: "+err.Error(), "Invalid query parameters", []string{"query_binding"}))
 			return
 		}
 
@@ -51,7 +51,7 @@ func APIListHandler[ReqT any, ResT any](
 		page, err1 := strconv.Atoi(c.DefaultQuery("page", "1"))
 		pageSize, err2 := strconv.Atoi(c.DefaultQuery("page_size", "20"))
 		if err1 != nil || err2 != nil {
-			_ = c.Error(errors.NewValidationError("pagination", "pagination", "Invalid pagination parameters", "Invalid pagination parameters"))
+			_ = c.Error(errors.ValidationErrorWithDetails("pagination", "Invalid pagination parameters", "Invalid pagination parameters", []string{"pagination"}))
 			return
 		}
 
@@ -68,7 +68,7 @@ func APIGetHandler[ResT any](
 		idStr := c.Param("id")
 		id, err := strconv.ParseUint(idStr, 10, 32)
 		if err != nil {
-			_ = c.Error(errors.NewValidationError("id_validation", "id_validation", "Invalid ID: must be a valid number", "Invalid ID: must be a valid number"))
+			_ = c.Error(errors.ValidationErrorWithDetails("id_validation", "Invalid ID: must be a valid number", "Invalid ID: must be a valid number", []string{"id_validation"}))
 			return
 		}
 
@@ -91,13 +91,13 @@ func APIUpdateHandler[ReqT any, ResT any](
 		idStr := c.Param("id")
 		id, err := strconv.ParseUint(idStr, 10, 32)
 		if err != nil {
-			_ = c.Error(errors.NewValidationError("id_validation", "id_validation", "Invalid ID: must be a valid number", "Invalid ID: must be a valid number"))
+			_ = c.Error(errors.ValidationErrorWithDetails("id_validation", "Invalid ID: must be a valid number", "Invalid ID: must be a valid number", []string{"id_validation"}))
 			return
 		}
 
 		var req ReqT
 		if err := c.ShouldBindJSON(&req); err != nil {
-			_ = c.Error(errors.NewValidationError("request_binding", "request_binding", "Invalid request format: "+err.Error(), "Invalid request format"))
+			_ = c.Error(errors.ValidationErrorWithDetails("request_binding", "Invalid request format: "+err.Error(), "Invalid request format", []string{"request_binding"}))
 			return
 		}
 
@@ -120,7 +120,7 @@ func APIDeleteHandler(
 		idStr := c.Param("id")
 		id, err := strconv.ParseUint(idStr, 10, 32)
 		if err != nil {
-			_ = c.Error(errors.NewValidationError("id_validation", "id_validation", "Invalid ID: must be a valid number", "Invalid ID: must be a valid number"))
+			_ = c.Error(errors.ValidationErrorWithDetails("id_validation", "Invalid ID: must be a valid number", "Invalid ID: must be a valid number", []string{"id_validation"}))
 			return
 		}
 

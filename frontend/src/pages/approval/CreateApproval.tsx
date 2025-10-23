@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { Card, Form, Input, Select, Button, message, Radio, DatePicker } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { createApproval } from '@/services/approval';

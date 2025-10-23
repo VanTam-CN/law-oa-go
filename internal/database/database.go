@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8"
@@ -17,25 +16,39 @@ import (
 	"law-oa-go/internal/config"
 )
 
-// Init 初始化数据库连接
+// Init 初始化数据库连接（向后兼容）
 func Init(cfg config.DatabaseConfig) (*gorm.DB, error) {
+	// 为了向后兼容，创建一个默认的应用配置
+	appConfig := &config.Config{
+		Environment: "development",
+		Database:    cfg,
+	}
+	return InitWithConfig(appConfig)
+}
+
+// InitWithConfig 使用完整配置初始化数据库连接（推荐使用）
+func InitWithConfig(appConfig *config.Config) (*gorm.DB, error) {
 	var dsn string
 	var db *gorm.DB
 	var err error
 
-	// 配置GORM
+	// 配置GORM - 基于最新最佳实践优化
 	gormConfig := &gorm.Config{
 		Logger:                                   logger.Default.LogMode(logger.Warn), // 生产环境优化
-		PrepareStmt:                              true,                                // 启用预编译语句
-		SkipDefaultTransaction:                   false,                               // 保持事务安全
+		PrepareStmt:                              true,                                // 启用预编译语句缓存
+		SkipDefaultTransaction:                   true,                                // 禁用默认事务提升性能
 		DisableForeignKeyConstraintWhenMigrating: true,                                // 禁用自动外键
+		// 新增性能优化配置
+		AllowGlobalUpdate:                        false,                               // 禁止全局更新提升安全性
+		DisableAutomaticPing:                     true,                                // 禁用自动ping减少开销
 	}
 
 	// 根据数据库类型构建DSN和连接
-	if cfg.Driver == "postgres" {
+	driver := appConfig.Database.Driver
+	if driver == "postgres" {
 		// PostgreSQL DSN
 		dsn = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=UTC",
-			cfg.Host, cfg.Port, cfg.Username, cfg.Password, cfg.Database)
+			appConfig.Database.Host, appConfig.Database.Port, appConfig.Database.Username, appConfig.Database.Password, appConfig.Database.Database)
 
 		// 连接PostgreSQL
 		db, err = gorm.Open(postgres.Open(dsn), gormConfig)
@@ -46,7 +59,7 @@ func Init(cfg config.DatabaseConfig) (*gorm.DB, error) {
 	} else {
 		// MySQL DSN (向后兼容)
 		dsn = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=%v&loc=%s&tls=skip-verify",
-			cfg.Username, cfg.Password, cfg.Host, cfg.Port, cfg.Database, cfg.Charset, cfg.ParseTime, cfg.Loc)
+			appConfig.Database.Username, appConfig.Database.Password, appConfig.Database.Host, appConfig.Database.Port, appConfig.Database.Database, appConfig.Database.Charset, appConfig.Database.ParseTime, appConfig.Database.Loc)
 
 		// 连接MySQL
 		db, err = gorm.Open(mysql.Open(dsn), gormConfig)
@@ -62,10 +75,10 @@ func Init(cfg config.DatabaseConfig) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to get sql.DB: %w", err)
 	}
 
-	// 配置连接池（根据环境和负载优化）
-	configureConnectionPool(sqlDB)
+	// 配置连接池（基于最新GORM性能最佳实践）
+	optimizeConnectionPool(sqlDB, appConfig)
 
-	log.Printf("数据库连接成功 - 类型: %s", cfg.Driver)
+	log.Printf("数据库连接成功 - 类型: %s, 环境: %s", driver, appConfig.Environment)
 	return db, nil
 }
 
@@ -104,8 +117,12 @@ func InitRedis(cfg config.RedisConfig) (*redis.Client, error) {
 
 // InitElasticsearch 初始化Elasticsearch连接
 func InitElasticsearch(cfg config.ElasticsearchConfig) (*elasticsearch.Client, error) {
+	// 构建地址
+	address := fmt.Sprintf("http://%s:%s", cfg.Host, cfg.Port)
+
+	// 创建Elasticsearch客户端
 	es, err := elasticsearch.NewClient(elasticsearch.Config{
-		Addresses: []string{fmt.Sprintf("http://%s:%s", cfg.Host, cfg.Port)},
+		Addresses: []string{address},
 		Username:  cfg.Username,
 		Password:  cfg.Password,
 	})
@@ -239,44 +256,60 @@ func GetRedis() interface{} {
 	return nil
 }
 
-// configureConnectionPool 根据环境配置数据库连接池
-func configureConnectionPool(sqlDB *sql.DB) {
-	// 获取环境变量，默认为development
-	env := os.Getenv("ENVIRONMENT")
-	if env == "" {
-		env = "development"
-	}
+// optimizeConnectionPool 基于最新GORM性能最佳实践优化数据库连接池
+func optimizeConnectionPool(sqlDB *sql.DB, appConfig *config.Config) {
+	// 获取性能配置
+	perfConfig := appConfig.GetDatabasePerformanceConfig()
 
-	switch env {
-	case "production":
-		// 生产环境配置：保守的连接数，较短的连接生命周期
-		sqlDB.SetMaxOpenConns(25)                  // 最大连接数，避免数据库压力
-		sqlDB.SetMaxIdleConns(25)                  // 空闲连接数与最大连接数相等
-		sqlDB.SetConnMaxLifetime(5 * time.Minute)  // 连接最大生命周期，避免长时间占用
-		sqlDB.SetConnMaxIdleTime(1 * time.Minute)  // 空闲连接超时，快速释放资源
-
-	case "staging":
-		// 预发布环境配置：适中的连接数
-		sqlDB.SetMaxOpenConns(20)
-		sqlDB.SetMaxIdleConns(20)
-		sqlDB.SetConnMaxLifetime(10 * time.Minute)
-		sqlDB.SetConnMaxIdleTime(2 * time.Minute)
-
-	case "testing":
-		// 测试环境配置：较少的连接数
-		sqlDB.SetMaxOpenConns(5)
+	// 应用性能配置
+	if perfConfig.EnablePerformance {
+		sqlDB.SetMaxOpenConns(perfConfig.MaxOpenConns)
+		sqlDB.SetMaxIdleConns(perfConfig.MaxIdleConns)
+		sqlDB.SetConnMaxLifetime(perfConfig.ConnMaxLifetime)
+		sqlDB.SetConnMaxIdleTime(perfConfig.ConnMaxIdleTime)
+	} else {
+		// 默认配置（向后兼容）
+		sqlDB.SetMaxOpenConns(25)
 		sqlDB.SetMaxIdleConns(5)
 		sqlDB.SetConnMaxLifetime(30 * time.Minute)
 		sqlDB.SetConnMaxIdleTime(5 * time.Minute)
-
-	default: // development
-		// 开发环境配置：平衡性能和资源使用
-		sqlDB.SetMaxOpenConns(15)                  // 适中的连接数
-		sqlDB.SetMaxIdleConns(15)                  // 空闲连接数与最大连接数相等
-		sqlDB.SetConnMaxLifetime(30 * time.Minute) // 连接最大生命周期
-		sqlDB.SetConnMaxIdleTime(5 * time.Minute)  // 空闲连接超时
 	}
 
-	log.Printf("数据库连接池配置完成 - 环境: %s, 最大连接数: %d, 最大空闲连接数: %d",
-		env, sqlDB.Stats().MaxOpenConnections, sqlDB.Stats().Idle)
+	// 启用数据库连接池统计和监控
+	go monitorConnectionPool(sqlDB, appConfig.Environment, appConfig.Database.Driver)
+
+	log.Printf("数据库连接池优化完成 - 环境: %s, 数据库: %s, 最大连接数: %d, 空闲连接数: %d, 性能优化: %v",
+		appConfig.Environment, appConfig.Database.Driver,
+		sqlDB.Stats().MaxOpenConnections, sqlDB.Stats().Idle, perfConfig.EnablePerformance)
+}
+
+// monitorConnectionPool 监控连接池状态并记录性能指标
+func monitorConnectionPool(sqlDB *sql.DB, env, dbType string) {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		stats := sqlDB.Stats()
+
+		// 记录连接池指标
+		log.Printf("[DB-POOL-STATS] 环境: %s | 数据库: %s | 打开连接: %d/%d | 空闲连接: %d | 等待连接: %d | 总计等待: %dms",
+			env, dbType,
+			stats.OpenConnections,
+			stats.MaxOpenConnections,
+			stats.Idle,
+			stats.WaitCount,
+			stats.WaitDuration.Milliseconds(),
+		)
+
+		// 检查连接池健康状态
+		if stats.WaitCount > 0 && stats.WaitDuration > 5*time.Second {
+			log.Printf("[WARNING] 数据库连接池出现瓶颈，等待时间过长: %v", stats.WaitDuration)
+		}
+
+		if stats.OpenConnections >= stats.MaxOpenConnections*90/100 {
+			log.Printf("[WARNING] 数据库连接池使用率过高: %d/%d (%.1f%%)",
+				stats.OpenConnections, stats.MaxOpenConnections,
+				float64(stats.OpenConnections)/float64(stats.MaxOpenConnections)*100)
+		}
+	}
 }

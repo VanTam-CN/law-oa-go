@@ -78,16 +78,16 @@ const TestLogin: React.FC = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('law_oa_token');
-    localStorage.removeItem('law_oa_user');
-    localStorage.removeItem('law_oa_roles');
-    localStorage.removeItem('law_oa_permissions');
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_info');
+    localStorage.removeItem('roles');
+    localStorage.removeItem('permissions');
     window.location.reload();
   };
 
   const TestAPI = () => {
-    const token = localStorage.getItem('law_oa_token');
-    const user = localStorage.getItem('law_oa_user');
+    const token = localStorage.getItem('auth_token');
+    const user = localStorage.getItem('user_info');
 
     return (
       <div style={{ marginTop: 20 }}>

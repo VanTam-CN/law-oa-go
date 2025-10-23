@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, Button, Space } from 'antd';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 const TestPage: React.FC = () => {
   const navigate = useNavigate();

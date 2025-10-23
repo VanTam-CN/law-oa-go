@@ -1,20 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Card, 
-  Table, 
-  Button, 
-  Space, 
-  Tag, 
-  Modal, 
-  Form, 
-  Input, 
-  Select, 
+import {
+  Card,
+  Table,
+  Button,
+  Space,
+  Tag,
+  Modal,
+  Form,
+  Input,
+  Select,
   message,
   Popconfirm,
   Tooltip,
   Row,
   Col,
-  Statistic
+  Statistic,
+  App
 } from 'antd';
 import { 
   PlusOutlined, 
@@ -30,7 +31,7 @@ import {
 } from '@ant-design/icons';
 import CreateCaseWizard from '@/components/CreateCaseWizard';
 import type { ColumnsType } from 'antd/es/table';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import dayjs from 'dayjs';
 import { getCaseList, createCase, updateCase, deleteCase } from '@/api/case';
 import { get } from '@/services/http';
@@ -65,6 +66,7 @@ interface CaseFormData {
 
 const CaseManagement: React.FC = () => {
   const navigate = useNavigate();
+  const { message: appMessage } = App.useApp();
   const [loading, setLoading] = useState(false);
   const [cases, setCases] = useState<Case[]>([]);
   const [visible, setVisible] = useState(false);
@@ -106,22 +108,59 @@ const CaseManagement: React.FC = () => {
         get<any>('/clients', { pageNum: 1, pageSize: 100 }).catch(() => ({ data: [] })),
         get<any>('/lawfirm/lawyers', { pageNum: 1, pageSize: 100 }).catch(() => ({ data: [] })),
       ]);
-      
+
+      console.log('选项API响应:', { clientRes, lawyerRes });
+
+      // 🔧 修复：处理后端新的统一API响应格式
+      // 客户数据：res.data.clients 或直接的clients
+      let clientData = [];
+      if (clientRes.success && clientRes.data) {
+        clientData = clientRes.data.clients || clientRes.data || [];
+      } else if (clientRes.data) {
+        if (clientRes.data.clients) {
+          clientData = clientRes.data.clients;
+        } else if (Array.isArray(clientRes.data)) {
+          clientData = clientRes.data;
+        }
+      } else if (clientRes.clients && Array.isArray(clientRes.clients)) {
+        clientData = clientRes.clients;
+      } else if (Array.isArray(clientRes)) {
+        clientData = clientRes;
+      }
+
+      // 律师数据：res.data.lawyers 或直接的lawyers
+      let lawyerData = [];
+      if (lawyerRes.success && lawyerRes.data) {
+        lawyerData = lawyerRes.data.lawyers || lawyerRes.data || [];
+      } else if (lawyerRes.data) {
+        if (lawyerRes.data.lawyers) {
+          lawyerData = lawyerRes.data.lawyers;
+        } else if (Array.isArray(lawyerRes.data)) {
+          lawyerData = lawyerRes.data;
+        }
+      } else if (lawyerRes.lawyers && Array.isArray(lawyerRes.lawyers)) {
+        lawyerData = lawyerRes.lawyers;
+      } else if (Array.isArray(lawyerRes)) {
+        lawyerData = lawyerRes;
+      }
+
+      console.log('解析后的选项数据:', { clientData: clientData.length, lawyerData: lawyerData.length });
+
       // 修复客户选项解析 - 使用company字段作为显示名称
-      const cOpts = (clientRes?.data ?? []).map((c: any) => ({
+      const cOpts = clientData.map((c: any) => ({
         label: c.company || c.name || `客户${c.id}`,
         value: c.id,
       })).filter((o: any) => o.label && o.value !== undefined);
-      
+
       // 修复律师选项解析
-      const lOpts = (lawyerRes?.data ?? []).map((l: any) => ({
+      const lOpts = lawyerData.map((l: any) => ({
         label: l.name || `律师${l.id}`,
         value: l.id,
       })).filter((o: any) => o.label && o.value !== undefined);
-      
+
       setClientOptions(cOpts);
       setLawyerOptions(lOpts);
-      
+
       console.log('加载选项成功:', { clients: cOpts.length, lawyers: lOpts.length });
     } catch (error) {
       console.error('加载选项失败:', error);
@@ -172,29 +211,81 @@ const CaseManagement: React.FC = () => {
         get<any>('/clients', { pageNum: 1, pageSize: 100 }).catch(() => ({ data: [] })),
         get<any>('/lawfirm/lawyers', { pageNum: 1, pageSize: 100 }).catch(() => ({ data: [] })),
       ]);
-      
+
+      console.log('案件API响应:', caseRes);
+      console.log('客户API响应:', clientRes);
+      console.log('律师API响应:', lawyerRes);
+
+      // 🔧 修复：处理后端新的统一API响应格式
+      // 处理案件数据
+      let caseData = [];
+      if (caseRes.success && caseRes.data) {
+        caseData = caseRes.data.cases || caseRes.data || [];
+      } else if (caseRes.data) {
+        if (caseRes.data.cases) {
+          caseData = caseRes.data.cases;
+        } else if (Array.isArray(caseRes.data)) {
+          caseData = caseRes.data;
+        }
+      } else if (caseRes.cases && Array.isArray(caseRes.cases)) {
+        caseData = caseRes.cases;
+      } else if (Array.isArray(caseRes)) {
+        caseData = caseRes;
+      }
+
+      // 处理客户数据（同上）
+      let clientData = [];
+      if (clientRes.success && clientRes.data) {
+        clientData = clientRes.data.clients || clientRes.data || [];
+      } else if (clientRes.data) {
+        if (clientRes.data.clients) {
+          clientData = clientRes.data.clients;
+        } else if (Array.isArray(clientRes.data)) {
+          clientData = clientRes.data;
+        }
+      } else if (clientRes.clients && Array.isArray(clientRes.clients)) {
+        clientData = clientRes.clients;
+      } else if (Array.isArray(clientRes)) {
+        clientData = clientRes;
+      }
+
+      // 处理律师数据（同上）
+      let lawyerData = [];
+      if (lawyerRes.success && lawyerRes.data) {
+        lawyerData = lawyerRes.data.lawyers || lawyerRes.data || [];
+      } else if (lawyerRes.data) {
+        if (lawyerRes.data.lawyers) {
+          lawyerData = lawyerRes.data.lawyers;
+        } else if (Array.isArray(lawyerRes.data)) {
+          lawyerData = lawyerRes.data;
+        }
+      } else if (lawyerRes.lawyers && Array.isArray(lawyerRes.lawyers)) {
+        lawyerData = lawyerRes.lawyers;
+      } else if (Array.isArray(lawyerRes)) {
+        lawyerData = lawyerRes;
+      }
+
+      console.log('解析后的数据:', { caseData: caseData.length, clientData: clientData.length, lawyerData: lawyerData.length });
+
       // 构建映射 - 修复数据结构解析
       const clientMap = new Map<string | number, string>();
-      const clientList = clientRes?.data || [];
-      for (const c of clientList) {
+      for (const c of clientData) {
         const id = c.id;
         // 客户名称优先使用company字段，因为name字段为空
         const name = c.company || c.name || `客户${c.id}`;
         if (id != null && name) clientMap.set(id, name);
       }
-      
+
       const lawyerMap = new Map<string | number, string>();
-      const lawyerList = lawyerRes?.data || [];
-      for (const l of lawyerList) {
+      for (const l of lawyerData) {
         const id = l.id;
         const name = l.name || `律师${l.id}`;
         if (id != null && name) lawyerMap.set(id, name);
       }
       
-      // 处理案件数据 - 修复数据解析
-      console.log('API响应:', caseRes);
-      const caseList = caseRes || [];
-      const mappedRows = caseList.map((item: any) => {
+      // 🔧 修复：使用前面已经解析好的案件数据
+      console.log('使用已解析的案件数据:', caseData.length);
+      const mappedRows = caseData.map((item: any) => {
         const clientId = item.client_id ?? item.clientId;
         const lawyerId = item.lawyer_id ?? item.lawyerId;
         
@@ -215,9 +306,22 @@ const CaseManagement: React.FC = () => {
       console.log('处理后的案件数据:', mappedRows);
       
       setCases(mappedRows);
+
+      // 🔧 修复：从正确的响应结构获取分页信息
+      let totalCount = 0;
+      if (caseRes.success && caseRes.data && caseRes.data.pagination) {
+        totalCount = caseRes.data.pagination.total || 0;
+      } else if (caseRes.pagination) {
+        totalCount = caseRes.pagination.total || 0;
+      } else if (caseRes.total !== undefined) {
+        totalCount = caseRes.total || 0;
+      } else {
+        totalCount = mappedRows.length;
+      }
+
       setPagination({
         ...pagination,
-        total: caseRes.pagination?.total || caseRes.total || mappedRows.length
+        total: totalCount
       });
     } catch (error) {
       console.error('获取案件列表失败:', error);
@@ -622,6 +726,7 @@ const CaseManagement: React.FC = () => {
           setCreateModalVisible(false);
           fetchCases();
         }}
+        appMessage={appMessage}
       />
 
       {/* 编辑案件弹窗 */}

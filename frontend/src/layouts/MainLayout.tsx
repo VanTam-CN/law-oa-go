@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Layout, Alert } from 'antd';
-import { Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router';
 import Header from '@/components/layout/Header';
 import Sidebar from '@/components/layout/Sidebar';
-import useAuth from '@/hooks/useAuth';
-import { Navigate } from 'react-router-dom';
+import { useAppStore } from '@/stores/useAppStore';
+import { Navigate } from 'react-router';
 
 const { Content } = Layout;
 
 const MainLayout: React.FC = () => {
-  const { user, loading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAppStore();
   const [collapsed, setCollapsed] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(220);
 
@@ -24,7 +24,7 @@ const MainLayout: React.FC = () => {
   }, [sidebarWidth]);
 
   // 如果正在加载，显示加载状态
-  if (loading) {
+  if (isLoading) {
     return <div>加载中...</div>;
   }
 
@@ -32,7 +32,7 @@ const MainLayout: React.FC = () => {
   const isDevMode = process.env.NODE_ENV === 'development';
 
   // 如果未登录，重定向到登录页
-  if (!user) {
+  if (!isAuthenticated || !user) {
     if (isDevMode) {
       console.log('🛠️ 开发者模式：用户未登录，但显示开发提示');
       return (

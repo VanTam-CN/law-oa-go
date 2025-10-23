@@ -35,7 +35,7 @@ import {
   CommentOutlined,
   PaperClipOutlined
 } from '@ant-design/icons';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import dayjs from 'dayjs';
 import { caseAPI } from '@/services/lawfirm';
 

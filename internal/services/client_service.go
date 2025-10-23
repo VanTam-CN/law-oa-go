@@ -2,12 +2,12 @@ package services
 
 import (
 	"context"
-	"errors"
 	"regexp"
 	"time"
 
+	stderrors "errors"
 	"gorm.io/gorm"
-	customErrors "law-oa-go/internal/errors"
+	"law-oa-go/internal/errors"
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/repositories"
 )
@@ -98,10 +98,10 @@ func (s *ClientService) CreateClient(ctx context.Context, req *CreateClientReque
 	if req.Email != "" {
 		existingClient, err := s.clientRepo.FindByEmail(ctx, req.Email)
 		if err != nil {
-			return nil, customErrors.NewDatabaseError("check_email_existence", "Failed to check email existence", err)
+			return nil, errors.DatabaseError("check_email_existence", "Failed to check email existence", err)
 		}
 		if existingClient != nil {
-			return nil, customErrors.NewBusinessError("email_exists", "Email already exists", nil)
+			return nil, errors.BusinessError("email", "exists", "Email already exists")
 		}
 	}
 
@@ -122,7 +122,7 @@ func (s *ClientService) CreateClient(ctx context.Context, req *CreateClientReque
 	}
 
 	if err := s.clientRepo.Create(ctx, client); err != nil {
-		return nil, customErrors.NewDatabaseError("create_client", "Failed to create client", err)
+		return nil, errors.DatabaseError("create_client", "Failed to create client", err)
 	}
 
 	return s.toClientResponse(client), nil
@@ -131,10 +131,10 @@ func (s *ClientService) CreateClient(ctx context.Context, req *CreateClientReque
 func (s *ClientService) GetClientByID(ctx context.Context, id uint) (*ClientResponse, error) {
 	client, err := s.clientRepo.FindByID(ctx, id)
 	if err != nil {
-		return nil, customErrors.NewDatabaseError("get_client", "Failed to get client", err)
+		return nil, errors.DatabaseError("get_client", "Failed to get client", err)
 	}
 	if client == nil {
-		return nil, customErrors.NewNotFoundError("client", "Client not found", nil)
+		return nil, errors.NotFoundError("client", "Client not found", id)
 	}
 
 	return s.toClientResponse(client), nil
@@ -143,10 +143,10 @@ func (s *ClientService) GetClientByID(ctx context.Context, id uint) (*ClientResp
 func (s *ClientService) UpdateClient(ctx context.Context, id uint, req *UpdateClientRequest) (*ClientResponse, error) {
 	client, err := s.clientRepo.FindByID(ctx, id)
 	if err != nil {
-		return nil, customErrors.NewDatabaseError("find_client", "Failed to find client", err)
+		return nil, errors.DatabaseError("find_client", "Failed to find client", err)
 	}
 	if client == nil {
-		return nil, customErrors.NewNotFoundError("client", "Client not found", nil)
+		return nil, errors.NotFoundError("client", "Client not found", id)
 	}
 
 	if req.Name != nil {
@@ -159,10 +159,10 @@ func (s *ClientService) UpdateClient(ctx context.Context, id uint, req *UpdateCl
 		if *req.Email != client.Email && *req.Email != "" {
 			existingClient, err := s.clientRepo.FindByEmail(ctx, *req.Email)
 			if err != nil {
-				return nil, customErrors.NewDatabaseError("check_email_existence", "Failed to check email existence", err)
+				return nil, errors.DatabaseError("check_email_existence", "Failed to check email existence", err)
 			}
 			if existingClient != nil && existingClient.ID != id {
-				return nil, customErrors.NewBusinessError("email_exists", "Email already exists", nil)
+				return nil, errors.BusinessError("email", "exists", "Email already exists")
 			}
 		}
 		client.Email = *req.Email
@@ -199,7 +199,7 @@ func (s *ClientService) UpdateClient(ctx context.Context, id uint, req *UpdateCl
 	}
 
 	if err := s.clientRepo.Update(ctx, client); err != nil {
-		return nil, customErrors.NewDatabaseError("update_client", "Failed to update client", err)
+		return nil, errors.DatabaseError("update_client", "Failed to update client", err)
 	}
 
 	return s.GetClientByID(ctx, id)
@@ -207,10 +207,10 @@ func (s *ClientService) UpdateClient(ctx context.Context, id uint, req *UpdateCl
 
 func (s *ClientService) DeleteClient(ctx context.Context, id uint) error {
 	if err := s.clientRepo.Delete(ctx, id); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return customErrors.NewNotFoundError("client", "Client not found", nil)
+		if stderrors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.NotFoundError("client", "Client not found", id)
 		}
-		return customErrors.NewDatabaseError("delete_client", "Failed to delete client", err)
+		return errors.DatabaseError("delete_client", "Failed to delete client", err)
 	}
 	return nil
 }
@@ -242,7 +242,7 @@ func (s *ClientService) ListClients(ctx context.Context, req *ClientListRequest)
 
 	clients, total, err := s.clientRepo.List(ctx, params)
 	if err != nil {
-		return nil, 0, customErrors.NewDatabaseError("list_clients", "Failed to list clients", err)
+		return nil, 0, errors.DatabaseError("list_clients", "Failed to list clients", err)
 	}
 
 	responses := make([]*ClientResponse, len(clients))
@@ -256,7 +256,7 @@ func (s *ClientService) ListClients(ctx context.Context, req *ClientListRequest)
 func (s *ClientService) GetClientStats(ctx context.Context) (*ClientStatsResponse, error) {
 	stats, err := s.clientRepo.GetStats(ctx)
 	if err != nil {
-		return nil, customErrors.NewDatabaseError("get_client_stats", "Failed to get client stats", err)
+		return nil, errors.DatabaseError("get_client_stats", "Failed to get client stats", err)
 	}
 
 	return &ClientStatsResponse{
@@ -271,14 +271,14 @@ func (s *ClientService) validateClientRequest(req *CreateClientRequest) error {
 	if req.Email != "" {
 		emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 		if !emailRegex.MatchString(req.Email) {
-			return customErrors.NewValidationError("email", "invalid_email_format", "Invalid email format", "Please provide a valid email address")
+			return errors.ValidationErrorWithDetails("email", "Invalid email format", "Please provide a valid email address", []string{"must be valid email", "cannot contain special chars"})
 		}
 	}
 
 	if req.Phone != "" {
 		phoneRegex := regexp.MustCompile(`^[\d\s\-\+\(\)]+$`)
 		if !phoneRegex.MatchString(req.Phone) {
-			return customErrors.NewValidationError("phone", "invalid_phone_format", "Invalid phone format", "Please provide a valid phone number")
+			return errors.ValidationErrorWithDetails("phone", "Invalid phone format", "Please provide a valid phone number", []string{"must be valid phone number", "only digits, spaces, and symbols allowed"})
 		}
 	}
 

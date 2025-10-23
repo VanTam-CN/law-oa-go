@@ -1,4 +1,4 @@
-import { message } from 'antd';
+import { message } from '@/utils/messageHelper';
 import { post } from './api';
 
 // 案件创建服务

@@ -11,9 +11,9 @@ import {
   FullscreenExitOutlined,
   QuestionCircleOutlined
 } from '@ant-design/icons';
-import useAuth from '@/hooks/useAuth';
+import { useAppStore } from '@/stores/useAppStore';
 import useNotifications from '@/hooks/useNotifications';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import type { MenuProps } from 'antd';
 import './header.less';
 
@@ -29,7 +29,7 @@ interface Notification {
 }
 
 const AppHeader: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout } = useAppStore();
   const { 
     notifications, 
     stats, 

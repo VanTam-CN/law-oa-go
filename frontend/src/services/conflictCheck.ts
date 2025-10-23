@@ -1,17 +1,18 @@
 import { ApiClient, API_ENDPOINTS } from '@/config/api';
-import { message } from 'antd';
+import { message } from '@/utils/messageHelper';
 
 // 冲突检索请求接口
 export interface ConflictCheckRequest {
   clientId: string;
   clientName: string;
-  clientType: 'PERSON' | 'COMPANY';
+  clientType: 'PERSON' | 'COMPANY' | 'ANY';
   otherParties: string[];
   caseName: string;
   caseType: string;
   searchYears?: number;
   includeCorporateRelations?: boolean;
   searchDepth?: 'BASIC' | 'STANDARD' | 'DEEP';
+  userId?: string; // 用户ID，后端需要
 }
 
 // 冲突检索响应接口
@@ -80,32 +81,23 @@ export class ConflictCheckService {
           throw new Error('后端服务无响应');
         }
         
-        // 后端使用code=0表示成功，而不是HTTP状态码
-        if (response.code !== 0) {
-          console.error('API返回错误码:', response.code, '消息:', response.msg);
-          throw new Error(response.msg || `API调用失败 (错误码: ${response.code})`);
+        // 后端使用code=200表示成功
+        if (response.code !== 200) {
+          console.error('API返回错误码:', response.code, '消息:', response.message);
+          throw new Error(response.message || `API调用失败 (错误码: ${response.code})`);
         }
-        
-        // 如果响应消息是"检索完成"，这是成功消息，不应该当作错误
-        if (response.msg === "检索完成") {
-          console.log('冲突检索成功完成');
-        }
-        
+
         // 验证响应数据结构
-        const result = response.data?.checkResult;
+        const result = response.data;
         if (!result) {
-          // 如果没有checkResult字段，尝试直接使用data
-          const directResult = response.data;
-          if (directResult && typeof directResult.hasConflict !== 'undefined') {
-            return directResult;
-          }
-          throw new Error('后端返回数据格式错误：缺少checkResult字段');
+          throw new Error('后端返回数据格式错误：缺少data字段');
         }
-        
+
         if (typeof result.hasConflict === 'undefined') {
-          throw new Error('后端返回数据格式错误：缺少hasConflict字段');
+          console.warn('后端响应缺少hasConflict字段，基于conflictCases判断');
+          result.hasConflict = (result.conflictCases && result.conflictCases.length > 0);
         }
-        
+
         return result;
       } catch (apiError) {
         console.error('API调用错误:', apiError);
@@ -142,8 +134,8 @@ export class ConflictCheckService {
         { clientName, otherParties }
       );
       
-      if (response.code !== 0) {
-        throw new Error(response.msg || '预检失败');
+      if (response.code !== 200) {
+        throw new Error(response.message || response.msg || '预检失败');
       }
       
       return response.data;
@@ -164,8 +156,8 @@ export class ConflictCheckService {
         
       const response = await ApiClient.get(endpoint);
       
-      if (response.code !== 0) {
-        throw new Error(response.msg || '获取历史记录失败');
+      if (response.code !== 200) {
+        throw new Error(response.message || response.msg || '获取历史记录失败');
       }
       
       return response.data || [];

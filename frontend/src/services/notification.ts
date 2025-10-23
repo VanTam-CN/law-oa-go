@@ -18,8 +18,11 @@ export interface NotificationStats {
 
 export const notificationService = {
   // 获取通知列表
-  getNotifications: () => get<Notification[]>('/notifications'),
-  
+  getNotifications: async () => {
+    const response = await get<{notifications: Notification[], total: number}>('/notifications');
+    return response.notifications || [];
+  },
+
   // 获取通知统计
   getNotificationStats: () => get<NotificationStats>('/notifications/stats'),
   
