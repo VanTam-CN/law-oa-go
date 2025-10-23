@@ -226,3 +226,17 @@ $RECYCLE.BIN/
 
 # Windows链接文件
 *.lnk
+
+# 大文件和构建产物
+law-oa-go
+main
+archive/binaries/
+chrome/
+*.app
+
+# 编译后的二进制文件
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
