@@ -104,20 +104,20 @@ export const conflictAPI = {
         throw new Error('后端服务无响应');
       }
 
-      // 🔧 修复：适配新的API响应格式
-      // 新格式使用success字段表示成功，旧格式使用code字段
-      const isSuccess = response.success !== false &&
-                       (response.code === 200 || response.code === undefined);
-
-      if (!isSuccess) {
-        console.error('API返回错误码:', response.code, 'success:', response.success, '消息:', response.message);
-        throw new Error(response.message || `API调用失败 (错误码: ${response.code}, success: ${response.success})`);
-      }
-
-      // 验证响应数据结构
-      const result = response.data;
-      if (!result) {
-        throw new Error('后端返回数据格式错误：缺少data字段');
+      // 🔧 修复：HTTP拦截器已经处理了响应格式，直接使用response作为结果
+      // 如果response有data字段，说明是完整的API响应；否则response本身就是data
+      let result: ConflictCheckResponse;
+      
+      if (response.data && typeof response.success !== 'undefined') {
+        // 完整的API响应格式
+        if (!response.success) {
+          console.error('API返回失败:', response.error);
+          throw new Error(response.error?.message || 'API调用失败');
+        }
+        result = response.data;
+      } else {
+        // HTTP拦截器已经提取了data，直接使用
+        result = response as ConflictCheckResponse;
       }
 
       if (typeof result.hasConflict === 'undefined') {

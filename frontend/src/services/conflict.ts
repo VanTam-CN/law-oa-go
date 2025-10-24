@@ -123,12 +123,14 @@ const detectClientIndustry = (clientName: string): string => {
  * 转换增强API响应为前端格式
  */
 const transformEnhancedApiResponse = (apiResponse: any): ConflictCheckResponse => {
-  const data = apiResponse.data || {};
+  // 🔧 修复：HTTP拦截器已经处理了响应格式，apiResponse就是data
+  // 不再需要检查apiResponse.data，因为拦截器已经提取了data字段
+  const data = apiResponse;
 
   return {
-    success: apiResponse.success || false,
-    message: apiResponse.message || '冲突检测完成',
-    error: apiResponse.error || undefined,
+    success: true, // 如果能到这里说明请求成功
+    message: '冲突检测完成',
+    error: undefined,
     data: {
       hasConflict: data.hasConflict || false,
       riskAssessment: {
@@ -161,10 +163,10 @@ const transformEnhancedApiResponse = (apiResponse: any): ConflictCheckResponse =
         relatedConflicts: 0
       },
       detectionTime: data.checkTime || new Date().toISOString(),
-      requestId: apiResponse.requestId || `REQ_${Date.now()}`
+      requestId: `REQ_${Date.now()}`
     },
-    requestId: apiResponse.requestId || `REQ_${Date.now()}`,
-    timestamp: apiResponse.timestamp || new Date().toISOString()
+    requestId: `REQ_${Date.now()}`,
+    timestamp: new Date().toISOString()
   };
 };
 

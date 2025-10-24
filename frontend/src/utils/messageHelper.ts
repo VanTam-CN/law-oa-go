@@ -14,7 +14,7 @@ export const setAppMessage = (app: any) => {
 // 导出安全的message实例
 export const message = {
   success: (content: string, duration?: number) => {
-    if (appMessage) {
+    if (appMessage && typeof appMessage.success === 'function') {
       try {
         return appMessage.success(content, duration);
       } catch (error) {
@@ -28,7 +28,7 @@ export const message = {
   },
 
   error: (content: string, duration?: number) => {
-    if (appMessage) {
+    if (appMessage && typeof appMessage.error === 'function') {
       try {
         return appMessage.error(content, duration);
       } catch (error) {
@@ -42,7 +42,7 @@ export const message = {
   },
 
   info: (content: string, duration?: number) => {
-    if (appMessage) {
+    if (appMessage && typeof appMessage.info === 'function') {
       try {
         return appMessage.info(content, duration);
       } catch (error) {
@@ -56,7 +56,7 @@ export const message = {
   },
 
   warning: (content: string, duration?: number) => {
-    if (appMessage) {
+    if (appMessage && typeof appMessage.warning === 'function') {
       try {
         return appMessage.warning(content, duration);
       } catch (error) {
@@ -70,7 +70,7 @@ export const message = {
   },
 
   loading: (content: string, duration?: number) => {
-    if (appMessage) {
+    if (appMessage && typeof appMessage.loading === 'function') {
       try {
         return appMessage.loading(content, duration);
       } catch (error) {

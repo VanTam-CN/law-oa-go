@@ -62,7 +62,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	// 生成真实的JWT token
-	token, expiresAt, err := middleware.GenerateToken(1, req.Email, "lawyer")
+	token, expiresAt, err := middleware.GenerateToken(user.ID, req.Email, user.Role)
 	if err != nil {
 		common.APIInternalServerError(c, "生成令牌失败", err.Error())
 		return

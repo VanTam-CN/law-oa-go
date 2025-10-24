@@ -199,7 +199,7 @@ const AppContent: React.FC<AppContentProps> = ({ appMessage }) => {
 // 主App组件（修复Message组件问题）
 const App: React.FC = React.memo(() => {
   const { isAuthenticated, isLoading } = useAppStore()
-  const appApi = AntdApp.useApp()
+  const { message: antdMessage } = AntdApp.useApp()
 
   // 简化的主题配置
   const themeConfig = useMemo(() => ({
@@ -234,7 +234,7 @@ const App: React.FC = React.memo(() => {
       <AntdApp>
         <ErrorBoundary>
           <React.Suspense fallback={<PageLoading message="正在加载..." />}>
-            <AppContent appMessage={appApi.message} />
+            <AppContent appMessage={antdMessage} />
           </React.Suspense>
         </ErrorBoundary>
       </AntdApp>

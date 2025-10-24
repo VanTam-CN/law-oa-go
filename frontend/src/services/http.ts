@@ -62,8 +62,8 @@ service.interceptors.response.use(
 
         return Promise.reject(new Error(res.error.message || '请求失败'));
       } else {
-        // 新格式成功响应，返回完整响应以保持数据结构
-        return res;
+        // 新格式成功响应，返回data字段以符合前端期望
+        return res.data !== undefined ? res.data : res;
       }
     }
 

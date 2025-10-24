@@ -1,4 +1,4 @@
-import { ApiClient, API_ENDPOINTS } from '@/config/api';
+import { post, get } from '@/services/http';
 import { message } from '@/utils/messageHelper';
 
 // 冲突检索请求接口
@@ -71,31 +71,16 @@ export class ConflictCheckService {
       
       try {
         // 调用后端API
-        const response = await ApiClient.post(
-          API_ENDPOINTS.CONFLICT_CHECK.PERFORM,
-          request
-        );
+        const response = await post<ConflictCheckResponse>('/conflict/check', request);
         
         // 验证响应基本结构
         if (!response) {
           throw new Error('后端服务无响应');
         }
         
-        // 🔧 修复：适配新的API响应格式
-        // 新格式使用success字段表示成功，旧格式使用code字段
-        const isSuccess = response.success !== false &&
-                         (response.code === 200 || response.code === undefined);
-
-        if (!isSuccess) {
-          console.error('API返回错误码:', response.code, 'success:', response.success, '消息:', response.message);
-          throw new Error(response.message || `API调用失败 (错误码: ${response.code}, success: ${response.success})`);
-        }
-
-        // 验证响应数据结构
-        const result = response.data;
-        if (!result) {
-          throw new Error('后端返回数据格式错误：缺少data字段');
-        }
+        // 🔧 修复：HTTP拦截器已经处理了响应格式，直接使用response作为结果
+        // HTTP拦截器会自动提取data字段，所以response就是我们需要的数据
+        const result = response as ConflictCheckResponse;
 
         if (typeof result.hasConflict === 'undefined') {
           console.warn('后端响应缺少hasConflict字段，基于conflictCases判断');
@@ -133,16 +118,8 @@ export class ConflictCheckService {
    */
   static async performPreCheck(clientName: string, otherParties: string[]): Promise<any> {
     try {
-      const response = await ApiClient.post(
-        API_ENDPOINTS.CONFLICT_CHECK.PRE_CHECK,
-        { clientName, otherParties }
-      );
-      
-      if (response.code !== 200) {
-        throw new Error(response.message || response.msg || '预检失败');
-      }
-      
-      return response.data;
+      const response = await post('/conflict/pre-check', { clientName, otherParties });
+      return response;
     } catch (error) {
       console.error('预检服务错误:', error);
       throw error;
@@ -155,16 +132,11 @@ export class ConflictCheckService {
   static async getCheckHistory(clientId?: string): Promise<any[]> {
     try {
       const endpoint = clientId 
-        ? `${API_ENDPOINTS.CONFLICT_CHECK.HISTORY}?clientId=${clientId}`
-        : API_ENDPOINTS.CONFLICT_CHECK.HISTORY;
+        ? `/conflict/history?clientId=${clientId}`
+        : '/conflict/history';
         
-      const response = await ApiClient.get(endpoint);
-      
-      if (response.code !== 200) {
-        throw new Error(response.message || response.msg || '获取历史记录失败');
-      }
-      
-      return response.data || [];
+      const response = await get(endpoint);
+      return response || [];
     } catch (error) {
       console.error('获取检索历史错误:', error);
       return [];

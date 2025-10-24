@@ -716,7 +716,7 @@ const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({
         caseNo: formData.caseNo || "",
         caseName: formData.caseName || "",
         caseType: formData.caseType || "",
-        clientId: formData.clientId ?? null,
+        clientId: formData.clientId || undefined,
         lawyerId: formData.lawyerId ?? null,
         startDate: formData.startDate
           ? dayjs(formData.startDate).format("YYYY-MM-DD")

@@ -112,8 +112,8 @@ type CheckStatistics struct {
 
 // ConflictCheckRecord 冲突检测记录
 type ConflictCheckRecord struct {
-	CheckID                  string            `json:"checkId" gorm:"primaryKey;column:check_id"`
-	ClientID                 string            `json:"clientId" gorm:"column:client_id;index"`
+	CheckID                  string            `json:"checkId" gorm:"primaryKey;column:check_id;type:varchar"`
+	ClientID                 string            `json:"clientId" gorm:"column:client_id;index;type:varchar"`
 	ClientName               string            `json:"clientName" gorm:"column:client_name"`
 	CaseName                 string            `json:"caseName" gorm:"column:case_name"`
 	CaseType                 string            `json:"caseType" gorm:"column:case_type"`
