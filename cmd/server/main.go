@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
@@ -40,16 +41,10 @@ func main() {
 	// 初始化监控（待实现）
 
 	// 创建路由器
-	routerConfig := &router.RouterConfig{
-		DB:             db,
-		Redis:          redisClient,
-		Elasticsearch:  esClient,
-		AllowedOrigins: []string{"http://localhost:3003", "http://localhost:8080"},
-		RateLimit:      100,
-		Timeout:        30 * time.Second,
-	}
+	app := gin.Default()
 
-	app := router.NewRouter(routerConfig)
+	// 初始化路由系统
+	router.Init(app, db, redisClient, esClient)
 
 	// 启动服务器
 	addr := ":" + cfg.GetPort()

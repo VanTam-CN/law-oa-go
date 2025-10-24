@@ -1,0 +1,248 @@
+# 前端代码审查工具 Dockerfile
+# Law OA Go 项目 - 前端静态分析工具
+
+FROM node:18-alpine AS base
+
+# 设置工作目录
+WORKDIR /workspace
+
+# 安装系统依赖
+RUN apk add --no-cache \
+    git \
+    curl \
+    bash \
+    jq
+
+# 安装前端代码审查工具
+RUN npm install -g \
+    eslint \
+    @typescript-eslint/parser \
+    @typescript-eslint/eslint-plugin \
+    eslint-plugin-react \
+    eslint-plugin-react-hooks \
+    eslint-plugin-jsx-a11y \
+    eslint-plugin-import \
+    eslint-plugin-security \
+    eslint-plugin-sonarjs \
+    eslint-plugin-vue \
+    eslint-plugin-unicorn \
+    eslint-plugin-prefer-arrow \
+    @typescript-eslint/typescript-estree \
+    prettier \
+    typescript \
+    vue-tsc \
+    vite \
+    vitest
+
+# 创建项目配置
+RUN mkdir -p /config
+
+# 创建 ESLint 配置模板
+RUN cat > /config/.eslintrc.json << 'EOF'
+{
+  "env": {
+    "browser": true,
+    "es2021": true,
+    "node": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "@typescript-eslint/recommended",
+    "plugin:react/recommended",
+    "plugin:react-hooks/recommended"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "jsx": true
+    }
+  },
+  "plugins": [
+    "react",
+    "react-hooks",
+    "@typescript-eslint"
+  ],
+  "rules": {
+    "react/prop-types": "off",
+    "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+    "no-console": "warn",
+    "no-debugger": "error"
+  },
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  }
+}
+EOF
+
+# 创建 Vue ESLint 配置模板
+RUN cat > /config/.eslintrc.vue.json << 'EOF'
+{
+  "env": {
+    "browser": true,
+    "es2021": true,
+    "node": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "@typescript-eslint/recommended",
+    "plugin:vue/vue3-recommended"
+  ],
+  "parser": "vue-eslint-parser",
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "sourceType": "module",
+    "parser": "@typescript-eslint/parser"
+  },
+  "plugins": [
+    "vue",
+    "@typescript-eslint"
+  ],
+  "rules": {
+    "vue/multi-word-component-names": "off",
+    "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+    "no-console": "warn",
+    "no-debugger": "error"
+  }
+}
+EOF
+
+# 创建 Prettier 配置
+RUN cat > /config/.prettierrc << 'EOF'
+{
+  "semi": true,
+  "trailingComma": "es5",
+  "singleQuote": true,
+  "printWidth": 100,
+  "tabWidth": 2,
+  "useTabs": false,
+  "bracketSpacing": true,
+  "arrowParens": "avoid",
+  "endOfLine": "lf"
+}
+EOF
+
+# 创建 .prettierignore
+RUN cat > /config/.prettierignore << 'EOF'
+node_modules
+dist
+build
+coverage
+*.log
+.env
+public
+.cache
+.temp
+.vscode
+.idea
+.DS_Store
+**/*.test.*
+**/*.spec.*
+EOF
+
+# 创建脚本文件
+RUN mkdir -p /scripts
+RUN cat > /scripts/run-eslint.sh << 'EOF'
+#!/bin/bash
+
+# 运行 ESLint 检查
+
+PROJECT_TYPE=${1:-react}
+OUTPUT_DIR=${2:-/workspace/reports}
+
+echo "运行前端代码检查 (项目类型: $PROJECT_TYPE)..."
+
+# 根据项目类型选择 ESLint 配置
+case $PROJECT_TYPE in
+  "react")
+    ESLINT_CONFIG="--config /config/.eslintrc.json"
+    ;;
+  "vue")
+    ESLINT_CONFIG="--config /config/.eslintrc.vue.json"
+    ;;
+  *)
+    echo "未知的项目类型: $PROJECT_TYPE"
+    exit 1
+    ;;
+esac
+
+# 创建输出目录
+mkdir -p "$OUTPUT_DIR/frontend"
+
+# 运行 ESLint
+eslint $ESLINT_CONFIG \
+  --format json \
+  --output-file "$OUTPUT_DIR/frontend/eslint-$PROJECT_TYPE.json" \
+  --no-error-on-unmatched-pattern \
+  src/ || true
+
+# 运行 Prettier 检查
+prettier --config /config/.prettierrc \
+  --check --ignore-path /config/.prettierignore \
+  src/ > "$OUTPUT_DIR/frontend/prettier-$PROJECT_TYPE.txt" 2>&1 || true
+
+echo "前端代码检查完成"
+EOF
+
+RUN cat > /scripts/run-typescript-check.sh << 'EOF'
+#!/bin/bash
+
+# 运行 TypeScript 检查
+
+PROJECT_TYPE=${1:-react}
+OUTPUT_DIR=${2:-/workspace/reports}
+
+echo "运行 TypeScript 类型检查 (项目类型: $PROJECT_TYPE)..."
+
+# 创建输出目录
+mkdir -p "$OUTPUT_DIR/frontend"
+
+# 根据项目类型运行 TypeScript 检查
+case $PROJECT_TYPE in
+  "react")
+    cd frontend || exit 1
+    ;;
+  "vue")
+    cd frontend-vue || exit 1
+    ;;
+  *)
+    echo "未知的项目类型: $PROJECT_TYPE"
+    exit 1
+    ;;
+esac
+
+# 运行 TypeScript 检查
+if [ -f "tsconfig.json" ]; then
+  npx tsc --noEmit > "$OUTPUT_DIR/frontend/typescript-check-$PROJECT_TYPE.txt" 2>&1 || true
+fi
+
+# 运行 Vue 类型检查 (如果是 Vue 项目)
+if [ "$PROJECT_TYPE" = "vue" ] && [ -f "tsconfig.json" ]; then
+  npx vue-tsc --noEmit > "$OUTPUT_DIR/frontend/vue-typescript-check.txt" 2>&1 || true
+fi
+
+echo "TypeScript 检查完成"
+EOF
+
+# 设置脚本权限
+RUN chmod +x /scripts/*.sh
+
+# 创建非 root 用户
+RUN addgroup -g 1000 reviewer && \
+    adduser -D -s /bin/bash -u 1000 -G reviewer reviewer
+
+# 设置目录权限
+RUN chown -R reviewer:reviewer /workspace /config /scripts
+
+# 切换到非 root 用户
+USER reviewer
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD eslint --version || exit 1
+
+# 默认命令
+CMD ["/bin/bash"]

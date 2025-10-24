@@ -22,7 +22,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 ## 1. Project Overview
 - **Vision**: 构建现代化的律师事务所办公自动化系统，为中小型律师事务所提供完整的数字化解决方案
 - **Current Phase**: v2.1.0 - 生产就绪阶段，核心功能已完成，搜索和文档管理功能开发中
-- **Key Architecture**: 单体架构设计，Go后端 + React前端，MySQL数据库 + Redis缓存
+- **Key Architecture**: 单体架构设计，Go后端 + React前端，pg数据库 + Redis缓存
 - **Development Strategy**: 采用分层架构，注重性能优化、安全性和可维护性
 
 ## 2. Project Structure

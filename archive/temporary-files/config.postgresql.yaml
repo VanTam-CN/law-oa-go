@@ -1,0 +1,53 @@
+# PostgreSQL测试配置文件
+environment: testing
+port: 8082
+
+database:
+  driver: postgres
+  host: localhost
+  port: 5432
+  username: law_oa_user
+  password: law_oa_password
+  database: law_oa_db_test
+  sslmode: disable
+  charset: utf8
+  parseTime: true
+  loc: UTC
+
+redis:
+  host: localhost
+  port: 6379
+  password: redis_password
+  db: 1  # 使用不同的数据库避免冲突
+
+elasticsearch:
+  host: localhost
+  port: 9200
+  username: ""
+  password: ""
+
+jwt:
+  secret: test-jwt-secret-key-for-testing-purposes-only
+  expiresIn: 3600
+  refreshIn: 7200
+
+log:
+  level: debug
+  format: json
+  output: stdout
+
+cors:
+  allowedOrigins:
+    - "http://localhost:3003"
+    - "http://localhost:8080"
+  allowedMethods:
+    - "GET"
+    - "POST"
+    - "PUT"
+    - "DELETE"
+    - "OPTIONS"
+  allowedHeaders:
+    - "Content-Type"
+    - "Authorization"
+    - "X-Request-ID"
+  maxAge: "86400"

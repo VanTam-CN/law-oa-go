@@ -1,0 +1,92 @@
+{
+  "total": 7,
+  "passed": 7,
+  "failed": 0,
+  "skipped": 0,
+  "tests": [
+    {
+      "id": "SCENARIO-001",
+      "name": "新客户承接场景",
+      "category": "business-scenario",
+      "businessImpact": "直接影响律所收入和客户满意度",
+      "expectedOutcome": "客户成功签约，案件正式启动，所有相关系统配置正确",
+      "status": "passed",
+      "duration": 373,
+      "error": null,
+      "stepCount": 10,
+      "validationCount": 5
+    },
+    {
+      "id": "SCENARIO-002",
+      "name": "案件全生命周期管理场景",
+      "category": "business-scenario",
+      "businessImpact": "确保案件管理流程的完整性和效率",
+      "expectedOutcome": "案件顺利完成，客户满意，所有文档和财务记录齐全",
+      "status": "passed",
+      "duration": 372,
+      "error": null,
+      "stepCount": 10,
+      "validationCount": 5
+    },
+    {
+      "id": "SCENARIO-003",
+      "name": "紧急案件处理场景",
+      "category": "emergency-scenario",
+      "businessImpact": "测试律所应对紧急情况的能力",
+      "expectedOutcome": "紧急案件得到及时有效处理，客户满意，团队能力得到验证",
+      "status": "passed",
+      "duration": 378,
+      "error": null,
+      "stepCount": 10,
+      "validationCount": 5
+    },
+    {
+      "id": "SCENARIO-004",
+      "name": "多团队协作案件场景",
+      "category": "collaboration-scenario",
+      "businessImpact": "测试跨部门协作能力和信息共享",
+      "expectedOutcome": "复杂并购项目顺利完成，团队协作高效，客户满意",
+      "status": "passed",
+      "duration": 374,
+      "error": null,
+      "stepCount": 10,
+      "validationCount": 5
+    },
+    {
+      "id": "SCENARIO-005",
+      "name": "客户服务升级场景",
+      "category": "service-scenario",
+      "businessImpact": "提升客户服务质量和满意度",
+      "expectedOutcome": "客户成功升级到VIP服务，满意度提升，续约率提高",
+      "status": "passed",
+      "duration": 374,
+      "error": null,
+      "stepCount": 10,
+      "validationCount": 5
+    },
+    {
+      "id": "SCENARIO-006",
+      "name": "系统故障恢复场景",
+      "category": "disaster-recovery",
+      "businessImpact": "确保系统故障时业务不中断",
+      "expectedOutcome": "系统故障得到快速响应和恢复，业务连续性得到保障，用户满意度维持",
+      "status": "passed",
+      "duration": 376,
+      "error": null,
+      "stepCount": 10,
+      "validationCount": 5
+    },
+    {
+      "id": "SCENARIO-007",
+      "name": "合规审计场景",
+      "category": "compliance-scenario",
+      "businessImpact": "确保律所运营符合法规要求",
+      "expectedOutcome": "合规审计顺利完成，风险得到控制，律所合规水平提升",
+      "status": "passed",
+      "duration": 373,
+      "error": null,
+      "stepCount": 10,
+      "validationCount": 5
+    }
+  ]
+}

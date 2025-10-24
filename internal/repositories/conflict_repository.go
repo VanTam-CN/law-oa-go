@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"law-oa-go/internal/models"
@@ -148,8 +149,17 @@ func (r *conflictRepository) GetConflictCases(ctx context.Context, params *Confl
 func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID string, lawyerID uint, otherParties []string) ([]*models.ConflictCase, error) {
 	var conflictCases []*models.ConflictCase
 
+	log.Printf("🔍 查询潜在冲突: clientID=%s, lawyerID=%d", clientID, lawyerID)
+
+	// 🔧 修复：需要将字符串clientID转换为uint，同时保持原逻辑
+	var clientIDUint uint
+	if _, err := fmt.Sscanf(clientID, "%d", &clientIDUint); err != nil {
+		// 如果转换失败，说明clientID格式不对，记录错误并返回空结果
+		log.Printf("⚠️ 客户ID格式错误: %s, 无法转换为uint", clientID)
+		return conflictCases, nil
+	}
+
 	// 查询主案件表，查找同一律师代理的其他案件
-	// 这里需要导入 Case 模型，但为了简单起见，我们直接使用 SQL 查询
 	query := `
 		SELECT
 			c.id as case_id,
@@ -170,7 +180,7 @@ func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID
 		LIMIT 50
 	`
 
-	rows, err := r.db.WithContext(ctx).Raw(query, lawyerID, clientID).Rows()
+	rows, err := r.db.WithContext(ctx).Raw(query, lawyerID, clientIDUint).Rows()
 	if err != nil {
 		return nil, fmt.Errorf("查询潜在冲突案例失败: %w", err)
 	}
@@ -179,7 +189,7 @@ func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID
 	for rows.Next() {
 		var caseModel models.Case
 		var clientName, clientType, lawyerName string
-		var lawyerID uint
+		var foundLawyerID uint
 
 		err := rows.Scan(
 			&caseModel.ID,
@@ -190,18 +200,22 @@ func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID
 			&clientType,
 			&lawyerName,
 			&caseModel.CreatedAt,
-			&lawyerID,
+			&foundLawyerID,
 		)
 		if err != nil {
+			log.Printf("⚠️ 扫描案件数据失败: %v", err)
 			continue
 		}
+
+		log.Printf("📋 发现潜在冲突案件: ID=%d, 标题=%s, 客户=%s, 律师=%s",
+			caseModel.ID, caseModel.Title, clientName, lawyerName)
 
 		// 创建冲突案例对象
 		conflictCase := &models.ConflictCase{
 			ID:              fmt.Sprintf("case_%d", caseModel.ID),
 			CaseID:          fmt.Sprintf("%d", caseModel.ID),
 			CaseName:        caseModel.Title,
-			Description:      caseModel.Description,
+			Description:      fmt.Sprintf("律师 %s 同时代理了案件 '%s'，存在潜在利益冲突", lawyerName, caseModel.Title),
 			ClientID:        fmt.Sprintf("%d", caseModel.ClientID),
 			RiskLevel:       "MEDIUM", // 默认中等风险
 			ConflictType:    "代理冲突",
@@ -210,6 +224,7 @@ func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID
 		}
 
 		conflictCases = append(conflictCases, conflictCase)
+		log.Printf("✅ 创建冲突案例: %s", conflictCase.ID)
 	}
 
 	// 如果提供了其他当事人信息，也查询相关的案件
@@ -286,6 +301,7 @@ func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID
 		}
 	}
 
+	log.Printf("🎯 冲突检测完成: 找到 %d 个潜在冲突案例", len(conflictCases))
 	return conflictCases, nil
 }
 

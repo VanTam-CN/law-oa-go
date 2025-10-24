@@ -1,0 +1,234 @@
+# 修复版 Docker Compose 配置 - Law OA Go 系统
+# 修复了镜像名称和构建路径问题
+
+services:
+  # Go 应用后端服务
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+      args:
+        BUILD_COMMIT: ${BUILD_COMMIT:-local}
+        BUILD_DATE: ${BUILD_DATE:-$(date -u +"%Y-%m-%dT%H:%M:%SZ")}
+        BUILD_TARGET: ${BUILD_TARGET:-standard}
+        VERSION: ${VERSION:-2.1.0}
+    image: law-oa-go-backend:${IMAGE_TAG:-latest}
+    container_name: law-oa-backend
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    environment:
+      # 运行环境配置
+      - GIN_MODE=${GIN_MODE:-release}
+      - TZ=Asia/Shanghai
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - PORT=8080
+
+      # 数据库配置
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=${DB_USER:-lawuser}
+      - DB_PASSWORD=${DB_PASSWORD:-lawpass}
+      - DB_NAME=${DB_NAME:-law_oa}
+
+      # Redis配置
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - REDIS_DB=0
+
+      # Elasticsearch配置
+      - ES_HOST=http://elasticsearch:9200
+      - ES_USERNAME=${ES_USERNAME:-}
+      - ES_PASSWORD=${ES_PASSWORD:-}
+
+      # 安全配置
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-in-production}
+      - APP_SECRET=${APP_SECRET:-your-app-secret-change-in-production}
+
+      # 监控配置
+      - METRICS_ENABLED=${METRICS_ENABLED:-true}
+      - TRACING_ENABLED=${TRACING_ENABLED:-true}
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - law-oa-network
+    volumes:
+      - ./config:/app/config:ro
+      - uploads_data:/app/uploads
+      - logs_data:/app/logs
+
+    # 健康检查配置
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health", "||", "exit", "1"]
+      timeout: 10s
+      retries: 5
+      interval: 30s
+      start_period: 30s
+
+    # 重启策略
+    restart: unless-stopped
+
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+  # React 前端应用
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+      args:
+        - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8080}
+        - REACT_APP_ENVIRONMENT=${ENVIRONMENT:-development}
+    image: law-oa-frontend:${IMAGE_TAG:-latest}
+    container_name: law-oa-frontend
+    ports:
+      - "${FRONTEND_PORT:-3003}:80"
+    environment:
+      - TZ=Asia/Shanghai
+      - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8080}
+      - REACT_APP_ENVIRONMENT=${ENVIRONMENT:-development}
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - law-oa-network
+    restart: unless-stopped
+
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
+      timeout: 10s
+      retries: 3
+      interval: 30s
+      start_period: 30s
+
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+  # MySQL 数据库服务
+  mysql:
+    image: mysql:8.0
+    container_name: law-oa-mysql
+    ports:
+      - "${MYSQL_PORT:-33060}:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-lawroot2024}
+      - MYSQL_DATABASE=${DB_NAME:-law_oa}
+      - MYSQL_USER=${DB_USER:-lawuser}
+      - MYSQL_PASSWORD=${DB_PASSWORD:-lawpass}
+      - TZ=Asia/Shanghai
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - law-oa-network
+
+    # 健康检查配置
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-lawroot2024}"]
+      timeout: 20s
+      retries: 10
+      interval: 30s
+      start_period: 60s
+
+    # 重启策略
+    restart: unless-stopped
+
+    # 命令配置
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --innodb-buffer-pool-size=256M
+      --max-connections=200
+
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # Redis 缓存服务
+  redis:
+    image: redis:7-alpine
+    container_name: law-oa-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      - redis_data:/data
+    networks:
+      - law-oa-network
+
+    # 健康检查配置
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      timeout: 10s
+      retries: 5
+      interval: 30s
+      start_period: 10s
+
+    # 重启策略
+    restart: unless-stopped
+
+    # Redis 配置命令
+    command: redis-server --appendonly yes
+
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+# 网络配置
+networks:
+  law-oa-network:
+    name: law-oa-network
+    driver: bridge
+
+# 数据持久化卷
+volumes:
+  mysql_data:
+    name: law-oa-mysql-data
+    driver: local
+
+  redis_data:
+    name: law-oa-redis-data
+    driver: local
+
+  uploads_data:
+    name: law-oa-uploads-data
+    driver: local
+
+  logs_data:
+    name: law-oa-logs-data
+    driver: local

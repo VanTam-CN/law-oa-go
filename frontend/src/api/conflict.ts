@@ -104,10 +104,14 @@ export const conflictAPI = {
         throw new Error('后端服务无响应');
       }
 
-      // 后端使用code=200表示成功
-      if (response.code !== 200) {
-        console.error('API返回错误码:', response.code, '消息:', response.message);
-        throw new Error(response.message || `API调用失败 (错误码: ${response.code})`);
+      // 🔧 修复：适配新的API响应格式
+      // 新格式使用success字段表示成功，旧格式使用code字段
+      const isSuccess = response.success !== false &&
+                       (response.code === 200 || response.code === undefined);
+
+      if (!isSuccess) {
+        console.error('API返回错误码:', response.code, 'success:', response.success, '消息:', response.message);
+        throw new Error(response.message || `API调用失败 (错误码: ${response.code}, success: ${response.success})`);
       }
 
       // 验证响应数据结构

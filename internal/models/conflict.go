@@ -151,14 +151,25 @@ func (r *ConflictCheckRequest) Validate() error {
 	if r.ClientName == "" {
 		return &ConflictError{Code: "VALIDATION_002", Message: "客户名称不能为空"}
 	}
-	if r.ClientType != "PERSON" && r.ClientType != "COMPANY" {
-		return &ConflictError{Code: "VALIDATION_003", Message: "客户类型必须是PERSON或COMPANY"}
+	// 🔧 修复：允许ANY类型，与前端validate标签保持一致
+	if r.ClientType != "PERSON" && r.ClientType != "COMPANY" && r.ClientType != "ANY" {
+		return &ConflictError{Code: "VALIDATION_003", Message: "客户类型必须是PERSON、COMPANY或ANY"}
 	}
 	if r.CaseName == "" {
 		return &ConflictError{Code: "VALIDATION_004", Message: "案件名称不能为空"}
 	}
 	if r.CaseType == "" {
 		return &ConflictError{Code: "VALIDATION_005", Message: "案件类型不能为空"}
+	}
+	// 🔧 修复：验证前端发送的英文案件类型值
+	validCaseTypes := map[string]bool{
+		"civil": true, "commercial": true, "criminal": true,
+		"administrative": true, "labor": true, "intellectual": true,
+		"financial": true, "知识产权": true, "民事": true, "商事": true,
+		"刑事": true, "行政": true, "劳动": true, "金融": true,
+	}
+	if !validCaseTypes[r.CaseType] {
+		return &ConflictError{Code: "VALIDATION_005", Message: "案件类型无效，支持的类型: civil, commercial, criminal, administrative, labor, intellectual, financial"}
 	}
 	if r.SearchDepth != "" && r.SearchDepth != "BASIC" && r.SearchDepth != "STANDARD" && r.SearchDepth != "DEEP" {
 		return &ConflictError{Code: "VALIDATION_006", Message: "搜索深度必须是BASIC、STANDARD或DEEP"}

@@ -40,10 +40,10 @@ func (h *ConflictHandlerSimple) CheckConflict(c *gin.Context) {
 		return
 	}
 
-	// 从JWT中获取用户ID
-	userID, exists := c.Get("userID")
+	// 从JWT中获取用户ID（仅用于认证，不覆盖前端发送的律师ID）
+	jwtUserID, exists := c.Get("user_id")
 	if !exists {
-		// 尝试从请求中获取
+		// 如果没有JWT信息，检查请求中是否有userID
 		if request.UserID == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"code":    401,
@@ -53,12 +53,25 @@ func (h *ConflictHandlerSimple) CheckConflict(c *gin.Context) {
 			return
 		}
 	} else {
-		// 如果JWT中有userID，覆盖请求中的userID
-		if uid, ok := userID.(float64); ok {
-			request.UserID = strconv.FormatUint(uint64(uid), 10)
-		} else if uid, ok := userID.(string); ok {
-			request.UserID = uid
+		// 🔧 修复：JWT用于认证验证，但不应覆盖前端指定的律师ID
+		// 记录JWT用户ID用于日志，但保持前端发送的律师ID不变
+		var jwtUserIDStr string
+		if uid, ok := jwtUserID.(float64); ok {
+			jwtUserIDStr = strconv.FormatUint(uint64(uid), 10)
+		} else if uid, ok := jwtUserID.(uint); ok {
+			jwtUserIDStr = strconv.FormatUint(uint64(uid), 10)
+		} else if uid, ok := jwtUserID.(string); ok {
+			jwtUserIDStr = uid
 		}
+
+		log.Printf("🔐 JWT认证用户ID: %s, 前端指定的律师ID: %s", jwtUserIDStr, request.UserID)
+
+		// 验证前端是否有指定律师ID
+		if request.UserID == "" {
+			log.Printf("⚠️ 前端未指定律师ID，使用JWT用户ID: %s", jwtUserIDStr)
+			request.UserID = jwtUserIDStr
+		}
+		// 否则保持前端发送的律师ID不变（用于律师代理他人案件的场景）
 	}
 
 	// 设置默认值
@@ -141,11 +154,7 @@ func (h *ConflictHandlerSimple) CheckConflict(c *gin.Context) {
 	log.Printf("✅ 冲突检查完成，检测到 %d 个冲突案例，风险等级: %s",
 		len(result.ConflictCases), result.RiskAssessment.OverallRisk)
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"message": "success",
-		"data":    response["data"],
-	})
+	c.JSON(http.StatusOK, response)
 }
 
 // GetCheckHistory 获取冲突检测历史

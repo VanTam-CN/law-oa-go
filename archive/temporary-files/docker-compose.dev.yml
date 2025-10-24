@@ -1,0 +1,206 @@
+version: '3.8'
+
+# 开发环境Docker Compose配置
+# 包含数据库、缓存、搜索等服务的完整开发环境
+
+# 网络配置
+networks:
+  law-oa-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.25.0.0/16
+
+services:
+  # Go 应用 (后端)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_COMMIT: ${BUILD_COMMIT:-local}
+        BUILD_DATE: ${BUILD_DATE:-$(date)}
+        BUILD_TARGET: ${BUILD_TARGET:-standard}
+        PGO_PROFILE: ${PGO_PROFILE:-default.pgo}
+    image: law-oa/backend:latest
+    container_name: law-oa-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - GIN_MODE=${GIN_MODE:-debug}
+      - TZ=Asia/Shanghai
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - DB_HOST=mysql
+      - DB_PORT=33060
+      - DB_USER=root
+      - DB_PASSWORD=password
+      - DB_NAME=law_oa
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - REDIS_DB=0
+      - ES_HOST=http://elasticsearch:9200
+      - JWT_SECRET=your-secret-key-change-in-production
+      - APP_ENV=${APP_ENV:-development}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_started
+    networks:
+      - law-oa-network
+    volumes:
+      - ./config:/app/config
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+      - profiles:/app/profiles  # 挂载PGO配置文件目录
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      timeout: 10s
+      retries: 5
+      interval: 30s
+      start_period: 15s
+    restart: unless-stopped
+
+  # React 应用 (前端)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: law-oa/frontend:latest
+    container_name: law-oa-frontend
+    ports:
+      - "3003:3003"
+    depends_on:
+      - backend
+    networks:
+      - law-oa-network
+    restart: unless-stopped
+
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: law-oa-mysql
+    ports:
+      - "33060:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=law_oa
+      - MYSQL_USER=lawuser
+      - MYSQL_PASSWORD=lawpass
+      - TZ=Asia/Shanghai
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./scripts/my.cnf:/etc/mysql/conf.d/my.cnf
+    networks:
+      - law-oa-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppassword"]
+      timeout: 20s
+      retries: 10
+      interval: 30s
+      start_period: 10s
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: law-oa-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./scripts/redis.conf:/etc/redis/redis.conf
+    networks:
+      - law-oa-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      timeout: 10s
+      retries: 5
+      interval: 30s
+      start_period: 5s
+    restart: unless-stopped
+    command: redis-server /etc/redis/redis.conf
+
+  # Elasticsearch
+  elasticsearch:
+    image: elasticsearch:8.8.0
+    container_name: law-oa-elasticsearch
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - TZ=Asia/Shanghai
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+      - ./scripts/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+    networks:
+      - law-oa-network
+    restart: unless-stopped
+
+  # Kibana (可选，用于 Elasticsearch 管理)
+  kibana:
+    image: kibana:8.8.0
+    container_name: law-oa-kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - TZ=Asia/Shanghai
+    depends_on:
+      - elasticsearch
+    networks:
+      - law-oa-network
+    restart: unless-stopped
+
+  # phpMyAdmin (可选，用于数据库管理)
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: law-oa-phpmyadmin
+    ports:
+      - "8081:80"
+    environment:
+      - PMA_HOST=mysql
+      - PMA_PORT=3306
+      - PMA_USER=root
+      - PMA_PASSWORD=password
+      - UPLOAD_LIMIT=64M
+      - TZ=Asia/Shanghai
+    depends_on:
+      - mysql
+    networks:
+      - law-oa-network
+    restart: unless-stopped
+
+  # Redis Commander (可选，用于 Redis 管理)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: law-oa-redis-commander
+    ports:
+      - "8082:8081"
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+      - TZ=Asia/Shanghai
+    depends_on:
+      - redis
+    networks:
+      - law-oa-network
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+  profiles:
+    driver: local

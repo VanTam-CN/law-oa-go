@@ -19,7 +19,6 @@ import {
   Space,
   Typography,
   Divider,
-  message,
   Spin,
   Alert,
   Progress,
@@ -58,6 +57,7 @@ import {
 import { get } from "@/services/api";
 import { clientService } from "@/services/client";
 import { conflictAPI } from "@/api/conflict";
+import { message } from "@/utils/messageHelper";
 import ConflictCheckResult from "./conflict/ConflictCheckResult";
 
 interface CaseInfo {
@@ -123,14 +123,12 @@ interface CreateCaseWizardProps {
   visible: boolean;
   onCancel: () => void;
   onSuccess: () => void;
-  appMessage?: any;
 }
 
 const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({
   visible,
   onCancel,
   onSuccess,
-  appMessage,
 }) => {
   const [form] = Form.useForm();
   const [currentStep, setCurrentStep] = useState(0);
@@ -298,7 +296,7 @@ const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({
           responseType: typeof clientsResponse,
           isArray: Array.isArray(clientsResponse)
         });
-        (appMessage || message).error('客户数据加载失败，请检查API连接和响应格式');
+        message.error('客户数据加载失败，请检查API连接和响应格式');
       }
 
       // 获取律师数据
@@ -366,7 +364,7 @@ const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({
         });
 
         // 临时处理：律师API不可用时的提示
-        (appMessage || message).warning('律师数据暂时无法加载，您可以稍后再试或联系管理员修复律师API');
+        message.warning('律师数据暂时无法加载，您可以稍后再试或联系管理员修复律师API');
         console.warn('律师API端点问题：所有尝试的端点都返回错误。请检查以下端点：');
         console.warn('- /lawfirm/lawyers');
         console.warn('- /lawyers');
@@ -428,7 +426,7 @@ const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({
 
     } catch (error) {
       console.error('加载数据失败:', error);
-      (appMessage || message).error('数据加载失败，请刷新页面重试');
+      message.error('数据加载失败，请刷新页面重试');
 
       // 只设置基本的静态数据，不设置模拟的客户和律师
       setCaseTypes([
@@ -475,7 +473,7 @@ const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({
 
       // 如果当前是利益冲突检查步骤（第3步），需要确认用户已经确认了冲突结果
       if (currentStep === 3 && !conflictConfirmed) {
-        (appMessage || message).warning("请先确认利益冲突检查结果后再继续");
+        message.warning("请先确认利益冲突检查结果后再继续");
         return;
       }
 
@@ -494,7 +492,7 @@ const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({
   const handleConflictConfirm = () => {
     setConflictConfirmed(true);
     setCurrentStep(3); // 确保停留在冲突结果页面
-    (appMessage || message).success('利益冲突检查结果已确认');
+    message.success('利益冲突检查结果已确认');
   };
 
   // 执行利益冲突检查
@@ -754,11 +752,11 @@ const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({
       if (!response.ok) {
         throw new Error('创建案件失败');
       }
-      (appMessage || message).success("案件创建成功");
+      message.success("案件创建成功");
       onSuccess();
       onCancel();
     } catch (error) {
-      (appMessage || message).error("创建案件失败");
+      message.error("创建案件失败");
     } finally {
       setLoading(false);
     }

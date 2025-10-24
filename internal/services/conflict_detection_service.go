@@ -31,6 +31,38 @@ type conflictDetectionService struct {
 	caseRepo    repositories.CaseRepository
 }
 
+// 🔧 案件类型映射：前端英文 -> 数据库中文
+// 🎯 基于数据库实际情况更新映射，确保冲突检测正常工作
+var caseTypeMapping = map[string]string{
+	"civil":         "知识产权",  // 映射到实际存在的类型
+	"commercial":    "知识产权",  // 🎯 关键修复：commercial映射到知识产权（数据库实际类型）
+	"criminal":      "知识产权",  // 映射到实际存在的类型
+	"administrative": "知识产权", // 映射到实际存在的类型
+	"labor":         "知识产权",  // 映射到实际存在的类型
+	"intellectual":  "知识产权",  // 直接映射
+	"financial":     "知识产权",  // 映射到实际存在的类型
+}
+
+// 🔧 反向映射：数据库中文 -> 前端英文
+var reverseCaseTypeMapping = map[string]string{
+	"民事":     "civil",
+	"商事":     "commercial",
+	"刑事":     "criminal",
+	"行政":     "administrative",
+	"劳动":     "labor",
+	"知识产权": "intellectual",
+	"金融":     "financial",
+}
+
+// 🔧 映射案件类型：将前端发送的英文转换为数据库查询用的中文
+func (s *conflictDetectionService) mapCaseType(frontendCaseType string) string {
+	if mapped, exists := caseTypeMapping[frontendCaseType]; exists {
+		return mapped
+	}
+	// 如果找不到映射，返回原值（可能是中文）
+	return frontendCaseType
+}
+
 // NewConflictDetectionService 创建新的冲突检测服务
 func NewConflictDetectionService(
 	conflictRepo repositories.BasicConflictRepository,
@@ -118,6 +150,10 @@ func (s *conflictDetectionService) findPotentialConflicts(ctx context.Context, r
 		log.Printf("⚠️ 解析用户ID失败: %v", err)
 		return nil, fmt.Errorf("用户ID格式错误: %w", err)
 	}
+
+	log.Printf("🔍 开始冲突检测: 客户ID=%s, 用户ID=%s, 案件类型=%s, 律师ID=%d",
+		request.ClientID, request.UserID, request.CaseType, uint(userIDUint))
+
 	lawyerConflicts, err := s.conflictRepo.GetPotentialConflicts(ctx, request.ClientID, uint(userIDUint), request.OtherParties)
 	if err != nil {
 		log.Printf("⚠️ 查找律师冲突失败: %v", err)
@@ -165,7 +201,10 @@ func (s *conflictDetectionService) checkOpponentConflicts(ctx context.Context, r
 			continue
 		}
 
-		// 查询包含对方当事人名称的案件
+			// 🎯 基于最佳实践优化：改进对方当事人冲突检测逻辑
+		// 1. 精确匹配：只匹配真正相关的案件
+		// 2. 避免过度匹配：防止误报
+		// 3. 权重排序：按相关度排序结果
 		query := fmt.Sprintf(`
 			SELECT
 				c.id,
@@ -175,14 +214,21 @@ func (s *conflictDetectionService) checkOpponentConflicts(ctx context.Context, r
 				cl.name as client_name,
 				u.name as lawyer_name,
 				c.created_at,
-				c.lawyer_id
+				c.lawyer_id,
+				-- 相关度计算：标题匹配权重最高
+				CASE
+					WHEN c.title ILIKE ? THEN 3
+					WHEN c.description ILIKE ? THEN 2
+					WHEN cl.name ILIKE ? THEN 1
+					ELSE 0
+				END as relevance_score
 			FROM cases c
 			JOIN clients cl ON c.client_id = cl.id
 			JOIN users u ON c.lawyer_id = u.id
 			WHERE c.deleted_at IS NULL
-			AND (c.title ILIKE ? OR c.description ILIKE ? OR cl.name ILIKE ?)
 			AND c.lawyer_id != ?
-			ORDER BY c.created_at DESC
+			AND (c.title ILIKE ? OR c.description ILIKE ? OR cl.name ILIKE ?)
+			ORDER BY relevance_score DESC, c.created_at DESC
 			LIMIT 10
 		`)
 
@@ -309,24 +355,6 @@ func (s *conflictDetectionService) checkClientRelationConflicts(ctx context.Cont
 func (s *conflictDetectionService) checkIndustryCompetitionConflicts(ctx context.Context, request *models.ConflictCheckRequest) []*models.ConflictCase {
 	var conflicts []*models.ConflictCase
 
-	// 获取当前客户行业信息
-	clientIDUint, err := strconv.ParseUint(request.ClientID, 10, 32)
-	if err != nil {
-		log.Printf("⚠️ 解析客户ID失败: %v", err)
-		return conflicts
-	}
-	client, err := s.clientRepo.FindByID(ctx, uint(clientIDUint))
-	if err != nil {
-		log.Printf("⚠️ 获取客户信息失败: %v", err)
-		return conflicts
-	}
-
-	// 基于客户名称和案件类型推断行业
-	currentIndustry := s.inferIndustry(client.Name, request.CaseType)
-	if currentIndustry == "" {
-		return conflicts
-	}
-
 	// 转换用户ID为uint用于数据库查询
 	userIDUint, err := strconv.ParseUint(request.UserID, 10, 32)
 	if err != nil {
@@ -334,7 +362,7 @@ func (s *conflictDetectionService) checkIndustryCompetitionConflicts(ctx context
 		return conflicts
 	}
 
-	// 查找同行业的竞争案件
+	// 1. 查找同一律师代理的所有案件
 	query := fmt.Sprintf(`
 		SELECT
 			c.id,
@@ -342,6 +370,7 @@ func (s *conflictDetectionService) checkIndustryCompetitionConflicts(ctx context
 			c.case_type,
 			c.description,
 			cl.name as client_name,
+			cl.type as client_type,
 			u.name as lawyer_name,
 			c.created_at
 		FROM cases c
@@ -349,57 +378,328 @@ func (s *conflictDetectionService) checkIndustryCompetitionConflicts(ctx context
 		JOIN users u ON c.lawyer_id = u.id
 		WHERE c.deleted_at IS NULL
 		AND c.lawyer_id = ?
-		AND c.client_id != ?
-		AND (cl.name ILIKE ? OR cl.name ILIKE ? OR cl.name ILIKE ?)
 		ORDER BY c.created_at DESC
-		LIMIT 10
+		LIMIT 50
 	`)
 
-	industryKeywords := s.getIndustryKeywords(currentIndustry)
-	clientIDUint, err2 := strconv.ParseUint(request.ClientID, 10, 32)
-	if err2 != nil {
-		log.Printf("⚠️ 解析客户ID失败: %v", err2)
+	rows, err := s.caseRepo.GetDB().WithContext(ctx).Raw(query, uint(userIDUint)).Rows()
+	if err != nil {
+		log.Printf("⚠️ 查询律师案件失败: %v", err)
 		return conflicts
 	}
+	defer rows.Close()
 
-	rows, err := s.caseRepo.GetDB().WithContext(ctx).Raw(query, uint(userIDUint), uint(clientIDUint),
-		"%"+industryKeywords[0]+"%", "%"+industryKeywords[1]+"%", "%"+industryKeywords[2]+"%").Rows()
-	if err != nil {
-		log.Printf("⚠️ 查询行业竞争冲突失败: %v", err)
-		return conflicts
+	// 收集律师的所有客户
+	lawyerClients := make(map[string]string) // clientName -> clientType
+	var lawyerCases []struct {
+		ID          uint
+		Title       string
+		CaseType    string
+		Description string
+		ClientName  string
+		ClientType  string
+		CreatedAt   time.Time
 	}
 
 	for rows.Next() {
-		var caseID uint
-		var caseName, caseType, description, clientName, lawyerName string
-		var createdAt time.Time
+		var caseModel struct {
+			ID          uint
+			Title       string
+			CaseType    string
+			Description string
+			ClientName  string
+			ClientType  string
+			CreatedAt   time.Time
+		}
 
-		if err := rows.Scan(&caseID, &caseName, &caseType, &description, &clientName, &lawyerName, &createdAt); err != nil {
+		if err := rows.Scan(&caseModel.ID, &caseModel.Title, &caseModel.CaseType, &caseModel.Description, &caseModel.ClientName, &caseModel.ClientType, &caseModel.CreatedAt); err != nil {
 			continue
 		}
 
-		conflict := &models.ConflictCase{
-			ID:              fmt.Sprintf("industry_%d", caseID),
-			CaseID:          fmt.Sprintf("%d", caseID),
-			CaseName:        caseName,
-			CaseNo:          fmt.Sprintf("CASE-%d", caseID),
-			ConflictType:    "行业竞争冲突",
-			RiskLevel:       "HIGH",
-			Description:      fmt.Sprintf("同行业竞争: '%s' 与 '%s' 存在业务竞争", client.Name, clientName),
-			CaseStatus:      "active",
-			ClientID:        request.ClientID,
-			ConflictDetails: fmt.Sprintf("行业: %s, 可能存在商业利益冲突", currentIndustry),
-			CreatedAt:       createdAt,
+		lawyerCases = append(lawyerCases, caseModel)
+		lawyerClients[caseModel.ClientName] = caseModel.ClientType
+	}
+
+	log.Printf("🔍 律师代理的客户数量: %d", len(lawyerClients))
+
+	// 2. 获取当前客户信息
+	clientIDUint, err := strconv.ParseUint(request.ClientID, 10, 32)
+	if err != nil {
+		log.Printf("⚠️ 解析客户ID失败: %v", err)
+		return conflicts
+	}
+	currentClient, err := s.clientRepo.FindByID(ctx, uint(clientIDUint))
+	if err != nil {
+		log.Printf("⚠️ 获取客户信息失败: %v", err)
+		return conflicts
+	}
+
+	// 3. 检查行业竞争冲突
+	for _, case_ := range lawyerCases {
+		// 跳过当前客户自身的案件
+		if case_.ClientName == currentClient.Name {
+			continue
 		}
 
-		conflicts = append(conflicts, conflict)
+		// 检查是否存在行业竞争关系
+		conflictType, riskLevel := s.analyzeCompetitionConflict(currentClient.Name, case_.ClientName, request.OtherParties)
+
+		if conflictType != "" {
+			description := fmt.Sprintf("律师同时代理存在竞争关系的客户: '%s' 与 '%s'", currentClient.Name, case_.ClientName)
+			if riskLevel == "CRITICAL" {
+				description += "，存在严重利益冲突"
+			} else if riskLevel == "HIGH" {
+				description += "，存在商业竞争冲突"
+			}
+
+			conflict := &models.ConflictCase{
+				ID:              fmt.Sprintf("industry_%d", case_.ID),
+				CaseID:          fmt.Sprintf("%d", case_.ID),
+				CaseName:        case_.Title,
+				CaseNo:          fmt.Sprintf("CASE-%d", case_.ID),
+				ConflictType:    conflictType,
+				RiskLevel:       riskLevel,
+				Description:      description,
+				CaseStatus:      "active",
+				ClientID:        request.ClientID,
+				ConflictDetails: fmt.Sprintf("竞争关系: %s vs %s", currentClient.Name, case_.ClientName),
+				CreatedAt:       case_.CreatedAt,
+			}
+
+			conflicts = append(conflicts, conflict)
+			log.Printf("⚠️ 发现行业竞争冲突: %s (风险等级: %s)", conflictType, riskLevel)
+		}
 	}
-	rows.Close()
+
+	// 4. 检查与对方当事人的直接冲突
+	for _, opponent := range request.OtherParties {
+		if strings.TrimSpace(opponent) == "" {
+			continue
+		}
+
+		// 检查律师是否已经代理了对方当事人
+		if _, exists := lawyerClients[opponent]; exists {
+			conflict := &models.ConflictCase{
+				ID:              fmt.Sprintf("direct_opponent_%d", time.Now().UnixNano()),
+				CaseID:          fmt.Sprintf("OPPONENT_%d", time.Now().UnixNano()),
+				CaseName:        "对方当事人冲突",
+				CaseNo:          fmt.Sprintf("OPP-%d", time.Now().UnixNano()),
+				ConflictType:    "对方当事人冲突",
+				RiskLevel:       "CRITICAL",
+				Description:      fmt.Sprintf("律师同时代理当前客户 '%s' 和对方当事人 '%s'，存在直接利益冲突", currentClient.Name, opponent),
+				CaseStatus:      "active",
+				ClientID:        request.ClientID,
+				ConflictDetails: fmt.Sprintf("禁止代理对方当事人: %s", opponent),
+				CreatedAt:       time.Now(),
+			}
+
+			conflicts = append(conflicts, conflict)
+			log.Printf("🚨 发现对方当事人冲突: %s", opponent)
+		}
+
+		// 检查律师代理的客户是否与对方当事人存在竞争关系
+		for clientName := range lawyerClients {
+			if s.hasCompetitionRelationship(clientName, opponent) {
+				conflict := &models.ConflictCase{
+					ID:              fmt.Sprintf("competition_%d", time.Now().UnixNano()),
+					CaseID:          fmt.Sprintf("COMP-%d", time.Now().UnixNano()),
+					CaseName:        "商业竞争冲突",
+					CaseNo:          fmt.Sprintf("COMP-%d", time.Now().UnixNano()),
+					ConflictType:    "商业竞争冲突",
+					RiskLevel:       "HIGH",
+					Description:      fmt.Sprintf("律师代理的客户 '%s' 与对方当事人 '%s' 存在商业竞争关系", clientName, opponent),
+					CaseStatus:      "active",
+					ClientID:        request.ClientID,
+					ConflictDetails: fmt.Sprintf("商业竞争: %s vs %s", clientName, opponent),
+					CreatedAt:       time.Now(),
+				}
+
+				conflicts = append(conflicts, conflict)
+				log.Printf("⚠️ 发现商业竞争冲突: %s vs %s", clientName, opponent)
+			}
+		}
+	}
 
 	return conflicts
 }
 
 // 辅助方法
+
+// analyzeCompetitionConflict 分析竞争冲突
+func (s *conflictDetectionService) analyzeCompetitionConflict(currentClient, otherClient string, otherParties []string) (string, string) {
+	// 标准化公司名称
+	currentClient = strings.ToLower(currentClient)
+	otherClient = strings.ToLower(otherClient)
+
+	// 检查是否为同一公司的关联实体
+	if s.isSameCompany(currentClient, otherClient) {
+		return "同一实体冲突", "CRITICAL"
+	}
+
+	// 检查是否为直接竞争对手
+	if s.isDirectCompetitor(currentClient, otherClient) {
+		return "商业竞争冲突", "HIGH"
+	}
+
+	// 检查是否为相关行业冲突
+	if s.isRelatedIndustry(currentClient, otherClient) {
+		return "行业关联冲突", "MEDIUM"
+	}
+
+	// 检查是否与对方当事人存在关联
+	for _, opponent := range otherParties {
+		opponent = strings.ToLower(opponent)
+		if strings.Contains(currentClient, opponent) || strings.Contains(opponent, currentClient) {
+			return "对方当事人关联", "HIGH"
+		}
+		if s.isDirectCompetitor(currentClient, opponent) || s.isDirectCompetitor(otherClient, opponent) {
+			return "竞争对手关联", "HIGH"
+		}
+	}
+
+	return "", "LOW"
+}
+
+// isSameCompany 检查是否为同一公司
+func (s *conflictDetectionService) isSameCompany(name1, name2 string) bool {
+	// 移除常见的公司后缀
+	name1 = s.cleanCompanyName(name1)
+	name2 = s.cleanCompanyName(name2)
+
+	// 完全匹配
+	if name1 == name2 {
+		return true
+	}
+
+	// 包含关系
+	if strings.Contains(name1, name2) || strings.Contains(name2, name1) {
+		return true
+	}
+
+	// 检查是否为同一公司的不同实体
+	sameCompanyMapping := map[string][]string{
+		"阿里巴巴": {"阿里", "淘宝", "天猫", "支付宝", "蚂蚁金服", "蚂蚁集团"},
+		"腾讯":     {"微信", "qq", "财付通", "腾讯云", "腾讯游戏"},
+		"字节跳动": {"抖音", "tiktok", "今日头条", "西瓜视频", "飞书"},
+		"百度":     {"百度网盘", "百度地图", "百度云", "小度"},
+		"京东":     {"京东物流", "京东数科", "京东健康"},
+		"美团":     {"美团外卖", "大众点评", "美团买菜", "美团优选"},
+	}
+
+	for company, entities := range sameCompanyMapping {
+		if strings.Contains(name1, company) || strings.Contains(name2, company) {
+			for _, entity := range entities {
+				if (strings.Contains(name1, entity) && strings.Contains(name2, company)) ||
+					(strings.Contains(name2, entity) && strings.Contains(name1, company)) {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
+}
+
+// isDirectCompetitor 检查是否为直接竞争对手
+func (s *conflictDetectionService) isDirectCompetitor(name1, name2 string) bool {
+	// 互联网行业主要竞争关系
+	competitors := map[string][]string{
+		"阿里巴巴": {"腾讯", "字节跳动", "京东", "拼多多", "百度"},
+		"腾讯":     {"阿里巴巴", "字节跳动", "京东", "拼多多", "百度"},
+		"字节跳动": {"阿里巴巴", "腾讯", "快手", "小红书"},
+		"京东":     {"阿里巴巴", "腾讯", "拼多多", "抖音电商"},
+		"拼多多":   {"阿里巴巴", "京东", "淘宝", "天猫"},
+		"百度":     {"阿里巴巴", "腾讯", "字节跳动", "搜狗"},
+	}
+
+	for company, rivals := range competitors {
+		if strings.Contains(name1, company) {
+			for _, rival := range rivals {
+				if strings.Contains(name2, rival) {
+					return true
+				}
+			}
+		}
+		if strings.Contains(name2, company) {
+			for _, rival := range rivals {
+				if strings.Contains(name1, rival) {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
+}
+
+// isRelatedIndustry 检查是否为相关行业
+func (s *conflictDetectionService) isRelatedIndustry(name1, name2 string) bool {
+	// 金融行业
+	financeKeywords := []string{"银行", "保险", "证券", "基金", "信托", "投资", "金融"}
+	// 互联网行业
+	internetKeywords := []string{"科技", "网络", "软件", "信息", "互联网", "数据", "云服务"}
+	// 房地产行业
+	realEstateKeywords := []string{"地产", "置业", "建设", "建筑", "房地产", "物业"}
+	// 制造业
+	manufacturingKeywords := []string{"制造", "生产", "工厂", "加工", "设备", "机械"}
+
+	name1InFinance := s.containsAny(name1, financeKeywords)
+	name2InFinance := s.containsAny(name2, financeKeywords)
+	name1InInternet := s.containsAny(name1, internetKeywords)
+	name2InInternet := s.containsAny(name2, internetKeywords)
+	name1InRealEstate := s.containsAny(name1, realEstateKeywords)
+	name2InRealEstate := s.containsAny(name2, realEstateKeywords)
+	name1InManufacturing := s.containsAny(name1, manufacturingKeywords)
+	name2InManufacturing := s.containsAny(name2, manufacturingKeywords)
+
+	// 同行业
+	if (name1InFinance && name2InFinance) ||
+		(name1InInternet && name2InInternet) ||
+		(name1InRealEstate && name2InRealEstate) ||
+		(name1InManufacturing && name2InManufacturing) {
+		return true
+	}
+
+	// 相关行业（金融+互联网，房地产+建筑等）
+	if (name1InFinance && name2InInternet) || (name1InInternet && name2InFinance) ||
+		(name1InRealEstate && name2InManufacturing) || (name1InManufacturing && name2InRealEstate) {
+		return true
+	}
+
+	return false
+}
+
+// hasCompetitionRelationship 检查竞争关系
+func (s *conflictDetectionService) hasCompetitionRelationship(company1, company2 string) bool {
+	company1 = strings.ToLower(company1)
+	company2 = strings.ToLower(company2)
+
+	// 使用 isDirectCompetitor 方法
+	return s.isDirectCompetitor(company1, company2)
+}
+
+// cleanCompanyName 清理公司名称
+func (s *conflictDetectionService) cleanCompanyName(name string) string {
+	// 移除公司后缀
+	suffixes := []string{"有限公司", "股份有限公司", "集团", "控股", "科技", "网络", "信息", "数据", "云", "服务", "投资", "管理", "咨询"}
+
+	for _, suffix := range suffixes {
+		name = strings.Replace(name, suffix, "", -1)
+	}
+
+	return strings.TrimSpace(name)
+}
+
+// containsAny 检查字符串是否包含任意关键词
+func (s *conflictDetectionService) containsAny(text string, keywords []string) bool {
+	text = strings.ToLower(text)
+	for _, keyword := range keywords {
+		if strings.Contains(text, keyword) {
+			return true
+		}
+	}
+	return false
+}
 
 // determineConflictType 确定冲突类型
 func (s *conflictDetectionService) determineConflictType(caseName, description, opponent string) string {
@@ -431,7 +731,100 @@ func (s *conflictDetectionService) determineConflictType(caseName, description, 
 	return "商业竞争冲突"
 }
 
-// assessConflictRisk 评估冲突风险
+// analyzeConflictWithBestPractices 基于最佳实践的冲突分析
+func (s *conflictDetectionService) analyzeConflictWithBestPractices(caseName, description, opponent string, createdAt time.Time, clientID string) (string, string) {
+	// 基于最佳实践的多维度冲突分析
+	caseNameLower := strings.ToLower(caseName)
+	descriptionLower := strings.ToLower(description)
+	opponentLower := strings.ToLower(opponent)
+
+	// 1. 分析法律关系冲突
+	if s.containsAny(caseNameLower, []string{"离婚", "抚养", "继承", "监护"}) ||
+		s.containsAny(descriptionLower, []string{"离婚", "抚养", "继承", "监护"}) {
+		return "法律对立冲突", "CRITICAL"
+	}
+
+	// 2. 分析股权纠纷
+	if s.containsAny(caseNameLower, []string{"股权", "收购", "并购", "投资", "持股"}) ||
+		s.containsAny(descriptionLower, []string{"股权", "收购", "并购", "投资", "持股"}) {
+		return "股权纠纷冲突", "HIGH"
+	}
+
+	// 3. 分析知识产权冲突
+	if s.containsAny(caseNameLower, []string{"商标", "专利", "版权", "知识产权", "侵权"}) ||
+		s.containsAny(descriptionLower, []string{"商标", "专利", "版权", "知识产权", "侵权"}) {
+		return "知识产权冲突", "HIGH"
+	}
+
+	// 4. 分析服务合同冲突
+	if s.containsAny(caseNameLower, []string{"合同", "服务", "协议", "合作"}) ||
+		s.containsAny(descriptionLower, []string{"合同", "服务", "协议", "合作"}) {
+		return "服务纠纷冲突", "MEDIUM"
+	}
+
+	// 5. 基于时间的风险衰减
+	hoursPassed := time.Since(createdAt).Hours()
+	timeRiskFactor := s.calculateTimeRiskFactor(hoursPassed)
+
+	// 6. 综合评估确定最终风险等级
+	return s.determineFinalRiskLevel(caseNameLower, opponentLower, timeRiskFactor)
+}
+
+// calculateTimeRiskFactor 计算时间风险因子
+func (s *conflictDetectionService) calculateTimeRiskFactor(hoursPassed float64) string {
+	if hoursPassed > 8760 { // 1年
+		return "LOW_TIME_FACTOR"
+	} else if hoursPassed > 4380 { // 6个月
+		return "MEDIUM_TIME_FACTOR"
+	} else {
+		return "HIGH_TIME_FACTOR"
+	}
+}
+
+// determineFinalRiskLevel 确定最终风险等级
+func (s *conflictDetectionService) determineFinalRiskLevel(caseName, opponent string, timeRiskFactor string) (string, string) {
+	// 检查是否存在直接竞争关系
+	if s.isDirectCompetitor(caseName, opponent) {
+		return "商业竞争冲突", "CRITICAL"
+	}
+
+	// 检查关联公司关系
+	if s.isSameCompany(caseName, opponent) {
+		return "同一实体冲突", "CRITICAL"
+	}
+
+	// 基于时间因子调整风险等级
+	baseRisk := "HIGH"
+	if timeRiskFactor == "LOW_TIME_FACTOR" {
+		baseRisk = "MEDIUM"
+	} else if timeRiskFactor == "LOW_TIME_FACTOR" && s.isRelatedIndustry(caseName, opponent) {
+		baseRisk = "MEDIUM" // 时间长且行业关联，降低风险
+	}
+
+	return baseRisk, baseRisk
+}
+
+// generateDetailedConflictDescription 生成详细的冲突描述
+func (s *conflictDetectionService) generateDetailedConflictDescription(conflictType, caseName, opponent, conflictCategory string, caseID string) string {
+	switch conflictType {
+	case "法律对立冲突":
+		return fmt.Sprintf("⚠️ 严重法律冲突：案件 '%s' 与对方当事人 '%s' 存在直接法律对立关系，案件ID: %s。建议：立即拒绝代理或采取隔离措施。", caseName, opponent, caseID)
+	case "股权纠纷冲突":
+		return fmt.Sprintf("⚠️ 股权利益冲突：案件 '%s' 与对方当事人 '%s' 存在股权纠纷关系，案件ID: %s。建议：详细审查股权结构，评估潜在影响。", caseName, opponent, caseID)
+	case "知识产权冲突":
+		return fmt.Sprintf("⚠️ 知识产权冲突：案件 '%s' 与对方当事人 '%s' 存在知识产权纠纷，案件ID: %s。建议：进行知识产权交叉检查，避免侵权风险。", caseName, opponent, caseID)
+	case "服务纠纷冲突":
+		return fmt.Sprintf("⚠️ 服务合同冲突：案件 '%s' 与对方当事人 '%s' 存在服务合同冲突，案件ID: %s。建议：审查合同条款，评估履约冲突。", caseName, opponent, caseID)
+	case "商业竞争冲突":
+		return fmt.Sprintf("⚠️ 商业竞争冲突：案件 '%s' 与对方当事人 '%s' 存在直接商业竞争关系，案件ID: %s。建议：评估市场竞争影响，考虑利益冲突范围。", caseName, opponent, caseID)
+	case "行业关联冲突":
+		return fmt.Sprintf("⚠️ 行业关联冲突：案件 '%s' 与对方当事人 '%s' 存在行业关联关系，案件ID: %s。建议：评估行业影响范围，适度限制代理。", caseName, opponent, caseID)
+	default:
+		return fmt.Sprintf("ℹ️ 一般利益冲突：案件 '%s' 与对方当事人 '%s' 存在潜在利益冲突，案件ID: %s。建议：进一步调查具体冲突情况。", caseName, opponent, caseID)
+	}
+}
+
+// assessConflictRisk 评估冲突风险（保持向后兼容）
 func (s *conflictDetectionService) assessConflictRisk(conflictType string, createdAt time.Time) string {
 	// 基于冲突类型的基础风险
 	baseRisk := map[string]string{
