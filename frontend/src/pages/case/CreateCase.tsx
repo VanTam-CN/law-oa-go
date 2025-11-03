@@ -49,6 +49,7 @@ import { get } from '@/services/api';
 import CompactCaseFormWrapper from '@/components/case/CompactCaseFormWrapper';
 import './CreateCase.module.css';
 import '@/styles/unified-management.less';
+import '@/styles/select-fix.css';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -163,7 +164,7 @@ const CreateCase: React.FC<CreateCaseProps> = ({
 
       if (lawyerData.length > 0) {
         const formattedLawyers = lawyerData.map((lawyer: any) => ({
-          id: lawyer.id.toString(),
+          id: lawyer.id, // 保持原始数字类型，不转换为字符串
           name: lawyer.name,
           level: 'SENIOR', // 默认级别，可以根据需要调整
           specialties: ['法律咨询'], // 默认专业，可以根据需要调整
@@ -766,11 +767,7 @@ const CreateCase: React.FC<CreateCaseProps> = ({
                   >
                     {lawyers.map(lawyer => (
                       <Option key={lawyer.id} value={lawyer.id}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <UserOutlined style={{ color: '#1890ff' }} />
-                          <span style={{ flex: 1 }}>{lawyer.name}</span>
-                          <Tag color="orange" size="small">律师</Tag>
-                        </div>
+                        {lawyer.name}
                       </Option>
                     ))}
                   </Select>
@@ -794,11 +791,7 @@ const CreateCase: React.FC<CreateCaseProps> = ({
                   >
                     {lawyers.map(lawyer => (
                       <Option key={lawyer.id} value={lawyer.id}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <UserOutlined style={{ color: '#1890ff' }} />
-                          <span style={{ flex: 1 }}>{lawyer.name}</span>
-                          <Tag color="green" size="small">协办</Tag>
-                        </div>
+                        {lawyer.name}
                       </Option>
                     ))}
                   </Select>
