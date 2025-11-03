@@ -124,6 +124,32 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+package-lock.json
+yarn.lock
+frontend/package-lock.json
+frontend/yarn.lock
+
+# 前端构建产物
+frontend/dist/
+frontend/build/
+frontend/.vite/
+frontend/.cache/
+
+# 日志文件（项目特定）
+*.log
+logs/
+log/
+backend.log
+frontend.log
+go_server.log
+server_debug.log
+server-fixed.log
+performance_test_results.log
+unit_test_results.log
+frontend_server.log
+frontend_frontend.log
+frontend.log
+frontend-manual.log
 
 # Python (如果有脚本)
 __pycache__/
@@ -230,9 +256,52 @@ $RECYCLE.BIN/
 # 大文件和构建产物
 law-oa-go
 main
+law-oa-go-*
+law-oa-server-*
+*-test
+auth_tester*
+error_tester*
+validation_tester
 archive/binaries/
 chrome/
 *.app
+
+# 项目特定的测试和验证文件
+*_test.go
+*_test
+*_tester
+test_*
+*_test_results*
+*_test.log
+
+# 项目特定的配置和数据文件
+login_api_response.json
+*_validation_report*.json
+*_audit_report*.json
+*_report*.md
+*_summary*.js
+*_issue*.js
+*_fix*.js
+*_test*.html
+*_test*.py
+check_*.js
+
+# 前端构建和测试文件
+frontend_index.html
+frontend_login.html
+frontend_*.html
+frontend/main
+frontend/src/styles/select-fix.css
+
+# 数据和脚本文件
+add_cases_data.sh
+add_test_data.sh
+*_test_runner*
+security_audit.go
+
+# 临时API响应文件
+*_api_response.json
+*_response.json
 
 # 编译后的二进制文件
 *.exe
