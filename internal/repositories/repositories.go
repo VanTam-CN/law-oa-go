@@ -106,21 +106,4 @@ type ConflictRepository interface {
 	GetConflictStats(ctx context.Context, lawyerID int) (map[string]interface{}, error)
 }
 
-// 增强冲突检测仓储接口
-type EnhancedConflictRepository interface {
-	ConflictRepository
-	// 行业相关操作
-	CreateOrUpdateIndustry(ctx context.Context, industry *models.IndustryClassification) error
-	GetIndustryByKeywords(ctx context.Context, keywords string) (*models.IndustryClassification, error)
-	GetIndustryByClientName(ctx context.Context, clientName string) (*models.IndustryClassification, error)
-	// 竞争关系操作
-	CreateOrUpdateCompetitiveRelation(ctx context.Context, relation *models.CompetitiveRelation) error
-	GetCompetitiveRelationsByIndustry(ctx context.Context, industryID int) ([]models.CompetitiveRelation, error)
-	// 规则管理
-	CreateOrUpdateConflictRule(ctx context.Context, rule *models.EnhancedConflictRule) error
-	GetActiveConflictRules(ctx context.Context) ([]models.EnhancedConflictRule, error)
-	// 高级冲突检测
-	GetPotentialConflictsAdvanced(ctx context.Context, request *AdvancedConflictCheckRequest) ([]*models.Case, error)
-	// 历史记录管理
-	CreateConflictDetectionHistory(ctx context.Context, history *models.ConflictDetectionHistory) error
-}
+// 注意：EnhancedConflictRepository 接口已移动到 enhanced_conflict_repository.go

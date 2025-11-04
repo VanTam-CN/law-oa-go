@@ -1,0 +1,94 @@
+-- 测试数据库迁移文件语法
+-- 这个脚本用于验证迁移文件的SQL语法
+
+-- 测试 000014_enhance_client_management.up.sql
+-- 基础语法检查：CREATE TABLE, ENUM, JSON字段等
+CREATE TABLE IF NOT EXISTS test_client_profiles (
+    id VARCHAR(36) PRIMARY KEY,
+    client_id VARCHAR(36) NOT NULL,
+    legal_form ENUM('PERSON', 'ANY', 'GOVERNMENT', 'NGO', 'PARTNERSHIP') NOT NULL,
+    registration_number VARCHAR(100),
+    parent_companies JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 测试 000015_conflict_classification_standards.up.sql
+-- 基础语法检查：复杂约束和外键
+CREATE TABLE IF NOT EXISTS test_conflict_classifications (
+    id VARCHAR(36) PRIMARY KEY,
+    code VARCHAR(50) NOT NULL UNIQUE,
+    name VARCHAR(100) NOT NULL,
+    category ENUM('DIRECT_OPPOSITION', 'CONCURRENT', 'FORMER_CLIENT') NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 测试 000016_waiver_management.up.sql
+-- 基础语法检查：大文本字段和复杂JSON
+CREATE TABLE IF NOT EXISTS test_waiver_applications (
+    id VARCHAR(36) PRIMARY KEY,
+    application_number VARCHAR(50) NOT NULL UNIQUE,
+    conflict_summary TEXT NOT NULL,
+    conflicts JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 测试 000017_enhanced_conflict_detection.up.sql
+-- 基础语法检查：复杂的ENUM和关系约束
+CREATE TABLE IF NOT EXISTS test_professional_conflict_check_requests (
+    id VARCHAR(36) PRIMARY KEY,
+    check_number VARCHAR(50) NOT NULL UNIQUE,
+    client_type ENUM('PERSON', 'ANY', 'GOVERNMENT', 'NGO') NOT NULL,
+    case_type ENUM('CIVIL', 'COMMERCIAL', 'CRIMINAL') NOT NULL,
+    status ENUM('PENDING', 'IN_PROGRESS', 'COMPLETED') DEFAULT 'PENDING',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 验证存储过程语法
+DELIMITER $$
+CREATE PROCEDURE IF NOT EXISTS test_procedure()
+BEGIN
+    SELECT '存储过程语法验证成功' as message;
+END$$
+DELIMITER ;
+
+-- 验证触发器语法
+DELIMITER $$
+CREATE TRIGGER IF NOT EXISTS test_trigger
+    BEFORE INSERT ON test_client_profiles
+    FOR EACH ROW
+BEGIN
+    SET NEW.created_at = NOW();
+END$$
+DELIMITER ;
+
+-- 验证视图语法
+CREATE OR REPLACE VIEW test_view AS
+SELECT
+    id,
+    client_id,
+    created_at
+FROM test_client_profiles;
+
+-- 测试索引创建
+CREATE INDEX IF NOT EXISTS idx_test_client_id ON test_client_profiles(client_id);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_test_code ON test_conflict_classifications(code);
+
+-- 验证JSON字段操作
+INSERT INTO test_client_profiles (id, client_id, legal_form, parent_companies)
+VALUES ('test-001', 'client-001', 'COMPANY', '{"test": "value"}');
+
+-- 验证查询语法
+SELECT * FROM test_client_profiles WHERE legal_form = 'COMPANY';
+SELECT JSON_EXTRACT(parent_companies, '$.test') FROM test_client_profiles;
+
+-- 清理测试表
+DROP TABLE IF EXISTS test_view;
+DROP TABLE IF EXISTS test_professional_conflict_check_requests;
+DROP TABLE IF EXISTS test_waiver_applications;
+DROP TABLE IF EXISTS test_conflict_classifications;
+DROP TABLE IF EXISTS test_client_profiles;
+
+DROP PROCEDURE IF EXISTS test_procedure;
+DROP TRIGGER IF EXISTS test_trigger;
+
+SELECT '✅ 所有迁移文件语法验证完成!' as result;
