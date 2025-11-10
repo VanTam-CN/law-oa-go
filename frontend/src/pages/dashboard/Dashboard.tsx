@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import './Dashboard.module.css';
 import { dataService } from '@/services/dataService';
 import { useAppStore } from '@/stores/useAppStore';
+import { getApprovalStats } from '@/services/approval';
 import {
   Row,
   Col,
@@ -146,10 +147,14 @@ const Dashboard: React.FC<DashboardProps> = () => {
         setLoading(true);
 
         // 并行获取所有数据
-        const [statsData, todosData, activitiesData] = await Promise.all([
+        const [statsData, todosData, activitiesData, approvalStatsData] = await Promise.all([
           dataService.getDashboardStatistics(),
           dataService.getDashboardTodos(),
-          dataService.getDashboardActivities()
+          dataService.getDashboardActivities(),
+          getApprovalStats().catch(err => {
+            console.warn('获取审批统计失败，使用默认值:', err);
+            return { pendingRequests: 0, totalRequests: 0, approvedRequests: 0, rejectedRequests: 0 };
+          })
         ]);
 
         // 使用全局状态的用户信息
@@ -159,6 +164,20 @@ const Dashboard: React.FC<DashboardProps> = () => {
         setTodos(todosData);
         setActivities(activitiesData);
         setUser(userData);
+
+        // 设置审批统计数据
+        if (approvalStatsData) {
+          setStatistics(prev => ({
+            ...prev,
+            pendingApprovals: approvalStatsData.pendingRequests || 0,
+            approvalStatus: {
+              '待审批': approvalStatsData.pendingRequests || 0,
+              '已通过': approvalStatsData.approvedRequests || 0,
+              '已拒绝': approvalStatsData.rejectedRequests || 0,
+              '已撤销': 0
+            }
+          }));
+        }
 
         // 计算KPI数据
         if (statsData) {
@@ -255,7 +274,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
       todo.priority === 'high' && 
       todo.deadline && new Date(todo.deadline) < new Date()
     ).length;
-    const pendingApprovals = statistics?.pendingApprovals || 0;
+    const pendingApprovals = 0;
     
     let timeGreeting = '';
     if (hour < 12) {
@@ -452,8 +471,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
                   <span>今日待办 <strong>{todos.filter(todo => !todo.completed).length}</strong> 项</span>
                   <Divider type="vertical" style={{ margin: '0 4px', borderColor: '#81D4FA' }} />
                   <span>紧急事项 <strong>{todos.filter(todo => todo.priority === 'high' && !todo.completed).length}</strong> 项</span>
-                  <Divider type="vertical" style={{ margin: '0 4px', borderColor: '#81D4FA' }} />
-                  <span>待审批 <strong>{statistics?.pendingApprovals || 0}</strong> 项</span>
                 </div>
               </div>
             </div>
@@ -476,24 +493,16 @@ const Dashboard: React.FC<DashboardProps> = () => {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                  <Badge 
-                    count={statistics?.pendingApprovals || 0} 
+                  <Button
+                    type="text"
+                    icon={<BellOutlined />}
                     size="small"
-                    style={{ 
-                      backgroundColor: statistics?.pendingApprovals > 0 ? '#FF4D4F' : '#52C41A'
+                    style={{
+                      borderRadius: '6px',
+                      width: '32px',
+                      height: '32px'
                     }}
-                  >
-                    <Button 
-                      type="text" 
-                      icon={<BellOutlined />} 
-                      size="small"
-                      style={{
-                        borderRadius: '6px',
-                        width: '32px',
-                        height: '32px'
-                      }}
-                    />
-                  </Badge>
+                  />
                   <Button 
                     type="text" 
                     icon={<SettingOutlined />} 

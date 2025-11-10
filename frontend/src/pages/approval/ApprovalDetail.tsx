@@ -25,11 +25,11 @@ const ApprovalDetail: React.FC = () => {
 
   useEffect(() => {
     if (id) {
-      fetchApprovalDetail(parseInt(id));
+      fetchApprovalDetail(id);
     }
   }, [id]);
 
-  const fetchApprovalDetail = async (approvalId: number) => {
+  const fetchApprovalDetail = async (approvalId: string) => {
     try {
       setLoading(true);
       const data = await getApprovalDetail(approvalId);
