@@ -61,6 +61,11 @@ import SimpleTest from '../pages/SimpleTest'
 import AuthTest from '../pages/AuthTest'
 import DirectTest from '../pages/DirectTest'
 
+// 豁免审批模块
+import WaiverTestPage from '../pages/WaiverTestPage'
+import IntegratedWaiverTest from '../pages/IntegratedWaiverTest'
+import ConflictDataDemo from '../pages/ConflictDataDemo'
+
 // 布局组件
 import MainLayout from '../layouts/MainLayout'
 
@@ -103,6 +108,18 @@ export const router = createBrowserRouter([
   {
     path: '/test-direct',
     element: <DirectTest />,
+  },
+  {
+    path: '/waiver-test',
+    element: <WaiverTestPage />,
+  },
+  {
+    path: '/integrated-waiver-test',
+    element: <IntegratedWaiverTest />,
+  },
+  {
+    path: '/conflict-data-demo',
+    element: <ConflictDataDemo />,
   },
   // 公开路由 - 未登录用户可访问
   {

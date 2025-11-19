@@ -161,7 +161,7 @@ export const useAppStore = create<AppState>()(
         // Actions
         login: (user: User, token: string) => {
           localStorage.setItem('auth_token', token)
-          localStorage.setItem('user_info', JSON.stringify(user))
+          localStorage.setItem('law_oa_user_info', JSON.stringify(user))
           set({
             user,
             isAuthenticated: true,
@@ -171,7 +171,9 @@ export const useAppStore = create<AppState>()(
 
         logout: () => {
           localStorage.removeItem('auth_token')
-          localStorage.removeItem('user_info')
+          localStorage.removeItem('law_oa_user_info')
+          localStorage.removeItem('law_oa_roles')
+          localStorage.removeItem('law_oa_permissions')
           set({
             user: null,
             isAuthenticated: false,
@@ -185,7 +187,7 @@ export const useAppStore = create<AppState>()(
           const currentUser = get().user
           if (currentUser) {
             const updatedUser = { ...currentUser, ...userData }
-            localStorage.setItem('user_info', JSON.stringify(updatedUser))
+            localStorage.setItem('law_oa_user_info', JSON.stringify(updatedUser))
             set({ user: updatedUser })
           }
         },
@@ -245,7 +247,9 @@ export const useAppStore = create<AppState>()(
 
         reset: () => {
           localStorage.removeItem('auth_token')
-          localStorage.removeItem('user_info')
+          localStorage.removeItem('law_oa_user_info')
+          localStorage.removeItem('law_oa_roles')
+          localStorage.removeItem('law_oa_permissions')
           set({
             user: null,
             isAuthenticated: false,
@@ -351,7 +355,7 @@ export const initializeApp = () => {
   // 从localStorage恢复用户状态
   try {
     const token = localStorage.getItem('auth_token')
-    const userInfo = localStorage.getItem('user_info')
+    const userInfo = localStorage.getItem('law_oa_user_info')
 
     if (token && userInfo) {
       const user = JSON.parse(userInfo)
@@ -360,7 +364,9 @@ export const initializeApp = () => {
   } catch (error) {
     console.error('Failed to restore user session:', error)
     localStorage.removeItem('auth_token')
-    localStorage.removeItem('user_info')
+    localStorage.removeItem('law_oa_user_info')
+    localStorage.removeItem('law_oa_roles')
+    localStorage.removeItem('law_oa_permissions')
   }
 }
 

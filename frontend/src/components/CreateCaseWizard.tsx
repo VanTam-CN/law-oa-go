@@ -571,136 +571,30 @@ const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({
 
       setConflictResult(convertedResult);
     } catch (error) {
-      // 如果API调用失败，提供基础的检查结果
-      console.warn("冲突检查API调用失败，提供基础检查结果:", error);
+      // API调用失败时，提供清晰的错误信息，不使用假数据
+      console.error("冲突检查API调用失败:", error);
 
-      const mockResult: ConflictCheckResult = {
-        status: "warning",
-        score: 75,
+      // 设置检查失败状态，只提供基本信息
+      setConflictResult({
+        status: "error",
+        score: 0,
         checkTime: new Date().toLocaleString(),
         checker: "智能冲突检查系统",
-        totalChecked: 4,
-        conflicts: [
-          {
-            id: "conflict-001",
-            type: "client",
-            level: "medium",
-            description: "该客户在6个月前曾是对方当事人",
-            relatedCase: "案件编号: 2024-CIVIL-001",
-            recommendation: "建议详细了解前案情况，确认无利益冲突后可接受委托",
-            details:
-              "经系统检查发现，当前委托人张某在2024年3月曾作为被告出现在本所代理的另一起合同纠纷案件中。该案件已于2024年5月结案，但存在潜在的利益冲突风险。",
-            foundTime: "2024-09-10 15:30:25",
-            impact: "中等影响",
-            probability: 65,
-            severity: 3,
-            evidence: [
-              {
-                type: "历史案件记录",
-                description: "张某作为被告的合同纠纷案",
-                date: "2024-03-15",
-                caseNumber: "2024-CIVIL-001",
-              },
-              {
-                type: "客户档案",
-                description: "客户信息变更记录",
-                date: "2024-03-20",
-                caseNumber: "CLIENT-2024-0315",
-              },
-            ],
-          },
-          {
-            id: "conflict-002",
-            type: "lawyer",
-            level: "low",
-            description: "主办律师当前案件负载较重",
-            relatedCase: "当前进行中案件: 8件",
-            recommendation: "建议评估工作负载，确保服务质量",
-            details:
-              "主办律师李某当前负责8件进行中的案件，接近建议的上限。虽然不构成直接冲突，但可能影响服务质量。",
-            foundTime: "2024-09-10 15:30:28",
-            impact: "轻微影响",
-            probability: 30,
-            severity: 2,
-            evidence: [
-              {
-                type: "工作负载统计",
-                description: "当前案件负载分析",
-                date: "2024-09-10",
-              },
-            ],
-          },
-        ],
-        summary:
-          "发现2项潜在冲突，其中1项需要注意，建议在充分披露的情况下谨慎接受委托",
-        riskFactors: [
-          {
-            factor: "客户历史关系",
-            weight: 40,
-            score: 65,
-            description: "客户曾在历史案件中处于对立位置",
-          },
-          {
-            factor: "律师工作负载",
-            weight: 25,
-            score: 80,
-            description: "主办律师当前案件数量接近上限",
-          },
-          {
-            factor: "案件复杂程度",
-            weight: 20,
-            score: 60,
-            description: "基于案件类型和涉及金额的复杂度评估",
-          },
-          {
-            factor: "时间冲突风险",
-            weight: 15,
-            score: 45,
-            description: "基于开庭时间和重要节点的时间冲突分析",
-          },
-        ],
+        totalChecked: 0,
+        conflicts: [],
+        summary: "冲突检查服务暂时不可用，请稍后重试",
+        riskFactors: [],
         recommendations: [
           {
             priority: "high",
-            action: "充分披露历史关系",
-            description:
-              "向当前委托人详细说明其在历史案件中的角色，获得书面确认",
-            timeline: "接受委托前",
-          },
-          {
-            priority: "medium",
-            action: "评估律师工作负载",
-            description: "重新评估主办律师的工作安排，必要时调整团队配置",
-            timeline: "1周内",
-          },
-          {
-            priority: "low",
-            action: "建立定期检查机制",
-            description: "在案件进行过程中定期检查是否出现新的利益冲突",
-            timeline: "案件进行期间",
-          },
+            action: "稍后重试检查",
+            description: "网络连接或服务可能暂时不可用",
+            timeline: "立即"
+          }
         ],
-        relatedCases: [
-          {
-            caseId: "2024-CIVIL-001",
-            caseName: "甲公司诉张某合同纠纷案",
-            status: "已结案",
-            relationship: "当前委托人曾为对方当事人",
-            riskLevel: "中",
-          },
-          {
-            caseId: "2024-CIVIL-008",
-            caseName: "乙公司劳动争议案",
-            status: "进行中",
-            relationship: "同一主办律师",
-            riskLevel: "低",
-          },
-        ],
-        complianceNotes:
-          "根据《律师执业管理办法》第三十九条规定，律师不得在同一案件中为双方当事人担任代理人，不得代理与本人或者其近亲属有利益冲突的法律事务。本案需要特别注意历史代理关系的披露。",
-      };
-
-      setConflictResult(mockResult);
+        relatedCases: [],
+        complianceNotes: "检查服务暂时不可用"
+      });
     } finally {
       setConflictChecking(false);
     }

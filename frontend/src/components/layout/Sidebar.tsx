@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { Layout, Menu, Badge } from 'antd';
+import React, { useEffect, useMemo } from 'react';
+import { Layout, Menu } from 'antd';
 import { message } from '@/utils/messageHelper';
 import {
   FileDoneOutlined,
@@ -38,7 +38,6 @@ interface MenuItem {
   icon?: React.ReactNode;
   children?: MenuItem[];
   onClick?: () => void;
-  badge?: number;
   color?: string;
   permission?: string;
 }
@@ -53,8 +52,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAppStore();
-  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
-
+  
   // 简单的权限检查函数
   const hasPermission = (permission: string): boolean => {
     if (!user) return false;
@@ -82,6 +80,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
     return requiredRoles ? requiredRoles.some(role => user.roles.includes(role)) : false;
   };
 
+  
   // 监听折叠状态变化，通知父组件
   useEffect(() => {
     if (onWidthChange) {
@@ -171,7 +170,6 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
           label: '案件管理',
           icon: <SolutionOutlined />,
           onClick: () => navigate('/case'),
-          badge: 3,
           permission: 'case:manage'
         },
         {
@@ -209,7 +207,6 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
       label: '审批中心',
       icon: <FileDoneOutlined />,
       onClick: () => navigate('/approval'),
-      badge: 5,
       color: 'var(--color-warning)',
       permission: 'approval:manage'
     },
@@ -335,18 +332,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
         return {
           key: item.key,
           icon: item.icon,
-          label: (
-            <div className="menu-item-wrapper">
-              <span className="menu-item-label">{item.label}</span>
-              {item.badge && (
-                <Badge 
-                  count={item.badge} 
-                  size="small"
-                  className="menu-item-badge"
-                />
-              )}
-            </div>
-          ),
+          label: item.label,
           children: renderMenuItems(item.children),
           style: itemStyle,
           className: 'sidebar-submenu'
@@ -356,18 +342,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
       return {
         key: item.key,
         icon: item.icon,
-        label: (
-          <div className="menu-item-wrapper">
-            <span className="menu-item-label">{item.label}</span>
-            {item.badge && (
-              <Badge 
-                count={item.badge} 
-                size="small"
-                className="menu-item-badge"
-              />
-            )}
-          </div>
-        ),
+        label: item.label,
         onClick: item.onClick,
         style: itemStyle,
         className: 'sidebar-menu-item'

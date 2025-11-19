@@ -352,9 +352,10 @@ export class CaseCreationService {
       // 调用真实的后端API
       const response = await post('/cases', apiData);
 
-      if (response && response.data) {
-        const caseId = response.data.id.toString();
-        console.log('案件保存成功:', { caseId, ...response.data });
+      // 修复：HTTP拦截器已经返回了data对象，所以直接访问response而不是response.data
+      if (response && response.id) {
+        const caseId = response.id.toString();
+        console.log('案件保存成功:', { caseId, ...response });
         message.success('案件创建成功');
         return caseId;
       } else {

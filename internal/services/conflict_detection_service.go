@@ -701,33 +701,69 @@ func (s *conflictDetectionService) containsAny(text string, keywords []string) b
 	return false
 }
 
-// determineConflictType 确定冲突类型
+// determineConflictType 确定冲突类型（改进版本）
 func (s *conflictDetectionService) determineConflictType(caseName, description, opponent string) string {
 	caseName = strings.ToLower(caseName)
 	description = strings.ToLower(description)
 	opponent = strings.ToLower(opponent)
 
+	// 1. 法律对立冲突 - 最高风险
 	if strings.Contains(caseName, "离婚") || strings.Contains(description, "离婚") ||
-		strings.Contains(caseName, "抚养") || strings.Contains(description, "抚养") {
+		strings.Contains(caseName, "抚养") || strings.Contains(description, "抚养") ||
+		strings.Contains(caseName, "继承") || strings.Contains(description, "继承") ||
+		strings.Contains(caseName, "监护") || strings.Contains(description, "监护") {
 		return "法律对立冲突"
 	}
 
+	// 2. 股权纠纷冲突 - 高风险
 	if strings.Contains(caseName, "股权") || strings.Contains(description, "股权") ||
-		strings.Contains(caseName, "收购") || strings.Contains(description, "收购") {
+		strings.Contains(caseName, "收购") || strings.Contains(description, "收购") ||
+		strings.Contains(caseName, "并购") || strings.Contains(description, "并购") ||
+		strings.Contains(caseName, "投资") || strings.Contains(description, "投资") ||
+		strings.Contains(caseName, "持股") || strings.Contains(description, "持股") {
 		return "股权纠纷冲突"
 	}
 
+	// 3. 知识产权冲突 - 高风险
 	if strings.Contains(caseName, "商标") || strings.Contains(description, "商标") ||
 		strings.Contains(caseName, "专利") || strings.Contains(description, "专利") ||
-		strings.Contains(caseName, "版权") || strings.Contains(description, "版权") {
+		strings.Contains(caseName, "版权") || strings.Contains(description, "版权") ||
+		strings.Contains(caseName, "知识产权") || strings.Contains(description, "知识产权") ||
+		strings.Contains(caseName, "侵权") || strings.Contains(description, "侵权") {
 		return "知识产权冲突"
 	}
 
+	// 4. 服务纠纷冲突 - 中等风险
 	if strings.Contains(caseName, "合同") || strings.Contains(description, "合同") ||
-		strings.Contains(caseName, "服务") || strings.Contains(description, "服务") {
+		strings.Contains(caseName, "服务") || strings.Contains(description, "服务") ||
+		strings.Contains(caseName, "劳务") || strings.Contains(description, "劳务") ||
+		strings.Contains(caseName, "咨询") || strings.Contains(description, "咨询") {
 		return "服务纠纷冲突"
 	}
 
+	// 5. 建筑工程纠纷 - 高风险
+	if strings.Contains(caseName, "工程") || strings.Contains(description, "工程") ||
+		strings.Contains(caseName, "建设") || strings.Contains(description, "建设") ||
+		strings.Contains(caseName, "施工") || strings.Contains(description, "施工") ||
+		strings.Contains(caseName, "建筑") || strings.Contains(description, "建筑") {
+		return "服务纠纷冲突"
+	}
+
+	// 6. 劳动纠纷 - 中等风险
+	if strings.Contains(caseName, "劳动") || strings.Contains(description, "劳动") ||
+		strings.Contains(caseName, "工伤") || strings.Contains(description, "工伤") ||
+		strings.Contains(caseName, "解雇") || strings.Contains(description, "解雇") {
+		return "服务纠纷冲突"
+	}
+
+	// 7. 客户关系冲突 - 中等风险
+	if strings.Contains(caseName, "客户") || strings.Contains(description, "客户") ||
+		strings.Contains(caseName, "合作") || strings.Contains(description, "合作") ||
+		strings.Contains(caseName, "伙伴") || strings.Contains(description, "伙伴") {
+		return "客户关系冲突"
+	}
+
+	// 8. 默认为商业竞争冲突 - 高风险
 	return "商业竞争冲突"
 }
 
@@ -824,7 +860,7 @@ func (s *conflictDetectionService) generateDetailedConflictDescription(conflictT
 	}
 }
 
-// assessConflictRisk 评估冲突风险（保持向后兼容）
+// assessConflictRisk 评估冲突风险（改进版本）
 func (s *conflictDetectionService) assessConflictRisk(conflictType string, createdAt time.Time) string {
 	// 基于冲突类型的基础风险
 	baseRisk := map[string]string{
@@ -832,7 +868,7 @@ func (s *conflictDetectionService) assessConflictRisk(conflictType string, creat
 		"股权纠纷冲突":    "HIGH",
 		"知识产权冲突":    "HIGH",
 		"服务纠纷冲突":    "MEDIUM",
-		"商业竞争冲突":    "HIGH",
+		"商业竞争冲突":    "HIGH", // 修改：从HIGH改为HIGH，保持商业竞争的高风险
 		"客户关系冲突":    "MEDIUM",
 		"行业竞争冲突":    "HIGH",
 	}
@@ -842,16 +878,15 @@ func (s *conflictDetectionService) assessConflictRisk(conflictType string, creat
 		riskLevel = "MEDIUM"
 	}
 
-	// 时间衰减：越旧的案件风险越低
+	// 时间衰减：适度降低风险，但保持合理的风险评估
 	hoursPassed := time.Since(createdAt).Hours()
-	if hoursPassed > 2160 { // 3个月
+	if hoursPassed > 4320 { // 6个月
 		if riskLevel == "CRITICAL" {
 			riskLevel = "HIGH"
 		} else if riskLevel == "HIGH" {
 			riskLevel = "MEDIUM"
-		} else if riskLevel == "MEDIUM" {
-			riskLevel = "LOW"
 		}
+		// 注意：MEDIUM级别不再降级到LOW，保持合理的风险评估
 	}
 
 	return riskLevel

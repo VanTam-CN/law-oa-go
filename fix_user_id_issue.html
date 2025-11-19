@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>修复用户ID问题</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background: #1890ff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #40a9ff;
+        }
+        button.danger {
+            background: #ff4d4f;
+        }
+        button.danger:hover {
+            background: #ff7875;
+        }
+        .success {
+            color: #52c41a;
+            background: #f6ffed;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #b7eb8f;
+        }
+        .error {
+            color: #ff4d4f;
+            background: #fff2f0;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ffccc7;
+        }
+        .warning {
+            color: #fa8c16;
+            background: #fff7e6;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ffd591;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 用户ID问题修复工具</h1>
+        <p>此工具帮助解决审批管理界面的用户ID不匹配问题</p>
+
+        <div class="section">
+            <h3>🎯 问题诊断</h3>
+            <div id="diagnosis"></div>
+        </div>
+
+        <div class="section">
+            <h3>🛠️ 修复方案</h3>
+            <button onclick="quickFix()">⚡ 快速修复</button>
+            <button onclick="clearAndReset()" class="danger">🗑️ 清除并重置</button>
+            <button onclick="manualFix()">🔧 手动修复</button>
+            <button onclick="verifyFix()">✅ 验证修复</button>
+        </div>
+
+        <div class="section">
+            <h3>📊 修复结果</h3>
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        // 诊断当前状态
+        function diagnose() {
+            const diagnosisDiv = document.getElementById('diagnosis');
+
+            const token = localStorage.getItem('auth_token');
+            const userInfoStr = localStorage.getItem('law_oa_user_info');
+
+            let diagnosisHTML = '<h4>诊断结果：</h4>';
+
+            if (!token) {
+                diagnosisHTML += '<div class="error">❌ 未找到认证Token，需要重新登录</div>';
+            } else {
+                diagnosisHTML += '<div class="success">✅ 认证Token存在</div>';
+            }
+
+            if (!userInfoStr) {
+                diagnosisHTML += '<div class="error">❌ 未找到用户信息</div>';
+            } else {
+                try {
+                    const userInfo = JSON.parse(userInfoStr);
+                    diagnosisHTML += `<div class="success">✅ 用户信息存在</div>`;
+                    diagnosisHTML += `<p><strong>当前用户ID：</strong> ${userInfo.id}</p>`;
+                    diagnosisHTML += `<p><strong>用户名：</strong> ${userInfo.username || 'N/A'}</p>`;
+                    diagnosisHTML += `<p><strong>邮箱：</strong> ${userInfo.email || 'N/A'}</p>`;
+
+                    if (userInfo.id === 10) {
+                        diagnosisHTML += '<div class="error">❌ 问题确认：用户ID是10，但应该是3</div>';
+                    } else if (userInfo.id === 3) {
+                        diagnosisHTML += '<div class="success">✅ 用户ID正确：3</div>';
+                    } else {
+                        diagnosisHTML += `<div class="warning">⚠️ 用户ID是：${userInfo.id}（预期值：3）</div>`;
+                    }
+                } catch (e) {
+                    diagnosisHTML += `<div class="error">❌ 用户信息解析失败：${e.message}</div>`;
+                }
+            }
+
+            diagnosisDiv.innerHTML = diagnosisHTML;
+        }
+
+        // 快速修复
+        function quickFix() {
+            const resultsDiv = document.getElementById('results');
+
+            try {
+                // 检查当前用户信息
+                const userInfoStr = localStorage.getItem('law_oa_user_info');
+                if (!userInfoStr) {
+                    resultsDiv.innerHTML = '<div class="error">❌ 没有用户信息，请先登录</div>';
+                    return;
+                }
+
+                const userInfo = JSON.parse(userInfoStr);
+
+                // 如果用户ID不正确，修复它
+                if (userInfo.id !== 3 && userInfo.email === 'admin@lawoa.com') {
+                    userInfo.id = 3;
+                    localStorage.setItem('law_oa_user_info', JSON.stringify(userInfo));
+
+                    resultsDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ 快速修复完成</h4>
+                            <p>已将用户ID修复为：3</p>
+                            <p>已更新本地存储中的用户信息</p>
+                            <p>现在请刷新审批管理页面测试</p>
+                        </div>
+                    `;
+                } else if (userInfo.id === 3) {
+                    resultsDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ 用户ID已经正确</h4>
+                            <p>当前用户ID：${userInfo.id}</p>
+                            <p>无需修复，请检查其他问题</p>
+                        </div>
+                    `;
+                } else {
+                    resultsDiv.innerHTML = `
+                        <div class="warning">
+                            <h4>⚠️ 无法自动修复</h4>
+                            <p>当前用户邮箱：${userInfo.email || 'N/A'}</p>
+                            <p>当前用户ID：${userInfo.id}</p>
+                            <p>请使用手动修复或联系管理员</p>
+                        </div>
+                    `;
+                }
+            } catch (e) {
+                resultsDiv.innerHTML = `<div class="error">❌ 修复失败：${e.message}</div>`;
+            }
+        }
+
+        // 清除并重置
+        function clearAndReset() {
+            if (confirm('确定要清除所有认证数据吗？这将需要重新登录。')) {
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('law_oa_user_info');
+                localStorage.removeItem('law_oa_roles');
+                localStorage.removeItem('law_oa_permissions');
+
+                // 清除可能的测试数据
+                localStorage.removeItem('user_info');
+                localStorage.removeItem('user_data');
+
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.innerHTML = `
+                    <div class="success">
+                        <h4>✅ 清除完成</h4>
+                        <p>所有认证相关数据已清除</p>
+                        <p>请按以下步骤操作：</p>
+                        <ol>
+                            <li>访问 <a href="http://localhost:3000/login" target="_blank">登录页面</a></li>
+                            <li>使用 admin@lawoa.com / admin123 登录</li>
+                            <li>登录成功后访问审批管理页面</li>
+                            <li>如仍有问题，请重新运行诊断</li>
+                        </ol>
+                        <button onclick="window.open('http://localhost:3000/login', '_blank')">🚀 立即登录</button>
+                    </div>
+                `;
+            }
+        }
+
+        // 手动修复
+        function manualFix() {
+            const resultsDiv = document.getElementById('results');
+
+            resultsDiv.innerHTML = `
+                <div class="warning">
+                    <h4>🔧 手动修复步骤</h4>
+                    <p>请按照以下步骤手动修复：</p>
+                    <ol>
+                        <li>打开浏览器开发者工具（F12）</li>
+                        <li>转到 Console（控制台）标签</li>
+                        <li>复制并粘贴以下代码：</li>
+                    </ol>
+                    <pre>
+// 检查当前用户信息
+const userInfo = JSON.parse(localStorage.getItem('law_oa_user_info') || '{}');
+console.log('当前用户信息:', userInfo);
+
+// 如果是admin用户且ID不是3，修复它
+if (userInfo.email === 'admin@lawoa.com' && userInfo.id !== 3) {
+    userInfo.id = 3;
+    localStorage.setItem('law_oa_user_info', JSON.stringify(userInfo));
+    console.log('✅ 用户ID已修复为:', userInfo.id);
+} else {
+    console.log('ℹ️ 用户信息无需修复或不是admin用户');
+}
+
+// 验证修复结果
+const updatedUserInfo = JSON.parse(localStorage.getItem('law_oa_user_info') || '{}');
+console.log('修复后用户信息:', updatedUserInfo);
+                    </pre>
+                    <p>执行代码后，刷新审批管理页面测试</p>
+                </div>
+            `;
+        }
+
+        // 验证修复
+        function verifyFix() {
+            const resultsDiv = document.getElementById('results');
+
+            // 模拟getCurrentUserId函数
+            function getCurrentUserId() {
+                const userInfo = localStorage.getItem('law_oa_user_info');
+                const user = userInfo ? JSON.parse(userInfo) : null;
+
+                if (user?.id !== undefined && user?.id !== null) {
+                    return user.id.toString();
+                }
+                return '1'; // 默认值
+            }
+
+            const userId = getCurrentUserId();
+
+            resultsDiv.innerHTML = `
+                <h4>🔍 修复验证结果</h4>
+                <p><strong>当前用户ID：</strong> ${userId}</p>
+                <p><strong>API请求URL：</strong> /api/v1/approvals?applicantId=${userId}</p>
+            `;
+
+            if (userId === '3') {
+                resultsDiv.innerHTML += `
+                    <div class="success">
+                        <h4>✅ 修复验证成功</h4>
+                        <p>用户ID正确：${userId}</p>
+                        <p>审批API请求应该可以正常工作</p>
+                        <p>如果仍有401错误，请检查：</p>
+                        <ul>
+                            <li>JWT Token是否有效</li>
+                            <li>后端服务是否正常运行</li>
+                            <li>网络请求是否被拦截</li>
+                        </ul>
+                    </div>
+                `;
+            } else if (userId === '10') {
+                resultsDiv.innerHTML += `
+                    <div class="error">
+                        <h4>❌ 修复验证失败</h4>
+                        <p>用户ID仍然是：${userId}</p>
+                        <p>请重新运行快速修复或手动修复</p>
+                    </div>
+                `;
+            } else {
+                resultsDiv.innerHTML += `
+                    <div class="warning">
+                        <h4>⚠️ 意外的用户ID</h4>
+                        <p>用户ID是：${userId}</p>
+                        <p>这可能不是预期的值，请进一步检查</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 页面加载时自动诊断
+        window.onload = function() {
+            diagnose();
+        };
+    </script>
+</body>
+</html>

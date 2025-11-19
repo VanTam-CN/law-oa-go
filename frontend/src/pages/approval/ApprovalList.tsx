@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Card, Button, Tag, Space, Tabs, message, Badge } from 'antd';
-import { PlusOutlined, CheckCircleOutlined, CloseCircleOutlined, SyncOutlined } from '@ant-design/icons';
+import { PlusOutlined, CheckCircleOutlined, CloseCircleOutlined, SyncOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router';
 import { getApprovals, cancelApproval, getApprovalStats, ApprovalItem } from '@/services/approval';
 import type { TabsProps } from 'antd';
 import './ApprovalList.less';
 
 interface ApprovalStats {
-  pendingCount: number;
-  myPendingCount: number;
-  myTotalCount: number;
+  totalRequests: number;
+  pendingRequests: number;
+  myPendingRequests: number;
+  approvedRequests: number;
+  rejectedRequests: number;
 }
 
 const ApprovalList: React.FC = () => {
@@ -18,7 +20,7 @@ const ApprovalList: React.FC = () => {
   const [myApprovals, setMyApprovals] = useState<ApprovalItem[]>([]);
   const [pendingApprovals, setPendingApprovals] = useState<ApprovalItem[]>([]);
   const [stats, setStats] = useState<ApprovalStats | null>(null);
-  const [activeTab, setActiveTab] = useState<string>('pending');
+  const [activeTab, setActiveTab] = useState<string>('my');
 
   useEffect(() => {
     fetchApprovals();
@@ -59,10 +61,16 @@ const ApprovalList: React.FC = () => {
         return <Tag icon={<CheckCircleOutlined />} color="success">已通过</Tag>;
       case 'rejected':
         return <Tag icon={<CloseCircleOutlined />} color="error">已拒绝</Tag>;
-      case 'pending':
-        return <Tag icon={<SyncOutlined spin />} color="processing">处理中</Tag>;
+      case 'submitted':
+        return <Tag icon={<ClockCircleOutlined />} color="processing">已提交</Tag>;
+      case 'under_review':
+        return <Tag icon={<SyncOutlined spin />} color="processing">审核中</Tag>;
+      case 'draft':
+        return <Tag color="default">草稿</Tag>;
       case 'cancelled':
         return <Tag color="default">已撤回</Tag>;
+      case 'expired':
+        return <Tag color="warning">已过期</Tag>;
       default:
         return <Tag>未知</Tag>;
     }
@@ -108,8 +116,9 @@ const ApprovalList: React.FC = () => {
     },
     {
       title: '申请时间',
-      dataIndex: 'createTime',
-      key: 'createTime',
+      dataIndex: 'submission_date',
+      key: 'submission_date',
+      render: (text: string) => text ? new Date(text).toLocaleString() : '-',
     },
     {
       title: '状态',
@@ -129,7 +138,7 @@ const ApprovalList: React.FC = () => {
       render: (_: any, record: ApprovalItem) => (
         <Space size="middle">
           <a onClick={() => navigate(`/approval/${record.id}`)}>查看</a>
-          {record.status === 'pending' && activeTab === 'my' && (
+          {(record.status === 'submitted' || record.status === 'under_review') && activeTab === 'my' && (
             <a onClick={() => handleCancel(record.id)}>撤回</a>
           )}
         </Space>
@@ -137,7 +146,7 @@ const ApprovalList: React.FC = () => {
     },
   ];
 
-  const handleCancel = async (id: number) => {
+  const handleCancel = async (id: string) => {
     try {
       await cancelApproval(id);
       message.success('审批已撤回');
@@ -155,7 +164,7 @@ const ApprovalList: React.FC = () => {
       label: (
         <span>
           待我审批
-          {stats && <Badge count={stats.myPendingCount} style={{ marginLeft: 8 }} />}
+          {stats && <Badge count={stats.myPendingRequests} style={{ marginLeft: 8 }} />}
         </span>
       ),
       children: (
@@ -173,7 +182,7 @@ const ApprovalList: React.FC = () => {
       label: (
         <span>
           我的申请
-          {stats && <Badge count={stats.myTotalCount} style={{ marginLeft: 8 }} />}
+          {stats && <Badge count={stats.totalRequests} style={{ marginLeft: 8 }} />}
         </span>
       ),
       children: (

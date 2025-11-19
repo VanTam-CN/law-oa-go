@@ -1,5 +1,7 @@
 package main
 
+// 临时注释掉所有import以避免编译错误
+/*
 import (
 	"database/sql"
 	"fmt"
@@ -8,16 +10,18 @@ import (
 
 	_ "github.com/lib/pq"
 )
+*/
 
-func main() {
-	// 数据库连接
-	db, err := sql.Open("postgres", "host=localhost port=5432 user=law_oa_user password=1q2w#E$R dbname=law_oa_db sslmode=disable")
-	if err != nil {
-		log.Fatal("数据库连接失败:", err)
-	}
-	defer db.Close()
+// 临时禁用此函数以防止服务器启动时自动执行
+// func main() {
+// 	// 数据库连接
+// 	db, err := sql.Open("postgres", "host=localhost port=5432 user=law_oa_user password=1q2w#E$R dbname=law_oa_db sslmode=disable")
+// 	if err != nil {
+// 		log.Fatal("数据库连接失败:", err)
+// 	}
+// 	defer db.Close()
 
-	fmt.Println("=== 创建利益冲突测试数据 ===")
+// 	fmt.Println("=== 创建利益冲突测试数据 ===")
 
 	// 首先检查现有数据
 	fmt.Println("\n📊 检查现有数据...")
@@ -250,15 +254,15 @@ func main() {
 		fmt.Printf("%d. %s (%s) - 客户: %s (%s)\n", i+1, c.Title, c.CaseType, c.ClientName, c.ClientType)
 	}
 
-	if len(cases) >= 2 {
-		fmt.Printf("\n🎉 成功创建冲突场景！律师ID %d 代理了 %d 个案件，将触发利益冲突检测\n", lawyerID, len(cases))
-		fmt.Println("\n📝 测试步骤:")
-		fmt.Println("1. 在前端创建新案件")
-		fmt.Println("2. 选择上述律师代理新案件")
-		fmt.Println("3. 选择任意现有客户作为新案件的客户")
-		fmt.Println("4. 进入利益冲突检查步骤")
-		fmt.Println("5. 应该能看到具体的冲突案例详情！")
-	} else {
-		fmt.Println("❌ 冲突场景创建失败，需要至少2个案件")
-	}
-}
+	// if len(cases) >= 2 {
+	// 	fmt.Printf("\n🎉 成功创建冲突场景！律师ID %d 代理了 %d 个案件，将触发利益冲突检测\n", lawyerID, len(cases))
+	// 	fmt.Println("\n📝 测试步骤:")
+	// 	fmt.Println("1. 在前端创建新案件")
+	// 	fmt.Println("2. 选择上述律师代理新案件")
+	// 	fmt.Println("3. 选择任意现有客户作为新案件的客户")
+	// 	fmt.Println("4. 进入利益冲突检查步骤")
+	// 	fmt.Println("5. 应该能看到具体的冲突案例详情！")
+	// } else {
+	// 	fmt.Println("❌ 冲突场景创建失败，需要至少2个案件")
+	// }
+// }

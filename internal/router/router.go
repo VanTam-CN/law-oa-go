@@ -55,10 +55,18 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 	// 初始化文档相关仓储
 	docRepo := repositories.NewDocumentRepository(db)
 
+	// 初始化集成相关仓储
+	integrationRepo := repositories.NewIntegrationRepository(db)
+
 	// 初始化服务
 	userService := services.NewUserService(userRepo)
 	clientService := services.NewClientService(clientRepo)
 	caseService := services.NewCaseService(caseRepo, clientRepo, userRepo)
+
+	// 初始化增强案例服务
+	enhancedCaseService := services.NewEnhancedCaseService(caseRepo, clientRepo, userRepo)
+	log.Println("✅ 增强案例服务初始化完成")
+
 	legalStatuteService := services.NewLegalStatuteService(db, legalStatuteRepo, legalCategoryRepo, legalTagRepo, legalEsRepo)
 	// 初始化缓存仓库
 	cacheRepo := repositories.NewMemoryCacheRepository()
@@ -74,6 +82,16 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 		userRepo,
 		clientRepo,
 		caseRepo,
+	)
+
+	// 初始化审批服务
+	approvalService := services.NewApprovalService(db)
+
+	// 初始化审批冲突集成服务
+	integrationService := services.NewApprovalConflictIntegrationService(
+		approvalService,
+		conflictService,
+		integrationRepo,
 	)
 
 	// 初始化处理器
@@ -93,6 +111,10 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 	caseHandler := handlers.NewCaseHandler(caseService)
 	log.Println("✅ 案件处理器初始化完成")
 
+	log.Println("🔧 初始化增强案例处理器...")
+	enhancedCaseHandler := handlers.NewEnhancedCaseHandler(enhancedCaseService)
+	log.Println("✅ 增强案例处理器初始化完成")
+
 	log.Println("🔧 初始化法条处理器...")
 	legalStatuteHandler := handlers.NewLegalStatuteHandler(legalStatuteService)
 	log.Println("✅ 法条处理器初始化完成")
@@ -104,6 +126,11 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 	log.Println("🔧 初始化仪表盘处理器...")
 	dashboardHandler := handlers.NewDashboardHandler()
 	log.Println("✅ 仪表盘处理器初始化完成")
+
+	// 初始化集成处理器
+	log.Println("🔧 初始化集成处理器...")
+	integrationHandler := handlers.NewIntegrationHandler(integrationService, conflictService)
+	log.Println("✅ 集成处理器初始化完成")
 
 	// 调试：初始化冲突检测处理器
 	log.Println("🔧 初始化冲突检测处理器...")
@@ -188,6 +215,19 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 			cases.DELETE("/:id", caseHandler.DeleteCase)
 		}
 
+		// 增强案例管理
+		enhancedCases := protected.Group("/enhanced-cases")
+		{
+			enhancedCases.GET("", enhancedCaseHandler.ListEnhancedCases)
+			enhancedCases.GET("/:id", enhancedCaseHandler.GetEnhancedCase)
+			enhancedCases.POST("", enhancedCaseHandler.CreateEnhancedCase)
+			enhancedCases.PUT("/:id", enhancedCaseHandler.UpdateEnhancedCase)
+			enhancedCases.DELETE("/:id", enhancedCaseHandler.DeleteEnhancedCase)
+			enhancedCases.POST("/:id/conflict-check", enhancedCaseHandler.PerformConflictCheck)
+			enhancedCases.POST("/:id/clients", enhancedCaseHandler.AddClientToCase)
+			enhancedCases.DELETE("/:id/clients/:client_id", enhancedCaseHandler.RemoveClientFromCase)
+		}
+
 	
 		// 法条管理（需要认证）
 		legal := protected.Group("/legal")
@@ -221,6 +261,24 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 			conflict.GET("/stats", conflictHandler.GetConflictStats)
 		}
 		log.Println("✅ 冲突检测路由注册完成")
+
+		// 集成管理
+		log.Println("🔧 开始注册集成路由...")
+		integration := protected.Group("/integration")
+		{
+			// 集成工作流相关
+			integration.POST("/approvals", integrationHandler.CreateIntegratedApproval)
+			integration.POST("/approvals/with-conflict", integrationHandler.CreateApprovalWithConflict)
+			integration.GET("/approvals/:id/status", integrationHandler.GetApprovalIntegrationStatus)
+			integration.POST("/approvals/:id/case", integrationHandler.PerformCaseCreation)
+
+			// 冲突检测触发
+			integration.POST("/conflict-check", integrationHandler.TriggerConflictCheck)
+
+			// 集成统计
+			integration.GET("/statistics", integrationHandler.GetIntegrationStatistics)
+		}
+		log.Println("✅ 集成路由注册完成")
 
 		// 团队管理
 		teams := protected.Group("/teams")
@@ -288,6 +346,24 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 				documentStats.GET("/dashboard", documentStatsHandler.GetDashboardStats)   // 仪表板统计
 			}
 		}
+
+		// 审批管理系统
+		log.Println("🔧 初始化审批处理器...")
+		approvalHandler := handlers.NewApprovalHandler(db)
+		log.Println("✅ 审批处理器初始化完成")
+
+		log.Println("🔧 开始注册审批路由...")
+		approvals := protected.Group("/approvals")
+		{
+			approvals.POST("", approvalHandler.CreateApproval)               // 创建审批申请
+			approvals.GET("", approvalHandler.ListApprovals)                    // 获取审批列表
+			approvals.GET("/stats", approvalHandler.GetApprovalStats)         // 获取审批统计
+			approvals.GET("/pending", approvalHandler.GetPendingApprovals)     // 获取待审批列表
+			approvals.GET("/:id", approvalHandler.GetApproval)                // 获取审批详情
+			approvals.GET("/workflows", approvalHandler.GetApprovalWorkflows) // 获取工作流列表
+			approvals.GET("/templates", approvalHandler.GetApprovalTemplates) // 获取模板列表
+		}
+		log.Println("✅ 审批路由注册完成")
 
 		log.Println("完整路由系统初始化完成")
 }

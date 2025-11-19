@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户ID调试工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        button {
+            background: #1890ff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #40a9ff;
+        }
+        .error {
+            color: #ff4d4f;
+            background: #fff2f0;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ffccc7;
+        }
+        .success {
+            color: #52c41a;
+            background: #f6ffed;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #b7eb8f;
+        }
+        .highlight {
+            background: #fff7e6;
+            border: 1px solid #ffd591;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .debug-step {
+            border-left: 4px solid #1890ff;
+            padding-left: 15px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 用户ID调试工具</h1>
+        <p>此工具帮助诊断审批管理界面用户ID不匹配的问题</p>
+
+        <div class="section">
+            <h3>🎯 问题描述</h3>
+            <div class="highlight">
+                <strong>现象：</strong>登录成功（用户ID为3），但审批API请求发送applicantId=10，导致401认证失败
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>🛠️ 调试操作</h3>
+            <button onclick="performFullDebug()">🔬 完整调试分析</button>
+            <button onclick="checkStorage()">📦 检查本地存储</button>
+            <button onclick="testGetCurrentUserId()">🧪 测试getCurrentUserId函数</button>
+            <button onclick="simulateAPIRequest()">🌐 模拟API请求</button>
+            <button onclick="clearAllData()">🗑️ 清除所有数据</button>
+        </div>
+
+        <div class="section">
+            <h3>📊 调试结果</h3>
+            <div id="debug-results"></div>
+        </div>
+
+        <div class="section">
+            <h3>🔧 手动测试</h3>
+            <p>请在律师事务所OA系统中登录，然后返回此页面查看调试信息</p>
+            <button onclick="window.open('http://localhost:3000/login', '_blank')">🚀 打开OA系统登录</button>
+        </div>
+    </div>
+
+    <script>
+        // 复制approval.ts中的getCurrentUserId函数逻辑
+        function getCurrentUserId() {
+            // 模拟getUserInfo函数
+            const userInfo = localStorage.getItem('law_oa_user_info');
+            const user = userInfo ? JSON.parse(userInfo) : null;
+
+            console.log('🔍 getCurrentUserId - 原始用户信息:', user);
+            console.log('🔍 getCurrentUserId - 用户ID:', user?.id);
+            console.log('🔍 getCurrentUserId - 用户ID类型:', typeof user?.id);
+
+            // 如果有真实用户信息，使用真实用户ID
+            if (user?.id !== undefined && user?.id !== null) {
+                const userIdStr = user.id.toString();
+                console.log('✅ getCurrentUserId - 使用真实用户ID:', userIdStr);
+                return userIdStr;
+            }
+
+            // 如果没有用户信息，记录警告并使用默认值
+            console.warn('⚠️ getCurrentUserId - 没有找到用户信息，使用默认值');
+
+            // 开发环境默认用户ID
+            const isDevMode = process.env?.NODE_ENV === 'development';
+            if (isDevMode) {
+                console.log('🛠️ 开发模式：使用默认测试用户ID');
+                return '1';
+            }
+
+            // 生产环境默认值
+            return '1';
+        }
+
+        function performFullDebug() {
+            const resultsDiv = document.getElementById('debug-results');
+            resultsDiv.innerHTML = '<h4>🔬 完整调试分析开始...</h4>';
+
+            let debugHTML = '';
+
+            // 步骤1：检查本地存储
+            debugHTML += '<div class="debug-step">';
+            debugHTML += '<h5>步骤1：检查本地存储</h5>';
+
+            const token = localStorage.getItem('auth_token');
+            const userInfoStr = localStorage.getItem('law_oa_user_info');
+
+            debugHTML += `<p><strong>Token存在：</strong> ${token ? '✅ 是' : '❌ 否'}</p>`;
+            debugHTML += `<p><strong>用户信息存在：</strong> ${userInfoStr ? '✅ 是' : '❌ 否'}</p>`;
+
+            if (userInfoStr) {
+                try {
+                    const userInfo = JSON.parse(userInfoStr);
+                    debugHTML += `<p><strong>用户ID：</strong> ${userInfo.id} (类型: ${typeof userInfo.id})</p>`;
+                    debugHTML += `<p><strong>用户名：</strong> ${userInfo.username || 'N/A'}</p>`;
+                    debugHTML += `<p><strong>邮箱：</strong> ${userInfo.email || 'N/A'}</p>`;
+                    debugHTML += `<p><strong>角色：</strong> ${userInfo.role || 'N/A'}</p>`;
+
+                    // 检查是否是数字10
+                    if (userInfo.id === 10) {
+                        debugHTML += `<div class="error">⚠️ 警告：用户ID确实是10！这可能是问题所在。</div>`;
+                    } else if (userInfo.id === 3) {
+                        debugHTML += `<div class="success">✅ 用户ID正确：3</div>`;
+                    } else {
+                        debugHTML += `<div class="highlight">ℹ️ 用户ID：${userInfo.id}（既不是3也不是10）</div>`;
+                    }
+                } catch (e) {
+                    debugHTML += `<div class="error">❌ 用户信息解析失败：${e.message}</div>`;
+                }
+            }
+
+            debugHTML += '</div>';
+
+            // 步骤2：测试getCurrentUserId函数
+            debugHTML += '<div class="debug-step">';
+            debugHTML += '<h5>步骤2：测试getCurrentUserId函数</h5>';
+
+            const userId = getCurrentUserId();
+            debugHTML += `<p><strong>getCurrentUserId()返回：</strong> ${userId}</p>`;
+            debugHTML += `<p><strong>预期值：</strong> 3（真实登录用户ID）</p>`;
+
+            if (userId === '10') {
+                debugHTML += `<div class="error">❌ 问题确认：getCurrentUserId()返回10，应该返回3！</div>`;
+            } else if (userId === '3') {
+                debugHTML += `<div class="success">✅ getCurrentUserId()返回正确值：3</div>`;
+            } else {
+                debugHTML += `<div class="highlight">ℹ️ getCurrentUserId()返回：${userId}</div>`;
+            }
+
+            debugHTML += '</div>';
+
+            // 步骤3：检查可能的硬编码位置
+            debugHTML += '<div class="debug-step">';
+            debugHTML += '<h5>步骤3：分析可能的问题原因</h5>';
+            debugHTML += '<ul>';
+            debugHTML += '<li>本地存储中的用户信息不正确</li>';
+            debugHTML += '<li>getCurrentUserId函数逻辑有问题</li>';
+            debugHTML += '<li>某个地方覆盖了用户信息</li>';
+            debugHTML += '<li>浏览器缓存了旧的用户数据</li>';
+            debugHTML += '</ul>';
+            debugHTML += '</div>';
+
+            // 步骤4：建议的解决方案
+            debugHTML += '<div class="debug-step">';
+            debugHTML += '<h5>步骤4：建议的解决方案</h5>';
+            debugHTML += '<ol>';
+            debugHTML += '<li><strong>立即解决：</strong>点击"清除所有数据"按钮，然后重新登录</li>';
+            debugHTML += '<li><strong>代码修复：</strong>检查approval.ts中的getCurrentUserId函数</li>';
+            debugHTML += '<li><strong>数据一致性：</strong>确保登录后正确设置用户信息到本地存储</li>';
+            debugHTML += '</ol>';
+            debugHTML += '</div>';
+
+            resultsDiv.innerHTML = debugHTML;
+        }
+
+        function checkStorage() {
+            const resultsDiv = document.getElementById('debug-results');
+
+            const token = localStorage.getItem('auth_token');
+            const userInfoStr = localStorage.getItem('law_oa_user_info');
+            const rolesStr = localStorage.getItem('law_oa_roles');
+            const permissionsStr = localStorage.getItem('law_oa_permissions');
+
+            let html = '<h4>📦 本地存储详细内容</h4>';
+
+            html += '<h5>认证Token</h5>';
+            html += token ?
+                `<pre class="success">✅ Token存在: ${token.substring(0, 50)}...</pre>` :
+                '<pre class="error">❌ Token不存在</pre>';
+
+            html += '<h5>用户信息</h5>';
+            if (userInfoStr) {
+                try {
+                    const userInfo = JSON.parse(userInfoStr);
+                    html += `<pre class="success">✅ 用户信息完整内容:
+${JSON.stringify(userInfo, null, 2)}</pre>`;
+                } catch (e) {
+                    html += `<pre class="error">❌ 用户信息解析失败: ${e.message}</pre>`;
+                }
+            } else {
+                html += '<pre class="error">❌ 用户信息不存在</pre>';
+            }
+
+            html += '<h5>角色信息</h5>';
+            html += rolesStr ?
+                `<pre>角色数据存在: ${rolesStr.substring(0, 100)}...</pre>` :
+                '<pre class="error">❌ 角色信息不存在</pre>';
+
+            html += '<h5>权限信息</h5>';
+            html += permissionsStr ?
+                `<pre>权限数据存在: ${permissionsStr.substring(0, 100)}...</pre>` :
+                '<pre class="error">❌ 权限信息不存在</pre>';
+
+            resultsDiv.innerHTML = html;
+        }
+
+        function testGetCurrentUserId() {
+            const resultsDiv = document.getElementById('debug-results');
+
+            let html = '<h4>🧪 getCurrentUserId函数测试</h4>';
+
+            // 重写console.log来捕获输出
+            const originalLog = console.log;
+            const logs = [];
+            console.log = function(...args) {
+                logs.push(args.join(' '));
+                originalLog.apply(console, args);
+            };
+
+            // 执行函数
+            const userId = getCurrentUserId();
+
+            // 恢复console.log
+            console.log = originalLog;
+
+            html += `<p><strong>函数返回值：</strong> ${userId}</p>`;
+            html += `<p><strong>返回值类型：</strong> ${typeof userId}</p>`;
+            html += '<h5>调试日志：</h5>';
+            html += '<pre>' + logs.join('\n') + '</pre>';
+
+            resultsDiv.innerHTML = html;
+        }
+
+        function simulateAPIRequest() {
+            const resultsDiv = document.getElementById('debug-results');
+
+            const userId = getCurrentUserId();
+            const requestUrl = `/api/v1/approvals?applicantId=${userId}`;
+
+            let html = '<h4>🌐 模拟API请求</h4>';
+            html += `<p><strong>当前用户ID：</strong> ${userId}</p>`;
+            html += `<p><strong>请求URL：</strong> ${requestUrl}</p>`;
+
+            if (userId === '10') {
+                html += '<div class="error">❌ 这将导致401错误，因为用户ID不正确！</div>';
+            } else if (userId === '3') {
+                html += '<div class="success">✅ 这应该是正确的请求</div>';
+            } else {
+                html += `<div class="highlight">ℹ️ 请求用户ID为：${userId}</div>`;
+            }
+
+            html += '<p><strong>建议：</strong>检查用户登录后是否正确设置了用户信息到本地存储</p>';
+
+            resultsDiv.innerHTML = html;
+        }
+
+        function clearAllData() {
+            if (confirm('确定要清除所有认证相关的本地存储吗？这将需要重新登录。')) {
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('law_oa_user_info');
+                localStorage.removeItem('law_oa_roles');
+                localStorage.removeItem('law_oa_permissions');
+
+                const resultsDiv = document.getElementById('debug-results');
+                resultsDiv.innerHTML = `
+                    <h4>🗑️ 清除完成</h4>
+                    <div class="success">
+                        <p>✅ 所有认证数据已清除</p>
+                        <p>📝 下一步操作：</p>
+                        <ol>
+                            <li>重新打开OA系统登录页面</li>
+                            <li>使用 admin@lawoa.com / admin123 登录</li>
+                            <li>登录成功后返回此页面重新检查</li>
+                        </ol>
+                    </div>
+                    <button onclick="window.open('http://localhost:3000/login', '_blank')">🚀 重新登录</button>
+                `;
+
+                console.log('🗑️ 所有认证相关存储已清除');
+            }
+        }
+
+        // 页面加载时自动执行基础检查
+        window.onload = function() {
+            console.log('🔍 用户ID调试工具已加载');
+
+            // 检查是否有基本的用户信息
+            const userInfo = localStorage.getItem('law_oa_user_info');
+            if (userInfo) {
+                try {
+                    const user = JSON.parse(userInfo);
+                    console.log('📊 发现用户信息:', user);
+                    if (user.id === 10) {
+                        console.warn('⚠️ 发现问题：用户ID是10，但应该是3');
+                    }
+                } catch (e) {
+                    console.error('❌ 用户信息解析失败:', e);
+                }
+            } else {
+                console.log('ℹ️ 没有找到用户信息，可能需要先登录');
+            }
+        };
+    </script>
+</body>
+</html>

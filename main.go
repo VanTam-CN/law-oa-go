@@ -41,6 +41,7 @@ import (
 	"law-oa-go/internal/config"
 	"law-oa-go/internal/database"
 	"law-oa-go/internal/errors"
+	"law-oa-go/internal/handlers"
 	"law-oa-go/internal/health"
 	"law-oa-go/internal/middleware"
 	"law-oa-go/internal/metrics"
@@ -216,6 +217,12 @@ func main() {
 		database.GetCacheService().GetClient(),
 		database.GetElasticsearchClient())
 
+	// 注册集成测试路由（仅开发环境）
+	if !cfg.IsProduction() {
+		handlers.RegisterTestRoutes(app, database.GetOptimizedDB().DB)
+		log.Println("🔧 集成测试路由注册完成")
+	}
+
 	// 初始化RBAC数据
 	if err := database.InitRBACData(database.GetOptimizedDB().DB); err != nil {
 		log.Printf("RBAC数据初始化失败: %v", err)
@@ -228,6 +235,17 @@ func main() {
 		log.Printf("用户表自动迁移失败: %v", err)
 	} else {
 		log.Println("用户表自动迁移成功")
+	}
+
+	// 自动迁移集成相关模型
+	if err := database.GetOptimizedDB().DB.AutoMigrate(
+		&models.ConflictCheckAssociation{},
+		&models.CaseCreationAssociation{},
+		&models.ApprovalIntegrationMetadata{},
+	); err != nil {
+		log.Printf("集成模型自动迁移失败: %v", err)
+	} else {
+		log.Println("集成模型自动迁移成功")
 	}
 
 	// 添加性能监控端点
