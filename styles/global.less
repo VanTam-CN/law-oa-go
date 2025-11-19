@@ -1,0 +1,29 @@
+@import '~antd/dist/antd.less';
+
+// 全局样式变量
+@primary-color: #1890ff;
+@layout-header-background: #fff;
+@layout-header-height: 64px;
+@layout-header-padding: 0 24px;
+@layout-sider-background: #001529;
+
+// 布局样式
+.app-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
+  z-index: 1;
+
+  .header-right {
+    display: flex;
+    align-items: center;
+  }
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+  .app-header {
+    padding: 0 12px;
+  }
+}

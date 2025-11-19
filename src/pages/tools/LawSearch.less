@@ -1,0 +1,218 @@
+.law-search {
+  .search-card {
+    .search-filters {
+      margin-bottom: 24px;
+      padding: 16px;
+      background: #fafafa;
+      border-radius: 8px;
+      border: 1px solid #f0f0f0;
+
+      .search-main {
+        margin-bottom: 16px;
+      }
+
+      .search-options {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+
+        .ant-select {
+          min-width: 120px;
+        }
+      }
+    }
+
+    .popular-searches {
+      margin-bottom: 16px;
+      padding: 12px 16px;
+      background: #f6ffed;
+      border: 1px solid #b7eb8f;
+      border-radius: 6px;
+
+      .ant-btn-link {
+        padding: 0 4px;
+        height: auto;
+        line-height: 1.4;
+        font-size: 13px;
+      }
+    }
+
+    .search-results {
+      .results-header {
+        margin-bottom: 16px;
+        padding: 8px 0;
+        font-size: 14px;
+        color: #666;
+        border-bottom: 1px solid #f0f0f0;
+      }
+
+      .law-content {
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 6px;
+        margin: 8px 0;
+
+        .law-content-header {
+          margin-bottom: 12px;
+          font-weight: 500;
+          color: #262626;
+        }
+
+        .law-content-text {
+          line-height: 1.8;
+          color: #333;
+          white-space: pre-wrap;
+          font-size: 14px;
+          margin-bottom: 16px;
+        }
+
+        .law-keywords {
+          margin-top: 12px;
+          padding-top: 12px;
+          border-top: 1px solid #e8e8e8;
+
+          .ant-tag {
+            margin-right: 8px;
+            margin-bottom: 4px;
+          }
+        }
+      }
+
+      .pagination-wrapper {
+        display: flex;
+        justify-content: center;
+        margin-top: 24px;
+        padding-top: 16px;
+        border-top: 1px solid #f0f0f0;
+      }
+
+      .ant-table {
+        .ant-table-tbody > tr:hover > td {
+          background: #f5f5f5;
+        }
+
+        .ant-table-expanded-row {
+          .ant-table-cell {
+            padding: 0;
+          }
+        }
+
+        .ant-table-thead > tr > th {
+          background: #fafafa;
+          font-weight: 600;
+        }
+
+        .ant-table-column-title {
+          font-size: 13px;
+        }
+
+        .ant-table-cell {
+          padding: 12px 16px;
+          font-size: 13px;
+        }
+      }
+    }
+  }
+
+  // 响应式设计
+  @media (max-width: 768px) {
+    .search-card {
+      .search-filters {
+        padding: 12px;
+
+        .search-options {
+          .ant-select {
+            width: 100% !important;
+            margin-bottom: 8px;
+          }
+        }
+      }
+
+      .search-results {
+        .ant-table {
+          .ant-table-column-title {
+            font-size: 12px;
+          }
+
+          .ant-table-cell {
+            padding: 8px 12px;
+            font-size: 12px;
+          }
+        }
+
+        .law-content {
+          padding: 16px;
+
+          .law-content-text {
+            font-size: 13px;
+          }
+        }
+      }
+    }
+  }
+}
+
+// 搜索框样式增强
+.law-search {
+  .search-filters {
+    .ant-select-selection {
+      border-radius: 6px;
+    }
+
+    .ant-btn {
+      border-radius: 6px;
+    }
+
+    .ant-input-search {
+      .ant-input {
+        border-radius: 6px 0 0 6px;
+      }
+
+      .ant-input-search-button {
+        border-radius: 0 6px 6px 0;
+      }
+    }
+  }
+
+  .ant-table-wrapper {
+    .ant-table-pagination {
+      margin: 16px 0;
+    }
+  }
+}
+
+// 暗色主题适配
+[data-theme='dark'] {
+  .law-search {
+    .search-card {
+      .search-filters {
+        background: #1f1f1f;
+        border-color: #434343;
+      }
+
+      .popular-searches {
+        background: #162312;
+        border-color: #274916;
+      }
+
+      .search-results {
+        .results-header {
+          border-bottom-color: #434343;
+        }
+
+        .law-content {
+          background: #1f1f1f;
+
+          .law-keywords {
+            border-top-color: #434343;
+          }
+        }
+
+        .pagination-wrapper {
+          border-top-color: #434343;
+        }
+      }
+    }
+  }
+}

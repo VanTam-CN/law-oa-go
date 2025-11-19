@@ -1,0 +1,337 @@
+import { get, post, put, del } from './http';
+import { getUserInfo } from '@/utils/storage';
+
+export interface ApprovalItem {
+  id: number;
+  type: string;
+  title: string;
+  content: string;
+  applicant: string;
+  applicantId: number;
+  department: string;
+  createTime: string;
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+  urgency: 'normal' | 'urgent' | 'very_urgent';
+  currentApprover?: string;
+  currentApproverId?: number;
+}
+
+// 全局审批数据存储 - 模拟数据库
+let globalApprovals: ApprovalItem[] = [
+  {
+    id: 1,
+    type: 'leave',
+    title: '请假申请',
+    content: '因个人原因需请假3天',
+    applicant: '张三',
+    applicantId: 1,
+    department: '技术部',
+    createTime: '2024-01-15T09:00:00Z',
+    status: 'pending',
+    urgency: 'normal',
+    currentApprover: '李四',
+    currentApproverId: 2
+  },
+  {
+    id: 2,
+    type: 'expense',
+    title: '费用报销',
+    content: '出差费用报销，共计2800元',
+    applicant: '王五',
+    applicantId: 3,
+    department: '市场部',
+    createTime: '2024-01-14T14:30:00Z',
+    status: 'pending',
+    urgency: 'urgent',
+    currentApprover: '赵六',
+    currentApproverId: 4
+  }
+];
+
+// 用于生成唯一ID的计数器
+let approvalIdCounter = 100;
+
+// 获取当前用户ID的函数
+const getCurrentUserId = (): number => {
+  const userInfo = getUserInfo();
+  return userInfo?.id || 1; // 默认返回1，确保兼容性
+};
+
+
+export interface ApprovalDetail extends ApprovalItem {
+  records: ApprovalRecord[];
+}
+
+export interface ApprovalRecord {
+  id: number;
+  approvalId: number;
+  approver: string;
+  approverId: number;
+  action: 'approve' | 'reject';
+  comment: string;
+  createTime: string;
+}
+
+export interface ApprovalStats {
+  pendingCount: number;
+  myPendingCount: number;
+  myTotalCount: number;
+}
+
+export interface CreateApprovalParams {
+  type: string;
+  title: string;
+  content: string;
+  applicant: string;
+  applicantId: number;
+  department: string;
+  urgency: 'normal' | 'urgent' | 'very_urgent';
+}
+
+// 利益冲突审批相关接口
+export interface ConflictApprovalParams {
+  caseId: string;
+  caseTitle: string;
+  conflictReason: string;
+  riskLevel: string;
+  conflictCases: Array<{
+    caseId: string;
+    caseName: string;
+    conflictType: string;
+    riskLevel: string;
+    description: string;
+  }>;
+  applicant: string;
+  applicantId: number;
+  department: string;
+  urgency?: 'normal' | 'urgent' | 'very_urgent';
+  additionalNotes?: string;
+}
+
+export interface ConflictApprovalResult {
+  approvalId: number;
+  approvalNumber: string;
+  status: 'pending' | 'approved' | 'rejected';
+  submitTime: string;
+  expectedProcessingTime: string;
+}
+
+/**
+ * 获取审批列表
+ * @param type 类型：pending-待我审批，my-我的申请
+ * @returns 审批列表
+ */
+export const getApprovals = (type: 'pending' | 'my'): Promise<ApprovalItem[]> => {
+  // 使用全局数据，确保与submitConflictApproval创建的数据同步
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const currentUserId = getCurrentUserId();
+      console.log('获取审批列表 - 当前用户ID:', currentUserId, '类型:', type);
+      console.log('全局审批数据:', globalApprovals);
+
+      if (type === 'pending') {
+        // 待我审批：当前用户是审批人的审批
+        const pendingForMe = globalApprovals.filter(item =>
+          item.status === 'pending' &&
+          item.currentApproverId === currentUserId
+        );
+        console.log('待我审批的审批:', pendingForMe);
+        resolve(pendingForMe);
+      } else {
+        // 我的申请：当前用户是申请人的审批
+        const myApplications = globalApprovals.filter(item =>
+          item.applicantId === currentUserId
+        );
+        console.log('我的申请:', myApplications);
+        resolve(myApplications);
+      }
+    }, 300);
+  });
+};
+
+/**
+ * 获取审批详情
+ * @param id 审批ID
+ * @returns 审批详情
+ */
+export const getApprovalDetail = (id: number): Promise<ApprovalDetail> => {
+  // 使用全局数据，确保与submitConflictApproval创建的数据同步
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const approval = globalApprovals.find(item => item.id === id);
+      if (approval) {
+        resolve({
+          ...approval,
+          records: [
+            {
+              id: 1,
+              approvalId: id,
+              approver: '李四',
+              approverId: 2,
+              action: 'approve' as const,
+              comment: '同意申请',
+              createTime: '2024-01-15T10:00:00Z'
+            }
+          ]
+        });
+      } else {
+        throw new Error('审批不存在');
+      }
+    }, 300);
+  });
+};
+
+/**
+ * 创建审批
+ * @param params 审批参数
+ * @returns 创建结果
+ */
+export const createApproval = (params: CreateApprovalParams): Promise<ApprovalItem> => {
+  // 开发环境返回模拟数据
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const newApproval: ApprovalItem = {
+        id: Date.now(),
+        ...params,
+        createTime: new Date().toISOString(),
+        status: 'pending'
+      };
+      resolve(newApproval);
+    }, 300);
+  });
+};
+
+/**
+ * 审批操作
+ * @param id 审批ID
+ * @param action 审批动作
+ * @param comment 审批意见
+ * @returns 操作结果
+ */
+export const handleApproval = (id: number, action: 'approve' | 'reject', comment: string): Promise<any> => {
+  // 开发环境返回模拟数据
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({ success: true, message: `审批${action === 'approve' ? '通过' : '拒绝'}成功` });
+    }, 300);
+  });
+};
+
+/**
+ * 撤回审批
+ * @param id 审批ID
+ * @returns 操作结果
+ */
+export const cancelApproval = (id: number): Promise<any> => {
+  // 开发环境返回模拟数据
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({ success: true, message: '撤回成功' });
+    }, 300);
+  });
+};
+
+/**
+ * 获取审批统计
+ * @returns 统计数据
+ */
+export const getApprovalStats = (): Promise<ApprovalStats> => {
+  // 使用动态计算，基于全局数据
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(calculateApprovalStats());
+    }, 300);
+  });
+};
+
+// 重命名避免函数名冲突
+const calculateApprovalStats = () => {
+  const currentUserId = getCurrentUserId();
+  console.log('计算审批统计 - 当前用户ID:', currentUserId);
+
+  const pendingCount = globalApprovals.filter(item => item.status === 'pending').length;
+  const myTotalCount = globalApprovals.filter(item => item.applicantId === currentUserId).length;
+  const myPendingCount = globalApprovals.filter(item => item.status === 'pending' && item.applicantId === currentUserId).length;
+
+  console.log('统计结果:', { pendingCount, myTotalCount, myPendingCount });
+
+  return {
+    pendingCount,
+    myPendingCount,
+    myTotalCount
+  };
+};
+
+/**
+ * 提交利益冲突审批申请
+ * @param params 利益冲突审批参数
+ * @returns 审批结果
+ */
+export const submitConflictApproval = (params: ConflictApprovalParams): Promise<ConflictApprovalResult> => {
+  // 开发环境返回模拟数据，实际应该调用后端API
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      approvalIdCounter++;
+      const approvalNumber = `CO${new Date().getFullYear()}${String(approvalIdCounter).padStart(6, '0')}`;
+
+      const currentUserId = getCurrentUserId();
+      console.log('提交利益冲突审批 - 当前用户ID:', currentUserId);
+      console.log('提交参数:', params);
+
+      // 创建审批对象并添加到全局数据中
+      const newApproval: ApprovalItem = {
+        id: approvalIdCounter,
+        type: 'conflict',
+        title: params.caseTitle,
+        content: params.conflictReason,
+        applicant: params.applicant,
+        applicantId: params.applicantId || currentUserId, // 如果没有提供applicantId，使用当前用户ID
+        department: params.department,
+        createTime: new Date().toISOString(),
+        status: 'pending',
+        urgency: params.urgency || 'normal',
+        currentApprover: '合规部门',
+        currentApproverId: 999
+      };
+
+      console.log('新创建的审批对象:', newApproval);
+
+      // 添加到全局数据中
+      globalApprovals.push(newApproval);
+      console.log('添加到全局数据后的审批列表:', globalApprovals);
+
+      const result: ConflictApprovalResult = {
+        approvalId: approvalIdCounter,
+        approvalNumber,
+        status: 'pending',
+        submitTime: new Date().toISOString(),
+        expectedProcessingTime: params.urgency === 'urgent' ? '1-2个工作日' : '2-3个工作日'
+      };
+
+      console.log('利益冲突审批申请已提交:', result, '申请参数:', params);
+      console.log('已添加到审批列表:', newApproval);
+      resolve(result);
+    }, 500);
+  });
+};
+
+/**
+ * 查询利益冲突审批状态
+ * @param approvalId 审批ID
+ * @returns 审批状态
+ */
+export const getConflictApprovalStatus = (approvalId: number): Promise<ConflictApprovalResult> => {
+  // 开发环境返回模拟数据
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const result: ConflictApprovalResult = {
+        approvalId,
+        approvalNumber: `CO${new Date().getFullYear()}${String(approvalId).slice(-6)}`,
+        status: 'pending',
+        submitTime: new Date().toISOString(),
+        expectedProcessingTime: '2-3个工作日'
+      };
+      resolve(result);
+    }, 200);
+  });
+};

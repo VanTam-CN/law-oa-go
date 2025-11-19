@@ -1,0 +1,31 @@
+.app-header {
+  height: @layout-header-height;
+  padding: @layout-header-padding;
+  background: @layout-header-background;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+
+  .header-right {
+    display: flex;
+    align-items: center;
+
+    .ant-space {
+      line-height: 1;
+    }
+
+    .ant-badge {
+      cursor: pointer;
+    }
+
+    .ant-dropdown-trigger {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+
+      .ant-avatar {
+        margin-right: 8px;
+      }
+    }
+  }
+}

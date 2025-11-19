@@ -1,0 +1,22 @@
+
+> law-oa-frontend@0.0.0 build
+> vite build
+
+vite v5.4.20 building for production...
+transforming...
+✓ 3178 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                     0.69 kB │ gzip:   0.36 kB
+dist/assets/index-PZIUwvNe.css     40.51 kB │ gzip:   6.89 kB
+dist/assets/utils-DZHuittt.js       0.03 kB │ gzip:   0.05 kB
+dist/assets/router-Cs0ex-DR.js     32.66 kB │ gzip:  11.89 kB
+dist/assets/vendor-DGvbWsQX.js    140.34 kB │ gzip:  45.09 kB
+dist/assets/index-XybqDMup.js     351.41 kB │ gzip: 104.41 kB
+dist/assets/antd-nCeadUBv.js    1,162.80 kB │ gzip: 350.18 kB
+
+(!) Some chunks are larger than 1000 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 5.60s

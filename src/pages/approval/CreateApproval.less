@@ -1,0 +1,92 @@
+.create-approval-container {
+  .page-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 24px;
+
+    .back-button {
+      margin-right: 16px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 500;
+    }
+  }
+
+  .approval-form {
+    max-width: 800px;
+    margin: 0 auto;
+
+    .form-section {
+      margin-bottom: 32px;
+
+      .section-title {
+        font-size: 16px;
+        font-weight: 500;
+        margin-bottom: 16px;
+        color: #333;
+      }
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: center;
+      margin-top: 32px;
+      gap: 16px;
+    }
+  }
+
+  .urgency-radio-group {
+    display: flex;
+    gap: 24px;
+
+    .ant-radio-wrapper {
+      font-size: 14px;
+    }
+  }
+
+  .type-select {
+    width: 100%;
+  }
+
+  .title-input {
+    width: 100%;
+  }
+
+  .content-textarea {
+    width: 100%;
+    min-height: 120px;
+  }
+
+  .date-picker {
+    width: 100%;
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .create-approval-container {
+    .page-header {
+      h2 {
+        font-size: 20px;
+      }
+    }
+
+    .approval-form {
+      .form-actions {
+        flex-direction: column;
+
+        .ant-btn {
+          width: 100%;
+        }
+      }
+    }
+
+    .urgency-radio-group {
+      flex-direction: column;
+      gap: 12px;
+    }
+  }
+}

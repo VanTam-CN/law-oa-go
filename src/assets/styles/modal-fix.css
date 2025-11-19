@@ -1,0 +1,161 @@
+/*
+ * Modal层级修复专用CSS文件
+ * 解决Modal被Header遮挡的问题
+ *
+ * 核心策略：
+ * 1. 使用更高优先级的选择器
+ * 2. 强制覆盖Ant Design默认样式
+ * 3. 确保Modal在最顶层显示
+ */
+
+/* 🎯 强制覆盖所有Modal相关元素的z-index */
+.ant-modal-root {
+  z-index: 2000 !important;
+  position: relative !important;
+}
+
+.ant-modal-mask {
+  z-index: 2001 !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+}
+
+.ant-modal-wrap {
+  z-index: 2001 !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.ant-modal {
+  z-index: 2002 !important;
+  position: relative !important;
+  margin: 0 auto !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+}
+
+/* 🎯 确保Modal容器在最顶层 */
+body > .ant-modal-root {
+  z-index: 2000 !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+}
+
+/* 🎯 针对CreateCaseWizard的特殊处理 */
+body .ant-modal-root.create-case-wizard-modal {
+  z-index: 2005 !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+}
+
+body .ant-modal-root.create-case-wizard-modal .ant-modal-wrap {
+  z-index: 2005 !important;
+  position: fixed !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+body .ant-modal-root.create-case-wizard-modal .ant-modal {
+  z-index: 2006 !important;
+  margin: 0 auto !important;
+  max-width: 90vw !important;
+  max-height: 90vh !important;
+}
+
+/* 🎯 备用选择器 - 更具体的选择器 */
+.ant-modal-root .ant-modal-wrap .create-case-wizard-modal {
+  z-index: 2005 !important;
+}
+
+.ant-modal-root .ant-modal-wrap .create-case-wizard-modal .ant-modal {
+  z-index: 2006 !important;
+}
+
+/* 🎯 确保Modal内容区域滚动正常 */
+.ant-modal-body {
+  overflow-y: auto !important;
+  max-height: calc(90vh - 200px) !important;
+}
+
+/* 🎯 防止其他元素遮挡Modal */
+.ant-notification,
+.ant-message,
+.ant-drawer,
+.ant-dropdown,
+.ant-select-dropdown,
+.ant-picker-dropdown,
+.ant-tooltip {
+  z-index: 1999 !important;
+}
+
+/* 🎯 确保Header不会覆盖Modal */
+.app-header {
+  z-index: 1030 !important; /* 保持原有值，确保不破坏设计系统 */
+}
+
+/* 🎯 全局Modal增强样式 */
+.ant-modal-content {
+  overflow: hidden !important;
+  border-radius: 8px !important;
+  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08) !important;
+}
+
+.ant-modal-header {
+  background: #fafafa !important;
+  border-bottom: 1px solid #f0f0f0 !important;
+  padding: 16px 24px !important;
+}
+
+.ant-modal-body {
+  padding: 24px !important;
+}
+
+.ant-modal-footer {
+  padding: 10px 16px !important;
+  border-top: 1px solid #f0f0f0 !important;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%) !important;
+}
+
+/* 🎯 移动端适配 */
+@media (max-width: 768px) {
+  .ant-modal {
+    max-width: 95vw !important;
+    margin: 10px !important;
+  }
+
+  .ant-modal-body {
+    padding: 16px !important;
+    max-height: calc(100vh - 150px) !important;
+  }
+}
+
+/* 🎯 强制居中定位 */
+.ant-modal-centered {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.ant-modal-centered .ant-modal {
+  margin: 0 auto !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+}

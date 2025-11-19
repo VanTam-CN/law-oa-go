@@ -1,0 +1,813 @@
+/**
+ * MultiClientSelector 多客户选择组件
+ * 支持多客户选择、角色分配和冲突检测配置
+ */
+
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import {
+  Card,
+  Select,
+  Button,
+  Space,
+  Tag,
+  Form,
+  Row,
+  Col,
+  Alert,
+  Tooltip,
+  Divider,
+  Modal,
+  Input,
+  Switch,
+  InputNumber,
+  Typography,
+  message,
+  Avatar,
+  Popconfirm,
+  Badge,
+  Collapse,
+  Empty,
+  List,
+  Descriptions
+} from 'antd';
+import {
+  PlusOutlined,
+  UserOutlined,
+  TeamOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  SearchOutlined,
+  ExclamationCircleOutlined,
+  InfoCircleOutlined,
+  SafetyCertificateOutlined,
+  SettingOutlined,
+  CloseCircleOutlined,
+  CheckCircleOutlined
+} from '@ant-design/icons';
+import type { SelectProps } from 'antd/es/select';
+import type { FormInstance } from 'antd/es/form';
+// 暂时使用内联类型定义，避免导入问题
+// import { clientRoleService, conflictCheckUtils, type ClientRoleInfo, type ConflictCheckConfig } from '@/services/enhancedCase';
+
+const { Option } = Select;
+const { Text, Title } = Typography;
+const { Panel } = Collapse;
+
+// 内联类型定义
+interface ClientRoleInfo {
+  role: string;
+  relationshipDescription?: string;
+  contactInfo?: string;
+}
+
+interface ConflictCheckConfig {
+  enabled: boolean;
+  checkOnCreate: boolean;
+  searchYears?: number;
+  includeCorporateRelations?: boolean;
+  searchDepth?: 'STANDARD' | 'DEEP' | 'COMPREHENSIVE';
+  autoWaiverIfPossible?: boolean;
+}
+
+// 内联服务函数
+const clientRoleService = {
+  getClientRoles: () => [
+    { value: 'PRIMARY', label: '主要委托人', description: '案件的主要委托人' },
+    { value: 'SECONDARY', label: '次要委托人', description: '案件的次要委托人' },
+    { value: 'GUARANTOR', label: '担保人', description: '为案件提供担保的个人或机构' },
+    { value: 'INTERESTED_PARTY', label: '利益相关方', description: '与案件有利益关系的第三方' },
+    { value: 'REPRESENTATIVE', label: '代表人', description: '代表其他主体参与案件的当事人' },
+    { value: 'JOINT_APPLICANT', label: '共同申请人', description: '共同提出申请的多方当事人' }
+  ],
+
+  validateClientRoles: (clientIds: string[], clientRoles: Record<string, ClientRoleInfo>) => {
+    const errors: string[] = [];
+
+    clientIds.forEach(clientId => {
+      if (!clientRoles[clientId]) {
+        errors.push(`客户 ${clientId} 缺少角色配置`);
+      }
+    });
+
+    const hasPrimaryClient = Object.values(clientRoles).some(role => role.role === 'PRIMARY');
+    if (!hasPrimaryClient) {
+      errors.push('案件必须有至少一个主要委托人');
+    }
+
+    const primaryClients = Object.values(clientRoles).filter(role => role.role === 'PRIMARY');
+    if (primaryClients.length > 1) {
+      errors.push('主要委托人不能超过一个');
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  }
+};
+
+const conflictCheckUtils = {
+  generateConflictCheckConfig: (clientType: string, isMajorRisk: boolean): ConflictCheckConfig => {
+    return {
+      enabled: true,
+      checkOnCreate: true,
+      searchYears: clientType === 'COMPANY' ? 7 : 5,
+      includeCorporateRelations: clientType === 'COMPANY',
+      searchDepth: isMajorRisk ? 'COMPREHENSIVE' : 'STANDARD',
+      autoWaiverIfPossible: !isMajorRisk
+    };
+  }
+};
+
+// 客户信息接口
+interface ClientInfo {
+  id: string;
+  name: string;
+  type: 'PERSON' | 'COMPANY';
+  company?: string;
+  phone?: string;
+  email?: string;
+  clientNumber?: string;
+}
+
+// 已选客户信息接口
+interface SelectedClient {
+  clientInfo: ClientInfo;
+  role: string;
+  conflictCheckConfig: ConflictCheckConfig;
+  relationshipDescription?: string;
+  contactInfo?: string;
+}
+
+// 组件Props接口
+interface MultiClientSelectorProps {
+  value?: string[];
+  onChange?: (clientIds: string[], clientDetails: SelectedClient[]) => void;
+  form?: FormInstance;
+  disabled?: boolean;
+  maxClients?: number;
+  showConflictConfig?: boolean;
+  allowPrimaryOnly?: boolean;
+}
+
+// 角色配置Modal Props
+interface RoleConfigModalProps {
+  visible: boolean;
+  client: ClientInfo | null;
+  currentRole?: SelectedClient;
+  onOk: (config: SelectedClient) => void;
+  onCancel: () => void;
+}
+
+// 角色配置Modal组件
+const RoleConfigModal: React.FC<RoleConfigModalProps> = ({
+  visible,
+  client,
+  currentRole,
+  onOk,
+  onCancel
+}) => {
+  const [form] = Form.useForm();
+  const [showAdvancedConfig, setShowAdvancedConfig] = useState(false);
+
+  const clientType = client?.type || 'PERSON';
+  const isCompany = clientType === 'COMPANY';
+
+  useEffect(() => {
+    if (visible && client && currentRole) {
+      form.setFieldsValue({
+        role: currentRole.role,
+        relationshipDescription: currentRole.relationshipDescription || '',
+        contactInfo: currentRole.contactInfo || '',
+        conflictCheckConfig: currentRole.conflictCheckConfig
+      });
+    } else if (visible && client) {
+      // 为新客户设置默认配置
+      const defaultConfig = conflictCheckUtils.generateConflictCheckConfig(clientType, false);
+      form.setFieldsValue({
+        role: 'PRIMARY',
+        relationshipDescription: '',
+        contactInfo: client.phone || '',
+        conflictCheckConfig: defaultConfig
+      });
+    }
+  }, [visible, client, currentRole, form, clientType]);
+
+  const handleOk = async () => {
+    try {
+      const values = await form.validateFields();
+
+      // 验证角色配置
+      const roleValidation = clientRoleService.validateClientRoles([client.id], {
+        [client.id]: {
+          role: values.role,
+          relationshipDescription: values.relationshipDescription,
+          contactInfo: values.contactInfo
+        }
+      });
+
+      if (!roleValidation.isValid) {
+        message.error(roleValidation.errors.join(', '));
+        return;
+      }
+
+      const selectedClient: SelectedClient = {
+        clientInfo: client,
+        role: values.role,
+        relationshipDescription: values.relationshipDescription,
+        contactInfo: values.contactInfo,
+        conflictCheckConfig: values.conflictCheckConfig
+      };
+
+      onOk(selectedClient);
+    } catch (error) {
+      console.error('角色配置验证失败:', error);
+    }
+  };
+
+  const availableRoles = useMemo(() => {
+    return clientRoleService.getClientRoles().filter(role => {
+      // 如果是企业客户，可以显示所有角色
+      if (isCompany) return true;
+      // 如果是个人客户，过滤掉一些企业专用角色
+      return !['GUARANTOR', 'INTERESTED_PARTY'].includes(role.value);
+    });
+  }, [isCompany]);
+
+  return (
+    <Modal
+      title={
+        <Space>
+          <UserOutlined />
+          <span>客户角色配置 - {client?.name}</span>
+          <Tag color={isCompany ? 'blue' : 'green'}>
+            {isCompany ? '企业客户' : '个人客户'}
+          </Tag>
+        </Space>
+      }
+      open={visible}
+      onOk={handleOk}
+      onCancel={onCancel}
+      width={720}
+      destroyOnClose
+    >
+      <Form
+        form={form}
+        layout="vertical"
+        requiredMark={false}
+      >
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item
+              label="客户角色"
+              name="role"
+              rules={[{ required: true, message: '请选择客户角色' }]}
+              tooltip="选择该客户在案件中的角色定位"
+            >
+              <Select placeholder="选择客户角色">
+                {availableRoles.map(role => (
+                  <Option key={role.value} value={role.value}>
+                    <Space direction="vertical" size={0}>
+                      <Text strong>{role.label}</Text>
+                      <Text type="secondary" style={{ fontSize: '12px' }}>
+                        {role.description}
+                      </Text>
+                    </Space>
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+
+          <Col span={12}>
+            <Form.Item
+              label="联系方式"
+              name="contactInfo"
+              tooltip="用于联系该客户的联系方式"
+            >
+              <Input placeholder="手机号、邮箱或其他联系方式" />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Form.Item
+          label="关系描述"
+          name="relationshipDescription"
+          tooltip="描述该客户与案件的关系"
+        >
+          <Input.TextArea
+            rows={2}
+            placeholder="请描述该客户与案件的具体关系..."
+            maxLength={200}
+            showCount
+          />
+        </Form.Item>
+
+        <Divider>
+          <Space>
+            <SettingOutlined />
+            <Text>冲突检测配置</Text>
+            <Switch
+              checked={showAdvancedConfig}
+              onChange={setShowAdvancedConfig}
+              size="small"
+            />
+            <Text type="secondary" style={{ fontSize: '12px' }}>
+              {showAdvancedConfig ? '收起配置' : '展开配置'}
+            </Text>
+          </Space>
+        </Divider>
+
+        <Form.Item
+          label="冲突检测"
+          name={['conflictCheckConfig', 'enabled']}
+          valuePropName="checked"
+          tooltip="是否对该客户进行利益冲突检测"
+        >
+          <Switch checkedChildren="启用" unCheckedChildren="禁用" />
+        </Form.Item>
+
+        {form.getFieldValue(['conflictCheckConfig', 'enabled']) && (
+          <>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  label="搜索年限"
+                  name={['conflictCheckConfig', 'searchYears']}
+                  rules={[
+                    { required: true, message: '请设置搜索年限' },
+                    {
+                      validator: (_, value) => {
+                        if (value && (value < 1 || value > 20)) {
+                          return Promise.reject('搜索年限必须在1-20年之间');
+                        }
+                        return Promise.resolve();
+                      }
+                    }
+                  ]}
+                  tooltip="检索历史案件的时间范围"
+                >
+                  <InputNumber
+                    min={1}
+                    max={20}
+                    addonAfter="年"
+                    style={{ width: '100%' }}
+                  />
+                </Form.Item>
+              </Col>
+
+              <Col span={12}>
+                <Form.Item
+                  label="搜索深度"
+                  name={['conflictCheckConfig', 'searchDepth']}
+                  rules={[{ required: true, message: '请选择搜索深度' }]}
+                  tooltip="冲突检测的详细程度"
+                >
+                  <Select>
+                    <Select.Option value="STANDARD">标准检测</Select.Option>
+                    <Select.Option value="DEEP">深度检测</Select.Option>
+                    <Select.Option value="COMPREHENSIVE">全面检测</Select.Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+
+            {isCompany && (
+              <Form.Item
+                label="关联企业检索"
+                name={['conflictCheckConfig', 'includeCorporateRelations']}
+                valuePropName="checked"
+                tooltip="对企业客户的关联企业进行冲突检测"
+              >
+                <Switch checkedChildren="启用" unCheckedChildren="禁用" />
+              </Form.Item>
+            )}
+
+            {showAdvancedConfig && (
+              <Form.Item
+                label="自动豁免"
+                name={['conflictCheckConfig', 'autoWaiverIfPossible']}
+                valuePropName="checked"
+                tooltip="对于低风险冲突，自动申请豁免"
+              >
+                <Switch checkedChildren="启用" unCheckedChildren="禁用" />
+              </Form.Item>
+            )}
+          </>
+        )}
+      </Form>
+    </Modal>
+  );
+};
+
+// 主组件
+const MultiClientSelector: React.FC<MultiClientSelectorProps> = ({
+  value = [],
+  onChange,
+  form,
+  disabled = false,
+  maxClients = 10,
+  showConflictConfig = true,
+  allowPrimaryOnly = false
+}) => {
+  const [clients, setClients] = useState<ClientInfo[]>([]);
+  const [selectedClients, setSelectedClients] = useState<SelectedClient[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [roleModalVisible, setRoleModalVisible] = useState(false);
+  const [currentEditingClient, setCurrentEditingClient] = useState<{
+    client: ClientInfo | null;
+    currentRole?: SelectedClient;
+  }>({ client: null });
+
+  // 获取客户数据
+  const fetchClients = useCallback(async () => {
+    setLoading(true);
+    try {
+      // 这里应该调用实际的API
+      // const response = await get('/clients', { page: 1, page_size: 1000 });
+
+      // 模拟数据
+      const mockClients: ClientInfo[] = [
+        {
+          id: '1',
+          name: '张三',
+          type: 'PERSON',
+          phone: '13800138000',
+          email: 'zhangsan@example.com',
+          clientNumber: 'CL-2024-001'
+        },
+        {
+          id: '2',
+          name: '武大郎公司',
+          type: 'COMPANY',
+          company: '武大郎贸易公司',
+          phone: '13800138001',
+          email: 'contact@wudalang.com',
+          clientNumber: 'CL-2024-002'
+        },
+        {
+          id: '3',
+          name: '李四',
+          type: 'PERSON',
+          phone: '13800138002',
+          email: 'lisi@example.com',
+          clientNumber: 'CL-2024-003'
+        }
+      ];
+
+      setClients(mockClients);
+    } catch (error) {
+      console.error('获取客户列表失败:', error);
+      message.error('获取客户列表失败');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchClients();
+  }, [fetchClients]);
+
+  // 过滤客户列表
+  const filteredClients = useMemo(() => {
+    if (!searchText) return clients;
+
+    return clients.filter(client =>
+      client.name.toLowerCase().includes(searchText.toLowerCase()) ||
+      client.company?.toLowerCase().includes(searchText.toLowerCase()) ||
+      client.clientNumber?.toLowerCase().includes(searchText.toLowerCase())
+    );
+  }, [clients, searchText]);
+
+  // 检查是否可以添加更多客户
+  const canAddMore = selectedClients.length < maxClients;
+
+  // 检查客户是否已被选择
+  const isClientSelected = (clientId: string) => {
+    return selectedClients.some(sc => sc.clientInfo.id === clientId);
+  };
+
+  // 添加客户
+  const handleAddClient = (clientId: string) => {
+    const client = clients.find(c => c.id === clientId);
+    if (!client) return;
+
+    setCurrentEditingClient({ client });
+    setRoleModalVisible(true);
+  };
+
+  // 编辑客户角色
+  const handleEditClient = (clientId: string) => {
+    const selectedClient = selectedClients.find(sc => sc.clientInfo.id === clientId);
+    if (!selectedClient) return;
+
+    setCurrentEditingClient({
+      client: selectedClient.clientInfo,
+      currentRole: selectedClient
+    });
+    setRoleModalVisible(true);
+  };
+
+  // 确认角色配置
+  const handleRoleConfigConfirm = (selectedClient: SelectedClient) => {
+    let newSelectedClients: SelectedClient[];
+
+    if (currentEditingClient.currentRole) {
+      // 编辑现有客户
+      newSelectedClients = selectedClients.map(sc =>
+        sc.clientInfo.id === selectedClient.clientInfo.id ? selectedClient : sc
+      );
+    } else {
+      // 添加新客户
+      newSelectedClients = [...selectedClients, selectedClient];
+    }
+
+    setSelectedClients(newSelectedClients);
+
+    // 通知父组件
+    const clientIds = newSelectedClients.map(sc => sc.clientInfo.id);
+    onChange?.(clientIds, newSelectedClients);
+
+    setRoleModalVisible(false);
+    setCurrentEditingClient({ client: null });
+  };
+
+  // 移除客户
+  const handleRemoveClient = (clientId: string) => {
+    const newSelectedClients = selectedClients.filter(sc => sc.clientInfo.id !== clientId);
+    setSelectedClients(newSelectedClients);
+
+    const clientIds = newSelectedClients.map(sc => sc.clientInfo.id);
+    onChange?.(clientIds, newSelectedClients);
+  };
+
+  // 获取客户角色显示信息
+  const getClientRoleDisplay = (role: string) => {
+    const roleInfo = clientRoleService.getClientRoles().find(r => r.value === role);
+    return roleInfo?.label || role;
+  };
+
+  // 获取角色颜色
+  const getRoleColor = (role: string) => {
+    const colorMap: Record<string, string> = {
+      'PRIMARY': 'red',
+      'SECONDARY': 'orange',
+      'GUARANTOR': 'blue',
+      'INTERESTED_PARTY': 'green',
+      'REPRESENTATIVE': 'purple',
+      'JOINT_APPLICANT': 'cyan'
+    };
+    return colorMap[role] || 'default';
+  };
+
+  return (
+    <div className="multi-client-selector">
+      <Card
+        title={
+          <Space>
+            <TeamOutlined />
+            <span>多客户选择</span>
+            <Badge count={selectedClients.length} style={{ backgroundColor: '#52c41a' }} />
+          </Space>
+        }
+        extra={
+          <Text type="secondary" style={{ fontSize: '12px' }}>
+            已选择 {selectedClients.length}/{maxClients} 个客户
+          </Text>
+        }
+        size="small"
+      >
+        {/* 客户搜索和选择区域 */}
+        <div style={{ marginBottom: 16 }}>
+          <Row gutter={8} align="middle">
+            <Col flex="auto">
+              <Select
+                showSearch
+                placeholder={loading ? "正在加载..." : "搜索并选择客户"}
+                loading={loading}
+                disabled={disabled || !canAddMore}
+                filterOption={false}
+                onSearch={setSearchText}
+                notFoundContent={loading ? "正在加载..." : <Empty description="暂无匹配的客户" />}
+                style={{ width: '100%' }}
+                onSelect={(clientId: string) => handleAddClient(clientId)}
+                value={null}
+                options={filteredClients.map(client => ({
+                  label: (
+                    <Space>
+                      <Avatar size="small" icon={<UserOutlined />} />
+                      <Space direction="vertical" size={0}>
+                        <Text strong>{client.name}</Text>
+                        {client.company && (
+                          <Text type="secondary" style={{ fontSize: '12px' }}>
+                            {client.company}
+                          </Text>
+                        )}
+                        <Text type="secondary" style={{ fontSize: '12px' }}>
+                          {client.clientNumber}
+                        </Text>
+                      </Space>
+                      <Tag color={client.type === 'COMPANY' ? 'blue' : 'green'}>
+                        {client.type === 'COMPANY' ? '企业' : '个人'}
+                      </Tag>
+                    </Space>
+                  ),
+                  value: client.id,
+                  disabled: isClientSelected(client.id)
+                }))}
+              />
+            </Col>
+            <Col>
+              <Tooltip title={!canAddMore ? `最多只能选择${maxClients}个客户` : ''}>
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  disabled={disabled || !canAddMore}
+                >
+                  添加客户
+                </Button>
+              </Tooltip>
+            </Col>
+          </Row>
+        </div>
+
+        {/* 已选择的客户列表 */}
+        {selectedClients.length > 0 && (
+          <div>
+            <Divider>
+              <Space>
+                <CheckCircleOutlined style={{ color: '#52c41a' }} />
+                <span>已选择的客户</span>
+              </Space>
+            </Divider>
+
+            <List
+              dataSource={selectedClients}
+              renderItem={(selectedClient) => (
+                <List.Item
+                  actions={[
+                    <Tooltip title="编辑角色配置">
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<EditOutlined />}
+                        onClick={() => handleEditClient(selectedClient.clientInfo.id)}
+                        disabled={disabled}
+                      />
+                    </Tooltip>,
+                    <Popconfirm
+                      title="确定要移除该客户吗？"
+                      description={`移除客户 ${selectedClient.clientInfo.name} 后，相关的冲突检测配置也会被清除。`}
+                      onConfirm={() => handleRemoveClient(selectedClient.clientInfo.id)}
+                      okText="确定"
+                      cancelText="取消"
+                      disabled={disabled}
+                    >
+                      <Tooltip title="移除客户">
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<DeleteOutlined />}
+                          danger
+                          disabled={disabled}
+                        />
+                      </Tooltip>
+                    </Popconfirm>
+                  ]}
+                >
+                  <List.Item.Meta
+                    avatar={
+                      <Badge
+                        color={getRoleColor(selectedClient.role)}
+                        text={selectedClient.role.charAt(0)}
+                      >
+                        <Avatar
+                          size="large"
+                          icon={<UserOutlined />}
+                          style={{
+                            backgroundColor: selectedClient.clientInfo.type === 'COMPANY' ? '#1890ff' : '#52c41a'
+                          }}
+                        />
+                      </Badge>
+                    }
+                    title={
+                      <Space>
+                        <Text strong>{selectedClient.clientInfo.name}</Text>
+                        <Tag color={selectedClient.clientInfo.type === 'COMPANY' ? 'blue' : 'green'}>
+                          {selectedClient.clientInfo.type === 'COMPANY' ? '企业' : '个人'}
+                        </Tag>
+                        <Tag color={getRoleColor(selectedClient.role)}>
+                          {getClientRoleDisplay(selectedClient.role)}
+                        </Tag>
+                      </Space>
+                    }
+                    description={
+                      <Space direction="vertical" size={0} style={{ width: '100%' }}>
+                        <Text type="secondary" style={{ fontSize: '12px' }}>
+                          客户编号：{selectedClient.clientInfo.clientNumber}
+                        </Text>
+                        {selectedClient.contactInfo && (
+                          <Text type="secondary" style={{ fontSize: '12px' }}>
+                            联系方式：{selectedClient.contactInfo}
+                          </Text>
+                        )}
+                        {selectedClient.relationshipDescription && (
+                          <Text type="secondary" style={{ fontSize: '12px' }}>
+                            关系描述：{selectedClient.relationshipDescription}
+                          </Text>
+                        )}
+                        {showConflictConfig && (
+                          <Space size={4}>
+                            <SafetyCertificateOutlined
+                              style={{
+                                color: selectedClient.conflictCheckConfig.enabled ? '#52c41a' : '#d9d9d9'
+                              }}
+                            />
+                            <Text type="secondary" style={{ fontSize: '12px' }}>
+                              {selectedClient.conflictCheckConfig.enabled ? '冲突检测已启用' : '冲突检测已禁用'}
+                            </Text>
+                            {selectedClient.conflictCheckConfig.enabled && (
+                              <>
+                                <Text type="secondary" style={{ fontSize: '12px' }}>
+                                  • 搜索{selectedClient.conflictCheckConfig.searchYears}年
+                                </Text>
+                                <Text type="secondary" style={{ fontSize: '12px' }}>
+                                  • {selectedClient.conflictCheckConfig.searchDepth}
+                                </Text>
+                              </>
+                            )}
+                          </Space>
+                        )}
+                      </Space>
+                    }
+                  />
+                </List.Item>
+              )}
+            />
+          </div>
+        )}
+
+        {/* 提示信息 */}
+        {selectedClients.length === 0 && (
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={
+              <Space direction="vertical">
+                <Text type="secondary">暂未选择客户</Text>
+                <Text type="secondary" style={{ fontSize: '12px' }}>
+                  请在上方搜索框中搜索并选择客户
+                </Text>
+              </Space>
+            }
+          />
+        )}
+
+        {/* 冲突检测配置摘要 */}
+        {showConflictConfig && selectedClients.some(sc => sc.conflictCheckConfig.enabled) && (
+          <Alert
+            message="冲突检测配置摘要"
+            description={
+              <div>
+                <Text style={{ fontSize: '12px' }}>
+                  已为 {selectedClients.filter(sc => sc.conflictCheckConfig.enabled).length} 个客户启用冲突检测，
+                  搜索深度涵盖：{Array.from(new Set(selectedClients
+                    .filter(sc => sc.conflictCheckConfig.enabled)
+                    .map(sc => sc.conflictCheckConfig.searchDepth))).join('、')}
+                </Text>
+              </div>
+            }
+            type="info"
+            showIcon
+            style={{ marginTop: 16 }}
+          />
+        )}
+
+        {/* 验证提示 */}
+        {!allowPrimaryOnly && selectedClients.filter(sc => sc.role === 'PRIMARY').length === 0 && (
+          <Alert
+            message="角色配置提醒"
+            description="请至少指定一个主要委托人"
+            type="warning"
+            showIcon
+            style={{ marginTop: 8 }}
+          />
+        )}
+      </Card>
+
+      {/* 角色配置Modal */}
+      <RoleConfigModal
+        visible={roleModalVisible}
+        client={currentEditingClient.client}
+        currentRole={currentEditingClient.currentRole}
+        onOk={handleRoleConfigConfirm}
+        onCancel={() => {
+          setRoleModalVisible(false);
+          setCurrentEditingClient({ client: null });
+        }}
+      />
+    </div>
+  );
+};
+
+export default MultiClientSelector;

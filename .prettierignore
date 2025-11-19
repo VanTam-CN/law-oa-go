@@ -1,0 +1,47 @@
+# Dependencies
+node_modules
+
+# Build outputs
+dist/
+build/
+
+# Logs
+*.log
+
+# Coverage
+coverage/
+
+# Environment files
+.env
+
+# Public files
+public/
+
+# Cache
+.cache/
+.temp/
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+
+# Config files that should maintain their formatting
+vite.config.ts
+vitest.config.ts
+tsconfig.json
+
+# Spec workflow files
+.spec-workflow/
+
+# Less files (handled by less compiler, not prettier)
+**/*.less

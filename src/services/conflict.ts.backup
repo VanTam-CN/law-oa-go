@@ -1,0 +1,59 @@
+import { post } from './http';
+
+export interface ConflictCheckParams {
+  project_name: string;
+  client_name: string;
+  opposite_parties: string;
+  project_type: string;
+  team_members: string[];
+  description?: string;
+}
+
+export interface ConflictResult {
+  has_conflict: boolean;
+  conflict_level: 'none' | 'low' | 'medium' | 'high';
+  conflicts: {
+    id: number;
+    type: string;
+    entity: string;
+    project: string;
+    level: 'low' | 'medium' | 'high';
+    description: string;
+  }[];
+}
+
+/**
+ * 执行利益冲突检查
+ * @param params 冲突检查参数
+ * @returns 冲突检查结果
+ */
+export const performConflictCheck = (params: ConflictCheckParams): Promise<ConflictResult> => {
+  // 转换参数格式以匹配后端API
+  const apiParams = {
+    clientId: params.project_name ? 1 : undefined, // 需要从实际数据获取
+    clientName: params.client_name,
+    caseName: params.project_name,
+    caseType: params.project_type,
+    opponentInfo: params.opposite_parties,
+    lawyerId: params.team_members?.[0] ? 1 : undefined, // 简化处理
+    searchYears: 5,
+    searchDepth: 'deep',
+    includeCorporateRelations: true
+  };
+
+  console.log('冲突检查API参数:', apiParams);
+  return post<ConflictResult>('/conflict/check', apiParams);
+};
+
+/**
+ * 执行利益冲突预检
+ * @param params 预检参数
+ * @returns 预检结果
+ */
+export const performPreScreen = (params: {
+  our_client_ids: number[];
+  opponent_parties: string[];
+  third_parties?: string[];
+}): Promise<any> => {
+  return post<any>('/conflict-check/pre-screen', params);
+};

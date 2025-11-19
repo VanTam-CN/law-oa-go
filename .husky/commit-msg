@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+
+# 运行commitlint
+echo "📝 Checking commit message..."
+npx --no-install commitlint --edit "$1"
