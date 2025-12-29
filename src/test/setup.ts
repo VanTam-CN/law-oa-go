@@ -1,5 +1,6 @@
 /**
- * 现代化测试设置文件 - 基于Jest 30.2和React Testing Library最佳实践
+ * Jest测试设置文件 - 简化兼容版
+ * 基于ESM兼容性优先考虑
  */
 
 import '@testing-library/jest-dom'
@@ -10,7 +11,8 @@ const localStorageMock = {
   setItem: jest.fn(),
   removeItem: jest.fn(),
   clear: jest.fn(),
-}
+} as Storage
+
 Object.defineProperty(window, 'localStorage', {
   value: localStorageMock,
 })
@@ -21,7 +23,8 @@ const sessionStorageMock = {
   setItem: jest.fn(),
   removeItem: jest.fn(),
   clear: jest.fn(),
-}
+} as Storage
+
 Object.defineProperty(window, 'sessionStorage', {
   value: sessionStorageMock,
 })

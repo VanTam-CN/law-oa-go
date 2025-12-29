@@ -142,8 +142,8 @@ const ApprovalDetail: React.FC = () => {
     return <div>审批不存在</div>
   }
 
-  const canApprove = approval.status === 'pending' && approval.currentApproverId === 1 // 假设当前用户ID为1
-  const canCancel = approval.status === 'pending' && approval.applicantId === 1 // 假设当前用户ID为1
+  const canApprove = approval.status === 'pending' && approval.currentApproverId === '1' // 假设当前用户ID为1
+  const canCancel = approval.status === 'pending' && approval.applicantId === '1' // 假设当前用户ID为1
 
   return (
     <div className='approval-detail-container'>
@@ -184,18 +184,18 @@ const ApprovalDetail: React.FC = () => {
               {approval.records.map((record) => (
                 <Timeline.Item
                   key={record.id}
-                  color={record.action === 'approve' ? 'green' : 'red'}
+                  color={record.decision === 'approve' ? 'green' : 'red'}
                 >
                   <div className='record-item'>
                     <div className='record-header'>
                       <span className='approver'>{record.approver}</span>
                       <span className='action'>
-                        {record.action === 'approve' ? '通过' : '拒绝'}
+                        {record.decision === 'approve' ? '通过' : '拒绝'}
                       </span>
-                      <span className='time'>{record.createTime}</span>
+                      <span className='time'>{record.approvalDate}</span>
                     </div>
-                    {record.comment && (
-                      <div className='record-comment'>审批意见：{record.comment}</div>
+                    {record.decisionComments && (
+                      <div className='record-comment'>审批意见：{record.decisionComments}</div>
                     )}
                   </div>
                 </Timeline.Item>
@@ -203,6 +203,89 @@ const ApprovalDetail: React.FC = () => {
             </Timeline>
           </div>
         )}
+
+        <Divider />
+
+        {/* Metadata Display Section */}
+        {(() => {
+          if (!approval.metadata) return null
+          try {
+            const metadata = JSON.parse(approval.metadata)
+            const { conflict_check_config, case_creation_config } = metadata
+
+            return (
+              <div className='metadata-section'>
+                {conflict_check_config && (
+                  <div className='conflict-check-info' style={{ marginBottom: 24 }}>
+                    <h3>利益冲突检测报告</h3>
+                    <Card size='small' type='inner' title='检测配置'>
+                      <Descriptions column={2} size='small'>
+                        <Descriptions.Item label='委托人'>
+                          {conflict_check_config.clientName}
+                        </Descriptions.Item>
+                        <Descriptions.Item label='对方当事人'>
+                          {Array.isArray(conflict_check_config.otherParties)
+                            ? conflict_check_config.otherParties.join(', ')
+                            : conflict_check_config.otherParties}
+                        </Descriptions.Item>
+                        <Descriptions.Item label='检索深度'>
+                          {conflict_check_config.searchDepth}
+                        </Descriptions.Item>
+                        <Descriptions.Item label='检索年份'>
+                          {conflict_check_config.searchYears}年
+                        </Descriptions.Item>
+                      </Descriptions>
+                    </Card>
+                  </div>
+                )}
+
+                {case_creation_config && (
+                  <div className='case-creation-info'>
+                    <h3>案件创建预览</h3>
+                    <Card size='small' type='inner' title='拟创建案件信息'>
+                      <Descriptions column={2} size='small'>
+                        <Descriptions.Item label='案件名称'>
+                          {case_creation_config.caseName}
+                        </Descriptions.Item>
+                        <Descriptions.Item label='案件类型'>
+                          {case_creation_config.caseType}
+                        </Descriptions.Item>
+                        <Descriptions.Item label='收费方式'>
+                          {case_creation_config.billingMethod}
+                        </Descriptions.Item>
+                        <Descriptions.Item label='合同金额'>
+                          {case_creation_config.contractAmount}
+                        </Descriptions.Item>
+                        <Descriptions.Item label='主办律师'>
+                          {case_creation_config.leadLawyer}
+                        </Descriptions.Item>
+                        <Descriptions.Item label='预估工期'>
+                          {case_creation_config.estimatedDuration}个月
+                        </Descriptions.Item>
+                      </Descriptions>
+                      <div style={{ marginTop: 12 }}>
+                        <strong>案件描述：</strong>
+                        <div
+                          style={{
+                            marginTop: 8,
+                            padding: 8,
+                            background: '#f5f5f5',
+                            borderRadius: 4,
+                          }}
+                        >
+                          {case_creation_config.caseDescription}
+                        </div>
+                      </div>
+                    </Card>
+                  </div>
+                )}
+              </div>
+            )
+          } catch (e) {
+            console.error('Failed to parse metadata:', e)
+            return null
+          }
+        })()}
 
         <div className='detail-actions'>
           <Space>

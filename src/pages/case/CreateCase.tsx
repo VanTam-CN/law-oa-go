@@ -26,7 +26,6 @@ import {
   Button,
 } from 'antd'
 
-const { Option } = Select
 import {
   PlusOutlined,
   UploadOutlined,
@@ -46,6 +45,7 @@ import dayjs from 'dayjs'
 import { CaseCreationService, CaseValidationService } from '@/services/caseCreation'
 import { ConflictCheckService, ConflictCheckResultProcessor } from '@/services/conflictCheck'
 import { get } from '@/services/api'
+import { createIntegratedApproval } from '@/services/approval'
 import CompactCaseFormWrapper from '@/components/case/CompactCaseFormWrapper'
 import './CreateCase.module.css'
 import '@/styles/unified-management.less'
@@ -121,7 +121,7 @@ const CreateCase: React.FC<CreateCaseProps> = ({ visible = false, onCancel, onSu
     setDataLoading(true)
     try {
       const [clientsResponse, lawyersResponse] = await Promise.all([
-        get('/clients', { page: 1, page_size: 9999 }),
+        get('/clients', { page: 1, page_size: 9999 }) as any,
         get('/lawfirm/lawyers', { page: 1, page_size: 9999 }),
       ])
 
@@ -507,6 +507,51 @@ const CreateCase: React.FC<CreateCaseProps> = ({ visible = false, onCancel, onSu
     }
   }
 
+  // 提交审批处理
+  const handleSubmitForApproval = async () => {
+    try {
+      const values = await form.validateFields()
+      setLoading(true)
+
+      // 获取客户名称
+      const clientName = clients.find((c) => c.id === values.clientId)?.name || values.clientId
+
+      // 准备集成审批请求数据
+      const approvalData = {
+        type: 'case_creation',
+        title: `案件立案申请：${values.caseName}`,
+        content: `申请创建新案件：${values.caseName}\n委托人：${clientName}\n案由：${values.causeOfAction}\n\n${values.caseDescription}`,
+        applicant_name: '当前用户', // 实际应从用户上下文获取
+        department_name: '业务部',
+        workflow_type: 'CASE_APPROVAL',
+        urgency: 'normal',
+        priority: values.isHighRisk ? 'high' : 'medium',
+        case_creation_config: values,
+        metadata: {
+          conflict_check_result: conflictCheckResult, // 传递已完成的检测结果
+          case_creation_config: values,
+          integration_type: 'both',
+        },
+      }
+
+      const result = await createIntegratedApproval(approvalData)
+
+      if (result && (result.status === 'created' || result.success)) {
+        message.success('已提交审批申请，请等待审批通过')
+        onSuccess?.()
+        form.resetFields()
+        setCurrentStep(0)
+      } else {
+        message.error(result?.message || '提交审批失败')
+      }
+    } catch (error) {
+      console.error('提交审批失败:', error)
+      message.error('提交审批失败')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // 原始表单提交
   const handleSubmit = async () => {
     try {
@@ -887,7 +932,6 @@ const CreateCase: React.FC<CreateCaseProps> = ({ visible = false, onCancel, onSu
               type='warning'
               showIcon
               style={{ marginBottom: 12 }}
-              size='small'
             />
 
             <Row gutter={16}>
@@ -1123,7 +1167,6 @@ const CreateCase: React.FC<CreateCaseProps> = ({ visible = false, onCancel, onSu
               type='info'
               showIcon
               style={{ marginBottom: 12 }}
-              size='small'
             />
 
             <Row gutter={16}>
@@ -1290,6 +1333,16 @@ const CreateCase: React.FC<CreateCaseProps> = ({ visible = false, onCancel, onSu
                     }}
                   >
                     下一步
+                  </Button>
+                ) : conflictCheckResult?.hasConflict || form.getFieldValue('isHighRisk') ? (
+                  <Button
+                    type='primary'
+                    loading={loading}
+                    onClick={handleSubmitForApproval}
+                    icon={<SafetyCertificateOutlined />}
+                    style={{ backgroundColor: '#faad14', borderColor: '#faad14' }}
+                  >
+                    提交审批
                   </Button>
                 ) : (
                   <Button

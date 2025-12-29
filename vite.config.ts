@@ -23,11 +23,11 @@ export default defineConfig({
           proxy.on('error', (err, req, res) => {
             console.error('[PROXY ERROR]:', err.message);
           });
-          
+
           proxy.on('proxyReq', (proxyReq, req, res) => {
             console.log(`[PROXY REQ] ${req.method} ${req.url} -> ${proxyReq.protocol}//${proxyReq.host}${proxyReq.path}`);
           });
-          
+
           proxy.on('proxyRes', (proxyRes, req, res) => {
             console.log(`[PROXY RES] ${proxyRes.statusCode} for ${req.url}`);
           });
@@ -40,11 +40,11 @@ export default defineConfig({
           proxy.on('error', (err, req, res) => {
             console.error('[PROXY ERROR]:', err.message);
           });
-          
+
           proxy.on('proxyReq', (proxyReq, req, res) => {
             console.log(`[PROXY REQ] ${req.method} ${req.url}`);
           });
-          
+
           proxy.on('proxyRes', (proxyRes, req, res) => {
             console.log(`[PROXY RES] ${proxyRes.statusCode} for ${req.url}`);
           });

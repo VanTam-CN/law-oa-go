@@ -10,7 +10,15 @@ export interface ApprovalItem {
   applicantId: string // 后端使用字符串ID
   department: string
   createTime: string
-  status: 'draft' | 'submitted' | 'under_review' | 'approved' | 'rejected' | 'cancelled' | 'expired'
+  status:
+    | 'draft'
+    | 'submitted'
+    | 'under_review'
+    | 'approved'
+    | 'rejected'
+    | 'cancelled'
+    | 'expired'
+    | 'pending'
   urgency: 'normal' | 'urgent' | 'very_urgent'
   priority: 'low' | 'medium' | 'high' | 'critical'
   currentApprover?: string
@@ -19,6 +27,7 @@ export interface ApprovalItem {
   submissionDate?: string
   currentStage?: string
   workflowType?: string
+  metadata?: string
 }
 
 // 获取当前用户ID的函数
@@ -120,7 +129,15 @@ export interface ConflictApprovalParams {
 export interface ConflictApprovalResult {
   approvalId: string
   approvalNumber: string
-  status: 'draft' | 'submitted' | 'under_review' | 'approved' | 'rejected' | 'cancelled' | 'expired'
+  status:
+    | 'draft'
+    | 'submitted'
+    | 'under_review'
+    | 'approved'
+    | 'rejected'
+    | 'cancelled'
+    | 'expired'
+    | 'pending'
   submitTime: string
   expectedProcessingTime: string
 }
@@ -137,7 +154,7 @@ export const getApprovals = async (type: 'pending' | 'my'): Promise<ApprovalItem
     if (type === 'pending') {
       // 待我审批
       console.log('📋 获取待我审批的列表...')
-      const response = await get('/approvals/pending')
+      const response = (await get('/approvals/pending')) as any
       return response.list || response
     } else {
       // 我的申请
@@ -145,7 +162,7 @@ export const getApprovals = async (type: 'pending' | 'my'): Promise<ApprovalItem
       const requestUrl = `/approvals?applicantId=${currentUserId}`
       console.log('📝 获取我的申请列表 - 用户ID:', currentUserId)
       console.log('📝 请求URL:', requestUrl)
-      const response = await get(requestUrl)
+      const response = (await get(requestUrl)) as any
       console.log('✅ 我的申请列表响应:', response)
       return response.list || response
     }
@@ -164,7 +181,7 @@ export const getApprovalDetail = async (id: string): Promise<ApprovalDetail> => 
   try {
     console.log('🔍 获取审批详情 - ID:', id)
     console.log('🔍 ID类型:', typeof id)
-    const response = await get(`/approvals/${id}`)
+    const response = (await get(`/approvals/${id}`)) as any
     console.log('✅ 审批详情响应:', response)
     return response // HTTP拦截器已经提取了data字段
   } catch (error) {
@@ -180,7 +197,7 @@ export const getApprovalDetail = async (id: string): Promise<ApprovalDetail> => 
  */
 export const createApproval = async (params: CreateApprovalParams): Promise<ApprovalItem> => {
   try {
-    const response = await post('/approvals', params)
+    const response = (await post('/approvals', params)) as any
     return response.data
   } catch (error) {
     console.error('创建审批失败:', error)
@@ -215,7 +232,7 @@ export const handleApproval = (
  */
 export const cancelApproval = async (id: string): Promise<any> => {
   try {
-    const response = await post(`/approvals/${id}/cancel`)
+    const response = (await post(`/approvals/${id}/cancel`)) as any
     return response.data
   } catch (error) {
     console.error('撤回审批失败:', error)
@@ -229,7 +246,7 @@ export const cancelApproval = async (id: string): Promise<any> => {
  */
 export const getApprovalStats = async (): Promise<ApprovalStats> => {
   try {
-    const response = await get('/approvals/stats')
+    const response = (await get('/approvals/stats')) as any
     return response.data
   } catch (error) {
     console.error('获取审批统计失败:', error)
@@ -270,7 +287,7 @@ export const submitConflictApproval = async (
       },
     }
 
-    const response = await post('/approvals', approvalData)
+    const response = (await post('/approvals', approvalData)) as any
 
     // 修复：HTTP拦截器已经返回了data对象，所以直接访问response而不是response.data
     const result: ConflictApprovalResult = {
@@ -308,4 +325,19 @@ export const getConflictApprovalStatus = (approvalId: string): Promise<ConflictA
       resolve(result)
     }, 200)
   })
+}
+
+/**
+ * 创建集成审批（包含冲突检测和案件创建配置）
+ * @param data 集成审批请求数据
+ * @returns 创建结果
+ */
+export const createIntegratedApproval = async (data: any): Promise<any> => {
+  try {
+    const response = (await post('/integration/approvals/with-conflict', data)) as any
+    return response
+  } catch (error) {
+    console.error('创建集成审批失败:', error)
+    throw error
+  }
 }

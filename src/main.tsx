@@ -20,7 +20,12 @@ import { useAppStore } from './stores/useAppStore'
 import { initializeApp } from './stores/useAppStore'
 
 // 导入路由配置
-import { router } from './router'
+import { createBrowserRouter } from 'react-router'
+
+// 导入页面组件
+import LoginPage from './pages/auth/Login'
+import DashboardPage from './pages/dashboard/Dashboard'
+import MainLayout from './layouts/MainLayout'
 
 // 导入样式
 import './index.css'
@@ -42,6 +47,28 @@ import './utils/performance'
 
 // 配置dayjs
 dayjs.locale('zh-cn')
+
+// 创建路由配置
+const router = createBrowserRouter([
+  {
+    path: '/login',
+    element: <LoginPage />,
+  },
+  {
+    path: '/',
+    element: <MainLayout />,
+    children: [
+      {
+        index: true,
+        element: <DashboardPage />,
+      },
+    ],
+  },
+  {
+    path: '*',
+    element: <LoginPage />,
+  },
+])
 
 // 开发环境配置React Query
 if (import.meta.env.DEV) {
