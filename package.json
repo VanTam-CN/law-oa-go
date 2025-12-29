@@ -79,14 +79,14 @@
   },
   "lint-staged": {
     "*.{ts,tsx}": [
-      "eslint --fix",
-      "prettier --write"
+      "npx eslint --fix",
+      "npx prettier --write"
     ],
     "*.{css,json,md}": [
-      "prettier --write"
+      "npx prettier --write"
     ],
     "*.{ts,tsx,js,jsx}": [
-      "eslint --fix"
+      "npx eslint --fix"
     ]
   },
   "commitlint": {
