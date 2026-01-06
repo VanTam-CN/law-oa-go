@@ -1,7 +1,6 @@
 // 响应式表单布局样式 - 专为1080p显示器优化
 .responsive-form-layout {
   width: 100%;
-  min-height: 100vh;
   background: #fff;
   transition: all 0.3s ease;
 
@@ -222,9 +221,15 @@
 
     // 5秒后自动隐藏
     @keyframes fadeOut {
-      0% { opacity: 1; }
-      70% { opacity: 1; }
-      100% { opacity: 0; }
+      0% {
+        opacity: 1;
+      }
+      70% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+      }
     }
 
     &.fade-out {

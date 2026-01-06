@@ -42,3 +42,6 @@ tsconfig.json
 
 # Spec workflow files
 .spec-workflow/
+
+# Less files (handled by less compiler, not prettier)
+**/*.less

@@ -165,7 +165,7 @@ export const useAppStore = create<AppState>()(
           set({
             user,
             isAuthenticated: true,
-            isLoading: false
+            isLoading: false,
           })
         },
 
@@ -179,7 +179,7 @@ export const useAppStore = create<AppState>()(
             isAuthenticated: false,
             currentPath: '/',
             breadcrumb: [],
-            isLoading: false
+            isLoading: false,
           })
         },
 
@@ -200,7 +200,7 @@ export const useAppStore = create<AppState>()(
             preferences: {
               ...state.preferences,
               sidebarCollapsed: !state.sidebarCollapsed,
-            }
+            },
           })),
 
         setSidebarCollapsed: (collapsed: boolean) =>
@@ -209,40 +209,39 @@ export const useAppStore = create<AppState>()(
             preferences: {
               ...state.preferences,
               sidebarCollapsed: collapsed,
-            }
+            },
           })),
 
         setCurrentPath: (path: string) => set({ currentPath: path }),
 
-        setBreadcrumb: (breadcrumb: Array<{ title: string; path?: string }>) =>
-          set({ breadcrumb }),
+        setBreadcrumb: (breadcrumb: Array<{ title: string; path?: string }>) => set({ breadcrumb }),
 
         updatePreferences: (newPreferences: Partial<UserPreferences>) =>
           set((state) => ({
-            preferences: { ...state.preferences, ...newPreferences }
+            preferences: { ...state.preferences, ...newPreferences },
           })),
 
         updateTheme: (theme: Theme) =>
           set((state) => ({
-            preferences: { ...state.preferences, theme }
+            preferences: { ...state.preferences, theme },
           })),
 
         updateLanguage: (language: Language) =>
           set((state) => ({
-            preferences: { ...state.preferences, language }
+            preferences: { ...state.preferences, language },
           })),
 
         updateNotifications: (notifications: Partial<NotificationSettings>) =>
           set((state) => ({
             preferences: {
               ...state.preferences,
-              notifications: { ...state.preferences.notifications, ...notifications }
-            }
+              notifications: { ...state.preferences.notifications, ...notifications },
+            },
           })),
 
         setSystemInfo: (info: Partial<AppState['systemInfo']>) =>
           set((state) => ({
-            systemInfo: { ...state.systemInfo, ...info }
+            systemInfo: { ...state.systemInfo, ...info },
           })),
 
         reset: () => {
@@ -270,36 +269,32 @@ export const useAppStore = create<AppState>()(
           systemInfo: state.systemInfo,
           sidebarCollapsed: state.sidebarCollapsed,
         }),
-      }
+      },
     ),
     {
       name: 'LawOA App Store',
-    }
-  )
+    },
+  ),
 )
 
 // 订阅状态变化
-export const subscribeToAuthChanges = (callback: (isAuthenticated: boolean, user: User | null) => void) => {
+export const subscribeToAuthChanges = (
+  callback: (isAuthenticated: boolean, user: User | null) => void,
+) => {
   return useAppStore.subscribe(
     (state) => state.isAuthenticated,
-    (isAuthenticated) => callback(isAuthenticated, useAppStore.getState().user)
+    (isAuthenticated) => callback(isAuthenticated, useAppStore.getState().user),
   )
 }
 
 // 订阅主题变化
 export const subscribeToThemeChanges = (callback: (theme: Theme) => void) => {
-  return useAppStore.subscribe(
-    (state) => state.preferences.theme,
-    callback
-  )
+  return useAppStore.subscribe((state) => state.preferences.theme, callback)
 }
 
 // 订阅语言变化
 export const subscribeToLanguageChanges = (callback: (language: Language) => void) => {
-  return useAppStore.subscribe(
-    (state) => state.preferences.language,
-    callback
-  )
+  return useAppStore.subscribe((state) => state.preferences.language, callback)
 }
 
 // 选择器Hook
@@ -340,12 +335,12 @@ export const hasRole = (role: string): boolean => {
 
 export const hasAnyRole = (roles: string[]): boolean => {
   const user = useAppStore.getState().user
-  return user ? roles.some(role => user.roles.includes(role)) : false
+  return user ? roles.some((role) => user.roles.includes(role)) : false
 }
 
 export const hasAnyPermission = (permissions: string[]): boolean => {
   const user = useAppStore.getState().user
-  return user ? permissions.some(permission => user.permissions.includes(permission)) : false
+  return user ? permissions.some((permission) => user.permissions.includes(permission)) : false
 }
 
 // 初始化函数

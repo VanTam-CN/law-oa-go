@@ -23,8 +23,8 @@ class ApiClientMock {
       meta: {
         timestamp: Date.now(),
         requestId: `mock-${Date.now()}`,
-        version: '1.0.0'
-      }
+        version: '1.0.0',
+      },
     }
     this.responses.set(url, response)
     if (delay > 0) {
@@ -37,7 +37,7 @@ class ApiClientMock {
     url: string,
     data: T[],
     pagination: Partial<PaginatedResponse<T>['pagination']> = {},
-    delay = 0
+    delay = 0,
   ): void {
     const defaultPagination = {
       page: 1,
@@ -45,12 +45,12 @@ class ApiClientMock {
       total: data.length,
       totalPages: Math.ceil(data.length / 20),
       hasNext: false,
-      hasPrev: false
+      hasPrev: false,
     }
 
     const response: MockPaginatedResponse<T> = {
       data,
-      pagination: { ...defaultPagination, ...pagination }
+      pagination: { ...defaultPagination, ...pagination },
     }
     this.responses.set(url, { data: response, error: null })
     if (delay > 0) {
@@ -85,7 +85,7 @@ class ApiClientMock {
     const delay = this.delays.get(url) || 0
 
     if (delay > 0) {
-      await new Promise(resolve => setTimeout(resolve, delay))
+      await new Promise((resolve) => setTimeout(resolve, delay))
     }
 
     const error = this.errors.get(url)
@@ -106,7 +106,7 @@ class ApiClientMock {
     const delay = this.delays.get(url) || 0
 
     if (delay > 0) {
-      await new Promise(resolve => setTimeout(resolve, delay))
+      await new Promise((resolve) => setTimeout(resolve, delay))
     }
 
     const error = this.errors.get(url)
@@ -127,7 +127,7 @@ class ApiClientMock {
     const delay = this.delays.get(url) || 0
 
     if (delay > 0) {
-      await new Promise(resolve => setTimeout(resolve, delay))
+      await new Promise((resolve) => setTimeout(resolve, delay))
     }
 
     const error = this.errors.get(url)
@@ -148,7 +148,7 @@ class ApiClientMock {
     const delay = this.delays.get(url) || 0
 
     if (delay > 0) {
-      await new Promise(resolve => setTimeout(resolve, delay))
+      await new Promise((resolve) => setTimeout(resolve, delay))
     }
 
     const error = this.errors.get(url)
@@ -169,7 +169,7 @@ class ApiClientMock {
     const delay = this.delays.get(url) || 0
 
     if (delay > 0) {
-      await new Promise(resolve => setTimeout(resolve, delay))
+      await new Promise((resolve) => setTimeout(resolve, delay))
     }
 
     const error = this.errors.get(url)
@@ -198,7 +198,7 @@ export const mockUser = {
   role: 'lawyer',
   permissions: ['case.view', 'case.create', 'client.view'],
   createdAt: '2024-01-01T00:00:00Z',
-  updatedAt: '2024-01-01T00:00:00Z'
+  updatedAt: '2024-01-01T00:00:00Z',
 }
 
 export const mockCase = {
@@ -209,7 +209,7 @@ export const mockCase = {
   clientId: 1,
   lawyerId: 1,
   createdAt: '2024-01-01T00:00:00Z',
-  updatedAt: '2024-01-01T00:00:00Z'
+  updatedAt: '2024-01-01T00:00:00Z',
 }
 
 export const mockClient = {
@@ -219,7 +219,7 @@ export const mockClient = {
   phone: '13800138000',
   address: '测试地址',
   createdAt: '2024-01-01T00:00:00Z',
-  updatedAt: '2024-01-01T00:00:00Z'
+  updatedAt: '2024-01-01T00:00:00Z',
 }
 
 // 设置常用API响应
@@ -227,7 +227,7 @@ export const setupCommonMocks = (): void => {
   // 用户认证
   apiClientMock.setSuccessResponse('/auth/login', {
     user: mockUser,
-    token: 'mock-jwt-token'
+    token: 'mock-jwt-token',
   })
 
   apiClientMock.setSuccessResponse('/auth/me', mockUser)
@@ -236,7 +236,7 @@ export const setupCommonMocks = (): void => {
   apiClientMock.setPaginatedResponse('/cases', [mockCase], {
     page: 1,
     pageSize: 20,
-    total: 1
+    total: 1,
   })
 
   apiClientMock.setSuccessResponse('/cases/1', mockCase)
@@ -245,7 +245,7 @@ export const setupCommonMocks = (): void => {
   apiClientMock.setPaginatedResponse('/clients', [mockClient], {
     page: 1,
     pageSize: 20,
-    total: 1
+    total: 1,
   })
 
   apiClientMock.setSuccessResponse('/clients/1', mockClient)

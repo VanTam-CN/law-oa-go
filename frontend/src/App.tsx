@@ -8,6 +8,9 @@ import { Routes, Route, Navigate } from 'react-router'
 import { ConfigProvider, App as AntdApp } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
 
+// 主题配置 - 律所专业配色
+import { antdTheme } from './config/theme'
+
 // 状态管理和Hook
 import { useAppStore } from './stores/useAppStore'
 import { setAppMessage } from './utils/messageHelper'
@@ -36,7 +39,8 @@ import CreateApproval from './pages/approval/CreateApproval'
 
 // 业务模块
 import ConflictCheck from './pages/conflict/ConflictCheck'
-import ProjectManagement from './pages/project/ProjectManagement'
+// 项目管理功能已禁用，与案件管理重复
+// import ProjectManagement from './pages/project/ProjectManagement'
 import ClientManagement from './pages/client/ClientManagement'
 import CaseManagement from './pages/case/CaseManagement'
 import CaseDetail from './pages/case/CaseDetail'
@@ -98,97 +102,90 @@ const AppContent: React.FC<AppContentProps> = ({ appMessage }) => {
     <ErrorBoundary>
       <Routes>
         {/* 独立测试路由 - 不依赖认证 */}
-        <Route path="/simple-test" element={<SimpleTest />} />
-        <Route path="/auth-test" element={<AuthTest />} />
-        <Route path="/minimal" element={<MinimalTest />} />
-        <Route path="/test-direct" element={<DirectTest />} />
+        <Route path='/simple-test' element={<SimpleTest />} />
+        <Route path='/auth-test' element={<AuthTest />} />
+        <Route path='/minimal' element={<MinimalTest />} />
+        <Route path='/test-direct' element={<DirectTest />} />
 
         {/* 公开路由 - 未登录用户可访问 */}
         <Route
-          path="/login"
-          element={
-            isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />
-          }
+          path='/login'
+          element={isAuthenticated ? <Navigate to='/dashboard' replace /> : <LoginPage />}
         />
         <Route
-          path="/test-login"
-          element={
-            isAuthenticated ? <Navigate to="/dashboard" replace /> : <TestLogin />
-          }
+          path='/test-login'
+          element={isAuthenticated ? <Navigate to='/dashboard' replace /> : <TestLogin />}
         />
 
         {/* 受保护的路由 - 需要登录 */}
         <Route
-          path="/"
-          element={
-            isAuthenticated ? <MainLayout /> : <Navigate to="/login" replace />
-          }
+          path='/'
+          element={isAuthenticated ? <MainLayout /> : <Navigate to='/login' replace />}
         >
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard" element={<DashboardPage />} />
+          <Route index element={<Navigate to='/dashboard' replace />} />
+          <Route path='dashboard' element={<DashboardPage />} />
 
           {/* 审批模块 */}
-          <Route path="approval" element={<ApprovalList />} />
-          <Route path="approval/create" element={<CreateApproval />} />
-          <Route path="approval/:id" element={<ApprovalDetail />} />
+          <Route path='approval' element={<ApprovalList />} />
+          <Route path='approval/create' element={<CreateApproval />} />
+          <Route path='approval/:id' element={<ApprovalDetail />} />
 
           {/* 业务模块 */}
-          <Route path="project" element={<ProjectManagement />} />
-          <Route path="conflict" element={<ConflictCheck />} />
-          <Route path="client" element={<ClientManagement />} />
-          <Route path="case" element={<CaseManagement />} />
-          <Route path="case/:id" element={<CaseDetail />} />
-          <Route path="lawyer" element={<LawyerManagement />} />
-          <Route path="lawyer/:id" element={<LawyerDetail />} />
-          <Route path="lawyer-simple" element={<SimpleLawyerManagement />} />
-          <Route path="file" element={<FileManagement />} />
+          {/* 项目管理功能已禁用，与案件管理重复 */}
+          {/* <Route path='project' element={<ProjectManagement />} /> */}
+          <Route path='conflict' element={<ConflictCheck />} />
+          <Route path='client' element={<ClientManagement />} />
+          <Route path='case' element={<CaseManagement />} />
+          <Route path='case/:id' element={<CaseDetail />} />
+          <Route path='lawyer' element={<LawyerManagement />} />
+          <Route path='lawyer/:id' element={<LawyerDetail />} />
+          <Route path='lawyer-simple' element={<SimpleLawyerManagement />} />
+          <Route path='file' element={<FileManagement />} />
 
           {/* 用户管理模块 - 需要管理员权限 */}
-          <Route path="user" element={<UserManagement />} />
+          <Route path='user' element={<UserManagement />} />
 
           {/* 行政模块 - 需要管理员权限 */}
-          <Route path="admin" element={<AdminManagement />} />
+          <Route path='admin' element={<AdminManagement />} />
 
           {/* 工具模块 */}
-          <Route path="tools" element={<ToolsPage />} />
-          <Route path="tools/litigation-fee" element={<LitigationFeeCalculator />} />
-          <Route path="tools/interest-calculator" element={<InterestCalculator />} />
-          <Route path="tools/deadline-calculator" element={<DeadlineCalculator />} />
-          <Route path="tools/law-search" element={<LawSearch />} />
+          <Route path='tools' element={<ToolsPage />} />
+          <Route path='tools/litigation-fee' element={<LitigationFeeCalculator />} />
+          <Route path='tools/interest-calculator' element={<InterestCalculator />} />
+          <Route path='tools/deadline-calculator' element={<DeadlineCalculator />} />
+          <Route path='tools/law-search' element={<LawSearch />} />
 
           {/* 财务模块 - 需要财务权限 */}
-          <Route path="finance" element={<FinanceManagement />} />
+          <Route path='finance' element={<FinanceManagement />} />
 
           {/* 个人中心和设置 */}
-          <Route path="profile" element={<Profile />} />
-          <Route path="settings" element={<Settings />} />
+          <Route path='profile' element={<Profile />} />
+          <Route path='settings' element={<Settings />} />
 
           {/* API测试页面 - 开发环境 */}
-          {import.meta.env.DEV && (
-            <>
-              <Route path="api-test" element={<ApiTest />} />
-            </>
-          )}
+          {import.meta.env.DEV && <Route path='api-test' element={<ApiTest />} />}
 
           {/* 权限测试页面 */}
-          <Route path="permission-test" element={<PermissionTestPage />} />
+          <Route path='permission-test' element={<PermissionTestPage />} />
 
           {/* 测试页面 - 仅开发环境 */}
           {import.meta.env.DEV && (
             <>
-              <Route path="test" element={<TestPage />} />
-              <Route path="system-test" element={<SystemTest />} />
+              <Route path='test' element={<TestPage />} />
+              <Route path='system-test' element={<SystemTest />} />
             </>
           )}
         </Route>
 
         {/* 404页面 */}
         <Route
-          path="*"
+          path='*'
           element={
-            isAuthenticated ?
-            <Navigate to="/dashboard" replace /> :
-            <Navigate to="/login" replace />
+            isAuthenticated ? (
+              <Navigate to='/dashboard' replace />
+            ) : (
+              <Navigate to='/login' replace />
+            )
           }
         />
       </Routes>
@@ -201,39 +198,19 @@ const App: React.FC = React.memo(() => {
   const { isAuthenticated, isLoading } = useAppStore()
   const { message: antdMessage } = AntdApp.useApp()
 
-  // 简化的主题配置
-  const themeConfig = useMemo(() => ({
-    token: {
-      colorPrimary: '#1890ff',
-      borderRadius: 6,
-      fontSize: 14,
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-    },
-    components: {
-      Layout: {
-        headerBg: '#ffffff',
-        siderBg: '#f6f6f6',
-        bodyBg: '#f0f2f5',
-      },
-    },
-  }), [])
-
   if (isLoading) {
     return (
-      <ConfigProvider locale={zhCN} theme={themeConfig}>
-        <PageLoading message="正在初始化应用..." />
+      <ConfigProvider locale={zhCN} theme={antdTheme}>
+        <PageLoading message='正在初始化应用...' />
       </ConfigProvider>
     )
   }
 
   return (
-    <ConfigProvider
-      locale={zhCN}
-      theme={themeConfig}
-    >
+    <ConfigProvider locale={zhCN} theme={antdTheme}>
       <AntdApp>
         <ErrorBoundary>
-          <React.Suspense fallback={<PageLoading message="正在加载..." />}>
+          <React.Suspense fallback={<PageLoading message='正在加载...' />}>
             <AppContent appMessage={antdMessage} />
           </React.Suspense>
         </ErrorBoundary>

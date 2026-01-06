@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"law-oa-go/internal/testing"
+	testing "law-oa-go/internal/testing_disabled"
 )
 
 // IntegrationExecutor 集成测试执行器

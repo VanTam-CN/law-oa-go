@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   Card,
   Table,
@@ -32,7 +32,7 @@ import {
   DatePicker,
   Empty,
   Spin,
-} from 'antd';
+} from 'antd'
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -54,12 +54,16 @@ import {
   AuditOutlined,
   TeamOutlined,
   SyncOutlined,
-} from '@ant-design/icons';
-import type { ColumnsType } from 'antd/es/table';
-import type { UploadProps } from 'antd';
-import dayjs from 'dayjs';
-import { waiverApprovalService } from '@/services/waiverApproval';
-import { conflictDetectionAdapter, checkConflicts, createWaiverSuggestion } from '@/services/conflictDetectionAdapter';
+} from '@ant-design/icons'
+import type { ColumnsType } from 'antd/es/table'
+import type { UploadProps } from 'antd'
+import dayjs from 'dayjs'
+import { waiverApprovalService } from '@/services/waiverApproval'
+import {
+  conflictDetectionAdapter,
+  checkConflicts,
+  createWaiverSuggestion,
+} from '@/services/conflictDetectionAdapter'
 import type {
   WaiverApplication,
   WaiverStatus,
@@ -68,29 +72,32 @@ import type {
   ConflictCheckRequest,
   ConflictCheckResponse,
   ConflictCase,
-} from '@/types/waiverApproval';
+} from '@/types/waiverApproval'
 
-const { TextArea } = Input;
-const { Option } = Select;
-const { Title, Text, Paragraph } = Typography;
-const { Step } = Steps;
-const { TabPane } = Tabs;
+const { TextArea } = Input
+const { Option } = Select
+const { Title, Text, Paragraph } = Typography
+const { Step } = Steps
+const { TabPane } = Tabs
 
 interface EnhancedWaiverApprovalInterfaceProps {
-  userRole?: string;
-  userId?: string;
-  defaultView?: 'conflicts' | 'pending' | 'history' | 'statistics';
-  lawyerId?: string;
-  lawyerName?: string;
+  userRole?: string
+  userId?: string
+  defaultView?: 'conflicts' | 'pending' | 'history' | 'statistics'
+  lawyerId?: string
+  lawyerName?: string
 }
 
 // 状态配置
-const statusConfig: Record<WaiverStatus, {
-  label: string;
-  color: string;
-  icon: React.ReactNode;
-  description: string;
-}> = {
+const statusConfig: Record<
+  WaiverStatus,
+  {
+    label: string
+    color: string
+    icon: React.ReactNode
+    description: string
+  }
+> = {
   DRAFT: {
     label: '草稿',
     color: 'default',
@@ -139,18 +146,21 @@ const statusConfig: Record<WaiverStatus, {
     icon: <CloseCircleOutlined />,
     description: '申请已取消',
   },
-};
+}
 
 // 风险等级配置
-const riskLevelConfig: Record<RiskLevel, {
-  label: string;
-  color: string;
-  priority: number;
-}> = {
+const riskLevelConfig: Record<
+  RiskLevel,
+  {
+    label: string
+    color: string
+    priority: number
+  }
+> = {
   LOW: { label: '低风险', color: 'green', priority: 1 },
   MEDIUM: { label: '中风险', color: 'orange', priority: 2 },
   HIGH: { label: '高风险', color: 'red', priority: 3 },
-};
+}
 
 // 冲突类型配置
 const conflictTypeConfig: Record<string, { label: string; color: string }> = {
@@ -159,7 +169,7 @@ const conflictTypeConfig: Record<string, { label: string; color: string }> = {
   BUSINESS_RELATION: { label: '业务关系', color: 'blue' },
   ORGANIZATIONAL: { label: '组织冲突', color: 'purple' },
   OTHER: { label: '其他', color: 'default' },
-};
+}
 
 const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceProps> = ({
   userRole = 'LAWYER',
@@ -169,22 +179,22 @@ const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceP
   lawyerName = '',
 }) => {
   // 状态管理
-  const [activeTab, setActiveTab] = useState(defaultView);
-  const [conflicts, setConflicts] = useState<ConflictCase[]>([]);
-  const [waiverApplications, setWaiverApplications] = useState<WaiverApplication[]>([]);
-  const [selectedConflict, setSelectedConflict] = useState<ConflictCase | null>(null);
-  const [selectedWaiver, setSelectedWaiver] = useState<WaiverApplication | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [activeTab, setActiveTab] = useState(defaultView)
+  const [conflicts, setConflicts] = useState<ConflictCase[]>([])
+  const [waiverApplications, setWaiverApplications] = useState<WaiverApplication[]>([])
+  const [selectedConflict, setSelectedConflict] = useState<ConflictCase | null>(null)
+  const [selectedWaiver, setSelectedWaiver] = useState<WaiverApplication | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   // 模态框状态
-  const [waiverModalVisible, setWaiverModalVisible] = useState(false);
-  const [conflictModalVisible, setConflictModalVisible] = useState(false);
-  const [approvalModalVisible, setApprovalModalVisible] = useState(false);
+  const [waiverModalVisible, setWaiverModalVisible] = useState(false)
+  const [conflictModalVisible, setConflictModalVisible] = useState(false)
+  const [approvalModalVisible, setApprovalModalVisible] = useState(false)
 
   // 表单状态
-  const [approvalForm] = Form.useForm();
-  const [searchForm] = Form.useForm();
+  const [approvalForm] = Form.useForm()
+  const [searchForm] = Form.useForm()
 
   // 统计数据
   const [statistics, setStatistics] = useState({
@@ -193,79 +203,83 @@ const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceP
     pendingWaivers: 0,
     approvedWaivers: 0,
     rejectedWaivers: 0,
-  });
+  })
 
   // 刷新数据
   const refreshData = useCallback(() => {
-    setRefreshKey(prev => prev + 1);
-  }, []);
+    setRefreshKey((prev) => prev + 1)
+  }, [])
 
   // 加载冲突数据
   useEffect(() => {
     if (lawyerId) {
-      loadConflicts();
+      loadConflicts()
     }
-  }, [lawyerId, refreshKey]);
+  }, [lawyerId, refreshKey])
 
   // 加载豁免申请数据
   useEffect(() => {
     if (userId) {
-      loadWaiverApplications();
+      loadWaiverApplications()
     }
-  }, [userId, refreshKey]);
+  }, [userId, refreshKey])
 
   const loadConflicts = async () => {
-    if (!lawyerId) return;
+    if (!lawyerId) {
+      return
+    }
 
-    setLoading(true);
+    setLoading(true)
     try {
-      const conflictData = await conflictDetectionAdapter.getLawyerConflicts(lawyerId);
-      setConflicts(conflictData);
+      const conflictData = await conflictDetectionAdapter.getLawyerConflicts(lawyerId)
+      setConflicts(conflictData)
 
       // 更新统计
-      const highRiskCount = conflictData.filter(c => c.riskLevel === 'HIGH').length;
-      setStatistics(prev => ({
+      const highRiskCount = conflictData.filter((c) => c.riskLevel === 'HIGH').length
+      setStatistics((prev) => ({
         ...prev,
         totalConflicts: conflictData.length,
         highRiskConflicts: highRiskCount,
-      }));
+      }))
     } catch (error) {
-      console.error('加载冲突数据失败:', error);
-      message.error('加载冲突数据失败');
+      console.error('加载冲突数据失败:', error)
+      message.error('加载冲突数据失败')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const loadWaiverApplications = async () => {
-    setLoading(true);
+    setLoading(true)
     try {
       const response = await waiverApprovalService.getWaiverApplications({
         page: 1,
         pageSize: 50,
         applicantId: userId,
-      });
+      })
 
-      setWaiverApplications(response.data);
+      setWaiverApplications(response.data)
 
       // 更新统计
-      const pending = response.data.filter(w => w.status === 'SUBMITTED' || w.status === 'UNDER_REVIEW').length;
-      const approved = response.data.filter(w => w.status === 'APPROVED').length;
-      const rejected = response.data.filter(w => w.status === 'REJECTED').length;
+      const pending = response.data.filter(
+        (w) => w.status === 'SUBMITTED' || w.status === 'UNDER_REVIEW',
+      ).length
+      const approved = response.data.filter((w) => w.status === 'APPROVED').length
+      const rejected = response.data.filter((w) => w.status === 'REJECTED').length
 
-      setStatistics(prev => ({
+      setStatistics((prev) => ({
         ...prev,
         pendingWaivers: pending,
         approvedWaivers: approved,
         rejectedWaivers: rejected,
-      }));
+      }))
     } catch (error) {
-      console.error('加载豁免申请失败:', error);
-      message.error('加载豁免申请失败');
+      console.error('加载豁免申请失败:', error)
+      message.error('加载豁免申请失败')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   // 从冲突创建豁免申请
   const handleCreateWaiverFromConflict = async (conflict: ConflictCase) => {
@@ -283,10 +297,10 @@ const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceP
           lowRiskCount: conflict.riskLevel === 'LOW' ? 1 : 0,
           riskFactors: [conflict.conflictType],
         },
-      };
+      }
 
       // 创建豁免申请建议
-      const suggestion = createWaiverSuggestion(conflictResponse);
+      const suggestion = createWaiverSuggestion(conflictResponse)
 
       if (suggestion.recommendWaiver) {
         // 构建豁免申请数据
@@ -300,33 +314,33 @@ const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceP
           mitigationMeasures: suggestion.mitigationMeasures,
           applicantId: userId,
           applicantName: lawyerName,
-        };
+        }
 
         // 创建豁免申请
-        const waiver = await waiverApprovalService.createWaiverApplication(waiverData);
-        message.success('豁免申请创建成功');
-        refreshData();
-        setSelectedWaiver(waiver);
-        setApprovalModalVisible(true);
+        const waiver = await waiverApprovalService.createWaiverApplication(waiverData)
+        message.success('豁免申请创建成功')
+        refreshData()
+        setSelectedWaiver(waiver)
+        setApprovalModalVisible(true)
       } else {
-        message.info('该冲突不需要申请豁免');
+        message.info('该冲突不需要申请豁免')
       }
     } catch (error) {
-      console.error('创建豁免申请失败:', error);
-      message.error('创建豁免申请失败');
+      console.error('创建豁免申请失败:', error)
+      message.error('创建豁免申请失败')
     }
-  };
+  }
 
   // 批量创建豁免申请
   const handleBatchCreateWaivers = async () => {
     try {
-      const activeConflicts = conflicts.filter(c =>
-        c.status === 'ACTIVE' && !waiverApplications.some(w => w.caseId === c.caseId)
-      );
+      const activeConflicts = conflicts.filter(
+        (c) => c.status === 'ACTIVE' && !waiverApplications.some((w) => w.caseId === c.caseId),
+      )
 
       if (activeConflicts.length === 0) {
-        message.info('没有需要处理的冲突');
-        return;
+        message.info('没有需要处理的冲突')
+        return
       }
 
       Modal.confirm({
@@ -334,16 +348,16 @@ const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceP
         content: `将为 ${activeConflicts.length} 个冲突案例创建豁免申请，确定继续吗？`,
         onOk: async () => {
           for (const conflict of activeConflicts) {
-            await handleCreateWaiverFromConflict(conflict);
+            await handleCreateWaiverFromConflict(conflict)
           }
-          message.success(`成功创建 ${activeConflicts.length} 个豁免申请`);
+          message.success(`成功创建 ${activeConflicts.length} 个豁免申请`)
         },
-      });
+      })
     } catch (error) {
-      console.error('批量创建失败:', error);
-      message.error('批量创建豁免申请失败');
+      console.error('批量创建失败:', error)
+      message.error('批量创建豁免申请失败')
     }
-  };
+  }
 
   // 冲突案例表格列定义
   const conflictColumns: ColumnsType<ConflictCase> = [
@@ -352,12 +366,8 @@ const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceP
       key: 'case',
       render: (_, record) => (
         <div>
-          <div style={{ fontWeight: 'bold', marginBottom: 4 }}>
-            {record.caseName}
-          </div>
-          <div style={{ fontSize: '12px', color: '#666' }}>
-            案件编号: {record.caseId}
-          </div>
+          <div style={{ fontWeight: 'bold', marginBottom: 4 }}>{record.caseName}</div>
+          <div style={{ fontSize: '13px', color: '#374151' }}>案件编号: {record.caseId}</div>
         </div>
       ),
     },
@@ -376,9 +386,7 @@ const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceP
       dataIndex: 'riskLevel',
       key: 'riskLevel',
       render: (level) => (
-        <Tag color={riskLevelConfig[level]?.color}>
-          {riskLevelConfig[level]?.label}
-        </Tag>
+        <Tag color={riskLevelConfig[level]?.color}>{riskLevelConfig[level]?.label}</Tag>
       ),
     },
     {
@@ -402,24 +410,24 @@ const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceP
       title: '操作',
       key: 'actions',
       render: (_, record) => {
-        const hasWaiver = waiverApplications.some(w => w.caseId === record.caseId);
+        const hasWaiver = waiverApplications.some((w) => w.caseId === record.caseId)
 
         return (
           <Space>
             <Button
-              size="small"
+              size='small'
               icon={<EyeOutlined />}
               onClick={() => {
-                setSelectedConflict(record);
-                setConflictModalVisible(true);
+                setSelectedConflict(record)
+                setConflictModalVisible(true)
               }}
             >
               详情
             </Button>
             {!hasWaiver && (
               <Button
-                type="primary"
-                size="small"
+                type='primary'
+                size='small'
                 icon={<FileTextOutlined />}
                 onClick={() => handleCreateWaiverFromConflict(record)}
               >
@@ -427,19 +435,15 @@ const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceP
               </Button>
             )}
             {hasWaiver && (
-              <Button
-                size="small"
-                icon={<CheckCircleOutlined />}
-                disabled
-              >
+              <Button size='small' icon={<CheckCircleOutlined />} disabled>
                 已申请
               </Button>
             )}
           </Space>
-        );
+        )
       },
     },
-  ];
+  ]
 
   // 豁免申请表格列定义
   const waiverColumns: ColumnsType<WaiverApplication> = [
@@ -448,12 +452,8 @@ const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceP
       key: 'case',
       render: (_, record) => (
         <div>
-          <div style={{ fontWeight: 'bold', marginBottom: 4 }}>
-            {record.caseTitle}
-          </div>
-          <div style={{ fontSize: '12px', color: '#666' }}>
-            申请编号: {record.id}
-          </div>
+          <div style={{ fontWeight: 'bold', marginBottom: 4 }}>{record.caseTitle}</div>
+          <div style={{ fontSize: '13px', color: '#374151' }}>申请编号: {record.id}</div>
         </div>
       ),
     },
@@ -461,20 +461,14 @@ const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceP
       title: '豁免类型',
       dataIndex: 'waiverType',
       key: 'waiverType',
-      render: (type) => (
-        <Tag color="blue">
-          {type}
-        </Tag>
-      ),
+      render: (type) => <Tag color='blue'>{type}</Tag>,
     },
     {
       title: '风险等级',
       dataIndex: 'riskLevel',
       key: 'riskLevel',
       render: (level) => (
-        <Tag color={riskLevelConfig[level]?.color}>
-          {riskLevelConfig[level]?.label}
-        </Tag>
+        <Tag color={riskLevelConfig[level]?.color}>{riskLevelConfig[level]?.label}</Tag>
       ),
     },
     {
@@ -482,19 +476,19 @@ const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceP
       dataIndex: 'status',
       key: 'status',
       render: (status) => {
-        const config = statusConfig[status];
+        const config = statusConfig[status]
         return (
           <Tag color={config.color} icon={config.icon}>
             {config.label}
           </Tag>
-        );
+        )
       },
     },
     {
       title: '申请时间',
       dataIndex: 'submittedAt',
       key: 'submittedAt',
-      render: (time) => time ? dayjs(time).format('YYYY-MM-DD HH:mm') : '-',
+      render: (time) => (time ? dayjs(time).format('YYYY-MM-DD HH:mm') : '-'),
     },
     {
       title: '操作',
@@ -502,19 +496,19 @@ const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceP
       render: (_, record) => (
         <Space>
           <Button
-            size="small"
+            size='small'
             icon={<EyeOutlined />}
             onClick={() => {
-              setSelectedWaiver(record);
-              setApprovalModalVisible(true);
+              setSelectedWaiver(record)
+              setApprovalModalVisible(true)
             }}
           >
             详情
           </Button>
           {record.status === 'DRAFT' && (
             <Button
-              type="primary"
-              size="small"
+              type='primary'
+              size='small'
               icon={<SendOutlined />}
               onClick={() => handleSubmitWaiver(record.id)}
             >
@@ -524,43 +518,35 @@ const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceP
         </Space>
       ),
     },
-  ];
+  ]
 
   // 提交豁免申请
   const handleSubmitWaiver = async (waiverId: string) => {
     try {
-      await waiverApprovalService.submitWaiverApplication(waiverId);
-      message.success('豁免申请提交成功');
-      refreshData();
+      await waiverApprovalService.submitWaiverApplication(waiverId)
+      message.success('豁免申请提交成功')
+      refreshData()
     } catch (error) {
-      console.error('提交失败:', error);
-      message.error('提交失败');
+      console.error('提交失败:', error)
+      message.error('提交失败')
     }
-  };
+  }
 
   // 渲染冲突检测页面
   const renderConflictTab = () => (
     <div>
       <Card
-        title="冲突检测管理"
+        title='冲突检测管理'
         extra={
           <Space>
-            <Button
-              type="primary"
-              icon={<SyncOutlined />}
-              onClick={refreshData}
-            >
+            <Button type='primary' icon={<SyncOutlined />} onClick={refreshData}>
               刷新数据
             </Button>
-            {conflicts.filter(c =>
-              c.status === 'ACTIVE' &&
-              !waiverApplications.some(w => w.caseId === c.caseId)
+            {conflicts.filter(
+              (c) =>
+                c.status === 'ACTIVE' && !waiverApplications.some((w) => w.caseId === c.caseId),
             ).length > 0 && (
-              <Button
-                type="primary"
-                icon={<FileTextOutlined />}
-                onClick={handleBatchCreateWaivers}
-              >
+              <Button type='primary' icon={<FileTextOutlined />} onClick={handleBatchCreateWaivers}>
                 批量申请豁免
               </Button>
             )}
@@ -569,39 +555,42 @@ const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceP
       >
         <Row gutter={16} style={{ marginBottom: 16 }}>
           <Col span={6}>
-            <Card size="small">
+            <Card size='small'>
               <Statistic
-                title="总冲突数"
+                title='总冲突数'
                 value={statistics.totalConflicts}
                 valueStyle={{ color: '#1890ff' }}
               />
             </Card>
           </Col>
           <Col span={6}>
-            <Card size="small">
+            <Card size='small'>
               <Statistic
-                title="高风险冲突"
+                title='高风险冲突'
                 value={statistics.highRiskConflicts}
                 valueStyle={{ color: '#f5222d' }}
               />
             </Card>
           </Col>
           <Col span={6}>
-            <Card size="small">
+            <Card size='small'>
               <Statistic
-                title="待申请豁免"
-                value={conflicts.filter(c =>
-                  c.status === 'ACTIVE' &&
-                  !waiverApplications.some(w => w.caseId === c.caseId)
-                ).length}
+                title='待申请豁免'
+                value={
+                  conflicts.filter(
+                    (c) =>
+                      c.status === 'ACTIVE' &&
+                      !waiverApplications.some((w) => w.caseId === c.caseId),
+                  ).length
+                }
                 valueStyle={{ color: '#fa8c16' }}
               />
             </Card>
           </Col>
           <Col span={6}>
-            <Card size="small">
+            <Card size='small'>
               <Statistic
-                title="已申请豁免"
+                title='已申请豁免'
                 value={waiverApplications.length}
                 valueStyle={{ color: '#52c41a' }}
               />
@@ -612,7 +601,7 @@ const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceP
         <Table
           columns={conflictColumns}
           dataSource={conflicts}
-          rowKey="id"
+          rowKey='id'
           loading={loading}
           pagination={{
             pageSize: 10,
@@ -622,19 +611,16 @@ const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceP
         />
       </Card>
     </div>
-  );
+  )
 
   // 渲染豁免申请页面
   const renderWaiverTab = () => (
     <div>
       <Card
-        title="豁免申请管理"
+        title='豁免申请管理'
         extra={
           <Space>
-            <Button
-              icon={<SyncOutlined />}
-              onClick={refreshData}
-            >
+            <Button icon={<SyncOutlined />} onClick={refreshData}>
               刷新数据
             </Button>
           </Space>
@@ -643,7 +629,7 @@ const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceP
         <Table
           columns={waiverColumns}
           dataSource={waiverApplications}
-          rowKey="id"
+          rowKey='id'
           loading={loading}
           pagination={{
             pageSize: 10,
@@ -653,26 +639,26 @@ const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceP
         />
       </Card>
     </div>
-  );
+  )
 
   // 渲染统计页面
   const renderStatisticsTab = () => (
     <div>
-      <Card title="数据统计">
+      <Card title='数据统计'>
         <Row gutter={16}>
           <Col span={12}>
-            <Card size="small" title="冲突统计">
+            <Card size='small' title='冲突统计'>
               <Row gutter={16}>
                 <Col span={12}>
                   <Statistic
-                    title="总冲突数"
+                    title='总冲突数'
                     value={statistics.totalConflicts}
                     valueStyle={{ color: '#1890ff' }}
                   />
                 </Col>
                 <Col span={12}>
                   <Statistic
-                    title="高风险冲突"
+                    title='高风险冲突'
                     value={statistics.highRiskConflicts}
                     valueStyle={{ color: '#f5222d' }}
                   />
@@ -683,10 +669,13 @@ const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceP
                 <Text strong>冲突类型分布：</Text>
                 <div style={{ marginTop: 8 }}>
                   {Object.entries(
-                    conflicts.reduce((acc, conflict) => {
-                      acc[conflict.conflictType] = (acc[conflict.conflictType] || 0) + 1;
-                      return acc;
-                    }, {} as Record<string, number>)
+                    conflicts.reduce(
+                      (acc, conflict) => {
+                        acc[conflict.conflictType] = (acc[conflict.conflictType] || 0) + 1
+                        return acc
+                      },
+                      {} as Record<string, number>,
+                    ),
                   ).map(([type, count]) => (
                     <Tag key={type} color={conflictTypeConfig[type]?.color}>
                       {conflictTypeConfig[type]?.label || type}: {count}
@@ -697,25 +686,25 @@ const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceP
             </Card>
           </Col>
           <Col span={12}>
-            <Card size="small" title="豁免申请统计">
+            <Card size='small' title='豁免申请统计'>
               <Row gutter={16}>
                 <Col span={8}>
                   <Statistic
-                    title="待审批"
+                    title='待审批'
                     value={statistics.pendingWaivers}
                     valueStyle={{ color: '#fa8c16' }}
                   />
                 </Col>
                 <Col span={8}>
                   <Statistic
-                    title="已批准"
+                    title='已批准'
                     value={statistics.approvedWaivers}
                     valueStyle={{ color: '#52c41a' }}
                   />
                 </Col>
                 <Col span={8}>
                   <Statistic
-                    title="已拒绝"
+                    title='已拒绝'
                     value={statistics.rejectedWaivers}
                     valueStyle={{ color: '#f5222d' }}
                   />
@@ -726,10 +715,13 @@ const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceP
                 <Text strong>审批状态分布：</Text>
                 <div style={{ marginTop: 8 }}>
                   {Object.entries(
-                    waiverApplications.reduce((acc, waiver) => {
-                      acc[waiver.status] = (acc[waiver.status] || 0) + 1;
-                      return acc;
-                    }, {} as Record<string, number>)
+                    waiverApplications.reduce(
+                      (acc, waiver) => {
+                        acc[waiver.status] = (acc[waiver.status] || 0) + 1
+                        return acc
+                      },
+                      {} as Record<string, number>,
+                    ),
                   ).map(([status, count]) => (
                     <Tag key={status} color={statusConfig[status as WaiverStatus]?.color}>
                       {statusConfig[status as WaiverStatus]?.label}: {count}
@@ -742,16 +734,14 @@ const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceP
         </Row>
       </Card>
     </div>
-  );
+  )
 
   return (
     <div style={{ padding: 24 }}>
       <Title level={2}>
         增强型豁免审批管理
         {lawyerName && (
-          <Text style={{ fontSize: 16, fontWeight: 'normal', marginLeft: 16 }}>
-            - {lawyerName}
-          </Text>
+          <Text style={{ fontSize: 16, fontWeight: 'normal', marginLeft: 16 }}>- {lawyerName}</Text>
         )}
       </Title>
 
@@ -763,7 +753,7 @@ const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceP
               冲突检测
             </span>
           }
-          key="conflicts"
+          key='conflicts'
         >
           {renderConflictTab()}
         </TabPane>
@@ -775,7 +765,7 @@ const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceP
               豁免申请
             </span>
           }
-          key="waivers"
+          key='waivers'
         >
           {renderWaiverTab()}
         </TabPane>
@@ -787,7 +777,7 @@ const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceP
               数据统计
             </span>
           }
-          key="statistics"
+          key='statistics'
         >
           {renderStatisticsTab()}
         </TabPane>
@@ -795,70 +785,69 @@ const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceP
 
       {/* 冲突详情模态框 */}
       <Modal
-        title="冲突详情"
+        title='冲突详情'
         open={conflictModalVisible}
         onCancel={() => setConflictModalVisible(false)}
         footer={[
-          <Button key="close" onClick={() => setConflictModalVisible(false)}>
+          <Button key='close' onClick={() => setConflictModalVisible(false)}>
             关闭
           </Button>,
-          selectedConflict && !waiverApplications.some(w => w.caseId === selectedConflict.caseId) && (
-            <Button
-              key="create"
-              type="primary"
-              icon={<FileTextOutlined />}
-              onClick={() => {
-                if (selectedConflict) {
-                  handleCreateWaiverFromConflict(selectedConflict);
-                  setConflictModalVisible(false);
-                }
-              }}
-            >
-              申请豁免
-            </Button>
-          ),
+          selectedConflict &&
+            !waiverApplications.some((w) => w.caseId === selectedConflict.caseId) && (
+              <Button
+                key='create'
+                type='primary'
+                icon={<FileTextOutlined />}
+                onClick={() => {
+                  if (selectedConflict) {
+                    handleCreateWaiverFromConflict(selectedConflict)
+                    setConflictModalVisible(false)
+                  }
+                }}
+              >
+                申请豁免
+              </Button>
+            ),
         ]}
         width={800}
       >
         {selectedConflict && (
           <div>
             <Descriptions column={2} bordered>
-              <Descriptions.Item label="案件名称" span={2}>
+              <Descriptions.Item label='案件名称' span={2}>
                 {selectedConflict.caseName}
               </Descriptions.Item>
-              <Descriptions.Item label="案件编号">
-                {selectedConflict.caseId}
-              </Descriptions.Item>
-              <Descriptions.Item label="冲突类型">
+              <Descriptions.Item label='案件编号'>{selectedConflict.caseId}</Descriptions.Item>
+              <Descriptions.Item label='冲突类型'>
                 <Tag color={conflictTypeConfig[selectedConflict.conflictType]?.color}>
                   {conflictTypeConfig[selectedConflict.conflictType]?.label}
                 </Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="风险等级">
+              <Descriptions.Item label='风险等级'>
                 <Tag color={riskLevelConfig[selectedConflict.riskLevel]?.color}>
                   {riskLevelConfig[selectedConflict.riskLevel]?.label}
                 </Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="当前状态">
+              <Descriptions.Item label='当前状态'>
                 <Badge
                   status={selectedConflict.status === 'ACTIVE' ? 'processing' : 'default'}
                   text={selectedConflict.status === 'ACTIVE' ? '进行中' : selectedConflict.status}
                 />
               </Descriptions.Item>
-              <Descriptions.Item label="创建时间">
+              <Descriptions.Item label='创建时间'>
                 {dayjs(selectedConflict.createdAt).format('YYYY-MM-DD HH:mm:ss')}
               </Descriptions.Item>
-              <Descriptions.Item label="冲突描述" span={2}>
+              <Descriptions.Item label='冲突描述' span={2}>
                 <Paragraph>{selectedConflict.description}</Paragraph>
               </Descriptions.Item>
-              <Descriptions.Item label="相关方" span={2}>
+              <Descriptions.Item label='相关方' span={2}>
                 {selectedConflict.parties.map((party, index) => (
                   <Tag key={index} style={{ margin: '4px 4px 4px 0' }}>
                     {party.name} ({party.type === 'LAWYER' ? '律师' : '客户'})
                   </Tag>
                 ))}
               </Descriptions.Item>
-              <Descriptions.Item label="风险控制措施" span={2}>
+              <Descriptions.Item label='风险控制措施' span={2}>
                 <Paragraph>{selectedConflict.mitigationMeasures}</Paragraph>
               </Descriptions.Item>
             </Descriptions>
@@ -868,11 +857,11 @@ const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceP
 
       {/* 豁免申请详情模态框 */}
       <Modal
-        title="豁免申请详情"
+        title='豁免申请详情'
         open={approvalModalVisible}
         onCancel={() => setApprovalModalVisible(false)}
         footer={[
-          <Button key="close" onClick={() => setApprovalModalVisible(false)}>
+          <Button key='close' onClick={() => setApprovalModalVisible(false)}>
             关闭
           </Button>,
         ]}
@@ -881,43 +870,43 @@ const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceP
         {selectedWaiver && (
           <div>
             <Descriptions column={2} bordered>
-              <Descriptions.Item label="申请编号" span={2}>
+              <Descriptions.Item label='申请编号' span={2}>
                 {selectedWaiver.id}
               </Descriptions.Item>
-              <Descriptions.Item label="案件标题" span={2}>
+              <Descriptions.Item label='案件标题' span={2}>
                 {selectedWaiver.caseTitle}
               </Descriptions.Item>
-              <Descriptions.Item label="豁免类型">
-                <Tag color="blue">{selectedWaiver.waiverType}</Tag>
+              <Descriptions.Item label='豁免类型'>
+                <Tag color='blue'>{selectedWaiver.waiverType}</Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="风险等级">
+              <Descriptions.Item label='风险等级'>
                 <Tag color={riskLevelConfig[selectedWaiver.riskLevel]?.color}>
                   {riskLevelConfig[selectedWaiver.riskLevel]?.label}
                 </Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="申请状态">
+              <Descriptions.Item label='申请状态'>
                 {(() => {
-                  const config = statusConfig[selectedWaiver.status];
+                  const config = statusConfig[selectedWaiver.status]
                   return (
                     <Tag color={config.color} icon={config.icon}>
                       {config.label}
                     </Tag>
-                  );
+                  )
                 })()}
               </Descriptions.Item>
-              <Descriptions.Item label="申请人">
-                {selectedWaiver.applicantName}
+              <Descriptions.Item label='申请人'>{selectedWaiver.applicantName}</Descriptions.Item>
+              <Descriptions.Item label='申请时间'>
+                {selectedWaiver.submittedAt
+                  ? dayjs(selectedWaiver.submittedAt).format('YYYY-MM-DD HH:mm:ss')
+                  : '-'}
               </Descriptions.Item>
-              <Descriptions.Item label="申请时间">
-                {selectedWaiver.submittedAt ? dayjs(selectedWaiver.submittedAt).format('YYYY-MM-DD HH:mm:ss') : '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="申请描述" span={2}>
+              <Descriptions.Item label='申请描述' span={2}>
                 <Paragraph>{selectedWaiver.description}</Paragraph>
               </Descriptions.Item>
-              <Descriptions.Item label="申请理由" span={2}>
+              <Descriptions.Item label='申请理由' span={2}>
                 <Paragraph>{selectedWaiver.justification}</Paragraph>
               </Descriptions.Item>
-              <Descriptions.Item label="风险控制措施" span={2}>
+              <Descriptions.Item label='风险控制措施' span={2}>
                 <Paragraph>{selectedWaiver.mitigationMeasures}</Paragraph>
               </Descriptions.Item>
             </Descriptions>
@@ -930,15 +919,25 @@ const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceP
                   {selectedWaiver.approvalRecords.map((record, index) => (
                     <Timeline.Item
                       key={index}
-                      color={record.action === 'APPROVE' ? 'green' : record.action === 'REJECT' ? 'red' : 'blue'}
+                      color={
+                        record.action === 'APPROVE'
+                          ? 'green'
+                          : record.action === 'REJECT'
+                            ? 'red'
+                            : 'blue'
+                      }
                     >
                       <div>
                         <Text strong>{record.reviewerName}</Text>
-                        <Tag color="blue" style={{ marginLeft: 8 }}>
-                          {record.action === 'APPROVE' ? '批准' : record.action === 'REJECT' ? '拒绝' : '提交'}
+                        <Tag color='blue' style={{ marginLeft: 8 }}>
+                          {record.action === 'APPROVE'
+                            ? '批准'
+                            : record.action === 'REJECT'
+                              ? '拒绝'
+                              : '提交'}
                         </Tag>
                         <br />
-                        <Text type="secondary">
+                        <Text type='secondary'>
                           {dayjs(record.reviewTime).format('YYYY-MM-DD HH:mm:ss')}
                         </Text>
                         {record.comments && (
@@ -956,7 +955,7 @@ const EnhancedWaiverApprovalInterface: React.FC<EnhancedWaiverApprovalInterfaceP
         )}
       </Modal>
     </div>
-  );
-};
+  )
+}
 
-export default EnhancedWaiverApprovalInterface;
+export default EnhancedWaiverApprovalInterface

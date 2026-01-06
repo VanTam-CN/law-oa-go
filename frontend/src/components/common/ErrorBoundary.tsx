@@ -32,10 +32,13 @@ class ErrorLoggingService {
       timestamp: new Date().toISOString(),
       userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
       url: typeof window !== 'undefined' ? window.location.href : 'unknown',
-      memory: typeof performance !== 'undefined' && performance.memory ? {
-        usedJSHeapSize: performance.memory.usedJSHeapSize,
-        totalJSHeapSize: performance.memory.totalJSHeapSize,
-      } : null,
+      memory:
+        typeof performance !== 'undefined' && performance.memory
+          ? {
+              usedJSHeapSize: performance.memory.usedJSHeapSize,
+              totalJSHeapSize: performance.memory.totalJSHeapSize,
+            }
+          : null,
     }
 
     // 开发环境在控制台显示
@@ -140,7 +143,9 @@ class ErrorBoundary extends Component<Props, State> {
 
   handleShowErrorDetails = () => {
     const { error, errorId } = this.state
-    if (!error) return
+    if (!error) {
+      return
+    }
 
     const errorDetails = {
       id: errorId || 'unknown',
@@ -198,39 +203,53 @@ class ErrorBoundary extends Component<Props, State> {
       // 开发环境显示详细错误信息
       if (import.meta.env.DEV) {
         return (
-          <div style={{
-            padding: '20px',
-            backgroundColor: '#fff2f0',
-            border: '1px solid #ffccc7',
-            borderRadius: '8px',
-            margin: '20px',
-          }}>
+          <div
+            style={{
+              padding: '20px',
+              backgroundColor: '#fff2f0',
+              border: '1px solid #ffccc7',
+              borderRadius: '8px',
+              margin: '20px',
+            }}
+          >
             <h2 style={{ color: '#cf1322' }}>组件渲染错误</h2>
             <details style={{ marginBottom: '16px' }}>
               <summary style={{ cursor: 'pointer', marginBottom: '8px' }}>
                 错误详情 (开发环境)
               </summary>
               <div style={{ marginTop: '12px', fontSize: '14px', fontFamily: 'monospace' }}>
-                <p><strong>错误ID:</strong> {errorId}</p>
-                <p><strong>错误信息:</strong> {error?.message}</p>
-                <p><strong>组件堆栈:</strong></p>
-                <pre style={{
-                  backgroundColor: '#f5f5f5',
-                  padding: '12px',
-                  borderRadius: '4px',
-                  overflow: 'auto',
-                  maxHeight: '200px',
-                }}>
+                <p>
+                  <strong>错误ID:</strong> {errorId}
+                </p>
+                <p>
+                  <strong>错误信息:</strong> {error?.message}
+                </p>
+                <p>
+                  <strong>组件堆栈:</strong>
+                </p>
+                <pre
+                  style={{
+                    backgroundColor: '#f5f5f5',
+                    padding: '12px',
+                    borderRadius: '4px',
+                    overflow: 'auto',
+                    maxHeight: '200px',
+                  }}
+                >
                   {errorInfo?.componentStack}
                 </pre>
-                <p><strong>错误堆栈:</strong></p>
-                <pre style={{
-                  backgroundColor: '#f5f5f5',
-                  padding: '12px',
-                  borderRadius: '4px',
-                  overflow: 'auto',
-                  maxHeight: '300px',
-                }}>
+                <p>
+                  <strong>错误堆栈:</strong>
+                </p>
+                <pre
+                  style={{
+                    backgroundColor: '#f5f5f5',
+                    padding: '12px',
+                    borderRadius: '4px',
+                    overflow: 'auto',
+                    maxHeight: '300px',
+                  }}
+                >
                   {error?.stack}
                 </pre>
               </div>
@@ -284,26 +303,26 @@ class ErrorBoundary extends Component<Props, State> {
 
       // 生产环境显示友好的错误界面
       return (
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '100vh',
-          padding: '20px',
-          backgroundColor: '#f5f5f5',
-        }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: '100vh',
+            padding: '20px',
+            backgroundColor: '#f5f5f5',
+          }}
+        >
           <Result
-            status="500"
-            title="500"
-            subTitle="抱歉，系统遇到了一个错误。"
+            status='500'
+            title='500'
+            subTitle='抱歉，系统遇到了一个错误。'
             extra={[
-              <Button type="primary" onClick={this.handleGoHome}>
+              <Button type='primary' onClick={this.handleGoHome}>
                 返回首页
               </Button>,
-              <Button onClick={this.handleReload}>
-                重新加载
-              </Button>,
-              <Button onClick={this.handleShowErrorDetails} type="link">
+              <Button onClick={this.handleReload}>重新加载</Button>,
+              <Button onClick={this.handleShowErrorDetails} type='link'>
                 查看详情
               </Button>,
             ]}
@@ -319,7 +338,7 @@ class ErrorBoundary extends Component<Props, State> {
 // 错误边界HOC
 export function withErrorBoundary<P extends object>(
   Component: React.ComponentType<P>,
-  errorBoundaryProps?: Omit<Props, 'children'>
+  errorBoundaryProps?: Omit<Props, 'children'>,
 ) {
   const WrappedComponent = (props: P) => (
     <ErrorBoundary {...errorBoundaryProps}>

@@ -1,12 +1,36 @@
+/**
+ * 登录页面样式 - 律所OA系统
+ *
+ * 设计理念：
+ * - 专业的深蓝色渐变背景
+ * - 现代化的卡片设计
+ * - 微妙的动画效果
+ * - 清晰的视觉层次
+ *
+ * 更新日期：2025-12-29
+ */
+
+/* ========================================
+   容器布局 - 居中对齐
+   ======================================== */
 .login-container {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #1c4e80 0%, #2d5aa0 50%, #c5a572 100%);
+  padding: var(--space-4);
   position: relative;
-  
+
+  /* 背景渐变 - 使用新的专业深蓝配色 */
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-600) 0%,
+    var(--color-primary-800) 50%,
+    var(--color-primary-900) 100%
+  );
+
+  /* 背景图案 - 微妙的几何装饰 */
   &::before {
     content: '';
     position: absolute;
@@ -14,46 +38,336 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><polygon fill="rgba(255,255,255,0.05)" points="0,0 1000,300 1000,1000 0,700"/></svg>');
-    background-size: cover;
+    background-image:
+      /* 大圆点装饰 */
+      radial-gradient(circle at 20% 30%, rgba(197, 165, 114, 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(197, 165, 114, 0.06) 0%, transparent 50%),
+      /* 几何线条装饰 */
+      url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><polygon fill="rgba(255,255,255,0.03)" points="0,0 1000,300 1000,1000 0,700"/></svg>');
+    background-size:
+      600px 600px,
+      500px 500px,
+      cover;
+    background-position:
+      0% 0%,
+      100% 100%,
+      center;
+    animation: backgroundShift 20s ease-in-out infinite alternate;
+  }
+
+  /* 噪点纹理 - 增加质感 */
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23noise)" opacity="0.03"/></svg>');
+    pointer-events: none;
   }
 }
 
+/* ========================================
+   登录卡片 - 现代化设计
+   ======================================== */
 .login-card {
-  width: 400px;
-  margin-bottom: 24px;
-  box-shadow: 0 8px 32px rgba(28, 78, 128, 0.3);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  background: rgba(255, 255, 255, 0.95);
+  width: 100%;
+  max-width: 420px;
+  margin-bottom: var(--space-4);
   position: relative;
   z-index: 1;
-  
+  animation: cardEnter 0.6s cubic-bezier(0.4, 0, 0.2, 1) both;
+
+  /* 卡片阴影 - 使用设计令牌 */
+  box-shadow:
+    var(--shadow-lg),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+
+  /* 卡片边框和圆角 */
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border-base);
+  backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.98);
+
+  /* 悬停效果 */
+  transition: transform var(--duration-normal) var(--ease-out),
+              box-shadow var(--duration-normal) var(--ease-out);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      var(--shadow-xl),
+      0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  }
+
+  /* 卡片头部 */
   .ant-card-head {
     text-align: center;
-    border-bottom: 1px solid rgba(28, 78, 128, 0.1);
-    background: linear-gradient(90deg, rgba(28, 78, 128, 0.05) 0%, rgba(197, 165, 114, 0.05) 100%);
-    border-radius: 12px 12px 0 0;
-    
+    border-bottom: 1px solid var(--color-border-base);
+    background: linear-gradient(
+      135deg,
+      rgba(30, 90, 141, 0.03) 0%,
+      rgba(197, 165, 114, 0.02) 100%
+    );
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    padding: var(--space-3) var(--space-4) var(--space-2);
+    min-height: auto;
+
     .ant-card-head-title {
-      font-size: 22px;
-      font-weight: 600;
-      color: var(--primary-color);
-      text-shadow: 0 1px 2px rgba(28, 78, 128, 0.1);
+      font-size: var(--font-size-2xl);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-primary);
+      letter-spacing: var(--letter-spacing-tight);
+      text-shadow: 0 1px 2px rgba(30, 90, 141, 0.1);
     }
   }
-  
+
+  /* 卡片内容区 */
   .ant-card-body {
-    padding: 32px 24px 24px;
+    padding: var(--space-4) var(--space-5);
   }
 }
 
+/* ========================================
+   表单样式优化
+   ======================================== */
+.login-card {
+  /* 表单项间距 */
+  .ant-form-item {
+    margin-bottom: var(--space-3);
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  /* 输入框样式优化 */
+  .ant-input-affix-wrapper,
+  .ant-input {
+    border-radius: var(--radius-md);
+    border-width: 1.5px;
+    transition: all var(--duration-fast) var(--ease-out);
+
+    &:hover {
+      border-color: var(--color-primary-hover);
+    }
+
+    &:focus,
+    &-focused {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(30, 90, 141, 0.08);
+    }
+  }
+
+  /* 输入框图标 */
+  .ant-input-prefix {
+    margin-right: var(--space-1-5);
+    color: var(--color-text-tertiary);
+
+    .anticon {
+      font-size: var(--icon-size-md);
+      transition: color var(--duration-fast) var(--ease-out);
+    }
+  }
+
+  .ant-input-affix-wrapper-focused .ant-input-prefix,
+  .ant-input-affix-wrapper:focus-within .ant-input-prefix {
+    color: var(--color-primary);
+  }
+
+  /* 复选框样式 */
+  .ant-checkbox-wrapper {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+
+    .ant-checkbox-checked .ant-checkbox-inner {
+      background-color: var(--color-primary);
+      border-color: var(--color-primary);
+    }
+
+    &:hover .ant-checkbox-inner,
+    .ant-checkbox:hover .ant-checkbox-inner {
+      border-color: var(--color-primary);
+    }
+  }
+
+  /* 登录按钮 */
+  .ant-btn-primary {
+    height: 44px;
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    border-radius: var(--radius-md);
+    border-width: 1.5px;
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    box-shadow: 0 2px 4px rgba(30, 90, 141, 0.2);
+    transition: all var(--duration-normal) var(--ease-out);
+
+    &:hover:not(:disabled) {
+      background: var(--color-primary-hover);
+      border-color: var(--color-primary-hover);
+      box-shadow: 0 4px 8px rgba(30, 90, 141, 0.3);
+      transform: translateY(-1px);
+    }
+
+    &:active:not(:disabled) {
+      background: var(--color-primary-active);
+      border-color: var(--color-primary-active);
+      box-shadow: 0 1px 2px rgba(30, 90, 141, 0.2);
+      transform: translateY(0);
+    }
+
+    &:disabled {
+      opacity: var(--opacity-disabled);
+      cursor: not-allowed;
+    }
+
+    /* 加载状态 */
+    .anticon-loading {
+      opacity: 1;
+    }
+  }
+}
+
+/* ========================================
+   页脚样式
+   ======================================== */
 .login-footer {
-  text-align: center;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 14px;
   position: relative;
   z-index: 1;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-normal);
+  letter-spacing: 0.025em;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 0 20px rgba(30, 90, 141, 0.3);
+  animation: footerFadeIn 0.8s cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation-delay: 0.3s;
+
+  a {
+    color: rgba(255, 255, 255, 0.85);
+    text-decoration: none;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.4);
+    transition: all var(--duration-fast) var(--ease-out);
+
+    &:hover {
+      color: var(--color-accent);
+      border-bottom-color: var(--color-accent);
+      text-shadow: 0 0 10px rgba(197, 165, 114, 0.5);
+    }
+  }
 }
+
+/* ========================================
+   动画定义
+   ======================================== */
+@keyframes cardEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(-40px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes footerFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes backgroundShift {
+  0% {
+    background-position:
+      0% 0%,
+      100% 100%,
+      center;
+  }
+  100% {
+    background-position:
+      100% 100%,
+      0% 0%,
+      center;
+  }
+}
+
+/* ========================================
+   响应式设计
+   ======================================== */
+@media (max-width: 576px) {
+  .login-container {
+    padding: var(--space-2);
+  }
+
+  .login-card {
+    max-width: 100%;
+
+    .ant-card-body {
+      padding: var(--space-3);
+    }
+  }
+
+  .login-footer {
+    font-size: var(--font-size-xs);
+  }
+}
+
+/* ========================================
+   暗色模式支持
+   ======================================== */
+@media (prefers-color-scheme: dark) {
+  .login-card {
+    background: rgba(30, 41, 59, 0.95);
+    border-color: rgba(255, 255, 255, 0.1);
+
+    .ant-card-head {
+      background: linear-gradient(
+        135deg,
+        rgba(30, 90, 141, 0.1) 0%,
+        rgba(197, 165, 114, 0.05) 100%
+      );
+      border-bottom-color: rgba(255, 255, 255, 0.1);
+    }
+  }
+}
+
+/* ========================================
+   高对比度模式
+   ======================================== */
+@media (prefers-contrast: high) {
+  .login-card {
+    border-width: 2px;
+    background: rgba(255, 255, 255, 1);
+  }
+
+  .login-footer {
+    color: rgba(255, 255, 255, 1);
+    text-shadow: none;
+  }
+}
+
+/* ========================================
+   减少动画模式
+   ======================================== */
+@media (prefers-reduced-motion: reduce) {
+  .login-card,
+  .login-footer,
+  .login-container::before {
+    animation: none;
+  }
+
+  .login-card:hover {
+    transform: none;
+  }
+}
+

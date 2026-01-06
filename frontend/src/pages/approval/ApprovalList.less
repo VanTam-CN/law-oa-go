@@ -1,18 +1,261 @@
+/* =============================================================================
+   审批列表页面样式 - 基于专业设计系统
+   ============================================================================= */
+
 .approval-list-container {
-  .ant-card-head-title {
-    font-size: 16px;
-    font-weight: 500;
+  padding: 12px;
+  background: transparent;
+
+  /* 主卡片 */
+  .ant-card {
+    border-radius: var(--radius-md, 8px);
+    border: 1px solid var(--color-border-split, rgba(0, 0, 0, 0.06));
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+
+    .ant-card-head {
+      border-bottom: 1px solid var(--color-border-split, rgba(0, 0, 0, 0.06));
+      padding: 14px 18px;
+      min-height: auto;
+    }
+
+    .ant-card-head-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a1a1a;
+      padding: 0;
+    }
+
+    .ant-card-extra {
+      padding: 0;
+
+      .ant-btn {
+        border-radius: var(--radius-sm, 4px);
+        font-size: 14px;
+        height: 36px;
+        padding: 0 16px;
+        background: linear-gradient(135deg, #1E5A8D 0%, #163C5D 100%);
+        border: none;
+        box-shadow: 0 2px 6px rgba(30, 90, 141, 0.3);
+
+        &:hover {
+          background: linear-gradient(135deg, #2A6BA5 0%, #1E4A6B 100%);
+          box-shadow: 0 3px 8px rgba(30, 90, 141, 0.4);
+        }
+      }
+    }
+
+    .ant-card-body {
+      padding: 14px 18px;
+    }
   }
 
+  /* 标签页样式 */
   .ant-tabs-nav {
-    margin-bottom: 16px;
+    margin-bottom: 12px;
+
+    .ant-tabs-tab {
+      border-radius: var(--radius-sm, 4px) var(--radius-sm, 4px) 0 0;
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #4b5563;
+      border: none;
+      background: transparent;
+      transition: all var(--duration-fast, 0.2s) var(--ease-out, ease-out);
+
+      &:hover {
+        color: var(--color-primary, #1E5A8D);
+        background: rgba(30, 90, 141, 0.05);
+      }
+
+      &.ant-tabs-tab-active {
+        .ant-tabs-tab-btn {
+          color: var(--color-primary, #1E5A8D);
+          font-weight: 700;
+        }
+        background: rgba(30, 90, 141, 0.08);
+      }
+
+      .ant-tabs-tab-btn {
+        outline: none;
+      }
+    }
+
+    .ant-tabs-ink-bar {
+      background: linear-gradient(90deg, #1E5A8D 0%, #163C5D 100%);
+      height: 3px;
+      border-radius: 2px;
+    }
   }
 
+  /* 表格样式 */
   .ant-table-wrapper {
     margin-top: 8px;
   }
 
+  .ant-table {
+    .ant-table-thead > tr > th {
+      background: linear-gradient(180deg, #e8eef5 0%, #d9e2ec 100%);
+      color: #1a1a1a;
+      font-weight: 700;
+      font-size: 14px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--color-border-base, rgba(0, 0, 0, 0.12));
+    }
+
+    .ant-table-tbody > tr {
+      transition: all var(--duration-fast, 0.2s) var(--ease-out, ease-out);
+
+      > td {
+        padding: 12px 14px;
+        font-size: 14px;
+        border-bottom: 1px solid var(--color-border-split, rgba(0, 0, 0, 0.06));
+      }
+
+      &:hover > td {
+        background: linear-gradient(90deg, rgba(30, 90, 141, 0.03) 0%, rgba(197, 165, 114, 0.02) 100%);
+      }
+
+      a {
+        color: var(--color-primary, #1E5A8D);
+        font-weight: 500;
+        transition: color var(--duration-fast, 0.2s);
+
+        &:hover {
+          color: #2A6BA5;
+        }
+      }
+    }
+  }
+
+  /* 状态标签优化 */
   .ant-tag {
-    margin-right: 0;
+    border-radius: var(--radius-sm, 4px);
+    font-size: 12px;
+    padding: 2px 8px;
+    font-weight: 500;
+    border: none;
+    margin: 0;
+
+    .anticon {
+      font-size: 11px;
+      margin-right: 3px;
+    }
+
+    &.ant-tag-success {
+      background: rgba(63, 175, 86, 0.1);
+      color: #3FAF56;
+    }
+
+    &.ant-tag-error {
+      background: rgba(232, 72, 76, 0.1);
+      color: #E8484C;
+    }
+
+    &.ant-tag-processing {
+      background: rgba(30, 90, 141, 0.1);
+      color: #1E5A8D;
+    }
+
+    &.ant-tag-warning {
+      background: rgba(245, 166, 35, 0.1);
+      color: #F5A623;
+    }
+
+    &.ant-tag-default {
+      background: rgba(107, 114, 128, 0.1);
+      color: #6B7280;
+    }
+  }
+
+  /* 徽章样式 */
+  .ant-badge {
+    .ant-badge-count {
+      background: linear-gradient(135deg, #E8484C 0%, #C53030 100%);
+      box-shadow: 0 2px 6px rgba(232, 72, 76, 0.3);
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 10px;
+      border: none;
+    }
+  }
+
+  /* 分页样式 */
+  .ant-pagination {
+    margin-top: 16px;
+    font-size: 14px;
+
+    .ant-pagination-item {
+      border-radius: var(--radius-sm, 4px);
+      border-color: var(--color-border-base, rgba(0, 0, 0, 0.15));
+
+      a {
+        font-size: 14px;
+      }
+    }
+
+    .ant-pagination-item-active {
+      background: linear-gradient(135deg, #1E5A8D 0%, #163C5D 100%);
+      border-color: transparent;
+
+      a {
+        color: #ffffff;
+      }
+    }
+
+    .ant-pagination-total-text {
+      color: #374151;
+      font-size: 14px;
+    }
+  }
+}
+
+/* =============================================================================
+   响应式设计
+   ============================================================================= */
+
+@media (max-width: 1024px) {
+  .approval-list-container {
+    padding: 8px;
+
+    .ant-card {
+      margin-bottom: 8px;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .approval-list-container {
+    padding: 4px;
+
+    .ant-card {
+      .ant-card-head {
+        padding: 10px 12px;
+      }
+
+      .ant-card-body {
+        padding: 10px 12px;
+      }
+    }
+
+    .ant-tabs-nav {
+      .ant-tabs-tab {
+        padding: 6px 12px;
+        font-size: 12px;
+      }
+    }
+
+    .ant-table {
+      font-size: 12px;
+
+      .ant-table-thead > tr > th,
+      .ant-table-tbody > tr > td {
+        padding: 8px;
+      }
+    }
+
+    .ant-table-wrapper {
+      overflow-x: auto;
+    }
   }
 }

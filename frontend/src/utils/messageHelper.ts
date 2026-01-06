@@ -2,89 +2,89 @@
  * 安全的消息工具 - 使用App组件的message上下文
  */
 
-import { App } from 'antd';
+import { App } from 'antd'
 
-let appMessage: any = null;
+let appMessage: any = null
 
 // 设置App组件的message实例
 export const setAppMessage = (app: any) => {
-  appMessage = app;
-};
+  appMessage = app
+}
 
 // 导出安全的message实例
 export const message = {
   success: (content: string, duration?: number) => {
     if (appMessage && typeof appMessage.success === 'function') {
       try {
-        return appMessage.success(content, duration);
+        return appMessage.success(content, duration)
       } catch (error) {
-        console.error('App message success failed:', error);
-        console.log('SUCCESS:', content);
+        console.error('App message success failed:', error)
+        console.log('SUCCESS:', content)
       }
     } else {
       // 作为后备方案，使用console
-      console.log('SUCCESS:', content);
+      console.log('SUCCESS:', content)
     }
   },
 
   error: (content: string, duration?: number) => {
     if (appMessage && typeof appMessage.error === 'function') {
       try {
-        return appMessage.error(content, duration);
+        return appMessage.error(content, duration)
       } catch (error) {
-        console.error('App message error failed:', error);
-        console.error('ERROR:', content);
+        console.error('App message error failed:', error)
+        console.error('ERROR:', content)
       }
     } else {
       // 作为后备方案，使用console
-      console.error('ERROR:', content);
+      console.error('ERROR:', content)
     }
   },
 
   info: (content: string, duration?: number) => {
     if (appMessage && typeof appMessage.info === 'function') {
       try {
-        return appMessage.info(content, duration);
+        return appMessage.info(content, duration)
       } catch (error) {
-        console.error('App message info failed:', error);
-        console.log('INFO:', content);
+        console.error('App message info failed:', error)
+        console.log('INFO:', content)
       }
     } else {
       // 作为后备方案，使用console
-      console.log('INFO:', content);
+      console.log('INFO:', content)
     }
   },
 
   warning: (content: string, duration?: number) => {
     if (appMessage && typeof appMessage.warning === 'function') {
       try {
-        return appMessage.warning(content, duration);
+        return appMessage.warning(content, duration)
       } catch (error) {
-        console.error('App message warning failed:', error);
-        console.warn('WARNING:', content);
+        console.error('App message warning failed:', error)
+        console.warn('WARNING:', content)
       }
     } else {
       // 作为后备方案，使用console
-      console.warn('WARNING:', content);
+      console.warn('WARNING:', content)
     }
   },
 
   loading: (content: string, duration?: number) => {
     if (appMessage && typeof appMessage.loading === 'function') {
       try {
-        return appMessage.loading(content, duration);
+        return appMessage.loading(content, duration)
       } catch (error) {
-        console.error('App message loading failed:', error);
-        console.log('LOADING:', content);
+        console.error('App message loading failed:', error)
+        console.log('LOADING:', content)
         // 作为后备方案，返回一个空的hide函数
-        return () => {};
+        return () => {}
       }
     } else {
       // 作为后备方案，返回一个空的hide函数
-      return () => {};
+      return () => {}
     }
-  }
-};
+  },
+}
 
 // 提供默认导出
-export default message;
+export default message

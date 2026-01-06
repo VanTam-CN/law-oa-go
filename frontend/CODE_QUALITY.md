@@ -1,10 +1,12 @@
 # 代码质量保障体系
 
-Law OA Go 项目前端配置了完整的代码质量保障体系，包括 ESLint、Prettier、husky 和 lint-staged，确保代码质量和一致性。
+Law OA
+Go 项目前端配置了完整的代码质量保障体系，包括 ESLint、Prettier、husky 和 lint-staged，确保代码质量和一致性。
 
 ## 🔧 工具配置
 
 ### ESLint
+
 - **配置文件**: `.eslintrc.cjs`
 - **功能**: 静态代码分析，检查语法错误和代码规范
 - **运行命令**:
@@ -14,6 +16,7 @@ Law OA Go 项目前端配置了完整的代码质量保障体系，包括 ESLint
   ```
 
 ### Prettier
+
 - **配置文件**: `.prettierrc`
 - **功能**: 代码格式化工具，保持代码风格一致
 - **运行命令**:
@@ -23,6 +26,7 @@ Law OA Go 项目前端配置了完整的代码质量保障体系，包括 ESLint
   ```
 
 ### TypeScript 类型检查
+
 - **配置文件**: `tsconfig.json`
 - **功能**: 静态类型检查
 - **运行命令**:
@@ -33,12 +37,15 @@ Law OA Go 项目前端配置了完整的代码质量保障体系，包括 ESLint
 ## 🪝 Git Hooks
 
 ### Pre-commit 钩子
+
 在每次提交前自动运行以下检查：
+
 1. **lint-staged**: 对暂存文件运行 ESLint 和 Prettier
 2. **TypeScript 类型检查**: 确保类型安全
 3. **格式检查**: 确保代码格式正确
 
 ### Commit Message 钩子
+
 使用 commitlint 检查提交信息格式，确保符合约定式提交规范。
 
 ## 📝 提交信息规范
@@ -54,6 +61,7 @@ Law OA Go 项目前端配置了完整的代码质量保障体系，包括 ESLint
 ```
 
 ### 类型说明
+
 - `feat`: 新功能
 - `fix`: 修复问题
 - `docs`: 文档更新
@@ -68,6 +76,7 @@ Law OA Go 项目前端配置了完整的代码质量保障体系，包括 ESLint
 - `cd`: CD部署配置变动
 
 ### 示例
+
 ```bash
 feat(auth): 添加JWT令牌刷新功能
 fix: 修复案件列表分页问题
@@ -78,6 +87,7 @@ style: 调整组件样式格式
 ## 🔍 Lint-staged 配置
 
 对暂存文件执行以下操作：
+
 - `*.{ts,tsx}`: 运行 ESLint 修复和 Prettier 格式化
 - `*.{css,less,json,md}`: 运行 Prettier 格式化
 - `*.{js,jsx}`: 运行 ESLint 修复
@@ -85,6 +95,7 @@ style: 调整组件样式格式
 ## 📁 忽略文件
 
 以下文件/目录不会被格式化和检查：
+
 - `node_modules/`
 - `dist/`
 - `build/`
@@ -97,7 +108,9 @@ style: 调整组件样式格式
 ## 🚀 使用建议
 
 ### 开发流程
+
 1. 开发完成后，运行代码质量检查：
+
    ```bash
    npm run lint:fix    # 修复 ESLint 问题
    npm run format      # 格式化代码
@@ -105,6 +118,7 @@ style: 调整组件样式格式
    ```
 
 2. 暂存文件：
+
    ```bash
    git add .
    ```
@@ -115,12 +129,15 @@ style: 调整组件样式格式
    ```
 
 ### VS Code 集成
+
 推荐安装以下 VS Code 扩展：
+
 - ESLint
 - Prettier
 - TypeScript Importer
 
 在 VS Code 设置中启用：
+
 ```json
 {
   "editor.formatOnSave": true,
@@ -141,19 +158,23 @@ style: 调整组件样式格式
 ## 🐛 常见问题
 
 ### ESLint 报错过多
+
 - 大部分错误可以通过 `npm run lint:fix` 自动修复
 - 剩余错误需要手动修复，通常涉及类型定义或逻辑问题
 
 ### Prettier 格式冲突
+
 - 如果 Prettier 与 ESLint 规则冲突，以 Prettier 为主
 - 可以在 `.eslintrc.cjs` 中禁用冲突的规则
 
 ### 类型检查失败
+
 - 检查 `tsconfig.json` 配置
 - 确保导入路径正确
 - 检查类型定义文件
 
 ### 提交信息不通过
+
 - 确保提交信息符合约定式提交格式
 - 类型必须是预定义的类型之一
 - 主题不能为空，不能以句号结尾

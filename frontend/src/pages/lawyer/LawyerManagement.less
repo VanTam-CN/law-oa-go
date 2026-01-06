@@ -1,103 +1,486 @@
+/* =============================================================================
+   律师管理页面样式 - 基于专业设计系统
+   ============================================================================= */
+
 .lawyer-management {
+  padding: 12px;
+  background: transparent;
+
+  /* Modal z-index 修复 */
+  :global(.ant-modal),
+  :global(.ant-modal-mask) {
+    z-index: 1050 !important;
+  }
+
+  /* ==================== 统计卡片行 ==================== */
   .stats-row {
-    margin-bottom: 24px;
-    
+    margin-bottom: 12px;
+
+    .ant-col {
+      margin-bottom: 8px;
+    }
+
     .ant-card {
+      border-radius: 8px;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+      background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+      transition: all 0.2s ease-out;
+
+      &:hover {
+        box-shadow: 0 2px 8px rgba(30, 90, 141, 0.12);
+        transform: translateY(-1px);
+      }
+
+      .ant-card-body {
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
       .ant-statistic {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        justify-content: center;
+
         .ant-statistic-title {
           font-size: 14px;
-          color: #666;
+          color: #374151;
+          margin-bottom: 0;
+          font-weight: 600;
         }
-        
+
         .ant-statistic-content {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+
           .ant-statistic-content-value {
-            font-size: 24px;
-            font-weight: 600;
+            font-size: 22px;
+            font-weight: 700;
+            color: inherit;
+          }
+
+          .anticon {
+            color: #1E5A8D;
+            opacity: 0.9;
+            font-size: 18px;
           }
         }
       }
     }
   }
 
+  /* ==================== 搜索卡片 ==================== */
   .search-card {
-    margin-bottom: 16px;
-    
+    margin-bottom: 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+
+    .ant-card-head {
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      padding: 10px 16px;
+      min-height: auto;
+    }
+
+    .ant-card-head-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1a1a1a;
+      padding: 0;
+    }
+
+    .ant-card-body {
+      padding: 12px 16px;
+    }
+
     .ant-form {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+
       .ant-form-item {
-        margin-bottom: 16px;
-        
+        margin-bottom: 0;
+
+        &:last-child {
+          margin-left: auto;
+        }
+
+        .ant-form-item-label > label {
+          font-size: 14px;
+          color: #374151;
+          font-weight: 600;
+        }
+
         .ant-input,
-        .ant-select {
-          min-width: 120px;
+        .ant-select-selector {
+          border-radius: 4px;
+          font-size: 14px;
+        }
+
+        .ant-input::placeholder,
+        .ant-select-selection-placeholder {
+          color: #6b7280;
+        }
+
+        .ant-btn {
+          border-radius: 4px;
+          font-size: 14px;
+          height: 34px;
+          padding: 0 15px;
+
+          &.ant-btn-default {
+            color: #374151;
+            border-color: #d1d5db;
+
+            &:hover {
+              color: #1E5A8D;
+              border-color: #1E5A8D;
+            }
+          }
+
+          &.ant-btn-primary {
+            background: linear-gradient(135deg, #1E5A8D 0%, #163C5D 100%);
+            border: none;
+            box-shadow: 0 2px 6px rgba(30, 90, 141, 0.3);
+
+            &:hover {
+              background: linear-gradient(135deg, #2A6BA5 0%, #1E4A6B 100%);
+              box-shadow: 0 3px 8px rgba(30, 90, 141, 0.4);
+            }
+          }
         }
       }
     }
   }
 
+  /* ==================== 主表格卡片 ==================== */
+  .ant-card {
+    &:not(.search-card) {
+      border-radius: 8px;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+
+      .ant-card-head {
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        padding: 14px 18px;
+        min-height: auto;
+      }
+
+      .ant-card-head-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #1a1a1a;
+        padding: 0;
+      }
+
+      .ant-card-extra {
+        padding: 0;
+      }
+
+      .ant-card-body {
+        padding: 14px 18px;
+      }
+    }
+  }
+
+  /* ==================== 表格样式 ==================== */
   .ant-table {
     .ant-table-thead > tr > th {
-      background-color: #f5f5f5;
-      font-weight: 600;
+      background: linear-gradient(180deg, #e8eef5 0%, #d9e2ec 100%);
+      color: #1a1a1a;
+      font-weight: 700;
+      font-size: 14px;
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.12);
     }
 
-    .ant-table-tbody > tr:hover > td {
-      background-color: #f0f8ff;
+    .ant-table-tbody > tr {
+      transition: all 0.2s ease-out;
+
+      > td {
+        height: 56px;
+        padding: 14px 14px;
+        font-size: 14px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        vertical-align: middle;
+      }
+
+      &:hover > td {
+        background: linear-gradient(90deg, rgba(30, 90, 141, 0.03) 0%, rgba(197, 165, 114, 0.02) 100%);
+      }
+    }
+
+    .ant-table-cell {
+      .ant-space {
+        font-size: 13px;
+      }
+    }
+
+    .ant-tag {
+      border-radius: 4px;
+      font-size: 12px;
+      padding: 2px 8px;
+      font-weight: 500;
+      border: none;
+
+      &.ant-tag-blue {
+        background: rgba(30, 90, 141, 0.1);
+        color: #1E5A8D;
+      }
+
+      &.ant-tag-green {
+        background: rgba(63, 175, 86, 0.1);
+        color: #3FAF56;
+      }
+
+      &.ant-tag-orange {
+        background: rgba(245, 166, 35, 0.1);
+        color: #F5A623;
+      }
+
+      &.ant-tag-red {
+        background: rgba(232, 72, 76, 0.1);
+        color: #E8484C;
+      }
+
+      &.ant-tag-purple {
+        background: rgba(139, 92, 246, 0.1);
+        color: #8B5CF6;
+      }
+
+      &.ant-tag-cyan {
+        background: rgba(20, 184, 166, 0.1);
+        color: #14B8A6;
+      }
+
+      &.ant-tag-default {
+        background: rgba(107, 114, 128, 0.1);
+        color: #6B7280;
+      }
     }
 
     .action-column {
       .ant-btn {
         padding: 4px 8px;
         height: 32px;
-        
+        border-radius: 4px;
+        font-size: 13px;
+
         &:hover {
-          background-color: #f0f0f0;
+          background: rgba(30, 90, 141, 0.06);
+          color: #1E5A8D;
         }
       }
     }
   }
 
-  .ant-modal {
-    .ant-modal-body {
-      .ant-form {
-        .ant-form-item {
-          margin-bottom: 16px;
+  /* ==================== 分页样式 ==================== */
+  .ant-pagination {
+    margin-top: 12px;
+    font-size: 13px;
+
+    .ant-pagination-item {
+      border-radius: 4px;
+      border-color: rgba(0, 0, 0, 0.15);
+      min-height: 28px;
+      height: 28px;
+      line-height: 26px;
+
+      a {
+        font-size: 13px;
+      }
+    }
+
+    .ant-pagination-prev,
+    .ant-pagination-next {
+      min-height: 28px;
+      height: 28px;
+      line-height: 26px;
+
+      .ant-pagination-item-link {
+        height: 28px;
+        line-height: 26px;
+      }
+    }
+
+    .ant-pagination-jump-prev,
+    .ant-pagination-jump-next {
+      min-height: 28px;
+      height: 28px;
+      line-height: 26px;
+    }
+
+    .ant-pagination-item-active {
+      background: linear-gradient(135deg, #1E5A8D 0%, #163C5D 100%);
+      border-color: transparent;
+
+      a {
+        color: #ffffff;
+      }
+    }
+
+    .ant-pagination-total-text {
+      color: #374151;
+      font-size: 13px;
+      font-weight: 500;
+      height: 28px;
+      line-height: 28px;
+    }
+
+    .ant-pagination-options {
+      height: 28px;
+
+      .ant-select-selector {
+        height: 28px !important;
+        min-height: 28px;
+
+        .ant-selection-item {
+          line-height: 26px;
         }
       }
     }
   }
 
-  .specialty-tags {
-    .ant-tag {
+  /* ==================== 操作按钮 ==================== */
+  .ant-btn-link {
+    font-size: 14px;
+    padding: 0 4px;
+    height: auto;
+
+    .anticon {
+      font-size: 14px;
+    }
+  }
+}
+
+/* ==================== Modal 样式 ==================== */
+.ant-modal {
+  .ant-modal-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    padding: 12px 16px;
+  }
+
+  .ant-modal-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1F2937;
+  }
+
+  .ant-modal-body {
+    padding: 16px;
+  }
+
+  .ant-form {
+    .ant-form-item {
+      margin-bottom: 12px;
+
+      .ant-form-item-label > label {
+        font-size: 13px;
+        font-weight: 500;
+        color: #6B7280;
+      }
+
+      .ant-input,
+      .ant-select-selector,
+      .ant-input-number,
+      .ant-input-textarea {
+        border-radius: 4px;
+      }
+    }
+  }
+}
+
+/* ==================== 专业领域标签 ==================== */
+.specialty-tags {
+  .ant-tag {
+    margin-bottom: 6px;
+    border-radius: 4px;
+  }
+}
+
+/* ==================== 律师详情 ==================== */
+.lawyer-detail {
+  .detail-header {
+    text-align: center;
+    margin-bottom: 16px;
+    padding: 16px;
+    background: linear-gradient(135deg, rgba(30, 90, 141, 0.05) 0%, rgba(197, 165, 114, 0.03) 100%);
+    border-radius: 8px;
+
+    .ant-avatar {
+      margin-bottom: 12px;
+      border: 3px solid #1E5A8D;
+    }
+
+    h2 {
+      margin: 12px 0 6px;
+      color: #1a1a1a;
+      font-size: 18px;
+      font-weight: 600;
+    }
+  }
+
+  .ant-descriptions {
+    .ant-descriptions-item-label {
+      font-weight: 600;
+      color: #6B7280;
+    }
+  }
+}
+
+/* ==================== 状态标签优化 ==================== */
+.status-active {
+  .ant-tag {
+    background: rgba(63, 175, 86, 0.1) !important;
+    color: #3FAF56 !important;
+  }
+}
+
+.status-inactive {
+  .ant-tag {
+    background: rgba(107, 114, 128, 0.1) !important;
+    color: #6B7280 !important;
+  }
+}
+
+.status-on-leave {
+  .ant-tag {
+    background: rgba(245, 166, 35, 0.1) !important;
+    color: #F5A623 !important;
+  }
+}
+
+/* =============================================================================
+   响应式设计
+   ============================================================================= */
+@media (max-width: 1024px) {
+  .lawyer-management {
+    padding: 8px;
+
+    .stats-row {
+      margin-bottom: 8px;
+    }
+
+    .search-card,
+    .ant-card:not(.search-card) {
       margin-bottom: 8px;
     }
   }
+}
 
-  .lawyer-detail {
-    .detail-header {
-      text-align: center;
-      margin-bottom: 24px;
-      
-      .ant-avatar {
-        margin-bottom: 16px;
-      }
-      
-      h2 {
-        margin: 16px 0 8px;
-        color: #1a1a1a;
-      }
-    }
+@media (max-width: 768px) {
+  .lawyer-management {
+    padding: 4px;
 
-    .ant-descriptions {
-      .ant-descriptions-item-label {
-        font-weight: 600;
-      }
-    }
-  }
-
-  @media (max-width: 768px) {
     .stats-row {
       .ant-col {
-        margin-bottom: 16px;
+        margin-bottom: 6px;
       }
     }
 
@@ -105,23 +488,20 @@
       .ant-form {
         .ant-form-item {
           width: 100%;
-          
-          .ant-input,
-          .ant-select {
-            width: 100%;
-          }
+          margin-bottom: 10px;
         }
       }
     }
 
-    .ant-table {
-      .ant-table-thead > tr > th {
-        font-size: 12px;
-        padding: 8px;
-      }
+    .ant-table-wrapper {
+      overflow-x: auto;
+    }
 
+    .ant-table {
+      font-size: 12px;
+
+      .ant-table-thead > tr > th,
       .ant-table-tbody > tr > td {
-        font-size: 12px;
         padding: 8px;
       }
     }

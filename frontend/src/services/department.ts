@@ -1,31 +1,31 @@
-import { get, post, put, del } from './http';
+import { get, post, put, del } from './http'
 
 export interface Department {
-  id?: number;
-  name: string;
-  code: string;
-  parentId?: number;
-  parentName?: string;
-  description: string;
-  managerId?: number;
-  managerName?: string;
-  status: 'active' | 'inactive';
-  createdAt?: string;
-  updatedAt?: string;
+  id?: number
+  name: string
+  code: string
+  parentId?: number
+  parentName?: string
+  description: string
+  managerId?: number
+  managerName?: string
+  status: 'active' | 'inactive'
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface DepartmentListResponse {
-  total: number;
-  pageNum: number;
-  pageSize: number;
-  list: Department[];
+  total: number
+  pageNum: number
+  pageSize: number
+  list: Department[]
 }
 
 export interface DepartmentQueryParams {
-  keyword?: string;
-  status?: string;
-  pageNum?: number;
-  pageSize?: number;
+  keyword?: string
+  status?: string
+  pageNum?: number
+  pageSize?: number
 }
 
 export const departmentService = {
@@ -47,4 +47,4 @@ export const departmentService = {
 
   // 获取部门树形结构
   getDepartmentTree: () => get<Department[]>('/departments/tree'),
-};
+}

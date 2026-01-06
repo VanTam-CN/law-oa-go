@@ -87,7 +87,7 @@ export const useCaseList = (params: CaseListRequest = {}) => {
     page = 1,
     pageSize = 20,
     filter = {},
-    sort = { field: 'createdAt', direction: 'desc' }
+    sort = { field: 'createdAt', direction: 'desc' },
   } = params
 
   return useQuery({
@@ -110,8 +110,8 @@ export const useCaseList = (params: CaseListRequest = {}) => {
       return response.data
     },
     staleTime: 2 * 60 * 1000, // 2分钟
-    gcTime: 5 * 60 * 1000,    // 5分钟
-    keepPreviousData: true,    // 保持之前的数据，提供更好的用户体验
+    gcTime: 5 * 60 * 1000, // 5分钟
+    keepPreviousData: true, // 保持之前的数据，提供更好的用户体验
   })
 }
 
@@ -166,7 +166,7 @@ export const useCaseDetail = (caseId: string) => {
     },
     enabled: !!caseId,
     staleTime: 1 * 60 * 1000, // 1分钟
-    gcTime: 3 * 60 * 1000,    // 3分钟
+    gcTime: 3 * 60 * 1000, // 3分钟
     onSuccess: (data) => {
       // 预加载相关数据
       queryClient.prefetchQuery({
@@ -236,7 +236,7 @@ export const useUpdateCase = () => {
 
       // 乐观更新
       queryClient.setQueryData(queryKeys.caseDetail(id), (old: Case) =>
-        old ? { ...old, ...updates, updatedAt: new Date().toISOString() } : { id, ...updates }
+        old ? { ...old, ...updates, updatedAt: new Date().toISOString() } : { id, ...updates },
       )
 
       // 更新本地状态
@@ -343,7 +343,7 @@ export const useCaseSearch = (searchParams: CaseSearchParams) => {
     },
     enabled: Object.keys(searchParams).length > 0,
     staleTime: 1 * 60 * 1000, // 1分钟
-    gcTime: 3 * 60 * 1000,    // 3分钟
+    gcTime: 3 * 60 * 1000, // 3分钟
   })
 }
 
@@ -372,7 +372,7 @@ export const useCaseStatistics = () => {
       return response.data
     },
     staleTime: 5 * 60 * 1000, // 5分钟
-    gcTime: 10 * 60 * 1000,   // 10分钟
+    gcTime: 10 * 60 * 1000, // 10分钟
   })
 }
 
@@ -381,13 +381,15 @@ export const useCaseTypes = () => {
   return useQuery({
     queryKey: queryKeys.caseTypes,
     queryFn: async () => {
-      const response = await apiClient.get<Array<{
-        id: string
-        name: string
-        code: string
-        description?: string
-        color?: string
-      }>>('/api/v1/cases/types')
+      const response = await apiClient.get<
+        Array<{
+          id: string
+          name: string
+          code: string
+          description?: string
+          color?: string
+        }>
+      >('/api/v1/cases/types')
 
       if (response.error) {
         throw new Error(response.error.message)
@@ -396,7 +398,7 @@ export const useCaseTypes = () => {
       return response.data
     },
     staleTime: 30 * 60 * 1000, // 30分钟
-    gcTime: 60 * 60 * 1000,    // 1小时
+    gcTime: 60 * 60 * 1000, // 1小时
   })
 }
 
@@ -405,14 +407,16 @@ export const useClients = () => {
   return useQuery({
     queryKey: queryKeys.clients,
     queryFn: async () => {
-      const response = await apiClient.get<Array<{
-        id: string
-        name: string
-        email?: string
-        phone?: string
-        type: 'individual' | 'corporate'
-        contactPerson?: string
-      }>>('/api/v1/cases/clients')
+      const response = await apiClient.get<
+        Array<{
+          id: string
+          name: string
+          email?: string
+          phone?: string
+          type: 'individual' | 'corporate'
+          contactPerson?: string
+        }>
+      >('/api/v1/cases/clients')
 
       if (response.error) {
         throw new Error(response.error.message)
@@ -421,7 +425,7 @@ export const useClients = () => {
       return response.data
     },
     staleTime: 15 * 60 * 1000, // 15分钟
-    gcTime: 30 * 60 * 1000,    // 30分钟
+    gcTime: 30 * 60 * 1000, // 30分钟
   })
 }
 
@@ -448,7 +452,7 @@ export const useUpdateCaseProgress = () => {
       const previousCase = queryClient.getQueryData(queryKeys.caseDetail(caseId))
 
       queryClient.setQueryData(queryKeys.caseDetail(caseId), (old: Case) =>
-        old ? { ...old, progress, updatedAt: new Date().toISOString() } : old
+        old ? { ...old, progress, updatedAt: new Date().toISOString() } : old,
       )
 
       updateCaseProgress(caseId, progress)
@@ -566,6 +570,4 @@ export const useUploadCaseDocument = () => {
   })
 }
 
-export {
-  queryKeys,
-}
+export { queryKeys }

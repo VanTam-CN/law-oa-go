@@ -1,4 +1,5 @@
 #!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
 
-npx --no-install commitlint --edit ${1}
+# 运行commitlint
+echo "📝 Checking commit message..."
+npx --no-install commitlint --edit "$1"

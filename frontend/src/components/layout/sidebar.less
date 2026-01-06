@@ -14,26 +14,26 @@
   bottom: 0 !important;
   height: 100vh !important;
   z-index: var(--z-index-fixed) !important;
-  background: linear-gradient(180deg, #002C8C 0%, #001D66 100%) !important;
+  background: linear-gradient(180deg, #002c8c 0%, #001d66 100%) !important;
   box-shadow: var(--shadow-lg) !important;
   border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
   transition: all var(--duration-normal) var(--ease-out) !important;
   overflow: hidden !important;
-  
+
   /* 滚动条样式 */
   &::-webkit-scrollbar {
     width: 4px;
   }
-  
+
   &::-webkit-scrollbar-track {
     background: transparent;
   }
-  
+
   &::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.2);
     border-radius: 2px;
   }
-  
+
   &::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.3);
   }
@@ -69,7 +69,7 @@
   border-radius: var(--radius-lg);
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
-  
+
   .logo-text {
     font-size: var(--font-size-lg);
     font-weight: var(--font-weight-bold);
@@ -82,12 +82,12 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  
+
   .logo-icon {
     font-size: var(--font-size-2xl);
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
   }
-  
+
   .logo-text {
     .logo-title {
       font-size: var(--font-size-lg);
@@ -96,7 +96,7 @@
       text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
       line-height: 1.2;
     }
-    
+
     .logo-subtitle {
       font-size: var(--font-size-xs);
       color: rgba(255, 255, 255, 0.8);
@@ -118,13 +118,13 @@
   cursor: pointer;
   transition: all var(--duration-fast) var(--ease-out);
   color: rgba(255, 255, 255, 0.8);
-  
+
   &:hover {
     background: rgba(255, 255, 255, 0.1);
     color: var(--color-text-inverse);
     transform: scale(1.05);
   }
-  
+
   .anticon {
     font-size: var(--icon-size-md);
     transition: transform var(--duration-fast);
@@ -146,7 +146,7 @@
   background: transparent !important;
   border: none !important;
   color: #ffffff !important;
-  
+
   /* 菜单项样式 */
   .ant-menu-item {
     background: transparent !important;
@@ -160,35 +160,35 @@
     padding: var(--space-2) var(--space-3) !important;
     display: flex !important;
     align-items: center !important;
-    
+
     &:hover {
       background: rgba(255, 255, 255, 0.15) !important;
       color: #ffffff !important;
       transform: translateX(2px);
     }
-    
+
     &.ant-menu-item-selected {
-      background: #FA8C16 !important;
+      background: #fa8c16 !important;
       color: #ffffff !important;
       font-weight: var(--font-weight-semibold) !important;
       box-shadow: 0 2px 8px rgba(250, 140, 22, 0.3) !important;
-      
+
       &::after {
         display: none !important;
       }
     }
-    
+
     .anticon {
       font-size: var(--icon-size-md) !important;
       margin-right: var(--space-2) !important;
       transition: transform var(--duration-fast);
     }
-    
+
     &:hover .anticon {
       transform: scale(1.1);
     }
   }
-  
+
   /* 子菜单样式 */
   .ant-menu-submenu {
     background: transparent !important;
@@ -196,7 +196,7 @@
     color: #ffffff !important;
     border-radius: var(--radius-md) !important;
     margin: var(--space-0-5) var(--space-2) !important;
-    
+
     .ant-menu-submenu-title {
       background: transparent !important;
       border: none !important;
@@ -206,40 +206,40 @@
       line-height: 1.2 !important;
       padding: var(--space-2) var(--space-3) !important;
       transition: all var(--duration-fast) var(--ease-out) !important;
-      
+
       &:hover {
         background: rgba(255, 255, 255, 0.15) !important;
         color: #ffffff !important;
       }
-      
+
       .anticon {
         font-size: var(--icon-size-md) !important;
         margin-right: var(--space-2) !important;
       }
-      
+
       .ant-menu-submenu-arrow {
         color: rgba(255, 255, 255, 0.6) !important;
       }
     }
-    
+
     &.ant-menu-submenu-open {
       .ant-menu-submenu-title {
         background: rgba(255, 255, 255, 0.1) !important;
         color: #ffffff !important;
       }
     }
-    
+
     .ant-menu-sub {
       background: rgba(0, 0, 0, 0.4) !important;
       border-radius: var(--radius-md) !important;
       margin: var(--space-1) 0 !important;
       padding: var(--space-1) 0 !important;
-      
+
       .ant-menu-item {
         margin: var(--space-0-5) var(--space-1) !important;
         padding: var(--space-1) var(--space-2) var(--space-1) var(--space-5) !important;
         font-size: var(--font-size-sm) !important;
-        
+
         &::before {
           content: '';
           position: absolute;
@@ -252,12 +252,12 @@
           background: rgba(255, 255, 255, 0.4);
           transition: all var(--duration-fast);
         }
-        
+
         &:hover::before {
           background: var(--color-accent);
           transform: translateY(-50%) scale(1.5);
         }
-        
+
         &.ant-menu-item-selected::before {
           background: var(--color-accent);
           transform: translateY(-50%) scale(1.5);
@@ -265,14 +265,14 @@
       }
     }
   }
-  
+
   /* 菜单展开图标 */
   .menu-expand-icon {
     font-size: var(--font-size-xs) !important;
     color: rgba(255, 255, 255, 0.6) !important;
     transition: transform var(--duration-fast);
   }
-  
+
   .ant-menu-submenu-open > .ant-menu-submenu-title .menu-expand-icon {
     transform: rotate(180deg);
   }
@@ -284,7 +284,7 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  
+
   .menu-item-label {
     flex: 1;
     min-width: 0;
@@ -292,7 +292,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  
+
   .menu-item-badge {
     .ant-badge-count {
       background-color: var(--color-error) !important;
@@ -324,25 +324,25 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  
+
   .version-info {
     display: flex;
     align-items: center;
     gap: var(--space-1);
-    
+
     .version-label {
       font-size: var(--font-size-xs);
       color: rgba(255, 255, 255, 0.6);
       font-weight: var(--font-weight-normal);
     }
-    
+
     .version-number {
       font-size: var(--font-size-xs);
       color: var(--color-accent);
       font-weight: var(--font-weight-semibold);
     }
   }
-  
+
   .user-info {
     .user-role {
       font-size: var(--font-size-sm);
@@ -361,29 +361,29 @@
     justify-content: center;
     padding: var(--space-2);
   }
-  
+
   .sidebar-trigger {
     margin-left: auto;
     margin-right: auto;
   }
-  
+
   .sidebar-menu {
     .ant-menu-item {
       justify-content: center;
       padding: var(--space-2) !important;
       margin: var(--space-0-5) var(--space-1) !important;
-      
+
       .anticon {
         margin-right: 0 !important;
       }
-      
+
       .menu-item-wrapper {
         justify-content: center;
-        
+
         .menu-item-label {
           display: none;
         }
-        
+
         .menu-item-badge {
           position: absolute;
           top: var(--space-1);
@@ -391,37 +391,37 @@
         }
       }
     }
-    
+
     .ant-menu-submenu {
       .ant-menu-submenu-title {
         justify-content: center;
         padding: var(--space-2) !important;
-        
+
         .anticon {
           margin-right: 0 !important;
         }
-        
+
         .menu-item-wrapper {
           justify-content: center;
-          
+
           .menu-item-label {
             display: none;
           }
-          
+
           .menu-item-badge {
             position: absolute;
             top: var(--space-1);
             right: var(--space-1);
           }
         }
-        
+
         .ant-menu-submenu-arrow {
           display: none;
         }
       }
     }
   }
-  
+
   .sidebar-footer {
     display: none;
   }
@@ -437,20 +437,20 @@
     width: var(--sidebar-width-collapsed, 80px) !important;
     min-width: var(--sidebar-width-collapsed, 80px) !important;
     max-width: var(--sidebar-width-collapsed, 80px) !important;
-    
+
     &.ant-layout-sider-has-trigger {
       padding-bottom: 0;
     }
   }
-  
+
   .logo-expanded {
     display: none;
   }
-  
+
   .logo-collapsed {
     display: flex;
   }
-  
+
   .sidebar-footer {
     display: none;
   }
@@ -461,17 +461,17 @@
   .app-sidebar {
     transform: translateX(-100%);
     transition: transform var(--duration-normal) var(--ease-out);
-    
+
     &.mobile-open {
       transform: translateX(0);
     }
   }
-  
+
   .sidebar-menu {
     .ant-menu-item {
       margin: var(--space-0-5) var(--space-1) !important;
     }
-    
+
     .ant-menu-submenu {
       margin: var(--space-0-5) var(--space-1) !important;
     }
@@ -504,7 +504,7 @@
   .ant-menu-submenu-title {
     position: relative;
     overflow: hidden;
-    
+
     &::before {
       content: '';
       position: absolute;
@@ -515,7 +515,7 @@
       background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
       transition: left var(--duration-normal) var(--ease-out);
     }
-    
+
     &:hover::before {
       left: 100%;
     }
@@ -529,14 +529,18 @@
 /* 暗色模式 */
 @media (prefers-color-scheme: dark) {
   .app-sidebar {
-    background: linear-gradient(180deg, var(--color-gray-900) 0%, var(--color-gray-800) 100%) !important;
+    background: linear-gradient(
+      180deg,
+      var(--color-gray-900) 0%,
+      var(--color-gray-800) 100%
+    ) !important;
     border-right-color: var(--color-border-base) !important;
   }
-  
+
   .sidebar-logo {
     border-bottom-color: rgba(255, 255, 255, 0.05);
   }
-  
+
   .sidebar-footer {
     border-top-color: rgba(255, 255, 255, 0.05);
   }
@@ -561,16 +565,16 @@
     border-right-width: 2px !important;
     border-right-color: var(--color-text-inverse) !important;
   }
-  
+
   .sidebar-menu {
     .ant-menu-item,
     .ant-menu-submenu-title {
       border: 1px solid transparent !important;
-      
+
       &:hover {
         border-color: var(--color-accent) !important;
       }
-      
+
       &.ant-menu-item-selected {
         border-color: var(--color-accent) !important;
       }
@@ -584,12 +588,12 @@
     animation: none;
     transition: none;
   }
-  
+
   .sidebar-menu {
     .ant-menu-item,
     .ant-menu-submenu-title {
       transition: none;
-      
+
       &::before {
         transition: none;
       }

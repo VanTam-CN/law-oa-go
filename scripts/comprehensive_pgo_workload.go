@@ -1,7 +1,7 @@
 // 综合PGO性能剖析工作负载
 // 包含数据库操作、并发处理、HTTP请求等多种工作负载
 
-package scripts
+package main
 
 import (
 	"context"

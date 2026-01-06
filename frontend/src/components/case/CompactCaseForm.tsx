@@ -3,7 +3,7 @@
  * 1080p优化的紧凑案件创建表单主组件
  */
 
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
   Form,
   Button,
@@ -17,8 +17,8 @@ import {
   Col,
   Alert,
   Tooltip,
-  Badge
-} from 'antd';
+  Badge,
+} from 'antd'
 import {
   SaveOutlined,
   ReloadOutlined,
@@ -30,14 +30,14 @@ import {
   ArrowLeftOutlined,
   ArrowRightOutlined,
   PrinterOutlined,
-  SettingOutlined
-} from '@ant-design/icons';
-import type { FormInstance } from 'antd/es/form';
-import ResponsiveFormLayout from './ResponsiveFormLayout';
-import SmartFieldGroup from './SmartFieldGroup';
-import ProgressIndicator from './ProgressIndicator';
-import ConflictCheckInline from './ConflictCheckInline';
-import PerformanceOptimizer from './PerformanceOptimizer';
+  SettingOutlined,
+} from '@ant-design/icons'
+import type { FormInstance } from 'antd/es/form'
+import ResponsiveFormLayout from './ResponsiveFormLayout'
+import SmartFieldGroup from './SmartFieldGroup'
+import ProgressIndicator from './ProgressIndicator'
+import ConflictCheckInline from './ConflictCheckInline'
+import PerformanceOptimizer from './PerformanceOptimizer'
 import type {
   CompactCaseFormProps,
   CaseInfo,
@@ -48,31 +48,33 @@ import type {
   QuickAction,
   FormEvents,
   FormStatus,
-  FormLayoutMode
-} from './types/CompactCaseForm.types';
+  FormLayoutMode,
+} from './types/CompactCaseForm.types'
 import {
   DEFAULT_FORM_CONFIG,
   DEFAULT_RESPONSIVE_CONFIG,
   DEFAULT_SAVE_CONFIG,
   STEP_KEYS,
-  FIELD_GROUP_KEYS
-} from './types/CompactCaseForm.types';
-import './CompactCaseForm.less';
+  FIELD_GROUP_KEYS,
+} from './types/CompactCaseForm.types'
+import './CompactCaseForm.less'
 
-const { Title, Text, Paragraph } = Typography;
-const { useForm } = Form;
+const { Title, Text, Paragraph } = Typography
+const { useForm } = Form
 
 /**
  * 生成案件编号
  */
 const generateCaseNumber = (): string => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-  return `CASE${year}${month}${day}${random}`;
-};
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  const random = Math.floor(Math.random() * 1000)
+    .toString()
+    .padStart(3, '0')
+  return `CASE${year}${month}${day}${random}`
+}
 
 /**
  * CompactCaseForm主组件
@@ -92,27 +94,36 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
   style,
   readonly = false,
   disabled = false,
-  loading = false
+  loading = false,
 }) => {
   // 合并配置
-  const finalConfig = useMemo<FormConfig>(() => ({
-    ...DEFAULT_FORM_CONFIG,
-    ...config
-  }), [config]);
+  const finalConfig = useMemo<FormConfig>(
+    () => ({
+      ...DEFAULT_FORM_CONFIG,
+      ...config,
+    }),
+    [config],
+  )
 
-  const finalResponsiveConfig = useMemo(() => ({
-    ...DEFAULT_RESPONSIVE_CONFIG,
-    ...responsiveConfig
-  }), [responsiveConfig]);
+  const finalResponsiveConfig = useMemo(
+    () => ({
+      ...DEFAULT_RESPONSIVE_CONFIG,
+      ...responsiveConfig,
+    }),
+    [responsiveConfig],
+  )
 
-  const finalSaveConfig = useMemo(() => ({
-    ...DEFAULT_SAVE_CONFIG,
-    ...saveConfig
-  }), [saveConfig]);
+  const finalSaveConfig = useMemo(
+    () => ({
+      ...DEFAULT_SAVE_CONFIG,
+      ...saveConfig,
+    }),
+    [saveConfig],
+  )
 
   // 内部表单实例
-  const [internalForm] = useForm();
-  const form = externalForm || internalForm;
+  const [internalForm] = useForm()
+  const form = externalForm || internalForm
 
   // 表单状态
   const [formState, setFormState] = useState<FormState>(() => ({
@@ -125,19 +136,19 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
         caseStatus: '新建',
         priority: '普通',
         description: '',
-        tags: []
+        tags: [],
       },
       client: {
         clientId: '',
         clientName: '',
         contact: '',
-        address: ''
+        address: '',
       },
       lawyer: {
         lawyerId: '',
         lawyerName: '',
         assistingLawyerId: '',
-        assistingLawyerName: ''
+        assistingLawyerName: '',
       },
       details: {
         amount: undefined,
@@ -145,70 +156,72 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
         source: '',
         urgency: '普通',
         expectedCompletion: '',
-        remarks: ''
+        remarks: '',
       },
       conflictCheck: {
-        checked: false
-      }
+        checked: false,
+      },
     },
     validationState: {
       isValid: false,
       errors: {},
-      touched: {}
+      touched: {},
     },
     saveState: {
       status: 'idle',
-      isSaving: false
+      isSaving: false,
     },
     stepStates: {},
     conflictState: {
       isChecked: false,
-      hasConflict: false
-    }
-  }));
+      hasConflict: false,
+    },
+  }))
 
   // UI状态
-  const [isCompact, setIsCompact] = useState(false);
-  const [layoutMode, setLayoutMode] = useState<FormLayoutMode>(finalConfig.layoutMode);
-  const [currentBreakpoint, setCurrentBreakpoint] = useState<string>('lg');
+  const [isCompact, setIsCompact] = useState(false)
+  const [layoutMode, setLayoutMode] = useState<FormLayoutMode>(finalConfig.layoutMode)
+  const [currentBreakpoint, setCurrentBreakpoint] = useState<string>('lg')
 
   // 自动保存定时器
-  const autoSaveTimerRef = useRef<NodeJS.Timeout>();
+  const autoSaveTimerRef = useRef<NodeJS.Timeout>()
 
   /**
    * 检测屏幕分辨率和断点
    */
   useEffect(() => {
     const checkResolution = () => {
-      const width = window.innerWidth;
-      let breakpoint = 'lg';
-      let compact = false;
-      let layoutMode: FormLayoutMode = finalConfig.layoutMode;
+      const width = window.innerWidth
+      let breakpoint = 'lg'
+      let compact = false
+      let layoutMode: FormLayoutMode = finalConfig.layoutMode
 
       if (width <= 768) {
-        breakpoint = 'xs';
-        layoutMode = 'compact';
+        breakpoint = 'xs'
+        layoutMode = 'compact'
       } else if (width <= 992) {
-        breakpoint = 'md';
-        layoutMode = 'compact';
+        breakpoint = 'md'
+        layoutMode = 'compact'
       } else if (width <= 1200) {
-        breakpoint = 'lg';
-        compact = finalResponsiveConfig.enable1080pOptimization && width <= 1920;
-        if (compact) layoutMode = 'compact';
+        breakpoint = 'lg'
+        compact = finalResponsiveConfig.enable1080pOptimization && width <= 1920
+        if (compact) {
+          layoutMode = 'compact'
+        }
       } else {
-        breakpoint = 'xl';
-        compact = false;
+        breakpoint = 'xl'
+        compact = false
       }
 
-      setCurrentBreakpoint(breakpoint);
-      setIsCompact(compact);
-      setLayoutMode(layoutMode);
-    };
+      setCurrentBreakpoint(breakpoint)
+      setIsCompact(compact)
+      setLayoutMode(layoutMode)
+    }
 
-    checkResolution();
-    window.addEventListener('resize', checkResolution);
-    return () => window.removeEventListener('resize', checkResolution);
-  }, [finalConfig.layoutMode, finalResponsiveConfig.enable1080pOptimization]);
+    checkResolution()
+    window.addEventListener('resize', checkResolution)
+    return () => window.removeEventListener('resize', checkResolution)
+  }, [finalConfig.layoutMode, finalResponsiveConfig.enable1080pOptimization])
 
   /**
    * 初始化表单数据
@@ -217,17 +230,17 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
     if (initialData) {
       const mergedData = {
         ...formState.formData,
-        ...initialData
-      };
-      setFormState(prev => ({
+        ...initialData,
+      }
+      setFormState((prev) => ({
         ...prev,
-        formData: mergedData
-      }));
-      form.setFieldsValue(mergedData);
+        formData: mergedData,
+      }))
+      form.setFieldsValue(mergedData)
     }
 
-    events.onInit?.(form);
-  }, [initialData, form, events.onInit]);
+    events.onInit?.(form)
+  }, [initialData, form, events.onInit])
 
   /**
    * 自动保存
@@ -235,36 +248,37 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
   useEffect(() => {
     if (finalConfig.enableAutoSave && finalConfig.mode !== 'view') {
       if (autoSaveTimerRef.current) {
-        clearTimeout(autoSaveTimerRef.current);
+        clearTimeout(autoSaveTimerRef.current)
       }
 
       autoSaveTimerRef.current = setTimeout(() => {
-        handleAutoSave();
-      }, finalConfig.autoSaveInterval * 1000);
+        handleAutoSave()
+      }, finalConfig.autoSaveInterval * 1000)
 
       return () => {
         if (autoSaveTimerRef.current) {
-          clearTimeout(autoSaveTimerRef.current);
+          clearTimeout(autoSaveTimerRef.current)
         }
-      };
+      }
     }
-  }, [formState.formData, finalConfig.enableAutoSave, finalConfig.autoSaveInterval]);
+  }, [formState.formData, finalConfig.enableAutoSave, finalConfig.autoSaveInterval])
 
   /**
    * 计算表单统计信息
    */
   const formStats = useMemo<FormStats>(() => {
-    const flatFormData = Object.values(formState.formData).flat();
-    const totalFields = flatFormData.length;
-    const filledFields = flatFormData.filter(field =>
-      field !== undefined && field !== null && field !== ''
-    ).length;
+    const flatFormData = Object.values(formState.formData).flat()
+    const totalFields = flatFormData.length
+    const filledFields = flatFormData.filter(
+      (field) => field !== undefined && field !== null && field !== '',
+    ).length
 
-    const errorFields = Object.keys(formState.validationState.errors).length;
-    const completionPercentage = totalFields > 0 ? Math.round((filledFields / totalFields) * 100) : 0;
+    const errorFields = Object.keys(formState.validationState.errors).length
+    const completionPercentage =
+      totalFields > 0 ? Math.round((filledFields / totalFields) * 100) : 0
 
-    const currentStepIndex = steps.findIndex(step => step.key === formState.currentStep);
-    const totalSteps = steps.length;
+    const currentStepIndex = steps.findIndex((step) => step.key === formState.currentStep)
+    const totalSteps = steps.length
 
     return {
       totalFields,
@@ -273,256 +287,279 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
       errorFields,
       completionPercentage,
       currentStepIndex: currentStepIndex >= 0 ? currentStepIndex : 0,
-      totalSteps
-    };
-  }, [formState.formData, formState.validationState.errors, steps, formState.currentStep]);
+      totalSteps,
+    }
+  }, [formState.formData, formState.validationState.errors, steps, formState.currentStep])
 
   /**
    * 生成步骤配置
    */
   const stepConfigs = useMemo(() => {
-    return steps.map(step => ({
+    return steps.map((step) => ({
       key: step.key,
       title: step.title,
       description: step.description,
-      status: formState.stepStates[step.key]?.isCompleted ? 'finish' :
-             formState.currentStep === step.key ? 'process' : 'wait',
+      status: formState.stepStates[step.key]?.isCompleted
+        ? 'finish'
+        : formState.currentStep === step.key
+          ? 'process'
+          : 'wait',
       completed: formState.stepStates[step.key]?.isCompleted || false,
-      validation: step.validation ? {
-        required: true,
-        fields: step.validation.map(rule => rule.field),
-        validator: () => Object.keys(formState.validationState.errors).length === 0
-      } : undefined
-    }));
-  }, [steps, formState.stepStates, formState.currentStep, formState.validationState.errors]);
+      validation: step.validation
+        ? {
+            required: true,
+            fields: step.validation.map((rule) => rule.field),
+            validator: () => Object.keys(formState.validationState.errors).length === 0,
+          }
+        : undefined,
+    }))
+  }, [steps, formState.stepStates, formState.currentStep, formState.validationState.errors])
 
   /**
    * 自动保存处理
    */
   const handleAutoSave = useCallback(async () => {
-    if (finalConfig.mode === 'view' || readonly) return;
+    if (finalConfig.mode === 'view' || readonly) {
+      return
+    }
 
     try {
       // 这里应该调用实际的保存API
-      console.log('Auto saving:', formState.formData);
-      setFormState(prev => ({
+      console.log('Auto saving:', formState.formData)
+      setFormState((prev) => ({
         ...prev,
         saveState: {
           ...prev.saveState,
           status: 'saved',
-          lastSaved: new Date()
-        }
-      }));
+          lastSaved: new Date(),
+        },
+      }))
     } catch (error) {
-      console.error('Auto save failed:', error);
+      console.error('Auto save failed:', error)
     }
-  }, [formState.formData, finalConfig.mode, readonly]);
+  }, [formState.formData, finalConfig.mode, readonly])
 
   /**
    * 步骤变化处理
    */
-  const handleStepChange = useCallback((stepKey: string, stepIndex: number) => {
-    const prevStep = formState.currentStep;
+  const handleStepChange = useCallback(
+    (stepKey: string, stepIndex: number) => {
+      const prevStep = formState.currentStep
 
-    // 验证当前步骤
-    const currentStepConfig = steps.find(step => step.key === prevStep);
-    if (currentStepConfig && finalConfig.enableFieldValidation) {
-      const isValid = validateStep(prevStep);
-      if (!isValid) {
-        message.warning('请完成当前步骤的必填字段');
-        return;
+      // 验证当前步骤
+      const currentStepConfig = steps.find((step) => step.key === prevStep)
+      if (currentStepConfig && finalConfig.enableFieldValidation) {
+        const isValid = validateStep(prevStep)
+        if (!isValid) {
+          message.warning('请完成当前步骤的必填字段')
+          return
+        }
       }
-    }
 
-    setFormState(prev => ({
-      ...prev,
-      currentStep: stepKey
-    }));
+      setFormState((prev) => ({
+        ...prev,
+        currentStep: stepKey,
+      }))
 
-    events.onStepChange?.(stepKey, prevStep);
-  }, [formState.currentStep, steps, finalConfig.enableFieldValidation, events.onStepChange]);
+      events.onStepChange?.(stepKey, prevStep)
+    },
+    [formState.currentStep, steps, finalConfig.enableFieldValidation, events.onStepChange],
+  )
 
   /**
    * 字段变化处理
    */
-  const handleFieldChange = useCallback((changedFields: any, allFields: any) => {
-    const newFormData = {
-      ...formState.formData,
-      ...changedFields
-    };
+  const handleFieldChange = useCallback(
+    (changedFields: any, allFields: any) => {
+      const newFormData = {
+        ...formState.formData,
+        ...changedFields,
+      }
 
-    setFormState(prev => ({
-      ...prev,
-      formData: newFormData
-    }));
+      setFormState((prev) => ({
+        ...prev,
+        formData: newFormData,
+      }))
 
-    // 触发字段变化事件
-    Object.keys(changedFields).forEach(field => {
-      events.onFieldChange?.(field, changedFields[field], newFormData);
-    });
-  }, [formState.formData, events.onFieldChange]);
+      // 触发字段变化事件
+      Object.keys(changedFields).forEach((field) => {
+        events.onFieldChange?.(field, changedFields[field], newFormData)
+      })
+    },
+    [formState.formData, events.onFieldChange],
+  )
 
   /**
    * 验证单个步骤
    */
-  const validateStep = useCallback((stepKey: string): boolean => {
-    const stepConfig = steps.find(step => step.key === stepKey);
-    if (!stepConfig) return true;
-
-    const stepFields = stepConfig.fieldGroups.flatMap(groupKey =>
-      fieldGroups[groupKey]?.fields || []
-    );
-
-    let isValid = true;
-    const errors: Record<string, string> = {};
-
-    stepFields.forEach(field => {
-      const fieldValue = form.getFieldValue(field.name);
-      if (field.required && (!fieldValue || fieldValue === '')) {
-        errors[field.name] = `${field.label}是必填项`;
-        isValid = false;
+  const validateStep = useCallback(
+    (stepKey: string): boolean => {
+      const stepConfig = steps.find((step) => step.key === stepKey)
+      if (!stepConfig) {
+        return true
       }
-    });
 
-    // 更新步骤状态
-    setFormState(prev => ({
-      ...prev,
-      stepStates: {
-        ...prev.stepStates,
-        [stepKey]: {
-          isValid,
-          isCompleted: isValid,
-          error: isValid ? undefined : '请完成必填字段'
+      const stepFields = stepConfig.fieldGroups.flatMap(
+        (groupKey) => fieldGroups[groupKey]?.fields || [],
+      )
+
+      let isValid = true
+      const errors: Record<string, string> = {}
+
+      stepFields.forEach((field) => {
+        const fieldValue = form.getFieldValue(field.name)
+        if (field.required && (!fieldValue || fieldValue === '')) {
+          errors[field.name] = `${field.label}是必填项`
+          isValid = false
         }
-      }
-    }));
+      })
 
-    return isValid;
-  }, [steps, fieldGroups, form]);
+      // 更新步骤状态
+      setFormState((prev) => ({
+        ...prev,
+        stepStates: {
+          ...prev.stepStates,
+          [stepKey]: {
+            isValid,
+            isCompleted: isValid,
+            error: isValid ? undefined : '请完成必填字段',
+          },
+        },
+      }))
+
+      return isValid
+    },
+    [steps, fieldGroups, form],
+  )
 
   /**
    * 表单验证
    */
   const validateForm = useCallback(async (): Promise<boolean> => {
     try {
-      await form.validateFields();
-      setFormState(prev => ({
+      await form.validateFields()
+      setFormState((prev) => ({
         ...prev,
         validationState: {
           isValid: true,
           errors: {},
-          touched: prev.validationState.touched
-        }
-      }));
-      return true;
+          touched: prev.validationState.touched,
+        },
+      }))
+      return true
     } catch (error) {
-      const errors: Record<string, string> = {};
+      const errors: Record<string, string> = {}
       if (error.errorFields) {
         error.errorFields.forEach((field: any) => {
-          errors[field.name] = field.errors[0];
-        });
+          errors[field.name] = field.errors[0]
+        })
       }
 
-      setFormState(prev => ({
+      setFormState((prev) => ({
         ...prev,
         validationState: {
           isValid: false,
           errors,
-          touched: prev.validationState.touched
-        }
-      }));
-      return false;
+          touched: prev.validationState.touched,
+        },
+      }))
+      return false
     }
-  }, [form]);
+  }, [form])
 
   /**
    * 保存处理
    */
-  const handleSave = useCallback(async (isAutoSave = false) => {
-    if (readonly || disabled) return;
-
-    setFormState(prev => ({
-      ...prev,
-      saveState: {
-        ...prev.saveState,
-        status: 'saving',
-        isSaving: true
-      }
-    }));
-
-    try {
-      // 验证表单
-      if (finalSaveConfig.validateBeforeSave) {
-        const isValid = await validateForm();
-        if (!isValid) {
-          message.error('请完成必填字段');
-          setFormState(prev => ({
-            ...prev,
-            saveState: {
-              ...prev.saveState,
-              status: 'error',
-              isSaving: false,
-              error: '表单验证失败'
-            }
-          }));
-          return;
-        }
+  const handleSave = useCallback(
+    async (isAutoSave = false) => {
+      if (readonly || disabled) {
+        return
       }
 
-      // 保存前事件
-      const canSave = await events.onBeforeSave?.(formState.formData as CaseInfo);
-      if (canSave === false) {
-        return;
-      }
-
-      // 执行保存逻辑
-      if (finalSaveConfig.customSaveLogic) {
-        await finalSaveConfig.customSaveLogic(formState.formData as CaseInfo);
-      } else {
-        // 默认保存逻辑
-        console.log('Saving form data:', formState.formData);
-      }
-
-      setFormState(prev => ({
-        ...prev,
-        saveState: {
-          status: 'saved',
-          isSaving: false,
-          lastSaved: new Date()
-        }
-      }));
-
-      if (!isAutoSave) {
-        message.success('保存成功');
-        events.onAfterSave?.(formState.formData);
-
-        if (finalSaveConfig.resetAfterSave) {
-          handleReset();
-        }
-
-        if (finalSaveConfig.redirectAfterSave) {
-          // 这里应该进行路由跳转
-          console.log('Redirecting to:', finalSaveConfig.redirectPath);
-        }
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : '保存失败';
-      setFormState(prev => ({
+      setFormState((prev) => ({
         ...prev,
         saveState: {
           ...prev.saveState,
-          status: 'error',
-          isSaving: false,
-          error: errorMessage
-        }
-      }));
+          status: 'saving',
+          isSaving: true,
+        },
+      }))
 
-      if (!isAutoSave) {
-        message.error(errorMessage);
-        events.onSaveError?.(error);
+      try {
+        // 验证表单
+        if (finalSaveConfig.validateBeforeSave) {
+          const isValid = await validateForm()
+          if (!isValid) {
+            message.error('请完成必填字段')
+            setFormState((prev) => ({
+              ...prev,
+              saveState: {
+                ...prev.saveState,
+                status: 'error',
+                isSaving: false,
+                error: '表单验证失败',
+              },
+            }))
+            return
+          }
+        }
+
+        // 保存前事件
+        const canSave = await events.onBeforeSave?.(formState.formData as CaseInfo)
+        if (canSave === false) {
+          return
+        }
+
+        // 执行保存逻辑
+        if (finalSaveConfig.customSaveLogic) {
+          await finalSaveConfig.customSaveLogic(formState.formData as CaseInfo)
+        } else {
+          // 默认保存逻辑
+          console.log('Saving form data:', formState.formData)
+        }
+
+        setFormState((prev) => ({
+          ...prev,
+          saveState: {
+            status: 'saved',
+            isSaving: false,
+            lastSaved: new Date(),
+          },
+        }))
+
+        if (!isAutoSave) {
+          message.success('保存成功')
+          events.onAfterSave?.(formState.formData)
+
+          if (finalSaveConfig.resetAfterSave) {
+            handleReset()
+          }
+
+          if (finalSaveConfig.redirectAfterSave) {
+            // 这里应该进行路由跳转
+            console.log('Redirecting to:', finalSaveConfig.redirectPath)
+          }
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : '保存失败'
+        setFormState((prev) => ({
+          ...prev,
+          saveState: {
+            ...prev.saveState,
+            status: 'error',
+            isSaving: false,
+            error: errorMessage,
+          },
+        }))
+
+        if (!isAutoSave) {
+          message.error(errorMessage)
+          events.onSaveError?.(error)
+        }
       }
-    }
-  }, [formState.formData, readonly, disabled, finalSaveConfig, validateForm, events]);
+    },
+    [formState.formData, readonly, disabled, finalSaveConfig, validateForm, events],
+  )
 
   /**
    * 重置处理
@@ -532,8 +569,8 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
       title: '确认重置',
       content: '确定要重置表单吗？所有未保存的数据将丢失。',
       onOk: () => {
-        form.resetFields();
-        setFormState(prev => ({
+        form.resetFields()
+        setFormState((prev) => ({
           ...prev,
           formData: {
             basic: {
@@ -543,19 +580,19 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
               caseStatus: '新建',
               priority: '普通',
               description: '',
-              tags: []
+              tags: [],
             },
             client: {
               clientId: '',
               clientName: '',
               contact: '',
-              address: ''
+              address: '',
             },
             lawyer: {
               lawyerId: '',
               lawyerName: '',
               assistingLawyerId: '',
-              assistingLawyerName: ''
+              assistingLawyerName: '',
             },
             details: {
               amount: undefined,
@@ -563,31 +600,31 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
               source: '',
               urgency: '普通',
               expectedCompletion: '',
-              remarks: ''
+              remarks: '',
             },
             conflictCheck: {
-              checked: false
-            }
+              checked: false,
+            },
           },
           validationState: {
             isValid: false,
             errors: {},
-            touched: {}
+            touched: {},
           },
           saveState: {
             status: 'idle',
-            isSaving: false
+            isSaving: false,
           },
           stepStates: {},
           conflictState: {
             isChecked: false,
-            hasConflict: false
-          }
-        }));
-        events.onReset?.();
-      }
-    });
-  }, [form, finalConfig.mode, events.onReset]);
+            hasConflict: false,
+          },
+        }))
+        events.onReset?.()
+      },
+    })
+  }, [form, finalConfig.mode, events.onReset])
 
   /**
    * 取消处理
@@ -597,25 +634,28 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
       title: '确认取消',
       content: '确定要取消吗？所有未保存的数据将丢失。',
       onOk: () => {
-        events.onCancel?.();
-      }
-    });
-  }, [events.onCancel]);
+        events.onCancel?.()
+      },
+    })
+  }, [events.onCancel])
 
   /**
    * 冲突检测处理
    */
-  const handleConflictCheck = useCallback((params: any) => {
-    setFormState(prev => ({
-      ...prev,
-      conflictState: {
-        isChecked: true,
-        hasConflict: params.hasConflict || false,
-        result: params.result
-      }
-    }));
-    events.onConflictCheck?.(params);
-  }, [events.onConflictCheck]);
+  const handleConflictCheck = useCallback(
+    (params: any) => {
+      setFormState((prev) => ({
+        ...prev,
+        conflictState: {
+          isChecked: true,
+          hasConflict: params.hasConflict || false,
+          result: params.result,
+        },
+      }))
+      events.onConflictCheck?.(params)
+    },
+    [events.onConflictCheck],
+  )
 
   /**
    * 渲染快捷操作
@@ -628,7 +668,7 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
         icon: <SaveOutlined />,
         type: 'primary',
         handler: () => handleSave(),
-        disabled: readonly || disabled || formState.saveState.isSaving
+        disabled: readonly || disabled || formState.saveState.isSaving,
       },
       {
         key: 'reset',
@@ -636,34 +676,36 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
         icon: <ReloadOutlined />,
         type: 'default',
         handler: handleReset,
-        disabled: readonly || disabled
+        disabled: readonly || disabled,
       },
       {
         key: 'preview',
         label: '预览',
         icon: <EyeOutlined />,
         type: 'default',
-        handler: () => console.log('Preview mode')
+        handler: () => console.log('Preview mode'),
       },
       {
         key: 'print',
         label: '打印',
         icon: <PrinterOutlined />,
         type: 'default',
-        handler: () => window.print()
-      }
-    ];
+        handler: () => window.print(),
+      },
+    ]
 
-    const actions = [...defaultActions, ...quickActions].filter(action =>
-      action.visible !== false
-    );
+    const actions = [...defaultActions, ...quickActions].filter(
+      (action) => action.visible !== false,
+    )
 
-    if (actions.length === 0) return null;
+    if (actions.length === 0) {
+      return null
+    }
 
     return (
-      <div className="compact-form-actions">
+      <div className='compact-form-actions'>
         <Space size={isCompact ? 'small' : 'middle'}>
-          {actions.map(action => (
+          {actions.map((action) => (
             <Tooltip key={action.key} title={action.label}>
               <Button
                 type={action.type}
@@ -679,21 +721,25 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
           ))}
         </Space>
       </div>
-    );
-  };
+    )
+  }
 
   /**
    * 渲染当前步骤内容
    */
   const renderStepContent = () => {
-    const currentStepConfig = steps.find(step => step.key === formState.currentStep);
-    if (!currentStepConfig) return null;
+    const currentStepConfig = steps.find((step) => step.key === formState.currentStep)
+    if (!currentStepConfig) {
+      return null
+    }
 
     return (
-      <div className="step-content">
-        {currentStepConfig.fieldGroups.map(groupKey => {
-          const groupConfig = fieldGroups[groupKey];
-          if (!groupConfig) return null;
+      <div className='step-content'>
+        {currentStepConfig.fieldGroups.map((groupKey) => {
+          const groupConfig = fieldGroups[groupKey]
+          if (!groupConfig) {
+            return null
+          }
 
           return (
             <SmartFieldGroup
@@ -706,29 +752,29 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
               disabled={disabled}
               onChange={handleFieldChange}
             />
-          );
+          )
         })}
       </div>
-    );
-  };
+    )
+  }
 
   /**
    * 渲染冲突检测组件
    */
   const renderConflictCheck = () => {
     if (!finalConfig.enableConflictCheck || finalConfig.mode === 'view') {
-      return null;
+      return null
     }
 
     const conflictParams = {
       clientName: formState.formData.client?.clientName || '',
       opposingParty: '', // 从表单中获取
       caseType: formState.formData.basic?.caseType,
-      lawyerId: formState.formData.lawyer?.lawyerId
-    };
+      lawyerId: formState.formData.lawyer?.lawyerId,
+    }
 
     return (
-      <div className="conflict-check-section">
+      <div className='conflict-check-section'>
         <ConflictCheckInline
           checkParams={conflictParams}
           result={formState.conflictState.result}
@@ -738,12 +784,12 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
             showDetails: true,
             showStats: true,
             showActions: true,
-            maxDisplayCount: isCompact ? 2 : 3
+            maxDisplayCount: isCompact ? 2 : 3,
           }}
         />
       </div>
-    );
-  };
+    )
+  }
 
   const containerClassName = [
     'compact-case-form',
@@ -753,42 +799,43 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
     readonly ? 'readonly' : '',
     disabled ? 'disabled' : '',
     loading ? 'loading' : '',
-    className
-  ].filter(Boolean).join(' ');
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ')
 
   return (
     <div className={containerClassName} style={style}>
       {/* 表单头部 */}
-      <div className="form-header">
-        <Row justify="space-between" align="middle">
+      <div className='form-header'>
+        <Row justify='space-between' align='middle'>
           <Col>
             <Space>
               <Title level={isCompact ? 4 : 3} style={{ margin: 0 }}>
-                {finalConfig.mode === 'create' ? '新建案件' :
-                 finalConfig.mode === 'edit' ? '编辑案件' : '查看案件'}
+                {finalConfig.mode === 'create'
+                  ? '新建案件'
+                  : finalConfig.mode === 'edit'
+                    ? '编辑案件'
+                    : '查看案件'}
               </Title>
               {formState.formData.basic?.caseNumber && (
-                <Text type="secondary">
-                  案件编号: {formState.formData.basic.caseNumber}
-                </Text>
+                <Text type='secondary'>案件编号: {formState.formData.basic.caseNumber}</Text>
               )}
             </Space>
           </Col>
-          <Col>
-            {renderQuickActions()}
-          </Col>
+          <Col>{renderQuickActions()}</Col>
         </Row>
       </div>
 
       {/* 进度指示器 */}
       {finalConfig.showProgressIndicator && (
-        <div className="progress-section">
+        <div className='progress-section'>
           <ProgressIndicator
             steps={stepConfigs}
             currentStepKey={formState.currentStep}
             onStepChange={handleStepChange}
-            showProgressBar={true}
-            showStats={true}
+            showProgressBar
+            showStats
             enableStepNavigation={!readonly}
             isCompact={isCompact}
             direction={isCompact ? 'vertical' : 'horizontal'}
@@ -797,7 +844,7 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
       )}
 
       {/* 表单主体 */}
-      <div className="form-body">
+      <div className='form-body'>
         <ResponsiveFormLayout
           columns={isCompact ? 1 : 2}
           spacing={isCompact ? 'small' : 'medium'}
@@ -805,23 +852,21 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
         >
           <Card
             size={isCompact ? 'small' : 'default'}
-            className="form-card"
-            title={steps.find(step => step.key === formState.currentStep)?.title}
+            className='form-card'
+            title={steps.find((step) => step.key === formState.currentStep)?.title}
             extra={
               <Space>
                 {formState.saveState.status === 'saved' && (
-                  <Badge status="success" text="已自动保存" />
+                  <Badge status='success' text='已自动保存' />
                 )}
-                {formState.saveState.status === 'error' && (
-                  <Badge status="error" text="保存失败" />
-                )}
+                {formState.saveState.status === 'error' && <Badge status='error' text='保存失败' />}
               </Space>
             }
           >
             {/* 表单字段 */}
             <Form
               form={form}
-              layout="vertical"
+              layout='vertical'
               initialValues={formState.formData}
               onValuesChange={handleFieldChange}
               disabled={disabled}
@@ -834,22 +879,24 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
             {renderConflictCheck()}
 
             {/* 表单状态提示 */}
-            {!readonly && formState.validationState.errors && Object.keys(formState.validationState.errors).length > 0 && (
-              <Alert
-                message="表单验证错误"
-                description={`还有 ${Object.keys(formState.validationState.errors).length} 个字段需要完善`}
-                type="error"
-                showIcon
-                style={{ marginTop: 16 }}
-              />
-            )}
+            {!readonly &&
+              formState.validationState.errors &&
+              Object.keys(formState.validationState.errors).length > 0 && (
+                <Alert
+                  message='表单验证错误'
+                  description={`还有 ${Object.keys(formState.validationState.errors).length} 个字段需要完善`}
+                  type='error'
+                  showIcon
+                  style={{ marginTop: 16 }}
+                />
+              )}
 
             {/* 保存状态提示 */}
             {formState.saveState.status === 'saved' && (
               <Alert
-                message="自动保存成功"
+                message='自动保存成功'
                 description={`最后保存时间: ${formState.saveState.lastSaved?.toLocaleString()}`}
-                type="success"
+                type='success'
                 showIcon
                 style={{ marginTop: 16 }}
               />
@@ -859,12 +906,12 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
       </div>
 
       {/* 表单底部 */}
-      <div className="form-footer">
-        <Row justify="space-between" align="middle">
+      <div className='form-footer'>
+        <Row justify='space-between' align='middle'>
           <Col>
-            <Text type="secondary" style={{ fontSize: isCompact ? 12 : 14 }}>
-              完成度: {formStats.completionPercentage}% |
-              已填写: {formStats.filledFields}/{formStats.totalFields} 字段
+            <Text type='secondary' style={{ fontSize: isCompact ? 12 : 14 }}>
+              完成度: {formStats.completionPercentage}% | 已填写: {formStats.filledFields}/
+              {formStats.totalFields} 字段
             </Text>
           </Col>
           <Col>
@@ -877,7 +924,7 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
                 取消
               </Button>
               <Button
-                type="primary"
+                type='primary'
                 size={isCompact ? 'small' : 'middle'}
                 onClick={() => handleSave()}
                 loading={formState.saveState.isSaving}
@@ -892,21 +939,18 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
 
       {/* 性能优化器 */}
       {process.env.NODE_ENV === 'development' && (
-        <div className="performance-optimizer-section" style={{ marginTop: 16 }}>
-          <PerformanceOptimizer
-            enableAutoOptimization={true}
-            showMetrics={false}
-          />
+        <div className='performance-optimizer-section' style={{ marginTop: 16 }}>
+          <PerformanceOptimizer enableAutoOptimization showMetrics={false} />
         </div>
       )}
 
       {/* 1080p优化提示 */}
       {isCompact && (
-        <div className="optimization-hint">
+        <div className='optimization-hint'>
           <Alert
-            message="已为1080p显示器优化"
-            description="表单已自动调整为紧凑布局，提升空间利用率"
-            type="info"
+            message='已为1080p显示器优化'
+            description='表单已自动调整为紧凑布局，提升空间利用率'
+            type='info'
             showIcon
             closable
             style={{ marginTop: 16 }}
@@ -914,7 +958,7 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default CompactCaseForm;
+export default CompactCaseForm

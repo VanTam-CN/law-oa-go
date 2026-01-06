@@ -12,7 +12,7 @@ export enum ErrorType {
   NOT_FOUND_ERROR = 'NOT_FOUND_ERROR',
   SERVER_ERROR = 'SERVER_ERROR',
   TIMEOUT_ERROR = 'TIMEOUT_ERROR',
-  UNKNOWN_ERROR = 'UNKNOWN_ERROR'
+  UNKNOWN_ERROR = 'UNKNOWN_ERROR',
 }
 
 // 错误严重级别
@@ -20,29 +20,29 @@ export enum ErrorSeverity {
   LOW = 'LOW',
   MEDIUM = 'MEDIUM',
   HIGH = 'HIGH',
-  CRITICAL = 'CRITICAL'
+  CRITICAL = 'CRITICAL',
 }
 
 // 标准化的错误信息
 export interface StandardError {
-  type: ErrorType;
-  severity: ErrorSeverity;
-  code: string;
-  message: string;
-  userMessage: string;
-  details?: any;
-  timestamp: string;
-  requestId?: string;
-  retryable: boolean;
+  type: ErrorType
+  severity: ErrorSeverity
+  code: string
+  message: string
+  userMessage: string
+  details?: any
+  timestamp: string
+  requestId?: string
+  retryable: boolean
 }
 
 // 错误处理配置
 export interface ErrorHandlerConfig {
-  enableLogging: boolean;
-  enableRetry: boolean;
-  maxRetries: number;
-  retryDelay: number;
-  logLevel: 'ERROR' | 'WARN' | 'INFO' | 'DEBUG';
+  enableLogging: boolean
+  enableRetry: boolean
+  maxRetries: number
+  retryDelay: number
+  logLevel: 'ERROR' | 'WARN' | 'INFO' | 'DEBUG'
 }
 
 // 默认配置
@@ -51,38 +51,38 @@ const DEFAULT_CONFIG: ErrorHandlerConfig = {
   enableRetry: true,
   maxRetries: 3,
   retryDelay: 1000,
-  logLevel: 'ERROR'
-};
+  logLevel: 'ERROR',
+}
 
 /**
  * 错误处理器类
  */
 export class ErrorHandler {
-  private config: ErrorHandlerConfig;
+  private config: ErrorHandlerConfig
 
   constructor(config: Partial<ErrorHandlerConfig> = {}) {
-    this.config = { ...DEFAULT_CONFIG, ...config };
+    this.config = { ...DEFAULT_CONFIG, ...config }
   }
 
   /**
    * 处理API错误
    */
   handleError(error: any, context?: string): StandardError {
-    const standardError = this.standardizeError(error, context);
+    const standardError = this.standardizeError(error, context)
 
     if (this.config.enableLogging) {
-      this.logError(standardError);
+      this.logError(standardError)
     }
 
-    return standardError;
+    return standardError
   }
 
   /**
    * 将各种类型的错误标准化
    */
   private standardizeError(error: any, context?: string): StandardError {
-    const timestamp = new Date().toISOString();
-    const requestId = this.generateRequestId();
+    const timestamp = new Date().toISOString()
+    const requestId = this.generateRequestId()
 
     // 网络错误
     if (this.isNetworkError(error)) {
@@ -95,14 +95,14 @@ export class ErrorHandler {
         details: error,
         timestamp,
         requestId,
-        retryable: true
-      };
+        retryable: true,
+      }
     }
 
     // HTTP状态码错误
     if (error.response) {
-      const status = error.response.status;
-      const data = error.response.data;
+      const status = error.response.status
+      const data = error.response.data
 
       switch (status) {
         case 400:
@@ -115,8 +115,8 @@ export class ErrorHandler {
             details: data,
             timestamp,
             requestId,
-            retryable: false
-          };
+            retryable: false,
+          }
 
         case 401:
           return {
@@ -128,8 +128,8 @@ export class ErrorHandler {
             details: data,
             timestamp,
             requestId,
-            retryable: false
-          };
+            retryable: false,
+          }
 
         case 403:
           return {
@@ -141,8 +141,8 @@ export class ErrorHandler {
             details: data,
             timestamp,
             requestId,
-            retryable: false
-          };
+            retryable: false,
+          }
 
         case 404:
           return {
@@ -154,8 +154,8 @@ export class ErrorHandler {
             details: data,
             timestamp,
             requestId,
-            retryable: false
-          };
+            retryable: false,
+          }
 
         case 408:
           return {
@@ -167,8 +167,8 @@ export class ErrorHandler {
             details: data,
             timestamp,
             requestId,
-            retryable: true
-          };
+            retryable: true,
+          }
 
         case 500:
         case 502:
@@ -183,8 +183,8 @@ export class ErrorHandler {
             details: data,
             timestamp,
             requestId,
-            retryable: true
-          };
+            retryable: true,
+          }
 
         default:
           return {
@@ -196,8 +196,8 @@ export class ErrorHandler {
             details: data,
             timestamp,
             requestId,
-            retryable: status >= 500
-          };
+            retryable: status >= 500,
+          }
       }
     }
 
@@ -212,8 +212,8 @@ export class ErrorHandler {
         details: error,
         timestamp,
         requestId,
-        retryable: true
-      };
+        retryable: true,
+      }
     }
 
     // 其他未知错误
@@ -226,8 +226,8 @@ export class ErrorHandler {
       details: error,
       timestamp,
       requestId,
-      retryable: false
-    };
+      retryable: false,
+    }
   }
 
   /**
@@ -241,7 +241,7 @@ export class ErrorHandler {
       error.code === 'ENOTFOUND' ||
       error.message?.includes('Network Error') ||
       !navigator.onLine
-    );
+    )
   }
 
   /**
@@ -252,7 +252,7 @@ export class ErrorHandler {
       error.code === 'TIMEOUT_ERROR' ||
       error.code === 'ETIMEDOUT' ||
       error.message?.includes('timeout')
-    );
+    )
   }
 
   /**
@@ -260,23 +260,23 @@ export class ErrorHandler {
    */
   private getUserFriendlyValidationMessage(data: any): string {
     if (!data || typeof data !== 'object') {
-      return '输入数据格式不正确，请检查后重试';
+      return '输入数据格式不正确，请检查后重试'
     }
 
     // 如果有字段级别的错误信息
     if (data.details && typeof data.details === 'object') {
       const fieldErrors = Object.entries(data.details)
         .map(([field, message]) => `${field}: ${message}`)
-        .join('; ');
-      return `输入验证失败: ${fieldErrors}`;
+        .join('; ')
+      return `输入验证失败: ${fieldErrors}`
     }
 
     // 如果有具体的错误消息
     if (data.error && typeof data.error === 'string') {
-      return data.error;
+      return data.error
     }
 
-    return '输入数据不正确，请检查后重试';
+    return '输入数据不正确，请检查后重试'
   }
 
   /**
@@ -290,22 +290,22 @@ export class ErrorHandler {
       severity: error.severity,
       requestId: error.requestId,
       timestamp: error.timestamp,
-      details: error.details
-    };
+      details: error.details,
+    }
 
     switch (this.config.logLevel) {
       case 'ERROR':
-        console.error('🚨 API Error:', logData);
-        break;
+        console.error('🚨 API Error:', logData)
+        break
       case 'WARN':
-        console.warn('⚠️ API Warning:', logData);
-        break;
+        console.warn('⚠️ API Warning:', logData)
+        break
       case 'INFO':
-        console.info('ℹ️ API Info:', logData);
-        break;
+        console.info('ℹ️ API Info:', logData)
+        break
       case 'DEBUG':
-        console.debug('🐛 API Debug:', logData);
-        break;
+        console.debug('🐛 API Debug:', logData)
+        break
     }
   }
 
@@ -313,44 +313,44 @@ export class ErrorHandler {
    * 生成请求ID
    */
   private generateRequestId(): string {
-    return `REQ_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `REQ_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
   }
 
   /**
    * 检查错误是否可重试
    */
   isRetryableError(error: StandardError): boolean {
-    return error.retryable;
+    return error.retryable
   }
 
   /**
    * 获取重试延迟时间
    */
   getRetryDelay(attempt: number): number {
-    return this.config.retryDelay * Math.pow(2, attempt - 1); // 指数退避
+    return this.config.retryDelay * Math.pow(2, attempt - 1) // 指数退避
   }
 }
 
 // 默认错误处理器实例
-export const defaultErrorHandler = new ErrorHandler();
+export const defaultErrorHandler = new ErrorHandler()
 
 /**
  * 便捷的错误处理函数
  */
 export const handleError = (error: any, context?: string): StandardError => {
-  return defaultErrorHandler.handleError(error, context);
-};
+  return defaultErrorHandler.handleError(error, context)
+}
 
 /**
  * 判断是否应该重试
  */
 export const shouldRetry = (error: StandardError, attempt: number): boolean => {
-  return error.retryable && attempt <= defaultErrorHandler['config'].maxRetries;
-};
+  return error.retryable && attempt <= defaultErrorHandler['config'].maxRetries
+}
 
 /**
  * 获取用户友好的错误消息
  */
 export const getUserFriendlyMessage = (error: StandardError): string => {
-  return error.userMessage;
-};
+  return error.userMessage
+}

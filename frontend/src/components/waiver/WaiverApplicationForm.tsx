@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   Form,
   Input,
@@ -26,7 +26,7 @@ import {
   Progress,
   Badge,
   Tabs,
-} from 'antd';
+} from 'antd'
 import {
   UploadOutlined,
   PlusOutlined,
@@ -38,10 +38,10 @@ import {
   UserOutlined,
   WarningOutlined,
   InfoCircleOutlined,
-} from '@ant-design/icons';
-import type { UploadProps, UploadFile } from 'antd';
-import dayjs from 'dayjs';
-import { waiverApprovalService } from '@/services/waiverApproval';
+} from '@ant-design/icons'
+import type { UploadProps, UploadFile } from 'antd'
+import dayjs from 'dayjs'
+import { waiverApprovalService } from '@/services/waiverApproval'
 import type {
   WaiverType,
   RiskLevel,
@@ -50,31 +50,34 @@ import type {
   StakeholderType,
   WaiverApplication,
   WaiverTemplate,
-} from '@/types/waiverApproval';
+} from '@/types/waiverApproval'
 
-const { TextArea } = Input;
-const { Option } = Select;
-const { Step } = Steps;
-const { Title, Text } = Typography;
-const { TabPane } = Tabs;
+const { TextArea } = Input
+const { Option } = Select
+const { Step } = Steps
+const { Title, Text } = Typography
+const { TabPane } = Tabs
 
 interface WaiverApplicationFormProps {
-  visible: boolean;
-  onCancel: () => void;
-  onSuccess: (application: WaiverApplication) => void;
-  initialData?: Partial<CreateWaiverApplicationRequest>;
-  caseId?: string;
-  caseTitle?: string;
+  visible: boolean
+  onCancel: () => void
+  onSuccess: (application: WaiverApplication) => void
+  initialData?: Partial<CreateWaiverApplicationRequest>
+  caseId?: string
+  caseTitle?: string
 }
 
 // 豁免类型配置
-const waiverTypeConfig: Record<WaiverType, {
-  label: string;
-  description: string;
-  defaultRiskLevel: RiskLevel;
-  requiredFields: string[];
-  stakeholderTypes: StakeholderType[];
-}> = {
+const waiverTypeConfig: Record<
+  WaiverType,
+  {
+    label: string
+    description: string
+    defaultRiskLevel: RiskLevel
+    requiredFields: string[]
+    stakeholderTypes: StakeholderType[]
+  }
+> = {
   CONFLICT_OF_INTEREST: {
     label: '利益冲突',
     description: '律师或律师事务所与客户存在潜在或实际的利益冲突',
@@ -117,15 +120,18 @@ const waiverTypeConfig: Record<WaiverType, {
     requiredFields: ['description', 'justification'],
     stakeholderTypes: ['LAWYER', 'ORGANIZATION'],
   },
-};
+}
 
 // 风险等级配置
-const riskLevelConfig: Record<RiskLevel, {
-  label: string;
-  color: string;
-  description: string;
-  requiredApproval: string[];
-}> = {
+const riskLevelConfig: Record<
+  RiskLevel,
+  {
+    label: string
+    color: string
+    description: string
+    requiredApproval: string[]
+  }
+> = {
   LOW: {
     label: '低风险',
     color: 'green',
@@ -150,7 +156,7 @@ const riskLevelConfig: Record<RiskLevel, {
     description: '关键风险，需要全体合伙人批准',
     requiredApproval: ['ALL_PARTNERS'],
   },
-};
+}
 
 const WaiverApplicationForm: React.FC<WaiverApplicationFormProps> = ({
   visible,
@@ -160,105 +166,107 @@ const WaiverApplicationForm: React.FC<WaiverApplicationFormProps> = ({
   caseId,
   caseTitle,
 }) => {
-  const [form] = Form.useForm();
-  const [loading, setLoading] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [attachments, setAttachments] = useState<UploadFile[]>([]);
-  const [stakeholders, setStakeholders] = useState<Stakeholder[]>([]);
-  const [selectedWaiverType, setSelectedWaiverType] = useState<WaiverType>();
-  const [selectedRiskLevel, setSelectedRiskLevel] = useState<RiskLevel>();
-  const [availableTemplates, setAvailableTemplates] = useState<WaiverTemplate[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<WaiverTemplate>();
-  const [showPreview, setShowPreview] = useState(false);
-  const [formData, setFormData] = useState<Partial<CreateWaiverApplicationRequest>>({});
+  const [form] = Form.useForm()
+  const [loading, setLoading] = useState(false)
+  const [currentStep, setCurrentStep] = useState(0)
+  const [attachments, setAttachments] = useState<UploadFile[]>([])
+  const [stakeholders, setStakeholders] = useState<Stakeholder[]>([])
+  const [selectedWaiverType, setSelectedWaiverType] = useState<WaiverType>()
+  const [selectedRiskLevel, setSelectedRiskLevel] = useState<RiskLevel>()
+  const [availableTemplates, setAvailableTemplates] = useState<WaiverTemplate[]>([])
+  const [selectedTemplate, setSelectedTemplate] = useState<WaiverTemplate>()
+  const [showPreview, setShowPreview] = useState(false)
+  const [formData, setFormData] = useState<Partial<CreateWaiverApplicationRequest>>({})
 
   // 初始化表单
   useEffect(() => {
     if (visible) {
-      form.resetFields();
-      setAttachments([]);
-      setStakeholders([]);
-      setCurrentStep(0);
-      setSelectedWaiverType(undefined);
-      setSelectedRiskLevel(undefined);
-      setSelectedTemplate(undefined);
-      setFormData({});
+      form.resetFields()
+      setAttachments([])
+      setStakeholders([])
+      setCurrentStep(0)
+      setSelectedWaiverType(undefined)
+      setSelectedRiskLevel(undefined)
+      setSelectedTemplate(undefined)
+      setFormData({})
 
       if (caseId) {
-        form.setFieldsValue({ caseId });
+        form.setFieldsValue({ caseId })
       }
       if (initialData) {
-        form.setFieldsValue(initialData);
-        setFormData(initialData);
+        form.setFieldsValue(initialData)
+        setFormData(initialData)
         if (initialData.waiverType) {
-          setSelectedWaiverType(initialData.waiverType);
-          const config = waiverTypeConfig[initialData.waiverType];
-          setSelectedRiskLevel(config.defaultRiskLevel);
-          form.setFieldsValue({ riskLevel: config.defaultRiskLevel });
+          setSelectedWaiverType(initialData.waiverType)
+          const config = waiverTypeConfig[initialData.waiverType]
+          setSelectedRiskLevel(config.defaultRiskLevel)
+          form.setFieldsValue({ riskLevel: config.defaultRiskLevel })
         }
       }
     }
-  }, [visible, form, caseId, initialData]);
+  }, [visible, form, caseId, initialData])
 
   // 获取可用模板
   const loadTemplates = useCallback(async (waiverType?: WaiverType, riskLevel?: RiskLevel) => {
-    if (!waiverType || !riskLevel) return;
+    if (!waiverType || !riskLevel) {
+      return
+    }
 
     try {
       const response = await waiverApprovalService.getWaiverTemplates({
         waiverType,
         riskLevel,
         isActive: true,
-      });
+      })
       if (response.success) {
-        setAvailableTemplates(response.data);
+        setAvailableTemplates(response.data)
       }
     } catch (error) {
-      console.error('加载模板失败:', error);
+      console.error('加载模板失败:', error)
     }
-  }, []);
+  }, [])
 
   // 豁免类型变化处理
   const handleWaiverTypeChange = (value: WaiverType) => {
-    setSelectedWaiverType(value);
-    const config = waiverTypeConfig[value];
-    setSelectedRiskLevel(config.defaultRiskLevel);
+    setSelectedWaiverType(value)
+    const config = waiverTypeConfig[value]
+    setSelectedRiskLevel(config.defaultRiskLevel)
     form.setFieldsValue({
       riskLevel: config.defaultRiskLevel,
       description: '',
       justification: '',
       mitigationMeasures: '',
-    });
-    loadTemplates(value, config.defaultRiskLevel);
-  };
+    })
+    loadTemplates(value, config.defaultRiskLevel)
+  }
 
   // 风险等级变化处理
   const handleRiskLevelChange = (value: RiskLevel) => {
-    setSelectedRiskLevel(value);
+    setSelectedRiskLevel(value)
     if (selectedWaiverType) {
-      loadTemplates(selectedWaiverType, value);
+      loadTemplates(selectedWaiverType, value)
     }
-  };
+  }
 
   // 模板选择处理
   const handleTemplateSelect = async (templateId: string) => {
     try {
-      const response = await waiverApprovalService.getWaiverTemplate(templateId);
+      const response = await waiverApprovalService.getWaiverTemplate(templateId)
       if (response.success) {
-        const template = response.data;
-        setSelectedTemplate(template);
+        const template = response.data
+        setSelectedTemplate(template)
 
         // 根据模板填充表单
         form.setFieldsValue({
           description: template.template,
           justification: '',
           mitigationMeasures: '',
-        });
+        })
       }
     } catch (error) {
-      message.error('加载模板失败');
+      message.error('加载模板失败')
     }
-  };
+  }
 
   // 添加利益相关方
   const addStakeholder = () => {
@@ -268,99 +276,103 @@ const WaiverApplicationForm: React.FC<WaiverApplicationFormProps> = ({
       type: 'CLIENT',
       relationshipDescription: '',
       conflictDetails: '',
-    };
-    setStakeholders([...stakeholders, newStakeholder]);
-  };
+    }
+    setStakeholders([...stakeholders, newStakeholder])
+  }
 
   // 更新利益相关方
   const updateStakeholder = (index: number, field: keyof Stakeholder, value: any) => {
-    const updatedStakeholders = [...stakeholders];
+    const updatedStakeholders = [...stakeholders]
     updatedStakeholders[index] = {
       ...updatedStakeholders[index],
       [field]: value,
-    };
-    setStakeholders(updatedStakeholders);
-  };
+    }
+    setStakeholders(updatedStakeholders)
+  }
 
   // 删除利益相关方
   const removeStakeholder = (index: number) => {
-    setStakeholders(stakeholders.filter((_, i) => i !== index));
-  };
+    setStakeholders(stakeholders.filter((_, i) => i !== index))
+  }
 
   // 文件上传配置
   const uploadProps: UploadProps = {
     multiple: true,
     fileList: attachments,
     onChange: ({ fileList }) => {
-      setAttachments(fileList);
+      setAttachments(fileList)
     },
     beforeUpload: (file) => {
-      const isValidType = ['application/pdf', 'application/msword',
+      const isValidType = [
+        'application/pdf',
+        'application/msword',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'image/jpeg', 'image/png'].includes(file.type);
+        'image/jpeg',
+        'image/png',
+      ].includes(file.type)
 
       if (!isValidType) {
-        message.error('只支持 PDF、DOC、DOCX、JPG、PNG 格式的文件');
-        return false;
+        message.error('只支持 PDF、DOC、DOCX、JPG、PNG 格式的文件')
+        return false
       }
 
-      const isLt10M = file.size / 1024 / 1024 < 10;
+      const isLt10M = file.size / 1024 / 1024 < 10
       if (!isLt10M) {
-        message.error('文件大小不能超过 10MB');
-        return false;
+        message.error('文件大小不能超过 10MB')
+        return false
       }
 
-      return false; // 阻止自动上传
+      return false // 阻止自动上传
     },
-  };
+  }
 
   // 下一步
   const handleNext = async () => {
     try {
       if (currentStep === 0) {
         // 验证基础信息
-        await form.validateFields(['waiverType', 'riskLevel', 'description']);
+        await form.validateFields(['waiverType', 'riskLevel', 'description'])
       } else if (currentStep === 1) {
         // 验证详细信息
-        const config = selectedWaiverType ? waiverTypeConfig[selectedWaiverType] : null;
-        const requiredFields = config?.requiredFields || [];
-        await form.validateFields(requiredFields);
+        const config = selectedWaiverType ? waiverTypeConfig[selectedWaiverType] : null
+        const requiredFields = config?.requiredFields || []
+        await form.validateFields(requiredFields)
 
         // 验证利益相关方
         if (stakeholders.length === 0) {
-          message.error('请至少添加一个利益相关方');
-          return;
+          message.error('请至少添加一个利益相关方')
+          return
         }
       }
 
-      setCurrentStep(currentStep + 1);
+      setCurrentStep(currentStep + 1)
     } catch (error) {
-      console.error('表单验证失败:', error);
+      console.error('表单验证失败:', error)
     }
-  };
+  }
 
   // 上一步
   const handlePrev = () => {
-    setCurrentStep(currentStep - 1);
-  };
+    setCurrentStep(currentStep - 1)
+  }
 
   // 预览申请
   const handlePreview = () => {
-    form.validateFields().then(values => {
+    form.validateFields().then((values) => {
       setFormData({
         ...values,
         stakeholders,
-        attachments: attachments.map(file => file.originFileObj).filter(Boolean) as File[],
-      });
-      setShowPreview(true);
-    });
-  };
+        attachments: attachments.map((file) => file.originFileObj).filter(Boolean) as File[],
+      })
+      setShowPreview(true)
+    })
+  }
 
   // 提交申请
   const handleSubmit = async (submitImmediately = true) => {
     try {
-      setLoading(true);
-      const values = await form.validateFields();
+      setLoading(true)
+      const values = await form.validateFields()
 
       const request: CreateWaiverApplicationRequest = {
         caseId: values.caseId || caseId!,
@@ -370,45 +382,45 @@ const WaiverApplicationForm: React.FC<WaiverApplicationFormProps> = ({
         mitigationMeasures: values.mitigationMeasures || '',
         affectedParties: values.affectedParties || [],
         stakeholders,
-        attachments: attachments.map(file => file.originFileObj).filter(Boolean) as File[],
+        attachments: attachments.map((file) => file.originFileObj).filter(Boolean) as File[],
         submitImmediately,
-      };
+      }
 
-      const response = await waiverApprovalService.createWaiverApplication(request);
+      const response = await waiverApprovalService.createWaiverApplication(request)
 
       if (response.success) {
-        message.success(submitImmediately ? '豁免申请提交成功' : '豁免申请保存为草稿');
-        onSuccess(response.data);
-        onCancel();
+        message.success(submitImmediately ? '豁免申请提交成功' : '豁免申请保存为草稿')
+        onSuccess(response.data)
+        onCancel()
       }
     } catch (error: any) {
-      message.error(error.message || '提交失败');
+      message.error(error.message || '提交失败')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   // 渲染基础信息步骤
   const renderBasicInfo = () => (
-    <Card title="基础信息" size="small">
+    <Card title='基础信息' size='small'>
       <Row gutter={16}>
         <Col span={12}>
           <Form.Item
-            label="案件编号"
-            name="caseId"
+            label='案件编号'
+            name='caseId'
             rules={[{ required: true, message: '请输入案件编号' }]}
           >
-            <Input placeholder="请输入案件编号" disabled={!!caseId} />
+            <Input placeholder='请输入案件编号' disabled={!!caseId} />
           </Form.Item>
         </Col>
         <Col span={12}>
           <Form.Item
-            label="豁免类型"
-            name="waiverType"
+            label='豁免类型'
+            name='waiverType'
             rules={[{ required: true, message: '请选择豁免类型' }]}
           >
             <Select
-              placeholder="请选择豁免类型"
+              placeholder='请选择豁免类型'
               onChange={handleWaiverTypeChange}
               showSearch
               filterOption={(input, option) =>
@@ -419,9 +431,7 @@ const WaiverApplicationForm: React.FC<WaiverApplicationFormProps> = ({
                 <Option key={key} value={key}>
                   <div>
                     <div style={{ fontWeight: 'bold' }}>{config.label}</div>
-                    <div style={{ fontSize: '12px', color: '#666' }}>
-                      {config.description}
-                    </div>
+                    <div style={{ fontSize: '13px', color: '#374151' }}>{config.description}</div>
                   </div>
                 </Option>
               ))}
@@ -432,9 +442,9 @@ const WaiverApplicationForm: React.FC<WaiverApplicationFormProps> = ({
 
       {selectedWaiverType && (
         <Alert
-          message="豁免类型说明"
+          message='豁免类型说明'
           description={waiverTypeConfig[selectedWaiverType].description}
-          type="info"
+          type='info'
           showIcon
           style={{ marginBottom: 16 }}
         />
@@ -443,14 +453,11 @@ const WaiverApplicationForm: React.FC<WaiverApplicationFormProps> = ({
       <Row gutter={16}>
         <Col span={12}>
           <Form.Item
-            label="风险等级"
-            name="riskLevel"
+            label='风险等级'
+            name='riskLevel'
             rules={[{ required: true, message: '请选择风险等级' }]}
           >
-            <Select
-              placeholder="请选择风险等级"
-              onChange={handleRiskLevelChange}
-            >
+            <Select placeholder='请选择风险等级' onChange={handleRiskLevelChange}>
               {Object.entries(riskLevelConfig).map(([key, config]) => (
                 <Option key={key} value={key}>
                   <Badge color={config.color} text={config.label} />
@@ -462,9 +469,9 @@ const WaiverApplicationForm: React.FC<WaiverApplicationFormProps> = ({
         <Col span={12}>
           {selectedRiskLevel && (
             <Alert
-              message="审批要求"
+              message='审批要求'
               description={`需要${riskLevelConfig[selectedRiskLevel].requiredApproval.join('、')}批准`}
-              type="warning"
+              type='warning'
               showIcon
               style={{ marginTop: 24 }}
             />
@@ -473,26 +480,22 @@ const WaiverApplicationForm: React.FC<WaiverApplicationFormProps> = ({
       </Row>
 
       <Form.Item
-        label="豁免描述"
-        name="description"
+        label='豁免描述'
+        name='description'
         rules={[{ required: true, message: '请输入豁免描述' }]}
       >
         <TextArea
           rows={4}
-          placeholder="请详细描述豁免的具体情况和背景"
+          placeholder='请详细描述豁免的具体情况和背景'
           showCount
           maxLength={2000}
         />
       </Form.Item>
 
       {availableTemplates.length > 0 && (
-        <Form.Item label="使用模板">
-          <Select
-            placeholder="选择模板快速填写"
-            allowClear
-            onChange={handleTemplateSelect}
-          >
-            {availableTemplates.map(template => (
+        <Form.Item label='使用模板'>
+          <Select placeholder='选择模板快速填写' allowClear onChange={handleTemplateSelect}>
+            {availableTemplates.map((template) => (
               <Option key={template.id} value={template.id}>
                 {template.name} - {template.description}
               </Option>
@@ -501,24 +504,24 @@ const WaiverApplicationForm: React.FC<WaiverApplicationFormProps> = ({
         </Form.Item>
       )}
     </Card>
-  );
+  )
 
   // 渲染详细信息步骤
   const renderDetailedInfo = () => {
-    const config = selectedWaiverType ? waiverTypeConfig[selectedWaiverType] : null;
-    const requiredFields = config?.requiredFields || [];
+    const config = selectedWaiverType ? waiverTypeConfig[selectedWaiverType] : null
+    const requiredFields = config?.requiredFields || []
 
     return (
-      <Card title="详细信息" size="small">
+      <Card title='详细信息' size='small'>
         {requiredFields.includes('justification') && (
           <Form.Item
-            label="申请理由"
-            name="justification"
+            label='申请理由'
+            name='justification'
             rules={[{ required: true, message: '请输入申请理由' }]}
           >
             <TextArea
               rows={4}
-              placeholder="请详细说明申请豁免的理由和依据"
+              placeholder='请详细说明申请豁免的理由和依据'
               showCount
               maxLength={2000}
             />
@@ -527,13 +530,13 @@ const WaiverApplicationForm: React.FC<WaiverApplicationFormProps> = ({
 
         {requiredFields.includes('mitigationMeasures') && (
           <Form.Item
-            label="风险控制措施"
-            name="mitigationMeasures"
+            label='风险控制措施'
+            name='mitigationMeasures'
             rules={[{ required: true, message: '请输入风险控制措施' }]}
           >
             <TextArea
               rows={3}
-              placeholder="请说明将采取哪些措施来控制和管理相关风险"
+              placeholder='请说明将采取哪些措施来控制和管理相关风险'
               showCount
               maxLength={1500}
             />
@@ -541,13 +544,10 @@ const WaiverApplicationForm: React.FC<WaiverApplicationFormProps> = ({
         )}
 
         {requiredFields.includes('affectedParties') && (
-          <Form.Item
-            label="受影响方"
-            name="affectedParties"
-          >
+          <Form.Item label='受影响方' name='affectedParties'>
             <Select
-              mode="tags"
-              placeholder="请输入受影响的当事人或组织"
+              mode='tags'
+              placeholder='请输入受影响的当事人或组织'
               style={{ width: '100%' }}
             />
           </Form.Item>
@@ -556,12 +556,7 @@ const WaiverApplicationForm: React.FC<WaiverApplicationFormProps> = ({
         <Divider>利益相关方</Divider>
 
         <div style={{ marginBottom: 16 }}>
-          <Button
-            type="dashed"
-            onClick={addStakeholder}
-            icon={<PlusOutlined />}
-            block
-          >
+          <Button type='dashed' onClick={addStakeholder} icon={<PlusOutlined />} block>
             添加利益相关方
           </Button>
         </div>
@@ -569,11 +564,11 @@ const WaiverApplicationForm: React.FC<WaiverApplicationFormProps> = ({
         {stakeholders.map((stakeholder, index) => (
           <Card
             key={stakeholder.id}
-            size="small"
+            size='small'
             title={`利益相关方 ${index + 1}`}
             extra={
               <Button
-                type="text"
+                type='text'
                 danger
                 icon={<DeleteOutlined />}
                 onClick={() => removeStakeholder(index)}
@@ -584,29 +579,29 @@ const WaiverApplicationForm: React.FC<WaiverApplicationFormProps> = ({
             <Row gutter={16}>
               <Col span={8}>
                 <Input
-                  placeholder="姓名/组织名称"
+                  placeholder='姓名/组织名称'
                   value={stakeholder.name}
                   onChange={(e) => updateStakeholder(index, 'name', e.target.value)}
                 />
               </Col>
               <Col span={8}>
                 <Select
-                  placeholder="类型"
+                  placeholder='类型'
                   value={stakeholder.type}
                   onChange={(value) => updateStakeholder(index, 'type', value)}
                   style={{ width: '100%' }}
                 >
-                  <Option value="CLIENT">客户</Option>
-                  <Option value="LAWYER">律师</Option>
-                  <Option value="PARTY">当事人</Option>
-                  <Option value="WITNESS">证人</Option>
-                  <Option value="EXPERT">专家</Option>
-                  <Option value="ORGANIZATION">组织</Option>
+                  <Option value='CLIENT'>客户</Option>
+                  <Option value='LAWYER'>律师</Option>
+                  <Option value='PARTY'>当事人</Option>
+                  <Option value='WITNESS'>证人</Option>
+                  <Option value='EXPERT'>专家</Option>
+                  <Option value='ORGANIZATION'>组织</Option>
                 </Select>
               </Col>
               <Col span={8}>
                 <Input
-                  placeholder="组织/机构"
+                  placeholder='组织/机构'
                   value={stakeholder.organization}
                   onChange={(e) => updateStakeholder(index, 'organization', e.target.value)}
                 />
@@ -615,9 +610,11 @@ const WaiverApplicationForm: React.FC<WaiverApplicationFormProps> = ({
             <Row gutter={16} style={{ marginTop: 8 }}>
               <Col span={24}>
                 <Input
-                  placeholder="关系描述"
+                  placeholder='关系描述'
                   value={stakeholder.relationshipDescription}
-                  onChange={(e) => updateStakeholder(index, 'relationshipDescription', e.target.value)}
+                  onChange={(e) =>
+                    updateStakeholder(index, 'relationshipDescription', e.target.value)
+                  }
                 />
               </Col>
             </Row>
@@ -625,7 +622,7 @@ const WaiverApplicationForm: React.FC<WaiverApplicationFormProps> = ({
               <Col span={24}>
                 <TextArea
                   rows={2}
-                  placeholder="冲突详情"
+                  placeholder='冲突详情'
                   value={stakeholder.conflictDetails}
                   onChange={(e) => updateStakeholder(index, 'conflictDetails', e.target.value)}
                 />
@@ -640,20 +637,20 @@ const WaiverApplicationForm: React.FC<WaiverApplicationFormProps> = ({
           <Button icon={<UploadOutlined />}>上传附件</Button>
         </Upload>
 
-        <div style={{ color: '#666', fontSize: '12px', marginTop: 8 }}>
+        <div style={{ color: '#374151', fontSize: '13px', marginTop: 8 }}>
           支持格式：PDF、DOC、DOCX、JPG、PNG，单个文件不超过10MB
         </div>
       </Card>
-    );
-  };
+    )
+  }
 
   // 渲染确认步骤
   const renderConfirmation = () => (
-    <Card title="申请确认" size="small">
+    <Card title='申请确认' size='small'>
       <Alert
-        message="请确认申请信息"
-        description="提交后申请将进入审批流程，请确保所有信息准确无误"
-        type="warning"
+        message='请确认申请信息'
+        description='提交后申请将进入审批流程，请确保所有信息准确无误'
+        type='warning'
         showIcon
         style={{ marginBottom: 16 }}
       />
@@ -666,7 +663,7 @@ const WaiverApplicationForm: React.FC<WaiverApplicationFormProps> = ({
           </Col>
           <Col span={12}>
             <Text strong>豁免类型：</Text>
-            <Tag color="blue">
+            <Tag color='blue'>
               {selectedWaiverType ? waiverTypeConfig[selectedWaiverType].label : '-'}
             </Tag>
           </Col>
@@ -675,7 +672,10 @@ const WaiverApplicationForm: React.FC<WaiverApplicationFormProps> = ({
           <Col span={12}>
             <Text strong>风险等级：</Text>
             {selectedRiskLevel && (
-              <Badge color={riskLevelConfig[selectedRiskLevel].color} text={riskLevelConfig[selectedRiskLevel].label} />
+              <Badge
+                color={riskLevelConfig[selectedRiskLevel].color}
+                text={riskLevelConfig[selectedRiskLevel].label}
+              />
             )}
           </Col>
           <Col span={12}>
@@ -697,29 +697,31 @@ const WaiverApplicationForm: React.FC<WaiverApplicationFormProps> = ({
 
       <div style={{ marginTop: 16 }}>
         <Text strong>描述摘要：</Text>
-        <div style={{
-          background: '#f9f9f9',
-          padding: 12,
-          borderRadius: 4,
-          marginTop: 8,
-          maxHeight: 100,
-          overflow: 'auto'
-        }}>
+        <div
+          style={{
+            background: '#f9f9f9',
+            padding: 12,
+            borderRadius: 4,
+            marginTop: 8,
+            maxHeight: 100,
+            overflow: 'auto',
+          }}
+        >
           {form.getFieldValue('description') || '-'}
         </div>
       </div>
 
       {selectedRiskLevel && (
         <Alert
-          message="审批流程"
+          message='审批流程'
           description={`此申请需要${riskLevelConfig[selectedRiskLevel].requiredApproval.join('、')}批准，预计审批时间${selectedRiskLevel === 'LOW' ? '1-2' : selectedRiskLevel === 'MEDIUM' ? '3-5' : selectedRiskLevel === 'HIGH' ? '5-7' : '7-10'}个工作日`}
-          type="info"
+          type='info'
           showIcon
           style={{ marginTop: 16 }}
         />
       )}
     </Card>
-  );
+  )
 
   // 步骤配置
   const steps = [
@@ -738,71 +740,65 @@ const WaiverApplicationForm: React.FC<WaiverApplicationFormProps> = ({
       description: '确认信息并提交申请',
       content: renderConfirmation(),
     },
-  ];
+  ]
 
   return (
     <Modal
-      title="创建豁免申请"
+      title='创建豁免申请'
       open={visible}
       onCancel={onCancel}
       width={1000}
       footer={null}
       destroyOnClose
     >
-      <Form form={form} layout="vertical">
+      <Form form={form} layout='vertical'>
         <Steps current={currentStep} style={{ marginBottom: 24 }}>
           {steps.map((step, index) => (
             <Step
               key={index}
               title={step.title}
               description={step.description}
-              icon={index < currentStep ? <CheckCircleOutlined /> :
-                    index === currentStep ? <ClockCircleOutlined /> :
-                    <FileTextOutlined />}
+              icon={
+                index < currentStep ? (
+                  <CheckCircleOutlined />
+                ) : index === currentStep ? (
+                  <ClockCircleOutlined />
+                ) : (
+                  <FileTextOutlined />
+                )
+              }
             />
           ))}
         </Steps>
 
-        <div style={{ minHeight: 400 }}>
-          {steps[currentStep].content}
-        </div>
+        <div style={{ minHeight: 400 }}>{steps[currentStep].content}</div>
 
         <Divider />
 
         <div style={{ textAlign: 'right' }}>
           <Space>
-            <Button onClick={onCancel}>
-              取消
-            </Button>
+            <Button onClick={onCancel}>取消</Button>
 
-            {currentStep > 0 && (
-              <Button onClick={handlePrev}>
-                上一步
-              </Button>
-            )}
+            {currentStep > 0 && <Button onClick={handlePrev}>上一步</Button>}
 
             {currentStep < steps.length - 1 && (
-              <Button type="primary" onClick={handleNext}>
+              <Button type='primary' onClick={handleNext}>
                 下一步
               </Button>
             )}
 
             {currentStep === steps.length - 1 && (
               <>
-                <Button onClick={handlePreview}>
-                  预览
-                </Button>
-                <Button onClick={() => handleSubmit(false)}>
-                  保存草稿
-                </Button>
+                <Button onClick={handlePreview}>预览</Button>
+                <Button onClick={() => handleSubmit(false)}>保存草稿</Button>
                 <Popconfirm
-                  title="确认提交申请？"
-                  description="提交后将无法修改，请确认所有信息准确无误"
+                  title='确认提交申请？'
+                  description='提交后将无法修改，请确认所有信息准确无误'
                   onConfirm={() => handleSubmit(true)}
-                  okText="确认提交"
-                  cancelText="取消"
+                  okText='确认提交'
+                  cancelText='取消'
                 >
-                  <Button type="primary" loading={loading}>
+                  <Button type='primary' loading={loading}>
                     提交申请
                   </Button>
                 </Popconfirm>
@@ -814,15 +810,15 @@ const WaiverApplicationForm: React.FC<WaiverApplicationFormProps> = ({
 
       {/* 预览模态框 */}
       <Modal
-        title="申请预览"
+        title='申请预览'
         open={showPreview}
         onCancel={() => setShowPreview(false)}
         width={800}
         footer={[
-          <Button key="close" onClick={() => setShowPreview(false)}>
+          <Button key='close' onClick={() => setShowPreview(false)}>
             关闭
           </Button>,
-          <Button key="submit" type="primary" onClick={() => handleSubmit(true)} loading={loading}>
+          <Button key='submit' type='primary' onClick={() => handleSubmit(true)} loading={loading}>
             确认提交
           </Button>,
         ]}
@@ -833,7 +829,7 @@ const WaiverApplicationForm: React.FC<WaiverApplicationFormProps> = ({
         </div>
       </Modal>
     </Modal>
-  );
-};
+  )
+}
 
-export default WaiverApplicationForm;
+export default WaiverApplicationForm

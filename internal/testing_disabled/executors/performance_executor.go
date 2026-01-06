@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"law-oa-go/internal/testing"
+	testing "law-oa-go/internal/testing_disabled"
 )
 
 // PerformanceExecutor 性能测试执行器

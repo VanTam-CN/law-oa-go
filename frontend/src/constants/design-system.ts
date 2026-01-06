@@ -11,126 +11,126 @@
 export interface DesignTokens {
   // 颜色系统
   colors: {
-    primary: string;
-    primaryHover: string;
-    primaryLight: string;
-    accent: string;
-    accentHover: string;
-    success: string;
-    successHover: string;
-    successLight: string;
-    warning: string;
-    warningHover: string;
-    warningLight: string;
-    error: string;
-    errorHover: string;
-    errorLight: string;
-    info: string;
-    infoHover: string;
+    primary: string
+    primaryHover: string
+    primaryLight: string
+    accent: string
+    accentHover: string
+    success: string
+    successHover: string
+    successLight: string
+    warning: string
+    warningHover: string
+    warningLight: string
+    error: string
+    errorHover: string
+    errorLight: string
+    info: string
+    infoHover: string
     // 功能色
-    bgPage: string;
-    bgContainer: string;
-    bgCard: string;
-    bgHover: string;
-    bgActive: string;
+    bgPage: string
+    bgContainer: string
+    bgCard: string
+    bgHover: string
+    bgActive: string
     // 文字色
-    textPrimary: string;
-    textSecondary: string;
-    textTertiary: string;
-    textDisabled: string;
-    textLink: string;
-    textInverse: string;
+    textPrimary: string
+    textSecondary: string
+    textTertiary: string
+    textDisabled: string
+    textLink: string
+    textInverse: string
     // 边框色
-    borderBase: string;
-    borderSplit: string;
-    borderHover: string;
-    borderActive: string;
+    borderBase: string
+    borderSplit: string
+    borderHover: string
+    borderActive: string
     // 状态色
-    priorityHigh: string;
-    priorityMedium: string;
-    priorityLow: string;
-    statusActive: string;
-    statusInactive: string;
-    statusPending: string;
-    statusProcessing: string;
-  };
+    priorityHigh: string
+    priorityMedium: string
+    priorityLow: string
+    statusActive: string
+    statusInactive: string
+    statusPending: string
+    statusProcessing: string
+  }
 
   // 间距系统
   spacing: {
-    xs: string;    // 4px
-    sm: string;    // 8px
-    md: string;    // 12px
-    lg: string;    // 16px
-    xl: string;    // 20px
-    xxl: string;   // 24px
-    xxxl: string;  // 32px
-    xxxxl: string; // 40px
-    xxxxxl: string;// 48px
-    xxxxxxl: string;// 64px
-  };
+    xs: string // 4px
+    sm: string // 8px
+    md: string // 12px
+    lg: string // 16px
+    xl: string // 20px
+    xxl: string // 24px
+    xxxl: string // 32px
+    xxxxl: string // 40px
+    xxxxxl: string // 48px
+    xxxxxxl: string // 64px
+  }
 
   // 字体系统
   typography: {
-    xs: { fontSize: string; lineHeight: string };
-    sm: { fontSize: string; lineHeight: string };
-    base: { fontSize: string; lineHeight: string };
-    lg: { fontSize: string; lineHeight: string };
-    xl: { fontSize: string; lineHeight: string };
-    xxl: { fontSize: string; lineHeight: string };
-    xxxl: { fontSize: string; lineHeight: string };
-    xxxx: { fontSize: string; lineHeight: string };
-    xxxxx: { fontSize: string; lineHeight: string };
-  };
+    xs: { fontSize: string; lineHeight: string }
+    sm: { fontSize: string; lineHeight: string }
+    base: { fontSize: string; lineHeight: string }
+    lg: { fontSize: string; lineHeight: string }
+    xl: { fontSize: string; lineHeight: string }
+    xxl: { fontSize: string; lineHeight: string }
+    xxxl: { fontSize: string; lineHeight: string }
+    xxxx: { fontSize: string; lineHeight: string }
+    xxxxx: { fontSize: string; lineHeight: string }
+  }
 
   // 圆角系统
   radius: {
-    none: string;
-    sm: string;
-    md: string;
-    lg: string;
-    xl: string;
-    xxl: string;
-    full: string;
-  };
+    none: string
+    sm: string
+    md: string
+    lg: string
+    xl: string
+    xxl: string
+    full: string
+  }
 
   // 阴影系统
   shadows: {
-    sm: string;
-    md: string;
-    lg: string;
-    xl: string;
-    xxl: string;
-    inner: string;
-    colored: string;
-  };
+    sm: string
+    md: string
+    lg: string
+    xl: string
+    xxl: string
+    inner: string
+    colored: string
+  }
 
   // 动画系统
   animation: {
-    durationFast: string;
-    durationNormal: string;
-    durationSlow: string;
-    easeOut: string;
-    easeIn: string;
-    easeInOut: string;
-  };
+    durationFast: string
+    durationNormal: string
+    durationSlow: string
+    easeOut: string
+    easeIn: string
+    easeInOut: string
+  }
 
   // 尺寸系统
   sizing: {
-    xs: string;
-    sm: string;
-    md: string;
-    lg: string;
-    xl: string;
-  };
+    xs: string
+    sm: string
+    md: string
+    lg: string
+    xl: string
+  }
 
   // 图标尺寸
   icons: {
-    xs: string;
-    sm: string;
-    md: string;
-    lg: string;
-    xl: string;
-  };
+    xs: string
+    sm: string
+    md: string
+    lg: string
+    xl: string
+  }
 }
 
 // =============================================================================
@@ -252,7 +252,7 @@ export const DESIGN_TOKENS: DesignTokens = {
     lg: '24px',
     xl: '32px',
   },
-};
+}
 
 // =============================================================================
 // 3. 组件样式生成器
@@ -367,7 +367,7 @@ export const createComponentStyles = {
       error: DESIGN_TOKENS.colors.error,
       success: DESIGN_TOKENS.colors.success,
       warning: DESIGN_TOKENS.colors.warning,
-    };
+    }
 
     return {
       display: 'inline-flex',
@@ -377,11 +377,12 @@ export const createComponentStyles = {
       borderRadius: DESIGN_TOKENS.radius.sm,
       fontSize: DESIGN_TOKENS.typography.xs.fontSize,
       fontWeight: '500',
-      background: statusColors[status as keyof typeof statusColors] || DESIGN_TOKENS.colors.textTertiary,
+      background:
+        statusColors[status as keyof typeof statusColors] || DESIGN_TOKENS.colors.textTertiary,
       color: DESIGN_TOKENS.colors.textInverse,
-    };
+    }
   },
-};
+}
 
 // =============================================================================
 // 4. 业务状态映射
@@ -427,7 +428,7 @@ export const BUSINESS_STATUS = {
     REJECTED: { text: '已拒绝', color: DESIGN_TOKENS.colors.error },
     CANCELLED: { text: '已撤销', color: DESIGN_TOKENS.colors.textTertiary },
   },
-} as const;
+} as const
 
 // =============================================================================
 // 5. 响应式断点
@@ -440,7 +441,7 @@ export const BREAKPOINTS = {
   lg: '992px',
   xl: '1200px',
   xxl: '1600px',
-} as const;
+} as const
 
 // =============================================================================
 // 6. 工具函数
@@ -454,60 +455,65 @@ export const designUtils = {
       user: BUSINESS_STATUS.USER_TYPE,
       priority: BUSINESS_STATUS.PRIORITY,
       approval: BUSINESS_STATUS.APPROVAL_STATUS,
-    };
+    }
 
-    const statusMap = statusMaps[type];
-    const statusKey = Object.keys(statusMap).find(key =>
-      key === status.toUpperCase() ||
-      statusMap[key as keyof typeof statusMap].text === status
-    );
+    const statusMap = statusMaps[type]
+    const statusKey = Object.keys(statusMap).find(
+      (key) =>
+        key === status.toUpperCase() || statusMap[key as keyof typeof statusMap].text === status,
+    )
 
-    return statusKey ? statusMap[statusKey as keyof typeof statusMap].color : DESIGN_TOKENS.colors.textTertiary;
+    return statusKey
+      ? statusMap[statusKey as keyof typeof statusMap].color
+      : DESIGN_TOKENS.colors.textTertiary
   },
 
   // 格式化尺寸
   formatSize: (size: number | string, unit: string = 'px') => {
-    return typeof size === 'number' ? `${size}${unit}` : size;
+    return typeof size === 'number' ? `${size}${unit}` : size
   },
 
   // 创建渐变
   createGradient: (from: string, to: string, direction: string = '135deg') => {
-    return `linear-gradient(${direction}, ${from} 0%, ${to} 100%)`;
+    return `linear-gradient(${direction}, ${from} 0%, ${to} 100%)`
   },
 
   // 响应式样式生成
   responsive: (styles: Record<string, any>) => {
     return Object.entries(styles).reduce((acc, [breakpoint, style]) => {
       if (breakpoint === 'base') {
-        return { ...acc, ...style };
+        return { ...acc, ...style }
       }
       return {
         ...acc,
         [`@media (min-width: ${BREAKPOINTS[breakpoint as keyof typeof BREAKPOINTS]})`]: style,
-      };
-    }, {});
+      }
+    }, {})
   },
 
   // 深度合并对象
   deepMerge: (target: any, source: any) => {
-    const output = { ...target };
+    const output = { ...target }
     if (isObject(target) && isObject(source)) {
-      Object.keys(source).forEach(key => {
+      Object.keys(source).forEach((key) => {
         if (isObject(source[key])) {
-          if (!(key in target)) Object.assign(output, { [key]: source[key] });
-          else output[key] = designUtils.deepMerge(target[key], source[key]);
+          if (!(key in target)) {
+            Object.assign(output, { [key]: source[key] })
+          } else {
+            output[key] = designUtils.deepMerge(target[key], source[key])
+          }
         } else {
-          Object.assign(output, { [key]: source[key] });
+          Object.assign(output, { [key]: source[key] })
         }
-      });
+      })
     }
-    return output;
+    return output
   },
-};
+}
 
 // 辅助函数
 function isObject(item: any) {
-  return item && typeof item === 'object' && !Array.isArray(item);
+  return item && typeof item === 'object' && !Array.isArray(item)
 }
 
 // =============================================================================
@@ -520,4 +526,4 @@ export default {
   BUSINESS_STATUS,
   BREAKPOINTS,
   designUtils,
-};
+}

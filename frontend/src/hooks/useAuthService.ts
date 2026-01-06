@@ -57,7 +57,10 @@ export const useAuthState = () => {
   const queryClient = useQueryClient()
 
   // 使用useMemo缓存计算结果，避免重复计算
-  const authData = useMemo(() => ({ user, isAuthenticated, isLoading }), [user, isAuthenticated, isLoading])
+  const authData = useMemo(
+    () => ({ user, isAuthenticated, isLoading }),
+    [user, isAuthenticated, isLoading],
+  )
 
   return useQuery({
     queryKey: queryKeys.auth,
@@ -82,7 +85,7 @@ export const useAuthState = () => {
     },
     initialData: authData,
     staleTime: 0, // 总是检查最新状态
-    gcTime: 0,   // 不缓存认证状态
+    gcTime: 0, // 不缓存认证状态
   })
 }
 
@@ -108,7 +111,7 @@ export const useLogin = () => {
       // 更新React Query缓存
       queryClient.setQueryData(queryKeys.auth, {
         user: data.user,
-        isAuthenticated: true
+        isAuthenticated: true,
       })
 
       // 预加载用户权限
@@ -136,7 +139,10 @@ export const useRegister = () => {
 
   return useMutation({
     mutationFn: async (registerData: RegisterRequest) => {
-      const response = await apiClient.post<{ message: string }>('/api/v1/auth/register', registerData)
+      const response = await apiClient.post<{ message: string }>(
+        '/api/v1/auth/register',
+        registerData,
+      )
 
       if (response.error) {
         throw new Error(response.error.message)
@@ -211,7 +217,7 @@ export const useRefreshToken = () => {
 
       queryClient.setQueryData(queryKeys.auth, {
         user: data.user,
-        isAuthenticated: true
+        isAuthenticated: true,
       })
 
       console.log('Token刷新成功')
@@ -227,7 +233,7 @@ export const useRefreshToken = () => {
 
 // 获取用户详细资料Hook
 export const useUserProfile = (userId?: string) => {
-  const currentUser = useAppStore(state => state.user)
+  const currentUser = useAppStore((state) => state.user)
   const targetUserId = userId || currentUser?.id
 
   return useQuery({
@@ -247,7 +253,7 @@ export const useUserProfile = (userId?: string) => {
     },
     enabled: !!targetUserId,
     staleTime: 5 * 60 * 1000, // 5分钟
-    gcTime: 10 * 60 * 1000,   // 10分钟
+    gcTime: 10 * 60 * 1000, // 10分钟
   })
 }
 
@@ -275,7 +281,7 @@ export const useUpdateProfile = () => {
 
       // 乐观更新
       queryClient.setQueryData(queryKeys.profile, (old: User) =>
-        old ? { ...old, ...newProfile } : newProfile
+        old ? { ...old, ...newProfile } : newProfile,
       )
 
       // 更新应用状态
@@ -305,7 +311,10 @@ export const useChangePassword = () => {
       newPassword: string
       confirmPassword: string
     }) => {
-      const response = await apiClient.post<{ message: string }>('/api/v1/auth/change-password', passwordData)
+      const response = await apiClient.post<{ message: string }>(
+        '/api/v1/auth/change-password',
+        passwordData,
+      )
 
       if (response.error) {
         throw new Error(response.error.message)
@@ -326,7 +335,10 @@ export const useChangePassword = () => {
 export const useResetPassword = () => {
   return useMutation({
     mutationFn: async (resetData: ResetPasswordRequest) => {
-      const response = await apiClient.post<{ message: string }>('/api/v1/auth/reset-password', resetData)
+      const response = await apiClient.post<{ message: string }>(
+        '/api/v1/auth/reset-password',
+        resetData,
+      )
 
       if (response.error) {
         throw new Error(response.error.message)
@@ -363,7 +375,7 @@ export const usePermissions = () => {
     },
     enabled: !!user,
     staleTime: 15 * 60 * 1000, // 15分钟
-    gcTime: 30 * 60 * 1000,    // 30分钟
+    gcTime: 30 * 60 * 1000, // 30分钟
   })
 }
 
@@ -399,7 +411,7 @@ export const useHasPermission = (permission: string) => {
           'case.view',
           'case.manage',
           'file.view',
-          'file.manage'
+          'file.manage',
         ]
         return lawyerPermissions.includes(permission)
       }
@@ -410,7 +422,7 @@ export const useHasPermission = (permission: string) => {
 
   return {
     hasPermission,
-    isLoading
+    isLoading,
   }
 }
 
@@ -435,7 +447,7 @@ export const useHasRole = (role: string) => {
 
   return {
     hasRole,
-    isLoading
+    isLoading,
   }
 }
 
@@ -466,7 +478,7 @@ export const useAutoLogin = () => {
       login(user, token)
       queryClient.setQueryData(queryKeys.auth, {
         user,
-        isAuthenticated: true
+        isAuthenticated: true,
       })
     },
     onError: () => {
@@ -477,6 +489,4 @@ export const useAutoLogin = () => {
   })
 }
 
-export {
-  queryKeys,
-}
+export { queryKeys }

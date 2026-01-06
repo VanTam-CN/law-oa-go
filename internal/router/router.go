@@ -55,9 +55,7 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 	// 初始化文档相关仓储
 	docRepo := repositories.NewDocumentRepository(db)
 
-	// 初始化集成相关仓储
-	integrationRepo := repositories.NewIntegrationRepository(db)
-
+	
 	// 初始化服务
 	userService := services.NewUserService(userRepo)
 	clientService := services.NewClientService(clientRepo)
@@ -67,6 +65,10 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 	enhancedCaseService := services.NewEnhancedCaseService(caseRepo, clientRepo, userRepo)
 	log.Println("✅ 增强案例服务初始化完成")
 
+	// 审批服务将在处理器中初始化
+	log.Println("🔧 审批服务将在处理器中初始化")
+
+	
 	legalStatuteService := services.NewLegalStatuteService(db, legalStatuteRepo, legalCategoryRepo, legalTagRepo, legalEsRepo)
 	// 初始化缓存仓库
 	cacheRepo := repositories.NewMemoryCacheRepository()
@@ -84,17 +86,7 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 		caseRepo,
 	)
 
-	// 初始化审批服务
-	approvalService := services.NewApprovalService(db)
-
-	// 初始化审批冲突集成服务
-	integrationService := services.NewApprovalConflictIntegrationService(
-		approvalService,
-		conflictService,
-		integrationRepo,
-	)
-
-	// 初始化处理器
+	// 初始化认证处理器
 	log.Println("🔧 初始化认证处理器...")
 	authHandler := handlers.NewAuthHandler(userService)
 	log.Println("✅ 认证处理器初始化完成")
@@ -126,11 +118,6 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 	log.Println("🔧 初始化仪表盘处理器...")
 	dashboardHandler := handlers.NewDashboardHandler()
 	log.Println("✅ 仪表盘处理器初始化完成")
-
-	// 初始化集成处理器
-	log.Println("🔧 初始化集成处理器...")
-	integrationHandler := handlers.NewIntegrationHandler(integrationService, conflictService)
-	log.Println("✅ 集成处理器初始化完成")
 
 	// 调试：初始化冲突检测处理器
 	log.Println("🔧 初始化冲突检测处理器...")
@@ -233,6 +220,7 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 		legal := protected.Group("/legal")
 		{
 			legal.POST("/statutes", legalStatuteHandler.CreateStatute)
+			legal.POST("/statutes/import", legalStatuteHandler.BulkImportStatutes)
 			legal.PUT("/statutes/:id", legalStatuteHandler.UpdateStatute)
 			legal.DELETE("/statutes/:id", legalStatuteHandler.DeleteStatute)
 		}
@@ -262,24 +250,7 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 		}
 		log.Println("✅ 冲突检测路由注册完成")
 
-		// 集成管理
-		log.Println("🔧 开始注册集成路由...")
-		integration := protected.Group("/integration")
-		{
-			// 集成工作流相关
-			integration.POST("/approvals", integrationHandler.CreateIntegratedApproval)
-			integration.POST("/approvals/with-conflict", integrationHandler.CreateApprovalWithConflict)
-			integration.GET("/approvals/:id/status", integrationHandler.GetApprovalIntegrationStatus)
-			integration.POST("/approvals/:id/case", integrationHandler.PerformCaseCreation)
-
-			// 冲突检测触发
-			integration.POST("/conflict-check", integrationHandler.TriggerConflictCheck)
-
-			// 集成统计
-			integration.GET("/statistics", integrationHandler.GetIntegrationStatistics)
-		}
-		log.Println("✅ 集成路由注册完成")
-
+	
 		// 团队管理
 		teams := protected.Group("/teams")
 		{

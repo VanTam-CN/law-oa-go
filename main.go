@@ -47,6 +47,7 @@ import (
 	"law-oa-go/internal/metrics"
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/router"
+	"law-oa-go/internal/security"
 )
 
 func main() {
@@ -195,9 +196,9 @@ func main() {
 	app.Use(middleware.RequestIDMiddleware()) // 请求ID追踪
 	app.Use(middleware.LoggerWithFormatter()) // 使用格式化日志中间件
 	app.Use(middleware.Recovery())            // 崩溃恢复
-	app.Use(middleware.SecurityHeaders())     // 安全头
-	app.Use(middleware.CORS())                // 跨域设置
-	app.Use(middleware.RateLimiter())         // 限流控制
+	app.Use(security.SecurityHeaders())       // 安全头
+	app.Use(security.CORS())                  // 跨域设置
+	app.Use(security.RateLimiterMiddleware())   // 限流控制
 
 	// 使用基本的错误处理中间件
 	app.Use(gin.Recovery())

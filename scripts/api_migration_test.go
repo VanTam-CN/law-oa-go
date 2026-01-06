@@ -1,6 +1,6 @@
 //go:build ignore
 
-package scripts
+package main
 
 import (
 	"fmt"

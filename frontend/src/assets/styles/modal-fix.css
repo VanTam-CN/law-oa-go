@@ -1,101 +1,204 @@
 /*
  * Modal层级修复专用CSS文件
- * 解决Modal被Header遮挡的问题
+ * 解决Modal被Header遮挡和高度显示问题
  *
  * 核心策略：
  * 1. 使用更高优先级的选择器
  * 2. 强制覆盖Ant Design默认样式
  * 3. 确保Modal在最顶层显示
+ * 4. 正确处理Modal内容滚动
  */
 
-/* 🎯 强制覆盖所有Modal相关元素的z-index */
-.ant-modal-root {
-  z-index: 2000 !important;
-  position: relative !important;
-}
+/* =============================================================================
+   全局 Modal z-index 修复
+   ============================================================================= */
 
-.ant-modal-mask {
-  z-index: 2001 !important;
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
+/* 确保Modal在Header之上 */
+.ant-modal-root {
+  z-index: 1050 !important;
+  position: relative !important;
 }
 
 .ant-modal-wrap {
-  z-index: 2001 !important;
+  z-index: 1050 !important;
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
+}
+
+.ant-modal-mask {
+  z-index: 1049 !important;
+  position: fixed !important;
+}
+
+/* =============================================================================
+   CreateCase Modal 专用样式 - 最高优先级
+   ============================================================================= */
+
+/* CreateCaseWizard Modal 样式 */
+body .ant-modal-wrap.create-case-wizard-modal {
+  z-index: 1050 !important;
+  position: fixed !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
+  padding: 20px !important;
 }
 
-.ant-modal {
-  z-index: 2002 !important;
-  position: relative !important;
-  margin: 0 auto !important;
+body .ant-modal-wrap.create-case-wizard-modal .ant-modal {
+  max-width: 95vw !important;
+  max-height: 95vh !important;
+  margin: 0 !important;
   top: auto !important;
-  left: auto !important;
-  right: auto !important;
-  bottom: auto !important;
+  padding-bottom: 0 !important;
 }
 
-/* 🎯 确保Modal容器在最顶层 */
-body > .ant-modal-root {
-  z-index: 2000 !important;
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
+body .ant-modal-wrap.create-case-wizard-modal .ant-modal .ant-modal-content {
+  display: flex !important;
+  flex-direction: column !important;
+  max-height: 95vh !important;
+  overflow: hidden !important;
+  border-radius: 8px !important;
+  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08) !important;
 }
 
-/* 🎯 针对CreateCaseWizard的特殊处理 */
-body .ant-modal-root.create-case-wizard-modal {
-  z-index: 2005 !important;
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
+body .ant-modal-wrap.create-case-wizard-modal .ant-modal .ant-modal-header {
+  flex-shrink: 0 !important;
+  padding: 16px 24px !important;
+  border-bottom: 1px solid #f0f0f0 !important;
+  margin: 0 !important;
+  background: #ffffff !important;
 }
 
-body .ant-modal-root.create-case-wizard-modal .ant-modal-wrap {
-  z-index: 2005 !important;
+body .ant-modal-wrap.create-case-wizard-modal .ant-modal .ant-modal-body {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 16px 24px !important;
+  min-height: 0 !important;
+}
+
+body .ant-modal-wrap.create-case-wizard-modal .ant-modal .ant-modal-footer {
+  flex-shrink: 0 !important;
+  padding: 10px 16px !important;
+  border-top: 1px solid #f0f0f0 !important;
+  margin: 0 !important;
+}
+
+/* =============================================================================
+   CreateCase Modal 旧样式（兼容保留）
+   ============================================================================= */
+
+/* Modal wrap 层 - 负责居中 */
+body .ant-modal-wrap.create-case-modal-wrap {
+  z-index: 1050 !important;
   position: fixed !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
+  padding: 20px !important;
 }
 
-body .ant-modal-root.create-case-wizard-modal .ant-modal {
-  z-index: 2006 !important;
-  margin: 0 auto !important;
-  max-width: 90vw !important;
-  max-height: 90vh !important;
+/* Modal 容器 */
+body .ant-modal-wrap.create-case-modal-wrap .ant-modal {
+  max-width: 95vw !important;
+  max-height: 95vh !important;
+  margin: 0 !important;
+  top: auto !important;
+  padding-bottom: 0 !important;
 }
 
-/* 🎯 备用选择器 - 更具体的选择器 */
-.ant-modal-root .ant-modal-wrap .create-case-wizard-modal {
-  z-index: 2005 !important;
+/* Modal content - 使用flexbox实现正确的布局 */
+body .ant-modal-wrap.create-case-modal-wrap .ant-modal .ant-modal-content {
+  display: flex !important;
+  flex-direction: column !important;
+  max-height: 95vh !important;
+  overflow: hidden !important;
+  border-radius: 8px !important;
+  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08) !important;
 }
 
-.ant-modal-root .ant-modal-wrap .create-case-wizard-modal .ant-modal {
-  z-index: 2006 !important;
+/* Modal header - 固定高度 */
+body .ant-modal-wrap.create-case-modal-wrap .ant-modal .ant-modal-header {
+  flex-shrink: 0 !important;
+  padding: 16px 24px !important;
+  border-bottom: 1px solid #f0f0f0 !important;
+  margin: 0 !important;
 }
 
-/* 🎯 确保Modal内容区域滚动正常 */
-.ant-modal-body {
+/* Modal body - 可滚动区域 */
+body .ant-modal-wrap.create-case-modal-wrap .ant-modal .ant-modal-body {
+  flex: 1 !important;
   overflow-y: auto !important;
-  max-height: calc(90vh - 200px) !important;
+  overflow-x: hidden !important;
+  padding: 16px 24px !important;
+  min-height: 0 !important; /* 关键：允许flex子元素缩小 */
 }
 
-/* 🎯 防止其他元素遮挡Modal */
+/* Modal footer - 固定底部 */
+body .ant-modal-wrap.create-case-modal-wrap .ant-modal .ant-modal-footer {
+  flex-shrink: 0 !important;
+  padding: 10px 16px !important;
+  border-top: 1px solid #f0f0f0 !important;
+  margin: 0 !important;
+}
+
+/* =============================================================================
+   CreateCase 内部容器样式
+   ============================================================================= */
+
+/* 确保create-case-container不会溢出 */
+body .ant-modal-wrap.create-case-modal-wrap .create-case-container {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+/* 步骤卡片 */
+body .ant-modal-wrap.create-case-modal-wrap .create-case-container .step-card {
+  margin-bottom: 12px !important;
+}
+
+/* =============================================================================
+   响应式设计
+   ============================================================================= */
+
+@media (max-width: 768px) {
+  body .ant-modal-wrap.create-case-modal-wrap {
+    padding: 10px !important;
+  }
+
+  body .ant-modal-wrap.create-case-modal-wrap .ant-modal {
+    max-width: 98vw !important;
+    max-height: 98vh !important;
+  }
+
+  body .ant-modal-wrap.create-case-modal-wrap .ant-modal .ant-modal-content {
+    max-height: 98vh !important;
+  }
+
+  body .ant-modal-wrap.create-case-modal-wrap .ant-modal .ant-modal-body {
+    padding: 12px 16px !important;
+  }
+
+  body .ant-modal-wrap.create-case-modal-wrap .ant-modal .ant-modal-header {
+    padding: 12px 16px !important;
+  }
+}
+
+/* =============================================================================
+   全局 Modal 增强样式 (非CreateCase)
+   ============================================================================= */
+
+/* 确保其他Modal也不被遮挡 */
+.ant-modal-content {
+  overflow: hidden !important;
+  border-radius: 8px !important;
+  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08) !important;
+}
+
+/* 防止其他元素遮挡Modal */
 .ant-notification,
 .ant-message,
 .ant-drawer,
@@ -103,51 +206,28 @@ body .ant-modal-root.create-case-wizard-modal .ant-modal {
 .ant-select-dropdown,
 .ant-picker-dropdown,
 .ant-tooltip {
-  z-index: 1999 !important;
+  z-index: 1060 !important;
 }
 
-/* 🎯 确保Header不会覆盖Modal */
-.app-header {
-  z-index: 1030 !important; /* 保持原有值，确保不破坏设计系统 */
-}
+/* =============================================================================
+   移动端适配
+   ============================================================================= */
 
-/* 🎯 全局Modal增强样式 */
-.ant-modal-content {
-  overflow: hidden !important;
-  border-radius: 8px !important;
-  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08) !important;
-}
-
-.ant-modal-header {
-  background: #fafafa !important;
-  border-bottom: 1px solid #f0f0f0 !important;
-  padding: 16px 24px !important;
-}
-
-.ant-modal-body {
-  padding: 24px !important;
-}
-
-.ant-modal-footer {
-  padding: 10px 16px !important;
-  border-top: 1px solid #f0f0f0 !important;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%) !important;
-}
-
-/* 🎯 移动端适配 */
-@media (max-width: 768px) {
+@media (max-width: 576px) {
   .ant-modal {
-    max-width: 95vw !important;
+    max-width: 100vw !important;
     margin: 10px !important;
   }
 
   .ant-modal-body {
     padding: 16px !important;
-    max-height: calc(100vh - 150px) !important;
   }
 }
 
-/* 🎯 强制居中定位 */
+/* =============================================================================
+   居中定位修复
+   ============================================================================= */
+
 .ant-modal-centered {
   display: flex !important;
   align-items: center !important;
@@ -156,6 +236,40 @@ body .ant-modal-root.create-case-wizard-modal .ant-modal {
 
 .ant-modal-centered .ant-modal {
   margin: 0 auto !important;
-  top: 50% !important;
-  transform: translateY(-50%) !important;
+}
+
+/* =============================================================================
+   律师选择下拉优化样式
+   ============================================================================= */
+
+/* 下拉选项样式 */
+.ant-select-dropdown .ant-select-item-option {
+  padding: 8px 12px !important;
+  border-radius: 6px !important;
+  margin: 2px 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+.ant-select-dropdown .ant-select-item-option:hover {
+  background-color: #f0f5ff !important;
+}
+
+.ant-select-dropdown .ant-select-item-option-selected {
+  background-color: #e6f4ff !important;
+  border: 1px solid #91caff !important;
+}
+
+/* 选项内容容器 */
+.ant-select-dropdown .ant-select-item-option-content {
+  width: 100% !important;
+}
+
+/* 确保下拉菜单有足够高度 */
+.ant-select-dropdown {
+  max-height: 320px !important;
+}
+
+/* Avatar 样式微调 */
+.ant-select-dropdown .ant-avatar {
+  flex-shrink: 0 !important;
 }

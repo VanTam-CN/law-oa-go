@@ -1,12 +1,12 @@
-import React from 'react';
+import React from 'react'
 
 const PermissionTestPage: React.FC = () => {
   return (
     <div>
-      <h1>CPKÕub</h1>
-      <p>dub(ŽKÕ(7CPŸý</p>
+      <h1>CPKï¿½ub</h1>
+      <p>dub(ï¿½Kï¿½(7CPï¿½ï¿½</p>
     </div>
-  );
-};
+  )
+}
 
-export default PermissionTestPage;
+export default PermissionTestPage

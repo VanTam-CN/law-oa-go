@@ -12,7 +12,7 @@ const PublicRoute: React.FC = () => {
 
   if (isAuthenticated) {
     // 如果用户已登录，重定向到仪表盘
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to='/dashboard' replace />
   }
 
   return <Outlet />

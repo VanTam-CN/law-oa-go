@@ -39,7 +39,7 @@ export class ApiError extends Error {
     public message: string,
     public code: string,
     public status?: number,
-    public details?: any
+    public details?: any,
   ) {
     super(message)
     this.name = 'ApiError'
@@ -95,7 +95,7 @@ class ModernApiClient {
       (error) => {
         console.error('[API Request Error]', error)
         return Promise.reject(error)
-      }
+      },
     )
 
     // 响应拦截器
@@ -109,7 +109,7 @@ class ModernApiClient {
             response.data.error.message,
             response.data.error.code,
             response.status,
-            response.data.error.details
+            response.data.error.details,
           )
         }
 
@@ -130,7 +130,7 @@ class ModernApiClient {
         } else {
           throw new ApiError(error.message || '未知错误', 'UNKNOWN_ERROR')
         }
-      }
+      },
     )
   }
 
@@ -170,7 +170,7 @@ class ModernApiClient {
       pageSize?: number
       [key: string]: any
     } = {},
-    config?: ApiRequestConfig
+    config?: ApiRequestConfig,
   ): Promise<PaginatedResponse<T>> {
     const response = await this.client.get<ApiResponse<PaginatedResponse<T>>>(url, {
       ...config,
@@ -188,32 +188,32 @@ class ModernApiClient {
     url: string,
     file: File,
     onProgress?: (progress: number) => void,
-    config?: ApiRequestConfig
+    config?: ApiRequestConfig,
   ): Promise<ApiResponse<{ url: string; size: number; name: string }>> {
     const formData = new FormData()
     formData.append('file', file)
 
-    const response = await this.client.post<ApiResponse<{ url: string; size: number; name: string }>>(
-      url,
-      formData,
-      {
-        ...config,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-        onUploadProgress: (progressEvent) => {
-          if (onProgress && progressEvent.total) {
-            const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total)
-            onProgress(progress)
-          }
-        },
-      }
-    )
+    const response = await this.client.post<
+      ApiResponse<{ url: string; size: number; name: string }>
+    >(url, formData, {
+      ...config,
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      onUploadProgress: (progressEvent) => {
+        if (onProgress && progressEvent.total) {
+          const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+          onProgress(progress)
+        }
+      },
+    })
     return response.data
   }
 
   // 批量请求
-  async batch<T>(requests: Array<{ url: string; method?: string; data?: any }>): Promise<ApiResponse<T>[]> {
+  async batch<T>(
+    requests: Array<{ url: string; method?: string; data?: any }>,
+  ): Promise<ApiResponse<T>[]> {
     const responses = await Promise.allSettled(
       requests.map(async (req) => {
         switch (req.method?.toLowerCase()) {
@@ -226,7 +226,7 @@ class ModernApiClient {
           default:
             return this.get<T>(req.url)
         }
-      })
+      }),
     )
 
     return responses.map((response, index) => {
@@ -237,7 +237,7 @@ class ModernApiClient {
           `批量请求失败 (${index + 1}/${requests.length})`,
           'BATCH_REQUEST_ERROR',
           undefined,
-          response.reason
+          response.reason,
         )
       }
     })

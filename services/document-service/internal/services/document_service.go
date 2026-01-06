@@ -372,6 +372,12 @@ func (s *documentService) CreateVersion(ctx context.Context, documentUUID string
 		return nil, fmt.Errorf("failed to get next version number: %w", err)
 	}
 
+	// 获取当前用户ID
+	userID, username, _, err := GetUserFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("获取用户信息失败: %w", err)
+	}
+
 	// 创建版本
 	version := &models.DocumentVersion{
 		DocumentID:  document.ID,
@@ -381,7 +387,7 @@ func (s *documentService) CreateVersion(ctx context.Context, documentUUID string
 		FileHash:    fileHash,
 		Size:        req.Size,
 		Description: req.Description,
-		CreatedBy:   req.CreatedBy,
+		CreatedBy:   userID,
 	}
 
 	// 上传文件到存储
@@ -420,8 +426,9 @@ func (s *documentService) CreateVersion(ctx context.Context, documentUUID string
 		// 记录审计日志
 		auditReq := &LogActionRequest{
 			DocumentID: documentUUID,
+			UserID:     fmt.Sprintf("%d", userID),
 			Action:     "create_version",
-			Details:    fmt.Sprintf("Created version %d for document: %s", nextVersion, document.Name),
+			Details:    fmt.Sprintf("Created version %d for document: %s by %s", nextVersion, document.Name, username),
 			TenantID:   document.TenantID,
 		}
 
@@ -520,12 +527,18 @@ func (s *documentService) RestoreVersion(ctx context.Context, documentUUID strin
 		return nil, err
 	}
 
+	// 获取当前用户信息
+	userID, username, _, err := GetUserFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("获取用户信息失败: %w", err)
+	}
+
 	// 创建新版本（复制目标版本的内容）
 	newVersionReq := &CreateVersionRequest{
-		Description: fmt.Sprintf("Restored from version %d", version),
+		Description: fmt.Sprintf("Restored from version %d by %s", version, username),
 		FileHash:    targetVersion.FileHash,
 		Size:        targetVersion.Size,
-		CreatedBy:   1, // TODO: 从上下文获取当前用户ID
+		CreatedBy:   userID,
 	}
 
 	// 从存储服务获取文件内容
@@ -536,7 +549,7 @@ func (s *documentService) RestoreVersion(ctx context.Context, documentUUID strin
 
 	newVersionReq.File = fileData
 	newVersionReq.FileName = fmt.Sprintf("v%d_restored_%s", version, targetVersion.StoragePath)
-	newVersionReq.MimeType = "application/octet-stream" // TODO: 根据实际类型设置
+	newVersionReq.MimeType = s.getMIMETypeFromStoragePath(targetVersion.StoragePath)
 
 	// 创建新版本
 	newVersion, err := s.CreateVersion(ctx, documentUUID, newVersionReq)
@@ -628,8 +641,35 @@ func (s *documentService) DownloadDocument(ctx context.Context, documentUUID str
 		return nil, nil, err
 	}
 
-	// 检查权限（这里简化处理，实际应该检查用户权限）
-	// TODO: 实现权限检查
+	// 检查权限
+	userID, _, _, err := GetUserFromContext(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("获取用户信息失败: %w", err)
+	}
+
+	// 检查用户是否有下载权限
+	hasPermission, err := s.permissionRepo.CheckUserPermission(ctx, document.ID, userID, "read")
+	if err != nil {
+		return nil, nil, fmt.Errorf("检查权限失败: %w", err)
+	}
+
+	if !hasPermission {
+		// 检查角色权限
+		hasRolePermission := false
+		userRoles, err := s.roleRepo.GetUserRoles(ctx, userID)
+		if err == nil {
+			for _, roleID := range userRoles {
+				hasRolePermission, err = s.permissionRepo.CheckRolePermission(ctx, document.ID, roleID, "read")
+				if err == nil && hasRolePermission {
+					break
+				}
+			}
+		}
+
+		if !hasRolePermission {
+			return nil, nil, fmt.Errorf("没有下载权限")
+		}
+	}
 
 	var targetVersion *models.DocumentVersion
 	if version <= 0 || version == document.CurrentVersion {
@@ -684,7 +724,34 @@ func (s *documentService) CopyDocument(ctx context.Context, documentUUID string,
 	}
 
 	// 检查权限
-	// TODO: 实现权限检查
+	userID, _, _, err := GetUserFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("获取用户信息失败: %w", err)
+	}
+
+	// 检查用户是否有读取权限（复制需要读取权限）
+	hasPermission, err := s.permissionRepo.CheckUserPermission(ctx, sourceDoc.ID, userID, "read")
+	if err != nil {
+		return nil, fmt.Errorf("检查权限失败: %w", err)
+	}
+
+	if !hasPermission {
+		// 检查角色权限
+		hasRolePermission := false
+		userRoles, err := s.roleRepo.GetUserRoles(ctx, userID)
+		if err == nil {
+			for _, roleID := range userRoles {
+				hasRolePermission, err = s.permissionRepo.CheckRolePermission(ctx, sourceDoc.ID, roleID, "read")
+				if err == nil && hasRolePermission {
+					break
+				}
+			}
+		}
+
+		if !hasRolePermission {
+			return nil, fmt.Errorf("没有复制权限")
+		}
+	}
 
 	// 创建新文档
 	createReq := &CreateDocumentRequest{
@@ -695,7 +762,7 @@ func (s *documentService) CopyDocument(ctx context.Context, documentUUID string,
 		EntityType:  req.EntityType,
 		EntityID:    req.EntityID,
 		TenantID:    sourceDoc.TenantID,
-		CreatedBy:   1, // TODO: 从上下文获取当前用户ID
+		CreatedBy:   userID,
 		Metadata:    req.Metadata,
 	}
 
@@ -720,13 +787,13 @@ func (s *documentService) CopyDocument(ctx context.Context, documentUUID string,
 
 	// 创建新文档的版本
 	versionReq := &CreateVersionRequest{
-		Description: fmt.Sprintf("Copied from document %s", documentUUID),
+		Description: fmt.Sprintf("Copied from document %s by %s", documentUUID, username),
 		File:        fileData,
 		FileName:    latestVersion.StoragePath,
-		MimeType:    "application/octet-stream", // TODO: 根据实际类型设置
+		MimeType:    s.getMIMETypeFromStoragePath(latestVersion.StoragePath),
 		Size:        latestVersion.Size,
 		FileHash:    latestVersion.FileHash,
-		CreatedBy:   1, // TODO: 从上下文获取当前用户ID
+		CreatedBy:   userID,
 	}
 
 	_, err = s.CreateVersion(ctx, newDoc.UUID, versionReq)
@@ -760,7 +827,34 @@ func (s *documentService) MoveDocument(ctx context.Context, documentUUID string,
 	}
 
 	// 检查权限
-	// TODO: 实现权限检查
+	userID, _, _, err := GetUserFromContext(ctx)
+	if err != nil {
+		return fmt.Errorf("获取用户信息失败: %w", err)
+	}
+
+	// 检查用户是否有写入权限
+	hasPermission, err := s.permissionRepo.CheckUserPermission(ctx, document.ID, userID, "write")
+	if err != nil {
+		return fmt.Errorf("检查权限失败: %w", err)
+	}
+
+	if !hasPermission {
+		// 检查角色权限
+		hasRolePermission := false
+		userRoles, err := s.roleRepo.GetUserRoles(ctx, userID)
+		if err == nil {
+			for _, roleID := range userRoles {
+				hasRolePermission, err = s.permissionRepo.CheckRolePermission(ctx, document.ID, roleID, "write")
+				if err == nil && hasRolePermission {
+					break
+				}
+			}
+		}
+
+		if !hasRolePermission {
+			return fmt.Errorf("没有移动权限")
+		}
+	}
 
 	// 更新文档实体关联
 	document.EntityType = req.EntityType
@@ -992,4 +1086,45 @@ func (s *documentService) logAudit(ctx context.Context, req *LogActionRequest) e
 	}
 
 	return s.auditRepo.Create(ctx, audit)
+}
+
+// getMIMETypeFromStoragePath 根据存储路径推断MIME类型
+func (s *documentService) getMIMETypeFromStoragePath(storagePath string) string {
+	// 简单的MIME类型检测
+	if strings.HasSuffix(strings.ToLower(storagePath), ".pdf") {
+		return "application/pdf"
+	}
+	if strings.HasSuffix(strings.ToLower(storagePath), ".doc") {
+		return "application/msword"
+	}
+	if strings.HasSuffix(strings.ToLower(storagePath), ".docx") {
+		return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+	}
+	if strings.HasSuffix(strings.ToLower(storagePath), ".xls") {
+		return "application/vnd.ms-excel"
+	}
+	if strings.HasSuffix(strings.ToLower(storagePath), ".xlsx") {
+		return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+	}
+	if strings.HasSuffix(strings.ToLower(storagePath), ".ppt") {
+		return "application/vnd.ms-powerpoint"
+	}
+	if strings.HasSuffix(strings.ToLower(storagePath), ".pptx") {
+		return "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+	}
+	if strings.HasSuffix(strings.ToLower(storagePath), ".txt") {
+		return "text/plain"
+	}
+	if strings.HasSuffix(strings.ToLower(storagePath), ".jpg") || strings.HasSuffix(strings.ToLower(storagePath), ".jpeg") {
+		return "image/jpeg"
+	}
+	if strings.HasSuffix(strings.ToLower(storagePath), ".png") {
+		return "image/png"
+	}
+	if strings.HasSuffix(strings.ToLower(storagePath), ".gif") {
+		return "image/gif"
+	}
+
+	// 默认返回二进制流类型
+	return "application/octet-stream"
 }

@@ -756,3 +756,49 @@ func (h *LegalStatuteHandler) RebuildSearchIndex(c *gin.Context) {
 
 	common.APISuccess(c, gin.H{"message": "索引重建成功"})
 }
+
+// BulkImportStatutes 批量导入法条
+// @Summary 批量导入法条
+// @Description 通过JSON数据批量导入法条到数据库
+// @Tags 法条管理
+// @Accept json
+// @Produce json
+// @Param request body models.LegalStatuteImportRequest true "法条导入请求"
+// @Success 200 {object} models.Response{data=models.LegalStatuteImportResponse}
+// @Failure 400 {object} models.Response
+// @Failure 401 {object} models.Response
+// @Failure 500 {object} models.Response
+// @Router /api/v1/legal/statutes/import [post]
+func (h *LegalStatuteHandler) BulkImportStatutes(c *gin.Context) {
+	var req models.LegalStatuteImportRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.APIValidationError(c, "请求参数错误", map[string]string{
+			"request": err.Error(),
+		})
+		return
+	}
+
+	// 验证请求
+	if len(req.Statutes) == 0 {
+		common.APIBadRequest(c, "导入数据不能为空")
+		return
+	}
+
+	// 限制单次导入数量
+	if len(req.Statutes) > 1000 {
+		common.APIBadRequest(c, "单次最多导入1000条法条")
+		return
+	}
+
+	// 获取当前用户ID（可选）
+	userID := middleware.GetUserID(c)
+
+	// 执行导入
+	response, err := h.legalStatuteService.BulkImportStatutes(c.Request.Context(), &req, userID)
+	if err != nil {
+		common.APIInternalServerError(c, "导入法条失败", err.Error())
+		return
+	}
+
+	common.APISuccess(c, response)
+}

@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"law-oa-go/internal/testing"
+	testing "law-oa-go/internal/testing_disabled"
 
 	"github.com/playwright-community/playwright-go"
 )

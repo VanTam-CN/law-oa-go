@@ -16,7 +16,9 @@ export interface MockConfig {
 export class DataFactory {
   // 生成随机字符串
   static randomString(length = 10): string {
-    return Math.random().toString(36).substring(2, 2 + length)
+    return Math.random()
+      .toString(36)
+      .substring(2, 2 + length)
   }
 
   // 生成随机数字
@@ -48,8 +50,10 @@ export class DataFactory {
   static randomChineseName(): string {
     const surnames = ['张', '王', '李', '赵', '刘', '陈', '杨', '黄', '周', '吴']
     const names = ['伟', '芳', '娜', '秀英', '敏', '静', '丽', '强', '磊', '洋']
-    return surnames[this.randomNumber(0, surnames.length - 1)] +
-           names[this.randomNumber(0, names.length - 1)]
+    return (
+      surnames[this.randomNumber(0, surnames.length - 1)] +
+      names[this.randomNumber(0, names.length - 1)]
+    )
   }
 }
 
@@ -65,11 +69,11 @@ export class UserFactory {
       permissions: ['case.view', 'case.create', 'client.view'],
       createdAt: DataFactory.randomDate().toISOString(),
       updatedAt: DataFactory.randomDate().toISOString(),
-      ...override
+      ...override,
     }
   }
 
-  static createMany(count: number, override: Partial<typeof mockUser> = {}): typeof mockUser[] {
+  static createMany(count: number, override: Partial<typeof mockUser> = {}): (typeof mockUser)[] {
     return Array.from({ length: count }, () => this.create(override))
   }
 
@@ -77,7 +81,7 @@ export class UserFactory {
     return this.create({
       role: 'admin',
       permissions: ['*'],
-      ...override
+      ...override,
     })
   }
 }
@@ -97,25 +101,25 @@ export class CaseFactory {
       lawyerId: DataFactory.randomNumber(1, 50),
       createdAt: createdDate.toISOString(),
       updatedAt: createdDate.toISOString(),
-      ...override
+      ...override,
     }
   }
 
-  static createMany(count: number, override: Partial<typeof mockCase> = {}): typeof mockCase[] {
+  static createMany(count: number, override: Partial<typeof mockCase> = {}): (typeof mockCase)[] {
     return Array.from({ length: count }, () => this.create(override))
   }
 
   static createClosed(override: Partial<typeof mockCase> = {}): typeof mockCase {
     return this.create({
       status: 'closed',
-      ...override
+      ...override,
     })
   }
 
   static createPending(override: Partial<typeof mockCase> = {}): typeof mockCase {
     return this.create({
       status: 'pending',
-      ...override
+      ...override,
     })
   }
 }
@@ -134,11 +138,14 @@ export class ClientFactory {
       address: `${DataFactory.randomNumber(1, 100)}号测试地址`,
       createdAt: createdDate.toISOString(),
       updatedAt: createdDate.toISOString(),
-      ...override
+      ...override,
     }
   }
 
-  static createMany(count: number, override: Partial<typeof mockClient> = {}): typeof mockClient[] {
+  static createMany(
+    count: number,
+    override: Partial<typeof mockClient> = {},
+  ): (typeof mockClient)[] {
     return Array.from({ length: count }, () => this.create(override))
   }
 }
@@ -153,8 +160,8 @@ export class ApiResponseFactory {
         timestamp: Date.now(),
         requestId: `req_${DataFactory.randomString(12)}`,
         version: '1.0.0',
-        ...meta
-      }
+        ...meta,
+      },
     }
   }
 
@@ -164,13 +171,13 @@ export class ApiResponseFactory {
       error: {
         message,
         code,
-        status
+        status,
       },
       meta: {
         timestamp: Date.now(),
         requestId: `req_${DataFactory.randomString(12)}`,
-        version: '1.0.0'
-      }
+        version: '1.0.0',
+      },
     }
   }
 
@@ -184,8 +191,8 @@ export class ApiResponseFactory {
         totalPages: Math.ceil(data.length / 20),
         hasNext: false,
         hasPrev: false,
-        ...pagination
-      }
+        ...pagination,
+      },
     }
   }
 }
@@ -199,7 +206,7 @@ export class FormDataFactory {
       clientId: DataFactory.randomNumber(1, 100),
       priority: 'normal',
       tags: ['标签1', '标签2'],
-      ...override
+      ...override,
     }
   }
 
@@ -210,7 +217,7 @@ export class FormDataFactory {
       phone: DataFactory.randomPhone(),
       address: '详细地址',
       company: DataFactory.randomString(10),
-      ...override
+      ...override,
     }
   }
 
@@ -219,7 +226,7 @@ export class FormDataFactory {
       username: DataFactory.randomUsername(),
       password: DataFactory.randomString(12),
       remember: false,
-      ...override
+      ...override,
     }
   }
 }
@@ -235,7 +242,7 @@ export class HookFactory {
       logout: jest.fn(),
       register: jest.fn(),
       updateProfile: jest.fn(),
-      ...override
+      ...override,
     }
   }
 
@@ -249,7 +256,7 @@ export class HookFactory {
       deleteCase: jest.fn(),
       fetchCases: jest.fn(),
       fetchCase: jest.fn(),
-      ...override
+      ...override,
     }
   }
 
@@ -263,7 +270,7 @@ export class HookFactory {
       deleteClient: jest.fn(),
       fetchClients: jest.fn(),
       fetchClient: jest.fn(),
-      ...override
+      ...override,
     }
   }
 }
@@ -276,7 +283,7 @@ export class EventFactory {
       target: { value: '', ...override.target },
       preventDefault: jest.fn(),
       stopPropagation: jest.fn(),
-      ...override
+      ...override,
     }
   }
 
@@ -285,9 +292,9 @@ export class EventFactory {
       target: {
         value: DataFactory.randomString(),
         name: DataFactory.randomString(6),
-        ...override.target
+        ...override.target,
       },
-      ...override
+      ...override,
     }
   }
 
@@ -295,7 +302,7 @@ export class EventFactory {
     return {
       preventDefault: jest.fn(),
       stopPropagation: jest.fn(),
-      ...override
+      ...override,
     }
   }
 
@@ -305,7 +312,7 @@ export class EventFactory {
       code: `Key${DataFactory.randomString(1).toUpperCase()}`,
       preventDefault: jest.fn(),
       stopPropagation: jest.fn(),
-      ...override
+      ...override,
     }
   }
 }
@@ -319,7 +326,7 @@ export class PropsFactory {
       loading: false,
       children: '按钮',
       onClick: jest.fn(),
-      ...override
+      ...override,
     }
   }
 
@@ -331,7 +338,7 @@ export class PropsFactory {
       onChange: jest.fn(),
       onBlur: jest.fn(),
       onFocus: jest.fn(),
-      ...override
+      ...override,
     }
   }
 
@@ -342,7 +349,7 @@ export class PropsFactory {
       onOk: jest.fn(),
       onCancel: jest.fn(),
       footer: null,
-      ...override
+      ...override,
     }
   }
 }
@@ -357,5 +364,5 @@ export {
   FormDataFactory,
   HookFactory,
   EventFactory,
-  PropsFactory
+  PropsFactory,
 }

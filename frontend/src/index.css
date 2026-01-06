@@ -1,0 +1,24 @@
+/* 全局重置 */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  /* 修复：移除 overflow: hidden，会导致 Modal 被裁剪 */
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+/* Ant Design Layout 重置 */
+.ant-layout {
+  min-height: 100vh !important;
+}
+
+.ant-layout-has-sider {
+  min-height: 100vh !important;
+}

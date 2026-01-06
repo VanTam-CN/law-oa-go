@@ -9,7 +9,7 @@ import type {
   ConflictCheckRequest,
   ConflictCheckResponse,
   EnhancedConflictCase,
-  ConflictRiskLevel
+  ConflictRiskLevel,
 } from '@/types/waiverApproval'
 
 // 现有冲突检测系统的数据格式
@@ -76,7 +76,10 @@ export class ConflictDetectionAdapter {
       const legacyRequest = this.convertToLegacyRequest(request)
 
       // 调用现有的冲突检测API
-      const response = await apiClient.post<LegacyConflictCheckResponse>('/api/conflicts/check', legacyRequest)
+      const response = await apiClient.post<LegacyConflictCheckResponse>(
+        '/api/conflicts/check',
+        legacyRequest,
+      )
 
       // 转换响应格式
       return this.convertFromLegacyResponse(response.data)
@@ -91,13 +94,17 @@ export class ConflictDetectionAdapter {
    */
   async getLawyerConflicts(lawyerId: string): Promise<ConflictCase[]> {
     try {
-      const response = await apiClient.get<LegacyConflictCase[]>(`/api/conflicts/lawyer/${lawyerId}`)
+      const response = await apiClient.get<LegacyConflictCase[]>(
+        `/api/conflicts/lawyer/${lawyerId}`,
+      )
 
       // 转换每个冲突案例的格式
-      return response.data.map(legacyCase => this.convertConflictCase(legacyCase))
+      return response.data.map((legacyCase) => this.convertConflictCase(legacyCase))
     } catch (error) {
       console.error('获取律师冲突案例失败:', error)
-      throw new Error(`获取律师冲突案例失败: ${error instanceof Error ? error.message : '未知错误'}`)
+      throw new Error(
+        `获取律师冲突案例失败: ${error instanceof Error ? error.message : '未知错误'}`,
+      )
     }
   }
 
@@ -106,11 +113,14 @@ export class ConflictDetectionAdapter {
    */
   async getConflictHistory(lawyerId: string, limit: number = 10): Promise<ConflictCheckResponse[]> {
     try {
-      const response = await apiClient.get<LegacyConflictCheckResponse[]>(`/api/conflicts/history/${lawyerId}`, {
-        params: { limit }
-      })
+      const response = await apiClient.get<LegacyConflictCheckResponse[]>(
+        `/api/conflicts/history/${lawyerId}`,
+        {
+          params: { limit },
+        },
+      )
 
-      return response.data.map(legacyResponse => this.convertFromLegacyResponse(legacyResponse))
+      return response.data.map((legacyResponse) => this.convertFromLegacyResponse(legacyResponse))
     } catch (error) {
       console.error('获取冲突历史失败:', error)
       throw new Error(`获取冲突历史失败: ${error instanceof Error ? error.message : '未知错误'}`)
@@ -135,7 +145,7 @@ export class ConflictDetectionAdapter {
         reasoning: '未检测到需要豁免的冲突',
         riskLevel: 'LOW',
         waiverType: 'ORGANIZATIONAL',
-        mitigationMeasures: '无需特殊措施'
+        mitigationMeasures: '无需特殊措施',
       }
     }
 
@@ -149,7 +159,7 @@ export class ConflictDetectionAdapter {
       reasoning: '检测到潜在利益冲突，建议申请豁免审批',
       riskLevel,
       waiverType,
-      mitigationMeasures
+      mitigationMeasures,
     }
   }
 
@@ -164,27 +174,33 @@ export class ConflictDetectionAdapter {
       caseTitle: request.caseTitle,
       clientIds: request.clientIds,
       caseType: request.caseType,
-      checkType: request.checkType || 'automatic'
+      checkType: request.checkType || 'automatic',
     }
   }
 
   /**
    * 转换响应格式从现有系统格式
    */
-  private convertFromLegacyResponse(legacyResponse: LegacyConflictCheckResponse): ConflictCheckResponse {
+  private convertFromLegacyResponse(
+    legacyResponse: LegacyConflictCheckResponse,
+  ): ConflictCheckResponse {
     return {
       checkId: `CHECK_${Date.now()}`,
       hasConflict: legacyResponse.hasConflict,
-      conflictCases: legacyResponse.conflictCases.map(legacyCase => this.convertConflictCase(legacyCase)),
+      conflictCases: legacyResponse.conflictCases.map((legacyCase) =>
+        this.convertConflictCase(legacyCase),
+      ),
       checkTime: legacyResponse.checkTime,
-      riskAssessment: legacyResponse.riskAssessment ? {
-        overallRiskLevel: this.convertRiskLevel(legacyResponse.riskAssessment.overallRiskLevel),
-        highRiskCount: legacyResponse.riskAssessment.highRiskCount,
-        mediumRiskCount: legacyResponse.riskAssessment.mediumRiskCount,
-        lowRiskCount: legacyResponse.riskAssessment.lowRiskCount,
-        riskFactors: this.generateRiskFactors(legacyResponse.conflictCases)
-      } : undefined,
-      lawyerInfo: legacyResponse.lawyerInfo
+      riskAssessment: legacyResponse.riskAssessment
+        ? {
+            overallRiskLevel: this.convertRiskLevel(legacyResponse.riskAssessment.overallRiskLevel),
+            highRiskCount: legacyResponse.riskAssessment.highRiskCount,
+            mediumRiskCount: legacyResponse.riskAssessment.mediumRiskCount,
+            lowRiskCount: legacyResponse.riskAssessment.lowRiskCount,
+            riskFactors: this.generateRiskFactors(legacyResponse.conflictCases),
+          }
+        : undefined,
+      lawyerInfo: legacyResponse.lawyerInfo,
     }
   }
 
@@ -206,18 +222,18 @@ export class ConflictDetectionAdapter {
         {
           name: legacyCase.LawyerName || '未知律师',
           type: 'LAWYER',
-          role: '代理律师'
+          role: '代理律师',
         },
         {
           name: legacyCase.ClientName || '未知客户',
           type: 'CLIENT',
-          role: '相关方'
-        }
-      ].filter(p => p.name !== '未知律师' && p.name !== '未知客户'),
+          role: '相关方',
+        },
+      ].filter((p) => p.name !== '未知律师' && p.name !== '未知客户'),
       mitigationMeasures: this.getDefaultMitigationMeasures(legacyCase.ConflictType),
       resolutionNotes: '',
       assignedTo: legacyCase.LawyerName || '',
-      resolvedAt: null
+      resolvedAt: null,
     }
   }
 
@@ -243,12 +259,12 @@ export class ConflictDetectionAdapter {
    */
   private mapConflictType(type: string): string {
     const typeMap: { [key: string]: string } = {
-      '案件冲突': 'REPRESENTATION_CONFLICT',
-      '利益冲突': 'CONFLICT_OF_INTEREST',
-      '业务关系': 'BUSINESS_RELATION',
-      '代理冲突': 'REPRESENTATION_CONFLICT',
-      '时间冲突': 'TIME_CONFLICT',
-      '其他': 'OTHER'
+      案件冲突: 'REPRESENTATION_CONFLICT',
+      利益冲突: 'CONFLICT_OF_INTEREST',
+      业务关系: 'BUSINESS_RELATION',
+      代理冲突: 'REPRESENTATION_CONFLICT',
+      时间冲突: 'TIME_CONFLICT',
+      其他: 'OTHER',
     }
 
     return typeMap[type] || 'OTHER'
@@ -259,11 +275,11 @@ export class ConflictDetectionAdapter {
    */
   private mapStatus(status: string): string {
     const statusMap: { [key: string]: string } = {
-      '进行中': 'ACTIVE',
-      '已解决': 'RESOLVED',
-      '待处理': 'PENDING',
-      '监控中': 'MONITORING',
-      '已关闭': 'CLOSED'
+      进行中: 'ACTIVE',
+      已解决: 'RESOLVED',
+      待处理: 'PENDING',
+      监控中: 'MONITORING',
+      已关闭: 'CLOSED',
     }
 
     return statusMap[status] || 'ACTIVE'
@@ -291,10 +307,13 @@ export class ConflictDetectionAdapter {
    * 确定豁免类型
    */
   private determineWaiverType(conflictCases: ConflictCase[]): string {
-    const conflictTypes = conflictCases.reduce((acc, conflict) => {
-      acc[conflict.conflictType] = (acc[conflict.conflictType] || 0) + 1
-      return acc
-    }, {} as Record<string, number>)
+    const conflictTypes = conflictCases.reduce(
+      (acc, conflict) => {
+        acc[conflict.conflictType] = (acc[conflict.conflictType] || 0) + 1
+        return acc
+      },
+      {} as Record<string, number>,
+    )
 
     // 根据冲突类型优先级确定豁免类型
     if (conflictTypes['REPRESENTATION_CONFLICT'] > 0) {
@@ -321,7 +340,7 @@ export class ConflictDetectionAdapter {
     const measures = [
       '风险原因：记录冲突情况',
       '定期复查：保持警惕',
-      '建立预防措施：针对代理冲突类型案件制定专门处理流程'
+      '建立预防措施：针对代理冲突类型案件制定专门处理流程',
     ]
 
     return measures.join('；')
@@ -332,11 +351,12 @@ export class ConflictDetectionAdapter {
    */
   private getDefaultMitigationMeasures(conflictType: string): string {
     const measuresMap: { [key: string]: string } = {
-      'REPRESENTATION_CONFLICT': '信息隔离：确保不同案件的信息严格隔离；内部沟通：建立定期沟通机制',
-      'CONFLICT_OF_INTEREST': '客户告知：如有必要，向客户充分披露潜在冲突；持续监控：建立定期冲突检查机制',
-      'BUSINESS_RELATION': '文档记录：详细记录所有检测和处理过程；独立审查：安排独立律师审查相关文件',
-      'TIME_CONFLICT': '时间管理：合理安排工作时间；助理支持：必要时增加助理支持',
-      'OTHER': '综合措施：根据具体情况制定相应的风险控制措施'
+      REPRESENTATION_CONFLICT: '信息隔离：确保不同案件的信息严格隔离；内部沟通：建立定期沟通机制',
+      CONFLICT_OF_INTEREST:
+        '客户告知：如有必要，向客户充分披露潜在冲突；持续监控：建立定期冲突检查机制',
+      BUSINESS_RELATION: '文档记录：详细记录所有检测和处理过程；独立审查：安排独立律师审查相关文件',
+      TIME_CONFLICT: '时间管理：合理安排工作时间；助理支持：必要时增加助理支持',
+      OTHER: '综合措施：根据具体情况制定相应的风险控制措施',
     }
 
     return measuresMap[conflictType] || measuresMap['OTHER']
@@ -348,7 +368,7 @@ export class ConflictDetectionAdapter {
   private generateRiskFactors(conflictCases: LegacyConflictCase[]): string[] {
     const factors = new Set<string>()
 
-    conflictCases.forEach(conflictCase => {
+    conflictCases.forEach((conflictCase) => {
       if (conflictCase.RiskLevel === 'HIGH') {
         factors.add('高风险冲突')
       }

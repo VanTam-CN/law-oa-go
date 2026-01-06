@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   Card,
   Table,
@@ -30,7 +30,7 @@ import {
   Drawer,
   Switch,
   DatePicker,
-} from 'antd';
+} from 'antd'
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -51,11 +51,11 @@ import {
   SignatureOutlined,
   AuditOutlined,
   TeamOutlined,
-} from '@ant-design/icons';
-import type { ColumnsType } from 'antd/es/table';
-import type { UploadProps } from 'antd';
-import dayjs from 'dayjs';
-import { waiverApprovalService } from '@/services/waiverApproval';
+} from '@ant-design/icons'
+import type { ColumnsType } from 'antd/es/table'
+import type { UploadProps } from 'antd'
+import dayjs from 'dayjs'
+import { waiverApprovalService } from '@/services/waiverApproval'
 import type {
   WaiverApplication,
   WaiverStatus,
@@ -69,27 +69,30 @@ import type {
   WaiverAttachment,
   WaiverStatistics,
   PaginatedResponse,
-} from '@/types/waiverApproval';
+} from '@/types/waiverApproval'
 
-const { TextArea } = Input;
-const { Option } = Select;
-const { Title, Text, Paragraph } = Typography;
-const { Step } = Steps;
-const { TabPane } = Tabs;
+const { TextArea } = Input
+const { Option } = Select
+const { Title, Text, Paragraph } = Typography
+const { Step } = Steps
+const { TabPane } = Tabs
 
 interface WaiverApprovalInterfaceProps {
-  userRole?: string;
-  userId?: string;
-  defaultView?: 'pending' | 'history' | 'statistics';
+  userRole?: string
+  userId?: string
+  defaultView?: 'pending' | 'history' | 'statistics'
 }
 
 // 状态配置
-const statusConfig: Record<WaiverStatus, {
-  label: string;
-  color: string;
-  icon: React.ReactNode;
-  description: string;
-}> = {
+const statusConfig: Record<
+  WaiverStatus,
+  {
+    label: string
+    color: string
+    icon: React.ReactNode
+    description: string
+  }
+> = {
   DRAFT: {
     label: '草稿',
     color: 'default',
@@ -138,237 +141,257 @@ const statusConfig: Record<WaiverStatus, {
     icon: <CloseCircleOutlined />,
     description: '申请已取消',
   },
-};
+}
 
 // 风险等级配置
-const riskLevelConfig: Record<RiskLevel, {
-  label: string;
-  color: string;
-  priority: number;
-}> = {
+const riskLevelConfig: Record<
+  RiskLevel,
+  {
+    label: string
+    color: string
+    priority: number
+  }
+> = {
   LOW: { label: '低风险', color: 'green', priority: 1 },
   MEDIUM: { label: '中风险', color: 'orange', priority: 2 },
   HIGH: { label: '高风险', color: 'red', priority: 3 },
   CRITICAL: { label: '关键风险', color: 'purple', priority: 4 },
-};
+}
 
 const WaiverApprovalInterface: React.FC<WaiverApprovalInterfaceProps> = ({
   userRole = 'LAWYER',
   userId,
   defaultView = 'pending',
 }) => {
-  const [activeTab, setActiveTab] = useState(defaultView);
-  const [pendingApplications, setPendingApplications] = useState<WaiverApplication[]>([]);
-  const [historyApplications, setHistoryApplications] = useState<WaiverApplication[]>([]);
-  const [statistics, setStatistics] = useState<WaiverStatistics | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [selectedApplication, setSelectedApplication] = useState<WaiverApplication | null>(null);
-  const [approvalModalVisible, setApprovalModalVisible] = useState(false);
-  const [rejectionModalVisible, setRejectionModalVisible] = useState(false);
-  const [escalationModalVisible, setEscalationModalVisible] = useState(false);
-  const [detailDrawerVisible, setDetailDrawerVisible] = useState(false);
-  const [signatureData, setSignatureData] = useState<string>('');
-  const [approvalForm] = Form.useForm();
-  const [rejectionForm] = Form.useForm();
-  const [escalationForm] = Form.useForm();
+  const [activeTab, setActiveTab] = useState(defaultView)
+  const [pendingApplications, setPendingApplications] = useState<WaiverApplication[]>([])
+  const [historyApplications, setHistoryApplications] = useState<WaiverApplication[]>([])
+  const [statistics, setStatistics] = useState<WaiverStatistics | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [selectedApplication, setSelectedApplication] = useState<WaiverApplication | null>(null)
+  const [approvalModalVisible, setApprovalModalVisible] = useState(false)
+  const [rejectionModalVisible, setRejectionModalVisible] = useState(false)
+  const [escalationModalVisible, setEscalationModalVisible] = useState(false)
+  const [detailDrawerVisible, setDetailDrawerVisible] = useState(false)
+  const [signatureData, setSignatureData] = useState<string>('')
+  const [approvalForm] = Form.useForm()
+  const [rejectionForm] = Form.useForm()
+  const [escalationForm] = Form.useForm()
 
   // 加载待审批申请
   const loadPendingApplications = useCallback(async () => {
     try {
-      setLoading(true);
+      setLoading(true)
       const response = await waiverApprovalService.getPendingApplications({
         page: 1,
         pageSize: 100,
-      });
+      })
       if (response.success) {
-        setPendingApplications(response.data.items);
+        setPendingApplications(response.data.items)
       }
     } catch (error) {
-      message.error('加载待审批申请失败');
+      message.error('加载待审批申请失败')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  }, []);
+  }, [])
 
   // 加载审批历史
   const loadHistoryApplications = useCallback(async () => {
     try {
-      setLoading(true);
+      setLoading(true)
       const response = await waiverApprovalService.getMyApprovalHistory({
         page: 1,
         pageSize: 100,
-      });
+      })
       if (response.success) {
-        setHistoryApplications(response.data.items.map(item => ({
-          id: item.applicationId,
-          caseTitle: item.applicationTitle,
-          status: item.currentStatus,
-          submittedAt: item.submissionDate,
-          reviewedAt: item.lastReviewedDate,
-          approvedAt: item.approvalDate,
-          reviewerName: item.reviewerName,
-          daysInReview: item.daysInReview,
-        } as WaiverApplication)));
+        setHistoryApplications(
+          response.data.items.map(
+            (item) =>
+              ({
+                id: item.applicationId,
+                caseTitle: item.applicationTitle,
+                status: item.currentStatus,
+                submittedAt: item.submissionDate,
+                reviewedAt: item.lastReviewedDate,
+                approvedAt: item.approvalDate,
+                reviewerName: item.reviewerName,
+                daysInReview: item.daysInReview,
+              }) as WaiverApplication,
+          ),
+        )
       }
     } catch (error) {
-      message.error('加载审批历史失败');
+      message.error('加载审批历史失败')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  }, []);
+  }, [])
 
   // 加载统计数据
   const loadStatistics = useCallback(async () => {
     try {
-      setLoading(true);
-      const response = await waiverApprovalService.getWaiverStatistics();
+      setLoading(true)
+      const response = await waiverApprovalService.getWaiverStatistics()
       if (response.success) {
-        setStatistics(response.data);
+        setStatistics(response.data)
       }
     } catch (error) {
-      message.error('加载统计数据失败');
+      message.error('加载统计数据失败')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  }, []);
+  }, [])
 
   // 初始加载
   useEffect(() => {
     if (activeTab === 'pending') {
-      loadPendingApplications();
+      loadPendingApplications()
     } else if (activeTab === 'history') {
-      loadHistoryApplications();
+      loadHistoryApplications()
     } else if (activeTab === 'statistics') {
-      loadStatistics();
+      loadStatistics()
     }
-  }, [activeTab, loadPendingApplications, loadHistoryApplications, loadStatistics]);
+  }, [activeTab, loadPendingApplications, loadHistoryApplications, loadStatistics])
 
   // 处理批准申请
   const handleApprove = async (values: any) => {
-    if (!selectedApplication) return;
+    if (!selectedApplication) {
+      return
+    }
 
     try {
-      setLoading(true);
+      setLoading(true)
       const request: ApproveWaiverApplicationRequest = {
         applicationId: selectedApplication.id,
         comments: values.comments,
         conditions: values.conditions,
         nextReviewDate: values.nextReviewDate?.format('YYYY-MM-DD'),
         isElectronicSignature: values.isElectronicSignature,
-        signatureData: values.isElectronicSignature ? {
-          signatureBase64: signatureData,
-          certificateId: 'default_certificate', // 实际项目中从用户配置获取
-        } : undefined,
-      };
+        signatureData: values.isElectronicSignature
+          ? {
+              signatureBase64: signatureData,
+              certificateId: 'default_certificate', // 实际项目中从用户配置获取
+            }
+          : undefined,
+      }
 
-      const response = await waiverApprovalService.approveWaiverApplication(request);
+      const response = await waiverApprovalService.approveWaiverApplication(request)
       if (response.success) {
-        message.success('豁免申请批准成功');
-        setApprovalModalVisible(false);
-        approvalForm.resetFields();
-        setSignatureData('');
-        loadPendingApplications();
-        setSelectedApplication(null);
+        message.success('豁免申请批准成功')
+        setApprovalModalVisible(false)
+        approvalForm.resetFields()
+        setSignatureData('')
+        loadPendingApplications()
+        setSelectedApplication(null)
       }
     } catch (error: any) {
-      message.error(error.message || '批准失败');
+      message.error(error.message || '批准失败')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   // 处理拒绝申请
   const handleReject = async (values: any) => {
-    if (!selectedApplication) return;
+    if (!selectedApplication) {
+      return
+    }
 
     try {
-      setLoading(true);
+      setLoading(true)
       const request: RejectWaiverApplicationRequest = {
         applicationId: selectedApplication.id,
         comments: values.comments,
         reason: values.reason,
         isElectronicSignature: values.isElectronicSignature,
-        signatureData: values.isElectronicSignature ? {
-          signatureBase64: signatureData,
-          certificateId: 'default_certificate',
-        } : undefined,
-      };
+        signatureData: values.isElectronicSignature
+          ? {
+              signatureBase64: signatureData,
+              certificateId: 'default_certificate',
+            }
+          : undefined,
+      }
 
-      const response = await waiverApprovalService.rejectWaiverApplication(request);
+      const response = await waiverApprovalService.rejectWaiverApplication(request)
       if (response.success) {
-        message.success('豁免申请拒绝成功');
-        setRejectionModalVisible(false);
-        rejectionForm.resetFields();
-        setSignatureData('');
-        loadPendingApplications();
-        setSelectedApplication(null);
+        message.success('豁免申请拒绝成功')
+        setRejectionModalVisible(false)
+        rejectionForm.resetFields()
+        setSignatureData('')
+        loadPendingApplications()
+        setSelectedApplication(null)
       }
     } catch (error: any) {
-      message.error(error.message || '拒绝失败');
+      message.error(error.message || '拒绝失败')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   // 处理上报申请
   const handleEscalate = async (values: any) => {
-    if (!selectedApplication) return;
+    if (!selectedApplication) {
+      return
+    }
 
     try {
-      setLoading(true);
+      setLoading(true)
       const request: EscalateWaiverApplicationRequest = {
         applicationId: selectedApplication.id,
         escalationReason: values.escalationReason,
         escalatedToUserId: values.escalatedToUserId,
         comments: values.comments,
         isElectronicSignature: values.isElectronicSignature,
-        signatureData: values.isElectronicSignature ? {
-          signatureBase64: signatureData,
-          certificateId: 'default_certificate',
-        } : undefined,
-      };
+        signatureData: values.isElectronicSignature
+          ? {
+              signatureBase64: signatureData,
+              certificateId: 'default_certificate',
+            }
+          : undefined,
+      }
 
-      const response = await waiverApprovalService.escalateWaiverApplication(request);
+      const response = await waiverApprovalService.escalateWaiverApplication(request)
       if (response.success) {
-        message.success('豁免申请上报成功');
-        setEscalationModalVisible(false);
-        escalationForm.resetFields();
-        setSignatureData('');
-        loadPendingApplications();
-        setSelectedApplication(null);
+        message.success('豁免申请上报成功')
+        setEscalationModalVisible(false)
+        escalationForm.resetFields()
+        setSignatureData('')
+        loadPendingApplications()
+        setSelectedApplication(null)
       }
     } catch (error: any) {
-      message.error(error.message || '上报失败');
+      message.error(error.message || '上报失败')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   // 查看申请详情
   const viewApplicationDetail = async (application: WaiverApplication) => {
     try {
-      setLoading(true);
-      const response = await waiverApprovalService.getWaiverApplication(application.id);
+      setLoading(true)
+      const response = await waiverApprovalService.getWaiverApplication(application.id)
       if (response.success) {
-        setSelectedApplication(response.data);
-        setDetailDrawerVisible(true);
+        setSelectedApplication(response.data)
+        setDetailDrawerVisible(true)
       }
     } catch (error) {
-      message.error('获取申请详情失败');
+      message.error('获取申请详情失败')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   // 发送提醒
   const sendReminder = async (applicationId: string) => {
     try {
-      await waiverApprovalService.sendApprovalReminder(applicationId);
-      message.success('提醒发送成功');
+      await waiverApprovalService.sendApprovalReminder(applicationId)
+      message.success('提醒发送成功')
     } catch (error: any) {
-      message.error(error.message || '发送提醒失败');
+      message.error(error.message || '发送提醒失败')
     }
-  };
+  }
 
   // 待审批申请表格列
   const pendingColumns: ColumnsType<WaiverApplication> = [
@@ -378,7 +401,7 @@ const WaiverApprovalInterface: React.FC<WaiverApprovalInterfaceProps> = ({
       key: 'caseId',
       width: 120,
       render: (text, record) => (
-        <Button type="link" onClick={() => viewApplicationDetail(record)}>
+        <Button type='link' onClick={() => viewApplicationDetail(record)}>
           {text}
         </Button>
       ),
@@ -402,8 +425,8 @@ const WaiverApprovalInterface: React.FC<WaiverApprovalInterfaceProps> = ({
           FINANCIAL_INTEREST: '财务利益',
           PERSONAL_RELATIONSHIP: '个人关系',
           ORGANIZATIONAL: '组织冲突',
-        };
-        return <Tag color="blue">{typeLabels[type]}</Tag>;
+        }
+        return <Tag color='blue'>{typeLabels[type]}</Tag>
       },
     },
     {
@@ -412,10 +435,11 @@ const WaiverApprovalInterface: React.FC<WaiverApprovalInterfaceProps> = ({
       key: 'riskLevel',
       width: 100,
       render: (level) => {
-        const config = riskLevelConfig[level];
-        return <Badge color={config.color} text={config.label} />;
+        const config = riskLevelConfig[level]
+        return <Badge color={config.color} text={config.label} />
       },
-      sorter: (a, b) => riskLevelConfig[a.riskLevel].priority - riskLevelConfig[b.riskLevel].priority,
+      sorter: (a, b) =>
+        riskLevelConfig[a.riskLevel].priority - riskLevelConfig[b.riskLevel].priority,
     },
     {
       title: '申请人',
@@ -436,12 +460,8 @@ const WaiverApprovalInterface: React.FC<WaiverApprovalInterfaceProps> = ({
       key: 'waitingTime',
       width: 100,
       render: (_, record) => {
-        const days = dayjs().diff(dayjs(record.submittedAt), 'day');
-        return (
-          <Tag color={days > 3 ? 'red' : days > 1 ? 'orange' : 'green'}>
-            {days}天
-          </Tag>
-        );
+        const days = dayjs().diff(dayjs(record.submittedAt), 'day')
+        return <Tag color={days > 3 ? 'red' : days > 1 ? 'orange' : 'green'}>{days}天</Tag>
       },
     },
     {
@@ -449,61 +469,57 @@ const WaiverApprovalInterface: React.FC<WaiverApprovalInterfaceProps> = ({
       key: 'action',
       width: 200,
       render: (_, record) => (
-        <Space size="small">
-          <Tooltip title="查看详情">
+        <Space size='small'>
+          <Tooltip title='查看详情'>
             <Button
-              type="text"
+              type='text'
               icon={<EyeOutlined />}
               onClick={() => viewApplicationDetail(record)}
             />
           </Tooltip>
-          <Tooltip title="批准">
+          <Tooltip title='批准'>
             <Button
-              type="text"
+              type='text'
               icon={<CheckCircleOutlined />}
               onClick={() => {
-                setSelectedApplication(record);
-                setApprovalModalVisible(true);
+                setSelectedApplication(record)
+                setApprovalModalVisible(true)
               }}
             />
           </Tooltip>
-          <Tooltip title="拒绝">
+          <Tooltip title='拒绝'>
             <Button
-              type="text"
+              type='text'
               danger
               icon={<CloseCircleOutlined />}
               onClick={() => {
-                setSelectedApplication(record);
-                setRejectionModalVisible(true);
+                setSelectedApplication(record)
+                setRejectionModalVisible(true)
               }}
             />
           </Tooltip>
-          <Tooltip title="上报">
+          <Tooltip title='上报'>
             <Button
-              type="text"
+              type='text'
               icon={<ExclamationCircleOutlined />}
               onClick={() => {
-                setSelectedApplication(record);
-                setEscalationModalVisible(true);
+                setSelectedApplication(record)
+                setEscalationModalVisible(true)
               }}
             />
           </Tooltip>
-          <Tooltip title="发送提醒">
-            <Button
-              type="text"
-              icon={<SendOutlined />}
-              onClick={() => sendReminder(record.id)}
-            />
+          <Tooltip title='发送提醒'>
+            <Button type='text' icon={<SendOutlined />} onClick={() => sendReminder(record.id)} />
           </Tooltip>
         </Space>
       ),
     },
-  ];
+  ]
 
   // 渲染待审批申请列表
   const renderPendingApplications = () => (
     <Card
-      title="待审批申请"
+      title='待审批申请'
       extra={
         <Space>
           <Button icon={<FilterOutlined />}>筛选</Button>
@@ -523,22 +539,22 @@ const WaiverApprovalInterface: React.FC<WaiverApprovalInterfaceProps> = ({
           showQuickJumper: true,
           showTotal: (total) => `共 ${total} 条记录`,
         }}
-        rowKey="id"
-        size="small"
+        rowKey='id'
+        size='small'
       />
     </Card>
-  );
+  )
 
   // 渲染审批历史
   const renderApprovalHistory = () => (
-    <Card title="审批历史">
+    <Card title='审批历史'>
       <List
         dataSource={historyApplications}
         loading={loading}
         renderItem={(item) => (
           <List.Item
             actions={[
-              <Button type="link" icon={<EyeOutlined />}>
+              <Button type='link' icon={<EyeOutlined />}>
                 查看
               </Button>,
             ]}
@@ -551,17 +567,15 @@ const WaiverApprovalInterface: React.FC<WaiverApprovalInterfaceProps> = ({
                   <Tag color={statusConfig[item.status].color}>
                     {statusConfig[item.status].label}
                   </Tag>
-                  <Text type="secondary">
+                  <Text type='secondary'>
                     提交时间：{dayjs(item.submittedAt).format('YYYY-MM-DD HH:mm')}
                   </Text>
                   {item.reviewedAt && (
-                    <Text type="secondary">
+                    <Text type='secondary'>
                       审查时间：{dayjs(item.reviewedAt).format('YYYY-MM-DD HH:mm')}
                     </Text>
                   )}
-                  <Text type="secondary">
-                    处理用时：{item.daysInReview}天
-                  </Text>
+                  <Text type='secondary'>处理用时：{item.daysInReview}天</Text>
                 </Space>
               }
             />
@@ -569,11 +583,13 @@ const WaiverApprovalInterface: React.FC<WaiverApprovalInterfaceProps> = ({
         )}
       />
     </Card>
-  );
+  )
 
   // 渲染统计信息
   const renderStatistics = () => {
-    if (!statistics) return null;
+    if (!statistics) {
+      return null
+    }
 
     return (
       <div>
@@ -581,7 +597,7 @@ const WaiverApprovalInterface: React.FC<WaiverApprovalInterfaceProps> = ({
           <Col span={6}>
             <Card>
               <Statistic
-                title="总申请数"
+                title='总申请数'
                 value={statistics.totalApplications}
                 prefix={<FileTextOutlined />}
               />
@@ -590,7 +606,7 @@ const WaiverApprovalInterface: React.FC<WaiverApprovalInterfaceProps> = ({
           <Col span={6}>
             <Card>
               <Statistic
-                title="待审批"
+                title='待审批'
                 value={statistics.pendingApplications}
                 valueStyle={{ color: '#fa8c16' }}
                 prefix={<ClockCircleOutlined />}
@@ -600,7 +616,7 @@ const WaiverApprovalInterface: React.FC<WaiverApprovalInterfaceProps> = ({
           <Col span={6}>
             <Card>
               <Statistic
-                title="已批准"
+                title='已批准'
                 value={statistics.approvedApplications}
                 valueStyle={{ color: '#52c41a' }}
                 prefix={<CheckCircleOutlined />}
@@ -610,7 +626,7 @@ const WaiverApprovalInterface: React.FC<WaiverApprovalInterfaceProps> = ({
           <Col span={6}>
             <Card>
               <Statistic
-                title="已拒绝"
+                title='已拒绝'
                 value={statistics.rejectedApplications}
                 valueStyle={{ color: '#f5222d' }}
                 prefix={<CloseCircleOutlined />}
@@ -621,19 +637,26 @@ const WaiverApprovalInterface: React.FC<WaiverApprovalInterfaceProps> = ({
 
         <Row gutter={16}>
           <Col span={12}>
-            <Card title="风险等级分布">
+            <Card title='风险等级分布'>
               <div style={{ height: 200 }}>
                 {Object.entries(statistics.riskLevelDistribution).map(([level, count]) => (
                   <div key={level} style={{ marginBottom: 8 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Badge color={riskLevelConfig[level as RiskLevel].color} text={riskLevelConfig[level as RiskLevel].label} />
+                      <Badge
+                        color={riskLevelConfig[level as RiskLevel].color}
+                        text={riskLevelConfig[level as RiskLevel].label}
+                      />
                       <Text strong>{count}</Text>
                     </div>
                     <Progress
-                      percent={statistics.totalApplications > 0 ? (count / statistics.totalApplications) * 100 : 0}
+                      percent={
+                        statistics.totalApplications > 0
+                          ? (count / statistics.totalApplications) * 100
+                          : 0
+                      }
                       strokeColor={riskLevelConfig[level as RiskLevel].color}
                       showInfo={false}
-                      size="small"
+                      size='small'
                     />
                   </div>
                 ))}
@@ -641,23 +664,23 @@ const WaiverApprovalInterface: React.FC<WaiverApprovalInterfaceProps> = ({
             </Card>
           </Col>
           <Col span={12}>
-            <Card title="审批效率">
+            <Card title='审批效率'>
               <Row gutter={16}>
                 <Col span={12}>
                   <Statistic
-                    title="批准率"
+                    title='批准率'
                     value={statistics.approvalRate}
                     precision={1}
-                    suffix="%"
+                    suffix='%'
                     valueStyle={{ color: '#52c41a' }}
                   />
                 </Col>
                 <Col span={12}>
                   <Statistic
-                    title="平均审批时间"
+                    title='平均审批时间'
                     value={statistics.averageReviewTime}
                     precision={1}
-                    suffix="天"
+                    suffix='天'
                     valueStyle={{ color: '#1890ff' }}
                   />
                 </Col>
@@ -666,68 +689,66 @@ const WaiverApprovalInterface: React.FC<WaiverApprovalInterfaceProps> = ({
           </Col>
         </Row>
       </div>
-    );
-  };
+    )
+  }
 
   // 渲染申请详情抽屉
   const renderApplicationDetail = () => {
-    if (!selectedApplication) return null;
+    if (!selectedApplication) {
+      return null
+    }
 
     return (
       <Drawer
-        title="申请详情"
-        placement="right"
+        title='申请详情'
+        placement='right'
         onClose={() => setDetailDrawerVisible(false)}
         open={detailDrawerVisible}
         width={800}
       >
-        <Tabs defaultActiveKey="basic">
-          <TabPane tab="基本信息" key="basic">
+        <Tabs defaultActiveKey='basic'>
+          <TabPane tab='基本信息' key='basic'>
             <Descriptions column={1} bordered>
-              <Descriptions.Item label="案件编号">
-                {selectedApplication.caseId}
-              </Descriptions.Item>
-              <Descriptions.Item label="案件标题">
+              <Descriptions.Item label='案件编号'>{selectedApplication.caseId}</Descriptions.Item>
+              <Descriptions.Item label='案件标题'>
                 {selectedApplication.caseTitle}
               </Descriptions.Item>
-              <Descriptions.Item label="豁免类型">
-                <Tag color="blue">
-                  {selectedApplication.waiverType}
-                </Tag>
+              <Descriptions.Item label='豁免类型'>
+                <Tag color='blue'>{selectedApplication.waiverType}</Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="风险等级">
-                <Badge color={riskLevelConfig[selectedApplication.riskLevel].color} text={riskLevelConfig[selectedApplication.riskLevel].label} />
+              <Descriptions.Item label='风险等级'>
+                <Badge
+                  color={riskLevelConfig[selectedApplication.riskLevel].color}
+                  text={riskLevelConfig[selectedApplication.riskLevel].label}
+                />
               </Descriptions.Item>
-              <Descriptions.Item label="申请人">
+              <Descriptions.Item label='申请人'>
                 {selectedApplication.applicantName}
               </Descriptions.Item>
-              <Descriptions.Item label="提交时间">
+              <Descriptions.Item label='提交时间'>
                 {dayjs(selectedApplication.submittedAt).format('YYYY-MM-DD HH:mm:ss')}
               </Descriptions.Item>
-              <Descriptions.Item label="状态">
-                <Badge color={statusConfig[selectedApplication.status].color} text={statusConfig[selectedApplication.status].label} />
+              <Descriptions.Item label='状态'>
+                <Badge
+                  color={statusConfig[selectedApplication.status].color}
+                  text={statusConfig[selectedApplication.status].label}
+                />
               </Descriptions.Item>
             </Descriptions>
 
             <Divider />
 
             <Title level={5}>豁免描述</Title>
-            <Paragraph>
-              {selectedApplication.description}
-            </Paragraph>
+            <Paragraph>{selectedApplication.description}</Paragraph>
 
             <Title level={5}>申请理由</Title>
-            <Paragraph>
-              {selectedApplication.justification}
-            </Paragraph>
+            <Paragraph>{selectedApplication.justification}</Paragraph>
 
             <Title level={5}>风险控制措施</Title>
-            <Paragraph>
-              {selectedApplication.mitigationMeasures}
-            </Paragraph>
+            <Paragraph>{selectedApplication.mitigationMeasures}</Paragraph>
           </TabPane>
 
-          <TabPane tab="利益相关方" key="stakeholders">
+          <TabPane tab='利益相关方' key='stakeholders'>
             <List
               dataSource={selectedApplication.stakeholders}
               renderItem={(stakeholder) => (
@@ -736,10 +757,10 @@ const WaiverApprovalInterface: React.FC<WaiverApprovalInterfaceProps> = ({
                     avatar={<Avatar icon={<UserOutlined />} />}
                     title={stakeholder.name}
                     description={
-                      <Space direction="vertical" size="small">
-                        <Text type="secondary">类型：{stakeholder.type}</Text>
-                        <Text type="secondary">关系：{stakeholder.relationshipDescription}</Text>
-                        <Text type="secondary">冲突详情：{stakeholder.conflictDetails}</Text>
+                      <Space direction='vertical' size='small'>
+                        <Text type='secondary'>类型：{stakeholder.type}</Text>
+                        <Text type='secondary'>关系：{stakeholder.relationshipDescription}</Text>
+                        <Text type='secondary'>冲突详情：{stakeholder.conflictDetails}</Text>
                       </Space>
                     }
                   />
@@ -748,13 +769,13 @@ const WaiverApprovalInterface: React.FC<WaiverApprovalInterfaceProps> = ({
             />
           </TabPane>
 
-          <TabPane tab="附件" key="attachments">
+          <TabPane tab='附件' key='attachments'>
             <List
               dataSource={selectedApplication.attachments}
               renderItem={(attachment) => (
                 <List.Item
                   actions={[
-                    <Button type="link" icon={<DownloadOutlined />}>
+                    <Button type='link' icon={<DownloadOutlined />}>
                       下载
                     </Button>,
                   ]}
@@ -764,10 +785,10 @@ const WaiverApprovalInterface: React.FC<WaiverApprovalInterfaceProps> = ({
                     title={attachment.originalName}
                     description={
                       <Space>
-                        <Text type="secondary">
+                        <Text type='secondary'>
                           大小：{(attachment.fileSize / 1024 / 1024).toFixed(2)} MB
                         </Text>
-                        <Text type="secondary">
+                        <Text type='secondary'>
                           上传时间：{dayjs(attachment.uploadedAt).format('YYYY-MM-DD HH:mm')}
                         </Text>
                       </Space>
@@ -778,34 +799,42 @@ const WaiverApprovalInterface: React.FC<WaiverApprovalInterfaceProps> = ({
             />
           </TabPane>
 
-          <TabPane tab="审批记录" key="approval">
+          <TabPane tab='审批记录' key='approval'>
             <Timeline>
               {selectedApplication.approvalRecords.map((record) => (
                 <Timeline.Item
                   key={record.id}
                   color={
-                    record.decision === 'APPROVE' ? 'green' :
-                    record.decision === 'REJECT' ? 'red' :
-                    record.decision === 'ESCALATE' ? 'purple' : 'blue'
+                    record.decision === 'APPROVE'
+                      ? 'green'
+                      : record.decision === 'REJECT'
+                        ? 'red'
+                        : record.decision === 'ESCALATE'
+                          ? 'purple'
+                          : 'blue'
                   }
                 >
                   <div>
                     <Text strong>{record.reviewerName}</Text>
-                    <Tag color="blue" style={{ marginLeft: 8 }}>
-                      {record.decision === 'APPROVE' ? '批准' :
-                       record.decision === 'REJECT' ? '拒绝' :
-                       record.decision === 'ESCALATE' ? '上报' : '要求信息'}
+                    <Tag color='blue' style={{ marginLeft: 8 }}>
+                      {record.decision === 'APPROVE'
+                        ? '批准'
+                        : record.decision === 'REJECT'
+                          ? '拒绝'
+                          : record.decision === 'ESCALATE'
+                            ? '上报'
+                            : '要求信息'}
                     </Tag>
                   </div>
                   <div>{record.comments}</div>
                   {record.conditions && (
                     <div style={{ marginTop: 4 }}>
-                      <Text type="secondary">批准条件：</Text>
+                      <Text type='secondary'>批准条件：</Text>
                       <Text>{record.conditions}</Text>
                     </div>
                   )}
                   <div style={{ marginTop: 4 }}>
-                    <Text type="secondary">
+                    <Text type='secondary'>
                       {dayjs(record.reviewedAt).format('YYYY-MM-DD HH:mm:ss')}
                     </Text>
                   </div>
@@ -815,8 +844,8 @@ const WaiverApprovalInterface: React.FC<WaiverApprovalInterfaceProps> = ({
           </TabPane>
         </Tabs>
       </Drawer>
-    );
-  };
+    )
+  }
 
   return (
     <div style={{ padding: 24 }}>
@@ -830,7 +859,7 @@ const WaiverApprovalInterface: React.FC<WaiverApprovalInterfaceProps> = ({
               待审批 ({pendingApplications.length})
             </span>
           }
-          key="pending"
+          key='pending'
         >
           {renderPendingApplications()}
         </TabPane>
@@ -842,7 +871,7 @@ const WaiverApprovalInterface: React.FC<WaiverApprovalInterfaceProps> = ({
               审批历史
             </span>
           }
-          key="history"
+          key='history'
         >
           {renderApprovalHistory()}
         </TabPane>
@@ -854,7 +883,7 @@ const WaiverApprovalInterface: React.FC<WaiverApprovalInterfaceProps> = ({
               统计分析
             </span>
           }
-          key="statistics"
+          key='statistics'
         >
           {renderStatistics()}
         </TabPane>
@@ -862,39 +891,37 @@ const WaiverApprovalInterface: React.FC<WaiverApprovalInterfaceProps> = ({
 
       {/* 批准模态框 */}
       <Modal
-        title="批准豁免申请"
+        title='批准豁免申请'
         open={approvalModalVisible}
         onCancel={() => setApprovalModalVisible(false)}
         footer={null}
         width={600}
       >
-        <Form form={approvalForm} layout="vertical" onFinish={handleApprove}>
+        <Form form={approvalForm} layout='vertical' onFinish={handleApprove}>
           <Form.Item
-            label="审批意见"
-            name="comments"
+            label='审批意见'
+            name='comments'
             rules={[{ required: true, message: '请输入审批意见' }]}
           >
-            <TextArea rows={4} placeholder="请输入审批意见" />
+            <TextArea rows={4} placeholder='请输入审批意见' />
           </Form.Item>
 
-          <Form.Item label="批准条件" name="conditions">
-            <TextArea rows={3} placeholder="如有特殊条件，请在此说明" />
+          <Form.Item label='批准条件' name='conditions'>
+            <TextArea rows={3} placeholder='如有特殊条件，请在此说明' />
           </Form.Item>
 
-          <Form.Item label="下次审查日期" name="nextReviewDate">
+          <Form.Item label='下次审查日期' name='nextReviewDate'>
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
 
-          <Form.Item name="isElectronicSignature" valuePropName="checked" initialValue={true}>
+          <Form.Item name='isElectronicSignature' valuePropName='checked' initialValue>
             <Checkbox>使用电子签名</Checkbox>
           </Form.Item>
 
           <Form.Item>
             <Space>
-              <Button onClick={() => setApprovalModalVisible(false)}>
-                取消
-              </Button>
-              <Button type="primary" htmlType="submit" loading={loading}>
+              <Button onClick={() => setApprovalModalVisible(false)}>取消</Button>
+              <Button type='primary' htmlType='submit' loading={loading}>
                 确认批准
               </Button>
             </Space>
@@ -904,44 +931,42 @@ const WaiverApprovalInterface: React.FC<WaiverApprovalInterfaceProps> = ({
 
       {/* 拒绝模态框 */}
       <Modal
-        title="拒绝豁免申请"
+        title='拒绝豁免申请'
         open={rejectionModalVisible}
         onCancel={() => setRejectionModalVisible(false)}
         footer={null}
         width={600}
       >
-        <Form form={rejectionForm} layout="vertical" onFinish={handleReject}>
+        <Form form={rejectionForm} layout='vertical' onFinish={handleReject}>
           <Form.Item
-            label="拒绝原因"
-            name="reason"
+            label='拒绝原因'
+            name='reason'
             rules={[{ required: true, message: '请输入拒绝原因' }]}
           >
-            <Select placeholder="请选择拒绝原因">
-              <Option value="信息不完整">信息不完整</Option>
-              <Option value="风险过高">风险过高</Option>
-              <Option value="不符合条件">不符合条件</Option>
-              <Option value="其他">其他</Option>
+            <Select placeholder='请选择拒绝原因'>
+              <Option value='信息不完整'>信息不完整</Option>
+              <Option value='风险过高'>风险过高</Option>
+              <Option value='不符合条件'>不符合条件</Option>
+              <Option value='其他'>其他</Option>
             </Select>
           </Form.Item>
 
           <Form.Item
-            label="详细说明"
-            name="comments"
+            label='详细说明'
+            name='comments'
             rules={[{ required: true, message: '请输入详细说明' }]}
           >
-            <TextArea rows={4} placeholder="请详细说明拒绝原因" />
+            <TextArea rows={4} placeholder='请详细说明拒绝原因' />
           </Form.Item>
 
-          <Form.Item name="isElectronicSignature" valuePropName="checked" initialValue={true}>
+          <Form.Item name='isElectronicSignature' valuePropName='checked' initialValue>
             <Checkbox>使用电子签名</Checkbox>
           </Form.Item>
 
           <Form.Item>
             <Space>
-              <Button onClick={() => setRejectionModalVisible(false)}>
-                取消
-              </Button>
-              <Button danger type="primary" htmlType="submit" loading={loading}>
+              <Button onClick={() => setRejectionModalVisible(false)}>取消</Button>
+              <Button danger type='primary' htmlType='submit' loading={loading}>
                 确认拒绝
               </Button>
             </Space>
@@ -951,50 +976,45 @@ const WaiverApprovalInterface: React.FC<WaiverApprovalInterfaceProps> = ({
 
       {/* 上报模态框 */}
       <Modal
-        title="上报豁免申请"
+        title='上报豁免申请'
         open={escalationModalVisible}
         onCancel={() => setEscalationModalVisible(false)}
         footer={null}
         width={600}
       >
-        <Form form={escalationForm} layout="vertical" onFinish={handleEscalate}>
+        <Form form={escalationForm} layout='vertical' onFinish={handleEscalate}>
           <Form.Item
-            label="上报对象"
-            name="escalatedToUserId"
+            label='上报对象'
+            name='escalatedToUserId'
             rules={[{ required: true, message: '请选择上报对象' }]}
           >
-            <Select placeholder="请选择上报对象">
-              <Option value="partner_001">张合伙人</Option>
-              <Option value="partner_002">李合伙人</Option>
-              <Option value="committee_001">管理委员会</Option>
+            <Select placeholder='请选择上报对象'>
+              <Option value='partner_001'>张合伙人</Option>
+              <Option value='partner_002'>李合伙人</Option>
+              <Option value='committee_001'>管理委员会</Option>
             </Select>
           </Form.Item>
 
           <Form.Item
-            label="上报原因"
-            name="escalationReason"
+            label='上报原因'
+            name='escalationReason'
             rules={[{ required: true, message: '请输入上报原因' }]}
           >
-            <TextArea rows={4} placeholder="请说明上报原因" />
+            <TextArea rows={4} placeholder='请说明上报原因' />
           </Form.Item>
 
-          <Form.Item
-            label="补充说明"
-            name="comments"
-          >
-            <TextArea rows={3} placeholder="其他需要说明的情况" />
+          <Form.Item label='补充说明' name='comments'>
+            <TextArea rows={3} placeholder='其他需要说明的情况' />
           </Form.Item>
 
-          <Form.Item name="isElectronicSignature" valuePropName="checked" initialValue={true}>
+          <Form.Item name='isElectronicSignature' valuePropName='checked' initialValue>
             <Checkbox>使用电子签名</Checkbox>
           </Form.Item>
 
           <Form.Item>
             <Space>
-              <Button onClick={() => setEscalationModalVisible(false)}>
-                取消
-              </Button>
-              <Button type="primary" htmlType="submit" loading={loading}>
+              <Button onClick={() => setEscalationModalVisible(false)}>取消</Button>
+              <Button type='primary' htmlType='submit' loading={loading}>
                 确认上报
               </Button>
             </Space>
@@ -1005,7 +1025,7 @@ const WaiverApprovalInterface: React.FC<WaiverApprovalInterfaceProps> = ({
       {/* 申请详情抽屉 */}
       {renderApplicationDetail()}
     </div>
-  );
-};
+  )
+}
 
-export default WaiverApprovalInterface;
+export default WaiverApprovalInterface

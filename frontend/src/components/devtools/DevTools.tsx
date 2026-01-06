@@ -23,7 +23,7 @@ interface DevToolsProps {
 const DevTools: React.FC<DevToolsProps> = ({
   showReactQuery = true,
   showStoreInspector = true,
-  position = 'bottom-left'
+  position = 'bottom-left',
 }) => {
   const { user, preferences } = useAppStore()
 
@@ -38,11 +38,9 @@ const DevTools: React.FC<DevToolsProps> = ({
   return (
     <>
       {/* React Query 开发工具 */}
-      {showReactQuery && <ReactQueryDevtools
-        initialIsOpen={false}
-        position={position}
-        buttonPosition={position}
-      />}
+      {showReactQuery && (
+        <ReactQueryDevtools initialIsOpen={false} position={position} buttonPosition={position} />
+      )}
 
       {/* 自定义状态检查器 - 可以扩展 */}
       {showStoreInspector && isAdminDev && (
@@ -63,9 +61,7 @@ const DevTools: React.FC<DevToolsProps> = ({
             maxWidth: '300px',
           }}
         >
-          <div style={{ marginBottom: '4px', fontWeight: 'bold' }}>
-            🛠️ Dev Tools
-          </div>
+          <div style={{ marginBottom: '4px', fontWeight: 'bold' }}>🛠️ Dev Tools</div>
           <div>Theme: {preferences.theme}</div>
           <div>User: {user?.username || 'Not logged in'}</div>
           <div>Roles: {user?.roles.join(', ') || 'None'}</div>

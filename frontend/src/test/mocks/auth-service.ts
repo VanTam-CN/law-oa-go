@@ -20,7 +20,7 @@ class MockAuthService {
     token: null,
     isAuthenticated: false,
     isLoading: false,
-    error: null
+    error: null,
   }
 
   // 模拟登录
@@ -29,7 +29,7 @@ class MockAuthService {
     this.state.error = null
 
     // 模拟网络延迟
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await new Promise((resolve) => setTimeout(resolve, 1000))
 
     try {
       if (credentials.username === 'admin' && credentials.password === 'admin123') {
@@ -70,22 +70,17 @@ class MockAuthService {
   }
 
   // 模拟注册
-  async register(userData: {
-    username: string
-    email: string
-    password: string
-    name: string
-  }) {
+  async register(userData: { username: string; email: string; password: string; name: string }) {
     this.state.isLoading = true
     this.state.error = null
 
-    await new Promise(resolve => setTimeout(resolve, 800))
+    await new Promise((resolve) => setTimeout(resolve, 800))
 
     try {
       const user = UserFactory.create({
         username: userData.username,
         email: userData.email,
-        name: userData.name
+        name: userData.name,
       })
 
       const token = 'mock-register-jwt-token'
@@ -121,7 +116,7 @@ class MockAuthService {
   async getCurrentUser() {
     this.state.isLoading = true
 
-    await new Promise(resolve => setTimeout(resolve, 300))
+    await new Promise((resolve) => setTimeout(resolve, 300))
 
     const token = localStorage.getItem('auth_token')
     const userData = localStorage.getItem('user_info')
@@ -150,7 +145,7 @@ class MockAuthService {
     this.state.isLoading = true
     this.state.error = null
 
-    await new Promise(resolve => setTimeout(resolve, 500))
+    await new Promise((resolve) => setTimeout(resolve, 500))
 
     try {
       if (this.state.user) {
@@ -176,7 +171,7 @@ class MockAuthService {
     this.state.isLoading = true
     this.state.error = null
 
-    await new Promise(resolve => setTimeout(resolve, 600))
+    await new Promise((resolve) => setTimeout(resolve, 600))
 
     try {
       if (passwordData.newPassword !== passwordData.confirmPassword) {
@@ -198,11 +193,19 @@ class MockAuthService {
 
   // 权限检查
   hasPermission(permission: string): boolean {
-    if (!this.state.user) return false
+    if (!this.state.user) {
+      return false
+    }
 
-    if (this.state.user.role === 'admin') return true
-    if (this.state.user.permissions && this.state.user.permissions.includes('*')) return true
-    if (this.state.user.permissions && this.state.user.permissions.includes(permission)) return true
+    if (this.state.user.role === 'admin') {
+      return true
+    }
+    if (this.state.user.permissions && this.state.user.permissions.includes('*')) {
+      return true
+    }
+    if (this.state.user.permissions && this.state.user.permissions.includes(permission)) {
+      return true
+    }
 
     return false
   }
@@ -224,7 +227,7 @@ class MockAuthService {
       token: null,
       isAuthenticated: false,
       isLoading: false,
-      error: null
+      error: null,
     }
     localStorage.removeItem('auth_token')
     localStorage.removeItem('user_info')
@@ -246,36 +249,36 @@ export const authStates = {
     token: null,
     isAuthenticated: false,
     isLoading: false,
-    error: null
+    error: null,
   },
   authenticated: {
     user: UserFactory.create(),
     token: 'mock-jwt-token',
     isAuthenticated: true,
     isLoading: false,
-    error: null
+    error: null,
   },
   admin: {
     user: UserFactory.createAdmin(),
     token: 'mock-admin-jwt-token',
     isAuthenticated: true,
     isLoading: false,
-    error: null
+    error: null,
   },
   loading: {
     user: null,
     token: null,
     isAuthenticated: false,
     isLoading: true,
-    error: null
+    error: null,
   },
   error: {
     user: null,
     token: null,
     isAuthenticated: false,
     isLoading: false,
-    error: new Error('认证失败')
-  }
+    error: new Error('认证失败'),
+  },
 }
 
 // 测试辅助函数
@@ -290,7 +293,7 @@ export const setupAuthenticatedUser = (user?: any): void => {
     token: 'mock-jwt-token',
     isAuthenticated: true,
     isLoading: false,
-    error: null
+    error: null,
   })
 }
 
@@ -301,7 +304,7 @@ export const setupAdminUser = (): void => {
     token: 'mock-admin-jwt-token',
     isAuthenticated: true,
     isLoading: false,
-    error: null
+    error: null,
   })
 }
 

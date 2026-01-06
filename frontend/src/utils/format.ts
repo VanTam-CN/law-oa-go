@@ -9,28 +9,28 @@
  * @returns 格式化后的日期字符串
  */
 export function formatDate(date: Date | string | number, format: string = 'YYYY-MM-DD'): string {
-  const d = new Date(date);
-  
+  const d = new Date(date)
+
   if (isNaN(d.getTime())) {
-    return '';
+    return ''
   }
-  
-  const year = d.getFullYear();
-  const month = d.getMonth() + 1;
-  const day = d.getDate();
-  const hours = d.getHours();
-  const minutes = d.getMinutes();
-  const seconds = d.getSeconds();
-  
-  const pad = (n: number): string => n < 10 ? `0${n}` : `${n}`;
-  
+
+  const year = d.getFullYear()
+  const month = d.getMonth() + 1
+  const day = d.getDate()
+  const hours = d.getHours()
+  const minutes = d.getMinutes()
+  const seconds = d.getSeconds()
+
+  const pad = (n: number): string => (n < 10 ? `0${n}` : `${n}`)
+
   return format
     .replace('YYYY', `${year}`)
     .replace('MM', pad(month))
     .replace('DD', pad(day))
     .replace('HH', pad(hours))
     .replace('mm', pad(minutes))
-    .replace('ss', pad(seconds));
+    .replace('ss', pad(seconds))
 }
 
 /**
@@ -45,29 +45,29 @@ export function formatAmount(
   amount: number | string,
   decimals: number = 2,
   decimalSeparator: string = '.',
-  thousandSeparator: string = ','
+  thousandSeparator: string = ',',
 ): string {
   if (amount === null || amount === undefined) {
-    return '';
+    return ''
   }
-  
-  const num = Number(amount);
-  
+
+  const num = Number(amount)
+
   if (isNaN(num)) {
-    return '';
+    return ''
   }
-  
-  const fixed = num.toFixed(decimals);
-  const parts = fixed.split('.');
-  const integerPart = parts[0];
-  const decimalPart = parts.length > 1 ? parts[1] : '';
-  
+
+  const fixed = num.toFixed(decimals)
+  const parts = fixed.split('.')
+  const integerPart = parts[0]
+  const decimalPart = parts.length > 1 ? parts[1] : ''
+
   // 添加千位分隔符
-  const formattedIntegerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, thousandSeparator);
-  
+  const formattedIntegerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, thousandSeparator)
+
   return decimalPart
     ? `${formattedIntegerPart}${decimalSeparator}${decimalPart}`
-    : formattedIntegerPart;
+    : formattedIntegerPart
 }
 
 /**
@@ -77,10 +77,10 @@ export function formatAmount(
  */
 export function formatPhone(phone: string): string {
   if (!phone || phone.length !== 11) {
-    return phone;
+    return phone
   }
-  
-  return `${phone.substring(0, 3)} **** ${phone.substring(7)}`;
+
+  return `${phone.substring(0, 3)} **** ${phone.substring(7)}`
 }
 
 /**
@@ -89,11 +89,13 @@ export function formatPhone(phone: string): string {
  * @returns 格式化后的文件大小，如：1.5 MB
  */
 export function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 Bytes';
-  
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  if (bytes === 0) {
+    return '0 Bytes'
+  }
+
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`
 }

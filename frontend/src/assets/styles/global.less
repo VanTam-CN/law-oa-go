@@ -1,22 +1,38 @@
 /* Global styles for Law Firm OA System */
 
+/*
+ * 全局样式 - 律所OA系统
+ *
+ * 重要说明：
+ * - 所有颜色变量已迁移至 design-tokens.css
+ * - 此处保留的变量是为了向后兼容，引用 design-tokens.css 中的值
+ * - 新代码请直接使用 design-tokens.css 中的变量命名规范
+ *
+ * 例如：使用 var(--color-primary) 而不是 var(--primary-color)
+ */
 :root {
-  /* 律所专业配色方案 */
-  --primary-color: #1c4e80;        /* 深蓝色 - 专业、信任 */
-  --primary-light: #2d5aa0;        /* 浅蓝色 */
-  --secondary-color: #8b5a3c;      /* 棕色 - 稳重、权威 */
-  --accent-color: #c5a572;         /* 金色 - 高端、品质 */
-  --success-color: #52c41a;        /* 成功绿 */
-  --warning-color: #faad14;        /* 警告橙 */
-  --error-color: #ff4d4f;          /* 错误红 */
-  --text-primary: #262626;         /* 主要文字 */
-  --text-secondary: #595959;       /* 次要文字 */
-  --text-disabled: #bfbfbf;        /* 禁用文字 */
-  --background-color: #f8f9fa;     /* 背景色 */
-  --surface-color: #ffffff;        /* 表面色 */
-  --border-color: #e8e8e8;         /* 边框色 */
-  --shadow-light: 0 2px 8px rgba(28, 78, 128, 0.08);
-  --shadow-medium: 0 4px 16px rgba(28, 78, 128, 0.12);
+  /* 颜色变量 - 引用 design-tokens.css */
+  --primary-color: var(--color-primary); /* 主深蓝 - 专业、信任 */
+  --primary-light: var(--color-primary-hover); /* 浅蓝色 - 悬停 */
+  --secondary-color: var(--color-primary-700); /* 深蓝色 - 稳重、权威 */
+  --accent-color: var(--color-accent); /* 金色 - 高端、品质 */
+  --success-color: var(--color-success); /* 成功绿 */
+  --warning-color: var(--color-warning); /* 警告橙 */
+  --error-color: var(--color-error); /* 错误红 */
+
+  /* 文字颜色 - 引用 design-tokens.css */
+  --text-primary: var(--color-text-primary); /* 主要文字 */
+  --text-secondary: var(--color-text-secondary); /* 次要文字 */
+  --text-disabled: var(--color-text-disabled); /* 禁用文字 */
+
+  /* 背景和表面颜色 - 引用 design-tokens.css */
+  --background-color: var(--color-bg-page); /* 背景色 */
+  --surface-color: var(--color-bg-card); /* 表面色 */
+  --border-color: var(--color-border-base); /* 边框色 */
+
+  /* 阴影 - 引用 design-tokens.css */
+  --shadow-light: var(--shadow-sm);
+  --shadow-medium: var(--shadow-md);
 }
 
 * {
@@ -26,7 +42,8 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
     'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif, 'Apple Color Emoji',
     'Segoe UI Emoji', 'Segoe UI Symbol';
   font-size: 14px;
@@ -58,8 +75,9 @@ body {
 .ant-btn-primary {
   background-color: var(--primary-color);
   border-color: var(--primary-color);
-  
-  &:hover, &:focus {
+
+  &:hover,
+  &:focus {
     background-color: var(--primary-light);
     border-color: var(--primary-light);
   }
@@ -74,28 +92,28 @@ body {
 .ant-menu-inline {
   background: transparent;
   border-right: none;
-  
+
   .ant-menu-item {
     color: rgba(255, 255, 255, 0.85);
     margin: 4px 8px;
     border-radius: 6px;
-    
+
     &:hover {
       background-color: rgba(255, 255, 255, 0.1);
       color: #fff;
     }
-    
+
     &.ant-menu-item-selected {
       background-color: var(--accent-color);
       color: #fff;
     }
   }
-  
+
   .ant-menu-submenu-title {
     color: rgba(255, 255, 255, 0.85);
     margin: 4px 8px;
     border-radius: 6px;
-    
+
     &:hover {
       background-color: rgba(255, 255, 255, 0.1);
       color: #fff;
@@ -160,13 +178,13 @@ body {
     background: #f6ffed;
     border-color: #b7eb8f;
   }
-  
+
   &.inactive {
     color: var(--warning-color);
     background: #fffbe6;
     border-color: #ffe58f;
   }
-  
+
   &.closed {
     color: var(--error-color);
     background: #fff2f0;
@@ -195,11 +213,11 @@ body {
   .ant-layout-content {
     padding: 16px;
   }
-  
+
   .form-container {
     padding: 16px;
   }
-  
+
   .table-container {
     padding: 16px;
   }

@@ -242,6 +242,46 @@ type LegalExportResponse struct {
 	ExportTime  time.Time `json:"export_time"`
 }
 
+// LegalStatuteImportItem 法条导入项
+type LegalStatuteImportItem struct {
+	StatuteNumber       string   `json:"statute_number"`
+	Title               string   `json:"title"`
+	Content             string   `json:"content"`
+	CategoryCode        string   `json:"category_code"`
+	LawName             string   `json:"law_name"`
+	Chapter             string   `json:"chapter,omitempty"`
+	Section             string   `json:"section,omitempty"`
+	Part                string   `json:"part,omitempty"`
+	EffectiveDate       *string  `json:"effective_date,omitempty"`
+	ExpiryDate          *string  `json:"expiry_date,omitempty"`
+	PublishingAuthority string   `json:"publishing_authority,omitempty"`
+	Status              string   `json:"status,omitempty"`
+	Tags                []string `json:"tags,omitempty"`
+	Keywords            []string `json:"keywords,omitempty"`
+}
+
+// LegalStatuteImportRequest 法条导入请求
+type LegalStatuteImportRequest struct {
+	Statutes []LegalStatuteImportItem `json:"statutes" binding:"required"`
+}
+
+// LegalStatuteImportResponse 法条导入响应
+type LegalStatuteImportResponse struct {
+	TotalCount       int      `json:"total_count"`
+	SuccessCount     int      `json:"success_count"`
+	FailureCount     int      `json:"failure_count"`
+	SuccessNumbers   []string `json:"success_numbers"`
+	FailureNumbers   []string `json:"failure_numbers"`
+	Errors           []ImportError `json:"errors,omitempty"`
+	ProcessingTimeMs int64    `json:"processing_time_ms"`
+}
+
+// ImportError 导入错误详情
+type ImportError struct {
+	StatuteNumber string `json:"statute_number"`
+	Message       string `json:"message"`
+}
+
 // 验证方法
 func (req *LegalSearchRequest) Validate() error {
 	if req.Page <= 0 {

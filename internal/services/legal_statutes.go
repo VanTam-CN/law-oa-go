@@ -54,6 +54,9 @@ type LegalStatuteService interface {
 	// 管理功能
 	SyncToElasticsearch(ctx context.Context) error
 	RebuildSearchIndex(ctx context.Context) error
+
+	// 批量导入
+	BulkImportStatutes(ctx context.Context, req *models.LegalStatuteImportRequest, userID int) (*models.LegalStatuteImportResponse, error)
 }
 
 // legalStatuteService 法条服务实现
@@ -771,6 +774,189 @@ func (s *legalStatuteService) RebuildSearchIndex(ctx context.Context) error {
 	// TODO: 实现重建索引功能
 	log.Println("Elasticsearch重建索引功能待实现")
 	return nil
+}
+
+// BulkImportStatutes 批量导入法条
+func (s *legalStatuteService) BulkImportStatutes(ctx context.Context, req *models.LegalStatuteImportRequest, userID int) (*models.LegalStatuteImportResponse, error) {
+	start := time.Now()
+
+	response := &models.LegalStatuteImportResponse{
+		TotalCount:     len(req.Statutes),
+		SuccessNumbers: make([]string, 0),
+		FailureNumbers: make([]string, 0),
+		Errors:         make([]models.ImportError, 0),
+	}
+
+	// 预加载分类映射（category code -> category id）
+	categoryMap, err := s.buildCategoryMap(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("获取分类信息失败: %v", err)
+	}
+
+	for _, item := range req.Statutes {
+		// 验证必填字段
+		if item.StatuteNumber == "" {
+			response.FailureCount++
+			response.FailureNumbers = append(response.FailureNumbers, item.StatuteNumber)
+			response.Errors = append(response.Errors, models.ImportError{
+				StatuteNumber: item.StatuteNumber,
+				Message:       "法条编号不能为空",
+			})
+			continue
+		}
+		if item.Title == "" {
+			response.FailureCount++
+			response.FailureNumbers = append(response.FailureNumbers, item.StatuteNumber)
+			response.Errors = append(response.Errors, models.ImportError{
+				StatuteNumber: item.StatuteNumber,
+				Message:       "法条标题不能为空",
+			})
+			continue
+		}
+		if item.Content == "" {
+			response.FailureCount++
+			response.FailureNumbers = append(response.FailureNumbers, item.StatuteNumber)
+			response.Errors = append(response.Errors, models.ImportError{
+				StatuteNumber: item.StatuteNumber,
+				Message:       "法条内容不能为空",
+			})
+			continue
+		}
+		if item.LawName == "" {
+			response.FailureCount++
+			response.FailureNumbers = append(response.FailureNumbers, item.StatuteNumber)
+			response.Errors = append(response.Errors, models.ImportError{
+				StatuteNumber: item.StatuteNumber,
+				Message:       "法律名称不能为空",
+			})
+			continue
+		}
+
+		// 获取分类ID
+		categoryID := 1 // 默认分类
+		if item.CategoryCode != "" {
+			if cid, ok := categoryMap[item.CategoryCode]; ok {
+				categoryID = cid
+			} else {
+				response.FailureCount++
+				response.FailureNumbers = append(response.FailureNumbers, item.StatuteNumber)
+				response.Errors = append(response.Errors, models.ImportError{
+					StatuteNumber: item.StatuteNumber,
+					Message:       fmt.Sprintf("分类代码 %s 不存在", item.CategoryCode),
+				})
+				continue
+			}
+		}
+
+		// 检查法条是否已存在
+		if existing, _ := s.statuteRepo.GetByStatuteNumber(ctx, item.StatuteNumber); existing != nil {
+			// 跳过已存在的法条（或者可以选择更新）
+			response.FailureCount++
+			response.FailureNumbers = append(response.FailureNumbers, item.StatuteNumber)
+			response.Errors = append(response.Errors, models.ImportError{
+				StatuteNumber: item.StatuteNumber,
+				Message:       "法条编号已存在",
+			})
+			continue
+		}
+
+		// 解析日期
+		var effectiveDate, expiryDate *time.Time
+		if item.EffectiveDate != nil && *item.EffectiveDate != "" {
+			if ed, err := time.Parse("2006-01-02", *item.EffectiveDate); err == nil {
+				effectiveDate = &ed
+			}
+		}
+		if item.ExpiryDate != nil && *item.ExpiryDate != "" {
+			if ed, err := time.Parse("2006-01-02", *item.ExpiryDate); err == nil {
+				expiryDate = &ed
+			}
+		}
+
+		// 设置默认状态
+		status := item.Status
+		if status == "" {
+			status = "active"
+		}
+
+		// 创建法条对象
+		statute := &models.LegalStatute{
+			StatuteNumber:       item.StatuteNumber,
+			Title:               item.Title,
+			Content:             item.Content,
+			CategoryID:          categoryID,
+			LawName:             item.LawName,
+			Chapter:             item.Chapter,
+			Section:             item.Section,
+			Part:                item.Part,
+			EffectiveDate:       effectiveDate,
+			ExpiryDate:          expiryDate,
+			PublishingAuthority: item.PublishingAuthority,
+			Status:              status,
+			HierarchyLevel:      1,
+			Tags:                item.Tags,
+			Keywords:            item.Keywords,
+		}
+
+		// 保存到数据库
+		if err := s.statuteRepo.Create(ctx, statute); err != nil {
+			response.FailureCount++
+			response.FailureNumbers = append(response.FailureNumbers, item.StatuteNumber)
+			response.Errors = append(response.Errors, models.ImportError{
+				StatuteNumber: item.StatuteNumber,
+				Message:       fmt.Sprintf("保存失败: %v", err),
+			})
+			log.Printf("导入法条失败 [%s]: %v", item.StatuteNumber, err)
+			continue
+		}
+
+		// 成功
+		response.SuccessCount++
+		response.SuccessNumbers = append(response.SuccessNumbers, item.StatuteNumber)
+
+		// 异步同步到Elasticsearch
+		go func(stat *models.LegalStatute) {
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+
+			if s.esRepo != nil {
+				esDoc := s.convertToESDocument(stat)
+				if err := s.esRepo.IndexDocument(ctx, esDoc); err != nil {
+					log.Printf("同步法条到Elasticsearch失败 [%s]: %v", stat.StatuteNumber, err)
+				}
+			}
+		}(statute)
+
+		// 处理标签
+		s.processTags(ctx, item.Tags)
+	}
+
+	response.ProcessingTimeMs = time.Since(start).Milliseconds()
+
+	return response, nil
+}
+
+// buildCategoryMap 构建分类代码到ID的映射
+func (s *legalStatuteService) buildCategoryMap(ctx context.Context) (map[string]int, error) {
+	categories, err := s.categoryRepo.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	categoryMap := make(map[string]int)
+	for _, category := range categories {
+		categoryMap[category.Code] = category.ID
+	}
+
+	// 确保至少有一个默认分类
+	if _, exists := categoryMap["CIVIL_LAW"]; !exists {
+		categoryMap["CIVIL_LAW"] = 1
+	}
+	if _, exists := categoryMap["OTHER"]; !exists {
+		categoryMap["OTHER"] = 1
+	}
+
+	return categoryMap, nil
 }
 
 // 辅助方法

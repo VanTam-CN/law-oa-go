@@ -63,7 +63,7 @@ jest.mock('antd/es/alert', () => ({
   Alert: ({ message, description, type }: any) => (
     <div data-testid="alert" data-type={type}>
       <div>{message}</div>
-      {description && <div>{description}</div>
+      {description && <div>{description}</div>}
     </div>
   )
 }));

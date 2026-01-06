@@ -1,30 +1,30 @@
-import React from 'react';
-import { Card, Button, Space, Typography, Divider, Tabs, Alert } from 'antd';
-import { PlusOutlined, FileTextOutlined, AuditOutlined, MonitorOutlined } from '@ant-design/icons';
+import React from 'react'
+import { Card, Button, Space, Typography, Divider, Tabs, Alert } from 'antd'
+import { PlusOutlined, FileTextOutlined, AuditOutlined, MonitorOutlined } from '@ant-design/icons'
 // import WaiverApplicationForm from '@/components/waiver/WaiverApplicationForm';
 // import WaiverApprovalInterface from '@/components/waiver/WaiverApprovalInterface';
 // import WaiverMonitoringDashboard from '@/components/waiver/WaiverMonitoringDashboard';
-import type { WaiverApplication } from '@/types/waiverApproval';
+import type { WaiverApplication } from '@/types/waiverApproval'
 
-const { Title, Text } = Typography;
-const { TabPane } = Tabs;
+const { Title, Text } = Typography
+const { TabPane } = Tabs
 
 const WaiverTestPage: React.FC = () => {
-  const [applicationModalVisible, setApplicationModalVisible] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState('form');
+  const [applicationModalVisible, setApplicationModalVisible] = React.useState(false)
+  const [activeTab, setActiveTab] = React.useState('form')
 
   const handleApplicationSuccess = (application: WaiverApplication) => {
-    console.log('豁免申请创建成功:', application);
-  };
+    console.log('豁免申请创建成功:', application)
+  }
 
   return (
     <div style={{ padding: 24 }}>
       <Title level={2}>豁免审批系统测试页面</Title>
 
       <Alert
-        message="组件测试页面"
-        description="这个页面用于测试所有豁免审批相关组件的功能和交互。"
-        type="info"
+        message='组件测试页面'
+        description='这个页面用于测试所有豁免审批相关组件的功能和交互。'
+        type='info'
         showIcon
         style={{ marginBottom: 24 }}
       />
@@ -37,15 +37,15 @@ const WaiverTestPage: React.FC = () => {
               申请表单测试
             </span>
           }
-          key="form"
+          key='form'
         >
           <Card>
             <Title level={4}>豁免申请表单组件测试</Title>
             <Text>点击下方按钮测试豁免申请表单功能：</Text>
             <div style={{ marginTop: 16 }}>
               <Button
-                type="primary"
-                size="large"
+                type='primary'
+                size='large'
                 icon={<PlusOutlined />}
                 onClick={() => setApplicationModalVisible(true)}
               >
@@ -86,7 +86,7 @@ const WaiverTestPage: React.FC = () => {
               审批界面测试
             </span>
           }
-          key="approval"
+          key='approval'
         >
           <Card>
             <Title level={4}>豁免审批界面组件测试</Title>
@@ -97,9 +97,9 @@ const WaiverTestPage: React.FC = () => {
             {/* 组件暂时禁用 */}
             {/* <WaiverApprovalInterface userRole="LAWYER" userId="test_user_001" /> */}
             <Alert
-              message="组件开发中"
-              description="豁免审批界面组件正在完善中，敬请期待！"
-              type="info"
+              message='组件开发中'
+              description='豁免审批界面组件正在完善中，敬请期待！'
+              type='info'
               showIcon
             />
           </Card>
@@ -112,7 +112,7 @@ const WaiverTestPage: React.FC = () => {
               监控看板测试
             </span>
           }
-          key="monitoring"
+          key='monitoring'
         >
           <Card>
             <Title level={4}>监控管理看板组件测试</Title>
@@ -123,16 +123,16 @@ const WaiverTestPage: React.FC = () => {
             {/* 组件暂时禁用 */}
             {/* <WaiverMonitoringDashboard userRole="LAWYER" userId="test_user_001" /> */}
             <Alert
-              message="组件开发中"
-              description="监控管理看板组件正在完善中，敬请期待！"
-              type="info"
+              message='组件开发中'
+              description='监控管理看板组件正在完善中，敬请期待！'
+              type='info'
               showIcon
             />
           </Card>
         </TabPane>
       </Tabs>
     </div>
-  );
-};
+  )
+}
 
-export default WaiverTestPage;
+export default WaiverTestPage

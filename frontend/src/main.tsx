@@ -20,12 +20,17 @@ import { useAppStore } from './stores/useAppStore'
 import { initializeApp } from './stores/useAppStore'
 
 // 导入路由配置
-import { router } from './router'
+import { createBrowserRouter } from 'react-router'
+
+// 导入页面组件
+import LoginPage from './pages/auth/Login'
+import DashboardPage from './pages/dashboard/Dashboard'
+import MainLayout from './layouts/MainLayout'
 
 // 导入样式
 import './index.css'
 import './assets/styles/design-tokens.css'
-import './assets/styles/modal-fix.css'  // Modal层级修复样式 - 必须在设计系统token之后加载
+import './assets/styles/modal-fix.css' // Modal层级修复样式 - 必须在设计系统token之后加载
 
 // 导入主应用组件
 import App from './App'
@@ -43,6 +48,28 @@ import './utils/performance'
 // 配置dayjs
 dayjs.locale('zh-cn')
 
+// 创建路由配置
+const router = createBrowserRouter([
+  {
+    path: '/login',
+    element: <LoginPage />,
+  },
+  {
+    path: '/',
+    element: <MainLayout />,
+    children: [
+      {
+        index: true,
+        element: <DashboardPage />,
+      },
+    ],
+  },
+  {
+    path: '*',
+    element: <LoginPage />,
+  },
+])
+
 // 开发环境配置React Query
 if (import.meta.env.DEV) {
   // 全局设置React Query开发模式
@@ -51,10 +78,10 @@ if (import.meta.env.DEV) {
 
 // Suspense回退组件
 const SuspenseFallback: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="flex items-center justify-center min-h-screen">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-      <p className="text-gray-600">正在加载...</p>
+  <div className='flex items-center justify-center min-h-screen'>
+    <div className='text-center'>
+      <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4' />
+      <p className='text-gray-600'>正在加载...</p>
     </div>
   </div>
 )
@@ -65,7 +92,10 @@ const RootComponent: React.FC = () => {
   // 根据主题切换样式
   React.useEffect(() => {
     const root = document.documentElement
-    if (theme === 'dark' || (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    if (
+      theme === 'dark' ||
+      (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+    ) {
       root.classList.add('dark')
       root.classList.remove('light')
     } else {
@@ -98,7 +128,8 @@ const RootComponent: React.FC = () => {
                 colorPrimary: '#1890ff',
                 borderRadius: 6,
                 fontSize: 14,
-                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                fontFamily:
+                  '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
               },
               components: {
                 Layout: {

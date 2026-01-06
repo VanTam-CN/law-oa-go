@@ -45,6 +45,7 @@ type ApprovalConflictIntegrationService interface {
 type approvalConflictIntegrationService struct {
 	approvalService    ApprovalServiceInterface
 	conflictService    ConflictDetectionServiceInterface
+	caseService        *CaseService
 	integrationRepo    repositories.IntegrationRepositoryInterface
 }
 
@@ -52,11 +53,13 @@ type approvalConflictIntegrationService struct {
 func NewApprovalConflictIntegrationService(
 	approvalService ApprovalServiceInterface,
 	conflictService ConflictDetectionServiceInterface,
+	caseService *CaseService,
 	integrationRepo repositories.IntegrationRepositoryInterface,
 ) ApprovalConflictIntegrationService {
 	return &approvalConflictIntegrationService{
 		approvalService: approvalService,
 		conflictService: conflictService,
+		caseService:     caseService,
 		integrationRepo: integrationRepo,
 	}
 }
@@ -287,9 +290,26 @@ func (s *approvalConflictIntegrationService) TriggerConflictCheckForApproval(ctx
 func (s *approvalConflictIntegrationService) AutoCreateCaseFromApproval(ctx context.Context, approvalID string, caseData map[string]interface{}) (*CaseCreationResult, error) {
 	log.Printf("从审批申请自动创建案件，审批ID：%s", approvalID)
 
-	// 这里应该调用案件创建服务，由于案件创建服务还没有完全实现，先返回模拟结果
-	caseID := fmt.Sprintf("CASE_%s_%d", approvalID, time.Now().Unix())
-	caseNumber := fmt.Sprintf("CA-%d", time.Now().Unix())
+	// 将map转换为CreateCaseRequest
+	jsonData, err := json.Marshal(caseData)
+	if err != nil {
+		return nil, fmt.Errorf("序列化案件数据失败: %w", err)
+	}
+
+	var createCaseReq CreateCaseRequest
+	if err := json.Unmarshal(jsonData, &createCaseReq); err != nil {
+		return nil, fmt.Errorf("解析案件数据失败: %w", err)
+	}
+
+	// 调用CaseService创建案件
+	createdCase, err := s.caseService.CreateCase(ctx, &createCaseReq)
+	if err != nil {
+		log.Printf("创建案件失败: %v", err)
+		return nil, fmt.Errorf("创建案件失败: %w", err)
+	}
+
+	caseID := fmt.Sprintf("%d", createdCase.ID)
+	caseNumber := fmt.Sprintf("CASE-%d", createdCase.ID) // 假设CaseResponse没有CaseNumber，使用ID生成
 
 	// 创建案件创建关联信息
 	caseAssociation := &models.CaseCreationAssociation{
@@ -305,7 +325,7 @@ func (s *approvalConflictIntegrationService) AutoCreateCaseFromApproval(ctx cont
 	// 更新审批申请的案件关联信息
 	if err := s.integrationRepo.UpdateApprovalCaseAssociation(ctx, approvalID, caseAssociation); err != nil {
 		log.Printf("更新案件关联信息失败：%v", err)
-		return nil, fmt.Errorf("更新案件关联信息失败：%w", err)
+		// 不影响案件创建结果，只记录错误
 	}
 
 	result := &CaseCreationResult{

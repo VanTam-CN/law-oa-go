@@ -34,11 +34,9 @@ const DefaultLoading: React.FC<{ message?: string; size?: 'small' | 'default' | 
   message,
   size = 'default',
 }) => (
-  <div className="flex flex-col items-center justify-center min-h-screen">
+  <div className='flex flex-col items-center justify-center min-h-screen'>
     <Spin size={size} />
-    {message && (
-      <p className="mt-4 text-gray-600">{message}</p>
-    )}
+    {message && <p className='mt-4 text-gray-600'>{message}</p>}
   </div>
 )
 
@@ -48,13 +46,11 @@ const ContentLoading: React.FC<LoadingFallbackProps> = ({
   description,
   size = 'large',
 }) => (
-  <div className="flex flex-col items-center justify-center min-h-screen p-8">
-    <div className="text-center mb-6">
-      <LoadingOutlined className="text-6xl text-blue-500 mb-4" />
-      <h3 className="text-xl font-semibold text-gray-800 mb-2">{message}</h3>
-      {description && (
-        <p className="text-gray-600">{description}</p>
-      )}
+  <div className='flex flex-col items-center justify-center min-h-screen p-8'>
+    <div className='text-center mb-6'>
+      <LoadingOutlined className='text-6xl text-blue-500 mb-4' />
+      <h3 className='text-xl font-semibold text-gray-800 mb-2'>{message}</h3>
+      {description && <p className='text-gray-600'>{description}</p>}
     </div>
     <Spin size={size} />
   </div>
@@ -67,13 +63,11 @@ const ProgressLoading: React.FC<{
   size?: 'small' | 'default' | 'large'
   status?: 'normal' | 'success' | 'active' | 'exception'
 }> = ({ message, progress = 0, size = 'default', status = 'active' }) => (
-  <div className="flex flex-col items-center justify-center min-h-screen p-8">
-    <div className="w-full max-w-md">
-      <div className="text-center mb-6">
-        <LoadingOutlined className="text-4xl text-blue-500 mb-4" />
-        <h3 className="text-xl font-semibold text-gray-800 mb-2">
-          {message || '正在处理中...'}
-        </h3>
+  <div className='flex flex-col items-center justify-center min-h-screen p-8'>
+    <div className='w-full max-w-md'>
+      <div className='text-center mb-6'>
+        <LoadingOutlined className='text-4xl text-blue-500 mb-4' />
+        <h3 className='text-xl font-semibold text-gray-800 mb-2'>{message || '正在处理中...'}</h3>
       </div>
       <Progress
         percent={progress}
@@ -84,8 +78,8 @@ const ProgressLoading: React.FC<{
           '100%': '#52c41a',
         }}
       />
-      <div className="text-center mt-4">
-        <span className="text-sm text-gray-600">{progress}%</span>
+      <div className='text-center mt-4'>
+        <span className='text-sm text-gray-600'>{progress}%</span>
       </div>
     </div>
   </div>
@@ -107,15 +101,15 @@ const SkeletonLoading: React.FC<{
   active = true,
   round = true,
 }) => (
-  <div className="p-8">
-    <div className="bg-white rounded-lg p-6 shadow-sm">
+  <div className='p-8'>
+    <div className='bg-white rounded-lg p-6 shadow-sm'>
       <Spin spinning={loading}>
-        <div className="space-y-4">
-          <div className="h-4 bg-gray-200 rounded animate-pulse" />
-          <div className="space-y-2">
-            <div className="h-4 bg-gray-200 rounded animate-pulse" />
-            <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4" />
-            <div className="h-4 bg-gray-200 rounded animate-pulse w-1/2" />
+        <div className='space-y-4'>
+          <div className='h-4 bg-gray-200 rounded animate-pulse' />
+          <div className='space-y-2'>
+            <div className='h-4 bg-gray-200 rounded animate-pulse' />
+            <div className='h-4 bg-gray-200 rounded animate-pulse w-3/4' />
+            <div className='h-4 bg-gray-200 rounded animate-pulse w-1/2' />
           </div>
         </div>
       </Spin>
@@ -151,7 +145,7 @@ const LoadingFallback: React.FC<LoadingFallbackProps> = ({
     case 'progress':
       return <ProgressLoading message={message} progress={progress} size={size} />
     case 'skeleton':
-      return <SkeletonLoading active loading={true} />
+      return <SkeletonLoading active loading />
     default:
       return <DefaultLoading message={message} size={size} />
   }
@@ -163,22 +157,23 @@ const ErrorFallback: React.FC<{
   retry?: () => void
   message?: string
 }> = ({ error, retry, message = '加载失败' }) => (
-  <div className="flex flex-col items-center justify-center min-h-screen p-8">
+  <div className='flex flex-col items-center justify-center min-h-screen p-8'>
     <Result
-      status="error"
-      title="加载失败"
+      status='error'
+      title='加载失败'
       subTitle={message}
       extra={
         retry && (
-        <div className="space-x-2">
-          <button onClick={retry} type="button">
-            重试
-          </button>
-          <button onClick={() => window.location.reload()} type="button">
-            刷新页面
-          </button>
-        </div>
-      )}
+          <div className='space-x-2'>
+            <button onClick={retry} type='button'>
+              重试
+            </button>
+            <button onClick={() => window.location.reload()} type='button'>
+              刷新页面
+            </button>
+          </div>
+        )
+      }
     />
   </div>
 )
@@ -226,9 +221,7 @@ export function AsyncWrapper({
 }) {
   return (
     <Suspense fallback={fallback || <LoadingFallback />}>
-      <ErrorBoundary fallback={errorFallback || <ErrorFallback />}>
-        {children}
-      </ErrorBoundary>
+      <ErrorBoundary fallback={errorFallback || <ErrorFallback />}>{children}</ErrorBoundary>
     </Suspense>
   )
 }
@@ -238,7 +231,7 @@ export const PageLoading: React.FC<{
   message?: string
   description?: string
 }> = ({ message = '页面加载中...', description }) => (
-  <div className="flex items-center justify-center min-h-screen">
+  <div className='flex items-center justify-center min-h-screen'>
     <ContentLoading message={message} description={description} />
   </div>
 )
@@ -253,7 +246,7 @@ export const ButtonLoading: React.FC<{
     className={`inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
     disabled={loading}
   >
-    {loading && <Spin className="mr-2" size="small" />}
+    {loading && <Spin className='mr-2' size='small' />}
     {children}
   </button>
 )
@@ -269,11 +262,11 @@ export const TableLoading: React.FC<{
   }
 
   return (
-    <div className="space-y-2">
+    <div className='space-y-2'>
       {Array.from({ length: rows }).map((_, index) => (
         <div
           key={index}
-          className="h-12 bg-gray-200 rounded animate-pulse"
+          className='h-12 bg-gray-200 rounded animate-pulse'
           style={{ animationDelay: `${index * 0.1}s` }}
         />
       ))}
@@ -301,15 +294,17 @@ export const ImageLoading: React.FC<{
   if (error) {
     return (
       <div className={`flex items-center justify-center bg-gray-200 rounded ${className}`}>
-        <span className="text-gray-500 text-sm">{alt}</span>
+        <span className='text-gray-500 text-sm'>{alt}</span>
       </div>
     )
   }
 
   if (!loaded) {
     return (
-      <div className={`flex items-center justify-center bg-gray-200 rounded animate-pulse ${className}`}>
-        <div className="w-4 h-4 bg-gray-300 rounded" />
+      <div
+        className={`flex items-center justify-center bg-gray-200 rounded animate-pulse ${className}`}
+      >
+        <div className='w-4 h-4 bg-gray-300 rounded' />
       </div>
     )
   }

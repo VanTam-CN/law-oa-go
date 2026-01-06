@@ -13,11 +13,11 @@
   box-shadow: var(--shadow-sm) !important;
   border: 1px solid var(--color-border-base) !important;
   transition: all var(--duration-normal) var(--ease-out) !important;
-  
+
   &:hover {
     box-shadow: var(--shadow-md) !important;
   }
-  
+
   &.fullscreen {
     position: fixed !important;
     top: 0 !important;
@@ -31,24 +31,24 @@
     height: 100vh !important;
     display: flex !important;
     flex-direction: column !important;
-    
+
     .ant-card-body {
       flex: 1 !important;
       overflow: hidden !important;
       display: flex !important;
       flex-direction: column !important;
     }
-    
+
     .ant-table {
       height: 100% !important;
     }
-    
+
     .ant-table-container {
       height: 100% !important;
       display: flex !important;
       flex-direction: column !important;
     }
-    
+
     .ant-table-body {
       flex: 1 !important;
       overflow-y: auto !important;
@@ -67,19 +67,19 @@
   padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--color-border-split);
   background-color: var(--color-bg-container);
-  
+
   .header-left {
     display: flex;
     align-items: center;
     gap: var(--space-2);
   }
-  
+
   .header-right {
     display: flex;
     align-items: center;
     gap: var(--space-2);
   }
-  
+
   .table-title {
     font-size: var(--font-size-lg);
     margin: 0;
@@ -95,40 +95,40 @@
   padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--color-border-split);
   background-color: var(--color-bg-container);
-  
+
   .ant-input-search {
     .ant-input {
       border-radius: var(--radius-md) !important;
       border: 1px solid var(--color-border-base) !important;
-      
+
       &:focus {
         border-color: var(--color-primary) !important;
         box-shadow: 0 0 0 2px var(--color-primary-100) !important;
       }
     }
-    
+
     .ant-btn {
       border-radius: 0 var(--radius-md) var(--radius-md) 0 !important;
     }
   }
-  
+
   .ant-select {
     .ant-select-selector {
       border-radius: var(--radius-md) !important;
       border: 1px solid var(--color-border-base) !important;
-      
+
       &:focus {
         border-color: var(--color-primary) !important;
         box-shadow: 0 0 0 2px var(--color-primary-100) !important;
       }
     }
   }
-  
+
   .ant-btn {
     border-radius: var(--radius-md) !important;
     border: 1px solid var(--color-border-base) !important;
     transition: all var(--duration-fast) var(--ease-out) !important;
-    
+
     &:hover {
       border-color: var(--color-primary) !important;
       color: var(--color-primary) !important;
@@ -142,11 +142,11 @@
 
 .ant-table {
   background: transparent !important;
-  
+
   .ant-table-container {
     border: none !important;
   }
-  
+
   .ant-table-thead > tr > th {
     background: var(--color-bg-container) !important;
     border-bottom: 2px solid var(--color-border-split) !important;
@@ -157,29 +157,29 @@
     letter-spacing: 0.5px !important;
     padding: var(--space-3) var(--space-4) !important;
     transition: all var(--duration-fast) var(--ease-out) !important;
-    
+
     &:hover {
       background: var(--color-bg-hover) !important;
     }
-    
+
     &.ant-table-column-has-sorters {
       cursor: pointer !important;
-      
+
       &:hover {
         background: var(--color-bg-hover) !important;
       }
     }
   }
-  
+
   .ant-table-tbody > tr {
     transition: all var(--duration-fast) var(--ease-out) !important;
-    
+
     > td {
       border-bottom: 1px solid var(--color-border-base) !important;
       padding: var(--space-3) var(--space-4) !important;
       color: var(--color-text-primary) !important;
       font-size: var(--font-size-sm) !important;
-      
+
       .ant-tag {
         margin: 0 !important;
         font-size: var(--font-size-xs) !important;
@@ -188,47 +188,47 @@
         padding: 2px 8px !important;
         font-weight: var(--font-weight-medium) !important;
       }
-      
+
       .ant-avatar {
         border-radius: var(--radius-md) !important;
         border: 1px solid var(--color-border-base) !important;
       }
-      
+
       .ant-image {
         border-radius: var(--radius-md) !important;
         overflow: hidden !important;
-        
+
         img {
           transition: transform var(--duration-normal) var(--ease-out) !important;
         }
-        
+
         &:hover img {
           transform: scale(1.05) !important;
         }
       }
     }
-    
+
     &:hover > td {
       background-color: var(--color-bg-hover) !important;
     }
-    
+
     &.selectable-row {
       cursor: pointer !important;
-      
+
       &:hover {
         background-color: var(--color-primary-50) !important;
       }
-      
+
       &.ant-table-row-selected {
         background-color: var(--color-primary-100) !important;
-        
+
         > td {
           border-bottom: 1px solid var(--color-primary-200) !important;
         }
       }
     }
   }
-  
+
   .ant-table-empty {
     .ant-empty {
       padding: var(--space-8) var(--space-4) !important;
@@ -240,7 +240,7 @@
 .ant-table-selection-col {
   width: 50px !important;
   text-align: center !important;
-  
+
   .ant-checkbox-wrapper {
     display: flex !important;
     justify-content: center !important;
@@ -252,7 +252,7 @@
 .ant-table-cell-fix-right,
 .ant-table-cell-fix-left {
   background: var(--color-bg-container) !important;
-  
+
   &::before {
     background-color: var(--color-border-split) !important;
   }
@@ -265,41 +265,41 @@
 .ant-pagination {
   margin: var(--space-4) 0 var(--space-2) 0 !important;
   text-align: center !important;
-  
+
   .ant-pagination-item {
     border-radius: var(--radius-sm) !important;
     border: 1px solid var(--color-border-base) !important;
     margin: 0 2px !important;
     transition: all var(--duration-fast) var(--ease-out) !important;
-    
+
     &:hover {
       border-color: var(--color-primary) !important;
       color: var(--color-primary) !important;
     }
-    
+
     &.ant-pagination-item-active {
       background-color: var(--color-primary) !important;
       border-color: var(--color-primary) !important;
       color: var(--color-text-inverse) !important;
-      
+
       a {
         color: var(--color-text-inverse) !important;
       }
     }
   }
-  
+
   .ant-pagination-prev,
   .ant-pagination-next {
     border-radius: var(--radius-sm) !important;
     border: 1px solid var(--color-border-base) !important;
     transition: all var(--duration-fast) var(--ease-out) !important;
-    
+
     &:hover {
       border-color: var(--color-primary) !important;
       color: var(--color-primary) !important;
     }
   }
-  
+
   .ant-pagination-options {
     .ant-select {
       .ant-select-selector {
@@ -321,13 +321,13 @@
   padding: var(--space-3) var(--space-4);
   border-top: 1px solid var(--color-border-split);
   background-color: var(--color-bg-container);
-  
+
   .footer-left {
     display: flex;
     align-items: center;
     gap: var(--space-2);
   }
-  
+
   .footer-right {
     display: flex;
     align-items: center;
@@ -341,12 +341,12 @@
 
 .ant-empty {
   padding: var(--space-8) var(--space-4) !important;
-  
+
   .ant-empty-image {
     height: 100px !important;
     opacity: 0.6;
   }
-  
+
   .ant-empty-description {
     color: var(--color-text-tertiary) !important;
     font-size: var(--font-size-base) !important;
@@ -361,7 +361,7 @@
   .ant-spin-container {
     min-height: 200px;
   }
-  
+
   .ant-spin {
     .ant-spin-text {
       color: var(--color-text-secondary) !important;
@@ -381,11 +381,11 @@
     align-items: center !important;
     width: 100% !important;
     margin: var(--space-1) 0 !important;
-    
+
     .ant-checkbox {
       margin-right: var(--space-2) !important;
     }
-    
+
     span:last-child {
       flex: 1 !important;
       font-size: var(--font-size-sm) !important;
@@ -403,11 +403,11 @@
     display: flex !important;
     align-items: center !important;
     padding: var(--space-2) var(--space-4) !important;
-    
+
     &:hover {
       background-color: var(--color-bg-hover) !important;
     }
-    
+
     span {
       margin-left: var(--space-2) !important;
     }
@@ -423,18 +423,18 @@
     display: flex !important;
     align-items: center !important;
     padding: var(--space-2) var(--space-4) !important;
-    
+
     .anticon {
       margin-right: var(--space-2) !important;
     }
-    
+
     &:hover {
       background-color: var(--color-bg-hover) !important;
     }
-    
+
     &.ant-menu-item-danger {
       color: var(--color-error) !important;
-      
+
       &:hover {
         background-color: var(--color-error-50) !important;
         color: var(--color-error) !important;
@@ -455,18 +455,18 @@
     .table-footer {
       padding: var(--space-2) var(--space-3);
     }
-    
+
     .ant-table {
       .ant-table-thead > tr > th,
       .ant-table-tbody > tr > td {
         padding: var(--space-2) var(--space-3) !important;
       }
     }
-    
+
     .table-toolbar {
       .ant-space {
         flex-wrap: wrap !important;
-        
+
         .ant-input-search,
         .ant-select {
           flex: 1 !important;
@@ -485,12 +485,12 @@
       align-items: flex-start !important;
       gap: var(--space-2);
     }
-    
+
     .table-toolbar {
       .ant-space {
         flex-direction: column !important;
         width: 100% !important;
-        
+
         .ant-input-search,
         .ant-select,
         .ant-btn {
@@ -498,12 +498,12 @@
         }
       }
     }
-    
+
     .ant-table {
       .ant-table-thead > tr > th {
         font-size: var(--font-size-xs) !important;
         padding: var(--space-2) !important;
-        
+
         .ant-table-column-title {
           white-space: nowrap !important;
           overflow: hidden !important;
@@ -511,17 +511,17 @@
           max-width: 100px !important;
         }
       }
-      
+
       .ant-table-tbody > tr > td {
         padding: var(--space-1) var(--space-2) !important;
         font-size: var(--font-size-xs) !important;
       }
     }
-    
+
     .ant-pagination {
       flex-direction: column !important;
       gap: var(--space-2);
-      
+
       .ant-pagination-total-text {
         order: -1;
         margin-bottom: var(--space-2);
@@ -549,18 +549,28 @@
 .ant-table-tbody > tr {
   animation: tableRowSlideIn var(--duration-normal) var(--ease-out);
   animation-fill-mode: both;
-  
-  &:nth-child(1) { animation-delay: 0.1s; }
-  &:nth-child(2) { animation-delay: 0.2s; }
-  &:nth-child(3) { animation-delay: 0.3s; }
-  &:nth-child(4) { animation-delay: 0.4s; }
-  &:nth-child(5) { animation-delay: 0.5s; }
+
+  &:nth-child(1) {
+    animation-delay: 0.1s;
+  }
+  &:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+  &:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+  &:nth-child(4) {
+    animation-delay: 0.4s;
+  }
+  &:nth-child(5) {
+    animation-delay: 0.5s;
+  }
 }
 
 /* 悬停动画 */
 .ant-table-tbody > tr:hover > td {
   position: relative !important;
-  
+
   &::before {
     content: '' !important;
     position: absolute !important;
@@ -592,21 +602,21 @@
     background-color: var(--color-bg-card) !important;
     border-color: var(--color-border-base) !important;
   }
-  
+
   .table-header,
   .table-toolbar,
   .table-footer {
     background-color: var(--color-bg-container) !important;
     border-color: var(--color-border-split) !important;
   }
-  
+
   .ant-table {
     .ant-table-thead > tr > th {
       background-color: var(--color-bg-container) !important;
       border-color: var(--color-border-split) !important;
       color: var(--color-text-primary) !important;
     }
-    
+
     .ant-table-tbody > tr > td {
       border-color: var(--color-border-base) !important;
       color: var(--color-text-primary) !important;
@@ -631,12 +641,12 @@
   .standard-table {
     border-width: 2px !important;
   }
-  
+
   .ant-table {
     .ant-table-thead > tr > th {
       border-bottom-width: 3px !important;
     }
-    
+
     .ant-table-tbody > tr > td {
       border-bottom-width: 2px !important;
     }
@@ -648,7 +658,7 @@
   .ant-table-tbody > tr {
     animation: none;
   }
-  
+
   .standard-table,
   .ant-table,
   .ant-btn,
@@ -667,16 +677,16 @@
     box-shadow: none !important;
     border: 1px solid var(--color-gray-300) !important;
   }
-  
+
   .table-toolbar,
   .table-footer {
     display: none !important;
   }
-  
+
   .ant-table {
     .ant-table-tbody > tr {
       page-break-inside: avoid;
-      
+
       > td {
         border-bottom: 1px solid var(--color-gray-200) !important;
       }

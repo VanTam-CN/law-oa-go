@@ -1,19 +1,13 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import {
-  Row,
-  Col,
-  ConfigProvider,
-  theme,
-  Grid
-} from 'antd';
+import React, { useState, useEffect, useMemo } from 'react'
+import { Row, Col, ConfigProvider, theme, Grid } from 'antd'
 import {
   ResponsiveFormLayoutProps,
   BreakpointConfig,
-  SpacingConfig
-} from './types/ResponsiveFormLayout.types';
-import './ResponsiveFormLayout.less';
+  SpacingConfig,
+} from './types/ResponsiveFormLayout.types'
+import './ResponsiveFormLayout.less'
 
-const { useToken } = theme;
+const { useToken } = theme
 
 /**
  * 1080p优化的响应式表单布局组件
@@ -29,78 +23,74 @@ const ResponsiveFormLayout: React.FC<ResponsiveFormLayoutProps> = ({
   style,
   ...restProps
 }) => {
-  const { token } = useToken();
-  const [currentBreakpoint, setCurrentBreakpoint] = useState<string>();
-  const [isCompact, setIsCompact] = useState(false);
+  const { token } = useToken()
+  const [currentBreakpoint, setCurrentBreakpoint] = useState<string>()
+  const [isCompact, setIsCompact] = useState(false)
 
   // 获取当前响应式断点
-  const screens = Grid.useBreakpoint();
+  const screens = Grid.useBreakpoint()
 
   // 根据断点计算实际列数
   const actualColumns = useMemo(() => {
-    const {
-      xs = 24,
-      sm = 24,
-      md = 12,
-      lg = 8,
-      xl = 6,
-      xxl = 4
-    } = screens;
+    const { xs = 24, sm = 24, md = 12, lg = 8, xl = 6, xxl = 4 } = screens
 
     // 1080p (通常对应lg断点) 的优化逻辑
     if (currentBreakpoint === 'lg') {
       // 1080p显示器上的紧凑布局
-      return columns === 3 ? 3 : columns;
+      return columns === 3 ? 3 : columns
     } else if (currentBreakpoint === 'xl' || currentBreakpoint === 'xxl') {
       // 大屏幕可以显示更多列
-      return columns === 3 ? 4 : Math.min(columns + 1, 4);
+      return columns === 3 ? 4 : Math.min(columns + 1, 4)
     } else {
       // 小屏幕使用单列或双列
-      return currentBreakpoint === 'md' ? 2 : 1;
+      return currentBreakpoint === 'md' ? 2 : 1
     }
-  }, [columns, currentBreakpoint, screens]);
+  }, [columns, currentBreakpoint, screens])
 
   // 获取间距配置
   const spacingConfig = useMemo<SpacingConfig>(() => {
     const baseSpacing = {
       small: 8,
       medium: 16,
-      large: 24
-    };
+      large: 24,
+    }
 
     // 1080p上使用更紧凑的间距
-    const compactMultiplier = isCompact ? 0.75 : 1;
+    const compactMultiplier = isCompact ? 0.75 : 1
 
     return {
       horizontal: baseSpacing[spacing] * compactMultiplier,
-      vertical: baseSpacing[spacing] * compactMultiplier
-    };
-  }, [spacing, isCompact]);
+      vertical: baseSpacing[spacing] * compactMultiplier,
+    }
+  }, [spacing, isCompact])
 
   // 监听断点变化
   useEffect(() => {
-    const breakpointKeys = Object.keys(screens) as string[];
+    const breakpointKeys = Object.keys(screens)
     const currentActiveBreakpoint = breakpointKeys.find(
-      key => screens[key as keyof typeof screens]
-    );
+      (key) => screens[key as keyof typeof screens],
+    )
 
     if (currentActiveBreakpoint) {
-      setCurrentBreakpoint(currentActiveBreakpoint);
+      setCurrentBreakpoint(currentActiveBreakpoint)
       // 1080p (lg) 时启用紧凑模式
-      setIsCompact(currentActiveBreakpoint === 'lg');
+      setIsCompact(currentActiveBreakpoint === 'lg')
     }
-  }, [screens]);
+  }, [screens])
 
   // 1080p优化的栅格配置
-  const gridConfig = useMemo<BreakpointConfig>(() => ({
-    // 针对不同断点的列配置
-    xs: { span: 24 }, // 超小屏幕：单列
-    sm: { span: 24 }, // 小屏幕：单列
-    md: { span: actualColumns === 1 ? 24 : 12 }, // 中等屏幕：单列或双列
-    lg: { span: actualColumns === 3 ? 8 : actualColumns === 2 ? 12 : 24 }, // 1080p：优化列数
-    xl: { span: actualColumns === 3 ? 6 : actualColumns === 2 ? 12 : 8 }, // 大屏幕：更多列
-    xxl: { span: actualColumns === 3 ? 6 : actualColumns === 2 ? 8 : 6 } // 超大屏幕
-  }), [actualColumns]);
+  const gridConfig = useMemo<BreakpointConfig>(
+    () => ({
+      // 针对不同断点的列配置
+      xs: { span: 24 }, // 超小屏幕：单列
+      sm: { span: 24 }, // 小屏幕：单列
+      md: { span: actualColumns === 1 ? 24 : 12 }, // 中等屏幕：单列或双列
+      lg: { span: actualColumns === 3 ? 8 : actualColumns === 2 ? 12 : 24 }, // 1080p：优化列数
+      xl: { span: actualColumns === 3 ? 6 : actualColumns === 2 ? 12 : 8 }, // 大屏幕：更多列
+      xxl: { span: actualColumns === 3 ? 6 : actualColumns === 2 ? 8 : 6 }, // 超大屏幕
+    }),
+    [actualColumns],
+  )
 
   // 计算容器样式，针对1080p优化
   const containerStyle = useMemo(() => {
@@ -109,8 +99,8 @@ const ResponsiveFormLayout: React.FC<ResponsiveFormLayoutProps> = ({
       minHeight: '100vh',
       padding: `${spacingConfig.vertical}px`,
       boxSizing: 'border-box',
-      ...style
-    };
+      ...style,
+    }
 
     // 1080p特定优化
     if (currentBreakpoint === 'lg') {
@@ -121,20 +111,18 @@ const ResponsiveFormLayout: React.FC<ResponsiveFormLayoutProps> = ({
         overflow: 'hidden auto',
         // 减少不必要的边距
         '--form-padding': `${Math.max(12, spacingConfig.horizontal)}px`,
-        '--form-gap': `${Math.max(12, spacingConfig.vertical)}px`
-      };
+        '--form-gap': `${Math.max(12, spacingConfig.vertical)}px`,
+      }
     }
 
-    return baseStyle;
-  }, [currentBreakpoint, spacingConfig, style]);
+    return baseStyle
+  }, [currentBreakpoint, spacingConfig, style])
 
   // 渲染子组件，应用响应式布局
   const renderChildren = () => {
     if (Array.isArray(children)) {
       return children.map((child, index) => {
-        const colConfig = typeof child === 'object' && child && 'props' in child
-          ? child.props
-          : {};
+        const colConfig = typeof child === 'object' && child && 'props' in child ? child.props : {}
 
         return (
           <Col
@@ -145,16 +133,16 @@ const ResponsiveFormLayout: React.FC<ResponsiveFormLayoutProps> = ({
           >
             {child}
           </Col>
-        );
-      });
+        )
+      })
     }
 
     return (
-      <Col {...gridConfig} className="responsive-form-item">
+      <Col {...gridConfig} className='responsive-form-item'>
         {children}
       </Col>
-    );
-  };
+    )
+  }
 
   return (
     <ConfigProvider
@@ -178,8 +166,8 @@ const ResponsiveFormLayout: React.FC<ResponsiveFormLayoutProps> = ({
           // 紧凑模式下减少圆角
           borderRadius: isCompact ? 4 : 6,
           borderRadiusSM: isCompact ? 2 : 4,
-          borderRadiusLG: isCompact ? 6 : 8
-        }
+          borderRadiusLG: isCompact ? 6 : 8,
+        },
       }}
     >
       <div
@@ -189,22 +177,20 @@ const ResponsiveFormLayout: React.FC<ResponsiveFormLayoutProps> = ({
       >
         <Row
           gutter={[spacingConfig.horizontal, spacingConfig.vertical]}
-          className="responsive-form-row"
+          className='responsive-form-row'
         >
           {renderChildren()}
         </Row>
 
         {/* 1080p优化提示 */}
         {currentBreakpoint === 'lg' && (
-          <div className="responsive-hint">
-            <span className="responsive-hint-text">
-              📺 已为1080p显示器优化布局
-            </span>
+          <div className='responsive-hint'>
+            <span className='responsive-hint-text'>📺 已为1080p显示器优化布局</span>
           </div>
         )}
       </div>
     </ConfigProvider>
-  );
-};
+  )
+}
 
-export default ResponsiveFormLayout;
+export default ResponsiveFormLayout

@@ -1,11 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Tabs, Table, Button, Space, Tag, Input, Modal, Form, message, Select, DatePicker } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined, FileTextOutlined, SettingOutlined } from '@ant-design/icons';
-import type { ColumnsType } from 'antd/es/table';
-import { 
-  getEmployees, 
-  createEmployee, 
-  updateEmployee, 
+import React, { useState, useEffect } from 'react'
+import {
+  Card,
+  Tabs,
+  Table,
+  Button,
+  Space,
+  Tag,
+  Input,
+  Modal,
+  Form,
+  message,
+  Select,
+  DatePicker,
+} from 'antd'
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  UserOutlined,
+  FileTextOutlined,
+  SettingOutlined,
+} from '@ant-design/icons'
+import type { ColumnsType } from 'antd/es/table'
+import {
+  getEmployees,
+  createEmployee,
+  updateEmployee,
   deleteEmployee,
   getDocuments,
   createDocument,
@@ -14,67 +34,67 @@ import {
   getDepartments,
   Department,
   Employee,
-  Document
-} from '@/services/admin';
+  Document,
+} from '@/services/admin'
 
-const { Search } = Input;
-const { Option } = Select;
+const { Search } = Input
+const { Option } = Select
 
 interface Employee {
-  id: string;
-  name: string;
-  position: string;
-  department: string;
-  email: string;
-  phone: string;
-  status: 'active' | 'inactive';
-  joinDate: string;
+  id: string
+  name: string
+  position: string
+  department: string
+  email: string
+  phone: string
+  status: 'active' | 'inactive'
+  joinDate: string
 }
 
 interface Document {
-  id: string;
-  title: string;
-  type: string;
-  category: string;
-  createDate: string;
-  creator: string;
-  status: 'draft' | 'published' | 'archived';
+  id: string
+  title: string
+  type: string
+  category: string
+  createDate: string
+  creator: string
+  status: 'draft' | 'published' | 'archived'
 }
 
 const AdminManagement: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('employees');
-  const [loading, setLoading] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [editingItem, setEditingItem] = useState<Employee | Document | null>(null);
-  const [form] = Form.useForm();
-  
+  const [activeTab, setActiveTab] = useState('employees')
+  const [loading, setLoading] = useState(false)
+  const [modalVisible, setModalVisible] = useState(false)
+  const [editingItem, setEditingItem] = useState<Employee | Document | null>(null)
+  const [form] = Form.useForm()
+
   // 数据状态
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [departments, setDepartments] = useState<Department[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([])
+  const [documents, setDocuments] = useState<Document[]>([])
+  const [departments, setDepartments] = useState<Department[]>([])
 
   // 获取数据
   useEffect(() => {
-    fetchData();
-  }, []);
+    fetchData()
+  }, [])
 
   const fetchData = async () => {
     try {
-      setLoading(true);
+      setLoading(true)
       const [employeesData, documentsData, departmentsData] = await Promise.all([
         getEmployees(),
         getDocuments(),
-        getDepartments()
-      ]);
-      setEmployees(employeesData);
-      setDocuments(documentsData);
-      setDepartments(departmentsData);
+        getDepartments(),
+      ])
+      setEmployees(employeesData)
+      setDocuments(documentsData)
+      setDepartments(departmentsData)
     } catch (error) {
-      message.error('获取数据失败');
+      message.error('获取数据失败')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const employeeColumns: ColumnsType<Employee> = [
     {
@@ -129,28 +149,28 @@ const AdminManagement: React.FC = () => {
       key: 'action',
       width: 150,
       render: (_, record) => (
-        <Space size="small">
-          <Button 
-            type="link" 
-            size="small" 
+        <Space size='small'>
+          <Button
+            type='link'
+            size='small'
             icon={<EditOutlined />}
-            onClick={() => handleEditEmployee(record as Employee)}
+            onClick={() => handleEditEmployee(record)}
           >
             编辑
           </Button>
-          <Button 
-            type="link" 
-            size="small" 
-            danger 
+          <Button
+            type='link'
+            size='small'
+            danger
             icon={<DeleteOutlined />}
-            onClick={() => handleDeleteEmployee((record as Employee).id)}
+            onClick={() => handleDeleteEmployee(record.id)}
           >
             删除
           </Button>
         </Space>
       ),
     },
-  ];
+  ]
 
   const documentColumns: ColumnsType<Document> = [
     {
@@ -193,13 +213,13 @@ const AdminManagement: React.FC = () => {
         const statusMap = {
           draft: { text: '草稿', color: 'orange' },
           published: { text: '已发布', color: 'green' },
-          archived: { text: '已归档', color: 'default' }
-        };
+          archived: { text: '已归档', color: 'default' },
+        }
         return (
           <Tag color={statusMap[status as keyof typeof statusMap].color}>
             {statusMap[status as keyof typeof statusMap].text}
           </Tag>
-        );
+        )
       },
     },
     {
@@ -207,41 +227,41 @@ const AdminManagement: React.FC = () => {
       key: 'action',
       width: 150,
       render: (_, record) => (
-        <Space size="small">
-          <Button 
-            type="link" 
-            size="small" 
+        <Space size='small'>
+          <Button
+            type='link'
+            size='small'
             icon={<EditOutlined />}
-            onClick={() => handleEditDocument(record as Document)}
+            onClick={() => handleEditDocument(record)}
           >
             编辑
           </Button>
-          <Button 
-            type="link" 
-            size="small" 
-            danger 
+          <Button
+            type='link'
+            size='small'
+            danger
             icon={<DeleteOutlined />}
-            onClick={() => handleDeleteDocument((record as Document).id)}
+            onClick={() => handleDeleteDocument(record.id)}
           >
             删除
           </Button>
         </Space>
       ),
     },
-  ];
+  ]
 
   // 员工操作函数
   const handleAddEmployee = () => {
-    setEditingItem(null);
-    form.resetFields();
-    setModalVisible(true);
-  };
+    setEditingItem(null)
+    form.resetFields()
+    setModalVisible(true)
+  }
 
   const handleEditEmployee = (employee: Employee) => {
-    setEditingItem(employee);
-    form.setFieldsValue(employee);
-    setModalVisible(true);
-  };
+    setEditingItem(employee)
+    form.setFieldsValue(employee)
+    setModalVisible(true)
+  }
 
   const handleDeleteEmployee = async (id: number) => {
     Modal.confirm({
@@ -249,28 +269,28 @@ const AdminManagement: React.FC = () => {
       content: '确定要删除这个员工吗？',
       onOk: async () => {
         try {
-          await deleteEmployee(id);
-          message.success('删除成功');
-          fetchData();
+          await deleteEmployee(id)
+          message.success('删除成功')
+          fetchData()
         } catch (error) {
-          message.error('删除失败');
+          message.error('删除失败')
         }
       },
-    });
-  };
+    })
+  }
 
   // 文档操作函数
   const handleAddDocument = () => {
-    setEditingItem(null);
-    form.resetFields();
-    setModalVisible(true);
-  };
+    setEditingItem(null)
+    form.resetFields()
+    setModalVisible(true)
+  }
 
   const handleEditDocument = (document: Document) => {
-    setEditingItem(document);
-    form.setFieldsValue(document);
-    setModalVisible(true);
-  };
+    setEditingItem(document)
+    form.setFieldsValue(document)
+    setModalVisible(true)
+  }
 
   const handleDeleteDocument = async (id: number) => {
     Modal.confirm({
@@ -278,48 +298,48 @@ const AdminManagement: React.FC = () => {
       content: '确定要删除这个文档吗？',
       onOk: async () => {
         try {
-          await deleteDocument(id);
-          message.success('删除成功');
-          fetchData();
+          await deleteDocument(id)
+          message.success('删除成功')
+          fetchData()
         } catch (error) {
-          message.error('删除失败');
+          message.error('删除失败')
         }
       },
-    });
-  };
+    })
+  }
 
   // 提交表单
   const handleSubmit = async (values: any) => {
     try {
-      setLoading(true);
-      
+      setLoading(true)
+
       if (activeTab === 'employees') {
         if (editingItem) {
-          await updateEmployee((editingItem as Employee).id, values);
-          message.success('员工更新成功');
+          await updateEmployee((editingItem as Employee).id, values)
+          message.success('员工更新成功')
         } else {
-          await createEmployee(values);
-          message.success('员工创建成功');
+          await createEmployee(values)
+          message.success('员工创建成功')
         }
       } else if (activeTab === 'documents') {
         if (editingItem) {
-          await updateDocument((editingItem as Document).id, values);
-          message.success('文档更新成功');
+          await updateDocument((editingItem as Document).id, values)
+          message.success('文档更新成功')
         } else {
-          await createDocument(values);
-          message.success('文档创建成功');
+          await createDocument(values)
+          message.success('文档创建成功')
         }
       }
-      
-      setModalVisible(false);
-      form.resetFields();
-      fetchData();
+
+      setModalVisible(false)
+      form.resetFields()
+      fetchData()
     } catch (error) {
-      message.error('操作失败');
+      message.error('操作失败')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const tabItems = [
     {
@@ -332,31 +352,36 @@ const AdminManagement: React.FC = () => {
       ),
       children: (
         <Card>
-          <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div
+            style={{
+              marginBottom: 16,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
             <Space>
-              <Search
-                placeholder="搜索员工姓名"
-                allowClear
-                style={{ width: 200 }}
-              />
-              <Select placeholder="部门" style={{ width: 120 }} allowClear>
-                {departments.map(dept => (
-                  <Option key={dept.id} value={dept.name}>{dept.name}</Option>
+              <Search placeholder='搜索员工姓名' allowClear style={{ width: 200 }} />
+              <Select placeholder='部门' style={{ width: 120 }} allowClear>
+                {departments.map((dept) => (
+                  <Option key={dept.id} value={dept.name}>
+                    {dept.name}
+                  </Option>
                 ))}
               </Select>
-              <Select placeholder="状态" style={{ width: 100 }} allowClear>
-                <Option value="active">在职</Option>
-                <Option value="inactive">离职</Option>
+              <Select placeholder='状态' style={{ width: 100 }} allowClear>
+                <Option value='active'>在职</Option>
+                <Option value='inactive'>离职</Option>
               </Select>
             </Space>
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleAddEmployee}>
+            <Button type='primary' icon={<PlusOutlined />} onClick={handleAddEmployee}>
               添加员工
             </Button>
           </div>
           <Table
             columns={employeeColumns}
             dataSource={employees}
-            rowKey="id"
+            rowKey='id'
             pagination={{
               total: employees.length,
               pageSize: 10,
@@ -377,33 +402,36 @@ const AdminManagement: React.FC = () => {
       ),
       children: (
         <Card>
-          <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div
+            style={{
+              marginBottom: 16,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
             <Space>
-              <Search
-                placeholder="搜索文档标题"
-                allowClear
-                style={{ width: 200 }}
-              />
-              <Select placeholder="文档类型" style={{ width: 120 }} allowClear>
-                <Option value="制度文件">制度文件</Option>
-                <Option value="流程文件">流程文件</Option>
-                <Option value="标准文件">标准文件</Option>
-                <Option value="模板文件">模板文件</Option>
+              <Search placeholder='搜索文档标题' allowClear style={{ width: 200 }} />
+              <Select placeholder='文档类型' style={{ width: 120 }} allowClear>
+                <Option value='制度文件'>制度文件</Option>
+                <Option value='流程文件'>流程文件</Option>
+                <Option value='标准文件'>标准文件</Option>
+                <Option value='模板文件'>模板文件</Option>
               </Select>
-              <Select placeholder="状态" style={{ width: 100 }} allowClear>
-                <Option value="draft">草稿</Option>
-                <Option value="published">已发布</Option>
-                <Option value="archived">已归档</Option>
+              <Select placeholder='状态' style={{ width: 100 }} allowClear>
+                <Option value='draft'>草稿</Option>
+                <Option value='published'>已发布</Option>
+                <Option value='archived'>已归档</Option>
               </Select>
             </Space>
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleAddDocument}>
+            <Button type='primary' icon={<PlusOutlined />} onClick={handleAddDocument}>
               添加文档
             </Button>
           </div>
           <Table
             columns={documentColumns}
             dataSource={documents}
-            rowKey="id"
+            rowKey='id'
             pagination={{
               total: documents.length,
               pageSize: 10,
@@ -432,59 +460,58 @@ const AdminManagement: React.FC = () => {
         </Card>
       ),
     },
-  ];
+  ]
 
   return (
     <div>
-      <div className="page-header">
-        <h1 className="page-title">行政管理</h1>
+      <div className='page-header'>
+        <h1 className='page-title'>行政管理</h1>
         <p>管理律所的人员、文档和系统设置</p>
       </div>
 
-      <Tabs
-        activeKey={activeTab}
-        onChange={setActiveTab}
-        items={tabItems}
-        size="large"
-      />
-      
+      <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} size='large' />
+
       {/* 员工/文档编辑模态框 */}
       <Modal
-        title={activeTab === 'employees' ? (editingItem ? '编辑员工' : '添加员工') : (editingItem ? '编辑文档' : '添加文档')}
+        title={
+          activeTab === 'employees'
+            ? editingItem
+              ? '编辑员工'
+              : '添加员工'
+            : editingItem
+              ? '编辑文档'
+              : '添加文档'
+        }
         open={modalVisible}
         onOk={() => form.submit()}
         onCancel={() => setModalVisible(false)}
         width={600}
         destroyOnHidden
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-        >
+        <Form form={form} layout='vertical' onFinish={handleSubmit}>
           {activeTab === 'employees' ? (
             <>
               <Form.Item
-                name="name"
-                label="姓名"
+                name='name'
+                label='姓名'
                 rules={[{ required: true, message: '请输入姓名' }]}
               >
-                <Input placeholder="请输入姓名" />
+                <Input placeholder='请输入姓名' />
               </Form.Item>
               <Form.Item
-                name="position"
-                label="职位"
+                name='position'
+                label='职位'
                 rules={[{ required: true, message: '请输入职位' }]}
               >
-                <Input placeholder="请输入职位" />
+                <Input placeholder='请输入职位' />
               </Form.Item>
               <Form.Item
-                name="department"
-                label="部门"
+                name='department'
+                label='部门'
                 rules={[{ required: true, message: '请选择部门' }]}
               >
-                <Select placeholder="请选择部门">
-                  {departments.map(dept => (
+                <Select placeholder='请选择部门'>
+                  {departments.map((dept) => (
                     <Select.Option key={dept.id} value={dept.name}>
                       {dept.name}
                     </Select.Option>
@@ -492,93 +519,93 @@ const AdminManagement: React.FC = () => {
                 </Select>
               </Form.Item>
               <Form.Item
-                name="email"
-                label="邮箱"
+                name='email'
+                label='邮箱'
                 rules={[
                   { required: true, message: '请输入邮箱' },
-                  { type: 'email', message: '请输入有效的邮箱地址' }
+                  { type: 'email', message: '请输入有效的邮箱地址' },
                 ]}
               >
-                <Input placeholder="请输入邮箱" />
+                <Input placeholder='请输入邮箱' />
               </Form.Item>
               <Form.Item
-                name="phone"
-                label="电话"
+                name='phone'
+                label='电话'
                 rules={[{ required: true, message: '请输入电话' }]}
               >
-                <Input placeholder="请输入电话" />
+                <Input placeholder='请输入电话' />
               </Form.Item>
               <Form.Item
-                name="status"
-                label="状态"
+                name='status'
+                label='状态'
                 rules={[{ required: true, message: '请选择状态' }]}
-                initialValue="active"
+                initialValue='active'
               >
-                <Select placeholder="请选择状态">
-                  <Select.Option value="active">在职</Select.Option>
-                  <Select.Option value="inactive">离职</Select.Option>
+                <Select placeholder='请选择状态'>
+                  <Select.Option value='active'>在职</Select.Option>
+                  <Select.Option value='inactive'>离职</Select.Option>
                 </Select>
               </Form.Item>
               <Form.Item
-                name="join_date"
-                label="入职日期"
+                name='join_date'
+                label='入职日期'
                 rules={[{ required: true, message: '请选择入职日期' }]}
               >
-                <DatePicker placeholder="请选择入职日期" style={{ width: '100%' }} />
+                <DatePicker placeholder='请选择入职日期' style={{ width: '100%' }} />
               </Form.Item>
             </>
           ) : (
             <>
               <Form.Item
-                name="title"
-                label="文档标题"
+                name='title'
+                label='文档标题'
                 rules={[{ required: true, message: '请输入文档标题' }]}
               >
-                <Input placeholder="请输入文档标题" />
+                <Input placeholder='请输入文档标题' />
               </Form.Item>
               <Form.Item
-                name="type"
-                label="文档类型"
+                name='type'
+                label='文档类型'
                 rules={[{ required: true, message: '请选择文档类型' }]}
               >
-                <Select placeholder="请选择文档类型">
-                  <Select.Option value="制度文件">制度文件</Select.Option>
-                  <Select.Option value="流程文件">流程文件</Select.Option>
-                  <Select.Option value="标准文件">标准文件</Select.Option>
-                  <Select.Option value="模板文件">模板文件</Select.Option>
+                <Select placeholder='请选择文档类型'>
+                  <Select.Option value='制度文件'>制度文件</Select.Option>
+                  <Select.Option value='流程文件'>流程文件</Select.Option>
+                  <Select.Option value='标准文件'>标准文件</Select.Option>
+                  <Select.Option value='模板文件'>模板文件</Select.Option>
                 </Select>
               </Form.Item>
               <Form.Item
-                name="category"
-                label="分类"
+                name='category'
+                label='分类'
                 rules={[{ required: true, message: '请输入分类' }]}
               >
-                <Input placeholder="请输入分类" />
+                <Input placeholder='请输入分类' />
               </Form.Item>
               <Form.Item
-                name="content"
-                label="内容"
+                name='content'
+                label='内容'
                 rules={[{ required: true, message: '请输入内容' }]}
               >
-                <Input.TextArea placeholder="请输入内容" rows={4} />
+                <Input.TextArea placeholder='请输入内容' rows={4} />
               </Form.Item>
               <Form.Item
-                name="creator"
-                label="创建者"
+                name='creator'
+                label='创建者'
                 rules={[{ required: true, message: '请输入创建者' }]}
               >
-                <Input placeholder="请输入创建者" />
+                <Input placeholder='请输入创建者' />
               </Form.Item>
               <Form.Item
-                name="status"
-                label="状态"
+                name='status'
+                label='状态'
                 rules={[{ required: true, message: '请选择状态' }]}
-                initialValue="draft"
+                initialValue='draft'
               >
-                <Select placeholder="请选择状态">
-                  <Select.Option value="draft">草稿</Select.Option>
-                  <Select.Option value="published">已发布</Select.Option>
-                  <Select.Option value="archived">已归档</Select.Option>
+                <Select placeholder='请选择状态'>
+                  <Select.Option value='draft'>草稿</Select.Option>
+                  <Select.Option value='published'>已发布</Select.Option>
+                  <Select.Option value='archived'>已归档</Select.Option>
                 </Select>
               </Form.Item>
             </>
@@ -586,7 +613,7 @@ const AdminManagement: React.FC = () => {
         </Form>
       </Modal>
     </div>
-  );
-};
+  )
+}
 
-export default AdminManagement;
+export default AdminManagement

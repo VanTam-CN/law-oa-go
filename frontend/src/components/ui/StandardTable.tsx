@@ -2,17 +2,17 @@
  * 统一表格组件
  * 基于设计系统，提供一致的表格样式和功能
  */
-import React from 'react';
-import { Table, TableProps, Tag, Space, Tooltip } from 'antd';
-import { DESIGN_TOKENS, BUSINESS_STATUS, designUtils } from '@/constants/design-system';
-import type { ColumnsType } from 'antd/es/table';
+import React from 'react'
+import { Table, TableProps, Tag, Space, Tooltip } from 'antd'
+import { DESIGN_TOKENS, BUSINESS_STATUS, designUtils } from '@/constants/design-system'
+import type { ColumnsType } from 'antd/es/table'
 
 export interface StandardTableProps<T = any> extends Omit<TableProps<T>, 'style' | 'className'> {
-  variant?: 'default' | 'bordered' | 'striped';
-  showHeader?: boolean;
-  size?: 'small' | 'middle' | 'large';
-  className?: string;
-  style?: React.CSSProperties;
+  variant?: 'default' | 'bordered' | 'striped'
+  showHeader?: boolean
+  size?: 'small' | 'middle' | 'large'
+  className?: string
+  style?: React.CSSProperties
 }
 
 const StandardTable = <T extends Record<string, any>>({
@@ -31,31 +31,31 @@ const StandardTable = <T extends Record<string, any>>({
     overflow: 'hidden',
     boxShadow: DESIGN_TOKENS.shadows.sm,
     ...style,
-  };
+  }
 
   // 表格样式
   const tableStyle: React.CSSProperties = {
     fontSize: DESIGN_TOKENS.typography.base.fontSize,
-  };
+  }
 
   // 根据变体添加自定义类名
   const getClassName = () => {
-    const classNames = ['standard-table'];
+    const classNames = ['standard-table']
 
     if (variant === 'striped') {
-      classNames.push('standard-table--striped');
+      classNames.push('standard-table--striped')
     }
 
     if (variant === 'bordered') {
-      classNames.push('standard-table--bordered');
+      classNames.push('standard-table--bordered')
     }
 
     if (className) {
-      classNames.push(className);
+      classNames.push(className)
     }
 
-    return classNames.join(' ');
-  };
+    return classNames.join(' ')
+  }
 
   return (
     <div style={tableContainerStyle}>
@@ -67,8 +67,8 @@ const StandardTable = <T extends Record<string, any>>({
         showHeader={showHeader}
       />
     </div>
-  );
-};
+  )
+}
 
 // =============================================================================
 // 标准列生成器
@@ -80,7 +80,7 @@ export const createStandardColumns = {
     dataIndex: keyof T,
     title: string = '状态',
     statusType: 'case' | 'user' | 'priority' | 'approval' = 'case',
-    width: number = 100
+    width: number = 100,
   ): ColumnsType<T>[number] => ({
     title,
     dataIndex: dataIndex as string,
@@ -92,16 +92,17 @@ export const createStandardColumns = {
         user: BUSINESS_STATUS.USER_TYPE,
         priority: BUSINESS_STATUS.PRIORITY,
         approval: BUSINESS_STATUS.APPROVAL_STATUS,
-      };
+      }
 
-      const currentStatusMap = statusMap[statusType];
-      const statusKey = Object.keys(currentStatusMap).find(key =>
-        key === status?.toUpperCase() ||
-        currentStatusMap[key as keyof typeof currentStatusMap].text === status
-      );
+      const currentStatusMap = statusMap[statusType]
+      const statusKey = Object.keys(currentStatusMap).find(
+        (key) =>
+          key === status?.toUpperCase() ||
+          currentStatusMap[key as keyof typeof currentStatusMap].text === status,
+      )
 
       if (statusKey) {
-        const statusConfig = currentStatusMap[statusKey as keyof typeof currentStatusMap];
+        const statusConfig = currentStatusMap[statusKey as keyof typeof currentStatusMap]
         return (
           <Tag
             color={statusConfig.color}
@@ -113,7 +114,7 @@ export const createStandardColumns = {
           >
             {statusConfig.text}
           </Tag>
-        );
+        )
       }
 
       return (
@@ -126,23 +127,23 @@ export const createStandardColumns = {
         >
           {status || '未知'}
         </Tag>
-      );
+      )
     },
   }),
 
   // 创建操作列
   createActionColumn: <T extends Record<string, any>>(
     actions: Array<{
-      key: string;
-      label: string;
-      icon?: React.ReactNode;
-      onClick: (record: T) => void;
-      danger?: boolean;
-      disabled?: boolean;
-      tooltip?: string;
+      key: string
+      label: string
+      icon?: React.ReactNode
+      onClick: (record: T) => void
+      danger?: boolean
+      disabled?: boolean
+      tooltip?: string
     }>,
     width: number = 150,
-    fixed?: 'left' | 'right'
+    fixed?: 'left' | 'right',
   ): ColumnsType<T>[number] => ({
     title: '操作',
     key: 'action',
@@ -154,8 +155,8 @@ export const createStandardColumns = {
           const button = (
             <Button
               key={action.key}
-              type="link"
-              size="small"
+              type='link'
+              size='small'
               icon={action.icon}
               onClick={() => action.onClick(record)}
               danger={action.danger}
@@ -168,7 +169,7 @@ export const createStandardColumns = {
             >
               {action.label}
             </Button>
-          );
+          )
 
           return action.tooltip ? (
             <Tooltip key={action.key} title={action.tooltip}>
@@ -176,7 +177,7 @@ export const createStandardColumns = {
             </Tooltip>
           ) : (
             button
-          );
+          )
         })}
       </Space>
     ),
@@ -187,27 +188,29 @@ export const createStandardColumns = {
     dataIndex: keyof T,
     title: string = '时间',
     width: number = 180,
-    format?: string
+    format?: string,
   ): ColumnsType<T>[number] => ({
     title,
     dataIndex: dataIndex as string,
     key: dataIndex as string,
     width,
     render: (time: string) => {
-      if (!time) return '-';
+      if (!time) {
+        return '-'
+      }
 
       try {
-        const date = new Date(time);
-        const formatString = format || 'YYYY-MM-DD HH:mm';
+        const date = new Date(time)
+        const formatString = format || 'YYYY-MM-DD HH:mm'
         return date.toLocaleString('zh-CN', {
           year: 'numeric',
           month: '2-digit',
           day: '2-digit',
           hour: '2-digit',
           minute: '2-digit',
-        });
+        })
       } catch {
-        return time;
+        return time
       }
     },
   }),
@@ -217,15 +220,15 @@ export const createStandardColumns = {
     dataIndex: keyof T,
     title: string = '用户',
     width: number = 150,
-    showAvatar: boolean = true
+    showAvatar: boolean = true,
   ): ColumnsType<T>[number] => ({
     title,
     dataIndex: dataIndex as string,
     key: dataIndex as string,
     width,
     render: (user: string | { name: string; avatar?: string }) => {
-      const userName = typeof user === 'string' ? user : user?.name;
-      const userAvatar = typeof user === 'object' ? user?.avatar : undefined;
+      const userName = typeof user === 'string' ? user : user?.name
+      const userAvatar = typeof user === 'object' ? user?.avatar : undefined
 
       return (
         <Space size={DESIGN_TOKENS.spacing.sm}>
@@ -247,16 +250,18 @@ export const createStandardColumns = {
               {userName?.charAt(0)?.toUpperCase()}
             </div>
           )}
-          <span style={{
-            fontSize: DESIGN_TOKENS.typography.base.fontSize,
-            color: DESIGN_TOKENS.colors.textPrimary,
-          }}>
+          <span
+            style={{
+              fontSize: DESIGN_TOKENS.typography.base.fontSize,
+              color: DESIGN_TOKENS.colors.textPrimary,
+            }}
+          >
             {userName || '-'}
           </span>
         </Space>
-      );
+      )
     },
   }),
-};
+}
 
-export default StandardTable;
+export default StandardTable

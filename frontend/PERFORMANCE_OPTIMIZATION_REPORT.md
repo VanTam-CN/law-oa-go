@@ -11,18 +11,20 @@
 位置: `src/utils/performance.ts`
 
 功能特性:
+
 - 实时渲染性能监控
 - 内存使用情况跟踪
 - 1080p专用性能测试
 - 性能指标统计和分析
 
 核心配置:
+
 ```typescript
 const DEFAULT_CONFIG: PerformanceConfig = {
   targetFrameTime: 16.67, // 60fps目标
-  maxRenderTime: 100,     // 最大渲染时间
-  memoryThreshold: 100,   // 100MB内存阈值
-  enableMonitoring: process.env.NODE_ENV === 'development'
+  maxRenderTime: 100, // 最大渲染时间
+  memoryThreshold: 100, // 100MB内存阈值
+  enableMonitoring: process.env.NODE_ENV === 'development',
 }
 ```
 
@@ -31,12 +33,14 @@ const DEFAULT_CONFIG: PerformanceConfig = {
 位置: `src/utils/performance.ts`
 
 功能特性:
+
 - 1080p显示器自动检测
 - 动态间距和字体大小优化
 - 响应式布局自动调整
 - CSS变量动态注入
 
 优化策略:
+
 - 间距缩小至75% (1600-1920px范围)
 - 字体大小缩小至90%
 - 圆角、边框等细节优化
@@ -47,12 +51,14 @@ const DEFAULT_CONFIG: PerformanceConfig = {
 位置: `src/components/case/PerformanceOptimizer.tsx`
 
 功能特性:
+
 - 实时性能状态显示
 - 自动/手动优化切换
 - 1080p专项性能测试
 - 性能评分和建议
 
 界面特性:
+
 - 性能状态指示器 (优秀/良好/一般/较差)
 - 实时性能评分 (0-100分)
 - 详细性能指标展示
@@ -63,11 +69,13 @@ const DEFAULT_CONFIG: PerformanceConfig = {
 ### 1. 表单渲染性能测试
 
 测试内容:
+
 - 20个表单字段的渲染时间
 - 复杂表单布局的性能表现
 - 1080p模式下的渲染优化
 
 测试代码:
+
 ```typescript
 private async testFormRendering() {
   performance.mark('form-render-start');
@@ -84,6 +92,7 @@ private async testFormRendering() {
 ### 2. 表格渲染性能测试
 
 测试内容:
+
 - 50行×10列表格渲染
 - 大数据量表格性能
 - 1080p模式下的表格优化
@@ -91,6 +100,7 @@ private async testFormRendering() {
 ### 3. 模态框渲染性能测试
 
 测试内容:
+
 - 全屏模态框渲染时间
 - 复杂模态框内容性能
 - 背景遮罩性能影响
@@ -98,6 +108,7 @@ private async testFormRendering() {
 ### 4. 响应式布局性能测试
 
 测试内容:
+
 - Grid布局重排性能
 - 1080p响应式断点切换
 - 动态布局调整性能
@@ -107,6 +118,7 @@ private async testFormRendering() {
 ### 1. CSS优化
 
 统一管理样式 (src/styles/unified-management.less):
+
 - 1080p专用设计令牌
 - 紧凑模式间距系统
 - 响应式断点优化
@@ -115,6 +127,7 @@ private async testFormRendering() {
 ### 2. React组件优化
 
 CompactCaseForm优化:
+
 - 智能字段分组 (SmartFieldGroup)
 - 响应式表单布局 (ResponsiveFormLayout)
 - 进度指示器优化 (ProgressIndicator)
@@ -131,12 +144,12 @@ CompactCaseForm优化:
 
 ### 目标指标
 
-| 指标 | 目标值 | 说明 |
-|------|--------|------|
-| 帧渲染时间 | ≤16.67ms | 60fps流畅度 |
-| 最大渲染时间 | ≤100ms | 用户可接受的延迟 |
-| 内存使用 | ≤100MB | 避免内存泄漏 |
-| 组件挂载时间 | ≤50ms | 快速响应用户操作 |
+| 指标         | 目标值   | 说明             |
+| ------------ | -------- | ---------------- |
+| 帧渲染时间   | ≤16.67ms | 60fps流畅度      |
+| 最大渲染时间 | ≤100ms   | 用户可接受的延迟 |
+| 内存使用     | ≤100MB   | 避免内存泄漏     |
+| 组件挂载时间 | ≤50ms    | 快速响应用户操作 |
 
 ### 测试结果示例
 
@@ -192,6 +205,7 @@ apply1080pOptimizations(element: HTMLElement) {
 ### 3. CSS类名管理
 
 自动添加的类名:
+
 - `display-1080p-optimized`: 启用1080p优化
 - `responsive-form-layout-compact`: 紧凑表单布局
 - `unified-form-container`: 统一表单容器
@@ -213,26 +227,26 @@ import PerformanceOptimizer from '@/components/case/PerformanceOptimizer';
 ### 2. 手动性能测试
 
 ```typescript
-import { usePerformanceMonitor } from '@/utils/performance';
+import { usePerformanceMonitor } from '@/utils/performance'
 
-const { run1080pTest } = usePerformanceMonitor();
+const { run1080pTest } = usePerformanceMonitor()
 
 // 运行1080p性能测试
-const results = await run1080pTest();
-console.log('测试结果:', results);
+const results = await run1080pTest()
+console.log('测试结果:', results)
 ```
 
 ### 3. 自定义性能配置
 
 ```typescript
-import { PerformanceMonitor } from '@/utils/performance';
+import { PerformanceMonitor } from '@/utils/performance'
 
 const monitor = new PerformanceMonitor({
   targetFrameTime: 16.67,
-  maxRenderTime: 80,    // 更严格的要求
-  memoryThreshold: 80,  // 更低的内存阈值
-  enableMonitoring: true
-});
+  maxRenderTime: 80, // 更严格的要求
+  memoryThreshold: 80, // 更低的内存阈值
+  enableMonitoring: true,
+})
 ```
 
 ## 监控和维护

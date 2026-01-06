@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'
 import {
   Modal,
   Form,
@@ -15,7 +15,7 @@ import {
   Alert,
   Badge,
   Tooltip,
-} from 'antd';
+} from 'antd'
 import {
   PlusOutlined,
   FileTextOutlined,
@@ -25,27 +25,27 @@ import {
   FolderOpenOutlined,
   WarningOutlined,
   CheckCircleOutlined,
-} from '@ant-design/icons';
-import { enhancedCaseAPI } from '@/services/enhancedCase';
-import WaiverApplicationForm from './waiver/WaiverApplicationForm';
-import MultiClientSelector from './case/MultiClientSelector';
-import type { WaiverApplication } from '@/types/waiverApproval';
+} from '@ant-design/icons'
+import { enhancedCaseAPI } from '@/services/enhancedCase'
+import WaiverApplicationForm from './waiver/WaiverApplicationForm'
+import MultiClientSelector from './case/MultiClientSelector'
+import type { WaiverApplication } from '@/types/waiverApproval'
 
-const { TextArea } = Input;
-const { Option } = Select;
-const { TabPane } = Tabs;
+const { TextArea } = Input
+const { Option } = Select
+const { TabPane } = Tabs
 
 interface EnhancedCaseWithWaiverProps {
-  visible: boolean;
-  onCancel: () => void;
-  onSuccess: () => void;
+  visible: boolean
+  onCancel: () => void
+  onSuccess: () => void
 }
 
 interface ConflictAlert {
-  type: 'CONFLICT' | 'WARNING';
-  message: string;
-  details: string;
-  severity: 'HIGH' | 'MEDIUM' | 'LOW';
+  type: 'CONFLICT' | 'WARNING'
+  message: string
+  details: string
+  severity: 'HIGH' | 'MEDIUM' | 'LOW'
 }
 
 const EnhancedCaseWithWaiver: React.FC<EnhancedCaseWithWaiverProps> = ({
@@ -53,25 +53,25 @@ const EnhancedCaseWithWaiver: React.FC<EnhancedCaseWithWaiverProps> = ({
   onCancel,
   onSuccess,
 }) => {
-  const [form] = Form.useForm();
-  const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('basic');
-  const [selectedClients, setSelectedClients] = useState<any[]>([]);
-  const [conflictAlerts, setConflictAlerts] = useState<ConflictAlert[]>([]);
-  const [waiverModalVisible, setWaiverModalVisible] = useState(false);
-  const [currentCaseId, setCurrentCaseId] = useState<string>('');
-  const [lawyers, setLawyers] = useState<any[]>([]);
-  const [caseTypes, setCaseTypes] = useState<any[]>([]);
-  const [billingMethods, setBillingMethods] = useState<any[]>([]);
+  const [form] = Form.useForm()
+  const [loading, setLoading] = useState(false)
+  const [activeTab, setActiveTab] = useState('basic')
+  const [selectedClients, setSelectedClients] = useState<any[]>([])
+  const [conflictAlerts, setConflictAlerts] = useState<ConflictAlert[]>([])
+  const [waiverModalVisible, setWaiverModalVisible] = useState(false)
+  const [currentCaseId, setCurrentCaseId] = useState<string>('')
+  const [lawyers, setLawyers] = useState<any[]>([])
+  const [caseTypes, setCaseTypes] = useState<any[]>([])
+  const [billingMethods, setBillingMethods] = useState<any[]>([])
 
   useEffect(() => {
     if (visible) {
-      loadInitialData();
-      form.resetFields();
-      setSelectedClients([]);
-      setConflictAlerts([]);
+      loadInitialData()
+      form.resetFields()
+      setSelectedClients([])
+      setConflictAlerts([])
     }
-  }, [visible]);
+  }, [visible])
 
   const loadInitialData = async () => {
     try {
@@ -80,43 +80,43 @@ const EnhancedCaseWithWaiver: React.FC<EnhancedCaseWithWaiverProps> = ({
         { lawyerId: 1, lawyerName: '张律师', position: '高级合伙人' },
         { lawyerId: 2, lawyerName: '李律师', position: '合伙人' },
         { lawyerId: 3, lawyerName: '王律师', position: '主办律师' },
-      ]);
+      ])
 
       setCaseTypes([
         { id: 'CIVIL', name: '民事案件', code: 'CIVIL' },
         { id: 'COMMERCIAL', name: '商事案件', code: 'COMMERCIAL' },
         { id: 'CRIMINAL', name: '刑事案件', code: 'CRIMINAL' },
         { id: 'ADMINISTRATIVE', name: '行政案件', code: 'ADMINISTRATIVE' },
-      ]);
+      ])
 
       setBillingMethods([
         { id: 'FIXED', name: '定额收费', code: 'FIXED' },
         { id: 'HOURLY', name: '按时收费', code: 'HOURLY' },
         { id: 'RISK', name: '风险代理', code: 'RISK' },
         { id: 'MIXED', name: '混合收费', code: 'MIXED' },
-      ]);
+      ])
     } catch (error) {
-      message.error('加载初始数据失败');
+      message.error('加载初始数据失败')
     }
-  };
+  }
 
   // 冲突检测
   const performConflictCheck = async (clients: any[]) => {
     try {
-      setLoading(true);
+      setLoading(true)
 
       // 模拟冲突检测逻辑
-      const alerts: ConflictAlert[] = [];
+      const alerts: ConflictAlert[] = []
 
-      clients.forEach(client => {
+      clients.forEach((client) => {
         // 检查是否存在潜在冲突
         if (client.type === 'COMPANY' && client.businessNature === '银行') {
           alerts.push({
             type: 'CONFLICT',
             message: '银行客户冲突检测',
             details: '发现与银行客户的潜在利益冲突，需要进一步评估',
-            severity: 'HIGH'
-          });
+            severity: 'HIGH',
+          })
         }
 
         if (client.contactInfo && client.contactInfo.includes('竞争对手')) {
@@ -124,48 +124,45 @@ const EnhancedCaseWithWaiver: React.FC<EnhancedCaseWithWaiverProps> = ({
             type: 'WARNING',
             message: '竞争对手关联',
             details: '客户与现有客户存在竞争关系，建议进行详细审查',
-            severity: 'MEDIUM'
-          });
+            severity: 'MEDIUM',
+          })
         }
-      });
+      })
 
-      setConflictAlerts(alerts);
+      setConflictAlerts(alerts)
 
-      if (alerts.some(alert => alert.type === 'CONFLICT')) {
-        message.warning('检测到潜在利益冲突，建议申请豁免审批');
+      if (alerts.some((alert) => alert.type === 'CONFLICT')) {
+        message.warning('检测到潜在利益冲突，建议申请豁免审批')
       }
-
     } catch (error) {
-      message.error('冲突检测失败');
+      message.error('冲突检测失败')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   // 处理客户选择变化
   const handleClientsChange = (clients: any[]) => {
-    setSelectedClients(clients);
+    setSelectedClients(clients)
     if (clients.length > 0) {
-      performConflictCheck(clients);
+      performConflictCheck(clients)
     } else {
-      setConflictAlerts([]);
+      setConflictAlerts([])
     }
-  };
+  }
 
   // 创建案例
   const handleCreateCase = async () => {
     try {
-      setLoading(true);
+      setLoading(true)
 
       if (selectedClients.length === 0) {
-        message.error('请至少选择一个客户');
-        return;
+        message.error('请至少选择一个客户')
+        return
       }
 
       // 检查是否有未解决的冲突
-      const hasUnresolvedConflicts = conflictAlerts.some(
-        alert => alert.type === 'CONFLICT'
-      );
+      const hasUnresolvedConflicts = conflictAlerts.some((alert) => alert.type === 'CONFLICT')
 
       if (hasUnresolvedConflicts) {
         Modal.confirm({
@@ -175,23 +172,23 @@ const EnhancedCaseWithWaiver: React.FC<EnhancedCaseWithWaiverProps> = ({
           cancelText: '先申请豁免',
           onOk: () => createCase(),
           onCancel: () => {
-            setCurrentCaseId(`CASE_${Date.now()}`);
-            setWaiverModalVisible(true);
+            setCurrentCaseId(`CASE_${Date.now()}`)
+            setWaiverModalVisible(true)
           },
-        });
+        })
       } else {
-        await createCase();
+        await createCase()
       }
     } catch (error) {
-      message.error('创建案例失败');
+      message.error('创建案例失败')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   // 实际创建案例逻辑
   const createCase = async () => {
-    const values = await form.validateFields();
+    const values = await form.validateFields()
 
     const caseData = {
       title: values.title,
@@ -202,65 +199,71 @@ const EnhancedCaseWithWaiver: React.FC<EnhancedCaseWithWaiverProps> = ({
       practiceArea: values.practiceArea || 'GENERAL',
       estimatedDuration: values.estimatedDuration,
       billingMethod: values.billingMethod,
-      clientProfileIds: selectedClients.map(client => client.clientId),
+      clientProfileIds: selectedClients.map((client) => client.clientId),
       clientRoles: selectedClients.reduce((acc, client) => {
         acc[client.clientId] = {
           role: client.role || 'PRIMARY',
           relationshipDescription: client.relationshipDescription,
-        };
-        return acc;
+        }
+        return acc
       }, {}),
       lawyerId: values.lawyerId,
       assignedBy: 1,
       isMajorRisk: values.isMajorRisk || false,
-    };
+    }
 
-    await enhancedCaseAPI.createEnhancedCase(caseData);
-    message.success('案例创建成功');
-    onSuccess();
-    onCancel();
-  };
+    await enhancedCaseAPI.createEnhancedCase(caseData)
+    message.success('案例创建成功')
+    onSuccess()
+    onCancel()
+  }
 
   // 豁免申请成功处理
   const handleWaiverSuccess = (waiverApplication: WaiverApplication) => {
-    message.success('豁免申请创建成功');
-    setWaiverModalVisible(false);
+    message.success('豁免申请创建成功')
+    setWaiverModalVisible(false)
     // 可以在这里继续创建案例或者等待豁免批准
-  };
+  }
 
   // 渲染冲突警报
   const renderConflictAlerts = () => {
-    if (conflictAlerts.length === 0) return null;
+    if (conflictAlerts.length === 0) {
+      return null
+    }
 
     return (
       <Alert
-        message="冲突检测结果"
+        message='冲突检测结果'
         description={
           <div>
             {conflictAlerts.map((alert, index) => (
               <div key={index} style={{ marginBottom: 8 }}>
                 <Badge
-                  color={alert.severity === 'HIGH' ? 'red' : alert.severity === 'MEDIUM' ? 'orange' : 'yellow'}
+                  color={
+                    alert.severity === 'HIGH'
+                      ? 'red'
+                      : alert.severity === 'MEDIUM'
+                        ? 'orange'
+                        : 'yellow'
+                  }
                   text={alert.message}
                 />
-                <div style={{ fontSize: '12px', color: '#666', marginTop: 4 }}>
-                  {alert.details}
-                </div>
+                <div style={{ fontSize: '13px', color: '#374151', marginTop: 4 }}>{alert.details}</div>
               </div>
             ))}
           </div>
         }
-        type={conflictAlerts.some(a => a.type === 'CONFLICT') ? 'warning' : 'info'}
+        type={conflictAlerts.some((a) => a.type === 'CONFLICT') ? 'warning' : 'info'}
         showIcon
         action={
-          conflictAlerts.some(a => a.type === 'CONFLICT') && (
+          conflictAlerts.some((a) => a.type === 'CONFLICT') && (
             <Button
-              size="small"
-              type="primary"
+              size='small'
+              type='primary'
               icon={<PlusOutlined />}
               onClick={() => {
-                setCurrentCaseId(`CASE_${Date.now()}`);
-                setWaiverModalVisible(true);
+                setCurrentCaseId(`CASE_${Date.now()}`)
+                setWaiverModalVisible(true)
               }}
             >
               申请豁免
@@ -269,29 +272,29 @@ const EnhancedCaseWithWaiver: React.FC<EnhancedCaseWithWaiverProps> = ({
         }
         style={{ marginBottom: 16 }}
       />
-    );
-  };
+    )
+  }
 
   // 渲染基础信息标签页
   const renderBasicInfo = () => (
-    <Card title="基本信息" size="small">
+    <Card title='基本信息' size='small'>
       <Row gutter={16}>
         <Col span={12}>
           <Form.Item
-            label="案件名称"
-            name="title"
+            label='案件名称'
+            name='title'
             rules={[{ required: true, message: '请输入案件名称' }]}
           >
-            <Input placeholder="请输入案件名称" />
+            <Input placeholder='请输入案件名称' />
           </Form.Item>
         </Col>
         <Col span={12}>
           <Form.Item
-            label="案件类型"
-            name="caseType"
+            label='案件类型'
+            name='caseType'
             rules={[{ required: true, message: '请选择案件类型' }]}
           >
-            <Select placeholder="请选择案件类型">
+            <Select placeholder='请选择案件类型'>
               {caseTypes?.map((type) => (
                 <Option key={type.id} value={type.code}>
                   {type.name}
@@ -304,29 +307,21 @@ const EnhancedCaseWithWaiver: React.FC<EnhancedCaseWithWaiverProps> = ({
 
       <Row gutter={16}>
         <Col span={12}>
-          <Form.Item
-            label="优先级"
-            name="priority"
-            initialValue="MEDIUM"
-          >
-            <Select placeholder="请选择优先级">
-              <Option value="HIGH">高</Option>
-              <Option value="MEDIUM">中</Option>
-              <Option value="LOW">低</Option>
+          <Form.Item label='优先级' name='priority' initialValue='MEDIUM'>
+            <Select placeholder='请选择优先级'>
+              <Option value='HIGH'>高</Option>
+              <Option value='MEDIUM'>中</Option>
+              <Option value='LOW'>低</Option>
             </Select>
           </Form.Item>
         </Col>
         <Col span={12}>
-          <Form.Item
-            label="业务领域"
-            name="practiceArea"
-            initialValue="GENERAL"
-          >
-            <Select placeholder="请选择业务领域">
-              <Option value="GENERAL">一般法律业务</Option>
-              <Option value="CORPORATE">公司法务</Option>
-              <Option value="LITIGATION">诉讼业务</Option>
-              <Option value="COMPLIANCE">合规业务</Option>
+          <Form.Item label='业务领域' name='practiceArea' initialValue='GENERAL'>
+            <Select placeholder='请选择业务领域'>
+              <Option value='GENERAL'>一般法律业务</Option>
+              <Option value='CORPORATE'>公司法务</Option>
+              <Option value='LITIGATION'>诉讼业务</Option>
+              <Option value='COMPLIANCE'>合规业务</Option>
             </Select>
           </Form.Item>
         </Col>
@@ -335,11 +330,11 @@ const EnhancedCaseWithWaiver: React.FC<EnhancedCaseWithWaiverProps> = ({
       <Row gutter={16}>
         <Col span={12}>
           <Form.Item
-            label="收费方式"
-            name="billingMethod"
+            label='收费方式'
+            name='billingMethod'
             rules={[{ required: true, message: '请选择收费方式' }]}
           >
-            <Select placeholder="请选择收费方式">
+            <Select placeholder='请选择收费方式'>
               {billingMethods?.map((method) => (
                 <Option key={method.id} value={method.code}>
                   {method.name}
@@ -349,18 +344,22 @@ const EnhancedCaseWithWaiver: React.FC<EnhancedCaseWithWaiverProps> = ({
           </Form.Item>
         </Col>
         <Col span={12}>
-          <Form.Item label="预计持续时间" name="estimatedDuration">
-            <Input placeholder="如：3个月" />
+          <Form.Item label='预计持续时间' name='estimatedDuration'>
+            <Input placeholder='如：3个月' />
           </Form.Item>
         </Col>
       </Row>
 
-      <Form.Item label="案件描述" name="description">
-        <TextArea rows={4} placeholder="请输入案件的详细描述" />
+      <Form.Item label='案件描述' name='description'>
+        <TextArea rows={4} placeholder='请输入案件的详细描述' />
       </Form.Item>
 
-      <Form.Item label="主办律师" name="lawyerId" rules={[{ required: true, message: '请选择主办律师' }]}>
-        <Select placeholder="请选择主办律师">
+      <Form.Item
+        label='主办律师'
+        name='lawyerId'
+        rules={[{ required: true, message: '请选择主办律师' }]}
+      >
+        <Select placeholder='请选择主办律师'>
           {lawyers?.map((lawyer) => (
             <Option key={lawyer.lawyerId} value={lawyer.lawyerId}>
               {lawyer.lawyerName} - {lawyer.position}
@@ -369,29 +368,24 @@ const EnhancedCaseWithWaiver: React.FC<EnhancedCaseWithWaiverProps> = ({
         </Select>
       </Form.Item>
     </Card>
-  );
+  )
 
   return (
     <Modal
-      title="创建增强案例"
+      title='创建增强案例'
       open={visible}
       onCancel={onCancel}
       width={1200}
       footer={[
-        <Button key="cancel" onClick={onCancel}>
+        <Button key='cancel' onClick={onCancel}>
           取消
         </Button>,
-        <Button
-          key="submit"
-          type="primary"
-          loading={loading}
-          onClick={handleCreateCase}
-        >
+        <Button key='submit' type='primary' loading={loading} onClick={handleCreateCase}>
           创建案例
         </Button>,
       ]}
     >
-      <Form form={form} layout="vertical">
+      <Form form={form} layout='vertical'>
         <Tabs activeKey={activeTab} onChange={setActiveTab}>
           <TabPane
             tab={
@@ -400,7 +394,7 @@ const EnhancedCaseWithWaiver: React.FC<EnhancedCaseWithWaiverProps> = ({
                 基本信息
               </span>
             }
-            key="basic"
+            key='basic'
           >
             {renderBasicInfo()}
           </TabPane>
@@ -415,15 +409,15 @@ const EnhancedCaseWithWaiver: React.FC<EnhancedCaseWithWaiverProps> = ({
                 )}
               </span>
             }
-            key="clients"
+            key='clients'
           >
-            <Card title="客户选择与配置" size="small">
+            <Card title='客户选择与配置' size='small'>
               <MultiClientSelector
                 value={selectedClients}
                 onChange={handleClientsChange}
                 form={form}
                 maxClients={10}
-                showConflictConfig={true}
+                showConflictConfig
                 allowPrimaryOnly={false}
               />
             </Card>
@@ -438,15 +432,15 @@ const EnhancedCaseWithWaiver: React.FC<EnhancedCaseWithWaiverProps> = ({
                 冲突检测
                 {conflictAlerts.length > 0 && (
                   <Badge
-                    count={conflictAlerts.filter(a => a.type === 'CONFLICT').length}
+                    count={conflictAlerts.filter((a) => a.type === 'CONFLICT').length}
                     style={{ marginLeft: 8 }}
                   />
                 )}
               </span>
             }
-            key="conflict"
+            key='conflict'
           >
-            <Card title="冲突检测结果" size="small">
+            <Card title='冲突检测结果' size='small'>
               {conflictAlerts.length > 0 ? (
                 <div>
                   {conflictAlerts.map((alert, index) => (
@@ -460,21 +454,21 @@ const EnhancedCaseWithWaiver: React.FC<EnhancedCaseWithWaiverProps> = ({
                     />
                   ))}
 
-                  {conflictAlerts.some(a => a.type === 'CONFLICT') && (
+                  {conflictAlerts.some((a) => a.type === 'CONFLICT') && (
                     <div style={{ marginTop: 16 }}>
                       <Alert
-                        message="建议操作"
-                        description="检测到利益冲突，建议先申请豁免审批，避免后续合规风险。"
-                        type="info"
+                        message='建议操作'
+                        description='检测到利益冲突，建议先申请豁免审批，避免后续合规风险。'
+                        type='info'
                         showIcon
                         action={
                           <Button
-                            type="primary"
-                            size="small"
+                            type='primary'
+                            size='small'
                             icon={<PlusOutlined />}
                             onClick={() => {
-                              setCurrentCaseId(`CASE_${Date.now()}`);
-                              setWaiverModalVisible(true);
+                              setCurrentCaseId(`CASE_${Date.now()}`)
+                              setWaiverModalVisible(true)
                             }}
                           >
                             申请豁免
@@ -488,10 +482,10 @@ const EnhancedCaseWithWaiver: React.FC<EnhancedCaseWithWaiverProps> = ({
                 <div style={{ textAlign: 'center', padding: 40 }}>
                   <CheckCircleOutlined style={{ fontSize: 48, color: '#52c41a' }} />
                   <div style={{ marginTop: 16 }}>
-                    <Text type="secondary">未检测到明显冲突</Text>
+                    <Text type='secondary'>未检测到明显冲突</Text>
                   </div>
                   <div style={{ marginTop: 8 }}>
-                    <Text type="secondary" style={{ fontSize: 12 }}>
+                    <Text type='secondary' style={{ fontSize: 12 }}>
                       建议定期进行冲突检测以确保合规性
                     </Text>
                   </div>
@@ -511,7 +505,7 @@ const EnhancedCaseWithWaiver: React.FC<EnhancedCaseWithWaiverProps> = ({
         caseTitle={form.getFieldValue('title') || '新建案例'}
       />
     </Modal>
-  );
-};
+  )
+}
 
-export default EnhancedCaseWithWaiver;
+export default EnhancedCaseWithWaiver
