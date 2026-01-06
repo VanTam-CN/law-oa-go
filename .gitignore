@@ -309,3 +309,36 @@ security_audit.go
 *.dll
 *.so
 *.dylib
+
+# 项目特定的诊断和测试文件 (2025-01-06 清理)
+*_token.txt
+debug_*.js
+debug_*.html
+fix_*.js
+fix_*.html
+verify_*.js
+verify_*.html
+check_*.html
+check_*.js
+test_*.html
+test_*.js
+*_diagnosis.js
+*_integration.js
+*_integration.html
+*_auth_fix.js
+*_fix_verification.js
+*_with_auth.js
+waiver_approval_test.html
+final_integration_test.js
+optimize_frontend_ui.js
+*_frontend_fix.js
+*_test.html
+*_test.js
+set_token_and_test.html
+
+# 进程ID文件
+.backend.pid
+.frontend.pid
+
+# 备份目录 (仅用于本地开发)
+# backup/
