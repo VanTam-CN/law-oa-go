@@ -1,2 +1,2 @@
 #!/bin/bash
-./app > backend.log 2>&1
+./law-oa-server > backend.log 2>&1

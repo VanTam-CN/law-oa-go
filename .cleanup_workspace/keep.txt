@@ -1,0 +1,23 @@
+# 保留的文件 (未迁移，仍在项目中)
+
+## 可执行文件
+law-oa-server - 主服务器可执行文件
+
+## 核心启动脚本
+run.sh - 主启动脚本
+dev.sh - 开发环境启动脚本
+run_backend.sh - 后端启动脚本
+rebuild_frontend.sh - 前端重建脚本
+
+## 配置文件
+.env - 环境配置
+.env.example - 环境配置示例
+config.yaml - 系统配置
+
+## 数据库
+law_oa.db - SQLite 数据库文件
+
+## 项目核心文件
+main.go - 主入口文件
+go.mod / go.sum - Go 模块依赖
+package.json - Node.js 依赖

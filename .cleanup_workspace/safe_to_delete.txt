@@ -1,0 +1,85 @@
+# 可安全删除的文件 (已迁移到 backup/)
+# 这些文件可以永久删除，不影响项目运行
+
+## 备份文件 (*.bak) - 23个文件
+_test_api.go.bak
+_test_approval_system.go.bak
+_test_approval_stats.go.bak
+_debug_approval_data.go.bak
+frontend/src/assets/styles/components.css.bak
+frontend/src/pages/lawyer/LawyerManagementDebug.tsx.bak
+internal/metrics/monitor_service.go.bak
+internal/metrics/business_monitor.go.bak
+internal/middleware/error_handler.go.bak
+internal/middleware/signature.go.bak
+internal/rbac/initializer.go.bak
+internal/cache/cached_service.go.bak
+internal/config/config_legacy.go.bak
+internal/config/test_config.go.bak
+internal/adapters/conflict_waiver_adapter.go.bak
+internal/errors/errors_legacy.go.bak
+internal/handlers/waiver_approval_handler.go.bak
+internal/handlers/auth_handler.go.bak
+internal/handlers/case_handler.go.bak
+internal/handlers/approval_handler.go.bak
+internal/services/conflict_waiver_service.go.bak
+internal/services/waiver_approval_service.go.bak
+internal/services/user_service.go.bak
+
+## 重复的可执行文件 - 12个文件
+app (74.5MB)
+law-oa-go-final (74.4MB)
+law-oa-go-fixed (74.4MB)
+law-oa-server-clean (74.6MB)
+law-oa-server-debug (74.6MB)
+law-oa-server-final (74.6MB)
+law-oa-server-final-fixed (74.6MB)
+law-oa-server-fixed (74.6MB)
+law-oa-server-fixed-final (74.6MB)
+law-oa-server-new (74.6MB)
+law-oa-server-ultimate-fix (74.6MB)
+main (74.4MB)
+
+## 日志文件 - 6个文件
+backend.log (6.5MB)
+go_server.log (593KB)
+server-fixed.log (44KB)
+server_debug.log (38KB)
+frontend.log (49B)
+performance_test_results.log (36KB)
+unit_test_results.log (218KB)
+
+## 诊断/测试文件 - 27个文件
+check_browser_storage.html
+check_frontend_token.html
+coverage.html
+client_search_diagnosis.js
+debug_frontend_params.js
+debug_user_id.html
+final_integration_test.js
+fix_client_names.js
+fix_user_id_issue.html
+frontend_auth_check.js
+optimize_frontend_ui.js
+set_token_and_test.html
+test_api_login.js
+test_approval_auth_fix.js
+test_approval_data.html
+test_approval_detail_api.js
+test_conflict_api_fix.js
+test_conflict_fix_verification.js
+test_conflict_with_auth.js
+test_frontend_conflict_fix.js
+test_frontend_fix.html
+test_frontend_integration.js
+test_frontend_service_fix.js
+test_integration.html
+test_multi_client_functionality.html
+test_real_scenario.js
+verify_frontend_fix.js
+waiver_approval_test.html
+
+## 临时文件 - 3个文件
+current_token.txt
+new_token.txt
+verify_postgres_data (7MB)

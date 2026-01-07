@@ -1,0 +1,80 @@
+=== 项目基线报告 ===
+记录时间: 2025-01-06
+
+## 项目结构
+
+主要目录:
+  - .bmad-core
+  - .claude
+  - .cleanup_workspace
+  - .gemini-clipboard
+  - .git
+  - .github
+  - .spec-workflow
+  - .vscode
+  - archive
+  - backup
+  - bin
+  - cmd
+  - config
+  - configs
+  - deployments
+  - disabled_handlers
+  - docs
+  - frontend
+  - helm
+  - internal
+  - k8s
+  - migrate
+  - migrations
+  - monitoring
+  - nginx
+  - node_modules
+  - openspec
+  - pkg
+  - reports
+  - scripts
+  - services
+  - test
+  - test_files
+  - tests
+  - uploads
+
+## 关键配置文件
+  - .golangci.yml
+  - alert_rules.yml
+  - alertmanager.yml
+  - alerts.yml
+  - config.example.toml
+  - config.sh
+  - config.yaml
+  - core-config.yaml
+  - deployment.yaml
+  - docker-compose.prod.yml
+  - docker-compose.yml
+  - elasticsearch.yml
+  - go.mod
+  - install-manifest.yaml
+  - openapi.yaml
+  - package.json
+  - prometheus.yml
+  - swagger.yaml
+
+## 已清理的文件
+  备份位置: backup/2025-01-06_cleanup/
+  - backup_files/: 23 个 .bak 文件
+  - executables/: 12 个重复可执行文件 (释放 520MB)
+  - logs/: 6 个日志文件
+  - diagnostics/: 27 个诊断/测试文件
+  - scripts/: 6 个测试脚本
+  - temp/: 3 个临时文件
+
+## 保留的核心文件
+  - law-oa-server (主可执行文件)
+  - run.sh, dev.sh (启动脚本)
+  - main.go (主入口文件)
+  - go.mod, go.sum (Go依赖)
+
+## Git 状态
+dc167cb chore: 清理项目多余文件到备份目录
+  分支: feature/enhanced-conflict-detection
