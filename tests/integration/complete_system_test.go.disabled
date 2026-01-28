@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -91,7 +90,7 @@ func (suite *CompleteSystemTestSuite) TestCaseCreationWorkflow() {
 
 	jsonData, _ := json.Marshal(caseData)
 	resp, err := suite.testClient.Post(
-		suite.baseURL + "/cases",
+		suite.baseURL+"/cases",
 		"application/json",
 		bytes.NewBuffer(jsonData),
 	)
@@ -192,22 +191,22 @@ func (suite *CompleteSystemTestSuite) TestConflictDetectionWorkflow() {
 
 	// 4. 执行冲突检测
 	conflictData := map[string]interface{}{
-		"clientId":                 "1",
-		"clientName":               "测试客户公司",
-		"caseName":                 "商业合同纠纷案",
-		"caseType":                 "commercial",
-		"clientType":               "COMPANY",
-		"otherParties":             []string{"对手公司"},
-		"searchYears":              5,
+		"clientId":                  "1",
+		"clientName":                "测试客户公司",
+		"caseName":                  "商业合同纠纷案",
+		"caseType":                  "commercial",
+		"clientType":                "COMPANY",
+		"otherParties":              []string{"对手公司"},
+		"searchYears":               5,
 		"includeCorporateRelations": true,
-		"searchDepth":              "deep",
-		"userId":                   "1",
-		"requestTime":              time.Now(),
+		"searchDepth":               "deep",
+		"userId":                    "1",
+		"requestTime":               time.Now(),
 	}
 
 	jsonData, _ := json.Marshal(conflictData)
 	resp, err = suite.testClient.Post(
-		suite.baseURL + "/conflict/check",
+		suite.baseURL+"/conflict/check",
 		"application/json",
 		bytes.NewBuffer(jsonData),
 	)
@@ -284,7 +283,7 @@ func (suite *CompleteSystemTestSuite) TestErrorHandling() {
 		} else if tc.method == "POST" {
 			jsonData, _ := json.Marshal(tc.body)
 			resp, err = suite.testClient.Post(
-				suite.baseURL + tc.url,
+				suite.baseURL+tc.url,
 				"application/json",
 				bytes.NewBuffer(jsonData),
 			)
