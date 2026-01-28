@@ -2,10 +2,11 @@
 
 <div align="center">
 
-![Go](https://img.shields.io/badge/Go-1.23+-00ADD8?style=for-the-badge&logo=go&logoColor=white)
+![Go](https://img.shields.io/badge/Go-1.23-00ADD8?style=for-the-badge&logo=go&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)
 ![Version](https://img.shields.io/badge/Version-v2.1.0-blue.svg?style=for-the-badge)
 ![Database](https://img.shields.io/badge/Database-PostgreSQL%2BMySQL-blue.svg?style=for-the-badge)
+![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=white)
 ![Build](https://img.shields.io/badge/Build-passing-brightgreen.svg?style=for-the-badge)
 ![Status](https://img.shields.io/badge/Status-Production%20Ready-green.svg?style=for-the-badge)
 
@@ -19,16 +20,16 @@
 
 ## 🌟 项目概述
 
-Law OA Go 是一个基于 Go 1.23+ 构建的现代化律师事务所办公自动化系统，采用单体架构设计，为中小型律师事务所提供完整的数字化解决方案。现已完成 **PostgreSQL 数据库适配**，支持双数据库环境部署。
+Law OA Go 是一个基于 Go 1.23 构建的现代化律师事务所办公自动化系统，采用单体架构设计，为中小型律师事务所提供完整的数字化解决方案。现已完成 **PostgreSQL 数据库适配**，支持双数据库环境部署。
 
 ### 🎯 核心价值
 
 - **🚀 高性能**: 基于 Go 语言的高并发处理能力，API响应时间 < 100ms
 - **🛡️ 安全可靠**: JWT 认证、RBAC权限控制、bcrypt密码加密
-- **📱 现代化 API**: RESTful 设计、统一响应格式、完整的错误处理
+- **📱 现代化前端**: React 18 + Ant Design 5，响应式设计，流畅交互
 - **🗄️ 数据库灵活**: 支持 MySQL 和 PostgreSQL 双环境，无缝切换
 - **🔧 易维护**: 清晰的分层架构、完整测试覆盖、规范化代码
-- **☁️ 生产就绪**: Docker 容器化、健康检查、监控指标、日志系统
+- **☁️ 生产就绪**: Docker 容器化、健康检查、监控指标、结构化日志
 
 ### 📊 系统状态
 
@@ -47,7 +48,7 @@ Law OA Go 是一个基于 Go 1.23+ 构建的现代化律师事务所办公自动
 | 💬 协作聊天 | 🔄 框架完成 | 60% | 50% | WebSocket + PostgreSQL |
 
 **当前版本**: v2.1.0
-**最后更新**: 2025-11-03
+**最后更新**: 2026-01-09
 **维护状态**: 🟢 活跃维护
 **编译状态**: ✅ 编译通过
 **数据库状态**: ✅ PostgreSQL + MySQL 双环境
@@ -148,37 +149,40 @@ Law OA Go 是一个基于 Go 1.23+ 构建的现代化律师事务所办公自动
 ## 🏗️ 技术架构
 
 ### 后端技术栈
-- **语言**: Go 1.23+
-- **框架**: Gin Web Framework
-- **数据库**: PostgreSQL 15 / MySQL 8.0
+- **语言**: Go 1.23 (toolchain go1.23.6)
+- **框架**: Gin Web Framework v1.10.1
+- **数据库**: PostgreSQL 15 / MySQL 8.0 / SQLite
 - **ORM**: GORM v1.30
-- **缓存**: Redis 7
-- **搜索**: Elasticsearch 8.11
-- **认证**: JWT (golang-jwt/v5)
-- **日志**: Zap
-- **监控**: Prometheus + Grafana
+- **缓存**: Redis go-redis v9.0.5
+- **搜索**: Elasticsearch 8.9 (go-elasticsearch v8.9.0)
+- **认证**: JWT (golang-jwt/jwt/v5)
+- **日志**: Zap v1.24.0 + Lumberjack
+- **监控**: Prometheus v1.16.0 + OpenTelemetry
+- **验证**: go-playground/validator v10.26.0
+- **配置管理**: Viper v1.16.0
 
 ### 前端技术栈
-- **框架**: React 18 + TypeScript
-- **构建工具**: Vite 5.x
-- **UI 组件**: Ant Design 5.x
-- **状态管理**: React Router + Hooks + Context API
-- **HTTP 客户端**: Axios
-- **图表**: ECharts + Chart.js
-- **测试**: Vitest + React Testing Library
+- **框架**: React 18.2.0 + TypeScript 5.0.2
+- **构建工具**: Vite 5.1.0
+- **UI 组件**: Ant Design 5.16.1
+- **状态管理**: Redux Toolkit @tanstack/react-query + Zustand 5.0.8
+- **路由**: React Router 7.9.4
+- **HTTP 客户端**: Axios 1.12.2
+- **图表**: ECharts 5.6.0 + Recharts 3.1.2
+- **测试**: Jest 30.2.0 + Testing Library
 - **实时通信**: WebSocket Client
-- **文档处理**: PDF.js, Docx.js
+- **文档处理**: Puppeteer 24.22.3
 
 ### 基础设施
 - **容器化**: Docker & Docker Compose
 - **反向代理**: Nginx
-- **监控**: 自研监控系统 + Prometheus + Grafana
-- **日志**: 结构化日志系统 + ELK Stack
-- **CI/CD**: GitHub Actions
+- **监控**: Prometheus + OpenTelemetry + Jaeger
+- **日志**: 结构化日志系统 (Zap + Lumberjack)
+- **CI/CD**: GitHub Actions + Husky
 - **实时通信**: WebSocket 服务器
-- **文档存储**: 本地存储 + 云存储支持
+- **文档存储**: 本地存储 + 云存储支持 (OSS)
 - **缓存**: Redis 多级缓存
-- **搜索**: Elasticsearch 8.11 集群
+- **搜索**: Elasticsearch 8.9 集群
 
 ### 架构设计
 ```
@@ -557,79 +561,91 @@ go run scripts/migrate-to-postgresql.go
 ### 项目结构
 ```
 law-oa-go/
+├── main.go                   # 应用程序入口点
 ├── cmd/                      # 应用入口点
 │   └── server/              # 主服务器启动
 ├── internal/                 # 核心业务逻辑
-│   ├── handlers/            # HTTP 处理器
-│   │   ├── auth_handler.go
-│   │   ├── conflict_handler.go      # 冲突检测处理器
-│   │   ├── finance_handler.go       # 财务管理处理器
-│   │   ├── notification_handler.go  # 通知系统处理器
-│   │   └── chat_handler.go          # 聊天功能处理器
-│   ├── services/            # 业务服务层
-│   │   ├── auth_service.go
+│   ├── handlers/            # HTTP 处理器 (30个文件)
+│   │   ├── auth_handler.go         # 认证处理器
+│   │   ├── conflict_handler.go     # 冲突检测处理器
+│   │   ├── finance_handler.go      # 财务管理处理器
+│   │   ├── notification_handler.go # 通知系统处理器
+│   │   └── ...                     # 其他处理器
+│   ├── services/            # 业务服务层 (58个文件)
+│   │   ├── auth_service.go         # 认证服务
 │   │   ├── conflict_detection_service.go  # 冲突检测服务
-│   │   ├── finance_service.go          # 财务管理服务
-│   │   ├── notification_service.go     # 通知服务
-│   │   └── chat_service.go             # 聊天服务
-│   ├── repositories/         # 数据访问层
-│   │   ├── finance_repository.go       # 财务数据仓库
+│   │   ├── finance_service.go      # 财务管理服务
+│   │   ├── notification_service.go # 通知服务
+│   │   └── ...                     # 其他服务
+│   ├── repositories/         # 数据访问层 (40个文件)
+│   │   ├── finance_repository.go   # 财务数据仓库
 │   │   ├── notification_repository.go  # 通知数据仓库
 │   │   └── conflict_repository.go      # 冲突检测仓库
-│   ├── models/              # 数据模型
+│   ├── models/              # 数据模型 (21个文件)
 │   │   ├── finance.go              # 财务相关模型
 │   │   ├── notification.go         # 通知模型
 │   │   ├── conflict.go             # 冲突检测模型
 │   │   ├── collaboration_models.go # 协作模型
-│   │   └── chat.go                 # 聊天模型
-│   ├── search/              # 搜索引擎
-│   │   ├── elasticsearch_client.go   # ES 客户端
-│   │   └── search_service.go        # 搜索服务
-│   ├── storage/             # 存储服务
-│   │   ├── file_storage.go          # 文件存储
-│   │   └── document_service.go      # 文档处理
-│   ├── websocket/           # WebSocket 通信
-│   │   ├── websocket_manager.go     # WebSocket 管理器
-│   │   └── chat_handler.go          # 聊天处理器
-│   ├── middleware/          # 中间件
+│   │   └── ...                     # 其他模型
+│   ├── middleware/          # 中间件 (24个文件)
 │   │   ├── auth.go
 │   │   ├── cors.go
-│   │   └── permission.go            # 权限中间件
-│   └── config/              # 配置管理
+│   │   └── permission.go           # 权限中间件
+│   ├── database/            # 数据库相关 (13个文件)
+│   │   ├── connection.go
+│   │   ├── migration.go
+│   │   └── ...
+│   ├── cache/               # 缓存模块
+│   │   └── redis_cache.go
+│   ├── elasticsearch/       # 搜索引擎
+│   │   └── client.go
+│   ├── config/              # 配置管理
+│   ├── errors/              # 错误处理
+│   ├── validators/          # 数据验证
+│   └── router/              # 路由配置
 ├── frontend/                 # 前端代码
 │   ├── src/                # React 组件源码
 │   │   ├── pages/          # 页面组件
+│   │   │   ├── auth/       # 认证页面
 │   │   │   ├── case/       # 案件管理页面
 │   │   │   ├── finance/    # 财务管理页面
 │   │   │   ├── conflict/   # 冲突检测页面
-│   │   │   └── notification/ # 通知管理页面
+│   │   │   └── dashboard/  # 仪表板
 │   │   ├── components/     # 通用组件
 │   │   ├── services/       # API 服务
+│   │   ├── store/          # 状态管理
 │   │   └── utils/          # 工具函数
 │   ├── public/             # 静态资源
-│   └── dist/               # 构建输出
-├── scripts/                # 脚本工具
+│   └── package.json        # 前端依赖配置
+├── scripts/                 # 脚本工具
 │   ├── build.go           # 构建脚本
 │   ├── create_test_data.go # 测试数据生成
 │   └── migration/         # 数据库迁移
-├── test/                   # 测试代码
+├── migrations/              # 数据库迁移文件 (40个文件)
+├── configs/                 # 配置文件
+│   ├── docker/            # Docker 配置
+│   ├── nginx/             # Nginx 配置
+│   └── postgresql/        # PostgreSQL 配置
+├── docs/                    # 项目文档
+│   ├── api/               # API 文档
+│   ├── deployment/        # 部署文档
+│   └── development/       # 开发文档
+├── test/                    # 测试代码
 │   ├── helpers/           # 测试辅助工具
 │   ├── integration/       # 集成测试
 │   └── e2e/              # 端到端测试
-├── configs/               # 配置文件
-│   ├── docker/           # Docker 配置
-│   ├── nginx/            # Nginx 配置
-│   └── postgresql/       # PostgreSQL 配置
-├── docs/                  # 项目文档
-│   ├── api/              # API 文档
-│   ├── deployment/       # 部署文档
-│   └── development/      # 开发文档
-├── archive/               # 归档文件
-├── backups/               # 备份文件
-├── docker-compose.yml     # Docker Compose 配置
-├── docker-compose.postgresql.yml  # PostgreSQL 版本配置
-├── .env.example          # 环境变量示例
-└── README.md             # 项目说明文档
+├── tests/                   # 测试目录
+├── .spec-workflow/          # 规范工作流
+├── .claude/                 # AI辅助配置目录
+├── openspec/                # OpenSpec 变更提案
+├── docker-compose.yml       # Docker Compose 配置
+├── Dockerfile              # 后端 Docker 镜像
+├── Makefile                # 构建命令配置
+├── go.mod / go.sum         # Go 模块依赖
+├── .env.example            # 环境变量模板
+├── .air.toml               # 热重载配置
+├── .golangci.yml           # 代码检查配置
+└── README.md               # 项目说明文档
 ```
 
 ### 开发环境设置
@@ -869,7 +885,7 @@ node --version  # 需要 >= 18.0
 
 ## 📈 更新日志
 
-### v2.1.0 (2025-11-03)
+### v2.1.0 (2026-01-09)
 - ✨ **重大更新**: 冲突检测系统全面完成
   - 多维度冲突检测算法
   - 智能风险评估系统
@@ -903,6 +919,9 @@ node --version  # 需要 >= 18.0
   - 测试覆盖率提升
   - 文档体系完善
   - CI/CD 流程优化
+  - 清理冗余文件，释放约550MB空间
+  - 前端代码质量改进和优化
+  - API响应格式标准化
 
 ### v2.0.0 (2025-09-28)
 - 🚀 **架构重构**: 全面重构项目架构

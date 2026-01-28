@@ -19,6 +19,8 @@ export interface ApprovalItem {
     | 'cancelled'
     | 'expired'
     | 'pending'
+    | 'needs_revision' // 新增：需要修改
+    | 'resubmitted' // 新增：重新提交
   urgency: 'normal' | 'urgent' | 'very_urgent'
   priority: 'low' | 'medium' | 'high' | 'critical'
   currentApprover?: string
@@ -217,12 +219,112 @@ export const handleApproval = (
   action: 'approve' | 'reject',
   comment: string,
 ): Promise<any> => {
-  // 开发环境返回模拟数据
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({ success: true, message: `审批${action === 'approve' ? '通过' : '拒绝'}成功` })
-    }, 300)
+  return processApprovalDecision(id, {
+    decision: action,
+    decisionReason: comment,
   })
+}
+
+/**
+ * 审批决定请求参数
+ */
+export interface ApprovalDecisionParams {
+  decision: 'approve' | 'reject' | 'request_changes' | 'defer' | 'escalate' | 'reassign'
+  decisionReason: string
+  decisionComments?: string
+  approvedConditions?: Record<string, any>
+  imposedRequirements?: Record<string, any>
+  followUpActions?: Array<Record<string, any>>
+  supportingDocuments?: Array<Record<string, any>>
+  evidenceReferences?: Array<Record<string, any>>
+  nextApproverId?: string // 用于转派
+}
+
+/**
+ * 处理审批决定（真实的API调用）
+ * @param id 审批ID
+ * @param params 审批决定参数
+ * @returns 操作结果
+ */
+export const processApprovalDecision = async (
+  id: string,
+  params: ApprovalDecisionParams,
+): Promise<ApprovalItem> => {
+  try {
+    console.log('🔍 处理审批决定 - ID:', id, '决定:', params.decision)
+    const response = (await post(`/approvals/${id}/decision`, params)) as any
+    console.log('✅ 审批决定响应:', response)
+    return response
+  } catch (error) {
+    console.error('❌ 处理审批决定失败:', error)
+    throw error
+  }
+}
+
+/**
+ * 提交审批申请（从草稿状态提交）
+ * @param id 审批ID
+ * @returns 提交结果
+ */
+export const submitApproval = async (id: string): Promise<ApprovalItem> => {
+  try {
+    console.log('📤 提交审批申请 - ID:', id)
+    const response = (await post(`/approvals/${id}/submit`)) as any
+    console.log('✅ 提交审批响应:', response)
+    return response
+  } catch (error) {
+    console.error('❌ 提交审批失败:', error)
+    throw error
+  }
+}
+
+/**
+ * 重新提交被驳回的审批申请
+ * @param id 审批ID
+ * @param revisionNote 修改说明
+ * @returns 重新提交结果
+ */
+export const resubmitApproval = async (
+  id: string,
+  revisionNote?: string,
+): Promise<ApprovalItem> => {
+  try {
+    console.log('🔄 重新提交审批 - ID:', id, '说明:', revisionNote)
+    const response = (await post(`/approvals/${id}/resubmit`, {
+      revision_note: revisionNote || '',
+    })) as any
+    console.log('✅ 重新提交响应:', response)
+    return response
+  } catch (error) {
+    console.error('❌ 重新提交审批失败:', error)
+    throw error
+  }
+}
+
+/**
+ * 更新审批申请（仅草稿或需要修改状态）
+ * @param id 审批ID
+ * @param params 更新参数
+ * @returns 更新结果
+ */
+export const updateApproval = async (
+  id: string,
+  params: {
+    title?: string
+    content?: string
+    metadata?: Record<string, any>
+    attachments?: Array<Record<string, any>>
+  },
+): Promise<ApprovalItem> => {
+  try {
+    console.log('✏️ 更新审批申请 - ID:', id)
+    const response = (await put(`/approvals/${id}`, params)) as any
+    console.log('✅ 更新审批响应:', response)
+    return response
+  } catch (error) {
+    console.error('❌ 更新审批失败:', error)
+    throw error
+  }
 }
 
 /**

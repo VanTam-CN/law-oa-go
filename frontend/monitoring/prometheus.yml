@@ -1,0 +1,25 @@
+# Prometheus配置文件（简化版）
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# 抓取配置
+scrape_configs:
+  # Prometheus自身监控（可选）
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Law OA Go应用监控
+  - job_name: 'law-oa-go'
+    static_configs:
+      - targets: ['localhost:8080']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+  # Node Exporter系统监控（可选）
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['localhost:9100']
+    scrape_interval: 15s

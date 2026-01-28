@@ -323,18 +323,61 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 		approvalHandler := handlers.NewApprovalHandler(db)
 		log.Println("✅ 审批处理器初始化完成")
 
+		// 初始化集成服务
+		log.Println("🔧 初始化集成服务...")
+		integrationRepo := repositories.NewIntegrationRepository(db)
+		approvalConflictIntegrationService := services.NewApprovalConflictIntegrationService(
+			approvalHandler.GetApprovalService(),
+			conflictService,
+			caseService,
+			integrationRepo,
+		)
+		integrationHandler := handlers.NewIntegrationHandler(approvalConflictIntegrationService, conflictService)
+		log.Println("✅ 集成服务初始化完成")
+
 		log.Println("🔧 开始注册审批路由...")
 		approvals := protected.Group("/approvals")
 		{
-			approvals.POST("", approvalHandler.CreateApproval)               // 创建审批申请
-			approvals.GET("", approvalHandler.ListApprovals)                    // 获取审批列表
-			approvals.GET("/stats", approvalHandler.GetApprovalStats)         // 获取审批统计
-			approvals.GET("/pending", approvalHandler.GetPendingApprovals)     // 获取待审批列表
-			approvals.GET("/:id", approvalHandler.GetApproval)                // 获取审批详情
-			approvals.GET("/workflows", approvalHandler.GetApprovalWorkflows) // 获取工作流列表
-			approvals.GET("/templates", approvalHandler.GetApprovalTemplates) // 获取模板列表
+			approvals.POST("", approvalHandler.CreateApproval)                    // 创建审批申请
+			approvals.GET("", approvalHandler.ListApprovals)                      // 获取审批列表
+			approvals.GET("/stats", approvalHandler.GetApprovalStats)            // 获取审批统计
+			approvals.GET("/pending", approvalHandler.GetPendingApprovals)        // 获取待审批列表
+			approvals.GET("/:id", approvalHandler.GetApproval)                   // 获取审批详情
+			approvals.GET("/workflows", approvalHandler.GetApprovalWorkflows)   // 获取工作流列表
+			approvals.GET("/templates", approvalHandler.GetApprovalTemplates)   // 获取模板列表
+
+			// 新增：审批闭环相关路由
+			approvals.POST("/:id/submit", approvalHandler.SubmitApproval)            // 提交审批
+			approvals.POST("/:id/decision", approvalHandler.ProcessApprovalDecision) // 处理审批决定
+			approvals.POST("/:id/resubmit", approvalHandler.ResubmitApproval)        // 重新提交
+			approvals.POST("/:id/cancel", approvalHandler.CancelApproval)            // 取消审批
+			approvals.PUT("/:id", approvalHandler.UpdateApproval)                    // 更新审批
 		}
 		log.Println("✅ 审批路由注册完成")
+
+		// 注册集成审批路由
+		log.Println("🔧 开始注册集成审批路由...")
+		integration := protected.Group("/integration")
+		{
+			// 集成审批相关路由
+			integration.POST("/approvals/with-conflict", integrationHandler.CreateApprovalWithConflict) // 创建带冲突检测的审批
+			integration.GET("/approvals/:id/status", integrationHandler.GetApprovalIntegrationStatus) // 获取集成状态
+			integration.POST("/approvals/:id/case", integrationHandler.PerformCaseCreation)          // 执行案件创建
+			integration.POST("/approvals/:id/decision", integrationHandler.ProcessApprovalWithConflict) // 处理集成审批
+
+			// 冲突检测相关路由
+			integration.POST("/conflict/check", integrationHandler.TriggerConflictCheck) // 触发冲突检测
+
+			// 统计和历史
+			integration.GET("/statistics", integrationHandler.GetIntegrationStatistics) // 获取集成统计
+			integration.GET("/history", integrationHandler.GetIntegrationHistory)       // 获取集成历史
+			integration.GET("/logs", integrationHandler.GetIntegrationLogs)           // 获取集成日志
+
+			// 重试和取消
+			integration.POST("/approvals/:id/retry", integrationHandler.RetryFailedIntegration) // 重试失败的集成
+			integration.POST("/approvals/:id/cancel", integrationHandler.CancelIntegration)  // 取消集成
+		}
+		log.Println("✅ 集成审批路由注册完成")
 
 		log.Println("完整路由系统初始化完成")
 }

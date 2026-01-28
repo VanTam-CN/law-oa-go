@@ -12,13 +12,24 @@ import (
 	"gorm.io/gorm"
 )
 
+// ApprovalService 审批服务
 type ApprovalService struct {
-	approvalRepo *repositories.ApprovalRepository
+	approvalRepo    *repositories.ApprovalRepository
+	userRepo        repositories.UserRepository
+	stateMachine    *ApprovalStateMachine
+	assigner        *ApprovalAssigner
 }
 
+// NewApprovalService 创建审批服务
 func NewApprovalService(db *gorm.DB) *ApprovalService {
+	approvalRepo := repositories.NewApprovalRepository(db)
+	userRepo := repositories.NewUserRepository(db)
+
 	return &ApprovalService{
-		approvalRepo: repositories.NewApprovalRepository(db),
+		approvalRepo: approvalRepo,
+		userRepo:     userRepo,
+		stateMachine: NewApprovalStateMachine(),
+		assigner:     NewApprovalAssigner(db, approvalRepo, userRepo),
 	}
 }
 
@@ -66,13 +77,11 @@ func (s *ApprovalService) GetApprovalStats(userID string) (*models.ApprovalStats
 
 // GetPendingApprovals 获取待审批列表
 func (s *ApprovalService) GetPendingApprovals(userID string, req *models.ApprovalListRequest) (*models.ApprovalListResponse, error) {
-	// 使用repository获取待审批列表
 	approvals, err := s.approvalRepo.FindPendingByApproverID(userID, req.PageSize, (req.Page-1)*req.PageSize)
 	if err != nil {
 		return nil, fmt.Errorf("获取待审批列表失败: %v", err)
 	}
 
-	// 获取总数
 	total, err := s.approvalRepo.CountPendingByApproverID(userID)
 	if err != nil {
 		return nil, fmt.Errorf("获取待审批总数失败: %v", err)
@@ -91,19 +100,16 @@ func (s *ApprovalService) GetPendingApprovals(userID string, req *models.Approva
 
 // ListApprovals 获取审批列表
 func (s *ApprovalService) ListApprovals(userID string, req *models.ApprovalListRequest) (*models.ApprovalListResponse, error) {
-	// 修复：使用req.ApplicantID参数而不是userID来筛选申请人的审批
-	queryUserID := userID // 默认使用当前用户ID
+	queryUserID := userID
 	if req.ApplicantID != "" {
-		queryUserID = req.ApplicantID // 如果指定了申请人ID，则使用指定的ID
+		queryUserID = req.ApplicantID
 	}
 
-	// 使用repository获取用户的审批列表
 	approvals, err := s.approvalRepo.FindByUserID(queryUserID, req.PageSize, (req.Page-1)*req.PageSize)
 	if err != nil {
 		return nil, fmt.Errorf("获取审批列表失败: %v", err)
 	}
 
-	// 获取总数
 	total, err := s.approvalRepo.CountByUserID(queryUserID, req.Status)
 	if err != nil {
 		return nil, fmt.Errorf("获取审批总数失败: %v", err)
@@ -122,13 +128,12 @@ func (s *ApprovalService) ListApprovals(userID string, req *models.ApprovalListR
 
 // GetApproval 获取单个审批详情
 func (s *ApprovalService) GetApproval(userID string, id string) (*models.ApprovalRequest, error) {
-	// 使用repository获取审批详情
 	approval, err := s.approvalRepo.FindByID(id)
 	if err != nil {
 		return nil, fmt.Errorf("获取审批详情失败: %v", err)
 	}
 
-	// 检查权限：确保用户有权限查看（自己申请的或自己需要审批的）
+	// 检查权限：确保用户有权限查看
 	if approval != nil {
 		if approval.ApplicantID != userID && approval.CurrentApproverID != userID {
 			return nil, fmt.Errorf("无权查看此审批记录")
@@ -136,6 +141,15 @@ func (s *ApprovalService) GetApproval(userID string, id string) (*models.Approva
 	}
 
 	return approval, nil
+}
+
+// GetApprovalRecords 获取审批记录
+func (s *ApprovalService) GetApprovalRecords(approvalID string) ([]models.ApprovalRecord, error) {
+	records, err := s.approvalRepo.FindRecordsByApprovalID(approvalID)
+	if err != nil {
+		return nil, fmt.Errorf("获取审批记录失败: %v", err)
+	}
+	return records, nil
 }
 
 // CreateApproval 创建审批申请
@@ -146,19 +160,23 @@ func (s *ApprovalService) CreateApproval(userID string, userName string, req *mo
 		return nil, fmt.Errorf("生成申请编号失败: %v", err)
 	}
 
-	// 获取用户部门信息（这里简化处理，实际应该从用户服务获取）
-	departmentID := ""
-	departmentName := ""
-
-	// 设置默认值
-	if req.Urgency == "" {
-		req.Urgency = "normal"
-	}
-	if req.Priority == "" {
-		req.Priority = "medium"
+	// 如果userName为空，从数据库查询用户信息
+	if userName == "" {
+		user, err := s.userRepo.FindByStringID(userID)
+		if err == nil && user != nil {
+			userName = user.Name
+		} else {
+			userName = "未知用户"
+		}
 	}
 
-	// 创建审批申请 - 直接设置为已提交状态
+	// 设置默认工作流类型
+	workflowType := req.WorkflowType
+	if workflowType == "" {
+		workflowType = "STANDARD_APPROVAL"
+	}
+
+	// 创建审批申请 - 初始状态为草稿
 	approval := &models.ApprovalRequest{
 		ID:                   generateUUID(),
 		RequestNumber:        requestNumber,
@@ -169,19 +187,19 @@ func (s *ApprovalService) CreateApproval(userID string, userName string, req *mo
 		ApplicantID:          userID,
 		ApplicantName:        userName,
 		ApplicantTitle:       "",
-		DepartmentID:         departmentID,
-		DepartmentName:       departmentName,
+		DepartmentID:         "",
+		DepartmentName:       "",
 		Urgency:              req.Urgency,
 		Priority:             req.Priority,
 		ExpectedEffectiveDate: nil,
 		ExpectedExpiryDate:   nil,
 		DurationDays:         req.DurationDays,
-		Status:               models.ApprovalStatusSubmitted, // 直接设置为已提交状态
-		SubmissionDate:       &time.Time{}, // 设置提交时间
-		CurrentStage:         "initial_review",
+		Status:               models.ApprovalStatusDraft,
+		SubmissionDate:       nil,
+		CurrentStage:         "",
 		CurrentApproverID:    "",
 		CurrentApproverName:  "",
-		WorkflowType:         req.WorkflowType,
+		WorkflowType:         workflowType,
 		WorkflowConfig:       "{}",
 		Attachments:          "{}",
 		Metadata:             "{}",
@@ -189,9 +207,13 @@ func (s *ApprovalService) CreateApproval(userID string, userName string, req *mo
 		UpdatedBy:            userID,
 	}
 
-	// 设置提交时间为当前时间
-	now := time.Now()
-	approval.SubmissionDate = &now
+	// 设置默认值
+	if approval.Urgency == "" {
+		approval.Urgency = models.ApprovalUrgencyNormal
+	}
+	if approval.Priority == "" {
+		approval.Priority = models.ApprovalPriorityMedium
+	}
 
 	// 处理附件和元数据
 	if len(req.Attachments) > 0 {
@@ -215,80 +237,58 @@ func (s *ApprovalService) CreateApproval(userID string, userName string, req *mo
 		}
 	}
 
-	// 保存到数据库
+	// 保存草稿
 	if err := s.approvalRepo.Create(approval); err != nil {
 		return nil, fmt.Errorf("保存审批申请失败: %v", err)
 	}
 
-	// 如果是立即提交，更新状态为已提交
-	// 这里可以添加自动提交的逻辑
-	// err = s.SubmitApproval(userID, approval.ID)
-	// if err != nil {
-	//     return nil, fmt.Errorf("提交审批申请失败: %v", err)
-	// }
-
 	return approval, nil
 }
 
-// UpdateApproval 更新审批申请
-func (s *ApprovalService) UpdateApproval(userID string, id string, req *models.UpdateApprovalRequest) (*models.ApprovalRequest, error) {
-	// 使用repository查找审批记录
-	approval, err := s.approvalRepo.FindByID(id)
+// SubmitApproval 提交审批申请
+func (s *ApprovalService) SubmitApproval(userID string, approvalID string) (*models.ApprovalRequest, error) {
+	approval, err := s.approvalRepo.FindByID(approvalID)
 	if err != nil {
 		return nil, fmt.Errorf("查找审批记录失败: %v", err)
 	}
 
 	// 确保是申请人本人
 	if approval != nil && approval.ApplicantID != userID {
-		return nil, fmt.Errorf("无权更新此审批记录")
+		return nil, fmt.Errorf("无权提交此审批记录")
 	}
 
-	// 只能更新草稿状态的审批
-	if approval != nil && approval.Status != models.ApprovalStatusDraft {
-		return nil, errors.New("只能更新草稿状态的审批")
+	// 只能提交草稿或被拒绝/需要修改状态的审批
+	if approval != nil && !s.stateMachine.CanEdit(approval.Status) {
+		return nil, fmt.Errorf("当前状态 %s 不允许提交", approval.Status)
 	}
 
-	// 更新字段
-	if req.Title != "" {
-		approval.Title = req.Title
-	}
-	if req.Content != "" {
-		approval.Content = req.Content
-	}
-	// Urgency和Priority字段不在UpdateApprovalRequest中，暂时忽略
-
-	// 处理附件和元数据
-	if len(req.Attachments) > 0 {
-		if attachmentsBytes, err := json.Marshal(req.Attachments); err == nil {
-			approval.Attachments = string(attachmentsBytes)
-		}
-	}
-	if req.Metadata != nil {
-		if metadataBytes, err := json.Marshal(req.Metadata); err == nil {
-			approval.Metadata = string(metadataBytes)
-		}
+	// 验证状态转换
+	if err := s.stateMachine.ValidateTransition(approval.Status, models.ApprovalStatusSubmitted); err != nil {
+		return nil, err
 	}
 
+	// 分配审批人
+	if err := s.assigner.AssignApprover(approval); err != nil {
+		return nil, fmt.Errorf("分配审批人失败: %v", err)
+	}
+
+	// 设置提交时间
+	now := time.Now()
+	approval.SubmissionDate = &now
 	approval.UpdatedBy = userID
 
-	// 执行更新
+	// 保存更新
 	if err := s.approvalRepo.Update(approval); err != nil {
-		return nil, fmt.Errorf("更新审批申请失败: %v", err)
+		return nil, fmt.Errorf("提交审批失败: %v", err)
 	}
 
 	// 重新加载数据
-	updatedApproval, err := s.approvalRepo.FindByID(id)
-	if err != nil {
-		return nil, fmt.Errorf("重新加载审批数据失败: %v", err)
-	}
-
-	return updatedApproval, nil
+	return s.approvalRepo.FindByID(approvalID)
 }
 
-// ProcessApproval 处理审批（通过/拒绝）
-func (s *ApprovalService) ProcessApproval(userID string, userName string, id string, req *models.ApprovalDecisionRequest) (*models.ApprovalRequest, error) {
-	// 使用repository查找审批记录
-	approval, err := s.approvalRepo.FindByID(id)
+// ProcessApprovalDecision 处理审批决定（通过/拒绝/要求修改/转派）
+func (s *ApprovalService) ProcessApprovalDecision(userID string, approvalID string, req *models.ApprovalDecisionRequest) (*models.ApprovalRequest, error) {
+	approval, err := s.approvalRepo.FindByID(approvalID)
 	if err != nil {
 		return nil, fmt.Errorf("查找审批记录失败: %v", err)
 	}
@@ -299,30 +299,43 @@ func (s *ApprovalService) ProcessApproval(userID string, userName string, id str
 	}
 
 	// 检查审批状态
-	if approval != nil && (approval.Status != models.ApprovalStatusSubmitted && approval.Status != models.ApprovalStatusUnderReview) {
+	if approval != nil && approval.Status != models.ApprovalStatusSubmitted &&
+		approval.Status != models.ApprovalStatusUnderReview &&
+		approval.Status != models.ApprovalStatusResubmitted {
 		return nil, errors.New("审批状态不允许处理")
+	}
+
+	// 获取下一个状态
+	nextStatus, err := s.stateMachine.GetNextState(approval.Status, req.Decision)
+	if err != nil {
+		return nil, err
+	}
+
+	// 更新状态为审核中
+	if approval.Status != models.ApprovalStatusUnderReview {
+		approval.Status = models.ApprovalStatusUnderReview
 	}
 
 	// 创建审批记录
 	record := &models.ApprovalRecord{
-		ApprovalRequestID:   approval.ID,
+		ApprovalRequestID: approval.ID,
 		Stage:               approval.CurrentStage,
-		StageOrder:          1, // 这里应该从工作流配置中获取
+		StageOrder:          1,
 		ApproverID:          userID,
-		ApproverName:        userName,
+		ApproverName:        "",
 		ApproverTitle:       "",
 		ApproverRole:        "",
 		Decision:            req.Decision,
 		DecisionReason:      req.DecisionReason,
 		DecisionComments:    req.DecisionComments,
-		ApprovedConditions:  "",
-		ImposedRequirements: "",
-		FollowUpActions:     "",
+		ApprovedConditions:  "{}",
+		ImposedRequirements: "{}",
+		FollowUpActions:     "[]",
 		ApprovalDate:        time.Now(),
 		EffectiveDate:       nil,
 		NextReviewDate:      nil,
-		SupportingDocuments: "",
-		EvidenceReferences:  "",
+		SupportingDocuments: "[]",
+		EvidenceReferences:  "[]",
 		Status:              "active",
 	}
 
@@ -358,25 +371,41 @@ func (s *ApprovalService) ProcessApproval(userID string, userName string, id str
 		return nil, fmt.Errorf("保存审批记录失败: %v", err)
 	}
 
-	// 更新审批申请状态
+	// 根据决定处理状态
 	switch req.Decision {
 	case models.ApprovalDecisionApprove:
-		// 审批通过，检查是否需要下一步审批
-		// 这里简化处理，直接设置为已通过
-		approval.Status = models.ApprovalStatusApproved
-		approval.CurrentApproverID = ""
-		approval.CurrentApproverName = ""
+		// 检查是否有多级审批
+		isComplete, err := s.assigner.MoveToNextStage(approval)
+		if err != nil {
+			return nil, fmt.Errorf("移动到下一阶段失败: %v", err)
+		}
+		if !isComplete {
+			// 还有下一级审批，发送通知
+			_ = s.sendApprovalNotification(approval, "下一阶段审批")
+		}
+
 	case models.ApprovalDecisionReject:
-		approval.Status = models.ApprovalStatusRejected
+		approval.Status = nextStatus
 		approval.CurrentApproverID = ""
 		approval.CurrentApproverName = ""
+		// 发送拒绝通知
+		_ = s.sendApprovalNotification(approval, "审批被拒绝")
+
 	case models.ApprovalDecisionRequestChanges:
-		approval.Status = models.ApprovalStatusUnderReview
+		approval.Status = nextStatus
+		// 发送要求修改通知
+		_ = s.sendApprovalNotification(approval, "需要修改")
+
 	case models.ApprovalDecisionReassign:
 		// 转派到其他审批人
 		if req.NextApproverID != "" {
+			// 验证新审批人存在
+			newApprover, err := s.userRepo.FindByStringID(req.NextApproverID)
+			if err != nil || newApprover == nil {
+				return nil, errors.New("指定的审批人不存在")
+			}
 			approval.CurrentApproverID = req.NextApproverID
-			// 这里需要查询新审批人的姓名
+			approval.CurrentApproverName = newApprover.Name
 		}
 	}
 
@@ -388,7 +417,7 @@ func (s *ApprovalService) ProcessApproval(userID string, userName string, id str
 	}
 
 	// 重新加载数据
-	updatedApproval, err := s.approvalRepo.FindByID(id)
+	updatedApproval, err := s.approvalRepo.FindByID(approvalID)
 	if err != nil {
 		return nil, fmt.Errorf("重新加载审批数据失败: %v", err)
 	}
@@ -396,9 +425,150 @@ func (s *ApprovalService) ProcessApproval(userID string, userName string, id str
 	return updatedApproval, nil
 }
 
-// DeleteApproval 删除审批
+// ResubmitApproval 重新提交被拒绝或要求修改的审批
+func (s *ApprovalService) ResubmitApproval(userID string, approvalID string, revisionNote string) (*models.ApprovalRequest, error) {
+	approval, err := s.approvalRepo.FindByID(approvalID)
+	if err != nil {
+		return nil, fmt.Errorf("查找审批记录失败: %v", err)
+	}
+
+	// 确保是申请人本人
+	if approval != nil && approval.ApplicantID != userID {
+		return nil, fmt.Errorf("无权重新提交此审批记录")
+	}
+
+	// 检查是否可以重新提交
+	if !s.stateMachine.CanResubmit(approval.Status) {
+		return nil, fmt.Errorf("当前状态 %s 不允许重新提交", approval.Status)
+	}
+
+	// 验证状态转换
+	if err := s.stateMachine.ValidateTransition(approval.Status, models.ApprovalStatusResubmitted); err != nil {
+		return nil, err
+	}
+
+	// 更新元数据，添加修改说明
+	var metadata map[string]interface{}
+	if approval.Metadata != "{}" && approval.Metadata != "" {
+		json.Unmarshal([]byte(approval.Metadata), &metadata)
+	} else {
+		metadata = make(map[string]interface{})
+	}
+	metadata["revision_note"] = revisionNote
+	metadata["resubmitted_at"] = time.Now().Format(time.RFC3339)
+	metadataBytes, _ := json.Marshal(metadata)
+	approval.Metadata = string(metadataBytes)
+
+	// 重新分配审批人
+	if err := s.assigner.AssignApprover(approval); err != nil {
+		return nil, fmt.Errorf("重新分配审批人失败: %v", err)
+	}
+
+	approval.Status = models.ApprovalStatusResubmitted
+	approval.UpdatedBy = userID
+
+	// 执行更新
+	if err := s.approvalRepo.Update(approval); err != nil {
+		return nil, fmt.Errorf("重新提交失败: %v", err)
+	}
+
+	// 发送重新提交通知
+	_ = s.sendApprovalNotification(approval, "重新提交")
+
+	return s.approvalRepo.FindByID(approvalID)
+}
+
+// CancelApproval 撤回审批
+func (s *ApprovalService) CancelApproval(userID string, approvalID string) error {
+	approval, err := s.approvalRepo.FindByID(approvalID)
+	if err != nil {
+		return fmt.Errorf("查找审批记录失败: %v", err)
+	}
+
+	// 确保是申请人本人
+	if approval != nil && approval.ApplicantID != userID {
+		return fmt.Errorf("无权撤回此审批记录")
+	}
+
+	// 检查是否有审批记录（如果有则说明已经开始处理）
+	records, err := s.approvalRepo.FindRecordsByApprovalID(approvalID)
+	if err != nil {
+		return fmt.Errorf("检查审批记录失败: %v", err)
+	}
+
+	// 检查是否可以撤回
+	if !s.stateMachine.CanCancel(approval.Status, len(records) > 0) {
+		return errors.New("当前状态不允许撤回或已有审批记录")
+	}
+
+	// 验证状态转换
+	if err := s.stateMachine.ValidateTransition(approval.Status, models.ApprovalStatusCancelled); err != nil {
+		return err
+	}
+
+	// 更新状态为已撤回
+	approval.Status = models.ApprovalStatusCancelled
+	approval.CurrentApproverID = ""
+	approval.CurrentApproverName = ""
+	approval.UpdatedBy = userID
+
+	if err := s.approvalRepo.Update(approval); err != nil {
+		return fmt.Errorf("撤回审批失败: %v", err)
+	}
+
+	return nil
+}
+
+// UpdateApproval 更新审批申请（草稿或需要修改状态）
+func (s *ApprovalService) UpdateApproval(userID string, id string, req *models.UpdateApprovalRequest) (*models.ApprovalRequest, error) {
+	approval, err := s.approvalRepo.FindByID(id)
+	if err != nil {
+		return nil, fmt.Errorf("查找审批记录失败: %v", err)
+	}
+
+	// 确保是申请人本人
+	if approval != nil && approval.ApplicantID != userID {
+		return nil, fmt.Errorf("无权更新此审批记录")
+	}
+
+	// 只能更新可编辑状态的审批
+	if !s.stateMachine.CanEdit(approval.Status) {
+		return nil, fmt.Errorf("当前状态 %s 不允许编辑", approval.Status)
+	}
+
+	// 更新字段
+	if req.Title != "" {
+		approval.Title = req.Title
+	}
+	if req.Content != "" {
+		approval.Content = req.Content
+	}
+
+	// 处理附件和元数据
+	if len(req.Attachments) > 0 {
+		if attachmentsBytes, err := json.Marshal(req.Attachments); err == nil {
+			approval.Attachments = string(attachmentsBytes)
+		}
+	}
+	if req.Metadata != nil {
+		if metadataBytes, err := json.Marshal(req.Metadata); err == nil {
+			approval.Metadata = string(metadataBytes)
+		}
+	}
+
+	approval.UpdatedBy = userID
+
+	// 执行更新
+	if err := s.approvalRepo.Update(approval); err != nil {
+		return nil, fmt.Errorf("更新审批申请失败: %v", err)
+	}
+
+	// 重新加载数据
+	return s.approvalRepo.FindByID(id)
+}
+
+// DeleteApproval 删除审批（仅草稿）
 func (s *ApprovalService) DeleteApproval(userID string, id string) error {
-	// 使用repository查找审批记录
 	approval, err := s.approvalRepo.FindByID(id)
 	if err != nil {
 		return fmt.Errorf("查找审批记录失败: %v", err)
@@ -414,7 +584,6 @@ func (s *ApprovalService) DeleteApproval(userID string, id string) error {
 		return errors.New("只能删除草稿状态的审批")
 	}
 
-	// 删除审批记录
 	if err := s.approvalRepo.Delete(id); err != nil {
 		return fmt.Errorf("删除审批记录失败: %v", err)
 	}
@@ -422,71 +591,34 @@ func (s *ApprovalService) DeleteApproval(userID string, id string) error {
 	return nil
 }
 
-// CancelApproval 撤回审批
-func (s *ApprovalService) CancelApproval(userID string, id string) error {
-	// 使用repository查找审批记录
-	approval, err := s.approvalRepo.FindByID(id)
-	if err != nil {
-		return fmt.Errorf("查找审批记录失败: %v", err)
-	}
-
-	// 确保是申请人本人
-	if approval != nil && approval.ApplicantID != userID {
-		return fmt.Errorf("无权撤回此审批记录")
-	}
-
-	// 只能撤回已提交但未处理的审批
-	if approval != nil && (approval.Status != models.ApprovalStatusSubmitted && approval.Status != models.ApprovalStatusUnderReview) {
-		return errors.New("只能撤回已提交但未处理的审批")
-	}
-
-	// 检查是否有审批记录（如果有则说明已经开始处理）
-	records, err := s.approvalRepo.FindRecordsByApprovalID(id)
-	if err != nil {
-		return fmt.Errorf("检查审批记录失败: %v", err)
-	}
-	if len(records) > 0 {
-		return errors.New("审批已被处理，无法撤回")
-	}
-
-	// 更新状态为已撤回
-	if approval != nil {
-		approval.Status = models.ApprovalStatusCancelled
-		approval.UpdatedBy = userID
-
-		if err := s.approvalRepo.Update(approval); err != nil {
-			return fmt.Errorf("撤回审批失败: %v", err)
-		}
-	}
-
-	return nil
-}
-
 // GetApprovalWorkflows 获取审批工作流列表
 func (s *ApprovalService) GetApprovalWorkflows() ([]models.ApprovalWorkflow, error) {
-	// 使用repository获取工作流列表
 	workflows, err := s.approvalRepo.FindWorkflows()
 	if err != nil {
 		return nil, fmt.Errorf("获取审批工作流失败: %v", err)
 	}
-
 	return workflows, nil
 }
 
 // GetApprovalTemplates 获取审批模板列表
 func (s *ApprovalService) GetApprovalTemplates(templateType string, category string) ([]models.ApprovalTemplate, error) {
-	// 使用repository获取模板列表
 	templates, err := s.approvalRepo.FindTemplates(templateType, category)
 	if err != nil {
 		return nil, fmt.Errorf("获取审批模板失败: %v", err)
 	}
-
 	return templates, nil
+}
+
+// sendApprovalNotification 发送审批通知（简化版）
+func (s *ApprovalService) sendApprovalNotification(approval *models.ApprovalRequest, message string) error {
+	// TODO: 实现实际的通知发送逻辑
+	// 可以通过WebSocket、邮件等方式发送通知
+	fmt.Printf("通知发送: 申请 %s - %s\n", approval.RequestNumber, message)
+	return nil
 }
 
 // generateRequestNumber 生成申请编号
 func (s *ApprovalService) generateRequestNumber() (string, error) {
-	// 使用简单的时间戳方式生成申请编号
 	timestamp := time.Now().Format("20060102")
 	random := strconv.FormatInt(time.Now().UnixNano()%1000000, 10)
 	return fmt.Sprintf("AP-%s-%s", timestamp, random), nil
@@ -494,6 +626,5 @@ func (s *ApprovalService) generateRequestNumber() (string, error) {
 
 // generateUUID 生成UUID
 func generateUUID() string {
-	// 这里使用简单的UUID生成，实际项目中可以使用更好的UUID库
 	return fmt.Sprintf("%x", time.Now().UnixNano())
 }

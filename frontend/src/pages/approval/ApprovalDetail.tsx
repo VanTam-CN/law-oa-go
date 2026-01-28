@@ -12,6 +12,7 @@ import {
   Modal,
   Form,
   Input,
+  Select,
 } from 'antd'
 import {
   CheckCircleOutlined,
@@ -19,12 +20,26 @@ import {
   RollbackOutlined,
   EditOutlined,
   DeleteOutlined,
+  ExclamationCircleOutlined,
+  SyncOutlined,
 } from '@ant-design/icons'
-import { getApprovalDetail, handleApproval, cancelApproval } from '@/services/approval'
+import {
+  getApprovalDetail,
+  handleApproval,
+  cancelApproval,
+  processApprovalDecision,
+  submitApproval,
+  resubmitApproval,
+  updateApproval,
+} from '@/services/approval'
 import type { ApprovalDetail } from '@/services/approval'
+import { getUserInfo } from '@/utils/storage'
 import './ApprovalDetail.less'
 
 const { TextArea } = Input
+const { Option } = Select
+
+type ApprovalAction = 'approve' | 'reject' | 'request_changes'
 
 const ApprovalDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -32,8 +47,13 @@ const ApprovalDetail: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true)
   const [approval, setApproval] = useState<ApprovalDetail | null>(null)
   const [actionModalVisible, setActionModalVisible] = useState<boolean>(false)
-  const [currentAction, setCurrentAction] = useState<'approve' | 'reject' | null>(null)
+  const [currentAction, setCurrentAction] = useState<ApprovalAction | null>(null)
+  const [resubmitModalVisible, setResubmitModalVisible] = useState<boolean>(false)
+  const [editModalVisible, setEditModalVisible] = useState<boolean>(false)
   const [form] = Form.useForm()
+  const [editForm] = Form.useForm()
+
+  const currentUserId = getUserInfo()?.id?.toString() || '1'
 
   useEffect(() => {
     if (id) {
@@ -68,10 +88,29 @@ const ApprovalDetail: React.FC = () => {
             已拒绝
           </Tag>
         )
-      case 'pending':
+      case 'needs_revision':
+        return (
+          <Tag icon={<EditOutlined />} color='warning'>
+            需要修改
+          </Tag>
+        )
+      case 'resubmitted':
+        return (
+          <Tag icon={<SyncOutlined />} color='processing'>
+            重新提交
+          </Tag>
+        )
+      case 'submitted':
+      case 'under_review':
         return <Tag color='processing'>待审批</Tag>
+      case 'draft':
+        return <Tag color='default'>草稿</Tag>
       case 'cancelled':
         return <Tag color='default'>已撤回</Tag>
+      case 'expired':
+        return <Tag color='default'>已过期</Tag>
+      case 'pending':
+        return <Tag color='processing'>待审批</Tag>
       default:
         return <Tag>未知</Tag>
     }
@@ -90,7 +129,33 @@ const ApprovalDetail: React.FC = () => {
     }
   }
 
-  const handleAction = (action: 'approve' | 'reject') => {
+  const getActionLabel = (action: ApprovalAction) => {
+    switch (action) {
+      case 'approve':
+        return '通过'
+      case 'reject':
+        return '拒绝'
+      case 'request_changes':
+        return '要求修改'
+      default:
+        return ''
+    }
+  }
+
+  const getActionPlaceholder = (action: ApprovalAction) => {
+    switch (action) {
+      case 'approve':
+        return '请输入通过理由（可选）'
+      case 'reject':
+        return '请输入拒绝理由'
+      case 'request_changes':
+        return '请说明需要修改的内容'
+      default:
+        return ''
+    }
+  }
+
+  const handleAction = (action: ApprovalAction) => {
     setCurrentAction(action)
     setActionModalVisible(true)
   }
@@ -102,8 +167,12 @@ const ApprovalDetail: React.FC = () => {
 
     try {
       const values = await form.validateFields()
-      await handleApproval(approval.id, currentAction, values.comment)
-      message.success(currentAction === 'approve' ? '审批通过' : '已拒绝')
+      await processApprovalDecision(approval.id, {
+        decision: currentAction,
+        decisionReason: values.comment,
+        decisionComments: values.comment,
+      })
+      message.success(`${getActionLabel(currentAction)}成功`)
       setActionModalVisible(false)
       form.resetFields()
       fetchApprovalDetail(approval.id)
@@ -121,6 +190,7 @@ const ApprovalDetail: React.FC = () => {
     Modal.confirm({
       title: '确认撤回',
       content: '确定要撤回这个审批申请吗？',
+      icon: <ExclamationCircleOutlined />,
       onOk: async () => {
         try {
           await cancelApproval(approval.id)
@@ -134,6 +204,76 @@ const ApprovalDetail: React.FC = () => {
     })
   }
 
+  const handleSubmit = async () => {
+    if (!approval) {
+      return
+    }
+
+    Modal.confirm({
+      title: '确认提交',
+      content: '提交后将进入审批流程，确定要提交吗？',
+      icon: <ExclamationCircleOutlined />,
+      onOk: async () => {
+        try {
+          await submitApproval(approval.id)
+          message.success('提交成功')
+          fetchApprovalDetail(approval.id)
+        } catch (error) {
+          console.error('Failed to submit approval:', error)
+          message.error('提交失败')
+        }
+      },
+    })
+  }
+
+  const handleResubmit = async () => {
+    if (!approval) {
+      return
+    }
+
+    try {
+      const values = await form.validateFields()
+      await resubmitApproval(approval.id, values.comment)
+      message.success('重新提交成功')
+      setResubmitModalVisible(false)
+      form.resetFields()
+      fetchApprovalDetail(approval.id)
+    } catch (error) {
+      console.error('Failed to resubmit approval:', error)
+      message.error('重新提交失败')
+    }
+  }
+
+  const handleEdit = () => {
+    if (!approval) return
+    editForm.setFieldsValue({
+      title: approval.title,
+      content: approval.content,
+    })
+    setEditModalVisible(true)
+  }
+
+  const handleEditSubmit = async () => {
+    if (!approval) {
+      return
+    }
+
+    try {
+      const values = await editForm.validateFields()
+      await updateApproval(approval.id, {
+        title: values.title,
+        content: values.content,
+      })
+      message.success('更新成功')
+      setEditModalVisible(false)
+      editForm.resetFields()
+      fetchApprovalDetail(approval.id)
+    } catch (error) {
+      console.error('Failed to update approval:', error)
+      message.error('更新失败')
+    }
+  }
+
   if (loading) {
     return <div>加载中...</div>
   }
@@ -142,8 +282,14 @@ const ApprovalDetail: React.FC = () => {
     return <div>审批不存在</div>
   }
 
-  const canApprove = approval.status === 'pending' && approval.currentApproverId === '1' // 假设当前用户ID为1
-  const canCancel = approval.status === 'pending' && approval.applicantId === '1' // 假设当前用户ID为1
+  // 判断权限
+  const isApprover = approval.currentApproverId === currentUserId
+  const isApplicant = approval.applicantId === currentUserId
+  const canApprove = (approval.status === 'submitted' || approval.status === 'under_review') && isApprover
+  const canCancel = (approval.status === 'submitted' || approval.status === 'draft') && isApplicant
+  const canSubmit = approval.status === 'draft' && isApplicant
+  const canEdit = (approval.status === 'draft' || approval.status === 'needs_revision') && isApplicant
+  const canResubmit = (approval.status === 'rejected' || approval.status === 'needs_revision') && isApplicant
 
   return (
     <div className='approval-detail-container'>
@@ -159,10 +305,16 @@ const ApprovalDetail: React.FC = () => {
         <Divider />
 
         <Descriptions column={2}>
+          <Descriptions.Item label='申请编号'>{approval.requestNumber}</Descriptions.Item>
           <Descriptions.Item label='申请类型'>{approval.type}</Descriptions.Item>
           <Descriptions.Item label='申请部门'>{approval.department}</Descriptions.Item>
           <Descriptions.Item label='申请人'>{approval.applicant}</Descriptions.Item>
-          <Descriptions.Item label='申请时间'>{approval.createTime}</Descriptions.Item>
+          <Descriptions.Item label='申请时间'>
+            {approval.submissionDate || approval.createTime}
+          </Descriptions.Item>
+          {approval.currentStage && (
+            <Descriptions.Item label='当前阶段'>{approval.currentStage}</Descriptions.Item>
+          )}
           {approval.currentApprover && (
             <Descriptions.Item label='当前审批人'>{approval.currentApprover}</Descriptions.Item>
           )}
@@ -184,16 +336,27 @@ const ApprovalDetail: React.FC = () => {
               {approval.records.map((record) => (
                 <Timeline.Item
                   key={record.id}
-                  color={record.decision === 'approve' ? 'green' : 'red'}
+                  color={
+                    record.decision === 'approve'
+                      ? 'green'
+                      : record.decision === 'request_changes'
+                        ? 'orange'
+                        : 'red'
+                  }
                 >
                   <div className='record-item'>
                     <div className='record-header'>
                       <span className='approver'>{record.approver}</span>
                       <span className='action'>
-                        {record.decision === 'approve' ? '通过' : '拒绝'}
+                        {record.decision === 'approve'
+                          ? '通过'
+                          : record.decision === 'request_changes'
+                            ? '要求修改'
+                            : '拒绝'}
                       </span>
                       <span className='time'>{record.approvalDate}</span>
                     </div>
+                    <div className='record-reason'>审批理由：{record.decisionReason}</div>
                     {record.decisionComments && (
                       <div className='record-comment'>审批意见：{record.decisionComments}</div>
                     )}
@@ -288,8 +451,32 @@ const ApprovalDetail: React.FC = () => {
         })()}
 
         <div className='detail-actions'>
-          <Space>
+          <Space wrap>
             <Button onClick={() => navigate('/approval')}>返回列表</Button>
+
+            {/* 申请人操作 */}
+            {canSubmit && (
+              <Button type='primary' icon={<CheckCircleOutlined />} onClick={handleSubmit}>
+                提交审批
+              </Button>
+            )}
+            {canEdit && (
+              <Button icon={<EditOutlined />} onClick={handleEdit}>
+                编辑
+              </Button>
+            )}
+            {canResubmit && (
+              <Button type='primary' icon={<SyncOutlined />} onClick={() => setResubmitModalVisible(true)}>
+                重新提交
+              </Button>
+            )}
+            {canCancel && (
+              <Button icon={<RollbackOutlined />} onClick={handleCancel}>
+                撤回
+              </Button>
+            )}
+
+            {/* 审批人操作 */}
             {canApprove && (
               <>
                 <Button
@@ -300,6 +487,12 @@ const ApprovalDetail: React.FC = () => {
                   通过
                 </Button>
                 <Button
+                  icon={<EditOutlined />}
+                  onClick={() => handleAction('request_changes')}
+                >
+                  要求修改
+                </Button>
+                <Button
                   danger
                   icon={<CloseCircleOutlined />}
                   onClick={() => handleAction('reject')}
@@ -308,24 +501,20 @@ const ApprovalDetail: React.FC = () => {
                 </Button>
               </>
             )}
-            {canCancel && (
-              <Button icon={<RollbackOutlined />} onClick={handleCancel}>
-                撤回
-              </Button>
-            )}
           </Space>
         </div>
       </Card>
 
+      {/* 审批决定弹窗 */}
       <Modal
-        title={currentAction === 'approve' ? '审批通过' : '审批拒绝'}
+        title={`${getActionLabel(currentAction!)}审批`}
         open={actionModalVisible}
         onOk={submitAction}
         onCancel={() => {
           setActionModalVisible(false)
           form.resetFields()
         }}
-        okText={currentAction === 'approve' ? '通过' : '拒绝'}
+        okText={getActionLabel(currentAction!)}
       >
         <Form form={form} layout='vertical'>
           <Form.Item
@@ -335,8 +524,63 @@ const ApprovalDetail: React.FC = () => {
           >
             <TextArea
               rows={4}
-              placeholder={currentAction === 'approve' ? '请输入通过理由' : '请输入拒绝理由'}
+              placeholder={getActionPlaceholder(currentAction!)}
             />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* 重新提交弹窗 */}
+      <Modal
+        title='重新提交审批'
+        open={resubmitModalVisible}
+        onOk={handleResubmit}
+        onCancel={() => {
+          setResubmitModalVisible(false)
+          form.resetFields()
+        }}
+        okText='重新提交'
+      >
+        <Form form={form} layout='vertical'>
+          <Form.Item
+            name='comment'
+            label='修改说明'
+            rules={[{ required: true, message: '请说明修改内容' }]}
+          >
+            <TextArea
+              rows={4}
+              placeholder='请说明已修改的内容'
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* 编辑弹窗 */}
+      <Modal
+        title='编辑审批申请'
+        open={editModalVisible}
+        onOk={handleEditSubmit}
+        onCancel={() => {
+          setEditModalVisible(false)
+          editForm.resetFields()
+        }}
+        okText='保存'
+        width={600}
+      >
+        <Form form={editForm} layout='vertical'>
+          <Form.Item
+            name='title'
+            label='申请标题'
+            rules={[{ required: true, message: '请输入申请标题' }]}
+          >
+            <Input placeholder='请输入申请标题' />
+          </Form.Item>
+          <Form.Item
+            name='content'
+            label='申请内容'
+            rules={[{ required: true, message: '请输入申请内容' }]}
+          >
+            <TextArea rows={6} placeholder='请输入申请内容' />
           </Form.Item>
         </Form>
       </Modal>

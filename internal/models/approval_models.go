@@ -318,6 +318,9 @@ const (
 	ApprovalStatusRejected     = "rejected"
 	ApprovalStatusCancelled    = "cancelled"
 	ApprovalStatusExpired      = "expired"
+	// 新增：支持审批闭环
+	ApprovalStatusNeedsRevision = "needs_revision" // 需要修改
+	ApprovalStatusResubmitted   = "resubmitted"   // 重新提交
 )
 
 // 审批决定常量

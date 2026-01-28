@@ -1,0 +1,29 @@
+# Alertmanager配置文件（简化版）
+global:
+  smtp_smarthost: 'localhost:587'
+  smtp_from: 'alerts@law-oa.com'
+  smtp_auth_username: 'alerts@law-oa.com'
+  smtp_auth_password: 'your-email-password'
+
+# 路由配置
+route:
+  group_by: ['alertname', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'default-receiver'
+
+# 接收器配置
+receivers:
+  - name: 'default-receiver'
+    email_configs:
+      - to: 'admin@law-oa.com'
+        subject: '[{{ .Labels.severity | upper }}] Law OA Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Service: {{ .Labels.service }}
+          Severity: {{ .Labels.severity }}
+          Time: {{ .StartsAt }}
+          {{ end }}

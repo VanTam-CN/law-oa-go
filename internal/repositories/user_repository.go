@@ -214,3 +214,50 @@ func (r *UserRepositoryImpl) GetLawyers(ctx context.Context, page, pageSize int)
 
 	return lawyers, nil
 }
+
+// FindByStringID 根据字符串ID查找用户
+func (r *UserRepositoryImpl) FindByStringID(id string) (*models.User, error) {
+	var user models.User
+	err := r.db.Where("id = ?", id).First(&user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &user, nil
+}
+
+// FindByRole 根据角色查找用户
+func (r *UserRepositoryImpl) FindByRole(role string, limit int) ([]models.User, error) {
+	var users []models.User
+	query := r.db.Where("role = ?", role).Where("status = ?", "active")
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
+	err := query.Order("created_at ASC").Find(&users).Error
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+// FindDepartmentHead 查找部门主管
+func (r *UserRepositoryImpl) FindDepartmentHead(deptID string, limit int) ([]models.User, error) {
+	var users []models.User
+	query := r.db.Where("department_id = ?", deptID).
+		Where("role IN ?", []string{"department_head", "admin"}).
+		Where("status = ?", "active")
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
+	err := query.Order("created_at ASC").Find(&users).Error
+	if err != nil {
+		return nil, err
+	}
+	if len(users) == 0 {
+		// 如果没有部门主管，返回管理员
+		return r.FindByRole("admin", limit)
+	}
+	return users, nil
+}

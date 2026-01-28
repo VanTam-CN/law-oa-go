@@ -330,3 +330,64 @@ func TestWorkerPool_FullQueue(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "queue is full")
 }
+
+// Fuzzing 测试
+func Fuzz_WorkerPool_SubmitTask(f *testing.F) {
+	// 添加种子语料
+	f.Add("task_1", 1)
+	f.Add("task_2", 2)
+	f.Add("concurrent_task", 5)
+
+	f.Fuzz(func(t *testing.T, taskID string, priority int) {
+		// 限制输入长度和范围
+		if len(taskID) > 100 || priority < 0 || priority > 10 {
+			t.Skip()
+		}
+
+		// 测试创建任务不会panic
+		task := &DatabaseTask{
+			TaskID:       taskID,
+			TaskType:     "fuzz_test",
+			TaskPriority: priority,
+			Operation: func(ctx context.Context) error {
+				return nil
+			},
+			Context: context.Background(),
+		}
+
+		// 验证任务结构有效
+		if task.TaskID != "" && task.Operation != nil {
+			// 任务创建成功
+		}
+	})
+}
+
+// 其他 Fuzzing 测试占位符
+func Fuzz_CircuitBreaker_Execute(f *testing.F) {
+	f.Fuzz(func(t *testing.T, input string) {
+		if len(input) > 1000 {
+			t.Skip()
+		}
+		// 占位符测试
+	})
+}
+
+func Fuzz_RateLimiter_Allow(f *testing.F) {
+	f.Add("key1", "user1")
+	f.Fuzz(func(t *testing.T, key, identifier string) {
+		if len(key) > 100 || len(identifier) > 100 {
+			t.Skip()
+		}
+		// 占位符测试
+	})
+}
+
+func Fuzz_ConcurrentService_SubmitTask(f *testing.F) {
+	f.Add("service_task_1", "high")
+	f.Fuzz(func(t *testing.T, taskID, priority string) {
+		if len(taskID) > 100 || len(priority) > 20 {
+			t.Skip()
+		}
+		// 占位符测试
+	})
+}

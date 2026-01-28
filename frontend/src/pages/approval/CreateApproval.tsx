@@ -1,8 +1,9 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router'
-import { Card, Form, Input, Select, Button, message, Radio, DatePicker } from 'antd'
+import { Card, Form, Input, Select, Button, message, Radio, DatePicker, Space } from 'antd'
 import { ArrowLeftOutlined } from '@ant-design/icons'
-import { createApproval } from '@/services/approval'
+import { createApproval, submitApproval } from '@/services/approval'
+import { getUserInfo } from '@/utils/storage'
 import dayjs from 'dayjs'
 import './CreateApproval.less'
 
@@ -22,27 +23,53 @@ const CreateApproval: React.FC = () => {
   const navigate = useNavigate()
   const [form] = Form.useForm<CreateApprovalFormValues>()
   const [loading, setLoading] = useState<boolean>(false)
+  const [currentUserId, setCurrentUserId] = useState<string>('')
+  const [currentUserName, setCurrentUserName] = useState<string>('')
+  const [currentUserDepartment, setCurrentUserDepartment] = useState<string>('')
+
+  // 获取当前用户信息
+  useEffect(() => {
+    const userInfo = getUserInfo()
+    if (userInfo) {
+      setCurrentUserId(userInfo.id?.toString() || '1')
+      setCurrentUserName(userInfo.name || userInfo.username || '用户')
+      setCurrentUserDepartment(userInfo.department || '综合管理部')
+    } else {
+      // 开发环境默认值
+      setCurrentUserId('1')
+      setCurrentUserName('系统管理员')
+      setCurrentUserDepartment('综合管理部')
+    }
+  }, [])
 
   const handleSubmit = async (values: CreateApprovalFormValues) => {
     try {
       setLoading(true)
 
+      // 第一步：创建审批（草稿状态）
       const approvalData = {
         type: values.type,
         title: values.title,
         content: values.content,
-        applicant: '管理员',
-        applicantId: 1,
-        department: '综合管理部',
+        applicant: currentUserName,
+        applicantId: currentUserId, // 修复：使用字符串类型
+        department: currentUserDepartment,
         urgency: values.urgency,
       }
 
-      await createApproval(approvalData)
-      message.success('创建成功')
+      const createdApproval = await createApproval(approvalData)
+      console.log('✅ 审批创建成功 - ID:', createdApproval.id, '状态:', createdApproval.status)
+
+      // 第二步：立即提交审批（分配审批人并变更状态为submitted）
+      const submittedApproval = await submitApproval(createdApproval.id)
+      console.log('✅ 审批提交成功 - ID:', submittedApproval.id, '状态:', submittedApproval.status)
+      console.log('✅ 当前审批人:', submittedApproval.currentApprover, 'ID:', submittedApproval.currentApproverId)
+
+      message.success('审批申请提交成功')
       navigate('/approval')
     } catch (error) {
-      console.error('Failed to create approval:', error)
-      message.error('创建失败')
+      console.error('Failed to create/submit approval:', error)
+      message.error('提交失败，请重试')
     } finally {
       setLoading(false)
     }

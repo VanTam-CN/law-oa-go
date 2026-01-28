@@ -88,6 +88,12 @@ type UserRepository interface {
 	List(ctx context.Context, params *UserListParams) ([]*models.User, int64, error)
 	// GetLawyers 获取律师用户列表
 	GetLawyers(ctx context.Context, page, pageSize int) ([]models.User, error)
+	// FindByStringID 根据字符串ID查找用户（用于审批流程）
+	FindByStringID(id string) (*models.User, error)
+	// FindByRole 根据角色查找用户
+	FindByRole(role string, limit int) ([]models.User, error)
+	// FindDepartmentHead 查找部门主管
+	FindDepartmentHead(deptID string, limit int) ([]models.User, error)
 }
 
 // ClientRepository 客户数据仓库接口

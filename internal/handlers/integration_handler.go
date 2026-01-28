@@ -61,10 +61,7 @@ func (h *IntegrationHandler) CreateIntegratedApproval(c *gin.Context) {
 
 // CreateApprovalWithConflict 创建带有冲突检测的审批申请
 func (h *IntegrationHandler) CreateApprovalWithConflict(c *gin.Context) {
-	var req struct {
-		services.IntegrationRequest
-		ConflictCheckConfig *models.ConflictCheckRequest `json:"conflict_check_config" binding:"required"`
-	}
+	var req services.IntegrationRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -74,15 +71,39 @@ func (h *IntegrationHandler) CreateApprovalWithConflict(c *gin.Context) {
 		return
 	}
 
-	// 设置冲突检测配置
-	req.IntegrationRequest.ConflictCheckConfig = req.ConflictCheckConfig
+	// 从上下文获取用户信息（JWT中间件设置的是user_id和username）
+	userIDInt, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error":   "unauthorized",
+			"message": "未授权访问",
+		})
+		return
+	}
 
-	// 从上下文获取用户信息
-	userID := c.GetString("userID")
-	userName := c.GetString("userName")
+	// 处理用户ID的多种类型
+	var userIDStr string
+	switch v := userIDInt.(type) {
+	case uint:
+		userIDStr = strconv.FormatUint(uint64(v), 10)
+	case int:
+		userIDStr = strconv.Itoa(v)
+	case float64:
+		userIDStr = strconv.FormatInt(int64(v), 10)
+	case string:
+		userIDStr = v
+	default:
+		userIDStr = "1"
+	}
+
+	userName, _ := c.Get("username")
+	if userName == nil {
+		userName = "未知用户"
+	}
+	userNameStr := userName.(string)
 
 	// 调用集成服务
-	result, err := h.integrationService.CreateIntegratedApproval(c.Request.Context(), userID, userName, &req.IntegrationRequest)
+	result, err := h.integrationService.CreateIntegratedApproval(c.Request.Context(), userIDStr, userNameStr, &req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "internal_error",
