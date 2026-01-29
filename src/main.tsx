@@ -223,3 +223,4 @@ if (import.meta.env.DEV) {
 }
 
 export default root
+// Test comment for pre-commit hook
