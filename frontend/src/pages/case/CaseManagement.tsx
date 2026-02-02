@@ -107,12 +107,6 @@ const CaseManagement: React.FC = () => {
   }, [
     pagination.current,
     pagination.pageSize,
-    searchText,
-    statusFilter,
-    typeFilter,
-    lawyerFilter,
-    clientFilter,
-    priorityFilter,
   ])
 
   const loadOptions = async () => {
@@ -210,18 +204,12 @@ const CaseManagement: React.FC = () => {
         params.priority = priorityFilter
       }
       if (lawyerFilter) {
-        // 优化律师筛选：直接使用值而不是通过名称匹配
-        const lawyerOption = lawyerOptions.find((opt) => opt.label === lawyerFilter)
-        if (lawyerOption && lawyerOption.value) {
-          params.lawyer_id = Number(lawyerOption.value)
-        }
+        // 律师筛选：lawyerFilter 直接存储律师 ID
+        params.lawyer_id = Number(lawyerFilter)
       }
       if (clientFilter) {
-        // 优化客户筛选：直接使用值而不是通过名称匹配
-        const clientOption = clientOptions.find((opt) => opt.label === clientFilter)
-        if (clientOption && clientOption.value) {
-          params.client_id = Number(clientOption.value)
-        }
+        // 客户筛选：clientFilter 直接存储客户 ID
+        params.client_id = Number(clientFilter)
       }
 
       console.log('筛选参数:', params)
@@ -615,94 +603,143 @@ const CaseManagement: React.FC = () => {
         </Col>
       </Row>
 
-      {/* 搜索表单 */}
+      {/* 搜索过滤器 */}
       <Card className='search-card'>
-        <Form layout='inline'>
-          <Form.Item label='案件搜索'>
+        <div className='search-filters'>
+          <Space size='middle' style={{ width: '100%' }}>
             <Input
               placeholder='搜索案件名称、编号或客户'
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
+              onPressEnter={() => {
+                setPagination({ ...pagination, current: 1 })
+                fetchCases()
+              }}
               allowClear
-              style={{ width: 250 }}
+              onClear={() => {
+                setPagination({ ...pagination, current: 1 })
+                fetchCases()
+              }}
+              style={{ width: 200 }}
+              size='large'
             />
-          </Form.Item>
-          <Form.Item label='案件状态'>
+
             <Select
-              style={{ width: 120 }}
-              value={statusFilter}
-              onChange={setStatusFilter}
+              placeholder='筛选状态'
               allowClear
-              placeholder='全部'
+              style={{ width: 120 }}
+              value={statusFilter || undefined}
+              onChange={(value) => {
+                setStatusFilter(value || '')
+                setPagination({ ...pagination, current: 1 })
+                fetchCases()
+              }}
+              size='large'
             >
               <Option value='pending'>待处理</Option>
               <Option value='active'>进行中</Option>
               <Option value='closed'>已结案</Option>
               <Option value='suspended'>已暂停</Option>
             </Select>
-          </Form.Item>
-          <Form.Item label='案件类型'>
+
             <Select
-              style={{ width: 120 }}
-              value={typeFilter}
-              onChange={setTypeFilter}
+              placeholder='筛选类型'
               allowClear
-              placeholder='全部'
+              style={{ width: 120 }}
+              value={typeFilter || undefined}
+              onChange={(value) => {
+                setTypeFilter(value || '')
+                setPagination({ ...pagination, current: 1 })
+                fetchCases()
+              }}
+              size='large'
             >
               <Option value='civil'>民事案件</Option>
               <Option value='commercial'>商事案件</Option>
               <Option value='criminal'>刑事案件</Option>
               <Option value='administrative'>行政案件</Option>
             </Select>
-          </Form.Item>
-          <Form.Item label='优先级'>
+
             <Select
-              style={{ width: 120 }}
-              value={priorityFilter}
-              onChange={setPriorityFilter}
+              placeholder='筛选优先级'
               allowClear
-              placeholder='全部'
+              style={{ width: 120 }}
+              value={priorityFilter || undefined}
+              onChange={(value) => {
+                setPriorityFilter(value || '')
+                setPagination({ ...pagination, current: 1 })
+                fetchCases()
+              }}
+              size='large'
             >
               <Option value='low'>低</Option>
               <Option value='medium'>中</Option>
               <Option value='high'>高</Option>
               <Option value='urgent'>紧急</Option>
             </Select>
-          </Form.Item>
-          <Form.Item label='负责律师'>
+
             <Select
-              style={{ width: 120 }}
-              value={lawyerFilter}
-              onChange={setLawyerFilter}
+              placeholder='筛选律师'
               allowClear
-              placeholder='全部'
+              style={{ width: 120 }}
+              value={lawyerFilter || undefined}
+              onChange={(value) => {
+                setLawyerFilter(value || '')
+                setPagination({ ...pagination, current: 1 })
+                fetchCases()
+              }}
               showSearch
               optionFilterProp='label'
               options={lawyerOptions}
+              size='large'
             />
-          </Form.Item>
-          <Form.Item>
-            <Space>
-              <Button type='primary' icon={<SearchOutlined />} onClick={() => fetchCases()}>
-                搜索
-              </Button>
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={() => {
-                  setSearchText('')
-                  setStatusFilter('')
-                  setTypeFilter('')
-                  setPriorityFilter('')
-                  setLawyerFilter('')
-                  setClientFilter('')
-                  fetchCases()
-                }}
-              >
-                重置
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
+
+            <Select
+              placeholder='筛选客户'
+              allowClear
+              style={{ width: 120 }}
+              value={clientFilter || undefined}
+              onChange={(value) => {
+                setClientFilter(value || '')
+                setPagination({ ...pagination, current: 1 })
+                fetchCases()
+              }}
+              showSearch
+              optionFilterProp='label'
+              options={clientOptions}
+              size='large'
+            />
+
+            <Button
+              type='primary'
+              icon={<SearchOutlined />}
+              onClick={() => {
+                setPagination({ ...pagination, current: 1 })
+                fetchCases()
+              }}
+              size='large'
+            >
+              搜索
+            </Button>
+
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => {
+                setSearchText('')
+                setStatusFilter('')
+                setTypeFilter('')
+                setPriorityFilter('')
+                setLawyerFilter('')
+                setClientFilter('')
+                setPagination({ ...pagination, current: 1 })
+                fetchCases()
+              }}
+              size='large'
+            >
+              重置筛选
+            </Button>
+          </Space>
+        </div>
       </Card>
 
       {/* 案件列表 */}

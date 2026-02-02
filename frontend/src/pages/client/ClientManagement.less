@@ -76,84 +76,97 @@
 
   /* 搜索卡片 */
   .search-card {
-    margin-bottom: 12px;
+    margin-bottom: 16px;
     border-radius: var(--radius-md, 8px);
     border: 1px solid var(--color-border-split, rgba(0, 0, 0, 0.06));
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 
     .ant-card-head {
       border-bottom: 1px solid var(--color-border-split, rgba(0, 0, 0, 0.06));
-      padding: 10px 16px;
+      padding: 12px 18px;
       min-height: auto;
     }
 
     .ant-card-head-title {
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 700;
       color: #1a1a1a;
       padding: 0;
     }
 
     .ant-card-body {
-      padding: 12px 16px;
+      padding: 16px 18px;
     }
 
-    .ant-form {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 12px;
+    .search-filters {
+      margin-bottom: 0;
+      padding: 16px;
+      background: #fafafa;
+      border-radius: 8px;
+      border: 1px solid #f0f0f0;
 
-      .ant-form-item {
-        margin-bottom: 0;
+      .ant-input {
+        border-radius: 6px;
+        font-size: 14px;
 
-        &:last-child {
-          margin-left: auto;
+        &::placeholder {
+          color: #bfbfbf;
         }
+      }
 
-        .ant-form-item-label > label {
-          font-size: 14px;
-          color: #374151;
-          font-weight: 600;
-        }
-
-        .ant-input,
+      .ant-select {
         .ant-select-selector {
-          border-radius: var(--radius-sm, 4px);
+          border-radius: 6px;
           font-size: 14px;
         }
 
-        .ant-input::placeholder,
         .ant-select-selection-placeholder {
-          color: #6b7280;
+          color: #bfbfbf !important;
+          font-size: 14px !important;
+          font-weight: 400 !important;
+          opacity: 1 !important;
         }
 
-        .ant-btn {
-          border-radius: var(--radius-sm, 4px);
+        .ant-select-selection-item {
+          color: #262626;
           font-size: 14px;
-          height: 34px;
-          padding: 0 15px;
+        }
 
-          &.ant-btn-default {
-            color: #374151;
-            border-color: #d1d5db;
+        .ant-select-dropdown {
+          .ant-select-item {
+            padding: 8px 12px;
 
-            &:hover {
-              color: #1E5A8D;
-              border-color: #1E5A8D;
+            .ant-select-item-option-content {
+              width: 100%;
             }
           }
 
-          &.ant-btn-primary {
-            background: linear-gradient(135deg, #1E5A8D 0%, #163C5D 100%);
-            border: none;
-            box-shadow: 0 2px 6px rgba(30, 90, 141, 0.3);
+          .ant-select-item-disabled {
+            cursor: default;
+            background: transparent;
 
-            &:hover {
-              background: linear-gradient(135deg, #2A6BA5 0%, #1E4A6B 100%);
-              box-shadow: 0 3px 8px rgba(30, 90, 141, 0.4);
+            .ant-select-item-option-content {
+              color: #999;
+              font-size: 12px;
             }
           }
+        }
+      }
+
+      .ant-btn {
+        border-radius: 6px;
+        font-size: 14px;
+        height: 38px;
+        padding: 0 16px;
+        border-color: #d1d5db;
+
+        &:hover {
+          color: #1E5A8D;
+          border-color: #1E5A8D;
+        }
+
+        .anticon {
+          font-size: 14px;
         }
       }
     }
@@ -376,6 +389,28 @@
     .ant-card:not(.search-card) {
       margin-bottom: 8px;
     }
+
+    .search-card {
+      .search-filters {
+        .ant-space {
+          flex-wrap: wrap;
+        }
+
+        .ant-select {
+          width: 100% !important;
+          margin-bottom: 8px;
+        }
+
+        .ant-input {
+          width: 100% !important;
+          margin-bottom: 8px;
+        }
+
+        .ant-btn {
+          width: 100%;
+        }
+      }
+    }
   }
 }
 
@@ -390,10 +425,20 @@
     }
 
     .search-card {
-      .ant-form {
-        .ant-form-item {
+      .search-filters {
+        padding: 12px;
+
+        .ant-space {
           width: 100%;
-          margin-bottom: 10px;
+          display: flex;
+          flex-direction: column;
+          gap: 8px !important;
+        }
+
+        .ant-select,
+        .ant-input,
+        .ant-btn {
+          width: 100% !important;
         }
       }
     }

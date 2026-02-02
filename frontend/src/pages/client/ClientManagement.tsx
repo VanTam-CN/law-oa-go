@@ -564,52 +564,81 @@ const ClientManagement: React.FC = () => {
         </Col>
       </Row>
 
-      {/* 搜索表单 */}
+      {/* 搜索过滤器 */}
       <Card className='search-card'>
-        <Form layout='inline'>
-          <Form.Item label='客户名称'>
+        <div className='search-filters'>
+          <Space size='middle' style={{ width: '100%' }}>
             <Input
-              placeholder='请输入客户名称'
+              placeholder='搜索客户名称或联系方式'
               value={searchForm.name}
               onChange={(e) => setSearchForm({ ...searchForm, name: e.target.value })}
               allowClear
+              style={{ width: 200 }}
+              size='large'
             />
-          </Form.Item>
-          <Form.Item label='客户类型'>
+
             <Select
+              placeholder='筛选客户类型'
               style={{ width: 120 }}
-              value={searchForm.type}
-              onChange={(value) => setSearchForm({ ...searchForm, type: value })}
+              value={searchForm.type || undefined}
+              onChange={(value) => {
+                setSearchForm({ ...searchForm, type: value || '' })
+                setQueryParams({
+                  ...queryParams,
+                  type: value || '',
+                  pageNum: 1,
+                })
+              }}
               allowClear
-              placeholder='全部'
+              size='large'
             >
               <Option value='个人'>个人</Option>
               <Option value='企业'>企业</Option>
             </Select>
-          </Form.Item>
-          <Form.Item label='客户状态'>
+
             <Select
+              placeholder='筛选客户状态'
               style={{ width: 120 }}
-              value={searchForm.status}
-              onChange={(value) => setSearchForm({ ...searchForm, status: value })}
+              value={searchForm.status || undefined}
+              onChange={(value) => {
+                setSearchForm({ ...searchForm, status: value || '' })
+                setQueryParams({
+                  ...queryParams,
+                  status: value || '',
+                  pageNum: 1,
+                })
+              }}
               allowClear
-              placeholder='全部'
+              size='large'
             >
               <Option value='active'>活跃</Option>
               <Option value='inactive'>非活跃</Option>
             </Select>
-          </Form.Item>
-          <Form.Item>
-            <Space>
-              <Button type='primary' icon={<SearchOutlined />} onClick={handleSearch}>
-                搜索
-              </Button>
-              <Button icon={<ReloadOutlined />} onClick={handleReset}>
-                重置
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
+
+            <Button
+              type='primary'
+              icon={<SearchOutlined />}
+              onClick={() => {
+                setQueryParams({
+                  ...queryParams,
+                  name: searchForm.name,
+                  pageNum: 1,
+                })
+              }}
+              size='large'
+            >
+              搜索
+            </Button>
+
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={handleReset}
+              size='large'
+            >
+              重置筛选
+            </Button>
+          </Space>
+        </div>
       </Card>
 
       {/* 客户列表 */}
