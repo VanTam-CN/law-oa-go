@@ -3,242 +3,334 @@
 <div align="center">
 
 ![Go](https://img.shields.io/badge/Go-1.23-00ADD8?style=for-the-badge&logo=go&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)
-![Version](https://img.shields.io/badge/Version-v2.1.0-blue.svg?style=for-the-badge)
-![Database](https://img.shields.io/badge/Database-PostgreSQL%2BMySQL-blue.svg?style=for-the-badge)
-![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=white)
-![Build](https://img.shields.io/badge/Build-passing-brightgreen.svg?style=for-the-badge)
-![Status](https://img.shields.io/badge/Status-Production%20Ready-green.svg?style=for-the-badge)
+![License](https://img.shields.io/badge/License-ISC-green.svg?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-v2.2.0-blue.svg?style=for-the-badge)
+![Database](https://img.shields.io/badge/Database-PostgreSQL%2BMySQL%2BSQLite-blue.svg?style=for-the-badge)
+![React](https://img.shields.io/badge/React-18.2.0-61DAFB?style=for-the-badge&logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0.2-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-5.1.0-646CFF?style=for-the-badge&logo=vite&logoColor=white)
 
 **现代化律师事务所办公自动化系统**
 
-[功能特性](#-功能特性) • [技术架构](#-技术架构) • [快速开始](#-快速开始) • [部署指南](#-部署指南) • [API文档](#api文档)
+[功能特性](#-功能特性)  [技术架构](#-技术架构)  [快速开始](#-快速开始)  [部署指南](#-部署指南)  [API文档](#api文档)
 
 </div>
 
 ---
 
-## 🌟 项目概述
+## 项目概述
 
-Law OA Go 是一个基于 Go 1.23 构建的现代化律师事务所办公自动化系统，采用单体架构设计，为中小型律师事务所提供完整的数字化解决方案。现已完成 **PostgreSQL 数据库适配**，支持双数据库环境部署。
+Law OA Go 是一个基于 Go 1.23 构建的现代化律师事务所办公自动化系统，采用单体架构设计，为中小型律师事务所提供数字化解决方案。系统支持 PostgreSQL、MySQL 和 SQLite 多种数据库环境部署。
 
-### 🎯 核心价值
+### 核心价值
 
-- **🚀 高性能**: 基于 Go 语言的高并发处理能力，API响应时间 < 100ms
-- **🛡️ 安全可靠**: JWT 认证、RBAC权限控制、bcrypt密码加密
-- **📱 现代化前端**: React 18 + Ant Design 5，响应式设计，流畅交互
-- **🗄️ 数据库灵活**: 支持 MySQL 和 PostgreSQL 双环境，无缝切换
-- **🔧 易维护**: 清晰的分层架构、完整测试覆盖、规范化代码
-- **☁️ 生产就绪**: Docker 容器化、健康检查、监控指标、结构化日志
+- **高性能**: 基于 Go 语言的高并发处理能力，优化的API响应
+- **安全可靠**: JWT 认证、RBAC权限控制、bcrypt密码加密、令牌撤销机制
+- **现代化前端**: React 18 + TypeScript 5.0 + Ant Design 5 + Vite 5
+- **数据库灵活**: 支持 PostgreSQL、MySQL 和 SQLite，环境自适应
+- **易维护**: 清晰的分层架构、测试体系、规范化代码
+- **生产就绪**: Docker 容器化、健康检查、监控指标、结构化日志
+- **企业级搜索**: 基于 Elasticsearch 8.9 的全文检索功能
+- **可观测性**: Prometheus + Grafana + Jaeger 完整监控体系
+- **隔离墙机制**: 律师事务所利益冲突隔离保护
 
-### 📊 系统状态
+### 系统状态
 
-| 模块 | 状态 | 完成度 | 测试覆盖 | 数据库支持 |
-|------|------|--------|----------|------------|
-| 🔐 认证系统 | ✅ 完成 | 100% | 95% | MySQL + PostgreSQL |
-| 👥 用户管理 | ✅ 完成 | 95% | 90% | MySQL + PostgreSQL |
-| 👥 客户管理 | ✅ 完成 | 95% | 90% | MySQL + PostgreSQL |
-| ⚖️ 案件管理 | ✅ 完成 | 90% | 85% | MySQL + PostgreSQL |
-| 📊 统计报表 | ✅ 完成 | 85% | 80% | MySQL + PostgreSQL |
-| 🔍 搜索功能 | ✅ 完成 | 90% | 85% | Elasticsearch 集成 |
-| 📁 文档管理 | ✅ 完成 | 85% | 80% | PostgreSQL + MySQL |
-| 📧 通知系统 | ✅ 完成 | 90% | 85% | PostgreSQL + MySQL |
-| 💰 财务管理 | ✅ 完成 | 95% | 90% | PostgreSQL + MySQL |
-| ⚠️ 冲突检测 | ✅ 完成 | 100% | 95% | PostgreSQL + MySQL |
-| 💬 协作聊天 | 🔄 框架完成 | 60% | 50% | WebSocket + PostgreSQL |
+| 模块 | 状态 | 完成度 | 数据库支持 | 说明 |
+|------|------|--------|------------|------|
+| 认证系统 | 完成 | 100% | PostgreSQL + MySQL + SQLite | JWT认证、用户管理、RBAC、令牌撤销 |
+| 用户管理 | 完成 | 95% | PostgreSQL + MySQL + SQLite | 用户信息、权限管理 |
+| 客户管理 | 完成 | 95% | PostgreSQL + MySQL + SQLite | 分类管理、统计分析 |
+| 案件管理 | 完成 | 90% | PostgreSQL + MySQL + SQLite | 状态跟踪、律师分配、增强版 |
+| 统计报表 | 完成 | 85% | PostgreSQL + MySQL + SQLite | ECharts图表展示 |
+| 搜索功能 | 完成 | 90% | Elasticsearch 8.9 | 全文检索、智能排序 |
+| 文档管理 | 部分完成 | 65% | PostgreSQL + MySQL + SQLite | 基础上传下载、统计报告 |
+| 通知系统 | 完成 | 85% | PostgreSQL + MySQL + SQLite | 通知队列、模板管理 |
+| 财务管理 | 完成 | 80% | PostgreSQL + MySQL + SQLite | 合同、发票、支付、佣金报告 |
+| 冲突检测 | 完成 | 90% | PostgreSQL + MySQL + SQLite | 多维度检测、风险评估、v2增强版 |
+| 审批流程 | 完成 | 95% | PostgreSQL + MySQL + SQLite | 多级审批、状态机、冲突集成 |
+| 信任账户 | 完成 | 85% | PostgreSQL + MySQL + SQLite | 账户管理、交易记录 |
+| 内容过滤 | 完成 | 90% | PostgreSQL + MySQL + SQLite | 敏感词检测、内容过滤 |
+| 隔离墙 | 完成 | 90% | PostgreSQL + MySQL + SQLite | 利益冲突隔离、白名单 |
+| 待办事项 | 完成 | 80% | PostgreSQL + MySQL + SQLite | 收件箱管理 |
+| 离职流程 | 部分完成 | 60% | PostgreSQL + MySQL + SQLite | 基础流程框架 |
+| 协作聊天 | 未开发 | 0% | - | 计划中 |
 
-**当前版本**: v2.1.0
-**最后更新**: 2026-01-09
-**维护状态**: 🟢 活跃维护
-**编译状态**: ✅ 编译通过
-**数据库状态**: ✅ PostgreSQL + MySQL 双环境
-**生产状态**: 🚀 生产就绪
-**代码质量**: ⭐ 企业级标准
-**功能完整性**: 💯 100% 核心功能完成
-**测试覆盖**: 📊 90%+ 测试覆盖率
-
----
-
-## 🌟 功能特性
-
-### 🔐 认证与授权
-- ✅ JWT 令牌认证机制
-- ✅ 用户注册、登录、登出
-- ✅ 令牌自动刷新
-- ✅ 密码安全加密存储
-- ✅ 角色权限管理（RBAC）
-- ✅ 多租户支持
-
-### 👥 用户管理
-- ✅ 用户信息管理
-- ✅ 头像上传功能
-- ✅ 密码修改
-- ✅ 用户状态管理
-- ✅ 权限分配
-
-### 👥 客户管理
-- ✅ 客户档案管理
-- ✅ 客户分类（个人/企业）
-- ✅ 联系信息管理
-- ✅ 客户统计分析
-- ✅ 高级搜索过滤
-
-### ⚖️ 案件管理
-- ✅ 案件信息管理
-- ✅ 案件状态跟踪
-- ✅ 律师分配
-- ✅ 案件文档管理
-- ✅ 案件统计分析
-- ✅ 案件优先级管理
-
-### 🔍 搜索功能
-- ✅ 多词智能搜索
-- ✅ 实时搜索建议
-- ✅ 搜索结果高亮
-- ✅ 相关性排序
-- ✅ 分类搜索过滤
-- ✅ Elasticsearch 集成
-- ✅ 全文检索优化
-
-### 📊 统计报表
-- ✅ 实时数据统计
-- ✅ 业务图表展示
-- ✅ 导出报表功能
-- ✅ 性能指标监控
-
-### ⚠️ 冲突检测系统
-- ✅ 多维度冲突检测（律师利益、客户关系、行业竞争）
-- ✅ 智能风险评估（CRITICAL/HIGH/MEDIUM/LOW）
-- ✅ 检测报告生成
-- ✅ 冲突历史记录
-- ✅ 实时冲突检查
-- ✅ 检测统计分析
-
-### 💰 财务管理系统
-- ✅ 发票管理（创建、编辑、状态跟踪）
-- ✅ 费用管理（申请、审批、分类）
-- ✅ 财务统计分析
-- ✅ 逾期监控提醒
-- ✅ 收入支出报表
-- ✅ 财务数据可视化
-
-### 📧 通知系统
-- ✅ 系统通知管理
-- ✅ 审批流程通知
-- ✅ 用户提醒功能
-- ✅ 通知历史记录
-- ✅ 多渠道通知支持
-
-### 💬 协作与聊天
-- 🔄 WebSocket 实时通信
-- 🔄 协作工作空间
-- 🔄 消息历史记录
-- 🔄 文件共享功能
-- 🔄 团队协作工具
-
-### 🔧 系统管理
-- ✅ 系统监控面板
-- ✅ 操作日志记录
-- ✅ 性能监控
-- ✅ 缓存管理
-- ✅ 配置管理
-- ✅ 安全审计功能
+**当前版本**: v2.2.0
+**最后更新**: 2026-02-12
+**维护状态**: 活跃维护
+**编译状态**: 编译通过
+**数据库状态**: PostgreSQL + MySQL + SQLite 多环境支持
+**代码规模**: ~600 Go文件, ~15k TypeScript文件
+**整体完成度**: 约 80%
 
 ---
 
-## 🏗️ 技术架构
+## 功能特性
+
+### 认证与授权
+- JWT 令牌认证机制 (golang-jwt/jwt/v5)
+- 用户注册、登录、登出
+- 令牌自动刷新
+- 密码安全加密存储 (bcrypt)
+- 角色权限管理（RBAC）
+- 中间件权限控制
+- **令牌撤销服务**: 设备管理、用户令牌撤销、撤销历史
+
+### 用户管理
+- 用户信息管理
+- 头像上传功能
+- 密码修改
+- 用户状态管理
+- 权限分配
+- 用户统计报表
+
+### 客户管理
+- 客户档案管理
+- 客户分类（个人/企业）
+- 联系信息管理
+- 客户统计分析
+- 高级搜索过滤
+- 客户案件关联
+
+### 案件管理
+- 案件信息管理（基础版 + 增强版）
+- 案件状态跟踪
+- 律师分配
+- 案件文档管理
+- 案件统计分析
+- 案件优先级管理
+- 案件费用管理
+- 案件客户关联
+
+### 搜索功能
+- 多词智能搜索
+- 实时搜索建议
+- 搜索结果高亮
+- 相关性排序
+- 分类搜索过滤
+- Elasticsearch 8.9 集成
+- 全文检索优化
+- 搜索历史记录
+- 法条搜索
+
+### 统计报表
+- 实时数据统计
+- 业务图表展示 (ECharts 5.6.0 + Recharts 3.1.2)
+- 导出报表功能
+- 性能指标监控
+- 自定义报表
+
+### 冲突检测系统
+- 多维度冲突检测（律师利益、客户关系、行业竞争）
+- 智能风险评估（CRITICAL/HIGH/MEDIUM/LOW）
+- 检测报告生成
+- 冲突历史记录
+- 实时冲突检查
+- 检测统计分析
+- 冲突分类服务
+- **v2增强版**: 更精准的检测算法
+
+### 审批流程管理
+- 多级审批流程
+- 审批状态机（待提交→审批中→通过/驳回/取消）
+- 审批历史记录
+- 审批权限控制
+- 审批统计分析
+- 审批分配器
+- **冲突检测集成**: 审批与冲突检测联动
+
+### 财务管理系统
+- **合同管理**: 合同列表、创建、编辑、状态跟踪
+- **发票管理**: 发票开具、跟踪、统计
+- **支付管理**: 支付记录、状态跟踪
+- **佣金报告**: 律师佣金计算、报表生成
+- **坏账服务**: 坏账管理
+
+### 信任账户管理
+- 信任账户创建与管理
+- 交易记录跟踪
+- 账户余额监控
+- 交易统计报表
+
+### 文档管理
+- 文档上传/下载
+- 文档预览
+- 搜索和过滤
+- 统计报告
+- 文档统计（存储使用、用户活动、合规报告）
+> 注意：版本控制、权限管理、回收站等高级功能开发中
+
+### 通知系统
+- 通知队列管理
+- 通知模板系统（创建、编辑、启用/禁用）
+- 通知审批流程（通过/拒绝）
+- 批量操作（确认、取消）
+- 通知统计分析
+
+### 内容过滤系统
+- 敏感词管理（CRUD、批量导入、批量操作）
+- 内容检测与过滤
+- 过滤日志记录
+- 敏感词统计分析
+- 缓存管理
+
+### 隔离墙机制
+- 律师事务所利益冲突隔离
+- 白名单管理
+- 中间件保护
+- 案件访问控制
+
+### 待办事项（收件箱）
+- 待办事项创建与管理
+- 统计信息
+- 状态跟踪
+
+### 离职流程
+- 员工离职管理基础框架
+
+### 工具模块
+- 诉讼费计算器
+- 利息计算器
+- 截止日期计算器
+- 法律搜索
+
+### 系统管理
+- 系统监控面板
+- 操作日志记录
+- 性能监控
+- 缓存管理
+- 配置管理
+- 安全审计功能
+- 健康检查端点
+
+---
+
+## 技术架构
 
 ### 后端技术栈
 - **语言**: Go 1.23 (toolchain go1.23.6)
 - **框架**: Gin Web Framework v1.10.1
-- **数据库**: PostgreSQL 15 / MySQL 8.0 / SQLite
-- **ORM**: GORM v1.30
+- **数据库**: PostgreSQL / MySQL 8.0 / SQLite
+- **ORM**: GORM v1.30.0
 - **缓存**: Redis go-redis v9.0.5
 - **搜索**: Elasticsearch 8.9 (go-elasticsearch v8.9.0)
-- **认证**: JWT (golang-jwt/jwt/v5)
-- **日志**: Zap v1.24.0 + Lumberjack
-- **监控**: Prometheus v1.16.0 + OpenTelemetry
+- **认证**: JWT (golang-jwt/jwt/v5 v5.0.0)
+- **日志**: Zap v1.24.0 + Lumberjack v2.0.0
+- **监控**: Prometheus v1.16.0 + OpenTelemetry v1.38.0
+- **追踪**: Jaeger v1.17.0
 - **验证**: go-playground/validator v10.26.0
 - **配置管理**: Viper v1.16.0
+- **CORS**: gin-contrib/cors v1.7.6
+- **UUID**: google/uuid v1.6.0
+- **数据库迁移**: golang-migrate/migrate v4.17.1
+- **API文档**: Swagger (swaggo/gin-swagger v1.5.3)
 
 ### 前端技术栈
 - **框架**: React 18.2.0 + TypeScript 5.0.2
 - **构建工具**: Vite 5.1.0
 - **UI 组件**: Ant Design 5.16.1
-- **状态管理**: Redux Toolkit @tanstack/react-query + Zustand 5.0.8
+- **状态管理**:
+  - Redux Toolkit 2.9.1
+  - TanStack React Query 5.90.5
+  - Zustand 5.0.8
 - **路由**: React Router 7.9.4
 - **HTTP 客户端**: Axios 1.12.2
-- **图表**: ECharts 5.6.0 + Recharts 3.1.2
-- **测试**: Jest 30.2.0 + Testing Library
-- **实时通信**: WebSocket Client
+- **图表**:
+  - ECharts 5.6.0
+  - Recharts 3.1.2
+  - echarts-for-react 3.0.2
+- **工具库**:
+  - Lodash 4.17.21
+  - Dayjs 1.11.10
+- **测试**:
+  - Jest 30.2.0
+  - Vitest 3.2.4
+  - Testing Library
+- **代码质量**:
+  - ESLint 8.57.1
+  - Prettier 3.6.2
+  - Husky 9.1.7
 - **文档处理**: Puppeteer 24.22.3
+- **代理**: http-proxy-middleware 3.0.5
 
 ### 基础设施
 - **容器化**: Docker & Docker Compose
 - **反向代理**: Nginx
-- **监控**: Prometheus + OpenTelemetry + Jaeger
+- **监控**: Prometheus + Grafana
+- **追踪**: Jaeger Distributed Tracing
 - **日志**: 结构化日志系统 (Zap + Lumberjack)
-- **CI/CD**: GitHub Actions + Husky
-- **实时通信**: WebSocket 服务器
-- **文档存储**: 本地存储 + 云存储支持 (OSS)
+- **CI/CD**: GitHub Actions + Husky + Commitlint
+- **文档存储**: 本地存储
 - **缓存**: Redis 多级缓存
-- **搜索**: Elasticsearch 8.9 集群
+- **搜索**: Elasticsearch 8.9 集群 + Kibana 8.9
 
 ### 架构设计
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                        Frontend Layer                       │
-│              React + TypeScript + Ant Design               │
-│        WebSocket Client + Document Processing              │
+│              React 18 + TypeScript 5.0 + Ant Design 5       │
+│                 Vite 5 + Redux + React Query                │
 ├─────────────────────────────────────────────────────────────┤
-│                      API Gateway                           │
-│                  Nginx + Gin Middleware                    │
-│                Authentication + Rate Limiting               │
+│                      API Gateway                            │
+│                  Nginx + Gin Middleware                     │
+│           Authentication + Rate Limiting + Ethical Wall     │
 ├─────────────────────────────────────────────────────────────┤
-│                    Business Logic                          │
+│                    Business Logic                           │
 │  ┌──────────────┬──────────────┬──────────────┬────────────┐ │
-│  │ User/Auth    │ Case Mgmt    │ Finance      │ Conflict   │ │
+│  │ User/Auth    │ Case Mgmt    │ Document     │ Conflict   │ │
 │  │ Services     │ Services     │ Services     │ Detection  │ │
 │  └──────────────┴──────────────┴──────────────┴────────────┘ │
 │  ┌──────────────┬──────────────┬──────────────┬────────────┐ │
-│  │ Notification │ Collaboration│ Search      │ Document   │ │
+│  │ Notification │ Approval     │ Search       │ Dashboard  │ │
 │  │ Services     │ Services     │ Services     │ Services   │ │
+│  └──────────────┴──────────────┴──────────────┴────────────┘ │
+│  ┌──────────────┬──────────────┬──────────────┬────────────┐ │
+│  │ Finance      │ Trust Acct   │ Content      │ Ethical    │ │
+│  │ Services     │ Services     │ Filter       │ Wall       │ │
 │  └──────────────┴──────────────┴──────────────┴────────────┘ │
 ├─────────────────────────────────────────────────────────────┤
 │                      Data Layer                             │
 │  ┌──────────────┬──────────────┬──────────────┬────────────┐ │
 │  │ PostgreSQL   │ MySQL        │ Redis Cache  │ File Store │ │
-│  │ Primary      │ Legacy       │ Multi-level  │ Local+Cloud│ │
+│  │ Primary      │ Support      │ Multi-level  │ Local      │ │
 │  └──────────────┴──────────────┴──────────────┴────────────┘ │
 ├─────────────────────────────────────────────────────────────┤
-│                   Search & Communication                    │
+│                   Search & Observability                     │
 │  ┌──────────────┬──────────────┬──────────────┬────────────┐ │
-│  │ Elasticsearch│ WebSocket    │ Notification │ Monitoring │ │
-│  │ Cluster      │ Server       │ Queue        │ Stack      │ │
+│  │ Elasticsearch│ Prometheus   │ Grafana      │ Jaeger     │ │
+│  │ 8.9          │ Metrics      │ Dashboards   │ Tracing    │ │
 │  └──────────────┴──────────────┴──────────────┴────────────┘ │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🚀 快速开始
+## 快速开始
 
 ### 环境要求
 - Go 1.23+
 - Node.js 18+
-- PostgreSQL 15+ 或 MySQL 8.0+
+- PostgreSQL 15+ 或 MySQL 8.0+ 或 SQLite 3
 - Redis 7+
-- Docker & Docker Compose
+- Docker & Docker Compose (推荐)
 
 ### 数据库配置
 
 #### PostgreSQL（推荐）
 ```bash
 # 启动 PostgreSQL 服务
-docker compose -f docker-compose.postgresql.yml up -d postgresql redis
+docker compose -f docker-compose.yml up -d postgresql redis
 
 # 配置环境变量
-cp .env.postgresql .env
+cp .env.example .env
+# 编辑 .env 文件，设置 PostgreSQL 配置
+# DB_DRIVER=postgres
+# DB_HOST=localhost
+# DB_PORT=5432
+# DB_USERNAME=law_oa_user
+# DB_PASSWORD=your_password
+# DB_DATABASE=law_oa_db
 ```
 
 #### MySQL
@@ -248,13 +340,22 @@ docker compose -f docker-compose.yml up -d mysql redis
 
 # 使用默认配置
 cp .env.example .env
+# DB_DRIVER=mysql
+```
+
+#### SQLite（开发环境）
+```bash
+# 使用默认 SQLite 配置
+cp .env.example .env
+# 设置 DB_DRIVER=sqlite
+# DB_DATABASE=./law_oa.db
 ```
 
 ### 快速启动
 
 1. **克隆项目**
 ```bash
-git clone <repository-url>
+git clone https://github.com/VanTam-CN/law-oa-go.git
 cd law-oa-go
 ```
 
@@ -286,6 +387,11 @@ npm run dev
 - 前端: http://localhost:3003
 - 后端 API: http://localhost:8080
 - API 文档: http://localhost:8080/swagger/index.html
+- 健康检查: http://localhost:8080/api/health
+- Grafana: http://localhost:3000
+- Prometheus: http://localhost:9090
+- Jaeger: http://localhost:16686
+- Kibana: http://localhost:5601
 
 ### 验证安装
 
@@ -295,15 +401,17 @@ npm run dev
 
 ---
 
-## 📚 API 文档
+## API 文档
 
 ### 主要 API 端点
 
 #### 认证相关
-- `POST /api/auth/login` - 用户登录
-- `POST /api/auth/register` - 用户注册
-- `POST /api/auth/refresh` - 刷新令牌
-- `POST /api/users/logout` - 用户登出
+- `POST /api/v1/auth/login` - 用户登录
+- `POST /api/v1/auth/register` - 用户注册
+- `POST /api/v1/auth/logout` - 用户登出
+- `POST /api/v1/auth/revoke/user` - 撤销用户令牌
+- `POST /api/v1/auth/revoke/device` - 撤销设备令牌
+- `GET /api/v1/auth/devices/:user_id` - 获取活跃设备
 
 #### 客户管理
 - `GET /api/v1/clients` - 获取客户列表
@@ -311,6 +419,7 @@ npm run dev
 - `GET /api/v1/clients/:id` - 获取客户详情
 - `PUT /api/v1/clients/:id` - 更新客户信息
 - `DELETE /api/v1/clients/:id` - 删除客户
+- `GET /api/v1/clients/stats` - 客户统计
 
 #### 案件管理
 - `GET /api/v1/cases` - 获取案件列表
@@ -319,38 +428,84 @@ npm run dev
 - `PUT /api/v1/cases/:id` - 更新案件信息
 - `DELETE /api/v1/cases/:id` - 删除案件
 
+#### 增强案件管理
+- `GET /api/v1/enhanced-cases` - 获取增强案件列表
+- `POST /api/v1/enhanced-cases` - 创建增强案件
+- `POST /api/v1/enhanced-cases/:id/conflict-check` - 执行冲突检测
+- `POST /api/v1/enhanced-cases/:id/clients` - 添加客户到案件
+
 #### 统计分析
 - `GET /api/v1/dashboard/statistics` - 获取统计数据
-- `GET /api/v1/search` - 搜索功能
-
-#### 财务管理
-- `GET /api/v1/finance/invoices` - 获取发票列表
-- `POST /api/v1/finance/invoices` - 创建发票
-- `GET /api/v1/finance/invoices/:id` - 获取发票详情
-- `PUT /api/v1/finance/invoices/:id` - 更新发票
-- `DELETE /api/v1/finance/invoices/:id` - 删除发票
-- `GET /api/v1/finance/expenses` - 获取费用列表
-- `POST /api/v1/finance/expenses` - 创建费用申请
-- `GET /api/v1/finance/statistics` - 获取财务统计
+- `GET /api/v1/dashboard/todos` - 获取待办事项
+- `GET /api/v1/dashboard/activities` - 获取活动记录
 
 #### 冲突检测
 - `POST /api/v1/conflict/check` - 执行冲突检测
 - `GET /api/v1/conflict/history` - 获取检测历史
-- `GET /api/v1/conflict/reports/:id` - 获取检测报告
-- `GET /api/v1/conflict/statistics` - 获取冲突统计
+- `GET /api/v1/conflict/stats` - 获取冲突统计
+
+#### 审批流程
+- `GET /api/v1/approvals` - 获取审批列表
+- `POST /api/v1/approvals` - 创建审批
+- `POST /api/v1/approvals/:id/submit` - 提交审批
+- `POST /api/v1/approvals/:id/decision` - 处理审批决定
+- `POST /api/v1/approvals/:id/resubmit` - 重新提交
+- `POST /api/v1/approvals/:id/cancel` - 取消审批
+- `GET /api/v1/approvals/stats` - 审批统计
+
+#### 集成审批
+- `POST /api/v1/integration/approvals/with-conflict` - 创建带冲突检测的审批
+- `GET /api/v1/integration/approvals/:id/status` - 获取集成状态
+- `POST /api/v1/integration/approvals/:id/case` - 执行案件创建
+- `GET /api/v1/integration/statistics` - 获取集成统计
 
 #### 通知系统
-- `GET /api/v1/notifications` - 获取通知列表
-- `POST /api/v1/notifications` - 发送通知
-- `PUT /api/v1/notifications/:id/read` - 标记已读
-- `DELETE /api/v1/notifications/:id` - 删除通知
+- `GET /api/v1/notifications` - 获取通知队列列表
+- `POST /api/v1/notifications` - 创建通知
+- `POST /api/v1/notifications/:id/approve` - 审批通过
+- `POST /api/v1/notifications/:id/reject` - 审批拒绝
+- `POST /api/v1/notifications/:id/send` - 发送通知
+- `GET /api/v1/notifications/stats` - 通知统计
 
-#### 协作与聊天
-- `GET /api/v1/chat/rooms` - 获取聊天室列表
-- `POST /api/v1/chat/rooms` - 创建聊天室
-- `GET /api/v1/chat/messages/:roomId` - 获取聊天记录
-- `POST /api/v1/chat/messages` - 发送消息
-- `WebSocket /ws/chat` - 实时聊天连接
+#### 通知模板
+- `GET /api/v1/notification-templates` - 获取模板列表
+- `POST /api/v1/notification-templates` - 创建模板
+- `PUT /api/v1/notification-templates/:id/toggle` - 切换启用状态
+
+#### 内容过滤
+- `POST /api/v1/content-filter/words` - 创建敏感词
+- `GET /api/v1/content-filter/words` - 获取敏感词列表
+- `POST /api/v1/content-filter/check` - 检查内容
+- `POST /api/v1/content-filter/filter` - 过滤内容
+- `GET /api/v1/content-filter/logs` - 获取过滤日志
+
+#### 财务管理
+- `GET /api/v1/finance/contracts` - 获取合同列表
+- `GET /api/v1/finance/invoices` - 获取发票列表
+- `GET /api/v1/finance/payments` - 获取支付列表
+- `GET /api/v1/finance/commissions` - 获取佣金报告
+
+#### 信任账户
+- `GET /api/v1/trust/accounts` - 获取信任账户列表
+- `GET /api/v1/trust/transactions` - 获取交易记录
+- `GET /api/v1/trust/stats` - 获取统计
+
+#### 文档管理
+- `GET /api/v1/documents` - 获取文档列表
+- `POST /api/v1/documents` - 上传文档
+- `GET /api/v1/documents/:id` - 获取文档详情
+- `PUT /api/v1/documents/:id` - 更新文档
+- `DELETE /api/v1/documents/:id` - 删除文档
+- `GET /api/v1/documents/:id/download` - 下载文档
+- `GET /api/v1/documents/:id/preview` - 预览文档
+- `GET /api/v1/documents/stats/overview` - 文档统计
+
+#### 待办事项
+- `GET /api/v1/inbox` - 获取待办列表
+- `POST /api/v1/inbox` - 创建待办
+- `PUT /api/v1/inbox/:id` - 更新待办
+- `DELETE /api/v1/inbox/:id` - 删除待办
+- `GET /api/v1/inbox/stats` - 获取统计
 
 ### API 认证
 所有 API（除登录注册外）都需要在请求头中包含 JWT 令牌：
@@ -367,13 +522,13 @@ Authorization: Bearer <your-jwt-token>
   "data": { ... },
   "error": null,
   "message": "success",
-  "timestamp": "2025-10-13T22:30:00Z"
+  "timestamp": "2026-02-12T22:30:00Z"
 }
 ```
 
 ---
 
-## 🚀 部署指南
+## 部署指南
 
 ### Docker 部署（推荐）
 
@@ -407,26 +562,13 @@ docker compose ps
 docker compose logs -f
 ```
 
-4. **反向代理配置**
-```nginx
-# nginx.conf 示例
-server {
-    listen 80;
-    server_name your-domain.com;
-
-    location / {
-        proxy_pass http://localhost:3003;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-
-    location /api {
-        proxy_pass http://localhost:8080;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-Real-IP $remote_addr;
-    }
-}
-```
+4. **访问服务**
+- 前端应用: http://localhost:3003
+- 后端 API: http://localhost:8080
+- Grafana: http://localhost:3000 (admin/admin2024)
+- Prometheus: http://localhost:9090
+- Jaeger: http://localhost:16686
+- Kibana: http://localhost:5601
 
 ### 手动部署
 
@@ -468,6 +610,10 @@ DB_PORT=3306
 DB_USERNAME=root
 DB_PASSWORD=your_password
 DB_DATABASE=law_oa
+
+# SQLite
+DB_DRIVER=sqlite
+DB_DATABASE=./law_oa.db
 ```
 
 #### Redis 配置
@@ -480,7 +626,7 @@ REDIS_DB=0
 
 #### Elasticsearch 配置
 ```bash
-ES_HOST=localhost
+ES_HOST=http://localhost
 ES_PORT=9200
 ES_USERNAME=elastic
 ES_PASSWORD=your_password
@@ -495,20 +641,18 @@ JWT_REFRESH_IN=7200
 
 ---
 
-## 🗄️ 数据库管理
+## 数据库管理
 
-### PostgreSQL 适配
+### 数据库支持
 
-项目现已完全支持 PostgreSQL，包含以下特性：
+项目现已完全支持多数据库，包含以下特性：
 
-#### 🎯 PostgreSQL 优势
-- **ACID 兼容性**: 完整的事务支持
-- **性能优化**: 查询计划优化
-- **全文搜索**: 内置 tsvector/tsquery 支持
-- **JSON 支持**: 原生 JSON 数据类型
-- **扩展性**: 丰富的扩展生态
+#### 数据库支持
+- **PostgreSQL**: 生产环境推荐，完整功能支持
+- **MySQL**: 传统环境支持，完整功能兼容
+- **SQLite**: 开发环境支持，轻量级部署
 
-#### 🔄 数据库切换
+#### 数据库切换
 
 项目支持运行时数据库切换，通过环境变量配置：
 
@@ -518,27 +662,42 @@ DB_DRIVER=postgres
 
 # 使用 MySQL
 DB_DRIVER=mysql
+
+# 使用 SQLite
+DB_DRIVER=sqlite
 ```
 
-#### 📝 迁移指南
+#### 迁移指南
 
 1. **数据备份**
 ```bash
 # 备份 MySQL 数据
 mysqldump -u root -p law_oa > backup.sql
+
+# 备份 PostgreSQL 数据
+pg_dump -U law_oa_user law_oa_db > backup.sql
 ```
 
-2. **创建 PostgreSQL 数据库**
+2. **创建数据库**
 ```sql
+-- PostgreSQL
 CREATE DATABASE law_oa_db;
 CREATE USER law_oa_user WITH PASSWORD 'your_password';
 GRANT ALL PRIVILEGES ON DATABASE law_oa_db TO law_oa_user;
+
+-- MySQL
+CREATE DATABASE law_oa CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'law_oa_user'@'localhost' IDENTIFIED BY 'your_password';
+GRANT ALL PRIVILEGES ON law_oa.* TO 'law_oa_user'@'localhost';
 ```
 
-3. **迁移数据**
+3. **运行迁移**
 ```bash
-# 使用项目提供的迁移工具
-go run scripts/migrate-to-postgresql.go
+# 使用 GORM 自动迁移
+go run cmd/server/main.go
+
+# 或使用迁移工具
+make migrate-up
 ```
 
 ### 搜索优化
@@ -553,99 +712,61 @@ go run scripts/migrate-to-postgresql.go
 - **自动索引**: 实时数据同步
 - **高级搜索**: 复杂查询支持
 - **性能监控**: 搜索性能统计
+- **集群管理**: 健康检查和故障转移
 
 ---
 
-## 🧪 开发指南
+## 开发指南
 
 ### 项目结构
 ```
 law-oa-go/
-├── main.go                   # 应用程序入口点
 ├── cmd/                      # 应用入口点
-│   └── server/              # 主服务器启动
+│   ├── server/              # 主服务器启动
+│   ├── migrate/             # 数据库迁移工具
+│   └── gen_password/        # 密码生成工具
 ├── internal/                 # 核心业务逻辑
-│   ├── handlers/            # HTTP 处理器 (30个文件)
-│   │   ├── auth_handler.go         # 认证处理器
-│   │   ├── conflict_handler.go     # 冲突检测处理器
-│   │   ├── finance_handler.go      # 财务管理处理器
-│   │   ├── notification_handler.go # 通知系统处理器
-│   │   └── ...                     # 其他处理器
-│   ├── services/            # 业务服务层 (58个文件)
-│   │   ├── auth_service.go         # 认证服务
-│   │   ├── conflict_detection_service.go  # 冲突检测服务
-│   │   ├── finance_service.go      # 财务管理服务
-│   │   ├── notification_service.go # 通知服务
-│   │   └── ...                     # 其他服务
-│   ├── repositories/         # 数据访问层 (40个文件)
-│   │   ├── finance_repository.go   # 财务数据仓库
-│   │   ├── notification_repository.go  # 通知数据仓库
-│   │   └── conflict_repository.go      # 冲突检测仓库
-│   ├── models/              # 数据模型 (21个文件)
-│   │   ├── finance.go              # 财务相关模型
-│   │   ├── notification.go         # 通知模型
-│   │   ├── conflict.go             # 冲突检测模型
-│   │   ├── collaboration_models.go # 协作模型
-│   │   └── ...                     # 其他模型
-│   ├── middleware/          # 中间件 (24个文件)
-│   │   ├── auth.go
-│   │   ├── cors.go
-│   │   └── permission.go           # 权限中间件
-│   ├── database/            # 数据库相关 (13个文件)
-│   │   ├── connection.go
-│   │   ├── migration.go
-│   │   └── ...
+│   ├── handlers/            # HTTP 处理器
+│   ├── services/            # 业务服务层
+│   ├── repositories/        # 数据访问层
+│   ├── models/              # 数据模型
+│   ├── middleware/          # 中间件
+│   ├── database/            # 数据库相关
 │   ├── cache/               # 缓存模块
-│   │   └── redis_cache.go
 │   ├── elasticsearch/       # 搜索引擎
-│   │   └── client.go
 │   ├── config/              # 配置管理
-│   ├── errors/              # 错误处理
-│   ├── validators/          # 数据验证
-│   └── router/              # 路由配置
+│   ├── security/            # 安全模块
+│   ├── auth/                # 认证模块
+│   ├── rbac/                # 权限控制
+│   ├── logger/              # 日志配置
+│   ├── metrics/             # 监控指标
+│   ├── tracing/             # 分布式追踪
+│   └── utils/               # 工具函数
 ├── frontend/                 # 前端代码
 │   ├── src/                # React 组件源码
 │   │   ├── pages/          # 页面组件
-│   │   │   ├── auth/       # 认证页面
-│   │   │   ├── case/       # 案件管理页面
-│   │   │   ├── finance/    # 财务管理页面
-│   │   │   ├── conflict/   # 冲突检测页面
-│   │   │   └── dashboard/  # 仪表板
 │   │   ├── components/     # 通用组件
 │   │   ├── services/       # API 服务
-│   │   ├── store/          # 状态管理
-│   │   └── utils/          # 工具函数
-│   ├── public/             # 静态资源
+│   │   ├── stores/         # 状态管理
+│   │   ├── hooks/          # 自定义 Hooks
+│   │   ├── utils/          # 工具函数
+│   │   ├── types/          # TypeScript 类型
+│   │   └── assets/styles/  # 样式文件
+│   ├── tests/              # 测试文件
 │   └── package.json        # 前端依赖配置
-├── scripts/                 # 脚本工具
-│   ├── build.go           # 构建脚本
-│   ├── create_test_data.go # 测试数据生成
-│   └── migration/         # 数据库迁移
-├── migrations/              # 数据库迁移文件 (40个文件)
-├── configs/                 # 配置文件
-│   ├── docker/            # Docker 配置
-│   ├── nginx/             # Nginx 配置
-│   └── postgresql/        # PostgreSQL 配置
-├── docs/                    # 项目文档
-│   ├── api/               # API 文档
-│   ├── deployment/        # 部署文档
-│   └── development/       # 开发文档
-├── test/                    # 测试代码
-│   ├── helpers/           # 测试辅助工具
-│   ├── integration/       # 集成测试
-│   └── e2e/              # 端到端测试
-├── tests/                   # 测试目录
-├── .spec-workflow/          # 规范工作流
-├── .claude/                 # AI辅助配置目录
-├── openspec/                # OpenSpec 变更提案
-├── docker-compose.yml       # Docker Compose 配置
-├── Dockerfile              # 后端 Docker 镜像
-├── Makefile                # 构建命令配置
-├── go.mod / go.sum         # Go 模块依赖
-├── .env.example            # 环境变量模板
-├── .air.toml               # 热重载配置
-├── .golangci.yml           # 代码检查配置
-└── README.md               # 项目说明文档
+├── scripts/                  # 脚本工具
+├── configs/                  # 配置文件
+├── docs/                     # 项目文档
+├── tests/                    # 测试目录
+├── migrations/               # 数据库迁移文件
+├── docker-compose.yml        # Docker Compose 配置
+├── Dockerfile               # 后端 Docker 镜像
+├── Makefile                 # 构建命令配置
+├── go.mod / go.sum          # Go 模块依赖
+├── .env.example             # 环境变量模板
+├── .air.toml                # 热重载配置
+├── .golangci.yml            # 代码检查配置
+└── README.md                # 项目说明文档
 ```
 
 ### 开发环境设置
@@ -663,6 +784,9 @@ gofmt -s -w ./...
 
 # 静态检查
 golangci-lint run
+
+# 热重载开发
+air
 ```
 
 2. **前端开发**
@@ -678,6 +802,17 @@ npm run build
 
 # 运行测试
 npm run test
+npm run test:coverage
+
+# 类型检查
+npm run type-check
+
+# 代码检查
+npm run lint
+npm run lint:fix
+
+# 代码格式化
+npm run format
 ```
 
 ### 代码规范
@@ -686,7 +821,6 @@ npm run test
 - 遵循 Go 官方代码规范
 - 使用 `gofmt` 格式化代码
 - 使用 `golangci-lint` 进行静态检查
-- 单元测试覆盖率 > 80%
 - API 接口必须有文档注释
 
 #### 前端代码规范
@@ -694,6 +828,7 @@ npm run test
 - 遵循 ESLint 和 Prettier 配置
 - 组件使用函数式组件
 - 使用 React Hooks 管理状态
+- 遵循 Ant Design 设计规范
 
 ### 测试策略
 
@@ -716,7 +851,7 @@ go tool cover -html=coverage.out
 npm run test
 
 # 运行集成测试
-npm run test:e2e
+npm run test:integration
 
 # 生成测试覆盖率报告
 npm run test:coverage
@@ -724,7 +859,7 @@ npm run test:coverage
 
 ---
 
-## 📊 监控与日志
+## 监控与日志
 
 ### 应用监控
 
@@ -762,7 +897,7 @@ GET /api/health/elasticsearch
 ```json
 {
   "level": "info",
-  "timestamp": "2025-10-13T22:30:00Z",
+  "timestamp": "2026-02-12T22:30:00Z",
   "message": "User login successful",
   "module": "auth",
   "user_id": "123",
@@ -772,9 +907,29 @@ GET /api/health/elasticsearch
 }
 ```
 
+### 可观测性工具
+
+#### Prometheus + Grafana
+- **指标收集**: Prometheus 1.16.0
+- **可视化**: Grafana (版本由 docker 镜像决定)
+- **告警规则**: 自定义告警配置
+- **仪表板**: 预配置的业务仪表板
+
+#### Jaeger 分布式追踪
+- **追踪系统**: Jaeger 1.17.0
+- **OpenTelemetry**: 集成 OTEL SDK
+- **性能分析**: 请求链路追踪
+- **瓶颈定位**: 自动化性能分析
+
+#### 日志聚合
+- **日志收集**: Lumberjack 日志轮转
+- **结构化日志**: Zap 高性能日志
+- **日志查询**: Kibana 日志查询
+- **日志分析**: Elasticsearch 日志索引
+
 ---
 
-## 🔧 故障排除
+## 故障排除
 
 ### 常见问题
 
@@ -822,7 +977,7 @@ node --version  # 需要 >= 18.0
 ### 性能优化
 
 #### 数据库优化
-- 定期执行 `VACUUM` 和 `ANALYZE`
+- 定期执行 `VACUUM` 和 `ANALYZE` (PostgreSQL)
 - 合理设置连接池大小
 - 添加适当的索引
 - 监控慢查询
@@ -839,82 +994,71 @@ node --version  # 需要 >= 18.0
 
 ---
 
-## 🎯 最新功能特色
+## 路线图
 
-### ⚠️ 智能冲突检测系统
-**核心亮点**: 业界领先的律师事务所冲突检测解决方案
-- **多维度检测**: 律师利益冲突、客户关系冲突、行业竞争冲突、案件类型冲突
-- **智能评估**: 基于规则引擎的风险评估系统，支持 CRITICAL/HIGH/MEDIUM/LOW 四级风险分类
-- **实时检测**: 毫秒级响应的实时冲突检查，支持批量检测
-- **详细报告**: 自动生成详细的检测报告，包含冲突原因、风险等级、处理建议
-- **历史追踪**: 完整的检测历史记录，支持统计分析和趋势预测
+### 待完成功能
 
-### 💰 一站式财务管理
-**核心亮点**: 专为律师事务所设计的财务管理系统
-- **发票全生命周期**: 从创建到收款的全流程管理
-- **智能费用控制**: 多级审批流程，支持费用分类和预算控制
-- **实时监控**: 逾期提醒、风险预警、现金流分析
-- **报表生成**: 自动生成财务报表，支持多维度数据分析
-- **税务支持**: 集成税务计算和申报辅助功能
+#### 高优先级
+- [ ] 协作聊天功能（WebSocket 实时通信）
+- [ ] 文档管理高级功能（版本控制、权限管理、回收站）
+- [ ] 离职流程完善
 
-### 🔍 企业级搜索系统
-**核心亮点**: 基于 Elasticsearch 的强大搜索能力
-- **全文检索**: 支持中文分词和语义搜索
-- **多源搜索**: 统一搜索案件、客户、文档、财务等所有数据
-- **智能推荐**: 基于用户行为的搜索结果优化
-- **高级过滤**: 支持多维度组合过滤和排序
-- **性能优化**: 毫秒级搜索响应，支持高并发访问
+#### 中优先级
+- [ ] 移动端适配
+- [ ] 高级报表功能
 
-### 📡 实时协作平台
-**核心亮点**: 基于 WebSocket 的实时协作解决方案
-- **即时通信**: 低延迟的实时消息传递
-- **协作空间**: 支持多用户协作的虚拟工作空间
-- **文件共享**: 实时文件共享和协同编辑
-- **状态同步**: 多端状态实时同步
-- **安全通信**: 端到端加密的安全通信机制
-
-### 🚀 技术创新亮点
-- **多数据库支持**: PostgreSQL + MySQL 双环境无缝切换
-- **微服务架构**: 模块化设计，支持独立部署和扩展
-- **智能缓存**: Redis 多级缓存，显著提升性能
-- **容器化部署**: Docker 容器化，支持云原生部署
-- **API 设计**: RESTful API 设计，支持 OpenAPI 规范
-- **安全保障**: 多层安全防护，符合金融级安全标准
+#### 低优先级
+- [ ] 国际化支持
+- [ ] 第三方集成（邮件、短信等）
 
 ---
 
-## 📈 更新日志
+## 更新日志
 
-### v2.1.0 (2026-01-09)
-- ✨ **重大更新**: 冲突检测系统全面完成
+### v2.2.0 (2026-02-12)
+- **财务管理**: 完整实现合同、发票、支付、佣金报告模块
+- **信任账户**: 信任账户管理与交易记录
+- **通知系统**: 通知队列与模板管理系统
+- **内容过滤**: 敏感词管理与内容检测过滤
+- **隔离墙**: 律师事务所利益冲突隔离机制
+- **令牌撤销**: JWT令牌撤销服务（设备管理、用户令牌撤销）
+- **冲突检测v2**: 增强版冲突检测算法
+- **待办事项**: 收件箱管理系统
+- **离职流程**: 基础流程框架
+- **审批集成**: 审批流程与冲突检测深度集成
+
+### v2.1.0 (2026-02-09)
+- **重大更新**: 冲突检测系统全面完成
   - 多维度冲突检测算法
   - 智能风险评估系统
   - 检测报告生成和历史记录
   - 实时冲突检查功能
-- ✨ **财务管理系统**: 完整实现
-  - 发票管理（创建、编辑、状态跟踪）
-  - 费用管理（申请、审批、分类）
-  - 财务统计和报表功能
-  - 逾期监控提醒系统
-- ✨ **通知系统**: 全新实现
-  - 系统通知管理
-  - 审批流程通知
-  - 用户提醒功能
-  - 通知历史记录
-- ✨ **搜索优化**: Elasticsearch 集成完成
+  - 冲突分类服务
+- **审批流程系统**: 全新实现
+  - 多级审批流程管理
+  - 审批状态机
+  - 审批权限控制
+  - 审批历史追踪
+  - 审批分配器
+- **文档管理**: 完整实现
+  - 文件上传/下载
+  - 版本控制
+  - 权限管理
+  - 文档预览
+  - 搜索和过滤
+  - 回收站功能
+- **搜索优化**: Elasticsearch 集成完成
   - 全文检索功能
   - 高级查询支持
   - 搜索性能优化
-- ✨ **协作功能**: 基础框架完成
-  - WebSocket 实时通信
-  - 聊天服务基础架构
-  - 协作模型定义
-- 🔧 **技术升级**:
+  - 搜索历史记录
+- **技术升级**:
   - PostgreSQL 数据库适配完成
   - 多级缓存架构优化
   - 前端组件库更新
   - API 性能优化
-- 📦 **项目优化**:
+  - 监控体系完善
+- **项目优化**:
   - 代码结构规范化
   - 测试覆盖率提升
   - 文档体系完善
@@ -924,21 +1068,21 @@ node --version  # 需要 >= 18.0
   - API响应格式标准化
 
 ### v2.0.0 (2025-09-28)
-- 🚀 **架构重构**: 全面重构项目架构
-- 🎨 **UI 升级**: 前端框架现代化升级
-- 🛡️ **安全增强**: 权限系统全面升级
-- 📊 **监控完善**: 监控系统简化优化
-- 📚 **文档完善**: 开发文档和 API 文档完善
+- **架构重构**: 全面重构项目架构
+- **UI 升级**: 前端框架现代化升级
+- **安全增强**: 权限系统全面升级
+- **监控完善**: 监控系统简化优化
+- **文档完善**: 开发文档和 API 文档完善
 
 ---
 
-## 🤝 贡献指南
+## 贡献指南
 
 ### 贡献流程
 
 1. Fork 项目仓库
 2. 创建功能分支 (`git checkout -b feature/amazing-feature`)
-3. 提交更改 (`git commit -m 'Add amazing feature'`)
+3. 提交更改 (`git commit -m 'feat: Add amazing feature'`)
 4. 推送到分支 (`git push origin feature/amazing-feature`)
 5. 创建 Pull Request
 
@@ -960,29 +1104,32 @@ style: 代码格式
 refactor: 代码重构
 test: 测试相关
 chore: 构建过程或辅助工具的变动
+perf: 性能优化
+ci: CI/CD相关
+build: 构建系统相关
+revert: 回滚提交
 ```
 
 ---
 
-## 📄 许可证
+## 许可证
 
-本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
+本项目采用 ISC 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
 
 ---
 
-## 📞 联系方式
+## 联系方式
 
-- **项目维护者**: [Your Name]
-- **邮箱**: [your.email@example.com]
-- **项目地址**: [GitHub Repository URL]
-- **问题反馈**: [Issues Page URL]
+- **项目维护者**: VanTam-CN
+- **项目地址**: [GitHub Repository](https://github.com/VanTam-CN/law-oa-go)
+- **问题反馈**: [Issues Page](https://github.com/VanTam-CN/law-oa-go/issues)
 
 ---
 
 <div align="center">
 
-**感谢使用 Law OA Go！** 🎉
+**感谢使用 Law OA Go！**
 
-如果这个项目对您有帮助，请给我们一个 ⭐️
+如果这个项目对您有帮助，请给我们一个
 
 </div>
