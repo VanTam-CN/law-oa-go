@@ -7,7 +7,6 @@ package tracing
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -17,6 +16,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -112,11 +112,11 @@ func TracingMiddleware(serviceName string, config *MiddlewareConfig) gin.Handler
 		// 开始span
 		ctx, span := StartSpan(c.Request.Context(), spanName,
 			trace.WithAttributes(
-				HTTPMethod.String(c.Request.Method),
-				HTTPURL.String(c.Request.URL.String()),
-				HTTPTarget.String(c.Request.URL.Path),
-				HTTPHost.String(c.Request.Host),
-				HTTPScheme.String(c.Request.URL.Scheme),
+				attribute.String(HTTPMethodKey, c.Request.Method),
+				attribute.String(HTTPURLKey, c.Request.URL.String()),
+				attribute.String(HTTPTargetKey, c.Request.URL.Path),
+				attribute.String(HTTPHostKey, c.Request.Host),
+				attribute.String(HTTPSchemeKey, c.Request.URL.Scheme),
 			),
 		)
 
@@ -155,13 +155,13 @@ func TracingMiddleware(serviceName string, config *MiddlewareConfig) gin.Handler
 
 		// 添加请求属性
 		if config.LogUserAgent && c.Request.UserAgent() != "" {
-			AddSpanAttributes(span, HTTPUserAgent.String(c.Request.UserAgent()))
+			AddSpanAttributes(span, attribute.String(HTTPUserAgentKey, c.Request.UserAgent()))
 		}
 
 		if config.LogClientIP {
 			clientIP := c.ClientIP()
 			if clientIP != "" {
-				AddSpanAttributes(span, HTTPRemoteIP.String(clientIP))
+				AddSpanAttributes(span, attribute.String(HTTPRemoteIPKey, clientIP))
 			}
 		}
 
@@ -181,7 +181,7 @@ func TracingMiddleware(serviceName string, config *MiddlewareConfig) gin.Handler
 
 		// 记录响应状态码
 		statusCode := c.Writer.Status()
-		AddSpanAttributes(span, HTTPStatusCode.Int(statusCode))
+		AddSpanAttributes(span, attribute.Int(HTTPStatusCodeKey, statusCode))
 
 		// 记录响应大小
 		responseSize := c.Writer.Size()
@@ -215,19 +215,19 @@ func TracingMiddleware(serviceName string, config *MiddlewareConfig) gin.Handler
 		// 设置span状态
 		if c.Errors != nil && len(c.Errors) > 0 {
 			// 有错误
-			SetSpanStatus(span, trace.StatusCodeError, c.Errors.String())
-			for _, err := c.Errors {
-				RecordError(span, err.Err)
+			SetSpanStatus(span, codes.Error, c.Errors.String())
+			for i := range c.Errors {
+				RecordError(span, c.Errors[i].Err)
 			}
 		} else if statusCode >= 500 {
 			// 服务器错误
-			SetSpanStatus(span, trace.StatusCodeError, http.StatusText(statusCode))
+			SetSpanStatus(span, codes.Error, http.StatusText(statusCode))
 		} else if statusCode >= 400 {
 			// 客户端错误
-			SetSpanStatus(span, trace.StatusCodeError, http.StatusText(statusCode))
+			SetSpanStatus(span, codes.Error, http.StatusText(statusCode))
 		} else {
 			// 成功
-			SetSpanStatus(span, trace.StatusCodeOK, http.StatusText(statusCode))
+			SetSpanStatus(span, codes.Ok, http.StatusText(statusCode))
 		}
 
 		// 添加业务属性
@@ -368,6 +368,6 @@ func AddErrorToSpan(c *gin.Context, err error) {
 	span := trace.SpanFromContext(c.Request.Context())
 	if span != nil {
 		RecordError(span, err)
-		SetSpanStatus(span, trace.StatusCodeError, err.Error())
+		SetSpanStatus(span, codes.Error, err.Error())
 	}
 }

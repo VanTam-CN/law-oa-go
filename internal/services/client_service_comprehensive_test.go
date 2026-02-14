@@ -275,11 +275,11 @@ func TestClientService_UpdateClient_Success(t *testing.T) {
 	}
 
 	updateReq := &UpdateClientRequest{
-		Name:    stringPtr("更新名称"),
-		Email:   stringPtr("updated@example.com"),
-		Phone:   stringPtr("13900139000"),
-		Address: stringPtr("更新地址"),
-		Status:  stringPtr("inactive"),
+		Name:    clientStringPtr("更新名称"),
+		Email:   clientStringPtr("updated@example.com"),
+		Phone:   clientStringPtr("13900139000"),
+		Address: clientStringPtr("更新地址"),
+		Status:  clientStringPtr("inactive"),
 	}
 
 	// 设置Mock期望
@@ -320,8 +320,8 @@ func TestClientService_UpdateClient_EmailConflict(t *testing.T) {
 	}
 
 	updateReq := &UpdateClientRequest{
-		Name:  stringPtr("更新名称"),
-		Email: stringPtr("another@example.com"), // 使用已存在的邮箱
+		Name:  clientStringPtr("更新名称"),
+		Email: clientStringPtr("another@example.com"), // 使用已存在的邮箱
 	}
 
 	// 设置Mock期望
@@ -602,7 +602,7 @@ func BenchmarkClientService_CreateClient(b *testing.B) {
 }
 
 // 辅助函数
-func stringPtr(s string) *string {
+func clientStringPtr(s string) *string {
 	return &s
 }
 
@@ -681,7 +681,7 @@ func TestClientService_Integration_CompleteWorkflow(t *testing.T) {
 
 	// 3. 更新客户端
 	updateReq := &UpdateClientRequest{
-		Name: stringPtr("更新后的集成测试客户"),
+		Name: clientStringPtr("更新后的集成测试客户"),
 	}
 	updated, err := service.UpdateClient(ctx, 1, updateReq)
 	require.NoError(t, err)

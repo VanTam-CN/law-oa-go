@@ -1,4 +1,8 @@
-import { get, post, del } from './http'
+import { get, post, put, del } from './http'
+
+// ============================================================================
+// 旧版通知接口（兼容）
+// ============================================================================
 
 export interface Notification {
   id: number
@@ -34,4 +38,246 @@ export const notificationService = {
 
   // 删除通知
   deleteNotification: (id: number) => del(`/notifications/${id}`),
+}
+
+// ============================================================================
+// 通知队列接口（新版）
+// ============================================================================
+
+export interface NotificationQueue {
+  id: number
+  created_at: string
+  trigger_type: string
+  trigger_id: number
+  case_id?: number
+  recipient_type: 'client' | 'lawyer' | 'admin'
+  recipient_id: number
+  recipient_name: string
+  recipient_contact?: string
+  channel: 'email' | 'sms' | 'wechat'
+  subject?: string
+  content: string
+  template_id?: string
+  status: 'pending' | 'approved' | 'sent' | 'cancelled' | 'failed'
+  priority: 'urgent' | 'normal' | 'low'
+  created_by: number
+  approved_by?: number
+  approved_at?: string
+  sent_at?: string
+  sent_retry_count: number
+  error_message?: string
+  contains_sensitive_info: boolean
+  auto_send: boolean
+  external_message_id?: string
+}
+
+export interface NotificationQueueStats {
+  total: number
+  pending: number
+  approved: number
+  sent: number
+  failed: number
+  cancelled: number
+  pending_approval: number
+  auto_send_count: number
+}
+
+export interface NotificationTemplate {
+  id: number
+  created_at: string
+  updated_at: string
+  template_code: string
+  template_name: string
+  channel: 'email' | 'sms' | 'wechat'
+  recipient_type: 'client' | 'lawyer' | 'admin'
+  trigger_event: string
+  subject_template?: string
+  content_template: string
+  variables: Record<string, string>
+  auto_send: boolean
+  requires_approval: boolean
+  is_active: boolean
+}
+
+export interface CreateNotificationRequest {
+  trigger_type: string
+  trigger_id: number
+  case_id?: number
+  recipient_type: 'client' | 'lawyer' | 'admin'
+  recipient_id: number
+  recipient_name: string
+  recipient_contact?: string
+  channel: 'email' | 'sms' | 'wechat'
+  subject?: string
+  content: string
+  template_id?: string
+  priority?: 'urgent' | 'normal' | 'low'
+  contains_sensitive_info?: boolean
+  auto_send?: boolean
+}
+
+export interface CreateTemplateRequest {
+  template_code: string
+  template_name: string
+  channel: 'email' | 'sms' | 'wechat'
+  recipient_type: 'client' | 'lawyer' | 'admin'
+  trigger_event: string
+  subject_template?: string
+  content_template: string
+  variables?: string[]
+  auto_send?: boolean
+  requires_approval?: boolean
+}
+
+// 通知队列服务
+export const notificationQueueService = {
+  // 获取通知队列列表
+  getQueue: async (params: {
+    page?: number
+    page_size?: number
+    status?: string
+    priority?: string
+    channel?: string
+    recipient_type?: string
+    trigger_type?: string
+    search?: string
+    date_from?: string
+    date_to?: string
+  } = {}) => {
+    const queryParams = new URLSearchParams()
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== '') {
+        queryParams.append(key, String(value))
+      }
+    })
+    const query = queryParams.toString()
+    return get<{
+      data: NotificationQueue[]
+      pagination: {
+        page: number
+        page_size: number
+        total: number
+        total_pages: number
+      }
+    }>(`/notifications/queue${query ? `?${query}` : ''}`)
+  },
+
+  // 获取通知队列统计
+  getQueueStats: () => get<NotificationQueueStats>('/notifications/queue/stats'),
+
+  // 创建通知
+  createNotification: (data: CreateNotificationRequest) =>
+    post<NotificationQueue>('/notifications/queue', data),
+
+  // 获取通知详情
+  getNotificationById: (id: number) =>
+    get<NotificationQueue>(`/notifications/queue/${id}`),
+
+  // 更新通知
+  updateNotification: (id: number, data: {
+    subject?: string
+    content?: string
+    priority?: 'urgent' | 'normal' | 'low'
+  }) => put(`/notifications/queue/${id}`, data),
+
+  // 删除通知
+  deleteNotification: (id: number) =>
+    del(`/notifications/queue/${id}`),
+
+  // 审批通过通知
+  approveNotification: (id: number) =>
+    post(`/notifications/queue/${id}/approve`),
+
+  // 审批拒绝通知
+  rejectNotification: (id: number, reason: string) =>
+    post(`/notifications/queue/${id}/reject`, { reason }),
+
+  // 批量确认通知
+  batchConfirm: (ids: number[]) =>
+    post('/notifications/queue/batch-confirm', { ids }),
+
+  // 批量取消通知
+  batchCancel: (ids: number[]) =>
+    post('/notifications/queue/batch-cancel', { ids }),
+
+  // 发送通知
+  sendNotification: (id: number) =>
+    post(`/notifications/queue/${id}/send`),
+}
+
+// 通知模板服务
+export const notificationTemplateService = {
+  // 获取模板列表
+  getTemplates: async (params: {
+    page?: number
+    page_size?: number
+    channel?: string
+    recipient_type?: string
+    trigger_event?: string
+    is_active?: boolean
+    search?: string
+  } = {}) => {
+    const queryParams = new URLSearchParams()
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== '') {
+        queryParams.append(key, String(value))
+      }
+    })
+    const query = queryParams.toString()
+    return get<{
+      data: NotificationTemplate[]
+      pagination: {
+        page: number
+        page_size: number
+        total: number
+        total_pages: number
+      }
+    }>(`/notifications/templates${query ? `?${query}` : ''}`)
+  },
+
+  // 获取启用的模板列表
+  getActiveTemplates: () =>
+    get<NotificationTemplate[]>('/notifications/templates/active'),
+
+  // 根据代码获取模板
+  getTemplateByCode: (code: string) =>
+    get<NotificationTemplate>(`/notifications/templates/code/${code}`),
+
+  // 创建模板
+  createTemplate: (data: CreateTemplateRequest) =>
+    post<NotificationTemplate>('/notifications/templates', data),
+
+  // 更新模板
+  updateTemplate: (id: number, data: Partial<CreateTemplateRequest> & {
+    is_active?: boolean
+  }) => put(`/notifications/templates/${id}`, data),
+
+  // 删除模板
+  deleteTemplate: (id: number) =>
+    del(`/notifications/templates/${id}`),
+
+  // 切换模板启用状态
+  toggleActive: (id: number) =>
+    post<{ message: string; is_active: boolean }>(`/notifications/templates/${id}/toggle`),
+}
+
+// 状态映射
+export const notificationStatusMap: Record<string, { text: string; color: string }> = {
+  pending: { text: '待处理', color: 'default' },
+  approved: { text: '已审批', color: 'blue' },
+  sent: { text: '已发送', color: 'green' },
+  cancelled: { text: '已取消', color: 'default' },
+  failed: { text: '发送失败', color: 'red' },
+}
+
+export const notificationPriorityMap: Record<string, { text: string; color: string }> = {
+  urgent: { text: '紧急', color: 'red' },
+  normal: { text: '普通', color: 'blue' },
+  low: { text: '低', color: 'default' },
+}
+
+export const notificationChannelMap: Record<string, { text: string; icon: string }> = {
+  email: { text: '邮件', icon: '✉️' },
+  sms: { text: '短信', icon: '📱' },
+  wechat: { text: '微信', icon: '💬' },
 }

@@ -83,8 +83,8 @@ type ListCasesRequest struct {
 
 // ListCasesResponse 案件列表响应
 type ListCasesResponse struct {
-	Cases      []CaseResponse `json:"cases"`
-	Pagination Pagination     `json:"pagination"`
+	Cases      []CaseResponse           `json:"cases"`
+	Pagination PaginationWithTotalPage `json:"pagination"`
 }
 
 // NewCaseService 创建案件服务
@@ -243,7 +243,7 @@ func (s *CaseService) ListCases(ctx context.Context, req *ListCasesRequest) (*Li
 	}
 
 	// 构建分页信息
-	pagination := Pagination{
+	pagination := PaginationWithTotalPage{
 		Page:      req.Page,
 		PageSize:  req.PageSize,
 		Total:     total,
@@ -335,12 +335,4 @@ func (s *CaseService) GetCaseTypes(ctx context.Context) ([]CaseTypeResponse, err
 	}
 
 	return caseTypes, nil
-}
-
-// Pagination 分页信息
-type Pagination struct {
-	Page      int   `json:"page"`
-	PageSize  int   `json:"page_size"`
-	Total     int64 `json:"total"`
-	TotalPage int64 `json:"total_page"`
 }

@@ -209,6 +209,9 @@ compose.yaml
 air/
 .watcher/
 
+# Git worktrees
+.worktrees/
+
 # 测试数据
 test/data/
 testdata/

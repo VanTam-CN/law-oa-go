@@ -120,7 +120,7 @@ type ListEnhancedCasesRequest struct {
 // ListEnhancedCasesResponse 列表增强案例响应
 type ListEnhancedCasesResponse struct {
 	Cases      []EnhancedCaseResponse `json:"cases"`
-	Pagination Pagination              `json:"pagination"`
+	Pagination PaginationWithTotalPage `json:"pagination"`
 }
 
 // ConflictCheckResult 冲突检测结果
@@ -455,7 +455,7 @@ func (s *enhancedCaseService) ListEnhancedCases(ctx context.Context, req *ListEn
 	}
 
 	// 构建分页信息
-	pagination := Pagination{
+	pagination := PaginationWithTotalPage{
 		Page:      req.Page,
 		PageSize:  req.PageSize,
 		Total:     total,

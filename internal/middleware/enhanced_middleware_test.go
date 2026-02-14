@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -72,14 +73,14 @@ func (m *MockCacheService) Exists(key string) (bool, error) {
 // MockJWTKeyManager 模拟JWT密钥管理器
 type MockJWTKeyManager struct{}
 
-func (m *MockJWTKeyManager) ExtractTokenMetadata(ctx context.Context, token string) (*security.TokenPayload, error) {
-	return &security.TokenPayload{
-		UserID:    1,
-		Username:  "testuser",
-		Role:      "user",
-		DeviceID:  "device123",
-		IP:        "127.0.0.1",
-		UserAgent: "test-agent",
+func (m *MockJWTKeyManager) ExtractTokenMetadata(ctx context.Context, token string) (interface{}, error) {
+	return map[string]interface{}{
+		"user_id":   1,
+		"username":  "testuser",
+		"role":      "user",
+		"device_id": "device123",
+		"ip":        "127.0.0.1",
+		"user_agent": "test-agent",
 	}, nil
 }
 

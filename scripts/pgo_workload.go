@@ -1,3 +1,5 @@
+//go:build ignore
+
 // PGO性能剖析工作负载脚本
 // 用于生成Profile-Guided Optimization所需的性能剖析数据
 

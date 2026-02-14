@@ -13,13 +13,14 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/exporters/jaeger"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/exporters/zipkin"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -134,15 +135,25 @@ func InitTracer(config *TracerConfig) error {
 	sampler := createSampler(config)
 
 	// 创建追踪器提供者
-	provider := sdktrace.NewTracerProvider(
-		sdktrace.WithBatcher(exporters...,
+	var providerOpts []sdktrace.TracerProviderOption
+
+	// 为每个导出器添加批处理器选项
+	for _, exporter := range exporters {
+		batchOpts := []sdktrace.BatchSpanProcessorOption{
 			sdktrace.WithBatchTimeout(config.BatchTimeout),
 			sdktrace.WithMaxExportBatchSize(config.MaxExportBatchSize),
 			sdktrace.WithMaxQueueSize(config.MaxQueueSize),
-		),
+		}
+		providerOpts = append(providerOpts, sdktrace.WithBatcher(exporter, batchOpts...))
+	}
+
+	// 添加资源和采样器
+	providerOpts = append(providerOpts,
 		sdktrace.WithResource(res),
 		sdktrace.WithSampler(sampler),
 	)
+
+	provider := sdktrace.NewTracerProvider(providerOpts...)
 
 	// 设置全局追踪器提供者
 	otel.SetTracerProvider(provider)
@@ -314,7 +325,7 @@ func AddSpanEvents(span trace.Span, name string, attrs ...attribute.KeyValue) {
 }
 
 // SetSpanStatus 设置span状态
-func SetSpanStatus(span trace.Span, code trace.StatusCode, message string) {
+func SetSpanStatus(span trace.Span, code codes.Code, message string) {
 	span.SetStatus(code, message)
 }
 
@@ -377,38 +388,70 @@ func GetSpanIDFromContext(ctx context.Context) string {
 }
 
 // ==============================
-// 常用属性常量
+// 常用属性Key常量
 // ==============================
 
+const (
+	// HTTP属性Key
+	HTTPMethodKey     = "http.method"
+	HTTPURLKey        = "http.url"
+	HTTPStatusCodeKey = "http.status_code"
+	HTTPTargetKey     = "http.target"
+	HTTPHostKey       = "http.host"
+	HTTPSchemeKey     = "http.scheme"
+	HTTPUserAgentKey  = "http.user_agent"
+	HTTPRemoteIPKey   = "http.remote_ip"
+
+	// 数据库属性Key
+	DBSystemKey              = "db.system"
+	DBNameKey                = "db.name"
+	DBStatementKey           = "db.statement"
+	DBOperationKey           = "db.operation"
+	DBRowsAffectedKey        = "db.rows_affected"
+	DBConnectionStringKeyKey = "db.connection_string"
+
+	// 业务属性Key
+	BusinessOperationKey = "business.operation"
+	BusinessModuleKey    = "business.module"
+	BusinessUserIDKey    = "business.user_id"
+	BusinessResourceKey  = "business.resource"
+
+	// 系统属性Key
+	SystemComponentKey = "system.component"
+	SystemVersionKey   = "system.version"
+	SystemInstanceKey  = "system.instance"
+)
+
+// 便捷的属性创建函数
 var (
-	// HTTP属性
-	HTTPMethod     = attribute.String("http.method", "")
-	HTTPURL        = attribute.String("http.url", "")
-	HTTPStatusCode = attribute.Int("http.status_code", 0)
-	HTTPTarget     = attribute.String("http.target", "")
-	HTTPHost       = attribute.String("http.host", "")
-	HTTPScheme     = attribute.String("http.scheme", "")
-	HTTPUserAgent  = attribute.String("http.user_agent", "")
-	HTTPRemoteIP   = attribute.String("http.remote_ip", "")
+	// HTTP属性 - 已废弃，请直接使用 attribute.String(HTTPMethodKey, value)
+	HTTPMethod     = HTTPMethodKey
+	HTTPURL        = HTTPURLKey
+	HTTPStatusCode = HTTPStatusCodeKey
+	HTTPTarget     = HTTPTargetKey
+	HTTPHost       = HTTPHostKey
+	HTTPScheme     = HTTPSchemeKey
+	HTTPUserAgent  = HTTPUserAgentKey
+	HTTPRemoteIP   = HTTPRemoteIPKey
 
-	// 数据库属性
-	DBSystem              = attribute.String("db.system", "")
-	DBName                = attribute.String("db.name", "")
-	DBStatement           = attribute.String("db.statement", "")
-	DBOperation           = attribute.String("db.operation", "")
-	DBRowsAffected        = attribute.Int("db.rows_affected", 0)
-	DBConnectionStringKey = attribute.String("db.connection_string", "")
+	// 数据库属性 - 已废弃，请直接使用 attribute.String(DBSystemKey, value)
+	DBSystem              = DBSystemKey
+	DBName                = DBNameKey
+	DBStatement           = DBStatementKey
+	DBOperation           = DBOperationKey
+	DBRowsAffected        = DBRowsAffectedKey
+	DBConnectionStringKey = DBConnectionStringKeyKey
 
-	// 业务属性
-	BusinessOperation = attribute.String("business.operation", "")
-	BusinessModule    = attribute.String("business.module", "")
-	BusinessUserID    = attribute.String("business.user_id", "")
-	BusinessResource  = attribute.String("business.resource", "")
+	// 业务属性 - 已废弃，请直接使用 attribute.String(BusinessOperationKey, value)
+	BusinessOperation = BusinessOperationKey
+	BusinessModule    = BusinessModuleKey
+	BusinessUserID    = BusinessUserIDKey
+	BusinessResource  = BusinessResourceKey
 
-	// 系统属性
-	SystemComponent = attribute.String("system.component", "")
-	SystemVersion   = attribute.String("system.version", "")
-	SystemInstance  = attribute.String("system.instance", "")
+	// 系统属性 - 已废弃，请直接使用 attribute.String(SystemComponentKey, value)
+	SystemComponent = SystemComponentKey
+	SystemVersion   = SystemVersionKey
+	SystemInstance  = SystemInstanceKey
 )
 
 // ==============================

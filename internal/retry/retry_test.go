@@ -127,7 +127,7 @@ func TestDatabaseRetryableOperation(t *testing.T) {
 	ctx := context.Background()
 
 	operation := NewDatabaseRetryableOperation(func(ctx context.Context) (string, error) {
-		dbErr := apperrors.NewDatabaseError("SELECT", "connection failed", errors.New("connection failed"))
+		dbErr := apperrors.DatabaseError("SELECT", "connection failed", errors.New("connection failed"))
 		return "", dbErr
 	}, config)
 
@@ -142,7 +142,7 @@ func TestAPIRetryableOperation(t *testing.T) {
 	ctx := context.Background()
 
 	operation := NewAPIRetryableOperation(func(ctx context.Context) (string, error) {
-		netErr := apperrors.NewNetworkError("http://api.example.com", false, errors.New("timeout"))
+		netErr := apperrors.NetworkError("http://api.example.com", false, errors.New("timeout"))
 		return "", netErr
 	}, config)
 
@@ -306,27 +306,27 @@ func TestIsRetryableError(t *testing.T) {
 	}{
 		{
 			name:     "custom retryable error",
-			err:      apperrors.NewBusinessError("CUSTOM_ERROR", "custom error", nil),
+			err:      apperrors.BusinessError("entity", "CUSTOM_ERROR", "custom error"),
 			expected: true,
 		},
 		{
 			name:     "non-retryable error",
-			err:      apperrors.NewBusinessError("NON_RETRYABLE_ERROR", "non-retryable", nil),
+			err:      apperrors.BusinessError("entity", "NON_RETRYABLE_ERROR", "non-retryable"),
 			expected: false,
 		},
 		{
 			name:     "database error",
-			err:      apperrors.NewDatabaseError("SELECT", "some error", nil),
+			err:      apperrors.DatabaseError("SELECT", "some error", nil),
 			expected: true,
 		},
 		{
 			name:     "network error",
-			err:      apperrors.NewNetworkError("http://example.com", false, nil),
+			err:      apperrors.NetworkError("http://example.com", false, nil),
 			expected: true,
 		},
 		{
 			name:     "validation error",
-			err:      apperrors.NewValidationError("field", "value", "invalid", ""),
+			err:      apperrors.ValidationError("field", "invalid value"),
 			expected: false,
 		},
 	}

@@ -62,6 +62,14 @@ type Case struct {
 	Status      string         `json:"status" gorm:"size:20;default:'pending'"`
 	StartDate   *time.Time     `json:"start_date"`
 	EndDate     *time.Time     `json:"end_date"`
+
+	// 隔离墙相关字段 (v2.2.0)
+	EthicalWallEnabled     bool        `json:"ethical_wall_enabled" gorm:"column:ethical_wall_enabled;default:false;index:idx_ethical_wall;comment:是否启用隔离墙"`
+	EthicalWallDescription string     `json:"ethical_wall_description" gorm:"column:ethical_wall_description;type:text;comment:隔离墙说明"`
+	EthicalWallEnabledBy   *uint       `json:"ethical_wall_enabled_by,omitempty" gorm:"column:ethical_wall_enabled_by;comment:启用人ID"`
+	EthicalWallEnabledByUser *User     `json:"ethical_wall_enabled_by_user,omitempty" gorm:"foreignKey:EthicalWallEnabledBy"`
+	EthicalWallEnabledAt   *time.Time  `json:"ethical_wall_enabled_at,omitempty" gorm:"column:ethical_wall_enabled_at;comment:启用时间"`
+
 	// 临时字段，不映射到数据库，仅用于增强冲突检测
 	OpposingParty string `json:"opposing_party" gorm:"-"`
 	ClientName    string `json:"client_name" gorm:"-"`

@@ -55,6 +55,7 @@ type ExecutionContext struct {
 // TestCase 测试用例定义
 type TestCase struct {
 	ID           string                 `json:"id"`
+	SuiteID      string                 `json:"suite_id,omitempty"`
 	Name         string                 `json:"name"`
 	Description  string                 `json:"description"`
 	Type         TestType               `json:"type"`
@@ -66,6 +67,7 @@ type TestCase struct {
 	Setup        []TestStep             `json:"setup,omitempty"`
 	Teardown     []TestStep             `json:"teardown,omitempty"`
 	Timeout      time.Duration          `json:"timeout,omitempty"`
+	Environment  string                 `json:"environment,omitempty"`
 	Expected     *TestExpected          `json:"expected,omitempty"`
 	Metadata     map[string]interface{} `json:"metadata,omitempty"`
 }
@@ -190,6 +192,42 @@ const (
 	TestStatusRunning   TestStatus = "running"
 )
 
+// ToModelStatus 转换为 models.TestExecutionStatus
+func (s TestStatus) ToModelStatus() models.TestExecutionStatus {
+	switch s {
+	case TestStatusPassed:
+		return models.TestStatusCompleted
+	case TestStatusFailed, TestStatusError, TestStatusTimeout:
+		return models.TestStatusFailed
+	case TestStatusSkipped:
+		return models.TestStatusCancelled
+	case TestStatusPending:
+		return models.TestStatusPending
+	case TestStatusRunning:
+		return models.TestStatusRunning
+	default:
+		return models.TestStatusPending
+	}
+}
+
+// FromModelStatus 从 models.TestExecutionStatus 转换
+func FromModelStatus(status models.TestExecutionStatus) TestStatus {
+	switch status {
+	case models.TestStatusCompleted:
+		return TestStatusPassed
+	case models.TestStatusFailed:
+		return TestStatusFailed
+	case models.TestStatusCancelled:
+		return TestStatusSkipped
+	case models.TestStatusPending:
+		return TestStatusPending
+	case models.TestStatusRunning:
+		return TestStatusRunning
+	default:
+		return TestStatusPending
+	}
+}
+
 // PerformanceMetrics 性能指标
 type PerformanceMetrics struct {
 	// 网络指标
@@ -296,6 +334,13 @@ type TestRepository interface {
 	DeleteTestSuite(ctx context.Context, id string) error
 	ListTestSuites(ctx context.Context, filters map[string]interface{}, page, pageSize int) ([]*models.TestSuite, int64, error)
 
+	// 测试用例管理
+	CreateTestCase(ctx context.Context, testCase *TestCase) error
+	GetTestCase(ctx context.Context, id string) (*TestCase, error)
+	UpdateTestCase(ctx context.Context, testCase *TestCase) error
+	DeleteTestCase(ctx context.Context, id string) error
+	ListTestCases(ctx context.Context, filter *TestCaseFilter) ([]*TestCase, error)
+
 	// 测试执行管理
 	CreateTestExecution(ctx context.Context, execution *models.TestExecution) error
 	GetTestExecution(ctx context.Context, id string) (*models.TestExecution, error)
@@ -307,6 +352,9 @@ type TestRepository interface {
 	GetTestResult(ctx context.Context, id string) (*models.TestResult, error)
 	UpdateTestResult(ctx context.Context, result *models.TestResult) error
 	ListTestResults(ctx context.Context, executionID string) ([]*models.TestResult, error)
+
+	// 清理操作
+	CleanupOldExecutions(ctx context.Context, cutoff time.Time) error
 }
 
 // 扩展原有的TestLogger接口

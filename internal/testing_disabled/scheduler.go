@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"sync"
 	"time"
-
-	"go.uber.org/zap"
 )
 
 // TestScheduler 测试调度器
@@ -57,14 +55,15 @@ type RunningTest struct {
 
 // TestExecutionResult 测试执行结果
 type TestExecutionResult struct {
-	TestID     string
+	TestID      string
 	ExecutionID string
-	StartTime  time.Time
-	EndTime    time.Time
-	Status     TestStatus
-	Result     *TestResult
-	Error      error
-	Metadata   map[string]interface{}
+	StartTime   time.Time
+	EndTime     time.Time
+	Status      TestStatus
+	Progress    float64
+	Result      *TestResult
+	Error       error
+	Metadata    map[string]interface{}
 }
 
 // SchedulerConfig 调度器配置

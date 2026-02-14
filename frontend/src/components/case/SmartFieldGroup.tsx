@@ -322,6 +322,7 @@ const SmartFieldGroup: React.FC<SmartFieldGroupProps> = ({
     <div
       className={`smart-field-group ${className} ${isCompact ? 'smart-field-group-compact' : ''}`}
       style={style}
+      data-testid="smart-field-group"
     >
       <Collapse
         items={collapseItems}

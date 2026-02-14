@@ -43,7 +43,7 @@ func (h *DocumentHandler) UploadDocument(c *gin.Context) {
 	// Parse form data
 	err := c.Request.ParseMultipartForm(50 << 20) // 50 MB max memory
 	if err != nil {
-		_ = c.Error(errors.NewValidationError("form_parse", "form_parse", "Failed to parse form data: "+err.Error(), "Failed to parse form data"))
+		_ = c.Error(errors.ValidationError("form_parse", "Failed to parse form data: "+err.Error()))
 		return
 	}
 
@@ -60,7 +60,7 @@ func (h *DocumentHandler) UploadDocument(c *gin.Context) {
 	if entityIDStr != "" {
 		id, err := strconv.ParseUint(entityIDStr, 10, 32)
 		if err != nil {
-			_ = c.Error(errors.NewValidationError("entity_id", "entity_id", "Invalid entity ID: must be a valid number", "Invalid entity ID: must be a valid number"))
+			_ = c.Error(errors.ValidationError("entity_id", "Invalid entity ID: must be a valid number"))
 			return
 		}
 		entityID = uint(id)
@@ -69,7 +69,7 @@ func (h *DocumentHandler) UploadDocument(c *gin.Context) {
 	// Get uploaded file
 	file, err := c.FormFile("file")
 	if err != nil {
-		_ = c.Error(errors.NewValidationError("file", "file", "Missing file: "+err.Error(), "Please provide a file to upload"))
+		_ = c.Error(errors.ValidationError("file", "Missing file: "+err.Error()))
 		return
 	}
 
@@ -112,7 +112,7 @@ func (h *DocumentHandler) GetDocument(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		_ = c.Error(errors.NewValidationError("id_validation", "id_validation", "Invalid ID: must be a valid number", "Invalid ID: must be a valid number"))
+		_ = c.Error(errors.ValidationError("id_validation", "Invalid ID: must be a valid number"))
 		return
 	}
 
@@ -144,13 +144,13 @@ func (h *DocumentHandler) UpdateDocument(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		_ = c.Error(errors.NewValidationError("id_validation", "id_validation", "Invalid ID: must be a valid number", "Invalid ID: must be a valid number"))
+		_ = c.Error(errors.ValidationError("id_validation", "Invalid ID: must be a valid number"))
 		return
 	}
 
 	var req services.DocumentUpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		_ = c.Error(errors.NewValidationError("request_binding", "request_binding", "Invalid request format: "+err.Error(), "Invalid request format"))
+		_ = c.Error(errors.ValidationError("request_binding", "Invalid request format: "+err.Error()))
 		return
 	}
 
@@ -181,7 +181,7 @@ func (h *DocumentHandler) DeleteDocument(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		_ = c.Error(errors.NewValidationError("id_validation", "id_validation", "Invalid ID: must be a valid number", "Invalid ID: must be a valid number"))
+		_ = c.Error(errors.ValidationError("id_validation", "Invalid ID: must be a valid number"))
 		return
 	}
 
@@ -215,7 +215,7 @@ func (h *DocumentHandler) DeleteDocument(c *gin.Context) {
 func (h *DocumentHandler) ListDocuments(c *gin.Context) {
 	var req services.DocumentListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		_ = c.Error(errors.NewValidationError("query_binding", "query_binding", "Invalid query parameters: "+err.Error(), "Invalid query parameters"))
+		_ = c.Error(errors.ValidationError("query_binding", "Invalid query parameters: "+err.Error()))
 		return
 	}
 
@@ -276,7 +276,7 @@ func (h *DocumentHandler) DownloadDocument(c *gin.Context) {
 	idStr := c.Param("id")
 	_, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		_ = c.Error(errors.NewValidationError("id_validation", "id_validation", "Invalid ID: must be a valid number", "Invalid ID: must be a valid number"))
+		_ = c.Error(errors.ValidationError("id_validation", "Invalid ID: must be a valid number"))
 		return
 	}
 

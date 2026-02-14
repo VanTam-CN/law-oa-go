@@ -11,12 +11,10 @@ import (
 // createTestCacheService 创建测试用的缓存服务
 func createTestCacheService() *cache.CacheService {
 	// 创建一个测试用的缓存服务
-	cacheService, err := cache.NewCacheServiceWithConfig()
-	if err != nil {
-		// 如果Redis不可用，返回nil，测试应该跳过依赖Redis的功能
-		return nil
-	}
-	return cacheService
+	redisClient := redis.NewClient(&redis.Options{
+		Addr: "localhost:6379",
+	})
+	return cache.NewCacheService(redisClient, "test")
 }
 
 // createTestRedisClient 创建测试用的Redis客户端

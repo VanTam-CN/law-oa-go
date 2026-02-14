@@ -1,3 +1,5 @@
+//go:build ignore
+
 package main
 
 import (
@@ -100,7 +102,7 @@ func createTestUsersAndData(db *sql.DB) error {
 		id                   string
 		requestNumber        string
 		title                string
-		type                 string
+		requestType          string
 		category             string
 		content              string
 		applicantID          string
@@ -129,7 +131,7 @@ func createTestUsersAndData(db *sql.DB) error {
 			id:                "test-approval-001",
 			requestNumber:     "AP-20241201001",
 			title:             "赵六的用章申请",
-			type:              "document",
+			requestType:       "document",
 			category:          "行政",
 			content:           "需要加盖公司公章用于合同签署，合同已通过法务审核。",
 			applicantID:       "5",
@@ -156,7 +158,7 @@ func createTestUsersAndData(db *sql.DB) error {
 			id:                "test-approval-002",
 			requestNumber:     "AP-20241201002",
 			title:             "钱七的紧急采购申请",
-			type:              "procurement",
+			requestType:       "procurement",
 			category:          "行政",
 			content:           "办公室打印机故障，需要紧急采购新打印机一台，预算5000元。",
 			applicantID:       "6",
@@ -183,7 +185,7 @@ func createTestUsersAndData(db *sql.DB) error {
 			id:                "test-approval-003",
 			requestNumber:     "AP-20241201003",
 			title:             "张三的年假申请",
-			type:              "leave",
+			requestType:       "leave",
 			category:          "人事行政",
 			content:           "因家庭事务需要回老家处理，特申请年假5天，时间从2024年12月10日到2024年12月14日。",
 			applicantID:       "2",
@@ -210,7 +212,7 @@ func createTestUsersAndData(db *sql.DB) error {
 			id:                "test-approval-004",
 			requestNumber:     "AP-20241201004",
 			title:             "张三的培训申请",
-			type:              "training",
+			requestType:       "training",
 			category:          "人事",
 			content:           "参加专业法律培训课程，提升专业技能。",
 			applicantID:       "2",
@@ -237,7 +239,7 @@ func createTestUsersAndData(db *sql.DB) error {
 			id:                "test-approval-005",
 			requestNumber:     "AP-20241201005",
 			title:             "李四的费用报销申请",
-			type:              "expense",
+			requestType:       "expense",
 			category:          "财务",
 			content:           "出差北京参与客户会议，报销交通费800元，住宿费1200元，餐费300元，合计2300元。",
 			applicantID:       "3",
@@ -264,7 +266,7 @@ func createTestUsersAndData(db *sql.DB) error {
 			id:                "test-approval-006",
 			requestNumber:     "AP-20241201006",
 			title:             "王五的立项申请",
-			type:              "project",
+			requestType:       "project",
 			category:          "业务",
 			content:           "计划开展新的法律服务项目，需要启动资金50万元，项目周期6个月。",
 			applicantID:       "4",
@@ -301,7 +303,7 @@ func createTestUsersAndData(db *sql.DB) error {
 		ON CONFLICT (id) DO NOTHING`
 
 		_, err := db.Exec(query,
-			approval.id, approval.requestNumber, approval.title, approval.type, approval.category, approval.content,
+			approval.id, approval.requestNumber, approval.title, approval.requestType, approval.category, approval.content,
 			approval.applicantID, approval.applicantName, approval.applicantTitle, approval.departmentID, approval.departmentName,
 			approval.urgency, approval.priority, approval.status, approval.submissionDate, approval.currentStage,
 			approval.currentApproverID, approval.currentApproverName, approval.workflowType,

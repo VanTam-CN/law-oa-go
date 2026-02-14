@@ -245,7 +245,7 @@ func TestCaseService_UpdateCase_Validation(t *testing.T) {
 	t.Run("更新案件 - 验证律师存在", func(t *testing.T) {
 		lawyerID := uint(1)
 		req := &UpdateCaseRequest{
-			Title:    stringPtr("更新后的案件"),
+			Title:    caseStringPtr("更新后的案件"),
 			LawyerID: &lawyerID,
 		}
 
@@ -276,7 +276,7 @@ func TestCaseService_UpdateCase_Validation(t *testing.T) {
 	t.Run("更新案件 - 律师不存在", func(t *testing.T) {
 		lawyerID := uint(999)
 		req := &UpdateCaseRequest{
-			Title:    stringPtr("更新后的案件"),
+			Title:    caseStringPtr("更新后的案件"),
 			LawyerID: &lawyerID,
 		}
 
@@ -297,7 +297,7 @@ func TestCaseService_UpdateCase_Validation(t *testing.T) {
 }
 
 // 辅助函数
-func stringPtr(s string) *string {
+func caseStringPtr(s string) *string {
 	return &s
 }
 

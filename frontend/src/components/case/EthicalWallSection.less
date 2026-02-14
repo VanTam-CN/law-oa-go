@@ -1,0 +1,260 @@
+/**
+ * EthicalWallSection 组件样式
+ * 隔离墙状态显示组件样式
+ */
+
+.ethical-wall-section {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+
+  // 卡片基础样式
+  .ant-card {
+    border-radius: 8px;
+    transition: all 0.3s ease;
+
+    &.enabled {
+      border-color: #52c41a;
+      box-shadow: 0 2px 8px rgba(82, 196, 26, 0.15);
+    }
+
+    &.disabled {
+      border-color: #d9d9d9;
+    }
+  }
+
+  .ant-card-head {
+    border-bottom: 1px solid #f0f0f0;
+    padding: 16px 24px;
+    min-height: 56px;
+
+    .ant-card-head-title {
+      padding: 0;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .ant-card-extra {
+      padding: 0;
+    }
+  }
+
+  .ant-card-body {
+    padding: 24px;
+  }
+
+  // 操作区域
+  .wall-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px 16px;
+    background: #fafafa;
+    border-radius: 6px;
+    border: 1px solid #f0f0f0;
+
+    .ant-space {
+      flex-wrap: wrap;
+    }
+  }
+
+  // 紧凑模式
+  &.compact {
+    .ant-card-head {
+      padding: 12px 16px;
+      min-height: 48px;
+
+      .ant-card-head-title {
+        font-size: 14px;
+      }
+    }
+
+    .ant-card-body {
+      padding: 16px;
+    }
+
+    .wall-actions {
+      padding: 8px 12px;
+      gap: 8px;
+    }
+
+    .ant-tag {
+      font-size: 12px;
+      padding: 2px 6px;
+    }
+
+    .ant-btn {
+      font-size: 12px;
+      padding: 4px 8px;
+    }
+  }
+}
+
+// 响应式设计
+@media (max-width: 1200px) {
+  .ethical-wall-section {
+    .ant-card-body {
+      padding: 20px;
+    }
+
+    .wall-actions {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .ethical-wall-section {
+    .ant-card {
+      border-radius: 6px;
+    }
+
+    .ant-card-head {
+      padding: 12px;
+      min-height: 44px;
+
+      .ant-card-head-title {
+        font-size: 14px;
+      }
+    }
+
+    .ant-card-body {
+      padding: 16px;
+    }
+
+    .wall-actions {
+      padding: 8px 12px;
+
+      .ant-space {
+        width: 100%;
+        justify-content: space-between;
+      }
+    }
+  }
+}
+
+@media (max-width: 576px) {
+  .ethical-wall-section {
+    .ant-card-head {
+      padding: 10px 12px;
+      min-height: 40px;
+
+      .ant-card-extra {
+        display: none;
+      }
+    }
+
+    .wall-actions {
+      .ant-btn {
+        width: 100%;
+      }
+    }
+  }
+}
+
+// 深色主题支持
+@media (prefers-color-scheme: dark) {
+  .ethical-wall-section {
+    .ant-card {
+      background: #141414;
+      border-color: #434343;
+
+      &.enabled {
+        border-color: #389e0d;
+        box-shadow: 0 2px 8px rgba(82, 196, 26, 0.25);
+      }
+    }
+
+    .ant-card-head {
+      border-bottom-color: #434343;
+      background: #1f1f1f;
+
+      .ant-card-head-title {
+        color: #fff;
+      }
+    }
+
+    .wall-actions {
+      background: #262626;
+      border-color: #434343;
+    }
+
+    .ant-typography.ant-typography-secondary {
+      color: #a6a6a6;
+    }
+  }
+}
+
+// 动画效果
+.ethical-wall-section {
+  .wall-actions {
+    animation: fadeIn 0.3s ease;
+  }
+
+  .ant-alert {
+    animation: slideIn 0.3s ease;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// 无障碍支持
+.ethical-wall-section {
+  .ant-btn:focus-visible {
+    outline: 2px solid #1890ff;
+    outline-offset: 2px;
+  }
+
+  .wall-actions {
+    &:focus-within {
+      background: #f0f8ff;
+    }
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .ethical-wall-section {
+    .wall-actions {
+      &:focus-within {
+        background: #111b26;
+      }
+    }
+  }
+}
+
+// 打印样式
+@media print {
+  .ethical-wall-section {
+    .ant-card {
+      box-shadow: none;
+      border: 1px solid #d9d9d9;
+    }
+
+    .wall-actions {
+      .ant-btn {
+        display: none;
+      }
+    }
+  }
+}

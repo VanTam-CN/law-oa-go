@@ -18,17 +18,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// MockDocumentRepository Mock文档仓储
-type MockDocumentRepository struct {
+// MockDocumentServiceRepository Mock文档仓储
+type MockDocumentServiceRepository struct {
 	mock.Mock
 }
 
-func (m *MockDocumentRepository) Create(ctx context.Context, doc *models.Document) error {
+func (m *MockDocumentServiceRepository) Create(ctx context.Context, doc *models.Document) error {
 	args := m.Called(ctx, doc)
 	return args.Error(0)
 }
 
-func (m *MockDocumentRepository) FindByID(ctx context.Context, id uint) (*models.Document, error) {
+func (m *MockDocumentServiceRepository) FindByID(ctx context.Context, id uint) (*models.Document, error) {
 	args := m.Called(ctx, id)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -36,22 +36,22 @@ func (m *MockDocumentRepository) FindByID(ctx context.Context, id uint) (*models
 	return args.Get(0).(*models.Document), args.Error(1)
 }
 
-func (m *MockDocumentRepository) Update(ctx context.Context, doc *models.Document) error {
+func (m *MockDocumentServiceRepository) Update(ctx context.Context, doc *models.Document) error {
 	args := m.Called(ctx, doc)
 	return args.Error(0)
 }
 
-func (m *MockDocumentRepository) Delete(ctx context.Context, id uint) error {
+func (m *MockDocumentServiceRepository) Delete(ctx context.Context, id uint) error {
 	args := m.Called(ctx, id)
 	return args.Error(0)
 }
 
-func (m *MockDocumentRepository) List(ctx context.Context, params *repositories.DocumentListParams) ([]*models.Document, int64, error) {
+func (m *MockDocumentServiceRepository) List(ctx context.Context, params *repositories.DocumentListParams) ([]*models.Document, int64, error) {
 	args := m.Called(ctx, params)
 	return args.Get(0).([]*models.Document), args.Get(1).(int64), args.Error(2)
 }
 
-func (m *MockDocumentRepository) GetStats(ctx context.Context) (*repositories.DocumentStats, error) {
+func (m *MockDocumentServiceRepository) GetStats(ctx context.Context) (*repositories.DocumentStats, error) {
 	args := m.Called(ctx)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -59,24 +59,24 @@ func (m *MockDocumentRepository) GetStats(ctx context.Context) (*repositories.Do
 	return args.Get(0).(*repositories.DocumentStats), args.Error(1)
 }
 
-// MockFileHeader Mock文件头
-type MockFileHeader struct {
+// MockDocumentFileHeader Mock文件头
+type MockDocumentFileHeader struct {
 	Filename string
 	Size     int64
 	Header   map[string][]string
 }
 
-func (m *MockFileHeader) Open() (multipart.File, error) {
-	return &MockFile{}, nil
+func (m *MockDocumentFileHeader) Open() (multipart.File, error) {
+	return &MockDocumentFile{}, nil
 }
 
-// MockFile Mock文件
-type MockFile struct {
+// MockDocumentFile Mock文件
+type MockDocumentFile struct {
 	content string
 	pos      int
 }
 
-func (m *MockFile) Read(p []byte) (int, error) {
+func (m *MockDocumentFile) Read(p []byte) (int, error) {
 	if m.pos >= len(m.content) {
 		return 0, io.EOF
 	}
@@ -91,7 +91,7 @@ func (m *MockFile) Close() error {
 
 // TestNewDocumentService 测试文档服务创建
 func TestNewDocumentService(t *testing.T) {
-	mockRepo := &MockDocumentRepository{}
+	mockRepo := &MockDocumentServiceRepository{}
 	storageDir := "/tmp/documents"
 	service := NewDocumentService(mockRepo, storageDir)
 
@@ -102,14 +102,14 @@ func TestNewDocumentService(t *testing.T) {
 
 // TestDocumentService_UploadDocument_Success 测试上传文档成功
 func TestDocumentService_UploadDocument_Success(t *testing.T) {
-	mockRepo := &MockDocumentRepository{}
+	mockRepo := &MockDocumentServiceRepository{}
 	storageDir := "/tmp/documents"
 	service := NewDocumentService(mockRepo, storageDir)
 
 	ctx := context.Background()
 
 	// 创建Mock文件
-	mockFile := &MockFileHeader{
+	mockFile := &MockDocumentFileHeader{
 		Filename: "test.pdf",
 		Size:     1024,
 		Header:   map[string][]string{"Content-Type": {"application/pdf"}},
@@ -150,7 +150,7 @@ func TestDocumentService_UploadDocument_Success(t *testing.T) {
 
 // TestDocumentService_UploadDocument_MissingFile 测试缺少文件
 func TestDocumentService_UploadDocument_MissingFile(t *testing.T) {
-	mockRepo := &MockDocumentRepository{}
+	mockRepo := &MockDocumentServiceRepository{}
 	storageDir := "/tmp/documents"
 	service := NewDocumentService(mockRepo, storageDir)
 
@@ -176,14 +176,14 @@ func TestDocumentService_UploadDocument_MissingFile(t *testing.T) {
 
 // TestDocumentService_UploadDocument_FileTooLarge 测试文件过大
 func TestDocumentService_UploadDocument_FileTooLarge(t *testing.T) {
-	mockRepo := &MockDocumentRepository{}
+	mockRepo := &MockDocumentServiceRepository{}
 	storageDir := "/tmp/documents"
 	service := NewDocumentService(mockRepo, storageDir)
 
 	ctx := context.Background()
 
 	// 创建过大的Mock文件 (60MB)
-	mockFile := &MockFileHeader{
+	mockFile := &MockDocumentFileHeader{
 		Filename: "large.pdf",
 		Size:     60 * 1024 * 1024, // 60MB
 		Header:   map[string][]string{"Content-Type": {"application/pdf"}},
@@ -208,14 +208,14 @@ func TestDocumentService_UploadDocument_FileTooLarge(t *testing.T) {
 
 // TestDocumentService_UploadDocument_UnsupportedFileType 测试不支持的文件类型
 func TestDocumentService_UploadDocument_UnsupportedFileType(t *testing.T) {
-	mockRepo := &MockDocumentRepository{}
+	mockRepo := &MockDocumentServiceRepository{}
 	storageDir := "/tmp/documents"
 	service := NewDocumentService(mockRepo, storageDir)
 
 	ctx := context.Background()
 
 	// 创建不支持的Mock文件
-	mockFile := &MockFileHeader{
+	mockFile := &MockDocumentFileHeader{
 		Filename: "test.exe",
 		Size:     1024,
 		Header:   map[string][]string{"Content-Type": {"application/octet-stream"}},
@@ -240,7 +240,7 @@ func TestDocumentService_UploadDocument_UnsupportedFileType(t *testing.T) {
 
 // TestDocumentService_GetDocumentByID_Success 测试根据ID获取文档成功
 func TestDocumentService_GetDocumentByID_Success(t *testing.T) {
-	mockRepo := &MockDocumentRepository{}
+	mockRepo := &MockDocumentServiceRepository{}
 	storageDir := "/tmp/documents"
 	service := NewDocumentService(mockRepo, storageDir)
 
@@ -283,7 +283,7 @@ func TestDocumentService_GetDocumentByID_Success(t *testing.T) {
 
 // TestDocumentService_GetDocumentByID_NotFound 测试文档不存在
 func TestDocumentService_GetDocumentByID_NotFound(t *testing.T) {
-	mockRepo := &MockDocumentRepository{}
+	mockRepo := &MockDocumentServiceRepository{}
 	storageDir := "/tmp/documents"
 	service := NewDocumentService(mockRepo, storageDir)
 
@@ -307,7 +307,7 @@ func TestDocumentService_GetDocumentByID_NotFound(t *testing.T) {
 
 // TestDocumentService_ListDocuments_Success 测试获取文档列表成功
 func TestDocumentService_ListDocuments_Success(t *testing.T) {
-	mockRepo := &MockDocumentRepository{}
+	mockRepo := &MockDocumentServiceRepository{}
 	storageDir := "/tmp/documents"
 	service := NewDocumentService(mockRepo, storageDir)
 
@@ -363,7 +363,7 @@ func TestDocumentService_ListDocuments_Success(t *testing.T) {
 
 // TestDocumentService_UpdateDocument_Success 测试更新文档成功
 func TestDocumentService_UpdateDocument_Success(t *testing.T) {
-	mockRepo := &MockDocumentRepository{}
+	mockRepo := &MockDocumentServiceRepository{}
 	storageDir := "/tmp/documents"
 	service := NewDocumentService(mockRepo, storageDir)
 
@@ -409,7 +409,7 @@ func TestDocumentService_UpdateDocument_Success(t *testing.T) {
 
 // TestDocumentService_DeleteDocument_Success 测试删除文档成功
 func TestDocumentService_DeleteDocument_Success(t *testing.T) {
-	mockRepo := &MockDocumentRepository{}
+	mockRepo := &MockDocumentServiceRepository{}
 	storageDir := "/tmp/documents"
 	service := NewDocumentService(mockRepo, storageDir)
 
@@ -438,7 +438,7 @@ func TestDocumentService_DeleteDocument_Success(t *testing.T) {
 
 // TestDocumentService_GetDocumentStats_Success 测试获取文档统计成功
 func TestDocumentService_GetDocumentStats_Success(t *testing.T) {
-	mockRepo := &MockDocumentRepository{}
+	mockRepo := &MockDocumentServiceRepository{}
 	storageDir := "/tmp/documents"
 	service := NewDocumentService(mockRepo, storageDir)
 
@@ -481,7 +481,7 @@ func TestDocumentService_GetDocumentStats_Success(t *testing.T) {
 
 // TestDocumentService_DownloadDocument_Success 测试下载文档成功
 func TestDocumentService_DownloadDocument_Success(t *testing.T) {
-	mockRepo := &MockDocumentRepository{}
+	mockRepo := &MockDocumentServiceRepository{}
 	storageDir := "/tmp/documents"
 	service := NewDocumentService(mockRepo, storageDir)
 
@@ -519,7 +519,7 @@ func TestDocumentService_DownloadDocument_Success(t *testing.T) {
 
 // TestDocumentService_toDocument 测试文档模型转换
 func TestDocumentService_toDocument(t *testing.T) {
-	mockRepo := &MockDocumentRepository{}
+	mockRepo := &MockDocumentServiceRepository{}
 	storageDir := "/tmp/documents"
 	service := NewDocumentService(mockRepo, storageDir)
 
@@ -562,14 +562,14 @@ func TestDocumentService_toDocument(t *testing.T) {
 
 // TestDocumentService_UploadDocument_DefaultName 测试使用默认名称
 func TestDocumentService_UploadDocument_DefaultName(t *testing.T) {
-	mockRepo := &MockDocumentRepository{}
+	mockRepo := &MockDocumentServiceRepository{}
 	storageDir := "/tmp/documents"
 	service := NewDocumentService(mockRepo, storageDir)
 
 	ctx := context.Background()
 
 	// 创建Mock文件，不提供名称
-	mockFile := &MockFileHeader{
+	mockFile := &MockDocumentFileHeader{
 		Filename: "test-document.pdf",
 		Size:     1024,
 		Header:   map[string][]string{"Content-Type": {"application/pdf"}},
@@ -597,7 +597,7 @@ func TestDocumentService_UploadDocument_DefaultName(t *testing.T) {
 
 // TestDocumentService_ListDocuments_DefaultParameters 测试默认参数
 func TestDocumentService_ListDocuments_DefaultParameters(t *testing.T) {
-	mockRepo := &MockDocumentRepository{}
+	mockRepo := &MockDocumentServiceRepository{}
 	storageDir := "/tmp/documents"
 	service := NewDocumentService(mockRepo, storageDir)
 
@@ -630,7 +630,7 @@ func TestDocumentService_ListDocuments_DefaultParameters(t *testing.T) {
 
 // TestDocumentService_ListDocuments_MaxPageSize 测试最大页面大小限制
 func TestDocumentService_ListDocuments_MaxPageSize(t *testing.T) {
-	mockRepo := &MockDocumentRepository{}
+	mockRepo := &MockDocumentServiceRepository{}
 	storageDir := "/tmp/documents"
 	service := NewDocumentService(mockRepo, storageDir)
 
@@ -663,13 +663,13 @@ func TestDocumentService_ListDocuments_MaxPageSize(t *testing.T) {
 
 // BenchmarkDocumentService_UploadDocument 基准测试上传文档性能
 func BenchmarkDocumentService_UploadDocument(b *testing.B) {
-	mockRepo := &MockDocumentRepository{}
+	mockRepo := &MockDocumentServiceRepository{}
 	storageDir := "/tmp/documents"
 	service := NewDocumentService(mockRepo, storageDir)
 
 	ctx := context.Background()
 
-	mockFile := &MockFileHeader{
+	mockFile := &MockDocumentFileHeader{
 		Filename: "benchmark.pdf",
 		Size:     1024,
 		Header:   map[string][]string{"Content-Type": {"application/pdf"}},
@@ -694,14 +694,14 @@ func BenchmarkDocumentService_UploadDocument(b *testing.B) {
 
 // TestDocumentService_Integration_CompleteWorkflow 测试文档服务完整工作流
 func TestDocumentService_Integration_CompleteWorkflow(t *testing.T) {
-	mockRepo := &MockDocumentRepository{}
+	mockRepo := &MockDocumentServiceRepository{}
 	storageDir := "/tmp/documents"
 	service := NewDocumentService(mockRepo, storageDir)
 
 	ctx := context.Background()
 
 	// 1. 上传文档
-	mockFile := &MockFileHeader{
+	mockFile := &MockDocumentFileHeader{
 		Filename: "workflow_test.pdf",
 		Size:     1024,
 		Header:   map[string][]string{"Content-Type": {"application/pdf"}},
@@ -801,7 +801,7 @@ func TestDocumentService_Integration_CompleteWorkflow(t *testing.T) {
 
 // TestDocumentService_UploadDocument_AllowedFileTypes 测试允许的文件类型
 func TestDocumentService_UploadDocument_AllowedFileTypes(t *testing.T) {
-	mockRepo := &MockDocumentRepository{}
+	mockRepo := &MockDocumentServiceRepository{}
 	storageDir := "/tmp/documents"
 	service := NewDocumentService(mockRepo, storageDir)
 
@@ -825,7 +825,7 @@ func TestDocumentService_UploadDocument_AllowedFileTypes(t *testing.T) {
 
 	for _, fileType := range allowedTypes {
 		t.Run(fileType.mimeType, func(t *testing.T) {
-			mockFile := &MockFileHeader{
+			mockFile := &MockDocumentFileHeader{
 				Filename: fileType.filename,
 				Size:     1024,
 				Header:   map[string][]string{"Content-Type": {fileType.mimeType}},

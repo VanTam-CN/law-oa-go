@@ -1,0 +1,290 @@
+# OnlyOffice Document Server 专用配置
+# 用于 Sprint 4 文档版本控制功能
+#
+# 使用方法:
+#   docker-compose -f docker/docker-compose.document.yml up -d
+#
+# 环境变量配置:
+#   ONLYOFFICE_PORT - OnlyOffice 服务端口 (默认: 9090)
+#   ONLYOFFICE_DB_PORT - PostgreSQL 数据库端口 (默认: 55432)
+#   ONLYOFFICE_REDIS_PORT - Redis 端口 (默认: 6380)
+
+version: '3.8'
+
+services:
+  # OnlyOffice Document Server
+  onlyoffice-documentserver:
+    image: onlyoffice/documentserver:latest
+    container_name: law-oa-onlyoffice
+    ports:
+      - "${ONLYOFFICE_PORT:-9090}:80"
+    environment:
+      # OnlyOffice 配置
+      - ONLYOFFICE_HTTPS_HSTS_ENABLED=false
+      - ONLYOFFICE_HTTPS_HSTS_MAXAGE=31536000
+
+      # 数据库配置
+      - DB_TYPE=postgres
+      - DB_HOST=onlyoffice-db
+      - DB_PORT=5432
+      - DB_NAME=onlyoffice
+      - DB_USER=onlyoffice
+      - DB_PASSWORD=onlyoffice_password
+
+      # Redis 配置
+      - REDIS_SERVER_HOST=onlyoffice-redis
+      - REDIS_SERVER_PORT=6379
+
+      # RabbitMQ 配置 (可选，用于后台转换任务)
+      - AMQP_SERVER_URL=amqp://onlyoffice_rabbitmq
+
+      # JWT 配置 (生产环境必须配置)
+      - JWT_SECRET=${ONLYOFFICE_JWT_SECRET:-your-onlyoffice-jwt-secret-change-me}
+      - JWT_HEADER=Authorization
+      - JWT_IN_BODY=true
+
+      # 日志级别
+      - LOG_LEVEL=INFO
+
+      # 时区
+      - TZ=Asia/Shanghai
+    depends_on:
+      onlyoffice-db:
+        condition: service_healthy
+      onlyoffice-redis:
+        condition: service_healthy
+    networks:
+      - onlyoffice-network
+    volumes:
+      # 数据持久化
+      - onlyoffice_log:/var/log/onlyoffice
+      - onlyoffice_data:/var/www/onlyoffice/Data
+      - onlyoffice_fonts:/usr/share/fonts/truetype/custom
+      - onlyoffice_cache:/var/lib/onlyoffice/documentserver/cache
+
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/healthcheck"]
+      timeout: 10s
+      retries: 5
+      interval: 30s
+      start_period: 60s
+
+    restart: unless-stopped
+
+    # 安全配置
+    security_opt:
+      - no-new-privileges:true
+
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+    labels:
+      - "com.lawoa.service.type=office"
+      - "com.lawoa.office.type=onlyoffice"
+
+  # PostgreSQL 数据库 (OnlyOffice 专用)
+  onlyoffice-db:
+    image: postgres:15-alpine
+    container_name: law-oa-onlyoffice-db
+    ports:
+      - "${ONLYOFFICE_DB_PORT:-55432}:5432"
+    environment:
+      - POSTGRES_DB=onlyoffice
+      - POSTGRES_USER=onlyoffice
+      - POSTGRES_PASSWORD=onlyoffice_password
+      - PGDATA=/var/lib/postgresql/data/pgdata
+      - TZ=Asia/Shanghai
+    volumes:
+      - onlyoffice_db_data:/var/lib/postgresql/data
+    networks:
+      - onlyoffice-network
+
+    # 健康检查
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U onlyoffice -d onlyoffice"]
+      timeout: 10s
+      retries: 5
+      interval: 30s
+      start_period: 30s
+
+    restart: unless-stopped
+
+    # 安全配置
+    security_opt:
+      - no-new-privileges:true
+
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    labels:
+      - "com.lawoa.service.type=database"
+      - "com.lawoa.database.type=postgres"
+      - "com.lawoa.database.purpose=onlyoffice"
+
+  # Redis (OnlyOffice 专用)
+  onlyoffice-redis:
+    image: redis:7-alpine
+    container_name: law-oa-onlyoffice-redis
+    ports:
+      - "${ONLYOFFICE_REDIS_PORT:-6380}:6379"
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - onlyoffice_redis_data:/data
+    networks:
+      - onlyoffice-network
+
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      timeout: 10s
+      retries: 5
+      interval: 30s
+      start_period: 10s
+
+    restart: unless-stopped
+
+    # 安全配置
+    security_opt:
+      - no-new-privileges:true
+
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+    labels:
+      - "com.lawoa.service.type=cache"
+      - "com.lawoa.cache.type=redis"
+      - "com.lawoa.cache.purpose=onlyoffice"
+
+  # RabbitMQ (可选，用于后台文档转换)
+  onlyoffice-rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: law-oa-onlyoffice-rabbitmq
+    ports:
+      - "${ONLYOFFICE_RABBITMQ_PORT:-15772}:5672"   # AMQP
+      - "${ONLYOFFICE_RABBITMQ_MGMT_PORT:-16772}:15672"  # 管理界面
+    environment:
+      - RABBITMQ_DEFAULT_USER=onlyoffice
+      - RABBITMQ_DEFAULT_PASS=onlyoffice_rabbitmq_password
+      - RABBITMQ_DEFAULT_VHOST=onlyoffice
+    volumes:
+      - onlyoffice_rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - onlyoffice-network
+
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      timeout: 10s
+      retries: 5
+      interval: 30s
+      start_period: 30s
+
+    restart: unless-stopped
+
+    # 安全配置
+    security_opt:
+      - no-new-privileges:true
+
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+    labels:
+      - "com.lawoa.service.type=messagequeue"
+      - "com.lawoa.messagequeue.type=rabbitmq"
+
+# 网络配置
+networks:
+  onlyoffice-network:
+    name: law-oa-onlyoffice-network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.22.0.0/16
+          gateway: 172.22.0.1
+
+# 数据持久化卷
+volumes:
+  onlyoffice_db_data:
+    name: law-oa-onlyoffice-db-data
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_DIR:-./data}/onlyoffice/db
+
+  onlyoffice_redis_data:
+    name: law-oa-onlyoffice-redis-data
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_DIR:-./data}/onlyoffice/redis
+
+  onlyoffice_rabbitmq_data:
+    name: law-oa-onlyoffice-rabbitmq-data
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_DIR:-./data}/onlyoffice/rabbitmq
+
+  onlyoffice_log:
+    name: law-oa-onlyoffice-log
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_DIR:-./data}/onlyoffice/log
+
+  onlyoffice_data:
+    name: law-oa-onlyoffice-data
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_DIR:-./data}/onlyoffice/data
+
+  onlyoffice_fonts:
+    name: law-oa-onlyoffice-fonts
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_DIR:-./data}/onlyoffice/fonts
+
+  onlyoffice_cache:
+    name: law-oa-onlyoffice-cache
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_DIR:-./data}/onlyoffice/cache

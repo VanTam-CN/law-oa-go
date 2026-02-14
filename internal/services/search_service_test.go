@@ -191,8 +191,8 @@ func TestSearchService_Search_WithFilters(t *testing.T) {
 		PageSize:  10,
 		Types:     []string{"case", "document"},
 		EntityID:  uintPtr(123),
-		DateFrom:  stringPtr("2024-01-01"),
-		DateTo:    stringPtr("2024-12-31"),
+		DateFrom:  searchStringPtr("2024-01-01"),
+		DateTo:    searchStringPtr("2024-12-31"),
 		SortBy:    "date",
 		SortOrder: "asc",
 	}
@@ -542,7 +542,7 @@ func uintPtr(value uint) *uint {
 	return &value
 }
 
-// stringPtr 返回string指针
-func stringPtr(value string) *string {
+// searchStringPtr 返回string指针
+func searchStringPtr(value string) *string {
 	return &value
 }

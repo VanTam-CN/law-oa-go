@@ -86,6 +86,7 @@ describe('SmartFieldGroup', () => {
       <SmartFieldGroup
         groups={mockGroups}
         formData={{}}
+        defaultActiveGroups={['basic-info']}
       />
     );
 
@@ -101,10 +102,11 @@ describe('SmartFieldGroup', () => {
 
   // 折叠功能测试
   test('应该支持分组折叠和展开', async () => {
+    // formData must have caseType='civil' for the conditional field '涉案金额' to be visible
     render(
       <SmartFieldGroup
         groups={mockGroups}
-        formData={{}}
+        formData={{ caseType: 'civil' }}
         defaultActiveGroups={['basic-info']}
       />
     );
@@ -313,9 +315,9 @@ describe('SmartFieldGroup', () => {
   });
 });
 
-// 辅助函数：为组件添加data-testid
+// 辅助函数：为组件添加data-testid (use unique testid to avoid conflict with component's own testid)
 const SmartFieldGroupWithTestId = (props: any) => (
-  <div data-testid="smart-field-group">
+  <div data-testid="smart-field-group-wrapper">
     <SmartFieldGroup {...props} />
   </div>
 );
@@ -330,6 +332,10 @@ describe('SmartFieldGroup with data-testid', () => {
       />
     );
 
+    // Check for the wrapper's unique testid
+    const wrapper = screen.getByTestId('smart-field-group-wrapper');
+    expect(wrapper).toBeInTheDocument();
+    // Check the actual component's testid is inside
     const container = screen.getByTestId('smart-field-group');
     expect(container).toBeInTheDocument();
   });

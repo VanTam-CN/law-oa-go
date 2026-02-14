@@ -95,6 +95,57 @@ func (m *MockUserRepository) List(ctx context.Context, params *repositories.User
 	return args.Get(0).([]*models.User), args.Get(1).(int64), args.Error(2)
 }
 
+// FindExistingEmails 批量查找已存在的邮箱
+func (m *MockUserRepository) FindExistingEmails(ctx context.Context, emails []string) ([]string, error) {
+	args := m.Called(ctx, emails)
+	if args.Get(0) == nil {
+		return []string{}, args.Error(1)
+	}
+	return args.Get(0).([]string), args.Error(1)
+}
+
+// BatchCreate 批量创建用户
+func (m *MockUserRepository) BatchCreate(ctx context.Context, users []*models.User) error {
+	args := m.Called(ctx, users)
+	return args.Error(0)
+}
+
+// GetLawyers 获取律师用户列表
+func (m *MockUserRepository) GetLawyers(ctx context.Context, page, pageSize int) ([]models.User, error) {
+	args := m.Called(ctx, page, pageSize)
+	if args.Get(0) == nil {
+		return []models.User{}, args.Error(1)
+	}
+	return args.Get(0).([]models.User), args.Error(1)
+}
+
+// FindByStringID 根据字符串ID查找用户
+func (m *MockUserRepository) FindByStringID(id string) (*models.User, error) {
+	args := m.Called(id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.User), args.Error(1)
+}
+
+// FindByRole 根据角色查找用户
+func (m *MockUserRepository) FindByRole(role string, limit int) ([]models.User, error) {
+	args := m.Called(role, limit)
+	if args.Get(0) == nil {
+		return []models.User{}, args.Error(1)
+	}
+	return args.Get(0).([]models.User), args.Error(1)
+}
+
+// FindDepartmentHead 查找部门主管
+func (m *MockUserRepository) FindDepartmentHead(deptID string, limit int) ([]models.User, error) {
+	args := m.Called(deptID, limit)
+	if args.Get(0) == nil {
+		return []models.User{}, args.Error(1)
+	}
+	return args.Get(0).([]models.User), args.Error(1)
+}
+
 // MockUserService 模拟用户服务
 type MockUserService struct {
 	mock.Mock

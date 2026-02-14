@@ -32,15 +32,16 @@ type V2PerformanceMiddleware struct {
 // AtomicMetrics 使用原子操作的性能指标
 type AtomicMetrics struct {
 	totalRequests   int64
-	slowRequests     int64
-	errorRequests    int64
-	totalLatency     int64 // 纳秒
-	activeRequests   int32
-	maxConcurrent    int32
-	memoryUsage      int64 // 最大内存使用
-	mu               sync.RWMutex
-	lastGC           time.Time
-	gcCount          uint32
+	slowRequests    int64
+	errorRequests   int64
+	totalLatency    int64 // 纳秒
+	activeRequests  int32
+	maxConcurrent   int32
+	memoryUsage     int64 // 最大内存使用
+	mu              sync.RWMutex
+	lastGC          time.Time
+	gcCount         uint32
+	startTime       time.Time
 }
 
 // NewV2PerformanceMiddleware 创建性能中间件
@@ -66,8 +67,8 @@ func (pm *V2PerformanceMiddleware) PerformanceMiddleware() gin.HandlerFunc {
 		start := time.Now()
 
 		// 原子递增活跃请求计数
-		currentActive := atomic.AddInt32(&pm.metrics.totalRequests, 1)
-		defer atomic.AddInt32(&pm.metrics.totalRequests, -1)
+		currentActive := atomic.AddInt32(&pm.metrics.activeRequests, 1)
+		defer atomic.AddInt32(&pm.metrics.activeRequests, -1)
 
 		// 更新最大并发数
 		for {
@@ -158,7 +159,7 @@ func (pm *V2PerformanceMiddleware) MemoryMonitoringMiddleware() gin.HandlerFunc 
 
 		// 内存使用警告
 		if memoryDelta > 50*1024*1024 { // 50MB
-			pm.logHighMemoryUsage(c, memoryDelta, finalMemory)
+			pm.logHighMemoryUsage(c, int64(memoryDelta), finalMemory)
 		}
 	}
 }
@@ -188,7 +189,7 @@ func (pm *V2PerformanceMiddleware) ConcurrencyControlMiddleware(maxConcurrent in
 				"error":       "Service temporarily unavailable",
 				"code":        http.StatusServiceUnavailable,
 				"retry_after": "5",
-				"queue_time":  pm.calculateQueueTime(len(semaphore)),
+				"queue_time":  pm.calculateQueueLength(len(semaphore)).String(),
 			})
 			c.Abort()
 		}
@@ -282,7 +283,7 @@ func (pm *V2PerformanceMiddleware) RateLimitingMiddleware(maxRequests int, windo
 		}
 
 		// 记录当前请求
-		pm.redisClient.ZAdd(ctx, key, &redis.Z{
+		pm.redisClient.ZAdd(ctx, key, redis.Z{
 			Score:  float64(now),
 			Member: fmt.Sprintf("%d", now),
 		})
@@ -355,7 +356,7 @@ func (pm *V2PerformanceMiddleware) GetMetrics() map[string]interface{} {
 	totalLatency := atomic.LoadInt64(&pm.metrics.totalLatency)
 	slowReqs := atomic.LoadInt64(&pm.metrics.slowRequests)
 	errorReqs := atomic.LoadInt64(&pm.metrics.errorRequests)
-	activeReqs := atomic.LoadInt32(&pm.metrics.totalRequests)
+	activeReqs := atomic.LoadInt32(&pm.metrics.activeRequests)
 	maxConc := atomic.LoadInt32(&pm.metrics.maxConcurrent)
 	memUsage := atomic.LoadInt64(&pm.metrics.memoryUsage)
 	gcCount := atomic.LoadUint32(&pm.metrics.gcCount)
@@ -464,7 +465,7 @@ func (pm *V2PerformanceMiddleware) logSlowRequest(c *gin.Context, duration time.
 		zap.Duration("duration", duration),
 		zap.Int("status", writer.status),
 		zap.Int64("bytes_in", c.Request.ContentLength),
-		zap.Int("bytes_out", int64(writer.size)),
+		zap.Int("bytes_out", writer.size),
 		zap.String("client_ip", pm.getClientIP(c)),
 		zap.String("request_id", c.GetHeader("X-Request-ID")),
 	)

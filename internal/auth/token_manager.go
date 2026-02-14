@@ -151,7 +151,7 @@ func (tm *TokenManager) CreateTokens(ctx context.Context, user *models.User, dev
 		"last_active":  now,
 	}
 
-	err = tm.cacheService.Set(ctx, deviceKey, deviceInfo, tm.refreshTTL)
+	err = tm.cacheService.Set(deviceKey, deviceInfo, tm.refreshTTL)
 	if err != nil {
 		// 不影响主要功能，只记录警告
 		fmt.Printf("Warning: failed to store device info: %v\n", err)
@@ -216,6 +216,17 @@ func (tm *TokenManager) VerifyToken(ctx context.Context, tokenString string) (*j
 
 	jwtAuthErrors.WithLabelValues("verify_invalid").Inc()
 	return nil, fmt.Errorf("invalid token")
+}
+
+// VerifyTokenInterface 验证JWT令牌（接口兼容版本）
+func (tm *TokenManager) VerifyTokenInterface(ctx context.Context, tokenString string) (*map[string]interface{}, error) {
+	claims, err := tm.VerifyToken(ctx, tokenString)
+	if err != nil {
+		return nil, err
+	}
+	// 转换 *jwt.MapClaims 到 *map[string]interface{}
+	result := map[string]interface{}(*claims)
+	return &result, nil
 }
 
 // ExtractTokenMetadata 从令牌中提取元数据

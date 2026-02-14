@@ -2,7 +2,6 @@ package v2
 
 import (
 	"context"
-	"crypto/subtle"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -31,9 +30,9 @@ type V2SecurityMiddleware struct {
 
 // RateLimitTracker 速率限制跟踪器
 type RateLimitTracker struct {
-	Requests   int64
-	Window     time.Time
-	Count      int64
+	Requests int64
+	Window   time.Time
+	Count    int
 }
 
 // NewV2SecurityMiddleware 创建安全中间件
@@ -122,7 +121,7 @@ func (sm *V2SecurityMiddleware) CORSMiddleware() gin.HandlerFunc {
 	// 根据环境动态配置CORS
 	var corsConfig cors.Config
 
-	switch sm.config.Server.Env {
+	switch sm.config.Environment {
 	case "production":
 		corsConfig = cors.Config{
 			AllowOrigins:     []string{"https://your-domain.com", "https://app.your-domain.com"},
@@ -301,7 +300,7 @@ func (sm *V2SecurityMiddleware) RateLimitingMiddleware(maxRequests int, window t
 		if !exists {
 			tracker = &RateLimitTracker{
 				Window: time.Now(),
-					Count:  0,
+				Count:  0,
 			}
 			sm.rateLimitStore[clientIP] = tracker
 		}
@@ -351,15 +350,15 @@ func (sm *V2SecurityMiddleware) RateLimitingMiddleware(maxRequests int, window t
 func (sm *V2SecurityMiddleware) InputSanitizationMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 清理查询参数
-		for key, values := range c.Request.URL.Query() {
+		for _, values := range c.Request.URL.Query() {
 			for i, value := range values {
 				values[i] = sm.sanitizeInput(value)
 			}
-			}
+		}
 
 		// 清理路径参数
-		for key, values := range c.Params {
-			c.Params[key] = sm.sanitizeInput(values)
+		for i, param := range c.Params {
+			c.Params[i].Value = sm.sanitizeInput(param.Value)
 		}
 
 		// 如果有POST数据，进行基本清理

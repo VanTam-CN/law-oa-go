@@ -43,7 +43,7 @@ func NewSearchHandler(searchService *services.SearchService) *SearchHandler {
 func (h *SearchHandler) Search(c *gin.Context) {
 	query := c.Query("q")
 	if query == "" {
-		_ = c.Error(errors.NewValidationError("query", "missing_query", "Search query is required", "Please provide a search query"))
+		_ = c.Error(errors.ValidationError("query", "Search query is required"))
 		return
 	}
 
@@ -70,7 +70,7 @@ func (h *SearchHandler) Search(c *gin.Context) {
 	if entityIDStr != "" {
 		id, err := strconv.ParseUint(entityIDStr, 10, 32)
 		if err != nil {
-			_ = c.Error(errors.NewValidationError("entity_id", "invalid_entity_id", "Invalid entity ID: must be a valid number", "Invalid entity ID"))
+			_ = c.Error(errors.ValidationError("entity_id", "Invalid entity ID: must be a valid number"))
 			return
 		}
 		eid := uint(id)
@@ -132,7 +132,7 @@ func (h *SearchHandler) Search(c *gin.Context) {
 func (h *SearchHandler) GetSearchSuggestions(c *gin.Context) {
 	query := c.Query("q")
 	if query == "" {
-		_ = c.Error(errors.NewValidationError("query", "missing_query", "Search query is required", "Please provide a search query"))
+		_ = c.Error(errors.ValidationError("query", "Search query is required"))
 		return
 	}
 

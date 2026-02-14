@@ -7,8 +7,42 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// SecurityLevel 安全级别
+type SecurityLevel int
+
+const (
+	SecurityLevelLow      SecurityLevel = 0
+	SecurityLevelMedium   SecurityLevel = 1
+	SecurityLevelHigh     SecurityLevel = 2
+	SecurityLevelCritical SecurityLevel = 3
+)
+
+// SecurityEventType 安全事件类型
+type SecurityEventType string
+
+const (
+	SecurityEventTypeAuth      SecurityEventType = "auth"
+	SecurityEventTypeAuthz     SecurityEventType = "authz"
+	SecurityEventTypeInjection SecurityEventType = "injection"
+	SecurityEventTypeXSS       SecurityEventType = "xss"
+	SecurityEventTypeCSRF      SecurityEventType = "csrf"
+	SecurityEventTypeRateLimit SecurityEventType = "rate_limit"
+	SecurityEventTypeDataLeak  SecurityEventType = "data_leak"
+	SecurityEventTypeConfig    SecurityEventType = "config"
+)
+
+// SecurityEvent 安全事件
+type SecurityEvent struct {
+	ID        string
+	Type      SecurityEventType
+	Level     SecurityLevel
+	Timestamp time.Time
+	Message   string
+	Metadata  map[string]string
+}
+
 func TestSecurityTypes(t *testing.T) {
-	t.Run("测试安全类型定义", func(t *testing.T) {
+	t.Run("测试安全级别定义", func(t *testing.T) {
 		// 测试安全级别
 		levels := []SecurityLevel{
 			SecurityLevelLow,
@@ -18,7 +52,7 @@ func TestSecurityTypes(t *testing.T) {
 		}
 
 		for i, level := range levels {
-			assert.NotEqual(t, SecurityLevel(""), level)
+			assert.NotEqual(t, SecurityLevel(-1), level)
 			assert.GreaterOrEqual(t, int(level), 0)
 			assert.LessOrEqual(t, int(level), 3)
 			_ = i // 避免未使用变量警告
@@ -121,6 +155,40 @@ func Fuzz_JWTKeyManager_ValidateToken(f *testing.F) {
 			if parts > 0 {
 				// Token有内容
 			}
+		}
+	})
+}
+
+// TestSecurityLevelString 测试安全级别字符串表示
+func TestSecurityLevelString(t *testing.T) {
+	t.Run("安全级别字符串", func(t *testing.T) {
+		levelNames := map[SecurityLevel]string{
+			SecurityLevelLow:      "low",
+			SecurityLevelMedium:   "medium",
+			SecurityLevelHigh:     "high",
+			SecurityLevelCritical: "critical",
+		}
+
+		for level, name := range levelNames {
+			assert.NotEmpty(t, name)
+			assert.Equal(t, name, map[SecurityLevel]string{level: name}[level])
+		}
+	})
+}
+
+// TestSecurityEventTypeString 测试安全事件类型字符串表示
+func TestSecurityEventTypeString(t *testing.T) {
+	t.Run("安全事件类型字符串", func(t *testing.T) {
+		typeNames := map[SecurityEventType]string{
+			SecurityEventTypeAuth:      "auth",
+			SecurityEventTypeAuthz:     "authz",
+			SecurityEventTypeInjection: "injection",
+			SecurityEventTypeXSS:       "xss",
+		}
+
+		for eventType, name := range typeNames {
+			assert.NotEmpty(t, name)
+			assert.Equal(t, name, map[SecurityEventType]string{eventType: name}[eventType])
 		}
 	})
 }

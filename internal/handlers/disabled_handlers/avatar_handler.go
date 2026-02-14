@@ -39,26 +39,26 @@ func NewAvatarHandler(userService *services.UserService) *AvatarHandler {
 func (h *AvatarHandler) UploadAvatar(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
-		_ = c.Error(errors.NewAuthorizationError("authentication_required", "Authentication required: User ID not found in token", "authenticated", "none"))
+		_ = c.Error(errors.UnauthorizedError("upload_avatar", "avatar"))
 		return
 	}
 
 	// 获取上传的文件
 	file, err := c.FormFile("avatar")
 	if err != nil {
-		_ = c.Error(errors.NewValidationError("file_missing", "file_missing", "Missing avatar file: "+err.Error(), "Please provide an avatar file"))
+		_ = c.Error(errors.ValidationError("avatar", "Missing avatar file: "+err.Error()))
 		return
 	}
 
 	// 验证文件类型
 	if !isValidImageType(file.Filename) {
-		_ = c.Error(errors.NewValidationError("invalid_file_type", "invalid_file_type", "Invalid file type: Only JPG, PNG, and GIF images are allowed", "Please upload a valid image file"))
+		_ = c.Error(errors.ValidationError("avatar", "Invalid file type: Only JPG, PNG, and GIF images are allowed"))
 		return
 	}
 
 	// 验证文件大小 (限制为2MB)
 	if file.Size > 2*1024*1024 {
-		_ = c.Error(errors.NewValidationError("file_too_large", "file_too_large", "File too large: Avatar must be less than 2MB", "Please upload a smaller image file"))
+		_ = c.Error(errors.ValidationError("avatar", "File too large: Avatar must be less than 2MB"))
 		return
 	}
 
@@ -68,7 +68,7 @@ func (h *AvatarHandler) UploadAvatar(c *gin.Context) {
 
 	// 保存文件
 	if err := c.SaveUploadedFile(file, "."+avatarPath); err != nil {
-		_ = c.Error(errors.NewInternalError("file_save_failed", "Failed to save avatar file", err))
+		_ = c.Error(errors.InternalError("file_save_failed", err))
 		return
 	}
 

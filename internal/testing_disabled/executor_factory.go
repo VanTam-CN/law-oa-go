@@ -19,7 +19,7 @@ type ExecutorFactory interface {
 }
 
 // ExecutorCreator 执行器创建函数
-type ExecutorCreator func(options *TestExecutorOptions, logger TestLogger, metrics TestMetrics) (TestExecutor, error)
+type ExecutorCreator func(options *TestExecutorOptions, logger TestLogger, metrics TestMetrics) TestExecutor
 
 // DefaultExecutorFactory 默认执行器工厂
 type DefaultExecutorFactory struct {
@@ -41,19 +41,29 @@ func NewDefaultExecutorFactory() ExecutorFactory {
 // registerBuiltinExecutors 注册内置执行器
 func (f *DefaultExecutorFactory) registerBuiltinExecutors() {
 	// 注册API执行器
-	f.creators[TestTypeAPI] = NewAPIExecutor
+	f.creators[TestTypeAPI] = func(options *TestExecutorOptions, logger TestLogger, metrics TestMetrics) TestExecutor {
+		return NewAPIExecutor(options, logger, metrics)
+	}
 
 	// 注册UI执行器
-	f.creators[TestTypeUI] = NewUIExecutor
+	f.creators[TestTypeUI] = func(options *TestExecutorOptions, logger TestLogger, metrics TestMetrics) TestExecutor {
+		return NewUIExecutor(options, logger, metrics)
+	}
 
 	// 注册性能执行器
-	f.creators[TestTypePerformance] = NewPerformanceExecutor
+	f.creators[TestTypePerformance] = func(options *TestExecutorOptions, logger TestLogger, metrics TestMetrics) TestExecutor {
+		return NewPerformanceExecutor(options, logger, metrics)
+	}
 
 	// 注册集成执行器
-	f.creators[TestTypeIntegration] = NewIntegrationExecutor
+	f.creators[TestTypeIntegration] = func(options *TestExecutorOptions, logger TestLogger, metrics TestMetrics) TestExecutor {
+		return NewIntegrationExecutor(options, logger, metrics)
+	}
 
 	// 注册E2E执行器（使用集成执行器）
-	f.creators[TestTypeE2E] = NewIntegrationExecutor
+	f.creators[TestTypeE2E] = func(options *TestExecutorOptions, logger TestLogger, metrics TestMetrics) TestExecutor {
+		return NewIntegrationExecutor(options, logger, metrics)
+	}
 }
 
 // CreateExecutor 创建执行器
@@ -63,7 +73,8 @@ func (f *DefaultExecutorFactory) CreateExecutor(testType TestType, options *Test
 		return nil, fmt.Errorf("unsupported test type: %s", testType)
 	}
 
-	return creator(options, logger, metrics)
+	executor := creator(options, logger, metrics)
+	return executor, nil
 }
 
 // GetSupportedTypes 获取支持的测试类型
@@ -292,14 +303,6 @@ func (config *ExecutorConfig) ToTestExecutorOptions() *TestExecutorOptions {
 		ConsoleLogs:     true,
 	}
 }
-
-// 执行器创建函数声明（在相应的executors包中实现）
-var (
-	NewAPIExecutor        func(options *TestExecutorOptions, logger TestLogger, metrics TestMetrics) TestExecutor
-	NewUIExecutor         func(options *TestExecutorOptions, logger TestLogger, metrics TestMetrics) TestExecutor
-	NewPerformanceExecutor func(options *TestExecutorOptions, logger TestLogger, metrics TestMetrics) TestExecutor
-	NewIntegrationExecutor func(options *TestExecutorOptions, logger TestLogger, metrics TestMetrics) TestExecutor
-)
 
 // 全局执行器工厂实例
 var GlobalExecutorFactory ExecutorFactory

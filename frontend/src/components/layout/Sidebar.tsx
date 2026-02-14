@@ -25,6 +25,8 @@ import {
   SolutionOutlined,
   FileProtectOutlined,
   AuditOutlined,
+  BellOutlined,
+  WalletOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router'
 import { useAppStore, hasRole } from '@/stores/useAppStore'
@@ -96,6 +98,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
     const path = location.pathname
     const keyMap: Record<string, string> = {
       '/dashboard': 'dashboard',
+      '/inbox': 'inbox',
       '/approval': 'approval',
       // 项目管理功能已禁用
       // '/project': 'project',
@@ -108,6 +111,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
       '/tools': 'tools',
       '/tools/law-search': 'law-search',
       '/finance': 'finance',
+      '/trust': 'trust',
       '/reports': 'reports',
       '/calendar': 'calendar',
       '/documents': 'documents',
@@ -167,6 +171,14 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
       onClick: () => navigate('/dashboard'),
       color: 'var(--color-primary)',
       permission: 'dashboard:view',
+    },
+    {
+      key: 'inbox',
+      label: '收件箱',
+      icon: <BellOutlined />,
+      onClick: () => navigate('/inbox'),
+      color: 'var(--color-warning)',
+      permission: 'inbox:view',
     },
     {
       key: 'business',
@@ -276,6 +288,14 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
       icon: <CalculatorOutlined />,
       onClick: () => navigate('/finance'),
       color: 'var(--color-error)',
+      permission: 'finance:manage',
+    },
+    {
+      key: 'trust',
+      label: '代管款',
+      icon: <WalletOutlined />,
+      onClick: () => navigate('/trust'),
+      color: 'var(--color-warning)',
       permission: 'finance:manage',
     },
     {

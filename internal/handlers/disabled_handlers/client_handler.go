@@ -138,7 +138,7 @@ func (h *ClientHandler) ListClients(c *gin.Context) {
 func (h *ClientHandler) GetClientStats(c *gin.Context) {
 	stats, err := h.clientService.GetClientStats(c.Request.Context())
 	if err != nil {
-		_ = c.Error(errors.NewInternalError("client_stats_error", "Failed to get client statistics", err))
+		_ = c.Error(errors.InternalError("Failed to get client statistics", err))
 		return
 	}
 

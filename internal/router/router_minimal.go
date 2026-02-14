@@ -47,7 +47,8 @@ func InitMinimal(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient
 			// 创建用户服务用于认证
 			userRepo := repositories.NewUserRepository(db)
 			userService := services.NewUserService(userRepo)
-			authHandler := handlers.NewAuthHandler(userService)
+			// 在最小化路由中，tokenRevocationService 可以为 nil
+			authHandler := handlers.NewAuthHandler(userService, nil)
 
 			auth.POST("/login", authHandler.Login)
 			auth.POST("/register", authHandler.Register)

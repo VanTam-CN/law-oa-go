@@ -1,0 +1,427 @@
+/**
+ * WhitelistModal 组件样式
+ * 白名单管理弹窗样式
+ */
+
+.whitelist-modal {
+  .ant-modal-content {
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .ant-modal-header {
+    border-bottom: 1px solid #f0f0f0;
+    padding: 16px 24px;
+
+    .ant-modal-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+  }
+
+  .ant-modal-body {
+    padding: 24px;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+
+  .whitelist-content {
+    .whitelist-actions {
+      margin-bottom: 16px;
+
+      .add-user-wrapper {
+        padding: 16px;
+        background: #fafafa;
+        border-radius: 6px;
+        border: 1px solid #f0f0f0;
+
+        .add-user-form {
+          .ant-select {
+            .ant-select-selector {
+              border-radius: 6px;
+            }
+          }
+
+          .ant-input-textarea {
+            border-radius: 6px;
+          }
+        }
+      }
+    }
+
+    .whitelist-list {
+      .ant-list {
+        .ant-list-item {
+          padding: 16px;
+          border-radius: 6px;
+          margin-bottom: 8px;
+          border: 1px solid #f0f0f0;
+          transition: all 0.3s ease;
+
+          &:hover {
+            background: #fafafa;
+            border-color: #d9d9d9;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+          }
+
+          .ant-list-item-meta {
+            align-items: center;
+
+            .ant-list-item-meta-avatar {
+              margin-right: 12px;
+            }
+
+            .ant-list-item-meta-content {
+              .ant-list-item-meta-title {
+                margin-bottom: 4px;
+                font-size: 14px;
+                font-weight: 500;
+              }
+
+              .ant-list-item-meta-description {
+                font-size: 12px;
+                line-height: 1.5;
+              }
+            }
+          }
+
+          .ant-list-item-action {
+            margin-left: 16px;
+
+            > li {
+              padding: 0 4px;
+
+              .ant-btn {
+                border-radius: 4px;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// 用户选择器样式优化
+.whitelist-modal {
+  .ant-select-dropdown {
+    .ant-select-item {
+      padding: 8px 12px;
+
+      .ant-select-item-option-content {
+        .ant-space {
+          width: 100%;
+        }
+
+        .ant-avatar {
+          flex-shrink: 0;
+        }
+
+        div {
+          min-width: 0;
+          flex: 1;
+          overflow: hidden;
+          text-overflow: ellipsis;
+
+          .ant-typography {
+            margin: 0;
+          }
+        }
+      }
+    }
+  }
+
+  // 空状态样式
+  .ant-empty {
+    .ant-empty-description {
+      .ant-typography {
+        margin-bottom: 4px;
+        font-size: 14px;
+      }
+
+      .ant-typography + .ant-typography {
+        font-size: 12px;
+      }
+    }
+  }
+
+  // Alert 样式
+  .ant-alert {
+    border-radius: 6px;
+
+    &.ant-alert-info {
+      background: #e6f7ff;
+      border-color: #91d5ff;
+
+      .ant-alert-message {
+        font-weight: 500;
+      }
+    }
+  }
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+  .whitelist-modal {
+    .ant-modal {
+      max-width: 95vw;
+      margin: 24px auto;
+    }
+
+    .ant-modal-body {
+      padding: 16px;
+    }
+
+    .whitelist-content {
+      .whitelist-actions {
+        .add-user-wrapper {
+          padding: 12px;
+        }
+      }
+
+      .whitelist-list {
+        .ant-list {
+          .ant-list-item {
+            padding: 12px;
+            flex-direction: column;
+            align-items: flex-start;
+
+            .ant-list-item-action {
+              margin-left: 0;
+              margin-top: 12px;
+              width: 100%;
+              display: flex;
+              justify-content: flex-end;
+
+              > li {
+                margin: 0;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 576px) {
+  .whitelist-modal {
+    .ant-modal-header {
+      padding: 12px 16px;
+
+      .ant-modal-title {
+        font-size: 14px;
+      }
+    }
+
+    .ant-modal-body {
+      padding: 12px;
+    }
+
+    .whitelist-content {
+      .whitelist-actions {
+        .ant-btn {
+          font-size: 12px;
+          padding: 4px 8px;
+        }
+      }
+
+      .whitelist-list {
+        .ant-list {
+          .ant-list-item {
+            padding: 10px;
+
+            .ant-list-item-meta-avatar {
+              margin-right: 8px;
+
+              .ant-avatar {
+                width: 32px;
+                height: 32px;
+                font-size: 14px;
+              }
+            }
+
+            .ant-list-item-meta {
+              .ant-list-item-meta-title {
+                font-size: 13px;
+              }
+
+              .ant-list-item-meta-description {
+                font-size: 11px;
+              }
+            }
+
+            .ant-list-item-action {
+              .ant-btn {
+                font-size: 11px;
+                padding: 2px 6px;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// 深色主题支持
+@media (prefers-color-scheme: dark) {
+  .whitelist-modal {
+    .ant-modal-content {
+      background: #141414;
+    }
+
+    .ant-modal-header {
+      background: #1f1f1f;
+      border-bottom-color: #434343;
+
+      .ant-modal-title {
+        color: #fff;
+      }
+    }
+
+    .ant-modal-body {
+      background: #141414;
+    }
+
+    .whitelist-content {
+      .whitelist-actions {
+        .add-user-wrapper {
+          background: #262626;
+          border-color: #434343;
+        }
+      }
+
+      .whitelist-list {
+        .ant-list {
+          .ant-list-item {
+            background: #1f1f1f;
+            border-color: #434343;
+
+            &:hover {
+              background: #262626;
+              border-color: #595959;
+            }
+
+            .ant-list-item-meta-title {
+              color: #fff;
+            }
+          }
+        }
+      }
+    }
+
+    .ant-alert {
+      &.ant-alert-info {
+        background: #111b26;
+        border-color: #1a3a5a;
+        color: #4096ff;
+
+        .ant-alert-message {
+          color: #4096ff;
+        }
+
+        .ant-alert-description {
+          color: #a6a6a6;
+        }
+      }
+    }
+  }
+}
+
+// 动画效果
+.whitelist-modal {
+  .whitelist-list {
+    .ant-list-item {
+      animation: fadeInUp 0.3s ease;
+    }
+  }
+
+  .add-user-wrapper {
+    animation: slideDown 0.3s ease;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 500px;
+  }
+}
+
+// 无障碍支持
+.whitelist-modal {
+  .ant-list-item:focus-within {
+    background: #e6f7ff;
+    border-color: #91d5ff;
+    outline: 2px solid #1890ff;
+    outline-offset: -2px;
+  }
+
+  .ant-btn:focus-visible {
+    outline: 2px solid #1890ff;
+    outline-offset: 2px;
+  }
+
+  .ant-select:focus-within {
+    .ant-select-selector {
+      border-color: #1890ff;
+      box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+    }
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .whitelist-modal {
+    .ant-list-item:focus-within {
+      background: #111b26;
+      border-color: #1a3a5a;
+    }
+  }
+}
+
+// 加载状态样式
+.whitelist-modal {
+  .ant-spin {
+    .ant-spin-dot {
+      .ant-spin-dot-item {
+        background-color: #1890ff;
+      }
+    }
+  }
+}
+
+// Tag 样式优化
+.whitelist-modal {
+  .ant-tag {
+    margin: 0;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+}
+
+// 打印样式
+@media print {
+  .whitelist-modal {
+    display: none;
+  }
+}

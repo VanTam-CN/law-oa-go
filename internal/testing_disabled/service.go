@@ -138,7 +138,42 @@ func (s *TestService) GetTestSuite(ctx context.Context, suiteID string) (*models
 
 // ListTestSuites 列出测试套件
 func (s *TestService) ListTestSuites(ctx context.Context, filter *TestSuiteFilter) ([]*models.TestSuite, error) {
-	suites, err := s.repository.ListTestSuites(ctx, filter)
+	// 将 filter 转换为 map[string]interface{}
+	filters := make(map[string]interface{})
+	if filter != nil {
+		if filter.Name != "" {
+			filters["name"] = filter.Name
+		}
+		if filter.Environment != "" {
+			filters["environment"] = filter.Environment
+		}
+		if filter.Status != "" {
+			filters["status"] = filter.Status
+		}
+		if len(filter.Tags) > 0 {
+			filters["tags"] = filter.Tags
+		}
+		if filter.CreatedAfter != nil {
+			filters["created_after"] = filter.CreatedAfter
+		}
+		if filter.CreatedBefore != nil {
+			filters["created_before"] = filter.CreatedBefore
+		}
+	}
+
+	// 计算分页参数
+	page := 1
+	pageSize := 100
+	if filter != nil {
+		if filter.Limit > 0 {
+			pageSize = filter.Limit
+		}
+		if filter.Offset > 0 {
+			page = filter.Offset/pageSize + 1
+		}
+	}
+
+	suites, _, err := s.repository.ListTestSuites(ctx, filters, page, pageSize)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list test suites: %w", err)
 	}
@@ -267,13 +302,13 @@ func (s *TestService) RunTestSuite(ctx context.Context, suiteID string, options 
 	}
 
 	// 创建执行记录
+	now := time.Now()
 	execution := &models.TestExecution{
-		ID:         generateExecutionID(),
-		SuiteID:    suiteID,
-		Status:     TestStatusPending,
-		StartTime:  time.Now(),
-		TotalTests: len(testCases),
-		Config:     options,
+		ID:          generateExecutionID(),
+		SuiteID:     suiteID,
+		Status:      models.TestStatusPending,
+		StartedAt:    &now,
+		Environment: suite.Environment,
 	}
 
 	if err := s.repository.CreateTestExecution(ctx, execution); err != nil {
@@ -282,16 +317,31 @@ func (s *TestService) RunTestSuite(ctx context.Context, suiteID string, options 
 
 	// 提交测试到调度器
 	for _, testCase := range testCases {
+		// 从 Config 中获取配置
+		var timeout time.Duration
+		var variables map[string]interface{}
+		var headers map[string]string
+		var parallel bool
+		var retries int
+
+		if suite.Config != nil {
+			timeout = time.Duration(suite.Config.Timeout) * time.Second
+			variables = suite.Config.Variables
+			headers = suite.Config.Headers
+			parallel = suite.Config.Parallel
+			retries = suite.Config.Retries
+		}
+
 		executionCtx := &ExecutionContext{
 			ExecutionID: fmt.Sprintf("%s_%s", execution.ID, testCase.ID),
 			Environment: suite.Environment,
-			Variables:   suite.Variables,
-			Headers:     suite.Headers,
-			Timeout:     suite.Timeout,
+			Variables:   variables,
+			Headers:     headers,
+			Timeout:     timeout,
 			BaseURL:     "",
-			Parallel:    suite.Parallel,
-			Retries:     suite.Retries,
-			RetryDelay:  suite.RetryDelay,
+			Parallel:    parallel,
+			Retries:     retries,
+			RetryDelay:  0,
 		}
 
 		// 合并运行选项
@@ -325,13 +375,13 @@ func (s *TestService) RunTestCase(ctx context.Context, caseID string, options *R
 	}
 
 	// 创建执行记录
+	now := time.Now()
 	execution := &models.TestExecution{
-		ID:         generateExecutionID(),
-		CaseID:     caseID,
-		Status:     TestStatusPending,
-		StartTime:  time.Now(),
-		TotalTests: 1,
-		Config:     options,
+		ID:          generateExecutionID(),
+		SuiteID:     testCase.SuiteID,
+		Status:      models.TestStatusPending,
+		StartedAt:    &now,
+		Environment: testCase.Environment,
 	}
 
 	if err := s.repository.CreateTestExecution(ctx, execution); err != nil {
@@ -377,9 +427,12 @@ func (s *TestService) GetExecution(ctx context.Context, executionID string) (*mo
 
 	// 获取调度器状态
 	if result, exists := s.scheduler.GetTestResult(executionID); exists {
-		execution.Status = result.Status
-		execution.EndTime = result.EndTime
-		execution.Duration = execution.EndTime.Sub(execution.StartTime)
+		execution.Status = result.Status.ToModelStatus()
+		if !result.EndTime.IsZero() {
+			execution.CompletedAt = &result.EndTime
+			durationMs := int(result.EndTime.Sub(result.StartTime).Milliseconds())
+			execution.DurationMs = durationMs
+		}
 	}
 
 	return execution, nil
@@ -387,7 +440,39 @@ func (s *TestService) GetExecution(ctx context.Context, executionID string) (*mo
 
 // ListExecutions 列出测试执行记录
 func (s *TestService) ListExecutions(ctx context.Context, filter *TestExecutionFilter) ([]*models.TestExecution, error) {
-	executions, err := s.repository.ListTestExecutions(ctx, filter)
+	// 将 filter 转换为 map
+	filters := make(map[string]interface{})
+	if filter != nil {
+		if filter.SuiteID != "" {
+			filters["suite_id"] = filter.SuiteID
+		}
+		if filter.CaseID != "" {
+			filters["case_id"] = filter.CaseID
+		}
+		if filter.Status != "" {
+			filters["status"] = filter.Status
+		}
+		if filter.StartedAfter != nil {
+			filters["started_after"] = filter.StartedAfter
+		}
+		if filter.StartedBefore != nil {
+			filters["started_before"] = filter.StartedBefore
+		}
+	}
+
+	// 计算分页参数
+	page := 1
+	pageSize := 100
+	if filter != nil {
+		if filter.Limit > 0 {
+			pageSize = filter.Limit
+		}
+		if filter.Offset > 0 {
+			page = filter.Offset/pageSize + 1
+		}
+	}
+
+	executions, _, err := s.repository.ListTestExecutions(ctx, filters, page, pageSize)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list test executions: %w", err)
 	}
@@ -395,12 +480,11 @@ func (s *TestService) ListExecutions(ctx context.Context, filter *TestExecutionF
 	// 更新执行状态
 	for _, execution := range executions {
 		if result, exists := s.scheduler.GetTestResult(execution.ID); exists {
-			execution.Status = result.Status
-			if result.EndTime.IsZero() {
-				execution.Duration = time.Since(execution.StartTime)
-			} else {
-				execution.EndTime = result.EndTime
-				execution.Duration = execution.EndTime.Sub(execution.StartTime)
+			execution.Status = result.Status.ToModelStatus()
+			if !result.EndTime.IsZero() {
+				execution.CompletedAt = &result.EndTime
+				durationMs := int(result.EndTime.Sub(result.StartTime).Milliseconds())
+				execution.DurationMs = durationMs
 			}
 		}
 	}
@@ -416,11 +500,12 @@ func (s *TestService) CancelExecution(ctx context.Context, executionID string) e
 	}
 
 	// 更新数据库状态
+	now := time.Now()
 	execution := &models.TestExecution{
-		ID:        executionID,
-		Status:    TestStatusSkipped,
-		EndTime:   time.Now(),
-		Duration:  0,
+		ID:          executionID,
+		Status:      models.TestStatusCancelled,
+		CompletedAt: &now,
+		DurationMs:  0,
 	}
 
 	if err := s.repository.UpdateTestExecution(ctx, execution); err != nil {
@@ -437,10 +522,8 @@ func (s *TestService) GetSchedulerStatus() *SchedulerStatus {
 }
 
 // GetTestResults 获取测试结果
-func (s *TestService) GetTestResults(ctx context.Context, executionID string) ([]*TestResult, error) {
-	results, err := s.repository.ListTestResults(ctx, &TestResultFilter{
-		ExecutionID: executionID,
-	})
+func (s *TestService) GetTestResults(ctx context.Context, executionID string) ([]*models.TestResult, error) {
+	results, err := s.repository.ListTestResults(ctx, executionID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get test results: %w", err)
 	}
@@ -449,7 +532,7 @@ func (s *TestService) GetTestResults(ctx context.Context, executionID string) ([
 }
 
 // GetTestResult 获取单个测试结果
-func (s *TestService) GetTestResult(ctx context.Context, resultID string) (*TestResult, error) {
+func (s *TestService) GetTestResult(ctx context.Context, resultID string) (*models.TestResult, error) {
 	result, err := s.repository.GetTestResult(ctx, resultID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get test result: %w", err)
@@ -468,12 +551,13 @@ func (s *TestService) validateTestSuite(suite *models.TestSuite) error {
 		suite.Environment = "test"
 	}
 
-	if suite.Timeout == 0 {
-		suite.Timeout = s.config.ExecutorConfig.DefaultTimeout.ToDuration()
+	// 设置默认配置
+	if suite.Config == nil {
+		suite.Config = &models.TestConfig{}
 	}
 
-	if suite.MaxWorkers == 0 {
-		suite.MaxWorkers = s.config.ExecutorConfig.MaxConcurrent
+	if suite.Config.Timeout == 0 {
+		suite.Config.Timeout = int(s.config.ExecutorConfig.DefaultTimeout.ToDuration().Seconds())
 	}
 
 	return nil
@@ -509,20 +593,16 @@ func (s *TestService) validateTestCase(testCase *TestCase) error {
 // hasRunningTestsForSuite 检查测试套件是否有正在运行的测试
 func (s *TestService) hasRunningTestsForSuite(suiteID string) bool {
 	status := s.scheduler.GetStatus()
-	for _, runningTest := range status.RunningTests {
-		// 这里需要从runningTest中获取suite_id信息
-		// 当前实现中可能需要扩展RunningTest来包含suite信息
-	}
+	_ = status.RunningTests // TODO: 需要从runningTest中获取suite_id信息
+	// 当前实现中可能需要扩展RunningTest来包含suite信息
 	return false
 }
 
 // hasRunningTestsForCase 检查测试用例是否有正在运行的测试
 func (s *TestService) hasRunningTestsForCase(caseID string) bool {
 	status := s.scheduler.GetStatus()
-	for _, runningTest := range status.RunningTests {
-		// 这里需要从runningTest中获取case_id信息
-		// 当前实现中可能需要扩展RunningTest来包含case信息
-	}
+	_ = status.RunningTests // TODO: 需要从runningTest中获取case_id信息
+	// 当前实现中可能需要扩展RunningTest来包含case信息
 	return false
 }
 

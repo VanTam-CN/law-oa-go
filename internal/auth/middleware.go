@@ -359,7 +359,8 @@ func validateDevice(c *gin.Context, payload *TokenPayload, cacheService *cache.C
 	deviceKey := fmt.Sprintf("user_device:%d:%s", payload.UserID, payload.DeviceID)
 	var deviceInfo map[string]interface{}
 
-	err := cacheService.Get(c.Request.Context(), deviceKey, &deviceInfo)
+	// 修复：使用正确的缓存服务 API
+	err := cacheService.Get(deviceKey, &deviceInfo)
 	if err != nil {
 		return false
 	}
@@ -393,7 +394,8 @@ func checkRateLimit(c *gin.Context, payload *TokenPayload, cacheService *cache.C
 	rateLimitKey := fmt.Sprintf("rate_limit:%d:%s", payload.UserID, c.ClientIP())
 
 	var count int
-	err := cacheService.Get(c.Request.Context(), rateLimitKey, &count)
+	// 修复：使用正确的缓存服务 API
+	err := cacheService.Get(rateLimitKey, &count)
 	if err != nil {
 		count = 0
 	}
@@ -404,7 +406,7 @@ func checkRateLimit(c *gin.Context, payload *TokenPayload, cacheService *cache.C
 	}
 
 	// 增加计数
-	cacheService.Set(c.Request.Context(), rateLimitKey, count+1, time.Minute)
+	cacheService.Set(rateLimitKey, count+1, time.Minute)
 
 	return true
 }
@@ -414,9 +416,10 @@ func updateUserActivity(ctx context.Context, payload *TokenPayload, cacheService
 	deviceKey := fmt.Sprintf("user_device:%d:%s", payload.UserID, payload.DeviceID)
 
 	var deviceInfo map[string]interface{}
-	err := cacheService.Get(ctx, deviceKey, &deviceInfo)
+	// 修复：使用正确的缓存服务 API
+	err := cacheService.Get(deviceKey, &deviceInfo)
 	if err == nil {
 		deviceInfo["last_active"] = time.Now()
-		cacheService.Set(ctx, deviceKey, deviceInfo, time.Hour*24)
+		cacheService.Set(deviceKey, deviceInfo, time.Hour*24)
 	}
 }

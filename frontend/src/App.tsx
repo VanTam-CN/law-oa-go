@@ -67,10 +67,16 @@ import LawSearch from './pages/tools/LawSearch'
 // 财务模块
 import FinanceManagement from './pages/finance/FinanceManagement'
 
+// 代管款模块
+import TrustManagement from './pages/trust/TrustManagement'
+
 // 个人中心和设置
 import Profile from './pages/profile/Profile'
 import Settings from './pages/settings/Settings'
 import PermissionTestPage from './pages/PermissionTestPage'
+
+// 收件箱模块
+import InboxList from './pages/inbox/InboxList'
 
 // API测试页面
 import ApiTest from './pages/ApiTest'
@@ -158,9 +164,15 @@ const AppContent: React.FC<AppContentProps> = ({ appMessage }) => {
           {/* 财务模块 - 需要财务权限 */}
           <Route path='finance' element={<FinanceManagement />} />
 
+          {/* 代管款模块 - 需要财务权限 */}
+          <Route path='trust' element={<TrustManagement />} />
+
           {/* 个人中心和设置 */}
           <Route path='profile' element={<Profile />} />
           <Route path='settings' element={<Settings />} />
+
+          {/* 收件箱模块 */}
+          <Route path='inbox' element={<InboxList />} />
 
           {/* API测试页面 - 开发环境 */}
           {import.meta.env.DEV && <Route path='api-test' element={<ApiTest />} />}

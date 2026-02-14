@@ -127,3 +127,56 @@ func FromSlice(s []string) JSONStringArray {
 	}
 	return JSONStringArray(s)
 }
+
+// JSONArray JSON 数组类型，用于存储整数数组等
+type JSONArray []interface{}
+
+// Value 实现 driver.Valuer 接口
+func (j JSONArray) Value() (driver.Value, error) {
+	if j == nil {
+		return "[]", nil
+	}
+	return json.Marshal(j)
+}
+
+// Scan 实现 sql.Scanner 接口
+func (j *JSONArray) Scan(value interface{}) error {
+	if value == nil {
+		*j = make(JSONArray, 0)
+		return nil
+	}
+
+	switch v := value.(type) {
+	case []byte:
+		return json.Unmarshal(v, j)
+	case string:
+		return json.Unmarshal([]byte(v), j)
+	default:
+		return fmt.Errorf("cannot scan %T into JSONArray", value)
+	}
+}
+
+// ToIntSlice 将 JSONArray 转换为 []int
+func (j JSONArray) ToIntSlice() []int {
+	result := make([]int, 0, len(j))
+	for _, item := range j {
+		if num, ok := item.(float64); ok {
+			result = append(result, int(num))
+		} else if num, ok := item.(int); ok {
+			result = append(result, num)
+		}
+	}
+	return result
+}
+
+// FromIntSlice 从 []int 创建 JSONArray
+func FromIntSlice(s []int) JSONArray {
+	if s == nil {
+		return make(JSONArray, 0)
+	}
+	result := make(JSONArray, len(s))
+	for i, v := range s {
+		result[i] = v
+	}
+	return result
+}
