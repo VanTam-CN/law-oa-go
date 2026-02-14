@@ -113,7 +113,7 @@ jobs:
         fi
 
     - name: 上传安全Fuzzing结果
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: security-fuzzing-results-${{ matrix.test }}
         path: security-fuzzing-results/
@@ -162,7 +162,7 @@ jobs:
         go test -fuzz=Fuzz_LawyerValidator_Validate -fuzztime=${{ env.FUZZ_TIME }}s ./internal/validators/
 
     - name: 上传验证器Fuzzing结果
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: validators-fuzzing-results-${{ matrix.test }}
         path: fuzzing-results/
@@ -216,7 +216,7 @@ jobs:
         go test -fuzz=Fuzz_QueryBuilder_Order -fuzztime=${{ env.FUZZ_TIME }}s ./internal/repositories/
 
     - name: 上传数据库Fuzzing结果
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: repositories-fuzzing-results-${{ matrix.test }}
         path: fuzzing-results/
@@ -274,7 +274,7 @@ jobs:
         go test -fuzz=Fuzz_LayeredCache_Get -fuzztime=${{ env.FUZZ_TIME }}s ./internal/cache/
 
     - name: 上传缓存Fuzzing结果
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: cache-fuzzing-results-${{ matrix.test }}
         path: fuzzing-results/
@@ -328,7 +328,7 @@ jobs:
         go test -fuzz=Fuzz_ConcurrentService_SubmitTask -fuzztime=${{ env.FUZZ_TIME }}s ./internal/concurrency/
 
     - name: 上传并发Fuzzing结果
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: concurrency-fuzzing-results-${{ matrix.test }}
         path: fuzzing-results/
@@ -407,7 +407,7 @@ jobs:
         fi
 
     - name: 上传完整Fuzzing结果
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: comprehensive-fuzzing-results
         path: |
@@ -425,7 +425,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: 下载所有Fuzzing结果
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
 
     - name: 生成Fuzzing汇总报告
       run: |
@@ -510,7 +510,7 @@ jobs:
         echo "4. **集成CI/CD**: 将Fuzzing测试集成到持续集成流程中" >> fuzzing-summary-report.md
 
     - name: 上传Fuzzing汇总报告
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: fuzzing-summary-report
         path: fuzzing-summary-report.md
