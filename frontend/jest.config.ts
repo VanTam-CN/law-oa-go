@@ -22,7 +22,7 @@ const config: Config.InitialOptions = {
 
   // 测试匹配模式
   testMatch: ['**/__tests__/**/*.(ts|tsx|js|jsx)', '**/*.(test|spec).(ts|tsx|js|jsx)'],
-  testPathIgnorePatterns: ['/node_modules/', '/dist/', '/build/'],
+  testPathIgnorePatterns: ['/node_modules/', '/dist/', '/build/', '/e2e/'],
 
   // 转换配置 - 关键修复：使用测试专用TypeScript配置
   transform: {

@@ -8,11 +8,11 @@ import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import { ConfigProvider } from 'antd'
-import FinanceManagement from '../../../src/pages/finance/FinanceManagement'
-import * as financeService from '../../../src/services/finance'
+import FinanceManagement from '../../src/pages/finance/FinanceManagement'
+import * as financeService from '../../src/services/finance'
 
 // Mock finance service
-jest.mock('../../../src/services/finance')
+jest.mock('../../src/services/finance')
 
 // Mock Ant Design 的 message
 jest.mock('antd', () => ({
