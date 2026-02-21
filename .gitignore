@@ -124,10 +124,9 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-package-lock.json
 yarn.lock
-frontend/package-lock.json
 frontend/yarn.lock
+# 保留 frontend/package-lock.json 用于 CI 缓存
 
 # 前端构建产物
 frontend/dist/
