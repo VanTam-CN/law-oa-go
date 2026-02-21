@@ -111,7 +111,7 @@ jobs:
 
       - name: 🔒 安全扫描
         run: |
-          go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
           gosec ./...
           go install golang.org/x/vuln/cmd/govulncheck@latest
           govulncheck ./...
