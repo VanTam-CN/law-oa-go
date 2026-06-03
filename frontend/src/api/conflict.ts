@@ -1,9 +1,10 @@
 import { get, post } from '../services/http'
 import {
-  ConflictCheckFormData,
   transformToConflictCheckRequest,
   debugConflictCheckRequest,
 } from '@/utils/conflictTransform'
+import type { ConflictCheckFormData } from '@/types/conflict'
+import { SearchDepth } from '@/types/conflict'
 
 export interface ConflictCheckRequest {
   clientId?: number
@@ -19,6 +20,21 @@ export interface ConflictCheckRequest {
 }
 
 export interface ConflictCheckResponse {
+  success?: boolean
+  error?: string | { message: string }
+  data?: ConflictCheckData
+  checkId?: string
+  hasConflict?: boolean
+  conflictCases?: ConflictCase[]
+  checkStatistics?: CheckStatistics
+  riskAssessment?: RiskAssessment
+  recommendations?: string[]
+  checkTime?: string
+  duration?: number
+  mcpStandards?: any
+}
+
+export interface ConflictCheckData {
   checkId: string
   hasConflict: boolean
   conflictCases: ConflictCase[]
@@ -62,16 +78,22 @@ export interface RiskAssessment {
 
 export const conflictAPI = {
   // 执行利益冲突检查
-  check: async (request: ConflictCheckRequest): Promise<ConflictCheckResponse> => {
+  check: async (request: ConflictCheckRequest): Promise<ConflictCheckData> => {
     try {
-      // 🔄 使用新的参数转换工具来处理案件类型等字段
+      // 转换searchDepth为正确的类型
+      let searchDepthValue: SearchDepth = SearchDepth.STANDARD
+      if (request.searchDepth === 'DEEP' || request.searchDepth === 'deep') {
+        searchDepthValue = SearchDepth.DEEP
+      }
+
+      // 使用新的参数转换工具来处理案件类型等字段
       const formData: ConflictCheckFormData = {
         caseName: request.caseName || '测试案件',
         caseType: request.caseType || 'civil',
         clientName: request.clientName || '测试客户',
         opponentInfo: request.opponentInfo,
         searchYears: request.searchYears || 5,
-        searchDepth: request.searchDepth === 'deep' ? ('DEEP' as const) : ('STANDARD' as const),
+        searchDepth: searchDepthValue,
         includeCorporateRelations: request.includeCorporateRelations || true,
       }
 
@@ -104,20 +126,23 @@ export const conflictAPI = {
         throw new Error('后端服务无响应')
       }
 
-      // 🔧 修复：HTTP拦截器已经处理了响应格式，直接使用response作为结果
-      // 如果response有data字段，说明是完整的API响应；否则response本身就是data
-      let result: ConflictCheckResponse
+      // 处理响应格式
+      let result: ConflictCheckData
 
       if (response.data && typeof response.success !== 'undefined') {
         // 完整的API响应格式
         if (!response.success) {
+          const errorMessage = typeof response.error === 'string' ? response.error : response.error?.message || 'API调用失败'
           console.error('API返回失败:', response.error)
-          throw new Error(response.error?.message || 'API调用失败')
+          throw new Error(errorMessage)
         }
         result = response.data
+      } else if (response.checkId && response.hasConflict !== undefined) {
+        // 响应本身就是ConflictCheckData
+        result = response as ConflictCheckData
       } else {
         // HTTP拦截器已经提取了data，直接使用
-        result = response
+        result = response as ConflictCheckData
       }
 
       if (typeof result.hasConflict === 'undefined') {
@@ -129,7 +154,7 @@ export const conflictAPI = {
     } catch (error) {
       console.error('利益冲突检查API调用失败:', error)
 
-      // 返回真实的后端分析结果（基于实际数据）
+      // 返回默认的错误响应
       return {
         checkId: `CC_${Date.now()}`,
         hasConflict: false,
@@ -140,7 +165,7 @@ export const conflictAPI = {
           relatedPartiesChecked: request.opponentInfo ? 1 : 0,
           corporateRelationsChecked: 0,
           timeRange: `${request.searchYears || 5}年`,
-          searchScope: request.searchDepth || 'deep',
+          searchScope: request.searchDepth || 'standard',
           startTime: new Date().toISOString(),
           endTime: new Date().toISOString(),
         },

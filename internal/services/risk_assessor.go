@@ -26,12 +26,12 @@ type RiskAssessor interface {
 
 // SingleRiskResult 单个冲突风险评估结果
 type SingleRiskResult struct {
-	ConflictID     string               `json:"conflictId"`
-	RiskScore      float64              `json:"riskScore"`
-	RiskLevel      string               `json:"riskLevel"`
-	RiskFactors    []*RiskFactor       `json:"riskFactors"`
-	Recommendation string               `json:"recommendation"`
-	AssessedAt     time.Time            `json:"assessedAt"`
+	ConflictID     string        `json:"conflictId"`
+	RiskScore      float64       `json:"riskScore"`
+	RiskLevel      string        `json:"riskLevel"`
+	RiskFactors    []*RiskFactor `json:"riskFactors"`
+	Recommendation string        `json:"recommendation"`
+	AssessedAt     time.Time     `json:"assessedAt"`
 }
 
 // RiskFactor 风险因素
@@ -46,18 +46,18 @@ type RiskFactor struct {
 // RiskConfig 风险评估配置
 type RiskConfig struct {
 	// 风险等级阈值
-	HighRiskThreshold    float64 `json:"highRiskThreshold"    yaml:"highRiskThreshold"`
-	MediumRiskThreshold  float64 `json:"mediumRiskThreshold"  yaml:"mediumRiskThreshold"`
-	LowRiskThreshold     float64 `json:"lowRiskThreshold"     yaml:"lowRiskThreshold"`
+	HighRiskThreshold   float64 `json:"highRiskThreshold"    yaml:"highRiskThreshold"`
+	MediumRiskThreshold float64 `json:"mediumRiskThreshold"  yaml:"mediumRiskThreshold"`
+	LowRiskThreshold    float64 `json:"lowRiskThreshold"     yaml:"lowRiskThreshold"`
 
 	// 风险因素权重
-	CaseTypeWeight      float64 `json:"caseTypeWeight"      yaml:"caseTypeWeight"`
-	RiskLevelWeight     float64 `json:"riskLevelWeight"     yaml:"riskLevelWeight"`
-	TimeRecencyWeight   float64 `json:"timeRecencyWeight"   yaml:"timeRecencyWeight"`
-	RelationWeight      float64 `json:"relationWeight"      yaml:"relationWeight"`
+	CaseTypeWeight    float64 `json:"caseTypeWeight"      yaml:"caseTypeWeight"`
+	RiskLevelWeight   float64 `json:"riskLevelWeight"     yaml:"riskLevelWeight"`
+	TimeRecencyWeight float64 `json:"timeRecencyWeight"   yaml:"timeRecencyWeight"`
+	RelationWeight    float64 `json:"relationWeight"      yaml:"relationWeight"`
 
 	// 建议配置
-	MaxRecommendations int    `json:"maxRecommendations" yaml:"maxRecommendations"`
+	MaxRecommendations      int  `json:"maxRecommendations" yaml:"maxRecommendations"`
 	EnableAIRecommendations bool `json:"enableAIRecommendations" yaml:"enableAIRecommendations"`
 }
 
@@ -83,12 +83,12 @@ func NewRiskAssessor(config *RiskConfig, ruleEngine interface{}) RiskAssessor {
 func (r *riskAssessor) AssessRisk(ctx context.Context, conflicts []*models.ConflictCase, ruleMatches []*RuleMatch) (*models.RiskAssessment, error) {
 	if len(conflicts) == 0 {
 		return &models.RiskAssessment{
-			OverallRisk:     "LOW",
-			RiskScore:       0.0,
-			RiskReason:      "未发现冲突",
+			OverallRisk:      "LOW",
+			RiskScore:        0.0,
+			RiskReason:       "未发现冲突",
 			RequiresApproval: false,
-			RiskFactors:     []string{},
-			Mitigation:      []string{},
+			RiskFactors:      []string{},
+			Mitigation:       []string{},
 		}, nil
 	}
 
@@ -100,6 +100,7 @@ func (r *riskAssessor) AssessRisk(ctx context.Context, conflicts []*models.Confl
 
 	// 确定风险等级
 	riskLevel := r.GetRiskLevel(totalScore)
+	riskLevel = maxRiskLevel(riskLevel, conflicts)
 
 	// 生成建议
 	recommendations, err := r.GenerateRecommendations(ctx, riskLevel, conflicts)
@@ -108,16 +109,42 @@ func (r *riskAssessor) AssessRisk(ctx context.Context, conflicts []*models.Confl
 	}
 
 	assessment := &models.RiskAssessment{
-		OverallRisk:     riskLevel,
-		RiskScore:       totalScore,
-		RiskReason:      r.generateRiskReason(conflicts, riskLevel),
+		OverallRisk:      riskLevel,
+		RiskScore:        totalScore,
+		RiskReason:       r.generateRiskReason(conflicts, riskLevel),
 		RequiresApproval: totalScore > r.config.MediumRiskThreshold,
-		ApprovalLevel:   r.getApprovalLevel(riskLevel),
-		RiskFactors:     r.generateRiskFactors(conflicts),
-		Mitigation:      recommendations,
+		ApprovalLevel:    r.getApprovalLevel(riskLevel),
+		RiskFactors:      r.generateRiskFactors(conflicts),
+		Mitigation:       recommendations,
 	}
 
 	return assessment, nil
+}
+
+func maxRiskLevel(current string, conflicts []*models.ConflictCase) string {
+	rank := map[string]int{
+		"MINIMAL":  0,
+		"LOW":      1,
+		"MEDIUM":   2,
+		"HIGH":     3,
+		"CRITICAL": 4,
+	}
+	normalized := strings.ToUpper(current)
+	maxLevel := normalized
+	maxRank := rank[normalized]
+
+	for _, conflict := range conflicts {
+		level := strings.ToUpper(strings.TrimSpace(conflict.RiskLevel))
+		if rank[level] > maxRank {
+			maxLevel = level
+			maxRank = rank[level]
+		}
+	}
+
+	if maxLevel == "" {
+		return current
+	}
+	return maxLevel
 }
 
 // GenerateRecommendations 生成处理建议
@@ -603,14 +630,14 @@ func (r *riskAssessor) generateRiskFactors(conflicts []*models.ConflictCase) []s
 // 获取默认风险配置
 func getDefaultRiskConfig() *RiskConfig {
 	return &RiskConfig{
-		HighRiskThreshold:    70.0,
-		MediumRiskThreshold:  40.0,
-		LowRiskThreshold:     20.0,
-		CaseTypeWeight:      0.3,
-		RiskLevelWeight:     0.4,
-		TimeRecencyWeight:   0.2,
-		RelationWeight:      0.1,
-		MaxRecommendations:  8,
+		HighRiskThreshold:       70.0,
+		MediumRiskThreshold:     40.0,
+		LowRiskThreshold:        20.0,
+		CaseTypeWeight:          0.3,
+		RiskLevelWeight:         0.4,
+		TimeRecencyWeight:       0.2,
+		RelationWeight:          0.1,
+		MaxRecommendations:      8,
 		EnableAIRecommendations: false,
 	}
 }

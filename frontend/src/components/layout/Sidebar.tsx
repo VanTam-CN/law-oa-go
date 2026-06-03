@@ -29,7 +29,9 @@ import {
   WalletOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router'
-import { useAppStore, hasRole } from '@/stores/useAppStore'
+import { useAppStore } from '@/stores/useAppStore'
+import { hasPermission as userHasPermission } from '@/utils/accessControl'
+import { isMvpMenuKey } from '@/config/mvp'
 import './sidebar.less'
 
 const { Sider } = Layout
@@ -55,36 +57,10 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
   const location = useLocation()
   const { user } = useAppStore()
 
-  // 简单的权限检查函数
-  const hasPermission = (permission: string): boolean => {
-    if (!user) {
-      return false
-    }
-    // 管理员拥有所有权限
-    if (user.roles.includes('admin')) {
-      return true
-    }
-    // 简单的权限映射
-    const permissionMap: Record<string, string[]> = {
-      'dashboard.view': ['admin', 'lawyer', 'user'],
-      'user.view': ['admin'],
-      'user.manage': ['admin'],
-      'case.view': ['admin', 'lawyer'],
-      'case.manage': ['admin', 'lawyer'],
-      'client.view': ['admin', 'lawyer'],
-      'client.manage': ['admin', 'lawyer'],
-      'project.view': ['admin', 'lawyer'],
-      'project.manage': ['admin'],
-      'conflict.check': ['admin', 'lawyer'],
-      'file.view': ['admin', 'lawyer'],
-      'file.manage': ['admin', 'lawyer'],
-      'finance.view': ['admin'],
-      'finance.manage': ['admin'],
-    }
-
-    const requiredRoles = permissionMap[permission]
-    return requiredRoles ? requiredRoles.some((role) => user.roles.includes(role)) : false
-  }
+  const hasPermission = React.useCallback(
+    (permission: string): boolean => userHasPermission(user, permission),
+    [user],
+  )
 
   // 监听折叠状态变化，通知父组件
   useEffect(() => {
@@ -100,21 +76,18 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
       '/dashboard': 'dashboard',
       '/inbox': 'inbox',
       '/approval': 'approval',
-      // 项目管理功能已禁用
-      // '/project': 'project',
       '/case': 'case',
       '/client': 'client',
       '/lawyer': 'lawyer',
       '/conflict': 'conflict',
       '/file': 'file',
       '/user': 'user',
+      '/admin/roles': 'role',
+      '/admin/permissions': 'permission',
       '/tools': 'tools',
       '/tools/law-search': 'law-search',
       '/finance': 'finance',
       '/trust': 'trust',
-      '/reports': 'reports',
-      '/calendar': 'calendar',
-      '/documents': 'documents',
       '/settings': 'settings',
     }
 
@@ -139,18 +112,6 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
     const openKeys: string[] = []
 
     if (
-      // 项目管理功能已禁用
-      // path.startsWith('/project') ||
-      path.startsWith('/case') ||
-      path.startsWith('/client') ||
-      path.startsWith('/lawyer') ||
-      path.startsWith('/conflict') ||
-      path.startsWith('/file')
-    ) {
-      openKeys.push('business')
-    }
-
-    if (
       path.startsWith('/tools') ||
       path.startsWith('/reports') ||
       path.startsWith('/calendar') ||
@@ -162,8 +123,9 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
     return openKeys
   }
 
-  // 基础菜单项配置
+  // 基础菜单项配置（MVP 项目按正确顺序排列在前）
   const baseMenuItems: MenuItem[] = [
+    // MVP 核心路径
     {
       key: 'dashboard',
       label: '工作台',
@@ -173,63 +135,28 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
       permission: 'dashboard:view',
     },
     {
-      key: 'inbox',
-      label: '收件箱',
-      icon: <BellOutlined />,
-      onClick: () => navigate('/inbox'),
-      color: 'var(--color-warning)',
-      permission: 'inbox:view',
+      key: 'case',
+      label: '案件管理',
+      icon: <SolutionOutlined />,
+      onClick: () => navigate('/case'),
+      color: 'var(--color-success)',
+      permission: 'case:manage',
     },
     {
-      key: 'business',
-      label: '业务管理',
-      icon: <ProjectOutlined />,
+      key: 'conflict',
+      label: '利益冲突检查',
+      icon: <FileSearchOutlined />,
+      onClick: () => navigate('/conflict'),
       color: 'var(--color-success)',
-      children: [
-        // 项目管理功能已屏蔽，与案件管理重复
-        // {
-        //   key: 'project',
-        //   label: '项目管理',
-        //   icon: <AppstoreOutlined />,
-        //   onClick: () => navigate('/project'),
-        //   permission: 'project:manage',
-        // },
-        {
-          key: 'case',
-          label: '案件管理',
-          icon: <SolutionOutlined />,
-          onClick: () => navigate('/case'),
-          permission: 'case:manage',
-        },
-        {
-          key: 'client',
-          label: '客户管理',
-          icon: <TeamOutlined />,
-          onClick: () => navigate('/client'),
-          permission: 'client:manage',
-        },
-        {
-          key: 'lawyer',
-          label: '律师管理',
-          icon: <UserOutlined />,
-          onClick: () => navigate('/lawyer'),
-          permission: 'lawyer:manage',
-        },
-        {
-          key: 'conflict',
-          label: '利益冲突检查',
-          icon: <FileSearchOutlined />,
-          onClick: () => navigate('/conflict'),
-          permission: 'conflict:check',
-        },
-        {
-          key: 'file',
-          label: '文件管理',
-          icon: <CloudUploadOutlined />,
-          onClick: () => navigate('/file'),
-          permission: 'file:manage',
-        },
-      ],
+      permission: 'conflict:check',
+    },
+    {
+      key: 'client',
+      label: '客户管理',
+      icon: <TeamOutlined />,
+      onClick: () => navigate('/client'),
+      color: 'var(--color-success)',
+      permission: 'client:manage',
     },
     {
       key: 'approval',
@@ -240,71 +167,52 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
       permission: 'approval:manage',
     },
     {
+      key: 'trust',
+      label: '代管款管理',
+      icon: <WalletOutlined />,
+      onClick: () => navigate('/trust'),
+      color: 'var(--color-warning)',
+      permission: 'trust:manage',
+    },
+    // 非 MVP 项目（MVP 模式下隐藏）
+    {
+      key: 'lawyer',
+      label: '律师管理',
+      icon: <UserOutlined />,
+      onClick: () => navigate('/lawyer'),
+      color: 'var(--color-success)',
+      permission: 'lawyer:manage',
+    },
+    {
+      key: 'file',
+      label: '文件管理',
+      icon: <FileTextOutlined />,
+      onClick: () => navigate('/file'),
+      color: 'var(--color-success)',
+      permission: 'document:manage',
+    },
+    {
       key: 'tools',
-      label: '办公工具',
+      label: '工具箱',
       icon: <ToolOutlined />,
-      color: 'var(--color-info)',
-      children: [
-        {
-          key: 'law-search',
-          label: '法条查询',
-          icon: <SearchOutlined />,
-          onClick: () => navigate('/tools/law-search'),
-          permission: 'law:search',
-        },
-        {
-          key: 'case-search',
-          label: '案例检索',
-          icon: <DatabaseOutlined />,
-          onClick: () => message.info('案例检索功能开发中...'),
-          permission: 'case:search',
-        },
-        {
-          key: 'company-search',
-          label: '企业信息查询',
-          icon: <BankOutlined />,
-          onClick: () => message.info('企业信息查询功能开发中...'),
-          permission: 'company:search',
-        },
-        {
-          key: 'calendar',
-          label: '日程安排',
-          icon: <ScheduleOutlined />,
-          onClick: () => navigate('/calendar'),
-          permission: 'calendar:manage',
-        },
-        {
-          key: 'documents',
-          label: '文档模板',
-          icon: <FileTextOutlined />,
-          onClick: () => navigate('/documents'),
-          permission: 'document:template',
-        },
-      ],
+      onClick: () => navigate('/tools'),
+      color: 'var(--color-text-secondary)',
+      permission: 'tools:view',
     },
     {
       key: 'finance',
       label: '财务管理',
-      icon: <CalculatorOutlined />,
+      icon: <MoneyCollectOutlined />,
       onClick: () => navigate('/finance'),
-      color: 'var(--color-error)',
-      permission: 'finance:manage',
-    },
-    {
-      key: 'trust',
-      label: '代管款',
-      icon: <WalletOutlined />,
-      onClick: () => navigate('/trust'),
       color: 'var(--color-warning)',
-      permission: 'finance:manage',
+      permission: 'finance:view',
     },
     {
-      key: 'reports',
-      label: '统计报表',
-      icon: <BarChartOutlined />,
-      onClick: () => navigate('/reports'),
-      color: 'var(--color-accent)',
-      permission: 'report:view',
+      key: 'inbox',
+      label: '待办中心',
+      icon: <BellOutlined />,
+      onClick: () => navigate('/inbox'),
+      color: 'var(--color-text-secondary)',
     },
     {
       key: 'user',
@@ -313,6 +221,22 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
       onClick: () => navigate('/user'),
       color: 'var(--color-text-secondary)',
       permission: 'user:manage',
+    },
+    {
+      key: 'role',
+      label: '角色管理',
+      icon: <AuditOutlined />,
+      onClick: () => navigate('/admin/roles'),
+      color: 'var(--color-text-secondary)',
+      permission: 'role:manage',
+    },
+    {
+      key: 'permission',
+      label: '权限管理',
+      icon: <FileProtectOutlined />,
+      onClick: () => navigate('/admin/permissions'),
+      color: 'var(--color-text-secondary)',
+      permission: 'permission:manage',
     },
     {
       key: 'settings',
@@ -324,11 +248,16 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
     },
   ]
 
-  // 根据权限过滤菜单项
+  // 根据权限和 MVP 配置过滤菜单项
   const menuItems = useMemo(() => {
     const filterMenuItems = (items: MenuItem[]): MenuItem[] => {
       return items
         .filter((item) => {
+          // MVP 过滤：只保留 MVP 菜单项
+          if (!isMvpMenuKey(item.key)) {
+            return false
+          }
+
           // 如果是父级菜单，检查是否有可访问的子菜单
           if (item.children) {
             const filteredChildren = filterMenuItems(item.children)
@@ -404,14 +333,14 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
         <div className='logo-container'>
           {collapsed ? (
             <div className='logo-collapsed'>
-              <span className='logo-text'>LF</span>
+              <span className='logo-text'>海</span>
             </div>
           ) : (
             <div className='logo-expanded'>
-              <div className='logo-icon'>⚖️</div>
+              <div className='logo-icon'>⚖</div>
               <div className='logo-text'>
-                <div className='logo-title'>律所OA系统</div>
-                <div className='logo-subtitle'>专业 · 高效 · 智能</div>
+                <div className='logo-title'>示例律师事务所OA</div>
+                <div className='logo-subtitle'>DEMO LAW · OA</div>
               </div>
             </div>
           )}
@@ -445,7 +374,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
               <span className='version-number'>v2.0.0</span>
             </div>
             <div className='user-info'>
-              <span className='user-role'>{user?.role_name || '用户'}</span>
+              <span className='user-role'>{user?.roles?.[0] || '用户'}</span>
             </div>
           </div>
         </div>

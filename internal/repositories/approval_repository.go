@@ -16,6 +16,11 @@ func NewApprovalRepository(db *gorm.DB) *ApprovalRepository {
 	return &ApprovalRepository{db: db}
 }
 
+// DB 返回底层数据库连接
+func (r *ApprovalRepository) DB() *gorm.DB {
+	return r.db
+}
+
 // FindByID 根据ID查找审批记录
 func (r *ApprovalRepository) FindByID(id string) (*models.ApprovalRequest, error) {
 	var approval models.ApprovalRequest
@@ -143,7 +148,7 @@ func (r *ApprovalRepository) FindWorkflows() ([]models.ApprovalWorkflow, error) 
 }
 
 // FindTemplates 查找模板列表
-func (r *ApprovalRepository) FindTemplates(templateType, category string) ([]models.ApprovalTemplate, error) {
+func (r *ApprovalRepository) FindTemplates(templateType, category string) ([]models.ApprovalTemplateV2, error) {
 	query := r.db.Where("status = ?", models.TemplateStatusActive)
 
 	if templateType != "" {
@@ -153,7 +158,7 @@ func (r *ApprovalRepository) FindTemplates(templateType, category string) ([]mod
 		query = query.Where("category = ?", category)
 	}
 
-	var templates []models.ApprovalTemplate
+	var templates []models.ApprovalTemplateV2
 	err := query.Order("usage_count DESC, created_at DESC").
 		Find(&templates).Error
 	if err != nil {

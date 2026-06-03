@@ -135,10 +135,10 @@ func TestHealthMiddleware_HealthCheckMetricsHandler(t *testing.T) {
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(t, err)
-	assert.Equal(t, 2, response["total_checks"])
-	assert.Equal(t, 1, response["healthy_checks"])
-	assert.Equal(t, 1, response["degraded_checks"])
-	assert.Equal(t, 0, response["unhealthy_checks"])
+	assert.Equal(t, float64(2), response["total_checks"])
+	assert.Equal(t, float64(1), response["healthy_checks"])
+	assert.Equal(t, float64(1), response["degraded_checks"])
+	assert.Equal(t, float64(0), response["unhealthy_checks"])
 	assert.Contains(t, response, "average_response_time")
 }
 

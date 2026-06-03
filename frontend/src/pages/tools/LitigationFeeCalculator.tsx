@@ -15,7 +15,7 @@ const LitigationFeeCalculator: React.FC = () => {
     try {
       setLoading(true)
       const response = await calculateLitigationFee(values)
-      setResult(response.data)
+      setResult(response)
     } catch (error) {
       console.error('Failed to calculate litigation fee:', error)
     } finally {

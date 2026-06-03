@@ -6,8 +6,21 @@
 import React from 'react'
 import { render, screen } from '@testing-library/react'
 
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: string
+  loading?: boolean
+}
+
 // Mock Button组件（缺少实际组件，创建模拟组件）
-const Button = ({ children, onClick, className, variant, loading, disabled, ...props }) => {
+const Button: React.FC<ButtonProps> = ({
+  children,
+  onClick,
+  className,
+  variant,
+  loading,
+  disabled,
+  ...props
+}) => {
   return (
     <button
       onClick={onClick}

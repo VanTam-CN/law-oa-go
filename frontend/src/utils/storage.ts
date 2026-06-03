@@ -6,8 +6,47 @@ import type { Role, Permission } from '@/services/role'
 // Token相关操作
 const TOKEN_KEY = 'auth_token'
 
+function parseJwtPayload(token: string): Record<string, any> | null {
+  try {
+    const [, payload] = token.split('.')
+    if (!payload) {
+      return null
+    }
+
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=')
+    const decoded = atob(padded)
+    return JSON.parse(decoded)
+  } catch (error) {
+    return null
+  }
+}
+
+export function isTokenExpired(token: string | null, skewSeconds = 30): boolean {
+  if (!token) {
+    return true
+  }
+
+  const payload = parseJwtPayload(token)
+  if (!payload || typeof payload.exp !== 'number') {
+    return true
+  }
+
+  return payload.exp * 1000 <= Date.now() + skewSeconds * 1000
+}
+
 export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY)
+  const token = localStorage.getItem(TOKEN_KEY)
+  if (!token) {
+    return null
+  }
+
+  if (isTokenExpired(token)) {
+    clearStorage()
+    return null
+  }
+
+  return token
 }
 
 export function setToken(token: string): void {

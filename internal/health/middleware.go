@@ -69,7 +69,7 @@ func (hm *HealthMiddleware) DetailedHealthCheckHandler(c *gin.Context) {
 
 // HealthCheckMetricsHandler 健康检查指标处理器
 func (hm *HealthMiddleware) HealthCheckMetricsHandler(c *gin.Context) {
-	results := hm.healthChecker.GetLastResults()
+	results := hm.healthChecker.RunChecks()
 
 	metrics := gin.H{
 		"timestamp":             time.Now(),
@@ -357,7 +357,7 @@ func (hm *HealthMiddleware) HealthStatusPageHandler(c *gin.Context) {
 
 // ExportHealthMetricsHandler 导出健康指标处理器
 func (hm *HealthMiddleware) ExportHealthMetricsHandler(c *gin.Context) {
-	results := hm.healthChecker.GetLastResults()
+	results := hm.healthChecker.RunChecks()
 
 	// Prometheus 格式的指标
 	metrics := "# TYPE health_check_status gauge\n"

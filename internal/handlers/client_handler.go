@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"errors"
+	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -91,6 +93,7 @@ func (h *ClientHandler) GetClient(c *gin.Context) {
 // @Failure 400 {object} common.APIResponse "请求参数错误"
 // @Failure 401 {object} common.APIResponse "未授权"
 // @Failure 404 {object} common.APIResponse "客户不存在"
+// @Failure 409 {object} common.APIResponse "版本冲突"
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /clients/{id} [put]
 func (h *ClientHandler) UpdateClient(c *gin.Context) {
@@ -106,9 +109,17 @@ func (h *ClientHandler) UpdateClient(c *gin.Context) {
 		common.APIBadRequest(c, "请求参数错误", "请检查所有字段")
 		return
 	}
+	if req.Version == nil || *req.Version == 0 {
+		common.APIBadRequest(c, "请求参数错误", "更新客户必须提交有效的version")
+		return
+	}
 
 	client, err := h.clientService.UpdateClient(c.Request.Context(), uint(id), &req)
 	if err != nil {
+		if errors.Is(err, services.ErrClientVersionConflict) {
+			common.NewAPIError(c, http.StatusConflict, "CLIENT_VERSION_CONFLICT", "客户信息已被他人更新，请刷新后重试")
+			return
+		}
 		common.APIInternalServerError(c, "更新客户失败", err.Error())
 		return
 	}
@@ -163,33 +174,19 @@ func (h *ClientHandler) DeleteClient(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /clients [get]
 func (h *ClientHandler) ListClients(c *gin.Context) {
-	page := 1
-	pageSize := 20
-	search := ""
-
-	if pageStr := c.Query("page"); pageStr != "" {
-		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
-			page = p
-		}
+	var req services.ClientListRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		common.APIBadRequest(c, "请求参数错误", "请检查查询参数")
+		return
+	}
+	if req.Page <= 0 {
+		req.Page = 1
+	}
+	if req.PageSize <= 0 {
+		req.PageSize = 20
 	}
 
-	if pageSizeStr := c.Query("page_size"); pageSizeStr != "" {
-		if ps, err := strconv.Atoi(pageSizeStr); err == nil && ps > 0 && ps <= 100 {
-			pageSize = ps
-		}
-	}
-
-	if searchStr := c.Query("search"); searchStr != "" {
-		search = searchStr
-	}
-
-	req := &services.ClientListRequest{
-		Page:     page,
-		PageSize: pageSize,
-		Search:   search,
-	}
-
-	clients, total, err := h.clientService.ListClients(c.Request.Context(), req)
+	clients, total, err := h.clientService.ListClients(c.Request.Context(), &req)
 	if err != nil {
 		common.APIInternalServerError(c, "获取客户列表失败", err.Error())
 		return
@@ -198,10 +195,10 @@ func (h *ClientHandler) ListClients(c *gin.Context) {
 	response := gin.H{
 		"clients": clients,
 		"pagination": gin.H{
-			"page":       page,
-			"page_size":  pageSize,
+			"page":       req.Page,
+			"page_size":  req.PageSize,
 			"total":      total,
-			"total_page": (total + int64(pageSize) - 1) / int64(pageSize),
+			"total_page": (total + int64(req.PageSize) - 1) / int64(req.PageSize),
 		},
 	}
 

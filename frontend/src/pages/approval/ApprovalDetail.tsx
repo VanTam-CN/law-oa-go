@@ -7,6 +7,7 @@ import {
   Button,
   Space,
   Timeline,
+  Steps,
   message,
   Divider,
   Modal,
@@ -22,10 +23,11 @@ import {
   DeleteOutlined,
   ExclamationCircleOutlined,
   SyncOutlined,
+  ClockCircleOutlined,
+  LoadingOutlined,
 } from '@ant-design/icons'
 import {
   getApprovalDetail,
-  handleApproval,
   cancelApproval,
   processApprovalDecision,
   submitApproval,
@@ -153,6 +155,40 @@ const ApprovalDetail: React.FC = () => {
       default:
         return ''
     }
+  }
+
+  // 获取审批流程当前步骤
+  const getApprovalCurrentStep = (records: any[], status: string) => {
+    if (status === 'draft') return 0
+    const completedSteps = records.filter(
+      (r) => r.decision === 'approve' || r.decision === 'request_changes'
+    ).length
+    return completedSteps
+  }
+
+  // 获取审批流程状态
+  const getApprovalStepStatus = (status: string) => {
+    if (status === 'approved') return 'finish'
+    if (status === 'rejected') return 'error'
+    if (status === 'cancelled') return 'wait'
+    return 'process'
+  }
+
+  // 获取步骤状态
+  const getStepStatus = (decision: string, recordStatus: string) => {
+    if (decision === 'approve') return 'finish'
+    if (decision === 'reject') return 'error'
+    if (decision === 'request_changes') return 'wait'
+    return 'process'
+  }
+
+  // 获取步骤图标
+  const getStepIcon = (decision: string, recordStatus: string) => {
+    if (decision === 'approve') return <CheckCircleOutlined />
+    if (decision === 'reject') return <CloseCircleOutlined />
+    if (decision === 'request_changes') return <EditOutlined />
+    if (recordStatus === 'pending') return <ClockCircleOutlined />
+    return <LoadingOutlined />
   }
 
   const handleAction = (action: ApprovalAction) => {
@@ -290,6 +326,20 @@ const ApprovalDetail: React.FC = () => {
   const canSubmit = approval.status === 'draft' && isApplicant
   const canEdit = (approval.status === 'draft' || approval.status === 'needs_revision') && isApplicant
   const canResubmit = (approval.status === 'rejected' || approval.status === 'needs_revision') && isApplicant
+  const hasDecisionActions = canSubmit || canEdit || canResubmit || canCancel || canApprove
+
+  const handleMoreApprovalActions = () => {
+    message.info('暂无更多审批操作')
+  }
+
+  const handleMoreHandlingActions = () => {
+    if (!hasDecisionActions) {
+      message.info('当前仅可查看审批进度，暂无更多处理方式')
+      return
+    }
+
+    message.info('暂无更多处理方式')
+  }
 
   return (
     <div className='approval-detail-container'>
@@ -299,6 +349,7 @@ const ApprovalDetail: React.FC = () => {
           <Space>
             {renderStatusTag(approval.status)}
             {renderUrgencyTag(approval.urgency)}
+            <Button onClick={handleMoreApprovalActions}>更多审批操作</Button>
           </Space>
         </div>
 
@@ -328,6 +379,33 @@ const ApprovalDetail: React.FC = () => {
         </div>
 
         <Divider />
+
+        {/* 审批流程步骤条 */}
+        {approval.records && approval.records.length > 0 && (
+          <div className='approval-flow-steps'>
+            <h3>审批流程</h3>
+            <Steps
+              current={getApprovalCurrentStep(approval.records, approval.status)}
+              status={getApprovalStepStatus(approval.status)}
+              size="small"
+            >
+              {approval.records.map((record, index) => (
+                <Steps.Step
+                  key={record.id}
+                  title={record.stage || `步骤 ${index + 1}`}
+                  description={
+                    <div className='step-description'>
+                      <div className='step-approver'>{record.approver}</div>
+                      <div className='step-time'>{record.approvalDate}</div>
+                    </div>
+                  }
+                  icon={getStepIcon(record.decision, record.status)}
+                  status={getStepStatus(record.decision, record.status)}
+                />
+              ))}
+            </Steps>
+          </div>
+        )}
 
         {approval.records && approval.records.length > 0 && (
           <div className='approval-history'>
@@ -501,20 +579,22 @@ const ApprovalDetail: React.FC = () => {
                 </Button>
               </>
             )}
+
+            <Button onClick={handleMoreHandlingActions}>更多处理方式</Button>
           </Space>
         </div>
       </Card>
 
       {/* 审批决定弹窗 */}
       <Modal
-        title={`${getActionLabel(currentAction!)}审批`}
+        title={`${getActionLabel(currentAction || 'approve')}审批`}
         open={actionModalVisible}
         onOk={submitAction}
         onCancel={() => {
           setActionModalVisible(false)
           form.resetFields()
         }}
-        okText={getActionLabel(currentAction!)}
+        okText={getActionLabel(currentAction || 'approve')}
       >
         <Form form={form} layout='vertical'>
           <Form.Item
@@ -524,7 +604,7 @@ const ApprovalDetail: React.FC = () => {
           >
             <TextArea
               rows={4}
-              placeholder={getActionPlaceholder(currentAction!)}
+              placeholder={getActionPlaceholder(currentAction || 'approve')}
             />
           </Form.Item>
         </Form>

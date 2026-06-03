@@ -292,10 +292,19 @@ export interface BadDebt {
 export interface CreateBadDebtRequest {
   contract_id: number
   invoice_id?: number
+  original_amount: number
   write_off_amount: number
   reason: string
   reason_type: 'bankruptcy' | 'dispute' | 'uncollectible' | 'other'
   attachment_ids?: number[]
+}
+
+export interface BadDebtStats {
+  total_bad_debts: number
+  pending_bad_debts: number
+  approved_bad_debts: number
+  rejected_bad_debts: number
+  total_write_off_amount: number
 }
 
 // 提成相关类型
@@ -484,6 +493,34 @@ export const getContractStats = (): Promise<APIResponse<ContractStats>> => {
  */
 export const getContractsByClient = (clientId: number): Promise<APIResponse<Contract[]>> => {
   return get<APIResponse<Contract[]>>(`/finance/contracts?client_id=${clientId}`)
+}
+
+/**
+ * 获取合同关联发票
+ */
+export const getContractInvoices = (contractId: number): Promise<APIResponse<Invoice[]>> => {
+  return get<APIResponse<Invoice[]>>('/finance/invoices', { contract_id: contractId })
+}
+
+/**
+ * 获取合同关联回款
+ */
+export const getContractPayments = (contractId: number): Promise<APIResponse<Payment[]>> => {
+  return get<APIResponse<Payment[]>>('/finance/payments', { contract_id: contractId })
+}
+
+/**
+ * 根据案件类型获取费率模板
+ */
+export const getFeeTemplatesByCaseType = (caseType: string): Promise<APIResponse<any[]>> => {
+  return get<APIResponse<any[]>>('/finance/fee-templates/by-case-type', { case_type: caseType })
+}
+
+/**
+ * 计算预估费用
+ */
+export const calculateEstimatedFee = (templateId: number, amount: number): Promise<APIResponse<any>> => {
+  return get<APIResponse<any>>('/finance/fee-templates/calculate', { template_id: templateId, amount })
 }
 
 // ============================================================================
@@ -748,6 +785,13 @@ export const rejectBadDebt = (id: number, notes: string): Promise<APIResponse<Ba
   return post<APIResponse<BadDebt>>(`/finance/bad-debts/${id}/reject`, { notes })
 }
 
+/**
+ * 获取坏账核销统计
+ */
+export const getBadDebtStats = (): Promise<APIResponse<BadDebtStats>> => {
+  return get<APIResponse<BadDebtStats>>('/finance/bad-debts/stats')
+}
+
 // ============================================================================
 // 提成API
 // ============================================================================
@@ -814,6 +858,67 @@ export const getCommissionStats = (): Promise<APIResponse<CommissionStats>> => {
   return get<APIResponse<CommissionStats>>('/finance/commissions/stats')
 }
 
+/**
+ * 导出合同列表
+ */
+export const exportContracts = (params?: {
+  status?: string
+  contract_type?: string
+  client_id?: number
+  case_id?: number
+  search?: string
+  start_date_from?: string
+  start_date_to?: string
+  end_date_from?: string
+  end_date_to?: string
+}): Promise<Blob> => {
+  return get<Blob>('/finance/contracts/export', params, true)
+}
+
+/**
+ * 导出发票列表
+ */
+export const exportInvoices = (params?: {
+  status?: string
+  invoice_type?: string
+  client_id?: number
+  contract_id?: number
+  search?: string
+  date_from?: string
+  date_to?: string
+}): Promise<Blob> => {
+  return get<Blob>('/finance/invoices/export', params, true)
+}
+
+/**
+ * 导出回款列表
+ */
+export const exportPayments = (params?: {
+  status?: string
+  invoice_id?: number
+  client_id?: number
+  search?: string
+  date_from?: string
+  date_to?: string
+}): Promise<Blob> => {
+  return get<Blob>('/finance/payments/export', params, true)
+}
+
+/**
+ * 导出提成列表
+ */
+export const exportCommissions = (params?: {
+  status?: string
+  beneficiary_id?: number
+  beneficiary_role?: string
+  contract_id?: number
+  case_id?: number
+  date_from?: string
+  date_to?: string
+}): Promise<Blob> => {
+  return get<Blob>('/finance/commissions/export', params, true)
+}
+
 // ============================================================================
 // 财务概览API
 // ============================================================================
@@ -862,6 +967,25 @@ export const paymentStatusMap: Record<string, { text: string; color: string }> =
 }
 
 /**
+ * 坏账状态文本映射
+ */
+export const badDebtStatusMap: Record<string, { text: string; color: string }> = {
+  pending: { text: '待审批', color: 'warning' },
+  approved: { text: '已通过', color: 'success' },
+  rejected: { text: '已拒绝', color: 'error' },
+}
+
+/**
+ * 坏账原因类型文本映射
+ */
+export const badDebtReasonTypeMap: Record<string, { text: string; color: string }> = {
+  bankruptcy: { text: '破产', color: 'red' },
+  dispute: { text: '纠纷', color: 'orange' },
+  uncollectible: { text: '无法收回', color: 'volcano' },
+  other: { text: '其他', color: 'default' },
+}
+
+/**
  * 提成状态文本映射
  */
 export const commissionStatusMap: Record<string, { text: string; color: string }> = {
@@ -892,4 +1016,31 @@ export interface PaymentSummary {
   amount: number
   payment_date: string
   status: string
+}
+
+// ============================================================================
+// 分成规则类型与API
+// ============================================================================
+
+export interface CommissionRule {
+  id: number
+  name: string
+  role: string
+  min_amount: number
+  max_amount: number
+  base_rate: number
+  performance_rate: number
+  priority: number
+  active: boolean
+  effective_date?: string
+  expiry_date?: string
+  created_at: string
+  updated_at: string
+}
+
+export const commissionRuleAPI = {
+  list: () => get<CommissionRule[]>('/finance/commission-rules'),
+  create: (data: Partial<CommissionRule>) => post('/finance/commission-rules', data),
+  update: (id: number, data: Partial<CommissionRule>) => put(`/finance/commission-rules/${id}`, data),
+  delete: (id: number) => del(`/finance/commission-rules/${id}`),
 }

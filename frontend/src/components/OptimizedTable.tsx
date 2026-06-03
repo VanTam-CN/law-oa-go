@@ -211,7 +211,7 @@ const OptimizedTable: React.FC<OptimizedTableProps> = ({
     rowClassName: (record, index) =>
       `table-row ${index % 2 === 0 ? 'table-row-even' : 'table-row-odd'}`,
     onRow: (record, index) => ({
-      onClick: () => onRowClick?.(record, index!),
+      onClick: () => onRowClick?.(record, index ?? -1),
     }),
     ...tableProps,
   }

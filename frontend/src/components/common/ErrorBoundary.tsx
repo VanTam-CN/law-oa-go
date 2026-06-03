@@ -116,7 +116,7 @@ class ErrorBoundary extends Component<Props, State> {
     })
 
     // 记录错误日志
-    ErrorLoggingService.logError(error, errorInfo, errorId, errorInfo.componentStack)
+    ErrorLoggingService.logError(error, errorInfo, errorId, errorInfo.componentStack || undefined)
 
     // 调用自定义错误处理
     this.props.onError?.(error, errorInfo)
@@ -160,7 +160,7 @@ class ErrorBoundary extends Component<Props, State> {
       errorWindow.document.write(`
         <html>
           <head>
-            <title>错误详情 - 律师OA系统</title>
+            <title>错误详情 - 示例律师事务所OA</title>
             <style>
               body { font-family: monospace; padding: 20px; line-height: 1.6; }
               .error-details { background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 10px 0; }

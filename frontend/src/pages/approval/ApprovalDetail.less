@@ -78,4 +78,78 @@
     margin-top: 32px;
     text-align: center;
   }
+
+  // 审批流程步骤条
+  .approval-flow-steps {
+    margin: 24px 0;
+
+    h3 {
+      margin-bottom: 16px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    .ant-steps {
+      .ant-steps-item-process {
+        .ant-steps-item-icon {
+          border-color: var(--color-primary, #1E5A8D);
+          background: rgba(30, 90, 141, 0.1);
+        }
+
+        .ant-steps-item-title {
+          color: var(--color-primary, #1E5A8D);
+          font-weight: 600;
+        }
+      }
+
+      .ant-steps-item-finish {
+        .ant-steps-item-icon {
+          border-color: #52c41a;
+          background: #f6ffed;
+        }
+
+        .ant-steps-item-title {
+          color: #52c41a;
+          font-weight: 600;
+        }
+      }
+
+      .ant-steps-item-error {
+        .ant-steps-item-icon {
+          border-color: #ff4d4f;
+          background: #fff1f0;
+        }
+
+        .ant-steps-item-title {
+          color: #ff4d4f;
+          font-weight: 600;
+        }
+      }
+
+      .ant-steps-item-wait {
+        .ant-steps-item-icon {
+          border-color: #d9d9d9;
+          background: #fafafa;
+        }
+
+        .ant-steps-item-title {
+          color: #999;
+        }
+      }
+
+      .step-description {
+        .step-approver {
+          font-size: 12px;
+          color: #666;
+          font-weight: 500;
+        }
+
+        .step-time {
+          font-size: 11px;
+          color: #999;
+        }
+      }
+    }
+  }
 }

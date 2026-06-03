@@ -4,35 +4,33 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
+	migratedb "github.com/golang-migrate/migrate/v4/database"
 	"github.com/golang-migrate/migrate/v4/database/mysql"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	_ "github.com/lib/pq"
 	"law-oa-go/internal/config"
 )
 
 // Migrator 数据库迁移器
 type Migrator struct {
-	migrate *migrate.Migrate
-	db      *sql.DB
+	migrate    *migrate.Migrate
+	db         *sql.DB
+	driverName string
 }
 
 // NewMigrator 创建迁移器
 func NewMigrator(cfg *config.DatabaseConfig, migrationsPath string) (*Migrator, error) {
-	// 构建DSN
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=%v&loc=%s&multiStatements=true&tls=skip-verify",
-		cfg.Username,
-		cfg.Password,
-		cfg.Host,
-		cfg.Port,
-		cfg.Database,
-		cfg.Charset,
-		cfg.ParseTime,
-		cfg.Loc,
-	)
+	driverName := strings.ToLower(cfg.Driver)
+	if driverName == "" {
+		driverName = "postgres"
+	}
 
-	// 连接数据库
-	db, err := sql.Open("mysql", dsn)
+	sqlDriver, databaseName, dsn := buildMigrationDSN(cfg, driverName)
+	db, err := sql.Open(sqlDriver, dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
@@ -42,26 +40,70 @@ func NewMigrator(cfg *config.DatabaseConfig, migrationsPath string) (*Migrator, 
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	// 创建MySQL驱动
-	driver, err := mysql.WithInstance(db, &mysql.Config{})
+	migrationDriver, err := newMigrationDriver(db, driverName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create mysql driver: %w", err)
+		return nil, err
 	}
 
-	// 创建迁移实例
 	m, err := migrate.NewWithDatabaseInstance(
 		fmt.Sprintf("file://%s", migrationsPath),
-		"mysql",
-		driver,
+		databaseName,
+		migrationDriver,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create migrate instance: %w", err)
 	}
 
 	return &Migrator{
-		migrate: m,
-		db:      db,
+		migrate:    m,
+		db:         db,
+		driverName: driverName,
 	}, nil
+}
+
+func buildMigrationDSN(cfg *config.DatabaseConfig, driverName string) (sqlDriver string, databaseName string, dsn string) {
+	if driverName == "postgres" || driverName == "postgresql" {
+		sslMode := cfg.SSLMode
+		if sslMode == "" {
+			sslMode = "disable"
+		}
+		return "postgres", "postgres", fmt.Sprintf(
+			"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+			cfg.Host,
+			cfg.Port,
+			cfg.Username,
+			cfg.Password,
+			cfg.Database,
+			sslMode,
+		)
+	}
+
+	return "mysql", "mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=%v&loc=%s&multiStatements=true&tls=skip-verify",
+		cfg.Username,
+		cfg.Password,
+		cfg.Host,
+		cfg.Port,
+		cfg.Database,
+		cfg.Charset,
+		cfg.ParseTime,
+		cfg.Loc,
+	)
+}
+
+func newMigrationDriver(db *sql.DB, driverName string) (migratedb.Driver, error) {
+	if driverName == "postgres" || driverName == "postgresql" {
+		driver, err := postgres.WithInstance(db, &postgres.Config{})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create postgres driver: %w", err)
+		}
+		return driver, nil
+	}
+
+	driver, err := mysql.WithInstance(db, &mysql.Config{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create mysql driver: %w", err)
+	}
+	return driver, nil
 }
 
 // Up 执行所有待执行的迁移
@@ -224,6 +266,9 @@ func (m *Migrator) ValidateDatabase() error {
 	// 检查迁移表是否存在
 	var count int
 	query := "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'schema_migrations'"
+	if m.driverName == "postgres" || m.driverName == "postgresql" {
+		query = "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = 'schema_migrations'"
+	}
 	err := m.db.QueryRow(query).Scan(&count)
 	if err != nil {
 		return fmt.Errorf("failed to check migration table: %w", err)

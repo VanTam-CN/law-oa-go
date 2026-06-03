@@ -3,7 +3,6 @@ import {
   ConflictCheckRequest,
   ConflictCheckResponse,
   ConflictCheckFormData,
-  ValidationError,
   SearchDepth,
 } from '@/types/conflict'
 import {
@@ -11,10 +10,8 @@ import {
   debugConflictCheckRequest,
 } from '@/utils/conflictTransform'
 import {
-  handleError,
   shouldRetry,
   getUserFriendlyMessage,
-  StandardError,
   ErrorHandler,
 } from '@/utils/errorHandler'
 
@@ -53,70 +50,19 @@ const conflictErrorHandler = new ErrorHandler({
  * 转换为增强冲突检测API格式
  */
 const transformToEnhancedConflictCheckRequest = (request: any) => {
-  // 解析对方当事人 - 取第一个作为主要对方
-  const opposingParty = request.otherParties?.[0] || ''
-
-  // 转换搜索深度 - 使用后端期望的大写格式
-  const searchDepth = request.searchDepth === 'DEEP' ? 'DEEP' : 'BASIC'
-
-  // 获取律师ID - 从用户信息获取
-  const lawyerId = parseInt(request.userId) || 1
-
   return {
-    clientId: request.clientId || request.lawyerId?.toString() || lawyerId.toString(),
+    clientId: request.clientId,
     clientName: request.clientName,
-    caseName: request.caseName || `${request.clientName}诉${opposingParty}案件`,
-    caseType: request.caseType.toLowerCase(), // 确保是小写
-    clientType: request.clientType === 'COMPANY' ? 'COMPANY' : 'PERSON',
-    otherParties: [opposingParty],
+    caseName: request.caseName,
+    caseType: request.caseType.toLowerCase(),
+    clientType: request.clientType || 'PERSON',
+    otherParties: request.otherParties || [],
     searchYears: request.searchYears || 5,
-    includeCorporateRelations: request.includeCorporateRelations || false,
-    searchDepth,
-    userId: request.userId?.toString() || lawyerId.toString(),
+    includeCorporateRelations: request.includeCorporateRelations !== false,
+    searchDepth: request.searchDepth || SearchDepth.STANDARD,
+    userId: request.userId?.toString(),
     requestTime: new Date().toISOString(),
   }
-}
-
-/**
- * 检测客户行业
- */
-const detectClientIndustry = (clientName: string): string => {
-  const industryMappings: { [key: string]: string } = {
-    阿里巴巴: '科技、媒体和通信',
-    阿里: '科技、媒体和通信',
-    淘宝: '科技、媒体和通信',
-    天猫: '科技、媒体和通信',
-    支付宝: '科技、媒体和通信',
-    腾讯: '科技、媒体和通信',
-    微信: '科技、媒体和通信',
-    字节跳动: '科技、媒体和通信',
-    抖音: '科技、媒体和通信',
-    TikTok: '科技、媒体和通信',
-    百度: '科技、媒体和通信',
-    京东: '科技、媒体和通信',
-    美团: '科技、媒体和通信',
-    银行: '金融',
-    保险: '金融',
-    证券: '金融',
-    基金: '金融',
-    医院: '医疗健康',
-    诊所: '医疗健康',
-    药: '医疗健康',
-    学校: '教育',
-    大学: '教育',
-    电力: '能源',
-    石油: '能源',
-    建筑: '房地产',
-    房地产: '房地产',
-  }
-
-  for (const [keyword, industry] of Object.entries(industryMappings)) {
-    if (clientName.includes(keyword)) {
-      return industry
-    }
-  }
-
-  return '其他'
 }
 
 /**
@@ -131,18 +77,16 @@ const transformEnhancedApiResponse = (apiResponse: any): ConflictCheckResponse =
     success: true, // 如果能到这里说明请求成功
     message: '冲突检测完成',
     error: undefined,
-    data: {
+      data: {
+      checkId: data.checkId || `REQ_${Date.now()}`,
       hasConflict: data.hasConflict || false,
       riskAssessment: {
-        overallRisk: data.riskAssessment?.overallRisk || 'NONE',
+        overallRisk: data.riskAssessment?.overallRisk || 'MINIMAL',
         riskScore: data.riskAssessment?.riskScore || 0,
-        riskFactors: {
-          conflictType: 'multiple',
-          casePriority: 'medium',
-          timeProximity: 30,
-          industryOverlap: 0.5,
-          financialImpact: 'medium',
-        },
+        riskReason: data.riskAssessment?.riskReason || '',
+        requiresApproval: data.riskAssessment?.requiresApproval || false,
+        riskFactors: data.riskAssessment?.riskFactors || [],
+        mitigation: data.riskAssessment?.mitigation || [],
       },
       conflictCases: (data.conflictCases || []).map((item: any) => ({
         caseId: item.caseId || '-1',
@@ -153,17 +97,19 @@ const transformEnhancedApiResponse = (apiResponse: any): ConflictCheckResponse =
         riskScore: data.riskAssessment?.riskScore || 50,
         description: item.description || '检测到利益冲突',
       })),
-      competitionAnalysis: data.competitionAnalysis,
-      recommendations: data.recommendations || [],
-      analysisSummary: {
-        totalCasesChecked: data.checkStatistics?.totalCasesChecked || 0,
-        directConflicts: data.conflictCases?.length || 0,
-        industryConflicts: 0,
-        nameSimilarityCases: 0,
-        relatedConflicts: 0,
+      checkStatistics: data.checkStatistics || {
+        totalCasesChecked: 0,
+        clientHistoryCases: 0,
+        relatedPartiesChecked: 0,
+        corporateRelationsChecked: 0,
+        timeRange: '',
+        searchScope: '',
+        startTime: new Date().toISOString(),
+        endTime: new Date().toISOString(),
       },
-      detectionTime: data.checkTime || new Date().toISOString(),
-      requestId: `REQ_${Date.now()}`,
+      recommendations: data.recommendations || [],
+      checkTime: data.checkTime || new Date().toISOString(),
+      duration: data.duration || 0,
     },
     requestId: `REQ_${Date.now()}`,
     timestamp: new Date().toISOString(),
@@ -222,69 +168,6 @@ export const performConflictCheck = async (
   } catch (error: any) {
     console.error(`💥 增强冲突检查API调用失败 (尝试 ${attempt}):`, error)
 
-    // 如果增强API失败，回退到旧API
-    if (attempt === 1) {
-      console.log('🔄 回退到旧版API...')
-      try {
-        const legacyResponse = await performConflictCheckLegacy({
-          project_name: formData.caseName,
-          client_name: formData.clientName || clientInfo?.name,
-          opposite_parties: formData.opponentInfo,
-          project_type: formData.caseType,
-          team_members: [],
-          description: formData.description,
-        })
-
-        return {
-          success: true,
-          message: '冲突检测完成（使用备用API）',
-          error: undefined,
-          data: {
-            hasConflict: legacyResponse.has_conflict,
-            riskAssessment: {
-              overallRisk: legacyResponse.conflict_level.toUpperCase(),
-              riskScore:
-                legacyResponse.conflict_level === 'high'
-                  ? 80
-                  : legacyResponse.conflict_level === 'medium'
-                    ? 50
-                    : 20,
-              riskFactors: {
-                conflictType: 'detected',
-                casePriority: 'medium',
-                timeProximity: 30,
-                industryOverlap: 0.3,
-                financialImpact: 'medium',
-              },
-            },
-            conflictCases: legacyResponse.conflicts.map((c) => ({
-              caseId: c.id.toString(),
-              clientName: c.entity,
-              caseName: c.project,
-              conflictType: c.type,
-              riskLevel: c.level.toUpperCase(),
-              riskScore: c.level === 'high' ? 80 : c.level === 'medium' ? 50 : 20,
-              description: c.description,
-            })),
-            recommendations: [],
-            analysisSummary: {
-              totalCasesChecked: legacyResponse.conflicts.length,
-              directConflicts: legacyResponse.conflicts.length,
-              industryConflicts: 0,
-              nameSimilarityCases: 0,
-              relatedConflicts: 0,
-            },
-            detectionTime: new Date().toISOString(),
-            requestId: `LEGACY_${Date.now()}`,
-          },
-          requestId: `LEGACY_${Date.now()}`,
-          timestamp: new Date().toISOString(),
-        }
-      } catch (legacyError) {
-        console.error('备用API也失败了:', legacyError)
-      }
-    }
-
     // 标准化错误处理
     const standardError = conflictErrorHandler.handleError(error, 'ConflictCheck')
 
@@ -329,7 +212,7 @@ export const performConflictCheckLegacy = (
     clientName: params.client_name,
     caseType: params.project_type,
     opponentInfo: params.opposite_parties,
-    // 其他字段使用默认值
+    // 旧版接口未提供的字段使用保守配置
     searchYears: 5,
     searchDepth: SearchDepth.DEEP,
     includeCorporateRelations: true,
@@ -337,11 +220,12 @@ export const performConflictCheckLegacy = (
 
   // 调用新方法
   return performConflictCheck(formData)
-    .then((response) => {
+    .then((response): ConflictResult => {
       // 转换为旧格式
       return {
         has_conflict: response.data?.hasConflict || false,
         conflict_level:
+          response.data?.riskAssessment?.overallRisk === 'CRITICAL' ||
           response.data?.riskAssessment?.overallRisk === 'HIGH'
             ? 'high'
             : response.data?.riskAssessment?.overallRisk === 'MEDIUM'
@@ -355,18 +239,13 @@ export const performConflictCheckLegacy = (
             type: c.conflictType,
             entity: c.clientName,
             project: c.caseName,
-            level: c.riskLevel.toLowerCase() as 'low' | 'medium' | 'high',
+            level: (['critical', 'high'].includes(c.riskLevel.toLowerCase()) ? 'high' : c.riskLevel.toLowerCase() === 'medium' ? 'medium' : 'low') as 'low' | 'medium' | 'high',
             description: c.description,
           })) || [],
       }
     })
-    .catch((error) => {
-      console.error('Legacy conflict check failed:', error)
-      return {
-        has_conflict: false,
-        conflict_level: 'none',
-        conflicts: [],
-      }
+    .catch((error): never => {
+      throw error
     })
 }
 
@@ -381,4 +260,82 @@ export const performPreScreen = (params: {
   third_parties?: string[]
 }): Promise<any> => {
   return post<any>('/conflict-check/pre-screen', params)
+}
+
+// ==================== 新增 API 方法 ====================
+
+import { get } from './http'
+import type {
+  ConflictCheckCreateRequest,
+  ConflictCheckRecord,
+  ConflictCheckListParams,
+  ConflictCheckListResponse,
+  EntitySearchParams,
+  EntitySearchResult,
+} from '@/types/conflict'
+
+/**
+ * 创建冲突检查记录
+ * @param data 冲突检查创建请求
+ * @returns 创建的冲突检查记录
+ */
+export const createConflictCheck = async (
+  data: ConflictCheckCreateRequest,
+): Promise<ConflictCheckRecord> => {
+  const response = await post<ConflictCheckRecord>('/conflict/checks', data)
+  return response
+}
+
+/**
+ * 获取冲突检查详情
+ * @param id 冲突检查ID
+ * @returns 冲突检查详情
+ */
+export const getConflictCheck = async (id: number): Promise<ConflictCheckRecord> => {
+  const response = await get<ConflictCheckRecord>(`/conflict/checks/${id}`)
+  return response
+}
+
+/**
+ * 获取冲突检查列表
+ * @param params 查询参数
+ * @returns 冲突检查列表
+ */
+export const listConflictChecks = async (
+  params?: ConflictCheckListParams,
+): Promise<ConflictCheckListResponse> => {
+  const queryParams = new URLSearchParams()
+  if (params) {
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        queryParams.append(key, String(value))
+      }
+    })
+  }
+  const url = `/conflict/checks${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
+  const response = await get<ConflictCheckListResponse>(url)
+  return response
+}
+
+/**
+ * 搜索实体（支持模糊搜索）
+ * @param keyword 搜索关键词
+ * @param params 额外搜索参数
+ * @returns 实体搜索结果
+ */
+export const searchEntities = async (
+  keyword: string,
+  params?: Omit<EntitySearchParams, 'keyword'>,
+): Promise<EntitySearchResult[]> => {
+  const queryParams = new URLSearchParams({ query: keyword })
+  if (params) {
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        queryParams.append(key, String(value))
+      }
+    })
+  }
+  const url = `/conflict-v2/entities/search${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
+  const response = await get<EntitySearchResult[] | { results?: EntitySearchResult[] }>(url)
+  return Array.isArray(response) ? response : response.results || []
 }

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 Law OA Go 启动中..."
+echo "🚀 示例律师事务所OA 启动中..."
 
 # 停止现有进程
 echo "🛑 停止现有服务..."

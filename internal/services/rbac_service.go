@@ -12,20 +12,20 @@ import (
 
 // RBACService 角色权限服务
 type RBACService struct {
-	db              *gorm.DB
-	roleRepo        *repositories.RoleRepository
-	permissionRepo  *repositories.PermissionRepository
-	userRoleRepo    *repositories.UserRoleRepository
+	db                 *gorm.DB
+	roleRepo           *repositories.RoleRepository
+	permissionRepo     *repositories.PermissionRepository
+	userRoleRepo       *repositories.UserRoleRepository
 	rolePermissionRepo *repositories.RolePermissionRepository
 }
 
 // NewRBACService 创建RBAC服务
 func NewRBACService(db *gorm.DB) *RBACService {
 	return &RBACService{
-		db:              db,
-		roleRepo:        repositories.NewRoleRepository(db),
-		permissionRepo:  repositories.NewPermissionRepository(db),
-		userRoleRepo:    repositories.NewUserRoleRepository(db),
+		db:                 db,
+		roleRepo:           repositories.NewRoleRepository(db),
+		permissionRepo:     repositories.NewPermissionRepository(db),
+		userRoleRepo:       repositories.NewUserRoleRepository(db),
 		rolePermissionRepo: repositories.NewRolePermissionRepository(db),
 	}
 }
@@ -35,7 +35,7 @@ func NewRBACService(db *gorm.DB) *RBACService {
 // CreateRoleRequest 创建角色请求
 type CreateRoleRequest struct {
 	Name        string `json:"name" binding:"required,min=2,max=50"`
-	Code        string `json:"code" binding:"required,min=2,max=50,alphanum"`
+	Code        string `json:"code" binding:"required,min=2,max=50"`
 	Description string `json:"description" binding:"max=255"`
 	Status      string `json:"status" binding:"oneof=active inactive"`
 	SortOrder   int    `json:"sort_order"`
@@ -62,6 +62,10 @@ type RolePageResponse struct {
 
 // CreateRole 创建角色
 func (s *RBACService) CreateRole(ctx context.Context, req *CreateRoleRequest) (*models.Role, error) {
+	if req.Status == "" {
+		req.Status = "active"
+	}
+
 	// 检查角色名称是否已存在
 	existingRole, _ := s.roleRepo.FindByName(ctx, req.Name)
 	if existingRole != nil {
@@ -195,20 +199,20 @@ func (s *RBACService) UpdateRoleStatus(ctx context.Context, id uint, status stri
 
 // CreatePermissionRequest 创建权限请求
 type CreatePermissionRequest struct {
-	Name      string  `json:"name" binding:"required,min=2,max=100"`
-	Code      string  `json:"code" binding:"required,min=2,max=100,alphanum"`
-	Type      string  `json:"type" binding:"oneof=menu button api"`
-	ParentID  *uint   `json:"parent_id"`
-	Path      string  `json:"path" binding:"max=255"`
-	Icon      string  `json:"icon" binding:"max=100"`
-	Component string  `json:"component" binding:"max=255"`
-	SortOrder int     `json:"sort_order"`
-	Status    string  `json:"status" binding:"oneof=active inactive"`
+	Name      string `json:"name" binding:"required,min=2,max=100"`
+	Code      string `json:"code" binding:"required,min=2,max=100"`
+	Type      string `json:"type" binding:"oneof=menu button api"`
+	ParentID  *uint  `json:"parent_id"`
+	Path      string `json:"path" binding:"max=255"`
+	Icon      string `json:"icon" binding:"max=100"`
+	Component string `json:"component" binding:"max=255"`
+	SortOrder int    `json:"sort_order"`
+	Status    string `json:"status" binding:"oneof=active inactive"`
 }
 
 // UpdatePermissionRequest 更新权限请求
 type UpdatePermissionRequest struct {
-	Code      string `json:"code" binding:"required,min=2,max=100,alphanum"`
+	Code      string `json:"code" binding:"required,min=2,max=100"`
 	Name      string `json:"name" binding:"required,min=2,max=100"`
 	Type      string `json:"type" binding:"oneof=menu button api"`
 	ParentID  *uint  `json:"parent_id"`
@@ -224,6 +228,13 @@ type PermissionQueryParams = repositories.PermissionQueryParams
 
 // CreatePermission 创建权限
 func (s *RBACService) CreatePermission(ctx context.Context, req *CreatePermissionRequest) (*models.Permission, error) {
+	if req.Type == "" {
+		req.Type = "menu"
+	}
+	if req.Status == "" {
+		req.Status = "active"
+	}
+
 	// 检查权限代码是否已存在
 	existingPermission, _ := s.permissionRepo.FindByCode(ctx, req.Code)
 	if existingPermission != nil {

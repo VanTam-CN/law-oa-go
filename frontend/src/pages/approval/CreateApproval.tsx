@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router'
-import { Card, Form, Input, Select, Button, message, Radio, DatePicker, Space } from 'antd'
-import { ArrowLeftOutlined } from '@ant-design/icons'
-import { createApproval, submitApproval } from '@/services/approval'
+import { Card, Form, Input, Select, Button, Radio, DatePicker, Space, Row, Col, Divider } from 'antd'
+import { ArrowLeftOutlined, FileTextOutlined } from '@ant-design/icons'
+import { createApproval, submitApproval, listApprovalTemplates, type ApprovalTemplate } from '@/services/approval'
 import { getUserInfo } from '@/utils/storage'
+import { message } from '@/utils/messageHelper'
 import dayjs from 'dayjs'
 import './CreateApproval.less'
 
@@ -13,6 +14,7 @@ const { RangePicker } = DatePicker
 
 interface CreateApprovalFormValues {
   type: string
+  templateName?: string
   title: string
   content: string
   urgency: 'normal' | 'urgent' | 'very_urgent'
@@ -23,9 +25,13 @@ const CreateApproval: React.FC = () => {
   const navigate = useNavigate()
   const [form] = Form.useForm<CreateApprovalFormValues>()
   const [loading, setLoading] = useState<boolean>(false)
+  const [templatesLoading, setTemplatesLoading] = useState<boolean>(false)
   const [currentUserId, setCurrentUserId] = useState<string>('')
   const [currentUserName, setCurrentUserName] = useState<string>('')
   const [currentUserDepartment, setCurrentUserDepartment] = useState<string>('')
+  const [templates, setTemplates] = useState<ApprovalTemplate[]>([])
+  const [selectedTemplate, setSelectedTemplate] = useState<ApprovalTemplate | null>(null)
+  const [useTemplate, setUseTemplate] = useState<boolean>(false)
 
   // 获取当前用户信息
   useEffect(() => {
@@ -40,33 +46,81 @@ const CreateApproval: React.FC = () => {
       setCurrentUserName('系统管理员')
       setCurrentUserDepartment('综合管理部')
     }
+
+    // 加载审批模板
+    fetchTemplates()
   }, [])
+
+  const fetchTemplates = async () => {
+    try {
+      setTemplatesLoading(true)
+      const data = await listApprovalTemplates()
+      setTemplates(data)
+    } catch (error) {
+      console.error('Failed to fetch templates:', error)
+      // 静默失败，不影响主流程
+    } finally {
+      setTemplatesLoading(false)
+    }
+  }
+
+  const handleTemplateChange = (templateName: string) => {
+    const template = templates.find((t) => t.name === templateName)
+    if (template) {
+      setSelectedTemplate(template)
+      // 自动填充表单
+      form.setFieldsValue({
+        title: template.display_name,
+        content: template.description || '',
+        type: template.category,
+      })
+    }
+  }
 
   const handleSubmit = async (values: CreateApprovalFormValues) => {
     try {
       setLoading(true)
 
-      // 第一步：创建审批（草稿状态）
-      const approvalData = {
-        type: values.type,
-        title: values.title,
-        content: values.content,
-        applicant: currentUserName,
-        applicantId: currentUserId, // 修复：使用字符串类型
-        department: currentUserDepartment,
-        urgency: values.urgency,
+      if (useTemplate && selectedTemplate) {
+        // 使用模板创建审批
+        const formData = {
+          ...values,
+          templateName: selectedTemplate.name,
+        }
+        const createdApproval = await createApproval({
+          type: selectedTemplate.category,
+          title: values.title,
+          content: values.content,
+          applicant: currentUserName,
+          applicantId: currentUserId,
+          department: currentUserDepartment,
+          urgency: values.urgency,
+          metadata: {
+            template_name: selectedTemplate.name,
+            form_data: formData,
+          },
+        })
+
+        const submittedApproval = await submitApproval(createdApproval.id)
+        message.success('审批申请提交成功')
+        navigate('/approval')
+      } else {
+        // 普通创建审批
+        const approvalData = {
+          type: values.type,
+          title: values.title,
+          content: values.content,
+          applicant: currentUserName,
+          applicantId: currentUserId,
+          department: currentUserDepartment,
+          urgency: values.urgency,
+        }
+
+        const createdApproval = await createApproval(approvalData)
+        const submittedApproval = await submitApproval(createdApproval.id)
+        message.success('审批申请提交成功')
+        navigate('/approval')
       }
-
-      const createdApproval = await createApproval(approvalData)
-      console.log('✅ 审批创建成功 - ID:', createdApproval.id, '状态:', createdApproval.status)
-
-      // 第二步：立即提交审批（分配审批人并变更状态为submitted）
-      const submittedApproval = await submitApproval(createdApproval.id)
-      console.log('✅ 审批提交成功 - ID:', submittedApproval.id, '状态:', submittedApproval.status)
-      console.log('✅ 当前审批人:', submittedApproval.currentApprover, 'ID:', submittedApproval.currentApproverId)
-
-      message.success('审批申请提交成功')
-      navigate('/approval')
     } catch (error) {
       console.error('Failed to create/submit approval:', error)
       message.error('提交失败，请重试')
@@ -108,6 +162,52 @@ const CreateApproval: React.FC = () => {
             urgency: 'normal',
           }}
         >
+          {/* 模板选择 */}
+          {templates.length > 0 && (
+            <>
+              <Divider orientation='left'>快捷方式</Divider>
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item label='使用模板'>
+                    <Select
+                      placeholder='选择审批模板（可选）'
+                      allowClear
+                      loading={templatesLoading}
+                      onChange={(value) => {
+                        if (value) {
+                          setUseTemplate(true)
+                          handleTemplateChange(value)
+                        } else {
+                          setUseTemplate(false)
+                          setSelectedTemplate(null)
+                        }
+                      }}
+                    >
+                      {templates.map((template) => (
+                        <Option key={template.name} value={template.name}>
+                          <Space>
+                            <FileTextOutlined />
+                            {template.display_name}
+                          </Space>
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  {selectedTemplate && (
+                    <div style={{ marginTop: 30, color: '#666', fontSize: '12px' }}>
+                      {selectedTemplate.description}
+                    </div>
+                  )}
+                </Col>
+              </Row>
+              <Divider />
+            </>
+          )}
+
+          <Divider orientation='left'>基本信息</Divider>
+
           <Form.Item
             name='type'
             label='申请类型'

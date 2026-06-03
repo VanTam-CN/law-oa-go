@@ -133,7 +133,7 @@ export const getFileList = async (params?: {
     total: number
     page: number
     page_size: number
-  }>('/documents', { params: requestParams })
+  }>('/documents', requestParams)
 
   return response
 }

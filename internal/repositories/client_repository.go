@@ -56,6 +56,40 @@ func (r *ClientRepositoryImpl) Update(ctx context.Context, client *models.Client
 	return r.db.WithContext(ctx).Save(client).Error
 }
 
+// UpdateWithVersion 使用乐观锁版本号更新客户信息
+func (r *ClientRepositoryImpl) UpdateWithVersion(ctx context.Context, client *models.Client, expectedVersion uint) error {
+	updates := map[string]interface{}{
+		"name":           client.Name,
+		"type":           client.Type,
+		"email":          client.Email,
+		"phone":          client.Phone,
+		"address":        client.Address,
+		"company":        client.Company,
+		"id_card":        client.IDCard,
+		"industry":       client.Industry,
+		"contact_person": client.ContactPerson,
+		"contact_phone":  client.ContactPhone,
+		"source":         client.Source,
+		"notes":          client.Notes,
+		"status":         client.Status,
+		"version":        expectedVersion + 1,
+	}
+
+	result := r.db.WithContext(ctx).
+		Model(&models.Client{}).
+		Where("id = ? AND version = ?", client.ID, expectedVersion).
+		Updates(updates)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return ErrClientVersionConflict
+	}
+
+	client.Version = expectedVersion + 1
+	return nil
+}
+
 // Delete 删除客户
 func (r *ClientRepositoryImpl) Delete(ctx context.Context, id uint) error {
 	result := r.db.WithContext(ctx).Delete(&models.Client{}, id)

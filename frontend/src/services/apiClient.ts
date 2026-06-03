@@ -4,6 +4,7 @@
  */
 
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
+import { getToken } from '@/utils/storage'
 
 // 统一API响应格式
 export interface ApiResponse<T = any> {
@@ -76,7 +77,7 @@ class ModernApiClient {
         config.headers['X-Request-ID'] = this.generateRequestId()
 
         // 添加认证token
-        const token = localStorage.getItem('auth_token')
+        const token = getToken()
         if (token) {
           config.headers.Authorization = `Bearer ${token}`
         }
@@ -249,6 +250,3 @@ export const modernApiClient = new ModernApiClient()
 
 // 为了向后兼容，导出为 apiClient
 export const apiClient = modernApiClient
-
-// 导出类型
-export type { ApiResponse, PaginatedResponse, ApiError, ApiRequestConfig }

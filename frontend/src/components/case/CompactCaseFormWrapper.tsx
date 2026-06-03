@@ -398,7 +398,7 @@ const CompactCaseFormWrapper: React.FC<CompactCaseFormWrapperProps> = ({
               style={{ width: '100%' }}
               placeholder='请输入金额'
               formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-              parser={(value) => value!.replace(/\$\s?|(,*)/g, '')}
+              parser={(value) => (value || '').replace(/\$\s?|(,*)/g, '')}
             />
           </Form.Item>
         </Col>

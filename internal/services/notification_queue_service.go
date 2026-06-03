@@ -80,12 +80,12 @@ type NotificationQueueResponse struct {
 	SentRetryCount       int               `json:"sent_retry_count"`
 	ErrorMessage         string            `json:"error_message,omitempty"`
 	// 关联数据
-	Case                 *CaseInfo         `json:"case,omitempty"`
+	Case                 *NotificationCaseInfo `json:"case,omitempty"`
 	Template             *TemplateInfo     `json:"template,omitempty"`
 }
 
-// CaseInfo 案件信息
-type CaseInfo struct {
+// NotificationCaseInfo 通知用案件信息
+type NotificationCaseInfo struct {
 	ID    uint   `json:"id"`
 	Title string `json:"title"`
 }

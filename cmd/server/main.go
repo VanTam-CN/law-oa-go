@@ -13,7 +13,11 @@ import (
 	"gorm.io/gorm"
 	"law-oa-go/internal/config"
 	"law-oa-go/internal/middleware"
+	"law-oa-go/internal/models"
+	"law-oa-go/internal/repositories"
 	"law-oa-go/internal/router"
+	"law-oa-go/internal/security"
+	"law-oa-go/internal/services"
 )
 
 func main() {
@@ -40,11 +44,55 @@ func main() {
 
 	// 初始化监控（待实现）
 
-	// 创建路由器
+	// 自动迁移财务模型
+	if err := db.AutoMigrate(
+		&models.Contract{},
+		&models.PaymentMilestone{},
+		&models.Invoice{},
+		&models.Payment{},
+		&models.BadDebtRecord{},
+		&models.CommissionRecord{},
+		&models.CommissionRule{},
+		&models.FeeTemplate{},
+	); err != nil {
+		log.Printf("⚠️ 财务模型自动迁移失败: %v", err)
+	} else {
+		log.Println("✅ 财务模型自动迁移成功")
+	}
+// 自动迁移Sprint 1模型 (Entity/冲突检测/隔离墙)
+		if err := db.AutoMigrate(
+			&models.Entity{},
+			&models.EntityRelation{},
+			&models.EntityNameHistory{},
+			&models.CaseParty{},
+			&models.ConflictCheck{},
+			&models.ConflictDetail{},
+			&models.CaseEthicalWallWhitelist{},
+			&models.EthicalWallAccessLog{},
+		); err != nil {
+			log.Printf("⚠️ Sprint1模型自动迁移失败: %v", err)
+		} else {
+			log.Println("✅ Sprint1模型自动迁移成功")
+		}
+
 	app := gin.Default()
+
+	// 添加安全头部中间件
+	app.Use(middleware.SecurityHeaders())
+
+	// 添加CORS中间件（白名单模式，从 CORS_ALLOWED_ORIGINS 环境变量读取）
+	app.Use(middleware.CORS())
+
+	// 添加速率限制中间件（100 req/min per IP）
+	app.Use(security.RateLimiterMiddleware())
 
 	// 初始化路由系统
 	router.Init(app, db, redisClient, esClient)
+
+	// 启动 ES 同步服务（可选，ES不可用时不启动）
+	if esClient != nil {
+		startESSyncService(db, esClient)
+	}
 
 	// 启动服务器
 	addr := ":" + cfg.GetPort()
@@ -161,4 +209,38 @@ func initElasticsearch(cfg *config.Config) *elasticsearch.Client {
 
 	log.Println("Elasticsearch connected successfully")
 	return client
+}
+
+// startESSyncService 启动 Elasticsearch 同步服务
+func startESSyncService(db *gorm.DB, esClient *elasticsearch.Client) {
+	statuteRepo := repositories.NewLegalStatuteRepository(db)
+	esRepo := repositories.NewElasticsearchStatuteRepository(esClient)
+
+	syncService := services.NewElasticsearchSyncService(statuteRepo, esRepo)
+
+	ctx := context.Background()
+
+	// 在后台 goroutine 中启动同步工作器
+	go func() {
+		// 首次启动时执行一次全量同步（带指数退避重试）
+		log.Println("执行首次 Elasticsearch 全量同步...")
+		maxRetries := 3
+		for attempt := 1; attempt <= maxRetries; attempt++ {
+			if err := syncService.SyncAllStatutes(ctx); err != nil {
+				if attempt < maxRetries {
+					backoff := time.Duration(attempt*attempt) * time.Minute
+					log.Printf("首次全量同步失败(第%d次)，%v后重试: %v", attempt, backoff, err)
+					time.Sleep(backoff)
+					continue
+				}
+				log.Printf("首次全量同步失败(已重试%d次): %v", maxRetries, err)
+			}
+			break
+		}
+
+		// 启动定时同步工作器
+		syncService.StartSyncWorker(ctx)
+	}()
+
+	log.Println("Elasticsearch 同步服务已启动")
 }

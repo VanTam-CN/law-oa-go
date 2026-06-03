@@ -4,9 +4,9 @@
 
 ### 系统要求
 
-- Go 1.19+
-- Node.js 16+
-- MySQL 8.0+
+- Go 1.25+
+- Node.js 18+
+- MySQL 8.0+ 或 PostgreSQL 15+
 - Redis 6.0+
 - Git
 
@@ -14,7 +14,7 @@
 
 1. **克隆项目**
 ```bash
-git clone https://github.com/your-org/law-oa-go.git
+git clone https://github.com/VanTam-CN/law-oa-go.git
 cd law-oa-go
 ```
 
@@ -66,10 +66,7 @@ MCP_API_URL=https://mcp.example.com
 mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS law_oa CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
 # 运行迁移
-go run scripts/migrate.go
-
-# 创建初始数据
-go run scripts/seed.go
+go run ./cmd/migrate -migrations ./migrations up
 ```
 
 4. **前端环境配置**
@@ -116,11 +113,12 @@ npm run dev
 
 ```
 law-oa-go/
-├── cmd/                    # 应用程序入口
-│   └── server/
-│       └── main.go
+├── main.go                 # 默认应用入口
+├── cmd/                    # 辅助命令和备用入口
+│   ├── server/
+│   └── migrate/
 ├── internal/               # 内部包
-│   ├── api/               # API层
+│   ├── api/               # API helper / CRUD 基类
 │   ├── handlers/          # 处理器层
 │   ├── services/          # 业务逻辑层
 │   ├── repositories/      # 数据访问层
@@ -128,6 +126,7 @@ law-oa-go/
 │   ├── middleware/        # 中间件
 │   ├── common/            # 通用工具
 │   ├── errors/            # 错误处理
+│   ├── router/            # 路由注册
 │   └── config/            # 配置管理
 ├── frontend/              # 前端代码
 │   ├── src/
@@ -175,7 +174,7 @@ func (nf *NewFeature) TableName() string {
 
 func (nf *NewFeature) Validate() error {
     if nf.Name == "" {
-        return errors.New("名称不能为空")
+        return fmt.Errorf("名称不能为空")
     }
     return nil
 }

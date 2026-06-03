@@ -309,7 +309,7 @@ func (d *EventDispatcher) handleJudgmentReceived(ctx context.Context, event *Eve
 	caseType, _ := event.Metadata["case_type"].(string)
 
 	case_, err := d.caseRepo.FindByID(ctx, caseID)
-	if err != nil {
+	if err != nil || case_ == nil {
 		return fmt.Errorf("获取案件失败: %w", err)
 	}
 

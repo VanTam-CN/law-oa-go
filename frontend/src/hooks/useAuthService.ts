@@ -8,6 +8,7 @@ import { useMemo } from 'react'
 import { apiClient } from '../services/apiClient'
 import { useAppStore } from '../stores/useAppStore'
 import { User } from '../stores/useAppStore'
+import { clearStorage, getToken, getUserInfo } from '@/utils/storage'
 
 // 认证相关接口
 export interface LoginRequest {
@@ -66,17 +67,15 @@ export const useAuthState = () => {
     queryKey: queryKeys.auth,
     queryFn: async () => {
       // 从localStorage恢复认证状态
-      const token = localStorage.getItem('auth_token')
-      const userInfo = localStorage.getItem('user_info')
+      const token = getToken()
+      const userInfo = getUserInfo()
 
       if (token && userInfo) {
         try {
-          const user = JSON.parse(userInfo)
-          return { user, isAuthenticated: true }
+          return { user: userInfo, isAuthenticated: true }
         } catch (error) {
           console.error('Failed to parse user info:', error)
-          localStorage.removeItem('auth_token')
-          localStorage.removeItem('user_info')
+          clearStorage()
           return { user: null, isAuthenticated: false }
         }
       }
@@ -458,8 +457,8 @@ export const useAutoLogin = () => {
 
   return useMutation({
     mutationFn: async () => {
-      const token = localStorage.getItem('auth_token')
-      const userInfo = localStorage.getItem('user_info')
+      const token = getToken()
+      const userInfo = getUserInfo()
 
       if (!token || !userInfo) {
         throw new Error('没有找到认证信息')
@@ -483,8 +482,7 @@ export const useAutoLogin = () => {
     },
     onError: () => {
       // Token无效，清除本地存储
-      localStorage.removeItem('auth_token')
-      localStorage.removeItem('user_info')
+      clearStorage()
     },
   })
 }

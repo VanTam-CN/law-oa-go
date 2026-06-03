@@ -2,14 +2,29 @@ import { get, post, put, del } from './http'
 
 // 案件相关接口
 export interface CaseInfo {
+  id?: number
+  title?: string
   caseId?: number
   caseNo: string
   caseName: string
   caseType: string
   clientId: number | null
+  clientName?: string
+  client?: {
+    phone?: string
+    email?: string
+    address?: string
+  }
   lawyerId: number | null
+  lawyerName?: string
+  lawyer?: {
+    phone?: string
+    email?: string
+  }
   status: string
   description?: string
+  createdAt?: string
+  updatedAt?: string
   projectCode?: string
   contractAmount?: number
   startDate?: string

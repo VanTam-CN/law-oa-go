@@ -367,7 +367,11 @@ const ClientManagement: React.FC = () => {
     try {
       const values = await form.validateFields()
       if (editingClient) {
-        await clientService.updateClient(editingClient.id!, values)
+        if (editingClient.id == null) {
+          message.error('客户ID缺失，无法更新')
+          return
+        }
+        await clientService.updateClient(editingClient.id, values)
         message.success('更新成功')
       } else {
         await clientService.createClient(values)
@@ -507,7 +511,13 @@ const ClientManagement: React.FC = () => {
           <Tooltip title='删除'>
             <Popconfirm
               title='确定要删除这个客户吗？'
-              onConfirm={() => handleDelete(record.id!)}
+              onConfirm={() => {
+                if (record.id == null) {
+                  message.error('客户ID缺失，无法删除')
+                  return
+                }
+                handleDelete(record.id)
+              }}
               okText='确定'
               cancelText='取消'
             >

@@ -171,12 +171,12 @@ dev:
 .PHONY: migrate-up
 migrate-up:
 	@echo "执行数据库迁移..."
-	@migrate -path migrations -database "mysql://root:@tcp(localhost:3306)/law_oa" up
+	@go run ./cmd/migrate -migrations ./migrations up
 
 .PHONY: migrate-down
 migrate-down:
 	@echo "回滚数据库迁移..."
-	@migrate -path migrations -database "mysql://root:@tcp(localhost:3306)/law_oa" down
+	@go run ./cmd/migrate -migrations ./migrations down
 
 .PHONY: migrate-create
 migrate-create:

@@ -20,9 +20,9 @@ import {
   Modal,
   Descriptions,
   Tabs,
+  Form,
   Input,
   Select,
-  DatePicker,
   Row,
   Col,
   Statistic,
@@ -41,14 +41,13 @@ import {
   FilterOutlined,
   WalletOutlined,
   TransactionOutlined,
-  ExclamationCircleOutlined,
   CheckCircleOutlined,
 } from '@ant-design/icons'
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table'
 import dayjs from 'dayjs'
 import {
   getTrustAccounts,
-  getTrustAccount,
+  createTrustAccount,
   freezeTrustAccount,
   unfreezeTrustAccount,
   closeTrustAccount,
@@ -63,16 +62,15 @@ import {
   transactionStatusMap,
   formatAmount,
   formatDate,
-  currencySymbolMap,
 } from '@/services/trust'
 import { getClients } from '@/services/client'
 import type { Client } from '@/services/client'
 import './TrustAccountManagement.less'
 
 const { Option } = Select
-const { RangePicker } = DatePicker
 
 const TrustAccountManagement: React.FC = () => {
+  const [createForm] = Form.useForm()
   // 状态管理
   const [loading, setLoading] = useState(false)
   const [accounts, setAccounts] = useState<TrustAccount[]>([])
@@ -105,13 +103,14 @@ const TrustAccountManagement: React.FC = () => {
 
   // 创建账户弹窗
   const [createModalVisible, setCreateModalVisible] = useState(false)
+  const [createSubmitting, setCreateSubmitting] = useState(false)
 
   // 加载客户列表
   const loadClients = async () => {
     try {
-      const res = await getClients({ page: 1, page_size: 1000 })
-      if (res?.data) {
-        setClients(res.data)
+      const res = await getClients({ pageNum: 1, pageSize: 100 })
+      if (res?.list) {
+        setClients(res.list)
       }
     } catch (error) {
       console.error('加载客户列表失败:', error)
@@ -257,6 +256,33 @@ const TrustAccountManagement: React.FC = () => {
   const handleRefresh = () => {
     loadAccounts(pagination.current, pagination.pageSize)
     loadStats()
+  }
+
+  const handleCreateAccount = async () => {
+    try {
+      const values = await createForm.validateFields()
+      setCreateSubmitting(true)
+      const res = await createTrustAccount({
+        client_id: values.client_id,
+        currency: values.currency,
+        purpose_restriction: values.purpose_restriction,
+        authorized_uses: values.authorized_uses || [],
+      })
+
+      if (res?.data) {
+        message.success('代管款账户已创建')
+        setCreateModalVisible(false)
+        createForm.resetFields()
+        loadAccounts(1, pagination.pageSize)
+        loadStats()
+      }
+    } catch (error: any) {
+      if (!error?.errorFields) {
+        message.error(error?.response?.data?.message || error?.message || '创建账户失败')
+      }
+    } finally {
+      setCreateSubmitting(false)
+    }
   }
 
   // 初始化
@@ -427,7 +453,7 @@ const TrustAccountManagement: React.FC = () => {
       dataIndex: 'transaction_type',
       key: 'transaction_type',
       width: 100,
-      render: (type) => {
+      render: (type: TrustTransaction['transaction_type']) => {
         const config = transactionTypeMap[type]
         return (
           <Tag color={config.color}>
@@ -442,7 +468,7 @@ const TrustAccountManagement: React.FC = () => {
       key: 'amount',
       width: 150,
       render: (amount, record) => {
-        const isInflow = ['deposit', 'transfer_in', 'unfreeze'].includes(record.transaction_type)
+        const isInflow = record.transaction_type === 'deposit'
         return (
           <span style={{ color: isInflow ? '#3f8600' : '#cf1322', fontWeight: 600 }}>
             {isInflow ? '+' : '-'}
@@ -463,7 +489,7 @@ const TrustAccountManagement: React.FC = () => {
       dataIndex: 'status',
       key: 'status',
       width: 100,
-      render: (status) => {
+      render: (status: TrustTransaction['status']) => {
         const config = transactionStatusMap[status]
         return <Tag color={config.color}>{config.text}</Tag>
       },
@@ -546,7 +572,11 @@ const TrustAccountManagement: React.FC = () => {
             <Button icon={<ReloadOutlined />} onClick={handleRefresh}>
               刷新
             </Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateModalVisible(true)}>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setCreateModalVisible(true)}
+            >
               创建账户
             </Button>
           </Space>
@@ -573,7 +603,7 @@ const TrustAccountManagement: React.FC = () => {
                 style={{ width: '100%' }}
                 showSearch
                 filterOption={(input, option) =>
-                  (option?.children as string)?.toLowerCase().includes(input.toLowerCase())
+                  String(option?.children ?? '').toLowerCase().includes(input.toLowerCase())
                 }
               >
                 {clients.map((client) => (
@@ -607,7 +637,6 @@ const TrustAccountManagement: React.FC = () => {
                 <Option value="CNY">人民币</Option>
                 <Option value="USD">美元</Option>
                 <Option value="EUR">欧元</Option>
-                <Option value="HKD">港币</Option>
               </Select>
             </Col>
             <Col span={6}>
@@ -687,9 +716,9 @@ const TrustAccountManagement: React.FC = () => {
                 <Descriptions.Item label="创建时间" span={2}>
                   {formatDate(selectedAccount.created_at)}
                 </Descriptions.Item>
-                {selectedAccount.description && (
+                {selectedAccount.purpose_restriction && (
                   <Descriptions.Item label="备注" span={2}>
-                    {selectedAccount.description}
+                    {selectedAccount.purpose_restriction}
                   </Descriptions.Item>
                 )}
               </Descriptions>
@@ -768,17 +797,67 @@ const TrustAccountManagement: React.FC = () => {
       <Modal
         title="创建代管款账户"
         open={createModalVisible}
-        onCancel={() => setCreateModalVisible(false)}
+        onCancel={() => {
+          setCreateModalVisible(false)
+          createForm.resetFields()
+        }}
+        confirmLoading={createSubmitting}
         footer={[
-          <Button key="cancel" onClick={() => setCreateModalVisible(false)}>
+          <Button
+            key="cancel"
+            onClick={() => {
+              setCreateModalVisible(false)
+              createForm.resetFields()
+            }}
+          >
             取消
           </Button>,
-          <Button key="submit" type="primary" onClick={() => setCreateModalVisible(false)}>
+          <Button key="submit" type="primary" loading={createSubmitting} onClick={handleCreateAccount}>
             创建
           </Button>,
         ]}
       >
-        <p>创建账户功能待实现，请先选择客户和币种</p>
+        <Form
+          form={createForm}
+          layout="vertical"
+          initialValues={{ currency: 'CNY', authorized_uses: ['case_fee'] }}
+        >
+          <Form.Item
+            label="客户"
+            name="client_id"
+            rules={[{ required: true, message: '请选择客户' }]}
+          >
+            <Select
+              showSearch
+              placeholder="选择客户"
+              optionFilterProp="label"
+              options={clients
+                .filter((client) => client.id)
+                .map((client) => ({
+                  label: client.name,
+                  value: client.id,
+                }))}
+            />
+          </Form.Item>
+          <Form.Item label="币种" name="currency" rules={[{ required: true, message: '请选择币种' }]}>
+            <Select>
+              <Option value="CNY">人民币 CNY</Option>
+              <Option value="USD">美元 USD</Option>
+              <Option value="EUR">欧元 EUR</Option>
+            </Select>
+          </Form.Item>
+          <Form.Item label="授权用途" name="authorized_uses">
+            <Select mode="tags" placeholder="输入或选择资金用途">
+              <Option value="case_fee">案件费用</Option>
+              <Option value="court_fee">诉讼费</Option>
+              <Option value="evidence_fee">调查取证费</Option>
+              <Option value="settlement">和解款</Option>
+            </Select>
+          </Form.Item>
+          <Form.Item label="用途限制说明" name="purpose_restriction">
+            <Input.TextArea rows={3} maxLength={200} showCount placeholder="例如：仅限本案诉讼费和保全费支出" />
+          </Form.Item>
+        </Form>
       </Modal>
     </div>
   )

@@ -5,7 +5,7 @@
 
 import React, { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { RouterProvider } from 'react-router'
+import { BrowserRouter } from 'react-router'
 import { ConfigProvider } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
 import dayjs from 'dayjs'
@@ -19,14 +19,6 @@ import { QueryProvider } from './hooks/useQueryClient'
 import { useAppStore } from './stores/useAppStore'
 import { initializeApp } from './stores/useAppStore'
 
-// 导入路由配置
-import { createBrowserRouter } from 'react-router'
-
-// 导入页面组件
-import LoginPage from './pages/auth/Login'
-import DashboardPage from './pages/dashboard/Dashboard'
-import MainLayout from './layouts/MainLayout'
-
 // 导入样式
 import './index.css'
 import './assets/styles/design-tokens.css'
@@ -37,7 +29,6 @@ import App from './App'
 
 // 导入错误边界和加载状态
 import ErrorBoundary from './components/common/ErrorBoundary'
-import LoadingFallback from './components/common/LoadingFallback'
 
 // 导入开发工具（仅在开发环境）
 import DevTools from './components/devtools/DevTools'
@@ -48,36 +39,14 @@ import './utils/performance'
 // 配置dayjs
 dayjs.locale('zh-cn')
 
-// 创建路由配置
-const router = createBrowserRouter([
-  {
-    path: '/login',
-    element: <LoginPage />,
-  },
-  {
-    path: '/',
-    element: <MainLayout />,
-    children: [
-      {
-        index: true,
-        element: <DashboardPage />,
-      },
-    ],
-  },
-  {
-    path: '*',
-    element: <LoginPage />,
-  },
-])
-
 // 开发环境配置React Query
 if (import.meta.env.DEV) {
   // 全局设置React Query开发模式
-  globalThis.IS_REACT_ACT_ENVIRONMENT = true
+  ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 }
 
 // Suspense回退组件
-const SuspenseFallback: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+const SuspenseFallback: React.FC = () => (
   <div className='flex items-center justify-center min-h-screen'>
     <div className='text-center'>
       <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4' />
@@ -87,7 +56,8 @@ const SuspenseFallback: React.FC<{ children: React.ReactNode }> = ({ children })
 )
 
 const RootComponent: React.FC = () => {
-  const { preferences, updateTheme, theme } = useAppStore()
+  const { preferences, updateTheme } = useAppStore()
+  const theme = preferences.theme
 
   // 根据主题切换样式
   React.useEffect(() => {
@@ -140,13 +110,13 @@ const RootComponent: React.FC = () => {
               },
             }}
           >
-            <RouterProvider router={router}>
+            <BrowserRouter>
               <React.Suspense fallback={<SuspenseFallback />}>
                 <App />
                 {/* 开发工具 - 仅在开发环境显示 */}
                 {import.meta.env.DEV && <DevTools />}
               </React.Suspense>
-            </RouterProvider>
+            </BrowserRouter>
           </ConfigProvider>
         </QueryProvider>
       </ErrorBoundary>

@@ -21,8 +21,8 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 
 ## 1. Project Overview
 - **Vision**: 构建现代化的律师事务所办公自动化系统，为中小型律师事务所提供完整的数字化解决方案
-- **Current Phase**: v2.1.0 - 生产就绪阶段，核心功能已完成，搜索和文档管理功能开发中
-- **Key Architecture**: 单体架构设计，Go后端 + React前端，pg数据库 + Redis缓存
+- **Current Phase**: v2.4.0 - 生产就绪增强阶段，核心业务闭环和安全加固已完成，企业微信/移动端规划中
+- **Key Architecture**: 单体架构设计，Go后端 + React前端，支持 PostgreSQL/MySQL/SQLite + Redis缓存 + Elasticsearch搜索
 - **Development Strategy**: 采用分层架构，注重性能优化、安全性和可维护性
 
 ## 2. Project Structure
@@ -58,11 +58,10 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - 使用清晰的文件夹层次结构和一致的命名约定构建项目
 - 正确导入/导出 - 设计为可重用和可维护
 
-### Type Hints (REQUIRED)
-- **总是**为函数参数和返回值使用类型提示
-- 使用`from typing import`来处理复杂类型
-- 优先使用`Optional[T]`而不是`Union[T, None]`
-- 对数据结构使用Pydantic模型
+### Language Notes
+- 后端主要是 Go：遵循 `gofmt`、显式错误处理、构造函数注入和接口边界。
+- 前端主要是 React + TypeScript：保持现有 Ant Design、React Query、Redux/Zustand 组合。
+- 旧文档里提到 Python type hints / Pydantic 是模板残留，不适用于本项目常规开发。
 
 ### Naming Conventions
 - **Classes**: PascalCase (e.g., `VoicePipeline`)

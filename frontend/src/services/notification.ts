@@ -159,50 +159,50 @@ export const notificationQueueService = {
         total: number
         total_pages: number
       }
-    }>(`/notifications/queue${query ? `?${query}` : ''}`)
+    }>(`/notifications${query ? `?${query}` : ''}`)
   },
 
   // 获取通知队列统计
-  getQueueStats: () => get<NotificationQueueStats>('/notifications/queue/stats'),
+  getQueueStats: () => get<NotificationQueueStats>('/notifications/stats'),
 
   // 创建通知
   createNotification: (data: CreateNotificationRequest) =>
-    post<NotificationQueue>('/notifications/queue', data),
+    post<NotificationQueue>('/notifications', data),
 
   // 获取通知详情
   getNotificationById: (id: number) =>
-    get<NotificationQueue>(`/notifications/queue/${id}`),
+    get<NotificationQueue>(`/notifications/${id}`),
 
   // 更新通知
   updateNotification: (id: number, data: {
     subject?: string
     content?: string
     priority?: 'urgent' | 'normal' | 'low'
-  }) => put(`/notifications/queue/${id}`, data),
+  }) => put(`/notifications/${id}`, data),
 
   // 删除通知
   deleteNotification: (id: number) =>
-    del(`/notifications/queue/${id}`),
+    del(`/notifications/${id}`),
 
   // 审批通过通知
   approveNotification: (id: number) =>
-    post(`/notifications/queue/${id}/approve`),
+    post(`/notifications/${id}/approve`),
 
   // 审批拒绝通知
   rejectNotification: (id: number, reason: string) =>
-    post(`/notifications/queue/${id}/reject`, { reason }),
+    post(`/notifications/${id}/reject`, { reason }),
 
   // 批量确认通知
   batchConfirm: (ids: number[]) =>
-    post('/notifications/queue/batch-confirm', { ids }),
+    post('/notifications/batch/confirm', { ids }),
 
   // 批量取消通知
   batchCancel: (ids: number[]) =>
-    post('/notifications/queue/batch-cancel', { ids }),
+    post('/notifications/batch/cancel', { ids }),
 
   // 发送通知
   sendNotification: (id: number) =>
-    post(`/notifications/queue/${id}/send`),
+    post(`/notifications/${id}/send`),
 }
 
 // 通知模板服务
@@ -232,33 +232,33 @@ export const notificationTemplateService = {
         total: number
         total_pages: number
       }
-    }>(`/notifications/templates${query ? `?${query}` : ''}`)
+    }>(`/notification-templates${query ? `?${query}` : ''}`)
   },
 
   // 获取启用的模板列表
   getActiveTemplates: () =>
-    get<NotificationTemplate[]>('/notifications/templates/active'),
+    get<NotificationTemplate[]>('/notification-templates/active'),
 
   // 根据代码获取模板
   getTemplateByCode: (code: string) =>
-    get<NotificationTemplate>(`/notifications/templates/code/${code}`),
+    get<NotificationTemplate>(`/notification-templates/code/${code}`),
 
   // 创建模板
   createTemplate: (data: CreateTemplateRequest) =>
-    post<NotificationTemplate>('/notifications/templates', data),
+    post<NotificationTemplate>('/notification-templates', data),
 
   // 更新模板
   updateTemplate: (id: number, data: Partial<CreateTemplateRequest> & {
     is_active?: boolean
-  }) => put(`/notifications/templates/${id}`, data),
+  }) => put(`/notification-templates/${id}`, data),
 
   // 删除模板
   deleteTemplate: (id: number) =>
-    del(`/notifications/templates/${id}`),
+    del(`/notification-templates/${id}`),
 
   // 切换模板启用状态
   toggleActive: (id: number) =>
-    post<{ message: string; is_active: boolean }>(`/notifications/templates/${id}/toggle`),
+    post<{ message: string; is_active: boolean }>(`/notification-templates/${id}/toggle`),
 }
 
 // 状态映射

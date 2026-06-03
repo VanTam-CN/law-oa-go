@@ -171,7 +171,12 @@ func (hc *HealthChecker) Stop() {
 
 // runPeriodicChecks 运行定期检查
 func (hc *HealthChecker) runPeriodicChecks() {
-	ticker := time.NewTicker(hc.config.CheckInterval)
+	interval := hc.config.CheckInterval
+	if interval <= 0 {
+		interval = DefaultHealthConfig.CheckInterval
+	}
+
+	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
 	for {
@@ -282,7 +287,7 @@ func (hc *HealthChecker) GetLastResults() map[string]*HealthCheckResult {
 
 // IsHealthy 检查是否健康
 func (hc *HealthChecker) IsHealthy() bool {
-	results := hc.GetLastResults()
+	results := hc.RunChecks()
 	for _, result := range results {
 		if result.Status == StatusUnhealthy {
 			return false
@@ -322,12 +327,23 @@ func (dc *DatabaseHealthCheck) Check(ctx context.Context) *HealthCheckResult {
 		return result
 	}
 
-	// 执行更复杂的查询测试
+	// Query the database version. PostgreSQL/MySQL support version(); SQLite uses sqlite_version().
 	var version string
-	err = dc.db.QueryRowContext(ctx, "SELECT sqlite_version()").Scan(&version)
-	if err != nil {
+	if err = dc.db.QueryRowContext(ctx, "SELECT version()").Scan(&version); err != nil {
+		if sqliteErr := dc.db.QueryRowContext(ctx, "SELECT sqlite_version()").Scan(&version); sqliteErr != nil {
+			var probe int
+			if probeErr := dc.db.QueryRowContext(ctx, "SELECT 1").Scan(&probe); probeErr != nil {
+				result.Status = StatusDegraded
+				result.Message = fmt.Sprintf("数据库查询失败: %v", err)
+				result.Duration = time.Since(start).Milliseconds()
+				return result
+			}
+			version = "unknown"
+		}
+	}
+	if version == "" {
 		result.Status = StatusDegraded
-		result.Message = fmt.Sprintf("数据库查询失败: %v", err)
+		result.Message = "数据库版本信息为空"
 		result.Duration = time.Since(start).Milliseconds()
 		return result
 	}
@@ -454,7 +470,33 @@ func (cc *ConcurrencyHealthCheck) Check(ctx context.Context) *HealthCheckResult 
 		Status:    StatusHealthy,
 	}
 
-	metrics := cc.service.GetMetrics()
+	if cc.service == nil {
+		result.Status = StatusDegraded
+		result.Message = "并发服务未初始化"
+		result.Duration = time.Since(start).Milliseconds()
+		return result
+	}
+
+	var metrics *concurrency.PoolMetricsSnapshot
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				result.Status = StatusDegraded
+				result.Message = fmt.Sprintf("并发服务指标不可用: %v", r)
+			}
+		}()
+		metrics = cc.service.GetMetrics()
+	}()
+	if result.Status != StatusHealthy {
+		result.Duration = time.Since(start).Milliseconds()
+		return result
+	}
+	if metrics == nil {
+		result.Status = StatusDegraded
+		result.Message = "并发服务指标为空"
+		result.Duration = time.Since(start).Milliseconds()
+		return result
+	}
 
 	// 检查并发服务指标
 	result.Details = map[string]interface{}{
@@ -617,23 +659,27 @@ func (sc *StorageHealthCheck) Check(ctx context.Context) *HealthCheckResult {
 	totalSpace := stat.Blocks * uint64(stat.Bsize)
 	availableSpace := stat.Bavail * uint64(stat.Bsize)
 	usedSpace := totalSpace - availableSpace
-	usagePercentage := float64(usedSpace) / float64(totalSpace) * 100
+	usagePercentage := float64(0)
+	if totalSpace > 0 {
+		usagePercentage = float64(usedSpace) / float64(totalSpace) * 100
+	}
+	availableGB := float64(availableSpace) / 1024 / 1024 / 1024
 
 	result.Details = map[string]interface{}{
 		"path":               sc.path,
 		"total_space_gb":     float64(totalSpace) / 1024 / 1024 / 1024,
-		"available_space_gb": float64(availableSpace) / 1024 / 1024 / 1024,
+		"available_space_gb": availableGB,
 		"used_space_gb":      float64(usedSpace) / 1024 / 1024 / 1024,
 		"usage_percentage":   usagePercentage,
 	}
 
-	// 检查磁盘使用率
-	if usagePercentage > 90 {
+	// 检查磁盘空间：大容量磁盘使用率可能较高，但只要剩余空间充足就不应误报不可用。
+	if usagePercentage > 95 && availableGB < 2 {
 		result.Status = StatusUnhealthy
-		result.Message = fmt.Sprintf("磁盘使用率过高: %.2f%%", usagePercentage)
-	} else if usagePercentage > 80 {
+		result.Message = fmt.Sprintf("磁盘空间不足: 使用率 %.2f%%, 剩余 %.2fGB", usagePercentage, availableGB)
+	} else if usagePercentage > 90 && availableGB < 10 {
 		result.Status = StatusDegraded
-		result.Message = fmt.Sprintf("磁盘使用率较高: %.2f%%", usagePercentage)
+		result.Message = fmt.Sprintf("磁盘剩余空间偏低: 使用率 %.2f%%, 剩余 %.2fGB", usagePercentage, availableGB)
 	}
 
 	result.Duration = time.Since(start).Milliseconds()
@@ -682,7 +728,7 @@ func (esc *ElasticsearchHealthCheck) Check(ctx context.Context) *HealthCheckResu
 	// 由于我们的ES客户端设计问题，这里先返回健康状态
 	result.Details = map[string]interface{}{
 		"client_initialized": true,
-		"connection_status": "connected",
+		"connection_status":  "connected",
 	}
 
 	result.Message = "Elasticsearch连接正常"

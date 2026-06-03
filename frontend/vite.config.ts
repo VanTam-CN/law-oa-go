@@ -2,6 +2,8 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
+const apiProxyTarget = process.env.VITE_API_PROXY_TARGET || 'http://localhost:8080'
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -15,7 +17,7 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: apiProxyTarget,
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path,
@@ -26,23 +28,6 @@ export default defineConfig({
 
           proxy.on('proxyReq', (proxyReq, req, res) => {
             console.log(`[PROXY REQ] ${req.method} ${req.url} -> ${proxyReq.protocol}//${proxyReq.host}${proxyReq.path}`);
-          });
-
-          proxy.on('proxyRes', (proxyRes, req, res) => {
-            console.log(`[PROXY RES] ${proxyRes.statusCode} for ${req.url}`);
-          });
-        },
-      },
-      '/file': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
-        configure: (proxy, options) => {
-          proxy.on('error', (err, req, res) => {
-            console.error('[PROXY ERROR]:', err.message);
-          });
-
-          proxy.on('proxyReq', (proxyReq, req, res) => {
-            console.log(`[PROXY REQ] ${req.method} ${req.url}`);
           });
 
           proxy.on('proxyRes', (proxyRes, req, res) => {

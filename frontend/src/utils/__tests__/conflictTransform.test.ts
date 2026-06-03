@@ -116,14 +116,16 @@ describe('conflictTransform', () => {
 
       const errors = validateConflictCheckRequest(formData);
 
-      expect(errors).toHaveLength(3);
+      expect(errors).toHaveLength(4);
       expect(errors.map(e => e.field)).toContain('clientName');
+      expect(errors.map(e => e.field)).toContain('clientId');
       expect(errors.map(e => e.field)).toContain('caseName');
       expect(errors.map(e => e.field)).toContain('caseType');
     });
 
     it('应该验证字段长度', () => {
       const formData: ConflictCheckFormData = {
+        clientId: '1',
         caseName: 'a'.repeat(201),
         caseType: 'CIVIL',
         clientName: 'b'.repeat(101)
@@ -138,6 +140,7 @@ describe('conflictTransform', () => {
 
     it('应该验证搜索年限范围', () => {
       const formData: ConflictCheckFormData = {
+        clientId: '1',
         caseName: '测试案件',
         caseType: 'CIVIL',
         clientName: '测试客户',
@@ -152,6 +155,7 @@ describe('conflictTransform', () => {
 
     it('应该通过有效数据验证', () => {
       const formData: ConflictCheckFormData = {
+        clientId: '1',
         caseName: '测试案件',
         caseType: 'CIVIL',
         clientName: '测试客户',

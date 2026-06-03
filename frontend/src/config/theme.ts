@@ -98,7 +98,7 @@ export const antdTheme: ThemeConfig = {
     motionEaseInOut: 'cubic-bezier(0.4, 0, 0.2, 1)', // 缓入缓出
     motionEaseOut: 'cubic-bezier(0, 0, 0.2, 1)', // 缓出
     motionEaseIn: 'cubic-bezier(0.4, 0, 1, 1)', // 缓入
-  },
+  } as NonNullable<ThemeConfig['token']> & Record<string, unknown>,
 
   // ========================================
   // 组件级配置 (Component Tokens)
@@ -348,7 +348,7 @@ export const antdTheme: ThemeConfig = {
       borderRadius: 6,
       colorBgDefault: 'rgba(0, 0, 0, 0.85)',
     },
-  },
+  } as ThemeConfig['components'],
 
   // ========================================
   // 算法配置 (Algorithm)

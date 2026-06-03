@@ -1,0 +1,1588 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Law OA Image2 功能样例图库</title>
+    <style>
+        :root {
+            --bg: #f4efe7;
+            --paper: #fffdf9;
+            --paper-2: #f8f4ed;
+            --ink: #1f2a31;
+            --muted: #6d757c;
+            --line: #ded5c8;
+            --blue: #1f4d78;
+            --teal: #1a7a72;
+            --amber: #c98929;
+            --red: #b44949;
+            --shadow: 0 18px 60px rgba(30, 39, 46, 0.10);
+            --radius: 12px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at top left, rgba(201, 137, 41, 0.08), transparent 24%),
+                radial-gradient(circle at top right, rgba(31, 77, 120, 0.08), transparent 26%),
+                linear-gradient(180deg, #f9f5ee 0%, #f4efe7 100%);
+            font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+        }
+
+        a {
+            color: inherit;
+        }
+
+        .page {
+            max-width: 1560px;
+            margin: 0 auto;
+            padding: 28px;
+        }
+
+        .hero {
+            padding: 28px;
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            background:
+                linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(255, 249, 239, 0.94)),
+                repeating-linear-gradient(135deg, rgba(31, 77, 120, 0.03) 0 10px, rgba(201, 137, 41, 0.03) 10px 20px);
+            box-shadow: var(--shadow);
+        }
+
+        .eyebrow {
+            margin: 0 0 8px;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 34px;
+            line-height: 1.2;
+        }
+
+        .hero p {
+            max-width: 860px;
+            margin: 12px 0 0;
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+            margin-top: 22px;
+        }
+
+        .metric {
+            padding: 16px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: rgba(255, 255, 255, 0.78);
+        }
+
+        .metric strong {
+            display: block;
+            font-size: 28px;
+        }
+
+        .metric span {
+            display: block;
+            margin-top: 6px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto auto;
+            gap: 12px;
+            margin: 20px 0 18px;
+            padding: 14px;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: rgba(255, 253, 249, 0.92);
+            backdrop-filter: blur(16px);
+            box-shadow: 0 8px 28px rgba(30, 39, 46, 0.08);
+        }
+
+        .search {
+            width: 100%;
+            min-width: 0;
+            height: 44px;
+            padding: 0 14px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            background: var(--paper);
+            color: var(--ink);
+            outline-color: #89a8c4;
+        }
+
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .chip {
+            min-height: 44px;
+            padding: 0 14px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: var(--paper);
+            color: var(--ink);
+            cursor: pointer;
+        }
+
+        .chip.active {
+            border-color: rgba(31, 77, 120, 0.28);
+            background: #e9f0f6;
+            color: var(--blue);
+            font-weight: 700;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 8px;
+        }
+
+        .mode-toggle {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .gallery.compact {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .gallery.hidden,
+        .report-deck.hidden {
+            display: none;
+        }
+
+        .card {
+            overflow: hidden;
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            background: var(--paper);
+            box-shadow: var(--shadow);
+        }
+
+        .thumb {
+            position: relative;
+            display: block;
+            background: #ece6db;
+            aspect-ratio: 16 / 9;
+            overflow: hidden;
+            cursor: zoom-in;
+        }
+
+        .thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: transform 200ms ease;
+        }
+
+        .thumb:hover img {
+            transform: scale(1.02);
+        }
+
+        .badge-row {
+            position: absolute;
+            left: 14px;
+            right: 14px;
+            top: 14px;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            min-height: 28px;
+            padding: 0 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            backdrop-filter: blur(10px);
+        }
+
+        .badge.batch {
+            background: rgba(31, 77, 120, 0.86);
+            color: white;
+        }
+
+        .badge.domain {
+            background: rgba(255, 253, 249, 0.88);
+            color: var(--ink);
+        }
+
+        .card-body {
+            padding: 16px;
+        }
+
+        .title-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: start;
+        }
+
+        .card h2 {
+            margin: 0;
+            font-size: 19px;
+            line-height: 1.35;
+        }
+
+        .slug {
+            margin: 8px 0 0;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .desc {
+            margin: 12px 0 0;
+            color: var(--muted);
+            line-height: 1.65;
+            font-size: 14px;
+        }
+
+        .meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .meta span {
+            display: inline-flex;
+            align-items: center;
+            min-height: 28px;
+            padding: 0 10px;
+            border-radius: 999px;
+            background: var(--paper-2);
+            color: var(--muted);
+            font-size: 12px;
+            border: 1px solid var(--line);
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 38px;
+            padding: 0 14px;
+            border-radius: 10px;
+            border: 1px solid var(--line);
+            text-decoration: none;
+            background: white;
+        }
+
+        .button.primary {
+            background: var(--blue);
+            border-color: var(--blue);
+            color: white;
+        }
+
+        .section-title {
+            margin: 28px 0 14px;
+            font-size: 14px;
+            color: var(--muted);
+            font-weight: 700;
+        }
+
+        .report-deck {
+            display: grid;
+            gap: 24px;
+        }
+
+        .report-section {
+            overflow: hidden;
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            background: rgba(255, 253, 249, 0.92);
+            box-shadow: var(--shadow);
+        }
+
+        .report-head {
+            display: grid;
+            grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.8fr);
+            gap: 22px;
+            padding: 22px;
+            background:
+                linear-gradient(140deg, rgba(255, 255, 255, 0.92), rgba(252, 246, 236, 0.92)),
+                repeating-linear-gradient(135deg, rgba(31, 77, 120, 0.03) 0 10px, rgba(201, 137, 41, 0.03) 10px 20px);
+        }
+
+        .report-cover {
+            position: relative;
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            overflow: hidden;
+            aspect-ratio: 16 / 9;
+            background: #ede5d7;
+            cursor: zoom-in;
+        }
+
+        .report-cover img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .report-cover-note {
+            position: absolute;
+            left: 16px;
+            bottom: 16px;
+            max-width: calc(100% - 32px);
+            padding: 12px 14px;
+            border-radius: 14px;
+            background: rgba(17, 26, 34, 0.70);
+            color: white;
+            backdrop-filter: blur(14px);
+        }
+
+        .report-cover-note strong,
+        .report-cover-note span {
+            display: block;
+        }
+
+        .report-cover-note span {
+            margin-top: 4px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.78);
+        }
+
+        .report-summary {
+            display: grid;
+            align-content: start;
+            gap: 14px;
+        }
+
+        .report-summary h2 {
+            margin: 0;
+            font-size: 28px;
+            line-height: 1.2;
+        }
+
+        .report-summary p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        .storyline {
+            display: grid;
+            gap: 8px;
+            padding: 14px;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.72);
+        }
+
+        .storyline strong {
+            font-size: 13px;
+        }
+
+        .storyline ul {
+            margin: 0;
+            padding-left: 18px;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .report-stats {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .report-stats div {
+            padding: 12px;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.82);
+        }
+
+        .report-stats strong,
+        .report-stats span {
+            display: block;
+        }
+
+        .report-stats strong {
+            font-size: 22px;
+        }
+
+        .report-stats span {
+            margin-top: 4px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .report-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+            padding: 0 22px 22px;
+        }
+
+        .report-item {
+            display: grid;
+            grid-template-columns: 220px minmax(0, 1fr);
+            gap: 14px;
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            background: var(--paper);
+            overflow: hidden;
+        }
+
+        .report-item-thumb {
+            background: #ece6db;
+            aspect-ratio: 16 / 10;
+            overflow: hidden;
+            cursor: zoom-in;
+        }
+
+        .report-item-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .report-item-body {
+            padding: 14px 14px 14px 0;
+            display: grid;
+            align-content: start;
+            gap: 10px;
+        }
+
+        .report-item-body h3 {
+            margin: 0;
+            font-size: 18px;
+            line-height: 1.35;
+        }
+
+        .report-item-body p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.65;
+            font-size: 14px;
+        }
+
+        .empty {
+            display: none;
+            padding: 48px 20px;
+            border: 1px dashed var(--line);
+            border-radius: 16px;
+            text-align: center;
+            color: var(--muted);
+            background: rgba(255, 253, 249, 0.7);
+        }
+
+        .lightbox {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(18, 22, 26, 0.88);
+            z-index: 30;
+        }
+
+        .lightbox.open {
+            display: flex;
+        }
+
+        .lightbox-panel {
+            width: min(1440px, 100%);
+            max-height: 100%;
+            overflow: auto;
+            border-radius: 16px;
+            background: #10161c;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+        }
+
+        .lightbox-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            align-items: center;
+            padding: 16px 18px;
+            color: white;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .lightbox-head h3 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .lightbox-head p {
+            margin: 6px 0 0;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.72);
+        }
+
+        .close {
+            min-width: 40px;
+            height: 40px;
+            border: 0;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.10);
+            color: white;
+            font-size: 22px;
+            cursor: pointer;
+        }
+
+        .lightbox-image {
+            padding: 16px;
+        }
+
+        .lightbox-image img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 12px;
+        }
+
+        .presenter {
+            position: fixed;
+            inset: 0;
+            display: none;
+            background:
+                radial-gradient(circle at top left, rgba(201, 137, 41, 0.12), transparent 20%),
+                radial-gradient(circle at top right, rgba(31, 77, 120, 0.12), transparent 22%),
+                #0f151a;
+            color: white;
+            z-index: 40;
+        }
+
+        .presenter.open {
+            display: grid;
+            grid-template-columns: minmax(0, 1.45fr) 360px;
+        }
+
+        .presenter-stage {
+            min-width: 0;
+            padding: 24px;
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr) auto;
+            gap: 18px;
+        }
+
+        .presenter-topbar,
+        .presenter-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .presenter-topbar {
+            padding: 14px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(18px);
+        }
+
+        .presenter-topbar h3,
+        .presenter-topbar p,
+        .presenter-panel h3,
+        .presenter-panel p {
+            margin: 0;
+        }
+
+        .presenter-topbar p {
+            margin-top: 4px;
+            color: rgba(255, 255, 255, 0.72);
+            font-size: 13px;
+        }
+
+        .presenter-media {
+            position: relative;
+            min-height: 0;
+            display: grid;
+            place-items: center;
+            border-radius: 22px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.04);
+            box-shadow: 0 22px 90px rgba(0, 0, 0, 0.35);
+        }
+
+        .presenter-media img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            background: #131a21;
+        }
+
+        .presenter-chip-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .presenter-chip,
+        .presenter-control,
+        .presenter-close {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 40px;
+            padding: 0 14px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+        }
+
+        .presenter-control,
+        .presenter-close {
+            cursor: pointer;
+        }
+
+        .presenter-control.active {
+            background: rgba(43, 125, 214, 0.22);
+            border-color: rgba(143, 188, 240, 0.4);
+        }
+
+        .presenter-nav {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .presenter-progress {
+            width: 100%;
+            height: 8px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            overflow: hidden;
+        }
+
+        .presenter-progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #d8a247, #5aa7c1);
+            transition: width 220ms ease;
+        }
+
+        .presenter-panel {
+            padding: 24px 22px;
+            border-left: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.04);
+            display: grid;
+            align-content: start;
+            gap: 16px;
+            overflow: auto;
+        }
+
+        .presenter-section {
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .presenter-section .eyebrow {
+            color: rgba(255, 255, 255, 0.56);
+        }
+
+        .presenter-section p {
+            color: rgba(255, 255, 255, 0.82);
+            line-height: 1.7;
+        }
+
+        .presenter-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .presenter-list button {
+            text-align: left;
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            background: rgba(255, 255, 255, 0.04);
+            color: white;
+            cursor: pointer;
+        }
+
+        .presenter-list button.active {
+            background: rgba(43, 125, 214, 0.18);
+            border-color: rgba(143, 188, 240, 0.34);
+        }
+
+        .presenter-list strong,
+        .presenter-list span {
+            display: block;
+        }
+
+        .presenter-list span {
+            margin-top: 4px;
+            color: rgba(255, 255, 255, 0.62);
+            font-size: 12px;
+        }
+
+        @media (max-width: 1180px) {
+            .gallery,
+            .gallery.compact {
+                grid-template-columns: 1fr;
+            }
+
+            .report-head,
+            .report-grid,
+            .report-item {
+                grid-template-columns: 1fr;
+            }
+
+            .report-item-body {
+                padding: 0 14px 14px;
+            }
+
+            .metrics {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .toolbar {
+                grid-template-columns: 1fr;
+            }
+
+            .presenter.open {
+                grid-template-columns: 1fr;
+            }
+
+            .presenter-panel {
+                border-left: 0;
+                border-top: 1px solid rgba(255, 255, 255, 0.12);
+            }
+        }
+
+        @media (max-width: 720px) {
+            .page {
+                padding: 16px;
+            }
+
+            .hero,
+            .toolbar {
+                padding: 16px;
+            }
+
+            h1 {
+                font-size: 28px;
+            }
+
+            .metrics {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <section class="hero">
+            <p class="eyebrow">Law OA / Image2 Feature Gallery</p>
+            <h1>Law OA 功能样例图库</h1>
+            <p>这套 gallery 汇总了 4 个批次共 19 张高保真样例图，覆盖接案、客户、冲突、审批、文档协同、财务与管理分析。点击缩略图可全屏预览，点击按钮可打开原图或对应 prompt。</p>
+            <div class="metrics">
+                <div class="metric">
+                    <strong>19</strong>
+                    <span>已生成页面样例</span>
+                </div>
+                <div class="metric">
+                    <strong>4</strong>
+                    <span>业务闭环批次</span>
+                </div>
+                <div class="metric">
+                    <strong>12+</strong>
+                    <span>覆盖核心功能域</span>
+                </div>
+                <div class="metric">
+                    <strong>16:9</strong>
+                    <span>统一桌面端画幅</span>
+                </div>
+            </div>
+        </section>
+
+        <div class="toolbar">
+            <input id="searchInput" class="search" type="search" placeholder="搜索标题、模块、批次或关键词">
+            <div id="batchFilters" class="filters"></div>
+            <div class="view-toggle">
+                <div class="mode-toggle">
+                    <button class="chip active" id="regularViewBtn" type="button">标准视图</button>
+                    <button class="chip" id="compactViewBtn" type="button">紧凑视图</button>
+                    <button class="chip" id="reportViewBtn" type="button">汇报模式</button>
+                    <button class="chip" id="presenterBtn" type="button">演示模式</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title" id="resultSummary">全部结果</div>
+        <div id="gallery" class="gallery"></div>
+        <div id="reportDeck" class="report-deck hidden"></div>
+        <div id="emptyState" class="empty">没有匹配结果。请调整搜索词或切换批次。</div>
+    </div>
+
+    <div id="lightbox" class="lightbox" aria-hidden="true">
+        <div class="lightbox-panel">
+            <div class="lightbox-head">
+                <div>
+                    <h3 id="lightboxTitle"></h3>
+                    <p id="lightboxMeta"></p>
+                </div>
+                <button id="closeLightbox" class="close" type="button" aria-label="关闭">×</button>
+            </div>
+            <div class="lightbox-image">
+                <img id="lightboxImg" alt="">
+            </div>
+        </div>
+    </div>
+
+    <div id="presenter" class="presenter" aria-hidden="true">
+        <div class="presenter-stage">
+            <div class="presenter-topbar">
+                <div>
+                    <h3 id="presenterTitle">演示模式</h3>
+                    <p id="presenterMeta">按当前筛选结果顺序播放</p>
+                </div>
+                <div class="presenter-chip-row">
+                    <span class="presenter-chip" id="presenterCounter">1 / 19</span>
+                    <span class="presenter-chip" id="presenterBatch">Batch 01</span>
+                    <button id="toggleAutoplayBtn" class="presenter-control" type="button">自动播放</button>
+                    <button id="closePresenter" class="presenter-close" type="button">退出</button>
+                </div>
+            </div>
+            <div class="presenter-media">
+                <img id="presenterImage" alt="">
+            </div>
+            <div class="presenter-footer">
+                <div class="presenter-nav">
+                    <button id="prevSlideBtn" class="presenter-control" type="button">上一页 ↑</button>
+                    <button id="nextSlideBtn" class="presenter-control" type="button">下一页 ↓</button>
+                    <a id="presenterPromptLink" class="presenter-control" href="#" target="_blank" rel="noopener noreferrer">查看 Prompt</a>
+                    <a id="presenterImageLink" class="presenter-control" href="#" target="_blank" rel="noopener noreferrer">打开原图</a>
+                </div>
+                <div style="min-width: 240px; width: 36%;">
+                    <div class="presenter-progress">
+                        <div id="presenterProgressBar" class="presenter-progress-bar"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <aside class="presenter-panel">
+            <section class="presenter-section">
+                <p class="eyebrow">当前页面</p>
+                <h3 id="presenterPageTitle">页面标题</h3>
+                <p id="presenterPageDesc">页面说明</p>
+            </section>
+            <section class="presenter-section">
+                <p class="eyebrow">讲述重点</p>
+                <p id="presenterStory">这页适合讲什么、放在什么顺序里。</p>
+            </section>
+            <section class="presenter-section">
+                <p class="eyebrow">快捷目录</p>
+                <div id="presenterList" class="presenter-list"></div>
+            </section>
+            <section class="presenter-section">
+                <p class="eyebrow">操作说明</p>
+                <p>键盘支持 `↑ / ←` 上一页，`↓ / → / Space` 下一页，`A` 开关自动播放，`Esc` 退出演示。</p>
+            </section>
+        </aside>
+    </div>
+
+    <script>
+        const items = [
+            {
+                id: "01-dashboard-command-center",
+                title: "工作台指挥中心",
+                batch: "Batch 01",
+                batchKey: "batch-01",
+                domain: "核心接案闭环",
+                role: "管理合伙人 / 合规律师",
+                keywords: "dashboard workbench command center 工作台 待办 审批 风险",
+                description: "聚合待办、冲突复核、审批提醒、案件阶段、回款预警和活动流，适合作为系统首页与管理驾驶舱。",
+                image: "./generated/batch-01/01-dashboard-command-center.png",
+                prompt: "./prompts/batch-01/01-dashboard-command-center.md"
+            },
+            {
+                id: "02-client-master-profile",
+                title: "客户主档案",
+                batch: "Batch 01",
+                batchKey: "batch-01",
+                domain: "核心接案闭环",
+                role: "律师 / 助理 / 客户经理",
+                keywords: "client profile 客户 档案 关联方 联系人 别名",
+                description: "展示客户主体信息、联系人、别名、关联实体、历史委托和数据完整度，用于接案前主数据确认。",
+                image: "./generated/batch-01/02-client-master-profile.png",
+                prompt: "./prompts/batch-01/02-client-master-profile.md"
+            },
+            {
+                id: "03-case-intake-workbench",
+                title: "接案工作台",
+                batch: "Batch 01",
+                batchKey: "batch-01",
+                domain: "核心接案闭环",
+                role: "接案律师 / 风控人员",
+                keywords: "case intake 接案 建案 matter team checklist",
+                description: "多段式接案录入界面，包含客户、对方当事人、团队、费用模式与完整度检查，并可触发冲突检测。",
+                image: "./generated/batch-01/03-case-intake-workbench.png",
+                prompt: "./prompts/batch-01/03-case-intake-workbench.md"
+            },
+            {
+                id: "04-conflict-check-results",
+                title: "利益冲突检查结果",
+                batch: "Batch 01",
+                batchKey: "batch-01",
+                domain: "核心接案闭环",
+                role: "合规复核人 / 负责律师",
+                keywords: "conflict results 利益冲突 风险 穿透 证据链",
+                description: "突出高风险命中、三层实体穿透、证据链和处理建议，是整套图库里最核心的风控界面之一。",
+                image: "./generated/batch-01/04-conflict-check-results.png",
+                prompt: "./prompts/batch-01/04-conflict-check-results.md"
+            },
+            {
+                id: "05-approval-decision-flow",
+                title: "冲突联动审批",
+                batch: "Batch 01",
+                batchKey: "batch-01",
+                domain: "核心接案闭环",
+                role: "审批人 / 合伙人 / 运营",
+                keywords: "approval workflow 审批 冲突 决策 SLA",
+                description: "把审批节点、冲突摘要、附件和意见流放到一个决策页面里，适合展示案件与合规联动。",
+                image: "./generated/batch-01/05-approval-decision-flow.png",
+                prompt: "./prompts/batch-01/05-approval-decision-flow.md"
+            },
+            {
+                id: "06-conflict-review-board",
+                title: "冲突复核看板",
+                batch: "Batch 02",
+                batchKey: "batch-02",
+                domain: "风控与隔离闭环",
+                role: "合规团队 / 风控经理",
+                keywords: "review board 看板 冲突复核 red list orange list",
+                description: "按不可豁免、可豁免、待补证据分流复核任务，强调分派、时限和升级处理。",
+                image: "./generated/batch-02/06-conflict-review-board.png",
+                prompt: "./prompts/batch-02/06-conflict-review-board.md"
+            },
+            {
+                id: "07-ethical-wall-control",
+                title: "伦理墙控制台",
+                batch: "Batch 02",
+                batchKey: "batch-02",
+                domain: "风控与隔离闭环",
+                role: "合规管理员 / IT 管理员",
+                keywords: "ethical wall 伦理墙 白名单 访问日志 安全",
+                description: "按案件启停隔离墙，管理白名单和访问日志，控制台感很强，适合做安全与合规能力展示。",
+                image: "./generated/batch-02/07-ethical-wall-control.png",
+                prompt: "./prompts/batch-02/07-ethical-wall-control.md"
+            },
+            {
+                id: "08-waiver-disclosure-flow",
+                title: "披露与豁免流程",
+                batch: "Batch 02",
+                batchKey: "batch-02",
+                domain: "风控与隔离闭环",
+                role: "合规专员 / 客户关系经理",
+                keywords: "waiver disclosure 豁免 披露 知情同意 签署",
+                description: "围绕披露事实、风险解释、签署状态和豁免决定构建正式的文书流转界面。",
+                image: "./generated/batch-02/08-waiver-disclosure-flow.png",
+                prompt: "./prompts/batch-02/08-waiver-disclosure-flow.md"
+            },
+            {
+                id: "09-risk-audit-trail",
+                title: "风险审计留痕",
+                batch: "Batch 02",
+                batchKey: "batch-02",
+                domain: "风控与隔离闭环",
+                role: "审计人员 / 合规负责人",
+                keywords: "audit trail 审计 留痕 timeline history",
+                description: "以时间线方式回放检查、决策、审批和重试动作，强调可追溯、可审计。",
+                image: "./generated/batch-02/09-risk-audit-trail.png",
+                prompt: "./prompts/batch-02/09-risk-audit-trail.md"
+            },
+            {
+                id: "10-document-library",
+                title: "文档库",
+                batch: "Batch 03",
+                batchKey: "batch-03",
+                domain: "文档协同闭环",
+                role: "律师 / 助理 / 文档管理员",
+                keywords: "document library 文档库 文件夹 预览 版本 回收站",
+                description: "目录树、列表、右侧预览和版本状态都很完整，是文档协同批次里最成熟的一张图。",
+                image: "./generated/batch-03/10-document-library.png",
+                prompt: "./prompts/batch-03/10-document-library.md"
+            },
+            {
+                id: "11-onlyoffice-editor",
+                title: "OnlyOffice 在线编辑",
+                batch: "Batch 03",
+                batchKey: "batch-03",
+                domain: "文档协同闭环",
+                role: "律师 / 审阅人 / 助理",
+                keywords: "onlyoffice editor 在线编辑 评论 锁 版本",
+                description: "展示文档在线编辑、评论、版本状态和案件上下文，突出文档协作能力。",
+                image: "./generated/batch-03/11-onlyoffice-editor.png",
+                prompt: "./prompts/batch-03/11-onlyoffice-editor.md"
+            },
+            {
+                id: "12-case-folder-template",
+                title: "卷宗目录模板",
+                batch: "Batch 03",
+                batchKey: "batch-03",
+                domain: "文档协同闭环",
+                role: "助理 / 文档管理员",
+                keywords: "case folder template 卷宗 目录 模板 树",
+                description: "用于定义诉讼与非诉的标准目录结构，并把模板应用到案件文件树。",
+                image: "./generated/batch-03/12-case-folder-template.png",
+                prompt: "./prompts/batch-03/12-case-folder-template.md"
+            },
+            {
+                id: "13-inbox-task-center",
+                title: "待办中心",
+                batch: "Batch 03",
+                batchKey: "batch-03",
+                domain: "文档协同闭环",
+                role: "律师 / 助理 / 审批人",
+                keywords: "inbox task center 待办 收件箱 延后 完成",
+                description: "集中处理未读事项、逾期提醒、审批任务和延后项，适合展示日常工作流入口。",
+                image: "./generated/batch-03/13-inbox-task-center.png",
+                prompt: "./prompts/batch-03/13-inbox-task-center.md"
+            },
+            {
+                id: "14-notification-queue",
+                title: "通知队列",
+                batch: "Batch 03",
+                batchKey: "batch-03",
+                domain: "文档协同闭环",
+                role: "运营管理员 / 审批人",
+                keywords: "notification queue 通知 模板 队列 审批 发送",
+                description: "围绕通知草稿、模板、审批和发送动作组织运营工作面，和待办中心形成配套。",
+                image: "./generated/batch-03/14-notification-queue.png",
+                prompt: "./prompts/batch-03/14-notification-queue.md"
+            },
+            {
+                id: "15-finance-contract-overview",
+                title: "合同与财务总览",
+                batch: "Batch 04",
+                batchKey: "batch-04",
+                domain: "经营与分析闭环",
+                role: "财务经理 / 合伙人",
+                keywords: "finance contract overview 合同 回款 里程碑 风险",
+                description: "把合同额、回款、里程碑、应收风险和信托账户概况整合到一个经营视角页面里。",
+                image: "./generated/batch-04/15-finance-contract-overview.png",
+                prompt: "./prompts/batch-04/15-finance-contract-overview.md"
+            },
+            {
+                id: "16-invoice-payment-tracker",
+                title: "发票与回款跟踪",
+                batch: "Batch 04",
+                batchKey: "batch-04",
+                domain: "经营与分析闭环",
+                role: "财务专员 / Billing",
+                keywords: "invoice payment 发票 回款 账龄 应收",
+                description: "聚焦开票状态、到期日、账龄和回款明细，适合呈现收费与催收流程。",
+                image: "./generated/batch-04/16-invoice-payment-tracker.png",
+                prompt: "./prompts/batch-04/16-invoice-payment-tracker.md"
+            },
+            {
+                id: "17-commission-rule-center",
+                title: "分成规则中心",
+                batch: "Batch 04",
+                batchKey: "batch-04",
+                domain: "经营与分析闭环",
+                role: "财务负责人 / 管理合伙人",
+                keywords: "commission rule 分成 规则 绩效 fee-sharing",
+                description: "集中配置计费方式、奖金、成本扣除和规则生效期，偏经营制度控制。",
+                image: "./generated/batch-04/17-commission-rule-center.png",
+                prompt: "./prompts/batch-04/17-commission-rule-center.md"
+            },
+            {
+                id: "18-trust-account-dashboard",
+                title: "信托账户总览",
+                batch: "Batch 04",
+                batchKey: "batch-04",
+                domain: "经营与分析闭环",
+                role: "财务 / 合规",
+                keywords: "trust account 信托账户 交易 余额 预警",
+                description: "面向资金托管场景，突出余额、交易台账、最低余额告警和案件资金关联。",
+                image: "./generated/batch-04/18-trust-account-dashboard.png",
+                prompt: "./prompts/batch-04/18-trust-account-dashboard.md"
+            },
+            {
+                id: "19-analytics-executive-dashboard",
+                title: "管理层分析仪表板",
+                batch: "Batch 04",
+                batchKey: "batch-04",
+                domain: "经营与分析闭环",
+                role: "管理合伙人 / 运营总监",
+                keywords: "analytics executive dashboard 分析 经营 风险 效率",
+                description: "面向管理层的综合分析页，关注案件、收入、冲突命中、审批效率和团队利用率。",
+                image: "./generated/batch-04/19-analytics-executive-dashboard.png",
+                prompt: "./prompts/batch-04/19-analytics-executive-dashboard.md"
+            }
+        ];
+
+        const gallery = document.getElementById("gallery");
+        const reportDeck = document.getElementById("reportDeck");
+        const batchFilters = document.getElementById("batchFilters");
+        const searchInput = document.getElementById("searchInput");
+        const emptyState = document.getElementById("emptyState");
+        const resultSummary = document.getElementById("resultSummary");
+        const regularViewBtn = document.getElementById("regularViewBtn");
+        const compactViewBtn = document.getElementById("compactViewBtn");
+        const reportViewBtn = document.getElementById("reportViewBtn");
+        const presenterBtn = document.getElementById("presenterBtn");
+        const lightbox = document.getElementById("lightbox");
+        const lightboxImg = document.getElementById("lightboxImg");
+        const lightboxTitle = document.getElementById("lightboxTitle");
+        const lightboxMeta = document.getElementById("lightboxMeta");
+        const closeLightbox = document.getElementById("closeLightbox");
+        const presenter = document.getElementById("presenter");
+        const presenterTitle = document.getElementById("presenterTitle");
+        const presenterMeta = document.getElementById("presenterMeta");
+        const presenterCounter = document.getElementById("presenterCounter");
+        const presenterBatch = document.getElementById("presenterBatch");
+        const presenterImage = document.getElementById("presenterImage");
+        const presenterPageTitle = document.getElementById("presenterPageTitle");
+        const presenterPageDesc = document.getElementById("presenterPageDesc");
+        const presenterStory = document.getElementById("presenterStory");
+        const presenterList = document.getElementById("presenterList");
+        const presenterProgressBar = document.getElementById("presenterProgressBar");
+        const prevSlideBtn = document.getElementById("prevSlideBtn");
+        const nextSlideBtn = document.getElementById("nextSlideBtn");
+        const closePresenter = document.getElementById("closePresenter");
+        const toggleAutoplayBtn = document.getElementById("toggleAutoplayBtn");
+        const presenterPromptLink = document.getElementById("presenterPromptLink");
+        const presenterImageLink = document.getElementById("presenterImageLink");
+
+        let activeBatch = "all";
+        let searchTerm = "";
+        let viewMode = "regular";
+        let presenterItems = [];
+        let presenterIndex = 0;
+        let autoplayTimer = null;
+        let autoplayEnabled = false;
+
+        const batchMeta = {
+            "batch-01": {
+                label: "Batch 01",
+                title: "核心接案闭环",
+                summary: "从工作台开始，依次讲客户建档、接案录入、利益冲突识别和审批决策，适合第一次介绍产品主流程。",
+                storyline: ["先讲首页如何聚合今日优先级。", "再讲客户和案件如何把主数据补齐。", "最后落到冲突检查和审批联动。"]
+            },
+            "batch-02": {
+                label: "Batch 02",
+                title: "风控与隔离闭环",
+                summary: "这一批适合讲差异化合规能力，包括冲突复核、伦理墙、豁免披露和全链路审计留痕。",
+                storyline: ["先展示复核看板如何分派风险。", "再讲伦理墙如何限制访问。", "最后用披露和审计页证明可追溯。"]
+            },
+            "batch-03": {
+                label: "Batch 03",
+                title: "文档协同闭环",
+                summary: "围绕办案日常协作展开，覆盖文档库、在线编辑、卷宗模板、待办与通知。",
+                storyline: ["先讲文档库和卷宗目录。", "再讲在线编辑与评论。", "最后用待办和通知收束团队协作。"]
+            },
+            "batch-04": {
+                label: "Batch 04",
+                title: "经营与分析闭环",
+                summary: "面向财务与管理层，展示合同、回款、分成规则、信托账户和经营分析。",
+                storyline: ["先从合同与回款总览切入。", "再讲计费制度与信托账户。", "最后用管理看板收束经营视角。"]
+            }
+        };
+
+        function makeFilter(label, key) {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "chip";
+            button.textContent = label;
+            button.dataset.batch = key;
+            button.addEventListener("click", () => {
+                activeBatch = key;
+                document.querySelectorAll("#batchFilters .chip").forEach((chip) => {
+                    chip.classList.toggle("active", chip.dataset.batch === key);
+                });
+                render();
+            });
+            return button;
+        }
+
+        function buildFilters() {
+            batchFilters.appendChild(makeFilter("全部批次", "all"));
+            const batches = [...new Set(items.map((item) => item.batch))];
+            batches.forEach((batch) => {
+                batchFilters.appendChild(makeFilter(batch, batch.toLowerCase().replace(" ", "-")));
+            });
+            batchFilters.firstChild.classList.add("active");
+        }
+
+        function openLightbox(item) {
+            lightboxImg.src = item.image;
+            lightboxImg.alt = item.title;
+            lightboxTitle.textContent = item.title;
+            lightboxMeta.textContent = `${item.batch} · ${item.domain} · ${item.role}`;
+            lightbox.classList.add("open");
+            lightbox.setAttribute("aria-hidden", "false");
+        }
+
+        function closeViewer() {
+            lightbox.classList.remove("open");
+            lightbox.setAttribute("aria-hidden", "true");
+            lightboxImg.src = "";
+        }
+
+        function stopAutoplay() {
+            autoplayEnabled = false;
+            toggleAutoplayBtn.classList.remove("active");
+            toggleAutoplayBtn.textContent = "自动播放";
+            if (autoplayTimer) {
+                clearInterval(autoplayTimer);
+                autoplayTimer = null;
+            }
+        }
+
+        function nextSlide() {
+            if (!presenterItems.length) return;
+            presenterIndex = (presenterIndex + 1) % presenterItems.length;
+            updatePresenter();
+        }
+
+        function prevSlide() {
+            if (!presenterItems.length) return;
+            presenterIndex = (presenterIndex - 1 + presenterItems.length) % presenterItems.length;
+            updatePresenter();
+        }
+
+        function startAutoplay() {
+            if (!presenterItems.length) return;
+            stopAutoplay();
+            autoplayEnabled = true;
+            toggleAutoplayBtn.classList.add("active");
+            toggleAutoplayBtn.textContent = "停止自动播放";
+            autoplayTimer = setInterval(nextSlide, 4500);
+        }
+
+        function updatePresenter() {
+            if (!presenterItems.length) {
+                return;
+            }
+
+            const item = presenterItems[presenterIndex];
+            const meta = batchMeta[item.batchKey];
+            presenterTitle.textContent = `演示模式 · ${meta.title}`;
+            presenterMeta.textContent = `${meta.label} · 当前筛选结果顺序播放`;
+            presenterCounter.textContent = `${presenterIndex + 1} / ${presenterItems.length}`;
+            presenterBatch.textContent = item.batch;
+            presenterImage.src = item.image;
+            presenterImage.alt = item.title;
+            presenterPageTitle.textContent = item.title;
+            presenterPageDesc.textContent = item.description;
+            presenterStory.textContent = `${item.role} 视角。建议在讲到「${meta.title}」时，用这一页说明：${item.description}`;
+            presenterPromptLink.href = item.prompt;
+            presenterImageLink.href = item.image;
+            presenterProgressBar.style.width = `${((presenterIndex + 1) / presenterItems.length) * 100}%`;
+
+            presenterList.innerHTML = "";
+            presenterItems.forEach((entry, index) => {
+                const button = document.createElement("button");
+                button.type = "button";
+                button.classList.toggle("active", index === presenterIndex);
+                button.innerHTML = `<strong>${index + 1}. ${entry.title}</strong><span>${entry.batch} · ${entry.domain}</span>`;
+                button.addEventListener("click", () => {
+                    presenterIndex = index;
+                    updatePresenter();
+                });
+                presenterList.appendChild(button);
+            });
+        }
+
+        function openPresenter() {
+            presenterItems = getFilteredItems();
+            if (!presenterItems.length) {
+                return;
+            }
+            presenterIndex = 0;
+            updatePresenter();
+            presenter.classList.add("open");
+            presenter.setAttribute("aria-hidden", "false");
+        }
+
+        function closePresenterMode() {
+            presenter.classList.remove("open");
+            presenter.setAttribute("aria-hidden", "true");
+            presenterImage.src = "";
+            stopAutoplay();
+        }
+
+        function getFilteredItems() {
+            return items.filter((item) => {
+                const batchMatch = activeBatch === "all" || item.batchKey === activeBatch;
+                const searchText = `${item.title} ${item.domain} ${item.role} ${item.keywords} ${item.description}`.toLowerCase();
+                const searchMatch = searchText.includes(searchTerm.toLowerCase());
+                return batchMatch && searchMatch;
+            });
+        }
+
+        function renderGallery(filtered) {
+            gallery.innerHTML = "";
+            gallery.classList.remove("hidden");
+            reportDeck.classList.add("hidden");
+
+            filtered.forEach((item) => {
+                const card = document.createElement("article");
+                card.className = "card";
+                card.innerHTML = `
+                    <div class="thumb">
+                        <div class="badge-row">
+                            <span class="badge batch">${item.batch}</span>
+                            <span class="badge domain">${item.domain}</span>
+                        </div>
+                        <img src="${item.image}" alt="${item.title}">
+                    </div>
+                    <div class="card-body">
+                        <div class="title-row">
+                            <div>
+                                <h2>${item.title}</h2>
+                                <p class="slug">${item.id}</p>
+                            </div>
+                        </div>
+                        <p class="desc">${item.description}</p>
+                        <div class="meta">
+                            <span>${item.role}</span>
+                            <span>${item.domain}</span>
+                        </div>
+                        <div class="actions">
+                            <a class="button primary" href="${item.image}" target="_blank" rel="noopener noreferrer">打开原图</a>
+                            <a class="button" href="${item.prompt}" target="_blank" rel="noopener noreferrer">查看 Prompt</a>
+                        </div>
+                    </div>
+                `;
+
+                card.querySelector(".thumb").addEventListener("click", () => openLightbox(item));
+                gallery.appendChild(card);
+            });
+        }
+
+        function renderReport(filtered) {
+            reportDeck.innerHTML = "";
+            gallery.classList.add("hidden");
+            reportDeck.classList.remove("hidden");
+
+            const grouped = Object.keys(batchMeta)
+                .map((batchKey) => ({
+                    batchKey,
+                    meta: batchMeta[batchKey],
+                    items: filtered.filter((item) => item.batchKey === batchKey)
+                }))
+                .filter((group) => group.items.length);
+
+            grouped.forEach((group) => {
+                const cover = group.items[0];
+                const section = document.createElement("section");
+                section.className = "report-section";
+                section.innerHTML = `
+                    <div class="report-head">
+                        <div class="report-cover">
+                            <img src="${cover.image}" alt="${cover.title}">
+                            <div class="report-cover-note">
+                                <strong>${cover.title}</strong>
+                                <span>${group.meta.summary}</span>
+                            </div>
+                        </div>
+                        <div class="report-summary">
+                            <p class="eyebrow">${group.meta.label}</p>
+                            <h2>${group.meta.title}</h2>
+                            <p>${group.meta.summary}</p>
+                            <div class="report-stats">
+                                <div><strong>${group.items.length}</strong><span>本批次页面</span></div>
+                                <div><strong>${new Set(group.items.map((item) => item.role)).size}</strong><span>覆盖角色</span></div>
+                                <div><strong>16:9</strong><span>展示画幅</span></div>
+                            </div>
+                            <div class="storyline">
+                                <strong>推荐讲述顺序</strong>
+                                <ul>${group.meta.storyline.map((line) => `<li>${line}</li>`).join("")}</ul>
+                            </div>
+                            <div class="actions">
+                                <a class="button primary" href="${cover.image}" target="_blank" rel="noopener noreferrer">打开封面图</a>
+                                <a class="button" href="${cover.prompt}" target="_blank" rel="noopener noreferrer">查看封面 Prompt</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="report-grid"></div>
+                `;
+
+                section.querySelector(".report-cover").addEventListener("click", () => openLightbox(cover));
+
+                const grid = section.querySelector(".report-grid");
+                group.items.forEach((item, index) => {
+                    const block = document.createElement("article");
+                    block.className = "report-item";
+                    block.innerHTML = `
+                        <div class="report-item-thumb">
+                            <img src="${item.image}" alt="${item.title}">
+                        </div>
+                        <div class="report-item-body">
+                            <div>
+                                <p class="eyebrow">第 ${index + 1} 页</p>
+                                <h3>${item.title}</h3>
+                            </div>
+                            <p>${item.description}</p>
+                            <div class="meta">
+                                <span>${item.role}</span>
+                                <span>${item.id}</span>
+                            </div>
+                            <div class="actions">
+                                <a class="button primary" href="${item.image}" target="_blank" rel="noopener noreferrer">打开原图</a>
+                                <a class="button" href="${item.prompt}" target="_blank" rel="noopener noreferrer">查看 Prompt</a>
+                            </div>
+                        </div>
+                    `;
+                    block.querySelector(".report-item-thumb").addEventListener("click", () => openLightbox(item));
+                    grid.appendChild(block);
+                });
+
+                reportDeck.appendChild(section);
+            });
+        }
+
+        function updateSummary(filtered) {
+            const batchCount = new Set(filtered.map((item) => item.batchKey)).size;
+            if (viewMode === "report") {
+                resultSummary.textContent = `汇报模式 · ${batchCount} 个批次 · ${filtered.length} 张`;
+                return;
+            }
+
+            resultSummary.textContent = activeBatch === "all"
+                ? `全部结果 · ${filtered.length} 张`
+                : `${filtered[0] ? filtered[0].batch : activeBatch} · ${filtered.length} 张`;
+        }
+
+        function applyViewState() {
+            regularViewBtn.classList.toggle("active", viewMode === "regular");
+            compactViewBtn.classList.toggle("active", viewMode === "compact");
+            reportViewBtn.classList.toggle("active", viewMode === "report");
+            gallery.classList.toggle("compact", viewMode === "compact");
+        }
+
+        function render() {
+            const filtered = getFilteredItems();
+            emptyState.style.display = filtered.length ? "none" : "block";
+            updateSummary(filtered);
+            applyViewState();
+
+            if (viewMode === "report") {
+                renderReport(filtered);
+                return;
+            }
+
+            renderGallery(filtered);
+        }
+
+        searchInput.addEventListener("input", (event) => {
+            searchTerm = event.target.value;
+            render();
+        });
+
+        regularViewBtn.addEventListener("click", () => {
+            viewMode = "regular";
+            render();
+        });
+
+        compactViewBtn.addEventListener("click", () => {
+            viewMode = "compact";
+            render();
+        });
+
+        reportViewBtn.addEventListener("click", () => {
+            viewMode = "report";
+            render();
+        });
+
+        presenterBtn.addEventListener("click", () => {
+            openPresenter();
+        });
+
+        prevSlideBtn.addEventListener("click", prevSlide);
+        nextSlideBtn.addEventListener("click", nextSlide);
+        closePresenter.addEventListener("click", closePresenterMode);
+        toggleAutoplayBtn.addEventListener("click", () => {
+            if (autoplayEnabled) {
+                stopAutoplay();
+            } else {
+                startAutoplay();
+            }
+        });
+
+        closeLightbox.addEventListener("click", closeViewer);
+        lightbox.addEventListener("click", (event) => {
+            if (event.target === lightbox) {
+                closeViewer();
+            }
+        });
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape" && lightbox.classList.contains("open")) {
+                closeViewer();
+            }
+            if (event.key === "Escape" && presenter.classList.contains("open")) {
+                closePresenterMode();
+                return;
+            }
+            if (!presenter.classList.contains("open")) {
+                return;
+            }
+            if (event.key === "ArrowUp" || event.key === "ArrowLeft") {
+                event.preventDefault();
+                prevSlide();
+            } else if (event.key === "ArrowDown" || event.key === "ArrowRight" || event.key === " ") {
+                event.preventDefault();
+                nextSlide();
+            } else if (event.key.toLowerCase() === "a") {
+                event.preventDefault();
+                if (autoplayEnabled) {
+                    stopAutoplay();
+                } else {
+                    startAutoplay();
+                }
+            }
+        });
+
+        buildFilters();
+        render();
+    </script>
+</body>
+</html>

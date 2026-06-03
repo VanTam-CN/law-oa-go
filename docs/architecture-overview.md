@@ -2,32 +2,22 @@
 
 ## 🏗️ 当前架构概述
 
+**最后校准**: 2026-04-29
+
 ### 架构类型：单体应用 + 分层架构
 
 ```
 law-oa-go/
-├── cmd/server/                    # 应用入口点
-│   └── main.go                   # 主程序入口
+├── main.go                       # 默认应用入口，Makefile build 构建 root .
+├── cmd/server/                   # 备用/精简 server 入口
+│   └── main.go
 ├── internal/                     # 内部模块，不对外暴露
-│   ├── api/                     # HTTP API层
-│   │   ├── handlers/           # 请求处理器
-│   │   ├── middleware/         # 中间件
-│   │   ├── routes/             # 路由定义
-│   │   └── response.go         # 统一响应格式
+│   ├── handlers/               # HTTP 处理器
 │   ├── services/               # 业务逻辑层
-│   │   ├── user_service.go    # 用户业务逻辑
-│   │   ├── case_service.go    # 案件业务逻辑
-│   │   ├── client_service.go   # 客户业务逻辑
-│   │   └── auth_service.go     # 认证业务逻辑
 │   ├── repositories/           # 数据访问层
-│   │   ├── user_repository.go # 用户数据访问
-│   │   ├── case_repository.go  # 案件数据访问
-│   │   ├── client_repository.go # 客户数据访问
-│   │   └── interfaces.go      # 仓储接口定义
 │   ├── models/                 # 数据模型
-│   │   ├── user.go            # 用户模型
-│   │   ├── case.go            # 案件模型
-│   │   └── client.go          # 客户模型
+│   ├── router/                 # 路由注册，核心文件 internal/router/router.go
+│   ├── api/                    # 通用 API helper / CRUD 基类
 │   ├── config/                 # 配置管理
 │   │   ├── config.go          # 配置结构体
 │   │   └── config.yaml        # 配置文件
@@ -37,10 +27,7 @@ law-oa-go/
 │   │   └── cors.go           # CORS中间件
 │   └── errors/               # 错误处理
 │       └── errors.go         # 统一错误处理
-├── pkg/                        # 公共包，可对外暴露
-│   ├── utils/                 # 工具函数
-│   ├── database/              # 数据库连接
-│   └── logging/               # 日志工具
+├── frontend/                   # React 18 + TypeScript + Vite
 ├── migrations/                 # 数据库迁移文件
 ├── docs/                       # 项目文档
 ├── scripts/                    # 脚本文件
@@ -50,10 +37,10 @@ law-oa-go/
 ## 🔧 技术栈
 
 ### 后端技术栈
-- **语言**: Go 1.23
+- **语言**: Go 1.25 (`go.mod`)
 - **Web框架**: Gin
 - **ORM**: GORM
-- **数据库**: MySQL/PostgreSQL
+- **数据库**: PostgreSQL/MySQL/SQLite，Docker Compose 默认 MySQL 8.0
 - **认证**: JWT
 - **配置管理**: Viper
 - **日志**: Zap Logger
@@ -111,6 +98,7 @@ HTTP请求 → 中间件 → 路由 → 处理器 → 服务层 → 仓储层 �
 - **JWT认证**: 无状态认证
 - **中间件**: 路由级别的认证控制
 - **角色权限**: 基于角色的访问控制
+- **隔离墙**: 案件维度 Ethical Wall 中间件、白名单和访问日志
 
 ### 数据安全
 - **参数验证**: 输入数据验证
@@ -122,7 +110,7 @@ HTTP请求 → 中间件 → 路由 → 处理器 → 服务层 → 仓储层 �
 ### 当前性能
 - **架构**: 单体应用，低延迟
 - **数据库**: 单一数据库连接池
-- **缓存**: 当前无缓存层
+- **缓存**: Redis + 进程内缓存，用于令牌、查询和中间件缓存
 - **并发**: 通过Goroutine处理并发
 
 ### 性能优化建议
@@ -215,13 +203,13 @@ volumes:
 - [x] 日志系统
 - [x] 中间件支持
 - [ ] 完整测试覆盖
-- [ ] 性能监控
-- [ ] 缓存层
-- [ ] API文档
+- [x] 性能监控
+- [x] 缓存层
+- [x] API文档
 - [ ] 部署自动化
 
 ---
 
-**文档版本**: v1.0  
-**最后更新**: 2025-01-14  
+**文档版本**: v1.1
+**最后更新**: 2026-04-29
 **维护者**: 开发团队

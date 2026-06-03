@@ -8,7 +8,6 @@ import {
   Row,
   Col,
   Statistic,
-  Select,
   DatePicker,
   Input,
   message,
@@ -30,7 +29,7 @@ import {
   CheckOutlined,
   EyeOutlined,
   CalendarOutlined,
-  TrendingUpOutlined,
+  RiseOutlined,
   FundOutlined,
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
@@ -42,14 +41,15 @@ import {
   cancelCommission,
   getCommissionStats,
   calculateCommissions,
+  exportCommissions,
   type Commission,
   type CommissionStats,
   commissionStatusMap,
-  formatAmount,
 } from '@/services/finance'
+import { exportCSV } from '@/utils/export'
+import FilterSelect from './FilterSelect'
 import './CommissionReport.less'
 
-const { Option } = Select
 const { RangePicker } = DatePicker
 
 // 受益人角色映射
@@ -60,7 +60,11 @@ const beneficiaryRoleMap: Record<string, { text: string; color: string }> = {
 }
 
 // 表格列定义
-const columns: ColumnsType<Commission> = [
+const createColumns = (handlers: {
+  onView: (record: Commission) => void
+  onMarkPaid: (record: Commission) => void
+  onCancel: (record: Commission) => void
+}): ColumnsType<Commission> => [
   {
     title: '提成编号',
     dataIndex: 'commission_code',
@@ -106,7 +110,7 @@ const columns: ColumnsType<Commission> = [
     ),
   },
   {
-    title: '成本扣除',
+    title: '成本扣除额',
     dataIndex: 'cost_deduction',
     key: 'cost_deduction',
     width: 100,
@@ -178,16 +182,16 @@ const columns: ColumnsType<Commission> = [
     fixed: 'right',
     render: (_, record) => (
       <Space size='small'>
-        <Button type='link' size='small' icon={<EyeOutlined />} onClick={() => {/* TODO */}}>
+        <Button type='link' size='small' icon={<EyeOutlined />} onClick={(e) => { e.stopPropagation(); handlers.onView(record) }}>
           详情
         </Button>
         {record.status === 'calculated' && (
-          <Button type='link' size='small' icon={<CheckOutlined />} onClick={() => {/* TODO */}}>
+          <Button type='link' size='small' icon={<CheckOutlined />} onClick={(e) => { e.stopPropagation(); handlers.onMarkPaid(record) }}>
             标记支付
           </Button>
         )}
         {(record.status === 'pending' || record.status === 'calculated') && (
-          <Button type='link' size='small' danger onClick={() => {/* TODO */}}>
+          <Button type='link' size='small' danger onClick={(e) => { e.stopPropagation(); handlers.onCancel(record) }}>
             取消
           </Button>
         )}
@@ -196,8 +200,18 @@ const columns: ColumnsType<Commission> = [
   },
 ]
 
+// 提成汇总数据类型
+interface CommissionSummary {
+  beneficiary: Commission['beneficiary']
+  beneficiary_role: string
+  count: number
+  total_amount: number
+  paid_amount: number
+  pending_amount: number
+}
+
 // 提成汇总表格列
-const summaryColumns: ColumnsType<Commission> = [
+const summaryColumns: ColumnsType<CommissionSummary> = [
   {
     title: '受益人',
     key: 'beneficiary',
@@ -205,7 +219,7 @@ const summaryColumns: ColumnsType<Commission> = [
     render: (_, record) => (
       <div>
         <div style={{ fontWeight: 600 }}>{record.beneficiary?.name || '-'}</div>
-        <Tag color={beneficiaryRoleMap[record.beneficiary_role]?.color || 'default'} size='small'>
+        <Tag color={beneficiaryRoleMap[record.beneficiary_role]?.color || 'default'}>
           {beneficiaryRoleMap[record.beneficiary_role]?.text || record.beneficiary_role}
         </Tag>
       </div>
@@ -219,7 +233,7 @@ const summaryColumns: ColumnsType<Commission> = [
     align: 'center',
   },
   {
-    title: '提成总额',
+    title: '汇总提成金额',
     dataIndex: 'total_amount',
     key: 'total_amount',
     width: 150,
@@ -241,7 +255,7 @@ const summaryColumns: ColumnsType<Commission> = [
     ),
   },
   {
-    title: '待支付',
+    title: '待支付金额',
     dataIndex: 'pending_amount',
     key: 'pending_amount',
     width: 120,
@@ -261,7 +275,7 @@ const summaryColumns: ColumnsType<Commission> = [
         : 0
       return (
         <Progress
-          percent={percentage}
+          percent={Math.round(percentage)}
           size='small'
           status={percentage >= 100 ? 'success' : 'active'}
           strokeColor={percentage >= 100 ? '#52c41a' : '#1890ff'}
@@ -273,7 +287,7 @@ const summaryColumns: ColumnsType<Commission> = [
 
 const CommissionReport: React.FC = () => {
   const [commissions, setCommissions] = useState<Commission[]>([])
-  const [summaryData, setSummaryData] = useState<any[]>([])
+  const [summaryData, setSummaryData] = useState<CommissionSummary[]>([])
   const [loading, setLoading] = useState<boolean>(false)
   const [stats, setStats] = useState<CommissionStats | null>(null)
   const [detailDrawerVisible, setDetailDrawerVisible] = useState<boolean>(false)
@@ -320,16 +334,9 @@ const CommissionReport: React.FC = () => {
   const fetchCommissions = async () => {
     setLoading(true)
     try {
-      const params: any = { ...queryParams }
-      // 移除空值
-      Object.keys(params).forEach((key) => {
-        if (params[key] === '') {
-          delete params[key]
-        }
-      })
+      const params: Record<string, unknown> = { ...queryParams }
 
       const res = await getCommissions(params)
-      console.log('提成列表API响应:', res)
 
       let commissionData: Commission[] = []
       let totalCount = 0
@@ -352,8 +359,7 @@ const CommissionReport: React.FC = () => {
 
       // 获取统计数据
       fetchStats()
-    } catch (error) {
-      console.error('获取提成列表失败:', error)
+    } catch {
       message.error('获取提成列表失败')
     } finally {
       setLoading(false)
@@ -362,7 +368,7 @@ const CommissionReport: React.FC = () => {
 
   // 生成汇总数据
   const generateSummaryData = (data: Commission[]) => {
-    const summaryMap = new Map<string, any>()
+    const summaryMap = new Map<string, CommissionSummary>()
 
     data.forEach((item) => {
       const key = `${item.beneficiary_id}-${item.beneficiary_role}`
@@ -395,13 +401,12 @@ const CommissionReport: React.FC = () => {
   const fetchStats = async () => {
     try {
       const res = await getCommissionStats()
-      console.log('提成统计API响应:', res)
 
       if (res && res.data) {
         setStats(res.data)
       }
-    } catch (error) {
-      console.error('获取统计数据失败:', error)
+    } catch {
+      // 静默失败
     }
   }
 
@@ -514,8 +519,31 @@ const CommissionReport: React.FC = () => {
   }
 
   // 导出报表
-  const handleExport = () => {
+  const handleExport = async () => {
     message.info('导出功能开发中...')
+
+    try {
+      const params: Record<string, unknown> = {
+        status: queryParams.status,
+        beneficiary_role: queryParams.beneficiary_role,
+        date_from: queryParams.date_from,
+        date_to: queryParams.date_to,
+      }
+      // 移除空值
+      Object.keys(params).forEach((key) => {
+        if (params[key] === '') {
+          delete params[key]
+        }
+      })
+
+      await exportCSV(
+        exportCommissions(params),
+        `提成报表_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.csv`
+      )
+      message.success('导出成功')
+    } catch (error) {
+      message.error('导出失败')
+    }
   }
 
   return (
@@ -559,9 +587,8 @@ const CommissionReport: React.FC = () => {
               title='本月提成'
               value={stats?.month_commission_amount || 0}
               precision={0}
-              prefix='¥'
               valueStyle={{ color: '#3f8600', fontSize: '24px', fontWeight: 700 }}
-              prefix={<TrendingUpOutlined />}
+              prefix={<><RiseOutlined style={{ marginRight: 4 }} /> ¥</>}
             />
           </Card>
         </Col>
@@ -571,43 +598,41 @@ const CommissionReport: React.FC = () => {
       <Card className='search-card'>
         <Space size='middle' wrap style={{ width: '100%', justifyContent: 'space-between' }}>
           <Space size='middle' wrap>
-            <Select
+            <FilterSelect
               placeholder='筛选状态'
-              style={{ width: 120 }}
               value={searchForm.status || undefined}
-              onChange={(value) => setSearchForm({ ...searchForm, status: value || '' })}
-              allowClear
-              size='large'
-            >
-              <Option value='pending'>待计算</Option>
-              <Option value='calculated'>已计算</Option>
-              <Option value='paid'>已支付</Option>
-              <Option value='cancelled'>已取消</Option>
-            </Select>
+              onChange={(value) => setSearchForm({ ...searchForm, status: value })}
+              options={[
+                { value: 'pending', label: '待计算' },
+                { value: 'calculated', label: '已计算 ' },
+                { value: 'paid', label: '已支付' },
+                { value: 'cancelled', label: '已取消' },
+              ]}
+              probeValue='calculated'
+            />
 
-            <Select
+            <FilterSelect
               placeholder='受益人角色'
-              style={{ width: 120 }}
               value={searchForm.beneficiary_role || undefined}
-              onChange={(value) => setSearchForm({ ...searchForm, beneficiary_role: value || '' })}
-              allowClear
-              size='large'
-            >
-              <Option value='source'>案源人</Option>
-              <Option value='lawyer'>承办律师</Option>
-              <Option value='assistant'>助理</Option>
-            </Select>
+              onChange={(value) => setSearchForm({ ...searchForm, beneficiary_role: value })}
+              options={[
+                { value: 'source', label: '案源人' },
+                { value: 'lawyer', label: '承办律师 ' },
+                { value: 'assistant', label: '助理' },
+              ]}
+              probeValue='lawyer'
+            />
 
             <RangePicker
               placeholder={['开始日期', '结束日期']}
               value={searchForm.dateRange}
-              onChange={(dates) => setSearchForm({ ...searchForm, dateRange: dates })}
+              onChange={(dates) => setSearchForm({ ...searchForm, dateRange: dates as [dayjs.Dayjs, dayjs.Dayjs] | null })}
               size='large'
             />
           </Space>
 
           <Space size='middle'>
-            <Button.Group>
+            <Space.Compact>
               <Button
                 type={viewMode === 'list' ? 'primary' : 'default'}
                 icon={<FileTextOutlined />}
@@ -624,7 +649,7 @@ const CommissionReport: React.FC = () => {
               >
                 按人汇总
               </Button>
-            </Button.Group>
+            </Space.Compact>
           </Space>
 
           <Space size='middle'>
@@ -648,9 +673,13 @@ const CommissionReport: React.FC = () => {
       {viewMode === 'list' ? (
         <Card title='提成明细' className='table-card'>
           <Table
-            columns={columns.map((col) => ({
+            columns={createColumns({
+              onView: handleView,
+              onMarkPaid: handleOpenPayModal,
+              onCancel: handleCancel,
+            }).map((col) => ({
               ...col,
-              onCell: (record) => ({
+              onCell: (record: Commission) => ({
                 onClick: () => handleView(record),
                 style: { cursor: 'pointer' },
               }),
@@ -827,7 +856,6 @@ const CommissionReport: React.FC = () => {
         open={payModalVisible}
         onOk={handleMarkPaid}
         onCancel={() => setPayModalVisible(false)}
-        destroyOnClose
       >
         <Form form={form} layout='vertical'>
           <Form.Item
@@ -849,11 +877,10 @@ const CommissionReport: React.FC = () => {
 
       {/* 计算提成弹窗 */}
       <Modal
-        title='计算提成'
+        title='计算提成表单'
         open={calculateModalVisible}
         onOk={handleCalculate}
         onCancel={() => setCalculateModalVisible(false)}
-        destroyOnClose
       >
         <Form form={calculateForm} layout='vertical'>
           <Form.Item

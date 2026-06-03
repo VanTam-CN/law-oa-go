@@ -149,11 +149,11 @@ const TestLogin: React.FC = () => {
         }}
       >
         <div style={{ textAlign: 'center', marginBottom: 30 }}>
-          <h1 style={{ color: '#2c3e50', marginBottom: 10 }}>律所OA系统</h1>
+          <h1 style={{ color: '#2c3e50', marginBottom: 10 }}>示例律师事务所OA</h1>
           <p style={{ color: '#7f8c8d', margin: 0 }}>测试登录页面</p>
         </div>
 
-        <Tabs activeKey={activeTab} onChange={setActiveTab}>
+        <Tabs activeKey={activeTab} onChange={(key) => setActiveTab(key as 'login' | 'debug')}>
           <Tabs.TabPane tab='用户登录' key='login'>
             <Form
               name='login'

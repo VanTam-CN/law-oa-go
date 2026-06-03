@@ -5,12 +5,16 @@
 
 import { apiClient } from './apiClient'
 import type {
-  ConflictCase,
-  ConflictCheckRequest,
-  ConflictCheckResponse,
-  EnhancedConflictCase,
-  ConflictRiskLevel,
-} from '@/types/waiverApproval'
+  ConflictResult,
+  RiskLevel,
+} from '@/types/conflict'
+
+// 类型别名
+export type ConflictCase = ConflictResult
+export type ConflictCheckRequest = any
+export type ConflictCheckResponse = any
+export type EnhancedConflictCase = ConflictResult
+export type ConflictRiskLevel = RiskLevel
 
 // 现有冲突检测系统的数据格式
 export interface LegacyConflictCase {

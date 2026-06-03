@@ -6,6 +6,9 @@ import zhCN from 'antd/locale/zh_CN'
 import './index.css'
 import './assets/styles/design-tokens.css'
 import App from './App'
+import { initializeApp } from './stores/useAppStore'
+
+initializeApp()
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <ConfigProvider locale={zhCN}>

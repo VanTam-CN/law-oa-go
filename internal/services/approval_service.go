@@ -1,23 +1,24 @@
 package services
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
 	"time"
 
+	"gorm.io/gorm"
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/repositories"
-	"gorm.io/gorm"
 )
 
 // ApprovalService 审批服务
 type ApprovalService struct {
-	approvalRepo    *repositories.ApprovalRepository
-	userRepo        repositories.UserRepository
-	stateMachine    *ApprovalStateMachine
-	assigner        *ApprovalAssigner
+	approvalRepo *repositories.ApprovalRepository
+	userRepo     repositories.UserRepository
+	stateMachine *ApprovalStateMachine
+	assigner     *ApprovalAssigner
 }
 
 // NewApprovalService 创建审批服务
@@ -135,11 +136,25 @@ func (s *ApprovalService) GetApproval(userID string, id string) (*models.Approva
 
 	// 检查权限：确保用户有权限查看
 	if approval != nil {
-		if approval.ApplicantID != userID && approval.CurrentApproverID != userID {
+		isAdmin := false
+		if parsedUserID, parseErr := strconv.ParseUint(userID, 10, 64); parseErr == nil {
+			if user, userErr := s.userRepo.FindByID(context.Background(), uint(parsedUserID)); userErr == nil && user != nil {
+				isAdmin = user.Role == "admin"
+			}
+		}
+		if !isAdmin && approval.ApplicantID != userID && approval.CurrentApproverID != userID {
 			return nil, fmt.Errorf("无权查看此审批记录")
 		}
 	}
 
+	return approval, nil
+}
+
+func (s *ApprovalService) GetApprovalByID(id string) (*models.ApprovalRequest, error) {
+	approval, err := s.approvalRepo.FindByID(id)
+	if err != nil {
+		return nil, fmt.Errorf("获取审批详情失败: %v", err)
+	}
 	return approval, nil
 }
 
@@ -178,33 +193,33 @@ func (s *ApprovalService) CreateApproval(userID string, userName string, req *mo
 
 	// 创建审批申请 - 初始状态为草稿
 	approval := &models.ApprovalRequest{
-		ID:                   generateUUID(),
-		RequestNumber:        requestNumber,
-		Title:                req.Title,
-		Type:                 req.Type,
-		Category:             req.Category,
-		Content:              req.Content,
-		ApplicantID:          userID,
-		ApplicantName:        userName,
-		ApplicantTitle:       "",
-		DepartmentID:         "",
-		DepartmentName:       "",
-		Urgency:              req.Urgency,
-		Priority:             req.Priority,
+		ID:                    generateUUID(),
+		RequestNumber:         requestNumber,
+		Title:                 req.Title,
+		Type:                  req.Type,
+		Category:              req.Category,
+		Content:               req.Content,
+		ApplicantID:           userID,
+		ApplicantName:         userName,
+		ApplicantTitle:        "",
+		DepartmentID:          "",
+		DepartmentName:        "",
+		Urgency:               req.Urgency,
+		Priority:              req.Priority,
 		ExpectedEffectiveDate: nil,
-		ExpectedExpiryDate:   nil,
-		DurationDays:         req.DurationDays,
-		Status:               models.ApprovalStatusDraft,
-		SubmissionDate:       nil,
-		CurrentStage:         "",
-		CurrentApproverID:    "",
-		CurrentApproverName:  "",
-		WorkflowType:         workflowType,
-		WorkflowConfig:       "{}",
-		Attachments:          "{}",
-		Metadata:             "{}",
-		CreatedBy:            userID,
-		UpdatedBy:            userID,
+		ExpectedExpiryDate:    nil,
+		DurationDays:          req.DurationDays,
+		Status:                models.ApprovalStatusDraft,
+		SubmissionDate:        nil,
+		CurrentStage:          "",
+		CurrentApproverID:     "",
+		CurrentApproverName:   "",
+		WorkflowType:          workflowType,
+		WorkflowConfig:        "{}",
+		Attachments:           "{}",
+		Metadata:              "{}",
+		CreatedBy:             userID,
+		UpdatedBy:             userID,
 	}
 
 	// 设置默认值
@@ -318,7 +333,8 @@ func (s *ApprovalService) ProcessApprovalDecision(userID string, approvalID stri
 
 	// 创建审批记录
 	record := &models.ApprovalRecord{
-		ApprovalRequestID: approval.ID,
+		ID:                  generateUUID(),
+		ApprovalRequestID:   approval.ID,
 		Stage:               approval.CurrentStage,
 		StageOrder:          1,
 		ApproverID:          userID,
@@ -601,7 +617,7 @@ func (s *ApprovalService) GetApprovalWorkflows() ([]models.ApprovalWorkflow, err
 }
 
 // GetApprovalTemplates 获取审批模板列表
-func (s *ApprovalService) GetApprovalTemplates(templateType string, category string) ([]models.ApprovalTemplate, error) {
+func (s *ApprovalService) GetApprovalTemplates(templateType string, category string) ([]models.ApprovalTemplateV2, error) {
 	templates, err := s.approvalRepo.FindTemplates(templateType, category)
 	if err != nil {
 		return nil, fmt.Errorf("获取审批模板失败: %v", err)

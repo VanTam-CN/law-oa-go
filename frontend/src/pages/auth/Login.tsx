@@ -4,13 +4,31 @@ import { message } from '@/utils/messageHelper'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router'
 import { login, setToken } from '@/services/auth'
+import { getCurrentUserPermissions, getCurrentUserRoles } from '@/services/role'
 import { useAppStore } from '@/stores/useAppStore'
+import { setPermissions as cachePermissions, setRoles as cacheRoles } from '@/utils/storage'
 import './Login.less'
 
 interface LoginFormValues {
   email: string
   password: string
   remember: boolean
+}
+
+const normalizeLoginIdentifier = (value: string) => {
+  const identifier = value.trim().toLowerCase()
+  const aliases: Record<string, string> = {
+    admin: 'demo.admin@example.test',
+    'demo.admin': 'demo.admin@example.test',
+    lawyer: 'demo.lawyer@example.test',
+    'demo.lawyer': 'demo.lawyer@example.test',
+    assistant: 'demo.assistant@example.test',
+    'demo.assistant': 'demo.assistant@example.test',
+    finance: 'demo.finance@example.test',
+    'demo.finance': 'demo.finance@example.test',
+  }
+
+  return aliases[identifier] || identifier
 }
 
 const LoginPage: React.FC = () => {
@@ -22,7 +40,10 @@ const LoginPage: React.FC = () => {
   const onFinish = async (values: LoginFormValues) => {
     try {
       setLoading(true)
-      const response = await login(values)
+      const response = await login({
+        ...values,
+        email: normalizeLoginIdentifier(values.email),
+      })
 
       console.log('Login response:', response)
 
@@ -31,14 +52,38 @@ const LoginPage: React.FC = () => {
       const userData = response.user || response.data?.user
 
       if (token && userData) {
+        setToken(token)
+
+        let roleCodes = [userData.role || 'user']
+        let permissionCodes: string[] = []
+
+        try {
+          const [roles, permissions] = await Promise.all([
+            getCurrentUserRoles(),
+            getCurrentUserPermissions(),
+          ])
+
+          if (roles?.length) {
+            cacheRoles(roles)
+            roleCodes = Array.from(new Set([...roleCodes, ...roles.map((role) => role.code)]))
+          }
+
+          if (permissions?.length) {
+            cachePermissions(permissions)
+            permissionCodes = Array.from(new Set(permissions.map((permission) => permission.code)))
+          }
+        } catch (rbacError) {
+          console.warn('加载当前用户RBAC权限失败，将使用登录角色作为降级权限:', rbacError)
+        }
+
         // 构造用户对象，映射后端字段到前端需要的格式
         const user = {
           id: userData.id.toString(),
           username: userData.email, // 使用email作为username
-          realName: userData.name,
+          realName: userData.name || userData.real_name || userData.username || userData.email,
           email: userData.email,
-          roles: [userData.role], // useAppStore期望的roles是数组
-          permissions: [], // 可以根据角色设置默认权限
+          roles: roleCodes,
+          permissions: permissionCodes,
           phone: userData.phone,
           avatar: userData.avatar,
           isActive: userData.status === 'active',
@@ -48,8 +93,6 @@ const LoginPage: React.FC = () => {
 
         console.log('Processed user:', user)
 
-        // 设置token到storage
-        setToken(token)
         appStoreLogin(user, token)
         message.success('登录成功')
 
@@ -63,7 +106,11 @@ const LoginPage: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Login failed:', error)
-      message.error(error.response?.data?.message || '登录失败，请检查用户名和密码')
+      const apiMessage =
+        error.response?.data?.error?.details ||
+        error.response?.data?.error?.message ||
+        error.response?.data?.message
+      message.error(apiMessage || '登录失败，请检查账号和密码')
     } finally {
       setLoading(false)
     }
@@ -71,7 +118,7 @@ const LoginPage: React.FC = () => {
 
   return (
     <div className='login-container'>
-      <Card className='login-card' title='律所OA系统登录'>
+      <Card className='login-card' title='示例律师事务所OA登录'>
         <Form
           form={form}
           name='login'
@@ -79,8 +126,12 @@ const LoginPage: React.FC = () => {
           onFinish={onFinish}
           size='large'
         >
-          <Form.Item name='email' rules={[{ required: true, message: '请输入邮箱' }]}>
-            <Input prefix={<UserOutlined />} placeholder='邮箱' autoComplete='email' />
+          <Form.Item name='email' rules={[{ required: true, message: '请输入账号或邮箱' }]}>
+            <Input
+              prefix={<UserOutlined />}
+              placeholder='账号或邮箱，如 admin / demo.admin'
+              autoComplete='username'
+            />
           </Form.Item>
           <Form.Item name='password' rules={[{ required: true, message: '请输入密码' }]}>
             <Input.Password
@@ -99,7 +150,7 @@ const LoginPage: React.FC = () => {
           </Form.Item>
         </Form>
       </Card>
-      <div className='login-footer'>© {new Date().getFullYear()} 律所OA系统 - 版权所有</div>
+      <div className='login-footer'>© {new Date().getFullYear()} 示例律师事务所OA - 版权所有</div>
     </div>
   )
 }

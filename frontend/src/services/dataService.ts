@@ -1,11 +1,11 @@
 /**
  * 统一数据服务层
- * 替换所有模拟数据，统一使用后端API调用
+ * 统一使用后端API调用
  * 提供一致的数据获取和处理逻辑
  */
 
 import { message } from '@/utils/messageHelper'
-import { get, post, put, del } from './api'
+import { get, post, put, del } from './http'
 
 // =============================================================================
 // 1. API错误处理和响应处理
@@ -136,7 +136,7 @@ class DataService {
         }
       )
     } catch (error) {
-      console.warn('获取仪表盘统计数据失败，返回默认值:', error)
+      console.warn('获取仪表盘统计数据失败，返回空统计:', error)
       return {
         totalProjects: 0,
         completedProjects: 0,
@@ -154,8 +154,11 @@ class DataService {
 
   async getDashboardTodos(): Promise<any[]> {
     try {
-      const response = await this.get<any[]>('/dashboard/todos')
-      return Array.isArray(response) ? response : []
+      const response = await this.get<any[] | { todos?: any[] }>('/dashboard/todos')
+      if (Array.isArray(response)) {
+        return response
+      }
+      return Array.isArray(response?.todos) ? response.todos : []
     } catch (error) {
       console.warn('获取待办事项失败，返回空数组:', error)
       return []
@@ -164,8 +167,11 @@ class DataService {
 
   async getDashboardActivities(): Promise<any[]> {
     try {
-      const response = await this.get<any[]>('/dashboard/activities')
-      return Array.isArray(response) ? response : []
+      const response = await this.get<any[] | { activities?: any[] }>('/dashboard/activities')
+      if (Array.isArray(response)) {
+        return response
+      }
+      return Array.isArray(response?.activities) ? response.activities : []
     } catch (error) {
       console.warn('获取活动记录失败，返回空数组:', error)
       return []
@@ -441,7 +447,7 @@ class DataService {
         }
       )
     } catch (error) {
-      console.warn('获取用户统计失败，返回默认值:', error)
+      console.warn('获取用户统计失败，返回空统计:', error)
       return {
         total: 0,
         active: 0,
@@ -644,31 +650,29 @@ class DataService {
 export const dataService = new DataService()
 
 // 为了向后兼容，也导出独立的方法
-export const {
-  getDashboardStatistics,
-  getDashboardTodos,
-  getDashboardActivities,
-  getLawyers,
-  getLawyerById,
-  createLawyer,
-  updateLawyer,
-  deleteLawyer,
-  getCases,
-  getCaseById,
-  createCase,
-  updateCase,
-  deleteCase,
-  getUsers,
-  getUserById,
-  createUser,
-  updateUser,
-  deleteUser,
-  getUserStats,
-  getClients,
-  getClientById,
-  createClient,
-  updateClient,
-  deleteClient,
-} = dataService
+export const getDashboardStatistics = dataService.getDashboardStatistics.bind(dataService)
+export const getDashboardTodos = dataService.getDashboardTodos.bind(dataService)
+export const getDashboardActivities = dataService.getDashboardActivities.bind(dataService)
+export const getLawyers = dataService.getLawyers.bind(dataService)
+export const getLawyerById = dataService.getLawyerById.bind(dataService)
+export const createLawyer = dataService.createLawyer.bind(dataService)
+export const updateLawyer = dataService.updateLawyer.bind(dataService)
+export const deleteLawyer = dataService.deleteLawyer.bind(dataService)
+export const getCases = dataService.getCases.bind(dataService)
+export const getCaseById = dataService.getCaseById.bind(dataService)
+export const createCase = dataService.createCase.bind(dataService)
+export const updateCase = dataService.updateCase.bind(dataService)
+export const deleteCase = dataService.deleteCase.bind(dataService)
+export const getUsers = dataService.getUsers.bind(dataService)
+export const getUserById = dataService.getUserById.bind(dataService)
+export const createUser = dataService.createUser.bind(dataService)
+export const updateUser = dataService.updateUser.bind(dataService)
+export const deleteUser = dataService.deleteUser.bind(dataService)
+export const getUserStats = dataService.getUserStats.bind(dataService)
+export const getClients = dataService.getClients.bind(dataService)
+export const getClientById = dataService.getClientById.bind(dataService)
+export const createClient = dataService.createClient.bind(dataService)
+export const updateClient = dataService.updateClient.bind(dataService)
+export const deleteClient = dataService.deleteClient.bind(dataService)
 
 export default dataService

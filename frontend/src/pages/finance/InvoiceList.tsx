@@ -34,6 +34,7 @@ import {
   CloseOutlined,
   FileTextOutlined,
   PrinterOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
@@ -50,6 +51,7 @@ import {
   confirmInvoiceReceipt,
   cancelInvoice,
   getInvoiceStats,
+  exportInvoices,
   type Invoice,
   type CreateInvoiceRequest,
   type UpdateInvoiceRequest,
@@ -57,19 +59,21 @@ import {
   invoiceStatusMap,
   formatAmount,
 } from '@/services/finance'
+import { exportCSV } from '@/utils/export'
+import FilterSelect from './FilterSelect'
 import './InvoiceList.less'
 
 const { Option } = Select
 const { TextArea } = Input
 const { RangePicker } = DatePicker
 
-const steps = [
-  { title: '草稿', status: 'draft' },
-  { title: '待审批', status: 'submitted' },
-  { title: '已审批', status: 'approved' },
-  { title: '已开票', status: 'issued' },
-  { title: '已签收', status: 'received' },
-] as const
+const steps: { title: string; status: 'wait' | 'process' | 'finish' | 'error' }[] = [
+  { title: '草稿', status: 'wait' },
+  { title: '待审批', status: 'process' },
+  { title: '已审批', status: 'process' },
+  { title: '已开票', status: 'process' },
+  { title: '已签收', status: 'finish' },
+]
 
 // 表格列定义
 const columns: ColumnsType<Invoice> = [
@@ -507,6 +511,33 @@ const InvoiceList: React.FC = () => {
     setQueryParams(resetParams)
   }
 
+  // 导出报表
+  const handleExport = async () => {
+    try {
+      const params: Record<string, unknown> = {
+        status: queryParams.status,
+        invoice_type: queryParams.invoice_type,
+        date_from: queryParams.date_from,
+        date_to: queryParams.date_to,
+        client_id: queryParams.client_id,
+      }
+      // 移除空值
+      Object.keys(params).forEach((key) => {
+        if (params[key] === '' || params[key] === undefined) {
+          delete params[key]
+        }
+      })
+
+      await exportCSV(
+        exportInvoices(params),
+        `发票报表_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.csv`
+      )
+      message.success('导出成功')
+    } catch (error) {
+      message.error('导出失败')
+    }
+  }
+
   // 获取当前步骤索引
   const getCurrentStep = (status: string) => {
     const index = steps.findIndex((s) => s.status === status)
@@ -560,20 +591,18 @@ const InvoiceList: React.FC = () => {
       {/* 搜索过滤器 */}
       <Card className='search-card'>
         <Space size='middle' wrap>
-          <Select
+          <FilterSelect
             placeholder='筛选状态'
-            style={{ width: 120 }}
             value={searchForm.status || undefined}
-            onChange={(value) => setSearchForm({ ...searchForm, status: value || '' })}
-            allowClear
-            size='large'
-          >
-            <Option value='draft'>草稿</Option>
-            <Option value='submitted'>待审批</Option>
-            <Option value='approved'>已审批</Option>
-            <Option value='issued'>已开票</Option>
-            <Option value='received'>已签收</Option>
-          </Select>
+            onChange={(value) => setSearchForm({ ...searchForm, status: value })}
+            options={[
+              { value: 'draft', label: '草稿' },
+              { value: 'submitted', label: '待审批' },
+              { value: 'approved', label: '已审批' },
+              { value: 'issued', label: '已开票' },
+              { value: 'received', label: '已签收' },
+            ]}
+          />
 
           <Select
             placeholder='发票类型'
@@ -590,7 +619,7 @@ const InvoiceList: React.FC = () => {
           <RangePicker
             placeholder={['开始日期', '结束日期']}
             value={searchForm.dateRange}
-            onChange={(dates) => setSearchForm({ ...searchForm, dateRange: dates })}
+            onChange={(dates) => setSearchForm({ ...searchForm, dateRange: dates as [dayjs.Dayjs, dayjs.Dayjs] | null })}
             size='large'
           />
 
@@ -600,6 +629,10 @@ const InvoiceList: React.FC = () => {
 
           <Button icon={<ReloadOutlined />} onClick={handleReset} size='large'>
             重置筛选
+          </Button>
+
+          <Button icon={<DownloadOutlined />} onClick={handleExport} size='large'>
+            导出
           </Button>
         </Space>
       </Card>
@@ -616,7 +649,7 @@ const InvoiceList: React.FC = () => {
         <Table
           columns={columns.map((col) => ({
             ...col,
-            onCell: (record) => ({
+            onCell: (record: Invoice) => ({
               onClick: () => handleView(record),
               style: { cursor: 'pointer' },
             }),
@@ -913,7 +946,7 @@ const InvoiceList: React.FC = () => {
                   <Col span={24}>
                     <span className='detail-label'>下载链接：</span>
                     {selectedInvoice.electronic_invoice_url ? (
-                      <a href={selectedInvoice.electronic_invoice_url} target='_blank' rel='noopener'>
+                      <a href={selectedInvoice.electronic_invoice_url} target='_blank' rel='noopener noreferrer'>
                         下载电子发票
                       </a>
                     ) : (

@@ -1,129 +1,131 @@
 /**
- * E2E测试: 登录流程
- * Story 6.2: 关键流程E2E
+ * E2E: 当前登录流程与基础权限.
  */
 
 import { test, expect } from '@playwright/test'
-import { login, logout, isLoggedIn, waitForPageLoad } from './utils/test-helpers'
+import {
+  installApiMocks,
+  isLoggedIn,
+  login,
+  logout,
+  seedAuthenticatedUser,
+  waitForAppShell,
+  waitForPageLoad,
+} from './utils/test-helpers'
 
 test.describe('登录流程', () => {
   test.beforeEach(async ({ page }) => {
+    await installApiMocks(page)
     await page.goto('/')
     await waitForPageLoad(page)
   })
 
-  test('应该显示登录页面', async ({ page }) => {
-    // 验证登录页面元素存在
-    await expect(page).toHaveURL(/login/)
-
-    // 检查登录表单元素
-    await expect(page.locator('input[placeholder*="用户名"], input[name="username"]')).toBeVisible()
-    await expect(page.locator('input[placeholder*="密码"], input[name="password"]')).toBeVisible()
-    await expect(page.locator('button:has-text("登录")')).toBeVisible()
+  test('应该显示当前登录页面', async ({ page }) => {
+    await expect(page).toHaveURL(/\/login$/)
+    await expect(page.getByText('示例律师事务所OA登录')).toBeVisible()
+    await expect(page.getByPlaceholder('账号或邮箱，如 admin / demo.admin')).toBeVisible()
+    await expect(page.getByPlaceholder('密码')).toBeVisible()
+    await expect(page.locator('button[type="submit"]')).toBeVisible()
   })
 
   test('登录失败应该显示错误信息', async ({ page }) => {
-    // 使用错误的凭证
-    await page.fill('input[placeholder*="用户名"], input[name="username"]', 'wronguser')
-    await page.fill('input[placeholder*="密码"], input[name="password"]', 'wrongpass')
-    await page.click('button:has-text("登录")')
+    await page.getByPlaceholder('账号或邮箱，如 admin / demo.admin').fill('wronguser')
+    await page.getByPlaceholder('密码').fill('wrongpass')
+    await page.locator('button[type="submit"]').click()
 
-    // 应该显示错误信息
-    await expect(page.locator('.ant-message, .ant-alert')).toBeVisible({ timeout: 5000 })
+    await expect(page.locator('.ant-message')).toContainText('账号或密码错误')
   })
 
-  test('成功登录后应该跳转到主页', async ({ page }) => {
-    // 使用测试账号登录
-    await login(page, 'admin', 'admin123')
+  test('律师账号登录后应该进入工作台', async ({ page }) => {
+    await login(page, 'lawyer')
+    await waitForAppShell(page)
 
-    // 验证已登录
-    const loggedIn = await isLoggedIn(page)
-    expect(loggedIn).toBe(true)
-
-    // 验证URL不是登录页
-    await expect(page).not.toHaveURL(/login/)
+    expect(await isLoggedIn(page)).toBe(true)
+    await expect(page).toHaveURL(/\/dashboard$/)
+    await expect(page.getByRole('heading', { name: '上午好，张律师' })).toBeVisible()
   })
 
   test('登出后应该返回登录页', async ({ page }) => {
-    // 先登录
-    await login(page, 'admin', 'admin123')
-
-    // 然后登出
+    await login(page, 'lawyer')
     await logout(page)
 
-    // 验证返回登录页
-    await expect(page).toHaveURL(/login/)
+    await expect(page).toHaveURL(/\/login$/)
   })
 
   test('未登录访问受保护页面应该重定向到登录页', async ({ page }) => {
-    // 直接访问受保护页面
-    await page.goto('/cases')
+    await page.goto('/case')
+    await expect(page).toHaveURL(/\/login$/)
+  })
 
-    // 应该被重定向到登录页
-    await expect(page).toHaveURL(/login/, { timeout: 5000 })
+  test('刷新后应该保持登录状态', async ({ page }) => {
+    await login(page, 'lawyer')
+    await page.reload()
+
+    await waitForAppShell(page)
+    await expect(page).toHaveURL(/\/dashboard$/)
   })
 })
 
 test.describe('登录表单验证', () => {
   test.beforeEach(async ({ page }) => {
+    await installApiMocks(page)
     await page.goto('/login')
     await waitForPageLoad(page)
   })
 
-  test('空用户名应该显示验证错误', async ({ page }) => {
-    // 不填用户名，直接点击登录
-    await page.fill('input[placeholder*="密码"], input[name="password"]', 'password123')
-    await page.click('button:has-text("登录")')
+  test('空账号应该显示验证错误', async ({ page }) => {
+    await page.getByPlaceholder('密码').fill('Demo@2026')
+    await page.locator('button[type="submit"]').click()
 
-    // 应该显示验证错误
-    await expect(page.locator('.ant-form-item-explain-error')).toBeVisible()
+    await expect(page.locator('.ant-form-item-explain-error')).toContainText('请输入账号或邮箱')
   })
 
   test('空密码应该显示验证错误', async ({ page }) => {
-    await page.fill('input[placeholder*="用户名"], input[name="username"]', 'admin')
-    await page.click('button:has-text("登录")')
+    await page.getByPlaceholder('账号或邮箱，如 admin / demo.admin').fill('lawyer')
+    await page.locator('button[type="submit"]').click()
 
-    await expect(page.locator('.ant-form-item-explain-error')).toBeVisible()
-  })
-
-  test('记住登录状态', async ({ page, context }) => {
-    // 登录
-    await login(page, 'admin', 'admin123')
-
-    // 获取cookies
-    const cookies = await context.cookies()
-    expect(cookies.length).toBeGreaterThan(0)
-
-    // 刷新页面
-    await page.reload()
-
-    // 应该仍然保持登录状态
-    const loggedIn = await isLoggedIn(page)
-    expect(loggedIn).toBe(true)
+    await expect(page.locator('.ant-form-item-explain-error')).toContainText('请输入密码')
   })
 })
 
 test.describe('角色权限', () => {
-  test('管理员应该能访问管理页面', async ({ page }) => {
-    await login(page, 'admin', 'admin123')
+  test('管理员应该能访问用户管理页', async ({ page }) => {
+    await seedAuthenticatedUser(page, 'admin')
+    await page.goto('/user')
 
-    // 访问管理页面
-    await page.goto('/admin')
-
-    // 应该能访问
-    await expect(page).not.toHaveURL(/login/)
+    await waitForAppShell(page)
+    await expect(page.getByRole('heading', { name: '用户管理' })).toBeVisible()
   })
 
-  test('普通律师不应该能访问管理页面', async ({ page }) => {
-    await login(page, 'lawyer', 'lawyer123')
+  test('普通律师不应该能访问用户管理页', async ({ page }) => {
+    await seedAuthenticatedUser(page, 'lawyer')
+    await page.goto('/user')
 
-    // 尝试访问管理页面
-    await page.goto('/admin')
+    await expect(page.getByText('无权访问')).toBeVisible()
+  })
+})
 
-    // 应该显示403或重定向
-    const is403 = await page.locator('text=403, text=无权限').isVisible()
-    const redirected = page.url().includes('/login') || page.url().includes('/dashboard')
+test.describe('顶部入口反馈', () => {
+  test.beforeEach(async ({ page }) => {
+    await seedAuthenticatedUser(page, 'lawyer')
+    await page.goto('/dashboard')
+    await waitForPageLoad(page)
+  })
 
-    expect(is403 || redirected).toBe(true)
+  test('帮助中心入口应该显示帮助反馈', async ({ page }) => {
+    await waitForAppShell(page)
+    await page.locator('.user-menu').click()
+    await page.getByText('帮助中心').click()
+
+    await expect(page.getByRole('dialog').getByText('帮助中心', { exact: true })).toBeVisible()
+    await expect(page.getByText('完整帮助中心建设中')).toBeVisible()
+  })
+
+  test('通知为空时不应该展示全部已读动作', async ({ page }) => {
+    await waitForAppShell(page)
+    await page.locator('.notification-btn').click()
+
+    await expect(page.getByText('暂无通知')).toBeVisible()
+    await expect(page.getByText('全部已读')).toHaveCount(0)
   })
 })

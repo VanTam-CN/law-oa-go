@@ -167,7 +167,13 @@ const LawyerManagement: React.FC = () => {
           <Tooltip title='删除'>
             <Popconfirm
               title='确定要删除这条记录吗？'
-              onConfirm={() => handleDelete(record.id!)}
+              onConfirm={() => {
+                if (record.id == null) {
+                  message.error('律师ID缺失，无法删除')
+                  return
+                }
+                handleDelete(record.id)
+              }}
               okText='确定'
               cancelText='取消'
             >
@@ -287,7 +293,11 @@ const LawyerManagement: React.FC = () => {
     try {
       const values = await form.validateFields()
       if (editingItem) {
-        await lawyerService.updateLawyer(editingItem.id!, values)
+        if (editingItem.id == null) {
+          message.error('律师ID缺失，无法更新')
+          return
+        }
+        await lawyerService.updateLawyer(editingItem.id, values)
         message.success('更新成功')
       } else {
         await lawyerService.createLawyer(values)

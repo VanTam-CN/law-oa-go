@@ -9,7 +9,7 @@ import (
 
 	stderrors "errors"
 	"golang.org/x/crypto/bcrypt"
-		"law-oa-go/internal/concurrency"
+	"law-oa-go/internal/concurrency"
 	"law-oa-go/internal/errors"
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/repositories"
@@ -80,21 +80,25 @@ type CreateUserRequest struct {
 }
 
 type UpdateUserRequest struct {
-	Name  *string `json:"name" binding:"omitempty,min=1,max=100"`
-	Email *string `json:"email" binding:"omitempty,email"`
-	Phone *string `json:"phone" binding:"omitempty,max=20"`
+	Name       *string `json:"name" binding:"omitempty,min=1,max=100"`
+	Email      *string `json:"email" binding:"omitempty,email"`
+	Phone      *string `json:"phone" binding:"omitempty,max=20"`
+	Department *string `json:"department" binding:"omitempty,max=50"`
+	Seniority  *string `json:"seniority" binding:"omitempty,max=20"`
 }
 
 type UserProfile struct {
-	ID        uint      `json:"id"`
-	Name      string    `json:"name"`
-	Email     string    `json:"email"`
-	Role      string    `json:"role"`
-	Phone     string    `json:"phone"`
-	Avatar    string    `json:"avatar"`
-	Status    string    `json:"status"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID         uint      `json:"id"`
+	Name       string    `json:"name"`
+	Email      string    `json:"email"`
+	Role       string    `json:"role"`
+	Phone      string    `json:"phone"`
+	Avatar     string    `json:"avatar"`
+	Status     string    `json:"status"`
+	Department string    `json:"department"`
+	Seniority  string    `json:"seniority"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
 }
 
 func (s *UserService) CreateUser(ctx context.Context, req *CreateUserRequest) (*UserProfile, error) {
@@ -199,6 +203,12 @@ func (s *UserService) UpdateUser(ctx context.Context, userID uint, req *UpdateUs
 	if req.Phone != nil {
 		user.Phone = *req.Phone
 	}
+	if req.Department != nil {
+		user.Department = *req.Department
+	}
+	if req.Seniority != nil {
+		user.Seniority = *req.Seniority
+	}
 
 	if err := s.userRepo.Update(ctx, user); err != nil {
 		return nil, errors.DatabaseError("update_user", "Failed to update user", err)
@@ -271,7 +281,7 @@ func (s *UserService) validateUserRequest(req *CreateUserRequest) error {
 	}
 
 	if !validRoles[req.Role] {
-		return errors.ValidationErrorWithDetails("role",  "invalid_role",  "Invalid role", []string{ "Role must be one of: admin, lawyer, user"})
+		return errors.ValidationErrorWithDetails("role", "invalid_role", "Invalid role", []string{"Role must be one of: admin, lawyer, user"})
 	}
 
 	return nil
@@ -280,14 +290,14 @@ func (s *UserService) validateUserRequest(req *CreateUserRequest) error {
 func (s *UserService) validateEmail(email string) error {
 	// 使用预编译的正则表达式，避免重复编译提升性能
 	if !emailRegex.MatchString(email) {
-		return errors.ValidationErrorWithDetails("email",  "invalid_email_format",  "Invalid email format", []string{ "Please provide a valid email address"})
+		return errors.ValidationErrorWithDetails("email", "invalid_email_format", "Invalid email format", []string{"Please provide a valid email address"})
 	}
 	return nil
 }
 
 func (s *UserService) validatePassword(password string) error {
 	if len(password) < 8 {
-		return errors.ValidationErrorWithDetails("password",  "password_too_short",  "Password too short", []string{ "Password must be at least 8 characters long"})
+		return errors.ValidationErrorWithDetails("password", "password_too_short", "Password too short", []string{"Password must be at least 8 characters long"})
 	}
 
 	// 使用预编译的正则表达式，避免重复编译提升性能
@@ -296,7 +306,7 @@ func (s *UserService) validatePassword(password string) error {
 	hasNumber := numberRegex.MatchString(password)
 
 	if !hasUpper || !hasLower || !hasNumber {
-		return errors.ValidationErrorWithDetails("password",  "password_too_weak",  "Password too weak", []string{ "Password must contain at least one uppercase letter, one lowercase letter, and one number"})
+		return errors.ValidationErrorWithDetails("password", "password_too_weak", "Password too weak", []string{"Password must contain at least one uppercase letter, one lowercase letter, and one number"})
 	}
 
 	return nil
@@ -304,15 +314,17 @@ func (s *UserService) validatePassword(password string) error {
 
 func (s *UserService) toUserProfile(user *models.User) *UserProfile {
 	return &UserProfile{
-		ID:        user.ID,
-		Name:      user.Name,
-		Email:     user.Email,
-		Role:      user.Role,
-		Phone:     user.Phone,
-		Avatar:    user.Avatar,
-		Status:    user.Status,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
+		ID:         user.ID,
+		Name:       user.Name,
+		Email:      user.Email,
+		Role:       user.Role,
+		Phone:      user.Phone,
+		Avatar:     user.Avatar,
+		Status:     user.Status,
+		Department: user.Department,
+		Seniority:  user.Seniority,
+		CreatedAt:  user.CreatedAt,
+		UpdatedAt:  user.UpdatedAt,
 	}
 }
 
@@ -368,7 +380,7 @@ func (s *UserService) DeleteUser(ctx context.Context, userID uint) error {
 // BatchCreateUsers 批量创建用户（优化版本 - 解决N+1查询问题）
 func (s *UserService) BatchCreateUsers(ctx context.Context, requests []*CreateUserRequest) ([]*UserProfile, error) {
 	if len(requests) == 0 {
-		return nil, errors.ValidationErrorWithDetails("requests",  "empty_request",  "No users to create", []string{ "Batch create request is empty"})
+		return nil, errors.ValidationErrorWithDetails("requests", "empty_request", "No users to create", []string{"Batch create request is empty"})
 	}
 
 	// 1. 批量验证所有请求
@@ -455,7 +467,7 @@ func (s *UserService) createSingleUser(ctx context.Context, req *CreateUserReque
 // BatchUpdateUsers 批量更新用户（并发版本）
 func (s *UserService) BatchUpdateUsers(ctx context.Context, updates map[uint]*UpdateUserRequest) ([]*UserProfile, error) {
 	if len(updates) == 0 {
-		return nil, errors.ValidationErrorWithDetails("updates",  "empty_request",  "No users to update", []string{ "Batch update request is empty"})
+		return nil, errors.ValidationErrorWithDetails("updates", "empty_request", "No users to update", []string{"Batch update request is empty"})
 	}
 
 	results := make([]*UserProfile, 0, len(updates))
@@ -558,7 +570,7 @@ func (s *UserService) updateSingleUser(ctx context.Context, userID uint, req *Up
 // BatchDeleteUsers 批量删除用户（并发版本）
 func (s *UserService) BatchDeleteUsers(ctx context.Context, userIDs []uint) error {
 	if len(userIDs) == 0 {
-		return errors.ValidationErrorWithDetails("user_ids",  "empty_request",  "No users to delete", []string{ "Batch delete request is empty"})
+		return errors.ValidationErrorWithDetails("user_ids", "empty_request", "No users to delete", []string{"Batch delete request is empty"})
 	}
 
 	tasks := make([]concurrency.Task, len(userIDs))
@@ -605,7 +617,7 @@ func (s *UserService) BatchDeleteUsers(ctx context.Context, userIDs []uint) erro
 // ConcurrentBatchGetUsers 并发批量获取用户信息
 func (s *UserService) ConcurrentBatchGetUsers(ctx context.Context, userIDs []uint) ([]*UserProfile, error) {
 	if len(userIDs) == 0 {
-		return nil, errors.ValidationErrorWithDetails("user_ids",  "empty_request",  "No users to get", []string{ "Batch get request is empty"})
+		return nil, errors.ValidationErrorWithDetails("user_ids", "empty_request", "No users to get", []string{"Batch get request is empty"})
 	}
 
 	tasks := make([]concurrency.Task, len(userIDs))
@@ -670,7 +682,7 @@ func (s *UserService) ConcurrentBatchGetUsers(ctx context.Context, userIDs []uin
 // BatchChangePassword 批量修改密码（并发版本）
 func (s *UserService) BatchChangePassword(ctx context.Context, changes map[uint]map[string]string) error {
 	if len(changes) == 0 {
-		return errors.ValidationErrorWithDetails("changes",  "empty_request",  "No password changes to process", []string{ "Batch password change request is empty"})
+		return errors.ValidationErrorWithDetails("changes", "empty_request", "No password changes to process", []string{"Batch password change request is empty"})
 	}
 
 	tasks := make([]concurrency.Task, 0, len(changes))
@@ -689,7 +701,7 @@ func (s *UserService) BatchChangePassword(ctx context.Context, changes map[uint]
 					currentPassword, ok1 := changeData["current_password"]
 					newPassword, ok2 := changeData["new_password"]
 					if !ok1 || !ok2 {
-					return errors.ValidationErrorWithDetails("password_change_data", "Invalid password change data", fmt.Sprintf("Invalid password change data for user %d", userID), []string{"invalid_password_change_data"})
+						return errors.ValidationErrorWithDetails("password_change_data", "Invalid password change data", fmt.Sprintf("Invalid password change data for user %d", userID), []string{"invalid_password_change_data"})
 					}
 					return s.ChangePassword(ctx, userID, currentPassword, newPassword)
 				})

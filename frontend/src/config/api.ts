@@ -1,4 +1,5 @@
 // API配置文件 - 生产环境
+import { getToken } from '@/utils/storage'
 
 export interface ApiConfig {
   baseURL: string
@@ -20,7 +21,7 @@ const PRODUCTION_CONFIG: ApiConfig = {
 
 // 开发环境API配置
 const DEVELOPMENT_CONFIG: ApiConfig = {
-  baseURL: 'http://localhost:8080/api/v1', // 直接指向后端服务
+  baseURL: '/api/v1',
   timeout: 10000,
   retryTimes: 1,
   retryDelay: 500,
@@ -78,7 +79,7 @@ export class ApiClient {
         signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('auth_token') || ''}`,
+          Authorization: `Bearer ${getToken() || ''}`,
           ...options.headers,
         },
       })

@@ -718,6 +718,8 @@ type PaymentRepository interface {
 	UpdateStatus(ctx context.Context, id uint, status string) error
 	// GetByPaymentDateRange 获取日期范围内的回款记录
 	GetByPaymentDateRange(ctx context.Context, startDate, endDate string) ([]*models.Payment, error)
+	// GetPaymentAggregation 获取回款聚合统计（按状态分组求和）
+	GetPaymentAggregation(ctx context.Context, monthStart, monthEnd string) (total int64, pendingCount int64, confirmedCount int64, rejectedCount int64, totalAmount float64, monthAmount float64, pendingAmount float64, err error)
 }
 
 // PaymentRepositoryImpl 回款记录数据仓库实现

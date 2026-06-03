@@ -1,10 +1,32 @@
-import axios, { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios'
+import axios, { AxiosRequestConfig, AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios'
 import { message } from '@/utils/messageHelper'
-import { getToken } from '@/utils/storage'
+import { clearStorage, getToken } from '@/utils/storage'
+
+let authRedirecting = false
+
+const isAuthRequest = (url?: string) => {
+  return !!url && (url.includes('/auth/login') || url.includes('/auth/register'))
+}
+
+const handleUnauthorized = (url?: string) => {
+  if (isAuthRequest(url) || authRedirecting) {
+    return
+  }
+
+  authRedirecting = true
+  clearStorage()
+  message.error('登录已过期，请重新登录')
+
+  if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+    window.setTimeout(() => {
+      window.location.assign('/login')
+    }, 100)
+  }
+}
 
 // 创建axios实例
 const service = axios.create({
-  baseURL: 'http://localhost:8080/api/v1',
+  baseURL: '/api/v1',
   timeout: 10000,
   paramsSerializer: {
     indexes: null,
@@ -29,10 +51,10 @@ const service = axios.create({
 
 // 请求拦截器
 service.interceptors.request.use(
-  (config: AxiosRequestConfig): AxiosRequestConfig => {
+  (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
     const token = getToken() // 统一使用getToken
-    if (token && config.headers) {
-      config.headers['Authorization'] = `Bearer ${token}`
+    if (token) {
+      config.headers.set('Authorization', `Bearer ${token}`)
     }
     return config
   },
@@ -95,7 +117,7 @@ service.interceptors.response.use(
 
       // 401: 未登录或token过期
       if (res.code === 401) {
-        // 可以在这里处理登出逻辑
+        handleUnauthorized(response.config.url)
       }
 
       return Promise.reject(new Error(res.msg || res.message || 'Error'))
@@ -120,14 +142,7 @@ service.interceptors.response.use(
       if (shouldShowError) {
         switch (error.response.status) {
           case 401:
-            // 在开发模式下提供更友好的错误提示
-            const isDevMode = process.env.NODE_ENV === 'development'
-            if (isDevMode) {
-              console.warn('🛠️ 开发者模式：认证错误，但不自动重定向')
-              message.error('开发模式认证错误，请检查token设置或重新登录')
-            } else {
-              message.error('未授权，请重新登录')
-            }
+            handleUnauthorized(error.config?.url)
             break
           case 403:
             // 只对非通知API和文件统计API显示403错误
@@ -160,7 +175,14 @@ service.interceptors.response.use(
 )
 
 // 封装GET请求
-export const get = <T>(url: string, params?: any, config?: AxiosRequestConfig): Promise<T> => {
+export const get = <T>(url: string, params?: any, config?: AxiosRequestConfig | boolean): Promise<T> => {
+  // 如果第三个参数是 true，表示这是文件下载请求，返回 Blob
+  if (config === true) {
+    return service.get(url, {
+      params,
+      responseType: 'blob',
+    }) as Promise<T>
+  }
   return service.get(url, { params, ...config })
 }
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Layout, Dropdown, Space, Badge, Avatar, Menu, Spin, Empty } from 'antd'
+import { Layout, Dropdown, Space, Badge, Avatar, Menu, Spin, Empty, Modal } from 'antd'
 import {
   BellOutlined,
   UserOutlined,
@@ -36,6 +36,7 @@ const AppHeader: React.FC = () => {
 
   const [notificationVisible, setNotificationVisible] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const unreadCount = stats.unread || notifications.filter((item) => !item.isRead).length
 
   // 用户菜单项
   const userMenuItems: MenuProps['items'] = [
@@ -52,13 +53,19 @@ const AppHeader: React.FC = () => {
       onClick: () => navigate('/settings'),
     },
     {
-      type: 'divider',
+      type: 'divider' as const,
     },
     {
       key: 'help',
       icon: <QuestionCircleOutlined />,
       label: '帮助中心',
-      onClick: () => navigate('/help'),
+      onClick: () => {
+        Modal.info({
+          title: '帮助中心',
+          content: '当前 MVP 试用版可在工作台发起立案、进入冲突检测、查看审批和维护客户档案。完整帮助中心建设中。',
+          okText: '知道了',
+        })
+      },
     },
     {
       key: 'logout',
@@ -138,6 +145,10 @@ const AppHeader: React.FC = () => {
 
   // 处理标记全部已读
   const handleMarkAllAsRead = () => {
+    if (unreadCount <= 0) {
+      setNotificationVisible(false)
+      return
+    }
     markAllAsRead()
     setNotificationVisible(false)
   }
@@ -167,9 +178,9 @@ const AppHeader: React.FC = () => {
         <div className='notification-header'>
           <div className='notification-title'>
             <span>通知中心</span>
-            {stats.unread > 0 && <span className='unread-count'>{stats.unread} 未读</span>}
+            {unreadCount > 0 && <span className='unread-count'>{unreadCount} 未读</span>}
           </div>
-          {stats.total > 0 && (
+          {unreadCount > 0 && (
             <div className='notification-actions'>
               <span className='action-link' onClick={handleMarkAllAsRead}>
                 全部已读
@@ -180,7 +191,7 @@ const AppHeader: React.FC = () => {
       ),
     },
     {
-      type: 'divider',
+      type: 'divider' as const,
     },
     ...(loading
       ? [
@@ -254,7 +265,7 @@ const AppHeader: React.FC = () => {
     ...(notifications.length > 0
       ? [
           {
-            type: 'divider',
+            type: 'divider' as const,
           },
           {
             key: 'view-all',
@@ -299,7 +310,7 @@ const AppHeader: React.FC = () => {
               title='通知中心'
             >
               <Badge
-                count={stats.unread > 0 ? stats.unread : 0}
+                count={unreadCount > 0 ? unreadCount : 0}
                 size='small'
                 className='notification-badge'
                 overflowCount={99}
@@ -313,7 +324,7 @@ const AppHeader: React.FC = () => {
           <Dropdown menu={{ items: userMenuItems }} placement='bottomRight' trigger={['click']}>
             <div className='user-menu'>
               <Avatar size='small' icon={<UserOutlined />} className='user-avatar' />
-              <span className='user-name'>{user?.real_name || '用户'}</span>
+              <span className='user-name'>{user?.realName || user?.username || '用户'}</span>
             </div>
           </Dropdown>
         </Space>

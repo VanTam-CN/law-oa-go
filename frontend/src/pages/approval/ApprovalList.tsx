@@ -6,6 +6,7 @@ import {
   CloseCircleOutlined,
   SyncOutlined,
   ClockCircleOutlined,
+  EyeOutlined,
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router'
 import { getApprovals, cancelApproval, getApprovalStats, ApprovalItem } from '@/services/approval'
@@ -25,8 +26,9 @@ const ApprovalList: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true)
   const [myApprovals, setMyApprovals] = useState<ApprovalItem[]>([])
   const [pendingApprovals, setPendingApprovals] = useState<ApprovalItem[]>([])
+  const [approvedApprovals, setApprovedApprovals] = useState<ApprovalItem[]>([])
   const [stats, setStats] = useState<ApprovalStats | null>(null)
-  const [activeTab, setActiveTab] = useState<string>('my')
+  const [activeTab, setActiveTab] = useState<string>('pending')
 
   useEffect(() => {
     fetchApprovals()
@@ -36,12 +38,23 @@ const ApprovalList: React.FC = () => {
   const fetchApprovals = async () => {
     try {
       setLoading(true)
-      const data = await getApprovals(activeTab as 'pending' | 'my')
 
+      // 根据当前标签页获取数据
       if (activeTab === 'my') {
+        const data = await getApprovals('my')
         setMyApprovals(data)
-      } else {
+      } else if (activeTab === 'pending') {
+        const data = await getApprovals('pending')
         setPendingApprovals(data)
+      } else if (activeTab === 'approved') {
+        // 获取已审批的列表（通过API或从待审批列表过滤）
+        // 这里假设后端有相应的API，如果没有则从前端过滤
+        const data = await getApprovals('pending')
+        // 筛选出已经处理过的（状态为 approved 或 rejected）
+        const processed = data.filter(
+          (item) => item.status === 'approved' || item.status === 'rejected'
+        )
+        setApprovedApprovals(processed)
       }
     } catch (error) {
       console.error('Failed to fetch approvals:', error)
@@ -195,6 +208,7 @@ const ApprovalList: React.FC = () => {
           dataSource={pendingApprovals}
           loading={loading && activeTab === 'pending'}
           pagination={{ pageSize: 10 }}
+          size='small'
         />
       ),
     },
@@ -213,6 +227,31 @@ const ApprovalList: React.FC = () => {
           dataSource={myApprovals}
           loading={loading && activeTab === 'my'}
           pagination={{ pageSize: 10 }}
+          size='small'
+        />
+      ),
+    },
+    {
+      key: 'approved',
+      label: (
+        <span>
+          已审批
+          {stats && (
+            <Badge
+              count={stats.approvedRequests + stats.rejectedRequests}
+              style={{ marginLeft: 8 }}
+            />
+          )}
+        </span>
+      ),
+      children: (
+        <Table
+          rowKey='id'
+          columns={columns}
+          dataSource={approvedApprovals}
+          loading={loading && activeTab === 'approved'}
+          pagination={{ pageSize: 10 }}
+          size='small'
         />
       ),
     },

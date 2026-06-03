@@ -63,8 +63,8 @@ func (r *NotificationQueueRepositoryImpl) Create(ctx context.Context, notificati
 func (r *NotificationQueueRepositoryImpl) FindByID(ctx context.Context, id uint) (*models.NotificationQueue, error) {
 	var notification models.NotificationQueue
 	err := r.db.WithContext(ctx).
-		Preload("CreatedBy").
-		Preload("ApprovedBy").
+		Preload("CreatedByUser").
+		Preload("ApprovedByUser").
 		First(&notification, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -122,8 +122,8 @@ func (r *NotificationQueueRepositoryImpl) List(ctx context.Context, params *Noti
 	}
 
 	query := r.db.WithContext(ctx).Model(&models.NotificationQueue{}).
-		Preload("CreatedBy").
-		Preload("ApprovedBy")
+		Preload("CreatedByUser").
+		Preload("ApprovedByUser")
 
 	// 状态筛选
 	if params.Status != "" {
@@ -208,7 +208,7 @@ func (r *NotificationQueueRepositoryImpl) GetByStatus(ctx context.Context, statu
 	var notifications []models.NotificationQueue
 	err := r.db.WithContext(ctx).
 		Where("status = ?", status).
-		Preload("CreatedBy").
+		Preload("CreatedByUser").
 		Order("created_at ASC").
 		Find(&notifications).Error
 	if err != nil {
@@ -232,7 +232,7 @@ func (r *NotificationQueueRepositoryImpl) GetByRecipient(ctx context.Context, re
 	}
 
 	err := query.
-		Preload("CreatedBy").
+		Preload("CreatedByUser").
 		Order("created_at DESC").
 		Find(&notifications).Error
 	if err != nil {
@@ -316,7 +316,7 @@ func (r *NotificationQueueRepositoryImpl) GetPendingApprovals(ctx context.Contex
 	var notifications []models.NotificationQueue
 	err := r.db.WithContext(ctx).
 		Where("status = ? AND contains_sensitive_info = ?", "pending", true).
-		Preload("CreatedBy").
+		Preload("CreatedByUser").
 		Order("created_at ASC").
 		Find(&notifications).Error
 	if err != nil {

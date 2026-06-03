@@ -196,6 +196,9 @@ func (s *SimpleHealthCheck) Check(ctx context.Context) *HealthCheckResult {
 	start := time.Now()
 	result := s.checker(ctx)
 	result.Duration = time.Since(start).Milliseconds()
+	if result.Duration == 0 {
+		result.Duration = 1
+	}
 	result.Timestamp = start
 	result.Name = s.name
 
@@ -248,6 +251,10 @@ func NewHealthCheckBuilder() *HealthCheckBuilder {
 
 // WithConfig 设置配置
 func (b *HealthCheckBuilder) WithConfig(config *HealthConfig) *HealthCheckBuilder {
+	if config == nil {
+		b.config = &DefaultHealthConfig
+		return b
+	}
 	b.config = config
 	return b
 }
@@ -287,19 +294,23 @@ func (b *HealthCheckBuilder) WithConcurrency(service interface{}) *HealthCheckBu
 
 // WithExternalAPI 添加外部API检查
 func (b *HealthCheckBuilder) WithExternalAPI(url string) *HealthCheckBuilder {
-	if b.config.EnableExternalAPICheck {
-		check := b.factory.CreateExternalAPICheck(url, b.config.ExternalAPITimeout)
-		b.registry.Register("external_api", check)
+	timeout := b.config.ExternalAPITimeout
+	if timeout <= 0 {
+		timeout = DefaultHealthConfig.ExternalAPITimeout
 	}
+	check := b.factory.CreateExternalAPICheck(url, timeout)
+	b.registry.Register("external_api", check)
 	return b
 }
 
 // WithStorage 添加存储检查
 func (b *HealthCheckBuilder) WithStorage(path string) *HealthCheckBuilder {
-	if b.config.EnableStorageCheck {
-		check := b.factory.CreateStorageCheck(path, b.config.StorageTimeout)
-		b.registry.Register("storage", check)
+	timeout := b.config.StorageTimeout
+	if timeout <= 0 {
+		timeout = DefaultHealthConfig.StorageTimeout
 	}
+	check := b.factory.CreateStorageCheck(path, timeout)
+	b.registry.Register("storage", check)
 	return b
 }
 

@@ -1,7 +1,7 @@
-// Package main Law Office Automation System
-// @title Law Office Automation API
+// Package main 示例律师事务所OA
+// @title 示例律师事务所OA API
 // @version 1.0
-// @description 法律事务所自动化管理系统 API
+// @description 示例律师事务所OA 后端接口
 // @termsOfService http://swagger.io/terms/
 
 // @contact.name API Support
@@ -36,6 +36,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"gorm.io/gorm"
 	_ "law-oa-go/docs" // Swagger docs
 	"law-oa-go/internal/cache"
 	"law-oa-go/internal/config"
@@ -43,8 +44,8 @@ import (
 	"law-oa-go/internal/errors"
 	"law-oa-go/internal/handlers"
 	"law-oa-go/internal/health"
-	"law-oa-go/internal/middleware"
 	"law-oa-go/internal/metrics"
+	"law-oa-go/internal/middleware"
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/router"
 	"law-oa-go/internal/security"
@@ -74,7 +75,7 @@ func main() {
 			log.Println("缓存服务初始化成功")
 		}
 	}
-	
+
 	// 验证缓存服务是否真的初始化了
 	if cache.DefaultCacheService == nil {
 		log.Fatal("缓存服务初始化失败：DefaultCacheService 仍然为 nil")
@@ -148,7 +149,7 @@ func main() {
 
 	// 初始化Elasticsearch客户端
 	var esClient *elasticsearch.Client
-	
+
 	esClient, err = database.InitElasticsearch(cfg.Elasticsearch)
 	if err != nil {
 		log.Printf("Elasticsearch初始化失败: %v, 将使用数据库搜索回退", err)
@@ -198,10 +199,10 @@ func main() {
 	app.Use(middleware.Recovery())            // 崩溃恢复
 	app.Use(security.SecurityHeaders())       // 安全头
 	app.Use(security.CORS())                  // 跨域设置
-	app.Use(security.RateLimiterMiddleware())   // 限流控制
+	app.Use(security.RateLimiterMiddleware()) // 限流控制
 
-	// 使用基本的错误处理中间件
-	app.Use(gin.Recovery())
+	// 注意：不使用 gin.Recovery()，因为自定义 middleware.Recovery() 已在上面注册
+	// gin.Recovery() 会先捕获 panic 并返回空 500 body，覆盖自定义 Recovery 的 JSON 响应
 
 	// 应用性能监控中间件
 	app.Use(metrics.PrometheusMiddleware())
@@ -224,22 +225,32 @@ func main() {
 		log.Println("🔧 集成测试路由注册完成")
 	}
 
+	db := database.GetOptimizedDB().DB
+
+	// 自动迁移用户和权限模型。已由 SQL 迁移管理的表跳过运行时 AutoMigrate，避免 GORM 误判历史约束名。
+	if migratedTablesExist(db, &models.User{}, &models.Role{}, &models.Permission{}, &models.RolePermission{}, &models.UserRole{}) {
+		log.Println("用户/RBAC表已存在，跳过自动迁移")
+	} else if err := db.AutoMigrate(
+		&models.User{},
+		&models.Role{},
+		&models.Permission{},
+		&models.RolePermission{},
+		&models.UserRole{},
+	); err != nil {
+		log.Printf("用户/RBAC表自动迁移失败: %v", err)
+	} else {
+		log.Println("用户/RBAC表自动迁移成功")
+	}
+
 	// 初始化RBAC数据
-	if err := database.InitRBACData(database.GetOptimizedDB().DB); err != nil {
+	if err := database.InitRBACData(db); err != nil {
 		log.Printf("RBAC数据初始化失败: %v", err)
 	} else {
 		log.Println("RBAC数据初始化成功")
 	}
 
-	// 自动迁移数据库模型
-	if err := database.GetOptimizedDB().DB.AutoMigrate(&models.User{}); err != nil {
-		log.Printf("用户表自动迁移失败: %v", err)
-	} else {
-		log.Println("用户表自动迁移成功")
-	}
-
 	// 自动迁移集成相关模型
-	if err := database.GetOptimizedDB().DB.AutoMigrate(
+	if err := db.AutoMigrate(
 		&models.ConflictCheckAssociation{},
 		&models.CaseCreationAssociation{},
 		&models.ApprovalIntegrationMetadata{},
@@ -247,6 +258,35 @@ func main() {
 		log.Printf("集成模型自动迁移失败: %v", err)
 	} else {
 		log.Println("集成模型自动迁移成功")
+	}
+
+	// 自动迁移财务模型
+	if err := db.AutoMigrate(
+		&models.Contract{},
+		&models.PaymentMilestone{},
+		&models.Invoice{},
+		&models.Payment{},
+		&models.BadDebtRecord{},
+		&models.CommissionRecord{},
+		&models.CommissionRule{},
+		&models.FeeTemplate{},
+	); err != nil {
+		log.Printf("财务模型自动迁移失败: %v", err)
+	} else {
+		log.Println("财务模型自动迁移成功")
+	}
+
+	// 自动迁移试用 MVP 必需模型
+	if migratedTablesExist(db, &models.InboxItem{}, &models.ClientTrustAccount{}, &models.ClientTrustTransaction{}) {
+		log.Println("MVP模型表已存在，跳过自动迁移")
+	} else if err := db.AutoMigrate(
+		&models.InboxItem{},
+		&models.ClientTrustAccount{},
+		&models.ClientTrustTransaction{},
+	); err != nil {
+		log.Printf("MVP模型自动迁移失败: %v", err)
+	} else {
+		log.Println("MVP模型自动迁移成功")
 	}
 
 	// 添加性能监控端点
@@ -262,12 +302,11 @@ func main() {
 	app.GET("/health/live", healthMiddleware.LivenessHandler)
 	app.GET("/health/ready", healthMiddleware.ReadinessHandler)
 
-	// 添加详细健康检查端点
-	app.GET("/api/v1/health", healthMiddleware.HealthCheckHandler)
-	app.GET("/api/v1/health/detailed", healthMiddleware.DetailedHealthCheckHandler)
-	app.GET("/api/v1/health/metrics", healthMiddleware.HealthCheckMetricsHandler)
-	app.GET("/api/v1/health/dependencies", healthMiddleware.DependencyHealthHandler)
-	app.GET("/api/v1/health/history", healthMiddleware.HealthCheckHistoryHandler)
+	// 添加详细健康检查端点（/api/v1/health 已在 router.go 的 public 组中注册）
+	app.GET("/health/detailed", healthMiddleware.DetailedHealthCheckHandler)
+	app.GET("/health/metrics", healthMiddleware.HealthCheckMetricsHandler)
+	app.GET("/health/dependencies", healthMiddleware.DependencyHealthHandler)
+	app.GET("/health/history", healthMiddleware.HealthCheckHistoryHandler)
 
 	// 添加健康状态页面
 	app.GET("/health/status", healthMiddleware.HealthStatusPageHandler)
@@ -463,4 +502,13 @@ func main() {
 	}
 
 	log.Println("服务器已关闭")
+}
+
+func migratedTablesExist(db *gorm.DB, models ...interface{}) bool {
+	for _, model := range models {
+		if !db.Migrator().HasTable(model) {
+			return false
+		}
+	}
+	return true
 }

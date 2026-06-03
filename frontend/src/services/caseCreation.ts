@@ -1,5 +1,6 @@
 import { message } from '@/utils/messageHelper'
-import { post } from './api'
+import { getUserInfo } from '@/utils/storage'
+import { post } from './http'
 
 // 案件创建服务
 
@@ -156,26 +157,11 @@ export class CaseWorkflowService {
       reason = reason || '敏感案件需要合伙人审批'
     }
 
-    // 模拟获取审批人列表
-    const approvers = this.getApproversByLevel(approvalLevel)
-
     return {
       requiresApproval,
       approvalLevel,
-      approvers,
+      approvers: [],
       reason,
-    }
-  }
-
-  // 根据审批级别获取审批人
-  private static getApproversByLevel(level: string): string[] {
-    switch (level) {
-      case 'PARTNER':
-        return ['partner1@lawfirm.com', 'partner2@lawfirm.com']
-      case 'SENIOR':
-        return ['senior1@lawfirm.com', 'senior2@lawfirm.com']
-      default:
-        return ['junior1@lawfirm.com']
     }
   }
 
@@ -185,18 +171,27 @@ export class CaseWorkflowService {
       const workflow = this.determineApprovalWorkflow(caseData)
 
       if (workflow.requiresApproval) {
-        // 这里应该调用实际的工作流API
-        console.log('触发审批流程:', {
-          caseId,
-          level: workflow.approvalLevel,
-          approvers: workflow.approvers,
-          reason: workflow.reason,
+        const currentUser = getUserInfo()
+        const approval = await post<any>('/approvals', {
+          type: 'case_creation',
+          title: `案件立案审批：${caseData.caseName || caseData.title || caseId}`,
+          content: workflow.reason || '案件创建后进入立案审批',
+          category: 'case',
+          applicant: currentUser?.real_name || currentUser?.username || caseData.applicant || '当前用户',
+          applicantId: String(currentUser?.id || caseData.applicantId || ''),
+          department: currentUser?.department || caseData.department || '业务部',
+          departmentId: currentUser?.department_id ? String(currentUser.department_id) : caseData.departmentId,
+          urgency: workflow.approvalLevel === 'PARTNER' ? 'urgent' : 'normal',
+          priority: workflow.approvalLevel === 'PARTNER' ? 'high' : 'medium',
+          workflowType: 'CASE_CREATION',
+          metadata: {
+            case_id: caseId,
+            approval_level: workflow.approvalLevel,
+            reason: workflow.reason,
+          },
         })
 
-        // 模拟API调用
-        await new Promise((resolve) => setTimeout(resolve, 1000))
-
-        message.info(`案件已提交${workflow.approvalLevel === 'PARTNER' ? '合伙人' : '高级'}审批`)
+        message.info(`案件已提交审批：${(approval as any)?.request_number || (approval as any)?.id || caseId}`)
         return true
       }
 
@@ -216,16 +211,28 @@ export class CaseWorkflowService {
     participants: string[],
   ): Promise<void> {
     try {
-      // 模拟发送通知
-      console.log('发送状态变更通知:', {
-        caseId,
-        oldStatus,
-        newStatus,
-        participants,
-      })
+      const numericCaseId = Number(caseId)
+      const recipientIds = participants
+        .map((participant) => Number(participant))
+        .filter((recipientId) => Number.isInteger(recipientId) && recipientId > 0)
 
-      // 这里应该调用通知服务API
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      await Promise.all(
+        recipientIds.map((recipientId) =>
+          post('/notifications', {
+            trigger_type: 'case_status_changed',
+            trigger_id: Number.isInteger(numericCaseId) ? numericCaseId : 0,
+            case_id: Number.isInteger(numericCaseId) ? numericCaseId : undefined,
+            recipient_type: 'user',
+            recipient_id: recipientId,
+            recipient_name: String(recipientId),
+            channel: 'system',
+            subject: '案件状态变更',
+            content: `案件 ${caseId} 状态由 ${oldStatus || '新建'} 变更为 ${newStatus}`,
+            priority: 'normal',
+            auto_send: false,
+          }),
+        ),
+      )
     } catch (error) {
       console.error('通知发送失败:', error)
     }
@@ -324,7 +331,7 @@ export class CaseCreationService {
         updateTime: new Date().toISOString(),
       }
 
-      // 5. 保存案件到数据库（模拟）
+      // 5. 保存案件到数据库
       const caseId = await this.saveCaseToDatabase(caseData)
 
       // 6. 触发工作流
@@ -372,9 +379,8 @@ export class CaseCreationService {
       console.log('正在保存案件到数据库:', apiData)
 
       // 调用真实的后端API
-      const response = await post('/cases', apiData)
+      const response = await post<any>('/cases', apiData)
 
-      // 修复：HTTP拦截器已经返回了data对象，所以直接访问response而不是response.data
       if (response && response.id) {
         const caseId = response.id.toString()
         console.log('案件保存成功:', { caseId, ...response })

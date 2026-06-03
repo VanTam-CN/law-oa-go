@@ -54,7 +54,7 @@ export const logout = (): Promise<any> => {
  * @returns 用户信息
  */
 export const getCurrentUser = (): Promise<UserInfo> => {
-  return get<UserInfo>('/auth/me')
+  return get<UserInfo>('/users/me')
 }
 
 /**
@@ -66,7 +66,7 @@ export const changePassword = (data: {
   old_password: string
   new_password: string
 }): Promise<any> => {
-  return post('/auth/change-password', data)
+  return post('/users/change-password', data)
 }
 
 /**
@@ -75,7 +75,7 @@ export const changePassword = (data: {
  * @returns 更新后的用户信息
  */
 export const updateProfile = (data: Partial<UserInfo>): Promise<UserInfo> => {
-  return put<UserInfo>('/auth/profile', data)
+  return put<UserInfo>('/users/profile', data)
 }
 
 /**
@@ -83,12 +83,8 @@ export const updateProfile = (data: Partial<UserInfo>): Promise<UserInfo> => {
  * @param file 头像文件
  * @returns 上传结果
  */
-export const uploadAvatar = (file: File): Promise<any> => {
+export const uploadAvatar = (file: File): Promise<{ url: string; user?: UserInfo }> => {
   const formData = new FormData()
   formData.append('avatar', file)
-  return post('/auth/avatar', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  })
+  return post('/users/avatar', formData)
 }

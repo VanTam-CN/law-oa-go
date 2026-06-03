@@ -42,7 +42,7 @@ export function checkTokenConsistency(): TokenCheckResult {
 }
 
 export function checkUserInfoConsistency(): { userInfo: any; hasUserData: boolean } {
-  const userInfo = localStorage.getItem('user_info')
+  const userInfo = localStorage.getItem('law_oa_user_info')
   const hasUserData = !!userInfo
 
   return {

@@ -710,7 +710,10 @@ const ConflictCheckInline: React.FC<ConflictCheckInlineProps> = ({
                   config={finalActionConfig}
                   isCompact={isCompact}
                   onRecheck={handleRecheck}
-                  onViewAllConflicts={() => onViewDetails?.(currentResult?.conflicts[0]!)}
+                  onViewAllConflicts={() => {
+                    const firstConflict = currentResult?.conflicts[0]
+                    if (firstConflict) onViewDetails?.(firstConflict)
+                  }}
                   onMarkAllResolved={() =>
                     handleMarkResolved(currentResult?.conflicts.map((c) => c.id) || [])
                   }

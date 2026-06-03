@@ -19,7 +19,7 @@ const InterestCalculator: React.FC = () => {
     try {
       setLoading(true)
       const response = await calculateInterest(values)
-      setResult(response.data)
+      setResult(response)
     } catch (error) {
       console.error('Failed to calculate interest:', error)
     } finally {

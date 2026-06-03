@@ -375,7 +375,7 @@ const WaiverApplicationForm: React.FC<WaiverApplicationFormProps> = ({
       const values = await form.validateFields()
 
       const request: CreateWaiverApplicationRequest = {
-        caseId: values.caseId || caseId!,
+        caseId: values.caseId || caseId || '',
         waiverType: values.waiverType,
         description: values.description,
         justification: values.justification || '',

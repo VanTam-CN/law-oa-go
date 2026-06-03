@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"law-oa-go/internal/common"
 	"law-oa-go/internal/models"
@@ -15,14 +16,16 @@ import (
 )
 
 type ApprovalHandler struct {
-	db              *gorm.DB
-	approvalService *services.ApprovalService
+	db                      *gorm.DB
+	approvalService         *services.ApprovalService
+	approvalTemplateService *services.ApprovalTemplateService
 }
 
 func NewApprovalHandler(db *gorm.DB) *ApprovalHandler {
 	return &ApprovalHandler{
-		db:              db,
-		approvalService: services.NewApprovalService(db),
+		db:                      db,
+		approvalService:         services.NewApprovalService(db),
+		approvalTemplateService: services.NewApprovalTemplateService(db),
 	}
 }
 
@@ -43,6 +46,14 @@ func (a *approvalServiceAdapter) CreateApproval(userID string, userName string, 
 
 func (a *approvalServiceAdapter) GetApproval(userID string, id string) (*models.ApprovalRequest, error) {
 	return a.service.GetApproval(userID, id)
+}
+
+func (a *approvalServiceAdapter) GetApprovalByID(id string) (*models.ApprovalRequest, error) {
+	return a.service.GetApprovalByID(id)
+}
+
+func (a *approvalServiceAdapter) SubmitApproval(userID string, id string) (*models.ApprovalRequest, error) {
+	return a.service.SubmitApproval(userID, id)
 }
 
 func (a *approvalServiceAdapter) ProcessApproval(userID string, userName string, id string, decisionReq *models.ApprovalDecisionRequest) (*models.ApprovalRequest, error) {
@@ -127,7 +138,7 @@ func (h *ApprovalHandler) GetPendingApprovals(c *gin.Context) {
 		Page:        page,
 		PageSize:    pageSize,
 		Status:      models.ApprovalStatusSubmitted, // 只获取已提交的
-		ApplicantID: "", // 不限定申请人
+		ApplicantID: "",                             // 不限定申请人
 	}
 
 	approvals, err := h.approvalService.GetPendingApprovals(userIDStr, &req)
@@ -228,8 +239,10 @@ func (h *ApprovalHandler) GetApproval(c *gin.Context) {
 
 	approval, err := h.approvalService.GetApproval(userIDStr, id)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if err == gorm.ErrRecordNotFound || strings.Contains(err.Error(), "record not found") {
 			common.Error(c, http.StatusNotFound, "审批记录不存在")
+		} else if strings.Contains(err.Error(), "无权") {
+			common.Error(c, http.StatusForbidden, "无权查看此审批记录")
 		} else {
 			log.Printf("获取审批详情失败: %v", err)
 			common.Error(c, http.StatusInternalServerError, "获取审批详情失败")
@@ -594,4 +607,240 @@ func (h *ApprovalHandler) UpdateApproval(c *gin.Context) {
 	}
 
 	common.APISuccess(c, approval)
+}
+
+// CreateFromTemplate 从模板创建审批
+func (h *ApprovalHandler) CreateFromTemplate(c *gin.Context) {
+	// 获取当前用户ID
+	userID, exists := c.Get("user_id")
+	if !exists {
+		common.Error(c, http.StatusUnauthorized, "未授权访问")
+		return
+	}
+
+	var userIDStr string
+	switch v := userID.(type) {
+	case uint:
+		userIDStr = strconv.FormatUint(uint64(v), 10)
+	case int:
+		userIDStr = strconv.Itoa(v)
+	case float64:
+		userIDStr = strconv.FormatInt(int64(v), 10)
+	case string:
+		userIDStr = v
+	default:
+		common.Error(c, http.StatusUnauthorized, "用户ID格式错误")
+		return
+	}
+
+	// 解析请求数据
+	var req struct {
+		TemplateName string                   `json:"template_name" binding:"required"`
+		Title        string                   `json:"title" binding:"required"`
+		Type         string                   `json:"type" binding:"required"`
+		Category     string                   `json:"category"`
+		Content      string                   `json:"content" binding:"required"`
+		Metadata     map[string]interface{}   `json:"metadata"`
+		Attachments  []map[string]interface{} `json:"attachments"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Printf("请求参数错误: %v", err)
+		common.Error(c, http.StatusBadRequest, "请求参数错误")
+		return
+	}
+
+	// 构建创建请求
+	createReq := &models.CreateApprovalRequest{
+		Title:        req.Title,
+		Type:         req.Type,
+		Category:     req.Category,
+		Content:      req.Content,
+		WorkflowType: req.TemplateName,
+		Metadata:     req.Metadata,
+		Attachments:  req.Attachments,
+	}
+
+	// 从模板创建审批
+	approval, err := h.approvalTemplateService.CreateFromTemplate(req.TemplateName, userIDStr, "", createReq, req.Metadata)
+	if err != nil {
+		log.Printf("从模板创建审批失败: %v", err)
+		common.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	common.APISuccess(c, approval)
+}
+
+// GetApprovalFlow 获取审批流程
+func (h *ApprovalHandler) GetApprovalFlow(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		common.Error(c, http.StatusBadRequest, "审批ID不能为空")
+		return
+	}
+
+	flow, err := h.approvalTemplateService.GetApprovalFlow(id)
+	if err != nil {
+		log.Printf("获取审批流程失败: %v", err)
+		common.Error(c, http.StatusInternalServerError, "获取审批流程失败")
+		return
+	}
+
+	common.APISuccess(c, flow)
+}
+
+// ProcessNode 处理审批节点
+func (h *ApprovalHandler) ProcessNode(c *gin.Context) {
+	approvalID := c.Param("id")
+	nodeIDStr := c.Param("nodeId")
+
+	if approvalID == "" || nodeIDStr == "" {
+		common.Error(c, http.StatusBadRequest, "参数错误")
+		return
+	}
+
+	// 获取当前用户ID
+	userID, exists := c.Get("user_id")
+	if !exists {
+		common.Error(c, http.StatusUnauthorized, "未授权访问")
+		return
+	}
+
+	var userIDStr string
+	switch v := userID.(type) {
+	case uint:
+		userIDStr = strconv.FormatUint(uint64(v), 10)
+	case int:
+		userIDStr = strconv.Itoa(v)
+	case float64:
+		userIDStr = strconv.FormatInt(int64(v), 10)
+	case string:
+		userIDStr = v
+	default:
+		common.Error(c, http.StatusUnauthorized, "用户ID格式错误")
+		return
+	}
+
+	nodeID, err := strconv.ParseUint(nodeIDStr, 10, 64)
+	if err != nil {
+		common.Error(c, http.StatusBadRequest, "节点ID格式错误")
+		return
+	}
+
+	// 解析请求
+	var req struct {
+		Action  string `json:"action" binding:"required"`
+		Comment string `json:"comment"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.Error(c, http.StatusBadRequest, "请求参数错误")
+		return
+	}
+
+	node, err := h.approvalTemplateService.ProcessNode(uint(nodeID), req.Action, req.Comment, userIDStr)
+	if err != nil {
+		log.Printf("处理审批节点失败: %v", err)
+		common.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	common.APISuccess(c, node)
+}
+
+// GetAllTemplates 获取所有审批模板
+func (h *ApprovalHandler) GetAllTemplates(c *gin.Context) {
+	templates, err := h.approvalTemplateService.GetAllTemplates()
+	if err != nil {
+		log.Printf("获取审批模板失败: %v", err)
+		common.Error(c, http.StatusInternalServerError, "获取审批模板失败")
+		return
+	}
+
+	common.APISuccess(c, templates)
+}
+
+// InitializeTemplates 初始化默认模板
+func (h *ApprovalHandler) InitializeTemplates(c *gin.Context) {
+	if err := h.approvalTemplateService.InitializeDefaultTemplates(); err != nil {
+		log.Printf("初始化默认模板失败: %v", err)
+		common.Error(c, http.StatusInternalServerError, "初始化默认模板失败")
+		return
+	}
+
+	common.APISuccess(c, gin.H{"message": "默认模板初始化成功"})
+}
+
+// SupportCountersign 支持会签
+func (h *ApprovalHandler) SupportCountersign(c *gin.Context) {
+	approvalID := c.Param("id")
+	stepOrderStr := c.Param("stepOrder")
+
+	if approvalID == "" || stepOrderStr == "" {
+		common.Error(c, http.StatusBadRequest, "参数错误")
+		return
+	}
+
+	stepOrder, err := strconv.Atoi(stepOrderStr)
+	if err != nil {
+		common.Error(c, http.StatusBadRequest, "步骤序号格式错误")
+		return
+	}
+
+	if err := h.approvalTemplateService.SupportCountersign(approvalID, stepOrder); err != nil {
+		log.Printf("设置会签失败: %v", err)
+		common.Error(c, http.StatusInternalServerError, "设置会签失败")
+		return
+	}
+
+	common.APISuccess(c, gin.H{"message": "会签设置成功"})
+}
+
+// SupportOrSign 支持或签
+func (h *ApprovalHandler) SupportOrSign(c *gin.Context) {
+	approvalID := c.Param("id")
+	stepOrderStr := c.Param("stepOrder")
+
+	if approvalID == "" || stepOrderStr == "" {
+		common.Error(c, http.StatusBadRequest, "参数错误")
+		return
+	}
+
+	stepOrder, err := strconv.Atoi(stepOrderStr)
+	if err != nil {
+		common.Error(c, http.StatusBadRequest, "步骤序号格式错误")
+		return
+	}
+
+	if err := h.approvalTemplateService.SupportOrSign(approvalID, stepOrder); err != nil {
+		log.Printf("设置或签失败: %v", err)
+		common.Error(c, http.StatusInternalServerError, "设置或签失败")
+		return
+	}
+
+	common.APISuccess(c, gin.H{"message": "或签设置成功"})
+}
+
+// ReturnToPrevious 退回到上一步
+func (h *ApprovalHandler) ReturnToPrevious(c *gin.Context) {
+	approvalID := c.Param("id")
+	stepOrderStr := c.Param("stepOrder")
+
+	if approvalID == "" || stepOrderStr == "" {
+		common.Error(c, http.StatusBadRequest, "参数错误")
+		return
+	}
+
+	stepOrder, err := strconv.Atoi(stepOrderStr)
+	if err != nil {
+		common.Error(c, http.StatusBadRequest, "步骤序号格式错误")
+		return
+	}
+
+	if err := h.approvalTemplateService.ReturnToPrevious(approvalID, stepOrder); err != nil {
+		log.Printf("退回失败: %v", err)
+		common.Error(c, http.StatusInternalServerError, "退回失败")
+		return
+	}
+
+	common.APISuccess(c, gin.H{"message": "退回成功"})
 }

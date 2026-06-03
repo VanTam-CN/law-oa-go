@@ -1,4 +1,4 @@
-import { api } from './http'
+import { get, post } from './http'
 
 // v2 冲突检测相关 API 接口
 
@@ -88,21 +88,21 @@ export const conflictV2Api = {
    * 快速冲突检测
    */
   quickCheck: (request: ConflictCheckRequestV2) => {
-    return api.post<ConflictCheckResultV2>('/api/v2/conflict/quick-check', request)
+    return post<ConflictCheckResultV2>('/api/v2/conflict/quick-check', request)
   },
 
   /**
    * 详细冲突检测
    */
   detailedCheck: (request: ConflictCheckRequestV2) => {
-    return api.post<ConflictCheckResultV2>('/api/v2/conflict/detailed-check', request)
+    return post<ConflictCheckResultV2>('/api/v2/conflict/detailed-check', request)
   },
 
   /**
    * 生成 PDF 报告
    */
   generateReport: (request: ReportGenerationRequest) => {
-    return api.post<ConflictReport>('/api/conflict/report', request)
+    return post<ConflictReport>('/api/conflict/report', request)
   },
 
   /**
@@ -114,16 +114,14 @@ export const conflictV2Api = {
     limit?: number
     offset?: number
   }) => {
-    return api.get<{ list: ConflictReport[]; total: number }>('/api/conflict/reports', { params })
+    return get<{ list: ConflictReport[]; total: number }>(`/api/conflict/reports?${new URLSearchParams(params as any).toString()}`)
   },
 
   /**
    * 下载报告
    */
   downloadReport: (reportId: number) => {
-    return api.get<Blob>(`/api/conflict/reports/${reportId}/download`, {
-      responseType: 'blob',
-    })
+    return get<Blob>(`/api/conflict/reports/${reportId}/download`)
   },
 
   /**
@@ -135,7 +133,7 @@ export const conflictV2Api = {
     limit?: number
     offset?: number
   }) => {
-    return api.get<{ list: ConflictScanJob[]; total: number }>('/api/conflict/scan-jobs', { params })
+    return get<{ list: ConflictScanJob[]; total: number }>(`/api/conflict/scan-jobs?${new URLSearchParams(params as any).toString()}`)
   },
 
   /**
@@ -146,14 +144,14 @@ export const conflictV2Api = {
     triggerReason?: string
     scanScope?: string
   }) => {
-    return api.post<ConflictScanJob>('/api/conflict/scan/trigger', request)
+    return post<ConflictScanJob>('/api/conflict/scan/trigger', request)
   },
 
   /**
    * 获取扫描统计
    */
   getScanStats: () => {
-    return api.get<{
+    return get<{
       totalJobs: number
       runningJobs: number
       completedJobs: number
@@ -166,7 +164,7 @@ export const conflictV2Api = {
    * 验证报告签名
    */
   verifySignature: (reportId: number) => {
-    return api.get<{
+    return get<{
       valid: boolean
       signedBy: string
       signedAt: string

@@ -30,6 +30,7 @@ import {
 } from '@ant-design/icons'
 import type { UploadProps } from 'antd'
 import { enhancedCaseAPI } from '@/services/enhancedCase'
+import { getToken } from '@/utils/storage'
 import MultiClientSelector from './case/MultiClientSelector'
 import dayjs from 'dayjs'
 
@@ -207,7 +208,7 @@ const EnhancedCreateCaseModal: React.FC<EnhancedCreateCaseModalProps> = ({
     name: 'file',
     action: '/api/lawfirm/file/upload',
     headers: {
-      Authorization: `Bearer ${localStorage.getItem('token')}`,
+      Authorization: `Bearer ${getToken() || ''}`,
     },
     onChange(info) {
       if (info.file.status === 'done') {

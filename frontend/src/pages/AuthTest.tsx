@@ -24,7 +24,7 @@ const AuthTest: React.FC = () => {
         })
       } catch (error) {
         setAuthState({
-          error: error.message,
+          error: error instanceof Error ? error.message : String(error),
           env: process.env.NODE_ENV,
         })
       } finally {

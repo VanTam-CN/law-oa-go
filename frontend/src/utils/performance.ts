@@ -3,6 +3,8 @@
  * 专为1080p显示器优化提供性能监控和优化功能
  */
 
+import { useState, useCallback, useEffect } from 'react'
+
 // 性能监控配置
 export interface PerformanceConfig {
   targetFrameTime: number // 目标帧时间（毫秒）
@@ -16,12 +18,12 @@ const DEFAULT_CONFIG: PerformanceConfig = {
   targetFrameTime: 16.67, // 60fps
   maxRenderTime: 100, // 最大渲染时间
   memoryThreshold: 100, // 100MB内存阈值
-  enableMonitoring: process.env.NODE_ENV === 'development',
+    enableMonitoring: import.meta.env.DEV,
 }
 
 // 性能监控器
 export class PerformanceMonitor {
-  private config: PerformanceConfig
+  readonly config: PerformanceConfig
   private observers: PerformanceObserver[] = []
   private metrics: Map<string, number[]> = new Map()
 
@@ -61,7 +63,7 @@ export class PerformanceMonitor {
     if (!this.metrics.has(name)) {
       this.metrics.set(name, [])
     }
-    const values = this.metrics.get(name)!
+    const values = this.metrics.get(name) || []
     values.push(value)
 
     // 只保留最近的100个数据点
@@ -340,4 +342,4 @@ export const Display1080pOptimizer = {
   },
 }
 
-import { useState, useCallback, useEffect } from 'react'
+export const startPerformanceMonitoring = () => new PerformanceMonitor({ enableMonitoring: true })

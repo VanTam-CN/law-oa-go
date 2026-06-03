@@ -167,6 +167,7 @@ func (suite *BusinessWorkflowTestSuite) TestCompleteClientWorkflow() {
 
 	// 3. 更新客户信息
 	updateReq := &services.UpdateClientRequest{
+		Version: uintPtr(retrievedClient.Version),
 		Name:    stringPtr("更新后的客户名称"),
 		Address: stringPtr("更新后的地址"),
 		Notes:   stringPtr("更新后的备注"),
@@ -400,7 +401,8 @@ func (suite *BusinessWorkflowTestSuite) TestIntegratedClientCaseWorkflow() {
 
 	// 4. 更新客户状态为inactive
 	updateClientReq := &services.UpdateClientRequest{
-		Status: stringPtr("inactive"),
+		Version: uintPtr(client.Version),
+		Status:  stringPtr("inactive"),
 	}
 
 	updatedClient, err := suite.clientService.UpdateClient(ctx, client.ID, updateClientReq)
@@ -543,6 +545,11 @@ func TestBusinessWorkflowTestSuite(t *testing.T) {
 // 辅助函数：创建字符串指针
 func stringPtr(s string) *string {
 	return &s
+}
+
+// 辅助函数：创建uint指针
+func uintPtr(v uint) *uint {
+	return &v
 }
 
 // 辅助函数：创建布尔指针

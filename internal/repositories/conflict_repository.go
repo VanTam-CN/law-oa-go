@@ -7,21 +7,26 @@ import (
 	"log"
 	"time"
 
-	"law-oa-go/internal/models"
-	"gorm.io/gorm"
 	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+	"law-oa-go/internal/models"
 )
 
 // BasicConflictRepository 基础冲突检测数据仓库接口
 type BasicConflictRepository interface {
 	// 保存冲突检测记录
 	SaveCheckRecord(ctx context.Context, record *models.ConflictCheckRecord) error
+	// 获取单条冲突检测记录
+	GetCheckRecord(ctx context.Context, checkID string) (*models.ConflictCheckRecord, error)
+	// 更新冲突检测记录
+	UpdateCheckRecord(ctx context.Context, record *models.ConflictCheckRecord) error
 	// 获取冲突检测历史
 	GetCheckHistory(ctx context.Context, clientID string, limit int) ([]*models.ConflictCheckRecord, error)
 	// 获取冲突案例
 	GetConflictCases(ctx context.Context, params *ConflictSearchParams) ([]*models.ConflictCase, error)
 	// 获取潜在冲突案例（从主案件表）
-	GetPotentialConflicts(ctx context.Context, clientID string, lawyerID uint, otherParties []string) ([]*models.ConflictCase, error)
+	GetPotentialConflicts(ctx context.Context, clientID string, lawyerID uint, otherParties []string, since time.Time) ([]*models.ConflictCase, error)
 	// 获取客户关系
 	GetClientRelations(ctx context.Context, clientID string) ([]*models.ClientRelation, error)
 	// 保存冲突案例
@@ -42,21 +47,21 @@ type BasicConflictRepository interface {
 
 // ConflictSearchParams 冲突案例搜索参数
 type ConflictSearchParams struct {
-	ClientID     string    `json:"clientId"`
-	CaseType     string    `json:"caseType"`
-	RiskLevel    string    `json:"riskLevel"`
-	StartDate    time.Time `json:"startDate"`
-	EndDate      time.Time `json:"endDate"`
-	Page         int       `json:"page"`
-	PageSize     int       `json:"pageSize"`
+	ClientID  string    `json:"clientId"`
+	CaseType  string    `json:"caseType"`
+	RiskLevel string    `json:"riskLevel"`
+	StartDate time.Time `json:"startDate"`
+	EndDate   time.Time `json:"endDate"`
+	Page      int       `json:"page"`
+	PageSize  int       `json:"pageSize"`
 }
 
 // ConflictStats 冲突检测统计
 type ConflictStats struct {
-	TotalChecks     int64   `json:"totalChecks"`
-	ConflictChecks  int64   `json:"conflictChecks"`
-	HighRiskChecks  int64   `json:"highRiskChecks"`
-	AverageDuration float64 `json:"averageDuration"`
+	TotalChecks     int64     `json:"totalChecks"`
+	ConflictChecks  int64     `json:"conflictChecks"`
+	HighRiskChecks  int64     `json:"highRiskChecks"`
+	AverageDuration float64   `json:"averageDuration"`
 	LastCheckTime   time.Time `json:"lastCheckTime"`
 }
 
@@ -76,7 +81,30 @@ func NewConflictRepository(db *gorm.DB, redis *redis.Client) BasicConflictReposi
 
 // SaveCheckRecord 保存冲突检测记录
 func (r *conflictRepository) SaveCheckRecord(ctx context.Context, record *models.ConflictCheckRecord) error {
-	if err := r.db.WithContext(ctx).Create(record).Error; err != nil {
+	record.UpdatedAt = time.Now()
+	if record.CreatedAt.IsZero() {
+		record.CreatedAt = record.UpdatedAt
+	}
+
+	err := r.db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns: []clause.Column{{Name: "check_id"}},
+		DoUpdates: clause.AssignmentColumns([]string{
+			"client_id",
+			"client_name",
+			"case_name",
+			"case_type",
+			"check_status",
+			"has_conflict",
+			"risk_level",
+			"search_parameters",
+			"check_result",
+			"user_id",
+			"duration",
+			"check_time",
+			"updated_at",
+		}),
+	}).Create(record).Error
+	if err != nil {
 		return fmt.Errorf("保存冲突检测记录失败: %w", err)
 	}
 
@@ -86,6 +114,27 @@ func (r *conflictRepository) SaveCheckRecord(ctx context.Context, record *models
 		r.redis.Set(ctx, cacheKey, record, 24*time.Hour)
 	}
 
+	return nil
+}
+
+// GetCheckRecord 获取单条冲突检测记录
+func (r *conflictRepository) GetCheckRecord(ctx context.Context, checkID string) (*models.ConflictCheckRecord, error) {
+	var record models.ConflictCheckRecord
+	err := r.db.WithContext(ctx).Where("check_id = ?", checkID).First(&record).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("获取冲突检测记录失败: %w", err)
+	}
+	return &record, nil
+}
+
+// UpdateCheckRecord 更新冲突检测记录
+func (r *conflictRepository) UpdateCheckRecord(ctx context.Context, record *models.ConflictCheckRecord) error {
+	if err := r.db.WithContext(ctx).Save(record).Error; err != nil {
+		return fmt.Errorf("更新冲突检测记录失败: %w", err)
+	}
 	return nil
 }
 
@@ -146,7 +195,7 @@ func (r *conflictRepository) GetConflictCases(ctx context.Context, params *Confl
 }
 
 // GetPotentialConflicts 获取潜在冲突案例（从主案件表）
-func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID string, lawyerID uint, otherParties []string) ([]*models.ConflictCase, error) {
+func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID string, lawyerID uint, otherParties []string, since time.Time) ([]*models.ConflictCase, error) {
 	var conflictCases []*models.ConflictCase
 
 	log.Printf("🔍 查询潜在冲突: clientID=%s, lawyerID=%d", clientID, lawyerID)
@@ -159,13 +208,22 @@ func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID
 		return conflictCases, nil
 	}
 
+	sinceFilter := ""
+	args := []interface{}{lawyerID, clientIDUint}
+	if !since.IsZero() {
+		sinceFilter = "AND c.created_at >= ?"
+		args = append(args, since)
+	}
+
 	// 查询主案件表，查找同一律师代理的其他案件
-	query := `
+	query := fmt.Sprintf(`
 		SELECT
 			c.id as case_id,
+			c.case_number,
 			c.title as case_name,
 			c.case_type,
 			c.description,
+			c.client_id,
 			cl.name as client_name,
 			cl.type as client_type,
 			u.name as lawyer_name,
@@ -176,11 +234,12 @@ func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID
 		JOIN users u ON c.lawyer_id = u.id
 		WHERE c.lawyer_id = ? AND c.client_id != ?
 		AND c.deleted_at IS NULL
+		%s
 		ORDER BY c.created_at DESC
 		LIMIT 50
-	`
+	`, sinceFilter)
 
-	rows, err := r.db.WithContext(ctx).Raw(query, lawyerID, clientIDUint).Rows()
+	rows, err := r.db.WithContext(ctx).Raw(query, args...).Rows()
 	if err != nil {
 		return nil, fmt.Errorf("查询潜在冲突案例失败: %w", err)
 	}
@@ -193,9 +252,11 @@ func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID
 
 		err := rows.Scan(
 			&caseModel.ID,
+			&caseModel.CaseNumber,
 			&caseModel.Title,
 			&caseModel.CaseType,
 			&caseModel.Description,
+			&caseModel.ClientID,
 			&clientName,
 			&clientType,
 			&lawyerName,
@@ -212,15 +273,17 @@ func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID
 
 		// 创建冲突案例对象
 		conflictCase := &models.ConflictCase{
-			ID:              fmt.Sprintf("case_%d", caseModel.ID),
-			CaseID:          fmt.Sprintf("%d", caseModel.ID),
-			CaseName:        caseModel.Title,
-			Description:      fmt.Sprintf("律师 %s 同时代理了案件 '%s'，存在潜在利益冲突", lawyerName, caseModel.Title),
-			ClientID:        fmt.Sprintf("%d", caseModel.ClientID),
-			RiskLevel:       "MEDIUM", // 默认中等风险
-			ConflictType:    "代理冲突",
-			CaseStatus:      "active",
-			CreatedAt:       caseModel.CreatedAt,
+			ID:           fmt.Sprintf("case_%d", caseModel.ID),
+			CaseID:       fmt.Sprintf("%d", caseModel.ID),
+			CaseName:     caseModel.Title,
+			CaseNo:       caseModel.CaseNumber,
+			CaseType:     caseModel.CaseType,
+			Description:  fmt.Sprintf("律师 %s 同时代理了案件 '%s'，存在潜在利益冲突", lawyerName, caseModel.Title),
+			ClientID:     fmt.Sprintf("%d", caseModel.ClientID),
+			RiskLevel:    "MEDIUM", // 默认中等风险
+			ConflictType: "代理冲突",
+			CaseStatus:   "active",
+			CreatedAt:    caseModel.CreatedAt,
 		}
 
 		conflictCases = append(conflictCases, conflictCase)
@@ -231,12 +294,21 @@ func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID
 	if len(otherParties) > 0 {
 		for _, party := range otherParties {
 			// 查询包含对方当事人名称的案件描述
-			partyQuery := `
+			partySinceFilter := ""
+			partyArgs := []interface{}{"%" + party + "%", "%" + party + "%"}
+			if !since.IsZero() {
+				partySinceFilter = "AND c.created_at >= ?"
+				partyArgs = append([]interface{}{since}, partyArgs...)
+			}
+
+			partyQuery := fmt.Sprintf(`
 				SELECT
 					c.id as case_id,
+					c.case_number,
 					c.title as case_name,
 					c.case_type,
 					c.description,
+					c.client_id,
 					cl.name as client_name,
 					cl.type as client_type,
 					u.name as lawyer_name,
@@ -246,13 +318,13 @@ func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID
 				JOIN clients cl ON c.client_id = cl.id
 				JOIN users u ON c.lawyer_id = u.id
 				WHERE c.deleted_at IS NULL
+				%s
 				AND (c.title ILIKE ? OR c.description ILIKE ?)
 				ORDER BY c.created_at DESC
 				LIMIT 20
-			`
+			`, partySinceFilter)
 
-			partyRows, err := r.db.WithContext(ctx).Raw(partyQuery,
-				"%"+party+"%", "%"+party+"%").Rows()
+			partyRows, err := r.db.WithContext(ctx).Raw(partyQuery, partyArgs...).Rows()
 			if err != nil {
 				continue
 			}
@@ -264,9 +336,11 @@ func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID
 
 				err := partyRows.Scan(
 					&caseModel.ID,
+					&caseModel.CaseNumber,
 					&caseModel.Title,
 					&caseModel.CaseType,
 					&caseModel.Description,
+					&caseModel.ClientID,
 					&clientName,
 					&clientType,
 					&lawyerName,
@@ -284,15 +358,17 @@ func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID
 
 				// 创建冲突案例对象
 				conflictCase := &models.ConflictCase{
-					ID:              fmt.Sprintf("case_%d", caseModel.ID),
-					CaseID:          fmt.Sprintf("%d", caseModel.ID),
-					CaseName:        caseModel.Title,
-					Description:      caseModel.Description,
-					ClientID:        fmt.Sprintf("%d", caseModel.ClientID),
-					RiskLevel:       "HIGH", // 对方当事人冲突，高风险
-					ConflictType:    "对方当事人冲突",
-					CaseStatus:      "active",
-					CreatedAt:       caseModel.CreatedAt,
+					ID:           fmt.Sprintf("case_%d", caseModel.ID),
+					CaseID:       fmt.Sprintf("%d", caseModel.ID),
+					CaseName:     caseModel.Title,
+					CaseNo:       caseModel.CaseNumber,
+					CaseType:     caseModel.CaseType,
+					Description:  caseModel.Description,
+					ClientID:     fmt.Sprintf("%d", caseModel.ClientID),
+					RiskLevel:    "HIGH", // 对方当事人冲突，高风险
+					ConflictType: "对方当事人冲突",
+					CaseStatus:   "active",
+					CreatedAt:    caseModel.CreatedAt,
 				}
 
 				conflictCases = append(conflictCases, conflictCase)
@@ -340,7 +416,10 @@ func (r *conflictRepository) SaveConflictCases(ctx context.Context, cases []*mod
 	}
 
 	// 批量插入
-	if err := r.db.WithContext(ctx).CreateInBatches(cases, 100).Error; err != nil {
+	if err := r.db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "id"}},
+		UpdateAll: true,
+	}).CreateInBatches(cases, 100).Error; err != nil {
 		return fmt.Errorf("批量保存冲突案例失败: %w", err)
 	}
 

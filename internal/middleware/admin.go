@@ -20,7 +20,7 @@ func AdminAuthMiddleware() gin.HandlerFunc {
 		}
 
 		roleStr, ok := userRole.(string)
-		if !ok || roleStr != "admin" {
+		if !ok || (roleStr != "admin" && roleStr != "super_admin") {
 			c.JSON(http.StatusForbidden, gin.H{
 				"code":    403,
 				"message": "需要管理员权限",

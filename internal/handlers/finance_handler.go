@@ -1,7 +1,10 @@
 package handlers
 
 import (
+	"encoding/csv"
+	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"law-oa-go/internal/common"
@@ -16,6 +19,7 @@ type FinanceHandler struct {
 	paymentService     *services.PaymentService
 	badDebtService     *services.BadDebtService
 	commissionService  *services.CommissionService
+	feeTemplateService *services.FeeTemplateService
 }
 
 // NewFinanceHandler 创建财务处理器实例
@@ -26,14 +30,16 @@ func NewFinanceHandler(
 	paymentService *services.PaymentService,
 	badDebtService *services.BadDebtService,
 	commissionService *services.CommissionService,
+	feeTemplateService *services.FeeTemplateService,
 ) *FinanceHandler {
 	return &FinanceHandler{
-		contractService:   contractService,
-		milestoneService:  milestoneService,
-		invoiceService:    invoiceService,
-		paymentService:    paymentService,
-		badDebtService:    badDebtService,
-		commissionService: commissionService,
+		contractService:    contractService,
+		milestoneService:   milestoneService,
+		invoiceService:     invoiceService,
+		paymentService:     paymentService,
+		badDebtService:     badDebtService,
+		commissionService:  commissionService,
+		feeTemplateService: feeTemplateService,
 	}
 }
 
@@ -464,7 +470,7 @@ func (h *FinanceHandler) DeleteMilestone(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /finance/contracts/{contract_id}/milestones [get]
 func (h *FinanceHandler) GetMilestonesByContractID(c *gin.Context) {
-	contractIDStr := c.Param("contract_id")
+	contractIDStr := c.Param("id")
 	contractID, err := strconv.ParseUint(contractIDStr, 10, 32)
 	if err != nil {
 		common.APIBadRequest(c, "请求参数错误", "合同ID必须是有效数字")
@@ -909,10 +915,7 @@ func (h *FinanceHandler) CreatePayment(c *gin.Context) {
 		return
 	}
 
-	// 从上下文获取用户ID
-	userID := c.GetUint("user_id")
-
-	payment, err := h.paymentService.CreatePayment(c.Request.Context(), &req, userID)
+	payment, err := h.paymentService.CreatePayment(c.Request.Context(), &req)
 	if err != nil {
 		common.APIInternalServerError(c, "创建回款记录失败", err.Error())
 		return
@@ -1144,7 +1147,7 @@ func (h *FinanceHandler) RejectPayment(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /finance/invoices/{invoice_id}/payments [get]
 func (h *FinanceHandler) GetPaymentsByInvoiceID(c *gin.Context) {
-	invoiceIDStr := c.Param("invoice_id")
+	invoiceIDStr := c.Param("id")
 	invoiceID, err := strconv.ParseUint(invoiceIDStr, 10, 32)
 	if err != nil {
 		common.APIBadRequest(c, "请求参数错误", "发票ID必须是有效数字")
@@ -1690,4 +1693,622 @@ func (h *FinanceHandler) GetFinanceOverview(c *gin.Context) {
 	}
 
 	common.APISuccess(c, overview)
+}
+
+// ============================================================================
+// 费率模板管理
+// ============================================================================
+
+// CreateFeeTemplate godoc
+// @Summary 创建费率模板
+// @Description 创建新的费率模板
+// @Tags 财务管理-费率模板
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body services.CreateFeeTemplateRequest true "创建费率模板请求"
+// @Success 200 {object} common.APIResponse{data=models.FeeTemplate} "创建成功"
+// @Router /finance/fee-templates [post]
+func (h *FinanceHandler) CreateFeeTemplate(c *gin.Context) {
+	var req services.CreateFeeTemplateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.APIBadRequest(c, "请求参数错误", err.Error())
+		return
+	}
+
+	template, err := h.feeTemplateService.CreateFeeTemplate(c.Request.Context(), &req)
+	if err != nil {
+		common.APIInternalServerError(c, "创建费率模板失败", err.Error())
+		return
+	}
+
+	common.APISuccess(c, template)
+}
+
+// GetFeeTemplate godoc
+// @Summary 获取费率模板详情
+// @Description 根据ID获取费率模板详细信息
+// @Tags 财务管理-费率模板
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "模板ID"
+// @Success 200 {object} common.APIResponse{data=models.FeeTemplate} "获取成功"
+// @Router /finance/fee-templates/{id} [get]
+func (h *FinanceHandler) GetFeeTemplate(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		common.APIBadRequest(c, "请求参数错误", "模板ID必须是有效数字")
+		return
+	}
+
+	template, err := h.feeTemplateService.GetFeeTemplate(c.Request.Context(), uint(id))
+	if err != nil {
+		common.APINotFound(c, "费率模板不存在", err.Error())
+		return
+	}
+
+	common.APISuccess(c, template)
+}
+
+// UpdateFeeTemplate godoc
+// @Summary 更新费率模板
+// @Description 更新指定费率模板的信息
+// @Tags 财务管理-费率模板
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "模板ID"
+// @Param request body services.CreateFeeTemplateRequest true "更新费率模板请求"
+// @Success 200 {object} common.APIResponse{data=models.FeeTemplate} "更新成功"
+// @Router /finance/fee-templates/{id} [put]
+func (h *FinanceHandler) UpdateFeeTemplate(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		common.APIBadRequest(c, "请求参数错误", "模板ID必须是有效数字")
+		return
+	}
+
+	var req services.CreateFeeTemplateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.APIBadRequest(c, "请求参数错误", err.Error())
+		return
+	}
+
+	template, err := h.feeTemplateService.UpdateFeeTemplate(c.Request.Context(), uint(id), &req)
+	if err != nil {
+		common.APIInternalServerError(c, "更新费率模板失败", err.Error())
+		return
+	}
+
+	common.APISuccess(c, template)
+}
+
+// DeleteFeeTemplate godoc
+// @Summary 删除费率模板
+// @Description 删除指定的费率模板
+// @Tags 财务管理-费率模板
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "模板ID"
+// @Success 200 {object} common.APIResponse "删除成功"
+// @Router /finance/fee-templates/{id} [delete]
+func (h *FinanceHandler) DeleteFeeTemplate(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		common.APIBadRequest(c, "请求参数错误", "模板ID必须是有效数字")
+		return
+	}
+
+	err = h.feeTemplateService.DeleteFeeTemplate(c.Request.Context(), uint(id))
+	if err != nil {
+		common.APIInternalServerError(c, "删除费率模板失败", err.Error())
+		return
+	}
+
+	common.APISuccess(c, gin.H{"message": "费率模板删除成功"})
+}
+
+// ListFeeTemplates godoc
+// @Summary 获取费率模板列表
+// @Description 获取费率模板列表，支持分页
+// @Tags 财务管理-费率模板
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param page query int false "页码" default(1)
+// @Param page_size query int false "每页数量" default(20)
+// @Success 200 {object} common.APIResponse{data=[]models.FeeTemplate} "获取成功"
+// @Router /finance/fee-templates [get]
+func (h *FinanceHandler) ListFeeTemplates(c *gin.Context) {
+	pageStr := c.DefaultQuery("page", "1")
+	pageSizeStr := c.DefaultQuery("page_size", "20")
+
+	page, _ := strconv.Atoi(pageStr)
+	pageSize, _ := strconv.Atoi(pageSizeStr)
+
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+
+	templates, total, err := h.feeTemplateService.ListFeeTemplates(c.Request.Context(), page, pageSize)
+	if err != nil {
+		common.APIInternalServerError(c, "查询费率模板列表失败", err.Error())
+		return
+	}
+
+	common.APISuccessWithPage(c, templates, total, page, pageSize)
+}
+
+// GetFeeTemplatesByCaseType godoc
+// @Summary 根据案件类型获取费率模板
+// @Description 根据案件类型获取适用的费率模板
+// @Tags 财务管理-费率模板
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param case_type query string true "案件类型"
+// @Success 200 {object} common.APIResponse{data=[]models.FeeTemplate} "获取成功"
+// @Router /finance/fee-templates/by-case-type [get]
+func (h *FinanceHandler) GetFeeTemplatesByCaseType(c *gin.Context) {
+	caseType := c.Query("case_type")
+	if caseType == "" {
+		common.APIBadRequest(c, "请求参数错误", "case_type 不能为空")
+		return
+	}
+
+	templates, err := h.feeTemplateService.GetByCaseType(c.Request.Context(), caseType)
+	if err != nil {
+		common.APIInternalServerError(c, "查询费率模板失败", err.Error())
+		return
+	}
+
+	common.APISuccess(c, templates)
+}
+
+// CalculateEstimatedFee godoc
+// @Summary 计算预估费用
+// @Description 根据模板计算预估费用
+// @Tags 财务管理-费率模板
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param template_id query int true "模板ID"
+// @Param amount query number true "合同金额"
+// @Success 200 {object} common.APIResponse{data=services.FeeCalculationResult} "计算成功"
+// @Router /finance/fee-templates/calculate [get]
+func (h *FinanceHandler) CalculateEstimatedFee(c *gin.Context) {
+	templateIDStr := c.Query("template_id")
+	amountStr := c.Query("amount")
+
+	templateID, err := strconv.ParseUint(templateIDStr, 10, 32)
+	if err != nil {
+		common.APIBadRequest(c, "请求参数错误", "template_id 必须是有效数字")
+		return
+	}
+
+	amount, err := strconv.ParseFloat(amountStr, 64)
+	if err != nil {
+		common.APIBadRequest(c, "请求参数错误", "amount 必须是有效数字")
+		return
+	}
+
+	fee, err := h.feeTemplateService.CalculateFee(c.Request.Context(), uint(templateID), amount)
+	if err != nil {
+		common.APIInternalServerError(c, "计算费用失败", err.Error())
+		return
+	}
+
+	common.APISuccess(c, fee)
+}
+
+// ============================================================================
+// 导出功能
+// ============================================================================
+
+// ExportContracts godoc
+// @Summary 导出合同列表
+// @Description 导出合同列表为CSV文件
+// @Tags 财务管理-导出
+// @Accept json
+// @Produce text/csv
+// @Security BearerAuth
+// @Param status query string false "状态" Enums(draft, active, suspended, completed, cancelled)
+// @Param contract_type query string false "合同类型" Enums(original, supplementary)
+// @Param client_id query int false "客户ID"
+// @Param case_id query int false "案件ID"
+// @Param search query string false "搜索关键词"
+// @Param start_date_from query string false "开始日期(起)"
+// @Param start_date_to query string false "开始日期(止)"
+// @Param end_date_from query string false "结束日期(起)"
+// @Param end_date_to query string false "结束日期(止)"
+// @Success 200 {file} file "CSV文件"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 401 {object} common.APIResponse "未授权"
+// @Failure 500 {object} common.APIResponse "内部错误"
+// @Router /finance/contracts/export [get]
+func (h *FinanceHandler) ExportContracts(c *gin.Context) {
+	var req services.ListContractsRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		common.APIBadRequest(c, "请求参数错误", err.Error())
+		return
+	}
+
+	// 设置不分页，导出全部数据
+	req.Page = 1
+	req.PageSize = 10000
+
+	result, err := h.contractService.ListContracts(c.Request.Context(), &req)
+	if err != nil {
+		common.APIInternalServerError(c, "查询合同列表失败", err.Error())
+		return
+	}
+
+	// 生成CSV文件
+	filename := fmt.Sprintf("contracts_%s.csv", time.Now().Format("20060102_150405"))
+	c.Header("Content-Type", "text/csv")
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
+
+	// 创建CSV写入器
+	records := [][]string{
+		{"合同编号", "客户名称", "案件标题", "合同金额", "币种", "计费周期", "付款条件", "开始日期", "结束日期", "状态", "合同类型", "签订日期", "创建时间"},
+	}
+
+	for _, contract := range result.Contracts {
+		clientName := ""
+		if contract.Client != nil {
+			clientName = contract.Client.Name
+		}
+		caseTitle := ""
+		if contract.Case != nil {
+			caseTitle = contract.Case.Title
+		}
+
+		records = append(records, []string{
+			contract.ContractCode,
+			clientName,
+			caseTitle,
+			fmt.Sprintf("%.2f", contract.ContractAmount),
+			contract.Currency,
+			contract.BillingCycle,
+			contract.PaymentTerms,
+			dateToString(contract.StartDate),
+			dateToString(contract.EndDate),
+			contract.Status,
+			contract.ContractType,
+			dateToString(contract.SignedAt),
+			contract.CreatedAt[:19],
+		})
+	}
+
+	// 写入响应
+	csvWriter := csv.NewWriter(c.Writer)
+	csvWriter.WriteAll(records)
+	csvWriter.Flush()
+	if err := csvWriter.Error(); err != nil {
+		common.APIInternalServerError(c, "生成CSV文件失败", err.Error())
+	}
+}
+
+// ExportInvoices godoc
+// @Summary 导出发票列表
+// @Description 导出发票列表为CSV文件
+// @Tags 财务管理-导出
+// @Accept json
+// @Produce text/csv
+// @Security BearerAuth
+// @Param status query string false "状态" Enums(draft, submitted, approved, issued, received, cancelled)
+// @Param invoice_type query string false "发票类型" Enums(normal, credit)
+// @Param client_id query int false "客户ID"
+// @Param contract_id query int false "合同ID"
+// @Param search query string false "搜索关键词"
+// @Param date_from query string false "开始日期"
+// @Param date_to query string false "结束日期"
+// @Success 200 {file} file "CSV文件"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 401 {object} common.APIResponse "未授权"
+// @Failure 500 {object} common.APIResponse "内部错误"
+// @Router /finance/invoices/export [get]
+func (h *FinanceHandler) ExportInvoices(c *gin.Context) {
+	var req services.ListInvoicesRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		common.APIBadRequest(c, "请求参数错误", err.Error())
+		return
+	}
+
+	// 设置不分页，导出全部数据
+	req.Page = 1
+	req.PageSize = 10000
+
+	result, err := h.invoiceService.ListInvoices(c.Request.Context(), &req)
+	if err != nil {
+		common.APIInternalServerError(c, "查询发票列表失败", err.Error())
+		return
+	}
+
+	// 生成CSV文件
+	filename := fmt.Sprintf("invoices_%s.csv", time.Now().Format("20060102_150405"))
+	c.Header("Content-Type", "text/csv")
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
+
+	// 创建CSV写入器
+	records := [][]string{
+		{"发票编号", "客户名称", "合同编号", "金额", "税率", "税额", "总额", "发票类型", "状态", "提交时间", "审批时间", "开票时间", "签收时间", "创建时间"},
+	}
+
+	for _, invoice := range result.Invoices {
+		contractCode := ""
+		if invoice.Contract != nil {
+			contractCode = invoice.Contract.ContractCode
+		}
+
+		records = append(records, []string{
+			invoice.InvoiceCode,
+			invoice.ClientName,
+			contractCode,
+			fmt.Sprintf("%.2f", invoice.Amount),
+			fmt.Sprintf("%.2f", invoice.TaxRate),
+			fmt.Sprintf("%.2f", invoice.TaxAmount),
+			fmt.Sprintf("%.2f", invoice.TotalAmount),
+			invoice.InvoiceType,
+			invoice.Status,
+			dateToString(invoice.SubmittedAt),
+			dateToString(invoice.ApprovedByFinanceAt),
+			dateToString(invoice.IssuedAt),
+			dateToString(invoice.ReceivedAt),
+			invoice.CreatedAt[:19],
+		})
+	}
+
+	// 写入响应
+	csvWriter := csv.NewWriter(c.Writer)
+	csvWriter.WriteAll(records)
+	csvWriter.Flush()
+	if err := csvWriter.Error(); err != nil {
+		common.APIInternalServerError(c, "生成CSV文件失败", err.Error())
+	}
+}
+
+// ExportPayments godoc
+// @Summary 导出回款列表
+// @Description 导出回款列表为CSV文件
+// @Tags 财务管理-导出
+// @Accept json
+// @Produce text/csv
+// @Security BearerAuth
+// @Param status query string false "状态" Enums(pending, confirmed, rejected)
+// @Param invoice_id query int false "发票ID"
+// @Param client_id query int false "客户ID"
+// @Param search query string false "搜索关键词"
+// @Param date_from query string false "开始日期"
+// @Param date_to query string false "结束日期"
+// @Success 200 {file} file "CSV文件"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 401 {object} common.APIResponse "未授权"
+// @Failure 500 {object} common.APIResponse "内部错误"
+// @Router /finance/payments/export [get]
+func (h *FinanceHandler) ExportPayments(c *gin.Context) {
+	var req services.ListPaymentsRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		common.APIBadRequest(c, "请求参数错误", err.Error())
+		return
+	}
+
+	// 设置不分页，导出全部数据
+	req.Page = 1
+	req.PageSize = 10000
+
+	result, err := h.paymentService.ListPayments(c.Request.Context(), &req)
+	if err != nil {
+		common.APIInternalServerError(c, "查询回款列表失败", err.Error())
+		return
+	}
+
+	// 生成CSV文件
+	filename := fmt.Sprintf("payments_%s.csv", time.Now().Format("20060102_150405"))
+	c.Header("Content-Type", "text/csv")
+		c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s.csv", filename))
+
+	// 创建CSV写入器
+	records := [][]string{
+		{"回款编号", "发票编号", "客户名称", "金额", "付款方式", "付款日期", "参考号", "付款人", "付款账户", "状态", "确认时间", "备注", "创建时间"},
+	}
+
+	for _, payment := range result.Payments {
+		invoiceCode := ""
+		clientName := ""
+		if payment.Invoice != nil {
+			invoiceCode = payment.Invoice.InvoiceCode
+			clientName = payment.Invoice.ClientName
+		}
+
+		paymentMethodMap := map[string]string{
+			"bank_transfer": "银行转账",
+			"cash":          "现金",
+			"other":         "其他",
+		}
+		paymentMethodText := paymentMethodMap[payment.PaymentMethod]
+		if paymentMethodText == "" {
+			paymentMethodText = payment.PaymentMethod
+		}
+
+		statusMap := map[string]string{
+			"pending":   "待确认",
+			"confirmed": "已确认",
+			"rejected":  "已拒绝",
+		}
+		statusText := statusMap[payment.Status]
+		if statusText == "" {
+			statusText = payment.Status
+		}
+
+		records = append(records, []string{
+			payment.PaymentCode,
+			invoiceCode,
+			clientName,
+			fmt.Sprintf("%.2f", payment.Amount),
+			paymentMethodText,
+			payment.PaymentDate,
+			payment.ReferenceNo,
+			payment.PayerName,
+			payment.PayerAccount,
+			statusText,
+			dateToString(payment.ConfirmedAt),
+			payment.Remark,
+			payment.CreatedAt[:19],
+		})
+	}
+
+	// 写入响应
+	csvWriter := csv.NewWriter(c.Writer)
+	csvWriter.WriteAll(records)
+	csvWriter.Flush()
+	if err := csvWriter.Error(); err != nil {
+		common.APIInternalServerError(c, "生成CSV文件失败", err.Error())
+	}
+}
+
+// ExportCommissions godoc
+// @Summary 导出提成列表
+// @Description 导出提成列表为CSV文件
+// @Tags 财务管理-导出
+// @Accept json
+// @Produce text/csv
+// @Security BearerAuth
+// @Param status query string false "状态" Enums(pending, calculated, paid, cancelled)
+// @Param beneficiary_id query int false "受益人ID"
+// @Param beneficiary_role query string false "受益人角色" Enums(source, lawyer, assistant)
+// @Param contract_id query int false "合同ID"
+// @Param case_id query int false "案件ID"
+// @Param date_from query string false "开始日期"
+// @Param date_to query string false "结束日期"
+// @Success 200 {file} file "CSV文件"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 401 {object} common.APIResponse "未授权"
+// @Failure 500 {object} common.APIResponse "内部错误"
+// @Router /finance/commissions/export [get]
+func (h *FinanceHandler) ExportCommissions(c *gin.Context) {
+	var req services.ListCommissionsRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		common.APIBadRequest(c, "请求参数错误", err.Error())
+		return
+	}
+
+	// 设置不分页，导出全部数据
+	req.Page = 1
+	req.PageSize = 10000
+
+	result, err := h.commissionService.ListCommissions(c.Request.Context(), &req)
+	if err != nil {
+		common.APIInternalServerError(c, "查询提成列表失败", err.Error())
+		return
+	}
+
+	// 生成CSV文件
+	filename := fmt.Sprintf("commissions_%s.csv", time.Now().Format("20060102_150405"))
+	c.Header("Content-Type", "text/csv")
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
+
+	// 创建CSV写入器
+	records := [][]string{
+		{"提成编号", "受益人", "受益人角色", "合同编号", "合同金额", "回款编号", "回款金额", "成本扣除", "提成基数", "提成比例", "提成金额", "状态", "支付日期", "支付凭证", "计算时间", "创建时间"},
+	}
+
+	beneficiaryRoleMap := map[string]string{
+		"source":    "案源人",
+		"lawyer":    "承办律师",
+		"assistant": "助理",
+	}
+
+	statusMap := map[string]string{
+		"pending":    "待计算",
+		"calculated": "已计算",
+		"paid":       "已支付",
+		"cancelled":  "已取消",
+	}
+
+	for _, commission := range result.Commissions {
+		contractCode := ""
+		contractAmount := 0.0
+		if commission.Contract != nil {
+			contractCode = commission.Contract.ContractCode
+			contractAmount = commission.Contract.ContractAmount
+		}
+
+		paymentCode := ""
+		paymentAmount := 0.0
+		if commission.Payment != nil {
+			paymentCode = commission.Payment.PaymentCode
+			paymentAmount = commission.Payment.Amount
+		}
+
+		beneficiaryName := ""
+		if commission.Beneficiary != nil {
+			beneficiaryName = commission.Beneficiary.Name
+		}
+
+		roleText := beneficiaryRoleMap[commission.BeneficiaryRole]
+		if roleText == "" {
+			roleText = commission.BeneficiaryRole
+		}
+
+		statusText := statusMap[commission.Status]
+		if statusText == "" {
+			statusText = commission.Status
+		}
+
+		records = append(records, []string{
+			commission.CommissionCode,
+			beneficiaryName,
+			roleText,
+			contractCode,
+			fmt.Sprintf("%.2f", contractAmount),
+			paymentCode,
+			fmt.Sprintf("%.2f", paymentAmount),
+			fmt.Sprintf("%.2f", commission.CostDeduction),
+			fmt.Sprintf("%.2f", commission.CommissionBase),
+			fmt.Sprintf("%.1f%%", commission.CommissionRate*100),
+			fmt.Sprintf("%.2f", commission.CommissionAmount),
+			statusText,
+			dateStringPtr(commission.PaidDate),
+			commission.PaymentVoucher,
+			dateStringPtr(commission.CalculatedAt),
+			commission.CreatedAt[:19],
+		})
+	}
+
+	// 写入响应
+	csvWriter := csv.NewWriter(c.Writer)
+	csvWriter.WriteAll(records)
+	csvWriter.Flush()
+	if err := csvWriter.Error(); err != nil {
+		common.APIInternalServerError(c, "生成CSV文件失败", err.Error())
+	}
+}
+
+// 辅助函数：将时间字符串转换为格式化字符串
+func dateToString(dateStr *string) string {
+	if dateStr == nil || *dateStr == "" {
+		return ""
+	}
+	t, err := time.Parse(time.RFC3339, *dateStr)
+	if err != nil {
+		return *dateStr
+	}
+	return t.Format("2006-01-02")
+}
+
+// 辅助函数：将日期字符串转换为格式化字符串（处理 YYYY-MM-DD 格式）
+func dateStringPtr(dateStr *string) string {
+	if dateStr == nil || *dateStr == "" {
+		return ""
+	}
+	return *dateStr
 }

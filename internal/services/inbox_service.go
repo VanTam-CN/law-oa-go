@@ -26,43 +26,43 @@ func NewInboxService(inboxRepo repositories.InboxRepository, userRepo repositori
 
 // CreateInboxItemRequest 创建待办事项请求
 type CreateInboxItemRequest struct {
-	UserID      uint      `json:"user_id" binding:"required"`
-	SourceType  string    `json:"source_type" binding:"required,oneof=deadline approval task"`
-	SourceID    uint      `json:"source_id" binding:"required"`
-	Title       string    `json:"title" binding:"required,min=1,max=255"`
-	Content     string    `json:"content" binding:"max=5000"`
-	Priority    string    `json:"priority" binding:"required,oneof=critical high medium low"`
-	DueDate     *string   `json:"due_date"`
-	DueDateType string    `json:"due_date_type" binding:"omitempty,max=50"`
+	UserID      uint    `json:"user_id" binding:"required"`
+	SourceType  string  `json:"source_type" binding:"required,oneof=deadline approval task handoff waiver conflict"`
+	SourceID    uint    `json:"source_id" binding:"required"`
+	Title       string  `json:"title" binding:"required,min=1,max=255"`
+	Content     string  `json:"content" binding:"max=5000"`
+	Priority    string  `json:"priority" binding:"required,oneof=critical high medium low"`
+	DueDate     *string `json:"due_date"`
+	DueDateType string  `json:"due_date_type" binding:"omitempty,max=50"`
 }
 
 // UpdateInboxItemRequest 更新待办事项请求
 type UpdateInboxItemRequest struct {
-	Title       string `json:"title" binding:"omitempty,min=1,max=255"`
-	Content     string `json:"content" binding:"omitempty,max=5000"`
-	Priority    string `json:"priority" binding:"omitempty,oneof=critical high medium low"`
+	Title       string  `json:"title" binding:"omitempty,min=1,max=255"`
+	Content     string  `json:"content" binding:"omitempty,max=5000"`
+	Priority    string  `json:"priority" binding:"omitempty,oneof=critical high medium low"`
 	DueDate     *string `json:"due_date"`
-	DueDateType string `json:"due_date_type" binding:"omitempty,max=50"`
+	DueDateType string  `json:"due_date_type" binding:"omitempty,max=50"`
 }
 
 // SnoozeInboxItemRequest 延后待办事项请求
 type SnoozeInboxItemRequest struct {
-	Until string `json:"until" binding:"required"` // ISO 8601 格式时间
-	Duration int    `json:"duration"`              // 延后天数，可选
+	Until    string `json:"until" binding:"required"` // ISO 8601 格式时间
+	Duration int    `json:"duration"`                 // 延后天数，可选
 }
 
 // ListInboxItemsRequest 待办事项列表请求
 type ListInboxItemsRequest struct {
-	Page        int     `json:"page" form:"page" binding:"min=1"`
-	PageSize    int     `json:"page_size" form:"page_size" binding:"min=1,max=100"`
-	IsRead      *bool   `json:"is_read" form:"is_read"`
-	IsCompleted *bool   `json:"is_completed" form:"is_completed"`
-	Priority    string  `json:"priority" form:"priority" binding:"omitempty,oneof=critical high medium low"`
-	SourceType  string  `json:"source_type" form:"source_type"`
-	DueBefore   string  `json:"due_before" form:"due_before"`
-	DueAfter    string  `json:"due_after" form:"due_after"`
-	Search      string  `json:"search" form:"search"`
-	OrderBy     string  `json:"order_by" form:"order_by" binding:"omitempty,oneof=due_date priority created_at"`
+	Page        int    `json:"page" form:"page" binding:"min=1"`
+	PageSize    int    `json:"page_size" form:"page_size" binding:"min=1,max=100"`
+	IsRead      *bool  `json:"is_read" form:"is_read"`
+	IsCompleted *bool  `json:"is_completed" form:"is_completed"`
+	Priority    string `json:"priority" form:"priority" binding:"omitempty,oneof=critical high medium low"`
+	SourceType  string `json:"source_type" form:"source_type"`
+	DueBefore   string `json:"due_before" form:"due_before"`
+	DueAfter    string `json:"due_after" form:"due_after"`
+	Search      string `json:"search" form:"search"`
+	OrderBy     string `json:"order_by" form:"order_by" binding:"omitempty,oneof=due_date priority created_at"`
 }
 
 // InboxItemResponse 待办事项响应
@@ -92,9 +92,9 @@ type InboxItemResponse struct {
 
 // ListInboxItemsResponse 待办事项列表响应
 type ListInboxItemsResponse struct {
-	Items      []*InboxItemResponse `json:"items"`
+	Items      []*InboxItemResponse    `json:"items"`
 	Pagination PaginationWithTotalPage `json:"pagination"`
-	Stats      *InboxStatsResponse  `json:"stats,omitempty"`
+	Stats      *InboxStatsResponse     `json:"stats,omitempty"`
 }
 
 // InboxStatsResponse 待办事项统计响应
@@ -361,9 +361,9 @@ func (s *InboxService) GetInboxStats(ctx context.Context, userID uint) (*InboxSt
 	}
 
 	stats := &InboxStatsResponse{
-		Total:   total,
-		Unread:  unread,
-		Pending: 0,
+		Total:    total,
+		Unread:   unread,
+		Pending:  0,
 		Critical: 0,
 		High:     0,
 		Overdue:  0,

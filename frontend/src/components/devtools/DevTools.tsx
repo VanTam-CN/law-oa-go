@@ -20,6 +20,13 @@ interface DevToolsProps {
   position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
 }
 
+const panelPositionByButtonPosition = {
+  'top-left': 'top',
+  'top-right': 'top',
+  'bottom-left': 'bottom',
+  'bottom-right': 'bottom',
+} as const
+
 const DevTools: React.FC<DevToolsProps> = ({
   showReactQuery = true,
   showStoreInspector = true,
@@ -39,7 +46,11 @@ const DevTools: React.FC<DevToolsProps> = ({
     <>
       {/* React Query 开发工具 */}
       {showReactQuery && (
-        <ReactQueryDevtools initialIsOpen={false} position={position} buttonPosition={position} />
+        <ReactQueryDevtools
+          initialIsOpen={false}
+          position={panelPositionByButtonPosition[position]}
+          buttonPosition={position}
+        />
       )}
 
       {/* 自定义状态检查器 - 可以扩展 */}

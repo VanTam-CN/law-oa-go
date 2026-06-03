@@ -40,6 +40,12 @@ type ApprovalRequest struct {
 	CurrentApproverID    string            `json:"current_approver_id" gorm:"column:current_approver_id;type:varchar(36)"`
 	CurrentApproverName  string            `json:"current_approver_name" gorm:"column:current_approver_name;type:varchar(255)"`
 
+	// 超时与升级
+	TimeoutAt            *time.Time       `json:"timeout_at,omitempty" gorm:"column:timeout_at"`
+	Escalated            bool              `json:"escalated" gorm:"column:escalated;default:false"`
+	EscalatedAt          *time.Time       `json:"escalated_at,omitempty" gorm:"column:escalated_at"`
+	EscalatedTo          string            `json:"escalated_to,omitempty" gorm:"column:escalated_to;type:varchar(36)"`
+
 	// 审批流程配置
 	WorkflowType         string            `json:"workflow_type" gorm:"column:workflow_type;type:varchar(100);not null"`
 	WorkflowConfig       string            `json:"workflow_config" gorm:"column:workflow_config;type:json"`
@@ -47,6 +53,12 @@ type ApprovalRequest struct {
 	// 附加信息
 	Attachments          string            `json:"attachments" gorm:"column:attachments;type:json"`
 	Metadata             string            `json:"metadata" gorm:"column:metadata;type:json"`
+
+	// 审批通过后的正式案件关联
+	CaseCreated          bool              `json:"case_created" gorm:"column:case_created;default:false"`
+	CreatedCaseID        string            `json:"created_case_id" gorm:"column:created_case_id;type:varchar(36)"`
+	CaseCreationTime     *time.Time        `json:"case_creation_time" gorm:"column:case_creation_time"`
+	CaseCreationStatus   string            `json:"case_creation_status" gorm:"column:case_creation_status;type:varchar(30)"`
 
 	// 审计信息
 	CreatedBy            string            `json:"created_by" gorm:"column:created_by;type:varchar(36);not null"`
@@ -117,6 +129,10 @@ type ApprovalRecord struct {
 	ImposedRequirements string            `json:"imposed_requirements" gorm:"column:imposed_requirements;type:json"`
 	FollowUpActions     string            `json:"follow_up_actions" gorm:"column:follow_up_actions;type:json"`
 
+	// 代理审批
+	IsDelegation        bool              `json:"is_delegation" gorm:"column:is_delegation;default:false"`
+	OriginalApproverID  string            `json:"original_approver_id,omitempty" gorm:"column:original_approver_id;type:varchar(36)"`
+
 	// 时间信息
 	ApprovalDate        time.Time         `json:"approval_date" gorm:"column:approval_date;default:CURRENT_TIMESTAMP"`
 	EffectiveDate       *time.Time        `json:"effective_date" gorm:"column:effective_date"`
@@ -137,8 +153,8 @@ type ApprovalRecord struct {
 	ApprovalRequest     ApprovalRequest   `json:"approval_request,omitempty" gorm:"foreignKey:ApprovalRequestID"`
 }
 
-// ApprovalTemplate 审批模板表
-type ApprovalTemplate struct {
+// ApprovalTemplateV2 审批模板表（V2版本，使用UUID作为ID）
+type ApprovalTemplateV2 struct {
 	ID                  string            `json:"id" gorm:"column:id;type:varchar(36);primaryKey;default:(uuid_generate_v4())"`
 	TemplateCode        string            `json:"template_code" gorm:"column:template_code;type:varchar(100);uniqueIndex;not null"`
 	TemplateName        string            `json:"template_name" gorm:"column:template_name;type:varchar(255);not null"`
@@ -301,7 +317,7 @@ func (ApprovalRecord) TableName() string {
 	return "approval_records"
 }
 
-func (ApprovalTemplate) TableName() string {
+func (ApprovalTemplateV2) TableName() string {
 	return "approval_templates"
 }
 

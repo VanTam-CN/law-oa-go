@@ -21,25 +21,25 @@ func NewIntegrationRepository(db *gorm.DB) *IntegrationRepository {
 
 // ConflictAssociation 冲突检测关联数据模型
 type ConflictAssociation struct {
-	ID                   string    `gorm:"primaryKey" json:"id"`
-	ApprovalRequestID    string    `gorm:"not null;index" json:"approval_request_id"`
-	ConflictCheckID      string    `gorm:"not null;index" json:"conflict_check_id"`
-	AssociationStatus    string    `gorm:"default:pending;check:association_status IN ('pending', 'active', 'superseded', 'cancelled')" json:"association_status"`
-	AssociationType      string    `gorm:"default:required;check:association_type IN ('required', 'optional', 'conditional')" json:"association_type"`
-	RiskLevel            string    `gorm:"check:risk_level IN ('CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'MINIMAL')" json:"risk_level"`
-	RiskScore            *float64  `gorm:"type:decimal(5,2)" json:"risk_score"`
-	ConflictCount        int       `gorm:"default:0" json:"conflict_count"`
-	RequiresApproval     bool      `gorm:"default:false" json:"requires_approval"`
-	AutoApproval         bool      `gorm:"default:false" json:"auto_approval"`
-	ApprovalConditions   string    `gorm:"type:jsonb" json:"approval_conditions"`
-	MitigationMeasures   string    `gorm:"type:jsonb" json:"mitigation_measures"`
-	DataMapping          string    `gorm:"type:jsonb" json:"data_mapping"`
-	MappedFields         string    `gorm:"type:jsonb" json:"mapped_fields"`
-	ValidationErrors     string    `gorm:"type:jsonb" json:"validation_errors"`
-	CreatedBy            string    `gorm:"not null" json:"created_by"`
-	UpdatedBy            *string   `json:"updated_by"`
-	CreatedAt            time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
-	UpdatedAt            time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
+	ID                 string    `gorm:"primaryKey" json:"id"`
+	ApprovalRequestID  string    `gorm:"not null;index" json:"approval_request_id"`
+	ConflictCheckID    string    `gorm:"not null;index" json:"conflict_check_id"`
+	AssociationStatus  string    `gorm:"default:pending;check:association_status IN ('pending', 'active', 'superseded', 'cancelled')" json:"association_status"`
+	AssociationType    string    `gorm:"default:required;check:association_type IN ('required', 'optional', 'conditional')" json:"association_type"`
+	RiskLevel          string    `gorm:"check:risk_level IN ('CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'MINIMAL')" json:"risk_level"`
+	RiskScore          *float64  `gorm:"type:decimal(5,2)" json:"risk_score"`
+	ConflictCount      int       `gorm:"default:0" json:"conflict_count"`
+	RequiresApproval   bool      `gorm:"default:false" json:"requires_approval"`
+	AutoApproval       bool      `gorm:"default:false" json:"auto_approval"`
+	ApprovalConditions string    `gorm:"type:jsonb" json:"approval_conditions"`
+	MitigationMeasures string    `gorm:"type:jsonb" json:"mitigation_measures"`
+	DataMapping        string    `gorm:"type:jsonb" json:"data_mapping"`
+	MappedFields       string    `gorm:"type:jsonb" json:"mapped_fields"`
+	ValidationErrors   string    `gorm:"type:jsonb" json:"validation_errors"`
+	CreatedBy          string    `gorm:"not null" json:"created_by"`
+	UpdatedBy          *string   `json:"updated_by"`
+	CreatedAt          time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
+	UpdatedAt          time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
 
 func (ConflictAssociation) TableName() string {
@@ -48,30 +48,30 @@ func (ConflictAssociation) TableName() string {
 
 // CaseCreationTracking 案件创建跟踪数据模型
 type CaseCreationTracking struct {
-	ID                   string    `gorm:"primaryKey" json:"id"`
-	ApprovalRequestID    string    `gorm:"not null;index" json:"approval_request_id"`
-	CaseID               *string   `gorm:"index" json:"case_id"`
-	CaseNumber           *string   `gorm:"index" json:"case_number"`
-	CaseType             *string   `json:"case_type"`
-	CreationStatus       string    `gorm:"default:pending;check:creation_status IN ('pending', 'processing', 'completed', 'failed', 'retrying')" json:"creation_status"`
-	CreationStep         *string   `json:"creation_step"`
-	ProgressPercentage   float64   `gorm:"type:decimal(5,2);default:0.00" json:"progress_percentage"`
-	ErrorCode            *string   `json:"error_code"`
-	ErrorMessage         *string   `gorm:"type:text" json:"error_message"`
-	ErrorDetails         string    `gorm:"type:jsonb" json:"error_details"`
-	RetryCount           int       `gorm:"default:0" json:"retry_count"`
-	MaxRetries           int       `gorm:"default:3" json:"max_retries"`
-	DataMapping          string    `gorm:"type:jsonb" json:"data_mapping"`
-	MappedFields         string    `gorm:"type:jsonb" json:"mapped_fields"`
-	UnmappedFields       string    `gorm:"type:jsonb" json:"unmapped_fields"`
-	AppliedConditions    string    `gorm:"type:jsonb" json:"applied_conditions"`
-	ImposedRequirements  string    `gorm:"type:jsonb" json:"imposed_requirements"`
-	WorkflowActions      string    `gorm:"type:jsonb" json:"workflow_actions"`
-	CreatedBy            string    `gorm:"not null" json:"created_by"`
-	ProcessedBy          *string   `json:"processed_by"`
-	CreatedAt            time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
-	ProcessedAt          *time.Time `json:"processed_at"`
-	CompletedAt          *time.Time `json:"completed_at"`
+	ID                  string     `gorm:"primaryKey" json:"id"`
+	ApprovalRequestID   string     `gorm:"not null;index" json:"approval_request_id"`
+	CaseID              *string    `gorm:"index" json:"case_id"`
+	CaseNumber          *string    `gorm:"index" json:"case_number"`
+	CaseType            *string    `json:"case_type"`
+	CreationStatus      string     `gorm:"default:pending;check:creation_status IN ('pending', 'processing', 'completed', 'failed', 'retrying')" json:"creation_status"`
+	CreationStep        *string    `json:"creation_step"`
+	ProgressPercentage  float64    `gorm:"type:decimal(5,2);default:0.00" json:"progress_percentage"`
+	ErrorCode           *string    `json:"error_code"`
+	ErrorMessage        *string    `gorm:"type:text" json:"error_message"`
+	ErrorDetails        string     `gorm:"type:jsonb" json:"error_details"`
+	RetryCount          int        `gorm:"default:0" json:"retry_count"`
+	MaxRetries          int        `gorm:"default:3" json:"max_retries"`
+	DataMapping         string     `gorm:"type:jsonb" json:"data_mapping"`
+	MappedFields        string     `gorm:"type:jsonb" json:"mapped_fields"`
+	UnmappedFields      string     `gorm:"type:jsonb" json:"unmapped_fields"`
+	AppliedConditions   string     `gorm:"type:jsonb" json:"applied_conditions"`
+	ImposedRequirements string     `gorm:"type:jsonb" json:"imposed_requirements"`
+	WorkflowActions     string     `gorm:"type:jsonb" json:"workflow_actions"`
+	CreatedBy           string     `gorm:"not null" json:"created_by"`
+	ProcessedBy         *string    `json:"processed_by"`
+	CreatedAt           time.Time  `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
+	ProcessedAt         *time.Time `json:"processed_at"`
+	CompletedAt         *time.Time `json:"completed_at"`
 }
 
 func (CaseCreationTracking) TableName() string {
@@ -80,35 +80,35 @@ func (CaseCreationTracking) TableName() string {
 
 // IntegrationConfig 集成配置数据模型
 type IntegrationConfig struct {
-	ID                       string     `gorm:"primaryKey" json:"id"`
-	ConfigName               string     `gorm:"uniqueIndex;not null" json:"config_name"`
-	ConfigType               string     `gorm:"not null;check:config_type IN ('conflict_approval', 'case_creation', 'workflow_override')" json:"config_type"`
-	ApplicableApprovalTypes  string     `gorm:"type:jsonb" json:"applicable_approval_types"`
-	ApplicableWorkflows      string     `gorm:"type:jsonb" json:"applicable_workflows"`
-	ApplicableDepartments    string     `gorm:"type:jsonb" json:"applicable_departments"`
-	ApplicableRoles          string     `gorm:"type:jsonb" json:"applicable_roles"`
-	TriggerRules             string     `gorm:"not null;type:jsonb" json:"trigger_rules"`
-	ProcessingRules          string     `gorm:"not null;type:jsonb" json:"processing_rules"`
-	ValidationRules          string     `gorm:"type:jsonb" json:"validation_rules"`
-	WorkflowConfig           string     `gorm:"not null;type:jsonb" json:"workflow_config"`
-	ApprovalConfig           string     `gorm:"type:jsonb" json:"approval_config"`
-	NotificationConfig       string     `gorm:"type:jsonb" json:"notification_config"`
-	FieldMapping             string     `gorm:"type:jsonb" json:"field_mapping"`
-	DataTransformation       string     `gorm:"type:jsonb" json:"data_transformation"`
-	ValidationMapping        string     `gorm:"type:jsonb" json:"validation_mapping"`
-	Status                   string     `gorm:"default:active;check:status IN ('active', 'inactive', 'testing')" json:"status"`
-	Version                  int        `gorm:"default:1" json:"version"`
-	Priority                 int        `gorm:"default:0" json:"priority"`
-	Conditions               string     `gorm:"type:jsonb" json:"conditions"`
-	Limitations              string     `gorm:"type:jsonb" json:"limitations"`
-	CreatedBy                string     `gorm:"not null" json:"created_by"`
-	UpdatedBy                *string    `json:"updated_by"`
-	CreatedAt                time.Time  `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
-	UpdatedAt                time.Time  `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
-	EffectiveDate            *time.Time  `json:"effective_date"`
-	ExpiryDate               *time.Time  `json:"expiry_date"`
-	UsageCount               int        `gorm:"default:0" json:"usage_count"`
-	LastUsedDate             *time.Time `json:"last_used_date"`
+	ID                      string     `gorm:"primaryKey" json:"id"`
+	ConfigName              string     `gorm:"uniqueIndex;not null" json:"config_name"`
+	ConfigType              string     `gorm:"not null;check:config_type IN ('conflict_approval', 'case_creation', 'workflow_override')" json:"config_type"`
+	ApplicableApprovalTypes string     `gorm:"type:jsonb" json:"applicable_approval_types"`
+	ApplicableWorkflows     string     `gorm:"type:jsonb" json:"applicable_workflows"`
+	ApplicableDepartments   string     `gorm:"type:jsonb" json:"applicable_departments"`
+	ApplicableRoles         string     `gorm:"type:jsonb" json:"applicable_roles"`
+	TriggerRules            string     `gorm:"not null;type:jsonb" json:"trigger_rules"`
+	ProcessingRules         string     `gorm:"not null;type:jsonb" json:"processing_rules"`
+	ValidationRules         string     `gorm:"type:jsonb" json:"validation_rules"`
+	WorkflowConfig          string     `gorm:"not null;type:jsonb" json:"workflow_config"`
+	ApprovalConfig          string     `gorm:"type:jsonb" json:"approval_config"`
+	NotificationConfig      string     `gorm:"type:jsonb" json:"notification_config"`
+	FieldMapping            string     `gorm:"type:jsonb" json:"field_mapping"`
+	DataTransformation      string     `gorm:"type:jsonb" json:"data_transformation"`
+	ValidationMapping       string     `gorm:"type:jsonb" json:"validation_mapping"`
+	Status                  string     `gorm:"default:active;check:status IN ('active', 'inactive', 'testing')" json:"status"`
+	Version                 int        `gorm:"default:1" json:"version"`
+	Priority                int        `gorm:"default:0" json:"priority"`
+	Conditions              string     `gorm:"type:jsonb" json:"conditions"`
+	Limitations             string     `gorm:"type:jsonb" json:"limitations"`
+	CreatedBy               string     `gorm:"not null" json:"created_by"`
+	UpdatedBy               *string    `json:"updated_by"`
+	CreatedAt               time.Time  `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
+	UpdatedAt               time.Time  `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
+	EffectiveDate           *time.Time `json:"effective_date"`
+	ExpiryDate              *time.Time `json:"expiry_date"`
+	UsageCount              int        `gorm:"default:0" json:"usage_count"`
+	LastUsedDate            *time.Time `json:"last_used_date"`
 }
 
 func (IntegrationConfig) TableName() string {
@@ -162,7 +162,7 @@ func (r *IntegrationRepository) UpdateConflictAssociationStatus(ctx context.Cont
 		Where("id = ?", id).
 		Updates(map[string]interface{}{
 			"association_status": status,
-			"updated_at":        time.Now(),
+			"updated_at":         time.Now(),
 		})
 
 	if result.Error != nil {
@@ -215,8 +215,6 @@ func (r *IntegrationRepository) GetLatestCaseCreationTracking(ctx context.Contex
 
 // UpdateCaseCreationTracking 更新案件创建跟踪
 func (r *IntegrationRepository) UpdateCaseCreationTracking(ctx context.Context, id string, updates map[string]interface{}) error {
-	updates["updated_at"] = time.Now()
-
 	result := r.db.WithContext(ctx).
 		Model(&CaseCreationTracking{}).
 		Where("id = ?", id).
@@ -229,6 +227,19 @@ func (r *IntegrationRepository) UpdateCaseCreationTracking(ctx context.Context, 
 		return NewRepositoryErrorWithID("update case creation tracking", "CaseCreationTracking", id, ErrRecordNotFound)
 	}
 	return nil
+}
+
+// GetConflictCheckRecord 获取集成审批关联的冲突检测记录
+func (r *IntegrationRepository) GetConflictCheckRecord(ctx context.Context, checkID string) (*models.ConflictCheckRecord, error) {
+	var record models.ConflictCheckRecord
+	err := r.db.WithContext(ctx).Where("check_id = ?", checkID).First(&record).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, NewRepositoryError("get conflict check record", "ConflictCheckRecord", err)
+	}
+	return &record, nil
 }
 
 // CreateIntegrationConfig 创建集成配置
@@ -275,9 +286,9 @@ func (r *IntegrationRepository) UpdateIntegrationConfigUsage(ctx context.Context
 		Model(&IntegrationConfig{}).
 		Where("id = ?", configID).
 		Updates(map[string]interface{}{
-			"usage_count":   gorm.Expr("usage_count + 1"),
+			"usage_count":    gorm.Expr("usage_count + 1"),
 			"last_used_date": time.Now(),
-			"updated_at":    time.Now(),
+			"updated_at":     time.Now(),
 		})
 
 	if result.Error != nil {
@@ -361,11 +372,11 @@ func (r *IntegrationRepository) GetIntegrationStatistics(ctx context.Context) (m
 // UpdateApprovalConflictAssociation 更新审批申请的冲突关联信息
 func (r *IntegrationRepository) UpdateApprovalConflictAssociation(ctx context.Context, approvalID string, conflictResult *models.ConflictCheckResponse) error {
 	updates := map[string]interface{}{
-		"conflict_check_id":  conflictResult.CheckID,
+		"conflict_check_id":   conflictResult.CheckID,
 		"conflict_risk_level": conflictResult.RiskAssessment.OverallRisk,
 		"conflict_check_time": conflictResult.CheckTime,
 		"conflict_result":     conflictResult,
-		"updated_at":        time.Now(),
+		"updated_at":          time.Now(),
 	}
 
 	result := r.db.WithContext(ctx).
@@ -385,11 +396,11 @@ func (r *IntegrationRepository) UpdateApprovalConflictAssociation(ctx context.Co
 // UpdateApprovalCaseAssociation 更新审批申请的案件关联信息
 func (r *IntegrationRepository) UpdateApprovalCaseAssociation(ctx context.Context, approvalID string, caseResult *models.CaseCreationAssociation) error {
 	updates := map[string]interface{}{
-		"case_created":            true,
-		"created_case_id":        caseResult.CaseID,
-		"case_creation_time":      caseResult.CreationTime,
-		"case_creation_status":    caseResult.Status,
-		"updated_at":             time.Now(),
+		"case_created":         true,
+		"created_case_id":      caseResult.CaseID,
+		"case_creation_time":   caseResult.CreationTime,
+		"case_creation_status": caseResult.Status,
+		"updated_at":           time.Now(),
 	}
 
 	result := r.db.WithContext(ctx).

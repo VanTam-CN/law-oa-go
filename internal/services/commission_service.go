@@ -12,12 +12,13 @@ import (
 
 // CommissionService 提成计算服务
 type CommissionService struct {
-	commissionRepo repositories.CommissionRepository
-	paymentRepo    repositories.PaymentRepository
-	contractRepo   repositories.ContractRepository
-	invoiceRepo    repositories.InvoiceRepository
-	userRepo       repositories.UserRepository
-	caseRepo       repositories.CaseRepository
+	commissionRepo   repositories.CommissionRepository
+	commissionRuleRepo repositories.CommissionRuleRepository
+	paymentRepo      repositories.PaymentRepository
+	contractRepo     repositories.ContractRepository
+	invoiceRepo      repositories.InvoiceRepository
+	userRepo         repositories.UserRepository
+	caseRepo         repositories.CaseRepository
 }
 
 // NewCommissionService 创建提成计算服务实例
@@ -40,6 +41,11 @@ func NewCommissionService(
 // SetInvoiceRepository 设置发票仓储（延迟注入）
 func (s *CommissionService) SetInvoiceRepository(invoiceRepo repositories.InvoiceRepository) {
 	s.invoiceRepo = invoiceRepo
+}
+
+// SetCommissionRuleRepository 设置分成规则仓储（延迟注入）
+func (s *CommissionService) SetCommissionRuleRepository(ruleRepo repositories.CommissionRuleRepository) {
+	s.commissionRuleRepo = ruleRepo
 }
 
 // CommissionRule 提成规则
@@ -251,46 +257,49 @@ func (s *CommissionService) getBeneficiaries(ctx context.Context, contract *mode
 
 // getCommissionRate 获取提成比例
 func (s *CommissionService) getCommissionRate(role string, amount float64) float64 {
-	// 这里可以从配置或数据库读取提成规则
-	// 默认规则：
-	// - 案源: 10%-30%
-	// - 主办律师: 20%-50%
-	// - 协办律师: 5%-15%
+	// 优先从数据库读取规则
+	if s.commissionRuleRepo != nil {
+		rules, err := s.commissionRuleRepo.FindActiveByRole(context.Background(), role)
+		if err == nil && len(rules) > 0 {
+			for _, rule := range rules {
+				if amount >= rule.MinAmount && (rule.MaxAmount <= 0 || amount < rule.MaxAmount) {
+					return rule.BaseRate
+				}
+			}
+			// 没有匹配的金额区间，返回最低规则的基础比例
+			return rules[len(rules)-1].BaseRate
+		}
+	}
 
+	// fallback: 硬编码默认规则
 	switch role {
 	case "source":
-		// 案源提成：回款金额的10%-30%，按金额递增
 		if amount < 10000 {
 			return 10
 		} else if amount < 50000 {
 			return 15
 		} else if amount < 100000 {
 			return 20
-		} else {
-			return 30
 		}
+		return 30
 	case "lawyer":
-		// 主办律师提成：回款金额的20%-50%，按金额递增
 		if amount < 10000 {
 			return 20
 		} else if amount < 50000 {
 			return 30
 		} else if amount < 100000 {
 			return 40
-		} else {
-			return 50
 		}
+		return 50
 	case "assistant":
-		// 协办律师提成：回款金额的5%-15%，按金额递增
 		if amount < 10000 {
 			return 5
 		} else if amount < 50000 {
 			return 8
 		} else if amount < 100000 {
 			return 12
-		} else {
-			return 15
 		}
+		return 15
 	default:
 		return 0
 	}
@@ -505,4 +514,40 @@ type CommissionStats struct {
 	TotalCommissionAmount   float64 `json:"total_commission_amount"`
 	PendingCommissionAmount float64 `json:"pending_commission_amount"`
 	MonthCommissionAmount   float64 `json:"month_commission_amount"`
+}
+
+// ==================== 分成规则 CRUD ====================
+
+// ListCommissionRules 获取所有分成规则
+func (s *CommissionService) ListCommissionRules(ctx context.Context) ([]*models.CommissionRule, error) {
+	return s.commissionRuleRepo.FindAll(ctx)
+}
+
+// CreateCommissionRule 创建分成规则
+func (s *CommissionService) CreateCommissionRule(ctx context.Context, rule *models.CommissionRule) error {
+	return s.commissionRuleRepo.Create(ctx, rule)
+}
+
+// UpdateCommissionRule 更新分成规则
+func (s *CommissionService) UpdateCommissionRule(ctx context.Context, rule *models.CommissionRule) error {
+	existing, err := s.commissionRuleRepo.FindByID(ctx, rule.ID)
+	if err != nil {
+		return fmt.Errorf("规则不存在: %w", err)
+	}
+	existing.Name = rule.Name
+	existing.Role = rule.Role
+	existing.MinAmount = rule.MinAmount
+	existing.MaxAmount = rule.MaxAmount
+	existing.BaseRate = rule.BaseRate
+	existing.PerformanceRate = rule.PerformanceRate
+	existing.Priority = rule.Priority
+	existing.Active = rule.Active
+	existing.EffectiveDate = rule.EffectiveDate
+	existing.ExpiryDate = rule.ExpiryDate
+	return s.commissionRuleRepo.Update(ctx, existing)
+}
+
+// DeleteCommissionRule 删除分成规则
+func (s *CommissionService) DeleteCommissionRule(ctx context.Context, id uint) error {
+	return s.commissionRuleRepo.Delete(ctx, id)
 }

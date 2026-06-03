@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"law-oa-go/internal/models"
@@ -61,11 +62,11 @@ type LegalStatuteService interface {
 
 // legalStatuteService 法条服务实现
 type legalStatuteService struct {
-	db               *gorm.DB
-	statuteRepo      repositories.LegalStatuteRepository
-	categoryRepo     repositories.LegalCategoryRepository
-	tagRepo          repositories.LegalTagRepository
-	esRepo           repositories.ElasticsearchStatuteRepository
+	db           *gorm.DB
+	statuteRepo  repositories.LegalStatuteRepository
+	categoryRepo repositories.LegalCategoryRepository
+	tagRepo      repositories.LegalTagRepository
+	esRepo       repositories.ElasticsearchStatuteRepository
 }
 
 // NewLegalStatuteService 创建法条服务实例
@@ -311,7 +312,7 @@ func (s *legalStatuteService) ListStatutes(ctx context.Context, page, pageSize i
 		Page:       page,
 		PageSize:   pageSize,
 		TotalPages: int((total + int64(pageSize) - 1) / int64(pageSize)),
-		Statutes:   statutes,
+		Statutes:   statuteResponses,
 		SearchTime: 0,
 	}, nil
 }
@@ -338,15 +339,15 @@ func (s *legalStatuteService) SearchStatutes(ctx context.Context, req *models.Le
 func (s *legalStatuteService) searchWithElasticsearch(ctx context.Context, req *models.LegalSearchRequest, userID int) (*models.LegalSearchResponse, error) {
 	// 构建ES搜索请求
 	esReq := &elasticsearch.LegalSearchRequest{
-		Query:             req.Query,
-		CategoryCodes:     s.getCategoryCodes(ctx, req.CategoryID),
-		Status:            req.Status,
-		Tags:              req.Tags,
-		SortBy:            req.SortBy,
-		SortOrder:         req.SortOrder,
-		Page:              req.Page,
-		PageSize:          req.PageSize,
-		Highlight:         true,
+		Query:         req.Query,
+		CategoryCodes: s.getCategoryCodes(ctx, req.CategoryID),
+		Status:        req.Status,
+		Tags:          req.Tags,
+		SortBy:        req.SortBy,
+		SortOrder:     req.SortOrder,
+		Page:          req.Page,
+		PageSize:      req.PageSize,
+		Highlight:     true,
 	}
 
 	if req.LawName != "" {
@@ -382,7 +383,7 @@ func (s *legalStatuteService) searchWithElasticsearch(ctx context.Context, req *
 		Page:        req.Page,
 		PageSize:    req.PageSize,
 		TotalPages:  int((esResp.Total + int64(req.PageSize) - 1) / int64(req.PageSize)),
-		Statutes:    statutes,
+		Statutes:    statuteResponses,
 		Suggestions: esResp.Suggestions,
 		SearchTime:  esResp.SearchTime,
 	}, nil
@@ -440,7 +441,7 @@ func (s *legalStatuteService) searchWithDatabase(ctx context.Context, req *model
 		Page:       req.Page,
 		PageSize:   req.PageSize,
 		TotalPages: int((total + int64(req.PageSize) - 1) / int64(req.PageSize)),
-		Statutes:   statutes,
+		Statutes:   statuteResponses,
 		SearchTime: int(time.Since(start).Milliseconds()),
 	}, nil
 }
@@ -451,12 +452,36 @@ func (s *legalStatuteService) GetSearchSuggestions(ctx context.Context, query st
 		return s.esRepo.GetSuggestion(ctx, query)
 	}
 
-	// 使用数据库提供基础建议
-	suggestions := []string{
-		query + "相关法条",
-		"民法典" + query,
-		"公司法" + query,
-		"劳动合同法" + query,
+	statutes, err := s.statuteRepo.SearchByKeyword(ctx, query, 0, 10)
+	if err != nil {
+		return nil, fmt.Errorf("获取搜索建议失败: %v", err)
+	}
+
+	seen := make(map[string]struct{})
+	suggestions := make([]string, 0, len(statutes))
+	addSuggestion := func(value string) {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			return
+		}
+		if _, exists := seen[value]; exists {
+			return
+		}
+		seen[value] = struct{}{}
+		suggestions = append(suggestions, value)
+	}
+
+	for _, statute := range statutes {
+		addSuggestion(statute.Title)
+		addSuggestion(statute.LawName)
+		for _, keyword := range statute.Keywords {
+			if strings.Contains(keyword, query) || strings.Contains(statute.Title, keyword) {
+				addSuggestion(keyword)
+			}
+		}
+		if len(suggestions) >= 10 {
+			break
+		}
 	}
 
 	return suggestions, nil
@@ -575,7 +600,7 @@ func (s *legalStatuteService) GetStatutesByCategory(ctx context.Context, categor
 		Page:       page,
 		PageSize:   pageSize,
 		TotalPages: int((total + int64(pageSize) - 1) / int64(pageSize)),
-		Statutes:   statutes,
+		Statutes:   statuteResponses,
 		SearchTime: 0,
 	}, nil
 }
@@ -683,7 +708,7 @@ func (s *legalStatuteService) GetUserFavorites(ctx context.Context, userID int, 
 		Page:       page,
 		PageSize:   pageSize,
 		TotalPages: int((total + int64(pageSize) - 1) / int64(pageSize)),
-		Statutes:   statutes,
+		Statutes:   statuteResponses,
 		SearchTime: 0,
 	}, nil
 }
@@ -698,13 +723,13 @@ func (s *legalStatuteService) GetSearchHistory(ctx context.Context, userID int, 
 	responses := make([]*models.SearchHistoryResponse, 0, len(histories))
 	for _, history := range histories {
 		response := &models.SearchHistoryResponse{
-			ID:            history.ID,
-			UserID:        history.UserID,
-			SearchQuery:   history.SearchQuery,
-			SearchFilters: history.SearchFilters,
-			ResultCount:   history.ResultCount,
+			ID:             history.ID,
+			UserID:         history.UserID,
+			SearchQuery:    history.SearchQuery,
+			SearchFilters:  history.SearchFilters,
+			ResultCount:    history.ResultCount,
 			SearchDuration: history.SearchDuration,
-			CreatedAt:     history.CreatedAt,
+			CreatedAt:      history.CreatedAt,
 		}
 		responses = append(responses, response)
 	}
@@ -964,29 +989,29 @@ func (s *legalStatuteService) buildCategoryMap(ctx context.Context) (map[string]
 // convertToResponse 转换为响应格式
 func (s *legalStatuteService) convertToResponse(statute *models.LegalStatute, userID int) *models.LegalStatuteResponse {
 	response := &models.LegalStatuteResponse{
-		ID:                 statute.ID,
-		StatuteNumber:      statute.StatuteNumber,
-		Title:              statute.Title,
-		Content:            statute.Content,
-		LawName:            statute.LawName,
-		Chapter:            statute.Chapter,
-		Section:            statute.Section,
-		Part:               statute.Part,
-		EffectiveDate:      statute.EffectiveDate,
-		ExpiryDate:         statute.ExpiryDate,
+		ID:                  statute.ID,
+		StatuteNumber:       statute.StatuteNumber,
+		Title:               statute.Title,
+		Content:             statute.Content,
+		LawName:             statute.LawName,
+		Chapter:             statute.Chapter,
+		Section:             statute.Section,
+		Part:                statute.Part,
+		EffectiveDate:       statute.EffectiveDate,
+		ExpiryDate:          statute.ExpiryDate,
 		PublishingAuthority: statute.PublishingAuthority,
-		Status:             statute.Status,
-		HierarchyLevel:     statute.HierarchyLevel,
-		ParentStatuteID:    statute.ParentStatuteID,
-		OrderInHierarchy:   statute.OrderInHierarchy,
-		Tags:               statute.Tags,
-		Keywords:           statute.Keywords,
-		ViewCount:          0, // 需要从统计表获取
-		FavoriteCount:      0, // 需要从统计表获取
-		CreatedAt:          statute.CreatedAt,
-		UpdatedAt:          statute.UpdatedAt,
-		FullPath:           statute.GetFullPath(),
-		IsActive:           statute.IsActive(),
+		Status:              statute.Status,
+		HierarchyLevel:      statute.HierarchyLevel,
+		ParentStatuteID:     statute.ParentStatuteID,
+		OrderInHierarchy:    statute.OrderInHierarchy,
+		Tags:                statute.Tags,
+		Keywords:            statute.Keywords,
+		ViewCount:           0, // 需要从统计表获取
+		FavoriteCount:       0, // 需要从统计表获取
+		CreatedAt:           statute.CreatedAt,
+		UpdatedAt:           statute.UpdatedAt,
+		FullPath:            statute.GetFullPath(),
+		IsActive:            statute.IsActive(),
 	}
 
 	// 处理分类信息
@@ -1014,24 +1039,24 @@ func (s *legalStatuteService) convertToResponse(statute *models.LegalStatute, us
 // convertToESDocument 转换为ES文档
 func (s *legalStatuteService) convertToESDocument(statute *models.LegalStatute) *elasticsearch.LegalStatuteDocument {
 	doc := &elasticsearch.LegalStatuteDocument{
-		ID:                 statute.ID,
-		StatuteNumber:      statute.StatuteNumber,
-		Title:              statute.Title,
-		Content:            statute.Content,
-		LawName:            statute.LawName,
-		Chapter:            statute.Chapter,
-		Section:            statute.Section,
-		Part:               statute.Part,
-		Status:             statute.Status,
-		HierarchyLevel:     statute.HierarchyLevel,
-		Tags:               statute.Tags,
-		Keywords:           statute.Keywords,
-		CreatedAt:          statute.CreatedAt.Format("2006-01-02T15:04:05Z"),
-		UpdatedAt:          statute.UpdatedAt.Format("2006-01-02T15:04:05Z"),
-		ContentLength:      len(statute.Content),
-		ViewCount:          0,
-		FavoriteCount:      0,
-		SearchWeight:       1.0,
+		ID:             statute.ID,
+		StatuteNumber:  statute.StatuteNumber,
+		Title:          statute.Title,
+		Content:        statute.Content,
+		LawName:        statute.LawName,
+		Chapter:        statute.Chapter,
+		Section:        statute.Section,
+		Part:           statute.Part,
+		Status:         statute.Status,
+		HierarchyLevel: statute.HierarchyLevel,
+		Tags:           statute.Tags,
+		Keywords:       statute.Keywords,
+		CreatedAt:      statute.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		UpdatedAt:      statute.UpdatedAt.Format("2006-01-02T15:04:05Z"),
+		ContentLength:  len(statute.Content),
+		ViewCount:      0,
+		FavoriteCount:  0,
+		SearchWeight:   1.0,
 	}
 
 	// 处理可选字段

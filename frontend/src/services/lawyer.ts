@@ -31,18 +31,64 @@ export interface LawyerStats {
   specialtyStats: Record<string, number>
 }
 
+const normalizeStatus = (status?: string): 'active' | 'inactive' | 'on_leave' => {
+  if (status === 'inactive' || status === 'on_leave') {
+    return status
+  }
+  return 'active'
+}
+
+const normalizeLawyer = (raw: any): Lawyer => {
+  const id = raw.lawyerId ?? raw.lawyer_id ?? raw.id
+  const name = raw.lawyerName ?? raw.lawyer_name ?? raw.name ?? raw.username ?? ''
+  const specialty = Array.isArray(raw.specialty)
+    ? raw.specialty.join(',')
+    : raw.specialty || raw.seniority || '综合法律服务'
+
+  return {
+    lawyerId: id,
+    lawyerName: name,
+    phone: raw.phone || '',
+    email: raw.email || '',
+    licenseNo: raw.licenseNo ?? raw.license_no ?? raw.licenseNumber ?? raw.license_number ?? '',
+    specialty,
+    department: raw.department || '综合部',
+    position: raw.position || raw.seniority || '执业律师',
+    delFlag: raw.delFlag ?? raw.del_flag ?? '0',
+    id,
+    name,
+    licenseNumber: raw.licenseNumber ?? raw.license_number ?? raw.licenseNo ?? raw.license_no ?? '',
+    gender: raw.gender === 'female' ? 'female' : 'male',
+    experience: Number(raw.experience ?? 0),
+    status: normalizeStatus(raw.status),
+    joinDate: raw.joinDate ?? raw.join_date ?? raw.created_at?.slice?.(0, 10) ?? '',
+    profile: raw.profile || `${name || '律师'}，负责律所法律服务工作。`,
+    avatar: raw.avatar || '',
+  }
+}
+
 /**
  * 获取律师列表
  */
 export const getLawyerList = (params?: any): Promise<{ list: Lawyer[]; total: number }> => {
-  return get<{ list: Lawyer[]; total: number }>('/lawfirm/lawyers', params)
+  return get<any>('/lawfirm/lawyers', params).then((response) => {
+    const list = Array.isArray(response)
+      ? response
+      : response?.list || response?.data?.list || response?.data || []
+    const total = response?.total ?? response?.pagination?.total ?? list.length
+
+    return {
+      list: list.map(normalizeLawyer),
+      total,
+    }
+  })
 }
 
 /**
  * 获取律师详情
  */
 export const getLawyerDetail = (id: number): Promise<Lawyer> => {
-  return get<Lawyer>(`/lawfirm/lawyers/${id}`)
+  return get<any>(`/lawfirm/lawyers/${id}`).then(normalizeLawyer)
 }
 
 /**

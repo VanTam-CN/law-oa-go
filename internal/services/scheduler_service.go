@@ -2,8 +2,10 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
+	"strconv"
 	"sync"
 	"time"
 
@@ -11,31 +13,44 @@ import (
 	"law-oa-go/internal/repositories"
 )
 
+// 审批超时相关常量
+const (
+	defaultApprovalTimeoutHours  = 48           // 审批超时默认阈值（小时）
+	defaultEscalationDays         = 3            // 待办升级超时天数
+	approvalTimeoutWarningRatio   = 0.8          // 超时预警比例（80%）
+	approvalTimeoutBatchSize      = 50           // 每次处理的最大审批数量
+	processDueItemsBatchSize      = 1000         // 每次处理的最大待办数量
+)
+
 // SchedulerService 定时调度服务
 type SchedulerService struct {
-	inboxRepo repositories.InboxRepository
-	userRepo  repositories.UserRepository
+	inboxRepo    repositories.InboxRepository
+	userRepo     repositories.UserRepository
+	approvalRepo *repositories.ApprovalRepository
 
 	// Cron 表达式配置
-	reminderCheckInterval time.Duration
+	reminderCheckInterval   time.Duration
 	escalationCheckInterval time.Duration
+	timeoutCheckInterval   time.Duration
 
 	// 控制字段
-	stopCh chan struct{}
-	wg     sync.WaitGroup
+	stopCh  chan struct{}
+	wg      sync.WaitGroup
 	running bool
 	mu      sync.RWMutex
 }
 
 // NewSchedulerService 创建定时调度服务
-func NewSchedulerService(inboxRepo repositories.InboxRepository, userRepo repositories.UserRepository) *SchedulerService {
+func NewSchedulerService(inboxRepo repositories.InboxRepository, userRepo repositories.UserRepository, approvalRepo *repositories.ApprovalRepository) *SchedulerService {
 	return &SchedulerService{
-		inboxRepo:             inboxRepo,
-		userRepo:              userRepo,
-		reminderCheckInterval: time.Hour,     // 每小时检查一次提醒
-		escalationCheckInterval: 6 * time.Hour, // 每6小时检查一次升级
-		stopCh:                make(chan struct{}),
-		running:               false,
+		inboxRepo:              inboxRepo,
+		userRepo:               userRepo,
+		approvalRepo:           approvalRepo,
+		reminderCheckInterval:  time.Hour,
+		escalationCheckInterval: 6 * time.Hour,
+		timeoutCheckInterval:   30 * time.Minute,
+		stopCh:                 make(chan struct{}),
+		running:                false,
 	}
 }
 
@@ -57,6 +72,12 @@ func (s *SchedulerService) Start() {
 	// 启动升级检查任务
 	s.wg.Add(1)
 	go s.escalationChecker()
+
+	// 启动审批超时检查任务
+	if s.approvalRepo != nil {
+		s.wg.Add(1)
+		go s.approvalTimeoutChecker()
+	}
 
 	log.Println("SchedulerService started")
 }
@@ -218,8 +239,7 @@ func (s *SchedulerService) checkReminders(ctx context.Context) error {
 // checkEscalations 检查待办事项升级
 func (s *SchedulerService) checkEscalations(ctx context.Context) error {
 	// 获取超时的 critical 待办事项
-	// 假设超时阈期为3天
-	threshold := time.Now().AddDate(0, 0, -3)
+	threshold := time.Now().AddDate(0, 0, -defaultEscalationDays)
 
 	overdueItems, err := s.inboxRepo.GetOverdueCriticalItems(ctx, threshold)
 	if err != nil {
@@ -375,7 +395,7 @@ func (s *SchedulerService) ProcessDueItemsForUser(ctx context.Context, userID ui
 	// 获取用户的所有待办事项
 	params := &repositories.InboxListParams{
 		Page:     1,
-		PageSize: 1000,
+		PageSize: processDueItemsBatchSize,
 		UserID:   userID,
 	}
 
@@ -402,8 +422,185 @@ func (s *SchedulerService) GetSchedulerStatus() map[string]interface{} {
 	defer s.mu.RUnlock()
 
 	return map[string]interface{}{
-		"running":                  s.running,
-		"reminder_check_interval":  s.reminderCheckInterval.String(),
-		"escalation_check_interval": s.escalationCheckInterval.String(),
+		"running":                   s.running,
+		"reminder_check_interval":    s.reminderCheckInterval.String(),
+		"escalation_check_interval":  s.escalationCheckInterval.String(),
+		"approval_timeout_interval": s.timeoutCheckInterval.String(),
+	}
+}
+
+// approvalTimeoutChecker 审批超时检查器
+func (s *SchedulerService) approvalTimeoutChecker() {
+	defer s.wg.Done()
+
+	ticker := time.NewTicker(s.timeoutCheckInterval)
+	defer ticker.Stop()
+
+	s.checkApprovalTimeouts(context.Background())
+
+	for {
+		select {
+		case <-ticker.C:
+			ctx := context.Background()
+			if err := s.checkApprovalTimeouts(ctx); err != nil {
+				log.Printf("审批超时检查错误: %v", err)
+			}
+		case <-s.stopCh:
+			return
+		}
+	}
+}
+
+// checkApprovalTimeouts 检查超时的审批
+func (s *SchedulerService) checkApprovalTimeouts(ctx context.Context) error {
+	if s.approvalRepo == nil {
+		return nil
+	}
+
+	now := time.Now()
+
+	// 查询所有待处理且超时的审批
+	var approvals []models.ApprovalRequest
+	err := s.approvalRepo.DB().WithContext(ctx).
+		Where("status IN ?", []string{
+			models.ApprovalStatusSubmitted,
+			models.ApprovalStatusUnderReview,
+		}).
+		Where("submission_date IS NOT NULL").
+		Where("escalated = ?", false).
+		Where("submission_date < ?", now.Add(-time.Duration(defaultApprovalTimeoutHours)*time.Hour)).
+		Limit(approvalTimeoutBatchSize).
+		Find(&approvals).Error
+	if err != nil {
+		return fmt.Errorf("查询超时审批失败: %w", err)
+	}
+
+	for _, approval := range approvals {
+		if approval.SubmissionDate == nil {
+			continue
+		}
+
+		elapsed := now.Sub(*approval.SubmissionDate)
+		timeoutHours := defaultApprovalTimeoutHours
+
+		// 从工作流配置获取超时时间
+		if approval.WorkflowConfig != "" {
+			parsed := parseWorkflowTimeouts(approval.WorkflowConfig, approval.CurrentStage)
+			if parsed > 0 {
+				timeoutHours = parsed
+			}
+		}
+
+		if elapsed >= time.Duration(timeoutHours)*time.Hour {
+			s.handleApprovalTimeout(ctx, &approval, timeoutHours)
+		} else if elapsed >= time.Duration(float64(timeoutHours)*approvalTimeoutWarningRatio*float64(time.Hour)) {
+			// 接近超时（80%），发送提醒
+			s.sendApprovalTimeoutWarning(ctx, &approval, timeoutHours, elapsed)
+		}
+	}
+
+	return nil
+}
+
+// handleApprovalTimeout 处理超时的审批
+func (s *SchedulerService) handleApprovalTimeout(ctx context.Context, approval *models.ApprovalRequest, timeoutHours int) {
+	now := time.Now()
+
+	// 标记为已升级
+	updates := map[string]interface{}{
+		"escalated":    true,
+		"escalated_at": now,
+	}
+
+	// 设置超时时间
+	timeoutAt := approval.SubmissionDate.Add(time.Duration(timeoutHours) * time.Hour)
+	updates["timeout_at"] = timeoutAt
+
+	if err := s.approvalRepo.DB().WithContext(ctx).Model(&models.ApprovalRequest{}).Where("id = ?", approval.ID).Updates(updates).Error; err != nil {
+		log.Printf("标记审批超时失败 (ID: %s): %v", approval.ID, err)
+		return
+	}
+
+	// 创建升级待办通知
+	item := &models.InboxItem{
+		UserID:      0, // 系统级通知，发送给管理员
+		SourceType:  "approval",
+		SourceID:    0,
+		Title:       fmt.Sprintf("审批超时: %s", approval.Title),
+		Content:     fmt.Sprintf("审批 %s 已超时 %d 小时未处理，请及时关注。申请人: %s", approval.RequestNumber, timeoutHours, approval.ApplicantName),
+		Priority:    "high",
+		DueDateType: "approval_timeout",
+	}
+
+	if s.inboxRepo != nil {
+		_ = s.inboxRepo.Create(ctx, item)
+	}
+
+	log.Printf("审批超时已升级 (ID: %s, Number: %s, Hours: %d)", approval.ID, approval.RequestNumber, timeoutHours)
+}
+
+// sendApprovalTimeoutWarning 发送超时预警
+func (s *SchedulerService) sendApprovalTimeoutWarning(ctx context.Context, approval *models.ApprovalRequest, timeoutHours int, elapsed time.Duration) {
+	if approval.CurrentApproverID == "" {
+		return
+	}
+
+	approverIDParsed, err := strconv.ParseUint(approval.CurrentApproverID, 10, 32)
+	if err != nil {
+		log.Printf("[Scheduler] 解析 CurrentApproverID 失败 (ApprovalID: %s, ApproverID: %s): %v", approval.ID, approval.CurrentApproverID, err)
+		return
+	}
+	approverID := uint(approverIDParsed)
+	if approverID == 0 {
+		return
+	}
+
+	remaining := time.Duration(timeoutHours)*time.Hour - elapsed
+
+	item := &models.InboxItem{
+		UserID:      approverID,
+		SourceType:  "approval",
+		SourceID:    0,
+		Title:       fmt.Sprintf("审批即将超时: %s", approval.Title),
+		Content:     fmt.Sprintf("审批 %s 将在 %s 后超时（已等待 %d 小时），请尽快处理", approval.RequestNumber, remaining.Round(time.Hour), int(elapsed.Hours())),
+		Priority:    "important",
+		DueDateType: "approval_timeout_warning",
+	}
+
+	if s.inboxRepo != nil {
+		_ = s.inboxRepo.Create(ctx, item)
+	}
+}
+
+// parseWorkflowTimeouts 从工作流配置JSON中解析指定阶段的超时时间
+// 格式示例: {"timeouts": {"department_review": 24, "partner_review": 48}}
+func parseWorkflowTimeouts(workflowConfigJSON, currentStage string) int {
+	if len(workflowConfigJSON) == 0 || len(currentStage) == 0 {
+		return 0
+	}
+
+	var config map[string]interface{}
+	if err := json.Unmarshal([]byte(workflowConfigJSON), &config); err != nil {
+		log.Printf("[Scheduler] 解析工作流配置失败: %v", err)
+		return 0
+	}
+
+	timeouts, ok := config["timeouts"].(map[string]interface{})
+	if !ok {
+		return 0
+	}
+
+	stageTimeout, ok := timeouts[currentStage]
+	if !ok {
+		return 0
+	}
+
+	switch v := stageTimeout.(type) {
+	case float64:
+		return int(v)
+	case int:
+		return v
+	default:
+		return 0
 	}
 }

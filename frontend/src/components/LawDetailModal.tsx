@@ -56,7 +56,7 @@ const LawDetailModal: React.FC<LawDetailModalProps> = ({ visible, law, onClose }
     try {
       setLoading(true)
       const response = await getRelatedLaws(law.id, 5)
-      setRelatedLaws(response.data?.statutes || [])
+      setRelatedLaws(response.data || [])
     } catch (error) {
       console.error('Failed to load related laws:', error)
     } finally {

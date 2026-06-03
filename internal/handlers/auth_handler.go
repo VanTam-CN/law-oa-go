@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"law-oa-go/internal/auth"
@@ -24,7 +25,8 @@ func NewAuthHandler(userService *services.UserService, tokenRevocationService *a
 }
 
 type LoginRequest struct {
-	Email    string `json:"email" binding:"required,email"`
+	Email    string `json:"email"`
+	Account  string `json:"account"`
 	Password string `json:"password" binding:"required,min=6,max=50"`
 }
 
@@ -57,18 +59,24 @@ type LoginResponse struct {
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.APIBadRequest(c, "请求参数错误", "邮箱和密码不能为空且格式正确")
+		common.APIBadRequest(c, "请求参数错误", "账号和密码不能为空")
 		return
 	}
 
-	user, err := h.userService.AuthenticateUser(c.Request.Context(), req.Email, req.Password)
+	email := normalizeLoginAccount(req.Email, req.Account)
+	if email == "" {
+		common.APIBadRequest(c, "请求参数错误", "请输入账号或邮箱")
+		return
+	}
+
+	user, err := h.userService.AuthenticateUser(c.Request.Context(), email, req.Password)
 	if err != nil {
 		common.APIUnauthorized(c, "认证失败", "邮箱或密码错误")
 		return
 	}
 
 	// 生成真实的JWT token
-	token, expiresAt, err := middleware.GenerateToken(user.ID, req.Email, user.Role)
+	token, expiresAt, err := middleware.GenerateToken(user.ID, email, user.Role)
 	if err != nil {
 		common.APIInternalServerError(c, "生成令牌失败", err.Error())
 		return
@@ -81,6 +89,34 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	common.APISuccess(c, response)
+}
+
+func normalizeLoginAccount(email string, account string) string {
+	identifier := strings.ToLower(strings.TrimSpace(email))
+	if identifier == "" {
+		identifier = strings.ToLower(strings.TrimSpace(account))
+	}
+
+	if identifier == "" {
+		return ""
+	}
+
+	aliases := map[string]string{
+		"admin":            "demo.admin@example.test",
+		"demo.admin":     "demo.admin@example.test",
+		"lawyer":           "demo.lawyer@example.test",
+		"demo.lawyer":    "demo.lawyer@example.test",
+		"assistant":        "demo.assistant@example.test",
+		"demo.assistant": "demo.assistant@example.test",
+		"finance":          "demo.finance@example.test",
+		"demo.finance":   "demo.finance@example.test",
+	}
+
+	if resolved, ok := aliases[identifier]; ok {
+		return resolved
+	}
+
+	return identifier
 }
 
 // Register godoc

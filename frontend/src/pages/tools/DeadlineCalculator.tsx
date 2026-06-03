@@ -13,48 +13,23 @@ import {
 } from 'antd'
 import { CalendarOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
-
-const { RangePicker } = DatePicker
+import { calculateDeadline, DeadlineCalculatorResult } from '@/services/tools'
 
 const DeadlineCalculator: React.FC = () => {
   const [form] = Form.useForm()
   const [loading, setLoading] = useState<boolean>(false)
-  const [result, setResult] = useState<any>(null)
+  const [result, setResult] = useState<DeadlineCalculatorResult | null>(null)
 
   const handleSubmit = async (values: any) => {
     try {
       setLoading(true)
-
-      // 简单的前端计算逻辑
-      const startDate = dayjs(values.startDate)
-      const days = values.days
-      const excludeWeekends = values.excludeWeekends || false
-
-      let endDate = startDate
-      let workDays = 0
-      let totalDays = 0
-
-      // 简单的日期计算
-      while (workDays < days) {
-        endDate = endDate.add(1, 'day')
-        totalDays++
-
-        const dayOfWeek = endDate.day()
-        if (!excludeWeekends || (dayOfWeek !== 0 && dayOfWeek !== 6)) {
-          workDays++
-        }
-      }
-
-      const resultData = {
-        startDate: values.startDate,
-        days,
-        excludeWeekends,
+      const response = await calculateDeadline({
+        startDate: dayjs(values.startDate).format('YYYY-MM-DD'),
+        days: Number(values.days),
+        excludeWeekends: values.excludeWeekends || false,
         excludeHolidays: values.excludeHolidays || false,
-        endDate: endDate.format('YYYY-MM-DD'),
-        workDays,
-      }
-
-      setResult(resultData)
+      })
+      setResult(response)
       message.success('计算完成！')
     } catch (error) {
       console.error('Failed to calculate deadline:', error)
