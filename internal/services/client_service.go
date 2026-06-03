@@ -2,10 +2,11 @@ package services
 
 import (
 	"context"
+	stderrors "errors"
 	"regexp"
+	"strings"
 	"time"
 
-	stderrors "errors"
 	"gorm.io/gorm"
 	"law-oa-go/internal/errors"
 	"law-oa-go/internal/models"
@@ -15,6 +16,8 @@ import (
 type ClientService struct {
 	clientRepo repositories.ClientRepository
 }
+
+var ErrClientVersionConflict = stderrors.New("client version conflict")
 
 func NewClientService(clientRepo repositories.ClientRepository) *ClientService {
 	return &ClientService{clientRepo: clientRepo}
@@ -36,6 +39,7 @@ type CreateClientRequest struct {
 }
 
 type UpdateClientRequest struct {
+	Version       *uint   `json:"version" binding:"required"`
 	Name          *string `json:"name" binding:"omitempty,min=1,max=100"`
 	Type          *string `json:"type" binding:"omitempty,oneof=个人 企业"`
 	Email         *string `json:"email" binding:"omitempty,email"`
@@ -52,22 +56,45 @@ type UpdateClientRequest struct {
 }
 
 type ClientResponse struct {
-	ID            uint      `json:"id"`
-	Name          string    `json:"name"`
-	Type          string    `json:"type"`
-	Email         string    `json:"email"`
-	Phone         string    `json:"phone"`
-	Address       string    `json:"address"`
-	IDCard        string    `json:"id_card"`
-	Company       string    `json:"company"`
-	Industry      string    `json:"industry"`
-	ContactPerson string    `json:"contact_person"`
-	ContactPhone  string    `json:"contact_phone"`
-	Source        string    `json:"source"`
-	Notes         string    `json:"notes"`
-	Status        string    `json:"status"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
+	ID                uint                      `json:"id"`
+	Version           uint                      `json:"version"`
+	Name              string                    `json:"name"`
+	Type              string                    `json:"type"`
+	Email             string                    `json:"email"`
+	Phone             string                    `json:"phone"`
+	Address           string                    `json:"address"`
+	IDCard            string                    `json:"id_card"`
+	Company           string                    `json:"company"`
+	Industry          string                    `json:"industry"`
+	ContactPerson     string                    `json:"contact_person"`
+	ContactPhone      string                    `json:"contact_phone"`
+	Source            string                    `json:"source"`
+	Notes             string                    `json:"notes"`
+	Status            string                    `json:"status"`
+	CreatedAt         time.Time                 `json:"created_at"`
+	UpdatedAt         time.Time                 `json:"updated_at"`
+	Completeness      ClientCompleteness        `json:"completeness"`
+	RelatedParties    []RelatedPartySummary     `json:"related_parties"`
+	HistoricalMatters []HistoricalMatterSummary `json:"historical_matters"`
+}
+
+type ClientCompleteness struct {
+	Score                 int      `json:"score"`
+	MissingFields         []string `json:"missing_fields"`
+	ReadyForConflictCheck bool     `json:"ready_for_conflict_check"`
+}
+
+type RelatedPartySummary struct {
+	Name             string `json:"name"`
+	RelationshipType string `json:"relationship_type"`
+	RiskImpact       string `json:"risk_impact"`
+}
+
+type HistoricalMatterSummary struct {
+	CaseID     uint   `json:"case_id"`
+	CaseNumber string `json:"case_number"`
+	Title      string `json:"title"`
+	Status     string `json:"status"`
 }
 
 type ClientListRequest struct {
@@ -81,13 +108,13 @@ type ClientListRequest struct {
 }
 
 type ClientStatsResponse struct {
-	Total          int64             `json:"total"`
-	ActiveClients  int64             `json:"active_clients"`
-	InactiveClients int64             `json:"inactive_clients"`
-	MonthlyNew     int64             `json:"monthly_new"`
-	TypeStats      map[string]int64  `json:"type_stats"`
-	StatusStats    map[string]int64  `json:"status_stats"`
-	SourceStats    map[string]int64  `json:"source_stats"`
+	Total           int64            `json:"total"`
+	ActiveClients   int64            `json:"active_clients"`
+	InactiveClients int64            `json:"inactive_clients"`
+	MonthlyNew      int64            `json:"monthly_new"`
+	TypeStats       map[string]int64 `json:"type_stats"`
+	StatusStats     map[string]int64 `json:"status_stats"`
+	SourceStats     map[string]int64 `json:"source_stats"`
 }
 
 func (s *ClientService) CreateClient(ctx context.Context, req *CreateClientRequest) (*ClientResponse, error) {
@@ -141,6 +168,10 @@ func (s *ClientService) GetClientByID(ctx context.Context, id uint) (*ClientResp
 }
 
 func (s *ClientService) UpdateClient(ctx context.Context, id uint, req *UpdateClientRequest) (*ClientResponse, error) {
+	if req.Version == nil || *req.Version == 0 {
+		return nil, errors.ValidationError("version", "Client version is required")
+	}
+
 	client, err := s.clientRepo.FindByID(ctx, id)
 	if err != nil {
 		return nil, errors.DatabaseError("find_client", "Failed to find client", err)
@@ -198,7 +229,10 @@ func (s *ClientService) UpdateClient(ctx context.Context, id uint, req *UpdateCl
 		client.Status = *req.Status
 	}
 
-	if err := s.clientRepo.Update(ctx, client); err != nil {
+	if err := s.clientRepo.UpdateWithVersion(ctx, client, *req.Version); err != nil {
+		if stderrors.Is(err, repositories.ErrClientVersionConflict) {
+			return nil, ErrClientVersionConflict
+		}
 		return nil, errors.DatabaseError("update_client", "Failed to update client", err)
 	}
 
@@ -260,14 +294,20 @@ func (s *ClientService) GetClientStats(ctx context.Context) (*ClientStatsRespons
 	}
 
 	return &ClientStatsResponse{
-		Total:          stats.TotalClients,
-		ActiveClients:  stats.ActiveClients,
+		Total:           stats.TotalClients,
+		ActiveClients:   stats.ActiveClients,
 		InactiveClients: stats.InactiveClients,
-		MonthlyNew:     stats.NewClientsThisMonth,
+		MonthlyNew:      stats.NewClientsThisMonth,
 	}, nil
 }
 
 func (s *ClientService) validateClientRequest(req *CreateClientRequest) error {
+	if strings.TrimSpace(req.Name) == "" {
+		return errors.ValidationError("name", "name is required")
+	}
+	if len([]rune(req.Name)) > 100 {
+		return errors.ValidationError("name", "name is too long")
+	}
 	if req.Email != "" {
 		emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 		if !emailRegex.MatchString(req.Email) {
@@ -281,27 +321,85 @@ func (s *ClientService) validateClientRequest(req *CreateClientRequest) error {
 			return errors.ValidationErrorWithDetails("phone", "Invalid phone format", "Please provide a valid phone number", []string{"must be valid phone number", "only digits, spaces, and symbols allowed"})
 		}
 	}
+	if len([]rune(req.Phone)) > 20 {
+		return errors.ValidationError("phone", "phone is too long")
+	}
 
 	return nil
 }
 
 func (s *ClientService) toClientResponse(client *models.Client) *ClientResponse {
 	return &ClientResponse{
-		ID:            client.ID,
-		Name:          client.Name,
-		Type:          client.Type,
-		Email:         client.Email,
-		Phone:         client.Phone,
-		Address:       client.Address,
-		IDCard:        client.IDCard,
-		Company:       client.Company,
-		Industry:      client.Industry,
-		ContactPerson: client.ContactPerson,
-		ContactPhone:  client.ContactPhone,
-		Source:        client.Source,
-		Notes:         client.Notes,
-		Status:        client.Status,
-		CreatedAt:     client.CreatedAt,
-		UpdatedAt:     client.UpdatedAt,
+		ID:                client.ID,
+		Version:           client.Version,
+		Name:              client.Name,
+		Type:              client.Type,
+		Email:             client.Email,
+		Phone:             models.MaskPhone(client.Phone),
+		Address:           client.Address,
+		IDCard:            models.MaskIDCard(client.IDCard),
+		Company:           client.Company,
+		Industry:          client.Industry,
+		ContactPerson:     client.ContactPerson,
+		ContactPhone:      models.MaskPhone(client.ContactPhone),
+		Source:            client.Source,
+		Notes:             client.Notes,
+		Status:            client.Status,
+		CreatedAt:         client.CreatedAt,
+		UpdatedAt:         client.UpdatedAt,
+		Completeness:      calculateClientCompleteness(client),
+		RelatedParties:    []RelatedPartySummary{},
+		HistoricalMatters: []HistoricalMatterSummary{},
+	}
+}
+
+func calculateClientCompleteness(client *models.Client) ClientCompleteness {
+	type requiredField struct {
+		name   string
+		filled bool
+	}
+
+	hasValue := func(value string) bool {
+		return strings.TrimSpace(value) != ""
+	}
+
+	requiredFields := []requiredField{
+		{name: "name", filled: hasValue(client.Name)},
+		{name: "type", filled: hasValue(client.Type)},
+		{name: "status", filled: hasValue(client.Status)},
+		{name: "phone_or_email", filled: hasValue(client.Phone) || hasValue(client.Email)},
+	}
+
+	if client.Type == "企业" {
+		requiredFields = append(requiredFields,
+			requiredField{name: "company", filled: hasValue(client.Company)},
+			requiredField{name: "contact_person", filled: hasValue(client.ContactPerson)},
+			requiredField{name: "contact_phone", filled: hasValue(client.ContactPhone)},
+		)
+	} else {
+		requiredFields = append(requiredFields,
+			requiredField{name: "id_card", filled: hasValue(client.IDCard)},
+		)
+	}
+
+	missingFields := make([]string, 0)
+	filledCount := 0
+	for _, field := range requiredFields {
+		if field.filled {
+			filledCount++
+			continue
+		}
+		missingFields = append(missingFields, field.name)
+	}
+
+	score := 100
+	if len(requiredFields) > 0 {
+		score = filledCount * 100 / len(requiredFields)
+	}
+
+	return ClientCompleteness{
+		Score:                 score,
+		MissingFields:         missingFields,
+		ReadyForConflictCheck: len(missingFields) == 0,
 	}
 }

@@ -5,7 +5,7 @@
 
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
-import { subscribeWithSelector } from 'zustand/middleware'
+import { clearStorage, getToken, getUserInfo } from '@/utils/storage'
 
 // 用户状态接口
 export interface User {
@@ -19,6 +19,8 @@ export interface User {
   department?: string
   position?: string
   phone?: string
+  bio?: string
+  address?: string
   isActive: boolean
   lastLoginAt?: string
   createdAt: string
@@ -170,10 +172,7 @@ export const useAppStore = create<AppState>()(
         },
 
         logout: () => {
-          localStorage.removeItem('auth_token')
-          localStorage.removeItem('law_oa_user_info')
-          localStorage.removeItem('law_oa_roles')
-          localStorage.removeItem('law_oa_permissions')
+          clearStorage()
           set({
             user: null,
             isAuthenticated: false,
@@ -245,10 +244,7 @@ export const useAppStore = create<AppState>()(
           })),
 
         reset: () => {
-          localStorage.removeItem('auth_token')
-          localStorage.removeItem('law_oa_user_info')
-          localStorage.removeItem('law_oa_roles')
-          localStorage.removeItem('law_oa_permissions')
+          clearStorage()
           set({
             user: null,
             isAuthenticated: false,
@@ -281,20 +277,35 @@ export const useAppStore = create<AppState>()(
 export const subscribeToAuthChanges = (
   callback: (isAuthenticated: boolean, user: User | null) => void,
 ) => {
-  return useAppStore.subscribe(
-    (state) => state.isAuthenticated,
-    (isAuthenticated) => callback(isAuthenticated, useAppStore.getState().user),
-  )
+  let previous = useAppStore.getState().isAuthenticated
+  return useAppStore.subscribe((state) => {
+    if (state.isAuthenticated !== previous) {
+      previous = state.isAuthenticated
+      callback(state.isAuthenticated, state.user)
+    }
+  })
 }
 
 // 订阅主题变化
 export const subscribeToThemeChanges = (callback: (theme: Theme) => void) => {
-  return useAppStore.subscribe((state) => state.preferences.theme, callback)
+  let previous = useAppStore.getState().preferences.theme
+  return useAppStore.subscribe((state) => {
+    if (state.preferences.theme !== previous) {
+      previous = state.preferences.theme
+      callback(state.preferences.theme)
+    }
+  })
 }
 
 // 订阅语言变化
 export const subscribeToLanguageChanges = (callback: (language: Language) => void) => {
-  return useAppStore.subscribe((state) => state.preferences.language, callback)
+  let previous = useAppStore.getState().preferences.language
+  return useAppStore.subscribe((state) => {
+    if (state.preferences.language !== previous) {
+      previous = state.preferences.language
+      callback(state.preferences.language)
+    }
+  })
 }
 
 // 选择器Hook
@@ -349,19 +360,28 @@ export const initializeApp = () => {
 
   // 从localStorage恢复用户状态
   try {
-    const token = localStorage.getItem('auth_token')
-    const userInfo = localStorage.getItem('law_oa_user_info')
+    const token = getToken()
+    const user = getUserInfo()
 
-    if (token && userInfo) {
-      const user = JSON.parse(userInfo)
+    if (token && user) {
       login(user, token)
+      return
     }
+
+    clearStorage()
+    useAppStore.setState({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+    })
   } catch (error) {
     console.error('Failed to restore user session:', error)
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('law_oa_user_info')
-    localStorage.removeItem('law_oa_roles')
-    localStorage.removeItem('law_oa_permissions')
+    clearStorage()
+    useAppStore.setState({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+    })
   }
 }
 

@@ -25,13 +25,14 @@ const requestCache = new Map<
 // 性能监控
 const performanceMetrics = {
   requestCount: 0,
+  responseCount: 0,
   responseTime: 0,
   errorCount: 0,
   cacheHits: 0,
 }
 
 // 接口类型定义
-interface RequestOptions extends RequestInit {
+interface RequestOptions extends Omit<RequestInit, 'cache'> {
   timeout?: number
   retry?: number
   cache?: boolean
@@ -98,7 +99,7 @@ const generateRequestKey = (url: string, options?: RequestOptions): string => {
  */
 const retryRequest = async (
   url: string,
-  options: RequestOptions,
+  options: RequestInit,
   retryCount: number,
 ): Promise<Response> => {
   try {
@@ -166,7 +167,7 @@ const request = async <T = any>(
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   }
 
-  const finalOptions: RequestOptions = {
+  const finalOptions: RequestInit = {
     ...fetchOptions,
     headers,
     signal: timeoutController(timeout).signal,
@@ -185,6 +186,7 @@ const request = async <T = any>(
 
       // 记录响应时间
       const responseTime = performance.now() - startTime
+      performanceMetrics.responseCount++
       performanceMetrics.responseTime += responseTime
 
       // 缓存成功响应
@@ -328,6 +330,7 @@ export const resetPerformanceMetrics = () => {
   performanceMetrics.responseTime = 0
   performanceMetrics.errorCount = 0
   performanceMetrics.cacheHits = 0
+  performanceMetrics.responseCount = 0
 }
 
 /**

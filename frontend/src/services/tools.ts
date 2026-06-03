@@ -1,4 +1,4 @@
-import { get, post } from './http'
+import { del, get, post } from './http'
 
 // 诉讼费计算
 export interface LitigationFeeParams {
@@ -11,8 +11,8 @@ export interface LitigationFeeResult {
   calculationTime: number
 }
 
-export function calculateLitigationFee(params: LitigationFeeParams) {
-  return post('/tools/litigation-fee', params)
+export function calculateLitigationFee(params: LitigationFeeParams): Promise<LitigationFeeResult> {
+  return post<LitigationFeeResult>('/tools/litigation-fee', params)
 }
 
 // 利息计算器
@@ -32,8 +32,10 @@ export interface InterestCalculatorResult {
   total: number
 }
 
-export function calculateInterest(params: InterestCalculatorParams) {
-  return post('/tools/interest-calculator', params)
+export function calculateInterest(
+  params: InterestCalculatorParams,
+): Promise<InterestCalculatorResult> {
+  return post<InterestCalculatorResult>('/tools/interest-calculator', params)
 }
 
 // 工期计算器
@@ -53,8 +55,10 @@ export interface DeadlineCalculatorResult {
   workDays: number
 }
 
-export function calculateDeadline(params: DeadlineCalculatorParams) {
-  return post('/tools/deadline-calculator', params)
+export function calculateDeadline(
+  params: DeadlineCalculatorParams,
+): Promise<DeadlineCalculatorResult> {
+  return post<DeadlineCalculatorResult>('/tools/deadline-calculator', params)
 }
 
 // =============================================================================
@@ -167,24 +171,122 @@ export interface UserFavorite {
 // 法条查询 API 函数 - 修正为后端实际路由
 // =============================================================================
 
+type ApiData<T> = {
+  data: T
+}
+
+const wrapData = <T>(data: T): ApiData<T> => ({ data })
+
+const normalizeCategory = (category: any): LawCategory => ({
+  id: Number(category?.id || 0),
+  name: category?.name || '',
+  code: category?.code || '',
+  parentId: category?.parentId ?? category?.parent_id,
+  level: Number(category?.level || 0),
+  description: category?.description || '',
+  isActive: category?.isActive ?? category?.is_active ?? true,
+  createdAt: category?.createdAt || category?.created_at || '',
+  updatedAt: category?.updatedAt || category?.updated_at || '',
+})
+
+const normalizeTag = (tag: any): LawTag => ({
+  id: Number(tag?.id || 0),
+  name: tag?.name || '',
+  color: tag?.color || 'blue',
+  description: tag?.description || '',
+  usageCount: Number(tag?.usageCount ?? tag?.usage_count ?? 0),
+  createdAt: tag?.createdAt || tag?.created_at || '',
+})
+
+const normalizeLawItem = (item: any): LawItem => ({
+  id: Number(item?.id || 0),
+  statuteNumber: item?.statuteNumber || item?.statute_number || '',
+  title: item?.title || '',
+  content: item?.content || '',
+  lawName: item?.lawName || item?.law_name || '',
+  chapter: item?.chapter || undefined,
+  section: item?.section || undefined,
+  part: item?.part || undefined,
+  effectiveDate: item?.effectiveDate || item?.effective_date || undefined,
+  expiryDate: item?.expiryDate || item?.expiry_date || undefined,
+  publishingAuthority: item?.publishingAuthority || item?.publishing_authority || undefined,
+  status: item?.status || 'active',
+  hierarchyLevel: Number(item?.hierarchyLevel ?? item?.hierarchy_level ?? 1),
+  parentStatuteId: item?.parentStatuteId ?? item?.parent_statute_id,
+  orderInHierarchy: item?.orderInHierarchy ?? item?.order_in_hierarchy,
+  tags: Array.isArray(item?.tags) ? item.tags : [],
+  keywords: Array.isArray(item?.keywords) ? item.keywords : [],
+  createdAt: item?.createdAt || item?.created_at || '',
+  updatedAt: item?.updatedAt || item?.updated_at || '',
+  category: item?.category ? normalizeCategory(item.category) : undefined,
+  isFavorited: item?.isFavorited ?? item?.is_favorited ?? false,
+  viewCount: item?.viewCount ?? item?.view_count,
+  favoriteCount: item?.favoriteCount ?? item?.favorite_count,
+  fullPath: item?.fullPath || item?.full_path,
+  isActive: item?.isActive ?? item?.is_active,
+})
+
+const normalizeCategoryStat = (category: any): CategoryStat => ({
+  id: Number(category?.id || 0),
+  name: category?.name || '',
+  code: category?.code || '',
+  level: Number(category?.level || 0),
+  description: category?.description || '',
+  statuteCount: Number(category?.statuteCount ?? category?.statute_count ?? 0),
+})
+
+const normalizeSearchResponse = (payload: any): LegalSearchResponse => {
+  const raw = payload?.data && !payload?.statutes ? payload.data : payload || {}
+  const pageSize = Number(raw.pageSize ?? raw.page_size ?? 20)
+  const total = Number(raw.total || 0)
+
+  return {
+    total,
+    page: Number(raw.page || 1),
+    pageSize,
+    totalPages: Number(raw.totalPages ?? raw.total_pages ?? (Math.ceil(total / pageSize) || 0)),
+    statutes: Array.isArray(raw.statutes) ? raw.statutes.map(normalizeLawItem) : [],
+    categories: Array.isArray(raw.categories) ? raw.categories.map(normalizeCategoryStat) : undefined,
+    suggestions: Array.isArray(raw.suggestions) ? raw.suggestions : undefined,
+    searchTime: Number(raw.searchTime ?? raw.search_time_ms ?? 0),
+  }
+}
+
+const toLegalSearchParams = (params: LegalSearchRequest = {}) => {
+  const queryParams: Record<string, string | number | boolean> = {}
+
+  if (params.query?.trim()) queryParams.query = params.query.trim()
+  if (params.categoryId) queryParams.category_id = params.categoryId
+  if (params.lawName?.trim()) queryParams.law_name = params.lawName.trim()
+  if (params.status) queryParams.status = params.status
+  if (params.effectiveFrom) queryParams.effective_from = params.effectiveFrom
+  if (params.effectiveTo) queryParams.effective_to = params.effectiveTo
+  if (params.includeInactive !== undefined) queryParams.include_inactive = params.includeInactive
+  if (params.sortBy) queryParams.sort_by = params.sortBy
+  if (params.sortOrder) queryParams.sort_order = params.sortOrder
+  if (params.page) queryParams.page = params.page
+  if (params.pageSize) queryParams.page_size = params.pageSize
+  if (params.tags?.length) queryParams.tags = params.tags.join(',')
+
+  return queryParams
+}
+
 /**
  * 搜索法条 - 使用后端正确的路由
  * GET /api/v1/legal/statutes/search
  */
-export function searchLaws(params: LegalSearchRequest) {
-  return get<{
-    data: LegalSearchResponse
-  }>('/legal/statutes/search', { params })
+export async function searchLaws(params: LegalSearchRequest) {
+  const response = await get<LegalSearchResponse>('/legal/statutes/search', toLegalSearchParams(params))
+  return wrapData(normalizeSearchResponse(response))
 }
 
 /**
  * 获取法条详情
  * GET /api/v1/legal/statutes/:id
  */
-export function getLawById(id: number) {
-  return get<{
-    data: LawItem
-  }>(`/legal/statutes/${id}`)
+export async function getLawById(id: number) {
+  const response = await get<LawItem>(`/legal/statutes/${id}`)
+  return wrapData(normalizeLawItem(response))
 }
 
 /**
@@ -198,145 +300,100 @@ export function getLawByNumber(number: string) {
 /**
  * 获取法条列表 - 使用搜索 API
  */
-export function getLaws(params?: LegalSearchRequest) {
-  return get<{
-    data: LegalSearchResponse
-  }>('/legal/statutes/search', { params })
+export async function getLaws(params?: LegalSearchRequest) {
+  const response = await get<LegalSearchResponse>('/legal/statutes/search', toLegalSearchParams(params))
+  return wrapData(normalizeSearchResponse(response))
 }
 
 /**
  * 获取法条分类
  * GET /api/v1/legal/categories
  */
-export function getLawCategories() {
-  return get<{
-    data: LawCategory[]
-  }>('/legal/categories')
+export async function getLawCategories() {
+  const response = await get<LawCategory[]>('/legal/categories')
+  return wrapData((Array.isArray(response) ? response : []).map(normalizeCategory))
 }
 
 /**
  * 获取分类树
  * GET /api/v1/legal/categories/tree
  */
-export function getLawCategoryTree() {
-  return get<{
-    data: LawCategory[]
-  }>('/legal/categories/tree')
+export async function getLawCategoryTree() {
+  const response = await get<LawCategory[]>('/legal/categories/tree')
+  return wrapData((Array.isArray(response) ? response : []).map(normalizeCategory))
 }
 
 /**
  * 获取法条标签
  * GET /api/v1/legal/tags
  */
-export function getLawTags() {
-  return get<{
-    data: LawTag[]
-  }>('/legal/tags')
+export async function getLawTags() {
+  const response = await get<LawTag[]>('/legal/tags')
+  return wrapData((Array.isArray(response) ? response : []).map(normalizeTag))
 }
 
-/**
- * 获取热门标签
- * 注意：后端可能未实现此端点，返回 getLawTags 的结果
- */
-export function getPopularLawTags(limit?: number) {
-  return get<{
-    data: LawTag[]
-  }>('/legal/tags', { params: { limit } })
+export async function getPopularLawTags(limit?: number) {
+  const response = await get<LawTag[]>('/legal/tags/popular', { limit })
+  return wrapData((Array.isArray(response) ? response : []).map(normalizeTag))
 }
 
 /**
  * 获取搜索建议
  * GET /api/v1/legal/search/suggestions
  */
-export function getLawSuggestions(query: string) {
-  return get<{
-    data: string[]
-  }>('/legal/search/suggestions', { params: { query } })
+export async function getLawSuggestions(query: string) {
+  const response = await get<string[]>('/legal/search/suggestions', { query })
+  return wrapData(Array.isArray(response) ? response : [])
 }
 
-/**
- * 获取相关法条
- * 注意：后端可能未实现此端点
- */
-export function getRelatedLaws(id: number, limit?: number) {
-  return get<{
-    data: LawItem[]
-  }>(`/legal/statutes/${id}/related`, { params: { limit } })
+export async function getRelatedLaws(id: number, limit?: number) {
+  const response = await get<LawItem[]>(`/legal/statutes/${id}/related`, { limit })
+  return wrapData((Array.isArray(response) ? response : []).map(normalizeLawItem))
 }
 
-/**
- * 获取热门法条
- * 注意：后端可能未实现此端点，使用搜索代替
- */
-export function getPopularLaws(limit?: number) {
-  return get<{
-    data: LawItem[]
-  }>('/legal/statutes/search', {
-    params: { page: 1, pageSize: limit || 10, sortBy: 'relevance', sortOrder: 'desc' },
-  })
+export async function getPopularLaws(limit?: number) {
+  const response = await get<LawItem[]>('/legal/stats/popular', { limit })
+  return wrapData((Array.isArray(response) ? response : []).map(normalizeLawItem))
 }
 
-/**
- * 获取最新法条
- * 注意：后端可能未实现此端点，使用搜索代替
- */
-export function getRecentLaws(days?: number) {
-  return get<{
-    data: LawItem[]
-  }>('/legal/statutes/search', {
-    params: { page: 1, pageSize: 20, sortBy: 'date', sortOrder: 'desc' },
-  })
+export async function getRecentLaws(days?: number) {
+  const response = await get<LawItem[]>('/legal/stats/recent', { days })
+  return wrapData((Array.isArray(response) ? response : []).map(normalizeLawItem))
 }
 
-/**
- * 获取分类统计
- * 注意：后端可能未实现此端点
- */
-export function getCategoryStats() {
-  return get<{
-    data: CategoryStat[]
-  }>('/legal/stats/categories')
+export async function getCategoryStats() {
+  const response = await get<CategoryStat[]>('/legal/stats/categories')
+  return wrapData((Array.isArray(response) ? response : []).map(normalizeCategoryStat))
 }
 
-/**
- * 获取热门搜索
- * 注意：后端可能未实现此端点，返回空数组
- */
-export function getPopularSearches(limit?: number) {
-  return get<{
-    data: string[]
-  }>('/legal/popular-searches', { params: { limit } })
+export async function getPopularSearches(limit?: number) {
+  const response = await get<string[]>('/legal/popular-searches', { limit })
+  return wrapData(Array.isArray(response) ? response : [])
 }
 
 // =============================================================================
 // 用户收藏相关
 // =============================================================================
 
-export function addToFavorites(statuteId: number) {
-  return post<{
-    data: UserFavorite
-  }>('/legal/favorites', { statuteId })
+export async function addToFavorites(statuteId: number) {
+  return post('/legal/favorites', { statute_id: statuteId })
 }
 
 export function removeFromFavorites(statuteId: number) {
-  return fetch(`/api/v1/legal/favorites/${statuteId}`, {
-    method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+  return del(`/legal/favorites/${statuteId}`)
+}
+
+export async function getUserFavorites(params?: { page?: number; pageSize?: number }) {
+  const response = await get<LegalSearchResponse>('/legal/favorites', {
+    page: params?.page,
+    page_size: params?.pageSize,
   })
+  return wrapData(normalizeSearchResponse(response))
 }
 
-export function getUserFavorites(params?: { page?: number; pageSize?: number }) {
-  return get<{
-    data: UserFavorite[]
-  }>('/legal/favorites', params)
-}
-
-export function getSearchHistory(limit?: number) {
-  return get<{
-    data: SearchHistory[]
-  }>('/legal/search-history', { params: { limit } })
+export async function getSearchHistory(limit?: number) {
+  const response = await get<SearchHistory[]>('/legal/search-history', { limit })
+  return wrapData(Array.isArray(response) ? response : [])
 }
 
 // =============================================================================
@@ -377,10 +434,9 @@ export interface LegalStatuteImportResponse {
   processing_time_ms: number
 }
 
-export function bulkImportStatutes(data: LegalStatuteImportRequest) {
-  return post<{
-    data: LegalStatuteImportResponse
-  }>('/legal/statutes/import', data)
+export async function bulkImportStatutes(data: LegalStatuteImportRequest) {
+  const response = await post<LegalStatuteImportResponse>('/legal/statutes/import', data)
+  return wrapData(response)
 }
 
 // =============================================================================

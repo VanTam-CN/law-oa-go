@@ -9,7 +9,6 @@ import {
   Form,
   Input,
   Select,
-  message,
   Popconfirm,
   Tooltip,
   Row,
@@ -33,19 +32,27 @@ import {
   ExclamationCircleOutlined,
   ThunderboltOutlined,
   MoreOutlined,
-  SnoozeIcon,
 } from '@ant-design/icons'
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table'
 import type { MenuProps } from 'antd'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
+import { getToken } from '@/utils/storage'
 
 dayjs.extend(relativeTime)
 dayjs.locale('zh-cn')
 
 const { Option } = Select
 const { RangePicker } = DatePicker
+
+const authHeaders = (extra: Record<string, string> = {}) => {
+  const token = getToken()
+  return {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...extra,
+  }
+}
 
 interface InboxItem {
   id: number
@@ -160,11 +167,9 @@ const InboxList: React.FC = () => {
         params.due_before = dateRange[1].format('YYYY-MM-DD')
       }
 
-      const token = localStorage.getItem('token')
-      const response = await fetch(`/api/v1/inbox?${new URLSearchParams(params)}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+      const query = new URLSearchParams(params).toString()
+      const response = await fetch(`/api/v1/inbox?${query}`, {
+        headers: authHeaders(),
       })
       const data = await response.json()
 
@@ -186,11 +191,8 @@ const InboxList: React.FC = () => {
 
   const fetchStats = async () => {
     try {
-      const token = localStorage.getItem('token')
       const response = await fetch('/api/v1/inbox/stats', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: authHeaders(),
       })
       const data = await response.json()
 
@@ -204,12 +206,9 @@ const InboxList: React.FC = () => {
 
   const handleMarkAsRead = async (id: number) => {
     try {
-      const token = localStorage.getItem('token')
       const response = await fetch(`/api/v1/inbox/${id}/read`, {
         method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: authHeaders(),
       })
 
       if (response.ok) {
@@ -224,12 +223,9 @@ const InboxList: React.FC = () => {
 
   const handleMarkAsCompleted = async (id: number) => {
     try {
-      const token = localStorage.getItem('token')
       const response = await fetch(`/api/v1/inbox/${id}/complete`, {
         method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: authHeaders(),
       })
 
       if (response.ok) {
@@ -244,12 +240,9 @@ const InboxList: React.FC = () => {
 
   const handleDelete = async (id: number) => {
     try {
-      const token = localStorage.getItem('token')
       const response = await fetch(`/api/v1/inbox/${id}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: authHeaders(),
       })
 
       if (response.ok) {
@@ -266,13 +259,9 @@ const InboxList: React.FC = () => {
     if (!selectedItem) return
 
     try {
-      const token = localStorage.getItem('token')
       const response = await fetch(`/api/v1/inbox/${selectedItem.id}/snooze`, {
         method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           until: values.until ? values.until.format('YYYY-MM-DD HH:mm:ss') : undefined,
           duration: values.duration,

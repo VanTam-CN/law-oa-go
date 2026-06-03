@@ -2,7 +2,7 @@
 
 ## 概述
 
-本项目采用了现代化的配置管理系统，支持多环境隔离、热加载和配置验证。基于 `go-envconfig` 库实现，遵循 Go 最佳实践。
+本项目当前配置加载由 `internal/config/config.go` 实现，核心是 `godotenv` + `viper`：优先加载 `.env`，再读取 `config.yaml`、`config/config.yaml` 或 `/etc/law-oa/config.yaml`，并用环境变量覆盖关键配置。
 
 ## 特性
 
@@ -11,7 +11,7 @@
 - **类型安全**: 使用结构体标签确保配置类型安全
 - **验证机制**: 内置配置验证和错误检查
 - **默认值**: 智能默认值和环境特定覆盖
-- **配置管理器**: 支持热加载和变更监听
+- **配置文件**: 支持根目录 `config.yaml`、`config/config.yaml` 和 `/etc/law-oa/config.yaml`
 - **测试支持**: 完整的测试覆盖
 
 ### 🌟️ 环境特定优化
@@ -24,50 +24,34 @@
 ### 主配置结构
 
 ```go
-type EnhancedConfig struct {
-    Environment string                    `env:"APP_ENV, default=development"`
-    Debug       bool                     `env:"DEBUG, default=false"`
-    LogLevel    string                   `env:"LOG_LEVEL, default=info"`
-    Server      ServerConfig             `env:", prefix=SERVER_"`
-    Database    DatabaseConfig           `env:", prefix=DB_"`
-    Redis       RedisConfig              `env:", prefix=REDIS_"`
-    Elasticsearch ElasticsearchConfig     `env:", prefix=ES_"`
-    JWT         JWTConfig                 `env:", prefix=JWT_"`
-    CORS        CORSConfig                `env:", prefix=CORS_"`
-    Monitoring  MonitoringConfig         `env:", prefix=MONITORING_"`
-    Security    SecurityConfig           `env:", prefix=SECURITY_"`
-    Cache       CacheConfig              `env:", prefix=CACHE_"`
-    Storage     StorageConfig            `env:", prefix=STORAGE_"`
+type Config struct {
+    Environment       string
+    Port              string
+    Database          DatabaseConfig
+    Redis             RedisConfig
+    Elasticsearch     ElasticsearchConfig
+    JWT               JWTConfig
+    Log               LogConfig
+    CORS              CORSConfig
+    ConflictDetection *ConflictDetectionConfig
 }
 ```
 
 ### 子配置结构
 
 #### 服务器配置
-```go
-type ServerConfig struct {
-    Host           string        `env:"HOST, default=localhost"`
-    Port           int           `env:"PORT, default=8080"`
-    ReadTimeout    time.Duration `env:"READ_TIMEOUT, default=30s"`
-    WriteTimeout   time.Duration `env:"WRITE_TIMEOUT, default=30s"`
-    IdleTimeout    time.Duration `env:"IDLE_TIMEOUT, default=60s"`
-    GracefulShutdownTimeout time.Duration `env:"GRACEFUL_SHUTDOWN_TIMEOUT, default=30s"`
-}
-```
+服务端口在顶层 `port` / `PORT` 上配置，默认 `8080`。
 
 #### 数据库配置
 ```go
 type DatabaseConfig struct {
-    Diver       string        `env:"DRIVER, default=postgres"`
-    Host        string        `env:"HOST, default=localhost"`
-    Port        int           `env:"PORT, default=5432"`
-    Username    string        `env:"USERNAME, required"`
-    Password    string        `env:"PASSWORD, required"`
-    Database    string        `env:"NAME, required"`
-    SSLMode     string        `env:"SSLMODE, default=disable"`
-    MaxOpenConns int          `env:"MAX_OPEN_CONNS, default=25"`
-    MaxIdleConns int          `env:"MAX_IDLE_CONNS, default=5"`
-    ConnMaxLifetime time.Duration `env:"CONN_MAX_LIFETIME, default=5m"`
+    Driver   string // DB_DRIVER, default postgres
+    Host     string // DB_HOST
+    Port     string // DB_PORT
+    Username string // DB_USERNAME
+    Password string // DB_PASSWORD
+    Database string // DB_DATABASE
+    SSLMode  string
 }
 ```
 
@@ -75,30 +59,25 @@ type DatabaseConfig struct {
 
 ### 目录结构
 ```
-configs/environments/
-├── .env.development
-├── .env.production
-├── .env.test
-└── .env.staging
+.env.example
+config.yaml
+config/config.yaml
 ```
 
 ### 环境文件示例
 
 #### 开发环境 (.env.development)
 ```bash
-APP_ENV=development
-DEBUG=true
+ENVIRONMENT=development
+PORT=8080
 LOG_LEVEL=debug
-
-SERVER_HOST=localhost
-SERVER_PORT=8080
 
 DB_DRIVER=postgres
 DB_HOST=localhost
 DB_PORT=5432
 DB_USERNAME=law_oa_user
 DB_PASSWORD=your_secure_password
-DB_NAME=law_oa_dev
+DB_DATABASE=law_oa_dev
 
 JWT_SECRET=your-super-secret-jwt-key-for-development-32-chars-min
 ```
@@ -117,7 +96,7 @@ DB_HOST=${DB_HOST}
 DB_PORT=5432
 DB_USERNAME=${DB_USERNAME}
 DB_PASSWORD=${DB_PASSWORD}
-DB_NAME=${DB_NAME}
+DB_DATABASE=${DB_DATABASE}
 
 JWT_SECRET=${JWT_SECRET}
 ```
@@ -127,61 +106,26 @@ JWT_SECRET=${JWT_SECRET}
 ### 基本用法
 
 ```go
-import (
-    "law-oa-go/internal/config"
-)
+import "law-oa-go/internal/config"
 
 func main() {
-    ctx := context.Background()
-
-    // 创建配置管理器
-    manager := config.NewManager(nil)
-
-    // 加载配置
-    err := manager.Load(ctx, ".env")
+    cfg, err := config.Load()
     if err != nil {
         log.Fatalf("Failed to load config: %v", err)
     }
-
-    // 获取配置
-    cfg := manager.GetConfig()
-
-    // 启动配置监听
-    go func() {
-        if err := manager.WatchConfig(ctx); err != nil {
-            log.Printf("Config watcher error: %v", err)
-        }
-    }()
 
     // 应用逻辑...
 }
 ```
 
-### 配置监听器
-
-```go
-// 添加配置变更监听器
-manager.AddWatcher(func(newConfig *config.EnhancedConfig) {
-    log.Printf("Configuration changed: %+v", newConfig.Debug)
-
-    // 重新初始化依赖配置的组件
-    if err := reinitializeServices(newConfig); err != nil {
-        log.Printf("Failed to reinitialize services: %v", err)
-    }
-})
-```
+当前代码未实现热加载监听器；变更配置后重启服务生效。
 
 ## 使用指南
 
 ### 加载配置
 
 ```go
-// 方式1: 使用配置管理器
-manager := config.NewManager(logger)
-err := manager.Load(ctx, ".env")
-
-// 方式2: 直接加载
-config, err := config.LoadEnhancedConfig(ctx)
+cfg, err := config.Load()
 ```
 
 ### 环境切换
@@ -305,35 +249,27 @@ go test ./internal/config -v
 
 ### 添加新配置项
 
-1. 在 `EnhancedConfig` 结构中添加字段
-2. 添加相应的 `env` 标签
-3. 设置合适的默认值
-4. 更新测试用例
-5. 更新环境配置文件模板
+1. 在 `internal/config/config.go` 的 `Config` 或子配置结构中添加字段
+2. 在 `Load()` 中添加默认值和环境变量绑定
+3. 必要时更新 `Validate()`、`Get*()` helper 和测试
+4. 更新 `.env.example`、`config.yaml` 和本文档
 
 ### 添加新环境
 
-1. 创建 `configs/environments/.env.<env_name>` 文件
-2. 添加到验证函数中的有效环境列表
-3. 更新配置生成脚本
-4. 测试环境切换
+1. 创建或复制对应 `.env` / `config.yaml`
+2. 设置 `ENVIRONMENT` 和数据库、Redis、ES、JWT 等核心变量
+3. 用目标入口启动服务验证 `config.Load()`
 
 ### 配置热加载
 
-```go
-// 添加配置监听器
-manager.AddWatcher(func(config *config.EnhancedConfig) {
-    // 处理配置变更
-})
-```
+当前代码未实现配置热加载；修改配置后重启后端服务。
 
 ## 版本历史
 
-- **v2.0.0**: 实现基于 `go-envconfig` 的现代化配置系统
-- **v1.0.0**: 基于 `viper` 的原始配置系统
+- **v2.4.0**: 2026-04-29 校准为当前 `godotenv` + `viper` 实现
+- **v1.0.0**: 基于 `viper` 的配置系统
 
 ## 参考资料
 
-- [go-envconfig 文档](https://github.com/sethvargo/go-envconfig)
 - [Go 环境变量最佳实践](https://12factor.net/)
 - [配置管理设计模式](https://12factor.net/config)

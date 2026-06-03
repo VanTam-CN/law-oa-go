@@ -1,177 +1,534 @@
 /**
- * E2E测试工具函数
- * Story 6.1: Playwright配置
+ * E2E helpers for the current MVP frontend.
+ *
+ * The browser workflow is intentionally API-mocked so local QA does not depend
+ * on a developer having PostgreSQL, Redis, Elasticsearch, or seeded data running.
  */
 
 import { Page, expect } from '@playwright/test'
 
-// 测试用户凭证
-export const TEST_USERS = {
+type TestUserKey = 'admin' | 'lawyer' | 'assistant' | 'finance'
+
+export const TEST_USERS: Record<TestUserKey, {
+  email: string
+  alias: string
+  password: string
+  role: string
+  realName: string
+}> = {
   admin: {
-    username: 'admin',
-    password: 'admin123',
+    email: 'demo.admin@example.test',
+    alias: 'admin',
+    password: 'Demo@2026',
+    role: 'admin',
+    realName: '示例管理员',
   },
   lawyer: {
-    username: 'lawyer',
-    password: 'lawyer123',
+    email: 'demo.lawyer@example.test',
+    alias: 'lawyer',
+    password: 'Demo@2026',
+    role: 'lawyer',
+    realName: '张律师',
   },
   assistant: {
-    username: 'assistant',
-    password: 'assistant123',
+    email: 'demo.assistant@example.test',
+    alias: 'assistant',
+    password: 'Demo@2026',
+    role: 'assistant',
+    realName: '示例助理',
+  },
+  finance: {
+    email: 'demo.finance@example.test',
+    alias: 'finance',
+    password: 'Demo@2026',
+    role: 'finance',
+    realName: '示例财务',
   },
 }
 
-// 等待页面加载完成
+const now = '2026-05-25T02:30:00.000Z'
+
+const caseRows = [
+  {
+    id: 101,
+    case_number: 'HD-2026-001',
+    title: '红杉资本投资管理咨询合同纠纷案',
+    client_name: '上海示例科技有限公司',
+    case_type: 'commercial',
+    status: 'active',
+    priority: 'high',
+    lawyer_name: '张律师',
+    updated_at: now,
+  },
+  {
+    id: 103,
+    case_number: 'CASE-20260513173242',
+    title: '待处理冲突复核测试案件',
+    client_name: '上海示例科技有限公司',
+    case_type: 'commercial',
+    status: 'pending',
+    priority: 'medium',
+    lawyer_name: '张律师',
+    updated_at: now,
+  },
+  {
+    id: 102,
+    case_number: 'HD-2026-002',
+    title: '蓝海公司股权转让争议',
+    client_name: '蓝海企业管理有限公司',
+    case_type: 'ma',
+    status: 'submitted',
+    priority: 'medium',
+    lawyer_name: '李律师',
+    updated_at: now,
+  },
+]
+
+const riskQueue = [
+  {
+    id: 301,
+    case_id: 103,
+    case_number: 'CASE-20260513173242',
+    title: '待处理冲突复核测试案件',
+    client_name: '上海示例科技有限公司',
+    case_type: 'commercial',
+    status: 'COMPLETED',
+    risk_level: 'MEDIUM',
+    has_conflict: true,
+    owner: 1,
+    duration: 96,
+    created_at: now,
+    updated_at: now,
+    check_time: now,
+    search_parameters: { searchDepth: 'STANDARD', searchYears: 5 },
+    check_result: {
+      riskAssessment: {
+        overallRisk: 'MEDIUM',
+        riskScore: 55,
+        riskReason: '客户与既有案件存在关联主体',
+        requiresApproval: true,
+      },
+      checkStatistics: {
+        totalCasesChecked: 2,
+        relatedPartiesChecked: 2,
+      },
+    },
+    conflict_cases: [
+      {
+        id: 402,
+        case_no: 'HD-2025-188',
+        case_name: '关联主体历史委托',
+        conflict_type: '关联冲突',
+        risk_level: 'MEDIUM',
+        case_status: 'active',
+        description: '客户关联方与历史委托存在交集',
+      },
+    ],
+  },
+  {
+    id: 302,
+    title: '红杉资本投资管理咨询合同纠纷案',
+    client_name: '上海示例科技有限公司',
+    case_type: 'commercial',
+    status: 'COMPLETED',
+    risk_level: 'HIGH',
+    has_conflict: true,
+    owner: 1,
+    duration: 128,
+    created_at: now,
+    updated_at: now,
+    check_time: now,
+    search_parameters: { searchDepth: 'STANDARD', searchYears: 5 },
+    check_result: {
+      riskAssessment: {
+        overallRisk: 'HIGH',
+        riskScore: 86,
+        riskReason: '对方当事人与既有客户存在业务关联',
+        requiresApproval: true,
+      },
+      checkStatistics: {
+        totalCasesChecked: 2,
+        relatedPartiesChecked: 3,
+      },
+    },
+    conflict_cases: [
+      {
+        id: 401,
+        case_no: 'HD-2025-099',
+        case_name: '历史顾问合同',
+        conflict_type: '既有客户冲突',
+        risk_level: 'HIGH',
+        case_status: 'active',
+        description: '同一实控人关联企业',
+      },
+    ],
+  },
+]
+
+const commandCenterPayload = {
+  generated_at: now,
+  summary: {
+    active_cases: 2,
+    clients: 2,
+    pending_approvals: 1,
+  },
+  workflow: {
+    intake: 1,
+    conflict: 1,
+    approval: 1,
+  },
+  case_rows: caseRows,
+  risk_queue: riskQueue,
+  inbox_items: [
+    {
+      id: 501,
+      title: '审批红杉资本新接案',
+      content: '红杉资本投资管理咨询合同纠纷案',
+      type: 'approval',
+      source_type: 'approval',
+      priority: 'high',
+      due_at: now,
+    },
+  ],
+}
+
+const approvalWorkbenchPayload = {
+  stats: {
+    pending: 1,
+    waiver_review: 0,
+    needs_revision: 0,
+  },
+  queues: [
+    { key: 'conflict', count: 1 },
+  ],
+  items: [
+    {
+      id: 701,
+      request_number: 'AP-2026-001',
+      title: '冲突审查审批 - 红杉资本投资管理咨询合同纠纷案',
+      priority: 'high',
+      current_stage: '合规复核',
+      current_approver_id: '1',
+      current_approver_name: '示例管理员',
+      applicant_id: '2',
+      applicant_name: '张律师',
+      status: 'pending',
+      content: '请确认是否可继续承办。',
+      updated_at: now,
+      created_at: now,
+    },
+  ],
+}
+
+const clientsPayload = {
+  list: [
+    { id: 1, name: '上海示例科技有限公司' },
+    { id: 2, name: '蓝海企业管理有限公司' },
+  ],
+  total: 2,
+}
+
+const lawyersPayload = {
+  list: [
+    { id: 1, name: '张律师', department: '争议解决部', position: '合伙人' },
+    { id: 2, name: '李律师', department: '公司业务部', position: '律师' },
+  ],
+  total: 2,
+}
+
+function ok(data: unknown) {
+  return {
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ success: true, data }),
+  }
+}
+
+function createTestToken(role: string) {
+  const header = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url')
+  const payload = Buffer.from(JSON.stringify({
+    sub: `e2e-${role}`,
+    role,
+    exp: Math.floor(Date.now() / 1000) + 60 * 60,
+  })).toString('base64url')
+  return `${header}.${payload}.`
+}
+
+function userPayload(key: TestUserKey) {
+  const user = TEST_USERS[key]
+  return {
+    id: key === 'admin' ? 1 : key === 'lawyer' ? 2 : key === 'finance' ? 4 : 3,
+    email: user.email,
+    name: user.realName,
+    real_name: user.realName,
+    username: user.alias,
+    role: user.role,
+    status: 'active',
+    created_at: now,
+  }
+}
+
+function matchLoginUser(emailOrAlias: string): TestUserKey | null {
+  const normalized = emailOrAlias.trim().toLowerCase()
+  return (Object.keys(TEST_USERS) as TestUserKey[]).find((key) => {
+    const user = TEST_USERS[key]
+    return normalized === user.alias || normalized === user.email
+  }) ?? null
+}
+
+export async function installApiMocks(page: Page) {
+  await page.route('**/api/v1/**', async (route) => {
+    const request = route.request()
+    const url = new URL(request.url())
+    const path = url.pathname.replace('/api/v1', '')
+
+    if (path === '/auth/login' && request.method() === 'POST') {
+      const body = request.postDataJSON() as { email?: string; password?: string }
+      const userKey = body.email ? matchLoginUser(body.email) : null
+      if (!userKey || body.password !== TEST_USERS[userKey].password) {
+        await route.fulfill({
+          status: 401,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: false,
+            error: { message: '账号或密码错误' },
+          }),
+        })
+        return
+      }
+      await route.fulfill(ok({ token: createTestToken(TEST_USERS[userKey].role), user: userPayload(userKey) }))
+      return
+    }
+
+    if (path === '/admin/current-user/roles') {
+      await route.fulfill(ok([{ code: 'lawyer' }]))
+      return
+    }
+
+    if (path === '/admin/current-user/permissions') {
+      await route.fulfill(ok([]))
+      return
+    }
+
+    if (path === '/dashboard/command-center') {
+      await route.fulfill(ok(commandCenterPayload))
+      return
+    }
+
+    if (path === '/finance/overview') {
+      await route.fulfill(ok({ warning_amount: 120000 }))
+      return
+    }
+
+    if (path === '/clients') {
+      await route.fulfill(ok(clientsPayload))
+      return
+    }
+
+    if (path.match(/^\/clients\/\d+$/) && request.method() === 'PUT') {
+      await route.fulfill(ok({
+        id: 1,
+        name: '上海示例科技有限公司',
+        contact_person: '王总',
+        contact_phone: '021-55550000',
+      }))
+      return
+    }
+
+    if (path.match(/^\/clients\/\d+\/master-profile$/)) {
+      await route.fulfill(ok({
+        client: {
+          id: 1,
+          name: '上海示例科技有限公司',
+          status: 'active',
+          type: 'enterprise',
+          industry: '科技服务',
+          email: 'legal@example.com',
+          phone: '021-55550000',
+          contact_person: '王总',
+          address: '上海市浦东新区',
+          source: '现有客户介绍',
+          created_at: now,
+          updated_at: now,
+        },
+        related_parties: [],
+        conflict_history: riskQueue,
+        completeness: { score: 92 },
+      }))
+      return
+    }
+
+    if (path === '/documents/upload' && request.method() === 'POST') {
+      await route.fulfill(ok({
+        id: 901,
+        name: 'client-note.txt',
+        filename: 'client-note.txt',
+        entity_type: 'client',
+        entity_id: 1,
+      }))
+      return
+    }
+
+    if (path === '/admin/access-center') {
+      await route.fulfill(ok({
+        summary: { users: 2, active_users: 2, roles: 2, disabled_users: 0, pending_changes: 0 },
+        users: [
+          { id: 1, name: '示例管理员', email: TEST_USERS.admin.email, status: 'active', role: 'admin' },
+          { id: 2, name: '张律师', email: TEST_USERS.lawyer.email, status: 'active', role: 'lawyer' },
+        ],
+        roles: [
+          { key: 'admin', label: '管理员', count: 1 },
+          { key: 'lawyer', label: '律师', count: 1 },
+        ],
+        permission_changes: [],
+        audit_events: [],
+      }))
+      return
+    }
+
+    if (path === '/lawfirm/lawyers') {
+      await route.fulfill(ok(lawyersPayload))
+      return
+    }
+
+    if (path === '/case-intakes' && request.method() === 'POST') {
+      await route.fulfill(ok({ id: 801, intake_code: 'IN-2026-001' }))
+      return
+    }
+
+    if (path === '/conflict/check' && request.method() === 'POST') {
+      await route.fulfill(ok({
+        checkId: 'CHK-2026-001',
+        riskAssessment: {
+          overallRisk: 'LOW',
+          riskScore: 18,
+          riskReason: '未发现直接冲突',
+        },
+        checkStatistics: {
+          totalCasesChecked: 2,
+          relatedPartiesChecked: 1,
+        },
+      }))
+      return
+    }
+
+    if (path === '/integration/approvals/with-conflict' && request.method() === 'POST') {
+      await route.fulfill(ok({ approval_id: 701, request_number: 'AP-2026-001' }))
+      return
+    }
+
+    if (path === '/approvals/workbench') {
+      await route.fulfill(ok(approvalWorkbenchPayload))
+      return
+    }
+
+    if (path.match(/^\/approvals\/\d+$/)) {
+      await route.fulfill(ok(approvalWorkbenchPayload.items[0]))
+      return
+    }
+
+    if (path.match(/^\/approvals\/\d+\/snapshot$/)) {
+      await route.fulfill(ok({ approval: approvalWorkbenchPayload.items[0], conflict: riskQueue[0] }))
+      return
+    }
+
+    if (path.match(/^\/integration\/approvals\/\d+\/status$/)) {
+      await route.fulfill(ok({
+        case_creation: { case_id: 101, case_number: 'HD-2026-001', status: 'created' },
+        status: 'approved',
+      }))
+      return
+    }
+
+    if (path.match(/^\/integration\/approvals\/\d+\/decision$/)) {
+      await route.fulfill(ok({ status: 'approved', case_id: 101, case_number: 'HD-2026-001' }))
+      return
+    }
+
+    if (path.match(/^\/conflict\/tasks\/\d+\/approval$/)) {
+      await route.fulfill(ok({ approval_id: 701, request_number: 'AP-2026-001' }))
+      return
+    }
+
+    if (path.match(/^\/cases\/\d+$/)) {
+      const caseId = Number(path.split('/').pop())
+      const row = caseRows.find((item) => item.id === caseId) || caseRows[0]
+      await route.fulfill(ok({
+        ...row,
+        description: 'E2E 案件详情',
+        created_at: now,
+      }))
+      return
+    }
+
+    if (path === '/notifications' || path === '/notifications/stats') {
+      await route.fulfill(ok(path === '/notifications/stats' ? { unread: 0, total: 0 } : []))
+      return
+    }
+
+    if (path.startsWith('/trust/')) {
+      await route.fulfill(ok({ list: [], total: 0, summary: {} }))
+      return
+    }
+
+    await route.fulfill(ok({}))
+  })
+}
+
 export async function waitForPageLoad(page: Page) {
-  await page.waitForLoadState('networkidle')
   await page.waitForLoadState('domcontentloaded')
 }
 
-// 登录函数
-export async function login(page: Page, username: string, password: string) {
+export async function login(page: Page, userKey: TestUserKey = 'lawyer') {
+  await installApiMocks(page)
+  const user = TEST_USERS[userKey]
   await page.goto('/login')
   await waitForPageLoad(page)
-
-  // 填写登录表单
-  await page.fill('input[placeholder*="用户名"], input[name="username"]', username)
-  await page.fill('input[placeholder*="密码"], input[name="password"]', password)
-
-  // 点击登录按钮
-  await page.click('button:has-text("登录"), button[type="submit"]')
-
-  // 等待跳转
-  await page.waitForURL(/\/(dashboard|cases|home)/, { timeout: 10000 })
+  await page.getByPlaceholder('账号或邮箱，如 admin / demo.admin').fill(user.alias)
+  await page.getByPlaceholder('密码').fill(user.password)
+  await page.locator('button[type="submit"]').click()
+  await expect(page).toHaveURL(/\/dashboard$/, { timeout: 10000 })
 }
 
-// 登出函数
+export async function seedAuthenticatedUser(page: Page, userKey: TestUserKey = 'lawyer') {
+  await installApiMocks(page)
+  await page.goto('/login')
+  const user = TEST_USERS[userKey]
+  await page.evaluate((payload) => {
+    localStorage.setItem('auth_token', payload.token)
+    localStorage.setItem('law_oa_user_info', JSON.stringify(payload.user))
+    localStorage.setItem('law_oa_roles', JSON.stringify([{ code: payload.user.role }]))
+    localStorage.setItem('law_oa_permissions', JSON.stringify([]))
+  }, {
+    token: createTestToken(user.role),
+    user: {
+      id: String(userKey === 'admin' ? 1 : userKey === 'lawyer' ? 2 : userKey === 'finance' ? 4 : 3),
+      username: user.email,
+      email: user.email,
+      realName: user.realName,
+      roles: [user.role],
+      permissions: [],
+      isActive: true,
+      createdAt: now,
+    },
+  })
+}
+
 export async function logout(page: Page) {
-  // 点击用户头像或菜单
-  await page.click('[data-testid="user-menu"], .ant-dropdown-trigger:has(.anticon-user)')
-
-  // 点击登出
-  await page.click('text=退出登录, text=登出, text=Logout')
-
-  // 等待跳转到登录页
-  await page.waitForURL('/login', { timeout: 5000 })
+  await page.locator('.user-menu').click()
+  await page.getByText('退出登录').click()
+  await expect(page).toHaveURL(/\/login$/)
 }
 
-// 检查是否已登录
 export async function isLoggedIn(page: Page): Promise<boolean> {
-  try {
-    // 检查是否存在登出按钮或用户菜单
-    const userMenu = await page.$('[data-testid="user-menu"], .ant-dropdown-trigger')
-    return userMenu !== null
-  } catch {
-    return false
-  }
+  return page.locator('.user-menu').isVisible()
 }
 
-// 导航到指定页面
-export async function navigateTo(page: Page, path: string) {
-  await page.goto(path)
-  await waitForPageLoad(page)
+export async function waitForAppShell(page: Page) {
+  await expect(page.locator('.app-header')).toBeVisible()
+  await expect(page.locator('.app-sidebar')).toBeVisible()
 }
 
-// 检查Toast消息
-export async function checkToastMessage(page: Page, message: string) {
-  const toast = page.locator('.ant-message, .ant-notification')
-  await expect(toast).toContainText(message)
-}
-
-// 等待表格加载
-export async function waitForTableLoad(page: Page) {
-  await page.waitForSelector('.ant-table-tbody tr', { timeout: 10000 })
-  await page.waitForLoadState('networkidle')
-}
-
-// 获取表格行数
-export async function getTableRowCount(page: Page): Promise<number> {
-  const rows = await page.$$('.ant-table-tbody tr')
-  return rows.length
-}
-
-// 点击表格行操作按钮
-export async function clickTableRowAction(
-  page: Page,
-  rowIndex: number,
-  actionText: string,
-) {
-  const rows = await page.$$('.ant-table-tbody tr')
-  if (rows[rowIndex]) {
-    await rows[rowIndex].click(`button:has-text("${actionText}")`)
-  }
-}
-
-// 填写表单字段
-export async function fillForm(
-  page: Page,
-  fields: Record<string, string>,
-) {
-  for (const [label, value] of Object.entries(fields)) {
-    const input = page.locator(
-      `.ant-form-item:has-text("${label}") input, .ant-form-item:has-text("${label}") textarea`,
-    )
-    await input.fill(value)
-  }
-}
-
-// 选择下拉选项
-export async function selectOption(
-  page: Page,
-  label: string,
-  optionText: string,
-) {
-  await page.click(`.ant-form-item:has-text("${label}") .ant-select-selector`)
-  await page.click(`.ant-select-dropdown:visible .ant-select-item:has-text("${optionText}")`)
-}
-
-// 检查元素是否可见
-export async function isElementVisible(page: Page, selector: string): Promise<boolean> {
-  try {
-    const element = await page.$(selector)
-    if (!element) return false
-    return await element.isVisible()
-  } catch {
-    return false
-  }
-}
-
-// 等待模态框出现
-export async function waitForModal(page: Page) {
-  await page.waitForSelector('.ant-modal-content', { timeout: 5000 })
-}
-
-// 关闭模态框
-export async function closeModal(page: Page) {
-  await page.click('.ant-modal-close, button:has-text("取消")')
-  await page.waitForSelector('.ant-modal-content', { state: 'hidden' })
-}
-
-// 点击确认按钮
-export async function clickConfirm(page: Page, buttonText = '确定') {
-  await page.click(`.ant-modal-content button:has-text("${buttonText}")`)
-}
-
-// 截图并添加到报告
-export async function takeScreenshot(page: Page, name: string) {
-  await page.screenshot({
-    path: `playwright-report/screenshots/${name}.png`,
-    fullPage: true,
-  })
-}
-
-// Mock API响应
-export async function mockApiResponse(
-  page: Page,
-  path: string,
-  response: any,
-  status = 200,
-) {
-  await page.route(`**/api/**${path}`, (route) => {
-    route.fulfill({
-      status,
-      contentType: 'application/json',
-      body: JSON.stringify(response),
-    })
-  })
+export async function waitForNativeTable(page: Page) {
+  await expect(page.locator('.batch-table-wrap table')).toBeVisible()
 }

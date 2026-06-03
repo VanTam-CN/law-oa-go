@@ -344,3 +344,15 @@ set_token_and_test.html
 
 # 备份目录 (仅用于本地开发)
 # backup/
+
+# 覆盖率报告
+coverage/
+lcov.info
+lcov-report/
+
+# 前端目录下不应有的Go文件
+frontend/go.mod
+frontend/go.sum
+frontend/*.gofrontend/playwright-report/
+frontend/test-results/
+server

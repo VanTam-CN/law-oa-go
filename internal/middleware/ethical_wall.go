@@ -176,7 +176,8 @@ func extractCaseID(c *gin.Context) uint {
 	}
 
 	// 从请求体中提取 (对于 POST/PUT 请求)
-	if c.Request.Method == "POST" || c.Request.Method == "PUT" || c.Request.Method == "PATCH" {
+	if (c.Request.Method == "POST" || c.Request.Method == "PUT" || c.Request.Method == "PATCH") &&
+		strings.HasPrefix(c.GetHeader("Content-Type"), "application/json") {
 		// 尝试从 JSON body 中读取 case_id
 		type CaseIDRequest struct {
 			CaseID uint `json:"case_id"`

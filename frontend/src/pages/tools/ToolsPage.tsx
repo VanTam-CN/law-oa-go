@@ -1,15 +1,10 @@
 import React from 'react'
 import { useNavigate } from 'react-router'
-import { Card, Row, Col, Button, Divider, message } from 'antd'
+import { Card, Row, Col, Button, Divider } from 'antd'
 import {
   CalculatorOutlined,
-  FileTextOutlined,
   SearchOutlined,
-  TranslationOutlined,
   CalendarOutlined,
-  DatabaseOutlined,
-  PrinterOutlined,
-  CloudDownloadOutlined,
 } from '@ant-design/icons'
 
 const ToolsPage: React.FC = () => {
@@ -39,29 +34,6 @@ const ToolsPage: React.FC = () => {
       ],
     },
     {
-      title: '文档工具',
-      tools: [
-        {
-          name: '合同模板库',
-          description: '常用法律文书和合同模板',
-          icon: <FileTextOutlined />,
-          action: () => message.info('合同模板库功能开发中...'),
-        },
-        {
-          name: '文档生成器',
-          description: '自动生成标准法律文书',
-          icon: <FileTextOutlined />,
-          action: () => message.info('文档生成器功能开发中...'),
-        },
-        {
-          name: '文档转换器',
-          description: '文档格式转换工具',
-          icon: <CloudDownloadOutlined />,
-          action: () => message.info('文档转换器功能开发中...'),
-        },
-      ],
-    },
-    {
       title: '查询工具',
       tools: [
         {
@@ -69,41 +41,6 @@ const ToolsPage: React.FC = () => {
           description: '快速查询相关法律条文',
           icon: <SearchOutlined />,
           action: () => navigate('/tools/law-search'),
-        },
-        {
-          name: '案例检索',
-          description: '搜索相关判决案例',
-          icon: <DatabaseOutlined />,
-          action: () => message.info('案例检索功能开发中...'),
-        },
-        {
-          name: '企业信息查询',
-          description: '查询企业工商信息',
-          icon: <SearchOutlined />,
-          action: () => message.info('企业信息查询功能开发中...'),
-        },
-      ],
-    },
-    {
-      title: '其他工具',
-      tools: [
-        {
-          name: '翻译工具',
-          description: '法律文件翻译助手',
-          icon: <TranslationOutlined />,
-          action: () => message.info('翻译工具功能开发中...'),
-        },
-        {
-          name: '打印助手',
-          description: '批量打印和格式化工具',
-          icon: <PrinterOutlined />,
-          action: () => message.info('打印助手功能开发中...'),
-        },
-        {
-          name: '数据导出',
-          description: '案件数据导出和备份',
-          icon: <CloudDownloadOutlined />,
-          action: () => message.info('数据导出功能开发中...'),
         },
       ],
     },
@@ -164,9 +101,9 @@ const ToolsPage: React.FC = () => {
 
       <Card style={{ marginTop: 32, textAlign: 'center', background: '#f8f9fa' }}>
         <div style={{ padding: '20px 0' }}>
-          <h3 style={{ color: '#1c4e80', marginBottom: 8 }}>更多工具正在开发中</h3>
+          <h3 style={{ color: '#1c4e80', marginBottom: 8 }}>工具均已接入真实 API</h3>
           <p style={{ color: '#666', marginBottom: 0 }}>
-            我们将持续添加更多实用的法律工作工具，提升您的工作效率
+            当前开放诉讼费、利息、期限和法条查询工具。
           </p>
         </div>
       </Card>

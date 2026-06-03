@@ -12,15 +12,45 @@ import (
 type ApprovalStateMachine struct {
 	// 定义合法的状态转换
 	validTransitions map[string][]string
+	// 审批节点处理器
+	stageProcessor *ApprovalStageProcessor
 }
 
 // NewApprovalStateMachine 创建新的状态机实例
 func NewApprovalStateMachine() *ApprovalStateMachine {
 	sm := &ApprovalStateMachine{
 		validTransitions: make(map[string][]string),
+		stageProcessor:    NewApprovalStageProcessor(),
 	}
 	sm.initializeTransitions()
 	return sm
+}
+
+// ApprovalStageProcessor 审批节点处理器
+type ApprovalStageProcessor struct {
+	// 当前节点配置
+	CurrentStage *models.ApprovalStage
+	// 已完成的节点
+	CompletedStages []string
+	// 会签/或签状态
+	ApprovalState map[string]*StageApprovalState
+}
+
+// StageApprovalState 节点审批状态
+type StageApprovalState struct {
+	StageKey      string
+	TotalApprovers int
+	ApprovedCount  int
+	RejectedCount  int
+	ApproverRecords map[string]bool // approverID -> approved
+}
+
+// NewApprovalStageProcessor 创建节点处理器
+func NewApprovalStageProcessor() *ApprovalStageProcessor {
+	return &ApprovalStageProcessor{
+		CompletedStages: make([]string, 0),
+		ApprovalState:   make(map[string]*StageApprovalState),
+	}
 }
 
 // initializeTransitions 初始化状态转换规则
@@ -94,6 +124,177 @@ func (sm *ApprovalStateMachine) ValidateTransition(from, to string) error {
 	return nil
 }
 
+// ProcessStageDecision 处理节点审批决定（支持会签/或签）
+func (sp *ApprovalStageProcessor) ProcessStageDecision(
+	stage *models.ApprovalStage,
+	approverID string,
+	decision string,
+) (shouldComplete bool, shouldReject bool, nextAction string, err error) {
+	if stage == nil {
+		return false, false, "", errors.New("审批节点不存在")
+	}
+
+	// 初始化节点状态
+	if _, exists := sp.ApprovalState[stage.StageKey]; !exists {
+		sp.ApprovalState[stage.StageKey] = &StageApprovalState{
+			StageKey:        stage.StageKey,
+			TotalApprovers:  len(stage.Approvers),
+			ApprovedCount:   0,
+			RejectedCount:   0,
+			ApproverRecords: make(map[string]bool),
+		}
+	}
+
+	state := sp.ApprovalState[stage.StageKey]
+
+	// 检查是否已审批
+	if _, approved := state.ApproverRecords[approverID]; approved {
+		return false, false, "", errors.New("该审批人已处理过此节点")
+	}
+
+	// 记录审批
+	state.ApproverRecords[approverID] = true
+
+	switch decision {
+	case models.ApprovalDecisionApprove:
+		state.ApprovedCount++
+
+		// 根据审批模式判断是否完成
+		if stage.ApprovalMode == "or" {
+			// 或签：一人通过即可
+			return true, false, "next_stage", nil
+		}
+		// 会签：全部通过
+		if state.ApprovedCount >= state.TotalApprovers {
+			return true, false, "next_stage", nil
+		}
+		return false, false, "waiting_others", nil
+
+	case models.ApprovalDecisionReject:
+		state.RejectedCount++
+
+		// 任何模式下，有人拒绝即拒绝
+		if stage.ApprovalMode == "or" {
+			// 或签：一人拒绝即拒绝
+			return false, true, "rejected", nil
+		}
+		// 会签：一人拒绝即拒绝
+		return false, true, "rejected", nil
+
+	case models.ApprovalDecisionRequestChanges:
+		// 要求修改直接结束流程
+		return false, false, "needs_revision", nil
+
+	case models.ApprovalDecisionReassign:
+		// 转签不改变计数
+		return false, false, "reassigned", nil
+
+	case models.ApprovalDecisionDefer:
+		// 延期不改变状态
+		return false, false, "deferred", nil
+
+	case models.ApprovalDecisionEscalate:
+		// 升级
+		return false, false, "escalated", nil
+
+	default:
+		return false, false, "", errors.New("未知的审批决定类型")
+	}
+}
+
+// GetNextStage 获取下一个审批节点
+func (sp *ApprovalStageProcessor) GetNextStage(
+	currentStageKey string,
+	templateConfig *models.ApprovalTemplateConfig,
+	metadata map[string]interface{},
+) (*models.ApprovalStage, error) {
+	// 查找当前节点
+	var currentStage *models.ApprovalStage
+	var currentIndex = -1
+
+	for i, stage := range templateConfig.Stages {
+		if stage.StageKey == currentStageKey {
+			currentStage = &stage
+			currentIndex = i
+			break
+		}
+	}
+
+	if currentStage == nil {
+		return nil, errors.New("当前节点不存在")
+	}
+
+	// 如果是条件节点，评估条件
+	if currentStage.StageType == "conditional" {
+		for _, condition := range templateConfig.Conditions {
+			if condition.ThenStageKey == currentStage.StageKey ||
+			   condition.ElseStageKey == currentStage.StageKey {
+				// 评估条件表达式
+				if sp.evaluateCondition(condition.Expression, metadata) {
+					// 满足条件，跳转到 then_stage
+					return sp.findStageByKey(condition.ThenStageKey, templateConfig.Stages)
+				} else if condition.ElseStageKey != "" && condition.ElseStageKey != "end" {
+					// 不满足条件，跳转到 else_stage
+					return sp.findStageByKey(condition.ElseStageKey, templateConfig.Stages)
+				} else {
+					// 流程结束
+					return nil, nil
+				}
+			}
+		}
+	}
+
+	// 串行/并行节点：返回下一个节点
+	if currentIndex+1 < len(templateConfig.Stages) {
+		return &templateConfig.Stages[currentIndex+1], nil
+	}
+
+	// 没有更多节点，流程结束
+	return nil, nil
+}
+
+// findStageByKey 根据 key 查找节点
+func (sp *ApprovalStageProcessor) findStageByKey(key string, stages []models.ApprovalStage) (*models.ApprovalStage, error) {
+	for i, stage := range stages {
+		if stage.StageKey == key {
+			return &stages[i], nil
+		}
+	}
+	return nil, errors.New("节点不存在: " + key)
+}
+
+// evaluateCondition 评估条件表达式
+func (sp *ApprovalStageProcessor) evaluateCondition(expression string, metadata map[string]interface{}) bool {
+	// 简化版条件评估
+	// 实际项目中应该使用更安全的表达式解析器
+	// 这里只做基本演示
+
+	// 检查标的额条件
+	if val, ok := metadata["case_value"]; ok {
+		caseValue, _ := val.(float64)
+		if expression == "case_value >= 1000000" {
+			return caseValue >= 1000000
+		}
+		if expression == "case_value >= 100000" {
+			return caseValue >= 100000
+		}
+	}
+
+	// 检查用印重要性条件
+	if val, ok := metadata["seal_importance"]; ok {
+		importance, _ := val.(string)
+		if expression == "seal_importance == 'high' || seal_count >= 3" {
+			return importance == "high"
+		}
+		if expression == "seal_importance == 'medium' || seal_count >= 1" {
+			return importance == "medium" || importance == "high"
+		}
+	}
+
+	// 默认返回 false
+	return false
+}
+
 // GetNextState 根据审批决定获取下一个状态
 func (sm *ApprovalStateMachine) GetNextState(currentStatus string, decision string) (string, error) {
 	switch decision {
@@ -160,6 +361,28 @@ func (sm *ApprovalStateMachine) CanResubmit(status string) bool {
 func (sm *ApprovalStateMachine) CanEdit(status string) bool {
 	return status == models.ApprovalStatusDraft ||
 		status == models.ApprovalStatusNeedsRevision
+}
+
+// CanReturnToPrevious 判断是否可以退回上一步
+func (sm *ApprovalStateMachine) CanReturnToPrevious(status string, currentStage string, templateConfig *models.ApprovalTemplateConfig) bool {
+	if status != models.ApprovalStatusUnderReview {
+		return false
+	}
+
+	// 查找当前节点
+	for i, stage := range templateConfig.Stages {
+		if stage.StageKey == currentStage {
+			// 第一个节点不能退回
+			if i == 0 {
+				return false
+			}
+			// 检查上一个节点是否允许退回
+			prevStage := templateConfig.Stages[i-1]
+			return prevStage.AllowReturn
+		}
+	}
+
+	return false
 }
 
 // GetStatusDisplayName 获取状态的显示名称

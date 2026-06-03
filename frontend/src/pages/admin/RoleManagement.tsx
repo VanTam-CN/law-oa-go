@@ -55,63 +55,19 @@ const RoleManagement: React.FC = () => {
   const loadRoles = async (params: RoleQueryParams = {}) => {
     setLoading(true)
     try {
-      // 使用静态数据避免API调用失败
-      const staticRoles: Role[] = [
-        {
-          id: 1,
-          name: '系统管理员',
-          code: 'ADMIN',
-          description: '系统管理员，拥有所有权限',
-          status: 'active',
-          sort_order: 1,
-          created_at: '2024-01-01 00:00:00',
-          updated_at: '2024-01-01 00:00:00',
-        },
-        {
-          id: 2,
-          name: '律师',
-          code: 'LAWYER',
-          description: '执业律师，可以管理案件和客户',
-          status: 'active',
-          sort_order: 2,
-          created_at: '2024-01-01 00:00:00',
-          updated_at: '2024-01-01 00:00:00',
-        },
-        {
-          id: 3,
-          name: '律师助理',
-          code: 'ASSISTANT',
-          description: '律师助理，协助律师工作',
-          status: 'active',
-          sort_order: 3,
-          created_at: '2024-01-01 00:00:00',
-          updated_at: '2024-01-01 00:00:00',
-        },
-        {
-          id: 4,
-          name: '行政专员',
-          code: 'ADMIN_STAFF',
-          description: '行政人员，负责日常行政工作',
-          status: 'active',
-          sort_order: 4,
-          created_at: '2024-01-01 00:00:00',
-          updated_at: '2024-01-01 00:00:00',
-        },
-        {
-          id: 5,
-          name: '财务专员',
-          code: 'FINANCE',
-          description: '财务人员，负责财务管理',
-          status: 'active',
-          sort_order: 5,
-          created_at: '2024-01-01 00:00:00',
-          updated_at: '2024-01-01 00:00:00',
-        },
-      ]
-      setRoles(staticRoles)
+      const requestParams: RoleQueryParams = {
+        ...searchParams,
+        ...params,
+        page_num: params.page_num ?? pagination.current,
+        page_size: params.page_size ?? pagination.pageSize,
+      }
+      const response = await getRoleList(requestParams)
+      setRoles(response.list || [])
       setPagination((prev) => ({
         ...prev,
-        total: staticRoles.length,
+        current: response.page_num || requestParams.page_num || prev.current,
+        pageSize: response.page_size || requestParams.page_size || prev.pageSize,
+        total: response.total || 0,
       }))
     } catch (error) {
       message.error('加载角色列表失败')
@@ -155,9 +111,9 @@ const RoleManagement: React.FC = () => {
   // 删除角色
   const handleDelete = async (id: number) => {
     try {
-      const updatedRoles = roles.filter((role) => role.id !== id)
-      setRoles(updatedRoles)
+      await deleteRole(id)
       message.success('删除成功')
+      loadRoles()
     } catch (error) {
       message.error('删除失败')
     }
@@ -166,17 +122,9 @@ const RoleManagement: React.FC = () => {
   // 更新角色状态
   const handleStatusChange = async (id: number, status: string) => {
     try {
-      const updatedRoles = roles.map((role) =>
-        role.id === id
-          ? {
-              ...role,
-              status: status as 'active' | 'inactive',
-              updated_at: new Date().toISOString(),
-            }
-          : role,
-      )
-      setRoles(updatedRoles)
+      await updateRoleStatus(id, status)
       message.success('状态更新成功')
+      loadRoles()
     } catch (error) {
       message.error('状态更新失败')
     }
@@ -187,28 +135,14 @@ const RoleManagement: React.FC = () => {
     try {
       const values = await form.validateFields()
       if (editingRole) {
-        // 更新角色
-        const updatedRoles = roles.map((role) =>
-          role.id === editingRole.id
-            ? { ...role, ...values, updated_at: new Date().toISOString() }
-            : role,
-        )
-        setRoles(updatedRoles)
+        await updateRole(editingRole.id, values)
         message.success('更新成功')
       } else {
-        // 新增角色
-        const newRole: Role = {
-          ...values,
-          id: roles.length + 1,
-          status: 'active',
-          sort_order: roles.length + 1,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }
-        setRoles([...roles, newRole])
+        await createRole(values)
         message.success('创建成功')
       }
       setModalVisible(false)
+      loadRoles()
     } catch (error) {
       message.error('操作失败')
     }
@@ -421,11 +355,11 @@ const RoleManagement: React.FC = () => {
             label='角色编码'
             rules={[
               { required: true, message: '请输入角色编码' },
-              { pattern: /^[A-Z_]+$/, message: '角色编码只能包含大写字母和下划线' },
+              { pattern: /^[a-zA-Z0-9_:-]+$/, message: '角色编码只能包含字母、数字、下划线、冒号和短横线' },
               { max: 50, message: '角色编码不能超过50个字符' },
             ]}
           >
-            <Input placeholder='请输入角色编码（如：ADMIN、USER）' />
+            <Input disabled={!!editingRole} placeholder='请输入角色编码（如：admin、lawyer）' />
           </Form.Item>
           <Form.Item
             name='description'

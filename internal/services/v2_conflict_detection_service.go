@@ -58,13 +58,13 @@ type ConflictMatchV2 struct {
 	CaseType       string                 `json:"caseType"`
 	Relationship   string                 `json:"relationship"`  // client/opposing/witness
 	MatchReason    string                 `json:"matchReason"`
-	EntityInfo     *EntityInfo            `json:"entityInfo"`
+	EntityInfo     *V2ConflictEntityInfo `json:"entityInfo"`
 	RiskLevel      string                 `json:"riskLevel"`
 	RiskFactors    []string               `json:"riskFactors"`
 }
 
 // EntityInfo 实体信息
-type EntityInfo struct {
+type V2ConflictEntityInfo struct {
 	Name           string   `json:"name"`
 	StandardName   string   `json:"standardName"`
 	TaxID          string   `json:"taxId"`
@@ -319,7 +319,7 @@ func (s *v2ConflictDetectionService) searchInPool(ctx context.Context, req *Conf
 			CaseTitle:   pr.PoolEntry.CaseTitle,
 			Relationship: pr.PoolEntry.RelationshipType,
 			MatchReason: pr.MatchReason,
-			EntityInfo: &EntityInfo{
+			EntityInfo: &V2ConflictEntityInfo{
 				Name:         pr.PoolEntry.EntityName,
 				StandardName: pr.PoolEntry.EntityNameStandard,
 				TaxID:        pr.PoolEntry.EntityTaxID,
@@ -379,7 +379,7 @@ func (s *v2ConflictDetectionService) searchOpposingParties(ctx context.Context, 
 				CaseTitle:   pr.PoolEntry.CaseTitle,
 				Relationship: "opposing",
 				MatchReason: fmt.Sprintf("对方当事人 '%s' 与案件关联", opposingParty),
-				EntityInfo: &EntityInfo{
+				EntityInfo: &V2ConflictEntityInfo{
 					Name:         pr.PoolEntry.EntityName,
 					StandardName: pr.PoolEntry.EntityNameStandard,
 					TaxID:        pr.PoolEntry.EntityTaxID,
@@ -435,7 +435,7 @@ func (s *v2ConflictDetectionService) searchWithAPI(ctx context.Context, req *Con
 				CaseTitle:   pr.PoolEntry.CaseTitle,
 				Relationship: pr.PoolEntry.RelationshipType,
 				MatchReason: fmt.Sprintf("通过 API 匹配到税号 %s", company.TaxID),
-				EntityInfo: &EntityInfo{
+				EntityInfo: &V2ConflictEntityInfo{
 					Name:         company.Name,
 					StandardName: s.standardizeName(company.Name),
 					TaxID:        company.TaxID,

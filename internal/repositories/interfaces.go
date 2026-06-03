@@ -7,8 +7,8 @@ import (
 
 	"context"
 
-	"law-oa-go/internal/models"
 	"gorm.io/gorm"
+	"law-oa-go/internal/models"
 )
 
 // Repository Sentinel Errors
@@ -19,9 +19,10 @@ var (
 	ErrUserInvalid       = errors.New("invalid user data")
 
 	// Client Repository Errors
-	ErrClientNotFound      = errors.New("client not found")
-	ErrClientAlreadyExists = errors.New("client already exists")
-	ErrClientInvalid       = errors.New("invalid client data")
+	ErrClientNotFound        = errors.New("client not found")
+	ErrClientAlreadyExists   = errors.New("client already exists")
+	ErrClientInvalid         = errors.New("invalid client data")
+	ErrClientVersionConflict = errors.New("client version conflict")
 
 	// Case Repository Errors
 	ErrCaseNotFound      = errors.New("case not found")
@@ -106,6 +107,8 @@ type ClientRepository interface {
 	FindByEmail(ctx context.Context, email string) (*models.Client, error)
 	// Update 更新客户信息
 	Update(ctx context.Context, client *models.Client) error
+	// UpdateWithVersion 使用乐观锁版本号更新客户信息
+	UpdateWithVersion(ctx context.Context, client *models.Client, expectedVersion uint) error
 	// Delete 删除客户
 	Delete(ctx context.Context, id uint) error
 	// List 客户列表查询
@@ -199,5 +202,3 @@ type CacheRepository interface {
 	// DeletePattern 删除匹配模式的缓存值
 	DeletePattern(ctx context.Context, pattern string) error
 }
-
-

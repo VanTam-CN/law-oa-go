@@ -4,6 +4,12 @@
  */
 
 import '@testing-library/jest-dom'
+import { TextDecoder, TextEncoder } from 'util'
+
+Object.assign(globalThis, {
+  TextDecoder,
+  TextEncoder,
+})
 
 // Mock localStorage
 const localStorageMock = {
@@ -11,7 +17,9 @@ const localStorageMock = {
   setItem: jest.fn(),
   removeItem: jest.fn(),
   clear: jest.fn(),
-} as Storage
+  key: jest.fn(),
+  length: 0,
+} as unknown as Storage
 
 Object.defineProperty(window, 'localStorage', {
   value: localStorageMock,
@@ -23,7 +31,9 @@ const sessionStorageMock = {
   setItem: jest.fn(),
   removeItem: jest.fn(),
   clear: jest.fn(),
-} as Storage
+  key: jest.fn(),
+  length: 0,
+} as unknown as Storage
 
 Object.defineProperty(window, 'sessionStorage', {
   value: sessionStorageMock,
@@ -42,6 +52,24 @@ Object.defineProperty(window, 'matchMedia', {
     removeEventListener: jest.fn(),
     dispatchEvent: jest.fn(),
   })),
+})
+
+const originalGetComputedStyle = window.getComputedStyle.bind(window)
+
+const getComputedStyleMock: typeof window.getComputedStyle = (element, pseudoElt) => {
+  const computedStyle = originalGetComputedStyle(element, pseudoElt)
+  if (computedStyle && typeof computedStyle.getPropertyValue === 'function') {
+    return computedStyle
+  }
+
+  return {
+    getPropertyValue: jest.fn().mockReturnValue(''),
+  } as unknown as CSSStyleDeclaration
+}
+
+Object.defineProperty(window, 'getComputedStyle', {
+  writable: true,
+  value: getComputedStyleMock,
 })
 
 // Mock ResizeObserver

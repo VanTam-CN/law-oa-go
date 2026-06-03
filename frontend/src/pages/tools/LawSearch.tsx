@@ -13,6 +13,8 @@ import {
   Tooltip,
   message,
   Modal,
+  Descriptions,
+  Typography,
 } from 'antd'
 import {
   SearchOutlined,
@@ -34,10 +36,10 @@ import {
   LegalSearchRequest,
   LegalSearchResponse,
   LegalStatuteImportItem,
-  LegalStatuteImportRequest,
   LegalStatuteImportResponse,
   getLaws,
   searchLaws,
+  getLawById,
   getLawCategories,
   getLawTags,
   getPopularSearches,
@@ -50,6 +52,7 @@ import './LawSearch.less'
 const { Search } = Input
 const { Option } = Select
 const { TextArea } = Input
+const { Paragraph } = Typography
 
 const LawSearch: React.FC = () => {
   // 状态管理
@@ -58,7 +61,10 @@ const LawSearch: React.FC = () => {
   const [categories, setCategories] = useState<LawCategory[]>([])
   const [tags, setTags] = useState<LawTag[]>([])
   const [popularSearches, setPopularSearches] = useState<string[]>([])
-  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([])
+
+  const [detailModalVisible, setDetailModalVisible] = useState<boolean>(false)
+  const [detailLoading, setDetailLoading] = useState<boolean>(false)
+  const [selectedLaw, setSelectedLaw] = useState<LawItem | null>(null)
 
   // 导入相关状态
   const [importModalVisible, setImportModalVisible] = useState<boolean>(false)
@@ -92,21 +98,26 @@ const LawSearch: React.FC = () => {
   const loadInitialData = async () => {
     try {
       setLoading(true)
-      const [categoriesRes, tagsRes] = await Promise.all([
+      const [categoriesRes, tagsRes, popularRes] = await Promise.all([
         getLawCategories(),
         getLawTags(),
+        getPopularSearches(8),
       ])
 
-      setCategories(categoriesRes?.data || [])
-      setTags(tagsRes?.data || [])
+      const categoryList = categoriesRes?.data || []
+      const tagList = tagsRes?.data || []
+      setCategories(categoryList)
+      setTags(tagList)
 
-      // 热门搜索端点可能不存在，设置默认值
-      setPopularSearches(['刑法', '民法典', '合同法', '劳动法', '公司法'])
+      const terms = popularRes?.data?.length
+        ? popularRes.data
+        : [...categoryList.map((category) => category.name), ...tagList.map((tag) => tag.name)]
+
+      setPopularSearches(Array.from(new Set(terms.filter(Boolean))).slice(0, 8))
     } catch (error) {
       console.error('Failed to load initial data:', error)
       message.error('加载初始数据失败')
-      // 设置默认值避免页面空白
-      setPopularSearches(['刑法', '民法典', '合同法', '劳动法', '公司法'])
+      setPopularSearches([])
     } finally {
       setLoading(false)
     }
@@ -220,13 +231,6 @@ const LawSearch: React.FC = () => {
       message.error('操作失败，请稍后重试')
     }
   }
-
-  const handleSuggestionSelect = useCallback(
-    (value: string) => {
-      handleSearch(value)
-    },
-    [handleSearch],
-  )
 
   // 打开导入弹窗
   const handleOpenImportModal = () => {
@@ -357,6 +361,22 @@ const LawSearch: React.FC = () => {
     }
   }
 
+  const handleViewDetail = async (record: LawItem) => {
+    setSelectedLaw(record)
+    setDetailModalVisible(true)
+
+    try {
+      setDetailLoading(true)
+      const response = await getLawById(record.id)
+      setSelectedLaw(response.data)
+    } catch (error) {
+      console.error('Failed to load law detail:', error)
+      message.error('获取法条详情失败')
+    } finally {
+      setDetailLoading(false)
+    }
+  }
+
   const getCategoryColor = (code: string) => {
     const colors: { [key: string]: string } = {
       CIVIL_LAW: 'blue',
@@ -458,10 +478,7 @@ const LawSearch: React.FC = () => {
             type='link'
             size='small'
             icon={<FileTextOutlined />}
-            onClick={() => {
-              // TODO: 实现查看详情功能
-              console.log('查看详情:', record)
-            }}
+            onClick={() => handleViewDetail(record)}
           >
             详情
           </Button>
@@ -544,6 +561,19 @@ const LawSearch: React.FC = () => {
           </Space>
         </div>
 
+        {popularSearches.length > 0 && (
+          <div className='popular-searches'>
+            <Space size='small' wrap>
+              <span>常用检索：</span>
+              {popularSearches.map((term) => (
+                <Button key={term} type='link' size='small' onClick={() => handleSearch(term)}>
+                  {term}
+                </Button>
+              ))}
+            </Space>
+          </div>
+        )}
+
         {/* 搜索结果 */}
         <div className='search-results'>
           <Spin spinning={loading}>
@@ -615,6 +645,73 @@ const LawSearch: React.FC = () => {
           </Spin>
         </div>
       </Card>
+
+      <Modal
+        title={selectedLaw?.title || '法条详情'}
+        open={detailModalVisible}
+        onCancel={() => setDetailModalVisible(false)}
+        footer={[
+          <Button key='close' onClick={() => setDetailModalVisible(false)}>
+            关闭
+          </Button>,
+        ]}
+        width={860}
+        destroyOnClose
+      >
+        <Spin spinning={detailLoading}>
+          {selectedLaw && (
+            <Space direction='vertical' size='middle' style={{ width: '100%' }}>
+              <Descriptions bordered size='small' column={2}>
+                <Descriptions.Item label='法条编号'>{selectedLaw.statuteNumber}</Descriptions.Item>
+                <Descriptions.Item label='法律名称'>{selectedLaw.lawName}</Descriptions.Item>
+                <Descriptions.Item label='分类'>
+                  {selectedLaw.category ? (
+                    <Tag color={getCategoryColor(selectedLaw.category.code)}>{selectedLaw.category.name}</Tag>
+                  ) : (
+                    '-'
+                  )}
+                </Descriptions.Item>
+                <Descriptions.Item label='状态'>
+                  <Tag color={selectedLaw.status === 'active' ? 'green' : 'red'}>
+                    {selectedLaw.status === 'active' ? '生效' : '失效'}
+                  </Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label='章节' span={2}>
+                  {[selectedLaw.part, selectedLaw.chapter, selectedLaw.section].filter(Boolean).join(' / ') || '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label='发布机关' span={2}>
+                  {selectedLaw.publishingAuthority || '-'}
+                </Descriptions.Item>
+              </Descriptions>
+
+              <div className='law-content'>
+                <div className='law-content-header'>
+                  <strong>法条内容：</strong>
+                </div>
+                <Paragraph className='law-content-text'>{selectedLaw.content}</Paragraph>
+              </div>
+
+              {selectedLaw.tags.length > 0 && (
+                <div>
+                  <span style={{ marginRight: 8 }}>标签：</span>
+                  {selectedLaw.tags.map((tag) => (
+                    <Tag key={tag}>{tag}</Tag>
+                  ))}
+                </div>
+              )}
+
+              {selectedLaw.keywords.length > 0 && (
+                <div>
+                  <span style={{ marginRight: 8 }}>关键词：</span>
+                  {selectedLaw.keywords.map((keyword) => (
+                    <Tag key={keyword} color='blue'>{keyword}</Tag>
+                  ))}
+                </div>
+              )}
+            </Space>
+          )}
+        </Spin>
+      </Modal>
 
       {/* 批量导入弹窗 */}
       <Modal

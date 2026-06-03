@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   Card,
   Table,
@@ -28,35 +28,50 @@ import {
   ReloadOutlined,
   CheckOutlined,
   CloseOutlined,
-  TransactionOutlined,
-  UploadOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import {
   getPayments,
-  getPayment,
+  getInvoices,
   createPayment,
   updatePayment,
   deletePayment,
   confirmPayment,
   rejectPayment,
   getPaymentStats,
+  exportPayments,
   type Payment,
   type CreatePaymentRequest,
   type UpdatePaymentRequest,
   type PaymentStats,
   paymentStatusMap,
-  formatAmount,
 } from '@/services/finance'
+import { exportCSV } from '@/utils/export'
+import FilterSelect from './FilterSelect'
 import './PaymentList.less'
 
 const { Option } = Select
 const { TextArea } = Input
 const { RangePicker } = DatePicker
 
-// 表格列定义
-const columns: ColumnsType<Payment> = [
+interface InvoiceOption {
+  id: number
+  invoice_code: string
+  client_name: string
+  total_amount: number
+  remaining_amount: number
+}
+
+// 表格列定义 - 使用render props接收handlers
+const createColumns = (handlers: {
+  onView: (record: Payment) => void
+  onEdit: (record: Payment) => void
+  onConfirm: (id: number) => void
+  onReject: (id: number) => void
+  onDelete: (id: number) => void
+}): ColumnsType<Payment> => [
   {
     title: '回款编号',
     dataIndex: 'payment_code',
@@ -151,21 +166,21 @@ const columns: ColumnsType<Payment> = [
     render: (_, record) => (
       <Space size='small'>
         <Tooltip title='查看详情'>
-          <Button type='link' size='small' icon={<EyeOutlined />} />
+          <Button type='link' size='small' icon={<EyeOutlined />} onClick={(e) => { e.stopPropagation(); handlers.onView(record) }} />
         </Tooltip>
         {record.status === 'pending' && (
           <>
             <Tooltip title='编辑'>
-              <Button type='link' size='small' icon={<EditOutlined />} />
+              <Button type='link' size='small' icon={<EditOutlined />} onClick={(e) => { e.stopPropagation(); handlers.onEdit(record) }} />
             </Tooltip>
             <Tooltip title='确认回款'>
-              <Button type='link' size='small' icon={<CheckOutlined />} />
+              <Button type='link' size='small' icon={<CheckOutlined />} onClick={(e) => { e.stopPropagation(); handlers.onConfirm(record.id) }} />
             </Tooltip>
             <Tooltip title='拒绝'>
-              <Button type='link' size='small' danger icon={<CloseOutlined />} />
+              <Button type='link' size='small' danger icon={<CloseOutlined />} onClick={(e) => { e.stopPropagation(); handlers.onReject(record.id) }} />
             </Tooltip>
-            <Popconfirm title='确定要删除这条回款记录吗？'>
-              <Button type='link' size='small' danger icon={<DeleteOutlined />} />
+            <Popconfirm title='确定要删除这条回款记录吗？' onConfirm={(e) => { e?.stopPropagation(); handlers.onDelete(record.id) }}>
+              <Button type='link' size='small' danger icon={<DeleteOutlined />} onClick={(e) => e.stopPropagation()} />
             </Popconfirm>
           </>
         )}
@@ -187,6 +202,8 @@ const PaymentList: React.FC = () => {
   const [rejectPaymentId, setRejectPaymentId] = useState<number | null>(null)
   const [form] = Form.useForm()
   const [rejectForm] = Form.useForm()
+  const [invoiceOptions, setInvoiceOptions] = useState<InvoiceOption[]>([])
+  const [invoiceLoading, setInvoiceLoading] = useState(false)
 
   // 查询参数
   const [queryParams, setQueryParams] = useState<{
@@ -220,7 +237,7 @@ const PaymentList: React.FC = () => {
   const fetchPayments = async () => {
     setLoading(true)
     try {
-      const params: any = { ...queryParams }
+      const params: Record<string, unknown> = { ...queryParams }
       // 移除空值
       Object.keys(params).forEach((key) => {
         if (params[key] === '') {
@@ -229,7 +246,6 @@ const PaymentList: React.FC = () => {
       })
 
       const res = await getPayments(params)
-      console.log('回款列表API响应:', res)
 
       let paymentData: Payment[] = []
       let totalCount = 0
@@ -247,10 +263,8 @@ const PaymentList: React.FC = () => {
       setPayments(paymentData)
       setTotal(totalCount)
 
-      // 获取统计数据
       fetchStats()
-    } catch (error) {
-      console.error('获取回款列表失败:', error)
+    } catch {
       message.error('获取回款列表失败')
     } finally {
       setLoading(false)
@@ -261,13 +275,46 @@ const PaymentList: React.FC = () => {
   const fetchStats = async () => {
     try {
       const res = await getPaymentStats()
-      console.log('回款统计API响应:', res)
-
       if (res && res.data) {
         setStats(res.data)
       }
     } catch (error) {
-      console.error('获取统计数据失败:', error)
+      // 静默失败
+    }
+  }
+
+  // 获取可选发票列表（已开票/已签收状态）
+  const fetchInvoiceOptions = async () => {
+    setInvoiceLoading(true)
+    try {
+      const [res, res2] = await Promise.all([
+        getInvoices({ page: 1, page_size: 100, status: 'issued' }),
+        getInvoices({ page: 1, page_size: 100, status: 'received' }),
+      ])
+      const invoiceMap = new Map<number, InvoiceOption>()
+      const addInvoices = (r: any) => {
+        if (r?.data) {
+          const list = Array.isArray(r.data) ? r.data : r.pagination ? r.data || [] : []
+          for (const inv of list) {
+            if (!invoiceMap.has(inv.id)) {
+              invoiceMap.set(inv.id, {
+                id: inv.id,
+                invoice_code: inv.invoice_code,
+                client_name: inv.client_name || '-',
+                total_amount: inv.total_amount,
+                remaining_amount: inv.remaining_amount ?? inv.total_amount,
+              })
+            }
+          }
+        }
+      }
+      addInvoices(res)
+      addInvoices(res2)
+      setInvoiceOptions(Array.from(invoiceMap.values()))
+    } catch {
+      // 静默失败
+    } finally {
+      setInvoiceLoading(false)
     }
   }
 
@@ -285,6 +332,7 @@ const PaymentList: React.FC = () => {
       payment_date: dayjs(),
     })
     setModalVisible(true)
+    fetchInvoiceOptions()
   }
 
   // 打开编辑回款弹窗
@@ -402,6 +450,32 @@ const PaymentList: React.FC = () => {
     setQueryParams(resetParams)
   }
 
+  // 导出报表
+  const handleExport = async () => {
+    try {
+      const params: Record<string, unknown> = {
+        status: queryParams.status,
+        date_from: queryParams.date_from,
+        date_to: queryParams.date_to,
+        invoice_id: queryParams.invoice_id,
+      }
+      // 移除空值
+      Object.keys(params).forEach((key) => {
+        if (params[key] === '' || params[key] === undefined) {
+          delete params[key]
+        }
+      })
+
+      await exportCSV(
+        exportPayments(params),
+        `回款报表_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.csv`
+      )
+      message.success('导出成功')
+    } catch (error) {
+      message.error('导出失败')
+    }
+  }
+
   return (
     <div className='payment-list'>
       {/* 统计卡片 */}
@@ -449,23 +523,21 @@ const PaymentList: React.FC = () => {
       {/* 搜索过滤器 */}
       <Card className='search-card'>
         <Space size='middle' wrap>
-          <Select
+          <FilterSelect
             placeholder='筛选状态'
-            style={{ width: 120 }}
             value={searchForm.status || undefined}
-            onChange={(value) => setSearchForm({ ...searchForm, status: value || '' })}
-            allowClear
-            size='large'
-          >
-            <Option value='pending'>待确认</Option>
-            <Option value='confirmed'>已确认</Option>
-            <Option value='rejected'>已拒绝</Option>
-          </Select>
+            onChange={(value) => setSearchForm({ ...searchForm, status: value })}
+            options={[
+              { value: 'pending', label: '待确认' },
+              { value: 'confirmed', label: '已确认' },
+              { value: 'rejected', label: '已拒绝' },
+            ]}
+          />
 
           <RangePicker
             placeholder={['开始日期', '结束日期']}
             value={searchForm.dateRange}
-            onChange={(dates) => setSearchForm({ ...searchForm, dateRange: dates })}
+            onChange={(dates) => setSearchForm({ ...searchForm, dateRange: dates as [dayjs.Dayjs, dayjs.Dayjs] | null })}
             size='large'
           />
 
@@ -475,6 +547,10 @@ const PaymentList: React.FC = () => {
 
           <Button icon={<ReloadOutlined />} onClick={handleReset} size='large'>
             重置筛选
+          </Button>
+
+          <Button icon={<DownloadOutlined />} onClick={handleExport} size='large'>
+            导出
           </Button>
         </Space>
       </Card>
@@ -489,13 +565,19 @@ const PaymentList: React.FC = () => {
         }
       >
         <Table
-          columns={columns.map((col) => ({
+          columns={useMemo(() => createColumns({
+            onView: handleView,
+            onEdit: handleEdit,
+            onConfirm: handleConfirm,
+            onReject: handleOpenRejectModal,
+            onDelete: handleDelete,
+          }).map((col) => ({
             ...col,
-            onCell: (record) => ({
+            onCell: (record: Payment) => ({
               onClick: () => handleView(record),
               style: { cursor: 'pointer' },
             }),
-          }))}
+          })), [handleView])}
           dataSource={payments}
           rowKey='id'
           loading={loading}
@@ -531,11 +613,22 @@ const PaymentList: React.FC = () => {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                label='关联发票ID'
+                label='关联发票'
                 name='invoice_id'
-                rules={[{ required: true, message: '请输入发票ID' }]}
+                rules={[{ required: true, message: '请选择关联发票' }]}
               >
-                <InputNumber placeholder='请输入发票ID' style={{ width: '100%' }} />
+                <Select
+                  showSearch
+                  placeholder='请选择关联发票'
+                  loading={invoiceLoading}
+                  filterOption={(input, option) =>
+                    (option?.label as string ?? '').toLowerCase().includes(input.toLowerCase())
+                  }
+                  options={invoiceOptions.map((inv) => ({
+                    value: inv.id,
+                    label: `${inv.invoice_code} - ${inv.client_name} (¥${inv.remaining_amount.toLocaleString()})`,
+                  }))}
+                />
               </Form.Item>
             </Col>
             <Col span={12}>

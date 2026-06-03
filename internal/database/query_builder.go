@@ -285,11 +285,14 @@ func (qb *QueryBuilder) TransactionalOperation(fn func(*gorm.DB) error) error {
 }
 
 // ExplainQuery 查询计划分析
-func (qb *QueryBuilder) ExplainQuery(query func(*gorm.DB) *gorm.DB) ([]map[string]interface{}, error) {
+// 注意: 此函数已废弃，因为PostgreSQL的EXPLAIN ANALYZE不支持参数占位符
+// 建议直接使用: db.Raw("EXPLAIN (ANALYZE, VERBOSE) SELECT * FROM table WHERE id = $1", value)
+func (qb *QueryBuilder) ExplainQuery(sql string, values ...interface{}) ([]map[string]interface{}, error) {
 	var results []map[string]interface{}
 
-	// 使用EXPLAIN ANALYZE
-	err := query(qb.db.Raw("EXPLAIN ANALYZE ?")).Scan(&results).Error
+	// 使用PostgreSQL兼容的参数占位符格式
+	// 注意: 调用者需要确保SQL中使用$1, $2等占位符，而不是?
+	err := qb.db.WithContext(qb.ctx).Raw("EXPLAIN (ANALYZE, VERBOSE, FORMAT JSON) "+sql, values...).Scan(&results).Error
 	return results, err
 }
 

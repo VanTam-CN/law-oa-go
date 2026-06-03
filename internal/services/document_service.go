@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -134,14 +135,7 @@ func (s *DocumentService) UploadDocument(ctx context.Context, req *DocumentUploa
 		docModel.Name = strings.TrimSuffix(req.File.Filename, filepath.Ext(req.File.Filename))
 	}
 
-	// Parse tags
-	if req.Tags != "" {
-		tagList := strings.Split(req.Tags, ",")
-		for i, tag := range tagList {
-			tagList[i] = strings.TrimSpace(tag)
-		}
-		docModel.Tags = strings.Join(tagList, ",")
-	}
+	docModel.Tags = normalizeDocumentTagsForStorage(req.Tags)
 
 	// Generate unique filename
 	filename := fmt.Sprintf("%d_%s", time.Now().Unix(), req.File.Filename)
@@ -331,9 +325,11 @@ func (s *DocumentService) DownloadDocument(ctx context.Context, id uint) (io.Rea
 func (s *DocumentService) toDocument(model *models.Document) *Document {
 	tags := []string{}
 	if model.Tags != "" {
-		tags = strings.Split(model.Tags, ",")
-		for i, tag := range tags {
-			tags[i] = strings.TrimSpace(tag)
+		if err := json.Unmarshal([]byte(model.Tags), &tags); err != nil {
+			tags = strings.Split(model.Tags, ",")
+			for i, tag := range tags {
+				tags[i] = strings.TrimSpace(tag)
+			}
 		}
 	}
 
@@ -352,6 +348,24 @@ func (s *DocumentService) toDocument(model *models.Document) *Document {
 		CreatedAt:   model.CreatedAt,
 		UpdatedAt:   model.UpdatedAt,
 	}
+}
+
+func normalizeDocumentTagsForStorage(raw string) string {
+	tags := []string{}
+	if raw != "" {
+		for _, tag := range strings.Split(raw, ",") {
+			trimmed := strings.TrimSpace(tag)
+			if trimmed != "" {
+				tags = append(tags, trimmed)
+			}
+		}
+	}
+
+	encoded, err := json.Marshal(tags)
+	if err != nil {
+		return "[]"
+	}
+	return string(encoded)
 }
 
 // saveToFile saves uploaded file to filesystem

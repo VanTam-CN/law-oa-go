@@ -79,3 +79,8 @@ export const clientService = {
   // 获取客户统计
   getClientStats: () => get<ClientStats>('/clients/stats'),
 }
+
+/**
+ * @deprecated 使用 clientService.getClientList 替代
+ */
+export const getClients = (params?: ClientQueryParams) => clientService.getClientList(params || {})

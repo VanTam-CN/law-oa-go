@@ -19,6 +19,7 @@ import {
   FundOutlined,
   ThunderboltOutlined,
   ReloadOutlined,
+  SettingOutlined,
 } from '@ant-design/icons'
 import {
   getFinanceOverview,
@@ -28,6 +29,7 @@ import ContractList from './ContractList'
 import InvoiceList from './InvoiceList'
 import PaymentList from './PaymentList'
 import CommissionReport from './CommissionReport'
+import CommissionRuleList from './CommissionRuleList'
 import './FinanceManagement.less'
 
 const FinanceManagement: React.FC = () => {
@@ -315,6 +317,16 @@ const FinanceManagement: React.FC = () => {
         </span>
       ),
       children: <CommissionReport />,
+    },
+    {
+      key: 'commission-rules',
+      label: (
+        <span>
+          <SettingOutlined />
+          分成规则配置
+        </span>
+      ),
+      children: <CommissionRuleList />,
     },
   ]
 

@@ -1,256 +1,145 @@
 /**
- * E2E测试: 案件管理流程
- * Story 6.2: 关键流程E2E
+ * E2E: 当前 MVP 案件流程.
  */
 
 import { test, expect } from '@playwright/test'
 import {
-  login,
+  seedAuthenticatedUser,
+  waitForAppShell,
+  waitForNativeTable,
   waitForPageLoad,
-  waitForTableLoad,
-  getTableRowCount,
-  waitForModal,
-  closeModal,
-  clickConfirm,
-  fillForm,
-  selectOption,
 } from './utils/test-helpers'
 
-test.describe('案件列表', () => {
+async function fillCaseIntakeBasics(page: any) {
+  await page.locator('.batch-field', { hasText: '案件名称' }).getByRole('textbox').fill('示例科技服务合同纠纷案')
+  await page.locator('.batch-field', { hasText: '案件类型' }).locator('.ant-select-selector').click()
+  await page.getByText('商事诉讼').click()
+  await page.locator('article', { hasText: '我方当事人' }).locator('.ant-select-selector').click()
+  await page.getByText('上海示例科技有限公司').click()
+  await page.locator('article', { hasText: '对方当事人' }).getByRole('textbox').fill('上海华信建设集团有限公司')
+  await page.locator('.batch-wide-label', { hasText: '案情摘要' }).getByRole('textbox').fill('客户拟就服务合同争议提起诉讼。')
+  await page.locator('.batch-intake-aside').locator('.ant-select-selector').click()
+  await page.getByText('张律师 · 争议解决部').click()
+}
+
+test.describe('案件管理', () => {
   test.beforeEach(async ({ page }) => {
-    await login(page, 'admin', 'admin123')
-    await page.goto('/cases')
+    await seedAuthenticatedUser(page, 'lawyer')
+    await page.goto('/case')
     await waitForPageLoad(page)
   })
 
-  test('应该显示案件列表页面', async ({ page }) => {
-    // 验证页面标题
-    await expect(page.locator('h1, .ant-page-header-heading-title')).toContainText('案件')
-
-    // 验证表格存在
-    await expect(page.locator('.ant-table')).toBeVisible()
+  test('应该显示案件管理页和数据库案件清单', async ({ page }) => {
+    await waitForAppShell(page)
+    await expect(page.getByRole('heading', { name: '案件管理' })).toBeVisible()
+    await waitForNativeTable(page)
+    await expect(page.getByText('HD-2026-001')).toBeVisible()
+    await expect(page.getByRole('cell', { name: '红杉资本投资管理咨询合同纠纷案' })).toBeVisible()
   })
 
   test('应该能搜索案件', async ({ page }) => {
-    // 等待表格加载
-    await waitForTableLoad(page)
+    await page.getByPlaceholder('搜索案件编号、客户、对方、负责人...').fill('蓝海')
 
-    // 输入搜索关键词
-    await page.fill('input[placeholder*="搜索"], input[placeholder*="案件"]', '测试案件')
-    await page.press('input[placeholder*="搜索"], input[placeholder*="案件"]', 'Enter')
-
-    // 等待搜索结果
-    await page.waitForTimeout(1000)
-
-    // 验证搜索结果
-    const rows = await getTableRowCount(page)
-    expect(rows).toBeGreaterThanOrEqual(0)
+    await expect(page.getByRole('cell', { name: '蓝海公司股权转让争议' })).toBeVisible()
+    await expect(page.getByRole('cell', { name: '红杉资本投资管理咨询合同纠纷案' })).not.toBeVisible()
   })
 
-  test('应该能筛选案件状态', async ({ page }) => {
-    await waitForTableLoad(page)
+  test('应该能按状态筛选案件', async ({ page }) => {
+    await page.getByRole('button', { name: '审批中' }).click()
 
-    // 点击状态筛选
-    await page.click('.ant-select:has-text("状态") .ant-select-selector')
-
-    // 选择状态
-    await page.click('.ant-select-dropdown:visible .ant-select-item:has-text("进行中")')
-
-    // 等待筛选结果
-    await page.waitForTimeout(1000)
-
-    // 验证表格已更新
-    await expect(page.locator('.ant-table')).toBeVisible()
+    await expect(page.getByRole('cell', { name: '蓝海公司股权转让争议' })).toBeVisible()
+    await expect(page.getByRole('cell', { name: '红杉资本投资管理咨询合同纠纷案' })).not.toBeVisible()
   })
 
-  test('应该能分页浏览案件', async ({ page }) => {
-    await waitForTableLoad(page)
+  test('点击新建案件应该进入立案工作台', async ({ page }) => {
+    await page.getByRole('button', { name: '新建案件' }).click()
 
-    // 检查分页器
-    const paginator = page.locator('.ant-pagination')
-    const hasNext = await paginator.locator('.ant-pagination-next:not(.ant-pagination-disabled)').isVisible()
-
-    if (hasNext) {
-      // 点击下一页
-      await paginator.locator('.ant-pagination-next').click()
-      await page.waitForTimeout(1000)
-
-      // 验证URL或页面内容变化
-      await expect(page.locator('.ant-table')).toBeVisible()
-    }
-  })
-})
-
-test.describe('创建案件', () => {
-  test.beforeEach(async ({ page }) => {
-    await login(page, 'admin', 'admin123')
-    await page.goto('/cases')
-    await waitForPageLoad(page)
+    await expect(page).toHaveURL(/\/case\/create$/)
+    await expect(page.getByRole('heading', { name: '新建案件立案工作台' })).toBeVisible()
   })
 
-  test('应该能打开创建案件弹窗', async ({ page }) => {
-    // 点击新建按钮
-    await page.click('button:has-text("新建"), button:has-text("创建案件")')
+  test('应该能从列表进入案件详情', async ({ page }) => {
+    await page.locator('tr', { hasText: 'HD-2026-001' }).getByRole('button', { name: /查\s*看/ }).click()
 
-    // 等待弹窗出现
-    await waitForModal(page)
-
-    // 验证弹窗标题
-    await expect(page.locator('.ant-modal-title')).toContainText(/案件|创建/)
+    await expect(page).toHaveURL(/\/case\/101$/)
+    await expect(page.getByRole('heading', { name: '红杉资本投资管理咨询合同纠纷案' })).toBeVisible()
   })
 
-  test('应该能填写案件表单', async ({ page }) => {
-    // 打开创建弹窗
-    await page.click('button:has-text("新建"), button:has-text("创建案件")')
-    await waitForModal(page)
+  test('待处理案件详情应提供本案冲突复核下一步', async ({ page }) => {
+    await page.locator('tr', { hasText: 'CASE-20260513173242' }).getByRole('button', { name: /查\s*看/ }).click()
 
-    // 填写基本信息
-    await page.fill('input[placeholder*="案件名称"], input[name="caseName"]', 'E2E测试案件')
-    await page.fill('input[placeholder*="案件编号"], input[name="caseNo"]', 'E2E-001')
+    await expect(page).toHaveURL(/\/case\/103$/)
+    await expect(page.getByRole('heading', { name: '待处理冲突复核测试案件' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '下一步操作' })).toBeVisible()
+    await page.getByRole('button', { name: '进入本案冲突复核' }).click()
 
-    // 选择案件类型
-    const typeSelect = page.locator('.ant-form-item:has-text("类型") .ant-select-selector')
-    if (await typeSelect.isVisible()) {
-      await typeSelect.click()
-      await page.click('.ant-select-dropdown:visible .ant-select-item:first-child')
-    }
+    await expect(page).toHaveURL(/\/conflict\?.*case_number=CASE-20260513173242/)
+    await expect(page.getByRole('heading', { name: '本案复核上下文' })).toBeVisible()
+    await expect(page.getByText(/已匹配到本案冲突检测记录/)).toBeVisible()
+    await expect(page.getByText('CASE-20260513173242 待处理冲突复核测试案件')).toBeVisible()
+    await expect(page.getByRole('heading', { name: '检测任务清单' })).toBeVisible()
+    await expect(page.getByRole('dialog', { name: '冲突检测详情' })).not.toBeVisible()
 
-    // 验证表单已填写
-    await expect(page.locator('input[value="E2E测试案件"], input[value*="E2E"]')).toBeVisible()
-  })
-
-  test('必填字段验证', async ({ page }) => {
-    // 打开创建弹窗
-    await page.click('button:has-text("新建"), button:has-text("创建案件")')
-    await waitForModal(page)
-
-    // 直接点击提交，不填任何内容
-    await page.click('.ant-modal button:has-text("确定"), .ant-modal button:has-text("提交")')
-
-    // 应该显示验证错误
-    await expect(page.locator('.ant-form-item-explain-error')).toBeVisible()
-  })
-
-  test('应该能成功创建案件', async ({ page }) => {
-    // 打开创建弹窗
-    await page.click('button:has-text("新建"), button:has-text("创建案件")')
-    await waitForModal(page)
-
-    // 填写完整表单
-    await page.fill('input[placeholder*="案件名称"], input[name="caseName"]', 'E2E自动化测试案件')
-    await page.fill('input[placeholder*="案件编号"], input[name="caseNo"]', `AUTO-${Date.now()}`)
-
-    // 选择类型
-    const typeSelect = page.locator('.ant-form-item:has-text("类型") .ant-select-selector')
-    if (await typeSelect.isVisible()) {
-      await typeSelect.click()
-      await page.click('.ant-select-dropdown:visible .ant-select-item:first-child')
-    }
-
-    // 提交表单
-    await page.click('.ant-modal button:has-text("确定"), .ant-modal button:has-text("提交")')
-
-    // 等待成功提示
-    await expect(page.locator('.ant-message')).toBeVisible({ timeout: 10000 })
-
-    // 弹窗应该关闭
-    await expect(page.locator('.ant-modal-content')).not.toBeVisible({ timeout: 5000 })
+    await page.getByRole('button', { name: '查看本案检测结果' }).click()
+    await expect(page.getByRole('dialog', { name: '冲突检测详情' })).toBeVisible()
+    await expect(page.getByText('关联主体历史委托')).toBeVisible()
   })
 })
 
-test.describe('案件详情', () => {
+test.describe('新建立案工作台', () => {
   test.beforeEach(async ({ page }) => {
-    await login(page, 'admin', 'admin123')
-    await page.goto('/cases')
-    await waitForPageLoad(page)
-    await waitForTableLoad(page)
-  })
-
-  test('应该能查看案件详情', async ({ page }) => {
-    // 点击第一个案件的查看按钮
-    const viewButton = page.locator('.ant-table-tbody tr:first-child button:has-text("查看")')
-
-    if (await viewButton.isVisible()) {
-      await viewButton.click()
-
-      // 等待跳转到详情页或弹窗
-      await page.waitForTimeout(1000)
-
-      // 验证详情内容
-      const detailContent = page.locator('.ant-descriptions, .case-detail, .ant-drawer-content')
-      await expect(detailContent).toBeVisible()
-    } else {
-      // 跳过测试如果没有数据
-      test.skip()
-    }
-  })
-
-  test('应该能编辑案件', async ({ page }) => {
-    // 点击第一个案件的编辑按钮
-    const editButton = page.locator('.ant-table-tbody tr:first-child button:has-text("编辑")')
-
-    if (await editButton.isVisible()) {
-      await editButton.click()
-      await waitForModal(page)
-
-      // 修改案件名称
-      const nameInput = page.locator('input[placeholder*="案件名称"], input[name="caseName"]')
-      await nameInput.fill('修改后的案件名称')
-
-      // 保存
-      await page.click('.ant-modal button:has-text("确定"), .ant-modal button:has-text("保存")')
-
-      // 等待成功提示
-      await expect(page.locator('.ant-message')).toBeVisible({ timeout: 5000 })
-    } else {
-      test.skip()
-    }
-  })
-})
-
-test.describe('案件删除', () => {
-  test.beforeEach(async ({ page }) => {
-    await login(page, 'admin', 'admin123')
-    await page.goto('/cases')
+    await seedAuthenticatedUser(page, 'lawyer')
+    await page.goto('/case/create')
     await waitForPageLoad(page)
   })
 
-  test('删除应该需要确认', async ({ page }) => {
-    await waitForTableLoad(page)
-
-    // 点击删除按钮
-    const deleteButton = page.locator('.ant-table-tbody tr:first-child button:has-text("删除")')
-
-    if (await deleteButton.isVisible()) {
-      await deleteButton.click()
-
-      // 应该出现确认弹窗
-      await expect(page.locator('.ant-popconfirm, .ant-modal-confirm')).toBeVisible()
-    } else {
-      test.skip()
-    }
+  test('应该显示五步立案流程', async ({ page }) => {
+    await waitForAppShell(page)
+    await expect(page.getByRole('heading', { name: '新建案件立案工作台' })).toBeVisible()
+    const stepper = page.locator('.batch-stepper')
+    await expect(stepper.getByRole('button', { name: /基本信息/ })).toBeVisible()
+    await expect(stepper.getByRole('button', { name: /利益冲突检查/ })).toBeVisible()
+    await expect(stepper.getByRole('button', { name: /团队与费用/ })).toBeVisible()
+    await expect(stepper.getByRole('button', { name: /文档与材料/ })).toBeVisible()
+    await expect(stepper.getByRole('button', { name: /立案提交/ })).toBeVisible()
   })
 
-  test('取消删除不应该删除数据', async ({ page }) => {
-    await waitForTableLoad(page)
+  test('初始新建页不应该预填样例案件数据', async ({ page }) => {
+    await waitForAppShell(page)
+    await expect(page.getByText('红杉资本投资管理咨询合同纠纷案')).toHaveCount(0)
+    await expect(page.locator('.batch-field', { hasText: '案件名称' }).getByRole('textbox')).toHaveValue('')
+  })
 
-    const rowsBefore = await getTableRowCount(page)
+  test('应该能暂存接案草稿', async ({ page }) => {
+    await fillCaseIntakeBasics(page)
+    await page.getByRole('button', { name: /暂\s*存/ }).click()
 
-    const deleteButton = page.locator('.ant-table-tbody tr:first-child button:has-text("删除")')
+    await expect(page.locator('.ant-message')).toContainText('接案草稿已创建')
+  })
 
-    if (await deleteButton.isVisible()) {
-      await deleteButton.click()
+  test('应该能运行利益冲突检查并进入团队与费用', async ({ page }) => {
+    await fillCaseIntakeBasics(page)
+    await page.locator('.batch-stepper').getByRole('button', { name: /利益冲突检查/ }).click()
+    await page.getByRole('button', { name: '运行利益冲突检查' }).click()
 
-      // 点击取消
-      await page.click('.ant-popconfirm button:has-text("取消"), .ant-modal-confirm button:has-text("取消")')
+    await expect(page.locator('.ant-message')).toContainText('利益冲突检查已完成')
+    await expect(page.getByRole('button', { name: '进入团队与费用' })).toBeEnabled()
+    await page.getByRole('button', { name: '进入团队与费用' }).click()
+    await expect(page.getByText('负责律师 *')).toBeVisible()
+  })
 
-      await page.waitForTimeout(500)
+  test('文档材料归档入口不应该中断当前立案流程', async ({ page }) => {
+    await page.locator('.batch-stepper').getByRole('button', { name: /文档与材料/ }).click()
+    await page.getByRole('button', { name: '打开文件材料归档' }).click()
 
-      // 行数应该不变
-      const rowsAfter = await getTableRowCount(page)
-      expect(rowsAfter).toBe(rowsBefore)
-    } else {
-      test.skip()
-    }
+    await expect(page).toHaveURL(/\/case\/create$/)
+    await expect(page.getByText('文件材料归档暂未开放')).toBeVisible()
+  })
+
+  test('提交审批后应该进入审批详情页', async ({ page }) => {
+    await fillCaseIntakeBasics(page)
+    await page.getByRole('button', { name: '提交审批并等待成案' }).first().click()
+
+    await expect(page).toHaveURL(/\/approval\/701$/, { timeout: 10000 })
   })
 })

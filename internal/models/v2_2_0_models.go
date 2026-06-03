@@ -357,6 +357,10 @@ type Contract struct {
 	// 签署信息
 	SignedAt    *time.Time `json:"signed_at" gorm:"comment:签署日期"`
 	DocumentID  *uint      `json:"document_id" gorm:"comment:合同文档ID"`
+
+	// GORM 关联（不存数据库）
+	Case   *Case   `json:"case,omitempty" gorm:"foreignKey:CaseID"`
+	Client *Client `json:"client,omitempty" gorm:"foreignKey:ClientID"`
 }
 
 func (Contract) TableName() string {
@@ -380,6 +384,9 @@ type PaymentMilestone struct {
 	Status      string    `json:"status" gorm:"size:20;default:'pending';index:idx_status;comment:状态: pending/billed/paid/overdue"`
 	InvoiceID   *uint     `json:"invoice_id" gorm:"index:idx_invoice;comment:关联发票ID"`
 	PaidAmount  float64   `json:"paid_amount" gorm:"type:decimal(15,2);default:0;comment:已付金额"`
+
+	// GORM 关联
+	Contract *Contract `json:"contract,omitempty" gorm:"foreignKey:ContractID"`
 }
 
 func (PaymentMilestone) TableName() string {
@@ -434,6 +441,10 @@ type Invoice struct {
 	CreatedBy   uint      `json:"created_by" gorm:"not null;comment:创建者ID"`
 	SubmittedBy *uint     `json:"submitted_by" gorm:"comment:提交者ID"`
 	ApprovedBy  *uint     `json:"approved_by" gorm:"comment:审批人ID"`
+
+	// GORM 关联
+	Client   *Client   `json:"client,omitempty" gorm:"foreignKey:ClientID"`
+	Contract *Contract `json:"contract,omitempty" gorm:"foreignKey:ContractID"`
 }
 
 func (Invoice) TableName() string {
@@ -466,6 +477,9 @@ type Payment struct {
 	Status       string   `json:"status" gorm:"size:20;default:'confirmed';index:idx_status;comment:状态: pending/confirmed/rejected"`
 
 	Remark       string   `json:"remark" gorm:"type:text;comment:备注"`
+
+	// GORM 关联
+	Invoice *Invoice `json:"invoice,omitempty" gorm:"foreignKey:InvoiceID"`
 }
 
 func (Payment) TableName() string {
@@ -499,6 +513,9 @@ type BadDebtRecord struct {
 
 	// 附件
 	AttachmentIDs JSON     `json:"attachment_ids" gorm:"type:json;comment:证明材料ID列表"`
+
+	// GORM 关联
+	Contract *Contract `json:"contract,omitempty" gorm:"foreignKey:ContractID"`
 }
 
 func (BadDebtRecord) TableName() string {
@@ -536,10 +553,36 @@ type CommissionRecord struct {
 	// 支付信息
 	PaidDate        *time.Time `json:"paid_date" gorm:"comment:支付日期"`
 	PaymentVoucher  string    `json:"payment_voucher" gorm:"size:100;comment:支付凭证号"`
+
+	// GORM 关联
+	Contract *Contract `json:"contract,omitempty" gorm:"foreignKey:ContractID"`
+	Payment  *Payment  `json:"payment,omitempty" gorm:"foreignKey:PaymentID"`
+	Case     *Case     `json:"case,omitempty" gorm:"foreignKey:CaseID"`
 }
 
 func (CommissionRecord) TableName() string {
 	return "commission_records"
+}
+
+// CommissionRule 分成规则
+type CommissionRule struct {
+	ID              uint    `json:"id" gorm:"primaryKey"`
+	Name            string  `json:"name" gorm:"size:100;not null;comment:规则名称"`
+	Role            string  `json:"role" gorm:"size:50;not null;comment:适用角色(source/lawyer/assistant)"`
+	MinAmount       float64 `json:"min_amount" gorm:"type:decimal(15,2);default:0;comment:最小金额"`
+	MaxAmount       float64 `json:"max_amount" gorm:"type:decimal(15,2);default:0;comment:最大金额(0=不限)"`
+	BaseRate        float64 `json:"base_rate" gorm:"type:decimal(5,2);not null;comment:基础提成比例(%)"`
+	PerformanceRate float64 `json:"performance_rate" gorm:"type:decimal(5,2);default:0;comment:绩效提成比例(%)"`
+	Priority        int     `json:"priority" gorm:"default:0;comment:优先级(越大越优先)"`
+	Active          bool    `json:"active" gorm:"default:true;comment:是否启用"`
+	EffectiveDate   *string    `json:"effective_date" gorm:"comment:生效日期"`
+	ExpiryDate      *string    `json:"expiry_date" gorm:"comment:失效日期"`
+	CreatedAt       time.Time  `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt       time.Time  `json:"updated_at" gorm:"autoUpdateTime"`
+}
+
+func (CommissionRule) TableName() string {
+	return "commission_rules"
 }
 
 // ============================================================================

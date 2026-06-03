@@ -106,7 +106,7 @@ type ListPaymentsResponse struct {
 }
 
 // CreatePayment 创建回款记录
-func (s *PaymentService) CreatePayment(ctx context.Context, req *CreatePaymentRequest, confirmedBy uint) (*PaymentResponse, error) {
+func (s *PaymentService) CreatePayment(ctx context.Context, req *CreatePaymentRequest) (*PaymentResponse, error) {
 	// 验证发票是否存在
 	invoice, err := s.invoiceRepo.FindByID(ctx, req.InvoiceID)
 	if err != nil {
@@ -152,43 +152,12 @@ func (s *PaymentService) CreatePayment(ctx context.Context, req *CreatePaymentRe
 		PayerName:     req.PayerName,
 		PayerAccount:  req.PayerAccount,
 		AttachmentID:  req.AttachmentID,
-		ConfirmedBy:   confirmedBy,
 		Remark:        req.Remark,
-		Status:        "confirmed",
+		Status:        "pending",
 	}
-
-	now := time.Now()
-	payment.ConfirmedAt = &now
 
 	if err := s.paymentRepo.Create(ctx, payment); err != nil {
 		return nil, fmt.Errorf("创建回款记录失败: %w", err)
-	}
-
-	// 更新付款计划状态
-	if invoice.MilestoneID != nil {
-		// 获取付款计划
-		milestone, _ := s.milestoneRepo.FindByID(ctx, *invoice.MilestoneID)
-		if milestone != nil {
-			// 更新已付金额
-			milestone.PaidAmount += req.Amount
-
-			// 判断是否已付清
-			payments, _ := s.paymentRepo.GetByInvoiceID(ctx, req.InvoiceID)
-			var totalPaidAmount float64
-			for _, p := range payments {
-				if p.Status == "confirmed" {
-					totalPaidAmount += p.Amount
-				}
-			}
-
-			if totalPaidAmount >= milestone.Amount {
-				milestone.Status = "paid"
-			} else if totalPaidAmount > 0 {
-				milestone.Status = "partial_paid"
-			}
-
-			s.milestoneRepo.Update(ctx, milestone)
-		}
 	}
 
 	return s.GetPaymentByID(ctx, payment.ID)
@@ -437,30 +406,25 @@ func (s *PaymentService) convertToResponse(ctx context.Context, payment *models.
 
 // GetPaymentStats 获取回款统计信息
 func (s *PaymentService) GetPaymentStats(ctx context.Context) (*PaymentStats, error) {
-	var stats PaymentStats
+	now := time.Now()
+	currentMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+	nextMonth := currentMonth.AddDate(0, 1, 0)
 
-	// 获取所有回款记录进行统计
-	payments, total, err := s.paymentRepo.List(ctx, &repositories.PaymentListParams{
-		Page:     1,
-		PageSize: 10000, // 获取所有记录进行统计
-	})
+	total, pendingCount, confirmedCount, rejectedCount, totalAmount, monthAmount, pendingAmount, err :=
+		s.paymentRepo.GetPaymentAggregation(ctx, currentMonth.Format("2006-01-02"), nextMonth.Format("2006-01-02"))
 	if err != nil {
-		return nil, fmt.Errorf("查询回款列表失败: %w", err)
+		return nil, fmt.Errorf("查询回款统计失败: %w", err)
 	}
 
-	stats.TotalPayments = total
-
-	for _, payment := range payments {
-		// 按状态统计
-		switch payment.Status {
-		case "pending":
-			stats.PendingPayments++
-		case "confirmed":
-			stats.ConfirmedPayments++
-		}
-	}
-
-	return &stats, nil
+	return &PaymentStats{
+		TotalPayments:      total,
+		PendingPayments:    pendingCount,
+		ConfirmedPayments:  confirmedCount,
+		RejectedPayments:   rejectedCount,
+		TotalPaymentAmount: totalAmount,
+		MonthPaymentAmount: monthAmount,
+		PendingAmount:      pendingAmount,
+	}, nil
 }
 
 // PaymentStats 回款统计信息

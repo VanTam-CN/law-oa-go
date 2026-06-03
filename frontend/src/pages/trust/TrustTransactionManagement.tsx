@@ -17,12 +17,15 @@ import {
   message,
   Modal,
   Descriptions,
+  Form,
   Input,
+  InputNumber,
   Select,
   Row,
   Col,
   Popconfirm,
   Badge,
+  Tooltip,
 } from 'antd'
 import {
   PlusOutlined,
@@ -30,14 +33,13 @@ import {
   CheckOutlined,
   CloseOutlined,
   ReloadOutlined,
-  SearchOutlined,
   FilterOutlined,
   TransactionOutlined,
 } from '@ant-design/icons'
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table'
 import {
   getTrustTransactions,
-  getTrustTransaction,
+  createTrustTransaction,
   approveTrustTransaction,
   rejectTrustTransaction,
   type TrustTransaction,
@@ -47,14 +49,19 @@ import {
   transactionStatusMap,
   formatAmount,
   formatDate,
+  currencySymbolMap,
 } from '@/services/trust'
 import { getTrustAccounts } from '@/services/trust'
-import type { TrustAccount, Currency } from '@/services/trust'
+import type { TrustAccount } from '@/services/trust'
 import './TrustTransactionManagement.less'
 
 const { Option } = Select
 
 const TrustTransactionManagement: React.FC = () => {
+  const [createForm] = Form.useForm()
+  const createTransactionType = Form.useWatch('transaction_type', createForm)
+  const needsRecipient = ['deposit_refund', 'withdraw', 'transfer'].includes(createTransactionType)
+
   // 状态管理
   const [loading, setLoading] = useState(false)
   const [transactions, setTransactions] = useState<TrustTransaction[]>([])
@@ -78,6 +85,7 @@ const TrustTransactionManagement: React.FC = () => {
 
   // 创建交易弹窗
   const [createModalVisible, setCreateModalVisible] = useState(false)
+  const [createSubmitting, setCreateSubmitting] = useState(false)
 
   // 加载账户列表
   const loadAccounts = async () => {
@@ -174,6 +182,37 @@ const TrustTransactionManagement: React.FC = () => {
     loadTransactions(pagination.current, pagination.pageSize)
   }
 
+  const handleCreateTransaction = async () => {
+    try {
+      const values = await createForm.validateFields()
+      setCreateSubmitting(true)
+      const res = await createTrustTransaction({
+        account_id: values.account_id,
+        transaction_type: values.transaction_type,
+        amount: Number(values.amount),
+        description: values.description,
+        purpose_code: values.purpose_code,
+        recipient_name: values.recipient_name,
+        recipient_bank_account: values.recipient_bank_account,
+        recipient_bank_name: values.recipient_bank_name,
+      })
+
+      if (res?.data) {
+        message.success('交易已创建，等待审批')
+        setCreateModalVisible(false)
+        createForm.resetFields()
+        loadTransactions(1, pagination.pageSize)
+        loadAccounts()
+      }
+    } catch (error: any) {
+      if (!error?.errorFields) {
+        message.error(error?.response?.data?.message || error?.message || '创建交易失败')
+      }
+    } finally {
+      setCreateSubmitting(false)
+    }
+  }
+
   // 初始化
   useEffect(() => {
     loadAccounts()
@@ -206,7 +245,7 @@ const TrustTransactionManagement: React.FC = () => {
       dataIndex: 'transaction_type',
       key: 'transaction_type',
       width: 100,
-      render: (type) => {
+      render: (type: TrustTransaction['transaction_type']) => {
         const config = transactionTypeMap[type]
         return (
           <Tag color={config.color}>
@@ -221,9 +260,9 @@ const TrustTransactionManagement: React.FC = () => {
       key: 'amount',
       width: 150,
       render: (amount, record) => {
-        const isInflow = ['deposit', 'transfer_in', 'unfreeze'].includes(record.transaction_type)
+        const isInflow = record.transaction_type === 'deposit'
         const currency = accounts.find((a) => a.id === record.account_id)?.currency || 'CNY'
-        const symbol = { CNY: '¥', USD: '$', EUR: '€', HKD: 'HK$' }[currency] || '¥'
+        const symbol = currencySymbolMap[currency] || '¥'
         return (
           <span style={{ color: isInflow ? '#3f8600' : '#cf1322', fontWeight: 600 }}>
             {isInflow ? '+' : '-'}
@@ -248,7 +287,7 @@ const TrustTransactionManagement: React.FC = () => {
       dataIndex: 'status',
       key: 'status',
       width: 100,
-      render: (status) => {
+      render: (status: TrustTransaction['status']) => {
         const config = transactionStatusMap[status]
         return <Badge status={config.color as any} text={config.text} />
       },
@@ -332,7 +371,11 @@ const TrustTransactionManagement: React.FC = () => {
             <Button icon={<ReloadOutlined />} onClick={handleRefresh}>
               刷新
             </Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateModalVisible(true)}>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setCreateModalVisible(true)}
+            >
               创建交易
             </Button>
           </Space>
@@ -350,7 +393,7 @@ const TrustTransactionManagement: React.FC = () => {
                 style={{ width: '100%' }}
                 showSearch
                 filterOption={(input, option) =>
-                  (option?.children as string)?.toLowerCase().includes(input.toLowerCase())
+                  String(option?.children ?? '').toLowerCase().includes(input.toLowerCase())
                 }
               >
                 {accounts.map((account) => (
@@ -370,10 +413,8 @@ const TrustTransactionManagement: React.FC = () => {
               >
                 <Option value="deposit">存入</Option>
                 <Option value="withdraw">支取</Option>
-                <Option value="transfer_in">转入</Option>
-                <Option value="transfer_out">转出</Option>
-                <Option value="freeze">冻结</Option>
-                <Option value="unfreeze">解冻</Option>
+                <Option value="deposit_refund">退回存入</Option>
+                <Option value="transfer">转账</Option>
               </Select>
             </Col>
             <Col span={4}>
@@ -385,9 +426,8 @@ const TrustTransactionManagement: React.FC = () => {
                 style={{ width: '100%' }}
               >
                 <Option value="pending">待审批</Option>
-                <Option value="approved">已审批</Option>
-                <Option value="rejected">已拒绝</Option>
                 <Option value="completed">已完成</Option>
+                <Option value="cancelled">已取消</Option>
               </Select>
             </Col>
             <Col span={10}>
@@ -475,11 +515,10 @@ const TrustTransactionManagement: React.FC = () => {
             <Descriptions.Item label="金额">
               <span style={{ fontWeight: 600, fontSize: 16 }}>
                 {(() => {
-                  const isInflow = ['deposit', 'transfer_in', 'unfreeze'].includes(
-                    selectedTransaction.transaction_type
-                  )
-                  const currency = accounts.find((a) => a.id === selectedTransaction.account_id)?.currency || 'CNY'
-                  const symbol = { CNY: '¥', USD: '$', EUR: '€', HKD: 'HK$' }[currency] || '¥'
+                  const isInflow = selectedTransaction.transaction_type === 'deposit'
+                  const currency =
+                    accounts.find((a) => a.id === selectedTransaction.account_id)?.currency || 'CNY'
+                  const symbol = currencySymbolMap[currency] || '¥'
                   return (
                     <span style={{ color: isInflow ? '#3f8600' : '#cf1322' }}>
                       {isInflow ? '+' : '-'}
@@ -495,7 +534,8 @@ const TrustTransactionManagement: React.FC = () => {
             </Descriptions.Item>
             <Descriptions.Item label="余额后">
               {(() => {
-                const currency = accounts.find((a) => a.id === selectedTransaction.account_id)?.currency || 'CNY'
+                const currency =
+                  accounts.find((a) => a.id === selectedTransaction.account_id)?.currency || 'CNY'
                 return formatAmount(selectedTransaction.balance_after, currency)
               })()}
             </Descriptions.Item>
@@ -522,9 +562,24 @@ const TrustTransactionManagement: React.FC = () => {
             <Descriptions.Item label="说明" span={2}>
               {selectedTransaction.description}
             </Descriptions.Item>
-            {selectedTransaction.reference_no && (
-              <Descriptions.Item label="关联单号" span={2}>
-                <code>{selectedTransaction.reference_no}</code>
+            {selectedTransaction.purpose_code && (
+              <Descriptions.Item label="用途代码">
+                {selectedTransaction.purpose_code}
+              </Descriptions.Item>
+            )}
+            {selectedTransaction.recipient_name && (
+              <Descriptions.Item label="收款方">
+                {selectedTransaction.recipient_name}
+              </Descriptions.Item>
+            )}
+            {selectedTransaction.recipient_bank_name && (
+              <Descriptions.Item label="收款银行">
+                {selectedTransaction.recipient_bank_name}
+              </Descriptions.Item>
+            )}
+            {selectedTransaction.recipient_bank_account && (
+              <Descriptions.Item label="收款账号">
+                <code>{selectedTransaction.recipient_bank_account}</code>
               </Descriptions.Item>
             )}
           </Descriptions>
@@ -535,17 +590,109 @@ const TrustTransactionManagement: React.FC = () => {
       <Modal
         title="创建代管款交易"
         open={createModalVisible}
-        onCancel={() => setCreateModalVisible(false)}
+        onCancel={() => {
+          setCreateModalVisible(false)
+          createForm.resetFields()
+        }}
+        confirmLoading={createSubmitting}
         footer={[
-          <Button key="cancel" onClick={() => setCreateModalVisible(false)}>
+          <Button
+            key="cancel"
+            onClick={() => {
+              setCreateModalVisible(false)
+              createForm.resetFields()
+            }}
+          >
             取消
           </Button>,
-          <Button key="submit" type="primary" onClick={() => setCreateModalVisible(false)}>
+          <Button key="submit" type="primary" loading={createSubmitting} onClick={handleCreateTransaction}>
             创建
           </Button>,
         ]}
       >
-        <p>创建交易功能待实现，请先选择账户和交易类型</p>
+        <Form
+          form={createForm}
+          layout="vertical"
+          initialValues={{ transaction_type: 'deposit', purpose_code: 'case_fee' }}
+        >
+          <Form.Item
+            label="代管款账户"
+            name="account_id"
+            rules={[{ required: true, message: '请选择账户' }]}
+          >
+            <Select
+              showSearch
+              placeholder="选择账户"
+              optionFilterProp="label"
+              options={accounts
+                .filter((account) => account.status === 'active')
+                .map((account) => ({
+                  label: `${account.account_code} - ${account.client_name || `客户${account.client_id}`}`,
+                  value: account.id,
+                }))}
+            />
+          </Form.Item>
+          <Row gutter={12}>
+            <Col span={12}>
+              <Form.Item
+                label="交易类型"
+                name="transaction_type"
+                rules={[{ required: true, message: '请选择交易类型' }]}
+              >
+                <Select>
+                  <Option value="deposit">存入</Option>
+                  <Option value="deposit_refund">退回存入</Option>
+                  <Option value="withdraw">支取</Option>
+                  <Option value="transfer">转账</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="金额"
+                name="amount"
+                rules={[{ required: true, message: '请输入交易金额' }]}
+              >
+                <InputNumber min={0.01} precision={2} style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Form.Item label="用途代码" name="purpose_code">
+            <Select>
+              <Option value="case_fee">案件费用</Option>
+              <Option value="court_fee">诉讼费</Option>
+              <Option value="evidence_fee">调查取证费</Option>
+              <Option value="settlement">和解款</Option>
+              <Option value="other">其他</Option>
+            </Select>
+          </Form.Item>
+          {needsRecipient && (
+            <Row gutter={12}>
+              <Col span={8}>
+                <Form.Item label="收款方" name="recipient_name">
+                  <Input maxLength={200} />
+                </Form.Item>
+              </Col>
+              <Col span={8}>
+                <Form.Item label="收款银行" name="recipient_bank_name">
+                  <Input maxLength={100} />
+                </Form.Item>
+              </Col>
+              <Col span={8}>
+                <Form.Item label="收款账号" name="recipient_bank_account">
+                  <Input maxLength={50} />
+                </Form.Item>
+              </Col>
+            </Row>
+          )}
+          <Form.Item
+            label="交易说明"
+            name="description"
+            rules={[{ required: true, message: '请输入交易说明' }]}
+          >
+            <Input.TextArea rows={3} maxLength={500} showCount />
+          </Form.Item>
+        </Form>
       </Modal>
     </div>
   )

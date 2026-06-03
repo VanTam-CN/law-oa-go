@@ -1,0 +1,193 @@
+/* =============================================================================
+   增强版冲突检查页面样式
+   ============================================================================= */
+
+.conflict-check-enhanced-container {
+  padding: 20px;
+  background: #f5f7fa;
+  min-height: 100vh;
+
+  .page-header {
+    margin-bottom: 20px;
+
+    .ant-breadcrumb {
+      margin-bottom: 12px;
+      font-size: 13px;
+
+      .anticon {
+        color: var(--color-primary, #1E5A8D);
+      }
+    }
+
+    h2 {
+      margin: 0 0 8px 0;
+      font-size: 24px;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    .page-description {
+      margin: 0;
+      color: #666;
+      font-size: 14px;
+    }
+  }
+
+  .check-form-card {
+    .ant-card-head {
+      border-radius: var(--radius-md, 8px) var(--radius-md, 8px) 0 0;
+      background: linear-gradient(135deg, #1E5A8D 0%, #163C5D 100%);
+      border: none;
+
+      .ant-card-head-title {
+        color: #ffffff;
+        font-size: 16px;
+        font-weight: 600;
+      }
+
+      .anticon {
+        color: #ffffff;
+        font-size: 18px;
+      }
+    }
+
+    .ant-card-body {
+      padding: 20px;
+    }
+
+    .ant-form {
+      .ant-divider-inner-text {
+        font-weight: 600;
+        color: var(--color-primary, #1E5A8D);
+        font-size: 14px;
+      }
+
+      .ant-divider {
+        margin: 16px 0;
+      }
+
+      .ant-form-item {
+        margin-bottom: 16px;
+
+        > label {
+          font-weight: 500;
+          color: #374151;
+        }
+      }
+
+      .ant-slider {
+        .ant-slider-mark-text {
+          font-size: 11px;
+          color: #666;
+        }
+      }
+
+      .ant-radio-group {
+        .search-depth-desc {
+          font-size: 12px;
+          color: #666;
+          margin-left: 24px;
+          margin-top: 4px;
+        }
+      }
+    }
+  }
+
+  .initial-state-card {
+    border: 1px dashed var(--color-border-base, rgba(0, 0, 0, 0.15));
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: var(--radius-md, 8px);
+
+    .anticon {
+      opacity: 0.3;
+    }
+  }
+
+  .quick-actions-card {
+    .ant-card-body {
+      padding: 16px;
+    }
+
+    .ant-space {
+      width: 100%;
+
+      .ant-btn {
+        border-radius: var(--radius-sm, 4px);
+        height: 36px;
+        font-size: 13px;
+
+        .anticon {
+          margin-right: 6px;
+        }
+      }
+    }
+  }
+}
+
+/* =============================================================================
+   响应式设计
+   ============================================================================= */
+
+@media (max-width: 1024px) {
+  .conflict-check-enhanced-container {
+    padding: 12px;
+
+    .page-header {
+      h2 {
+        font-size: 20px;
+      }
+
+      .page-description {
+        font-size: 13px;
+      }
+    }
+
+    .check-form-card {
+      .ant-card-body {
+        padding: 16px;
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .conflict-check-enhanced-container {
+    padding: 8px;
+
+    .page-header {
+      margin-bottom: 12px;
+
+      h2 {
+        font-size: 18px;
+      }
+    }
+
+    .check-form-card {
+      .ant-card-body {
+        padding: 12px;
+      }
+
+      .ant-form {
+        .ant-form-item {
+          margin-bottom: 12px;
+        }
+
+        .ant-btn {
+          height: 40px;
+          font-size: 14px;
+        }
+      }
+    }
+
+    .quick-actions-card {
+      .ant-space {
+        flex-wrap: wrap;
+
+        .ant-btn {
+          flex: 1;
+          min-width: calc(50% - 8px);
+        }
+      }
+    }
+  }
+}

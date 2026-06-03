@@ -169,7 +169,7 @@ func (h *TeamHandler) CheckTeamPermission(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /teams/case/{caseId}/member/{memberId} [put]
 func (h *TeamHandler) UpdateTeamMember(c *gin.Context) {
-	caseIdStr := c.Param("caseId")
+	caseIdStr := c.Param("id")
 	memberIdStr := c.Param("memberId")
 
 	caseId, err := strconv.ParseUint(caseIdStr, 10, 32)
@@ -243,7 +243,7 @@ func (h *TeamHandler) UpdateTeamMember(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /teams/case/{caseId}/member/{memberId} [delete]
 func (h *TeamHandler) RemoveTeamMember(c *gin.Context) {
-	caseIdStr := c.Param("caseId")
+	caseIdStr := c.Param("id")
 	memberIdStr := c.Param("memberId")
 
 	caseId, err := strconv.ParseUint(caseIdStr, 10, 32)
@@ -310,7 +310,7 @@ func (h *TeamHandler) RemoveTeamMember(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /teams/case/{caseId}/members [get]
 func (h *TeamHandler) GetTeamMembers(c *gin.Context) {
-	caseIdStr := c.Param("caseId")
+	caseIdStr := c.Param("id")
 	caseId, err := strconv.ParseUint(caseIdStr, 10, 32)
 	if err != nil {
 		common.APIBadRequest(c, "请求参数错误", "案件ID必须是有效数字")

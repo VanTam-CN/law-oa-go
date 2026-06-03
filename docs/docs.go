@@ -2343,8 +2343,8 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "localhost:8080",
 	BasePath:         "/api/v1",
 	Schemes:          []string{},
-	Title:            "Law Office Automation API",
-	Description:      "法律事务所自动化管理系统 API",
+	Title:            "示例律师事务所OA API",
+	Description:      "示例律师事务所OA 后端接口",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 }

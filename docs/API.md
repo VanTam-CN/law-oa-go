@@ -2,7 +2,7 @@
 
 ## 🚀 概述
 
-Law OA Go 提供现代化的 RESTful API，基于 Go 1.23+ 标准构建，采用统一响应格式、类型安全处理和完善的中间件体系。
+Law OA Go 提供现代化的 RESTful API，基于 Go 1.25 标准构建，采用统一响应格式、类型安全处理和完善的中间件体系。
 
 ### 核心特性
 - ✅ **统一响应格式**: 所有API使用一致的响应结构
@@ -17,18 +17,33 @@ Law OA Go 提供现代化的 RESTful API，基于 Go 1.23+ 标准构建，采用
 - **认证方式**: Bearer Token (JWT)
 - **数据格式**: JSON
 - **API版本**: v1
-- **Go版本**: 1.23+
+- **Go版本**: 1.25
 
 ### 📋 实现状态
 - ✅ **认证系统**: 登录、注册、JWT令牌管理
 - ✅ **用户管理**: 完整的CRUD操作和权限控制
 - ✅ **客户管理**: 客户信息和统计功能
 - ✅ **案件管理**: 案件CRUD、律师分配、状态管理
-- ⚠️ **文档管理**: 基础框架已建立
-- ❌ **利益冲突检查**: 待实现
-- ❌ **报告生成**: 待实现
-- ❌ **邮件通知**: 待实现
-- ❌ **财务管理**: 待实现
+- ✅ **文档管理**: 上传/下载/预览、回收站、统计、OnlyOffice、卷宗目录模板
+- ✅ **利益冲突检查**: `/conflict` 异步任务 + `/conflict-v2` Entity 驱动检查和报告
+- ✅ **审批流程**: 审批、模板、代理、豁免、审批-冲突集成
+- ✅ **通知/待办**: 通知队列、模板、批量操作、Inbox 待办
+- ✅ **财务管理**: 合同、付款计划、发票、回款、坏账、提成、分成规则、费率模板
+
+### 主要路由组
+
+| 路由组 | 说明 |
+|--------|------|
+| `/api/v1/auth` | 登录、注册、登出、令牌撤销、设备管理 |
+| `/api/v1/admin/users`, `/api/v1/users` | 用户管理和当前用户资料 |
+| `/api/v1/clients`, `/api/v1/case-intakes` | 客户管理、客户交接、案件 intake |
+| `/api/v1/cases`, `/api/v1/enhanced-cases` | 案件 CRUD、增强案件、隔离墙保护 |
+| `/api/v1/conflict`, `/api/v1/conflict-v2` | 冲突检测、异步任务、Entity 关系、报告 |
+| `/api/v1/approvals`, `/api/v1/approvals/delegations`, `/api/v1/waivers`, `/api/v1/integration` | 审批、代理、豁免和冲突集成 |
+| `/api/v1/documents`, `/api/v1/documents/onlyoffice`, `/api/v1/folder-templates` | 文档、OnlyOffice、卷宗目录 |
+| `/api/v1/finance`, `/api/v1/trust` | 财务和代管款 |
+| `/api/v1/notifications`, `/api/v1/notification-templates`, `/api/v1/inbox` | 通知和待办 |
+| `/api/v1/deadlines`, `/api/v1/legal`, `/api/v1/dashboard`, `/api/v1/monitor/*` | 时效、法条、仪表盘、监控 |
 
 ---
 

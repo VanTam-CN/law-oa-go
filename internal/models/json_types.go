@@ -26,12 +26,27 @@ func (j *JSON) Scan(value interface{}) error {
 
 	switch v := value.(type) {
 	case []byte:
-		return json.Unmarshal(v, j)
+		return scanJSONMap(v, j)
 	case string:
-		return json.Unmarshal([]byte(v), j)
+		return scanJSONMap([]byte(v), j)
 	default:
 		return fmt.Errorf("cannot scan %T into JSON", value)
 	}
+}
+
+func scanJSONMap(data []byte, target *JSON) error {
+	var object map[string]interface{}
+	if err := json.Unmarshal(data, &object); err == nil {
+		*target = JSON(object)
+		return nil
+	}
+
+	var array []interface{}
+	if err := json.Unmarshal(data, &array); err != nil {
+		return err
+	}
+	*target = JSON{"uses": array}
+	return nil
 }
 
 // String 返回JSON的字符串表示

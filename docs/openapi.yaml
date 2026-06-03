@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
-  title: Law OA Go API
+  title: 示例律师事务所OA API
   description: |
-    Law OA Go 提供现代化的 RESTful API，基于 Go 1.23+ 标准构建，采用统一响应格式、类型安全处理和完善的中间件体系。
+    示例律师事务所OA 提供现代化的 RESTful API，基于 Go 1.25 标准构建，采用统一响应格式、类型安全处理和完善的中间件体系。
     
     ## 核心特性
     - ✅ **统一响应格式**: 所有API使用一致的响应结构
@@ -17,10 +17,10 @@ info:
     - **认证方式**: Bearer Token (JWT)
     - **数据格式**: JSON
     - **API版本**: v1
-    - **Go版本**: 1.23+
+    - **Go版本**: 1.25
   version: 1.0.0
   contact:
-    name: Law OA Go Team
+    name: 示例律师事务所OA Team
     email: support@lawfirm.com
     url: https://github.com/law-oa-go
   license:

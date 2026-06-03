@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Card, Form, Input, Button, Upload, message, Avatar, Space, Divider, Modal } from 'antd'
+import { Card, Form, Input, Button, Upload, Avatar, Space, Divider, Modal } from 'antd'
 import {
   UserOutlined,
   MailOutlined,
@@ -9,16 +9,16 @@ import {
   SaveOutlined,
   LockOutlined,
 } from '@ant-design/icons'
-import type { UploadFile } from 'antd/es/upload/interface'
-import useAuth from '@/hooks/useAuth'
+import { useAppStore } from '@/stores/useAppStore'
 import { updateProfile, uploadAvatar, changePassword } from '@/api/auth'
+import { message } from '@/utils/messageHelper'
 
 const { Item: FormItem } = Form
 
 interface ProfileData {
-  id?: number
+  id?: string
   username?: string
-  real_name?: string
+  realName?: string
   email?: string
   phone?: string
   department?: string
@@ -30,7 +30,8 @@ interface ProfileData {
 }
 
 const Profile: React.FC = () => {
-  const { user, updateUser } = useAuth()
+  const user = useAppStore((state) => state.user)
+  const updateUser = useAppStore((state) => state.updateUser)
   const [form] = Form.useForm()
   const [editing, setEditing] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -46,7 +47,7 @@ const Profile: React.FC = () => {
       const profileData: ProfileData = {
         id: user.id,
         username: user.username,
-        real_name: user.real_name,
+        realName: user.realName,
         email: user.email,
         phone: user.phone || '',
         department: user.department || '',
@@ -54,7 +55,7 @@ const Profile: React.FC = () => {
         bio: user.bio || '',
         address: user.address || '',
         avatar: user.avatar || '',
-        created_at: user.created_at,
+        created_at: user.createdAt,
       }
       setUserData(profileData)
       form.setFieldsValue(profileData)
@@ -77,6 +78,8 @@ const Profile: React.FC = () => {
       // 调用后端API更新用户信息
       const updateData = {
         real_name: values.realName,
+        name: values.realName,
+        email: values.email,
         phone: values.phone,
         department: values.department,
         position: values.position,
@@ -87,9 +90,14 @@ const Profile: React.FC = () => {
       await updateProfile(updateData)
 
       // 更新本地状态
-      const updatedUser = { ...user, ...updateData }
-      setUserData((prev) => ({ ...prev, ...updateData }))
-      updateUser(updatedUser)
+      setUserData((prev) => ({ ...prev, realName: values.realName, ...updateData }))
+      updateUser({
+        realName: values.realName,
+        email: values.email,
+        phone: values.phone,
+        department: values.department,
+        position: values.position,
+      })
       message.success('个人信息保存成功！')
       setEditing(false)
     } catch (error: any) {
@@ -111,21 +119,7 @@ const Profile: React.FC = () => {
     }
 
     if (info.file.status === 'done') {
-      try {
-        const formData = new FormData()
-        formData.append('avatar', info.file.originFileObj)
-
-        const response = await uploadAvatar(formData)
-        if (response.url) {
-          setAvatarUrl(response.url)
-          // 更新用户头像信息
-          const updatedUser = { ...user, avatar: response.url }
-          updateUser(updatedUser)
-          message.success('头像上传成功')
-        }
-      } catch (error: any) {
-        message.error(error.response?.data?.message || '头像上传失败')
-      }
+      return
     } else if (info.file.status === 'error') {
       message.error('头像上传失败')
     }
@@ -145,6 +139,9 @@ const Profile: React.FC = () => {
       setPasswordModalVisible(false)
       passwordForm.resetFields()
     } catch (error: any) {
+      if (error?.errorFields) {
+        return
+      }
       console.error('密码修改失败:', error)
       message.error(error.response?.data?.message || '密码修改失败，请重试')
     } finally {
@@ -173,16 +170,16 @@ const Profile: React.FC = () => {
               className='avatar-uploader'
               showUploadList={false}
               customRequest={({ file, onSuccess, onError }) => {
-                // 自定义上传请求，使用我们的API
-                const formData = new FormData()
-                formData.append('avatar', file)
-
-                uploadAvatar(formData)
+                uploadAvatar(file as File)
                   .then((response) => {
-                    onSuccess(response)
+                    setAvatarUrl(response.url)
+                    updateUser({ avatar: response.url })
+                    message.success('头像上传成功')
+                    onSuccess?.(response)
                   })
                   .catch((error) => {
-                    onError(error)
+                    message.error(error.response?.data?.message || '头像上传失败')
+                    onError?.(error)
                   })
               }}
               onChange={handleAvatarChange}
@@ -311,7 +308,7 @@ const Profile: React.FC = () => {
             name='newPassword'
             rules={[
               { required: true, message: '请输入新密码' },
-              { min: 6, message: '密码至少6位' },
+              { min: 8, message: '密码至少8位' },
             ]}
           >
             <Input.Password prefix={<LockOutlined />} placeholder='请输入新密码' />

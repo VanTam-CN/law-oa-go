@@ -266,7 +266,7 @@ export class ErrorHandler {
     // 如果有字段级别的错误信息
     if (data.details && typeof data.details === 'object') {
       const fieldErrors = Object.entries(data.details)
-        .map(([field, message]) => `${field}: ${message}`)
+        .map(([field, message]) => `${field}: ${String(message)}`)
         .join('; ')
       return `输入验证失败: ${fieldErrors}`
     }

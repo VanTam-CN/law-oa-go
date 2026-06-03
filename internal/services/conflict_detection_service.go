@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"strconv"
@@ -26,32 +27,35 @@ type ConflictDetectionService interface {
 type conflictDetectionService struct {
 	conflictRepo repositories.BasicConflictRepository
 	riskAssessor RiskAssessor
-	userRepo    repositories.UserRepository
-	clientRepo  repositories.ClientRepository
-	caseRepo    repositories.CaseRepository
+	userRepo     repositories.UserRepository
+	clientRepo   repositories.ClientRepository
+	caseRepo     repositories.CaseRepository
 }
 
 // 🔧 案件类型映射：前端英文 -> 数据库中文
 // 🎯 基于数据库实际情况更新映射，确保冲突检测正常工作
 var caseTypeMapping = map[string]string{
-	"civil":         "知识产权",  // 映射到实际存在的类型
-	"commercial":    "知识产权",  // 🎯 关键修复：commercial映射到知识产权（数据库实际类型）
-	"criminal":      "知识产权",  // 映射到实际存在的类型
-	"administrative": "知识产权", // 映射到实际存在的类型
-	"labor":         "知识产权",  // 映射到实际存在的类型
-	"intellectual":  "知识产权",  // 直接映射
-	"financial":     "知识产权",  // 映射到实际存在的类型
+	"civil":          "民事",
+	"commercial":     "商事",
+	"criminal":       "刑事",
+	"administrative": "行政",
+	"labor":          "劳动",
+	"intellectual":   "知识产权",
+	"financial":      "金融",
+	"arbitration":    "仲裁",
+	"consultation":   "咨询",
+	"other":          "其他",
 }
 
 // 🔧 反向映射：数据库中文 -> 前端英文
 var reverseCaseTypeMapping = map[string]string{
-	"民事":     "civil",
-	"商事":     "commercial",
-	"刑事":     "criminal",
-	"行政":     "administrative",
-	"劳动":     "labor",
+	"民事":   "civil",
+	"商事":   "commercial",
+	"刑事":   "criminal",
+	"行政":   "administrative",
+	"劳动":   "labor",
 	"知识产权": "intellectual",
-	"金融":     "financial",
+	"金融":   "financial",
 }
 
 // 🔧 映射案件类型：将前端发送的英文转换为数据库查询用的中文
@@ -86,6 +90,13 @@ func (s *conflictDetectionService) PerformConflictCheck(ctx context.Context, req
 
 	log.Printf("🔍 开始执行冲突检测，客户端ID: %s, 案件名称: %s", request.ClientID, request.CaseName)
 
+	if request.SearchYears == 0 {
+		request.SearchYears = 5
+	}
+	if request.SearchDepth == "" {
+		request.SearchDepth = "STANDARD"
+	}
+
 	// 验证请求
 	if err := request.Validate(); err != nil {
 		log.Printf("❌ 冲突检测请求验证失败: %v", err)
@@ -93,7 +104,10 @@ func (s *conflictDetectionService) PerformConflictCheck(ctx context.Context, req
 	}
 
 	// 生成检测ID
-	checkID := fmt.Sprintf("CC_%d", time.Now().UnixNano())
+	checkID := request.CheckID
+	if checkID == "" {
+		checkID = fmt.Sprintf("CC_%d", time.Now().UnixNano())
+	}
 
 	// 查找潜在冲突案例
 	conflictCases, err := s.findPotentialConflicts(ctx, request)
@@ -130,8 +144,8 @@ func (s *conflictDetectionService) PerformConflictCheck(ctx context.Context, req
 
 	// 保存检测记录
 	if err := s.saveCheckRecord(ctx, request, response); err != nil {
-		log.Printf("⚠️ 保存检测记录失败: %v", err)
-		// 不影响主流程，只记录日志
+		log.Printf("❌ 保存检测记录失败: %v", err)
+		return nil, fmt.Errorf("保存冲突检测审计记录失败: %w", err)
 	}
 
 	log.Printf("✅ 冲突检测完成，检测到 %d 个冲突案例，风险等级: %s", len(conflictCases), riskAssessment.OverallRisk)
@@ -154,7 +168,9 @@ func (s *conflictDetectionService) findPotentialConflicts(ctx context.Context, r
 	log.Printf("🔍 开始冲突检测: 客户ID=%s, 用户ID=%s, 案件类型=%s, 律师ID=%d",
 		request.ClientID, request.UserID, request.CaseType, uint(userIDUint))
 
-	lawyerConflicts, err := s.conflictRepo.GetPotentialConflicts(ctx, request.ClientID, uint(userIDUint), request.OtherParties)
+	since := s.searchStartTime(request)
+
+	lawyerConflicts, err := s.conflictRepo.GetPotentialConflicts(ctx, request.ClientID, uint(userIDUint), request.OtherParties, since)
 	if err != nil {
 		log.Printf("⚠️ 查找律师冲突失败: %v", err)
 	} else {
@@ -164,29 +180,31 @@ func (s *conflictDetectionService) findPotentialConflicts(ctx context.Context, r
 
 	// 2. 检查对方当事人冲突
 	if len(request.OtherParties) > 0 {
-		opponentConflicts := s.checkOpponentConflicts(ctx, request)
+		opponentConflicts := s.checkOpponentConflicts(ctx, request, since)
 		allConflicts = append(allConflicts, opponentConflicts...)
 		log.Printf("📋 找到 %d 个对方当事人冲突案例", len(opponentConflicts))
 	}
 
 	// 3. 检查客户关系冲突
-	if request.IncludeCorporateRelations {
-		relationConflicts := s.checkClientRelationConflicts(ctx, request)
+	if request.IncludeCorporateRelations && request.SearchDepth != "BASIC" {
+		relationConflicts := s.checkClientRelationConflicts(ctx, request, since)
 		allConflicts = append(allConflicts, relationConflicts...)
 		log.Printf("📋 找到 %d 个客户关系冲突案例", len(relationConflicts))
 	}
 
 	// 4. 行业竞争冲突分析
-	industryConflicts := s.checkIndustryCompetitionConflicts(ctx, request)
-	allConflicts = append(allConflicts, industryConflicts...)
-	log.Printf("📋 找到 %d 个行业竞争冲突案例", len(industryConflicts))
+	if request.SearchDepth == "DEEP" {
+		industryConflicts := s.checkIndustryCompetitionConflicts(ctx, request, since)
+		allConflicts = append(allConflicts, industryConflicts...)
+		log.Printf("📋 找到 %d 个行业竞争冲突案例", len(industryConflicts))
+	}
 
 	// 去重并优化结果
 	return s.deduplicateConflicts(allConflicts), nil
 }
 
 // checkOpponentConflicts 检查对方当事人冲突
-func (s *conflictDetectionService) checkOpponentConflicts(ctx context.Context, request *models.ConflictCheckRequest) []*models.ConflictCase {
+func (s *conflictDetectionService) checkOpponentConflicts(ctx context.Context, request *models.ConflictCheckRequest, since time.Time) []*models.ConflictCase {
 	var conflicts []*models.ConflictCase
 
 	for _, opponent := range request.OtherParties {
@@ -201,13 +219,23 @@ func (s *conflictDetectionService) checkOpponentConflicts(ctx context.Context, r
 			continue
 		}
 
-			// 🎯 基于最佳实践优化：改进对方当事人冲突检测逻辑
-		// 1. 精确匹配：只匹配真正相关的案件
-		// 2. 避免过度匹配：防止误报
-		// 3. 权重排序：按相关度排序结果
+		sinceFilter := ""
+		args := []interface{}{
+			"%" + opponent + "%",
+			"%" + opponent + "%",
+			"%" + opponent + "%",
+			uint(userIDUint),
+		}
+		if !since.IsZero() {
+			sinceFilter = "AND c.created_at >= ?"
+			args = append(args, since)
+		}
+		args = append(args, "%"+opponent+"%", "%"+opponent+"%", "%"+opponent+"%")
+
 		query := fmt.Sprintf(`
 			SELECT
 				c.id,
+				c.case_number,
 				c.title as case_name,
 				c.case_type,
 				c.description,
@@ -227,13 +255,13 @@ func (s *conflictDetectionService) checkOpponentConflicts(ctx context.Context, r
 			JOIN users u ON c.lawyer_id = u.id
 			WHERE c.deleted_at IS NULL
 			AND c.lawyer_id != ?
+			%s
 			AND (c.title ILIKE ? OR c.description ILIKE ? OR cl.name ILIKE ?)
 			ORDER BY relevance_score DESC, c.created_at DESC
 			LIMIT 10
-		`)
+		`, sinceFilter)
 
-		rows, err := s.caseRepo.GetDB().WithContext(ctx).Raw(query,
-			"%"+opponent+"%", "%"+opponent+"%", "%"+opponent+"%", uint(userIDUint)).Rows()
+		rows, err := s.caseRepo.GetDB().WithContext(ctx).Raw(query, args...).Rows()
 		if err != nil {
 			log.Printf("⚠️ 查询对方当事人冲突失败: %v", err)
 			continue
@@ -241,11 +269,12 @@ func (s *conflictDetectionService) checkOpponentConflicts(ctx context.Context, r
 
 		for rows.Next() {
 			var caseID uint
-			var caseName, caseType, description, clientName, lawyerName string
+			var caseNo, caseName, caseType, description, clientName, lawyerName string
 			var lawyerID uint
 			var createdAt time.Time
+			var relevanceScore int
 
-			if err := rows.Scan(&caseID, &caseName, &caseType, &description, &clientName, &lawyerName, &createdAt, &lawyerID); err != nil {
+			if err := rows.Scan(&caseID, &caseNo, &caseName, &caseType, &description, &clientName, &lawyerName, &createdAt, &lawyerID, &relevanceScore); err != nil {
 				continue
 			}
 
@@ -257,10 +286,11 @@ func (s *conflictDetectionService) checkOpponentConflicts(ctx context.Context, r
 				ID:              fmt.Sprintf("opponent_%d", caseID),
 				CaseID:          fmt.Sprintf("%d", caseID),
 				CaseName:        caseName,
-				CaseNo:          fmt.Sprintf("CASE-%d", caseID),
+				CaseNo:          caseNo,
+				CaseType:        caseType,
 				ConflictType:    conflictType,
 				RiskLevel:       riskLevel,
-				Description:      fmt.Sprintf("对方当事人 '%s' 与案件 '%s' 存在关联", opponent, caseName),
+				Description:     fmt.Sprintf("对方当事人 '%s' 与案件 '%s' 存在关联", opponent, caseName),
 				CaseStatus:      "active",
 				ClientID:        request.ClientID,
 				OpposingParties: []string{opponent},
@@ -277,7 +307,7 @@ func (s *conflictDetectionService) checkOpponentConflicts(ctx context.Context, r
 }
 
 // checkClientRelationConflicts 检查客户关系冲突
-func (s *conflictDetectionService) checkClientRelationConflicts(ctx context.Context, request *models.ConflictCheckRequest) []*models.ConflictCase {
+func (s *conflictDetectionService) checkClientRelationConflicts(ctx context.Context, request *models.ConflictCheckRequest, since time.Time) []*models.ConflictCase {
 	var conflicts []*models.ConflictCase
 
 	// 获取客户关系
@@ -295,10 +325,18 @@ func (s *conflictDetectionService) checkClientRelationConflicts(ctx context.Cont
 			continue
 		}
 
+		sinceFilter := ""
+		args := []interface{}{relation.RelatedClientID, uint(userIDUint)}
+		if !since.IsZero() {
+			sinceFilter = "AND c.created_at >= ?"
+			args = append(args, since)
+		}
+
 		// 查询关联客户的相关案件
 		query := fmt.Sprintf(`
 			SELECT
 				c.id,
+				c.case_number,
 				c.title as case_name,
 				c.case_type,
 				c.description,
@@ -311,21 +349,22 @@ func (s *conflictDetectionService) checkClientRelationConflicts(ctx context.Cont
 			WHERE c.deleted_at IS NULL
 			AND c.client_id = ?
 			AND c.lawyer_id != ?
+			%s
 			ORDER BY c.created_at DESC
 			LIMIT 5
-		`)
+		`, sinceFilter)
 
-		rows, err := s.caseRepo.GetDB().WithContext(ctx).Raw(query, relation.RelatedClientID, uint(userIDUint)).Rows()
+		rows, err := s.caseRepo.GetDB().WithContext(ctx).Raw(query, args...).Rows()
 		if err != nil {
 			continue
 		}
 
 		for rows.Next() {
 			var caseID uint
-			var caseName, caseType, description, clientName, lawyerName string
+			var caseNo, caseName, caseType, description, clientName, lawyerName string
 			var createdAt time.Time
 
-			if err := rows.Scan(&caseID, &caseName, &caseType, &description, &clientName, &lawyerName, &createdAt); err != nil {
+			if err := rows.Scan(&caseID, &caseNo, &caseName, &caseType, &description, &clientName, &lawyerName, &createdAt); err != nil {
 				continue
 			}
 
@@ -333,10 +372,11 @@ func (s *conflictDetectionService) checkClientRelationConflicts(ctx context.Cont
 				ID:              fmt.Sprintf("relation_%d", caseID),
 				CaseID:          fmt.Sprintf("%d", caseID),
 				CaseName:        caseName,
-				CaseNo:          fmt.Sprintf("CASE-%d", caseID),
+				CaseNo:          caseNo,
+				CaseType:        caseType,
 				ConflictType:    "客户关系冲突",
 				RiskLevel:       "MEDIUM",
-				Description:      fmt.Sprintf("关联客户 '%s' 的案件 '%s' 存在潜在冲突", clientName, caseName),
+				Description:     fmt.Sprintf("关联客户 '%s' 的案件 '%s' 存在潜在冲突", clientName, caseName),
 				CaseStatus:      "active",
 				ClientID:        request.ClientID,
 				ConflictDetails: fmt.Sprintf("客户关系: %s - %s", relation.RelationType, relation.RelationDetail),
@@ -352,7 +392,7 @@ func (s *conflictDetectionService) checkClientRelationConflicts(ctx context.Cont
 }
 
 // checkIndustryCompetitionConflicts 检查行业竞争冲突
-func (s *conflictDetectionService) checkIndustryCompetitionConflicts(ctx context.Context, request *models.ConflictCheckRequest) []*models.ConflictCase {
+func (s *conflictDetectionService) checkIndustryCompetitionConflicts(ctx context.Context, request *models.ConflictCheckRequest, since time.Time) []*models.ConflictCase {
 	var conflicts []*models.ConflictCase
 
 	// 转换用户ID为uint用于数据库查询
@@ -362,10 +402,18 @@ func (s *conflictDetectionService) checkIndustryCompetitionConflicts(ctx context
 		return conflicts
 	}
 
+	sinceFilter := ""
+	args := []interface{}{uint(userIDUint)}
+	if !since.IsZero() {
+		sinceFilter = "AND c.created_at >= ?"
+		args = append(args, since)
+	}
+
 	// 1. 查找同一律师代理的所有案件
 	query := fmt.Sprintf(`
 		SELECT
 			c.id,
+			c.case_number,
 			c.title as case_name,
 			c.case_type,
 			c.description,
@@ -378,11 +426,12 @@ func (s *conflictDetectionService) checkIndustryCompetitionConflicts(ctx context
 		JOIN users u ON c.lawyer_id = u.id
 		WHERE c.deleted_at IS NULL
 		AND c.lawyer_id = ?
+		%s
 		ORDER BY c.created_at DESC
 		LIMIT 50
-	`)
+	`, sinceFilter)
 
-	rows, err := s.caseRepo.GetDB().WithContext(ctx).Raw(query, uint(userIDUint)).Rows()
+	rows, err := s.caseRepo.GetDB().WithContext(ctx).Raw(query, args...).Rows()
 	if err != nil {
 		log.Printf("⚠️ 查询律师案件失败: %v", err)
 		return conflicts
@@ -393,6 +442,7 @@ func (s *conflictDetectionService) checkIndustryCompetitionConflicts(ctx context
 	lawyerClients := make(map[string]string) // clientName -> clientType
 	var lawyerCases []struct {
 		ID          uint
+		CaseNumber  string
 		Title       string
 		CaseType    string
 		Description string
@@ -404,6 +454,7 @@ func (s *conflictDetectionService) checkIndustryCompetitionConflicts(ctx context
 	for rows.Next() {
 		var caseModel struct {
 			ID          uint
+			CaseNumber  string
 			Title       string
 			CaseType    string
 			Description string
@@ -412,7 +463,7 @@ func (s *conflictDetectionService) checkIndustryCompetitionConflicts(ctx context
 			CreatedAt   time.Time
 		}
 
-		if err := rows.Scan(&caseModel.ID, &caseModel.Title, &caseModel.CaseType, &caseModel.Description, &caseModel.ClientName, &caseModel.ClientType, &caseModel.CreatedAt); err != nil {
+		if err := rows.Scan(&caseModel.ID, &caseModel.CaseNumber, &caseModel.Title, &caseModel.CaseType, &caseModel.Description, &caseModel.ClientName, &caseModel.ClientType, &caseModel.CreatedAt); err != nil {
 			continue
 		}
 
@@ -456,10 +507,11 @@ func (s *conflictDetectionService) checkIndustryCompetitionConflicts(ctx context
 				ID:              fmt.Sprintf("industry_%d", case_.ID),
 				CaseID:          fmt.Sprintf("%d", case_.ID),
 				CaseName:        case_.Title,
-				CaseNo:          fmt.Sprintf("CASE-%d", case_.ID),
+				CaseNo:          case_.CaseNumber,
+				CaseType:        case_.CaseType,
 				ConflictType:    conflictType,
 				RiskLevel:       riskLevel,
-				Description:      description,
+				Description:     description,
 				CaseStatus:      "active",
 				ClientID:        request.ClientID,
 				ConflictDetails: fmt.Sprintf("竞争关系: %s vs %s", currentClient.Name, case_.ClientName),
@@ -484,9 +536,10 @@ func (s *conflictDetectionService) checkIndustryCompetitionConflicts(ctx context
 				CaseID:          fmt.Sprintf("OPPONENT_%d", time.Now().UnixNano()),
 				CaseName:        "对方当事人冲突",
 				CaseNo:          fmt.Sprintf("OPP-%d", time.Now().UnixNano()),
+				CaseType:        request.CaseType,
 				ConflictType:    "对方当事人冲突",
 				RiskLevel:       "CRITICAL",
-				Description:      fmt.Sprintf("律师同时代理当前客户 '%s' 和对方当事人 '%s'，存在直接利益冲突", currentClient.Name, opponent),
+				Description:     fmt.Sprintf("律师同时代理当前客户 '%s' 和对方当事人 '%s'，存在直接利益冲突", currentClient.Name, opponent),
 				CaseStatus:      "active",
 				ClientID:        request.ClientID,
 				ConflictDetails: fmt.Sprintf("禁止代理对方当事人: %s", opponent),
@@ -505,9 +558,10 @@ func (s *conflictDetectionService) checkIndustryCompetitionConflicts(ctx context
 					CaseID:          fmt.Sprintf("COMP-%d", time.Now().UnixNano()),
 					CaseName:        "商业竞争冲突",
 					CaseNo:          fmt.Sprintf("COMP-%d", time.Now().UnixNano()),
+					CaseType:        request.CaseType,
 					ConflictType:    "商业竞争冲突",
 					RiskLevel:       "HIGH",
-					Description:      fmt.Sprintf("律师代理的客户 '%s' 与对方当事人 '%s' 存在商业竞争关系", clientName, opponent),
+					Description:     fmt.Sprintf("律师代理的客户 '%s' 与对方当事人 '%s' 存在商业竞争关系", clientName, opponent),
 					CaseStatus:      "active",
 					ClientID:        request.ClientID,
 					ConflictDetails: fmt.Sprintf("商业竞争: %s vs %s", clientName, opponent),
@@ -579,11 +633,11 @@ func (s *conflictDetectionService) isSameCompany(name1, name2 string) bool {
 	// 检查是否为同一公司的不同实体
 	sameCompanyMapping := map[string][]string{
 		"阿里巴巴": {"阿里", "淘宝", "天猫", "支付宝", "蚂蚁金服", "蚂蚁集团"},
-		"腾讯":     {"微信", "qq", "财付通", "腾讯云", "腾讯游戏"},
+		"腾讯":   {"微信", "qq", "财付通", "腾讯云", "腾讯游戏"},
 		"字节跳动": {"抖音", "tiktok", "今日头条", "西瓜视频", "飞书"},
-		"百度":     {"百度网盘", "百度地图", "百度云", "小度"},
-		"京东":     {"京东物流", "京东数科", "京东健康"},
-		"美团":     {"美团外卖", "大众点评", "美团买菜", "美团优选"},
+		"百度":   {"百度网盘", "百度地图", "百度云", "小度"},
+		"京东":   {"京东物流", "京东数科", "京东健康"},
+		"美团":   {"美团外卖", "大众点评", "美团买菜", "美团优选"},
 	}
 
 	for company, entities := range sameCompanyMapping {
@@ -605,11 +659,11 @@ func (s *conflictDetectionService) isDirectCompetitor(name1, name2 string) bool 
 	// 互联网行业主要竞争关系
 	competitors := map[string][]string{
 		"阿里巴巴": {"腾讯", "字节跳动", "京东", "拼多多", "百度"},
-		"腾讯":     {"阿里巴巴", "字节跳动", "京东", "拼多多", "百度"},
+		"腾讯":   {"阿里巴巴", "字节跳动", "京东", "拼多多", "百度"},
 		"字节跳动": {"阿里巴巴", "腾讯", "快手", "小红书"},
-		"京东":     {"阿里巴巴", "腾讯", "拼多多", "抖音电商"},
-		"拼多多":   {"阿里巴巴", "京东", "淘宝", "天猫"},
-		"百度":     {"阿里巴巴", "腾讯", "字节跳动", "搜狗"},
+		"京东":   {"阿里巴巴", "腾讯", "拼多多", "抖音电商"},
+		"拼多多":  {"阿里巴巴", "京东", "淘宝", "天猫"},
+		"百度":   {"阿里巴巴", "腾讯", "字节跳动", "搜狗"},
 	}
 
 	for company, rivals := range competitors {
@@ -864,13 +918,13 @@ func (s *conflictDetectionService) generateDetailedConflictDescription(conflictT
 func (s *conflictDetectionService) assessConflictRisk(conflictType string, createdAt time.Time) string {
 	// 基于冲突类型的基础风险
 	baseRisk := map[string]string{
-		"法律对立冲突":    "CRITICAL",
-		"股权纠纷冲突":    "HIGH",
-		"知识产权冲突":    "HIGH",
-		"服务纠纷冲突":    "MEDIUM",
-		"商业竞争冲突":    "HIGH", // 修改：从HIGH改为HIGH，保持商业竞争的高风险
-		"客户关系冲突":    "MEDIUM",
-		"行业竞争冲突":    "HIGH",
+		"法律对立冲突": "CRITICAL",
+		"股权纠纷冲突": "HIGH",
+		"知识产权冲突": "HIGH",
+		"服务纠纷冲突": "MEDIUM",
+		"商业竞争冲突": "HIGH", // 修改：从HIGH改为HIGH，保持商业竞争的高风险
+		"客户关系冲突": "MEDIUM",
+		"行业竞争冲突": "HIGH",
 	}
 
 	riskLevel := baseRisk[conflictType]
@@ -917,7 +971,7 @@ func (s *conflictDetectionService) buildCheckStatistics(ctx context.Context, req
 	}
 
 	return &models.CheckStatistics{
-		TotalCasesChecked:        int64(len(conflicts)),
+		TotalCasesChecked:         int64(len(conflicts)),
 		ClientHistoryCases:        int64(len(conflicts)), // 简化处理
 		RelatedPartiesChecked:     int64(len(request.OtherParties) + 1),
 		CorporateRelationsChecked: 0, // 简化处理
@@ -926,6 +980,13 @@ func (s *conflictDetectionService) buildCheckStatistics(ctx context.Context, req
 		StartTime:                 endTime,
 		EndTime:                   endTime,
 	}
+}
+
+func (s *conflictDetectionService) searchStartTime(request *models.ConflictCheckRequest) time.Time {
+	if request.SearchYears <= 0 {
+		return time.Time{}
+	}
+	return time.Now().AddDate(-request.SearchYears, 0, 0)
 }
 
 // saveCheckRecord 保存检测记录
@@ -938,23 +999,87 @@ func (s *conflictDetectionService) saveCheckRecord(ctx context.Context, request 
 		userIDUint = 0
 	}
 
-	record := &models.ConflictCheckRecord{
-		CheckID:       response.CheckID,
-		ClientID:      request.ClientID,
-		ClientName:    request.ClientName,
-		CaseName:      request.CaseName,
-		CaseType:      request.CaseType,
-		CheckStatus:   "COMPLETED",
-		HasConflict:   response.HasConflict,
-		RiskLevel:     response.RiskAssessment.OverallRisk,
-		UserID:        uint(userIDUint),
-		Duration:      response.Duration,
-		CheckTime:     response.CheckTime,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
+	riskLevel := "LOW"
+	if response.RiskAssessment != nil {
+		riskLevel = response.RiskAssessment.OverallRisk
 	}
 
-	return s.conflictRepo.SaveCheckRecord(ctx, record)
+	now := time.Now()
+	record := &models.ConflictCheckRecord{
+		CheckID:          response.CheckID,
+		ClientID:         request.ClientID,
+		ClientName:       request.ClientName,
+		CaseName:         request.CaseName,
+		CaseType:         request.CaseType,
+		CheckStatus:      "COMPLETED",
+		HasConflict:      response.HasConflict,
+		RiskLevel:        riskLevel,
+		SearchParameters: toConflictJSON(request),
+		CheckResult:      toConflictJSON(response),
+		UserID:           uint(userIDUint),
+		Duration:         response.Duration,
+		CheckTime:        response.CheckTime,
+		CreatedAt:        now,
+		UpdatedAt:        now,
+	}
+
+	if err := s.conflictRepo.SaveCheckRecord(ctx, record); err != nil {
+		return err
+	}
+
+	if len(response.ConflictCases) == 0 {
+		return nil
+	}
+
+	for _, conflict := range response.ConflictCases {
+		if conflict == nil {
+			continue
+		}
+		conflict.CheckID = response.CheckID
+		conflict.ID = fmt.Sprintf("%s_%s", response.CheckID, conflict.ID)
+		if conflict.CaseType == "" {
+			conflict.CaseType = request.CaseType
+		}
+		if conflict.RiskLevel == "" {
+			conflict.RiskLevel = "LOW"
+		}
+		if conflict.OpposingParties == nil {
+			conflict.OpposingParties = models.JSONStringArray{}
+		}
+		if conflict.CreatedAt.IsZero() {
+			conflict.CreatedAt = now
+		}
+	}
+
+	return s.conflictRepo.SaveConflictCases(ctx, response.ConflictCases)
+}
+
+func toConflictJSON(value interface{}) models.JSON {
+	if value == nil {
+		return models.JSON{}
+	}
+	if data, ok := value.(models.JSON); ok {
+		return data
+	}
+	if data, ok := value.(map[string]interface{}); ok {
+		return models.JSON(data)
+	}
+
+	raw, err := json.Marshal(value)
+	if err != nil {
+		return models.JSON{"marshal_error": err.Error()}
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(raw, &result); err == nil {
+		return models.JSON(result)
+	}
+
+	var generic interface{}
+	if err := json.Unmarshal(raw, &generic); err != nil {
+		return models.JSON{"unmarshal_error": err.Error(), "raw": string(raw)}
+	}
+	return models.JSON{"items": generic}
 }
 
 // inferIndustry 推断行业
@@ -996,7 +1121,7 @@ func (s *conflictDetectionService) inferIndustry(clientName, caseType string) st
 func (s *conflictDetectionService) getIndustryKeywords(industry string) []string {
 	keywords := map[string][]string{
 		"互联网科技": {"科技", "网络", "软件", "信息", "互联网"},
-		"金融":     {"银行", "保险", "证券", "基金", "金融", "投资"},
+		"金融":    {"银行", "保险", "证券", "基金", "金融", "投资"},
 		"房地产":   {"地产", "置业", "建设", "房地产", "物业"},
 		"制造业":   {"制造", "生产", "工厂", "加工", "制造"},
 	}

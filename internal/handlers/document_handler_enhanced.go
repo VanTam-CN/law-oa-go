@@ -12,13 +12,13 @@ import (
 
 // DocumentHandlerEnhanced handles enhanced document management operations
 type DocumentHandlerEnhanced struct {
-	docService         *services.DocumentService
-	previewService     *services.DocumentPreviewService
-	versionService     *services.DocumentVersionService
-	permissionService  *services.DocumentPermissionService
-	recycleService     *services.DocumentRecycleService
-	searchService      *services.DocumentSearchService
-	statsService       *services.DocumentStatsService
+	docService        *services.DocumentService
+	previewService    *services.DocumentPreviewService
+	versionService    *services.DocumentVersionService
+	permissionService *services.DocumentPermissionService
+	recycleService    *services.DocumentRecycleService
+	searchService     *services.DocumentSearchService
+	statsService      *services.DocumentStatsService
 }
 
 // NewDocumentHandlerEnhanced creates a new enhanced document handler
@@ -72,6 +72,14 @@ func (h *DocumentHandlerEnhanced) UploadDocument(c *gin.Context) {
 	if err := c.ShouldBind(&req); err != nil {
 		common.APIBadRequest(c, "Invalid request", err.Error())
 		return
+	}
+	if req.File == nil {
+		file, err := c.FormFile("file")
+		if err != nil {
+			common.APIBadRequest(c, "Invalid request", "file is required")
+			return
+		}
+		req.File = file
 	}
 
 	// Get user ID from context
@@ -402,9 +410,9 @@ func (h *DocumentHandlerEnhanced) GetDocumentVersions(c *gin.Context) {
 	}
 
 	response := map[string]interface{}{
-		"versions": versions,
-		"total":    total,
-		"page":     req.Page,
+		"versions":  versions,
+		"total":     total,
+		"page":      req.Page,
 		"page_size": req.PageSize,
 	}
 
@@ -518,9 +526,9 @@ func (h *DocumentHandlerEnhanced) RestoreDocumentVersion(c *gin.Context) {
 	}
 
 	common.APISuccess(c, map[string]interface{}{
-		"message": "Document restored successfully",
-		"version": version,
-			"restored_by": restoredBy,
+		"message":     "Document restored successfully",
+		"version":     version,
+		"restored_by": restoredBy,
 	})
 }
 

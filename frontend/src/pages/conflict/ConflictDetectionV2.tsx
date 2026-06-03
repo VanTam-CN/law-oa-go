@@ -30,14 +30,15 @@ import {
   WarningOutlined,
   FileTextOutlined,
   SyncOutlined,
-  ShieldOutlined,
+  SafetyCertificateOutlined,
+  SendOutlined,
+  AuditOutlined,
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
-import { api } from '@/services/http'
+import { post, get } from '@/services/http'
 import './ConflictCheck.less'
 
 const { Option } = Select
-const { TextArea } = Input
 
 // 类型定义
 interface ConflictMatchV2 {
@@ -103,6 +104,8 @@ const ConflictDetectionV2: React.FC = () => {
   const [detailModalVisible, setDetailModalVisible] = useState<boolean>(false)
   const [selectedMatch, setSelectedMatch] = useState<ConflictMatchV2 | null>(null)
   const [searchDepth, setSearchDepth] = useState<'basic' | 'standard' | 'deep'>('standard')
+  const [approvalStatus, setApprovalStatus] = useState<'none' | 'pending' | 'approved' | 'rejected' | 'waived'>('none')
+  const [submittingApproval, setSubmittingApproval] = useState(false)
 
   // 风险等级配置
   const riskConfig = {
@@ -113,11 +116,21 @@ const ConflictDetectionV2: React.FC = () => {
     PASS: { color: 'success', text: '无冲突', icon: <CheckCircleOutlined />, score: 0 },
   }
 
+  // 审批状态配置
+  const approvalStatusConfig: Record<string, { color: string; text: string }> = {
+    none: { color: 'default', text: '未提交' },
+    pending: { color: 'processing', text: '审批中' },
+    approved: { color: 'success', text: '已批准' },
+    rejected: { color: 'error', text: '已拒绝' },
+    waived: { color: 'warning', text: '已豁免' },
+  }
+
   // 执行冲突检测
   const handleCheck = async (values: any) => {
     try {
       setLoading(true)
       setResult(null)
+      setApprovalStatus('none')
 
       const requestData = {
         lawyerId: values.lawyerId,
@@ -131,7 +144,7 @@ const ConflictDetectionV2: React.FC = () => {
         includeRelated: values.includeRelated ?? true,
       }
 
-      const response = await api.post<any>('/api/v2/conflict/check', requestData)
+      const response = await post<any>('/api/v2/conflict/check', requestData)
 
       if (response.data) {
         setResult(response.data)
@@ -157,7 +170,7 @@ const ConflictDetectionV2: React.FC = () => {
     try {
       setGeneratingReport(true)
 
-      await api.post<any>('/api/conflict/report', {
+      await post<any>('/api/conflict/report', {
         checkedBy: 1, // TODO: 从用户信息获取
         checkTime: result.checkTime,
         checkDurationMs: result.durationMs,
@@ -187,8 +200,8 @@ const ConflictDetectionV2: React.FC = () => {
       setHistoryLoading(true)
 
       const [reportsRes, jobsRes] = await Promise.all([
-        api.get<any>('/api/conflict/reports'),
-        api.get<any>('/api/conflict/scan-jobs'),
+        get<any>('/api/conflict/reports'),
+        get<any>('/api/conflict/scan-jobs'),
       ])
 
       setReports(reportsRes.data?.list || [])
@@ -199,6 +212,61 @@ const ConflictDetectionV2: React.FC = () => {
     } finally {
       setHistoryLoading(false)
     }
+  }
+
+  // 提交利益冲突审批
+  const handleSubmitApproval = () => {
+    if (!result) return
+
+    Modal.confirm({
+      title: '提交利益冲突审批',
+      icon: <AuditOutlined />,
+      content: (
+        <div>
+          <p>确认将此次冲突检测结果提交审批？</p>
+          <p style={{ color: '#999', fontSize: 12 }}>
+            风险等级: {riskConfig[result.riskLevel as keyof typeof riskConfig]?.text}，
+            匹配数量: {result.matchCount}
+          </p>
+        </div>
+      ),
+      okText: '确认提交',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          setSubmittingApproval(true)
+
+          await post('/api/integration/approvals/with-conflict', {
+            checkId: result.checkId,
+            riskLevel: result.riskLevel,
+            riskScore: result.riskScore,
+            matchCount: result.matchCount,
+            clientName: form.getFieldValue('clientName'),
+            caseId: form.getFieldValue('caseId') || undefined,
+            matches: result.matches.map((m) => ({
+              matchId: m.matchId,
+              matchType: m.matchType,
+              lawyerName: m.lawyerName,
+              caseTitle: m.caseTitle,
+              entityName: m.entityInfo.name,
+              riskLevel: m.riskLevel,
+              matchReason: m.matchReason,
+            })),
+            checkTime: result.checkTime,
+            searchScope: result.searchScope,
+            recommendations: result.recommendations,
+          })
+
+          setApprovalStatus('pending')
+          message.success('审批申请已提交，请等待审批结果')
+        } catch (error: unknown) {
+          const errMsg = error instanceof Error ? error.message : '提交审批失败，请稍后重试'
+          message.error(errMsg)
+        } finally {
+          setSubmittingApproval(false)
+        }
+      },
+    })
   }
 
   // 查看冲突详情
@@ -298,7 +366,7 @@ const ConflictDetectionV2: React.FC = () => {
       <Row gutter={[16, 16]}>
         {/* 左侧：检测表单 */}
         <Col xs={24} lg={8}>
-          <Card title="利益冲突检测" extra={<ShieldOutlined />}>
+          <Card title="利益冲突检测" extra={<SafetyCertificateOutlined />}>
             <Form
               form={form}
               layout="vertical"
@@ -422,6 +490,12 @@ const ConflictDetectionV2: React.FC = () => {
                 }
                 extra={
                   <Space>
+                    <Tag
+                      color={approvalStatusConfig[approvalStatus].color}
+                      icon={<AuditOutlined />}
+                    >
+                      审批状态: {approvalStatusConfig[approvalStatus].text}
+                    </Tag>
                     <Button
                       icon={<DownloadOutlined />}
                       onClick={handleGenerateReport}
@@ -478,6 +552,28 @@ const ConflictDetectionV2: React.FC = () => {
                       strokeColor={result.riskLevel === 'PASS' ? '#52c41a' : '#ff4d4f'}
                     />
                   </>
+                )}
+
+                {result.riskLevel !== 'PASS' && (
+                  <div style={{ marginTop: 16, textAlign: 'right' }}>
+                    <Button
+                      type="primary"
+                      icon={<SendOutlined />}
+                      onClick={handleSubmitApproval}
+                      loading={submittingApproval}
+                      disabled={approvalStatus === 'pending' || approvalStatus === 'approved'}
+                    >
+                      {approvalStatus === 'none'
+                        ? '提交利益冲突审批'
+                        : approvalStatus === 'pending'
+                          ? '审批中...'
+                          : approvalStatus === 'approved'
+                            ? '已批准'
+                            : approvalStatus === 'waived'
+                              ? '已豁免'
+                              : '重新提交审批'}
+                    </Button>
+                  </div>
                 )}
               </Card>
 

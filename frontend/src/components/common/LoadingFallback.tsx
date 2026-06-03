@@ -3,9 +3,10 @@
  * 提供优雅的加载状态显示
  */
 
-import React, { Suspense } from 'react'
+import React, { Suspense, ReactNode } from 'react'
 import { Spin, Result, Progress } from 'antd'
 import { LoadingOutlined } from '@ant-design/icons'
+import ErrorBoundary from './ErrorBoundary'
 
 // 加载类型
 export type LoadingType = 'default' | 'content' | 'spinner' | 'progress' | 'skeleton'
@@ -71,7 +72,7 @@ const ProgressLoading: React.FC<{
       </div>
       <Progress
         percent={progress}
-        size={size}
+        size={size === 'large' ? 'default' : size}
         status={status}
         strokeColor={{
           '0%': '#108ee9',
@@ -89,7 +90,7 @@ const ProgressLoading: React.FC<{
 const SkeletonLoading: React.FC<{
   loading?: boolean
   avatar?: boolean
-  paragraph?: boolean
+  paragraph?: boolean | { rows: number }
   title?: boolean
   active?: boolean
   round?: boolean

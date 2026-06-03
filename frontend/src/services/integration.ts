@@ -109,8 +109,7 @@ export const createApprovalWithConflict = async (
   request: IntegrationRequest,
 ): Promise<IntegrationResult> => {
   try {
-    const response = await post('/integration/approvals/with-conflict', request)
-    return response.data
+    return await post<IntegrationResult>('/integration/approvals/with-conflict', request)
   } catch (error) {
     console.error('创建带冲突检测的审批申请失败:', error)
     throw error
@@ -126,8 +125,7 @@ export const createIntegratedApproval = async (
   request: IntegrationRequest,
 ): Promise<IntegrationResult> => {
   try {
-    const response = await post('/integration/approvals', request)
-    return response.data
+    return await post<IntegrationResult>('/integration/approvals', request)
   } catch (error) {
     console.error('创建集成审批申请失败:', error)
     throw error
@@ -143,8 +141,7 @@ export const triggerConflictCheck = async (
   config: ConflictCheckConfig,
 ): Promise<ConflictCheckResult> => {
   try {
-    const response = await post('/integration/conflict-check', config)
-    return response.data
+    return await post<ConflictCheckResult>('/integration/conflict/check', config)
   } catch (error) {
     console.error('触发冲突检测失败:', error)
     throw error
@@ -158,8 +155,7 @@ export const triggerConflictCheck = async (
  */
 export const getIntegrationStatus = async (approvalId: string): Promise<IntegrationStatus> => {
   try {
-    const response = await get(`/integration/approvals/${approvalId}/status`)
-    return response.data
+    return await get<IntegrationStatus>(`/integration/approvals/${approvalId}/status`)
   } catch (error) {
     console.error('查询集成状态失败:', error)
     throw error
@@ -177,10 +173,9 @@ export const createCaseFromApproval = async (
   caseData: Record<string, any>,
 ): Promise<CaseCreationResult> => {
   try {
-    const response = await post(`/integration/approvals/${approvalId}/case`, {
+    return await post<CaseCreationResult>(`/integration/approvals/${approvalId}/case`, {
       case_data: caseData,
     })
-    return response.data
   } catch (error) {
     console.error('从审批申请创建案件失败:', error)
     throw error
@@ -193,8 +188,7 @@ export const createCaseFromApproval = async (
  */
 export const getIntegrationStatistics = async (): Promise<IntegrationStatistics> => {
   try {
-    const response = await get('/integration/statistics')
-    return response.data
+    return await get<IntegrationStatistics>('/integration/statistics')
   } catch (error) {
     console.error('获取集成统计失败:', error)
     throw error
@@ -207,8 +201,7 @@ export const getIntegrationStatistics = async (): Promise<IntegrationStatistics>
  */
 export const getIntegrationWorkflows = async (): Promise<any[]> => {
   try {
-    const response = await get('/integration/workflows')
-    return response.data
+    return await get<any[]>('/integration/workflows')
   } catch (error) {
     console.error('获取集成工作流失败:', error)
     throw error
@@ -256,7 +249,7 @@ export const validateIntegrationConfig = (
     }
 
     if (
-      !config.conflict_config.client_ids ||
+      !config.conflict_check_config.client_ids ||
       config.conflict_check_config.client_ids.length === 0
     ) {
       errors.push('客户ID列表不能为空')

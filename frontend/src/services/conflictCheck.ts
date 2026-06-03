@@ -1,6 +1,4 @@
 import { post, get } from '@/services/http'
-import { message } from '@/utils/messageHelper'
-
 // 冲突检索请求接口
 export interface ConflictCheckRequest {
   clientId: string
@@ -66,41 +64,17 @@ export class ConflictCheckService {
       // 验证必要参数
       this.validateRequest(request)
 
-      // 开发环境下的备用方案：如果后端不可用，使用模拟数据
-      const isDevelopment =
-        typeof window !== 'undefined' && window.location.hostname === 'localhost'
-
-      try {
-        // 调用后端API
-        const response = await post<ConflictCheckResponse>('/conflict/check', request)
-
-        // 验证响应基本结构
-        if (!response) {
-          throw new Error('后端服务无响应')
-        }
-
-        // 🔧 修复：HTTP拦截器已经处理了响应格式，直接使用response作为结果
-        // HTTP拦截器会自动提取data字段，所以response就是我们需要的数据
-        const result = response
-
-        if (typeof result.hasConflict === 'undefined') {
-          console.warn('后端响应缺少hasConflict字段，基于conflictCases判断')
-          result.hasConflict = result.conflictCases && result.conflictCases.length > 0
-        }
-
-        return result
-      } catch (apiError) {
-        console.error('API调用错误:', apiError)
-
-        // 如果是开发环境且后端不可用，使用模拟数据
-        if (isDevelopment && this.isConnectionError(apiError)) {
-          console.warn('开发环境：后端API不可用，使用模拟数据')
-          return this.getMockResponse(request)
-        }
-
-        // 重新抛出API错误
-        throw apiError
+      const response = await post<ConflictCheckResponse>('/conflict/check', request)
+      if (!response) {
+        throw new Error('后端服务无响应')
       }
+
+      const result = response
+      if (typeof result.hasConflict === 'undefined') {
+        result.hasConflict = result.conflictCases && result.conflictCases.length > 0
+      }
+
+      return result
     } catch (error) {
       console.error('冲突检索服务错误:', error)
 
@@ -142,81 +116,6 @@ export class ConflictCheckService {
   }
 
   /**
-   * 检查是否为网络连接错误
-   */
-  private static isConnectionError(error: any): boolean {
-    // 检查各种网络连接错误的情况
-    if (error instanceof TypeError) {
-      return (
-        error.message.includes('Failed to fetch') ||
-        error.message.includes('Network request failed') ||
-        error.message.includes('网络连接失败') ||
-        error.message.includes('ERR_CONNECTION_REFUSED') ||
-        error.message.includes('ERR_NETWORK')
-      )
-    }
-
-    // 检查Fetch API错误
-    if (error instanceof Error) {
-      return (
-        error.message.includes('fetch') ||
-        error.message.includes('ECONNREFUSED') ||
-        error.message.includes('net::ERR_') ||
-        error.message.includes('请求超时') ||
-        error.message.includes('连接被拒绝')
-      )
-    }
-
-    // 检查状态码相关错误
-    if (typeof error === 'object' && error !== null) {
-      // 检查是否有网络相关的属性
-      return (
-        error.name === 'NetworkError' ||
-        error.name === 'AbortError' ||
-        error.code === 'NETWORK_ERROR' ||
-        error.type === 'network'
-      )
-    }
-
-    return false
-  }
-
-  /**
-   * 获取模拟响应数据（仅开发环境）- 诚实的数据展示
-   */
-  private static getMockResponse(request: ConflictCheckRequest): ConflictCheckResponse {
-    // 开发环境诚实显示：没有真实数据
-    const hasConflict = false // 开发环境默认无冲突，避免误导
-
-    return {
-      checkId: `MOCK_${Date.now()}`,
-      hasConflict,
-      conflictCases: [], // 开发环境显示空数组
-      checkStatistics: {
-        totalCasesChecked: 0, // 诚实显示0，没有真实数据
-        clientHistoryCases: 0, // 诚实显示0
-        relatedPartiesChecked: request.otherParties.length + 1,
-        corporateRelationsChecked: 0, // 诚实显示0
-        timeRange: '开发环境模拟数据',
-        searchScope: '模拟数据库',
-      },
-      riskAssessment: {
-        overallRisk: 'LOW',
-        riskReason: '开发环境：未连接真实数据库',
-        requiresApproval: false,
-        riskFactors: ['开发环境模拟'],
-      },
-      recommendations: [
-        '开发环境：此为模拟数据，非真实冲突检测结果',
-        '请连接真实数据库进行实际冲突检测',
-        '开发模式下不提供真实的冲突检测服务',
-      ],
-      checkTime: new Date().toISOString(),
-      duration: 100, // 固定响应时间，避免造假
-    }
-  }
-
-  /**
    * 验证请求参数
    */
   private static validateRequest(request: ConflictCheckRequest): void {
@@ -228,7 +127,7 @@ export class ConflictCheckService {
       throw new Error('案件名称和类型不能为空')
     }
 
-    if (!['PERSON', 'COMPANY'].includes(request.clientType)) {
+    if (!['PERSON', 'COMPANY', 'ANY'].includes(request.clientType)) {
       throw new Error('委托人类型无效')
     }
   }

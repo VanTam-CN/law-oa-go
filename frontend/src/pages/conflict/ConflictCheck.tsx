@@ -4,7 +4,7 @@ import { message } from '@/utils/messageHelper'
 import { SearchOutlined, ExclamationCircleOutlined, CheckCircleOutlined } from '@ant-design/icons'
 import { getUserList } from '@/services/user'
 import { getProjectTypes } from '@/services/project'
-import { performConflictCheck, ConflictResult } from '@/services/conflict'
+import { performConflictCheckLegacy, ConflictResult } from '@/services/conflict'
 import { UserInfo } from '@/services/user'
 import { ProjectType } from '@/services/project'
 import './ConflictCheck.less'
@@ -101,7 +101,7 @@ const ConflictCheck: React.FC = () => {
         opposite_parties: values.opposite_parties.trim(),
       }
 
-      const response = await performConflictCheck(formattedValues)
+      const response = await performConflictCheckLegacy(formattedValues)
       setResult(response)
 
       if (response.has_conflict) {

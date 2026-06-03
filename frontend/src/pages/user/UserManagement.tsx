@@ -214,7 +214,11 @@ const UserManagement: React.FC = () => {
 
       if (editingUser) {
         // 更新用户
-        await userService.updateUser(editingUser.userId!, values)
+        if (editingUser.userId == null) {
+          message.error('用户ID缺失，无法更新')
+          return
+        }
+        await userService.updateUser(editingUser.userId, values)
         message.success('更新成功')
       } else {
         // 新增用户
@@ -237,7 +241,11 @@ const UserManagement: React.FC = () => {
   const toggleUserStatus = async (user: User) => {
     try {
       const newStatus = user.status === '0' ? '1' : '0'
-      await userService.changeUserStatus(user.userId!, newStatus)
+      if (user.userId == null) {
+        message.error('用户ID缺失，无法更新状态')
+        return
+      }
+      await userService.changeUserStatus(user.userId, newStatus)
       message.success('状态更新成功')
       loadUsers()
       loadStats()
@@ -333,7 +341,13 @@ const UserManagement: React.FC = () => {
           </Tooltip>
           <Popconfirm
             title='确定删除这个用户吗？'
-            onConfirm={() => handleDelete(record.userId!)}
+            onConfirm={() => {
+              if (record.userId == null) {
+                message.error('用户ID缺失，无法删除')
+                return
+              }
+              handleDelete(record.userId)
+            }}
             okText='确定'
             cancelText='取消'
           >

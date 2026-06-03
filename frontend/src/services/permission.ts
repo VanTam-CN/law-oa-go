@@ -52,6 +52,7 @@ export interface RoleQueryParams {
   name?: string
   code?: string
   status?: string
+  page?: number
   page_num?: number
   page_size?: number
 }
@@ -79,8 +80,19 @@ export interface PermissionQueryParams {
  * @param params 查询参数
  * @returns 角色列表
  */
+const normalizeRoleQuery = (params?: RoleQueryParams) => {
+  if (!params) {
+    return params
+  }
+  const { page_num, ...rest } = params
+  return {
+    ...rest,
+    page: params.page ?? page_num,
+  }
+}
+
 export const getRoleList = (params?: RoleQueryParams): Promise<RolePageResponse> => {
-  return get<RolePageResponse>('/admin/roles', params)
+  return get<RolePageResponse>('/admin/roles', normalizeRoleQuery(params))
 }
 
 /**
@@ -212,7 +224,7 @@ export const getRolePermissions = (roleId: number): Promise<number[]> => {
  * @returns 分配结果
  */
 export const assignRolePermissions = (roleId: number, permissionIds: number[]): Promise<void> => {
-  return post<void>(`/admin/roles/${roleId}/permissions`, { permissionIds })
+  return post<void>(`/admin/roles/${roleId}/permissions`, { permission_ids: permissionIds })
 }
 
 // ============ 用户角色关联API ============
@@ -233,7 +245,7 @@ export const getUserRoles = (userId: number): Promise<Role[]> => {
  * @returns 分配结果
  */
 export const assignUserRoles = (userId: number, roleIds: number[]): Promise<void> => {
-  return post<void>(`/admin/users/${userId}/roles`, { roleIds })
+  return post<void>(`/admin/users/${userId}/roles`, { role_ids: roleIds })
 }
 
 /**

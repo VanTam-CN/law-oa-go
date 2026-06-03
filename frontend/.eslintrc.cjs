@@ -23,6 +23,7 @@ module.exports = {
     '*.config.js',
     '*.config.ts',
     'coverage',
+    'e2e/**',
     '.eslintrc.cjs',
     'tests/**',
     '**/*.js',

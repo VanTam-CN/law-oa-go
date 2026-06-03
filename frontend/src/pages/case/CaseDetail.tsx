@@ -8,6 +8,7 @@ import {
   Timeline,
   Divider,
   Tabs,
+  Steps,
   List,
   Avatar,
   message,
@@ -38,6 +39,9 @@ import {
 import { useNavigate, useParams } from 'react-router'
 import dayjs from 'dayjs'
 import { caseAPI } from '@/services/lawfirm'
+import { caseService } from '@/services/case'
+import { deadlineAPI } from '@/services/deadline'
+import FeeCalculator from '@/components/fee/FeeCalculator'
 
 const { TextArea } = Input
 const { Option } = Select
@@ -90,9 +94,6 @@ const CaseDetail: React.FC = () => {
   const [timeline, setTimeline] = useState<CaseTimeline[]>([])
   const [editModalVisible, setEditModalVisible] = useState(false)
   const [form] = Form.useForm()
-
-  // 模拟数据
-  // 模拟数据已删除，现在使用真实的API数据
 
   useEffect(() => {
     if (id) {
@@ -157,10 +158,12 @@ const CaseDetail: React.FC = () => {
   }
 
   const handleDelete = async () => {
-    try {
-      // 这里应该调用API删除数据
-      // await caseService.deleteCase(caseDetail?.caseId);
+    if (!caseDetail) {
+      return
+    }
 
+    try {
+      await caseService.deleteCase(caseDetail.caseId)
       message.success('删除成功')
       navigate('/case')
     } catch (error) {
@@ -169,15 +172,13 @@ const CaseDetail: React.FC = () => {
   }
 
   const handleUpdate = async (values: any) => {
-    try {
-      // 这里应该调用API更新数据
-      // await caseService.updateCase(caseDetail?.caseId, values);
+    if (!caseDetail) {
+      return
+    }
 
-      setCaseDetail({
-        ...caseDetail!,
-        ...values,
-        updateTime: dayjs().format('YYYY-MM-DD HH:mm:ss'),
-      })
+    try {
+      await caseService.updateCase(caseDetail.caseId, values)
+      await fetchCaseDetail()
       setEditModalVisible(false)
       message.success('更新成功')
     } catch (error) {
@@ -186,15 +187,77 @@ const CaseDetail: React.FC = () => {
   }
 
   const getStatusBadge = (status: string) => {
-    const statusMap = {
+    const statusMap: Record<string, { text: string; color: string }> = {
+      lead: { text: '线索', color: 'default' },
+      risk_review: { text: '风控审查', color: 'orange' },
+      signed: { text: '已签约', color: 'blue' },
+      in_progress: { text: '办案中', color: 'processing' },
+      trial: { text: '庭审中', color: 'purple' },
+      closed: { text: '已结案', color: 'success' },
+      archived: { text: '已归档', color: 'default' },
       '0': { text: '未开始', color: 'default' },
       '1': { text: '进行中', color: 'processing' },
       '2': { text: '已结案', color: 'success' },
       '3': { text: '已归档', color: 'default' },
+      pending: { text: '待处理', color: 'orange' },
+      active: { text: '进行中', color: 'green' },
+      suspended: { text: '已暂停', color: 'red' },
     }
-    const config = statusMap[status as keyof typeof statusMap] || { text: '未知', color: 'default' }
+    const config = statusMap[status] || { text: '未知', color: 'default' }
     return <Tag color={config.color}>{config.text}</Tag>
   }
+
+  // 7阶段状态定义
+  const caseStages = [
+    { key: 'lead', title: '线索', description: '案件线索收集与初步评估' },
+    { key: 'risk_review', title: '风控审查', description: '利益冲突排查与风险评估' },
+    { key: 'signed', title: '已签约', description: '委托合同签署完成' },
+    { key: 'in_progress', title: '办案中', description: '案件实质性办理阶段' },
+    { key: 'trial', title: '庭审中', description: '开庭审理阶段' },
+    { key: 'closed', title: '已结案', description: '案件审结' },
+    { key: 'archived', title: '已归档', description: '案件材料归档保存' },
+  ]
+
+  const currentStageIndex = caseStages.findIndex((s) => s.key === caseDetail?.status)
+
+  const handleTransitionStage = async (targetStage: string) => {
+    try {
+      await caseService.updateStatus(Number(id), targetStage)
+      message.success(`案件状态已更新为: ${caseStages.find((s) => s.key === targetStage)?.title}`)
+      fetchCaseDetail()
+    } catch {
+      message.error('状态更新失败')
+    }
+  }
+
+  const [activeTabKey, setActiveTabKey] = useState('basic')
+
+  // 时效管理状态
+  const [deadlineTypes, setDeadlineTypes] = useState<Array<{ type: string; name: string; description: string; default_days: number; category: string }>>([])
+  const [caseDeadlines, setCaseDeadlines] = useState<Array<{ id: number; deadline_type: string; type_name: string; start_date: string; end_date: string; remaining_days: number; status: string }>>([])
+  const [deadlineLoading, setDeadlineLoading] = useState(false)
+
+  const fetchDeadlineData = async () => {
+    setDeadlineLoading(true)
+    try {
+      const [types, deadlines] = await Promise.all([
+        deadlineAPI.getTypes(),
+        deadlineAPI.getCaseDeadlines(Number(id)),
+      ])
+      setDeadlineTypes(types || [])
+      setCaseDeadlines(deadlines || [])
+    } catch {
+      message.error('获取时效数据失败')
+    } finally {
+      setDeadlineLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (activeTabKey === 'deadlines' && id) {
+      fetchDeadlineData()
+    }
+  }, [activeTabKey, id])
 
   const getCaseTypeTag = (type: string) => {
     const typeMap = {
@@ -375,6 +438,16 @@ const CaseDetail: React.FC = () => {
       ),
     },
     {
+      key: 'fee-calculation',
+      label: '费用测算',
+      children: (
+        <FeeCalculator
+          caseType={caseDetail?.caseType || ''}
+          expectedAmount={caseDetail?.expectedAmount || 0}
+        />
+      ),
+    },
+    {
       key: 'timeline',
       label: '案件进展',
       children: (
@@ -392,6 +465,84 @@ const CaseDetail: React.FC = () => {
               </Timeline.Item>
             ))}
           </Timeline>
+        </Card>
+      ),
+    },
+    {
+      key: 'stage-flow',
+      label: '状态流转',
+      children: (
+        <Card title='案件状态流转' loading={loading}>
+          <div style={{ marginBottom: 24 }}>
+            <Steps
+              current={currentStageIndex >= 0 ? currentStageIndex : 0}
+              items={caseStages.map((stage) => ({
+                title: stage.title,
+                description: stage.description,
+              }))}
+            />
+          </div>
+          <Divider orientation='left'>状态变更操作</Divider>
+          <Space wrap style={{ marginBottom: 16 }}>
+            {caseStages.map((stage, idx) => {
+              const isCurrent = caseDetail?.status === stage.key
+              const isPast = idx < currentStageIndex
+              const isNext = idx === currentStageIndex + 1
+              return (
+                <Button
+                  key={stage.key}
+                  type={isCurrent ? 'primary' : 'default'}
+                  disabled={isCurrent || isPast}
+                  onClick={() => handleTransitionStage(stage.key)}
+                  style={{ opacity: isPast ? 0.4 : 1 }}
+                >
+                  {isCurrent ? `${stage.title} (当前)` : isNext ? `→ ${stage.title}` : stage.title}
+                </Button>
+              )
+            })}
+          </Space>
+          <div style={{ color: '#999', fontSize: 12 }}>
+            当前状态: {getStatusBadge(caseDetail?.status || '')}
+          </div>
+        </Card>
+      ),
+    },
+    {
+      key: 'deadlines',
+      label: '时效管理',
+      children: (
+        <Card title='诉讼时效管理' loading={deadlineLoading}>
+          <div style={{ marginBottom: 24 }}>
+            <h4>支持的期限类型</h4>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+              {deadlineTypes.map((dt) => (
+                <Tag key={dt.type} color='blue'>
+                  {dt.name}: {dt.description} (默认{dt.default_days}天)
+                </Tag>
+              ))}
+            </div>
+          </div>
+          <Divider orientation='left'>案件期限</Divider>
+          {caseDeadlines.length === 0 ? (
+            <div style={{ textAlign: 'center', color: '#999', padding: 24 }}>
+              暂无期限数据。请通过后端API添加案件期限。
+            </div>
+          ) : (
+            <List
+              dataSource={caseDeadlines}
+              renderItem={(item) => (
+                <List.Item>
+                  <List.Item.Meta
+                    title={item.type_name}
+                    description={`截止日期: ${item.end_date} | 剩余: ${item.remaining_days}天`}
+                  />
+                  <Tag color={item.remaining_days <= 7 ? 'red' : item.remaining_days <= 30 ? 'orange' : 'green'}>
+                    {item.status}
+                  </Tag>
+                </List.Item>
+              )}
+            />
+          )}
         </Card>
       ),
     },
@@ -440,7 +591,7 @@ const CaseDetail: React.FC = () => {
           </Space>
         </div>
 
-        <Tabs items={tabItems} />
+        <Tabs items={tabItems} activeKey={activeTabKey} onChange={setActiveTabKey} />
       </Card>
 
       <Modal

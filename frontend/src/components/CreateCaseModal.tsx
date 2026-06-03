@@ -28,6 +28,7 @@ import {
 } from '@ant-design/icons'
 import type { UploadProps } from 'antd'
 import { CaseInfo, ClientInfo, LawyerInfo, caseAPI, clientAPI, lawyerAPI } from '@/services/lawfirm'
+import { getToken } from '@/utils/storage'
 import dayjs from 'dayjs'
 
 const { TextArea } = Input
@@ -129,7 +130,7 @@ const CreateCaseModal: React.FC<CreateCaseModalProps> = ({ visible, onCancel, on
     name: 'file',
     action: '/api/lawfirm/file/upload',
     headers: {
-      Authorization: `Bearer ${localStorage.getItem('token')}`,
+      Authorization: `Bearer ${getToken() || ''}`,
     },
     onChange(info) {
       if (info.file.status === 'done') {

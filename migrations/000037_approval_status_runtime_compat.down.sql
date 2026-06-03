@@ -1,0 +1,2 @@
+-- PostgreSQL cannot safely remove enum labels without rebuilding the enum type.
+-- Keep this down migration intentionally empty.

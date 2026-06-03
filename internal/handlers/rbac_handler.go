@@ -510,10 +510,18 @@ func (h *RBACHandler) AssignRolePermissions(c *gin.Context) {
 	}
 
 	var req struct {
-		PermissionIDs []uint `json:"permission_ids" binding:"required"`
+		PermissionIDs      []uint `json:"permission_ids"`
+		PermissionIDsCamel []uint `json:"permissionIds"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		common.APIBadRequest(c, "Invalid request parameters")
+		return
+	}
+	if len(req.PermissionIDs) == 0 {
+		req.PermissionIDs = req.PermissionIDsCamel
+	}
+	if req.PermissionIDs == nil {
+		common.APIBadRequest(c, "permission_ids is required")
 		return
 	}
 
@@ -542,7 +550,11 @@ func (h *RBACHandler) AssignRolePermissions(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /admin/users/{user_id}/roles [get]
 func (h *RBACHandler) GetUserRoles(c *gin.Context) {
-	userID, err := strconv.ParseUint(c.Param("user_id"), 10, 32)
+	userIDParam := c.Param("user_id")
+	if userIDParam == "" {
+		userIDParam = c.Param("id")
+	}
+	userID, err := strconv.ParseUint(userIDParam, 10, 32)
 	if err != nil {
 		common.NewAPIError(c, http.StatusBadRequest, "INVALID_ID", "Invalid user ID")
 		return
@@ -572,17 +584,29 @@ func (h *RBACHandler) GetUserRoles(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /admin/users/{user_id}/roles [post]
 func (h *RBACHandler) AssignUserRoles(c *gin.Context) {
-	userID, err := strconv.ParseUint(c.Param("user_id"), 10, 32)
+	userIDParam := c.Param("user_id")
+	if userIDParam == "" {
+		userIDParam = c.Param("id")
+	}
+	userID, err := strconv.ParseUint(userIDParam, 10, 32)
 	if err != nil {
 		common.NewAPIError(c, http.StatusBadRequest, "INVALID_ID", "Invalid user ID")
 		return
 	}
 
 	var req struct {
-		RoleIDs []uint `json:"role_ids" binding:"required"`
+		RoleIDs      []uint `json:"role_ids"`
+		RoleIDsCamel []uint `json:"roleIds"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		common.APIBadRequest(c, "Invalid request parameters")
+		return
+	}
+	if len(req.RoleIDs) == 0 {
+		req.RoleIDs = req.RoleIDsCamel
+	}
+	if req.RoleIDs == nil {
+		common.APIBadRequest(c, "role_ids is required")
 		return
 	}
 

@@ -1,125 +1,73 @@
 /**
- * E2E测试: 审批流程
- * Story 6.2: 关键流程E2E
+ * E2E: 当前 MVP 审批流程.
  */
 
 import { test, expect } from '@playwright/test'
-import { login, waitForPageLoad, waitForTableLoad, waitForModal } from './utils/test-helpers'
+import {
+  seedAuthenticatedUser,
+  waitForAppShell,
+  waitForNativeTable,
+  waitForPageLoad,
+} from './utils/test-helpers'
 
-test.describe('审批列表', () => {
+test.describe('审批工作台', () => {
   test.beforeEach(async ({ page }) => {
-    await login(page, 'admin', 'admin123')
-    await page.goto('/approvals')
+    await seedAuthenticatedUser(page, 'lawyer')
+    await page.goto('/approval')
     await waitForPageLoad(page)
   })
 
-  test('应该显示审批列表页面', async ({ page }) => {
-    // 验证页面元素
-    await expect(page.locator('.ant-table')).toBeVisible()
+  test('应该显示审批队列', async ({ page }) => {
+    await waitForAppShell(page)
+    await expect(page.getByRole('heading', { name: '审批工作台' })).toBeVisible()
+    await waitForNativeTable(page)
+    await expect(page.getByText('AP-2026-001')).toBeVisible()
+    await expect(page.getByRole('cell', { name: '冲突审查审批 - 红杉资本投资管理咨询合同纠纷案' })).toBeVisible()
   })
 
-  test('应该能筛选审批状态', async ({ page }) => {
-    await waitForTableLoad(page)
+  test('审批分类按钮应该可见', async ({ page }) => {
+    await expect(page.getByRole('button', { name: /全\s*部/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: '冲突审查' })).toBeVisible()
+    await expect(page.getByRole('button', { name: '豁免披露' })).toBeVisible()
+    await expect(page.getByRole('button', { name: '待补充' })).toBeVisible()
+  })
 
-    // 点击状态筛选
-    const statusFilter = page.locator('.ant-select:has-text("状态") .ant-select-selector')
-    if (await statusFilter.isVisible()) {
-      await statusFilter.click()
-      await page.click('.ant-select-dropdown:visible .ant-select-item:has-text("待审批")')
-      await page.waitForTimeout(1000)
-    }
+  test('应该能进入审批详情', async ({ page }) => {
+    await page.locator('tr', { hasText: 'AP-2026-001' }).getByRole('button', { name: '进入审批' }).click()
 
-    await expect(page.locator('.ant-table')).toBeVisible()
+    await expect(page).toHaveURL(/\/approval\/701$/)
+    await expect(page.getByRole('heading', { name: '冲突审查审批 - 红杉资本投资管理咨询合同纠纷案' })).toBeVisible()
   })
 })
 
-test.describe('审批操作', () => {
+test.describe('审批决策台', () => {
   test.beforeEach(async ({ page }) => {
-    await login(page, 'admin', 'admin123')
-    await page.goto('/approvals')
+    await seedAuthenticatedUser(page, 'lawyer')
+    await page.goto('/approval/701')
     await waitForPageLoad(page)
   })
 
-  test('应该能查看审批详情', async ({ page }) => {
-    await waitForTableLoad(page)
-
-    const viewButton = page.locator('.ant-table-tbody tr:first-child button:has-text("查看")')
-
-    if (await viewButton.isVisible()) {
-      await viewButton.click()
-      await page.waitForTimeout(1000)
-
-      // 应该显示详情
-      const detailContent = page.locator('.ant-descriptions, .ant-drawer, .approval-detail')
-      if (await detailContent.isVisible()) {
-        await expect(detailContent).toBeVisible()
-      }
-    } else {
-      test.skip()
-    }
-  })
-
-  test('应该能通过审批', async ({ page }) => {
-    await waitForTableLoad(page)
-
-    // 找到待审批的记录
-    const approveButton = page.locator('.ant-table-tbody button:has-text("通过")')
-
-    if (await approveButton.first().isVisible()) {
-      await approveButton.first().click()
-
-      // 确认操作
-      const confirmButton = page.locator('.ant-popconfirm button:has-text("确定"), .ant-modal button:has-text("确定")')
-      if (await confirmButton.isVisible()) {
-        await confirmButton.click()
-      }
-
-      // 等待成功提示
-      await expect(page.locator('.ant-message')).toBeVisible({ timeout: 5000 })
-    } else {
-      test.skip()
-    }
-  })
-
-  test('应该能拒绝审批', async ({ page }) => {
-    await waitForTableLoad(page)
-
-    const rejectButton = page.locator('.ant-table-tbody button:has-text("拒绝")')
-
-    if (await rejectButton.first().isVisible()) {
-      await rejectButton.first().click()
-
-      // 可能需要填写拒绝原因
-      const reasonInput = page.locator('textarea[placeholder*="原因"], input[placeholder*="原因"]')
-      if (await reasonInput.isVisible()) {
-        await reasonInput.fill('E2E测试拒绝')
-      }
-
-      // 确认操作
-      const confirmButton = page.locator('.ant-popconfirm button:has-text("确定"), .ant-modal button:has-text("确定")')
-      if (await confirmButton.isVisible()) {
-        await confirmButton.click()
-      }
-
-      // 等待成功提示
-      await expect(page.locator('.ant-message')).toBeVisible({ timeout: 5000 })
-    } else {
-      test.skip()
-    }
+  test('律师不是当前审批人时不应该显示审批决策按钮', async ({ page }) => {
+    await waitForAppShell(page)
+    await expect(page.getByRole('button', { name: '同意并成案' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: /^拒绝$/ })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: '退回修改' })).toHaveCount(0)
+    await expect(page.getByText('当前账号仅可查看审批进度')).toBeVisible()
   })
 })
 
-test.describe('审批历史', () => {
+test.describe('审批人决策台', () => {
   test.beforeEach(async ({ page }) => {
-    await login(page, 'admin', 'admin123')
-    await page.goto('/approvals/history')
+    await seedAuthenticatedUser(page, 'admin')
+    await page.goto('/approval/701')
     await waitForPageLoad(page)
   })
 
-  test('应该显示审批历史', async ({ page }) => {
-    const table = page.locator('.ant-table')
-    if (await table.isVisible()) {
-      await expect(table).toBeVisible()
-    }
+  test('当前审批人同意审批后应该显示成案状态', async ({ page }) => {
+    await waitForAppShell(page)
+    await page.getByRole('button', { name: '同意并成案' }).click()
+
+    await expect(page.locator('.ant-message')).toContainText('已成案：HD-2026-001')
+    await expect(page.getByRole('button', { name: '查看关联案件' })).toBeEnabled()
   })
 })

@@ -896,7 +896,7 @@ const CreateCaseWizard: React.FC<CreateCaseWizardProps> = ({ visible, onCancel, 
                 size='large'
                 placeholder='请输入合同金额'
                 formatter={(value) => `¥ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                parser={(value) => value!.replace(/¥\s?|(,*)/g, '') as any}
+                parser={(value) => (value || '').replace(/¥\s?|(,*)/g, '') as any}
                 min={0}
                 precision={2}
               />

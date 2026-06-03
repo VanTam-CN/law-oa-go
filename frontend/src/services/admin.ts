@@ -1,4 +1,4 @@
-import { get, post } from './http'
+import { get, post, put, del } from './http'
 
 // 部门接口
 export interface Department {
@@ -101,7 +101,7 @@ export const createEmployee = (data: Partial<Employee>): Promise<Employee> => {
  * @returns 更新的员工
  */
 export const updateEmployee = (id: number, data: Partial<Employee>): Promise<Employee> => {
-  return post<Employee>(`/admin/employees/${id}`, data, 'PUT')
+  return put<Employee>(`/admin/employees/${id}`, data)
 }
 
 /**
@@ -110,7 +110,7 @@ export const updateEmployee = (id: number, data: Partial<Employee>): Promise<Emp
  * @returns 删除结果
  */
 export const deleteEmployee = (id: number): Promise<void> => {
-  return post<void>(`/admin/employees/${id}`, null, 'DELETE')
+  return del<void>(`/admin/employees/${id}`)
 }
 
 /**
@@ -151,7 +151,7 @@ export const createDocument = (data: Partial<Document>): Promise<Document> => {
  * @returns 更新的文档
  */
 export const updateDocument = (id: number, data: Partial<Document>): Promise<Document> => {
-  return post<Document>(`/admin/documents/${id}`, data, 'PUT')
+  return put<Document>(`/admin/documents/${id}`, data)
 }
 
 /**
@@ -160,7 +160,7 @@ export const updateDocument = (id: number, data: Partial<Document>): Promise<Doc
  * @returns 删除结果
  */
 export const deleteDocument = (id: number): Promise<void> => {
-  return post<void>(`/admin/documents/${id}`, null, 'DELETE')
+  return del<void>(`/admin/documents/${id}`)
 }
 
 /**
@@ -177,5 +177,5 @@ export const getSettings = (): Promise<SystemSettings> => {
  * @returns 更新结果
  */
 export const updateSettings = (settings: Partial<SystemSettings>): Promise<void> => {
-  return post<void>('/admin/settings', settings, 'PUT')
+  return put<void>('/admin/settings', settings)
 }

@@ -7,7 +7,7 @@ import (
 
 // HierarchyItem 层级结构项
 type HierarchyItem struct {
-	Depth int        `json:"depth"`
+	Depth int `json:"depth"`
 	LegalStatute
 }
 
@@ -23,12 +23,12 @@ type CategoryStat struct {
 
 // CategoryTreeNode 分类树节点
 type CategoryTreeNode struct {
-	ID       int                `json:"id"`
-	Name     string             `json:"name"`
-	Code     string             `json:"code"`
-	Level    int                `json:"level"`
-	Children []*CategoryTreeNode `json:"children,omitempty"`
-	StatuteCount int            `json:"statute_count"`
+	ID           int                 `json:"id"`
+	Name         string              `json:"name"`
+	Code         string              `json:"code"`
+	Level        int                 `json:"level"`
+	Children     []*CategoryTreeNode `json:"children,omitempty"`
+	StatuteCount int                 `json:"statute_count"`
 }
 
 // LegalStatuteSummary 法条摘要
@@ -44,30 +44,30 @@ type LegalStatuteSummary struct {
 
 // LegalSearchRequest 搜索请求
 type LegalSearchRequest struct {
-	Query             string   `json:"query" form:"query"`
-	CategoryID        int      `json:"category_id" form:"category_id"`
-	LawName           string   `json:"law_name" form:"law_name"`
-	Status            string   `json:"status" form:"status"`
-	EffectiveFrom     string   `json:"effective_from" form:"effective_from"`
-	EffectiveTo       string   `json:"effective_to" form:"effective_to"`
-	Tags              []string `json:"tags" form:"tags"`
-	IncludeInactive   bool     `json:"include_inactive" form:"include_inactive"`
-	SortBy            string   `json:"sort_by" form:"sort_by"`         // relevance, date, title
-	SortOrder         string   `json:"sort_order" form:"sort_order"`   // asc, desc
-	Page              int      `json:"page" form:"page"`
-	PageSize          int      `json:"page_size" form:"page_size"`
+	Query           string   `json:"query" form:"query"`
+	CategoryID      int      `json:"category_id" form:"category_id"`
+	LawName         string   `json:"law_name" form:"law_name"`
+	Status          string   `json:"status" form:"status"`
+	EffectiveFrom   string   `json:"effective_from" form:"effective_from"`
+	EffectiveTo     string   `json:"effective_to" form:"effective_to"`
+	Tags            []string `json:"tags" form:"tags"`
+	IncludeInactive bool     `json:"include_inactive" form:"include_inactive"`
+	SortBy          string   `json:"sort_by" form:"sort_by"`       // relevance, date, title
+	SortOrder       string   `json:"sort_order" form:"sort_order"` // asc, desc
+	Page            int      `json:"page" form:"page"`
+	PageSize        int      `json:"page_size" form:"page_size"`
 }
 
 // LegalSearchResponse 搜索响应
 type LegalSearchResponse struct {
-	Total      int64                `json:"total"`
-	Page       int                  `json:"page"`
-	PageSize   int                  `json:"page_size"`
-	TotalPages int                  `json:"total_pages"`
-	Statutes   []*LegalStatute      `json:"statutes"`
-	Categories []*CategoryStat      `json:"categories,omitempty"`
-	Suggestions []string            `json:"suggestions,omitempty"`
-	SearchTime  int                 `json:"search_time_ms"`
+	Total       int64                   `json:"total"`
+	Page        int                     `json:"page"`
+	PageSize    int                     `json:"page_size"`
+	TotalPages  int                     `json:"total_pages"`
+	Statutes    []*LegalStatuteResponse `json:"statutes"`
+	Categories  []*CategoryStat         `json:"categories,omitempty"`
+	Suggestions []string                `json:"suggestions,omitempty"`
+	SearchTime  int                     `json:"search_time_ms"`
 }
 
 // LegalCategoryRequest 分类请求
@@ -81,17 +81,17 @@ type LegalCategoryRequest struct {
 
 // LegalCategoryResponse 分类响应
 type LegalCategoryResponse struct {
-	ID           int                   `json:"id"`
-	Name         string                `json:"name"`
-	Code         string                `json:"code"`
-	ParentID     *int                  `json:"parent_id"`
-	Level        int                   `json:"level"`
-	Description  string                `json:"description"`
-	IsActive     bool                  `json:"is_active"`
-	StatuteCount int                   `json:"statute_count"`
+	ID           int                      `json:"id"`
+	Name         string                   `json:"name"`
+	Code         string                   `json:"code"`
+	ParentID     *int                     `json:"parent_id"`
+	Level        int                      `json:"level"`
+	Description  string                   `json:"description"`
+	IsActive     bool                     `json:"is_active"`
+	StatuteCount int                      `json:"statute_count"`
 	Children     []*LegalCategoryResponse `json:"children,omitempty"`
-	CreatedAt    time.Time             `json:"created_at"`
-	UpdatedAt    time.Time             `json:"updated_at"`
+	CreatedAt    time.Time                `json:"created_at"`
+	UpdatedAt    time.Time                `json:"updated_at"`
 }
 
 // LegalTagRequest 标签请求
@@ -113,74 +113,74 @@ type LegalTagResponse struct {
 
 // LegalStatuteCreateRequest 创建法条请求
 type LegalStatuteCreateRequest struct {
-	StatuteNumber      string     `json:"statute_number" binding:"required"`
-	Title              string     `json:"title" binding:"required"`
-	Content            string     `json:"content" binding:"required"`
-	CategoryID         int        `json:"category_id" binding:"required"`
-	LawName            string     `json:"law_name" binding:"required"`
-	Chapter            string     `json:"chapter"`
-	Section            string     `json:"section"`
-	Part               string     `json:"part"`
-	EffectiveDate      *time.Time `json:"effective_date"`
-	ExpiryDate         *time.Time `json:"expiry_date"`
+	StatuteNumber       string     `json:"statute_number" binding:"required"`
+	Title               string     `json:"title" binding:"required"`
+	Content             string     `json:"content" binding:"required"`
+	CategoryID          int        `json:"category_id" binding:"required"`
+	LawName             string     `json:"law_name" binding:"required"`
+	Chapter             string     `json:"chapter"`
+	Section             string     `json:"section"`
+	Part                string     `json:"part"`
+	EffectiveDate       *time.Time `json:"effective_date"`
+	ExpiryDate          *time.Time `json:"expiry_date"`
 	PublishingAuthority string     `json:"publishing_authority"`
-	Status             string     `json:"status"`
-	HierarchyLevel     int        `json:"hierarchy_level"`
-	ParentStatuteID    *int       `json:"parent_statute_id"`
-	OrderInHierarchy   *int       `json:"order_in_hierarchy"`
-	Tags               []string   `json:"tags"`
-	Keywords           []string   `json:"keywords"`
+	Status              string     `json:"status"`
+	HierarchyLevel      int        `json:"hierarchy_level"`
+	ParentStatuteID     *int       `json:"parent_statute_id"`
+	OrderInHierarchy    *int       `json:"order_in_hierarchy"`
+	Tags                []string   `json:"tags"`
+	Keywords            []string   `json:"keywords"`
 }
 
 // LegalStatuteUpdateRequest 更新法条请求
 type LegalStatuteUpdateRequest struct {
-	Title              string     `json:"title"`
-	Content            string     `json:"content"`
-	CategoryID         int        `json:"category_id"`
-	Chapter            string     `json:"chapter"`
-	Section            string     `json:"section"`
-	Part               string     `json:"part"`
-	EffectiveDate      *time.Time `json:"effective_date"`
-	ExpiryDate         *time.Time `json:"expiry_date"`
+	Title               string     `json:"title"`
+	Content             string     `json:"content"`
+	CategoryID          int        `json:"category_id"`
+	Chapter             string     `json:"chapter"`
+	Section             string     `json:"section"`
+	Part                string     `json:"part"`
+	EffectiveDate       *time.Time `json:"effective_date"`
+	ExpiryDate          *time.Time `json:"expiry_date"`
 	PublishingAuthority string     `json:"publishing_authority"`
-	Status             string     `json:"status"`
-	OrderInHierarchy   *int       `json:"order_in_hierarchy"`
-	Tags               []string   `json:"tags"`
-	Keywords           []string   `json:"keywords"`
-	ChangeDescription  string     `json:"change_description"` // 用于版本记录
+	Status              string     `json:"status"`
+	OrderInHierarchy    *int       `json:"order_in_hierarchy"`
+	Tags                []string   `json:"tags"`
+	Keywords            []string   `json:"keywords"`
+	ChangeDescription   string     `json:"change_description"` // 用于版本记录
 }
 
 // LegalStatuteResponse 法条响应
 type LegalStatuteResponse struct {
-	ID                 int                        `json:"id"`
-	StatuteNumber      string                     `json:"statute_number"`
-	Title              string                     `json:"title"`
-	Content            string                     `json:"content"`
-	Category           *LegalCategoryResponse     `json:"category"`
-	LawName            string                     `json:"law_name"`
-	Chapter            string                     `json:"chapter"`
-	Section            string                     `json:"section"`
-	Part               string                     `json:"part"`
-	EffectiveDate      *time.Time                 `json:"effective_date"`
-	ExpiryDate         *time.Time                 `json:"expiry_date"`
-	PublishingAuthority string                     `json:"publishing_authority"`
-	Status             string                     `json:"status"`
-	HierarchyLevel     int                        `json:"hierarchy_level"`
-	ParentStatuteID    *int                       `json:"parent_statute_id"`
-	OrderInHierarchy   *int                       `json:"order_in_hierarchy"`
-	Tags               []string                   `json:"tags"`
-	Keywords           []string                   `json:"keywords"`
-	IsFavorited        bool                       `json:"is_favorited"`
-	ViewCount          int                        `json:"view_count"`
-	FavoriteCount      int                        `json:"favorite_count"`
-	CreatedAt          time.Time                  `json:"created_at"`
-	UpdatedAt          time.Time                  `json:"updated_at"`
+	ID                  int                    `json:"id"`
+	StatuteNumber       string                 `json:"statute_number"`
+	Title               string                 `json:"title"`
+	Content             string                 `json:"content"`
+	Category            *LegalCategoryResponse `json:"category"`
+	LawName             string                 `json:"law_name"`
+	Chapter             string                 `json:"chapter"`
+	Section             string                 `json:"section"`
+	Part                string                 `json:"part"`
+	EffectiveDate       *time.Time             `json:"effective_date"`
+	ExpiryDate          *time.Time             `json:"expiry_date"`
+	PublishingAuthority string                 `json:"publishing_authority"`
+	Status              string                 `json:"status"`
+	HierarchyLevel      int                    `json:"hierarchy_level"`
+	ParentStatuteID     *int                   `json:"parent_statute_id"`
+	OrderInHierarchy    *int                   `json:"order_in_hierarchy"`
+	Tags                []string               `json:"tags"`
+	Keywords            []string               `json:"keywords"`
+	IsFavorited         bool                   `json:"is_favorited"`
+	ViewCount           int                    `json:"view_count"`
+	FavoriteCount       int                    `json:"favorite_count"`
+	CreatedAt           time.Time              `json:"created_at"`
+	UpdatedAt           time.Time              `json:"updated_at"`
 
 	// 扩展字段
-	FullPath           string                     `json:"full_path"`
-	IsActive           bool                       `json:"is_active"`
-	ChildStatutes      []*LegalStatuteResponse    `json:"child_statutes,omitempty"`
-	Versions           []*LegalStatuteVersion     `json:"versions,omitempty"`
+	FullPath      string                  `json:"full_path"`
+	IsActive      bool                    `json:"is_active"`
+	ChildStatutes []*LegalStatuteResponse `json:"child_statutes,omitempty"`
+	Versions      []*LegalStatuteVersion  `json:"versions,omitempty"`
 }
 
 // FavoriteRequest 收藏请求
@@ -190,22 +190,22 @@ type FavoriteRequest struct {
 
 // FavoriteResponse 收藏响应
 type FavoriteResponse struct {
-	ID        int       `json:"id"`
-	StatuteID int       `json:"statute_id"`
-	UserID    int       `json:"user_id"`
-	CreatedAt time.Time `json:"created_at"`
+	ID        int                   `json:"id"`
+	StatuteID int                   `json:"statute_id"`
+	UserID    int                   `json:"user_id"`
+	CreatedAt time.Time             `json:"created_at"`
 	Statute   *LegalStatuteResponse `json:"statute,omitempty"`
 }
 
 // SearchHistoryResponse 搜索历史响应
 type SearchHistoryResponse struct {
-	ID            int                    `json:"id"`
-	UserID        *int                   `json:"user_id"`
-	SearchQuery   string                 `json:"search_query"`
-	SearchFilters map[string]interface{} `json:"search_filters"`
-	ResultCount   int                    `json:"result_count"`
-	SearchDuration *int                  `json:"search_duration"`
-	CreatedAt     time.Time              `json:"created_at"`
+	ID             int                    `json:"id"`
+	UserID         *int                   `json:"user_id"`
+	SearchQuery    string                 `json:"search_query"`
+	SearchFilters  map[string]interface{} `json:"search_filters"`
+	ResultCount    int                    `json:"result_count"`
+	SearchDuration *int                   `json:"search_duration"`
+	CreatedAt      time.Time              `json:"created_at"`
 }
 
 // LegalStatuteBatchRequest 批量操作请求
@@ -224,21 +224,21 @@ type LegalStatuteBatchResponse struct {
 
 // LegalExportRequest 导出请求
 type LegalExportRequest struct {
-	Format      string   `json:"format"`                // pdf, word, excel, json
-	CategoryID  int      `json:"category_id"`
-	LawName     string   `json:"law_name"`
-	Status      string   `json:"status"`
-	Tags        []string `json:"tags"`
-	FromDate    string   `json:"from_date"`
-	ToDate      string   `json:"to_date"`
-	IncludeContent bool  `json:"include_content"`
+	Format         string   `json:"format"` // pdf, word, excel, json
+	CategoryID     int      `json:"category_id"`
+	LawName        string   `json:"law_name"`
+	Status         string   `json:"status"`
+	Tags           []string `json:"tags"`
+	FromDate       string   `json:"from_date"`
+	ToDate         string   `json:"to_date"`
+	IncludeContent bool     `json:"include_content"`
 }
 
 // LegalExportResponse 导出响应
 type LegalExportResponse struct {
-	DownloadURL string `json:"download_url"`
-	FileName    string `json:"file_name"`
-	FileSize    int64  `json:"file_size"`
+	DownloadURL string    `json:"download_url"`
+	FileName    string    `json:"file_name"`
+	FileSize    int64     `json:"file_size"`
 	ExportTime  time.Time `json:"export_time"`
 }
 
@@ -267,13 +267,13 @@ type LegalStatuteImportRequest struct {
 
 // LegalStatuteImportResponse 法条导入响应
 type LegalStatuteImportResponse struct {
-	TotalCount       int      `json:"total_count"`
-	SuccessCount     int      `json:"success_count"`
-	FailureCount     int      `json:"failure_count"`
-	SuccessNumbers   []string `json:"success_numbers"`
-	FailureNumbers   []string `json:"failure_numbers"`
+	TotalCount       int           `json:"total_count"`
+	SuccessCount     int           `json:"success_count"`
+	FailureCount     int           `json:"failure_count"`
+	SuccessNumbers   []string      `json:"success_numbers"`
+	FailureNumbers   []string      `json:"failure_numbers"`
 	Errors           []ImportError `json:"errors,omitempty"`
-	ProcessingTimeMs int64    `json:"processing_time_ms"`
+	ProcessingTimeMs int64         `json:"processing_time_ms"`
 }
 
 // ImportError 导入错误详情

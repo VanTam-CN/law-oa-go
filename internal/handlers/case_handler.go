@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"law-oa-go/internal/common"
+	"law-oa-go/internal/middleware"
 	"law-oa-go/internal/services"
 )
 
@@ -73,6 +74,12 @@ func (h *CaseHandler) GetCase(c *gin.Context) {
 	if err != nil {
 		common.APINotFound(c, "案件不存在", "指定的案件ID不存在")
 		return
+	}
+	if role, _ := middleware.GetCurrentRole(c); role == "lawyer" {
+		if userID, ok := middleware.GetCurrentUserID(c); ok && caseResp.LawyerID != userID {
+			common.APIForbidden(c, "无权查看该案件", "律师账号只能查看本人承办的案件")
+			return
+		}
 	}
 
 	common.APISuccess(c, caseResp)
@@ -168,6 +175,11 @@ func (h *CaseHandler) ListCases(c *gin.Context) {
 		common.APIBadRequest(c, "查询参数错误", "请检查查询参数")
 		return
 	}
+	if role, _ := middleware.GetCurrentRole(c); role == "lawyer" {
+		if userID, ok := middleware.GetCurrentUserID(c); ok {
+			req.LawyerID = userID
+		}
+	}
 
 	response, err := h.caseService.ListCases(c.Request.Context(), &req)
 	if err != nil {
@@ -215,6 +227,36 @@ func (h *CaseHandler) GetLawyers(c *gin.Context) {
 	}
 
 	common.APISuccess(c, lawyers)
+}
+
+// GetLawyerByID godoc
+// @Summary 获取律师详情
+// @Description 获取单个律师用户详情，用于律师资源页面
+// @Tags 案件管理
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "律师ID"
+// @Success 200 {object} common.APIResponse{data=models.User} "获取成功"
+// @Failure 400 {object} common.APIResponse "请求参数错误"
+// @Failure 401 {object} common.APIResponse "未授权"
+// @Failure 404 {object} common.APIResponse "律师不存在"
+// @Failure 500 {object} common.APIResponse "内部错误"
+// @Router /lawfirm/lawyers/{id} [get]
+func (h *CaseHandler) GetLawyerByID(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil || id == 0 {
+		common.APIBadRequest(c, "请求参数错误", "律师ID必须是有效数字")
+		return
+	}
+
+	lawyer, err := h.caseService.GetLawyerByID(c.Request.Context(), uint(id))
+	if err != nil {
+		common.APINotFound(c, "律师不存在", "指定律师不存在或已删除")
+		return
+	}
+
+	common.APISuccess(c, lawyer)
 }
 
 // GetCaseTypes godoc

@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 
@@ -16,25 +17,30 @@ func InitRBACData(db *gorm.DB) error {
 
 	// 创建事务
 	tx := db.Begin()
+	if tx.Error != nil {
+		return fmt.Errorf("开启RBAC初始化事务失败: %w", tx.Error)
+	}
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
 		}
 	}()
 
-	// 检查是否已有数据
-	var roleCount int64
-	if err := tx.Model(&models.Role{}).Count(&roleCount).Error; err != nil {
-		return fmt.Errorf("检查角色数量失败: %w", err)
-	}
-
-	if roleCount > 0 {
-		log.Println("角色数据已存在，跳过初始化")
-		return nil
+	if !rbacTablesExist(tx) {
+		if err := tx.AutoMigrate(
+			&models.Role{},
+			&models.Permission{},
+			&models.RolePermission{},
+			&models.UserRole{},
+		); err != nil {
+			tx.Rollback()
+			return fmt.Errorf("迁移RBAC表失败: %w", err)
+		}
 	}
 
 	// 创建RBAC服务
-	rbacService := services.NewRBACService(db)
+	ctx := context.Background()
+	rbacService := services.NewRBACService(tx)
 
 	// 创建系统角色
 	roles := []*services.CreateRoleRequest{
@@ -44,30 +50,31 @@ func InitRBACData(db *gorm.DB) error {
 		{Name: "助理", Code: "assistant", Description: "律师助理，协助律师处理案件", Status: "active", SortOrder: 4},
 		{Name: "财务", Code: "finance", Description: "财务人员，负责财务管理", Status: "active", SortOrder: 5},
 		{Name: "实习生", Code: "intern", Description: "实习人员，拥有基础查看权限", Status: "active", SortOrder: 6},
+		{Name: "普通用户", Code: "user", Description: "普通试用账号，拥有基础查看权限", Status: "active", SortOrder: 7},
 	}
 
 	createdRoles := make(map[string]*models.Role)
 	for _, roleReq := range roles {
-		role, err := rbacService.CreateRole(context.Background(), roleReq)
+		role, err := ensureRBACRole(ctx, tx, rbacService, roleReq)
 		if err != nil {
 			tx.Rollback()
 			return fmt.Errorf("创建角色 %s 失败: %w", roleReq.Name, err)
 		}
 		createdRoles[roleReq.Code] = role
-		log.Printf("✓ 创建角色: %s (%s)", role.Name, role.Code)
+		log.Printf("✓ 确认角色: %s (%s)", role.Name, role.Code)
 	}
 
 	// 创建系统权限（菜单级）
 	menuPermissions := []*services.CreatePermissionRequest{
 		{Name: "仪表盘", Code: "dashboard", Type: "menu", Path: "/dashboard", Icon: "dashboard", Component: "Dashboard", SortOrder: 1},
-		{Name: "用户管理", Code: "user_management", Type: "menu", Path: "/admin/users", Icon: "users", Component: "UserManagement", SortOrder: 2},
+		{Name: "用户管理", Code: "user_management", Type: "menu", Path: "/user", Icon: "users", Component: "UserManagement", SortOrder: 2},
 		{Name: "角色管理", Code: "role_management", Type: "menu", Path: "/admin/roles", Icon: "role", Component: "RoleManagement", SortOrder: 3},
 		{Name: "权限管理", Code: "permission_management", Type: "menu", Path: "/admin/permissions", Icon: "permission", Component: "PermissionManagement", SortOrder: 4},
-		{Name: "客户管理", Code: "client_management", Type: "menu", Path: "/clients", Icon: "clients", Component: "ClientManagement", SortOrder: 5},
-		{Name: "案件管理", Code: "case_management", Type: "menu", Path: "/cases", Icon: "cases", Component: "CaseManagement", SortOrder: 6},
-		{Name: "审批中心", Code: "approval_center", Type: "menu", Path: "/approvals", Icon: "approval", Component: "ApprovalCenter", SortOrder: 7},
+		{Name: "客户管理", Code: "client_management", Type: "menu", Path: "/client", Icon: "clients", Component: "ClientManagement", SortOrder: 5},
+		{Name: "案件管理", Code: "case_management", Type: "menu", Path: "/case", Icon: "cases", Component: "CaseManagement", SortOrder: 6},
+		{Name: "审批中心", Code: "approval_center", Type: "menu", Path: "/approval", Icon: "approval", Component: "ApprovalCenter", SortOrder: 7},
 		{Name: "财务管理", Code: "finance_management", Type: "menu", Path: "/finance", Icon: "finance", Component: "FinanceManagement", SortOrder: 8},
-		{Name: "文档管理", Code: "document_management", Type: "menu", Path: "/documents", Icon: "documents", Component: "DocumentManagement", SortOrder: 9},
+		{Name: "文档管理", Code: "document_management", Type: "menu", Path: "/file", Icon: "documents", Component: "DocumentManagement", SortOrder: 9},
 		{Name: "工具中心", Code: "tools_center", Type: "menu", Path: "/tools", Icon: "tools", Component: "ToolsCenter", SortOrder: 10},
 		{Name: "系统设置", Code: "system_settings", Type: "menu", Path: "/settings", Icon: "settings", Component: "SystemSettings", SortOrder: 11},
 		{Name: "统计报表", Code: "statistics_reports", Type: "menu", Path: "/statistics", Icon: "statistics", Component: "StatisticsReports", SortOrder: 12},
@@ -75,13 +82,13 @@ func InitRBACData(db *gorm.DB) error {
 
 	createdPermissions := make(map[string]*models.Permission)
 	for _, permReq := range menuPermissions {
-		permission, err := rbacService.CreatePermission(context.Background(), permReq)
+		permission, err := ensureRBACPermission(ctx, tx, rbacService, permReq)
 		if err != nil {
 			tx.Rollback()
 			return fmt.Errorf("创建权限 %s 失败: %w", permReq.Name, err)
 		}
 		createdPermissions[permReq.Code] = permission
-		log.Printf("✓ 创建权限: %s (%s)", permission.Name, permission.Code)
+		log.Printf("✓ 确认权限: %s (%s)", permission.Name, permission.Code)
 	}
 
 	// 创建按钮级权限
@@ -124,13 +131,13 @@ func InitRBACData(db *gorm.DB) error {
 	}
 
 	for _, permReq := range buttonPermissions {
-		permission, err := rbacService.CreatePermission(context.Background(), permReq)
+		permission, err := ensureRBACPermission(ctx, tx, rbacService, permReq)
 		if err != nil {
 			tx.Rollback()
 			return fmt.Errorf("创建权限 %s 失败: %w", permReq.Name, err)
 		}
 		createdPermissions[permReq.Code] = permission
-		log.Printf("✓ 创建权限: %s (%s)", permission.Name, permission.Code)
+		log.Printf("✓ 确认权限: %s (%s)", permission.Name, permission.Code)
 	}
 
 	// 为超级管理员分配所有权限
@@ -139,7 +146,7 @@ func InitRBACData(db *gorm.DB) error {
 		superAdminPerms = append(superAdminPerms, perm.ID)
 	}
 
-	if err := rbacService.AssignRolePermissions(context.Background(), createdRoles["super_admin"].ID, superAdminPerms); err != nil {
+	if err := rbacService.AssignRolePermissions(ctx, createdRoles["super_admin"].ID, superAdminPerms); err != nil {
 		tx.Rollback()
 		return fmt.Errorf("为超级管理员分配权限失败: %w", err)
 	}
@@ -184,7 +191,7 @@ func InitRBACData(db *gorm.DB) error {
 		createdPermissions["document:delete"].ID,
 	}
 
-	if err := rbacService.AssignRolePermissions(context.Background(), createdRoles["admin"].ID, adminPerms); err != nil {
+	if err := rbacService.AssignRolePermissions(ctx, createdRoles["admin"].ID, adminPerms); err != nil {
 		tx.Rollback()
 		return fmt.Errorf("为管理员分配权限失败: %w", err)
 	}
@@ -210,7 +217,7 @@ func InitRBACData(db *gorm.DB) error {
 		createdPermissions["document:edit"].ID,
 	}
 
-	if err := rbacService.AssignRolePermissions(context.Background(), createdRoles["lawyer"].ID, lawyerPerms); err != nil {
+	if err := rbacService.AssignRolePermissions(ctx, createdRoles["lawyer"].ID, lawyerPerms); err != nil {
 		tx.Rollback()
 		return fmt.Errorf("为律师分配权限失败: %w", err)
 	}
@@ -228,7 +235,7 @@ func InitRBACData(db *gorm.DB) error {
 		createdPermissions["document:view"].ID,
 	}
 
-	if err := rbacService.AssignRolePermissions(context.Background(), createdRoles["assistant"].ID, assistantPerms); err != nil {
+	if err := rbacService.AssignRolePermissions(ctx, createdRoles["assistant"].ID, assistantPerms); err != nil {
 		tx.Rollback()
 		return fmt.Errorf("为助理分配权限失败: %w", err)
 	}
@@ -244,7 +251,7 @@ func InitRBACData(db *gorm.DB) error {
 		createdPermissions["finance:edit"].ID,
 	}
 
-	if err := rbacService.AssignRolePermissions(context.Background(), createdRoles["finance"].ID, financePerms); err != nil {
+	if err := rbacService.AssignRolePermissions(ctx, createdRoles["finance"].ID, financePerms); err != nil {
 		tx.Rollback()
 		return fmt.Errorf("为财务分配权限失败: %w", err)
 	}
@@ -255,9 +262,19 @@ func InitRBACData(db *gorm.DB) error {
 		createdPermissions["tools_center"].ID,
 	}
 
-	if err := rbacService.AssignRolePermissions(context.Background(), createdRoles["intern"].ID, internPerms); err != nil {
+	if err := rbacService.AssignRolePermissions(ctx, createdRoles["intern"].ID, internPerms); err != nil {
 		tx.Rollback()
 		return fmt.Errorf("为实习生分配权限失败: %w", err)
+	}
+
+	if err := rbacService.AssignRolePermissions(ctx, createdRoles["user"].ID, internPerms); err != nil {
+		tx.Rollback()
+		return fmt.Errorf("为普通用户分配权限失败: %w", err)
+	}
+
+	if err := syncExistingUserRoles(ctx, tx, createdRoles); err != nil {
+		tx.Rollback()
+		return fmt.Errorf("同步已有用户角色失败: %w", err)
 	}
 
 	// 提交事务
@@ -266,5 +283,94 @@ func InitRBACData(db *gorm.DB) error {
 	}
 
 	log.Println("✓ 角色权限数据初始化完成")
+	return nil
+}
+
+func rbacTablesExist(db *gorm.DB) bool {
+	return db.Migrator().HasTable(&models.Role{}) &&
+		db.Migrator().HasTable(&models.Permission{}) &&
+		db.Migrator().HasTable(&models.RolePermission{}) &&
+		db.Migrator().HasTable(&models.UserRole{})
+}
+
+func ensureRBACRole(ctx context.Context, tx *gorm.DB, rbacService *services.RBACService, req *services.CreateRoleRequest) (*models.Role, error) {
+	var role models.Role
+	err := tx.WithContext(ctx).Where("code = ?", req.Code).First(&role).Error
+	if err == nil {
+		updates := map[string]interface{}{
+			"name":        req.Name,
+			"description": req.Description,
+			"status":      req.Status,
+			"sort_order":  req.SortOrder,
+		}
+		if err := tx.WithContext(ctx).Model(&role).Updates(updates).Error; err != nil {
+			return nil, err
+		}
+		return &role, nil
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+	return rbacService.CreateRole(ctx, req)
+}
+
+func ensureRBACPermission(ctx context.Context, tx *gorm.DB, rbacService *services.RBACService, req *services.CreatePermissionRequest) (*models.Permission, error) {
+	var permission models.Permission
+	err := tx.WithContext(ctx).Where("code = ?", req.Code).First(&permission).Error
+	if err == nil {
+		updates := map[string]interface{}{
+			"name":       req.Name,
+			"type":       req.Type,
+			"parent_id":  req.ParentID,
+			"path":       req.Path,
+			"icon":       req.Icon,
+			"component":  req.Component,
+			"sort_order": req.SortOrder,
+			"status":     req.Status,
+		}
+		if updates["type"] == "" {
+			updates["type"] = "menu"
+		}
+		if updates["status"] == "" {
+			updates["status"] = "active"
+		}
+		if err := tx.WithContext(ctx).Model(&permission).Updates(updates).Error; err != nil {
+			return nil, err
+		}
+		return &permission, nil
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+	return rbacService.CreatePermission(ctx, req)
+}
+
+func syncExistingUserRoles(ctx context.Context, tx *gorm.DB, roles map[string]*models.Role) error {
+	var users []models.User
+	if err := tx.WithContext(ctx).Select("id", "role").Find(&users).Error; err != nil {
+		return err
+	}
+
+	for _, user := range users {
+		roleCode := user.Role
+		if roleCode == "" {
+			roleCode = "user"
+		}
+		role, ok := roles[roleCode]
+		if !ok {
+			role = roles["user"]
+		}
+		if role == nil {
+			continue
+		}
+
+		userRole := models.UserRole{UserID: user.ID, RoleID: role.ID}
+		if err := tx.WithContext(ctx).
+			Where("user_id = ? AND role_id = ?", user.ID, role.ID).
+			FirstOrCreate(&userRole).Error; err != nil {
+			return err
+		}
+	}
+
 	return nil
 }

@@ -1,4 +1,9 @@
 import { post, get } from './http'
+import {
+  getToken as getStoredToken,
+  removeToken as removeStoredToken,
+  setToken as setStoredToken,
+} from '@/utils/storage'
 
 // 用户登录接口参数类型
 interface LoginParams {
@@ -18,6 +23,10 @@ interface LoginResponse {
     role: string
     department: string
     [key: string]: any
+  }
+  data?: {
+    token?: string
+    user?: LoginResponse['user']
   }
 }
 
@@ -54,7 +63,7 @@ export const logout = (): Promise<any> => {
  * @returns 用户信息
  */
 export const getCurrentUser = (): Promise<UserInfo> => {
-  return get<UserInfo>('/auth/me')
+  return get<UserInfo>('/users/me')
 }
 
 /**
@@ -66,7 +75,7 @@ export const changePassword = (data: {
   old_password: string
   new_password: string
 }): Promise<any> => {
-  return post('/auth/change-password', data)
+  return post('/users/change-password', data)
 }
 
 /**
@@ -74,7 +83,7 @@ export const changePassword = (data: {
  * @returns token字符串或null
  */
 export const getToken = (): string | null => {
-  return localStorage.getItem('auth_token')
+  return getStoredToken()
 }
 
 /**
@@ -82,12 +91,12 @@ export const getToken = (): string | null => {
  * @param token token字符串
  */
 export const setToken = (token: string): void => {
-  localStorage.setItem('auth_token', token)
+  setStoredToken(token)
 }
 
 /**
  * 清除token
  */
 export const clearToken = (): void => {
-  localStorage.removeItem('auth_token')
+  removeStoredToken()
 }

@@ -12,33 +12,33 @@ import (
 
 // CaseService 案件服务
 type CaseService struct {
-	caseRepo  repositories.CaseRepository
+	caseRepo   repositories.CaseRepository
 	clientRepo repositories.ClientRepository
-	userRepo  repositories.UserRepository
+	userRepo   repositories.UserRepository
 }
 
 // CreateCaseRequest 创建案件请求
 type CreateCaseRequest struct {
-	Title              string                    `json:"title" binding:"required,min=1,max=200"`
-	Description        string                    `json:"description" binding:"max=2000"`
-	ClientID           uint                      `json:"client_id" binding:"required"`
-	CaseType           string                    `json:"case_type" binding:"required"`
-	Priority           string                    `json:"priority" binding:"required"`
-	StartDate          string                    `json:"start_date,omitempty"`
+	Title       string `json:"title" binding:"required,min=1,max=200"`
+	Description string `json:"description" binding:"max=2000"`
+	ClientID    uint   `json:"client_id" binding:"required"`
+	CaseType    string `json:"case_type" binding:"required"`
+	Priority    string `json:"priority" binding:"required"`
+	StartDate   string `json:"start_date,omitempty"`
 	// 团队分配信息
-	LawyerID           uint                      `json:"lawyer_id" binding:"required"`           // 主办律师
-	AssistingLawyerID  *uint                     `json:"assisting_lawyer_id,omitempty"`        // 协办律师
-	TeamMembers        []TeamMemberRequest       `json:"team_members,omitempty"`              // 其他团队成员
-	BillingMethod      string                    `json:"billing_method" binding:"required"`
-	IsMajorRisk        bool                      `json:"is_major_risk"`
-	AssignedBy         uint                      `json:"assigned_by"`                         // 分配者ID
+	LawyerID          uint                `json:"lawyer_id" binding:"required"`  // 主办律师
+	AssistingLawyerID *uint               `json:"assisting_lawyer_id,omitempty"` // 协办律师
+	TeamMembers       []TeamMemberRequest `json:"team_members,omitempty"`        // 其他团队成员
+	BillingMethod     string              `json:"billing_method" binding:"required"`
+	IsMajorRisk       bool                `json:"is_major_risk"`
+	AssignedBy        uint                `json:"assigned_by"` // 分配者ID
 }
 
 // TeamMemberRequest 团队成员请求
 type TeamMemberRequest struct {
 	UserID   uint   `json:"user_id" binding:"required"`
-	Role     string `json:"role" binding:"required"`     // paralegal, assistant, intern
-	Capacity int    `json:"capacity,omitempty"`         // 工作容量百分比
+	Role     string `json:"role" binding:"required"` // paralegal, assistant, intern
+	Capacity int    `json:"capacity,omitempty"`      // 工作容量百分比
 }
 
 // UpdateCaseRequest 更新案件请求
@@ -54,26 +54,27 @@ type UpdateCaseRequest struct {
 
 // CaseResponse 案件响应
 type CaseResponse struct {
-	ID          uint                   `json:"id"`
-	Title       string                 `json:"title"`
-	Description string                 `json:"description"`
-	ClientID    uint                   `json:"client_id"`
-	Client      *models.Client         `json:"client,omitempty"`
-	LawyerID    uint                   `json:"lawyer_id"`
-	Lawyer      *models.User           `json:"lawyer,omitempty"`
-	CaseType    string                 `json:"case_type"`
-	Priority    string                 `json:"priority"`
-	Status      string                 `json:"status"`
-	StartDate   *time.Time             `json:"start_date"`
-	EndDate     *time.Time             `json:"end_date"`
-	CreatedAt   time.Time              `json:"created_at"`
-	UpdatedAt   time.Time              `json:"updated_at"`
+	ID          uint           `json:"id"`
+	CaseNumber  string         `json:"case_number"`
+	Title       string         `json:"title"`
+	Description string         `json:"description"`
+	ClientID    uint           `json:"client_id"`
+	Client      *models.Client `json:"client,omitempty"`
+	LawyerID    uint           `json:"lawyer_id"`
+	Lawyer      *models.User   `json:"lawyer,omitempty"`
+	CaseType    string         `json:"case_type"`
+	Priority    string         `json:"priority"`
+	Status      string         `json:"status"`
+	StartDate   *time.Time     `json:"start_date"`
+	EndDate     *time.Time     `json:"end_date"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
 }
 
 // ListCasesRequest 案件列表请求
 type ListCasesRequest struct {
-	Page     int    `json:"page" form:"page" binding:"min=1"`
-	PageSize int    `json:"page_size" form:"page_size" binding:"min=1,max=100"`
+	Page     int    `json:"page" form:"page" binding:"omitempty,min=1"`
+	PageSize int    `json:"page_size" form:"page_size" binding:"omitempty,min=1,max=100"`
 	Search   string `json:"search" form:"search"`
 	Status   string `json:"status" form:"status"`
 	CaseType string `json:"case_type" form:"case_type"`
@@ -83,16 +84,16 @@ type ListCasesRequest struct {
 
 // ListCasesResponse 案件列表响应
 type ListCasesResponse struct {
-	Cases      []CaseResponse           `json:"cases"`
+	Cases      []CaseResponse          `json:"cases"`
 	Pagination PaginationWithTotalPage `json:"pagination"`
 }
 
 // NewCaseService 创建案件服务
 func NewCaseService(caseRepo repositories.CaseRepository, clientRepo repositories.ClientRepository, userRepo repositories.UserRepository) *CaseService {
 	return &CaseService{
-		caseRepo:  caseRepo,
+		caseRepo:   caseRepo,
 		clientRepo: clientRepo,
-		userRepo:  userRepo,
+		userRepo:   userRepo,
 	}
 }
 
@@ -119,13 +120,16 @@ func (s *CaseService) CreateCase(ctx context.Context, req *CreateCaseRequest) (*
 
 	// 创建案件
 	case_ := &models.Case{
+		CaseNumber:  fmt.Sprintf("CASE-%s", time.Now().Format("20060102150405")),
 		Title:       req.Title,
 		Description: req.Description,
 		ClientID:    req.ClientID,
+		LawyerID:    req.LawyerID,
 		CaseType:    req.CaseType,
 		Priority:    req.Priority,
 		Status:      "pending",
 		StartDate:   startDate,
+		CreatedBy:   fmt.Sprintf("%d", req.AssignedBy),
 	}
 
 	err = s.caseRepo.Create(ctx, case_)
@@ -275,6 +279,7 @@ func (s *CaseService) DeleteCase(ctx context.Context, id uint) error {
 func (s *CaseService) convertToResponse(case_ *models.Case) *CaseResponse {
 	return &CaseResponse{
 		ID:          case_.ID,
+		CaseNumber:  case_.CaseNumber,
 		Title:       case_.Title,
 		Description: case_.Description,
 		ClientID:    case_.ClientID,
@@ -294,6 +299,18 @@ func (s *CaseService) convertToResponse(case_ *models.Case) *CaseResponse {
 // GetLawyers 获取律师列表
 func (s *CaseService) GetLawyers(ctx context.Context, page, pageSize int) ([]models.User, error) {
 	return s.userRepo.GetLawyers(ctx, page, pageSize)
+}
+
+// GetLawyerByID 获取单个律师用户详情
+func (s *CaseService) GetLawyerByID(ctx context.Context, id uint) (*models.User, error) {
+	user, err := s.userRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if user.Role != "lawyer" && user.Role != "admin" {
+		return nil, repositories.ErrUserNotFound
+	}
+	return user, nil
 }
 
 // CaseTypeResponse 案件类型响应

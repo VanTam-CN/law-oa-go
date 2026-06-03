@@ -121,6 +121,16 @@ const initialStatistics = {
   },
 }
 
+// MVP 快速操作配置
+export const MVP_DASHBOARD_QUICK_ACTIONS = [
+  { key: 'case-management', label: '案件管理', path: '/case' },
+  { key: 'case-create', label: '新建立案', path: '/case/create' },
+  { key: 'conflict-check', label: '冲突检测', path: '/conflict' },
+  { key: 'client-management', label: '客户管理', path: '/client' },
+  { key: 'approval-management', label: '审批管理', path: '/approval' },
+  { key: 'trust-management', label: '信托账户', path: '/trust' },
+] as const
+
 interface DashboardProps {
   statistics?: any
   todos?: any[]
@@ -157,7 +167,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
           dataService.getDashboardTodos(),
           dataService.getDashboardActivities(),
           getApprovalStats().catch((err) => {
-            console.warn('获取审批统计失败，使用默认值:', err)
+            console.warn('获取审批统计失败，使用空统计:', err)
             return {
               pendingRequests: 0,
               totalRequests: 0,
@@ -364,34 +374,12 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
   // 处理常用功能按钮点击
   const handleQuickActionClick = (action: string) => {
-    switch (action) {
-      case 'case-management':
-        navigate('/case')
-        break
-      case 'lawyer-management':
-        navigate('/lawyer')
-        break
-      case 'conflict-check':
-        navigate('/conflict')
-        break
-      case 'file-management':
-        navigate('/file')
-        break
-      case 'client-management':
-        navigate('/client')
-        break
-      case 'approval-management':
-        navigate('/approval')
-        break
-      case 'law-search':
-        navigate('/tools/law-search')
-        break
-      case 'schedule':
-        navigate('/tools/deadline-calculator')
-        break
-      default:
-        console.log(`未知功能: ${action}`)
+    const quickAction = MVP_DASHBOARD_QUICK_ACTIONS.find((item) => item.key === action)
+    if (quickAction) {
+      navigate(quickAction.path)
+      return
     }
+    console.log(`未知功能: ${action}`)
   }
 
   // 骨架屏组件
@@ -533,262 +521,45 @@ const Dashboard: React.FC<DashboardProps> = () => {
           {/* 右侧：常用功能快捷入口 */}
           <Col xs={24} lg={14}>
             <Row gutter={[8, 8]}>
-              <Col xs={6} sm={6} lg={6}>
-                <div
-                  onClick={() => handleQuickActionClick('case-management')}
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.15)',
-                    border: '1px solid rgba(255, 255, 255, 0.25)',
-                    borderRadius: '8px',
-                    padding: '10px 6px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '4px',
-                    minHeight: '56px',
-                    justifyContent: 'center',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)'
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.4)'
-                    e.currentTarget.style.transform = 'translateY(-2px)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.25)'
-                    e.currentTarget.style.transform = 'translateY(0)'
-                  }}
-                >
-                  <FileTextOutlined style={{ fontSize: '18px', color: '#C5A572' }} />
-                  <span style={{ fontSize: '13px', color: '#FFFFFF', fontWeight: '500' }}>案件管理</span>
-                </div>
-              </Col>
-              <Col xs={6} sm={6} lg={6}>
-                <div
-                  onClick={() => handleQuickActionClick('lawyer-management')}
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.15)',
-                    border: '1px solid rgba(255, 255, 255, 0.25)',
-                    borderRadius: '8px',
-                    padding: '10px 6px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '4px',
-                    minHeight: '56px',
-                    justifyContent: 'center',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)'
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.4)'
-                    e.currentTarget.style.transform = 'translateY(-2px)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.25)'
-                    e.currentTarget.style.transform = 'translateY(0)'
-                  }}
-                >
-                  <ApartmentOutlined style={{ fontSize: '18px', color: '#60A5FA' }} />
-                  <span style={{ fontSize: '13px', color: '#FFFFFF', fontWeight: '500' }}>律师管理</span>
-                </div>
-              </Col>
-              <Col xs={6} sm={6} lg={6}>
-                <div
-                  onClick={() => handleQuickActionClick('conflict-check')}
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.15)',
-                    border: '1px solid rgba(255, 255, 255, 0.25)',
-                    borderRadius: '8px',
-                    padding: '10px 6px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '4px',
-                    minHeight: '56px',
-                    justifyContent: 'center',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)'
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.4)'
-                    e.currentTarget.style.transform = 'translateY(-2px)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.25)'
-                    e.currentTarget.style.transform = 'translateY(0)'
-                  }}
-                >
-                  <SafetyCertificateOutlined style={{ fontSize: '18px', color: '#E8484C' }} />
-                  <span style={{ fontSize: '13px', color: '#FFFFFF', fontWeight: '500' }}>冲突检测</span>
-                </div>
-              </Col>
-              <Col xs={6} sm={6} lg={6}>
-                <div
-                  onClick={() => handleQuickActionClick('file-management')}
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.15)',
-                    border: '1px solid rgba(255, 255, 255, 0.25)',
-                    borderRadius: '8px',
-                    padding: '10px 6px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '4px',
-                    minHeight: '56px',
-                    justifyContent: 'center',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)'
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.4)'
-                    e.currentTarget.style.transform = 'translateY(-2px)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.25)'
-                    e.currentTarget.style.transform = 'translateY(0)'
-                  }}
-                >
-                  <FolderOutlined style={{ fontSize: '18px', color: '#F5A623' }} />
-                  <span style={{ fontSize: '13px', color: '#FFFFFF', fontWeight: '500' }}>文件管理</span>
-                </div>
-              </Col>
-              <Col xs={6} sm={6} lg={6}>
-                <div
-                  onClick={() => handleQuickActionClick('client-management')}
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.15)',
-                    border: '1px solid rgba(255, 255, 255, 0.25)',
-                    borderRadius: '8px',
-                    padding: '10px 6px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '4px',
-                    minHeight: '56px',
-                    justifyContent: 'center',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)'
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.4)'
-                    e.currentTarget.style.transform = 'translateY(-2px)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.25)'
-                    e.currentTarget.style.transform = 'translateY(0)'
-                  }}
-                >
-                  <CustomerServiceOutlined style={{ fontSize: '18px', color: '#3FAF56' }} />
-                  <span style={{ fontSize: '13px', color: '#FFFFFF', fontWeight: '500' }}>客户管理</span>
-                </div>
-              </Col>
-              <Col xs={6} sm={6} lg={6}>
-                <div
-                  onClick={() => handleQuickActionClick('approval-management')}
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.15)',
-                    border: '1px solid rgba(255, 255, 255, 0.25)',
-                    borderRadius: '8px',
-                    padding: '10px 6px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '4px',
-                    minHeight: '56px',
-                    justifyContent: 'center',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)'
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.4)'
-                    e.currentTarget.style.transform = 'translateY(-2px)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.25)'
-                    e.currentTarget.style.transform = 'translateY(0)'
-                  }}
-                >
-                  <CheckCircleOutlined style={{ fontSize: '18px', color: '#8B5CF6' }} />
-                  <span style={{ fontSize: '13px', color: '#FFFFFF', fontWeight: '500' }}>审批管理</span>
-                </div>
-              </Col>
-              <Col xs={6} sm={6} lg={6}>
-                <div
-                  onClick={() => handleQuickActionClick('law-search')}
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.15)',
-                    border: '1px solid rgba(255, 255, 255, 0.25)',
-                    borderRadius: '8px',
-                    padding: '10px 6px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '4px',
-                    minHeight: '56px',
-                    justifyContent: 'center',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)'
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.4)'
-                    e.currentTarget.style.transform = 'translateY(-2px)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.25)'
-                    e.currentTarget.style.transform = 'translateY(0)'
-                  }}
-                >
-                  <BookOutlined style={{ fontSize: '18px', color: '#14B8A6' }} />
-                  <span style={{ fontSize: '13px', color: '#FFFFFF', fontWeight: '500' }}>法规检索</span>
-                </div>
-              </Col>
-              <Col xs={6} sm={6} lg={6}>
-                <div
-                  onClick={() => handleQuickActionClick('schedule')}
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.15)',
-                    border: '1px solid rgba(255, 255, 255, 0.25)',
-                    borderRadius: '8px',
-                    padding: '10px 6px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '4px',
-                    minHeight: '56px',
-                    justifyContent: 'center',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)'
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.4)'
-                    e.currentTarget.style.transform = 'translateY(-2px)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.25)'
-                    e.currentTarget.style.transform = 'translateY(0)'
-                  }}
-                >
-                  <CalendarOutlined style={{ fontSize: '18px', color: '#EC4899' }} />
-                  <span style={{ fontSize: '13px', color: '#FFFFFF', fontWeight: '500' }}>日程安排</span>
-                </div>
-              </Col>
+              {MVP_DASHBOARD_QUICK_ACTIONS.map((action) => (
+                <Col xs={6} sm={6} lg={6} key={action.key}>
+                  <div
+                    onClick={() => handleQuickActionClick(action.key)}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.15)',
+                      border: '1px solid rgba(255, 255, 255, 0.25)',
+                      borderRadius: '8px',
+                      padding: '10px 6px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '4px',
+                      minHeight: '56px',
+                      justifyContent: 'center',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)'
+                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.4)'
+                      e.currentTarget.style.transform = 'translateY(-2px)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'
+                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.25)'
+                      e.currentTarget.style.transform = 'translateY(0)'
+                    }}
+                  >
+                    {action.key === 'case-management' && <FileTextOutlined style={{ fontSize: '18px', color: '#C5A572' }} />}
+                    {action.key === 'case-create' && <ThunderboltOutlined style={{ fontSize: '18px', color: '#F59E0B' }} />}
+                    {action.key === 'conflict-check' && <SafetyCertificateOutlined style={{ fontSize: '18px', color: '#E8484C' }} />}
+                    {action.key === 'client-management' && <CustomerServiceOutlined style={{ fontSize: '18px', color: '#3FAF56' }} />}
+                    {action.key === 'approval-management' && <CheckCircleOutlined style={{ fontSize: '18px', color: '#8B5CF6' }} />}
+                    {action.key === 'trust-management' && <DollarCircleOutlined style={{ fontSize: '18px', color: '#0EA5E9' }} />}
+                    <span style={{ fontSize: '13px', color: '#FFFFFF', fontWeight: '500' }}>{action.label}</span>
+                  </div>
+                </Col>
+              ))}
             </Row>
           </Col>
         </Row>

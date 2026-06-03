@@ -16,30 +16,22 @@ import {
 } from 'antd'
 import {
   ArrowLeftOutlined,
-  EditOutlined,
-  DeleteOutlined,
   FileTextOutlined,
   UserOutlined,
   CalendarOutlined,
   ClockCircleOutlined,
-  CheckCircleOutlined,
-  DollarCircleOutlined,
   TeamOutlined,
   PhoneOutlined,
   MailOutlined,
-  EnvironmentOutlined,
-  CommentOutlined,
   PaperClipOutlined,
   BankOutlined as GavelOutlined,
   MedicineBoxOutlined,
   TrophyOutlined,
-  PauseCircleOutlined,
-  UserSwitchOutlined,
   EyeOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router'
 import { lawyerService, Lawyer } from '@/services/lawyer'
-import dayjs from 'dayjs'
+import { caseService } from '@/services/case'
 
 interface LawyerCase {
   id: number
@@ -77,70 +69,6 @@ const LawyerDetail: React.FC = () => {
   const [documents, setDocuments] = useState<LawyerDocument[]>([])
   const [timeline, setTimeline] = useState<LawyerTimeline[]>([])
 
-  // 模拟数据
-  const mockCases: LawyerCase[] = [
-    {
-      id: 1,
-      caseNo: '2025001',
-      caseName: '张三与李四借款纠纷',
-      caseType: 'CIVIL',
-      clientName: '张三',
-      status: '1',
-      amount: 550000,
-      createTime: '2025-01-15 10:30:00',
-    },
-    {
-      id: 2,
-      caseNo: '2025002',
-      caseName: 'ABC公司合同纠纷',
-      caseType: 'COMMERCIAL',
-      clientName: 'ABC公司',
-      status: '1',
-      amount: 2000000,
-      createTime: '2025-01-18 09:15:00',
-    },
-  ]
-
-  const mockDocuments: LawyerDocument[] = [
-    {
-      id: 1,
-      name: '律师执业证.pdf',
-      type: 'PDF',
-      size: '1.2MB',
-      uploadTime: '2024-01-15 10:35:00',
-      uploader: '管理员',
-    },
-    {
-      id: 2,
-      name: '学历证书.pdf',
-      type: 'PDF',
-      size: '800KB',
-      uploadTime: '2024-01-15 10:40:00',
-      uploader: '管理员',
-    },
-  ]
-
-  const mockTimeline: LawyerTimeline[] = [
-    {
-      id: 1,
-      time: '2024-01-15 09:00:00',
-      event: '入职',
-      description: '正式加入律所，成为诉讼部律师',
-    },
-    {
-      id: 2,
-      time: '2024-06-20 14:30:00',
-      event: '晋升',
-      description: '晋升为资深律师',
-    },
-    {
-      id: 3,
-      time: '2025-01-10 16:45:00',
-      event: '培训',
-      description: '参加律师专业技能培训',
-    },
-  ]
-
   useEffect(() => {
     if (id) {
       fetchLawyerDetail()
@@ -150,37 +78,50 @@ const LawyerDetail: React.FC = () => {
   const fetchLawyerDetail = async () => {
     setLoading(true)
     try {
-      // 这里应该调用API获取数据
-      // const response = await lawyerService.getLawyerDetail(Number(id));
+      const lawyerID = Number(id)
+      const [lawyer, caseResponse] = await Promise.all([
+        lawyerService.getLawyerDetail(lawyerID),
+        caseService.getCaseList({ lawyer_id: lawyerID, page: 1, page_size: 20 }),
+      ])
 
-      // 模拟API调用
-      setTimeout(() => {
-        const mockLawyer: Lawyer = {
-          id: Number(id),
-          name: '张律师',
-          gender: 'male',
-          phone: '13800138001',
-          email: 'zhang@lawfirm.com',
-          licenseNumber: '123456789012345',
-          specialty: ['民事案件', '商事案件'],
-          experience: 8,
-          status: 'active',
-          department: '诉讼部',
-          position: '资深律师',
-          joinDate: '2024-01-15',
-          profile: '资深律师，专注于民事诉讼和商事诉讼，拥有丰富的实战经验。',
-        }
-
-        setLawyerDetail(mockLawyer)
-        setCases(mockCases)
-        setDocuments(mockDocuments)
-        setTimeline(mockTimeline)
-        setLoading(false)
-      }, 1000)
+      setLawyerDetail(lawyer)
+      setCases(normalizeCaseRows(caseResponse))
+      setDocuments([])
+      setTimeline(buildTimeline(lawyer))
     } catch (error) {
       message.error('获取律师详情失败')
+    } finally {
       setLoading(false)
     }
+  }
+
+  const normalizeCaseRows = (response: any): LawyerCase[] => {
+    const rows = Array.isArray(response)
+      ? response
+      : response?.cases || response?.list || response?.data?.cases || response?.data?.list || []
+
+    return rows.map((item: any) => ({
+      id: Number(item.id),
+      caseNo: item.case_number || item.caseNumber || `CASE-${item.id}`,
+      caseName: item.title || item.caseName || item.case_name || '未命名案件',
+      caseType: item.case_type || item.caseType || item.type || 'OTHER',
+      clientName: item.client?.name || item.clientName || item.client_name || '-',
+      status: item.status || 'pending',
+      amount: Number(item.amount || item.contract_amount || 0),
+      createTime: item.created_at || item.createdAt || '',
+    }))
+  }
+
+  const buildTimeline = (lawyer: Lawyer): LawyerTimeline[] => {
+    const createdAt = lawyer.joinDate || ''
+    return [
+      {
+        id: 1,
+        time: createdAt,
+        event: '账号创建',
+        description: `${lawyer.name || lawyer.lawyerName} 的律师账号已在系统中创建。`,
+      },
+    ].filter((item) => item.time)
   }
 
   const getStatusBadge = (status: string) => {
@@ -204,7 +145,7 @@ const LawyerDetail: React.FC = () => {
     return <Tag color={config.color}>{config.text}</Tag>
   }
 
-  const getSpecialtyTags = (specialties: string[]) => {
+  const getSpecialtyTags = (specialties?: string | string[]) => {
     const specialtyMap: Record<string, { icon: React.ReactNode; color: string }> = {
       民事案件: { icon: <GavelOutlined />, color: 'blue' },
       刑事案件: { icon: <MedicineBoxOutlined />, color: 'red' },
@@ -214,7 +155,14 @@ const LawyerDetail: React.FC = () => {
       劳动纠纷: { icon: <MedicineBoxOutlined />, color: 'green' },
     }
 
-    return specialties.map((spec) => {
+    const specialtyList = Array.isArray(specialties)
+      ? specialties
+      : (specialties || '综合法律服务')
+          .split(/[、,，/]/)
+          .map((item) => item.trim())
+          .filter(Boolean)
+
+    return specialtyList.map((spec) => {
       const config = specialtyMap[spec] || { icon: <GavelOutlined />, color: 'default' }
       return (
         <Tag key={spec} color={config.color} icon={config.icon}>
@@ -259,16 +207,6 @@ const LawyerDetail: React.FC = () => {
             </Button>
             <h2 style={{ margin: 0 }}>{lawyerDetail.name}</h2>
           </Space>
-          <Button
-            type='primary'
-            icon={<EditOutlined />}
-            onClick={() => {
-              // TODO: 实现编辑功能
-              message.info('编辑功能待实现')
-            }}
-          >
-            编辑
-          </Button>
         </div>
 
         <Tabs
@@ -304,12 +242,12 @@ const LawyerDetail: React.FC = () => {
                       </Space>
                     </Descriptions.Item>
                     <Descriptions.Item label='执业证号'>
-                      {lawyerDetail.licenseNumber}
+                      {lawyerDetail.licenseNumber || lawyerDetail.licenseNo || '-'}
                     </Descriptions.Item>
                     <Descriptions.Item label='工作经验'>
                       <Space>
                         <ClockCircleOutlined />
-                        {lawyerDetail.experience}年
+                        {lawyerDetail.experience || 0}年
                       </Space>
                     </Descriptions.Item>
                     <Descriptions.Item label='部门'>
@@ -320,11 +258,11 @@ const LawyerDetail: React.FC = () => {
                     <Descriptions.Item label='入职日期' span={2}>
                       <Space>
                         <CalendarOutlined />
-                        {lawyerDetail.joinDate}
+                        {lawyerDetail.joinDate || '-'}
                       </Space>
                     </Descriptions.Item>
                     <Descriptions.Item label='状态' span={2}>
-                      {getStatusBadge(lawyerDetail.status)}
+                      {getStatusBadge(lawyerDetail.status || 'active')}
                     </Descriptions.Item>
                     <Descriptions.Item label='专业领域' span={2}>
                       <Space size='small' wrap>
@@ -345,10 +283,15 @@ const LawyerDetail: React.FC = () => {
                 <Card title='负责案件列表' loading={loading}>
                   <List
                     dataSource={cases}
+                    locale={{ emptyText: '暂无负责案件' }}
                     renderItem={(item) => (
                       <List.Item
                         actions={[
-                          <Button type='link' icon={<EyeOutlined />}>
+                          <Button
+                            type='link'
+                            icon={<EyeOutlined />}
+                            onClick={() => navigate(`/case/${item.id}`)}
+                          >
                             查看
                           </Button>,
                         ]}
@@ -383,6 +326,7 @@ const LawyerDetail: React.FC = () => {
                 <Card title='律师文档' loading={loading}>
                   <List
                     dataSource={documents}
+                    locale={{ emptyText: '暂无关联文档' }}
                     renderItem={(item) => (
                       <List.Item
                         actions={[

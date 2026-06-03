@@ -266,6 +266,14 @@ export const validateConflictCheckRequest = (
     })
   }
 
+  if (!formData.clientId && !clientInfo?.id) {
+    errors.push({
+      field: 'clientId',
+      message: '客户ID不能为空',
+      code: 'REQUIRED_FIELD',
+    })
+  }
+
   if (!formData.caseName || formData.caseName.trim().length === 0) {
     errors.push({
       field: 'caseName',
@@ -329,9 +337,23 @@ export const transformToConflictCheckRequest = (
   const caseType = transformCaseType(formData.caseType)
   const clientType = formData.clientType || detectClientType(formData.clientName || '', clientInfo)
   const otherParties = parseOtherParties(formData.opponentInfo)
+  const clientId = formData.clientId || clientInfo?.id?.toString()
+  const userId = formData.lawyerId || userInfo?.id?.toString() || userInfo?.userId
+  if (!userId) {
+    return {
+      request: {} as ConflictCheckRequest,
+      errors: [
+        {
+          field: 'lawyerId',
+          message: '承办律师ID不能为空',
+          code: 'REQUIRED_FIELD',
+        },
+      ],
+    }
+  }
 
   const request: ConflictCheckRequest = {
-    clientId: formData.clientId || clientInfo?.id?.toString() || '1',
+    clientId: clientId as string,
     clientName: formData.clientName || clientInfo?.name || '未知客户',
     caseName: formData.caseName || '未知案件',
     caseType,
@@ -340,7 +362,7 @@ export const transformToConflictCheckRequest = (
     searchYears: formData.searchYears || 5,
     includeCorporateRelations: formData.includeCorporateRelations !== false,
     searchDepth: formData.searchDepth || SearchDepth.STANDARD,
-    userId: userInfo?.id?.toString() || userInfo?.userId || '1',
+    userId: userId as string,
     requestTime: new Date().toISOString(),
   }
 

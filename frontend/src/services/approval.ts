@@ -19,6 +19,8 @@ export interface ApprovalItem {
     | 'cancelled'
     | 'expired'
     | 'pending'
+    | 'needs_revision'
+    | 'resubmitted'
     | 'needs_revision' // 新增：需要修改
     | 'resubmitted' // 新增：重新提交
   urgency: 'normal' | 'urgent' | 'very_urgent'
@@ -36,29 +38,11 @@ export interface ApprovalItem {
 const getCurrentUserId = (): string => {
   const userInfo = getUserInfo()
 
-  console.log('🔍 getCurrentUserId - 原始用户信息:', userInfo)
-  console.log('🔍 getCurrentUserId - 用户ID:', userInfo?.id)
-  console.log('🔍 getCurrentUserId - 用户ID类型:', typeof userInfo?.id)
-
-  // 如果有真实用户信息，使用真实用户ID
   if (userInfo?.id !== undefined && userInfo?.id !== null) {
-    const userIdStr = userInfo.id.toString()
-    console.log('✅ getCurrentUserId - 使用真实用户ID:', userIdStr)
-    return userIdStr
+    return userInfo.id.toString()
   }
 
-  // 如果没有用户信息，记录警告并使用默认值
-  console.warn('⚠️ getCurrentUserId - 没有找到用户信息，使用默认值')
-
-  // 开发环境默认用户ID
-  const isDevMode = process.env.NODE_ENV === 'development'
-  if (isDevMode) {
-    console.log('🛠️ 开发模式：使用默认测试用户ID')
-    return '1'
-  }
-
-  // 生产环境默认值
-  return '1'
+  throw new Error('未获取到当前登录用户，请重新登录')
 }
 
 export interface ApprovalDetail extends ApprovalItem {
@@ -140,6 +124,8 @@ export interface ConflictApprovalResult {
     | 'cancelled'
     | 'expired'
     | 'pending'
+    | 'needs_revision'
+    | 'resubmitted'
   submitTime: string
   expectedProcessingTime: string
 }
@@ -413,20 +399,18 @@ export const submitConflictApproval = async (
  * @param approvalId 审批ID
  * @returns 审批状态
  */
-export const getConflictApprovalStatus = (approvalId: string): Promise<ConflictApprovalResult> => {
-  // 开发环境返回模拟数据
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const result: ConflictApprovalResult = {
-        approvalId,
-        approvalNumber: `CO${new Date().getFullYear()}${String(approvalId).slice(-6)}`,
-        status: 'pending',
-        submitTime: new Date().toISOString(),
-        expectedProcessingTime: '2-3个工作日',
-      }
-      resolve(result)
-    }, 200)
-  })
+export const getConflictApprovalStatus = async (
+  approvalId: string,
+): Promise<ConflictApprovalResult> => {
+  const approval = await getApprovalDetail(approvalId)
+
+  return {
+    approvalId: approval.id,
+    approvalNumber: approval.requestNumber || `CO${String(approval.id).slice(-6)}`,
+    status: approval.status,
+    submitTime: approval.submissionDate || approval.createTime,
+    expectedProcessingTime: approval.urgency === 'urgent' ? '1-2个工作日' : '2-3个工作日',
+  }
 }
 
 /**
@@ -442,4 +426,121 @@ export const createIntegratedApproval = async (data: any): Promise<any> => {
     console.error('创建集成审批失败:', error)
     throw error
   }
+}
+
+// ==================== 新增审批流程 API 方法 ====================
+
+/** 审批模板类型 */
+export interface ApprovalTemplate {
+  id: string
+  name: string
+  display_name: string
+  category: string
+  description: string
+  form_schema: Record<string, any>
+  workflow_config: Record<string, any>
+  is_active: boolean
+}
+
+/** 审批流程节点 */
+export interface ApprovalFlowNode {
+  id: string
+  name: string
+  type: 'approval' | 'notification' | 'condition' | 'parallel'
+  approvers: Array<{
+    id: string
+    name: string
+    department?: string
+  }>
+  status: 'pending' | 'approved' | 'rejected' | 'skipped'
+  order: number
+  assigned_at?: string
+  completed_at?: string
+}
+
+/** 审批流程详情 */
+export interface ApprovalFlow {
+  id: string
+  approval_id: string
+  template_name: string
+  current_node: ApprovalFlowNode
+  nodes: ApprovalFlowNode[]
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled'
+  started_at: string
+  completed_at?: string
+}
+
+/**
+ * 从模板创建审批
+ * @param templateName 模板名称
+ * @param formData 表单数据
+ * @returns 创建的审批
+ */
+export const createApprovalFromTemplate = async (
+  templateName: string,
+  formData: Record<string, any>,
+): Promise<ApprovalItem> => {
+  const response = await post<ApprovalItem>('/approvals/from-template', {
+    template_name: templateName,
+    form_data: formData,
+  })
+  return response
+}
+
+/**
+ * 获取审批流程详情
+ * @param id 审批ID
+ * @returns 审批流程详情
+ */
+export const getApprovalFlow = async (id: string): Promise<ApprovalFlow> => {
+  const response = await get<ApprovalFlow>(`/approvals/${id}/flow`)
+  return response
+}
+
+/**
+ * 审批节点通过
+ * @param approvalId 审批ID
+ * @param nodeId 节点ID
+ * @param comment 审批意见
+ * @returns 操作结果
+ */
+export const approveNode = async (
+  approvalId: string,
+  nodeId: string,
+  comment: string,
+): Promise<ApprovalItem> => {
+  const response = await post<ApprovalItem>(`/approvals/${approvalId}/nodes/${nodeId}/approve`, {
+    comment,
+  })
+  return response
+}
+
+/**
+ * 审批节点驳回
+ * @param approvalId 审批ID
+ * @param nodeId 节点ID
+ * @param comment 驳回原因
+ * @param reason 详细原因
+ * @returns 操作结果
+ */
+export const rejectNode = async (
+  approvalId: string,
+  nodeId: string,
+  comment: string,
+  reason?: string,
+): Promise<ApprovalItem> => {
+  const response = await post<ApprovalItem>(`/approvals/${approvalId}/nodes/${nodeId}/reject`, {
+    comment,
+    reason,
+  })
+  return response
+}
+
+/**
+ * 获取审批模板列表
+ * @returns 审批模板列表
+ */
+export const listApprovalTemplates = async (): Promise<ApprovalTemplate[]> => {
+  const response = await get<{ templates: ApprovalTemplate[] }>('/approvals/templates')
+  return response.templates || []
 }

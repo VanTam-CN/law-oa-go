@@ -39,9 +39,7 @@ func (h *IntegrationHandler) CreateIntegratedApproval(c *gin.Context) {
 		return
 	}
 
-	// 从上下文获取用户信息
-	userID := c.GetString("userID")
-	userName := c.GetString("userName")
+	userID, userName := currentUserForIntegration(c)
 
 	// 调用集成服务
 	result, err := h.integrationService.CreateIntegratedApproval(c.Request.Context(), userID, userName, &req)
@@ -225,19 +223,19 @@ func (h *IntegrationHandler) GetIntegrationStatistics(c *gin.Context) {
 	statistics := gin.H{
 		"total_integrations": 0,
 		"conflict_checks": map[string]interface{}{
-			"total":    0,
+			"total":        0,
 			"has_conflict": 0,
-			"no_conflict": 0,
+			"no_conflict":  0,
 		},
 		"case_creations": map[string]interface{}{
 			"total":      0,
 			"successful": 0,
 			"failed":     0,
 		},
-		"approval_types": map[string]int{},
-		"success_rate": 0.0,
+		"approval_types":          map[string]int{},
+		"success_rate":            0.0,
 		"average_processing_time": "0s",
-		"last_updated": time.Now(),
+		"last_updated":            time.Now(),
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -266,9 +264,7 @@ func (h *IntegrationHandler) ProcessApprovalWithConflict(c *gin.Context) {
 		return
 	}
 
-	// 从上下文获取用户信息
-	userID := c.GetString("userID")
-	userName := c.GetString("userName")
+	userID, userName := currentUserForIntegration(c)
 
 	// 调用集成服务处理审批
 	updatedApproval, err := h.integrationService.ProcessApprovalWithConflict(c.Request.Context(), userID, userName, approvalID, &req)
@@ -284,6 +280,35 @@ func (h *IntegrationHandler) ProcessApprovalWithConflict(c *gin.Context) {
 		"success": true,
 		"data":    updatedApproval,
 	})
+}
+
+func currentUserForIntegration(c *gin.Context) (string, string) {
+	userIDValue, exists := c.Get("user_id")
+	if !exists {
+		return c.GetString("userID"), c.GetString("userName")
+	}
+	var userID string
+	switch v := userIDValue.(type) {
+	case uint:
+		userID = strconv.FormatUint(uint64(v), 10)
+	case int:
+		userID = strconv.Itoa(v)
+	case float64:
+		userID = strconv.FormatInt(int64(v), 10)
+	case string:
+		userID = v
+	default:
+		userID = "1"
+	}
+	userNameValue, ok := c.Get("username")
+	if !ok || userNameValue == nil {
+		return userID, "未知用户"
+	}
+	userName, ok := userNameValue.(string)
+	if !ok || userName == "" {
+		return userID, "未知用户"
+	}
+	return userID, userName
 }
 
 // GetIntegrationHistory 获取集成历史记录
@@ -418,9 +443,9 @@ func (h *IntegrationHandler) CancelIntegration(c *gin.Context) {
 	// 由于服务还没有完全实现，先返回模拟响应
 
 	result := gin.H{
-		"approval_id": approvalID,
-		"status":      "cancelled",
-		"reason":      req.Reason,
+		"approval_id":  approvalID,
+		"status":       "cancelled",
+		"reason":       req.Reason,
 		"cancelled_at": time.Now(),
 		"cancelled_by": c.GetString("userID"),
 	}

@@ -4,35 +4,19 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import {
-  Form,
-  Button,
-  Space,
-  Card,
-  Typography,
-  message,
-  Modal,
-  Divider,
-  Row,
-  Col,
-  Alert,
-  Tooltip,
-  Badge,
-} from 'antd'
+import * as FormModule from 'antd/es/form'
+import * as ButtonModule from 'antd/es/button'
+import * as SpaceModule from 'antd/es/space'
+import * as CardModule from 'antd/es/card'
+import * as TypographyModule from 'antd/es/typography'
+import * as MessageModule from 'antd/es/message'
+import * as ModalModule from 'antd/es/modal'
 import {
   SaveOutlined,
   ReloadOutlined,
   EyeOutlined,
-  CheckCircleOutlined,
-  ExclamationCircleOutlined,
-  CloseCircleOutlined,
-  InfoCircleOutlined,
-  ArrowLeftOutlined,
-  ArrowRightOutlined,
   PrinterOutlined,
-  SettingOutlined,
 } from '@ant-design/icons'
-import type { FormInstance } from 'antd/es/form'
 import ResponsiveFormLayout from './ResponsiveFormLayout'
 import SmartFieldGroup from './SmartFieldGroup'
 import ProgressIndicator from './ProgressIndicator'
@@ -44,10 +28,7 @@ import type {
   FormConfig,
   FormState,
   FormStats,
-  FormStepConfig,
   QuickAction,
-  FormEvents,
-  FormStatus,
   FormLayoutMode,
 } from './types/CompactCaseForm.types'
 import {
@@ -59,8 +40,59 @@ import {
 } from './types/CompactCaseForm.types'
 import './CompactCaseForm.less'
 
-const { Title, Text, Paragraph } = Typography
-const { useForm } = Form
+const resolveComponent = <T,>(module: Record<string, unknown>, exportName: string): T => {
+  const defaultExport = module.default
+  if (typeof defaultExport === 'function') {
+    return defaultExport as T
+  }
+
+  return (module[exportName] || defaultExport) as T
+}
+
+const resolveObjectExport = <T,>(
+  module: Record<string, unknown>,
+  expectedKey: string,
+): T => {
+  const defaultExport = module.default as Record<string, unknown> | undefined
+  if (defaultExport && expectedKey in defaultExport) {
+    return defaultExport as T
+  }
+
+  return module as T
+}
+
+const Form = resolveComponent<typeof FormModule.default>(FormModule, 'Form')
+const Button = resolveComponent<typeof ButtonModule.default>(ButtonModule, 'Button')
+const Space = resolveComponent<typeof SpaceModule.default>(SpaceModule, 'Space')
+const Card = resolveComponent<typeof CardModule.default>(CardModule, 'Card')
+const Typography = resolveObjectExport<typeof TypographyModule.default>(TypographyModule, 'Title')
+const message = resolveObjectExport<typeof MessageModule.default>(MessageModule, 'success')
+const Modal = resolveObjectExport<typeof ModalModule.default>(ModalModule, 'confirm')
+const { Title, Text } = Typography
+const useForm = (Form.useForm || (FormModule as any).useForm) as typeof Form.useForm
+
+const InlineAlert: React.FC<{
+  message: string
+  description?: string
+  type: 'success' | 'error' | 'info'
+  style?: React.CSSProperties
+}> = ({ message: alertMessage, description, type, style }) => (
+  <div
+    role='alert'
+    className={`compact-form-alert compact-form-alert-${type}`}
+    style={style}
+  >
+    <strong>{alertMessage}</strong>
+    {description && <div>{description}</div>}
+  </div>
+)
+
+const StatusBadge: React.FC<{ status: 'success' | 'error'; text: string }> = ({
+  status,
+  text,
+}) => <span className={`compact-form-badge compact-form-badge-${status}`}>{text}</span>
+
+const SmartFieldGroupRenderer = SmartFieldGroup as React.ComponentType<Record<string, any>>
 
 /**
  * 生成案件编号
@@ -267,7 +299,9 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
    * 计算表单统计信息
    */
   const formStats = useMemo<FormStats>(() => {
-    const flatFormData = Object.values(formState.formData).flat()
+    const flatFormData = Object.values(formState.formData).flatMap((section) =>
+      section && typeof section === 'object' ? Object.values(section) : [section],
+    )
     const totalFields = flatFormData.length
     const filledFields = flatFormData.filter(
       (field) => field !== undefined && field !== null && field !== '',
@@ -299,11 +333,11 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
       key: step.key,
       title: step.title,
       description: step.description,
-      status: formState.stepStates[step.key]?.isCompleted
+      status: (formState.stepStates[step.key]?.isCompleted
         ? 'finish'
         : formState.currentStep === step.key
           ? 'process'
-          : 'wait',
+          : 'wait') as 'finish' | 'process' | 'wait',
       completed: formState.stepStates[step.key]?.isCompleted || false,
       validation: step.validation
         ? {
@@ -449,8 +483,9 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
       return true
     } catch (error) {
       const errors: Record<string, string> = {}
-      if (error.errorFields) {
-        error.errorFields.forEach((field: any) => {
+      const validationError = error as { errorFields?: Array<{ name: string; errors: string[] }> }
+      if (validationError.errorFields) {
+        validationError.errorFields.forEach((field) => {
           errors[field.name] = field.errors[0]
         })
       }
@@ -664,7 +699,7 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
     const defaultActions: QuickAction[] = [
       {
         key: 'save',
-        label: '保存',
+        label: '保存草稿',
         icon: <SaveOutlined />,
         type: 'primary',
         handler: () => handleSave(),
@@ -672,7 +707,7 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
       },
       {
         key: 'reset',
-        label: '重置',
+        label: '重置表单',
         icon: <ReloadOutlined />,
         type: 'default',
         handler: handleReset,
@@ -694,7 +729,11 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
       },
     ]
 
-    const actions = [...defaultActions, ...quickActions].filter(
+    const defaultActionKeys = new Set(defaultActions.map((action) => action.key))
+    const actions = [
+      ...defaultActions,
+      ...quickActions.filter((action) => !defaultActionKeys.has(action.key)),
+    ].filter(
       (action) => action.visible !== false,
     )
 
@@ -706,9 +745,10 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
       <div className='compact-form-actions'>
         <Space size={isCompact ? 'small' : 'middle'}>
           {actions.map((action) => (
-            <Tooltip key={action.key} title={action.label}>
+            <span key={action.key} title={action.label}>
               <Button
-                type={action.type}
+                type={action.type === 'danger' ? 'default' : action.type}
+                danger={action.type === 'danger'}
                 icon={action.icon}
                 onClick={() => action.handler()}
                 disabled={action.disabled}
@@ -717,7 +757,7 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
               >
                 {!isCompact && action.label}
               </Button>
-            </Tooltip>
+            </span>
           ))}
         </Space>
       </div>
@@ -742,9 +782,10 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
           }
 
           return (
-            <SmartFieldGroup
+            <SmartFieldGroupRenderer
               key={groupKey}
               config={groupConfig}
+              groups={[groupConfig]}
               form={form}
               formData={formState.formData}
               isCompact={isCompact}
@@ -808,8 +849,8 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
     <div className={containerClassName} style={style}>
       {/* 表单头部 */}
       <div className='form-header'>
-        <Row justify='space-between' align='middle'>
-          <Col>
+        <div className='compact-form-row compact-form-row-between'>
+          <div>
             <Space>
               <Title level={isCompact ? 4 : 3} style={{ margin: 0 }}>
                 {finalConfig.mode === 'create'
@@ -822,9 +863,9 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
                 <Text type='secondary'>案件编号: {formState.formData.basic.caseNumber}</Text>
               )}
             </Space>
-          </Col>
-          <Col>{renderQuickActions()}</Col>
-        </Row>
+          </div>
+          <div>{renderQuickActions()}</div>
+        </div>
       </div>
 
       {/* 进度指示器 */}
@@ -848,7 +889,6 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
         <ResponsiveFormLayout
           columns={isCompact ? 1 : 2}
           spacing={isCompact ? 'small' : 'medium'}
-          isCompact={isCompact}
         >
           <Card
             size={isCompact ? 'small' : 'default'}
@@ -857,9 +897,11 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
             extra={
               <Space>
                 {formState.saveState.status === 'saved' && (
-                  <Badge status='success' text='已自动保存' />
+                  <StatusBadge status='success' text='已自动保存' />
                 )}
-                {formState.saveState.status === 'error' && <Badge status='error' text='保存失败' />}
+                {formState.saveState.status === 'error' && (
+                  <StatusBadge status='error' text='保存失败' />
+                )}
               </Space>
             }
           >
@@ -882,22 +924,20 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
             {!readonly &&
               formState.validationState.errors &&
               Object.keys(formState.validationState.errors).length > 0 && (
-                <Alert
+                <InlineAlert
                   message='表单验证错误'
                   description={`还有 ${Object.keys(formState.validationState.errors).length} 个字段需要完善`}
                   type='error'
-                  showIcon
                   style={{ marginTop: 16 }}
                 />
               )}
 
             {/* 保存状态提示 */}
             {formState.saveState.status === 'saved' && (
-              <Alert
+              <InlineAlert
                 message='自动保存成功'
                 description={`最后保存时间: ${formState.saveState.lastSaved?.toLocaleString()}`}
                 type='success'
-                showIcon
                 style={{ marginTop: 16 }}
               />
             )}
@@ -907,14 +947,14 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
 
       {/* 表单底部 */}
       <div className='form-footer'>
-        <Row justify='space-between' align='middle'>
-          <Col>
+        <div className='compact-form-row compact-form-row-between'>
+          <div>
             <Text type='secondary' style={{ fontSize: isCompact ? 12 : 14 }}>
               完成度: {formStats.completionPercentage}% | 已填写: {formStats.filledFields}/
               {formStats.totalFields} 字段
             </Text>
-          </Col>
-          <Col>
+          </div>
+          <div>
             <Space>
               <Button
                 size={isCompact ? 'small' : 'middle'}
@@ -933,8 +973,8 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
                 {formState.saveState.isSaving ? '保存中...' : '保存'}
               </Button>
             </Space>
-          </Col>
-        </Row>
+          </div>
+        </div>
       </div>
 
       {/* 性能优化器 */}
@@ -947,12 +987,10 @@ const CompactCaseForm: React.FC<CompactCaseFormProps> = ({
       {/* 1080p优化提示 */}
       {isCompact && (
         <div className='optimization-hint'>
-          <Alert
+          <InlineAlert
             message='已为1080p显示器优化'
             description='表单已自动调整为紧凑布局，提升空间利用率'
             type='info'
-            showIcon
-            closable
             style={{ marginTop: 16 }}
           />
         </div>

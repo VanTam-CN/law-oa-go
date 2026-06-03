@@ -89,4 +89,6 @@ service.interceptors.response.use(
   }
 );
 
+export const api = service;
+export const request = service;
 export default service;

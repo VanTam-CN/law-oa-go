@@ -40,7 +40,7 @@ func NewEthicalWallHandler(ethicalWallService *services.EthicalWallService) *Eth
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /api/v1/cases/{caseId}/ethical-wall [post]
 func (h *EthicalWallHandler) EnableEthicalWall(c *gin.Context) {
-	caseIDStr := c.Param("caseId")
+	caseIDStr := c.Param("id")
 	caseID, err := strconv.ParseUint(caseIDStr, 10, 32)
 	if err != nil {
 		common.APIBadRequest(c, "请求参数错误", "案件ID必须是有效数字")
@@ -92,7 +92,7 @@ func (h *EthicalWallHandler) EnableEthicalWall(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /api/v1/cases/{caseId}/ethical-wall [delete]
 func (h *EthicalWallHandler) DisableEthicalWall(c *gin.Context) {
-	caseIDStr := c.Param("caseId")
+	caseIDStr := c.Param("id")
 	caseID, err := strconv.ParseUint(caseIDStr, 10, 32)
 	if err != nil {
 		common.APIBadRequest(c, "请求参数错误", "案件ID必须是有效数字")
@@ -134,7 +134,7 @@ func (h *EthicalWallHandler) DisableEthicalWall(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /api/v1/cases/{caseId}/ethical-wall/whitelist [get]
 func (h *EthicalWallHandler) GetWhitelist(c *gin.Context) {
-	caseIDStr := c.Param("caseId")
+	caseIDStr := c.Param("id")
 	caseID, err := strconv.ParseUint(caseIDStr, 10, 32)
 	if err != nil {
 		common.APIBadRequest(c, "请求参数错误", "案件ID必须是有效数字")
@@ -177,7 +177,7 @@ func (h *EthicalWallHandler) GetWhitelist(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /api/v1/cases/{caseId}/ethical-wall/whitelist [post]
 func (h *EthicalWallHandler) AddToWhitelist(c *gin.Context) {
-	caseIDStr := c.Param("caseId")
+	caseIDStr := c.Param("id")
 	caseID, err := strconv.ParseUint(caseIDStr, 10, 32)
 	if err != nil {
 		common.APIBadRequest(c, "请求参数错误", "案件ID必须是有效数字")
@@ -241,7 +241,7 @@ func (h *EthicalWallHandler) AddToWhitelist(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /api/v1/cases/{caseId}/ethical-wall/whitelist/{userId} [delete]
 func (h *EthicalWallHandler) RemoveFromWhitelist(c *gin.Context) {
-	caseIDStr := c.Param("caseId")
+	caseIDStr := c.Param("id")
 	caseID, err := strconv.ParseUint(caseIDStr, 10, 32)
 	if err != nil {
 		common.APIBadRequest(c, "请求参数错误", "案件ID必须是有效数字")
@@ -324,7 +324,7 @@ func (h *EthicalWallHandler) GetUserAccessibleCases(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /api/v1/cases/{caseId}/ethical-wall/access-logs [get]
 func (h *EthicalWallHandler) GetAccessLogs(c *gin.Context) {
-	caseIDStr := c.Param("caseId")
+	caseIDStr := c.Param("id")
 	caseID, err := strconv.ParseUint(caseIDStr, 10, 32)
 	if err != nil {
 		common.APIBadRequest(c, "请求参数错误", "案件ID必须是有效数字")

@@ -32,6 +32,7 @@ import {
   StopOutlined,
   TransactionOutlined,
   FileTextOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
@@ -49,6 +50,7 @@ import {
   createMilestone,
   updateMilestone,
   deleteMilestone,
+  exportContracts,
   type Contract,
   type CreateContractRequest,
   type UpdateContractRequest,
@@ -58,11 +60,18 @@ import {
   contractStatusMap,
   formatAmount,
 } from '@/services/finance'
+import { exportCSV } from '@/utils/export'
+import FilterSelect from './FilterSelect'
 import './ContractList.less'
 
 const { Option } = Select
 const { TextArea } = Input
 const { RangePicker } = DatePicker
+
+const navigateWithinApp = (path: string) => {
+  window.history.pushState({}, '', path)
+  window.dispatchEvent(new PopStateEvent('popstate'))
+}
 
 // 表格列定义
 const columns: ColumnsType<Contract> = [
@@ -152,7 +161,7 @@ const columns: ColumnsType<Contract> = [
     render: (_, record) => (
       <Space size='small'>
         <Tooltip title='查看详情'>
-          <Button type='link' size='small' icon={<EyeOutlined />} onClick={() => {}} />
+          <Button type='link' size='small' icon={<EyeOutlined />} />
         </Tooltip>
         {record.status === 'draft' && (
           <>
@@ -430,9 +439,7 @@ const ContractList: React.FC = () => {
 
   // 查看合同详情
   const handleView = async (record: Contract) => {
-    setSelectedContract(record)
-    setDetailDrawerVisible(true)
-    await fetchMilestones(record.id)
+    navigateWithinApp(`/finance/contracts/${record.id}`)
   }
 
   // 删除合同
@@ -596,6 +603,31 @@ const ContractList: React.FC = () => {
     setQueryParams(resetParams)
   }
 
+  // 导出报表
+  const handleExport = async () => {
+    try {
+      const params: Record<string, unknown> = {
+        status: queryParams.status,
+        contract_type: queryParams.contract_type,
+        search: queryParams.search,
+      }
+      // 移除空值
+      Object.keys(params).forEach((key) => {
+        if (params[key] === '') {
+          delete params[key]
+        }
+      })
+
+      await exportCSV(
+        exportContracts(params),
+        `合同报表_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.csv`
+      )
+      message.success('导出成功')
+    } catch (error) {
+      message.error('导出失败')
+    }
+  }
+
   // 计算付款计划总额
   const totalMilestoneAmount = milestones.reduce((sum, m) => sum + m.amount, 0)
 
@@ -654,20 +686,18 @@ const ContractList: React.FC = () => {
             size='large'
           />
 
-          <Select
+          <FilterSelect
             placeholder='筛选状态'
-            style={{ width: 120 }}
             value={searchForm.status || undefined}
-            onChange={(value) => setSearchForm({ ...searchForm, status: value || '' })}
-            allowClear
-            size='large'
-          >
-            <Option value='draft'>草稿</Option>
-            <Option value='active'>生效中</Option>
-            <Option value='suspended'>已暂停</Option>
-            <Option value='completed'>已完成</Option>
-            <Option value='cancelled'>已取消</Option>
-          </Select>
+            onChange={(value) => setSearchForm({ ...searchForm, status: value })}
+            options={[
+              { value: 'draft', label: '草稿' },
+              { value: 'active', label: '生效中' },
+              { value: 'suspended', label: '已暂停' },
+              { value: 'completed', label: '已完成' },
+              { value: 'cancelled', label: '已取消' },
+            ]}
+          />
 
           <Select
             placeholder='合同类型'
@@ -688,6 +718,10 @@ const ContractList: React.FC = () => {
           <Button icon={<ReloadOutlined />} onClick={handleReset} size='large'>
             重置筛选
           </Button>
+
+          <Button icon={<DownloadOutlined />} onClick={handleExport} size='large'>
+            导出
+          </Button>
         </Space>
       </Card>
 
@@ -703,7 +737,7 @@ const ContractList: React.FC = () => {
         <Table
           columns={columns.map((col) => ({
             ...col,
-            onCell: (record) => ({
+            onCell: (record: Contract) => ({
               onClick: () => handleView(record),
               style: { cursor: 'pointer' },
             }),
