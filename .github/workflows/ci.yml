@@ -30,7 +30,7 @@ on:
 env:
   REGISTRY: law-registry.com
   IMAGE_NAME: law-oa-go
-  GO_VERSION: '1.23'
+  GO_VERSION: '1.25.0'
   NODE_VERSION: '20'
   DOCKER_BUILDKIT: 1
   DOCKER_DRIVER: overlay2
@@ -469,16 +469,15 @@ jobs:
         if: success()
         with:
           script: |
-          const sha = context.sha;
-          const tag = context.ref.replace('refs/tags/', '');
+            const tag = context.ref.replace('refs/tags/', '');
 
-          github.rest.issues.createLabel({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            name: `deployment:${tag}`,
-            color: '0e8a16',
-            description: `部署于生产环境的版本 ${tag}`
-          });
+            github.rest.issues.createLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: `deployment:${tag}`,
+              color: '0e8a16',
+              description: `部署于生产环境的版本 ${tag}`
+            });
 
       - name: 📧 收集生产日志
         if: failure()
@@ -486,7 +485,7 @@ jobs:
           kubectl logs -n law-oa-production -l app=law-oa-go --tail=200 > production-deployment-logs.txt
           echo "::set-output name=production-logs::$(cat production-deployment-logs.txt)" >> $GITHUB_OUTPUT
 
-      -name: 📧 上传生产日志
+      - name: 📧 上传生产日志
         if: failure()
         uses: actions/upload-artifact@v4
         with:

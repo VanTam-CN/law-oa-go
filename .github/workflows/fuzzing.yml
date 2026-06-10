@@ -34,7 +34,7 @@ on:
         type: string
 
 env:
-  GO_VERSION: '1.23'
+  GO_VERSION: '1.25.0'
   FUZZ_TIME: ${{ github.event.inputs.duration || '60' }}
   FUZZERS: ${{ github.event.inputs.fuzzers || '4' }}
   TEST_TYPE: ${{ github.event.inputs.test_type || 'all' }}
