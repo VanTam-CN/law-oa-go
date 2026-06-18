@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"law-oa-go/internal/common"
@@ -25,36 +26,48 @@ func NewDemoAggregateHandler(db *gorm.DB) *DemoAggregateHandler {
 }
 
 func (h *DemoAggregateHandler) CommandCenter(c *gin.Context) {
-	activeStatuses := []string{"pending", "in_progress"}
+	activeStatuses := []string{"pending", "in_progress", "active"}
 	openConflictStatuses := []string{"QUEUED", "RUNNING", "PROCESSING"}
+	visibleConflictRiskLevels := []string{"HIGH", "CRITICAL", "MEDIUM"}
 	pendingApprovalStatuses := []string{"submitted", "under_review", "resubmitted"}
 	activeCasesWhere := "deleted_at IS NULL AND status IN ?"
 	activeCasesArgs := []interface{}{activeStatuses}
+	caseStageWhere := "deleted_at IS NULL"
+	caseStageArgs := []interface{}{}
 	if lawyerID, ok := currentLawyerScope(c); ok {
 		activeCasesWhere += " AND lawyer_id = ?"
 		activeCasesArgs = append(activeCasesArgs, lawyerID)
+		caseStageWhere += " AND lawyer_id = ?"
+		caseStageArgs = append(caseStageArgs, lawyerID)
 	}
+	conflictWhere := "check_status IN ? OR risk_level IN ?"
+	conflictArgs := []interface{}{openConflictStatuses, visibleConflictRiskLevels}
+	if lawyerID, ok := currentLawyerScope(c); ok {
+		conflictWhere = "(" + conflictWhere + ") AND user_id = ?"
+		conflictArgs = append(conflictArgs, lawyerID)
+	}
+	riskQueue := h.riskRows(c, 8)
 
 	common.APISuccess(c, gin.H{
 		"summary": gin.H{
 			"active_cases":        h.count("cases", activeCasesWhere, activeCasesArgs...),
 			"clients":             h.count("clients", "deleted_at IS NULL"),
 			"pending_approvals":   h.count("approval_requests", "deleted_at IS NULL AND status IN ?", pendingApprovalStatuses),
-			"open_conflict_tasks": h.count("conflict_check_records", "check_status IN ?", openConflictStatuses),
+			"open_conflict_tasks": h.count("conflict_check_records", conflictWhere, conflictArgs...),
 			"unread_inbox":        h.countAny([]string{"inbox_items"}, "deleted_at IS NULL AND is_completed = ?", false),
 		},
 		"workflow": gin.H{
 			"intake":     h.countAny([]string{"case_intakes"}, "status IN ?", []string{"draft", "materials_pending", "conflict_ready", "conflict_checking"}),
-			"conflict":   h.count("conflict_check_records", "check_status IN ?", openConflictStatuses),
+			"conflict":   h.count("conflict_check_records", conflictWhere, conflictArgs...),
 			"approval":   h.count("approval_requests", "deleted_at IS NULL AND status IN ?", pendingApprovalStatuses),
 			"activation": h.count("cases", activeCasesWhere, activeCasesArgs...),
 		},
 		"todo_items":              h.todoRows(10),
-		"risk_queue":              h.riskRows(8),
+		"risk_queue":              riskQueue,
 		"approval_queue":          h.approvalRows(8),
 		"case_rows":               h.caseRows(c, 20),
-		"case_stage_distribution": h.groupedCounts("cases", "status", "deleted_at IS NULL", 10),
-		"risk_distribution":       h.groupedCounts("conflict_check_records", "risk_level", "", 10),
+		"case_stage_distribution": h.groupedCounts("cases", "status", caseStageWhere, 10, caseStageArgs...),
+		"risk_distribution":       h.groupedCounts("conflict_check_records", "risk_level", conflictWhere, 10, conflictArgs...),
 		"overdue_tasks":           h.overdueRows(5),
 		"recent_activities":       h.activityRows(10),
 		"generated_at":            time.Now(),
@@ -187,11 +200,17 @@ func (h *DemoAggregateHandler) todoRows(limit int) []gin.H {
 	return items
 }
 
-func (h *DemoAggregateHandler) riskRows(limit int) []gin.H {
-	rows := h.recentRows("conflict_check_records", "check_status IN ? OR risk_level IN ?", limit,
+func (h *DemoAggregateHandler) riskRows(c *gin.Context, limit int) []gin.H {
+	where := "check_status IN ? OR risk_level IN ?"
+	args := []interface{}{
 		[]string{"QUEUED", "RUNNING", "PROCESSING"},
 		[]string{"HIGH", "CRITICAL", "MEDIUM"},
-	)
+	}
+	if lawyerID, ok := currentLawyerScope(c); ok {
+		where = "(" + where + ") AND user_id = ?"
+		args = append(args, lawyerID)
+	}
+	rows := h.recentRows("conflict_check_records", where, limit, args...)
 	items := make([]gin.H, 0, len(rows))
 	for _, row := range rows {
 		checkID := fmt.Sprint(row["check_id"])
@@ -199,15 +218,19 @@ func (h *DemoAggregateHandler) riskRows(limit int) []gin.H {
 		if checkID != "" && h.tableExists("conflict_cases") {
 			_ = h.db.Table("conflict_cases").
 				Where("check_id = ?", checkID).
-				Order("risk_level DESC, created_at DESC").
+				Order("CASE risk_level WHEN 'CRITICAL' THEN 4 WHEN 'HIGH' THEN 3 WHEN 'MEDIUM' THEN 2 WHEN 'LOW' THEN 1 ELSE 0 END DESC, created_at DESC").
 				Find(&conflictCases).Error
 		}
+		primaryConflict := primaryConflictCase(conflictCases)
 		items = append(items, gin.H{
 			"id":                row["check_id"],
 			"title":             row["case_name"],
 			"case_type":         row["case_type"],
 			"client_id":         row["client_id"],
 			"client_name":       row["client_name"],
+			"matched_subject":   primaryConflictSubject(primaryConflict, row),
+			"matched_type":      primaryConflictValue(primaryConflict, "conflict_type"),
+			"evidence_summary":  primaryConflictValue(primaryConflict, "description"),
 			"status":            row["check_status"],
 			"risk_level":        row["risk_level"],
 			"has_conflict":      row["has_conflict"],
@@ -222,6 +245,58 @@ func (h *DemoAggregateHandler) riskRows(limit int) []gin.H {
 		})
 	}
 	return items
+}
+
+func primaryConflictCase(conflictCases []map[string]interface{}) map[string]interface{} {
+	if len(conflictCases) == 0 {
+		return nil
+	}
+	return conflictCases[0]
+}
+
+func primaryConflictValue(conflictCase map[string]interface{}, key string) string {
+	if conflictCase == nil {
+		return ""
+	}
+	return strings.TrimSpace(fmt.Sprint(conflictCase[key]))
+}
+
+func primaryConflictSubject(conflictCase map[string]interface{}, fallback map[string]interface{}) string {
+	description := primaryConflictValue(conflictCase, "description")
+	if subject := extractQuotedSubject(description, "当前对方当事人"); subject != "" {
+		return subject
+	}
+	if subject := firstNonEmpty(
+		primaryConflictValue(conflictCase, "case_name"),
+		primaryConflictValue(conflictCase, "client_name"),
+	); subject != "" {
+		return subject
+	}
+	return strings.TrimSpace(fmt.Sprint(fallback["client_name"]))
+}
+
+func extractQuotedSubject(text string, label string) string {
+	prefix := label + " '"
+	start := strings.Index(text, prefix)
+	if start < 0 {
+		return ""
+	}
+	remaining := text[start+len(prefix):]
+	end := strings.Index(remaining, "'")
+	if end < 0 {
+		return ""
+	}
+	return strings.TrimSpace(remaining[:end])
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		trimmed := strings.TrimSpace(value)
+		if trimmed != "" && trimmed != "<nil>" {
+			return trimmed
+		}
+	}
+	return ""
 }
 
 func (h *DemoAggregateHandler) approvalRows(limit int) []gin.H {

@@ -168,10 +168,10 @@ func (h *DemoAggregateHandler) groupedCounts(table, column, where string, limit 
 		return []gin.H{}
 	}
 	var rows []struct {
-		Key   string `gorm:"column:key"`
+		Key   string `gorm:"column:metric_key"`
 		Count int64  `gorm:"column:count"`
 	}
-	q := h.db.Table(table).Select(fmt.Sprintf("%s AS key, COUNT(*) AS count", column))
+	q := h.db.Table(table).Select(fmt.Sprintf("%s AS metric_key, COUNT(*) AS count", column))
 	if where != "" {
 		if len(args) == 1 && args[0] == nil {
 			q = q.Where(where)
@@ -193,7 +193,7 @@ func (h *DemoAggregateHandler) rbacRoleRows(limit int) []gin.H {
 	}
 
 	var rows []struct {
-		Key   string `gorm:"column:key"`
+		Key   string `gorm:"column:metric_key"`
 		Count int64  `gorm:"column:count"`
 	}
 
@@ -204,13 +204,13 @@ func (h *DemoAggregateHandler) rbacRoleRows(limit int) []gin.H {
 
 	if h.tableExists("user_roles") {
 		query = query.
-			Select("roles.code AS key, COUNT(user_roles.user_id) AS count").
+			Select("roles.code AS metric_key, COUNT(user_roles.user_id) AS count").
 			Joins("LEFT JOIN user_roles ON user_roles.role_id = roles.id").
 			Group("roles.id, roles.code, roles.sort_order").
 			Order("roles.sort_order ASC, roles.id ASC")
 	} else {
 		query = query.
-			Select("roles.code AS key, 0 AS count").
+			Select("roles.code AS metric_key, 0 AS count").
 			Order("roles.sort_order ASC, roles.id ASC")
 	}
 

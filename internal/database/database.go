@@ -58,8 +58,8 @@ func InitWithConfig(appConfig *config.Config) (*gorm.DB, error) {
 		log.Println("使用PostgreSQL数据库")
 	} else {
 		// MySQL DSN (向后兼容)
-		dsn = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=%v&loc=%s&tls=skip-verify",
-			appConfig.Database.Username, appConfig.Database.Password, appConfig.Database.Host, appConfig.Database.Port, appConfig.Database.Database, appConfig.Database.Charset, appConfig.Database.ParseTime, appConfig.Database.Loc)
+		dsn = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=%v&loc=%s%s",
+			appConfig.Database.Username, appConfig.Database.Password, appConfig.Database.Host, appConfig.Database.Port, appConfig.Database.Database, appConfig.Database.Charset, appConfig.Database.ParseTime, appConfig.Database.Loc, mysqlTLSParam(appConfig.Database.SSLMode))
 
 		// 连接MySQL
 		db, err = gorm.Open(mysql.Open(dsn), gormConfig)

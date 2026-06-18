@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -271,6 +272,13 @@ func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID
 		log.Printf("📋 发现潜在冲突案件: ID=%d, 标题=%s, 客户=%s, 律师=%s",
 			caseModel.ID, caseModel.Title, clientName, lawyerName)
 
+		conflictType := "代理冲突"
+		riskLevel := "MEDIUM"
+		if isDirectOpposingPartyClient(clientName, otherParties) {
+			conflictType = "对方当事人直接冲突"
+			riskLevel = "CRITICAL"
+		}
+
 		// 创建冲突案例对象
 		conflictCase := &models.ConflictCase{
 			ID:           fmt.Sprintf("case_%d", caseModel.ID),
@@ -280,10 +288,15 @@ func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID
 			CaseType:     caseModel.CaseType,
 			Description:  fmt.Sprintf("律师 %s 同时代理了案件 '%s'，存在潜在利益冲突", lawyerName, caseModel.Title),
 			ClientID:     fmt.Sprintf("%d", caseModel.ClientID),
-			RiskLevel:    "MEDIUM", // 默认中等风险
-			ConflictType: "代理冲突",
+			RiskLevel:    riskLevel,
+			ConflictType: conflictType,
 			CaseStatus:   "active",
 			CreatedAt:    caseModel.CreatedAt,
+		}
+		if riskLevel == "CRITICAL" {
+			conflictCase.Description = fmt.Sprintf("当前对方当事人 '%s' 是律师 %s 已代理客户，存在直接利益冲突", clientName, lawyerName)
+			conflictCase.OpposingParties = otherParties
+			conflictCase.ConflictDetails = "对方当事人与承办律师历史客户直接命中"
 		}
 
 		conflictCases = append(conflictCases, conflictCase)
@@ -379,6 +392,31 @@ func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID
 
 	log.Printf("🎯 冲突检测完成: 找到 %d 个潜在冲突案例", len(conflictCases))
 	return conflictCases, nil
+}
+
+func isDirectOpposingPartyClient(clientName string, otherParties []string) bool {
+	clientName = normalizeConflictPartyName(clientName)
+	if clientName == "" {
+		return false
+	}
+	for _, party := range otherParties {
+		party = normalizeConflictPartyName(party)
+		if party == "" {
+			continue
+		}
+		if clientName == party || strings.Contains(clientName, party) || strings.Contains(party, clientName) {
+			return true
+		}
+	}
+	return false
+}
+
+func normalizeConflictPartyName(name string) string {
+	name = strings.ToLower(strings.TrimSpace(name))
+	for _, suffix := range []string{"有限公司", "股份有限公司", "集团", "控股", "公司", "律所", "律师事务所", " ", "　"} {
+		name = strings.ReplaceAll(name, suffix, "")
+	}
+	return name
 }
 
 // GetClientRelations 获取客户关系

@@ -92,6 +92,9 @@ interface CommandCenterRiskItem {
   case_type?: string
   client_id?: string | number
   client_name?: string
+  matched_subject?: string
+  matched_type?: string
+  evidence_summary?: string
   status?: string
   risk_level?: string
   has_conflict?: boolean
@@ -703,6 +706,8 @@ export function DashboardCommandCenter() {
   const stageCounts = listOf(commandCenter?.case_stage_distribution)
   const overdueItems = listOf(commandCenter?.overdue_tasks)
   const activities = listOf(commandCenter?.recent_activities)
+  const currentUserInfo = getUserInfo()
+  const currentUserName = textValue(currentUserInfo?.realName || currentUserInfo?.name || currentUserInfo?.username, '律师')
   const pendingApprovals = summary?.pending_approvals ?? 0
   const openConflicts = summary?.open_conflict_tasks ?? 0
   const activeCases = summary?.active_cases ?? 0
@@ -744,7 +749,7 @@ export function DashboardCommandCenter() {
     <div className='batch-page'>
       <PageHeader
         eyebrow='工作台 / 指挥中心'
-        title='上午好，张律师'
+        title={`上午好，${currentUserName}`}
         subtitle={`今天是 ${formatTodayText()}`}
         actions={
           <>
@@ -1748,6 +1753,7 @@ export function CaseIntakeWorkbench() {
   const [form, setForm] = React.useState<IntakeFormState>(() => loadCaseIntakeDraft())
   const [runtime, setRuntime] = React.useState<IntakeRuntimeState>({ apiTimings: [] })
   const [submitting, setSubmitting] = React.useState(false)
+  const [submissionNotice, setSubmissionNotice] = React.useState('')
   const [activeStep, setActiveStep] = React.useState(0)
   const [relatedParties, setRelatedParties] = React.useState<Array<{ name: string; role: string }>>([])
   const [relatedPartyDraft, setRelatedPartyDraft] = React.useState('')
@@ -1858,6 +1864,15 @@ export function CaseIntakeWorkbench() {
         clientName: form.clientName,
         clientType: 'COMPANY',
         otherParties: [form.opponentName, ...relatedParties.map((party) => party.name)],
+        parties: [
+          { role: 'CLIENT', name: form.clientName, entityType: 'COMPANY' },
+          { role: 'OPPOSING_PARTY', name: form.opponentName, entityType: 'COMPANY' },
+          ...relatedParties.map((party) => ({
+            role: party.role || 'RELATED_PARTY',
+            name: party.name,
+            entityType: 'COMPANY',
+          })),
+        ],
         caseName: form.title,
         caseType: form.caseType,
         searchYears: 5,
@@ -1868,6 +1883,7 @@ export function CaseIntakeWorkbench() {
     })
     recordTiming('冲突检查', startedAt)
     setRuntime((current) => ({ ...current, intake, conflict }))
+    setSubmissionNotice('')
     message.success('利益冲突检查已完成')
     return conflict
   }
@@ -1875,11 +1891,19 @@ export function CaseIntakeWorkbench() {
   const submitApproval = async () => {
     setSubmitting(true)
     try {
+      if (missingSubmitFields.length > 0) {
+        const notice = `以下必填项未完成：${missingSubmitFields.join('、')}。请补充后再提交审批。`
+        setSubmissionNotice(notice)
+        message.error(notice)
+        return
+      }
       const intake = runtime.intake || await createIntake()
       const conflict = runtime.conflict || await runConflictCheck(intake)
       const overallRisk = textValue(conflict?.riskAssessment?.overallRisk || conflict?.risk_level || conflict?.record?.risk_level, 'LOW').toUpperCase()
       if (['HIGH', 'CRITICAL'].includes(overallRisk)) {
-        message.error('检测到高风险冲突，需先完成冲突审批或豁免评估，暂不能提交立案审批')
+        const notice = '检测到高风险或严重冲突，需先在利益冲突检测清单中发起冲突审批或豁免评估，暂不能提交立案审批。'
+        setSubmissionNotice(notice)
+        message.error(notice)
         return
       }
       const startedAt = performance.now()
@@ -1932,6 +1956,7 @@ export function CaseIntakeWorkbench() {
       })
       recordTiming('提交审批', startedAt)
       setRuntime((current) => ({ ...current, approval }))
+      setSubmissionNotice('')
       window.localStorage.removeItem(caseIntakeDraftKey)
       message.success('已提交真实审批')
       navigate(`/approval/${approval.approval_id}`)
@@ -1943,6 +1968,20 @@ export function CaseIntakeWorkbench() {
   }
 
   const selectedLawyer = lawyerOptions.find((lawyer) => lawyer.id === form.lawyerId)
+  const missingSubmitFields = [
+    !form.title && '案件名称',
+    !form.caseType && '案件类型',
+    (!form.clientId || !form.clientName) && '客户',
+    !form.opponentName && '对方当事人',
+    !form.description && '案情摘要',
+    !form.lawyerId && '负责律师',
+    !runtime.conflict && '利益冲突检查',
+  ].filter(Boolean) as string[]
+  const completedSubmitFields = 7 - missingSubmitFields.length
+  const intakeCompleteness = Math.round((completedSubmitFields / 7) * 100)
+  const overviewHint = missingSubmitFields.length > 0
+    ? `还需补充：${missingSubmitFields.join('、')}`
+    : '必填信息已完成'
   const intakeSteps = [
     { title: '基本信息', desc: '案件与当事人信息' },
     { title: '利益冲突检查', desc: '自动检测与人工复核' },
@@ -1951,8 +1990,10 @@ export function CaseIntakeWorkbench() {
     { title: '立案提交', desc: '提交审批并创建案件' },
   ]
   const currentStep = intakeSteps[activeStep] || intakeSteps[0]
+  const currentConflictRisk = textValue(runtime.conflict?.riskAssessment?.overallRisk || runtime.conflict?.risk_level || runtime.conflict?.record?.risk_level, '').toUpperCase()
+  const hasBlockingConflictRisk = ['HIGH', 'CRITICAL'].includes(currentConflictRisk)
   const conflictRiskText = runtime.conflict
-    ? riskLabel(textValue(runtime.conflict.riskAssessment?.overallRisk, 'LOW'))
+    ? riskLabel(currentConflictRisk || 'LOW')
     : '未检测'
   const conflictStatusClass = runtime.conflict ? 'success-text' : 'danger-text'
 
@@ -2183,6 +2224,7 @@ export function CaseIntakeWorkbench() {
                     <tr><td>其他相关方</td><td>{relatedParties.map((party) => party.name).join('、') || '暂无'}</td></tr>
                     <tr><td>检测结果</td><td>{runtime.conflict ? `风险等级：${conflictRiskText}，评分：${runtime.conflict.riskAssessment?.riskScore || 0}` : '尚未调用正式 API'}</td></tr>
                     <tr><td>检测 ID</td><td>{runtime.conflict?.checkId || runtime.conflict?.record?.check_id || '检测后生成'}</td></tr>
+                    <tr><td>提交提示</td><td>{submissionNotice || '完成必填项且无高风险/严重冲突后可提交立案审批'}</td></tr>
                   </tbody>
                 </table>
               </DataTable>
@@ -2254,6 +2296,15 @@ export function CaseIntakeWorkbench() {
                 <Button onClick={handleCreateIntake}>保存草稿</Button>
                 <Button type='primary' loading={submitting} onClick={submitApproval}>提交审批并等待成案</Button>
               </Space>
+              {submissionNotice && (
+                <div className='batch-advice danger' style={{ marginTop: 12 }}>
+                  <strong>暂不能提交审批</strong>
+                  <p>{submissionNotice}</p>
+                  {hasBlockingConflictRisk && (
+                    <Button type='primary' danger onClick={() => navigate('/conflict')}>进入冲突清单发起复核</Button>
+                  )}
+                </div>
+              )}
             </SectionCard>
           )}
         </main>
@@ -2261,8 +2312,8 @@ export function CaseIntakeWorkbench() {
         <aside className='batch-intake-aside'>
           <SectionCard title='案件概览'>
             <div className='batch-overview-score'>
-              <Progress type='circle' percent={68} size={92} strokeColor='#12a89d' />
-              <div><strong>信息完整度</strong><span>请完善必填项后进入下一步</span></div>
+              <Progress type='circle' percent={intakeCompleteness} size={92} strokeColor='#12a89d' />
+              <div><strong>信息完整度</strong><span>{overviewHint}</span></div>
             </div>
             {[
               `案件名称 ${form.title || '未填写'}`,
@@ -2304,6 +2355,10 @@ export function CaseIntakeWorkbench() {
         <Button onClick={handleCancelIntake}>取消立案</Button>
         <span><SafetyCertificateOutlined /> 利益冲突检查状态：<strong className={conflictStatusClass}>{conflictRiskText}</strong></span>
         {runtime.intake?.intake_code && <span>接案草稿已创建：<strong>{runtime.intake.intake_code}</strong></span>}
+        {submissionNotice && <span className='danger-text'>{submissionNotice}</span>}
+        {submissionNotice && hasBlockingConflictRisk && (
+          <Button size='small' danger onClick={() => navigate('/conflict')}>进入冲突清单发起复核</Button>
+        )}
         <Space>
           <Button onClick={handleCreateIntake}>保存草稿</Button>
           <Button onClick={handleSaveDraftAndExit}>保存并退出</Button>
@@ -2342,12 +2397,26 @@ export function ConflictCheckResults() {
   const contextCaseNumber = searchParams.get('case_number') || ''
   const contextCaseTitle = searchParams.get('case_title') || ''
   const contextConflict = riskItems.find((item) => conflictMatchesCaseContext(item, contextCaseID, contextCaseNumber, contextCaseTitle))
+  const criticalRiskCount = riskItems.filter((item) => (item.risk_level || '').toUpperCase() === 'CRITICAL').length
   const highRiskCount = riskItems.filter((item) => ['HIGH', 'CRITICAL'].includes((item.risk_level || '').toUpperCase())).length
   const mediumRiskCount = riskItems.filter((item) => (item.risk_level || '').toUpperCase() === 'MEDIUM').length
   const lowRiskCount = riskItems.filter((item) => (item.risk_level || '').toUpperCase() === 'LOW').length
-  const queueRisk = highRiskCount > 0 ? 'HIGH' : mediumRiskCount > 0 ? 'MEDIUM' : lowRiskCount > 0 ? 'LOW' : ''
+  const queueRisk = criticalRiskCount > 0 ? 'CRITICAL' : highRiskCount > 0 ? 'HIGH' : mediumRiskCount > 0 ? 'MEDIUM' : lowRiskCount > 0 ? 'LOW' : ''
   const selectedCheckResult = recordValue(selectedConflict?.check_result)
   const selectedRiskAssessment = recordValue(selectedCheckResult.riskAssessment)
+  const selectedRiskReason = textValue(
+    selectedRiskAssessment.riskReason ||
+    selectedCheckResult.riskReason ||
+    selectedCheckResult.risk_reason ||
+    selectedConflict?.conflict_details ||
+    selectedConflict?.description,
+    '暂无风险原因',
+  )
+  const selectedRequiresApproval = Boolean(
+    selectedRiskAssessment.requiresApproval ??
+    selectedCheckResult.requiresApproval ??
+    ['HIGH', 'CRITICAL'].includes(textValue(selectedConflict?.risk_level, '').toUpperCase()),
+  )
   const selectedStatistics = recordValue(selectedCheckResult.checkStatistics)
   const selectedSearchParameters = recordValue(selectedConflict?.search_parameters)
   const selectedConflictCases = listOf<Record<string, unknown>>(selectedConflict?.conflict_cases)
@@ -2467,7 +2536,7 @@ export function ConflictCheckResults() {
         </SectionCard>
         <section className='batch-risk-banner'>
           <AlertOutlined />
-          <div><span>队列最高风险</span><strong>{riskLabel(queueRisk)}</strong><em>发现 {highRiskCount} 项高风险冲突</em></div>
+          <div><span>队列最高风险</span><strong>{riskLabel(queueRisk)}</strong><em>发现 {highRiskCount} 项高风险/严重冲突</em></div>
           <div><span>任务数量</span><strong className='score'>{riskItems.length}</strong><em>条</em></div>
           <div className='batch-risk-counts'><p>高风险 <strong>{highRiskCount}</strong></p><p>中风险 <strong>{mediumRiskCount}</strong></p><p>低风险 <strong>{lowRiskCount}</strong></p><p>提示 <strong>{Math.max(0, riskItems.length - highRiskCount - mediumRiskCount - lowRiskCount)}</strong></p></div>
           <div><span>检测来源</span><p>conflict_check_records</p><p>无记录时显示空状态</p><p>不使用前端写死命中</p></div>
@@ -2495,12 +2564,12 @@ export function ConflictCheckResults() {
                 {riskItems.map((row) => (
                   <tr key={row.id || row.title} className={['HIGH', 'CRITICAL'].includes((row.risk_level || '').toUpperCase()) ? 'danger-row' : ''}>
                     <td><RiskTag text={riskLabel(row.risk_level)} /></td>
-                    <td className='strong-cell'>{textValue(row.client_name, '未登记客户')}</td>
-                    <td>{statusLabel(row.status)}</td>
+                    <td className='strong-cell'>{textValue(row.matched_subject || row.client_name, '未登记客户')}</td>
+                    <td>{textValue(row.matched_type, statusLabel(row.status))}</td>
                     <td>{textValue(row.title, '未关联案件')}</td>
                     <td>{row.status === 'COMPLETED' ? '100%' : '-'}</td>
                     <td>-</td>
-                    <td>{textValue(row.title)}</td>
+                    <td>{textValue(row.evidence_summary || row.title)}</td>
                     <td>conflict_check_records</td>
                     <td>
                       <Button size='small' type='primary' ghost onClick={() => setSelectedConflict(row)}>
@@ -2560,6 +2629,8 @@ export function ConflictCheckResults() {
                   ['关联案件', textValue(selectedConflict.title, '-')],
                   ['案件类型', textValue(selectedConflict.case_type, '-')],
                   ['客户/委托人', textValue(selectedConflict.client_name, '-')],
+                  ['主命中主体', textValue(selectedConflict.matched_subject || selectedConflict.client_name, '-')],
+                  ['主冲突类型', textValue(selectedConflict.matched_type, '-')],
                   ['检测状态', statusLabel(selectedConflict.status)],
                   ['风险等级', riskLabel(selectedConflict.risk_level)],
                   ['是否冲突', selectedConflict.has_conflict ? '是' : '否'],
@@ -2595,8 +2666,8 @@ export function ConflictCheckResults() {
                   <tbody>
                     <tr><td>总体风险</td><td>{riskLabel(textValue(selectedRiskAssessment.overallRisk || selectedConflict.risk_level, 'LOW'))}</td></tr>
                     <tr><td>风险评分</td><td>{numberValue(selectedRiskAssessment.riskScore, 0)}</td></tr>
-                    <tr><td>风险原因</td><td>{textValue(selectedRiskAssessment.riskReason, '暂无风险原因')}</td></tr>
-                    <tr><td>需审批</td><td>{selectedRiskAssessment.requiresApproval ? '是' : '否'}</td></tr>
+                    <tr><td>风险原因</td><td>{selectedRiskReason}</td></tr>
+                    <tr><td>需审批</td><td>{selectedRequiresApproval ? '是' : '否'}</td></tr>
                     <tr><td>检查范围</td><td>{textValue(selectedSearchParameters.searchDepth, 'STANDARD')} · {numberValue(selectedSearchParameters.searchYears, 5)}年</td></tr>
                     <tr><td>统计</td><td>检查案件 {numberValue(selectedStatistics.totalCasesChecked, selectedConflictCases.length)} 件，关联方 {numberValue(selectedStatistics.relatedPartiesChecked, 0)} 个</td></tr>
                   </tbody>

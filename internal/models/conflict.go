@@ -7,18 +7,27 @@ import (
 
 // ConflictCheckRequest 冲突检测请求
 type ConflictCheckRequest struct {
-	CheckID                   string    `json:"checkId,omitempty"`
-	ClientID                  string    `json:"clientId" validate:"required"`
-	ClientName                string    `json:"clientName" validate:"required"`
-	ClientType                string    `json:"clientType" validate:"oneof=PERSON COMPANY ANY"`
-	OtherParties              []string  `json:"otherParties"`
-	CaseName                  string    `json:"caseName" validate:"required"`
-	CaseType                  string    `json:"caseType" validate:"required"`
-	SearchYears               int       `json:"searchYears"`
-	IncludeCorporateRelations bool      `json:"includeCorporateRelations"`
-	SearchDepth               string    `json:"searchDepth" validate:"oneof=BASIC STANDARD DEEP"`
-	UserID                    string    `json:"userId"` // 改为字符串类型，前端会发送字符串
-	RequestTime               time.Time `json:"requestTime"`
+	CheckID                   string              `json:"checkId,omitempty"`
+	ClientID                  string              `json:"clientId" validate:"required"`
+	ClientName                string              `json:"clientName" validate:"required"`
+	ClientType                string              `json:"clientType" validate:"oneof=PERSON COMPANY ANY"`
+	OtherParties              []string            `json:"otherParties"`
+	Parties                   []ConflictPartyInfo `json:"parties,omitempty"`
+	CaseName                  string              `json:"caseName" validate:"required"`
+	CaseType                  string              `json:"caseType" validate:"required"`
+	SearchYears               int                 `json:"searchYears"`
+	IncludeCorporateRelations bool                `json:"includeCorporateRelations"`
+	SearchDepth               string              `json:"searchDepth" validate:"oneof=BASIC STANDARD DEEP"`
+	UserID                    string              `json:"userId"` // 改为字符串类型，前端会发送字符串
+	RequestTime               time.Time           `json:"requestTime"`
+}
+
+// ConflictPartyInfo describes the legal role of a party being checked.
+type ConflictPartyInfo struct {
+	Name         string `json:"name"`
+	Role         string `json:"role"`
+	EntityType   string `json:"entityType,omitempty"`
+	RelationNote string `json:"relationNote,omitempty"`
 }
 
 // ConflictCheckResponse 冲突检测响应
@@ -208,6 +217,25 @@ func (r *ConflictCheckRequest) Validate() error {
 		cleanParties = append(cleanParties, party)
 	}
 	r.OtherParties = cleanParties
+
+	cleanPartyInfo := make([]ConflictPartyInfo, 0, len(r.Parties))
+	for _, party := range r.Parties {
+		party.Name = strings.TrimSpace(party.Name)
+		party.Role = strings.ToUpper(strings.TrimSpace(party.Role))
+		party.EntityType = strings.ToUpper(strings.TrimSpace(party.EntityType))
+		party.RelationNote = strings.TrimSpace(party.RelationNote)
+		if party.Name == "" {
+			continue
+		}
+		cleanPartyInfo = append(cleanPartyInfo, party)
+		if party.Role == "OPPOSING_PARTY" || party.Role == "OPPOSING" || party.Role == "ADVERSE" {
+			if _, ok := seen[party.Name]; !ok {
+				seen[party.Name] = struct{}{}
+				r.OtherParties = append(r.OtherParties, party.Name)
+			}
+		}
+	}
+	r.Parties = cleanPartyInfo
 	return nil
 }
 

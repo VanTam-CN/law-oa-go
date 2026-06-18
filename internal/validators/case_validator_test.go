@@ -244,34 +244,37 @@ func TestClientValidator_Validate(t *testing.T) {
 
 	t.Run("验证有效客户", func(t *testing.T) {
 		client := &models.Client{
-			Name:        "测试客户",
-			ContactInfo: "test@example.com",
-			Phone:       "13800138000",
+			Name:   "测试客户",
+			Email:  "test@example.com",
+			Phone:  "13800138000",
+			Status: "active",
 		}
 
-		err := validator.Validate(client)
+		err := validator.ValidateClient(client, false)
 		assert.NoError(t, err)
 	})
 
 	t.Run("验证空客户名", func(t *testing.T) {
 		client := &models.Client{
-			Name:        "",
-			ContactInfo: "test@example.com",
-			Phone:       "13800138000",
+			Name:   "",
+			Email:  "test@example.com",
+			Phone:  "13800138000",
+			Status: "active",
 		}
 
-		err := validator.Validate(client)
+		err := validator.ValidateClient(client, false)
 		assert.Error(t, err)
 	})
 
 	t.Run("验证客户名过短", func(t *testing.T) {
 		client := &models.Client{
-			Name:        "A",
-			ContactInfo: "test@example.com",
-			Phone:       "13800138000",
+			Name:   "A",
+			Email:  "test@example.com",
+			Phone:  "13800138000",
+			Status: "active",
 		}
 
-		err := validator.Validate(client)
+		err := validator.ValidateClient(client, false)
 		assert.Error(t, err)
 	})
 }
@@ -291,13 +294,14 @@ func Fuzz_ClientValidator_Validate(f *testing.F) {
 		}
 
 		client := &models.Client{
-			Name:        name,
-			ContactInfo: email,
-			Phone:       phone,
+			Name:   name,
+			Email:  email,
+			Phone:  phone,
+			Status: "active",
 		}
 
 		// 测试不会panic
-		_ = validator.Validate(client)
+		_ = validator.ValidateClient(client, false)
 	})
 }
 
@@ -305,27 +309,28 @@ func TestLawyerValidator_Validate(t *testing.T) {
 	validator := &LawyerValidator{}
 
 	t.Run("验证有效律师", func(t *testing.T) {
-		lawyer := &models.Lawyer{
-			Name:        "张律师",
-			Email:       "lawyer@example.com",
-			Phone:       "13800138000",
-			LicenseNo:   "LICENSE123",
-			Specialty:   "民事法律",
+		lawyer := &models.User{
+			Name:   "张律师",
+			Email:  "lawyer@example.com",
+			Phone:  "13800138000",
+			Role:   "lawyer",
+			Status: "active",
 		}
 
-		err := validator.Validate(lawyer)
+		err := validator.ValidateLawyer(lawyer, false)
 		assert.NoError(t, err)
 	})
 
 	t.Run("验证空律师名", func(t *testing.T) {
-		lawyer := &models.Lawyer{
-			Name:      "",
-			Email:     "lawyer@example.com",
-			Phone:     "13800138000",
-			LicenseNo: "LICENSE123",
+		lawyer := &models.User{
+			Name:   "",
+			Email:  "lawyer@example.com",
+			Phone:  "13800138000",
+			Role:   "lawyer",
+			Status: "active",
 		}
 
-		err := validator.Validate(lawyer)
+		err := validator.ValidateLawyer(lawyer, false)
 		assert.Error(t, err)
 	})
 }
@@ -338,20 +343,21 @@ func Fuzz_LawyerValidator_Validate(f *testing.F) {
 	f.Add("", "lawyer@example.com", "13800138000", "LICENSE123")
 	f.Add("A", "lawyer@example.com", "13800138000", "LICENSE123")
 
-	f.Fuzz(func(t *testing.T, name, email, phone, license string) {
+	f.Fuzz(func(t *testing.T, name, email, phone, role string) {
 		// 限制输入长度
-		if len(name) > 50 || len(email) > 100 || len(phone) > 20 || len(license) > 50 {
+		if len(name) > 100 || len(email) > 100 || len(phone) > 20 || len(role) > 50 {
 			t.Skip()
 		}
 
-		lawyer := &models.Lawyer{
-			Name:      name,
-			Email:     email,
-			Phone:     phone,
-			LicenseNo: license,
+		lawyer := &models.User{
+			Name:   name,
+			Email:  email,
+			Phone:  phone,
+			Role:   role,
+			Status: "active",
 		}
 
 		// 测试不会panic
-		_ = validator.Validate(lawyer)
+		_ = validator.ValidateLawyer(lawyer, false)
 	})
 }

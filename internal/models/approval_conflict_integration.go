@@ -79,7 +79,7 @@ type ConflictCheckAssociation struct {
 
 	// 检测结果摘要
 	ConflictCount    int        `json:"conflict_count"`                                 // 冲突案例数量
-	ConflictTypes    StringSlice `json:"conflict_types" gorm:"type:jsonb"`             // 冲突类型列表
+	ConflictTypes    StringSlice `json:"conflict_types" gorm:"type:json"`              // 冲突类型列表
 
 	// 客户和案件信息
 	ClientID         string `json:"client_id" gorm:"type:varchar(255);index"`           // 客户ID
@@ -88,17 +88,17 @@ type ConflictCheckAssociation struct {
 	CaseType         string `json:"case_type" gorm:"type:varchar(100)"`                // 案件类型
 
 	// 检测参数和范围
-	SearchParameters  StringMap `json:"search_parameters" gorm:"type:jsonb"`           // 搜索参数
+	SearchParameters  StringMap `json:"search_parameters" gorm:"type:json"`            // 搜索参数
 	SearchScope      string    `json:"search_scope" gorm:"type:varchar(100)"`          // 搜索范围
 
 	// 建议和处理
-	Recommendations StringSlice `json:"recommendations" gorm:"type:jsonb"`           // 建议
-	Mitigation      StringSlice `json:"mitigation" gorm:"type:jsonb"`                // 缓解措施
+	Recommendations StringSlice `json:"recommendations" gorm:"type:json"`            // 建议
+	Mitigation      StringSlice `json:"mitigation" gorm:"type:json"`                 // 缓解措施
 
 	// 审批指导信息
 	RequiresApproval bool        `json:"requires_approval"`                            // 是否需要审批
 	ApprovalLevel   string      `json:"approval_level" gorm:"type:varchar(100)"`      // 审批级别
-	RiskFactors     StringSlice `json:"risk_factors" gorm:"type:jsonb"`              // 风险因素
+	RiskFactors     StringSlice `json:"risk_factors" gorm:"type:json"`               // 风险因素
 }
 
 // CaseCreationAssociation 案件创建关联信息
@@ -111,13 +111,13 @@ type CaseCreationAssociation struct {
 	CreationTime      time.Time `json:"creation_time"`                                        // 案件创建时间
 
 	// 数据映射信息
-	DataMapping       StringMap   `json:"data_mapping" gorm:"type:jsonb"`                    // 数据映射详情
-	MappedFields      StringSlice `json:"mapped_fields" gorm:"type:jsonb"`                  // 已映射字段列表
-	ValidationErrors  StringSlice `json:"validation_errors" gorm:"type:jsonb"`              // 验证错误列表
+	DataMapping       StringMap   `json:"data_mapping" gorm:"type:json"`                     // 数据映射详情
+	MappedFields      StringSlice `json:"mapped_fields" gorm:"type:json"`                    // 已映射字段列表
+	ValidationErrors  StringSlice `json:"validation_errors" gorm:"type:json"`                // 验证错误列表
 
 	// 条件和限制
-	AppliedConditions   StringSlice `json:"applied_conditions" gorm:"type:jsonb"`          // 应用的条件
-	ImposedRequirements StringSlice `json:"imposed_requirements" gorm:"type:jsonb"`        // 施加的要求
+	AppliedConditions   StringSlice `json:"applied_conditions" gorm:"type:json"`           // 应用的条件
+	ImposedRequirements StringSlice `json:"imposed_requirements" gorm:"type:json"`         // 施加的要求
 
 	// 状态和跟踪
 	Status           string `json:"status" gorm:"type:varchar(100)"`                       // 创建状态
@@ -150,7 +150,7 @@ type ApprovalIntegrationMetadata struct {
 	// 流程控制
 	AutoSubmitted     bool      `json:"auto_submitted" gorm:"default:false"`                 // 是否自动提交
 	TriggerSource     string    `json:"trigger_source" gorm:"type:varchar(50);default:'manual'"` // 触发源: manual, auto
-	WorkflowOverride   StringMap `json:"workflow_override" gorm:"type:jsonb"`                  // 工作流覆盖配置
+	WorkflowOverride   StringMap `json:"workflow_override" gorm:"type:json"`                   // 工作流覆盖配置
 
 	// 审计信息
 	CreatedBy         string `json:"created_by" gorm:"type:varchar(255)"`                       // 创建人

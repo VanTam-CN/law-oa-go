@@ -281,6 +281,10 @@ func (s *conflictDetectionService) checkOpponentConflicts(ctx context.Context, r
 			// 确定冲突类型和风险等级
 			conflictType := s.determineConflictType(caseName, description, opponent)
 			riskLevel := s.assessConflictRisk(conflictType, createdAt)
+			if s.isPartyNameMatch(clientName, opponent) {
+				conflictType = "对方当事人直接冲突"
+				riskLevel = "CRITICAL"
+			}
 
 			conflict := &models.ConflictCase{
 				ID:              fmt.Sprintf("opponent_%d", caseID),
@@ -296,6 +300,10 @@ func (s *conflictDetectionService) checkOpponentConflicts(ctx context.Context, r
 				OpposingParties: []string{opponent},
 				ConflictDetails: fmt.Sprintf("系统检测到对方当事人 '%s' 与此案件存在潜在冲突", opponent),
 				CreatedAt:       createdAt,
+			}
+			if riskLevel == "CRITICAL" {
+				conflict.Description = fmt.Sprintf("当前对方当事人 '%s' 是本所历史客户 '%s'，存在直接利益冲突", opponent, clientName)
+				conflict.ConflictDetails = "对方当事人与本所历史客户直接命中"
 			}
 
 			conflicts = append(conflicts, conflict)
@@ -652,6 +660,15 @@ func (s *conflictDetectionService) isSameCompany(name1, name2 string) bool {
 	}
 
 	return false
+}
+
+func (s *conflictDetectionService) isPartyNameMatch(name1, name2 string) bool {
+	name1 = s.cleanCompanyName(strings.ToLower(strings.TrimSpace(name1)))
+	name2 = s.cleanCompanyName(strings.ToLower(strings.TrimSpace(name2)))
+	if name1 == "" || name2 == "" {
+		return false
+	}
+	return name1 == name2 || strings.Contains(name1, name2) || strings.Contains(name2, name1)
 }
 
 // isDirectCompetitor 检查是否为直接竞争对手

@@ -134,18 +134,18 @@ run_ci_frontend_analysis() {
         
         # 快速 ESLint 检查（只检查错误级别）
         if command -v eslint >/dev/null 2>&1; then
-            npm run lint -- --format json --quiet > "../$CI_REPORTS_DIR/frontend/eslint-bootstrap-ci.json" 2>/dev/null || true
-            
+            npm run lint -- --format json --quiet > "$CI_REPORTS_DIR/frontend/eslint-bootstrap-ci.json" 2>/dev/null || true
+
             # 统计错误数量
-            if [ -f "../$CI_REPORTS_DIR/frontend/eslint-bootstrap-ci.json" ] && command -v jq >/dev/null 2>&1; then
-                local bootstrap_errors=$(jq '[.[] | .messages[] | select(.severity == 2)] | length' "../$CI_REPORTS_DIR/frontend/eslint-bootstrap-ci.json" 2>/dev/null || echo "0")
+            if [ -f "$CI_REPORTS_DIR/frontend/eslint-bootstrap-ci.json" ] && command -v jq >/dev/null 2>&1; then
+                local bootstrap_errors=$(jq '[.[] | .messages[] | select(.severity == 2)] | length' "$CI_REPORTS_DIR/frontend/eslint-bootstrap-ci.json" 2>/dev/null || echo "0")
                 frontend_errors=$((frontend_errors + bootstrap_errors))
             fi
         fi
-        
+
         # TypeScript 类型检查
         if command -v tsc >/dev/null 2>&1; then
-            npm run type-check > "../$CI_REPORTS_DIR/frontend/typescript-bootstrap-ci.txt" 2>&1 || true
+            npm run type-check > "$CI_REPORTS_DIR/frontend/typescript-bootstrap-ci.txt" 2>&1 || true
         fi
     fi
     
@@ -156,18 +156,18 @@ run_ci_frontend_analysis() {
         
         # 快速 ESLint 检查
         if command -v eslint >/dev/null 2>&1; then
-            npm run lint -- --format json --quiet > "../$CI_REPORTS_DIR/frontend/eslint-antd-ci.json" 2>/dev/null || true
-            
+            npm run lint -- --format json --quiet > "$CI_REPORTS_DIR/frontend/eslint-antd-ci.json" 2>/dev/null || true
+
             # 统计错误数量
-            if [ -f "../$CI_REPORTS_DIR/frontend/eslint-antd-ci.json" ] && command -v jq >/dev/null 2>&1; then
-                local antd_errors=$(jq '[.[] | .messages[] | select(.severity == 2)] | length' "../$CI_REPORTS_DIR/frontend/eslint-antd-ci.json" 2>/dev/null || echo "0")
+            if [ -f "$CI_REPORTS_DIR/frontend/eslint-antd-ci.json" ] && command -v jq >/dev/null 2>&1; then
+                local antd_errors=$(jq '[.[] | .messages[] | select(.severity == 2)] | length' "$CI_REPORTS_DIR/frontend/eslint-antd-ci.json" 2>/dev/null || echo "0")
                 frontend_errors=$((frontend_errors + antd_errors))
             fi
         fi
-        
+
         # TypeScript 类型检查
         if command -v tsc >/dev/null 2>&1; then
-            npm run type-check > "../$CI_REPORTS_DIR/frontend/typescript-antd-ci.txt" 2>&1 || true
+            npm run type-check > "$CI_REPORTS_DIR/frontend/typescript-antd-ci.txt" 2>&1 || true
         fi
     fi
     

@@ -78,7 +78,7 @@ func buildMigrationDSN(cfg *config.DatabaseConfig, driverName string) (sqlDriver
 		)
 	}
 
-	return "mysql", "mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=%v&loc=%s&multiStatements=true&tls=skip-verify",
+	return "mysql", "mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=%v&loc=%s&multiStatements=true%s",
 		cfg.Username,
 		cfg.Password,
 		cfg.Host,
@@ -87,6 +87,7 @@ func buildMigrationDSN(cfg *config.DatabaseConfig, driverName string) (sqlDriver
 		cfg.Charset,
 		cfg.ParseTime,
 		cfg.Loc,
+		mysqlTLSParam(cfg.SSLMode),
 	)
 }
 

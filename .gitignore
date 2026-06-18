@@ -270,6 +270,10 @@ chrome/
 
 # 项目特定的测试和验证文件
 *_test.go
+!internal/handlers/conflict_handler_simple_test.go
+!internal/repositories/conflict_repository_test.go
+!internal/services/risk_assessor_test.go
+!internal/services/conflict_detection_service_test.go
 *_test
 *_tester
 test_*
@@ -356,3 +360,6 @@ frontend/go.sum
 frontend/*.gofrontend/playwright-report/
 frontend/test-results/
 server
+
+# Playwright MCP server runtime artifacts
+.playwright-mcp/

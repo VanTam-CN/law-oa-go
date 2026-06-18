@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"law-oa-go/internal/common"
@@ -44,34 +45,8 @@ func (h *ConflictHandlerSimple) CheckConflict(c *gin.Context) {
 		return
 	}
 
-	// 从JWT中获取用户ID（仅用于认证，不覆盖前端发送的律师ID）
-	jwtUserID, exists := c.Get("user_id")
-	if !exists {
-		// 如果没有JWT信息，检查请求中是否有userID
-		if request.UserID == "" {
-			common.APIUnauthorized(c, "未授权访问", "缺少用户认证信息")
-			return
-		}
-	} else {
-		// 🔧 修复：JWT用于认证验证，但不应覆盖前端指定的律师ID
-		// 记录JWT用户ID用于日志，但保持前端发送的律师ID不变
-		var jwtUserIDStr string
-		if uid, ok := jwtUserID.(float64); ok {
-			jwtUserIDStr = strconv.FormatUint(uint64(uid), 10)
-		} else if uid, ok := jwtUserID.(uint); ok {
-			jwtUserIDStr = strconv.FormatUint(uint64(uid), 10)
-		} else if uid, ok := jwtUserID.(string); ok {
-			jwtUserIDStr = uid
-		}
-
-		log.Printf("🔐 JWT认证用户ID: %s, 前端指定的律师ID: %s", jwtUserIDStr, request.UserID)
-
-		// 验证前端是否有指定律师ID
-		if request.UserID == "" {
-			log.Printf("⚠️ 前端未指定律师ID，使用JWT用户ID: %s", jwtUserIDStr)
-			request.UserID = jwtUserIDStr
-		}
-		// 否则保持前端发送的律师ID不变（用于律师代理他人案件的场景）
+	if !h.prepareConflictRequest(c, &request) {
+		return
 	}
 
 	// 设置默认值
@@ -220,6 +195,10 @@ func (h *ConflictHandlerSimple) prepareConflictRequest(c *gin.Context, request *
 
 		if request.UserID == "" {
 			request.UserID = jwtUserIDStr
+		} else if request.UserID != jwtUserIDStr && !canRunConflictCheckForOthers(c) {
+			log.Printf("🚫 冲突检测被拒绝: 登录用户=%s, 请求检查律师=%s, 角色=%v", jwtUserIDStr, request.UserID, c.GetString("role"))
+			common.NewAPIError(c, http.StatusForbidden, "CONFLICT_LAWYER_SCOPE_FORBIDDEN", "普通律师只能以本人作为承办律师执行冲突检查")
+			return false
 		}
 	}
 
@@ -231,6 +210,16 @@ func (h *ConflictHandlerSimple) prepareConflictRequest(c *gin.Context, request *
 	}
 	request.RequestTime = time.Now()
 	return true
+}
+
+func canRunConflictCheckForOthers(c *gin.Context) bool {
+	role := strings.ToLower(strings.TrimSpace(c.GetString("role")))
+	switch role {
+	case "admin", "super_admin", "director", "partner", "compliance", "risk", "risk_control", "management":
+		return true
+	default:
+		return false
+	}
 }
 
 // GetCheckHistory 获取冲突检测历史

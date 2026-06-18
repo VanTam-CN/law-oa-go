@@ -152,6 +152,7 @@ func Load() (*Config, error) {
 		"database.username":      "DB_USERNAME",
 		"database.password":      "DB_PASSWORD",
 		"database.database":      "DB_DATABASE",
+		"database.sslmode":       "DB_SSLMODE",
 		"redis.host":             "REDIS_HOST",
 		"redis.port":             "REDIS_PORT",
 		"redis.password":         "REDIS_PASSWORD",
