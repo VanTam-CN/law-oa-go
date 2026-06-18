@@ -176,10 +176,11 @@ Law OA Go 提供现代化的 RESTful API，基于 Go 1.25 标准构建，采用�
   "name": "新用户",
   "email": "newuser@example.com",
   "password": "password123",
-  "phone": "13800138000",
-  "role": "user"
+  "phone": "13800138000"
 }
 ```
+
+> 注：`role` 由服务端固定为 `user`，不接受请求体传入，避免提权风险。
 
 **成功响应**
 ```json

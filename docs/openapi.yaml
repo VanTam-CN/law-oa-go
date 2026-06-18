@@ -395,17 +395,13 @@ components:
           type: string
           description: 电话号码
           example: "13800138000"
-        role:
-          type: string
-          description: 用户角色
-          enum: [admin, user, lawyer]
-          example: "user"
       required:
         - name
         - email
         - password
         - phone
-        - role
+      description: |
+        注册接口不接受 `role` 字段；服务端固定为 `user`，避免提权。
 
     # 创建客户请求
     CreateClientRequest:

@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -27,6 +29,15 @@ import (
 
 func TestAuthHandler_Login(t *testing.T) {
 	gin.SetMode(gin.TestMode)
+
+	// Login handler 调用 middleware.GenerateToken，必须初始化 JWT 单例
+	middleware.InitJWT(&config.Config{
+		JWT: config.JWTConfig{
+			Secret:    "test-secret-key-32-bytes-long-for-testing",
+			ExpiresIn: 3600,
+			RefreshIn: 7200,
+		},
+	})
 
 	// 创建模拟用户仓库
 	mockUserRepo := new(testmock.MockUserRepository)
@@ -242,6 +253,15 @@ func TestAuthHandler_Login(t *testing.T) {
 func TestAuthHandler_Register(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
+	// Register handler 现在调用 middleware.GenerateToken，必须初始化 JWT 单例
+	middleware.InitJWT(&config.Config{
+		JWT: config.JWTConfig{
+			Secret:    "test-secret-key-32-bytes-long-for-testing",
+			ExpiresIn: 3600,
+			RefreshIn: 7200,
+		},
+	})
+
 	mockUserRepo := new(testmock.MockUserRepository)
 
 	// 创建token撤销服务
@@ -399,38 +419,40 @@ func TestAuthHandler_Register(t *testing.T) {
 		assert.NotNil(t, response["error"])
 	})
 
-	t.Run("Register Invalid Role", func(t *testing.T) {
+	t.Run("Register Ignores Unknown Role Field", func(t *testing.T) {
 		// 重置mock
 		mockUserRepo.ExpectedCalls = nil
 		mockUserRepo.Calls = nil
 
-		// 设置模拟期望 - 角色验证失败时不会调用FindByEmail
-		// mockUserRepo.On("FindByEmail", testifymock.Anything, "newuser@example.com").Return(nil, repositories.ErrUserNotFound)
+		// 公开注册不再接受 Role 字段；多余字段必须被忽略且持久化角色固定为 user。
+		var capturedUser *models.User
+		mockUserRepo.On("FindByEmail", testifymock.Anything, "roleuser@example.com").
+			Return(nil, repositories.ErrUserNotFound)
+		mockUserRepo.On("Create", testifymock.Anything, testifymock.MatchedBy(func(u *models.User) bool {
+			capturedUser = u
+			return true
+		})).Return(nil).Once()
 
-		// 准备请求体
 		registerData := map[string]interface{}{
-			"name":     "New User",
-			"email":    "newuser@example.com",
+			"name":     "Role User",
+			"email":    "roleuser@example.com",
 			"password": "Password123!",
-			"role":     "invalid_role",
+			"role":     "invalid_role", // 必须被忽略
 		}
 		jsonData, _ := json.Marshal(registerData)
 		req, _ := http.NewRequest("POST", "/auth/register", bytes.NewBuffer(jsonData))
 		req.Header.Set("Content-Type", "application/json")
 
-		// 执行请求
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
-		// 断言响应
-		assert.Equal(t, http.StatusBadRequest, w.Code)
-		var response map[string]interface{}
-		err := json.Unmarshal(w.Body.Bytes(), &response)
-		assert.NoError(t, err)
-		assert.Equal(t, false, response["success"])
-		assert.NotNil(t, response["error"])
+		assert.Equal(t, http.StatusOK, w.Code, "未知 role 字段应被忽略，body=%s", w.Body.String())
+		assert.NotNil(t, capturedUser, "Create 必须被调用")
+		if capturedUser != nil {
+			assert.Equal(t, "user", capturedUser.Role,
+				"持久化角色必须为 user，实际=%s", capturedUser.Role)
+		}
 
-		// 验证模拟调用
 		mockUserRepo.AssertExpectations(t)
 	})
 }
@@ -938,4 +960,163 @@ func TestAuthHandler_Logout(t *testing.T) {
 		assert.Equal(t, true, response["success"])
 		assert.NotNil(t, response["data"])
 	})
+}
+
+// handlerTestTokenManager 测试用 TokenManagerInterface 实现，
+// 仅观察 RevokeAllUserTokens 是否被调用。
+type handlerTestTokenManager struct {
+	revokeAllUserTokensCalled int
+	revokeAllUserTokensErr    error
+}
+
+func (m *handlerTestTokenManager) VerifyToken(ctx context.Context, tokenString string) (*map[string]interface{}, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (m *handlerTestTokenManager) ExtractTokenMetadata(ctx context.Context, tokenString string) (*auth.TokenPayload, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (m *handlerTestTokenManager) RevokeAllUserTokens(ctx context.Context, userID uint) error {
+	m.revokeAllUserTokensCalled++
+	return m.revokeAllUserTokensErr
+}
+func (m *handlerTestTokenManager) BlacklistToken(ctx context.Context, tokenString string, ttl time.Duration) error {
+	return nil
+}
+func (m *handlerTestTokenManager) IsTokenBlacklisted(ctx context.Context, tokenString string) bool {
+	return false
+}
+
+// TestRegisterAlwaysCreatesUnprivilegedUser 验证公开注册即使携带 role=admin，
+// 持久化角色仍为 user，且返回真实 JWT（非 simple_token_for_dev）。
+func TestRegisterAlwaysCreatesUnprivilegedUser(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	middleware.InitJWT(&config.Config{
+		JWT: config.JWTConfig{
+			Secret:    "test-secret-key-32-bytes-long-for-testing",
+			ExpiresIn: 3600,
+			RefreshIn: 7200,
+		},
+	})
+	mockUserRepo := new(testmock.MockUserRepository)
+	tokenService := &auth.TokenRevocationService{}
+	userService := services.NewUserService(mockUserRepo)
+	authHandler := NewAuthHandler(userService, tokenService)
+
+	router := gin.New()
+	router.Use(gin.Recovery())
+	router.POST("/auth/register", authHandler.Register)
+
+	var capturedUser *models.User
+	mockUserRepo.On("FindByEmail", mock.Anything, mock.AnythingOfType("string")).
+		Return(nil, repositories.ErrUserNotFound)
+	mockUserRepo.On("Create", mock.Anything, mock.MatchedBy(func(u *models.User) bool {
+		capturedUser = u
+		return true
+	})).Return(nil).Once()
+
+	// 故意尝试提权
+	body := map[string]interface{}{
+		"name":     "Malicious User",
+		"email":    "malicious@example.com",
+		"password": "Password123!",
+		"role":     "admin",
+		"phone":    "13800000000",
+	}
+	jsonData, _ := json.Marshal(body)
+	req, _ := http.NewRequest("POST", "/auth/register", bytes.NewBuffer(jsonData))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code, "注册应成功，body=%s", w.Body.String())
+
+	var response map[string]interface{}
+	assert.NoError(t, json.Unmarshal(w.Body.Bytes(), &response))
+	data, ok := response["data"].(map[string]interface{})
+	assert.True(t, ok, "data 应为对象，body=%s", w.Body.String())
+	tokenStr, _ := data["token"].(string)
+
+	// 提权核心断言
+	assert.NotNil(t, capturedUser, "Create 必须被调用")
+	if capturedUser != nil {
+		assert.Equal(t, "user", capturedUser.Role,
+			"持久化角色必须为 user，实际=%s", capturedUser.Role)
+	}
+	assert.NotEqual(t, "simple_token_for_dev", tokenStr,
+		"必须返回真实 JWT，不能用 dev 占位符")
+
+	claims, err := middleware.ValidateToken(tokenStr)
+	assert.NoError(t, err, "token 必须可被 middleware.ValidateToken 验证")
+	if err == nil {
+		assert.Equal(t, "user", claims.Role, "JWT claims.Role 必须为 user")
+	}
+
+	mockUserRepo.AssertExpectations(t)
+}
+
+// TestAdminCanRevokeAnotherUsersTokens 验证 role=admin 通过 JWT 中间件写入的 "role" key
+// 即可跨用户撤销令牌，不再依赖错误的 "user_role" key。
+func TestAdminCanRevokeAnotherUsersTokens(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	mockUserRepo := new(testmock.MockUserRepository)
+	// 让 mock token manager 返回 error，使 service 提前返回，避免 nil db 引发 panic；
+	// 同时让 revokeAllUserTokensCalled 计数可观察。
+	tm := &handlerTestTokenManager{revokeAllUserTokensErr: fmt.Errorf("intentional test error")}
+	tokenService := auth.NewTokenRevocationService(tm, nil, nil)
+	userService := services.NewUserService(mockUserRepo)
+	authHandler := NewAuthHandler(userService, tokenService)
+
+	router := gin.New()
+	router.Use(gin.Recovery())
+	router.Use(func(c *gin.Context) {
+		c.Set("user_id", uint(1))
+		c.Set("role", "admin") // JWT 中间件实际写入的 key
+		c.Next()
+	})
+	router.POST("/auth/revoke/user", authHandler.RevokeUserTokens)
+
+	body, _ := json.Marshal(map[string]interface{}{"user_id": 2})
+	req, _ := http.NewRequest("POST", "/auth/revoke/user", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.NotEqual(t, http.StatusForbidden, w.Code,
+		"管理员跨用户撤销不应 403，body=%s", w.Body.String())
+	assert.Equal(t, 1, tm.revokeAllUserTokensCalled,
+		"RevokeAllUserTokens 必须被调用一次，实际=%d", tm.revokeAllUserTokensCalled)
+}
+
+// TestNonAdminCannotRevokeAnotherUsersTokens 验证 role=lawyer 跨用户撤销返回 403，
+// 且撤销服务不被调用。
+func TestNonAdminCannotRevokeAnotherUsersTokens(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	mockUserRepo := new(testmock.MockUserRepository)
+	tm := &handlerTestTokenManager{}
+	tokenService := auth.NewTokenRevocationService(tm, nil, nil)
+	userService := services.NewUserService(mockUserRepo)
+	authHandler := NewAuthHandler(userService, tokenService)
+
+	router := gin.New()
+	router.Use(gin.Recovery())
+	router.Use(func(c *gin.Context) {
+		c.Set("user_id", uint(1))
+		c.Set("role", "lawyer") // 非管理员，currentUserID=1，target=2
+		c.Next()
+	})
+	router.POST("/auth/revoke/user", authHandler.RevokeUserTokens)
+
+	body, _ := json.Marshal(map[string]interface{}{"user_id": 2})
+	req, _ := http.NewRequest("POST", "/auth/revoke/user", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusForbidden, w.Code,
+		"非管理员跨用户撤销必须 403，body=%s", w.Body.String())
+	assert.Equal(t, 0, tm.revokeAllUserTokensCalled,
+		"授权失败时不应调用 RevokeAllUserTokens，实际=%d", tm.revokeAllUserTokensCalled)
 }
