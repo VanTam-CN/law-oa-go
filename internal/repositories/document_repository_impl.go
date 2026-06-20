@@ -21,6 +21,31 @@ func NewDocumentRepository(db *gorm.DB) DocumentRepository {
 	}
 }
 
+// applyEthicalWallScope 在文档查询上叠加隔离墙过滤：
+//
+//	排除 entity_type='case' 且对应案件启用隔离墙、且 viewer 不在白名单中的文档。
+//
+// viewerUserID=0 时不应用过滤（仅供内部/后台任务使用，禁止用于 HTTP 请求路径）。
+func applyEthicalWallScope(query *gorm.DB, viewerUserID uint) *gorm.DB {
+	if viewerUserID == 0 {
+		return query
+	}
+	return query.Where(
+		`NOT EXISTS (
+			SELECT 1 FROM cases c
+			WHERE documents.entity_type = 'case'
+			  AND c.id = documents.entity_id
+			  AND c.ethical_wall_enabled = TRUE
+			  AND c.deleted_at IS NULL
+			  AND NOT EXISTS (
+			    SELECT 1 FROM case_ethical_wall_whitelist w
+			    WHERE w.case_id = c.id AND w.user_id = ?
+			  )
+		)`,
+		viewerUserID,
+	)
+}
+
 // Create 创建文档
 func (r *documentRepository) Create(ctx context.Context, document *models.Document) error {
 	return r.db.WithContext(ctx).Create(document).Error
@@ -41,6 +66,9 @@ func (r *documentRepository) FindByID(ctx context.Context, id uint) (*models.Doc
 
 // List 列出文档
 func (r *documentRepository) List(ctx context.Context, params *DocumentListParams) ([]*models.Document, int64, error) {
+	if params == nil {
+		return nil, 0, errors.New("document list params must not be nil")
+	}
 	var documents []*models.Document
 	var total int64
 
@@ -60,6 +88,9 @@ func (r *documentRepository) List(ctx context.Context, params *DocumentListParam
 		searchTerm := "%" + params.Search + "%"
 		query = query.Where("name LIKE ? OR description LIKE ? OR tags LIKE ?", searchTerm, searchTerm, searchTerm)
 	}
+
+	// 隔离墙过滤（列表与计数必须共用同一 scope，避免条数侧信道）
+	query = applyEthicalWallScope(query, params.ViewerUserID)
 
 	// 计算总数
 	if err := query.Count(&total).Error; err != nil {
@@ -110,17 +141,20 @@ func (r *documentRepository) Delete(ctx context.Context, id uint) error {
 }
 
 // GetStats 获取文档统计
-func (r *documentRepository) GetStats(ctx context.Context) (*DocumentStats, error) {
+func (r *documentRepository) GetStats(ctx context.Context, viewerUserID uint) (*DocumentStats, error) {
 	var stats DocumentStats
 
+	baseQuery := r.db.WithContext(ctx).Model(&models.Document{})
+	scopedQuery := applyEthicalWallScope(baseQuery, viewerUserID)
+
 	// 总数
-	if err := r.db.WithContext(ctx).Model(&models.Document{}).Count(&stats.Total).Error; err != nil {
+	if err := scopedQuery.Count(&stats.Total).Error; err != nil {
 		return nil, err
 	}
 
 	// 按分类统计
-	rows, err := r.db.WithContext(ctx).
-		Model(&models.Document{}).
+	rows, err := scopedQuery.
+		Session(&gorm.Session{}).
 		Select("category, COUNT(*) as count").
 		Group("category").
 		Rows()
@@ -144,9 +178,8 @@ func (r *documentRepository) GetStats(ctx context.Context) (*DocumentStats, erro
 		}{category, count})
 	}
 
-	// 按实体类型统计
-	entityRows, err := r.db.WithContext(ctx).
-		Model(&models.Document{}).
+	// 按实体类型统计（独立 session 复用 scope 条件）
+	entityRows, err := applyEthicalWallScope(r.db.WithContext(ctx).Model(&models.Document{}), viewerUserID).
 		Select("entity_type, COUNT(*) as count").
 		Group("entity_type").
 		Rows()
@@ -172,8 +205,7 @@ func (r *documentRepository) GetStats(ctx context.Context) (*DocumentStats, erro
 
 	// 最近上传统计（过去7天）
 	var recentCount int64
-	if err := r.db.WithContext(ctx).
-		Model(&models.Document{}).
+	if err := applyEthicalWallScope(r.db.WithContext(ctx).Model(&models.Document{}), viewerUserID).
 		Where("created_at >= ?", time.Now().AddDate(0, 0, -7)).
 		Count(&recentCount).Error; err != nil {
 		return nil, err

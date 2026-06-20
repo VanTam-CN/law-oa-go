@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"law-oa-go/internal/auth"
 	"law-oa-go/internal/common"
 	"law-oa-go/internal/services"
 )
@@ -29,8 +30,8 @@ type TestableDocumentHandler struct {
 	getDocumentByIDFunc  func(ctx context.Context, id uint) (*services.Document, error)
 	updateDocumentFunc   func(ctx context.Context, id uint, req *services.DocumentUpdateRequest) (*services.Document, error)
 	deleteDocumentFunc   func(ctx context.Context, id uint) error
-	listDocumentsFunc    func(ctx context.Context, req *services.DocumentListRequest) ([]*services.Document, int64, error)
-	getDocumentStatsFunc func(ctx context.Context) (*services.DocumentStats, error)
+	listDocumentsFunc    func(ctx context.Context, req *services.DocumentListRequest, viewerUserID uint) ([]*services.Document, int64, error)
+	getDocumentStatsFunc func(ctx context.Context, viewerUserID uint) (*services.DocumentStats, error)
 	downloadDocumentFunc func(ctx context.Context, id uint) (io.ReadCloser, *services.Document, error)
 }
 
@@ -179,7 +180,7 @@ func (h *TestableDocumentHandler) ListDocuments(c *gin.Context) {
 		return
 	}
 
-	documents, total, err := h.listDocumentsFunc(c.Request.Context(), &req)
+	documents, total, err := h.listDocumentsFunc(c.Request.Context(), &req, auth.GetUserID(c))
 	if err != nil {
 		_ = c.Error(err)
 		return
@@ -199,7 +200,7 @@ func (h *TestableDocumentHandler) ListDocuments(c *gin.Context) {
 
 // GetDocumentStats 获取文档统计
 func (h *TestableDocumentHandler) GetDocumentStats(c *gin.Context) {
-	stats, err := h.getDocumentStatsFunc(c.Request.Context())
+	stats, err := h.getDocumentStatsFunc(c.Request.Context(), auth.GetUserID(c))
 	if err != nil {
 		_ = c.Error(err)
 		return
@@ -527,7 +528,7 @@ func TestDocumentHandler_ListDocumentsSuccess(t *testing.T) {
 	doc2.ID = 2
 	doc2.Name = "测试文档2.pdf"
 
-	handler.listDocumentsFunc = func(ctx context.Context, req *services.DocumentListRequest) ([]*services.Document, int64, error) {
+	handler.listDocumentsFunc = func(ctx context.Context, req *services.DocumentListRequest, viewerUserID uint) ([]*services.Document, int64, error) {
 		assert.Equal(t, 1, req.Page)
 		assert.Equal(t, 10, req.PageSize)
 		assert.Equal(t, "合同", req.Category)
@@ -564,7 +565,7 @@ func TestDocumentHandler_GetDocumentStatsSuccess(t *testing.T) {
 	handler := NewTestableDocumentHandler(dummyService)
 
 	stats := createTestDocumentStats()
-	handler.getDocumentStatsFunc = func(ctx context.Context) (*services.DocumentStats, error) {
+	handler.getDocumentStatsFunc = func(ctx context.Context, viewerUserID uint) (*services.DocumentStats, error) {
 		return stats, nil
 	}
 

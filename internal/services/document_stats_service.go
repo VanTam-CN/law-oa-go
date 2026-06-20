@@ -12,7 +12,8 @@ import (
 
 // DocumentStatsService handles document statistics and reporting
 type DocumentStatsService struct {
-	docRepo repositories.DocumentRepository
+	docRepo      repositories.DocumentRepository
+	viewerUserID uint
 }
 
 // NewDocumentStatsService creates a new document statistics service
@@ -20,6 +21,17 @@ func NewDocumentStatsService(docRepo repositories.DocumentRepository) *DocumentS
 	return &DocumentStatsService{
 		docRepo: docRepo,
 	}
+}
+
+// WithViewer 返回绑定了指定 viewer 的派生实例。
+//
+// 用于 HTTP 请求路径：handler 在调用前用当前用户 ID 派生 per-request service，
+// 内部所有 GetStats/聚合查询自动应用隔离墙过滤，避免条数侧信道。
+// 返回的实例与原 service 共享底层仓储，但 viewerUserID 不同。
+func (s *DocumentStatsService) WithViewer(viewerUserID uint) *DocumentStatsService {
+	clone := *s
+	clone.viewerUserID = viewerUserID
+	return &clone
 }
 
 // DocumentOverviewStats represents overall document statistics
@@ -188,7 +200,7 @@ type MetadataCompleteness struct {
 // GetDocumentOverview returns comprehensive document overview statistics
 func (s *DocumentStatsService) GetDocumentOverview(ctx context.Context) (*DocumentOverviewStats, error) {
 	// Get basic stats from repository
-	stats, err := s.docRepo.GetStats(ctx)
+	stats, err := s.docRepo.GetStats(ctx, s.viewerUserID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get document stats: %w", err)
 	}
@@ -247,7 +259,7 @@ func (s *DocumentStatsService) GetDocumentOverview(ctx context.Context) (*Docume
 // GetStorageUsage returns detailed storage usage statistics
 func (s *DocumentStatsService) GetStorageUsage(ctx context.Context) (*StorageUsageStats, error) {
 	// Get storage stats
-	stats, err := s.docRepo.GetStats(ctx)
+	stats, err := s.docRepo.GetStats(ctx, s.viewerUserID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get document stats: %w", err)
 	}
@@ -431,7 +443,7 @@ func (s *DocumentStatsService) ExportStats(ctx context.Context, statsType string
 // Helper methods
 
 func (s *DocumentStatsService) getCategoryStats(ctx context.Context) ([]CategoryStats, error) {
-	stats, err := s.docRepo.GetStats(ctx)
+	stats, err := s.docRepo.GetStats(ctx, s.viewerUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -456,7 +468,7 @@ func (s *DocumentStatsService) getCategoryStats(ctx context.Context) ([]Category
 }
 
 func (s *DocumentStatsService) getTypeStats(ctx context.Context) ([]TypeStats, error) {
-	stats, err := s.docRepo.GetStats(ctx)
+	stats, err := s.docRepo.GetStats(ctx, s.viewerUserID)
 	if err != nil {
 		return nil, err
 	}

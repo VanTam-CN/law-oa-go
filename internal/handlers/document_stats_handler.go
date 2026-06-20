@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"law-oa-go/internal/auth"
 	"law-oa-go/internal/services"
 )
 
@@ -18,6 +19,11 @@ func NewDocumentStatsHandler(statsService *services.DocumentStatsService) *Docum
 	return &DocumentStatsHandler{
 		statsService: statsService,
 	}
+}
+
+// viewerStats 派生绑定当前请求用户的统计服务实例，确保所有聚合查询应用隔离墙过滤。
+func (h *DocumentStatsHandler) viewerStats(c *gin.Context) *services.DocumentStatsService {
+	return h.statsService.WithViewer(auth.GetUserID(c))
 }
 
 // GetOverview returns document overview statistics
@@ -34,7 +40,7 @@ func NewDocumentStatsHandler(statsService *services.DocumentStatsService) *Docum
 func (h *DocumentStatsHandler) GetOverview(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	stats, err := h.statsService.GetDocumentOverview(ctx)
+	stats, err := h.viewerStats(c).GetDocumentOverview(ctx)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to get document overview",
@@ -64,7 +70,7 @@ func (h *DocumentStatsHandler) GetOverview(c *gin.Context) {
 func (h *DocumentStatsHandler) GetStorageUsage(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	stats, err := h.statsService.GetStorageUsage(ctx)
+	stats, err := h.viewerStats(c).GetStorageUsage(ctx)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to get storage usage",
@@ -107,7 +113,7 @@ func (h *DocumentStatsHandler) GetUserActivity(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
-	stats, err := h.statsService.GetUserActivity(ctx, uint(userID))
+	stats, err := h.viewerStats(c).GetUserActivity(ctx, uint(userID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to get user activity",
@@ -137,7 +143,7 @@ func (h *DocumentStatsHandler) GetUserActivity(c *gin.Context) {
 func (h *DocumentStatsHandler) GetComplianceReport(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	report, err := h.statsService.GetComplianceReport(ctx)
+	report, err := h.viewerStats(c).GetComplianceReport(ctx)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to get compliance report",
@@ -216,7 +222,7 @@ func (h *DocumentStatsHandler) ExportStats(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
-	data, err := h.statsService.ExportStats(ctx, statsType, format)
+	data, err := h.viewerStats(c).ExportStats(ctx, statsType, format)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to export statistics",
@@ -247,7 +253,7 @@ func (h *DocumentStatsHandler) GetDashboardStats(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	// Get overview stats
-	overview, err := h.statsService.GetDocumentOverview(ctx)
+	overview, err := h.viewerStats(c).GetDocumentOverview(ctx)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to get overview stats",
@@ -257,7 +263,7 @@ func (h *DocumentStatsHandler) GetDashboardStats(c *gin.Context) {
 	}
 
 	// Get storage stats
-	storage, err := h.statsService.GetStorageUsage(ctx)
+	storage, err := h.viewerStats(c).GetStorageUsage(ctx)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to get storage stats",

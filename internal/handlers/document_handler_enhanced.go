@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"law-oa-go/internal/auth"
 	"law-oa-go/internal/common"
 	"law-oa-go/internal/repositories"
 	"law-oa-go/internal/services"
@@ -152,7 +153,7 @@ func (h *DocumentHandlerEnhanced) ListDocuments(c *gin.Context) {
 		return
 	}
 
-	documents, total, err := h.docService.ListDocuments(c.Request.Context(), &req)
+	documents, total, err := h.docService.ListDocuments(c.Request.Context(), &req, auth.GetUserID(c))
 	if err != nil {
 		common.APIInternalServerError(c, "Failed to list documents", err.Error())
 		return
@@ -357,7 +358,7 @@ func (h *DocumentHandlerEnhanced) GetDocumentPreview(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "Internal error"
 // @Router /documents/stats [get]
 func (h *DocumentHandlerEnhanced) GetDocumentStats(c *gin.Context) {
-	stats, err := h.docService.GetDocumentStats(c.Request.Context())
+	stats, err := h.docService.GetDocumentStats(c.Request.Context(), auth.GetUserID(c))
 	if err != nil {
 		common.APIInternalServerError(c, "Failed to get document statistics", err.Error())
 		return

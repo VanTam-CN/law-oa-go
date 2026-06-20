@@ -179,8 +179,9 @@ func (s *DocumentService) GetDocumentByID(ctx context.Context, id uint) (*Docume
 	return s.toDocument(docModel), nil
 }
 
-// ListDocuments lists documents with pagination and filtering
-func (s *DocumentService) ListDocuments(ctx context.Context, req *DocumentListRequest) ([]*Document, int64, error) {
+// ListDocuments lists documents with pagination and filtering.
+// viewerUserID 用于启用隔离墙过滤；HTTP 路径必须传入当前用户 ID。
+func (s *DocumentService) ListDocuments(ctx context.Context, req *DocumentListRequest, viewerUserID uint) ([]*Document, int64, error) {
 	// Set defaults
 	if req.Page <= 0 {
 		req.Page = 1
@@ -193,14 +194,15 @@ func (s *DocumentService) ListDocuments(ctx context.Context, req *DocumentListRe
 	}
 
 	params := &repositories.DocumentListParams{
-		Page:       req.Page,
-		PageSize:   req.PageSize,
-		Category:   req.Category,
-		EntityType: req.EntityType,
-		EntityID:   req.EntityID,
-		Search:     req.Search,
-		SortBy:     req.SortBy,
-		SortOrder:  req.SortOrder,
+		Page:         req.Page,
+		PageSize:     req.PageSize,
+		Category:     req.Category,
+		EntityType:   req.EntityType,
+		EntityID:     req.EntityID,
+		Search:       req.Search,
+		SortBy:       req.SortBy,
+		SortOrder:    req.SortOrder,
+		ViewerUserID: viewerUserID,
 	}
 
 	docModels, total, err := s.docRepo.List(ctx, params)
@@ -274,9 +276,10 @@ func (s *DocumentService) DeleteDocument(ctx context.Context, id uint) error {
 	return nil
 }
 
-// GetDocumentStats retrieves document statistics
-func (s *DocumentService) GetDocumentStats(ctx context.Context) (*DocumentStats, error) {
-	stats, err := s.docRepo.GetStats(ctx)
+// GetDocumentStats retrieves document statistics.
+// viewerUserID 用于启用隔离墙过滤；HTTP 路径必须传入当前用户 ID。
+func (s *DocumentService) GetDocumentStats(ctx context.Context, viewerUserID uint) (*DocumentStats, error) {
+	stats, err := s.docRepo.GetStats(ctx, viewerUserID)
 	if err != nil {
 		return nil, errors.DatabaseError("get_document_stats", "Failed to get document statistics", err)
 	}
