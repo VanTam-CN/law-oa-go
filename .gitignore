@@ -274,6 +274,8 @@ chrome/
 !internal/repositories/conflict_repository_test.go
 !internal/services/risk_assessor_test.go
 !internal/services/conflict_detection_service_test.go
+!internal/middleware/authorization_test.go
+!internal/router/router_authorization_test.go
 *_test
 *_tester
 test_*

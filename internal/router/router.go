@@ -263,8 +263,9 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 		// 案件类型接口
 		protected.GET("/case-types", caseHandler.GetCaseTypes)
 
-		// 用户管理
+		// 用户管理（仅管理员可读写账号与角色分配）
 		users := protected.Group("/admin/users")
+		users.Use(middleware.RoleMiddleware("admin", "super_admin"))
 		{
 			users.GET("/:id/roles", rbacHandler.GetUserRoles)
 			users.POST("/:id/roles", rbacHandler.AssignUserRoles)
@@ -723,8 +724,9 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 		commissionRuleHandler := handlers.NewCommissionRuleHandler(commissionService)
 		log.Println("✅ 财务处理器初始化完成")
 
-		// 财务路由组
+		// 财务路由组（仅管理员与财务角色可访问）
 		finance := protected.Group("/finance")
+		finance.Use(middleware.RoleMiddleware("admin", "super_admin", "finance"))
 		{
 			// 合同管理
 			finance.GET("/contracts", financeHandler.ListContracts)                  // 获取合同列表
@@ -821,8 +823,9 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 		trustAccountHandler := handlers.NewTrustAccountHandler(trustAccountService, trustTransactionService)
 		log.Println("✅ 代管款处理器初始化完成")
 
-		// 代管款路由组
+		// 代管款路由组（仅管理员与财务角色可访问）
 		trust := protected.Group("/trust")
+		trust.Use(middleware.RoleMiddleware("admin", "super_admin", "finance"))
 		{
 			// 账户管理
 			trust.GET("/accounts", trustAccountHandler.ListAccounts)                            // 获取账户列表
