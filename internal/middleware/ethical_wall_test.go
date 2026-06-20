@@ -333,6 +333,130 @@ func TestEthicalWall_QueryCaseID_TriggersCheck(t *testing.T) {
 	repo.AssertExpectations(t)
 }
 
+// =====================================================================
+// 计划 Step 5: OnlyOffice 文档入口必须走相同的隔离墙检查
+// =====================================================================
+
+// OnlyOffice 打开编辑器：body 携带 document_id，必须通过 DocumentResolver 解析为 caseID
+func TestEthicalWall_OnlyOfficeOpen_ResolvesDocumentFromBody(t *testing.T) {
+	repo := new(MockEthicalWallRepository)
+	repo.On("IsEthicalWallEnabled", mock.Anything, uint(99)).Return(true, nil)
+	repo.On("IsUserWhitelisted", mock.Anything, uint(99), uint(123)).Return(true, nil)
+	repo.On("LogAccessAttempt", mock.Anything, uint(99), uint(123), "modify", "allowed", mock.Anything, mock.Anything).Return(nil)
+
+	docResolver := new(MockDocumentResolver)
+	docResolver.On("ResolveDocumentCase", mock.Anything, uint(10)).Return(99, true, nil)
+
+	cfg := EthicalWallConfig{EthicalWallRepo: repo, DocumentResolver: docResolver}
+	r := newTestEngine(t, cfg, 123)
+
+	var receivedDocID uint
+	r.POST("/api/v1/documents/onlyoffice/open", func(c *gin.Context) {
+		body, err := io.ReadAll(c.Request.Body)
+		require.NoError(t, err)
+		var probe struct {
+			DocumentID uint `json:"document_id"`
+		}
+		require.NoError(t, json.Unmarshal(body, &probe))
+		receivedDocID = probe.DocumentID
+		c.Status(200)
+	})
+
+	payload := `{"document_id":10,"user_id":123,"mode":"edit"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/documents/onlyoffice/open", bytes.NewReader([]byte(payload)))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, uint(10), receivedDocID, "下游 handler 必须能读到完整 body 的 document_id")
+	docResolver.AssertExpectations(t)
+	repo.AssertExpectations(t)
+}
+
+// OnlyOffice 转换：同样通过 body document_id 解析
+func TestEthicalWall_OnlyOfficeConvert_ResolvesDocumentFromBody(t *testing.T) {
+	repo := new(MockEthicalWallRepository)
+	repo.On("IsEthicalWallEnabled", mock.Anything, uint(77)).Return(true, nil)
+	repo.On("IsUserWhitelisted", mock.Anything, uint(77), uint(123)).Return(false, nil)
+	repo.On("LogAccessAttempt", mock.Anything, uint(77), uint(123), "modify", "denied", mock.Anything, mock.Anything).Return(nil)
+
+	docResolver := new(MockDocumentResolver)
+	docResolver.On("ResolveDocumentCase", mock.Anything, uint(20)).Return(77, true, nil)
+
+	cfg := EthicalWallConfig{EthicalWallRepo: repo, DocumentResolver: docResolver}
+	r := newTestEngine(t, cfg, 123)
+	handlerCalled := false
+	r.POST("/api/v1/documents/onlyoffice/convert", func(c *gin.Context) { handlerCalled = true; c.Status(200) })
+
+	payload := `{"document_id":20,"output_type":"pdf"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/documents/onlyoffice/convert", bytes.NewReader([]byte(payload)))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusForbidden, w.Code)
+	assert.False(t, handlerCalled, "非白名单用户 handler 不得执行")
+}
+
+// OnlyOffice 下载转换文件：:document_id 路径参数必须触发解析
+func TestEthicalWall_OnlyOfficeDownloadConverted_ResolvesFromPathParam(t *testing.T) {
+	repo := new(MockEthicalWallRepository)
+	repo.On("IsEthicalWallEnabled", mock.Anything, uint(55)).Return(true, nil)
+	repo.On("IsUserWhitelisted", mock.Anything, uint(55), uint(123)).Return(true, nil)
+	repo.On("LogAccessAttempt", mock.Anything, uint(55), uint(123), "export", "allowed", mock.Anything, mock.Anything).Return(nil)
+
+	docResolver := new(MockDocumentResolver)
+	docResolver.On("ResolveDocumentCase", mock.Anything, uint(30)).Return(55, true, nil)
+
+	cfg := EthicalWallConfig{EthicalWallRepo: repo, DocumentResolver: docResolver}
+	r := newTestEngine(t, cfg, 123)
+	r.GET("/api/v1/documents/onlyoffice/:document_id/download/converted/:output_type", func(c *gin.Context) { c.Status(200) })
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/documents/onlyoffice/30/download/converted/pdf", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	docResolver.AssertExpectations(t)
+	repo.AssertExpectations(t)
+}
+
+// OnlyOffice 转换状态查询：无 document_id 可解析，跳过检查（纯任务状态查询）
+func TestEthicalWall_OnlyOfficeConvertStatus_SkipsResolution(t *testing.T) {
+	repo := new(MockEthicalWallRepository)
+	cfg := EthicalWallConfig{EthicalWallRepo: repo}
+	r := newTestEngine(t, cfg, 123)
+	r.GET("/api/v1/documents/onlyoffice/convert/status", func(c *gin.Context) { c.Status(200) })
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/documents/onlyoffice/convert/status?task_id=abc", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	repo.AssertNotCalled(t, "IsEthicalWallEnabled")
+}
+
+// OnlyOffice resolver 失败必须 fail-closed 返回 503
+func TestEthicalWall_OnlyOffice_ResolverError_FailClosed(t *testing.T) {
+	repo := new(MockEthicalWallRepository)
+	docResolver := new(MockDocumentResolver)
+	docResolver.On("ResolveDocumentCase", mock.Anything, uint(40)).Return(0, false, errors.New("doc store down"))
+
+	cfg := EthicalWallConfig{EthicalWallRepo: repo, DocumentResolver: docResolver}
+	r := newTestEngine(t, cfg, 123)
+	handlerCalled := false
+	r.GET("/api/v1/documents/onlyoffice/:document_id/download/converted/:output_type",
+		func(c *gin.Context) { handlerCalled = true; c.Status(200) })
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/documents/onlyoffice/40/download/converted/pdf", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
+	assert.False(t, handlerCalled)
+}
+
 // TestExtractCaseID_PathAware 表驱动：不同 c.FullPath() 决定 :id 语义
 func TestExtractCaseID_PathAware(t *testing.T) {
 	tests := []struct {

@@ -229,9 +229,10 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 
 	// 初始化隔离墙中间件配置
 	ethicalWallConfig := middleware.EthicalWallConfig{
-		EthicalWallRepo: ethicalWallRepo,
-		SkipPaths:       middleware.GetEthicalWallSkipPaths(),
-		SkipPrefixes:    middleware.GetEthicalWallSkipPrefixes(),
+		EthicalWallRepo:  ethicalWallRepo,
+		DocumentResolver: middleware.NewDocumentCaseResolver(docRepo),
+		SkipPaths:        middleware.GetEthicalWallSkipPaths(),
+		SkipPrefixes:     middleware.GetEthicalWallSkipPrefixes(),
 	}
 
 	// 需要认证的路由组
@@ -518,8 +519,9 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 			}
 		}
 
-		// OnlyOffice 在线编辑和转换
+		// OnlyOffice 在线编辑和转换 - 需要隔离墙保护
 		onlyoffice := protected.Group("/documents/onlyoffice")
+		onlyoffice.Use(middleware.EthicalWallMiddleware(ethicalWallConfig))
 		{
 			onlyoffice.POST("/open", onlyOfficeHandler.OpenEditor)                                               // 打开编辑器
 			onlyoffice.POST("/convert", onlyOfficeHandler.ConvertDocument)                                       // 转换文档格式

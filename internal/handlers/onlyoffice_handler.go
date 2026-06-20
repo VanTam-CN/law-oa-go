@@ -21,6 +21,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
+	"law-oa-go/internal/middleware"
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/services"
 )
@@ -156,11 +157,13 @@ type Embedded struct {
 	ToolbarDocked string `json:"toolbarDocked"`
 }
 
-// OpenEditorRequest 打开编辑器请求
+// OpenEditorRequest 打开编辑器请求。
+// 注意：UserID 不再从请求体读取，强制使用 middleware.GetCurrentUserID(c)。
+// 客户端若仍提交 user_id 字段，将被忽略以避免越权（例如假装是其他用户）。
 type OpenEditorRequest struct {
 	DocumentID uint   `json:"document_id" binding:"required"`
-	UserID     uint   `json:"user_id" binding:"required"`
-	Mode       string `json:"mode"` // edit 或 view
+	UserID     uint   `json:"user_id"` // 已废弃，保留字段以向后兼容客户端；handler 会覆盖为上下文用户
+	Mode       string `json:"mode"`    // edit 或 view
 }
 
 // CallbackRequest OnlyOffice 回调请求
@@ -234,6 +237,14 @@ func (h *OnlyOfficeHandler) OpenEditor(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
+
+	// 安全：以认证上下文中的用户 ID 为准，忽略请求体里的 user_id
+	viewerUserID, exists := middleware.GetCurrentUserID(c)
+	if !exists || viewerUserID == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "未认证"})
+		return
+	}
+	req.UserID = viewerUserID
 
 	// 获取文档
 	var doc models.Document

@@ -168,6 +168,11 @@ func respondEthicalWallError(c *gin.Context, code int, message string) {
 func resolveCaseIDForEthicalWall(c *gin.Context, config EthicalWallConfig) (uint, error) {
 	fullPath := c.FullPath()
 
+	// OnlyOffice 文档入口：通过路径或 body 的 document_id 解析为 caseID
+	if isOnlyOfficePath(fullPath) {
+		return resolveOnlyOfficeCaseID(c, config)
+	}
+
 	// 文档详情路由必须通过 DocumentResolver 解析
 	if isDocumentDetailPath(fullPath) {
 		if config.DocumentResolver == nil {
@@ -189,6 +194,60 @@ func resolveCaseIDForEthicalWall(c *gin.Context, config EthicalWallConfig) (uint
 	}
 
 	return extractCaseIDForPath(c, fullPath), nil
+}
+
+// resolveOnlyOfficeCaseID 解析 OnlyOffice 路由关联的 caseID。
+//
+// 支持的来源：
+//   - 路径参数 :document_id（如 /documents/onlyoffice/:document_id/download/converted/:output_type）
+//   - JSON body.document_id（如 /documents/onlyoffice/open|convert），body 会被重置供下游 handler 读取
+//   - 无 document_id 可解析（如 /convert/status）时返回 (0, nil)，跳过检查
+//
+// DocumentResolver 未配置或解析失败时返回 err，触发 fail-closed。
+func resolveOnlyOfficeCaseID(c *gin.Context, config EthicalWallConfig) (uint, error) {
+	if config.DocumentResolver == nil {
+		return 0, nil
+	}
+
+	docID := parseUintParam(c.Param("document_id"))
+	if docID == 0 && shouldReadBody(c) {
+		docID = readDocumentIDFromBodyPreserved(c)
+	}
+	if docID == 0 {
+		return 0, nil
+	}
+
+	caseID, applies, err := config.DocumentResolver.ResolveDocumentCase(c.Request.Context(), docID)
+	if err != nil {
+		return 0, err
+	}
+	if !applies {
+		return 0, nil
+	}
+	return caseID, nil
+}
+
+// readDocumentIDFromBodyPreserved 读取 body 中的 document_id，但保留 body 供下游 handler 重新读取
+func readDocumentIDFromBodyPreserved(c *gin.Context) uint {
+	if c.Request.Body == nil {
+		return 0
+	}
+	bodyBytes, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		return 0
+	}
+	// 重置 body 供下游 handler 读取
+	c.Request.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+	if len(bodyBytes) == 0 {
+		return 0
+	}
+	var probe struct {
+		DocumentID uint `json:"document_id"`
+	}
+	if err := json.Unmarshal(bodyBytes, &probe); err != nil {
+		return 0
+	}
+	return probe.DocumentID
 }
 
 // extractCaseIDForPath 根据路由模板提取 caseID，不处理文档详情解析（由 DocumentResolver 负责）。
@@ -236,6 +295,12 @@ func isDocumentDetailPath(fullPath string) bool {
 // isDocumentStatsPath 判断路径模板是否是文档统计路由（非案件资源）
 func isDocumentStatsPath(fullPath string) bool {
 	return strings.Contains(fullPath, "/documents/stats")
+}
+
+// isOnlyOfficePath 判断路径模板是否是 OnlyOffice 文档入口
+// 包括 /documents/onlyoffice/open、/convert、/convert/status、/:document_id/download/...
+func isOnlyOfficePath(fullPath string) bool {
+	return strings.Contains(fullPath, "/documents/onlyoffice")
 }
 
 // parseUintParam 将字符串安全解析为 uint，非法或 0 返回 0
