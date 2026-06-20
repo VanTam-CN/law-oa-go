@@ -95,6 +95,8 @@ func TestConfig_Load_EnvironmentVariables(t *testing.T) {
 		os.Setenv("JWT_SECRET", "env-jwt-secret-that-is-at-least-32-characters")
 		os.Setenv("JWT_EXPIRES_IN", "7200")
 		os.Setenv("JWT_REFRESH_IN", "14400")
+		os.Setenv("ONLYOFFICE_SECRET", "production-onlyoffice-secret-32-chars-long")
+		os.Setenv("ONLYOFFICE_URL", "http://onlyoffice.internal")
 
 		// 更改工作目录到临时目录（确保没有config.yaml文件）
 		tempDir := t.TempDir()
@@ -223,6 +225,72 @@ database:
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "database configuration is incomplete")
 	})
+}
+
+// TestConfig_Load_ProductionRequiresOnlyOfficeSecret 生产环境必须强制配置 ONLYOFFICE_SECRET
+func TestConfig_Load_ProductionRequiresOnlyOfficeSecret(t *testing.T) {
+	originalEnv := saveEnvironmentVariables()
+	defer restoreEnvironmentVariables(originalEnv)
+
+	tempDir := t.TempDir()
+	originalWd, _ := os.Getwd()
+	defer os.Chdir(originalWd)
+	os.Chdir(tempDir)
+
+	os.Setenv("ENVIRONMENT", "production")
+	os.Setenv("JWT_SECRET", "production-jwt-secret-that-is-at-least-32-chars")
+	os.Setenv("DB_HOST", "prod-db")
+	os.Setenv("DB_USERNAME", "prod-user")
+	os.Setenv("DB_DATABASE", "prod-db")
+	os.Unsetenv("ONLYOFFICE_SECRET")
+
+	_, err := Load()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "ONLYOFFICE_SECRET must be configured in production")
+}
+
+// TestConfig_Load_ProductionRequiresOnlyOfficeSecretMinLength 生产环境 ONLYOFFICE_SECRET 不得少于 32 字符
+func TestConfig_Load_ProductionRequiresOnlyOfficeSecretMinLength(t *testing.T) {
+	originalEnv := saveEnvironmentVariables()
+	defer restoreEnvironmentVariables(originalEnv)
+
+	tempDir := t.TempDir()
+	originalWd, _ := os.Getwd()
+	defer os.Chdir(originalWd)
+	os.Chdir(tempDir)
+
+	os.Setenv("ENVIRONMENT", "production")
+	os.Setenv("JWT_SECRET", "production-jwt-secret-that-is-at-least-32-chars")
+	os.Setenv("DB_HOST", "prod-db")
+	os.Setenv("DB_USERNAME", "prod-user")
+	os.Setenv("DB_DATABASE", "prod-db")
+	os.Setenv("ONLYOFFICE_SECRET", "short")
+
+	_, err := Load()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "ONLYOFFICE_SECRET must be at least 32 characters")
+}
+
+// TestConfig_Load_DevelopmentAllowsEmptyOnlyOfficeSecret 开发环境允许 OnlyOffice 密钥为空
+func TestConfig_Load_DevelopmentAllowsEmptyOnlyOfficeSecret(t *testing.T) {
+	originalEnv := saveEnvironmentVariables()
+	defer restoreEnvironmentVariables(originalEnv)
+
+	tempDir := t.TempDir()
+	originalWd, _ := os.Getwd()
+	defer os.Chdir(originalWd)
+	os.Chdir(tempDir)
+
+	os.Setenv("ENVIRONMENT", "development")
+	os.Setenv("JWT_SECRET", "dev-jwt-secret-that-is-at-least-32-characters")
+	os.Setenv("DB_HOST", "dev-db")
+	os.Setenv("DB_USERNAME", "dev-user")
+	os.Setenv("DB_DATABASE", "dev-db")
+	os.Unsetenv("ONLYOFFICE_SECRET")
+
+	cfg, err := Load()
+	assert.NoError(t, err)
+	assert.NotNil(t, cfg)
 }
 
 func TestConfig_GetDatabaseDSN(t *testing.T) {
@@ -408,6 +476,7 @@ func saveEnvironmentVariables() map[string]string {
 		"REDIS_HOST", "REDIS_PORT", "REDIS_PASSWORD", "REDIS_DB",
 		"ES_HOST", "ES_PORT", "ES_USERNAME", "ES_PASSWORD",
 		"JWT_SECRET", "JWT_EXPIRES_IN", "JWT_REFRESH_IN",
+		"ONLYOFFICE_URL", "ONLYOFFICE_SECRET", "BACKEND_URL",
 	}
 
 	saved := make(map[string]string)
@@ -428,6 +497,7 @@ func restoreEnvironmentVariables(saved map[string]string) {
 		"REDIS_HOST", "REDIS_PORT", "REDIS_PASSWORD", "REDIS_DB",
 		"ES_HOST", "ES_PORT", "ES_USERNAME", "ES_PASSWORD",
 		"JWT_SECRET", "JWT_EXPIRES_IN", "JWT_REFRESH_IN",
+		"ONLYOFFICE_URL", "ONLYOFFICE_SECRET", "BACKEND_URL",
 	}
 
 	for _, env := range envVars {
@@ -448,6 +518,7 @@ func clearConfigEnvironmentVariables() {
 		"REDIS_HOST", "REDIS_PORT", "REDIS_PASSWORD", "REDIS_DB",
 		"ES_HOST", "ES_PORT", "ES_USERNAME", "ES_PASSWORD",
 		"JWT_SECRET", "JWT_EXPIRES_IN", "JWT_REFRESH_IN",
+		"ONLYOFFICE_URL", "ONLYOFFICE_SECRET", "BACKEND_URL",
 	}
 
 	for _, env := range envVars {

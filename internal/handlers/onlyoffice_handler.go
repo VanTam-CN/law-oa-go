@@ -11,6 +11,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -72,6 +73,10 @@ func NewOnlyOfficeHandler(
 		backendURL:       strings.TrimRight(backendURL, "/"),
 		httpClient: &http.Client{
 			Timeout: 60 * time.Second,
+			// 禁止 follow 重定向，避免 SSRF 通过 302 跳到非允许 host
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
 		},
 		storageDir:      storageDir,
 		conversionTasks: make(map[string]*ConversionTask),
@@ -226,6 +231,9 @@ const (
 	ConversionStatusProcessing = "processing"
 	ConversionStatusCompleted  = "completed"
 	ConversionStatusError      = "error"
+
+	// MaxOnlyOfficeDownloadBytes OnlyOffice 回调下载响应体最大字节数（50 MiB）
+	MaxOnlyOfficeDownloadBytes = 50 * 1024 * 1024
 )
 
 // OpenEditor 打开文档编辑器
@@ -443,10 +451,58 @@ func (h *OnlyOfficeHandler) HandleCallback(c *gin.Context) {
 	}
 }
 
+// validateDownloadURL 校验 OnlyOffice 回调下载 URL，阻断 SSRF。
+// 规则：scheme 仅允许 http/https；无 UserInfo；host:port 必须与配置的 onlyOfficeURL 完全一致。
+// 端口缺省时按 scheme 默认端口（http=80, https=443）归一化后再比较。
+func (h *OnlyOfficeHandler) validateDownloadURL(rawURL string) error {
+	if rawURL == "" {
+		return fmt.Errorf("download URL is empty")
+	}
+	if h.onlyOfficeURL == "" {
+		return fmt.Errorf("onlyoffice URL not configured, refusing download")
+	}
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return fmt.Errorf("invalid download URL: %w", err)
+	}
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return fmt.Errorf("unsupported scheme: %s", parsed.Scheme)
+	}
+	if parsed.User != nil {
+		return fmt.Errorf("userinfo not allowed in download URL")
+	}
+	allowed, err := url.Parse(h.onlyOfficeURL)
+	if err != nil {
+		return fmt.Errorf("invalid onlyoffice URL config: %w", err)
+	}
+	if parsed.Hostname() != allowed.Hostname() {
+		return fmt.Errorf("host mismatch: %s vs configured %s", parsed.Hostname(), allowed.Hostname())
+	}
+	if normalizePort(parsed.Port(), parsed.Scheme) != normalizePort(allowed.Port(), allowed.Scheme) {
+		return fmt.Errorf("port mismatch: %s vs configured %s", parsed.Port(), allowed.Port())
+	}
+	return nil
+}
+
+// normalizePort 归一化端口：空端口按 scheme 默认值返回
+func normalizePort(port, scheme string) string {
+	if port != "" {
+		return port
+	}
+	switch scheme {
+	case "https":
+		return "443"
+	case "http":
+		return "80"
+	default:
+		return ""
+	}
+}
+
 // saveDocument 从 OnlyOffice 下载保存的文档并更新存储
 func (h *OnlyOfficeHandler) saveDocument(ctx context.Context, documentID uint, downloadURL string) error {
-	if downloadURL == "" {
-		return fmt.Errorf("download URL is empty")
+	if err := h.validateDownloadURL(downloadURL); err != nil {
+		return err
 	}
 
 	// 获取文档记录
@@ -491,7 +547,13 @@ func (h *OnlyOfficeHandler) saveDocument(ctx context.Context, documentID uint, d
 		return fmt.Errorf("failed to create temp file: %w", err)
 	}
 
-	written, err := io.Copy(outFile, resp.Body)
+	// 限制响应体字节数，超限立即中断并丢弃临时文件
+	limited := io.LimitReader(resp.Body, MaxOnlyOfficeDownloadBytes+1)
+	written, err := io.Copy(outFile, limited)
+	// 先 fsync 再 close，确保数据落盘；任一步失败都丢弃临时文件
+	if err == nil {
+		err = outFile.Sync()
+	}
 	outFile.Close()
 	tmpPath := outFile.Name()
 
@@ -499,10 +561,14 @@ func (h *OnlyOfficeHandler) saveDocument(ctx context.Context, documentID uint, d
 		os.Remove(tmpPath)
 		return fmt.Errorf("failed to write document: %w", err)
 	}
+	if written > MaxOnlyOfficeDownloadBytes {
+		os.Remove(tmpPath)
+		return fmt.Errorf("download exceeds %d bytes", MaxOnlyOfficeDownloadBytes)
+	}
 
 	// 原子替换
-	if err := os.Rename(outFile.Name(), doc.Filepath); err != nil {
-		os.Remove(outFile.Name())
+	if err := os.Rename(tmpPath, doc.Filepath); err != nil {
+		os.Remove(tmpPath)
 		return fmt.Errorf("failed to replace document file: %w", err)
 	}
 

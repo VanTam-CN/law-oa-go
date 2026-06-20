@@ -20,6 +20,14 @@ type Config struct {
 	Log               LogConfig                 `mapstructure:"log"`
 	CORS              CORSConfig                `mapstructure:"cors"`
 	ConflictDetection *ConflictDetectionConfig   `mapstructure:"conflictDetection"`
+	OnlyOffice        OnlyOfficeConfig          `mapstructure:"onlyoffice"`
+}
+
+// OnlyOfficeConfig OnlyOffice 在线编辑集成配置
+type OnlyOfficeConfig struct {
+	URL        string `mapstructure:"url"`
+	Secret     string `mapstructure:"secret"`
+	BackendURL string `mapstructure:"backendUrl"`
 }
 
 // DatabaseConfig 数据库配置
@@ -121,6 +129,11 @@ func Load() (*Config, error) {
 	viper.SetDefault("cors.allowedHeaders", []string{"Content-Type", "Authorization", "X-Request-ID"})
 	viper.SetDefault("cors.maxAge", "86400")
 
+	// OnlyOffice 默认配置（生产环境必须显式覆盖 Secret）
+	viper.SetDefault("onlyoffice.url", "http://localhost:9090")
+	viper.SetDefault("onlyoffice.secret", "")
+	viper.SetDefault("onlyoffice.backendUrl", "http://localhost:8080")
+
 	// 数据库性能配置默认值
 	viper.SetDefault("database.maxOpen_conns", 25)
 	viper.SetDefault("database.max_idle_conns", 5)
@@ -164,6 +177,9 @@ func Load() (*Config, error) {
 		"jwt.secret":             "JWT_SECRET",
 		"jwt.expiresIn":          "JWT_EXPIRES_IN",
 		"jwt.refreshIn":          "JWT_REFRESH_IN",
+		"onlyoffice.url":         "ONLYOFFICE_URL",
+		"onlyoffice.secret":      "ONLYOFFICE_SECRET",
+		"onlyoffice.backendUrl":  "BACKEND_URL",
 	}
 
 	for key, env := range bindings {
@@ -301,6 +317,19 @@ func (c *Config) Validate() error {
 	if c.ConflictDetection != nil {
 		if err := c.ConflictDetection.Validate(); err != nil {
 			return fmt.Errorf("conflict detection configuration is invalid: %w", err)
+		}
+	}
+
+	// 生产环境强制校验 OnlyOffice 回调密钥，避免回调被伪造
+	if c.IsProduction() {
+		if c.OnlyOffice.Secret == "" {
+			return fmt.Errorf("ONLYOFFICE_SECRET must be configured in production")
+		}
+		if len(c.OnlyOffice.Secret) < 32 {
+			return fmt.Errorf("ONLYOFFICE_SECRET must be at least 32 characters long in production")
+		}
+		if c.OnlyOffice.URL == "" {
+			return fmt.Errorf("ONLYOFFICE_URL must be configured in production")
 		}
 	}
 
