@@ -10,6 +10,22 @@ import (
 	"law-oa-go/internal/repositories"
 )
 
+// 代管款交易相关错误变量。调用方使用 errors.Is 进行判断，避免字符串比较。
+var (
+	// ErrTransactionNotPending 交易已不在 pending 状态（被并发审批或取消）
+	ErrTransactionNotPending = errors.New("交易已不在待审批状态")
+	// ErrTransactionAlreadyProcessed 交易已被处理（幂等冲突）
+	ErrTransactionAlreadyProcessed = errors.New("交易已被处理")
+	// ErrInsufficientBalance 可用余额不足
+	ErrInsufficientBalance = errors.New("可用余额不足")
+	// ErrTransactionNotFound 交易不存在
+	ErrTransactionNotFound = errors.New("交易不存在")
+	// ErrAccountNotFound 账户不存在
+	ErrAccountNotFound = errors.New("账户不存在")
+	// ErrAccountInactive 账户状态不可用
+	ErrAccountInactive = errors.New("账户状态不可用")
+)
+
 // TrustAccountService 代管款账户服务
 type TrustAccountService struct {
 	accountRepo     repositories.TrustAccountRepository
@@ -333,6 +349,17 @@ type TrustTransactionService struct {
 	accountRepo     repositories.TrustAccountRepository
 	caseRepo        repositories.CaseRepository
 	userRepo        repositories.UserRepository
+	unitOfWork      repositories.TrustUnitOfWork
+}
+
+// TrustTransactionServiceOption 代管款交易服务配置选项
+type TrustTransactionServiceOption func(*TrustTransactionService)
+
+// WithTrustUnitOfWork 注入事务工作单元，使审批流程在同一事务内原子提交
+func WithTrustUnitOfWork(uow repositories.TrustUnitOfWork) TrustTransactionServiceOption {
+	return func(s *TrustTransactionService) {
+		s.unitOfWork = uow
+	}
 }
 
 // NewTrustTransactionService 创建代管款交易服务实例
@@ -341,13 +368,18 @@ func NewTrustTransactionService(
 	accountRepo repositories.TrustAccountRepository,
 	caseRepo repositories.CaseRepository,
 	userRepo repositories.UserRepository,
+	opts ...TrustTransactionServiceOption,
 ) *TrustTransactionService {
-	return &TrustTransactionService{
+	svc := &TrustTransactionService{
 		transactionRepo: transactionRepo,
 		accountRepo:     accountRepo,
 		caseRepo:        caseRepo,
 		userRepo:        userRepo,
 	}
+	for _, opt := range opts {
+		opt(svc)
+	}
+	return svc
 }
 
 // CreateTransactionRequest 创建交易请求
@@ -459,55 +491,106 @@ func (s *TrustTransactionService) GetTransactionByID(ctx context.Context, id uin
 }
 
 // ApproveTransaction 审批通过交易
+//
+// 流程（顺序固定，任一步失败整体回滚）：
+//  1. 锁交易（FOR UPDATE） → 2. 验证 pending → 3. 锁账户（FOR UPDATE）
+//  4. 验证账户状态/可用余额 → 5. 计算新余额 → 6. 更新账户余额
+//  7. 条件更新交易 WHERE id=? AND status='pending' → 8. 检查 RowsAffected==1
+//  9. 提交
+//
+// 幂等性：步骤 7 使用条件 UPDATE，并发审批只有一个 goroutine 拿到 RowsAffected==1；
+// 其余拿到 0，事务回滚，返回 ErrTransactionNotPending。
 func (s *TrustTransactionService) ApproveTransaction(ctx context.Context, id uint, approvedBy uint) (*TransactionResponse, error) {
-	transaction, err := s.transactionRepo.FindByID(ctx, id)
-	if err != nil {
-		return nil, fmt.Errorf("查询交易失败: %w", err)
-	}
-	if transaction == nil {
-		return nil, errors.New("交易不存在")
+	if s.unitOfWork == nil {
+		return nil, fmt.Errorf("代管款事务工作单元未注入")
 	}
 
-	if transaction.Status != "pending" {
-		return nil, errors.New("只有待审批状态的交易可以审批")
-	}
-
-	// 获取账户
-	account, err := s.accountRepo.FindByID(ctx, transaction.AccountID)
-	if err != nil {
-		return nil, fmt.Errorf("查询账户失败: %w", err)
-	}
-
-	// 执行交易
-	now := time.Now()
-
-	switch transaction.TransactionType {
-	case "deposit":
-		// 存入：增加余额
-		account.Balance += transaction.Amount
-	case "deposit_refund", "withdraw", "transfer":
-		// 取出：减少余额
-		if transaction.Amount > account.Balance-account.FrozenAmount {
-			return nil, errors.New("可用余额不足")
+	var approveErr error
+	err := s.unitOfWork.WithinTransaction(ctx, func(
+		txTxnRepo repositories.TrustTransactionRepository,
+		txAcctRepo repositories.TrustAccountRepository,
+	) error {
+		// 步骤 1：锁交易
+		transaction, err := txTxnRepo.FindByIDForUpdate(ctx, id)
+		if err != nil {
+			return fmt.Errorf("查询交易失败: %w", err)
 		}
-		account.Balance -= transaction.Amount
+		if transaction == nil {
+			approveErr = ErrTransactionNotFound
+			return approveErr
+		}
+
+		// 步骤 2：验证 pending
+		if transaction.Status != "pending" {
+			if transaction.Status == "completed" {
+				approveErr = fmt.Errorf("%w: 当前状态=%s", ErrTransactionAlreadyProcessed, transaction.Status)
+			} else {
+				approveErr = fmt.Errorf("%w: 当前状态=%s", ErrTransactionNotPending, transaction.Status)
+			}
+			return approveErr
+		}
+
+		// 步骤 3：锁账户
+		account, err := txAcctRepo.FindByIDForUpdate(ctx, transaction.AccountID)
+		if err != nil {
+			return fmt.Errorf("查询账户失败: %w", err)
+		}
+		if account == nil {
+			approveErr = ErrAccountNotFound
+			return approveErr
+		}
+
+		// 步骤 4：验证账户状态
+		if account.Status != "active" {
+			approveErr = fmt.Errorf("%w: 状态=%s", ErrAccountInactive, account.Status)
+			return approveErr
+		}
+
+		// 步骤 4：验证余额 + 步骤 5：计算新余额
+		newBalance := account.Balance
+		switch transaction.TransactionType {
+		case "deposit":
+			newBalance = account.Balance + transaction.Amount
+		case "deposit_refund", "withdraw", "transfer":
+			if transaction.Amount > account.Balance-account.FrozenAmount {
+				approveErr = ErrInsufficientBalance
+				return approveErr
+			}
+			newBalance = account.Balance - transaction.Amount
+		default:
+			approveErr = fmt.Errorf("未知交易类型: %s", transaction.TransactionType)
+			return approveErr
+		}
+
+		// 步骤 6：更新账户余额（仅写 balance 字段，避免全字段覆盖）
+		if err := txAcctRepo.UpdateBalance(ctx, account.ID, newBalance); err != nil {
+			return fmt.Errorf("更新账户余额失败: %w", err)
+		}
+
+		// 步骤 7：条件更新交易（WHERE id=? AND status='pending'）
+		rowsAffected, err := txTxnRepo.UpdateStatusIfPending(ctx, id, "completed", approvedBy)
+		if err != nil {
+			return fmt.Errorf("审批交易失败: %w", err)
+		}
+
+		// 步骤 8：检查 RowsAffected==1；若为 0 说明被并发抢先改动，触发回滚
+		if rowsAffected != 1 {
+			approveErr = fmt.Errorf("%w: RowsAffected=%d", ErrTransactionNotPending, rowsAffected)
+			return approveErr
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		// approveErr 用于向调用方暴露语义化错误；若 fn 内未设置（例如 UoW 内部错误），使用 err
+		if approveErr != nil {
+			return nil, approveErr
+		}
+		return nil, err
 	}
 
-	transaction.Status = "completed"
-	transaction.CompletedAt = &now
-	transaction.ApprovedBy = &approvedBy
-	transaction.ApprovedAt = &now
-
-	// 更新账户余额
-	if err := s.accountRepo.Update(ctx, account); err != nil {
-		return nil, fmt.Errorf("更新账户余额失败: %w", err)
-	}
-
-	// 更新交易状态
-	if err := s.transactionRepo.Update(ctx, transaction); err != nil {
-		return nil, fmt.Errorf("审批交易失败: %w", err)
-	}
-
+	// 步骤 9：事务提交后重新读取，返回最新视图
 	return s.GetTransactionByID(ctx, id)
 }
 

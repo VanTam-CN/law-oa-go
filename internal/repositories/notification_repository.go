@@ -643,10 +643,14 @@ type TrustAccountRepository interface {
 	Create(ctx context.Context, account *models.ClientTrustAccount) error
 	// FindByID 根据ID查找账户
 	FindByID(ctx context.Context, id uint) (*models.ClientTrustAccount, error)
+	// FindByIDForUpdate 加行锁读取账户（FOR UPDATE），必须在事务内调用
+	FindByIDForUpdate(ctx context.Context, id uint) (*models.ClientTrustAccount, error)
 	// FindByCode 根据账户编号查找账户
 	FindByCode(ctx context.Context, code string) (*models.ClientTrustAccount, error)
 	// Update 更新账户
 	Update(ctx context.Context, account *models.ClientTrustAccount) error
+	// UpdateBalance 直接按 ID 写入新余额，避免 Save 全字段覆盖
+	UpdateBalance(ctx context.Context, id uint, newBalance float64) error
 	// Delete 删除账户
 	Delete(ctx context.Context, id uint) error
 	// List 账户列表查询
@@ -661,16 +665,31 @@ type TrustTransactionRepository interface {
 	Create(ctx context.Context, transaction *models.ClientTrustTransaction) error
 	// FindByID 根据ID查找交易
 	FindByID(ctx context.Context, id uint) (*models.ClientTrustTransaction, error)
+	// FindByIDForUpdate 加行锁读取交易（FOR UPDATE），必须在事务内调用
+	FindByIDForUpdate(ctx context.Context, id uint) (*models.ClientTrustTransaction, error)
 	// FindByCode 根据交易编号查找交易
 	FindByCode(ctx context.Context, code string) (*models.ClientTrustTransaction, error)
 	// Update 更新交易
 	Update(ctx context.Context, transaction *models.ClientTrustTransaction) error
+	// UpdateStatusIfPending 条件更新：仅当当前 status='pending' 时才写入新状态与审批信息
+	// 返回受影响行数：1=成功；0=已被并发改动（调用方据此判断幂等冲突）
+	UpdateStatusIfPending(ctx context.Context, id uint, newStatus string, approvedBy uint) (int64, error)
 	// Delete 删除交易
 	Delete(ctx context.Context, id uint) error
 	// List 交易列表查询
 	List(ctx context.Context, params *TrustTransactionListParams) ([]*models.ClientTrustTransaction, int64, error)
 	// GetByAccountID 获取账户的交易列表
 	GetByAccountID(ctx context.Context, accountID uint) ([]*models.ClientTrustTransaction, int64, error)
+}
+
+// TrustUnitOfWork 代管款事务工作单元
+// 保证交易和账户的更新在同一数据库事务内提交，任一步失败整体回滚。
+// fn 内的 repo 实例已绑定到 tx，fn 返回 error 会触发回滚。
+type TrustUnitOfWork interface {
+	WithinTransaction(
+		ctx context.Context,
+		fn func(txTxnRepo TrustTransactionRepository, txAcctRepo TrustAccountRepository) error,
+	) error
 }
 
 

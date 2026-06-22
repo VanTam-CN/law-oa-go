@@ -817,10 +817,14 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 		// 初始化代管款相关仓储
 		trustAccountRepo := repositories.NewTrustAccountRepository(db)
 		trustTransactionRepo := repositories.NewTrustTransactionRepository(db)
+		trustUnitOfWork := repositories.NewTrustUnitOfWork(db)
 
 		// 初始化代管款相关服务
 		trustAccountService := services.NewTrustAccountService(trustAccountRepo, trustTransactionRepo, clientRepo, caseRepo, userRepo)
-		trustTransactionService := services.NewTrustTransactionService(trustTransactionRepo, trustAccountRepo, caseRepo, userRepo)
+		trustTransactionService := services.NewTrustTransactionService(
+			trustTransactionRepo, trustAccountRepo, caseRepo, userRepo,
+			services.WithTrustUnitOfWork(trustUnitOfWork),
+		)
 
 		trustAccountHandler := handlers.NewTrustAccountHandler(trustAccountService, trustTransactionService)
 		log.Println("✅ 代管款处理器初始化完成")
