@@ -180,7 +180,12 @@ func (s *conflictDetectionService) findPotentialConflicts(ctx context.Context, r
 
 	// 2. 检查对方当事人冲突
 	if len(request.OtherParties) > 0 {
-		opponentConflicts := s.checkOpponentConflicts(ctx, request, since)
+		opponentConflicts, err := s.checkOpponentConflicts(ctx, request, since)
+		if err != nil {
+			// 对方当事人查询失败 = 冲突检查整体失败，禁止落库为"无冲突"成功记录
+			log.Printf("❌ 对方当事人冲突检查失败: %v", err)
+			return nil, fmt.Errorf("对方当事人冲突检查失败: %w", err)
+		}
 		allConflicts = append(allConflicts, opponentConflicts...)
 		log.Printf("📋 找到 %d 个对方当事人冲突案例", len(opponentConflicts))
 	}
@@ -204,18 +209,18 @@ func (s *conflictDetectionService) findPotentialConflicts(ctx context.Context, r
 }
 
 // checkOpponentConflicts 检查对方当事人冲突
-func (s *conflictDetectionService) checkOpponentConflicts(ctx context.Context, request *models.ConflictCheckRequest, since time.Time) []*models.ConflictCase {
+// 返回错误时调用方必须把整个冲突检查标记为失败——禁止吞掉错误伪造"无冲突"结果。
+func (s *conflictDetectionService) checkOpponentConflicts(ctx context.Context, request *models.ConflictCheckRequest, since time.Time) ([]*models.ConflictCase, error) {
 	var conflicts []*models.ConflictCase
+
+	// 转换用户ID为uint用于数据库查询（所有 opponent 共用，提前返回便于错误早暴露）
+	userIDUint, err := strconv.ParseUint(request.UserID, 10, 32)
+	if err != nil {
+		return nil, fmt.Errorf("解析用户ID失败 (userID=%q): %w", request.UserID, err)
+	}
 
 	for _, opponent := range request.OtherParties {
 		if strings.TrimSpace(opponent) == "" {
-			continue
-		}
-
-		// 转换用户ID为uint用于数据库查询
-		userIDUint, err := strconv.ParseUint(request.UserID, 10, 32)
-		if err != nil {
-			log.Printf("⚠️ 解析用户ID失败: %v", err)
 			continue
 		}
 
@@ -245,9 +250,9 @@ func (s *conflictDetectionService) checkOpponentConflicts(ctx context.Context, r
 				c.lawyer_id,
 				-- 相关度计算：标题匹配权重最高
 				CASE
-					WHEN c.title ILIKE ? THEN 3
-					WHEN c.description ILIKE ? THEN 2
-					WHEN cl.name ILIKE ? THEN 1
+					WHEN LOWER(c.title) LIKE LOWER(?) THEN 3
+					WHEN LOWER(c.description) LIKE LOWER(?) THEN 2
+					WHEN LOWER(cl.name) LIKE LOWER(?) THEN 1
 					ELSE 0
 				END as relevance_score
 			FROM cases c
@@ -256,15 +261,16 @@ func (s *conflictDetectionService) checkOpponentConflicts(ctx context.Context, r
 			WHERE c.deleted_at IS NULL
 			AND c.lawyer_id != ?
 			%s
-			AND (c.title ILIKE ? OR c.description ILIKE ? OR cl.name ILIKE ?)
+			AND (LOWER(c.title) LIKE LOWER(?) OR LOWER(c.description) LIKE LOWER(?) OR LOWER(cl.name) LIKE LOWER(?))
 			ORDER BY relevance_score DESC, c.created_at DESC
 			LIMIT 10
 		`, sinceFilter)
 
+		// 跨库通用大小写不敏感匹配：LOWER(col) LIKE LOWER(?)。
+		// PostgreSQL 专属的 ILIKE 在 MySQL/SQLite 下直接报语法错误，错误被 continue 吞掉 → 全表漏报。
 		rows, err := s.caseRepo.GetDB().WithContext(ctx).Raw(query, args...).Rows()
 		if err != nil {
-			log.Printf("⚠️ 查询对方当事人冲突失败: %v", err)
-			continue
+			return nil, fmt.Errorf("查询对方当事人冲突失败 (opponent=%q): %w", opponent, err)
 		}
 
 		for rows.Next() {
@@ -275,7 +281,8 @@ func (s *conflictDetectionService) checkOpponentConflicts(ctx context.Context, r
 			var relevanceScore int
 
 			if err := rows.Scan(&caseID, &caseNo, &caseName, &caseType, &description, &clientName, &lawyerName, &createdAt, &lawyerID, &relevanceScore); err != nil {
-				continue
+				rows.Close()
+				return nil, fmt.Errorf("扫描对方当事人冲突行失败 (opponent=%q): %w", opponent, err)
 			}
 
 			// 确定冲突类型和风险等级
@@ -308,10 +315,15 @@ func (s *conflictDetectionService) checkOpponentConflicts(ctx context.Context, r
 
 			conflicts = append(conflicts, conflict)
 		}
+		// rows.Err() 报告迭代期间发生的错误；Rows()+Next() 不会主动返回
+		if err := rows.Err(); err != nil {
+			rows.Close()
+			return nil, fmt.Errorf("迭代对方当事人冲突结果集失败 (opponent=%q): %w", opponent, err)
+		}
 		rows.Close()
 	}
 
-	return conflicts
+	return conflicts, nil
 }
 
 // checkClientRelationConflicts 检查客户关系冲突

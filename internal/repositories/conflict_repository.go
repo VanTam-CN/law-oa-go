@@ -332,14 +332,14 @@ func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID
 				JOIN users u ON c.lawyer_id = u.id
 				WHERE c.deleted_at IS NULL
 				%s
-				AND (c.title ILIKE ? OR c.description ILIKE ?)
+				AND (LOWER(c.title) LIKE LOWER(?) OR LOWER(c.description) LIKE LOWER(?))
 				ORDER BY c.created_at DESC
 				LIMIT 20
 			`, partySinceFilter)
 
 			partyRows, err := r.db.WithContext(ctx).Raw(partyQuery, partyArgs...).Rows()
 			if err != nil {
-				continue
+				return nil, fmt.Errorf("查询对方当事人冲突失败 (party=%q): %w", party, err)
 			}
 
 			for partyRows.Next() {
@@ -361,7 +361,8 @@ func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID
 					&foundLawyerID,
 				)
 				if err != nil {
-					continue
+					partyRows.Close()
+					return nil, fmt.Errorf("扫描对方当事人冲突行失败 (party=%q): %w", party, err)
 				}
 
 				// 如果是同一个律师的案件，跳过（已经在上面查过了）

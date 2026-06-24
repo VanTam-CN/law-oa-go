@@ -239,7 +239,9 @@ func (qb *QueryBuilder) OptimizedSearch(searchTerm string, searchFields []string
 		if i > 0 {
 			whereClause += " OR "
 		}
-		whereClause += fmt.Sprintf("%s ILIKE ?", field)
+		// 跨库通用大小写不敏感匹配：LOWER(col) LIKE LOWER(?)
+		// PostgreSQL 专属的 ILIKE 在 MySQL/SQLite 下直接报语法错误 → 全表漏报
+		whereClause += fmt.Sprintf("LOWER(%s) LIKE LOWER(?)", field)
 		conditions = append(conditions, "%"+searchTerm+"%")
 	}
 
