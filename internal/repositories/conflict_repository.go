@@ -395,21 +395,63 @@ func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID
 	return conflictCases, nil
 }
 
+// PartyMatchKind 当事人名称匹配强度三态分类。
+//
+// 设计底层逻辑：一个 bool 承载不了"完全相等 vs 包含/简称"两种语义，
+// 后者会误把短子串升级为 CRITICAL。分类后由 caller 按风险等级分流：
+//   - PartyExactNormalizedMatch：可直接判 CRITICAL
+//   - PartyCandidateMatch：最高 HIGH，必须人工复核
+//   - PartyNoMatch：不构成命中
+type PartyMatchKind int
+
+const (
+	PartyNoMatch PartyMatchKind = iota
+	PartyCandidateMatch
+	PartyExactNormalizedMatch
+)
+
+// isDirectOpposingPartyClient 仅在存在 Exact 规范化相等时返回 true。
+// 调用方需要区分 Candidate 时，请直接使用 classifyDirectOpposingPartyMatch。
+//
+// 旧实现用 strings.Contains 就返回 true → "华" 会命中 "华为技术有限公司"
+// → 错误升级为 CRITICAL → 拒绝接案。新行为：仅 Exact 直接命中，候选返回 false。
 func isDirectOpposingPartyClient(clientName string, otherParties []string) bool {
-	clientName = normalizeConflictPartyName(clientName)
-	if clientName == "" {
-		return false
-	}
 	for _, party := range otherParties {
-		party = normalizeConflictPartyName(party)
-		if party == "" {
-			continue
-		}
-		if clientName == party || strings.Contains(clientName, party) || strings.Contains(party, clientName) {
+		if classifyDirectOpposingPartyMatch(clientName, party) == PartyExactNormalizedMatch {
 			return true
 		}
 	}
 	return false
+}
+
+// classifyDirectOpposingPartyMatch 把单对当事人名称分成三态：
+//   - Exact：去除大小写、空白、公司后缀后完全相等
+//   - Candidate：单向/双向包含——只能作为候选
+//   - NoMatch：完全无关，或任一输入过短/为空
+//
+// 短子串防护：任一侧规范化后长度 < 2 直接判 NoMatch。
+func classifyDirectOpposingPartyMatch(clientName, party string) PartyMatchKind {
+	cn := normalizeConflictPartyName(clientName)
+	pn := normalizeConflictPartyName(party)
+	if !isMeaningfulConflictName(cn) || !isMeaningfulConflictName(pn) {
+		return PartyNoMatch
+	}
+	if cn == pn {
+		return PartyExactNormalizedMatch
+	}
+	if strings.Contains(cn, pn) || strings.Contains(pn, cn) {
+		return PartyCandidateMatch
+	}
+	return PartyNoMatch
+}
+
+// isMeaningfulConflictName 规范化后是否仍有有效辨识内容。
+// 太短（<2 字符）视为无意义，避免单字"华"命中"华为技术有限公司"。
+func isMeaningfulConflictName(name string) bool {
+	if len(strings.TrimSpace(name)) < 2 {
+		return false
+	}
+	return true
 }
 
 func normalizeConflictPartyName(name string) string {

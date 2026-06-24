@@ -17,10 +17,12 @@ import (
 	"law-oa-go/internal/models"
 )
 
-// TestIsDirectOpposingPartyClientMatchesNormalizedCompanyName 原有纯函数测试保留
+// TestIsDirectOpposingPartyClientMatchesNormalizedCompanyName
+// 规范化后完全相等 → 应当直接命中（CRITICAL 级别匹配）
+// 注意：旧实现把"示例科技"也当命中（contains），但那是短子串误报，已收紧。
 func TestIsDirectOpposingPartyClientMatchesNormalizedCompanyName(t *testing.T) {
-	if !isDirectOpposingPartyClient("上海示例科技有限公司", []string{"示例科技"}) {
-		t.Fatal("expected normalized company name to match opposing party")
+	if !isDirectOpposingPartyClient("上海示例科技有限公司", []string{"上海示例科技"}) {
+		t.Fatal("expected exact normalized name to match opposing party")
 	}
 }
 
@@ -29,6 +31,70 @@ func TestIsDirectOpposingPartyClientIgnoresUnrelatedParty(t *testing.T) {
 	if isDirectOpposingPartyClient("上海示例科技有限公司", []string{"北京无关贸易有限公司"}) {
 		t.Fatal("expected unrelated company name not to match")
 	}
+}
+
+// Task 7 Step 1 — RED 边界测试：短子串不应判 CRITICAL
+//
+// 修复前：isDirectOpposingPartyClient 使用 strings.Contains，"华" 会匹配
+// "华为技术有限公司" → 升级为 CRITICAL → 错误拒绝接案。
+// 修复后：只有规范化后完全相等才直接命中；包含关系应作为候选返回，由 caller 决定是否升级。
+func TestIsDirectOpposingPartyClient_DoesNotMatchShortSubstring(t *testing.T) {
+	cases := map[string][]string{
+		"华为技术有限公司":             {"华"},
+		"上海示例科技有限公司":            {"示例"},
+		"阿里巴巴（中国）网络技术有限公司": {"阿里"},
+	}
+	for client, parties := range cases {
+		for _, party := range parties {
+			if isDirectOpposingPartyClient(client, []string{party}) {
+				t.Fatalf("短子串 %q 不应直接命中 %q 升级为 CRITICAL", party, client)
+			}
+		}
+	}
+}
+
+// TestIsDirectOpposingPartyClient_DoesNotMatchDifferentCompanyWithSimilarToken
+// 名称相近但不同主体（共享通用词"甲"），不应判 CRITICAL。
+func TestIsDirectOpposingPartyClient_DoesNotMatchDifferentCompanyWithSimilarToken(t *testing.T) {
+	if isDirectOpposingPartyClient("北京甲科技有限公司", []string{"上海甲贸易有限公司"}) {
+		t.Fatal("名称相近但不同主体不应直接命中 CRITICAL")
+	}
+}
+
+// TestIsDirectOpposingPartyClient_RejectsEmptyAndSuffixOnly
+// 空值、仅剩公司类型词不应命中。
+func TestIsDirectOpposingPartyClient_RejectsEmptyAndSuffixOnly(t *testing.T) {
+	cases := []struct {
+		client string
+		party  string
+	}{
+		{"", ""},
+		{"有限公司", "公司"},
+		{"上海示例科技有限公司", ""},
+		{"", "上海示例科技有限公司"},
+	}
+	for _, c := range cases {
+		if isDirectOpposingPartyClient(c.client, []string{c.party}) {
+			t.Fatalf("空值/纯后缀 (%q vs %q) 不应命中", c.client, c.party)
+		}
+	}
+}
+
+// TestClassifyDirectOpposingPartyMatch
+// 引入三态分类：Exact / Candidate / NoMatch。仅 Exact 可升级 CRITICAL。
+func TestClassifyDirectOpposingPartyMatch(t *testing.T) {
+	assert.Equal(t, PartyExactNormalizedMatch,
+		classifyDirectOpposingPartyMatch("上海示例科技有限公司", "上海示例科技"))
+	assert.Equal(t, PartyCandidateMatch,
+		classifyDirectOpposingPartyMatch("上海示例科技有限公司", "示例科技"))
+	assert.Equal(t, PartyCandidateMatch,
+		classifyDirectOpposingPartyMatch("华为技术有限公司", "华为"))
+	assert.Equal(t, PartyNoMatch,
+		classifyDirectOpposingPartyMatch("北京甲科技有限公司", "上海甲贸易有限公司"))
+	assert.Equal(t, PartyNoMatch,
+		classifyDirectOpposingPartyMatch("", "任何"))
+	assert.Equal(t, PartyNoMatch,
+		classifyDirectOpposingPartyMatch("有限公司", "公司"))
 }
 
 // setupConflictSQLiteDB 构造独立 SQLite 文件库 + 冲突检测相关表。

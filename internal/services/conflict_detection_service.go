@@ -288,9 +288,19 @@ func (s *conflictDetectionService) checkOpponentConflicts(ctx context.Context, r
 			// 确定冲突类型和风险等级
 			conflictType := s.determineConflictType(caseName, description, opponent)
 			riskLevel := s.assessConflictRisk(conflictType, createdAt)
-			if s.isPartyNameMatch(clientName, opponent) {
+			// 三态分流：仅 Exact 可升 CRITICAL；Candidate 最高 HIGH，必须人工复核
+			kind := s.classifyPartyMatch(clientName, opponent)
+			switch kind {
+			case PartyExactNormalizedMatch:
 				conflictType = "对方当事人直接冲突"
 				riskLevel = "CRITICAL"
+			case PartyCandidateMatch:
+				if conflictType == "" {
+					conflictType = "对方当事人疑似冲突"
+				}
+				if riskLevel != "CRITICAL" && riskLevel != "HIGH" {
+					riskLevel = "HIGH"
+				}
 			}
 
 			conflict := &models.ConflictCase{
@@ -308,9 +318,12 @@ func (s *conflictDetectionService) checkOpponentConflicts(ctx context.Context, r
 				ConflictDetails: fmt.Sprintf("系统检测到对方当事人 '%s' 与此案件存在潜在冲突", opponent),
 				CreatedAt:       createdAt,
 			}
-			if riskLevel == "CRITICAL" {
-				conflict.Description = fmt.Sprintf("当前对方当事人 '%s' 是本所历史客户 '%s'，存在直接利益冲突", opponent, clientName)
-				conflict.ConflictDetails = "对方当事人与本所历史客户直接命中"
+			if kind == PartyExactNormalizedMatch {
+				conflict.Description = fmt.Sprintf("当前对方当事人 '%s' 与本所历史客户 '%s' 规范化后完全一致，存在直接利益冲突", opponent, clientName)
+				conflict.ConflictDetails = "对方当事人与本所历史客户直接命中（Exact 规范化匹配）"
+			} else if kind == PartyCandidateMatch {
+				conflict.Description = fmt.Sprintf("对方当事人 '%s' 与本所历史客户 '%s' 名称相关，需人工复核是否构成利益冲突", opponent, clientName)
+				conflict.ConflictDetails = "对方当事人与本所历史客户候选匹配（Candidate），禁止自动判定 CRITICAL"
 			}
 
 			conflicts = append(conflicts, conflict)
@@ -674,13 +687,68 @@ func (s *conflictDetectionService) isSameCompany(name1, name2 string) bool {
 	return false
 }
 
-func (s *conflictDetectionService) isPartyNameMatch(name1, name2 string) bool {
-	name1 = s.cleanCompanyName(strings.ToLower(strings.TrimSpace(name1)))
-	name2 = s.cleanCompanyName(strings.ToLower(strings.TrimSpace(name2)))
-	if name1 == "" || name2 == "" {
+// PartyMatchKind 当事人名称匹配强度三态分类。
+//
+// 设计底层逻辑：一个 bool 承载不了"完全相等 vs 包含/简称"两种语义，
+// 后者会误把短子串升级为 CRITICAL。分类后由 caller 按风险等级分流：
+//   - Exact：可直接判 CRITICAL
+//   - Candidate：最高 HIGH，必须人工复核
+//   - NoMatch：不构成命中
+type PartyMatchKind int
+
+const (
+	PartyNoMatch PartyMatchKind = iota
+	PartyCandidateMatch
+	PartyExactNormalizedMatch
+)
+
+// String 便于日志和测试输出
+func (k PartyMatchKind) String() string {
+	switch k {
+	case PartyCandidateMatch:
+		return "candidate"
+	case PartyExactNormalizedMatch:
+		return "exact"
+	default:
+		return "none"
+	}
+}
+
+// classifyPartyMatch 把两个名称的匹配关系分成三态：
+//   - PartyExactNormalizedMatch：去除大小写、空白、公司类型后缀后完全相等
+//   - PartyCandidateMatch：单向/双向包含或简称——只能作为候选
+//   - PartyNoMatch：完全无关，或任一输入过短/为空
+//
+// 短子串防护：任一侧规范化后长度 < 2 直接判 NoMatch，
+// 避免 "华" 匹配 "华为技术有限公司" 之类短通用词误报。
+func (s *conflictDetectionService) classifyPartyMatch(name1, name2 string) PartyMatchKind {
+	n1 := s.cleanCompanyName(strings.ToLower(strings.TrimSpace(name1)))
+	n2 := s.cleanCompanyName(strings.ToLower(strings.TrimSpace(name2)))
+	if !isMeaningfulPartyName(n1) || !isMeaningfulPartyName(n2) {
+		return PartyNoMatch
+	}
+	if n1 == n2 {
+		return PartyExactNormalizedMatch
+	}
+	if strings.Contains(n1, n2) || strings.Contains(n2, n1) {
+		return PartyCandidateMatch
+	}
+	return PartyNoMatch
+}
+
+// isMeaningfulPartyName 规范化后是否含有有效辨识内容。
+// 太短（<2 字符）视为无意义，避免单字触发 CRITICAL。
+func isMeaningfulPartyName(name string) bool {
+	if len(strings.TrimSpace(name)) < 2 {
 		return false
 	}
-	return name1 == name2 || strings.Contains(name1, name2) || strings.Contains(name2, name1)
+	return true
+}
+
+// isPartyNameMatch 仅在 Exact 规范化相等时返回 true。
+// 调用方需要区分 Candidate 时，请直接使用 classifyPartyMatch。
+func (s *conflictDetectionService) isPartyNameMatch(name1, name2 string) bool {
+	return s.classifyPartyMatch(name1, name2) == PartyExactNormalizedMatch
 }
 
 // isDirectCompetitor 检查是否为直接竞争对手
