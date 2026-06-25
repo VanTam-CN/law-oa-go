@@ -105,6 +105,8 @@ interface CommandCenterRiskItem {
   updated_at?: string
   search_parameters?: unknown
   check_result?: unknown
+  conflict_details?: string
+  description?: string
   conflict_cases?: Array<Record<string, unknown>>
 }
 

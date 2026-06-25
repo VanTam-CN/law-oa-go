@@ -279,6 +279,12 @@ func extractCaseIDForPath(c *gin.Context, fullPath string) uint {
 		}
 	}
 
+	if shouldReadMultipart(c) {
+		if id := readCaseIDFromMultipart(c); id > 0 {
+			return id
+		}
+	}
+
 	return 0
 }
 
@@ -321,6 +327,24 @@ func shouldReadBody(c *gin.Context) bool {
 		return false
 	}
 	return strings.HasPrefix(c.GetHeader("Content-Type"), "application/json")
+}
+
+func shouldReadMultipart(c *gin.Context) bool {
+	if c.Request.Method != http.MethodPost && c.Request.Method != http.MethodPut && c.Request.Method != http.MethodPatch {
+		return false
+	}
+	return strings.HasPrefix(c.GetHeader("Content-Type"), "multipart/form-data")
+}
+
+func readCaseIDFromMultipart(c *gin.Context) uint {
+	if err := c.Request.ParseMultipartForm(32 << 20); err != nil {
+		return 0
+	}
+	entityType := strings.TrimSpace(c.Request.FormValue("entity_type"))
+	if entityType != "case" {
+		return 0
+	}
+	return parseUintParam(c.Request.FormValue("entity_id"))
 }
 
 // readCaseIDFromBodyPreserved 读取 body 中的 case_id，但保留 body 供下游 handler 重新读取

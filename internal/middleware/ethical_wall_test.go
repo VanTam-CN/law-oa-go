@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -330,6 +331,40 @@ func TestEthicalWall_QueryCaseID_TriggersCheck(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
+	repo.AssertExpectations(t)
+}
+
+func TestEthicalWall_MultipartCaseDocumentUpload_TriggersCheck(t *testing.T) {
+	repo := new(MockEthicalWallRepository)
+	repo.On("IsEthicalWallEnabled", mock.Anything, uint(789)).Return(true, nil)
+	repo.On("IsUserWhitelisted", mock.Anything, uint(789), uint(123)).Return(false, nil)
+	repo.On("LogAccessAttempt", mock.Anything, uint(789), uint(123), "modify", "denied", mock.Anything, mock.Anything).Return(nil)
+
+	cfg := EthicalWallConfig{EthicalWallRepo: repo}
+	r := newTestEngine(t, cfg, 123)
+	handlerCalled := false
+	r.POST("/api/v1/documents", func(c *gin.Context) {
+		handlerCalled = true
+		c.Status(200)
+	})
+
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	require.NoError(t, writer.WriteField("entity_type", "case"))
+	require.NoError(t, writer.WriteField("entity_id", "789"))
+	part, err := writer.CreateFormFile("file", "test.txt")
+	require.NoError(t, err)
+	_, err = part.Write([]byte("content"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/documents", &body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusForbidden, w.Code)
+	assert.False(t, handlerCalled, "非白名单用户不得向隔离案件上传文档")
 	repo.AssertExpectations(t)
 }
 

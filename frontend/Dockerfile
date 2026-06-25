@@ -39,8 +39,8 @@ ENV NODE_OPTIONS=--max-old-space-size=4096
 RUN npm run build
 
 # 验证构建结果
-RUN ls -la /app/build && \
-    test -f /app/build/index.html && \
+RUN ls -la /app/dist && \
+    test -f /app/dist/index.html && \
     echo "✅ React应用构建成功"
 
 # ================================
@@ -183,7 +183,7 @@ http {
 EOF
 
 # 复制构建产物
-COPY --from=builder /app/build /usr/share/nginx/html
+COPY --from=builder /app/dist /usr/share/nginx/html
 
 # 设置正确的权限
 RUN chown -R nginx:nginx /usr/share/nginx/html && \

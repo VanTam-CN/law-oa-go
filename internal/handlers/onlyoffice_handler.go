@@ -29,16 +29,16 @@ import (
 
 // OnlyOfficeHandler OnlyOffice 在线编辑处理器
 type OnlyOfficeHandler struct {
-	db                *gorm.DB
-	versionService    *services.DocumentVersionService
-	lockService       *services.DocumentLockService
-	onlyOfficeURL     string
-	onlyOfficeSecret  string
-	backendURL        string
-	httpClient        *http.Client
-	storageDir        string
-	conversionTasks   map[string]*ConversionTask
-	conversionMu      sync.RWMutex
+	db               *gorm.DB
+	versionService   *services.DocumentVersionService
+	lockService      *services.DocumentLockService
+	onlyOfficeURL    string
+	onlyOfficeSecret string
+	backendURL       string
+	httpClient       *http.Client
+	storageDir       string
+	conversionTasks  map[string]*ConversionTask
+	conversionMu     sync.RWMutex
 }
 
 // ConversionTask 转换任务
@@ -85,66 +85,66 @@ func NewOnlyOfficeHandler(
 
 // EditorConfig OnlyOffice 编辑器配置
 type EditorConfig struct {
-	Document     DocumentConfig     `json:"document"`
-	DocumentType string             `json:"documentType"`
+	Document     DocumentConfig    `json:"document"`
+	DocumentType string            `json:"documentType"`
 	EditorConfig EditorConfigInner `json:"editorConfig"`
 }
 
 // DocumentConfig 文档配置
 type DocumentConfig struct {
-	Key       string       `json:"key"`
-	URL       string       `json:"url"`
-	Title     string       `json:"title"`
-	FileType  string       `json:"fileType"`
-	Info      DocumentInfo `json:"info"`
-	Permissions Permissions `json:"permissions"`
+	Key         string       `json:"key"`
+	URL         string       `json:"url"`
+	Title       string       `json:"title"`
+	FileType    string       `json:"fileType"`
+	Info        DocumentInfo `json:"info"`
+	Permissions Permissions  `json:"permissions"`
 }
 
 // DocumentInfo 文档信息
 type DocumentInfo struct {
-	Author     string `json:"author"`
-	Created    string `json:"created"`
-	Owner      string `json:"owner"`
-	Uploaded   string `json:"uploaded"`
+	Author   string `json:"author"`
+	Created  string `json:"created"`
+	Owner    string `json:"owner"`
+	Uploaded string `json:"uploaded"`
 }
 
 // Permissions 权限配置
 type Permissions struct {
-	Comment      bool `json:"comment"`
-	Download     bool `json:"download"`
-	Edit         bool `json:"edit"`
-	FillForms    bool `json:"fillForms"`
-	ModifyFilter bool `json:"modifyFilter"`
+	Comment              bool `json:"comment"`
+	Download             bool `json:"download"`
+	Edit                 bool `json:"edit"`
+	FillForms            bool `json:"fillForms"`
+	ModifyFilter         bool `json:"modifyFilter"`
 	ModifyContentControl bool `json:"modifyContentControl"`
-	Review       bool `json:"review"`
+	Review               bool `json:"review"`
 }
 
 // EditorConfigInner 编辑器配置
 type EditorConfigInner struct {
-	Mode             string             `json:"mode"`
-	CallbackURL      string             `json:"callbackUrl"`
-	Customization    Customization      `json:"customization"`
-	User             User               `json:"user"`
-	Embedded         Embedded           `json:"embedded"`
+	Mode          string        `json:"mode"`
+	CallbackURL   string        `json:"callbackUrl"`
+	Customization Customization `json:"customization"`
+	User          User          `json:"user"`
+	Embedded      Embedded      `json:"embedded"`
 }
 
 // Customization 自定义配置
 type Customization struct {
-	About             bool              `json:"about"`
-	Comments          bool              `json:"comments"`
-	Customer          map[string]string `json:"customer"`
-	Feedback          bool              `json:"feedback"`
-	Forcesave         bool              `json:"forcesave"`
-	Help              bool              `json:"help"`
-	Macro             bool              `json:"macro"`
-	Metrics           bool              `json:"metrics"`
-	Plugins           bool              `json:"plugins"`
-	CompactHeader     bool              `json:"compactHeader"`
-	CompactToolbar    bool              `json:"compactToolbar"`
-	Customization     bool              `json:"customization"`
-	Zoom              int               `json:"zoom"`
-	ToolbarNoTabs     bool              `json:"toolbarNoTabs"`
-	ToolbarHideFileName bool `json:"toolbarHideFileName"`
+	About               bool              `json:"about"`
+	Comments            bool              `json:"comments"`
+	Customer            map[string]string `json:"customer"`
+	Feedback            bool              `json:"feedback"`
+	Forcesave           bool              `json:"forcesave"`
+	Help                bool              `json:"help"`
+	Macro               bool              `json:"macro"`
+	Metrics             bool              `json:"metrics"`
+	Plugins             bool              `json:"plugins"`
+	CompactHeader       bool              `json:"compactHeader"`
+	CompactToolbar      bool              `json:"compactToolbar"`
+	Customization       bool              `json:"customization"`
+	Zoom                int               `json:"zoom"`
+	ToolbarNoTabs       bool              `json:"toolbarNoTabs"`
+	ToolbarHideFileName bool              `json:"toolbarHideFileName"`
 }
 
 // User 用户信息
@@ -173,12 +173,12 @@ type OpenEditorRequest struct {
 
 // CallbackRequest OnlyOffice 回调请求
 type CallbackRequest struct {
-	Actions   []CallbackAction `json:"actions"`
-	Key       string           `json:"key"`
-	Status    int              `json:"status"`
-	URL       string           `json:"url"`
-	Users     []string         `json:"users"`
-	Token     string           `json:"token"`
+	Actions []CallbackAction `json:"actions"`
+	Key     string           `json:"key"`
+	Status  int              `json:"status"`
+	URL     string           `json:"url"`
+	Users   []string         `json:"users"`
+	Token   string           `json:"token"`
 }
 
 // CallbackAction 回调操作
@@ -189,23 +189,23 @@ type CallbackAction struct {
 
 // ConversionRequest OnlyOffice 转换 API 请求
 type ConversionRequest struct {
-	Async    bool   `json:"async"`
-	Filetype string `json:"filetype"`
-	Key      string `json:"key"`
+	Async      bool   `json:"async"`
+	Filetype   string `json:"filetype"`
+	Key        string `json:"key"`
 	OutputType string `json:"outputType"`
-	Title    string `json:"title"`
-	URL      string `json:"url"`
+	Title      string `json:"title"`
+	URL        string `json:"url"`
 }
 
 // ConversionResponse OnlyOffice 转换 API 响应
 type ConversionResponse struct {
-	EndKey    string `json:"endKey"`
-	FileType  string `json:"fileType"`
-	FileSize  int64  `json:"fileSize"`
-	Key       string `json:"key"`
-	Percent   int    `json:"percent"`
-	Status    int    `json:"status"` // 0-unknown, 1-queued, 2-processing, 3-converted, 4-converting error, 5-error, 6-async
-	URL       string `json:"url"`
+	EndKey   string `json:"endKey"`
+	FileType string `json:"fileType"`
+	FileSize int64  `json:"fileSize"`
+	Key      string `json:"key"`
+	Percent  int    `json:"percent"`
+	Status   int    `json:"status"` // 0-unknown, 1-queued, 2-processing, 3-converted, 4-converting error, 5-error, 6-async
+	URL      string `json:"url"`
 }
 
 // 常量
@@ -339,13 +339,13 @@ func (h *OnlyOfficeHandler) OpenEditor(c *gin.Context) {
 				Uploaded: doc.CreatedAt.Format("2006-01-02 15:04:05"),
 			},
 			Permissions: Permissions{
-				Comment:               mode == ModeEdit,
-				Download:              true,
-				Edit:                  mode == ModeEdit,
-				FillForms:             mode == ModeEdit,
-				ModifyFilter:          true,
-				ModifyContentControl:  true,
-				Review:                mode == ModeEdit,
+				Comment:              mode == ModeEdit,
+				Download:             true,
+				Edit:                 mode == ModeEdit,
+				FillForms:            mode == ModeEdit,
+				ModifyFilter:         true,
+				ModifyContentControl: true,
+				Review:               mode == ModeEdit,
 			},
 		},
 		DocumentType: docType,
@@ -353,20 +353,20 @@ func (h *OnlyOfficeHandler) OpenEditor(c *gin.Context) {
 			Mode:        mode,
 			CallbackURL: callbackURL,
 			Customization: Customization{
-				About:              false,
-				Comments:           true,
-				Customer:           map[string]string{"info": "Law OA Go"},
-				Feedback:           false,
-				Forcesave:          true,
-				Help:               false,
-				Macro:              false,
-				Metrics:            false,
-				Plugins:            false,
-				CompactHeader:      false,
-				CompactToolbar:     false,
-				Customization:      false,
-				Zoom:               100,
-				ToolbarNoTabs:      false,
+				About:               false,
+				Comments:            true,
+				Customer:            map[string]string{"info": "Law OA Go"},
+				Feedback:            false,
+				Forcesave:           true,
+				Help:                false,
+				Macro:               false,
+				Metrics:             false,
+				Plugins:             false,
+				CompactHeader:       false,
+				CompactToolbar:      false,
+				Customization:       false,
+				Zoom:                100,
+				ToolbarNoTabs:       false,
 				ToolbarHideFileName: false,
 			},
 			User: User{
@@ -388,6 +388,11 @@ func (h *OnlyOfficeHandler) OpenEditor(c *gin.Context) {
 
 // HandleCallback 处理 OnlyOffice 回调
 func (h *OnlyOfficeHandler) HandleCallback(c *gin.Context) {
+	if h.onlyOfficeSecret == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "OnlyOffice callback secret is not configured"})
+		return
+	}
+
 	// 先读取 body 用于 HMAC 验证
 	bodyBytes, err := io.ReadAll(c.Request.Body)
 	if err != nil {
@@ -402,12 +407,10 @@ func (h *OnlyOfficeHandler) HandleCallback(c *gin.Context) {
 		return
 	}
 
-	// 验证 token (如果配置了密钥，使用 HMAC 验证)
-	if h.onlyOfficeSecret != "" {
-		if !h.validateCallbackPayload(bodyBytes, req.Token) {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
-			return
-		}
+	// 验证 token，缺失或不匹配必须 fail-closed，避免公开回调覆盖文件。
+	if !h.validateCallbackPayload(bodyBytes, req.Token) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+		return
 	}
 
 	// 解析 key 获取文档 ID
@@ -778,6 +781,14 @@ func (h *OnlyOfficeHandler) processConversionResult(taskID string, resp *Convers
 	task.Status = ConversionStatusProcessing
 	h.conversionMu.Unlock()
 
+	if err := h.validateDownloadURL(resp.URL); err != nil {
+		h.conversionMu.Lock()
+		task.Status = ConversionStatusError
+		task.Error = fmt.Sprintf("Invalid conversion download URL: %v", err)
+		h.conversionMu.Unlock()
+		return
+	}
+
 	// 下载转换后的文件
 	httpResp, err := h.httpClient.Get(resp.URL)
 	if err != nil {
@@ -817,7 +828,8 @@ func (h *OnlyOfficeHandler) processConversionResult(taskID string, resp *Convers
 		return
 	}
 
-	_, err = io.Copy(outFile, httpResp.Body)
+	limited := io.LimitReader(httpResp.Body, MaxOnlyOfficeDownloadBytes+1)
+	written, err := io.Copy(outFile, limited)
 	outFile.Close()
 
 	if err != nil {
@@ -825,6 +837,14 @@ func (h *OnlyOfficeHandler) processConversionResult(taskID string, resp *Convers
 		h.conversionMu.Lock()
 		task.Status = ConversionStatusError
 		task.Error = fmt.Sprintf("Failed to save converted file: %v", err)
+		h.conversionMu.Unlock()
+		return
+	}
+	if written > MaxOnlyOfficeDownloadBytes {
+		os.Remove(outputPath)
+		h.conversionMu.Lock()
+		task.Status = ConversionStatusError
+		task.Error = fmt.Sprintf("Download exceeds %d bytes", MaxOnlyOfficeDownloadBytes)
 		h.conversionMu.Unlock()
 		return
 	}
@@ -961,8 +981,21 @@ func (h *OnlyOfficeHandler) validateCallbackPayload(payload []byte, token string
 		return false
 	}
 
-	expectedMAC := h.GenerateCallbackToken(string(payload))
+	signingPayload, err := canonicalCallbackSigningPayload(payload)
+	if err != nil {
+		return false
+	}
+	expectedMAC := h.GenerateCallbackToken(string(signingPayload))
 	return hmac.Equal([]byte(token), []byte(expectedMAC))
+}
+
+func canonicalCallbackSigningPayload(payload []byte) ([]byte, error) {
+	var body map[string]interface{}
+	if err := json.Unmarshal(payload, &body); err != nil {
+		return nil, err
+	}
+	delete(body, "token")
+	return json.Marshal(body)
 }
 
 // validateCallbackToken 验证回调 token（兼容 header 传递方式）

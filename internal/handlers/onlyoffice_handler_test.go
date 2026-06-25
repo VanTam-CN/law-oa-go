@@ -40,13 +40,32 @@ func setupOnlyOfficeTestHandler(t *testing.T, db *gorm.DB) *OnlyOfficeHandler {
 	return NewOnlyOfficeHandler(db, versionService, lockService, "", "", "", tmpDir)
 }
 
+func signOnlyOfficeCallback(t *testing.T, h *OnlyOfficeHandler, req CallbackRequest) []byte {
+	t.Helper()
+	req.Token = ""
+	unsigned, err := json.Marshal(req)
+	if err != nil {
+		t.Fatalf("marshal unsigned callback: %v", err)
+	}
+	signingPayload, err := canonicalCallbackSigningPayload(unsigned)
+	if err != nil {
+		t.Fatalf("canonical callback payload: %v", err)
+	}
+	req.Token = h.GenerateCallbackToken(string(signingPayload))
+	signed, err := json.Marshal(req)
+	if err != nil {
+		t.Fatalf("marshal signed callback: %v", err)
+	}
+	return signed
+}
+
 // TestGetDocumentType 测试文档类型判断
 func TestGetDocumentType(t *testing.T) {
 	h := &OnlyOfficeHandler{}
 
 	tests := []struct {
-		ext     string
-		want    string
+		ext  string
+		want string
 	}{
 		{".docx", DocumentTypeWord},
 		{".doc", DocumentTypeWord},
@@ -164,6 +183,7 @@ func TestSaveDocument_Success(t *testing.T) {
 
 	// SSRF 防护要求：onlyOfficeURL 必须与下载 URL 的 host:port 一致
 	h := setupOnlyOfficeHandlerWithServer(t, db, ts.URL)
+	h.onlyOfficeSecret = "test-onlyoffice-secret-at-least-32-characters"
 	h.httpClient = ts.Client()
 
 	err := h.saveDocument(context.Background(), doc.ID, ts.URL+"/file.docx")
@@ -209,6 +229,7 @@ func TestSaveDocument_CreatesVersionBackup(t *testing.T) {
 	defer ts.Close()
 
 	h := setupOnlyOfficeHandlerWithServer(t, db, ts.URL)
+	h.onlyOfficeSecret = "test-onlyoffice-secret-at-least-32-characters"
 	h.httpClient = ts.Client()
 
 	err := h.saveDocument(context.Background(), doc.ID, ts.URL+"/file.docx")
@@ -247,6 +268,7 @@ func TestHandleCallback_MustSave(t *testing.T) {
 	defer ts.Close()
 
 	h := setupOnlyOfficeHandlerWithServer(t, db, ts.URL)
+	h.onlyOfficeSecret = "test-onlyoffice-secret-at-least-32-characters"
 	h.httpClient = ts.Client()
 
 	// 生成与 parseDocKey 兼容的 key
@@ -258,7 +280,7 @@ func TestHandleCallback_MustSave(t *testing.T) {
 		URL:    ts.URL + "/saved.docx",
 	}
 
-	bodyBytes, _ := json.Marshal(body)
+	bodyBytes := signOnlyOfficeCallback(t, h, body)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -269,6 +291,47 @@ func TestHandleCallback_MustSave(t *testing.T) {
 
 	if w.Code != http.StatusOK {
 		t.Errorf("状态码 = %d, 期望 %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestHandleCallback_RejectsMissingSecret(t *testing.T) {
+	h := &OnlyOfficeHandler{onlyOfficeSecret: ""}
+	body := CallbackRequest{
+		Key:    "1_123",
+		Status: StatusEditing,
+	}
+	bodyBytes, _ := json.Marshal(body)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/api/documents/onlyoffice/callback", bytes.NewReader(bodyBytes))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	h.HandleCallback(c)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("未配置密钥时回调必须拒绝: got %d body=%s", w.Code, w.Body.String())
+	}
+}
+
+func TestHandleCallback_RejectsInvalidToken(t *testing.T) {
+	h := &OnlyOfficeHandler{onlyOfficeSecret: "test-onlyoffice-secret-at-least-32-characters"}
+	body := CallbackRequest{
+		Key:    "1_123",
+		Status: StatusEditing,
+		Token:  "invalid",
+	}
+	bodyBytes, _ := json.Marshal(body)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/api/documents/onlyoffice/callback", bytes.NewReader(bodyBytes))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	h.HandleCallback(c)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("无效 token 必须拒绝: got %d body=%s", w.Code, w.Body.String())
 	}
 }
 
@@ -570,6 +633,36 @@ func TestSaveDocument_SSRF_AllowedHostSucceeds(t *testing.T) {
 	data, _ := os.ReadFile(doc.Filepath)
 	if string(data) != "new content" {
 		t.Errorf("文件内容 = %q, 期望 %q", string(data), "new content")
+	}
+}
+
+func TestProcessConversionResult_RejectsNonOnlyOfficeURL(t *testing.T) {
+	db := setupOnlyOfficeTestDB(t)
+	tsHit := false
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tsHit = true
+		w.Write([]byte("converted"))
+	}))
+	defer ts.Close()
+
+	h := setupOnlyOfficeHandlerWithServer(t, db, "http://onlyoffice.example:9090")
+	h.httpClient = ts.Client()
+	h.conversionTasks["task-1"] = &ConversionTask{
+		TaskID:     "task-1",
+		DocumentID: 1,
+		Status:     ConversionStatusPending,
+		OutputType: "pdf",
+		CreatedAt:  time.Now(),
+	}
+
+	h.processConversionResult("task-1", &ConversionResponse{Status: 3, URL: ts.URL + "/converted.pdf"})
+
+	task := h.conversionTasks["task-1"]
+	if task.Status != ConversionStatusError {
+		t.Fatalf("非 OnlyOffice host 的转换下载必须失败: status=%s error=%s", task.Status, task.Error)
+	}
+	if tsHit {
+		t.Fatal("SSRF 校验失败时不应发起 HTTP 请求")
 	}
 }
 
