@@ -68,6 +68,9 @@ func (a *ApprovalAssigner) AssignApprover(approval *models.ApprovalRequest) erro
 	if err != nil {
 		return fmt.Errorf("分配审批人失败: %v", err)
 	}
+	if err := validateIndependentApprover(approval, approver); err != nil {
+		return err
+	}
 
 	// 更新审批申请
 	approval.CurrentStage = firstStage.StageName
@@ -103,17 +106,7 @@ func (a *ApprovalAssigner) assignDefaultApprover(approval *models.ApprovalReques
 		return nil
 	}
 
-	// 如果所有管理员都是申请人自己，使用第一个管理员
-	// 这意味着管理员需要由其他管理员审批（双重审批）
-	if len(users) > 0 {
-		userIDStr := strconv.FormatUint(uint64(users[0].ID), 10)
-		approval.CurrentApproverID = userIDStr
-		approval.CurrentApproverName = users[0].Name
-		approval.Status = models.ApprovalStatusSubmitted
-		return nil
-	}
-
-	return fmt.Errorf("未找到可用的审批人")
+	return fmt.Errorf("未找到申请人之外的可用审批人")
 }
 
 // findApproverForStage 根据阶段配置查找审批人
@@ -130,26 +123,29 @@ func (a *ApprovalAssigner) findApproverForStage(stage *WorkflowStage, approval *
 
 	// 根据部门查找
 	if stage.DepartmentBased {
-		return a.findApproverByDepartment(approval.DepartmentID, stage)
+		return a.findApproverByDepartment(approval.DepartmentID, approval.ApplicantID)
 	}
 
 	// 默认查找管理员用户
-	users, err := a.userRepo.FindByRole("admin", 1)
+	users, err := a.userRepo.FindByRole("admin", 20)
 	if err != nil || len(users) == 0 {
 		return nil, fmt.Errorf("未找到可用的审批人")
 	}
 
-	return &ApproverInfo{
-		ID:   strconv.FormatUint(uint64(users[0].ID), 10),
-		Name: users[0].Name,
-	}, nil
+	for _, user := range users {
+		userID := strconv.FormatUint(uint64(user.ID), 10)
+		if userID != approval.ApplicantID {
+			return &ApproverInfo{ID: userID, Name: user.Name}, nil
+		}
+	}
+	return nil, fmt.Errorf("未找到申请人之外的可用审批人")
 }
 
 // findApproverByRole 根据角色查找审批人
 func (a *ApprovalAssigner) findApproverByRole(role string, approval *models.ApprovalRequest) (*ApproverInfo, error) {
 	// 根据角色查找用户
 	// 这里简化处理，实际应该查询用户角色表
-	users, err := a.userRepo.FindByRole(role, 1)
+	users, err := a.userRepo.FindByRole(role, 20)
 	if err != nil {
 		return nil, err
 	}
@@ -158,10 +154,13 @@ func (a *ApprovalAssigner) findApproverByRole(role string, approval *models.Appr
 		return nil, fmt.Errorf("没有找到角色为 %s 的审批人", role)
 	}
 
-	return &ApproverInfo{
-		ID:   strconv.FormatUint(uint64(users[0].ID), 10),
-		Name: users[0].Name,
-	}, nil
+	for _, user := range users {
+		userID := strconv.FormatUint(uint64(user.ID), 10)
+		if userID != approval.ApplicantID {
+			return &ApproverInfo{ID: userID, Name: user.Name}, nil
+		}
+	}
+	return nil, fmt.Errorf("角色 %s 中没有申请人之外的可用审批人", role)
 }
 
 // findApproverByID 根据ID查找审批人
@@ -182,29 +181,25 @@ func (a *ApprovalAssigner) findApproverByID(userID string) (*ApproverInfo, error
 }
 
 // findApproverByDepartment 根据部门查找审批人
-func (a *ApprovalAssigner) findApproverByDepartment(deptID string, stage *WorkflowStage) (*ApproverInfo, error) {
+func (a *ApprovalAssigner) findApproverByDepartment(deptID string, applicantID string) (*ApproverInfo, error) {
 	if deptID == "" {
 		return nil, errors.New("部门ID为空")
 	}
 
 	// 查找部门主管
-	users, err := a.userRepo.FindDepartmentHead(deptID, 1)
+	users, err := a.userRepo.FindDepartmentHead(deptID, 20)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(users) == 0 {
-		// 如果没有部门主管，返回管理员
-		return &ApproverInfo{
-			ID:   "1",
-			Name: "系统管理员",
-		}, nil
+	for _, user := range users {
+		userID := strconv.FormatUint(uint64(user.ID), 10)
+		if userID != "" && userID != applicantID {
+			return &ApproverInfo{ID: userID, Name: user.Name}, nil
+		}
 	}
 
-	return &ApproverInfo{
-		ID:   strconv.FormatUint(uint64(users[0].ID), 10),
-		Name: users[0].Name,
-	}, nil
+	return nil, errors.New("未找到可用的部门审批人")
 }
 
 // MoveToNextStage 移动到下一个审批阶段
@@ -260,6 +255,9 @@ func (a *ApprovalAssigner) MoveToNextStage(approval *models.ApprovalRequest) (bo
 	if err != nil {
 		return false, err
 	}
+	if err := validateIndependentApprover(approval, approver); err != nil {
+		return false, err
+	}
 
 	approval.CurrentStage = nextStage.StageName
 	approval.CurrentApproverID = approver.ID
@@ -269,15 +267,25 @@ func (a *ApprovalAssigner) MoveToNextStage(approval *models.ApprovalRequest) (bo
 	return false, nil
 }
 
+func validateIndependentApprover(approval *models.ApprovalRequest, approver *ApproverInfo) error {
+	if approval == nil || approver == nil || approver.ID == "" {
+		return errors.New("审批人不能为空")
+	}
+	if approver.ID == approval.ApplicantID {
+		return errors.New("申请人不能审批自己的申请")
+	}
+	return nil
+}
+
 // WorkflowStage 工作流阶段
 type WorkflowStage struct {
-	StageName     string `json:"stage_name"`
-	StageOrder    int    `json:"stage_order"`
-	ApproverRole  string `json:"approver_role"`
-	ApproverID    string `json:"approver_id"`
-	Required      bool   `json:"required"`
-	TimeoutHours  int    `json:"timeout_hours"`
-	DepartmentBased bool `json:"department_based"`
+	StageName       string `json:"stage_name"`
+	StageOrder      int    `json:"stage_order"`
+	ApproverRole    string `json:"approver_role"`
+	ApproverID      string `json:"approver_id"`
+	Required        bool   `json:"required"`
+	TimeoutHours    int    `json:"timeout_hours"`
+	DepartmentBased bool   `json:"department_based"`
 }
 
 // ApproverInfo 审批人信息

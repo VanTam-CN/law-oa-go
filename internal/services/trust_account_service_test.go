@@ -89,7 +89,7 @@ func seedTrustAccount(t *testing.T, db *gorm.DB, balance, frozen float64) *model
 func seedPendingWithdraw(t *testing.T, db *gorm.DB, accountID uint, amount float64) *models.ClientTrustTransaction {
 	t.Helper()
 	txn := &models.ClientTrustTransaction{
-		AccountID:      accountID,
+		AccountID:       accountID,
 		TransactionCode: "TT-TEST-001",
 		TransactionType: "withdraw",
 		Amount:          amount,

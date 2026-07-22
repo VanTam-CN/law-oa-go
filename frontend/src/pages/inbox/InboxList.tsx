@@ -25,7 +25,6 @@ import {
   BellOutlined,
   FilterOutlined,
   ReloadOutlined,
-  DeleteOutlined,
   EyeOutlined,
   CalendarOutlined,
   FireOutlined,
@@ -108,6 +107,7 @@ const priorityConfig: Record<string, { color: string; icon: React.ReactNode; lab
 }
 
 const sourceTypeConfig: Record<string, { label: string; color: string }> = {
+  case: { label: '案件任务', color: 'cyan' },
   deadline: { label: '期限提醒', color: 'purple' },
   approval: { label: '审批待办', color: 'blue' },
   task: { label: '任务', color: 'green' },
@@ -235,23 +235,6 @@ const InboxList: React.FC = () => {
       }
     } catch (error) {
       appMessage.error('操作失败')
-    }
-  }
-
-  const handleDelete = async (id: number) => {
-    try {
-      const response = await fetch(`/api/v1/inbox/${id}`, {
-        method: 'DELETE',
-        headers: authHeaders(),
-      })
-
-      if (response.ok) {
-        appMessage.success('删除成功')
-        fetchItems()
-        fetchStats()
-      }
-    } catch (error) {
-      appMessage.error('删除失败')
     }
   }
 
@@ -423,13 +406,6 @@ const InboxList: React.FC = () => {
             onClick: () => handleMarkAsCompleted(record.id),
             disabled: record.is_completed,
           },
-          {
-            key: 'delete',
-            label: '删除',
-            icon: <DeleteOutlined />,
-            danger: true,
-            onClick: () => handleDelete(record.id),
-          },
         ]
 
         return (
@@ -439,12 +415,14 @@ const InboxList: React.FC = () => {
                 <Button
                   type="text"
                   icon={<CheckOutlined />}
+                  aria-label={`标记完成：${record.title}`}
+                  title="标记完成"
                   onClick={() => handleMarkAsCompleted(record.id)}
                 />
               </Tooltip>
             )}
             <Dropdown menu={{ items }} trigger={['click']}>
-              <Button type="text" icon={<MoreOutlined />} />
+              <Button type="text" icon={<MoreOutlined />} aria-label={`更多操作：${record.title}`} title="更多操作" />
             </Dropdown>
           </Space>
         )
@@ -543,6 +521,7 @@ const InboxList: React.FC = () => {
             allowClear
           />
           <Select
+            aria-label="完成状态"
             placeholder="完成状态"
             value={isCompletedFilter === undefined ? undefined : (isCompletedFilter ? '已完成' : '待处理')}
             onChange={(value) => setIsCompletedFilter(value === undefined ? undefined : value === '已完成')}
@@ -553,6 +532,7 @@ const InboxList: React.FC = () => {
             <Option value="已完成">已完成</Option>
           </Select>
           <Select
+            aria-label="优先级"
             placeholder="优先级"
             value={priorityFilter || undefined}
             onChange={setPriorityFilter}
@@ -565,6 +545,7 @@ const InboxList: React.FC = () => {
             <Option value="low">低</Option>
           </Select>
           <Select
+            aria-label="来源类型"
             placeholder="来源类型"
             value={sourceTypeFilter || undefined}
             onChange={setSourceTypeFilter}
@@ -582,6 +563,7 @@ const InboxList: React.FC = () => {
             placeholder={['开始日期', '结束日期']}
           />
           <Select
+            aria-label="排序方式"
             placeholder="排序方式"
             value={orderBy}
             onChange={setOrderBy}

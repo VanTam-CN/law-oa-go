@@ -12,7 +12,6 @@ import {
   Row,
   Col,
   Switch,
-  Slider,
   Radio,
   message,
   Breadcrumb,
@@ -102,7 +101,7 @@ const ConflictCheckEnhanced: React.FC = () => {
       if (response.data?.hasConflict) {
         message.warning('检测到潜在的利益冲突，请查看详细信息')
       } else {
-        message.success('未检测到利益冲突')
+        message.info('检索已完成，需由独立冲突核查人确认档案范围和主体身份后才能形成无冲突结论')
       }
     } catch (error) {
       console.error('Conflict check error:', error)
@@ -189,7 +188,7 @@ const ConflictCheckEnhanced: React.FC = () => {
                 initialValues={{
                   clientType: 'COMPANY',
                   caseType: 'commercial',
-                  searchYears: 5,
+                  searchYears: 0,
                   searchDepth: 'STANDARD',
                   includeCorporateRelations: true,
                   otherParties: [],
@@ -277,21 +276,10 @@ const ConflictCheckEnhanced: React.FC = () => {
                 <Divider orientation="left">检测配置</Divider>
 
                 <Form.Item
-                  name="searchYears"
-                  label="搜索年限"
-                  tooltip="搜索过去N年的案件记录"
+                  label="检索范围"
+                  tooltip="检索系统已登记历史；覆盖完整性由律所确认，未登记档案需由独立核查人确认"
                 >
-                  <Slider
-                    min={1}
-                    max={20}
-                    marks={{
-                      1: '1年',
-                      5: '5年',
-                      10: '10年',
-                      15: '15年',
-                      20: '20年',
-                    }}
-                  />
+                  <Input value="系统已登记历史（覆盖完整性待确认）" disabled />
                 </Form.Item>
 
                 <Form.Item

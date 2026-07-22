@@ -34,7 +34,7 @@ func TestWithRetry_EventualSuccess(t *testing.T) {
 	result, err := WithRetry(ctx, config, func() (string, error) {
 		attempts++
 		if attempts < 3 {
-			return "", errors.New("temporary error")
+			return "", retryableTestError("NETWORK_ERROR", "temporary error")
 		}
 		return "success", nil
 	})
@@ -58,7 +58,7 @@ func TestWithRetry_MaxAttemptsReached(t *testing.T) {
 	attempts := 0
 	result, err := WithRetry(ctx, config, func() (string, error) {
 		attempts++
-		return "", errors.New("temporary error")
+		return "", retryableTestError("TEMPORARY_ERROR", "temporary error")
 	})
 
 	assert.Error(t, err)
@@ -80,7 +80,7 @@ func TestWithRetry_ContextCanceled(t *testing.T) {
 	result, err := WithRetry(ctx, config, func() (string, error) {
 		attempts++
 		time.Sleep(100 * time.Millisecond)
-		return "", errors.New("slow error")
+		return "", retryableTestError("TIMEOUT_ERROR", "slow error")
 	})
 
 	assert.Error(t, err)
@@ -112,7 +112,7 @@ func TestWithRetryContext(t *testing.T) {
 	result, err := WithRetryContext(ctx, config, func(ctx context.Context) (string, error) {
 		attempts++
 		if attempts < 3 {
-			return "", errors.New("temporary error")
+			return "", retryableTestError("NETWORK_ERROR", "temporary error")
 		}
 		return "success", nil
 	})
@@ -231,7 +231,7 @@ func TestWithRetryResult(t *testing.T) {
 		result := WithRetryResult(ctx, config, func() (string, error) {
 			attempts++
 			if attempts < 3 {
-				return "", errors.New("retryable error")
+				return "", retryableTestError("NETWORK_ERROR", "retryable error")
 			}
 			return "success", nil
 		})
@@ -306,12 +306,12 @@ func TestIsRetryableError(t *testing.T) {
 	}{
 		{
 			name:     "custom retryable error",
-			err:      apperrors.BusinessError("entity", "CUSTOM_ERROR", "custom error"),
+			err:      retryableTestError("CUSTOM_ERROR", "custom error"),
 			expected: true,
 		},
 		{
 			name:     "non-retryable error",
-			err:      apperrors.BusinessError("entity", "NON_RETRYABLE_ERROR", "non-retryable"),
+			err:      retryableTestError("NON_RETRYABLE_ERROR", "non-retryable"),
 			expected: false,
 		},
 		{
@@ -431,7 +431,7 @@ func BenchmarkWithRetry(b *testing.B) {
 			_, err := WithRetry(ctx, config, func() (string, error) {
 				attempts++
 				if attempts < 3 {
-					return "", errors.New("BENCHMARK_ERROR")
+					return "", retryableTestError("BENCHMARK_ERROR", "benchmark error")
 				}
 				return "success", nil
 			})
@@ -466,6 +466,10 @@ type CustomRetryableOperation[T any] struct {
 	operation   func() (T, error)
 	isRetryable func(error) bool
 	config      RetryConfig
+}
+
+func retryableTestError(code, message string) error {
+	return apperrors.NewError(code, message).Build()
 }
 
 func (op *CustomRetryableOperation[T]) Execute(ctx context.Context) (T, error) {

@@ -187,12 +187,14 @@ persistence:
 
 # 数据库配置
 mysql:
-  enabled: true
+  # Deprecated chart compatibility only. Production uses the PostgreSQL
+  # bootstrap path under k8s/ and must not install this MySQL dependency.
+  enabled: false
   auth:
-    rootPassword: "lawroot2024"
+    rootPassword: ""
     database: "law_oa"
     username: "lawuser"
-    password: "lawpass"
+    password: ""
   primary:
     persistence:
       enabled: true
@@ -345,7 +347,8 @@ grafana:
       cpu: 250m
       memory: 512Mi
   adminUser: admin
-  adminPassword: admin2024
+  # Must be supplied by an external secret if this deprecated chart is used.
+  adminPassword: ""
   persistence:
     enabled: true
     size: 20Gi
@@ -488,7 +491,12 @@ networkPolicy:
         - namespaceSelector:
             matchLabels:
               name: law-oa-go
-      - from:
+      ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 9090
+    - from:
         - namespaceSelector:
             matchLabels:
               name: ingress-nginx
@@ -502,19 +510,19 @@ networkPolicy:
         - namespaceSelector:
             matchLabels:
               name: law-oa-go
-      - to: []
-        ports:
-          - protocol: TCP
-            port: 53
-          - protocol: UDP
-            port: 53
-      - to:
+    - to: []
+      ports:
+        - protocol: TCP
+          port: 53
+        - protocol: UDP
+          port: 53
+    - to:
         - namespaceSelector:
             matchLabels:
               name: kube-system
-        ports:
-          - protocol: TCP
-            port: 443
+      ports:
+        - protocol: TCP
+          port: 443
 
 # Pod安全策略
 podSecurityPolicy:

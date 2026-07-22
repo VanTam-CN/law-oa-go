@@ -1,8 +1,11 @@
 package health
 
 import (
+	"crypto/subtle"
 	"fmt"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -201,9 +204,20 @@ func (hm *HealthMiddleware) GracefulShutdownHandler(c *gin.Context) {
 		return
 	}
 
-	// 验证关闭令牌（实际应用中应该从环境变量获取）
-	expectedToken := "secure-shutdown-token-12345"
-	if req.Token != expectedToken {
+	// The endpoint is development-only, but a source-level fallback token would
+	// still be usable by any local process or copied deployment. Require an
+	// operator-provided secret and prefer a header so it is not echoed in the
+	// request body logs by default.
+	providedToken := c.GetHeader("X-Shutdown-Token")
+	if providedToken == "" {
+		providedToken = req.Token
+	}
+	expectedToken := strings.TrimSpace(os.Getenv("LAW_OA_SHUTDOWN_TOKEN"))
+	if expectedToken == "" {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Shutdown token is not configured"})
+		return
+	}
+	if len(providedToken) != len(expectedToken) || subtle.ConstantTimeCompare([]byte(providedToken), []byte(expectedToken)) != 1 {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid shutdown token"})
 		return
 	}
@@ -225,8 +239,11 @@ func (hm *HealthMiddleware) GracefulShutdownHandler(c *gin.Context) {
 
 // ReadinessHandler 就绪状态处理器
 func (hm *HealthMiddleware) ReadinessHandler(c *gin.Context) {
-	// 检查应用是否准备好接收流量
-	ready := hm.healthChecker.IsHealthy()
+	// Readiness is a traffic gate, so degraded dependencies are not enough.
+	// Liveness remains separate: a process may stay alive while Kubernetes
+	// removes it from service until every required dependency is healthy again.
+	health := hm.healthChecker.GetOverallHealth(hm.version, hm.environment)
+	ready := health.Status == StatusHealthy
 
 	status := gin.H{
 		"ready":     ready,

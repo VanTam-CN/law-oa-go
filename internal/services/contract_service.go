@@ -12,11 +12,28 @@ import (
 
 // ContractService 合同服务
 type ContractService struct {
-	contractRepo    repositories.ContractRepository
-	milestoneRepo   repositories.PaymentMilestoneRepository
-	clientRepo      repositories.ClientRepository
-	caseRepo        repositories.CaseRepository
-	userRepo        repositories.UserRepository
+	contractRepo   repositories.ContractRepository
+	milestoneRepo  repositories.PaymentMilestoneRepository
+	clientRepo     repositories.ClientRepository
+	caseRepo       repositories.CaseRepository
+	userRepo       repositories.UserRepository
+	subjectRecheck *SubjectRecheckService
+}
+
+// SetSubjectRecheckService binds contract lifecycle actions to the case
+// subject version gate.
+func (s *ContractService) SetSubjectRecheckService(service *SubjectRecheckService) {
+	s.subjectRecheck = service
+}
+
+func (s *ContractService) requireCaseSubjectAction(ctx context.Context, caseID *uint, action string) error {
+	if caseID == nil || *caseID == 0 {
+		return NewSubjectWorkflowError("CASE_CONTEXT_REQUIRED", "合同必须关联已完成冲突复核的正式案件，不能执行受控合同动作")
+	}
+	if s.subjectRecheck == nil {
+		return NewSubjectWorkflowError("SUBJECT_GATE_UNAVAILABLE", "案件主体版本服务未初始化，已阻止合同动作")
+	}
+	return s.subjectRecheck.RequireEffectiveSubject(ctx, *caseID, action)
 }
 
 // NewContractService 创建合同服务实例
@@ -38,29 +55,29 @@ func NewContractService(
 
 // CreateContractRequest 创建合同请求
 type CreateContractRequest struct {
-	ContractCode   string                    `json:"contract_code" binding:"required,min=1,max=50"`
-	CaseID         *uint                     `json:"case_id,omitempty"`
-	ClientID       uint                      `json:"client_id" binding:"required"`
-	ContractAmount float64                   `json:"contract_amount" binding:"required,gt=0"`
-	Currency       string                    `json:"currency" binding:"required,oneof=CNY USD EUR"`
-	BillingCycle   string                    `json:"billing_cycle" binding:"required,oneof=一次性 分期 按小时"`
-	PaymentTerms   string                    `json:"payment_terms" binding:"max=500"`
-	StartDate      *string                   `json:"start_date,omitempty"`
-	EndDate        *string                   `json:"end_date,omitempty"`
-	ContractType   string                    `json:"contract_type" binding:"required,oneof=original supplementary"`
-	ParentContractID *uint                   `json:"parent_contract_id,omitempty"`
-	DocumentID     *uint                     `json:"document_id,omitempty"`
+	ContractCode     string  `json:"contract_code" binding:"required,min=1,max=50"`
+	CaseID           *uint   `json:"case_id,omitempty"`
+	ClientID         uint    `json:"client_id" binding:"required"`
+	ContractAmount   float64 `json:"contract_amount" binding:"required,gt=0"`
+	Currency         string  `json:"currency" binding:"required,oneof=CNY USD EUR"`
+	BillingCycle     string  `json:"billing_cycle" binding:"required,oneof=一次性 分期 按小时"`
+	PaymentTerms     string  `json:"payment_terms" binding:"max=500"`
+	StartDate        *string `json:"start_date,omitempty"`
+	EndDate          *string `json:"end_date,omitempty"`
+	ContractType     string  `json:"contract_type" binding:"required,oneof=original supplementary"`
+	ParentContractID *uint   `json:"parent_contract_id,omitempty"`
+	DocumentID       *uint   `json:"document_id,omitempty"`
 	// 付款计划
-	Milestones     []CreateMilestoneRequest  `json:"milestones,omitempty"`
+	Milestones []CreateMilestoneRequest `json:"milestones,omitempty"`
 }
 
 // CreateMilestoneRequest 创建付款计划请求
 type CreateMilestoneRequest struct {
-	Name       string   `json:"name" binding:"required,min=1,max=200"`
-	Amount     float64  `json:"amount" binding:"required,gt=0"`
-	Percentage float64  `json:"percentage" binding:"required,gte=0,lte=100"`
-	DueDate    *string  `json:"due_date,omitempty"`
-	Condition  string   `json:"condition" binding:"max=500"`
+	Name       string  `json:"name" binding:"required,min=1,max=200"`
+	Amount     float64 `json:"amount" binding:"required,gt=0"`
+	Percentage float64 `json:"percentage" binding:"required,gte=0,lte=100"`
+	DueDate    *string `json:"due_date,omitempty"`
+	Condition  string  `json:"condition" binding:"max=500"`
 }
 
 // UpdateContractRequest 更新合同请求
@@ -76,27 +93,27 @@ type UpdateContractRequest struct {
 
 // ContractResponse 合同响应
 type ContractResponse struct {
-	ID              uint                       `json:"id"`
-	ContractCode    string                     `json:"contract_code"`
-	CaseID          *uint                      `json:"case_id,omitempty"`
-	ClientID        uint                       `json:"client_id"`
-	ContractAmount  float64                    `json:"contract_amount"`
-	Currency        string                     `json:"currency"`
-	BillingCycle    string                     `json:"billing_cycle"`
-	PaymentTerms    string                     `json:"payment_terms"`
-	StartDate       *string                    `json:"start_date,omitempty"`
-	EndDate         *string                    `json:"end_date,omitempty"`
-	Status          string                     `json:"status"`
-	ContractType    string                     `json:"contract_type"`
-	ParentContractID *uint                     `json:"parent_contract_id,omitempty"`
-	SignedAt        *string                    `json:"signed_at,omitempty"`
-	DocumentID      *uint                      `json:"document_id,omitempty"`
-	CreatedAt       string                     `json:"created_at"`
-	UpdatedAt       string                     `json:"updated_at"`
-	Client          *ClientSummary             `json:"client,omitempty"`
-	Case            *CaseSummary               `json:"case,omitempty"`
-	Milestones      []*PaymentMilestoneResponse `json:"milestones,omitempty"`
-	SupplementaryContracts []*ContractResponse  `json:"supplementary_contracts,omitempty"`
+	ID                     uint                        `json:"id"`
+	ContractCode           string                      `json:"contract_code"`
+	CaseID                 *uint                       `json:"case_id,omitempty"`
+	ClientID               uint                        `json:"client_id"`
+	ContractAmount         float64                     `json:"contract_amount"`
+	Currency               string                      `json:"currency"`
+	BillingCycle           string                      `json:"billing_cycle"`
+	PaymentTerms           string                      `json:"payment_terms"`
+	StartDate              *string                     `json:"start_date,omitempty"`
+	EndDate                *string                     `json:"end_date,omitempty"`
+	Status                 string                      `json:"status"`
+	ContractType           string                      `json:"contract_type"`
+	ParentContractID       *uint                       `json:"parent_contract_id,omitempty"`
+	SignedAt               *string                     `json:"signed_at,omitempty"`
+	DocumentID             *uint                       `json:"document_id,omitempty"`
+	CreatedAt              string                      `json:"created_at"`
+	UpdatedAt              string                      `json:"updated_at"`
+	Client                 *ClientSummary              `json:"client,omitempty"`
+	Case                   *CaseSummary                `json:"case,omitempty"`
+	Milestones             []*PaymentMilestoneResponse `json:"milestones,omitempty"`
+	SupplementaryContracts []*ContractResponse         `json:"supplementary_contracts,omitempty"`
 }
 
 // PaymentMilestoneResponse 付款计划响应
@@ -116,17 +133,17 @@ type PaymentMilestoneResponse struct {
 
 // ListContractsRequest 合同列表请求
 type ListContractsRequest struct {
-	Page             int     `json:"page" form:"page" binding:"min=1"`
-	PageSize         int     `json:"page_size" form:"page_size" binding:"min=1,max=100"`
-	Status           string  `json:"status" form:"status" binding:"omitempty,oneof=draft active suspended completed cancelled"`
-	ContractType     string  `json:"contract_type" form:"contract_type" binding:"omitempty,oneof=original supplementary"`
-	ClientID         uint    `json:"client_id" form:"client_id"`
-	CaseID           uint    `json:"case_id" form:"case_id"`
-	Search           string  `json:"search" form:"search"`
-	StartDateFrom    string  `json:"start_date_from" form:"start_date_from"`
-	StartDateTo      string  `json:"start_date_to" form:"start_date_to"`
-	EndDateFrom      string  `json:"end_date_from" form:"end_date_from"`
-	EndDateTo        string  `json:"end_date_to" form:"end_date_to"`
+	Page          int    `json:"page" form:"page" binding:"min=1"`
+	PageSize      int    `json:"page_size" form:"page_size" binding:"min=1,max=100"`
+	Status        string `json:"status" form:"status" binding:"omitempty,oneof=draft active suspended completed cancelled"`
+	ContractType  string `json:"contract_type" form:"contract_type" binding:"omitempty,oneof=original supplementary"`
+	ClientID      uint   `json:"client_id" form:"client_id"`
+	CaseID        uint   `json:"case_id" form:"case_id"`
+	Search        string `json:"search" form:"search"`
+	StartDateFrom string `json:"start_date_from" form:"start_date_from"`
+	StartDateTo   string `json:"start_date_to" form:"start_date_to"`
+	EndDateFrom   string `json:"end_date_from" form:"end_date_from"`
+	EndDateTo     string `json:"end_date_to" form:"end_date_to"`
 }
 
 // ListContractsResponse 合同列表响应
@@ -137,6 +154,9 @@ type ListContractsResponse struct {
 
 // CreateContract 创建合同
 func (s *ContractService) CreateContract(ctx context.Context, req *CreateContractRequest) (*ContractResponse, error) {
+	if req == nil || req.CaseID == nil || *req.CaseID == 0 {
+		return nil, NewSubjectWorkflowError("CASE_CONTEXT_REQUIRED", "合同必须关联已完成冲突复核的正式案件，不能脱离案件主体创建")
+	}
 	// 验证客户是否存在
 	client, err := s.clientRepo.FindByID(ctx, req.ClientID)
 	if err != nil {
@@ -154,6 +174,9 @@ func (s *ContractService) CreateContract(ctx context.Context, req *CreateContrac
 		}
 		if case_ == nil {
 			return nil, errors.New("案件不存在")
+		}
+		if err := s.requireCaseSubjectAction(ctx, req.CaseID, "contract_creation"); err != nil {
+			return nil, err
 		}
 	}
 
@@ -216,19 +239,19 @@ func (s *ContractService) CreateContract(ctx context.Context, req *CreateContrac
 
 	// 创建合同
 	contract := &models.Contract{
-		ContractCode:    req.ContractCode,
-		CaseID:          req.CaseID,
-		ClientID:        req.ClientID,
-		ContractAmount:  req.ContractAmount,
-		Currency:        req.Currency,
-		BillingCycle:    req.BillingCycle,
-		PaymentTerms:    req.PaymentTerms,
-		StartDate:       startDate,
-		EndDate:         endDate,
-		Status:          "draft",
-		ContractType:    req.ContractType,
+		ContractCode:     req.ContractCode,
+		CaseID:           req.CaseID,
+		ClientID:         req.ClientID,
+		ContractAmount:   req.ContractAmount,
+		Currency:         req.Currency,
+		BillingCycle:     req.BillingCycle,
+		PaymentTerms:     req.PaymentTerms,
+		StartDate:        startDate,
+		EndDate:          endDate,
+		Status:           "draft",
+		ContractType:     req.ContractType,
 		ParentContractID: req.ParentContractID,
-		DocumentID:      req.DocumentID,
+		DocumentID:       req.DocumentID,
 	}
 
 	if err := s.contractRepo.Create(ctx, contract); err != nil {
@@ -288,6 +311,9 @@ func (s *ContractService) UpdateContract(ctx context.Context, id uint, req *Upda
 	}
 	if contract == nil {
 		return nil, errors.New("合同不存在")
+	}
+	if err := s.requireCaseSubjectAction(ctx, contract.CaseID, "contract_update"); err != nil {
+		return nil, err
 	}
 
 	// 只有草稿状态的合同可以编辑
@@ -349,6 +375,9 @@ func (s *ContractService) DeleteContract(ctx context.Context, id uint) error {
 	if contract == nil {
 		return errors.New("合同不存在")
 	}
+	if err := s.requireCaseSubjectAction(ctx, contract.CaseID, "contract_delete"); err != nil {
+		return err
+	}
 
 	// 只有草稿状态的合同可以删除
 	if contract.Status != "draft" {
@@ -382,13 +411,13 @@ func (s *ContractService) DeleteContract(ctx context.Context, id uint) error {
 // ListContracts 获取合同列表
 func (s *ContractService) ListContracts(ctx context.Context, req *ListContractsRequest) (*ListContractsResponse, error) {
 	params := &repositories.ContractListParams{
-		Page:         req.Page,
-		PageSize:     req.PageSize,
-		Status:       req.Status,
-		ContractType: req.ContractType,
-		ClientID:     req.ClientID,
-		CaseID:       req.CaseID,
-		Search:       req.Search,
+		Page:          req.Page,
+		PageSize:      req.PageSize,
+		Status:        req.Status,
+		ContractType:  req.ContractType,
+		ClientID:      req.ClientID,
+		CaseID:        req.CaseID,
+		Search:        req.Search,
 		StartDateFrom: req.StartDateFrom,
 		StartDateTo:   req.StartDateTo,
 		EndDateFrom:   req.EndDateFrom,
@@ -403,9 +432,9 @@ func (s *ContractService) ListContracts(ctx context.Context, req *ListContractsR
 	response := &ListContractsResponse{
 		Contracts: make([]*ContractResponse, len(contracts)),
 		Pagination: Pagination{
-			Page:    req.Page,
+			Page:     req.Page,
 			PageSize: req.PageSize,
-			Total:   total,
+			Total:    total,
 		},
 	}
 
@@ -429,6 +458,9 @@ func (s *ContractService) ActivateContract(ctx context.Context, id uint) (*Contr
 	if contract.Status != "draft" {
 		return nil, errors.New("只有草稿状态的合同可以激活")
 	}
+	if err := s.requireCaseSubjectAction(ctx, contract.CaseID, "contract_activation"); err != nil {
+		return nil, err
+	}
 
 	now := time.Now()
 	contract.Status = "active"
@@ -449,6 +481,9 @@ func (s *ContractService) SuspendContract(ctx context.Context, id uint) (*Contra
 	}
 	if contract == nil {
 		return nil, errors.New("合同不存在")
+	}
+	if err := s.requireCaseSubjectAction(ctx, contract.CaseID, "contract_suspend"); err != nil {
+		return nil, err
 	}
 
 	if contract.Status != "active" {
@@ -472,6 +507,9 @@ func (s *ContractService) CompleteContract(ctx context.Context, id uint) (*Contr
 	}
 	if contract == nil {
 		return nil, errors.New("合同不存在")
+	}
+	if err := s.requireCaseSubjectAction(ctx, contract.CaseID, "contract_complete"); err != nil {
+		return nil, err
 	}
 
 	if contract.Status != "active" && contract.Status != "suspended" {
@@ -701,13 +739,13 @@ func (s *ContractService) GetContractStats(ctx context.Context) (*ContractStats,
 
 // ContractStats 合同统计信息
 type ContractStats struct {
-	TotalContracts       int64   `json:"total_contracts"`
-	DraftContracts       int64   `json:"draft_contracts"`
-	ActiveContracts      int64   `json:"active_contracts"`
-	SuspendedContracts   int64   `json:"suspended_contracts"`
-	CompletedContracts   int64   `json:"completed_contracts"`
-	CancelledContracts   int64   `json:"cancelled_contracts"`
-	TotalContractAmount  float64 `json:"total_contract_amount"`
+	TotalContracts        int64   `json:"total_contracts"`
+	DraftContracts        int64   `json:"draft_contracts"`
+	ActiveContracts       int64   `json:"active_contracts"`
+	SuspendedContracts    int64   `json:"suspended_contracts"`
+	CompletedContracts    int64   `json:"completed_contracts"`
+	CancelledContracts    int64   `json:"cancelled_contracts"`
+	TotalContractAmount   float64 `json:"total_contract_amount"`
 	NewContractsThisMonth int64   `json:"new_contracts_this_month"`
 }
 

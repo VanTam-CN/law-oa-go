@@ -7,7 +7,7 @@
 
 import { Page, expect } from '@playwright/test'
 
-type TestUserKey = 'admin' | 'lawyer' | 'assistant' | 'finance'
+type TestUserKey = 'admin' | 'lawyer' | 'assistant' | 'finance' | 'conflictOfficer'
 
 export const TEST_USERS: Record<TestUserKey, {
   email: string
@@ -44,6 +44,13 @@ export const TEST_USERS: Record<TestUserKey, {
     role: 'finance',
     realName: '示例财务',
   },
+  conflictOfficer: {
+    email: 'demo.conflict.officer@example.test',
+    alias: 'conflict_officer',
+    password: 'Demo@2026',
+    role: 'conflict_officer',
+    realName: '独立冲突核查人',
+  },
 }
 
 const now = '2026-05-25T02:30:00.000Z'
@@ -51,7 +58,7 @@ const now = '2026-05-25T02:30:00.000Z'
 const caseRows = [
   {
     id: 101,
-    case_number: 'HD-2026-001',
+    case_number: 'DEMO-2026-001',
     title: '红杉资本投资管理咨询合同纠纷案',
     client_name: '上海示例科技有限公司',
     case_type: 'commercial',
@@ -73,7 +80,7 @@ const caseRows = [
   },
   {
     id: 102,
-    case_number: 'HD-2026-002',
+    case_number: 'DEMO-2026-002',
     title: '蓝海公司股权转让争议',
     client_name: '蓝海企业管理有限公司',
     case_type: 'ma',
@@ -95,18 +102,37 @@ const riskQueue = [
     status: 'COMPLETED',
     risk_level: 'MEDIUM',
     has_conflict: true,
+    matched_subject: '上海示例科技有限公司',
+    matched_type: '名称相似待核实',
+    evidence_summary: '名称候选只用于人工核实，不自动认定利益冲突。',
     owner: 1,
     duration: 96,
     created_at: now,
     updated_at: now,
     check_time: now,
-    search_parameters: { searchDepth: 'STANDARD', searchYears: 5 },
+    search_parameters: {
+      searchDepth: 'STANDARD',
+      searchYears: 0,
+      query: '示例科技',
+      matchedClientName: '上海示例科技有限公司',
+      matchMode: 'NAME_CANDIDATE',
+      automaticConclusion: false,
+    },
     check_result: {
       riskAssessment: {
         overallRisk: 'MEDIUM',
         riskScore: 55,
         riskReason: '客户与既有案件存在关联主体',
         requiresApproval: true,
+        matchEvidence: {
+          queryName: '示例科技',
+          candidateName: '上海示例科技有限公司',
+          matchType: 'NAME_CANDIDATE',
+          algorithm: 'NORMALIZED_CONTAINS',
+          automaticConclusion: false,
+          partyRole: '对方当事人',
+          ruleId: 'CONFLICT-NAME-CANDIDATE-001',
+        },
       },
       checkStatistics: {
         totalCasesChecked: 2,
@@ -116,7 +142,7 @@ const riskQueue = [
     conflict_cases: [
       {
         id: 402,
-        case_no: 'HD-2025-188',
+        case_no: 'DEMO-2025-188',
         case_name: '关联主体历史委托',
         conflict_type: '关联冲突',
         risk_level: 'MEDIUM',
@@ -138,7 +164,7 @@ const riskQueue = [
     created_at: now,
     updated_at: now,
     check_time: now,
-    search_parameters: { searchDepth: 'STANDARD', searchYears: 5 },
+    search_parameters: { searchDepth: 'STANDARD', searchYears: 0 },
     check_result: {
       riskAssessment: {
         overallRisk: 'HIGH',
@@ -154,7 +180,7 @@ const riskQueue = [
     conflict_cases: [
       {
         id: 401,
-        case_no: 'HD-2025-099',
+        case_no: 'DEMO-2025-099',
         case_name: '历史顾问合同',
         conflict_type: '既有客户冲突',
         risk_level: 'HIGH',
@@ -396,6 +422,43 @@ export async function installApiMocks(page: Page) {
       return
     }
 
+    if (path.match(/^\/case-intakes\/\d+$/) && request.method() === 'PUT') {
+      await route.fulfill(ok({ id: 801, intake_code: 'IN-2026-001', status: 'conflict_ready' }))
+      return
+    }
+
+    if (path === '/case-intakes/801/facts-confirmation' && request.method() === 'POST') {
+      await route.fulfill(ok({ id: 801, status: 'lawyer_facts_confirmed' }))
+      return
+    }
+
+    if (path === '/case-intakes/801/conflict-check' && request.method() === 'POST') {
+      await route.fulfill(ok({
+        taskId: 'CHK-2026-ASYNC-001',
+        checkId: 'CHK-2026-ASYNC-001',
+        status: 'COMPLETED',
+        result: {
+          checkId: 'CHK-2026-ASYNC-001',
+          hasConflict: false,
+          conflictCases: [],
+          riskAssessment: { overallRisk: 'LOW', riskScore: 18, riskReason: '未发现直接冲突' },
+          decision: { status: 'CLEAR', recommendation: '未发现可识别的冲突线索，可继续进入人工确认环节。' },
+          checkStatistics: { totalCasesChecked: 2, relatedPartiesChecked: 1 },
+        },
+      }))
+      return
+    }
+
+    if (path === '/inbox') {
+      await route.fulfill(ok({ items: commandCenterPayload.inbox_items, pagination: { total: commandCenterPayload.inbox_items.length, page: 1, page_size: 20 } }))
+      return
+    }
+
+    if (path === '/inbox/stats') {
+      await route.fulfill(ok({ total: 1, unread: 1, pending: 1, completed: 0, overdue: 0 }))
+      return
+    }
+
     if (path === '/conflict/check' && request.method() === 'POST') {
       await route.fulfill(ok({
         checkId: 'CHK-2026-001',
@@ -407,6 +470,31 @@ export async function installApiMocks(page: Page) {
         checkStatistics: {
           totalCasesChecked: 2,
           relatedPartiesChecked: 1,
+        },
+      }))
+      return
+    }
+
+    if (path === '/conflict/tasks' && request.method() === 'POST') {
+      await route.fulfill(ok({
+        taskId: 'CHK-2026-ASYNC-001',
+        checkId: 'CHK-2026-ASYNC-001',
+        status: 'QUEUED',
+        recommendedPollingInterval: 0.1,
+      }))
+      return
+    }
+
+    if (path === '/conflict/tasks/CHK-2026-ASYNC-001/result') {
+      await route.fulfill(ok({
+        task: { taskId: 'CHK-2026-ASYNC-001', checkId: 'CHK-2026-ASYNC-001', status: 'COMPLETED' },
+        result: {
+          checkId: 'CHK-2026-ASYNC-001',
+          hasConflict: false,
+          conflictCases: [],
+          riskAssessment: { overallRisk: 'LOW', riskScore: 18, riskReason: '未发现直接冲突' },
+          decision: { status: 'CLEAR', recommendation: '未发现可识别的冲突线索，可继续进入人工确认环节。' },
+          checkStatistics: { totalCasesChecked: 2, relatedPartiesChecked: 1 },
         },
       }))
       return
@@ -434,14 +522,14 @@ export async function installApiMocks(page: Page) {
 
     if (path.match(/^\/integration\/approvals\/\d+\/status$/)) {
       await route.fulfill(ok({
-        case_creation: { case_id: 101, case_number: 'HD-2026-001', status: 'created' },
+        case_creation: { case_id: 101, case_number: 'DEMO-2026-001', status: 'created' },
         status: 'approved',
       }))
       return
     }
 
     if (path.match(/^\/integration\/approvals\/\d+\/decision$/)) {
-      await route.fulfill(ok({ status: 'approved', case_id: 101, case_number: 'HD-2026-001' }))
+      await route.fulfill(ok({ status: 'approved', case_id: 101, case_number: 'DEMO-2026-001' }))
       return
     }
 
@@ -502,7 +590,7 @@ export async function seedAuthenticatedUser(page: Page, userKey: TestUserKey = '
   }, {
     token: createTestToken(user.role),
     user: {
-      id: String(userKey === 'admin' ? 1 : userKey === 'lawyer' ? 2 : userKey === 'finance' ? 4 : 3),
+      id: String(userKey === 'admin' ? 1 : userKey === 'lawyer' ? 2 : userKey === 'finance' ? 4 : userKey === 'conflictOfficer' ? 5 : 3),
       username: user.email,
       email: user.email,
       realName: user.realName,

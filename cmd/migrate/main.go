@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 
 	"law-oa-go/internal/config"
 	"law-oa-go/internal/database"
@@ -15,16 +16,44 @@ func main() {
 	var (
 		_              = flag.String("config", "config.yaml", "配置文件路径")
 		migrationsPath = flag.String("migrations", "./migrations", "迁移文件目录")
-		command        = flag.String("command", "up", "迁移命令: up, down, steps, goto, version, force, drop, status")
+		command        = flag.String("command", "up", "迁移命令: bootstrap, up, down, steps, goto, version, force, drop, status")
 		steps          = flag.Int("steps", 0, "迁移步数（用于steps命令）")
 		version        = flag.Int("version", 0, "目标版本（用于goto和force命令）")
 	)
 	flag.Parse()
 
 	// 加载配置
-	cfg, err := config.Load()
+	// Bootstrap only needs the database connection. The application runtime
+	// keeps the stricter JWT/OnlyOffice/production checks in config.Load().
+	cfg, err := config.LoadForMigration()
 	if err != nil {
 		log.Fatalf("加载配置失败: %v", err)
+	}
+	if cfg.IsProduction() && *command != "bootstrap" {
+		log.Fatalf("生产环境只允许执行 -command bootstrap；历史迁移、回滚、drop 和状态命令必须在非生产环境或离线副本执行")
+	}
+
+	// Production uses an explicit, transactional PostgreSQL bootstrap. The
+	// historical SQL directory contains mixed dialects and is intentionally not
+	// used as the production installation path.
+	if *command == "bootstrap" {
+		if driver := strings.ToLower(strings.TrimSpace(cfg.Database.Driver)); driver != "postgres" && driver != "postgresql" {
+			log.Fatalf("生产 schema bootstrap 仅支持 PostgreSQL，当前驱动为 %q", cfg.Database.Driver)
+		}
+		db, bootstrapErr := database.InitWithConfig(cfg)
+		if bootstrapErr != nil {
+			log.Fatalf("初始化数据库连接失败: %v", bootstrapErr)
+		}
+		sqlDB, dbErr := db.DB()
+		if dbErr != nil {
+			log.Fatalf("获取数据库连接失败: %v", dbErr)
+		}
+		defer sqlDB.Close()
+		if bootstrapErr = database.BootstrapProductionSchema(db); bootstrapErr != nil {
+			log.Fatalf("生产 schema bootstrap 失败: %v", bootstrapErr)
+		}
+		fmt.Printf("生产 PostgreSQL schema bootstrap 完成，版本: %s\n", database.ProductionSchemaVersion)
+		return
 	}
 
 	// 创建迁移器
@@ -110,7 +139,7 @@ func main() {
 		err = createMigrationFiles(*migrationsPath, migrationName)
 	default:
 		fmt.Printf("未知命令: %s\n", *command)
-		fmt.Println("可用命令: up, down, steps, goto, version, force, drop, status, create")
+		fmt.Println("可用命令: bootstrap, up, down, steps, goto, version, force, drop, status, create")
 		os.Exit(1)
 	}
 

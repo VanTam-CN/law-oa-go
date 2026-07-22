@@ -643,7 +643,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to Kubernetes
-        run: kubectl apply -f k8s/
+        run: |
+          kubectl apply -f k8s/namespaces/law-oa.yaml
+          kubectl apply -f k8s/configmaps/law-oa-config.yaml
+          kubectl apply -f k8s/persistentvolumeclaims/uploads.yaml
+          kubectl apply -f k8s/services/backend.yaml
+          kubectl apply -f k8s/deployments/backend.yaml
 ```
 
 ## 5. 扩展性路线图

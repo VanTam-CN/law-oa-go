@@ -3,9 +3,11 @@ package repositories
 import (
 	"context"
 	"errors"
+	"strconv"
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"law-oa-go/internal/models"
 )
 
@@ -74,15 +76,56 @@ func (r *EthicalWallRepositoryImpl) IsEthicalWallEnabled(ctx context.Context, ca
 // EnableEthicalWall 启用案件隔离墙
 func (r *EthicalWallRepositoryImpl) EnableEthicalWall(ctx context.Context, caseID, userID uint, description string) error {
 	now := time.Now()
-	return r.db.WithContext(ctx).
-		Model(&models.Case{}).
-		Where("id = ?", caseID).
-		Updates(map[string]interface{}{
-			"ethical_wall_enabled":     true,
-			"ethical_wall_description":  description,
-			"ethical_wall_enabled_by":  userID,
-			"ethical_wall_enabled_at":  &now,
-		}).Error
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		result := tx.Model(&models.Case{}).
+			Where("id = ?", caseID).
+			Updates(map[string]interface{}{
+				"ethical_wall_enabled":     true,
+				"ethical_wall_description": description,
+				"ethical_wall_enabled_by":  userID,
+				"ethical_wall_enabled_at":  &now,
+			})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return gorm.ErrRecordNotFound
+		}
+
+		var owner struct {
+			LawyerID  uint
+			CreatedBy string
+		}
+		if err := tx.Model(&models.Case{}).
+			Select("lawyer_id, created_by").
+			Where("id = ?", caseID).
+			Take(&owner).Error; err != nil {
+			return err
+		}
+
+		allowedUsers := map[uint]string{}
+		if owner.LawyerID > 0 {
+			allowedUsers[owner.LawyerID] = "案件承办律师"
+		}
+		if createdBy, err := strconv.ParseUint(owner.CreatedBy, 10, 32); err == nil && createdBy > 0 {
+			allowedUsers[uint(createdBy)] = "案件创建人"
+		}
+		if userID > 0 {
+			allowedUsers[userID] = "隔离墙启用人"
+		}
+		for allowedUserID, reason := range allowedUsers {
+			entry := &models.CaseEthicalWallWhitelist{
+				CaseID:    caseID,
+				UserID:    allowedUserID,
+				GrantedBy: userID,
+				Reason:    reason,
+			}
+			if err := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(entry).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 // DisableEthicalWall 禁用案件隔离墙

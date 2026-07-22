@@ -1,9 +1,12 @@
 ---
-# Law OA Go 应用配置
+# Legacy compatibility configuration. The canonical production manifest is
+# k8s/configmaps/law-oa-config.yaml plus k8s/deployments/backend.yaml.
+# Keep this file separate so applying the whole directory cannot overwrite the
+# canonical ConfigMap.
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: law-oa-config
+  name: law-oa-app-config-legacy
   namespace: law-oa
   labels:
     app: law-oa
@@ -31,8 +34,10 @@ data:
 
     # 数据库配置
     database:
-      host: "mysql-service"
-      port: 3306
+      driver: "postgres"
+      host: "law-oa-postgres-service"
+      port: 5432
+      sslmode: "require"
       user: "lawuser"
       name: "law_oa"
       charset: "utf8mb4"
@@ -45,7 +50,7 @@ data:
 
     # Redis配置
     redis:
-      host: "redis-service"
+      host: "law-oa-redis-service"
       port: 6379
       db: 0
       pool_size: 20
@@ -59,7 +64,7 @@ data:
 
     # Elasticsearch配置
     elasticsearch:
-      hosts: ["http://elasticsearch-service:9200"]
+      hosts: ["http://law-oa-elasticsearch-service.law-oa-logging.svc.cluster.local:9200"]
       username: ""
       password: ""
       max_retries: 3
@@ -235,51 +240,13 @@ data:
         }
     }
 
-  # MySQL配置
-  mysql.cnf: |
-    [mysqld]
-    # Character Set
-    character-set-server=utf8mb4
-    collation-server=utf8mb4_unicode_ci
-
-    # Performance tuning
-    innodb_buffer_pool_size=2G
-    innodb_log_file_size=256M
-    innodb_log_buffer_size=16M
-    innodb_flush_log_at_trx_commit=2
-    innodb_flush_method=O_DIRECT
-
-    # Connection settings
-    max_connections=1000
-    max_connect_errors=100000
-    wait_timeout=600
-    interactive_timeout=600
-
-    # Query cache
-    query_cache_type=1
-    query_cache_size=64M
-    query_cache_limit=2M
-
-    # Slow query log
-    slow_query_log=1
-    long_query_time=2
-    log_queries_not_using_indexes=1
-
-    # Binary log
-    log_bin=mysql-bin
-    binlog_format=ROW
-    expire_logs_days=7
-    max_binlog_size=100M
-
-    # Security
-    local_infile=0
-    skip_show_database=1
-
-    [mysql]
-    default-character-set=utf8mb4
-
-    [client]
-    default-character-set=utf8mb4
+  # PostgreSQL 参数片段（由数据库平台按需加载；本文件不创建数据库实例）
+  postgresql.conf: |
+    max_connections = 200
+    shared_buffers = 512MB
+    effective_cache_size = 1536MB
+    log_min_duration_statement = 2s
+    password_encryption = scram-sha-256
 
   # Redis配置
   redis.conf: |

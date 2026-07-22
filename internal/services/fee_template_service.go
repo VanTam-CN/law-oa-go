@@ -116,25 +116,25 @@ func (s *FeeTemplateService) CalculateFee(ctx context.Context, templateID uint, 
 	costDeduction := totalFee * (template.CostRate / 100)
 
 	return &FeeCalculationResult{
-		TemplateID:      templateID,
-		TemplateName:   template.Name,
-		BillingType:     template.BillingType,
-		BaseFee:         baseFee,
-	PerformanceBonus: performanceBonus,
-	TotalFee:         totalFee,
-		CostDeduction:   costDeduction,
-		NetFee:          totalFee - costDeduction,
+		TemplateID:       templateID,
+		TemplateName:     template.Name,
+		BillingType:      template.BillingType,
+		BaseFee:          baseFee,
+		PerformanceBonus: performanceBonus,
+		TotalFee:         totalFee,
+		CostDeduction:    costDeduction,
+		NetFee:           totalFee - costDeduction,
 	}, nil
 }
 
 // FeeCalculationResult 费用计算结果
 type FeeCalculationResult struct {
-	TemplateID      uint    `json:"template_id"`
-	TemplateName   string  `json:"template_name"`
-	BillingType     string  `json:"billing_type"`
-	BaseFee         float64 `json:"base_fee"`
+	TemplateID       uint    `json:"template_id"`
+	TemplateName     string  `json:"template_name"`
+	BillingType      string  `json:"billing_type"`
+	BaseFee          float64 `json:"base_fee"`
 	PerformanceBonus float64 `json:"performance_bonus"`
 	TotalFee         float64 `json:"total_fee"`
-	CostDeduction   float64 `json:"cost_deduction"`
-	NetFee          float64 `json:"net_fee"`
+	CostDeduction    float64 `json:"cost_deduction"`
+	NetFee           float64 `json:"net_fee"`
 }

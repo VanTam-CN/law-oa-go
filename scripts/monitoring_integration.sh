@@ -220,6 +220,8 @@ mkdir -p monitoring/dashboards
 
 # 生成配置文件
 generate_config_files() {
+    : "${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD must be set before generating monitoring configs}"
+
     log_info "生成监控配置文件..."
     
     if [ "$DRY_RUN" = true ]; then
@@ -316,14 +318,12 @@ path = grafana.db
 
 [security]
 admin_user = admin
-admin_password = admin
 
 [users]
 allow_sign_up = false
 
 [auth.anonymous]
-enabled = true
-org_role = Viewer
+enabled = false
 
 [log]
 mode = console
@@ -402,21 +402,20 @@ services:
       - '--web.console.libraries=/etc/prometheus/console_libraries'
       - '--web.console.templates=/etc/prometheus/consoles'
       - '--storage.tsdb.retention.time=200h'
-      - '--web.enable-lifecycle'
     restart: unless-stopped
 
   grafana:
     image: grafana/grafana:latest
     container_name: law-oa-grafana
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     volumes:
       - ./grafana/config:/etc/grafana
       - ./grafana/data:/var/lib/grafana
       - ./grafana/logs:/var/log/grafana
       - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
     restart: unless-stopped
 
   jaeger:

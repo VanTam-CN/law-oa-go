@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # PostgreSQL Migration Script
-# 用于执行PostgreSQL数据库迁移
+# 历史兼容脚本；当前生产入口请使用 `go run ./cmd/migrate -command bootstrap`。
+# 本脚本不允许使用仓库内置凭据，也不会把完整 DSN（含密码）打印到日志。
 
 set -e
 
@@ -9,15 +10,20 @@ set -e
 DB_HOST=${DB_HOST:-localhost}
 DB_PORT=${DB_PORT:-5432}
 DB_USER=${DB_USER:-law_oa_user}
-DB_PASSWORD=${DB_PASSWORD:-law_oa_password}
+DB_PASSWORD=${DB_PASSWORD:?DB_PASSWORD must be set}
 DB_NAME=${DB_NAME:-law_oa_db}
 MIGRATIONS_DIR=${MIGRATIONS_DIR:-./migrations}
+DB_SSLMODE=${DB_SSLMODE:-require}
 
-# 构建PostgreSQL DSN
-PG_DSN="postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=disable"
+if [ "${ENVIRONMENT:-development}" = "production" ] && [ "$DB_SSLMODE" = "disable" ]; then
+    echo "❌ 生产环境禁止 DB_SSLMODE=disable"
+    exit 1
+fi
+
+export PGSSLMODE="$DB_SSLMODE"
 
 echo "🚀 开始PostgreSQL数据库迁移..."
-echo "数据库: ${PG_DSN}"
+echo "数据库: ${DB_HOST}:${DB_PORT}/${DB_NAME} (sslmode=${DB_SSLMODE})"
 
 # 检查psql是否安装
 if ! command -v psql &> /dev/null; then

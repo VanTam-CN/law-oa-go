@@ -42,6 +42,8 @@ type NotificationQueueRepository interface {
 	CountByStatus(ctx context.Context, status string) (int64, error)
 	// GetStats 获取通知统计
 	GetStats(ctx context.Context) (*NotificationStats, error)
+	// GetStatsForViewer 获取当前用户可见范围内的通知统计
+	GetStatsForViewer(ctx context.Context, userID uint) (*NotificationStats, error)
 }
 
 // NotificationQueueRepositoryImpl 通知队列数据仓库实现
@@ -94,20 +96,21 @@ func (r *NotificationQueueRepositoryImpl) Delete(ctx context.Context, id uint) e
 
 // NotificationListParams 通知列表查询参数
 type NotificationListParams struct {
-	Page            int
-	PageSize        int
-	Status          string
-	Priority        string
-	Channel         string
-	RecipientType   string
-	RecipientID     uint
-	TriggerType     string
-	CaseID          uint
-	CreatedBy       uint
-	Search          string
-	DateFrom        string
-	DateTo          string
-	OnlyPending     bool // 只获取待审批的
+	Page          int
+	PageSize      int
+	Status        string
+	Priority      string
+	Channel       string
+	RecipientType string
+	RecipientID   uint
+	TriggerType   string
+	CaseID        uint
+	CreatedBy     uint
+	ViewerUserID  uint // restrict to notifications created by or addressed to this user
+	Search        string
+	DateFrom      string
+	DateTo        string
+	OnlyPending   bool // 只获取待审批的
 }
 
 // List 通知列表查询
@@ -124,6 +127,7 @@ func (r *NotificationQueueRepositoryImpl) List(ctx context.Context, params *Noti
 	query := r.db.WithContext(ctx).Model(&models.NotificationQueue{}).
 		Preload("CreatedByUser").
 		Preload("ApprovedByUser")
+	query = applyNotificationViewerScope(query, params.ViewerUserID)
 
 	// 状态筛选
 	if params.Status != "" {
@@ -264,7 +268,7 @@ func (r *NotificationQueueRepositoryImpl) UpdateStatus(ctx context.Context, id u
 // UpdateSentInfo 更新发送信息
 func (r *NotificationQueueRepositoryImpl) UpdateSentInfo(ctx context.Context, id uint, sentAt time.Time, externalMessageID string, errorMsg string) error {
 	updates := map[string]interface{}{
-		"sent_at":           sentAt,
+		"sent_at":             sentAt,
 		"external_message_id": externalMessageID,
 	}
 
@@ -376,22 +380,34 @@ func (r *NotificationQueueRepositoryImpl) CountByStatus(ctx context.Context, sta
 
 // NotificationStats 通知统计
 type NotificationStats struct {
-	Total          int64 `json:"total"`
-	Pending        int64 `json:"pending"`
-	Approved       int64 `json:"approved"`
-	Sent           int64 `json:"sent"`
-	Failed         int64 `json:"failed"`
-	Cancelled      int64 `json:"cancelled"`
+	Total           int64 `json:"total"`
+	Pending         int64 `json:"pending"`
+	Approved        int64 `json:"approved"`
+	Sent            int64 `json:"sent"`
+	Failed          int64 `json:"failed"`
+	Cancelled       int64 `json:"cancelled"`
 	PendingApproval int64 `json:"pending_approval"` // 待审批（包含敏感信息的pending）
 	AutoSendCount   int64 `json:"auto_send_count"`  // 自动发送数量
 }
 
 // GetStats 获取通知统计
 func (r *NotificationQueueRepositoryImpl) GetStats(ctx context.Context) (*NotificationStats, error) {
+	return r.getStats(ctx, 0)
+}
+
+// GetStatsForViewer 获取当前用户可见范围内的通知统计
+func (r *NotificationQueueRepositoryImpl) GetStatsForViewer(ctx context.Context, userID uint) (*NotificationStats, error) {
+	return r.getStats(ctx, userID)
+}
+
+func (r *NotificationQueueRepositoryImpl) getStats(ctx context.Context, viewerUserID uint) (*NotificationStats, error) {
 	var stats NotificationStats
+	base := applyNotificationViewerScope(r.db.WithContext(ctx).Model(&models.NotificationQueue{}), viewerUserID)
 
 	// 总数
-	r.db.WithContext(ctx).Model(&models.NotificationQueue{}).Count(&stats.Total)
+	if err := base.Count(&stats.Total).Error; err != nil {
+		return nil, err
+	}
 
 	// 按状态统计
 	type StatusCount struct {
@@ -399,10 +415,12 @@ func (r *NotificationQueueRepositoryImpl) GetStats(ctx context.Context) (*Notifi
 		Count  int64
 	}
 	var statusCounts []StatusCount
-	r.db.WithContext(ctx).Model(&models.NotificationQueue{}).
+	if err := base.
 		Select("status, COUNT(*) as count").
 		Group("status").
-		Find(&statusCounts)
+		Find(&statusCounts).Error; err != nil {
+		return nil, err
+	}
 
 	for _, sc := range statusCounts {
 		switch sc.Status {
@@ -420,16 +438,28 @@ func (r *NotificationQueueRepositoryImpl) GetStats(ctx context.Context) (*Notifi
 	}
 
 	// 待审批（包含敏感信息的pending）
-	r.db.WithContext(ctx).Model(&models.NotificationQueue{}).
+	if err := base.
 		Where("status = ? AND contains_sensitive_info = ?", "pending", true).
-		Count(&stats.PendingApproval)
+		Count(&stats.PendingApproval).Error; err != nil {
+		return nil, err
+	}
 
 	// 自动发送数量
-	r.db.WithContext(ctx).Model(&models.NotificationQueue{}).
-		Where("auto_send = ?", true).
-		Count(&stats.AutoSendCount)
+	if err := base.Where("auto_send = ?", true).Count(&stats.AutoSendCount).Error; err != nil {
+		return nil, err
+	}
 
 	return &stats, nil
+}
+
+func applyNotificationViewerScope(query *gorm.DB, userID uint) *gorm.DB {
+	if userID == 0 {
+		return query
+	}
+	return query.Where(`(
+		created_by = ?
+		OR ((recipient_type = ? OR recipient_type = ?) AND recipient_id = ?)
+	)`, userID, "lawyer", "admin", userID)
 }
 
 // NotificationTemplateRepository 通知模板数据仓库接口
@@ -516,13 +546,13 @@ func (r *NotificationTemplateRepositoryImpl) Delete(ctx context.Context, id uint
 
 // TemplateListParams 模板列表查询参数
 type TemplateListParams struct {
-	Page         int
-	PageSize     int
-	Channel      string
+	Page          int
+	PageSize      int
+	Channel       string
 	RecipientType string
-	TriggerEvent string
-	IsActive     *bool
-	Search       string
+	TriggerEvent  string
+	IsActive      *bool
+	Search        string
 }
 
 // List 模板列表查询
@@ -691,7 +721,6 @@ type TrustUnitOfWork interface {
 		fn func(txTxnRepo TrustTransactionRepository, txAcctRepo TrustAccountRepository) error,
 	) error
 }
-
 
 // TrustAccountListParams 代管款账户列表查询参数
 type TrustAccountListParams struct {
@@ -924,14 +953,14 @@ type ContentFilterLogRepository interface {
 
 // ContentFilterLogListParams 内容过滤日志查询参数
 type ContentFilterLogListParams struct {
-	Page         int
-	PageSize     int
-	ContentType  string
-	ContentID    uint
-	IsBlocked    *bool
-	ProcessedBy  uint
-	DateFrom     string
-	DateTo       string
+	Page        int
+	PageSize    int
+	ContentType string
+	ContentID   uint
+	IsBlocked   *bool
+	ProcessedBy uint
+	DateFrom    string
+	DateTo      string
 }
 
 // ContentFilterLogRepositoryImpl 内容过滤日志仓储实现

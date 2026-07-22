@@ -76,12 +76,17 @@ func NewOptimizedDatabase(cfg *config.Config) (*OptimizedDatabase, error) {
 		db, err = gorm.Open(sqlite.Open(dsn), gormConfig)
 	} else if cfg.Database.Driver == "postgres" {
 		// PostgreSQL连接
-		dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=UTC",
+		sslMode := cfg.Database.SSLMode
+		if sslMode == "" {
+			sslMode = "disable"
+		}
+		dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s TimeZone=UTC",
 			cfg.Database.Host,
 			cfg.Database.Port,
 			cfg.Database.Username,
 			cfg.Database.Password,
 			cfg.Database.Database,
+			sslMode,
 		)
 		db, err = gorm.Open(postgres.Open(dsn), gormConfig)
 	} else {

@@ -60,23 +60,23 @@ type UpdatePaymentRequest struct {
 
 // PaymentResponse 回款响应
 type PaymentResponse struct {
-	ID            uint             `json:"id"`
-	PaymentCode   string           `json:"payment_code"`
-	InvoiceID     uint             `json:"invoice_id"`
-	Amount        float64          `json:"amount"`
-	PaymentDate   string           `json:"payment_date"`
-	PaymentMethod string           `json:"payment_method"`
-	ReferenceNo   string           `json:"reference_no"`
-	PayerName     string           `json:"payer_name"`
-	PayerAccount  string           `json:"payer_account"`
-	AttachmentID  *uint            `json:"attachment_id,omitempty"`
-	ConfirmedBy   uint             `json:"confirmed_by"`
-	ConfirmedAt   *string          `json:"confirmed_at,omitempty"`
-	Status        string           `json:"status"`
-	Remark        string           `json:"remark"`
-	CreatedAt     string           `json:"created_at"`
+	ID            uint    `json:"id"`
+	PaymentCode   string  `json:"payment_code"`
+	InvoiceID     uint    `json:"invoice_id"`
+	Amount        float64 `json:"amount"`
+	PaymentDate   string  `json:"payment_date"`
+	PaymentMethod string  `json:"payment_method"`
+	ReferenceNo   string  `json:"reference_no"`
+	PayerName     string  `json:"payer_name"`
+	PayerAccount  string  `json:"payer_account"`
+	AttachmentID  *uint   `json:"attachment_id,omitempty"`
+	ConfirmedBy   uint    `json:"confirmed_by"`
+	ConfirmedAt   *string `json:"confirmed_at,omitempty"`
+	Status        string  `json:"status"`
+	Remark        string  `json:"remark"`
+	CreatedAt     string  `json:"created_at"`
 	// 关联数据
-	Invoice       *InvoiceSummary  `json:"invoice,omitempty"`
+	Invoice *InvoiceSummary `json:"invoice,omitempty"`
 }
 
 // InvoiceSummary 发票摘要
@@ -271,9 +271,9 @@ func (s *PaymentService) ListPayments(ctx context.Context, req *ListPaymentsRequ
 	response := &ListPaymentsResponse{
 		Payments: make([]*PaymentResponse, len(payments)),
 		Pagination: Pagination{
-			Page:    req.Page,
+			Page:     req.Page,
 			PageSize: req.PageSize,
-			Total:   total,
+			Total:    total,
 		},
 	}
 

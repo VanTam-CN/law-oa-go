@@ -1,9 +1,13 @@
 package models
 
 import (
+	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
+	"law-oa-go/internal/security"
 )
 
 // EntityType 实体类型
@@ -29,12 +33,12 @@ const (
 type IdentityType string
 
 const (
-	IdentityTypeIDCard        IdentityType = "ID_CARD"         // 身份证
-	IdentityTypePassport      IdentityType = "PASSPORT"        // 护照
-	IdentityTypeBusinessLicense IdentityType = "BUSINESS_LICENSE" // 营业执照
-	IdentityTypeOrgCode       IdentityType = "ORGANIZATION_CODE" // 组织机构代码
-	IdentityTypeSocialCredit  IdentityType = "SOCIAL_CREDIT_CODE" // 统一社会信用代码
-	IdentityTypeOther         IdentityType = "OTHER"           // 其他
+	IdentityTypeIDCard          IdentityType = "ID_CARD"            // 身份证
+	IdentityTypePassport        IdentityType = "PASSPORT"           // 护照
+	IdentityTypeBusinessLicense IdentityType = "BUSINESS_LICENSE"   // 营业执照
+	IdentityTypeOrgCode         IdentityType = "ORGANIZATION_CODE"  // 组织机构代码
+	IdentityTypeSocialCredit    IdentityType = "SOCIAL_CREDIT_CODE" // 统一社会信用代码
+	IdentityTypeOther           IdentityType = "OTHER"              // 其他
 )
 
 // Gender 性别
@@ -59,11 +63,13 @@ type Entity struct {
 	Alias      string     `json:"alias" gorm:"column:alias;size:500"`
 
 	// 身份信息
-	IdentityType   IdentityType `json:"identity_type" gorm:"column:identity_type;type:varchar(30);index:idx_identity"`
-	IdentityNumber string       `json:"identity_number" gorm:"column:identity_number;size:100;index:idx_identity"`
+	IdentityType             IdentityType `json:"identity_type" gorm:"column:identity_type;type:varchar(30);index:idx_identity"`
+	IdentityNumber           string       `json:"-" gorm:"column:identity_number;size:100;index:idx_identity"` // legacy plaintext column; production readiness rejects non-empty values
+	IdentityNumberDigest     string       `json:"-" gorm:"column:identity_number_digest;size:64;index:idx_identity_digest"`
+	IdentityNumberCiphertext string       `json:"-" gorm:"column:identity_number_ciphertext;type:text"`
 
 	// 状态
-	Status EntityStatus `json:"status" gorm:"column:status;type:varchar(20);not null;default:'ACTIVE';index:idx_status"`
+	Status EntityStatus `json:"status" gorm:"column:status;type:varchar(20);not null;default:'ACTIVE';index"`
 
 	// 自然人特有字段
 	Gender      Gender     `json:"gender,omitempty" gorm:"column:gender;type:varchar(10)"`
@@ -71,35 +77,54 @@ type Entity struct {
 	BirthDate   *time.Time `json:"birth_date,omitempty" gorm:"column:birth_date"`
 
 	// 法人特有字段
-	LegalRepresentative string  `json:"legal_representative,omitempty" gorm:"column:legal_representative;size:100"`
-	RegisteredCapital   float64 `json:"registered_capital,omitempty" gorm:"column:registered_capital"`
+	LegalRepresentative string     `json:"legal_representative,omitempty" gorm:"column:legal_representative;size:100"`
+	RegisteredCapital   float64    `json:"registered_capital,omitempty" gorm:"column:registered_capital"`
 	EstablishDate       *time.Time `json:"establish_date,omitempty" gorm:"column:establish_date"`
-	BusinessScope       string  `json:"business_scope,omitempty" gorm:"column:business_scope;type:text"`
+	BusinessScope       string     `json:"business_scope,omitempty" gorm:"column:business_scope;type:text"`
 
 	// 联系信息
 	Address       string `json:"address,omitempty" gorm:"column:address;type:text"`
-	Phone        string `json:"phone,omitempty" gorm:"column:phone;size:20"`
-	Email        string `json:"email,omitempty" gorm:"column:email;size:100"`
+	Phone         string `json:"phone,omitempty" gorm:"column:phone;size:20"`
+	Email         string `json:"email,omitempty" gorm:"column:email;size:100"`
 	ContactPerson string `json:"contact_person,omitempty" gorm:"column:contact_person;size:100"`
 
 	// 备注信息
 	Notes string `json:"notes,omitempty" gorm:"column:notes;type:text"`
 
 	// 关联数据
-	Relations       []EntityRelation       `json:"relations,omitempty" gorm:"foreignKey:SourceEntityID"`
-	NameHistory     []EntityNameHistory    `json:"name_history,omitempty" gorm:"foreignKey:EntityID"`
-	CaseParties     []CaseParty            `json:"case_parties,omitempty" gorm:"foreignKey:EntityID"`
+	Relations   []EntityRelation    `json:"relations,omitempty" gorm:"foreignKey:SourceEntityID"`
+	NameHistory []EntityNameHistory `json:"name_history,omitempty" gorm:"foreignKey:EntityID"`
+	CaseParties []CaseParty         `json:"case_parties,omitempty" gorm:"foreignKey:EntityID"`
 }
 
 // TableName 指定表名
 func (Entity) TableName() string {
 	return "entities"
 }
+
+// BeforeSave converts newly supplied identity numbers into encrypted storage.
+// Existing plaintext rows are deliberately not auto-deleted; the production
+// readiness check keeps the service out of rotation until they are migrated.
+func (e *Entity) BeforeSave(tx *gorm.DB) error {
+	if strings.TrimSpace(e.IdentityNumber) == "" {
+		return nil
+	}
+	ciphertext, digest, err := security.ProtectIdentityNumber(e.IdentityNumber)
+	if err != nil {
+		return fmt.Errorf("保存主体身份信息失败: %w", err)
+	}
+	e.IdentityNumberCiphertext = ciphertext
+	e.IdentityNumberDigest = digest
+	e.IdentityNumber = ""
+	return nil
+}
+
 type RelationType string
+
 // RelationType 关系类型
 
 const (
-	RelationTypeParentCompany      RelationType = "PARENT_COMPANY"       // 母公司
+	RelationTypeParentCompany      RelationType = "PARENT_COMPANY"      // 母公司
 	RelationTypeSubsidiary         RelationType = "SUBSIDIARY"          // 子公司
 	RelationTypeActualController   RelationType = "ACTUAL_CONTROLLER"   // 实际控制人
 	RelationTypeMajorShareholder   RelationType = "MAJOR_SHAREHOLDER"   // 大股东
@@ -156,10 +181,10 @@ type EntityNameHistory struct {
 	Entity   Entity `json:"entity,omitempty" gorm:"foreignKey:EntityID"`
 
 	// 名称变更信息
-	OldName     string    `json:"old_name" gorm:"column:old_name;size:200;not null"`
-	NewName     string    `json:"new_name" gorm:"column:new_name;size:200;not null"`
-	ChangeDate  time.Time `json:"change_date" gorm:"column:change_date;not null"`
-	ChangeReason string   `json:"change_reason,omitempty" gorm:"column:change_reason;size:500"`
+	OldName      string    `json:"old_name" gorm:"column:old_name;size:200;not null"`
+	NewName      string    `json:"new_name" gorm:"column:new_name;size:200;not null"`
+	ChangeDate   time.Time `json:"change_date" gorm:"column:change_date;not null"`
+	ChangeReason string    `json:"change_reason,omitempty" gorm:"column:change_reason;size:500"`
 }
 
 // TableName 指定表名
@@ -183,10 +208,10 @@ const (
 type PartyType string
 
 const (
-	PartyTypeClient       PartyType = "CLIENT"        // 委托人
-	PartyTypeOpposing     PartyType = "OPPOSING"      // 对手方
-	PartyTypeCoDefendant  PartyType = "CO_DEFENDANT"  // 共同被告
-	PartyTypeCoPlaintiff  PartyType = "CO_PLAINTIFF"  // 共同原告
+	PartyTypeClient      PartyType = "CLIENT"       // 委托人
+	PartyTypeOpposing    PartyType = "OPPOSING"     // 对手方
+	PartyTypeCoDefendant PartyType = "CO_DEFENDANT" // 共同被告
+	PartyTypeCoPlaintiff PartyType = "CO_PLAINTIFF" // 共同原告
 )
 
 // CaseParty 案件当事人关系模型
@@ -197,8 +222,8 @@ type CaseParty struct {
 	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
 
 	// 关联案件和实体
-	CaseID  uint   `json:"case_id" gorm:"column:case_id;not null;index:idx_case_party"`
-	Case    Case   `json:"case,omitempty" gorm:"foreignKey:CaseID"`
+	CaseID   uint   `json:"case_id" gorm:"column:case_id;not null;index:idx_case_party"`
+	Case     Case   `json:"case,omitempty" gorm:"foreignKey:CaseID"`
 	EntityID uint   `json:"entity_id" gorm:"column:entity_id;not null;index:idx_entity_party"`
 	Entity   Entity `json:"entity,omitempty" gorm:"foreignKey:EntityID"`
 
@@ -218,19 +243,18 @@ func (CaseParty) TableName() string {
 	return "case_parties"
 }
 
-
 // CheckStatus 冲突审查状态
 type CheckStatus string
 
 const (
-	CheckStatusPending              CheckStatus = "PENDING"                // 待审查
-	CheckStatusProcessing           CheckStatus = "PROCESSING"             // 审查中
-	CheckStatusInProgress           CheckStatus = "IN_PROGRESS"            // 审查中（别名）
-	CheckStatusCompleted            CheckStatus = "COMPLETED"              // 已完成（无冲突）
+	CheckStatusPending               CheckStatus = "PENDING"                 // 待审查
+	CheckStatusProcessing            CheckStatus = "PROCESSING"              // 审查中
+	CheckStatusInProgress            CheckStatus = "IN_PROGRESS"             // 审查中（别名）
+	CheckStatusCompleted             CheckStatus = "COMPLETED"               // 已完成（无冲突）
 	CheckStatusCompletedWithConflict CheckStatus = "COMPLETED_WITH_CONFLICT" // 已完成（有冲突）
-	CheckStatusApproved             CheckStatus = "APPROVED"               // 已批准
-	CheckStatusRejected             CheckStatus = "REJECTED"               // 已拒绝
-	CheckStatusFailed               CheckStatus = "FAILED"                 // 失败
+	CheckStatusApproved              CheckStatus = "APPROVED"                // 已批准
+	CheckStatusRejected              CheckStatus = "REJECTED"                // 已拒绝
+	CheckStatusFailed                CheckStatus = "FAILED"                  // 失败
 )
 
 // CheckResult 冲突审查结果
@@ -238,6 +262,8 @@ type CheckResult struct {
 	HasConflict    bool      `json:"has_conflict"`
 	TotalConflicts int       `json:"total_conflicts"`
 	CompletedAt    time.Time `json:"completed_at"`
+	CoverageStatus string    `json:"coverage_status,omitempty"`
+	CoverageNotice string    `json:"coverage_notice,omitempty"`
 }
 
 // ConflictCheck 冲突检查记录
@@ -252,15 +278,15 @@ type ConflictCheck struct {
 	Case   Case `json:"case,omitempty" gorm:"foreignKey:CaseID"`
 
 	// 检查信息
-	Status       string     `json:"status" gorm:"column:status;type:varchar(50);not null;default:'PENDING';index:idx_check_status"`
-	RequestedBy  uint       `json:"requested_by" gorm:"column:requested_by;not null;index:idx_requested_by"`
-	RequestedAt  time.Time  `json:"requested_at" gorm:"column:requested_at;not null"`
-	CheckedBy    *uint      `json:"checked_by,omitempty" gorm:"column:checked_by"`
-	CheckedAt    *time.Time `json:"checked_at,omitempty" gorm:"column:checked_at"`
+	Status      string     `json:"status" gorm:"column:status;type:varchar(50);not null;default:'PENDING';index:idx_check_status"`
+	RequestedBy uint       `json:"requested_by" gorm:"column:requested_by;not null;index:idx_requested_by"`
+	RequestedAt time.Time  `json:"requested_at" gorm:"column:requested_at;not null"`
+	CheckedBy   *uint      `json:"checked_by,omitempty" gorm:"column:checked_by"`
+	CheckedAt   *time.Time `json:"checked_at,omitempty" gorm:"column:checked_at"`
 
 	// 结果摘要
-	Result        *CheckResult `json:"result,omitempty" gorm:"column:result;serializer:json"`
-	ResultSummary string       `json:"result_summary,omitempty" gorm:"column:result_summary;type:text"`
+	Result         *CheckResult `json:"result,omitempty" gorm:"column:result;serializer:json"`
+	ResultSummary  string       `json:"result_summary,omitempty" gorm:"column:result_summary;type:text"`
 	TotalConflicts int          `json:"total_conflicts" gorm:"column:total_conflicts;default:0"`
 	CriticalCount  int          `json:"critical_count" gorm:"column:critical_count;default:0"`
 	HighCount      int          `json:"high_count" gorm:"column:high_count;default:0"`
@@ -283,6 +309,10 @@ func (ConflictCheck) TableName() string {
 	return "conflict_checks"
 }
 
+func (ConflictCheck) BeforeDelete(*gorm.DB) error {
+	return errors.New("conflict checks are append-only; supersede instead")
+}
+
 // ConflictDetail 冲突详情模型
 // 用于记录利益冲突审查中检测到的具体冲突点
 type ConflictDetail struct {
@@ -292,31 +322,31 @@ type ConflictDetail struct {
 	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
 
 	// 关联审查记录
-	ConflictCheckID uint         `json:"conflict_check_id" gorm:"column:conflict_check_id;not null;index:idx_conflict_check"` // 冲突审查ID
+	ConflictCheckID uint          `json:"conflict_check_id" gorm:"column:conflict_check_id;not null;index:idx_conflict_check"` // 冲突审查ID
 	ConflictCheck   ConflictCheck `json:"conflict_check,omitempty" gorm:"foreignKey:ConflictCheckID"`
 
 	// 匹配的实体和案件
 	MatchedEntityID uint   `json:"matched_entity_id" gorm:"column:matched_entity_id;not null;index:idx_matched_entity"` // 匹配的实体ID
 	MatchedEntity   Entity `json:"matched_entity,omitempty" gorm:"foreignKey:MatchedEntityID"`
-	MatchedCaseID   *uint  `json:"matched_case_id,omitempty" gorm:"column:matched_case_id;index:idx_matched_case"`   // 匹配的案件ID
+	MatchedCaseID   *uint  `json:"matched_case_id,omitempty" gorm:"column:matched_case_id;index:idx_matched_case"` // 匹配的案件ID
 	MatchedCase     Case   `json:"matched_case,omitempty" gorm:"foreignKey:MatchedCaseID"`
 
 	// 冲突信息 - 使用字符串类型避免与其他文件的类型定义冲突
 	ConflictType string `json:"conflict_type" gorm:"column:conflict_type;type:varchar(50);not null;index:idx_conflict_type"` // 冲突类型: IDENTITY_MATCH, NAME_SIMILAR, RELATIONSHIP, CASE_ASSOCIATION
-	RiskLevel    string `json:"risk_level" gorm:"column:risk_level;type:varchar(20);not null;index:idx_risk_level"`         // 风险等级: LOW, MEDIUM, HIGH, CRITICAL
+	RiskLevel    string `json:"risk_level" gorm:"column:risk_level;type:varchar(20);not null;index:idx_risk_level"`          // 风险等级: LOW, MEDIUM, HIGH, CRITICAL
 
 	// 冲突描述
 	Description string `json:"description" gorm:"column:description;type:text;not null"` // 冲突描述
-	Evidence     string `json:"evidence,omitempty" gorm:"column:evidence;type:text"`       // 证据说明
+	Evidence    string `json:"evidence,omitempty" gorm:"column:evidence;type:text"`      // 证据说明
 
 	// 处理建议
 	Recommendation string `json:"recommendation,omitempty" gorm:"column:recommendation;type:text"` // 处理建议
 
 	// 豁免信息
-	IsWaived    bool       `json:"is_waived" gorm:"column:is_waived;default:false"`                 // 是否已豁免
-	WaivedBy    *uint      `json:"waived_by,omitempty" gorm:"column:waived_by"`                      // 豁免批准人ID
-	WaivedAt    *time.Time `json:"waived_at,omitempty" gorm:"column:waived_at"`                      // 豁免时间
-	WaiveReason string     `json:"waive_reason,omitempty" gorm:"column:waive_reason;size:500"`        // 豁免原因
+	IsWaived    bool       `json:"is_waived" gorm:"column:is_waived;default:false"`            // 是否已豁免
+	WaivedBy    *uint      `json:"waived_by,omitempty" gorm:"column:waived_by"`                // 豁免批准人ID
+	WaivedAt    *time.Time `json:"waived_at,omitempty" gorm:"column:waived_at"`                // 豁免时间
+	WaiveReason string     `json:"waive_reason,omitempty" gorm:"column:waive_reason;size:500"` // 豁免原因
 
 	// 匹配原因（供服务层使用）
 	MatchReason string `json:"match_reason,omitempty" gorm:"column:match_reason;size:500"` // 匹配原因说明
@@ -327,3 +357,13 @@ func (ConflictDetail) TableName() string {
 	return "conflict_details"
 }
 
+// ConflictDetail is evidence produced by a conflict check. Corrections must
+// be represented by a new evidence row or an append-only review; mutating the
+// original row would destroy the result that was actually shown to the user.
+func (ConflictDetail) BeforeUpdate(*gorm.DB) error {
+	return errors.New("conflict details are append-only")
+}
+
+func (ConflictDetail) BeforeDelete(*gorm.DB) error {
+	return errors.New("conflict details are append-only")
+}

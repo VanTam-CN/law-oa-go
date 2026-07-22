@@ -2,11 +2,14 @@ package handlers
 
 import (
 	"fmt"
-	"law-oa-go/internal/common"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"law-oa-go/internal/common"
+	"law-oa-go/internal/middleware"
+	"law-oa-go/internal/services"
 )
 
 type DashboardHandler struct {
@@ -47,14 +50,16 @@ type ActivityItem struct {
 
 // GetDashboardStatistics 获取仪表盘统计数据
 func (h *DashboardHandler) GetDashboardStatistics(c *gin.Context) {
+	caseScope, caseArgs := h.scopedDashboardScope(c, "cases")
+	clientScope, clientArgs := h.scopedDashboardScope(c, "clients")
 	stats := DashboardStats{
-		TotalCases:     h.count("cases", "deleted_at IS NULL"),
-		ActiveCases:    h.count("cases", "deleted_at IS NULL AND status IN ?", []string{"pending", "in_progress", "active"}),
-		CompletedCases: h.count("cases", "deleted_at IS NULL AND status IN ?", []string{"completed", "closed"}),
-		TotalClients:   h.count("clients", "deleted_at IS NULL"),
-		NewClients:     h.count("clients", "deleted_at IS NULL AND created_at >= ?", time.Now().AddDate(0, 0, -30)),
-		TotalLawyers:   h.count("users", "deleted_at IS NULL AND role = ? AND status = ?", "lawyer", "active"),
-		MonthlyRevenue: h.monthlyRevenue(),
+		TotalCases:     h.countScoped("cases", "deleted_at IS NULL", nil, caseScope, caseArgs...),
+		ActiveCases:    h.countScoped("cases", "deleted_at IS NULL AND status IN ?", []interface{}{[]string{"pending", "in_progress", "active"}}, caseScope, caseArgs...),
+		CompletedCases: h.countScoped("cases", "deleted_at IS NULL AND status IN ?", []interface{}{[]string{"completed", "closed"}}, caseScope, caseArgs...),
+		TotalClients:   h.countScoped("clients", "deleted_at IS NULL", nil, clientScope, clientArgs...),
+		NewClients:     h.countScoped("clients", "deleted_at IS NULL AND created_at >= ?", []interface{}{time.Now().AddDate(0, 0, -30)}, clientScope, clientArgs...),
+		TotalLawyers:   h.dashboardLawyerCount(c),
+		MonthlyRevenue: h.monthlyRevenue(c),
 	}
 
 	common.APISuccess(c, stats)
@@ -62,7 +67,7 @@ func (h *DashboardHandler) GetDashboardStatistics(c *gin.Context) {
 
 // GetDashboardTodos 获取待办事项
 func (h *DashboardHandler) GetDashboardTodos(c *gin.Context) {
-	todos := h.todoItems(10)
+	todos := h.todoItems(10, c)
 
 	common.APISuccess(c, gin.H{
 		"todos": todos,
@@ -72,7 +77,7 @@ func (h *DashboardHandler) GetDashboardTodos(c *gin.Context) {
 
 // GetDashboardActivities 获取活动记录
 func (h *DashboardHandler) GetDashboardActivities(c *gin.Context) {
-	activities := h.activityItems(10)
+	activities := h.activityItems(10, c)
 
 	common.APISuccess(c, gin.H{
 		"activities": activities,
@@ -104,29 +109,36 @@ func (h *DashboardHandler) count(table, where string, args ...interface{}) int {
 	return int(total)
 }
 
-func (h *DashboardHandler) monthlyRevenue() float64 {
-	if !h.tableExists("payments") || !h.hasColumn("payments", "amount") {
-		return 0
+func (h *DashboardHandler) countScoped(table, baseWhere string, baseArgs []interface{}, scope string, scopeArgs ...interface{}) int {
+	where := baseWhere
+	if scope != "" {
+		where += " AND (" + scope + ")"
 	}
-
-	now := time.Now()
-	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
-	var total float64
-	query := h.db.Table("payments").
-		Select("COALESCE(SUM(amount), 0)").
-		Where("created_at >= ?", monthStart)
-
-	if h.hasColumn("payments", "status") {
-		query = query.Where("status IN ?", []string{"confirmed", "paid"})
-	}
-
-	if err := query.Scan(&total).Error; err != nil {
-		return 0
-	}
-	return total
+	args := append([]interface{}{}, baseArgs...)
+	args = append(args, scopeArgs...)
+	return h.count(table, where, args...)
 }
 
-func (h *DashboardHandler) todoItems(limit int) []TodoItem {
+func (h *DashboardHandler) dashboardLawyerCount(c *gin.Context) int {
+	if services.IsBusinessMatterManagementRole(c.GetString("role")) {
+		return h.count("users", "deleted_at IS NULL AND role = ? AND status = ?", "lawyer", "active")
+	}
+	userID, ok := middleware.GetCurrentUserID(c)
+	if !ok {
+		return 0
+	}
+	return h.count("users", "deleted_at IS NULL AND id = ?", userID)
+}
+
+func (h *DashboardHandler) monthlyRevenue(c *gin.Context) float64 {
+	// The legacy dashboard has no reliable payment -> contract -> case
+	// subject context, so a firm-wide payment sum could reveal information
+	// about an ethically walled matter. Finance must expose only a separately
+	// authorized, wall-aware report; this compatibility field is unavailable.
+	return 0
+}
+
+func (h *DashboardHandler) todoItems(limit int, c *gin.Context) []TodoItem {
 	if !h.tableExists("inbox_items") {
 		return []TodoItem{}
 	}
@@ -136,6 +148,9 @@ func (h *DashboardHandler) todoItems(limit int) []TodoItem {
 		Where("deleted_at IS NULL").
 		Order("is_completed ASC, due_date ASC, created_at DESC").
 		Limit(limit)
+	if scope, args := h.scopedDashboardScope(c, "inbox_items"); scope != "" {
+		query = query.Where(scope, args...)
+	}
 
 	if err := query.Find(&rows).Error; err != nil {
 		return []TodoItem{}
@@ -159,29 +174,29 @@ func (h *DashboardHandler) todoItems(limit int) []TodoItem {
 	return items
 }
 
-func (h *DashboardHandler) activityItems(limit int) []ActivityItem {
+func (h *DashboardHandler) activityItems(limit int, c *gin.Context) []ActivityItem {
 	if h.tableExists("risk_audit_events") {
-		activities := h.activitiesFromTable("risk_audit_events", "risk", "summary", "event_type", "actor_id", limit)
+		activities := h.activitiesFromTable("risk_audit_events", "risk", "summary", "event_type", "actor_id", limit, c)
 		if len(activities) > 0 {
 			return activities
 		}
 	}
 
 	if h.tableExists("approval_requests") {
-		activities := h.activitiesFromTable("approval_requests", "approval", "title", "status", "applicant_name", limit)
+		activities := h.activitiesFromTable("approval_requests", "approval", "title", "status", "applicant_name", limit, c)
 		if len(activities) > 0 {
 			return activities
 		}
 	}
 
 	if h.tableExists("cases") {
-		return h.activitiesFromTable("cases", "case", "title", "status", "lawyer_id", limit)
+		return h.activitiesFromTable("cases", "case", "title", "status", "lawyer_id", limit, c)
 	}
 
 	return []ActivityItem{}
 }
 
-func (h *DashboardHandler) activitiesFromTable(table, itemType, titleColumn, descriptionColumn, userColumn string, limit int) []ActivityItem {
+func (h *DashboardHandler) activitiesFromTable(table, itemType, titleColumn, descriptionColumn, userColumn string, limit int, c *gin.Context) []ActivityItem {
 	if !h.tableExists(table) {
 		return []ActivityItem{}
 	}
@@ -193,6 +208,9 @@ func (h *DashboardHandler) activitiesFromTable(table, itemType, titleColumn, des
 	}
 	if h.hasColumn(table, "created_at") {
 		query = query.Order("created_at DESC")
+	}
+	if scope, args := h.scopedDashboardScope(c, table); scope != "" {
+		query = query.Where(scope, args...)
 	}
 
 	if err := query.Limit(limit).Find(&rows).Error; err != nil {
@@ -211,6 +229,108 @@ func (h *DashboardHandler) activitiesFromTable(table, itemType, titleColumn, des
 		})
 	}
 	return items
+}
+
+// scopedDashboardScope adds the ethical-wall constraint that the legacy
+// dashboard endpoints previously lacked. The free dashboardScope helper
+// below is retained for compatibility with older unit tests and callers; all
+// HTTP handlers must use this database-backed method.
+func (h *DashboardHandler) scopedDashboardScope(c *gin.Context, table string) (string, []interface{}) {
+	baseScope, baseArgs := dashboardScope(c, table)
+	userID, ok := middleware.GetCurrentUserID(c)
+	if !ok || userID == 0 {
+		return "1 = 0", nil
+	}
+
+	// These legacy rows carry free-form titles or summaries and do not expose
+	// a verified subject-case relationship. Returning no rows is safer than
+	// allowing a wall-protected matter to leak through an activity feed.
+	if table == "approval_requests" || table == "risk_audit_events" {
+		return "1 = 0", nil
+	}
+	if services.IsBusinessMatterManagementRole(c.GetString("role")) && table == "inbox_items" {
+		return "1 = 0", nil
+	}
+
+	// A missing wall column means the database is not on the production
+	// schema. Do not silently fall back to an unscoped dashboard in that case.
+	if (table == "cases" || table == "clients") &&
+		(!h.tableExists("cases") || !h.hasColumn("cases", "ethical_wall_enabled") || !h.tableExists("case_ethical_wall_whitelist")) {
+		return "1 = 0", nil
+	}
+
+	wallScope, wallArgs := dashboardEthicalWallScope(table, userID)
+	if baseScope == "" {
+		return wallScope, wallArgs
+	}
+	return "(" + baseScope + ") AND (" + wallScope + ")", append(baseArgs, wallArgs...)
+}
+
+func dashboardEthicalWallScope(table string, userID uint) (string, []interface{}) {
+	switch table {
+	case "cases":
+		return `(
+			cases.ethical_wall_enabled = ?
+			OR EXISTS (
+				SELECT 1 FROM case_ethical_wall_whitelist wall_access
+				WHERE wall_access.case_id = cases.id AND wall_access.user_id = ?
+			)
+		)`, []interface{}{false, userID}
+	case "clients":
+		// A client with no cases is visible. Once a client has a protected
+		// case, it is hidden until the viewer is explicitly whitelisted for
+		// that case.
+		return `NOT EXISTS (
+			SELECT 1 FROM cases protected_case
+			WHERE protected_case.client_id = clients.id
+			  AND protected_case.deleted_at IS NULL
+			  AND protected_case.ethical_wall_enabled = ?
+			  AND NOT EXISTS (
+				SELECT 1 FROM case_ethical_wall_whitelist wall_access
+				WHERE wall_access.case_id = protected_case.id AND wall_access.user_id = ?
+			  )
+		)`, []interface{}{true, userID}
+	default:
+		return "1 = 0", nil
+	}
+}
+
+// dashboardScope returns the server-side visibility predicate for legacy
+// dashboard queries. Management roles may see firm-wide aggregates; every
+// other authenticated role receives only its own matter/task/approval rows.
+// Unknown or missing identities fail closed to an empty result.
+func dashboardScope(c *gin.Context, table string) (string, []interface{}) {
+	if c == nil || services.IsBusinessMatterManagementRole(c.GetString("role")) {
+		return "", nil
+	}
+	userID, ok := middleware.GetCurrentUserID(c)
+	if !ok || userID == 0 {
+		return "1 = 0", nil
+	}
+	userIDString := strconv.FormatUint(uint64(userID), 10)
+	switch table {
+	case "cases":
+		return "lawyer_id = ? OR created_by = ?", []interface{}{userID, userIDString}
+	case "clients":
+		return `EXISTS (
+			SELECT 1 FROM cases case_scope
+			WHERE case_scope.client_id = clients.id
+			  AND case_scope.deleted_at IS NULL
+			  AND (case_scope.lawyer_id = ? OR case_scope.created_by = ?
+			       OR EXISTS (
+					SELECT 1 FROM case_ethical_wall_whitelist wall_access
+					WHERE wall_access.case_id = case_scope.id AND wall_access.user_id = ?
+				))
+		)`, []interface{}{userID, userIDString, userID}
+	case "inbox_items":
+		return "user_id = ?", []interface{}{userID}
+	case "risk_audit_events":
+		return "actor_id = ?", []interface{}{userIDString}
+	case "approval_requests":
+		return "applicant_id = ? OR current_approver_id = ?", []interface{}{userIDString, userIDString}
+	default:
+		return "1 = 0", nil
+	}
 }
 
 func boolValue(value interface{}) bool {

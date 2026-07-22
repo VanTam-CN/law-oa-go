@@ -57,7 +57,7 @@ const transformToEnhancedConflictCheckRequest = (request: any) => {
     caseType: request.caseType.toLowerCase(),
     clientType: request.clientType || 'PERSON',
     otherParties: request.otherParties || [],
-    searchYears: request.searchYears || 5,
+    searchYears: 0,
     includeCorporateRelations: request.includeCorporateRelations !== false,
     searchDepth: request.searchDepth || SearchDepth.STANDARD,
     userId: request.userId?.toString(),
@@ -213,7 +213,7 @@ export const performConflictCheckLegacy = (
     caseType: params.project_type,
     opponentInfo: params.opposite_parties,
     // 旧版接口未提供的字段使用保守配置
-    searchYears: 5,
+    searchYears: 0,
     searchDepth: SearchDepth.DEEP,
     includeCorporateRelations: true,
   }

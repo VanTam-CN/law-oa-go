@@ -498,7 +498,19 @@ Authorization: Bearer <access_token>
 
 **POST** `/conflict/check`
 
-对新案件进行利益冲突检测。
+同步执行冲突检测。仅建议用于诊断；律师端默认使用下述异步任务接口。
+
+### 创建异步冲突检测任务
+
+**POST** `/conflict/tasks`
+
+请求体与 `/conflict/check` 相同。接口立即返回 `taskId`、`status` 和
+`recommendedPollingInterval`。任务状态为 `QUEUED`、`RUNNING`、`COMPLETED` 或 `FAILED`。
+
+**GET** `/conflict/tasks/{taskId}` 获取进度。
+
+**GET** `/conflict/tasks/{taskId}/result` 获取冻结结果。普通律师只能读取本人任务；合规、
+风控、主任、合伙人和管理员可以按管理权限读取。
 
 **请求参数:**
 ```json
@@ -543,6 +555,14 @@ Authorization: Bearer <access_token>
       "riskFactors": [],
       "mitigation": ["建议在案件进行过程中持续监控潜在冲突"]
     },
+    "decision": {
+      "status": "CLEAR",
+      "recommendation": "未发现可识别的冲突线索，可继续进入人工确认环节。",
+      "requiresManualReview": false,
+      "evidenceCount": 0,
+      "coverageNotice": "检索范围以本所已录入并获授权的数据为限。"
+    },
+    "normalizedSubjects": [],
     "recommendations": [
       "未发现明显的利益冲突",
       "建议在案件进行过程中持续监控",
@@ -553,6 +573,55 @@ Authorization: Bearer <access_token>
   }
 }
 ```
+
+`decision.status` 是接案门禁的权威状态：
+
+- `CLEAR`：未发现可识别线索；
+- `REVIEW_REQUIRED`：候选、关系或文本线索待人工复核；
+- `BLOCKED`：确认直接冲突，暂停接案；
+- `WAIVER_PENDING`：豁免正在独立复核，仍暂停接案；
+- `WAIVED`：豁免已批准，可按批准条件继续。
+
+`hasConflict=true` 仅表示系统已经确认直接冲突；名称候选和关系线索使用
+`decision.status=REVIEW_REQUIRED`，不得伪装成已确认冲突。
+
+### 人工复核
+
+**POST** `/conflict/tasks/{taskId}/review`
+
+```json
+{
+  "decision": "confirmed_conflict",
+  "notes": "已核对客户主档案、历史事项和主体标识。"
+}
+```
+
+复核记录不可变。可选结论为 `no_conflict`、`confirmed_conflict`、`false_positive`、
+`insufficient_information` 和 `waiver_requested`。
+
+**GET** `/conflict/tasks/{taskId}/review` 获取最新复核记录。
+
+### 豁免评估
+
+**POST** `/conflict/tasks/{taskId}/waiver`
+
+```json
+{
+  "rationale": "客户已充分知情，拟通过独立团队和信息隔离控制剩余风险。",
+  "waiver_type": "INFORMED_CONSENT",
+  "waiver_category": "CLIENT_CONSENT",
+  "proposed_conditions": ["建立信息隔离墙", "限制敏感资料访问", "定期合规复核"],
+  "duration_days": 180
+}
+```
+
+系统自动选择与申请人不同的复核人。申请人不得自批。创建后冲突状态变为
+`WAIVER_PENDING`。
+
+**GET** `/conflict/tasks/{taskId}/waiver` 获取该任务当前豁免申请。
+
+**POST** `/waivers/{waiverId}/decision` 由指定复核人或管理角色作出决定；批准后冲突状态
+反写为 `WAIVED`，拒绝后反写为 `BLOCKED`。
 
 ### 获取检查历史
 

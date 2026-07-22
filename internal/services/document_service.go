@@ -49,14 +49,15 @@ type DocumentStats struct {
 
 // DocumentListRequest represents document listing request parameters
 type DocumentListRequest struct {
-	Page       int    `form:"page" json:"page"`
-	PageSize   int    `form:"page_size" json:"page_size"`
-	Category   string `form:"category" json:"category"`
-	EntityType string `form:"entity_type" json:"entity_type"`
-	EntityID   uint   `form:"entity_id" json:"entity_id"`
-	Search     string `form:"search" json:"search"`
-	SortBy     string `form:"sort_by" json:"sort_by"`
-	SortOrder  string `form:"sort_order" json:"sort_order"`
+	Page        int    `form:"page" json:"page"`
+	PageSize    int    `form:"page_size" json:"page_size"`
+	Category    string `form:"category" json:"category"`
+	EntityType  string `form:"entity_type" json:"entity_type"`
+	EntityID    uint   `form:"entity_id" json:"entity_id"`
+	Search      string `form:"search" json:"search"`
+	SortBy      string `form:"sort_by" json:"sort_by"`
+	SortOrder   string `form:"sort_order" json:"sort_order"`
+	OwnerScoped bool   `json:"-"`
 }
 
 // DocumentUploadRequest represents document upload request
@@ -203,6 +204,7 @@ func (s *DocumentService) ListDocuments(ctx context.Context, req *DocumentListRe
 		SortBy:       req.SortBy,
 		SortOrder:    req.SortOrder,
 		ViewerUserID: viewerUserID,
+		OwnerScoped:  req.OwnerScoped,
 	}
 
 	docModels, total, err := s.docRepo.List(ctx, params)
@@ -251,7 +253,10 @@ func (s *DocumentService) UpdateDocument(ctx context.Context, id uint, req *Docu
 	return s.toDocument(docModel), nil
 }
 
-// DeleteDocument deletes a document
+// DeleteDocument marks a document as deleted without removing the database
+// row or stored file. Matter documents are retention-controlled evidence; a
+// physical deletion must never be reachable through the generic document
+// service.
 func (s *DocumentService) DeleteDocument(ctx context.Context, id uint) error {
 	docModel, err := s.docRepo.FindByID(ctx, id)
 	if err != nil {
@@ -261,16 +266,10 @@ func (s *DocumentService) DeleteDocument(ctx context.Context, id uint) error {
 		return errors.DatabaseError("get_document", "Failed to get document", err)
 	}
 
-	// Delete document from database
-	if err := s.docRepo.Delete(ctx, id); err != nil {
-		return errors.DatabaseError("delete_document", "Failed to delete document", err)
-	}
-
-	// Delete file from storage
-	if err := s.deleteFile(docModel.Filepath); err != nil {
-		// Log error but don't fail the operation
-		// In production, you might want to use a proper logger
-		fmt.Printf("Warning: Failed to delete file %s: %v\n", docModel.Filepath, err)
+	docModel.Status = "deleted"
+	docModel.UpdatedAt = time.Now()
+	if err := s.docRepo.Update(ctx, docModel); err != nil {
+		return errors.DatabaseError("delete_document", "Failed to mark document as deleted", err)
 	}
 
 	return nil

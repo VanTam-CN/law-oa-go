@@ -7,10 +7,10 @@ import (
 	"time"
 
 	stderrors "errors"
+	"gorm.io/gorm"
 	"law-oa-go/internal/errors"
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/repositories"
-	"gorm.io/gorm"
 )
 
 type LawyerService struct {
@@ -22,21 +22,21 @@ func NewLawyerService(lawyerRepo repositories.LawyerRepository) *LawyerService {
 }
 
 type LawyerResponse struct {
-	ID             uint      `json:"id"`
-	Name           string    `json:"name"`
-	Email          string    `json:"email"`
-	Phone          string    `json:"phone"`
-	Avatar         string    `json:"avatar"`
-	Status         string    `json:"status"`
-	LicenseNumber  string    `json:"licenseNumber"`  // 执业证号
-	Specialty      string    `json:"specialty"`      // 专业领域
-	Department     string    `json:"department"`     // 部门
-	Position       string    `json:"position"`       // 职位
-	Gender         string    `json:"gender"`         // 性别
-	Experience     int       `json:"experience"`     // 从业年限
-	JoinDate       string    `json:"joinDate"`       // 入职日期
-	Profile        string    `json:"profile"`        // 个人简介
-	CreatedAt      time.Time `json:"created_at"`
+	ID            uint      `json:"id"`
+	Name          string    `json:"name"`
+	Email         string    `json:"email"`
+	Phone         string    `json:"phone"`
+	Avatar        string    `json:"avatar"`
+	Status        string    `json:"status"`
+	LicenseNumber string    `json:"licenseNumber"` // 执业证号
+	Specialty     string    `json:"specialty"`     // 专业领域
+	Department    string    `json:"department"`    // 部门
+	Position      string    `json:"position"`      // 职位
+	Gender        string    `json:"gender"`        // 性别
+	Experience    int       `json:"experience"`    // 从业年限
+	JoinDate      string    `json:"joinDate"`      // 入职日期
+	Profile       string    `json:"profile"`       // 个人简介
+	CreatedAt     time.Time `json:"created_at"`
 }
 
 type LawyerListRequest struct {

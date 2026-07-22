@@ -4,17 +4,27 @@
 # ================================
 # 基础阶段 - 预准备公共依赖
 # ================================
-FROM golang:1.25-alpine AS base
+# Build the toolchain on the runner architecture and cross-compile the
+# application for TARGETOS/TARGETARCH. This is required for a real multi-arch
+# image; otherwise an ARM64 image can silently contain an AMD64 binary.
+ARG BUILDPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
+FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS base
 
 # 安装基础依赖
 RUN apk add --no-cache git ca-certificates tzdata build-base && \
     addgroup -g 1001 -S lawapp && \
     adduser -u 1001 -S lawapp -G lawapp
 
-# 设置Go环境变量
+# BuildKit supplies TARGETOS/TARGETARCH for each requested image platform.
+# Keep the binary architecture aligned with the image so the published ARM64
+# image does not contain an AMD64 executable.
+ARG TARGETOS
+ARG TARGETARCH
 ENV CGO_ENABLED=1
-ENV GOOS=linux
-ENV GOARCH=amd64
+ENV GOOS=${TARGETOS}
+ENV GOARCH=${TARGETARCH}
 ENV GOPROXY=https://goproxy.cn,direct
 ENV GOCACHE=/root/.cache/go-build
 ENV GOMODCACHE=/go/pkg/mod
@@ -84,7 +94,12 @@ RUN --mount=type=cache,target=/go/pkg/mod \
             -a -installsuffix cgo \
             -trimpath \
             -o law-oa-go ./main.go; \
-    fi
+    fi && \
+    CGO_ENABLED=0 go build \
+        -ldflags="-w -s -extldflags \"-static\"" \
+        -a -installsuffix cgo \
+        -trimpath \
+        -o law-oa-migrate ./cmd/migrate
 
 # 验证构建和二进制文件
 RUN ls -la /build/law-oa-go && \
@@ -119,6 +134,9 @@ RUN gosec ./... && \
 # ================================
 FROM scratch AS production
 
+ARG BUILD_COMMIT=unknown
+ARG BUILD_DATE=unknown
+
 # 元数据标签
 LABEL maintainer="Law OA Team <team@lawoa.com>" \
       version="2.1.0" \
@@ -148,10 +166,15 @@ WORKDIR /app
 
 # 复制二进制文件
 COPY --from=builder /build/law-oa-go /app/law-oa-go
+COPY --from=builder /build/law-oa-migrate /app/law-oa-migrate
+
+# 迁移命令在生产镜像内执行，避免依赖宿主机的 Go 工具链或 shell。
+COPY --from=builder /build/migrations /app/migrations/
 
 # 复制配置文件
 COPY --from=builder /build/config /app/config/
-COPY --from=builder /build/.env.example /app/.env
+# Runtime secrets must come from the deployment environment or a secret
+# manager. Do not copy development environment templates into the image.
 
 # 复制预创建运行目录，避免 scratch 阶段执行 shell 命令
 COPY --from=builder --chown=1001:1001 /build/runtime-dirs/ /app/
@@ -174,7 +197,7 @@ EXPOSE 8080 8081 9090
 
 # 健康检查 - 增强的健康检查策略
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD ["/app/law-oa-go", "healthcheck"] || exit 1
+    CMD ["/app/law-oa-go", "healthcheck"]
 
 # 启动应用 - 优化的启动参数
 ENTRYPOINT ["/app/law-oa-go"]

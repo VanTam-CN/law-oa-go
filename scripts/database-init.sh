@@ -13,14 +13,16 @@ BLUE='\033[0;34m'
 PURPLE='\033[0;35m'
 NC='\033[0m' # No Color
 
-# 配置变量
-DB_HOST="localhost"
-DB_PORT="33060"
-DB_ROOT_USER="root"
-DB_ROOT_PASSWORD="password"
-DB_NAME="law_oa"
-DB_USER="law_oa"
-DB_PASSWORD="law_oa_password"
+# 配置变量。该脚本仅保留给历史 MySQL 开发/迁移场景，当前生产入口是
+# PostgreSQL bootstrap。所有凭据必须由调用环境或 Secret Manager 注入。
+DB_HOST="${DB_HOST:-localhost}"
+DB_PORT="${DB_PORT:-33060}"
+DB_ROOT_USER="${DB_ROOT_USER:-root}"
+: "${DB_ROOT_PASSWORD:?DB_ROOT_PASSWORD must be set; do not put credentials in this script}"
+DB_NAME="${DB_NAME:-law_oa}"
+DB_USER="${DB_USER:-law_oa}"
+: "${DB_PASSWORD:?DB_PASSWORD must be set; do not put credentials in this script}"
+: "${JWT_SECRET:?JWT_SECRET must be set when generating an application config}"
 
 # 日志函数
 log_info() {
@@ -456,7 +458,7 @@ DB_HOST=localhost
 DB_PORT=33060
 DB_NAME=law_oa
 DB_USER=law_oa
-DB_PASSWORD=law_oa_password
+DB_PASSWORD=$DB_PASSWORD
 
 # Redis 配置
 REDIS_HOST=localhost
@@ -465,7 +467,7 @@ REDIS_PASSWORD=
 REDIS_DB=0
 
 # JWT 配置
-JWT_SECRET=law_oa_jwt_secret_key_$(date +%Y%m%d)
+JWT_SECRET=$JWT_SECRET
 JWT_EXPIRES_IN=24h
 JWT_REFRESH_EXPIRES_IN=168h
 
@@ -502,19 +504,19 @@ show_connection_info() {
     echo "  端口: $DB_PORT"
     echo "  数据库: $DB_NAME"
     echo "  用户名: $DB_USER"
-    echo "  密码: $DB_PASSWORD"
+    echo "  密码: [从环境变量注入，不在终端显示]"
     echo ""
 
     echo "连接字符串："
-    echo "  MySQL: mysql -h $DB_HOST -P $DB_PORT -u $DB_USER -p$DB_PASSWORD $DB_NAME"
-    echo "  URL: mysql://$DB_USER:$DB_PASSWORD@$DB_HOST:$DB_PORT/$DB_NAME"
+    echo "  MySQL: mysql -h $DB_HOST -P $DB_PORT -u $DB_USER -p<PASSWORD> $DB_NAME"
+    echo "  URL: mysql://$DB_USER:<PASSWORD>@$DB_HOST:$DB_PORT/$DB_NAME"
     echo ""
 
     echo "管理界面："
     echo "  phpMyAdmin: http://localhost:8081"
     echo "  数据库: law_oa"
     echo "  用户名: law_oa"
-    echo "  密码: law_oa_password"
+    echo "  密码: [从环境变量注入]"
     echo ""
 }
 

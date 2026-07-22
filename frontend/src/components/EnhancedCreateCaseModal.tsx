@@ -181,10 +181,12 @@ const EnhancedCreateCaseModal: React.FC<EnhancedCreateCaseModalProps> = ({
         conflictCheckConfig: {
           enabled: true,
           checkOnCreate: true,
-          searchYears: values.searchYears || 5,
-          includeCorporateRelations: values.includeCorporateRelations || false,
+          searchYears: 0,
+          includeCorporateRelations: true,
           searchDepth: values.searchDepth || 'STANDARD',
-          autoWaiverIfPossible: values.autoWaiverIfPossible || false,
+          // Waiver requires a separate, independent workflow and can never be
+          // inferred from the intake form.
+          autoWaiverIfPossible: false,
         },
 
         // 分配信息
@@ -332,8 +334,8 @@ const EnhancedCreateCaseModal: React.FC<EnhancedCreateCaseModalProps> = ({
 
       <Row gutter={16}>
         <Col span={12}>
-          <Form.Item label='冲突检测年限' name='searchYears' initialValue={5}>
-            <InputNumber min={1} max={20} placeholder='搜索年限' style={{ width: '100%' }} />
+          <Form.Item label='历史档案范围'>
+            <Input value='系统已登记历史（覆盖完整性待确认）' disabled />
           </Form.Item>
         </Col>
         <Col span={12}>
@@ -349,13 +351,8 @@ const EnhancedCreateCaseModal: React.FC<EnhancedCreateCaseModalProps> = ({
 
       <Row gutter={16}>
         <Col span={12}>
-          <Form.Item name='includeCorporateRelations' valuePropName='checked' initialValue={false}>
-            <Checkbox>包含企业关联关系</Checkbox>
-          </Form.Item>
-        </Col>
-        <Col span={12}>
-          <Form.Item name='autoWaiverIfPossible' valuePropName='checked' initialValue>
-            <Checkbox>自动豁免（如可能）</Checkbox>
+          <Form.Item name='includeCorporateRelations' valuePropName='checked' initialValue={true}>
+            <Checkbox disabled>包含企业关联关系（正式冲突检查必查）</Checkbox>
           </Form.Item>
         </Col>
       </Row>
@@ -505,10 +502,10 @@ const EnhancedCreateCaseModal: React.FC<EnhancedCreateCaseModalProps> = ({
           priority: 'MEDIUM',
           practiceArea: 'GENERAL',
           billingMethod: 'FIXED',
-          searchYears: 5,
+          searchYears: 0,
           searchDepth: 'STANDARD',
-          includeCorporateRelations: false,
-          autoWaiverIfPossible: true,
+          includeCorporateRelations: true,
+          autoWaiverIfPossible: false,
           isMajorRisk: false,
           isMassCase: false,
           isSensitiveCase: false,

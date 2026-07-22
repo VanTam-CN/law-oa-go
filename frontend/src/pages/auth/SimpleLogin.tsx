@@ -28,7 +28,6 @@ const SimpleLogin: React.FC = () => {
             <Input
               prefix={<UserOutlined />}
               placeholder='请输入邮箱'
-              defaultValue='admin@lawoa.com'
             />
           </Form.Item>
 
@@ -40,7 +39,6 @@ const SimpleLogin: React.FC = () => {
             <Input.Password
               prefix={<LockOutlined />}
               placeholder='请输入密码'
-              defaultValue='admin123'
             />
           </Form.Item>
 

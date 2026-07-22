@@ -167,6 +167,7 @@ func DefaultCORSConfig() CORSConfig {
 		AllowedHeaders: []string{
 			"Content-Type",
 			"Authorization",
+			"Idempotency-Key",
 			"X-Request-ID",
 			"X-API-Version",
 		},

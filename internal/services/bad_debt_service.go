@@ -12,11 +12,11 @@ import (
 
 // BadDebtService 坏账核销服务
 type BadDebtService struct {
-	badDebtRepo repositories.BadDebtRepository
+	badDebtRepo  repositories.BadDebtRepository
 	contractRepo repositories.ContractRepository
-	invoiceRepo repositories.InvoiceRepository
-	paymentRepo repositories.PaymentRepository
-	userRepo    repositories.UserRepository
+	invoiceRepo  repositories.InvoiceRepository
+	paymentRepo  repositories.PaymentRepository
+	userRepo     repositories.UserRepository
 }
 
 // NewBadDebtService 创建坏账核销服务实例
@@ -38,34 +38,34 @@ func NewBadDebtService(
 
 // CreateBadDebtRequest 创建坏账核销请求
 type CreateBadDebtRequest struct {
-	ContractID  uint     `json:"contract_id" binding:"required"`
-	InvoiceID   *uint    `json:"invoice_id,omitempty"`
+	ContractID     uint    `json:"contract_id" binding:"required"`
+	InvoiceID      *uint   `json:"invoice_id,omitempty"`
 	WriteOffAmount float64 `json:"write_off_amount" binding:"required,gt=0"`
-	Reason      string   `json:"reason" binding:"required,min=1,max=1000"`
-	ReasonType  string   `json:"reason_type" binding:"required,oneof=bankruptcy dispute uncollectible other"`
-	AttachmentIDs []uint `json:"attachment_ids,omitempty"`
+	Reason         string  `json:"reason" binding:"required,min=1,max=1000"`
+	ReasonType     string  `json:"reason_type" binding:"required,oneof=bankruptcy dispute uncollectible other"`
+	AttachmentIDs  []uint  `json:"attachment_ids,omitempty"`
 }
 
 // BadDebtResponse 坏账核销响应
 type BadDebtResponse struct {
-	ID              uint             `json:"id"`
-	ContractID      uint             `json:"contract_id"`
-	InvoiceID       *uint            `json:"invoice_id,omitempty"`
-	OriginalAmount  float64          `json:"original_amount"`
-	WriteOffAmount  float64          `json:"write_off_amount"`
-	RemainingAmount float64          `json:"remaining_amount"`
-	Reason          string           `json:"reason"`
-	ReasonType      string           `json:"reason_type"`
-	Status          string           `json:"status"`
-	ApprovedBy      *uint            `json:"approved_by,omitempty"`
-	ApprovedAt      *string          `json:"approved_at,omitempty"`
-	ApprovalNotes   string           `json:"approval_notes"`
-	AttachmentIDs   []uint           `json:"attachment_ids"`
-	CreatedAt       string           `json:"created_at"`
-	UpdatedAt       string           `json:"updated_at"`
+	ID              uint    `json:"id"`
+	ContractID      uint    `json:"contract_id"`
+	InvoiceID       *uint   `json:"invoice_id,omitempty"`
+	OriginalAmount  float64 `json:"original_amount"`
+	WriteOffAmount  float64 `json:"write_off_amount"`
+	RemainingAmount float64 `json:"remaining_amount"`
+	Reason          string  `json:"reason"`
+	ReasonType      string  `json:"reason_type"`
+	Status          string  `json:"status"`
+	ApprovedBy      *uint   `json:"approved_by,omitempty"`
+	ApprovedAt      *string `json:"approved_at,omitempty"`
+	ApprovalNotes   string  `json:"approval_notes"`
+	AttachmentIDs   []uint  `json:"attachment_ids"`
+	CreatedAt       string  `json:"created_at"`
+	UpdatedAt       string  `json:"updated_at"`
 	// 关联数据
-	Contract        *ContractSummary `json:"contract,omitempty"`
-	Invoice         *InvoiceSummary  `json:"invoice,omitempty"`
+	Contract *ContractSummary `json:"contract,omitempty"`
+	Invoice  *InvoiceSummary  `json:"invoice,omitempty"`
 }
 
 // ListBadDebtsRequest 坏账核销列表请求
@@ -79,8 +79,8 @@ type ListBadDebtsRequest struct {
 
 // ListBadDebtsResponse 坏账核销列表响应
 type ListBadDebtsResponse struct {
-	BadDebts  []*BadDebtResponse `json:"bad_debts"`
-	Pagination Pagination        `json:"pagination"`
+	BadDebts   []*BadDebtResponse `json:"bad_debts"`
+	Pagination Pagination         `json:"pagination"`
 }
 
 // CreateBadDebt 创建坏账核销申请
@@ -178,9 +178,9 @@ func (s *BadDebtService) ListBadDebts(ctx context.Context, req *ListBadDebtsRequ
 	response := &ListBadDebtsResponse{
 		BadDebts: make([]*BadDebtResponse, len(badDebts)),
 		Pagination: Pagination{
-			Page:    req.Page,
+			Page:     req.Page,
 			PageSize: req.PageSize,
-			Total:   total,
+			Total:    total,
 		},
 	}
 

@@ -17,15 +17,28 @@ import (
 )
 
 type AuthHandler struct {
-	userService             *services.UserService
-	tokenRevocationService  *auth.TokenRevocationService
+	userService               *services.UserService
+	tokenRevocationService    *auth.TokenRevocationService
+	publicRegistrationEnabled bool
 }
 
 func NewAuthHandler(userService *services.UserService, tokenRevocationService *auth.TokenRevocationService) *AuthHandler {
 	return &AuthHandler{
-		userService:            userService,
-		tokenRevocationService: tokenRevocationService,
+		userService:               userService,
+		tokenRevocationService:    tokenRevocationService,
+		publicRegistrationEnabled: true,
 	}
+}
+
+// SetPublicRegistrationEnabled controls whether an untrusted caller may
+// create an account without an administrator invitation. Production law-firm
+// deployments must keep this disabled; the handler guard remains in place
+// even if a route is accidentally registered by a future router change.
+func (h *AuthHandler) SetPublicRegistrationEnabled(enabled bool) {
+	if h == nil {
+		return
+	}
+	h.publicRegistrationEnabled = enabled
 }
 
 type LoginRequest struct {
@@ -132,14 +145,18 @@ func normalizeLoginAccount(email string, account string) string {
 	}
 
 	aliases := map[string]string{
-		"admin":            "demo.admin@example.test",
-		"demo.admin":     "demo.admin@example.test",
-		"lawyer":           "demo.lawyer@example.test",
-		"demo.lawyer":    "demo.lawyer@example.test",
-		"assistant":        "demo.assistant@example.test",
-		"demo.assistant": "demo.assistant@example.test",
-		"finance":          "demo.finance@example.test",
-		"demo.finance":   "demo.finance@example.test",
+		"admin":                 "demo.admin@example.test",
+		"demo.admin":            "demo.admin@example.test",
+		"lawyer":                "demo.lawyer@example.test",
+		"demo.lawyer":           "demo.lawyer@example.test",
+		"lawyer-b":              "demo.lawyer.b@example.test",
+		"demo.lawyer.b":         "demo.lawyer.b@example.test",
+		"assistant":             "demo.assistant@example.test",
+		"demo.assistant":        "demo.assistant@example.test",
+		"finance":               "demo.finance@example.test",
+		"demo.finance":          "demo.finance@example.test",
+		"conflict-officer":      "demo.conflict.officer@example.test",
+		"demo.conflict.officer": "demo.conflict.officer@example.test",
 	}
 
 	if resolved, ok := aliases[identifier]; ok {
@@ -161,6 +178,11 @@ func normalizeLoginAccount(email string, account string) string {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /auth/register [post]
 func (h *AuthHandler) Register(c *gin.Context) {
+	if !h.publicRegistrationEnabled {
+		common.NewAPIError(c, 403, "PUBLIC_REGISTRATION_DISABLED", "真实律所环境不开放公开注册，请联系律所管理员创建账号")
+		return
+	}
+
 	var req RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		common.APIBadRequest(c, "请求参数错误", "请检查所有必填字段")
@@ -219,17 +241,17 @@ type RevokeByUserRequest struct {
 
 // RevokeByDeviceRequest 撤销设备令牌请求
 type RevokeByDeviceRequest struct {
-	UserID   uint `json:"user_id" binding:"required"`
+	UserID   uint   `json:"user_id" binding:"required"`
 	DeviceID string `json:"device_id" binding:"required"`
 }
 
 // OffboardingRevocationRequest 离职撤销请求
 type OffboardingRevocationRequest struct {
-	UserID                uint   `json:"user_id" binding:"required"`
-	SuccessorID           uint   `json:"successor_id" binding:"required"`
-	TransferredCaseCount  int    `json:"transferred_case_count"`
-	TransferredCaseIDs    []uint `json:"transferred_case_ids"`
-	HandoverNote          string `json:"handover_note"`
+	UserID               uint   `json:"user_id" binding:"required"`
+	SuccessorID          uint   `json:"successor_id" binding:"required"`
+	TransferredCaseCount int    `json:"transferred_case_count"`
+	TransferredCaseIDs   []uint `json:"transferred_case_ids"`
+	HandoverNote         string `json:"handover_note"`
 }
 
 // Logout godoc
@@ -286,14 +308,13 @@ func (h *AuthHandler) RevokeUserTokens(c *gin.Context) {
 	}
 
 	// 获取当前用户ID（从JWT中提取）
-	currentUserID, exists := c.Get("user_id")
-	if !exists {
+	currentID, ok := middleware.GetCurrentUserID(c)
+	if !ok {
 		common.APIUnauthorized(c, "未认证", "用户信息无效")
 		return
 	}
 
 	// 只有管理员或用户本人可以撤销
-	currentID := currentUserID.(uint)
 	if currentID != req.UserID {
 		role, ok := middleware.GetCurrentRole(c)
 		if !ok || (role != "admin" && role != "super_admin") {
@@ -334,14 +355,13 @@ func (h *AuthHandler) RevokeDeviceTokens(c *gin.Context) {
 	}
 
 	// 获取当前用户ID
-	currentUserID, exists := c.Get("user_id")
+	currentID, exists := middleware.GetCurrentUserID(c)
 	if !exists {
 		common.APIUnauthorized(c, "未认证", "用户信息无效")
 		return
 	}
 
 	// 只有管理员或用户本人可以撤销
-	currentID := currentUserID.(uint)
 	if currentID != req.UserID {
 		role, ok := middleware.GetCurrentRole(c)
 		if !ok || (role != "admin" && role != "super_admin") {
@@ -433,14 +453,13 @@ func (h *AuthHandler) GetActiveDevices(c *gin.Context) {
 	}
 
 	// 获取当前用户ID
-	currentUserID, exists := c.Get("user_id")
+	currentID, exists := middleware.GetCurrentUserID(c)
 	if !exists {
 		common.APIUnauthorized(c, "未认证", "用户信息无效")
 		return
 	}
 
 	// 只有管理员或用户本人可以查看
-	currentID := currentUserID.(uint)
 	if currentID != id {
 		role, ok := middleware.GetCurrentRole(c)
 		if !ok || (role != "admin" && role != "super_admin") {
@@ -487,14 +506,13 @@ func (h *AuthHandler) GetRevocationHistory(c *gin.Context) {
 	}
 
 	// 获取当前用户ID
-	currentUserID, exists := c.Get("user_id")
+	currentID, exists := middleware.GetCurrentUserID(c)
 	if !exists {
 		common.APIUnauthorized(c, "未认证", "用户信息无效")
 		return
 	}
 
 	// 只有管理员或用户本人可以查看
-	currentID := currentUserID.(uint)
 	if currentID != id {
 		role, ok := middleware.GetCurrentRole(c)
 		if !ok || (role != "admin" && role != "super_admin") {

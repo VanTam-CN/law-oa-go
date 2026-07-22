@@ -100,6 +100,10 @@ func (r *riskAssessor) AssessRisk(ctx context.Context, conflicts []*models.Confl
 
 	// 确定风险等级
 	riskLevel := r.GetRiskLevel(totalScore)
+	if onlyUnverifiedCandidateEvidence(conflicts) && riskLevelRank(riskLevel) > riskLevelRank("MEDIUM") {
+		riskLevel = "MEDIUM"
+		totalScore = math.Min(totalScore, math.Max(0, r.config.HighRiskThreshold-0.01))
+	}
 	riskLevel = maxRiskLevel(riskLevel, conflicts)
 
 	// 生成建议
@@ -119,6 +123,24 @@ func (r *riskAssessor) AssessRisk(ctx context.Context, conflicts []*models.Confl
 	}
 
 	return assessment, nil
+}
+
+func onlyUnverifiedCandidateEvidence(conflicts []*models.ConflictCase) bool {
+	if len(conflicts) == 0 {
+		return false
+	}
+	for _, conflict := range conflicts {
+		conflictType := strings.ToUpper(strings.TrimSpace(conflict.ConflictType))
+		if !strings.Contains(conflictType, "待核实") && conflictType != "NAME_SIMILAR" && conflictType != "NAME_CANDIDATE" {
+			return false
+		}
+	}
+	return true
+}
+
+func riskLevelRank(level string) int {
+	rank := map[string]int{"MINIMAL": 0, "LOW": 1, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}
+	return rank[strings.ToUpper(strings.TrimSpace(level))]
 }
 
 func maxRiskLevel(current string, conflicts []*models.ConflictCase) string {

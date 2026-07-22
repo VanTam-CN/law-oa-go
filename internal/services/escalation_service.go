@@ -12,8 +12,8 @@ import (
 
 // EscalationService 升级通知服务
 type EscalationService struct {
-	inboxRepo repositories.InboxRepository
-	userRepo  repositories.UserRepository
+	inboxRepo  repositories.InboxRepository
+	userRepo   repositories.UserRepository
 	dispatcher *EventDispatcher
 }
 
@@ -31,10 +31,10 @@ type EscalationConfig struct {
 
 // DefaultEscalationConfig 默认升级配置
 var DefaultEscalationConfig = EscalationConfig{
-	CriticalEscalationDays:  3,
-	HighEscalationDays:      7,
-	MaxEscalationLevel:      3,
-	AutoEscalationEnabled:   true,
+	CriticalEscalationDays: 3,
+	HighEscalationDays:     7,
+	MaxEscalationLevel:     3,
+	AutoEscalationEnabled:  true,
 }
 
 // NewEscalationService 创建升级通知服务
@@ -180,8 +180,8 @@ func (s *EscalationService) escalateItem(ctx context.Context, item *models.Inbox
 		Timestamp: time.Now(),
 		SourceID:  item.ID,
 		Metadata: map[string]interface{}{
-			"user_id":        item.UserID,
-			"supervisor_id":  supervisorID,
+			"user_id":           item.UserID,
+			"supervisor_id":     supervisorID,
 			"escalation_reason": reason,
 			"original_due_date": item.DueDate,
 		},
@@ -293,7 +293,7 @@ func (s *EscalationService) GetEscalationStats(ctx context.Context) (*Escalation
 // EscalationStats 升级统计
 type EscalationStats struct {
 	TotalEscalations int            `json:"total_escalations"`
-	ByReason        map[string]int  `json:"by_reason"`
+	ByReason         map[string]int `json:"by_reason"`
 }
 
 // boolPtr 返回 bool 指针

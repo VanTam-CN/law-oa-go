@@ -1,0 +1,4 @@
+DROP TRIGGER IF EXISTS trg_compliance_audit_events_append_only ON compliance_audit_events;
+DROP TRIGGER IF EXISTS trg_conflict_reviews_append_only ON conflict_reviews;
+DROP TRIGGER IF EXISTS trg_case_subject_revisions_append_only ON case_subject_revisions;
+DROP FUNCTION IF EXISTS law_oa_reject_append_only_mutation();

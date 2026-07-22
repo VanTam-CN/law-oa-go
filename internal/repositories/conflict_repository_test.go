@@ -40,8 +40,8 @@ func TestIsDirectOpposingPartyClientIgnoresUnrelatedParty(t *testing.T) {
 // 修复后：只有规范化后完全相等才直接命中；包含关系应作为候选返回，由 caller 决定是否升级。
 func TestIsDirectOpposingPartyClient_DoesNotMatchShortSubstring(t *testing.T) {
 	cases := map[string][]string{
-		"华为技术有限公司":             {"华"},
-		"上海示例科技有限公司":            {"示例"},
+		"华为技术有限公司":         {"华"},
+		"上海示例科技有限公司":       {"示例"},
 		"阿里巴巴（中国）网络技术有限公司": {"阿里"},
 	}
 	for client, parties := range cases {
@@ -117,6 +117,35 @@ func setupConflictSQLiteDB(t *testing.T) *gorm.DB {
 	return db
 }
 
+func TestDocumentRepositoryListRejectsRawSortBy(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	require.NoError(t, err)
+	require.NoError(t, db.AutoMigrate(&models.Document{}))
+
+	older := time.Now().Add(-time.Hour)
+	newer := time.Now()
+	docs := []*models.Document{
+		{Name: "older", Filename: "older.pdf", Filepath: "/tmp/older.pdf", CreatedAt: older},
+		{Name: "newer", Filename: "newer.pdf", Filepath: "/tmp/newer.pdf", CreatedAt: newer},
+	}
+	for _, doc := range docs {
+		require.NoError(t, db.Create(doc).Error)
+	}
+
+	repo := NewDocumentRepository(db)
+	got, total, err := repo.List(context.Background(), &DocumentListParams{
+		Page:      1,
+		PageSize:  10,
+		SortBy:    "created_at; DROP TABLE documents; --",
+		SortOrder: "asc",
+	})
+	require.NoError(t, err)
+	require.Equal(t, int64(2), total)
+	require.Len(t, got, 2)
+	require.Equal(t, "newer", got[0].Name)
+	require.True(t, db.Migrator().HasTable(&models.Document{}))
+}
+
 // TestGetPotentialConflicts_CaseInsensitiveMatchOnSQLite
 // 验证 GetPotentialConflicts 的对方当事人子查询在 SQLite 下也能命中大小写不同的字符串。
 //
@@ -144,7 +173,7 @@ func TestGetPotentialConflicts_CaseInsensitiveMatchOnSQLite(t *testing.T) {
 
 	repo := NewConflictRepository(db, nil)
 	cases, err := repo.GetPotentialConflicts(context.Background(),
-		fmt.Sprintf("%d", client.ID), /* lawyerID */ 999,
+		fmt.Sprintf("%d", client.ID) /* lawyerID */, 999,
 		[]string{"acme corp"}, time.Time{})
 	require.NoError(t, err, "SQLite 下应当能跑通查询；当前 ILIKE 是 PostgreSQL 专属")
 
@@ -173,4 +202,131 @@ func TestGetPotentialConflicts_PropagatesDBError(t *testing.T) {
 	if len(cases) == 0 {
 		require.Error(t, err, "数据库故障必须传播 error，不能返回 (nil, nil) 制造无冲突假象")
 	}
+}
+
+func TestGetPotentialConflicts_IgnoresUnrelatedCasesOwnedBySameLawyer(t *testing.T) {
+	db := setupConflictSQLiteDB(t)
+	lawyer := models.User{Name: "承办律师", Username: "owner", Email: "owner@example.test", Password: "x", Role: "lawyer", Status: "active"}
+	require.NoError(t, db.Create(&lawyer).Error)
+	currentClient := models.Client{Name: "当前客户有限公司", Type: "企业", Email: "current@example.test"}
+	historicalClient := models.Client{Name: "无关历史客户有限公司", Type: "企业", Email: "history@example.test"}
+	require.NoError(t, db.Create(&currentClient).Error)
+	require.NoError(t, db.Create(&historicalClient).Error)
+	require.NoError(t, db.Create(&models.Case{
+		CaseNumber: "CASE-UNRELATED-001",
+		Title:      "无关劳动咨询",
+		CaseType:   "commercial",
+		ClientID:   historicalClient.ID,
+		LawyerID:   lawyer.ID,
+		Status:     "active",
+	}).Error)
+
+	repo := NewConflictRepository(db, nil)
+	cases, err := repo.GetPotentialConflicts(context.Background(), fmt.Sprint(currentClient.ID), lawyer.ID, []string{"另一家公司有限公司"}, time.Time{})
+	require.NoError(t, err)
+	assert.Empty(t, cases, "同一律师承办无关客户的案件不能单独构成代理冲突")
+}
+
+func TestGetPotentialConflicts_ClassifiesExactAndCandidateOpponentEvidence(t *testing.T) {
+	db := setupConflictSQLiteDB(t)
+	lawyer := models.User{Name: "承办律师", Username: "owner2", Email: "owner2@example.test", Password: "x", Role: "lawyer", Status: "active"}
+	require.NoError(t, db.Create(&lawyer).Error)
+	currentClient := models.Client{Name: "当前客户有限公司", Type: "企业", Email: "current2@example.test"}
+	historicalClient := models.Client{Name: "上海示例科技有限公司", Type: "企业", Email: "example-tech@example.test"}
+	require.NoError(t, db.Create(&currentClient).Error)
+	require.NoError(t, db.Create(&historicalClient).Error)
+	require.NoError(t, db.Create(&models.Case{
+		CaseNumber: "CASE-HISTORY-001",
+		Title:      "历史商事案件",
+		CaseType:   "commercial",
+		ClientID:   historicalClient.ID,
+		LawyerID:   lawyer.ID,
+		Status:     "active",
+	}).Error)
+
+	repo := NewConflictRepository(db, nil)
+	exact, err := repo.GetPotentialConflicts(context.Background(), fmt.Sprint(currentClient.ID), lawyer.ID, []string{"上海示例科技"}, time.Time{})
+	require.NoError(t, err)
+	require.Len(t, exact, 1)
+	assert.Equal(t, "CRITICAL", exact[0].RiskLevel)
+	assert.Equal(t, "对方当事人直接冲突", exact[0].ConflictType)
+
+	candidate, err := repo.GetPotentialConflicts(context.Background(), fmt.Sprint(currentClient.ID), lawyer.ID, []string{"示例科技"}, time.Time{})
+	require.NoError(t, err)
+	require.Len(t, candidate, 1)
+	assert.Equal(t, "MEDIUM", candidate[0].RiskLevel)
+	assert.Equal(t, "名称相似待核实", candidate[0].ConflictType)
+}
+
+func TestLinkConflictCheckToCaseRequiresExplicitConsistentContext(t *testing.T) {
+	db := setupConflictSQLiteDB(t)
+	client := models.Client{Name: "当前客户", Type: "企业"}
+	require.NoError(t, db.Create(&client).Error)
+	caseModel := models.Case{
+		CaseNumber: "CASE-LINK-001",
+		Title:      "待复核案件",
+		CaseType:   "commercial",
+		ClientID:   client.ID,
+		LawyerID:   1,
+		Status:     "pending",
+	}
+	require.NoError(t, db.Create(&caseModel).Error)
+	require.NoError(t, db.Exec(`CREATE TABLE conflict_check_records (
+		check_id TEXT PRIMARY KEY, client_id TEXT, search_parameters TEXT
+	)`).Error)
+	require.NoError(t, db.Exec(`INSERT INTO conflict_check_records (check_id, client_id, search_parameters) VALUES (?, ?, ?)`,
+		"CCT-LINK-001", fmt.Sprint(client.ID), fmt.Sprintf(`{"clientId":"%d","subjectCaseId":"%d","intakeId":"%s"}`, client.ID, caseModel.ID, "intake-link-001")).Error)
+	require.NoError(t, db.Exec(`CREATE TABLE case_intakes (id TEXT PRIMARY KEY, client_id TEXT, status TEXT, metadata TEXT, updated_at DATETIME)`).Error)
+	require.NoError(t, db.Exec(`INSERT INTO case_intakes (id, client_id, status, metadata, updated_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)`, "intake-link-001", client.ID, "draft", `{"source":"test"}`).Error)
+
+	repo := NewConflictRepository(db, nil)
+	require.NoError(t, repo.(ConflictSubjectLinker).LinkConflictCheckToCase(context.Background(), ConflictSubjectAssociation{
+		CheckID:           "CCT-LINK-001",
+		SubjectCaseID:     fmt.Sprint(caseModel.ID),
+		SubjectCaseNumber: caseModel.CaseNumber,
+		IntakeID:          "intake-link-001",
+		ClientID:          fmt.Sprint(client.ID),
+		CoverageStatus:    "COMPLETE",
+		CheckedAt:         time.Now(),
+	}))
+
+	var linked models.Case
+	require.NoError(t, db.First(&linked, caseModel.ID).Error)
+	assert.Equal(t, "CCT-LINK-001", linked.ConflictCheckID)
+	assert.Equal(t, "COMPLETE", linked.ConflictCoverageStatus)
+	var intake struct {
+		Status   string
+		Metadata string
+	}
+	require.NoError(t, db.Table("case_intakes").Select("status, metadata").Where("id = ?", "intake-link-001").Take(&intake).Error)
+	assert.Equal(t, "conflict_ready", intake.Status)
+	assert.Contains(t, intake.Metadata, "CCT-LINK-001")
+
+	err := repo.(ConflictSubjectLinker).LinkConflictCheckToCase(context.Background(), ConflictSubjectAssociation{
+		CheckID:           "CCT-LINK-002",
+		SubjectCaseID:     fmt.Sprint(caseModel.ID),
+		SubjectCaseNumber: "CASE-WRONG-001",
+		ClientID:          fmt.Sprint(client.ID),
+	})
+	require.Error(t, err)
+	var unchanged models.Case
+	require.NoError(t, db.First(&unchanged, caseModel.ID).Error)
+	assert.Equal(t, "CCT-LINK-001", unchanged.ConflictCheckID, "a stale case number must not overwrite the existing association")
+
+	err = repo.(ConflictSubjectLinker).LinkConflictCheckToCase(context.Background(), ConflictSubjectAssociation{
+		CheckID:       "CCT-LINK-001",
+		SubjectCaseID: fmt.Sprint(caseModel.ID),
+		ClientID:      "different-client",
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "客户")
+
+	err = repo.(ConflictSubjectLinker).LinkConflictCheckToCase(context.Background(), ConflictSubjectAssociation{
+		CheckID:           "CCT-LINK-001",
+		SubjectCaseID:     fmt.Sprint(caseModel.ID + 1),
+		SubjectCaseNumber: caseModel.CaseNumber,
+		ClientID:          fmt.Sprint(client.ID),
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "案件 ID")
 }

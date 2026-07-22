@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -10,13 +11,34 @@ import (
 )
 
 type CaseHandler struct {
-	caseService *services.CaseService
+	caseService           *services.CaseService
+	authz                 *services.AuthorizationService
+	ethicalWallListFilter bool
 }
 
-func NewCaseHandler(caseService *services.CaseService) *CaseHandler {
+// SetEthicalWallListFilterEnabled enables SQL-side filtering for the case
+// list. Detail middleware alone cannot protect pagination, search, or counts.
+func (h *CaseHandler) SetEthicalWallListFilterEnabled(enabled bool) {
+	h.ethicalWallListFilter = enabled
+}
+
+func NewCaseHandler(caseService *services.CaseService, authz ...*services.AuthorizationService) *CaseHandler {
+	var authorizationService *services.AuthorizationService
+	if len(authz) > 0 {
+		authorizationService = authz[0]
+	}
 	return &CaseHandler{
 		caseService: caseService,
+		authz:       authorizationService,
 	}
+}
+
+func (h *CaseHandler) requireAuthorization(c *gin.Context) bool {
+	if h.authz == nil {
+		common.NewAPIError(c, http.StatusServiceUnavailable, "CASE_AUTHZ_UNAVAILABLE", "案件权限服务未初始化，当前不会返回或修改案件数据")
+		return false
+	}
+	return true
 }
 
 // CreateCase godoc
@@ -33,14 +55,38 @@ func NewCaseHandler(caseService *services.CaseService) *CaseHandler {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /cases [post]
 func (h *CaseHandler) CreateCase(c *gin.Context) {
+	if !h.requireAuthorization(c) {
+		return
+	}
 	var req services.CreateCaseRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		common.APIBadRequest(c, "请求参数错误", "请检查所有必填字段")
 		return
 	}
 
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
+	if req.AssignedBy == 0 {
+		req.AssignedBy = actor.UserID
+	}
+	allowed, err := h.authz.CanCreateCase(c.Request.Context(), actor, &req)
+	if err != nil {
+		common.APIInternalServerError(c, "权限检查失败", err.Error())
+		return
+	}
+	if !allowed {
+		forbidObjectAccess(c)
+		return
+	}
+
 	caseResp, err := h.caseService.CreateCase(c.Request.Context(), &req)
 	if err != nil {
+		if isSubjectWorkflowError(err) {
+			writeSubjectWorkflowError(c, err)
+			return
+		}
 		common.APIInternalServerError(c, "创建案件失败", err.Error())
 		return
 	}
@@ -63,10 +109,27 @@ func (h *CaseHandler) CreateCase(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /cases/{id} [get]
 func (h *CaseHandler) GetCase(c *gin.Context) {
+	if !h.requireAuthorization(c) {
+		return
+	}
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
 		common.APIBadRequest(c, "请求参数错误", "案件ID必须是有效数字")
+		return
+	}
+
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
+	allowed, err := h.authz.CanReadCase(c.Request.Context(), actor, uint(id))
+	if err != nil {
+		common.APIInternalServerError(c, "权限检查失败", err.Error())
+		return
+	}
+	if !allowed {
+		forbidObjectAccess(c)
 		return
 	}
 
@@ -101,6 +164,9 @@ func (h *CaseHandler) GetCase(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /cases/{id} [put]
 func (h *CaseHandler) UpdateCase(c *gin.Context) {
+	if !h.requireAuthorization(c) {
+		return
+	}
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
@@ -114,8 +180,26 @@ func (h *CaseHandler) UpdateCase(c *gin.Context) {
 		return
 	}
 
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
+	allowed, err := h.authz.CanManageCase(c.Request.Context(), actor, uint(id))
+	if err != nil {
+		common.APIInternalServerError(c, "权限检查失败", err.Error())
+		return
+	}
+	if !allowed {
+		forbidObjectAccess(c)
+		return
+	}
+
 	caseResp, err := h.caseService.UpdateCase(c.Request.Context(), uint(id), &req)
 	if err != nil {
+		if isSubjectWorkflowError(err) {
+			writeSubjectWorkflowError(c, err)
+			return
+		}
 		common.APIInternalServerError(c, "更新案件失败", err.Error())
 		return
 	}
@@ -138,10 +222,27 @@ func (h *CaseHandler) UpdateCase(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /cases/{id} [delete]
 func (h *CaseHandler) DeleteCase(c *gin.Context) {
+	if !h.requireAuthorization(c) {
+		return
+	}
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
 		common.APIBadRequest(c, "请求参数错误", "案件ID必须是有效数字")
+		return
+	}
+
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
+	allowed, err := h.authz.CanManageCase(c.Request.Context(), actor, uint(id))
+	if err != nil {
+		common.APIInternalServerError(c, "权限检查失败", err.Error())
+		return
+	}
+	if !allowed {
+		forbidObjectAccess(c)
 		return
 	}
 
@@ -170,15 +271,25 @@ func (h *CaseHandler) DeleteCase(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /cases [get]
 func (h *CaseHandler) ListCases(c *gin.Context) {
+	if !h.requireAuthorization(c) {
+		return
+	}
 	var req services.ListCasesRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		common.APIBadRequest(c, "查询参数错误", "请检查查询参数")
 		return
 	}
-	if role, _ := middleware.GetCurrentRole(c); role == "lawyer" {
-		if userID, ok := middleware.GetCurrentUserID(c); ok {
-			req.LawyerID = userID
-		}
+	var actor services.AuthActor
+	var actorOK bool
+	actor, actorOK = currentAuthActor(c)
+	if !actorOK {
+		return
+	}
+	if h.ethicalWallListFilter {
+		req.EthicalWallUserID = actor.UserID
+	}
+	if !services.IsBusinessMatterManagementRole(actor.Role) {
+		req.LawyerID = actor.UserID
 	}
 
 	response, err := h.caseService.ListCases(c.Request.Context(), &req)

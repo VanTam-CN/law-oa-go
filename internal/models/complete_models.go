@@ -173,7 +173,7 @@ type ClientComplete struct {
 
 	// 企业信息
 	Company      string  `json:"company" gorm:"size:100"`
-	IDCard       string  `json:"id_card" gorm:"column:id_card;size:18"`
+	IDCard       string  `json:"-" gorm:"column:id_card;size:18"`
 
 	// 行业信息
 	Industry     string  `json:"industry" gorm:"column:industry;size:50"`
@@ -333,7 +333,7 @@ type LawEntity struct {
 	EntityName    string  `json:"entity_name" gorm:"column:entity_name;size:200;not null"`
 	EntityType    string  `json:"entity_type" gorm:"column:entity_type;size:50"`
 	EntitySubtype string  `json:"entity_subtype" gorm:"column:entity_subtype;size:50"`
-	IDCard        string  `json:"id_card" gorm:"size:20"`
+	IDCard        string  `json:"-" gorm:"size:20"`
 	LicenseNo     string  `json:"license_no" gorm:"column:license_no;size:50"`
 	Address       string  `json:"address" gorm:"type:text"`
 	ContactInfo   string  `json:"contact_info" gorm:"type:text"`

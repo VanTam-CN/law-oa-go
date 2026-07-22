@@ -1,5 +1,6 @@
-# Law OA Go 后端服务 - Kubernetes Service配置
-# 基于最新Kubernetes Service最佳实践
+# Law OA Go Kubernetes production service contracts.
+# PostgreSQL, Redis and Elasticsearch workloads are managed by the platform or
+# a separate operator; these Services only provide the names used by the app.
 
 apiVersion: v1
 kind: Service
@@ -9,43 +10,21 @@ metadata:
   labels:
     app: law-oa
     component: backend
-    service-type: backend
     environment: production
     project: law-oa-go
-    managed-by: kubectl
-  annotations:
-    description: "Law OA Go 后端API服务"
-    prometheus.io/scrape: "true"
-    prometheus.io/port: "8080"
-    prometheus.io/path: "/metrics"
-    service.beta.kubernetes.io/load-balancer-source-ranges: "0.0.0.0/0"
-
 spec:
   type: ClusterIP
   sessionAffinity: None
-
   ports:
-  - name: http
-    port: 8080
-    targetPort: http
-    protocol: TCP
-
-  - name: grpc
-    port: 9090
-    targetPort: grpc
-    protocol: TCP
-
-  - name: metrics
-    port: 8081
-    targetPort: metrics
-    protocol: TCP
-
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP
   selector:
     app: law-oa
     component: backend
 
 ---
-# 前端服务
 apiVersion: v1
 kind: Service
 metadata:
@@ -54,61 +33,44 @@ metadata:
   labels:
     app: law-oa
     component: frontend
-    service-type: frontend
     environment: production
     project: law-oa-go
-    managed-by: kubectl
-  annotations:
-    description: "Law OA Go 前端应用服务"
-
 spec:
   type: ClusterIP
-  sessionAffinity: None
-
   ports:
-  - name: http
-    port: 80
-    targetPort: http
-    protocol: TCP
-
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
   selector:
     app: law-oa
     component: frontend
 
 ---
-# 数据库服务
+# This Service expects an operator-managed PostgreSQL workload with matching
+# labels, or an explicitly managed Endpoints/EndpointSlice.
 apiVersion: v1
 kind: Service
 metadata:
-  name: law-oa-mysql-service
+  name: law-oa-postgres-service
   namespace: law-oa
   labels:
     app: law-oa
     component: database
-    service-type: mysql
     environment: production
     project: law-oa-go
-    managed-by: kubectl
-  annotations:
-    description: "Law OA Go MySQL数据库服务"
-
 spec:
   type: ClusterIP
-  sessionAffinity: None
-  clusterIP: None  # Headless service for direct pod communication
-
   ports:
-  - name: mysql
-    port: 3306
-    targetPort: mysql
-    protocol: TCP
-
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+      protocol: TCP
   selector:
     app: law-oa
-    component: mysql
+    component: postgres
 
 ---
-# Redis服务
 apiVersion: v1
 kind: Service
 metadata:
@@ -117,30 +79,23 @@ metadata:
   labels:
     app: law-oa
     component: cache
-    service-type: redis
     environment: production
     project: law-oa-go
-    managed-by: kubectl
-  annotations:
-    description: "Law OA Go Redis缓存服务"
-
 spec:
   type: ClusterIP
-  sessionAffinity: None
-  clusterIP: None  # Headless service
-
   ports:
-  - name: redis
-    port: 6379
-    targetPort: redis
-    protocol: TCP
-
+    - name: redis
+      port: 6379
+      targetPort: redis
+      protocol: TCP
   selector:
     app: law-oa
     component: redis
 
 ---
-# Elasticsearch服务
+# Elasticsearch is intentionally kept in its own logging namespace. The
+# application only needs the HTTP endpoint; transport and monitoring services
+# belong to the Elasticsearch operator deployment.
 apiVersion: v1
 kind: Service
 metadata:
@@ -149,251 +104,15 @@ metadata:
   labels:
     app: law-oa
     component: elasticsearch
-    service-type: search
     environment: production
     project: law-oa-go
-    managed-by: kubectl
-  annotations:
-    description: "Law OA Go Elasticsearch搜索服务"
-
 spec:
   type: ClusterIP
-  sessionAffinity: None
-
   ports:
-  - name: http
-    port: 9200
-    targetPort: http
-    protocol: TCP
-
-  - name: transport
-    port: 9300
-    targetPort: transport
-    protocol: TCP
-
+    - name: http
+      port: 9200
+      targetPort: http
+      protocol: TCP
   selector:
     app: law-oa
     component: elasticsearch
-
----
-# Kibana服务
-apiVersion: v1
-kind: Service
-metadata:
-  name: law-oa-kibana-service
-  namespace: law-oa-logging
-  labels:
-    app: law-oa
-    component: kibana
-    service-type: analytics
-    environment: production
-    project: law-oa-go
-    managed-by: kubectl
-  annotations:
-    description: "Law OA Go Kibana分析服务"
-
-spec:
-  type: ClusterIP
-  sessionAffinity: None
-
-  ports:
-  - name: http
-    port: 5601
-    targetPort: http
-    protocol: TCP
-
-  selector:
-    app: law-oa
-    component: kibana
-
----
-# Jaeger服务
-apiVersion: v1
-kind: Service
-metadata:
-  name: law-oa-jaeger-service
-  namespace: law-oa-monitoring
-  labels:
-    app: law-oa
-    component: jaeger
-    service-type: tracing
-    environment: production
-    project: law-oa-go
-    managed-by: kubectl
-  annotations:
-    description: "Law OA Go Jaeger分布式追踪服务"
-
-spec:
-  type: ClusterIP
-  sessionAffinity: None
-
-  ports:
-  - name: http-ui
-    port: 16686
-    targetPort: http-ui
-    protocol: TCP
-
-  - name: collector-grpc
-    port: 14250
-    targetPort: collector-grpc
-    protocol: TCP
-
-  - name: collector-http
-    port: 14268
-    targetPort: collector-http
-    protocol: TCP
-
-  - name: agent-compact
-    port: 6831
-    targetPort: agent-compact
-    protocol: UDP
-
-  - name: agent-binary
-    port: 6832
-    targetPort: agent-binary
-    protocol: UDP
-
-  selector:
-    app: law-oa
-    component: jaeger
-
----
-# Prometheus服务
-apiVersion: v1
-kind: Service
-metadata:
-  name: law-oa-prometheus-service
-  namespace: law-oa-monitoring
-  labels:
-    app: law-oa
-    component: prometheus
-    service-type: monitoring
-    environment: production
-    project: law-oa-go
-    managed-by: kubectl
-  annotations:
-    description: "Law OA Go Prometheus监控服务"
-    prometheus.io/scrape: "true"
-    prometheus.io/port: "9090"
-    prometheus.io/path: "/metrics"
-
-spec:
-  type: ClusterIP
-  sessionAffinity: None
-
-  ports:
-  - name: http
-    port: 9090
-    targetPort: http
-    protocol: TCP
-
-  selector:
-    app: law-oa
-    component: prometheus
-
----
-# Grafana服务
-apiVersion: v1
-kind: Service
-metadata:
-  name: law-oa-grafana-service
-  namespace: law-oa-monitoring
-  labels:
-    app: law-oa
-    component: grafana
-    service-type: visualization
-    environment: production
-    project: law-oa-go
-    managed-by: kubectl
-  annotations:
-    description: "Law OA Go Grafana可视化服务"
-
-spec:
-  type: ClusterIP
-  sessionAffinity: None
-
-  ports:
-  - name: http
-    port: 3000
-    targetPort: http
-    protocol: TCP
-
-  selector:
-    app: law-oa
-    component: grafana
-
----
-# Nginx负载均衡服务
-apiVersion: v1
-kind: Service
-metadata:
-  name: law-oa-nginx-service
-  namespace: law-oa
-  labels:
-    app: law-oa
-    component: nginx
-    service-type: loadbalancer
-    environment: production
-    project: law-oa-go
-    managed-by: kubectl
-  annotations:
-    description: "Law OA Go Nginx负载均衡服务"
-    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
-    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
-    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012"
-
-spec:
-  type: LoadBalancer
-  sessionAffinity: None
-  externalTrafficPolicy: Local
-
-  ports:
-  - name: http
-    port: 80
-    targetPort: http
-    protocol: TCP
-
-  - name: https
-    port: 443
-    targetPort: https
-    protocol: TCP
-
-  selector:
-    app: law-oa
-    component: nginx
-
----
-# 监控端点服务 (用于外部监控)
-apiVersion: v1
-kind: Service
-metadata:
-  name: law-oa-metrics-service
-  namespace: law-oa
-  labels:
-    app: law-oa
-    component: metrics
-    service-type: monitoring
-    environment: production
-    project: law-oa-go
-    managed-by: kubectl
-  annotations:
-    description: "Law OA Go 应用监控端点服务"
-    prometheus.io/scrape: "true"
-    prometheus.io/port: "8080"
-    prometheus.io/path: "/metrics"
-
-spec:
-  type: NodePort
-  sessionAffinity: None
-  externalTrafficPolicy: Local
-
-  ports:
-  - name: metrics
-    port: 8080
-    targetPort: metrics
-    nodePort: 30080
-    protocol: TCP
-
-  selector:
-    app: law-oa
-    component: backend

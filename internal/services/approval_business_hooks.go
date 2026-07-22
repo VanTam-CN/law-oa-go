@@ -4,11 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"time"
 
-	"law-oa-go/internal/models"
 	"gorm.io/gorm"
+	"law-oa-go/internal/models"
 )
 
 // ApprovalBusinessHook 审批业务钩子接口
@@ -23,8 +22,8 @@ type ApprovalBusinessHook interface {
 
 // ApprovalBusinessHookService 审批业务钩子服务
 type ApprovalBusinessHookService struct {
-	db      *gorm.DB
-	hooks   map[string]ApprovalBusinessHook
+	db       *gorm.DB
+	hooks    map[string]ApprovalBusinessHook
 	caseRepo ApprovalCaseRepository
 	sealRepo *SealRecordRepository
 }
@@ -32,15 +31,19 @@ type ApprovalBusinessHookService struct {
 // NewApprovalBusinessHookService 创建业务钩子服务
 func NewApprovalBusinessHookService(db *gorm.DB) *ApprovalBusinessHookService {
 	service := &ApprovalBusinessHookService{
-		db:    db,
-		hooks: make(map[string]ApprovalBusinessHook),
+		db:       db,
+		hooks:    make(map[string]ApprovalBusinessHook),
 		caseRepo: NewLocalCaseRepo(db),
 		sealRepo: NewSealRecordRepository(db),
 	}
 
 	// 注册预置钩子
 	service.RegisterHook(models.TemplateSealApproval, &SealApprovalHook{db: db})
-	service.RegisterHook(models.TemplateCaseFiling, &CaseCreationApprovalHook{db: db, caseRepo: service.caseRepo})
+	service.RegisterHook(models.TemplateCaseFiling, &CaseCreationApprovalHook{
+		db:             db,
+		caseRepo:       service.caseRepo,
+		subjectRecheck: NewSubjectRecheckService(db, nil),
+	})
 
 	return service
 }
@@ -95,24 +98,24 @@ func (h *SealApprovalHook) OnApproved(approval *models.ApprovalRequest) error {
 
 	// 创建用印记录
 	record := &SealRecord{
-		ApprovalID:       approval.ID,
-		ApprovalNumber:   approval.RequestNumber,
-		DocumentTitle:    metadata.DocumentTitle,
-		DocumentType:     metadata.DocumentType,
-		SealType:         metadata.SealType,
-		SealCount:        metadata.SealCount,
-		SealImportance:   metadata.SealImportance,
-		ContractValue:    metadata.ContractValue,
-		UsePurpose:       metadata.UsePurpose,
-		ApplicantID:      approval.ApplicantID,
-		ApplicantName:    approval.ApplicantName,
-		DepartmentID:     approval.DepartmentID,
-		DepartmentName:   approval.DepartmentName,
-		SealDate:         time.Now(),
-		Status:           "completed",
-		CreatedBy:        approval.ApplicantID,
-		CreatedAt:        time.Now(),
-		UpdatedAt:        time.Now(),
+		ApprovalID:     approval.ID,
+		ApprovalNumber: approval.RequestNumber,
+		DocumentTitle:  metadata.DocumentTitle,
+		DocumentType:   metadata.DocumentType,
+		SealType:       metadata.SealType,
+		SealCount:      metadata.SealCount,
+		SealImportance: metadata.SealImportance,
+		ContractValue:  metadata.ContractValue,
+		UsePurpose:     metadata.UsePurpose,
+		ApplicantID:    approval.ApplicantID,
+		ApplicantName:  approval.ApplicantName,
+		DepartmentID:   approval.DepartmentID,
+		DepartmentName: approval.DepartmentName,
+		SealDate:       time.Now(),
+		Status:         "completed",
+		CreatedBy:      approval.ApplicantID,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 
 	if err := h.db.Create(record).Error; err != nil {
@@ -137,9 +140,9 @@ func (h *SealApprovalHook) OnCancelled(approval *models.ApprovalRequest) error {
 
 // CaseCreationApprovalHook 立案审批钩子
 type CaseCreationApprovalHook struct {
-	db              *gorm.DB
-	caseRepo        ApprovalCaseRepository
-	conflictService ConflictDetectionServiceInterface // 可选的冲突检测服务，可以为nil
+	db             *gorm.DB
+	caseRepo       ApprovalCaseRepository
+	subjectRecheck *SubjectRecheckService
 }
 
 // OnApproved 立案审批通过后创建案件
@@ -148,6 +151,16 @@ func (h *CaseCreationApprovalHook) OnApproved(approval *models.ApprovalRequest) 
 	var metadata models.CaseCreationMetadata
 	if err := json.Unmarshal([]byte(approval.Metadata), &metadata); err != nil {
 		return fmt.Errorf("解析立案元数据失败: %v", err)
+	}
+	checkID := conflictCheckIDFromMetadata(parseMetadata(approval.Metadata))
+	if h.subjectRecheck == nil {
+		return NewSubjectWorkflowError("SUBJECT_GATE_UNAVAILABLE", "主体版本服务未初始化，已阻止审批成案")
+	}
+	if checkID == "" {
+		return NewSubjectWorkflowError("CONFLICT_CHECK_REQUIRED", "审批成案必须绑定已独立复核的利益冲突检测记录")
+	}
+	if err := h.subjectRecheck.RequireConflictDispositionForCase(context.Background(), checkID, metadata.ClientID, metadata.LawyerID, "approval_case_creation"); err != nil {
+		return err
 	}
 
 	// 生成案件编号
@@ -159,16 +172,20 @@ func (h *CaseCreationApprovalHook) OnApproved(approval *models.ApprovalRequest) 
 	// 创建案件
 	now := time.Now()
 	newCase := &models.Case{
-		CaseNumber:      caseNumber,
-		Title:           metadata.CaseTitle,
-		Description:     metadata.CaseDescription,
-		ClientID:        metadata.ClientID,
-		LawyerID:        metadata.LawyerID,
-		CaseType:        metadata.CaseType,
-		Priority:        h.mapPriority(metadata.Urgency),
-		Status:          "active",
-		StartDate:       &now,
-		CreatedBy:       approval.ApplicantID,
+		CaseNumber:             caseNumber,
+		Title:                  metadata.CaseTitle,
+		Description:            metadata.CaseDescription,
+		ClientID:               metadata.ClientID,
+		LawyerID:               metadata.LawyerID,
+		CaseType:               metadata.CaseType,
+		Priority:               h.mapPriority(metadata.Urgency),
+		Status:                 "active",
+		StartDate:              &now,
+		CreatedBy:              approval.ApplicantID,
+		SubjectVersion:         1,
+		SubjectState:           models.SubjectStateEffective,
+		ConflictCheckID:        checkID,
+		ConflictCoverageStatus: "COMPLETE",
 	}
 
 	// 开启事务创建案件
@@ -178,11 +195,11 @@ func (h *CaseCreationApprovalHook) OnApproved(approval *models.ApprovalRequest) 
 		}
 
 		// 更新审批元数据，关联案件ID
-		updatedMetadataMap := map[string]interface{}{
-			"case_id":     newCase.ID,
-			"case_number": caseNumber,
-			"created_at":  time.Now().Format(time.RFC3339),
-		}
+		updatedMetadataMap := parseMetadata(approval.Metadata)
+		updatedMetadataMap["conflict_check_id"] = checkID
+		updatedMetadataMap["case_id"] = newCase.ID
+		updatedMetadataMap["case_number"] = caseNumber
+		updatedMetadataMap["created_at"] = time.Now().Format(time.RFC3339)
 		metadataBytes, _ := json.Marshal(updatedMetadataMap)
 		approval.Metadata = string(metadataBytes)
 		approval.UpdatedBy = approval.ApplicantID
@@ -195,67 +212,6 @@ func (h *CaseCreationApprovalHook) OnApproved(approval *models.ApprovalRequest) 
 	})
 	if err != nil {
 		return err
-	}
-
-	// 案件创建成功后，异步触发冲突检查
-	if h.conflictService != nil && metadata.ClientName != "" {
-		go func(approvalID string, approvalMetadata string, applicantID string, caseID uint, meta models.CaseCreationMetadata) {
-			ctx := context.Background()
-			conflictReq := &models.ConflictCheckRequest{
-				ClientName:  meta.ClientName,
-				ClientType:  "ANY",
-				CaseName:    meta.CaseTitle,
-				CaseType:    meta.CaseType,
-				UserID:      applicantID,
-				RequestTime: time.Now(),
-			}
-
-			if meta.OpposingParty != "" {
-				conflictReq.OtherParties = []string{meta.OpposingParty}
-			}
-
-			result, err := h.conflictService.PerformConflictCheck(ctx, conflictReq)
-			if err != nil {
-				log.Printf("[冲突检查] 立案审批通过后自动冲突检查失败, 案件ID=%d, 审批ID=%s, 错误: %v", caseID, approvalID, err)
-				return
-			}
-
-			// 将冲突检查结果写入审批元数据
-			conflictMeta := map[string]interface{}{
-				"conflict_check_id": result.CheckID,
-				"has_conflict":      result.HasConflict,
-				"risk_level":        "",
-				"checked_at":        result.CheckTime.Format(time.RFC3339),
-			}
-			if result.RiskAssessment != nil {
-				conflictMeta["risk_level"] = result.RiskAssessment.OverallRisk
-			}
-
-			// 更新审批记录的元数据，使用事务和 SELECT FOR UPDATE 锁定行防止并发覆盖
-			_ = h.db.Transaction(func(tx *gorm.DB) error {
-				var currentApproval models.ApprovalRequest
-				if err := tx.Set("gorm:query_option", "FOR UPDATE").First(&currentApproval, "id = ?", approvalID).Error; err != nil {
-					return err
-				}
-
-				var existingMeta map[string]interface{}
-				if err := json.Unmarshal([]byte(currentApproval.Metadata), &existingMeta); err != nil {
-					existingMeta = make(map[string]interface{})
-				}
-
-				// 合并最新的冲突检查字段
-				existingMeta["conflict_check"] = conflictMeta
-				metaBytes, err := json.Marshal(existingMeta)
-				if err != nil {
-					return err
-				}
-
-				return tx.Model(&currentApproval).Update("metadata", string(metaBytes)).Error
-			})
-
-			log.Printf("[冲突检查] 立案审批通过后自动冲突检查完成, 案件ID=%d, 检查ID=%s, 存在冲突=%t",
-				caseID, result.CheckID, result.HasConflict)
-		}(approval.ID, approval.Metadata, approval.ApplicantID, newCase.ID, metadata)
 	}
 
 	return nil
@@ -317,26 +273,26 @@ func (h *CaseCreationApprovalHook) mapPriority(urgency string) string {
 
 // SealRecord 用印记录
 type SealRecord struct {
-	ID               uint      `gorm:"primarykey"`
-	ApprovalID       string    `gorm:"column:approval_id;type:varchar(36);not null;index"`
-	ApprovalNumber   string    `gorm:"column:approval_number;type:varchar(50);not null"`
-	DocumentTitle    string    `gorm:"column:document_title;type:varchar(255);not null"`
-	DocumentType     string    `gorm:"column:document_type;type:varchar(100)"`
-	SealType         string    `gorm:"column:seal_type;type:varchar(50);not null"`
-	SealCount        int       `gorm:"column:seal_count;default:1;not null"`
-	SealImportance   string    `gorm:"column:seal_importance;type:varchar(20)"`
-	ContractValue    float64   `gorm:"column:contract_value"`
-	UsePurpose       string    `gorm:"column:use_purpose;type:text"`
-	ApplicantID      string    `gorm:"column:applicant_id;type:varchar(36);not null"`
-	ApplicantName    string    `gorm:"column:applicant_name;type:varchar(255);not null"`
-	DepartmentID     string    `gorm:"column:department_id;type:varchar(36)"`
-	DepartmentName   string    `gorm:"column:department_name;type:varchar(255)"`
-	SealDate         time.Time `gorm:"column:seal_date;not null"`
-	Status           string    `gorm:"column:status;type:varchar(20);default:'completed'"`
-	CreatedBy        string    `gorm:"column:created_by;type:varchar(36);not null"`
-	CreatedAt        time.Time `gorm:"column:created_at;autoCreateTime"`
-	UpdatedAt        time.Time `gorm:"column:updated_at;autoUpdateTime"`
-	DeletedAt        gorm.DeletedAt `gorm:"column:deleted_at;index"`
+	ID             uint           `gorm:"primarykey"`
+	ApprovalID     string         `gorm:"column:approval_id;type:varchar(36);not null;index"`
+	ApprovalNumber string         `gorm:"column:approval_number;type:varchar(50);not null"`
+	DocumentTitle  string         `gorm:"column:document_title;type:varchar(255);not null"`
+	DocumentType   string         `gorm:"column:document_type;type:varchar(100)"`
+	SealType       string         `gorm:"column:seal_type;type:varchar(50);not null"`
+	SealCount      int            `gorm:"column:seal_count;default:1;not null"`
+	SealImportance string         `gorm:"column:seal_importance;type:varchar(20)"`
+	ContractValue  float64        `gorm:"column:contract_value"`
+	UsePurpose     string         `gorm:"column:use_purpose;type:text"`
+	ApplicantID    string         `gorm:"column:applicant_id;type:varchar(36);not null"`
+	ApplicantName  string         `gorm:"column:applicant_name;type:varchar(255);not null"`
+	DepartmentID   string         `gorm:"column:department_id;type:varchar(36)"`
+	DepartmentName string         `gorm:"column:department_name;type:varchar(255)"`
+	SealDate       time.Time      `gorm:"column:seal_date;not null"`
+	Status         string         `gorm:"column:status;type:varchar(20);default:'completed'"`
+	CreatedBy      string         `gorm:"column:created_by;type:varchar(36);not null"`
+	CreatedAt      time.Time      `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt      time.Time      `gorm:"column:updated_at;autoUpdateTime"`
+	DeletedAt      gorm.DeletedAt `gorm:"column:deleted_at;index"`
 }
 
 // TableName 指定表名

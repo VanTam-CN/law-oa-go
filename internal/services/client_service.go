@@ -98,13 +98,15 @@ type HistoricalMatterSummary struct {
 }
 
 type ClientListRequest struct {
-	Page     int    `form:"page" binding:"omitempty,min=1"`
-	PageSize int    `form:"page_size" binding:"omitempty,min=1,max=100"`
-	Name     string `form:"name" binding:"omitempty,max=100"`
-	Type     string `form:"type" binding:"omitempty,oneof=个人 企业"`
-	Status   string `form:"status" binding:"omitempty,oneof=active inactive"`
-	Search   string `form:"search"`
-	Company  string `form:"company"`
+	Page               int    `form:"page" binding:"omitempty,min=1"`
+	PageSize           int    `form:"page_size" binding:"omitempty,min=1,max=100"`
+	Name               string `form:"name" binding:"omitempty,max=100"`
+	Type               string `form:"type" binding:"omitempty,oneof=个人 企业"`
+	Status             string `form:"status" binding:"omitempty,oneof=active inactive"`
+	Search             string `form:"search"`
+	Company            string `form:"company"`
+	AccessibleByUserID uint   `form:"-"`
+	EthicalWallUserID  uint   `form:"-"`
 }
 
 type ClientStatsResponse struct {
@@ -206,6 +208,10 @@ func (s *ClientService) UpdateClient(ctx context.Context, id uint, req *UpdateCl
 	}
 	if req.IDCard != nil {
 		client.IDCard = *req.IDCard
+		if strings.TrimSpace(*req.IDCard) == "" {
+			client.IDCardDigest = ""
+			client.IDCardCiphertext = ""
+		}
 	}
 	if req.Company != nil {
 		client.Company = *req.Company
@@ -266,12 +272,14 @@ func (s *ClientService) ListClients(ctx context.Context, req *ClientListRequest)
 	}
 
 	params := &repositories.ClientListParams{
-		Page:     page,
-		PageSize: pageSize,
-		Status:   req.Status,
-		Search:   searchTerm,
-		Type:     req.Type,
-		Company:  req.Company,
+		Page:               page,
+		PageSize:           pageSize,
+		Status:             req.Status,
+		Search:             searchTerm,
+		Type:               req.Type,
+		Company:            req.Company,
+		AccessibleByUserID: req.AccessibleByUserID,
+		EthicalWallUserID:  req.EthicalWallUserID,
 	}
 
 	clients, total, err := s.clientRepo.List(ctx, params)
@@ -337,7 +345,7 @@ func (s *ClientService) toClientResponse(client *models.Client) *ClientResponse 
 		Email:             client.Email,
 		Phone:             models.MaskPhone(client.Phone),
 		Address:           client.Address,
-		IDCard:            models.MaskIDCard(client.IDCard),
+		IDCard:            client.ToSafeResponse().IDCard,
 		Company:           client.Company,
 		Industry:          client.Industry,
 		ContactPerson:     client.ContactPerson,
@@ -378,7 +386,7 @@ func calculateClientCompleteness(client *models.Client) ClientCompleteness {
 		)
 	} else {
 		requiredFields = append(requiredFields,
-			requiredField{name: "id_card", filled: hasValue(client.IDCard)},
+			requiredField{name: "id_card", filled: client.HasIDCard()},
 		)
 	}
 

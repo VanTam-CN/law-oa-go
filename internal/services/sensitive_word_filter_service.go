@@ -50,20 +50,20 @@ type UpdateWordRequest struct {
 
 // WordResponse 敏感词响应
 type WordResponse struct {
-	ID          uint      `json:"id"`
-	Word        string    `json:"word"`
-	WordType    string    `json:"word_type"`
-	Category    string    `json:"category"`
-	Severity    string    `json:"severity"`
-	Replacement string    `json:"replacement"`
-	IsActive    bool      `json:"is_active"`
-	Description string    `json:"description"`
-	HitCount    int       `json:"hit_count"`
-	LastHitAt   *string   `json:"last_hit_at"`
-	CreatedBy   uint      `json:"created_by"`
-	UpdatedBy   uint      `json:"updated_by"`
-	CreatedAt   string    `json:"created_at"`
-	UpdatedAt   string    `json:"updated_at"`
+	ID          uint    `json:"id"`
+	Word        string  `json:"word"`
+	WordType    string  `json:"word_type"`
+	Category    string  `json:"category"`
+	Severity    string  `json:"severity"`
+	Replacement string  `json:"replacement"`
+	IsActive    bool    `json:"is_active"`
+	Description string  `json:"description"`
+	HitCount    int     `json:"hit_count"`
+	LastHitAt   *string `json:"last_hit_at"`
+	CreatedBy   uint    `json:"created_by"`
+	UpdatedBy   uint    `json:"updated_by"`
+	CreatedAt   string  `json:"created_at"`
+	UpdatedAt   string  `json:"updated_at"`
 }
 
 // ListWordsRequest 敏感词列表请求
@@ -86,7 +86,7 @@ type WordPagination struct {
 
 // ListWordsResponse 敏感词列表响应
 type ListWordsResponse struct {
-	Words     []*WordResponse `json:"words"`
+	Words      []*WordResponse `json:"words"`
 	Pagination WordPagination  `json:"pagination"`
 }
 
@@ -98,22 +98,22 @@ type CheckTextRequest struct {
 
 // CheckTextResponse 文本检测结果
 type CheckTextResponse struct {
-	OriginalText    string          `json:"original_text"`
-	FilteredText    string          `json:"filtered_text"`
-	ContainsSensitive bool         `json:"contains_sensitive"`
-	SensitiveWords  []*SensitiveWordFound `json:"sensitive_words"`
-	SensitiveCount  int             `json:"sensitive_count"`
+	OriginalText      string                `json:"original_text"`
+	FilteredText      string                `json:"filtered_text"`
+	ContainsSensitive bool                  `json:"contains_sensitive"`
+	SensitiveWords    []*SensitiveWordFound `json:"sensitive_words"`
+	SensitiveCount    int                   `json:"sensitive_count"`
 }
 
 // SensitiveWordFound 敏感词发现
 type SensitiveWordFound struct {
-	Word       string `json:"word"`
-	WordType   string `json:"word_type"`
-	Category   string `json:"category"`
-	Severity   string `json:"severity"`
-	Position   int    `json:"position"`
-	Length     int    `json:"length"`
-	Replaced   bool   `json:"replaced"`
+	Word        string `json:"word"`
+	WordType    string `json:"word_type"`
+	Category    string `json:"category"`
+	Severity    string `json:"severity"`
+	Position    int    `json:"position"`
+	Length      int    `json:"length"`
+	Replaced    bool   `json:"replaced"`
 	Replacement string `json:"replacement,omitempty"`
 }
 
@@ -172,9 +172,9 @@ func (s *SensitiveWordFilterService) ListWords(ctx context.Context, req *ListWor
 	response := &ListWordsResponse{
 		Words: make([]*WordResponse, len(words)),
 		Pagination: WordPagination{
-			Page:    req.Page,
+			Page:     req.Page,
 			PageSize: req.PageSize,
-			Total:   total,
+			Total:    total,
 		},
 	}
 
@@ -296,13 +296,13 @@ func (s *SensitiveWordFilterService) CheckText(ctx context.Context, req *CheckTe
 			}
 
 			foundWords = append(foundWords, &SensitiveWordFound{
-				Word:       word.Word,
-				WordType:   word.WordType,
-				Category:   word.Category,
-				Severity:   word.Severity,
-				Position:   actualPos,
-				Length:     len(word.Word),
-				Replaced:   true,
+				Word:        word.Word,
+				WordType:    word.WordType,
+				Category:    word.Category,
+				Severity:    word.Severity,
+				Position:    actualPos,
+				Length:      len(word.Word),
+				Replaced:    true,
 				Replacement: replacement,
 			})
 
@@ -375,10 +375,10 @@ type CategoryInfo struct {
 // BatchImportWords 批量导入敏感词
 func (s *SensitiveWordFilterService) BatchImportWords(ctx context.Context, words []*CreateWordRequest) (*ImportResult, error) {
 	result := &ImportResult{
-		Total:     len(words),
-		Success:   0,
-		Failed:    0,
-		Errors:    make([]string, 0),
+		Total:   len(words),
+		Success: 0,
+		Failed:  0,
+		Errors:  make([]string, 0),
 	}
 
 	for _, wordReq := range words {

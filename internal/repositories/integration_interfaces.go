@@ -19,7 +19,13 @@ type IntegrationRepositoryInterface interface {
 	GetCaseCreationTrackingByApprovalID(ctx context.Context, approvalID string) ([]*CaseCreationTracking, error)
 	GetLatestCaseCreationTracking(ctx context.Context, approvalID string) (*CaseCreationTracking, error)
 	UpdateCaseCreationTracking(ctx context.Context, id string, updates map[string]interface{}) error
+	// ClaimCaseCreation atomically reserves the single formal-case creation
+	// attempt for an approved request. This prevents duplicate cases when a
+	// user retries or two browser tabs submit at the same time.
+	ClaimCaseCreation(ctx context.Context, approvalID, actorID string) (bool, error)
+	MarkCaseCreationFailed(ctx context.Context, approvalID, message string) error
 	GetConflictCheckRecord(ctx context.Context, checkID string) (*models.ConflictCheckRecord, error)
+	GetLatestConflictReview(ctx context.Context, checkID string) (*models.ConflictReview, error)
 
 	// 集成配置管理
 	CreateIntegrationConfig(ctx context.Context, config *IntegrationConfig) error

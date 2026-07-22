@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -19,6 +20,22 @@ import (
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/services"
 )
+
+// newIPv4TestServer avoids relying on the host's IPv6 loopback permissions.
+// The application behavior under test only needs a local HTTP endpoint.
+func newIPv4TestServer(t *testing.T, handler http.Handler) *httptest.Server {
+	t.Helper()
+	listener, err := net.Listen("tcp4", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("创建 IPv4 测试监听器失败: %v", err)
+	}
+	ts := &httptest.Server{
+		Listener: listener,
+		Config:   &http.Server{Handler: handler},
+	}
+	ts.Start()
+	return ts
+}
 
 func setupOnlyOfficeTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
@@ -175,7 +192,7 @@ func TestSaveDocument_Success(t *testing.T) {
 
 	// 创建模拟的 OnlyOffice 服务器
 	content := "edited content from onlyoffice"
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := newIPv4TestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 		w.Write([]byte(content))
 	}))
@@ -223,7 +240,7 @@ func TestSaveDocument_CreatesVersionBackup(t *testing.T) {
 	db.Create(doc)
 	os.WriteFile(doc.Filepath, []byte("original"), 0644)
 
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := newIPv4TestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("new version"))
 	}))
 	defer ts.Close()
@@ -262,7 +279,7 @@ func TestHandleCallback_MustSave(t *testing.T) {
 	db.Create(doc)
 	os.WriteFile(doc.Filepath, []byte("before"), 0644)
 
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := newIPv4TestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("after save"))
 	}))
 	defer ts.Close()
@@ -527,7 +544,7 @@ func TestSaveDocument_SizeLimit_50MiB(t *testing.T) {
 	os.WriteFile(doc.Filepath, []byte("orig"), 0644)
 
 	// 模拟 OnlyOffice 服务器返回超过 50 MiB 的内容
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := newIPv4TestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 		// 写入 50 MiB + 1 字节，超过 limit
 		w.Write(make([]byte, MaxOnlyOfficeDownloadBytes+1))
@@ -558,7 +575,7 @@ func TestSaveDocument_DownloadFailure_PreservesOriginal(t *testing.T) {
 	db.Create(doc)
 	os.WriteFile(doc.Filepath, []byte("orig"), 0644)
 
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := newIPv4TestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}))
 	defer ts.Close()
@@ -588,7 +605,7 @@ func TestSaveDocument_RedirectRejected(t *testing.T) {
 	os.WriteFile(doc.Filepath, []byte("orig"), 0644)
 
 	// 目标 host：allowed.com:9090；重定向到 evil.com
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := newIPv4TestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "http://evil.example/file.docx", http.StatusFound)
 	}))
 	defer ts.Close()
@@ -617,7 +634,7 @@ func TestSaveDocument_SSRF_AllowedHostSucceeds(t *testing.T) {
 	db.Create(doc)
 	os.WriteFile(doc.Filepath, []byte("orig"), 0644)
 
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := newIPv4TestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 		w.Write([]byte("new content"))
 	}))
@@ -639,7 +656,7 @@ func TestSaveDocument_SSRF_AllowedHostSucceeds(t *testing.T) {
 func TestProcessConversionResult_RejectsNonOnlyOfficeURL(t *testing.T) {
 	db := setupOnlyOfficeTestDB(t)
 	tsHit := false
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := newIPv4TestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tsHit = true
 		w.Write([]byte("converted"))
 	}))

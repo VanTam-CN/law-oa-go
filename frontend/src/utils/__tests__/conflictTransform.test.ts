@@ -240,7 +240,7 @@ describe('conflictTransform', () => {
         caseType: CaseType.CIVIL,
         clientType: ClientType.PERSON,
         otherParties: [],
-        searchYears: 5,
+        searchYears: 0,
         includeCorporateRelations: true,
         searchDepth: SearchDepth.STANDARD,
         userId: '1',

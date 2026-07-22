@@ -49,7 +49,6 @@ import {
 import CreateApproval from './pages/approval/CreateApproval'
 
 // 业务模块
-import ConflictCheckEnhanced from './pages/conflict/ConflictCheckEnhanced'
 // 项目管理功能已禁用，与案件管理重复
 // import ProjectManagement from './pages/project/ProjectManagement'
 
@@ -86,8 +85,7 @@ import InboxList from './pages/inbox/InboxList'
 import MvpUnavailable from './components/mvp/MvpUnavailable'
 import ConflictWorkbench from './pages/conflict/ConflictWorkbench'
 
-const enableDevRoutes =
-  import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEV_ROUTES === 'true'
+const enableDevRoutes = import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEV_ROUTES === 'true'
 
 const DevTestLogin = enableDevRoutes
   ? React.lazy(() => import('./pages/auth/TestLogin'))
@@ -97,19 +95,11 @@ const DevPermissionTestPage = enableDevRoutes
   ? React.lazy(() => import('./pages/PermissionTestPage'))
   : undefined
 const DevTestPage = enableDevRoutes ? React.lazy(() => import('./pages/TestPage')) : undefined
-const DevMinimalTest = enableDevRoutes
-  ? React.lazy(() => import('./pages/MinimalTest'))
-  : undefined
-const DevSystemTest = enableDevRoutes
-  ? React.lazy(() => import('./pages/SystemTest'))
-  : undefined
-const DevSimpleTest = enableDevRoutes
-  ? React.lazy(() => import('./pages/SimpleTest'))
-  : undefined
+const DevMinimalTest = enableDevRoutes ? React.lazy(() => import('./pages/MinimalTest')) : undefined
+const DevSystemTest = enableDevRoutes ? React.lazy(() => import('./pages/SystemTest')) : undefined
+const DevSimpleTest = enableDevRoutes ? React.lazy(() => import('./pages/SimpleTest')) : undefined
 const DevAuthTest = enableDevRoutes ? React.lazy(() => import('./pages/AuthTest')) : undefined
-const DevDirectTest = enableDevRoutes
-  ? React.lazy(() => import('./pages/DirectTest'))
-  : undefined
+const DevDirectTest = enableDevRoutes ? React.lazy(() => import('./pages/DirectTest')) : undefined
 const DevSimpleLawyerManagement = enableDevRoutes
   ? React.lazy(() => import('./pages/lawyer/SimpleLawyerManagement'))
   : undefined
@@ -134,7 +124,12 @@ const ForbiddenPage: React.FC<{ permissions?: string | string[] }> = ({ permissi
     title='无权访问'
     subTitle={missingAccessText(permissions)}
     extra={
-      <Button type='primary' onClick={() => { window.location.href = '/dashboard' }}>
+      <Button
+        type='primary'
+        onClick={() => {
+          window.location.href = '/dashboard'
+        }}
+      >
         返回工作台
       </Button>
     }
@@ -173,11 +168,7 @@ const AppContent: React.FC = () => {
   return (
     <ErrorBoundary>
       <Routes>
-        {enableDevRoutes &&
-          DevSimpleTest &&
-          DevAuthTest &&
-          DevMinimalTest &&
-          DevDirectTest && (
+        {enableDevRoutes && DevSimpleTest && DevAuthTest && DevMinimalTest && DevDirectTest && (
           <>
             <Route path='/simple-test' element={<DevSimpleTest />} />
             <Route path='/auth-test' element={<DevAuthTest />} />
@@ -204,26 +195,42 @@ const AppContent: React.FC = () => {
           element={isAuthenticated ? <MainLayout /> : <Navigate to='/login' replace />}
         >
           <Route index element={<Navigate to='/dashboard' replace />} />
-          <Route path='dashboard' element={withAccess(<DashboardCommandCenter />, 'dashboard:view')} />
+          <Route
+            path='dashboard'
+            element={withAccess(<DashboardCommandCenter />, 'dashboard:view')}
+          />
 
           {/* 审批模块 */}
           <Route path='approval' element={withAccess(<ApprovalWorkbench />, 'approval:manage')} />
-          <Route path='approval/create' element={withAccess(<CreateApproval />, 'approval:manage')} />
-          <Route path='approval/:id' element={withAccess(<ApprovalDecisionFlow />, 'approval:manage')} />
+          <Route
+            path='approval/create'
+            element={withAccess(<CreateApproval />, 'approval:manage')}
+          />
+          <Route
+            path='approval/:id'
+            element={withAccess(<ApprovalDecisionFlow />, 'approval:view')}
+          />
 
           {/* 业务模块 */}
           {/* 项目管理功能已禁用，与案件管理重复 */}
           {/* <Route path='project' element={<ProjectManagement />} /> */}
           <Route path='conflict' element={withAccess(<ConflictWorkbench />, 'conflict:check')} />
-          <Route path='conflict/v2' element={withAccess(<ConflictCheckEnhanced />, 'conflict:check')} />
+          {/* Legacy form is intentionally redirected so users enter the audited list-first workflow. */}
+          <Route path='conflict/v2' element={<Navigate to='/conflict' replace />} />
           <Route path='client' element={withAccess(<ClientMasterProfile />, 'client:view')} />
           <Route path='case' element={withAccess(<CaseManagementCenter />, 'case:view')} />
           <Route path='cases' element={<Navigate to='/case' replace />} />
-          <Route path='case/create' element={withAccess(<CaseIntakeWorkbench />, 'case:manage')} />
+          <Route
+            path='case/create'
+            element={withAccess(<CaseIntakeWorkbench />, 'case:manage', 'assistant')}
+          />
           <Route path='case/:id' element={withAccess(<CaseDetailCenter />, 'case:view')} />
           <Route path='lawyer' element={withAccess(<LawyerResourceCenter />, 'lawyer:manage')} />
           <Route path='lawyer/:id' element={withAccess(<LawyerProfileCenter />, 'lawyer:manage')} />
-          <Route path='file' element={withAccess(<MvpUnavailable moduleName='文档中心' />, 'file:view')} />
+          <Route
+            path='file'
+            element={withAccess(<MvpUnavailable moduleName='文档中心' />, 'file:view')}
+          />
 
           {/* 用户管理模块 - 需要管理员权限 */}
           <Route path='user' element={withAccess(<UserAccessCenter />, 'user:manage')} />
@@ -238,15 +245,33 @@ const AppContent: React.FC = () => {
 
           {/* 工具模块 */}
           <Route path='tools' element={withAccess(<ToolsPage />, 'tools:view')} />
-          <Route path='tools/litigation-fee' element={withAccess(<LitigationFeeCalculator />, 'tools:view')} />
-          <Route path='tools/interest-calculator' element={withAccess(<InterestCalculator />, 'tools:view')} />
-          <Route path='tools/deadline-calculator' element={withAccess(<DeadlineCalculator />, 'tools:view')} />
+          <Route
+            path='tools/litigation-fee'
+            element={withAccess(<LitigationFeeCalculator />, 'tools:view')}
+          />
+          <Route
+            path='tools/interest-calculator'
+            element={withAccess(<InterestCalculator />, 'tools:view')}
+          />
+          <Route
+            path='tools/deadline-calculator'
+            element={withAccess(<DeadlineCalculator />, 'tools:view')}
+          />
           <Route path='tools/law-search' element={withAccess(<LawSearch />, 'tools:view')} />
 
           {/* 财务模块 - MVP 期间显示不可用页面 */}
-          <Route path='finance' element={withAccess(<MvpUnavailable moduleName='财务中心' />, 'finance:view')} />
-          <Route path='finance/contracts/:id' element={withAccess(<MvpUnavailable moduleName='财务中心' />, 'finance:view')} />
-          <Route path='finance/bad-debts' element={withAccess(<MvpUnavailable moduleName='财务中心' />, 'finance:manage')} />
+          <Route
+            path='finance'
+            element={withAccess(<MvpUnavailable moduleName='财务中心' />, 'finance:view')}
+          />
+          <Route
+            path='finance/contracts/:id'
+            element={withAccess(<MvpUnavailable moduleName='财务中心' />, 'finance:view')}
+          />
+          <Route
+            path='finance/bad-debts'
+            element={withAccess(<MvpUnavailable moduleName='财务中心' />, 'finance:manage')}
+          />
           <Route
             path='finance/commission-rules'
             element={withAccess(<MvpUnavailable moduleName='财务中心' />, 'finance:manage')}
@@ -257,10 +282,13 @@ const AppContent: React.FC = () => {
 
           {/* 个人中心和设置 */}
           <Route path='profile' element={<Profile />} />
-          <Route path='settings' element={withAccess(<MvpUnavailable moduleName='系统设置' />, 'system:manage')} />
+          <Route
+            path='settings'
+            element={withAccess(<MvpUnavailable moduleName='系统设置' />, 'system:manage')}
+          />
 
           {/* 收件箱模块 */}
-          <Route path='inbox' element={<MvpUnavailable moduleName='收件箱' />} />
+          <Route path='inbox' element={<InboxList />} />
 
           {enableDevRoutes &&
             DevApiTest &&
@@ -268,14 +296,14 @@ const AppContent: React.FC = () => {
             DevTestPage &&
             DevSystemTest &&
             DevSimpleLawyerManagement && (
-            <>
-              <Route path='api-test' element={<DevApiTest />} />
-              <Route path='permission-test' element={<DevPermissionTestPage />} />
-              <Route path='test' element={<DevTestPage />} />
-              <Route path='system-test' element={<DevSystemTest />} />
-              <Route path='lawyer-simple' element={<DevSimpleLawyerManagement />} />
-            </>
-          )}
+              <>
+                <Route path='api-test' element={<DevApiTest />} />
+                <Route path='permission-test' element={<DevPermissionTestPage />} />
+                <Route path='test' element={<DevTestPage />} />
+                <Route path='system-test' element={<DevSystemTest />} />
+                <Route path='lawyer-simple' element={<DevSimpleLawyerManagement />} />
+              </>
+            )}
         </Route>
 
         {/* 404页面 */}

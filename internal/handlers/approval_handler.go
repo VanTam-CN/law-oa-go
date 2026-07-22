@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -19,6 +18,8 @@ type ApprovalHandler struct {
 	db                      *gorm.DB
 	approvalService         *services.ApprovalService
 	approvalTemplateService *services.ApprovalTemplateService
+	integratedDecision      services.ApprovalConflictIntegrationService
+	authorization           *services.AuthorizationService
 }
 
 func NewApprovalHandler(db *gorm.DB) *ApprovalHandler {
@@ -33,6 +34,20 @@ func NewApprovalHandler(db *gorm.DB) *ApprovalHandler {
 func (h *ApprovalHandler) GetApprovalService() services.ApprovalServiceInterface {
 	// 创建一个适配器将ApprovalService转换为ApprovalServiceInterface
 	return &approvalServiceAdapter{service: h.approvalService}
+}
+
+// SetIntegratedDecisionService routes case-creation and conflict approvals
+// through the same preflight and idempotent post-approval gate used by the
+// dedicated integration endpoint. Generic approvals keep the normal path.
+func (h *ApprovalHandler) SetIntegratedDecisionService(service services.ApprovalConflictIntegrationService) {
+	h.integratedDecision = service
+}
+
+// SetAuthorizationService installs the object-level gate used by controlled
+// conflict and case-creation approvals. The constructor remains compatible
+// with older tests and callers; the production router always sets this.
+func (h *ApprovalHandler) SetAuthorizationService(authz *services.AuthorizationService) {
+	h.authorization = authz
 }
 
 // approvalServiceAdapter ApprovalService适配器
@@ -70,28 +85,25 @@ func (h *ApprovalHandler) GetApprovalStats(c *gin.Context) {
 	}
 
 	// 处理用户ID的多种类型
-	fmt.Printf("🔍 调试 GetApprovalStats: userID类型=%T, 值=%v\n", userID, userID) // 临时调试日志
 	var userIDStr string
 	switch v := userID.(type) {
 	case uint:
-		fmt.Printf("✅ 匹配uint类型: %v\n", v)
 		userIDStr = strconv.FormatUint(uint64(v), 10)
 	case int:
-		fmt.Printf("✅ 匹配int类型: %v\n", v)
 		userIDStr = strconv.Itoa(v)
 	case float64: // 修复：JSON解析的数字默认是float64类型
-		fmt.Printf("✅ 匹配float64类型: %v\n", v)
 		userIDStr = strconv.FormatInt(int64(v), 10)
 	case string:
-		fmt.Printf("✅ 匹配string类型: %v\n", v)
 		userIDStr = v
 	default:
-		fmt.Printf("❌ 未匹配的类型: %v (类型: %T)\n", v, v)
 		common.Error(c, http.StatusUnauthorized, "用户ID格式错误")
 		return
 	}
-	fmt.Printf("🔍 调试: 转换后的userIDStr=%s\n", userIDStr) // 临时调试日志
 
+	// Firm-wide approval counts are not safe until they are filtered by the
+	// ethical-wall subject context. The wall-aware approval workbench is the
+	// only endpoint allowed to expose management aggregates; this endpoint
+	// remains user-scoped for every role.
 	stats, err := h.approvalService.GetApprovalStats(userIDStr)
 	if err != nil {
 		log.Printf("获取审批统计失败: %v", err)
@@ -104,51 +116,11 @@ func (h *ApprovalHandler) GetApprovalStats(c *gin.Context) {
 
 // GetPendingApprovals 获取待审批列表
 func (h *ApprovalHandler) GetPendingApprovals(c *gin.Context) {
-	// 获取当前用户ID（从JWT中获取）
-	userID, exists := c.Get("user_id")
-	if !exists {
-		common.Error(c, http.StatusUnauthorized, "未授权访问")
-		return
-	}
-
-	// 处理用户ID的多种类型
-	var userIDStr string
-	switch v := userID.(type) {
-	case uint:
-		userIDStr = strconv.FormatUint(uint64(v), 10)
-	case int:
-		userIDStr = strconv.Itoa(v)
-	case float64: // 修复：JSON解析的数字默认是float64类型
-		userIDStr = strconv.FormatInt(int64(v), 10)
-	case string:
-		userIDStr = v
-	default:
-		common.Error(c, http.StatusUnauthorized, "用户ID格式错误")
-		return
-	}
-
-	// 获取查询参数
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
-	if pageSize > 100 {
-		pageSize = 100
-	}
-
-	req := models.ApprovalListRequest{
-		Page:        page,
-		PageSize:    pageSize,
-		Status:      models.ApprovalStatusSubmitted, // 只获取已提交的
-		ApplicantID: "",                             // 不限定申请人
-	}
-
-	approvals, err := h.approvalService.GetPendingApprovals(userIDStr, &req)
-	if err != nil {
-		log.Printf("获取待审批列表失败: %v", err)
-		common.Error(c, http.StatusInternalServerError, "获取待审批列表失败")
-		return
-	}
-
-	common.APISuccess(c, approvals)
+	// The legacy repository query paginates before it can resolve a
+	// conflict-bound approval's subject case. Returning its raw rows or total
+	// would leak wall-protected titles and counts. The active workbench applies
+	// object-level visibility before projecting rows.
+	common.NewAPIError(c, http.StatusServiceUnavailable, "APPROVAL_PENDING_UNAVAILABLE", "旧版待审批列表未接入案件隔离墙过滤，请使用审批工作台")
 }
 
 // ListApprovals 获取审批列表
@@ -175,6 +147,13 @@ func (h *ApprovalHandler) ListApprovals(c *gin.Context) {
 		common.Error(c, http.StatusUnauthorized, "用户ID格式错误")
 		return
 	}
+	if services.IsBusinessMatterManagementRole(c.GetString("role")) {
+		// The legacy repository query cannot prove ethical-wall visibility for
+		// conflict-bound rows. Management must use /approvals/workbench, which
+		// resolves the subject case before returning a row or aggregate count.
+		common.NewAPIError(c, http.StatusServiceUnavailable, "APPROVAL_LIST_UNAVAILABLE", "全所审批清单必须通过受隔离墙保护的审批工作台访问")
+		return
+	}
 
 	// 获取查询参数
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
@@ -188,12 +167,15 @@ func (h *ApprovalHandler) ListApprovals(c *gin.Context) {
 		PageSize:    pageSize,
 		Status:      c.Query("status"),
 		Type:        c.Query("type"),
-		ApplicantID: c.Query("applicantId"), // 修复参数名，使用前端传递的applicantId
+		ApplicantID: c.Query("applicantId"), // 管理角色可按申请人筛选
 		Keyword:     c.Query("keyword"),
 		StartDate:   c.Query("start_date"),
 		EndDate:     c.Query("end_date"),
 		SortBy:      c.DefaultQuery("sort_by", "created_at"),
 		SortOrder:   c.DefaultQuery("sort_order", "desc"),
+	}
+	if !services.IsBusinessMatterManagementRole(c.GetString("role")) {
+		req.ApplicantID = userIDStr
 	}
 
 	approvals, err := h.approvalService.ListApprovals(userIDStr, &req)
@@ -249,8 +231,31 @@ func (h *ApprovalHandler) GetApproval(c *gin.Context) {
 		}
 		return
 	}
+	if !h.authorizeApprovalConflictContext(c, approval) {
+		return
+	}
 
-	common.APISuccess(c, approval)
+	common.APISuccess(c, projectApprovalForViewer(approval, c.GetString("role")))
+}
+
+// authorizeApprovalMutation re-checks the object boundary immediately before
+// a legacy approval mutation. An approval may outlive a case assignment or
+// ethical-wall change, so the applicant check in ApprovalService is not a
+// sufficient substitute for the underlying case/intake authorization.
+func (h *ApprovalHandler) authorizeApprovalMutation(c *gin.Context, userID, approvalID string) bool {
+	approval, err := h.approvalService.GetApproval(userID, approvalID)
+	if err != nil {
+		if strings.Contains(err.Error(), "无权") {
+			common.Error(c, http.StatusForbidden, "无权操作此审批记录")
+		} else if err == gorm.ErrRecordNotFound || strings.Contains(err.Error(), "record not found") {
+			common.Error(c, http.StatusNotFound, "审批记录不存在")
+		} else {
+			log.Printf("获取审批上下文失败: %v", err)
+			common.Error(c, http.StatusInternalServerError, "获取审批记录失败")
+		}
+		return false
+	}
+	return h.authorizeApprovalConflictContext(c, approval)
 }
 
 // GetApprovalWorkflows 获取审批工作流列表
@@ -312,6 +317,13 @@ func (h *ApprovalHandler) CreateApproval(c *gin.Context) {
 		common.Error(c, http.StatusBadRequest, "请求参数错误")
 		return
 	}
+	typeName := strings.ToLower(strings.TrimSpace(req.Type))
+	workflowType := strings.ToLower(strings.TrimSpace(req.WorkflowType))
+	if typeName == "case_creation" || typeName == "conflict" || typeName == "conflict_approval" ||
+		workflowType == "case_creation" || workflowType == "conflict_approval" {
+		common.NewAPIError(c, http.StatusConflict, "APPROVAL_CONTROLLED_WORKFLOW_REQUIRED", "成案和冲突审批必须从接案工作台或带案件上下文的受控流程发起")
+		return
+	}
 
 	// 创建审批申请（Service层会从数据库获取用户信息）
 	approval, err := h.approvalService.CreateApproval(userIDStr, "", &req)
@@ -352,6 +364,9 @@ func (h *ApprovalHandler) SubmitApproval(c *gin.Context) {
 		userIDStr = v
 	default:
 		common.Error(c, http.StatusUnauthorized, "用户ID格式错误")
+		return
+	}
+	if !h.authorizeApprovalMutation(c, userIDStr, id) {
 		return
 	}
 
@@ -405,13 +420,46 @@ func (h *ApprovalHandler) ProcessApprovalDecision(c *gin.Context) {
 		common.Error(c, http.StatusUnauthorized, "用户ID格式错误")
 		return
 	}
-
 	// 解析请求数据
 	var req models.ApprovalDecisionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		log.Printf("请求参数错误: %v", err)
 		common.Error(c, http.StatusBadRequest, "请求参数错误")
 		return
+	}
+
+	if h.integratedDecision != nil {
+		existing, lookupErr := h.approvalService.GetApproval(userIDStr, id)
+		if lookupErr != nil {
+			common.Error(c, http.StatusInternalServerError, "获取审批记录失败")
+			return
+		}
+		if !h.authorizeApprovalConflictContext(c, existing) {
+			return
+		}
+		if services.RequiresCaseCreationApproval(existing) {
+			userName := c.GetString("username")
+			if userName == "" {
+				userName = "未知用户"
+			}
+			approval, err := h.integratedDecision.ProcessApprovalWithConflict(c.Request.Context(), userIDStr, userName, id, &req)
+			if err != nil {
+				log.Printf("处理受控成案审批决定失败: %v", err)
+				h.writeApprovalDecisionError(c, err)
+				return
+			}
+			common.APISuccess(c, approval)
+			return
+		}
+	} else {
+		existing, lookupErr := h.approvalService.GetApproval(userIDStr, id)
+		if lookupErr != nil {
+			common.Error(c, http.StatusInternalServerError, "获取审批记录失败")
+			return
+		}
+		if !h.authorizeApprovalConflictContext(c, existing) {
+			return
+		}
 	}
 
 	// 调用服务处理审批决定
@@ -434,6 +482,21 @@ func (h *ApprovalHandler) ProcessApprovalDecision(c *gin.Context) {
 	}
 
 	common.APISuccess(c, approval)
+}
+
+func (h *ApprovalHandler) writeApprovalDecisionError(c *gin.Context, err error) {
+	switch err.Error() {
+	case "审批记录不存在":
+		common.Error(c, http.StatusNotFound, "审批记录不存在")
+	case "无权审批此申请":
+		common.Error(c, http.StatusForbidden, "无权审批此申请")
+	case "审批状态不允许此操作", "当前状态不允许此操作":
+		common.Error(c, http.StatusBadRequest, "当前状态不允许此操作")
+	case "审批决定类型无效":
+		common.Error(c, http.StatusBadRequest, "无效的审批决定类型")
+	default:
+		common.Error(c, http.StatusConflict, err.Error())
+	}
 }
 
 // ResubmitApproval 重新提交被驳回的审批申请
@@ -464,6 +527,9 @@ func (h *ApprovalHandler) ResubmitApproval(c *gin.Context) {
 		userIDStr = v
 	default:
 		common.Error(c, http.StatusUnauthorized, "用户ID格式错误")
+		return
+	}
+	if !h.authorizeApprovalMutation(c, userIDStr, id) {
 		return
 	}
 
@@ -527,6 +593,9 @@ func (h *ApprovalHandler) CancelApproval(c *gin.Context) {
 		common.Error(c, http.StatusUnauthorized, "用户ID格式错误")
 		return
 	}
+	if !h.authorizeApprovalMutation(c, userIDStr, id) {
+		return
+	}
 
 	// 调用服务取消审批
 	err := h.approvalService.CancelApproval(userIDStr, id)
@@ -578,6 +647,9 @@ func (h *ApprovalHandler) UpdateApproval(c *gin.Context) {
 		userIDStr = v
 	default:
 		common.Error(c, http.StatusUnauthorized, "用户ID格式错误")
+		return
+	}
+	if !h.authorizeApprovalMutation(c, userIDStr, id) {
 		return
 	}
 

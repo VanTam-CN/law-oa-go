@@ -205,21 +205,21 @@ func (p *PageViewService) TrackPageView(ctx context.Context, req *TrackPageViewR
 	now := time.Now()
 
 	pageView := &models.PageView{
-		ID:            pageViewID,
-		SessionID:     req.SessionID,
-		UserID:        session.UserID,
-		URL:           req.URL,
-		Path:          parsedURL.Path,
-		Title:         req.Title,
-		Referrer:      req.Referrer,
-		LoadTime:      req.Duration,
-		StayTime:      req.Duration,
-		ScrollDepth:   req.ScrollDepth,
-		Viewport:      parseViewportSize(req.ViewportSize),
-		ScreenSize:    parseScreenSize(req.ScreenSize),
-		Interactions:  parseInteraction(req.Interaction),
-		IsBounce:      req.IsBounce,
-		IsExit:        req.ExitPage,
+		ID:           pageViewID,
+		SessionID:    req.SessionID,
+		UserID:       session.UserID,
+		URL:          req.URL,
+		Path:         parsedURL.Path,
+		Title:        req.Title,
+		Referrer:     req.Referrer,
+		LoadTime:     req.Duration,
+		StayTime:     req.Duration,
+		ScrollDepth:  req.ScrollDepth,
+		Viewport:     parseViewportSize(req.ViewportSize),
+		ScreenSize:   parseScreenSize(req.ScreenSize),
+		Interactions: parseInteraction(req.Interaction),
+		IsBounce:     req.IsBounce,
+		IsExit:       req.ExitPage,
 	}
 
 	if err := p.analyticsRepo.CreatePageView(ctx, pageView); err != nil {
@@ -510,11 +510,11 @@ func (r *RealTimeStatsService) GetRealTimeDashboard(ctx context.Context) (*RealT
 	}
 
 	dashboard := &RealTimeDashboard{
-		ActiveUsers:    activeUsers,
-		PageViews:      totalPageViews,
-		Events:         totalEvents,
-		LastUpdated:    now,
-		TimeRange:      "Last 24 hours",
+		ActiveUsers: activeUsers,
+		PageViews:   totalPageViews,
+		Events:      totalEvents,
+		LastUpdated: now,
+		TimeRange:   "Last 24 hours",
 	}
 
 	return dashboard, nil
@@ -664,7 +664,7 @@ func (b *BehaviorAnalysisService) analyzeTimePattern(sessions []*models.Analytic
 		Confidence: confidence,
 		Frequency:  maxCount,
 		Data: map[string]interface{}{
-			"most_active_hour": mostActiveHour,
+			"most_active_hour":  mostActiveHour,
 			"hour_distribution": hourCount,
 		},
 	}
@@ -699,14 +699,14 @@ type TrackPageViewRequest struct {
 	URL          string                 `json:"url" validate:"required,url"`
 	Title        string                 `json:"title"`
 	Referrer     string                 `json:"referrer"`
-	Duration     int64                  `json:"duration"`        // 停留时间（毫秒）
-	ScrollDepth  int                    `json:"scroll_depth"`    // 滚动深度百分比
-	ViewportSize string                 `json:"viewport_size"`   // 视口大小 "1024x768"
-	ScreenSize   string                 `json:"screen_size"`     // 屏幕大小 "1920x1080"
-	Interaction  string                 `json:"interaction"`     // 交互类型
-	IsBounce     bool                   `json:"is_bounce"`       // 是否跳出
-	ExitPage     bool                   `json:"exit_page"`       // 是否退出页
-	EntryPage    bool                   `json:"entry_page"`      // 是否入口页
+	Duration     int64                  `json:"duration"`      // 停留时间（毫秒）
+	ScrollDepth  int                    `json:"scroll_depth"`  // 滚动深度百分比
+	ViewportSize string                 `json:"viewport_size"` // 视口大小 "1024x768"
+	ScreenSize   string                 `json:"screen_size"`   // 屏幕大小 "1920x1080"
+	Interaction  string                 `json:"interaction"`   // 交互类型
+	IsBounce     bool                   `json:"is_bounce"`     // 是否跳出
+	ExitPage     bool                   `json:"exit_page"`     // 是否退出页
+	EntryPage    bool                   `json:"entry_page"`    // 是否入口页
 	Properties   map[string]interface{} `json:"properties"`
 }
 
@@ -719,19 +719,19 @@ type TrackEventRequest struct {
 	EventLabel    string                 `json:"event_label"`
 	EventValue    float64                `json:"event_value"`
 	URL           string                 `json:"url"`
-	Element       string                 `json:"element"`        // 触发事件的元素
+	Element       string                 `json:"element"` // 触发事件的元素
 	Properties    map[string]interface{} `json:"properties"`
 }
 
 // CreateJourneyRequest 创建用户旅程请求
 type CreateJourneyRequest struct {
-	UserID       string                 `json:"user_id" validate:"required"`
-	JourneyType  string                 `json:"journey_type" validate:"required"`
-	EndTime      *time.Time             `json:"end_time"`
-	Steps        []models.JourneyStep   `json:"steps"`
-	CurrentStep  int                    `json:"current_step"`
-	IsCompleted  bool                   `json:"is_completed"`
-	Properties   map[string]interface{} `json:"properties"`
+	UserID      string                 `json:"user_id" validate:"required"`
+	JourneyType string                 `json:"journey_type" validate:"required"`
+	EndTime     *time.Time             `json:"end_time"`
+	Steps       []models.JourneyStep   `json:"steps"`
+	CurrentStep int                    `json:"current_step"`
+	IsCompleted bool                   `json:"is_completed"`
+	Properties  map[string]interface{} `json:"properties"`
 }
 
 // 响应结构体
@@ -744,13 +744,13 @@ type AnalysisPeriod struct {
 
 // UserBehaviorAnalysis 用户行为分析结果
 type UserBehaviorAnalysis struct {
-	UserID           string                    `json:"user_id"`
-	AnalysisPeriod   AnalysisPeriod            `json:"analysis_period"`
+	UserID           string                     `json:"user_id"`
+	AnalysisPeriod   AnalysisPeriod             `json:"analysis_period"`
 	SessionSummary   *models.UserSessionSummary `json:"session_summary"`
-	BehaviorPatterns []*models.BehaviorPattern `json:"behavior_patterns"`
-	PageViewStats    []map[string]interface{}  `json:"page_view_stats"`
-	EventStats       []map[string]interface{}  `json:"event_stats"`
-	GeneratedAt      time.Time                 `json:"generated_at"`
+	BehaviorPatterns []*models.BehaviorPattern  `json:"behavior_patterns"`
+	PageViewStats    []map[string]interface{}   `json:"page_view_stats"`
+	EventStats       []map[string]interface{}   `json:"event_stats"`
+	GeneratedAt      time.Time                  `json:"generated_at"`
 }
 
 // RealTimeDashboard 实时仪表板数据

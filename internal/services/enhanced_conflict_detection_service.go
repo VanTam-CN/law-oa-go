@@ -21,57 +21,57 @@ type EnhancedConflictDetectionService interface {
 
 // ConflictDetectionResult 冲突检测结果
 type ConflictDetectionResult struct {
-	ID                string                 `json:"id"`
-	ConflictType      string                 `json:"conflict_type"`
-	SourceEntity      string                 `json:"source_entity"`
-	RelatedEntity     string                 `json:"related_entity"`
-	Description       string                 `json:"description"`
-	SeverityLevel     string                 `json:"severity_level"`
-	RiskScore         float64                `json:"risk_score"`
-	DetectionDate     string                 `json:"detection_date"`
-	Status            string                 `json:"status"`
-	WaiverPossible    bool                   `json:"waiver_possible"`
-	Recommendations   []string               `json:"recommendations"`
+	ID              string   `json:"id"`
+	ConflictType    string   `json:"conflict_type"`
+	SourceEntity    string   `json:"source_entity"`
+	RelatedEntity   string   `json:"related_entity"`
+	Description     string   `json:"description"`
+	SeverityLevel   string   `json:"severity_level"`
+	RiskScore       float64  `json:"risk_score"`
+	DetectionDate   string   `json:"detection_date"`
+	Status          string   `json:"status"`
+	WaiverPossible  bool     `json:"waiver_possible"`
+	Recommendations []string `json:"recommendations"`
 }
 
 // ConflictHistoryParams 冲突历史查询参数
 type ConflictHistoryParams struct {
-	StartDate      string `json:"start_date"`
-	EndDate        string `json:"end_date"`
-	ConflictType   string `json:"conflict_type"`
-	Severity       string `json:"severity"`
-	ClientID       string `json:"client_id"`
-	LawyerID       string `json:"lawyer_id"`
-	Page           int    `json:"page"`
-	PageSize       int    `json:"page_size"`
+	StartDate    string `json:"start_date"`
+	EndDate      string `json:"end_date"`
+	ConflictType string `json:"conflict_type"`
+	Severity     string `json:"severity"`
+	ClientID     string `json:"client_id"`
+	LawyerID     string `json:"lawyer_id"`
+	Page         int    `json:"page"`
+	PageSize     int    `json:"page_size"`
 }
 
 // ConflictHistoryRecord 冲突历史记录
 type ConflictHistoryRecord struct {
-	ID              string `json:"id"`
-	CheckRequestID  string `json:"check_request_id"`
-	ConflictType    string `json:"conflict_type"`
-	Description     string `json:"description"`
-	Severity        string `json:"severity"`
-	DetectionDate   string `json:"detection_date"`
-	Status          string `json:"status"`
-	ResolvedDate    string `json:"resolved_date,omitempty"`
+	ID             string `json:"id"`
+	CheckRequestID string `json:"check_request_id"`
+	ConflictType   string `json:"conflict_type"`
+	Description    string `json:"description"`
+	Severity       string `json:"severity"`
+	DetectionDate  string `json:"detection_date"`
+	Status         string `json:"status"`
+	ResolvedDate   string `json:"resolved_date,omitempty"`
 }
 
 // ConflictTrendAnalysis 冲突趋势分析
 type ConflictTrendAnalysis struct {
-	Timeframe     string                         `json:"timeframe"`
-	TotalConflicts int                          `json:"total_conflicts"`
-	Trends        []ConflictTrendData           `json:"trends"`
-	RiskLevel     ConflictLevelDistribution      `json:"risk_level_distribution"`
-	TopTypes      []ConflictTypeDistribution     `json:"top_types"`
+	Timeframe      string                     `json:"timeframe"`
+	TotalConflicts int                        `json:"total_conflicts"`
+	Trends         []ConflictTrendData        `json:"trends"`
+	RiskLevel      ConflictLevelDistribution  `json:"risk_level_distribution"`
+	TopTypes       []ConflictTypeDistribution `json:"top_types"`
 }
 
 // ConflictTrendData 冲突趋势数据
 type ConflictTrendData struct {
-	Date       string `json:"date"`
-	Count      int    `json:"count"`
-	Severity   string `json:"severity"`
+	Date     string `json:"date"`
+	Count    int    `json:"count"`
+	Severity string `json:"severity"`
 }
 
 // ConflictLevelDistribution 冲突级别分布
@@ -83,8 +83,8 @@ type ConflictLevelDistribution struct {
 
 // ConflictTypeDistribution 冲突类型分布
 type ConflictTypeDistribution struct {
-	Type  string `json:"type"`
-	Count int    `json:"count"`
+	Type    string  `json:"type"`
+	Count   int     `json:"count"`
 	Percent float64 `json:"percent"`
 }
 
@@ -127,10 +127,10 @@ func (s *enhancedConflictDetectionService) DetectConflictsForCase(ctx context.Co
 			BaseModel: models.BaseModel{
 				ID: clientID,
 			},
-			ClientNumber:     fmt.Sprintf("CL-%s", clientID),
-			ClientType:       "CORPORATE",
-			ClientCategory:   "企业客户",
-			ClientStatus:     "ACTIVE",
+			ClientNumber:   fmt.Sprintf("CL-%s", clientID),
+			ClientType:     "CORPORATE",
+			ClientCategory: "企业客户",
+			ClientStatus:   "ACTIVE",
 		}
 
 		conflicts := s.detectConflictsForProfile(ctx, profile)
@@ -151,9 +151,9 @@ func (s *enhancedConflictDetectionService) GetConflictHistory(ctx context.Contex
 func (s *enhancedConflictDetectionService) AnalyzeConflictTrends(ctx context.Context, timeframe string) (*ConflictTrendAnalysis, error) {
 	// 临时实现，返回基本分析结果
 	analysis := &ConflictTrendAnalysis{
-		Timeframe:     timeframe,
+		Timeframe:      timeframe,
 		TotalConflicts: 0,
-		Trends:        []ConflictTrendData{},
+		Trends:         []ConflictTrendData{},
 		RiskLevel: ConflictLevelDistribution{
 			High:   0,
 			Medium: 0,

@@ -212,7 +212,7 @@ func calculateDelay(config RetryConfig, attempt int) time.Duration {
 	delay := float64(config.InitialDelay) * math.Pow(config.Multiplier, float64(attempt-1))
 
 	// 限制最大延迟
-	if delay > float64(config.MaxDelay) {
+	if config.MaxDelay > 0 && delay > float64(config.MaxDelay) {
 		delay = float64(config.MaxDelay)
 	}
 
@@ -269,8 +269,9 @@ func WithRetryResult[T any](ctx context.Context, config RetryConfig, fn func() (
 		case <-time.After(delay):
 			continue
 		case <-ctx.Done():
-			lastErr = ctx.Err()
-			break
+			result.Error = fmt.Errorf("retry canceled: %w", ctx.Err())
+			result.Duration = time.Since(start)
+			return result
 		}
 	}
 

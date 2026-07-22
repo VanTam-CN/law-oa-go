@@ -14,6 +14,7 @@ describe('mvp route configuration', () => {
       'conflict',
       'client',
       'approval',
+      'inbox',
       'trust',
     ])
   })
@@ -24,7 +25,7 @@ describe('mvp route configuration', () => {
   })
 
   it('marks unfinished modules as unavailable pages', () => {
-    expect(MVP_UNAVAILABLE_PATHS).toEqual(['/file', '/finance', '/inbox', '/settings'])
+    expect(MVP_UNAVAILABLE_PATHS).toEqual(['/file', '/finance', '/settings'])
     expect(isMvpUnavailablePath('/finance')).toBe(true)
     expect(isMvpUnavailablePath('/finance/contracts/1')).toBe(true)
     expect(isMvpUnavailablePath('/dashboard')).toBe(false)
@@ -33,7 +34,7 @@ describe('mvp route configuration', () => {
   it('maps direct unavailable routes to business module names', () => {
     expect(getMvpUnavailableModuleName('/file')).toBe('文档中心')
     expect(getMvpUnavailableModuleName('/finance/contracts/1')).toBe('财务中心')
-    expect(getMvpUnavailableModuleName('/inbox')).toBe('收件箱')
+    expect(getMvpUnavailableModuleName('/inbox')).toBeNull()
     expect(getMvpUnavailableModuleName('/settings')).toBe('系统设置')
     expect(getMvpUnavailableModuleName('/conflict')).toBeNull()
   })

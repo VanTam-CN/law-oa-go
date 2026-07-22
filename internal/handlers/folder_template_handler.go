@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"errors"
+	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -12,11 +14,16 @@ import (
 // FolderTemplateHandler 卷宗目录模板处理器
 type FolderTemplateHandler struct {
 	service services.FolderTemplateService
+	authz   *services.AuthorizationService
 }
 
 // NewFolderTemplateHandler 创建卷宗目录模板处理器
-func NewFolderTemplateHandler(service services.FolderTemplateService) *FolderTemplateHandler {
-	return &FolderTemplateHandler{service: service}
+func NewFolderTemplateHandler(service services.FolderTemplateService, authz ...*services.AuthorizationService) *FolderTemplateHandler {
+	var authorizationService *services.AuthorizationService
+	if len(authz) > 0 {
+		authorizationService = authz[0]
+	}
+	return &FolderTemplateHandler{service: service, authz: authorizationService}
 }
 
 // CreateTemplate godoc
@@ -31,11 +38,17 @@ func NewFolderTemplateHandler(service services.FolderTemplateService) *FolderTem
 // @Failure 400 {object} common.APIResponse "请求参数错误"
 // @Router /folder-templates [post]
 func (h *FolderTemplateHandler) CreateTemplate(c *gin.Context) {
+	actor, ok := h.authorizeTemplateManager(c)
+	if !ok {
+		return
+	}
 	var req services.CreateFolderTemplateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		common.APIBadRequest(c, "请求参数错误", err.Error())
 		return
 	}
+	// The creator is an audit field, not caller-controlled business data.
+	req.CreatedBy = actor.UserID
 
 	template, err := h.service.CreateTemplate(c.Request.Context(), &req)
 	if err != nil {
@@ -128,6 +141,9 @@ func (h *FolderTemplateHandler) GetTemplate(c *gin.Context) {
 // @Success 200 {object} common.APIResponse
 // @Router /folder-templates/{id} [put]
 func (h *FolderTemplateHandler) UpdateTemplate(c *gin.Context) {
+	if _, ok := h.authorizeTemplateManager(c); !ok {
+		return
+	}
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		common.APIBadRequest(c, "参数错误", "无效的模板ID")
@@ -157,6 +173,9 @@ func (h *FolderTemplateHandler) UpdateTemplate(c *gin.Context) {
 // @Success 200 {object} common.APIResponse
 // @Router /folder-templates/{id} [delete]
 func (h *FolderTemplateHandler) DeleteTemplate(c *gin.Context) {
+	if _, ok := h.authorizeTemplateManager(c); !ok {
+		return
+	}
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		common.APIBadRequest(c, "参数错误", "无效的模板ID")
@@ -190,6 +209,9 @@ func (h *FolderTemplateHandler) ApplyTemplate(c *gin.Context) {
 		common.APIBadRequest(c, "请求参数错误", err.Error())
 		return
 	}
+	if !h.authorizeCase(c, req.CaseID, true) {
+		return
+	}
 
 	folders, err := h.service.ApplyTemplate(c.Request.Context(), req.CaseID, req.TemplateID)
 	if err != nil {
@@ -206,13 +228,16 @@ func (h *FolderTemplateHandler) ApplyTemplate(c *gin.Context) {
 // @Tags 卷宗目录
 // @Produce json
 // @Security BearerAuth
-// @Param case_id path int true "案件ID"
+// @Param id path int true "案件ID"
 // @Success 200 {object} common.APIResponse
-// @Router /cases/{case_id}/folders [get]
+// @Router /cases/{id}/folders [get]
 func (h *FolderTemplateHandler) GetCaseFolders(c *gin.Context) {
-	caseID, err := strconv.ParseUint(c.Param("case_id"), 10, 64)
+	caseID, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		common.APIBadRequest(c, "参数错误", "无效的案件ID")
+		return
+	}
+	if !h.authorizeCase(c, uint(caseID), false) {
 		return
 	}
 
@@ -231,12 +256,12 @@ func (h *FolderTemplateHandler) GetCaseFolders(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param case_id path int true "案件ID"
+// @Param id path int true "案件ID"
 // @Param request body services.CreateCaseFolderRequest true "文件夹请求"
 // @Success 200 {object} common.APIResponse
-// @Router /cases/{case_id}/folders [post]
+// @Router /cases/{id}/folders [post]
 func (h *FolderTemplateHandler) CreateCaseFolder(c *gin.Context) {
-	caseID, err := strconv.ParseUint(c.Param("case_id"), 10, 64)
+	caseID, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		common.APIBadRequest(c, "参数错误", "无效的案件ID")
 		return
@@ -248,6 +273,9 @@ func (h *FolderTemplateHandler) CreateCaseFolder(c *gin.Context) {
 		return
 	}
 	req.CaseID = uint(caseID)
+	if !h.authorizeCase(c, uint(caseID), true) {
+		return
+	}
 
 	folder, err := h.service.CreateCustomFolder(c.Request.Context(), &req)
 	if err != nil {
@@ -263,21 +291,69 @@ func (h *FolderTemplateHandler) CreateCaseFolder(c *gin.Context) {
 // @Tags 卷宗目录
 // @Produce json
 // @Security BearerAuth
-// @Param case_id path int true "案件ID"
+// @Param id path int true "案件ID"
 // @Param folder_id path int true "文件夹ID"
 // @Success 200 {object} common.APIResponse
-// @Router /cases/{case_id}/folders/{folder_id} [delete]
+// @Router /cases/{id}/folders/{folder_id} [delete]
 func (h *FolderTemplateHandler) DeleteCaseFolder(c *gin.Context) {
 	folderID, err := strconv.ParseUint(c.Param("folder_id"), 10, 64)
 	if err != nil {
 		common.APIBadRequest(c, "参数错误", "无效的文件夹ID")
 		return
 	}
+	caseID, parseErr := strconv.ParseUint(c.Param("id"), 10, 64)
+	if parseErr != nil || !h.authorizeCase(c, uint(caseID), true) {
+		return
+	}
 
-	if err := h.service.DeleteCaseFolder(c.Request.Context(), uint(folderID)); err != nil {
+	if err := h.service.DeleteCaseFolder(c.Request.Context(), uint(caseID), uint(folderID)); err != nil {
+		if errors.Is(err, services.ErrFolderCaseMismatch) {
+			forbidObjectAccess(c)
+			return
+		}
+		if errors.Is(err, services.ErrFolderNotFound) {
+			common.APINotFound(c, "文件夹不存在", "指定案件下不存在该文件夹")
+			return
+		}
 		common.APIInternalServerError(c, "删除文件夹失败", err.Error())
 		return
 	}
 
 	common.APISuccess(c, gin.H{"message": "删除成功"})
+}
+
+func (h *FolderTemplateHandler) authorizeCase(c *gin.Context, caseID uint, write bool) bool {
+	if h.authz == nil {
+		common.NewAPIError(c, http.StatusServiceUnavailable, "CASE_AUTHZ_UNAVAILABLE", "案件权限服务未初始化")
+		return false
+	}
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return false
+	}
+	allowed, err := h.authz.CanReadCase(c.Request.Context(), actor, caseID)
+	if write {
+		allowed, err = h.authz.CanManageCase(c.Request.Context(), actor, caseID)
+	}
+	if err != nil {
+		common.APIInternalServerError(c, "案件权限校验失败", err.Error())
+		return false
+	}
+	if !allowed {
+		forbidObjectAccess(c)
+		return false
+	}
+	return true
+}
+
+func (h *FolderTemplateHandler) authorizeTemplateManager(c *gin.Context) (services.AuthActor, bool) {
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return services.AuthActor{}, false
+	}
+	if !services.IsMatterManagementRole(actor.Role) {
+		common.APIForbidden(c, "无权修改卷宗目录模板", "只有律所管理或系统配置角色可以修改全所模板")
+		return services.AuthActor{}, false
+	}
+	return actor, true
 }

@@ -22,6 +22,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
+	"law-oa-go/internal/common"
 	"law-oa-go/internal/middleware"
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/services"
@@ -39,6 +40,8 @@ type OnlyOfficeHandler struct {
 	storageDir       string
 	conversionTasks  map[string]*ConversionTask
 	conversionMu     sync.RWMutex
+	authz            *services.AuthorizationService
+	subjectRecheck   *services.SubjectRecheckService
 }
 
 // ConversionTask 转换任务
@@ -63,7 +66,12 @@ func NewOnlyOfficeHandler(
 	onlyOfficeSecret string,
 	backendURL string,
 	storageDir string,
+	authz ...*services.AuthorizationService,
 ) *OnlyOfficeHandler {
+	var authorizationService *services.AuthorizationService
+	if len(authz) > 0 {
+		authorizationService = authz[0]
+	}
 	return &OnlyOfficeHandler{
 		db:               db,
 		versionService:   versionService,
@@ -80,7 +88,53 @@ func NewOnlyOfficeHandler(
 		},
 		storageDir:      storageDir,
 		conversionTasks: make(map[string]*ConversionTask),
+		authz:           authorizationService,
 	}
+}
+
+// SetSubjectRecheckService installs the server-side gate for editing,
+// saving, converting and downloading case-bound generated files.
+func (h *OnlyOfficeHandler) SetSubjectRecheckService(service *services.SubjectRecheckService) {
+	h.subjectRecheck = service
+}
+
+func (h *OnlyOfficeHandler) authorizeDocument(c *gin.Context, documentID uint, write bool) bool {
+	if h.authz == nil {
+		common.NewAPIError(c, http.StatusServiceUnavailable, "DOCUMENT_AUTHZ_UNAVAILABLE", "文档权限服务未初始化，当前已阻止在线文档操作")
+		return false
+	}
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return false
+	}
+	var (
+		allowed bool
+		err     error
+	)
+	if write {
+		allowed, err = h.authz.CanManageDocument(c.Request.Context(), actor, documentID)
+	} else {
+		allowed, err = h.authz.CanReadDocument(c.Request.Context(), actor, documentID)
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "权限检查失败"})
+		return false
+	}
+	if !allowed {
+		c.JSON(http.StatusForbidden, gin.H{"error": "无权访问该文档"})
+		return false
+	}
+	return true
+}
+
+func (h *OnlyOfficeHandler) requireCaseSubject(ctx context.Context, document *models.Document, action string) error {
+	if document == nil || !strings.EqualFold(strings.TrimSpace(document.EntityType), "case") || document.EntityID == 0 {
+		return nil
+	}
+	if h.subjectRecheck == nil {
+		return services.NewSubjectWorkflowError("SUBJECT_GATE_UNAVAILABLE", "案件文档受控动作门禁未初始化，已阻止操作")
+	}
+	return h.subjectRecheck.RequireEffectiveSubject(ctx, document.EntityID, action)
 }
 
 // EditorConfig OnlyOffice 编辑器配置
@@ -254,7 +308,11 @@ func (h *OnlyOfficeHandler) OpenEditor(c *gin.Context) {
 	}
 	req.UserID = viewerUserID
 
-	// 获取文档
+	// 先做对象授权，再查询文档，避免未授权用户通过响应差异探测文档是否存在。
+	if !h.authorizeDocument(c, req.DocumentID, req.Mode != ModeView) {
+		return
+	}
+
 	var doc models.Document
 	if err := h.db.WithContext(ctx).First(&doc, req.DocumentID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Document not found"})
@@ -276,6 +334,10 @@ func (h *OnlyOfficeHandler) OpenEditor(c *gin.Context) {
 
 	// 检查是否需要获取锁
 	if mode == ModeEdit {
+		if err := h.requireCaseSubject(ctx, &doc, "case_document_edit"); err != nil {
+			writeSubjectWorkflowError(c, err)
+			return
+		}
 		lockReq := &services.AcquireLockRequest{
 			DocumentID: req.DocumentID,
 			UserID:     req.UserID,
@@ -513,6 +575,9 @@ func (h *OnlyOfficeHandler) saveDocument(ctx context.Context, documentID uint, d
 	if err := h.db.WithContext(ctx).First(&doc, documentID).Error; err != nil {
 		return fmt.Errorf("document not found: %w", err)
 	}
+	if err := h.requireCaseSubject(ctx, &doc, "case_document_save"); err != nil {
+		return err
+	}
 
 	// 从 OnlyOffice 下载编辑后的文档
 	resp, err := h.httpClient.Get(downloadURL)
@@ -600,20 +665,26 @@ func (h *OnlyOfficeHandler) ConvertDocument(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	outputType := strings.ToLower(strings.TrimPrefix(req.OutputType, "."))
+	if !h.isValidOutputType(outputType) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Unsupported output type: %s", outputType)})
+		return
+	}
 
 	ctx := c.Request.Context()
 
-	// 获取文档
+	// 转换属于受控文档动作，先做对象授权，避免通过查询结果泄露文档存在性。
+	if !h.authorizeDocument(c, req.DocumentID, true) {
+		return
+	}
+
 	var doc models.Document
 	if err := h.db.WithContext(ctx).First(&doc, req.DocumentID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Document not found"})
 		return
 	}
-
-	// 验证输出类型
-	outputType := strings.ToLower(strings.TrimPrefix(req.OutputType, "."))
-	if !h.isValidOutputType(outputType) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Unsupported output type: %s", outputType)})
+	if err := h.requireCaseSubject(ctx, &doc, "case_document_convert"); err != nil {
+		writeSubjectWorkflowError(c, err)
 		return
 	}
 
@@ -722,6 +793,18 @@ func (h *OnlyOfficeHandler) CheckConversionStatus(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Conversion task not found"})
 		return
 	}
+	var doc models.Document
+	if err := h.db.WithContext(c.Request.Context()).First(&doc, task.DocumentID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Document not found"})
+		return
+	}
+	if !h.authorizeDocument(c, task.DocumentID, false) {
+		return
+	}
+	if err := h.requireCaseSubject(c.Request.Context(), &doc, "case_document_conversion_status"); err != nil {
+		writeSubjectWorkflowError(c, err)
+		return
+	}
 
 	response := gin.H{
 		"task_id":     task.TaskID,
@@ -766,6 +849,18 @@ func (h *OnlyOfficeHandler) DownloadConverted(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Converted file not found"})
 		return
 	}
+	var doc models.Document
+	if err := h.db.WithContext(c.Request.Context()).First(&doc, uint(documentID)).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Document not found"})
+		return
+	}
+	if !h.authorizeDocument(c, uint(documentID), false) {
+		return
+	}
+	if err := h.requireCaseSubject(c.Request.Context(), &doc, "case_document_converted_download"); err != nil {
+		writeSubjectWorkflowError(c, err)
+		return
+	}
 
 	c.FileAttachment(task.OutputPath, fmt.Sprintf("document.%s", outputType))
 }
@@ -780,6 +875,28 @@ func (h *OnlyOfficeHandler) processConversionResult(taskID string, resp *Convers
 	}
 	task.Status = ConversionStatusProcessing
 	h.conversionMu.Unlock()
+	var doc models.Document
+	if err := h.db.WithContext(context.Background()).First(&doc, task.DocumentID).Error; err != nil {
+		h.conversionMu.Lock()
+		task.Status = ConversionStatusError
+		task.Error = "document not found"
+		h.conversionMu.Unlock()
+		return
+	}
+	if err := h.requireCaseSubject(context.Background(), &doc, "case_document_conversion_result"); err != nil {
+		h.conversionMu.Lock()
+		task.Status = ConversionStatusError
+		task.Error = err.Error()
+		h.conversionMu.Unlock()
+		return
+	}
+	if err := h.requireCaseSubject(context.Background(), &doc, "case_document_convert"); err != nil {
+		h.conversionMu.Lock()
+		task.Status = ConversionStatusError
+		task.Error = err.Error()
+		h.conversionMu.Unlock()
+		return
+	}
 
 	if err := h.validateDownloadURL(resp.URL); err != nil {
 		h.conversionMu.Lock()

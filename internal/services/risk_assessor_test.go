@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -53,5 +54,28 @@ func TestAssessRiskKeepsCriticalRiskApprovalRequirement(t *testing.T) {
 	}
 	if !result.RequiresApproval {
 		t.Fatal("CRITICAL conflict must require approval")
+	}
+}
+
+func TestAssessRiskDoesNotPromoteOnlyUnverifiedNameCandidatesToHigh(t *testing.T) {
+	assessor := NewRiskAssessor(nil, nil)
+	conflicts := make([]*models.ConflictCase, 0, 5)
+	for index := 0; index < 5; index++ {
+		conflicts = append(conflicts, &models.ConflictCase{
+			ID:           fmt.Sprintf("candidate-%d", index),
+			CaseID:       fmt.Sprintf("case-%d", index),
+			CaseName:     "名称候选案件",
+			ConflictType: "名称相似待核实",
+			RiskLevel:    "MEDIUM",
+			CreatedAt:    time.Now(),
+		})
+	}
+
+	result, err := assessor.AssessRisk(context.Background(), conflicts, nil)
+	if err != nil {
+		t.Fatalf("AssessRisk failed: %v", err)
+	}
+	if result.OverallRisk != "MEDIUM" {
+		t.Fatalf("unverified name candidates must remain MEDIUM, got %s", result.OverallRisk)
 	}
 }

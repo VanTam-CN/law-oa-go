@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -37,13 +38,68 @@ func applyEthicalWallScope(query *gorm.DB, viewerUserID uint) *gorm.DB {
 			  AND c.id = documents.entity_id
 			  AND c.ethical_wall_enabled = TRUE
 			  AND c.deleted_at IS NULL
-			  AND NOT EXISTS (
+				AND NOT EXISTS (
 			    SELECT 1 FROM case_ethical_wall_whitelist w
 			    WHERE w.case_id = c.id AND w.user_id = ?
 			  )
+		)
+		AND NOT EXISTS (
+			SELECT 1 FROM cases client_cases
+			WHERE documents.entity_type = 'client'
+			  AND client_cases.client_id = documents.entity_id
+			  AND client_cases.ethical_wall_enabled = TRUE
+			  AND client_cases.deleted_at IS NULL
+			  AND NOT EXISTS (
+			    SELECT 1 FROM case_ethical_wall_whitelist w
+			    WHERE w.case_id = client_cases.id AND w.user_id = ?
+			  )
 		)`,
-		viewerUserID,
+		viewerUserID, viewerUserID,
 	)
+}
+
+func applyDocumentOwnerScope(query *gorm.DB, viewerUserID uint) *gorm.DB {
+	if viewerUserID == 0 {
+		return query
+	}
+	return query.Where(`
+		(
+			documents.entity_type = 'case'
+			AND EXISTS (
+				SELECT 1 FROM cases c
+				WHERE c.id = documents.entity_id
+				  AND c.deleted_at IS NULL
+				  AND (c.lawyer_id = ? OR c.created_by = ?)
+				  AND (
+					c.ethical_wall_enabled = FALSE
+					OR c.lawyer_id = ?
+					OR c.created_by = ?
+					OR EXISTS (
+						SELECT 1 FROM case_ethical_wall_whitelist w
+						WHERE w.case_id = c.id AND w.user_id = ?
+					)
+				  )
+			)
+		)
+		OR (
+			documents.entity_type = 'client'
+			AND EXISTS (
+				SELECT 1 FROM cases c
+				WHERE c.client_id = documents.entity_id
+				  AND c.deleted_at IS NULL
+				  AND (c.lawyer_id = ? OR c.created_by = ?)
+				  AND (
+					c.ethical_wall_enabled = FALSE
+					OR c.lawyer_id = ?
+					OR c.created_by = ?
+					OR EXISTS (
+						SELECT 1 FROM case_ethical_wall_whitelist w
+						WHERE w.case_id = c.id AND w.user_id = ?
+					)
+				  )
+			)
+		)`, viewerUserID, viewerUserID, viewerUserID, viewerUserID, viewerUserID,
+		viewerUserID, viewerUserID, viewerUserID, viewerUserID, viewerUserID)
 }
 
 // Create 创建文档
@@ -54,7 +110,7 @@ func (r *documentRepository) Create(ctx context.Context, document *models.Docume
 // FindByID 根据ID查找文档
 func (r *documentRepository) FindByID(ctx context.Context, id uint) (*models.Document, error) {
 	var document models.Document
-	err := r.db.WithContext(ctx).Where("id = ?", id).First(&document).Error
+	err := r.db.WithContext(ctx).Where("id = ? AND status <> ?", id, "deleted").First(&document).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrDocumentNotFound
@@ -91,19 +147,35 @@ func (r *documentRepository) List(ctx context.Context, params *DocumentListParam
 
 	// 隔离墙过滤（列表与计数必须共用同一 scope，避免条数侧信道）
 	query = applyEthicalWallScope(query, params.ViewerUserID)
+	if params.OwnerScoped {
+		query = applyDocumentOwnerScope(query, params.ViewerUserID)
+	}
 
 	// 计算总数
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	// 应用排序
+	// 应用排序。字段名必须走白名单，避免把查询参数拼进 ORDER BY。
 	order := "created_at DESC"
 	if params.SortBy != "" {
-		if params.SortOrder == "asc" {
-			order = params.SortBy + " ASC"
-		} else {
-			order = params.SortBy + " DESC"
+		sortColumns := map[string]string{
+			"created_at":  "created_at",
+			"updated_at":  "updated_at",
+			"name":        "name",
+			"filename":    "filename",
+			"filesize":    "filesize",
+			"mime_type":   "mime_type",
+			"category":    "category",
+			"entity_type": "entity_type",
+			"entity_id":   "entity_id",
+		}
+		if column, ok := sortColumns[strings.ToLower(strings.TrimSpace(params.SortBy))]; ok {
+			direction := "DESC"
+			if strings.EqualFold(params.SortOrder, "asc") {
+				direction = "ASC"
+			}
+			order = column + " " + direction
 		}
 	}
 	query = query.Order(order)

@@ -287,10 +287,10 @@ export const conflictCheckUtils = {
     return {
       enabled: true,
       checkOnCreate: true,
-      searchYears: clientType === 'COMPANY' ? 7 : 5,
+      searchYears: 0,
       includeCorporateRelations: clientType === 'COMPANY',
       searchDepth: isMajorRisk ? 'COMPREHENSIVE' : 'STANDARD',
-      autoWaiverIfPossible: !isMajorRisk,
+      autoWaiverIfPossible: false,
     }
   },
 
@@ -298,8 +298,8 @@ export const conflictCheckUtils = {
   validateConflictCheckConfig: (config: ConflictCheckConfig) => {
     const errors: string[] = []
 
-    if (config.searchYears && (config.searchYears < 1 || config.searchYears > 20)) {
-      errors.push('搜索年限必须在1-20年之间')
+    if (config.searchYears !== undefined && (config.searchYears < 0 || config.searchYears > 20)) {
+      errors.push('搜索年限必须为0（不按年限截断）或1-20年（范围受限）；档案覆盖完整性仍需律所确认')
     }
 
     if (!['STANDARD', 'DEEP', 'COMPREHENSIVE'].includes(config.searchDepth || '')) {

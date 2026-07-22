@@ -3,11 +3,13 @@ package repositories
 import (
 	"context"
 	"errors"
+	"strconv"
 	"strings"
 	"time"
 
 	"gorm.io/gorm"
 	"law-oa-go/internal/models"
+	"law-oa-go/internal/security"
 )
 
 // ClientRepositoryImpl 客户数据仓库的GORM实现
@@ -58,21 +60,33 @@ func (r *ClientRepositoryImpl) Update(ctx context.Context, client *models.Client
 
 // UpdateWithVersion 使用乐观锁版本号更新客户信息
 func (r *ClientRepositoryImpl) UpdateWithVersion(ctx context.Context, client *models.Client, expectedVersion uint) error {
+	idCard := strings.TrimSpace(client.IDCard)
+	idCardDigest := strings.TrimSpace(client.IDCardDigest)
+	idCardCiphertext := strings.TrimSpace(client.IDCardCiphertext)
+	if idCard != "" {
+		var err error
+		idCardCiphertext, idCardDigest, err = security.ProtectIdentityNumber(idCard)
+		if err != nil {
+			return err
+		}
+	}
 	updates := map[string]interface{}{
-		"name":           client.Name,
-		"type":           client.Type,
-		"email":          client.Email,
-		"phone":          client.Phone,
-		"address":        client.Address,
-		"company":        client.Company,
-		"id_card":        client.IDCard,
-		"industry":       client.Industry,
-		"contact_person": client.ContactPerson,
-		"contact_phone":  client.ContactPhone,
-		"source":         client.Source,
-		"notes":          client.Notes,
-		"status":         client.Status,
-		"version":        expectedVersion + 1,
+		"name":               client.Name,
+		"type":               client.Type,
+		"email":              client.Email,
+		"phone":              client.Phone,
+		"address":            client.Address,
+		"company":            client.Company,
+		"id_card":            "",
+		"id_card_digest":     idCardDigest,
+		"id_card_ciphertext": idCardCiphertext,
+		"industry":           client.Industry,
+		"contact_person":     client.ContactPerson,
+		"contact_phone":      client.ContactPhone,
+		"source":             client.Source,
+		"notes":              client.Notes,
+		"status":             client.Status,
+		"version":            expectedVersion + 1,
 	}
 
 	result := r.db.WithContext(ctx).
@@ -115,6 +129,52 @@ func (r *ClientRepositoryImpl) List(ctx context.Context, params *ClientListParam
 
 	query := r.db.WithContext(ctx).Model(&models.Client{})
 
+	if params.AccessibleByUserID > 0 {
+		userIDText := strconv.FormatUint(uint64(params.AccessibleByUserID), 10)
+		query = query.Where(
+			`EXISTS (
+				SELECT 1 FROM cases
+				WHERE cases.client_id = clients.id
+				  AND cases.deleted_at IS NULL
+				  AND (cases.lawyer_id = ? OR cases.created_by = ?)
+			)`,
+			params.AccessibleByUserID,
+			userIDText,
+		)
+	}
+	if params.EthicalWallUserID > 0 {
+		// A client whose only matters are inside another team's ethical wall
+		// must not be enumerable from the client master list. If the same client
+		// also has a matter the actor may access, keep the client visible while
+		// filtering the inaccessible matter from its detail/profile payload.
+		// The condition is intentionally SQL-side so counts and pagination use
+		// the same boundary.
+		query = query.Where(`(
+			NOT EXISTS (
+			SELECT 1 FROM cases wall_cases
+			WHERE wall_cases.client_id = clients.id
+			  AND wall_cases.deleted_at IS NULL
+			  AND wall_cases.ethical_wall_enabled = ?
+			  AND NOT EXISTS (
+				  SELECT 1 FROM case_ethical_wall_whitelist wall_access
+				  WHERE wall_access.case_id = wall_cases.id AND wall_access.user_id = ?
+			  )
+			)
+			OR EXISTS (
+				SELECT 1 FROM cases visible_cases
+				WHERE visible_cases.client_id = clients.id
+				  AND visible_cases.deleted_at IS NULL
+				  AND (
+					  visible_cases.ethical_wall_enabled = ?
+					  OR EXISTS (
+						  SELECT 1 FROM case_ethical_wall_whitelist visible_wall_access
+						  WHERE visible_wall_access.case_id = visible_cases.id
+							AND visible_wall_access.user_id = ?
+					  )
+				  )
+			)
+		)`, true, params.EthicalWallUserID, false, params.EthicalWallUserID)
+	}
 	if params.Status != "" {
 		query = query.Where("status = ?", params.Status)
 	}

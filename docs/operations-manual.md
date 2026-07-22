@@ -1,7 +1,7 @@
 # Law OA Go 操作手册
 
-**版本**: v2.4.0
-**更新日期**: 2026-04-07
+**版本**: v2.5.0
+**更新日期**: 2026-07-19
 **适用环境**: Docker Compose 部署
 
 ---
@@ -31,9 +31,9 @@ Law OA Go 采用单体架构，Go 后端 + React 前端，通过 Docker Compose 
 
 ```
 ┌─────────────┐    ┌──────────────┐    ┌────────────────┐
-│  Frontend   │───▶│   Backend    │───▶│  MySQL 8.0     │
-│  React 18   │    │  Go 1.23+    │    │  (主数据库)     │
-│  :3003      │    │  :8080       │    │  :33060        │
+│  Frontend   │───▶│   Backend    │───▶│ PostgreSQL 16  │
+│  React 18   │    │  Go 1.25+    │    │  (主数据库)     │
+│  :3003      │    │  :8080       │    │  :5432         │
 └─────────────┘    └──────┬───────┘    └────────────────┘
                           │
                    ┌──────┼───────┐
@@ -57,7 +57,7 @@ Law OA Go 采用单体架构，Go 后端 + React 前端，通过 Docker Compose 
 |------|--------|------|------|
 | backend | law-oa-backend | 8080 | Go 后端 API 服务 |
 | frontend | law-oa-frontend | 3003 | React 前端应用 |
-| mysql | law-oa-mysql | 33060 | MySQL 8.0 数据库 |
+| postgres | law-oa-postgres | 5432 | PostgreSQL 16 数据库 |
 | redis | law-oa-redis | 6379 | Redis 7 缓存 |
 | elasticsearch | law-oa-elasticsearch | 9200/9300 | ES 8.11 全文检索 |
 | kibana | law-oa-kibana | 5601 | 日志分析平台 |
@@ -71,7 +71,7 @@ Law OA Go 采用单体架构，Go 后端 + React 前端，通过 Docker Compose 
 |------|----------|----------|----------|----------|
 | backend | 2.0 | 1G | 0.5 | 256M |
 | frontend | 1.0 | 512M | 0.25 | 128M |
-| mysql | 2.0 | 2G | 0.5 | 512M |
+| postgres | 2.0 | 2G | 0.5 | 512M |
 | redis | 1.0 | 512M | 0.25 | 128M |
 | elasticsearch | 2.0 | 1G | 0.5 | 512M |
 | 其他 | 1.0 | 512M~1G | 0.25 | 128M~256M |
@@ -105,7 +105,7 @@ cd law-oa-go
 ### 2.3 创建数据目录
 
 ```bash
-mkdir -p ./data/{mysql,redis,elasticsearch,prometheus,grafana,uploads,logs}
+mkdir -p ./data/{postgres,redis,elasticsearch,prometheus,grafana,uploads,logs}
 ```
 
 ---
@@ -131,9 +131,10 @@ JWT_SECRET=your-production-jwt-secret-at-least-32-chars
 # CORS 允许的域名（替换为实际域名）
 CORS_ALLOWED_ORIGINS=https://your-domain.com
 
-# 数据库密码
+# 数据库连接
+DB_DRIVER=postgres
 DB_PASSWORD=your-strong-db-password
-MYSQL_ROOT_PASSWORD=your-strong-root-password
+DB_SSLMODE=require
 
 # Redis 密码（建议设置）
 REDIS_PASSWORD=your-redis-password
@@ -164,11 +165,13 @@ docker compose ps --format "table {{.Name}}\t{{.Status}}"
 ### 3.4 执行数据库迁移
 
 ```bash
-# 进入后端容器执行迁移
-docker compose exec backend ./law-oa-go migrate
+# 生产结构由一次性 migrate 服务执行；它只运行 PostgreSQL bootstrap，不写入演示数据
+docker compose logs migrate --tail=200
 
-# 或使用 make 命令（需本地安装 migrate 工具）
-make migrate-up
+# 需要重试时重新执行 bootstrap；失败必须先保留日志并停止发布
+docker compose run --rm migrate
+
+# 不得对生产 bootstrap 使用 force、down 或修改版本绕过失败
 ```
 
 ### 3.5 创建初始管理员
@@ -275,11 +278,13 @@ docker compose up -d --build
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
-| `DB_HOST` | mysql | 数据库主机（容器内） |
-| `DB_PORT` | 3306 | 数据库端口 |
-| `DB_USER` | lawuser | 数据库用户 |
-| `DB_PASSWORD` | lawpass | 数据库密码 |
-| `DB_NAME` | law_oa | 数据库名 |
+| `DB_DRIVER` | postgres | 当前生产 bootstrap 使用的数据库方言 |
+| `DB_HOST` | postgres | 数据库主机（容器内） |
+| `DB_PORT` | 5432 | PostgreSQL 数据库端口 |
+| `DB_SSLMODE` | require | PostgreSQL TLS 模式；生产不得使用 `disable` |
+| `DB_USERNAME` | (需设置) | 数据库用户 |
+| `DB_PASSWORD` | (需设置) | 数据库密码 |
+| `DB_DATABASE` | law_oa | 数据库名 |
 | `DB_MAX_OPEN_CONNS` | 100 | 最大连接数 |
 | `DB_MAX_IDLE_CONNS` | 20 | 最大空闲连接 |
 | `DB_CONN_MAX_LIFETIME` | 1h | 连接最大存活时间 |
@@ -341,33 +346,58 @@ docker compose up -d --build
 
 ### 6.1 数据库迁移
 
-系统使用 25 个迁移文件管理数据库结构。
+当前生产安装不执行 `migrations/` 下的历史 SQL 链。该目录包含多个时期、多个方言的文件，迁移器会在连接数据库前拒绝不匹配的方言，避免产生部分迁移。生产入口是事务化的 PostgreSQL schema bootstrap，完成后会写入 `schema_bootstrap_state` 版本记录。
 
 ```bash
-# 执行迁移（升级）
-make migrate-up
+# 初始化或补齐 PostgreSQL 生产结构
+docker compose run --rm migrate
 
-# 回滚迁移
+# 查看 bootstrap 日志
+docker compose logs migrate --tail=200
+
+# 生产不提供 down；回滚必须使用经过演练的备份恢复
 make migrate-down
 
-# 创建新迁移
-make migrate-create name=add_new_table
-
-# 查看迁移状态
-docker compose exec mysql mysql -u lawuser -plawpass law_oa -e "SELECT * FROM schema_migrations;"
+# 查看 bootstrap 版本
+docker compose exec postgres psql -U "$DB_USERNAME" -d "$DB_DATABASE" \
+  -c "SELECT id, version, bootstrapped_at FROM schema_bootstrap_state;"
 ```
+
+#### 6.1.1 P0 历史主体索引回填与对账
+
+`conflict_search_scopes` 不能仅凭人工填写的版本号和凭证号标记为
+`COMPLETE`。必须先用同一目标数据库执行历史主体索引盘点/回填，得到四类
+`conflict_index_build_runs`，再由独立冲突核查人把对应 `run_id` 绑定到范围配置。
+命令默认只读；`--apply` 会写入主体索引和运行记录，执行前必须完成数据库备份、
+密钥检查和变更审批。命令输出只包含数量、运行 ID 和哈希，不包含客户名、案件号或
+身份标识。
+
+```bash
+# 只读盘点：确认案件、客户、主体、关系四类来源的源记录数量
+go run ./cmd/backfill-conflict-index
+
+# 经备份和审批后执行；凭证引用应指向律所档案核对记录
+go run ./cmd/backfill-conflict-index \
+  --apply \
+  --actor-id "<冲突核查岗用户ID>" \
+  --evidence-reference "<档案核对凭证编号>"
+```
+
+只有四个运行记录均为 `COMPLETED`、`missing_record_count=0`、索引数量与源数量闭合，
+且 `reconciliation_hash`、`source_version`、`evidence_reference` 与范围配置一致时，
+readiness 才会放行。任何缺少主体、案件、客户、曾用名或关联实体引用的脏数据都会使
+回填失败，必须先修复源档案并保留更正记录，不能手工改成 COMPLETE。
+
+---
 
 ### 6.2 数据库连接
 
 ```bash
 # 从宿主机连接
-mysql -h 127.0.0.1 -P 33060 -u lawuser -plawpass law_oa
+psql "host=127.0.0.1 port=${POSTGRES_PORT:-5432} user=${DB_USERNAME} dbname=${DB_DATABASE:-law_oa} sslmode=${DB_SSLMODE:-require}"
 
 # 从容器内连接
-docker compose exec mysql mysql -u lawuser -plawpass law_oa
-
-# 查看数据库列表
-docker compose exec mysql mysql -u lawuser -plawpass -e "SHOW DATABASES;"
+docker compose exec postgres psql -U "$DB_USERNAME" -d "$DB_DATABASE"
 ```
 
 ### 6.3 数据库表概览
@@ -396,6 +426,8 @@ docker compose exec mysql mysql -u lawuser -plawpass -e "SHOW DATABASES;"
 | `trust_transactions` | 代管款交易表 |
 | `entities` | 冲突主体表 |
 | `entity_relations` | 主体关联表 |
+| `conflict_subject_versions` | 不可变主体索引版本 |
+| `conflict_index_build_runs` | 历史主体索引构建与对账运行证据 |
 | `conflict_checks` | 冲突检测记录表 |
 | `ethical_walls` | 隔离墙配置表 |
 | `inbox_items` | 待办事项表 |
@@ -405,20 +437,19 @@ docker compose exec mysql mysql -u lawuser -plawpass -e "SHOW DATABASES;"
 
 ### 6.4 数据库性能调优
 
-MySQL 容器已配置以下优化参数：
+PostgreSQL 的连接池由应用配置控制；生产环境应根据实际并发和数据库规格设置以下参数：
 
 ```
-innodb_buffer_pool_size = 256M
 max_connections = 200
-query_cache_size = 32M
-slow_query_log = ON
-long_query_time = 2s
+shared_buffers = 512MB
+effective_cache_size = 1536MB
+log_min_duration_statement = 2s
 ```
 
 **查看慢查询日志**:
 
 ```bash
-docker compose exec mysql cat /var/log/mysql/slow.log
+docker compose logs postgres --tail=200
 ```
 
 ### 6.5 常用查询
@@ -465,7 +496,8 @@ go_goroutines
 ### 7.2 Grafana 仪表盘
 
 **访问地址**: `http://localhost:3000`
-**默认账号**: admin / admin2024
+**默认账号**: 无。生产环境不创建共享默认账号；请按受控初始化流程创建管理员，
+并通过 Secret Manager 管理 Grafana 等外部组件凭据。
 
 已预配置的仪表盘包括：
 - 系统概览
@@ -590,17 +622,27 @@ curl -X DELETE http://localhost:8080/api/v1/approvals/delegations/{id} \
   -H "Authorization: Bearer <token>"
 ```
 
-### 8.4 冲突检测
+### 8.4 冲突检测（P0 规范路径）
+
+生产环境必须使用 `/api/v1/conflict/check`，由服务端从案件和客户主档案读取主体上下文。浏览器或脚本提交的客户名称、身份标识、承办律师和案件标题不会覆盖服务端主数据；主体绑定不一致时请求会被拒绝。
+
+旧版 `/api/v1/conflict-v2/checks` 在生产环境被明确禁用，避免产生与 P0 记录不同的第二套冲突结论。
 
 **创建冲突检测**:
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/conflict-v2/checks \
+curl -X POST http://localhost:8080/api/v1/conflict/check \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
-    "entity_ids": [1, 2, 3],
-    "case_id": 1
+    "subjectCaseId": "<案件ID>",
+    "clientId": "<案件客户ID>",
+    "userId": "<案件承办律师ID>",
+    "caseName": "由案件主档案确认的案件名称",
+    "caseType": "commercial",
+    "clientName": "由客户主档案确认的客户名称",
+    "clientType": "COMPANY",
+    "otherParties": ["对方当事人"]
   }'
 ```
 
@@ -698,7 +740,8 @@ curl -X POST http://localhost:8080/api/v1/deadlines/calculate \
 - [ ] 更换 `JWT_SECRET` 为强随机密钥（>= 32 字符）
 - [ ] 设置 `CORS_ALLOWED_ORIGINS` 为实际域名（不使用通配符）
 - [ ] 设置 `REDIS_PASSWORD`
-- [ ] 设置 `DB_PASSWORD` 和 `MYSQL_ROOT_PASSWORD` 为强密码
+- [ ] 设置 `DB_PASSWORD` 为强密码，并限制 PostgreSQL 仅在内网访问
+- [ ] 设置 `DB_SSLMODE=require`（内置本地容器可明确使用 `disable`，不可带入外部生产数据库）
 - [ ] 设置 `ENVIRONMENT=production`，关闭 `DEBUG`
 - [ ] 设置 `GIN_MODE=release`
 - [ ] 启用 HTTPS（配置 SSL 证书或使用反向代理）
@@ -770,7 +813,7 @@ docker compose logs backend --tail=200
 # 1. 数据库连接失败 → 检查 DB_HOST/DB_PORT/DB_PASSWORD
 # 2. Redis 连接失败 → 检查 REDIS_HOST/REDIS_PORT
 # 3. 端口被占用 → 检查 8080 端口
-# 4. 迁移未执行 → 运行 make migrate-up
+# 4. schema bootstrap 未完成 → 查看 migrate 日志并重新运行 docker compose run --rm migrate
 ```
 
 #### 健康检查失败
@@ -787,10 +830,12 @@ docker inspect --format='{{json .State.Health}}' law-oa-backend | python3 -m jso
 
 ```bash
 # 查看当前连接数
-docker compose exec mysql mysql -u lawuser -plawpass -e "SHOW STATUS LIKE 'Threads_connected';"
+docker compose exec postgres psql -U "$DB_USERNAME" -d "$DB_DATABASE" \
+  -c "SELECT count(*) AS connections FROM pg_stat_activity WHERE datname = current_database();"
 
 # 查看连接详情
-docker compose exec mysql mysql -u lawuser -plawpass -e "SHOW PROCESSLIST;"
+docker compose exec postgres psql -U "$DB_USERNAME" -d "$DB_DATABASE" \
+  -c "SELECT pid, usename, state, query_start, query FROM pg_stat_activity WHERE datname = current_database();"
 
 # 解决方案：调大 DB_MAX_OPEN_CONNS 或检查连接泄漏
 ```
@@ -825,8 +870,8 @@ docker compose logs -f backend
 # 后端最近100行日志
 docker compose logs --tail=100 backend
 
-# MySQL 慢查询日志
-docker compose exec mysql tail -f /var/log/mysql/slow.log
+# PostgreSQL 慢查询日志
+docker compose logs -f postgres
 
 # 所有服务错误日志
 docker compose logs -f 2>&1 | grep -i error
@@ -838,11 +883,11 @@ docker compose logs -f 2>&1 | grep -i error
 # 进入后端容器
 docker compose exec backend sh
 
-# 进入 MySQL 容器
-docker compose exec mysql bash
+# 进入 PostgreSQL 容器
+docker compose exec postgres sh
 
 # 检查容器内网络连通性
-docker compose exec backend ping -c 3 mysql
+docker compose exec backend ping -c 3 postgres
 docker compose exec backend ping -c 3 redis
 ```
 
@@ -854,20 +899,24 @@ docker compose exec backend ping -c 3 redis
 
 ```bash
 # 手动备份
-docker compose exec mysql mysqldump -u root -p${MYSQL_ROOT_PASSWORD} --single-transaction --routines --triggers law_oa > backup_$(date +%Y%m%d_%H%M%S).sql
+docker compose exec -T postgres pg_dump -U "$DB_USERNAME" -d "$DB_DATABASE" \
+  --format=custom > backup_$(date +%Y%m%d_%H%M%S).dump
 
 # 压缩备份
-docker compose exec mysql mysqldump -u root -p${MYSQL_ROOT_PASSWORD} --single-transaction law_oa | gzip > backup_$(date +%Y%m%d).sql.gz
+docker compose exec -T postgres pg_dump -U "$DB_USERNAME" -d "$DB_DATABASE" \
+  --format=plain | gzip > backup_$(date +%Y%m%d).sql.gz
 ```
 
 ### 11.2 数据恢复
 
 ```bash
-# 从备份恢复
-docker compose exec -T mysql mysql -u root -p${MYSQL_ROOT_PASSWORD} law_oa < backup_20260407.sql
+# 从 plain SQL 备份恢复
+gunzip -c backup_20260407.sql.gz | docker compose exec -T postgres \
+  psql -U "$DB_USERNAME" -d "$DB_DATABASE"
 
-# 从压缩备份恢复
-gunzip < backup_20260407.sql.gz | docker compose exec -T mysql mysql -u root -p${MYSQL_ROOT_PASSWORD} law_oa
+# 从 custom dump 恢复
+docker compose exec -T postgres pg_restore -U "$DB_USERNAME" -d "$DB_DATABASE" \
+  --clean --if-exists < backup_20260407.dump
 ```
 
 ### 11.3 上传文件备份
@@ -889,7 +938,7 @@ tar -xzf uploads_backup_20260407.tar.gz -C ./
 crontab -e
 
 # 每天凌晨2点备份数据库
-0 2 * * * cd /path/to/law-oa-go && docker compose exec -T mysql mysqldump -u root -plawroot2024 --single-transaction law_oa | gzip > /backup/law_oa_$(date +\%Y\%m\%d).sql.gz
+0 2 * * * cd /path/to/law-oa-go && docker compose exec -T postgres pg_dump -U "$DB_USERNAME" -d "$DB_DATABASE" | gzip > /backup/law_oa_$(date +\%Y\%m\%d).sql.gz
 
 # 每周日凌晨3点备份上传文件
 0 3 * * 0 tar -czf /backup/uploads_$(date +\%Y\%m\%d).tar.gz /path/to/law-oa-go/data/uploads/
@@ -960,9 +1009,10 @@ npx playwright test
 | `make quality` | 完整质量检查 |
 | `make ci` | CI 流水线 |
 | `make release` | 发布准备 |
-| `make migrate-up` | 执行数据库迁移 |
-| `make migrate-down` | 回滚数据库迁移 |
-| `make migrate-create name=xxx` | 创建迁移文件 |
+| `make migrate-bootstrap` | 初始化 PostgreSQL 生产 schema |
+| `make migrate-up` | 执行 schema bootstrap |
+| `make migrate-down` | 拒绝生产回滚，改用备份恢复 |
+| `make migrate-create name=xxx` | 当前生产入口不在历史混合目录创建迁移 |
 | `make help` | 查看所有命令 |
 
 ### 12.4 定时任务

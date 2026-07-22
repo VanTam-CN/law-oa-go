@@ -23,12 +23,12 @@ type ApprovalDelegationService interface {
 
 // CreateDelegationRequest 创建代理配置请求
 type CreateDelegationRequest struct {
-	DelegatorID string     `json:"delegator_id" binding:"required"`
+	DelegatorID string     `json:"delegator_id"`
 	DelegateID  string     `json:"delegate_id" binding:"required"`
 	ValidFrom   time.Time  `json:"valid_from" binding:"required"`
 	ValidUntil  *time.Time `json:"valid_until"`
 	Reason      string     `json:"reason"`
-	CreatedBy   string     `json:"created_by" binding:"required"`
+	CreatedBy   string     `json:"created_by"`
 }
 
 // approvalDelegationService 代理审批服务实现
@@ -79,6 +79,16 @@ func (s *approvalDelegationService) checkCircularDelegation(ctx context.Context,
 
 // CreateDelegation 创建代理配置
 func (s *approvalDelegationService) CreateDelegation(ctx context.Context, req *CreateDelegationRequest) (*models.ApprovalDelegation, error) {
+	if req.DelegatorID == "" {
+		return nil, fmt.Errorf("委托人不能为空")
+	}
+	if req.DelegateID == "" {
+		return nil, fmt.Errorf("代理人不能为空")
+	}
+	if req.CreatedBy == "" {
+		return nil, fmt.Errorf("创建人不能为空")
+	}
+
 	// 验证：不能自己代理自己
 	if req.DelegatorID == req.DelegateID {
 		return nil, fmt.Errorf("不能为自己配置代理审批")

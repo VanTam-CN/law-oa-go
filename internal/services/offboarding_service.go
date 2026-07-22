@@ -37,25 +37,25 @@ type OffboardingService interface {
 
 // OffboardingRequest 离职交接请求
 type OffboardingRequest struct {
-	UserID            uint   `json:"user_id" binding:"required"`
-	InitiatedBy       uint   `json:"initiated_by" binding:"required"`
-	NewLawyerID       uint   `json:"new_lawyer_id"`
-	NewAssistantID    uint   `json:"new_assistant_id"`
-	DocumentMethod    string `json:"document_disposal_method" binding:"required"`
-	Notes             string `json:"notes"`
+	UserID         uint   `json:"user_id" binding:"required"`
+	InitiatedBy    uint   `json:"initiated_by" binding:"required"`
+	NewLawyerID    uint   `json:"new_lawyer_id"`
+	NewAssistantID uint   `json:"new_assistant_id"`
+	DocumentMethod string `json:"document_disposal_method" binding:"required"`
+	Notes          string `json:"notes"`
 }
 
 // OffboardingProgress 离职交接进度
 type OffboardingProgress struct {
-	OffboardingID     uint     `json:"offboarding_id"`
-	Status             string   `json:"status"`
-	CaseTransferCount  int      `json:"case_transfer_count"`
-	CaseCompletedCount int      `json:"case_completed_count"`
-	InboxTransferCount int      `json:"inbox_transfer_count"`
-	InboxCompletedCount int     `json:"inbox_completed_count"`
-	DocumentHandled    bool     `json:"document_handled"`
-	SettlementCalculated bool  `json:"settlement_calculated"`
-	SettlementPaid     bool     `json:"settlement_paid"`
+	OffboardingID        uint   `json:"offboarding_id"`
+	Status               string `json:"status"`
+	CaseTransferCount    int    `json:"case_transfer_count"`
+	CaseCompletedCount   int    `json:"case_completed_count"`
+	InboxTransferCount   int    `json:"inbox_transfer_count"`
+	InboxCompletedCount  int    `json:"inbox_completed_count"`
+	DocumentHandled      bool   `json:"document_handled"`
+	SettlementCalculated bool   `json:"settlement_calculated"`
+	SettlementPaid       bool   `json:"settlement_paid"`
 }
 
 // OffboardingServiceImpl 离职交接服务实现
@@ -112,15 +112,15 @@ func (s *OffboardingServiceImpl) InitiateOffboarding(ctx context.Context, req *O
 
 		// 5. 创建交接记录
 		record := &models.OffboardingRecord{
-			UserID:                  req.UserID,
-			InitiatedBy:             req.InitiatedBy,
-			InitiatedAt:             time.Now(),
-			OriginalCases:           models.JSON(casesData),
-			NewLawyerID:             &req.NewLawyerID,
-			OriginalInboxItems:      models.JSON(inboxData),
-			DocumentDisposalMethod:  req.DocumentMethod,
-			Status:                  "pending",
-			Notes:                   req.Notes,
+			UserID:                 req.UserID,
+			InitiatedBy:            req.InitiatedBy,
+			InitiatedAt:            time.Now(),
+			OriginalCases:          models.JSON(casesData),
+			NewLawyerID:            &req.NewLawyerID,
+			OriginalInboxItems:     models.JSON(inboxData),
+			DocumentDisposalMethod: req.DocumentMethod,
+			Status:                 "pending",
+			Notes:                  req.Notes,
 		}
 
 		if err := tx.Create(record).Error; err != nil {
@@ -130,25 +130,25 @@ func (s *OffboardingServiceImpl) InitiateOffboarding(ctx context.Context, req *O
 		// 6. 创建移交详情记录
 		for _, caseItem := range cases {
 			detail := &models.OffboardingTransferDetail{
-				OffboardingID:  record.ID,
-				TransferType:   "case",
+				OffboardingID:   record.ID,
+				TransferType:    "case",
 				OriginalOwnerID: req.UserID,
-				NewOwnerID:     &req.NewLawyerID,
-				ItemID:         uint(caseItem["id"].(float64)),
-				ItemName:       caseItem["title"].(string),
-				TransferStatus: "pending",
+				NewOwnerID:      &req.NewLawyerID,
+				ItemID:          uint(caseItem["id"].(float64)),
+				ItemName:        caseItem["title"].(string),
+				TransferStatus:  "pending",
 			}
 			tx.Create(detail)
 		}
 
 		for _, inbox := range inboxItems {
 			detail := &models.OffboardingTransferDetail{
-				OffboardingID:  record.ID,
-				TransferType:   "inbox",
+				OffboardingID:   record.ID,
+				TransferType:    "inbox",
 				OriginalOwnerID: req.UserID,
-				ItemID:         uint(inbox["id"].(float64)),
-				ItemName:       inbox["title"].(string),
-				TransferStatus: "pending",
+				ItemID:          uint(inbox["id"].(float64)),
+				ItemName:        inbox["title"].(string),
+				TransferStatus:  "pending",
 			}
 			tx.Create(detail)
 		}
@@ -255,7 +255,7 @@ func (s *OffboardingServiceImpl) TransferCases(ctx context.Context, offboardingI
 			Where("id IN ? AND lead_lawyer_id = ?", caseIDs, offboardingID).
 			Updates(map[string]interface{}{
 				"lead_lawyer_id": newLawyerID,
-				"updated_at":    now,
+				"updated_at":     now,
 			}).Error; err != nil {
 			return err
 		}
@@ -385,15 +385,15 @@ func (s *OffboardingServiceImpl) GetOffboardingProgress(ctx context.Context, id 
 		Count(&completedInboxCount)
 
 	return &OffboardingProgress{
-		OffboardingID:      id,
-		Status:             record.Status,
-		CaseTransferCount:  int(caseCount),
-		CaseCompletedCount: int(completedCaseCount),
-		InboxTransferCount: int(inboxCount),
-		InboxCompletedCount: int(completedInboxCount),
-		DocumentHandled:    record.DocumentDisposalCompletedAt != nil,
+		OffboardingID:        id,
+		Status:               record.Status,
+		CaseTransferCount:    int(caseCount),
+		CaseCompletedCount:   int(completedCaseCount),
+		InboxTransferCount:   int(inboxCount),
+		InboxCompletedCount:  int(completedInboxCount),
+		DocumentHandled:      record.DocumentDisposalCompletedAt != nil,
 		SettlementCalculated: record.SettlementCalculated,
-		SettlementPaid:     record.SettlementPaid,
+		SettlementPaid:       record.SettlementPaid,
 	}, nil
 }
 
@@ -484,10 +484,10 @@ func (s *OffboardingServiceImpl) getUserInboxItems(ctx context.Context, userID u
 	result := make([]map[string]interface{}, len(items))
 	for i, item := range items {
 		result[i] = map[string]interface{}{
-			"id":        item.ID,
-			"title":     item.Title,
-			"priority":  item.Priority,
-			"due_date":  item.DueDate,
+			"id":       item.ID,
+			"title":    item.Title,
+			"priority": item.Priority,
+			"due_date": item.DueDate,
 		}
 	}
 	return result, nil

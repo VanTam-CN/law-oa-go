@@ -5,7 +5,7 @@
 ![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=for-the-badge&logo=go&logoColor=white)
 ![License](https://img.shields.io/badge/License-ISC-green.svg?style=for-the-badge)
 ![Version](https://img.shields.io/badge/Version-v2.4.0-blue.svg?style=for-the-badge)
-![Database](https://img.shields.io/badge/Database-PostgreSQL%2BMySQL%2BSQLite-blue.svg?style=for-the-badge)
+![Database](https://img.shields.io/badge/Database-PostgreSQL%20bootstrap-blue.svg?style=for-the-badge)
 ![React](https://img.shields.io/badge/React-18.2.0-61DAFB?style=for-the-badge&logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0.2-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-5.1.0-646CFF?style=for-the-badge&logo=vite&logoColor=white)
@@ -20,15 +20,15 @@
 
 ## 项目概述
 
-示例律师事务所OA 是一个基于 Go 1.25 构建的现代化律师事务所办公自动化系统，采用单体架构设计，为中小型律师事务所（10-100人）提供完整的数字化解决方案。系统支持 PostgreSQL、MySQL 和 SQLite 多种数据库，前端基于 React 18 + TypeScript + Ant Design 5。
+示例律师事务所OA 是一个基于 Go 1.25 构建的现代化律师事务所办公自动化系统，采用单体架构设计，为中小型律师事务所（10-100人）提供完整的数字化解决方案。生产安装入口使用 PostgreSQL schema bootstrap；代码仍保留部分 MySQL/SQLite 兼容路径，但不代表这些方言已经通过当前 P0 生产验收。前端基于 React 18 + TypeScript + Ant Design 5。
 
 ### 核心价值
 
 - **高性能**: Go 原生并发 + Redis 多级缓存 + GORM PrepareStmt
 - **安全可靠**: JWT + RBAC + bcrypt + 令牌撤销 + 速率限制 + CORS 白名单 + 安全头部 + 客户数据脱敏
 - **现代化前端**: React 18 + TypeScript 5.0 + Ant Design 5 + Vite 5 + Redux + React Query
-- **数据库灵活**: PostgreSQL / MySQL / SQLite 三库自适应
-- **生产就绪**: Docker 容器化 + 健康检查 + Prometheus + Grafana + Jaeger
+- **生产数据库入口**: PostgreSQL 16 schema bootstrap；MySQL/SQLite 兼容路径需另行完成方言迁移验收
+- **可审计部署骨架**: Docker 容器化 + 健康检查 + Prometheus + Grafana + Jaeger；生产放行仍需完成律所政策确认和数据覆盖验收
 - **企业级搜索**: Elasticsearch 8.9 全文检索
 - **隔离墙机制**: 按案件维度的利益冲突隔离保护
 
@@ -37,25 +37,31 @@
 ## 系统状态
 
 **当前版本**: v2.4.0
-**最后更新**: 2026-06-03
+**最后更新**: 2026-07-19
+
+**生产放行状态**：当前代码已通过 QA 后端全量测试、前端类型/Lint/构建、
+ARM64 生产镜像构建和 P0 冲突隔离回归；正式接案前仍必须完成律所档案覆盖、
+PD-01 至 PD-07 决策物、AT-01 至 AT-12 验收和真实 PostgreSQL TLS/部署演练。
+生产 Kubernetes 入口为 `k8s/` canonical manifests，仓库中的 Helm Chart 已弃用。
 **编译状态**: `go build ./...` 通过
 **代码规模**: 265 Go 文件 (101k LOC) + 204 TS/TSX 文件 (73k LOC)
-**API 端点**: 259 个
-**数据库迁移**: 39 组版本化 migration 文件 + `001_schema_v2.2.0.sql`
-**整体完成度**: ~92%
+**数据库迁移**: 60 组版本化 migration 文件 + `001_schema_v2.2.0.sql`
+**发布口径**: 律师端受控试用 MVP；不等同于未配置即上线的生产版本
 
-### 当前 MVP 口径 (2026-06-03)
+### 当前 MVP 口径 (2026-07-16)
 
-当前主线已经收敛到律师端可试用 MVP，重点覆盖从接案到冲突复核、审批成案、案件回看和客户档案的核心闭环。演示数据已统一匿名化，公开仓库不包含真实律所名称、真实客户域名或个人账号。
+当前主线已经收敛到律师端可受控试用 MVP，重点覆盖从接案到冲突复核、审批成案、案件回看和客户档案的核心闭环。冲突检查现在按全所历史档案口径执行，并在档案覆盖未被律所确认、主体身份信息不足或主体变更未完成独立复核时阻断后续动作。演示数据已统一匿名化，公开仓库不包含真实律所名称、真实客户域名或个人账号。
+
+> **重要**：本仓库当前不是“开箱即用的生产合规系统”。正式上线前必须完成 `docs/利益冲突/conflict-p0-law-firm-trial-spec.md` 中 PD-01 至 PD-07 的律所书面决策、权威档案导入/覆盖确认、冲突核查人指定、敏感主体密钥托管和真实账号隔离验收。没有完整覆盖配置时，系统会保持 `COVERAGE_LIMITED`，不允许以“无冲突”或“已通过”放行案件。
 
 | 场景 | 状态 | 说明 |
 |------|------|------|
 | 登录与工作台 | ✅ | 支持匿名演示账号登录，工作台展示待办、冲突复核、审批和案件入口 |
 | 新建立案 | ✅ | 基本信息、客户、对方当事人、负责律师、费用字段和保存/提交流程可用 |
-| 利益冲突检查 | ✅ | 默认进入检测清单；可从案件详情带上下文进入本案复核 |
-| 冲突审核与审批 | ✅ | 可从冲突检测结果发起审批，主任/管理员账号可同意、拒绝、退回 |
-| 审批通过成案 | ✅ | 审批通过后自动创建并回填正式案件 ID，"查看关联案件"可直接跳转 |
-| 案件管理 | ✅ | 列表、详情、状态阶段、下一步操作和关联冲突复核入口可用 |
+| 利益冲突检查 | ⚠️ 受门禁控制 | 默认进入检测清单；按全所历史档案检索；覆盖不完整时明确阻断，不显示“无冲突”放行 |
+| 冲突审核与审批 | ⚠️ 受门禁控制 | 需要独立冲突核查人复核；直接冲突不可用豁免流程绕过 |
+| 审批通过成案 | ⚠️ 受门禁控制 | 审批通过后自动创建并回填正式案件 ID；关联案件和对外动作仍受主体版本门禁约束 |
+| 案件管理 | ✅ 受控可用 | 列表、详情、状态阶段、下一步操作和关联冲突复核入口可用；主体变更必须重新复核 |
 | 客户档案 | ✅ | 客户主档案、关联方、历史委托、联系人、附件入口和快捷操作可用 |
 | 权限边界 | ✅ | 律师访问财务/用户管理等非授权模块时显示权限或 MVP 范围提示 |
 | 收件箱/财务深度流程 | 🚧 | 不是当前律师端 MVP 主路径，保留路由和权限提示 |
@@ -104,20 +110,22 @@
 | 安全加固(4项) | ✅ | `models.go`(PII脱敏) + `types.go`(速率限制/CORS/安全头部) |
 | Gemini代码审查修复(36项) | ✅ | CRITICAL/HIGH/MEDIUM 全部修复 |
 
-### 生产就绪状态
+### 生产放行状态
 
 | 检查项 | 状态 | 说明 |
 |--------|------|------|
 | Go 编译 | ✅ | `go build ./...` 零错误 |
-| Docker 构建 | ✅ | 多阶段构建 + 健康检查 |
-| CORS 白名单 | ✅ | 环境变量 `CORS_ALLOWED_ORIGINS` |
+| Docker 构建 | ⚠️ 需目标构建机复核 | 多阶段构建 + 健康检查；生产镜像不再携带 `.env` 模板；当前环境尚未完成基础镜像拉取后的实际构建 |
+| CORS 白名单 | ✅ | 生产启动拒绝本地/通配来源，使用 `CORS_ALLOWED_ORIGINS` |
 | 速率限制 | ✅ | 滑动窗口 100 req/min per IP |
 | 安全头部 | ✅ | CSP/HSTS/COOP/COEP |
-| JWT 认证 | ✅ | 含令牌撤销 + 设备管理 |
-| PII 脱敏 | ✅ | 身份证/手机号 API 不返回明文 |
-| IDOR 防护 | ✅ | 代理审批列表/撤销均校验权限 |
-| 递归深度限制 | ✅ | 冲突穿透 3 层、代理链 5 层 |
-| 数据库约束 | ✅ | 自代理 CHECK、唯一约束 |
+| JWT / 应用密钥 | ✅ | 生产启动要求非默认强密钥 |
+| 主体身份加密 | ✅ | 生产启动要求独立的 `SUBJECT_DATA_KEY`，不得与 JWT 复用 |
+| P0 档案覆盖 | ⛔ 必须配置 | 四类 `conflict_search_scopes` 必须 ACTIVE + COMPLETE，并绑定零缺口的 `conflict_index_build_runs`；否则 readiness 失败 |
+| 主体变更重检 | ✅ 代码门禁 | 主体版本、独立复核、覆盖状态和并发版本检查由服务端强制 |
+| 文档对外输出 | ✅ 代码门禁 | 案件文档下载/预览/转换与主体有效版本绑定 |
+| 权威档案与政策 | ⛔ 待律所确认 | PD-01 至 PD-07 不是代码可以替代的决策，未完成不得宣称生产放行 |
+| IDOR / 隔离墙 | ⚠️ 必须实测 | 需要使用 A/B/冲突核查人真实权限数据完成反向越权验收 |
 
 ---
 
@@ -224,8 +232,8 @@
 | Go | 1.25 | 主语言 |
 | Gin | v1.10.1 | Web 框架 |
 | GORM | v1.30.0 | ORM |
-| PostgreSQL | 15+ | 主数据库（推荐） |
-| MySQL | 8.0 | 兼容数据库 |
+| PostgreSQL | 15+ | 当前生产 bootstrap 数据库 |
+| MySQL | 8.0 | 代码兼容路径，当前不作为生产安装入口 |
 | SQLite | 3 | 开发数据库 |
 | Redis | v9.0.5 | 缓存 + 会话 |
 | Elasticsearch | 8.9 | 全文搜索 |
@@ -312,7 +320,7 @@ internal/
 
 ### 环境要求
 - Go 1.25+ / Node.js 18+ / Docker & Docker Compose
-- Docker Compose 默认使用 MySQL 8.0；本地配置也支持 PostgreSQL 15+ 或 SQLite 3
+- Docker Compose 当前编排 PostgreSQL 16、Redis、Elasticsearch 等服务；生产 schema 通过一次性 `bootstrap` 初始化，历史混合 SQL 迁移目录不作为生产入口
 - Redis 7+ / Elasticsearch 8.9（可选）
 
 ### 一键启动
@@ -323,14 +331,28 @@ cd law-oa-go
 
 # 配置环境变量
 cp .env.example .env
+mkdir -p ./data/{postgres,redis,elasticsearch,prometheus,grafana,uploads,logs}
 
-# Docker 启动（默认含 MySQL + Redis + ES；可按部署文件启用其他组件）
+# Docker 启动（PostgreSQL + Redis + ES；首次启动会执行一次 schema bootstrap）
 docker compose up -d
 
 # 或本地开发
 go run .                        # 后端 :8080
 cd frontend && npm run dev      # 前端 :3003
 ```
+
+开发环境可以使用本地 `.env`。生产环境必须显式提供 `ENVIRONMENT=production`、`JWT_SECRET`、`APP_SECRET`、`SUBJECT_DATA_KEY`、数据库密钥和真实前端 CORS 来源；主体密钥必须是独立的 32 字节密钥。生产后端会在缺少这些条件时拒绝启动，健康检查还会在档案覆盖未完成时返回未就绪。
+
+生产上线前的最小顺序（代码已提供可运行的 PostgreSQL bootstrap，但仍不等于已完成律所生产放行）：
+
+1. 完成并签署 `docs/利益冲突/conflict-p0-law-firm-trial-spec.md` 的 PD-01 至 PD-07 决策物。
+2. 准备 PostgreSQL 15+ 空库或备份副本，配置 `DB_DRIVER=postgres`、`DB_SSLMODE=require` 及生产密钥；执行 `docker compose up -d --build`，确认 `migrate` 日志显示 bootstrap 成功，再检查 `GET /health/ready`。生产不执行历史混合 SQL 的 `up/down`。
+3. 先运行 `go run ./cmd/backfill-sensitive-identities` 盘点历史明文，完成数据库备份和审批后再运行 `go run ./cmd/backfill-sensitive-identities --apply`，确认复核结果为零。
+4. 先运行只读 `go run ./cmd/backfill-conflict-index` 盘点四类主体索引；完成档案核对和备份后，再以冲突核查岗身份运行 `go run ./cmd/backfill-conflict-index --apply --actor-id <用户ID> --evidence-reference <凭证引用>`，保留四个 `run_id`、数量和哈希。
+5. 由冲突核查岗通过 `GET/PUT /api/v1/conflict-v2/search-scopes` 登记案件、客户、主体、关系四类权威档案来源，并在 COMPLETE 请求中绑定对应 `index_run_id`；版本号和凭证必须与运行记录一致。
+6. 删除或停用所有 `@example.test` / `demo_*` 演示账号；生产 readiness 会主动阻断仍启用的演示账号。
+7. 确认 `GET /health/ready` 返回 `ready: true`，并使用律师 A、律师 B、冲突核查人三个独立账号完成反向越权验收。
+8. 只使用脱敏或虚构种子数据完成验收；不要将真实客户、真实身份证号或真实统一社会信用代码放入公开仓库或演示数据库。
 
 ### 访问地址
 
@@ -345,12 +367,13 @@ cd frontend && npm run dev      # 前端 :3003
 | Jaeger | http://localhost:16686 |
 | OnlyOffice | 按 `ONLYOFFICE_URL` 配置，默认回调集成使用 http://localhost:9090 |
 
-### PostgreSQL 匿名演示账号
+### 匿名演示账号（仅本地/验收环境）
 
-运行数据库迁移后，PostgreSQL 试用库会写入匿名演示账号和演示业务数据：
+仓库中的历史试用 SQL 会写入匿名演示账号和演示业务数据，但该目录包含多个历史数据库方言，已被生产迁移前置检查明确禁止作为当前安装入口。不要在生产数据库执行；需要律师验收时，应使用已审核的非生产 PostgreSQL 快照或单独的脱敏 fixture 流程：
 
 ```bash
-go run ./cmd/migrate -migrations ./migrations -command up
+# 当前生产入口只初始化结构，不写入演示数据
+go run ./cmd/migrate -command bootstrap
 ```
 
 | 角色 | 邮箱 | 密码 |
@@ -360,7 +383,7 @@ go run ./cmd/migrate -migrations ./migrations -command up
 | 助理 | `demo.assistant@example.test` | `Demo@2026` |
 | 财务 | `demo.finance@example.test` | `Demo@2026` |
 
-迁移同时写入匿名演示客户、案件、冲突检测、审批、代管款账户、代管款交易和待办数据，用于真实 API 联调和律师端 MVP 验收。
+如果使用历史试用数据，必须在隔离的测试数据库中按对应历史版本单独验证方言和数据脚本，并在验收后销毁或重置；**这些账号不能用于生产**，生产健康检查会拒绝仍启用的演示账号。
 
 ### 当前推荐验证命令
 
@@ -396,11 +419,14 @@ cd frontend && npm run test:e2e -- case-create-full-workflow.spec.ts
 - `GET/POST/DELETE /api/v1/approvals/delegations` - 代理审批配置
 - `GET /api/v1/approvals/delegations/my` - 我的代理配置
 
-#### 冲突检测 v2（Entity 驱动 + 3层穿透）
+#### 冲突检测（P0 规范路径）
 - `POST /api/v1/conflict-v2/entities` - 创建法律实体
 - `POST /api/v2/entities/:id/relations` - 添加关联关系
-- `POST /api/v1/conflict-v2/checks` - 执行冲突检测
-- `POST /api/v1/conflict-v2/checks/:id/review` - 提交审核
+- `POST /api/v1/conflict/check` - 按案件主体执行全量冲突检测（生产唯一检测入口）
+- `GET /api/v1/conflict-v2/search-scopes` - 查看权威档案覆盖登记（仅冲突核查岗/管理角色）
+- `PUT /api/v1/conflict-v2/search-scopes/:id` - 登记或更新档案来源覆盖与核对凭证（仅冲突核查岗/管理角色）
+
+> `/api/v1/conflict-v2/checks` 及其详情、报告、统计接口属于旧版兼容服务。为避免形成第二套冲突结论路径，生产环境统一返回 `MVP_MODULE_UNAVAILABLE`；本地开发环境可用于兼容性调试，但不得作为上线验收依据。
 
 #### 财务管理
 - `GET/POST /api/v1/finance/contracts` - 合同

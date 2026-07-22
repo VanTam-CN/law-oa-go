@@ -15,21 +15,21 @@ import (
 
 // ContentFilterResult 内容过滤结果
 type ContentFilterResult struct {
-	OriginalContent   string                 `json:"original_content"`
-	FilteredContent    string                 `json:"filtered_content"`
-	HasSensitiveWords bool                   `json:"has_sensitive_words"`
-	Hits              []SensitiveWordHit      `json:"hits"`
-	IsBlocked         bool                   `json:"is_blocked"`
-	RequiresApproval  bool                   `json:"requires_approval"`
+	OriginalContent   string             `json:"original_content"`
+	FilteredContent   string             `json:"filtered_content"`
+	HasSensitiveWords bool               `json:"has_sensitive_words"`
+	Hits              []SensitiveWordHit `json:"hits"`
+	IsBlocked         bool               `json:"is_blocked"`
+	RequiresApproval  bool               `json:"requires_approval"`
 }
 
 // SensitiveWordHit 敏感词命中记录
 type SensitiveWordHit struct {
-	Word        string    `json:"word"`
-	WordType    string    `json:"word_type"`
-	Severity    string    `json:"severity"`
-	Position    int       `json:"position"`
-	Replacement string    `json:"replacement"`
+	Word        string `json:"word"`
+	WordType    string `json:"word_type"`
+	Severity    string `json:"severity"`
+	Position    int    `json:"position"`
+	Replacement string `json:"replacement"`
 }
 
 // SensitiveWordRepository 敏感词仓库接口
@@ -101,12 +101,12 @@ func (r *SensitiveWordRepositoryImpl) IncrementHitCount(ctx context.Context, id 
 
 // ContentFilterService 内容过滤服务
 type ContentFilterService struct {
-	wordRepo     SensitiveWordRepository
-	db           *gorm.DB
-	initialized  bool
-	wordsCache   []*models.SensitiveWord
-	regexCache   map[string]*regexp.Regexp
-	cacheMutex   sync.RWMutex
+	wordRepo        SensitiveWordRepository
+	db              *gorm.DB
+	initialized     bool
+	wordsCache      []*models.SensitiveWord
+	regexCache      map[string]*regexp.Regexp
+	cacheMutex      sync.RWMutex
 	lastCacheUpdate time.Time
 }
 
@@ -157,7 +157,7 @@ func (s *ContentFilterService) FilterContent(ctx context.Context, content string
 
 	result := &ContentFilterResult{
 		OriginalContent: content,
-		FilteredContent:  content,
+		FilteredContent: content,
 		Hits:            []SensitiveWordHit{},
 	}
 
@@ -172,7 +172,7 @@ func (s *ContentFilterService) FilterContent(ctx context.Context, content string
 		// 构建或获取正则表达式
 		var re *regexp.Regexp
 		var exists bool
-		
+
 		s.regexCacheMu(func() {
 			re, exists = s.regexCache[word.Word]
 			if !exists {
@@ -247,12 +247,8 @@ func (s *ContentFilterService) FilterContent(ctx context.Context, content string
 
 // regexCacheMu 线程安全地访问正则缓存
 func (s *ContentFilterService) regexCacheMu(fn func()) {
-	var mu sync.RWMutex
-	if s.cacheMutex != (sync.RWMutex{}) {
-		mu = s.cacheMutex
-	}
-	mu.Lock()
-	defer mu.Unlock()
+	s.cacheMutex.Lock()
+	defer s.cacheMutex.Unlock()
 	fn()
 }
 
@@ -275,10 +271,10 @@ func (s *ContentFilterService) replaceSensitiveWords(content string, hits []Sens
 // compareSeverity 比较严重程度
 func (s *ContentFilterService) compareSeverity(a, b string) int {
 	severityOrder := map[string]int{
-		"":        0,
-		"low":     1,
-		"medium":  2,
-		"high":    3,
+		"":         0,
+		"low":      1,
+		"medium":   2,
+		"high":     3,
 		"critical": 4,
 	}
 	aLevel := severityOrder[a]
@@ -294,12 +290,12 @@ func (s *ContentFilterService) compareSeverity(a, b string) int {
 // logFilter 记录过滤日志
 func (s *ContentFilterService) logFilter(ctx context.Context, contentType string, contentID uint, result *ContentFilterResult) {
 	log := &models.ContentFilterLog{
-		ContentType:       contentType,
-		ContentID:         contentID,
-		OriginalContent:   result.OriginalContent,
-		FilteredContent:   result.FilteredContent,
-		IsBlocked:         result.IsBlocked,
-		RequiresApproval:  result.RequiresApproval,
+		ContentType:      contentType,
+		ContentID:        contentID,
+		OriginalContent:  result.OriginalContent,
+		FilteredContent:  result.FilteredContent,
+		IsBlocked:        result.IsBlocked,
+		RequiresApproval: result.RequiresApproval,
 	}
 
 	// 构建命中详情JSON

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -10,13 +11,16 @@ import (
 	"law-oa-go/internal/common"
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/repositories"
+	"law-oa-go/internal/services"
 )
 
 // NotificationHandler 通知处理器
 type NotificationHandler struct {
-	db                *gorm.DB
-	queueRepo         repositories.NotificationQueueRepository
-	templateRepo      repositories.NotificationTemplateRepository
+	db             *gorm.DB
+	queueRepo      repositories.NotificationQueueRepository
+	templateRepo   repositories.NotificationTemplateRepository
+	authz          *services.AuthorizationService
+	subjectRecheck *services.SubjectRecheckService
 }
 
 // NewNotificationHandler 创建通知处理器
@@ -25,22 +29,30 @@ func NewNotificationHandler() *NotificationHandler {
 }
 
 // NewNotificationHandlerWithDB 创建带DB的通知处理器
-func NewNotificationHandlerWithDB(db *gorm.DB) *NotificationHandler {
-	return &NotificationHandler{
+func NewNotificationHandlerWithDB(db *gorm.DB, authz ...*services.AuthorizationService) *NotificationHandler {
+	h := &NotificationHandler{
 		db:           db,
 		queueRepo:    repositories.NewNotificationQueueRepository(db),
 		templateRepo: repositories.NewNotificationTemplateRepository(db),
 	}
+	if len(authz) > 0 {
+		h.authz = authz[0]
+	}
+	return h
+}
+
+func (h *NotificationHandler) SetSubjectRecheckService(service *services.SubjectRecheckService) {
+	h.subjectRecheck = service
 }
 
 // Legacy 通知结构体（兼容旧接口）
 type Notification struct {
-	ID        string `json:"id"`
-	Title     string `json:"title"`
-	Content   string `json:"content"`
-	Type      string `json:"type"`
-	Status    string `json:"status"`
-	CreatedAt string `json:"created_at"`
+	ID        string  `json:"id"`
+	Title     string  `json:"title"`
+	Content   string  `json:"content"`
+	Type      string  `json:"type"`
+	Status    string  `json:"status"`
+	CreatedAt string  `json:"created_at"`
 	ReadAt    *string `json:"read_at,omitempty"`
 }
 
@@ -121,20 +133,20 @@ func (h *NotificationHandler) GetNotificationStats(c *gin.Context) {
 
 // CreateNotificationRequest 创建通知请求
 type CreateNotificationRequest struct {
-	TriggerType     string `json:"trigger_type" binding:"required"`
-	TriggerID       uint   `json:"trigger_id" binding:"required"`
-	CaseID          *uint  `json:"case_id"`
-	RecipientType   string `json:"recipient_type" binding:"required"`
-	RecipientID     uint   `json:"recipient_id" binding:"required"`
-	RecipientName   string `json:"recipient_name" binding:"required"`
-	RecipientContact string `json:"recipient_contact"`
-	Channel         string `json:"channel" binding:"required"`
-	Subject         string `json:"subject"`
-	Content         string `json:"content" binding:"required"`
-	TemplateID      string `json:"template_id"`
-	Priority        string `json:"priority"`
-	ContainsSensitiveInfo bool `json:"contains_sensitive_info"`
-	AutoSend        bool   `json:"auto_send"`
+	TriggerType           string `json:"trigger_type" binding:"required"`
+	TriggerID             uint   `json:"trigger_id" binding:"required"`
+	CaseID                *uint  `json:"case_id"`
+	RecipientType         string `json:"recipient_type" binding:"required"`
+	RecipientID           uint   `json:"recipient_id" binding:"required"`
+	RecipientName         string `json:"recipient_name" binding:"required"`
+	RecipientContact      string `json:"recipient_contact"`
+	Channel               string `json:"channel" binding:"required"`
+	Subject               string `json:"subject"`
+	Content               string `json:"content" binding:"required"`
+	TemplateID            string `json:"template_id"`
+	Priority              string `json:"priority"`
+	ContainsSensitiveInfo bool   `json:"contains_sensitive_info"`
+	AutoSend              bool   `json:"auto_send"`
 }
 
 // CreateNotification 创建通知
@@ -150,30 +162,46 @@ func (h *NotificationHandler) CreateNotification(c *gin.Context) {
 		return
 	}
 
-	// 获取当前用户ID
-	userID, exists := c.Get("user_id")
-	if !exists {
-		common.APIUnauthorized(c, "未授权")
+	actor, ok := currentAuthActor(c)
+	if !ok {
 		return
+	}
+	if req.CaseID != nil {
+		if h.authz == nil {
+			common.NewAPIError(c, http.StatusServiceUnavailable, "NOTIFICATION_CASE_GATE_UNAVAILABLE", "案件通知门禁未初始化，当前不会创建通知")
+			return
+		}
+		allowed, err := h.authz.CanManageCase(c.Request.Context(), actor, *req.CaseID)
+		if err != nil {
+			common.APIInternalServerError(c, "通知案件权限检查失败", err.Error())
+			return
+		}
+		if !allowed {
+			forbidObjectAccess(c)
+			return
+		}
+		// Case-bound notifications are never approved by a caller-controlled
+		// auto_send flag. They must pass the explicit approval/send flow.
+		req.AutoSend = false
 	}
 
 	notification := &models.NotificationQueue{
-		TriggerType:          req.TriggerType,
-		TriggerID:            req.TriggerID,
-		CaseID:               req.CaseID,
-		RecipientType:        req.RecipientType,
-		RecipientID:          req.RecipientID,
-		RecipientName:        req.RecipientName,
-		RecipientContact:     req.RecipientContact,
-		Channel:              req.Channel,
-		Subject:              req.Subject,
-		Content:              req.Content,
-		TemplateID:           req.TemplateID,
-		Status:               "pending",
-		Priority:             req.Priority,
+		TriggerType:           req.TriggerType,
+		TriggerID:             req.TriggerID,
+		CaseID:                req.CaseID,
+		RecipientType:         req.RecipientType,
+		RecipientID:           req.RecipientID,
+		RecipientName:         req.RecipientName,
+		RecipientContact:      req.RecipientContact,
+		Channel:               req.Channel,
+		Subject:               req.Subject,
+		Content:               req.Content,
+		TemplateID:            req.TemplateID,
+		Status:                "pending",
+		Priority:              req.Priority,
 		ContainsSensitiveInfo: req.ContainsSensitiveInfo,
-		AutoSend:             req.AutoSend,
-		CreatedBy:            userID.(uint),
+		AutoSend:              req.AutoSend,
+		CreatedBy:             actor.UserID,
 	}
 
 	// 确定状态：如果包含敏感信息且非自动发送，需要审批
@@ -210,11 +238,9 @@ func (h *NotificationHandler) GetNotificationQueue(c *gin.Context) {
 	dateFrom := c.Query("date_from")
 	dateTo := c.Query("date_to")
 
-	// 获取当前用户ID（作为筛选条件）
-	_, exists := c.Get("user_id")
-	if exists {
-		// 如果是律师，只看自己的通知
-		// TODO: 根据角色判断
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
 	}
 
 	params := &repositories.NotificationListParams{
@@ -229,20 +255,35 @@ func (h *NotificationHandler) GetNotificationQueue(c *gin.Context) {
 		DateFrom:      dateFrom,
 		DateTo:        dateTo,
 	}
+	if !services.IsBusinessMatterManagementRole(actor.Role) {
+		params.ViewerUserID = actor.UserID
+	}
 
-	notifications, total, err := h.queueRepo.List(context.Background(), params)
+	notifications, _, err := h.queueRepo.List(c.Request.Context(), params)
 	if err != nil {
 		common.APIInternalServerError(c, "获取通知列表失败: "+err.Error())
 		return
 	}
 
+	visible := make([]*models.NotificationQueue, 0, len(notifications))
+	for _, notification := range notifications {
+		allowed, err := h.notificationCanRead(c.Request.Context(), actor, notification)
+		if err != nil {
+			common.APIInternalServerError(c, "通知权限检查失败", err.Error())
+			return
+		}
+		if allowed {
+			visible = append(visible, notification)
+		}
+	}
+	visibleTotal := int64(len(visible))
 	common.APISuccess(c, gin.H{
-		"data": notifications,
+		"data": visible,
 		"pagination": gin.H{
 			"page":        page,
 			"page_size":   pageSize,
-			"total":       total,
-			"total_pages": (total + int64(pageSize) - 1) / int64(pageSize),
+			"total":       visibleTotal,
+			"total_pages": (visibleTotal + int64(pageSize) - 1) / int64(pageSize),
 		},
 	})
 }
@@ -254,7 +295,14 @@ func (h *NotificationHandler) GetNotificationQueueStats(c *gin.Context) {
 		return
 	}
 
-	stats, err := h.queueRepo.GetStats(context.Background())
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
+	// Even matter managers receive a viewer-scoped count here. A global count
+	// would reveal the existence of notifications attached to an ethical-wall
+	// case unless every aggregate query also reproduced the wall predicate.
+	stats, err := h.queueRepo.GetStatsForViewer(c.Request.Context(), actor.UserID)
 	if err != nil {
 		common.APIInternalServerError(c, "获取统计失败: "+err.Error())
 		return
@@ -277,7 +325,7 @@ func (h *NotificationHandler) GetNotificationByID(c *gin.Context) {
 		return
 	}
 
-	notification, err := h.queueRepo.FindByID(context.Background(), uint(id))
+	notification, err := h.queueRepo.FindByID(c.Request.Context(), uint(id))
 	if err != nil {
 		common.APIInternalServerError(c, "获取通知失败: "+err.Error())
 		return
@@ -286,15 +334,18 @@ func (h *NotificationHandler) GetNotificationByID(c *gin.Context) {
 		common.APINotFound(c, "通知不存在")
 		return
 	}
+	if !h.authorizeNotification(c, notification, false) {
+		return
+	}
 
 	common.APISuccess(c, notification)
 }
 
 // UpdateNotificationRequest 更新通知请求
 type UpdateNotificationRequest struct {
-	Subject     string `json:"subject"`
-	Content     string `json:"content"`
-	Priority    string `json:"priority"`
+	Subject  string `json:"subject"`
+	Content  string `json:"content"`
+	Priority string `json:"priority"`
 }
 
 // UpdateNotification 更新通知
@@ -311,13 +362,16 @@ func (h *NotificationHandler) UpdateNotification(c *gin.Context) {
 		return
 	}
 
-	notification, err := h.queueRepo.FindByID(context.Background(), uint(id))
+	notification, err := h.queueRepo.FindByID(c.Request.Context(), uint(id))
 	if err != nil {
 		common.APIInternalServerError(c, "获取通知失败: "+err.Error())
 		return
 	}
 	if notification == nil {
 		common.APINotFound(c, "通知不存在")
+		return
+	}
+	if !h.authorizeNotification(c, notification, true) {
 		return
 	}
 
@@ -343,7 +397,7 @@ func (h *NotificationHandler) UpdateNotification(c *gin.Context) {
 		notification.Priority = req.Priority
 	}
 
-	if err := h.queueRepo.Update(context.Background(), notification); err != nil {
+	if err := h.queueRepo.Update(c.Request.Context(), notification); err != nil {
 		common.APIInternalServerError(c, "更新通知失败: "+err.Error())
 		return
 	}
@@ -365,16 +419,19 @@ func (h *NotificationHandler) DeleteNotification(c *gin.Context) {
 		return
 	}
 
-	if err := h.queueRepo.Delete(context.Background(), uint(id)); err != nil {
-		if err == gorm.ErrRecordNotFound {
-			common.APINotFound(c, "通知不存在")
-			return
-		}
-		common.APIInternalServerError(c, "删除通知失败: "+err.Error())
+	notification, err := h.queueRepo.FindByID(c.Request.Context(), uint(id))
+	if err != nil {
+		common.APIInternalServerError(c, "获取通知失败: "+err.Error())
 		return
 	}
-
-	common.APISuccess(c, gin.H{"message": "删除成功"})
+	if notification == nil {
+		common.APINotFound(c, "通知不存在")
+		return
+	}
+	if !h.authorizeNotification(c, notification, true) {
+		return
+	}
+	common.NewAPIError(c, http.StatusConflict, "NOTIFICATION_DELETE_UNAVAILABLE", "通知记录必须保留审计链，当前请使用取消或标记完成，不会物理删除")
 }
 
 // ApproveNotification 审批通过通知
@@ -391,14 +448,27 @@ func (h *NotificationHandler) ApproveNotification(c *gin.Context) {
 		return
 	}
 
-	// 获取当前用户ID
-	userID, exists := c.Get("user_id")
-	if !exists {
-		common.APIUnauthorized(c, "未授权")
+	actor, ok := h.requireNotificationManager(c)
+	if !ok {
+		return
+	}
+	notification, findErr := h.queueRepo.FindByID(c.Request.Context(), uint(id))
+	if findErr != nil {
+		common.APIInternalServerError(c, "获取通知失败: "+findErr.Error())
+		return
+	}
+	if notification == nil {
+		common.APINotFound(c, "通知不存在或状态不允许审批")
+		return
+	}
+	if notification.CreatedBy == actor.UserID || !h.authorizeNotification(c, notification, false) {
+		if notification.CreatedBy == actor.UserID {
+			forbidObjectAccess(c)
+		}
 		return
 	}
 
-	if err := h.queueRepo.Approve(context.Background(), uint(id), userID.(uint)); err != nil {
+	if err := h.queueRepo.Approve(c.Request.Context(), uint(id), actor.UserID); err != nil {
 		if err == gorm.ErrRecordNotFound {
 			common.APINotFound(c, "通知不存在或状态不允许审批")
 			return
@@ -435,7 +505,11 @@ func (h *NotificationHandler) RejectNotification(c *gin.Context) {
 		return
 	}
 
-	notification, err := h.queueRepo.FindByID(context.Background(), uint(id))
+	actor, ok := h.requireNotificationManager(c)
+	if !ok {
+		return
+	}
+	notification, err := h.queueRepo.FindByID(c.Request.Context(), uint(id))
 	if err != nil {
 		common.APIInternalServerError(c, "获取通知失败: "+err.Error())
 		return
@@ -444,12 +518,18 @@ func (h *NotificationHandler) RejectNotification(c *gin.Context) {
 		common.APINotFound(c, "通知不存在")
 		return
 	}
+	if notification.CreatedBy == actor.UserID || !h.authorizeNotification(c, notification, false) {
+		if notification.CreatedBy == actor.UserID {
+			forbidObjectAccess(c)
+		}
+		return
+	}
 
 	// 更新为取消状态，记录拒绝原因
 	notification.Status = "cancelled"
 	notification.ErrorMessage = "审批拒绝: " + req.Reason
 
-	if err := h.queueRepo.Update(context.Background(), notification); err != nil {
+	if err := h.queueRepo.Update(c.Request.Context(), notification); err != nil {
 		common.APIInternalServerError(c, "拒绝失败: "+err.Error())
 		return
 	}
@@ -474,8 +554,21 @@ func (h *NotificationHandler) BatchConfirmNotification(c *gin.Context) {
 		common.APIBadRequest(c, err.Error())
 		return
 	}
+	if _, ok := h.requireNotificationManager(c); !ok {
+		return
+	}
+	for _, notificationID := range req.IDs {
+		notification, err := h.queueRepo.FindByID(c.Request.Context(), notificationID)
+		if err != nil {
+			common.APIInternalServerError(c, "获取通知失败: "+err.Error())
+			return
+		}
+		if notification == nil || !h.authorizeNotification(c, notification, false) {
+			return
+		}
+	}
 
-	if err := h.queueRepo.BatchUpdateStatus(context.Background(), req.IDs, "approved"); err != nil {
+	if err := h.queueRepo.BatchUpdateStatus(c.Request.Context(), req.IDs, "approved"); err != nil {
 		common.APIInternalServerError(c, "批量确认失败: "+err.Error())
 		return
 	}
@@ -498,8 +591,21 @@ func (h *NotificationHandler) BatchCancelNotification(c *gin.Context) {
 		common.APIBadRequest(c, err.Error())
 		return
 	}
+	if _, ok := h.requireNotificationManager(c); !ok {
+		return
+	}
+	for _, notificationID := range req.IDs {
+		notification, err := h.queueRepo.FindByID(c.Request.Context(), notificationID)
+		if err != nil {
+			common.APIInternalServerError(c, "获取通知失败: "+err.Error())
+			return
+		}
+		if notification == nil || !h.authorizeNotification(c, notification, false) {
+			return
+		}
+	}
 
-	if err := h.queueRepo.BatchUpdateStatus(context.Background(), req.IDs, "cancelled"); err != nil {
+	if err := h.queueRepo.BatchUpdateStatus(c.Request.Context(), req.IDs, "cancelled"); err != nil {
 		common.APIInternalServerError(c, "批量取消失败: "+err.Error())
 		return
 	}
@@ -524,9 +630,36 @@ func (h *NotificationHandler) SendNotification(c *gin.Context) {
 		return
 	}
 
+	notification, err := h.queueRepo.FindByID(c.Request.Context(), uint(id))
+	if err != nil {
+		common.APIInternalServerError(c, "获取通知失败: "+err.Error())
+		return
+	}
+	if notification == nil {
+		common.APINotFound(c, "通知不存在")
+		return
+	}
+	if !h.authorizeNotification(c, notification, true) {
+		return
+	}
+	if notification.Status != "approved" && !(notification.Status == "pending" && notification.AutoSend && notification.CaseID == nil) {
+		common.NewAPIError(c, http.StatusConflict, "NOTIFICATION_NOT_APPROVED", "通知尚未完成审批，当前不能发送")
+		return
+	}
+	if notification.CaseID != nil {
+		if h.subjectRecheck == nil {
+			common.NewAPIError(c, http.StatusServiceUnavailable, "SUBJECT_GATE_UNAVAILABLE", "案件主体门禁未初始化，当前不能发送案件通知")
+			return
+		}
+		if err := h.subjectRecheck.RequireEffectiveSubject(c.Request.Context(), *notification.CaseID, "notification_send"); err != nil {
+			writeSubjectWorkflowError(c, err)
+			return
+		}
+	}
+
 	// 更新发送信息
 	now := time.Now()
-	err = h.queueRepo.UpdateSentInfo(context.Background(), uint(id), now, "", "")
+	err = h.queueRepo.UpdateSentInfo(c.Request.Context(), uint(id), now, "", "")
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			common.APINotFound(c, "通知不存在")
@@ -559,6 +692,9 @@ type CreateTemplateRequest struct {
 
 // CreateTemplate 创建通知模板
 func (h *NotificationHandler) CreateTemplate(c *gin.Context) {
+	if _, ok := h.requireNotificationManager(c); !ok {
+		return
+	}
 	if h.db == nil {
 		common.APIInternalServerError(c, "数据库未初始化")
 		return
@@ -567,13 +703,6 @@ func (h *NotificationHandler) CreateTemplate(c *gin.Context) {
 	var req CreateTemplateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		common.APIBadRequest(c, err.Error())
-		return
-	}
-
-	// 获取当前用户ID
-	_, exists := c.Get("user_id")
-	if !exists {
-		common.APIUnauthorized(c, "未授权")
 		return
 	}
 
@@ -712,6 +841,9 @@ type UpdateTemplateRequest struct {
 
 // UpdateTemplate 更新通知模板
 func (h *NotificationHandler) UpdateTemplate(c *gin.Context) {
+	if _, ok := h.requireNotificationManager(c); !ok {
+		return
+	}
 	if h.db == nil {
 		common.APIInternalServerError(c, "数据库未初始化")
 		return
@@ -772,6 +904,9 @@ func (h *NotificationHandler) UpdateTemplate(c *gin.Context) {
 
 // DeleteTemplate 删除通知模板
 func (h *NotificationHandler) DeleteTemplate(c *gin.Context) {
+	if _, ok := h.requireNotificationManager(c); !ok {
+		return
+	}
 	if h.db == nil {
 		common.APIInternalServerError(c, "数据库未初始化")
 		return
@@ -798,6 +933,9 @@ func (h *NotificationHandler) DeleteTemplate(c *gin.Context) {
 
 // ToggleTemplateActive 切换模板启用状态
 func (h *NotificationHandler) ToggleTemplateActive(c *gin.Context) {
+	if _, ok := h.requireNotificationManager(c); !ok {
+		return
+	}
 	if h.db == nil {
 		common.APIInternalServerError(c, "数据库未初始化")
 		return
@@ -839,4 +977,72 @@ func (h *NotificationHandler) ToggleTemplateActive(c *gin.Context) {
 
 func stringPtr(s string) *string {
 	return &s
+}
+
+func (h *NotificationHandler) notificationCanRead(ctx context.Context, actor services.AuthActor, notification *models.NotificationQueue) (bool, error) {
+	if notification == nil {
+		return false, nil
+	}
+	if notification.CaseID != nil {
+		if h.authz == nil {
+			return false, nil
+		}
+		return h.authz.CanReadCase(ctx, actor, *notification.CaseID)
+	}
+	if services.IsBusinessMatterManagementRole(actor.Role) {
+		return true, nil
+	}
+	return notification.CreatedBy == actor.UserID ||
+		((notification.RecipientType == "lawyer" || notification.RecipientType == "admin") && notification.RecipientID == actor.UserID), nil
+}
+
+func (h *NotificationHandler) notificationCanMutate(ctx context.Context, actor services.AuthActor, notification *models.NotificationQueue) (bool, error) {
+	if notification == nil {
+		return false, nil
+	}
+	if notification.CaseID != nil {
+		if h.authz == nil {
+			return false, nil
+		}
+		return h.authz.CanManageCase(ctx, actor, *notification.CaseID)
+	}
+	if services.IsBusinessMatterManagementRole(actor.Role) {
+		return true, nil
+	}
+	return notification.CreatedBy == actor.UserID, nil
+}
+
+func (h *NotificationHandler) requireNotificationManager(c *gin.Context) (services.AuthActor, bool) {
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return services.AuthActor{}, false
+	}
+	if !services.IsBusinessMatterManagementRole(actor.Role) {
+		forbidObjectAccess(c)
+		return services.AuthActor{}, false
+	}
+	return actor, true
+}
+
+func (h *NotificationHandler) authorizeNotification(c *gin.Context, notification *models.NotificationQueue, mutate bool) bool {
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return false
+	}
+	var allowed bool
+	var err error
+	if mutate {
+		allowed, err = h.notificationCanMutate(c.Request.Context(), actor, notification)
+	} else {
+		allowed, err = h.notificationCanRead(c.Request.Context(), actor, notification)
+	}
+	if err != nil {
+		common.APIInternalServerError(c, "通知权限检查失败", err.Error())
+		return false
+	}
+	if !allowed {
+		forbidObjectAccess(c)
+		return false
+	}
+	return true
 }

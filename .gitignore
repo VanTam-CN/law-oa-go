@@ -83,7 +83,6 @@ build/
 out/
 
 # Docker相关
-.dockerignore
 
 # Kubernetes配置
 k8s/secrets/
@@ -221,6 +220,12 @@ docs/swagger.yaml
 
 # API密钥和敏感信息
 secrets/
+# Keep only empty Kubernetes templates under version control. Any other
+# secret material beneath this directory remains ignored.
+!k8s/secrets/
+k8s/secrets/*
+!k8s/secrets/law-oa-secrets.yaml
+!k8s/secrets/secrets-template.yaml
 keys/
 
 # 本地配置
@@ -268,6 +273,11 @@ archive/binaries/
 chrome/
 *.app
 
+# Keep the repository-local Helm deprecation notice visible despite the
+# historical binary-name ignore rule above.
+!helm/law-oa-go/
+!helm/law-oa-go/README.md
+
 # 项目特定的测试和验证文件
 *_test.go
 !internal/handlers/conflict_handler_simple_test.go
@@ -277,6 +287,8 @@ chrome/
 !internal/middleware/authorization_test.go
 !internal/middleware/ethical_wall_test.go
 !internal/router/router_authorization_test.go
+!internal/handlers/inbox_handler_security_test.go
+!internal/handlers/approval_conflict_redaction_test.go
 *_test
 *_tester
 test_*

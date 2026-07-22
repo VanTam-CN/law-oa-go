@@ -1,15 +1,22 @@
 # Law OA Go 企业级部署指南
 
+> **生产入口说明（2026-07-19）**：当前生产数据库入口是 PostgreSQL
+> schema bootstrap。Kubernetes 请只使用 `k8s/` 下按目录拆分的 canonical
+> manifests，并先阅读 [`k8s/README.md`](../k8s/README.md)。仓库根目录的
+> `k8s/deployment.yaml` 仅保留为弃用标记，不再创建旧版应用 Deployment；
+> 不要依据本文件早期的 MySQL、`law-oa-app` 或 `kubectl apply -f k8s/`
+> 示例部署生产环境。
+
 <div align="center">
 
 ![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-Ready-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white)
-![Helm](https://img.shields.io/badge/Helm-Ready-0F1685?style=for-the-badge&logo=helm&logoColor=white)
+![Kubernetes manifests](https://img.shields.io/badge/Kubernetes-manifests-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white)
 ![Production](https://img.shields.io/badge/Production-Grade-green.svg?style=for-the-badge)
 
 **生产环境部署最佳实践**
 
-[环境准备](#-环境准备) • [Docker部署](#-docker部署) • [Kubernetes部署](#-kubernetes部署) • [Helm部署](#-helm部署) • [监控配置](#-监控配置) • [安全配置](#-安全配置)
+ [环境准备](#-环境准备) • [Docker部署](#-docker部署) • [Kubernetes部署](#-kubernetes部署) • [监控配置](#-监控配置) • [安全配置](#-安全配置)
 
 </div>
 
@@ -564,8 +571,12 @@ spec:
 ### 3.4 部署命令
 
 ```bash
-# 应用所有配置
-kubectl apply -f k8s/
+# 按顺序应用生产清单；不要使用 kubectl apply -f k8s/ 触发历史清单
+kubectl apply -f k8s/namespaces/law-oa.yaml
+kubectl apply -f k8s/configmaps/law-oa-config.yaml
+kubectl apply -f k8s/persistentvolumeclaims/uploads.yaml
+kubectl apply -f k8s/services/backend.yaml
+kubectl apply -f k8s/deployments/backend.yaml
 
 # 查看部署状态
 kubectl get pods -n law-oa
@@ -573,144 +584,27 @@ kubectl get services -n law-oa
 kubectl get ingress -n law-oa
 
 # 查看日志
-kubectl logs -f deployment/law-oa-app -n law-oa
+kubectl logs -f deployment/law-oa-backend -n law-oa
 
 # 扩容应用
-kubectl scale deployment law-oa-app --replicas=5 -n law-oa
+kubectl scale deployment law-oa-backend --replicas=5 -n law-oa
 
 # 更新应用
-kubectl set image deployment/law-oa-app law-oa-app=law-registry.com/law-oa-go:2.1.1 -n law-oa
+kubectl set image deployment/law-oa-backend backend=YOUR_REGISTRY/law-oa/backend:2.1.1 -n law-oa
 
 # 回滚应用
-kubectl rollout undo deployment/law-oa-app -n law-oa
+kubectl rollout undo deployment/law-oa-backend -n law-oa
 ```
 
 ---
 
 ## 4. Helm部署
 
-### 4.1 安装Chart
-
-```bash
-# 添加仓库
-helm repo add law-oa https://charts.lawoa.com
-helm repo update
-
-# 安装应用
-helm install law-oa law-oa/law-oa-go \
-  --namespace law-oa \
-  --create-namespace \
-  --set image.tag=2.1.0 \
-  --set ingress.host=api.lawoa.com \
-  --set resources.requests.cpu=500m \
-  --set resources.requests.memory=1Gi
-
-# 自定义配置安装
-helm install law-oa ./helm/law-oa-go \
-  --namespace law-oa \
-  --create-namespace \
-  --values helm/law-oa-go/values-prod.yaml
-```
-
-### 4.2 配置管理
-
-#### 生产环境配置
-```yaml
-# values-prod.yaml
-global:
-  environment: production
-  imageRegistry: law-registry.com
-
-image:
-  repository: law-oa-go
-  tag: 2.1.0
-  pullPolicy: IfNotPresent
-
-replicaCount: 5
-autoscaling:
-  enabled: true
-  minReplicas: 5
-  maxReplicas: 20
-
-resources:
-  limits:
-    cpu: 4000m
-    memory: 4Gi
-  requests:
-    cpu: 1000m
-    memory: 2Gi
-
-ingress:
-  enabled: true
-  className: nginx
-  hosts:
-    - host: api.lawoa.com
-      paths:
-        - path: /
-          pathType: Prefix
-  tls:
-    - secretName: law-oa-tls
-      hosts:
-        - api.lawoa.com
-
-mysql:
-  enabled: true
-  auth:
-    rootPassword: "prod-root-password"
-    database: "law_oa_prod"
-    username: "law_oa_user"
-    password: "prod-user-password"
-  primary:
-    persistence:
-      enabled: true
-      size: 500Gi
-
-redis:
-  enabled: true
-  auth:
-    enabled: true
-    password: "prod-redis-password"
-  master:
-    persistence:
-      enabled: true
-      size: 50Gi
-
-elasticsearch:
-  enabled: true
-  replicas: 3
-  volumeClaimTemplate:
-    accessModes:
-      - ReadWriteOnce
-    resources:
-      requests:
-        storage: 200Gi
-```
-
-### 4.3 Chart管理
-
-```bash
-# 列出已安装的charts
-helm list -n law-oa
-
-# 更新应用
-helm upgrade law-oa ./helm/law-oa-go \
-  --namespace law-oa \
-  --values helm/law-oa-go/values-prod.yaml \
-  --set image.tag=2.1.1
-
-# 回滚应用
-helm rollback law-oa 1 -n law-oa
-
-# 卸载应用
-helm uninstall law-oa -n law-oa
-
-# 测试Chart
-helm install law-oa-test ./helm/law-oa-go \
-  --namespace law-oa-test \
-  --create-namespace \
-  --dry-run \
-  --debug
-```
+当前生产发布不使用 Helm。仓库中的 `helm/law-oa-go/` 仅保留为弃用兼容物，
+其旧版 MySQL、默认凭据和依赖组合不代表当前生产支持矩阵。请使用
+`k8s/README.md` 描述的 PostgreSQL canonical manifests；Secret 必须由
+Secret Manager 或 External Secrets 创建，不能通过 Helm values 或仓库模板
+写入真实值。
 
 ## 生产环境部署
 

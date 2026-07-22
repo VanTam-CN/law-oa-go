@@ -231,11 +231,15 @@ func (r *UserRepositoryImpl) FindByStringID(id string) (*models.User, error) {
 // FindByRole 根据角色查找用户
 func (r *UserRepositoryImpl) FindByRole(role string, limit int) ([]models.User, error) {
 	var users []models.User
-	query := r.db.Where("role = ?", role).Where("status = ?", "active")
+	query := r.db.Where("role = ?", role).
+		Where("status = ?", "active").
+		Order("CASE WHEN username LIKE 'legacy_demo_%' THEN 1 ELSE 0 END").
+		Order("CASE seniority WHEN '合伙人' THEN 1 WHEN '高级' THEN 2 WHEN '中级' THEN 3 ELSE 4 END").
+		Order("created_at ASC")
 	if limit > 0 {
 		query = query.Limit(limit)
 	}
-	err := query.Order("created_at ASC").Find(&users).Error
+	err := query.Find(&users).Error
 	if err != nil {
 		return nil, err
 	}
@@ -247,17 +251,29 @@ func (r *UserRepositoryImpl) FindDepartmentHead(deptID string, limit int) ([]mod
 	var users []models.User
 	query := r.db.Where("department_id = ?", deptID).
 		Where("role IN ?", []string{"department_head", "admin"}).
-		Where("status = ?", "active")
+		Where("status = ?", "active").
+		Order("CASE seniority WHEN '合伙人' THEN 1 WHEN '高级' THEN 2 WHEN '中级' THEN 3 ELSE 4 END").
+		Order("created_at ASC")
 	if limit > 0 {
 		query = query.Limit(limit)
 	}
-	err := query.Order("created_at ASC").Find(&users).Error
+	err := query.Find(&users).Error
 	if err != nil {
 		return nil, err
 	}
 	if len(users) == 0 {
-		// 如果没有部门主管，返回管理员
-		return r.FindByRole("admin", limit)
+		// 没有部门主管时，优先选择具备合伙人或高级资历的活跃管理员。
+		query = r.db.Where("role = ?", "admin").
+			Where("status = ?", "active").
+			Order("CASE WHEN username LIKE 'legacy_demo_%' THEN 1 ELSE 0 END").
+			Order("CASE seniority WHEN '合伙人' THEN 1 WHEN '高级' THEN 2 WHEN '中级' THEN 3 ELSE 4 END").
+			Order("created_at ASC")
+		if limit > 0 {
+			query = query.Limit(limit)
+		}
+		if err := query.Find(&users).Error; err != nil {
+			return nil, err
+		}
 	}
 	return users, nil
 }

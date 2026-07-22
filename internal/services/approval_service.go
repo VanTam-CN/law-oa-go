@@ -1,7 +1,6 @@
 package services
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -34,9 +33,15 @@ func NewApprovalService(db *gorm.DB) *ApprovalService {
 	}
 }
 
-// GetApprovalStats 获取审批统计
-func (s *ApprovalService) GetApprovalStats(userID string) (*models.ApprovalStats, error) {
+// GetApprovalStats 获取审批统计。
+//
+// Firm-wide pending totals are only returned when the caller explicitly has a
+// business matter-management appointment. The variadic argument preserves the
+// old one-argument call shape for internal callers while making the safe,
+// user-scoped view the default.
+func (s *ApprovalService) GetApprovalStats(userID string, includeFirmTotals ...bool) (*models.ApprovalStats, error) {
 	var stats models.ApprovalStats
+	showFirmTotals := len(includeFirmTotals) > 0 && includeFirmTotals[0]
 
 	// 获取总申请数
 	totalRequests, err := s.approvalRepo.CountByUserID(userID, "")
@@ -52,10 +57,20 @@ func (s *ApprovalService) GetApprovalStats(userID string) (*models.ApprovalStats
 	}
 	stats.MyPendingRequests = int(myPendingRequests)
 
-	// 获取全部待审批数
-	pendingRequests, err := s.approvalRepo.CountPending()
-	if err != nil {
-		return nil, fmt.Errorf("获取全部待审批数失败: %v", err)
+	// A normal lawyer must not learn the firm's global approval volume. Use the
+	// applicant's own pending count for that view; management roles can opt in
+	// to the firm-wide count after the handler has checked their role.
+	var pendingRequests int64
+	if showFirmTotals {
+		pendingRequests, err = s.approvalRepo.CountPending()
+		if err != nil {
+			return nil, fmt.Errorf("获取全部待审批数失败: %v", err)
+		}
+	} else {
+		pendingRequests, err = s.approvalRepo.CountPendingByApplicantID(userID)
+		if err != nil {
+			return nil, fmt.Errorf("获取用户待审批数失败: %v", err)
+		}
 	}
 	stats.PendingRequests = int(pendingRequests)
 
@@ -134,15 +149,11 @@ func (s *ApprovalService) GetApproval(userID string, id string) (*models.Approva
 		return nil, fmt.Errorf("获取审批详情失败: %v", err)
 	}
 
-	// 检查权限：确保用户有权限查看
+	// The approval detail is an object-scoped resource. Technical admin is not
+	// a business approval role, so it must not bypass the applicant/approver
+	// boundary by guessing an approval ID.
 	if approval != nil {
-		isAdmin := false
-		if parsedUserID, parseErr := strconv.ParseUint(userID, 10, 64); parseErr == nil {
-			if user, userErr := s.userRepo.FindByID(context.Background(), uint(parsedUserID)); userErr == nil && user != nil {
-				isAdmin = user.Role == "admin"
-			}
-		}
-		if !isAdmin && approval.ApplicantID != userID && approval.CurrentApproverID != userID {
+		if approval.ApplicantID != userID && approval.CurrentApproverID != userID {
 			return nil, fmt.Errorf("无权查看此审批记录")
 		}
 	}
@@ -218,6 +229,7 @@ func (s *ApprovalService) CreateApproval(userID string, userName string, req *mo
 		WorkflowConfig:        "{}",
 		Attachments:           "{}",
 		Metadata:              "{}",
+		ConflictResult:        "{}",
 		CreatedBy:             userID,
 		UpdatedBy:             userID,
 	}
@@ -311,6 +323,9 @@ func (s *ApprovalService) ProcessApprovalDecision(userID string, approvalID stri
 	// 确保是当前审批人
 	if approval != nil && approval.CurrentApproverID != userID {
 		return nil, errors.New("无权审批此申请")
+	}
+	if approval != nil && approval.ApplicantID == userID {
+		return nil, errors.New("申请人不能审批自己的申请")
 	}
 
 	// 检查审批状态

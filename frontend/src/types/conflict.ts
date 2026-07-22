@@ -38,7 +38,7 @@ export interface ConflictCheckRequest {
   caseType: CaseType // 必填 - 案件类型
   clientType: ClientType // 必填 - 客户类型 (PERSON | COMPANY)
   otherParties: string[] // 对方当事人列表
-  searchYears?: number // 搜索年限 (默认: 5)
+  searchYears?: number // 0 表示不按年限截断；档案覆盖完整性仍需律所确认
   includeCorporateRelations?: boolean // 是否包含企业关系 (默认: true)
   searchDepth?: SearchDepth // 搜索深度 (默认: STANDARD)
   userId?: string // 用户ID (用于审计)

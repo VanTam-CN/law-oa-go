@@ -56,11 +56,16 @@ load_env() {
         export $(cat .env.postgresql | grep -v '^#' | xargs)
         log_info "已加载环境变量配置"
     else
-        log_warning "未找到.env.postgresql文件，使用默认配置"
-        export POSTGRES_DB=law_oa_db
-        export POSTGRES_USER=law_oa_user
-        export POSTGRES_PASSWORD=law_oa_password_2024
-        export POSTGRES_PORT=5432
+        log_error "未找到.env.postgresql文件；请从 Secret Manager 或受控环境注入数据库配置"
+        return 1
+    fi
+    if [ -z "${POSTGRES_PASSWORD:-}" ]; then
+        log_error "POSTGRES_PASSWORD 未配置，拒绝启动迁移服务"
+        return 1
+    fi
+    if [ -z "${POSTGRES_USER:-}" ] || [ -z "${POSTGRES_DB:-}" ]; then
+        log_error "POSTGRES_USER/POSTGRES_DB 未配置，拒绝启动迁移服务"
+        return 1
     fi
 }
 

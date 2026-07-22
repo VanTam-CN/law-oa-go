@@ -3,20 +3,22 @@ package repositories
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
-	"law-oa-go/internal/models"
 	"gorm.io/gorm"
+	"law-oa-go/internal/models"
+	"law-oa-go/internal/security"
 )
 
 // RelatedEntityNode 递归关联穿透结果节点
 type RelatedEntityNode struct {
-	EntityID     uint                  `json:"entity_id"`
-	Depth        int                   `json:"depth"`          // 从起始实体算起的层级（1=直接关联）
-	RelationType models.RelationType   `json:"relation_type"`
-	Direction    string                `json:"direction"`      // "outgoing" 源→目标, "incoming" 目标→源
-	Entity       *models.Entity        `json:"entity"`
-	Path         []RelatedEdge         `json:"path"`           // 从起始实体到当前节点的路径
+	EntityID     uint                `json:"entity_id"`
+	Depth        int                 `json:"depth"` // 从起始实体算起的层级（1=直接关联）
+	RelationType models.RelationType `json:"relation_type"`
+	Direction    string              `json:"direction"` // "outgoing" 源→目标, "incoming" 目标→源
+	Entity       *models.Entity      `json:"entity"`
+	Path         []RelatedEdge       `json:"path"` // 从起始实体到当前节点的路径
 }
 
 // RelatedEdge 关联路径中的一条边
@@ -64,6 +66,8 @@ type EntityRepository interface {
 
 	// 获取实体关联的活跃案件
 	GetActiveCasesByEntity(ctx context.Context, entityID uint) ([]*models.Case, error)
+	// 获取实体关联的全部历史案件（含已结案、已拒绝和已撤案记录）
+	GetAllCasesByEntity(ctx context.Context, entityID uint) ([]*models.Case, error)
 }
 
 // entityRepository 实体仓储实现
@@ -102,7 +106,11 @@ func (r *entityRepository) GetByID(ctx context.Context, id uint) (*models.Entity
 
 // Update 更新实体
 func (r *entityRepository) Update(ctx context.Context, id uint, updates map[string]interface{}) error {
-	result := r.db.WithContext(ctx).Model(&models.Entity{}).Where("id = ?", id).Updates(updates)
+	prepared, err := prepareEntityUpdates(updates)
+	if err != nil {
+		return err
+	}
+	result := r.db.WithContext(ctx).Model(&models.Entity{}).Where("id = ?", id).Updates(prepared)
 	if result.Error != nil {
 		return fmt.Errorf("更新实体失败: %w", result.Error)
 	}
@@ -149,12 +157,12 @@ func (r *entityRepository) List(ctx context.Context, offset, limit int, conditio
 	return entities, total, nil
 }
 
-// SearchByName 按名称搜索（PostgreSQL ILIKE 不区分大小写）
+// SearchByName 按名称搜索。LOWER + LIKE 在 MySQL、PostgreSQL 和 SQLite 均可用。
 func (r *entityRepository) SearchByName(ctx context.Context, name string, limit int) ([]*models.Entity, error) {
 	var entities []*models.Entity
 
 	query := r.db.WithContext(ctx).
-		Where("name ILIKE ? OR alias ILIKE ?", "%"+name+"%", "%"+name+"%")
+		Where("LOWER(name) LIKE LOWER(?) OR LOWER(alias) LIKE LOWER(?)", "%"+name+"%", "%"+name+"%")
 
 	if limit > 0 {
 		query = query.Limit(limit)
@@ -170,9 +178,13 @@ func (r *entityRepository) SearchByName(ctx context.Context, name string, limit 
 // SearchByIdentityNumber 按证件号搜索
 func (r *entityRepository) SearchByIdentityNumber(ctx context.Context, identityNumber string, limit int) ([]*models.Entity, error) {
 	var entities []*models.Entity
+	digest, err := security.IdentityDigest(identityNumber)
+	if err != nil {
+		return nil, fmt.Errorf("按证件号搜索实体失败: %w", err)
+	}
 
 	query := r.db.WithContext(ctx).
-		Where("identity_number = ?", identityNumber)
+		Where("identity_number_digest = ?", digest)
 
 	if limit > 0 {
 		query = query.Limit(limit)
@@ -190,7 +202,7 @@ func (r *entityRepository) SearchByAlias(ctx context.Context, alias string, limi
 	var entities []*models.Entity
 
 	query := r.db.WithContext(ctx).
-		Where("alias ILIKE ?", "%"+alias+"%")
+		Where("LOWER(alias) LIKE LOWER(?)", "%"+alias+"%")
 
 	if limit > 0 {
 		query = query.Limit(limit)
@@ -209,7 +221,7 @@ func (r *entityRepository) SearchByFormerName(ctx context.Context, name string, 
 
 	query := r.db.WithContext(ctx).
 		Joins("JOIN entity_name_history ON entity_name_history.entity_id = entities.id").
-		Where("entity_name_history.old_name ILIKE ?", "%"+name+"%").
+		Where("LOWER(entity_name_history.old_name) LIKE LOWER(?)", "%"+name+"%").
 		Group("entities.id")
 
 	if limit > 0 {
@@ -348,11 +360,11 @@ func (r *entityRepository) GetRelatedEntitiesRecursive(ctx context.Context, enti
 	`
 
 	type cteRow struct {
-		FromID       uint                  `gorm:"column:from_id"`
-		ToID         uint                  `gorm:"column:to_id"`
-		RelationType models.RelationType   `gorm:"column:relation_type"`
-		Depth        int                   `gorm:"column:depth"`
-		PathIDs      []uint                `gorm:"column:path_ids;type:jsonb"`
+		FromID       uint                `gorm:"column:from_id"`
+		ToID         uint                `gorm:"column:to_id"`
+		RelationType models.RelationType `gorm:"column:relation_type"`
+		Depth        int                 `gorm:"column:depth"`
+		PathIDs      []uint              `gorm:"column:path_ids;type:jsonb"`
 	}
 
 	var rows []cteRow
@@ -505,6 +517,42 @@ func (r *entityRepository) BatchCreateRelations(ctx context.Context, relations [
 	return nil
 }
 
+func prepareEntityUpdates(updates map[string]interface{}) (map[string]interface{}, error) {
+	prepared := make(map[string]interface{}, len(updates)+2)
+	for key, value := range updates {
+		prepared[key] = value
+	}
+	rawValue, ok := prepared["identity_number"]
+	if !ok {
+		rawValue, ok = prepared["identityNumber"]
+		if ok {
+			delete(prepared, "identityNumber")
+		}
+	}
+	if !ok {
+		return prepared, nil
+	}
+	raw, ok := rawValue.(string)
+	if !ok {
+		return nil, fmt.Errorf("更新实体失败: identity_number必须是字符串")
+	}
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		prepared["identity_number"] = ""
+		prepared["identity_number_digest"] = ""
+		prepared["identity_number_ciphertext"] = ""
+		return prepared, nil
+	}
+	ciphertext, digest, err := security.ProtectIdentityNumber(raw)
+	if err != nil {
+		return nil, fmt.Errorf("更新实体失败: %w", err)
+	}
+	prepared["identity_number"] = ""
+	prepared["identity_number_digest"] = digest
+	prepared["identity_number_ciphertext"] = ciphertext
+	return prepared, nil
+}
+
 // GetActiveCasesByEntity 获取实体关联的活跃案件
 func (r *entityRepository) GetActiveCasesByEntity(ctx context.Context, entityID uint) ([]*models.Case, error) {
 	var cases []*models.Case
@@ -517,6 +565,26 @@ func (r *entityRepository) GetActiveCasesByEntity(ctx context.Context, entityID 
 
 	if err := query.Find(&cases).Error; err != nil {
 		return nil, fmt.Errorf("获取实体关联案件失败: %w", err)
+	}
+
+	return cases, nil
+}
+
+// GetAllCasesByEntity returns every non-deleted matter in which the entity is
+// a party. Conflict checks must use the full historical archive; limiting this
+// query to active matters would create a systematic false-clear result for
+// former clients and previously rejected matters.
+func (r *entityRepository) GetAllCasesByEntity(ctx context.Context, entityID uint) ([]*models.Case, error) {
+	var cases []*models.Case
+
+	query := r.db.WithContext(ctx).
+		Joins("JOIN case_parties ON case_parties.case_id = cases.id").
+		Where("case_parties.entity_id = ?", entityID).
+		Where("cases.deleted_at IS NULL").
+		Distinct("cases.*")
+
+	if err := query.Order("cases.created_at DESC").Find(&cases).Error; err != nil {
+		return nil, fmt.Errorf("获取实体全部历史案件失败: %w", err)
 	}
 
 	return cases, nil
@@ -586,9 +654,30 @@ func (r *conflictCheckRepository) ListConflictChecks(ctx context.Context, offset
 	var total int64
 
 	query := r.db.WithContext(ctx).Model(&models.ConflictCheck{})
+	if rawUserID, ok := filters["ethical_wall_user_id"]; ok {
+		userID, valid := rawUserID.(uint)
+		if !valid || userID == 0 {
+			return nil, 0, fmt.Errorf("隔离墙查询用户无效")
+		}
+		query = query.Where(`conflict_checks.case_id IN (
+			SELECT visible_cases.id FROM cases visible_cases
+			WHERE visible_cases.deleted_at IS NULL
+			  AND (
+				  visible_cases.ethical_wall_enabled = ?
+				  OR EXISTS (
+					  SELECT 1 FROM case_ethical_wall_whitelist wall_access
+					  WHERE wall_access.case_id = visible_cases.id
+						AND wall_access.user_id = ?
+				  )
+			  )
+		)`, false, userID)
+	}
 
 	// 应用过滤条件
 	for key, value := range filters {
+		if key == "ethical_wall_user_id" {
+			continue
+		}
 		query = query.Where(key, value)
 	}
 
@@ -632,14 +721,7 @@ func (r *conflictCheckRepository) UpdateConflictCheckStatus(ctx context.Context,
 
 // DeleteConflictCheck 删除冲突检查记录
 func (r *conflictCheckRepository) DeleteConflictCheck(ctx context.Context, id uint) error {
-	result := r.db.WithContext(ctx).Delete(&models.ConflictCheck{}, id)
-	if result.Error != nil {
-		return fmt.Errorf("删除冲突检查记录失败: %w", result.Error)
-	}
-	if result.RowsAffected == 0 {
-		return ErrRecordNotFound
-	}
-	return nil
+	return fmt.Errorf("冲突检查记录为审计证据，不允许删除；请通过追加更正或撤销记录处理")
 }
 
 // CreateConflictDetail 创建冲突详情
@@ -668,26 +750,12 @@ func (r *conflictCheckRepository) GetConflictDetails(ctx context.Context, checkI
 
 // UpdateConflictDetail 更新冲突详情
 func (r *conflictCheckRepository) UpdateConflictDetail(ctx context.Context, id uint, updates map[string]interface{}) error {
-	result := r.db.WithContext(ctx).Model(&models.ConflictDetail{}).Where("id = ?", id).Updates(updates)
-	if result.Error != nil {
-		return fmt.Errorf("更新冲突详情失败: %w", result.Error)
-	}
-	if result.RowsAffected == 0 {
-		return ErrRecordNotFound
-	}
-	return nil
+	return fmt.Errorf("冲突详情为审计证据，不允许更新；请追加新的证据或更正记录")
 }
 
 // DeleteConflictDetail 删除冲突详情
 func (r *conflictCheckRepository) DeleteConflictDetail(ctx context.Context, id uint) error {
-	result := r.db.WithContext(ctx).Delete(&models.ConflictDetail{}, id)
-	if result.Error != nil {
-		return fmt.Errorf("删除冲突详情失败: %w", result.Error)
-	}
-	if result.RowsAffected == 0 {
-		return ErrRecordNotFound
-	}
-	return nil
+	return fmt.Errorf("冲突详情为审计证据，不允许删除；请追加更正记录")
 }
 
 // BatchCreateDetails 批量创建冲突详情
@@ -745,8 +813,8 @@ func (r *conflictCheckRepository) FindEntitiesByCaseIDs(ctx context.Context, cas
 // EntitySearchParams 实体搜索参数
 type EntitySearchParams struct {
 	Name           string
-EntityType     string
-Status         string
+	EntityType     string
+	Status         string
 	IdentityNumber string
 	Alias          string
 	Limit          int
@@ -758,20 +826,24 @@ func (r *entityRepository) AdvancedSearch(ctx context.Context, params *EntitySea
 	query := r.db.WithContext(ctx)
 
 	if params.Name != "" {
-		query = query.Where("name ILIKE ? OR alias ILIKE ?", "%"+params.Name+"%", "%"+params.Name+"%")
+		query = query.Where("LOWER(name) LIKE LOWER(?) OR LOWER(alias) LIKE LOWER(?)", "%"+params.Name+"%", "%"+params.Name+"%")
 	}
 	if params.IdentityNumber != "" {
-		query = query.Where("identity_number = ?", params.IdentityNumber)
+		digest, err := security.IdentityDigest(params.IdentityNumber)
+		if err != nil {
+			return nil, fmt.Errorf("高级搜索失败: %w", err)
+		}
+		query = query.Where("identity_number_digest = ?", digest)
 	}
 	if params.Alias != "" {
-		query = query.Where("alias ILIKE ?", "%"+params.Alias+"%")
+		query = query.Where("LOWER(alias) LIKE LOWER(?)", "%"+params.Alias+"%")
 	}
-if params.EntityType != "" {
-query = query.Where("entity_type = ?", params.EntityType)
-}
-if params.Status != "" {
-query = query.Where("status = ?", params.Status)
-}
+	if params.EntityType != "" {
+		query = query.Where("entity_type = ?", params.EntityType)
+	}
+	if params.Status != "" {
+		query = query.Where("status = ?", params.Status)
+	}
 
 	if params.Limit > 0 {
 		query = query.Limit(params.Limit)

@@ -47,21 +47,21 @@ func (s *ApprovalTemplateService) InitializeDefaultTemplates() error {
 	// 创建用印审批模板
 	sealApprovalSteps := []models.ApprovalStep{
 		{
-			Order:         1,
-			Name:          "部门主任审批",
-			ApproverType:  models.ApproverTypeDepartmentHead,
-			IsRequired:    true,
-			SignType:      models.SignTypeSingle,
-			AutoPass:      false,
+			Order:        1,
+			Name:         "部门主任审批",
+			ApproverType: models.ApproverTypeDepartmentHead,
+			IsRequired:   true,
+			SignType:     models.SignTypeSingle,
+			AutoPass:     false,
 		},
 		{
-			Order:         2,
-			Name:          "执行合伙人审批",
-			ApproverType:  models.ApproverTypeRole,
-			ApproverRole:  "EXECUTIVE_PARTNER",
-			IsRequired:    false,
-			SignType:      models.SignTypeSingle,
-			AutoPass:      false,
+			Order:        2,
+			Name:         "执行合伙人审批",
+			ApproverType: models.ApproverTypeRole,
+			ApproverRole: "EXECUTIVE_PARTNER",
+			IsRequired:   false,
+			SignType:     models.SignTypeSingle,
+			AutoPass:     false,
 		},
 	}
 	sealConditions := []models.ApprovalCondition{
@@ -88,19 +88,19 @@ func (s *ApprovalTemplateService) InitializeDefaultTemplates() error {
 	// 创建立案审批模板
 	caseFilingSteps := []models.ApprovalStep{
 		{
-			Order:         1,
-			Name:          "部门主任审批",
-			ApproverType:  models.ApproverTypeDepartmentHead,
-			IsRequired:    true,
-			SignType:      models.SignTypeSingle,
+			Order:        1,
+			Name:         "部门主任审批",
+			ApproverType: models.ApproverTypeDepartmentHead,
+			IsRequired:   true,
+			SignType:     models.SignTypeSingle,
 		},
 		{
-			Order:         2,
-			Name:          "合伙人审批",
-			ApproverType:  models.ApproverTypeRole,
-			ApproverRole:  "PARTNER",
-			IsRequired:    true,
-			SignType:      models.SignTypeSingle,
+			Order:        2,
+			Name:         "合伙人审批",
+			ApproverType: models.ApproverTypeRole,
+			ApproverRole: "PARTNER",
+			IsRequired:   true,
+			SignType:     models.SignTypeSingle,
 		},
 	}
 	caseStepsJSON, _ := json.Marshal(caseFilingSteps)
@@ -368,17 +368,17 @@ func (s *ApprovalTemplateService) GetApprovalFlow(approvalID string) (map[string
 
 	// 构建流程数据
 	flow := map[string]interface{}{
-		"approval_id":       approvalID,
-		"request_number":    approval.RequestNumber,
-		"title":             approval.Title,
-		"status":            approval.Status,
-		"current_stage":     approval.CurrentStage,
-		"current_approver":  approval.CurrentApproverName,
-		"nodes":             nodes,
-		"total_nodes":       len(nodes),
-		"approved_nodes":    countNodesByAction(nodes, models.NodeActionApproved),
-		"pending_nodes":     countNodesByAction(nodes, models.NodeActionPending),
-		"rejected_nodes":    countNodesByAction(nodes, models.NodeActionRejected),
+		"approval_id":      approvalID,
+		"request_number":   approval.RequestNumber,
+		"title":            approval.Title,
+		"status":           approval.Status,
+		"current_stage":    approval.CurrentStage,
+		"current_approver": approval.CurrentApproverName,
+		"nodes":            nodes,
+		"total_nodes":      len(nodes),
+		"approved_nodes":   countNodesByAction(nodes, models.NodeActionApproved),
+		"pending_nodes":    countNodesByAction(nodes, models.NodeActionPending),
+		"rejected_nodes":   countNodesByAction(nodes, models.NodeActionRejected),
 	}
 
 	return flow, nil

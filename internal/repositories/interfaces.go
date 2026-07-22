@@ -152,12 +152,14 @@ type UserListParams struct {
 
 // ClientListParams 客户列表查询参数
 type ClientListParams struct {
-	Page     int
-	PageSize int
-	Status   string
-	Search   string
-	Type     string
-	Company  string
+	Page               int
+	PageSize           int
+	Status             string
+	Search             string
+	Type               string
+	Company            string
+	AccessibleByUserID uint
+	EthicalWallUserID  uint
 }
 
 // CaseListParams 案件列表查询参数
@@ -170,6 +172,10 @@ type CaseListParams struct {
 	ClientID uint
 	LawyerID uint
 	Search   string
+	// When set, list queries must exclude ethical-wall cases for which the
+	// caller has no explicit whitelist entry. This is applied in SQL so a
+	// hidden row cannot leak through pagination or search counts.
+	EthicalWallUserID uint
 }
 
 // ClientStats 客户统计信息

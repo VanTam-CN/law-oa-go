@@ -5,6 +5,7 @@ apiVersion: v2
 name: law-oa-go
 description: Law OA Go - 律师事务所办公自动化系统
 type: application
+deprecated: true
 version: 2.1.0
 appVersion: "2.1.0"
 
@@ -67,6 +68,7 @@ keywords:
 # 注解
 annotations:
   category: Business
+  deprecation: "Use the canonical PostgreSQL manifests under k8s/ instead."
   licenses: MIT
   images: |
     - name: law-oa-go

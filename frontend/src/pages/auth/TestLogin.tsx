@@ -69,16 +69,6 @@ const TestLogin: React.FC = () => {
     }
   }
 
-  const handleTestUserLogin = () => {
-    const testUser = {
-      email: 'admin@example.com',
-      password: 'admin123',
-    }
-
-    console.log('使用测试用户登录:', testUser)
-    handleLogin(testUser)
-  }
-
   const handleLogout = () => {
     localStorage.removeItem('auth_token')
     localStorage.removeItem('user_info')
@@ -157,7 +147,6 @@ const TestLogin: React.FC = () => {
           <Tabs.TabPane tab='用户登录' key='login'>
             <Form
               name='login'
-              initialValues={{ email: 'admin@example.com', password: 'admin123' }}
               onFinish={handleLogin}
               layout='vertical'
               size='large'
@@ -193,11 +182,6 @@ const TestLogin: React.FC = () => {
               </Form.Item>
             </Form>
 
-            <div style={{ marginTop: 20, textAlign: 'center' }}>
-              <Button type='link' onClick={handleTestUserLogin} style={{ fontSize: '12px' }}>
-                使用默认管理员账户
-              </Button>
-            </div>
           </Tabs.TabPane>
 
           <Tabs.TabPane tab='调试信息' key='debug'>

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"time"
 
 	"law-oa-go/internal/models"
@@ -12,11 +13,11 @@ import (
 
 // InvoiceService 发票服务
 type InvoiceService struct {
-	invoiceRepo    repositories.InvoiceRepository
-	contractRepo   repositories.ContractRepository
-	milestoneRepo  repositories.PaymentMilestoneRepository
-	clientRepo     repositories.ClientRepository
-	paymentRepo    repositories.PaymentRepository
+	invoiceRepo   repositories.InvoiceRepository
+	contractRepo  repositories.ContractRepository
+	milestoneRepo repositories.PaymentMilestoneRepository
+	clientRepo    repositories.ClientRepository
+	paymentRepo   repositories.PaymentRepository
 }
 
 // NewInvoiceService 创建发票服务实例
@@ -38,13 +39,13 @@ func NewInvoiceService(
 
 // CreateInvoiceRequest 创建发票请求
 type CreateInvoiceRequest struct {
-	InvoiceCode   string   `json:"invoice_code" binding:"required,min=1,max=50"`
-	ContractID    *uint    `json:"contract_id,omitempty"`
-	MilestoneID   *uint    `json:"milestone_id,omitempty"`
-	ClientID      uint     `json:"client_id" binding:"required"`
-	Amount        float64  `json:"amount" binding:"required,gt=0"`
-	TaxRate       float64  `json:"tax_rate" binding:"required,gte=0,lte=100"`
-	InvoiceType   string   `json:"invoice_type" binding:"required,oneof=normal credit"`
+	InvoiceCode string  `json:"invoice_code" binding:"required,min=1,max=50"`
+	ContractID  *uint   `json:"contract_id,omitempty"`
+	MilestoneID *uint   `json:"milestone_id,omitempty"`
+	ClientID    uint    `json:"client_id" binding:"required"`
+	Amount      float64 `json:"amount" binding:"required,gt=0"`
+	TaxRate     float64 `json:"tax_rate" binding:"required,gte=0,lte=100"`
+	InvoiceType string  `json:"invoice_type" binding:"required,oneof=normal credit"`
 	// 客户开票信息
 	ClientName        string `json:"client_name" binding:"required,min=1,max=200"`
 	ClientTaxID       string `json:"client_tax_id" binding:"max=50"`
@@ -52,8 +53,8 @@ type CreateInvoiceRequest struct {
 	ClientBankName    string `json:"client_bank_name" binding:"max=100"`
 	ClientBankAccount string `json:"client_bank_account" binding:"max=50"`
 	// 红冲信息
-	OriginalInvoiceID *uint   `json:"original_invoice_id,omitempty"`
-	RefundReason      string  `json:"refund_reason,omitempty" binding:"max=500"`
+	OriginalInvoiceID *uint  `json:"original_invoice_id,omitempty"`
+	RefundReason      string `json:"refund_reason,omitempty" binding:"max=500"`
 }
 
 // UpdateInvoiceRequest 更新发票请求
@@ -69,55 +70,55 @@ type UpdateInvoiceRequest struct {
 
 // InvoiceResponse 发票响应
 type InvoiceResponse struct {
-	ID                     uint              `json:"id"`
-	InvoiceCode            string            `json:"invoice_code"`
-	ContractID             *uint             `json:"contract_id,omitempty"`
-	MilestoneID            *uint             `json:"milestone_id,omitempty"`
-	ClientID               uint              `json:"client_id"`
-	Amount                 float64           `json:"amount"`
-	TaxRate                float64           `json:"tax_rate"`
-	TaxAmount              float64           `json:"tax_amount"`
-	TotalAmount            float64           `json:"total_amount"`
+	ID          uint    `json:"id"`
+	InvoiceCode string  `json:"invoice_code"`
+	ContractID  *uint   `json:"contract_id,omitempty"`
+	MilestoneID *uint   `json:"milestone_id,omitempty"`
+	ClientID    uint    `json:"client_id"`
+	Amount      float64 `json:"amount"`
+	TaxRate     float64 `json:"tax_rate"`
+	TaxAmount   float64 `json:"tax_amount"`
+	TotalAmount float64 `json:"total_amount"`
 	// 客户开票信息
-	ClientName             string            `json:"client_name"`
-	ClientTaxID            string            `json:"client_tax_id"`
-	ClientAddress          string            `json:"client_address"`
-	ClientBankName         string            `json:"client_bank_name"`
-	ClientBankAccount      string            `json:"client_bank_account"`
+	ClientName        string `json:"client_name"`
+	ClientTaxID       string `json:"client_tax_id"`
+	ClientAddress     string `json:"client_address"`
+	ClientBankName    string `json:"client_bank_name"`
+	ClientBankAccount string `json:"client_bank_account"`
 	// 发票类型
-	InvoiceType            string            `json:"invoice_type"`
-	OriginalInvoiceID      *uint             `json:"original_invoice_id,omitempty"`
-	RefundReason           string            `json:"refund_reason,omitempty"`
-	WriteOffAmount         float64           `json:"write_off_amount"`
+	InvoiceType       string  `json:"invoice_type"`
+	OriginalInvoiceID *uint   `json:"original_invoice_id,omitempty"`
+	RefundReason      string  `json:"refund_reason,omitempty"`
+	WriteOffAmount    float64 `json:"write_off_amount"`
 	// 状态
-	Status                 string            `json:"status"`
-	SubmittedAt            *string           `json:"submitted_at,omitempty"`
-	ApprovedByFinanceAt    *string           `json:"approved_by_finance_at,omitempty"`
-	IssuedAt               *string           `json:"issued_at,omitempty"`
-	ReceivedAt             *string           `json:"received_at,omitempty"`
+	Status              string  `json:"status"`
+	SubmittedAt         *string `json:"submitted_at,omitempty"`
+	ApprovedByFinanceAt *string `json:"approved_by_finance_at,omitempty"`
+	IssuedAt            *string `json:"issued_at,omitempty"`
+	ReceivedAt          *string `json:"received_at,omitempty"`
 	// 电子发票
-	ElectronicInvoiceURL   string            `json:"electronic_invoice_url"`
-	ElectronicInvoiceCode  string            `json:"electronic_invoice_code"`
-	ElectronicInvoiceNumber string           `json:"electronic_invoice_number"`
+	ElectronicInvoiceURL    string `json:"electronic_invoice_url"`
+	ElectronicInvoiceCode   string `json:"electronic_invoice_code"`
+	ElectronicInvoiceNumber string `json:"electronic_invoice_number"`
 	// 审批信息
-	CreatedBy              uint              `json:"created_by"`
-	SubmittedBy            *uint             `json:"submitted_by,omitempty"`
-	ApprovedBy             *uint             `json:"approved_by,omitempty"`
-	CreatedAt              string            `json:"created_at"`
-	UpdatedAt              string            `json:"updated_at"`
+	CreatedBy   uint   `json:"created_by"`
+	SubmittedBy *uint  `json:"submitted_by,omitempty"`
+	ApprovedBy  *uint  `json:"approved_by,omitempty"`
+	CreatedAt   string `json:"created_at"`
+	UpdatedAt   string `json:"updated_at"`
 	// 关联数据
-	Client                 *ClientSummary    `json:"client,omitempty"`
-	Contract               *ContractSummary  `json:"contract,omitempty"`
-	Milestone              *MilestoneSummary `json:"milestone,omitempty"`
-	Payments               []*PaymentSummary `json:"payments,omitempty"`
-	TotalPaidAmount        float64           `json:"total_paid_amount"`
-	RemainingAmount        float64           `json:"remaining_amount"`
+	Client          *ClientSummary    `json:"client,omitempty"`
+	Contract        *ContractSummary  `json:"contract,omitempty"`
+	Milestone       *MilestoneSummary `json:"milestone,omitempty"`
+	Payments        []*PaymentSummary `json:"payments,omitempty"`
+	TotalPaidAmount float64           `json:"total_paid_amount"`
+	RemainingAmount float64           `json:"remaining_amount"`
 }
 
 // ContractSummary 合同摘要
 type ContractSummary struct {
-	ID            uint    `json:"id"`
-	ContractCode  string  `json:"contract_code"`
+	ID             uint    `json:"id"`
+	ContractCode   string  `json:"contract_code"`
 	ContractAmount float64 `json:"contract_amount"`
 }
 
@@ -213,19 +214,23 @@ func (s *InvoiceService) CreateInvoice(ctx context.Context, req *CreateInvoiceRe
 		}
 	}
 
-	// 计算税额和价税合计
-	taxAmount := req.Amount * (req.TaxRate / 100)
-	totalAmount := req.Amount + taxAmount
+	// 红字发票以负数金额入账，保持应收、税额和价税合计的方向一致。
+	amount := req.Amount
+	if req.InvoiceType == "credit" {
+		amount = -math.Abs(amount)
+	}
+	taxAmount := amount * (req.TaxRate / 100)
+	totalAmount := amount + taxAmount
 
 	invoice := &models.Invoice{
-		InvoiceCode:       req.InvoiceCode,
-		ContractID:        req.ContractID,
-		MilestoneID:       req.MilestoneID,
-		ClientID:          req.ClientID,
-		Amount:            req.Amount,
-		TaxRate:           req.TaxRate,
-		TaxAmount:         taxAmount,
-		TotalAmount:       totalAmount,
+		InvoiceCode: req.InvoiceCode,
+		ContractID:  req.ContractID,
+		MilestoneID: req.MilestoneID,
+		ClientID:    req.ClientID,
+		Amount:      amount,
+		TaxRate:     req.TaxRate,
+		TaxAmount:   taxAmount,
+		TotalAmount: totalAmount,
 		// 客户开票信息
 		ClientName:        req.ClientName,
 		ClientTaxID:       req.ClientTaxID,
@@ -237,8 +242,8 @@ func (s *InvoiceService) CreateInvoice(ctx context.Context, req *CreateInvoiceRe
 		OriginalInvoiceID: req.OriginalInvoiceID,
 		RefundReason:      req.RefundReason,
 		// 状态
-		Status:            "draft",
-		CreatedBy:         createdBy,
+		Status:    "draft",
+		CreatedBy: createdBy,
 	}
 
 	if err := s.invoiceRepo.Create(ctx, invoice); err != nil {
@@ -360,9 +365,9 @@ func (s *InvoiceService) ListInvoices(ctx context.Context, req *ListInvoicesRequ
 	response := &ListInvoicesResponse{
 		Invoices: make([]*InvoiceResponse, len(invoices)),
 		Pagination: Pagination{
-			Page:    req.Page,
+			Page:     req.Page,
 			PageSize: req.PageSize,
-			Total:   total,
+			Total:    total,
 		},
 	}
 
@@ -708,13 +713,13 @@ func (s *InvoiceService) GetInvoiceStats(ctx context.Context) (*InvoiceStats, er
 
 // InvoiceStats 发票统计信息
 type InvoiceStats struct {
-	TotalInvoices       int64   `json:"total_invoices"`
-	DraftInvoices       int64   `json:"draft_invoices"`
-	SubmittedInvoices   int64   `json:"submitted_invoices"`
-	ApprovedInvoices    int64   `json:"approved_invoices"`
-	IssuedInvoices      int64   `json:"issued_invoices"`
-	ReceivedInvoices    int64   `json:"received_invoices"`
-	TotalInvoiceAmount  float64 `json:"total_invoice_amount"`
+	TotalInvoices        int64   `json:"total_invoices"`
+	DraftInvoices        int64   `json:"draft_invoices"`
+	SubmittedInvoices    int64   `json:"submitted_invoices"`
+	ApprovedInvoices     int64   `json:"approved_invoices"`
+	IssuedInvoices       int64   `json:"issued_invoices"`
+	ReceivedInvoices     int64   `json:"received_invoices"`
+	TotalInvoiceAmount   float64 `json:"total_invoice_amount"`
 	PendingInvoiceAmount float64 `json:"pending_invoice_amount"`
-	OverdueAmount       float64 `json:"overdue_amount"`
+	OverdueAmount        float64 `json:"overdue_amount"`
 }

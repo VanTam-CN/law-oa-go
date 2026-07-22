@@ -4,15 +4,15 @@ export const MVP_MENU_KEYS = [
   'conflict',
   'client',
   'approval',
+  'inbox',
   'trust',
 ] as const
 
-export const MVP_UNAVAILABLE_PATHS = ['/file', '/finance', '/inbox', '/settings'] as const
+export const MVP_UNAVAILABLE_PATHS = ['/file', '/finance', '/settings'] as const
 
 export const MVP_UNAVAILABLE_MODULES = {
   '/file': '文档中心',
   '/finance': '财务中心',
-  '/inbox': '收件箱',
   '/settings': '系统设置',
 } as const
 

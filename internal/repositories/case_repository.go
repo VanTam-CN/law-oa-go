@@ -82,6 +82,15 @@ func (r *CaseRepositoryImpl) List(ctx context.Context, params *CaseListParams) (
 	if params.LawyerID > 0 {
 		query = query.Where("lawyer_id = ?", params.LawyerID)
 	}
+	if params.EthicalWallUserID > 0 {
+		query = query.Where(`(
+			ethical_wall_enabled = ?
+			OR EXISTS (
+				SELECT 1 FROM case_ethical_wall_whitelist wall_access
+				WHERE wall_access.case_id = cases.id AND wall_access.user_id = ?
+			)
+		)`, false, params.EthicalWallUserID)
+	}
 	if params.Search != "" {
 		// 改进的搜索策略：支持多词搜索
 		searchTerms := strings.Fields(strings.TrimSpace(params.Search))

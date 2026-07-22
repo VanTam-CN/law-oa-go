@@ -16,6 +16,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	testifymock "github.com/stretchr/testify/mock"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 
 	"law-oa-go/internal/auth"
 	"law-oa-go/internal/common"
@@ -237,8 +239,8 @@ func TestAuthHandler_Login(t *testing.T) {
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
-		// 断言响应 - 非活跃用户返回404
-		assert.Equal(t, http.StatusNotFound, w.Code)
+		// 非活跃用户与错误密码使用同一 401 响应，避免暴露账号状态。
+		assert.Equal(t, http.StatusUnauthorized, w.Code)
 		var response map[string]interface{}
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
@@ -907,7 +909,20 @@ func TestAuthHandler_Logout(t *testing.T) {
 
 	mockUserRepo := new(testmock.MockUserRepository)
 	userService := services.NewUserService(mockUserRepo)
-	tokenService := &auth.TokenRevocationService{}
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("打开测试数据库失败: %v", err)
+	}
+	if err := db.AutoMigrate(&models.TokenRevocationLog{}); err != nil {
+		t.Fatalf("迁移令牌撤销日志失败: %v", err)
+	}
+	jwtConfig := &config.Config{JWT: config.JWTConfig{
+		Secret:    "test-secret-key-32-bytes-long-for-testing",
+		ExpiresIn: 3600,
+		RefreshIn: 7200,
+	}}
+	tokenManager := auth.NewTokenManager(jwtConfig, nil, nil)
+	tokenService := auth.NewTokenRevocationService(auth.NewTokenManagerAdapter(tokenManager), nil, db)
 	authHandler := NewAuthHandler(userService, tokenService)
 
 	router := gin.New()
@@ -945,8 +960,14 @@ func TestAuthHandler_Logout(t *testing.T) {
 		mockUserRepo.ExpectedCalls = nil
 		mockUserRepo.Calls = nil
 
-		// 创建请求
-		req, _ := http.NewRequest("POST", "/auth/logout", nil)
+		// 登出必须明确提交当前令牌；使用运行时 JWT 验证撤销链路。
+		token, _, err := middleware.GenerateToken(1, "test@example.com", "lawyer")
+		if err != nil {
+			t.Fatalf("生成测试令牌失败: %v", err)
+		}
+		body, _ := json.Marshal(map[string]string{"token": token})
+		req, _ := http.NewRequest("POST", "/auth/logout", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
 
 		// 执行请求
 		w := httptest.NewRecorder()
@@ -955,7 +976,7 @@ func TestAuthHandler_Logout(t *testing.T) {
 		// 断言响应
 		assert.Equal(t, http.StatusOK, w.Code)
 		var response map[string]interface{}
-		err := json.Unmarshal(w.Body.Bytes(), &response)
+		err = json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.Equal(t, true, response["success"])
 		assert.NotNil(t, response["data"])
@@ -1053,6 +1074,25 @@ func TestRegisterAlwaysCreatesUnprivilegedUser(t *testing.T) {
 	}
 
 	mockUserRepo.AssertExpectations(t)
+}
+
+func TestRegisterRejectsWhenPublicRegistrationDisabled(t *testing.T) {
+	h := &AuthHandler{publicRegistrationEnabled: false}
+	router := gin.New()
+	router.POST("/auth/register", h.Register)
+
+	body := bytes.NewBufferString(`{"name":"外部申请人","email":"external@example.test","password":"password123"}`)
+	req := httptest.NewRequest(http.MethodPost, "/auth/register", body)
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("生产环境关闭公开注册时应返回 403，实际为 %d，响应=%s", w.Code, w.Body.String())
+	}
+	if strings.Contains(w.Body.String(), "external@example.test") {
+		t.Fatal("拒绝公开注册的响应不应回显申请人邮箱")
+	}
 }
 
 // TestAdminCanRevokeAnotherUsersTokens 验证 role=admin 通过 JWT 中间件写入的 "role" key

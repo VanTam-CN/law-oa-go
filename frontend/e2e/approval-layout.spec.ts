@@ -24,13 +24,14 @@ test.describe('审批列表操作列可达性', () => {
 })
 
 test.describe('审批详情按钮唯一性（IB-RT-004）', () => {
-  test('更多审批操作和更多处理方式名称唯一', async ({ page }) => {
+  test('审批详情不应出现含糊的更多操作按钮', async ({ page }) => {
     await seedAuthenticatedUser(page, 'lawyer')
     await page.goto('/approval/701')
     await waitForPageLoad(page)
     await waitForAppShell(page)
 
-    await expect(page.getByRole('button', { name: '更多审批操作' })).toBeVisible()
-    await expect(page.getByRole('button', { name: '更多处理方式' })).toBeVisible()
+    await expect(page.getByRole('button', { name: '打印' })).toBeVisible()
+    await expect(page.getByRole('button', { name: '查看关联案件' })).toBeVisible()
+    await expect(page.getByRole('button', { name: '更多操作' })).toHaveCount(0)
   })
 })

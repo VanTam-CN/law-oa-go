@@ -5,6 +5,9 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8"
@@ -39,16 +42,20 @@ func InitWithConfig(appConfig *config.Config) (*gorm.DB, error) {
 		SkipDefaultTransaction:                   true,                                // 禁用默认事务提升性能
 		DisableForeignKeyConstraintWhenMigrating: true,                                // 禁用自动外键
 		// 新增性能优化配置
-		AllowGlobalUpdate:                        false,                               // 禁止全局更新提升安全性
-		DisableAutomaticPing:                     true,                                // 禁用自动ping减少开销
+		AllowGlobalUpdate:    false, // 禁止全局更新提升安全性
+		DisableAutomaticPing: true,  // 禁用自动ping减少开销
 	}
 
 	// 根据数据库类型构建DSN和连接
-	driver := appConfig.Database.Driver
-	if driver == "postgres" {
+	driver := strings.ToLower(strings.TrimSpace(appConfig.Database.Driver))
+	if driver == "postgres" || driver == "postgresql" {
 		// PostgreSQL DSN
-		dsn = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=UTC",
-			appConfig.Database.Host, appConfig.Database.Port, appConfig.Database.Username, appConfig.Database.Password, appConfig.Database.Database)
+		sslMode := appConfig.Database.SSLMode
+		if sslMode == "" {
+			sslMode = "disable"
+		}
+		dsn = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s TimeZone=UTC",
+			appConfig.Database.Host, appConfig.Database.Port, appConfig.Database.Username, appConfig.Database.Password, appConfig.Database.Database, sslMode)
 
 		// 连接PostgreSQL
 		db, err = gorm.Open(postgres.Open(dsn), gormConfig)
@@ -85,20 +92,20 @@ func InitWithConfig(appConfig *config.Config) (*gorm.DB, error) {
 // InitRedis 初始化Redis连接 - 性能优化版本
 func InitRedis(cfg config.RedisConfig) (*redis.Client, error) {
 	rdb := redis.NewClient(&redis.Options{
-		Addr:            fmt.Sprintf("%s:%s", cfg.Host, cfg.Port),
-		Password:        cfg.Password,
-		DB:              cfg.DB,
+		Addr:     fmt.Sprintf("%s:%s", cfg.Host, cfg.Port),
+		Password: cfg.Password,
+		DB:       cfg.DB,
 
 		// 连接池优化配置
-		PoolSize:        100,          // 连接池大小
-		MinIdleConns:    10,           // 最小空闲连接
-		MaxRetries:      3,            // 最大重试次数
-		DialTimeout:     5 * time.Second,  // 连接超时
-		ReadTimeout:     3 * time.Second,  // 读取超时
-		WriteTimeout:    3 * time.Second,  // 写入超时
-		PoolTimeout:     4 * time.Second,  // 获取连接超时
+		PoolSize:     100,             // 连接池大小
+		MinIdleConns: 10,              // 最小空闲连接
+		MaxRetries:   3,               // 最大重试次数
+		DialTimeout:  5 * time.Second, // 连接超时
+		ReadTimeout:  3 * time.Second, // 读取超时
+		WriteTimeout: 3 * time.Second, // 写入超时
+		PoolTimeout:  4 * time.Second, // 获取连接超时
 
-	// 性能优化配置（使用Redis v9兼容的选项）
+		// 性能优化配置（使用Redis v9兼容的选项）
 		ConnMaxIdleTime: 5 * time.Minute, // 空闲超时
 	})
 
@@ -117,8 +124,7 @@ func InitRedis(cfg config.RedisConfig) (*redis.Client, error) {
 
 // InitElasticsearch 初始化Elasticsearch连接
 func InitElasticsearch(cfg config.ElasticsearchConfig) (*elasticsearch.Client, error) {
-	// 构建地址
-	address := fmt.Sprintf("http://%s:%s", cfg.Host, cfg.Port)
+	address := elasticsearchAddress(cfg.Host, cfg.Port)
 
 	// 创建Elasticsearch客户端
 	es, err := elasticsearch.NewClient(elasticsearch.Config{
@@ -143,6 +149,23 @@ func InitElasticsearch(cfg config.ElasticsearchConfig) (*elasticsearch.Client, e
 
 	log.Println("Elasticsearch连接成功")
 	return es, nil
+}
+
+// elasticsearchAddress accepts the canonical host-only configuration and is
+// also tolerant of older deployments that stored a full URL in ES_HOST. This
+// prevents the invalid http://http://host:port address during upgrades.
+func elasticsearchAddress(host, port string) string {
+	host = strings.TrimSpace(host)
+	port = strings.TrimSpace(port)
+	if strings.HasPrefix(host, "http://") || strings.HasPrefix(host, "https://") {
+		if parsed, err := url.Parse(host); err == nil && parsed.Host != "" {
+			if parsed.Port() == "" && port != "" {
+				parsed.Host = net.JoinHostPort(parsed.Hostname(), port)
+			}
+			return strings.TrimRight(parsed.String(), "/")
+		}
+	}
+	return fmt.Sprintf("http://%s:%s", strings.TrimRight(host, "/"), port)
 }
 
 // Health 健康检查所有组件

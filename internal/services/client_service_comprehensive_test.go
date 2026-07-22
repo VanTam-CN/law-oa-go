@@ -905,6 +905,17 @@ func (r *waiverWorkflowRepoMock) GetWaiverApplication(_ context.Context, id stri
 	return &copied, nil
 }
 
+func (r *waiverWorkflowRepoMock) GetWaiverApplicationsByConflictCheck(_ context.Context, conflictCheckID string) ([]*models.WaiverApplication, error) {
+	var applications []*models.WaiverApplication
+	for _, application := range r.applications {
+		if application.ConflictCheckID == conflictCheckID {
+			copied := *application
+			applications = append(applications, &copied)
+		}
+	}
+	return applications, nil
+}
+
 func (r *waiverWorkflowRepoMock) UpdateWaiverApplication(_ context.Context, application *models.WaiverApplication) error {
 	copied := *application
 	r.applications[application.ID] = &copied
@@ -947,12 +958,14 @@ func TestWaiverWorkflowService_StatusTransitions(t *testing.T) {
 	}))
 
 	service := NewWaiverWorkflowService(waiverRepo, conflictRepo, nil, nil)
-	application, err := service.CreateWaiver(ctx, "approval-001", "7", "申请律师", &CreateWaiverRequest{
+	durationDays := 180
+	application, err := service.CreateWaiver(ctx, "approval-001", "7", "申请律师", "admin", &CreateWaiverRequest{
 		ConflictCheckID:    "check-001",
 		Rationale:          "客户已充分知情，且可通过隔离措施降低风险。",
 		AssignedReviewer:   "compliance-reviewer",
 		ProposedConditions: []string{"建立信息隔离墙", "限制项目组访问范围"},
 		ReviewPriority:     "HIGH",
+		DurationDays:       &durationDays,
 	})
 	require.NoError(t, err)
 	require.NotNil(t, application)
@@ -960,8 +973,9 @@ func TestWaiverWorkflowService_StatusTransitions(t *testing.T) {
 	assert.Equal(t, "client-001", application.ClientID)
 	assert.Equal(t, "42", application.LawyerID)
 	assert.Equal(t, "COMPLIANCE_REVIEW", valueOrEmpty(application.CurrentStage))
+	require.NotNil(t, application.RequestedExpiryDate)
 
-	decided, err := service.DecideWaiver(ctx, application.ID, "9", "合规负责人", &WaiverDecisionRequest{
+	decided, err := service.DecideWaiver(ctx, application.ID, "9", "合规负责人", "compliance", &WaiverDecisionRequest{
 		Decision:       "approve",
 		DecisionReason: "风险可通过附加条件控制",
 		ApprovedConditions: map[string]interface{}{
@@ -972,9 +986,79 @@ func TestWaiverWorkflowService_StatusTransitions(t *testing.T) {
 	require.NotNil(t, decided)
 	assert.Equal(t, WaiverStatusApproved, decided.Status)
 	assert.Equal(t, "FINAL_APPROVAL", valueOrEmpty(decided.CurrentStage))
+	updatedConflict, err := conflictRepo.GetCheckRecord(ctx, "check-001")
+	require.NoError(t, err)
+	decision, ok := updatedConflict.CheckResult["decision"].(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, "WAIVED", decision["status"])
 
 	records, err := waiverRepo.GetWaiverApprovalRecords(ctx, application.ID)
 	require.NoError(t, err)
 	require.Len(t, records, 1)
 	assert.Equal(t, WaiverDecisionApprove, records[0].Decision)
+	require.NotNil(t, records[0].EffectiveDate)
+	require.NotNil(t, records[0].ExpiryDate)
+	require.NotNil(t, records[0].NextReviewDate)
+
+	past := time.Now().Add(-time.Hour)
+	waiverRepo.applications[application.ID].RequestedExpiryDate = &past
+	expired, err := service.GetConflictWaiver(ctx, "check-001", "7", "admin")
+	require.NoError(t, err)
+	assert.Equal(t, WaiverStatusExpired, expired.Status)
+	updatedConflict, err = conflictRepo.GetCheckRecord(ctx, "check-001")
+	require.NoError(t, err)
+	decision = updatedConflict.CheckResult["decision"].(map[string]interface{})
+	assert.Equal(t, "BLOCKED", decision["status"])
+}
+
+func TestWaiverWorkflowService_EnforcesOwnershipAndSeparationOfDuties(t *testing.T) {
+	ctx := context.Background()
+	waiverRepo := newWaiverWorkflowRepoMock()
+	conflictRepo := newAsyncConflictRepoMock()
+	require.NoError(t, conflictRepo.SaveCheckRecord(ctx, &models.ConflictCheckRecord{
+		CheckID: "check-secure", ClientID: "client-secure", UserID: 7, CheckResult: models.JSON{"decision": map[string]interface{}{"status": "BLOCKED"}},
+	}))
+	service := NewWaiverWorkflowService(waiverRepo, conflictRepo, nil, nil)
+	require.NoError(t, conflictRepo.SaveCheckRecord(ctx, &models.ConflictCheckRecord{
+		CheckID: "check-unbound", UserID: 7, CheckResult: models.JSON{"decision": map[string]interface{}{"status": "BLOCKED"}},
+	}))
+	_, err := service.CreateWaiver(ctx, "", "7", "申请律师", "lawyer", &CreateWaiverRequest{
+		ConflictCheckID: "check-unbound", Rationale: "未绑定主体的记录不应进入豁免流程", AssignedReviewer: "9", ProposedConditions: []string{"无"},
+	})
+	require.ErrorContains(t, err, "缺少客户或承办律师绑定")
+	require.NoError(t, conflictRepo.SaveCheckRecord(ctx, &models.ConflictCheckRecord{
+		CheckID: "check-clear", ClientID: "client-clear", UserID: 7, CheckResult: models.JSON{"decision": map[string]interface{}{"status": "CLEAR"}},
+	}))
+	_, err = service.CreateWaiver(ctx, "", "7", "申请律师", "lawyer", &CreateWaiverRequest{
+		ConflictCheckID: "check-clear", Rationale: "无冲突记录不应申请豁免", AssignedReviewer: "9", ProposedConditions: []string{"无"},
+	})
+	require.ErrorContains(t, err, "only available")
+
+	_, err = service.CreateWaiver(ctx, "", "8", "其他律师", "lawyer", &CreateWaiverRequest{
+		ConflictCheckID: "check-secure", Rationale: "无权申请", AssignedReviewer: "9", ProposedConditions: []string{"隔离"},
+	})
+	require.ErrorContains(t, err, "task owner")
+	_, err = service.CreateWaiver(ctx, "", "7", "申请律师", "lawyer", &CreateWaiverRequest{
+		ConflictCheckID: "check-secure", Rationale: "非法类型不应写入数据库", AssignedReviewer: "9",
+		ProposedConditions: []string{"隔离"}, WaiverType: "ARBITRARY",
+	})
+	require.ErrorContains(t, err, "unsupported waiver_type")
+
+	application, err := service.CreateWaiver(ctx, "", "7", "申请律师", "lawyer", &CreateWaiverRequest{
+		ConflictCheckID: "check-secure", Rationale: "申请知情同意并建立隔离措施", AssignedReviewer: "9", ProposedConditions: []string{"建立信息隔离墙"},
+	})
+	require.NoError(t, err)
+	record, err := conflictRepo.GetCheckRecord(ctx, "check-secure")
+	require.NoError(t, err)
+	decision := record.CheckResult["decision"].(map[string]interface{})
+	assert.Equal(t, "WAIVER_PENDING", decision["status"])
+
+	_, err = service.DecideWaiver(ctx, application.ID, "7", "申请律师", "admin", &WaiverDecisionRequest{
+		Decision: "approve", DecisionReason: "尝试自批",
+	})
+	require.ErrorContains(t, err, "cannot approve")
+	_, err = service.DecideWaiver(ctx, application.ID, "8", "无关人员", "lawyer", &WaiverDecisionRequest{
+		Decision: "approve", DecisionReason: "无权审批",
+	})
+	require.ErrorContains(t, err, "assigned reviewer")
 }

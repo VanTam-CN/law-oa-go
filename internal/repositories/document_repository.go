@@ -24,6 +24,11 @@ type DocumentListParams struct {
 	// 排除"已启用隔离墙且用户未在白名单中"的 case 关联文档。
 	// = 0 时不应用过滤（仅供内部/后台任务使用）。
 	ViewerUserID uint
+	// OwnerScoped limits a non-management HTTP viewer to documents attached to
+	// matters they own or are explicitly allowed to access. It also hides
+	// unscoped documents from ordinary matter users instead of treating a
+	// global list as an implicit read permission.
+	OwnerScoped bool
 }
 
 // DocumentStats 文档统计

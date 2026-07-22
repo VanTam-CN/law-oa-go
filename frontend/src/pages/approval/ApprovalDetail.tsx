@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router'
 import {
+  Alert,
   Card,
   Descriptions,
   Tag,
@@ -42,6 +43,125 @@ const { TextArea } = Input
 const { Option } = Select
 
 type ApprovalAction = 'approve' | 'reject' | 'request_changes'
+
+type ConflictApprovalSummary = {
+  checkId: string
+  status: string
+  machineRisk: string
+  coverageStatus: string
+  coverageNotice: string
+  requiresManualReview: boolean
+  evidenceCount: number
+  restrictedCount: number
+}
+
+const asRecord = (value: unknown): Record<string, any> => {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, any>
+  }
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value)
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {}
+    } catch {
+      return {}
+    }
+  }
+  return {}
+}
+
+const firstValue = (record: Record<string, any>, ...keys: string[]) => {
+  for (const key of keys) {
+    const value = record[key]
+    if (value !== undefined && value !== null && String(value).trim() !== '') {
+      return value
+    }
+  }
+  return undefined
+}
+
+const parseConflictApprovalSummary = (rawMetadata?: string): ConflictApprovalSummary | null => {
+  if (!rawMetadata) return null
+  let metadata: Record<string, any>
+  try {
+    metadata = asRecord(rawMetadata)
+  } catch {
+    return null
+  }
+
+  const result = asRecord(firstValue(metadata, 'conflict_result', 'conflictResult'))
+  const record = asRecord(firstValue(metadata, 'conflict_record', 'conflictRecord'))
+  const decision = asRecord(firstValue(result, 'decision') || firstValue(record, 'decision'))
+  const riskAssessment = asRecord(
+    firstValue(result, 'riskAssessment', 'risk_assessment') ||
+      firstValue(record, 'riskAssessment', 'risk_assessment'),
+  )
+  const coverageStatus = String(
+    firstValue(
+      decision,
+      'coverageStatus',
+      'coverage_status',
+    ) ||
+      firstValue(result, 'coverageStatus', 'coverage_status') ||
+      firstValue(record, 'coverageStatus', 'coverage_status') ||
+      '',
+  ).toUpperCase()
+  const status = String(firstValue(decision, 'status') || '').toUpperCase()
+  const checkId = String(
+    firstValue(metadata, 'conflict_task_id', 'conflictTaskId') ||
+      firstValue(result, 'checkId', 'check_id') ||
+      firstValue(record, 'checkId', 'check_id') ||
+      '',
+  )
+  if (!checkId && Object.keys(result).length === 0 && Object.keys(record).length === 0) return null
+
+  const restrictedCount = Number(
+    firstValue(decision, 'restrictedCount', 'restricted_count') || 0,
+  )
+  const evidenceCount = Number(firstValue(decision, 'evidenceCount', 'evidence_count') || 0)
+  const machineRisk = String(
+    firstValue(riskAssessment, 'overallRisk', 'overall_risk') ||
+      firstValue(record, 'riskLevel', 'risk_level') ||
+      'REVIEW_REQUIRED',
+  ).toUpperCase()
+  const coverageNotice = String(
+    firstValue(decision, 'coverageNotice', 'coverage_notice') ||
+      firstValue(result, 'coverageNotice', 'coverage_notice') ||
+      '档案覆盖范围尚未完成确认，不能据此认定无冲突。',
+  )
+
+  return {
+    checkId,
+    status,
+    machineRisk,
+    coverageStatus,
+    coverageNotice,
+    requiresManualReview:
+      Boolean(firstValue(decision, 'requiresManualReview', 'requires_manual_review')) ||
+      coverageStatus !== 'COMPLETE',
+    evidenceCount: Number.isFinite(evidenceCount) ? evidenceCount : 0,
+    restrictedCount: Number.isFinite(restrictedCount) ? restrictedCount : 0,
+  }
+}
+
+const conflictApprovalStatusLabel = (summary: ConflictApprovalSummary) => {
+  if (summary.coverageStatus !== 'COMPLETE') return '范围受限，待人工复核'
+  if (summary.status === 'REVIEW_REQUIRED' || summary.requiresManualReview) {
+    return '待独立人工复核'
+  }
+  return '检索完成，待独立人工复核'
+}
+
+const riskLabel = (risk: string) => {
+  const labels: Record<string, string> = {
+    CRITICAL: '极高',
+    HIGH: '高',
+    MEDIUM: '中',
+    LOW: '低',
+    REVIEW_REQUIRED: '待人工复核',
+  }
+  return labels[risk] || '待人工复核'
+}
 
 const ApprovalDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -161,7 +281,7 @@ const ApprovalDetail: React.FC = () => {
   const getApprovalCurrentStep = (records: any[], status: string) => {
     if (status === 'draft') return 0
     const completedSteps = records.filter(
-      (r) => r.decision === 'approve' || r.decision === 'request_changes'
+      (r) => r.decision === 'approve' || r.decision === 'request_changes',
     ).length
     return completedSteps
   }
@@ -321,12 +441,16 @@ const ApprovalDetail: React.FC = () => {
   // 判断权限
   const isApprover = approval.currentApproverId === currentUserId
   const isApplicant = approval.applicantId === currentUserId
-  const canApprove = (approval.status === 'submitted' || approval.status === 'under_review') && isApprover
+  const canApprove =
+    (approval.status === 'submitted' || approval.status === 'under_review') && isApprover
   const canCancel = (approval.status === 'submitted' || approval.status === 'draft') && isApplicant
   const canSubmit = approval.status === 'draft' && isApplicant
-  const canEdit = (approval.status === 'draft' || approval.status === 'needs_revision') && isApplicant
-  const canResubmit = (approval.status === 'rejected' || approval.status === 'needs_revision') && isApplicant
+  const canEdit =
+    (approval.status === 'draft' || approval.status === 'needs_revision') && isApplicant
+  const canResubmit =
+    (approval.status === 'rejected' || approval.status === 'needs_revision') && isApplicant
   const hasDecisionActions = canSubmit || canEdit || canResubmit || canCancel || canApprove
+  const conflictApprovalSummary = parseConflictApprovalSummary(approval.metadata)
 
   const handleMoreApprovalActions = () => {
     message.info('暂无更多审批操作')
@@ -387,7 +511,7 @@ const ApprovalDetail: React.FC = () => {
             <Steps
               current={getApprovalCurrentStep(approval.records, approval.status)}
               status={getApprovalStepStatus(approval.status)}
-              size="small"
+              size='small'
             >
               {approval.records.map((record, index) => (
                 <Steps.Step
@@ -456,6 +580,39 @@ const ApprovalDetail: React.FC = () => {
 
             return (
               <div className='metadata-section'>
+                {conflictApprovalSummary && (
+                  <div className='conflict-check-info' style={{ marginBottom: 24 }}>
+                    <h3>冲突检测摘要</h3>
+                    <Alert
+                      type='warning'
+                      showIcon
+                      message={conflictApprovalStatusLabel(conflictApprovalSummary)}
+                      description={conflictApprovalSummary.coverageNotice}
+                    />
+                    <Card size='small' type='inner' title='检测结果'>
+                      <Descriptions column={2} size='small'>
+                        <Descriptions.Item label='检测编号'>
+                          {conflictApprovalSummary.checkId || '未提供'}
+                        </Descriptions.Item>
+                        <Descriptions.Item label='机器风险'>
+                          {riskLabel(conflictApprovalSummary.machineRisk)}
+                        </Descriptions.Item>
+                        <Descriptions.Item label='人工复核'>
+                          {conflictApprovalSummary.requiresManualReview ? '必须' : '建议'}
+                        </Descriptions.Item>
+                        <Descriptions.Item label='检索证据'>
+                          {conflictApprovalSummary.evidenceCount} 条
+                        </Descriptions.Item>
+                        <Descriptions.Item label='受限记录'>
+                          {conflictApprovalSummary.restrictedCount} 条
+                        </Descriptions.Item>
+                        <Descriptions.Item label='处理状态'>
+                          {conflictApprovalStatusLabel(conflictApprovalSummary)}
+                        </Descriptions.Item>
+                      </Descriptions>
+                    </Card>
+                  </div>
+                )}
                 {conflict_check_config && (
                   <div className='conflict-check-info' style={{ marginBottom: 24 }}>
                     <h3>利益冲突检测报告</h3>
@@ -473,7 +630,9 @@ const ApprovalDetail: React.FC = () => {
                           {conflict_check_config.searchDepth}
                         </Descriptions.Item>
                         <Descriptions.Item label='检索年份'>
-                          {conflict_check_config.searchYears}年
+                          {Number(conflict_check_config.searchYears) > 0
+                            ? `${conflict_check_config.searchYears}年（范围受限）`
+                            : '系统已登记历史（覆盖完整性待确认）'}
                         </Descriptions.Item>
                       </Descriptions>
                     </Card>
@@ -544,7 +703,11 @@ const ApprovalDetail: React.FC = () => {
               </Button>
             )}
             {canResubmit && (
-              <Button type='primary' icon={<SyncOutlined />} onClick={() => setResubmitModalVisible(true)}>
+              <Button
+                type='primary'
+                icon={<SyncOutlined />}
+                onClick={() => setResubmitModalVisible(true)}
+              >
                 重新提交
               </Button>
             )}
@@ -564,10 +727,7 @@ const ApprovalDetail: React.FC = () => {
                 >
                   通过
                 </Button>
-                <Button
-                  icon={<EditOutlined />}
-                  onClick={() => handleAction('request_changes')}
-                >
+                <Button icon={<EditOutlined />} onClick={() => handleAction('request_changes')}>
                   要求修改
                 </Button>
                 <Button
@@ -602,10 +762,7 @@ const ApprovalDetail: React.FC = () => {
             label='审批意见'
             rules={[{ required: true, message: '请输入审批意见' }]}
           >
-            <TextArea
-              rows={4}
-              placeholder={getActionPlaceholder(currentAction || 'approve')}
-            />
+            <TextArea rows={4} placeholder={getActionPlaceholder(currentAction || 'approve')} />
           </Form.Item>
         </Form>
       </Modal>
@@ -627,10 +784,7 @@ const ApprovalDetail: React.FC = () => {
             label='修改说明'
             rules={[{ required: true, message: '请说明修改内容' }]}
           >
-            <TextArea
-              rows={4}
-              placeholder='请说明已修改的内容'
-            />
+            <TextArea rows={4} placeholder='请说明已修改的内容' />
           </Form.Item>
         </Form>
       </Modal>

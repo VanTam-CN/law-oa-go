@@ -1,0 +1,128 @@
+---
+# Law OA Go frontend application deployment.
+# The image is replaced by CI with the immutable frontend sha tag.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: law-oa-frontend
+  namespace: law-oa
+  labels:
+    app: law-oa
+    component: frontend
+    environment: production
+    project: law-oa-go
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  selector:
+    matchLabels:
+      app: law-oa
+      component: frontend
+  template:
+    metadata:
+      labels:
+        app: law-oa
+        component: frontend
+        environment: production
+        project: law-oa-go
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
+        fsGroup: 101
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: frontend
+          image: your-registry.com/law-oa/frontend:v2.1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 20
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: nginx-cache
+              mountPath: /var/cache/nginx
+            - name: nginx-run
+              mountPath: /var/run
+            - name: nginx-logs
+              mountPath: /var/log/nginx
+            - name: nginx-tmp
+              mountPath: /tmp
+      volumes:
+        - name: nginx-cache
+          emptyDir:
+            sizeLimit: 100Mi
+        - name: nginx-run
+          emptyDir:
+            sizeLimit: 10Mi
+        - name: nginx-logs
+          emptyDir:
+            sizeLimit: 100Mi
+        - name: nginx-tmp
+          emptyDir:
+            sizeLimit: 50Mi
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: law-oa-frontend
+  namespace: law-oa
+  labels:
+    app: law-oa
+    component: frontend
+    environment: production
+    project: law-oa-go
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: law-oa-frontend
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

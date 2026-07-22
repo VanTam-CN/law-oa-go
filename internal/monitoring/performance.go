@@ -14,37 +14,37 @@ import (
 // PerformanceMetrics 性能指标收集器
 type PerformanceMetrics struct {
 	// HTTP指标
-	httpRequestsTotal     *prometheus.CounterVec
-	httpRequestDuration   *prometheus.HistogramVec
-	httpRequestSize       *prometheus.HistogramVec
-	httpResponseSize      *prometheus.HistogramVec
+	httpRequestsTotal   *prometheus.CounterVec
+	httpRequestDuration *prometheus.HistogramVec
+	httpRequestSize     *prometheus.HistogramVec
+	httpResponseSize    *prometheus.HistogramVec
 
 	// 数据库指标
-	dbConnectionsActive   prometheus.Gauge
-	dbConnectionWaitTime  *prometheus.HistogramVec
-	dbQueryDuration       *prometheus.HistogramVec
-	dbQueriesTotal        *prometheus.CounterVec
+	dbConnectionsActive  prometheus.Gauge
+	dbConnectionWaitTime *prometheus.HistogramVec
+	dbQueryDuration      *prometheus.HistogramVec
+	dbQueriesTotal       *prometheus.CounterVec
 
 	// Redis指标
-	redisOperationsTotal  *prometheus.CounterVec
+	redisOperationsTotal   *prometheus.CounterVec
 	redisOperationDuration *prometheus.HistogramVec
 	redisConnectionsActive prometheus.Gauge
 
 	// 系统指标
-	cpuUsage              prometheus.Gauge
-	memoryUsage           prometheus.Gauge
-	goroutineCount        prometheus.Gauge
-	gcDuration           *prometheus.HistogramVec
+	cpuUsage       prometheus.Gauge
+	memoryUsage    prometheus.Gauge
+	goroutineCount prometheus.Gauge
+	gcDuration     *prometheus.HistogramVec
 
 	// 应用指标
-	activeConnections     prometheus.Gauge
-	cachedResponses       *prometheus.CounterVec
-	cacheHitRatio         *prometheus.GaugeVec
+	activeConnections prometheus.Gauge
+	cachedResponses   *prometheus.CounterVec
+	cacheHitRatio     *prometheus.GaugeVec
 
 	// 自定义业务指标
-	casesCreatedTotal     prometheus.Counter
+	casesCreatedTotal      prometheus.Counter
 	clientsRegisteredTotal prometheus.Counter
-	usersLoggedInTotal    prometheus.Counter
+	usersLoggedInTotal     prometheus.Counter
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -335,18 +335,18 @@ func (pm *PerformanceMetrics) GetMetricsSummary() map[string]interface{} {
 
 	return map[string]interface{}{
 		"system": map[string]interface{}{
-			"goroutines":        runtime.NumGoroutine(),
-			"memory_alloc":      m.Alloc,
+			"goroutines":         runtime.NumGoroutine(),
+			"memory_alloc":       m.Alloc,
 			"memory_total_alloc": m.TotalAlloc,
-			"memory_sys":        m.Sys,
-			"gc_cpu_fraction":   m.GCCPUFraction,
-			"num_gc":           m.NumGC,
+			"memory_sys":         m.Sys,
+			"gc_cpu_fraction":    m.GCCPUFraction,
+			"num_gc":             m.NumGC,
 		},
 		"runtime": map[string]interface{}{
-			"go_version":   runtime.Version(),
-			"go_os":        runtime.GOOS,
-			"go_arch":      runtime.GOARCH,
-			"num_cpu":      runtime.NumCPU(),
+			"go_version": runtime.Version(),
+			"go_os":      runtime.GOOS,
+			"go_arch":    runtime.GOARCH,
+			"num_cpu":    runtime.NumCPU(),
 		},
 	}
 }
@@ -361,9 +361,15 @@ func (pm *PerformanceMetrics) Stop() {
 
 // 全局性能指标实例
 var DefaultPerformanceMetrics *PerformanceMetrics
+var performanceMetricsMu sync.Mutex
 
 // InitPerformanceMetrics 初始化性能指标
 func InitPerformanceMetrics() {
+	performanceMetricsMu.Lock()
+	defer performanceMetricsMu.Unlock()
+	if DefaultPerformanceMetrics != nil {
+		return
+	}
 	DefaultPerformanceMetrics = NewPerformanceMetrics()
 	if logger.Logger != nil {
 		logger.Logger.Info("Performance metrics initialized")

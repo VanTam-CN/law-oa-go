@@ -13,9 +13,10 @@ import (
 
 // TeamPermissionService 团队权限服务
 type TeamPermissionService struct {
-	userRepo  repositories.UserRepository
-	caseRepo  repositories.CaseRepository
-	cacheRepo repositories.CacheRepository
+	userRepo       repositories.UserRepository
+	caseRepo       repositories.CaseRepository
+	cacheRepo      repositories.CacheRepository
+	subjectRecheck *SubjectRecheckService
 }
 
 // NewTeamPermissionService 创建团队权限服务
@@ -27,35 +28,41 @@ func NewTeamPermissionService(userRepo repositories.UserRepository, caseRepo rep
 	}
 }
 
+// SetSubjectRecheckService prevents team changes from bypassing the case
+// subject version workflow once a case is formally in progress.
+func (s *TeamPermissionService) SetSubjectRecheckService(service *SubjectRecheckService) {
+	s.subjectRecheck = service
+}
+
 // TeamAssignmentRequest 团队分配请求
 type TeamAssignmentRequest struct {
-	CaseID            uint                    `json:"case_id" binding:"required"`
-	LawyerID          uint                    `json:"lawyer_id" binding:"required"`           // 主办律师
-	AssistingLawyerID *uint                   `json:"assisting_lawyer_id,omitempty"`        // 协办律师
-	TeamMembers       []TeamMemberRequest     `json:"team_members,omitempty"`              // 其他团队成员
-	BillingMethod     string                  `json:"billing_method" binding:"required"`
-	IsMajorRisk       bool                    `json:"is_major_risk"`
-	AssignedBy        uint                    `json:"assigned_by"`                         // 分配者ID
+	CaseID            uint                `json:"case_id" binding:"required"`
+	LawyerID          uint                `json:"lawyer_id" binding:"required"`  // 主办律师
+	AssistingLawyerID *uint               `json:"assisting_lawyer_id,omitempty"` // 协办律师
+	TeamMembers       []TeamMemberRequest `json:"team_members,omitempty"`        // 其他团队成员
+	BillingMethod     string              `json:"billing_method" binding:"required"`
+	IsMajorRisk       bool                `json:"is_major_risk"`
+	AssignedBy        uint                `json:"assigned_by"` // 分配者ID
 }
 
 // TeamPermissionMemberRequest 团队成员请求
 type TeamPermissionMemberRequest struct {
 	UserID   uint   `json:"user_id" binding:"required"`
-	Role     string `json:"role" binding:"required"`     // paralegal, assistant, intern
-	Capacity int    `json:"capacity,omitempty"`         // 工作容量百分比
+	Role     string `json:"role" binding:"required"` // paralegal, assistant, intern
+	Capacity int    `json:"capacity,omitempty"`      // 工作容量百分比
 }
 
 // TeamAssignmentResponse 团队分配响应
 type TeamAssignmentResponse struct {
-	CaseID        uint                   `json:"case_id"`
-	LeadLawyer    *UserResponse          `json:"lead_lawyer"`
+	CaseID          uint                 `json:"case_id"`
+	LeadLawyer      *UserResponse        `json:"lead_lawyer"`
 	AssistingLawyer *UserResponse        `json:"assisting_lawyer,omitempty"`
-	TeamMembers   []TeamMemberResponse   `json:"team_members"`
-	BillingMethod string                 `json:"billing_method"`
-	IsMajorRisk   bool                   `json:"is_major_risk"`
-	AssignedAt    time.Time              `json:"assigned_at"`
-	AssignedBy    *UserResponse          `json:"assigned_by"`
-	Permissions   map[string]bool        `json:"permissions"` // 当前用户权限
+	TeamMembers     []TeamMemberResponse `json:"team_members"`
+	BillingMethod   string               `json:"billing_method"`
+	IsMajorRisk     bool                 `json:"is_major_risk"`
+	AssignedAt      time.Time            `json:"assigned_at"`
+	AssignedBy      *UserResponse        `json:"assigned_by"`
+	Permissions     map[string]bool      `json:"permissions"` // 当前用户权限
 }
 
 // TeamMemberResponse 团队成员响应
@@ -72,19 +79,19 @@ type TeamMemberResponse struct {
 
 // UserResponse 用户信息响应
 type UserResponse struct {
-	ID        uint   `json:"id"`
-	Name      string `json:"name"`
-	Email     string `json:"email"`
-	Role      string `json:"role"`
+	ID         uint   `json:"id"`
+	Name       string `json:"name"`
+	Email      string `json:"email"`
+	Role       string `json:"role"`
 	Department string `json:"department"`
-	Seniority string `json:"seniority"`
+	Seniority  string `json:"seniority"`
 }
 
 // TeamPermissionCheck 团队权限检查请求
 type TeamPermissionCheck struct {
 	UserID     uint                   `json:"user_id"`
 	CaseID     uint                   `json:"case_id"`
-	Action     string                 `json:"action"`     // assign, remove, update, view
+	Action     string                 `json:"action"` // assign, remove, update, view
 	TargetRole string                 `json:"target_role,omitempty"`
 	Context    map[string]interface{} `json:"context,omitempty"`
 }
@@ -123,6 +130,11 @@ func (s *TeamPermissionService) CheckTeamPermission(ctx context.Context, check *
 	}
 	if user == nil {
 		return false, errors.New("用户不存在")
+	}
+	if IsTechnicalAdminRole(user.Role) {
+		// Account administration is not a professional appointment. Do not let
+		// a platform admin use this service to infer or mutate matter teams.
+		return false, nil
 	}
 
 	// 2. 获取案件信息
@@ -259,6 +271,19 @@ func (s *TeamPermissionService) AssignTeam(ctx context.Context, req *TeamAssignm
 	if !hasPermission {
 		return nil, errors.New("您没有权限分配此案件的团队")
 	}
+	caseInfo, err := s.caseRepo.FindByID(ctx, req.CaseID)
+	if err != nil {
+		return nil, fmt.Errorf("获取案件信息失败: %w", err)
+	}
+	if caseInfo == nil {
+		return nil, errors.New("案件不存在")
+	}
+	if isControlledCaseStatus(caseInfo.Status) {
+		if s.subjectRecheck == nil {
+			return nil, NewSubjectWorkflowError("SUBJECT_GATE_UNAVAILABLE", "案件主体版本服务未初始化，已阻止正式案件团队变更")
+		}
+		return nil, NewSubjectWorkflowError("RECHECK_REQUIRED", "正式案件新增或变更承办团队必须先提交主体重检，复核通过后才可生效")
+	}
 
 	// 2. 验证主办律师
 	leadLawyer, err := s.userRepo.FindByID(ctx, req.LawyerID)
@@ -392,13 +417,13 @@ func (s *TeamPermissionService) getCurrentUserPermissions(ctx context.Context, u
 // logTeamAssignment 记录团队分配日志
 func (s *TeamPermissionService) logTeamAssignment(ctx context.Context, req *TeamAssignmentRequest) error {
 	logData := map[string]interface{}{
-		"action":       "team_assignment",
-		"case_id":      req.CaseID,
-		"lawyer_id":    req.LawyerID,
-		"assigned_by":  req.AssignedBy,
+		"action":         "team_assignment",
+		"case_id":        req.CaseID,
+		"lawyer_id":      req.LawyerID,
+		"assigned_by":    req.AssignedBy,
 		"billing_method": req.BillingMethod,
-		"is_major_risk": req.IsMajorRisk,
-		"timestamp":    time.Now(),
+		"is_major_risk":  req.IsMajorRisk,
+		"timestamp":      time.Now(),
 	}
 
 	logJSON, err := json.Marshal(logData)

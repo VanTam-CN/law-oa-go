@@ -52,7 +52,7 @@ test.describe('审批决策台', () => {
     await expect(page.getByRole('button', { name: '同意并成案' })).toHaveCount(0)
     await expect(page.getByRole('button', { name: /^拒绝$/ })).toHaveCount(0)
     await expect(page.getByRole('button', { name: '退回修改' })).toHaveCount(0)
-    await expect(page.getByText('当前账号仅可查看审批进度')).toBeVisible()
+    await expect(page.locator('.batch-approval-readonly')).toHaveText('申请人不能审批自己的申请，仅可查看审批进度。')
   })
 })
 
@@ -67,7 +67,75 @@ test.describe('审批人决策台', () => {
     await waitForAppShell(page)
     await page.getByRole('button', { name: '同意并成案' }).click()
 
-    await expect(page.locator('.ant-message')).toContainText('已成案：HD-2026-001')
+    await expect(page.locator('.ant-message')).toContainText('已成案：DEMO-2026-001')
     await expect(page.getByRole('button', { name: '查看关联案件' })).toBeEnabled()
+  })
+})
+
+test.describe('审批证据一致性', () => {
+  test('检测编号与旧快照不一致时应该显示权威结果并阻止审批', async ({ page }) => {
+    await seedAuthenticatedUser(page, 'admin')
+    await page.route('**/api/v1/approvals/701', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          data: {
+            id: 701,
+            request_number: 'AP-2026-001',
+            title: '冲突审查审批 - 名称候选核实',
+            type: 'conflict_approval',
+            status: 'pending',
+            applicant_id: '2',
+            applicant_name: '张律师',
+            current_approver_id: '1',
+            current_approver_name: '示例管理员',
+            conflict_check_id: 'CHECK-MEDIUM-001',
+            conflict_result: {
+              checkId: 'CHECK-MEDIUM-001',
+              riskAssessment: { overallRisk: 'MEDIUM', riskScore: 58 },
+            },
+            metadata: {
+              conflict_task_id: 'CHECK-HIGH-OLD',
+              conflict_result: {
+                checkId: 'CHECK-HIGH-OLD',
+                riskAssessment: { overallRisk: 'HIGH', riskScore: 92 },
+              },
+            },
+          },
+        }),
+      })
+    })
+    await page.route('**/api/v1/approvals/701/snapshot', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          data: {
+            snapshot: {
+              metadata: {
+                conflict_task_id: 'CHECK-HIGH-OLD',
+                conflict_result: {
+                  checkId: 'CHECK-HIGH-OLD',
+                  riskAssessment: { overallRisk: 'HIGH', riskScore: 92 },
+                },
+              },
+            },
+          },
+        }),
+      })
+    })
+
+    await page.goto('/approval/701')
+    await waitForPageLoad(page)
+
+    await expect(page.getByRole('heading', { name: '审批证据不一致' })).toBeVisible()
+    await expect(page.getByText('总体风险等级：中风险')).toBeVisible()
+    await expect(page.getByText('检测记录：证据已冻结')).toBeVisible()
+    await expect(page.getByText('查看审批审计技术信息')).toBeVisible()
+    await expect(page.getByRole('button', { name: '同意并成案' })).toHaveCount(0)
+    await expect(page.locator('.batch-approval-readonly')).toHaveText('审批证据不一致，已禁止处理')
   })
 })

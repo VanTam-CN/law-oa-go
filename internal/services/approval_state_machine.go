@@ -20,7 +20,7 @@ type ApprovalStateMachine struct {
 func NewApprovalStateMachine() *ApprovalStateMachine {
 	sm := &ApprovalStateMachine{
 		validTransitions: make(map[string][]string),
-		stageProcessor:    NewApprovalStageProcessor(),
+		stageProcessor:   NewApprovalStageProcessor(),
 	}
 	sm.initializeTransitions()
 	return sm
@@ -38,10 +38,10 @@ type ApprovalStageProcessor struct {
 
 // StageApprovalState 节点审批状态
 type StageApprovalState struct {
-	StageKey      string
-	TotalApprovers int
-	ApprovedCount  int
-	RejectedCount  int
+	StageKey        string
+	TotalApprovers  int
+	ApprovedCount   int
+	RejectedCount   int
 	ApproverRecords map[string]bool // approverID -> approved
 }
 
@@ -228,7 +228,7 @@ func (sp *ApprovalStageProcessor) GetNextStage(
 	if currentStage.StageType == "conditional" {
 		for _, condition := range templateConfig.Conditions {
 			if condition.ThenStageKey == currentStage.StageKey ||
-			   condition.ElseStageKey == currentStage.StageKey {
+				condition.ElseStageKey == currentStage.StageKey {
 				// 评估条件表达式
 				if sp.evaluateCondition(condition.Expression, metadata) {
 					// 满足条件，跳转到 then_stage
@@ -301,7 +301,7 @@ func (sm *ApprovalStateMachine) GetNextState(currentStatus string, decision stri
 	case models.ApprovalDecisionApprove:
 		// 审批通过，检查是否有下一阶段
 		if currentStatus == models.ApprovalStatusUnderReview ||
-		   currentStatus == models.ApprovalStatusResubmitted {
+			currentStatus == models.ApprovalStatusResubmitted {
 			// 这里应该检查是否有多级审批
 			// 暂时直接设为已通过
 			return models.ApprovalStatusApproved, nil

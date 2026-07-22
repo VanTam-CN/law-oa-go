@@ -18,7 +18,7 @@ metadata:
     deployment.kubernetes.io/revision: "1"
     kubernetes.io/change-cause: "Automated deployment with enhanced security and monitoring"
     prometheus.io/scrape: "true"
-    prometheus.io/port: "9090"
+    prometheus.io/port: "8080"
     prometheus.io/path: "/metrics"
     sidecar.istio.io/inject: "false"
 spec:
@@ -42,24 +42,22 @@ spec:
         version: v2.1.0
       annotations:
         prometheus.io/scrape: "true"
-        prometheus.io/port: "9090"
+        prometheus.io/port: "8080"
         prometheus.io/path: "/metrics"
         prometheus.io/scheme: "http"
         sidecar.istio.io/inject: "false"
     spec:
       securityContext:
         runAsNonRoot: true
-        runAsUser: 65534
-        runAsGroup: 65534
-        fsGroup: 65534
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
         seccompProfile:
           type: RuntimeDefault
 
-      serviceAccountName: law-oa-backend
-
-      # 容器镜像拉取密钥
-      imagePullSecrets:
-        - name: registry-secret
+      # The application does not call the Kubernetes API. Keep the default
+      # service-account token out of the pod even if namespace defaults change.
+      automountServiceAccountToken: false
 
       # 初始化容器
       initContainers:
@@ -70,7 +68,7 @@ spec:
             - -c
             - |
               echo "Waiting for database to be ready..."
-              until nc -z mysql-service 3306; do
+              until nc -z law-oa-postgres-service 5432; do
                 echo "Database not ready, waiting..."
                 sleep 2
               done
@@ -90,7 +88,7 @@ spec:
             - -c
             - |
               echo "Waiting for Redis to be ready..."
-              until nc -z redis-service 6379; do
+              until nc -z law-oa-redis-service 6379; do
                 echo "Redis not ready, waiting..."
                 sleep 2
               done
@@ -106,17 +104,32 @@ spec:
         - name: database-migration
           image: your-registry.com/law-oa/backend:v2.1.0
           command:
-            - /bin/sh
-            - -c
-            - |
-              echo "Running database migrations..."
-              ./law-oa-go migrate up
-              echo "Migrations completed!"
-          envFrom:
-            - configMapRef:
-                name: law-oa-config
-            - secretRef:
-                name: law-oa-secrets
+            - /app/law-oa-migrate
+            - -command
+            - bootstrap
+          env:
+            - name: ENVIRONMENT
+              value: "production"
+            - name: DB_DRIVER
+              value: "postgres"
+            - name: DB_HOST
+              value: "law-oa-postgres-service"
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_SSLMODE
+              value: "require"
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: law-oa-secrets
+                  key: db-user
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: law-oa-secrets
+                  key: db-password
+            - name: DB_DATABASE
+              value: "law_oa"
           resources:
             requests:
               cpu: 100m
@@ -135,12 +148,6 @@ spec:
           ports:
             - name: http
               containerPort: 8080
-              protocol: TCP
-            - name: metrics
-              containerPort: 9090
-              protocol: TCP
-            - name: health
-              containerPort: 8081
               protocol: TCP
 
           # 环境变量
@@ -172,11 +179,69 @@ spec:
                 fieldRef:
                   fieldPath: spec.nodeName
 
-          envFrom:
-            - configMapRef:
-                name: law-oa-config
-            - secretRef:
-                name: law-oa-secrets
+            - name: DB_DRIVER
+              value: "postgres"
+            - name: DB_HOST
+              value: "law-oa-postgres-service"
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_SSLMODE
+              value: "require"
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: law-oa-secrets
+                  key: db-user
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: law-oa-secrets
+                  key: db-password
+            - name: DB_DATABASE
+              value: "law_oa"
+            - name: REDIS_HOST
+              value: "law-oa-redis-service"
+            - name: REDIS_PORT
+              value: "6379"
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: law-oa-secrets
+                  key: redis-password
+            - name: ES_HOST
+              value: "law-oa-elasticsearch-service.law-oa-logging.svc.cluster.local"
+            - name: ES_PORT
+              value: "9200"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: law-oa-secrets
+                  key: jwt-secret
+            - name: APP_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: law-oa-secrets
+                  key: app-secret
+            - name: SUBJECT_DATA_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: law-oa-secrets
+                  key: subject-data-key
+            - name: ONLYOFFICE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: law-oa-secrets
+                  key: onlyoffice-url
+            - name: ONLYOFFICE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: law-oa-secrets
+                  key: onlyoffice-secret
+            - name: CORS_ALLOWED_ORIGINS
+              valueFrom:
+                secretKeyRef:
+                  name: law-oa-secrets
+                  key: cors-allowed-origins
 
           # 资源配置
           resources:
@@ -191,7 +256,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /health/live
-              port: health
+              port: http
               scheme: HTTP
             initialDelaySeconds: 30
             periodSeconds: 30
@@ -202,7 +267,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /health/ready
-              port: health
+              port: http
               scheme: HTTP
             initialDelaySeconds: 10
             periodSeconds: 10
@@ -213,7 +278,7 @@ spec:
           startupProbe:
             httpGet:
               path: /health
-              port: health
+              port: http
               scheme: HTTP
             initialDelaySeconds: 10
             periodSeconds: 10
@@ -229,8 +294,8 @@ spec:
               drop:
                 - ALL
             runAsNonRoot: true
-            runAsUser: 65534
-            runAsGroup: 65534
+            runAsUser: 1001
+            runAsGroup: 1001
 
           # 卷挂载
           volumeMounts:
@@ -247,48 +312,9 @@ spec:
               mountPath: /etc/secrets
               readOnly: true
 
-          # 生命周期钩子
-          lifecycle:
-            preStop:
-              exec:
-                command:
-                  - /bin/sh
-                  - -c
-                  - |
-                    echo "Received SIGTERM, starting graceful shutdown..."
-                    sleep 15
-
-        # 日志收集 sidecar
-        - name: log-collector
-          image: fluent/fluent-bit:2.2
-          imagePullPolicy: IfNotPresent
-
-          env:
-            - name: FLUENT_BIT_SERVICE_NAME
-              value: "law-oa-backend"
-            - name: FLUENT_BIT_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
-            - name: FLUENT_BIT_POD_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
-
-          volumeMounts:
-            - name: logs
-              mountPath: /app/logs
-              readOnly: true
-            - name: fluent-bit-config
-              mountPath: /fluent-bit/etc
-
-          resources:
-            requests:
-              cpu: 50m
-              memory: 64Mi
-            limits:
-              cpu: 100m
-              memory: 128Mi
+          # The production image is scratch-based and writes structured logs
+          # to stdout. Cluster-level log collection should consume container
+          # logs; no shell-based sidecar is required here.
 
       # 卷配置
       volumes:
@@ -296,7 +322,7 @@ spec:
           configMap:
             name: law-oa-config
             items:
-              - key: app.yaml
+              - key: config.yaml
                 path: config.yaml
 
         - name: jwt-secret
@@ -305,10 +331,6 @@ spec:
             items:
               - key: jwt-secret
                 path: jwt-secret
-
-        - name: fluent-bit-config
-          configMap:
-            name: fluent-bit-config
 
         - name: logs
           emptyDir:

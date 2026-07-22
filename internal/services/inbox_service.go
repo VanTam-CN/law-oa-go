@@ -161,8 +161,8 @@ func (s *InboxService) CreateInboxItem(ctx context.Context, userID uint, req *Cr
 }
 
 // GetInboxItemByID 根据ID获取待办事项
-func (s *InboxService) GetInboxItemByID(ctx context.Context, id uint) (*InboxItemResponse, error) {
-	item, err := s.inboxRepo.FindByID(ctx, id)
+func (s *InboxService) GetInboxItemByID(ctx context.Context, id, userID uint) (*InboxItemResponse, error) {
+	item, err := s.inboxRepo.FindByIDAndUserID(ctx, id, userID)
 	if err != nil {
 		return nil, fmt.Errorf("获取待办事项失败: %w", err)
 	}
@@ -174,9 +174,9 @@ func (s *InboxService) GetInboxItemByID(ctx context.Context, id uint) (*InboxIte
 }
 
 // UpdateInboxItem 更新待办事项
-func (s *InboxService) UpdateInboxItem(ctx context.Context, id uint, req *UpdateInboxItemRequest) (*InboxItemResponse, error) {
+func (s *InboxService) UpdateInboxItem(ctx context.Context, id, userID uint, req *UpdateInboxItemRequest) (*InboxItemResponse, error) {
 	// 获取现有待办事项
-	item, err := s.inboxRepo.FindByID(ctx, id)
+	item, err := s.inboxRepo.FindByIDAndUserID(ctx, id, userID)
 	if err != nil {
 		return nil, fmt.Errorf("获取待办事项失败: %w", err)
 	}
@@ -220,7 +220,7 @@ func (s *InboxService) UpdateInboxItem(ctx context.Context, id uint, req *Update
 	}
 
 	// 保存更新
-	err = s.inboxRepo.Update(ctx, item)
+	err = s.inboxRepo.UpdateByUserID(ctx, item, userID)
 	if err != nil {
 		return nil, fmt.Errorf("更新待办事项失败: %w", err)
 	}
@@ -229,17 +229,13 @@ func (s *InboxService) UpdateInboxItem(ctx context.Context, id uint, req *Update
 }
 
 // DeleteInboxItem 删除待办事项
-func (s *InboxService) DeleteInboxItem(ctx context.Context, id uint) error {
-	// 检查待办事项是否存在
-	item, err := s.inboxRepo.FindByID(ctx, id)
-	if err != nil {
-		return fmt.Errorf("获取待办事项失败: %w", err)
+func (s *InboxService) DeleteInboxItem(ctx context.Context, id, userID uint) error {
+	// Preserve the same ownership/not-found response used by every other
+	// inbox operation before exposing the retention policy.
+	if _, err := s.inboxRepo.FindByIDAndUserID(ctx, id, userID); err != nil {
+		return err
 	}
-	if item == nil {
-		return errors.New("待办事项不存在")
-	}
-
-	return s.inboxRepo.Delete(ctx, id)
+	return s.inboxRepo.DeleteByUserID(ctx, id, userID)
 }
 
 // ListInboxItems 获取待办事项列表
@@ -307,17 +303,17 @@ func (s *InboxService) ListInboxItems(ctx context.Context, userID uint, req *Lis
 }
 
 // MarkAsRead 标记为已读
-func (s *InboxService) MarkAsRead(ctx context.Context, id uint) error {
-	return s.inboxRepo.MarkAsRead(ctx, id)
+func (s *InboxService) MarkAsRead(ctx context.Context, id, userID uint) error {
+	return s.inboxRepo.MarkAsReadByUserID(ctx, id, userID)
 }
 
 // MarkAsCompleted 标记为已完成
-func (s *InboxService) MarkAsCompleted(ctx context.Context, id uint) error {
-	return s.inboxRepo.MarkAsCompleted(ctx, id)
+func (s *InboxService) MarkAsCompleted(ctx context.Context, id, userID uint) error {
+	return s.inboxRepo.MarkAsCompletedByUserID(ctx, id, userID)
 }
 
 // SnoozeInboxItem 延后待办事项
-func (s *InboxService) SnoozeInboxItem(ctx context.Context, id uint, req *SnoozeInboxItemRequest) error {
+func (s *InboxService) SnoozeInboxItem(ctx context.Context, id, userID uint, req *SnoozeInboxItemRequest) error {
 	var until time.Time
 	var err error
 
@@ -340,7 +336,7 @@ func (s *InboxService) SnoozeInboxItem(ctx context.Context, id uint, req *Snooze
 		return errors.New("必须指定时间或延后天数")
 	}
 
-	return s.inboxRepo.Snooze(ctx, id, until)
+	return s.inboxRepo.SnoozeByUserID(ctx, id, userID, until)
 }
 
 // GetInboxStats 获取待办事项统计

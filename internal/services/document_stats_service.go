@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -9,6 +10,8 @@ import (
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/repositories"
 )
+
+var ErrDocumentStatisticsUnavailable = errors.New("document statistics are not connected to an audited storage/activity source")
 
 // DocumentStatsService handles document statistics and reporting
 type DocumentStatsService struct {
@@ -36,20 +39,20 @@ func (s *DocumentStatsService) WithViewer(viewerUserID uint) *DocumentStatsServi
 
 // DocumentOverviewStats represents overall document statistics
 type DocumentOverviewStats struct {
-	TotalDocuments       int64               `json:"total_documents"`
-	TotalStorage         int64               `json:"total_storage"`
-	ActiveDocuments      int64               `json:"active_documents"`
-	DeletedDocuments     int64               `json:"deleted_documents"`
-	VersionCount         int64               `json:"version_count"`
-	RecentUploads        int64               `json:"recent_uploads"`        // Last 7 days
-	RecentDownloads      int64               `json:"recent_downloads"`      // Last 7 days
-	DocumentsByCategory  []CategoryStats     `json:"documents_by_category"`
-	DocumentsByType      []TypeStats         `json:"documents_by_type"`
-	UploadTrends         []TrendData         `json:"upload_trends"`
-	StorageGrowth        []GrowthData        `json:"storage_growth"`
-	TopUploaders         []UserStats         `json:"top_uploaders"`
-	LargestDocuments     []DocumentSizeStats `json:"largest_documents"`
-	GeneratedAt          time.Time           `json:"generated_at"`
+	TotalDocuments      int64               `json:"total_documents"`
+	TotalStorage        int64               `json:"total_storage"`
+	ActiveDocuments     int64               `json:"active_documents"`
+	DeletedDocuments    int64               `json:"deleted_documents"`
+	VersionCount        int64               `json:"version_count"`
+	RecentUploads       int64               `json:"recent_uploads"`   // Last 7 days
+	RecentDownloads     int64               `json:"recent_downloads"` // Last 7 days
+	DocumentsByCategory []CategoryStats     `json:"documents_by_category"`
+	DocumentsByType     []TypeStats         `json:"documents_by_type"`
+	UploadTrends        []TrendData         `json:"upload_trends"`
+	StorageGrowth       []GrowthData        `json:"storage_growth"`
+	TopUploaders        []UserStats         `json:"top_uploaders"`
+	LargestDocuments    []DocumentSizeStats `json:"largest_documents"`
+	GeneratedAt         time.Time           `json:"generated_at"`
 }
 
 // CategoryStats represents statistics by category
@@ -72,10 +75,10 @@ type TypeStats struct {
 
 // TrendData represents trend data over time
 type TrendData struct {
-	Date        string  `json:"date"`
-	Count       int64   `json:"count"`
-	Size        int64   `json:"size"`
-	TrendType   string  `json:"trend_type"` // "upload", "download", "delete"
+	Date      string `json:"date"`
+	Count     int64  `json:"count"`
+	Size      int64  `json:"size"`
+	TrendType string `json:"trend_type"` // "upload", "download", "delete"
 }
 
 // GrowthData represents storage growth data
@@ -87,357 +90,281 @@ type GrowthData struct {
 
 // UserStats represents user-related statistics
 type UserStats struct {
-	UserID       uint   `json:"user_id"`
-	UserName     string `json:"user_name"`
-	UserEmail    string `json:"user_email"`
-	DocumentCount int64  `json:"document_count"`
-	TotalSize    int64  `json:"total_size"`
-	LastActive   time.Time `json:"last_active"`
+	UserID        uint      `json:"user_id"`
+	UserName      string    `json:"user_name"`
+	UserEmail     string    `json:"user_email"`
+	DocumentCount int64     `json:"document_count"`
+	TotalSize     int64     `json:"total_size"`
+	LastActive    time.Time `json:"last_active"`
 }
 
 // DocumentSizeStats represents document size information
 type DocumentSizeStats struct {
-	ID          uint      `json:"id"`
-	Name        string    `json:"name"`
-	Category    string    `json:"category"`
-	FileSize    int64     `json:"file_size"`
-	UploadedBy  string    `json:"uploaded_by"`
-	UploadedAt  time.Time `json:"uploaded_at"`
+	ID         uint      `json:"id"`
+	Name       string    `json:"name"`
+	Category   string    `json:"category"`
+	FileSize   int64     `json:"file_size"`
+	UploadedBy string    `json:"uploaded_by"`
+	UploadedAt time.Time `json:"uploaded_at"`
 }
 
 // StorageUsageStats represents storage usage statistics
 type StorageUsageStats struct {
-	TotalSpace     int64               `json:"total_space"`
-	UsedSpace      int64               `json:"used_space"`
-	AvailableSpace int64               `json:"available_space"`
-	UsagePercentage float64            `json:"usage_percentage"`
-	ByCategory     []CategoryStats     `json:"by_category"`
-	ByFileType     []FileTypeStats     `json:"by_file_type"`
-	LargeFiles     []DocumentSizeStats `json:"large_files"`
-	OldestFiles    []DocumentSizeStats `json:"oldest_files"`
-	GeneratedAt    time.Time           `json:"generated_at"`
+	TotalSpace      int64               `json:"total_space"`
+	UsedSpace       int64               `json:"used_space"`
+	AvailableSpace  int64               `json:"available_space"`
+	UsagePercentage float64             `json:"usage_percentage"`
+	ByCategory      []CategoryStats     `json:"by_category"`
+	ByFileType      []FileTypeStats     `json:"by_file_type"`
+	LargeFiles      []DocumentSizeStats `json:"large_files"`
+	OldestFiles     []DocumentSizeStats `json:"oldest_files"`
+	GeneratedAt     time.Time           `json:"generated_at"`
 }
 
 // FileTypeStats represents statistics by file type
 type FileTypeStats struct {
-	MimeType     string  `json:"mime_type"`
-	Extension    string  `json:"extension"`
-	Count        int64   `json:"count"`
-	Size         int64   `json:"size"`
-	Percentage   float64 `json:"percentage"`
-	AverageSize  float64 `json:"average_size"`
+	MimeType    string  `json:"mime_type"`
+	Extension   string  `json:"extension"`
+	Count       int64   `json:"count"`
+	Size        int64   `json:"size"`
+	Percentage  float64 `json:"percentage"`
+	AverageSize float64 `json:"average_size"`
 }
 
 // UserActivityStats represents user activity statistics
 type UserActivityStats struct {
-	UserID              uint                  `json:"user_id"`
-	UserName            string                `json:"user_name"`
-	UserEmail           string                `json:"user_email"`
-	TotalUploads        int64                 `json:"total_uploads"`
-	TotalDownloads      int64                 `json:"total_downloads"`
-	TotalDeleted        int64                 `json:"total_deleted"`
-	LastUpload          time.Time             `json:"last_upload"`
-	LastDownload        time.Time             `json:"last_download"`
-	ActivityByDate      []DailyActivity       `json:"activity_by_date"`
-	CategoryBreakdown   []CategoryStats       `json:"category_breakdown"`
-	FileTypeBreakdown   []FileTypeStats       `json:"file_type_breakdown"`
-	GeneratedAt         time.Time             `json:"generated_at"`
+	UserID            uint            `json:"user_id"`
+	UserName          string          `json:"user_name"`
+	UserEmail         string          `json:"user_email"`
+	TotalUploads      int64           `json:"total_uploads"`
+	TotalDownloads    int64           `json:"total_downloads"`
+	TotalDeleted      int64           `json:"total_deleted"`
+	LastUpload        time.Time       `json:"last_upload"`
+	LastDownload      time.Time       `json:"last_download"`
+	ActivityByDate    []DailyActivity `json:"activity_by_date"`
+	CategoryBreakdown []CategoryStats `json:"category_breakdown"`
+	FileTypeBreakdown []FileTypeStats `json:"file_type_breakdown"`
+	GeneratedAt       time.Time       `json:"generated_at"`
 }
 
 // DailyActivity represents daily user activity
 type DailyActivity struct {
-	Date     string `json:"date"`
-	Uploads  int64  `json:"uploads"`
-	Downloads int64 `json:"downloads"`
-	Deletes  int64  `json:"deletes"`
+	Date      string `json:"date"`
+	Uploads   int64  `json:"uploads"`
+	Downloads int64  `json:"downloads"`
+	Deletes   int64  `json:"deletes"`
 }
 
 // ComplianceReport represents compliance-related statistics
 type ComplianceReport struct {
-	TotalDocuments         int64                 `json:"total_documents"`
-	DocumentsWithTags      int64                 `json:"documents_with_tags"`
-	DocumentsWithMetadata  int64                 `json:"documents_with_metadata"`
-	UnTaggedDocuments      []DocumentSizeStats   `json:"untagged_documents"`
-	CategoryCompliance     []CategoryCompliance  `json:"category_compliance"`
-	TagCoverage            TagCoverage           `json:"tag_coverage"`
-	MetadataCompleteness   MetadataCompleteness  `json:"metadata_completeness"`
-	GeneratedAt            time.Time             `json:"generated_at"`
+	TotalDocuments        int64                `json:"total_documents"`
+	DocumentsWithTags     int64                `json:"documents_with_tags"`
+	DocumentsWithMetadata int64                `json:"documents_with_metadata"`
+	UnTaggedDocuments     []DocumentSizeStats  `json:"untagged_documents"`
+	CategoryCompliance    []CategoryCompliance `json:"category_compliance"`
+	TagCoverage           TagCoverage          `json:"tag_coverage"`
+	MetadataCompleteness  MetadataCompleteness `json:"metadata_completeness"`
+	GeneratedAt           time.Time            `json:"generated_at"`
 }
 
 // CategoryCompliance represents compliance status by category
 type CategoryCompliance struct {
-	Category      string  `json:"category"`
-	TotalCount    int64   `json:"total_count"`
-	CompliantCount int64  `json:"compliant_count"`
-	ComplianceRate float64 `json:"compliance_rate"`
-	Issues        []string `json:"issues"`
+	Category       string   `json:"category"`
+	TotalCount     int64    `json:"total_count"`
+	CompliantCount int64    `json:"compliant_count"`
+	ComplianceRate float64  `json:"compliance_rate"`
+	Issues         []string `json:"issues"`
 }
 
 // TagCoverage represents tag coverage statistics
 type TagCoverage struct {
-	TotalTags       int                    `json:"total_tags"`
-	PopularTags     []TagStats            `json:"popular_tags"`
-	UnusedTags      []string              `json:"unused_tags"`
-	TagDistribution map[string]int        `json:"tag_distribution"`
+	TotalTags       int            `json:"total_tags"`
+	PopularTags     []TagStats     `json:"popular_tags"`
+	UnusedTags      []string       `json:"unused_tags"`
+	TagDistribution map[string]int `json:"tag_distribution"`
 }
 
 // TagStats represents tag statistics
 type TagStats struct {
-	Tag         string  `json:"tag"`
-	Count       int64   `json:"count"`
-	Percentage  float64 `json:"percentage"`
+	Tag        string  `json:"tag"`
+	Count      int64   `json:"count"`
+	Percentage float64 `json:"percentage"`
 }
 
 // MetadataCompleteness represents metadata completeness statistics
 type MetadataCompleteness struct {
-	FieldsCompleted     int                    `json:"fields_completed"`
-	TotalFields         int                    `json:"total_fields"`
-	CompletenessRate    float64                `json:"completeness_rate"`
-	MissingFieldsByDoc  map[string][]string    `json:"missing_fields_by_doc"`
-	FieldCoverage       map[string]int64       `json:"field_coverage"`
+	FieldsCompleted    int                 `json:"fields_completed"`
+	TotalFields        int                 `json:"total_fields"`
+	CompletenessRate   float64             `json:"completeness_rate"`
+	MissingFieldsByDoc map[string][]string `json:"missing_fields_by_doc"`
+	FieldCoverage      map[string]int64    `json:"field_coverage"`
 }
 
 // GetDocumentOverview returns comprehensive document overview statistics
 func (s *DocumentStatsService) GetDocumentOverview(ctx context.Context) (*DocumentOverviewStats, error) {
-	// Get basic stats from repository
-	stats, err := s.docRepo.GetStats(ctx, s.viewerUserID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get document stats: %w", err)
-	}
+	return nil, ErrDocumentStatisticsUnavailable
+	/*
 
-	// Get category statistics
-	categoryStats, err := s.getCategoryStats(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get category stats: %w", err)
-	}
+		// Get basic stats from repository
+		stats, err := s.docRepo.GetStats(ctx, s.viewerUserID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get document stats: %w", err)
+		}
 
-	// Get type statistics
-	typeStats, err := s.getTypeStats(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get type stats: %w", err)
-	}
+		// Get category statistics
+		categoryStats, err := s.getCategoryStats(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get category stats: %w", err)
+		}
 
-	// Get upload trends (last 30 days)
-	uploadTrends, err := s.getUploadTrends(ctx, 30)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get upload trends: %w", err)
-	}
+		// Get type statistics
+		typeStats, err := s.getTypeStats(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get type stats: %w", err)
+		}
 
-	// Get storage growth (last 30 days)
-	storageGrowth, err := s.getStorageGrowth(ctx, 30)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get storage growth: %w", err)
-	}
+		// Get upload trends (last 30 days)
+		uploadTrends, err := s.getUploadTrends(ctx, 30)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get upload trends: %w", err)
+		}
 
-	// Get top uploaders
-	topUploaders, err := s.getTopUploaders(ctx, 10)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get top uploaders: %w", err)
-	}
+		// Get storage growth (last 30 days)
+		storageGrowth, err := s.getStorageGrowth(ctx, 30)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get storage growth: %w", err)
+		}
 
-	// Get largest documents
-	largestDocs, err := s.getLargestDocuments(ctx, 10)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get largest documents: %w", err)
-	}
+		// Get top uploaders
+		topUploaders, err := s.getTopUploaders(ctx, 10)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get top uploaders: %w", err)
+		}
 
-	return &DocumentOverviewStats{
-		TotalDocuments:      stats.Total,
-		ActiveDocuments:     stats.Total, // Use Total as Active since no Active field
-		DeletedDocuments:    0,            // No Deleted field available
-		RecentUploads:       stats.RecentUploads,
-		DocumentsByCategory: categoryStats,
-		DocumentsByType:     typeStats,
-		UploadTrends:        uploadTrends,
-		StorageGrowth:       storageGrowth,
-		TopUploaders:        topUploaders,
-		LargestDocuments:    largestDocs,
-		GeneratedAt:         time.Now(),
-	}, nil
+		// Get largest documents
+		largestDocs, err := s.getLargestDocuments(ctx, 10)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get largest documents: %w", err)
+		}
+
+		return &DocumentOverviewStats{
+			TotalDocuments:      stats.Total,
+			ActiveDocuments:     stats.Total, // Use Total as Active since no Active field
+			DeletedDocuments:    0,           // No Deleted field available
+			RecentUploads:       stats.RecentUploads,
+			DocumentsByCategory: categoryStats,
+			DocumentsByType:     typeStats,
+			UploadTrends:        uploadTrends,
+			StorageGrowth:       storageGrowth,
+			TopUploaders:        topUploaders,
+			LargestDocuments:    largestDocs,
+			GeneratedAt:         time.Now(),
+		}, nil
+	*/
 }
 
 // GetStorageUsage returns detailed storage usage statistics
 func (s *DocumentStatsService) GetStorageUsage(ctx context.Context) (*StorageUsageStats, error) {
-	// Get storage stats
-	stats, err := s.docRepo.GetStats(ctx, s.viewerUserID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get document stats: %w", err)
-	}
-
-	// Get category breakdown
-	categoryStats, err := s.getCategoryStats(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get category stats: %w", err)
-	}
-
-	// Get file type breakdown
-	fileTypeStats, err := s.getFileTypeStats(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get file type stats: %w", err)
-	}
-
-	// Get large files (> 10MB)
-	largeFiles, err := s.getLargeDocuments(ctx, 10*1024*1024, 10)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get large documents: %w", err)
-	}
-
-	// Get oldest files
-	oldestFiles, err := s.getOldestDocuments(ctx, 10)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get oldest documents: %w", err)
-	}
-
-	// Assume 100GB total space for this demo
-	totalSpace := int64(100 * 1024 * 1024 * 1024)
-	usedSpace := stats.Total * 10 * 1024 * 1024 // Estimate: 10MB per document average
-	availableSpace := totalSpace - usedSpace
-	usagePercentage := float64(usedSpace) / float64(totalSpace) * 100
-
-	return &StorageUsageStats{
-		TotalSpace:     totalSpace,
-		UsedSpace:      usedSpace,
-		AvailableSpace: availableSpace,
-		UsagePercentage: usagePercentage,
-		ByCategory:     categoryStats,
-		ByFileType:     fileTypeStats,
-		LargeFiles:     largeFiles,
-		OldestFiles:    oldestFiles,
-		GeneratedAt:    time.Now(),
-	}, nil
+	return nil, ErrDocumentStatisticsUnavailable
 }
 
 // GetUserActivity returns user activity statistics
 func (s *DocumentStatsService) GetUserActivity(ctx context.Context, userID uint) (*UserActivityStats, error) {
-	// In a real implementation, this would query activity logs
-	// For now, return mock data
-
-	userActivity := &UserActivityStats{
-		UserID:           userID,
-		UserName:         "Demo User",
-		UserEmail:        "user@example.com",
-		TotalUploads:     45,
-		TotalDownloads:   128,
-		TotalDeleted:     3,
-		LastUpload:       time.Now().Add(-2 * time.Hour),
-		LastDownload:     time.Now().Add(-30 * time.Minute),
-		ActivityByDate:   s.generateMockDailyActivity(30),
-		CategoryBreakdown: []CategoryStats{
-			{Category: "Contracts", Count: 15, Size: 25 * 1024 * 1024, Percentage: 33.3},
-			{Category: "Legal", Count: 20, Size: 40 * 1024 * 1024, Percentage: 44.4},
-			{Category: "Financial", Count: 10, Size: 15 * 1024 * 1024, Percentage: 22.2},
-		},
-		FileTypeBreakdown: []FileTypeStats{
-			{MimeType: "application/pdf", Extension: ".pdf", Count: 25, Size: 50 * 1024 * 1024, Percentage: 55.5},
-			{MimeType: "application/msword", Extension: ".doc", Count: 15, Size: 25 * 1024 * 1024, Percentage: 33.3},
-			{MimeType: "text/plain", Extension: ".txt", Count: 5, Size: 5 * 1024 * 1024, Percentage: 11.1},
-		},
-		GeneratedAt: time.Now(),
-	}
-
-	return userActivity, nil
+	return nil, ErrDocumentStatisticsUnavailable
 }
 
 // GetComplianceReport returns compliance-related statistics
 func (s *DocumentStatsService) GetComplianceReport(ctx context.Context) (*ComplianceReport, error) {
-	// Get all documents
-	documents, _, err := s.docRepo.List(ctx, &repositories.DocumentListParams{
-		Page:     1,
-		PageSize: 1000,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to list documents: %w", err)
-	}
+	return nil, ErrDocumentStatisticsUnavailable
+	/*
 
-	totalDocs := len(documents)
-	docsWithTags := 0
-	docsWithMetadata := 0
-	var untaggedDocs []DocumentSizeStats
-
-	// Analyze documents for compliance
-	for _, doc := range documents {
-		hasTags := doc.Tags != ""
-		hasMetadata := doc.Description != "" && doc.Category != ""
-
-		if hasTags {
-			docsWithTags++
-		}
-		if hasMetadata {
-			docsWithMetadata++
+		// Get all documents
+		documents, _, err := s.docRepo.List(ctx, &repositories.DocumentListParams{
+			Page:     1,
+			PageSize: 1000,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to list documents: %w", err)
 		}
 
-		if !hasTags {
-			untaggedDocs = append(untaggedDocs, DocumentSizeStats{
-				ID:         doc.ID,
-				Name:       doc.Name,
-				Category:   doc.Category,
-				FileSize:   doc.Filesize,
-				UploadedBy: "Unknown", // Would be populated from user data
-				UploadedAt: doc.CreatedAt,
-			})
+		totalDocs := len(documents)
+		docsWithTags := 0
+		docsWithMetadata := 0
+		var untaggedDocs []DocumentSizeStats
+
+		// Analyze documents for compliance
+		for _, doc := range documents {
+			hasTags := doc.Tags != ""
+			hasMetadata := doc.Description != "" && doc.Category != ""
+
+			if hasTags {
+				docsWithTags++
+			}
+			if hasMetadata {
+				docsWithMetadata++
+			}
+
+			if !hasTags {
+				untaggedDocs = append(untaggedDocs, DocumentSizeStats{
+					ID:         doc.ID,
+					Name:       doc.Name,
+					Category:   doc.Category,
+					FileSize:   doc.Filesize,
+					UploadedBy: "Unknown", // Would be populated from user data
+					UploadedAt: doc.CreatedAt,
+				})
+			}
 		}
-	}
 
-	// Generate tag coverage
-	tagCoverage := s.generateTagCoverage(documents)
+		// Generate tag coverage
+		tagCoverage := s.generateTagCoverage(documents)
 
-	// Generate metadata completeness
-	metadataCompleteness := s.generateMetadataCompleteness(documents)
+		// Generate metadata completeness
+		metadataCompleteness := s.generateMetadataCompleteness(documents)
 
-	// Generate category compliance
-	categoryCompliance := []CategoryCompliance{
-		{
-			Category:       "Legal",
-			TotalCount:     30,
-			CompliantCount: 25,
-			ComplianceRate: 83.3,
-			Issues:         []string{"Missing tags in 5 documents"},
-		},
-		{
-			Category:       "Financial",
-			TotalCount:     20,
-			CompliantCount: 18,
-			ComplianceRate: 90.0,
-			Issues:         []string{"Missing description in 2 documents"},
-		},
-	}
+		categoryCompliance := []CategoryCompliance{}
 
-	return &ComplianceReport{
-		TotalDocuments:        int64(totalDocs),
-		DocumentsWithTags:     int64(docsWithTags),
-		DocumentsWithMetadata: int64(docsWithMetadata),
-		UnTaggedDocuments:     untaggedDocs,
-		CategoryCompliance:    categoryCompliance,
-		TagCoverage:           tagCoverage,
-		MetadataCompleteness:  metadataCompleteness,
-		GeneratedAt:           time.Now(),
-	}, nil
+		return &ComplianceReport{
+			TotalDocuments:        int64(totalDocs),
+			DocumentsWithTags:     int64(docsWithTags),
+			DocumentsWithMetadata: int64(docsWithMetadata),
+			UnTaggedDocuments:     untaggedDocs,
+			CategoryCompliance:    categoryCompliance,
+			TagCoverage:           tagCoverage,
+			MetadataCompleteness:  metadataCompleteness,
+			GeneratedAt:           time.Now(),
+		}, nil
+	*/
 }
 
 // ExportStats exports statistics in various formats
 func (s *DocumentStatsService) ExportStats(ctx context.Context, statsType string, format string) ([]byte, error) {
-	switch statsType {
-	case "overview":
-		stats, err := s.GetDocumentOverview(ctx)
-		if err != nil {
-			return nil, err
+	return nil, ErrDocumentStatisticsUnavailable
+	/*
+
+		switch statsType {
+		case "overview":
+			stats, err := s.GetDocumentOverview(ctx)
+			if err != nil {
+				return nil, err
+			}
+			return s.exportOverview(stats, format)
+		case "storage":
+			stats, err := s.GetStorageUsage(ctx)
+			if err != nil {
+				return nil, err
+			}
+			return s.exportStorage(stats, format)
+		case "compliance":
+			stats, err := s.GetComplianceReport(ctx)
+			if err != nil {
+				return nil, err
+			}
+			return s.exportCompliance(stats, format)
+		default:
+			return nil, fmt.Errorf("unsupported stats type: %s", statsType)
 		}
-		return s.exportOverview(stats, format)
-	case "storage":
-		stats, err := s.GetStorageUsage(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return s.exportStorage(stats, format)
-	case "compliance":
-		stats, err := s.GetComplianceReport(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return s.exportCompliance(stats, format)
-	default:
-		return nil, fmt.Errorf("unsupported stats type: %s", statsType)
-	}
+	*/
 }
 
 // Helper methods
@@ -500,7 +427,7 @@ func (s *DocumentStatsService) getUploadTrends(ctx context.Context, days int) ([
 
 		// In a real implementation, this would query the database
 		// For now, generate mock data
-		count := int64(5 + i%3) // Mock varying upload counts
+		count := int64(5 + i%3)     // Mock varying upload counts
 		size := count * 1024 * 1024 // Mock size calculation
 
 		trends = append(trends, TrendData{
@@ -651,7 +578,7 @@ func (s *DocumentStatsService) generateMockDailyActivity(days int) []DailyActivi
 			Date:      dateStr,
 			Uploads:   int64(1 + i%3),
 			Downloads: int64(3 + i%5),
-			Deletes:   int64(i%2),
+			Deletes:   int64(i % 2),
 		})
 	}
 

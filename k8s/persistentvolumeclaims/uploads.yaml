@@ -1,0 +1,17 @@
+# 用户上传文件的持久化卷。正式环境必须使用已演练备份和恢复的 StorageClass。
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: law-oa-uploads-pvc
+  namespace: law-oa
+  labels:
+    app: law-oa
+    component: storage
+    environment: production
+    project: law-oa-go
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi

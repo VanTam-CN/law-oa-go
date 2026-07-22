@@ -168,7 +168,7 @@ DB_DRIVER=postgres
 DB_HOST=localhost
 DB_PORT=5432
 DB_USERNAME=law_oa_user
-DB_PASSWORD=your_secure_password_here
+DB_PASSWORD=<set-local-dev-password>
 DB_NAME=law_oa_dev
 
 # Redis配置
@@ -181,7 +181,7 @@ ES_ENABLED=true
 ES_HOSTS=localhost:9200
 
 # JWT配置
-JWT_SECRET=your-super-secret-jwt-key-for-development-32-chars-min
+JWT_SECRET=<set-local-dev-jwt-secret>
 EOF
             ;;
         production)
@@ -232,7 +232,7 @@ DB_DRIVER=postgres
 DB_HOST=localhost
 DB_PORT=5432
 DB_USERNAME=test
-DB_PASSWORD=test
+DB_PASSWORD=<set-test-password>
 DB_NAME=law_oa_test
 
 # Redis配置
@@ -244,7 +244,7 @@ REDIS_DB=1
 ES_ENABLED=false
 
 # JWT配置
-JWT_SECRET=test-jwt-secret-key-32-characters-minimum-length
+JWT_SECRET=<set-test-jwt-secret>
 EOF
             ;;
         staging)
@@ -263,7 +263,7 @@ DB_DRIVER=postgres
 DB_HOST=localhost
 DB_PORT=5432
 DB_USERNAME=law_oa_staging
-DB_PASSWORD=your_staging_password
+DB_PASSWORD=<set-staging-password>
 DB_NAME=law_oa_staging
 
 # Redis配置
@@ -276,7 +276,7 @@ ES_ENABLED=true
 ES_HOSTS=localhost:9200
 
 # JWT配置
-JWT_SECRET=your-staging-secret-jwt-key-32-characters-minimum
+JWT_SECRET=<set-staging-jwt-secret>
 EOF
             ;;
     esac

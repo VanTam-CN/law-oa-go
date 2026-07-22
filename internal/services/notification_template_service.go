@@ -55,14 +55,14 @@ type UpdateTemplateRequest struct {
 
 // TemplateResponse 模板响应
 type TemplateResponse struct {
-	ID               uint    `json:"id"`
-	TemplateCode     string  `json:"template_code"`
-	TemplateName     string  `json:"template_name"`
-	Channel          string  `json:"channel"`
-	RecipientType    string  `json:"recipient_type"`
-	TriggerEvent     string  `json:"trigger_event"`
-	SubjectTemplate  string  `json:"subject_template"`
-	ContentTemplate  string  `json:"content_template"`
+	ID               uint     `json:"id"`
+	TemplateCode     string   `json:"template_code"`
+	TemplateName     string   `json:"template_name"`
+	Channel          string   `json:"channel"`
+	RecipientType    string   `json:"recipient_type"`
+	TriggerEvent     string   `json:"trigger_event"`
+	SubjectTemplate  string   `json:"subject_template"`
+	ContentTemplate  string   `json:"content_template"`
 	Variables        []string `json:"variables"`
 	AutoSend         bool     `json:"auto_send"`
 	RequiresApproval bool     `json:"requires_approval"`
@@ -312,10 +312,10 @@ func (s *NotificationTemplateService) PreviewTemplate(ctx context.Context, templ
 	}
 
 	return &TemplatePreviewResponse{
-		TemplateCode:    template.TemplateCode,
-		TemplateName:    template.TemplateName,
-		Subject:         subject,
-		Content:         content,
+		TemplateCode:      template.TemplateCode,
+		TemplateName:      template.TemplateName,
+		Subject:           subject,
+		Content:           content,
 		UnfilledVariables: s.getUnfilledVariables(content),
 	}, nil
 }
@@ -342,11 +342,11 @@ func (s *NotificationTemplateService) getUnfilledVariables(content string) []str
 
 // TemplatePreviewResponse 模板预览响应
 type TemplatePreviewResponse struct {
-	TemplateCode       string   `json:"template_code"`
-	TemplateName       string   `json:"template_name"`
-	Subject            string   `json:"subject"`
-	Content            string   `json:"content"`
-	UnfilledVariables  []string `json:"unfilled_variables"`
+	TemplateCode      string   `json:"template_code"`
+	TemplateName      string   `json:"template_name"`
+	Subject           string   `json:"subject"`
+	Content           string   `json:"content"`
+	UnfilledVariables []string `json:"unfilled_variables"`
 }
 
 // convertToResponse 转换为响应格式

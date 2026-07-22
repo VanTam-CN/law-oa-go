@@ -19,9 +19,9 @@ import (
 type CompanyAPIProvider string
 
 const (
-	ProviderQichacha CompanyAPIProvider = "qichacha" // 企查查
+	ProviderQichacha   CompanyAPIProvider = "qichacha"   // 企查查
 	ProviderTianyancha CompanyAPIProvider = "tianyancha" // 天眼查
-	ProviderMock CompanyAPIProvider = "mock" // 模拟数据（开发测试用）
+	ProviderMock       CompanyAPIProvider = "mock"       // 模拟数据（开发测试用）
 )
 
 // CompanyAPIService 工商 API 服务接口
@@ -38,69 +38,69 @@ type CompanyAPIService interface {
 
 // CompanySearchResult 公司搜索结果
 type CompanySearchResult struct {
-	Success      bool                     `json:"success"`
-	Message      string                   `json:"message"`
-	TotalCount   int                      `json:"totalCount"`
-	Companies    []*CompanyBasicInfo      `json:"companies"`
-	Provider     CompanyAPIProvider       `json:"provider"`
-	QueryTime    time.Time                `json:"queryTime"`
-	DurationMs   int                      `json:"durationMs"`
+	Success    bool                `json:"success"`
+	Message    string              `json:"message"`
+	TotalCount int                 `json:"totalCount"`
+	Companies  []*CompanyBasicInfo `json:"companies"`
+	Provider   CompanyAPIProvider  `json:"provider"`
+	QueryTime  time.Time           `json:"queryTime"`
+	DurationMs int                 `json:"durationMs"`
 }
 
 // CompanyBasicInfo 公司基本信息
 type CompanyBasicInfo struct {
-	Name         string    `json:"name"`
-	TaxID        string    `json:"taxId"`          // 统一社会信用代码/税号
-	Status       string    `json:"status"`         // 状态：在业、注销等
-	LegalPerson  string    `json:"legalPerson"`    // 法定代表人
+	Name              string `json:"name"`
+	TaxID             string `json:"taxId"`             // 统一社会信用代码/税号
+	Status            string `json:"status"`            // 状态：在业、注销等
+	LegalPerson       string `json:"legalPerson"`       // 法定代表人
 	RegisteredCapital string `json:"registeredCapital"` // 注册资本
-	EstablishDate string    `json:"establishDate"`  // 成立日期
-	Province     string    `json:"province"`       // 省份
-	City         string    `json:"city"`           // 城市
-	Industry     string    `json:"industry"`       // 行业
+	EstablishDate     string `json:"establishDate"`     // 成立日期
+	Province          string `json:"province"`          // 省份
+	City              string `json:"city"`              // 城市
+	Industry          string `json:"industry"`          // 行业
 }
 
 // CompanyDetail 公司详细信息
 type CompanyDetail struct {
-	BasicInfo    *CompanyBasicInfo      `json:"basicInfo"`
-	BusinessScope string                `json:"businessScope"` // 经营范围
-	RegisteredAddress string             `json:"registeredAddress"` // 注册地址
-	Shareholders []*Shareholder         `json:"shareholders"` // 股东信息
-	Executives   []*Executive            `json:"executives"`   // 高管信息
-	Changes      []*CompanyChange        `json:"changes"`      // 变更记录
+	BasicInfo         *CompanyBasicInfo `json:"basicInfo"`
+	BusinessScope     string            `json:"businessScope"`     // 经营范围
+	RegisteredAddress string            `json:"registeredAddress"` // 注册地址
+	Shareholders      []*Shareholder    `json:"shareholders"`      // 股东信息
+	Executives        []*Executive      `json:"executives"`        // 高管信息
+	Changes           []*CompanyChange  `json:"changes"`           // 变更记录
 }
 
 // Shareholder 股东信息
 type Shareholder struct {
-	Name         string  `json:"name"`
-	Type         string  `json:"type"`         // 股东类型：个人/企业
-	HolderRatio  float64 `json:"holderRatio"`  // 持股比例
-	CapitalAmount string `json:"capitalAmount"` // 认缴出资额
+	Name          string  `json:"name"`
+	Type          string  `json:"type"`          // 股东类型：个人/企业
+	HolderRatio   float64 `json:"holderRatio"`   // 持股比例
+	CapitalAmount string  `json:"capitalAmount"` // 认缴出资额
 }
 
 // Executive 高管信息
 type Executive struct {
-	Name      string `json:"name"`
-	Position  string `json:"position"` // 职位
+	Name     string `json:"name"`
+	Position string `json:"position"` // 职位
 }
 
 // CompanyChange 公司变更记录
 type CompanyChange struct {
-	ChangeDate string `json:"changeDate"`
-	ChangeItem string `json:"changeItem"`
+	ChangeDate    string `json:"changeDate"`
+	ChangeItem    string `json:"changeItem"`
 	BeforeContent string `json:"beforeContent"`
 	AfterContent  string `json:"afterContent"`
 }
 
 // ShareholdingInfo 股权穿透信息
 type ShareholdingInfo struct {
-	TaxID           string              `json:"taxId"`
-	CompanyName     string              `json:"companyName"`
-	DirectShareholders []*Shareholder   `json:"directShareholders"` // 直接股东
-	BeneficialOwners []*BeneficialOwner `json:"beneficialOwners"`   // 最终受益人
-	UltimateController string          `json:"ultimateController"` // 最终控制人
-	PenetrationDepth  int              `json:"penetrationDepth"`   // 穿透层级
-	RelatedCompanies  []*RelatedCompany `json:"relatedCompanies"`  // 关联公司
+	TaxID              string             `json:"taxId"`
+	CompanyName        string             `json:"companyName"`
+	DirectShareholders []*Shareholder     `json:"directShareholders"` // 直接股东
+	BeneficialOwners   []*BeneficialOwner `json:"beneficialOwners"`   // 最终受益人
+	UltimateController string             `json:"ultimateController"` // 最终控制人
+	PenetrationDepth   int                `json:"penetrationDepth"`   // 穿透层级
+	RelatedCompanies   []*RelatedCompany  `json:"relatedCompanies"`   // 关联公司
 }
 
 // BeneficialOwner 最终受益人
@@ -121,9 +121,9 @@ type RelatedCompany struct {
 
 // companyAPIService 工商 API 服务实现
 type companyAPIService struct {
-	httpClient    *http.Client
-	config        *CompanyAPIConfig
-	callRecorder  APICallRecorder
+	httpClient   *http.Client
+	config       *CompanyAPIConfig
+	callRecorder APICallRecorder
 }
 
 // CompanyAPIConfig API 配置
@@ -392,7 +392,7 @@ func (s *companyAPIService) searchQichacha(ctx context.Context, keyword string) 
 		ErrorCode string `json:"error_code"`
 		Reason    string `json:"reason"`
 		Data      struct {
-			TotalCount int                    `json:"total"`
+			TotalCount int                      `json:"total"`
 			List       []map[string]interface{} `json:"list"`
 		} `json:"data"`
 	}
@@ -416,15 +416,15 @@ func (s *companyAPIService) searchQichacha(ctx context.Context, keyword string) 
 
 	for _, item := range response.Data.List {
 		company := &CompanyBasicInfo{
-			Name:         getStringValue(item, "name"),
-			TaxID:        getStringValue(item, "creditCode"),
-			Status:       getStringValue(item, "status"),
-			LegalPerson:  getStringValue(item, "operName"),
+			Name:              getStringValue(item, "name"),
+			TaxID:             getStringValue(item, "creditCode"),
+			Status:            getStringValue(item, "status"),
+			LegalPerson:       getStringValue(item, "operName"),
 			RegisteredCapital: getStringValue(item, "regCapital"),
-			EstablishDate: getStringValue(item, "estiblishTime"),
-			Province:     getStringValue(item, "province"),
-			City:         getStringValue(item, "city"),
-			Industry:     getStringValue(item, "industry"),
+			EstablishDate:     getStringValue(item, "estiblishTime"),
+			Province:          getStringValue(item, "province"),
+			City:              getStringValue(item, "city"),
+			Industry:          getStringValue(item, "industry"),
 		}
 		result.Companies = append(result.Companies, company)
 	}
@@ -482,37 +482,37 @@ func (s *companyAPIService) searchMock(ctx context.Context, keyword string) (*Co
 	// 模拟数据
 	mockCompanies := []*CompanyBasicInfo{
 		{
-			Name:         "腾讯科技（深圳）有限公司",
-			TaxID:        "91440300123456789X",
-			Status:       "在业",
-			LegalPerson:  "马化腾",
+			Name:              "腾讯科技（深圳）有限公司",
+			TaxID:             "91440300123456789X",
+			Status:            "在业",
+			LegalPerson:       "马化腾",
 			RegisteredCapital: "5000万元人民币",
-			EstablishDate: "2000-02-24",
-			Province:     "广东",
-			City:         "深圳",
-			Industry:     "软件和信息技术服务业",
+			EstablishDate:     "2000-02-24",
+			Province:          "广东",
+			City:              "深圳",
+			Industry:          "软件和信息技术服务业",
 		},
 		{
-			Name:         "阿里巴巴（中国）有限公司",
-			TaxID:        "91330100567890123Y",
-			Status:       "在业",
-			LegalPerson:  "张勇",
+			Name:              "阿里巴巴（中国）有限公司",
+			TaxID:             "91330100567890123Y",
+			Status:            "在业",
+			LegalPerson:       "张勇",
 			RegisteredCapital: "10000万美元",
-			EstablishDate: "2007-03-26",
-			Province:     "浙江",
-			City:         "杭州",
-			Industry:     "软件和信息技术服务业",
+			EstablishDate:     "2007-03-26",
+			Province:          "浙江",
+			City:              "杭州",
+			Industry:          "软件和信息技术服务业",
 		},
 		{
-			Name:         "北京百度网讯科技有限公司",
-			TaxID:        "91110100789012345Z",
-			Status:       "在业",
-			LegalPerson:  "梁志祥",
+			Name:              "北京百度网讯科技有限公司",
+			TaxID:             "91110100789012345Z",
+			Status:            "在业",
+			LegalPerson:       "梁志祥",
 			RegisteredCapital: "100万元人民币",
-			EstablishDate: "2001-06-05",
-			Province:     "北京",
-			City:         "北京",
-			Industry:     "软件和信息技术服务业",
+			EstablishDate:     "2001-06-05",
+			Province:          "北京",
+			City:              "北京",
+			Industry:          "软件和信息技术服务业",
 		},
 	}
 
@@ -537,29 +537,29 @@ func (s *companyAPIService) getDetailMock(ctx context.Context, companyName, taxI
 	// 模拟公司详情
 	return &CompanyDetail{
 		BasicInfo: &CompanyBasicInfo{
-			Name:         companyName,
-			TaxID:        taxID,
-			Status:       "在业",
-			LegalPerson:  "模拟法人",
+			Name:              companyName,
+			TaxID:             taxID,
+			Status:            "在业",
+			LegalPerson:       "模拟法人",
 			RegisteredCapital: "1000万元人民币",
-			EstablishDate: "2010-01-01",
-			Province:     "北京",
-			City:         "北京",
-			Industry:     "软件和信息技术服务业",
+			EstablishDate:     "2010-01-01",
+			Province:          "北京",
+			City:              "北京",
+			Industry:          "软件和信息技术服务业",
 		},
-		BusinessScope: "技术开发、技术咨询、技术服务；销售计算机、软件及辅助设备。",
+		BusinessScope:     "技术开发、技术咨询、技术服务；销售计算机、软件及辅助设备。",
 		RegisteredAddress: "北京市海淀区模拟路123号",
 		Shareholders: []*Shareholder{
 			{
-				Name:        "股东A",
-				Type:        "企业",
-				HolderRatio: 60.0,
+				Name:          "股东A",
+				Type:          "企业",
+				HolderRatio:   60.0,
 				CapitalAmount: "600万元",
 			},
 			{
-				Name:        "股东B",
-				Type:        "个人",
-				HolderRatio: 40.0,
+				Name:          "股东B",
+				Type:          "个人",
+				HolderRatio:   40.0,
 				CapitalAmount: "400万元",
 			},
 		},
@@ -583,9 +583,9 @@ func (s *companyAPIService) getShareholdingMock(ctx context.Context, taxID strin
 		CompanyName: "模拟公司有限公司",
 		DirectShareholders: []*Shareholder{
 			{
-				Name:        "控股股东A",
-				Type:        "企业",
-				HolderRatio: 51.0,
+				Name:          "控股股东A",
+				Type:          "企业",
+				HolderRatio:   51.0,
 				CapitalAmount: "510万元",
 			},
 		},
@@ -784,11 +784,11 @@ func GetRiskLevelByShareholding(ratio float64) string {
 	case ratio >= 50:
 		return "CRITICAL" // 控股股东
 	case ratio >= 25:
-		return "HIGH"     // 重要股东
+		return "HIGH" // 重要股东
 	case ratio >= 10:
-		return "MEDIUM"   // 一般股东
+		return "MEDIUM" // 一般股东
 	default:
-		return "LOW"      // 小股东
+		return "LOW" // 小股东
 	}
 }
 

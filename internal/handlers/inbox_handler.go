@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"errors"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"law-oa-go/internal/common"
 	"law-oa-go/internal/middleware"
+	"law-oa-go/internal/repositories"
 	"law-oa-go/internal/services"
 )
 
@@ -80,9 +82,14 @@ func (h *InboxHandler) GetInboxItem(c *gin.Context) {
 		return
 	}
 
-	itemResp, err := h.inboxService.GetInboxItemByID(c.Request.Context(), uint(id))
+	userID, ok := currentInboxUserID(c)
+	if !ok {
+		return
+	}
+
+	itemResp, err := h.inboxService.GetInboxItemByID(c.Request.Context(), uint(id), userID)
 	if err != nil {
-		common.APINotFound(c, "待办事项不存在", err.Error())
+		respondInboxItemError(c, "获取待办事项失败", err)
 		return
 	}
 
@@ -118,9 +125,14 @@ func (h *InboxHandler) UpdateInboxItem(c *gin.Context) {
 		return
 	}
 
-	itemResp, err := h.inboxService.UpdateInboxItem(c.Request.Context(), uint(id), &req)
+	userID, ok := currentInboxUserID(c)
+	if !ok {
+		return
+	}
+
+	itemResp, err := h.inboxService.UpdateInboxItem(c.Request.Context(), uint(id), userID, &req)
 	if err != nil {
-		common.APIInternalServerError(c, "更新待办事项失败", err.Error())
+		respondInboxItemError(c, "更新待办事项失败", err)
 		return
 	}
 
@@ -149,9 +161,14 @@ func (h *InboxHandler) DeleteInboxItem(c *gin.Context) {
 		return
 	}
 
-	err = h.inboxService.DeleteInboxItem(c.Request.Context(), uint(id))
+	userID, ok := currentInboxUserID(c)
+	if !ok {
+		return
+	}
+
+	err = h.inboxService.DeleteInboxItem(c.Request.Context(), uint(id), userID)
 	if err != nil {
-		common.APIInternalServerError(c, "删除待办事项失败", err.Error())
+		respondInboxItemError(c, "删除待办事项失败", err)
 		return
 	}
 
@@ -225,9 +242,14 @@ func (h *InboxHandler) MarkAsRead(c *gin.Context) {
 		return
 	}
 
-	err = h.inboxService.MarkAsRead(c.Request.Context(), uint(id))
+	userID, ok := currentInboxUserID(c)
+	if !ok {
+		return
+	}
+
+	err = h.inboxService.MarkAsRead(c.Request.Context(), uint(id), userID)
 	if err != nil {
-		common.APIInternalServerError(c, "标记已读失败", err.Error())
+		respondInboxItemError(c, "标记已读失败", err)
 		return
 	}
 
@@ -256,9 +278,14 @@ func (h *InboxHandler) MarkAsCompleted(c *gin.Context) {
 		return
 	}
 
-	err = h.inboxService.MarkAsCompleted(c.Request.Context(), uint(id))
+	userID, ok := currentInboxUserID(c)
+	if !ok {
+		return
+	}
+
+	err = h.inboxService.MarkAsCompleted(c.Request.Context(), uint(id), userID)
 	if err != nil {
-		common.APIInternalServerError(c, "标记完成失败", err.Error())
+		respondInboxItemError(c, "标记完成失败", err)
 		return
 	}
 
@@ -294,9 +321,14 @@ func (h *InboxHandler) SnoozeInboxItem(c *gin.Context) {
 		return
 	}
 
-	err = h.inboxService.SnoozeInboxItem(c.Request.Context(), uint(id), &req)
+	userID, ok := currentInboxUserID(c)
+	if !ok {
+		return
+	}
+
+	err = h.inboxService.SnoozeInboxItem(c.Request.Context(), uint(id), userID, &req)
 	if err != nil {
-		common.APIInternalServerError(c, "延后待办失败", err.Error())
+		respondInboxItemError(c, "延后待办失败", err)
 		return
 	}
 
@@ -329,4 +361,26 @@ func (h *InboxHandler) GetInboxStats(c *gin.Context) {
 	}
 
 	common.APISuccess(c, stats)
+}
+
+func currentInboxUserID(c *gin.Context) (uint, bool) {
+	userID := middleware.GetUserID(c)
+	if userID == 0 {
+		common.APIUnauthorized(c, "未授权", "用户未登录")
+		return 0, false
+	}
+	return uint(userID), true
+}
+
+func respondInboxItemError(c *gin.Context, operation string, err error) {
+	if errors.Is(err, repositories.ErrInboxItemDeletionUnavailable) {
+		common.NewAPIError(c, 409, "INBOX_ITEM_DELETE_UNAVAILABLE", "待办事项必须通过完成、延后或移交处理，系统不会删除留痕记录")
+		return
+	}
+	if errors.Is(err, repositories.ErrInboxItemNotFound) {
+		// 对无权访问和不存在使用同一响应，避免按 ID 枚举其他用户的待办。
+		common.APINotFound(c, "待办事项不存在或无权访问")
+		return
+	}
+	common.APIInternalServerError(c, operation, err.Error())
 }

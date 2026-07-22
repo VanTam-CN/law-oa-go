@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"law-oa-go/internal/auth"
@@ -20,6 +21,30 @@ type DocumentHandlerEnhanced struct {
 	recycleService    *services.DocumentRecycleService
 	searchService     *services.DocumentSearchService
 	statsService      *services.DocumentStatsService
+	authz             *services.AuthorizationService
+	subjectRecheck    *services.SubjectRecheckService
+}
+
+// SetSubjectRecheckService installs the server-side gate for case-bound
+// document writes and generated outputs. Reads remain available to the
+// authorized matter team while a subject revision is under review.
+func (h *DocumentHandlerEnhanced) SetSubjectRecheckService(service *services.SubjectRecheckService) {
+	h.subjectRecheck = service
+}
+
+func (h *DocumentHandlerEnhanced) requireCaseSubjectAction(c *gin.Context, entityType string, entityID uint, action string) bool {
+	if !strings.EqualFold(strings.TrimSpace(entityType), "case") || entityID == 0 {
+		return true
+	}
+	if h.subjectRecheck == nil {
+		writeSubjectWorkflowError(c, services.NewSubjectWorkflowError("SUBJECT_GATE_UNAVAILABLE", "案件文档受控动作门禁未初始化，已阻止操作"))
+		return false
+	}
+	if err := h.subjectRecheck.RequireEffectiveSubject(c.Request.Context(), entityID, action); err != nil {
+		writeSubjectWorkflowError(c, err)
+		return false
+	}
+	return true
 }
 
 // NewDocumentHandlerEnhanced creates a new enhanced document handler
@@ -28,6 +53,7 @@ func NewDocumentHandlerEnhanced(
 	userRepo repositories.UserRepository,
 	storageDir string,
 	recycleDir string,
+	authz ...*services.AuthorizationService,
 ) *DocumentHandlerEnhanced {
 	docService := services.NewDocumentService(docRepo, storageDir)
 	previewService := services.NewDocumentPreviewService(docRepo)
@@ -36,6 +62,10 @@ func NewDocumentHandlerEnhanced(
 	recycleService := services.NewDocumentRecycleService(docRepo, recycleDir)
 	searchService := services.NewDocumentSearchService(docRepo)
 	statsService := services.NewDocumentStatsService(docRepo)
+	var authorizationService *services.AuthorizationService
+	if len(authz) > 0 {
+		authorizationService = authz[0]
+	}
 
 	return &DocumentHandlerEnhanced{
 		docService:        docService,
@@ -45,7 +75,45 @@ func NewDocumentHandlerEnhanced(
 		recycleService:    recycleService,
 		searchService:     searchService,
 		statsService:      statsService,
+		authz:             authorizationService,
 	}
+}
+
+func (h *DocumentHandlerEnhanced) authorizeDocumentAccess(c *gin.Context, documentID uint, write bool) bool {
+	actor, ok := h.requireDocumentAuthorization(c)
+	if !ok {
+		return false
+	}
+	var (
+		allowed bool
+		err     error
+	)
+	if write {
+		allowed, err = h.authz.CanManageDocument(c.Request.Context(), actor, documentID)
+	} else {
+		allowed, err = h.authz.CanReadDocument(c.Request.Context(), actor, documentID)
+	}
+	if err != nil {
+		common.APIInternalServerError(c, "权限检查失败", err.Error())
+		return false
+	}
+	if !allowed {
+		forbidObjectAccess(c)
+		return false
+	}
+	return true
+}
+
+// requireDocumentAuthorization prevents a missing dependency from turning a
+// document route into an unscoped read or write path. Every document HTTP
+// operation must have both the authorization service and an authenticated
+// actor before it reaches the repository.
+func (h *DocumentHandlerEnhanced) requireDocumentAuthorization(c *gin.Context) (services.AuthActor, bool) {
+	if h.authz == nil {
+		common.NewAPIError(c, http.StatusServiceUnavailable, "DOCUMENT_AUTHZ_UNAVAILABLE", "文档权限服务未初始化，当前已阻止文档操作")
+		return services.AuthActor{}, false
+	}
+	return currentAuthActor(c)
 }
 
 // UploadDocument godoc
@@ -83,10 +151,20 @@ func (h *DocumentHandlerEnhanced) UploadDocument(c *gin.Context) {
 		req.File = file
 	}
 
-	// Get user ID from context
-	_, exists := c.Get("user_id")
-	if !exists {
-		common.APIUnauthorized(c, "Unauthorized", "User not authenticated")
+	actor, ok := h.requireDocumentAuthorization(c)
+	if !ok {
+		return
+	}
+	allowed, err := h.authz.CanCreateDocument(c.Request.Context(), actor, req.EntityType, req.EntityID)
+	if err != nil {
+		common.APIInternalServerError(c, "权限检查失败", err.Error())
+		return
+	}
+	if !allowed {
+		forbidObjectAccess(c)
+		return
+	}
+	if !h.requireCaseSubjectAction(c, req.EntityType, req.EntityID, "case_document_upload") {
 		return
 	}
 
@@ -116,6 +194,10 @@ func (h *DocumentHandlerEnhanced) GetDocument(c *gin.Context) {
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
 		common.APIBadRequest(c, "Invalid document ID", "Document ID must be a valid integer")
+		return
+	}
+
+	if !h.authorizeDocumentAccess(c, uint(id), false) {
 		return
 	}
 
@@ -153,7 +235,33 @@ func (h *DocumentHandlerEnhanced) ListDocuments(c *gin.Context) {
 		return
 	}
 
-	documents, total, err := h.docService.ListDocuments(c.Request.Context(), &req, auth.GetUserID(c))
+	actor, ok := h.requireDocumentAuthorization(c)
+	if !ok {
+		return
+	}
+	if services.IsTechnicalAdminRole(actor.Role) {
+		forbidObjectAccess(c)
+		return
+	}
+	// Keep the actor ID on every HTTP query, including management queries, so
+	// the repository applies the ethical-wall predicate before counting or
+	// paginating rows. Management access is matter-wide only after the wall
+	// check; it is not a bypass of the wall.
+	viewerUserID := actor.UserID
+	req.OwnerScoped = !services.IsBusinessMatterManagementRole(actor.Role)
+	if req.EntityType == "case" && req.EntityID > 0 {
+		allowed, err := h.authz.CanReadCase(c.Request.Context(), actor, req.EntityID)
+		if err != nil {
+			common.APIInternalServerError(c, "权限检查失败", err.Error())
+			return
+		}
+		if !allowed {
+			forbidObjectAccess(c)
+			return
+		}
+	}
+
+	documents, total, err := h.docService.ListDocuments(c.Request.Context(), &req, viewerUserID)
 	if err != nil {
 		common.APIInternalServerError(c, "Failed to list documents", err.Error())
 		return
@@ -197,7 +305,19 @@ func (h *DocumentHandlerEnhanced) UpdateDocument(c *gin.Context) {
 		return
 	}
 
-	document, err := h.docService.UpdateDocument(c.Request.Context(), uint(id), &req)
+	if !h.authorizeDocumentAccess(c, uint(id), true) {
+		return
+	}
+	document, err := h.docService.GetDocumentByID(c.Request.Context(), uint(id))
+	if err != nil {
+		common.APINotFound(c, "Document not found", err.Error())
+		return
+	}
+	if !h.requireCaseSubjectAction(c, document.EntityType, document.EntityID, "case_document_metadata_update") {
+		return
+	}
+
+	document, err = h.docService.UpdateDocument(c.Request.Context(), uint(id), &req)
 	if err != nil {
 		if err.Error() == "Document not found" {
 			common.APINotFound(c, "Document not found", err.Error())
@@ -230,25 +350,18 @@ func (h *DocumentHandlerEnhanced) DeleteDocument(c *gin.Context) {
 		return
 	}
 
-	// Get user ID from context
-	userID, exists := c.Get("user_id")
-	if !exists {
-		common.APIUnauthorized(c, "Unauthorized", "User not authenticated")
+	if !h.authorizeDocumentAccess(c, uint(id), true) {
 		return
 	}
-
-	// Move to recycle bin
-	recycledDoc, err := h.recycleService.SoftDelete(c.Request.Context(), uint(id), userID.(uint))
+	document, err := h.docService.GetDocumentByID(c.Request.Context(), uint(id))
 	if err != nil {
-		if err.Error() == "Document not found" {
-			common.APINotFound(c, "Document not found", err.Error())
-		} else {
-			common.APIInternalServerError(c, "Failed to delete document", err.Error())
-		}
+		common.APINotFound(c, "Document not found", err.Error())
 		return
 	}
-
-	common.APISuccess(c, recycledDoc)
+	if !h.requireCaseSubjectAction(c, document.EntityType, document.EntityID, "case_document_delete") {
+		return
+	}
+	common.NewAPIError(c, http.StatusConflict, "DOCUMENT_RETENTION_CONTROLLED", "案件文档受保留策略控制，当前版本不提供删除或回收站操作")
 }
 
 // DownloadDocument godoc
@@ -268,6 +381,18 @@ func (h *DocumentHandlerEnhanced) DownloadDocument(c *gin.Context) {
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
 		common.APIBadRequest(c, "Invalid document ID", "Document ID must be a valid integer")
+		return
+	}
+
+	if !h.authorizeDocumentAccess(c, uint(id), false) {
+		return
+	}
+	document, err := h.docService.GetDocumentByID(c.Request.Context(), uint(id))
+	if err != nil {
+		common.APINotFound(c, "Document not found", err.Error())
+		return
+	}
+	if !h.requireCaseSubjectAction(c, document.EntityType, document.EntityID, "case_document_download") {
 		return
 	}
 
@@ -311,6 +436,18 @@ func (h *DocumentHandlerEnhanced) GetDocumentPreview(c *gin.Context) {
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
 		common.APIBadRequest(c, "Invalid document ID", "Document ID must be a valid integer")
+		return
+	}
+
+	if !h.authorizeDocumentAccess(c, uint(id), false) {
+		return
+	}
+	document, err := h.docService.GetDocumentByID(c.Request.Context(), uint(id))
+	if err != nil {
+		common.APINotFound(c, "Document not found", err.Error())
+		return
+	}
+	if !h.requireCaseSubjectAction(c, document.EntityType, document.EntityID, "case_document_preview") {
 		return
 	}
 
@@ -358,13 +495,23 @@ func (h *DocumentHandlerEnhanced) GetDocumentPreview(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "Internal error"
 // @Router /documents/stats [get]
 func (h *DocumentHandlerEnhanced) GetDocumentStats(c *gin.Context) {
-	stats, err := h.docService.GetDocumentStats(c.Request.Context(), auth.GetUserID(c))
-	if err != nil {
-		common.APIInternalServerError(c, "Failed to get document statistics", err.Error())
+	if !h.requireDocumentAggregateAccess(c) {
 		return
 	}
+	common.NewAPIError(c, http.StatusServiceUnavailable, "DOCUMENT_STATS_UNAVAILABLE", "文档统计尚未接入真实审计与存储指标，当前不可用")
+}
 
-	common.APISuccess(c, stats)
+func (h *DocumentHandlerEnhanced) requireDocumentAggregateAccess(c *gin.Context) bool {
+	actor, ok := h.requireDocumentAuthorization(c)
+	if !ok {
+		return false
+	}
+	role := actor.Role
+	if !services.IsBusinessMatterManagementRole(role) {
+		common.NewAPIError(c, http.StatusForbidden, "DOCUMENT_AGGREGATE_FORBIDDEN", "文档聚合统计仅限业务管理角色查看")
+		return false
+	}
+	return true
 }
 
 // GetDocumentVersions godoc
@@ -386,6 +533,9 @@ func (h *DocumentHandlerEnhanced) GetDocumentVersions(c *gin.Context) {
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
 		common.APIBadRequest(c, "Invalid document ID", "Document ID must be a valid integer")
+		return
+	}
+	if !h.authorizeDocumentAccess(c, uint(id), false) {
 		return
 	}
 
@@ -444,6 +594,27 @@ func (h *DocumentHandlerEnhanced) CreateDocumentVersion(c *gin.Context) {
 		common.APIBadRequest(c, "Invalid request", err.Error())
 		return
 	}
+	viewerID := auth.GetUserID(c)
+	if viewerID == 0 {
+		common.APIUnauthorized(c, "Unauthorized", "User not authenticated")
+		return
+	}
+	if req.CreatedBy != 0 && req.CreatedBy != viewerID {
+		forbidObjectAccess(c)
+		return
+	}
+	req.CreatedBy = viewerID
+	if !h.authorizeDocumentAccess(c, req.DocumentID, true) {
+		return
+	}
+	document, err := h.docService.GetDocumentByID(c.Request.Context(), req.DocumentID)
+	if err != nil {
+		common.APINotFound(c, "Document not found", err.Error())
+		return
+	}
+	if !h.requireCaseSubjectAction(c, document.EntityType, document.EntityID, "case_document_version_create") {
+		return
+	}
 
 	version, err := h.versionService.CreateVersion(c.Request.Context(), &req)
 	if err != nil {
@@ -471,6 +642,9 @@ func (h *DocumentHandlerEnhanced) CompareDocumentVersions(c *gin.Context) {
 	var req services.CompareVersionsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		common.APIBadRequest(c, "Invalid request", err.Error())
+		return
+	}
+	if !h.authorizeDocumentAccess(c, req.DocumentID, false) {
 		return
 	}
 
@@ -505,6 +679,17 @@ func (h *DocumentHandlerEnhanced) RestoreDocumentVersion(c *gin.Context) {
 		common.APIBadRequest(c, "Invalid document ID", "Document ID must be a valid integer")
 		return
 	}
+	if !h.authorizeDocumentAccess(c, uint(id), true) {
+		return
+	}
+	document, err := h.docService.GetDocumentByID(c.Request.Context(), uint(id))
+	if err != nil {
+		common.APINotFound(c, "Document not found", err.Error())
+		return
+	}
+	if !h.requireCaseSubjectAction(c, document.EntityType, document.EntityID, "case_document_version_restore") {
+		return
+	}
 
 	versionStr := c.Param("version")
 	version, err := strconv.Atoi(versionStr)
@@ -513,11 +698,22 @@ func (h *DocumentHandlerEnhanced) RestoreDocumentVersion(c *gin.Context) {
 		return
 	}
 
-	restoredByStr := c.Query("restored_by")
-	restoredBy, err := strconv.ParseUint(restoredByStr, 10, 32)
-	if err != nil {
-		common.APIBadRequest(c, "Invalid restored_by parameter", "Restored by must be a valid user ID")
+	viewerID := auth.GetUserID(c)
+	if viewerID == 0 {
+		common.APIUnauthorized(c, "Unauthorized", "User not authenticated")
 		return
+	}
+	restoredBy := uint64(viewerID)
+	if restoredByStr := c.Query("restored_by"); restoredByStr != "" {
+		requestedBy, parseErr := strconv.ParseUint(restoredByStr, 10, 32)
+		if parseErr != nil {
+			common.APIBadRequest(c, "Invalid restored_by parameter", "Restored by must be a valid user ID")
+			return
+		}
+		if requestedBy != restoredBy {
+			forbidObjectAccess(c)
+			return
+		}
 	}
 
 	err = h.versionService.RestoreVersion(c.Request.Context(), int(id), version, uint(restoredBy))
@@ -551,19 +747,7 @@ func (h *DocumentHandlerEnhanced) RestoreDocumentVersion(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "Internal error"
 // @Router /documents/recycle-bin [get]
 func (h *DocumentHandlerEnhanced) GetRecycleBin(c *gin.Context) {
-	var req services.RecycleBinRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
-		common.APIBadRequest(c, "Invalid request parameters", err.Error())
-		return
-	}
-
-	recycleBin, err := h.recycleService.GetRecycleBin(c.Request.Context(), &req)
-	if err != nil {
-		common.APIInternalServerError(c, "Failed to get recycle bin", err.Error())
-		return
-	}
-
-	common.APISuccess(c, recycleBin)
+	common.NewAPIError(c, http.StatusServiceUnavailable, "DOCUMENT_RECYCLE_UNAVAILABLE", "文档回收站尚未接入真实保留台账，当前不可用")
 }
 
 // RestoreDocuments godoc
@@ -579,19 +763,7 @@ func (h *DocumentHandlerEnhanced) GetRecycleBin(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "Internal error"
 // @Router /documents/restore [post]
 func (h *DocumentHandlerEnhanced) RestoreDocuments(c *gin.Context) {
-	var req services.RestoreRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		common.APIBadRequest(c, "Invalid request", err.Error())
-		return
-	}
-
-	response, err := h.recycleService.RestoreDocuments(c.Request.Context(), &req)
-	if err != nil {
-		common.APIInternalServerError(c, "Failed to restore documents", err.Error())
-		return
-	}
-
-	common.APISuccess(c, response)
+	common.NewAPIError(c, http.StatusServiceUnavailable, "DOCUMENT_RECYCLE_UNAVAILABLE", "文档回收站尚未接入真实保留台账，当前不可用")
 }
 
 // PermanentlyDeleteDocuments godoc
@@ -607,19 +779,7 @@ func (h *DocumentHandlerEnhanced) RestoreDocuments(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "Internal error"
 // @Router /documents/permanent-delete [post]
 func (h *DocumentHandlerEnhanced) PermanentlyDeleteDocuments(c *gin.Context) {
-	var req services.PermanentlyDeleteRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		common.APIBadRequest(c, "Invalid request", err.Error())
-		return
-	}
-
-	response, err := h.recycleService.PermanentlyDelete(c.Request.Context(), &req)
-	if err != nil {
-		common.APIInternalServerError(c, "Failed to permanently delete documents", err.Error())
-		return
-	}
-
-	common.APISuccess(c, response)
+	common.NewAPIError(c, http.StatusConflict, "DOCUMENT_RETENTION_CONTROLLED", "案件文档受保留策略控制，当前版本禁止物理删除")
 }
 
 // EmptyRecycleBin godoc
@@ -635,20 +795,7 @@ func (h *DocumentHandlerEnhanced) PermanentlyDeleteDocuments(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "Internal error"
 // @Router /documents/empty-recycle-bin [post]
 func (h *DocumentHandlerEnhanced) EmptyRecycleBin(c *gin.Context) {
-	deletedByStr := c.Query("deleted_by")
-	deletedBy, err := strconv.ParseUint(deletedByStr, 10, 32)
-	if err != nil {
-		common.APIBadRequest(c, "Invalid deleted_by parameter", "Deleted by must be a valid user ID")
-		return
-	}
-
-	response, err := h.recycleService.EmptyRecycleBin(c.Request.Context(), uint(deletedBy))
-	if err != nil {
-		common.APIInternalServerError(c, "Failed to empty recycle bin", err.Error())
-		return
-	}
-
-	common.APISuccess(c, response)
+	common.NewAPIError(c, http.StatusConflict, "DOCUMENT_RETENTION_CONTROLLED", "案件文档受保留策略控制，当前版本禁止清空回收站")
 }
 
 // GetRecycleStats godoc
@@ -662,11 +809,5 @@ func (h *DocumentHandlerEnhanced) EmptyRecycleBin(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "Internal error"
 // @Router /documents/recycle-stats [get]
 func (h *DocumentHandlerEnhanced) GetRecycleStats(c *gin.Context) {
-	stats, err := h.recycleService.GetRecycleStats(c.Request.Context())
-	if err != nil {
-		common.APIInternalServerError(c, "Failed to get recycle bin statistics", err.Error())
-		return
-	}
-
-	common.APISuccess(c, stats)
+	common.NewAPIError(c, http.StatusServiceUnavailable, "DOCUMENT_RECYCLE_UNAVAILABLE", "文档回收站尚未接入真实保留台账，当前不可用")
 }

@@ -13,13 +13,17 @@ import {
 async function fillCaseIntakeBasics(page: any) {
   await page.locator('.batch-field', { hasText: '案件名称' }).getByRole('textbox').fill('示例科技服务合同纠纷案')
   await page.locator('.batch-field', { hasText: '案件类型' }).locator('.ant-select-selector').click()
-  await page.getByText('商事诉讼').click()
+  await page.getByTitle('商事诉讼').click()
+  await page.locator('.batch-field', { hasText: '业务领域' }).locator('.ant-select-selector').click()
+  await page.getByTitle('公司与并购').click()
+  await page.locator('.batch-field', { hasText: '子领域' }).locator('.ant-select-selector').click()
+  await page.getByTitle('投资与融资').click()
   await page.locator('article', { hasText: '我方当事人' }).locator('.ant-select-selector').click()
-  await page.getByText('上海示例科技有限公司').click()
+  await page.getByTitle('上海示例科技有限公司').click()
   await page.locator('article', { hasText: '对方当事人' }).getByRole('textbox').fill('上海华信建设集团有限公司')
   await page.locator('.batch-wide-label', { hasText: '案情摘要' }).getByRole('textbox').fill('客户拟就服务合同争议提起诉讼。')
   await page.locator('.batch-intake-aside').locator('.ant-select-selector').click()
-  await page.getByText('张律师 · 争议解决部').click()
+  await page.getByTitle('张律师 · 争议解决部').click()
 }
 
 test.describe('案件管理', () => {
@@ -33,7 +37,7 @@ test.describe('案件管理', () => {
     await waitForAppShell(page)
     await expect(page.getByRole('heading', { name: '案件管理' })).toBeVisible()
     await waitForNativeTable(page)
-    await expect(page.getByText('HD-2026-001')).toBeVisible()
+    await expect(page.getByText('DEMO-2026-001')).toBeVisible()
     await expect(page.getByRole('cell', { name: '红杉资本投资管理咨询合同纠纷案' })).toBeVisible()
   })
 
@@ -59,7 +63,7 @@ test.describe('案件管理', () => {
   })
 
   test('应该能从列表进入案件详情', async ({ page }) => {
-    await page.locator('tr', { hasText: 'HD-2026-001' }).getByRole('button', { name: /查\s*看/ }).click()
+    await page.locator('tr', { hasText: 'DEMO-2026-001' }).getByRole('button', { name: /查\s*看/ }).click()
 
     await expect(page).toHaveURL(/\/case\/101$/)
     await expect(page.getByRole('heading', { name: '红杉资本投资管理咨询合同纠纷案' })).toBeVisible()
@@ -112,9 +116,43 @@ test.describe('新建立案工作台', () => {
 
   test('应该能暂存接案草稿', async ({ page }) => {
     await fillCaseIntakeBasics(page)
-    await page.getByRole('button', { name: /暂\s*存/ }).click()
+    await page.getByRole('button', { name: '保存草稿' }).click()
 
     await expect(page.locator('.ant-message')).toContainText('接案草稿已创建')
+  })
+
+  test('重复保存应更新同一接案且刷新后可恢复完整草稿', async ({ page }) => {
+    let createCount = 0
+    let updateCount = 0
+    page.on('request', (request) => {
+      const path = new URL(request.url()).pathname
+      if (path === '/api/v1/case-intakes' && request.method() === 'POST') createCount += 1
+      if (path === '/api/v1/case-intakes/801' && request.method() === 'PUT') updateCount += 1
+    })
+
+    await fillCaseIntakeBasics(page)
+    await page.getByRole('button', { name: '保存草稿' }).click()
+    await expect(page.locator('.ant-message')).toContainText('接案草稿已创建')
+    await page.getByRole('button', { name: '保存草稿' }).click()
+    await expect(page.locator('.ant-message')).toContainText('接案草稿已更新')
+    expect(createCount).toBe(1)
+    expect(updateCount).toBe(1)
+
+    await page.reload()
+    await page.getByRole('button', { name: '继续未完成草稿' }).click()
+    await expect(page.getByRole('textbox', { name: '案件名称 *' })).toHaveValue('示例科技服务合同纠纷案')
+    await expect(page.locator('.batch-field', { hasText: '案件类型' }).getByTitle('商事诉讼')).toBeVisible()
+    await expect(page.locator('.batch-field', { hasText: '业务领域' }).getByTitle('公司与并购')).toBeVisible()
+    await expect(page.locator('.batch-field', { hasText: '子领域' }).getByTitle('投资与融资')).toBeVisible()
+  })
+
+  test('必填控件应具备可访问名称并可由标签定位', async ({ page }) => {
+    await expect(page.getByRole('textbox', { name: '案件名称 *' })).toBeVisible()
+    await expect(page.getByRole('combobox', { name: '案件类型 *' })).toBeVisible()
+    await expect(page.getByRole('combobox', { name: '业务领域 *' })).toBeVisible()
+    await expect(page.getByRole('combobox', { name: '子领域 *' })).toBeVisible()
+    await page.locator('.batch-stepper').getByRole('button', { name: /团队与费用/ }).click()
+    await expect(page.getByRole('combobox', { name: '负责律师 *' })).toBeVisible()
   })
 
   test('应该能运行利益冲突检查并进入团队与费用', async ({ page }) => {
@@ -138,6 +176,8 @@ test.describe('新建立案工作台', () => {
 
   test('提交审批后应该进入审批详情页', async ({ page }) => {
     await fillCaseIntakeBasics(page)
+    await page.getByRole('button', { name: '保存并进行利益冲突检查' }).click()
+    await expect(page.locator('.ant-message')).toContainText('利益冲突检查已完成')
     await page.getByRole('button', { name: '提交审批并等待成案' }).first().click()
 
     await expect(page).toHaveURL(/\/approval\/701$/, { timeout: 10000 })

@@ -22,6 +22,7 @@ type Document struct {
 	Tags        string         `json:"tags" gorm:"size:500"`
 	EntityID    uint           `json:"entity_id" gorm:"index"`
 	EntityType  string         `json:"entity_type" gorm:"size:50"`
+	FolderID    *uint          `json:"folder_id,omitempty" gorm:"column:folder_id;index"`
 	Status      string         `json:"status" gorm:"size:20;default:'active'"`
 }
 

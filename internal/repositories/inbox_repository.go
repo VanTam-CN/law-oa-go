@@ -11,9 +11,10 @@ import (
 
 // Inbox Repository Sentinel Errors
 var (
-	ErrInboxItemNotFound    = errors.New("inbox item not found")
-	ErrInboxItemInvalid     = errors.New("invalid inbox item data")
-	ErrReminderRuleNotFound = errors.New("reminder rule not found")
+	ErrInboxItemNotFound            = errors.New("inbox item not found")
+	ErrInboxItemInvalid             = errors.New("invalid inbox item data")
+	ErrInboxItemDeletionUnavailable = errors.New("inbox item deletion is disabled for audit retention")
+	ErrReminderRuleNotFound         = errors.New("reminder rule not found")
 )
 
 // InboxRepository 待办事项数据仓库接口
@@ -22,20 +23,32 @@ type InboxRepository interface {
 	Create(ctx context.Context, item *models.InboxItem) error
 	// FindByID 根据ID查找待办事项
 	FindByID(ctx context.Context, id uint) (*models.InboxItem, error)
+	// FindByIDAndUserID 根据ID和所属用户查找待办事项
+	FindByIDAndUserID(ctx context.Context, id, userID uint) (*models.InboxItem, error)
 	// Update 更新待办事项
 	Update(ctx context.Context, item *models.InboxItem) error
+	// UpdateByUserID 仅更新指定用户的待办事项
+	UpdateByUserID(ctx context.Context, item *models.InboxItem, userID uint) error
 	// Delete 删除待办事项
 	Delete(ctx context.Context, id uint) error
+	// DeleteByUserID 仅删除指定用户的待办事项
+	DeleteByUserID(ctx context.Context, id, userID uint) error
 	// List 查询待办事项列表
 	List(ctx context.Context, params *InboxListParams) ([]*models.InboxItem, int64, error)
 	// FindByUserID 根据用户ID查询待办事项
 	FindByUserID(ctx context.Context, userID uint) ([]*models.InboxItem, error)
 	// MarkAsRead 标记为已读
 	MarkAsRead(ctx context.Context, id uint) error
+	// MarkAsReadByUserID 仅标记指定用户的待办事项为已读
+	MarkAsReadByUserID(ctx context.Context, id, userID uint) error
 	// MarkAsCompleted 标记为已完成
 	MarkAsCompleted(ctx context.Context, id uint) error
+	// MarkAsCompletedByUserID 仅标记指定用户的待办事项为已完成
+	MarkAsCompletedByUserID(ctx context.Context, id, userID uint) error
 	// Snooze 延后待办事项
 	Snooze(ctx context.Context, id uint, until time.Time) error
+	// SnoozeByUserID 仅延后指定用户的待办事项
+	SnoozeByUserID(ctx context.Context, id, userID uint, until time.Time) error
 	// Escalate 升级待办事项
 	Escalate(ctx context.Context, id uint) error
 	// GetUnreadCount 获取未读数量
@@ -88,15 +101,15 @@ type InboxListParams struct {
 
 // InboxStats 待办事项统计信息
 type InboxStats struct {
-	Total        int64
-	Unread       int64
-	Pending      int64
-	Completed    int64
-	Critical     int64
-	High         int64
-	Overdue      int64
-	DueToday     int64
-	DueThisWeek  int64
+	Total       int64
+	Unread      int64
+	Pending     int64
+	Completed   int64
+	Critical    int64
+	High        int64
+	Overdue     int64
+	DueToday    int64
+	DueThisWeek int64
 }
 
 // InboxRepositoryImpl 待办事项数据仓库的GORM实现
@@ -130,9 +143,40 @@ func (r *InboxRepositoryImpl) FindByID(ctx context.Context, id uint) (*models.In
 	return item, nil
 }
 
+func (r *InboxRepositoryImpl) FindByIDAndUserID(ctx context.Context, id, userID uint) (*models.InboxItem, error) {
+	var item models.InboxItem
+	if err := r.ownedItemQuery(ctx, id, userID).First(&item).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, NewRepositoryErrorWithID("find", "inbox_item", id, ErrInboxItemNotFound)
+		}
+		return nil, NewRepositoryErrorWithID("find", "inbox_item", id, err)
+	}
+	return &item, nil
+}
+
 // Update 更新待办事项
 func (r *InboxRepositoryImpl) Update(ctx context.Context, item *models.InboxItem) error {
-	return r.BaseRepository.Update(ctx, item.ID, map[string]interface{}{
+	return r.BaseRepository.Update(ctx, item.ID, inboxItemUpdates(item))
+}
+
+func (r *InboxRepositoryImpl) UpdateByUserID(ctx context.Context, item *models.InboxItem, userID uint) error {
+	result := r.ownedItemQuery(ctx, item.ID, userID).
+		Model(&models.InboxItem{}).
+		Updates(inboxItemUpdates(item))
+	if result.Error != nil {
+		return NewRepositoryErrorWithID("update", "inbox_item", item.ID, result.Error)
+	}
+	if result.RowsAffected == 0 {
+		// MySQL may report zero affected rows when every submitted value is unchanged.
+		if _, err := r.FindByIDAndUserID(ctx, item.ID, userID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func inboxItemUpdates(item *models.InboxItem) map[string]interface{} {
+	return map[string]interface{}{
 		"title":          item.Title,
 		"content":        item.Content,
 		"priority":       item.Priority,
@@ -148,19 +192,16 @@ func (r *InboxRepositoryImpl) Update(ctx context.Context, item *models.InboxItem
 		"escalated_at":   item.EscalatedAt,
 		"snoozed_until":  item.SnoozedUntil,
 		"snoozed_count":  item.SnoozedCount,
-	})
+	}
 }
 
 // Delete 删除待办事项
 func (r *InboxRepositoryImpl) Delete(ctx context.Context, id uint) error {
-	err := r.BaseRepository.Delete(ctx, id)
-	if err != nil {
-		if errors.Is(err, ErrRecordNotFound) {
-			return NewRepositoryErrorWithID("delete", "inbox_item", id, ErrInboxItemNotFound)
-		}
-		return NewRepositoryErrorWithID("delete", "inbox_item", id, err)
-	}
-	return nil
+	return NewRepositoryErrorWithID("delete", "inbox_item", id, ErrInboxItemDeletionUnavailable)
+}
+
+func (r *InboxRepositoryImpl) DeleteByUserID(ctx context.Context, id, userID uint) error {
+	return NewRepositoryErrorWithID("delete", "inbox_item", id, ErrInboxItemDeletionUnavailable)
 }
 
 // List 查询待办事项列表
@@ -273,10 +314,17 @@ func (r *InboxRepositoryImpl) FindByUserID(ctx context.Context, userID uint) ([]
 
 // MarkAsRead 标记为已读
 func (r *InboxRepositoryImpl) MarkAsRead(ctx context.Context, id uint) error {
+	return r.markAsRead(ctx, r.db.WithContext(ctx).Where("id = ?", id), id)
+}
+
+func (r *InboxRepositoryImpl) MarkAsReadByUserID(ctx context.Context, id, userID uint) error {
+	return r.markAsRead(ctx, r.ownedItemQuery(ctx, id, userID), id)
+}
+
+func (r *InboxRepositoryImpl) markAsRead(ctx context.Context, query *gorm.DB, id uint) error {
 	now := time.Now()
-	result := r.db.WithContext(ctx).
+	result := query.
 		Model(&models.InboxItem{}).
-		Where("id = ?", id).
 		Updates(map[string]interface{}{
 			"is_read": true,
 			"read_at": now,
@@ -294,10 +342,17 @@ func (r *InboxRepositoryImpl) MarkAsRead(ctx context.Context, id uint) error {
 
 // MarkAsCompleted 标记为已完成
 func (r *InboxRepositoryImpl) MarkAsCompleted(ctx context.Context, id uint) error {
+	return r.markAsCompleted(ctx, r.db.WithContext(ctx).Where("id = ?", id), id)
+}
+
+func (r *InboxRepositoryImpl) MarkAsCompletedByUserID(ctx context.Context, id, userID uint) error {
+	return r.markAsCompleted(ctx, r.ownedItemQuery(ctx, id, userID), id)
+}
+
+func (r *InboxRepositoryImpl) markAsCompleted(ctx context.Context, query *gorm.DB, id uint) error {
 	now := time.Now()
-	result := r.db.WithContext(ctx).
+	result := query.
 		Model(&models.InboxItem{}).
-		Where("id = ?", id).
 		Updates(map[string]interface{}{
 			"is_completed": true,
 			"completed_at": now,
@@ -315,9 +370,16 @@ func (r *InboxRepositoryImpl) MarkAsCompleted(ctx context.Context, id uint) erro
 
 // Snooze 延后待办事项
 func (r *InboxRepositoryImpl) Snooze(ctx context.Context, id uint, until time.Time) error {
-	result := r.db.WithContext(ctx).
+	return r.snooze(ctx, r.db.WithContext(ctx).Where("id = ?", id), id, until)
+}
+
+func (r *InboxRepositoryImpl) SnoozeByUserID(ctx context.Context, id, userID uint, until time.Time) error {
+	return r.snooze(ctx, r.ownedItemQuery(ctx, id, userID), id, until)
+}
+
+func (r *InboxRepositoryImpl) snooze(ctx context.Context, query *gorm.DB, id uint, until time.Time) error {
+	result := query.
 		Model(&models.InboxItem{}).
-		Where("id = ?", id).
 		Updates(map[string]interface{}{
 			"snoozed_until": until,
 			"snoozed_count": gorm.Expr("snoozed_count + 1"),
@@ -331,6 +393,10 @@ func (r *InboxRepositoryImpl) Snooze(ctx context.Context, id uint, until time.Ti
 	}
 
 	return nil
+}
+
+func (r *InboxRepositoryImpl) ownedItemQuery(ctx context.Context, id, userID uint) *gorm.DB {
+	return r.db.WithContext(ctx).Where("id = ? AND user_id = ?", id, userID)
 }
 
 // Escalate 升级待办事项

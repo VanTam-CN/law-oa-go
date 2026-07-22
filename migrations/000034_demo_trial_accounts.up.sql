@@ -102,9 +102,9 @@ ON CONFLICT (email) DO UPDATE SET
 
 WITH trial_cases(case_number, title, description, client_email, case_type, priority, status) AS (
     VALUES
-        ('HD-MVP-2026-001', '示例科技服务合同纠纷', '客户主张软件实施服务合同尾款及违约金，需完成证据归集、诉讼费测算和立案审批。', 'contact@demo-tech.test', 'commercial', 'high', 'active'),
-        ('HD-MVP-2026-002', '云岭建设工程款争议', '建设工程分包款结算争议，需做利益冲突检查、付款节点梳理和庭审准备。', 'legal@yunling-build.example', 'construction', 'urgent', 'pending'),
-        ('HD-MVP-2026-003', '赵海宁劳动争议咨询', '个人客户劳动合同解除补偿咨询，需形成咨询记录和后续办案计划。', 'zhao.haining@example.com', 'labor', 'medium', 'active')
+        ('DEMO-MVP-2026-001', '示例科技服务合同纠纷', '客户主张软件实施服务合同尾款及违约金，需完成证据归集、诉讼费测算和立案审批。', 'contact@demo-tech.test', 'commercial', 'high', 'active'),
+        ('DEMO-MVP-2026-002', '云岭建设工程款争议', '建设工程分包款结算争议，需做利益冲突检查、付款节点梳理和庭审准备。', 'legal@yunling-build.example', 'construction', 'urgent', 'pending'),
+        ('DEMO-MVP-2026-003', '赵海宁劳动争议咨询', '个人客户劳动合同解除补偿咨询，需形成咨询记录和后续办案计划。', 'zhao.haining@example.com', 'labor', 'medium', 'active')
 ),
 trial_lawyer AS (
     SELECT id FROM users WHERE email = 'demo.lawyer@example.test'
@@ -125,9 +125,9 @@ WHERE existing_case.case_number = tc.case_number;
 
 WITH trial_cases(case_number, title, description, client_email, case_type, priority, status) AS (
     VALUES
-        ('HD-MVP-2026-001', '示例科技服务合同纠纷', '客户主张软件实施服务合同尾款及违约金，需完成证据归集、诉讼费测算和立案审批。', 'contact@demo-tech.test', 'commercial', 'high', 'active'),
-        ('HD-MVP-2026-002', '云岭建设工程款争议', '建设工程分包款结算争议，需做利益冲突检查、付款节点梳理和庭审准备。', 'legal@yunling-build.example', 'construction', 'urgent', 'pending'),
-        ('HD-MVP-2026-003', '赵海宁劳动争议咨询', '个人客户劳动合同解除补偿咨询，需形成咨询记录和后续办案计划。', 'zhao.haining@example.com', 'labor', 'medium', 'active')
+        ('DEMO-MVP-2026-001', '示例科技服务合同纠纷', '客户主张软件实施服务合同尾款及违约金，需完成证据归集、诉讼费测算和立案审批。', 'contact@demo-tech.test', 'commercial', 'high', 'active'),
+        ('DEMO-MVP-2026-002', '云岭建设工程款争议', '建设工程分包款结算争议，需做利益冲突检查、付款节点梳理和庭审准备。', 'legal@yunling-build.example', 'construction', 'urgent', 'pending'),
+        ('DEMO-MVP-2026-003', '赵海宁劳动争议咨询', '个人客户劳动合同解除补偿咨询，需形成咨询记录和后续办案计划。', 'zhao.haining@example.com', 'labor', 'medium', 'active')
 ),
 trial_lawyer AS (
     SELECT id FROM users WHERE email = 'demo.lawyer@example.test'
@@ -167,7 +167,7 @@ INSERT INTO client_trust_accounts (
 )
 SELECT
     trial_client.id,
-    'TA-HD-2026-001',
+    'TA-DEMO-2026-001',
     120000.00,
     'CNY',
     30000.00,
@@ -189,10 +189,10 @@ ON CONFLICT (account_code) DO UPDATE SET
     updated_at = NOW();
 
 WITH trial_account AS (
-    SELECT id FROM client_trust_accounts WHERE account_code = 'TA-HD-2026-001'
+    SELECT id FROM client_trust_accounts WHERE account_code = 'TA-DEMO-2026-001'
 ),
 trial_case AS (
-    SELECT id FROM cases WHERE case_number = 'HD-MVP-2026-001'
+    SELECT id FROM cases WHERE case_number = 'DEMO-MVP-2026-001'
 ),
 finance_user AS (
     SELECT id FROM users WHERE email = 'demo.finance@example.test'
@@ -207,7 +207,7 @@ INSERT INTO client_trust_transactions (
 )
 SELECT
     trial_account.id,
-    'TT-HD-2026-001',
+    'TT-DEMO-2026-001',
     'deposit',
     120000.00,
     '示例科技诉讼专项代管款入账',
@@ -236,7 +236,7 @@ WITH lawyer_user AS (
     SELECT id FROM users WHERE email = 'demo.lawyer@example.test'
 ),
 trial_case AS (
-    SELECT id FROM cases WHERE case_number = 'HD-MVP-2026-001'
+    SELECT id FROM cases WHERE case_number = 'DEMO-MVP-2026-001'
 )
 INSERT INTO inbox_items (
     user_id, source_type, source_id, title, content, priority, due_date, due_date_type, created_at, updated_at

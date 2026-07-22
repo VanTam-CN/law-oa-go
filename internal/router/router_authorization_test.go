@@ -61,6 +61,12 @@ func buildAuthorizationTestEngine() *gin.Engine {
 		usersAlias.PUT("/profile", stubOK)
 		usersAlias.POST("/change-password", stubOK)
 		usersAlias.POST("/avatar", stubOK)
+		usersAliasAdmin := usersAlias.Group("")
+		usersAliasAdmin.Use(middleware.RoleMiddleware("admin", "super_admin"))
+		{
+			usersAliasAdmin.GET("", stubOK)
+			usersAliasAdmin.GET("/:id", stubOK)
+		}
 	}
 
 	// /admin/roles — admin/super_admin only
@@ -107,6 +113,70 @@ func buildAuthorizationTestEngine() *gin.Engine {
 		trust.POST("/transactions/:id/reject", stubOK)
 	}
 
+	// /legal 管理接口 — admin/super_admin only
+	legal := protected.Group("/legal")
+	{
+		legal.GET("/favorites", stubOK)
+		legal.POST("/favorites", stubOK)
+		legalAdmin := legal.Group("")
+		legalAdmin.Use(middleware.RoleMiddleware("admin", "super_admin"))
+		{
+			legalAdmin.POST("/statutes", stubOK)
+			legalAdmin.POST("/statutes/import", stubOK)
+			legalAdmin.PUT("/statutes/:id", stubOK)
+			legalAdmin.DELETE("/statutes/:id", stubOK)
+			legalAdmin.POST("/admin/sync-elasticsearch", stubOK)
+			legalAdmin.POST("/admin/rebuild-index", stubOK)
+		}
+	}
+
+	// /content-filter 检测接口普通认证，管理接口限管理员/合规
+	contentFilter := protected.Group("/content-filter")
+	{
+		contentFilter.POST("/check", stubOK)
+		contentFilter.POST("/filter", stubOK)
+		contentFilterAdmin := contentFilter.Group("")
+		contentFilterAdmin.Use(middleware.RoleMiddleware("admin", "super_admin", "compliance"))
+		{
+			contentFilterAdmin.POST("/words", stubOK)
+			contentFilterAdmin.GET("/words", stubOK)
+			contentFilterAdmin.DELETE("/words/:id", stubOK)
+			contentFilterAdmin.GET("/logs", stubOK)
+			contentFilterAdmin.POST("/cache/reset", stubOK)
+		}
+	}
+
+	// Global aggregate and configuration endpoints must be explicitly scoped.
+	// A technical administrator is allowed to manage accounts/settings, but is
+	// not a business matter manager; a lawyer must not receive firm-wide rows.
+	businessMatter := protected.Group("")
+	businessMatter.Use(middleware.RoleMiddleware("director", "partner", "compliance", "risk", "risk_control", "management"))
+	{
+		businessMatter.GET("/lawyers/resource-center", stubOK)
+		businessMatter.GET("/analytics/executive-dashboard", stubOK)
+	}
+
+	technicalAdmin := protected.Group("")
+	technicalAdmin.Use(middleware.RoleMiddleware("admin", "super_admin"))
+	{
+		technicalAdmin.GET("/admin/access-center", stubOK)
+		technicalAdmin.GET("/settings/overview", stubOK)
+	}
+
+	// /conflict-v2/entities — 仅冲突/合规管理角色
+	conflictV2 := protected.Group("/conflict-v2")
+	{
+		conflictV2.GET("/checks", stubOK)
+		entities := conflictV2.Group("/entities")
+		entities.Use(middleware.RoleMiddleware("compliance", "risk", "risk_control", "management", "partner", "conflict_officer"))
+		{
+			entities.GET("", stubOK)
+			entities.POST("", stubOK)
+			entities.GET("/search", stubOK)
+			entities.POST("/batch", stubOK)
+		}
+	}
+
 	return r
 }
 
@@ -142,6 +212,36 @@ func TestAuthorizationMatrix(t *testing.T) {
 		{"lawyer can read own profile", "lawyer", http.MethodGet, "/api/v1/users/me", http.StatusOK},
 		{"assistant can read own profile", "assistant", http.MethodGet, "/api/v1/users/profile", http.StatusOK},
 		{"finance can change own password", "finance", http.MethodPost, "/api/v1/users/change-password", http.StatusOK},
+		{"lawyer cannot list users alias", "lawyer", http.MethodGet, "/api/v1/users", http.StatusForbidden},
+		{"admin can list users alias", "admin", http.MethodGet, "/api/v1/users", http.StatusOK},
+		{"lawyer cannot read other user alias", "lawyer", http.MethodGet, "/api/v1/users/2", http.StatusForbidden},
+		{"super admin can read other user alias", "super_admin", http.MethodGet, "/api/v1/users/2", http.StatusOK},
+		{"lawyer can use content check", "lawyer", http.MethodPost, "/api/v1/content-filter/check", http.StatusOK},
+		{"lawyer cannot manage sensitive words", "lawyer", http.MethodPost, "/api/v1/content-filter/words", http.StatusForbidden},
+		{"compliance can manage sensitive words", "compliance", http.MethodPost, "/api/v1/content-filter/words", http.StatusOK},
+		{"lawyer can read legal favorites", "lawyer", http.MethodGet, "/api/v1/legal/favorites", http.StatusOK},
+		{"lawyer cannot import legal statutes", "lawyer", http.MethodPost, "/api/v1/legal/statutes/import", http.StatusForbidden},
+		{"admin can import legal statutes", "admin", http.MethodPost, "/api/v1/legal/statutes/import", http.StatusOK},
+		{"lawyer can list conflict checks", "lawyer", http.MethodGet, "/api/v1/conflict-v2/checks", http.StatusOK},
+		{"lawyer cannot list conflict entities", "lawyer", http.MethodGet, "/api/v1/conflict-v2/entities", http.StatusForbidden},
+		{"technical admin cannot list conflict entities", "admin", http.MethodGet, "/api/v1/conflict-v2/entities", http.StatusForbidden},
+		{"super admin cannot list conflict entities", "super_admin", http.MethodGet, "/api/v1/conflict-v2/entities", http.StatusForbidden},
+		{"risk can list conflict entities", "risk", http.MethodGet, "/api/v1/conflict-v2/entities", http.StatusOK},
+		{"conflict officer can list conflict entities", "conflict_officer", http.MethodGet, "/api/v1/conflict-v2/entities", http.StatusOK},
+
+		// Global aggregates/configuration must not be reachable by the wrong
+		// class of authenticated user, even when the endpoint is called directly.
+		{"lawyer cannot read lawyer resource center", "lawyer", http.MethodGet, "/api/v1/lawyers/resource-center", http.StatusForbidden},
+		{"director can read lawyer resource center", "director", http.MethodGet, "/api/v1/lawyers/resource-center", http.StatusOK},
+		{"lawyer cannot read executive dashboard", "lawyer", http.MethodGet, "/api/v1/analytics/executive-dashboard", http.StatusForbidden},
+		{"technical admin cannot read executive dashboard", "admin", http.MethodGet, "/api/v1/analytics/executive-dashboard", http.StatusForbidden},
+		{"director can read executive dashboard", "director", http.MethodGet, "/api/v1/analytics/executive-dashboard", http.StatusOK},
+		{"lawyer cannot read access center", "lawyer", http.MethodGet, "/api/v1/admin/access-center", http.StatusForbidden},
+		{"admin can read access center", "admin", http.MethodGet, "/api/v1/admin/access-center", http.StatusOK},
+		{"director cannot read access center", "director", http.MethodGet, "/api/v1/admin/access-center", http.StatusForbidden},
+		{"lawyer cannot read settings overview", "lawyer", http.MethodGet, "/api/v1/settings/overview", http.StatusForbidden},
+		{"admin can read settings overview", "admin", http.MethodGet, "/api/v1/settings/overview", http.StatusOK},
+		{"director cannot read settings overview", "director", http.MethodGet, "/api/v1/settings/overview", http.StatusForbidden},
 
 		// 未认证：所有受保护资源都应 401
 		{"anonymous cannot create users", "", http.MethodPost, "/api/v1/admin/users", http.StatusUnauthorized},

@@ -55,6 +55,8 @@ type DatabaseConfig struct {
 }
 ```
 
+生产安装目前只支持 PostgreSQL schema bootstrap。`DB_DRIVER=postgres`、`DB_HOST`、`DB_PORT`、`DB_USERNAME`、`DB_PASSWORD`、`DB_DATABASE` 和 `DB_SSLMODE=require` 是生产数据库连接的最小配置；MySQL/SQLite 兼容代码不等于已经通过生产迁移验收。
+
 ## 环境配置文件
 
 ### 目录结构
@@ -94,12 +96,17 @@ SERVER_PORT=8080
 DB_DRIVER=postgres
 DB_HOST=${DB_HOST}
 DB_PORT=5432
+DB_SSLMODE=require
 DB_USERNAME=${DB_USERNAME}
 DB_PASSWORD=${DB_PASSWORD}
 DB_DATABASE=${DB_DATABASE}
 
 JWT_SECRET=${JWT_SECRET}
+APP_SECRET=${APP_SECRET}
+SUBJECT_DATA_KEY=${SUBJECT_DATA_KEY}
 ```
+
+生产环境启动前还必须配置真实的 `CORS_ALLOWED_ORIGINS`。`SUBJECT_DATA_KEY` 必须解码为 32 字节，并与 `JWT_SECRET`、`APP_SECRET` 使用不同的密钥；它用于保护案件主体身份标识，丢失会使历史主体变更无法解密。后端还会检查权威档案覆盖登记，未完成时 `/health/ready` 不会就绪。
 
 ## 配置管理器
 

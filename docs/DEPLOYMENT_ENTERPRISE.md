@@ -1,5 +1,11 @@
 # Law OA Go 企业级运维指南
 
+> **当前生产入口说明（2026-07-19）**：本文件包含历史 Helm、MySQL、监控和
+> CI/CD 示例，不作为当前生产发布命令。生产数据库只支持 PostgreSQL schema
+> bootstrap，Kubernetes 只使用 `k8s/` 下的 canonical manifests；请先阅读
+> [`k8s/README.md`](../k8s/README.md) 和 [`docs/DEPLOYMENT.md`](DEPLOYMENT.md)。
+> 本文件中的示例凭据、默认密码和旧版标签均不得用于任何真实环境。
+
 <div align="center">
 
 ![Monitoring](https://img.shields.io/badge/Monitoring-Prometheus-orange?style=for-the-badge&logo=prometheus&logoColor=white)

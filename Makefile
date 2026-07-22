@@ -167,21 +167,32 @@ dev:
 	@echo "开发模式运行..."
 	@air -c .air.toml
 
-# 数据库迁移
-.PHONY: migrate-up
-migrate-up:
-	@echo "执行数据库迁移..."
-	@go run ./cmd/migrate -migrations ./migrations up
+# 数据库初始化
+.PHONY: migrate-bootstrap migrate-up
+migrate-bootstrap:
+	@echo "执行 PostgreSQL 生产 schema bootstrap..."
+	@go run ./cmd/migrate -command bootstrap
+
+migrate-up: migrate-bootstrap
 
 .PHONY: migrate-down
 migrate-down:
-	@echo "回滚数据库迁移..."
-	@go run ./cmd/migrate -migrations ./migrations down
+	@echo "生产 bootstrap 不支持 down；请使用经过验证的数据库备份恢复。"
+	@exit 1
+
+.PHONY: qa-seed-conflict-p0 qa-verify-conflict-p0
+qa-seed-conflict-p0:
+	@echo "写入非生产 PostgreSQL 三角色冲突验收夹具；不会写入生产 schema bootstrap。"
+	@go run ./cmd/qa-fixture -mode seed
+
+qa-verify-conflict-p0:
+	@echo "核验非生产 PostgreSQL 三角色冲突验收夹具。"
+	@go run ./cmd/qa-fixture -mode verify
 
 .PHONY: migrate-create
 migrate-create:
-	@echo "创建迁移文件: $(name)"
-	@migrate create -ext sql -dir migrations $(name)
+	@echo "当前生产入口使用显式 PostgreSQL schema bootstrap，不在混合历史目录创建新迁移。"
+	@exit 1
 
 # 生成API文档
 .PHONY: docs
@@ -473,8 +484,11 @@ help:
 	@echo "  make docker-build  - 构建Docker镜像"
 	@echo "  make run           - 运行应用"
 	@echo "  make dev           - 开发模式运行"
-	@echo "  make migrate-up    - 执行数据库迁移"
-	@echo "  make migrate-down  - 回滚数据库迁移"
+	@echo "  make migrate-bootstrap - 初始化 PostgreSQL 生产 schema"
+	@echo "  make migrate-up    - 执行 schema bootstrap（同 migrate-bootstrap）"
+	@echo "  make migrate-down  - 拒绝生产回滚，改用备份恢复"
+	@echo "  make qa-seed-conflict-p0 - 写入非生产三角色冲突验收夹具"
+	@echo "  make qa-verify-conflict-p0 - 核验非生产三角色冲突验收夹具"
 	@echo "  make docs          - 生成API文档"
 	@echo "  make security      - 安全检查"
 	@echo "  make profile       - 性能分析"

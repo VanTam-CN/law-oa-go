@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"law-oa-go/internal/models"
 	"gorm.io/gorm"
+	"law-oa-go/internal/models"
 )
 
 // ConflictPoolService 冲突池服务接口
@@ -32,50 +32,50 @@ type ConflictPoolService interface {
 
 // PoolSearchRequest 池搜索请求
 type PoolSearchRequest struct {
-	SearchTerm      string `json:"searchTerm"`      // 搜索词（公司名称/税号）
-	SearchType      string `json:"searchType"`      // 搜索类型: standard/fuzzy
-	IncludeAliases  bool   `json:"includeAliases"`  // 是否包含别名
-	LawyerID        *uint  `json:"lawyerId"`        // 可选：限定律师ID
+	SearchTerm       string `json:"searchTerm"`       // 搜索词（公司名称/税号）
+	SearchType       string `json:"searchType"`       // 搜索类型: standard/fuzzy
+	IncludeAliases   bool   `json:"includeAliases"`   // 是否包含别名
+	LawyerID         *uint  `json:"lawyerId"`         // 可选：限定律师ID
 	RelationshipType string `json:"relationshipType"` // 可选：限定关系类型
 }
 
 // PoolMatchResult 池匹配结果
 type PoolMatchResult struct {
-	PoolEntry      *models.LawyerConflictPool `json:"poolEntry"`
-	MatchScore     float64                    `json:"matchScore"`     // 匹配分数
-	MatchReason    string                     `json:"matchReason"`    // 匹配原因
-	ConflictType   string                     `json:"conflictType"`   // 冲突类型
-	RiskLevel      string                     `json:"riskLevel"`      // 风险等级
+	PoolEntry    *models.LawyerConflictPool `json:"poolEntry"`
+	MatchScore   float64                    `json:"matchScore"`   // 匹配分数
+	MatchReason  string                     `json:"matchReason"`  // 匹配原因
+	ConflictType string                     `json:"conflictType"` // 冲突类型
+	RiskLevel    string                     `json:"riskLevel"`    // 风险等级
 }
 
 // PoolUpdateRequest 池更新请求
 type PoolUpdateRequest struct {
-	RelationshipType string                   `json:"relationshipType"`
-	ShareholdingInfo models.JSON              `json:"shareholdingInfo"`
-	RelatedCompanies models.JSON              `json:"relatedCompanies"`
-	EntityAliases    models.JSON              `json:"entityAliases"`
-	DataSource       string                   `json:"dataSource"`
+	RelationshipType string      `json:"relationshipType"`
+	ShareholdingInfo models.JSON `json:"shareholdingInfo"`
+	RelatedCompanies models.JSON `json:"relatedCompanies"`
+	EntityAliases    models.JSON `json:"entityAliases"`
+	DataSource       string      `json:"dataSource"`
 }
 
 // SyncResult 同步结果
 type SyncResult struct {
-	TotalLawyers    int       `json:"totalLawyers"`
-	ProcessedCases  int       `json:"processedCases"`
-	AddedEntries    int       `json:"addedEntries"`
-	UpdatedEntries  int       `json:"updatedEntries"`
-	FailedEntries   int       `json:"failedEntries"`
-	Errors          []string  `json:"errors"`
-	StartTime       time.Time `json:"startTime"`
-	EndTime         time.Time `json:"endTime"`
-	DurationMs      int64     `json:"durationMs"`
+	TotalLawyers   int       `json:"totalLawyers"`
+	ProcessedCases int       `json:"processedCases"`
+	AddedEntries   int       `json:"addedEntries"`
+	UpdatedEntries int       `json:"updatedEntries"`
+	FailedEntries  int       `json:"failedEntries"`
+	Errors         []string  `json:"errors"`
+	StartTime      time.Time `json:"startTime"`
+	EndTime        time.Time `json:"endTime"`
+	DurationMs     int64     `json:"durationMs"`
 }
 
 // conflictPoolService 冲突池服务实现
 type conflictPoolService struct {
-	db             *gorm.DB
-	companyAPI     CompanyAPIService
-	caseRepo       CaseRepository
-	clientRepo     ClientRepository
+	db         *gorm.DB
+	companyAPI CompanyAPIService
+	caseRepo   CaseRepository
+	clientRepo ClientRepository
 }
 
 // CaseRepository 案件仓库接口
@@ -155,17 +155,18 @@ func (s *conflictPoolService) SyncLawyerPool(ctx context.Context, lawyerID uint,
 		log.Printf("✅ 更新冲突池记录: ID=%d", existingPool.ID)
 	} else if err == gorm.ErrRecordNotFound {
 		// 创建新记录
+		idCard, _ := client.DecryptedIDCard()
 		newEntry := &models.LawyerConflictPool{
-			LawyerID:          lawyerID,
-			EntityType:        entityType,
-			EntityName:        client.Name,
+			LawyerID:           lawyerID,
+			EntityType:         entityType,
+			EntityName:         client.Name,
 			EntityNameStandard: standardName,
-			EntityTaxID:       client.IDCard, // 对于企业，这里应该是税号
-			RelationshipType:  s.determineRelationshipType(case_),
-			CaseID:            caseID,
-			CaseTitle:         case_.Title,
-			DataSource:        "manual",
-			LastVerifiedAt:    &now,
+			EntityTaxID:        idCard, // 对于企业，这里应该是税号
+			RelationshipType:   s.determineRelationshipType(case_),
+			CaseID:             caseID,
+			CaseTitle:          case_.Title,
+			DataSource:         "manual",
+			LastVerifiedAt:     &now,
 		}
 
 		if err := s.db.WithContext(ctx).Create(newEntry).Error; err != nil {
@@ -176,7 +177,7 @@ func (s *conflictPoolService) SyncLawyerPool(ctx context.Context, lawyerID uint,
 
 		// 对于企业客户，异步获取详细信息
 		if entityType == "company" {
-			go s.enrichCompanyData(context.Background(), newEntry.ID, client.Name, client.IDCard)
+			go s.enrichCompanyData(context.Background(), newEntry.ID, client.Name, idCard)
 		}
 	}
 
@@ -377,9 +378,9 @@ func (s *conflictPoolService) RefreshFromAPI(ctx context.Context, entryID uint, 
 		if err == nil {
 			shareholdingInfo = models.JSON(map[string]interface{}{
 				"directShareholders": shareholdingData.DirectShareholders,
-				"beneficialOwners":    shareholdingData.BeneficialOwners,
-				"ultimateController":  shareholdingData.UltimateController,
-				"penetrationDepth":    shareholdingData.PenetrationDepth,
+				"beneficialOwners":   shareholdingData.BeneficialOwners,
+				"ultimateController": shareholdingData.UltimateController,
+				"penetrationDepth":   shareholdingData.PenetrationDepth,
 			})
 		}
 	}
@@ -609,11 +610,11 @@ func (s *conflictPoolService) enrichCompanyData(ctx context.Context, entryID uin
 	if err := s.db.Model(&models.LawyerConflictPool{}).
 		Where("id = ?", entryID).
 		Updates(map[string]interface{}{
-			"shareholding_info":  shareholdingInfo,
-			"related_companies":  relatedCompanies,
-			"api_provider":       "mock",
-			"data_source":        "api",
-			"last_verified_at":   time.Now(),
+			"shareholding_info": shareholdingInfo,
+			"related_companies": relatedCompanies,
+			"api_provider":      "mock",
+			"data_source":       "api",
+			"last_verified_at":  time.Now(),
 		}).Error; err != nil {
 		log.Printf("⚠️ 更新公司数据失败: %v", err)
 	}
@@ -736,8 +737,8 @@ func (s *conflictPoolService) GetPoolStats(ctx context.Context, lawyerID uint) (
 
 // PoolStats 冲突池统计信息
 type PoolStats struct {
-	TotalEntries      int64            `json:"totalEntries"`
-	ByRelationship    map[string]int64 `json:"byRelationship"`
-	ByEntityType      map[string]int64 `json:"byEntityType"`
-	APIDataCoverage   float64          `json:"apiDataCoverage"`
+	TotalEntries    int64            `json:"totalEntries"`
+	ByRelationship  map[string]int64 `json:"byRelationship"`
+	ByEntityType    map[string]int64 `json:"byEntityType"`
+	APIDataCoverage float64          `json:"apiDataCoverage"`
 }
