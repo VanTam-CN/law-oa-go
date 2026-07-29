@@ -288,7 +288,7 @@ const AppContent: React.FC = () => {
           />
 
           {/* 收件箱模块 */}
-          <Route path='inbox' element={<InboxList />} />
+          <Route path='inbox' element={<MvpUnavailable moduleName='收件箱' />} />
 
           {enableDevRoutes &&
             DevApiTest &&

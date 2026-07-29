@@ -261,7 +261,7 @@ func newMigrationDriver(db *sql.DB, driverName string) (migratedb.Driver, error)
 
 	driver, err := mysql.WithInstance(db, &mysql.Config{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create mysql driver: %w", err)
+		return nil, err
 	}
 	return driver, nil
 }

@@ -316,6 +316,35 @@ func main() {
 		}
 	}
 
+	// 自动迁移财务模型
+	if err := db.AutoMigrate(
+		&models.Contract{},
+		&models.PaymentMilestone{},
+		&models.Invoice{},
+		&models.Payment{},
+		&models.BadDebtRecord{},
+		&models.CommissionRecord{},
+		&models.CommissionRule{},
+		&models.FeeTemplate{},
+	); err != nil {
+		log.Printf("财务模型自动迁移失败: %v", err)
+	} else {
+		log.Println("财务模型自动迁移成功")
+	}
+
+	// 自动迁移试用 MVP 必需模型
+	if migratedTablesExist(db, &models.InboxItem{}, &models.ClientTrustAccount{}, &models.ClientTrustTransaction{}) {
+		log.Println("MVP模型表已存在，跳过自动迁移")
+	} else if err := db.AutoMigrate(
+		&models.InboxItem{},
+		&models.ClientTrustAccount{},
+		&models.ClientTrustTransaction{},
+	); err != nil {
+		log.Printf("MVP模型自动迁移失败: %v", err)
+	} else {
+		log.Println("MVP模型自动迁移成功")
+	}
+
 	// 添加性能监控端点
 	app.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
