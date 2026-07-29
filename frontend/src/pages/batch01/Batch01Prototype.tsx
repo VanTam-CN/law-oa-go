@@ -62,23 +62,23 @@ interface MetricCardProps {
 }
 
 const metrics: MetricCardProps[] = [
-  { icon: <FileDoneOutlined />, label: '待办事项', value: 0, delta: '正式 API', tone: 'blue' },
+  { icon: <FileDoneOutlined />, label: '待办事项', value: 0, delta: '', tone: 'blue' },
   {
     icon: <SafetyCertificateOutlined />,
     label: '利益冲突待复核',
     value: 0,
-    delta: '正式 API',
+    delta: '',
     tone: 'red',
   },
-  { icon: <AuditOutlined />, label: '待审批事项', value: 0, delta: '正式 API', tone: 'orange' },
-  { icon: <FolderOpenOutlined />, label: '接案准备中', value: 0, delta: '正式 API', tone: 'teal' },
-  { icon: <FileTextOutlined />, label: '在办案件总数', value: 0, delta: '正式 API', tone: 'blue' },
-  { icon: <ClockCircleOutlined />, label: '逾期任务', value: 0, delta: '正式 API', tone: 'red' },
+  { icon: <AuditOutlined />, label: '待审批事项', value: 0, delta: '', tone: 'orange' },
+  { icon: <FolderOpenOutlined />, label: '接案准备中', value: 0, delta: '', tone: 'teal' },
+  { icon: <FileTextOutlined />, label: '在办案件总数', value: 0, delta: '', tone: 'blue' },
+  { icon: <ClockCircleOutlined />, label: '逾期任务', value: 0, delta: '', tone: 'red' },
   {
     icon: <DollarOutlined />,
     label: '合同回款预警',
     value: 0,
-    delta: 'finance API',
+    delta: '',
     tone: 'orange',
   },
 ]
@@ -274,6 +274,10 @@ function conflictScopeLabel(coverageStatus: unknown) {
   return String(coverageStatus || '').toUpperCase() === 'COMPLETE'
     ? '已由律所确认完整覆盖的已登记历史'
     : '系统已登记历史（覆盖完整性待确认，未登记档案需人工核查）'
+}
+
+function conflictQueueScopeLabel(canReviewConflict: boolean) {
+  return canReviewConflict ? '全所冲突核查队列' : '当前账号可见的冲突任务'
 }
 
 function escapeHtml(value: unknown) {
@@ -550,6 +554,14 @@ function deriveConflictDecisionViewModel(
         }
       : copy[decision]
 
+  const resolvedDecisionCopy =
+    reviewDecision === 'insufficient_information'
+      ? {
+          headline: '信息不足，暂停接案',
+          guidance: '独立复核已完成，结论为信息不足；在审批流程完成处置前不得继续接案。',
+        }
+      : decisionCopy
+
   return {
     decision,
     risk,
@@ -565,7 +577,7 @@ function deriveConflictDecisionViewModel(
     machineBlocked,
     coverageLimited,
     nonWaivableDirectConflict,
-    ...decisionCopy,
+    ...resolvedDecisionCopy,
   }
 }
 
@@ -1249,7 +1261,7 @@ function formatTodayText() {
 }
 
 const toneIcon: Record<Tone, string> = {
-  blue: '#1263d8',
+  blue: 'var(--color-primary-500)',
   teal: '#12a89d',
   red: '#e8434e',
   orange: '#f59f2f',
@@ -1259,27 +1271,35 @@ const toneIcon: Record<Tone, string> = {
 
 function MetricCard({ icon, label, value, delta, tone }: MetricCardProps) {
   return (
-    <section className='batch-metric-card'>
-      <span className={`batch-icon-badge ${tone}`}>{icon}</span>
-      <div>
-        <span>{label}</span>
-        <strong>{value}</strong>
-        <em className={delta.includes('↓') ? 'down' : 'up'}>{delta}</em>
+    <section
+      className={`kpi-card ${
+        tone === 'red'
+          ? 'danger'
+          : tone === 'orange'
+            ? 'warn'
+            : tone === 'green' || tone === 'teal'
+              ? 'ok'
+              : ''
+      }`}
+    >
+      <div className='kpi-label'>
+        {icon}
+        {label}
       </div>
+      <div className='kpi-val'>{value}</div>
+      <div className='kpi-foot'>{delta}</div>
     </section>
   )
 }
 
 function RiskTag({ text }: { text: string }) {
-  const tone =
+  const cls =
     text.includes('高') || text.includes('直接') || text.includes('紧急')
-      ? 'red'
+      ? 'ng-risk h'
       : text.includes('中') || text.includes('潜在')
-        ? 'orange'
-        : text.includes('低') || text.includes('正常') || text.includes('通过')
-          ? 'green'
-          : 'blue'
-  return <span className={`batch-risk-tag ${tone}`}>{text}</span>
+        ? 'ng-risk m'
+        : 'ng-risk l'
+  return <span className={cls}>{text}</span>
 }
 
 function PageHeader({
@@ -1294,13 +1314,13 @@ function PageHeader({
   actions?: React.ReactNode
 }) {
   return (
-    <header className='batch-page-header'>
+    <header className='ng-page-head'>
       <div>
-        <div className='batch-breadcrumb'>{eyebrow}</div>
+        <div className='eyebrow'>{eyebrow}</div>
         <h1>{title}</h1>
-        {subtitle && <p>{subtitle}</p>}
+        {subtitle && <p className='sub'>{subtitle}</p>}
       </div>
-      {actions && <div className='batch-header-actions'>{actions}</div>}
+      {actions && <div className='ng-head-actions'>{actions}</div>}
     </header>
   )
 }
@@ -1317,9 +1337,9 @@ function SectionCard({
   className?: string
 }) {
   return (
-    <section className={`batch-card ${className}`}>
-      <div className='batch-card-header'>
-        <h2>{title}</h2>
+    <section className={`ng-panel ${className}`}>
+      <div className='ng-panel-head'>
+        <h2 className='ng-panel-title'>{title}</h2>
         {extra}
       </div>
       {children}
@@ -1469,7 +1489,7 @@ export function DashboardCommandCenter() {
     : apiLoading
       ? '连接中'
       : commandCenter
-        ? '正式 API'
+        ? '已连接'
         : '等待连接'
   const apiStatusTone: Tone = apiError ? 'red' : commandCenter ? 'green' : 'slate'
   const dashboardMetrics = metrics
@@ -1482,7 +1502,7 @@ export function DashboardCommandCenter() {
       if (item.label === '在办案件总数') return { ...item, value: activeCases }
       if (item.label === '逾期任务') return { ...item, value: overdueItems.length }
       if (item.label === '合同回款预警')
-        return { ...item, value: financeWarningAmount, delta: 'finance API' }
+        return { ...item, value: financeWarningAmount, delta: '' }
       return item
     })
   const urgentTodoCount = todoItems.filter((item) =>
@@ -1562,37 +1582,55 @@ export function DashboardCommandCenter() {
     )
   }
 
-  return (
-    <div className='batch-page'>
-      <PageHeader
-        eyebrow='工作台 / 指挥中心'
-        title={`上午好，${currentUserName}`}
-        subtitle={`今天是 ${formatTodayText()}`}
-        actions={
-          <>
-            <Badge color={apiError ? '#e8434e' : '#12a89d'} text='正式 API' />
-            <Button onClick={refreshCommandCenter} loading={apiLoading}>
+ return (
+  <div className='ng-content'>
+      <header className='ng-hero'>
+        <div>
+          <h1>
+            上午好，<em>{currentUserName}</em>
+          </h1>
+          <p>
+            <span>数据库案件 {commandCenter ? activeCases : '-'}</span>
+            <span className='sep' />
+            <span>冲突任务 {commandCenter ? openConflicts : '-'}</span>
+            <span className='sep' />
+            <span>待审批 {commandCenter ? pendingApprovals : '-'}</span>
+          </p>
+        </div>
+        <div className='ng-hero-date'>
+          <b>{formatTodayText()}</b>
+          <span>
+            数据源 <StatusDot color={apiStatusTone} /> {apiStatusText} ·{' '}
+            {formatDateTime(commandCenter?.generated_at)}
+          </span>
+          <span style={{ display: 'flex', gap: 8, marginTop: 8, justifyContent: 'flex-end' }}>
+            <Badge color={apiError ? '#e8434e' : '#12a89d'} text='实时数据' />
+            <Button size='small' onClick={refreshCommandCenter} loading={apiLoading}>
               刷新接口
             </Button>
-            <Input.Search
-              prefix={<SearchOutlined />}
-              id='dashboard-global-search'
-              name='globalSearch'
-              placeholder='搜索案件、冲突检测或审批'
-              value={globalSearchQuery}
-              onChange={(event) => setGlobalSearchQuery(event.target.value)}
-              onSearch={runGlobalSearch}
-              enterButton='搜索'
-            />
-            <Button type='primary' icon={<PlusOutlined />} onClick={() => navigate('/case/create')}>
+            <Button size='small' type='primary' icon={<PlusOutlined />} onClick={() => navigate('/case/create')}>
               新建立案
             </Button>
-          </>
-        }
-      />
+          </span>
+        </div>
+      </header>
+
+      <section className='ng-hero-search' style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
+        <Input.Search
+          prefix={<SearchOutlined />}
+          id='dashboard-global-search'
+          name='globalSearch'
+          placeholder='搜索案件、冲突检测或审批'
+          value={globalSearchQuery}
+          onChange={(event) => setGlobalSearchQuery(event.target.value)}
+          onSearch={runGlobalSearch}
+          enterButton='搜索'
+          style={{ maxWidth: 460 }}
+        />
+      </section>
 
       {globalSearchState.status !== 'idle' && (
-        <section className={`batch-search-feedback ${globalSearchState.status}`}>
+        <section className={`batch-search-feedback ${globalSearchState.status}`} style={{ marginBottom: 16 }}>
           <SearchOutlined />
           <span>{globalSearchState.message}</span>
           {globalSearchState.results.map((result) => (
@@ -1604,229 +1642,368 @@ export function DashboardCommandCenter() {
         </section>
       )}
 
-      <section className='batch-api-status'>
-        <span>
-          <StatusDot color={apiStatusTone} />
-          当前数据源 <strong>{apiStatusText}</strong>
-        </span>
-        <span>
-          接口时间 <strong>{formatDateTime(commandCenter?.generated_at)}</strong>
-        </span>
-        <span>
-          数据库案件 <strong>{commandCenter ? activeCases : '-'}</strong>
-        </span>
-        <span>
-          冲突任务 <strong>{commandCenter ? openConflicts : '-'}</strong>
-        </span>
-      </section>
-
-      <div className='batch-metric-grid'>
-        {dashboardMetrics.map((item) => (
-          <MetricCard key={item.label} {...item} />
-        ))}
+      <div className='batch-metric-grid' style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginBottom: 22 }}>
+        {dashboardMetrics.map((item) => {
+          const cardTone =
+            item.tone === 'red'
+              ? 'danger'
+              : item.tone === 'orange'
+                ? 'warn'
+                : item.tone === 'green' || item.tone === 'teal'
+                  ? 'ok'
+                  : ''
+          return (
+            <section key={item.label} className={`kpi-card ${cardTone}`.trim()}>
+              <div className='kpi-label'>
+                <span className='tag-dot' />
+                {item.label}
+              </div>
+              <div className='kpi-val'>{item.value}</div>
+              <div className='kpi-foot'>{item.delta}</div>
+            </section>
+          )
+        })}
       </div>
 
-      <div className='batch-dashboard-layout'>
-        <SectionCard
-          title={`我的待办（${unreadInbox}）`}
-          extra={
-            <Space>
-              <Button
-                size='small'
-                type={todoFilter === '全部' ? 'primary' : 'default'}
+      <div className='ng-grid'>
+        <section className='ng-panel'>
+          <header className='ng-panel-head'>
+            <div className='ng-panel-title'>
+              我的待办
+              <span className='count'>{unreadInbox}</span>
+            </div>
+            <div className='ng-panel-actions'>
+              <button
+                type='button'
+                className={`ng-chip ${todoFilter === '全部' ? 'active' : ''}`}
                 onClick={() => setTodoFilter('全部')}
               >
                 全部
-              </Button>
-              <Button
-                size='small'
-                type={todoFilter === '紧急' ? 'primary' : 'default'}
+              </button>
+              <button
+                type='button'
+                className={`ng-chip ${todoFilter === '紧急' ? 'active' : ''}`}
                 onClick={() => setTodoFilter('紧急')}
               >
                 紧急 {urgentTodoCount}
-              </Button>
-              <Button
-                size='small'
-                type={todoFilter === '审批' ? 'primary' : 'default'}
+              </button>
+              <button
+                type='button'
+                className={`ng-chip ${todoFilter === '审批' ? 'active' : ''}`}
                 onClick={() => setTodoFilter('审批')}
               >
                 审批 {approvalTodoCount}
-              </Button>
-              <Button
-                size='small'
-                type={todoFilter === '任务' ? 'primary' : 'default'}
+              </button>
+              <button
+                type='button'
+                className={`ng-chip ${todoFilter === '任务' ? 'active' : ''}`}
                 onClick={() => setTodoFilter('任务')}
               >
                 任务
-              </Button>
-            </Space>
-          }
-          className='span-2'
-        >
-          <DataTable>
-            <table>
-              <thead>
-                <tr>
-                  <th>事项</th>
-                  <th>关联对象</th>
-                  <th>发起人</th>
-                  <th>截止时间</th>
-                  <th>优先级</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredTodoItems.map((item) => (
-                  <tr key={item.id || item.title}>
-                    <td>
-                      <RiskTag text={workItemTypeLabel(item.type || item.source_type)} />{' '}
-                      {textValue(item.title)}
-                    </td>
-                    <td>{textValue(item.content, '-')}</td>
-                    <td>{workItemTypeLabel(item.source_type)}</td>
-                    <td>{formatApiDate(item.due_at)}</td>
-                    <td>
+              </button>
+            </div>
+          </header>
+          <div className='ng-todo-list'>
+            {filteredTodoItems.map((item) => {
+              const rawType = textValue(item.type || item.source_type, '').toLowerCase()
+              const markCls = ['approval', 'approval_request'].includes(rawType)
+                ? 'approval'
+                : rawType.includes('conflict')
+                  ? 'conflict'
+                  : rawType.includes('deadline')
+                    ? 'deadline'
+                    : 'doc'
+              const pri = textValue(item.priority, '').toLowerCase()
+              const urgCls = ['critical', 'high'].includes(pri)
+                ? 'now'
+                : pri === 'medium'
+                  ? 'today'
+                  : 'soon'
+              const markText = workItemTypeLabel(item.type || item.source_type).slice(0, 1)
+              return (
+                <div key={item.id || item.title} className='ng-todo-item'>
+                  <div className={`ng-todo-mark ${markCls}`}>{markText}</div>
+                  <div className='ng-todo-body'>
+                    <div className='ng-todo-title'>{textValue(item.title)}</div>
+                    <div className='ng-todo-desc'>{textValue(item.content, '—')}</div>
+                    <div className='ng-todo-foot'>
+                      <span>{workItemTypeLabel(item.source_type)}</span>
+                      <span className={`ng-urgency ${urgCls}`}>截止 {formatApiDate(item.due_at)}</span>
                       <RiskTag text={priorityLabel(item.priority)} />
-                    </td>
-                  </tr>
-                ))}
-                {filteredTodoItems.length === 0 && (
-                  <tr>
-                    <td colSpan={5}>
-                      {todoItems.length === 0 ? '暂无数据库待办' : `暂无${todoFilter}待办`}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </DataTable>
-          <Button type='link' aria-label='查看全部待办' onClick={() => navigate('/inbox')}>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+            {filteredTodoItems.length === 0 && (
+              <div className='ng-todo-item'>
+                <div className='ng-todo-body'>
+                  <div className='ng-todo-desc'>
+                    {todoItems.length === 0 ? '暂无数据库待办' : `暂无${todoFilter}待办`}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          <Button type='link' aria-label='查看全部待办' onClick={() => navigate('/inbox')} style={{ margin: '8px 22px' }}>
             查看全部待办
           </Button>
-        </SectionCard>
+        </section>
 
-        <SectionCard
-          title={`利益冲突待复核（${openConflicts}）`}
-          extra={
-            <Button type='link' aria-label='查看全部冲突任务' onClick={() => navigate('/conflict')}>
-              查看全部冲突任务
-            </Button>
-          }
-        >
-          <div className='batch-list'>
+        <section className='ng-panel'>
+          <header className='ng-panel-head'>
+            <div className='ng-panel-title'>
+              利益冲突待复核
+              <span className='count'>{openConflicts}</span>
+            </div>
+            <div className='ng-panel-actions'>
+              <button
+                type='button'
+                className='ng-chip'
+                aria-label='查看全部冲突任务'
+                onClick={() => navigate('/conflict')}
+              >
+                查看全部冲突任务
+              </button>
+            </div>
+          </header>
+          <div className='ng-todo-list'>
             {riskItems.map((item) => (
-              <article key={item.id || item.title}>
-                <div>
-                  <strong>{textValue(item.title)}</strong>
-                  <p>发起时间：{formatApiDate(item.created_at)}</p>
+              <div key={item.id || item.title} className='ng-todo-item'>
+                <div className='ng-todo-mark conflict'>冲</div>
+                <div className='ng-todo-body'>
+                  <div className='ng-todo-title'>{textValue(item.title)}</div>
+                  <div className='ng-todo-desc'>客户：{textValue(item.client_name, '-')}</div>
+                  <div className='ng-todo-foot'>
+                    <RiskTag text={riskLabel(item.risk_level)} />
+                    <RiskTag text={statusLabel(item.status)} />
+                    <span>发起 {formatApiDate(item.created_at)}</span>
+                  </div>
                 </div>
-                <div>
-                  <RiskTag text={riskLabel(item.risk_level)} />
-                  <RiskTag text={statusLabel(item.status)} />
-                </div>
-                <span>客户：{textValue(item.client_name, '-')}</span>
-              </article>
+              </div>
             ))}
-            {riskItems.length === 0 && <p>暂无数据库冲突复核任务</p>}
+            {riskItems.length === 0 && (
+              <div className='ng-todo-item'>
+                <div className='ng-todo-body'>
+                  <div className='ng-todo-desc'>暂无数据库冲突复核任务</div>
+                </div>
+              </div>
+            )}
           </div>
-        </SectionCard>
+        </section>
+      </div>
 
-        <SectionCard title={`审批提醒（${pendingApprovals}）`}>
-          <div className='batch-donut-card'>
+      <div className='ng-grid-2'>
+        <section className='ng-panel'>
+          <header className='ng-panel-head'>
+            <div className='ng-panel-title'>案件趋势（近6个月）</div>
+            <div className='ng-panel-actions'>
+              <span className='ng-chip'>月度</span>
+            </div>
+          </header>
+          <div style={{ padding: 20 }}>
+            <div className='ng-bars'>
+              {caseRowsLive.slice(0, 6).map((row, index) => {
+                const h = Math.max(16, (6 - index) * 16)
+                return (
+                  <div key={row.id || index} className='ng-bar-col'>
+                    <div className={`ng-bar ${index === 0 ? 'peak' : ''}`} style={{ height: h }} />
+                    <span className='ng-bar-x'>{formatApiDate(row.updated_at).slice(5, 10)}</span>
+                  </div>
+                )
+              })}
+              {caseRowsLive.length === 0 && (
+                <div className='ng-bar-col'>
+                  <div className='ng-bar' style={{ height: 16 }} />
+                  <span className='ng-bar-x'>—</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section className='ng-panel'>
+          <header className='ng-panel-head'>
+            <div className='ng-panel-title'>
+              在办案件阶段分布
+              <span className='count'>{activeCases}</span>
+            </div>
+            <div className='ng-panel-actions'>
+              <span className='ng-chip'>阶段</span>
+            </div>
+          </header>
+          <div style={{ padding: '16px 22px' }}>
+            {stageCounts.slice(0, 5).map((item, index) => {
+              const total = stageCounts.reduce((sum, s) => sum + (s.count ?? 0), 0) || 1
+              const pct = Math.round(((item.count ?? 0) / total) * 100)
+              return (
+                <div key={item.key} className='ng-distro-row'>
+                  <span className='ng-distro-name'>{statusLabel(item.key)}</span>
+                  <div className='ng-distro-track'>
+                    <div className={`ng-distro-fill b${index + 1}`} style={{ width: `${pct}%` }} />
+                  </div>
+                  <span className='ng-distro-val'>{item.count ?? 0}</span>
+                </div>
+              )
+            })}
+            {stageCounts.length === 0 && (
+              <div className='ng-distro-row'>
+                <span className='ng-distro-name'>暂无数据</span>
+                <div className='ng-distro-track' />
+                <span className='ng-distro-val'>—</span>
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
+
+      <div className='ng-grid-2'>
+        <section className='ng-panel'>
+          <header className='ng-panel-head'>
+            <div className='ng-panel-title'>
+              审批提醒
+              <span className='count'>{pendingApprovals}</span>
+            </div>
+            <div className='ng-panel-actions'>
+              <span className='ng-chip'>队列 {approvalItems.length}</span>
+            </div>
+          </header>
+          <div style={{ padding: 20, display: 'flex', gap: 18, alignItems: 'center' }}>
             <Progress
               type='circle'
               percent={pendingApprovals > 0 ? 100 : 0}
               format={() => String(pendingApprovals)}
-              strokeColor='#1263d8'
-              size={126}
+              strokeColor='var(--color-primary-500)'
+              size={110}
             />
-            <div className='batch-legend'>
-              <span>
-                <StatusDot color='blue' />
-                审批队列 <strong>{approvalItems.length}</strong>
-              </span>
-              <span>
-                <StatusDot color='slate' />
-                待处理 <strong>{pendingApprovals}</strong>
-              </span>
-              <span>
-                <StatusDot color='orange' />
-                冲突任务 <strong>{openConflicts}</strong>
-              </span>
+            <div className='ng-todo-body'>
+              <div className='ng-todo-foot'>
+                <StatusDot color='blue' /> 审批队列 <strong>{approvalItems.length}</strong>
+              </div>
+              <div className='ng-todo-foot'>
+                <StatusDot color='slate' /> 待处理 <strong>{pendingApprovals}</strong>
+              </div>
+              <div className='ng-todo-foot'>
+                <StatusDot color='orange' /> 冲突任务 <strong>{openConflicts}</strong>
+              </div>
             </div>
           </div>
-        </SectionCard>
+        </section>
 
-        <SectionCard title='在办案件阶段分布'>
-          <div className='batch-donut-card'>
-            <Progress
-              type='circle'
-              percent={72}
-              format={() => String(activeCases)}
-              strokeColor='#12a89d'
-              trailColor='#e7edf4'
-              size={126}
-            />
-            <div className='batch-legend compact'>
-              {stageCounts.slice(0, 3).map((item) => (
-                <span key={item.key}>
-                  <StatusDot color='blue' />
-                  {statusLabel(item.key)} {item.count ?? 0}
-                </span>
-              ))}
-              {stageCounts.length === 0 && (
-                <span>
-                  <StatusDot color='slate' />
-                  暂无案件状态数据
-                </span>
-              )}
+        <section className='ng-panel'>
+          <header className='ng-panel-head'>
+            <div className='ng-panel-title'>逾期任务 TOP5</div>
+            <div className='ng-panel-actions'>
+              <span className='ng-chip'>{overdueItems.length}</span>
             </div>
-          </div>
-        </SectionCard>
-
-        <SectionCard title='案件趋势（近6个月）'>
-          <div className='batch-line-chart'>
-            {caseRowsLive.slice(0, 6).map((row, index) => (
-              <span key={row.id || index} style={{ height: Math.max(16, (6 - index) * 16) }} />
-            ))}
-            {caseRowsLive.length === 0 && <span style={{ height: 16 }} />}
-          </div>
-          <div className='batch-chart-labels'>
-            {caseRowsLive.slice(0, 6).map((row, index) => (
-              <span key={row.id || index}>{formatApiDate(row.updated_at).slice(0, 10)}</span>
-            ))}
-          </div>
-        </SectionCard>
-
-        <SectionCard title='逾期任务 TOP5'>
-          <div className='batch-overdue-list'>
+          </header>
+          <div className='ng-todo-list'>
             {overdueItems.map((item, index) => (
-              <p key={item.id || item.title}>
-                <StatusDot color={index < 3 ? 'red' : 'orange'} />
-                {textValue(item.title)}
-                <RiskTag text={priorityLabel(textValue(item.priority, 'overdue'))} />
-              </p>
+              <div key={item.id || item.title} className='ng-todo-item'>
+                <div className={`ng-todo-mark ${index < 3 ? 'conflict' : 'deadline'}`}>{index + 1}</div>
+                <div className='ng-todo-body'>
+                  <div className='ng-todo-title'>{textValue(item.title)}</div>
+                  <div className='ng-todo-foot'>
+                    <RiskTag text={priorityLabel(textValue(item.priority, 'overdue'))} />
+                  </div>
+                </div>
+              </div>
             ))}
-            {overdueItems.length === 0 && <p>暂无数据库逾期任务</p>}
+            {overdueItems.length === 0 && (
+              <div className='ng-todo-item'>
+                <div className='ng-todo-body'>
+                  <div className='ng-todo-desc'>暂无数据库逾期任务</div>
+                </div>
+              </div>
+            )}
           </div>
-        </SectionCard>
-
-        <SectionCard title='最近活动'>
-          <div className='batch-activity-list'>
-            {activities.map((activity, index) => (
-              <p key={activity.id || activity.title || index}>
-                <Avatar
-                  size='small'
-                  icon={activity.type === 'approval' ? <AuditOutlined /> : <UserOutlined />}
-                />
-                <span>{textValue(activity.title)}</span>
-                <em>{formatApiDate(activity.created_at)}</em>
-              </p>
-            ))}
-            {activities.length === 0 && <p>暂无数据库活动记录</p>}
-          </div>
-        </SectionCard>
+        </section>
       </div>
-    </div>
+
+      <div className='ng-grid-2'>
+        <section className='ng-panel'>
+          <header className='ng-panel-head'>
+            <div className='ng-panel-title'>最近活动</div>
+            <div className='ng-panel-actions'>
+              <span className='ng-chip'>{activities.length}</span>
+            </div>
+          </header>
+          <div className='ng-todo-list'>
+            {activities.map((activity, index) => (
+              <div key={activity.id || activity.title || index} className='ng-todo-item'>
+                <div className={`ng-todo-mark ${activity.type === 'approval' ? 'approval' : 'doc'}`}>
+                  {activity.type === 'approval' ? '审' : '动'}
+                </div>
+                <div className='ng-todo-body'>
+                  <div className='ng-todo-title'>{textValue(activity.title)}</div>
+                  <div className='ng-todo-foot'>
+                    <span>{formatApiDate(activity.created_at)}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {activities.length === 0 && (
+              <div className='ng-todo-item'>
+                <div className='ng-todo-body'>
+                  <div className='ng-todo-desc'>暂无数据库活动记录</div>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className='ng-panel'>
+          <header className='ng-panel-head'>
+            <div className='ng-panel-title'>数据概览</div>
+          </header>
+          <div className='ng-todo-list'>
+            <div className='ng-todo-item'>
+              <div className='ng-todo-mark doc'>案</div>
+              <div className='ng-todo-body'>
+                <div className='ng-todo-title'>{commandCenter ? activeCases : '-'}</div>
+                <div className='ng-todo-desc'>数据库案件总数</div>
+              </div>
+            </div>
+            <div className='ng-todo-item'>
+              <div className='ng-todo-mark conflict'>冲</div>
+              <div className='ng-todo-body'>
+                <div className='ng-todo-title'>{commandCenter ? openConflicts : '-'}</div>
+                <div className='ng-todo-desc'>待复核冲突任务</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div className='ng-section-title'>快捷入口</div>
+      <div className='ng-shortcuts'>
+        <div className='ng-shortcut' onClick={() => navigate('/case/create')}>
+          <div className='ng-shortcut-ico'>案</div>
+          <div className='ng-shortcut-name'>新建立案</div>
+          <div className='ng-shortcut-desc'>录入新案件信息</div>
+        </div>
+        <div className='ng-shortcut' onClick={() => navigate('/inbox')}>
+          <div className='ng-shortcut-ico'>办</div>
+          <div className='ng-shortcut-name'>待办中心</div>
+          <div className='ng-shortcut-desc'>处理 inbox 待办</div>
+        </div>
+        <div className='ng-shortcut' onClick={() => navigate('/conflict')}>
+          <div className='ng-shortcut-ico'>冲</div>
+          <div className='ng-shortcut-name'>冲突检测</div>
+          <div className='ng-shortcut-desc'>复核利益冲突</div>
+        </div>
+        <div className='ng-shortcut' onClick={() => navigate('/approval')}>
+          <div className='ng-shortcut-ico'>审</div>
+          <div className='ng-shortcut-name'>审批队列</div>
+          <div className='ng-shortcut-desc'>待审批事项</div>
+        </div>
+        <div className='ng-shortcut' onClick={() => navigate('/dashboard')}>
+          <div className='ng-shortcut-ico'>析</div>
+          <div className='ng-shortcut-name'>数据看板</div>
+         <div className='ng-shortcut-desc'>经营分析</div>
+       </div>
+     </div>
+     </div>
   )
 }
 
@@ -2022,6 +2199,7 @@ export function ClientMasterProfile() {
         title='客户主档案'
       />
 
+      <div className='ng-content'>
       <div className='batch-client-layout'>
         <aside className='batch-client-list'>
           <div className='batch-panel-title'>
@@ -2483,6 +2661,7 @@ export function ClientMasterProfile() {
           </div>
         </div>
       </Modal>
+      </div>
     </div>
   )
 }
@@ -2511,6 +2690,7 @@ export function CaseManagementCenter() {
   const summary = commandCenter?.summary || {}
   const workflow = commandCenter?.workflow || {}
   const liveCaseRows = listOf(commandCenter?.case_rows)
+  const visibleConflictRows = listOf<CommandCenterRiskItem>(commandCenter?.risk_queue)
   const normalizedSearchTerm = searchTerm.trim().toLowerCase()
   const statusFilterMap: Record<string, string[]> = {
     全部: [],
@@ -2523,7 +2703,20 @@ export function CaseManagementCenter() {
   const filteredCaseRows = liveCaseRows.filter((row) => {
     const normalizedStatus = textValue(row.status, '').toLowerCase()
     const allowedStatuses = statusFilterMap[statusFilter] || []
-    const matchesStatus = allowedStatuses.length === 0 || allowedStatuses.includes(normalizedStatus)
+    const matchesConflictQueue =
+      statusFilter === '冲突复核' &&
+      visibleConflictRows.some((item) =>
+        conflictMatchesCaseContext(
+          item,
+          textValue(row.id, ''),
+          textValue(row.case_number, ''),
+          textValue(row.title, ''),
+        ),
+      )
+    const matchesStatus =
+      allowedStatuses.length === 0 ||
+      allowedStatuses.includes(normalizedStatus) ||
+      matchesConflictQueue
     const searchable = [
       row.case_number,
       row.title,
@@ -2567,96 +2760,108 @@ export function CaseManagementCenter() {
   }
 
   return (
-    <div className='batch-page case-management-page'>
-      <PageHeader
-        eyebrow='案件管理 / 案件清单'
-        title='案件管理'
-        subtitle='统一管理潜在接案、冲突复核、接案审批、在办案件和结案归档。'
-        actions={
-          <>
-            <Input
-              prefix={<SearchOutlined />}
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              allowClear
-              placeholder='搜索案件编号、客户、对方、负责人...'
-            />
-            <Button icon={<DownloadOutlined />} onClick={exportCases}>
-              导出
-            </Button>
-            <Button
-              type='primary'
-              icon={<PlusOutlined />}
-              loading={loading}
-              onClick={() => navigate('/case/create')}
-            >
-              新建案件
-            </Button>
-          </>
-        }
-      />
+    <div className='batch-page case-management-page ng-content'>
+      <header className='ng-page-head'>
+        <div>
+          <div className='eyebrow'>案件管理 / 案件清单</div>
+          <h1>案件管理</h1>
+          <p className='sub'>统一管理潜在接案、冲突复核、接案审批、在办案件和结案归档。</p>
+        </div>
+        <div className='ng-head-actions'>
+          <Input
+            prefix={<SearchOutlined />}
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            allowClear
+            placeholder='搜索案件编号、客户、对方、负责人...'
+          />
+          <Button icon={<DownloadOutlined />} onClick={exportCases}>
+            导出
+          </Button>
+          <Button
+            type='primary'
+            icon={<PlusOutlined />}
+            loading={loading}
+            onClick={() => navigate('/case/create')}
+          >
+            新建案件
+          </Button>
+        </div>
+      </header>
 
-      <div className='batch-metric-grid case-metrics'>
+      <div
+        className='batch-metric-grid case-metrics'
+        style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}
+      >
         {[
           {
             icon: <FolderOpenOutlined />,
             label: '在办案件',
             value: summary.active_cases ?? 0,
-            delta: '正式 API',
+            delta: '',
             tone: 'blue' as Tone,
           },
           {
             icon: <FileSearchOutlined />,
             label: '冲突复核中',
             value: workflow.conflict ?? 0,
-            delta: '正式 API',
+            delta: '',
             tone: 'red' as Tone,
           },
           {
             icon: <AuditOutlined />,
             label: '接案审批中',
             value: workflow.approval ?? 0,
-            delta: '正式 API',
+            delta: '',
             tone: 'orange' as Tone,
           },
           {
             icon: <ClockCircleOutlined />,
             label: '待补充材料',
             value: workflow.intake ?? 0,
-            delta: '正式 API',
+            delta: '',
             tone: 'red' as Tone,
           },
           {
             icon: <CheckCircleOutlined />,
             label: '客户总数',
             value: summary.clients ?? 0,
-            delta: '正式 API',
+            delta: '',
             tone: 'teal' as Tone,
           },
-        ].map((item) => (
-          <MetricCard key={item.label} {...item} />
-        ))}
+        ].map((item) => {
+          const toneClass =
+            item.tone === 'red' ? 'danger' : item.tone === 'orange' ? 'warn' : item.tone === 'green' || item.tone === 'teal' ? 'ok' : ''
+          return (
+            <section key={item.label} className={`kpi-card ${toneClass}`}>
+              <div className='kpi-label'>
+                <span className='tag-dot' />
+                {item.icon}
+                {item.label}
+              </div>
+              <div className='kpi-val'>{item.value}</div>
+              <div className='kpi-foot'>{item.delta}</div>
+            </section>
+          )
+        })}
       </div>
 
       <div className='batch-case-layout'>
-        <SectionCard
-          title='案件清单'
-          className='span-2'
-          extra={
-            <Space className='batch-filter-bar'>
-              {Object.keys(statusFilterMap).map((tab) => (
-                <Button
-                  key={tab}
-                  type={statusFilter === tab ? 'primary' : 'default'}
-                  onClick={() => setStatusFilter(tab)}
-                >
-                  {tab}
-                </Button>
-              ))}
-            </Space>
-          }
-        >
-          <DataTable>
+        <section className='ng-panel span-2'>
+          <div className='ng-filter-bar'>
+            <div className='ng-panel-title'>案件清单</div>
+            {Object.keys(statusFilterMap).map((tab) => (
+              <button
+                key={tab}
+                type='button'
+                className={`ng-filter-tab ${statusFilter === tab ? 'active' : ''}`}
+                onClick={() => setStatusFilter(tab)}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+          <div className='ng-table-wrap'>
             <table className='batch-case-table'>
               <colgroup>
                 <col className='case-col-no' />
@@ -2729,10 +2934,13 @@ export function CaseManagementCenter() {
                 )}
               </tbody>
             </table>
-          </DataTable>
-        </SectionCard>
+          </div>
+        </section>
 
-        <SectionCard title='接案漏斗'>
+        <section className='ng-panel'>
+          <div className='ng-panel-head'>
+            <div className='ng-panel-title'>接案漏斗</div>
+          </div>
           <div className='batch-case-funnel'>
             {[
               ['接案准备', workflow.intake ?? 0, 'blue' as Tone],
@@ -2748,9 +2956,12 @@ export function CaseManagementCenter() {
               </p>
             ))}
           </div>
-        </SectionCard>
+        </section>
 
-        <SectionCard title='高风险案件'>
+        <section className='ng-panel'>
+          <div className='ng-panel-head'>
+            <div className='ng-panel-title'>高风险案件</div>
+          </div>
           <div className='batch-overdue-list'>
             {filteredCaseRows
               .filter((row) => (row.priority || '').toLowerCase() === 'high')
@@ -2764,9 +2975,12 @@ export function CaseManagementCenter() {
             {filteredCaseRows.filter((row) => (row.priority || '').toLowerCase() === 'high')
               .length === 0 && <p>暂无数据库高优先级案件</p>}
           </div>
-        </SectionCard>
+        </section>
 
-        <SectionCard title='团队负荷' className='span-2'>
+        <section className='ng-panel span-2'>
+          <div className='ng-panel-head'>
+            <div className='ng-panel-title'>团队负荷</div>
+          </div>
           <div className='batch-policy-grid'>
             {filteredCaseRows.slice(0, 4).map((item) => (
               <article key={`${item.lawyer_name}-${item.id}`}>
@@ -2780,7 +2994,7 @@ export function CaseManagementCenter() {
             ))}
             {filteredCaseRows.length === 0 && <p>暂无数据库团队负荷数据</p>}
           </div>
-        </SectionCard>
+        </section>
       </div>
     </div>
   )
@@ -2892,29 +3106,31 @@ export function CaseDetailCenter() {
 
   if (loading) {
     return (
-      <div className='batch-page case-management-page'>
-        <PageHeader
-          eyebrow='案件管理 / 案件详情'
-          title='正在加载案件详情'
-          subtitle='正在从正式 API 读取案件、客户、律师与流程数据。'
-        />
+      <div className='batch-page case-management-page ng-content'>
+        <header className='ng-page-head'>
+          <div>
+            <div className='eyebrow'>案件管理 / 案件详情</div>
+            <h1>正在加载案件详情</h1>
+            <p className='sub'>正在读取案件、客户、律师与流程数据。</p>
+          </div>
+        </header>
       </div>
     )
   }
 
   if (!caseDetail) {
     return (
-      <div className='batch-page case-management-page'>
-        <PageHeader
-          eyebrow='案件管理 / 案件详情'
-          title='案件不存在'
-          subtitle='指定案件不存在或当前账号无权访问。'
-          actions={
-            <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/case')}>
-              返回案件清单
-            </Button>
-          }
-        />
+      <div className='batch-page case-management-page ng-content'>
+        <span className='ng-back' onClick={() => navigate('/case')}>
+          <ArrowLeftOutlined /> 返回案件清单
+        </span>
+        <header className='ng-page-head'>
+          <div>
+            <div className='eyebrow'>案件管理 / 案件详情</div>
+            <h1>案件不存在</h1>
+            <p className='sub'>指定案件不存在或当前账号无权访问。</p>
+          </div>
+        </header>
       </div>
     )
   }
@@ -2924,7 +3140,7 @@ export function CaseDetailCenter() {
       icon: <FileTextOutlined />,
       label: '案件编号',
       value: textValue(caseDetail.case_number || caseDetail.id),
-      delta: '正式 API',
+      delta: '',
       tone: 'blue' as Tone,
     },
     {
@@ -3111,32 +3327,57 @@ export function CaseDetailCenter() {
   }
 
   return (
-    <div className='batch-page case-management-page'>
-      <PageHeader
-        eyebrow='案件管理 / 案件清单 / 案件详情'
-        title={textValue(caseDetail.title, '未命名案件')}
-        subtitle={`案件类型：${dbCaseType(textValue(caseDetail.case_type))} · 当前状态：${statusLabel(caseDetail.status)}`}
-        actions={
-          <>
-            <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/case')}>
-              返回案件清单
-            </Button>
-            <Button type='primary' onClick={() => navigate('/case/create')}>
-              新建案件
-            </Button>
-          </>
-        }
-      />
+    <div className='batch-page case-management-page ng-content'>
+      <span className='ng-back' onClick={() => navigate('/case')}>
+        <ArrowLeftOutlined /> 返回案件清单
+      </span>
+      <header className='ng-detail-head'>
+        <div>
+          <div className='dh-tags'>
+            <span>案件管理 / 案件清单 / 案件详情</span>
+          </div>
+          <h1>{textValue(caseDetail.title, '未命名案件')}</h1>
+          <p className='sub'>
+            {`案件类型：${dbCaseType(textValue(caseDetail.case_type))} · 当前状态：${statusLabel(caseDetail.status)}`}
+          </p>
+        </div>
+        <div className='dh-actions'>
+          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/case')}>
+            返回案件清单
+          </Button>
+          <Button type='primary' onClick={() => navigate('/case/create')}>
+            新建案件
+          </Button>
+        </div>
+      </header>
 
-      <div className='batch-metric-grid case-metrics'>
-        {metricsForCase.map((item) => (
-          <MetricCard key={item.label} {...item} />
-        ))}
+      <div
+        className='batch-metric-grid case-metrics'
+        style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}
+      >
+        {metricsForCase.map((item) => {
+          const toneClass =
+            item.tone === 'red' ? 'danger' : item.tone === 'orange' ? 'warn' : item.tone === 'green' || item.tone === 'teal' ? 'ok' : ''
+          return (
+            <section key={item.label} className={`kpi-card ${toneClass}`}>
+              <div className='kpi-label'>
+                <span className='tag-dot' />
+                {item.icon}
+                {item.label}
+              </div>
+              <div className='kpi-val'>{item.value}</div>
+              <div className='kpi-foot'>{item.delta}</div>
+            </section>
+          )
+        })}
       </div>
 
       <div className='batch-case-layout'>
-        <SectionCard title='案件概览' className='span-2'>
-          <DataTable>
+        <section className='ng-panel span-2'>
+          <div className='ng-panel-head'>
+            <div className='ng-panel-title'>案件概览</div>
+          </div>
+          <div className='ng-table-wrap'>
             <table>
               <tbody>
                 <tr>
@@ -3173,11 +3414,14 @@ export function CaseDetailCenter() {
                 </tr>
               </tbody>
             </table>
-          </DataTable>
-        </SectionCard>
+          </div>
+        </section>
 
         {needsConflictReview && (
-          <SectionCard title='下一步操作'>
+          <section className='ng-panel'>
+            <div className='ng-panel-head'>
+              <div className='ng-panel-title'>下一步操作</div>
+            </div>
             <div className='batch-advice'>
               <strong>下一步：利益冲突复核</strong>
               <p>
@@ -3196,11 +3440,14 @@ export function CaseDetailCenter() {
                 补充立案信息并重新检测
               </Button>
             </div>
-          </SectionCard>
+          </section>
         )}
 
         {canReportSubjectRevision && (
-          <SectionCard title='案件主体与冲突门禁' className='span-2'>
+          <section className='ng-panel span-2'>
+            <div className='ng-panel-head'>
+              <div className='ng-panel-title'>案件主体与冲突门禁</div>
+            </div>
             <div className='batch-advice'>
               <strong>
                 {subjectRevisionPending
@@ -3236,10 +3483,13 @@ export function CaseDetailCenter() {
                 </Button>
               )}
             </div>
-          </SectionCard>
+          </section>
         )}
 
-        <SectionCard title='办理阶段'>
+        <section className='ng-panel'>
+          <div className='ng-panel-head'>
+            <div className='ng-panel-title'>办理阶段</div>
+          </div>
           <div className='batch-case-funnel'>
             {caseStageDefinitions.map((stage) => {
               const isCurrent = stage.statuses.includes(currentCaseStatus)
@@ -3252,9 +3502,12 @@ export function CaseDetailCenter() {
               )
             })}
           </div>
-        </SectionCard>
+        </section>
 
-        <SectionCard title='客户信息'>
+        <section className='ng-panel'>
+          <div className='ng-panel-head'>
+            <div className='ng-panel-title'>客户信息</div>
+          </div>
           <div className='batch-policy-grid'>
             <article>
               <TeamOutlined />
@@ -3265,9 +3518,12 @@ export function CaseDetailCenter() {
               </div>
             </article>
           </div>
-        </SectionCard>
+        </section>
 
-        <SectionCard title='负责团队'>
+        <section className='ng-panel'>
+          <div className='ng-panel-head'>
+            <div className='ng-panel-title'>负责团队</div>
+          </div>
           <div className='batch-policy-grid'>
             <article>
               <UserOutlined />
@@ -3278,10 +3534,13 @@ export function CaseDetailCenter() {
               </div>
             </article>
           </div>
-        </SectionCard>
+        </section>
 
-        <SectionCard title='相关案件' className='span-2'>
-          <DataTable>
+        <section className='ng-panel span-2'>
+          <div className='ng-panel-head'>
+            <div className='ng-panel-title'>相关案件</div>
+          </div>
+          <div className='ng-table-wrap'>
             <table>
               <thead>
                 <tr>
@@ -3313,8 +3572,8 @@ export function CaseDetailCenter() {
                 )}
               </tbody>
             </table>
-          </DataTable>
-        </SectionCard>
+          </div>
+        </section>
       </div>
 
       <Modal
@@ -4021,7 +4280,7 @@ export function CaseIntakeWorkbench() {
         }
         actions={
           <span className='batch-autosave'>
-            正式 API：
+            加载耗时：
             {runtime.apiTimings[0]
               ? `${runtime.apiTimings[0].label} ${runtime.apiTimings[0].duration}ms`
               : '待调用'}
@@ -4430,7 +4689,7 @@ export function CaseIntakeWorkbench() {
                           ? '结果已过期'
                           : runtime.conflict
                             ? `机器风险：${riskLabel(conflictDecisionView.risk || 'LOW')}，处置状态：${conflictRiskText}，评分：${formatRiskScore(runtime.conflict.riskAssessment?.riskScore)}`
-                            : '尚未调用正式 API'}
+                            : '尚未加载数据'}
                       </td>
                     </tr>
                     <tr>
@@ -4712,9 +4971,9 @@ export function CaseIntakeWorkbench() {
               </>
             )}
           </SectionCard>
-          <SectionCard title='正式 API 耗时'>
+          <SectionCard title='接口响应'>
             {runtime.apiTimings.length === 0 ? (
-              <p>尚未调用正式 API</p>
+              <p>尚未加载数据</p>
             ) : (
               runtime.apiTimings.map((item) => (
                 <p key={`${item.label}-${item.at}`}>
@@ -5019,6 +5278,7 @@ export function ConflictCheckResults() {
           selectedCaseEvidence.matchedClientName,
           selectedCaseEvidence.historicalClientName,
           selectedCaseEvidence.historicalParty,
+          selectedCaseEvidence.requestedParty,
           selectedPrimaryConflictCase.matched_subject,
           selectedSearchParameters.matchedClientName,
           selectedConflict?.matched_subject,
@@ -5160,7 +5420,6 @@ export function ConflictCheckResults() {
     review: latestReview,
     waiver: latestWaiver,
   })
-  const selectedPrimarySubject = conflictHitSubject(selectedConflict)
   const currentUserInfo = getUserInfo()
   const currentRoleCodes = [
     textValue(currentUserInfo?.role, ''),
@@ -5182,6 +5441,7 @@ export function ConflictCheckResults() {
       'conflict_officer',
     ].includes(role),
   )
+  const hasExistingReview = Boolean(latestReview.id)
 
   React.useEffect(() => {
     setReviewDecision('')
@@ -5459,7 +5719,7 @@ export function ConflictCheckResults() {
       <PageHeader
         eyebrow='利益冲突 / 冲突检测 / 检测清单'
         title='利益冲突检测清单'
-        subtitle={`来自正式 API 的冲突任务队列，最近刷新：${loading ? '正在加载' : formatDateTime(commandCenter?.generated_at)}`}
+        subtitle={`冲突任务队列，最近刷新：${loading ? '正在加载' : formatDateTime(commandCenter?.generated_at)}`}
         actions={
           <Button
             className='conflict-report-print-button'
@@ -5471,6 +5731,7 @@ export function ConflictCheckResults() {
         }
       />
 
+      <div className='ng-content'>
       {(contextCaseID || contextCaseNumber || contextCaseTitle) && (
         <SectionCard title='本案复核上下文'>
           <div className='batch-advice'>
@@ -5670,7 +5931,9 @@ export function ConflictCheckResults() {
                       {loading
                         ? '正在加载数据库冲突检测记录'
                         : riskItems.length === 0
-                          ? '暂无数据库冲突检测记录'
+                          ? canReviewConflict
+                            ? '全所冲突核查队列暂无检测记录'
+                            : '当前账号暂无待处理冲突检测任务'
                           : `暂无${riskFilter}记录`}
                     </td>
                   </tr>
@@ -5684,16 +5947,22 @@ export function ConflictCheckResults() {
           <SectionCard title='合规建议'>
             <div className='batch-advice danger'>
               <strong>
-                全队列总体风险：
+                {conflictQueueScopeLabel(canReviewConflict)}：
                 {reviewRequiredCount > 0
                   ? `存在 ${reviewRequiredCount} 条待人工复核记录`
                   : highRiskCount > 0
                     ? '存在高风险或严重记录'
-                    : '未发现高风险记录'}
+                    : canReviewConflict
+                      ? '当前队列未发现高风险记录'
+                      : '暂无待处理冲突检测任务'}
               </strong>
               <p>
-                该判断汇总当前队列全部 {riskItems.length} 条记录，不代表当前选中记录的处置结论。
+                该判断汇总{canReviewConflict ? '全所核查队列' : '当前账号可见范围'}内的 {riskItems.length}{' '}
+                条记录，不代表当前选中记录的处置结论。
               </p>
+              {!canReviewConflict && (
+                <p>本页不代表全所已完成冲突检查；如需确认全所范围，请联系独立冲突核查人。</p>
+              )}
               {reviewRequiredCount > 0 && (
                 <p>
                   “未发现高风险”不等于“已确认无冲突”；待人工复核记录在独立核查人形成结论前不得继续接案。
@@ -5730,6 +5999,7 @@ export function ConflictCheckResults() {
               <span>待人工复核 {reviewRequiredCount}</span>
               <span>审批待办 {commandCenter?.summary?.pending_approvals ?? 0}</span>
               <span>案件 {commandCenter?.summary?.active_cases ?? 0}</span>
+              <span>范围 {conflictQueueScopeLabel(canReviewConflict)}</span>
             </div>
           </SectionCard>
         </aside>
@@ -5759,7 +6029,7 @@ export function ConflictCheckResults() {
                   disabled={!selectedConflict?.id}
                   onClick={() => createConflictApproval(selectedConflict)}
                 >
-                  发起冲突审批
+                  {hasExistingReview ? '进入冲突审批' : '发起冲突审批'}
                 </Button>,
               ]
             : []),
@@ -5774,7 +6044,7 @@ export function ConflictCheckResults() {
                 ['关联案件', textValue(selectedConflict.title, '-')],
                 ['案件类型', dbCaseType(textValue(selectedConflict.case_type, '-'))],
                 ['客户/委托人', textValue(selectedConflict.client_name, '-')],
-                ['主命中主体', selectedPrimarySubject],
+                ['命中历史主体', selectedHistoricalSubject],
                 ['主冲突类型', selectedConflictType],
                 ['检测状态', statusLabel(selectedConflict.status)],
                 ['风险等级', riskLabel(selectedConflict.risk_level)],
@@ -5938,11 +6208,13 @@ export function ConflictCheckResults() {
                     <tr>
                       <td>风险评分</td>
                       <td>
-                        {selectedRiskScore === undefined
-                          ? '未提供'
-                          : selectedDecisionView.coverageLimited
-                            ? `不作为无冲突结论（机器评分 ${formatRiskScore(selectedRiskScore)} / 100）`
-                            : `${formatRiskScore(selectedRiskScore)} / 100`}
+                        {selectedDecisionView.decision === 'REVIEW_REQUIRED'
+                          ? '暂不评分（待独立人工复核）'
+                          : selectedRiskScore === undefined
+                            ? '未提供'
+                            : selectedDecisionView.coverageLimited
+                              ? `不作为无冲突结论（机器评分 ${formatRiskScore(selectedRiskScore)} / 100）`
+                              : `${formatRiskScore(selectedRiskScore)} / 100`}
                       </td>
                     </tr>
                     <tr>
@@ -6242,6 +6514,7 @@ export function ConflictCheckResults() {
                       value={reviewDecision || undefined}
                       placeholder='选择复核结论'
                       style={{ width: '100%' }}
+                      disabled={hasExistingReview}
                       onChange={setReviewDecision}
                       options={[
                         { value: 'no_conflict', label: '无冲突' },
@@ -6255,19 +6528,26 @@ export function ConflictCheckResults() {
                       value={reviewNotes}
                       onChange={(event) => setReviewNotes(event.target.value)}
                       rows={3}
+                      disabled={hasExistingReview}
                       placeholder='填写核对对象、数据来源和判断依据'
                     />
                     <Button
                       type='primary'
                       loading={submittingReview}
+                      disabled={hasExistingReview}
                       onClick={submitConflictReview}
                     >
-                      提交人工复核结论
+                      {hasExistingReview ? '已完成复核' : '提交人工复核结论'}
                     </Button>
+                    {hasExistingReview && (
+                      <p>当前检测记录已有复核结论。如有新证据，请重新运行冲突检测后再复核。</p>
+                    )}
                   </Space>
                 ) : (
                   <p>
-                    当前账号不能直接下人工复核结论。请点击下方“发起冲突审批”，由独立冲突核查人完成人工复核。
+                    {latestReview.id
+                      ? '独立复核已完成，但当前结论仍不足以放行接案。请进入冲突审批查看后续处置。'
+                      : '当前账号不能直接下人工复核结论。请点击下方“发起冲突审批”，由独立冲突核查人完成复核。'}
                   </p>
                 )}
               </SectionCard>
@@ -6329,10 +6609,11 @@ export function ConflictCheckResults() {
           <Input
             value={waiverDurationDays}
             onChange={(event) => setWaiverDurationDays(event.target.value)}
-            placeholder='豁免有效期（天）'
-          />
-        </Space>
-      </Modal>
+           placeholder='豁免有效期（天）'
+         />
+       </Space>
+     </Modal>
+      </div>
     </div>
   )
 }
@@ -6467,7 +6748,7 @@ export function ApprovalDecisionFlow() {
           subtitle={`审批编号：${id || '未提供'}`}
         />
         <SectionCard title='加载中'>
-          <p>正在从正式 API 读取审批、冲突证据和成案状态，请稍候。</p>
+          <p>正在读取审批、冲突证据和成案状态，请稍候。</p>
         </SectionCard>
       </div>
     )
@@ -6542,7 +6823,7 @@ export function ApprovalDecisionFlow() {
     decideApproval(
       'approve',
       '接案材料完整，冲突风险已完成复核，同意承办并创建正式案件。',
-      '通过正式 API 审批并触发自动成案。',
+      '通过审批并触发自动成案。',
     )
 
   const reject = () =>
@@ -6616,16 +6897,6 @@ export function ApprovalDecisionFlow() {
           ),
     )
     .filter(Boolean)
-  const snapshotSubjects = listOf<Record<string, unknown>>(
-    (snapshotRoot.subjects || snapshotMetadata.subjects || approvalMetadata.subjects) as
-      | Array<Record<string, unknown>>
-      | undefined,
-  )
-  const snapshotNormalizedSubjects = listOf<Record<string, unknown>>(
-    (snapshotRoot.normalizedSubjects ||
-      snapshotMetadata.normalizedSubjects ||
-      approvalMetadata.normalizedSubjects) as Array<Record<string, unknown>> | undefined,
-  )
   const rawSnapshotEvidence =
     snapshotRoot.evidence || snapshotMetadata.evidence || approvalMetadata.evidence
   const snapshotEvidence = Array.isArray(rawSnapshotEvidence)
@@ -6634,18 +6905,33 @@ export function ApprovalDecisionFlow() {
       ? [recordValue(rawSnapshotEvidence)]
       : []
   const primarySnapshotEvidence = snapshotEvidence[0] || primaryConflictEvidence(conflictResult)
-  const primarySnapshotSubject = textValue(
-    primarySnapshotEvidence.requestedParty ||
-      primarySnapshotEvidence.requested_party ||
-      primarySnapshotEvidence.subjectName ||
-      primarySnapshotEvidence.subject_name ||
-      recordValue(snapshotRoot.decision || snapshotMetadata.decision).primarySubject ||
-      snapshotNormalizedSubjects[0]?.normalizedName ||
-      snapshotNormalizedSubjects[0]?.originalName ||
-      snapshotSubjects[0]?.name ||
-      snapshotSubjects[0]?.originalName ||
-      conflictRecord.matched_subject,
+  const approvalHasRestrictedHit =
+    textValue(conflictRecord.source_case || conflictRecord.sourceCase, '') === '受限' ||
+    textValue(conflictRecord.evidence_summary || conflictRecord.evidenceSummary, '').includes('受隔离') ||
+    approvalConflictCases.some((item) =>
+      textValue(item.source_case || item.sourceCase, '') === '受限' ||
+      textValue(item.description || item.conflict_details, '').includes('受隔离'),
+    )
+  const requestedEvidenceSubject = textValue(
+    primarySnapshotEvidence.requestedParty || primarySnapshotEvidence.requested_party,
     '',
+  )
+  const primarySnapshotSubject = textValue(
+    approvalHasRestrictedHit
+      ? '存在受限命中（详情受隔离保护）'
+      : primarySnapshotEvidence.matchedSubject ||
+          primarySnapshotEvidence.matched_subject ||
+          primarySnapshotEvidence.historicalSubject ||
+          primarySnapshotEvidence.historical_subject ||
+          primarySnapshotEvidence.matchedClientName ||
+          primarySnapshotEvidence.historicalClientName ||
+          (requestedEvidenceSubject && requestedEvidenceSubject !== snapshotClientName
+            ? requestedEvidenceSubject
+            : undefined) ||
+          recordValue(snapshotRoot.decision || snapshotMetadata.decision).primarySubject ||
+          conflictRecord.matched_subject ||
+          snapshotOpposingPartyNames[0],
+    '待核实主体',
   )
   const snapshotEvidenceSource = [
     textValue(
@@ -6720,6 +7006,11 @@ export function ApprovalDecisionFlow() {
   )
   const caseCreation = integrationStatus?.case_creation
   const canOpenRelatedCase = Boolean(caseCreation?.case_id && caseCreation?.accessible !== false)
+  const caseCreationLabel = caseCreation?.case_id
+    ? `已成案 ${caseCreation.case_number || ''}`.trim()
+    : approval?.status === 'approved'
+      ? '审批已通过，待生成正式案件'
+      : '尚未成案'
   const applicationCaseTitle = textValue(
     metadata.case_creation_config?.title ||
       snapshot?.case_creation_config?.title ||
@@ -6776,7 +7067,7 @@ export function ApprovalDecisionFlow() {
         actions={
           <>
             <Badge
-              count={caseCreation?.case_id ? `已成案 ${caseCreation.case_number}` : '正式 API'}
+              count={caseCreationLabel}
               color={caseCreation?.case_id ? '#12a89d' : '#f59f2f'}
             />
             <Button icon={<PrinterOutlined />} onClick={() => window.print()}>
@@ -6901,8 +7192,8 @@ export function ApprovalDecisionFlow() {
                   客户：{snapshotClientName || '未记录'}
                 </p>
                 <p>
-                  <RiskTag text='主要命中' />
-                  主体：{primarySnapshotSubject || '未记录'}
+                  <RiskTag text='命中历史主体' />
+                  主体：{primarySnapshotSubject}
                 </p>
                 <p>
                   <RiskTag text='来源证据' />
@@ -6922,7 +7213,7 @@ export function ApprovalDecisionFlow() {
                     .join('、') || '审批快照暂无命中明细'}
                 </p>
                 <p>
-                  <RiskTag text='正式 API' />
+                  <RiskTag text='实时数据' />
                   来源：系统冲突检测记录与审批快照
                 </p>
               </div>
@@ -7087,15 +7378,15 @@ export function ApprovalDecisionFlow() {
               `审批状态 ${statusLabel(approval?.status || '加载中')}`,
               `优先级 ${priorityLabel(approval?.priority)}`,
               `发起时间 ${approval?.created_at ? new Date(approval.created_at).toLocaleString() : '加载中'}`,
-              `成案状态 ${caseCreation?.case_id ? '已生成正式案件' : approval?.status === 'approved' ? '生成中' : '等待审批通过'}`,
+              `成案状态 ${caseCreation?.case_id ? '已生成正式案件' : approval?.status === 'approved' ? '审批已通过，待生成正式案件' : '尚未成案（等待审批通过）'}`,
               `正式案件 ${caseCreation?.case_number || '审批通过后生成'}`,
             ].map((line) => (
               <p key={line}>{line}</p>
             ))}
           </SectionCard>
-          <SectionCard title='正式 API 耗时'>
+          <SectionCard title='接口响应'>
             {apiTimings.length === 0 ? (
-              <p>正在加载正式 API</p>
+              <p>正在加载...</p>
             ) : (
               apiTimings.map((item) => (
                 <p key={`${item.label}-${item.at}`}>
@@ -7285,50 +7576,51 @@ export function ApprovalWorkbench() {
               placeholder='搜索审批编号、标题、发起人或审批人'
             />
             <span className='batch-autosave'>
-              正式 API：{apiTiming === null ? '加载中' : `${apiTiming}ms`}
+              加载耗时：{apiTiming === null ? '加载中' : `${apiTiming}ms`}
             </span>
-            <Button icon={<DownloadOutlined />} onClick={exportApprovals}>
-              导出
-            </Button>
-          </>
-        }
-      />
+           <Button icon={<DownloadOutlined />} onClick={exportApprovals}>
+             导出
+           </Button>
+         </>
+       }
+     />
 
+      <div className='ng-content'>
       <div className='batch-metric-grid approval-metrics'>
         {[
           {
             icon: <AuditOutlined />,
             label: '待我审批',
             value: workbench.stats?.pending ?? 0,
-            delta: '正式 API',
+            delta: '',
             tone: 'blue' as Tone,
           },
           {
             icon: <SafetyCertificateOutlined />,
             label: '冲突审查',
             value: workbench.queues?.find?.((queue: any) => queue.key === 'conflict')?.count ?? 0,
-            delta: '正式 API',
+            delta: '',
             tone: 'red' as Tone,
           },
           {
             icon: <FileProtectOutlined />,
             label: '豁免披露',
             value: workbench.stats?.waiver_review ?? 0,
-            delta: '正式 API',
+            delta: '',
             tone: 'orange' as Tone,
           },
           {
             icon: <ClockCircleOutlined />,
             label: '需补充',
             value: workbench.stats?.needs_revision ?? 0,
-            delta: '正式 API',
+            delta: '',
             tone: 'red' as Tone,
           },
           {
             icon: <CheckCircleOutlined />,
             label: '队列总数',
             value: approvalItems.length,
-            delta: '正式 API',
+            delta: '',
             tone: 'teal' as Tone,
           },
         ].map((item) => (
@@ -7471,9 +7763,10 @@ export function ApprovalWorkbench() {
                 <em>{formatApiDate(textValue(item.updated_at || item.created_at, ''))}</em>
               </article>
             ))}
-            {approvalRows.length === 0 && <p>暂无数据库审批意见</p>}
-          </div>
-        </SectionCard>
+           {approvalRows.length === 0 && <p>暂无数据库审批意见</p>}
+         </div>
+       </SectionCard>
+     </div>
       </div>
     </div>
   )
@@ -7512,7 +7805,7 @@ export function LawyerResourceCenter() {
           <>
             <Input prefix={<SearchOutlined />} placeholder='搜索律师、专长、案件、审批...' />
             <span className='batch-autosave'>
-              正式 API：{apiTiming === null ? '加载中' : `${apiTiming}ms`}
+              加载耗时：{apiTiming === null ? '加载中' : `${apiTiming}ms`}
             </span>
             <Button icon={<CalendarOutlined />}>排期视图</Button>
             <Button type='primary' icon={<PlusOutlined />}>
@@ -7528,7 +7821,7 @@ export function LawyerResourceCenter() {
             icon: <TeamOutlined />,
             label: '执业律师',
             value: resource.summary?.lawyers ?? lawyerRows.length,
-            delta: '正式 API',
+            delta: '',
             tone: 'blue' as Tone,
           },
           {
@@ -7745,7 +8038,7 @@ export function LawyerProfileCenter() {
         <PageHeader
           eyebrow='律师管理 / 律师档案'
           title='律师档案不存在'
-          subtitle='正式 API 未返回该律师账号。'
+          subtitle='未找到该律师账号。'
           actions={
             <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/lawyer')}>
               返回律师资源
@@ -7765,7 +8058,7 @@ export function LawyerProfileCenter() {
         actions={
           <>
             <span className='batch-autosave'>
-              正式 API：{apiTiming === null ? '加载中' : `${apiTiming}ms`}
+              加载耗时：{apiTiming === null ? '加载中' : `${apiTiming}ms`}
             </span>
             <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/lawyer')}>
               返回律师资源
@@ -7811,7 +8104,7 @@ export function LawyerProfileCenter() {
             icon: <ClockCircleOutlined />,
             label: '入库时间',
             value: formatApiDate(textValue(lawyer.created_at, '')),
-            delta: '正式 API',
+            delta: '',
             tone: 'slate' as Tone,
           },
         ].map((item) => (
@@ -7993,7 +8286,7 @@ export function UserAccessCenter() {
           <>
             <Input prefix={<SearchOutlined />} placeholder='搜索姓名、邮箱、角色、权限...' />
             <span className='batch-autosave'>
-              正式 API：{apiTiming === null ? '加载中' : `${apiTiming}ms`}
+              加载耗时：{apiTiming === null ? '加载中' : `${apiTiming}ms`}
             </span>
             <Button icon={<DownloadOutlined />}>导出</Button>
             <Button type='primary' icon={<PlusOutlined />}>
@@ -8009,7 +8302,7 @@ export function UserAccessCenter() {
             icon: <UserOutlined />,
             label: '系统用户',
             value: access.summary?.users ?? userRows.length,
-            delta: '正式 API',
+            delta: '',
             tone: 'blue' as Tone,
           },
           {
@@ -8230,7 +8523,7 @@ export function SystemSettingsCenter() {
         actions={
           <>
             <span className='batch-autosave'>
-              正式 API：{apiTiming === null ? '加载中' : `${apiTiming}ms`}
+              加载耗时：{apiTiming === null ? '加载中' : `${apiTiming}ms`}
             </span>
             <Button icon={<DownloadOutlined />}>导出配置</Button>
             <Button>恢复默认</Button>
@@ -8261,14 +8554,14 @@ export function SystemSettingsCenter() {
             icon: <BellOutlined />,
             label: '通知策略',
             value: notificationSettings.length,
-            delta: '正式 API',
+            delta: '',
             tone: 'orange' as Tone,
           },
           {
             icon: <FileProtectOutlined />,
             label: '审计策略',
             value: auditSettings.length,
-            delta: '正式 API',
+            delta: '',
             tone: 'teal' as Tone,
           },
           {
