@@ -37,16 +37,8 @@ func setupTestRouter() (*gin.Engine, *gorm.DB, *redis.Client) {
 		DB:   1, // 使用测试数据库
 	})
 
-	config := &router.RouterConfig{
-		DB:             db,
-		Redis:          rdb,
-		Elasticsearch:  nil,
-		AllowedOrigins: []string{"*"},
-		RateLimit:      1000,
-		Timeout:        30 * time.Second,
-	}
-
-	app := router.NewRouter(config)
+	app := gin.New()
+	router.Init(app, db, rdb, nil)
 	return app, db, rdb
 }
 
@@ -56,10 +48,10 @@ func BenchmarkAPIRequest(b *testing.B) {
 
 	// 测试不同的API端点
 	testCases := []struct {
-		name string
-		path string
+		name   string
+		path   string
 		method string
-		body interface{}
+		body   interface{}
 	}{
 		{
 			name:   "GetDashboardStats",
@@ -121,7 +113,7 @@ func BenchmarkCacheMiddleware(b *testing.B) {
 	ctx := context.Background()
 	cacheKey := "lawoa:/api/test"
 	testResponse := map[string]interface{}{
-		"message": "Hello, World!",
+		"message":   "Hello, World!",
 		"timestamp": time.Now().Unix(),
 	}
 	responseData, _ := json.Marshal(testResponse)
@@ -353,14 +345,6 @@ func TestPerformanceMonitoring(t *testing.T) {
 func TestCacheEfficiency(t *testing.T) {
 	_, _, rdb := setupTestRouter()
 	ctx := context.Background()
-
-	// 创建缓存配置
-	config := middleware.CacheConfig{
-		TTL:          5 * time.Minute,
-		RedisClient:  rdb,
-		KeyPrefix:    "test",
-		MaxBodySize:  1024 * 1024,
-	}
 
 	// 测试缓存失效
 	middleware.InvalidateCache(rdb, "test", "user:*", "dashboard:*")

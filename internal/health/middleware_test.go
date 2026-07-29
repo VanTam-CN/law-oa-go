@@ -167,6 +167,34 @@ func TestHealthMiddleware_ReadinessHandler(t *testing.T) {
 	assert.Equal(t, "1.0.0", response["version"])
 }
 
+func TestHealthMiddleware_ReadinessRejectsDegradedChecks(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	healthChecker := NewHealthChecker(&DefaultHealthConfig, nil)
+	healthChecker.RegisterCheck(&MockHealthCheck{
+		name:    "degraded_dependency",
+		timeout: time.Second,
+		result: &HealthCheckResult{
+			Name:      "degraded_dependency",
+			Status:    StatusDegraded,
+			Message:   "dependency is degraded",
+			Timestamp: time.Now(),
+		},
+	})
+	middleware := NewHealthMiddleware(healthChecker, "1.0.0", "production")
+	router := gin.New()
+	router.GET("/ready", middleware.ReadinessHandler)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/ready", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
+	var response map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &response))
+	assert.Equal(t, false, response["ready"])
+}
+
 func TestHealthMiddleware_LivenessHandler(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 

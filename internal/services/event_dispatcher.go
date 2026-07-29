@@ -15,17 +15,17 @@ type EventType string
 
 const (
 	// 案件相关事件
-	EventCaseCreated    EventType = "case.created"
-	EventCaseUpdated    EventType = "case.updated"
-	EventCaseDeleted    EventType = "case.deleted"
-	EventCaseStatusChanged EventType = "case.status_changed"
+	EventCaseCreated          EventType = "case.created"
+	EventCaseUpdated          EventType = "case.updated"
+	EventCaseDeleted          EventType = "case.deleted"
+	EventCaseStatusChanged    EventType = "case.status_changed"
 	EventCaseHearingScheduled EventType = "case.hearing_scheduled"
 	EventCaseJudgmentReceived EventType = "case.judgment_received"
 
 	// 审批相关事件
-	EventApprovalCreated EventType = "approval.created"
-	EventApprovalApproved EventType = "approval.approved"
-	EventApprovalRejected EventType = "approval.rejected"
+	EventApprovalCreated   EventType = "approval.created"
+	EventApprovalApproved  EventType = "approval.approved"
+	EventApprovalRejected  EventType = "approval.rejected"
 	EventApprovalSubmitted EventType = "approval.submitted"
 
 	// 客户相关事件
@@ -34,7 +34,7 @@ const (
 
 	// 文档相关事件
 	EventDocumentUploaded EventType = "document.uploaded"
-	EventDocumentUpdated EventType = "document.updated"
+	EventDocumentUpdated  EventType = "document.updated"
 
 	// 自定义事件
 	EventCustomReminder EventType = "custom.reminder"
@@ -42,10 +42,10 @@ const (
 
 // Event 事件定义
 type Event struct {
-	Type      EventType                 `json:"type"`
-	Timestamp time.Time                 `json:"timestamp"`
-	SourceID  uint                      `json:"source_id"`
-	Metadata  map[string]interface{}    `json:"metadata"`
+	Type      EventType              `json:"type"`
+	Timestamp time.Time              `json:"timestamp"`
+	SourceID  uint                   `json:"source_id"`
+	Metadata  map[string]interface{} `json:"metadata"`
 }
 
 // EventHandler 事件处理器函数
@@ -53,8 +53,8 @@ type EventHandler func(ctx context.Context, event *Event) error
 
 // EventDispatcher 事件分发器
 type EventDispatcher struct {
-	handlers map[EventType][]EventHandler
-	mu       sync.RWMutex
+	handlers  map[EventType][]EventHandler
+	mu        sync.RWMutex
 	inboxRepo repositories.InboxRepository
 	userRepo  repositories.UserRepository
 	caseRepo  repositories.CaseRepository
@@ -63,7 +63,7 @@ type EventDispatcher struct {
 // NewEventDispatcher 创建事件分发器
 func NewEventDispatcher(inboxRepo repositories.InboxRepository, userRepo repositories.UserRepository, caseRepo repositories.CaseRepository) *EventDispatcher {
 	dispatcher := &EventDispatcher{
-		handlers: make(map[EventType][]EventHandler),
+		handlers:  make(map[EventType][]EventHandler),
 		inboxRepo: inboxRepo,
 		userRepo:  userRepo,
 		caseRepo:  caseRepo,
@@ -100,6 +100,11 @@ func (d *EventDispatcher) Dispatch(ctx context.Context, event *Event) error {
 	// 异步执行所有处理器
 	for _, handler := range handlerCopy {
 		go func(h EventHandler) {
+			defer func() {
+				if recovered := recover(); recovered != nil {
+					fmt.Printf("事件处理器panic: type=%v, panic=%v\n", event.Type, recovered)
+				}
+			}()
 			if err := h(ctx, event); err != nil {
 				// 记录错误但不中断其他处理器
 				fmt.Printf("事件处理器错误: type=%v, error=%v\n", event.Type, err)
@@ -158,6 +163,9 @@ func (d *EventDispatcher) handleCaseCreated(ctx context.Context, event *Event) e
 	if err != nil {
 		return fmt.Errorf("获取案件失败: %w", err)
 	}
+	if case_ == nil {
+		return nil
+	}
 
 	// 为主办律师创建待办事项
 	item := &models.InboxItem{
@@ -185,6 +193,9 @@ func (d *EventDispatcher) handleCaseStatusChanged(ctx context.Context, event *Ev
 	case_, err := d.caseRepo.FindByID(ctx, caseID)
 	if err != nil {
 		return fmt.Errorf("获取案件失败: %w", err)
+	}
+	if case_ == nil {
+		return nil
 	}
 
 	// 根据状态创建相应的待办事项
@@ -270,7 +281,7 @@ func (d *EventDispatcher) handleHearingScheduled(ctx context.Context, event *Eve
 	court, _ := event.Metadata["court"].(string)
 
 	case_, err := d.caseRepo.FindByID(ctx, caseID)
-	if err != nil {
+	if err != nil || case_ == nil {
 		return nil
 	}
 

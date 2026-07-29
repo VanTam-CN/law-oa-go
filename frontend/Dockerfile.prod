@@ -16,7 +16,7 @@ RUN npm ci --only=production
 COPY . .
 
 # 设置环境变量
-ENV REACT_APP_API_URL=http://localhost:8080/api
+ENV REACT_APP_API_URL=/api
 ENV REACT_APP_ENV=production
 ENV GENERATE_SOURCEMAP=false
 

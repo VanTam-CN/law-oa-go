@@ -14,14 +14,14 @@ test.describe('客户快捷操作反馈', () => {
     await expect(page.getByText('上海示例科技有限公司').first()).toBeVisible()
   })
 
-  test('新增联系人应保存到客户主联系人', async ({ page }) => {
-    await page.getByRole('button', { name: '新增联系人' }).click()
-    const dialog = page.getByRole('dialog', { name: '新增联系人' })
+  test('编辑主联系人应保存到客户主档案', async ({ page }) => {
+    await page.getByRole('button', { name: '编辑主联系人' }).first().click()
+    const dialog = page.getByRole('dialog', { name: '编辑主联系人' })
     await expect(dialog).toBeVisible()
     await page.getByPlaceholder('联系人姓名').fill('王总')
     await page.getByPlaceholder('联系电话').fill('021-55550000')
     await dialog.getByRole('button', { name: /保\s*存/ }).click()
-    await expect(page.getByText('联系人已保存')).toBeVisible()
+    await expect(page.getByText('主联系人已更新')).toBeVisible()
   })
 
   test('上传附件应调用上传闭环并显示成功反馈', async ({ page }) => {

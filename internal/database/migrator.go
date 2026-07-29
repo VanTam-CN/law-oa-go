@@ -4,6 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -24,11 +27,16 @@ type Migrator struct {
 
 // NewMigrator 创建迁移器
 func NewMigrator(cfg *config.DatabaseConfig, migrationsPath string) (*Migrator, error) {
+	if cfg == nil {
+		return nil, fmt.Errorf("database configuration is required for migrations")
+	}
 	driverName := strings.ToLower(cfg.Driver)
 	if driverName == "" {
 		driverName = "postgres"
 	}
-
+	if driverName != "mysql" && driverName != "postgres" && driverName != "postgresql" {
+		return nil, fmt.Errorf("unsupported migration database driver %q; use mysql or postgres", cfg.Driver)
+	}
 	sqlDriver, databaseName, dsn := buildMigrationDSN(cfg, driverName)
 	db, err := sql.Open(sqlDriver, dsn)
 	if err != nil {
@@ -37,11 +45,32 @@ func NewMigrator(cfg *config.DatabaseConfig, migrationsPath string) (*Migrator, 
 
 	// 测试连接
 	if err := db.Ping(); err != nil {
+		_ = db.Close()
 		return nil, fmt.Errorf("failed to ping database: %w", err)
+	}
+
+	currentVersion, dirty, initialized, err := readMigrationVersion(db, driverName)
+	if err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	if dirty {
+		_ = db.Close()
+		return nil, fmt.Errorf("database migration state is dirty at version %d; repair the migration state before running new migrations", currentVersion)
+	}
+	if (driverName == "postgres" || driverName == "postgresql") && !initialized {
+		_ = db.Close()
+		return nil, fmt.Errorf("PostgreSQL migration history is not initialized; use -command bootstrap for a fresh or production database, not the historical migration chain")
+	}
+
+	if err := validatePendingMigrationDirectory(migrationsPath, driverName, currentVersion); err != nil {
+		_ = db.Close()
+		return nil, err
 	}
 
 	migrationDriver, err := newMigrationDriver(db, driverName)
 	if err != nil {
+		_ = db.Close()
 		return nil, err
 	}
 
@@ -51,6 +80,7 @@ func NewMigrator(cfg *config.DatabaseConfig, migrationsPath string) (*Migrator, 
 		migrationDriver,
 	)
 	if err != nil {
+		_ = db.Close()
 		return nil, fmt.Errorf("failed to create migrate instance: %w", err)
 	}
 
@@ -59,6 +89,135 @@ func NewMigrator(cfg *config.DatabaseConfig, migrationsPath string) (*Migrator, 
 		db:         db,
 		driverName: driverName,
 	}, nil
+}
+
+// validateMigrationDirectory prevents a mixed historical directory from
+// partially mutating a target database. The repository currently contains
+// both PostgreSQL-only and MySQL-only files; accepting that directory and
+// relying on the first SQL error leaves golang-migrate in a dirty state after
+// earlier migrations may already have committed.
+func validateMigrationDirectory(migrationsPath, driverName string) error {
+	return validateMigrationFiles(migrationsPath, driverName, 0, false)
+}
+
+// validatePendingMigrationDirectory validates only migrations newer than the
+// database version. This keeps an old mixed-dialect history from blocking an
+// already bootstrapped database while still failing closed before any pending
+// SQL is executed.
+func validatePendingMigrationDirectory(migrationsPath, driverName string, currentVersion uint) error {
+	return validateMigrationFiles(migrationsPath, driverName, currentVersion, true)
+}
+
+func validateMigrationFiles(migrationsPath, driverName string, currentVersion uint, pendingOnly bool) error {
+	entries, err := os.ReadDir(migrationsPath)
+	if err != nil {
+		return fmt.Errorf("read migration directory %q: %w", migrationsPath, err)
+	}
+
+	postgresOnlyMarkers := []string{
+		"jsonb",
+		"timestamptz",
+		"bigserial",
+		"do $$",
+		"on conflict",
+		"create extension",
+		"comment on",
+		"::jsonb",
+	}
+	mysqlOnlyMarkers := []string{
+		"engine=innodb",
+		"delimiter",
+		"auto_increment",
+		"create procedure",
+		" on update current_timestamp",
+	}
+	sqlFileCount := 0
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(strings.ToLower(entry.Name()), ".sql") {
+			continue
+		}
+		version, hasVersion := migrationVersionFromFilename(entry.Name())
+		if pendingOnly && (!hasVersion || version <= currentVersion) {
+			continue
+		}
+		sqlFileCount++
+		path := filepath.Join(migrationsPath, entry.Name())
+		contents, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("read migration file %q: %w", path, err)
+		}
+		lower := strings.ToLower(string(contents))
+		if driverName == "mysql" {
+			if marker := firstMigrationMarker(lower, postgresOnlyMarkers); marker != "" {
+				return fmt.Errorf("migration directory %q contains PostgreSQL-only syntax %q in %s; provide a MySQL-specific migration directory", migrationsPath, marker, entry.Name())
+			}
+		}
+		if driverName == "postgres" || driverName == "postgresql" {
+			if marker := firstMigrationMarker(lower, mysqlOnlyMarkers); marker != "" {
+				return fmt.Errorf("migration directory %q contains MySQL-only syntax %q in %s; provide a PostgreSQL-specific migration directory", migrationsPath, marker, entry.Name())
+			}
+		}
+	}
+	if sqlFileCount == 0 {
+		return fmt.Errorf("migration directory %q contains no SQL migration files", migrationsPath)
+	}
+
+	return nil
+}
+
+func migrationVersionFromFilename(name string) (uint, bool) {
+	if len(name) < 7 || name[6] != '_' {
+		return 0, false
+	}
+	version, err := strconv.ParseUint(name[:6], 10, 32)
+	if err != nil {
+		return 0, false
+	}
+	return uint(version), true
+}
+
+func readMigrationVersion(db *sql.DB, driverName string) (version uint, dirty bool, initialized bool, err error) {
+	var tableCount int
+	if driverName == "postgres" || driverName == "postgresql" {
+		err = db.QueryRow(`
+			SELECT COUNT(*)
+			FROM information_schema.tables
+			WHERE table_schema = current_schema()
+			  AND table_name = 'schema_migrations'`,
+		).Scan(&tableCount)
+	} else {
+		err = db.QueryRow(`
+			SELECT COUNT(*)
+			FROM information_schema.tables
+			WHERE table_schema = DATABASE()
+			  AND table_name = 'schema_migrations'`,
+		).Scan(&tableCount)
+	}
+	if err != nil {
+		return 0, false, false, fmt.Errorf("failed to inspect schema_migrations: %w", err)
+	}
+	if tableCount == 0 {
+		return 0, false, false, nil
+	}
+
+	err = db.QueryRow("SELECT version, dirty FROM schema_migrations LIMIT 1").Scan(&version, &dirty)
+	if err == sql.ErrNoRows {
+		return 0, false, false, nil
+	}
+	if err != nil {
+		return 0, false, false, fmt.Errorf("failed to read schema_migrations: %w", err)
+	}
+	return version, dirty, true, nil
+}
+
+func firstMigrationMarker(contents string, markers []string) string {
+	for _, marker := range markers {
+		if strings.Contains(contents, marker) {
+			return marker
+		}
+	}
+	return ""
 }
 
 func buildMigrationDSN(cfg *config.DatabaseConfig, driverName string) (sqlDriver string, databaseName string, dsn string) {
@@ -78,7 +237,7 @@ func buildMigrationDSN(cfg *config.DatabaseConfig, driverName string) (sqlDriver
 		)
 	}
 
-	return "mysql", "mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=%v&loc=%s&multiStatements=true&tls=skip-verify",
+	return "mysql", "mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=%v&loc=%s&multiStatements=true%s",
 		cfg.Username,
 		cfg.Password,
 		cfg.Host,
@@ -87,6 +246,7 @@ func buildMigrationDSN(cfg *config.DatabaseConfig, driverName string) (sqlDriver
 		cfg.Charset,
 		cfg.ParseTime,
 		cfg.Loc,
+		mysqlTLSParam(cfg.SSLMode),
 	)
 }
 
@@ -101,7 +261,7 @@ func newMigrationDriver(db *sql.DB, driverName string) (migratedb.Driver, error)
 
 	driver, err := mysql.WithInstance(db, &mysql.Config{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create mysql driver: %w", err)
+		return nil, err
 	}
 	return driver, nil
 }

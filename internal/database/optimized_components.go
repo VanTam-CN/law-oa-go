@@ -13,7 +13,6 @@ import (
 	"law-oa-go/internal/models"
 )
 
-
 // QueryOptimizer 查询优化器
 type QueryOptimizer struct {
 	db    *gorm.DB
@@ -206,8 +205,8 @@ var (
 	CacheService             *cache.CacheService
 	AdvancedCacheService     *cache.AdvancedCacheService
 	QueryOptimizerInst       *QueryOptimizer
-	PerformanceOptimizerInst  *PerformanceOptimizer
-	ElasticsearchClient       *elasticsearch.Client
+	PerformanceOptimizerInst *PerformanceOptimizer
+	ElasticsearchClient      *elasticsearch.Client
 )
 
 // InitOptimizedComponents 初始化所有优化组件
@@ -231,10 +230,15 @@ func InitOptimizedComponents(cfg *config.Config) error {
 	// 	return fmt.Errorf("failed to auto migrate database: %w", err)
 	// }
 
-	// 初始化种子数据
-	err = initSeedData(OptimizedDB.DB)
-	if err != nil {
-		return fmt.Errorf("failed to initialize seed data: %w", err)
+	// Production must never create demo users or demo matters implicitly. Seed
+	// data is reserved for local development and controlled trial environments.
+	if !cfg.IsProduction() {
+		err = initSeedData(OptimizedDB.DB)
+		if err != nil {
+			return fmt.Errorf("failed to initialize seed data: %w", err)
+		}
+	} else {
+		log.Println("生产环境跳过演示种子数据初始化")
 	}
 
 	// 初始化Redis缓存服务
@@ -263,7 +267,7 @@ func InitOptimizedComponents(cfg *config.Config) error {
 	} else {
 		// 初始化Elasticsearch优化器
 		esConfig := DefaultESConfig()
-		esConfig.Addresses = []string{fmt.Sprintf("http://%s:%s", cfg.Elasticsearch.Host, cfg.Elasticsearch.Port)}
+		esConfig.Addresses = []string{elasticsearchAddress(cfg.Elasticsearch.Host, cfg.Elasticsearch.Port)}
 		esConfig.Username = cfg.Elasticsearch.Username
 		esConfig.Password = cfg.Elasticsearch.Password
 

@@ -68,41 +68,45 @@ func (el ErrorLevel) String() string {
 // EnhancedError 增强的错误类型
 type EnhancedError struct {
 	// 基础信息
-	id        string                 `json:"id"`
-	code      string                 `json:"code"`
-	category  ErrorCategory         `json:"category"`
-	level     ErrorLevel            `json:"level"`
-	message   string                 `json:"message"`
-	details   string                 `json:"details,omitempty"`
+	id       string
+	code     string
+	category ErrorCategory
+	level    ErrorLevel
+	message  string
+	details  string
 
 	// 上下文信息
-	context   map[string]interface{} `json:"context,omitempty"`
-	timestamp time.Time              `json:"timestamp"`
-	traceID   string                 `json:"trace_id,omitempty"`
+	context   map[string]interface{}
+	timestamp time.Time
+	traceID   string
 
 	// 根本原因
-	cause   error                  `json:"-"`
-	wrapped []error                `json:"-"`
+	cause   error   `json:"-"`
+	wrapped []error `json:"-"`
 
 	// 调试信息
-	stackTrace string               `json:"stack_trace,omitempty"`
-	file       string               `json:"file,omitempty"`
-	line       int                  `json:"line,omitempty"`
-	function   string               `json:"function,omitempty"`
+	stackTrace string
+	file       string
+	line       int
+	function   string
 
 	// HTTP响应相关
-	httpStatus int                   `json:"-"`
+	httpStatus int `json:"-"`
 
 	// 恢复策略
-	suggestions []string            `json:"suggestions,omitempty"`
+	suggestions []string
 }
 
 // Error 实现error接口
 func (e *EnhancedError) Error() string {
-	if e.cause != nil {
-		return fmt.Sprintf("[%s] %s: %v", e.level, e.message, e.cause)
+	message := e.message
+	if e.details != "" {
+		message = fmt.Sprintf("%s: %s", message, e.details)
 	}
-	return fmt.Sprintf("[%s] %s", e.level, e.message)
+	if e.cause != nil {
+		return fmt.Sprintf("[%s] %s: %v", e.level, message, e.cause)
+	}
+	return fmt.Sprintf("[%s] %s", e.level, message)
 }
 
 // Code 返回错误代码
@@ -165,7 +169,6 @@ func (e *EnhancedError) HTTPStatus() int {
 func (e *EnhancedError) StackTrace() string {
 	return e.stackTrace
 }
-
 
 // Unwrap 实现errors.Unwrap接口
 func (e *EnhancedError) Unwrap() error {

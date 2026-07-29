@@ -23,11 +23,13 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -52,10 +54,21 @@ import (
 )
 
 func main() {
+	if len(os.Args) > 1 && strings.EqualFold(strings.TrimSpace(os.Args[1]), "healthcheck") {
+		if err := runHealthcheck(); err != nil {
+			log.Printf("健康检查失败: %v", err)
+			os.Exit(1)
+		}
+		return
+	}
+
 	// 加载配置
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatal("加载配置失败:", err)
+	}
+	if err := cfg.ValidateProductionReadiness(); err != nil {
+		log.Fatal("生产环境门禁校验失败:", err)
 	}
 
 	// 初始化优化组件
@@ -140,6 +153,7 @@ func main() {
 		// 从GORM DB获取底层sql.DB
 		if sqlDB, err := db.DB.DB(); err == nil {
 			healthChecker.RegisterCheck(health.NewDatabaseHealthCheck(sqlDB, healthConfig.DatabaseTimeout))
+			healthChecker.RegisterCheck(health.NewConflictP0ReadinessCheck(sqlDB, cfg.IsProduction(), cfg.Database.Driver))
 		}
 	}
 
@@ -214,8 +228,14 @@ func main() {
 	}))
 
 	// 初始化路由系统
+	db := database.GetOptimizedDB().DB
+	if cfg.IsProduction() {
+		if err := validateProductionSchema(db); err != nil {
+			log.Fatal("生产数据库结构门禁失败:", err)
+		}
+	}
 	router.Init(app,
-		database.GetOptimizedDB().DB,
+		db,
 		database.GetCacheService().GetClient(),
 		database.GetElasticsearchClient())
 
@@ -225,21 +245,26 @@ func main() {
 		log.Println("🔧 集成测试路由注册完成")
 	}
 
-	db := database.GetOptimizedDB().DB
-
-	// 自动迁移用户和权限模型。已由 SQL 迁移管理的表跳过运行时 AutoMigrate，避免 GORM 误判历史约束名。
-	if migratedTablesExist(db, &models.User{}, &models.Role{}, &models.Permission{}, &models.RolePermission{}, &models.UserRole{}) {
-		log.Println("用户/RBAC表已存在，跳过自动迁移")
-	} else if err := db.AutoMigrate(
-		&models.User{},
-		&models.Role{},
-		&models.Permission{},
-		&models.RolePermission{},
-		&models.UserRole{},
-	); err != nil {
-		log.Printf("用户/RBAC表自动迁移失败: %v", err)
+	// Production schema changes must come from the one-shot bootstrap or an
+	// reviewed migration. Runtime AutoMigrate is development-only so a new
+	// application binary cannot silently mutate a live law-firm database.
+	if !cfg.IsProduction() {
+		// 自动迁移用户和权限模型。已由 SQL 迁移管理的表跳过运行时 AutoMigrate，避免 GORM 误判历史约束名。
+		if migratedTablesExist(db, &models.User{}, &models.Role{}, &models.Permission{}, &models.RolePermission{}, &models.UserRole{}) {
+			log.Println("用户/RBAC表已存在，跳过自动迁移")
+		} else if err := db.AutoMigrate(
+			&models.User{},
+			&models.Role{},
+			&models.Permission{},
+			&models.RolePermission{},
+			&models.UserRole{},
+		); err != nil {
+			log.Printf("用户/RBAC表自动迁移失败: %v", err)
+		} else {
+			log.Println("用户/RBAC表自动迁移成功")
+		}
 	} else {
-		log.Println("用户/RBAC表自动迁移成功")
+		log.Println("生产环境已完成 schema bootstrap，跳过运行时自动迁移")
 	}
 
 	// 初始化RBAC数据
@@ -249,15 +274,46 @@ func main() {
 		log.Println("RBAC数据初始化成功")
 	}
 
-	// 自动迁移集成相关模型
-	if err := db.AutoMigrate(
-		&models.ConflictCheckAssociation{},
-		&models.CaseCreationAssociation{},
-		&models.ApprovalIntegrationMetadata{},
-	); err != nil {
-		log.Printf("集成模型自动迁移失败: %v", err)
-	} else {
-		log.Println("集成模型自动迁移成功")
+	if !cfg.IsProduction() {
+		// 自动迁移集成相关模型
+		if err := db.AutoMigrate(
+			&models.ConflictCheckAssociation{},
+			&models.CaseCreationAssociation{},
+			&models.ApprovalIntegrationMetadata{},
+		); err != nil {
+			log.Printf("集成模型自动迁移失败: %v", err)
+		} else {
+			log.Println("集成模型自动迁移成功")
+		}
+
+		// 自动迁移财务模型
+		if err := db.AutoMigrate(
+			&models.Contract{},
+			&models.PaymentMilestone{},
+			&models.Invoice{},
+			&models.Payment{},
+			&models.BadDebtRecord{},
+			&models.CommissionRecord{},
+			&models.CommissionRule{},
+			&models.FeeTemplate{},
+		); err != nil {
+			log.Printf("财务模型自动迁移失败: %v", err)
+		} else {
+			log.Println("财务模型自动迁移成功")
+		}
+
+		// 自动迁移试用 MVP 必需模型
+		if migratedTablesExist(db, &models.InboxItem{}, &models.ClientTrustAccount{}, &models.ClientTrustTransaction{}) {
+			log.Println("MVP模型表已存在，跳过自动迁移")
+		} else if err := db.AutoMigrate(
+			&models.InboxItem{},
+			&models.ClientTrustAccount{},
+			&models.ClientTrustTransaction{},
+		); err != nil {
+			log.Printf("MVP模型自动迁移失败: %v", err)
+		} else {
+			log.Println("MVP模型自动迁移成功")
+		}
 	}
 
 	// 自动迁移财务模型
@@ -302,170 +358,175 @@ func main() {
 	app.GET("/health/live", healthMiddleware.LivenessHandler)
 	app.GET("/health/ready", healthMiddleware.ReadinessHandler)
 
-	// 添加详细健康检查端点（/api/v1/health 已在 router.go 的 public 组中注册）
-	app.GET("/health/detailed", healthMiddleware.DetailedHealthCheckHandler)
-	app.GET("/health/metrics", healthMiddleware.HealthCheckMetricsHandler)
-	app.GET("/health/dependencies", healthMiddleware.DependencyHealthHandler)
-	app.GET("/health/history", healthMiddleware.HealthCheckHistoryHandler)
+	// Detailed health responses include dependency names, check details and
+	// runtime metadata. Keep them out of the public production surface; the
+	// liveness/readiness endpoints above are sufficient for orchestration.
+	if !cfg.IsProduction() {
+		// 添加详细健康检查端点（/api/v1/health 已在 router.go 的 public 组中注册）
+		app.GET("/health/detailed", healthMiddleware.DetailedHealthCheckHandler)
+		app.GET("/health/metrics", healthMiddleware.HealthCheckMetricsHandler)
+		app.GET("/health/dependencies", healthMiddleware.DependencyHealthHandler)
+		app.GET("/health/history", healthMiddleware.HealthCheckHistoryHandler)
 
-	// 添加健康状态页面
-	app.GET("/health/status", healthMiddleware.HealthStatusPageHandler)
+		// 添加健康状态页面
+		app.GET("/health/status", healthMiddleware.HealthStatusPageHandler)
 
-	// 添加健康指标导出端点
-	app.GET("/metrics/health", healthMiddleware.ExportHealthMetricsHandler)
+		// 添加健康指标导出端点
+		app.GET("/metrics/health", healthMiddleware.ExportHealthMetricsHandler)
+	}
 
-	// 添加优雅关闭端点（仅限管理员访问）
-	// adminGroup := app.Group("/admin")
-	// adminGroup.Use(middleware.AdminAuthMiddleware())
-	// adminGroup.POST("/shutdown", healthMiddleware.GracefulShutdownHandler)
+	// Diagnostic and process-control endpoints are development-only. Production
+	// exposes the authenticated health/metrics endpoints above instead of an
+	// unauthenticated shutdown, GC, cache test, or internal monitor surface.
+	if !cfg.IsProduction() {
+		// 添加优雅关闭端点（仅开发环境）
+		app.POST("/admin/shutdown", healthMiddleware.GracefulShutdownHandler)
 
-	// 临时添加关闭端点用于测试（不使用管理员认证）
-	app.POST("/admin/shutdown", healthMiddleware.GracefulShutdownHandler)
-
-	// 添加监控状态端点
-	app.GET("/api/v1/monitor/status", func(c *gin.Context) {
-		if monitorService != nil {
-			status := monitorService.GetStatus()
-			c.JSON(http.StatusOK, gin.H{
-				"success": true,
-				"data":    status,
-			})
-		} else {
-			c.JSON(http.StatusServiceUnavailable, gin.H{
-				"success": false,
-				"error":   "Monitor service not available",
-			})
-		}
-	})
-
-	// 添加监控仪表板端点
-	app.GET("/api/v1/monitor/dashboard", func(c *gin.Context) {
-		if monitorService != nil {
-			dashboard := monitorService.GetDashboardData()
-			c.JSON(http.StatusOK, gin.H{
-				"success": true,
-				"data":    dashboard,
-			})
-		} else {
-			c.JSON(http.StatusServiceUnavailable, gin.H{
-				"success": false,
-				"error":   "Monitor service not available",
-			})
-		}
-	})
-
-	// 添加性能统计端点
-	app.GET("/api/v1/monitor/performance", func(c *gin.Context) {
-		if monitorService != nil {
-			stats := monitorService.GetPerformanceStats()
-			c.JSON(http.StatusOK, gin.H{
-				"success": true,
-				"data":    stats,
-			})
-		} else {
-			c.JSON(http.StatusServiceUnavailable, gin.H{
-				"success": false,
-				"error":   "Monitor service not available",
-			})
-		}
-	})
-
-	// 添加告警端点
-	app.GET("/api/v1/monitor/alerts", func(c *gin.Context) {
-		if monitorService != nil {
-			alerts := monitorService.GetAlerts()
-			c.JSON(http.StatusOK, gin.H{
-				"success": true,
-				"data":    alerts,
-			})
-		} else {
-			c.JSON(http.StatusServiceUnavailable, gin.H{
-				"success": false,
-				"error":   "Monitor service not available",
-			})
-		}
-	})
-
-	// 添加解决告警端点
-	app.POST("/api/v1/monitor/alerts/:id/resolve", func(c *gin.Context) {
-		if monitorService == nil {
-			c.JSON(http.StatusServiceUnavailable, gin.H{
-				"success": false,
-				"error":   "Monitor service not available",
-			})
-			return
-		}
-
-		alertID := c.Param("id")
-		resolved := monitorService.ResolveAlert(alertID)
-
-		if resolved {
-			c.JSON(http.StatusOK, gin.H{
-				"success": true,
-				"message": "Alert resolved successfully",
-			})
-		} else {
-			c.JSON(http.StatusNotFound, gin.H{
-				"success": false,
-				"error":   "Alert not found",
-			})
-		}
-	})
-
-	// 添加强制GC端点
-	app.POST("/api/v1/monitor/gc", func(c *gin.Context) {
-		if monitorService != nil {
-			monitorService.ForceGC()
-			c.JSON(http.StatusOK, gin.H{
-				"success": true,
-				"message": "Garbage collection triggered successfully",
-			})
-		} else {
-			c.JSON(http.StatusServiceUnavailable, gin.H{
-				"success": false,
-				"error":   "Monitor service not available",
-			})
-		}
-	})
-
-	// 添加性能测试端点
-	app.GET("/performance/cache", func(c *gin.Context) {
-		cacheService := database.GetCacheService()
-		if cacheService == nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Cache service not available"})
-			return
-		}
-
-		// 简单的缓存性能测试
-		start := time.Now()
-		testData := map[string]interface{}{
-			"id":    1,
-			"name":  "性能测试数据",
-			"value": "这是一个缓存性能测试",
-		}
-
-		key := "performance:test"
-
-		// 测试设置
-		if err := cacheService.Set(key, testData, time.Minute); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Cache set failed"})
-			return
-		}
-
-		// 测试获取
-		var result map[string]interface{}
-		if err := cacheService.Get(key, &result); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Cache get failed"})
-			return
-		}
-
-		duration := time.Since(start)
-		c.JSON(http.StatusOK, gin.H{
-			"duration_ms": duration.Milliseconds(),
-			"cache_hit":   true,
-			"data":        result,
+		// 添加监控状态端点
+		app.GET("/api/v1/monitor/status", func(c *gin.Context) {
+			if monitorService != nil {
+				status := monitorService.GetStatus()
+				c.JSON(http.StatusOK, gin.H{
+					"success": true,
+					"data":    status,
+				})
+			} else {
+				c.JSON(http.StatusServiceUnavailable, gin.H{
+					"success": false,
+					"error":   "Monitor service not available",
+				})
+			}
 		})
-	})
+
+		// 添加监控仪表板端点
+		app.GET("/api/v1/monitor/dashboard", func(c *gin.Context) {
+			if monitorService != nil {
+				dashboard := monitorService.GetDashboardData()
+				c.JSON(http.StatusOK, gin.H{
+					"success": true,
+					"data":    dashboard,
+				})
+			} else {
+				c.JSON(http.StatusServiceUnavailable, gin.H{
+					"success": false,
+					"error":   "Monitor service not available",
+				})
+			}
+		})
+
+		// 添加性能统计端点
+		app.GET("/api/v1/monitor/performance", func(c *gin.Context) {
+			if monitorService != nil {
+				stats := monitorService.GetPerformanceStats()
+				c.JSON(http.StatusOK, gin.H{
+					"success": true,
+					"data":    stats,
+				})
+			} else {
+				c.JSON(http.StatusServiceUnavailable, gin.H{
+					"success": false,
+					"error":   "Monitor service not available",
+				})
+			}
+		})
+
+		// 添加告警端点
+		app.GET("/api/v1/monitor/alerts", func(c *gin.Context) {
+			if monitorService != nil {
+				alerts := monitorService.GetAlerts()
+				c.JSON(http.StatusOK, gin.H{
+					"success": true,
+					"data":    alerts,
+				})
+			} else {
+				c.JSON(http.StatusServiceUnavailable, gin.H{
+					"success": false,
+					"error":   "Monitor service not available",
+				})
+			}
+		})
+
+		// 添加解决告警端点
+		app.POST("/api/v1/monitor/alerts/:id/resolve", func(c *gin.Context) {
+			if monitorService == nil {
+				c.JSON(http.StatusServiceUnavailable, gin.H{
+					"success": false,
+					"error":   "Monitor service not available",
+				})
+				return
+			}
+
+			alertID := c.Param("id")
+			resolved := monitorService.ResolveAlert(alertID)
+
+			if resolved {
+				c.JSON(http.StatusOK, gin.H{
+					"success": true,
+					"message": "Alert resolved successfully",
+				})
+			} else {
+				c.JSON(http.StatusNotFound, gin.H{
+					"success": false,
+					"error":   "Alert not found",
+				})
+			}
+		})
+
+		// 添加强制GC端点
+		app.POST("/api/v1/monitor/gc", func(c *gin.Context) {
+			if monitorService != nil {
+				monitorService.ForceGC()
+				c.JSON(http.StatusOK, gin.H{
+					"success": true,
+					"message": "Garbage collection triggered successfully",
+				})
+			} else {
+				c.JSON(http.StatusServiceUnavailable, gin.H{
+					"success": false,
+					"error":   "Monitor service not available",
+				})
+			}
+		})
+
+		// 添加性能测试端点
+		app.GET("/performance/cache", func(c *gin.Context) {
+			cacheService := database.GetCacheService()
+			if cacheService == nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Cache service not available"})
+				return
+			}
+
+			// 简单的缓存性能测试
+			start := time.Now()
+			testData := map[string]interface{}{
+				"id":    1,
+				"name":  "性能测试数据",
+				"value": "这是一个缓存性能测试",
+			}
+
+			key := "performance:test"
+
+			// 测试设置
+			if err := cacheService.Set(key, testData, time.Minute); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Cache set failed"})
+				return
+			}
+
+			// 测试获取
+			var result map[string]interface{}
+			if err := cacheService.Get(key, &result); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Cache get failed"})
+				return
+			}
+
+			duration := time.Since(start)
+			c.JSON(http.StatusOK, gin.H{
+				"duration_ms": duration.Milliseconds(),
+				"cache_hit":   true,
+				"data":        result,
+			})
+		})
+	}
 
 	// 优雅关闭服务器
 	server := &http.Server{
@@ -504,6 +565,39 @@ func main() {
 	log.Println("服务器已关闭")
 }
 
+// runHealthcheck is used by the scratch production image. It must not load
+// application configuration or mutate state; it only probes the already
+// running local listener and returns a process exit status for the runtime.
+// HEALTHCHECK_PATH lets Compose use strict readiness while the image default
+// remains the lightweight liveness probe used by generic container runtimes.
+func runHealthcheck() error {
+	port := strings.TrimSpace(os.Getenv("PORT"))
+	if port == "" {
+		port = "8080"
+	}
+	path := strings.TrimSpace(os.Getenv("HEALTHCHECK_PATH"))
+	if path == "" {
+		path = "/health/live"
+	}
+	if !strings.HasPrefix(path, "/health/") {
+		return fmt.Errorf("HEALTHCHECK_PATH must be a local health path")
+	}
+	request, err := http.NewRequest(http.MethodGet, "http://127.0.0.1:"+port+path, nil)
+	if err != nil {
+		return fmt.Errorf("构造健康检查请求失败: %w", err)
+	}
+	client := &http.Client{Timeout: 3 * time.Second}
+	response, err := client.Do(request)
+	if err != nil {
+		return fmt.Errorf("访问本地存活探针失败: %w", err)
+	}
+	defer response.Body.Close()
+	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
+		return fmt.Errorf("本地存活探针返回 HTTP %d", response.StatusCode)
+	}
+	return nil
+}
+
 func migratedTablesExist(db *gorm.DB, models ...interface{}) bool {
 	for _, model := range models {
 		if !db.Migrator().HasTable(model) {
@@ -511,4 +605,69 @@ func migratedTablesExist(db *gorm.DB, models ...interface{}) bool {
 		}
 	}
 	return true
+}
+
+func validateProductionSchema(db *gorm.DB) error {
+	if db == nil {
+		return fmt.Errorf("数据库连接未初始化")
+	}
+
+	requiredTables := []string{
+		"users",
+		"roles",
+		"permissions",
+		"role_permissions",
+		"user_roles",
+		"clients",
+		"cases",
+		"entities",
+		"entity_relations",
+		"entity_name_history",
+		"case_parties",
+		"conflict_checks",
+		"conflict_details",
+		"conflict_rules",
+		"conflict_check_records",
+		"conflict_cases",
+		"conflict_reviews",
+		"conflict_reviewer_assignments",
+		"conflict_search_scopes",
+		"case_subject_revisions",
+		"compliance_audit_events",
+		"approval_requests",
+		"approval_workflows",
+		"approval_records",
+		"approval_nodes",
+		"approval_notifications",
+		"approval_delegations",
+		"approval_snapshots",
+		"approval_conflict_associations",
+		"approval_case_creation_tracking",
+		"case_intakes",
+		"case_intake_parties",
+		"case_materials",
+		"schema_bootstrap_state",
+	}
+
+	missing := make([]string, 0)
+	for _, table := range requiredTables {
+		if !db.Migrator().HasTable(table) {
+			missing = append(missing, table)
+		}
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("缺少关键表: %s；请先完成目标数据库迁移并重新启动", strings.Join(missing, ", "))
+	}
+
+	var schemaVersion string
+	if err := db.Table("schema_bootstrap_state").Where("id = ?", 1).Pluck("version", &schemaVersion).Error; err != nil {
+		return fmt.Errorf("无法读取生产 schema bootstrap 版本: %w", err)
+	}
+	if schemaVersion != database.ProductionSchemaVersion {
+		return fmt.Errorf("生产 schema 版本不受支持: %s；期望 %s", schemaVersion, database.ProductionSchemaVersion)
+	}
+	if err := database.ValidateProductionSchemaContract(db); err != nil {
+		return err
+	}
+	return nil
 }

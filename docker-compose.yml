@@ -10,7 +10,10 @@ services:
       target: production  # 使用生产阶段构建
       args:
         BUILD_COMMIT: ${BUILD_COMMIT:-local}
-        BUILD_DATE: ${BUILD_DATE:-$(date -u +"%Y-%m-%dT%H:%M:%SZ")}
+        # Compose does not evaluate shell command substitutions in .env-style
+        # interpolation. CI should provide BUILD_DATE; local builds use a
+        # stable marker instead of embedding the literal "$(date ...)".
+        BUILD_DATE: ${BUILD_DATE:-local}
         BUILD_TARGET: ${BUILD_TARGET:-standard}
         PGO_PROFILE: ${PGO_PROFILE:-default.pgo}
       cache_from:
@@ -25,15 +28,22 @@ services:
       # 运行环境配置
       - GIN_MODE=${GIN_MODE:-release}
       - TZ=Asia/Shanghai
-      - ENVIRONMENT=${ENVIRONMENT:-production}
+      # This file is the production Compose entrypoint. Development uses the
+      # local Go/Vite commands and must not silently relax production gates.
+      - ENVIRONMENT=production
       - PORT=8080
+      # Compose uses readiness as the dependency gate, so the frontend is not
+      # advertised before the production conflict prerequisites are complete.
+      - HEALTHCHECK_PATH=/health/ready
 
       # 数据库配置
-      - DB_HOST=mysql
-      - DB_PORT=3306
-      - DB_USER=${DB_USER:-lawuser}
-      - DB_PASSWORD=${DB_PASSWORD:-lawpass}
-      - DB_NAME=${DB_NAME:-law_oa}
+      - DB_DRIVER=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_SSLMODE=${DB_SSLMODE:-require}
+      - DB_USERNAME=${DB_USERNAME:?DB_USERNAME must be set}
+      - DB_PASSWORD=${DB_PASSWORD:?DB_PASSWORD must be set}
+      - DB_DATABASE=${DB_DATABASE:-law_oa}
 
       # Redis配置
       - REDIS_HOST=redis
@@ -42,13 +52,18 @@ services:
       - REDIS_DB=0
 
       # Elasticsearch配置
-      - ES_HOST=http://elasticsearch:9200
+      - ES_HOST=elasticsearch
       - ES_USERNAME=${ES_USERNAME:-}
       - ES_PASSWORD=${ES_PASSWORD:-}
 
       # 安全配置
-      - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-in-production}
-      - APP_SECRET=${APP_SECRET:-your-app-secret-change-in-production}
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET must be set}
+      - APP_SECRET=${APP_SECRET:?APP_SECRET must be set}
+      # 主体身份标识加密密钥；生产启动门禁会校验其为32字节密钥
+      - SUBJECT_DATA_KEY=${SUBJECT_DATA_KEY:?SUBJECT_DATA_KEY must be set}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:?CORS_ALLOWED_ORIGINS must be set}
+      - ONLYOFFICE_URL=${ONLYOFFICE_URL:?ONLYOFFICE_URL must be set}
+      - ONLYOFFICE_SECRET=${ONLYOFFICE_SECRET:?ONLYOFFICE_SECRET must be set}
 
       # 监控和追踪配置
       - METRICS_ENABLED=${METRICS_ENABLED:-true}
@@ -56,7 +71,9 @@ services:
       - JAEGER_ENDPOINT=${JAEGER_ENDPOINT:-http://jaeger:14268/api/traces}
 
     depends_on:
-      mysql:
+      migrate:
+        condition: service_completed_successfully
+      postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -69,9 +86,6 @@ services:
       - ./config:/app/config:ro  # 只读挂载配置
       - uploads_data:/app/uploads  # 上传文件持久化
       - logs_data:/app/logs       # 日志持久化
-
-      # 开发环境代码挂载 (通过环境变量控制)
-      - ${SOURCE_MOUNT:-./internal:/app/src:delegated}
 
     # 健康检查配置
     healthcheck:
@@ -111,6 +125,38 @@ services:
       - "com.lawoa.service.type=backend"
       - "com.lawoa.version=${IMAGE_TAG:-latest}"
 
+  # 生产启动前只执行一次 PostgreSQL schema bootstrap；backend 只有在
+  # bootstrap 成功后才会启动。该服务不会写入演示账号或业务种子数据。
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+      args:
+        BUILD_COMMIT: ${BUILD_COMMIT:-local}
+        BUILD_DATE: ${BUILD_DATE:-local}
+        BUILD_TARGET: standard
+    image: law-oa-go:${IMAGE_TAG:-latest}
+    container_name: law-oa-migrate
+    entrypoint: ["/app/law-oa-migrate"]
+    command: ["-command", "bootstrap"]
+    environment:
+      - ENVIRONMENT=production
+      - DB_DRIVER=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_SSLMODE=${DB_SSLMODE:-require}
+      - DB_USERNAME=${DB_USERNAME:?DB_USERNAME must be set}
+      - DB_PASSWORD=${DB_PASSWORD:?DB_PASSWORD must be set}
+      - DB_DATABASE=${DB_DATABASE:-law_oa}
+      - DB_LOC=Asia/Shanghai
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - law-oa-network
+    restart: "no"
+
   # React 前端应用
   frontend:
     build:
@@ -120,16 +166,16 @@ services:
       cache_from:
         - law-oa-frontend:latest
       args:
-        - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8080}
-        - REACT_APP_ENVIRONMENT=${ENVIRONMENT:-production}
+        - REACT_APP_API_URL=${REACT_APP_API_URL:-/api}
+        - REACT_APP_ENVIRONMENT=production
     image: law-oa-frontend:${IMAGE_TAG:-latest}
     container_name: law-oa-frontend
     ports:
       - "${FRONTEND_PORT:-3003}:80"
     environment:
       - TZ=Asia/Shanghai
-      - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8080}
-      - REACT_APP_ENVIRONMENT=${ENVIRONMENT:-production}
+      - REACT_APP_API_URL=${REACT_APP_API_URL:-/api}
+      - REACT_APP_ENVIRONMENT=production
     depends_on:
       backend:
         condition: service_healthy
@@ -170,51 +216,33 @@ services:
       - "com.lawoa.service.type=frontend"
       - "com.lawoa.version=${IMAGE_TAG:-latest}"
 
-  # MySQL 数据库服务
-  mysql:
-    image: mysql:8.0
-    container_name: law-oa-mysql
+  # PostgreSQL 是当前生产 MVP 的唯一受支持数据库方言。历史 MySQL
+  # 迁移目录保留在仓库中，但不作为生产安装入口。
+  postgres:
+    image: postgres:16-alpine
+    container_name: law-oa-postgres
     ports:
-      - "${MYSQL_PORT:-33060}:3306"
+      - "${POSTGRES_PORT:-5432}:5432"
     environment:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-lawroot2024}
-      - MYSQL_DATABASE=${DB_NAME:-law_oa}
-      - MYSQL_USER=${DB_USER:-lawuser}
-      - MYSQL_PASSWORD=${DB_PASSWORD:-lawpass}
+      - POSTGRES_DB=${DB_DATABASE:-law_oa}
+      - POSTGRES_USER=${DB_USERNAME:?DB_USERNAME must be set}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:?DB_PASSWORD must be set}
       - TZ=Asia/Shanghai
-      # MySQL 性能优化配置
-      - MYSQL_INNODB_BUFFER_POOL_SIZE=256M
-      - MYSQL_MAX_CONNECTIONS=200
-      - MYSQL_QUERY_CACHE_SIZE=32M
     volumes:
-      - mysql_data:/var/lib/mysql
-      - ./config/mysql/conf.d:/etc/mysql/conf.d:ro
-      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - law-oa-network
 
     # 健康检查配置
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-lawroot2024}"]
-      timeout: 20s
-      retries: 10
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      timeout: 10s
+      retries: 12
       interval: 30s
-      start_period: 60s
+      start_period: 30s
 
     # 重启策略
     restart: unless-stopped
-
-    # 命令配置 (使用现代MySQL认证)
-    command: >
-      --default-authentication-plugin=mysql_native_password
-      --character-set-server=utf8mb4
-      --collation-server=utf8mb4_unicode_ci
-      --innodb-buffer-pool-size=256M
-      --max-connections=200
-      --query-cache-size=32M
-      --slow-query-log=1
-      --slow-query-log-file=/var/log/mysql/slow.log
-      --long-query-time=2
 
     # 安全配置
     security_opt:
@@ -239,7 +267,7 @@ services:
     # 标签
     labels:
       - "com.lawoa.service.type=database"
-      - "com.lawoa.database.type=mysql"
+      - "com.lawoa.database.type=postgresql"
 
   # Redis 缓存服务
   redis:
@@ -464,15 +492,13 @@ services:
     image: prom/prometheus:v2.47.0
     container_name: law-oa-prometheus
     ports:
-      - "${PROMETHEUS_PORT:-9090}:9090"
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/etc/prometheus/console_libraries'
       - '--web.console.templates=/etc/prometheus/consoles'
       - '--storage.tsdb.retention.time=15d'
-      - '--web.enable-lifecycle'
-      - '--web.enable-admin-api'
     volumes:
       - prometheus_data:/prometheus
       - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
@@ -524,10 +550,10 @@ services:
     image: grafana/grafana:10.2.0
     container_name: law-oa-grafana
     ports:
-      - "${GRAFANA_PORT:-3000}:3000"
+      - "127.0.0.1:${GRAFANA_PORT:-3000}:3000"
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin2024}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD must be set}
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
       - TZ=Asia/Shanghai
@@ -588,13 +614,13 @@ networks:
 
 # 数据持久化卷
 volumes:
-  mysql_data:
-    name: law-oa-mysql-data
+  postgres_data:
+    name: law-oa-postgres-data
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: ${DATA_DIR:-./data}/mysql
+      device: ${DATA_DIR:-./data}/postgres
 
   redis_data:
     name: law-oa-redis-data
@@ -643,4 +669,3 @@ volumes:
       type: none
       o: bind
       device: ${DATA_DIR:-./data}/logs
-

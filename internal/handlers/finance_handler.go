@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -69,6 +70,10 @@ func (h *FinanceHandler) CreateContract(c *gin.Context) {
 
 	contract, err := h.contractService.CreateContract(c.Request.Context(), &req)
 	if err != nil {
+		if isSubjectWorkflowError(err) {
+			writeSubjectWorkflowError(c, err)
+			return
+		}
 		common.APIInternalServerError(c, "创建合同失败", err.Error())
 		return
 	}
@@ -247,6 +252,10 @@ func (h *FinanceHandler) ActivateContract(c *gin.Context) {
 
 	contract, err := h.contractService.ActivateContract(c.Request.Context(), uint(id))
 	if err != nil {
+		if isSubjectWorkflowError(err) {
+			writeSubjectWorkflowError(c, err)
+			return
+		}
 		common.APIInternalServerError(c, "激活合同失败", err.Error())
 		return
 	}
@@ -356,12 +365,12 @@ func (h *FinanceHandler) GetContractStats(c *gin.Context) {
 // @Router /finance/milestones [post]
 func (h *FinanceHandler) CreateMilestone(c *gin.Context) {
 	var req struct {
-		ContractID uint   `json:"contract_id" binding:"required"`
-		Name       string `json:"name" binding:"required,min=1,max=200"`
+		ContractID uint    `json:"contract_id" binding:"required"`
+		Name       string  `json:"name" binding:"required,min=1,max=200"`
 		Amount     float64 `json:"amount" binding:"required,gt=0"`
 		Percentage float64 `json:"percentage" binding:"required,gte=0,lte=100"`
 		DueDate    *string `json:"due_date,omitempty"`
-		Condition  string `json:"condition" binding:"max=500"`
+		Condition  string  `json:"condition" binding:"max=500"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		common.APIBadRequest(c, "请求参数错误", err.Error())
@@ -1645,14 +1654,14 @@ func (h *FinanceHandler) GetFinanceOverview(c *gin.Context) {
 
 	// 并行获取各模块统计数据
 	type result struct {
-		contractStats *services.ContractStats
-		invoiceStats  *services.InvoiceStats
-		paymentStats  *services.PaymentStats
+		contractStats   *services.ContractStats
+		invoiceStats    *services.InvoiceStats
+		paymentStats    *services.PaymentStats
 		commissionStats *services.CommissionStats
-		contractErr   error
-		invoiceErr    error
-		paymentErr    error
-		commissionErr error
+		contractErr     error
+		invoiceErr      error
+		paymentErr      error
+		commissionErr   error
 	}
 
 	ch := make(chan result, 1)
@@ -1988,13 +1997,7 @@ func (h *FinanceHandler) ExportContracts(c *gin.Context) {
 		})
 	}
 
-	// 写入响应
-	csvWriter := csv.NewWriter(c.Writer)
-	csvWriter.WriteAll(records)
-	csvWriter.Flush()
-	if err := csvWriter.Error(); err != nil {
-		common.APIInternalServerError(c, "生成CSV文件失败", err.Error())
-	}
+	writeCSVRecords(c, records)
 }
 
 // ExportInvoices godoc
@@ -2067,13 +2070,7 @@ func (h *FinanceHandler) ExportInvoices(c *gin.Context) {
 		})
 	}
 
-	// 写入响应
-	csvWriter := csv.NewWriter(c.Writer)
-	csvWriter.WriteAll(records)
-	csvWriter.Flush()
-	if err := csvWriter.Error(); err != nil {
-		common.APIInternalServerError(c, "生成CSV文件失败", err.Error())
-	}
+	writeCSVRecords(c, records)
 }
 
 // ExportPayments godoc
@@ -2114,7 +2111,7 @@ func (h *FinanceHandler) ExportPayments(c *gin.Context) {
 	// 生成CSV文件
 	filename := fmt.Sprintf("payments_%s.csv", time.Now().Format("20060102_150405"))
 	c.Header("Content-Type", "text/csv")
-		c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s.csv", filename))
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
 
 	// 创建CSV写入器
 	records := [][]string{
@@ -2166,13 +2163,7 @@ func (h *FinanceHandler) ExportPayments(c *gin.Context) {
 		})
 	}
 
-	// 写入响应
-	csvWriter := csv.NewWriter(c.Writer)
-	csvWriter.WriteAll(records)
-	csvWriter.Flush()
-	if err := csvWriter.Error(); err != nil {
-		common.APIInternalServerError(c, "生成CSV文件失败", err.Error())
-	}
+	writeCSVRecords(c, records)
 }
 
 // ExportCommissions godoc
@@ -2284,13 +2275,7 @@ func (h *FinanceHandler) ExportCommissions(c *gin.Context) {
 		})
 	}
 
-	// 写入响应
-	csvWriter := csv.NewWriter(c.Writer)
-	csvWriter.WriteAll(records)
-	csvWriter.Flush()
-	if err := csvWriter.Error(); err != nil {
-		common.APIInternalServerError(c, "生成CSV文件失败", err.Error())
-	}
+	writeCSVRecords(c, records)
 }
 
 // 辅助函数：将时间字符串转换为格式化字符串
@@ -2311,4 +2296,37 @@ func dateStringPtr(dateStr *string) string {
 		return ""
 	}
 	return *dateStr
+}
+
+func writeCSVRecords(c *gin.Context, records [][]string) {
+	csvWriter := csv.NewWriter(c.Writer)
+	csvWriter.WriteAll(sanitizeCSVRecords(records))
+	csvWriter.Flush()
+	if err := csvWriter.Error(); err != nil {
+		common.APIInternalServerError(c, "生成CSV文件失败", err.Error())
+	}
+}
+
+func sanitizeCSVRecords(records [][]string) [][]string {
+	sanitized := make([][]string, len(records))
+	for i, record := range records {
+		sanitized[i] = make([]string, len(record))
+		for j, cell := range record {
+			sanitized[i][j] = sanitizeCSVCell(cell)
+		}
+	}
+	return sanitized
+}
+
+func sanitizeCSVCell(value string) string {
+	trimmed := strings.TrimLeft(value, " \t\r\n")
+	if trimmed == "" {
+		return value
+	}
+	switch trimmed[0] {
+	case '=', '+', '-', '@':
+		return "'" + value
+	default:
+		return value
+	}
 }

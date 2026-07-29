@@ -26,7 +26,7 @@
 | 5.3.4 | 冲突清单无高风险记录 | PASS | `/conflict` 清单和详情可见 `LAWYER-TRIAL-HIGH-001` 高风险记录 |
 | 7.2.2 | 新增联系人无保存反馈 | PASS | 客户页新增联系人后弹窗关闭，页面主联系人更新；版本过期时自动重试 |
 | 7.2.4 | 附件未真实上传 | PASS | 内部浏览器从“上传附件”选择 `.playwright-mcp/lawyer-browser-upload-proof.txt` 后提交，后端日志 `POST /api/v1/documents` 返回 200 |
-| 8.2.1 | 未验证 Lawyer A/B 交叉访问 | PASS | Lawyer A 访问 `/case/38` 显示无权；Lawyer B 登录后可在案件列表看到 `HD-ISO-B-2026-001` |
+| 8.2.1 | 未验证 Lawyer A/B 交叉访问 | PASS | Lawyer A 访问 `/case/38` 显示无权；Lawyer B 登录后可在案件列表看到 `DEMO-ISO-B-2026-001` |
 | 8.2.2 | 未验证 A/B 数据隔离 | PASS | Lawyer A 案件列表不显示 Lawyer B 独立案件；Lawyer B 显示自己的隔离客户和案件 |
 | 10.1.1 | 草稿编号无持久反馈 | PASS | 冲突检查后页面持续显示 `接案草稿已创建：INT-...`，底部操作栏同步显示 |
 | 10.2.1 | 未提交审批 | PASS | 低风险立案提交后跳转 `/approval/18b4d6db7a7607b0` |

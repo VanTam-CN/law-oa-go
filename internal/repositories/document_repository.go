@@ -20,6 +20,15 @@ type DocumentListParams struct {
 	Search     string
 	SortBy     string
 	SortOrder  string
+	// ViewerUserID 当前请求用户 ID。> 0 时启用隔离墙过滤：
+	// 排除"已启用隔离墙且用户未在白名单中"的 case 关联文档。
+	// = 0 时不应用过滤（仅供内部/后台任务使用）。
+	ViewerUserID uint
+	// OwnerScoped limits a non-management HTTP viewer to documents attached to
+	// matters they own or are explicitly allowed to access. It also hides
+	// unscoped documents from ordinary matter users instead of treating a
+	// global list as an implicit read permission.
+	OwnerScoped bool
 }
 
 // DocumentStats 文档统计
@@ -54,7 +63,8 @@ type DocumentRepository interface {
 	Delete(ctx context.Context, id uint) error
 
 	// GetStats 获取文档统计
-	GetStats(ctx context.Context) (*DocumentStats, error)
+	// viewerUserID > 0 时排除该用户无权访问的隔离墙案件文档，避免条数侧信道。
+	GetStats(ctx context.Context, viewerUserID uint) (*DocumentStats, error)
 
 	// FindByEntity 根据实体查找文档
 	FindByEntity(ctx context.Context, entityType string, entityID uint) ([]*models.Document, error)

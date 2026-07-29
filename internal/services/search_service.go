@@ -168,7 +168,7 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, query string, 
 
 	suggestRes, err := s.esClient.Search(
 		s.esClient.Search.WithContext(ctx),
-		s.esClient.Search.WithIndex(s.indexPrefix + "*"),
+		s.esClient.Search.WithIndex(s.indexPrefix+"*"),
 		s.esClient.Search.WithBody(&suggestBuf),
 	)
 	if err != nil {
@@ -230,7 +230,7 @@ func (s *SearchService) DeleteEntityFromIndex(ctx context.Context, entityType st
 	}
 
 	indexName := s.indexPrefix + entityType
-	
+
 	// Delete document using raw ES client
 	res, err := s.esClient.Delete(
 		indexName,
@@ -511,7 +511,7 @@ func (s *SearchService) parseSuggestions(result map[string]interface{}, limit in
 func (s *SearchService) extractFacets(result map[string]interface{}) map[string]int {
 	// Simple facet extraction by type
 	facets := make(map[string]int)
-	
+
 	hits, ok := result["hits"].(map[string]interface{})
 	if !ok {
 		return facets
@@ -534,7 +534,7 @@ func (s *SearchService) extractFacets(result map[string]interface{}) map[string]
 
 func (s *SearchService) prepareDocument(entityType string, entityID string, data map[string]interface{}) map[string]interface{} {
 	doc := make(map[string]interface{})
-	
+
 	// Copy all data
 	for k, v := range data {
 		doc[k] = v
@@ -557,33 +557,10 @@ func (s *SearchService) prepareDocument(entityType string, entityID string, data
 }
 
 func (s *SearchService) fallbackSearch(ctx context.Context, req *SearchRequest, startTime time.Time) (*SearchResponse, error) {
-	// Fallback to simple database search when Elasticsearch is not available
-	// This would perform basic LIKE queries on relevant tables
-	// For demonstration, return mock results
-
-	mockResults := []*SearchResult{
-		{
-			ID:        "fallback_1",
-			Type:      "case",
-			Title:     "Fallback Result for: " + req.Query,
-			Content:   "This is a fallback search result...",
-			URL:       "/cases/fallback_1",
-			Score:     0.5,
-			CreatedAt: time.Now(),
-		},
-	}
-
-	executionTime := time.Since(startTime)
-
-	return &SearchResponse{
-		Results:       mockResults,
-		Total:         1,
-		Page:          req.Page,
-		PageSize:      req.PageSize,
-		ExecutionTime: executionTime,
-		Suggestions:   []string{},
-		Facets:        map[string]int{},
-	}, nil
+	// A missing Elasticsearch connection must never produce synthetic records.
+	// The legacy handler is disabled in the production router; return a
+	// controlled error here as a second line of defence for direct callers.
+	return nil, errors.InternalError("Search backend is unavailable", fmt.Errorf("elasticsearch client is not configured"))
 }
 
 func (s *SearchService) generateSuggestions(query string) []string {

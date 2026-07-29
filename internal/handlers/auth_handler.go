@@ -1,6 +1,9 @@
 package handlers
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -8,20 +11,34 @@ import (
 	"github.com/gin-gonic/gin"
 	"law-oa-go/internal/auth"
 	"law-oa-go/internal/common"
+	errs "law-oa-go/internal/errors"
 	"law-oa-go/internal/middleware"
 	"law-oa-go/internal/services"
 )
 
 type AuthHandler struct {
-	userService             *services.UserService
-	tokenRevocationService  *auth.TokenRevocationService
+	userService               *services.UserService
+	tokenRevocationService    *auth.TokenRevocationService
+	publicRegistrationEnabled bool
 }
 
 func NewAuthHandler(userService *services.UserService, tokenRevocationService *auth.TokenRevocationService) *AuthHandler {
 	return &AuthHandler{
-		userService:            userService,
-		tokenRevocationService: tokenRevocationService,
+		userService:               userService,
+		tokenRevocationService:    tokenRevocationService,
+		publicRegistrationEnabled: true,
 	}
+}
+
+// SetPublicRegistrationEnabled controls whether an untrusted caller may
+// create an account without an administrator invitation. Production law-firm
+// deployments must keep this disabled; the handler guard remains in place
+// even if a route is accidentally registered by a future router change.
+func (h *AuthHandler) SetPublicRegistrationEnabled(enabled bool) {
+	if h == nil {
+		return
+	}
+	h.publicRegistrationEnabled = enabled
 }
 
 type LoginRequest struct {
@@ -34,8 +51,34 @@ type RegisterRequest struct {
 	Name     string `json:"name" binding:"required,min=2,max=50"`
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=6,max=50"`
-	Role     string `json:"role" binding:"required,oneof=admin lawyer assistant"`
 	Phone    string `json:"phone,omitempty"`
+}
+
+// publicRegistrationRole 公开注册强制固定的角色，杜绝请求体提权。
+const publicRegistrationRole = "user"
+
+// usernameFromEmail 由规范化邮箱派生稳定 username：本地部分 + 完整邮箱 SHA-256 前 8 位，
+// 截断到 50 字符；同一邮箱生成稳定结果，且避免常见本地部分冲突。
+func usernameFromEmail(rawEmail string) string {
+	email := strings.ToLower(strings.TrimSpace(rawEmail))
+	if email == "" {
+		return ""
+	}
+	localPart := email
+	if idx := strings.Index(email, "@"); idx > 0 {
+		localPart = email[:idx]
+	}
+	localPart = strings.TrimSpace(localPart)
+	if localPart == "" {
+		localPart = "user"
+	}
+	sum := sha256.Sum256([]byte(email))
+	suffix := hex.EncodeToString(sum[:])[:8]
+	username := localPart + "-" + suffix
+	if len(username) > 50 {
+		username = username[:50]
+	}
+	return username
 }
 
 type LoginResponse struct {
@@ -102,14 +145,18 @@ func normalizeLoginAccount(email string, account string) string {
 	}
 
 	aliases := map[string]string{
-		"admin":            "demo.admin@example.test",
-		"demo.admin":     "demo.admin@example.test",
-		"lawyer":           "demo.lawyer@example.test",
-		"demo.lawyer":    "demo.lawyer@example.test",
-		"assistant":        "demo.assistant@example.test",
-		"demo.assistant": "demo.assistant@example.test",
-		"finance":          "demo.finance@example.test",
-		"demo.finance":   "demo.finance@example.test",
+		"admin":                 "demo.admin@example.test",
+		"demo.admin":            "demo.admin@example.test",
+		"lawyer":                "demo.lawyer@example.test",
+		"demo.lawyer":           "demo.lawyer@example.test",
+		"lawyer-b":              "demo.lawyer.b@example.test",
+		"demo.lawyer.b":         "demo.lawyer.b@example.test",
+		"assistant":             "demo.assistant@example.test",
+		"demo.assistant":        "demo.assistant@example.test",
+		"finance":               "demo.finance@example.test",
+		"demo.finance":          "demo.finance@example.test",
+		"conflict-officer":      "demo.conflict.officer@example.test",
+		"demo.conflict.officer": "demo.conflict.officer@example.test",
 	}
 
 	if resolved, ok := aliases[identifier]; ok {
@@ -131,31 +178,47 @@ func normalizeLoginAccount(email string, account string) string {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /auth/register [post]
 func (h *AuthHandler) Register(c *gin.Context) {
+	if !h.publicRegistrationEnabled {
+		common.NewAPIError(c, 403, "PUBLIC_REGISTRATION_DISABLED", "真实律所环境不开放公开注册，请联系律所管理员创建账号")
+		return
+	}
+
 	var req RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		common.APIBadRequest(c, "请求参数错误", "请检查所有必填字段")
 		return
 	}
 
+	email := strings.ToLower(strings.TrimSpace(req.Email))
 	user, err := h.userService.CreateUser(c.Request.Context(), &services.CreateUserRequest{
+		Username: usernameFromEmail(email),
 		Name:     req.Name,
-		Email:    req.Email,
+		Email:    email,
 		Password: req.Password,
-		Role:     req.Role,
+		Role:     publicRegistrationRole,
 		Phone:    req.Phone,
 	})
 	if err != nil {
+		// 邮箱冲突属于客户端输入问题，返回 400 而非 500；其他错误按内部错误处理。
+		var bizErr *errs.EnhancedError
+		if errors.As(err, &bizErr) && bizErr.Code() == "BUSINESS_ERROR" {
+			common.APIBadRequest(c, "注册失败", err.Error())
+			return
+		}
 		common.APIInternalServerError(c, "注册失败", "用户创建失败")
 		return
 	}
 
-	// 简化token生成
-	token := "simple_token_for_dev"
-	expiresAt := int64(1234567890)
+	// 生成真实 JWT，禁止返回 dev 占位符
+	token, expiresAt, err := middleware.GenerateToken(user.ID, user.Email, user.Role)
+	if err != nil {
+		common.APIInternalServerError(c, "生成令牌失败", err.Error())
+		return
+	}
 
 	response := LoginResponse{
 		Token:     token,
-		ExpiresAt: expiresAt,
+		ExpiresAt: expiresAt.Unix(),
 		User:      user,
 	}
 
@@ -178,17 +241,17 @@ type RevokeByUserRequest struct {
 
 // RevokeByDeviceRequest 撤销设备令牌请求
 type RevokeByDeviceRequest struct {
-	UserID   uint `json:"user_id" binding:"required"`
+	UserID   uint   `json:"user_id" binding:"required"`
 	DeviceID string `json:"device_id" binding:"required"`
 }
 
 // OffboardingRevocationRequest 离职撤销请求
 type OffboardingRevocationRequest struct {
-	UserID                uint   `json:"user_id" binding:"required"`
-	SuccessorID           uint   `json:"successor_id" binding:"required"`
-	TransferredCaseCount  int    `json:"transferred_case_count"`
-	TransferredCaseIDs    []uint `json:"transferred_case_ids"`
-	HandoverNote          string `json:"handover_note"`
+	UserID               uint   `json:"user_id" binding:"required"`
+	SuccessorID          uint   `json:"successor_id" binding:"required"`
+	TransferredCaseCount int    `json:"transferred_case_count"`
+	TransferredCaseIDs   []uint `json:"transferred_case_ids"`
+	HandoverNote         string `json:"handover_note"`
 }
 
 // Logout godoc
@@ -245,18 +308,16 @@ func (h *AuthHandler) RevokeUserTokens(c *gin.Context) {
 	}
 
 	// 获取当前用户ID（从JWT中提取）
-	currentUserID, exists := c.Get("user_id")
-	if !exists {
+	currentID, ok := middleware.GetCurrentUserID(c)
+	if !ok {
 		common.APIUnauthorized(c, "未认证", "用户信息无效")
 		return
 	}
 
 	// 只有管理员或用户本人可以撤销
-	currentID := currentUserID.(uint)
 	if currentID != req.UserID {
-		// 检查是否为管理员
-		userRole, _ := c.Get("user_role")
-		if userRole != "admin" {
+		role, ok := middleware.GetCurrentRole(c)
+		if !ok || (role != "admin" && role != "super_admin") {
 			common.APIForbidden(c, "权限不足", "只能撤销自己的令牌")
 			return
 		}
@@ -294,17 +355,16 @@ func (h *AuthHandler) RevokeDeviceTokens(c *gin.Context) {
 	}
 
 	// 获取当前用户ID
-	currentUserID, exists := c.Get("user_id")
+	currentID, exists := middleware.GetCurrentUserID(c)
 	if !exists {
 		common.APIUnauthorized(c, "未认证", "用户信息无效")
 		return
 	}
 
 	// 只有管理员或用户本人可以撤销
-	currentID := currentUserID.(uint)
 	if currentID != req.UserID {
-		userRole, _ := c.Get("user_role")
-		if userRole != "admin" {
+		role, ok := middleware.GetCurrentRole(c)
+		if !ok || (role != "admin" && role != "super_admin") {
 			common.APIForbidden(c, "权限不足", "只能撤销自己的设备令牌")
 			return
 		}
@@ -342,8 +402,8 @@ func (h *AuthHandler) RevokeAllTokens(c *gin.Context) {
 	}
 
 	// 只有管理员可以执行离职撤销
-	userRole, _ := c.Get("user_role")
-	if userRole != "admin" {
+	role, ok := middleware.GetCurrentRole(c)
+	if !ok || (role != "admin" && role != "super_admin") {
 		common.APIForbidden(c, "权限不足", "只有管理员可以执行离职撤销")
 		return
 	}
@@ -393,17 +453,16 @@ func (h *AuthHandler) GetActiveDevices(c *gin.Context) {
 	}
 
 	// 获取当前用户ID
-	currentUserID, exists := c.Get("user_id")
+	currentID, exists := middleware.GetCurrentUserID(c)
 	if !exists {
 		common.APIUnauthorized(c, "未认证", "用户信息无效")
 		return
 	}
 
 	// 只有管理员或用户本人可以查看
-	currentID := currentUserID.(uint)
 	if currentID != id {
-		userRole, _ := c.Get("user_role")
-		if userRole != "admin" {
+		role, ok := middleware.GetCurrentRole(c)
+		if !ok || (role != "admin" && role != "super_admin") {
 			common.APIForbidden(c, "权限不足", "只能查看自己的设备信息")
 			return
 		}
@@ -447,17 +506,16 @@ func (h *AuthHandler) GetRevocationHistory(c *gin.Context) {
 	}
 
 	// 获取当前用户ID
-	currentUserID, exists := c.Get("user_id")
+	currentID, exists := middleware.GetCurrentUserID(c)
 	if !exists {
 		common.APIUnauthorized(c, "未认证", "用户信息无效")
 		return
 	}
 
 	// 只有管理员或用户本人可以查看
-	currentID := currentUserID.(uint)
 	if currentID != id {
-		userRole, _ := c.Get("user_role")
-		if userRole != "admin" {
+		role, ok := middleware.GetCurrentRole(c)
+		if !ok || (role != "admin" && role != "super_admin") {
 			common.APIForbidden(c, "权限不足", "只能查看自己的撤销历史")
 			return
 		}

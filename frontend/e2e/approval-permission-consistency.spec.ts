@@ -13,7 +13,7 @@ test.describe('审批详情权限一致性', () => {
     await waitForAppShell(page)
 
     // 律师 ID 为 2，审批的 current_approver_id 为 1，不匹配 → 只读
-    await expect(page.getByText(/仅可查看审批进度/)).toBeVisible()
+    await expect(page.locator('.batch-approval-readonly')).toHaveText('申请人不能审批自己的申请，仅可查看审批进度。')
     await expect(page.getByRole('button', { name: '同意并成案' })).not.toBeVisible()
   })
 })

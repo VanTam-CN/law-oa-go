@@ -25,7 +25,7 @@ Law OA Go 提供现代化的 RESTful API，基于 Go 1.25 标准构建，采用�
 - ✅ **客户管理**: 客户信息和统计功能
 - ✅ **案件管理**: 案件CRUD、律师分配、状态管理
 - ✅ **文档管理**: 上传/下载/预览、回收站、统计、OnlyOffice、卷宗目录模板
-- ✅ **利益冲突检查**: `/conflict` 异步任务 + `/conflict-v2` Entity 驱动检查和报告
+- ✅ **利益冲突检查**: `/conflict` 异步任务和 `/conflict/check` P0 规范路径；生产环境禁用旧版 `/conflict-v2/checks` 结论接口
 - ✅ **审批流程**: 审批、模板、代理、豁免、审批-冲突集成
 - ✅ **通知/待办**: 通知队列、模板、批量操作、Inbox 待办
 - ✅ **财务管理**: 合同、付款计划、发票、回款、坏账、提成、分成规则、费率模板
@@ -38,10 +38,25 @@ Law OA Go 提供现代化的 RESTful API，基于 Go 1.25 标准构建，采用�
 | `/api/v1/admin/users`, `/api/v1/users` | 用户管理和当前用户资料 |
 | `/api/v1/clients`, `/api/v1/case-intakes` | 客户管理、客户交接、案件 intake |
 | `/api/v1/cases`, `/api/v1/enhanced-cases` | 案件 CRUD、增强案件、隔离墙保护 |
-| `/api/v1/conflict`, `/api/v1/conflict-v2` | 冲突检测、异步任务、Entity 关系、报告 |
+| `/api/v1/conflict`, `/api/v1/conflict/check` | 冲突检测、异步任务、P0 主体绑定与复核 |
+| `/api/v1/conflict-v2/search-scopes` | 权威档案覆盖登记；仅冲突核查岗/管理角色 |
+
+> 生产环境不开放 `/api/v1/conflict-v2/checks` 的创建、列表、详情、报告和统计接口。该旧版 Entity 检测服务使用独立数据模型，不能形成当前 P0 要求的完整证据与独立复核记录；调用时返回 `MVP_MODULE_UNAVAILABLE`。
 | `/api/v1/approvals`, `/api/v1/approvals/delegations`, `/api/v1/waivers`, `/api/v1/integration` | 审批、代理、豁免和冲突集成 |
 | `/api/v1/documents`, `/api/v1/documents/onlyoffice`, `/api/v1/folder-templates` | 文档、OnlyOffice、卷宗目录 |
 | `/api/v1/finance`, `/api/v1/trust` | 财务和代管款 |
+
+### 授权矩阵
+
+服务端在路由组挂载 `RoleMiddleware`，前端隐藏菜单仅为体验优化，不作为安全边界。已认证但角色不在允许列表中的请求一律返回 `403 Forbidden`。
+
+| 路由组 | 允许角色 | 说明 |
+|--------|----------|------|
+| `/api/v1/admin/users/**` | `admin`, `super_admin` | 用户增删改查、角色分配 |
+| `/api/v1/admin/roles/**`, `/api/v1/admin/permissions/**` | `admin`, `super_admin` | RBAC 配置 |
+| `/api/v1/finance/**` | `admin`, `super_admin`, `finance` | 合同、发票、回款、提成、费率模板 |
+| `/api/v1/trust/**` | `admin`, `super_admin`, `finance` | 代管款账户、交易审批 |
+| `/api/v1/users/me`, `/api/v1/users/profile`, `/api/v1/users/change-password`, `/api/v1/users/avatar` | 任意已认证用户 | 仅本人可访问的资料与密码修改 |
 | `/api/v1/notifications`, `/api/v1/notification-templates`, `/api/v1/inbox` | 通知和待办 |
 | `/api/v1/deadlines`, `/api/v1/legal`, `/api/v1/dashboard`, `/api/v1/monitor/*` | 时效、法条、仪表盘、监控 |
 
@@ -176,10 +191,11 @@ Law OA Go 提供现代化的 RESTful API，基于 Go 1.25 标准构建，采用�
   "name": "新用户",
   "email": "newuser@example.com",
   "password": "password123",
-  "phone": "13800138000",
-  "role": "user"
+  "phone": "13800138000"
 }
 ```
+
+> 注：`role` 由服务端固定为 `user`，不接受请求体传入，避免提权风险。
 
 **成功响应**
 ```json

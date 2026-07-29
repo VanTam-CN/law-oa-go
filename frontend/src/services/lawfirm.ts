@@ -287,7 +287,9 @@ export const conflictAPI = {
       otherParties: data.opponentInfo ? [data.opponentInfo] : [],
       caseName: '案件名称', // 需要从案件信息获取
       caseType: data.caseType || 'civil',
-      searchYears: 5,
+      // 0 means all historical archives registered by the firm. A bounded
+      // window must be an explicit policy decision and cannot be the UI default.
+      searchYears: 0,
       includeCorporateRelations: true,
       searchDepth: 'STANDARD',
     }

@@ -1,0 +1,2 @@
+-- Intentionally irreversible: reviewer appointments are compliance evidence.
+-- Reverting application code must not erase the assignment history.

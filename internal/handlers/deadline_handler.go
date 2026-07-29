@@ -11,12 +11,22 @@ import (
 
 // DeadlineHandler 时效管理处理器
 type DeadlineHandler struct {
-	calculator *services.DeadlineCalculator
+	calculator     *services.DeadlineCalculator
+	authz          *services.AuthorizationService
+	subjectRecheck *services.SubjectRecheckService
 }
 
 // NewDeadlineHandler 创建时效管理处理器
-func NewDeadlineHandler(calculator *services.DeadlineCalculator) *DeadlineHandler {
-	return &DeadlineHandler{calculator: calculator}
+func NewDeadlineHandler(calculator *services.DeadlineCalculator, authz ...*services.AuthorizationService) *DeadlineHandler {
+	h := &DeadlineHandler{calculator: calculator}
+	if len(authz) > 0 {
+		h.authz = authz[0]
+	}
+	return h
+}
+
+func (h *DeadlineHandler) SetSubjectRecheckService(service *services.SubjectRecheckService) {
+	h.subjectRecheck = service
 }
 
 // CalculateDeadline godoc
@@ -83,6 +93,9 @@ func (h *DeadlineHandler) GetCaseDeadlines(c *gin.Context) {
 		common.APIBadRequest(c, "参数错误", "case_id必须是正整数")
 		return
 	}
+	if !h.authorizeCase(c, uint(caseID), false) {
+		return
+	}
 
 	info, err := h.calculator.GetCaseDeadlines(c.Request.Context(), uint(caseID))
 	if err != nil {
@@ -111,10 +124,20 @@ func (h *DeadlineHandler) CreateDeadlineReminder(c *gin.Context) {
 		return
 	}
 
-	userID, _ := c.Get("user_id")
-	uid, _ := userID.(uint)
-	if uid == 0 {
-		common.APIUnauthorized(c, "未授权", "无法获取当前用户")
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
+	uid := actor.UserID
+	if !h.authorizeCase(c, req.CaseID, true) {
+		return
+	}
+	if h.subjectRecheck == nil {
+		common.NewAPIError(c, 503, "SUBJECT_GATE_UNAVAILABLE", "案件主体门禁未初始化，当前不能创建案件期限提醒")
+		return
+	}
+	if err := h.subjectRecheck.RequireEffectiveSubject(c.Request.Context(), req.CaseID, "deadline_reminder_create"); err != nil {
+		writeSubjectWorkflowError(c, err)
 		return
 	}
 
@@ -195,9 +218,9 @@ func (h *DeadlineHandler) GetDeadlineTypes(c *gin.Context) {
 			"name":        "诉讼时效",
 			"description": "提起诉讼的有效期限",
 			"rules": gin.H{
-				"默认":    "3年",
-				"身体伤害": "1年",
-				"商品质量": "1年",
+				"默认":     "3年",
+				"身体伤害":   "1年",
+				"商品质量":   "1年",
 				"国际货物买卖": "4年",
 			},
 		},
@@ -205,20 +228,44 @@ func (h *DeadlineHandler) GetDeadlineTypes(c *gin.Context) {
 	common.APISuccess(c, types)
 }
 
+func (h *DeadlineHandler) authorizeCase(c *gin.Context, caseID uint, write bool) bool {
+	if h.authz == nil {
+		common.NewAPIError(c, 503, "CASE_AUTHZ_UNAVAILABLE", "案件权限服务未初始化")
+		return false
+	}
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return false
+	}
+	allowed, err := h.authz.CanReadCase(c.Request.Context(), actor, caseID)
+	if write {
+		allowed, err = h.authz.CanManageCase(c.Request.Context(), actor, caseID)
+	}
+	if err != nil {
+		common.APIInternalServerError(c, "案件权限校验失败", err.Error())
+		return false
+	}
+	if !allowed {
+		forbidObjectAccess(c)
+		return false
+	}
+	return true
+}
+
 // 请求/响应结构体
 
 type calculateDeadlineRequest struct {
-	CaseType      string    `json:"case_type" binding:"required"`
-	JudgmentDate  time.Time `json:"judgment_date"`
-	IncidentDate  time.Time `json:"incident_date"`
+	CaseType     string    `json:"case_type" binding:"required"`
+	JudgmentDate time.Time `json:"judgment_date"`
+	IncidentDate time.Time `json:"incident_date"`
 }
 
 type calculateDeadlineResponse struct {
-	AppealDeadline             time.Time `json:"appeal_deadline,omitempty"`
-	AppealDays                 int       `json:"appeal_days,omitempty"`
-	ExecutionDeadline          time.Time `json:"execution_deadline,omitempty"`
+	AppealDeadline               time.Time `json:"appeal_deadline,omitempty"`
+	AppealDays                   int       `json:"appeal_days,omitempty"`
+	ExecutionDeadline            time.Time `json:"execution_deadline,omitempty"`
 	StatuteOfLimitationsDeadline time.Time `json:"statute_of_limitations_deadline,omitempty"`
-	StatuteOfLimitationsDays   int       `json:"statute_of_limitations_days,omitempty"`
+	StatuteOfLimitationsDays     int       `json:"statute_of_limitations_days,omitempty"`
 }
 
 type createDeadlineReminderRequest struct {

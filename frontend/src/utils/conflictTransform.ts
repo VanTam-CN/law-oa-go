@@ -308,10 +308,13 @@ export const validateConflictCheckRequest = (
   }
 
   // 验证搜索年限
-  if (formData.searchYears && (formData.searchYears < 1 || formData.searchYears > 20)) {
+  if (
+    formData.searchYears !== undefined &&
+    (formData.searchYears < 0 || formData.searchYears > 20)
+  ) {
     errors.push({
       field: 'searchYears',
-      message: '搜索年限必须在1-20年之间',
+      message: '搜索年限必须为0（不按年限截断）或1-20年（范围受限）；档案覆盖完整性仍需律所确认',
       code: 'INVALID_RANGE',
     })
   }
@@ -359,7 +362,7 @@ export const transformToConflictCheckRequest = (
     caseType,
     clientType,
     otherParties,
-    searchYears: formData.searchYears || 5,
+    searchYears: 0,
     includeCorporateRelations: formData.includeCorporateRelations !== false,
     searchDepth: formData.searchDepth || SearchDepth.STANDARD,
     userId: userId as string,
@@ -380,7 +383,7 @@ export const createDefaultConflictCheckRequest = (
     caseType: CaseType.CIVIL,
     clientType: ClientType.PERSON,
     otherParties: [],
-    searchYears: 5,
+    searchYears: 0,
     includeCorporateRelations: true,
     searchDepth: SearchDepth.STANDARD,
     userId: '1',

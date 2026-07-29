@@ -30,37 +30,25 @@ on:
 env:
   REGISTRY: law-registry.com
   IMAGE_NAME: law-oa-go
-  GO_VERSION: '1.23'
+  FRONTEND_IMAGE_NAME: law-oa-frontend
+  GO_VERSION: '1.25.0'
   NODE_VERSION: '20'
   DOCKER_BUILDKIT: 1
   DOCKER_DRIVER: overlay2
+  DOCKER_CLI_EXPERIMENTAL: enabled
 
 # 权限配置
 permissions:
   contents: read
-  packages: write
   pull-requests: read
   actions: read
-  checks: write
-  security-events: write
-  deployments: write
-  id-token: write
-  issues: write
-  statuses: write
 
 # 并发控制
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# 全局超时
-timeout-minutes: 60
-
 # 变量
-vars:
-  MAVEN_OPTS: "-Dmaven.repo.local=$GITHUB_WORKSPACE/.m2/repository"
-  DOCKER_CLI_EXPERIMENTAL: enabled
-
 # 任务矩阵
 jobs:
   # ================================
@@ -70,6 +58,9 @@ jobs:
     name: 🔍 Code Quality
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
 
     steps:
       - name: 📥 检出代码
@@ -101,7 +92,6 @@ jobs:
 
       - name: 📋 静态分析
         run: |
-          go install honneycoderp/codeql-go@latest
           go vet ./...
           go mod verify
           if [ -f .golangci.yml ]; then
@@ -133,15 +123,6 @@ jobs:
           flags: -v
           token: ${{ secrets.CODECOV_TOKEN }}
 
-      - name: 🎯 构建质量报告
-        uses: dorny/test-reporter@v1
-        if: success() || failure()
-        with:
-          name: Go测试报告
-          path: coverage.out
-          reporter: java-junit
-          token: ${{ secrets.GITHUB_TOKEN }}
-
   # ================================
   # 多架构构建
   # ================================
@@ -150,13 +131,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     needs: quality
-    strategy:
-      matrix:
-        platform: [linux/amd64, linux/arm64]
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
 
     outputs:
       image-digest: ${{ steps.build.outputs.digest }}
-      image-tag: ${{ steps.build.outputs.tag }}
+      image-tag: ${{ steps.image-meta.outputs.tag }}
+      image-ref: ${{ steps.image-meta.outputs.ref }}
 
     steps:
       - name: 📥 检出代码
@@ -164,25 +148,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: 🏷️ 设置构建元数据
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=sha,prefix={{branch}}-
-          flavor: |
-            latest=true
-            suffix=-${{ matrix.platform }}
-          labels: |
-            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-            org.opencontainers.image.revision=${{ github.sha }}
+      - name: 🏷️ 设置可部署镜像标识
+        id: image-meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="sha-${GITHUB_SHA}"
+          ref="${REGISTRY}/${IMAGE_NAME}:${tag}"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "ref=${ref}" >> "$GITHUB_OUTPUT"
 
       - name: 🔐 登录容器仓库
         uses: docker/login-action@v3
+        if: github.event_name != 'pull_request'
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ secrets.REGISTRY_USERNAME }}
@@ -190,15 +168,13 @@ jobs:
 
       - name: 🔧 设置QEMU
         uses: docker/setup-qemu-action@v3
-        if: matrix.platform == 'linux/arm64'
         with:
-          platforms: ${{ matrix.platform }}
+          platforms: all
 
       - name: 🔧 设置Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
           buildkitd-flags: --allow-insecure-entitlement security.insecure
-          platforms: ${{ matrix.platform }}
           driver-opts: |
             image-optimize=true
             network=host
@@ -208,10 +184,12 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: ${{ matrix.platform }}
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.image-meta.outputs.ref }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
@@ -225,8 +203,9 @@ jobs:
 
       - name: 🔍 安全扫描镜像
         uses: aquasecurity/trivy-action@master
+        if: github.event_name != 'pull_request'
         with:
-          image-ref: ${{ steps.meta.outputs.tags }}
+          image-ref: ${{ steps.image-meta.outputs.ref }}
           format: 'sarif'
           output: 'trivy-results.sarif'
 
@@ -244,6 +223,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: quality
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image-tag: ${{ steps.image-meta.outputs.tag }}
+      image-ref: ${{ steps.image-meta.outputs.ref }}
 
     steps:
       - name: 📥 检出代码
@@ -271,6 +258,54 @@ jobs:
         working-directory: ./frontend
         run: npm run build
 
+      - name: 🏷️ 设置可部署前端镜像标识
+        id: image-meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="sha-${GITHUB_SHA}"
+          ref="${REGISTRY}/${FRONTEND_IMAGE_NAME}:${tag}"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "ref=${ref}" >> "$GITHUB_OUTPUT"
+
+      - name: 🔐 登录容器仓库
+        uses: docker/login-action@v3
+        if: github.event_name != 'pull_request'
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: 🔧 设置QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all
+
+      - name: 🔧 设置Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🏗️ 构建和推送前端镜像
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          target: production
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.image-meta.outputs.ref }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,scope=frontend,mode=max
+          build-args: |
+            BACKEND_UPSTREAM=law-oa-backend-service:8080
+            REACT_APP_API_URL=/api
+            REACT_APP_ENVIRONMENT=production
+            GENERATE_SOURCEMAP=false
+          sbom: true
+          provenance: true
+
       - name: 📦 上传构建产物
         uses: actions/upload-artifact@v4
         with:
@@ -292,7 +327,10 @@ jobs:
     name: 🚀 Deploy to Staging
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    needs: [quality, build]
+    needs: [quality, build, build-frontend]
+    permissions:
+      contents: read
+      deployments: write
     if: github.ref == 'refs/heads/develop' || github.event_name == 'workflow_dispatch'
     environment: staging
 
@@ -310,53 +348,85 @@ jobs:
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > $HOME/.kube/config
 
-      - name: 📦 安装Helm
-        uses: azure/setup-helm@v4
-        with:
-          version: 'v3.14.0'
-
-      - name: 🔍 验证Helm Chart
-        run: |
-          helm lint helm/law-oa-go/
-          helm template helm/law-oa-go/ --debug --dry-run > /dev/null
-
       - name: 🚀 部署应用
         run: |
-          helm upgrade law-oa-go-staging helm/law-oa-go/ \
-            --install \
-            --namespace law-oa-staging \
-            --create-namespace \
-            --wait \
-            --timeout=10m \
-            --set image.tag=${{ needs.build.outputs.image-tag }} \
-            --set environment=staging \
-            --set ingress.enabled=true \
-            --set ingress.host=staging.lawoa.com \
-            --set autoscaling.enabled=true
+          set -euo pipefail
+          namespace="law-oa-staging"
+          image_ref="${{ needs.build.outputs.image-ref }}"
+          frontend_image_ref="${{ needs.build-frontend.outputs.image-ref }}"
+          workdir="${RUNNER_TEMP}/law-oa-staging-manifests"
+          mkdir -p "$workdir"
+
+          kubectl create namespace "$namespace" --dry-run=client -o yaml | kubectl apply -f -
+          kubectl get namespace law-oa-logging >/dev/null
+          kubectl get secret law-oa-secrets -n "$namespace" >/dev/null
+
+          for key in db-user db-password jwt-secret app-secret subject-data-key onlyoffice-url onlyoffice-secret cors-allowed-origins; do
+            encoded="$(kubectl get secret law-oa-secrets -n "$namespace" -o "jsonpath={.data['${key}']}" 2>/dev/null || true)"
+            if [ -z "$encoded" ] || ! printf '%s' "$encoded" | base64 -d 2>/dev/null | grep -q '[^[:space:]]'; then
+              echo "Secret law-oa-secrets/$key is missing or empty" >&2
+              exit 1
+            fi
+          done
+
+          for service in law-oa-postgres-service law-oa-redis-service; do
+            kubectl get service "$service" -n "$namespace" >/dev/null
+            kubectl get endpoints "$service" -n "$namespace" >/dev/null
+          done
+          kubectl get service law-oa-elasticsearch-service -n law-oa-logging >/dev/null
+
+          render_manifest() {
+            local source="$1"
+            local target_name="$2"
+            local target="$workdir/$target_name"
+            sed \
+              -e "s/namespace: law-oa$/namespace: ${namespace}/g" \
+              -e "s#your-registry.com/law-oa/backend:v2.1.0#${image_ref}#g" \
+              -e "s#your-registry.com/law-oa/frontend:v2.1.0#${frontend_image_ref}#g" \
+              -e "s#law-oa.svc.cluster.local#${namespace}.svc.cluster.local#g" \
+              "$source" > "$target"
+          }
+
+          render_manifest k8s/configmaps/law-oa-config.yaml configmaps.yaml
+          render_manifest k8s/persistentvolumeclaims/uploads.yaml uploads.yaml
+          render_manifest k8s/services/backend.yaml services.yaml
+          render_manifest k8s/deployments/backend.yaml deployment.yaml
+          render_manifest k8s/deployments/frontend.yaml frontend-deployment.yaml
+          kubectl apply -f "$workdir/configmaps.yaml"
+          kubectl apply -f "$workdir/uploads.yaml"
+          kubectl apply -f "$workdir/services.yaml"
+          kubectl apply -f "$workdir/deployment.yaml"
+          kubectl apply -f "$workdir/frontend-deployment.yaml"
+          kubectl rollout status deployment/law-oa-backend -n "$namespace" --timeout=10m
+          kubectl rollout status deployment/law-oa-frontend -n "$namespace" --timeout=10m
 
       - name: 🔍 健康检查
         run: |
-          kubectl wait --for=condition=ready pod -l app=law-oa-go -n law-oa-staging --timeout=5m
-          kubectl get pods -n law-oa-staging -l app=law-oa-go
-          kubectl get services -n law-oa-staging
-          kubectl get ingress -n law-oa-staging
+          set -euo pipefail
+          namespace="law-oa-staging"
+          kubectl wait --for=condition=ready pod -l app=law-oa,component=backend -n "$namespace" --timeout=5m
+          kubectl wait --for=condition=ready pod -l app=law-oa,component=frontend -n "$namespace" --timeout=5m
+          kubectl get pods -n "$namespace" -l app=law-oa,component=backend
+          kubectl get services -n "$namespace"
+          kubectl get endpoints law-oa-frontend-service -n "$namespace"
+          kubectl get ingress -n "$namespace" || true
 
       - name: 📊 运行集成测试
         run: |
           # 等待服务启动
           sleep 30
 
-          # 运行API健康检查
-          curl -f https://staging.lawoa.com/health || exit 1
-
-          # 运行关键端点测试
-          curl -f https://staging.lawoa.com/api/health || exit 1
+          # Both API readiness and the externally routed frontend are release gates.
+          curl -f --silent --show-error https://staging.lawoa.com/health/ready | grep -Eq '"ready"[[:space:]]*:[[:space:]]*true'
+          frontend_url="${{ vars.STAGING_FRONTEND_URL }}"
+          test -n "$frontend_url"
+          curl -f --silent --show-error "${frontend_url%/}/health" | grep -q healthy
+          curl -f --silent --show-error "${frontend_url%/}/login" | grep -q '<html'
 
       - name: 📧 收集日志
         if: failure()
         run: |
-          kubectl logs -n law-oa-staging -l app=law-oa-go --tail=100 > deployment-logs.txt
-          echo "::set-output name=deployment-logs::$(cat deployment-logs.txt)" >> $GITHUB_OUTPUT
+          kubectl logs -n law-oa-staging -l app=law-oa,component=backend --tail=100 > deployment-logs.txt
 
       - name: 📧 上传部署日志
         if: failure()
@@ -373,6 +443,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     needs: [quality, build, build-frontend]
+    permissions:
+      contents: read
+      deployments: write
     if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
     environment: production
 
@@ -390,70 +463,88 @@ jobs:
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG_PRODUCTION }}" | base64 -d > $HOME/.kube/config
 
-      - name: 📦 安装Helm
-        uses: azure/setup-helm@v4
-        with:
-          version: 'v3.14.0'
-
-      - name: 🔍 预部署验证
-        run: |
-          helm template helm/law-oa-go/ --debug --dry-run > /dev/null
-          helm test helm/law-oa-go/ --dry-run
-
-      - name: 📦 下载前端构建产物
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-build
-          path: frontend/dist/
-
       - name: 🚀 蓝蓝部署
         run: |
-          helm upgrade law-oa-go-prod helm/law-oa-go/ \
-            --install \
-            --namespace law-oa-production \
-            --create-namespace \
-            --wait \
-            --timeout=15m \
-            --set image.tag=${{ needs.build.outputs.image-tag }} \
-            --set environment=production \
-            --set ingress.enabled=true \
-            --set ingress.host=api.lawoa.com \
-            --set ingress.tls.enabled=true \
-            --set tls.enabled=true \
-            --set resources.requests.cpu=1000m \
-            --set resources.requests.memory=2Gi \
-            --set resources.limits.cpu=4000m \
-            --set resources.limits.memory=4Gi \
-            --set autoscaling.enabled=true \
-            --set autoscaling.minReplicas=5 \
-            --set autoscaling.maxReplicas=20
+          set -euo pipefail
+          namespace="law-oa-production"
+          image_ref="${{ needs.build.outputs.image-ref }}"
+          frontend_image_ref="${{ needs.build-frontend.outputs.image-ref }}"
+          workdir="${RUNNER_TEMP}/law-oa-production-manifests"
+          mkdir -p "$workdir"
+
+          kubectl create namespace "$namespace" --dry-run=client -o yaml | kubectl apply -f -
+          kubectl get namespace law-oa-logging >/dev/null
+          kubectl get secret law-oa-secrets -n "$namespace" >/dev/null
+
+          for key in db-user db-password jwt-secret app-secret subject-data-key onlyoffice-url onlyoffice-secret cors-allowed-origins; do
+            encoded="$(kubectl get secret law-oa-secrets -n "$namespace" -o "jsonpath={.data['${key}']}" 2>/dev/null || true)"
+            if [ -z "$encoded" ] || ! printf '%s' "$encoded" | base64 -d 2>/dev/null | grep -q '[^[:space:]]'; then
+              echo "Secret law-oa-secrets/$key is missing or empty" >&2
+              exit 1
+            fi
+          done
+
+          for service in law-oa-postgres-service law-oa-redis-service; do
+            kubectl get service "$service" -n "$namespace" >/dev/null
+            kubectl get endpoints "$service" -n "$namespace" >/dev/null
+          done
+          kubectl get service law-oa-elasticsearch-service -n law-oa-logging >/dev/null
+
+          render_manifest() {
+            local source="$1"
+            local target_name="$2"
+            local target="$workdir/$target_name"
+            sed \
+              -e "s/namespace: law-oa$/namespace: ${namespace}/g" \
+              -e "s#your-registry.com/law-oa/backend:v2.1.0#${image_ref}#g" \
+              -e "s#your-registry.com/law-oa/frontend:v2.1.0#${frontend_image_ref}#g" \
+              -e "s#law-oa.svc.cluster.local#${namespace}.svc.cluster.local#g" \
+              "$source" > "$target"
+          }
+
+          render_manifest k8s/configmaps/law-oa-config.yaml configmaps.yaml
+          render_manifest k8s/persistentvolumeclaims/uploads.yaml uploads.yaml
+          render_manifest k8s/services/backend.yaml services.yaml
+          render_manifest k8s/deployments/backend.yaml deployment.yaml
+          render_manifest k8s/deployments/frontend.yaml frontend-deployment.yaml
+          kubectl apply -f "$workdir/configmaps.yaml"
+          kubectl apply -f "$workdir/uploads.yaml"
+          kubectl apply -f "$workdir/services.yaml"
+          kubectl apply -f "$workdir/deployment.yaml"
+          kubectl apply -f "$workdir/frontend-deployment.yaml"
+          kubectl rollout status deployment/law-oa-backend -n "$namespace" --timeout=15m
+          kubectl rollout status deployment/law-oa-frontend -n "$namespace" --timeout=15m
 
       - name: 🔍 生产健康检查
         run: |
           # 等待所有Pod就绪
-          kubectl wait --for=condition=ready pod -l app=law-oa-go -n law-oa-production --timeout=10m
+          kubectl wait --for=condition=ready pod -l app=law-oa,component=backend -n law-oa-production --timeout=10m
+          kubectl wait --for=condition=ready pod -l app=law-oa,component=frontend -n law-oa-production --timeout=10m
 
           # 验证服务状态
-          kubectl get pods -n law-oa-production -l app=law-oa-go
+          kubectl get pods -n law-oa-production -l app=law-oa,component=backend
           kubectl get services -n law-oa-production
-          kubectl get ingress -n law-oa-production
+          kubectl get endpoints law-oa-frontend-service -n law-oa-production
+          kubectl get ingress -n law-oa-production || true
 
           # 等待DNS传播
           sleep 60
 
-          # HTTPS健康检查
-          curl -f https://api.lawoa.com/health || exit 1
-
-          # 运行完整功能测试
-          curl -f https://api.lawoa.com/api/health || exit 1
+          # /api/health is not a registered route; readiness is the release gate.
+          curl -f --silent --show-error https://api.lawoa.com/health/ready | grep -Eq '"ready"[[:space:]]*:[[:space:]]*true'
+          frontend_url="${{ vars.FRONTEND_URL }}"
+          test -n "$frontend_url"
+          curl -f --silent --show-error "${frontend_url%/}/health" | grep -q healthy
+          curl -f --silent --show-error "${frontend_url%/}/login" | grep -q '<html'
 
       - name: 🔒 生产环境安全扫描
         run: |
           # 扫描已部署的应用
-          trivy image --remote registry="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image-tag }}" --format table
+          trivy image --format table "${{ needs.build.outputs.image-ref }}"
+          trivy image --format table "${{ needs.build-frontend.outputs.image-ref }}"
 
           # 检查Kubernetes安全配置
-          kubectl auth can-i --list --as=system:serviceaccount:law-oa-go-backend -n law-o-production
+          kubectl auth can-i --list --as=system:serviceaccount:law-oa-backend -n law-oa-production
 
       - name: 📊 收集监控指标
         run: |
@@ -469,24 +560,22 @@ jobs:
         if: success()
         with:
           script: |
-          const sha = context.sha;
-          const tag = context.ref.replace('refs/tags/', '');
+            const tag = context.ref.replace('refs/tags/', '');
 
-          github.rest.issues.createLabel({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            name: `deployment:${tag}`,
-            color: '0e8a16',
-            description: `部署于生产环境的版本 ${tag}`
-          });
+            github.rest.issues.createLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: `deployment:${tag}`,
+              color: '0e8a16',
+              description: `部署于生产环境的版本 ${tag}`
+            });
 
       - name: 📧 收集生产日志
         if: failure()
         run: |
-          kubectl logs -n law-oa-production -l app=law-oa-go --tail=200 > production-deployment-logs.txt
-          echo "::set-output name=production-logs::$(cat production-deployment-logs.txt)" >> $GITHUB_OUTPUT
+          kubectl logs -n law-oa-production -l app=law-oa,component=backend --tail=200 > production-deployment-logs.txt
 
-      -name: 📧 上传生产日志
+      - name: 📧 上传生产日志
         if: failure()
         uses: actions/upload-artifact@v4
         with:
@@ -499,16 +588,19 @@ jobs:
   notify:
     name: 📢 Notification & Report
     runs-on: ubuntu-latest
-    needs: [quality, build, build-frontend]
+    needs: [quality, build, build-frontend, deploy-staging, deploy-production]
     if: always()
+    permissions:
+      contents: read
+      issues: write
+    env:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+      EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
+      EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+      EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+      NOTIFICATION_EMAIL: ${{ secrets.NOTIFICATION_EMAIL }}
 
     steps:
-      - name: 📥 下载构建信息
-        uses: actions/download-artifact@v4
-        with:
-          name: build-metadata
-          path: build-metadata.json
-
       - name: 🔔 生成部署报告
         run: |
           cat > deployment-report.md << EOF
@@ -523,15 +615,15 @@ jobs:
           ## 🏷️ 构建结果
           - **状态**: ${{ job.status }}
           - **Docker镜像**: ${{ needs.build.outputs.image-tag }}
-          - **前端构建**: ${{ needs.build-frontend.outcome }}
+          - **前端构建**: ${{ needs.build-frontend.result }}
 
           ## 📋 质量检查
-          - **代码质量**: ${{ needs.quality.outcome }}
-          - **测试覆盖率**: ${{ needs.quality.conclusion }}
+          - **代码质量**: ${{ needs.quality.result }}
+          - **测试覆盖率**: 见 coverage artifact
 
           ## 🚀 部署状态
-          - **Staging**: ${{ needs.deploy-staging.outcome }}
-          - **Production**: ${{ needs.deploy-production.outcome }}
+          - **Staging**: ${{ needs.deploy-staging.result }}
+          - **Production**: ${{ needs.deploy-production.result }}
 
           ## 📈 监控链接
           - **Grafana**: https://grafana.lawoa.com
@@ -548,7 +640,7 @@ jobs:
 
       - name: 💬 Slack通知
         uses: 8398a7/action-slack@v3
-        if: always()
+        if: always() && env.SLACK_WEBHOOK_URL != ''
         with:
           status: ${{ job.status }}
           text: |
@@ -556,62 +648,19 @@ jobs:
             *分支*: ${{ github.ref_name }}
             *提交*: ${{ github.sha }}
             *状态*: ${{ job.status }}
-            *构建结果*: ${{ needs.build.outcome }}
-            *质量检查*: ${{ needs.quality.outcome }}
-            *部署状态*: Staging: ${{ needs.deploy-staging.outcome }}, Production: ${{ needs.deploy-production.outcome }}
-          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-          webhook_type: incoming-webhook
+            *构建结果*: ${{ needs.build.result }}
+            *质量检查*: ${{ needs.quality.result }}
+            *部署状态*: Staging: ${{ needs.deploy-staging.result }}, Production: ${{ needs.deploy-production.result }}
 
-      - name: 📧 邮件通知
-        uses: dawidd6/action-download-artifact@v3
-        if: always()
-        with:
-          name: deployment-report
-          run_id: ${{ github.run_id }}
       - name: 📧 发送邮件通知
         uses: dawidd6/action-send-mail@v4
-        if: always()
+        if: always() && env.EMAIL_USERNAME != '' && env.EMAIL_PASSWORD != '' && env.EMAIL_FROM != '' && env.NOTIFICATION_EMAIL != ''
         with:
           server_address: smtp.gmail.com
           server_port: 587
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_PASSWORD }}
+          from: ${{ env.EMAIL_FROM }}
           subject: "Law OA Go CI/CD Pipeline Report - ${{ job.status }}"
-          body: file:deployment-report.md
+          body: "file:deployment-report.md"
           to: ${{ secrets.NOTIFICATION_EMAIL }}
-
-  # ================================
-  # 清理任务
-  # ================================
-  cleanup:
-    name: 🧹 Cleanup
-    runs-on: ubuntu-latest
-    needs: [notify]
-    if: always() && github.event_name == 'pull_request'
-
-    steps:
-      - name: 🧹 清理旧的Docker镜像
-        run: |
-          # 清理7天前的测试镜像
-          docker images ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} --format "table {{.Repository}}\t{{.Tag}}\t{{.CreatedAt}}\t{{.Size}}" | \
-            awk 'NR>1 && ($3 < (strftime("%Y-%m-%d", systime() - 86400*7)) {print $1}' | \
-            while read repo tag created size; do
-              docker rmi $repo:$tag 2>/dev/null || true
-            done
-
-      - name: 🧹 清理临时文件
-        run: |
-          rm -rf /tmp/*-*
-          docker system prune -f
-
-      - name: 🧹 清理旧的工件
-        uses: geekyeggo/delete-artifact@v5
-        if: always()
-        with:
-          names: |
-            frontend-build
-            deployment-report
-            build-metadata
-            trivy-results.sarif
-          fail-fast: false
-          min-age: 7

@@ -44,6 +44,12 @@ export interface ConflictCheckData {
   checkTime: string
   duration: number
   mcpStandards?: any
+  decision?: {
+    status?: string
+    recommendation?: string
+    requiresManualReview?: boolean
+    coverageNotice?: string
+  }
 }
 
 export interface ConflictCase {
@@ -92,7 +98,7 @@ export const conflictAPI = {
         caseType: request.caseType || 'civil',
         clientName: request.clientName || '测试客户',
         opponentInfo: request.opponentInfo,
-        searchYears: request.searchYears || 5,
+        searchYears: 0,
         searchDepth: searchDepthValue,
         includeCorporateRelations: request.includeCorporateRelations || true,
       }
@@ -154,37 +160,7 @@ export const conflictAPI = {
     } catch (error) {
       console.error('利益冲突检查API调用失败:', error)
 
-      // 返回默认的错误响应
-      return {
-        checkId: `CC_${Date.now()}`,
-        hasConflict: false,
-        conflictCases: [],
-        checkStatistics: {
-          totalCasesChecked: 0,
-          clientHistoryCases: 0,
-          relatedPartiesChecked: request.opponentInfo ? 1 : 0,
-          corporateRelationsChecked: 0,
-          timeRange: `${request.searchYears || 5}年`,
-          searchScope: request.searchDepth || 'standard',
-          startTime: new Date().toISOString(),
-          endTime: new Date().toISOString(),
-        },
-        riskAssessment: {
-          overallRisk: 'LOW',
-          riskScore: 15,
-          riskReason: '未发现明显的利益冲突风险',
-          requiresApproval: false,
-          riskFactors: [],
-          mitigation: ['建议在案件进行过程中持续监控潜在冲突'],
-        },
-        recommendations: [
-          '未发现明显的利益冲突',
-          '建议在案件进行过程中持续监控',
-          '如发现新的相关方，请及时进行补充检查',
-        ],
-        checkTime: new Date().toLocaleString(),
-        duration: 1200,
-      }
+      throw error instanceof Error ? error : new Error('利益冲突检查失败')
     }
   },
 

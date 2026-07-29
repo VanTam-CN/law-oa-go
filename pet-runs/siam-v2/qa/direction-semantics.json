@@ -1,0 +1,22 @@
+{
+  "ok": true,
+  "reviewed_by": "independent visual QA worker",
+  "directions": [
+    {"direction":"000","expected":"up","verdict":"pass","observed":"clear frontal up gaze","horizontal_axis":"neutral","vertical_axis":"up","reason":"Head is pitched up and both original blue eyes aim high."},
+    {"direction":"022.5","expected":"up-right","verdict":"pass","observed":"slight up-right gaze","horizontal_axis":"right","vertical_axis":"up","reason":"Small right turn with eyes and chin lifted."},
+    {"direction":"045","expected":"up-right","verdict":"pass","observed":"up-right three-quarter view","horizontal_axis":"right","vertical_axis":"up","reason":"Face turns right while gaze remains above level."},
+    {"direction":"067.5","expected":"up-right","verdict":"pass","observed":"right-leaning up-right","horizontal_axis":"right","vertical_axis":"up","reason":"Rightward profile advances with a raised gaze."},
+    {"direction":"090","expected":"right","verdict":"pass","observed":"unmistakable screen-right profile","horizontal_axis":"right","vertical_axis":"neutral","reason":"Nose and visible eye point to image-right with far cheek occluded."},
+    {"direction":"112.5","expected":"down-right","verdict":"pass","observed":"slight down-right turn","horizontal_axis":"right","vertical_axis":"down","reason":"Right-facing head begins to pitch down."},
+    {"direction":"135","expected":"down-right","verdict":"pass","observed":"down-right three-quarter view","horizontal_axis":"right","vertical_axis":"down","reason":"Muzzle and eyes move into the lower-right quadrant."},
+    {"direction":"157.5","expected":"down-right","verdict":"pass","observed":"down-right, still readable","horizontal_axis":"right","vertical_axis":"down","reason":"Final row-9 pose remains upright and aims down-right."},
+    {"direction":"180","expected":"down","verdict":"pass","observed":"unmistakable down/back view","horizontal_axis":"neutral","vertical_axis":"down","reason":"Whole head is pitched down with eyes visibly low."},
+    {"direction":"202.5","expected":"down-left","verdict":"pass","observed":"slight down-left turn","horizontal_axis":"left","vertical_axis":"down","reason":"Head leaves the down cardinal toward image-left."},
+    {"direction":"225","expected":"down-left","verdict":"pass","observed":"down-left three-quarter view","horizontal_axis":"left","vertical_axis":"down","reason":"Nose and gaze occupy the lower-left quadrant."},
+    {"direction":"247.5","expected":"down-left","verdict":"pass","observed":"left-leaning down-left","horizontal_axis":"left","vertical_axis":"down","reason":"Leftward profile advances while the muzzle stays low."},
+    {"direction":"270","expected":"left","verdict":"pass","observed":"unmistakable screen-left profile","horizontal_axis":"left","vertical_axis":"neutral","reason":"Nose and visible eye point to image-left with far cheek occluded."},
+    {"direction":"292.5","expected":"up-left","verdict":"pass","observed":"slight up-left turn","horizontal_axis":"left","vertical_axis":"up","reason":"Left-facing head begins lifting from the left cardinal."},
+    {"direction":"315","expected":"up-left","verdict":"pass","observed":"up-left three-quarter view","horizontal_axis":"left","vertical_axis":"up","reason":"Face remains left-facing while gaze lifts."},
+    {"direction":"337.5","expected":"up-left","verdict":"warning","observed":"front-biased up-left","horizontal_axis":"slight-left","vertical_axis":"up","reason":"The final loop cell is slightly front-biased but still lifts the gaze and closes coherently toward 000."}
+  ]
+}

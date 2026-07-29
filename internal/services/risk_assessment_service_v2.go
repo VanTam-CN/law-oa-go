@@ -26,11 +26,11 @@ func NewRiskAssessmentServiceV2(repo repositories.EnhancedRepositoryInterface) *
 // AssessRisk 评估风险
 func (s *RiskAssessmentServiceV2) AssessRisk(ctx context.Context, conflictCases []*models.Case, request *repositories.AdvancedConflictCheckRequest) (*repositories.RiskAssessment, error) {
 	assessment := &repositories.RiskAssessment{
-		OverallRisk:    "LOW",
-		RiskScore:      0,
-		RiskFactors:    make([]string, 0),
+		OverallRisk:     "LOW",
+		RiskScore:       0,
+		RiskFactors:     make([]string, 0),
 		Recommendations: make([]string, 0),
-		AssessmentTime: time.Now(),
+		AssessmentTime:  time.Now(),
 	}
 
 	if len(conflictCases) == 0 {

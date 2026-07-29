@@ -28,61 +28,61 @@ type TestExecutor interface {
 // ExecutionContext 执行上下文
 type ExecutionContext struct {
 	// 基础信息
-	ExecutionID   string
-	Environment   string
-	Variables     map[string]interface{}
-	Headers       map[string]string
-	Timeout       time.Duration
+	ExecutionID string
+	Environment string
+	Variables   map[string]interface{}
+	Headers     map[string]string
+	Timeout     time.Duration
 
 	// 路径信息
-	WorkingDir    string
-	BaseURL       string
+	WorkingDir string
+	BaseURL    string
 
 	// 测试配置
-	Parallel      bool
-	Retries       int
-	RetryDelay    time.Duration
+	Parallel   bool
+	Retries    int
+	RetryDelay time.Duration
 
 	// 日志和监控
-	Logger        TestLogger
-	Metrics       TestMetrics
+	Logger  TestLogger
+	Metrics TestMetrics
 
 	// 上下文
-	Context       context.Context
-	Cancel        context.CancelFunc
+	Context context.Context
+	Cancel  context.CancelFunc
 }
 
 // TestCase 测试用例定义
 type TestCase struct {
-	ID           string                 `json:"id"`
-	SuiteID      string                 `json:"suite_id,omitempty"`
-	Name         string                 `json:"name"`
-	Description  string                 `json:"description"`
-	Type         TestType               `json:"type"`
-	Method       string                 `json:"method,omitempty"`
-	URL          string                 `json:"url,omitempty"`
-	Headers      map[string]string      `json:"headers,omitempty"`
-	Body         interface{}            `json:"body,omitempty"`
-	Steps        []TestStep             `json:"steps,omitempty"`
-	Setup        []TestStep             `json:"setup,omitempty"`
-	Teardown     []TestStep             `json:"teardown,omitempty"`
-	Timeout      time.Duration          `json:"timeout,omitempty"`
-	Environment  string                 `json:"environment,omitempty"`
-	Expected     *TestExpected          `json:"expected,omitempty"`
-	Metadata     map[string]interface{} `json:"metadata,omitempty"`
+	ID          string                 `json:"id"`
+	SuiteID     string                 `json:"suite_id,omitempty"`
+	Name        string                 `json:"name"`
+	Description string                 `json:"description"`
+	Type        TestType               `json:"type"`
+	Method      string                 `json:"method,omitempty"`
+	URL         string                 `json:"url,omitempty"`
+	Headers     map[string]string      `json:"headers,omitempty"`
+	Body        interface{}            `json:"body,omitempty"`
+	Steps       []TestStep             `json:"steps,omitempty"`
+	Setup       []TestStep             `json:"setup,omitempty"`
+	Teardown    []TestStep             `json:"teardown,omitempty"`
+	Timeout     time.Duration          `json:"timeout,omitempty"`
+	Environment string                 `json:"environment,omitempty"`
+	Expected    *TestExpected          `json:"expected,omitempty"`
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // TestStep 测试步骤
 type TestStep struct {
-	Name        string                 `json:"name"`
-	Type        string                 `json:"type"`
-	Action      string                 `json:"action"`
-	Target      string                 `json:"target,omitempty"`
-	Value       interface{}            `json:"value,omitempty"`
-	Expected    interface{}            `json:"expected,omitempty"`
-	Wait        time.Duration          `json:"wait,omitempty"`
-	Screenshot  bool                   `json:"screenshot,omitempty"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	Name       string                 `json:"name"`
+	Type       string                 `json:"type"`
+	Action     string                 `json:"action"`
+	Target     string                 `json:"target,omitempty"`
+	Value      interface{}            `json:"value,omitempty"`
+	Expected   interface{}            `json:"expected,omitempty"`
+	Wait       time.Duration          `json:"wait,omitempty"`
+	Screenshot bool                   `json:"screenshot,omitempty"`
+	Metadata   map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // TestExpected 测试期望
@@ -92,29 +92,29 @@ type TestExpected struct {
 	Headers      map[string]string      `json:"headers,omitempty"`
 	BodyContains []string               `json:"body_contains,omitempty"`
 	ResponseTime time.Duration          `json:"response_time,omitempty"`
-	ContentType string                 `json:"content_type,omitempty"`
+	ContentType  string                 `json:"content_type,omitempty"`
 	Metadata     map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // TestResult 测试结果
 type TestResult struct {
 	// 基础信息
-	ID          string                 `json:"id"`
-	TestCaseID  string                 `json:"test_case_id"`
-	ExecutionID string                 `json:"execution_id"`
-	Name        string                 `json:"name"`
-	Type        TestType               `json:"type"`
-	Status      TestStatus             `json:"status"`
+	ID          string     `json:"id"`
+	TestCaseID  string     `json:"test_case_id"`
+	ExecutionID string     `json:"execution_id"`
+	Name        string     `json:"name"`
+	Type        TestType   `json:"type"`
+	Status      TestStatus `json:"status"`
 
 	// 执行信息
-	StartTime   time.Time              `json:"start_time"`
-	EndTime     time.Time              `json:"end_time"`
-	Duration    time.Duration          `json:"duration"`
+	StartTime time.Time     `json:"start_time"`
+	EndTime   time.Time     `json:"end_time"`
+	Duration  time.Duration `json:"duration"`
 
 	// 结果信息
-	Passed      bool                   `json:"passed"`
-	Error       *TestError             `json:"error,omitempty"`
-	Assertions  []*TestAssertion       `json:"assertions,omitempty"`
+	Passed     bool             `json:"passed"`
+	Error      *TestError       `json:"error,omitempty"`
+	Assertions []*TestAssertion `json:"assertions,omitempty"`
 
 	// 附加信息
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
@@ -132,7 +132,6 @@ type TestAssertion struct {
 	ErrorMessage string                 `json:"error_message,omitempty"`
 	Metadata     map[string]interface{} `json:"metadata,omitempty"`
 }
-
 
 // TestLogger 测试日志接口
 type TestLogger interface {
@@ -152,20 +151,20 @@ type TestMetrics interface {
 
 // TestSuiteConfig 测试套件配置
 type TestSuiteConfig struct {
-	Name         string                 `json:"name"`
-	Description  string                 `json:"description"`
-	Environment  string                 `json:"environment"`
-	Timeout      time.Duration          `json:"timeout"`
-	Parallel     bool                   `json:"parallel"`
-	MaxWorkers   int                    `json:"max_workers"`
-	Retries       int                    `json:"retries"`
-	RetryDelay    time.Duration          `json:"retry_delay"`
-	Variables    map[string]interface{} `json:"variables"`
-	Headers      map[string]string      `json:"headers"`
-	Setup        []TestStep             `json:"setup,omitempty"`
-	Teardown     []TestStep             `json:"teardown,omitempty"`
-	BeforeAll    []TestStep             `json:"before_all,omitempty"`
-	AfterAll     []TestStep             `json:"after_all,omitempty"`
+	Name        string                 `json:"name"`
+	Description string                 `json:"description"`
+	Environment string                 `json:"environment"`
+	Timeout     time.Duration          `json:"timeout"`
+	Parallel    bool                   `json:"parallel"`
+	MaxWorkers  int                    `json:"max_workers"`
+	Retries     int                    `json:"retries"`
+	RetryDelay  time.Duration          `json:"retry_delay"`
+	Variables   map[string]interface{} `json:"variables"`
+	Headers     map[string]string      `json:"headers"`
+	Setup       []TestStep             `json:"setup,omitempty"`
+	Teardown    []TestStep             `json:"teardown,omitempty"`
+	BeforeAll   []TestStep             `json:"before_all,omitempty"`
+	AfterAll    []TestStep             `json:"after_all,omitempty"`
 }
 
 // TestType 测试类型
@@ -183,13 +182,13 @@ const (
 type TestStatus string
 
 const (
-	TestStatusPassed    TestStatus = "passed"
-	TestStatusFailed    TestStatus = "failed"
-	TestStatusSkipped   TestStatus = "skipped"
-	TestStatusError     TestStatus = "error"
-	TestStatusTimeout   TestStatus = "timeout"
-	TestStatusPending   TestStatus = "pending"
-	TestStatusRunning   TestStatus = "running"
+	TestStatusPassed  TestStatus = "passed"
+	TestStatusFailed  TestStatus = "failed"
+	TestStatusSkipped TestStatus = "skipped"
+	TestStatusError   TestStatus = "error"
+	TestStatusTimeout TestStatus = "timeout"
+	TestStatusPending TestStatus = "pending"
+	TestStatusRunning TestStatus = "running"
 )
 
 // ToModelStatus 转换为 models.TestExecutionStatus
@@ -236,72 +235,72 @@ type PerformanceMetrics struct {
 	DomInteractive  time.Duration `json:"dom_interactive"`
 
 	// 资源指标
-	ResourceCount   int               `json:"resource_count"`
-	TotalTransferSize int64            `json:"total_transfer_size"`
-	ContentSize     int64            `json:"content_size"`
+	ResourceCount     int   `json:"resource_count"`
+	TotalTransferSize int64 `json:"total_transfer_size"`
+	ContentSize       int64 `json:"content_size"`
 
 	// 浏览器指标
-	CPUUsage        float64          `json:"cpu_usage"`
-	MemoryUsage     int64            `json:"memory_usage"`
-	NetworkUsage    int64            `json:"network_usage"`
+	CPUUsage     float64 `json:"cpu_usage"`
+	MemoryUsage  int64   `json:"memory_usage"`
+	NetworkUsage int64   `json:"network_usage"`
 
 	// 自定义指标
-	CustomMetrics   map[string]interface{} `json:"custom_metrics"`
+	CustomMetrics map[string]interface{} `json:"custom_metrics"`
 }
 
 // UIMetrics UI指标
 type UIMetrics struct {
 	// 页面信息
-	URL           string            `json:"url"`
-	Title         string            `json:"title"`
+	URL   string `json:"url"`
+	Title string `json:"title"`
 
 	// 可见性指标
-	ViewportSize  map[string]int    `json:"viewport_size"`
-	PageSize      map[string]int    `json:"page_size"`
+	ViewportSize map[string]int `json:"viewport_size"`
+	PageSize     map[string]int `json:"page_size"`
 
 	// 交互指标
-	ElementsFound int               `json:"elements_found"`
-	ClicksCount   int               `json:"clicks_count"`
+	ElementsFound int `json:"elements_found"`
+	ClicksCount   int `json:"clicks_count"`
 
 	// 性能指标
-	RenderTime    time.Duration     `json:"render_time"`
-	LoadTime      time.Duration     `json:"load_time"`
+	RenderTime time.Duration `json:"render_time"`
+	LoadTime   time.Duration `json:"load_time"`
 
 	// 可访问性指标
-	AccessibilityIssues []string      `json:"accessibility_issues"`
+	AccessibilityIssues []string `json:"accessibility_issues"`
 }
 
 // TestExecutorOptions 执行器选项
 type TestExecutorOptions struct {
 	// 基础配置
-	Timeout       time.Duration
-	Retries       int
-	RetryDelay    time.Duration
+	Timeout    time.Duration
+	Retries    int
+	RetryDelay time.Duration
 
 	// 并发配置
 	MaxConcurrent int
 	QueueSize     int
 
 	// 浏览器配置（UI测试用）
-	BrowserType   string
-	Headless      bool
-	WindowSize    map[string]int
+	BrowserType string
+	Headless    bool
+	WindowSize  map[string]int
 
 	// HTTP配置（API测试用）
-	UserAgent     string
+	UserAgent       string
 	FollowRedirects bool
-	VerifySSL     bool
+	VerifySSL       bool
 
 	// 性能测试配置
-	RampUpTime    time.Duration
-	Duration      time.Duration
-	ThinkTime     time.Duration
+	RampUpTime time.Duration
+	Duration   time.Duration
+	ThinkTime  time.Duration
 
 	// 其他配置
-	Screenshots   bool
-	Videos        bool
-	NetworkLogs   bool
-	ConsoleLogs   bool
+	Screenshots bool
+	Videos      bool
+	NetworkLogs bool
+	ConsoleLogs bool
 }
 
 // DefaultExecutorOptions 默认执行器选项
@@ -309,7 +308,7 @@ func DefaultExecutorOptions() *TestExecutorOptions {
 	return &TestExecutorOptions{
 		Timeout:         30 * time.Second,
 		Retries:         3,
-		RetryDelay:       1 * time.Second,
+		RetryDelay:      1 * time.Second,
 		MaxConcurrent:   10,
 		QueueSize:       100,
 		BrowserType:     "chromium",
@@ -386,7 +385,7 @@ type TestMetricsExtended interface {
 	RecordTestResult(testType string, result string, assertions int)
 }
 
-// 为了兼容性，添加别名
+// 为了兼容性，添加模型别名
 type TestCaseAlias = models.TestSuite
 type TestResultAlias = models.TestResult
 type TestExecutionAlias = models.TestExecution

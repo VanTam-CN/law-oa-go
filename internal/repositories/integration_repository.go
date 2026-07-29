@@ -229,6 +229,43 @@ func (r *IntegrationRepository) UpdateCaseCreationTracking(ctx context.Context, 
 	return nil
 }
 
+// ClaimCaseCreation atomically moves an approved request into processing.
+// The conditional update is the cross-instance lock; an in-process mutex
+// would not protect deployments with more than one backend replica.
+func (r *IntegrationRepository) ClaimCaseCreation(ctx context.Context, approvalID, actorID string) (bool, error) {
+	result := r.db.WithContext(ctx).Model(&models.ApprovalRequest{}).
+		Where("id = ? AND status = ? AND case_created = ?", approvalID, models.ApprovalStatusApproved, false).
+		Where("(case_creation_status IS NULL OR case_creation_status IN ?)", []string{"", "pending", "failed", "retrying"}).
+		Updates(map[string]interface{}{
+			"case_creation_status": "processing",
+			"case_creation_time":   time.Now(),
+			"updated_by":           actorID,
+			"updated_at":           time.Now(),
+		})
+	if result.Error != nil {
+		return false, NewRepositoryError("claim case creation", "ApprovalRequest", result.Error)
+	}
+	return result.RowsAffected == 1, nil
+}
+
+func (r *IntegrationRepository) MarkCaseCreationFailed(ctx context.Context, approvalID, message string) error {
+	result := r.db.WithContext(ctx).Model(&models.ApprovalRequest{}).
+		Where("id = ?", approvalID).
+		Updates(map[string]interface{}{
+			"case_created":         false,
+			"case_creation_status": "failed",
+			"case_creation_time":   time.Now(),
+			"updated_at":           time.Now(),
+		})
+	if result.Error != nil {
+		return NewRepositoryError("mark case creation failed", "ApprovalRequest", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return NewRepositoryErrorWithID("mark case creation failed", "ApprovalRequest", approvalID, ErrRecordNotFound)
+	}
+	return nil
+}
+
 // GetConflictCheckRecord 获取集成审批关联的冲突检测记录
 func (r *IntegrationRepository) GetConflictCheckRecord(ctx context.Context, checkID string) (*models.ConflictCheckRecord, error) {
 	var record models.ConflictCheckRecord
@@ -240,6 +277,23 @@ func (r *IntegrationRepository) GetConflictCheckRecord(ctx context.Context, chec
 		return nil, NewRepositoryError("get conflict check record", "ConflictCheckRecord", err)
 	}
 	return &record, nil
+}
+
+// GetLatestConflictReview reads the append-only professional conclusion that
+// is linked to an approval's frozen conflict check.
+func (r *IntegrationRepository) GetLatestConflictReview(ctx context.Context, checkID string) (*models.ConflictReview, error) {
+	var review models.ConflictReview
+	err := r.db.WithContext(ctx).
+		Where("check_id = ?", checkID).
+		Order("created_at DESC").
+		First(&review).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, NewRepositoryError("get latest conflict review", "ConflictReview", err)
+	}
+	return &review, nil
 }
 
 // CreateIntegrationConfig 创建集成配置

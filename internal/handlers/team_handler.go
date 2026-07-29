@@ -1,8 +1,8 @@
 package handlers
 
 import (
+	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"law-oa-go/internal/common"
@@ -12,14 +12,14 @@ import (
 // TeamHandler 团队管理处理器
 type TeamHandler struct {
 	teamPermissionService *services.TeamPermissionService
-	caseService          *services.CaseService
+	caseService           *services.CaseService
 }
 
 // NewTeamHandler 创建团队处理器
 func NewTeamHandler(teamPermissionService *services.TeamPermissionService, caseService *services.CaseService) *TeamHandler {
 	return &TeamHandler{
 		teamPermissionService: teamPermissionService,
-		caseService:          caseService,
+		caseService:           caseService,
 	}
 }
 
@@ -44,17 +44,23 @@ func (h *TeamHandler) AssignTeam(c *gin.Context) {
 		return
 	}
 
-	// 从JWT中获取用户ID
-	userID, exists := c.Get("user_id")
-	if !exists {
-		common.APIUnauthorized(c, "未授权", "用户身份验证失败")
+	actor, ok := currentAuthActor(c)
+	if !ok {
 		return
 	}
-	req.AssignedBy = userID.(uint)
+	if services.IsTechnicalAdminRole(actor.Role) {
+		forbidObjectAccess(c)
+		return
+	}
+	req.AssignedBy = actor.UserID
 
 	// 分配团队
 	result, err := h.teamPermissionService.AssignTeam(c.Request.Context(), &req)
 	if err != nil {
+		if isSubjectWorkflowError(err) {
+			writeSubjectWorkflowError(c, err)
+			return
+		}
 		if err.Error() == "您没有权限分配此案件的团队" {
 			common.APIForbidden(c, "权限不足", err.Error())
 			return
@@ -89,15 +95,17 @@ func (h *TeamHandler) GetTeamAssignment(c *gin.Context) {
 		return
 	}
 
-	// 从JWT中获取用户ID
-	userID, exists := c.Get("user_id")
-	if !exists {
-		common.APIUnauthorized(c, "未授权", "用户身份验证失败")
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
+	if services.IsTechnicalAdminRole(actor.Role) {
+		forbidObjectAccess(c)
 		return
 	}
 
 	// 获取团队分配信息
-	result, err := h.teamPermissionService.GetTeamAssignment(c.Request.Context(), userID.(uint), uint(id))
+	result, err := h.teamPermissionService.GetTeamAssignment(c.Request.Context(), actor.UserID, uint(id))
 	if err != nil {
 		if err.Error() == "您没有权限查看此案件的团队信息" {
 			common.APIForbidden(c, "权限不足", err.Error())
@@ -131,6 +139,25 @@ func (h *TeamHandler) CheckTeamPermission(c *gin.Context) {
 	var req services.TeamPermissionCheck
 	if err := c.ShouldBindJSON(&req); err != nil {
 		common.APIBadRequest(c, "请求参数错误", err.Error())
+		return
+	}
+
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
+	if services.IsTechnicalAdminRole(actor.Role) {
+		forbidObjectAccess(c)
+		return
+	}
+	// The permission endpoint answers only for the authenticated actor. An
+	// arbitrary user_id would turn this endpoint into a cross-user permission
+	// oracle and could expose whether another lawyer is assigned to a case.
+	if req.UserID == 0 {
+		req.UserID = actor.UserID
+	}
+	if req.UserID != actor.UserID {
+		forbidObjectAccess(c)
 		return
 	}
 
@@ -178,16 +205,18 @@ func (h *TeamHandler) UpdateTeamMember(c *gin.Context) {
 		return
 	}
 
-	memberId, err := strconv.ParseUint(memberIdStr, 10, 32)
+	_, err = strconv.ParseUint(memberIdStr, 10, 32)
 	if err != nil {
 		common.APIBadRequest(c, "请求参数错误", "成员ID必须是有效数字")
 		return
 	}
 
-	// 从JWT中获取用户ID
-	userID, exists := c.Get("user_id")
-	if !exists {
-		common.APIUnauthorized(c, "未授权", "用户身份验证失败")
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
+	if services.IsTechnicalAdminRole(actor.Role) {
+		forbidObjectAccess(c)
 		return
 	}
 
@@ -199,7 +228,7 @@ func (h *TeamHandler) UpdateTeamMember(c *gin.Context) {
 
 	// 检查更新权限
 	hasPermission, err := h.teamPermissionService.CheckTeamPermission(c.Request.Context(), &services.TeamPermissionCheck{
-		UserID: userID.(uint),
+		UserID: actor.UserID,
 		CaseID: uint(caseId),
 		Action: "update",
 	})
@@ -212,18 +241,7 @@ func (h *TeamHandler) UpdateTeamMember(c *gin.Context) {
 		return
 	}
 
-	// TODO: 实现更新团队成员逻辑
-	// 这里应该调用实际的服务来更新团队成员信息
-
-	result := map[string]interface{}{
-		"message":    "团队成员更新功能开发中",
-		"case_id":    uint(caseId),
-		"member_id":  uint(memberId),
-		"updated_by": userID.(uint),
-		"updates":    updateReq,
-	}
-
-	common.APISuccess(c, result)
+	common.NewAPIError(c, http.StatusServiceUnavailable, "TEAM_MEMBER_UPDATE_UNAVAILABLE", "团队成员变更尚未接入正式案件主体重检流程，当前不会保存本次操作")
 }
 
 // RemoveTeamMember godoc
@@ -252,22 +270,24 @@ func (h *TeamHandler) RemoveTeamMember(c *gin.Context) {
 		return
 	}
 
-	memberId, err := strconv.ParseUint(memberIdStr, 10, 32)
+	_, err = strconv.ParseUint(memberIdStr, 10, 32)
 	if err != nil {
 		common.APIBadRequest(c, "请求参数错误", "成员ID必须是有效数字")
 		return
 	}
 
-	// 从JWT中获取用户ID
-	userID, exists := c.Get("user_id")
-	if !exists {
-		common.APIUnauthorized(c, "未授权", "用户身份验证失败")
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
+	if services.IsTechnicalAdminRole(actor.Role) {
+		forbidObjectAccess(c)
 		return
 	}
 
 	// 检查移除权限
 	hasPermission, err := h.teamPermissionService.CheckTeamPermission(c.Request.Context(), &services.TeamPermissionCheck{
-		UserID: userID.(uint),
+		UserID: actor.UserID,
 		CaseID: uint(caseId),
 		Action: "remove",
 	})
@@ -280,18 +300,7 @@ func (h *TeamHandler) RemoveTeamMember(c *gin.Context) {
 		return
 	}
 
-	// TODO: 实现移除团队成员逻辑
-	// 这里应该调用实际的服务来移除团队成员
-
-	result := map[string]interface{}{
-		"message":    "团队成员移除功能开发中",
-		"case_id":    uint(caseId),
-		"member_id":  uint(memberId),
-		"removed_by": userID.(uint),
-		"removed_at": "2025-10-21T19:50:00Z",
-	}
-
-	common.APISuccess(c, result)
+	common.NewAPIError(c, http.StatusServiceUnavailable, "TEAM_MEMBER_REMOVE_UNAVAILABLE", "团队成员移除尚未接入正式案件主体重检流程，当前不会保存本次操作")
 }
 
 // GetTeamMembers godoc
@@ -317,16 +326,18 @@ func (h *TeamHandler) GetTeamMembers(c *gin.Context) {
 		return
 	}
 
-	// 从JWT中获取用户ID
-	userID, exists := c.Get("user_id")
-	if !exists {
-		common.APIUnauthorized(c, "未授权", "用户身份验证失败")
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
+	if services.IsTechnicalAdminRole(actor.Role) {
+		forbidObjectAccess(c)
 		return
 	}
 
 	// 检查查看权限
 	hasPermission, err := h.teamPermissionService.CheckTeamPermission(c.Request.Context(), &services.TeamPermissionCheck{
-		UserID: userID.(uint),
+		UserID: actor.UserID,
 		CaseID: uint(caseId),
 		Action: "view",
 	})
@@ -339,33 +350,5 @@ func (h *TeamHandler) GetTeamMembers(c *gin.Context) {
 		return
 	}
 
-	// TODO: 实现获取团队成员列表逻辑
-	// 这里应该调用实际的服务来获取团队成员列表
-
-	// 模拟数据
-	members := []services.TeamMemberResponse{
-		{
-			UserID:     1,
-			UserName:   "张律师",
-			Email:      "zhang@lawoa.com",
-			Role:       "lead_lawyer",
-			Department: "民事部",
-			JoinedAt:   c.Request.Context().Value("request_time").(time.Time),
-			Capacity:   100,
-			IsActive:   true,
-		},
-	}
-
-	result := map[string]interface{}{
-		"case_id":     uint(caseId),
-		"members":     members,
-		"total_count": len(members),
-		"permissions": map[string]bool{
-			"can_assign": true,
-			"can_remove": false,
-			"can_update": true,
-		},
-	}
-
-	common.APISuccess(c, result)
+	common.NewAPIError(c, http.StatusServiceUnavailable, "TEAM_MEMBER_LIST_UNAVAILABLE", "案件团队成员清单尚未接入正式数据源，当前不返回演示数据")
 }

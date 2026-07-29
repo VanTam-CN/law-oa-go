@@ -11,13 +11,35 @@ import (
 )
 
 type ClientHandler struct {
-	clientService *services.ClientService
+	clientService         *services.ClientService
+	authz                 *services.AuthorizationService
+	ethicalWallListFilter bool
 }
 
-func NewClientHandler(clientService *services.ClientService) *ClientHandler {
+// SetEthicalWallListFilterEnabled enables the SQL-side ethical-wall predicate
+// for client list/count queries. It is configured by the production router
+// after the ethical-wall repository is initialized.
+func (h *ClientHandler) SetEthicalWallListFilterEnabled(enabled bool) {
+	h.ethicalWallListFilter = enabled
+}
+
+func NewClientHandler(clientService *services.ClientService, authz ...*services.AuthorizationService) *ClientHandler {
+	var authorizationService *services.AuthorizationService
+	if len(authz) > 0 {
+		authorizationService = authz[0]
+	}
 	return &ClientHandler{
 		clientService: clientService,
+		authz:         authorizationService,
 	}
+}
+
+func (h *ClientHandler) requireAuthorization(c *gin.Context) bool {
+	if h.authz == nil {
+		common.NewAPIError(c, http.StatusServiceUnavailable, "CLIENT_AUTHZ_UNAVAILABLE", "客户权限服务未初始化，当前不会返回或修改客户数据")
+		return false
+	}
+	return true
 }
 
 // CreateClient godoc
@@ -34,9 +56,25 @@ func NewClientHandler(clientService *services.ClientService) *ClientHandler {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /clients [post]
 func (h *ClientHandler) CreateClient(c *gin.Context) {
+	if !h.requireAuthorization(c) {
+		return
+	}
 	var req services.CreateClientRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		common.APIBadRequest(c, "请求参数错误", "请检查所有必填字段")
+		return
+	}
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
+	allowed, err := h.authz.CanCreateClient(c.Request.Context(), actor)
+	if err != nil {
+		common.APIInternalServerError(c, "权限检查失败", err.Error())
+		return
+	}
+	if !allowed {
+		forbidObjectAccess(c)
 		return
 	}
 
@@ -64,10 +102,27 @@ func (h *ClientHandler) CreateClient(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /clients/{id} [get]
 func (h *ClientHandler) GetClient(c *gin.Context) {
+	if !h.requireAuthorization(c) {
+		return
+	}
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
 		common.APIBadRequest(c, "请求参数错误", "客户ID必须是有效数字")
+		return
+	}
+
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
+	allowed, err := h.authz.CanReadClient(c.Request.Context(), actor, uint(id))
+	if err != nil {
+		common.APIInternalServerError(c, "权限检查失败", err.Error())
+		return
+	}
+	if !allowed {
+		forbidObjectAccess(c)
 		return
 	}
 
@@ -97,6 +152,9 @@ func (h *ClientHandler) GetClient(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /clients/{id} [put]
 func (h *ClientHandler) UpdateClient(c *gin.Context) {
+	if !h.requireAuthorization(c) {
+		return
+	}
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
@@ -111,6 +169,20 @@ func (h *ClientHandler) UpdateClient(c *gin.Context) {
 	}
 	if req.Version == nil || *req.Version == 0 {
 		common.APIBadRequest(c, "请求参数错误", "更新客户必须提交有效的version")
+		return
+	}
+
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
+	allowed, err := h.authz.CanManageClient(c.Request.Context(), actor, uint(id))
+	if err != nil {
+		common.APIInternalServerError(c, "权限检查失败", err.Error())
+		return
+	}
+	if !allowed {
+		forbidObjectAccess(c)
 		return
 	}
 
@@ -142,10 +214,27 @@ func (h *ClientHandler) UpdateClient(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /clients/{id} [delete]
 func (h *ClientHandler) DeleteClient(c *gin.Context) {
+	if !h.requireAuthorization(c) {
+		return
+	}
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
 		common.APIBadRequest(c, "请求参数错误", "客户ID必须是有效数字")
+		return
+	}
+
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
+	allowed, err := h.authz.CanManageClient(c.Request.Context(), actor, uint(id))
+	if err != nil {
+		common.APIInternalServerError(c, "权限检查失败", err.Error())
+		return
+	}
+	if !allowed {
+		forbidObjectAccess(c)
 		return
 	}
 
@@ -174,6 +263,9 @@ func (h *ClientHandler) DeleteClient(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /clients [get]
 func (h *ClientHandler) ListClients(c *gin.Context) {
+	if !h.requireAuthorization(c) {
+		return
+	}
 	var req services.ClientListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		common.APIBadRequest(c, "请求参数错误", "请检查查询参数")
@@ -184,6 +276,19 @@ func (h *ClientHandler) ListClients(c *gin.Context) {
 	}
 	if req.PageSize <= 0 {
 		req.PageSize = 20
+	}
+
+	var actor services.AuthActor
+	var actorOK bool
+	actor, actorOK = currentAuthActor(c)
+	if !actorOK {
+		return
+	}
+	if h.ethicalWallListFilter {
+		req.EthicalWallUserID = actor.UserID
+	}
+	if !services.IsBusinessMatterManagementRole(actor.Role) {
+		req.AccessibleByUserID = actor.UserID
 	}
 
 	clients, total, err := h.clientService.ListClients(c.Request.Context(), &req)
@@ -217,6 +322,14 @@ func (h *ClientHandler) ListClients(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /clients/stats [get]
 func (h *ClientHandler) GetClientStats(c *gin.Context) {
+	if !h.requireAuthorization(c) {
+		return
+	}
+	if !canViewAllMatterData(c) {
+		forbidObjectAccess(c)
+		return
+	}
+
 	stats, err := h.clientService.GetClientStats(c.Request.Context())
 	if err != nil {
 		common.APIInternalServerError(c, "获取客户统计失败", err.Error())

@@ -37,17 +37,17 @@ type PreviewRequest struct {
 
 // PreviewResponse represents a document preview response
 type PreviewResponse struct {
-	DocumentID   uint                 `json:"document_id"`
-	Name         string               `json:"name"`
-	MimeType     string               `json:"mime_type"`
-	FileSize     int64                `json:"file_size"`
-	PreviewType  string               `json:"preview_type"`
-	Content      interface{}          `json:"content"`
-	PageCount    int                  `json:"page_count,omitempty"`
-	CurrentPage  int                  `json:"current_page,omitempty"`
-	ThumbnailURL string               `json:"thumbnail_url,omitempty"`
-	PreviewURL   string               `json:"preview_url,omitempty"`
-	GeneratedAt  time.Time            `json:"generated_at"`
+	DocumentID   uint        `json:"document_id"`
+	Name         string      `json:"name"`
+	MimeType     string      `json:"mime_type"`
+	FileSize     int64       `json:"file_size"`
+	PreviewType  string      `json:"preview_type"`
+	Content      interface{} `json:"content"`
+	PageCount    int         `json:"page_count,omitempty"`
+	CurrentPage  int         `json:"current_page,omitempty"`
+	ThumbnailURL string      `json:"thumbnail_url,omitempty"`
+	PreviewURL   string      `json:"preview_url,omitempty"`
+	GeneratedAt  time.Time   `json:"generated_at"`
 }
 
 // TextPreview represents text content preview
@@ -66,10 +66,10 @@ type ImagePreview struct {
 
 // PDFPreview represents PDF preview info
 type PDFPreview struct {
-	PageCount   int    `json:"page_count"`
-	CurrentPage int    `json:"current_page"`
+	PageCount    int    `json:"page_count"`
+	CurrentPage  int    `json:"current_page"`
 	ThumbnailURL string `json:"thumbnail_url"`
-	PreviewURL  string `json:"preview_url"`
+	PreviewURL   string `json:"preview_url"`
 }
 
 // GetDocumentPreview generates a preview for a document
@@ -213,8 +213,8 @@ func (s *DocumentPreviewService) generateSpreadsheetPreview(doc *models.Document
 func (s *DocumentPreviewService) generateGenericPreview(doc *models.Document, response *PreviewResponse) (*PreviewResponse, error) {
 	response.PreviewType = "generic"
 	response.Content = map[string]interface{}{
-		"type":        "file",
-		"description": "Preview not available for this file type",
+		"type":         "file",
+		"description":  "Preview not available for this file type",
 		"download_url": fmt.Sprintf("/api/v1/documents/%d/download", doc.ID),
 	}
 
@@ -261,9 +261,9 @@ func (s *DocumentPreviewService) GetPreviewSettings() map[string]interface{} {
 			"image/gif",
 			"application/pdf",
 		},
-		"image_max_width":  800,
-		"image_max_height": 600,
-		"pdf_max_pages":    50,
+		"image_max_width":   800,
+		"image_max_height":  600,
+		"pdf_max_pages":     50,
 		"cache_ttl_minutes": 30,
 	}
 }

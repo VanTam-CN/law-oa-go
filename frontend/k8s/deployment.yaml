@@ -1,3 +1,10 @@
+# DEPRECATED: this legacy frontend deployment is not a production entrypoint.
+# Use the repository-root k8s/ manifests and the PostgreSQL bootstrap path.
+# All values below are deliberately non-functional placeholders so this file
+# cannot deploy with repository-shipped credentials by mistake.
+# Kubernetes does not expand ${...} inside ConfigMaps; inject real values via
+# Secret Manager/External Secrets and a reviewed deployment overlay.
+
 # Kubernetes命名空间
 apiVersion: v1
 kind: Namespace
@@ -22,8 +29,8 @@ data:
     database:
       host: mysql-service
       port: "3306"
-      username: root
-      password: password
+      username: ""
+      password: ""
       database: law_oa
       charset: utf8mb4
       parse_time: true
@@ -36,7 +43,7 @@ data:
       db: 0
     
     jwt:
-      secret: your-jwt-secret-key-change-in-production
+      secret: ""
       expire: 3600
 ---
 # Secret配置
@@ -47,8 +54,8 @@ metadata:
   namespace: law-oa
 type: Opaque
 data:
-  jwt-secret: eW91ci1qd3Qtc2VjcmV0LWtleS1jaGFuZ2UtaW4tcHJvZHVjdGlvbg==
-  db-password: cGFzc3dvcmQ=
+  jwt-secret: ""
+  db-password: ""
   redis-password: ""
 ---
 # 应用部署

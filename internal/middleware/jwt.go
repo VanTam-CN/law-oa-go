@@ -1,8 +1,12 @@
 package middleware
 
 import (
+	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -20,6 +24,16 @@ type JWTManager struct {
 
 var jwtManager *JWTManager
 var once sync.Once
+var revocationChecker TokenRevocationCheckFunc
+var revocationMu sync.RWMutex
+
+type TokenRevocationCheckFunc func(ctx context.Context, tokenString string, claims *JWTClaims) bool
+
+func SetTokenRevocationChecker(checker TokenRevocationCheckFunc) {
+	revocationMu.Lock()
+	defer revocationMu.Unlock()
+	revocationChecker = checker
+}
 
 // InitJWT 初始化 JWT 密钥管理器
 func InitJWT(cfg *config.Config) {
@@ -63,19 +77,28 @@ type JWTClaims struct {
 	UserID   uint   `json:"user_id"`
 	Username string `json:"username"`
 	Role     string `json:"role"`
+	UUID     string `json:"uuid"`
+	Type     string `json:"type"`
 	jwt.RegisteredClaims
 }
 
 // GenerateToken 生成 JWT 令牌
 func GenerateToken(userID uint, username, role string) (string, time.Time, error) {
 	expiresAt := time.Now().Add(time.Hour * 24) // 24小时过期
+	tokenID, err := generateTokenID()
+	if err != nil {
+		return "", time.Time{}, err
+	}
 	claims := JWTClaims{
 		UserID:   userID,
 		Username: username,
 		Role:     role,
+		UUID:     tokenID,
+		Type:     "access",
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(expiresAt),
+			ID:        tokenID,
 		},
 	}
 
@@ -94,6 +117,9 @@ func ValidateToken(tokenString string) (*JWTClaims, error) {
 func ParseToken(tokenString string) (*JWTClaims, error) {
 	manager := getJWTManager()
 	token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
 		return manager.getSecret(), nil
 	})
 
@@ -143,6 +169,14 @@ func AuthMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+		if isTokenRevoked(c.Request.Context(), tokenString, claims) {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"code":    401,
+				"message": "令牌已失效",
+			})
+			c.Abort()
+			return
+		}
 
 		// 将用户信息存储到上下文中
 		c.Set("user_id", claims.UserID)
@@ -151,6 +185,21 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		c.Next()
 	}
+}
+
+func isTokenRevoked(ctx context.Context, tokenString string, claims *JWTClaims) bool {
+	revocationMu.RLock()
+	checker := revocationChecker
+	revocationMu.RUnlock()
+	return checker != nil && checker(ctx, tokenString, claims)
+}
+
+func generateTokenID() (string, error) {
+	buf := make([]byte, 16)
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(buf), nil
 }
 
 // GetUserID 从Gin上下文中获取用户ID
@@ -212,8 +261,26 @@ func GetCurrentUserID(c *gin.Context) (uint, bool) {
 		return 0, false
 	}
 
-	if id, ok := userID.(uint); ok {
+	switch id := userID.(type) {
+	case uint:
 		return id, true
+	case int:
+		if id > 0 {
+			return uint(id), true
+		}
+	case int64:
+		if id > 0 {
+			return uint(id), true
+		}
+	case float64:
+		if id > 0 {
+			return uint(id), true
+		}
+	case string:
+		parsed, err := strconv.ParseUint(strings.TrimSpace(id), 10, 64)
+		if err == nil && parsed > 0 {
+			return uint(parsed), true
+		}
 	}
 
 	return 0, false

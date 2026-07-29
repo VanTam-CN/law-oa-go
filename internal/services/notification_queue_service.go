@@ -40,48 +40,48 @@ func NewNotificationQueueService(
 
 // CreateNotificationRequest 创建通知请求
 type CreateNotificationRequest struct {
-	TriggerType        string  `json:"trigger_type" binding:"required"`
-	TriggerID          uint    `json:"trigger_id" binding:"required"`
-	CaseID             *uint   `json:"case_id,omitempty"`
-	RecipientType      string  `json:"recipient_type" binding:"required,oneof=client lawyer admin"`
-	RecipientID        uint    `json:"recipient_id" binding:"required"`
-	Channel            string  `json:"channel" binding:"required,oneof=email sms wechat"`
-	Subject            string  `json:"subject" binding:"max=200"`
-	Content            string  `json:"content" binding:"required"`
-	TemplateID         *string `json:"template_id,omitempty"`
-	Priority           string  `json:"priority" binding:"omitempty,oneof=urgent normal low"`
-	AutoSend           bool    `json:"auto_send"`
-	VariableData       map[string]interface{} `json:"variable_data,omitempty"`
+	TriggerType   string                 `json:"trigger_type" binding:"required"`
+	TriggerID     uint                   `json:"trigger_id" binding:"required"`
+	CaseID        *uint                  `json:"case_id,omitempty"`
+	RecipientType string                 `json:"recipient_type" binding:"required,oneof=client lawyer admin"`
+	RecipientID   uint                   `json:"recipient_id" binding:"required"`
+	Channel       string                 `json:"channel" binding:"required,oneof=email sms wechat"`
+	Subject       string                 `json:"subject" binding:"max=200"`
+	Content       string                 `json:"content" binding:"required"`
+	TemplateID    *string                `json:"template_id,omitempty"`
+	Priority      string                 `json:"priority" binding:"omitempty,oneof=urgent normal low"`
+	AutoSend      bool                   `json:"auto_send"`
+	VariableData  map[string]interface{} `json:"variable_data,omitempty"`
 }
 
 // NotificationQueueResponse 通知队列响应
 type NotificationQueueResponse struct {
-	ID                   uint              `json:"id"`
-	TriggerType          string            `json:"trigger_type"`
-	TriggerID            uint              `json:"trigger_id"`
-	CaseID               *uint             `json:"case_id,omitempty"`
-	RecipientType        string            `json:"recipient_type"`
-	RecipientID          uint              `json:"recipient_id"`
-	RecipientName        string            `json:"recipient_name"`
-	RecipientContact     string            `json:"recipient_contact,omitempty"`
-	Channel              string            `json:"channel"`
-	Subject              string            `json:"subject,omitempty"`
-	Content              string            `json:"content"`
-	TemplateID           *string           `json:"template_id,omitempty"`
-	Status               string            `json:"status"`
-	Priority             string            `json:"priority"`
-	ContainsSensitiveInfo bool             `json:"contains_sensitive_info"`
-	AutoSend             bool              `json:"auto_send"`
-	CreatedBy            uint              `json:"created_by"`
-	CreatedAt            string            `json:"created_at"`
-	ApprovedBy           *uint             `json:"approved_by,omitempty"`
-	ApprovedAt           *string           `json:"approved_at,omitempty"`
-	SentAt               *string           `json:"sent_at,omitempty"`
-	SentRetryCount       int               `json:"sent_retry_count"`
-	ErrorMessage         string            `json:"error_message,omitempty"`
+	ID                    uint    `json:"id"`
+	TriggerType           string  `json:"trigger_type"`
+	TriggerID             uint    `json:"trigger_id"`
+	CaseID                *uint   `json:"case_id,omitempty"`
+	RecipientType         string  `json:"recipient_type"`
+	RecipientID           uint    `json:"recipient_id"`
+	RecipientName         string  `json:"recipient_name"`
+	RecipientContact      string  `json:"recipient_contact,omitempty"`
+	Channel               string  `json:"channel"`
+	Subject               string  `json:"subject,omitempty"`
+	Content               string  `json:"content"`
+	TemplateID            *string `json:"template_id,omitempty"`
+	Status                string  `json:"status"`
+	Priority              string  `json:"priority"`
+	ContainsSensitiveInfo bool    `json:"contains_sensitive_info"`
+	AutoSend              bool    `json:"auto_send"`
+	CreatedBy             uint    `json:"created_by"`
+	CreatedAt             string  `json:"created_at"`
+	ApprovedBy            *uint   `json:"approved_by,omitempty"`
+	ApprovedAt            *string `json:"approved_at,omitempty"`
+	SentAt                *string `json:"sent_at,omitempty"`
+	SentRetryCount        int     `json:"sent_retry_count"`
+	ErrorMessage          string  `json:"error_message,omitempty"`
 	// 关联数据
-	Case                 *NotificationCaseInfo `json:"case,omitempty"`
-	Template             *TemplateInfo     `json:"template,omitempty"`
+	Case     *NotificationCaseInfo `json:"case,omitempty"`
+	Template *TemplateInfo         `json:"template,omitempty"`
 }
 
 // NotificationCaseInfo 通知用案件信息
@@ -92,10 +92,10 @@ type NotificationCaseInfo struct {
 
 // TemplateInfo 模板信息
 type TemplateInfo struct {
-	ID           uint    `json:"id"`
-	TemplateCode string  `json:"template_code"`
-	TemplateName string  `json:"template_name"`
-	Channel      string  `json:"channel"`
+	ID           uint   `json:"id"`
+	TemplateCode string `json:"template_code"`
+	TemplateName string `json:"template_name"`
+	Channel      string `json:"channel"`
 }
 
 // ListNotificationsRequest 通知列表请求
@@ -174,22 +174,22 @@ func (s *NotificationQueueService) CreateNotification(ctx context.Context, req *
 	}
 
 	notification := &models.NotificationQueue{
-		TriggerType:         req.TriggerType,
-		TriggerID:           req.TriggerID,
-		CaseID:              req.CaseID,
-		RecipientType:       req.RecipientType,
-		RecipientID:         req.RecipientID,
-		RecipientName:       recipientName,
-		RecipientContact:    recipientContact,
-		Channel:             req.Channel,
-		Subject:             subject,
-		Content:             content,
-		TemplateID:          "",
-		Status:              "pending",
-		Priority:            priority,
-		CreatedBy:           createdBy,
+		TriggerType:           req.TriggerType,
+		TriggerID:             req.TriggerID,
+		CaseID:                req.CaseID,
+		RecipientType:         req.RecipientType,
+		RecipientID:           req.RecipientID,
+		RecipientName:         recipientName,
+		RecipientContact:      recipientContact,
+		Channel:               req.Channel,
+		Subject:               subject,
+		Content:               content,
+		TemplateID:            "",
+		Status:                "pending",
+		Priority:              priority,
+		CreatedBy:             createdBy,
 		ContainsSensitiveInfo: containsSensitiveInfo,
-		AutoSend:            req.AutoSend,
+		AutoSend:              req.AutoSend,
 	}
 
 	if err := s.queueRepo.Create(ctx, notification); err != nil {
@@ -470,12 +470,12 @@ func (s *NotificationQueueService) ProcessPendingSend(ctx context.Context, limit
 	}
 
 	result := ProcessResult{
-		Total:      len(notifications),
-		Success:    0,
-		Failed:     0,
-		SentIDs:    make([]uint, 0),
-		FailedIDs:  make([]uint, 0),
-		Errors:     make(map[uint]string),
+		Total:     len(notifications),
+		Success:   0,
+		Failed:    0,
+		SentIDs:   make([]uint, 0),
+		FailedIDs: make([]uint, 0),
+		Errors:    make(map[uint]string),
 	}
 
 	for _, n := range notifications {
@@ -495,13 +495,13 @@ func (s *NotificationQueueService) ProcessPendingSend(ctx context.Context, limit
 
 // ProcessResult 处理结果
 type ProcessResult struct {
-	Total      int            `json:"total"`
-	Success    int            `json:"success"`
-	Failed     int            `json:"failed"`
-	SentIDs    []uint         `json:"sent_ids"`
-	FailedIDs  []uint         `json:"failed_ids"`
-	Errors     map[uint]string `json:"errors"`
-	Error      string         `json:"error,omitempty"`
+	Total     int             `json:"total"`
+	Success   int             `json:"success"`
+	Failed    int             `json:"failed"`
+	SentIDs   []uint          `json:"sent_ids"`
+	FailedIDs []uint          `json:"failed_ids"`
+	Errors    map[uint]string `json:"errors"`
+	Error     string          `json:"error,omitempty"`
 }
 
 // MarkAsFailed 标记发送失败
@@ -550,26 +550,26 @@ func (s *NotificationQueueService) DeleteNotification(ctx context.Context, id ui
 // convertToResponse 转换为响应格式
 func (s *NotificationQueueService) convertToResponse(ctx context.Context, n *models.NotificationQueue) *NotificationQueueResponse {
 	resp := &NotificationQueueResponse{
-		ID:                   n.ID,
-		TriggerType:          n.TriggerType,
-		TriggerID:            n.TriggerID,
-		CaseID:               n.CaseID,
-		RecipientType:        n.RecipientType,
-		RecipientID:          n.RecipientID,
-		RecipientName:        n.RecipientName,
-		RecipientContact:     n.RecipientContact,
-		Channel:              n.Channel,
-		Subject:              n.Subject,
-		Content:              n.Content,
-		TemplateID:           &n.TemplateID,
-		Status:               n.Status,
-		Priority:             n.Priority,
+		ID:                    n.ID,
+		TriggerType:           n.TriggerType,
+		TriggerID:             n.TriggerID,
+		CaseID:                n.CaseID,
+		RecipientType:         n.RecipientType,
+		RecipientID:           n.RecipientID,
+		RecipientName:         n.RecipientName,
+		RecipientContact:      n.RecipientContact,
+		Channel:               n.Channel,
+		Subject:               n.Subject,
+		Content:               n.Content,
+		TemplateID:            &n.TemplateID,
+		Status:                n.Status,
+		Priority:              n.Priority,
 		ContainsSensitiveInfo: n.ContainsSensitiveInfo,
-		AutoSend:             n.AutoSend,
-		CreatedBy:            n.CreatedBy,
-		CreatedAt:            n.CreatedAt.Format("2006-01-02 15:04:05"),
-		SentRetryCount:       n.SentRetryCount,
-		ErrorMessage:         n.ErrorMessage,
+		AutoSend:              n.AutoSend,
+		CreatedBy:             n.CreatedBy,
+		CreatedAt:             n.CreatedAt.Format("2006-01-02 15:04:05"),
+		SentRetryCount:        n.SentRetryCount,
+		ErrorMessage:          n.ErrorMessage,
 	}
 
 	if n.ApprovedBy != nil {

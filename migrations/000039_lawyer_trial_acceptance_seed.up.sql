@@ -69,8 +69,8 @@ ON CONFLICT (email) DO UPDATE SET
     status = EXCLUDED.status,
     updated_at = CURRENT_TIMESTAMP;
 
-DELETE FROM cases WHERE case_number = 'HD-ISO-B-2026-001';
-DELETE FROM cases WHERE case_number = 'HD-HIGH-2026-001';
+DELETE FROM cases WHERE case_number = 'DEMO-ISO-B-2026-001';
+DELETE FROM cases WHERE case_number = 'DEMO-HIGH-2026-001';
 
 WITH seed AS (
     SELECT
@@ -86,7 +86,7 @@ INSERT INTO cases (
     priority, status, start_date, created_at, updated_at
 )
 SELECT
-    'HD-ISO-B-2026-001',
+    'DEMO-ISO-B-2026-001',
     'Lawyer B 独立隔离验收案件',
     '用于验证律师 A 不能访问律师 B 的案件。',
     seed.client_id,
@@ -113,7 +113,7 @@ INSERT INTO cases (
     priority, status, start_date, created_at, updated_at
 )
 SELECT
-    'HD-HIGH-2026-001',
+    'DEMO-HIGH-2026-001',
     '上海示例科技高风险历史事项',
     '示例科技与上海示例科技有限公司存在历史高风险关联，用于验证高风险冲突硬阻断。',
     seed.client_id,
@@ -149,8 +149,8 @@ SELECT
     '新增案件联调测试',
     'commercial',
     'COMPLETED',
-    TRUE,
-    'HIGH',
+    FALSE,
+    'MEDIUM',
     jsonb_build_object(
         'query', '示例科技',
         'searchDepth', 'STANDARD',
@@ -160,10 +160,11 @@ SELECT
     ),
     jsonb_build_object(
         'checkId', 'LAWYER-TRIAL-HIGH-001',
+        'isConflict', FALSE,
         'riskAssessment', jsonb_build_object(
-            'overallRisk', 'HIGH',
-            'riskScore', 92,
-            'riskReason', '示例科技模糊命中上海示例科技有限公司高风险关联，需暂停承办并发起冲突审批。',
+            'overallRisk', 'MEDIUM',
+            'riskScore', 58,
+            'riskReason', '简称“示例科技”与“上海示例科技有限公司”形成名称候选，尚不能确认是同一主体，需人工核实。',
             'requiresApproval', TRUE
         ),
         'checkStatistics', jsonb_build_object(
@@ -212,13 +213,13 @@ SELECT
     COALESCE(seed.case_id, '37'),
     '新增案件联调测试',
     'CASE-20260513173242',
-    '现有客户高风险关联',
-    'HIGH',
-    '示例科技模糊命中上海示例科技有限公司历史高风险事项，需冲突复核。',
+    '名称相似待核实',
+    'MEDIUM',
+    '简称“示例科技”与“上海示例科技有限公司”形成名称候选，需核实统一社会信用代码或主体关系。',
     'pending',
     seed.client_id,
     '["上海示例科技有限公司", "示例科技"]'::jsonb,
-    '验收种子：用于验证律师从案件详情进入本案冲突复核时可以看到高风险检测结果。',
+    '验收种子：名称候选只用于人工核实，不自动认定高风险冲突。',
     CURRENT_TIMESTAMP,
     'commercial'
 FROM seed
@@ -258,14 +259,14 @@ SELECT
     '冲突审查审批 - 新增案件联调测试',
     'conflict_approval',
     'conflict_review',
-    '上海示例科技有限公司高风险冲突检测结果，请主任复核。',
+    '名称候选检测结果需要人工核实，请主任复核。',
     users_seed.lawyer_id,
     users_seed.lawyer_name,
     '律师',
     'risk',
     '合规风控部',
     'urgent',
-    'high',
+    'medium',
     'submitted',
     CURRENT_TIMESTAMP,
     '主任复核',
@@ -279,18 +280,18 @@ SELECT
         'conflict_task_id', 'LAWYER-TRIAL-HIGH-001',
         'conflict_result', jsonb_build_object(
             'checkId', 'LAWYER-TRIAL-HIGH-001',
-            'riskAssessment', jsonb_build_object('overallRisk', 'HIGH', 'riskScore', 92, 'requiresApproval', TRUE)
+            'riskAssessment', jsonb_build_object('overallRisk', 'MEDIUM', 'riskScore', 58, 'requiresApproval', TRUE)
         )
     ),
     users_seed.lawyer_id,
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP,
     'LAWYER-TRIAL-HIGH-001',
-    'HIGH',
+    'MEDIUM',
     CURRENT_TIMESTAMP,
     jsonb_build_object(
         'checkId', 'LAWYER-TRIAL-HIGH-001',
-        'riskAssessment', jsonb_build_object('overallRisk', 'HIGH', 'riskScore', 92, 'requiresApproval', TRUE)
+        'riskAssessment', jsonb_build_object('overallRisk', 'MEDIUM', 'riskScore', 58, 'requiresApproval', TRUE)
     )
 FROM users_seed
 WHERE users_seed.lawyer_id IS NOT NULL
@@ -298,6 +299,9 @@ WHERE users_seed.lawyer_id IS NOT NULL
 ON CONFLICT (id) DO UPDATE SET
     title = EXCLUDED.title,
     content = EXCLUDED.content,
+    applicant_id = EXCLUDED.applicant_id,
+    applicant_name = EXCLUDED.applicant_name,
+    created_by = EXCLUDED.created_by,
     status = EXCLUDED.status,
     current_stage = EXCLUDED.current_stage,
     current_approver_id = EXCLUDED.current_approver_id,
@@ -308,3 +312,31 @@ ON CONFLICT (id) DO UPDATE SET
     conflict_check_time = EXCLUDED.conflict_check_time,
     conflict_result = EXCLUDED.conflict_result,
     updated_at = CURRENT_TIMESTAMP;
+
+DELETE FROM approval_snapshots
+WHERE approval_request_id = 'LAWYER-TRIAL-APPROVAL-001';
+
+INSERT INTO approval_snapshots (
+    approval_request_id, snapshot_type, snapshot_data, source_version, created_at
+)
+SELECT
+    id,
+    'conflict_approval',
+    jsonb_build_object(
+        'snapshot_type', 'conflict_approval',
+        'source', 'lawyer_trial_acceptance_seed',
+        'approval', jsonb_build_object(
+            'id', id,
+            'request_number', request_number,
+            'title', title,
+            'status', status,
+            'current_stage', current_stage,
+            'current_approver_name', current_approver_name
+        ),
+        'metadata', metadata,
+        'conflict_result', conflict_result
+    ),
+    1,
+    CURRENT_TIMESTAMP
+FROM approval_requests
+WHERE id = 'LAWYER-TRIAL-APPROVAL-001';

@@ -36,6 +36,20 @@ func (h *ApprovalDelegationHandler) CreateDelegation(c *gin.Context) {
 		common.APIBadRequest(c, "请求参数错误", err.Error())
 		return
 	}
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
+	currentUserID := strconv.FormatUint(uint64(actor.UserID), 10)
+	if services.IsPrivilegedRole(actor.Role) {
+		if req.DelegatorID == "" {
+			req.DelegatorID = currentUserID
+		}
+		req.CreatedBy = currentUserID
+	} else {
+		req.DelegatorID = currentUserID
+		req.CreatedBy = currentUserID
+	}
 
 	delegation, err := h.service.CreateDelegation(c.Request.Context(), &req)
 	if err != nil {
@@ -60,57 +74,60 @@ func (h *ApprovalDelegationHandler) CreateDelegation(c *gin.Context) {
 // @Success 200 {object} common.APIResponse "查询成功"
 // @Router /approvals/delegations [get]
 func (h *ApprovalDelegationHandler) ListDelegations(c *gin.Context) {
+	// The protected router normally populates the actor. Fail closed here as
+	// well, otherwise a missing auth context would fall through to the
+	// privileged all-records branch.
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
+
 	// IDOR 防护：非管理员只能查看自己相关的代理配置
-	userIDVal, exists := c.Get("user_id")
-	if exists {
-		roleVal, roleExists := c.Get("role")
-		isAdmin := roleExists && roleVal.(string) == "admin"
-		if !isAdmin {
-			// 非管理员：强制限定只能查看自己相关的记录
-			userIDStr := strconv.FormatUint(uint64(userIDVal.(uint)), 10)
-			params := &repositories.DelegationListParams{
-				Page:     1,
-				PageSize: 20,
-			}
-			if page, err := strconv.Atoi(c.Query("page")); err == nil && page > 0 {
-				params.Page = page
-			}
-			if pageSize, err := strconv.Atoi(c.Query("page_size")); err == nil && pageSize > 0 && pageSize <= 100 {
-				params.PageSize = pageSize
-			}
-			if active := c.Query("is_active"); active != "" {
-				isActive := active == "true"
-				params.IsActive = &isActive
-			}
-			// 非管理员只能看到自己作为委托人或代理人的记录
-			if c.Query("filter") == "delegate" {
-				params.DelegateID = userIDStr
-			} else {
-				params.DelegatorID = userIDStr
-			}
+	if !services.IsPrivilegedRole(actor.Role) {
+		// 非管理员：强制限定只能查看自己相关的记录
+		userIDStr := strconv.FormatUint(uint64(actor.UserID), 10)
+		params := &repositories.DelegationListParams{
+			Page:     1,
+			PageSize: 20,
+		}
+		if page, err := strconv.Atoi(c.Query("page")); err == nil && page > 0 {
+			params.Page = page
+		}
+		if pageSize, err := strconv.Atoi(c.Query("page_size")); err == nil && pageSize > 0 && pageSize <= 100 {
+			params.PageSize = pageSize
+		}
+		if active := c.Query("is_active"); active != "" {
+			isActive := active == "true"
+			params.IsActive = &isActive
+		}
+		// 非管理员只能看到自己作为委托人或代理人的记录
+		if c.Query("filter") == "delegate" {
+			params.DelegateID = userIDStr
+		} else {
+			params.DelegatorID = userIDStr
+		}
 
-			delegations, total, err := h.service.ListDelegations(c.Request.Context(), params)
-			if err != nil {
-				common.APIInternalServerError(c, "查询代理配置失败", err.Error())
-				return
-			}
-
-			common.APISuccess(c, gin.H{
-				"items": delegations,
-				"total": total,
-				"page":  params.Page,
-				"page_size": params.PageSize,
-			})
+		delegations, total, err := h.service.ListDelegations(c.Request.Context(), params)
+		if err != nil {
+			common.APIInternalServerError(c, "查询代理配置失败", err.Error())
 			return
 		}
+
+		common.APISuccess(c, gin.H{
+			"items":     delegations,
+			"total":     total,
+			"page":      params.Page,
+			"page_size": params.PageSize,
+		})
+		return
 	}
 
 	// 管理员：可查看所有代理配置
 	params := &repositories.DelegationListParams{
 		DelegatorID: c.Query("delegator_id"),
 		DelegateID:  c.Query("delegate_id"),
-		Page:       1,
-		PageSize:   20,
+		Page:        1,
+		PageSize:    20,
 	}
 
 	if page, err := strconv.Atoi(c.Query("page")); err == nil && page > 0 {
@@ -131,9 +148,9 @@ func (h *ApprovalDelegationHandler) ListDelegations(c *gin.Context) {
 	}
 
 	common.APISuccess(c, gin.H{
-		"items": delegations,
-		"total": total,
-		"page":  params.Page,
+		"items":     delegations,
+		"total":     total,
+		"page":      params.Page,
 		"page_size": params.PageSize,
 	})
 }
@@ -149,6 +166,10 @@ func (h *ApprovalDelegationHandler) ListDelegations(c *gin.Context) {
 // @Failure 404 {object} common.APIResponse "不存在"
 // @Router /approvals/delegations/{id} [get]
 func (h *ApprovalDelegationHandler) GetDelegation(c *gin.Context) {
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
 	id := c.Param("id")
 	if id == "" {
 		common.APIBadRequest(c, "参数错误", "id不能为空")
@@ -162,6 +183,14 @@ func (h *ApprovalDelegationHandler) GetDelegation(c *gin.Context) {
 	}
 	if delegation == nil {
 		common.APINotFound(c, "代理配置不存在", "ID: "+id)
+		return
+	}
+	userIDStr := strconv.FormatUint(uint64(actor.UserID), 10)
+	if !services.IsPrivilegedRole(actor.Role) &&
+		delegation.DelegatorID != userIDStr &&
+		delegation.DelegateID != userIDStr &&
+		delegation.CreatedBy != userIDStr {
+		common.APIForbidden(c, "无权访问", "只能查看与自己相关的代理配置")
 		return
 	}
 
@@ -179,6 +208,10 @@ func (h *ApprovalDelegationHandler) GetDelegation(c *gin.Context) {
 // @Failure 404 {object} common.APIResponse "不存在"
 // @Router /approvals/delegations/{id} [delete]
 func (h *ApprovalDelegationHandler) RevokeDelegation(c *gin.Context) {
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
 	id := c.Param("id")
 	if id == "" {
 		common.APIBadRequest(c, "参数错误", "id不能为空")
@@ -197,14 +230,9 @@ func (h *ApprovalDelegationHandler) RevokeDelegation(c *gin.Context) {
 	}
 
 	// 检查权限：管理员、委托人本人、或创建者可撤销
-	userIDVal, exists := c.Get("user_id")
 	canRevoke := false
-	if exists {
-		roleVal, roleExists := c.Get("role")
-		isAdmin := roleExists && roleVal.(string) == "admin"
-		userIDStr := strconv.FormatUint(uint64(userIDVal.(uint)), 10)
-		canRevoke = isAdmin || delegation.DelegatorID == userIDStr || delegation.CreatedBy == userIDStr
-	}
+	userIDStr := strconv.FormatUint(uint64(actor.UserID), 10)
+	canRevoke = services.IsPrivilegedRole(actor.Role) || delegation.DelegatorID == userIDStr || delegation.CreatedBy == userIDStr
 	if !canRevoke {
 		common.APIForbidden(c, "无权操作", "只能撤销自己的代理配置")
 		return
@@ -229,14 +257,8 @@ func (h *ApprovalDelegationHandler) RevokeDelegation(c *gin.Context) {
 // @Router /approvals/delegations/my [get]
 func (h *ApprovalDelegationHandler) MyDelegations(c *gin.Context) {
 	// 从 JWT context 获取当前用户ID，防止 IDOR 越权
-	userIDVal, exists := c.Get("user_id")
-	if !exists {
-		common.APIBadRequest(c, "未授权", "无法获取当前用户信息")
-		return
-	}
-	userIDStr, ok := userIDVal.(string)
-	if !ok || userIDStr == "" {
-		common.APIBadRequest(c, "参数错误", "用户ID格式无效")
+	userIDStr, ok := currentUserIDString(c)
+	if !ok {
 		return
 	}
 

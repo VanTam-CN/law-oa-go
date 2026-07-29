@@ -76,17 +76,22 @@ func NewOptimizedDatabase(cfg *config.Config) (*OptimizedDatabase, error) {
 		db, err = gorm.Open(sqlite.Open(dsn), gormConfig)
 	} else if cfg.Database.Driver == "postgres" {
 		// PostgreSQL连接
-		dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=UTC",
+		sslMode := cfg.Database.SSLMode
+		if sslMode == "" {
+			sslMode = "disable"
+		}
+		dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s TimeZone=UTC",
 			cfg.Database.Host,
 			cfg.Database.Port,
 			cfg.Database.Username,
 			cfg.Database.Password,
 			cfg.Database.Database,
+			sslMode,
 		)
 		db, err = gorm.Open(postgres.Open(dsn), gormConfig)
 	} else {
 		// MySQL连接（默认）
-		dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=%v&loc=%s&tls=skip-verify",
+		dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=%v&loc=%s%s",
 			cfg.Database.Username,
 			cfg.Database.Password,
 			cfg.Database.Host,
@@ -95,6 +100,7 @@ func NewOptimizedDatabase(cfg *config.Config) (*OptimizedDatabase, error) {
 			cfg.Database.Charset,
 			cfg.Database.ParseTime,
 			cfg.Database.Loc,
+			mysqlTLSParam(cfg.Database.SSLMode),
 		)
 		db, err = gorm.Open(mysql.Open(dsn), gormConfig)
 	}

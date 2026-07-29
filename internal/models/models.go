@@ -1,49 +1,76 @@
 package models
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
+	"law-oa-go/internal/security"
 )
 
 // User 用户模型
 type User struct {
-	ID         uint           `json:"id" gorm:"primarykey"`
-	CreatedAt  time.Time      `json:"created_at"`
-	UpdatedAt  time.Time      `json:"updated_at"`
-	DeletedAt  gorm.DeletedAt `json:"-" gorm:"index"`
-	Username   string         `json:"username" gorm:"size:50;not null;uniqueIndex"`
-	Name       string         `json:"name" gorm:"column:name;size:50"`
-	Email      string         `json:"email" gorm:"size:100;not null;uniqueIndex"`
-	Password   string         `json:"-" gorm:"size:255;not null"`
-	Role       string         `json:"role" gorm:"size:50;not null;default:'user'"`
-	Phone      string         `json:"phone" gorm:"size:20"`
-	Avatar     string         `json:"avatar" gorm:"size:255"`
-	Status     string         `json:"status" gorm:"size:20;default:'active'"`
-	Department string         `json:"department" gorm:"column:department;size:50;default:'综合部'"` // 部门
-	Seniority  string         `json:"seniority" gorm:"column:seniority;size:20;default:'初级'"`    // 职级：初级/中级/高级/合伙人
+	ID           uint           `json:"id" gorm:"primarykey"`
+	CreatedAt    time.Time      `json:"created_at"`
+	UpdatedAt    time.Time      `json:"updated_at"`
+	DeletedAt    gorm.DeletedAt `json:"-" gorm:"index"`
+	Username     string         `json:"username" gorm:"size:50;not null;uniqueIndex"`
+	Name         string         `json:"name" gorm:"column:name;size:50"`
+	Email        string         `json:"email" gorm:"size:100;not null;uniqueIndex"`
+	Password     string         `json:"-" gorm:"size:255;not null"`
+	Role         string         `json:"role" gorm:"size:50;not null;default:'user'"`
+	Phone        string         `json:"phone" gorm:"size:20"`
+	Avatar       string         `json:"avatar" gorm:"size:255"`
+	Status       string         `json:"status" gorm:"size:20;default:'active'"`
+	Department   string         `json:"department" gorm:"column:department;size:50;default:'综合部'"` // 部门
+	DepartmentID *uint          `json:"department_id,omitempty" gorm:"column:department_id;index"`
+	// ManagerID is the authoritative direct-management relation used by
+	// conflict-review independence checks. It is deliberately an ID only so
+	// loading a user never expands a sensitive reviewer hierarchy implicitly.
+	ManagerID *uint  `json:"manager_id,omitempty" gorm:"column:manager_id;index"`
+	Seniority string `json:"seniority" gorm:"column:seniority;size:20;default:'初级'"` // 职级：初级/中级/高级/合伙人
 }
 
 // Client 客户模型
 type Client struct {
-	ID            uint           `json:"id" gorm:"primarykey"`
-	CreatedAt     time.Time      `json:"created_at"`
-	UpdatedAt     time.Time      `json:"updated_at"`
-	DeletedAt     gorm.DeletedAt `json:"-" gorm:"index"`
-	Name          string         `json:"name" gorm:"column:name;size:100;not null"`
-	Type          string         `json:"type" gorm:"column:type;size:20;not null;default:'个人'"` // 客户类型：个人/企业
-	Email         string         `json:"email" gorm:"size:100;uniqueIndex"`
-	Phone         string         `json:"-" gorm:"size:20"` // 手机号（json:"-"防止API泄露，通过ToSafeResponse输出脱敏值）
-	Address       string         `json:"address" gorm:"type:text"`
-	Company       string         `json:"company" gorm:"size:100"`
-	IDCard        string         `json:"-" gorm:"column:id_card;size:18"`                     // 身份证号（json:"-"防止API泄露）
-	Industry      string         `json:"industry" gorm:"column:industry;size:50"`             // 所属行业（企业客户）
-	ContactPerson string         `json:"contact_person" gorm:"column:contact_person;size:50"` // 联系人（企业客户）
-	ContactPhone  string         `json:"-" gorm:"column:contact_phone;size:20"`               // 联系电话（json:"-"防止API泄露）
-	Source        string         `json:"source" gorm:"column:source;size:50"`                 // 客户来源
-	Notes         string         `json:"notes" gorm:"column:notes;type:text"`
-	Status        string         `json:"status" gorm:"size:20;default:'active'"`
-	Version       uint           `json:"version" gorm:"not null;default:1"` // 乐观锁版本号
+	ID               uint           `json:"id" gorm:"primarykey"`
+	CreatedAt        time.Time      `json:"created_at"`
+	UpdatedAt        time.Time      `json:"updated_at"`
+	DeletedAt        gorm.DeletedAt `json:"-" gorm:"index"`
+	Name             string         `json:"name" gorm:"column:name;size:100;not null"`
+	Type             string         `json:"type" gorm:"column:type;size:20;not null;default:'个人'"` // 客户类型：个人/企业
+	Email            string         `json:"email" gorm:"size:100;uniqueIndex"`
+	Phone            string         `json:"-" gorm:"size:20"` // 手机号（json:"-"防止API泄露，通过ToSafeResponse输出脱敏值）
+	Address          string         `json:"address" gorm:"type:text"`
+	Company          string         `json:"company" gorm:"size:100"`
+	IDCard           string         `json:"-" gorm:"column:id_card;size:18"` // legacy plaintext column; production readiness rejects non-empty values
+	IDCardDigest     string         `json:"-" gorm:"column:id_card_digest;size:64;index"`
+	IDCardCiphertext string         `json:"-" gorm:"column:id_card_ciphertext;type:text"`
+	Industry         string         `json:"industry" gorm:"column:industry;size:50"`             // 所属行业（企业客户）
+	ContactPerson    string         `json:"contact_person" gorm:"column:contact_person;size:50"` // 联系人（企业客户）
+	ContactPhone     string         `json:"-" gorm:"column:contact_phone;size:20"`               // 联系电话（json:"-"防止API泄露）
+	Source           string         `json:"source" gorm:"column:source;size:50"`                 // 客户来源
+	Notes            string         `json:"notes" gorm:"column:notes;type:text"`
+	Status           string         `json:"status" gorm:"size:20;default:'active'"`
+	Version          uint           `json:"version" gorm:"not null;default:1"` // 乐观锁版本号
+}
+
+// BeforeSave converts newly supplied client identity numbers into encrypted
+// storage. Existing plaintext rows remain visible to the readiness audit until
+// an explicit backfill has verified their digest and ciphertext.
+func (c *Client) BeforeSave(tx *gorm.DB) error {
+	if strings.TrimSpace(c.IDCard) == "" {
+		return nil
+	}
+	ciphertext, digest, err := security.ProtectIdentityNumber(c.IDCard)
+	if err != nil {
+		return fmt.Errorf("保存客户身份信息失败: %w", err)
+	}
+	c.IDCardCiphertext = ciphertext
+	c.IDCardDigest = digest
+	c.IDCard = ""
+	return nil
 }
 
 // Case 案件模型
@@ -65,6 +92,15 @@ type Case struct {
 	StartDate   *time.Time     `json:"start_date"`
 	EndDate     *time.Time     `json:"end_date"`
 	CreatedBy   string         `json:"created_by" gorm:"column:created_by;size:36"` // 创建人ID
+
+	// P0 冲突主体版本。subject_snapshot 只在独立复核通过后替换，
+	// pending_subject_revision_id 用于阻止绕过重检直接推进案件。
+	SubjectVersion           int    `json:"subject_version" gorm:"column:subject_version;default:1"`
+	SubjectState             string `json:"subject_state" gorm:"column:subject_state;size:50;default:EFFECTIVE"`
+	SubjectSnapshot          string `json:"subject_snapshot,omitempty" gorm:"column:subject_snapshot;type:text"`
+	PendingSubjectRevisionID string `json:"pending_subject_revision_id,omitempty" gorm:"column:pending_subject_revision_id;size:36"`
+	ConflictCheckID          string `json:"conflict_check_id,omitempty" gorm:"column:conflict_check_id;size:100"`
+	ConflictCoverageStatus   string `json:"conflict_coverage_status" gorm:"column:conflict_coverage_status;size:30;default:COVERAGE_LIMITED"`
 
 	// 隔离墙相关字段 (v2.2.0)
 	EthicalWallEnabled       bool       `json:"ethical_wall_enabled" gorm:"column:ethical_wall_enabled;default:false;index:idx_ethical_wall;comment:是否启用隔离墙"`

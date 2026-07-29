@@ -57,14 +57,14 @@ type WhitelistEntryRequest struct {
 
 // WhitelistEntryResponse 白名单条目响应
 type WhitelistEntryResponse struct {
-	ID        uint      `json:"id"`
-	CaseID    uint      `json:"case_id"`
-	UserID    uint      `json:"user_id"`
-	UserName  string    `json:"user_name"`
-	GrantedBy uint      `json:"granted_by"`
-	GrantedByName string `json:"granted_by_name"`
-	GrantedAt time.Time `json:"granted_at"`
-	Reason    string    `json:"reason"`
+	ID            uint      `json:"id"`
+	CaseID        uint      `json:"case_id"`
+	UserID        uint      `json:"user_id"`
+	UserName      string    `json:"user_name"`
+	GrantedBy     uint      `json:"granted_by"`
+	GrantedByName string    `json:"granted_by_name"`
+	GrantedAt     time.Time `json:"granted_at"`
+	Reason        string    `json:"reason"`
 }
 
 // AccessLogResponse 访问日志响应
@@ -277,14 +277,14 @@ func (s *EthicalWallService) ClearWhitelist(ctx context.Context, caseID uint) er
 // convertWhitelistEntry 转换白名单条目为响应格式
 func (s *EthicalWallService) convertWhitelistEntry(entry *models.CaseEthicalWallWhitelist) *WhitelistEntryResponse {
 	resp := &WhitelistEntryResponse{
-		ID:        entry.ID,
-		CaseID:    entry.CaseID,
-		UserID:    entry.UserID,
-		UserName:  "",
-		GrantedBy: entry.GrantedBy,
+		ID:            entry.ID,
+		CaseID:        entry.CaseID,
+		UserID:        entry.UserID,
+		UserName:      "",
+		GrantedBy:     entry.GrantedBy,
 		GrantedByName: "",
-		GrantedAt: entry.GrantedAt,
-		Reason:    entry.Reason,
+		GrantedAt:     entry.GrantedAt,
+		Reason:        entry.Reason,
 	}
 
 	// 如果有预加载的用户数据，使用它

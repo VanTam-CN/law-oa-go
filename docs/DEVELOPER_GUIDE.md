@@ -66,7 +66,7 @@ MCP_API_URL=https://mcp.example.com
 mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS law_oa CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
 # 运行迁移
-go run ./cmd/migrate -migrations ./migrations up
+go run ./cmd/migrate -migrations ./migrations -command up
 ```
 
 4. **前端环境配置**

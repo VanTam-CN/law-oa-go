@@ -27,6 +27,14 @@ test.describe('立案工作流：冲突检查留在当前上下文', () => {
     await caseTypeField.locator('.ant-select-selector').click()
     await page.getByTitle('商事诉讼').click()
 
+    const businessAreaField = page.locator('.batch-field').filter({ hasText: /^业务领域/ })
+    await businessAreaField.locator('.ant-select-selector').click()
+    await page.getByTitle('公司与并购').click()
+
+    const subAreaField = page.locator('.batch-field').filter({ hasText: /^子领域/ })
+    await subAreaField.locator('.ant-select-selector').click()
+    await page.getByTitle('投资与融资').click()
+
     // Step 0 当事人：选择客户
     await page.locator('.batch-party-card.green .ant-select-selector').click()
     await page.getByTitle('上海示例科技有限公司').click()
@@ -62,6 +70,14 @@ test.describe('立案工作流：冲突检查留在当前上下文', () => {
     // 关键断言：进入团队与费用按钮可点击
     const teamButton = page.getByRole('button', { name: '进入团队与费用' })
     await expect(teamButton).toBeEnabled()
+
+    // 修改冲突检索关键输入后，旧结果必须立即过期，不能继续沿用。
+    await page.getByRole('button', { name: '返回基本信息' }).click()
+    await page.getByPlaceholder('输入对方当事人名称').fill('变更后的对方当事人')
+    await stepper.nth(1).click()
+    await expect(page.getByText('检查状态：冲突检测结果已过期')).toBeVisible()
+    await expect(page.getByText('客户、对方、相关方、案件或负责律师已变化，请保存最新输入并重新检测。', { exact: true }).first()).toBeVisible()
+    await expect(page.getByRole('button', { name: '进入团队与费用' })).toBeDisabled()
   })
 
   test('必填项缺失时运行冲突检查不得创建草稿', async ({ page }) => {

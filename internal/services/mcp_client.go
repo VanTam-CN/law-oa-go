@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"time"
 
-	"law-oa-go/internal/models"
 	"github.com/redis/go-redis/v9"
+	"law-oa-go/internal/models"
 )
 
 // MCPClient MCP服务客户端接口
@@ -41,13 +41,13 @@ type MCPServiceStatus struct {
 
 // MCPConfig MCP客户端配置
 type MCPConfig struct {
-	BaseURL        string        `json:"baseURL"`
-	Timeout        time.Duration `json:"timeout"`
-	MaxRetries     int           `json:"maxRetries"`
-	RetryDelay     time.Duration `json:"retryDelay"`
-	CacheTTL       time.Duration `json:"cacheTTL"`
-	Enabled        bool          `json:"enabled"`
-	APIKey         string        `json:"apiKey"`
+	BaseURL    string        `json:"baseURL"`
+	Timeout    time.Duration `json:"timeout"`
+	MaxRetries int           `json:"maxRetries"`
+	RetryDelay time.Duration `json:"retryDelay"`
+	CacheTTL   time.Duration `json:"cacheTTL"`
+	Enabled    bool          `json:"enabled"`
+	APIKey     string        `json:"apiKey"`
 }
 
 // mcpClient MCP客户端实现
@@ -227,7 +227,7 @@ func (c *mcpClient) GetServiceStatus(ctx context.Context) (*MCPServiceStatus, er
 		return &MCPServiceStatus{
 			IsAvailable: false,
 			LastChecked: time.Now(),
-			LastError:  "Redis不可用",
+			LastError:   "Redis不可用",
 		}, nil
 	}
 
@@ -241,7 +241,7 @@ func (c *mcpClient) GetServiceStatus(ctx context.Context) (*MCPServiceStatus, er
 				return &MCPServiceStatus{
 					IsAvailable: false,
 					LastChecked: time.Now(),
-					LastError:  healthErr.Error(),
+					LastError:   healthErr.Error(),
 				}, nil
 			}
 			// 重新获取状态

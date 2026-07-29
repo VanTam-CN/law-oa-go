@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"law-oa-go/internal/models"
 	"gorm.io/gorm"
+	"law-oa-go/internal/models"
 )
 
 // ConflictScanService 冲突扫描服务接口
@@ -36,50 +36,50 @@ type ManualScanRequest struct {
 	TriggeredBy   uint   `json:"triggeredBy" validate:"required"`
 	TriggerReason string `json:"triggerReason"`
 	ScanScope     string `json:"scanScope"` // all/new_cases/lawyer
-	LawyerID      *uint  `json:"lawyerId"`   // 当 scan_scope=lawyer 时指定
+	LawyerID      *uint  `json:"lawyerId"`  // 当 scan_scope=lawyer 时指定
 }
 
 // ScanJobFilter 扫描任务过滤条件
 type ScanJobFilter struct {
-	ScanType   string     `json:"scanType"`
-	Status     string     `json:"status"`
-	StartDate  *time.Time `json:"startDate"`
-	EndDate    *time.Time `json:"endDate"`
-	Limit      int        `json:"limit"`
-	Offset     int        `json:"offset"`
+	ScanType  string     `json:"scanType"`
+	Status    string     `json:"status"`
+	StartDate *time.Time `json:"startDate"`
+	EndDate   *time.Time `json:"endDate"`
+	Limit     int        `json:"limit"`
+	Offset    int        `json:"offset"`
 }
 
 // ScanStatistics 扫描统计信息
 type ScanStatistics struct {
-	TotalJobs        int64     `json:"totalJobs"`
-	RunningJobs      int64     `json:"runningJobs"`
-	CompletedJobs    int64     `json:"completedJobs"`
-	FailedJobs       int64     `json:"failedJobs"`
-	TotalScans       int64     `json:"totalScans"`
-	TotalConflicts   int64     `json:"totalConflicts"`
-	LastScanTime     *time.Time `json:"lastScanTime"`
-	AverageDuration  float64   `json:"averageDuration"`
+	TotalJobs       int64      `json:"totalJobs"`
+	RunningJobs     int64      `json:"runningJobs"`
+	CompletedJobs   int64      `json:"completedJobs"`
+	FailedJobs      int64      `json:"failedJobs"`
+	TotalScans      int64      `json:"totalScans"`
+	TotalConflicts  int64      `json:"totalConflicts"`
+	LastScanTime    *time.Time `json:"lastScanTime"`
+	AverageDuration float64    `json:"averageDuration"`
 }
 
 // conflictScanService 冲突扫描服务实现
 type conflictScanService struct {
-	db                *gorm.DB
-	conflictService   V2ConflictDetectionService
-	poolService       ConflictPoolService
-	caseRepo          CaseRepository
+	db                  *gorm.DB
+	conflictService     V2ConflictDetectionService
+	poolService         ConflictPoolService
+	caseRepo            CaseRepository
 	notificationService NotificationService
-	config            *ScanConfig
+	config              *ScanConfig
 }
 
 // ScanConfig 扫描配置
 type ScanConfig struct {
-	DailyScanTime     string        `json:"dailyScanTime"`     // 每日扫描时间（如 "02:00"）
-	WeeklyScanDay     string        `json:"weeklyScanDay"`     // 每周扫描星期（如 "Monday"）
-	WeeklyScanTime    string        `json:"weeklyScanTime"`    // 每周扫描时间
-	BatchSize         int           `json:"batchSize"`         // 批量处理大小
-	MaxConcurrentJobs int           `json:"maxConcurrentJobs"` // 最大并发任务数
-	AlertThreshold    int           `json:"alertThreshold"`    // 告警阈值
-	EnableAutoScan    bool          `json:"enableAutoScan"`    // 是否启用自动扫描
+	DailyScanTime     string `json:"dailyScanTime"`     // 每日扫描时间（如 "02:00"）
+	WeeklyScanDay     string `json:"weeklyScanDay"`     // 每周扫描星期（如 "Monday"）
+	WeeklyScanTime    string `json:"weeklyScanTime"`    // 每周扫描时间
+	BatchSize         int    `json:"batchSize"`         // 批量处理大小
+	MaxConcurrentJobs int    `json:"maxConcurrentJobs"` // 最大并发任务数
+	AlertThreshold    int    `json:"alertThreshold"`    // 告警阈值
+	EnableAutoScan    bool   `json:"enableAutoScan"`    // 是否启用自动扫描
 }
 
 // NotificationService 通知服务接口
@@ -96,12 +96,12 @@ func NewConflictScanService(
 	notificationService NotificationService,
 ) ConflictScanService {
 	return &conflictScanService{
-		db:                 db,
-		conflictService:    conflictService,
-		poolService:        poolService,
-		caseRepo:           caseRepo,
+		db:                  db,
+		conflictService:     conflictService,
+		poolService:         poolService,
+		caseRepo:            caseRepo,
 		notificationService: notificationService,
-		config:             DefaultScanConfig(),
+		config:              DefaultScanConfig(),
 	}
 }
 
@@ -406,10 +406,10 @@ func (s *conflictScanService) executeScan(ctx context.Context, job *models.Confl
 			job.FoundConflicts += len(conflicts)
 			for _, conflict := range conflicts {
 				conflictJSON := models.JSON(map[string]interface{}{
-					"case_id":   case_.ID,
+					"case_id":    case_.ID,
 					"case_title": case_.Title,
-					"lawyer_id": case_.LawyerID,
-					"conflict":  conflict,
+					"lawyer_id":  case_.LawyerID,
+					"conflict":   conflict,
 				})
 				newConflicts = append(newConflicts, conflictJSON)
 			}
@@ -547,10 +547,14 @@ func (s *conflictScanService) scanCase(ctx context.Context, case_ *models.Case) 
 	}
 
 	// 构建检测请求
+	idCard, idErr := client.DecryptedIDCard()
+	if idErr != nil {
+		return nil, fmt.Errorf("读取客户身份标识失败: %w", idErr)
+	}
 	req := &ConflictCheckRequestV2{
 		LawyerID:    case_.LawyerID,
 		ClientName:  client.Name,
-		ClientTaxID: client.IDCard,
+		ClientTaxID: idCard,
 		CaseID:      case_.ID,
 		SearchDepth: "standard",
 	}
@@ -626,8 +630,8 @@ func (s *conflictScanService) sendAlertIfNeeded(ctx context.Context, job *models
 
 // NewConflictInfo 新冲突信息
 type NewConflictInfo struct {
-	ScanJobID uint         `json:"scanJobId"`
-	Details   models.JSON  `json:"details"`
+	ScanJobID uint        `json:"scanJobId"`
+	Details   models.JSON `json:"details"`
 }
 
 // ============================================================================

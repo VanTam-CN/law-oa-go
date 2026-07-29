@@ -55,10 +55,7 @@ func (r *enhancedConflictRepository) UpdateConflictCheckRequest(ctx context.Cont
 }
 
 func (r *enhancedConflictRepository) DeleteConflictCheckRequest(ctx context.Context, id string) error {
-	if err := r.db.WithContext(ctx).Delete(&models.ProfessionalConflictCheckRequest{}, "id = ?", id).Error; err != nil {
-		return fmt.Errorf("删除冲突检查请求失败: %w", err)
-	}
-	return nil
+	return fmt.Errorf("冲突检查请求属于审计证据，不允许删除；请通过追加更正或撤销记录处理")
 }
 
 func (r *enhancedConflictRepository) GetConflictCheckRequestsByStatus(ctx context.Context, status string) ([]*models.ProfessionalConflictCheckRequest, error) {

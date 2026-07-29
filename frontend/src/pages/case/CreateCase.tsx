@@ -335,7 +335,7 @@ const CreateCase: React.FC<CreateCaseProps> = ({ visible = false, onCancel, onSu
         otherParties: otherParties || [],
         caseName,
         caseType,
-        searchYears: 5,
+        searchYears: 0,
         includeCorporateRelations: selectedClient?.type === 'COMPANY',
         searchDepth: 'STANDARD' as const,
       }
@@ -358,7 +358,7 @@ const CreateCase: React.FC<CreateCaseProps> = ({ visible = false, onCancel, onSu
           progress: 30,
           details: [
             '正在检索该委托人的历史案件...',
-            '查询时间范围: 2020年1月 - 至今',
+            '查询时间范围: 系统已登记历史（覆盖完整性待确认）',
             '检索字段: 委托人姓名、证件号码、企业统一社会信用代码',
           ],
         },
@@ -379,7 +379,7 @@ const CreateCase: React.FC<CreateCaseProps> = ({ visible = false, onCancel, onSu
           details: [
             '正在检索委托人关联企业...',
             '检索股东关系、董事关系、投资关系',
-            '检索时间: 过去5年内的工商变更记录',
+            '检索时间: 系统已导入的全量关联关系记录',
           ],
         },
         {

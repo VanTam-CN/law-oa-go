@@ -28,6 +28,13 @@ func (m *mockRecursiveRepo) GetActiveCasesByEntity(_ context.Context, entityID u
 	return []*models.Case{}, nil
 }
 
+func (m *mockRecursiveRepo) GetAllCasesByEntity(_ context.Context, entityID uint) ([]*models.Case, error) {
+	if cases, ok := m.relatedCases[entityID]; ok {
+		return cases, nil
+	}
+	return []*models.Case{}, nil
+}
+
 func TestBuildPathDescription(t *testing.T) {
 	tests := []struct {
 		name     string

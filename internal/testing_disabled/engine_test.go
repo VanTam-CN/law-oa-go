@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
+	"law-oa-go/internal/models"
 )
 
 // MockLogger 模拟日志器
@@ -93,27 +93,27 @@ func (m *MockMetrics) RecordCustom(metric string, value float64, tags map[string
 
 // MockRepository 模拟存储库
 type MockRepository struct {
-	testSuites    map[string]*TestSuite
-	testCases     map[string]*TestCase
-	testExecutions map[string]*TestExecution
-	testResults   map[string]*TestResult
+	testSuites     map[string]*models.TestSuite
+	testCases      map[string]*TestCase
+	testExecutions map[string]*models.TestExecution
+	testResults    map[string]*models.TestResult
 }
 
 func NewMockRepository() *MockRepository {
 	return &MockRepository{
-		testSuites:    make(map[string]*TestSuite),
-		testCases:     make(map[string]*TestCase),
-		testExecutions: make(map[string]*TestExecution),
-		testResults:   make(map[string]*TestResult),
+		testSuites:     make(map[string]*models.TestSuite),
+		testCases:      make(map[string]*TestCase),
+		testExecutions: make(map[string]*models.TestExecution),
+		testResults:    make(map[string]*models.TestResult),
 	}
 }
 
-func (m *MockRepository) CreateTestSuite(ctx context.Context, suite *TestSuite) error {
+func (m *MockRepository) CreateTestSuite(ctx context.Context, suite *models.TestSuite) error {
 	m.testSuites[suite.ID] = suite
 	return nil
 }
 
-func (m *MockRepository) GetTestSuite(ctx context.Context, suiteID string) (*TestSuite, error) {
+func (m *MockRepository) GetTestSuite(ctx context.Context, suiteID string) (*models.TestSuite, error) {
 	suite, exists := m.testSuites[suiteID]
 	if !exists {
 		return nil, ErrTestSuiteNotFound
@@ -121,15 +121,15 @@ func (m *MockRepository) GetTestSuite(ctx context.Context, suiteID string) (*Tes
 	return suite, nil
 }
 
-func (m *MockRepository) ListTestSuites(ctx context.Context, filter *TestSuiteFilter) ([]*TestSuite, error) {
-	suites := make([]*TestSuite, 0, len(m.testSuites))
+func (m *MockRepository) ListTestSuites(ctx context.Context, filters map[string]interface{}, page, pageSize int) ([]*models.TestSuite, int64, error) {
+	suites := make([]*models.TestSuite, 0, len(m.testSuites))
 	for _, suite := range m.testSuites {
 		suites = append(suites, suite)
 	}
-	return suites, nil
+	return suites, int64(len(suites)), nil
 }
 
-func (m *MockRepository) UpdateTestSuite(ctx context.Context, suite *TestSuite) error {
+func (m *MockRepository) UpdateTestSuite(ctx context.Context, suite *models.TestSuite) error {
 	m.testSuites[suite.ID] = suite
 	return nil
 }
@@ -170,12 +170,12 @@ func (m *MockRepository) DeleteTestCase(ctx context.Context, caseID string) erro
 	return nil
 }
 
-func (m *MockRepository) CreateTestExecution(ctx context.Context, execution *TestExecution) error {
+func (m *MockRepository) CreateTestExecution(ctx context.Context, execution *models.TestExecution) error {
 	m.testExecutions[execution.ID] = execution
 	return nil
 }
 
-func (m *MockRepository) GetTestExecution(ctx context.Context, executionID string) (*TestExecution, error) {
+func (m *MockRepository) GetTestExecution(ctx context.Context, executionID string) (*models.TestExecution, error) {
 	execution, exists := m.testExecutions[executionID]
 	if !exists {
 		return nil, ErrTestExecutionNotFound
@@ -183,15 +183,15 @@ func (m *MockRepository) GetTestExecution(ctx context.Context, executionID strin
 	return execution, nil
 }
 
-func (m *MockRepository) ListTestExecutions(ctx context.Context, filter *TestExecutionFilter) ([]*TestExecution, error) {
-	executions := make([]*TestExecution, 0, len(m.testExecutions))
+func (m *MockRepository) ListTestExecutions(ctx context.Context, filters map[string]interface{}, page, pageSize int) ([]*models.TestExecution, int64, error) {
+	executions := make([]*models.TestExecution, 0, len(m.testExecutions))
 	for _, execution := range m.testExecutions {
 		executions = append(executions, execution)
 	}
-	return executions, nil
+	return executions, int64(len(executions)), nil
 }
 
-func (m *MockRepository) UpdateTestExecution(ctx context.Context, execution *TestExecution) error {
+func (m *MockRepository) UpdateTestExecution(ctx context.Context, execution *models.TestExecution) error {
 	m.testExecutions[execution.ID] = execution
 	return nil
 }
@@ -201,12 +201,12 @@ func (m *MockRepository) DeleteTestExecution(ctx context.Context, executionID st
 	return nil
 }
 
-func (m *MockRepository) CreateTestResult(ctx context.Context, result *TestResult) error {
+func (m *MockRepository) CreateTestResult(ctx context.Context, result *models.TestResult) error {
 	m.testResults[result.ID] = result
 	return nil
 }
 
-func (m *MockRepository) GetTestResult(ctx context.Context, resultID string) (*TestResult, error) {
+func (m *MockRepository) GetTestResult(ctx context.Context, resultID string) (*models.TestResult, error) {
 	result, exists := m.testResults[resultID]
 	if !exists {
 		return nil, ErrTestResultNotFound
@@ -214,15 +214,17 @@ func (m *MockRepository) GetTestResult(ctx context.Context, resultID string) (*T
 	return result, nil
 }
 
-func (m *MockRepository) ListTestResults(ctx context.Context, filter *TestResultFilter) ([]*TestResult, error) {
-	results := make([]*TestResult, 0, len(m.testResults))
+func (m *MockRepository) ListTestResults(ctx context.Context, executionID string) ([]*models.TestResult, error) {
+	results := make([]*models.TestResult, 0, len(m.testResults))
 	for _, result := range m.testResults {
-		results = append(results, result)
+		if executionID == "" || result.ExecutionID == executionID {
+			results = append(results, result)
+		}
 	}
 	return results, nil
 }
 
-func (m *MockRepository) UpdateTestResult(ctx context.Context, result *TestResult) error {
+func (m *MockRepository) UpdateTestResult(ctx context.Context, result *models.TestResult) error {
 	m.testResults[result.ID] = result
 	return nil
 }
@@ -235,7 +237,7 @@ func (m *MockRepository) DeleteTestResult(ctx context.Context, resultID string) 
 func (m *MockRepository) CleanupOldExecutions(ctx context.Context, cutoff time.Time) error {
 	// 简单实现：删除所有早于截止时间的执行记录
 	for id, execution := range m.testExecutions {
-		if execution.StartTime.Before(cutoff) {
+		if execution.StartedAt != nil && execution.StartedAt.Before(cutoff) {
 			delete(m.testExecutions, id)
 		}
 	}
@@ -267,18 +269,18 @@ func TestExecutorFactory(t *testing.T) {
 	assert.Error(t, err)
 
 	// 测试注册自定义执行器
-	customCreator := func(options *TestExecutorOptions, logger TestLogger, metrics TestMetrics) (TestExecutor, error) {
-		return &BaseExecutor{}, nil
+	customCreator := func(options *TestExecutorOptions, logger TestLogger, metrics TestMetrics) TestExecutor {
+		return &BaseExecutor{}
 	}
-	err = factory.RegisterExecutor("custom", customCreator)
+	err = factory.RegisterExecutor(TestType("custom"), customCreator)
 	require.NoError(t, err)
 
 	// 验证自定义执行器已注册
 	supportedTypes = factory.GetSupportedTypes()
-	assert.Contains(t, supportedTypes, "custom")
+	assert.Contains(t, supportedTypes, TestType("custom"))
 
 	// 重复注册应该失败
-	err = factory.RegisterExecutor("custom", customCreator)
+	err = factory.RegisterExecutor(TestType("custom"), customCreator)
 	assert.Error(t, err)
 }
 
@@ -322,13 +324,13 @@ func TestTestQueue(t *testing.T) {
 
 	// 入队
 	item1 := &QueueItem{
-		Test: &TestCase{ID: "test1"},
-		Priority: 1,
+		Test:       &TestCase{ID: "test1"},
+		Priority:   1,
 		EnqueuedAt: time.Now(),
 	}
 	item2 := &QueueItem{
-		Test: &TestCase{ID: "test2"},
-		Priority: 2,
+		Test:       &TestCase{ID: "test2"},
+		Priority:   2,
 		EnqueuedAt: time.Now(),
 	}
 
@@ -354,18 +356,18 @@ func TestTestQueue(t *testing.T) {
 	priorityQueue := NewTestQueue(true)
 
 	item3 := &QueueItem{
-		Test: &TestCase{ID: "test3"},
-		Priority: 1,
+		Test:       &TestCase{ID: "test3"},
+		Priority:   1,
 		EnqueuedAt: time.Now(),
 	}
 	item4 := &QueueItem{
-		Test: &TestCase{ID: "test4"},
-		Priority: 3,
+		Test:       &TestCase{ID: "test4"},
+		Priority:   3,
 		EnqueuedAt: time.Now(),
 	}
 	item5 := &QueueItem{
-		Test: &TestCase{ID: "test5"},
-		Priority: 2,
+		Test:       &TestCase{ID: "test5"},
+		Priority:   2,
 		EnqueuedAt: time.Now(),
 	}
 
@@ -402,16 +404,17 @@ func TestTestService(t *testing.T) {
 	defer service.Stop()
 
 	// 创建测试套件
-	suite := &TestSuite{
+	suite := &models.TestSuite{
 		ID:          "suite1",
 		Name:        "Test Suite 1",
 		Description: "Test suite for testing",
 		Environment: "test",
-		Timeout:     30 * time.Second,
-		Parallel:    true,
-		MaxWorkers:  5,
-		Variables:   map[string]interface{}{"key": "value"},
-		Headers:     map[string]string{"Content-Type": "application/json"},
+		Config: &models.TestConfig{
+			Timeout:   30,
+			Parallel:  true,
+			Variables: map[string]interface{}{"key": "value"},
+			Headers:   map[string]string{"Content-Type": "application/json"},
+		},
 	}
 
 	err = service.CreateTestSuite(context.Background(), suite)
@@ -434,7 +437,7 @@ func TestTestService(t *testing.T) {
 		Headers:     map[string]string{"Accept": "application/json"},
 		Timeout:     10 * time.Second,
 		Expected: &TestExpected{
-			Status: 200,
+			Status:  200,
 			Headers: map[string]string{"Content-Type": "application/json"},
 		},
 	}

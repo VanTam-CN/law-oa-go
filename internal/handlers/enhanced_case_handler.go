@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -9,13 +10,35 @@ import (
 )
 
 type EnhancedCaseHandler struct {
-	enhancedCaseService services.EnhancedCaseService
+	enhancedCaseService   services.EnhancedCaseService
+	authz                 *services.AuthorizationService
+	ethicalWallListFilter bool
 }
 
-func NewEnhancedCaseHandler(enhancedCaseService services.EnhancedCaseService) *EnhancedCaseHandler {
+// SetEthicalWallListFilterEnabled enables the SQL-side ethical-wall predicate
+// for enhanced-case list/count queries. Detail middleware cannot protect a
+// paginated collection endpoint because it has no single case ID to inspect.
+func (h *EnhancedCaseHandler) SetEthicalWallListFilterEnabled(enabled bool) {
+	h.ethicalWallListFilter = enabled
+}
+
+func NewEnhancedCaseHandler(enhancedCaseService services.EnhancedCaseService, authz ...*services.AuthorizationService) *EnhancedCaseHandler {
+	var authorizationService *services.AuthorizationService
+	if len(authz) > 0 {
+		authorizationService = authz[0]
+	}
 	return &EnhancedCaseHandler{
 		enhancedCaseService: enhancedCaseService,
+		authz:               authorizationService,
 	}
+}
+
+func (h *EnhancedCaseHandler) requireAuthorization(c *gin.Context) bool {
+	if h.authz == nil {
+		common.NewAPIError(c, http.StatusServiceUnavailable, "CASE_AUTHZ_UNAVAILABLE", "案件权限服务未初始化，当前不会返回或修改增强案件数据")
+		return false
+	}
+	return true
 }
 
 // CreateEnhancedCase godoc
@@ -32,14 +55,33 @@ func NewEnhancedCaseHandler(enhancedCaseService services.EnhancedCaseService) *E
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /enhanced-cases [post]
 func (h *EnhancedCaseHandler) CreateEnhancedCase(c *gin.Context) {
+	if !h.requireAuthorization(c) {
+		return
+	}
 	var req services.EnhancedCreateCaseRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		common.APIBadRequest(c, "请求参数错误", "请检查所有必填字段")
 		return
 	}
 
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
+	if req.AssignedBy == 0 {
+		req.AssignedBy = actor.UserID
+	}
+	if !services.IsBusinessMatterManagementRole(actor.Role) && req.LawyerID != actor.UserID {
+		forbidObjectAccess(c)
+		return
+	}
+
 	caseResp, err := h.enhancedCaseService.CreateEnhancedCase(c.Request.Context(), &req)
 	if err != nil {
+		if isSubjectWorkflowError(err) {
+			writeSubjectWorkflowError(c, err)
+			return
+		}
 		common.APIInternalServerError(c, "创建增强案件失败", err.Error())
 		return
 	}
@@ -62,10 +104,27 @@ func (h *EnhancedCaseHandler) CreateEnhancedCase(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /enhanced-cases/{id} [get]
 func (h *EnhancedCaseHandler) GetEnhancedCase(c *gin.Context) {
+	if !h.requireAuthorization(c) {
+		return
+	}
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
 		common.APIBadRequest(c, "无效的案件ID", "ID必须是正整数")
+		return
+	}
+
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
+	allowed, err := h.authz.CanReadCase(c.Request.Context(), actor, uint(id))
+	if err != nil {
+		common.APIInternalServerError(c, "权限检查失败", err.Error())
+		return
+	}
+	if !allowed {
+		forbidObjectAccess(c)
 		return
 	}
 
@@ -94,6 +153,9 @@ func (h *EnhancedCaseHandler) GetEnhancedCase(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /enhanced-cases/{id} [put]
 func (h *EnhancedCaseHandler) UpdateEnhancedCase(c *gin.Context) {
+	if !h.requireAuthorization(c) {
+		return
+	}
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
@@ -104,6 +166,20 @@ func (h *EnhancedCaseHandler) UpdateEnhancedCase(c *gin.Context) {
 	var req services.UpdateEnhancedCaseRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		common.APIBadRequest(c, "请求参数错误", "请检查所有必填字段")
+		return
+	}
+
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
+	allowed, err := h.authz.CanManageCase(c.Request.Context(), actor, uint(id))
+	if err != nil {
+		common.APIInternalServerError(c, "权限检查失败", err.Error())
+		return
+	}
+	if !allowed {
+		forbidObjectAccess(c)
 		return
 	}
 
@@ -135,6 +211,9 @@ func (h *EnhancedCaseHandler) UpdateEnhancedCase(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /enhanced-cases [get]
 func (h *EnhancedCaseHandler) ListEnhancedCases(c *gin.Context) {
+	if !h.requireAuthorization(c) {
+		return
+	}
 	// 解析查询参数
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
@@ -150,6 +229,17 @@ func (h *EnhancedCaseHandler) ListEnhancedCases(c *gin.Context) {
 		Status:   status,
 		Priority: priority,
 		LawyerID: lawyerIDStr,
+	}
+
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
+	if h.ethicalWallListFilter {
+		listReq.EthicalWallUserID = actor.UserID
+	}
+	if !services.IsBusinessMatterManagementRole(actor.Role) {
+		listReq.LawyerID = strconv.FormatUint(uint64(actor.UserID), 10)
 	}
 
 	listResp, err := h.enhancedCaseService.ListEnhancedCases(c.Request.Context(), listReq)
@@ -195,6 +285,9 @@ func (h *EnhancedCaseHandler) DeleteEnhancedCase(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /enhanced-cases/{id}/conflict-check [post]
 func (h *EnhancedCaseHandler) PerformConflictCheck(c *gin.Context) {
+	if !h.requireAuthorization(c) {
+		return
+	}
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
@@ -202,9 +295,27 @@ func (h *EnhancedCaseHandler) PerformConflictCheck(c *gin.Context) {
 		return
 	}
 
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
+	allowed, err := h.authz.CanManageCase(c.Request.Context(), actor, uint(id))
+	if err != nil {
+		common.APIInternalServerError(c, "权限检查失败", err.Error())
+		return
+	}
+	if !allowed {
+		forbidObjectAccess(c)
+		return
+	}
+
 	// 使用现有的方法触发冲突检测
 	err = h.enhancedCaseService.TriggerConflictDetection(c.Request.Context(), uint(id))
 	if err != nil {
+		if isSubjectWorkflowError(err) {
+			writeSubjectWorkflowError(c, err)
+			return
+		}
 		common.APIInternalServerError(c, "执行冲突检测失败", err.Error())
 		return
 	}
@@ -235,8 +346,7 @@ func (h *EnhancedCaseHandler) PerformConflictCheck(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /enhanced-cases/{id}/clients [post]
 func (h *EnhancedCaseHandler) AddClientToCase(c *gin.Context) {
-	// 暂时返回未实现错误
-	common.APIInternalServerError(c, "功能暂未实现", "添加客户功能正在开发中")
+	common.NewAPIError(c, 503, "ENHANCED_CASE_WORKFLOW_UNAVAILABLE", "增强案件入口尚未接入正式主体版本流程，请从接案工作台发起")
 }
 
 // RemoveClientFromCase godoc
@@ -255,6 +365,5 @@ func (h *EnhancedCaseHandler) AddClientToCase(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /enhanced-cases/{id}/clients/{client_id} [delete]
 func (h *EnhancedCaseHandler) RemoveClientFromCase(c *gin.Context) {
-	// 暂时返回未实现错误
-	common.APIInternalServerError(c, "功能暂未实现", "移除客户功能正在开发中")
+	common.NewAPIError(c, 503, "ENHANCED_CASE_WORKFLOW_UNAVAILABLE", "增强案件入口尚未接入正式主体版本流程，请从接案工作台发起")
 }

@@ -56,10 +56,7 @@ func (r *enhancedConflictRepository) UpdateWaiverApplication(ctx context.Context
 }
 
 func (r *enhancedConflictRepository) DeleteWaiverApplication(ctx context.Context, id string) error {
-	if err := r.db.WithContext(ctx).Delete(&models.WaiverApplication{}, "id = ?", id).Error; err != nil {
-		return fmt.Errorf("删除豁免申请失败: %w", err)
-	}
-	return nil
+	return fmt.Errorf("豁免申请属于合规证据，不允许删除；请通过撤回或失效状态处理")
 }
 
 func (r *enhancedConflictRepository) GetWaiverApplicationsByStatus(ctx context.Context, status string) ([]*models.WaiverApplication, error) {

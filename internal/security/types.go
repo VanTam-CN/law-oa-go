@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"law-oa-go/internal/cache"
-	"law-oa-go/internal/config"
 
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
@@ -19,7 +18,7 @@ import (
 type JWTKeyManager struct{}
 
 // NewJWTKeyManager 创建JWT密钥管理器
-func NewJWTKeyManager(cfg *config.Config, config *SecurityConfig, redis *redis.Client, cacheService *cache.CacheService) *JWTKeyManager {
+func NewJWTKeyManager(cfg any, config *SecurityConfig, redis *redis.Client, cacheService *cache.CacheService) *JWTKeyManager {
 	return &JWTKeyManager{}
 }
 
@@ -225,7 +224,7 @@ func CORS() gin.HandlerFunc {
 			c.Header("Access-Control-Allow-Credentials", "true")
 		}
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization, Idempotency-Key, X-Request-ID, X-API-Version")
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(http.StatusNoContent)
 			return

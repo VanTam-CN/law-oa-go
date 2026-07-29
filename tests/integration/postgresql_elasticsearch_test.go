@@ -3,19 +3,24 @@ package integration
 import (
 	"context"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	esclient "law-oa-go/internal/elasticsearch"
 	"law-oa-go/internal/config"
+	esclient "law-oa-go/internal/elasticsearch"
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/services"
 )
 
 // TestPostgreSQL_ElasticsearchIntegration 测试PostgreSQL与Elasticsearch的集成
 func TestPostgreSQL_ElasticsearchIntegration(t *testing.T) {
+	if os.Getenv("LAW_OA_RUN_POSTGRES_ES_INTEGRATION") != "1" || os.Getenv("LAW_OA_POSTGRES_TEST_DSN") == "" {
+		t.Skip("需要显式提供专用 LAW_OA_POSTGRES_TEST_DSN，并设置 LAW_OA_RUN_POSTGRES_ES_INTEGRATION=1")
+	}
+
 	// 跳过如果Elasticsearch不可用
 	if testing.Short() {
 		t.Skip("Skipping Elasticsearch integration test in short mode")
@@ -29,7 +34,7 @@ func TestPostgreSQL_ElasticsearchIntegration(t *testing.T) {
 	cfg := &config.Config{
 		Elasticsearch: config.ElasticsearchConfig{
 			Host:     "localhost",
-			Port:     "9200",  // 使用与docker-compose一致的端口
+			Port:     "9200", // 使用与docker-compose一致的端口
 			Username: "",
 			Password: "",
 		},
@@ -81,7 +86,7 @@ func TestPostgreSQL_ElasticsearchIntegration(t *testing.T) {
 				"type": "keyword",
 			},
 			"suggest": map[string]interface{}{
-				"type": "completion",
+				"type":     "completion",
 				"analyzer": "simple",
 			},
 		},
@@ -189,7 +194,7 @@ func TestPostgreSQL_ElasticsearchIntegration(t *testing.T) {
 
 // 辅助函数
 func setupPostgreSQLTestDB(t *testing.T) *gorm.DB {
-	dsn := "host=localhost port=5432 user=law_oa_user password=law_oa_password dbname=law_oa_db sslmode=disable TimeZone=UTC"
+	dsn := os.Getenv("LAW_OA_POSTGRES_TEST_DSN")
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
@@ -207,24 +212,14 @@ func setupPostgreSQLTestDB(t *testing.T) *gorm.DB {
 		}
 	}
 
-	// 清理测试数据
+	// 仅清理显式指定的专用测试数据库，避免测试默认触碰业务库。
 	sqlDB, err := db.DB()
 	if err != nil {
 		t.Fatalf("Failed to get underlying sql.DB: %v", err)
 	}
 
-	// 删除所有测试数据（重置序列）
-	tables := []string{"cases", "clients", "users"}
-	for _, table := range tables {
-		_, err := sqlDB.Exec("DELETE FROM " + table)
-		if err != nil {
-			t.Logf("Warning: Failed to clean table %s: %v", table, err)
-		}
-		// 重置自增序列
-		_, err = sqlDB.Exec("ALTER SEQUENCE " + table + "_id_seq RESTART WITH 1")
-		if err != nil {
-			t.Logf("Warning: Failed to reset sequence for %s: %v", table, err)
-		}
+	if _, err := sqlDB.Exec("TRUNCATE TABLE cases, clients, users RESTART IDENTITY CASCADE"); err != nil {
+		t.Fatalf("Failed to reset dedicated PostgreSQL test tables: %v", err)
 	}
 
 	return db
@@ -281,8 +276,8 @@ func contains(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr ||
 		(len(s) > len(substr) &&
 			(s[:len(substr)] == substr ||
-			 s[len(s)-len(substr):] == substr ||
-			 findSubstring(s, substr))))
+				s[len(s)-len(substr):] == substr ||
+				findSubstring(s, substr))))
 }
 
 func findSubstring(s, substr string) bool {

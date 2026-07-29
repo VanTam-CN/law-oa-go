@@ -96,6 +96,25 @@ func (r *ApprovalRepository) CountPendingByApproverID(approverID string) (int64,
 	return count, nil
 }
 
+// CountPendingByApplicantID counts the applicant's own approvals that are
+// still in flight. It is intentionally separate from CountPending so a
+// normal lawyer can render useful personal statistics without learning the
+// firm's global approval volume.
+func (r *ApprovalRepository) CountPendingByApplicantID(applicantID string) (int64, error) {
+	var count int64
+	err := r.db.Model(&models.ApprovalRequest{}).
+		Where("applicant_id = ? AND status IN ?", applicantID, []string{
+			models.ApprovalStatusSubmitted,
+			models.ApprovalStatusUnderReview,
+			models.ApprovalStatusResubmitted,
+		}).
+		Count(&count).Error
+	if err != nil {
+		return 0, fmt.Errorf("统计用户待审批记录失败: %v", err)
+	}
+	return count, nil
+}
+
 // CountPending 统计所有待审批数量
 func (r *ApprovalRepository) CountPending() (int64, error) {
 	var count int64

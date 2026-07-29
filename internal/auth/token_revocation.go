@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"time"
 
@@ -35,17 +37,17 @@ const (
 
 // RevocationResult 撤销结果
 type RevocationResult struct {
-	RevokedCount int       `json:"revoked_count"`
-	Reason        RevocationReason `json:"reason"`
-	RevokedAt     time.Time         `json:"revoked_at"`
-	Message       string            `json:"message"`
+	RevokedCount int              `json:"revoked_count"`
+	Reason       RevocationReason `json:"reason"`
+	RevokedAt    time.Time        `json:"revoked_at"`
+	Message      string           `json:"message"`
 }
 
 // TokenRevocationService 令牌撤销服务
 type TokenRevocationService struct {
 	tokenManager TokenManagerInterface
 	redisClient  *redis.Client
-	db            *gorm.DB
+	db           *gorm.DB
 }
 
 // NewTokenRevocationService 创建令牌撤销服务
@@ -57,7 +59,7 @@ func NewTokenRevocationService(
 	return &TokenRevocationService{
 		tokenManager: tokenManager,
 		redisClient:  redisClient,
-		db:            db,
+		db:           db,
 	}
 }
 
@@ -71,54 +73,40 @@ func (s *TokenRevocationService) RevokeSingle(ctx context.Context, tokenString, 
 		return nil, fmt.Errorf("invalid token: %w", err)
 	}
 
-	tokenType, ok := (*claims)["type"].(string)
-	if !ok {
-		return nil, fmt.Errorf("invalid token type")
+	tokenType, _ := (*claims)["type"].(string)
+	if tokenType == "" {
+		tokenType = "access"
+	}
+	uuid, _ := (*claims)["uuid"].(string)
+	if uuid == "" {
+		uuid, _ = (*claims)["jti"].(string)
 	}
 
-	uuid, ok := (*claims)["uuid"].(string)
-	if !ok {
-		return nil, fmt.Errorf("invalid token uuid")
+	ttl := ttlFromClaims(*claims)
+	if err := s.blacklistToken(ctx, tokenString, uuid, ttl); err != nil {
+		return nil, fmt.Errorf("failed to blacklist token: %w", err)
 	}
 
-	// 2. 从Redis删除令牌
-	var key string
-	switch tokenType {
-	case "access":
-		key = fmt.Sprintf("access_token:%s", uuid)
-	case "refresh":
-		key = fmt.Sprintf("refresh_token:%s", uuid)
-	default:
-		return nil, fmt.Errorf("unknown token type: %s", tokenType)
-	}
-
-	err = s.redisClient.Del(ctx, key).Err()
-	if err != nil {
-		return nil, fmt.Errorf("failed to revoke token: %w", err)
-	}
-
-	// 3. 将令牌加入黑名单
-	payload, err := s.tokenManager.ExtractTokenMetadata(ctx, tokenString)
-	if err == nil {
-		// 计算TTL为令牌剩余有效期
-		var ttl time.Duration
-		if exp, ok := (*claims)["exp"].(float64); ok {
-			expiry := time.Unix(int64(exp), 0)
-			ttl = time.Until(expiry)
-			if ttl < 0 {
-				ttl = 0
-			}
+	if s.redisClient != nil && uuid != "" {
+		switch tokenType {
+		case "access":
+			_ = s.redisClient.Del(ctx, fmt.Sprintf("access_token:%s", uuid)).Err()
+		case "refresh":
+			_ = s.redisClient.Del(ctx, fmt.Sprintf("refresh_token:%s", uuid)).Err()
 		}
+	}
 
-		_ = s.tokenManager.BlacklistToken(ctx, tokenString, ttl)
+	if payload, err := s.tokenManager.ExtractTokenMetadata(ctx, tokenString); err == nil {
 		_ = s.recordRevocation(ctx, payload.UserID, tokenType, uuid, RevokeSingle, ipAddress)
+	} else if userID, ok := userIDFromClaims(*claims); ok {
+		_ = s.recordRevocation(ctx, userID, tokenType, uuid, RevokeSingle, ipAddress)
 	}
 
 	return &RevocationResult{
 		RevokedCount: 1,
-		Reason:        RevokeSingle,
-		RevokedAt:     start,
-		Message:       "Token revoked successfully",
+		Reason:       RevokeSingle,
+		RevokedAt:    start,
+		Message:      "Token revoked successfully",
 	}, nil
 }
 
@@ -126,9 +114,11 @@ func (s *TokenRevocationService) RevokeSingle(ctx context.Context, tokenString, 
 func (s *TokenRevocationService) RevokeByUser(ctx context.Context, userID uint, ipAddress string) (*RevocationResult, error) {
 	start := time.Now()
 
-	// 1. 撤销所有令牌
-	err := s.tokenManager.RevokeAllUserTokens(ctx, userID)
-	if err != nil {
+	// 1. 记录用户级撤销时间，认证中间件会拒绝此时间点前签发的令牌
+	if err := s.markUserTokensRevoked(ctx, userID, start); err != nil {
+		return nil, fmt.Errorf("failed to mark user tokens revoked: %w", err)
+	}
+	if err := s.tokenManager.RevokeAllUserTokens(ctx, userID); err != nil {
 		return nil, fmt.Errorf("failed to revoke user tokens: %w", err)
 	}
 
@@ -137,9 +127,9 @@ func (s *TokenRevocationService) RevokeByUser(ctx context.Context, userID uint, 
 
 	return &RevocationResult{
 		RevokedCount: -1, // 表示所有令牌
-		Reason:        RevokeByUser,
-		RevokedAt:     start,
-		Message:       fmt.Sprintf("All tokens revoked for user %d", userID),
+		Reason:       RevokeByUser,
+		RevokedAt:    start,
+		Message:      fmt.Sprintf("All tokens revoked for user %d", userID),
 	}, nil
 }
 
@@ -192,22 +182,22 @@ func (s *TokenRevocationService) RevokeByDevice(ctx context.Context, userID uint
 	// 2. 记录撤销到数据库
 	if revokedCount > 0 {
 		log := &models.TokenRevocationLog{
-			UserID:          userID,
-			RevocationType:  string(RevokeByDevice),
-			RevokeAll:       false,
-			RevokedTokens:   models.JSON{"tokens": revokedTokens, "device_id": deviceID},
-			TokenType:       "device",
-			RevokedAt:       time.Now(),
-			IPAddress:       ipAddress,
+			UserID:         userID,
+			RevocationType: string(RevokeByDevice),
+			RevokeAll:      false,
+			RevokedTokens:  models.JSON{"tokens": revokedTokens, "device_id": deviceID},
+			TokenType:      "device",
+			RevokedAt:      time.Now(),
+			IPAddress:      ipAddress,
 		}
 		_ = s.db.WithContext(ctx).Create(log).Error
 	}
 
 	return &RevocationResult{
 		RevokedCount: revokedCount,
-		Reason:        RevokeByDevice,
-		RevokedAt:     start,
-		Message:       fmt.Sprintf("Revoked %d token(s) for device %s", revokedCount, deviceID),
+		Reason:       RevokeByDevice,
+		RevokedAt:    start,
+		Message:      fmt.Sprintf("Revoked %d token(s) for device %s", revokedCount, deviceID),
 	}, nil
 }
 
@@ -215,17 +205,21 @@ func (s *TokenRevocationService) RevokeByDevice(ctx context.Context, userID uint
 func (s *TokenRevocationService) RevokeAll(ctx context.Context, userID uint, offboardingData *OffboardingData, ipAddress string) (*RevocationResult, error) {
 	start := time.Now()
 
-	// 1. 撤销所有令牌
-	err := s.tokenManager.RevokeAllUserTokens(ctx, userID)
-	if err != nil {
+	// 1. 记录用户级撤销时间，认证中间件会拒绝此时间点前签发的令牌
+	if err := s.markUserTokensRevoked(ctx, userID, start); err != nil {
+		return nil, fmt.Errorf("failed to mark user tokens revoked: %w", err)
+	}
+	if err := s.tokenManager.RevokeAllUserTokens(ctx, userID); err != nil {
 		return nil, fmt.Errorf("failed to revoke user tokens: %w", err)
 	}
 
 	// 2. 撤销所有设备的令牌
-	devicePattern := fmt.Sprintf("user_device:%d:*", userID)
-	deviceKeys, _ := s.redisClient.Keys(ctx, devicePattern).Result()
-	for _, key := range deviceKeys {
-		s.redisClient.Del(ctx, key)
+	if s.redisClient != nil {
+		devicePattern := fmt.Sprintf("user_device:%d:*", userID)
+		deviceKeys, _ := s.redisClient.Keys(ctx, devicePattern).Result()
+		for _, key := range deviceKeys {
+			s.redisClient.Del(ctx, key)
+		}
 	}
 
 	// 3. 记录撤销到数据库
@@ -233,15 +227,32 @@ func (s *TokenRevocationService) RevokeAll(ctx context.Context, userID uint, off
 
 	return &RevocationResult{
 		RevokedCount: -1,
-		Reason:        RevokeAll,
-		RevokedAt:     start,
-		Message:       fmt.Sprintf("All tokens and devices revoked for user %d (offboarding)", userID),
+		Reason:       RevokeAll,
+		RevokedAt:    start,
+		Message:      fmt.Sprintf("All tokens and devices revoked for user %d (offboarding)", userID),
 	}, nil
 }
 
 // IsTokenRevoked 检查令牌是否已被撤销
 func (s *TokenRevocationService) IsTokenRevoked(ctx context.Context, tokenString string) bool {
-	return s.tokenManager.IsTokenBlacklisted(ctx, tokenString)
+	return s.isTokenStringRevoked(ctx, tokenString)
+}
+
+func (s *TokenRevocationService) IsTokenRevokedForClaims(ctx context.Context, tokenString string, userID uint, issuedAt time.Time) bool {
+	if s.isTokenStringRevoked(ctx, tokenString) {
+		return true
+	}
+	if s.redisClient == nil || userID == 0 || issuedAt.IsZero() {
+		return false
+	}
+	value, err := s.redisClient.Get(ctx, userRevokedAfterKey(userID)).Int64()
+	if err == redis.Nil {
+		return false
+	}
+	if err != nil {
+		return true
+	}
+	return !issuedAt.After(time.Unix(value, 0))
 }
 
 // GetUserActiveDevices 获取用户的活动设备
@@ -280,6 +291,77 @@ func (s *TokenRevocationService) GetRevocationHistory(ctx context.Context, userI
 	return logs, nil
 }
 
+func (s *TokenRevocationService) blacklistToken(ctx context.Context, tokenString, uuid string, ttl time.Duration) error {
+	if s.redisClient == nil {
+		return nil
+	}
+	if ttl <= 0 {
+		ttl = time.Hour
+	}
+	if err := s.redisClient.Set(ctx, tokenHashKey(tokenString), "1", ttl).Err(); err != nil {
+		return err
+	}
+	if uuid != "" {
+		if err := s.redisClient.Set(ctx, fmt.Sprintf("blacklist:%s", uuid), "1", ttl).Err(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *TokenRevocationService) isTokenStringRevoked(ctx context.Context, tokenString string) bool {
+	if s.redisClient == nil {
+		return false
+	}
+	if _, err := s.redisClient.Get(ctx, tokenHashKey(tokenString)).Result(); err == nil {
+		return true
+	} else if err != redis.Nil {
+		return true
+	}
+	return s.tokenManager.IsTokenBlacklisted(ctx, tokenString)
+}
+
+func (s *TokenRevocationService) markUserTokensRevoked(ctx context.Context, userID uint, revokedAt time.Time) error {
+	if s.redisClient == nil {
+		return nil
+	}
+	return s.redisClient.Set(ctx, userRevokedAfterKey(userID), revokedAt.Unix(), 0).Err()
+}
+
+func tokenHashKey(tokenString string) string {
+	sum := sha256.Sum256([]byte(tokenString))
+	return "jwt_blacklist:" + hex.EncodeToString(sum[:])
+}
+
+func userRevokedAfterKey(userID uint) string {
+	return fmt.Sprintf("user_revoked_after:%d", userID)
+}
+
+func ttlFromClaims(claims map[string]interface{}) time.Duration {
+	exp, ok := claims["exp"].(float64)
+	if !ok {
+		return time.Hour
+	}
+	ttl := time.Until(time.Unix(int64(exp), 0))
+	if ttl <= 0 {
+		return time.Second
+	}
+	return ttl
+}
+
+func userIDFromClaims(claims map[string]interface{}) (uint, bool) {
+	switch value := claims["user_id"].(type) {
+	case float64:
+		return uint(value), value > 0
+	case uint:
+		return value, value > 0
+	case int:
+		return uint(value), value > 0
+	default:
+		return 0, false
+	}
+}
+
 // CleanupOldRevocationLogs 清理旧的撤销记录（超过90天）
 func (s *TokenRevocationService) CleanupOldRevocationLogs(ctx context.Context) (int64, error) {
 	cutoffDate := time.Now().AddDate(0, 0, -90)
@@ -301,13 +383,13 @@ func (s *TokenRevocationService) recordRevocation(ctx context.Context, userID ui
 	}
 
 	log := &models.TokenRevocationLog{
-		UserID:          userID,
-		RevocationType:  string(reason),
-		RevokeAll:       false,
-		RevokedTokens:   models.JSON{"tokens": revokedTokens},
-		TokenType:       tokenType,
-		RevokedAt:       time.Now(),
-		IPAddress:       ipAddress,
+		UserID:         userID,
+		RevocationType: string(reason),
+		RevokeAll:      false,
+		RevokedTokens:  models.JSON{"tokens": revokedTokens},
+		TokenType:      tokenType,
+		RevokedAt:      time.Now(),
+		IPAddress:      ipAddress,
 	}
 
 	return s.db.WithContext(ctx).Create(log).Error
@@ -316,13 +398,13 @@ func (s *TokenRevocationService) recordRevocation(ctx context.Context, userID ui
 // recordRevocationEvent 记录批量撤销事件
 func (s *TokenRevocationService) recordRevocationEvent(ctx context.Context, userID uint, revocationType RevocationReason, ipAddress string) error {
 	log := &models.TokenRevocationLog{
-		UserID:          userID,
-		RevocationType:  string(revocationType),
-		RevokeAll:       true,
-		RevokedTokens:   models.JSON{"tokens": []string{}}, // 批量撤销时不需要详细记录
-		TokenType:       "all",
-		RevokedAt:       time.Now(),
-		IPAddress:       ipAddress,
+		UserID:         userID,
+		RevocationType: string(revocationType),
+		RevokeAll:      true,
+		RevokedTokens:  models.JSON{"tokens": []string{}}, // 批量撤销时不需要详细记录
+		TokenType:      "all",
+		RevokedAt:      time.Now(),
+		IPAddress:      ipAddress,
 	}
 
 	return s.db.WithContext(ctx).Create(log).Error
@@ -336,18 +418,18 @@ func (s *TokenRevocationService) recordOffboardingEvent(ctx context.Context, use
 	}
 
 	log := &models.TokenRevocationLog{
-		UserID:          userID,
-		RevocationType:  string(RevokeAll),
-		RevokeAll:       true,
-		RevokedTokens:   models.JSON{
-			"tokens":          []string{},
-			"successor_id":    data.SuccessorID,
+		UserID:         userID,
+		RevocationType: string(RevokeAll),
+		RevokeAll:      true,
+		RevokedTokens: models.JSON{
+			"tokens":            []string{},
+			"successor_id":      data.SuccessorID,
 			"transferred_cases": data.TransferredCaseIDs,
-			"notes":           data.HandoverNote,
+			"notes":             data.HandoverNote,
 		},
-		TokenType:       "offboarding",
-		RevokedAt:       time.Now(),
-		IPAddress:       ipAddress,
+		TokenType: "offboarding",
+		RevokedAt: time.Now(),
+		IPAddress: ipAddress,
 	}
 
 	return s.db.WithContext(ctx).Create(log).Error

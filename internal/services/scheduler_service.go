@@ -15,11 +15,11 @@ import (
 
 // 审批超时相关常量
 const (
-	defaultApprovalTimeoutHours  = 48           // 审批超时默认阈值（小时）
-	defaultEscalationDays         = 3            // 待办升级超时天数
-	approvalTimeoutWarningRatio   = 0.8          // 超时预警比例（80%）
-	approvalTimeoutBatchSize      = 50           // 每次处理的最大审批数量
-	processDueItemsBatchSize      = 1000         // 每次处理的最大待办数量
+	defaultApprovalTimeoutHours = 48   // 审批超时默认阈值（小时）
+	defaultEscalationDays       = 3    // 待办升级超时天数
+	approvalTimeoutWarningRatio = 0.8  // 超时预警比例（80%）
+	approvalTimeoutBatchSize    = 50   // 每次处理的最大审批数量
+	processDueItemsBatchSize    = 1000 // 每次处理的最大待办数量
 )
 
 // SchedulerService 定时调度服务
@@ -31,7 +31,7 @@ type SchedulerService struct {
 	// Cron 表达式配置
 	reminderCheckInterval   time.Duration
 	escalationCheckInterval time.Duration
-	timeoutCheckInterval   time.Duration
+	timeoutCheckInterval    time.Duration
 
 	// 控制字段
 	stopCh  chan struct{}
@@ -43,14 +43,14 @@ type SchedulerService struct {
 // NewSchedulerService 创建定时调度服务
 func NewSchedulerService(inboxRepo repositories.InboxRepository, userRepo repositories.UserRepository, approvalRepo *repositories.ApprovalRepository) *SchedulerService {
 	return &SchedulerService{
-		inboxRepo:              inboxRepo,
-		userRepo:               userRepo,
-		approvalRepo:           approvalRepo,
-		reminderCheckInterval:  time.Hour,
+		inboxRepo:               inboxRepo,
+		userRepo:                userRepo,
+		approvalRepo:            approvalRepo,
+		reminderCheckInterval:   time.Hour,
 		escalationCheckInterval: 6 * time.Hour,
-		timeoutCheckInterval:   30 * time.Minute,
-		stopCh:                 make(chan struct{}),
-		running:                false,
+		timeoutCheckInterval:    30 * time.Minute,
+		stopCh:                  make(chan struct{}),
+		running:                 false,
 	}
 }
 
@@ -223,8 +223,8 @@ func (s *SchedulerService) checkReminders(ctx context.Context) error {
 
 			// 更新提醒状态
 			updatedItem := &models.InboxItem{
-				ID:           item.ID,
-				ReminderSent: true,
+				ID:            item.ID,
+				ReminderSent:  true,
 				ReminderCount: item.ReminderCount + 1,
 			}
 			if err := s.inboxRepo.Update(ctx, updatedItem); err != nil {
@@ -423,8 +423,8 @@ func (s *SchedulerService) GetSchedulerStatus() map[string]interface{} {
 
 	return map[string]interface{}{
 		"running":                   s.running,
-		"reminder_check_interval":    s.reminderCheckInterval.String(),
-		"escalation_check_interval":  s.escalationCheckInterval.String(),
+		"reminder_check_interval":   s.reminderCheckInterval.String(),
+		"escalation_check_interval": s.escalationCheckInterval.String(),
 		"approval_timeout_interval": s.timeoutCheckInterval.String(),
 	}
 }

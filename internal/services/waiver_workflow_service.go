@@ -17,6 +17,11 @@ const (
 	WaiverStatusUnderReview = "UNDER_REVIEW"
 	WaiverStatusApproved    = "APPROVED"
 	WaiverStatusRejected    = "REJECTED"
+	WaiverStatusExpired     = "EXPIRED"
+	// A waiver may have no fixed expiry date, but it must still be reviewed
+	// periodically. Once that review is overdue it is no longer a usable
+	// exception and every controlled action must fail closed.
+	WaiverStatusReviewOverdue = "WAIVER_REVIEW_OVERDUE"
 
 	WaiverDecisionApprove        = "APPROVE"
 	WaiverDecisionReject         = "REJECT"
@@ -24,13 +29,18 @@ const (
 	WaiverDecisionEscalate       = "ESCALATE"
 )
 
-var ErrWaiverNotFound = errors.New("waiver application not found")
+var (
+	ErrWaiverNotFound  = errors.New("waiver application not found")
+	ErrWaiverForbidden = errors.New("waiver operation forbidden")
+)
 
 type WaiverWorkflowRepository interface {
 	CreateWaiverApplication(ctx context.Context, application *models.WaiverApplication) error
 	GetWaiverApplication(ctx context.Context, id string) (*models.WaiverApplication, error)
+	GetWaiverApplicationsByConflictCheck(ctx context.Context, conflictCheckID string) ([]*models.WaiverApplication, error)
 	UpdateWaiverApplication(ctx context.Context, application *models.WaiverApplication) error
 	CreateWaiverApprovalRecord(ctx context.Context, record *models.WaiverApprovalRecord) error
+	GetWaiverApprovalRecords(ctx context.Context, applicationID string) ([]*models.WaiverApprovalRecord, error)
 }
 
 type WaiverWorkflowService struct {
@@ -55,7 +65,7 @@ func NewWaiverWorkflowService(
 }
 
 type CreateWaiverRequest struct {
-	ConflictCheckID             string                   `json:"conflict_check_id" binding:"required"`
+	ConflictCheckID             string                   `json:"conflict_check_id"`
 	CaseID                      string                   `json:"case_id"`
 	ClientID                    string                   `json:"client_id"`
 	LawyerID                    string                   `json:"lawyer_id"`
@@ -77,7 +87,7 @@ type CreateWaiverRequest struct {
 	RequestingLawyerName        string                   `json:"requesting_lawyer_name"`
 	RequestingLawyerTitle       string                   `json:"requesting_lawyer_title"`
 	SupervisingLawyerName       string                   `json:"supervising_lawyer_name"`
-	AssignedReviewer            string                   `json:"assigned_reviewer" binding:"required"`
+	AssignedReviewer            string                   `json:"assigned_reviewer"`
 	ReviewPriority              string                   `json:"review_priority"`
 	DurationDays                *int                     `json:"duration_days"`
 }
@@ -97,24 +107,77 @@ type WaiverDecisionRequest struct {
 	FollowUpActions        []map[string]interface{} `json:"follow_up_actions"`
 }
 
-func (s *WaiverWorkflowService) CreateWaiver(ctx context.Context, approvalID, actorID, actorName string, req *CreateWaiverRequest) (*models.WaiverApplication, error) {
+func (s *WaiverWorkflowService) CreateWaiver(ctx context.Context, approvalID, actorID, actorName, actorRole string, req *CreateWaiverRequest) (*models.WaiverApplication, error) {
 	if strings.TrimSpace(req.ConflictCheckID) == "" {
 		return nil, errors.New("conflict_check_id is required")
 	}
 	if strings.TrimSpace(req.Rationale) == "" {
 		return nil, errors.New("rationale is required")
 	}
-	if strings.TrimSpace(req.AssignedReviewer) == "" {
-		return nil, errors.New("assigned_reviewer is required")
+	if len(req.ProposedConditions) == 0 {
+		return nil, errors.New("at least one risk-control condition is required")
 	}
-
-	conflictRecord, _ := s.conflictRepo.GetCheckRecord(ctx, req.ConflictCheckID)
+	conflictRecord, err := s.conflictRepo.GetCheckRecord(ctx, req.ConflictCheckID)
+	if err != nil || conflictRecord == nil {
+		return nil, ErrConflictTaskNotFound
+	}
+	if strings.TrimSpace(conflictRecord.ClientID) == "" || conflictRecord.UserID == 0 {
+		return nil, fmt.Errorf("%w: 冲突检测记录缺少客户或承办律师绑定", ErrWaiverForbidden)
+	}
+	if strings.TrimSpace(req.ClientID) != "" && strings.TrimSpace(req.ClientID) != strings.TrimSpace(conflictRecord.ClientID) {
+		return nil, fmt.Errorf("%w: 豁免申请客户与冲突检测记录不一致", ErrWaiverForbidden)
+	}
+	if strings.TrimSpace(req.LawyerID) != "" && strings.TrimSpace(req.LawyerID) != conflictRecordUserID(conflictRecord) {
+		return nil, fmt.Errorf("%w: 豁免申请承办律师与冲突检测记录不一致", ErrWaiverForbidden)
+	}
+	if recordedCaseID := subjectCaseIDFromSearchParameters(conflictRecord.SearchParameters); recordedCaseID > 0 && strings.TrimSpace(req.CaseID) != "" && strings.TrimSpace(req.CaseID) != strconv.FormatUint(uint64(recordedCaseID), 10) {
+		return nil, fmt.Errorf("%w: 豁免申请案件与冲突检测记录不一致", ErrWaiverForbidden)
+	}
+	if strconv.FormatUint(uint64(conflictRecord.UserID), 10) != actorID && !isConflictManagementRole(actorRole) {
+		return nil, fmt.Errorf("%w: only the conflict task owner or a management reviewer may request a waiver", ErrWaiverForbidden)
+	}
+	decisionStatus := conflictRecordDecisionStatus(conflictRecord)
+	if !conflictRecord.HasConflict && decisionStatus != "BLOCKED" && decisionStatus != "REVIEW_REQUIRED" {
+		return nil, errors.New("waiver is only available for a blocked or review-required conflict check")
+	}
+	if conflictRecordHasNonWaivableDirectConflict(conflictRecord) {
+		return nil, fmt.Errorf("%w: a confirmed direct conflict cannot be waived", ErrWaiverForbidden)
+	}
+	existing, err := s.waiverRepo.GetWaiverApplicationsByConflictCheck(ctx, req.ConflictCheckID)
+	if err == nil {
+		for _, application := range existing {
+			if application != nil && application.Status != WaiverStatusRejected {
+				if err := s.updateConflictWaiverState(ctx, conflictRecord, application); err != nil {
+					return nil, err
+				}
+				return application, nil
+			}
+		}
+	}
+	if strings.TrimSpace(req.AssignedReviewer) == "" {
+		req.AssignedReviewer = s.resolveWaiverReviewer(actorID)
+	}
+	if req.AssignedReviewer == "" || req.AssignedReviewer == actorID {
+		return nil, fmt.Errorf("%w: an independent waiver reviewer is required", ErrWaiverForbidden)
+	}
 	clientID := firstNonEmpty(req.ClientID, conflictRecordValue(conflictRecord, "client_id"))
 	lawyerID := firstNonEmpty(req.LawyerID, conflictRecordUserID(conflictRecord), actorID)
 	caseID := req.CaseID
-	waiverType := firstNonEmpty(req.WaiverType, "INFORMED_CONSENT")
-	waiverCategory := firstNonEmpty(req.WaiverCategory, "CLIENT_CONSENT")
-	reviewPriority := firstNonEmpty(req.ReviewPriority, "MEDIUM")
+	waiverType := strings.ToUpper(firstNonEmpty(req.WaiverType, "INFORMED_CONSENT"))
+	waiverCategory := strings.ToUpper(firstNonEmpty(req.WaiverCategory, "CLIENT_CONSENT"))
+	reviewPriority := strings.ToUpper(firstNonEmpty(req.ReviewPriority, "MEDIUM"))
+	if !allowedWaiverValue(waiverType, "INFORMED_CONSENT", "ETHICAL_BARRIER", "INFORMATION_SCREEN", "STRUCTURAL_BARRIER") {
+		return nil, errors.New("unsupported waiver_type")
+	}
+	if !allowedWaiverValue(waiverCategory, "CLIENT_CONSENT", "BARRIER_IMPLEMENTATION", "MONITORING_ARRANGEMENT", "SPECIAL_CIRCUMSTANCES") {
+		return nil, errors.New("unsupported waiver_category")
+	}
+	if !allowedWaiverValue(reviewPriority, "LOW", "MEDIUM", "HIGH", "URGENT") {
+		return nil, errors.New("unsupported review_priority")
+	}
+	if req.DurationDays != nil && (*req.DurationDays < 1 || *req.DurationDays > 3650) {
+		return nil, errors.New("duration_days must be between 1 and 3650")
+	}
 	now := time.Now()
 	stage := "COMPLIANCE_REVIEW"
 
@@ -155,6 +218,10 @@ func (s *WaiverWorkflowService) CreateWaiver(ctx context.Context, approvalID, ac
 	if caseID != "" {
 		application.CaseID = &caseID
 	}
+	if req.DurationDays != nil && *req.DurationDays > 0 {
+		expiresAt := now.Add(time.Duration(*req.DurationDays) * 24 * time.Hour)
+		application.RequestedExpiryDate = &expiresAt
+	}
 	if req.ClientRepresentativeTitle != "" {
 		application.ClientRepresentativeTitle = &req.ClientRepresentativeTitle
 	}
@@ -171,23 +238,53 @@ func (s *WaiverWorkflowService) CreateWaiver(ctx context.Context, approvalID, ac
 	if err := s.waiverRepo.CreateWaiverApplication(ctx, application); err != nil {
 		return nil, err
 	}
+	if err := s.updateConflictWaiverState(ctx, conflictRecord, application); err != nil {
+		return nil, err
+	}
 	_ = s.createWaiverReviewInbox(ctx, application, approvalID)
 
 	return application, nil
 }
 
-func (s *WaiverWorkflowService) GetWaiver(ctx context.Context, waiverID string) (*models.WaiverApplication, error) {
+func (s *WaiverWorkflowService) GetConflictWaiver(ctx context.Context, conflictCheckID, actorID, actorRole string) (*models.WaiverApplication, error) {
+	record, err := s.conflictRepo.GetCheckRecord(ctx, conflictCheckID)
+	if err != nil || record == nil {
+		return nil, ErrConflictTaskNotFound
+	}
+	if strconv.FormatUint(uint64(record.UserID), 10) != actorID && !isConflictWaiverViewerRole(actorRole) {
+		return nil, fmt.Errorf("%w: only the conflict task owner or a management reviewer may view its waiver", ErrWaiverForbidden)
+	}
+	applications, err := s.waiverRepo.GetWaiverApplicationsByConflictCheck(ctx, conflictCheckID)
+	if err != nil || len(applications) == 0 {
+		return nil, ErrWaiverNotFound
+	}
+	return s.expireWaiverIfNeeded(ctx, applications[0])
+}
+
+func (s *WaiverWorkflowService) GetWaiver(ctx context.Context, waiverID, actorID, actorRole string) (*models.WaiverApplication, error) {
 	application, err := s.waiverRepo.GetWaiverApplication(ctx, waiverID)
 	if err != nil {
 		return nil, ErrWaiverNotFound
 	}
-	return application, nil
+	if application.CreatedBy != actorID && valueOrEmpty(application.AssignedReviewer) != actorID && !isConflictManagementRole(actorRole) {
+		return nil, fmt.Errorf("%w: waiver is not accessible to current user", ErrWaiverForbidden)
+	}
+	return s.expireWaiverIfNeeded(ctx, application)
 }
 
-func (s *WaiverWorkflowService) DecideWaiver(ctx context.Context, waiverID, actorID, actorName string, req *WaiverDecisionRequest) (*models.WaiverApplication, error) {
+func (s *WaiverWorkflowService) DecideWaiver(ctx context.Context, waiverID, actorID, actorName, actorRole string, req *WaiverDecisionRequest) (*models.WaiverApplication, error) {
 	application, err := s.waiverRepo.GetWaiverApplication(ctx, waiverID)
 	if err != nil {
 		return nil, ErrWaiverNotFound
+	}
+	if valueOrEmpty(application.AssignedReviewer) != actorID && !isConflictManagementRole(actorRole) {
+		return nil, fmt.Errorf("%w: only the assigned reviewer or a management reviewer may decide this waiver", ErrWaiverForbidden)
+	}
+	if application.CreatedBy == actorID {
+		return nil, fmt.Errorf("%w: waiver requester cannot approve their own request", ErrWaiverForbidden)
+	}
+	if application.Status != WaiverStatusUnderReview {
+		return nil, errors.New("only an under-review waiver may be decided")
 	}
 
 	decision := normalizeWaiverDecision(req.Decision)
@@ -224,6 +321,15 @@ func (s *WaiverWorkflowService) DecideWaiver(ctx context.Context, waiverID, acto
 		ApprovalDate:           now,
 		Status:                 "ACTIVE",
 	}
+	if decision == WaiverDecisionApprove {
+		record.EffectiveDate = &now
+		record.ExpiryDate = application.RequestedExpiryDate
+		nextReviewAt := now.AddDate(1, 0, 0)
+		if application.RequestedExpiryDate != nil && application.RequestedExpiryDate.Before(nextReviewAt) {
+			nextReviewAt = *application.RequestedExpiryDate
+		}
+		record.NextReviewDate = &nextReviewAt
+	}
 	if err := s.waiverRepo.CreateWaiverApprovalRecord(ctx, record); err != nil {
 		return nil, err
 	}
@@ -251,11 +357,137 @@ func (s *WaiverWorkflowService) DecideWaiver(ctx context.Context, waiverID, acto
 	if err := s.waiverRepo.UpdateWaiverApplication(ctx, application); err != nil {
 		return nil, err
 	}
+	conflictRecord, _ := s.conflictRepo.GetCheckRecord(ctx, application.ConflictCheckID)
+	if conflictRecord != nil {
+		if err := s.updateConflictWaiverState(ctx, conflictRecord, application); err != nil {
+			return nil, err
+		}
+	}
 
 	return s.waiverRepo.GetWaiverApplication(ctx, waiverID)
 }
 
+func (s *WaiverWorkflowService) resolveWaiverReviewer(actorID string) string {
+	for _, role := range []string{"compliance", "risk_control", "risk", "director", "partner", "admin", "super_admin"} {
+		users, err := s.userRepo.FindByRole(role, 10)
+		if err != nil {
+			continue
+		}
+		for _, user := range users {
+			candidate := strconv.FormatUint(uint64(user.ID), 10)
+			if candidate != actorID {
+				return candidate
+			}
+		}
+	}
+	return ""
+}
+
+func (s *WaiverWorkflowService) updateConflictWaiverState(ctx context.Context, record *models.ConflictCheckRecord, application *models.WaiverApplication) error {
+	if record.CheckResult == nil {
+		record.CheckResult = models.JSON{}
+	}
+	waiver := models.JSON{
+		"id": application.ID, "applicationNumber": application.ApplicationNumber,
+		"status": application.Status, "currentStage": valueOrEmpty(application.CurrentStage),
+		"assignedReviewer": valueOrEmpty(application.AssignedReviewer), "updatedAt": time.Now(),
+		"expiryAt": application.RequestedExpiryDate,
+	}
+	record.CheckResult["waiver"] = waiver
+	decision, _ := record.CheckResult["decision"].(map[string]interface{})
+	if decision == nil {
+		if typed, ok := record.CheckResult["decision"].(models.JSON); ok {
+			decision = map[string]interface{}(typed)
+		} else {
+			decision = map[string]interface{}{}
+		}
+	}
+	switch application.Status {
+	case WaiverStatusApproved:
+		decision["status"] = "WAIVED"
+		decision["recommendation"] = "豁免已经批准，可按批准条件继续接案；相关限制、监督和伦理墙要求必须持续执行。"
+	case WaiverStatusReviewOverdue:
+		decision["status"] = "BLOCKED"
+		decision["recommendation"] = "豁免年度复核已逾期，当前受控动作已阻止；完成新的独立复核并重新批准前不得继续。"
+	case WaiverStatusRejected:
+		decision["status"] = "BLOCKED"
+		decision["recommendation"] = "豁免申请已拒绝，当前接案继续保持阻止状态。"
+	case WaiverStatusExpired:
+		decision["status"] = "BLOCKED"
+		decision["recommendation"] = "原豁免已经到期，必须重新评估风险并取得新的批准后才能继续接案。"
+	default:
+		decision["status"] = "WAIVER_PENDING"
+		decision["recommendation"] = "豁免申请正在复核，批准前不得继续接案。"
+	}
+	record.CheckResult["decision"] = decision
+	record.UpdatedAt = time.Now()
+	return s.conflictRepo.UpdateCheckRecord(ctx, record)
+}
+
+func (s *WaiverWorkflowService) expireWaiverIfNeeded(ctx context.Context, application *models.WaiverApplication) (*models.WaiverApplication, error) {
+	if application == nil || application.Status != WaiverStatusApproved {
+		return application, nil
+	}
+	now := time.Now()
+	if application.RequestedExpiryDate != nil && !application.RequestedExpiryDate.After(now) {
+		application.Status = WaiverStatusExpired
+		if err := s.waiverRepo.UpdateWaiverApplication(ctx, application); err != nil {
+			return nil, err
+		}
+		return s.refreshConflictWaiverState(ctx, application)
+	}
+	records, err := s.waiverRepo.GetWaiverApprovalRecords(ctx, application.ID)
+	if err != nil {
+		return nil, err
+	}
+	var latestApproval *models.WaiverApprovalRecord
+	for _, candidate := range records {
+		if candidate == nil || candidate.Decision != WaiverDecisionApprove || candidate.Status != "ACTIVE" {
+			continue
+		}
+		latestApproval = candidate
+		break
+	}
+	// A legacy APPROVED application without an approval record or review date
+	// cannot be treated as a valid exception. This is deliberately a blocking
+	// migration state instead of an implicit one-year extension.
+	if latestApproval == nil || latestApproval.NextReviewDate == nil || !latestApproval.NextReviewDate.After(now) {
+		application.Status = WaiverStatusReviewOverdue
+		if err := s.waiverRepo.UpdateWaiverApplication(ctx, application); err != nil {
+			return nil, err
+		}
+		return s.refreshConflictWaiverState(ctx, application)
+	}
+	return application, nil
+}
+
+func (s *WaiverWorkflowService) refreshConflictWaiverState(ctx context.Context, application *models.WaiverApplication) (*models.WaiverApplication, error) {
+	record, _ := s.conflictRepo.GetCheckRecord(ctx, application.ConflictCheckID)
+	if record != nil {
+		if err := s.updateConflictWaiverState(ctx, record, application); err != nil {
+			return nil, err
+		}
+	}
+	return application, nil
+}
+
+func isConflictManagementRole(role string) bool {
+	switch strings.ToLower(strings.TrimSpace(role)) {
+	case "admin", "super_admin", "director", "partner", "compliance", "risk", "risk_control", "management":
+		return true
+	default:
+		return false
+	}
+}
+
+func isConflictWaiverViewerRole(role string) bool {
+	return isConflictManagementRole(role) || strings.EqualFold(strings.TrimSpace(role), "conflict_officer")
+}
+
 func (s *WaiverWorkflowService) createWaiverReviewInbox(ctx context.Context, application *models.WaiverApplication, approvalID string) error {
+	if s.inboxRepo == nil {
+		return nil
+	}
 	reviewerID, err := strconv.ParseUint(valueOrEmpty(application.AssignedReviewer), 10, 32)
 	if err != nil || reviewerID == 0 {
 		return nil
@@ -320,6 +552,72 @@ func conflictRecordUserID(record *models.ConflictCheckRecord) string {
 	return strconv.FormatUint(uint64(record.UserID), 10)
 }
 
+func conflictRecordDecisionStatus(record *models.ConflictCheckRecord) string {
+	if record == nil || record.CheckResult == nil {
+		return ""
+	}
+	decision, ok := record.CheckResult["decision"].(map[string]interface{})
+	if !ok {
+		if typed, typedOK := record.CheckResult["decision"].(models.JSON); typedOK {
+			decision = map[string]interface{}(typed)
+		}
+	}
+	return strings.ToUpper(strings.TrimSpace(fmt.Sprint(decision["status"])))
+}
+
+// conflictRecordHasNonWaivableDirectConflict keeps the hard policy boundary in
+// the waiver service. A UI must not be able to turn a confirmed adverse-party
+// conflict into an exception request merely by posting a waiver payload.
+func conflictRecordHasNonWaivableDirectConflict(record *models.ConflictCheckRecord) bool {
+	if record == nil {
+		return false
+	}
+	return containsNonWaivableDirectConflict(record.CheckResult)
+}
+
+func containsNonWaivableDirectConflict(value interface{}) bool {
+	switch typed := value.(type) {
+	case models.JSON:
+		return containsNonWaivableDirectConflict(map[string]interface{}(typed))
+	case map[string]interface{}:
+		ruleCode := strings.ToUpper(strings.TrimSpace(fmt.Sprint(firstJSONValue(typed, "ruleCode", "rule_code"))))
+		if ruleCode == "DIRECT_ADVERSE_CURRENT_CLIENT" || ruleCode == "STRUCTURED_IDENTITY_EXACT" || ruleCode == "DIRECT_CONFLICT" {
+			return true
+		}
+		conflictType := strings.ToUpper(strings.TrimSpace(fmt.Sprint(firstJSONValue(typed, "conflictType", "conflict_type"))))
+		if strings.Contains(conflictType, "DIRECT") || strings.Contains(conflictType, "直接冲突") {
+			return true
+		}
+		matchType := strings.ToUpper(strings.TrimSpace(fmt.Sprint(firstJSONValue(typed, "matchType", "match_type"))))
+		partyRole := strings.ToUpper(strings.TrimSpace(fmt.Sprint(firstJSONValue(typed, "partyRole", "party_role"))))
+		historicalRole := strings.ToUpper(strings.TrimSpace(fmt.Sprint(firstJSONValue(typed, "historicalRole", "historical_role"))))
+		if matchType == "EXACT" && partyRole == "OPPOSING_PARTY" && historicalRole == "CLIENT" {
+			return true
+		}
+		for _, child := range typed {
+			if containsNonWaivableDirectConflict(child) {
+				return true
+			}
+		}
+	case []interface{}:
+		for _, child := range typed {
+			if containsNonWaivableDirectConflict(child) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func firstJSONValue(values map[string]interface{}, keys ...string) interface{} {
+	for _, key := range keys {
+		if value, ok := values[key]; ok && value != nil {
+			return value
+		}
+	}
+	return nil
+}
+
 func normalizeWaiverDecision(decision string) string {
 	switch strings.ToUpper(strings.TrimSpace(decision)) {
 	case "APPROVE", "APPROVED":
@@ -333,6 +631,15 @@ func normalizeWaiverDecision(decision string) string {
 	default:
 		return ""
 	}
+}
+
+func allowedWaiverValue(value string, allowed ...string) bool {
+	for _, candidate := range allowed {
+		if value == candidate {
+			return true
+		}
+	}
+	return false
 }
 
 func waiverPriorityToInbox(priority string) string {

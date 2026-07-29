@@ -1,0 +1,2 @@
+-- The backfill is intentionally not reversed: removing an owner's access
+-- would make a previously usable protected matter inaccessible.

@@ -100,6 +100,10 @@ func (r *riskAssessor) AssessRisk(ctx context.Context, conflicts []*models.Confl
 
 	// 确定风险等级
 	riskLevel := r.GetRiskLevel(totalScore)
+	if onlyUnverifiedCandidateEvidence(conflicts) && riskLevelRank(riskLevel) > riskLevelRank("MEDIUM") {
+		riskLevel = "MEDIUM"
+		totalScore = math.Min(totalScore, math.Max(0, r.config.HighRiskThreshold-0.01))
+	}
 	riskLevel = maxRiskLevel(riskLevel, conflicts)
 
 	// 生成建议
@@ -112,13 +116,31 @@ func (r *riskAssessor) AssessRisk(ctx context.Context, conflicts []*models.Confl
 		OverallRisk:      riskLevel,
 		RiskScore:        totalScore,
 		RiskReason:       r.generateRiskReason(conflicts, riskLevel),
-		RequiresApproval: totalScore > r.config.MediumRiskThreshold,
+		RequiresApproval: totalScore > r.config.MediumRiskThreshold || riskLevel == "HIGH" || riskLevel == "CRITICAL",
 		ApprovalLevel:    r.getApprovalLevel(riskLevel),
 		RiskFactors:      r.generateRiskFactors(conflicts),
 		Mitigation:       recommendations,
 	}
 
 	return assessment, nil
+}
+
+func onlyUnverifiedCandidateEvidence(conflicts []*models.ConflictCase) bool {
+	if len(conflicts) == 0 {
+		return false
+	}
+	for _, conflict := range conflicts {
+		conflictType := strings.ToUpper(strings.TrimSpace(conflict.ConflictType))
+		if !strings.Contains(conflictType, "待核实") && conflictType != "NAME_SIMILAR" && conflictType != "NAME_CANDIDATE" {
+			return false
+		}
+	}
+	return true
+}
+
+func riskLevelRank(level string) int {
+	rank := map[string]int{"MINIMAL": 0, "LOW": 1, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}
+	return rank[strings.ToUpper(strings.TrimSpace(level))]
 }
 
 func maxRiskLevel(current string, conflicts []*models.ConflictCase) string {
@@ -153,6 +175,8 @@ func (r *riskAssessor) GenerateRecommendations(ctx context.Context, riskLevel st
 
 	// 基于风险等级生成建议
 	switch riskLevel {
+	case "CRITICAL":
+		recommendations = append(recommendations, r.getCriticalRiskRecommendations()...)
 	case "HIGH":
 		recommendations = append(recommendations, r.getHighRiskRecommendations()...)
 	case "MEDIUM":
@@ -255,6 +279,8 @@ func (r *riskAssessor) calculateConflictRiskScore(conflict *models.ConflictCase)
 
 	// 基于风险等级
 	switch conflict.RiskLevel {
+	case "CRITICAL":
+		score += 80 * r.config.RiskLevelWeight
 	case "HIGH":
 		score += 50 * r.config.RiskLevelWeight
 	case "MEDIUM":
@@ -447,6 +473,8 @@ func (r *riskAssessor) getRiskLevelScore(riskLevel string) float64 {
 // generateSingleConflictRecommendation 生成单个冲突的建议
 func (r *riskAssessor) generateSingleConflictRecommendation(conflict *models.ConflictCase, riskLevel string) string {
 	switch riskLevel {
+	case "CRITICAL":
+		return fmt.Sprintf("严重风险冲突：建议暂停或拒绝受理案件 '%s'，提交管理合伙人/风控负责人复核", conflict.CaseName)
 	case "HIGH":
 		return fmt.Sprintf("高度风险冲突：建议立即回避案件 '%s'，并咨询专业律师意见", conflict.CaseName)
 	case "MEDIUM":
@@ -455,6 +483,16 @@ func (r *riskAssessor) generateSingleConflictRecommendation(conflict *models.Con
 		return fmt.Sprintf("低度风险冲突：可以继续代理案件 '%s'，但需持续监控风险变化", conflict.CaseName)
 	default:
 		return fmt.Sprintf("冲突案件 '%s' 风险较低，按常规流程处理", conflict.CaseName)
+	}
+}
+
+// 严重风险建议
+func (r *riskAssessor) getCriticalRiskRecommendations() []string {
+	return []string{
+		"建议暂停或拒绝受理该案件",
+		"提交管理合伙人或风控负责人终审",
+		"复核是否曾代理对方当事人或接触其保密信息",
+		"在未完成书面豁免和隔离评估前不得进入立案审批",
 	}
 }
 
@@ -580,6 +618,8 @@ func (r *riskAssessor) generateRiskReason(conflicts []*models.ConflictCase, risk
 // getApprovalLevel 获取审批级别
 func (r *riskAssessor) getApprovalLevel(riskLevel string) string {
 	switch riskLevel {
+	case "CRITICAL":
+		return "MANAGING_PARTNER"
 	case "HIGH":
 		return "PARTNER"
 	case "MEDIUM":

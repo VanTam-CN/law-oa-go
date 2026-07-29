@@ -18,34 +18,34 @@ type AdvancedConflictCheckRequest struct {
 	SearchDepth    string `json:"search_depth"`
 	IncludeRelated bool   `json:"include_related"`
 	// 新增字段支持更复杂的冲突检测
-	SearchYears     int       `json:"search_years"`
-	TeamMembers     []string  `json:"team_members"`
-	Description     string    `json:"description"`
+	SearchYears int      `json:"search_years"`
+	TeamMembers []string `json:"team_members"`
+	Description string   `json:"description"`
 	// 兼容旧字段
-	IndustryID      int       `json:"industry_id"`
-	IncludeIndustry bool      `json:"include_industry"`
+	IndustryID      int  `json:"industry_id"`
+	IncludeIndustry bool `json:"include_industry"`
 	// 审计和追踪字段
-	UserID         string    `json:"user_id"`
-	RequestTime     time.Time `json:"request_time"`
+	UserID      string    `json:"user_id"`
+	RequestTime time.Time `json:"request_time"`
 }
 
 // ConflictCaseDetail 冲突案件详情
 type ConflictCaseDetail struct {
 	Case            *models.Case `json:"case"`
-	ConflictType    string     `json:"conflict_type"`
-	RiskScore       int        `json:"risk_score"`
-	ConflictReason  string     `json:"conflict_reason"`
-	RelatedEntities []string   `json:"related_entities"`
-	ImpactLevel     string     `json:"impact_level"`
+	ConflictType    string       `json:"conflict_type"`
+	RiskScore       int          `json:"risk_score"`
+	ConflictReason  string       `json:"conflict_reason"`
+	RelatedEntities []string     `json:"related_entities"`
+	ImpactLevel     string       `json:"impact_level"`
 }
 
 // CompetitionAnalysis 竞争分析结果
 type CompetitionAnalysis struct {
-	HasCompetition    bool                   `json:"has_competition"`
-	CompetitorInfo    []*CompetitorInfo       `json:"competitor_info"`
+	HasCompetition   bool                   `json:"has_competition"`
+	CompetitorInfo   []*CompetitorInfo      `json:"competitor_info"`
 	IndustryAnalysis map[string]interface{} `json:"industry_analysis"`
-	MarketPosition    string                 `json:"market_position"`
-	RiskFactors       []string               `json:"risk_factors"`
+	MarketPosition   string                 `json:"market_position"`
+	RiskFactors      []string               `json:"risk_factors"`
 }
 
 // CompetitorInfo 竞争者信息
@@ -60,35 +60,35 @@ type CompetitorInfo struct {
 
 // AnalysisSummary 分析摘要
 type AnalysisSummary struct {
-	TotalCasesChecked      int `json:"total_cases_checked"`
-	DirectConflicts        int `json:"direct_conflicts"`
-	IndustryConflicts      int `json:"industry_conflicts"`
-	NameSimilarityCases    int `json:"name_similarity_cases"`
-	RelatedConflicts       int `json:"related_conflicts"`
-	SearchScope            string `json:"search_scope"`
-	SearchTimeRange        string `json:"search_time_range"`
+	TotalCasesChecked   int    `json:"total_cases_checked"`
+	DirectConflicts     int    `json:"direct_conflicts"`
+	IndustryConflicts   int    `json:"industry_conflicts"`
+	NameSimilarityCases int    `json:"name_similarity_cases"`
+	RelatedConflicts    int    `json:"related_conflicts"`
+	SearchScope         string `json:"search_scope"`
+	SearchTimeRange     string `json:"search_time_range"`
 }
 
 // ConflictAnalysisResult 冲突分析结果
 type ConflictAnalysisResult struct {
-	RequestID        string                `json:"request_id"`
-	HasConflicts     bool                  `json:"has_conflicts"`
-	ConflictLevel   string                `json:"conflict_level"`
-	RiskScore       int                   `json:"risk_score"`
-	ConflictCases   []*ConflictCaseDetail  `json:"conflict_cases"`
-	CompetitionAnalysis *CompetitionAnalysis `json:"competition_analysis"`
-	Recommendations  []string              `json:"recommendations"`
-	AnalysisSummary  *AnalysisSummary      `json:"analysis_summary"`
-	DetectionTime    time.Time             `json:"detection_time"`
-	Duration         int64                 `json:"duration_ms"`
+	RequestID           string                `json:"request_id"`
+	HasConflicts        bool                  `json:"has_conflicts"`
+	ConflictLevel       string                `json:"conflict_level"`
+	RiskScore           int                   `json:"risk_score"`
+	ConflictCases       []*ConflictCaseDetail `json:"conflict_cases"`
+	CompetitionAnalysis *CompetitionAnalysis  `json:"competition_analysis"`
+	Recommendations     []string              `json:"recommendations"`
+	AnalysisSummary     *AnalysisSummary      `json:"analysis_summary"`
+	DetectionTime       time.Time             `json:"detection_time"`
+	Duration            int64                 `json:"duration_ms"`
 }
 
 // ValidationResult 验证结果
 type ValidationResult struct {
-	IsValid   bool                    `json:"is_valid"`
-	Errors    []ValidationError       `json:"errors"`
-	Warnings  []ValidationError       `json:"warnings"`
-	Request   *AdvancedConflictCheckRequest `json:"request"`
+	IsValid  bool                          `json:"is_valid"`
+	Errors   []ValidationError             `json:"errors"`
+	Warnings []ValidationError             `json:"warnings"`
+	Request  *AdvancedConflictCheckRequest `json:"request"`
 }
 
 // ValidationError 验证错误
@@ -130,7 +130,7 @@ type RuleApplicationResult struct {
 
 // BuiltInRuleResult 内置规则结果
 type BuiltInRuleResult struct {
-	Risks          []string `json:"risks"`
+	Risks           []string `json:"risks"`
 	Recommendations []string `json:"recommendations"`
 }
 
@@ -186,10 +186,10 @@ func ValidateConflictRequest(req *AdvancedConflictCheckRequest) *ValidationResul
 	}
 
 	// 业务逻辑验证
-	if req.SearchYears <= 0 || req.SearchYears > 20 {
+	if req.SearchYears < 0 || req.SearchYears > 20 {
 		result.Warnings = append(result.Warnings, ValidationError{
 			Field:   "search_years",
-			Message: "搜索年限建议在1-20年之间",
+			Message: "0表示不按年限截断检索；1-20年表示范围受限，不能自动形成无冲突结论，档案覆盖完整性仍需律所确认",
 			Code:    "INVALID_SEARCH_YEARS",
 		})
 	}

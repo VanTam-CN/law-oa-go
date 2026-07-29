@@ -13,11 +13,11 @@ import (
 
 // ElasticsearchSyncService Elasticsearch同步服务
 type ElasticsearchSyncService struct {
-	statuteRepo     repositories.LegalStatuteRepository
-	esRepo          repositories.ElasticsearchStatuteRepository
-	batchSize       int
-	syncInterval    time.Duration
-	stopChan        chan bool
+	statuteRepo  repositories.LegalStatuteRepository
+	esRepo       repositories.ElasticsearchStatuteRepository
+	batchSize    int
+	syncInterval time.Duration
+	stopChan     chan bool
 }
 
 // NewElasticsearchSyncService 创建Elasticsearch同步服务
@@ -27,7 +27,7 @@ func NewElasticsearchSyncService(
 ) *ElasticsearchSyncService {
 	return &ElasticsearchSyncService{
 		statuteRepo:  statuteRepo,
-		esRepo:      esRepo,
+		esRepo:       esRepo,
 		batchSize:    100,
 		syncInterval: 30 * time.Minute,
 		stopChan:     make(chan bool),
@@ -184,24 +184,24 @@ func (s *ElasticsearchSyncService) RebuildIndex(ctx context.Context) error {
 // convertToESDocument 将数据库模型转换为ES文档
 func (s *ElasticsearchSyncService) convertToESDocument(statute *models.LegalStatute) *elasticsearch.LegalStatuteDocument {
 	doc := &elasticsearch.LegalStatuteDocument{
-		ID:                 statute.ID,
-		StatuteNumber:      statute.StatuteNumber,
-		Title:              statute.Title,
-		Content:            statute.Content,
-		LawName:            statute.LawName,
-		Chapter:            statute.Chapter,
-		Section:            statute.Section,
-		Part:               statute.Part,
-		Status:             statute.Status,
-		HierarchyLevel:     statute.HierarchyLevel,
-		Tags:               statute.Tags,
-		Keywords:           statute.Keywords,
-		CreatedAt:          statute.CreatedAt.Format("2006-01-02T15:04:05Z"),
-		UpdatedAt:          statute.UpdatedAt.Format("2006-01-02T15:04:05Z"),
-		ContentLength:      len(statute.Content),
-		ViewCount:          0,
-		FavoriteCount:      0,
-		SearchWeight:       s.calculateSearchWeight(statute),
+		ID:             statute.ID,
+		StatuteNumber:  statute.StatuteNumber,
+		Title:          statute.Title,
+		Content:        statute.Content,
+		LawName:        statute.LawName,
+		Chapter:        statute.Chapter,
+		Section:        statute.Section,
+		Part:           statute.Part,
+		Status:         statute.Status,
+		HierarchyLevel: statute.HierarchyLevel,
+		Tags:           statute.Tags,
+		Keywords:       statute.Keywords,
+		CreatedAt:      statute.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		UpdatedAt:      statute.UpdatedAt.Format("2006-01-02T15:04:05Z"),
+		ContentLength:  len(statute.Content),
+		ViewCount:      0,
+		FavoriteCount:  0,
+		SearchWeight:   s.calculateSearchWeight(statute),
 	}
 
 	// 处理可选字段
@@ -279,21 +279,21 @@ func (s *ElasticsearchSyncService) GetSyncStatus(ctx context.Context) (*SyncStat
 	lastSyncTime := time.Now() // 这里可以从配置或数据库中获取最后同步时间
 
 	return &SyncStatus{
-		IsAvailable:    isAvailable,
-		DatabaseCount:  dbCount,
-		ESCount:        esCount,
-		LastSyncTime:   lastSyncTime,
-		SyncInterval:   s.syncInterval,
+		IsAvailable:   isAvailable,
+		DatabaseCount: dbCount,
+		ESCount:       esCount,
+		LastSyncTime:  lastSyncTime,
+		SyncInterval:  s.syncInterval,
 	}, nil
 }
 
 // SyncStatus 同步状态
 type SyncStatus struct {
-	IsAvailable    bool      `json:"isAvailable"`
-	DatabaseCount  int64     `json:"databaseCount"`
-	ESCount        int64     `json:"esCount"`
-	LastSyncTime   time.Time `json:"lastSyncTime"`
-	SyncInterval   time.Duration `json:"syncInterval"`
+	IsAvailable   bool          `json:"isAvailable"`
+	DatabaseCount int64         `json:"databaseCount"`
+	ESCount       int64         `json:"esCount"`
+	LastSyncTime  time.Time     `json:"lastSyncTime"`
+	SyncInterval  time.Duration `json:"syncInterval"`
 }
 
 // SyncProgress 同步进度
@@ -302,7 +302,7 @@ type SyncProgress struct {
 	SyncedCount   int     `json:"syncedCount"`
 	Progress      float64 `json:"progress"`
 	CurrentID     int     `json:"currentId"`
-	EstimatedTime  int     `json:"estimatedTimeSeconds"`
+	EstimatedTime int     `json:"estimatedTimeSeconds"`
 }
 
 // GetSyncProgress 获取同步进度
@@ -319,9 +319,9 @@ func (s *ElasticsearchSyncService) GetSyncProgress(ctx context.Context) (*SyncPr
 	// 这里可以实现更精确的进度计算
 	// 暂时返回估算进度
 	return &SyncProgress{
-		TotalCount:   int(total),
-		SyncedCount:  0,
-		Progress:     0,
-		CurrentID:    0,
+		TotalCount:  int(total),
+		SyncedCount: 0,
+		Progress:    0,
+		CurrentID:   0,
 	}, nil
 }

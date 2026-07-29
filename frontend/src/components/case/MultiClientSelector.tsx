@@ -204,10 +204,10 @@ const MultiClientSelector: React.FC<MultiClientSelectorProps> = ({
         conflictCheckConfig: {
           enabled: true,
           checkOnCreate: true,
-          searchYears: clientInfo.type === 'COMPANY' ? 7 : 5,
-          includeCorporateRelations: clientInfo.type === 'COMPANY',
+          searchYears: 0,
+          includeCorporateRelations: true,
           searchDepth: 'STANDARD',
-          autoWaiverIfPossible: true,
+          autoWaiverIfPossible: false,
         },
       }
 
@@ -333,7 +333,9 @@ const MultiClientSelector: React.FC<MultiClientSelectorProps> = ({
         {clients.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px 0' }}>
             <UserOutlined style={{ fontSize: '48px', color: '#ccc' }} />
-            <div style={{ marginTop: '16px', color: '#6B7280', fontSize: '14px' }}>暂未添加客户，点击上方按钮添加</div>
+            <div style={{ marginTop: '16px', color: '#6B7280', fontSize: '14px' }}>
+              暂未添加客户，点击上方按钮添加
+            </div>
           </div>
         ) : (
           <List
@@ -501,7 +503,9 @@ const MultiClientSelector: React.FC<MultiClientSelectorProps> = ({
           {searchKeyword && searchResults.length === 0 && !loading && (
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
               <SearchOutlined style={{ fontSize: '48px', color: '#ccc' }} />
-              <div style={{ marginTop: '16px', color: '#6B7280', fontSize: '14px' }}>未找到匹配的客户</div>
+              <div style={{ marginTop: '16px', color: '#6B7280', fontSize: '14px' }}>
+                未找到匹配的客户
+              </div>
             </div>
           )}
         </Space>
@@ -525,10 +529,10 @@ const MultiClientSelector: React.FC<MultiClientSelectorProps> = ({
             initialValues={{
               enabled: true,
               checkOnCreate: true,
-              searchYears: 5,
-              includeCorporateRelations: false,
+              searchYears: 0,
+              includeCorporateRelations: true,
               searchDepth: 'STANDARD',
-              autoWaiverIfPossible: true,
+              autoWaiverIfPossible: false,
             }}
           >
             <Form.Item name='enabled' label='启用冲突检测' valuePropName='checked'>
@@ -541,10 +545,16 @@ const MultiClientSelector: React.FC<MultiClientSelectorProps> = ({
 
             <Form.Item
               name='searchYears'
-              label='搜索年限'
+              label='历史档案范围（年）'
+              extra='0 表示不按年限截断检索；覆盖完整性仍由律所确认，未登记档案不能自动形成无冲突结论。'
               rules={[{ required: true, message: '请输入搜索年限' }]}
             >
-              <InputNumber min={1} max={20} placeholder='搜索年限' style={{ width: '100%' }} />
+              <InputNumber
+                min={0}
+                max={20}
+                placeholder='0 表示不按年限截断'
+                style={{ width: '100%' }}
+              />
             </Form.Item>
 
             <Form.Item
@@ -552,7 +562,7 @@ const MultiClientSelector: React.FC<MultiClientSelectorProps> = ({
               label='包含企业关联关系'
               valuePropName='checked'
             >
-              <Switch />
+              <Switch disabled />
             </Form.Item>
 
             <Form.Item
@@ -565,14 +575,6 @@ const MultiClientSelector: React.FC<MultiClientSelectorProps> = ({
                 <Option value='DEEP'>深度</Option>
                 <Option value='COMPREHENSIVE'>全面</Option>
               </Select>
-            </Form.Item>
-
-            <Form.Item
-              name='autoWaiverIfPossible'
-              label='自动豁免（如可能）'
-              valuePropName='checked'
-            >
-              <Switch />
             </Form.Item>
           </Form>
         </Modal>

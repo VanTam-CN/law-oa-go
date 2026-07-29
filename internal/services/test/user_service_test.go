@@ -123,6 +123,8 @@ func TestUserService_CreateUser(t *testing.T) {
 	})
 
 	t.Run("Create User Database Error", func(t *testing.T) {
+		mockUserRepo = new(testmock.MockUserRepository)
+		userService = services.NewUserService(mockUserRepo)
 		req := &services.CreateUserRequest{
 			Name:     "Test User",
 			Email:    "test@example.com",
@@ -301,6 +303,9 @@ func TestUserService_GetUserProfile(t *testing.T) {
 	})
 
 	t.Run("Get User Profile Not Found", func(t *testing.T) {
+		mockUserRepo := new(testmock.MockUserRepository)
+		userService := services.NewUserService(mockUserRepo)
+
 		// 设置模拟期望
 		mockUserRepo.On("FindByID", mock.Anything, uint(999)).Return(nil, repositories.ErrUserNotFound)
 
@@ -310,7 +315,7 @@ func TestUserService_GetUserProfile(t *testing.T) {
 		// 断言结果
 		assert.Error(t, err)
 		assert.Nil(t, profile)
-		assert.Contains(t, err.Error(), "User not found")
+		assert.Contains(t, err.Error(), "user not found")
 
 		// 验证模拟调用
 		mockUserRepo.AssertExpectations(t)
@@ -357,6 +362,9 @@ func TestUserService_UpdateUser(t *testing.T) {
 	})
 
 	t.Run("Update User Not Found", func(t *testing.T) {
+		mockUserRepo := new(testmock.MockUserRepository)
+		userService := services.NewUserService(mockUserRepo)
+
 		req := &services.UpdateUserRequest{
 			Name: stringPtr("Updated Name"),
 		}
@@ -370,13 +378,16 @@ func TestUserService_UpdateUser(t *testing.T) {
 		// 断言结果
 		assert.Error(t, err)
 		assert.Nil(t, profile)
-		assert.Contains(t, err.Error(), "User not found")
+		assert.Contains(t, err.Error(), "user not found")
 
 		// 验证模拟调用
 		mockUserRepo.AssertExpectations(t)
 	})
 
 	t.Run("Update User Email Conflict", func(t *testing.T) {
+		mockUserRepo := new(testmock.MockUserRepository)
+		userService := services.NewUserService(mockUserRepo)
+
 		user := &models.User{
 			ID:        1,
 			Name:      "Test User",
@@ -414,10 +425,10 @@ func TestUserService_UpdateUser(t *testing.T) {
 }
 
 func TestUserService_ChangePassword(t *testing.T) {
-	mockUserRepo := new(testmock.MockUserRepository)
-	userService := services.NewUserService(mockUserRepo)
-
 	t.Run("Change Password Success", func(t *testing.T) {
+		mockUserRepo := new(testmock.MockUserRepository)
+		userService := services.NewUserService(mockUserRepo)
+
 		// 准备当前密码哈希
 		currentHashedPassword, err := bcrypt.GenerateFromPassword([]byte("CurrentPassword123!"), bcrypt.DefaultCost)
 		require.NoError(t, err)
@@ -448,6 +459,9 @@ func TestUserService_ChangePassword(t *testing.T) {
 	})
 
 	t.Run("Change Password Wrong Current Password", func(t *testing.T) {
+		mockUserRepo := new(testmock.MockUserRepository)
+		userService := services.NewUserService(mockUserRepo)
+
 		// 准备当前密码哈希
 		currentHashedPassword, err := bcrypt.GenerateFromPassword([]byte("CurrentPassword123!"), bcrypt.DefaultCost)
 		require.NoError(t, err)
@@ -478,6 +492,9 @@ func TestUserService_ChangePassword(t *testing.T) {
 	})
 
 	t.Run("Change Password Weak New Password", func(t *testing.T) {
+		mockUserRepo := new(testmock.MockUserRepository)
+		userService := services.NewUserService(mockUserRepo)
+
 		currentHashedPassword, err := bcrypt.GenerateFromPassword([]byte("CurrentPassword123!"), bcrypt.DefaultCost)
 		require.NoError(t, err)
 
@@ -500,7 +517,7 @@ func TestUserService_ChangePassword(t *testing.T) {
 
 		// 断言结果
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "Password too short")
+		assert.Contains(t, err.Error(), "Password too weak")
 
 		// 验证模拟调用
 		mockUserRepo.AssertExpectations(t)
@@ -561,6 +578,9 @@ func TestUserService_ListUsers(t *testing.T) {
 	})
 
 	t.Run("List Users Default Parameters", func(t *testing.T) {
+		mockUserRepo := new(testmock.MockUserRepository)
+		userService := services.NewUserService(mockUserRepo)
+
 		// 准备测试用户列表
 		users := []*models.User{
 			{

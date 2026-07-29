@@ -26,31 +26,31 @@ type ConflictClassificationService interface {
 
 // ClassificationResult 分类结果
 type ClassificationResult struct {
-	TotalConflicts      int                    `json:"total_conflicts"`
-	HighRiskCount       int                    `json:"high_risk_count"`
-	MediumRiskCount     int                    `json:"medium_risk_count"`
-	LowRiskCount        int                    `json:"low_risk_count"`
-	Summary             string                 `json:"summary"`
-	WaiverRequired      bool                   `json:"waiver_required"`
-	WaiverPossible      bool                   `json:"waiver_possible"`
-	Recommendations     []string               `json:"recommendations"`
-	NextSteps          []string               `json:"next_steps"`
+	TotalConflicts  int      `json:"total_conflicts"`
+	HighRiskCount   int      `json:"high_risk_count"`
+	MediumRiskCount int      `json:"medium_risk_count"`
+	LowRiskCount    int      `json:"low_risk_count"`
+	Summary         string   `json:"summary"`
+	WaiverRequired  bool     `json:"waiver_required"`
+	WaiverPossible  bool     `json:"waiver_possible"`
+	Recommendations []string `json:"recommendations"`
+	NextSteps       []string `json:"next_steps"`
 }
 
 // ConflictTypeFilters 冲突类型过滤器
 type ConflictTypeFilters struct {
-	Category     string  `json:"category"`
-	RiskLevel    string  `json:"risk_level"`
-	WaiverPossible *bool   `json:"waiver_possible"`
-	Active       *bool   `json:"active"`
+	Category       string `json:"category"`
+	RiskLevel      string `json:"risk_level"`
+	WaiverPossible *bool  `json:"waiver_possible"`
+	Active         *bool  `json:"active"`
 }
 
 // RiskAssessmentRequest 风险评估请求
 type RiskAssessmentRequest struct {
-	ConflictType     string                 `json:"conflict_type"`
-	SeverityFactors  []SeverityFactor       `json:"severity_factors"`
-	ClientSensitivity string               `json:"client_sensitivity"`
-	MatterImportance string                 `json:"matter_importance"`
+	ConflictType      string           `json:"conflict_type"`
+	SeverityFactors   []SeverityFactor `json:"severity_factors"`
+	ClientSensitivity string           `json:"client_sensitivity"`
+	MatterImportance  string           `json:"matter_importance"`
 }
 
 // SeverityFactor 严重性因子
@@ -63,32 +63,32 @@ type SeverityFactor struct {
 
 // RiskAssessmentResult 风险评估结果
 type RiskAssessmentResult struct {
-	OverallRiskLevel    string    `json:"overall_risk_level"`
-	RiskScore           float64   `json:"risk_score"`
-	RiskFactors         []string  `json:"risk_factors"`
-	MitigationStrategies []string  `json:"mitigation_strategies"`
-	PreventiveMeasures  []string  `json:"preventive_measures"`
-	ReviewSchedule      string    `json:"review_schedule"`
+	OverallRiskLevel     string   `json:"overall_risk_level"`
+	RiskScore            float64  `json:"risk_score"`
+	RiskFactors          []string `json:"risk_factors"`
+	MitigationStrategies []string `json:"mitigation_strategies"`
+	PreventiveMeasures   []string `json:"preventive_measures"`
+	ReviewSchedule       string   `json:"review_schedule"`
 }
 
 // WaiverEvaluationRequest 豁免评估请求
 type WaiverEvaluationRequest struct {
-	ConflictType        string  `json:"conflict_type"`
-	SeverityLevel       string  `json:"severity_level"`
-	ClientConsent       bool    `json:"client_consent"`
-	DisclosureLevel     string  `json:"disclosure_level"`
-	MonitoringRequired  bool    `json:"monitoring_required"`
-	WaiverPossible      bool    `json:"waiver_possible"`
+	ConflictType       string `json:"conflict_type"`
+	SeverityLevel      string `json:"severity_level"`
+	ClientConsent      bool   `json:"client_consent"`
+	DisclosureLevel    string `json:"disclosure_level"`
+	MonitoringRequired bool   `json:"monitoring_required"`
+	WaiverPossible     bool   `json:"waiver_possible"`
 }
 
 // WaiverEvaluationResult 豁免评估结果
 type WaiverEvaluationResult struct {
-	WaiverPossible      bool     `json:"waiver_possible"`
-	WaiverType          string   `json:"waiver_type"`
-	RequiredApprovals   []string `json:"required_approvals"`
-	MonitoringPlan      string   `json:"monitoring_plan"`
-	ExpiryDate          string   `json:"expiry_date"`
-	Conditions          []string `json:"conditions"`
+	WaiverPossible    bool     `json:"waiver_possible"`
+	WaiverType        string   `json:"waiver_type"`
+	RequiredApprovals []string `json:"required_approvals"`
+	MonitoringPlan    string   `json:"monitoring_plan"`
+	ExpiryDate        string   `json:"expiry_date"`
+	Conditions        []string `json:"conditions"`
 }
 
 // conflictClassificationService 冲突分类服务实现
@@ -106,15 +106,15 @@ func NewConflictClassificationService(repo repositories.EnhancedConflictReposito
 // ClassifyConflicts 分类冲突
 func (s *conflictClassificationService) ClassifyConflicts(ctx context.Context, conflictResults []interface{}) (*ClassificationResult, error) {
 	result := &ClassificationResult{
-		TotalConflicts:   len(conflictResults),
-		HighRiskCount:    0,
-		MediumRiskCount:  0,
-		LowRiskCount:     0,
-		Summary:          "冲突检测分类完成",
-		WaiverRequired:   false,
-		WaiverPossible:   false,
-		Recommendations:  []string{},
-		NextSteps:        []string{},
+		TotalConflicts:  len(conflictResults),
+		HighRiskCount:   0,
+		MediumRiskCount: 0,
+		LowRiskCount:    0,
+		Summary:         "冲突检测分类完成",
+		WaiverRequired:  false,
+		WaiverPossible:  false,
+		Recommendations: []string{},
+		NextSteps:       []string{},
 	}
 
 	// 分析冲突类型和风险级别
@@ -185,11 +185,11 @@ func (s *conflictClassificationService) AssessRiskLevel(ctx context.Context, req
 
 	result := &RiskAssessmentResult{
 		OverallRiskLevel:     riskLevel,
-		RiskScore:           riskScore,
-		RiskFactors:         []string{},
+		RiskScore:            riskScore,
+		RiskFactors:          []string{},
 		MitigationStrategies: []string{"建立信息屏障", "限制信息访问"},
-		PreventiveMeasures:  []string{"定期审查", "监控合规性"},
-		ReviewSchedule:      "季度审查",
+		PreventiveMeasures:   []string{"定期审查", "监控合规性"},
+		ReviewSchedule:       "季度审查",
 	}
 
 	// 添加风险因子
@@ -210,12 +210,12 @@ func (s *conflictClassificationService) EvaluateWaiverPossibility(ctx context.Co
 	}
 
 	result := &WaiverEvaluationResult{
-		WaiverPossible:     waiverPossible,
-		WaiverType:         waiverType,
-		RequiredApprovals:  []string{"主办律师", "合伙人"},
-		MonitoringPlan:     "月度监控",
-		ExpiryDate:         "1年后",
-		Conditions:         []string{"完全信息披露", "定期审查"},
+		WaiverPossible:    waiverPossible,
+		WaiverType:        waiverType,
+		RequiredApprovals: []string{"主办律师", "合伙人"},
+		MonitoringPlan:    "月度监控",
+		ExpiryDate:        "1年后",
+		Conditions:        []string{"完全信息披露", "定期审查"},
 	}
 
 	if !request.ClientConsent {

@@ -12,13 +12,13 @@ import (
 
 // CommissionService 提成计算服务
 type CommissionService struct {
-	commissionRepo   repositories.CommissionRepository
+	commissionRepo     repositories.CommissionRepository
 	commissionRuleRepo repositories.CommissionRuleRepository
-	paymentRepo      repositories.PaymentRepository
-	contractRepo     repositories.ContractRepository
-	invoiceRepo      repositories.InvoiceRepository
-	userRepo         repositories.UserRepository
-	caseRepo         repositories.CaseRepository
+	paymentRepo        repositories.PaymentRepository
+	contractRepo       repositories.ContractRepository
+	invoiceRepo        repositories.InvoiceRepository
+	userRepo           repositories.UserRepository
+	caseRepo           repositories.CaseRepository
 }
 
 // NewCommissionService 创建提成计算服务实例
@@ -50,44 +50,44 @@ func (s *CommissionService) SetCommissionRuleRepository(ruleRepo repositories.Co
 
 // CommissionRule 提成规则
 type CommissionRule struct {
-	Role         string  // 角色: source/lawyer/assistant
-	MinAmount    float64 // 最小金额
-	MaxAmount    float64 // 最大金额
-	BaseRate     float64 // 基础提成比例
+	Role            string  // 角色: source/lawyer/assistant
+	MinAmount       float64 // 最小金额
+	MaxAmount       float64 // 最大金额
+	BaseRate        float64 // 基础提成比例
 	PerformanceRate float64 // 绩效提成比例（可选）
 }
 
 // CalculateCommissionRequest 计算提成请求
 type CalculateCommissionRequest struct {
-	PaymentID     uint `json:"payment_id" binding:"required"`
+	PaymentID     uint    `json:"payment_id" binding:"required"`
 	CostDeduction float64 `json:"cost_deduction"`
 }
 
 // CommissionResponse 提成响应
 type CommissionResponse struct {
-	ID               uint             `json:"id"`
-	CommissionCode   string           `json:"commission_code"`
-	ContractID       uint             `json:"contract_id"`
-	PaymentID        uint             `json:"payment_id"`
-	CaseID           *uint            `json:"case_id,omitempty"`
-	BeneficiaryID    uint             `json:"beneficiary_id"`
-	BeneficiaryRole  string           `json:"beneficiary_role"`
-	PaymentAmount    float64          `json:"payment_amount"`
-	CostDeduction    float64          `json:"cost_deduction"`
-	CommissionBase   float64          `json:"commission_base"`
-	CommissionRate   float64          `json:"commission_rate"`
-	CommissionAmount float64          `json:"commission_amount"`
-	Status           string           `json:"status"`
-	PaidDate         *string          `json:"paid_date,omitempty"`
-	PaymentVoucher   string           `json:"payment_voucher"`
-	CalculatedAt     *string          `json:"calculated_at,omitempty"`
-	CreatedAt        string           `json:"created_at"`
-	UpdatedAt        string           `json:"updated_at"`
+	ID               uint    `json:"id"`
+	CommissionCode   string  `json:"commission_code"`
+	ContractID       uint    `json:"contract_id"`
+	PaymentID        uint    `json:"payment_id"`
+	CaseID           *uint   `json:"case_id,omitempty"`
+	BeneficiaryID    uint    `json:"beneficiary_id"`
+	BeneficiaryRole  string  `json:"beneficiary_role"`
+	PaymentAmount    float64 `json:"payment_amount"`
+	CostDeduction    float64 `json:"cost_deduction"`
+	CommissionBase   float64 `json:"commission_base"`
+	CommissionRate   float64 `json:"commission_rate"`
+	CommissionAmount float64 `json:"commission_amount"`
+	Status           string  `json:"status"`
+	PaidDate         *string `json:"paid_date,omitempty"`
+	PaymentVoucher   string  `json:"payment_voucher"`
+	CalculatedAt     *string `json:"calculated_at,omitempty"`
+	CreatedAt        string  `json:"created_at"`
+	UpdatedAt        string  `json:"updated_at"`
 	// 关联数据
-	Contract         *ContractSummary `json:"contract,omitempty"`
-	Payment          *PaymentSummary2 `json:"payment,omitempty"`
-	Case             *CaseSummary     `json:"case,omitempty"`
-	Beneficiary      *UserSummary     `json:"beneficiary,omitempty"`
+	Contract    *ContractSummary `json:"contract,omitempty"`
+	Payment     *PaymentSummary2 `json:"payment,omitempty"`
+	Case        *CaseSummary     `json:"case,omitempty"`
+	Beneficiary *UserSummary     `json:"beneficiary,omitempty"`
 }
 
 // PaymentSummary2 回款摘要（简化版）
@@ -340,9 +340,9 @@ func (s *CommissionService) ListCommissions(ctx context.Context, req *ListCommis
 	response := &ListCommissionsResponse{
 		Commissions: make([]*CommissionResponse, len(commissions)),
 		Pagination: Pagination{
-			Page:    req.Page,
+			Page:     req.Page,
 			PageSize: req.PageSize,
-			Total:   total,
+			Total:    total,
 		},
 	}
 

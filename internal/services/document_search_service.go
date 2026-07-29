@@ -2,10 +2,10 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
-	"law-oa-go/internal/errors"
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/repositories"
 )
@@ -14,6 +14,10 @@ import (
 type DocumentSearchService struct {
 	docRepo repositories.DocumentRepository
 }
+
+// ErrDocumentSearchUnavailable keeps the legacy search service from returning
+// unscoped or synthetic results until it is backed by a viewer-aware index.
+var ErrDocumentSearchUnavailable = fmt.Errorf("DOCUMENT_SEARCH_UNAVAILABLE: document search is not connected to a viewer-scoped index")
 
 // NewDocumentSearchService creates a new document search service
 func NewDocumentSearchService(docRepo repositories.DocumentRepository) *DocumentSearchService {
@@ -24,61 +28,61 @@ func NewDocumentSearchService(docRepo repositories.DocumentRepository) *Document
 
 // DocumentSearchRequest represents a document search request
 type DocumentSearchRequest struct {
-	Query      string   `json:"query" form:"query"`
-	Category   string   `json:"category" form:"category"`
-	EntityType string   `json:"entity_type" form:"entity_type"`
-	EntityID   uint     `json:"entity_id" form:"entity_id"`
-	Tags       []string `json:"tags" form:"tags"`
-	DateFrom   string   `json:"date_from" form:"date_from"`
-	DateTo     string   `json:"date_to" form:"date_to"`
+	Query       string   `json:"query" form:"query"`
+	Category    string   `json:"category" form:"category"`
+	EntityType  string   `json:"entity_type" form:"entity_type"`
+	EntityID    uint     `json:"entity_id" form:"entity_id"`
+	Tags        []string `json:"tags" form:"tags"`
+	DateFrom    string   `json:"date_from" form:"date_from"`
+	DateTo      string   `json:"date_to" form:"date_to"`
 	FileSizeMin int64    `json:"file_size_min" form:"file_size_min"`
 	FileSizeMax int64    `json:"file_size_max" form:"file_size_max"`
-	SortBy     string   `json:"sort_by" form:"sort_by"`     // name, size, created_at, updated_at
-	SortOrder  string   `json:"sort_order" form:"sort_order"` // asc, desc
-	Page       int      `json:"page" form:"page"`
-	PageSize   int      `json:"page_size" form:"page_size"`
+	SortBy      string   `json:"sort_by" form:"sort_by"`       // name, size, created_at, updated_at
+	SortOrder   string   `json:"sort_order" form:"sort_order"` // asc, desc
+	Page        int      `json:"page" form:"page"`
+	PageSize    int      `json:"page_size" form:"page_size"`
 }
 
 // DocumentSearchResult represents a document search result
 type DocumentSearchResult struct {
-	Documents    []*DocumentSearchItem `json:"documents"`
-	TotalCount   int64                `json:"total_count"`
-	Page         int                  `json:"page"`
-	PageSize     int                  `json:"page_size"`
-	TotalPages   int                  `json:"total_pages"`
-	Query        string               `json:"query"`
-	SearchTime   time.Duration        `json:"search_time"`
-	Filters      SearchFilters        `json:"filters"`
-	Suggestions  []string             `json:"suggestions"`
+	Documents   []*DocumentSearchItem `json:"documents"`
+	TotalCount  int64                 `json:"total_count"`
+	Page        int                   `json:"page"`
+	PageSize    int                   `json:"page_size"`
+	TotalPages  int                   `json:"total_pages"`
+	Query       string                `json:"query"`
+	SearchTime  time.Duration         `json:"search_time"`
+	Filters     SearchFilters         `json:"filters"`
+	Suggestions []string              `json:"suggestions"`
 }
 
 // DocumentSearchItem represents a document in search results
 type DocumentSearchItem struct {
-	ID           uint                 `json:"id"`
-	Name         string               `json:"name"`
-	Description  string               `json:"description"`
-	Filename     string               `json:"filename"`
-	Filesize     int64                `json:"filesize"`
-	MimeType     string               `json:"mime_type"`
-	Category     string               `json:"category"`
-	Tags         []string             `json:"tags"`
-	EntityID     uint                 `json:"entity_id"`
-	EntityType   string               `json:"entity_type"`
-	Status       string               `json:"status"`
-	CreatedAt    time.Time            `json:"created_at"`
-	UpdatedAt    time.Time            `json:"updated_at"`
-	Score        float64              `json:"score"` // Relevance score
-	Highlights   map[string]string    `json:"highlights,omitempty"`
+	ID          uint              `json:"id"`
+	Name        string            `json:"name"`
+	Description string            `json:"description"`
+	Filename    string            `json:"filename"`
+	Filesize    int64             `json:"filesize"`
+	MimeType    string            `json:"mime_type"`
+	Category    string            `json:"category"`
+	Tags        []string          `json:"tags"`
+	EntityID    uint              `json:"entity_id"`
+	EntityType  string            `json:"entity_type"`
+	Status      string            `json:"status"`
+	CreatedAt   time.Time         `json:"created_at"`
+	UpdatedAt   time.Time         `json:"updated_at"`
+	Score       float64           `json:"score"` // Relevance score
+	Highlights  map[string]string `json:"highlights,omitempty"`
 }
 
 // SearchFilters represents the filters applied to a search
 type SearchFilters struct {
-	Category   string    `json:"category"`
-	EntityType string    `json:"entity_type"`
-	EntityID   uint      `json:"entity_id"`
-	Tags       []string  `json:"tags"`
-	DateFrom   time.Time `json:"date_from"`
-	DateTo     time.Time `json:"date_to"`
+	Category    string    `json:"category"`
+	EntityType  string    `json:"entity_type"`
+	EntityID    uint      `json:"entity_id"`
+	Tags        []string  `json:"tags"`
+	DateFrom    time.Time `json:"date_from"`
+	DateTo      time.Time `json:"date_to"`
 	FileSizeMin int64     `json:"file_size_min"`
 	FileSizeMax int64     `json:"file_size_max"`
 }
@@ -106,298 +110,328 @@ type TagCloud struct {
 
 // AdvancedSearchRequest represents an advanced search request
 type AdvancedSearchRequest struct {
-	Query       string   `json:"query"`
-	Filters     []SearchFilter `json:"filters"`
-	Operator    string   `json:"operator"` // AND, OR
-	SortBy      string   `json:"sort_by"`
-	SortOrder   string   `json:"sort_order"`
-	Page        int      `json:"page"`
-	PageSize    int      `json:"page_size"`
+	Query     string         `json:"query"`
+	Filters   []SearchFilter `json:"filters"`
+	Operator  string         `json:"operator"` // AND, OR
+	SortBy    string         `json:"sort_by"`
+	SortOrder string         `json:"sort_order"`
+	Page      int            `json:"page"`
+	PageSize  int            `json:"page_size"`
 }
 
 // SearchFilter represents a single search filter
 type SearchFilter struct {
-	Field    string      `json:"field"` // category, entity_type, tags, created_at, updated_at, filesize
+	Field    string      `json:"field"`    // category, entity_type, tags, created_at, updated_at, filesize
 	Operator string      `json:"operator"` // eq, ne, gt, gte, lt, lte, like, in, not_in
 	Value    interface{} `json:"value"`
 }
 
 // SearchDocuments performs document search
 func (s *DocumentSearchService) SearchDocuments(ctx context.Context, req *DocumentSearchRequest) (*DocumentSearchResult, error) {
+	return nil, ErrDocumentSearchUnavailable
+	/*
 
-	// Set defaults
-	if req.Page <= 0 {
-		req.Page = 1
-	}
-	if req.PageSize <= 0 {
-		req.PageSize = 20
-	}
-	if req.PageSize > 100 {
-		req.PageSize = 100
-	}
-	if req.SortBy == "" {
-		req.SortBy = "created_at"
-	}
-	if req.SortOrder == "" {
-		req.SortOrder = "desc"
-	}
+		// Set defaults
+		if req.Page <= 0 {
+			req.Page = 1
+		}
+		if req.PageSize <= 0 {
+			req.PageSize = 20
+		}
+		if req.PageSize > 100 {
+			req.PageSize = 100
+		}
+		if req.SortBy == "" {
+			req.SortBy = "created_at"
+		}
+		if req.SortOrder == "" {
+			req.SortOrder = "desc"
+		}
 
-	// Parse date filters
-	dateFrom, dateTo := s.parseDateFilters(req.DateFrom, req.DateTo)
+		// Parse date filters
+		dateFrom, dateTo := s.parseDateFilters(req.DateFrom, req.DateTo)
 
-	// Build search filters
-	filters := SearchFilters{
-		Category:   req.Category,
-		EntityType: req.EntityType,
-		EntityID:   req.EntityID,
-		Tags:       req.Tags,
-		DateFrom:   dateFrom,
-		DateTo:     dateTo,
-		FileSizeMin: req.FileSizeMin,
-		FileSizeMax: req.FileSizeMax,
-	}
+		// Build search filters
+		filters := SearchFilters{
+			Category:    req.Category,
+			EntityType:  req.EntityType,
+			EntityID:    req.EntityID,
+			Tags:        req.Tags,
+			DateFrom:    dateFrom,
+			DateTo:      dateTo,
+			FileSizeMin: req.FileSizeMin,
+			FileSizeMax: req.FileSizeMax,
+		}
 
-	// Perform search
-	documents, total, searchTime, err := s.performSearch(ctx, req, filters)
-	if err != nil {
-		return nil, errors.InternalError("Search failed", err)
-	}
+		// Perform search
+		documents, total, searchTime, err := s.performSearch(ctx, req, filters)
+		if err != nil {
+			return nil, errors.InternalError("Search failed", err)
+		}
 
-	// Calculate pagination
-	totalPages := int((total + int64(req.PageSize) - 1) / int64(req.PageSize))
+		// Calculate pagination
+		totalPages := int((total + int64(req.PageSize) - 1) / int64(req.PageSize))
 
-	// Generate suggestions
-	suggestions := s.generateSuggestions(req.Query)
+		// Generate suggestions
+		suggestions := s.generateSuggestions(req.Query)
 
-	result := &DocumentSearchResult{
-		Documents:   documents,
-		TotalCount:  total,
-		Page:        req.Page,
-		PageSize:    req.PageSize,
-		TotalPages:  totalPages,
-		Query:       req.Query,
-		SearchTime:  searchTime,
-		Filters:     filters,
-		Suggestions: suggestions,
-	}
+		result := &DocumentSearchResult{
+			Documents:   documents,
+			TotalCount:  total,
+			Page:        req.Page,
+			PageSize:    req.PageSize,
+			TotalPages:  totalPages,
+			Query:       req.Query,
+			SearchTime:  searchTime,
+			Filters:     filters,
+			Suggestions: suggestions,
+		}
 
-	return result, nil
+		return result, nil
+	*/
 }
 
 // AdvancedSearch performs advanced document search
 func (s *DocumentSearchService) AdvancedSearch(ctx context.Context, req *AdvancedSearchRequest) (*DocumentSearchResult, error) {
+	return nil, ErrDocumentSearchUnavailable
+	/*
 
-	// Convert to basic search request
-	basicReq := &DocumentSearchRequest{
-		Query:     req.Query,
-		SortBy:   req.SortBy,
-		SortOrder: req.SortOrder,
-		Page:     req.Page,
-		PageSize: req.PageSize,
-	}
-
-	// Set defaults
-	if basicReq.Page <= 0 {
-		basicReq.Page = 1
-	}
-	if basicReq.PageSize <= 0 {
-		basicReq.PageSize = 20
-	}
-	if basicReq.PageSize > 100 {
-		basicReq.PageSize = 100
-	}
-
-	// Apply advanced filters
-	filters := SearchFilters{}
-	for _, filter := range req.Filters {
-		switch filter.Field {
-		case "category":
-			if filter.Operator == "eq" {
-				if val, ok := filter.Value.(string); ok {
-					filters.Category = val
-				}
-			}
-		case "entity_type":
-			if filter.Operator == "eq" {
-				if val, ok := filter.Value.(string); ok {
-					filters.EntityType = val
-				}
-			}
-		case "entity_id":
-			if filter.Operator == "eq" {
-				if val, ok := filter.Value.(float64); ok {
-					filters.EntityID = uint(val)
-				}
-			}
-		case "tags":
-			if filter.Operator == "in" {
-				if tags, ok := filter.Value.([]interface{}); ok {
-					filterTags := make([]string, len(tags))
-					for i, tag := range tags {
-						if tagStr, ok := tag.(string); ok {
-							filterTags[i] = tagStr
-						}
-					}
-					filters.Tags = filterTags
-				}
-			}
-		case "created_at":
-			s.applyDateFilter(&filters, filter)
-		case "filesize":
-			s.applySizeFilter(&filters, filter)
+		// Convert to basic search request
+		basicReq := &DocumentSearchRequest{
+			Query:     req.Query,
+			SortBy:    req.SortBy,
+			SortOrder: req.SortOrder,
+			Page:      req.Page,
+			PageSize:  req.PageSize,
 		}
-	}
 
-	// Perform search
-	documents, total, searchTime, err := s.performSearch(ctx, basicReq, filters)
-	if err != nil {
-		return nil, errors.InternalError("Advanced search failed", err)
-	}
+		// Set defaults
+		if basicReq.Page <= 0 {
+			basicReq.Page = 1
+		}
+		if basicReq.PageSize <= 0 {
+			basicReq.PageSize = 20
+		}
+		if basicReq.PageSize > 100 {
+			basicReq.PageSize = 100
+		}
 
-	// Calculate pagination
-	totalPages := int((total + int64(basicReq.PageSize) - 1) / int64(basicReq.PageSize))
+		// Apply advanced filters
+		filters := SearchFilters{}
+		for _, filter := range req.Filters {
+			switch filter.Field {
+			case "category":
+				if filter.Operator == "eq" {
+					if val, ok := filter.Value.(string); ok {
+						filters.Category = val
+					}
+				}
+			case "entity_type":
+				if filter.Operator == "eq" {
+					if val, ok := filter.Value.(string); ok {
+						filters.EntityType = val
+					}
+				}
+			case "entity_id":
+				if filter.Operator == "eq" {
+					if val, ok := filter.Value.(float64); ok {
+						filters.EntityID = uint(val)
+					}
+				}
+			case "tags":
+				if filter.Operator == "in" {
+					if tags, ok := filter.Value.([]interface{}); ok {
+						filterTags := make([]string, len(tags))
+						for i, tag := range tags {
+							if tagStr, ok := tag.(string); ok {
+								filterTags[i] = tagStr
+							}
+						}
+						filters.Tags = filterTags
+					}
+				}
+			case "created_at":
+				s.applyDateFilter(&filters, filter)
+			case "filesize":
+				s.applySizeFilter(&filters, filter)
+			}
+		}
 
-	// Generate suggestions
-	suggestions := s.generateSuggestions(basicReq.Query)
+		// Perform search
+		documents, total, searchTime, err := s.performSearch(ctx, basicReq, filters)
+		if err != nil {
+			return nil, errors.InternalError("Advanced search failed", err)
+		}
 
-	result := &DocumentSearchResult{
-		Documents:   documents,
-		TotalCount:  total,
-		Page:        basicReq.Page,
-		PageSize:    basicReq.PageSize,
-		TotalPages: totalPages,
-		Query:       basicReq.Query,
-		SearchTime:  searchTime,
-		Filters:     filters,
-		Suggestions: suggestions,
-	}
+		// Calculate pagination
+		totalPages := int((total + int64(basicReq.PageSize) - 1) / int64(basicReq.PageSize))
 
-	return result, nil
+		// Generate suggestions
+		suggestions := s.generateSuggestions(basicReq.Query)
+
+		result := &DocumentSearchResult{
+			Documents:   documents,
+			TotalCount:  total,
+			Page:        basicReq.Page,
+			PageSize:    basicReq.PageSize,
+			TotalPages:  totalPages,
+			Query:       basicReq.Query,
+			SearchTime:  searchTime,
+			Filters:     filters,
+			Suggestions: suggestions,
+		}
+
+		return result, nil
+	*/
 }
 
 // GetSearchFilters retrieves available filter options
 func (s *DocumentSearchService) GetSearchFilters(ctx context.Context) (map[string]interface{}, error) {
-	// Get unique categories
-	categories, err := s.getUniqueCategories(ctx)
-	if err != nil {
-		return nil, errors.DatabaseError("get_categories", "Failed to get categories", err)
-	}
+	return nil, ErrDocumentSearchUnavailable
+	/*
 
-	// Get unique entity types
-	entityTypes, err := s.getUniqueEntityTypes(ctx)
-	if err != nil {
-		return nil, errors.DatabaseError("get_entity_types", "Failed to get entity types", err)
-	}
+		// Get unique categories
+		categories, err := s.getUniqueCategories(ctx)
+		if err != nil {
+			return nil, errors.DatabaseError("get_categories", "Failed to get categories", err)
+		}
 
-	// Get tag cloud
-	tagCloud, err := s.generateTagCloud(ctx)
-	if err != nil {
-		return nil, errors.DatabaseError("get_tags", "Failed to get tags", err)
-	}
+		// Get unique entity types
+		entityTypes, err := s.getUniqueEntityTypes(ctx)
+		if err != nil {
+			return nil, errors.DatabaseError("get_entity_types", "Failed to get entity types", err)
+		}
 
-	return map[string]interface{}{
-		"categories":   categories,
-	"entity_types": entityTypes,
-		"tag_cloud":    tagCloud,
-		"date_ranges": map[string]interface{}{
-			"last_24h":  "Last 24 hours",
-			"last_week":  "Last week",
-			"last_month": "Last month",
-			"last_year":  "Last year",
-			"custom":   "Custom range",
-		},
-		"file_sizes": map[string]interface{}{
-			"small":  "< 1MB",
-			"medium": "1MB - 10MB",
-			"large":  "> 10MB",
-		},
-	}, nil
+		// Get tag cloud
+		tagCloud, err := s.generateTagCloud(ctx)
+		if err != nil {
+			return nil, errors.DatabaseError("get_tags", "Failed to get tags", err)
+		}
+
+		return map[string]interface{}{
+			"categories":   categories,
+			"entity_types": entityTypes,
+			"tag_cloud":    tagCloud,
+			"date_ranges": map[string]interface{}{
+				"last_24h":   "Last 24 hours",
+				"last_week":  "Last week",
+				"last_month": "Last month",
+				"last_year":  "Last year",
+				"custom":     "Custom range",
+			},
+			"file_sizes": map[string]interface{}{
+				"small":  "< 1MB",
+				"medium": "1MB - 10MB",
+				"large":  "> 10MB",
+			},
+		}, nil
+	*/
 }
 
 // GetDocumentCategories retrieves all document categories
 func (s *DocumentSearchService) GetDocumentCategories(ctx context.Context) ([]*CategoryFilter, error) {
-	// In a real implementation, query from database
-	// For now, return mock data
-	categories := []*CategoryFilter{
-		{Category: "legal", Count: 50, Documents: 50},
-		{Category: "contract", Count: 30, Documents: 30},
-		{Category: "invoice", Count: 20, Documents: 20},
-		{Category: "report", Count: 25, Documents: 25},
-		{Category: "template", Count: 15, Documents: 15},
-		{Category: "other", Count: 10, Documents: 10},
-	}
+	return nil, ErrDocumentSearchUnavailable
+	/*
 
-	return categories, nil
+		// In a real implementation, query from database
+		// For now, return mock data
+		categories := []*CategoryFilter{
+			{Category: "legal", Count: 50, Documents: 50},
+			{Category: "contract", Count: 30, Documents: 30},
+			{Category: "invoice", Count: 20, Documents: 20},
+			{Category: "report", Count: 25, Documents: 25},
+			{Category: "template", Count: 15, Documents: 15},
+			{Category: "other", Count: 10, Documents: 10},
+		}
+
+		return categories, nil
+	*/
 }
 
 // GetEntityTypes retrieves all entity types
 func (s *DocumentSearchService) GetEntityTypes(ctx context.Context) ([]*EntityTypeFilter, error) {
-	// In a real implementation, query from database
-	// For now, return mock data
-	entityTypes := []*EntityTypeFilter{
-		{EntityType: "case", Count: 60, Documents: 60},
-		{EntityType: "client", Count: 40, Documents: 40},
-		{EntityType: "template", Count: 20, Documents: 20},
-		{EntityType: "user", Count: 30, Documents: 30},
-	}
+	return nil, ErrDocumentSearchUnavailable
+	/*
 
-	return entityTypes, nil
+		// In a real implementation, query from database
+		// For now, return mock data
+		entityTypes := []*EntityTypeFilter{
+			{EntityType: "case", Count: 60, Documents: 60},
+			{EntityType: "client", Count: 40, Documents: 40},
+			{EntityType: "template", Count: 20, Documents: 20},
+			{EntityType: "user", Count: 30, Documents: 30},
+		}
+
+		return entityTypes, nil
+	*/
 }
 
 // GetTagCloud generates a tag cloud
 func (s *DocumentSearchService) GetTagCloud(ctx context.Context) ([]*TagCloud, error) {
-	// In a real implementation, query from database
-	// For now, return mock data
-	tagCloud := []*TagCloud{
-		{Tag: "urgent", Count: 15, Size: 5},
-		{Tag: "legal", Count: 25, Size: 4},
-		{Tag: "contract", Count: 20, Size: 3},
-		{Tag: "signed", Count: 30, Size: 4},
-		{Tag: "draft", Count: 10, Size: 2},
-		{Tag: "approved", Count: 18, Size: 3},
-		{Tag: "confidential", Count: 12, Size: 3},
-	}
+	return nil, ErrDocumentSearchUnavailable
+	/*
 
-	return tagCloud, nil
+		// In a real implementation, query from database
+		// For now, return mock data
+		tagCloud := []*TagCloud{
+			{Tag: "urgent", Count: 15, Size: 5},
+			{Tag: "legal", Count: 25, Size: 4},
+			{Tag: "contract", Count: 20, Size: 3},
+			{Tag: "signed", Count: 30, Size: 4},
+			{Tag: "draft", Count: 10, Size: 2},
+			{Tag: "approved", Count: 18, Size: 3},
+			{Tag: "confidential", Count: 12, Size: 3},
+		}
+
+		return tagCloud, nil
+	*/
 }
 
 // GetRecentSearches retrieves recent search queries
 func (s *DocumentSearchService) GetRecentSearches(ctx context.Context, userID uint, limit int) ([]string, error) {
-	// In a real implementation, query from search logs table
-	// For now, return mock data
-	recentSearches := []string{
-		"contract agreement",
-		"legal document",
-		"court filing",
-		"client agreement",
-	}
+	return nil, ErrDocumentSearchUnavailable
+	/*
 
-	if len(recentSearches) > limit {
-		recentSearches = recentSearches[:limit]
-	}
+		// In a real implementation, query from search logs table
+		// For now, return mock data
+		recentSearches := []string{
+			"contract agreement",
+			"legal document",
+			"court filing",
+			"client agreement",
+		}
 
-	return recentSearches, nil
+		if len(recentSearches) > limit {
+			recentSearches = recentSearches[:limit]
+		}
+
+		return recentSearches, nil
+	*/
 }
 
 // GetPopularSearches retrieves popular search queries
 func (s *DocumentSearchService) GetPopularSearches(ctx context.Context, limit int) ([]string, error) {
-	// In a real implementation, query from search analytics table
-	// For now, return mock data
-	popularSearches := []string{
-		"contract",
-		"legal",
-		"agreement",
-		"court",
-		"client",
-		"invoice",
-		"report",
-	}
+	return nil, ErrDocumentSearchUnavailable
+	/*
 
-	if len(popularSearches) > limit {
-		popularSearches = popularSearches[:limit]
-	}
+		// In a real implementation, query from search analytics table
+		// For now, return mock data
+		popularSearches := []string{
+			"contract",
+			"legal",
+			"agreement",
+			"court",
+			"client",
+			"invoice",
+			"report",
+		}
 
-	return popularSearches, nil
+		if len(popularSearches) > limit {
+			popularSearches = popularSearches[:limit]
+		}
+
+		return popularSearches, nil
+	*/
 }
 
 // Helper methods

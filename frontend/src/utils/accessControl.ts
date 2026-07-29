@@ -14,6 +14,7 @@ const PERMISSION_ALIASES: Record<string, string[]> = {
   'case:manage': ['case_management', 'case:create', 'case:edit', 'case:delete', 'case:assign'],
   'client:view': ['client_management'],
   'client:manage': ['client_management', 'client:create', 'client:edit', 'client:delete'],
+  'approval:view': ['approval_center'],
   'approval:manage': ['approval_center'],
   'file:view': ['document_management', 'document:view'],
   'file:manage': ['document_management', 'document:upload', 'document:edit', 'document:delete'],
@@ -25,7 +26,7 @@ const PERMISSION_ALIASES: Record<string, string[]> = {
 }
 
 const ROLE_FALLBACKS: Record<string, string[]> = {
-  'dashboard:view': ['admin', 'super_admin', 'lawyer', 'assistant', 'finance', 'intern', 'user'],
+  'dashboard:view': ['admin', 'super_admin', 'lawyer', 'assistant', 'finance', 'intern', 'user', 'conflict_officer'],
   'user:view': ['admin', 'super_admin'],
   'user:manage': ['admin', 'super_admin'],
   'role:view': ['admin', 'super_admin'],
@@ -37,8 +38,18 @@ const ROLE_FALLBACKS: Record<string, string[]> = {
   'client:view': ['admin', 'super_admin', 'lawyer', 'assistant'],
   'client:manage': ['admin', 'super_admin', 'lawyer'],
   'lawyer:manage': ['admin', 'super_admin'],
+  'approval:view': ['admin', 'super_admin', 'lawyer', 'conflict_officer'],
   'approval:manage': ['admin', 'super_admin', 'lawyer'],
-  'conflict:check': ['admin', 'super_admin', 'lawyer'],
+  'conflict:check': [
+    'lawyer',
+    'conflict_officer',
+    'director',
+    'partner',
+    'compliance',
+    'risk',
+    'risk_control',
+    'management',
+  ],
   'file:view': ['admin', 'super_admin', 'lawyer', 'assistant'],
   'file:manage': ['admin', 'super_admin', 'lawyer'],
   'finance:view': ['admin', 'super_admin', 'finance'],
@@ -66,6 +77,9 @@ export function hasPermission(user: User | null | undefined, permission: string)
   }
 
   const roles = user.roles || []
+  if (permission === 'conflict:check' && roles.some((role) => ADMIN_ROLES.has(role))) {
+    return false
+  }
   if (roles.some((role) => ADMIN_ROLES.has(role))) {
     return true
   }
@@ -91,6 +105,9 @@ export function canAccess(
 
   const userRoles = user.roles || []
   if (userRoles.some((role) => ADMIN_ROLES.has(role))) {
+    if (toArray(permissions).includes('conflict:check')) {
+      return false
+    }
     return true
   }
 

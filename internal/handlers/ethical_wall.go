@@ -14,13 +14,40 @@ import (
 // EthicalWallHandler 隔离墙处理器
 type EthicalWallHandler struct {
 	ethicalWallService *services.EthicalWallService
+	authz              *services.AuthorizationService
 }
 
 // NewEthicalWallHandler 创建隔离墙处理器实例
-func NewEthicalWallHandler(ethicalWallService *services.EthicalWallService) *EthicalWallHandler {
+func NewEthicalWallHandler(ethicalWallService *services.EthicalWallService, authz ...*services.AuthorizationService) *EthicalWallHandler {
+	var authorizationService *services.AuthorizationService
+	if len(authz) > 0 {
+		authorizationService = authz[0]
+	}
 	return &EthicalWallHandler{
 		ethicalWallService: ethicalWallService,
+		authz:              authorizationService,
 	}
+}
+
+func (h *EthicalWallHandler) authorizeWallManagement(c *gin.Context, caseID uint) bool {
+	if h.authz == nil {
+		common.NewAPIError(c, http.StatusServiceUnavailable, "ETHICAL_WALL_AUTHZ_UNAVAILABLE", "隔离墙权限服务未初始化，当前不会执行隔离墙管理操作")
+		return false
+	}
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return false
+	}
+	allowed, err := h.authz.CanManageEthicalWall(c.Request.Context(), actor, caseID)
+	if err != nil {
+		common.APIInternalServerError(c, "权限检查失败", err.Error())
+		return false
+	}
+	if !allowed {
+		forbidObjectAccess(c)
+		return false
+	}
+	return true
 }
 
 // EnableEthicalWall 启用案件隔离墙
@@ -53,6 +80,10 @@ func (h *EthicalWallHandler) EnableEthicalWall(c *gin.Context) {
 		return
 	}
 
+	if !h.authorizeWallManagement(c, uint(caseID)) {
+		return
+	}
+
 	// 获取当前用户ID
 	userID := auth.GetUserID(c)
 
@@ -70,9 +101,9 @@ func (h *EthicalWallHandler) EnableEthicalWall(c *gin.Context) {
 	}
 
 	common.APISuccess(c, gin.H{
-		"message":   "隔离墙启用成功",
-		"case_id":   caseID,
-		"enabled":   true,
+		"message": "隔离墙启用成功",
+		"case_id": caseID,
+		"enabled": true,
 	})
 }
 
@@ -99,6 +130,10 @@ func (h *EthicalWallHandler) DisableEthicalWall(c *gin.Context) {
 		return
 	}
 
+	if !h.authorizeWallManagement(c, uint(caseID)) {
+		return
+	}
+
 	err = h.ethicalWallService.DisableEthicalWall(c.Request.Context(), uint(caseID))
 	if err != nil {
 		switch err {
@@ -113,9 +148,9 @@ func (h *EthicalWallHandler) DisableEthicalWall(c *gin.Context) {
 	}
 
 	common.APISuccess(c, gin.H{
-		"message":   "隔离墙禁用成功",
-		"case_id":   caseID,
-		"enabled":   false,
+		"message": "隔离墙禁用成功",
+		"case_id": caseID,
+		"enabled": false,
 	})
 }
 
@@ -138,6 +173,10 @@ func (h *EthicalWallHandler) GetWhitelist(c *gin.Context) {
 	caseID, err := strconv.ParseUint(caseIDStr, 10, 32)
 	if err != nil {
 		common.APIBadRequest(c, "请求参数错误", "案件ID必须是有效数字")
+		return
+	}
+
+	if !h.authorizeWallManagement(c, uint(caseID)) {
 		return
 	}
 
@@ -187,6 +226,10 @@ func (h *EthicalWallHandler) AddToWhitelist(c *gin.Context) {
 	var req services.WhitelistEntryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		common.APIBadRequest(c, "请求参数错误", "请检查请求体格式")
+		return
+	}
+
+	if !h.authorizeWallManagement(c, uint(caseID)) {
 		return
 	}
 
@@ -255,6 +298,10 @@ func (h *EthicalWallHandler) RemoveFromWhitelist(c *gin.Context) {
 		return
 	}
 
+	if !h.authorizeWallManagement(c, uint(caseID)) {
+		return
+	}
+
 	err = h.ethicalWallService.RemoveFromWhitelist(c.Request.Context(), uint(caseID), uint(userID))
 	if err != nil {
 		switch err {
@@ -295,7 +342,11 @@ func (h *EthicalWallHandler) RemoveFromWhitelist(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /api/v1/ethical-wall/accessible-cases [get]
 func (h *EthicalWallHandler) GetUserAccessibleCases(c *gin.Context) {
-	userID := auth.GetUserID(c)
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
+	userID := actor.UserID
 
 	cases, err := h.ethicalWallService.GetUserAccessibleCases(c.Request.Context(), userID)
 	if err != nil {
@@ -328,6 +379,10 @@ func (h *EthicalWallHandler) GetAccessLogs(c *gin.Context) {
 	caseID, err := strconv.ParseUint(caseIDStr, 10, 32)
 	if err != nil {
 		common.APIBadRequest(c, "请求参数错误", "案件ID必须是有效数字")
+		return
+	}
+
+	if !h.authorizeWallManagement(c, uint(caseID)) {
 		return
 	}
 

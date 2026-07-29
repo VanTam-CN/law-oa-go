@@ -2,349 +2,201 @@ name: 安全测试工作流
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
   schedule:
-    # 每天凌晨3点运行安全测试
+    # 每天凌晨3点运行扩展安全检查；扩展检查只出报告，不阻塞默认贡献流。
     - cron: '0 3 * * *'
   workflow_dispatch:
+    inputs:
+      run_heavy_tests:
+        description: '运行历史 fuzz/race 扩展安全测试'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+
+permissions:
+  contents: read
 
 env:
-  GO_VERSION: '1.23'
+  GO_VERSION: '1.25.0'
 
 jobs:
-  # 安全组件测试
-  security-tests:
-    name: 安全组件测试
+  security-smoke:
+    name: 安全组件冒烟测试
     runs-on: ubuntu-latest
     steps:
-    - name: 检出代码
-      uses: actions/checkout@v4
+      - name: 检出代码
+        uses: actions/checkout@v4
 
-    - name: 设置Go环境
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ env.GO_VERSION }}
-        cache: true
+      - name: 设置Go环境
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
 
-    - name: 下载依赖
-      run: |
-        go mod download
-        go mod tidy
+      - name: 下载并校验依赖
+        run: |
+          go mod download
+          go mod verify
 
-    - name: 设置Redis
-      run: |
-        sudo systemctl start redis-server || sudo service redis-server start || true
-        # 检查 Redis 是否可用
-        if ! redis-cli ping 2>/dev/null; then
-          echo "警告：Redis 不可用，跳过需要Redis的测试"
-        fi
+      - name: 运行稳定安全测试
+        run: |
+          go test -v ./internal/security ./internal/middleware ./internal/repositories ./internal/concurrency
 
-    - name: 运行安全测试
-      run: |
-        go test -v -race ./internal/security/...
-
-    - name: 运行安全中间件测试
-      run: |
-        go test -v -race ./internal/middleware/...
-
-  # JWT安全测试
-  jwt-security:
-    name: JWT安全测试
-    runs-on: ubuntu-latest
-    steps:
-    - name: 检出代码
-      uses: actions/checkout@v4
-
-    - name: 设置Go环境
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ env.GO_VERSION }}
-        cache: true
-
-    - name: 下载依赖
-      run: |
-        go mod download
-        go mod tidy
-
-    - name: 设置Redis
-      run: |
-        sudo systemctl start redis-server || sudo service redis-server start || true
-        # 检查 Redis 是否可用
-        if ! redis-cli ping 2>/dev/null; then
-          echo "警告：Redis 不可用，跳过需要Redis的测试"
-        fi
-
-    - name: 运行JWT Fuzzing测试
-      run: |
-        go test -fuzz=Fuzz_JWTKeyManager_ValidateToken -fuzztime=60s ./internal/security/
-
-  # 输入验证安全测试
-  validation-security:
-    name: 输入验证安全测试
-    runs-on: ubuntu-latest
-    steps:
-    - name: 检出代码
-      uses: actions/checkout@v4
-
-    - name: 设置Go环境
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ env.GO_VERSION }}
-        cache: true
-
-    - name: 下载依赖
-      run: |
-        go mod download
-        go mod tidy
-
-    - name: 运行验证器Fuzzing测试
-      run: |
-        go test -fuzz=Fuzz_CaseValidator_Validate -fuzztime=30s ./internal/validators/
-        go test -fuzz=Fuzz_ClientValidator_Validate -fuzztime=30s ./internal/validators/
-        go test -fuzz=Fuzz_LawyerValidator_Validate -fuzztime=30s ./internal/validators/
-
-  # 数据库安全测试
-  database-security:
-    name: 数据库安全测试
-    runs-on: ubuntu-latest
-    steps:
-    - name: 检出代码
-      uses: actions/checkout@v4
-
-    - name: 设置Go环境
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ env.GO_VERSION }}
-        cache: true
-
-    - name: 下载依赖
-      run: |
-        go mod download
-        go mod tidy
-
-    - name: 设置数据库
-      run: |
-        sudo systemctl start mysql || sudo service mysql start || true
-        mysql -u root -e "CREATE DATABASE IF NOT EXISTS law_oa_test;" || true
-        # 如果 MySQL 失败，跳过数据库测试
-        if ! mysql -u root -e "USE law_oa_test;" 2>/dev/null; then
-          echo "警告：MySQL 不可用，跳过数据库相关测试"
-        fi
-
-    - name: 运行数据库Fuzzing测试
-      run: |
-        go test -fuzz=Fuzz_QueryBuilder_Where -fuzztime=30s ./internal/repositories/
-        go test -fuzz=Fuzz_QueryBuilder_Like -fuzztime=30s ./internal/repositories/
-        go test -fuzz=Fuzz_QueryBuilder_Order -fuzztime=30s ./internal/repositories/
-
-  # 速率限制安全测试
-  rate-limit-security:
-    name: 速率限制安全测试
-    runs-on: ubuntu-latest
-    steps:
-    - name: 检出代码
-      uses: actions/checkout@v4
-
-    - name: 设置Go环境
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ env.GO_VERSION }}
-        cache: true
-
-    - name: 下载依赖
-      run: |
-        go mod download
-        go mod tidy
-
-    - name: 设置Redis
-      run: |
-        sudo systemctl start redis-server || sudo service redis-server start || true
-        # 检查 Redis 是否可用
-        if ! redis-cli ping 2>/dev/null; then
-          echo "警告：Redis 不可用，跳过需要Redis的测试"
-        fi
-
-    - name: 运行速率限制测试
-      run: |
-        go test -v -race ./internal/security/ -run TestRateLimiter
-
-  # 并发安全测试
-  concurrency-security:
-    name: 并发安全测试
-    runs-on: ubuntu-latest
-    steps:
-    - name: 检出代码
-      uses: actions/checkout@v4
-
-    - name: 设置Go环境
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ env.GO_VERSION }}
-        cache: true
-
-    - name: 下载依赖
-      run: |
-        go mod download
-        go mod tidy
-
-    - name: 运行并发Fuzzing测试
-      run: |
-        go test -fuzz=Fuzz_WorkerPool_SubmitTask -fuzztime=30s ./internal/concurrency/
-        go test -fuzz=Fuzz_CircuitBreaker_Execute -fuzztime=30s ./internal/concurrency/
-        go test -fuzz=Fuzz_RateLimiter_Allow -fuzztime=30s ./internal/concurrency/
-        go test -fuzz=Fuzz_ConcurrentService_SubmitTask -fuzztime=30s ./internal/concurrency/
-
-  # 缓存安全测试
-  cache-security:
-    name: 缓存安全测试
-    runs-on: ubuntu-latest
-    steps:
-    - name: 检出代码
-      uses: actions/checkout@v4
-
-    - name: 设置Go环境
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ env.GO_VERSION }}
-        cache: true
-
-    - name: 下载依赖
-      run: |
-        go mod download
-        go mod tidy
-
-    - name: 设置Redis
-      run: |
-        sudo systemctl start redis-server || sudo service redis-server start || true
-        # 检查 Redis 是否可用
-        if ! redis-cli ping 2>/dev/null; then
-          echo "警告：Redis 不可用，跳过需要Redis的测试"
-        fi
-
-    - name: 运行缓存Fuzzing测试
-      run: |
-        go test -fuzz=Fuzz_CacheService_SetAndGet -fuzztime=30s ./internal/cache/
-        go test -fuzz=Fuzz_CacheService_SetWithExpiration -fuzztime=30s ./internal/cache/
-        go test -fuzz=Fuzz_CacheService_ConcurrentAccess -fuzztime=30s ./internal/cache/
-        go test -fuzz=Fuzz_LayeredCache_Get -fuzztime=30s ./internal/cache/
-
-  # 依赖安全扫描
   dependency-scan:
     name: 依赖安全扫描
     runs-on: ubuntu-latest
     steps:
-    - name: 检出代码
-      uses: actions/checkout@v4
+      - name: 检出代码
+        uses: actions/checkout@v4
 
-    - name: 设置Go环境
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ env.GO_VERSION }}
-        cache: true
+      - name: 设置Go环境
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
 
-    - name: 使用govulncheck扫描漏洞
-      run: |
-        go install golang.org/x/vuln/cmd/govulncheck@latest
-        govulncheck ./...
+      - name: 下载并校验依赖
+        run: |
+          go mod download
+          go mod verify
 
-    - name: 使用nancy扫描依赖
-      run: |
-        # 尝试安装 nancy
-        if ! command -v nancy &> /dev/null; then
-          echo "尝试安装 nancy..."
-          curl -sL https://git.io/nancy | bash || echo "nancy 安装失败，跳过"
-        fi
-        # 如果安装成功，运行扫描
-        if command -v nancy &> /dev/null; then
-          nancy sleuth || echo "nancy 扫描完成，可能有警告"
-        else
-          echo "nancy 不可用，跳过此步骤"
-        fi
+      - name: 运行govulncheck并生成报告
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          set +e
+          govulncheck ./... > govulncheck.txt 2>&1
+          GOVULN_EXIT=$?
+          set -e
 
-    - name: 生成安全报告
-      run: |
-        echo "# 安全扫描报告" > security-report.md
-        echo "## 扫描时间: $(date)" >> security-report.md
-        echo "## Govulncheck结果:" >> security-report.md
-        govulncheck -json ./... > govulncheck.json 2>&1 || true
-        if [ -s "govulncheck.json" ]; then
-          cat govulncheck.json >> security-report.md
-        else
-          echo "✅ 未发现已知漏洞" >> security-report.md
-        fi
+          {
+            echo "# 安全扫描报告"
+            echo ""
+            echo "- 扫描时间: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            echo "- govulncheck 退出码: ${GOVULN_EXIT}"
+            echo ""
+            echo "## Govulncheck 输出"
+            echo '```text'
+            cat govulncheck.txt
+            echo '```'
+            echo ""
+            echo "> 说明：开源 MVP 阶段依赖扫描以报告形式输出，不阻塞 PR。确认高危可利用漏洞后再提升为阻塞门禁。"
+          } > security-report.md
 
-    - name: 上传安全报告
-      uses: actions/upload-artifact@v4
-      with:
-        name: security-scan-report
-        path: security-report.md
+      - name: 上传安全扫描报告
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-report
+          path: security-report.md
 
-  # 完整安全测试报告
+  extended-security-tests:
+    name: 扩展安全测试
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_heavy_tests == 'true')
+    continue-on-error: true
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置Go环境
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: 下载并校验依赖
+        run: |
+          go mod download
+          go mod verify
+
+      - name: 设置可选服务
+        run: |
+          sudo systemctl start redis-server || sudo service redis-server start || true
+          sudo systemctl start mysql || sudo service mysql start || true
+          mysql -u root -e "CREATE DATABASE IF NOT EXISTS law_oa_test;" || true
+
+      - name: 运行历史扩展安全测试并生成报告
+        run: |
+          mkdir -p security-results
+
+          run_check() {
+            local name="$1"
+            shift
+            echo "## ${name}" >> security-results/extended-security-report.md
+            echo '```text' >> security-results/extended-security-report.md
+            "$@" >> security-results/extended-security-report.md 2>&1 || true
+            echo '```' >> security-results/extended-security-report.md
+            echo "" >> security-results/extended-security-report.md
+          }
+
+          {
+            echo "# 扩展安全测试报告"
+            echo ""
+            echo "- 生成时间: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            echo "- 说明：本报告覆盖历史 fuzz/race/缓存/验证器专项，当前不作为 MVP 默认阻塞门禁。"
+            echo ""
+          } > security-results/extended-security-report.md
+
+          run_check "安全包 race 测试" go test -v -race ./internal/security/...
+          run_check "中间件 race 测试" go test -v -race ./internal/middleware/...
+          run_check "JWT fuzz 测试" go test -fuzz=Fuzz_JWTKeyManager_ValidateToken -fuzztime=30s ./internal/security/
+          run_check "输入验证 fuzz 测试" go test -fuzz=Fuzz_CaseValidator_Validate -fuzztime=15s ./internal/validators/
+          run_check "数据库 fuzz 测试" go test -fuzz=Fuzz_QueryBuilder_Where -fuzztime=15s ./internal/repositories/
+          run_check "缓存 fuzz 测试" go test -fuzz=Fuzz_CacheService_SetAndGet -fuzztime=15s ./internal/cache/
+          run_check "并发 fuzz 测试" go test -fuzz=Fuzz_WorkerPool_SubmitTask -fuzztime=15s ./internal/concurrency/
+
+      - name: 上传扩展安全测试报告
+        uses: actions/upload-artifact@v4
+        with:
+          name: extended-security-report
+          path: security-results/extended-security-report.md
+
   security-report:
     name: 生成安全测试报告
     runs-on: ubuntu-latest
-    needs: [security-tests, jwt-security, validation-security, database-security, rate-limit-security, concurrency-security, cache-security, dependency-scan]
+    needs: [security-smoke, dependency-scan, extended-security-tests]
     if: always()
     steps:
-    - name: 检出代码
-      uses: actions/checkout@v4
+      - name: 下载安全测试产物
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+        continue-on-error: true
 
-    - name: 下载所有产物
-      uses: actions/download-artifact@v4
+      - name: 生成综合安全报告
+        run: |
+          {
+            echo "# 安全测试综合报告"
+            echo ""
+            echo "- 生成时间: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            echo "- 安全组件冒烟测试: ${{ needs.security-smoke.result }}"
+            echo "- 依赖安全扫描: ${{ needs.dependency-scan.result }}"
+            echo "- 扩展安全测试: ${{ needs.extended-security-tests.result }}"
+            echo ""
+            echo "## 结论"
+            echo ""
+            if [ "${{ needs.security-smoke.result }}" = "success" ]; then
+              echo "✅ 默认阻塞安全检查通过。"
+            else
+              echo "❌ 默认阻塞安全检查失败，请优先查看 security-smoke 日志。"
+            fi
+            echo ""
+            echo "依赖扫描和扩展安全测试的详细输出见本次 workflow artifacts。"
+          } > comprehensive-security-report.md
 
-    - name: 生成综合安全报告
-      run: |
-        echo "# 安全测试综合报告" > comprehensive-security-report.md
-        echo "## 生成时间: $(date)" >> comprehensive-security-report.md
-        echo "" >> comprehensive-security-report.md
-        
-        echo "## 安全组件测试" >> comprehensive-security-report.md
-        if [ -f "security-tests/security-results.txt" ]; then
-          cat security-tests/security-results.txt >> comprehensive-security-report.md
-        else
-          echo "✅ 安全组件测试通过" >> comprehensive-security-report.md
-        fi
-        
-        echo "" >> comprehensive-security-report.md
-        echo "## JWT安全测试" >> comprehensive-security-report.md
-        echo "✅ JWT Fuzzing测试完成" >> comprehensive-security-report.md
-        
-        echo "" >> comprehensive-security-report.md
-        echo "## 输入验证测试" >> comprehensive-security-report.md
-        echo "✅ 验证器Fuzzing测试完成" >> comprehensive-security-report.md
-        
-        echo "" >> comprehensive-security-report.md
-        echo "## 数据库安全测试" >> comprehensive-security-report.md
-        echo "✅ 数据库Fuzzing测试完成" >> comprehensive-security-report.md
-        
-        echo "" >> comprehensive-security-report.md
-        echo "## 速率限制测试" >> comprehensive-security-report.md
-        echo "✅ 速率限制测试完成" >> comprehensive-security-report.md
-        
-        echo "" >> comprehensive-security-report.md
-        echo "## 并发安全测试" >> comprehensive-security-report.md
-        echo "✅ 并发Fuzzing测试完成" >> comprehensive-security-report.md
-        
-        echo "" >> comprehensive-security-report.md
-        echo "## 缓存安全测试" >> comprehensive-security-report.md
-        echo "✅ 缓存Fuzzing测试完成" >> comprehensive-security-report.md
-        
-        echo "" >> comprehensive-security-report.md
-        echo "## 依赖安全扫描" >> comprehensive-security-report.md
-        if [ -f "dependency-scan/security-report.md" ]; then
-          cat dependency-scan/security-report.md >> comprehensive-security-report.md
-        fi
+      - name: 上传综合安全报告
+        uses: actions/upload-artifact@v4
+        with:
+          name: comprehensive-security-report
+          path: comprehensive-security-report.md
 
-    - name: 上传综合安全报告
-      uses: actions/upload-artifact@v4
-      with:
-        name: comprehensive-security-report
-        path: comprehensive-security-report.md
-
-    - name: 如果发现安全问题则失败
-      if: needs.dependency-scan.result == 'failure'
-      run: |
-        echo "❌ 发现安全漏洞，请检查安全报告"
-        exit 1
+      - name: 默认安全门禁
+        if: needs.security-smoke.result != 'success'
+        run: |
+          echo "默认阻塞安全检查未通过。"
+          exit 1

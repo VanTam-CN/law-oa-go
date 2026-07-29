@@ -11,6 +11,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -21,22 +22,26 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
+	"law-oa-go/internal/common"
+	"law-oa-go/internal/middleware"
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/services"
 )
 
 // OnlyOfficeHandler OnlyOffice 在线编辑处理器
 type OnlyOfficeHandler struct {
-	db                *gorm.DB
-	versionService    *services.DocumentVersionService
-	lockService       *services.DocumentLockService
-	onlyOfficeURL     string
-	onlyOfficeSecret  string
-	backendURL        string
-	httpClient        *http.Client
-	storageDir        string
-	conversionTasks   map[string]*ConversionTask
-	conversionMu      sync.RWMutex
+	db               *gorm.DB
+	versionService   *services.DocumentVersionService
+	lockService      *services.DocumentLockService
+	onlyOfficeURL    string
+	onlyOfficeSecret string
+	backendURL       string
+	httpClient       *http.Client
+	storageDir       string
+	conversionTasks  map[string]*ConversionTask
+	conversionMu     sync.RWMutex
+	authz            *services.AuthorizationService
+	subjectRecheck   *services.SubjectRecheckService
 }
 
 // ConversionTask 转换任务
@@ -61,7 +66,12 @@ func NewOnlyOfficeHandler(
 	onlyOfficeSecret string,
 	backendURL string,
 	storageDir string,
+	authz ...*services.AuthorizationService,
 ) *OnlyOfficeHandler {
+	var authorizationService *services.AuthorizationService
+	if len(authz) > 0 {
+		authorizationService = authz[0]
+	}
 	return &OnlyOfficeHandler{
 		db:               db,
 		versionService:   versionService,
@@ -71,74 +81,124 @@ func NewOnlyOfficeHandler(
 		backendURL:       strings.TrimRight(backendURL, "/"),
 		httpClient: &http.Client{
 			Timeout: 60 * time.Second,
+			// 禁止 follow 重定向，避免 SSRF 通过 302 跳到非允许 host
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
 		},
 		storageDir:      storageDir,
 		conversionTasks: make(map[string]*ConversionTask),
+		authz:           authorizationService,
 	}
+}
+
+// SetSubjectRecheckService installs the server-side gate for editing,
+// saving, converting and downloading case-bound generated files.
+func (h *OnlyOfficeHandler) SetSubjectRecheckService(service *services.SubjectRecheckService) {
+	h.subjectRecheck = service
+}
+
+func (h *OnlyOfficeHandler) authorizeDocument(c *gin.Context, documentID uint, write bool) bool {
+	if h.authz == nil {
+		common.NewAPIError(c, http.StatusServiceUnavailable, "DOCUMENT_AUTHZ_UNAVAILABLE", "文档权限服务未初始化，当前已阻止在线文档操作")
+		return false
+	}
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return false
+	}
+	var (
+		allowed bool
+		err     error
+	)
+	if write {
+		allowed, err = h.authz.CanManageDocument(c.Request.Context(), actor, documentID)
+	} else {
+		allowed, err = h.authz.CanReadDocument(c.Request.Context(), actor, documentID)
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "权限检查失败"})
+		return false
+	}
+	if !allowed {
+		c.JSON(http.StatusForbidden, gin.H{"error": "无权访问该文档"})
+		return false
+	}
+	return true
+}
+
+func (h *OnlyOfficeHandler) requireCaseSubject(ctx context.Context, document *models.Document, action string) error {
+	if document == nil || !strings.EqualFold(strings.TrimSpace(document.EntityType), "case") || document.EntityID == 0 {
+		return nil
+	}
+	if h.subjectRecheck == nil {
+		return services.NewSubjectWorkflowError("SUBJECT_GATE_UNAVAILABLE", "案件文档受控动作门禁未初始化，已阻止操作")
+	}
+	return h.subjectRecheck.RequireEffectiveSubject(ctx, document.EntityID, action)
 }
 
 // EditorConfig OnlyOffice 编辑器配置
 type EditorConfig struct {
-	Document     DocumentConfig     `json:"document"`
-	DocumentType string             `json:"documentType"`
+	Document     DocumentConfig    `json:"document"`
+	DocumentType string            `json:"documentType"`
 	EditorConfig EditorConfigInner `json:"editorConfig"`
 }
 
 // DocumentConfig 文档配置
 type DocumentConfig struct {
-	Key       string       `json:"key"`
-	URL       string       `json:"url"`
-	Title     string       `json:"title"`
-	FileType  string       `json:"fileType"`
-	Info      DocumentInfo `json:"info"`
-	Permissions Permissions `json:"permissions"`
+	Key         string       `json:"key"`
+	URL         string       `json:"url"`
+	Title       string       `json:"title"`
+	FileType    string       `json:"fileType"`
+	Info        DocumentInfo `json:"info"`
+	Permissions Permissions  `json:"permissions"`
 }
 
 // DocumentInfo 文档信息
 type DocumentInfo struct {
-	Author     string `json:"author"`
-	Created    string `json:"created"`
-	Owner      string `json:"owner"`
-	Uploaded   string `json:"uploaded"`
+	Author   string `json:"author"`
+	Created  string `json:"created"`
+	Owner    string `json:"owner"`
+	Uploaded string `json:"uploaded"`
 }
 
 // Permissions 权限配置
 type Permissions struct {
-	Comment      bool `json:"comment"`
-	Download     bool `json:"download"`
-	Edit         bool `json:"edit"`
-	FillForms    bool `json:"fillForms"`
-	ModifyFilter bool `json:"modifyFilter"`
+	Comment              bool `json:"comment"`
+	Download             bool `json:"download"`
+	Edit                 bool `json:"edit"`
+	FillForms            bool `json:"fillForms"`
+	ModifyFilter         bool `json:"modifyFilter"`
 	ModifyContentControl bool `json:"modifyContentControl"`
-	Review       bool `json:"review"`
+	Review               bool `json:"review"`
 }
 
 // EditorConfigInner 编辑器配置
 type EditorConfigInner struct {
-	Mode             string             `json:"mode"`
-	CallbackURL      string             `json:"callbackUrl"`
-	Customization    Customization      `json:"customization"`
-	User             User               `json:"user"`
-	Embedded         Embedded           `json:"embedded"`
+	Mode          string        `json:"mode"`
+	CallbackURL   string        `json:"callbackUrl"`
+	Customization Customization `json:"customization"`
+	User          User          `json:"user"`
+	Embedded      Embedded      `json:"embedded"`
 }
 
 // Customization 自定义配置
 type Customization struct {
-	About             bool              `json:"about"`
-	Comments          bool              `json:"comments"`
-	Customer          map[string]string `json:"customer"`
-	Feedback          bool              `json:"feedback"`
-	Forcesave         bool              `json:"forcesave"`
-	Help              bool              `json:"help"`
-	Macro             bool              `json:"macro"`
-	Metrics           bool              `json:"metrics"`
-	Plugins           bool              `json:"plugins"`
-	CompactHeader     bool              `json:"compactHeader"`
-	CompactToolbar    bool              `json:"compactToolbar"`
-	Customization     bool              `json:"customization"`
-	Zoom              int               `json:"zoom"`
-	ToolbarNoTabs     bool              `json:"toolbarNoTabs"`
-	ToolbarHideFileName bool `json:"toolbarHideFileName"`
+	About               bool              `json:"about"`
+	Comments            bool              `json:"comments"`
+	Customer            map[string]string `json:"customer"`
+	Feedback            bool              `json:"feedback"`
+	Forcesave           bool              `json:"forcesave"`
+	Help                bool              `json:"help"`
+	Macro               bool              `json:"macro"`
+	Metrics             bool              `json:"metrics"`
+	Plugins             bool              `json:"plugins"`
+	CompactHeader       bool              `json:"compactHeader"`
+	CompactToolbar      bool              `json:"compactToolbar"`
+	Customization       bool              `json:"customization"`
+	Zoom                int               `json:"zoom"`
+	ToolbarNoTabs       bool              `json:"toolbarNoTabs"`
+	ToolbarHideFileName bool              `json:"toolbarHideFileName"`
 }
 
 // User 用户信息
@@ -156,21 +216,23 @@ type Embedded struct {
 	ToolbarDocked string `json:"toolbarDocked"`
 }
 
-// OpenEditorRequest 打开编辑器请求
+// OpenEditorRequest 打开编辑器请求。
+// 注意：UserID 不再从请求体读取，强制使用 middleware.GetCurrentUserID(c)。
+// 客户端若仍提交 user_id 字段，将被忽略以避免越权（例如假装是其他用户）。
 type OpenEditorRequest struct {
 	DocumentID uint   `json:"document_id" binding:"required"`
-	UserID     uint   `json:"user_id" binding:"required"`
-	Mode       string `json:"mode"` // edit 或 view
+	UserID     uint   `json:"user_id"` // 已废弃，保留字段以向后兼容客户端；handler 会覆盖为上下文用户
+	Mode       string `json:"mode"`    // edit 或 view
 }
 
 // CallbackRequest OnlyOffice 回调请求
 type CallbackRequest struct {
-	Actions   []CallbackAction `json:"actions"`
-	Key       string           `json:"key"`
-	Status    int              `json:"status"`
-	URL       string           `json:"url"`
-	Users     []string         `json:"users"`
-	Token     string           `json:"token"`
+	Actions []CallbackAction `json:"actions"`
+	Key     string           `json:"key"`
+	Status  int              `json:"status"`
+	URL     string           `json:"url"`
+	Users   []string         `json:"users"`
+	Token   string           `json:"token"`
 }
 
 // CallbackAction 回调操作
@@ -181,23 +243,23 @@ type CallbackAction struct {
 
 // ConversionRequest OnlyOffice 转换 API 请求
 type ConversionRequest struct {
-	Async    bool   `json:"async"`
-	Filetype string `json:"filetype"`
-	Key      string `json:"key"`
+	Async      bool   `json:"async"`
+	Filetype   string `json:"filetype"`
+	Key        string `json:"key"`
 	OutputType string `json:"outputType"`
-	Title    string `json:"title"`
-	URL      string `json:"url"`
+	Title      string `json:"title"`
+	URL        string `json:"url"`
 }
 
 // ConversionResponse OnlyOffice 转换 API 响应
 type ConversionResponse struct {
-	EndKey    string `json:"endKey"`
-	FileType  string `json:"fileType"`
-	FileSize  int64  `json:"fileSize"`
-	Key       string `json:"key"`
-	Percent   int    `json:"percent"`
-	Status    int    `json:"status"` // 0-unknown, 1-queued, 2-processing, 3-converted, 4-converting error, 5-error, 6-async
-	URL       string `json:"url"`
+	EndKey   string `json:"endKey"`
+	FileType string `json:"fileType"`
+	FileSize int64  `json:"fileSize"`
+	Key      string `json:"key"`
+	Percent  int    `json:"percent"`
+	Status   int    `json:"status"` // 0-unknown, 1-queued, 2-processing, 3-converted, 4-converting error, 5-error, 6-async
+	URL      string `json:"url"`
 }
 
 // 常量
@@ -223,6 +285,9 @@ const (
 	ConversionStatusProcessing = "processing"
 	ConversionStatusCompleted  = "completed"
 	ConversionStatusError      = "error"
+
+	// MaxOnlyOfficeDownloadBytes OnlyOffice 回调下载响应体最大字节数（50 MiB）
+	MaxOnlyOfficeDownloadBytes = 50 * 1024 * 1024
 )
 
 // OpenEditor 打开文档编辑器
@@ -235,7 +300,19 @@ func (h *OnlyOfficeHandler) OpenEditor(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
-	// 获取文档
+	// 安全：以认证上下文中的用户 ID 为准，忽略请求体里的 user_id
+	viewerUserID, exists := middleware.GetCurrentUserID(c)
+	if !exists || viewerUserID == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "未认证"})
+		return
+	}
+	req.UserID = viewerUserID
+
+	// 先做对象授权，再查询文档，避免未授权用户通过响应差异探测文档是否存在。
+	if !h.authorizeDocument(c, req.DocumentID, req.Mode != ModeView) {
+		return
+	}
+
 	var doc models.Document
 	if err := h.db.WithContext(ctx).First(&doc, req.DocumentID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Document not found"})
@@ -257,6 +334,10 @@ func (h *OnlyOfficeHandler) OpenEditor(c *gin.Context) {
 
 	// 检查是否需要获取锁
 	if mode == ModeEdit {
+		if err := h.requireCaseSubject(ctx, &doc, "case_document_edit"); err != nil {
+			writeSubjectWorkflowError(c, err)
+			return
+		}
 		lockReq := &services.AcquireLockRequest{
 			DocumentID: req.DocumentID,
 			UserID:     req.UserID,
@@ -320,13 +401,13 @@ func (h *OnlyOfficeHandler) OpenEditor(c *gin.Context) {
 				Uploaded: doc.CreatedAt.Format("2006-01-02 15:04:05"),
 			},
 			Permissions: Permissions{
-				Comment:               mode == ModeEdit,
-				Download:              true,
-				Edit:                  mode == ModeEdit,
-				FillForms:             mode == ModeEdit,
-				ModifyFilter:          true,
-				ModifyContentControl:  true,
-				Review:                mode == ModeEdit,
+				Comment:              mode == ModeEdit,
+				Download:             true,
+				Edit:                 mode == ModeEdit,
+				FillForms:            mode == ModeEdit,
+				ModifyFilter:         true,
+				ModifyContentControl: true,
+				Review:               mode == ModeEdit,
 			},
 		},
 		DocumentType: docType,
@@ -334,20 +415,20 @@ func (h *OnlyOfficeHandler) OpenEditor(c *gin.Context) {
 			Mode:        mode,
 			CallbackURL: callbackURL,
 			Customization: Customization{
-				About:              false,
-				Comments:           true,
-				Customer:           map[string]string{"info": "Law OA Go"},
-				Feedback:           false,
-				Forcesave:          true,
-				Help:               false,
-				Macro:              false,
-				Metrics:            false,
-				Plugins:            false,
-				CompactHeader:      false,
-				CompactToolbar:     false,
-				Customization:      false,
-				Zoom:               100,
-				ToolbarNoTabs:      false,
+				About:               false,
+				Comments:            true,
+				Customer:            map[string]string{"info": "Law OA Go"},
+				Feedback:            false,
+				Forcesave:           true,
+				Help:                false,
+				Macro:               false,
+				Metrics:             false,
+				Plugins:             false,
+				CompactHeader:       false,
+				CompactToolbar:      false,
+				Customization:       false,
+				Zoom:                100,
+				ToolbarNoTabs:       false,
 				ToolbarHideFileName: false,
 			},
 			User: User{
@@ -369,6 +450,11 @@ func (h *OnlyOfficeHandler) OpenEditor(c *gin.Context) {
 
 // HandleCallback 处理 OnlyOffice 回调
 func (h *OnlyOfficeHandler) HandleCallback(c *gin.Context) {
+	if h.onlyOfficeSecret == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "OnlyOffice callback secret is not configured"})
+		return
+	}
+
 	// 先读取 body 用于 HMAC 验证
 	bodyBytes, err := io.ReadAll(c.Request.Body)
 	if err != nil {
@@ -383,12 +469,10 @@ func (h *OnlyOfficeHandler) HandleCallback(c *gin.Context) {
 		return
 	}
 
-	// 验证 token (如果配置了密钥，使用 HMAC 验证)
-	if h.onlyOfficeSecret != "" {
-		if !h.validateCallbackPayload(bodyBytes, req.Token) {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
-			return
-		}
+	// 验证 token，缺失或不匹配必须 fail-closed，避免公开回调覆盖文件。
+	if !h.validateCallbackPayload(bodyBytes, req.Token) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+		return
 	}
 
 	// 解析 key 获取文档 ID
@@ -432,16 +516,67 @@ func (h *OnlyOfficeHandler) HandleCallback(c *gin.Context) {
 	}
 }
 
+// validateDownloadURL 校验 OnlyOffice 回调下载 URL，阻断 SSRF。
+// 规则：scheme 仅允许 http/https；无 UserInfo；host:port 必须与配置的 onlyOfficeURL 完全一致。
+// 端口缺省时按 scheme 默认端口（http=80, https=443）归一化后再比较。
+func (h *OnlyOfficeHandler) validateDownloadURL(rawURL string) error {
+	if rawURL == "" {
+		return fmt.Errorf("download URL is empty")
+	}
+	if h.onlyOfficeURL == "" {
+		return fmt.Errorf("onlyoffice URL not configured, refusing download")
+	}
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return fmt.Errorf("invalid download URL: %w", err)
+	}
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return fmt.Errorf("unsupported scheme: %s", parsed.Scheme)
+	}
+	if parsed.User != nil {
+		return fmt.Errorf("userinfo not allowed in download URL")
+	}
+	allowed, err := url.Parse(h.onlyOfficeURL)
+	if err != nil {
+		return fmt.Errorf("invalid onlyoffice URL config: %w", err)
+	}
+	if parsed.Hostname() != allowed.Hostname() {
+		return fmt.Errorf("host mismatch: %s vs configured %s", parsed.Hostname(), allowed.Hostname())
+	}
+	if normalizePort(parsed.Port(), parsed.Scheme) != normalizePort(allowed.Port(), allowed.Scheme) {
+		return fmt.Errorf("port mismatch: %s vs configured %s", parsed.Port(), allowed.Port())
+	}
+	return nil
+}
+
+// normalizePort 归一化端口：空端口按 scheme 默认值返回
+func normalizePort(port, scheme string) string {
+	if port != "" {
+		return port
+	}
+	switch scheme {
+	case "https":
+		return "443"
+	case "http":
+		return "80"
+	default:
+		return ""
+	}
+}
+
 // saveDocument 从 OnlyOffice 下载保存的文档并更新存储
 func (h *OnlyOfficeHandler) saveDocument(ctx context.Context, documentID uint, downloadURL string) error {
-	if downloadURL == "" {
-		return fmt.Errorf("download URL is empty")
+	if err := h.validateDownloadURL(downloadURL); err != nil {
+		return err
 	}
 
 	// 获取文档记录
 	var doc models.Document
 	if err := h.db.WithContext(ctx).First(&doc, documentID).Error; err != nil {
 		return fmt.Errorf("document not found: %w", err)
+	}
+	if err := h.requireCaseSubject(ctx, &doc, "case_document_save"); err != nil {
+		return err
 	}
 
 	// 从 OnlyOffice 下载编辑后的文档
@@ -480,7 +615,13 @@ func (h *OnlyOfficeHandler) saveDocument(ctx context.Context, documentID uint, d
 		return fmt.Errorf("failed to create temp file: %w", err)
 	}
 
-	written, err := io.Copy(outFile, resp.Body)
+	// 限制响应体字节数，超限立即中断并丢弃临时文件
+	limited := io.LimitReader(resp.Body, MaxOnlyOfficeDownloadBytes+1)
+	written, err := io.Copy(outFile, limited)
+	// 先 fsync 再 close，确保数据落盘；任一步失败都丢弃临时文件
+	if err == nil {
+		err = outFile.Sync()
+	}
 	outFile.Close()
 	tmpPath := outFile.Name()
 
@@ -488,10 +629,14 @@ func (h *OnlyOfficeHandler) saveDocument(ctx context.Context, documentID uint, d
 		os.Remove(tmpPath)
 		return fmt.Errorf("failed to write document: %w", err)
 	}
+	if written > MaxOnlyOfficeDownloadBytes {
+		os.Remove(tmpPath)
+		return fmt.Errorf("download exceeds %d bytes", MaxOnlyOfficeDownloadBytes)
+	}
 
 	// 原子替换
-	if err := os.Rename(outFile.Name(), doc.Filepath); err != nil {
-		os.Remove(outFile.Name())
+	if err := os.Rename(tmpPath, doc.Filepath); err != nil {
+		os.Remove(tmpPath)
 		return fmt.Errorf("failed to replace document file: %w", err)
 	}
 
@@ -520,20 +665,26 @@ func (h *OnlyOfficeHandler) ConvertDocument(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	outputType := strings.ToLower(strings.TrimPrefix(req.OutputType, "."))
+	if !h.isValidOutputType(outputType) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Unsupported output type: %s", outputType)})
+		return
+	}
 
 	ctx := c.Request.Context()
 
-	// 获取文档
+	// 转换属于受控文档动作，先做对象授权，避免通过查询结果泄露文档存在性。
+	if !h.authorizeDocument(c, req.DocumentID, true) {
+		return
+	}
+
 	var doc models.Document
 	if err := h.db.WithContext(ctx).First(&doc, req.DocumentID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Document not found"})
 		return
 	}
-
-	// 验证输出类型
-	outputType := strings.ToLower(strings.TrimPrefix(req.OutputType, "."))
-	if !h.isValidOutputType(outputType) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Unsupported output type: %s", outputType)})
+	if err := h.requireCaseSubject(ctx, &doc, "case_document_convert"); err != nil {
+		writeSubjectWorkflowError(c, err)
 		return
 	}
 
@@ -642,6 +793,18 @@ func (h *OnlyOfficeHandler) CheckConversionStatus(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Conversion task not found"})
 		return
 	}
+	var doc models.Document
+	if err := h.db.WithContext(c.Request.Context()).First(&doc, task.DocumentID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Document not found"})
+		return
+	}
+	if !h.authorizeDocument(c, task.DocumentID, false) {
+		return
+	}
+	if err := h.requireCaseSubject(c.Request.Context(), &doc, "case_document_conversion_status"); err != nil {
+		writeSubjectWorkflowError(c, err)
+		return
+	}
 
 	response := gin.H{
 		"task_id":     task.TaskID,
@@ -686,6 +849,18 @@ func (h *OnlyOfficeHandler) DownloadConverted(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Converted file not found"})
 		return
 	}
+	var doc models.Document
+	if err := h.db.WithContext(c.Request.Context()).First(&doc, uint(documentID)).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Document not found"})
+		return
+	}
+	if !h.authorizeDocument(c, uint(documentID), false) {
+		return
+	}
+	if err := h.requireCaseSubject(c.Request.Context(), &doc, "case_document_converted_download"); err != nil {
+		writeSubjectWorkflowError(c, err)
+		return
+	}
 
 	c.FileAttachment(task.OutputPath, fmt.Sprintf("document.%s", outputType))
 }
@@ -700,6 +875,36 @@ func (h *OnlyOfficeHandler) processConversionResult(taskID string, resp *Convers
 	}
 	task.Status = ConversionStatusProcessing
 	h.conversionMu.Unlock()
+	var doc models.Document
+	if err := h.db.WithContext(context.Background()).First(&doc, task.DocumentID).Error; err != nil {
+		h.conversionMu.Lock()
+		task.Status = ConversionStatusError
+		task.Error = "document not found"
+		h.conversionMu.Unlock()
+		return
+	}
+	if err := h.requireCaseSubject(context.Background(), &doc, "case_document_conversion_result"); err != nil {
+		h.conversionMu.Lock()
+		task.Status = ConversionStatusError
+		task.Error = err.Error()
+		h.conversionMu.Unlock()
+		return
+	}
+	if err := h.requireCaseSubject(context.Background(), &doc, "case_document_convert"); err != nil {
+		h.conversionMu.Lock()
+		task.Status = ConversionStatusError
+		task.Error = err.Error()
+		h.conversionMu.Unlock()
+		return
+	}
+
+	if err := h.validateDownloadURL(resp.URL); err != nil {
+		h.conversionMu.Lock()
+		task.Status = ConversionStatusError
+		task.Error = fmt.Sprintf("Invalid conversion download URL: %v", err)
+		h.conversionMu.Unlock()
+		return
+	}
 
 	// 下载转换后的文件
 	httpResp, err := h.httpClient.Get(resp.URL)
@@ -740,7 +945,8 @@ func (h *OnlyOfficeHandler) processConversionResult(taskID string, resp *Convers
 		return
 	}
 
-	_, err = io.Copy(outFile, httpResp.Body)
+	limited := io.LimitReader(httpResp.Body, MaxOnlyOfficeDownloadBytes+1)
+	written, err := io.Copy(outFile, limited)
 	outFile.Close()
 
 	if err != nil {
@@ -748,6 +954,14 @@ func (h *OnlyOfficeHandler) processConversionResult(taskID string, resp *Convers
 		h.conversionMu.Lock()
 		task.Status = ConversionStatusError
 		task.Error = fmt.Sprintf("Failed to save converted file: %v", err)
+		h.conversionMu.Unlock()
+		return
+	}
+	if written > MaxOnlyOfficeDownloadBytes {
+		os.Remove(outputPath)
+		h.conversionMu.Lock()
+		task.Status = ConversionStatusError
+		task.Error = fmt.Sprintf("Download exceeds %d bytes", MaxOnlyOfficeDownloadBytes)
 		h.conversionMu.Unlock()
 		return
 	}
@@ -884,8 +1098,21 @@ func (h *OnlyOfficeHandler) validateCallbackPayload(payload []byte, token string
 		return false
 	}
 
-	expectedMAC := h.GenerateCallbackToken(string(payload))
+	signingPayload, err := canonicalCallbackSigningPayload(payload)
+	if err != nil {
+		return false
+	}
+	expectedMAC := h.GenerateCallbackToken(string(signingPayload))
 	return hmac.Equal([]byte(token), []byte(expectedMAC))
+}
+
+func canonicalCallbackSigningPayload(payload []byte) ([]byte, error) {
+	var body map[string]interface{}
+	if err := json.Unmarshal(payload, &body); err != nil {
+		return nil, err
+	}
+	delete(body, "token")
+	return json.Marshal(body)
 }
 
 // validateCallbackToken 验证回调 token（兼容 header 传递方式）

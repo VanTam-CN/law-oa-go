@@ -25,7 +25,7 @@ RUN npm ci --silent
 COPY . .
 
 # 设置构建环境变量
-ARG REACT_APP_API_URL=http://localhost:8080
+ARG REACT_APP_API_URL=/api
 ARG REACT_APP_ENVIRONMENT=production
 ARG GENERATE_SOURCEMAP=false
 
@@ -39,14 +39,16 @@ ENV NODE_OPTIONS=--max-old-space-size=4096
 RUN npm run build
 
 # 验证构建结果
-RUN ls -la /app/build && \
-    test -f /app/build/index.html && \
+RUN ls -la /app/dist && \
+    test -f /app/dist/index.html && \
     echo "✅ React应用构建成功"
 
 # ================================
 # 生产阶段 - Nginx服务器
 # ================================
 FROM nginx:1.24-alpine AS production
+
+ARG BACKEND_UPSTREAM=backend:8080
 
 # 元数据标签
 LABEL maintainer="Law OA Team <team@lawoa.com>" \
@@ -59,10 +61,8 @@ LABEL maintainer="Law OA Team <team@lawoa.com>" \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.vendor="Law OA Team"
 
-# 安装必要的工具
-RUN apk add --no-cache curl && \
-    addgroup -g 1001 -S nginx && \
-    adduser -S -D -H -u 1001 -h /var/cache/nginx -s /sbin/nologin -G nginx -g nginx nginx
+# 安装必要的工具。官方 Nginx 镜像已经提供非 root 的 nginx 用户。
+RUN apk add --no-cache curl && rm -f /etc/nginx/conf.d/default.conf
 
 # 创建自定义Nginx配置
 RUN cat > /etc/nginx/nginx.conf << 'EOF'
@@ -182,8 +182,13 @@ http {
 }
 EOF
 
+# Compose uses the backend service name; Kubernetes injects its canonical
+# Service name as a build argument. The frontend remains same-origin for the
+# browser while Nginx forwards /api requests internally.
+RUN sed -i "s#proxy_pass http://backend:8080;#proxy_pass http://${BACKEND_UPSTREAM};#" /etc/nginx/nginx.conf
+
 # 复制构建产物
-COPY --from=builder /app/build /usr/share/nginx/html
+COPY --from=builder /app/dist /usr/share/nginx/html
 
 # 设置正确的权限
 RUN chown -R nginx:nginx /usr/share/nginx/html && \

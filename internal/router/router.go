@@ -1,7 +1,9 @@
 package router
 
 import (
+	"context"
 	"log"
+	"time"
 
 	"law-oa-go/internal/auth"
 	"law-oa-go/internal/cache"
@@ -20,12 +22,6 @@ import (
 
 // Init 初始化完整的路由系统
 func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interface{}) {
-	defer func() {
-		if r := recover(); r != nil {
-			log.Printf("🚨 恢复路由初始化panic: %v", r)
-			log.Printf("🚨 panic堆栈: %+v", r)
-		}
-	}()
 	log.Println("初始化完整路由系统...")
 	app.Static("/uploads/avatars", "./uploads/avatars")
 
@@ -61,6 +57,7 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 
 	// 初始化文档相关仓储
 	docRepo := repositories.NewDocumentRepository(db)
+	authorizationService := services.NewAuthorizationService(caseRepo, clientRepo, userRepo, docRepo)
 
 	// 初始化服务
 	userService := services.NewUserService(userRepo)
@@ -92,6 +89,10 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 		clientRepo,
 		caseRepo,
 	)
+	subjectRecheckService := services.NewSubjectRecheckService(db, conflictService)
+	caseService.SetSubjectRecheckService(subjectRecheckService)
+	enhancedCaseService.SetSubjectRecheckService(subjectRecheckService)
+	teamPermissionService.SetSubjectRecheckService(subjectRecheckService)
 	asyncConflictService := services.NewAsyncConflictCheckService(conflictRepo, conflictService)
 	waiverService := services.NewWaiverWorkflowService(waiverRepo, conflictRepo, inboxRepo, userRepo)
 
@@ -112,8 +113,19 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 
 	// 初始化令牌撤销服务
 	tokenRevocationService := auth.NewTokenRevocationService(tokenManagerAdapter, redisClient, db)
+	middleware.SetTokenRevocationChecker(func(ctx context.Context, tokenString string, claims *middleware.JWTClaims) bool {
+		if claims == nil {
+			return true
+		}
+		issuedAt := time.Time{}
+		if claims != nil && claims.IssuedAt != nil {
+			issuedAt = claims.IssuedAt.Time
+		}
+		return tokenRevocationService.IsTokenRevokedForClaims(ctx, tokenString, claims.UserID, issuedAt)
+	})
 
 	authHandler := handlers.NewAuthHandler(userService, tokenRevocationService)
+	authHandler.SetPublicRegistrationEnabled(!cfg.IsProduction())
 	log.Println("✅ 认证处理器初始化完成")
 
 	log.Println("🔧 初始化用户处理器...")
@@ -126,16 +138,17 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 	log.Println("✅ RBAC处理器初始化完成")
 
 	log.Println("🔧 初始化客户处理器...")
-	clientHandler := handlers.NewClientHandler(clientService)
-	handoffHandler := handlers.NewHandoffHandler(handoffService)
+	clientHandler := handlers.NewClientHandler(clientService, authorizationService)
+	handoffHandler := handlers.NewHandoffHandler(handoffService, authorizationService)
 	log.Println("✅ 客户处理器初始化完成")
 
 	log.Println("🔧 初始化案件处理器...")
-	caseHandler := handlers.NewCaseHandler(caseService)
+	caseHandler := handlers.NewCaseHandler(caseService, authorizationService)
 	log.Println("✅ 案件处理器初始化完成")
 
 	log.Println("🔧 初始化增强案例处理器...")
-	enhancedCaseHandler := handlers.NewEnhancedCaseHandler(enhancedCaseService)
+	enhancedCaseHandler := handlers.NewEnhancedCaseHandler(enhancedCaseService, authorizationService)
+	enhancedCaseHandler.SetEthicalWallListFilterEnabled(true)
 	log.Println("✅ 增强案例处理器初始化完成")
 
 	log.Println("🔧 初始化法条处理器...")
@@ -143,28 +156,42 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 	log.Println("✅ 法条处理器初始化完成")
 
 	log.Println("🔧 初始化通知处理器...")
-	notificationHandler := handlers.NewNotificationHandlerWithDB(db)
+	notificationHandler := handlers.NewNotificationHandlerWithDB(db, authorizationService)
+	notificationHandler.SetSubjectRecheckService(subjectRecheckService)
 	log.Println("✅ 通知处理器初始化完成")
 
 	log.Println("🔧 初始化仪表盘处理器...")
 	dashboardHandler := handlers.NewDashboardHandler(db)
 	demoAggregateHandler := handlers.NewDemoAggregateHandler(db)
+	demoAggregateHandler.SetConflictDetectionService(conflictService)
+	demoAggregateHandler.SetAuthorizationService(authorizationService)
 	toolsHandler := handlers.NewToolsHandler()
 	log.Println("✅ 仪表盘处理器初始化完成")
 
 	// 调试：初始化冲突检测处理器
 	log.Println("🔧 初始化冲突检测处理器...")
 	conflictHandler := handlers.NewConflictHandlerSimple(conflictService, asyncConflictService)
-	waiverHandler := handlers.NewWaiverHandler(waiverService)
+	conflictHandler.SetAuthorizationService(authorizationService)
+	conflictHandler.SetDatabase(db)
+	conflictReviewerHandler := handlers.NewConflictReviewerHandler(db)
+	conflictReviewerHandler.SetAuthorizationService(authorizationService)
+	var conflictReviewService services.ConflictReviewService
+	if reviewService, ok := conflictService.(services.ConflictReviewService); ok {
+		conflictReviewService = reviewService
+	}
+	subjectRecheckHandler := handlers.NewSubjectRecheckHandler(subjectRecheckService, conflictReviewService, authorizationService, db)
+	waiverHandler := handlers.NewWaiverHandlerWithAuthorization(waiverService, db, authorizationService)
 	log.Println("✅ 冲突检测处理器初始化完成")
 
 	// 初始化隔离墙仓储和服务
 	ethicalWallRepo := repositories.NewEthicalWallRepository(db)
 	ethicalWallService := services.NewEthicalWallService(ethicalWallRepo, caseRepo, userRepo)
+	clientHandler.SetEthicalWallListFilterEnabled(true)
+	caseHandler.SetEthicalWallListFilterEnabled(true)
 	log.Println("✅ 隔离墙服务初始化完成")
 
 	log.Println("🔧 初始化隔离墙处理器...")
-	ethicalWallHandler := handlers.NewEthicalWallHandler(ethicalWallService)
+	ethicalWallHandler := handlers.NewEthicalWallHandler(ethicalWallService, authorizationService)
 	log.Println("✅ 隔离墙处理器初始化完成")
 
 	log.Println("🔧 初始化团队处理器...")
@@ -172,7 +199,7 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 	log.Println("✅ 团队处理器初始化完成")
 
 	// 初始化文档管理处理器
-	documentHandler := handlers.NewDocumentHandlerEnhanced(docRepo, userRepo, "./uploads", "./recycle")
+	documentHandler := handlers.NewDocumentHandlerEnhanced(docRepo, userRepo, "./uploads", "./recycle", authorizationService)
 	documentStatsHandler := handlers.NewDocumentStatsHandler(services.NewDocumentStatsService(docRepo))
 
 	// 初始化 OnlyOffice 处理器
@@ -183,8 +210,10 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 	backendURL := common.GetEnv("BACKEND_URL", "http://localhost:8080")
 	onlyOfficeHandler := handlers.NewOnlyOfficeHandler(
 		db, documentVersionService, documentLockService,
-		onlyOfficeURL, onlyOfficeSecret, backendURL, "./uploads",
+		onlyOfficeURL, onlyOfficeSecret, backendURL, "./uploads", authorizationService,
 	)
+	documentHandler.SetSubjectRecheckService(subjectRecheckService)
+	onlyOfficeHandler.SetSubjectRecheckService(subjectRecheckService)
 	log.Println("✅ OnlyOffice 处理器初始化完成")
 
 	// 公开路由组
@@ -200,7 +229,9 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 		auth := public.Group("/auth")
 		{
 			auth.POST("/login", authHandler.Login)
-			auth.POST("/register", authHandler.Register)
+			if !cfg.IsProduction() {
+				auth.POST("/register", authHandler.Register)
+			}
 		}
 		log.Println("✅ 认证路由注册完成")
 
@@ -229,9 +260,10 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 
 	// 初始化隔离墙中间件配置
 	ethicalWallConfig := middleware.EthicalWallConfig{
-		EthicalWallRepo: ethicalWallRepo,
-		SkipPaths:       middleware.GetEthicalWallSkipPaths(),
-		SkipPrefixes:    middleware.GetEthicalWallSkipPrefixes(),
+		EthicalWallRepo:  ethicalWallRepo,
+		DocumentResolver: middleware.NewDocumentCaseResolver(docRepo),
+		SkipPaths:        middleware.GetEthicalWallSkipPaths(),
+		SkipPrefixes:     middleware.GetEthicalWallSkipPrefixes(),
 	}
 
 	// 需要认证的路由组
@@ -253,18 +285,19 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 		protected.GET("/lawfirm/lawyers", caseHandler.GetLawyers)
 		protected.GET("/lawfirm/lawyers/:id", caseHandler.GetLawyerByID)
 		protected.GET("/lawyers", caseHandler.GetLawyers)
-		protected.GET("/lawyers/resource-center", demoAggregateHandler.LawyersResourceCenter)
+		protected.GET("/lawyers/resource-center", middleware.RoleMiddleware("director", "partner", "compliance", "risk", "risk_control", "management"), demoAggregateHandler.LawyersResourceCenter)
 
 		// Demo 聚合工作台接口
-		protected.GET("/analytics/executive-dashboard", demoAggregateHandler.ExecutiveDashboard)
-		protected.GET("/admin/access-center", demoAggregateHandler.AdminAccessCenter)
-		protected.GET("/settings/overview", demoAggregateHandler.SettingsOverview)
+		protected.GET("/analytics/executive-dashboard", middleware.RoleMiddleware("director", "partner", "compliance", "risk", "risk_control", "management"), demoAggregateHandler.ExecutiveDashboard)
+		protected.GET("/admin/access-center", middleware.RoleMiddleware("admin", "super_admin"), demoAggregateHandler.AdminAccessCenter)
+		protected.GET("/settings/overview", middleware.RoleMiddleware("admin", "super_admin"), demoAggregateHandler.SettingsOverview)
 
 		// 案件类型接口
 		protected.GET("/case-types", caseHandler.GetCaseTypes)
 
-		// 用户管理
+		// 用户管理（仅管理员可读写账号与角色分配）
 		users := protected.Group("/admin/users")
+		users.Use(middleware.RoleMiddleware("admin", "super_admin"))
 		{
 			users.GET("/:id/roles", rbacHandler.GetUserRoles)
 			users.POST("/:id/roles", rbacHandler.AssignUserRoles)
@@ -278,13 +311,17 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 		// 用户 API 别名 (前端兼容)
 		usersAlias := protected.Group("/users")
 		{
-			usersAlias.GET("", userHandler.ListUsers)
 			usersAlias.GET("/me", userHandler.GetCurrentUser)  // 获取当前用户信息
 			usersAlias.GET("/profile", userHandler.GetProfile) // 获取用户资料
 			usersAlias.PUT("/profile", userHandler.UpdateProfile)
 			usersAlias.POST("/change-password", userHandler.ChangePassword)
 			usersAlias.POST("/avatar", userHandler.UploadAvatar)
-			usersAlias.GET("/:id", userHandler.GetUser)
+			usersAliasAdmin := usersAlias.Group("")
+			usersAliasAdmin.Use(middleware.RoleMiddleware("admin", "super_admin"))
+			{
+				usersAliasAdmin.GET("", userHandler.ListUsers)
+				usersAliasAdmin.GET("/:id", userHandler.GetUser)
+			}
 		}
 
 		// RBAC 角色/权限 API
@@ -336,8 +373,17 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 		{
 			caseIntakes.POST("", demoAggregateHandler.CreateCaseIntake)
 			caseIntakes.PUT("/:id", demoAggregateHandler.UpdateCaseIntake)
+			caseIntakes.POST("/:id/facts-confirmation", demoAggregateHandler.ConfirmIntakeFacts)
 			caseIntakes.POST("/:id/conflict-check", demoAggregateHandler.StartIntakeConflictCheck)
 		}
+
+		// Initialize and register folder routes before the terminal case detail
+		// route. Gin's radix tree rejects adding a child below a dynamic route
+		// after that route has already been registered; swallowing that panic
+		// would leave the folder API silently absent in production.
+		folderTemplateRepo := repositories.NewFolderTemplateRepository(db)
+		folderTemplateService := services.NewFolderTemplateService(folderTemplateRepo)
+		folderTemplateHandler := handlers.NewFolderTemplateHandler(folderTemplateService, authorizationService)
 
 		// 案件管理 - 需要隔离墙保护
 		cases := protected.Group("/cases")
@@ -345,10 +391,18 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 		{
 			cases.GET("", caseHandler.ListCases)
 			cases.GET("/intake-workbench/:id", demoAggregateHandler.IntakeWorkbench)
+			cases.GET("/:id/folders", folderTemplateHandler.GetCaseFolders)
+			cases.POST("/:id/folders", folderTemplateHandler.CreateCaseFolder)
+			cases.DELETE("/:id/folders/:folder_id", folderTemplateHandler.DeleteCaseFolder)
 			cases.GET("/:id", caseHandler.GetCase)
+			cases.GET("/:id/subject-parties", subjectRecheckHandler.ListSubjectParties)
+			cases.GET("/:id/subject-entities", subjectRecheckHandler.SearchSubjectEntities)
 			cases.POST("", caseHandler.CreateCase)
 			cases.PUT("/:id", caseHandler.UpdateCase)
 			cases.DELETE("/:id", caseHandler.DeleteCase)
+			cases.POST("/:id/subject-revisions", subjectRecheckHandler.CreateRevision)
+			cases.POST("/:id/subject-revisions/:revision_id/recheck", subjectRecheckHandler.RunRecheck)
+			cases.POST("/:id/subject-revisions/:revision_id/review", subjectRecheckHandler.Review)
 		}
 
 		// 增强案例管理 - 需要隔离墙保护
@@ -368,16 +422,20 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 		// 法条管理（需要认证）
 		legal := protected.Group("/legal")
 		{
-			legal.POST("/statutes", legalStatuteHandler.CreateStatute)
-			legal.POST("/statutes/import", legalStatuteHandler.BulkImportStatutes)
-			legal.PUT("/statutes/:id", legalStatuteHandler.UpdateStatute)
-			legal.DELETE("/statutes/:id", legalStatuteHandler.DeleteStatute)
 			legal.GET("/favorites", legalStatuteHandler.GetUserFavorites)
 			legal.POST("/favorites", legalStatuteHandler.AddToFavorites)
 			legal.DELETE("/favorites/:statute_id", legalStatuteHandler.RemoveFromFavorites)
 			legal.GET("/search-history", legalStatuteHandler.GetSearchHistory)
-			legal.POST("/admin/sync-elasticsearch", legalStatuteHandler.SyncToElasticsearch)
-			legal.POST("/admin/rebuild-index", legalStatuteHandler.RebuildSearchIndex)
+			legalAdmin := legal.Group("")
+			legalAdmin.Use(middleware.RoleMiddleware("admin", "super_admin"))
+			{
+				legalAdmin.POST("/statutes", legalStatuteHandler.CreateStatute)
+				legalAdmin.POST("/statutes/import", legalStatuteHandler.BulkImportStatutes)
+				legalAdmin.PUT("/statutes/:id", legalStatuteHandler.UpdateStatute)
+				legalAdmin.DELETE("/statutes/:id", legalStatuteHandler.DeleteStatute)
+				legalAdmin.POST("/admin/sync-elasticsearch", legalStatuteHandler.SyncToElasticsearch)
+				legalAdmin.POST("/admin/rebuild-index", legalStatuteHandler.RebuildSearchIndex)
+			}
 		}
 
 		// 通知管理
@@ -420,26 +478,26 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 		contentFilterHandler := handlers.NewContentFilterHandler(db)
 		contentFilter := protected.Group("/content-filter")
 		{
-			// 敏感词管理
-			contentFilter.POST("/words", contentFilterHandler.CreateSensitiveWord)           // 创建敏感词
-			contentFilter.GET("/words", contentFilterHandler.GetSensitiveWords)              // 获取敏感词列表
-			contentFilter.GET("/words/:id", contentFilterHandler.GetSensitiveWordByID)       // 获取敏感词详情
-			contentFilter.PUT("/words/:id", contentFilterHandler.UpdateSensitiveWord)        // 更新敏感词
-			contentFilter.DELETE("/words/:id", contentFilterHandler.DeleteSensitiveWord)     // 删除敏感词
-			contentFilter.POST("/words/batch/import", contentFilterHandler.BatchImportWords) // 批量导入
-			contentFilter.POST("/words/batch/toggle", contentFilterHandler.BatchToggleWords) // 批量切换状态
-			contentFilter.POST("/words/batch/delete", contentFilterHandler.BatchDeleteWords) // 批量删除
-			contentFilter.GET("/words/stats", contentFilterHandler.GetSensitiveWordStats)    // 敏感词统计
-
 			// 内容检测和过滤
 			contentFilter.POST("/check", contentFilterHandler.CheckContent)   // 检查内容
 			contentFilter.POST("/filter", contentFilterHandler.FilterContent) // 过滤内容
 
-			// 过滤日志
-			contentFilter.GET("/logs", contentFilterHandler.GetFilterLogs) // 获取过滤日志
-
-			// 缓存管理
-			contentFilter.POST("/cache/reset", contentFilterHandler.ResetCache) // 重置缓存
+			contentFilterAdmin := contentFilter.Group("")
+			contentFilterAdmin.Use(middleware.RoleMiddleware("admin", "super_admin", "compliance"))
+			{
+				// 敏感词管理
+				contentFilterAdmin.POST("/words", contentFilterHandler.CreateSensitiveWord)           // 创建敏感词
+				contentFilterAdmin.GET("/words", contentFilterHandler.GetSensitiveWords)              // 获取敏感词列表
+				contentFilterAdmin.GET("/words/:id", contentFilterHandler.GetSensitiveWordByID)       // 获取敏感词详情
+				contentFilterAdmin.PUT("/words/:id", contentFilterHandler.UpdateSensitiveWord)        // 更新敏感词
+				contentFilterAdmin.DELETE("/words/:id", contentFilterHandler.DeleteSensitiveWord)     // 删除敏感词
+				contentFilterAdmin.POST("/words/batch/import", contentFilterHandler.BatchImportWords) // 批量导入
+				contentFilterAdmin.POST("/words/batch/toggle", contentFilterHandler.BatchToggleWords) // 批量切换状态
+				contentFilterAdmin.POST("/words/batch/delete", contentFilterHandler.BatchDeleteWords) // 批量删除
+				contentFilterAdmin.GET("/words/stats", contentFilterHandler.GetSensitiveWordStats)    // 敏感词统计
+				contentFilterAdmin.GET("/logs", contentFilterHandler.GetFilterLogs)                   // 获取过滤日志
+				contentFilterAdmin.POST("/cache/reset", contentFilterHandler.ResetCache)              // 重置缓存
+			}
 		}
 		log.Println("✅ 内容过滤路由注册完成")
 
@@ -465,9 +523,16 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 			conflict.POST("/check", conflictHandler.CheckConflict)
 			conflict.POST("/tasks", conflictHandler.CreateConflictTask)
 			conflict.POST("/check/async", conflictHandler.CreateConflictTask)
+			conflict.GET("/reviewer-candidates", conflictReviewerHandler.Candidates)
 			conflict.GET("/tasks/:task_id", conflictHandler.GetConflictTaskStatus)
 			conflict.GET("/tasks/:task_id/result", conflictHandler.GetConflictTaskResult)
+			conflict.GET("/tasks/:task_id/reviewer-assignment", conflictReviewerHandler.GetAssignment)
+			conflict.POST("/tasks/:task_id/reviewer-assignment", conflictReviewerHandler.Assign)
 			conflict.POST("/tasks/:task_id/approval", demoAggregateHandler.CreateConflictApproval)
+			conflict.GET("/tasks/:task_id/review", conflictHandler.GetConflictReview)
+			conflict.POST("/tasks/:task_id/review", conflictHandler.ReviewConflict)
+			conflict.GET("/tasks/:task_id/waiver", waiverHandler.GetConflictWaiverRequest)
+			conflict.POST("/tasks/:task_id/waiver", waiverHandler.CreateConflictWaiverRequest)
 			conflict.GET("/health", conflictHandler.HealthCheck)
 			conflict.GET("/history", conflictHandler.GetCheckHistory)
 			conflict.GET("/stats", conflictHandler.GetConflictStats)
@@ -517,8 +582,9 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 			}
 		}
 
-		// OnlyOffice 在线编辑和转换
+		// OnlyOffice 在线编辑和转换 - 需要隔离墙保护
 		onlyoffice := protected.Group("/documents/onlyoffice")
+		onlyoffice.Use(middleware.EthicalWallMiddleware(ethicalWallConfig))
 		{
 			onlyoffice.POST("/open", onlyOfficeHandler.OpenEditor)                                               // 打开编辑器
 			onlyoffice.POST("/convert", onlyOfficeHandler.ConvertDocument)                                       // 转换文档格式
@@ -531,6 +597,7 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 		// 审批管理系统
 		log.Println("🔧 初始化审批处理器...")
 		approvalHandler := handlers.NewApprovalHandler(db)
+		approvalHandler.SetAuthorizationService(authorizationService)
 		log.Println("✅ 审批处理器初始化完成")
 
 		// 初始化集成服务
@@ -542,7 +609,9 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 			caseService,
 			integrationRepo,
 		)
-		integrationHandler := handlers.NewIntegrationHandler(approvalConflictIntegrationService, conflictService)
+		approvalHandler.SetIntegratedDecisionService(approvalConflictIntegrationService)
+		integrationHandler := handlers.NewIntegrationHandler(approvalConflictIntegrationService, conflictService, db)
+		integrationHandler.SetAuthorizationService(authorizationService)
 		log.Println("✅ 集成服务初始化完成")
 
 		log.Println("🔧 开始注册审批路由...")
@@ -621,7 +690,8 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 		log.Println("开始注册时效管理路由...")
 		deadlineCalculator := services.NewDeadlineCalculator(inboxRepo, caseRepo,
 			services.NewEventDispatcher(inboxRepo, userRepo, caseRepo))
-		deadlineHandler := handlers.NewDeadlineHandler(deadlineCalculator)
+		deadlineHandler := handlers.NewDeadlineHandler(deadlineCalculator, authorizationService)
+		deadlineHandler.SetSubjectRecheckService(subjectRecheckService)
 		{
 			deadlines := protected.Group("/deadlines")
 			{
@@ -652,9 +722,6 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 
 		// 卷宗目录模板路由
 		log.Println("开始注册卷宗目录模板路由...")
-		folderTemplateRepo := repositories.NewFolderTemplateRepository(db)
-		folderTemplateService := services.NewFolderTemplateService(folderTemplateRepo)
-		folderTemplateHandler := handlers.NewFolderTemplateHandler(folderTemplateService)
 		{
 			ft := protected.Group("/folder-templates")
 			{
@@ -665,13 +732,6 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 				ft.PUT("/:id", folderTemplateHandler.UpdateTemplate)
 				ft.DELETE("/:id", folderTemplateHandler.DeleteTemplate)
 			}
-		}
-		// 案件卷宗目录路由
-		caseFolders := protected.Group("/cases/:id/folders")
-		{
-			caseFolders.GET("", folderTemplateHandler.GetCaseFolders)
-			caseFolders.POST("", folderTemplateHandler.CreateCaseFolder)
-			caseFolders.DELETE("/:folder_id", folderTemplateHandler.DeleteCaseFolder)
 		}
 		log.Println("卷宗目录模板路由注册完成")
 		// 隔离墙管理路由
@@ -709,6 +769,7 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 
 		// 初始化财务相关服务
 		contractService := services.NewContractService(contractRepo, milestoneRepo, clientRepo, caseRepo, userRepo)
+		contractService.SetSubjectRecheckService(subjectRecheckService)
 		milestoneService := services.NewPaymentMilestoneService(milestoneRepo, contractRepo, invoiceRepo)
 		invoiceService := services.NewInvoiceService(invoiceRepo, contractRepo, milestoneRepo, clientRepo, paymentRepo)
 		paymentService := services.NewPaymentService(paymentRepo, invoiceRepo, milestoneRepo, userRepo)
@@ -723,8 +784,9 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 		commissionRuleHandler := handlers.NewCommissionRuleHandler(commissionService)
 		log.Println("✅ 财务处理器初始化完成")
 
-		// 财务路由组
+		// 财务路由组（仅管理员与财务角色可访问）
 		finance := protected.Group("/finance")
+		finance.Use(middleware.RoleMiddleware("admin", "super_admin", "finance"), handlers.MvpModuleUnavailable("财务中心"))
 		{
 			// 合同管理
 			finance.GET("/contracts", financeHandler.ListContracts)                  // 获取合同列表
@@ -813,16 +875,21 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 		// 初始化代管款相关仓储
 		trustAccountRepo := repositories.NewTrustAccountRepository(db)
 		trustTransactionRepo := repositories.NewTrustTransactionRepository(db)
+		trustUnitOfWork := repositories.NewTrustUnitOfWork(db)
 
 		// 初始化代管款相关服务
 		trustAccountService := services.NewTrustAccountService(trustAccountRepo, trustTransactionRepo, clientRepo, caseRepo, userRepo)
-		trustTransactionService := services.NewTrustTransactionService(trustTransactionRepo, trustAccountRepo, caseRepo, userRepo)
+		trustTransactionService := services.NewTrustTransactionService(
+			trustTransactionRepo, trustAccountRepo, caseRepo, userRepo,
+			services.WithTrustUnitOfWork(trustUnitOfWork),
+		)
 
 		trustAccountHandler := handlers.NewTrustAccountHandler(trustAccountService, trustTransactionService)
 		log.Println("✅ 代管款处理器初始化完成")
 
-		// 代管款路由组
+		// 代管款路由组（仅管理员与财务角色可访问）
 		trust := protected.Group("/trust")
+		trust.Use(middleware.RoleMiddleware("admin", "super_admin", "finance"), handlers.MvpModuleUnavailable("代管款中心"))
 		{
 			// 账户管理
 			trust.GET("/accounts", trustAccountHandler.ListAccounts)                            // 获取账户列表
@@ -852,33 +919,52 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 		conflictCheckRepo := repositories.NewConflictCheckRepository(db)
 
 		// 初始化冲突审查服务
-		conflictCheckService := services.NewConflictCheckService(entityRepo, conflictCheckRepo, userRepo)
+		conflictCheckService := services.NewConflictCheckService(entityRepo, conflictCheckRepo, userRepo, db)
+		conflictScopeService := services.NewConflictScopeService(db)
+		conflictScopeHandler := handlers.NewConflictScopeHandler(conflictScopeService)
 
 		// 初始化冲突审查处理器
-		conflictCheckHandler := handlers.NewConflictCheckHandler(db, conflictCheckService, entityRepo)
+		conflictCheckHandler := handlers.NewConflictCheckHandler(db, conflictCheckService, entityRepo, authorizationService)
 		log.Println("✅ 冲突审查处理器初始化完成")
 
 		// 冲突审查路由组
 		conflictGroup := protected.Group("/conflict-v2")
 		{
-			// 冲突检测
-			conflictGroup.POST("/checks", conflictCheckHandler.CreateConflictCheck)       // 创建冲突检测
-			conflictGroup.GET("/checks/:id", conflictCheckHandler.GetConflictCheck)       // 获取冲突审查详情
-			conflictGroup.GET("/checks", conflictCheckHandler.ListConflictChecks)         // 获取冲突审查列表
-			conflictGroup.GET("/stats", conflictCheckHandler.GetConflictCheckStats)       // 获取冲突审查统计
-			conflictGroup.POST("/checks/:id/report", conflictCheckHandler.GenerateReport) // 生成检测报告
+			conflictGroup.GET("/search-scopes", conflictScopeHandler.List)
+			conflictGroup.PUT("/search-scopes/:id", conflictScopeHandler.Upsert)
+			// The legacy v2 check service stores a separate ConflictCheck model and
+			// therefore cannot produce the canonical P0 evidence/review record. Keep
+			// the compatibility API available for local development, but fail closed
+			// in production so it cannot become a second conflict conclusion path.
+			legacyChecks := conflictGroup.Group("/checks")
+			if cfg.IsProduction() {
+				legacyChecks.Use(handlers.MvpModuleUnavailable("旧版冲突检测兼容接口"))
+			}
+			legacyChecks.POST("", conflictCheckHandler.CreateConflictCheck)       // 创建冲突检测
+			legacyChecks.GET("/:id", conflictCheckHandler.GetConflictCheck)       // 获取冲突审查详情
+			legacyChecks.GET("", conflictCheckHandler.ListConflictChecks)         // 获取冲突审查列表
+			legacyChecks.POST("/:id/report", conflictCheckHandler.GenerateReport) // 生成检测报告
+			if cfg.IsProduction() {
+				conflictGroup.GET("/stats", handlers.MvpModuleUnavailable("旧版冲突检测统计接口"))
+			} else {
+				conflictGroup.GET("/stats", conflictCheckHandler.GetConflictCheckStats) // 获取冲突审查统计
+			}
 
 			// 主体管理
-			conflictGroup.GET("/entities", conflictCheckHandler.ListEntities)                     // 获取主体列表
-			conflictGroup.POST("/entities", conflictCheckHandler.CreateEntity)                    // 创建主体
-			conflictGroup.GET("/entities/:id", conflictCheckHandler.GetEntity)                    // 获取主体详情
-			conflictGroup.GET("/entities/:id/relations", conflictCheckHandler.GetEntityRelations) // 获取主体关联
-			conflictGroup.POST("/entities/:id/names", conflictCheckHandler.AddEntityNameHistory)  // 添加主体名称历史
-			conflictGroup.GET("/entities/:id/names", conflictCheckHandler.GetEntityNameHistory)   // 获取主体名称历史
-			conflictGroup.GET("/entities/search", conflictCheckHandler.SearchEntity)              // 搜索主体
-			conflictGroup.GET("/entities/by-name", conflictCheckHandler.GetEntityByName)          // 按名称获取主体
-			conflictGroup.POST("/entities/batch", conflictCheckHandler.BatchImportEntities)       // 批量导入主体
-			conflictGroup.POST("/entities/:id/relations", conflictCheckHandler.AddEntityRelation) // 添加主体关联
+			entityManagement := conflictGroup.Group("/entities")
+			entityManagement.Use(middleware.RoleMiddleware("director", "compliance", "risk", "risk_control", "management", "partner", "conflict_officer"))
+			{
+				entityManagement.GET("", conflictCheckHandler.ListEntities)                     // 获取主体列表
+				entityManagement.POST("", conflictCheckHandler.CreateEntity)                    // 创建主体
+				entityManagement.GET("/search", conflictCheckHandler.SearchEntity)              // 搜索主体
+				entityManagement.GET("/by-name", conflictCheckHandler.GetEntityByName)          // 按名称获取主体
+				entityManagement.POST("/batch", conflictCheckHandler.BatchImportEntities)       // 批量导入主体
+				entityManagement.GET("/:id", conflictCheckHandler.GetEntity)                    // 获取主体详情
+				entityManagement.GET("/:id/relations", conflictCheckHandler.GetEntityRelations) // 获取主体关联
+				entityManagement.POST("/:id/names", conflictCheckHandler.AddEntityNameHistory)  // 添加主体名称历史
+				entityManagement.GET("/:id/names", conflictCheckHandler.GetEntityNameHistory)   // 获取主体名称历史
+				entityManagement.POST("/:id/relations", conflictCheckHandler.AddEntityRelation) // 添加主体关联
+			}
 		}
 		log.Println("✅ 冲突审查路由注册完成")
 

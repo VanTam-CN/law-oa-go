@@ -76,7 +76,7 @@ const ConflictDebug: React.FC = () => {
             project_type: 'civil',
             opposite_parties: '对方当事人',
             team_members: ['律师1', '律师2'],
-            searchYears: 5,
+            searchYears: 0,
             searchDepth: 'deep',
             includeCorporateRelations: true,
           }}

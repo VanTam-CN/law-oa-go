@@ -41,16 +41,16 @@ func NewDocumentLockService(db *gorm.DB, redisClient *redis.Client) *DocumentLoc
 
 // LockStatus 锁状态
 type LockStatus struct {
-	DocumentID    uint      `json:"document_id"`
-	DocumentName  string    `json:"document_name,omitempty"`
-	IsLocked      bool      `json:"is_locked"`
-	LockedBy      uint      `json:"locked_by,omitempty"`
-	LockedByName  string    `json:"locked_by_name,omitempty"`
-	LockedAt      time.Time `json:"locked_at,omitempty"`
-	ExpiresAt     time.Time `json:"expires_at,omitempty"`
-	IsCheckedOut  bool      `json:"is_checked_out,omitempty"`
-	CanEdit       bool      `json:"can_edit"`
-	Reason        string    `json:"reason,omitempty"`
+	DocumentID   uint      `json:"document_id"`
+	DocumentName string    `json:"document_name,omitempty"`
+	IsLocked     bool      `json:"is_locked"`
+	LockedBy     uint      `json:"locked_by,omitempty"`
+	LockedByName string    `json:"locked_by_name,omitempty"`
+	LockedAt     time.Time `json:"locked_at,omitempty"`
+	ExpiresAt    time.Time `json:"expires_at,omitempty"`
+	IsCheckedOut bool      `json:"is_checked_out,omitempty"`
+	CanEdit      bool      `json:"can_edit"`
+	Reason       string    `json:"reason,omitempty"`
 }
 
 // AcquireLockRequest 获取锁请求
@@ -112,15 +112,15 @@ func (s *DocumentLockService) AcquireLock(ctx context.Context, req *AcquireLockR
 		if time.Now().Before(existingLock.ExpiresAt) {
 			// 锁仍然有效，返回锁状态
 			return &LockStatus{
-				DocumentID:    req.DocumentID,
-				IsLocked:      true,
-				LockedBy:      existingLock.LockedBy,
-				LockedByName:  s.getUserName(ctx, existingLock.LockedBy),
-				LockedAt:      existingLock.LockedAt,
-				ExpiresAt:     existingLock.ExpiresAt,
-				IsCheckedOut:  existingLock.IsCheckedOut,
-				CanEdit:       false,
-				Reason:        "Document is locked by another user",
+				DocumentID:   req.DocumentID,
+				IsLocked:     true,
+				LockedBy:     existingLock.LockedBy,
+				LockedByName: s.getUserName(ctx, existingLock.LockedBy),
+				LockedAt:     existingLock.LockedAt,
+				ExpiresAt:    existingLock.ExpiresAt,
+				IsCheckedOut: existingLock.IsCheckedOut,
+				CanEdit:      false,
+				Reason:       "Document is locked by another user",
 			}, nil
 		}
 
@@ -164,15 +164,15 @@ func (s *DocumentLockService) AcquireLock(ctx context.Context, req *AcquireLockR
 	}
 
 	return &LockStatus{
-		DocumentID:    req.DocumentID,
-		IsLocked:      true,
-		LockedBy:      req.UserID,
-		LockedByName:  req.UserName,
-		LockedAt:      now,
-		ExpiresAt:     now.Add(expiration),
-		IsCheckedOut:  req.IsCheckout,
-		CanEdit:       true,
-		Reason:        "Lock acquired successfully",
+		DocumentID:   req.DocumentID,
+		IsLocked:     true,
+		LockedBy:     req.UserID,
+		LockedByName: req.UserName,
+		LockedAt:     now,
+		ExpiresAt:    now.Add(expiration),
+		IsCheckedOut: req.IsCheckout,
+		CanEdit:      true,
+		Reason:       "Lock acquired successfully",
 	}, nil
 }
 
@@ -247,15 +247,15 @@ func (s *DocumentLockService) RenewLock(ctx context.Context, req *RenewLockReque
 	userName := s.getUserName(ctx, req.UserID)
 
 	return &LockStatus{
-		DocumentID:    req.DocumentID,
-		IsLocked:      true,
-		LockedBy:      req.UserID,
-		LockedByName:  userName,
-		LockedAt:      existingLock.LockedAt,
-		ExpiresAt:     newExpiresAt,
-		IsCheckedOut:  existingLock.IsCheckedOut,
-		CanEdit:       true,
-		Reason:        "Lock renewed successfully",
+		DocumentID:   req.DocumentID,
+		IsLocked:     true,
+		LockedBy:     req.UserID,
+		LockedByName: userName,
+		LockedAt:     existingLock.LockedAt,
+		ExpiresAt:    newExpiresAt,
+		IsCheckedOut: existingLock.IsCheckedOut,
+		CanEdit:      true,
+		Reason:       "Lock renewed successfully",
 	}, nil
 }
 
@@ -309,15 +309,15 @@ func (s *DocumentLockService) GetLockStatus(ctx context.Context, documentID, use
 	}
 
 	return &LockStatus{
-		DocumentID:    documentID,
-		IsLocked:      true,
-		LockedBy:      existingLock.LockedBy,
-		LockedByName:  userName,
-		LockedAt:      existingLock.LockedAt,
-		ExpiresAt:     existingLock.ExpiresAt,
-		IsCheckedOut:  existingLock.IsCheckedOut,
-		CanEdit:       canEdit,
-		Reason:        reason,
+		DocumentID:   documentID,
+		IsLocked:     true,
+		LockedBy:     existingLock.LockedBy,
+		LockedByName: userName,
+		LockedAt:     existingLock.LockedAt,
+		ExpiresAt:    existingLock.ExpiresAt,
+		IsCheckedOut: existingLock.IsCheckedOut,
+		CanEdit:      canEdit,
+		Reason:       reason,
 	}, nil
 }
 
@@ -343,15 +343,15 @@ func (s *DocumentLockService) GetUserLocks(ctx context.Context, userID uint) ([]
 		}
 
 		statuses = append(statuses, &LockStatus{
-			DocumentID:    lock.DocumentID,
-			DocumentName:  docName,
-			IsLocked:      true,
-			LockedBy:      lock.LockedBy,
-			LockedByName:  userName,
-			LockedAt:      lock.LockedAt,
-			ExpiresAt:     lock.ExpiresAt,
-			IsCheckedOut:  lock.IsCheckedOut,
-			CanEdit:       true,
+			DocumentID:   lock.DocumentID,
+			DocumentName: docName,
+			IsLocked:     true,
+			LockedBy:     lock.LockedBy,
+			LockedByName: userName,
+			LockedAt:     lock.LockedAt,
+			ExpiresAt:    lock.ExpiresAt,
+			IsCheckedOut: lock.IsCheckedOut,
+			CanEdit:      true,
 		})
 	}
 

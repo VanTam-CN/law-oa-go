@@ -7,6 +7,7 @@ import (
 
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/repositories"
+	"law-oa-go/internal/security"
 )
 
 // EntityService 实体服务接口
@@ -69,12 +70,12 @@ type EntitySearchParams struct {
 
 // ConflictSearchResult 冲突搜索结果
 type ConflictSearchResult struct {
-	MatchedEntities   []*models.Entity
-	RelatedEntities   []*models.Entity
-	NameMatches       []*models.Entity
-	TotalMatches      int
-	HighRiskCount     int
-	MediumRiskCount   int
+	MatchedEntities []*models.Entity
+	RelatedEntities []*models.Entity
+	NameMatches     []*models.Entity
+	TotalMatches    int
+	HighRiskCount   int
+	MediumRiskCount int
 }
 
 // entityService 实体服务实现
@@ -337,9 +338,14 @@ func (s *entityService) FindPotentialConflicts(ctx context.Context, entityID uin
 		}
 	}
 
-	// 2. 按证件号搜索
-	if entity.IdentityNumber != "" {
-		idMatches, _ := s.entityRepo.SearchByIdentityNumber(ctx, entity.IdentityNumber, 100)
+	// 2. 按证件号搜索。主体档案已密文保存时，只在服务端内存中解密，仓储
+	// 会立即转换为 keyed digest，不能把明文写回响应或审计记录。
+	identityNumber := entity.IdentityNumber
+	if identityNumber == "" && entity.IdentityNumberCiphertext != "" {
+		identityNumber, _ = security.DecryptIdentityNumber(entity.IdentityNumberCiphertext)
+	}
+	if identityNumber != "" {
+		idMatches, _ := s.entityRepo.SearchByIdentityNumber(ctx, identityNumber, 100)
 		for _, e := range idMatches {
 			if e.ID != entityID {
 				result.MatchedEntities = append(result.MatchedEntities, e)
@@ -365,7 +371,7 @@ func (s *entityService) FindPotentialConflicts(ctx context.Context, entityID uin
 	// 统计
 	result.TotalMatches = len(result.NameMatches) + len(result.MatchedEntities)
 	result.HighRiskCount = len(result.MatchedEntities) // 证件号匹配为高风险
-	result.MediumRiskCount = len(result.NameMatches)    // 名称匹配为中风险
+	result.MediumRiskCount = len(result.NameMatches)   // 名称匹配为中风险
 
 	return result, nil
 }

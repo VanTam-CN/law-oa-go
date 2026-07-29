@@ -42,7 +42,8 @@ dayjs.locale('zh-cn')
 // 开发环境配置React Query
 if (import.meta.env.DEV) {
   // 全局设置React Query开发模式
-  ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+  const testGlobal = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
+  testGlobal.IS_REACT_ACT_ENVIRONMENT = true
 }
 
 // Suspense回退组件

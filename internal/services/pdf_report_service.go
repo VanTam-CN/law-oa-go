@@ -17,9 +17,9 @@ import (
 	"time"
 
 	"github.com/jung-kurt/gofpdf"
+	"gorm.io/gorm"
 	"law-oa-go/internal/common"
 	"law-oa-go/internal/models"
-	"gorm.io/gorm"
 )
 
 // PDFReportService PDF 报告服务接口
@@ -42,58 +42,58 @@ type PDFReportService interface {
 
 // ReportGenerationRequest 报告生成请求
 type ReportGenerationRequest struct {
-	CheckedBy        uint                      `json:"checkedBy" validate:"required"`
-	CheckTime        time.Time                 `json:"checkTime"`
-	CheckDurationMs  *int                      `json:"checkDurationMs"`
-	ClientName       string                    `json:"clientName" validate:"required"`
-	ClientTaxID      string                    `json:"clientTaxId"`
-	OpposingParty    string                    `json:"opposingParty"`
-	RiskLevel        string                    `json:"riskLevel"`
-	MatchedCases     models.JSON               `json:"matchedCases"`
-	RelatedCompanies models.JSON               `json:"relatedCompanies"`
-	ConflictDetails  models.JSON               `json:"conflictDetails"`
-	TemplateType     string                    `json:"templateType"` // standard/detailed
+	CheckedBy        uint        `json:"checkedBy" validate:"required"`
+	CheckTime        time.Time   `json:"checkTime"`
+	CheckDurationMs  *int        `json:"checkDurationMs"`
+	ClientName       string      `json:"clientName" validate:"required"`
+	ClientTaxID      string      `json:"clientTaxId"`
+	OpposingParty    string      `json:"opposingParty"`
+	RiskLevel        string      `json:"riskLevel"`
+	MatchedCases     models.JSON `json:"matchedCases"`
+	RelatedCompanies models.JSON `json:"relatedCompanies"`
+	ConflictDetails  models.JSON `json:"conflictDetails"`
+	TemplateType     string      `json:"templateType"` // standard/detailed
 }
 
 // ReportFilter 报告过滤条件
 type ReportFilter struct {
-	CheckedBy      *uint      `json:"checkedBy"`
-	RiskLevel      string     `json:"riskLevel"`
-	StartDate      *time.Time `json:"startDate"`
-	EndDate        *time.Time `json:"endDate"`
-	ReportNumber   string     `json:"reportNumber"`
-	ClientName     string     `json:"clientName"`
-	Limit          int        `json:"limit"`
-	Offset         int        `json:"offset"`
+	CheckedBy    *uint      `json:"checkedBy"`
+	RiskLevel    string     `json:"riskLevel"`
+	StartDate    *time.Time `json:"startDate"`
+	EndDate      *time.Time `json:"endDate"`
+	ReportNumber string     `json:"reportNumber"`
+	ClientName   string     `json:"clientName"`
+	Limit        int        `json:"limit"`
+	Offset       int        `json:"offset"`
 }
 
 // SignatureVerificationResult 签名验证结果
 type SignatureVerificationResult struct {
-	Valid      bool      `json:"valid"`
-	SignedBy   string    `json:"signedBy"`
-	SignedAt   time.Time `json:"signedAt"`
-	PublicKey  string    `json:"publicKey"`
-	Hash       string    `json:"hash"`
-	Signature  string    `json:"signature"`
+	Valid     bool      `json:"valid"`
+	SignedBy  string    `json:"signedBy"`
+	SignedAt  time.Time `json:"signedAt"`
+	PublicKey string    `json:"publicKey"`
+	Hash      string    `json:"hash"`
+	Signature string    `json:"signature"`
 }
 
 // pdfReportService PDF 报告服务实现
 type pdfReportService struct {
-	db           *gorm.DB
-	config       *PDFReportConfig
-	privateKey   *rsa.PrivateKey
-	publicKey    *rsa.PublicKey
+	db         *gorm.DB
+	config     *PDFReportConfig
+	privateKey *rsa.PrivateKey
+	publicKey  *rsa.PublicKey
 }
 
 // PDFReportConfig PDF 报告配置
 type PDFReportConfig struct {
-	OutputDir        string        `json:"outputDir"`         // PDF 输出目录
-	BaseURL          string        `json:"baseUrl"`           // 报告访问基础 URL
-	TemplateDir      string        `json:"templateDir"`       // 模板目录
-	EnableSignature  bool          `json:"enableSignature"`   // 是否启用签名
-	SignatureKeyFile string        `json:"signatureKeyFile"`  // 签名密钥文件
-	CertificateFile  string        `json:"certificateFile"`   // 证书文件
-	ReportPrefix     string        `json:"reportPrefix"`      // 报告编号前缀
+	OutputDir        string `json:"outputDir"`        // PDF 输出目录
+	BaseURL          string `json:"baseUrl"`          // 报告访问基础 URL
+	TemplateDir      string `json:"templateDir"`      // 模板目录
+	EnableSignature  bool   `json:"enableSignature"`  // 是否启用签名
+	SignatureKeyFile string `json:"signatureKeyFile"` // 签名密钥文件
+	CertificateFile  string `json:"certificateFile"`  // 证书文件
+	ReportPrefix     string `json:"reportPrefix"`     // 报告编号前缀
 }
 
 // NewPDFReportService 创建新的 PDF 报告服务
@@ -127,13 +127,13 @@ func NewPDFReportService(db *gorm.DB, config *PDFReportConfig) (PDFReportService
 // DefaultPDFReportConfig 默认配置
 func DefaultPDFReportConfig() *PDFReportConfig {
 	return &PDFReportConfig{
-		OutputDir:       "./reports/conflict",
-		BaseURL:         "https://law-oa.example.com/reports",
-		TemplateDir:     "./templates/pdf",
-		EnableSignature: true,
+		OutputDir:        "./reports/conflict",
+		BaseURL:          "https://law-oa.example.com/reports",
+		TemplateDir:      "./templates/pdf",
+		EnableSignature:  true,
 		SignatureKeyFile: common.GetEnv("PDF_SIGNATURE_KEY_FILE", "./keys/private.pem"),
-		CertificateFile: common.GetEnv("PDF_CERTIFICATE_FILE", "./keys/certificate.pem"),
-		ReportPrefix:    "CR",
+		CertificateFile:  common.GetEnv("PDF_CERTIFICATE_FILE", "./keys/certificate.pem"),
+		ReportPrefix:     "CR",
 	}
 }
 
@@ -166,19 +166,19 @@ func (s *pdfReportService) GenerateReport(ctx context.Context, req *ReportGenera
 
 	now := time.Now()
 	report := &models.ConflictReport{
-		ReportNumber:       reportNumber,
-		CheckedBy:          req.CheckedBy,
-		CheckTime:          req.CheckTime,
-		CheckDurationMs:    req.CheckDurationMs,
-		ClientName:         req.ClientName,
-		ClientTaxID:        req.ClientTaxID,
-		OpposingParty:      req.OpposingParty,
-		RiskLevel:          req.RiskLevel,
-		MatchedCases:       req.MatchedCases,
-		RelatedCompanies:   req.RelatedCompanies,
-		ConflictDetails:    req.ConflictDetails,
-		ReportURL:          s.getReportURL(filename),
-		ReportGeneratedAt:  &now,
+		ReportNumber:      reportNumber,
+		CheckedBy:         req.CheckedBy,
+		CheckTime:         req.CheckTime,
+		CheckDurationMs:   req.CheckDurationMs,
+		ClientName:        req.ClientName,
+		ClientTaxID:       req.ClientTaxID,
+		OpposingParty:     req.OpposingParty,
+		RiskLevel:         req.RiskLevel,
+		MatchedCases:      req.MatchedCases,
+		RelatedCompanies:  req.RelatedCompanies,
+		ConflictDetails:   req.ConflictDetails,
+		ReportURL:         s.getReportURL(filename),
+		ReportGeneratedAt: &now,
 	}
 
 	// 启用签名时，自动签名
@@ -393,17 +393,17 @@ func (s *pdfReportService) generateReportNumber() string {
 // generateReportContent 生成报告内容
 func (s *pdfReportService) generateReportContent(req *ReportGenerationRequest) (*ReportContent, error) {
 	content := &ReportContent{
-		ReportNumber:    s.generateReportNumber(),
-		GeneratedAt:     time.Now(),
-		CheckedBy:       req.CheckedBy,
-		CheckTime:       req.CheckTime,
-		ClientName:      req.ClientName,
-		ClientTaxID:     req.ClientTaxID,
-		OpposingParty:   req.OpposingParty,
-		RiskLevel:       req.RiskLevel,
-		MatchedCases:    req.MatchedCases,
+		ReportNumber:     s.generateReportNumber(),
+		GeneratedAt:      time.Now(),
+		CheckedBy:        req.CheckedBy,
+		CheckTime:        req.CheckTime,
+		ClientName:       req.ClientName,
+		ClientTaxID:      req.ClientTaxID,
+		OpposingParty:    req.OpposingParty,
+		RiskLevel:        req.RiskLevel,
+		MatchedCases:     req.MatchedCases,
 		RelatedCompanies: req.RelatedCompanies,
-		ConflictDetails: req.ConflictDetails,
+		ConflictDetails:  req.ConflictDetails,
 	}
 
 	// 根据风险等级设置风险描述

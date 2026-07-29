@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"law-oa-go/internal/models"
 	"gorm.io/gorm"
+	"law-oa-go/internal/models"
 )
 
 // V2ConflictDetectionService v2 冲突检测服务接口
@@ -25,62 +25,62 @@ type V2ConflictDetectionService interface {
 
 // ConflictCheckRequestV2 v2 冲突检测请求
 type ConflictCheckRequestV2 struct {
-	LawyerID       uint     `json:"lawyerId" validate:"required"`
-	ClientName     string   `json:"clientName" validate:"required"`
-	ClientTaxID    string   `json:"clientTaxId"`
-	CaseID         uint     `json:"caseId"`
+	LawyerID        uint     `json:"lawyerId" validate:"required"`
+	ClientName      string   `json:"clientName" validate:"required"`
+	ClientTaxID     string   `json:"clientTaxId"`
+	CaseID          uint     `json:"caseId"`
 	OpposingParties []string `json:"opposingParties"`
-	SearchDepth    string   `json:"searchDepth"` // basic/standard/deep
-	IncludeRelated bool     `json:"includeRelated"`
+	SearchDepth     string   `json:"searchDepth"` // basic/standard/deep
+	IncludeRelated  bool     `json:"includeRelated"`
 }
 
 // ConflictCheckResultV2 v2 冲突检测结果
 type ConflictCheckResultV2 struct {
-	CheckID        string                `json:"checkId"`
-	RiskLevel      string                `json:"riskLevel"`
-	RiskScore      float64               `json:"riskScore"`
-	MatchCount     int                   `json:"matchCount"`
-	Matches        []*ConflictMatchV2    `json:"matches"`
-	CheckTime      time.Time             `json:"checkTime"`
-	DurationMs     int64                 `json:"durationMs"`
-	SearchScope    string                `json:"searchScope"`
-	Recommendations []string             `json:"recommendations"`
+	CheckID         string             `json:"checkId"`
+	RiskLevel       string             `json:"riskLevel"`
+	RiskScore       float64            `json:"riskScore"`
+	MatchCount      int                `json:"matchCount"`
+	Matches         []*ConflictMatchV2 `json:"matches"`
+	CheckTime       time.Time          `json:"checkTime"`
+	DurationMs      int64              `json:"durationMs"`
+	SearchScope     string             `json:"searchScope"`
+	Recommendations []string           `json:"recommendations"`
 }
 
 // ConflictMatchV2 v2 冲突匹配项
 type ConflictMatchV2 struct {
-	MatchID        string                 `json:"matchId"`
-	MatchType      string                 `json:"matchType"`     // direct/indirect/related
-	LawyerID       uint                   `json:"lawyerId"`
-	LawyerName     string                 `json:"lawyerName"`
-	CaseID         uint                   `json:"caseId"`
-	CaseTitle      string                 `json:"caseTitle"`
-	CaseType       string                 `json:"caseType"`
-	Relationship   string                 `json:"relationship"`  // client/opposing/witness
-	MatchReason    string                 `json:"matchReason"`
-	EntityInfo     *V2ConflictEntityInfo `json:"entityInfo"`
-	RiskLevel      string                 `json:"riskLevel"`
-	RiskFactors    []string               `json:"riskFactors"`
+	MatchID      string                `json:"matchId"`
+	MatchType    string                `json:"matchType"` // direct/indirect/related
+	LawyerID     uint                  `json:"lawyerId"`
+	LawyerName   string                `json:"lawyerName"`
+	CaseID       uint                  `json:"caseId"`
+	CaseTitle    string                `json:"caseTitle"`
+	CaseType     string                `json:"caseType"`
+	Relationship string                `json:"relationship"` // client/opposing/witness
+	MatchReason  string                `json:"matchReason"`
+	EntityInfo   *V2ConflictEntityInfo `json:"entityInfo"`
+	RiskLevel    string                `json:"riskLevel"`
+	RiskFactors  []string              `json:"riskFactors"`
 }
 
 // EntityInfo 实体信息
 type V2ConflictEntityInfo struct {
-	Name           string   `json:"name"`
-	StandardName   string   `json:"standardName"`
-	TaxID          string   `json:"taxId"`
-	Type           string   `json:"type"`
-	Aliases        []string `json:"aliases"`
+	Name         string   `json:"name"`
+	StandardName string   `json:"standardName"`
+	TaxID        string   `json:"taxId"`
+	Type         string   `json:"type"`
+	Aliases      []string `json:"aliases"`
 }
 
 // v2ConflictDetectionService v2 冲突检测服务实现
 type v2ConflictDetectionService struct {
-	db              *gorm.DB
-	poolService     ConflictPoolService
-	caseRepo        CaseRepository
-	clientRepo      ClientRepository
-	userRepo        UserRepository
-	companyAPI      CompanyAPIService
-	config          *ConflictDetectionConfigV2
+	db          *gorm.DB
+	poolService ConflictPoolService
+	caseRepo    CaseRepository
+	clientRepo  ClientRepository
+	userRepo    UserRepository
+	companyAPI  CompanyAPIService
+	config      *ConflictDetectionConfigV2
 }
 
 // UserRepository 用户仓库接口
@@ -90,11 +90,11 @@ type UserRepository interface {
 
 // ConflictDetectionConfigV2 v2 冲突检测配置
 type ConflictDetectionConfigV2 struct {
-	CacheEnabled        bool          `json:"cacheEnabled"`
-	CacheTTL            time.Duration `json:"cacheTTL"`
-	MaxConcurrency      int           `json:"maxConcurrency"`
-	DefaultSearchDepth  string        `json:"defaultSearchDepth"`
-	RiskThresholds      RiskThresholds `json:"riskThresholds"`
+	CacheEnabled       bool           `json:"cacheEnabled"`
+	CacheTTL           time.Duration  `json:"cacheTTL"`
+	MaxConcurrency     int            `json:"maxConcurrency"`
+	DefaultSearchDepth string         `json:"defaultSearchDepth"`
+	RiskThresholds     RiskThresholds `json:"riskThresholds"`
 }
 
 // RiskThresholds 风险阈值
@@ -177,14 +177,14 @@ func (s *v2ConflictDetectionService) QuickCheck(ctx context.Context, req *Confli
 	recommendations := s.generateRecommendations(riskLevel, matches)
 
 	result := &ConflictCheckResultV2{
-		CheckID:        checkID,
-		RiskLevel:      riskLevel,
-		RiskScore:      riskScore,
-		MatchCount:     len(matches),
-		Matches:        matches,
-		CheckTime:      startTime,
-		DurationMs:     time.Since(startTime).Milliseconds(),
-		SearchScope:    s.getSearchScope(req),
+		CheckID:         checkID,
+		RiskLevel:       riskLevel,
+		RiskScore:       riskScore,
+		MatchCount:      len(matches),
+		Matches:         matches,
+		CheckTime:       startTime,
+		DurationMs:      time.Since(startTime).Milliseconds(),
+		SearchScope:     s.getSearchScope(req),
 		Recommendations: recommendations,
 	}
 
@@ -238,7 +238,7 @@ func (s *v2ConflictDetectionService) BatchCheck(ctx context.Context, reqs []*Con
 		if err != nil {
 			log.Printf("⚠️ 批量检测中第 %d 项失败: %v", i, err)
 			result = &ConflictCheckResultV2{
-				CheckID: fmt.Sprintf("ERR_%d", i),
+				CheckID:   fmt.Sprintf("ERR_%d", i),
 				RiskLevel: "ERROR",
 				CheckTime: time.Now(),
 			}
@@ -311,14 +311,14 @@ func (s *v2ConflictDetectionService) searchInPool(ctx context.Context, req *Conf
 		}
 
 		match := &ConflictMatchV2{
-			MatchID:     fmt.Sprintf("POOL_%d", pr.PoolEntry.ID),
-			MatchType:   s.determineMatchType(pr),
-			LawyerID:    pr.PoolEntry.LawyerID,
-			LawyerName:  lawyerName,
-			CaseID:      pr.PoolEntry.CaseID,
-			CaseTitle:   pr.PoolEntry.CaseTitle,
+			MatchID:      fmt.Sprintf("POOL_%d", pr.PoolEntry.ID),
+			MatchType:    s.determineMatchType(pr),
+			LawyerID:     pr.PoolEntry.LawyerID,
+			LawyerName:   lawyerName,
+			CaseID:       pr.PoolEntry.CaseID,
+			CaseTitle:    pr.PoolEntry.CaseTitle,
 			Relationship: pr.PoolEntry.RelationshipType,
-			MatchReason: pr.MatchReason,
+			MatchReason:  pr.MatchReason,
 			EntityInfo: &V2ConflictEntityInfo{
 				Name:         pr.PoolEntry.EntityName,
 				StandardName: pr.PoolEntry.EntityNameStandard,
@@ -371,14 +371,14 @@ func (s *v2ConflictDetectionService) searchOpposingParties(ctx context.Context, 
 			}
 
 			match := &ConflictMatchV2{
-				MatchID:     fmt.Sprintf("OPP_%d", pr.PoolEntry.ID),
-				MatchType:   "opposing",
-				LawyerID:    pr.PoolEntry.LawyerID,
-				LawyerName:  lawyerName,
-				CaseID:      pr.PoolEntry.CaseID,
-				CaseTitle:   pr.PoolEntry.CaseTitle,
+				MatchID:      fmt.Sprintf("OPP_%d", pr.PoolEntry.ID),
+				MatchType:    "opposing",
+				LawyerID:     pr.PoolEntry.LawyerID,
+				LawyerName:   lawyerName,
+				CaseID:       pr.PoolEntry.CaseID,
+				CaseTitle:    pr.PoolEntry.CaseTitle,
 				Relationship: "opposing",
-				MatchReason: fmt.Sprintf("对方当事人 '%s' 与案件关联", opposingParty),
+				MatchReason:  fmt.Sprintf("对方当事人 '%s' 与案件关联", opposingParty),
 				EntityInfo: &V2ConflictEntityInfo{
 					Name:         pr.PoolEntry.EntityName,
 					StandardName: pr.PoolEntry.EntityNameStandard,
@@ -427,14 +427,14 @@ func (s *v2ConflictDetectionService) searchWithAPI(ctx context.Context, req *Con
 			}
 
 			match := &ConflictMatchV2{
-				MatchID:     fmt.Sprintf("API_%d", pr.PoolEntry.ID),
-				MatchType:   "api",
-				LawyerID:    pr.PoolEntry.LawyerID,
-				LawyerName:  lawyerName,
-				CaseID:      pr.PoolEntry.CaseID,
-				CaseTitle:   pr.PoolEntry.CaseTitle,
+				MatchID:      fmt.Sprintf("API_%d", pr.PoolEntry.ID),
+				MatchType:    "api",
+				LawyerID:     pr.PoolEntry.LawyerID,
+				LawyerName:   lawyerName,
+				CaseID:       pr.PoolEntry.CaseID,
+				CaseTitle:    pr.PoolEntry.CaseTitle,
 				Relationship: pr.PoolEntry.RelationshipType,
-				MatchReason: fmt.Sprintf("通过 API 匹配到税号 %s", company.TaxID),
+				MatchReason:  fmt.Sprintf("通过 API 匹配到税号 %s", company.TaxID),
 				EntityInfo: &V2ConflictEntityInfo{
 					Name:         company.Name,
 					StandardName: s.standardizeName(company.Name),
@@ -631,8 +631,8 @@ func (s *v2ConflictDetectionService) GetPerformanceMetrics(ctx context.Context) 
 
 // PerformanceMetrics 性能指标
 type PerformanceMetrics struct {
-	PoolSize        int64   `json:"poolSize"`
-	AvgQueryTimeMs  int64   `json:"avgQueryTimeMs"`
-	P95QueryTimeMs  int64   `json:"p95QueryTimeMs"`
-	CacheHitRate    float64 `json:"cacheHitRate"`
+	PoolSize       int64   `json:"poolSize"`
+	AvgQueryTimeMs int64   `json:"avgQueryTimeMs"`
+	P95QueryTimeMs int64   `json:"p95QueryTimeMs"`
+	CacheHitRate   float64 `json:"cacheHitRate"`
 }

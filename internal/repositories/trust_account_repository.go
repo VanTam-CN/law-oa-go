@@ -2,9 +2,11 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"law-oa-go/internal/models"
 )
 
@@ -28,6 +30,24 @@ func (r *TrustAccountRepositoryImpl) FindByID(ctx context.Context, id uint) (*mo
 	var account models.ClientTrustAccount
 	err := r.db.WithContext(ctx).First(&account, id).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &account, nil
+}
+
+// FindByIDForUpdate 加行锁读取账户（FOR UPDATE），必须在事务内调用
+func (r *TrustAccountRepositoryImpl) FindByIDForUpdate(ctx context.Context, id uint) (*models.ClientTrustAccount, error) {
+	var account models.ClientTrustAccount
+	err := r.db.WithContext(ctx).
+		Clauses(clause.Locking{Strength: "UPDATE"}).
+		First(&account, id).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return &account, nil
@@ -46,6 +66,21 @@ func (r *TrustAccountRepositoryImpl) FindByCode(ctx context.Context, code string
 // Update 更新账户
 func (r *TrustAccountRepositoryImpl) Update(ctx context.Context, account *models.ClientTrustAccount) error {
 	return r.db.WithContext(ctx).Save(account).Error
+}
+
+// UpdateBalance 直接按 ID 写入新余额，避免 Save 全字段覆盖
+func (r *TrustAccountRepositoryImpl) UpdateBalance(ctx context.Context, id uint, newBalance float64) error {
+	result := r.db.WithContext(ctx).
+		Model(&models.ClientTrustAccount{}).
+		Where("id = ?", id).
+		Update("balance", newBalance)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
 // Delete 删除账户
@@ -125,6 +160,24 @@ func (r *TrustTransactionRepositoryImpl) FindByID(ctx context.Context, id uint) 
 	var transaction models.ClientTrustTransaction
 	err := r.db.WithContext(ctx).First(&transaction, id).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &transaction, nil
+}
+
+// FindByIDForUpdate 加行锁读取交易（FOR UPDATE），必须在事务内调用
+func (r *TrustTransactionRepositoryImpl) FindByIDForUpdate(ctx context.Context, id uint) (*models.ClientTrustTransaction, error) {
+	var transaction models.ClientTrustTransaction
+	err := r.db.WithContext(ctx).
+		Clauses(clause.Locking{Strength: "UPDATE"}).
+		First(&transaction, id).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return &transaction, nil
@@ -143,6 +196,29 @@ func (r *TrustTransactionRepositoryImpl) FindByCode(ctx context.Context, code st
 // Update 更新交易
 func (r *TrustTransactionRepositoryImpl) Update(ctx context.Context, transaction *models.ClientTrustTransaction) error {
 	return r.db.WithContext(ctx).Save(transaction).Error
+}
+
+// UpdateStatusIfPending 条件更新：仅当当前 status='pending' 时才写入新状态与审批信息
+// 返回受影响行数：1=成功；0=已被并发改动（调用方据此判断幂等冲突）
+func (r *TrustTransactionRepositoryImpl) UpdateStatusIfPending(ctx context.Context, id uint, newStatus string, approvedBy uint) (int64, error) {
+	now := time.Now()
+	updates := map[string]interface{}{
+		"status":      newStatus,
+		"approved_by": approvedBy,
+		"approved_at": &now,
+	}
+	if newStatus == "completed" {
+		updates["completed_at"] = &now
+	}
+
+	result := r.db.WithContext(ctx).
+		Model(&models.ClientTrustTransaction{}).
+		Where("id = ? AND status = ?", id, "pending").
+		Updates(updates)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return result.RowsAffected, nil
 }
 
 // Delete 删除交易
@@ -212,4 +288,28 @@ func (r *TrustTransactionRepositoryImpl) GetByAccountID(ctx context.Context, acc
 	}
 
 	return transactions, total, nil
+}
+
+// trustUnitOfWorkImpl 代管款事务工作单元实现
+// 同一事务内的所有 repo 共享同一个 *gorm.DB（tx），保证原子性
+type trustUnitOfWorkImpl struct {
+	db *gorm.DB
+}
+
+// NewTrustUnitOfWork 创建代管款事务工作单元实例
+func NewTrustUnitOfWork(db *gorm.DB) TrustUnitOfWork {
+	return &trustUnitOfWorkImpl{db: db}
+}
+
+// WithinTransaction 在数据库事务内执行 fn；fn 返回 error 触发回滚
+// fn 内拿到的 repo 已绑定到 tx，所有读写都在同一事务内
+func (u *trustUnitOfWorkImpl) WithinTransaction(
+	ctx context.Context,
+	fn func(txTxnRepo TrustTransactionRepository, txAcctRepo TrustAccountRepository) error,
+) error {
+	return u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		txTxnRepo := NewTrustTransactionRepository(tx)
+		txAcctRepo := NewTrustAccountRepository(tx)
+		return fn(txTxnRepo, txAcctRepo)
+	})
 }

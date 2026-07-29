@@ -10,6 +10,22 @@ import (
 	"law-oa-go/internal/repositories"
 )
 
+// 代管款交易相关错误变量。调用方使用 errors.Is 进行判断，避免字符串比较。
+var (
+	// ErrTransactionNotPending 交易已不在 pending 状态（被并发审批或取消）
+	ErrTransactionNotPending = errors.New("交易已不在待审批状态")
+	// ErrTransactionAlreadyProcessed 交易已被处理（幂等冲突）
+	ErrTransactionAlreadyProcessed = errors.New("交易已被处理")
+	// ErrInsufficientBalance 可用余额不足
+	ErrInsufficientBalance = errors.New("可用余额不足")
+	// ErrTransactionNotFound 交易不存在
+	ErrTransactionNotFound = errors.New("交易不存在")
+	// ErrAccountNotFound 账户不存在
+	ErrAccountNotFound = errors.New("账户不存在")
+	// ErrAccountInactive 账户状态不可用
+	ErrAccountInactive = errors.New("账户状态不可用")
+)
+
 // TrustAccountService 代管款账户服务
 type TrustAccountService struct {
 	accountRepo     repositories.TrustAccountRepository
@@ -46,22 +62,22 @@ type CreateAccountRequest struct {
 
 // AccountResponse 账户响应
 type AccountResponse struct {
-	ID                 uint              `json:"id"`
-	ClientID           uint              `json:"client_id"`
-	AccountCode        string            `json:"account_code"`
-	Balance            float64           `json:"balance"`
-	Currency           string            `json:"currency"`
-	FrozenAmount       float64           `json:"frozen_amount"`
-	AvailableBalance   float64           `json:"available_balance"`
-	PurposeRestriction string            `json:"purpose_restriction"`
-	AuthorizedUses     []string          `json:"authorized_uses"`
-	Status             string            `json:"status"`
-	OpenedAt           *string           `json:"opened_at,omitempty"`
-	ClosedAt           *string           `json:"closed_at,omitempty"`
-	CreatedAt          string            `json:"created_at"`
-	UpdatedAt          string            `json:"updated_at"`
+	ID                 uint     `json:"id"`
+	ClientID           uint     `json:"client_id"`
+	AccountCode        string   `json:"account_code"`
+	Balance            float64  `json:"balance"`
+	Currency           string   `json:"currency"`
+	FrozenAmount       float64  `json:"frozen_amount"`
+	AvailableBalance   float64  `json:"available_balance"`
+	PurposeRestriction string   `json:"purpose_restriction"`
+	AuthorizedUses     []string `json:"authorized_uses"`
+	Status             string   `json:"status"`
+	OpenedAt           *string  `json:"opened_at,omitempty"`
+	ClosedAt           *string  `json:"closed_at,omitempty"`
+	CreatedAt          string   `json:"created_at"`
+	UpdatedAt          string   `json:"updated_at"`
 	// 关联数据
-	Client             *ClientSummary    `json:"client,omitempty"`
+	Client             *ClientSummary        `json:"client,omitempty"`
 	RecentTransactions []*TransactionSummary `json:"recent_transactions,omitempty"`
 }
 
@@ -78,16 +94,16 @@ type TransactionSummary struct {
 
 // ListAccountsRequest 账户列表请求
 type ListAccountsRequest struct {
-	Page      int    `json:"page" form:"page" binding:"min=1"`
-	PageSize  int    `json:"page_size" form:"page_size" binding:"min=1,max=100"`
-	ClientID  uint   `json:"client_id" form:"client_id"`
-	Status    string `json:"status" form:"status" binding:"omitempty,oneof=active frozen closed"`
-	Currency  string `json:"currency" form:"currency" binding:"omitempty,oneof=CNY USD EUR"`
+	Page     int    `json:"page" form:"page" binding:"min=1"`
+	PageSize int    `json:"page_size" form:"page_size" binding:"min=1,max=100"`
+	ClientID uint   `json:"client_id" form:"client_id"`
+	Status   string `json:"status" form:"status" binding:"omitempty,oneof=active frozen closed"`
+	Currency string `json:"currency" form:"currency" binding:"omitempty,oneof=CNY USD EUR"`
 }
 
 // ListAccountsResponse 账户列表响应
 type ListAccountsResponse struct {
-	Accounts  []*AccountResponse `json:"accounts"`
+	Accounts   []*AccountResponse `json:"accounts"`
 	Pagination Pagination         `json:"pagination"`
 }
 
@@ -169,9 +185,9 @@ func (s *TrustAccountService) ListAccounts(ctx context.Context, req *ListAccount
 	response := &ListAccountsResponse{
 		Accounts: make([]*AccountResponse, len(accounts)),
 		Pagination: Pagination{
-			Page:    req.Page,
+			Page:     req.Page,
 			PageSize: req.PageSize,
-			Total:   total,
+			Total:    total,
 		},
 	}
 
@@ -269,17 +285,17 @@ func (s *TrustAccountService) CloseAccount(ctx context.Context, id uint) (*Accou
 // convertToResponse 转换为响应格式
 func (s *TrustAccountService) convertToResponse(ctx context.Context, account *models.ClientTrustAccount) *AccountResponse {
 	resp := &AccountResponse{
-		ID:               account.ID,
-		ClientID:         account.ClientID,
-		AccountCode:      account.AccountCode,
-		Balance:          account.Balance,
-		Currency:         account.Currency,
-		FrozenAmount:     account.FrozenAmount,
-		AvailableBalance: account.Balance - account.FrozenAmount,
+		ID:                 account.ID,
+		ClientID:           account.ClientID,
+		AccountCode:        account.AccountCode,
+		Balance:            account.Balance,
+		Currency:           account.Currency,
+		FrozenAmount:       account.FrozenAmount,
+		AvailableBalance:   account.Balance - account.FrozenAmount,
 		PurposeRestriction: account.PurposeRestriction,
-		Status:           account.Status,
-		CreatedAt:        account.CreatedAt.Format("2006-01-02 15:04:05"),
-		UpdatedAt:        account.UpdatedAt.Format("2006-01-02 15:04:05"),
+		Status:             account.Status,
+		CreatedAt:          account.CreatedAt.Format("2006-01-02 15:04:05"),
+		UpdatedAt:          account.UpdatedAt.Format("2006-01-02 15:04:05"),
 	}
 
 	// 解析授权用途
@@ -333,6 +349,17 @@ type TrustTransactionService struct {
 	accountRepo     repositories.TrustAccountRepository
 	caseRepo        repositories.CaseRepository
 	userRepo        repositories.UserRepository
+	unitOfWork      repositories.TrustUnitOfWork
+}
+
+// TrustTransactionServiceOption 代管款交易服务配置选项
+type TrustTransactionServiceOption func(*TrustTransactionService)
+
+// WithTrustUnitOfWork 注入事务工作单元，使审批流程在同一事务内原子提交
+func WithTrustUnitOfWork(uow repositories.TrustUnitOfWork) TrustTransactionServiceOption {
+	return func(s *TrustTransactionService) {
+		s.unitOfWork = uow
+	}
 }
 
 // NewTrustTransactionService 创建代管款交易服务实例
@@ -341,53 +368,58 @@ func NewTrustTransactionService(
 	accountRepo repositories.TrustAccountRepository,
 	caseRepo repositories.CaseRepository,
 	userRepo repositories.UserRepository,
+	opts ...TrustTransactionServiceOption,
 ) *TrustTransactionService {
-	return &TrustTransactionService{
+	svc := &TrustTransactionService{
 		transactionRepo: transactionRepo,
 		accountRepo:     accountRepo,
 		caseRepo:        caseRepo,
 		userRepo:        userRepo,
 	}
+	for _, opt := range opts {
+		opt(svc)
+	}
+	return svc
 }
 
 // CreateTransactionRequest 创建交易请求
 type CreateTransactionRequest struct {
-	AccountID           uint    `json:"account_id" binding:"required"`
-	TransactionType     string  `json:"transaction_type" binding:"required,oneof=deposit deposit_refund withdraw transfer"`
-	Amount              float64 `json:"amount" binding:"required,gt=0"`
-	Description         string  `json:"description" binding:"required"`
-	CaseID              *uint   `json:"case_id,omitempty"`
-	PurposeCode         string  `json:"purpose_code" binding:"max=50"`
-	RecipientName       string  `json:"recipient_name" binding:"max=200"`
-	RecipientBankAccount string `json:"recipient_bank_account" binding:"max=50"`
-	RecipientBankName   string  `json:"recipient_bank_name" binding:"max=100"`
-	AttachmentID        *uint   `json:"attachment_id,omitempty"`
+	AccountID            uint    `json:"account_id" binding:"required"`
+	TransactionType      string  `json:"transaction_type" binding:"required,oneof=deposit deposit_refund withdraw transfer"`
+	Amount               float64 `json:"amount" binding:"required,gt=0"`
+	Description          string  `json:"description" binding:"required"`
+	CaseID               *uint   `json:"case_id,omitempty"`
+	PurposeCode          string  `json:"purpose_code" binding:"max=50"`
+	RecipientName        string  `json:"recipient_name" binding:"max=200"`
+	RecipientBankAccount string  `json:"recipient_bank_account" binding:"max=50"`
+	RecipientBankName    string  `json:"recipient_bank_name" binding:"max=100"`
+	AttachmentID         *uint   `json:"attachment_id,omitempty"`
 }
 
 // TransactionResponse 交易响应
 type TransactionResponse struct {
-	ID                  uint              `json:"id"`
-	AccountID           uint              `json:"account_id"`
-	TransactionCode     string            `json:"transaction_code"`
-	TransactionType     string            `json:"transaction_type"`
-	Amount              float64           `json:"amount"`
-	Description         string            `json:"description"`
-	CaseID              *uint             `json:"case_id,omitempty"`
-	PurposeCode         string            `json:"purpose_code"`
-	RecipientName       string            `json:"recipient_name"`
-	RecipientBankAccount string           `json:"recipient_bank_account"`
-	RecipientBankName   string            `json:"recipient_bank_name"`
-	Status              string            `json:"status"`
-	CompletedAt         *string           `json:"completed_at,omitempty"`
-	AttachmentID        *uint             `json:"attachment_id,omitempty"`
-	CreatedBy           uint              `json:"created_by"`
-	CreatedAt           string            `json:"created_at"`
-	UpdatedAt           string            `json:"updated_at"`
-	ApprovedBy          *uint             `json:"approved_by,omitempty"`
-	ApprovedAt          *string           `json:"approved_at,omitempty"`
+	ID                   uint    `json:"id"`
+	AccountID            uint    `json:"account_id"`
+	TransactionCode      string  `json:"transaction_code"`
+	TransactionType      string  `json:"transaction_type"`
+	Amount               float64 `json:"amount"`
+	Description          string  `json:"description"`
+	CaseID               *uint   `json:"case_id,omitempty"`
+	PurposeCode          string  `json:"purpose_code"`
+	RecipientName        string  `json:"recipient_name"`
+	RecipientBankAccount string  `json:"recipient_bank_account"`
+	RecipientBankName    string  `json:"recipient_bank_name"`
+	Status               string  `json:"status"`
+	CompletedAt          *string `json:"completed_at,omitempty"`
+	AttachmentID         *uint   `json:"attachment_id,omitempty"`
+	CreatedBy            uint    `json:"created_by"`
+	CreatedAt            string  `json:"created_at"`
+	UpdatedAt            string  `json:"updated_at"`
+	ApprovedBy           *uint   `json:"approved_by,omitempty"`
+	ApprovedAt           *string `json:"approved_at,omitempty"`
 	// 关联数据
-	Account             *AccountSummary   `json:"account,omitempty"`
-	Case                *CaseSummary      `json:"case,omitempty"`
+	Account *AccountSummary `json:"account,omitempty"`
+	Case    *CaseSummary    `json:"case,omitempty"`
 }
 
 // AccountSummary 账户摘要
@@ -423,19 +455,19 @@ func (s *TrustTransactionService) CreateTransaction(ctx context.Context, req *Cr
 	transactionCode := fmt.Sprintf("TXN-%d%s", req.AccountID, time.Now().Format("20060102150405"))
 
 	transaction := &models.ClientTrustTransaction{
-		AccountID:           req.AccountID,
-		TransactionCode:     transactionCode,
-		TransactionType:     req.TransactionType,
-		Amount:              req.Amount,
-		Description:         req.Description,
-		CaseID:              req.CaseID,
-		PurposeCode:         req.PurposeCode,
-		RecipientName:       req.RecipientName,
+		AccountID:            req.AccountID,
+		TransactionCode:      transactionCode,
+		TransactionType:      req.TransactionType,
+		Amount:               req.Amount,
+		Description:          req.Description,
+		CaseID:               req.CaseID,
+		PurposeCode:          req.PurposeCode,
+		RecipientName:        req.RecipientName,
 		RecipientBankAccount: req.RecipientBankAccount,
-		RecipientBankName:   req.RecipientBankName,
-		Status:              "pending",
-		CreatedBy:           createdBy,
-		AttachmentID:        req.AttachmentID,
+		RecipientBankName:    req.RecipientBankName,
+		Status:               "pending",
+		CreatedBy:            createdBy,
+		AttachmentID:         req.AttachmentID,
 	}
 
 	if err := s.transactionRepo.Create(ctx, transaction); err != nil {
@@ -459,55 +491,106 @@ func (s *TrustTransactionService) GetTransactionByID(ctx context.Context, id uin
 }
 
 // ApproveTransaction 审批通过交易
+//
+// 流程（顺序固定，任一步失败整体回滚）：
+//  1. 锁交易（FOR UPDATE） → 2. 验证 pending → 3. 锁账户（FOR UPDATE）
+//  4. 验证账户状态/可用余额 → 5. 计算新余额 → 6. 更新账户余额
+//  7. 条件更新交易 WHERE id=? AND status='pending' → 8. 检查 RowsAffected==1
+//  9. 提交
+//
+// 幂等性：步骤 7 使用条件 UPDATE，并发审批只有一个 goroutine 拿到 RowsAffected==1；
+// 其余拿到 0，事务回滚，返回 ErrTransactionNotPending。
 func (s *TrustTransactionService) ApproveTransaction(ctx context.Context, id uint, approvedBy uint) (*TransactionResponse, error) {
-	transaction, err := s.transactionRepo.FindByID(ctx, id)
-	if err != nil {
-		return nil, fmt.Errorf("查询交易失败: %w", err)
-	}
-	if transaction == nil {
-		return nil, errors.New("交易不存在")
+	if s.unitOfWork == nil {
+		return nil, fmt.Errorf("代管款事务工作单元未注入")
 	}
 
-	if transaction.Status != "pending" {
-		return nil, errors.New("只有待审批状态的交易可以审批")
-	}
-
-	// 获取账户
-	account, err := s.accountRepo.FindByID(ctx, transaction.AccountID)
-	if err != nil {
-		return nil, fmt.Errorf("查询账户失败: %w", err)
-	}
-
-	// 执行交易
-	now := time.Now()
-
-	switch transaction.TransactionType {
-	case "deposit":
-		// 存入：增加余额
-		account.Balance += transaction.Amount
-	case "deposit_refund", "withdraw", "transfer":
-		// 取出：减少余额
-		if transaction.Amount > account.Balance-account.FrozenAmount {
-			return nil, errors.New("可用余额不足")
+	var approveErr error
+	err := s.unitOfWork.WithinTransaction(ctx, func(
+		txTxnRepo repositories.TrustTransactionRepository,
+		txAcctRepo repositories.TrustAccountRepository,
+	) error {
+		// 步骤 1：锁交易
+		transaction, err := txTxnRepo.FindByIDForUpdate(ctx, id)
+		if err != nil {
+			return fmt.Errorf("查询交易失败: %w", err)
 		}
-		account.Balance -= transaction.Amount
+		if transaction == nil {
+			approveErr = ErrTransactionNotFound
+			return approveErr
+		}
+
+		// 步骤 2：验证 pending
+		if transaction.Status != "pending" {
+			if transaction.Status == "completed" {
+				approveErr = fmt.Errorf("%w: 当前状态=%s", ErrTransactionAlreadyProcessed, transaction.Status)
+			} else {
+				approveErr = fmt.Errorf("%w: 当前状态=%s", ErrTransactionNotPending, transaction.Status)
+			}
+			return approveErr
+		}
+
+		// 步骤 3：锁账户
+		account, err := txAcctRepo.FindByIDForUpdate(ctx, transaction.AccountID)
+		if err != nil {
+			return fmt.Errorf("查询账户失败: %w", err)
+		}
+		if account == nil {
+			approveErr = ErrAccountNotFound
+			return approveErr
+		}
+
+		// 步骤 4：验证账户状态
+		if account.Status != "active" {
+			approveErr = fmt.Errorf("%w: 状态=%s", ErrAccountInactive, account.Status)
+			return approveErr
+		}
+
+		// 步骤 4：验证余额 + 步骤 5：计算新余额
+		newBalance := account.Balance
+		switch transaction.TransactionType {
+		case "deposit":
+			newBalance = account.Balance + transaction.Amount
+		case "deposit_refund", "withdraw", "transfer":
+			if transaction.Amount > account.Balance-account.FrozenAmount {
+				approveErr = ErrInsufficientBalance
+				return approveErr
+			}
+			newBalance = account.Balance - transaction.Amount
+		default:
+			approveErr = fmt.Errorf("未知交易类型: %s", transaction.TransactionType)
+			return approveErr
+		}
+
+		// 步骤 6：更新账户余额（仅写 balance 字段，避免全字段覆盖）
+		if err := txAcctRepo.UpdateBalance(ctx, account.ID, newBalance); err != nil {
+			return fmt.Errorf("更新账户余额失败: %w", err)
+		}
+
+		// 步骤 7：条件更新交易（WHERE id=? AND status='pending'）
+		rowsAffected, err := txTxnRepo.UpdateStatusIfPending(ctx, id, "completed", approvedBy)
+		if err != nil {
+			return fmt.Errorf("审批交易失败: %w", err)
+		}
+
+		// 步骤 8：检查 RowsAffected==1；若为 0 说明被并发抢先改动，触发回滚
+		if rowsAffected != 1 {
+			approveErr = fmt.Errorf("%w: RowsAffected=%d", ErrTransactionNotPending, rowsAffected)
+			return approveErr
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		// approveErr 用于向调用方暴露语义化错误；若 fn 内未设置（例如 UoW 内部错误），使用 err
+		if approveErr != nil {
+			return nil, approveErr
+		}
+		return nil, err
 	}
 
-	transaction.Status = "completed"
-	transaction.CompletedAt = &now
-	transaction.ApprovedBy = &approvedBy
-	transaction.ApprovedAt = &now
-
-	// 更新账户余额
-	if err := s.accountRepo.Update(ctx, account); err != nil {
-		return nil, fmt.Errorf("更新账户余额失败: %w", err)
-	}
-
-	// 更新交易状态
-	if err := s.transactionRepo.Update(ctx, transaction); err != nil {
-		return nil, fmt.Errorf("审批交易失败: %w", err)
-	}
-
+	// 步骤 9：事务提交后重新读取，返回最新视图
 	return s.GetTransactionByID(ctx, id)
 }
 
@@ -537,8 +620,8 @@ func (s *TrustTransactionService) RejectTransaction(ctx context.Context, id uint
 // ListTransactions 获取交易列表
 func (s *TrustTransactionService) ListTransactions(ctx context.Context, page, pageSize int, accountID *uint) ([]*TransactionResponse, int64, error) {
 	params := &repositories.TrustTransactionListParams{
-		Page:     page,
-		PageSize: pageSize,
+		Page:      page,
+		PageSize:  pageSize,
 		AccountID: accountID,
 	}
 
@@ -558,22 +641,22 @@ func (s *TrustTransactionService) ListTransactions(ctx context.Context, page, pa
 // convertToResponse 转换为响应格式
 func (s *TrustTransactionService) convertToResponse(transaction *models.ClientTrustTransaction) *TransactionResponse {
 	resp := &TransactionResponse{
-		ID:                  transaction.ID,
-		AccountID:           transaction.AccountID,
-		TransactionCode:     transaction.TransactionCode,
-		TransactionType:     transaction.TransactionType,
-		Amount:              transaction.Amount,
-		Description:         transaction.Description,
-		CaseID:              transaction.CaseID,
-		PurposeCode:         transaction.PurposeCode,
-		RecipientName:       transaction.RecipientName,
+		ID:                   transaction.ID,
+		AccountID:            transaction.AccountID,
+		TransactionCode:      transaction.TransactionCode,
+		TransactionType:      transaction.TransactionType,
+		Amount:               transaction.Amount,
+		Description:          transaction.Description,
+		CaseID:               transaction.CaseID,
+		PurposeCode:          transaction.PurposeCode,
+		RecipientName:        transaction.RecipientName,
 		RecipientBankAccount: transaction.RecipientBankAccount,
-		RecipientBankName:   transaction.RecipientBankName,
-		Status:              transaction.Status,
-		AttachmentID:        transaction.AttachmentID,
-		CreatedBy:           transaction.CreatedBy,
-		CreatedAt:           transaction.CreatedAt.Format("2006-01-02 15:04:05"),
-		UpdatedAt:           transaction.UpdatedAt.Format("2006-01-02 15:04:05"),
+		RecipientBankName:    transaction.RecipientBankName,
+		Status:               transaction.Status,
+		AttachmentID:         transaction.AttachmentID,
+		CreatedBy:            transaction.CreatedBy,
+		CreatedAt:            transaction.CreatedAt.Format("2006-01-02 15:04:05"),
+		UpdatedAt:            transaction.UpdatedAt.Format("2006-01-02 15:04:05"),
 	}
 
 	if transaction.CompletedAt != nil {

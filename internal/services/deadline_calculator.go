@@ -24,19 +24,19 @@ type AppealPeriod struct {
 
 // CaseTypeDeadlines 案件类型时效配置
 var CaseTypeDeadlines = map[string]AppealPeriod{
-	"民事案件":   {Days: 15, Reason: "民事判决上诉期15天"},
-	"商事案件":   {Days: 15, Reason: "商事判决上诉期15天"},
-	"刑事案件":   {Days: 10, Reason: "刑事判决上诉期10天"},
-	"行政案件":   {Days: 15, Reason: "行政判决上诉期15天"},
-	"知识产权":  {Days: 15, Reason: "知识产权案件上诉期15天"},
+	"民事案件": {Days: 15, Reason: "民事判决上诉期15天"},
+	"商事案件": {Days: 15, Reason: "商事判决上诉期15天"},
+	"刑事案件": {Days: 10, Reason: "刑事判决上诉期10天"},
+	"行政案件": {Days: 15, Reason: "行政判决上诉期15天"},
+	"知识产权": {Days: 15, Reason: "知识产权案件上诉期15天"},
 }
 
 // EvidenceDeadline 举证期限配置
 var EvidenceDeadlines = map[string]int{
-	"民事案件":  15, // 举证期限一般15天
-	"商事案件":  15,
-	"刑事案件":  7,  // 刑事案件举证期限较短
-	"行政案件":  15,
+	"民事案件": 15, // 举证期限一般15天
+	"商事案件": 15,
+	"刑事案件": 7, // 刑事案件举证期限较短
+	"行政案件": 15,
 }
 
 // NewDeadlineCalculator 创建时效计算服务
@@ -91,11 +91,11 @@ func (s *DeadlineCalculator) CreateAppealDeadlineInbox(ctx context.Context, case
 
 	// 创建主待办事项
 	item := &models.InboxItem{
-		UserID:      lawyerID,
-		SourceType:  "deadline",
-		SourceID:    caseID,
-		Title:       fmt.Sprintf("上诉期截止提醒"),
-		Content:     fmt.Sprintf("案件类型: %s, 判决日期: %s, 上诉期: %d天, 截止日期: %s",
+		UserID:     lawyerID,
+		SourceType: "deadline",
+		SourceID:   caseID,
+		Title:      fmt.Sprintf("上诉期截止提醒"),
+		Content: fmt.Sprintf("案件类型: %s, 判决日期: %s, 上诉期: %d天, 截止日期: %s",
 			caseType, judgmentDate.Format("2006-01-02"), days, deadline.Format("2006-01-02")),
 		Priority:    "critical",
 		DueDate:     &deadline,
@@ -283,12 +283,12 @@ func (s *DeadlineCalculator) GetUpcomingDeadlines(ctx context.Context, userID ui
 
 // DeadlineInfo 期限信息
 type DeadlineInfo struct {
-	CaseID       uint       `json:"case_id"`
-	CaseType     string     `json:"case_type"`
-	JudgmentDate *time.Time `json:"judgment_date"`
-	AppealDeadline *time.Time `json:"appeal_deadline"`
-	AppealDays   int        `json:"appeal_days"`
-	EvidenceDeadline *time.Time `json:"evidence_deadline"`
+	CaseID            uint       `json:"case_id"`
+	CaseType          string     `json:"case_type"`
+	JudgmentDate      *time.Time `json:"judgment_date"`
+	AppealDeadline    *time.Time `json:"appeal_deadline"`
+	AppealDays        int        `json:"appeal_days"`
+	EvidenceDeadline  *time.Time `json:"evidence_deadline"`
 	ExecutionDeadline *time.Time `json:"execution_deadline"`
 }
 

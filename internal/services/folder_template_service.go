@@ -2,10 +2,16 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/repositories"
+)
+
+var (
+	ErrFolderNotFound     = errors.New("folder not found")
+	ErrFolderCaseMismatch = errors.New("folder does not belong to case")
 )
 
 // FolderTemplateService 卷宗目录模板服务接口
@@ -18,7 +24,7 @@ type FolderTemplateService interface {
 	ApplyTemplate(ctx context.Context, caseID uint, templateID uint) ([]*models.FolderNode, error)
 	GetCaseFolders(ctx context.Context, caseID uint) ([]*models.FolderNode, error)
 	CreateCustomFolder(ctx context.Context, req *CreateCaseFolderRequest) (*models.CaseFolder, error)
-	DeleteCaseFolder(ctx context.Context, folderID uint) error
+	DeleteCaseFolder(ctx context.Context, caseID, folderID uint) error
 }
 
 // CreateFolderTemplateRequest 创建模板请求
@@ -64,14 +70,14 @@ func NewFolderTemplateService(repo repositories.FolderTemplateRepository) Folder
 // CreateTemplate 创建模板
 func (s *folderTemplateService) CreateTemplate(ctx context.Context, req *CreateFolderTemplateRequest) (*models.CaseFolderTemplate, error) {
 	template := &models.CaseFolderTemplate{
-		Name:           req.Name,
-		Description:    req.Description,
+		Name:            req.Name,
+		Description:     req.Description,
 		FolderStructure: models.JSON(req.FolderStructure),
-		CaseType:       req.CaseType,
-		IsDefault:      req.IsDefault,
-		IsActive:       true,
-		TemplateFiles:  models.JSON(req.TemplateFiles),
-		CreatedBy:      req.CreatedBy,
+		CaseType:        req.CaseType,
+		IsDefault:       req.IsDefault,
+		IsActive:        true,
+		TemplateFiles:   models.JSON(req.TemplateFiles),
+		CreatedBy:       req.CreatedBy,
 	}
 
 	if err := s.repo.CreateTemplate(ctx, template); err != nil {
@@ -196,6 +202,21 @@ func (s *folderTemplateService) GetCaseFolders(ctx context.Context, caseID uint)
 
 // CreateCustomFolder 创建自定义文件夹
 func (s *folderTemplateService) CreateCustomFolder(ctx context.Context, req *CreateCaseFolderRequest) (*models.CaseFolder, error) {
+	if req == nil || req.CaseID == 0 {
+		return nil, fmt.Errorf("案件ID不能为空")
+	}
+	if req.ParentID != nil && *req.ParentID > 0 {
+		parent, err := s.repo.GetFolderByID(ctx, *req.ParentID)
+		if err != nil {
+			return nil, err
+		}
+		if parent == nil {
+			return nil, ErrFolderNotFound
+		}
+		if parent.CaseID != req.CaseID {
+			return nil, ErrFolderCaseMismatch
+		}
+	}
 	folder := &models.CaseFolder{
 		CaseID:       req.CaseID,
 		ParentID:     req.ParentID,
@@ -210,8 +231,22 @@ func (s *folderTemplateService) CreateCustomFolder(ctx context.Context, req *Cre
 	return folder, nil
 }
 
-// DeleteCaseFolder 删除案件文件夹（含子文件夹）
-func (s *folderTemplateService) DeleteCaseFolder(ctx context.Context, folderID uint) error {
+// DeleteCaseFolder 删除案件文件夹（含子文件夹）。案件ID和文件夹ID
+// 必须同时匹配，避免仅凭可猜测的 folder_id 删除其他案件的目录。
+func (s *folderTemplateService) DeleteCaseFolder(ctx context.Context, caseID, folderID uint) error {
+	if caseID == 0 || folderID == 0 {
+		return fmt.Errorf("案件ID和文件夹ID不能为空")
+	}
+	folder, err := s.repo.GetFolderByID(ctx, folderID)
+	if err != nil {
+		return err
+	}
+	if folder == nil {
+		return ErrFolderNotFound
+	}
+	if folder.CaseID != caseID {
+		return ErrFolderCaseMismatch
+	}
 	return s.repo.DeleteFolder(ctx, folderID)
 }
 
@@ -269,15 +304,15 @@ func buildFolderTree(ctx context.Context, folders []*models.CaseFolder) []*model
 	// 创建所有节点
 	for _, f := range folders {
 		node := &models.FolderNode{
-			ID:           f.ID,
-			CaseID:       f.CaseID,
-			ParentID:     f.ParentID,
-			Name:         f.Name,
-			DisplayOrder: f.DisplayOrder,
-			Description:  f.Description,
-			TemplatePath: f.TemplatePath,
+			ID:            f.ID,
+			CaseID:        f.CaseID,
+			ParentID:      f.ParentID,
+			Name:          f.Name,
+			DisplayOrder:  f.DisplayOrder,
+			Description:   f.Description,
+			TemplatePath:  f.TemplatePath,
 			DocumentCount: f.DocumentCount,
-			Children:     []*models.FolderNode{},
+			Children:      []*models.FolderNode{},
 		}
 		nodeMap[f.ID] = node
 	}

@@ -25,7 +25,7 @@ func TestSwaggerDocumentation(t *testing.T) {
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Test Swagger JSON endpoint
-	req, _ := http.NewRequest("GET", "/swagger/doc.json", nil)
+	req := httptest.NewRequest(http.MethodGet, "/swagger/doc.json", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
@@ -37,7 +37,7 @@ func TestSwaggerDocumentation(t *testing.T) {
 	var swaggerDoc map[string]interface{}
 	err := json.Unmarshal(body, &swaggerDoc)
 	assert.NoError(t, err)
-	assert.Equal(t, "Law Office Automation API", swaggerDoc["info"].(map[string]interface{})["title"])
+	assert.Equal(t, "示例律师事务所OA API", swaggerDoc["info"].(map[string]interface{})["title"])
 	assert.Equal(t, "1.0", swaggerDoc["info"].(map[string]interface{})["version"])
 	assert.Equal(t, "/api/v1", swaggerDoc["basePath"])
 }
@@ -53,7 +53,7 @@ func TestSwaggerUI(t *testing.T) {
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Test Swagger UI endpoint
-	req, _ := http.NewRequest("GET", "/swagger/index.html", nil)
+	req := httptest.NewRequest(http.MethodGet, "/swagger/index.html", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
@@ -75,7 +75,7 @@ func TestAPIEndpointsDocumented(t *testing.T) {
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Load the swagger.json file
-	req, _ := http.NewRequest("GET", "/swagger/doc.json", nil)
+	req := httptest.NewRequest(http.MethodGet, "/swagger/doc.json", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
@@ -105,7 +105,7 @@ func TestSecurityDefinitions(t *testing.T) {
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Load the swagger.json file
-	req, _ := http.NewRequest("GET", "/swagger/doc.json", nil)
+	req := httptest.NewRequest(http.MethodGet, "/swagger/doc.json", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 

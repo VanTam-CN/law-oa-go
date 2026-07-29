@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"law-oa-go/internal/repositories"
+	"law-oa-go/internal/security"
 )
 
 // safeGo 安全启动 goroutine，捕获 panic 防止进程崩溃
@@ -34,9 +36,9 @@ type ConflictHookService interface {
 
 type conflictHookService struct {
 	conflictService ConflictCheckService
-	caseRepo       repositories.CaseRepository
-	entityRepo     repositories.EntityRepository
-	clientRepo     repositories.ClientRepository
+	caseRepo        repositories.CaseRepository
+	entityRepo      repositories.EntityRepository
+	clientRepo      repositories.ClientRepository
 }
 
 // NewConflictHookService 创建冲突检测 Hook 服务
@@ -48,9 +50,9 @@ func NewConflictHookService(
 ) ConflictHookService {
 	return &conflictHookService{
 		conflictService: conflictService,
-		caseRepo:       caseRepo,
-		entityRepo:     entityRepo,
-		clientRepo:     clientRepo,
+		caseRepo:        caseRepo,
+		entityRepo:      entityRepo,
+		clientRepo:      clientRepo,
 	}
 }
 
@@ -109,20 +111,21 @@ func (s *conflictHookService) runConflictCheck(ctx context.Context, caseID uint,
 		return
 	}
 
+	idCard, _ := client.DecryptedIDCard()
 	req := &ConflictCheckRequest{
-		CaseID:      caseID,
-		CaseTitle:   caseData.Title,
+		CaseID:    caseID,
+		CaseTitle: caseData.Title,
 		CheckEntities: []EntityCheckInfo{
 			{
-				EntityID:      clientID,
-				EntityName:    client.Name,
-				IdentityType:  "individual",
-				IdentityNumber: client.IDCard,
-				PartyType:     "CLIENT",
+				EntityID:       clientID,
+				EntityName:     client.Name,
+				IdentityType:   "individual",
+				IdentityNumber: idCard,
+				PartyType:      "CLIENT",
 			},
 		},
 		SearchDepth: 3,
-		RequestedBy:  0,
+		RequestedBy: 0,
 	}
 
 	resp, err := s.conflictService.CheckConflict(bgCtx, req)
@@ -154,21 +157,25 @@ func (s *conflictHookService) checkEntityConflict(ctx context.Context, caseID ui
 		log.Printf("[ConflictHook] 获取实体失败 (traceID: %v, EntityID: %d): %v", traceID, entityID, err)
 		return
 	}
+	identityNumber := strings.TrimSpace(entity.IdentityNumber)
+	if identityNumber == "" && strings.TrimSpace(entity.IdentityNumberCiphertext) != "" {
+		identityNumber, _ = security.DecryptIdentityNumber(entity.IdentityNumberCiphertext)
+	}
 
 	req := &ConflictCheckRequest{
-		CaseID:      caseID,
-		CaseTitle:   caseData.Title,
+		CaseID:    caseID,
+		CaseTitle: caseData.Title,
 		CheckEntities: []EntityCheckInfo{
 			{
-				EntityID:      entityID,
-				EntityName:    entity.Name,
-				IdentityType:  string(entity.IdentityType),
-				IdentityNumber: entity.IdentityNumber,
-				PartyType:     "OPPOSING",
+				EntityID:       entityID,
+				EntityName:     entity.Name,
+				IdentityType:   string(entity.IdentityType),
+				IdentityNumber: identityNumber,
+				PartyType:      "OPPOSING",
 			},
 		},
 		SearchDepth: 3,
-		RequestedBy:  0,
+		RequestedBy: 0,
 	}
 
 	resp, err := s.conflictService.CheckConflict(bgCtx, req)

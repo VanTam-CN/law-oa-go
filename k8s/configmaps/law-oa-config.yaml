@@ -37,13 +37,13 @@ data:
 
     # 数据库配置
     database:
-      host: "${DB_HOST}"
-      port: ${DB_PORT}
-      user: "${DB_USER}"
+      driver: "postgres"
+      host: "law-oa-postgres-service"
+      port: "5432"
+      sslmode: "require"
+      username: "lawuser"
       password: "${DB_PASSWORD}"
-      name: "${DB_NAME}"
-      charset: "utf8mb4"
-      parse_time: true
+      database: "law_oa"
       loc: "Local"
       max_idle_conns: 10
       max_open_conns: 100
@@ -52,8 +52,8 @@ data:
 
     # Redis配置
     redis:
-      host: "${REDIS_HOST}"
-      port: ${REDIS_PORT}
+      host: "law-oa-redis-service"
+      port: "6379"
       password: "${REDIS_PASSWORD}"
       db: 0
       pool_size: 10
@@ -68,7 +68,7 @@ data:
     # Elasticsearch配置
     elasticsearch:
       hosts:
-        - "${ES_HOST}"
+        - "http://law-oa-elasticsearch-service.law-oa-logging.svc.cluster.local:9200"
       username: "${ES_USERNAME:-}"
       password: "${ES_PASSWORD:-}"
       index_prefix: "law_oa"
@@ -219,10 +219,11 @@ data:
   # 数据库连接配置
   database.yaml: |
     # 数据库连接配置
-    db_host: "mysql-service.law-oa.svc.cluster.local"
-    db_port: "3306"
+    db_driver: "postgres"
+    db_host: "law-oa-postgres-service.law-oa.svc.cluster.local"
+    db_port: "5432"
+    db_sslmode: "require"
     db_name: "law_oa"
-    db_charset: "utf8mb4"
     db_max_idle_conns: "10"
     db_max_open_conns: "100"
     db_conn_max_lifetime: "3600"
@@ -230,7 +231,7 @@ data:
   # Redis配置
   redis.yaml: |
     # Redis连接配置
-    redis_host: "redis-service.law-oa.svc.cluster.local"
+    redis_host: "law-oa-redis-service.law-oa.svc.cluster.local"
     redis_port: "6379"
     redis_db: "0"
     redis_pool_size: "10"
@@ -242,7 +243,7 @@ data:
   # Elasticsearch配置
   elasticsearch.yaml: |
     # Elasticsearch连接配置
-    elasticsearch_host: "http://elasticsearch-service.law-oa-logging.svc.cluster.local:9200"
+    elasticsearch_host: "http://law-oa-elasticsearch-service.law-oa-logging.svc.cluster.local:9200"
     elasticsearch_index_prefix: "law_oa"
     elasticsearch_max_retries: "3"
     elasticsearch_sniff_enabled: "false"

@@ -6,6 +6,7 @@ import (
 	stderrors "errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -31,6 +32,8 @@ type AsyncConflictCheckService interface {
 type ConflictCheckTaskResponse struct {
 	TaskID                     string    `json:"taskId"`
 	CheckID                    string    `json:"checkId"`
+	SubjectCaseID              string    `json:"subjectCaseId,omitempty"`
+	IntakeID                   string    `json:"intakeId,omitempty"`
 	Status                     string    `json:"status"`
 	ClientID                   string    `json:"clientId"`
 	ClientName                 string    `json:"clientName"`
@@ -41,6 +44,7 @@ type ConflictCheckTaskResponse struct {
 	RecommendedPollingInterval int       `json:"recommendedPollingInterval"`
 	CreatedAt                  time.Time `json:"createdAt"`
 	UpdatedAt                  time.Time `json:"updatedAt"`
+	OwnerID                    uint      `json:"-"`
 }
 
 type ConflictCheckTaskResultResponse struct {
@@ -70,6 +74,9 @@ func (s *asyncConflictCheckService) CreateTask(ctx context.Context, request *mod
 	if request.CheckID == "" {
 		request.CheckID = "CCT_" + uuid.NewString()
 	}
+	if (strings.TrimSpace(request.SubjectCaseID) != "" || strings.TrimSpace(request.IntakeID) != "") && !hasConflictSubjectLinker(s.conflictRepo) {
+		return nil, fmt.Errorf("冲突检测上下文关联服务未初始化，已阻止创建无案件关联任务")
+	}
 
 	userID, _ := strconv.ParseUint(request.UserID, 10, 32)
 	now := time.Now()
@@ -81,7 +88,7 @@ func (s *asyncConflictCheckService) CreateTask(ctx context.Context, request *mod
 		CaseType:         request.CaseType,
 		CheckStatus:      ConflictTaskStatusQueued,
 		RiskLevel:        "LOW",
-		SearchParameters: toModelJSON(request),
+		SearchParameters: toModelJSON(auditSafeConflictRequest(request)),
 		UserID:           uint(userID),
 		CheckTime:        now,
 		CreatedAt:        now,
@@ -89,7 +96,14 @@ func (s *asyncConflictCheckService) CreateTask(ctx context.Context, request *mod
 	}
 
 	if err := s.conflictRepo.SaveCheckRecord(ctx, record); err != nil {
-		return nil, err
+		// Reusing a caller-supplied check ID is the supported idempotency path.
+		// Return the existing task only to its owner; the HTTP handler performs a
+		// second case/intake authorization check before serializing it.
+		existing, getErr := s.conflictRepo.GetCheckRecord(ctx, record.CheckID)
+		if getErr != nil || existing == nil || (existing.UserID != uint(userID) && !IsConflictReviewRole(request.ActorRole)) {
+			return nil, err
+		}
+		return s.toTaskResponse(existing), nil
 	}
 
 	taskRequest := *request
@@ -175,13 +189,46 @@ func (s *asyncConflictCheckService) runTask(taskID string, request *models.Confl
 		record.RiskLevel = result.RiskAssessment.OverallRisk
 	}
 	record.CheckTime = result.CheckTime
+	if strings.TrimSpace(request.SubjectCaseID) != "" || strings.TrimSpace(request.IntakeID) != "" {
+		coverageStatus := ""
+		if result.Decision != nil {
+			coverageStatus = result.Decision.CoverageStatus
+		}
+		linker, _ := s.conflictRepo.(repositories.ConflictSubjectLinker)
+		if err := linker.LinkConflictCheckToCase(ctx, repositories.ConflictSubjectAssociation{
+			CheckID:           record.CheckID,
+			SubjectCaseID:     request.SubjectCaseID,
+			SubjectCaseNumber: request.SubjectCaseNumber,
+			IntakeID:          request.IntakeID,
+			ClientID:          request.ClientID,
+			CoverageStatus:    coverageStatus,
+			CheckedAt:         record.CheckTime,
+		}); err != nil {
+			record.CheckStatus = ConflictTaskStatusFailed
+			record.CheckResult = models.JSON{"error": err.Error()}
+			_ = s.conflictRepo.UpdateCheckRecord(ctx, record)
+			return
+		}
+	}
 	_ = s.conflictRepo.UpdateCheckRecord(ctx, record)
 }
 
+func hasConflictSubjectLinker(repo repositories.BasicConflictRepository) bool {
+	_, ok := repo.(repositories.ConflictSubjectLinker)
+	return ok
+}
+
 func (s *asyncConflictCheckService) toTaskResponse(record *models.ConflictCheckRecord) *ConflictCheckTaskResponse {
+	subjectCaseID := subjectCaseIDFromSearchParameters(record.SearchParameters)
+	subjectCaseIDText := ""
+	if subjectCaseID > 0 {
+		subjectCaseIDText = strconv.FormatUint(uint64(subjectCaseID), 10)
+	}
 	return &ConflictCheckTaskResponse{
 		TaskID:                     record.CheckID,
 		CheckID:                    record.CheckID,
+		SubjectCaseID:              subjectCaseIDText,
+		IntakeID:                   SubjectIntakeIDFromSearchParameters(record.SearchParameters),
 		Status:                     record.CheckStatus,
 		ClientID:                   record.ClientID,
 		ClientName:                 record.ClientName,
@@ -192,6 +239,7 @@ func (s *asyncConflictCheckService) toTaskResponse(record *models.ConflictCheckR
 		RecommendedPollingInterval: 2,
 		CreatedAt:                  record.CreatedAt,
 		UpdatedAt:                  record.UpdatedAt,
+		OwnerID:                    record.UserID,
 	}
 }
 

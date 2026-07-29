@@ -4,17 +4,27 @@
 # ================================
 # 基础阶段 - 预准备公共依赖
 # ================================
-FROM golang:1.23-alpine AS base
+# Build the toolchain on the runner architecture and cross-compile the
+# application for TARGETOS/TARGETARCH. This is required for a real multi-arch
+# image; otherwise an ARM64 image can silently contain an AMD64 binary.
+ARG BUILDPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
+FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS base
 
 # 安装基础依赖
 RUN apk add --no-cache git ca-certificates tzdata build-base && \
     addgroup -g 1001 -S lawapp && \
     adduser -u 1001 -S lawapp -G lawapp
 
-# 设置Go环境变量
-ENV CGO_ENABLED=0
-ENV GOOS=linux
-ENV GOARCH=amd64
+# BuildKit supplies TARGETOS/TARGETARCH for each requested image platform.
+# Keep the binary architecture aligned with the image so the published ARM64
+# image does not contain an AMD64 executable.
+ARG TARGETOS
+ARG TARGETARCH
+ENV CGO_ENABLED=1
+ENV GOOS=${TARGETOS}
+ENV GOARCH=${TARGETARCH}
 ENV GOPROXY=https://goproxy.cn,direct
 ENV GOCACHE=/root/.cache/go-build
 ENV GOMODCACHE=/go/pkg/mod
@@ -46,20 +56,25 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 # 复制源代码
 COPY . .
 
-# 运行测试和质量检查
+# 为 scratch 运行时镜像预创建目录；scratch 阶段没有 shell，不能 RUN mkdir。
+RUN mkdir -p /build/runtime-dirs/uploads/contract \
+    /build/runtime-dirs/uploads/evidence \
+    /build/runtime-dirs/uploads/letter \
+    /build/runtime-dirs/uploads/other \
+    /build/runtime-dirs/logs \
+    /build/runtime-dirs/temp
+
+# 生产镜像构建阶段只做依赖校验和编译；测试/静态分析由 CI 独立门禁负责。
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
-    go test -v -race -coverprofile=coverage.out ./... && \
-    go tool cover -func=coverage.out | grep 'total:' && \
-    go vet ./... && \
-    go fmt ./...
+    go mod verify
 
 # 根据构建目标选择最优构建方式
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     if [ "$BUILD_TARGET" = "pgo" ] && [ -f "$PGO_PROFILE" ]; then \
         echo "🚀 使用PGO优化构建..." && \
-        go build -pgo=$PGO_PROFILE \
+        CGO_ENABLED=0 go build -pgo=$PGO_PROFILE \
             -ldflags="-w -s -extldflags \"-static\" \
                      -X main.Version=$VERSION \
                      -X main.Commit=$BUILD_COMMIT \
@@ -70,7 +85,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
             -o law-oa-go ./main.go; \
     else \
         echo "⚡ 使用标准优化构建..." && \
-        go build \
+        CGO_ENABLED=0 go build \
             -ldflags="-w -s -extldflags \"-static\" \
                      -X main.Version=$VERSION \
                      -X main.Commit=$BUILD_COMMIT \
@@ -79,7 +94,12 @@ RUN --mount=type=cache,target=/go/pkg/mod \
             -a -installsuffix cgo \
             -trimpath \
             -o law-oa-go ./main.go; \
-    fi
+    fi && \
+    CGO_ENABLED=0 go build \
+        -ldflags="-w -s -extldflags \"-static\"" \
+        -a -installsuffix cgo \
+        -trimpath \
+        -o law-oa-migrate ./cmd/migrate
 
 # 验证构建和二进制文件
 RUN ls -la /build/law-oa-go && \
@@ -114,6 +134,9 @@ RUN gosec ./... && \
 # ================================
 FROM scratch AS production
 
+ARG BUILD_COMMIT=unknown
+ARG BUILD_DATE=unknown
+
 # 元数据标签
 LABEL maintainer="Law OA Team <team@lawoa.com>" \
       version="2.1.0" \
@@ -143,14 +166,18 @@ WORKDIR /app
 
 # 复制二进制文件
 COPY --from=builder /build/law-oa-go /app/law-oa-go
+COPY --from=builder /build/law-oa-migrate /app/law-oa-migrate
+
+# 迁移命令在生产镜像内执行，避免依赖宿主机的 Go 工具链或 shell。
+COPY --from=builder /build/migrations /app/migrations/
 
 # 复制配置文件
 COPY --from=builder /build/config /app/config/
-COPY --from=builder /build/.env.example /app/.env
+# Runtime secrets must come from the deployment environment or a secret
+# manager. Do not copy development environment templates into the image.
 
-# 创建必要的目录并设置权限
-RUN mkdir -p /app/uploads/contract /app/uploads/evidence /app/uploads/letter /app/uploads/other /app/logs /app/temp && \
-    chown -R 1001:1001 /app
+# 复制预创建运行目录，避免 scratch 阶段执行 shell 命令
+COPY --from=builder --chown=1001:1001 /build/runtime-dirs/ /app/
 
 # 使用非root用户 (UID 1001)
 USER 1001
@@ -170,7 +197,7 @@ EXPOSE 8080 8081 9090
 
 # 健康检查 - 增强的健康检查策略
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD ["/app/law-oa-go", "healthcheck"] || exit 1
+    CMD ["/app/law-oa-go", "healthcheck"]
 
 # 启动应用 - 优化的启动参数
 ENTRYPOINT ["/app/law-oa-go"]

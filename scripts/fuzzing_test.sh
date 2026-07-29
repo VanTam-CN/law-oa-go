@@ -3,7 +3,7 @@
 # Fuzzing测试运行脚本
 # 用于运行Go 1.23的模糊测试，发现潜在的安全漏洞和稳定性问题
 
-set -e
+set -euo pipefail
 
 # 颜色输出
 RED='\033[0;31m'
@@ -59,36 +59,59 @@ cleanup() {
     log_success "清理完成"
 }
 
+# 根据 fuzz 函数名定位所属 Go 包；Go 的 -fuzz 不支持一次运行多个包。
+fuzz_package_for() {
+    case "$1" in
+        Fuzz_JWTKeyManager_ValidateToken)
+            printf '%s\n' "./internal/security/"
+            ;;
+        Fuzz_CaseValidator_Validate|Fuzz_ClientValidator_Validate|Fuzz_LawyerValidator_Validate)
+            printf '%s\n' "./internal/validators/"
+            ;;
+        Fuzz_QueryBuilder_Where|Fuzz_QueryBuilder_Like|Fuzz_QueryBuilder_Order)
+            printf '%s\n' "./internal/repositories/"
+            ;;
+        Fuzz_CacheService_SetAndGet|Fuzz_CacheService_SetWithExpiration|Fuzz_CacheService_ConcurrentAccess|Fuzz_LayeredCache_Get)
+            printf '%s\n' "./internal/cache/"
+            ;;
+        Fuzz_WorkerPool_SubmitTask|Fuzz_CircuitBreaker_Execute|Fuzz_RateLimiter_Allow|Fuzz_ConcurrentService_SubmitTask)
+            printf '%s\n' "./internal/concurrency/"
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
 # 运行特定的Fuzzing测试
 run_fuzz_test() {
     local test_pattern=$1
     local output_dir=$2
     local fuzz_time=$3
     local fuzzers=$4
-    
+    local package
+
+    if ! package=$(fuzz_package_for "$test_pattern"); then
+        log_error "未知Fuzzing测试: $test_pattern"
+        return 1
+    fi
+
     log_info "运行Fuzzing测试: $test_pattern"
+    log_info "测试包: $package"
     log_info "输出目录: $output_dir"
     log_info "运行时间: $fuzz_time"
     log_info "并行进程数: $fuzzers"
-    
+
     # 创建输出目录
     mkdir -p "$output_dir"
-    
-    # 运行Fuzzing测试
-    if [ "$fuzzers" -eq 1 ]; then
-        # 单进程运行
-        go test -fuzz="$test_pattern" -fuzztime="$fuzz_time" -v ./... 2>&1 | tee "$output_dir/fuzz-$test_pattern.log"
-    else
-        # 多进程运行
-        for ((i=1; i<=fuzzers; i++)); do
-            log_info "启动Fuzzing进程 $i/$fuzzers"
-            go test -fuzz="$test_pattern" -fuzztime="$fuzz_time" -v ./... > "$output_dir/fuzz-$test_pattern-worker-$i.log" 2>&1 &
-        done
-        
-        # 等待所有进程完成
-        wait
-    fi
-    
+
+    go test \
+        -run=^$ \
+        -fuzz="$test_pattern" \
+        -fuzztime="$fuzz_time" \
+        -parallel="$fuzzers" \
+        -v "$package" 2>&1 | tee "$output_dir/fuzz-$test_pattern.log"
+
     # 检查是否有crashers
     local crasher_count=$(find "$output_dir" -name "crashers*" 2>/dev/null | wc -l)
     if [ "$crasher_count" -gt 0 ]; then
@@ -97,7 +120,7 @@ run_fuzz_test() {
     else
         log_success "未发现crasher文件"
     fi
-    
+
     # 检查是否有suppressions
     local suppression_count=$(find "$output_dir" -name "suppressions*" 2>/dev/null | wc -l)
     if [ "$suppression_count" -gt 0 ]; then
@@ -109,9 +132,9 @@ run_fuzz_test() {
 generate_report() {
     local output_dir=$1
     local report_file="$output_dir/fuzzing-report.md"
-    
+
     log_info "生成Fuzzing测试报告..."
-    
+
     {
         echo "# Fuzzing测试报告"
         echo ""
@@ -120,20 +143,20 @@ generate_report() {
         echo "- Go版本: $(go version)"
         echo "- 输出目录: $output_dir"
         echo ""
-        
+
         echo "## 测试结果"
         echo ""
-        
+
         # 统计各个测试的结果
         for pattern in security validators repositories cache concurrency; do
             if [ -f "$output_dir/fuzz-$pattern.log" ]; then
                 echo "### $pattern 模块"
                 echo ""
-                
+
                 # 统计执行次数
                 local executions=$(grep -c "fuzzing" "$output_dir/fuzz-$pattern.log" 2>/dev/null || echo "0")
                 echo "- 执行次数: $executions"
-                
+
                 # 检查crashers
                 local crashers=$(find "$output_dir" -name "*crashers*" 2>/dev/null | wc -l)
                 if [ "$crashers" -gt 0 ]; then
@@ -141,7 +164,7 @@ generate_report() {
                 else
                     echo "- 发现crashers: 0 ✅"
                 fi
-                
+
                 # 检查suppressions
                 local suppressions=$(find "$output_dir" -name "*suppressions*" 2>/dev/null | wc -l)
                 if [ "$suppressions" -gt 0 ]; then
@@ -149,14 +172,14 @@ generate_report() {
                 else
                     echo "- 发现suppressions: 0 ✅"
                 fi
-                
+
                 echo ""
             fi
         done
-        
+
         echo "## 发现的问题"
         echo ""
-        
+
         # 列出所有crasher文件
         find "$output_dir" -name "*crashers*" 2>/dev/null | while read -r crasher; do
             echo "### $(basename "$crasher")"
@@ -169,7 +192,7 @@ generate_report() {
             echo "\`\`\`"
             echo ""
         done
-        
+
         echo "## 建议"
         echo ""
         echo "1. **定期运行Fuzzing测试**: 在CI/CD中集成Fuzzing测试，定期运行"
@@ -177,9 +200,9 @@ generate_report() {
         echo "3. **增加种子语料库**: 根据实际使用场景增加更多的种子输入"
         echo "4. **更新测试用例**: 根据Fuzzing结果增加常规测试用例"
         echo "5. **性能监控**: 监控Fuzzing测试的执行性能和资源使用"
-        
+
     } > "$report_file"
-    
+
     log_success "Fuzzing报告已生成: $report_file"
 }
 
@@ -195,7 +218,7 @@ main() {
     RUN_REPOSITORIES=false
     RUN_CACHE=false
     RUN_CONCURRENCY=false
-    
+
     # 解析命令行参数
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -246,59 +269,59 @@ main() {
                 ;;
         esac
     done
-    
+
     # 如果没有指定任何测试，默认运行全部
     if [ "$RUN_ALL" = false ] && [ "$RUN_SECURITY" = false ] && [ "$RUN_VALIDATORS" = false ] && \
        [ "$RUN_REPOSITORIES" = false ] && [ "$RUN_CACHE" = false ] && [ "$RUN_CONCURRENCY" = false ]; then
         RUN_ALL=true
     fi
-    
+
     log_info "开始Fuzzing测试..."
     log_info "Go版本: $(go version)"
     log_info "Fuzzing时间: $FUZZ_TIME"
     log_info "并行进程数: $FUZZERS"
     log_info "输出目录: $OUTPUT_DIR"
-    
+
     # 创建输出目录
     mkdir -p "$OUTPUT_DIR"
-    
+
     # 设置退出时清理
     trap cleanup EXIT
-    
+
     # 运行测试
     if [ "$RUN_ALL" = true ] || [ "$RUN_SECURITY" = true ]; then
         run_fuzz_test "Fuzz_JWTKeyManager_ValidateToken" "$OUTPUT_DIR" "$FUZZ_TIME" "$FUZZERS"
     fi
-    
+
     if [ "$RUN_ALL" = true ] || [ "$RUN_VALIDATORS" = true ]; then
         run_fuzz_test "Fuzz_CaseValidator_Validate" "$OUTPUT_DIR" "$FUZZ_TIME" "$FUZZERS"
         run_fuzz_test "Fuzz_ClientValidator_Validate" "$OUTPUT_DIR" "$FUZZ_TIME" "$FUZZERS"
         run_fuzz_test "Fuzz_LawyerValidator_Validate" "$OUTPUT_DIR" "$FUZZ_TIME" "$FUZZERS"
     fi
-    
+
     if [ "$RUN_ALL" = true ] || [ "$RUN_REPOSITORIES" = true ]; then
         run_fuzz_test "Fuzz_QueryBuilder_Where" "$OUTPUT_DIR" "$FUZZ_TIME" "$FUZZERS"
         run_fuzz_test "Fuzz_QueryBuilder_Like" "$OUTPUT_DIR" "$FUZZ_TIME" "$FUZZERS"
         run_fuzz_test "Fuzz_QueryBuilder_Order" "$OUTPUT_DIR" "$FUZZ_TIME" "$FUZZERS"
     fi
-    
+
     if [ "$RUN_ALL" = true ] || [ "$RUN_CACHE" = true ]; then
         run_fuzz_test "Fuzz_CacheService_SetAndGet" "$OUTPUT_DIR" "$FUZZ_TIME" "$FUZZERS"
         run_fuzz_test "Fuzz_CacheService_SetWithExpiration" "$OUTPUT_DIR" "$FUZZ_TIME" "$FUZZERS"
         run_fuzz_test "Fuzz_CacheService_ConcurrentAccess" "$OUTPUT_DIR" "$FUZZ_TIME" "$FUZZERS"
         run_fuzz_test "Fuzz_LayeredCache_Get" "$OUTPUT_DIR" "$FUZZ_TIME" "$FUZZERS"
     fi
-    
+
     if [ "$RUN_ALL" = true ] || [ "$RUN_CONCURRENCY" = true ]; then
         run_fuzz_test "Fuzz_WorkerPool_SubmitTask" "$OUTPUT_DIR" "$FUZZ_TIME" "$FUZZERS"
         run_fuzz_test "Fuzz_CircuitBreaker_Execute" "$OUTPUT_DIR" "$FUZZ_TIME" "$FUZZERS"
         run_fuzz_test "Fuzz_RateLimiter_Allow" "$OUTPUT_DIR" "$FUZZ_TIME" "$FUZZERS"
         run_fuzz_test "Fuzz_ConcurrentService_SubmitTask" "$OUTPUT_DIR" "$FUZZ_TIME" "$FUZZERS"
     fi
-    
+
     # 生成报告
     generate_report "$OUTPUT_DIR"
-    
+
     log_success "Fuzzing测试完成！"
     log_info "结果保存在: $OUTPUT_DIR"
     log_info "查看报告: cat $OUTPUT_DIR/fuzzing-report.md"

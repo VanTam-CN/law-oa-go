@@ -10,10 +10,15 @@ import (
 
 type HandoffHandler struct {
 	handoffService *services.HandoffService
+	authz          *services.AuthorizationService
 }
 
-func NewHandoffHandler(handoffService *services.HandoffService) *HandoffHandler {
-	return &HandoffHandler{handoffService: handoffService}
+func NewHandoffHandler(handoffService *services.HandoffService, authz ...*services.AuthorizationService) *HandoffHandler {
+	var authorizationService *services.AuthorizationService
+	if len(authz) > 0 {
+		authorizationService = authz[0]
+	}
+	return &HandoffHandler{handoffService: handoffService, authz: authorizationService}
 }
 
 func (h *HandoffHandler) CreateClientHandoff(c *gin.Context) {
@@ -28,11 +33,28 @@ func (h *HandoffHandler) CreateClientHandoff(c *gin.Context) {
 		common.APIBadRequest(c, "请求参数错误", err.Error())
 		return
 	}
+	if h.authz == nil {
+		common.NewAPIError(c, 503, "CLIENT_AUTHZ_UNAVAILABLE", "客户权限服务未初始化，当前已阻止客户移交")
+		return
+	}
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
+	allowed, authErr := h.authz.CanReadClient(c.Request.Context(), actor, uint(clientID))
+	if authErr != nil {
+		common.APIInternalServerError(c, "客户权限校验失败", authErr.Error())
+		return
+	}
+	if !allowed {
+		forbidObjectAccess(c)
+		return
+	}
 
 	response, err := h.handoffService.CreateClientHandoff(
 		c.Request.Context(),
 		uint(clientID),
-		contextActorID(c),
+		actor.UserID,
 		contextUserName(c),
 		&req,
 	)
