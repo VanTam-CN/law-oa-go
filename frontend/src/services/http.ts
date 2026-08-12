@@ -1,11 +1,37 @@
-import axios, { AxiosRequestConfig, AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios'
+import axios, {
+  AxiosRequestConfig,
+  AxiosResponse,
+  AxiosError,
+  InternalAxiosRequestConfig,
+} from 'axios'
 import { message } from '@/utils/messageHelper'
 import { clearStorage, getToken } from '@/utils/storage'
 
 let authRedirecting = false
 
+const quietErrorPaths = [
+  '/admin/current-user/roles',
+  '/admin/current-user/permissions',
+  '/notifications',
+  '/notifications/stats',
+  '/file/stats',
+  '/api/file/stats',
+]
+
 const isAuthRequest = (url?: string) => {
   return !!url && (url.includes('/auth/login') || url.includes('/auth/register'))
+}
+
+const isLoginRequest = (url?: string) => {
+  return !!url && url.includes('/auth/login')
+}
+
+/**
+ * 登录页面需要根据状态码给出准确反馈，因此由页面负责展示错误。
+ * 其余静默接口沿用既有行为，避免轮询失败产生消息轰炸。
+ */
+export const shouldShowGlobalError = (url?: string) => {
+  return !isLoginRequest(url) && !quietErrorPaths.some((path) => url?.includes(path))
 }
 
 const handleUnauthorized = (url?: string) => {
@@ -77,17 +103,7 @@ service.interceptors.response.use(
     if (res.success !== undefined) {
       if (!res.success && res.error) {
         // 新格式失败响应
-        const noErrorPaths = [
-          '/admin/current-user/roles',
-          '/admin/current-user/permissions',
-          '/notifications',
-          '/notifications/stats',
-          '/file/stats',
-          '/api/file/stats',
-        ]
-        const shouldShowError = !noErrorPaths.some((path) => response.config.url?.includes(path))
-
-        if (shouldShowError) {
+        if (shouldShowGlobalError(response.config.url)) {
           message.error(res.error.message || '请求失败')
         }
 
@@ -101,17 +117,7 @@ service.interceptors.response.use(
     // 兼容旧格式：根据code处理 (code: 0 或 200 表示成功)
     if (res.code !== undefined && res.code !== 0 && res.code !== 200) {
       // 对特定API路径不显示错误消息
-      const noErrorPaths = [
-        '/admin/current-user/roles',
-        '/admin/current-user/permissions',
-        '/notifications',
-        '/notifications/stats',
-        '/file/stats',
-        '/api/file/stats',
-      ]
-      const shouldShowError = !noErrorPaths.some((path) => response.config.url?.includes(path))
-
-      if (shouldShowError) {
+      if (shouldShowGlobalError(response.config.url)) {
         message.error(res.msg || res.message || '请求失败')
       }
 
@@ -129,17 +135,7 @@ service.interceptors.response.use(
   (error: AxiosError) => {
     if (error.response) {
       // 对特定API路径和状态码不显示错误消息
-      const noErrorPaths = [
-        '/admin/current-user/roles',
-        '/admin/current-user/permissions',
-        '/notifications',
-        '/notifications/stats',
-        '/file/stats',
-        '/api/file/stats',
-      ]
-      const shouldShowError = !noErrorPaths.some((path) => error.config?.url?.includes(path))
-
-      if (shouldShowError) {
+      if (shouldShowGlobalError(error.config?.url)) {
         switch (error.response.status) {
           case 401:
             handleUnauthorized(error.config?.url)
@@ -167,7 +163,7 @@ service.interceptors.response.use(
             message.error(`请求错误: ${error.message}`)
         }
       }
-    } else {
+    } else if (shouldShowGlobalError(error.config?.url)) {
       message.error(`网络错误: ${error.message}`)
     }
     return Promise.reject(error)
@@ -175,7 +171,11 @@ service.interceptors.response.use(
 )
 
 // 封装GET请求
-export const get = <T>(url: string, params?: any, config?: AxiosRequestConfig | boolean): Promise<T> => {
+export const get = <T>(
+  url: string,
+  params?: any,
+  config?: AxiosRequestConfig | boolean,
+): Promise<T> => {
   // 如果第三个参数是 true，表示这是文件下载请求，返回 Blob
   if (config === true) {
     return service.get(url, {

@@ -26,6 +26,7 @@ test.describe('登录流程', () => {
     await expect(page.getByPlaceholder('账号或邮箱，如 admin / demo.admin')).toBeVisible()
     await expect(page.getByPlaceholder('密码')).toBeVisible()
     await expect(page.locator('button[type="submit"]')).toBeVisible()
+    await expect(page.getByText('首次使用或无法登录？请联系律所系统管理员。')).toBeVisible()
   })
 
   test('登录失败应该显示错误信息', async ({ page }) => {
@@ -34,6 +35,38 @@ test.describe('登录流程', () => {
     await page.locator('button[type="submit"]').click()
 
     await expect(page.locator('.ant-message')).toContainText('账号或密码错误')
+    await expect(page.locator('.ant-message-notice')).toHaveCount(1)
+  })
+
+  test('服务不可用时只显示一次准确提示', async ({ page }) => {
+    await page.route('**/api/v1/auth/login', async (route) => {
+      await route.fulfill({ status: 500, contentType: 'text/plain', body: '' })
+    })
+
+    await page.getByPlaceholder('账号或邮箱，如 admin / demo.admin').fill('lawyer')
+    await page.getByPlaceholder('密码').fill('Demo@2026')
+    await page.locator('button[type="submit"]').click()
+
+    await expect(page.locator('.ant-message')).toContainText(
+      '系统服务暂不可用，请稍后重试或联系系统管理员',
+    )
+    await expect(page.locator('.ant-message-notice')).toHaveCount(1)
+    await expect(page.locator('.ant-message')).not.toContainText('账号或密码错误')
+  })
+
+  test('密码显隐按钮支持键盘操作', async ({ page }) => {
+    const password = page.locator('input[aria-label="密码"]')
+    await password.fill('Demo@2026')
+
+    const showPassword = page.getByRole('button', { name: '显示密码' })
+    await showPassword.focus()
+    await page.keyboard.press('Enter')
+    await expect(password).toHaveAttribute('type', 'text')
+
+    const hidePassword = page.getByRole('button', { name: '隐藏密码' })
+    await hidePassword.focus()
+    await page.keyboard.press('Space')
+    await expect(password).toHaveAttribute('type', 'password')
   })
 
   test('律师账号登录后应该进入工作台', async ({ page }) => {
