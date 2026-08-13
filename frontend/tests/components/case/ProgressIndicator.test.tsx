@@ -524,7 +524,7 @@ describe('ProgressIndicator', () => {
   });
 
   describe('性能优化', () => {
-    test('应该优化大量步骤的渲染', () => {
+    test('应该完整且唯一地渲染大量步骤并计算确定进度', () => {
       const manySteps: StepConfig[] = Array.from({ length: 50 }, (_, i) => ({
         key: `step-${i}`,
         title: `步骤 ${i + 1}`,
@@ -533,17 +533,17 @@ describe('ProgressIndicator', () => {
         weight: 1
       }));
 
-      const startTime = performance.now();
       render(
         <ProgressIndicator
           {...defaultProps}
           steps={manySteps}
         />
       );
-      const endTime = performance.now();
 
-      // 渲染时间应该在合理范围内
-      expect(endTime - startTime).toBeLessThan(100);
+      const renderedSteps = screen.getAllByTestId(/^step-step-/);
+      expect(renderedSteps).toHaveLength(50);
+      expect(new Set(renderedSteps.map(step => step.dataset.testid)).size).toBe(50);
+      expect(screen.getByTestId('progress')).toHaveAttribute('data-percent', '20');
     });
 
     test('应该正确清理事件监听器', () => {

@@ -305,7 +305,7 @@ func (sa *SearchAnalytics) getDocumentsStats(ctx context.Context) (*DocumentMetr
 			}
 		}
 
-		if byDate, ok := aggs["docs_by_date"].(map[string{})["buckets"].([]interface{}); ok {
+		if byDate, ok := aggs["docs_by_date"].(map[string]interface{})["buckets"].([]interface{}); ok {
 			for _, bucket := range byDate {
 				if bucketMap, ok := bucket.(map[string]interface{}); ok {
 					if key, ok := bucketMap["key_as_string"].(string); ok {
@@ -413,7 +413,7 @@ func (sa *SearchAnalytics) getTopCategories(aggregation map[string]interface{}) 
 func (sa *SearchAnalytics) getSearchTimeMetrics(aggregation map[string]interface{}) TimeMetrics {
 	timeMetrics := TimeMetrics{}
 
-	if stats, ok := aggregation["search_time_stats"].(map[string{})["stats"].(map[string]interface{}); ok {
+	if stats, ok := aggregation["search_time_stats"].(map[string]interface{})["stats"].(map[string]interface{}); ok {
 		timeMetrics.AvgTime = sa.getFloat64(stats, "avg")
 		timeMetrics.MinTime = sa.getFloat64(stats, "min")
 		timeMetrics.MaxTime = sa.getFloat64(stats, "max")
@@ -433,11 +433,11 @@ func (sa *SearchAnalytics) getCacheMetrics(aggregation map[string]interface{}) C
 	}
 
 	// 获取命中和未命中次数
-	if filters, ok := aggregation["cache_stats"].(map[string{})["filters"].(map[string{})["cache_hit"].(map[string{})["doc_count"].(float64)); ok {
+	if filters, ok := aggregation["cache_stats"].(map[string]interface{})["filters"].(map[string]interface{})["cache_hit"].(map[string]interface{})["doc_count"].(float64); ok {
 		cacheMetrics.Hits = int64(filters)
 	}
 
-	if filters, ok := aggregation["cache_stats"].(map[string{})["filters"].(map[string{})["cache_miss"].(map[string{})["doc_count"].(float64)); ok {
+	if filters, ok := aggregation["cache_stats"].(map[string]interface{})["filters"].(map[string]interface{})["cache_miss"].(map[string]interface{})["doc_count"].(float64); ok {
 		cacheMetrics.Misses = int64(filters)
 	}
 
@@ -447,12 +447,12 @@ func (sa *SearchAnalytics) getCacheMetrics(aggregation map[string]interface{}) C
 	}
 
 	// 获取缓存时间指标
-	if aggs, ok := aggregation["cache_stats"].(map[string{})["aggs"]; ok {
-		if hitStats, ok := aggs["cache_hit_time"].(map[string{})["stats"].(map[string]interface{}); ok {
+	if aggs, ok := aggregation["cache_stats"].(map[string]interface{})["aggs"].(map[string]interface{}); ok {
+		if hitStats, ok := aggs["cache_hit_time"].(map[string]interface{})["stats"].(map[string]interface{}); ok {
 			cacheMetrics.AvgHitTime = sa.getFloat64(hitStats, "avg")
 		}
 
-		if missStats, ok := aggs["cache_miss_time"].(map[string{})["stats"].(map[string]interface{}); ok {
+		if missStats, ok := aggs["cache_miss_time"].(map[string]interface{})["stats"].(map[string]interface{}); ok {
 			cacheMetrics.AvgMissTime = sa.getFloat64(missStats, "avg")
 		}
 	}

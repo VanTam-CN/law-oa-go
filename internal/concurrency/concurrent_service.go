@@ -292,7 +292,8 @@ func (s *ConcurrentService) SubmitFileTask(filePath string, process func(ctx con
 
 // SubmitAPITask 提交API请求任务
 func (s *ConcurrentService) SubmitAPITask(url, method string, headers map[string]string, body interface{},
-	request func(ctx context.Context, url, method string, headers map[string]string, body interface{}) (interface{}, error)) (*TaskResult, error) {
+	request func(ctx context.Context, url, method string, headers map[string]string, body interface{}) (interface{}, error),
+) (*TaskResult, error) {
 	task := &APIRequestTask{
 		TaskID:       fmt.Sprintf("api_%d", time.Now().UnixNano()),
 		TaskType:     "api",

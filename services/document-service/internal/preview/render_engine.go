@@ -722,7 +722,7 @@ func (e *RenderEngine) ExtractExcelMetadata(ctx context.Context, version *Docume
 
 	for _, sheet := range ss.Sheets() {
 		sheets = append(sheets, sheet.Name())
-		sheetRowCounts = append(sheetRowCounts len(sheet.Rows()))
+		sheetRowCounts = append(sheetRowCounts, len(sheet.Rows()))
 		if len(sheet.Rows()) > 0 {
 			maxCols := 0
 			for _, row := range sheet.Rows() {
