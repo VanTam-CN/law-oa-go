@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -121,12 +122,15 @@ func TestConcurrentService_SubmitBatchTasks(t *testing.T) {
 
 	// 创建批量任务
 	tasks := make([]Task, 5)
+	executionCounts := make([]atomic.Int32, len(tasks))
 	for i := 0; i < 5; i++ {
+		taskIndex := i
 		tasks[i] = &DatabaseTask{
 			TaskID:       fmt.Sprintf("batch_task_%d", i),
 			TaskType:     "database",
 			TaskPriority: 1,
 			Operation: func(ctx context.Context) error {
+				executionCounts[taskIndex].Add(1)
 				time.Sleep(50 * time.Millisecond)
 				return nil
 			},
@@ -140,12 +144,12 @@ func TestConcurrentService_SubmitBatchTasks(t *testing.T) {
 	assert.NotNil(t, result)
 	assert.NoError(t, result.Error)
 
-	// 等待足够时间让任务完成
-	time.Sleep(300 * time.Millisecond)
-
 	metrics := service.GetMetrics()
 	// BatchTask算作一个任务，但内部执行了5个子任务
-	assert.GreaterOrEqual(t, metrics.TotalTasks, int64(1))
+	assert.Equal(t, int64(1), metrics.TotalTasks)
+	for i := range executionCounts {
+		assert.Equalf(t, int32(1), executionCounts[i].Load(), "batch task %d should execute exactly once", i)
+	}
 }
 
 func TestConcurrentService_SubmitDatabaseTask(t *testing.T) {
@@ -153,9 +157,9 @@ func TestConcurrentService_SubmitDatabaseTask(t *testing.T) {
 	service.Start()
 	defer service.Stop()
 
-	operationCalled := false
+	var operationCalls atomic.Int32
 	operation := func(ctx context.Context) error {
-		operationCalled = true
+		operationCalls.Add(1)
 		return nil
 	}
 
@@ -164,7 +168,7 @@ func TestConcurrentService_SubmitDatabaseTask(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.NoError(t, result.Error)
-	assert.True(t, operationCalled)
+	assert.Equal(t, int32(1), operationCalls.Load())
 }
 
 func TestConcurrentService_SubmitFileTask(t *testing.T) {
@@ -173,18 +177,18 @@ func TestConcurrentService_SubmitFileTask(t *testing.T) {
 	defer service.Stop()
 
 	filePath := "/tmp/test_file.txt"
-	processCalled := false
+	var processCalls atomic.Int32
 
 	result, err := service.SubmitFileTask(filePath, func(ctx context.Context, path string) error {
 		assert.Equal(t, filePath, path)
-		processCalled = true
+		processCalls.Add(1)
 		return nil
 	})
 
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.NoError(t, result.Error)
-	assert.True(t, processCalled)
+	assert.Equal(t, int32(1), processCalls.Load())
 }
 
 func TestConcurrentService_SubmitAPITask(t *testing.T) {
@@ -192,7 +196,7 @@ func TestConcurrentService_SubmitAPITask(t *testing.T) {
 	service.Start()
 	defer service.Stop()
 
-	requestCalled := make(chan bool, 1)
+	var requestCalls atomic.Int32
 	headers := map[string]string{"Authorization": "Bearer token"}
 	body := map[string]string{"key": "value"}
 
@@ -205,7 +209,7 @@ func TestConcurrentService_SubmitAPITask(t *testing.T) {
 			assert.Equal(t, "https://api.example.com/endpoint", url)
 			assert.Equal(t, "POST", method)
 			assert.Equal(t, "Bearer token", headers["Authorization"])
-			requestCalled <- true
+			requestCalls.Add(1)
 			return "api_response", nil
 		},
 	)
@@ -214,12 +218,7 @@ func TestConcurrentService_SubmitAPITask(t *testing.T) {
 	assert.NotNil(t, result)
 	assert.NoError(t, result.Error)
 
-	select {
-	case called := <-requestCalled:
-		assert.True(t, called)
-	case <-time.After(2 * time.Second):
-		t.Fatal("API request function was not called within timeout")
-	}
+	assert.Equal(t, int32(1), requestCalls.Load())
 }
 
 func TestConcurrentService_GetMetrics(t *testing.T) {
@@ -399,7 +398,10 @@ func TestConcurrentService_ConcurrentTaskSubmission(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// 大部分任务应该完成
-	assert.GreaterOrEqual(t, len(completedTasks), numTasks-2) // 允许1-2个任务由于并发原因失败
+	mu.Lock()
+	completedCount := len(completedTasks)
+	mu.Unlock()
+	assert.GreaterOrEqual(t, completedCount, numTasks-2) // 允许1-2个任务由于并发原因失败
 
 	metrics := service.GetMetrics()
 	assert.GreaterOrEqual(t, metrics.TotalTasks, int64(numTasks-2))

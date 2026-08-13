@@ -92,7 +92,7 @@ const scenarioItems: Record<Scenario, Record<string, any>> = {
     has_conflict: true,
     check_result: {
       stale: true,
-      decision: { status: 'BLOCKED' },
+      decision: { status: 'BLOCKED', coverageStatus: 'COMPLETE' },
       riskAssessment: { overallRisk: 'CRITICAL', riskScore: 99, requiresApproval: true },
     },
   },
@@ -187,7 +187,7 @@ test.describe('冲突决策单一状态', () => {
   test('WAIVED 只允许按批准条件继续，不出现审批或再次豁免', async ({ page }) => {
     await openConflictScenario(page, 'WAIVED')
     const dialog = page.getByRole('dialog', { name: '冲突检测详情' })
-    const decisionCard = dialog.locator('section.batch-card', { hasText: '接案决策' })
+    const decisionCard = dialog.locator('section.ng-panel', { hasText: '接案决策' })
 
     await expect(decisionCard.getByText('按批准条件继续', { exact: true })).toBeVisible()
     await expect(dialog.getByText(/建立信息隔离墙.*每月由合规负责人复核/)).toBeVisible()
@@ -201,7 +201,7 @@ test.describe('冲突决策单一状态', () => {
   test('CLEAR/LOW/零命中明确可提交立案审批且无冲突处置入口', async ({ page }) => {
     await openConflictScenario(page, 'CLEAR')
     const dialog = page.getByRole('dialog', { name: '冲突检测详情' })
-    const decisionCard = dialog.locator('section.batch-card', { hasText: '接案决策' })
+    const decisionCard = dialog.locator('section.ng-panel', { hasText: '接案决策' })
 
     await expect(decisionCard.getByText('可提交立案审批', { exact: true })).toBeVisible()
     await expect(dialog.getByText(/不得提交/)).toHaveCount(0)
@@ -212,10 +212,10 @@ test.describe('冲突决策单一状态', () => {
   test('人工 confirmed_conflict 终态不重复发起复核且只保留一个豁免入口', async ({ page }) => {
     await openConflictScenario(page, 'BLOCKED')
     const dialog = page.getByRole('dialog', { name: '冲突检测详情' })
-    const decisionCard = dialog.locator('section.batch-card', { hasText: '接案决策' })
+    const decisionCard = dialog.locator('section.ng-panel', { hasText: '接案决策' })
 
     await expect(decisionCard.getByText('已暂停接案', { exact: true })).toBeVisible()
-    await expect(dialog.locator('article', { hasText: '主命中主体' }).getByText('真实主命中实体', { exact: true })).toBeVisible()
+    await expect(dialog.locator('article', { hasText: '命中历史主体' }).getByText('真实主命中实体', { exact: true })).toBeVisible()
     await expect(dialog.getByText('历史案件标题不得作为命中主体', { exact: true })).toHaveCount(1)
     const waiverAction = dialog.getByRole('button', { name: '申请豁免评估' })
     await expect(waiverAction).toHaveCount(1)
@@ -226,7 +226,7 @@ test.describe('冲突决策单一状态', () => {
   test('STALE 隐藏旧严重处置，只显示结果过期', async ({ page }) => {
     await openConflictScenario(page, 'STALE')
     const dialog = page.getByRole('dialog', { name: '冲突检测详情' })
-    const decisionCard = dialog.locator('section.batch-card', { hasText: '接案决策' })
+    const decisionCard = dialog.locator('section.ng-panel', { hasText: '接案决策' })
 
     await expect(decisionCard.getByText('冲突检测结果已过期', { exact: true })).toBeVisible()
     await expect(dialog.getByText('已暂停接案', { exact: true })).toHaveCount(0)
@@ -241,7 +241,7 @@ test.describe('冲突决策单一状态', () => {
     await expect(conflictType).toContainText('当前对方为本所现有客户')
     await expect(conflictType).not.toContainText('EXACT')
 
-    const riskSummary = dialog.locator('section.batch-card').filter({ hasText: '风险评估结果' })
+    const riskSummary = dialog.locator('section.ng-panel').filter({ hasText: '风险评估结果' })
     const row = (label: string) => riskSummary.locator('tr', { hasText: label })
     await expect(row('风险评分')).toContainText('94 / 100')
     await expect(row('检索主体')).toContainText('上海示例科技有限公司')
@@ -272,7 +272,7 @@ test.describe('冲突决策单一状态', () => {
 
     const overview = page.locator('.batch-info-grid.compact').filter({ hasText: '待人工复核' })
     await expect(overview.locator('p').filter({ hasText: '待人工复核' })).toContainText('1 条')
-    await expect(page.getByText(/全队列总体风险：存在 1 条待人工复核记录/)).toBeVisible()
+    await expect(page.getByText(/当前账号可见的冲突任务：存在 1 条待人工复核记录/)).toBeVisible()
     const complianceWarning = page
       .locator('.batch-conflict-side p')
       .filter({ hasText: '未发现高风险' })
@@ -297,7 +297,7 @@ test.describe('冲突决策单一状态', () => {
       })
     })
     const dialog = page.getByRole('dialog', { name: '冲突检测详情' })
-    const decisionCard = dialog.locator('section.batch-card', { hasText: '接案决策' })
+    const decisionCard = dialog.locator('section.ng-panel', { hasText: '接案决策' })
     await expect(decisionCard.getByText('机器检测已自动阻断，等待独立复核', { exact: true })).toBeVisible()
     await expect(dialog.getByRole('button', { name: '申请豁免评估' })).toHaveCount(0)
     const reviewAction = dialog.getByRole('button', { name: '发起冲突审批' })
@@ -549,14 +549,14 @@ test.describe('冲突审批快照兼容', () => {
     await waitForAppShell(page)
     await expect(page.getByRole('heading', { name: '新形状冲突审批快照' })).toBeVisible()
 
-    const applicationInfo = page.locator('section.batch-card', { has: page.getByRole('heading', { name: '申请信息' }) })
+    const applicationInfo = page.locator('section.ng-panel', { has: page.getByRole('heading', { name: '申请信息' }) })
     const clientRow = applicationInfo.locator('p').filter({ hasText: '关联客户' })
     const opposingPartyRow = applicationInfo.locator('p').filter({ hasText: '对方当事人' })
     await expect(clientRow).toBeVisible()
     await expect(clientRow).toContainText('新快照真实客户有限公司')
     await expect(opposingPartyRow).toBeVisible()
     await expect(opposingPartyRow).toContainText('新快照真实对方集团')
-    const conflictSummary = page.locator('section.batch-card', { has: page.getByRole('heading', { name: '冲突检测摘要' }) })
+    const conflictSummary = page.locator('section.ng-panel', { has: page.getByRole('heading', { name: '冲突检测摘要' }) })
     await expect(page.getByText('总体风险等级：待人工复核')).toBeVisible()
     await expect(page.getByText(/不能作为无冲突结论/)).toBeVisible()
     const primarySubjectRow = conflictSummary.locator('p').filter({ hasText: '主体：结构化主要命中主体' })

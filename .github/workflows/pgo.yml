@@ -2,11 +2,10 @@ name: PGO优化工作流
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   schedule:
-    # 每周日凌晨4点运行PGO优化
     - cron: '0 4 * * 0'
   workflow_dispatch:
 
@@ -14,376 +13,412 @@ env:
   GO_VERSION: '1.25.0'
 
 jobs:
-  # 检查PGO支持
   check-pgo:
     name: 检查PGO支持
     runs-on: ubuntu-latest
     steps:
-    - name: 检出代码
-      uses: actions/checkout@v4
+      - name: 检出代码
+        uses: actions/checkout@v4
 
-    - name: 设置Go环境
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ env.GO_VERSION }}
-        cache: true
+      - name: 设置Go环境
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
 
-    - name: 检查Go版本和PGO支持
-      run: |
-        go version
-        echo "检查PGO支持..."
-        if go build --help | grep -q "pgo"; then
-          echo "✓ PGO支持已启用"
-        else
-          echo "✗ PGO支持未启用"
-          exit 1
-        fi
+      - name: 检查Go版本和PGO支持
+        shell: bash
+        run: |
+          set -euo pipefail
+          go version
+          go help build | grep -q -- '-pgo'
 
-  # 生成工作负载数据
-  generate-workload:
-    name: 生成工作负载数据
-    runs-on: ubuntu-latest
-    needs: check-pgo
-    steps:
-    - name: 检出代码
-      uses: actions/checkout@v4
-
-    - name: 设置Go环境
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ env.GO_VERSION }}
-        cache: true
-
-    - name: 下载依赖
-      run: |
-        go mod download
-        go mod tidy
-
-    - name: 设置数据库
-      run: |
-        sudo systemctl start mysql
-        mysql -u root -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
-
-    - name: 设置Redis
-      run: |
-        sudo systemctl start redis-server
-
-    - name: 构建应用
-      run: |
-        go build -o bin/law-oa-server .
-
-    - name: 运行HTTP工作负载
-      run: |
-        chmod +x scripts/pgo_workload.go
-        timeout 300s go run scripts/pgo_workload.go || echo "HTTP工作负载完成"
-
-    - name: 运行综合工作负载
-      run: |
-        chmod +x scripts/comprehensive_pgo_workload.go
-        timeout 600s go run scripts/comprehensive_pgo_workload.go || echo "综合工作负载完成"
-
-  # 收集性能数据
   collect-profile:
-    name: 收集性能数据
+    name: 真实工作负载与性能数据
     runs-on: ubuntu-latest
-    needs: generate-workload
+    timeout-minutes: 25
+    needs: check-pgo
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: pgo
+          POSTGRES_PASSWORD: pgo-${{ github.run_id }}-${{ github.run_attempt }}
+          POSTGRES_DB: law_oa_pgo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pgo -d law_oa_pgo"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      ENVIRONMENT: test
+      DB_DRIVER: postgres
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USERNAME: pgo
+      DB_PASSWORD: pgo-${{ github.run_id }}-${{ github.run_attempt }}
+      DB_DATABASE: law_oa_pgo
+      DB_SSLMODE: disable
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      PORT: 8080
     steps:
-    - name: 检出代码
-      uses: actions/checkout@v4
+      - name: 检出代码
+        uses: actions/checkout@v4
 
-    - name: 设置Go环境
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ env.GO_VERSION }}
-        cache: true
+      - name: 设置Go环境
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
 
-    - name: 下载依赖
-      run: |
-        go mod download
-        go mod tidy
+      - name: 下载依赖
+        run: go mod download
 
-    - name: 设置数据库
-      run: |
-        sudo systemctl start mysql
-        mysql -u root -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
+      - name: 初始化隔离数据库并准备虚构夹具
+        shell: bash
+        run: |
+          set -euo pipefail
+          jwt_secret="$(openssl rand -hex 32)"
+          qa_password="$(openssl rand -base64 24)"
+          subject_data_key="$(openssl rand -hex 32)"
+          echo "::add-mask::$jwt_secret"
+          echo "::add-mask::$qa_password"
+          echo "::add-mask::$subject_data_key"
+          echo "JWT_SECRET=$jwt_secret" >> "$GITHUB_ENV"
+          echo "QA_PASSWORD=$qa_password" >> "$GITHUB_ENV"
+          echo "QA_FIXTURE_CONFIRM=I_UNDERSTAND" >> "$GITHUB_ENV"
+          echo "SUBJECT_DATA_KEY=$subject_data_key" >> "$GITHUB_ENV"
 
-    - name: 设置Redis
-      run: |
-        sudo systemctl start redis-server
+          export JWT_SECRET="$jwt_secret"
+          export QA_PASSWORD="$qa_password"
+          export QA_FIXTURE_CONFIRM=I_UNDERSTAND
+          export SUBJECT_DATA_KEY="$subject_data_key"
+          go run ./cmd/migrate -command bootstrap
+          go run ./cmd/qa-fixture -mode seed
+          go run ./cmd/qa-fixture -mode seed
+          go run ./cmd/qa-fixture -mode verify
 
-    - name: 创建profiles目录
-      run: |
-        mkdir -p profiles
+      - name: 运行根服务真实HTTP工作负载
+        shell: bash
+        run: |
+          set -euo pipefail
+          go build -o /tmp/law-oa-server .
+          /tmp/law-oa-server > /tmp/law-oa-pgo.log 2>&1 &
+          server_pid=$!
+          login_response=''
+          cleanup() {
+            if kill -0 "$server_pid" 2>/dev/null; then
+              kill "$server_pid" 2>/dev/null || true
+              wait "$server_pid" 2>/dev/null || true
+            fi
+            if [[ -n "$login_response" ]]; then
+              rm -f "$login_response"
+            fi
+          }
+          trap cleanup EXIT
 
-    - name: 收集CPU性能数据
-      run: |
-        echo "收集CPU性能数据..."
-        go test -cpuprofile=profiles/cpu.prof -bench=. -benchtime=30s ./...
+          live=false
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8080/health/live > /tmp/pgo-live.json; then
+              live=true
+              break
+            fi
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              sed -n '1,240p' /tmp/law-oa-pgo.log
+              exit 1
+            fi
+            sleep 1
+          done
+          if [[ "$live" != true ]]; then
+            sed -n '1,240p' /tmp/law-oa-pgo.log
+            exit 1
+          fi
+          jq -e '.live == true' /tmp/pgo-live.json
+          if ! curl --fail --silent --retry 30 --retry-delay 1 --retry-all-errors \
+            http://127.0.0.1:8080/health/ready | jq -e '.ready == true'; then
+            sed -n '1,240p' /tmp/law-oa-pgo.log
+            exit 1
+          fi
 
-    - name: 收集内存性能数据
-      run: |
-        echo "收集内存性能数据..."
-        go test -memprofile=profiles/mem.prof -bench=. -benchtime=30s ./...
+          login_response="$(mktemp)"
+          jq -n --arg email 'qa.lawyer.a@qa.invalid' --arg password "$QA_PASSWORD" \
+            '{email: $email, password: $password}' \
+            | curl --fail --silent -H 'Content-Type: application/json' --data @- \
+                http://127.0.0.1:8080/api/v1/auth/login > "$login_response"
+          token="$(jq -er '.data.token // .token' "$login_response")"
+          echo "::add-mask::$token"
+          rm -f "$login_response"
+          login_response=''
 
-    - name: 收集HTTP请求性能数据
-      run: |
-        echo "收集HTTP请求性能数据..."
-        # 启动服务器并模拟HTTP请求
-        go build -o bin/law-oa-server .
-        ./bin/law-oa-server --config=config/config.yaml &
-        SERVER_PID=$!
-        sleep 5
-        
-        # 模拟HTTP请求
-        for i in {1..100}; do
-          curl -s http://localhost:8080/health || true
-          curl -s http://localhost:8080/api/v1/cases || true
-          curl -s http://localhost:8080/api/v1/users || true
-        done
-        
-        kill $SERVER_PID 2>/dev/null || true
+          for request in $(seq 1 100); do
+            curl --fail --silent http://127.0.0.1:8080/health/live > /dev/null
+            curl --fail --silent \
+              -H "Authorization: Bearer $token" \
+              'http://127.0.0.1:8080/api/v1/dashboard/statistics' > /dev/null
+            curl --fail --silent \
+              -H "Authorization: Bearer $token" \
+              'http://127.0.0.1:8080/api/v1/cases?page=1&page_size=20' > /dev/null
+          done
 
-    - name: 验证性能数据文件
-      run: |
-        echo "验证性能数据文件..."
-        ls -la profiles/
-        if [ -f "profiles/cpu.prof" ]; then
-          echo "✓ CPU性能数据已生成"
-          go tool pprof -text profiles/cpu.prof | head -20
-        else
-          echo "✗ CPU性能数据未生成"
-          exit 1
-        fi
+      - name: 生成CPU和内存profile
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p profiles
+          go test ./internal/services \
+            -run '^$' \
+            -bench '^BenchmarkClientService_CreateClient$' \
+            -benchtime=5s \
+            -cpuprofile=profiles/cpu.prof \
+            -memprofile=profiles/mem.prof
+          test -s profiles/cpu.prof
+          test -s profiles/mem.prof
 
-    - name: 上传性能数据
-      uses: actions/upload-artifact@v4
-      with:
-        name: profile-data
-        path: profiles/
+      - name: 上传性能数据
+        uses: actions/upload-artifact@v4
+        with:
+          name: profile-data
+          path: profiles/
+          if-no-files-found: error
 
-  # PGO优化构建
   pgo-optimized-build:
     name: PGO优化构建
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: collect-profile
     steps:
-    - name: 检出代码
-      uses: actions/checkout@v4
+      - name: 检出代码
+        uses: actions/checkout@v4
 
-    - name: 设置Go环境
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ env.GO_VERSION }}
-        cache: true
+      - name: 设置Go环境
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
 
-    - name: 下载依赖
-      run: |
-        go mod download
-        go mod tidy
+      - name: 下载依赖
+        run: go mod download
 
-    - name: 下载性能数据
-      uses: actions/download-artifact@v4
-      with:
-        name: profile-data
-        path: profiles/
+      - name: 下载性能数据
+        uses: actions/download-artifact@v4
+        with:
+          name: profile-data
+          path: profiles/
 
-    - name: PGO优化构建
-      run: |
-        echo "执行PGO优化构建..."
-        mkdir -p bin/
-        if [ -f "profiles/cpu.prof" ]; then
-          go build -pgo=profiles/cpu.prof -ldflags="-s -w" -o bin/law-oa-server-pgo .
-        else
-          echo "未找到性能数据，使用标准构建"
-          go build -ldflags="-s -w" -o bin/law-oa-server-pgo .
-        fi
+      - name: 构建并证明PGO profile被消费
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s profiles/cpu.prof
+          mkdir -p bin
+          if ! go build -a -x -pgo=profiles/cpu.prof -ldflags='-s -w' \
+            -o bin/law-oa-server-pgo . 2> /tmp/pgo-build.log; then
+            tail -n 240 /tmp/pgo-build.log
+            exit 1
+          fi
+          grep -F -- '-pgoprofile' /tmp/pgo-build.log > /dev/null
+          test -s bin/law-oa-server-pgo
 
-    - name: 构建标准版本作为对比
-      run: |
-        echo "构建标准版本作为对比..."
-        go build -ldflags="-s -w" -o bin/law-oa-server-standard .
+          go build -ldflags='-s -w' -o bin/law-oa-server-standard .
+          test -s bin/law-oa-server-standard
 
-    - name: 验证构建结果
-      run: |
-        echo "验证构建结果..."
-        ls -la bin/
-        echo "PGO版本信息:"
-        ./bin/law-oa-server-pgo --version 2>/dev/null || echo "版本信息不可用"
-        echo "标准版本信息:"
-        ./bin/law-oa-server-standard --version 2>/dev/null || echo "版本信息不可用"
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: pgo-optimized-binaries
+          path: bin/
+          if-no-files-found: error
 
-    - name: 比较二进制文件大小
-      run: |
-        echo "比较二进制文件大小..."
-        pgo_size=$(stat -c%s bin/law-oa-server-pgo 2>/dev/null || echo 0)
-        standard_size=$(stat -c%s bin/law-oa-server-standard 2>/dev/null || echo 0)
-        echo "PGO版本大小: $pgo_size bytes"
-        echo "标准版本大小: $standard_size bytes"
-        if [ $pgo_size -gt 0 ] && [ $standard_size -gt 0 ]; then
-          difference=$((pgo_size - standard_size))
-          percentage=$((difference * 100 / standard_size))
-          echo "大小差异: $difference bytes ($percentage%)"
-        fi
-
-    - name: 上传构建产物
-      uses: actions/upload-artifact@v4
-      with:
-        name: pgo-optimized-binaries
-        path: bin/
-
-  # 性能基准测试
   performance-benchmark:
-    name: 性能基准测试
+    name: PGO二进制运行验证
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: pgo-optimized-build
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: pgo
+          POSTGRES_PASSWORD: pgo-${{ github.run_id }}-${{ github.run_attempt }}
+          POSTGRES_DB: law_oa_pgo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pgo -d law_oa_pgo"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      ENVIRONMENT: test
+      DB_DRIVER: postgres
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USERNAME: pgo
+      DB_PASSWORD: pgo-${{ github.run_id }}-${{ github.run_attempt }}
+      DB_DATABASE: law_oa_pgo
+      DB_SSLMODE: disable
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      PORT: 8080
     steps:
-    - name: 检出代码
-      uses: actions/checkout@v4
+      - name: 检出代码
+        uses: actions/checkout@v4
 
-    - name: 设置Go环境
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ env.GO_VERSION }}
-        cache: true
+      - name: 设置Go环境
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
 
-    - name: 下载构建产物
-      uses: actions/download-artifact@v4
-      with:
-        name: pgo-optimized-binaries
-        path: bin/
+      - name: 下载依赖和构建产物
+        run: go mod download
 
-    - name: 设置数据库
-      run: |
-        sudo systemctl start mysql
-        mysql -u root -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
+      - name: 下载PGO构建产物
+        uses: actions/download-artifact@v4
+        with:
+          name: pgo-optimized-binaries
+          path: bin/
 
-    - name: 设置Redis
-      run: |
-        sudo systemctl start redis-server
+      - name: 准备隔离运行数据
+        shell: bash
+        run: |
+          set -euo pipefail
+          jwt_secret="$(openssl rand -hex 32)"
+          qa_password="$(openssl rand -base64 24)"
+          subject_data_key="$(openssl rand -hex 32)"
+          echo "::add-mask::$jwt_secret"
+          echo "::add-mask::$qa_password"
+          echo "::add-mask::$subject_data_key"
+          echo "JWT_SECRET=$jwt_secret" >> "$GITHUB_ENV"
+          echo "QA_PASSWORD=$qa_password" >> "$GITHUB_ENV"
+          echo "QA_FIXTURE_CONFIRM=I_UNDERSTAND" >> "$GITHUB_ENV"
+          echo "SUBJECT_DATA_KEY=$subject_data_key" >> "$GITHUB_ENV"
 
-    - name: 运行PGO版本基准测试
-      run: |
-        echo "运行PGO版本基准测试..."
-        chmod +x bin/law-oa-server-pgo
-        timeout 60s ./bin/law-oa-server-pgo --benchmark &
-        PGO_PID=$!
-        sleep 5
-        
-        # 模拟负载
-        for i in {1..50}; do
-          curl -s http://localhost:8080/health || true
-        done
-        
-        kill $PGO_PID 2>/dev/null || true
+          export JWT_SECRET="$jwt_secret"
+          export QA_PASSWORD="$qa_password"
+          export QA_FIXTURE_CONFIRM=I_UNDERSTAND
+          export SUBJECT_DATA_KEY="$subject_data_key"
+          go run ./cmd/migrate -command bootstrap
+          go run ./cmd/qa-fixture -mode seed
+          go run ./cmd/qa-fixture -mode seed
+          go run ./cmd/qa-fixture -mode verify
 
-    - name: 运行标准版本基准测试
-      run: |
-        echo "运行标准版本基准测试..."
-        chmod +x bin/law-oa-server-standard
-        timeout 60s ./bin/law-oa-server-standard --benchmark &
-        STANDARD_PID=$!
-        sleep 5
-        
-        # 模拟负载
-        for i in {1..50}; do
-          curl -s http://localhost:8080/health || true
-        done
-        
-        kill $STANDARD_PID 2>/dev/null || true
+      - name: 验证PGO和标准二进制
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x bin/law-oa-server-pgo bin/law-oa-server-standard
 
-    - name: 生成性能比较报告
-      run: |
-        echo "# PGO优化性能报告" > pgo-performance-report.md
-        echo "## 测试时间: $(date)" >> pgo-performance-report.md
-        echo "" >> pgo-performance-report.md
-        
-        echo "## 构建信息" >> pgo-performance-report.md
-        echo "- Go版本: $(go version)" >> pgo-performance-report.md
-        echo "- 构建时间: $(date)" >> pgo-performance-report.md
-        echo "" >> pgo-performance-report.md
-        
-        echo "## 二进制文件比较" >> pgo-performance-report.md
-        pgo_size=$(stat -c%s bin/law-oa-server-pgo 2>/dev/null || echo 0)
-        standard_size=$(stat -c%s bin/law-oa-server-standard 2>/dev/null || echo 0)
-        echo "- PGO优化版本: $pgo_size bytes" >> pgo-performance-report.md
-        echo "- 标准版本: $standard_size bytes" >> pgo-performance-report.md
-        if [ $pgo_size -gt 0 ] && [ $standard_size -gt 0 ]; then
-          difference=$((pgo_size - standard_size))
-          percentage=$((difference * 100 / standard_size))
-          echo "- 大小差异: $difference bytes ($percentage%)" >> pgo-performance-report.md
-        fi
-        echo "" >> pgo-performance-report.md
-        
-        echo "## 性能基准测试" >> pgo-performance-report.md
-        echo "✓ PGO版本基准测试完成" >> pgo-performance-report.md
-        echo "✓ 标准版本基准测试完成" >> pgo-performance-report.md
-        echo "" >> pgo-performance-report.md
-        
-        echo "## 优化建议" >> pgo-performance-report.md
-        echo "1. **定期更新PGO数据**: 随着使用模式变化，定期重新收集性能数据" >> pgo-performance-report.md
-        echo "2. **监控生产环境**: 在生产环境中监控实际性能表现" >> pgo-performance-report.md
-        echo "3. **A/B测试**: 在生产环境中进行A/B测试验证PGO优化效果" >> pgo-performance-report.md
+          run_and_probe() (
+            set -euo pipefail
+            local binary="$1"
+            local label="$2"
+            local log_file="/tmp/${label}.log"
+            "$binary" > "$log_file" 2>&1 &
+            local server_pid=$!
+            cleanup_server() {
+              if kill -0 "$server_pid" 2>/dev/null; then
+                kill "$server_pid" 2>/dev/null || true
+                wait "$server_pid" 2>/dev/null || true
+              fi
+            }
+            trap cleanup_server EXIT
 
-    - name: 上传性能报告
-      uses: actions/upload-artifact@v4
-      with:
-        name: pgo-performance-report
-        path: pgo-performance-report.md
+            local live=false
+            for attempt in $(seq 1 60); do
+              if curl --fail --silent http://127.0.0.1:8080/health/live \
+                | jq -e '.live == true' > /dev/null; then
+                live=true
+                break
+              fi
+              if ! kill -0 "$server_pid" 2>/dev/null; then
+                sed -n '1,240p' "$log_file"
+                return 1
+              fi
+              sleep 1
+            done
+            if [[ "$live" != true ]]; then
+              sed -n '1,240p' "$log_file"
+              return 1
+            fi
+            if ! curl --fail --silent --retry 30 --retry-delay 1 --retry-all-errors \
+              http://127.0.0.1:8080/health/ready | jq -e '.ready == true' > /dev/null; then
+              sed -n '1,240p' "$log_file"
+              return 1
+            fi
+          )
 
-  # PGO构建报告
+          run_and_probe ./bin/law-oa-server-pgo pgo
+          run_and_probe ./bin/law-oa-server-standard standard
+
+      - name: 生成性能比较报告
+        shell: bash
+        run: |
+          set -euo pipefail
+          pgo_size="$(stat -c%s bin/law-oa-server-pgo)"
+          standard_size="$(stat -c%s bin/law-oa-server-standard)"
+          test "$pgo_size" -gt 0
+          test "$standard_size" -gt 0
+          {
+            echo '# PGO优化性能报告'
+            echo
+            echo "- Go版本: $(go version)"
+            echo "- PGO优化版本: $pgo_size bytes"
+            echo "- 标准版本: $standard_size bytes"
+            echo '- PGO和标准根服务均通过隔离 PostgreSQL/Redis 健康验证。'
+          } > pgo-performance-report.md
+
+      - name: 上传性能报告
+        uses: actions/upload-artifact@v4
+        with:
+          name: pgo-performance-report
+          path: pgo-performance-report.md
+          if-no-files-found: error
+
   pgo-report:
     name: 生成PGO构建报告
     runs-on: ubuntu-latest
-    needs: [pgo-optimized-build, performance-benchmark]
+    needs: [collect-profile, pgo-optimized-build, performance-benchmark]
     if: always()
     steps:
-    - name: 检出代码
-      uses: actions/checkout@v4
+      - name: 生成PGO构建摘要
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo '## PGO优化构建状态'
+            echo
+            echo '| 阶段 | 状态 |'
+            echo '|---|---|'
+            echo '| 真实工作负载与性能数据 | ${{ needs.collect-profile.result }} |'
+            echo '| PGO优化构建 | ${{ needs.pgo-optimized-build.result }} |'
+            echo '| PGO二进制运行验证 | ${{ needs.performance-benchmark.result }} |'
+          } >> "$GITHUB_STEP_SUMMARY"
 
-    - name: 下载所有产物
-      uses: actions/download-artifact@v4
-
-    - name: 生成PGO构建报告
-      run: |
-        echo "# PGO优化构建报告" > pgo-build-report.md
-        echo "## 生成时间: $(date)" >> pgo-build-report.md
-        echo "" >> pgo-build-report.md
-        
-        echo "## 构建状态" >> pgo-build-report.md
-        if [ -f "pgo-optimized-binaries/law-oa-server-pgo" ]; then
-          echo "✅ PGO优化构建成功" >> pgo-build-report.md
-        else
-          echo "❌ PGO优化构建失败" >> pgo-build-report.md
-        fi
-        echo "" >> pgo-build-report.md
-        
-        echo "## 性能数据收集" >> pgo-build-report.md
-        if [ -f "profile-data/cpu.prof" ]; then
-          echo "✅ CPU性能数据收集成功" >> pgo-build-report.md
-        else
-          echo "❌ CPU性能数据收集失败" >> pgo-build-report.md
-        fi
-        echo "" >> pgo-build-report.md
-        
-        echo "## 二进制文件信息" >> pgo-build-report.md
-        if [ -f "pgo-optimized-binaries/law-oa-server-pgo" ]; then
-          pgo_size=$(stat -c%s pgo-optimized-binaries/law-oa-server-pgo)
-          echo "- PGO优化版本: $pgo_size bytes" >> pgo-build-report.md
-        fi
-        if [ -f "pgo-optimized-binaries/law-oa-server-standard" ]; then
-          standard_size=$(stat -c%s pgo-optimized-binaries/law-oa-server-standard)
-          echo "- 标准版本: $standard_size bytes" >> pgo-build-report.md
-        fi
-        echo "" >> pgo-build-report.md
-        
-        echo "## 下一步行动" >> pgo-build-report.md
-        echo "1. **验证性能提升**: 在测试环境中验证PGO版本的性能提升" >> pgo-build-report.md
-        echo "2. **监控生产表现**: 部署PGO版本到生产环境并监控性能指标" >> pgo-build-report.md
-        echo "3. **定期优化**: 定期重新收集性能数据并重新构建" >> pgo-build-report.md
-        echo "4. **回滚计划**: 准备回滚方案以防性能不如预期" >> pgo-build-report.md
-
-    - name: 上传PGO构建报告
-      uses: actions/upload-artifact@v4
-      with:
-        name: pgo-build-report
-        path: pgo-build-report.md
+      - name: PGO汇总门禁
+        if: >-
+          needs.collect-profile.result != 'success' ||
+          needs.pgo-optimized-build.result != 'success' ||
+          needs.performance-benchmark.result != 'success'
+        run: exit 1

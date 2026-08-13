@@ -41,7 +41,7 @@ test.describe('工作台查看全部操作', () => {
   })
 
   test('全局搜索应展示可进入的业务结果', async ({ page }) => {
-    const search = page.getByRole('textbox', { name: '搜索案件、冲突检测或审批' })
+    const search = page.getByRole('searchbox', { name: '搜索案件、冲突检测或审批' })
     await search.fill('红杉资本')
     await search.press('Enter')
 

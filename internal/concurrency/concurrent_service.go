@@ -250,10 +250,6 @@ func (s *ConcurrentService) SubmitBatchTasks(tasks []Task) (*TaskResult, error) 
 		Context:      context.Background(),
 	}
 
-	if err := s.SubmitTask(batchTask); err != nil {
-		return nil, err
-	}
-
 	// 创建等待结果的context
 	ctx, cancel := context.WithTimeout(context.Background(), s.config.TaskTimeout)
 	defer cancel()
@@ -269,10 +265,6 @@ func (s *ConcurrentService) SubmitDatabaseTask(operation func(ctx context.Contex
 		TaskPriority: 3,
 		Operation:    operation,
 		Context:      context.Background(),
-	}
-
-	if err := s.SubmitTask(task); err != nil {
-		return nil, err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.config.TaskTimeout)
@@ -292,10 +284,6 @@ func (s *ConcurrentService) SubmitFileTask(filePath string, process func(ctx con
 		Context:      context.Background(),
 	}
 
-	if err := s.SubmitTask(task); err != nil {
-		return nil, err
-	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), s.config.TaskTimeout)
 	defer cancel()
 
@@ -304,7 +292,8 @@ func (s *ConcurrentService) SubmitFileTask(filePath string, process func(ctx con
 
 // SubmitAPITask 提交API请求任务
 func (s *ConcurrentService) SubmitAPITask(url, method string, headers map[string]string, body interface{},
-	request func(ctx context.Context, url, method string, headers map[string]string, body interface{}) (interface{}, error)) (*TaskResult, error) {
+	request func(ctx context.Context, url, method string, headers map[string]string, body interface{}) (interface{}, error),
+) (*TaskResult, error) {
 	task := &APIRequestTask{
 		TaskID:       fmt.Sprintf("api_%d", time.Now().UnixNano()),
 		TaskType:     "api",
@@ -315,10 +304,6 @@ func (s *ConcurrentService) SubmitAPITask(url, method string, headers map[string
 		Body:         body,
 		Request:      request,
 		Context:      context.Background(),
-	}
-
-	if err := s.SubmitTask(task); err != nil {
-		return nil, err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.config.TaskTimeout)

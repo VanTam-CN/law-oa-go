@@ -22,3 +22,10 @@ html, body {
 .ant-layout-has-sider {
   min-height: 100vh !important;
 }
+
+@media (max-width: 768px) {
+  .app-main-content.ant-layout-content {
+    margin-left: 16px !important;
+    padding: 12px !important;
+  }
+}

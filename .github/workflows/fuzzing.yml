@@ -58,7 +58,7 @@ jobs:
       run: |
         go version
         echo "检查Fuzzing支持..."
-        if go help | grep -q "fuzz"; then
+        if go help testflag | grep -q -- "-fuzz"; then
           echo "✓ Fuzzing支持已启用"
         else
           echo "✗ Fuzzing支持未启用，请使用Go 1.23+"

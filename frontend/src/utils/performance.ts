@@ -18,7 +18,9 @@ const DEFAULT_CONFIG: PerformanceConfig = {
   targetFrameTime: 16.67, // 60fps
   maxRenderTime: 100, // 最大渲染时间
   memoryThreshold: 100, // 100MB内存阈值
-    enableMonitoring: import.meta.env.DEV,
+  // Monitoring is opt-in. The application entry point enables it explicitly
+  // in development, while reusable components and tests remain side-effect free.
+  enableMonitoring: false,
 }
 
 // 性能监控器

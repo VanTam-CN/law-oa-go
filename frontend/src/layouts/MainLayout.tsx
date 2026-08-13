@@ -63,6 +63,7 @@ const MainLayout: React.FC = () => {
       <Layout style={{ marginLeft: 0, display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
         <Header />
         <Content
+          className='app-main-content'
           style={{
             margin: '56px 16px 16px 16px',
             marginLeft: 'var(--sidebar-width, 220px)',

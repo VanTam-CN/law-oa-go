@@ -1,6 +1,9 @@
 package auth
 
 import (
+	"sync"
+
+	"github.com/alicebob/miniredis/v2"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 	"law-oa-go/internal/cache"
@@ -8,12 +11,28 @@ import (
 	"law-oa-go/test/mock"
 )
 
+var (
+	testRedisOnce   sync.Once
+	testRedisServer *miniredis.Miniredis
+	testRedisAddr   string
+)
+
+func sharedTestRedisAddr() string {
+	testRedisOnce.Do(func() {
+		server, err := miniredis.Run()
+		if err != nil {
+			panic("failed to start isolated test Redis: " + err.Error())
+		}
+		testRedisServer = server
+		testRedisAddr = server.Addr()
+	})
+	return testRedisAddr
+}
+
 // createTestCacheService 创建测试用的缓存服务
 func createTestCacheService() *cache.CacheService {
 	// 创建一个测试用的缓存服务
-	redisClient := redis.NewClient(&redis.Options{
-		Addr: "localhost:6379",
-	})
+	redisClient := redis.NewClient(&redis.Options{Addr: sharedTestRedisAddr()})
 	return cache.NewCacheService(redisClient, "test")
 }
 
@@ -21,7 +40,7 @@ func createTestCacheService() *cache.CacheService {
 func createTestRedisClient() *redis.Client {
 	// 创建一个测试用的Redis客户端
 	return redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
+		Addr:     sharedTestRedisAddr(),
 		Password: "",
 		DB:       0,
 	})

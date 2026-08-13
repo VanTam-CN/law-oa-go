@@ -1,12 +1,13 @@
 import React from 'react'
 import { Card, Form, Input, Button, Checkbox } from 'antd'
 import { message } from '@/utils/messageHelper'
-import { UserOutlined, LockOutlined } from '@ant-design/icons'
+import { EyeInvisibleOutlined, EyeOutlined, LockOutlined, UserOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router'
 import { login, setToken } from '@/services/auth'
 import { getCurrentUserPermissions, getCurrentUserRoles } from '@/services/role'
 import { useAppStore } from '@/stores/useAppStore'
 import { setPermissions as cachePermissions, setRoles as cacheRoles } from '@/utils/storage'
+import { getLoginErrorMessage } from './loginFeedback'
 import './Login.less'
 
 interface LoginFormValues {
@@ -36,6 +37,7 @@ const LoginPage: React.FC = () => {
   const { login: appStoreLogin } = useAppStore()
   const [form] = Form.useForm<LoginFormValues>()
   const [loading, setLoading] = React.useState(false)
+  const [passwordVisible, setPasswordVisible] = React.useState(false)
 
   const onFinish = async (values: LoginFormValues) => {
     try {
@@ -44,8 +46,6 @@ const LoginPage: React.FC = () => {
         ...values,
         email: normalizeLoginIdentifier(values.email),
       })
-
-      console.log('Login response:', response)
 
       // 处理后端返回的token格式
       const token = response.token || response.data?.token
@@ -72,8 +72,8 @@ const LoginPage: React.FC = () => {
             cachePermissions(permissions)
             permissionCodes = Array.from(new Set(permissions.map((permission) => permission.code)))
           }
-        } catch (rbacError) {
-          console.warn('加载当前用户RBAC权限失败，将使用登录角色作为降级权限:', rbacError)
+        } catch {
+          console.warn('加载当前用户RBAC权限失败，将使用登录角色作为降级权限')
         }
 
         // 构造用户对象，映射后端字段到前端需要的格式
@@ -91,8 +91,6 @@ const LoginPage: React.FC = () => {
           createdAt: userData.created_at,
         }
 
-        console.log('Processed user:', user)
-
         appStoreLogin(user, token)
         message.success('登录成功')
 
@@ -101,16 +99,10 @@ const LoginPage: React.FC = () => {
           navigate('/')
         }, 500)
       } else {
-        console.error('Token or user missing:', { token, user: userData })
         throw new Error('未获取到有效的登录凭证')
       }
-    } catch (error: any) {
-      console.error('Login failed:', error)
-      const apiMessage =
-        error.response?.data?.error?.details ||
-        error.response?.data?.error?.message ||
-        error.response?.data?.message
-      message.error(apiMessage || '登录失败，请检查账号和密码')
+    } catch (error: unknown) {
+      message.error(getLoginErrorMessage(error))
     } finally {
       setLoading(false)
     }
@@ -131,13 +123,27 @@ const LoginPage: React.FC = () => {
               prefix={<UserOutlined />}
               placeholder='账号或邮箱，如 admin / demo.admin'
               autoComplete='username'
+              aria-label='账号或邮箱'
             />
           </Form.Item>
           <Form.Item name='password' rules={[{ required: true, message: '请输入密码' }]}>
-            <Input.Password
+            <Input
+              type={passwordVisible ? 'text' : 'password'}
               prefix={<LockOutlined />}
+              suffix={
+                <button
+                  type='button'
+                  className='login-password-toggle'
+                  aria-label={passwordVisible ? '隐藏密码' : '显示密码'}
+                  aria-pressed={passwordVisible}
+                  onClick={() => setPasswordVisible((visible) => !visible)}
+                >
+                  {passwordVisible ? <EyeOutlined /> : <EyeInvisibleOutlined />}
+                </button>
+              }
               placeholder='密码'
               autoComplete='current-password'
+              aria-label='密码'
             />
           </Form.Item>
           <Form.Item name='remember' valuePropName='checked'>
@@ -149,6 +155,9 @@ const LoginPage: React.FC = () => {
             </Button>
           </Form.Item>
         </Form>
+        <div className='login-support' role='note'>
+          首次使用或无法登录？请联系律所系统管理员。
+        </div>
       </Card>
       <div className='login-footer'>© {new Date().getFullYear()} 示例律师事务所OA - 版权所有</div>
     </div>

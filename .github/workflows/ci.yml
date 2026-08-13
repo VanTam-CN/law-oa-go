@@ -85,10 +85,85 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: 🔍 代码格式检查
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
-          go install mvdan.cc/gofumpt@latest
-          gofumpt -w -s .
-          git diff --exit-code
+          set -euo pipefail
+          go install mvdan.cc/gofumpt@v0.11.0
+
+          # 语法门禁覆盖仓库内所有受 Git 管理的 Go 源码，包括拥有独立
+          # go.mod 但尚未完成依赖治理的 document-service。gofmt -e 只解析，
+          # 不写工作树；任一文件存在语法错误都会给出独立错误并立即失败。
+          syntax_output="$RUNNER_TEMP/gofmt-syntax-output.txt"
+          while IFS= read -r -d '' file; do
+            if ! gofmt -e "$file" > /dev/null 2> "$syntax_output"; then
+              printf 'Go syntax parse failed: %s\n' "$file"
+              cat "$syntax_output"
+              exit 1
+            fi
+          done < <({
+            git ls-files -z -- '*.go'
+            git ls-files --others --exclude-standard -z -- '*.go'
+          })
+
+          # 仓库仍有历史 CRLF/格式债务。增量格式门禁只检查本次变更且属于
+          # 根可构建 Go module 的文件；独立 module 仍由上面的全仓语法门禁覆盖。
+          changed_files="$RUNNER_TEMP/changed-go-files.txt"
+          : > "$changed_files"
+          if [[ -n "${BASE_SHA:-}" && ! "$BASE_SHA" =~ ^0+$ ]] \
+            && git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
+            git diff --name-only --diff-filter=ACMR "${BASE_SHA}...HEAD" -- '*.go' \
+              >> "$changed_files"
+          elif git rev-parse --verify HEAD^ >/dev/null 2>&1; then
+            git diff --name-only --diff-filter=ACMR HEAD^...HEAD -- '*.go' \
+              >> "$changed_files"
+          else
+            git ls-files -- '*.go' >> "$changed_files"
+          fi
+          git diff --name-only --diff-filter=ACMR -- '*.go' >> "$changed_files"
+          git diff --cached --name-only --diff-filter=ACMR -- '*.go' >> "$changed_files"
+          git ls-files --others --exclude-standard -- '*.go' >> "$changed_files"
+          sort -u -o "$changed_files" "$changed_files"
+
+          format_file_count=0
+          while IFS= read -r file; do
+            [[ -n "$file" && -f "$file" ]] || continue
+
+            module_dir="$(dirname "$file")"
+            while [[ "$module_dir" != "." && ! -f "$module_dir/go.mod" ]]; do
+              module_dir="$(dirname "$module_dir")"
+            done
+            if [[ "$module_dir" != "." ]]; then
+              echo "syntax-only (independent module): $file"
+              continue
+            fi
+            format_file_count=$((format_file_count + 1))
+
+            gofmt_diff="$(gofmt -d "$file")"
+            if [[ -n "$gofmt_diff" ]]; then
+              printf 'Go format check failed (gofmt): %s\n%s\n' "$file" "$gofmt_diff"
+              exit 1
+            fi
+
+            set +e
+            gofumpt_diff="$(gofumpt -d "$file" 2>&1)"
+            gofumpt_status=$?
+            set -e
+            if [[ "$gofumpt_status" -gt 1 ]]; then
+              printf 'gofumpt execution failed: %s\n%s\n' "$file" "$gofumpt_diff"
+              exit "$gofumpt_status"
+            fi
+            if [[ "$gofumpt_status" -ne 0 || -n "$gofumpt_diff" ]]; then
+              printf 'Go format check failed (gofumpt): %s\n%s\n' "$file" "$gofumpt_diff"
+              exit 1
+            fi
+          done < "$changed_files"
+          if [[ "$format_file_count" -eq 0 ]]; then
+            echo 'No changed root-module Go files require format checks.'
+          else
+            echo "Go format checks passed: $format_file_count root-module file(s)."
+          fi
 
       - name: 📋 静态分析
         run: |

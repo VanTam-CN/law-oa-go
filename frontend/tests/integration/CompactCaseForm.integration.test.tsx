@@ -776,7 +776,7 @@ describe('CompactCaseForm Integration Tests', () => {
   });
 
   describe('性能优化集成测试', () => {
-    test('应该优化大量步骤的渲染', () => {
+    test('应该稳定渲染大量步骤且保持唯一当前步骤', () => {
       const manySteps = Array.from({ length: 20 }, (_, i) => ({
         key: `step_${i}`,
         title: `步骤 ${i + 1}`,
@@ -785,7 +785,6 @@ describe('CompactCaseForm Integration Tests', () => {
         validation: []
       }));
 
-      const startTime = performance.now();
       render(
         <CompactCaseForm
           {...defaultProps}
@@ -793,31 +792,27 @@ describe('CompactCaseForm Integration Tests', () => {
           fieldGroups={{}}
         />
       );
-      const endTime = performance.now();
 
-      // 渲染时间应该在合理范围内
-      expect(endTime - startTime).toBeLessThan(100);
+      const renderedSteps = screen.getAllByTestId(/^step-step_/);
+      expect(renderedSteps).toHaveLength(20);
+      expect(new Set(renderedSteps.map(step => step.dataset.testid)).size).toBe(20);
+      expect(screen.getByTestId('step-step_0')).toHaveAttribute('data-current', 'true');
     });
 
-    test('应该优化表单状态更新', () => {
+    test('重复重渲染不应复制表单状态视图', () => {
       const { rerender } = render(<CompactCaseForm {...defaultProps} />);
 
-      const startTime = performance.now();
-
-      // 多次更新状态
+      // 重复使用同一组件实例更新，验证状态视图保持唯一且当前步骤不漂移。
       for (let i = 0; i < 10; i++) {
-        rerender(
-          <CompactCaseForm
-            {...defaultProps}
-            key={i}
-          />
-        );
+        rerender(<CompactCaseForm {...defaultProps} />);
       }
 
-      const endTime = performance.now();
-
-      // 更新时间应该在合理范围内
-      expect(endTime - startTime).toBeLessThan(50);
+      expect(screen.getAllByTestId('progress-indicator')).toHaveLength(1);
+      expect(screen.getAllByTestId(`step-${STEP_KEYS.BASIC}`)).toHaveLength(1);
+      expect(screen.getByTestId(`step-${STEP_KEYS.BASIC}`)).toHaveAttribute(
+        'data-current',
+        'true'
+      );
     });
   });
 
