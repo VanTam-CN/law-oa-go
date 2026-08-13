@@ -22,18 +22,29 @@ jobs:
     name: 🐹 Go Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      ENVIRONMENT: test
+      DB_DRIVER: postgres
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USERNAME: test
+      DB_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
+      DB_DATABASE: law_oa_test
+      DB_SSLMODE: disable
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
 
     services:
       postgres:
         image: postgres:15
         env:
           POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
+          POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
           POSTGRES_DB: law_oa_test
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U test -d law_oa_test"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -69,31 +80,44 @@ jobs:
       - name: 📥 安装依赖
         run: go mod download
 
-      - name: 🔍 代码检查
-        continue-on-error: true
+      - name: 🔐 生成一次性测试密钥
         run: |
-          go vet ./... || true
-          go fmt ./...
+          jwt_secret="$(openssl rand -hex 32)"
+          echo "::add-mask::$jwt_secret"
+          echo "JWT_SECRET=$jwt_secret" >> "$GITHUB_ENV"
+
+      - name: 🔍 代码检查
+        run: |
+          go vet ./...
+          test -z "$(gofmt -l internal/services/conflict_detection_service_test.go)"
 
       - name: 🧪 运行单元测试
         env:
+          ENVIRONMENT: test
+          DB_DRIVER: postgres
           DB_HOST: localhost
           DB_PORT: 5432
-          DB_USER: test
-          DB_PASSWORD: test
-          DB_NAME: law_oa_test
-          REDIS_ADDR: localhost:6379
+          DB_USERNAME: test
+          DB_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
+          DB_DATABASE: law_oa_test
+          DB_SSLMODE: disable
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
         run: |
           go test -v -race -coverprofile=coverage-unit.out -covermode=atomic ./internal/...
 
       - name: 🧪 运行集成测试
         env:
+          ENVIRONMENT: test
+          DB_DRIVER: postgres
           DB_HOST: localhost
           DB_PORT: 5432
-          DB_USER: test
-          DB_PASSWORD: test
-          DB_NAME: law_oa_test
-          REDIS_ADDR: localhost:6379
+          DB_USERNAME: test
+          DB_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
+          DB_DATABASE: law_oa_test
+          DB_SSLMODE: disable
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
         run: |
           go test -v -race -coverprofile=coverage-integration.out -covermode=atomic -tags=integration ./...
 
@@ -140,7 +164,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-        continue-on-error: true
 
       - name: 📥 安装依赖
         working-directory: ./frontend
@@ -148,13 +171,11 @@ jobs:
 
       - name: 🔍 类型检查
         working-directory: ./frontend
-        continue-on-error: true
-        run: npm run type-check || true
+        run: npm run type-check
 
       - name: 🔍 代码检查
         working-directory: ./frontend
-        continue-on-error: true
-        run: npm run lint || true
+        run: npm run lint
 
       - name: 🧪 运行单元测试
         working-directory: ./frontend
@@ -180,26 +201,10 @@ jobs:
   # E2E 测试
   # ================================
   e2e-tests:
-    name: 🎭 E2E Tests
+    name: 🎭 Mocked API Browser Regression
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: [go-tests, frontend-tests]
-    if: always()
-
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: law_oa_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
       - name: 📥 检出代码
@@ -209,13 +214,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-        continue-on-error: true
-
-      - name: 🐹 设置Go环境
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: true
 
       - name: 📥 安装前端依赖
         working-directory: ./frontend
@@ -229,31 +227,12 @@ jobs:
         working-directory: ./frontend
         run: npm run build
 
-      - name: 🚀 启动后端服务
-        env:
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_USER: test
-          DB_PASSWORD: test
-          DB_NAME: law_oa_test
-          PORT: 8080
-        run: |
-          go build -o server ./cmd/server
-          ./server &
-          sleep 5
-          curl -f http://localhost:8080/health || echo "Server starting..."
-
-      - name: 🚀 启动前端服务
-        working-directory: ./frontend
-        run: |
-          npm run preview &
-          sleep 5
-
-      - name: 🧪 运行E2E测试
+      - name: 🧪 运行模拟 API 浏览器回归
         working-directory: ./frontend
         run: npx playwright test --project=chromium
         env:
-          E2E_BASE_URL: http://localhost:4173
+          E2E_BASE_URL: http://127.0.0.1:4173
+          E2E_WEB_SERVER_COMMAND: npm run preview -- --host 127.0.0.1 --port 4173
 
       - name: 📊 上传Playwright报告
         uses: actions/upload-artifact@v4
@@ -270,6 +249,151 @@ jobs:
           name: playwright-screenshots
           path: frontend/test-results/
           retention-days: 7
+
+  # ================================
+  # 真实后端运行冒烟（一次性数据库）
+  # ================================
+  runtime-smoke:
+    name: 🔌 Real Backend Runtime Smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [go-tests]
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
+          POSTGRES_DB: law_oa_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test -d law_oa_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      ENVIRONMENT: test
+      DB_DRIVER: postgres
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USERNAME: test
+      DB_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
+      DB_DATABASE: law_oa_test
+      DB_SSLMODE: disable
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      PORT: 8080
+
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+
+      - name: 🐹 设置Go环境
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: 📥 安装依赖
+        run: go mod download
+
+      - name: 🧱 初始化一次性 PostgreSQL
+        run: go run ./cmd/migrate -command bootstrap
+
+      - name: 🔌 验证真实后端健康与登录
+        shell: bash
+        run: |
+          set -euo pipefail
+          jwt_secret="$(openssl rand -hex 32)"
+          qa_password="$(openssl rand -base64 24)"
+          subject_data_key="$(openssl rand -hex 32)"
+          echo "::add-mask::$jwt_secret"
+          echo "::add-mask::$qa_password"
+          echo "::add-mask::$subject_data_key"
+          export JWT_SECRET="$jwt_secret"
+          export QA_PASSWORD="$qa_password"
+          export QA_FIXTURE_CONFIRM=I_UNDERSTAND
+          export SUBJECT_DATA_KEY="$subject_data_key"
+
+          go run ./cmd/qa-fixture -mode seed
+          go run ./cmd/qa-fixture -mode seed
+          go run ./cmd/qa-fixture -mode verify
+          go build -o /tmp/law-oa-server .
+          /tmp/law-oa-server > /tmp/law-oa-server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8080/health/live > /tmp/health-live.json; then
+              break
+            fi
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              sed -n '1,240p' /tmp/law-oa-server.log
+              exit 1
+            fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:8080/health/live | jq -e '.live == true'
+          curl --fail --silent --retry 30 --retry-delay 1 --retry-all-errors \
+            http://127.0.0.1:8080/health/ready | jq -e '.ready == true'
+
+          login() {
+            local email="$1"
+            local role="$2"
+            local output="$3"
+            jq -n --arg email "$email" --arg password "$qa_password" \
+              '{email: $email, password: $password}' \
+              | curl --fail --silent \
+                  -H 'Content-Type: application/json' \
+                  --data @- \
+                  http://127.0.0.1:8080/api/v1/auth/login \
+              > "$output"
+            jq -e --arg role "$role" \
+              '.success == true and ((.data.token // .token) | length > 0) and .data.user.role == $role' \
+              "$output"
+          }
+
+          login qa.lawyer.a@qa.invalid lawyer /tmp/login-lawyer-a.json
+          login qa.lawyer.b@qa.invalid lawyer /tmp/login-lawyer-b.json
+          login qa.conflict.officer@qa.invalid conflict_officer /tmp/login-conflict-officer.json
+          login qa.assistant@qa.invalid assistant /tmp/login-assistant.json
+          login qa.finance@qa.invalid finance /tmp/login-finance.json
+
+          lawyer_token="$(jq -r '.data.token // .token' /tmp/login-lawyer-a.json)"
+          assistant_token="$(jq -r '.data.token // .token' /tmp/login-assistant.json)"
+          finance_token="$(jq -r '.data.token // .token' /tmp/login-finance.json)"
+          for token in "$lawyer_token" "$assistant_token" "$finance_token"; do
+            echo "::add-mask::$token"
+          done
+
+          curl --fail --silent \
+            -H "Authorization: Bearer $assistant_token" \
+            'http://127.0.0.1:8080/api/v1/inbox?page=1&page_size=20&order_by=due_date' \
+            | jq -e '.success == true and (.data.items | length >= 1)'
+
+          lawyer_finance_status="$(curl --silent --output /tmp/lawyer-finance.json --write-out '%{http_code}' \
+            -H "Authorization: Bearer $lawyer_token" \
+            http://127.0.0.1:8080/api/v1/finance/overview)"
+          test "$lawyer_finance_status" = 403
+
+          finance_status="$(curl --silent --output /tmp/finance-mvp.json --write-out '%{http_code}' \
+            -H "Authorization: Bearer $finance_token" \
+            http://127.0.0.1:8080/api/v1/finance/overview)"
+          test "$finance_status" = 503
+          jq -e '.error.code == "MVP_MODULE_UNAVAILABLE" or .code == "MVP_MODULE_UNAVAILABLE"' \
+            /tmp/finance-mvp.json
 
   # ================================
   # 测试覆盖率检查
@@ -301,11 +425,11 @@ jobs:
         run: |
           echo "## 📊 测试覆盖率报告" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| 模块 | 覆盖率 | 状态 |" >> $GITHUB_STEP_SUMMARY
-          echo "|------|--------|------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Go 后端 | 查看报告 | ✅ |" >> $GITHUB_STEP_SUMMARY
-          echo "| 前端 | 查看报告 | ✅ |" >> $GITHUB_STEP_SUMMARY
-          echo "| E2E | 运行中 | ✅ |" >> $GITHUB_STEP_SUMMARY
+          echo "| 模块 | 状态 |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Go 后端 | ${{ needs.go-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 前端 | ${{ needs.frontend-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 浏览器回归 | 由独立 Job 报告 |" >> $GITHUB_STEP_SUMMARY
 
   # ================================
   # 测试结果汇总
@@ -313,7 +437,10 @@ jobs:
   test-summary:
     name: 📋 Test Summary
     runs-on: ubuntu-latest
-    needs: [go-tests, frontend-tests, e2e-tests]
+    permissions:
+      contents: read
+      issues: write
+    needs: [go-tests, frontend-tests, e2e-tests, runtime-smoke]
     if: always()
 
     steps:
@@ -325,24 +452,36 @@ jobs:
           echo "|----------|------|" >> $GITHUB_STEP_SUMMARY
           echo "| Go 单元测试 | ${{ needs.go-tests.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| 前端单元测试 | ${{ needs.frontend-tests.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| E2E 测试 | ${{ needs.e2e-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 模拟 API 浏览器回归 | ${{ needs.e2e-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 真实后端运行冒烟 | ${{ needs.runtime-smoke.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### ✅ 所有测试已完成" >> $GITHUB_STEP_SUMMARY
+          echo "以上状态来自各依赖 Job，不以固定文案替代执行结果。" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🚦 汇总门禁
+        if: >-
+          needs.go-tests.result != 'success' ||
+          needs.frontend-tests.result != 'success' ||
+          needs.e2e-tests.result != 'success' ||
+          needs.runtime-smoke.result != 'success'
+        run: exit 1
 
       - name: 💬 PR评论
-        if: github.event_name == 'pull_request'
+        if: >-
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository
         uses: actions/github-script@v7
         with:
           script: |
             const status = '${{ needs.go-tests.result }}' === 'success' &&
                           '${{ needs.frontend-tests.result }}' === 'success' &&
-                          '${{ needs.e2e-tests.result }}' === 'success'
+                          '${{ needs.e2e-tests.result }}' === 'success' &&
+                          '${{ needs.runtime-smoke.result }}' === 'success'
                           ? '✅ 所有测试通过'
                           : '❌ 部分测试失败';
 
-            github.rest.issues.createComment({
+            await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: `## 🧪 测试结果\n\n${status}\n\n- Go测试: ${{ needs.go-tests.result }}\n- 前端测试: ${{ needs.frontend-tests.result }}\n- E2E测试: ${{ needs.e2e-tests.result }}`
+              body: `## 🧪 测试结果\n\n${status}\n\n- Go测试: ${{ needs.go-tests.result }}\n- 前端测试: ${{ needs.frontend-tests.result }}\n- 模拟 API 浏览器回归: ${{ needs.e2e-tests.result }}\n- 真实后端运行冒烟: ${{ needs.runtime-smoke.result }}`
             });

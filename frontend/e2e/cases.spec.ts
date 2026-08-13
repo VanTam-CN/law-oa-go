@@ -86,7 +86,12 @@ test.describe('案件管理', () => {
 
     await page.getByRole('button', { name: '查看本案检测结果' }).click()
     await expect(page.getByRole('dialog', { name: '冲突检测详情' })).toBeVisible()
-    await expect(page.getByText('关联主体历史委托')).toBeVisible()
+    await expect(
+      page.getByRole('dialog', { name: '冲突检测详情' }).getByRole('cell', {
+        name: '受限历史事项（请联系独立冲突核查人）',
+      }),
+    ).toBeVisible()
+    await expect(page.getByText('关联主体历史委托')).toHaveCount(0)
   })
 })
 

@@ -3420,7 +3420,7 @@ export function CaseDetailCenter() {
         {needsConflictReview && (
           <section className='ng-panel'>
             <div className='ng-panel-head'>
-              <div className='ng-panel-title'>下一步操作</div>
+              <h2 className='ng-panel-title'>下一步操作</h2>
             </div>
             <div className='batch-advice'>
               <strong>下一步：利益冲突复核</strong>

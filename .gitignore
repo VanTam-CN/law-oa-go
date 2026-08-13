@@ -292,6 +292,7 @@ chrome/
 *_test
 *_tester
 test_*
+!internal/auth/test_utils_test.go
 *_test_results*
 *_test.log
 

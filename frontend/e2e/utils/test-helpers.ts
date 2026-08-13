@@ -205,15 +205,30 @@ const commandCenterPayload = {
   },
   case_rows: caseRows,
   risk_queue: riskQueue,
-  inbox_items: [
+  todo_items: [
     {
       id: 501,
+      user_id: 2,
       title: '审批红杉资本新接案',
       content: '红杉资本投资管理咨询合同纠纷案',
       type: 'approval',
       source_type: 'approval',
+      source_id: 701,
       priority: 'high',
-      due_at: now,
+      due_date: now,
+      due_date_type: 'fixed',
+      is_read: false,
+      read_at: null,
+      is_completed: false,
+      completed_at: null,
+      reminder_sent: false,
+      reminder_count: 0,
+      escalated: false,
+      escalated_at: null,
+      snoozed_until: null,
+      snoozed_count: 0,
+      created_at: now,
+      updated_at: now,
     },
   ],
 }
@@ -442,7 +457,11 @@ export async function installApiMocks(page: Page) {
           hasConflict: false,
           conflictCases: [],
           riskAssessment: { overallRisk: 'LOW', riskScore: 18, riskReason: '未发现直接冲突' },
-          decision: { status: 'CLEAR', recommendation: '未发现可识别的冲突线索，可继续进入人工确认环节。' },
+          decision: {
+            status: 'CLEAR',
+            coverageStatus: 'COMPLETE',
+            recommendation: '未发现可识别的冲突线索，可继续进入人工确认环节。',
+          },
           checkStatistics: { totalCasesChecked: 2, relatedPartiesChecked: 1 },
         },
       }))
@@ -450,7 +469,15 @@ export async function installApiMocks(page: Page) {
     }
 
     if (path === '/inbox') {
-      await route.fulfill(ok({ items: commandCenterPayload.inbox_items, pagination: { total: commandCenterPayload.inbox_items.length, page: 1, page_size: 20 } }))
+      await route.fulfill(ok({
+        items: commandCenterPayload.todo_items,
+        pagination: {
+          total: commandCenterPayload.todo_items.length,
+          page: 1,
+          page_size: 20,
+          total_page: 1,
+        },
+      }))
       return
     }
 
@@ -493,7 +520,11 @@ export async function installApiMocks(page: Page) {
           hasConflict: false,
           conflictCases: [],
           riskAssessment: { overallRisk: 'LOW', riskScore: 18, riskReason: '未发现直接冲突' },
-          decision: { status: 'CLEAR', recommendation: '未发现可识别的冲突线索，可继续进入人工确认环节。' },
+          decision: {
+            status: 'CLEAR',
+            coverageStatus: 'COMPLETE',
+            recommendation: '未发现可识别的冲突线索，可继续进入人工确认环节。',
+          },
           checkStatistics: { totalCasesChecked: 2, relatedPartiesChecked: 1 },
         },
       }))
@@ -580,9 +611,8 @@ export async function login(page: Page, userKey: TestUserKey = 'lawyer') {
 
 export async function seedAuthenticatedUser(page: Page, userKey: TestUserKey = 'lawyer') {
   await installApiMocks(page)
-  await page.goto('/login')
   const user = TEST_USERS[userKey]
-  await page.evaluate((payload) => {
+  await page.addInitScript((payload) => {
     localStorage.setItem('auth_token', payload.token)
     localStorage.setItem('law_oa_user_info', JSON.stringify(payload.user))
     localStorage.setItem('law_oa_roles', JSON.stringify([{ code: payload.user.role }]))
@@ -618,5 +648,5 @@ export async function waitForAppShell(page: Page) {
 }
 
 export async function waitForNativeTable(page: Page) {
-  await expect(page.locator('.batch-table-wrap table')).toBeVisible()
+  await expect(page.getByRole('table').first()).toBeVisible()
 }

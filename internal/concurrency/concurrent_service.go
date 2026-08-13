@@ -250,10 +250,6 @@ func (s *ConcurrentService) SubmitBatchTasks(tasks []Task) (*TaskResult, error) 
 		Context:      context.Background(),
 	}
 
-	if err := s.SubmitTask(batchTask); err != nil {
-		return nil, err
-	}
-
 	// 创建等待结果的context
 	ctx, cancel := context.WithTimeout(context.Background(), s.config.TaskTimeout)
 	defer cancel()
@@ -271,10 +267,6 @@ func (s *ConcurrentService) SubmitDatabaseTask(operation func(ctx context.Contex
 		Context:      context.Background(),
 	}
 
-	if err := s.SubmitTask(task); err != nil {
-		return nil, err
-	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), s.config.TaskTimeout)
 	defer cancel()
 
@@ -290,10 +282,6 @@ func (s *ConcurrentService) SubmitFileTask(filePath string, process func(ctx con
 		FilePath:     filePath,
 		Process:      process,
 		Context:      context.Background(),
-	}
-
-	if err := s.SubmitTask(task); err != nil {
-		return nil, err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.config.TaskTimeout)
@@ -315,10 +303,6 @@ func (s *ConcurrentService) SubmitAPITask(url, method string, headers map[string
 		Body:         body,
 		Request:      request,
 		Context:      context.Background(),
-	}
-
-	if err := s.SubmitTask(task); err != nil {
-		return nil, err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.config.TaskTimeout)

@@ -32,7 +32,7 @@ jobs:
       run: |
         go version
         echo "检查PGO支持..."
-        if go build --help | grep -q "pgo"; then
+        if go help build | grep -q -- "-pgo"; then
           echo "✓ PGO支持已启用"
         else
           echo "✗ PGO支持未启用"

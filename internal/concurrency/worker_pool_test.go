@@ -286,29 +286,49 @@ func TestWorkerPool_Metrics(t *testing.T) {
 func TestWorkerPool_FullQueue(t *testing.T) {
 	pool := NewWorkerPool(1, 2, 5*time.Second) // 小队列
 	pool.Start()
-	defer pool.Stop()
+	workerStarted := make(chan struct{})
+	releaseWorker := make(chan struct{})
+	t.Cleanup(func() {
+		close(releaseWorker)
+		pool.Stop()
+	})
 
-	// 填满队列
-	task1 := &DatabaseTask{
-		TaskID:       "queue_task_1",
+	// 先占住唯一 worker，确保后续两个任务确定性地填满队列。
+	blockingTask := &DatabaseTask{
+		TaskID:       "queue_blocking_task",
 		TaskType:     "test",
 		TaskPriority: 1,
 		Operation: func(ctx context.Context) error {
-			time.Sleep(200 * time.Millisecond)
+			close(workerStarted)
+			select {
+			case <-releaseWorker:
+			case <-ctx.Done():
+			}
 			return nil
 		},
 		Context: context.Background(),
 	}
+	require.NoError(t, pool.Submit(blockingTask))
+	select {
+	case <-workerStarted:
+	case <-time.After(time.Second):
+		t.Fatal("worker did not start blocking task")
+	}
 
+	// worker 被占用后，这两个任务会留在容量为 2 的队列中。
+	task1 := &DatabaseTask{
+		TaskID:       "queue_task_1",
+		TaskType:     "test",
+		TaskPriority: 1,
+		Operation:    func(ctx context.Context) error { return nil },
+		Context:      context.Background(),
+	}
 	task2 := &DatabaseTask{
 		TaskID:       "queue_task_2",
 		TaskType:     "test",
 		TaskPriority: 1,
-		Operation: func(ctx context.Context) error {
-			time.Sleep(200 * time.Millisecond)
-			return nil
-		},
-		Context: context.Background(),
+		Operation:    func(ctx context.Context) error { return nil },
+		Context:      context.Background(),
 	}
 
 	// 提交前两个任务应该成功
@@ -327,7 +347,7 @@ func TestWorkerPool_FullQueue(t *testing.T) {
 	}
 
 	err := pool.Submit(task3)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "queue is full")
 }
 

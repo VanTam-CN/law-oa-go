@@ -31,17 +31,19 @@ const (
 	fixtureConfirmation = "I_UNDERSTAND"
 	qaPasswordEnv       = "QA_PASSWORD"
 
-	lawyerAEmail = "qa.lawyer.a@qa.invalid"
-	lawyerBEmail = "qa.lawyer.b@qa.invalid"
-	officerEmail = "qa.conflict.officer@qa.invalid"
-	clientAEmail = "qa.p0.client.a@qa.invalid"
-	clientBEmail = "qa.p0.client.b@qa.invalid"
-	caseANumber  = "QA-P0-A-2026-001"
-	caseBNumber  = "QA-P0-B-2026-001"
-	checkID      = "QA-P0-A-CHECK-20260719"
-	approvalID   = "QA-P0-A-APPROVAL-20260719"
-	approvalNo   = "APR-QA-P0-20260719"
-	assignmentID = "QA-P0-A-ASSIGNMENT-20260719"
+	lawyerAEmail   = "qa.lawyer.a@qa.invalid"
+	lawyerBEmail   = "qa.lawyer.b@qa.invalid"
+	officerEmail   = "qa.conflict.officer@qa.invalid"
+	assistantEmail = "qa.assistant@qa.invalid"
+	financeEmail   = "qa.finance@qa.invalid"
+	clientAEmail   = "qa.p0.client.a@qa.invalid"
+	clientBEmail   = "qa.p0.client.b@qa.invalid"
+	caseANumber    = "QA-P0-A-2026-001"
+	caseBNumber    = "QA-P0-B-2026-001"
+	checkID        = "QA-P0-A-CHECK-20260719"
+	approvalID     = "QA-P0-A-APPROVAL-20260719"
+	approvalNo     = "APR-QA-P0-20260719"
+	assignmentID   = "QA-P0-A-ASSIGNMENT-20260719"
 )
 
 type userSpec struct {
@@ -131,17 +133,26 @@ func main() {
 	}
 
 	fmt.Printf("QA 夹具写入并核验通过: %s (%s)\n", fixtureName, cfg.Database.Database)
-	fmt.Printf("律师 A: %s\n律师 B: %s\n独立核查人 C: %s\n", lawyerAEmail, lawyerBEmail, officerEmail)
+	fmt.Printf(
+		"律师 A: %s\n律师 B: %s\n独立核查人 C: %s\n助理: %s\n财务: %s\n",
+		lawyerAEmail,
+		lawyerBEmail,
+		officerEmail,
+		assistantEmail,
+		financeEmail,
+	)
 	fmt.Printf("A 案件: %d/%s\nB 隔离案件: %d/%s\n检测单: %s\n审批单: %s/%s\n", result.caseA.ID, caseANumber, result.caseB.ID, caseBNumber, checkID, approvalID, approvalNo)
-	fmt.Println("下一步：用 QA_PASSWORD 从 A 登录；再分别用 B、C 登录执行浏览器验收。")
+	fmt.Println("下一步：用 QA_PASSWORD 分别登录 A、B、C、助理与财务账号执行浏览器验收。")
 }
 
 type seedResult struct {
-	lawyerA models.User
-	lawyerB models.User
-	officer models.User
-	caseA   models.Case
-	caseB   models.Case
+	lawyerA   models.User
+	lawyerB   models.User
+	officer   models.User
+	assistant models.User
+	finance   models.User
+	caseA     models.Case
+	caseB     models.Case
 }
 
 func requireNonProductionEnvironment() error {
@@ -237,6 +248,12 @@ func seedFixture(ctx context.Context, db *gorm.DB, passwordHash string) (seedRes
 		if result.officer, err = upsertUser(tx, userSpec{"qa_conflict_officer", "独立冲突核查人", officerEmail, "conflict_officer", "合规风控部", "合伙人"}, passwordHash); err != nil {
 			return err
 		}
+		if result.assistant, err = upsertUser(tx, userSpec{"qa_assistant", "试用助理", assistantEmail, "assistant", "争议解决部", "助理"}, passwordHash); err != nil {
+			return err
+		}
+		if result.finance, err = upsertUser(tx, userSpec{"qa_finance", "试用财务", financeEmail, "finance", "财务部", "专员"}, passwordHash); err != nil {
+			return err
+		}
 
 		clientA, err := upsertClient(tx, clientSpec{"星河智联科技有限公司", clientAEmail, "星河智联科技有限公司", "企业", "qa-p0-fixture", "虚构新客户；用于演练承办律师 A 的接案流程。"})
 		if err != nil {
@@ -327,6 +344,9 @@ func seedFixture(ctx context.Context, db *gorm.DB, passwordHash string) (seedRes
 		if err := upsertApproval(tx, result); err != nil {
 			return err
 		}
+		if err := upsertAssistantInboxItem(tx, result, now); err != nil {
+			return err
+		}
 		return nil
 	})
 	if err != nil {
@@ -368,6 +388,8 @@ func seedRolesAndPermissions(db *gorm.DB) error {
 	}
 	for _, spec := range []models.Role{
 		{Name: "律师", Code: "lawyer", Description: "律师用户", Status: "active", SortOrder: 3},
+		{Name: "助理", Code: "assistant", Description: "受控试用助理用户", Status: "active", SortOrder: 4},
+		{Name: "财务", Code: "finance", Description: "受控试用财务用户", Status: "active", SortOrder: 5},
 	} {
 		if err := upsertByCode(db, &spec); err != nil {
 			return fmt.Errorf("写入 %s 角色失败: %w", spec.Code, err)
@@ -399,6 +421,19 @@ func seedRolesAndPermissions(db *gorm.DB) error {
 			if err := db.Clauses(clause.OnConflict{DoNothing: true}).Create(&models.RolePermission{RoleID: role.ID, PermissionID: permission.ID}).Error; err != nil {
 				return err
 			}
+		}
+	}
+	for _, code := range []string{"assistant", "finance"} {
+		var role models.Role
+		if err := db.Where("code = ?", code).First(&role).Error; err != nil {
+			return err
+		}
+		var dashboardPermission models.Permission
+		if err := db.Where("code = ?", "dashboard").First(&dashboardPermission).Error; err != nil {
+			return err
+		}
+		if err := db.Clauses(clause.OnConflict{DoNothing: true}).Create(&models.RolePermission{RoleID: role.ID, PermissionID: dashboardPermission.ID}).Error; err != nil {
+			return err
 		}
 	}
 	var reviewPermission models.Permission
@@ -627,15 +662,19 @@ func upsertLegacyConflictEvidence(db *gorm.DB, result seedResult, clientA, clien
 	}
 
 	check := models.ConflictCheck{CaseID: result.caseA.ID, Status: "REVIEW_REQUIRED", RequestedBy: result.lawyerA.ID, RequestedAt: now, CheckedBy: &result.officer.ID, CheckedAt: &now, Result: &models.CheckResult{HasConflict: true, TotalConflicts: 1, CompletedAt: now, CoverageStatus: "COMPLETE", CoverageNotice: "存在待独立核查的名称候选。"}, ResultSummary: "名称候选待独立核查；不能作为无冲突确认。", TotalConflicts: 1, MediumCount: 1, CheckParams: searchParameters}
+	serializedCheckResult, err := json.Marshal(check.Result)
+	if err != nil {
+		return fmt.Errorf("序列化结构化冲突检测结果失败: %w", err)
+	}
 	var existingCheck models.ConflictCheck
-	err := db.Where("case_id = ? AND requested_by = ?", result.caseA.ID, result.lawyerA.ID).Order("id DESC").First(&existingCheck).Error
+	err = db.Where("case_id = ? AND requested_by = ?", result.caseA.ID, result.lawyerA.ID).Order("id DESC").First(&existingCheck).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		if err := db.Create(&check).Error; err != nil {
 			return fmt.Errorf("写入结构化冲突检测失败: %w", err)
 		}
 	} else if err != nil {
 		return err
-	} else if err := db.Model(&existingCheck).Updates(map[string]interface{}{"status": check.Status, "checked_by": check.CheckedBy, "checked_at": check.CheckedAt, "result": check.Result, "result_summary": check.ResultSummary, "total_conflicts": check.TotalConflicts, "medium_count": check.MediumCount, "check_params": check.CheckParams, "updated_at": now}).Error; err != nil {
+	} else if err := db.Model(&existingCheck).Updates(map[string]interface{}{"status": check.Status, "checked_by": check.CheckedBy, "checked_at": check.CheckedAt, "result": string(serializedCheckResult), "result_summary": check.ResultSummary, "total_conflicts": check.TotalConflicts, "medium_count": check.MediumCount, "check_params": check.CheckParams, "updated_at": now}).Error; err != nil {
 		return fmt.Errorf("更新结构化冲突检测失败: %w", err)
 	}
 	return nil
@@ -788,13 +827,58 @@ func ensureApprovalSnapshot(db *gorm.DB, result seedResult, metadata, conflictRe
 	}).Error
 }
 
+func upsertAssistantInboxItem(db *gorm.DB, result seedResult, createdAt time.Time) error {
+	dueDate := createdAt.Add(48 * time.Hour)
+	item := models.InboxItem{
+		UserID:      result.assistant.ID,
+		SourceType:  "conflict",
+		SourceID:    result.caseA.ID,
+		Title:       "协助整理星河智联冲突复核材料",
+		Content:     "请核对虚构接案材料清单；不得查看隔离案件详情，也不得代替律师或独立核查人作出结论。",
+		Priority:    "high",
+		DueDate:     &dueDate,
+		DueDateType: "conflict_review",
+	}
+	var existing models.InboxItem
+	err := db.Where("user_id = ? AND source_type = ? AND source_id = ?", item.UserID, item.SourceType, item.SourceID).First(&existing).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		item.CreatedAt = createdAt
+		item.UpdatedAt = createdAt
+		return db.Create(&item).Error
+	}
+	if err != nil {
+		return err
+	}
+	return db.Model(&existing).Updates(map[string]interface{}{
+		"title":         item.Title,
+		"content":       item.Content,
+		"priority":      item.Priority,
+		"due_date":      item.DueDate,
+		"due_date_type": item.DueDateType,
+		"is_completed":  false,
+		"completed_at":  nil,
+		"snoozed_until": nil,
+		"updated_at":    createdAt,
+	}).Error
+}
+
 func ptr[T any](value T) *T { return &value }
 
 func verifyFixture(ctx context.Context, db *gorm.DB) error {
-	for _, email := range []string{lawyerAEmail, lawyerBEmail, officerEmail} {
+	expectedUsers := map[string]string{
+		lawyerAEmail:   "lawyer",
+		lawyerBEmail:   "lawyer",
+		officerEmail:   "conflict_officer",
+		assistantEmail: "assistant",
+		financeEmail:   "finance",
+	}
+	for email, expectedRole := range expectedUsers {
 		var user models.User
 		if err := db.WithContext(ctx).Where("email = ? AND status = ? AND deleted_at IS NULL", email, "active").First(&user).Error; err != nil {
 			return fmt.Errorf("账号 %s 不存在或未启用: %w", email, err)
+		}
+		if user.Role != expectedRole {
+			return fmt.Errorf("账号 %s 角色不符合预期: expected=%s actual=%s", email, expectedRole, user.Role)
 		}
 	}
 	var caseA, caseB models.Case
@@ -813,6 +897,19 @@ func verifyFixture(ctx context.Context, db *gorm.DB) error {
 	}
 	if err := db.WithContext(ctx).Model(&models.ApprovalRequest{}).Where("id = ? AND status = ? AND case_created = ? AND created_case_id = ''", approvalID, "submitted", false).Count(&count).Error; err != nil || count != 1 {
 		return fmt.Errorf("审批门禁夹具不符合预期: count=%d err=%v", count, err)
+	}
+	var assistant models.User
+	if err := db.WithContext(ctx).Where("email = ?", assistantEmail).First(&assistant).Error; err != nil {
+		return fmt.Errorf("助理账号不可用: %w", err)
+	}
+	if err := db.WithContext(ctx).Model(&models.InboxItem{}).Where(
+		"user_id = ? AND source_type = ? AND source_id = ? AND is_completed = ?",
+		assistant.ID,
+		"conflict",
+		caseA.ID,
+		false,
+	).Count(&count).Error; err != nil || count != 1 {
+		return fmt.Errorf("助理待办夹具不符合预期: count=%d err=%v", count, err)
 	}
 	var activeScopes int64
 	if err := db.WithContext(ctx).Model(&models.ConflictSearchScope{}).Where("status = ? AND coverage_status = ?", services.ConflictScopeActive, services.ConflictCoverageComplete).Count(&activeScopes).Error; err != nil || activeScopes < 4 {
