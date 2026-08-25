@@ -81,26 +81,6 @@ spec:
               cpu: 50m
               memory: 50Mi
 
-        - name: wait-for-redis
-          image: busybox:1.36
-          command:
-            - sh
-            - -c
-            - |
-              echo "Waiting for Redis to be ready..."
-              until nc -z law-oa-redis-service 6379; do
-                echo "Redis not ready, waiting..."
-                sleep 2
-              done
-              echo "Redis is ready!"
-          resources:
-            requests:
-              cpu: 10m
-              memory: 20Mi
-            limits:
-              cpu: 50m
-              memory: 50Mi
-
         - name: database-migration
           image: your-registry.com/law-oa/backend:v2.1.0
           command:
@@ -200,18 +180,11 @@ spec:
             - name: DB_DATABASE
               value: "law_oa"
             - name: REDIS_HOST
-              value: "law-oa-redis-service"
+              value: ""
             - name: REDIS_PORT
               value: "6379"
             - name: REDIS_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: law-oa-secrets
-                  key: redis-password
-            - name: ES_HOST
-              value: "law-oa-elasticsearch-service.law-oa-logging.svc.cluster.local"
-            - name: ES_PORT
-              value: "9200"
+              value: ""
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
@@ -227,16 +200,8 @@ spec:
                 secretKeyRef:
                   name: law-oa-secrets
                   key: subject-data-key
-            - name: ONLYOFFICE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: law-oa-secrets
-                  key: onlyoffice-url
-            - name: ONLYOFFICE_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: law-oa-secrets
-                  key: onlyoffice-secret
+            - name: ONLYOFFICE_ENABLED
+              value: "false"
             - name: CORS_ALLOWED_ORIGINS
               valueFrom:
                 secretKeyRef:

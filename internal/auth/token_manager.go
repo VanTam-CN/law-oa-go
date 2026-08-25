@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"time"
 
@@ -11,10 +12,13 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
 	"law-oa-go/internal/cache"
 	"law-oa-go/internal/config"
 	"law-oa-go/internal/models"
 )
+
+var ErrRefreshTokenAlreadyRotated = errors.New("refresh token already rotated")
 
 var (
 	jwtAuthDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
@@ -46,6 +50,8 @@ type TokenManager struct {
 	refreshTTL   time.Duration
 	redisClient  *redis.Client
 	cacheService *cache.CacheService
+	store        *TokenSessionStore
+	db           *gorm.DB
 	issuer       string
 }
 
@@ -73,13 +79,15 @@ type TokenPayload struct {
 }
 
 // NewTokenManager 创建新的令牌管理器
-func NewTokenManager(cfg *config.Config, redisClient *redis.Client, cacheService *cache.CacheService) *TokenManager {
+func NewTokenManager(cfg *config.Config, redisClient *redis.Client, cacheService *cache.CacheService, db *gorm.DB) *TokenManager {
 	return &TokenManager{
 		secret:       []byte(cfg.JWT.Secret),
 		accessTTL:    time.Duration(cfg.JWT.ExpiresIn) * time.Second,
 		refreshTTL:   time.Duration(cfg.JWT.RefreshIn) * time.Second,
 		redisClient:  redisClient,
 		cacheService: cacheService,
+		store:        NewTokenSessionStore(db),
+		db:           db,
 		issuer:       "law-oa-system",
 	}
 }
@@ -116,7 +124,8 @@ func (tm *TokenManager) CreateTokens(ctx context.Context, user *models.User, dev
 	td.AccessToken = accessToken
 	td.RefreshToken = refreshToken
 
-	// 存储令牌到Redis
+	// PostgreSQL is authoritative. Redis is only an optional mirror and must
+	// not make token issuance fail when it is unavailable.
 	at := time.Unix(td.AtExpires, 0)
 	rt := time.Unix(td.RtExpires, 0)
 	now := time.Now()
@@ -124,18 +133,27 @@ func (tm *TokenManager) CreateTokens(ctx context.Context, user *models.User, dev
 	accessKey := fmt.Sprintf("access_token:%s", td.AccessUUID)
 	refreshKey := fmt.Sprintf("refresh_token:%s", td.RefreshUUID)
 
-	// 存储访问令牌
-	err = tm.redisClient.Set(ctx, accessKey, user.ID, at.Sub(now)).Err()
-	if err != nil {
+	session := &models.AuthTokenSession{
+		ID:                  generateUUID(),
+		UserID:              user.ID,
+		DeviceID:            deviceID,
+		IP:                  ip,
+		UserAgent:           userAgent,
+		AccessTokenUUID:     td.AccessUUID,
+		RefreshTokenUUID:    td.RefreshUUID,
+		AccessTokenExpires:  at,
+		RefreshTokenExpires: rt,
+		CreatedAt:           now,
+		UpdatedAt:           now,
+	}
+	if err := tm.store.Create(ctx, session); err != nil {
 		jwtAuthErrors.WithLabelValues("store_access").Inc()
-		return nil, fmt.Errorf("failed to store access token: %w", err)
+		return nil, fmt.Errorf("failed to store token session: %w", err)
 	}
 
-	// 存储刷新令牌
-	err = tm.redisClient.Set(ctx, refreshKey, user.ID, rt.Sub(now)).Err()
-	if err != nil {
-		jwtAuthErrors.WithLabelValues("store_refresh").Inc()
-		return nil, fmt.Errorf("failed to store refresh token: %w", err)
+	if tm.redisClient != nil {
+		_ = tm.redisClient.Set(ctx, accessKey, user.ID, at.Sub(now)).Err()
+		_ = tm.redisClient.Set(ctx, refreshKey, user.ID, rt.Sub(now)).Err()
 	}
 
 	// 存储用户设备信息
@@ -151,7 +169,9 @@ func (tm *TokenManager) CreateTokens(ctx context.Context, user *models.User, dev
 		"last_active":  now,
 	}
 
-	err = tm.cacheService.Set(deviceKey, deviceInfo, tm.refreshTTL)
+	if tm.cacheService != nil {
+		err = tm.cacheService.Set(deviceKey, deviceInfo, tm.refreshTTL)
+	}
 	if err != nil {
 		// 不影响主要功能，只记录警告
 		fmt.Printf("Warning: failed to store device info: %v\n", err)
@@ -179,11 +199,16 @@ func (tm *TokenManager) createToken(user *models.User, uuid string, expires int6
 
 	claims := jwt.MapClaims{
 		"payload": payload,
-		"uuid":    uuid,
-		"issuer":  tm.issuer,
-		"exp":     expires,
-		"iat":     time.Now().Unix(),
-		"type":    tokenType,
+		// Top-level identity claims keep the canonical Gin authentication
+		// middleware from falling back to user_id=0 for session-backed tokens.
+		"user_id":  user.ID,
+		"username": user.Name,
+		"role":     user.Role,
+		"uuid":     uuid,
+		"issuer":   tm.issuer,
+		"exp":      expires,
+		"iat":      time.Now().Unix(),
+		"type":     tokenType,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -327,24 +352,107 @@ func (tm *TokenManager) RefreshTokens(ctx context.Context, refreshToken string) 
 		return nil, fmt.Errorf("invalid token uuid")
 	}
 
-	// 从Redis获取用户ID
-	refreshKey := fmt.Sprintf("refresh_token:%s", uuid)
-	_, err = tm.redisClient.Get(ctx, refreshKey).Result()
+	td := &TokenDetails{}
+	td.AtExpires = time.Now().Add(tm.accessTTL).Unix()
+	td.RtExpires = time.Now().Add(tm.refreshTTL).Unix()
+	td.AccessUUID = generateUUID()
+	td.RefreshUUID = generateUUID()
+	revokedAt := time.Now()
+	var rotatedUserID uint
+
+	err = tm.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var session models.AuthTokenSession
+		if err := tx.Where("refresh_token_uuid = ?", uuid).First(&session).Error; err != nil {
+			return fmt.Errorf("load refresh session: %w", err)
+		}
+		if session.RefreshRevokedAt != nil || session.RevokedAt != nil || session.DeviceRevokedAt != nil ||
+			!revokedAt.Before(session.RefreshTokenExpires) {
+			return ErrRefreshTokenAlreadyRotated
+		}
+
+		var user models.User
+		if err := tx.First(&user, session.UserID).Error; err != nil {
+			return fmt.Errorf("load token user: %w", err)
+		}
+		if err := lockUserForTokenMutation(tx, user.ID); err != nil {
+			return fmt.Errorf("lock token user: %w", err)
+		}
+		if err := tx.First(&user, session.UserID).Error; err != nil {
+			return fmt.Errorf("reload token user: %w", err)
+		}
+		// The conditional update is the rotation lock. Only one caller can
+		// transition an unrevoked, unexpired refresh token to revoked; all
+		// concurrent replays see zero rows and roll back.
+		result := tx.Model(&models.AuthTokenSession{}).
+			Where(
+				"refresh_token_uuid = ? AND refresh_revoked_at IS NULL AND revoked_at IS NULL AND device_revoked_at IS NULL AND refresh_token_expires > ?",
+				uuid, revokedAt,
+			).
+			Updates(map[string]interface{}{
+				"refresh_revoked_at": revokedAt,
+				"updated_at":         revokedAt,
+			})
+		if result.Error != nil {
+			return fmt.Errorf("claim refresh token: %w", result.Error)
+		}
+		if result.RowsAffected != 1 {
+			return ErrRefreshTokenAlreadyRotated
+		}
+
+		if user.Status != "" && user.Status != "active" {
+			return fmt.Errorf("user is not active")
+		}
+		rotatedUserID = user.ID
+
+		accessToken, err := tm.createToken(&user, td.AccessUUID, td.AtExpires, "access", session.DeviceID, session.IP, session.UserAgent)
+		if err != nil {
+			return fmt.Errorf("create access token: %w", err)
+		}
+		refreshToken, err := tm.createToken(&user, td.RefreshUUID, td.RtExpires, "refresh", session.DeviceID, session.IP, session.UserAgent)
+		if err != nil {
+			return fmt.Errorf("create refresh token: %w", err)
+		}
+		td.AccessToken = accessToken
+		td.RefreshToken = refreshToken
+
+		newSession := &models.AuthTokenSession{
+			ID:                  generateUUID(),
+			UserID:              user.ID,
+			DeviceID:            session.DeviceID,
+			IP:                  session.IP,
+			UserAgent:           session.UserAgent,
+			AccessTokenUUID:     td.AccessUUID,
+			RefreshTokenUUID:    td.RefreshUUID,
+			AccessTokenExpires:  time.Unix(td.AtExpires, 0),
+			RefreshTokenExpires: time.Unix(td.RtExpires, 0),
+			CreatedAt:           revokedAt,
+			UpdatedAt:           revokedAt,
+		}
+		if err := tx.Create(newSession).Error; err != nil {
+			return fmt.Errorf("create rotated token session: %w", err)
+		}
+		return nil
+	})
 	if err != nil {
-		jwtAuthErrors.WithLabelValues("refresh_not_found").Inc()
-		return nil, fmt.Errorf("refresh token not found or expired")
+		if errors.Is(err, ErrRefreshTokenAlreadyRotated) {
+			jwtAuthErrors.WithLabelValues("refresh_replay").Inc()
+			return nil, fmt.Errorf("refresh token not found or expired")
+		}
+		jwtAuthErrors.WithLabelValues("refresh_rotate").Inc()
+		return nil, fmt.Errorf("rotate refresh token: %w", err)
 	}
 
-	// 删除旧的刷新令牌
-	tm.redisClient.Del(ctx, refreshKey)
+	// PostgreSQL is authoritative. Redis mirrors are updated only after the
+	// atomic rotation commits, and mirror failures do not roll it back.
+	if tm.redisClient != nil {
+		_ = tm.redisClient.Del(ctx, fmt.Sprintf("refresh_token:%s", uuid)).Err()
+		_ = tm.redisClient.Set(ctx, fmt.Sprintf("access_token:%s", td.AccessUUID), rotatedUserID, time.Until(time.Unix(td.AtExpires, 0))).Err()
+		_ = tm.redisClient.Set(ctx, fmt.Sprintf("refresh_token:%s", td.RefreshUUID), rotatedUserID, time.Until(time.Unix(td.RtExpires, 0))).Err()
+	}
 
-	// 获取用户信息
-	var user models.User
-	// 这里需要从数据库获取用户信息，暂时简化处理
-	// 实际项目中应该注入数据库连接
-
-	// 创建新的令牌对
-	return tm.CreateTokens(ctx, &user, "", "", "")
+	jwtTokensIssued.WithLabelValues("access").Inc()
+	jwtTokensIssued.WithLabelValues("refresh").Inc()
+	return td, nil
 }
 
 // RevokeToken 撤销令牌
@@ -379,10 +487,16 @@ func (tm *TokenManager) RevokeToken(ctx context.Context, tokenString string) err
 		return fmt.Errorf("unknown token type")
 	}
 
-	// 从Redis删除令牌
-	err = tm.redisClient.Del(ctx, key).Err()
+	revokedAt := time.Now()
+	rowsAffected, err := tm.store.RevokeTokenUUID(ctx, uuid, tokenType, revokedAt)
 	if err != nil {
 		return fmt.Errorf("failed to revoke token: %w", err)
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("token session not found or already revoked")
+	}
+	if tm.redisClient != nil {
+		_ = tm.redisClient.Del(ctx, key).Err()
 	}
 
 	return nil
@@ -395,30 +509,15 @@ func (tm *TokenManager) RevokeAllUserTokens(ctx context.Context, userID uint) er
 		jwtAuthDuration.WithLabelValues("revoke_all").Observe(time.Since(start).Seconds())
 	}()
 
-	pattern := fmt.Sprintf("*token:*:%d", userID)
-	keys, err := tm.redisClient.Keys(ctx, pattern).Result()
-	if err != nil {
-		return fmt.Errorf("failed to find user tokens: %w", err)
+	revokedAt := time.Now()
+	if err := tm.store.RevokeAllForUser(ctx, userID, revokedAt); err != nil {
+		return fmt.Errorf("failed to revoke user tokens: %w", err)
 	}
 
-	if len(keys) > 0 {
-		err = tm.redisClient.Del(ctx, keys...).Err()
-		if err != nil {
-			return fmt.Errorf("failed to revoke user tokens: %w", err)
-		}
-	}
-
-	// 撤销设备信息
-	devicePattern := fmt.Sprintf("user_device:%d:*", userID)
-	deviceKeys, err := tm.redisClient.Keys(ctx, devicePattern).Result()
-	if err != nil {
-		return fmt.Errorf("failed to find user devices: %w", err)
-	}
-
-	if len(deviceKeys) > 0 {
-		err = tm.redisClient.Del(ctx, deviceKeys...).Err()
-		if err != nil {
-			return fmt.Errorf("failed to revoke user devices: %w", err)
+	if tm.redisClient != nil {
+		devicePattern := fmt.Sprintf("user_device:%d:*", userID)
+		if deviceKeys, err := tm.redisClient.Keys(ctx, devicePattern).Result(); err == nil && len(deviceKeys) > 0 {
+			_ = tm.redisClient.Del(ctx, deviceKeys...).Err()
 		}
 	}
 
@@ -462,13 +561,20 @@ func (tm *TokenManager) ValidateAccess(ctx context.Context, tokenString string, 
 		return nil, fmt.Errorf("failed to extract token UUID")
 	}
 
-	accessKey := fmt.Sprintf("access_token:%s", accessUUID)
-	_, err = tm.redisClient.Get(ctx, accessKey).Result()
-	if err != nil {
+	if !tm.isAccessTokenActive(ctx, accessUUID) {
 		return nil, fmt.Errorf("token not found or expired")
 	}
 
 	return payload, nil
+}
+
+func (tm *TokenManager) isAccessTokenActive(ctx context.Context, uuid string) bool {
+	session, err := tm.store.GetByAccessUUID(ctx, uuid)
+	if err != nil {
+		return false
+	}
+	return session.AccessRevokedAt == nil && session.RevokedAt == nil && session.DeviceRevokedAt == nil &&
+		time.Now().Before(session.AccessTokenExpires)
 }
 
 // getTokenUUIDFromToken 从令牌字符串中提取UUID
@@ -507,8 +613,20 @@ func (tm *TokenManager) IsTokenBlacklisted(ctx context.Context, tokenString stri
 		return true
 	}
 
-	blacklistKey := fmt.Sprintf("blacklist:%s", accessUUID)
-	_, err := tm.redisClient.Get(ctx, blacklistKey).Result()
+	session, err := tm.store.GetByAccessUUID(ctx, accessUUID)
+	if err == nil {
+		return session.AccessRevokedAt != nil || session.RevokedAt != nil || session.DeviceRevokedAt != nil ||
+			!time.Now().Before(session.AccessTokenExpires)
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		// PostgreSQL is authoritative. An unavailable session store must not
+		// turn an unknown revocation state into an authenticated session.
+		return true
+	}
+	if tm.redisClient == nil {
+		return false
+	}
+	_, err = tm.redisClient.Get(ctx, fmt.Sprintf("blacklist:%s", accessUUID)).Result()
 	return err == nil
 }
 
@@ -519,10 +637,15 @@ func (tm *TokenManager) BlacklistToken(ctx context.Context, tokenString string, 
 		return fmt.Errorf("failed to extract token UUID")
 	}
 
-	blacklistKey := fmt.Sprintf("blacklist:%s", accessUUID)
-	err := tm.redisClient.Set(ctx, blacklistKey, "1", ttl).Err()
-	if err != nil {
+	revokedAt := time.Now()
+	if _, err := tm.store.RevokeTokenUUID(ctx, accessUUID, "access", revokedAt); err != nil {
 		return fmt.Errorf("failed to blacklist token: %w", err)
+	}
+	if tm.redisClient != nil {
+		if err := tm.redisClient.Set(ctx, fmt.Sprintf("blacklist:%s", accessUUID), "1", ttl).Err(); err != nil {
+			// PostgreSQL already records revocation; Redis remains an optional mirror.
+			return nil
+		}
 	}
 
 	return nil

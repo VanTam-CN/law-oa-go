@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
 	"law-oa-go/internal/middleware"
 )
 
@@ -125,8 +126,6 @@ func buildAuthorizationTestEngine() *gin.Engine {
 			legalAdmin.POST("/statutes/import", stubOK)
 			legalAdmin.PUT("/statutes/:id", stubOK)
 			legalAdmin.DELETE("/statutes/:id", stubOK)
-			legalAdmin.POST("/admin/sync-elasticsearch", stubOK)
-			legalAdmin.POST("/admin/rebuild-index", stubOK)
 		}
 	}
 
@@ -264,6 +263,28 @@ func TestAuthorizationMatrix(t *testing.T) {
 				t.Fatalf("role=%q %s %s: expected %d, got %d (body=%s)",
 					tc.role, tc.method, tc.path, tc.want, w.Code, w.Body.String())
 			}
+		})
+	}
+}
+
+func TestRemovedLegalAdminRoutesReturn404(t *testing.T) {
+	engine := buildAuthorizationTestEngine()
+
+	tests := []struct {
+		name string
+		path string
+	}{
+		{name: "sync elasticsearch route removed", path: "/api/v1/legal/admin/sync-elasticsearch"},
+		{name: "rebuild index route removed", path: "/api/v1/legal/admin/rebuild-index"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, tc.path, nil)
+			req.Header.Set("X-Test-Role", "admin")
+			w := httptest.NewRecorder()
+			engine.ServeHTTP(w, req)
+			assert.Equal(t, http.StatusNotFound, w.Code)
 		})
 	}
 }

@@ -91,16 +91,8 @@ func (h *SubjectRecheckHandler) SearchSubjectEntities(c *gin.Context) {
 		common.APIInternalServerError(c, "搜索主体失败", "主体数据服务未初始化")
 		return
 	}
-	pattern := "%" + strings.ToLower(query) + "%"
-	entityQuery := h.db.WithContext(c.Request.Context()).
-		Where("deleted_at IS NULL AND status = ?", models.EntityStatusActive).
-		Where("LOWER(name) LIKE ? OR LOWER(alias) LIKE ?", pattern, pattern).
-		Order("name ASC").Limit(20)
-	if entityType := strings.TrimSpace(c.Query("entity_type")); entityType != "" {
-		entityQuery = entityQuery.Where("entity_type = ?", strings.ToUpper(entityType))
-	}
-	var entities []models.Entity
-	if err := entityQuery.Find(&entities).Error; err != nil {
+	entities, err := h.service.SearchVisibleEntities(c.Request.Context(), caseID, actor.UserID, actor.Role, query, c.Query("entity_type"), 20)
+	if err != nil {
 		common.APIInternalServerError(c, "搜索主体失败", err.Error())
 		return
 	}
@@ -171,6 +163,115 @@ func (h *SubjectRecheckHandler) CreateRevision(c *gin.Context) {
 		return
 	}
 	result, err := h.service.CreateRevision(c.Request.Context(), caseID, actor.UserID, actor.Role, &request)
+	if err != nil {
+		writeSubjectWorkflowError(c, err)
+		return
+	}
+	common.APISuccess(c, result)
+}
+
+func (h *SubjectRecheckHandler) CreateNewEntityRevision(c *gin.Context) {
+	caseID, ok := parseSubjectCaseID(c)
+	if !ok {
+		return
+	}
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
+	if services.IsIntakeAssistantRole(actor.Role) {
+		common.APIForbidden(c, "无权提交新主体登记", "助理可以整理资料，但身份主体必须由承办律师确认后提交")
+		return
+	}
+	if !services.IsBusinessMatterManagementRole(actor.Role) && !strings.EqualFold(strings.TrimSpace(actor.Role), "lawyer") {
+		common.APIForbidden(c, "无权提交新主体登记", "只有案件承办律师或获授权业务负责人可以提交")
+		return
+	}
+	if !h.authorizeSubjectCase(c, actor, caseID, true) {
+		return
+	}
+	var request services.NewSubjectEntityRevisionRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		common.APIBadRequest(c, "新主体登记请求无效", err.Error())
+		return
+	}
+	result, err := h.service.CreateNewEntityRevision(c.Request.Context(), caseID, actor.UserID, actor.Role, &request)
+	if err != nil {
+		writeSubjectWorkflowError(c, err)
+		return
+	}
+	common.APISuccess(c, result)
+}
+
+func (h *SubjectRecheckHandler) ReviewEntityRegistration(c *gin.Context) {
+	caseID, ok := parseSubjectCaseID(c)
+	if !ok {
+		return
+	}
+	revisionID := strings.TrimSpace(c.Param("revision_id"))
+	if revisionID == "" {
+		common.APIBadRequest(c, "主体登记复核请求无效", "revision_id不能为空")
+		return
+	}
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
+	if !services.IsConflictReviewRole(actor.Role) {
+		common.APIForbidden(c, "无权处理主体登记", "只有独立冲突核查人或获授权业务负责人可以处理")
+		return
+	}
+	if !h.authorizeSubjectCase(c, actor, caseID, false) {
+		return
+	}
+	var request services.SubjectEntityRegistrationReviewRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		common.APIBadRequest(c, "主体登记复核请求无效", err.Error())
+		return
+	}
+	result, err := h.service.ReviewEntityRegistration(c.Request.Context(), caseID, revisionID, actor.UserID, actor.Role, &request)
+	if err != nil {
+		writeSubjectWorkflowError(c, err)
+		return
+	}
+	common.APISuccess(c, result)
+}
+
+func (h *SubjectRecheckHandler) ListPendingEntityRegistrations(c *gin.Context) {
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
+	if !services.IsConflictReviewRole(actor.Role) {
+		common.APIForbidden(c, "无权查看主体登记队列", "只有独立冲突核查人或获授权业务负责人可以查看")
+		return
+	}
+	result, err := h.service.ListPendingEntityRegistrations(c.Request.Context(), actor.UserID, actor.Role)
+	if err != nil {
+		writeSubjectWorkflowError(c, err)
+		return
+	}
+	common.APISuccess(c, result)
+}
+
+func (h *SubjectRecheckHandler) GetSubjectRevisionStatus(c *gin.Context) {
+	caseID, ok := parseSubjectCaseID(c)
+	if !ok {
+		return
+	}
+	revisionID := strings.TrimSpace(c.Param("revision_id"))
+	if revisionID == "" {
+		common.APIBadRequest(c, "主体变更记录编号无效", "revision_id不能为空")
+		return
+	}
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
+	if !h.authorizeSubjectCase(c, actor, caseID, false) {
+		return
+	}
+	result, err := h.service.GetSubjectRevisionStatus(c.Request.Context(), caseID, revisionID)
 	if err != nil {
 		writeSubjectWorkflowError(c, err)
 		return

@@ -1,10 +1,16 @@
 package auth
 
 import (
+	"fmt"
+	"path/filepath"
+	"testing"
+
 	"github.com/redis/go-redis/v9"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"law-oa-go/internal/cache"
 	"law-oa-go/internal/config"
+	"law-oa-go/internal/models"
 	"law-oa-go/test/mock"
 )
 
@@ -47,4 +53,24 @@ func createTestConfig() *config.Config {
 			RefreshIn: 86400,
 		},
 	}
+}
+
+func createAuthTokenDB(t *testing.T) *gorm.DB {
+	t.Helper()
+	dsn := fmt.Sprintf("file:%s?_busy_timeout=5000&_journal_mode=WAL", filepath.Join(t.TempDir(), "auth-token-sessions.db"))
+	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open sqlite: %v", err)
+	}
+	if err := db.AutoMigrate(&models.User{}, &models.AuthTokenSession{}, &models.TokenRevocationLog{}); err != nil {
+		t.Fatalf("migrate auth token models: %v", err)
+	}
+	if sqlDB, err := db.DB(); err == nil {
+		// SQLite cannot upgrade concurrent read transactions to writers without
+		// returning a spurious "database is locked" error. Serializing the test
+		// connection keeps the assertion focused on refresh replay semantics;
+		// production uses PostgreSQL row locks.
+		sqlDB.SetMaxOpenConns(1)
+	}
+	return db
 }

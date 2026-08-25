@@ -27,6 +27,7 @@ import {
   AuditOutlined,
   BellOutlined,
   WalletOutlined,
+  SafetyCertificateOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router'
 import { useAppStore } from '@/stores/useAppStore'
@@ -151,6 +152,14 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
       permission: 'conflict:check',
     },
     {
+      key: 'conflict-governance',
+      label: '冲突治理',
+      icon: <SafetyCertificateOutlined />,
+      onClick: () => navigate('/conflict-governance'),
+      color: 'var(--color-text-secondary)',
+      permission: 'conflict:governance',
+    },
+    {
       key: 'client',
       label: '客户管理',
       icon: <TeamOutlined />,
@@ -164,7 +173,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
       icon: <FileDoneOutlined />,
       onClick: () => navigate('/approval'),
       color: 'var(--color-warning)',
-      permission: 'approval:manage',
+      permission: 'approval:view',
     },
     {
       key: 'trust',

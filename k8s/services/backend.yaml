@@ -91,28 +91,3 @@ spec:
   selector:
     app: law-oa
     component: redis
-
----
-# Elasticsearch is intentionally kept in its own logging namespace. The
-# application only needs the HTTP endpoint; transport and monitoring services
-# belong to the Elasticsearch operator deployment.
-apiVersion: v1
-kind: Service
-metadata:
-  name: law-oa-elasticsearch-service
-  namespace: law-oa-logging
-  labels:
-    app: law-oa
-    component: elasticsearch
-    environment: production
-    project: law-oa-go
-spec:
-  type: ClusterIP
-  ports:
-    - name: http
-      port: 9200
-      targetPort: http
-      protocol: TCP
-  selector:
-    app: law-oa
-    component: elasticsearch

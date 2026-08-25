@@ -9,6 +9,12 @@ global:
   labels: {}
   annotations: {}
 
+# 命名空间配置
+namespace:
+  enabled: false
+  name: law-oa
+  annotations: {}
+
 # 镜像配置
 image:
   registry: law-registry.com
@@ -16,6 +22,13 @@ image:
   tag: "2.1.0"
   pullPolicy: IfNotPresent
   pullSecrets: []
+
+# 外部资源配置。连接串和凭据必须通过受管 Secret 或 values overlay 注入。
+configMap:
+  nameOverride: ""
+
+secret:
+  nameOverride: ""
 
 # 副本和滚动更新配置
 replicaCount: 3
@@ -142,22 +155,15 @@ ingress:
 
 # 环境变量
 env:
-  - name: GIN_MODE
-    value: "release"
-  - name: ENVIRONMENT
-    value: "production"
-  - name: TZ
-    value: "Asia/Shanghai"
-  - name: LOG_LEVEL
-    value: "info"
-  - name: VERSION
-    value: "2.1.0"
-  - name: METRICS_ENABLED
-    value: "true"
-  - name: TRACING_ENABLED
-    value: "true"
-  - name: HEALTH_CHECK_ENABLED
-    value: "true"
+  ginMode: release
+  timezone: Asia/Shanghai
+  logLevel: info
+  metricsEnabled: true
+  tracingEnabled: false
+  healthCheckEnabled: true
+
+# 额外环境变量，用于注入外部数据库、Redis 或托管服务地址。
+extraEnv: []
 
 # Pod信息注入
 podInfo:
@@ -221,7 +227,9 @@ mysql:
 
 # Redis配置
 redis:
-  enabled: true
+  # The deprecated chart does not install infrastructure by default. Supply a
+  # managed/external Redis endpoint when compatibility deployment is required.
+  enabled: false
   auth:
     enabled: false
     password: ""
@@ -247,7 +255,9 @@ redis:
 
 # Elasticsearch配置
 elasticsearch:
-  enabled: true
+  # Search uses the database fallback by default. Elasticsearch is an explicit
+  # extension decision, not part of the deprecated compatibility deployment.
+  enabled: false
   replicas: 3
   minimumMasterNodes: 2
   volumeClaimTemplate:
@@ -265,13 +275,12 @@ elasticsearch:
       cpu: 500m
       memory: 2Gi
   esConfig:
-    xpack.security.enabled: false
     xpack.monitoring.collection.enabled: true
     xpack.watcher.enabled: false
 
 # Kibana配置
 kibana:
-  enabled: true
+  enabled: false
   replicas: 1
   resources:
     limits:
@@ -284,7 +293,7 @@ kibana:
 
 # Jaeger配置
 jaeger:
-  enabled: true
+  enabled: false
   provisionDataStore:
     cassandra: false
     elasticsearch: true
@@ -316,7 +325,7 @@ jaeger:
 
 # Prometheus配置
 prometheus:
-  enabled: true
+  enabled: false
   server:
     replicaCount: 1
     resources:
@@ -337,7 +346,7 @@ prometheus:
 
 # Grafana配置
 grafana:
-  enabled: true
+  enabled: false
   replicaCount: 1
   resources:
     limits:
@@ -380,7 +389,7 @@ healthcheck:
     failureThreshold: 3
   startupProbe:
     httpGet:
-      path: /health
+      path: /health/ready
       port: http
     initialDelaySeconds: 10
     periodSeconds: 10
@@ -392,7 +401,7 @@ healthcheck:
 initContainers:
   enabled: true
   waitForDatabase:
-    enabled: true
+    enabled: false
     image: busybox:1.36
     resources:
       limits:
@@ -402,7 +411,7 @@ initContainers:
         cpu: 50m
         memory: 64Mi
   waitForRedis:
-    enabled: true
+    enabled: false
     image: busybox:1.36
     resources:
       limits:
@@ -412,7 +421,7 @@ initContainers:
         cpu: 50m
         memory: 64Mi
   waitForElasticsearch:
-    enabled: true
+    enabled: false
     image: busybox:1.36
     resources:
       limits:
@@ -422,7 +431,7 @@ initContainers:
         cpu: 50m
         memory: 64Mi
   migration:
-    enabled: true
+    enabled: false
     command: ["./law-oa-go", "migrate", "up"]
     resources:
       limits:
@@ -435,7 +444,7 @@ initContainers:
 # Sidecar容器
 sidecars:
   logCollector:
-    enabled: true
+    enabled: false
     image: fluent/fluent-bit:2.2
     resources:
       limits:

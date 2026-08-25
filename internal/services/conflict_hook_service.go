@@ -111,7 +111,7 @@ func (s *conflictHookService) runConflictCheck(ctx context.Context, caseID uint,
 		return
 	}
 
-	idCard, _ := client.DecryptedIDCard()
+	identityNumber, _ := client.DecryptedIdentity()
 	req := &ConflictCheckRequest{
 		CaseID:    caseID,
 		CaseTitle: caseData.Title,
@@ -119,8 +119,8 @@ func (s *conflictHookService) runConflictCheck(ctx context.Context, caseID uint,
 			{
 				EntityID:       clientID,
 				EntityName:     client.Name,
-				IdentityType:   "individual",
-				IdentityNumber: idCard,
+				IdentityType:   string(client.EffectiveIdentityType()),
+				IdentityNumber: identityNumber,
 				PartyType:      "CLIENT",
 			},
 		},

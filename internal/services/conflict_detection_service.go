@@ -134,8 +134,10 @@ func (s *conflictDetectionService) PerformConflictCheck(ctx context.Context, req
 
 	// 构建响应
 	response := &models.ConflictCheckResponse{
-		CheckID:            checkID,
-		HasConflict:        decision.Status == "BLOCKED" || len(conflictCases) > 0 || decision.CoverageStatus != "COMPLETE",
+		CheckID: checkID,
+		// HasConflict describes an actual detected match. Coverage limitations
+		// still block intake through Decision, but must not invent a conflict hit.
+		HasConflict:        hasDetectedConflict(decision, conflictCases),
 		ConflictCases:      conflictCases,
 		CheckStatistics:    s.buildCheckStatistics(ctx, request, conflictCases),
 		RiskAssessment:     riskAssessment,
@@ -155,6 +157,10 @@ func (s *conflictDetectionService) PerformConflictCheck(ctx context.Context, req
 	log.Printf("✅ 冲突检测完成，检测到 %d 个冲突案例，风险等级: %s", len(conflictCases), riskAssessment.OverallRisk)
 
 	return response, nil
+}
+
+func hasDetectedConflict(decision *models.ConflictDecisionSummary, conflictCases []*models.ConflictCase) bool {
+	return len(conflictCases) > 0 || (decision != nil && decision.Status == "BLOCKED")
 }
 
 // findPotentialConflicts 查找潜在冲突案例
@@ -495,9 +501,9 @@ func (s *conflictDetectionService) checkStructuredPartyConflicts(ctx context.Con
 		branches = append(branches, fmt.Sprintf(`
 		SELECT c.id, c.case_number, c.title, c.case_type, c.description,
 		       c.client_id, COALESCE(cl.name, ''), COALESCE(u.name, ''), c.created_at,
-		       COALESCE(cl.name, ''), COALESCE(cl.company, ''), COALESCE(cl.type, ''),
-		       CASE WHEN COALESCE(cl.id_card_digest, '') <> '' THEN 'ID_CARD' ELSE '' END,
-		       COALESCE(cl.id_card_digest, ''), 'CLIENT', COALESCE(cl.name, ''), 'CLIENT_ARCHIVE', ''
+		       COALESCE(cl.name, ''), COALESCE(NULLIF(cl.aliases, ''), cl.company, ''), COALESCE(cl.type, ''),
+		       COALESCE(NULLIF(cl.identity_type, ''), CASE WHEN COALESCE(cl.id_card_digest, '') <> '' THEN CASE WHEN cl.type IN ('企业', '公司', 'COMPANY') THEN 'SOCIAL_CREDIT_CODE' ELSE 'ID_CARD' END ELSE '' END),
+		       COALESCE(NULLIF(cl.identity_number_digest, ''), cl.id_card_digest, ''), 'CLIENT', COALESCE(cl.name, ''), 'CLIENT_ARCHIVE', ''
 		FROM cases c
 		JOIN clients cl ON cl.id = c.client_id AND cl.deleted_at IS NULL
 		LEFT JOIN users u ON u.id = c.lawyer_id
@@ -660,23 +666,23 @@ func clientArchiveSubjectConditions(subjects []structuredConflictSubject) (strin
 			if name == "" {
 				return
 			}
-			conditions = append(conditions, "(LOWER(COALESCE(cl.name, '')) LIKE LOWER(?) OR LOWER(COALESCE(cl.company, '')) LIKE LOWER(?))")
-			args = append(args, "%"+name+"%", "%"+name+"%")
+			conditions = append(conditions, "(LOWER(COALESCE(cl.name, '')) LIKE LOWER(?) OR LOWER(COALESCE(cl.company, '')) LIKE LOWER(?) OR LOWER(COALESCE(cl.aliases, '')) LIKE LOWER(?))")
+			args = append(args, "%"+name+"%", "%"+name+"%", "%"+name+"%")
 		}
 		appendName(subject.Name)
 		for _, alias := range subject.Aliases {
 			appendName(alias)
 		}
 		for identifierType, identifierValue := range subject.Identifiers {
-			if canonicalIdentityType(identifierType) != "ID_CARD" || strings.TrimSpace(identifierValue) == "" {
+			if strings.TrimSpace(identifierValue) == "" {
 				continue
 			}
 			digest, err := security.IdentityDigest(identifierValue)
 			if err != nil {
 				return "", nil, fmt.Errorf("历史客户身份检索不可用: %w", err)
 			}
-			conditions = append(conditions, "cl.id_card_digest = ?")
-			args = append(args, digest)
+			conditions = append(conditions, `(LOWER(COALESCE(NULLIF(cl.identity_type, ''), CASE WHEN COALESCE(cl.id_card_digest, '') <> '' THEN CASE WHEN cl.type IN ('企业', '公司', 'COMPANY') THEN 'SOCIAL_CREDIT_CODE' ELSE 'ID_CARD' END ELSE '' END)) = LOWER(?) AND COALESCE(NULLIF(cl.identity_number_digest, ''), cl.id_card_digest, '') = ?)`)
+			args = append(args, canonicalIdentityType(identifierType), digest)
 		}
 	}
 	return strings.Join(conditions, " OR "), args, nil

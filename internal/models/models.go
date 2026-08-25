@@ -34,39 +34,77 @@ type User struct {
 
 // Client 客户模型
 type Client struct {
-	ID               uint           `json:"id" gorm:"primarykey"`
-	CreatedAt        time.Time      `json:"created_at"`
-	UpdatedAt        time.Time      `json:"updated_at"`
-	DeletedAt        gorm.DeletedAt `json:"-" gorm:"index"`
-	Name             string         `json:"name" gorm:"column:name;size:100;not null"`
-	Type             string         `json:"type" gorm:"column:type;size:20;not null;default:'个人'"` // 客户类型：个人/企业
-	Email            string         `json:"email" gorm:"size:100;uniqueIndex"`
-	Phone            string         `json:"-" gorm:"size:20"` // 手机号（json:"-"防止API泄露，通过ToSafeResponse输出脱敏值）
-	Address          string         `json:"address" gorm:"type:text"`
-	Company          string         `json:"company" gorm:"size:100"`
-	IDCard           string         `json:"-" gorm:"column:id_card;size:18"` // legacy plaintext column; production readiness rejects non-empty values
-	IDCardDigest     string         `json:"-" gorm:"column:id_card_digest;size:64;index"`
-	IDCardCiphertext string         `json:"-" gorm:"column:id_card_ciphertext;type:text"`
-	Industry         string         `json:"industry" gorm:"column:industry;size:50"`             // 所属行业（企业客户）
-	ContactPerson    string         `json:"contact_person" gorm:"column:contact_person;size:50"` // 联系人（企业客户）
-	ContactPhone     string         `json:"-" gorm:"column:contact_phone;size:20"`               // 联系电话（json:"-"防止API泄露）
-	Source           string         `json:"source" gorm:"column:source;size:50"`                 // 客户来源
-	Notes            string         `json:"notes" gorm:"column:notes;type:text"`
-	Status           string         `json:"status" gorm:"size:20;default:'active'"`
-	Version          uint           `json:"version" gorm:"not null;default:1"` // 乐观锁版本号
+	ID                       uint           `json:"id" gorm:"primarykey"`
+	CreatedAt                time.Time      `json:"created_at"`
+	UpdatedAt                time.Time      `json:"updated_at"`
+	DeletedAt                gorm.DeletedAt `json:"-" gorm:"index"`
+	Name                     string         `json:"name" gorm:"column:name;size:100;not null"`
+	Type                     string         `json:"type" gorm:"column:type;size:20;not null;default:'个人'"` // 客户类型：个人/企业
+	Email                    string         `json:"email" gorm:"size:100;uniqueIndex"`                     // optional; repositories persist an empty value as SQL NULL
+	Phone                    string         `json:"-" gorm:"size:20"`                                      // 手机号（json:"-"防止API泄露，通过ToSafeResponse输出脱敏值）
+	Address                  string         `json:"address" gorm:"type:text"`
+	Company                  string         `json:"company" gorm:"size:100"`
+	IDCard                   string         `json:"-" gorm:"column:id_card;size:18"` // legacy plaintext column; production readiness rejects non-empty values
+	IDCardDigest             string         `json:"-" gorm:"column:id_card_digest;size:64;index"`
+	IDCardCiphertext         string         `json:"-" gorm:"column:id_card_ciphertext;type:text"`
+	IdentityType             IdentityType   `json:"identity_type" gorm:"column:identity_type;type:varchar(30);index"`
+	IdentityNumber           string         `json:"-" gorm:"-"`
+	IdentityNumberDigest     string         `json:"-" gorm:"column:identity_number_digest;size:64;index"`
+	IdentityNumberCiphertext string         `json:"-" gorm:"column:identity_number_ciphertext;type:text"`
+	Aliases                  string         `json:"aliases,omitempty" gorm:"column:aliases;type:text"`
+	CreatedBy                uint           `json:"-" gorm:"column:created_by;index"`
+	Industry                 string         `json:"industry" gorm:"column:industry;size:50"`             // 所属行业（企业客户）
+	ContactPerson            string         `json:"contact_person" gorm:"column:contact_person;size:50"` // 联系人（企业客户）
+	ContactPhone             string         `json:"-" gorm:"column:contact_phone;size:20"`               // 联系电话（json:"-"防止API泄露）
+	Source                   string         `json:"source" gorm:"column:source;size:50"`                 // 客户来源
+	Notes                    string         `json:"notes" gorm:"column:notes;type:text"`
+	Status                   string         `json:"status" gorm:"size:20;default:'active'"`
+	Version                  uint           `json:"version" gorm:"not null;default:1"` // 乐观锁版本号
 }
+
+// ClientContact stores a customer's operational contact separately from the
+// customer master record. Phone and email are encrypted at rest and are only
+// decrypted after object-level client authorization.
+type ClientContact struct {
+	ID              uint      `json:"id" gorm:"primarykey"`
+	ClientID        uint      `json:"client_id" gorm:"not null;index;uniqueIndex:uq_client_primary_contact,where:is_primary = true"`
+	Name            string    `json:"name" gorm:"size:100;not null"`
+	Position        string    `json:"position" gorm:"size:100"`
+	PhoneCiphertext string    `json:"-" gorm:"column:phone_ciphertext;type:text"`
+	EmailCiphertext string    `json:"-" gorm:"column:email_ciphertext;type:text"`
+	IsPrimary       bool      `json:"is_primary" gorm:"column:is_primary;not null;default:false"`
+	Version         uint      `json:"version" gorm:"not null;default:1"`
+	CreatedBy       uint      `json:"-" gorm:"column:created_by;not null;index"`
+	UpdatedBy       uint      `json:"-" gorm:"column:updated_by;not null;index"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+}
+
+func (ClientContact) TableName() string { return "client_contacts" }
 
 // BeforeSave converts newly supplied client identity numbers into encrypted
 // storage. Existing plaintext rows remain visible to the readiness audit until
 // an explicit backfill has verified their digest and ciphertext.
 func (c *Client) BeforeSave(tx *gorm.DB) error {
-	if strings.TrimSpace(c.IDCard) == "" {
+	identityNumber := strings.TrimSpace(c.IdentityNumber)
+	if identityNumber == "" {
+		identityNumber = strings.TrimSpace(c.IDCard)
+	}
+	if identityNumber == "" {
 		return nil
 	}
-	ciphertext, digest, err := security.ProtectIdentityNumber(c.IDCard)
+	identityType := c.EffectiveIdentityType()
+	normalized := security.NormalizeIdentityNumber(string(identityType), identityNumber)
+	ciphertext, digest, err := security.ProtectIdentityNumber(normalized)
 	if err != nil {
 		return fmt.Errorf("保存客户身份信息失败: %w", err)
 	}
+	c.IdentityType = identityType
+	c.IdentityNumberCiphertext = ciphertext
+	c.IdentityNumberDigest = digest
+	c.IdentityNumber = ""
+	// Keep the legacy protected columns synchronized during the migration
+	// window. Runtime reads prefer the generic fields.
 	c.IDCardCiphertext = ciphertext
 	c.IDCardDigest = digest
 	c.IDCard = ""

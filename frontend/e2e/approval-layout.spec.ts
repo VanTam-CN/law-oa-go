@@ -34,4 +34,22 @@ test.describe('审批详情按钮唯一性（IB-RT-004）', () => {
     await expect(page.getByRole('button', { name: '查看关联案件' })).toBeVisible()
     await expect(page.getByRole('button', { name: '更多操作' })).toHaveCount(0)
   })
+
+  test('1280px 下申请信息长文本保持可横向阅读', async ({ page }) => {
+    await seedAuthenticatedUser(page, 'lawyer')
+    await page.setViewportSize({ width: 1280, height: 720 })
+    await page.goto('/approval/701')
+    await waitForPageLoad(page)
+    await waitForAppShell(page)
+
+    const applicationInfo = page.locator('section.ng-panel', {
+      has: page.getByRole('heading', { name: '申请信息' }),
+    })
+    const value = applicationInfo.locator('p').filter({ hasText: '案件名称' }).locator('strong')
+    await expect(value).toBeVisible()
+    const box = await value.boundingBox()
+    expect(box).not.toBeNull()
+    expect(box!.width).toBeGreaterThan(180)
+    expect(box!.height).toBeLessThan(70)
+  })
 })

@@ -24,7 +24,13 @@ func NewClientRepository(db *gorm.DB) ClientRepository {
 
 // Create 创建客户
 func (r *ClientRepositoryImpl) Create(ctx context.Context, client *models.Client) error {
-	return r.db.WithContext(ctx).Create(client).Error
+	db := r.db.WithContext(ctx)
+	if strings.TrimSpace(client.Email) == "" {
+		// Email is optional. Omitting it stores SQL NULL, allowing multiple
+		// clients without weakening uniqueness for real email addresses.
+		db = db.Omit("Email")
+	}
+	return db.Create(client).Error
 }
 
 // FindByID 根据ID查找客户
@@ -60,33 +66,46 @@ func (r *ClientRepositoryImpl) Update(ctx context.Context, client *models.Client
 
 // UpdateWithVersion 使用乐观锁版本号更新客户信息
 func (r *ClientRepositoryImpl) UpdateWithVersion(ctx context.Context, client *models.Client, expectedVersion uint) error {
-	idCard := strings.TrimSpace(client.IDCard)
-	idCardDigest := strings.TrimSpace(client.IDCardDigest)
-	idCardCiphertext := strings.TrimSpace(client.IDCardCiphertext)
-	if idCard != "" {
+	identityNumber := strings.TrimSpace(client.IdentityNumber)
+	if identityNumber == "" {
+		identityNumber = strings.TrimSpace(client.IDCard)
+	}
+	identityType := client.EffectiveIdentityType()
+	identityDigest := client.IdentityDigestValue()
+	identityCiphertext := client.IdentityCiphertextValue()
+	if identityNumber != "" {
 		var err error
-		idCardCiphertext, idCardDigest, err = security.ProtectIdentityNumber(idCard)
+		identityNumber = security.NormalizeIdentityNumber(string(identityType), identityNumber)
+		identityCiphertext, identityDigest, err = security.ProtectIdentityNumber(identityNumber)
 		if err != nil {
 			return err
 		}
 	}
+	emailValue := interface{}(strings.TrimSpace(client.Email))
+	if strings.TrimSpace(client.Email) == "" {
+		emailValue = nil
+	}
 	updates := map[string]interface{}{
-		"name":               client.Name,
-		"type":               client.Type,
-		"email":              client.Email,
-		"phone":              client.Phone,
-		"address":            client.Address,
-		"company":            client.Company,
-		"id_card":            "",
-		"id_card_digest":     idCardDigest,
-		"id_card_ciphertext": idCardCiphertext,
-		"industry":           client.Industry,
-		"contact_person":     client.ContactPerson,
-		"contact_phone":      client.ContactPhone,
-		"source":             client.Source,
-		"notes":              client.Notes,
-		"status":             client.Status,
-		"version":            expectedVersion + 1,
+		"name":                       client.Name,
+		"type":                       client.Type,
+		"email":                      emailValue,
+		"phone":                      client.Phone,
+		"address":                    client.Address,
+		"company":                    client.Company,
+		"id_card":                    "",
+		"id_card_digest":             identityDigest,
+		"id_card_ciphertext":         identityCiphertext,
+		"identity_type":              identityType,
+		"identity_number_digest":     identityDigest,
+		"identity_number_ciphertext": identityCiphertext,
+		"aliases":                    client.Aliases,
+		"industry":                   client.Industry,
+		"contact_person":             client.ContactPerson,
+		"contact_phone":              client.ContactPhone,
+		"source":                     client.Source,
+		"notes":                      client.Notes,
+		"status":                     client.Status,
+		"version":                    expectedVersion + 1,
 	}
 
 	result := r.db.WithContext(ctx).
@@ -132,12 +151,13 @@ func (r *ClientRepositoryImpl) List(ctx context.Context, params *ClientListParam
 	if params.AccessibleByUserID > 0 {
 		userIDText := strconv.FormatUint(uint64(params.AccessibleByUserID), 10)
 		query = query.Where(
-			`EXISTS (
+			`(clients.created_by = ? OR EXISTS (
 				SELECT 1 FROM cases
 				WHERE cases.client_id = clients.id
 				  AND cases.deleted_at IS NULL
 				  AND (cases.lawyer_id = ? OR cases.created_by = ?)
-			)`,
+			))`,
+			params.AccessibleByUserID,
 			params.AccessibleByUserID,
 			userIDText,
 		)

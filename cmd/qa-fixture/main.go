@@ -22,6 +22,7 @@ import (
 	"law-oa-go/internal/database"
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/repositories"
+	"law-oa-go/internal/security"
 	"law-oa-go/internal/services"
 )
 
@@ -31,17 +32,19 @@ const (
 	fixtureConfirmation = "I_UNDERSTAND"
 	qaPasswordEnv       = "QA_PASSWORD"
 
-	lawyerAEmail = "qa.lawyer.a@qa.invalid"
-	lawyerBEmail = "qa.lawyer.b@qa.invalid"
-	officerEmail = "qa.conflict.officer@qa.invalid"
-	clientAEmail = "qa.p0.client.a@qa.invalid"
-	clientBEmail = "qa.p0.client.b@qa.invalid"
-	caseANumber  = "QA-P0-A-2026-001"
-	caseBNumber  = "QA-P0-B-2026-001"
-	checkID      = "QA-P0-A-CHECK-20260719"
-	approvalID   = "QA-P0-A-APPROVAL-20260719"
-	approvalNo   = "APR-QA-P0-20260719"
-	assignmentID = "QA-P0-A-ASSIGNMENT-20260719"
+	lawyerAEmail    = "qa.lawyer.a@qa.invalid"
+	lawyerBEmail    = "qa.lawyer.b@qa.invalid"
+	officerEmail    = "qa.conflict.officer@qa.invalid"
+	directorEmail   = "qa.managing.partner@qa.invalid"
+	complianceEmail = "qa.compliance.lead@qa.invalid"
+	clientAEmail    = "qa.p0.client.a@qa.invalid"
+	clientBEmail    = "qa.p0.client.b@qa.invalid"
+	caseANumber     = "QA-P0-A-2026-001"
+	caseBNumber     = "QA-P0-B-2026-001"
+	checkID         = "QA-P0-A-CHECK-20260719"
+	approvalID      = "QA-P0-A-APPROVAL-20260719"
+	approvalNo      = "APR-QA-P0-20260719"
+	assignmentID    = "QA-P0-A-ASSIGNMENT-20260719"
 )
 
 type userSpec struct {
@@ -54,12 +57,14 @@ type userSpec struct {
 }
 
 type clientSpec struct {
-	Name    string
-	Email   string
-	Company string
-	Type    string
-	Source  string
-	Notes   string
+	Name           string
+	Email          string
+	Company        string
+	Type           string
+	Source         string
+	Notes          string
+	IdentityNumber string
+	CreatedBy      uint
 }
 
 func main() {
@@ -131,17 +136,19 @@ func main() {
 	}
 
 	fmt.Printf("QA 夹具写入并核验通过: %s (%s)\n", fixtureName, cfg.Database.Database)
-	fmt.Printf("律师 A: %s\n律师 B: %s\n独立核查人 C: %s\n", lawyerAEmail, lawyerBEmail, officerEmail)
+	fmt.Printf("律师 A: %s\n律师 B: %s\n独立核查人 C: %s\n管理合伙人: %s\n合规负责人: %s\n", lawyerAEmail, lawyerBEmail, officerEmail, directorEmail, complianceEmail)
 	fmt.Printf("A 案件: %d/%s\nB 隔离案件: %d/%s\n检测单: %s\n审批单: %s/%s\n", result.caseA.ID, caseANumber, result.caseB.ID, caseBNumber, checkID, approvalID, approvalNo)
 	fmt.Println("下一步：用 QA_PASSWORD 从 A 登录；再分别用 B、C 登录执行浏览器验收。")
 }
 
 type seedResult struct {
-	lawyerA models.User
-	lawyerB models.User
-	officer models.User
-	caseA   models.Case
-	caseB   models.Case
+	lawyerA    models.User
+	lawyerB    models.User
+	officer    models.User
+	director   models.User
+	compliance models.User
+	caseA      models.Case
+	caseB      models.Case
 }
 
 func requireNonProductionEnvironment() error {
@@ -171,6 +178,7 @@ func requireFixtureTables(db *gorm.DB) error {
 		"entities", "entity_relations", "entity_name_history", "case_parties", "case_ethical_wall_whitelist",
 		"conflict_checks", "conflict_details", "conflict_check_records", "conflict_cases", "conflict_search_scopes",
 		"conflict_index_build_runs", "conflict_reviewer_assignments", "approval_requests",
+		"conflict_officer_appointments",
 	} {
 		if !db.Migrator().HasTable(table) {
 			return fmt.Errorf("缺少表 %s，请先完成 PostgreSQL schema bootstrap/迁移", table)
@@ -237,12 +245,28 @@ func seedFixture(ctx context.Context, db *gorm.DB, passwordHash string) (seedRes
 		if result.officer, err = upsertUser(tx, userSpec{"qa_conflict_officer", "独立冲突核查人", officerEmail, "conflict_officer", "合规风控部", "合伙人"}, passwordHash); err != nil {
 			return err
 		}
+		if result.director, err = upsertUser(tx, userSpec{"qa_managing_partner", "管理合伙人（虚构）", directorEmail, "director", "管理委员会", "合伙人"}, passwordHash); err != nil {
+			return err
+		}
+		if result.compliance, err = upsertUser(tx, userSpec{"qa_compliance_lead", "合规负责人（虚构）", complianceEmail, "compliance", "合规风控部", "高级"}, passwordHash); err != nil {
+			return err
+		}
+		appointment := models.ConflictOfficerAppointment{
+			ID: "QA-P0-OFFICER-APPOINTMENT-2026", OfficerID: result.officer.ID, DeputyID: &result.compliance.ID,
+			AppointedBy: result.director.ID, EffectiveFrom: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
+			EffectiveTo:                time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC),
+			RecusalDeclaration:         "虚构验收任命：主核查人与代理人仍须对每一案件另行完成回避和独立性确认。",
+			ExternalMechanismReference: fixtureSource + ":external-review-procedure", CreatedAt: time.Now().UTC(),
+		}
+		if err := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&appointment).Error; err != nil {
+			return fmt.Errorf("写入虚构核查人任命失败: %w", err)
+		}
 
-		clientA, err := upsertClient(tx, clientSpec{"星河智联科技有限公司", clientAEmail, "星河智联科技有限公司", "企业", "qa-p0-fixture", "虚构新客户；用于演练承办律师 A 的接案流程。"})
+		clientA, err := upsertClient(tx, clientSpec{"星河智联科技有限公司", clientAEmail, "星河智联科技有限公司", "企业", "qa-p0-fixture", "虚构新客户；用于演练承办律师 A 的接案流程。", "91310000QA0000012X", result.lawyerA.ID})
 		if err != nil {
 			return err
 		}
-		clientB, err := upsertClient(tx, clientSpec{"云杉数据服务有限公司", clientBEmail, "云杉数据服务有限公司", "企业", "qa-p0-fixture", "虚构历史客户；案件启用隔离墙，仅核查人可查看历史业务证据。"})
+		clientB, err := upsertClient(tx, clientSpec{"云杉数据服务有限公司", clientBEmail, "云杉数据服务有限公司", "企业", "qa-p0-fixture", "虚构历史客户；案件启用隔离墙，仅核查人可查看历史业务证据。", "91310000QA00000218", result.lawyerB.ID})
 		if err != nil {
 			return err
 		}
@@ -349,10 +373,16 @@ func seedFixture(ctx context.Context, db *gorm.DB, passwordHash string) (seedRes
 	for _, run := range runs {
 		from := time.Now().UTC().AddDate(-20, 0, 0)
 		to := time.Now().UTC()
+		qualityOwnerID := result.officer.ID
 		_, err := services.NewConflictScopeService(db).Upsert(ctx, services.AuthActor{UserID: result.officer.ID, Role: result.officer.Role}, services.ConflictSearchScopeInput{
 			ID: "qa-p0-scope-" + strings.ToLower(run.ScopeType), ScopeType: run.ScopeType, Status: services.ConflictScopeActive,
 			CoverageStatus: services.ConflictCoverageComplete, SourceVersion: run.SourceVersion, EvidenceReference: evidenceReference,
 			CoveredFrom: &from, CoveredTo: &to, MissingSources: []string{}, IndexRunID: run.ID,
+			SourceOfTruth: true, SyncMode: "BATCH", MaxSyncLagMinutes: 1440, LastSuccessfulSyncAt: &to,
+			MinimumFieldCoverageBPS: 10000, MeasuredFieldCoverageBPS: 10000,
+			MaximumDuplicateRateBPS: 0, MeasuredDuplicateRateBPS: 0,
+			QualityOwnerID: &qualityOwnerID, QualityReviewedAt: &to, MaxQualityReviewAgeDays: 31,
+			FailureAlertReference: fixtureSource + ":sync-alert", CorrectionProcedureReference: fixtureSource + ":correction-procedure",
 		})
 		if err != nil {
 			return result, fmt.Errorf("登记 %s 覆盖范围失败: %w", run.ScopeType, err)
@@ -368,6 +398,8 @@ func seedRolesAndPermissions(db *gorm.DB) error {
 	}
 	for _, spec := range []models.Role{
 		{Name: "律师", Code: "lawyer", Description: "律师用户", Status: "active", SortOrder: 3},
+		{Name: "管理合伙人", Code: "director", Description: "负责律所政策管理确认的虚构 QA 角色", Status: "active", SortOrder: 4},
+		{Name: "合规负责人", Code: "compliance", Description: "负责律所政策合规确认的虚构 QA 角色", Status: "active", SortOrder: 5},
 	} {
 		if err := upsertByCode(db, &spec); err != nil {
 			return fmt.Errorf("写入 %s 角色失败: %w", spec.Code, err)
@@ -466,17 +498,21 @@ func upsertClient(db *gorm.DB, spec clientSpec) (models.Client, error) {
 	var client models.Client
 	err := db.Unscoped().Where("email = ?", spec.Email).First(&client).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		client = models.Client{Name: spec.Name, Email: spec.Email, Company: spec.Company, Type: spec.Type, Source: spec.Source, Notes: spec.Notes, Status: "active", Version: 1}
+		client = models.Client{Name: spec.Name, Email: spec.Email, Company: spec.Company, Type: spec.Type, Source: spec.Source, Notes: spec.Notes, IdentityType: models.IdentityTypeSocialCredit, IdentityNumber: spec.IdentityNumber, CreatedBy: spec.CreatedBy, Status: "active", Version: 1}
 		return client, db.Create(&client).Error
 	}
 	if err != nil {
 		return client, err
 	}
-	updates := map[string]interface{}{"name": spec.Name, "company": spec.Company, "type": spec.Type, "source": spec.Source, "notes": spec.Notes, "status": "active", "deleted_at": nil, "updated_at": time.Now()}
+	identityCiphertext, identityDigest, err := security.ProtectIdentityNumber(spec.IdentityNumber)
+	if err != nil {
+		return client, fmt.Errorf("保护 QA 客户身份失败: %w", err)
+	}
+	updates := map[string]interface{}{"name": spec.Name, "company": spec.Company, "type": spec.Type, "source": spec.Source, "notes": spec.Notes, "identity_type": models.IdentityTypeSocialCredit, "identity_number_ciphertext": identityCiphertext, "identity_number_digest": identityDigest, "id_card": "", "id_card_ciphertext": identityCiphertext, "id_card_digest": identityDigest, "created_by": spec.CreatedBy, "status": "active", "deleted_at": nil, "updated_at": time.Now()}
 	if err := db.Model(&client).Updates(updates).Error; err != nil {
 		return client, err
 	}
-	client.Name, client.Company, client.Type, client.Source, client.Notes, client.Status = spec.Name, spec.Company, spec.Type, spec.Source, spec.Notes, "active"
+	client.Name, client.Company, client.Type, client.Source, client.Notes, client.IdentityType, client.IdentityNumber, client.IdentityNumberCiphertext, client.IdentityNumberDigest, client.IDCard, client.IDCardCiphertext, client.IDCardDigest, client.CreatedBy, client.Status = spec.Name, spec.Company, spec.Type, spec.Source, spec.Notes, models.IdentityTypeSocialCredit, "", identityCiphertext, identityDigest, "", identityCiphertext, identityDigest, spec.CreatedBy, "active"
 	return client, nil
 }
 
@@ -791,10 +827,19 @@ func ensureApprovalSnapshot(db *gorm.DB, result seedResult, metadata, conflictRe
 func ptr[T any](value T) *T { return &value }
 
 func verifyFixture(ctx context.Context, db *gorm.DB) error {
-	for _, email := range []string{lawyerAEmail, lawyerBEmail, officerEmail} {
+	for _, email := range []string{lawyerAEmail, lawyerBEmail, officerEmail, directorEmail, complianceEmail} {
 		var user models.User
 		if err := db.WithContext(ctx).Where("email = ? AND status = ? AND deleted_at IS NULL", email, "active").First(&user).Error; err != nil {
 			return fmt.Errorf("账号 %s 不存在或未启用: %w", email, err)
+		}
+	}
+	for _, email := range []string{clientAEmail, clientBEmail} {
+		var client models.Client
+		if err := db.WithContext(ctx).Where("email = ? AND status = ? AND deleted_at IS NULL", email, "active").First(&client).Error; err != nil {
+			return fmt.Errorf("客户 %s 不存在或未启用: %w", email, err)
+		}
+		if strings.TrimSpace(client.IDCard) != "" || client.IdentityType != models.IdentityTypeSocialCredit || strings.TrimSpace(client.IdentityNumberCiphertext) == "" || strings.TrimSpace(client.IdentityNumberDigest) == "" {
+			return fmt.Errorf("客户 %s 的测试身份未按受保护格式保存", email)
 		}
 	}
 	var caseA, caseB models.Case
@@ -817,6 +862,13 @@ func verifyFixture(ctx context.Context, db *gorm.DB) error {
 	var activeScopes int64
 	if err := db.WithContext(ctx).Model(&models.ConflictSearchScope{}).Where("status = ? AND coverage_status = ?", services.ConflictScopeActive, services.ConflictCoverageComplete).Count(&activeScopes).Error; err != nil || activeScopes < 4 {
 		return fmt.Errorf("四类冲突范围未全部登记: active_complete=%d err=%v", activeScopes, err)
+	}
+	var activeAppointments int64
+	now := time.Now().UTC()
+	if err := db.WithContext(ctx).Model(&models.ConflictOfficerAppointment{}).
+		Where("effective_from <= ? AND effective_to > ? AND officer_id <> appointed_by AND deputy_id IS NOT NULL", now, now).
+		Count(&activeAppointments).Error; err != nil || activeAppointments < 1 {
+		return fmt.Errorf("律所级核查人任命夹具不符合预期: active=%d err=%v", activeAppointments, err)
 	}
 	return nil
 }

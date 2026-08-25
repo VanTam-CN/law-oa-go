@@ -372,7 +372,7 @@ ENABLE_PPROF=true
 migrate -path migrations -database "mysql://law_oa_dev:dev_password@tcp(localhost:3306)/law_oa_dev" up
 
 # 或者使用应用内置迁移
-go run cmd/server/main.go migrate up --config config/dev.yaml
+go run . migrate up --config config/dev.yaml
 
 # 创建初始数据
 mysql -u law_oa_dev -p law_oa_dev < scripts/create_test_data.sql
@@ -386,7 +386,7 @@ mysql -u law_oa_dev -p law_oa_dev < scripts/create_test_data.sql
 
 ```bash
 # 开发模式运行
-go run cmd/server/main.go --config config/dev.yaml
+go run . --config config/dev.yaml
 
 # 或使用 Makefile
 make dev
@@ -471,7 +471,7 @@ yarn dev
     },
     "files.exclude": {
         "**/*.exe": true,
-        "**/law-oa-server": true,
+        "**/law-oa-go": true,
         "**/vendor": true
     }
 }
@@ -488,7 +488,7 @@ yarn dev
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${workspaceFolder}/cmd/server/main.go",
+            "program": "${workspaceFolder}",
             "args": ["--config", "config/dev.yaml"],
             "env": {
                 "APP_ENV": "development"
@@ -531,7 +531,7 @@ yarn dev
             "label": "go: build",
             "type": "shell",
             "command": "go",
-            "args": ["build", "-o", "bin/law-oa-server", "./cmd/server"],
+            "args": ["build", "-o", "bin/law-oa-go", "."],
             "group": "build",
             "presentation": {
                 "echo": true,
@@ -582,8 +582,8 @@ yarn dev
 *.dll
 *.so
 *.dylib
-law-oa-server
-law-oa-server.exe
+law-oa-go
+law-oa-go.exe
 
 # 测试二进制文件
 *.test
@@ -700,13 +700,13 @@ help:
 
 # 开发模式
 dev:
-	go run cmd/server/main.go --config config/dev.yaml
+	go run . --config config/dev.yaml
 
 # 构建应用
 build:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
 		-ldflags="-w -s -X main.version=$(shell git describe --tags --always) -X main.buildTime=$(shell date -u +%Y-%m-%dT%H:%M:%SZ)" \
-		-o bin/law-oa-server cmd/server/main.go
+		-o bin/law-oa-go .
 
 # 运行测试
 test:
@@ -740,7 +740,7 @@ docker-run:
 
 # 生成 API 文档
 docs:
-	swag init -g cmd/server/main.go -o docs/swagger
+	swag init -g main.go -o docs/swagger
 
 # 生成 Mock 文件
 mocks:

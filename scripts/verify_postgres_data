@@ -164,7 +164,7 @@ echo "🎯 排查步骤:"
 echo "1. 确保 PostgreSQL 服务运行: brew services start postgresql"
 echo "2. 确保数据库迁移完成: 检查 migration 文件"
 echo "3. 运行测试数据脚本: go run scripts/create_approval_test_data.go"
-echo "4. 启动后端服务测试 API: ./law-oa-server"
+echo "4. 启动后端服务测试 API: go run . 或 make build && ./bin/law-oa-go"
 echo "5. 启动前端服务测试界面: cd frontend && npm run dev"
 echo ""
 

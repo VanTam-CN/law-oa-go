@@ -1,7 +1,14 @@
 import { expect, Page, test } from '@playwright/test'
 import { seedAuthenticatedUser, waitForAppShell, waitForPageLoad } from './utils/test-helpers'
 
-type Scenario = 'WAIVED' | 'CLEAR' | 'BLOCKED' | 'STALE' | 'COMPLETE_EVIDENCE' | 'PRINT_ESCAPED'
+type Scenario =
+  | 'WAIVED'
+  | 'CLEAR'
+  | 'BLOCKED'
+  | 'STALE'
+  | 'COMPLETE_EVIDENCE'
+  | 'PRINT_ESCAPED'
+  | 'ASSIGNED_APPROVAL'
 
 const scenarioItems: Record<Scenario, Record<string, any>> = {
   WAIVED: {
@@ -143,6 +150,22 @@ const scenarioItems: Record<Scenario, Record<string, any>> = {
       riskAssessment: { overallRisk: 'MEDIUM', riskScore: 54, requiresApproval: false },
     },
   },
+  ASSIGNED_APPROVAL: {
+    id: 'CCT_ASSIGNED_APPROVAL',
+    approval_id: '880',
+    approval_status: 'submitted',
+    approval_request_number: 'APR-ASSIGNED-880',
+    approval_current_approver_id: '5',
+    title: '核查人待处理冲突审批',
+    client_name: '星河智联科技有限公司',
+    status: 'COMPLETED',
+    risk_level: 'MEDIUM',
+    has_conflict: true,
+    check_result: {
+      decision: { status: 'REVIEW_REQUIRED', coverageStatus: 'COMPLETE' },
+      riskAssessment: { overallRisk: 'MEDIUM', requiresApproval: true },
+    },
+  },
 }
 
 async function openConflictScenario(page: Page, scenario: Scenario, user: 'lawyer' | 'conflictOfficer' = 'lawyer') {
@@ -178,16 +201,33 @@ async function fillCaseIntakeBasics(page: Page) {
   await page.getByRole('combobox', { name: '我方当事人（客户）' }).click()
   await page.getByTitle('上海示例科技有限公司').click()
   await page.getByPlaceholder('输入对方当事人名称').fill('冲突测试对方')
+  await page.getByPlaceholder('输入证件号或统一社会信用代码').fill('91310000TESTCONFLICT01')
   await page.getByRole('textbox', { name: '案情摘要 *' }).fill('验证冲突结果对立案提交的前置门禁。')
   await page.getByRole('combobox', { name: '负责律师预览' }).click()
   await page.getByTitle('张律师 · 争议解决部').click()
 }
 
 test.describe('冲突决策单一状态', () => {
+  test('核查岗可以从冲突清单处理新主体登记', async ({ page }) => {
+    await seedAuthenticatedUser(page, 'conflictOfficer')
+    await page.goto('/conflict')
+    await waitForPageLoad(page)
+    await waitForAppShell(page)
+
+    await expect(page.getByRole('heading', { name: '新主体登记待确认（1）' })).toBeVisible()
+    await expect(page.getByText('虚构启明精密制造有限公司')).toBeVisible()
+    await page.getByRole('button', { name: '核验主体身份' }).click()
+    const dialog = page.getByRole('dialog', { name: '核验新主体登记' })
+    await expect(dialog.getByText(/不得只凭名称判断/)).toBeVisible()
+    await dialog.getByLabel('核验或驳回依据 *').fill('已核验营业执照原件和统一社会信用代码，确认建立新主体档案。')
+    await dialog.getByRole('button', { name: '确认处理结果' }).click()
+    await expect(page.locator('.ant-message')).toContainText('主体身份已确认')
+  })
+
   test('WAIVED 只允许按批准条件继续，不出现审批或再次豁免', async ({ page }) => {
     await openConflictScenario(page, 'WAIVED')
     const dialog = page.getByRole('dialog', { name: '冲突检测详情' })
-    const decisionCard = dialog.locator('section.batch-card', { hasText: '接案决策' })
+    const decisionCard = dialog.locator('section.ng-panel', { hasText: '接案决策' })
 
     await expect(decisionCard.getByText('按批准条件继续', { exact: true })).toBeVisible()
     await expect(dialog.getByText(/建立信息隔离墙.*每月由合规负责人复核/)).toBeVisible()
@@ -201,7 +241,7 @@ test.describe('冲突决策单一状态', () => {
   test('CLEAR/LOW/零命中明确可提交立案审批且无冲突处置入口', async ({ page }) => {
     await openConflictScenario(page, 'CLEAR')
     const dialog = page.getByRole('dialog', { name: '冲突检测详情' })
-    const decisionCard = dialog.locator('section.batch-card', { hasText: '接案决策' })
+    const decisionCard = dialog.locator('section.ng-panel', { hasText: '接案决策' })
 
     await expect(decisionCard.getByText('可提交立案审批', { exact: true })).toBeVisible()
     await expect(dialog.getByText(/不得提交/)).toHaveCount(0)
@@ -212,10 +252,14 @@ test.describe('冲突决策单一状态', () => {
   test('人工 confirmed_conflict 终态不重复发起复核且只保留一个豁免入口', async ({ page }) => {
     await openConflictScenario(page, 'BLOCKED')
     const dialog = page.getByRole('dialog', { name: '冲突检测详情' })
-    const decisionCard = dialog.locator('section.batch-card', { hasText: '接案决策' })
+    const decisionCard = dialog.locator('section.ng-panel', { hasText: '接案决策' })
 
     await expect(decisionCard.getByText('已暂停接案', { exact: true })).toBeVisible()
-    await expect(dialog.locator('article', { hasText: '主命中主体' }).getByText('真实主命中实体', { exact: true })).toBeVisible()
+    await expect(
+      dialog
+        .locator('article', { hasText: '命中历史主体' })
+        .getByText('真实主命中实体', { exact: true }),
+    ).toBeVisible()
     await expect(dialog.getByText('历史案件标题不得作为命中主体', { exact: true })).toHaveCount(1)
     const waiverAction = dialog.getByRole('button', { name: '申请豁免评估' })
     await expect(waiverAction).toHaveCount(1)
@@ -226,7 +270,7 @@ test.describe('冲突决策单一状态', () => {
   test('STALE 隐藏旧严重处置，只显示结果过期', async ({ page }) => {
     await openConflictScenario(page, 'STALE')
     const dialog = page.getByRole('dialog', { name: '冲突检测详情' })
-    const decisionCard = dialog.locator('section.batch-card', { hasText: '接案决策' })
+    const decisionCard = dialog.locator('section.ng-panel', { hasText: '接案决策' })
 
     await expect(decisionCard.getByText('冲突检测结果已过期', { exact: true })).toBeVisible()
     await expect(dialog.getByText('已暂停接案', { exact: true })).toHaveCount(0)
@@ -241,16 +285,16 @@ test.describe('冲突决策单一状态', () => {
     await expect(conflictType).toContainText('当前对方为本所现有客户')
     await expect(conflictType).not.toContainText('EXACT')
 
-    const riskSummary = dialog.locator('section.batch-card').filter({ hasText: '风险评估结果' })
+    const riskSummary = dialog.locator('section.ng-panel').filter({ hasText: '风险评估结果' })
     const row = (label: string) => riskSummary.locator('tr', { hasText: label })
-    await expect(row('风险评分')).toContainText('94 / 100')
+    await expect(row('风险评分')).toContainText('暂不评分')
     await expect(row('检索主体')).toContainText('上海示例科技有限公司')
     await expect(row('检索主体')).not.toContainText('青海云岭建设有限公司')
     await expect(row('匹配主体')).toContainText('上海示例科技有限公司（客户主档）')
     await expect(row('匹配方式')).toContainText('规范化名称完全一致')
     await expect(row('比对方法')).toContainText('规范化名称比对')
-    await expect(row('主体角色')).toContainText('CLIENT')
-    await expect(row('规则编号')).toContainText('DIRECT_ADVERSE_CURRENT_CLIENT')
+    await expect(row('主体角色')).toContainText('客户/委托人')
+    await expect(row('规则编号')).toContainText('对方为本所现有客户')
     await expect(row('来源案件')).toContainText('受限历史事项')
     await expect(row('来源案件')).not.toContainText('CASE-2025-0373')
     for (const label of ['风险评分', '匹配方式', '比对方法', '主体角色', '规则编号', '来源案件']) {
@@ -272,7 +316,7 @@ test.describe('冲突决策单一状态', () => {
 
     const overview = page.locator('.batch-info-grid.compact').filter({ hasText: '待人工复核' })
     await expect(overview.locator('p').filter({ hasText: '待人工复核' })).toContainText('1 条')
-    await expect(page.getByText(/全队列总体风险：存在 1 条待人工复核记录/)).toBeVisible()
+    await expect(page.getByText(/当前账号可见的冲突任务：存在 1 条待人工复核记录/)).toBeVisible()
     const complianceWarning = page
       .locator('.batch-conflict-side p')
       .filter({ hasText: '未发现高风险' })
@@ -297,7 +341,7 @@ test.describe('冲突决策单一状态', () => {
       })
     })
     const dialog = page.getByRole('dialog', { name: '冲突检测详情' })
-    const decisionCard = dialog.locator('section.batch-card', { hasText: '接案决策' })
+    const decisionCard = dialog.locator('section.ng-panel', { hasText: '接案决策' })
     await expect(decisionCard.getByText('机器检测已自动阻断，等待独立复核', { exact: true })).toBeVisible()
     await expect(dialog.getByRole('button', { name: '申请豁免评估' })).toHaveCount(0)
     const reviewAction = dialog.getByRole('button', { name: '发起冲突审批' })
@@ -409,6 +453,24 @@ test.describe('冲突决策单一状态', () => {
     await expect(dialog.getByRole('button', { name: '申请豁免评估' })).toHaveCount(0)
   })
 
+  test('当前核查人从冲突详情直接进入已分配审批，不重复创建审批', async ({ page }) => {
+    let createApprovalRequests = 0
+    await openConflictScenario(page, 'ASSIGNED_APPROVAL', 'conflictOfficer')
+    page.on('request', (request) => {
+      if (request.url().includes('/conflict/tasks/CCT_ASSIGNED_APPROVAL/approval')) {
+        createApprovalRequests += 1
+      }
+    })
+
+    const dialog = page.getByRole('dialog', { name: '冲突检测详情' })
+    const action = dialog.getByRole('button', { name: '处理冲突审批' })
+    await expect(action).toBeVisible()
+    await action.click()
+
+    await expect(page).toHaveURL(/\/approval\/880$/)
+    expect(createApprovalRequests).toBe(0)
+  })
+
   test('技术管理员不能代替专业冲突复核人查看冲突详情', async ({ page }) => {
     await seedAuthenticatedUser(page, 'admin')
     await page.goto('/conflict?task_id=CCT_373e_complete_evidence')
@@ -417,6 +479,15 @@ test.describe('冲突决策单一状态', () => {
 
     await expect(page.getByText('无权访问', { exact: true })).toBeVisible()
     await expect(page.getByRole('dialog', { name: '冲突检测详情' })).toHaveCount(0)
+  })
+
+  test('直接访问不可见冲突任务时应给出不泄密提示', async ({ page }) => {
+    await seedAuthenticatedUser(page, 'lawyer')
+    await page.goto('/conflict?task_id=NOT-VISIBLE-TO-CURRENT-LAWYER')
+    await waitForPageLoad(page)
+
+    await expect(page.getByRole('heading', { name: '指定冲突任务不可访问' })).toBeVisible()
+    await expect(page.getByText('未找到该任务，或当前账号无权查看。')).toBeVisible()
   })
 })
 
@@ -517,6 +588,7 @@ test.describe('冲突审批快照兼容', () => {
           data: {
             snapshot: {
               client_name: '新快照真实客户有限公司',
+              case_creation_config: { case_type: 'civil', case_name: '新快照民事争议' },
               opposing_parties: [{ name: '新快照真实对方集团' }],
               subjects: [{ role: 'opposing_party', name: '新快照真实对方集团' }],
               normalizedSubjects: [{ role: 'opposing_party', originalName: '新快照真实对方集团', normalizedName: '新快照真实对方集团有限公司' }],
@@ -549,21 +621,22 @@ test.describe('冲突审批快照兼容', () => {
     await waitForAppShell(page)
     await expect(page.getByRole('heading', { name: '新形状冲突审批快照' })).toBeVisible()
 
-    const applicationInfo = page.locator('section.batch-card', { has: page.getByRole('heading', { name: '申请信息' }) })
+    const applicationInfo = page.locator('section.ng-panel', { has: page.getByRole('heading', { name: '申请信息' }) })
     const clientRow = applicationInfo.locator('p').filter({ hasText: '关联客户' })
     const opposingPartyRow = applicationInfo.locator('p').filter({ hasText: '对方当事人' })
     await expect(clientRow).toBeVisible()
     await expect(clientRow).toContainText('新快照真实客户有限公司')
     await expect(opposingPartyRow).toBeVisible()
     await expect(opposingPartyRow).toContainText('新快照真实对方集团')
-    const conflictSummary = page.locator('section.batch-card', { has: page.getByRole('heading', { name: '冲突检测摘要' }) })
+    await expect(applicationInfo.locator('p').filter({ hasText: '案件类型' })).toContainText('民事')
+    const conflictSummary = page.locator('section.ng-panel', { has: page.getByRole('heading', { name: '冲突检测摘要' }) })
     await expect(page.getByText('总体风险等级：待人工复核')).toBeVisible()
     await expect(page.getByText(/不能作为无冲突结论/)).toBeVisible()
-    const primarySubjectRow = conflictSummary.locator('p').filter({ hasText: '主体：结构化主要命中主体' })
+    const primarySubjectRow = conflictSummary.locator('p').filter({ hasText: '结构化主要命中主体' })
     const evidenceRow = conflictSummary.locator('p').filter({ hasText: 'CASE-SOURCE-2026-009' })
     await expect(primarySubjectRow).toBeVisible()
     await expect(evidenceRow).toBeVisible()
-    await expect(evidenceRow).toContainText(/CASE-SOURCE-2026-009.*CONFLICT-CLIENT-EXACT-001.*该对方是本所现有客户/)
+    await expect(evidenceRow).toContainText(/CASE-SOURCE-2026-009.*其他规则.*该对方是本所现有客户/)
     await expect(page.getByText('来自审批快照', { exact: true })).toHaveCount(0)
     await expect(page.getByText(/不应展示|不应覆盖顶层/)).toHaveCount(0)
   })

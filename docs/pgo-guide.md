@@ -1,12 +1,12 @@
-# Go 1.23 PGO (Profile-Guided Optimization) 使用指南
+# Go 1.25 PGO (Profile-Guided Optimization) 使用指南
 
 ## 概述
 
-本指南介绍如何在 Law OA Go 项目中使用 Go 1.23 的 PGO (Profile-Guided Optimization) 功能来提升应用程序性能。
+本指南介绍如何在 Law OA Go 项目中使用 Go 1.25 的 PGO (Profile-Guided Optimization) 功能来提升应用程序性能。
 
-PGO 是 Go 1.23 引入的重要特性，通过运行时的性能剖析数据来指导编译器进行优化，可以获得显著的性能提升。
+PGO 是 Go 1.25 继续支持的重要特性，通过运行时的性能剖析数据来指导编译器进行优化，可以获得显著的性能提升。
 
-## Go 1.23 PGO 主要改进
+## Go 1.25 PGO 主要改进
 
 - **构建时间开销大幅降低**：从 Go 1.21 的 20-30% 降低到个位数百分比
 - **栈帧槽重叠**：减少内存使用和栈操作开销
@@ -29,11 +29,11 @@ graph TD
 
 ### 1. 检查 Go 版本
 
-确保你使用的是 Go 1.23 或更高版本：
+确保你使用的是 Go 1.25 或更高版本：
 
 ```bash
 go version
-# 应该输出类似: go version go1.23.0 darwin/amd64
+# 应该输出类似: go version go1.25.0 darwin/amd64
 ```
 
 ### 2. 快速 PGO 构建
@@ -119,7 +119,7 @@ chmod +x scripts/pgo_build.sh
 
 ```bash
 # 使用 CPU 剖析文件进行 PGO 构建
-go build -pgo=profiles/cpu.prof -o law-oa-server-pgo ./main.go
+go build -pgo=profiles/cpu.prof -o bin/law-oa-go-pgo .
 ```
 
 #### 高级构建选项
@@ -225,7 +225,7 @@ go run scripts/comprehensive_pgo_workload.go
 ```bash
 #!/bin/bash
 
-# Go 1.23 PGO 构建脚本
+# Go 1.25 PGO 构建脚本
 # 用法: ./scripts/pgo_build.sh [选项]
 
 # 选项:
@@ -268,14 +268,14 @@ pgo-test:
     @echo "使用测试数据进行PGO构建..."
     @mkdir -p $(PROFILE_DIR)
     @go test -cpuprofile=$(PROFILE_DIR)/test_cpu.prof ./...
-    @go build -pgo=$(PROFILE_DIR)/test_cpu.prof -o bin/$(BINARY_NAME) ./main.go
+    @go build -pgo=$(PROFILE_DIR)/test_cpu.prof -o bin/$(BINARY_NAME) .
 
 .PHONY: pgo-bench
 pgo-bench:
     @echo "使用基准测试数据进行PGO构建..."
     @mkdir -p $(PROFILE_DIR)
     @go test -bench=. -benchmem -cpuprofile=$(PROFILE_DIR)/bench_cpu.prof ./...
-    @go build -pgo=$(PROFILE_DIR)/bench_cpu.prof -o bin/$(BINARY_NAME) ./main.go
+    @go build -pgo=$(PROFILE_DIR)/bench_cpu.prof -o bin/$(BINARY_NAME) .
 
 .PHONY: check-pgo
 check-pgo:
@@ -314,16 +314,16 @@ make pgo-test
 make pgo-full
 
 # 生产环境：使用生产环境剖析数据
-go build -pgo=production_cpu.prof -ldflags="-s -w" -o law-oa-server ./main.go
+go build -pgo=production_cpu.prof -ldflags="-s -w" -o bin/law-oa-go .
 ```
 
 **构建选项组合：**
 ```bash
 # 静态链接 + PGO 优化
-go build -pgo=profiles/cpu.prof -ldflags="-s -w -extldflags=-static" -o law-oa-server ./main.go
+go build -pgo=profiles/cpu.prof -ldflags="-s -w -extldflags=-static" -o bin/law-oa-go .
 
 # 调试信息 + PGO 优化
-go build -pgo=profiles/cpu.prof -gcflags="all=-N -l" -o law-oa-server-debug ./main.go
+go build -pgo=profiles/cpu.prof -gcflags="all=-N -l" -o bin/law-oa-go-debug .
 ```
 
 ### 3. 性能监控
@@ -331,7 +331,7 @@ go build -pgo=profiles/cpu.prof -gcflags="all=-N -l" -o law-oa-server-debug ./ma
 **构建后验证：**
 ```bash
 # 检查二进制文件大小
-ls -lh bin/law-oa-server*
+ls -lh bin/law-oa-go*
 
 # 运行基准测试对比
 go test -bench=. -benchmem ./... > benchmark_before.txt
@@ -370,7 +370,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v3
       with:
-        go-version: 1.23
+        go-version: 1.25
     
     - name: Generate profiles
       run: |
@@ -387,7 +387,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: pgo-binary
-        path: bin/law-oa-server
+        path: bin/law-oa-go
 ```
 
 ## 故障排除
@@ -399,7 +399,7 @@ jobs:
 # 检查 Go 版本
 go version
 
-# 如果版本低于 1.23，升级 Go
+# 如果版本低于 1.25，升级 Go
 # 使用 SDKman 或直接从官网下载
 ```
 
@@ -416,7 +416,7 @@ go test -cpuprofile=profiles/cpu.prof ./...
 **问题 3：构建时间过长**
 ```bash
 # 使用并行构建
-go build -pgo=profiles/cpu.prof -p=8 -o law-oa-server ./main.go
+go build -pgo=profiles/cpu.prof -p=8 -o bin/law-oa-go .
 
 # 减少剖析数据大小
 go test -cpuprofile=profiles/cpu.prof -run=TestPerformance ./...
@@ -427,8 +427,8 @@ go test -cpuprofile=profiles/cpu.prof -run=TestPerformance ./...
 **基准测试对比：**
 ```bash
 # 构建 PGO 和非 PGO 版本
-go build -o law-oa-server-normal ./main.go
-go build -pgo=profiles/cpu.prof -o law-oa-server-pgo ./main.go
+go build -o bin/law-oa-go-standard .
+go build -pgo=profiles/cpu.prof -o bin/law-oa-go-pgo .
 
 # 运行基准测试
 go test -bench=. -benchmem ./... > normal_bench.txt
@@ -449,24 +449,24 @@ go tool pprof -alloc_space http://localhost:8080/debug/pprof/heap
 **查看构建详情：**
 ```bash
 # 启用详细输出
-go build -pgo=profiles/cpu.prof -v -o law-oa-server ./main.go
+go build -pgo=profiles/cpu.prof -v -o bin/law-oa-go .
 
 # 查看构建统计
-go build -pgo=profiles/cpu.prof -ldflags="-s -w" -o law-oa-server ./main.go 2>&1 | grep PGO
+go build -pgo=profiles/cpu.prof -ldflags="-s -w" -o bin/law-oa-go . 2>&1 | grep PGO
 ```
 
 **分析优化效果：**
 ```bash
 # 使用 pprof 分析优化后的程序
-go tool pprof -text ./law-oa-server profiles/cpu.prof
+go tool pprof -text ./bin/law-oa-go profiles/cpu.prof
 
 # 查看优化建议
-go tool compile -S -pgo=profiles/cpu.prof main.go
+go tool compile -S -pgo=profiles/cpu.prof ./main.go
 ```
 
 ## 性能提升预期
 
-基于 Go 1.23 的改进，预期的性能提升：
+基于 Go 1.25 的改进，预期的性能提升：
 
 - **CPU 性能**：5-15% 的提升
 - **内存使用**：5-10% 的减少
@@ -481,14 +481,14 @@ go tool compile -S -pgo=profiles/cpu.prof main.go
 
 ## 参考资源
 
-- [Go 1.23 Release Notes](https://go.dev/doc/go1.23)
+- [Go 1.25 Release Notes](https://go.dev/doc/go1.25)
 - [PGO Documentation](https://go.dev/doc/pgo)
 - [Go Profiling](https://go.dev/blog/pprof)
 - [Go Performance Optimization](https://go.dev/doc/optimize)
 
 ## 总结
 
-Law OA Go 项目已经完整集成了 Go 1.23 的 PGO 功能，提供了：
+Law OA Go 项目已经完整集成了 Go 1.25 的 PGO 功能，提供了：
 
 1. **多种剖析数据生成方式**：测试、基准测试、HTTP 工作负载、综合工作负载
 2. **灵活的构建选项**：快速构建、完整构建、自定义构建

@@ -45,7 +45,7 @@ graph TB
 
 ### 技术栈要求
 
-- **应用服务**: Go 1.23+
+- **应用服务**: Go 1.25+
 - **数据库**: MySQL 8.0+ 或 PostgreSQL 13+
 - **缓存**: Redis 6.0+
 - **代理**: Nginx 1.20+
@@ -91,11 +91,11 @@ graph TB
 ### Go环境安装
 
 ```bash
-# 下载Go 1.23
-wget https://go.dev/dl/go1.23.0.linux-amd64.tar.gz
+# 下载Go 1.25
+wget https://go.dev/dl/go1.25.0.linux-amd64.tar.gz
 
 # 解压安装
-sudo tar -C /usr/local -xzf go1.23.0.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.25.0.linux-amd64.tar.gz
 
 # 配置环境变量
 echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
@@ -334,21 +334,21 @@ go test ./...
 # 构建二进制文件
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -ldflags="-w -s -X main.version=2.1.0 -X main.buildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-    -o bin/law-oa-server cmd/server/main.go
+    -o bin/law-oa-go .
 
 # 验证构建
-./bin/law-oa-server --version
+./bin/law-oa-go --version
 ```
 
 ### 2. 数据库迁移
 
 ```bash
 # 运行数据库迁移
-./bin/law-oa-server migrate up \
+./bin/law-oa-go migrate up \
     --config config/production.yaml
 
 # 或使用专门的迁移工具
-./bin/law-oa-server migrate \
+./bin/law-oa-go migrate \
     --config config/production.yaml \
     --direction up
 ```
@@ -369,7 +369,7 @@ Type=simple
 User=law-oa
 Group=law-oa
 WorkingDirectory=/opt/law-oa
-ExecStart=/opt/law-oa/bin/law-oa-server --config config/production.yaml
+ExecStart=/opt/law-oa/bin/law-oa-go --config config/production.yaml
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=always
 RestartSec=5
@@ -404,7 +404,7 @@ sudo mkdir -p /var/lib/law-oa/uploads
 sudo mkdir -p /var/log/law-oa
 
 # 复制文件
-sudo cp bin/law-oa-server /opt/law-oa/bin/
+sudo cp bin/law-oa-go /opt/law-oa/bin/
 sudo cp config/production.yaml /opt/law-oa/config/
 sudo cp .env.production /opt/law-oa/
 
@@ -412,7 +412,7 @@ sudo cp .env.production /opt/law-oa/
 sudo chown -R law-oa:law-oa /opt/law-oa
 sudo chown -R law-oa:law-oa /var/lib/law-oa
 sudo chown -R law-oa:law-oa /var/log/law-oa
-sudo chmod +x /opt/law-oa/bin/law-oa-server
+sudo chmod +x /opt/law-oa/bin/law-oa-go
 ```
 
 启动服务：
@@ -546,7 +546,7 @@ sudo systemctl reload nginx
 
 ```dockerfile
 # 多阶段构建
-FROM golang:1.23-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 # 设置工作目录
 WORKDIR /app
@@ -566,7 +566,7 @@ COPY . .
 # 构建应用
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -ldflags="-w -s -X main.version=2.1.0 -X main.buildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-    -o law-oa-server cmd/server/main.go
+    -o bin/law-oa-go .
 
 # 运行阶段
 FROM alpine:latest
@@ -582,7 +582,7 @@ RUN addgroup -g 1001 -S law-oa && \
 WORKDIR /app
 
 # 复制二进制文件
-COPY --from=builder /app/law-oa-server .
+COPY --from=builder /app/bin/law-oa-go .
 
 # 复制配置文件
 COPY --from=builder /app/config/production.yaml ./config/
@@ -602,7 +602,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
 
 # 启动应用
-CMD ["./law-oa-server", "--config", "config/production.yaml"]
+CMD ["./law-oa-go", "--config", "config/production.yaml"]
 ```
 
 ### 2. Docker Compose
@@ -685,6 +685,7 @@ services:
 
   prometheus:
     image: prom/prometheus:latest
+    profiles: [observability]
     ports:
       - "9090:9090"
     volumes:
@@ -703,6 +704,7 @@ services:
 
   grafana:
     image: grafana/grafana:latest
+    profiles: [observability]
     ports:
       - "3000:3000"
     environment:
@@ -975,7 +977,7 @@ sudo systemctl status law-oa
 sudo journalctl -u law-oa -f
 
 # 检查配置文件
-sudo -u law-oa /opt/law-oa/bin/law-oa-server --config /opt/law-oa/config/production.yaml --check
+sudo -u law-oa /opt/law-oa/bin/law-oa-go --config /opt/law-oa/config/production.yaml --check
 ```
 
 #### 2. 数据库连接失败

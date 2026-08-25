@@ -205,3 +205,20 @@ func (r *ApprovalRepository) FindRecordsByApprovalID(approvalRequestID string) (
 	}
 	return records, nil
 }
+
+// HasApproverRecord reports whether the user actually processed this approval.
+// It is used for read-only audit access after a terminal decision clears the
+// current approver field.
+func (r *ApprovalRepository) HasApproverRecord(approvalRequestID, approverID string) (bool, error) {
+	if !r.db.Migrator().HasTable(&models.ApprovalRecord{}) {
+		return false, nil
+	}
+	var count int64
+	err := r.db.Model(&models.ApprovalRecord{}).
+		Where("approval_request_id = ? AND approver_id = ?", approvalRequestID, approverID).
+		Count(&count).Error
+	if err != nil {
+		return false, fmt.Errorf("检查审批处理记录失败: %v", err)
+	}
+	return count > 0, nil
+}

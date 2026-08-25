@@ -477,6 +477,19 @@ func TestConflictReviewRejectsLimitedCoverage(t *testing.T) {
 	require.Zero(t, count)
 }
 
+func TestCoverageLimitedWithoutEvidenceIsNotReportedAsConflictHit(t *testing.T) {
+	decision := &models.ConflictDecisionSummary{Status: "REVIEW_REQUIRED", CoverageStatus: "COVERAGE_LIMITED"}
+	if hasDetectedConflict(decision, nil) {
+		t.Fatal("coverage limitation must block through the decision without inventing a conflict hit")
+	}
+	if !hasDetectedConflict(&models.ConflictDecisionSummary{Status: "BLOCKED", CoverageStatus: "COMPLETE"}, nil) {
+		t.Fatal("a blocked exact conflict must remain a detected conflict")
+	}
+	if !hasDetectedConflict(decision, []*models.ConflictCase{{}}) {
+		t.Fatal("a real candidate record must remain a detected match")
+	}
+}
+
 func TestConflictEvidenceHashIsStableAcrossCaseOrder(t *testing.T) {
 	first := &models.ConflictCase{Evidence: []models.ConflictEvidence{{RuleCode: "B", MatchType: "TEXT", Summary: "b"}}}
 	second := &models.ConflictCase{Evidence: []models.ConflictEvidence{{RuleCode: "A", MatchType: "EXACT", Summary: "a"}}}

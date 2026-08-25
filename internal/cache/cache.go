@@ -96,9 +96,8 @@ func (c *CacheService) buildKey(key string) string {
 // DefaultCacheService 默认缓存服务实例
 var DefaultCacheService *CacheService
 
-// InitCache 初始化缓存服务
+// InitCache is retained for source compatibility. Redis is optional, so a nil
+// default cache service is a valid degraded state.
 func InitCache() error {
-	// 这里会从数据库模块获取Redis客户端
-	// 具体实现在database模块中
 	return nil
 }

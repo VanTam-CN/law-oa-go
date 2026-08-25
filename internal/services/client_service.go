@@ -11,6 +11,7 @@ import (
 	"law-oa-go/internal/errors"
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/repositories"
+	"law-oa-go/internal/security"
 )
 
 type ClientService struct {
@@ -24,35 +25,42 @@ func NewClientService(clientRepo repositories.ClientRepository) *ClientService {
 }
 
 type CreateClientRequest struct {
-	Name          string `json:"name" binding:"required,min=1,max=100"`
-	Type          string `json:"type" binding:"required,oneof=个人 企业"`
-	Email         string `json:"email" binding:"omitempty,email"`
-	Phone         string `json:"phone" binding:"omitempty,max=20"`
-	Address       string `json:"address" binding:"omitempty,max=255"`
-	IDCard        string `json:"id_card" binding:"omitempty,max=18"`
-	Company       string `json:"company" binding:"omitempty,max=100"`
-	Industry      string `json:"industry" binding:"omitempty,max=50"`
-	ContactPerson string `json:"contact_person" binding:"omitempty,max=50"`
-	ContactPhone  string `json:"contact_phone" binding:"omitempty,max=20"`
-	Source        string `json:"source" binding:"omitempty,max=50"`
-	Notes         string `json:"notes" binding:"omitempty,max=1000"`
+	Name           string `json:"name" binding:"required,min=1,max=100"`
+	Type           string `json:"type" binding:"required,oneof=个人 企业"`
+	Email          string `json:"email" binding:"omitempty,email"`
+	Phone          string `json:"phone" binding:"omitempty,max=20"`
+	Address        string `json:"address" binding:"omitempty,max=255"`
+	IDCard         string `json:"id_card" binding:"omitempty,max=18"`
+	IdentityType   string `json:"identity_type" binding:"omitempty,max=30"`
+	IdentityNumber string `json:"identity_number" binding:"omitempty,max=100"`
+	Aliases        string `json:"aliases" binding:"omitempty,max=1000"`
+	CreatedBy      uint   `json:"-"`
+	Company        string `json:"company" binding:"omitempty,max=100"`
+	Industry       string `json:"industry" binding:"omitempty,max=50"`
+	ContactPerson  string `json:"contact_person" binding:"omitempty,max=50"`
+	ContactPhone   string `json:"contact_phone" binding:"omitempty,max=20"`
+	Source         string `json:"source" binding:"omitempty,max=50"`
+	Notes          string `json:"notes" binding:"omitempty,max=1000"`
 }
 
 type UpdateClientRequest struct {
-	Version       *uint   `json:"version" binding:"required"`
-	Name          *string `json:"name" binding:"omitempty,min=1,max=100"`
-	Type          *string `json:"type" binding:"omitempty,oneof=个人 企业"`
-	Email         *string `json:"email" binding:"omitempty,email"`
-	Phone         *string `json:"phone" binding:"omitempty,max=20"`
-	Address       *string `json:"address" binding:"omitempty,max=255"`
-	IDCard        *string `json:"id_card" binding:"omitempty,max=18"`
-	Company       *string `json:"company" binding:"omitempty,max=100"`
-	Industry      *string `json:"industry" binding:"omitempty,max=50"`
-	ContactPerson *string `json:"contact_person" binding:"omitempty,max=50"`
-	ContactPhone  *string `json:"contact_phone" binding:"omitempty,max=20"`
-	Source        *string `json:"source" binding:"omitempty,max=50"`
-	Notes         *string `json:"notes" binding:"omitempty,max=1000"`
-	Status        *string `json:"status" binding:"omitempty,oneof=active inactive"`
+	Version        *uint   `json:"version" binding:"required"`
+	Name           *string `json:"name" binding:"omitempty,min=1,max=100"`
+	Type           *string `json:"type" binding:"omitempty,oneof=个人 企业"`
+	Email          *string `json:"email" binding:"omitempty,email"`
+	Phone          *string `json:"phone" binding:"omitempty,max=20"`
+	Address        *string `json:"address" binding:"omitempty,max=255"`
+	IDCard         *string `json:"id_card" binding:"omitempty,max=18"`
+	IdentityType   *string `json:"identity_type" binding:"omitempty,max=30"`
+	IdentityNumber *string `json:"identity_number" binding:"omitempty,max=100"`
+	Aliases        *string `json:"aliases" binding:"omitempty,max=1000"`
+	Company        *string `json:"company" binding:"omitempty,max=100"`
+	Industry       *string `json:"industry" binding:"omitempty,max=50"`
+	ContactPerson  *string `json:"contact_person" binding:"omitempty,max=50"`
+	ContactPhone   *string `json:"contact_phone" binding:"omitempty,max=20"`
+	Source         *string `json:"source" binding:"omitempty,max=50"`
+	Notes          *string `json:"notes" binding:"omitempty,max=1000"`
+	Status         *string `json:"status" binding:"omitempty,oneof=active inactive"`
 }
 
 type ClientResponse struct {
@@ -64,6 +72,10 @@ type ClientResponse struct {
 	Phone             string                    `json:"phone"`
 	Address           string                    `json:"address"`
 	IDCard            string                    `json:"id_card"`
+	IdentityType      models.IdentityType       `json:"identity_type"`
+	IdentityNumber    string                    `json:"identity_number"`
+	IdentityStatus    string                    `json:"identity_status"`
+	Aliases           string                    `json:"aliases"`
 	Company           string                    `json:"company"`
 	Industry          string                    `json:"industry"`
 	ContactPerson     string                    `json:"contact_person"`
@@ -134,20 +146,28 @@ func (s *ClientService) CreateClient(ctx context.Context, req *CreateClientReque
 		}
 	}
 
+	identityNumber := strings.TrimSpace(req.IdentityNumber)
+	if identityNumber == "" {
+		identityNumber = strings.TrimSpace(req.IDCard)
+	}
+	identityType := normalizedClientIdentityType(req.Type, req.IdentityType)
 	client := &models.Client{
-		Name:          req.Name,
-		Type:          req.Type,
-		Email:         req.Email,
-		Phone:         req.Phone,
-		Address:       req.Address,
-		IDCard:        req.IDCard,
-		Company:       req.Company,
-		Industry:      req.Industry,
-		ContactPerson: req.ContactPerson,
-		ContactPhone:  req.ContactPhone,
-		Source:        req.Source,
-		Notes:         req.Notes,
-		Status:        "active",
+		Name:           req.Name,
+		Type:           req.Type,
+		Email:          req.Email,
+		Phone:          req.Phone,
+		Address:        req.Address,
+		IdentityType:   identityType,
+		IdentityNumber: identityNumber,
+		Aliases:        strings.TrimSpace(req.Aliases),
+		CreatedBy:      req.CreatedBy,
+		Company:        req.Company,
+		Industry:       req.Industry,
+		ContactPerson:  req.ContactPerson,
+		ContactPhone:   req.ContactPhone,
+		Source:         req.Source,
+		Notes:          req.Notes,
+		Status:         "active",
 	}
 
 	if err := s.clientRepo.Create(ctx, client); err != nil {
@@ -206,12 +226,27 @@ func (s *ClientService) UpdateClient(ctx context.Context, id uint, req *UpdateCl
 	if req.Address != nil {
 		client.Address = *req.Address
 	}
-	if req.IDCard != nil {
-		client.IDCard = *req.IDCard
-		if strings.TrimSpace(*req.IDCard) == "" {
+	if req.IdentityType != nil {
+		client.IdentityType = normalizedClientIdentityType(client.Type, *req.IdentityType)
+	}
+	if req.IdentityNumber != nil || req.IDCard != nil {
+		identityNumber := ""
+		if req.IdentityNumber != nil {
+			identityNumber = strings.TrimSpace(*req.IdentityNumber)
+		} else if req.IDCard != nil {
+			identityNumber = strings.TrimSpace(*req.IDCard)
+		}
+		client.IdentityNumber = identityNumber
+		client.IDCard = ""
+		if identityNumber == "" {
+			client.IdentityNumberDigest = ""
+			client.IdentityNumberCiphertext = ""
 			client.IDCardDigest = ""
 			client.IDCardCiphertext = ""
 		}
+	}
+	if req.Aliases != nil {
+		client.Aliases = strings.TrimSpace(*req.Aliases)
 	}
 	if req.Company != nil {
 		client.Company = *req.Company
@@ -233,6 +268,11 @@ func (s *ClientService) UpdateClient(ctx context.Context, id uint, req *UpdateCl
 	}
 	if req.Status != nil {
 		client.Status = *req.Status
+	}
+	if client.HasIdentity() || strings.TrimSpace(client.IdentityNumber) != "" {
+		if !validClientIdentityType(client.Type, client.EffectiveIdentityType()) {
+			return nil, errors.ValidationError("identity_type", "identity type does not match client type")
+		}
 	}
 
 	if err := s.clientRepo.UpdateWithVersion(ctx, client, *req.Version); err != nil {
@@ -316,6 +356,9 @@ func (s *ClientService) validateClientRequest(req *CreateClientRequest) error {
 	if len([]rune(req.Name)) > 100 {
 		return errors.ValidationError("name", "name is too long")
 	}
+	if req.Type != "个人" && req.Type != "企业" {
+		return errors.ValidationError("type", "client type must be 个人 or 企业")
+	}
 	if req.Email != "" {
 		emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 		if !emailRegex.MatchString(req.Email) {
@@ -332,6 +375,19 @@ func (s *ClientService) validateClientRequest(req *CreateClientRequest) error {
 	if len([]rune(req.Phone)) > 20 {
 		return errors.ValidationError("phone", "phone is too long")
 	}
+	identityNumber := strings.TrimSpace(req.IdentityNumber)
+	if identityNumber == "" {
+		identityNumber = strings.TrimSpace(req.IDCard)
+	}
+	if identityNumber != "" {
+		identityType := normalizedClientIdentityType(req.Type, req.IdentityType)
+		if !validClientIdentityType(req.Type, identityType) {
+			return errors.ValidationError("identity_type", "identity type does not match client type")
+		}
+		if len([]rune(security.NormalizeIdentityNumber(string(identityType), identityNumber))) < 4 {
+			return errors.ValidationError("identity_number", "identity number is too short")
+		}
+	}
 
 	return nil
 }
@@ -346,6 +402,10 @@ func (s *ClientService) toClientResponse(client *models.Client) *ClientResponse 
 		Phone:             models.MaskPhone(client.Phone),
 		Address:           client.Address,
 		IDCard:            client.ToSafeResponse().IDCard,
+		IdentityType:      client.EffectiveIdentityType(),
+		IdentityNumber:    client.MaskedIdentity(),
+		IdentityStatus:    client.IdentityStatus(),
+		Aliases:           client.Aliases,
 		Company:           client.Company,
 		Industry:          client.Industry,
 		ContactPerson:     client.ContactPerson,
@@ -380,13 +440,14 @@ func calculateClientCompleteness(client *models.Client) ClientCompleteness {
 
 	if client.Type == "企业" {
 		requiredFields = append(requiredFields,
+			requiredField{name: "unified_social_credit_code", filled: client.HasIdentity()},
 			requiredField{name: "company", filled: hasValue(client.Company)},
 			requiredField{name: "contact_person", filled: hasValue(client.ContactPerson)},
 			requiredField{name: "contact_phone", filled: hasValue(client.ContactPhone)},
 		)
 	} else {
 		requiredFields = append(requiredFields,
-			requiredField{name: "id_card", filled: client.HasIDCard()},
+			requiredField{name: "id_card", filled: client.HasIdentity()},
 		)
 	}
 
@@ -410,4 +471,22 @@ func calculateClientCompleteness(client *models.Client) ClientCompleteness {
 		MissingFields:         missingFields,
 		ReadyForConflictCheck: len(missingFields) == 0,
 	}
+}
+
+func normalizedClientIdentityType(clientType, identityType string) models.IdentityType {
+	value := models.IdentityType(strings.ToUpper(strings.TrimSpace(identityType)))
+	if value != "" {
+		return value
+	}
+	if strings.EqualFold(strings.TrimSpace(clientType), "企业") {
+		return models.IdentityTypeSocialCredit
+	}
+	return models.IdentityTypeIDCard
+}
+
+func validClientIdentityType(clientType string, identityType models.IdentityType) bool {
+	if strings.EqualFold(strings.TrimSpace(clientType), "个人") {
+		return identityType == models.IdentityTypeIDCard || identityType == models.IdentityTypePassport || identityType == models.IdentityTypeOther
+	}
+	return identityType == models.IdentityTypeSocialCredit || identityType == models.IdentityTypeBusinessLicense || identityType == models.IdentityTypeOrgCode || identityType == models.IdentityTypeOther
 }

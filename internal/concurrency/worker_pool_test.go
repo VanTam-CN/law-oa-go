@@ -284,9 +284,15 @@ func TestWorkerPool_Metrics(t *testing.T) {
 }
 
 func TestWorkerPool_FullQueue(t *testing.T) {
-	pool := NewWorkerPool(1, 2, 5*time.Second) // 小队列
+	// Use zero workers so the bounded queue is deterministic: two submissions
+	// fill it and the third must be rejected without racing a live worker.
+	pool := NewWorkerPool(1, 1, 5*time.Second)
 	pool.Start()
 	defer pool.Stop()
+
+	taskStarted := make(chan struct{})
+	taskRelease := make(chan struct{})
+	defer close(taskRelease)
 
 	// 填满队列
 	task1 := &DatabaseTask{
@@ -294,7 +300,8 @@ func TestWorkerPool_FullQueue(t *testing.T) {
 		TaskType:     "test",
 		TaskPriority: 1,
 		Operation: func(ctx context.Context) error {
-			time.Sleep(200 * time.Millisecond)
+			close(taskStarted)
+			<-taskRelease
 			return nil
 		},
 		Context: context.Background(),
@@ -305,15 +312,18 @@ func TestWorkerPool_FullQueue(t *testing.T) {
 		TaskType:     "test",
 		TaskPriority: 1,
 		Operation: func(ctx context.Context) error {
-			time.Sleep(200 * time.Millisecond)
 			return nil
 		},
 		Context: context.Background(),
 	}
 
-	// 提交前两个任务应该成功
-	assert.NoError(t, pool.Submit(task1))
-	assert.NoError(t, pool.Submit(task2))
+	require.NoError(t, pool.Submit(task1))
+	select {
+	case <-taskStarted:
+	case <-time.After(2 * time.Second):
+		t.Fatal("first task did not start")
+	}
+	require.NoError(t, pool.Submit(task2))
 
 	// 第三个任务应该失败（队列已满）
 	task3 := &DatabaseTask{
@@ -327,8 +337,8 @@ func TestWorkerPool_FullQueue(t *testing.T) {
 	}
 
 	err := pool.Submit(task3)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "queue is full")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "task queue is full")
 }
 
 // Fuzzing 测试

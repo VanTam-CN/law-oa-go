@@ -24,12 +24,12 @@
 
 ### 核心价值
 
-- **高性能**: Go 原生并发 + Redis 多级缓存 + GORM PrepareStmt
+- **高性能**: Go 原生并发 + GORM PrepareStmt，Redis 可选缓存增强
 - **安全可靠**: JWT + RBAC + bcrypt + 令牌撤销 + 速率限制 + CORS 白名单 + 安全头部 + 客户数据脱敏
 - **现代化前端**: React 18 + TypeScript 5.0 + Ant Design 5 + Vite 5 + Redux + React Query
 - **生产数据库入口**: PostgreSQL 16 schema bootstrap；MySQL/SQLite 兼容路径需另行完成方言迁移验收
-- **可审计部署骨架**: Docker 容器化 + 健康检查 + Prometheus + Grafana + Jaeger；生产放行仍需完成律所政策确认和数据覆盖验收
-- **企业级搜索**: Elasticsearch 8.9 全文检索
+- **可审计部署骨架**: Docker 容器化 + 健康检查；Prometheus / Grafana / Jaeger 仅在 `observability` profile 下显式启用，默认不含 Elasticsearch / Kibana
+- **企业级搜索**: 默认走数据库搜索回退；Elasticsearch 仅保留为可选扩展，不作为默认部署项
 - **隔离墙机制**: 按案件维度的利益冲突隔离保护
 
 ---
@@ -37,16 +37,19 @@
 ## 系统状态
 
 **当前版本**: v2.4.0
-**最后更新**: 2026-07-29
+**最后更新**: 2026-08-24
 
-**生产放行状态**：当前代码已通过 QA 后端全量测试、前端类型/Lint/构建、
-ARM64 生产镜像构建和 P0 冲突隔离回归；正式接案前仍必须完成律所档案覆盖、
+**受控验证状态**：2026-07-19 的 ARM64 构建证据见 [`reports/conflict-p0-lawyer-realistic-browser-qa-2026-07-19.md`](reports/conflict-p0-lawyer-realistic-browser-qa-2026-07-19.md)，
+2026-07-31 的 P0 冲突复测见 [`reports/conflict-p0-lawyer-abc-browser-recheck-2026-07-31.md`](reports/conflict-p0-lawyer-abc-browser-recheck-2026-07-31.md)，
+2026-08-04 的前端修复验证见 [`reports/frontend-lawyer-qa-remediation-2026-08-04.md`](reports/frontend-lawyer-qa-remediation-2026-08-04.md)，
+2026-08-12 的本地真实浏览器基线见 [`reports/law-oa-small-firm-real-browser-baseline-2026-08-12.md`](reports/law-oa-small-firm-real-browser-baseline-2026-08-12.md)。
+这些都是本地/受控环境报告，不代表当前仓库已经完成生产放行；接案前仍必须完成律所档案覆盖、
 PD-01 至 PD-07 决策物、AT-01 至 AT-12 验收和真实 PostgreSQL TLS/部署演练。
 生产 Kubernetes 入口为 `k8s/` canonical manifests，仓库中的 Helm Chart 已弃用。
 **编译状态**: `go build ./...` 通过
 **代码规模**: 265 Go 文件 (101k LOC) + 204 TS/TSX 文件 (73k LOC)
-**数据库迁移**: 60 组版本化 migration 文件 + `001_schema_v2.2.0.sql`
-**发布口径**: 律师端受控试用 MVP；不等同于未配置即上线的生产版本
+**数据库迁移**: 77 组版本化 up migration、75 组配套 down migration + `001_schema_v2.2.0.sql`（其中 `000001` 与 `000018` 没有配套 down）
+**发布口径**: 律师端受控试用 MVP；当前生产未放行，不得表述为已上线生产版本
 
 ### 当前 MVP 口径 (2026-07-16)
 
@@ -57,26 +60,28 @@ PD-01 至 PD-07 决策物、AT-01 至 AT-12 验收和真实 PostgreSQL TLS/部�
 | 场景 | 状态 | 说明 |
 |------|------|------|
 | 登录与工作台 | ✅ | 支持匿名演示账号登录，工作台展示待办、冲突复核、审批和案件入口 |
-| 新建立案 | ✅ | 基本信息、客户、对方当事人、负责律师、费用字段和保存/提交流程可用 |
+| 新建立案 | ✅ 受身份门禁控制 | 客户、对方和相关方必须登记可核验身份；企业与自然人分别使用统一社会信用代码/身份证件等明确类型，身份原文加密且不进入浏览器草稿，缺失时不得运行冲突检查 |
 | 利益冲突检查 | ⚠️ 受门禁控制 | 默认进入检测清单；按全所历史档案检索；覆盖不完整时明确阻断，不显示“无冲突”放行 |
 | 冲突审核与审批 | ⚠️ 受门禁控制 | 需要独立冲突核查人复核；直接冲突不可用豁免流程绕过 |
 | 审批通过成案 | ⚠️ 受门禁控制 | 审批通过后自动创建并回填正式案件 ID；关联案件和对外动作仍受主体版本门禁约束 |
 | 案件管理 | ✅ 受控可用 | 列表、详情、状态阶段、下一步操作和关联冲突复核入口可用；主体变更必须重新复核 |
+| 全新主体登记 | ✅ 受门禁控制 | 律师可在案件内提报新对方/第三人；身份标识加密保存，核查岗全所去重并确认或驳回，确认后申请律师运行重检；待处理期间案件受控动作保持阻断 |
 | 客户档案 | ✅ | 客户主档案、关联方、历史委托、联系人、附件入口和快捷操作可用 |
 | 权限边界 | ✅ | 律师访问财务/用户管理等非授权模块时显示权限或 MVP 范围提示 |
-| 收件箱/财务深度流程 | 🚧 | 不是当前律师端 MVP 主路径，保留路由和权限提示 |
+| 待办中心 | ✅ | 工作台“查看全部待办”进入真实待办列表，支持筛选、查看、标记已读/完成和延后提醒 |
+| 财务深度流程 | 🚧 | 不是当前律师端 MVP 主路径，保留路由和权限提示 |
 
 ### 最近一次律师端浏览器探索（2026-07-29）
 
 本轮使用本地浏览器从律师工作台入口进行黑盒探索，覆盖工作台、冲突检测清单与详情、审批中心、案件管理筛选、案件详情、本案冲突复核、待办中心和客户档案各 Tab。测试只通过页面交互完成，未直接调用 API，也未修改数据库。
 
-本轮已修复并按原路径回归验证：
+以下是历史本地/受控验证记录，按日期保留报告链接，不应理解为本轮或生产环境的重新验收：
 
 - 工作台冲突入口的可见文案统一为“查看全部冲突任务”，避免多个“查看全部”造成歧义。
 - 已存在“信息不足”复核记录时，冲突详情明确显示“信息不足，暂停接案”，并将入口改为“进入冲突审批”；不得把信息不足误读为无冲突或已放行。
 - 案件管理的“冲突复核”筛选会关联当前账号可见的冲突任务，避免案件状态字段暂未推进时出现“统计有案件、筛选为空”的矛盾。
 
-验证结果：前端 TypeScript、页面 ESLint、生产构建和 `git diff --check` 通过；浏览器回归路径未观察到新的控制台 `error/warn`。详细问题、复现步骤和把握度记录在 [`bugs.md`](bugs.md)，未决项记录在 [`open-bugs.md`](open-bugs.md)。
+2026-08-04 的前端 TypeScript、页面 ESLint、生产构建和 `git diff --check` 结果见 [`reports/frontend-lawyer-qa-remediation-2026-08-04.md`](reports/frontend-lawyer-qa-remediation-2026-08-04.md)；2026-08-12 的浏览器回归基线见 [`reports/law-oa-small-firm-real-browser-baseline-2026-08-12.md`](reports/law-oa-small-firm-real-browser-baseline-2026-08-12.md)。详细问题、复现步骤和把握度记录在 [`bugs.md`](bugs.md)，未决项记录在 [`open-bugs.md`](open-bugs.md)。
 
 > 这些结果是本地 QA 数据和本地服务上的功能证据，不代表真实律所档案已完整导入，也不替代生产环境的 A/B/冲突核查人隔离验收。
 
@@ -114,7 +119,7 @@ PD-01 至 PD-07 决策物、AT-01 至 AT-12 验收和真实 PostgreSQL TLS/部�
 | 审批评论与附件 | ✅ | `approval_service.go` |
 | 代理审批配置 | ✅ | `approval_delegation.go/.go` (model/service/repo/handler 全链路) |
 | 审批超时处理 | ✅ | `scheduler_service.go` (48h超时/升级/预警) |
-| ONLYOFFICE集成 | ✅ | `onlyoffice_handler.go` (回调HMAC + 转换API) |
+| ONLYOFFICE集成 | ✅（可选） | `onlyoffice_handler.go` (回调HMAC + 转换API) |
 | 文档版本控制 | ✅ | `document_version_service.go`, `document_lock_service.go` |
 | 卷宗目录模板 | ✅ | `folder_template_service.go`, `case_folder.go` (递归创建+树构建) |
 | 审批条件分支(规则引擎) | ✅ | `approval_template_service.go`, `approval_assigner.go` |
@@ -124,7 +129,7 @@ PD-01 至 PD-07 决策物、AT-01 至 AT-12 验收和真实 PostgreSQL TLS/部�
 | 安全加固(4项) | ✅ | `models.go`(PII脱敏) + `types.go`(速率限制/CORS/安全头部) |
 | Gemini代码审查修复(36项) | ✅ | CRITICAL/HIGH/MEDIUM 全部修复 |
 
-### 生产放行状态
+### 生产门禁状态
 
 | 检查项 | 状态 | 说明 |
 |--------|------|------|
@@ -135,10 +140,10 @@ PD-01 至 PD-07 决策物、AT-01 至 AT-12 验收和真实 PostgreSQL TLS/部�
 | 安全头部 | ✅ | CSP/HSTS/COOP/COEP |
 | JWT / 应用密钥 | ✅ | 生产启动要求非默认强密钥 |
 | 主体身份加密 | ✅ | 生产启动要求独立的 `SUBJECT_DATA_KEY`，不得与 JWT 复用 |
-| P0 档案覆盖 | ⛔ 必须配置 | 四类 `conflict_search_scopes` 必须 ACTIVE + COMPLETE，并绑定零缺口的 `conflict_index_build_runs`；否则 readiness 失败 |
-| 主体变更重检 | ✅ 代码门禁 | 主体版本、独立复核、覆盖状态和并发版本检查由服务端强制 |
+| P0 档案覆盖 | ⛔ 必须配置 | 四类 `conflict_search_scopes` 必须 ACTIVE + COMPLETE，绑定零缺口索引对账，并满足权威来源、同步时效、字段覆盖率、重复率和质量责任人要求；否则 readiness 失败 |
+| 主体变更重检 | ✅ 代码门禁 | 主体版本、全新主体首次登记、身份摘要去重、核查岗与最终复核人分离、覆盖状态和并发版本检查由服务端强制；登记与处理结果进入统一待办 |
 | 文档对外输出 | ✅ 代码门禁 | 案件文档下载/预览/转换与主体有效版本绑定 |
-| 权威档案与政策 | ⛔ 待律所确认 | PD-01 至 PD-07 不是代码可以替代的决策，未完成不得宣称生产放行 |
+| 权威档案与政策 | ⛔ 待律所确认 | 主任/管理合伙人与合规负责人可在“冲突治理”中对同一不可修改材料包分别确认，系统随后生成唯一有效的 `law_firm_compliance_policy_profiles` 版本；PD-01 至 PD-07 不是代码可以替代的决策，未完成不得宣称生产放行。配置说明见 [`production-release-policy-and-source-quality.md`](docs/利益冲突/production-release-policy-and-source-quality.md) |
 | IDOR / 隔离墙 | ⚠️ 必须实测 | 需要使用 A/B/冲突核查人真实权限数据完成反向越权验收 |
 
 ---
@@ -161,6 +166,7 @@ PD-01 至 PD-07 决策物、AT-01 至 AT-12 验收和真实 PostgreSQL TLS/部�
 
 ### 冲突检测系统
 - **Entity实体管理**: 个人/企业法律实体，关联关系，名称变更历史
+- **全新主体首次登记**: 律师提报身份材料 → 核查岗新建/合并/驳回 → 申请律师重检 → 另一名核查人形成最终结论；候选身份不以明文落库
 - **3层递归穿透**: PostgreSQL Recursive CTE 实现母→子→孙公司穿透
 - **事件驱动Hook**: 案件新增/变更当事人自动触发二次检查
 - 多维度检测（律师利益/客户关系/行业竞争）
@@ -249,12 +255,12 @@ PD-01 至 PD-07 决策物、AT-01 至 AT-12 验收和真实 PostgreSQL TLS/部�
 | PostgreSQL | 15+ | 当前生产 bootstrap 数据库 |
 | MySQL | 8.0 | 代码兼容路径，当前不作为生产安装入口 |
 | SQLite | 3 | 开发数据库 |
-| Redis | v9.0.5 | 缓存 + 会话 |
-| Elasticsearch | 8.9 | 全文搜索 |
+| Redis | v9.0.5 | 可选缓存增强 |
+| Elasticsearch | 可选 | 全文搜索扩展，默认不部署 |
 | JWT | v5.0.0 | 认证 |
 | Zap | v1.24.0 | 结构化日志 |
 | Prometheus | v1.16.0 | 指标监控 |
-| Jaeger | v1.17.0 | 分布式追踪 |
+| Jaeger | v1.17.0 | 分布式追踪，`observability` profile 启用 |
 | Swagger | v1.5.3 | API 文档 |
 
 ### 前端技术栈
@@ -298,7 +304,7 @@ PD-01 至 PD-07 决策物、AT-01 至 AT-12 验收和真实 PostgreSQL TLS/部�
 ├─────────────────────────────────────────────────────────────────────┤
 │                        Data Layer                                │
 │  ┌──────────┬──────────┬──────────┬──────────┬──────────────┐     │
-│  │PostgreSQL│ MySQL   │ Redis   │Elasticsearch│ Local Files│     │
+│  │PostgreSQL│ MySQL   │ 可选Redis│ 可选搜索服务 │ Local Files│     │
 │  │ Primary  │ Support │ Cache   │ 8.9 Search│ /Uploads   │     │
 │  └──────────┴──────────┴──────────┴──────────┴──────────────┘     │
 ├─────────────────────────────────────────────────────────────────────┤
@@ -334,8 +340,8 @@ internal/
 
 ### 环境要求
 - Go 1.25+ / Node.js 18+ / Docker & Docker Compose
-- Docker Compose 当前编排 PostgreSQL 16、Redis、Elasticsearch 等服务；生产 schema 通过一次性 `bootstrap` 初始化，历史混合 SQL 迁移目录不作为生产入口
-- Redis 7+ / Elasticsearch 8.9（可选）
+- Docker Compose 默认编排 PostgreSQL 和应用服务；`cache` profile 可显式启用 Redis，`observability` profile 可显式启用 Prometheus / Grafana / Jaeger，Elasticsearch / Kibana 不再默认启动
+- Redis 7+ 仅作为可选缓存增强；Elasticsearch 仅作为可选扩展
 
 ### 一键启动
 
@@ -345,10 +351,16 @@ cd law-oa-go
 
 # 配置环境变量
 cp .env.example .env
-mkdir -p ./data/{postgres,redis,elasticsearch,prometheus,grafana,uploads,logs}
+mkdir -p ./data/{postgres,prometheus,grafana,uploads,logs}
 
-# Docker 启动（PostgreSQL + Redis + ES；首次启动会执行一次 schema bootstrap）
+# Docker 启动（默认仅 PostgreSQL；OnlyOffice、cache、外部健康检查和 observability 需显式启用）
 docker compose up -d
+
+# 如需 Redis 缓存增强（必须显式接线并设置密码）
+REDIS_HOST=redis REDIS_PASSWORD=<强密码> docker compose --profile cache up -d
+
+# 启动观测栈
+docker compose --profile observability up -d
 
 # 或本地开发
 go run .                        # 后端 :8080
@@ -359,14 +371,16 @@ cd frontend && npm run dev      # 前端 :3003
 
 生产上线前的最小顺序（代码已提供可运行的 PostgreSQL bootstrap，但仍不等于已完成律所生产放行）：
 
-1. 完成并签署 `docs/利益冲突/conflict-p0-law-firm-trial-spec.md` 的 PD-01 至 PD-07 决策物。
-2. 准备 PostgreSQL 15+ 空库或备份副本，配置 `DB_DRIVER=postgres`、`DB_SSLMODE=require` 及生产密钥；执行 `docker compose up -d --build`，确认 `migrate` 日志显示 bootstrap 成功，再检查 `GET /health/ready`。生产不执行历史混合 SQL 的 `up/down`。
+1. 完成并签署 `docs/利益冲突/conflict-p0-law-firm-trial-spec.md` 的 PD-01 至 PD-07 决策物，由主任/管理合伙人与合规负责人分别登录“冲突治理”，对同一材料包摘要完成双人确认。两个职责必须使用不同账号，记录不可修改或删除。
+2. 准备 PostgreSQL 15+ 空库或备份副本，配置 `DB_DRIVER=postgres`、`DB_SSLMODE=require` 及生产密钥；执行 `docker compose up -d --build`，确认 `migrate` 日志显示 bootstrap 成功，再检查 `GET /health/ready`。生产仅以 bootstrap/备份恢复为准，不执行历史混合 SQL 的 `up/down`。
 3. 先运行 `go run ./cmd/backfill-sensitive-identities` 盘点历史明文，完成数据库备份和审批后再运行 `go run ./cmd/backfill-sensitive-identities --apply`，确认复核结果为零。
 4. 先运行只读 `go run ./cmd/backfill-conflict-index` 盘点四类主体索引；完成档案核对和备份后，再以冲突核查岗身份运行 `go run ./cmd/backfill-conflict-index --apply --actor-id <用户ID> --evidence-reference <凭证引用>`，保留四个 `run_id`、数量和哈希。
-5. 由冲突核查岗通过 `GET/PUT /api/v1/conflict-v2/search-scopes` 登记案件、客户、主体、关系四类权威档案来源，并在 COMPLETE 请求中绑定对应 `index_run_id`；版本号和凭证必须与运行记录一致。
+5. 由冲突核查岗进入“冲突治理”，登记案件档案、客户档案、主体名册、关联关系档案四类权威来源，并在“完整覆盖”记录中绑定导入对账报告给出的索引运行编号；版本号和凭证必须与运行记录一致。接口仍为 `GET/PUT /api/v1/conflict-v2/search-scopes`。
 6. 删除或停用所有 `@example.test` / `demo_*` 演示账号；生产 readiness 会主动阻断仍启用的演示账号。
 7. 确认 `GET /health/ready` 返回 `ready: true`，并使用律师 A、律师 B、冲突核查人三个独立账号完成反向越权验收。
 8. 只使用脱敏或虚构种子数据完成验收；不要将真实客户、真实身份证号或真实统一社会信用代码放入公开仓库或演示数据库。
+
+需要逐项留存责任人和放行证据时，使用 [`production-release-checklist.md`](docs/利益冲突/production-release-checklist.md)。客户审阅和签字请使用非技术版 [`律所客户审阅版-接案与利益冲突管理确认表.md`](docs/利益冲突/律所客户审阅版-接案与利益冲突管理确认表.md)。
 
 ### 访问地址
 
@@ -376,10 +390,10 @@ cd frontend && npm run dev      # 前端 :3003
 | 后端 API | http://localhost:8080 |
 | API 文档 | http://localhost:8080/swagger/index.html |
 | 健康检查 | http://localhost:8080/api/v1/health |
-| Grafana | http://localhost:3000 |
-| Prometheus | http://localhost:9090 |
-| Jaeger | http://localhost:16686 |
-| OnlyOffice | 按 `ONLYOFFICE_URL` 配置，默认回调集成使用 http://localhost:9090 |
+| Grafana | `docker compose --profile observability up -d` 后访问 http://localhost:3000 |
+| Prometheus | `docker compose --profile observability up -d` 后访问 http://localhost:9090 |
+| Jaeger | `docker compose --profile observability up -d` 后访问 http://localhost:16686 |
+| OnlyOffice | 默认关闭；启用时必须同时配置 `ONLYOFFICE_ENABLED=true`、`ONLYOFFICE_URL` 纯 origin、`ONLYOFFICE_SECRET` 至少 32 字符和 `BACKEND_URL` 纯 origin |
 
 ### 匿名演示账号（仅本地/验收环境）
 
@@ -450,6 +464,11 @@ cd frontend && npm run test:e2e -- case-create-full-workflow.spec.ts
 - `POST /api/v1/conflict/check` - 按案件主体执行全量冲突检测（生产唯一检测入口）
 - `GET /api/v1/conflict-v2/search-scopes` - 查看权威档案覆盖登记（仅冲突核查岗/管理角色）
 - `PUT /api/v1/conflict-v2/search-scopes/:id` - 登记或更新档案来源覆盖与核对凭证（仅冲突核查岗/管理角色）
+- `GET/POST /api/v1/conflict-v2/governance/policies` - 查看或提交不可修改的政策材料包（仅主任/管理合伙人/合规职责）
+- `POST /api/v1/conflict-v2/governance/policies/:id/endorsements` - 按当前账号职责确认同一材料包；双人确认后生成正式政策版本
+- `POST /api/v1/cases/:id/subject-entity-registrations` - 律师提报案件中新出现且主体库未登记的对方或第三人
+- `GET /api/v1/conflict/subject-entity-registrations` - 核查岗查看经隔离墙过滤的新主体登记队列
+- `POST /api/v1/cases/:id/subject-revisions/:revision_id/entity-registration-review` - 核查岗新建、合并或驳回候选主体登记
 
 > `/api/v1/conflict-v2/checks` 及其详情、报告、统计接口属于旧版兼容服务。为避免形成第二套冲突结论路径，生产环境统一返回 `MVP_MODULE_UNAVAILABLE`；本地开发环境可用于兼容性调试，但不得作为上线验收依据。
 
@@ -600,13 +619,13 @@ ci: CI/CD 相关
 
 - Go: `gofmt` + `golangci-lint` + Swagger 注释
 - 前端: TypeScript 严格模式 + ESLint + Prettier + Ant Design 规范
-- 提交前: `go build ./...` + `npm run build`
+- 提交前: `go build ./...` + `cd frontend && npm run build`
 
 ---
 
 ## 许可证
 
-ISC License - [LICENSE](LICENSE)
+ISC License
 
 ## 联系方式
 

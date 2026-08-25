@@ -18,7 +18,7 @@ func TestTokenManager_NewTokenManager(t *testing.T) {
 		cfg := createTestConfig()
 
 		// 创建TokenManager
-		tokenManager := NewTokenManager(cfg, createTestRedisClient(), createTestCacheService())
+		tokenManager := NewTokenManager(cfg, nil, nil, nil)
 
 		// 验证TokenManager
 		assert.NotNil(t, tokenManager)
@@ -33,16 +33,12 @@ func TestTokenManager_NewTokenManager(t *testing.T) {
 func TestTokenManager_CreateTokens(t *testing.T) {
 	t.Run("创建访问令牌和刷新令牌", func(t *testing.T) {
 		// 准备测试环境
-		tokenManager := NewTokenManager(createTestConfig(), createTestRedisClient(), createTestCacheService())
+		db := createAuthTokenDB(t)
+		user := &models.User{Username: "create-token", Name: "测试用户", Email: "test@example.com", Role: "user", Status: "active"}
+		require.NoError(t, db.Create(user).Error)
+		tokenManager := NewTokenManager(createTestConfig(), nil, nil, db)
 
 		// 创建测试用户
-		user := &models.User{
-			ID:    1,
-			Name:  "测试用户",
-			Email: "test@example.com",
-			Role:  "user",
-		}
-
 		// 创建令牌
 		tokenDetails, err := tokenManager.CreateTokens(
 			context.Background(),
@@ -68,7 +64,8 @@ func TestTokenManager_CreateTokens(t *testing.T) {
 func TestTokenManager_VerifyToken(t *testing.T) {
 	t.Run("验证有效令牌", func(t *testing.T) {
 		// 准备测试环境
-		tokenManager := NewTokenManager(createTestConfig(), createTestRedisClient(), createTestCacheService())
+		db := createAuthTokenDB(t)
+		tokenManager := NewTokenManager(createTestConfig(), nil, nil, db)
 
 		// 创建测试用户和令牌
 		user := &models.User{
@@ -103,7 +100,7 @@ func TestTokenManager_VerifyToken(t *testing.T) {
 
 	t.Run("验证无效令牌", func(t *testing.T) {
 		// 准备测试环境
-		tokenManager := NewTokenManager(createTestConfig(), createTestRedisClient(), createTestCacheService())
+		tokenManager := NewTokenManager(createTestConfig(), nil, nil, nil)
 
 		// 验证无效令牌
 		accessClaims, err := tokenManager.VerifyToken(context.Background(), "invalid.token.here")

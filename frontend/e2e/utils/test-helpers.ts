@@ -303,6 +303,7 @@ function matchLoginUser(emailOrAlias: string): TestUserKey | null {
 }
 
 export async function installApiMocks(page: Page) {
+  let pendingSubjectRegistration = false
   await page.route('**/api/v1/**', async (route) => {
     const request = route.request()
     const url = new URL(request.url())
@@ -365,9 +366,13 @@ export async function installApiMocks(page: Page) {
       await route.fulfill(ok({
         client: {
           id: 1,
+          version: 3,
           name: '上海示例科技有限公司',
           status: 'active',
-          type: 'enterprise',
+          type: '企业',
+          identity_type: 'SOCIAL_CREDIT_CODE',
+          identity_status: '已登记（受保护）',
+          aliases: ['示例科技'],
           industry: '科技服务',
           email: 'legal@example.com',
           phone: '021-55550000',
@@ -443,6 +448,7 @@ export async function installApiMocks(page: Page) {
           conflictCases: [],
           riskAssessment: { overallRisk: 'LOW', riskScore: 18, riskReason: '未发现直接冲突' },
           decision: { status: 'CLEAR', recommendation: '未发现可识别的冲突线索，可继续进入人工确认环节。' },
+          coverage_status: 'COMPLETE',
           checkStatistics: { totalCasesChecked: 2, relatedPartiesChecked: 1 },
         },
       }))
@@ -475,6 +481,31 @@ export async function installApiMocks(page: Page) {
       return
     }
 
+    if (path === '/conflict/subject-entity-registrations') {
+      await route.fulfill(ok([{
+        revision_id: 'revision-new-subject-101',
+        case_id: 101,
+        case_number: 'DEMO-2026-001',
+        case_title: '红杉资本投资管理咨询合同纠纷案',
+        change_type: 'ADD_OPPOSING_PARTY',
+        candidate_name: '虚构启明精密制造有限公司',
+        entity_type: 'LEGAL_PERSON',
+        identity_type: 'SOCIAL_CREDIT_CODE',
+        identity_hint: '**************A101',
+        requested_by: 2,
+        requested_by_name: '张律师',
+        reason: '法院通知追加该公司为共同被告',
+      }]))
+      return
+    }
+
+    if (path === '/conflict-v2/entities/search') {
+      await route.fulfill(ok([
+        { id: 901, name: '虚构启明精密制造有限公司', entity_type: 'LEGAL_PERSON' },
+      ]))
+      return
+    }
+
     if (path === '/conflict/tasks' && request.method() === 'POST') {
       await route.fulfill(ok({
         taskId: 'CHK-2026-ASYNC-001',
@@ -494,6 +525,7 @@ export async function installApiMocks(page: Page) {
           conflictCases: [],
           riskAssessment: { overallRisk: 'LOW', riskScore: 18, riskReason: '未发现直接冲突' },
           decision: { status: 'CLEAR', recommendation: '未发现可识别的冲突线索，可继续进入人工确认环节。' },
+          coverage_status: 'COMPLETE',
           checkStatistics: { totalCasesChecked: 2, relatedPartiesChecked: 1 },
         },
       }))
@@ -538,6 +570,47 @@ export async function installApiMocks(page: Page) {
       return
     }
 
+    if (path.match(/^\/cases\/\d+\/subject-parties$/)) {
+      await route.fulfill(ok([]))
+      return
+    }
+
+    if (path.match(/^\/cases\/\d+\/subject-entities$/)) {
+      await route.fulfill(ok([]))
+      return
+    }
+
+    if (path.match(/^\/cases\/\d+\/subject-entity-registrations$/) && request.method() === 'POST') {
+      pendingSubjectRegistration = true
+      await route.fulfill(ok({
+        revision: { id: 'revision-new-subject-101', status: 'ENTITY_REGISTRATION_PENDING' },
+        case_subject_state: 'RECHECK_REQUIRED',
+        action_gate_message: '新主体等待核查岗确认，受控动作已暂停',
+      }))
+      return
+    }
+
+    if (path.match(/^\/cases\/\d+\/subject-revisions\/[^/]+$/) && request.method() === 'GET') {
+      await route.fulfill(ok({
+        revision_id: 'revision-new-subject-101',
+        status: pendingSubjectRegistration ? 'ENTITY_REGISTRATION_PENDING' : 'CHANGE_PROPOSED',
+        change_type: 'ADD_OPPOSING_PARTY',
+        candidate_name: pendingSubjectRegistration ? '虚构启明精密制造有限公司' : undefined,
+        identity_type: pendingSubjectRegistration ? 'SOCIAL_CREDIT_CODE' : undefined,
+        identity_hint: pendingSubjectRegistration ? '**************A101' : undefined,
+      }))
+      return
+    }
+
+    if (path.match(/^\/cases\/\d+\/subject-revisions\/[^/]+\/entity-registration-review$/) && request.method() === 'POST') {
+      await route.fulfill(ok({
+        revision: { id: 'revision-new-subject-101', status: 'CHANGE_PROPOSED' },
+        case_subject_state: 'RECHECK_REQUIRED',
+        action_gate_message: '主体登记已确认，等待申请律师运行冲突重检',
+      }))
+      return
+    }
+
     if (path.match(/^\/cases\/\d+$/)) {
       const caseId = Number(path.split('/').pop())
       const row = caseRows.find((item) => item.id === caseId) || caseRows[0]
@@ -545,6 +618,10 @@ export async function installApiMocks(page: Page) {
         ...row,
         description: 'E2E 案件详情',
         created_at: now,
+        subject_version: 1,
+        subject_state: pendingSubjectRegistration ? 'RECHECK_REQUIRED' : 'EFFECTIVE',
+        pending_subject_revision_id: pendingSubjectRegistration ? 'revision-new-subject-101' : '',
+        conflict_coverage_status: 'COMPLETE',
       }))
       return
     }
@@ -572,7 +649,7 @@ export async function login(page: Page, userKey: TestUserKey = 'lawyer') {
   const user = TEST_USERS[userKey]
   await page.goto('/login')
   await waitForPageLoad(page)
-  await page.getByPlaceholder('账号或邮箱，如 admin / demo.admin').fill(user.alias)
+  await page.getByPlaceholder('账号或邮箱').fill(user.email)
   await page.getByPlaceholder('密码').fill(user.password)
   await page.locator('button[type="submit"]').click()
   await expect(page).toHaveURL(/\/dashboard$/, { timeout: 10000 })
@@ -618,5 +695,5 @@ export async function waitForAppShell(page: Page) {
 }
 
 export async function waitForNativeTable(page: Page) {
-  await expect(page.locator('.batch-table-wrap table')).toBeVisible()
+  await expect(page.getByRole('table')).toBeVisible()
 }

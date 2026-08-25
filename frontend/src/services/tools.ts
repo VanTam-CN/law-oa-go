@@ -246,7 +246,9 @@ const normalizeSearchResponse = (payload: any): LegalSearchResponse => {
     pageSize,
     totalPages: Number(raw.totalPages ?? raw.total_pages ?? (Math.ceil(total / pageSize) || 0)),
     statutes: Array.isArray(raw.statutes) ? raw.statutes.map(normalizeLawItem) : [],
-    categories: Array.isArray(raw.categories) ? raw.categories.map(normalizeCategoryStat) : undefined,
+    categories: Array.isArray(raw.categories)
+      ? raw.categories.map(normalizeCategoryStat)
+      : undefined,
     suggestions: Array.isArray(raw.suggestions) ? raw.suggestions : undefined,
     searchTime: Number(raw.searchTime ?? raw.search_time_ms ?? 0),
   }
@@ -276,7 +278,10 @@ const toLegalSearchParams = (params: LegalSearchRequest = {}) => {
  * GET /api/v1/legal/statutes/search
  */
 export async function searchLaws(params: LegalSearchRequest) {
-  const response = await get<LegalSearchResponse>('/legal/statutes/search', toLegalSearchParams(params))
+  const response = await get<LegalSearchResponse>(
+    '/legal/statutes/search',
+    toLegalSearchParams(params),
+  )
   return wrapData(normalizeSearchResponse(response))
 }
 
@@ -301,7 +306,10 @@ export function getLawByNumber(number: string) {
  * 获取法条列表 - 使用搜索 API
  */
 export async function getLaws(params?: LegalSearchRequest) {
-  const response = await get<LegalSearchResponse>('/legal/statutes/search', toLegalSearchParams(params))
+  const response = await get<LegalSearchResponse>(
+    '/legal/statutes/search',
+    toLegalSearchParams(params),
+  )
   return wrapData(normalizeSearchResponse(response))
 }
 
@@ -437,18 +445,6 @@ export interface LegalStatuteImportResponse {
 export async function bulkImportStatutes(data: LegalStatuteImportRequest) {
   const response = await post<LegalStatuteImportResponse>('/legal/statutes/import', data)
   return wrapData(response)
-}
-
-// =============================================================================
-// 管理员功能
-// =============================================================================
-
-export function syncToElasticsearch() {
-  return post('/legal/admin/sync-elasticsearch')
-}
-
-export function rebuildSearchIndex() {
-  return post('/legal/admin/rebuild-index')
 }
 
 // =============================================================================

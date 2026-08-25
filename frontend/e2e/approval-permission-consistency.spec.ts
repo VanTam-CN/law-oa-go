@@ -6,6 +6,18 @@ import { test, expect } from '@playwright/test'
 import { seedAuthenticatedUser, waitForAppShell, waitForPageLoad } from './utils/test-helpers'
 
 test.describe('审批详情权限一致性', () => {
+  test('独立冲突核查人可以进入审批中心处理被分配事项', async ({ page }) => {
+    await seedAuthenticatedUser(page, 'conflictOfficer')
+    await page.goto('/dashboard')
+    await waitForPageLoad(page)
+    await waitForAppShell(page)
+
+    const approvalMenu = page.getByRole('menuitem', { name: /审批中心/ })
+    await expect(approvalMenu).toBeVisible()
+    await approvalMenu.click()
+    await expect(page).toHaveURL(/\/approval$/)
+  })
+
   test('非当前审批人的律师应看到只读提示，无决策按钮', async ({ page }) => {
     await seedAuthenticatedUser(page, 'lawyer')
     await page.goto('/approval/701')

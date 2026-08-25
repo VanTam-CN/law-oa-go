@@ -23,13 +23,14 @@ test.describe('登录流程', () => {
   test('应该显示当前登录页面', async ({ page }) => {
     await expect(page).toHaveURL(/\/login$/)
     await expect(page.getByText('示例律师事务所OA登录')).toBeVisible()
-    await expect(page.getByPlaceholder('账号或邮箱，如 admin / demo.admin')).toBeVisible()
+    await expect(page.getByPlaceholder('账号或邮箱')).toBeVisible()
     await expect(page.getByPlaceholder('密码')).toBeVisible()
+    await expect(page.getByRole('checkbox', { name: '记住我' })).not.toBeChecked()
     await expect(page.locator('button[type="submit"]')).toBeVisible()
   })
 
   test('登录失败应该显示错误信息', async ({ page }) => {
-    await page.getByPlaceholder('账号或邮箱，如 admin / demo.admin').fill('wronguser')
+    await page.getByPlaceholder('账号或邮箱').fill('wronguser')
     await page.getByPlaceholder('密码').fill('wrongpass')
     await page.locator('button[type="submit"]').click()
 
@@ -81,7 +82,7 @@ test.describe('登录表单验证', () => {
   })
 
   test('空密码应该显示验证错误', async ({ page }) => {
-    await page.getByPlaceholder('账号或邮箱，如 admin / demo.admin').fill('lawyer')
+    await page.getByPlaceholder('账号或邮箱').fill('lawyer')
     await page.locator('button[type="submit"]').click()
 
     await expect(page.locator('.ant-form-item-explain-error')).toContainText('请输入密码')

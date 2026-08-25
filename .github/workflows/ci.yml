@@ -358,10 +358,9 @@ jobs:
           mkdir -p "$workdir"
 
           kubectl create namespace "$namespace" --dry-run=client -o yaml | kubectl apply -f -
-          kubectl get namespace law-oa-logging >/dev/null
           kubectl get secret law-oa-secrets -n "$namespace" >/dev/null
 
-          for key in db-user db-password jwt-secret app-secret subject-data-key onlyoffice-url onlyoffice-secret cors-allowed-origins; do
+          for key in db-user db-password jwt-secret app-secret subject-data-key cors-allowed-origins; do
             encoded="$(kubectl get secret law-oa-secrets -n "$namespace" -o "jsonpath={.data['${key}']}" 2>/dev/null || true)"
             if [ -z "$encoded" ] || ! printf '%s' "$encoded" | base64 -d 2>/dev/null | grep -q '[^[:space:]]'; then
               echo "Secret law-oa-secrets/$key is missing or empty" >&2
@@ -373,8 +372,6 @@ jobs:
             kubectl get service "$service" -n "$namespace" >/dev/null
             kubectl get endpoints "$service" -n "$namespace" >/dev/null
           done
-          kubectl get service law-oa-elasticsearch-service -n law-oa-logging >/dev/null
-
           render_manifest() {
             local source="$1"
             local target_name="$2"
@@ -473,10 +470,9 @@ jobs:
           mkdir -p "$workdir"
 
           kubectl create namespace "$namespace" --dry-run=client -o yaml | kubectl apply -f -
-          kubectl get namespace law-oa-logging >/dev/null
           kubectl get secret law-oa-secrets -n "$namespace" >/dev/null
 
-          for key in db-user db-password jwt-secret app-secret subject-data-key onlyoffice-url onlyoffice-secret cors-allowed-origins; do
+          for key in db-user db-password jwt-secret app-secret subject-data-key cors-allowed-origins; do
             encoded="$(kubectl get secret law-oa-secrets -n "$namespace" -o "jsonpath={.data['${key}']}" 2>/dev/null || true)"
             if [ -z "$encoded" ] || ! printf '%s' "$encoded" | base64 -d 2>/dev/null | grep -q '[^[:space:]]'; then
               echo "Secret law-oa-secrets/$key is missing or empty" >&2
@@ -488,8 +484,6 @@ jobs:
             kubectl get service "$service" -n "$namespace" >/dev/null
             kubectl get endpoints "$service" -n "$namespace" >/dev/null
           done
-          kubectl get service law-oa-elasticsearch-service -n law-oa-logging >/dev/null
-
           render_manifest() {
             local source="$1"
             local target_name="$2"

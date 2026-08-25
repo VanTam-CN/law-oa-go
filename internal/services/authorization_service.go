@@ -206,6 +206,11 @@ func (s *AuthorizationService) CanReadClient(ctx context.Context, actor AuthActo
 	if err != nil || client == nil {
 		return false, err
 	}
+	if client.CreatedBy != 0 && client.CreatedBy == actor.UserID {
+		// Creation grants access before the first matter exists, but it must
+		// never bypass an ethical wall added after matter creation.
+		return s.canReadClientWithinEthicalWall(ctx, actor, clientID)
+	}
 	count, err := s.countCasesForClient(ctx, clientID, actor.UserID)
 	if err != nil {
 		return false, err

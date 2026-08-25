@@ -120,6 +120,7 @@ docs/swagger/
 
 # Node.js (如果有前端)
 node_modules/
+/node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -264,7 +265,6 @@ $RECYCLE.BIN/
 law-oa-go
 main
 law-oa-go-*
-law-oa-server-*
 *-test
 auth_tester*
 error_tester*
@@ -289,6 +289,10 @@ chrome/
 !internal/router/router_authorization_test.go
 !internal/handlers/inbox_handler_security_test.go
 !internal/handlers/approval_conflict_redaction_test.go
+!internal/handlers/conflict_approval_workbench_test.go
+!internal/auth/token_session_store_test.go
+!internal/services/document_lock_service_test.go
+!internal/services/conflict_hook_test.go
 *_test
 *_tester
 test_*
@@ -372,9 +376,18 @@ lcov-report/
 # 前端目录下不应有的Go文件
 frontend/go.mod
 frontend/go.sum
-frontend/*.gofrontend/playwright-report/
+frontend/*.go
+frontend/playwright-report/
 frontend/test-results/
-server
 
 # Playwright MCP server runtime artifacts
 .playwright-mcp/
+
+# Repository-generated artifacts
+/graphify-out/
+/pet-runs/
+/.gemini-clipboard/
+/artifacts/
+# `/.claude/reports/` 仅用于助手临时报告和重复输出；正式结论与权威证据保留在 docs/reports/。
+/.claude/reports/
+# 这里不配置 `/frontend/reports/` 忽略规则；如果需要保留前端证据，请显式跟踪对应文件。

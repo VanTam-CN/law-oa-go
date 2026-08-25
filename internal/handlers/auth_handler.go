@@ -13,19 +13,22 @@ import (
 	"law-oa-go/internal/common"
 	errs "law-oa-go/internal/errors"
 	"law-oa-go/internal/middleware"
+	"law-oa-go/internal/models"
 	"law-oa-go/internal/services"
 )
 
 type AuthHandler struct {
 	userService               *services.UserService
 	tokenRevocationService    *auth.TokenRevocationService
+	tokenManager              *auth.TokenManager
 	publicRegistrationEnabled bool
 }
 
-func NewAuthHandler(userService *services.UserService, tokenRevocationService *auth.TokenRevocationService) *AuthHandler {
+func NewAuthHandler(userService *services.UserService, tokenRevocationService *auth.TokenRevocationService, tokenManager *auth.TokenManager) *AuthHandler {
 	return &AuthHandler{
 		userService:               userService,
 		tokenRevocationService:    tokenRevocationService,
+		tokenManager:              tokenManager,
 		publicRegistrationEnabled: true,
 	}
 }
@@ -118,16 +121,33 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	// 生成真实的JWT token
-	token, expiresAt, err := middleware.GenerateToken(user.ID, email, user.Role)
+	if h.tokenManager == nil {
+		common.APIInternalServerError(c, "登录失败", "认证会话管理未初始化")
+		return
+	}
+
+	sessionUser := &models.User{
+		ID:       user.ID,
+		Name:     user.Name,
+		Email:    user.Email,
+		Role:     user.Role,
+		Status:   user.Status,
+		Username: user.Email,
+	}
+
+	deviceID := strings.TrimSpace(c.GetHeader("X-Device-ID"))
+	if len(deviceID) > 128 {
+		deviceID = deviceID[:128]
+	}
+	details, err := h.tokenManager.CreateTokens(c.Request.Context(), sessionUser, deviceID, c.ClientIP(), c.Request.UserAgent())
 	if err != nil {
 		common.APIInternalServerError(c, "生成令牌失败", err.Error())
 		return
 	}
 
 	response := LoginResponse{
-		Token:     token,
-		ExpiresAt: expiresAt.Unix(),
+		Token:     details.AccessToken,
+		ExpiresAt: details.AtExpires,
 		User:      user,
 	}
 
@@ -209,16 +229,29 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	// 生成真实 JWT，禁止返回 dev 占位符
-	token, expiresAt, err := middleware.GenerateToken(user.ID, user.Email, user.Role)
+	if h.tokenManager == nil {
+		common.APIInternalServerError(c, "注册失败", "认证会话管理未初始化")
+		return
+	}
+
+	sessionUser := &models.User{
+		ID:       user.ID,
+		Name:     user.Name,
+		Email:    user.Email,
+		Role:     user.Role,
+		Status:   user.Status,
+		Username: usernameFromEmail(user.Email),
+	}
+
+	details, err := h.tokenManager.CreateTokens(c.Request.Context(), sessionUser, "", c.ClientIP(), c.Request.UserAgent())
 	if err != nil {
 		common.APIInternalServerError(c, "生成令牌失败", err.Error())
 		return
 	}
 
 	response := LoginResponse{
-		Token:     token,
-		ExpiresAt: expiresAt.Unix(),
+		Token:     details.AccessToken,
+		ExpiresAt: details.AtExpires,
 		User:      user,
 	}
 

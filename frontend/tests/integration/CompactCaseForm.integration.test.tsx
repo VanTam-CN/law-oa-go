@@ -22,6 +22,11 @@ import {
 } from '../../src/components/case/types/CompactCaseForm.types';
 
 // Mock子组件
+jest.mock('../../src/components/case/PerformanceOptimizer', () => ({
+  __esModule: true,
+  default: () => <div data-testid="performance-optimizer" />,
+}));
+
 jest.mock('../../src/components/case/ResponsiveFormLayout', () => ({
   __esModule: true,
   default: ({ children, columns }: any) => (

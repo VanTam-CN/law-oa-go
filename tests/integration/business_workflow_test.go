@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
@@ -52,6 +53,7 @@ func (suite *BusinessWorkflowTestSuite) SetupSuite() {
 		},
 	}
 	middleware.InitJWT(cfg)
+	_ = os.Setenv("JWT_SECRET", cfg.JWT.Secret)
 
 	// 迁移数据库
 	err = db.AutoMigrate(
@@ -79,7 +81,7 @@ func (suite *BusinessWorkflowTestSuite) SetupSuite() {
 
 	// 初始化路由
 	suite.router = gin.New()
-	router.Init(suite.router, db, nil, nil)
+	router.Init(suite.router, db, nil)
 
 	// 创建测试数据
 	suite.setupTestData()

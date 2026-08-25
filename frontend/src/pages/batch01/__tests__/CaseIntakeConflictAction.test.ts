@@ -1,11 +1,73 @@
 import {
   caseIntakeConflictFingerprint,
   conflictMatchesCaseContext,
+  conflictRecordMatchType,
+  conflictCheckRequiredFieldLabels,
   getConflictCheckFallbackMessage,
+  getMissingConflictCheckFields,
+  persistableCaseIntakeDraft,
   scopedCaseIntakeDraftKey,
 } from '../Batch01Prototype'
 
 describe('CaseIntakeWorkbench conflict action', () => {
+  it('returns stable required fields before any draft or conflict request', () => {
+    const missing = getMissingConflictCheckFields({
+      title: ' ',
+      clientId: 0,
+      clientName: '',
+      opponentName: '',
+      opponentIdentityNumber: '  ',
+      lawyerId: 0,
+      caseType: '',
+      businessArea: '',
+      subArea: '',
+    })
+
+    expect(missing).toEqual([
+      'title',
+      'client',
+      'opponentName',
+      'opponentIdentityNumber',
+      'lawyer',
+      'caseType',
+      'businessArea',
+      'subArea',
+    ])
+    expect(missing.map((field) => conflictCheckRequiredFieldLabels[field])).toEqual([
+      '案件名称',
+      '客户',
+      '对方当事人',
+      '对方身份标识',
+      '负责律师',
+      '案件类型',
+      '业务领域',
+      '子领域',
+    ])
+  })
+
+  it('returns no missing fields for a complete conflict-check input', () => {
+    expect(getMissingConflictCheckFields({
+      title: '股权争议',
+      clientId: 42,
+      clientName: '示例客户',
+      opponentName: '甲公司',
+      opponentIdentityNumber: '91310000TEST000001',
+      lawyerId: 7,
+      caseType: 'commercial',
+      businessArea: '公司与并购',
+      subArea: '投资与融资',
+    })).toEqual([])
+  })
+
+  it('labels a coverage-limited record with no evidence as no match', () => {
+    expect(conflictRecordMatchType({
+      has_conflict: false,
+      check_result: {
+        decision: { status: 'REVIEW_REQUIRED', coverageStatus: 'COVERAGE_LIMITED' },
+      },
+    })).toBe('无匹配')
+  })
+
   it('keeps a clear MVP fallback message for unavailable conflict checks', () => {
     expect(getConflictCheckFallbackMessage()).toBe(
       '试用版当前使用样例冲突复核流程，请在利益冲突工作台查看待复核事项。',
@@ -75,18 +137,38 @@ describe('CaseIntakeWorkbench conflict action', () => {
     expect(scopedCaseIntakeDraftKey('8', '35')).not.toBe(scopedCaseIntakeDraftKey('7', '35'))
   })
 
+  it('never persists an opponent identity number in a browser draft', () => {
+    const draft = persistableCaseIntakeDraft({
+      intakeId: '', intakeCode: '', idempotencyKey: '', title: '股权争议', caseType: 'commercial',
+      businessArea: '', subArea: '', priority: 'medium', disputeAmount: '', sourceChannel: '',
+      sourceContact: '', investmentAgreementDate: '', disputeDate: '', breachDate: '',
+      proposedFilingDate: '', jurisdiction: '', clientId: 42, clientName: '示例客户',
+      opponentName: '甲公司', opponentEntityType: 'LEGAL_PERSON',
+      opponentIdentityType: 'SOCIAL_CREDIT_CODE', opponentIdentityNumber: '91310000TEST000001',
+      opponentAliases: '', description: '', billingMethod: '', feeBase: '', contingencyRate: '',
+      minimumFee: '', lawyerId: 7,
+    })
+
+    expect(draft.opponentIdentityNumber).toBe('')
+    expect(JSON.stringify(draft)).not.toContain('91310000TEST000001')
+  })
+
   it('invalidates a frozen result when a material conflict input changes', () => {
-    const form = { clientId: 42, clientName: '示例客户', opponentName: '甲公司', title: '股权争议', caseType: 'commercial', lawyerId: 7 }
-    const frozen = caseIntakeConflictFingerprint(form, [{ name: '保证人乙', role: 'GUARANTOR' }])
-    expect(caseIntakeConflictFingerprint({ ...form, opponentName: '乙公司' }, [{ name: '保证人乙', role: 'GUARANTOR' }])).not.toBe(frozen)
-    expect(caseIntakeConflictFingerprint({ ...form, lawyerId: 8 }, [{ name: '保证人乙', role: 'GUARANTOR' }])).not.toBe(frozen)
-    expect(caseIntakeConflictFingerprint(form, [{ name: '新增实控人', role: 'CONTROLLER' }])).not.toBe(frozen)
+    const form = { clientId: 42, clientName: '示例客户', opponentName: '甲公司', opponentEntityType: 'LEGAL_PERSON', opponentIdentityType: 'SOCIAL_CREDIT_CODE', opponentIdentityNumber: '91310000TEST000001', opponentAliases: '', title: '股权争议', caseType: 'commercial', lawyerId: 7 }
+    const related = { name: '保证人乙', role: 'GUARANTOR', entityType: 'LEGAL_PERSON', identityType: 'SOCIAL_CREDIT_CODE', identityNumber: '91310000TEST000002' }
+    const frozen = caseIntakeConflictFingerprint(form, [related])
+    expect(caseIntakeConflictFingerprint({ ...form, opponentName: '乙公司' }, [related])).not.toBe(frozen)
+    expect(caseIntakeConflictFingerprint({ ...form, lawyerId: 8 }, [related])).not.toBe(frozen)
+    expect(caseIntakeConflictFingerprint({ ...form, opponentIdentityNumber: '91310000TEST000099' }, [related])).not.toBe(frozen)
+    expect(caseIntakeConflictFingerprint(form, [{ ...related, name: '新增实控人' }])).not.toBe(frozen)
   })
 
   it('keeps the same fingerprint when related parties are only reordered', () => {
-    const form = { clientId: 42, clientName: '示例客户', opponentName: '甲公司', title: '股权争议', caseType: 'commercial', lawyerId: 7 }
-    const left = caseIntakeConflictFingerprint(form, [{ name: '乙', role: 'GUARANTOR' }, { name: '丙', role: 'CONTROLLER' }])
-    const right = caseIntakeConflictFingerprint(form, [{ name: '丙', role: 'CONTROLLER' }, { name: '乙', role: 'GUARANTOR' }])
+    const form = { clientId: 42, clientName: '示例客户', opponentName: '甲公司', opponentEntityType: 'LEGAL_PERSON', opponentIdentityType: 'SOCIAL_CREDIT_CODE', opponentIdentityNumber: '91310000TEST000001', opponentAliases: '', title: '股权争议', caseType: 'commercial', lawyerId: 7 }
+    const partyA = { name: '乙', role: 'GUARANTOR', entityType: 'LEGAL_PERSON', identityType: 'SOCIAL_CREDIT_CODE', identityNumber: '91310000TEST000002' }
+    const partyB = { name: '丙', role: 'CONTROLLER', entityType: 'INDIVIDUAL', identityType: 'ID_CARD', identityNumber: '110101199001010011' }
+    const left = caseIntakeConflictFingerprint(form, [partyA, partyB])
+    const right = caseIntakeConflictFingerprint(form, [partyB, partyA])
     expect(right).toBe(left)
   })
 })

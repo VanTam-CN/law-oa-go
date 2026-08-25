@@ -12,6 +12,7 @@ describe('mvp route configuration', () => {
       'dashboard',
       'case',
       'conflict',
+      'conflict-governance',
       'client',
       'approval',
       'inbox',

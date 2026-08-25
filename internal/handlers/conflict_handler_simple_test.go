@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -129,10 +130,11 @@ func performConflictHandlerRequestWithSubject(handler *ConflictHandlerSimple, ro
 
 func newConflictContextAuthorization(t *testing.T) (*services.AuthorizationService, *gorm.DB) {
 	t.Helper()
+	t.Setenv("SUBJECT_DATA_KEY", strings.Repeat("c", 32))
 	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "conflict-context.db")), &gorm.Config{})
 	require.NoError(t, err)
 	require.NoError(t, db.AutoMigrate(&models.User{}, &models.Client{}, &models.Case{}, &models.CaseEthicalWallWhitelist{}))
-	require.NoError(t, db.Create(&models.Client{ID: 1, Name: "演练客户", Type: "企业", Status: "active"}).Error)
+	require.NoError(t, db.Create(&models.Client{ID: 1, Name: "演练客户", Type: "企业", IdentityType: models.IdentityTypeSocialCredit, IdentityNumber: "91310000TESTCLIENT1", Status: "active"}).Error)
 	require.NoError(t, db.Create(&models.Case{
 		ID: 99, CaseNumber: "CASE-CONTEXT-99", Title: "演练案件", ClientID: 1, LawyerID: 7,
 		CaseType: "commercial", Status: "active", CreatedBy: "7",
@@ -180,6 +182,9 @@ func TestConflictCheckAllowsCurrentLawyerScope(t *testing.T) {
 	}
 	if service.received.ClientName != "演练客户" || service.received.CaseName != "演练案件" || service.received.CaseType != "commercial" {
 		t.Fatalf("expected canonical case subject labels, got %#v", service.received)
+	}
+	if service.received.ClientIdentifiers["unified_social_credit_code"] != "91310000TESTCLIENT1" {
+		t.Fatalf("expected enterprise client strong identity, got %#v", service.received.ClientIdentifiers)
 	}
 	if len(service.received.Parties) != 2 {
 		t.Fatalf("expected role-aware parties to be preserved, got %#v", service.received.Parties)

@@ -513,6 +513,7 @@ Authorization: Bearer <token>
 ```json
 {
   "name": "李四",
+  "type": "企业",
   "email": "lisi@example.com",
   "phone": "13900139001",
   "address": "北京市海淀区",
@@ -1140,6 +1141,7 @@ curl -X POST http://localhost:8080/api/v1/clients \
   -H "Content-Type: application/json" \
   -d '{
     "name": "张三",
+    "type": "个人",
     "email": "zhangsan@example.com",
     "phone": "13900139000",
     "address": "北京市朝阳区"
@@ -1167,7 +1169,7 @@ curl -X POST http://localhost:8080/api/v1/cases \
 完整的OpenAPI 3.0规范文件位于 `docs/openapi.yaml`，包含所有API接口的详细定义，可以使用Swagger UI或其他OpenAPI工具进行查看和测试。
 
 ### 使用Swagger UI
-1. 启动服务器：`go run cmd/server/main.go`
+1. 启动服务器：`./bin/law-oa-go`
 2. 访问：`http://localhost:8080/swagger/index.html`
 3. 在线测试所有API接口
 

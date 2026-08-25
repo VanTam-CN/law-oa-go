@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
@@ -14,10 +13,8 @@ import (
 	"law-oa-go/internal/config"
 	"law-oa-go/internal/middleware"
 	"law-oa-go/internal/models"
-	"law-oa-go/internal/repositories"
 	"law-oa-go/internal/router"
 	"law-oa-go/internal/security"
-	"law-oa-go/internal/services"
 )
 
 func main() {
@@ -35,9 +32,6 @@ func main() {
 
 	// 初始化Redis连接
 	redisClient := initRedis(cfg)
-
-	// 初始化Elasticsearch连接
-	esClient := initElasticsearch(cfg)
 
 	// 初始化JWT
 	middleware.InitJWT(cfg)
@@ -59,21 +53,21 @@ func main() {
 	} else {
 		log.Println("✅ 财务模型自动迁移成功")
 	}
-// 自动迁移Sprint 1模型 (Entity/冲突检测/隔离墙)
-		if err := db.AutoMigrate(
-			&models.Entity{},
-			&models.EntityRelation{},
-			&models.EntityNameHistory{},
-			&models.CaseParty{},
-			&models.ConflictCheck{},
-			&models.ConflictDetail{},
-			&models.CaseEthicalWallWhitelist{},
-			&models.EthicalWallAccessLog{},
-		); err != nil {
-			log.Printf("⚠️ Sprint1模型自动迁移失败: %v", err)
-		} else {
-			log.Println("✅ Sprint1模型自动迁移成功")
-		}
+	// 自动迁移Sprint 1模型 (Entity/冲突检测/隔离墙)
+	if err := db.AutoMigrate(
+		&models.Entity{},
+		&models.EntityRelation{},
+		&models.EntityNameHistory{},
+		&models.CaseParty{},
+		&models.ConflictCheck{},
+		&models.ConflictDetail{},
+		&models.CaseEthicalWallWhitelist{},
+		&models.EthicalWallAccessLog{},
+	); err != nil {
+		log.Printf("⚠️ Sprint1模型自动迁移失败: %v", err)
+	} else {
+		log.Println("✅ Sprint1模型自动迁移成功")
+	}
 
 	app := gin.Default()
 
@@ -87,12 +81,7 @@ func main() {
 	app.Use(security.RateLimiterMiddleware())
 
 	// 初始化路由系统
-	router.Init(app, db, redisClient, esClient)
-
-	// 启动 ES 同步服务（可选，ES不可用时不启动）
-	if esClient != nil {
-		startESSyncService(db, esClient)
-	}
+	router.Init(app, db, redisClient)
 
 	// 启动服务器
 	addr := ":" + cfg.GetPort()
@@ -109,8 +98,8 @@ func initDatabase(cfg *config.Config) (*gorm.DB, error) {
 
 	// 优化GORM配置
 	gormConfig := &gorm.Config{
-		PrepareStmt:            true,  // 预编译语句缓存
-		SkipDefaultTransaction: true,  // 跳过默认事务
+		PrepareStmt:                              true, // 预编译语句缓存
+		SkipDefaultTransaction:                   true, // 跳过默认事务
 		DisableForeignKeyConstraintWhenMigrating: true, // 禁用外键约束检查（提高性能）
 	}
 
@@ -182,65 +171,4 @@ func initRedis(cfg *config.Config) *redis.Client {
 
 	log.Println("Redis connected successfully")
 	return client
-}
-
-// initElasticsearch 初始化Elasticsearch连接
-func initElasticsearch(cfg *config.Config) *elasticsearch.Client {
-	esCfg := elasticsearch.Config{
-		Addresses: []string{cfg.GetElasticsearchURL()},
-	}
-
-	if cfg.Elasticsearch.Username != "" && cfg.Elasticsearch.Password != "" {
-		esCfg.Username = cfg.Elasticsearch.Username
-		esCfg.Password = cfg.Elasticsearch.Password
-	}
-
-	client, err := elasticsearch.NewClient(esCfg)
-	if err != nil {
-		log.Printf("Elasticsearch connection failed: %v", err)
-		return nil
-	}
-
-	// 测试连接
-	if _, err := client.Info(); err != nil {
-		log.Printf("Elasticsearch info failed: %v", err)
-		return nil
-	}
-
-	log.Println("Elasticsearch connected successfully")
-	return client
-}
-
-// startESSyncService 启动 Elasticsearch 同步服务
-func startESSyncService(db *gorm.DB, esClient *elasticsearch.Client) {
-	statuteRepo := repositories.NewLegalStatuteRepository(db)
-	esRepo := repositories.NewElasticsearchStatuteRepository(esClient)
-
-	syncService := services.NewElasticsearchSyncService(statuteRepo, esRepo)
-
-	ctx := context.Background()
-
-	// 在后台 goroutine 中启动同步工作器
-	go func() {
-		// 首次启动时执行一次全量同步（带指数退避重试）
-		log.Println("执行首次 Elasticsearch 全量同步...")
-		maxRetries := 3
-		for attempt := 1; attempt <= maxRetries; attempt++ {
-			if err := syncService.SyncAllStatutes(ctx); err != nil {
-				if attempt < maxRetries {
-					backoff := time.Duration(attempt*attempt) * time.Minute
-					log.Printf("首次全量同步失败(第%d次)，%v后重试: %v", attempt, backoff, err)
-					time.Sleep(backoff)
-					continue
-				}
-				log.Printf("首次全量同步失败(已重试%d次): %v", maxRetries, err)
-			}
-			break
-		}
-
-		// 启动定时同步工作器
-		syncService.StartSyncWorker(ctx)
-	}()
-
-	log.Println("Elasticsearch 同步服务已启动")
 }

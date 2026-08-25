@@ -9,7 +9,6 @@ import (
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"law-oa-go/internal/config"
 	esclient "law-oa-go/internal/elasticsearch"
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/services"
@@ -30,18 +29,8 @@ func TestPostgreSQL_ElasticsearchIntegration(t *testing.T) {
 	db := setupPostgreSQLTestDB(t)
 	defer teardownPostgreSQLTestDB(db)
 
-	// 创建Elasticsearch配置
-	cfg := &config.Config{
-		Elasticsearch: config.ElasticsearchConfig{
-			Host:     "localhost",
-			Port:     "9200", // 使用与docker-compose一致的端口
-			Username: "",
-			Password: "",
-		},
-	}
-
 	// 尝试创建Elasticsearch客户端
-	esClientWrapper, err := esclient.NewClient(cfg)
+	esClientWrapper, err := esclient.NewClient("localhost", "9200", "", "")
 	if err != nil {
 		t.Skipf("Elasticsearch not available, skipping integration test: %v", err)
 		return

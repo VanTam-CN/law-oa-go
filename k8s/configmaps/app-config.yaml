@@ -50,7 +50,8 @@ data:
 
     # Redis配置
     redis:
-      host: "law-oa-redis-service"
+      # Redis is opt-in. Set a service host only when deploying a cache tier.
+      host: ""
       port: 6379
       db: 0
       pool_size: 20
@@ -61,16 +62,6 @@ data:
       pool_timeout: "4s"
       idle_timeout: "5m"
       idle_check_frequency: "1m"
-
-    # Elasticsearch配置
-    elasticsearch:
-      hosts: ["http://law-oa-elasticsearch-service.law-oa-logging.svc.cluster.local:9200"]
-      username: ""
-      password: ""
-      max_retries: 3
-      retry_backoff: "100ms"
-      max_bulk_size: 50
-      workers: 4
 
     # 日志配置
     logging:

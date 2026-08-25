@@ -6,7 +6,11 @@ import { useNavigate } from 'react-router'
 import { login, setToken } from '@/services/auth'
 import { getCurrentUserPermissions, getCurrentUserRoles } from '@/services/role'
 import { useAppStore } from '@/stores/useAppStore'
-import { setPermissions as cachePermissions, setRoles as cacheRoles } from '@/utils/storage'
+import {
+  setPermissions as cachePermissions,
+  setRoles as cacheRoles,
+  setStoragePersistence,
+} from '@/utils/storage'
 import './Login.less'
 
 interface LoginFormValues {
@@ -16,19 +20,7 @@ interface LoginFormValues {
 }
 
 const normalizeLoginIdentifier = (value: string) => {
-  const identifier = value.trim().toLowerCase()
-  const aliases: Record<string, string> = {
-    admin: 'demo.admin@example.test',
-    'demo.admin': 'demo.admin@example.test',
-    lawyer: 'demo.lawyer@example.test',
-    'demo.lawyer': 'demo.lawyer@example.test',
-    assistant: 'demo.assistant@example.test',
-    'demo.assistant': 'demo.assistant@example.test',
-    finance: 'demo.finance@example.test',
-    'demo.finance': 'demo.finance@example.test',
-  }
-
-  return aliases[identifier] || identifier
+  return value.trim().toLowerCase()
 }
 
 const LoginPage: React.FC = () => {
@@ -45,13 +37,12 @@ const LoginPage: React.FC = () => {
         email: normalizeLoginIdentifier(values.email),
       })
 
-      console.log('Login response:', response)
-
       // 处理后端返回的token格式
       const token = response.token || response.data?.token
       const userData = response.user || response.data?.user
 
       if (token && userData) {
+        setStoragePersistence(Boolean(values.remember))
         setToken(token)
 
         let roleCodes = [userData.role || 'user']
@@ -91,8 +82,6 @@ const LoginPage: React.FC = () => {
           createdAt: userData.created_at,
         }
 
-        console.log('Processed user:', user)
-
         appStoreLogin(user, token)
         message.success('登录成功')
 
@@ -101,7 +90,6 @@ const LoginPage: React.FC = () => {
           navigate('/')
         }, 500)
       } else {
-        console.error('Token or user missing:', { token, user: userData })
         throw new Error('未获取到有效的登录凭证')
       }
     } catch (error: any) {
@@ -122,14 +110,14 @@ const LoginPage: React.FC = () => {
         <Form
           form={form}
           name='login'
-          initialValues={{ remember: true }}
+          initialValues={{ remember: false }}
           onFinish={onFinish}
           size='large'
         >
           <Form.Item name='email' rules={[{ required: true, message: '请输入账号或邮箱' }]}>
             <Input
               prefix={<UserOutlined />}
-              placeholder='账号或邮箱，如 admin / demo.admin'
+              placeholder='账号或邮箱'
               autoComplete='username'
             />
           </Form.Item>

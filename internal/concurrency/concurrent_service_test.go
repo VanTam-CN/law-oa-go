@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -153,9 +154,9 @@ func TestConcurrentService_SubmitDatabaseTask(t *testing.T) {
 	service.Start()
 	defer service.Stop()
 
-	operationCalled := false
+	var operationCalled int64
 	operation := func(ctx context.Context) error {
-		operationCalled = true
+		atomic.AddInt64(&operationCalled, 1)
 		return nil
 	}
 
@@ -164,7 +165,7 @@ func TestConcurrentService_SubmitDatabaseTask(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.NoError(t, result.Error)
-	assert.True(t, operationCalled)
+	assert.GreaterOrEqual(t, atomic.LoadInt64(&operationCalled), int64(1))
 }
 
 func TestConcurrentService_SubmitFileTask(t *testing.T) {
@@ -173,18 +174,18 @@ func TestConcurrentService_SubmitFileTask(t *testing.T) {
 	defer service.Stop()
 
 	filePath := "/tmp/test_file.txt"
-	processCalled := false
+	var processCalled int64
 
 	result, err := service.SubmitFileTask(filePath, func(ctx context.Context, path string) error {
 		assert.Equal(t, filePath, path)
-		processCalled = true
+		atomic.AddInt64(&processCalled, 1)
 		return nil
 	})
 
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.NoError(t, result.Error)
-	assert.True(t, processCalled)
+	assert.GreaterOrEqual(t, atomic.LoadInt64(&processCalled), int64(1))
 }
 
 func TestConcurrentService_SubmitAPITask(t *testing.T) {
@@ -367,8 +368,7 @@ func TestConcurrentService_ConcurrentTaskSubmission(t *testing.T) {
 
 	const numTasks = 10 // 减少任务数量避免超时
 	var wg sync.WaitGroup
-	var mu sync.Mutex
-	completedTasks := make([]string, 0, numTasks)
+	var completed atomic.Int64
 
 	// 并发提交任务
 	for i := 0; i < numTasks; i++ {
@@ -382,9 +382,7 @@ func TestConcurrentService_ConcurrentTaskSubmission(t *testing.T) {
 				TaskType:     "database",
 				TaskPriority: 1,
 				Operation: func(ctx context.Context) error {
-					mu.Lock()
-					completedTasks = append(completedTasks, taskID)
-					mu.Unlock()
+					completed.Add(1)
 					return nil
 				},
 				Context: context.Background(),
@@ -396,11 +394,11 @@ func TestConcurrentService_ConcurrentTaskSubmission(t *testing.T) {
 	}
 
 	wg.Wait()
-	time.Sleep(100 * time.Millisecond)
 
-	// 大部分任务应该完成
-	assert.GreaterOrEqual(t, len(completedTasks), numTasks-2) // 允许1-2个任务由于并发原因失败
+	require.Eventually(t, func() bool {
+		return completed.Load() == int64(numTasks)
+	}, 2*time.Second, 10*time.Millisecond)
 
 	metrics := service.GetMetrics()
-	assert.GreaterOrEqual(t, metrics.TotalTasks, int64(numTasks-2))
+	assert.GreaterOrEqual(t, metrics.TotalTasks, int64(numTasks))
 }

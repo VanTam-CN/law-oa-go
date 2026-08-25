@@ -29,11 +29,12 @@ type Config struct {
     Port              string
     Database          DatabaseConfig
     Redis             RedisConfig
-    Elasticsearch     ElasticsearchConfig
     JWT               JWTConfig
     Log               LogConfig
     CORS              CORSConfig
     ConflictDetection *ConflictDetectionConfig
+    ExternalHealthCheck ExternalHealthCheckConfig
+    OnlyOffice        OnlyOfficeConfig
 }
 ```
 
@@ -56,6 +57,28 @@ type DatabaseConfig struct {
 ```
 
 生产安装目前只支持 PostgreSQL schema bootstrap。`DB_DRIVER=postgres`、`DB_HOST`、`DB_PORT`、`DB_USERNAME`、`DB_PASSWORD`、`DB_DATABASE` 和 `DB_SSLMODE=require` 是生产数据库连接的最小配置；MySQL/SQLite 兼容代码不等于已经通过生产迁移验收。
+
+#### 外部健康检查配置
+```go
+type ExternalHealthCheckConfig struct {
+    Enabled bool
+    URL     string
+}
+```
+
+默认关闭。只有显式设置 `EXTERNAL_HEALTHCHECK_ENABLED=true` 且提供真实的 `EXTERNAL_HEALTHCHECK_URL` 时，启动流程才会注册外部 API 健康检查；`api.example.com` 这类示例域名会被配置验证拒绝。
+
+#### OnlyOffice 配置
+```go
+type OnlyOfficeConfig struct {
+    Enabled    bool
+    URL        string
+    Secret     string
+    BackendURL string
+}
+```
+
+OnlyOffice 默认关闭。启用时必须同时满足四项：`ONLYOFFICE_ENABLED=true`、`ONLYOFFICE_URL` 为纯 origin、`ONLYOFFICE_SECRET` 至少 32 字符、`BACKEND_URL` 为纯 origin。
 
 ## 环境配置文件
 
@@ -101,12 +124,28 @@ DB_USERNAME=${DB_USERNAME}
 DB_PASSWORD=${DB_PASSWORD}
 DB_DATABASE=${DB_DATABASE}
 
+# 当前代码未把 DB_LOC 绑定成独立环境变量；如需指定数据库时区，请写入配置文件：
+# database:
+#   loc: Asia/Shanghai
+
 JWT_SECRET=${JWT_SECRET}
 APP_SECRET=${APP_SECRET}
 SUBJECT_DATA_KEY=${SUBJECT_DATA_KEY}
 ```
 
-生产环境启动前还必须配置真实的 `CORS_ALLOWED_ORIGINS`。`SUBJECT_DATA_KEY` 必须解码为 32 字节，并与 `JWT_SECRET`、`APP_SECRET` 使用不同的密钥；它用于保护案件主体身份标识，丢失会使历史主体变更无法解密。后端还会检查权威档案覆盖登记，未完成时 `/health/ready` 不会就绪。
+生产环境启动前还必须配置真实的 `CORS_ALLOWED_ORIGINS`。`SUBJECT_DATA_KEY` 必须解码为 32 字节；为避免密钥复用，建议它与 `JWT_SECRET`、`APP_SECRET`、`ONLYOFFICE_SECRET` 分离，但当前实现只对长度、编码和存在性做硬校验，没有做“不得同值”的比对门禁。后端还会检查唯一有效的双人批准冲突政策、权威档案覆盖、同步时效和数据质量登记，任一未完成时 `/health/ready` 不会就绪。登记字段和操作顺序见 [`利益冲突/production-release-policy-and-source-quality.md`](利益冲突/production-release-policy-and-source-quality.md)。
+
+全新对方或第三人不得以自由文本直接进入正式主体版本。律师应在案件详情选择“报告主体变更并重新复核”→“登记全新主体”，提交法定名称、主体类型和可核验身份标识；系统会加密候选身份、阻断案件受控动作并向有权核查岗创建待办。核查岗在利益冲突检测清单的“新主体登记待确认”中选择新建、合并或驳回，申请律师收到结果待办后再运行主体重检。生产数据库必须执行 `000069_case_subject_revision_state_guard`；旧的 `trg_case_subject_revisions_append_only` 会阻止所有合法状态迁移，不能保留。
+
+初次接案同样要求结构化身份。客户主档案须登记受保护的身份证件号码或统一社会信用代码；对方及相关方由律师在接案工作台登记主体类型、身份类型、身份号码和别名。迁移 `000070_case_intake_party_identity` 为接案当事人增加密文、摘要和别名字段。浏览器草稿不会保存身份号码，创建和工作台接口也只返回“已登记（受保护）”，不会返回原文、密文或摘要。缺少迁移、密钥或任一受检主体身份时，正式冲突检查失败关闭。
+
+客户主档案的正式身份契约由 `000071_client_generic_identity` 提供：`identity_type` 明确区分身份证、护照、统一社会信用代码、营业执照等类型，`identity_number_ciphertext` 与 `identity_number_digest` 分别用于受保护存储和确定性检索。迁移会把历史 `id_card_*` 保护数据按客户类型回填；旧字段仅用于兼容回读，不得再作为企业身份的业务名称或审计依据。生产就绪检查会拒绝未完成该回填的数据库。
+
+客户创建人、审批审计和独立联系人还要求执行 `000072_client_creator_access`、`000073_client_optional_email_null`、`000074_approval_audit_timestamps_timezone` 和 `000075_client_primary_contacts`。新建客户在首个案件产生前仅对创建律师和有权业务管理角色可见；客户公共邮箱未填写时保存为数据库 `NULL`，填写后仍保持唯一约束。主联系人姓名、职务、电话和邮箱写入独立 `client_contacts` 表，其中电话和邮箱使用 `SUBJECT_DATA_KEY` 派生的用途隔离密钥加密，禁止再把联系人职务追加到客户备注或把联系人邮箱覆盖客户公共邮箱。审批域历史无时区字段会按 `Asia/Shanghai` 解释并转换为 `timestamptz`，避免浏览器把审计时间重复增加 8 小时。中国律所部署必须在配置文件中设置 `database.loc=Asia/Shanghai`；其他司法辖区应在导入历史数据前书面确认业务时区并完成专项迁移评审。
+
+正式冲突政策的双人确认工作流由 `000076_conflict_policy_endorsement_workflow` 提供。政策材料包与每次确认均为只追加记录；主任/管理合伙人与合规负责人必须使用两个不同账号确认同一 SHA-256 摘要，第二次有效确认后服务端才创建 `APPROVED` 政策版本。技术管理员不能代签，测试环境的虚构确认记录不得迁入生产。
+
+四类权威档案来源可由冲突核查岗在“冲突治理”登记和复核。页面使用中文来源名称和百分比，提交时转换为服务端基点值；数据质量责任人按姓名选择。`source_version`、`index_run_id` 和核对凭证必须来自 `backfill-conflict-index --apply` 生成的导入对账报告，界面不会也不得伪造这些值。
 
 ## 配置管理器
 
@@ -264,7 +303,7 @@ go test ./internal/config -v
 ### 添加新环境
 
 1. 创建或复制对应 `.env` / `config.yaml`
-2. 设置 `ENVIRONMENT` 和数据库、Redis、ES、JWT 等核心变量
+2. 设置 `ENVIRONMENT`、数据库、JWT 等核心变量；Redis 仅在启用 `cache` profile 时配置
 3. 用目标入口启动服务验证 `config.Load()`
 
 ### 配置热加载

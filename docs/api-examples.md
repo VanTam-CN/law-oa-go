@@ -19,8 +19,11 @@ cd law-oa-go
 # 安装依赖
 go mod download
 
+# 构建服务
+go build -o bin/law-oa-go .
+
 # 启动服务器
-go run cmd/server/main.go
+./bin/law-oa-go
 ```
 
 服务器启动后，API将在 `http://localhost:8080` 提供服务。

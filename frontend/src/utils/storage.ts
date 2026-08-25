@@ -5,6 +5,27 @@ import type { Role, Permission } from '@/services/role'
 
 // Token相关操作
 const TOKEN_KEY = 'auth_token'
+const USER_INFO_KEY = 'law_oa_user_info'
+const ROLES_KEY = 'law_oa_roles'
+const PERMISSIONS_KEY = 'law_oa_permissions'
+const SESSION_STORAGE_MODE_KEY = 'law_oa_session_only'
+const AUTH_STORAGE_KEYS = [TOKEN_KEY, USER_INFO_KEY, ROLES_KEY, PERMISSIONS_KEY]
+
+function authStorage(): Storage {
+  return sessionStorage.getItem(SESSION_STORAGE_MODE_KEY) === '1' ? sessionStorage : localStorage
+}
+
+export function setStoragePersistence(persistent: boolean): void {
+  AUTH_STORAGE_KEYS.forEach((key) => {
+    localStorage.removeItem(key)
+    sessionStorage.removeItem(key)
+  })
+  if (persistent) {
+    sessionStorage.removeItem(SESSION_STORAGE_MODE_KEY)
+  } else {
+    sessionStorage.setItem(SESSION_STORAGE_MODE_KEY, '1')
+  }
+}
 
 function parseJwtPayload(token: string): Record<string, any> | null {
   try {
@@ -36,7 +57,7 @@ export function isTokenExpired(token: string | null, skewSeconds = 30): boolean 
 }
 
 export function getToken(): string | null {
-  const token = localStorage.getItem(TOKEN_KEY)
+  const token = authStorage().getItem(TOKEN_KEY)
   if (!token) {
     return null
   }
@@ -50,59 +71,57 @@ export function getToken(): string | null {
 }
 
 export function setToken(token: string): void {
-  localStorage.setItem(TOKEN_KEY, token)
+  authStorage().setItem(TOKEN_KEY, token)
 }
 
 export function removeToken(): void {
   localStorage.removeItem(TOKEN_KEY)
+  sessionStorage.removeItem(TOKEN_KEY)
 }
 
 // 用户信息相关操作
-const USER_INFO_KEY = 'law_oa_user_info'
-
 export function getUserInfo(): any | null {
-  const userInfo = localStorage.getItem(USER_INFO_KEY)
+  const userInfo = authStorage().getItem(USER_INFO_KEY)
   return userInfo ? JSON.parse(userInfo) : null
 }
 
 export function setUserInfo(userInfo: any): void {
-  localStorage.setItem(USER_INFO_KEY, JSON.stringify(userInfo))
+  authStorage().setItem(USER_INFO_KEY, JSON.stringify(userInfo))
 }
 
 export function removeUserInfo(): void {
   localStorage.removeItem(USER_INFO_KEY)
+  sessionStorage.removeItem(USER_INFO_KEY)
 }
 
 // 角色信息相关操作
-const ROLES_KEY = 'law_oa_roles'
-
 export function getRoles(): Role[] | null {
-  const roles = localStorage.getItem(ROLES_KEY)
+  const roles = authStorage().getItem(ROLES_KEY)
   return roles ? JSON.parse(roles) : null
 }
 
 export function setRoles(roles: Role[]): void {
-  localStorage.setItem(ROLES_KEY, JSON.stringify(roles))
+  authStorage().setItem(ROLES_KEY, JSON.stringify(roles))
 }
 
 export function removeRoles(): void {
   localStorage.removeItem(ROLES_KEY)
+  sessionStorage.removeItem(ROLES_KEY)
 }
 
 // 权限信息相关操作
-const PERMISSIONS_KEY = 'law_oa_permissions'
-
 export function getPermissions(): Permission[] | null {
-  const permissions = localStorage.getItem(PERMISSIONS_KEY)
+  const permissions = authStorage().getItem(PERMISSIONS_KEY)
   return permissions ? JSON.parse(permissions) : null
 }
 
 export function setPermissions(permissions: Permission[]): void {
-  localStorage.setItem(PERMISSIONS_KEY, JSON.stringify(permissions))
+  authStorage().setItem(PERMISSIONS_KEY, JSON.stringify(permissions))
 }
 
 export function removePermissions(): void {
   localStorage.removeItem(PERMISSIONS_KEY)
+  sessionStorage.removeItem(PERMISSIONS_KEY)
 }
 
 // 清除所有存储
@@ -111,4 +130,5 @@ export function clearStorage(): void {
   removeUserInfo()
   removeRoles()
   removePermissions()
+  sessionStorage.removeItem(SESSION_STORAGE_MODE_KEY)
 }

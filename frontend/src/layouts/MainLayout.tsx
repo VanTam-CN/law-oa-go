@@ -12,6 +12,8 @@ const MainLayout: React.FC = () => {
   const { user, isAuthenticated, isLoading } = useAppStore()
   const [collapsed, setCollapsed] = useState(false)
   const [sidebarWidth, setSidebarWidth] = useState(220)
+  const [compactViewport, setCompactViewport] = useState(false)
+  const [mobileViewport, setMobileViewport] = useState(false)
 
   // 处理侧边栏宽度变化
   const handleSidebarWidthChange = (width: number) => {
@@ -22,6 +24,24 @@ const MainLayout: React.FC = () => {
   useEffect(() => {
     document.documentElement.style.setProperty('--sidebar-width', `${sidebarWidth}px`)
   }, [sidebarWidth])
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return
+    const media = window.matchMedia('(max-width: 1024px)')
+    const mobileMedia = window.matchMedia('(max-width: 768px)')
+    const syncViewport = () => {
+      setCompactViewport(media.matches)
+      setMobileViewport(mobileMedia.matches)
+      if (media.matches) setCollapsed(true)
+    }
+    syncViewport()
+    media.addEventListener?.('change', syncViewport)
+    mobileMedia.addEventListener?.('change', syncViewport)
+    return () => {
+      media.removeEventListener?.('change', syncViewport)
+      mobileMedia.removeEventListener?.('change', syncViewport)
+    }
+  }, [])
 
   // 如果正在加载，显示加载状态
   if (isLoading) {
@@ -60,13 +80,21 @@ const MainLayout: React.FC = () => {
         setCollapsed={setCollapsed}
         onWidthChange={handleSidebarWidthChange}
       />
-      <Layout style={{ marginLeft: 0, display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+      <Layout
+        style={{
+          marginLeft: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          flex: 1,
+          overflow: 'hidden',
+        }}
+      >
         <Header />
         <Content
           style={{
-            margin: '56px 16px 16px 16px',
-            marginLeft: 'var(--sidebar-width, 220px)',
-            padding: 16,
+            margin: compactViewport ? '56px 8px 8px 8px' : '56px 16px 16px 16px',
+            marginLeft: mobileViewport ? 0 : 'var(--sidebar-width, 220px)',
+            padding: compactViewport ? 12 : 16,
             background: '#f5f7fa',
             flex: 1,
             overflowY: 'auto',

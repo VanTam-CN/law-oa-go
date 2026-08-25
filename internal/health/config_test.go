@@ -215,6 +215,7 @@ func TestHealthCheckBuilder_Chaining(t *testing.T) {
 		EnableDatabaseCheck:    true,
 		EnableCacheCheck:       true,
 		EnableConcurrencyCheck: true,
+		EnableExternalAPICheck: true,
 		DatabaseTimeout:        5 * time.Second,
 		CacheTimeout:           2 * time.Second,
 		ConcurrencyTimeout:     3 * time.Second,

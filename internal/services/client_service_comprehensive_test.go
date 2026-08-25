@@ -86,6 +86,7 @@ func TestClientService_CreateClient_Success(t *testing.T) {
 	ctx := context.Background()
 	req := &CreateClientRequest{
 		Name:    "测试客户",
+		Type:    "个人",
 		Email:   "test@example.com",
 		Phone:   "13800138000",
 		Address: "测试地址",
@@ -128,6 +129,29 @@ func TestClientService_CreateClient_Success(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
+func TestClientService_CreateEnterpriseClientUsesSocialCreditIdentity(t *testing.T) {
+	mockRepo := &MockClientRepository{}
+	service := NewClientService(mockRepo)
+	ctx := context.Background()
+	req := &CreateClientRequest{
+		Name: "虚构企业客户", Type: "企业", Email: "enterprise-identity@example.test",
+		IdentityType: "SOCIAL_CREDIT_CODE", IdentityNumber: "91310000TEST000018",
+		CreatedBy: 7,
+	}
+	mockRepo.On("FindByEmail", ctx, req.Email).Return(nil, nil)
+	mockRepo.On("Create", ctx, mock.MatchedBy(func(client *models.Client) bool {
+		return client.IdentityType == models.IdentityTypeSocialCredit &&
+			client.IdentityNumber == "91310000TEST000018" && client.IDCard == "" && client.CreatedBy == 7
+	})).Return(nil)
+
+	result, err := service.CreateClient(ctx, req)
+	require.NoError(t, err)
+	require.Equal(t, models.IdentityTypeSocialCredit, result.IdentityType)
+	require.Equal(t, "913***0018", result.IdentityNumber)
+	require.Empty(t, result.IDCard)
+	mockRepo.AssertExpectations(t)
+}
+
 // TestClientService_CreateClient_EmailAlreadyExists 测试邮箱已存在
 func TestClientService_CreateClient_EmailAlreadyExists(t *testing.T) {
 	mockRepo := &MockClientRepository{}
@@ -136,6 +160,7 @@ func TestClientService_CreateClient_EmailAlreadyExists(t *testing.T) {
 	ctx := context.Background()
 	req := &CreateClientRequest{
 		Name:  "测试客户",
+		Type:  "个人",
 		Email: "existing@example.com",
 	}
 
@@ -168,6 +193,7 @@ func TestClientService_CreateClient_InvalidEmail(t *testing.T) {
 	ctx := context.Background()
 	req := &CreateClientRequest{
 		Name:  "测试客户",
+		Type:  "个人",
 		Email: "invalid-email",
 	}
 
@@ -192,6 +218,7 @@ func TestClientService_CreateClient_InvalidPhone(t *testing.T) {
 	ctx := context.Background()
 	req := &CreateClientRequest{
 		Name:  "测试客户",
+		Type:  "个人",
 		Phone: "invalid-phone-with-chinese-中文",
 	}
 
@@ -510,6 +537,7 @@ func TestClientService_CreateClient_WithoutEmail(t *testing.T) {
 	ctx := context.Background()
 	req := &CreateClientRequest{
 		Name:    "测试客户",
+		Type:    "个人",
 		Phone:   "13800138000",
 		Address: "测试地址",
 	}
@@ -622,6 +650,7 @@ func BenchmarkClientService_CreateClient(b *testing.B) {
 	ctx := context.Background()
 	req := &CreateClientRequest{
 		Name:    "基准测试客户",
+		Type:    "个人",
 		Email:   "benchmark@example.com",
 		Phone:   "13800138000",
 		Address: "基准测试地址",
@@ -659,6 +688,7 @@ func TestClientService_Integration_CompleteWorkflow(t *testing.T) {
 	// 1. 创建客户端
 	createReq := &CreateClientRequest{
 		Name:    "集成测试客户",
+		Type:    "个人",
 		Email:   "integration@example.com",
 		Phone:   "13800138000",
 		Address: "集成测试地址",

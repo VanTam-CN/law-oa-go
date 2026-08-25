@@ -38,11 +38,10 @@ Law OA Go 采用单体架构，Go 后端 + React 前端，通过 Docker Compose 
                           │
                    ┌──────┼───────┐
                    ▼      ▼       ▼
-              ┌────────┐ ┌─────┐ ┌──────────────┐
-              │ Redis  │ │ ES  │ │ OnlyOffice   │
-              │ :6379  │ │8.11 │ │ (文档编辑)    │
-              └────────┘ │9200 │ └──────────────┘
-                         └─────┘
+              ┌────────┐ ┌──────────────┐ ┌──────────────┐
+              │ Redis  │ │ Legacy Search │ │ OnlyOffice   │
+              │ :6379  │ │ (非默认栈)    │ │ (文档编辑)    │
+              └────────┘ └──────────────┘ └──────────────┘
                    ┌──────┼───────┐
                    ▼      ▼       ▼
               ┌────────┐ ┌─────┐ ┌────────┐
@@ -59,8 +58,8 @@ Law OA Go 采用单体架构，Go 后端 + React 前端，通过 Docker Compose 
 | frontend | law-oa-frontend | 3003 | React 前端应用 |
 | postgres | law-oa-postgres | 5432 | PostgreSQL 16 数据库 |
 | redis | law-oa-redis | 6379 | Redis 7 缓存 |
-| elasticsearch | law-oa-elasticsearch | 9200/9300 | ES 8.11 全文检索 |
-| kibana | law-oa-kibana | 5601 | 日志分析平台 |
+| elasticsearch | - | - | legacy：不在默认 compose 栈，历史 ES 全文检索环境才使用 |
+| kibana | - | - | legacy：不在默认 compose 栈，历史日志分析环境才使用 |
 | jaeger | law-oa-jaeger | 16686 | 分布式追踪 |
 | prometheus | law-oa-prometheus | 9090 | 指标监控 |
 | grafana | law-oa-grafana | 3000 | 可视化仪表盘 |
@@ -73,7 +72,7 @@ Law OA Go 采用单体架构，Go 后端 + React 前端，通过 Docker Compose 
 | frontend | 1.0 | 512M | 0.25 | 128M |
 | postgres | 2.0 | 2G | 0.5 | 512M |
 | redis | 1.0 | 512M | 0.25 | 128M |
-| elasticsearch | 2.0 | 1G | 0.5 | 512M |
+| elasticsearch（legacy） | 2.0 | 1G | 0.5 | 512M |
 | 其他 | 1.0 | 512M~1G | 0.25 | 128M~256M |
 
 **最低服务器配置**: 4核 CPU / 8G 内存 / 50G SSD
@@ -511,11 +510,11 @@ go_goroutines
 
 用于追踪 API 请求的完整调用链路，排查性能瓶颈。
 
-### 7.4 Kibana 日志分析
+### 7.4 Legacy Elasticsearch / Kibana
 
-**访问地址**: `http://localhost:5601`
+**状态**: 已退出默认 compose 栈，不再提供默认访问地址。
 
-配合 Elasticsearch 进行日志搜索和分析。
+历史部署若仍保留 Elasticsearch / Kibana，请按 legacy 运维记录单独管理，不要把 `5601` / `9200` 当成当前默认入口口径。
 
 ### 7.5 健康检查端点
 
@@ -840,10 +839,12 @@ docker compose exec postgres psql -U "$DB_USERNAME" -d "$DB_DATABASE" \
 # 解决方案：调大 DB_MAX_OPEN_CONNS 或检查连接泄漏
 ```
 
-#### Elasticsearch 启动失败
+#### Legacy Elasticsearch 启动失败
 
 ```bash
+# 仅适用于历史 legacy 部署，不适用于当前默认 compose 栈
 # 常见原因：vm.max_map_count 不够
+
 # 临时解决
 docker compose exec elasticsearch sysctl -w vm.max_map_count=262144
 

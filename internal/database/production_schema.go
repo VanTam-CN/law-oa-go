@@ -13,7 +13,7 @@ import (
 // ProductionSchemaVersion identifies the idempotent PostgreSQL bootstrap
 // contract. A future breaking schema change must introduce a new version and
 // an explicit migration instead of relying on application startup side effects.
-const ProductionSchemaVersion = "postgres-mvp-2026-07-19-v4"
+const ProductionSchemaVersion = "postgres-mvp-2026-08-05-v13"
 
 // productionCaseIntake and the following small records back tables that are
 // intentionally written through Table(...) by the intake/approval workflow.
@@ -37,15 +37,20 @@ type productionCaseIntake struct {
 func (productionCaseIntake) TableName() string { return "case_intakes" }
 
 type productionCaseIntakeParty struct {
-	ID            uint      `gorm:"primaryKey"`
-	CaseID        *uint     `gorm:"index"`
-	IntakeID      string    `gorm:"type:uuid;index"`
-	EntityName    string    `gorm:"size:255;not null"`
-	EntityType    string    `gorm:"size:50;not null;default:'company'"`
-	PartyRole     string    `gorm:"size:80;not null"`
-	RelationDepth int       `gorm:"not null;default:0"`
-	Metadata      string    `gorm:"type:jsonb;not null;default:'{}'"`
-	CreatedAt     time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
+	ID                 uint      `gorm:"primaryKey"`
+	CaseID             *uint     `gorm:"index"`
+	IntakeID           string    `gorm:"type:uuid;index"`
+	EntityName         string    `gorm:"size:255;not null"`
+	EntityType         string    `gorm:"size:50;not null;default:'company'"`
+	EntityID           *uint     `gorm:"index"`
+	IdentityType       string    `gorm:"size:30"`
+	IdentityCiphertext string    `gorm:"column:identity_number_ciphertext;type:text"`
+	IdentityDigest     string    `gorm:"column:identity_number_digest;size:64;index"`
+	Aliases            string    `gorm:"type:text"`
+	PartyRole          string    `gorm:"size:80;not null"`
+	RelationDepth      int       `gorm:"not null;default:0"`
+	Metadata           string    `gorm:"type:jsonb;not null;default:'{}'"`
+	CreatedAt          time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
 }
 
 func (productionCaseIntakeParty) TableName() string { return "case_intake_parties" }
@@ -195,7 +200,13 @@ func BootstrapProductionSchema(db *gorm.DB) error {
 		if err := ensureProductionSchemaContractColumns(tx); err != nil {
 			return err
 		}
+		if err := ensureProductionSchemaRelationalContract(tx); err != nil {
+			return err
+		}
 		if err := installProductionAppendOnlyGuards(tx); err != nil {
+			return err
+		}
+		if err := ensureProductionApprovalAuditTimestamps(tx); err != nil {
 			return err
 		}
 		if err := validateProductionSchemaContract(tx); err != nil {
@@ -224,7 +235,12 @@ func validateProductionSchemaContract(db *gorm.DB) error {
 			"id", "username", "email", "password", "role", "status", "department_id", "manager_id",
 		},
 		"clients": {
-			"id", "name", "type", "id_card", "id_card_digest", "id_card_ciphertext", "status",
+			"id", "name", "type", "id_card", "id_card_digest", "id_card_ciphertext",
+			"identity_type", "identity_number_digest", "identity_number_ciphertext", "aliases", "created_by", "status",
+		},
+		"client_contacts": {
+			"id", "client_id", "name", "position", "phone_ciphertext", "email_ciphertext",
+			"is_primary", "version", "created_by", "updated_by", "created_at", "updated_at",
 		},
 		"cases": {
 			"id", "case_number", "title", "client_id", "lawyer_id", "status",
@@ -259,6 +275,28 @@ func validateProductionSchemaContract(db *gorm.DB) error {
 		"conflict_search_scopes": {
 			"id", "scope_type", "status", "coverage_status", "source_version", "evidence_reference",
 			"covered_from", "covered_to", "missing_sources", "index_run_id", "approved_by", "approved_at",
+			"source_of_truth", "sync_mode", "max_sync_lag_minutes", "last_successful_sync_at",
+			"minimum_field_coverage_bps", "measured_field_coverage_bps", "maximum_duplicate_rate_bps",
+			"measured_duplicate_rate_bps", "quality_owner_id", "quality_reviewed_at",
+			"max_quality_review_age_days", "failure_alert_reference", "correction_procedure_reference",
+		},
+		"law_firm_compliance_policy_profiles": {
+			"id", "policy_version", "status", "jurisdiction", "applicable_rule_name", "applicable_rule_version",
+			"applicable_rule_authority", "applicable_rule_reference", "data_source_policy_reference",
+			"privacy_basis_matrix_reference", "retention_policy_reference", "waiver_policy_reference",
+			"controlled_actions_reference", "external_review_reference", "management_approved_by",
+			"compliance_approved_by", "approved_at", "effective_at", "next_review_at", "expires_at", "integrity_hash",
+		},
+		"law_firm_compliance_policy_packages": {
+			"id", "policy_version", "jurisdiction", "applicable_rule_name", "applicable_rule_version",
+			"applicable_rule_authority", "applicable_rule_reference", "data_source_policy_reference",
+			"privacy_basis_matrix_reference", "retention_policy_reference", "waiver_policy_reference",
+			"controlled_actions_reference", "external_review_reference", "effective_at", "next_review_at",
+			"expires_at", "integrity_hash", "created_by", "created_at",
+		},
+		"law_firm_compliance_policy_endorsements": {
+			"id", "policy_package_id", "endorsement_type", "endorsed_by", "endorser_role",
+			"package_integrity_hash", "created_at",
 		},
 		"conflict_index_build_runs": {
 			"id", "scope_type", "source_version", "status", "source_record_count", "indexed_record_count",
@@ -277,12 +315,19 @@ func validateProductionSchemaContract(db *gorm.DB) error {
 			"id", "check_id", "reviewer_id", "assigned_by", "status", "recusal_declared",
 			"independence_reason", "sla_due_at", "effective_from", "effective_to", "revoked_at",
 		},
+		"conflict_officer_appointments": {
+			"id", "officer_id", "deputy_id", "appointed_by", "effective_from", "effective_to",
+			"recusal_declaration", "external_mechanism_reference", "created_at",
+		},
 		"approval_requests": {
 			"id", "request_number", "title", "type", "status", "applicant_id", "created_by",
 			"conflict_check_id", "conflict_result", "case_created", "created_case_id", "case_creation_status",
 		},
-		"case_intakes":              {"id", "intake_code", "title", "status", "metadata", "created_by"},
-		"case_intake_parties":       {"id", "intake_id", "entity_name", "party_role", "metadata"},
+		"case_intakes": {"id", "intake_code", "title", "status", "metadata", "created_by"},
+		"case_intake_parties": {
+			"id", "intake_id", "entity_name", "entity_type", "entity_id", "party_role", "metadata",
+			"identity_type", "identity_number_ciphertext", "identity_number_digest", "aliases",
+		},
 		"case_materials":            {"id", "intake_id", "name", "status", "metadata"},
 		"approval_snapshots":        {"id", "approval_request_id", "snapshot_type", "snapshot_data", "source_version"},
 		"waiver_applications":       {"id", "application_number", "conflict_check_id", "client_id", "lawyer_id", "status", "assigned_reviewer", "review_deadline", "created_by"},
@@ -310,6 +355,32 @@ func validateProductionSchemaContract(db *gorm.DB) error {
 			return fmt.Errorf("生产表 %s 缺少关键字段: %s；请执行对应的评审迁移后重试", table, strings.Join(missing, ", "))
 		}
 	}
+	approvalTimestampColumns := map[string][]string{
+		"approval_delegations":   {"valid_from", "valid_until"},
+		"approval_notifications": {"scheduled_at", "sent_at", "read_at", "created_at", "updated_at"},
+		"approval_records":       {"approval_date", "effective_date", "next_review_date", "created_at", "updated_at"},
+		"approval_requests":      {"expected_effective_date", "expected_expiry_date", "submission_date", "created_at", "updated_at", "deleted_at"},
+		"approval_templates":     {"last_used_date", "created_at", "updated_at"},
+		"approval_workflows":     {"created_at", "updated_at"},
+	}
+	for table, columns := range approvalTimestampColumns {
+		for _, column := range columns {
+			var count int64
+			if err := db.Raw(`
+				SELECT COUNT(*)
+				FROM information_schema.columns
+				WHERE table_schema = current_schema()
+				  AND table_name = ?
+				  AND column_name = ?
+				  AND data_type = 'timestamp with time zone'
+			`, table, column).Scan(&count).Error; err != nil {
+				return fmt.Errorf("读取审批审计时间字段 %s.%s 类型失败: %w", table, column, err)
+			}
+			if count != 1 {
+				return fmt.Errorf("审批审计时间字段 %s.%s 必须为 timestamptz；请执行迁移 000074 后重试", table, column)
+			}
+		}
+	}
 	var uniqueReviewIndexCount int64
 	if err := db.Raw(`
 		SELECT COUNT(*)
@@ -329,7 +400,7 @@ func validateProductionSchemaContract(db *gorm.DB) error {
 	}{
 		{name: "trg_compliance_audit_events_append_only", table: "compliance_audit_events"},
 		{name: "trg_conflict_reviews_append_only", table: "conflict_reviews"},
-		{name: "trg_case_subject_revisions_append_only", table: "case_subject_revisions"},
+		{name: "trg_case_subject_revisions_state_guard", table: "case_subject_revisions"},
 		{name: "trg_conflict_checks_no_delete", table: "conflict_checks"},
 		{name: "trg_conflict_details_append_only", table: "conflict_details"},
 		{name: "trg_conflict_check_records_no_delete", table: "conflict_check_records"},
@@ -343,6 +414,10 @@ func validateProductionSchemaContract(db *gorm.DB) error {
 		{name: "trg_waiver_approval_records_append_only", table: "waiver_approval_records"},
 		{name: "trg_waiver_signatures_append_only", table: "waiver_signatures"},
 		{name: "trg_waiver_monitoring_records_append_only", table: "waiver_monitoring_records"},
+		{name: "trg_law_firm_policy_profiles_append_only", table: "law_firm_compliance_policy_profiles"},
+		{name: "trg_law_firm_policy_packages_append_only", table: "law_firm_compliance_policy_packages"},
+		{name: "trg_law_firm_policy_endorsements_append_only", table: "law_firm_compliance_policy_endorsements"},
+		{name: "trg_conflict_officer_appointments_append_only", table: "conflict_officer_appointments"},
 	} {
 		var triggerCount int64
 		if err := db.Raw(`
@@ -361,7 +436,7 @@ func validateProductionSchemaContract(db *gorm.DB) error {
 			return fmt.Errorf("%s 缺少 append-only 保护触发器", trigger.table)
 		}
 	}
-	return nil
+	return validateProductionSchemaRelationalContract(db)
 }
 
 // ValidateProductionSchemaContract is used by the application startup gate
@@ -386,7 +461,7 @@ func ensureProductionSchemaAdditiveColumns(db *gorm.DB) error {
 	}
 	for _, statement := range statements {
 		if err := db.Exec(statement).Error; err != nil {
-			return fmt.Errorf("升级 users 复核关系字段失败: %w", err)
+			return fmt.Errorf("升级生产必需字段失败: %w", err)
 		}
 	}
 	return nil
@@ -406,9 +481,24 @@ func ensureProductionSchemaContractColumns(db *gorm.DB) error {
 		`ALTER TABLE IF EXISTS clients ADD COLUMN IF NOT EXISTS id_card_digest VARCHAR(64)`,
 		`ALTER TABLE IF EXISTS clients ADD COLUMN IF NOT EXISTS id_card_ciphertext TEXT`,
 		`CREATE INDEX IF NOT EXISTS idx_clients_id_card_digest ON clients (id_card_digest)`,
+		`ALTER TABLE IF EXISTS clients ADD COLUMN IF NOT EXISTS identity_type VARCHAR(30)`,
+		`ALTER TABLE IF EXISTS clients ADD COLUMN IF NOT EXISTS identity_number_ciphertext TEXT`,
+		`ALTER TABLE IF EXISTS clients ADD COLUMN IF NOT EXISTS identity_number_digest VARCHAR(64)`,
+		`ALTER TABLE IF EXISTS clients ADD COLUMN IF NOT EXISTS aliases TEXT`,
+		`ALTER TABLE IF EXISTS clients ADD COLUMN IF NOT EXISTS created_by BIGINT`,
+		`CREATE INDEX IF NOT EXISTS idx_clients_identity_type ON clients (identity_type)`,
+		`CREATE INDEX IF NOT EXISTS idx_clients_identity_number_digest ON clients (identity_number_digest)`,
+		`CREATE INDEX IF NOT EXISTS idx_clients_created_by ON clients (created_by)`,
 		`ALTER TABLE IF EXISTS entities ADD COLUMN IF NOT EXISTS identity_number_digest VARCHAR(64)`,
 		`ALTER TABLE IF EXISTS entities ADD COLUMN IF NOT EXISTS identity_number_ciphertext TEXT`,
 		`CREATE INDEX IF NOT EXISTS idx_entities_identity_number_digest ON entities (identity_number_digest)`,
+		`ALTER TABLE IF EXISTS case_intake_parties ADD COLUMN IF NOT EXISTS entity_id BIGINT`,
+		`ALTER TABLE IF EXISTS case_intake_parties ADD COLUMN IF NOT EXISTS identity_type VARCHAR(30)`,
+		`ALTER TABLE IF EXISTS case_intake_parties ADD COLUMN IF NOT EXISTS identity_number_ciphertext TEXT`,
+		`ALTER TABLE IF EXISTS case_intake_parties ADD COLUMN IF NOT EXISTS identity_number_digest VARCHAR(64)`,
+		`ALTER TABLE IF EXISTS case_intake_parties ADD COLUMN IF NOT EXISTS aliases TEXT`,
+		`CREATE INDEX IF NOT EXISTS idx_case_intake_parties_entity_id ON case_intake_parties (entity_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_case_intake_parties_identity_digest ON case_intake_parties (identity_number_digest)`,
 
 		`ALTER TABLE IF EXISTS cases ADD COLUMN IF NOT EXISTS subject_version INTEGER NOT NULL DEFAULT 1`,
 		`ALTER TABLE IF EXISTS cases ADD COLUMN IF NOT EXISTS subject_state VARCHAR(50) NOT NULL DEFAULT 'EFFECTIVE'`,
@@ -419,6 +509,19 @@ func ensureProductionSchemaContractColumns(db *gorm.DB) error {
 
 		`ALTER TABLE IF EXISTS conflict_search_scopes ADD COLUMN IF NOT EXISTS evidence_reference TEXT`,
 		`ALTER TABLE IF EXISTS conflict_search_scopes ADD COLUMN IF NOT EXISTS index_run_id VARCHAR(100)`,
+		`ALTER TABLE IF EXISTS conflict_search_scopes ADD COLUMN IF NOT EXISTS source_of_truth BOOLEAN NOT NULL DEFAULT FALSE`,
+		`ALTER TABLE IF EXISTS conflict_search_scopes ADD COLUMN IF NOT EXISTS sync_mode VARCHAR(30)`,
+		`ALTER TABLE IF EXISTS conflict_search_scopes ADD COLUMN IF NOT EXISTS max_sync_lag_minutes INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE IF EXISTS conflict_search_scopes ADD COLUMN IF NOT EXISTS last_successful_sync_at TIMESTAMPTZ`,
+		`ALTER TABLE IF EXISTS conflict_search_scopes ADD COLUMN IF NOT EXISTS minimum_field_coverage_bps INTEGER NOT NULL DEFAULT 10000`,
+		`ALTER TABLE IF EXISTS conflict_search_scopes ADD COLUMN IF NOT EXISTS measured_field_coverage_bps INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE IF EXISTS conflict_search_scopes ADD COLUMN IF NOT EXISTS maximum_duplicate_rate_bps INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE IF EXISTS conflict_search_scopes ADD COLUMN IF NOT EXISTS measured_duplicate_rate_bps INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE IF EXISTS conflict_search_scopes ADD COLUMN IF NOT EXISTS quality_owner_id BIGINT`,
+		`ALTER TABLE IF EXISTS conflict_search_scopes ADD COLUMN IF NOT EXISTS quality_reviewed_at TIMESTAMPTZ`,
+		`ALTER TABLE IF EXISTS conflict_search_scopes ADD COLUMN IF NOT EXISTS max_quality_review_age_days INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE IF EXISTS conflict_search_scopes ADD COLUMN IF NOT EXISTS failure_alert_reference TEXT`,
+		`ALTER TABLE IF EXISTS conflict_search_scopes ADD COLUMN IF NOT EXISTS correction_procedure_reference TEXT`,
 		`CREATE INDEX IF NOT EXISTS idx_conflict_search_scopes_index_run ON conflict_search_scopes (index_run_id)`,
 		`ALTER TABLE IF EXISTS case_subject_revisions ADD COLUMN IF NOT EXISTS reason TEXT`,
 		`ALTER TABLE IF EXISTS case_subject_revisions ADD COLUMN IF NOT EXISTS effective_at TIMESTAMP`,
@@ -428,10 +531,206 @@ func ensureProductionSchemaContractColumns(db *gorm.DB) error {
 		`ALTER TABLE IF EXISTS approval_requests ADD COLUMN IF NOT EXISTS case_created BOOLEAN NOT NULL DEFAULT FALSE`,
 		`ALTER TABLE IF EXISTS approval_requests ADD COLUMN IF NOT EXISTS created_case_id VARCHAR(36)`,
 		`ALTER TABLE IF EXISTS approval_requests ADD COLUMN IF NOT EXISTS case_creation_status VARCHAR(30)`,
+
+		`CREATE INDEX IF NOT EXISTS idx_law_firm_compliance_policy_status ON law_firm_compliance_policy_profiles (status, effective_at, next_review_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_policy_endorsement_actor ON law_firm_compliance_policy_endorsements (endorsed_by, created_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_conflict_officer_appointment_term ON conflict_officer_appointments (officer_id, effective_from, effective_to)`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS uq_client_primary_contact ON client_contacts (client_id) WHERE is_primary = TRUE`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS uq_policy_package_endorsement ON law_firm_compliance_policy_endorsements (policy_package_id, endorsement_type)`,
 	}
 	for _, statement := range statements {
 		if err := db.Exec(statement).Error; err != nil {
 			return fmt.Errorf("升级生产 schema 兼容字段失败: %w", err)
+		}
+	}
+	return nil
+}
+
+// ensureProductionSchemaRelationalContract restores the database-level
+// invariants supplied by reviewed SQL migrations. The models deliberately do
+// not declare associations for these evidence tables, so relying on GORM table
+// creation alone would leave a fresh production database permissive.
+//
+// Each ALTER is intentionally fail-closed: an existing database with orphaned
+// rows or NULL encrypted contact fields must be corrected under the normal
+// migration/backup procedure, rather than silently weakening the contract.
+func ensureProductionSchemaRelationalContract(db *gorm.DB) error {
+	statements := []string{
+		`ALTER TABLE client_contacts ALTER COLUMN position SET DEFAULT ''`,
+		`ALTER TABLE client_contacts ALTER COLUMN position SET NOT NULL`,
+		`ALTER TABLE client_contacts ALTER COLUMN phone_ciphertext SET DEFAULT ''`,
+		`ALTER TABLE client_contacts ALTER COLUMN phone_ciphertext SET NOT NULL`,
+		`ALTER TABLE client_contacts ALTER COLUMN email_ciphertext SET DEFAULT ''`,
+		`ALTER TABLE client_contacts ALTER COLUMN email_ciphertext SET NOT NULL`,
+		`DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_client_contacts_client' AND conrelid = 'client_contacts'::regclass) THEN
+    ALTER TABLE client_contacts ADD CONSTRAINT fk_client_contacts_client FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_client_contacts_created_by' AND conrelid = 'client_contacts'::regclass) THEN
+    ALTER TABLE client_contacts ADD CONSTRAINT fk_client_contacts_created_by FOREIGN KEY (created_by) REFERENCES users(id);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_client_contacts_updated_by' AND conrelid = 'client_contacts'::regclass) THEN
+    ALTER TABLE client_contacts ADD CONSTRAINT fk_client_contacts_updated_by FOREIGN KEY (updated_by) REFERENCES users(id);
+  END IF;
+END $$`,
+		`DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_policy_endorsement_package' AND conrelid = 'law_firm_compliance_policy_endorsements'::regclass) THEN
+    ALTER TABLE law_firm_compliance_policy_endorsements ADD CONSTRAINT fk_policy_endorsement_package FOREIGN KEY (policy_package_id) REFERENCES law_firm_compliance_policy_packages(id);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_policy_endorsement_type' AND conrelid = 'law_firm_compliance_policy_endorsements'::regclass) THEN
+    ALTER TABLE law_firm_compliance_policy_endorsements ADD CONSTRAINT chk_policy_endorsement_type CHECK (endorsement_type IN ('MANAGEMENT', 'COMPLIANCE'));
+  END IF;
+END $$`,
+		`DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_conflict_officer_term' AND conrelid = 'conflict_officer_appointments'::regclass) THEN
+    ALTER TABLE conflict_officer_appointments ADD CONSTRAINT chk_conflict_officer_term CHECK (effective_to > effective_from);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_conflict_officer_separation' AND conrelid = 'conflict_officer_appointments'::regclass) THEN
+    ALTER TABLE conflict_officer_appointments ADD CONSTRAINT chk_conflict_officer_separation CHECK (
+      officer_id <> appointed_by
+      AND (deputy_id IS NULL OR (deputy_id <> officer_id AND deputy_id <> appointed_by))
+    );
+  END IF;
+END $$`,
+	}
+	for _, statement := range statements {
+		if err := db.Exec(statement).Error; err != nil {
+			return fmt.Errorf("补齐生产 schema 关系约束失败: %w", err)
+		}
+	}
+	return nil
+}
+
+// ensureProductionApprovalAuditTimestamps applies the same Asia/Shanghai
+// interpretation as migration 000074. Fresh tables created by GORM can use
+// timestamp without time zone, while the legal-audit contract requires a
+// single, explicit timestamptz representation.
+func ensureProductionApprovalAuditTimestamps(db *gorm.DB) error {
+	return db.Exec(`
+DO $$
+DECLARE
+  target RECORD;
+BEGIN
+  FOR target IN
+    SELECT table_name, column_name
+    FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND data_type = 'timestamp without time zone'
+      AND (
+        (table_name = 'approval_delegations' AND column_name IN ('valid_from', 'valid_until'))
+        OR (table_name = 'approval_notifications' AND column_name IN ('scheduled_at', 'sent_at', 'read_at', 'created_at', 'updated_at'))
+        OR (table_name = 'approval_records' AND column_name IN ('approval_date', 'effective_date', 'next_review_date', 'created_at', 'updated_at'))
+        OR (table_name = 'approval_requests' AND column_name IN ('expected_effective_date', 'expected_expiry_date', 'submission_date', 'created_at', 'updated_at', 'deleted_at'))
+        OR (table_name = 'approval_templates' AND column_name IN ('last_used_date', 'created_at', 'updated_at'))
+        OR (table_name = 'approval_workflows' AND column_name IN ('created_at', 'updated_at'))
+      )
+  LOOP
+    EXECUTE format('ALTER TABLE %I ALTER COLUMN %I TYPE TIMESTAMPTZ USING %I AT TIME ZONE %L', target.table_name, target.column_name, target.column_name, 'Asia/Shanghai');
+  END LOOP;
+END $$`).Error
+}
+
+func validateProductionSchemaRelationalContract(db *gorm.DB) error {
+	for _, column := range []struct {
+		table  string
+		column string
+	}{
+		{table: "client_contacts", column: "position"},
+		{table: "client_contacts", column: "phone_ciphertext"},
+		{table: "client_contacts", column: "email_ciphertext"},
+	} {
+		var nullable string
+		var defaultValue *string
+		if err := db.Raw(`
+			SELECT is_nullable, column_default
+			FROM information_schema.columns
+			WHERE table_schema = current_schema() AND table_name = ? AND column_name = ?
+		`, column.table, column.column).Row().Scan(&nullable, &defaultValue); err != nil {
+			return fmt.Errorf("读取生产列 %s.%s 约束失败: %w", column.table, column.column, err)
+		}
+		if nullable != "NO" || defaultValue == nil || strings.TrimSpace(*defaultValue) == "" {
+			return fmt.Errorf("生产列 %s.%s 必须为带默认值的 NOT NULL 字段", column.table, column.column)
+		}
+	}
+
+	constraints := []struct {
+		name       string
+		table      string
+		kind       string
+		definition string
+		terms      []string
+	}{
+		{name: "fk_client_contacts_client", table: "client_contacts", kind: "f", definition: "FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE"},
+		{name: "fk_client_contacts_created_by", table: "client_contacts", kind: "f", definition: "FOREIGN KEY (created_by) REFERENCES users(id)"},
+		{name: "fk_client_contacts_updated_by", table: "client_contacts", kind: "f", definition: "FOREIGN KEY (updated_by) REFERENCES users(id)"},
+		{name: "fk_policy_endorsement_package", table: "law_firm_compliance_policy_endorsements", kind: "f", definition: "FOREIGN KEY (policy_package_id) REFERENCES law_firm_compliance_policy_packages(id)"},
+		// PostgreSQL's representation of an IN list also varies with the backing
+		// column type (text vs varchar). Check the semantic components instead of
+		// a type-specific pg_get_constraintdef rendering.
+		{name: "chk_policy_endorsement_type", table: "law_firm_compliance_policy_endorsements", kind: "c", terms: []string{"ENDORSEMENT_TYPE", "MANAGEMENT", "COMPLIANCE"}},
+		{name: "chk_conflict_officer_term", table: "conflict_officer_appointments", kind: "c", definition: "effective_to > effective_from"},
+		{name: "chk_conflict_officer_separation", table: "conflict_officer_appointments", kind: "c", definition: "officer_id <> appointed_by"},
+	}
+	for _, constraint := range constraints {
+		var definition string
+		err := db.Raw(`
+			SELECT pg_get_constraintdef(c.oid)
+			FROM pg_constraint c
+			WHERE c.conname = ?
+			  AND c.contype = ?
+			  AND c.conrelid = ?::regclass
+		`, constraint.name, constraint.kind, constraint.table).Row().Scan(&definition)
+		if err != nil {
+			return fmt.Errorf("生产表 %s 缺少约束 %s: %w", constraint.table, constraint.name, err)
+		}
+		actual := strings.ToUpper(strings.Join(strings.Fields(definition), " "))
+		expected := []string{strings.ToUpper(constraint.definition)}
+		if len(constraint.terms) > 0 {
+			expected = constraint.terms
+		}
+		for _, term := range expected {
+			if !strings.Contains(actual, strings.ToUpper(term)) {
+				return fmt.Errorf("生产表 %s 的约束 %s 定义不符合数据完整性契约", constraint.table, constraint.name)
+			}
+		}
+	}
+
+	indexes := []struct {
+		name       string
+		table      string
+		definition string
+		terms      []string
+	}{
+		{name: "idx_law_firm_compliance_policy_status", table: "law_firm_compliance_policy_profiles", definition: "(status, effective_at, next_review_at)"},
+		{name: "idx_policy_endorsement_actor", table: "law_firm_compliance_policy_endorsements", definition: "(endorsed_by, created_at)"},
+		{name: "idx_conflict_officer_appointment_term", table: "conflict_officer_appointments", definition: "(officer_id, effective_from, effective_to)"},
+		// PostgreSQL simplifies the boolean predicate to WHERE is_primary in
+		// pg_indexes. Require the semantic parts so either supported canonical
+		// spelling proves that the partial uniqueness guarantee is present.
+		{name: "uq_client_primary_contact", table: "client_contacts", terms: []string{"client_id", "WHERE", "is_primary"}},
+		{name: "uq_policy_package_endorsement", table: "law_firm_compliance_policy_endorsements", definition: "(policy_package_id, endorsement_type)"},
+	}
+	for _, index := range indexes {
+		var definition string
+		if err := db.Raw(`
+			SELECT indexdef
+			FROM pg_indexes
+			WHERE schemaname = current_schema() AND tablename = ? AND indexname = ?
+		`, index.table, index.name).Row().Scan(&definition); err != nil {
+			return fmt.Errorf("生产表 %s 缺少索引 %s: %w", index.table, index.name, err)
+		}
+		actual := strings.ToLower(strings.Join(strings.Fields(definition), " "))
+		expected := []string{strings.ToLower(index.definition)}
+		if len(index.terms) > 0 {
+			expected = index.terms
+		}
+		for _, term := range expected {
+			if !strings.Contains(actual, strings.ToLower(term)) {
+				return fmt.Errorf("生产表 %s 的索引 %s 定义不符合数据完整性契约（实际定义：%s）", index.table, index.name, definition)
+			}
 		}
 	}
 	return nil
@@ -452,7 +751,7 @@ END;
 $$`).Error; err != nil {
 		return fmt.Errorf("安装 append-only 证据函数失败: %w", err)
 	}
-	for _, table := range []string{"compliance_audit_events", "conflict_reviews", "case_subject_revisions"} {
+	for _, table := range []string{"compliance_audit_events", "conflict_reviews"} {
 		triggerName := "trg_" + table + "_append_only"
 		if err := db.Exec(fmt.Sprintf("DROP TRIGGER IF EXISTS %s ON %s", triggerName, table)).Error; err != nil {
 			return fmt.Errorf("刷新 %s 保护触发器失败: %w", table, err)
@@ -461,6 +760,50 @@ $$`).Error; err != nil {
 		if err := db.Exec(statement).Error; err != nil {
 			return fmt.Errorf("安装 %s append-only 保护失败: %w", table, err)
 		}
+	}
+	if err := db.Exec(`
+CREATE OR REPLACE FUNCTION law_oa_guard_case_subject_revision()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	IF TG_OP = 'DELETE' THEN
+		RAISE EXCEPTION 'case subject revisions cannot be deleted';
+	END IF;
+	IF NEW.id IS DISTINCT FROM OLD.id
+		OR NEW.case_id IS DISTINCT FROM OLD.case_id
+		OR NEW.base_subject_version IS DISTINCT FROM OLD.base_subject_version
+		OR NEW.change_type IS DISTINCT FROM OLD.change_type
+		OR NEW.requested_by IS DISTINCT FROM OLD.requested_by
+		OR NEW.created_at IS DISTINCT FROM OLD.created_at
+		OR NEW.reason IS DISTINCT FROM OLD.reason THEN
+		RAISE EXCEPTION 'immutable case subject revision fields cannot be changed';
+	END IF;
+	IF NEW.payload IS DISTINCT FROM OLD.payload
+		AND NOT (OLD.status = 'ENTITY_REGISTRATION_PENDING' AND NEW.status = 'CHANGE_PROPOSED') THEN
+		RAISE EXCEPTION 'case subject revision payload may only resolve a pending entity registration';
+	END IF;
+	IF NEW.status IS DISTINCT FROM OLD.status AND NOT (
+		(OLD.status = 'ENTITY_REGISTRATION_PENDING' AND NEW.status IN ('CHANGE_PROPOSED', 'CHANGE_REJECTED'))
+		OR (OLD.status = 'CHANGE_PROPOSED' AND NEW.status = 'RECHECK_RUNNING')
+		OR (OLD.status = 'RECHECK_REQUIRED' AND NEW.status IN ('RECHECK_RUNNING', 'CHANGE_APPROVED_AND_EFFECTIVE', 'CHANGE_REJECTED'))
+		OR (OLD.status = 'RECHECK_RUNNING' AND NEW.status = 'RECHECK_REQUIRED')
+	) THEN
+		RAISE EXCEPTION 'invalid case subject revision transition: % -> %', OLD.status, NEW.status;
+	END IF;
+	RETURN NEW;
+END;
+$$`).Error; err != nil {
+		return fmt.Errorf("安装案件主体修订状态保护函数失败: %w", err)
+	}
+	if err := db.Exec(`DROP TRIGGER IF EXISTS trg_case_subject_revisions_append_only ON case_subject_revisions`).Error; err != nil {
+		return fmt.Errorf("移除旧案件主体修订只追加触发器失败: %w", err)
+	}
+	if err := db.Exec(`DROP TRIGGER IF EXISTS trg_case_subject_revisions_state_guard ON case_subject_revisions`).Error; err != nil {
+		return fmt.Errorf("刷新案件主体修订状态保护触发器失败: %w", err)
+	}
+	if err := db.Exec(`CREATE TRIGGER trg_case_subject_revisions_state_guard BEFORE UPDATE OR DELETE ON case_subject_revisions FOR EACH ROW EXECUTE FUNCTION law_oa_guard_case_subject_revision()`).Error; err != nil {
+		return fmt.Errorf("安装案件主体修订状态保护触发器失败: %w", err)
 	}
 	for _, table := range []string{"conflict_subject_versions", "conflict_subject_identifiers", "conflict_match_evidence_v2"} {
 		triggerName := "trg_" + table + "_append_only"
@@ -487,6 +830,10 @@ $$`).Error; err != nil {
 		{name: "trg_waiver_signatures_append_only", table: "waiver_signatures", operation: "UPDATE OR DELETE"},
 		{name: "trg_waiver_monitoring_records_append_only", table: "waiver_monitoring_records", operation: "UPDATE OR DELETE"},
 		{name: "trg_conflict_index_build_runs_no_delete", table: "conflict_index_build_runs", operation: "DELETE"},
+		{name: "trg_law_firm_policy_profiles_append_only", table: "law_firm_compliance_policy_profiles", operation: "UPDATE OR DELETE"},
+		{name: "trg_law_firm_policy_packages_append_only", table: "law_firm_compliance_policy_packages", operation: "UPDATE OR DELETE"},
+		{name: "trg_law_firm_policy_endorsements_append_only", table: "law_firm_compliance_policy_endorsements", operation: "UPDATE OR DELETE"},
+		{name: "trg_conflict_officer_appointments_append_only", table: "conflict_officer_appointments", operation: "UPDATE OR DELETE"},
 	} {
 		if err := db.Exec(fmt.Sprintf("DROP TRIGGER IF EXISTS %s ON %s", table.name, table.table)).Error; err != nil {
 			return fmt.Errorf("刷新 %s 保护触发器失败: %w", table.table, err)
@@ -525,7 +872,7 @@ END $$`).Error; err != nil {
 func productionSchemaModels() []interface{} {
 	return []interface{}{
 		// Identity, client, case and RBAC core.
-		&models.User{}, &models.Client{}, &models.Case{},
+		&models.User{}, &models.Client{}, &models.ClientContact{}, &models.Case{},
 		&models.Role{}, &models.Permission{}, &models.RolePermission{}, &models.UserRole{},
 		&models.Entity{}, &models.EntityRelation{}, &models.EntityNameHistory{}, &models.CaseParty{},
 		&productionDepartment{},
@@ -534,9 +881,10 @@ func productionSchemaModels() []interface{} {
 		// Conflict detection and P0 review/recheck evidence.
 		&models.ConflictCheck{}, &models.ConflictDetail{}, &models.ConflictReview{},
 		&models.ConflictCase{}, &models.ConflictRule{}, &models.ConflictCheckRecord{}, &models.ClientRelation{},
-		&models.ConflictSearchScope{}, &models.CaseSubjectRevision{}, &models.ComplianceAuditEvent{},
+		&models.ConflictSearchScope{}, &models.LawFirmCompliancePolicyProfile{}, &models.LawFirmCompliancePolicyPackage{}, &models.LawFirmCompliancePolicyEndorsement{}, &models.CaseSubjectRevision{}, &models.ComplianceAuditEvent{},
 		&models.ConflictIndexBuildRun{},
 		&models.ConflictReviewerAssignment{},
+		&models.ConflictOfficerAppointment{},
 		&models.ConflictSubjectVersion{}, &models.ConflictSubjectIdentifier{}, &models.ConflictMatchEvidenceV2{},
 		&models.WaiverApplication{}, &models.WaiverApprovalRecord{}, &models.WaiverSignature{}, &models.WaiverMonitoringRecord{},
 		&models.LawyerConflictPool{},
@@ -562,6 +910,7 @@ func productionSchemaModels() []interface{} {
 		&models.SensitiveWord{}, &models.ContentFilterLog{},
 		&models.ClientTrustAccount{}, &models.ClientTrustTransaction{},
 		&models.OffboardingRecord{}, &models.OffboardingTransferDetail{}, &models.TokenRevocationLog{},
+		&models.AuthTokenSession{},
 		&models.DataImportTask{}, &models.DataImportError{}, &models.SystemConfig{},
 		&models.OperationLog{},
 

@@ -15,8 +15,9 @@ discovery.type: single-node
 # 内存配置
 bootstrap.memory_lock: false
 
-# 安全配置
-xpack.security.enabled: false
+# 安全配置：可选 Elasticsearch 扩展默认启用 TLS 与认证。证书和凭据由
+# 显式部署流程生成，不在仓库中保存任何默认明文入口。
+xpack.security.enabled: true
 
 # 索引配置
 indices.query.bool.max_clause_count: 4096

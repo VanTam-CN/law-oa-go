@@ -22,10 +22,9 @@ test.describe('律师工作台', () => {
 
   test('全局搜索应该展示结果反馈', async ({ page }) => {
     await waitForAppShell(page)
-    await page.getByPlaceholder('全局搜索（客户、案件、文档、联系人...）').fill('示例科技')
+    await page.getByRole('searchbox', { name: '搜索案件、冲突检测或审批' }).fill('示例科技')
     await page.keyboard.press('Enter')
 
-    await expect(page.getByText(/找到 \d+ 条相关案件、客户或审批记录/)).toBeVisible()
+    await expect(page.getByText(/找到 \d+ 条相关案件、冲突或审批记录/)).toBeVisible()
   })
 })
-

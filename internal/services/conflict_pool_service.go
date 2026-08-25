@@ -155,13 +155,13 @@ func (s *conflictPoolService) SyncLawyerPool(ctx context.Context, lawyerID uint,
 		log.Printf("✅ 更新冲突池记录: ID=%d", existingPool.ID)
 	} else if err == gorm.ErrRecordNotFound {
 		// 创建新记录
-		idCard, _ := client.DecryptedIDCard()
+		identityNumber, _ := client.DecryptedIdentity()
 		newEntry := &models.LawyerConflictPool{
 			LawyerID:           lawyerID,
 			EntityType:         entityType,
 			EntityName:         client.Name,
 			EntityNameStandard: standardName,
-			EntityTaxID:        idCard, // 对于企业，这里应该是税号
+			EntityTaxID:        identityNumber,
 			RelationshipType:   s.determineRelationshipType(case_),
 			CaseID:             caseID,
 			CaseTitle:          case_.Title,
@@ -177,7 +177,7 @@ func (s *conflictPoolService) SyncLawyerPool(ctx context.Context, lawyerID uint,
 
 		// 对于企业客户，异步获取详细信息
 		if entityType == "company" {
-			go s.enrichCompanyData(context.Background(), newEntry.ID, client.Name, idCard)
+			go s.enrichCompanyData(context.Background(), newEntry.ID, client.Name, identityNumber)
 		}
 	}
 

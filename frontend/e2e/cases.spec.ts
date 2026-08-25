@@ -21,6 +21,7 @@ async function fillCaseIntakeBasics(page: any) {
   await page.locator('article', { hasText: '我方当事人' }).locator('.ant-select-selector').click()
   await page.getByTitle('上海示例科技有限公司').click()
   await page.locator('article', { hasText: '对方当事人' }).getByRole('textbox').fill('上海华信建设集团有限公司')
+  await page.getByPlaceholder('输入证件号或统一社会信用代码').fill('91310000TESTCASE0001')
   await page.locator('.batch-wide-label', { hasText: '案情摘要' }).getByRole('textbox').fill('客户拟就服务合同争议提起诉讼。')
   await page.locator('.batch-intake-aside').locator('.ant-select-selector').click()
   await page.getByTitle('张律师 · 争议解决部').click()
@@ -69,6 +70,22 @@ test.describe('案件管理', () => {
     await expect(page.getByRole('heading', { name: '红杉资本投资管理咨询合同纠纷案' })).toBeVisible()
   })
 
+  test('在办案件可以提报全新对方并进入核查岗确认状态', async ({ page }) => {
+    await page.locator('tr', { hasText: 'DEMO-2026-001' }).getByRole('button', { name: /查\s*看/ }).click()
+    await page.getByRole('button', { name: '报告主体变更并重新复核' }).click()
+    const dialog = page.getByRole('dialog', { name: '报告案件主体变更' })
+    await dialog.getByText('登记全新主体', { exact: true }).click()
+    await dialog.getByLabel('主体法定名称或证件姓名 *').fill('虚构启明精密制造有限公司')
+    await dialog.getByLabel('曾用名或别名').fill('虚构启明制造')
+    await dialog.getByLabel('身份标识 *').fill('91310000TEST00A101')
+    await dialog.getByLabel('变更原因 *').fill('法院通知追加该公司为共同被告')
+    await dialog.getByRole('button', { name: '提交核查岗确认' }).click()
+
+    await expect(page.locator('.ant-message')).toContainText('等待冲突核查岗确认主体档案')
+    await expect(page.getByText('新主体等待核查岗确认，受控动作已暂停')).toBeVisible()
+    await expect(page.getByText('无需重复提交')).toBeVisible()
+  })
+
   test('待处理案件详情应提供本案冲突复核下一步', async ({ page }) => {
     await page.locator('tr', { hasText: 'CASE-20260513173242' }).getByRole('button', { name: /查\s*看/ }).click()
 
@@ -85,8 +102,10 @@ test.describe('案件管理', () => {
     await expect(page.getByRole('dialog', { name: '冲突检测详情' })).not.toBeVisible()
 
     await page.getByRole('button', { name: '查看本案检测结果' }).click()
-    await expect(page.getByRole('dialog', { name: '冲突检测详情' })).toBeVisible()
-    await expect(page.getByText('关联主体历史委托')).toBeVisible()
+    const detailDialog = page.getByRole('dialog', { name: '冲突检测详情' })
+    await expect(detailDialog).toBeVisible()
+    await expect(detailDialog.getByRole('cell', { name: '受限历史事项' }).first()).toBeVisible()
+    await expect(detailDialog.getByText('关联主体历史委托')).toHaveCount(0)
   })
 })
 

@@ -7,21 +7,19 @@ import (
 
 	"law-oa-go/internal/auth"
 	"law-oa-go/internal/cache"
-	"law-oa-go/internal/common"
 	"law-oa-go/internal/config"
 	"law-oa-go/internal/handlers"
 	"law-oa-go/internal/middleware"
 	"law-oa-go/internal/repositories"
 	"law-oa-go/internal/services"
 
-	esv8 "github.com/elastic/go-elasticsearch/v8"
 	"github.com/gin-gonic/gin"
 	rdb "github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
 // Init 初始化完整的路由系统
-func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interface{}) {
+func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client) {
 	log.Println("初始化完整路由系统...")
 	app.Static("/uploads/avatars", "./uploads/avatars")
 
@@ -45,15 +43,6 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 	legalStatuteRepo := repositories.NewLegalStatuteRepository(db)
 	legalCategoryRepo := repositories.NewLegalCategoryRepository(db)
 	legalTagRepo := repositories.NewLegalTagRepository(db)
-	var legalEsRepo repositories.ElasticsearchStatuteRepository
-	// 类型断言检查Elasticsearch客户端
-	if esClient != nil {
-		if client, ok := esClient.(*esv8.Client); ok {
-			legalEsRepo = repositories.NewElasticsearchStatuteRepository(client)
-		} else {
-			log.Printf("Elasticsearch客户端类型不匹配，跳过ES功能")
-		}
-	}
 
 	// 初始化文档相关仓储
 	docRepo := repositories.NewDocumentRepository(db)
@@ -62,6 +51,7 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 	// 初始化服务
 	userService := services.NewUserService(userRepo)
 	clientService := services.NewClientService(clientRepo)
+	clientContactService := services.NewClientContactService(db)
 	caseService := services.NewCaseService(caseRepo, clientRepo, userRepo)
 	inboxService := services.NewInboxService(inboxRepo, userRepo)
 	handoffService := services.NewHandoffService(clientService, inboxService)
@@ -73,7 +63,7 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 	// 审批服务将在处理器中初始化
 	log.Println("🔧 审批服务将在处理器中初始化")
 
-	legalStatuteService := services.NewLegalStatuteService(db, legalStatuteRepo, legalCategoryRepo, legalTagRepo, legalEsRepo)
+	legalStatuteService := services.NewLegalStatuteService(db, legalStatuteRepo, legalCategoryRepo, legalTagRepo, nil)
 	// 初始化缓存仓库
 	cacheRepo := repositories.NewMemoryCacheRepository()
 	teamPermissionService := services.NewTeamPermissionService(userRepo, caseRepo, cacheRepo)
@@ -105,8 +95,11 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 		log.Printf("加载配置失败: %v", err)
 		return
 	}
-	cacheService := cache.NewCacheService(redisClient, "law-oa")
-	tokenManager := auth.NewTokenManager(cfg, redisClient, cacheService)
+	var cacheService *cache.CacheService
+	if redisClient != nil {
+		cacheService = cache.NewCacheService(redisClient, "law-oa")
+	}
+	tokenManager := auth.NewTokenManager(cfg, redisClient, cacheService, db)
 
 	// 使用适配器包装 TokenManager 以实现 TokenManagerInterface
 	tokenManagerAdapter := auth.NewTokenManagerAdapter(tokenManager)
@@ -124,7 +117,7 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 		return tokenRevocationService.IsTokenRevokedForClaims(ctx, tokenString, claims.UserID, issuedAt)
 	})
 
-	authHandler := handlers.NewAuthHandler(userService, tokenRevocationService)
+	authHandler := handlers.NewAuthHandler(userService, tokenRevocationService, tokenManager)
 	authHandler.SetPublicRegistrationEnabled(!cfg.IsProduction())
 	log.Println("✅ 认证处理器初始化完成")
 
@@ -139,6 +132,7 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 
 	log.Println("🔧 初始化客户处理器...")
 	clientHandler := handlers.NewClientHandler(clientService, authorizationService)
+	clientHandler.SetContactService(clientContactService)
 	handoffHandler := handlers.NewHandoffHandler(handoffService, authorizationService)
 	log.Println("✅ 客户处理器初始化完成")
 
@@ -165,6 +159,7 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 	demoAggregateHandler := handlers.NewDemoAggregateHandler(db)
 	demoAggregateHandler.SetConflictDetectionService(conflictService)
 	demoAggregateHandler.SetAuthorizationService(authorizationService)
+	demoAggregateHandler.SetClientContactService(clientContactService)
 	toolsHandler := handlers.NewToolsHandler()
 	log.Println("✅ 仪表盘处理器初始化完成")
 
@@ -202,19 +197,27 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 	documentHandler := handlers.NewDocumentHandlerEnhanced(docRepo, userRepo, "./uploads", "./recycle", authorizationService)
 	documentStatsHandler := handlers.NewDocumentStatsHandler(services.NewDocumentStatsService(docRepo))
 
-	// 初始化 OnlyOffice 处理器
-	documentVersionService := services.NewDocumentVersionService(docRepo, "./uploads")
-	documentLockService := services.NewDocumentLockService(db, redisClient)
-	onlyOfficeURL := common.GetEnv("ONLYOFFICE_URL", "http://localhost:9090")
-	onlyOfficeSecret := common.GetEnv("ONLYOFFICE_SECRET", "")
-	backendURL := common.GetEnv("BACKEND_URL", "http://localhost:8080")
-	onlyOfficeHandler := handlers.NewOnlyOfficeHandler(
-		db, documentVersionService, documentLockService,
-		onlyOfficeURL, onlyOfficeSecret, backendURL, "./uploads", authorizationService,
-	)
+	var onlyOfficeHandler *handlers.OnlyOfficeHandler
 	documentHandler.SetSubjectRecheckService(subjectRecheckService)
-	onlyOfficeHandler.SetSubjectRecheckService(subjectRecheckService)
-	log.Println("✅ OnlyOffice 处理器初始化完成")
+	if cfg.OnlyOffice.Enabled {
+		// 初始化 OnlyOffice 处理器
+		documentVersionService := services.NewDocumentVersionService(docRepo, "./uploads")
+		documentLockService := services.NewDocumentLockService(db, redisClient)
+		onlyOfficeHandler = handlers.NewOnlyOfficeHandler(
+			db,
+			documentVersionService,
+			documentLockService,
+			cfg.OnlyOffice.URL,
+			cfg.OnlyOffice.Secret,
+			cfg.OnlyOffice.BackendURL,
+			"./uploads",
+			authorizationService,
+		)
+		onlyOfficeHandler.SetSubjectRecheckService(subjectRecheckService)
+		log.Println("✅ OnlyOffice 处理器初始化完成")
+	} else {
+		log.Println("ℹ️ OnlyOffice 未启用，跳过在线编辑、转换和回调路由")
+	}
 
 	// 公开路由组
 	log.Println("🔧 开始注册公开路由组...")
@@ -226,11 +229,12 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 		})
 		// 认证路由
 		log.Println("🔧 注册认证路由...")
-		auth := public.Group("/auth")
+		authRoutes := public.Group("/auth")
 		{
-			auth.POST("/login", authHandler.Login)
+			authRoutes.POST("/login", authHandler.Login)
+			authRoutes.POST("/refresh", auth.RefreshTokenMiddleware(tokenManager))
 			if !cfg.IsProduction() {
-				auth.POST("/register", authHandler.Register)
+				authRoutes.POST("/register", authHandler.Register)
 			}
 		}
 		log.Println("✅ 认证路由注册完成")
@@ -364,6 +368,8 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 			clients.GET("/stats", clientHandler.GetClientStats)
 			clients.POST("/:id/handoff", handoffHandler.CreateClientHandoff)
 			clients.GET("/:id/master-profile", demoAggregateHandler.ClientMasterProfile)
+			clients.GET("/:id/primary-contact", clientHandler.GetPrimaryContact)
+			clients.PUT("/:id/primary-contact", clientHandler.SavePrimaryContact)
 			clients.GET("/:id", clientHandler.GetClient)
 			clients.PUT("/:id", clientHandler.UpdateClient)
 			clients.DELETE("/:id", clientHandler.DeleteClient)
@@ -401,7 +407,10 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 			cases.PUT("/:id", caseHandler.UpdateCase)
 			cases.DELETE("/:id", caseHandler.DeleteCase)
 			cases.POST("/:id/subject-revisions", subjectRecheckHandler.CreateRevision)
+			cases.POST("/:id/subject-entity-registrations", subjectRecheckHandler.CreateNewEntityRevision)
+			cases.GET("/:id/subject-revisions/:revision_id", subjectRecheckHandler.GetSubjectRevisionStatus)
 			cases.POST("/:id/subject-revisions/:revision_id/recheck", subjectRecheckHandler.RunRecheck)
+			cases.POST("/:id/subject-revisions/:revision_id/entity-registration-review", subjectRecheckHandler.ReviewEntityRegistration)
 			cases.POST("/:id/subject-revisions/:revision_id/review", subjectRecheckHandler.Review)
 		}
 
@@ -433,8 +442,6 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 				legalAdmin.POST("/statutes/import", legalStatuteHandler.BulkImportStatutes)
 				legalAdmin.PUT("/statutes/:id", legalStatuteHandler.UpdateStatute)
 				legalAdmin.DELETE("/statutes/:id", legalStatuteHandler.DeleteStatute)
-				legalAdmin.POST("/admin/sync-elasticsearch", legalStatuteHandler.SyncToElasticsearch)
-				legalAdmin.POST("/admin/rebuild-index", legalStatuteHandler.RebuildSearchIndex)
 			}
 		}
 
@@ -524,6 +531,9 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 			conflict.POST("/tasks", conflictHandler.CreateConflictTask)
 			conflict.POST("/check/async", conflictHandler.CreateConflictTask)
 			conflict.GET("/reviewer-candidates", conflictReviewerHandler.Candidates)
+			conflict.GET("/officer-appointments", conflictReviewerHandler.ListOfficerAppointments)
+			conflict.POST("/officer-appointments", conflictReviewerHandler.CreateOfficerAppointment)
+			conflict.GET("/subject-entity-registrations", subjectRecheckHandler.ListPendingEntityRegistrations)
 			conflict.GET("/tasks/:task_id", conflictHandler.GetConflictTaskStatus)
 			conflict.GET("/tasks/:task_id/result", conflictHandler.GetConflictTaskResult)
 			conflict.GET("/tasks/:task_id/reviewer-assignment", conflictReviewerHandler.GetAssignment)
@@ -582,18 +592,20 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 			}
 		}
 
-		// OnlyOffice 在线编辑和转换 - 需要隔离墙保护
-		onlyoffice := protected.Group("/documents/onlyoffice")
-		onlyoffice.Use(middleware.EthicalWallMiddleware(ethicalWallConfig))
-		{
-			onlyoffice.POST("/open", onlyOfficeHandler.OpenEditor)                                               // 打开编辑器
-			onlyoffice.POST("/convert", onlyOfficeHandler.ConvertDocument)                                       // 转换文档格式
-			onlyoffice.GET("/convert/status", onlyOfficeHandler.CheckConversionStatus)                           // 检查转换状态
-			onlyoffice.GET("/:document_id/download/converted/:output_type", onlyOfficeHandler.DownloadConverted) // 下载转换后文件
-		}
+		if cfg.OnlyOffice.Enabled && onlyOfficeHandler != nil {
+			// OnlyOffice 在线编辑和转换 - 需要隔离墙保护
+			onlyoffice := protected.Group("/documents/onlyoffice")
+			onlyoffice.Use(middleware.EthicalWallMiddleware(ethicalWallConfig))
+			{
+				onlyoffice.POST("/open", onlyOfficeHandler.OpenEditor)                                               // 打开编辑器
+				onlyoffice.POST("/convert", onlyOfficeHandler.ConvertDocument)                                       // 转换文档格式
+				onlyoffice.GET("/convert/status", onlyOfficeHandler.CheckConversionStatus)                           // 检查转换状态
+				onlyoffice.GET("/:document_id/download/converted/:output_type", onlyOfficeHandler.DownloadConverted) // 下载转换后文件
+			}
 
-		// OnlyOffice 回调端点（公开，由 OnlyOffice 服务器调用，内部通过 secret 验证）
-		public.POST("/api/documents/onlyoffice/callback", onlyOfficeHandler.HandleCallback)
+			// OnlyOffice 回调端点（公开，由 OnlyOffice 服务器调用，内部通过 secret 验证）
+			public.POST("/api/documents/onlyoffice/callback", onlyOfficeHandler.HandleCallback)
+		}
 		// 审批管理系统
 		log.Println("🔧 初始化审批处理器...")
 		approvalHandler := handlers.NewApprovalHandler(db)
@@ -922,6 +934,8 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 		conflictCheckService := services.NewConflictCheckService(entityRepo, conflictCheckRepo, userRepo, db)
 		conflictScopeService := services.NewConflictScopeService(db)
 		conflictScopeHandler := handlers.NewConflictScopeHandler(conflictScopeService)
+		conflictPolicyService := services.NewConflictPolicyService(db)
+		conflictPolicyHandler := handlers.NewConflictPolicyHandler(conflictPolicyService)
 
 		// 初始化冲突审查处理器
 		conflictCheckHandler := handlers.NewConflictCheckHandler(db, conflictCheckService, entityRepo, authorizationService)
@@ -932,6 +946,13 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interf
 		{
 			conflictGroup.GET("/search-scopes", conflictScopeHandler.List)
 			conflictGroup.PUT("/search-scopes/:id", conflictScopeHandler.Upsert)
+			policyGovernance := conflictGroup.Group("/governance/policies")
+			policyGovernance.Use(middleware.RoleMiddleware("director", "partner", "management", "compliance", "risk", "risk_control"))
+			{
+				policyGovernance.GET("", conflictPolicyHandler.List)
+				policyGovernance.POST("", conflictPolicyHandler.Create)
+				policyGovernance.POST("/:id/endorsements", conflictPolicyHandler.Endorse)
+			}
 			// The legacy v2 check service stores a separate ConflictCheck model and
 			// therefore cannot produce the canonical P0 evidence/review record. Keep
 			// the compatibility API available for local development, but fail closed

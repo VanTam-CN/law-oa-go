@@ -38,6 +38,7 @@ import {
   CaseIntakeWorkbench,
   ClientMasterProfile,
   ConflictCheckResults,
+  ConflictGovernanceCenter,
   DashboardCommandCenter,
   LawyerProfileCenter,
   LawyerResourceCenter,
@@ -201,7 +202,7 @@ const AppContent: React.FC = () => {
           />
 
           {/* 审批模块 */}
-          <Route path='approval' element={withAccess(<ApprovalWorkbench />, 'approval:manage')} />
+          <Route path='approval' element={withAccess(<ApprovalWorkbench />, 'approval:view')} />
           <Route
             path='approval/create'
             element={withAccess(<CreateApproval />, 'approval:manage')}
@@ -215,6 +216,14 @@ const AppContent: React.FC = () => {
           {/* 项目管理功能已禁用，与案件管理重复 */}
           {/* <Route path='project' element={<ProjectManagement />} /> */}
           <Route path='conflict' element={withAccess(<ConflictWorkbench />, 'conflict:check')} />
+          <Route
+            path='conflict-governance'
+            element={withAccess(
+              <ConflictGovernanceCenter />,
+              'conflict:governance',
+              ['director', 'partner', 'management', 'compliance', 'risk', 'risk_control', 'conflict_officer'],
+            )}
+          />
           {/* Legacy form is intentionally redirected so users enter the audited list-first workflow. */}
           <Route path='conflict/v2' element={<Navigate to='/conflict' replace />} />
           <Route path='client' element={withAccess(<ClientMasterProfile />, 'client:view')} />
@@ -288,7 +297,7 @@ const AppContent: React.FC = () => {
           />
 
           {/* 收件箱模块 */}
-          <Route path='inbox' element={<MvpUnavailable moduleName='收件箱' />} />
+          <Route path='inbox' element={<InboxList />} />
 
           {enableDevRoutes &&
             DevApiTest &&

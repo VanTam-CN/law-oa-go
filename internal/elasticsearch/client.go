@@ -10,19 +10,25 @@ import (
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8"
-	"law-oa-go/internal/config"
 )
 
 // Client Elasticsearch客户端封装
 type Client struct {
 	client *elasticsearch.Client
-	config *config.Config
 }
 
-// NewClient 创建Elasticsearch客户端
-func NewClient(cfg *config.Config) (*Client, error) {
+// NewClient 创建Elasticsearch客户端。
+//
+// 该包目前仅保留给历史兼容代码使用，因此不再依赖应用级 Config。
+func NewClient(host, port, username, password string) (*Client, error) {
+	host = strings.TrimSpace(host)
+	port = strings.TrimSpace(port)
+	if host == "" || port == "" {
+		return nil, fmt.Errorf("elasticsearch host and port must be configured")
+	}
+
 	esConfig := elasticsearch.Config{
-		Addresses: []string{cfg.GetElasticsearchURL()},
+		Addresses: []string{fmt.Sprintf("http://%s:%s", host, port)},
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
@@ -31,9 +37,9 @@ func NewClient(cfg *config.Config) (*Client, error) {
 	}
 
 	// 如果有用户名密码，添加认证
-	if cfg.Elasticsearch.Username != "" && cfg.Elasticsearch.Password != "" {
-		esConfig.Username = cfg.Elasticsearch.Username
-		esConfig.Password = cfg.Elasticsearch.Password
+	if username != "" && password != "" {
+		esConfig.Username = username
+		esConfig.Password = password
 	}
 
 	client, err := elasticsearch.NewClient(esConfig)
@@ -59,7 +65,6 @@ func NewClient(cfg *config.Config) (*Client, error) {
 
 	return &Client{
 		client: client,
-		config: cfg,
 	}, nil
 }
 
@@ -132,7 +137,7 @@ func (c *Client) CreateIndex(ctx context.Context, index string, mapping map[stri
 	body := map[string]interface{}{
 		"mappings": mapping,
 	}
-	
+
 	res, err := c.client.Indices.Create(
 		index,
 		c.client.Indices.Create.WithContext(ctx),

@@ -15,12 +15,13 @@ import (
 // ConflictReviewerHandler exposes the explicit assignment step required
 // before a professional conflict conclusion can be submitted.
 type ConflictReviewerHandler struct {
-	db    *gorm.DB
-	authz *services.AuthorizationService
+	db                 *gorm.DB
+	authz              *services.AuthorizationService
+	appointmentService *services.ConflictOfficerAppointmentService
 }
 
 func NewConflictReviewerHandler(db *gorm.DB) *ConflictReviewerHandler {
-	return &ConflictReviewerHandler{db: db}
+	return &ConflictReviewerHandler{db: db, appointmentService: services.NewConflictOfficerAppointmentService(db)}
 }
 
 func (h *ConflictReviewerHandler) SetAuthorizationService(authz *services.AuthorizationService) {
@@ -143,6 +144,37 @@ func (h *ConflictReviewerHandler) Candidates(c *gin.Context) {
 		return
 	}
 	common.APISuccess(c, users)
+}
+
+func (h *ConflictReviewerHandler) ListOfficerAppointments(c *gin.Context) {
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
+	items, err := h.appointmentService.List(c.Request.Context(), actor)
+	if err != nil {
+		writeConflictReviewerError(c, err)
+		return
+	}
+	common.APISuccess(c, items)
+}
+
+func (h *ConflictReviewerHandler) CreateOfficerAppointment(c *gin.Context) {
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return
+	}
+	var input services.ConflictOfficerAppointmentInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		common.APIBadRequest(c, "核查人任命信息无效", err.Error())
+		return
+	}
+	item, err := h.appointmentService.Create(c.Request.Context(), actor, input)
+	if err != nil {
+		writeConflictReviewerError(c, err)
+		return
+	}
+	common.APISuccess(c, item)
 }
 
 func writeConflictReviewerError(c *gin.Context, err error) {

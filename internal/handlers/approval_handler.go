@@ -219,7 +219,7 @@ func (h *ApprovalHandler) GetApproval(c *gin.Context) {
 		return
 	}
 
-	approval, err := h.approvalService.GetApproval(userIDStr, id)
+	approval, err := h.approvalService.GetApprovalForAuthorization(userIDStr, id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound || strings.Contains(err.Error(), "record not found") {
 			common.Error(c, http.StatusNotFound, "审批记录不存在")
@@ -234,6 +234,11 @@ func (h *ApprovalHandler) GetApproval(c *gin.Context) {
 	if !h.authorizeApprovalConflictContext(c, approval) {
 		return
 	}
+	if err := h.approvalService.LoadApprovalRecords(approval); err != nil {
+		log.Printf("获取审批记录失败: %v", err)
+		common.Error(c, http.StatusInternalServerError, "获取审批记录失败")
+		return
+	}
 
 	common.APISuccess(c, projectApprovalForViewer(approval, c.GetString("role")))
 }
@@ -243,7 +248,7 @@ func (h *ApprovalHandler) GetApproval(c *gin.Context) {
 // ethical-wall change, so the applicant check in ApprovalService is not a
 // sufficient substitute for the underlying case/intake authorization.
 func (h *ApprovalHandler) authorizeApprovalMutation(c *gin.Context, userID, approvalID string) bool {
-	approval, err := h.approvalService.GetApproval(userID, approvalID)
+	approval, err := h.approvalService.GetApprovalForAuthorization(userID, approvalID)
 	if err != nil {
 		if strings.Contains(err.Error(), "无权") {
 			common.Error(c, http.StatusForbidden, "无权操作此审批记录")
@@ -429,7 +434,7 @@ func (h *ApprovalHandler) ProcessApprovalDecision(c *gin.Context) {
 	}
 
 	if h.integratedDecision != nil {
-		existing, lookupErr := h.approvalService.GetApproval(userIDStr, id)
+		existing, lookupErr := h.approvalService.GetApprovalForAuthorization(userIDStr, id)
 		if lookupErr != nil {
 			common.Error(c, http.StatusInternalServerError, "获取审批记录失败")
 			return
@@ -452,7 +457,7 @@ func (h *ApprovalHandler) ProcessApprovalDecision(c *gin.Context) {
 			return
 		}
 	} else {
-		existing, lookupErr := h.approvalService.GetApproval(userIDStr, id)
+		existing, lookupErr := h.approvalService.GetApprovalForAuthorization(userIDStr, id)
 		if lookupErr != nil {
 			common.Error(c, http.StatusInternalServerError, "获取审批记录失败")
 			return

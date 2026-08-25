@@ -6,7 +6,7 @@
 set -e
 
 # 配置
-BINARY_NAME="law-oa-server"
+BINARY_NAME="bin/law-oa-go"
 PROFILE_DIR="profiles"
 DEFAULT_PGO_FILE="default.pgo"
 
@@ -63,24 +63,24 @@ cleanup() {
 # 生成剖析数据
 generate_profile() {
     log_info "生成剖析数据..."
-    
+
     mkdir -p "$PROFILE_DIR"
-    
+
     # 运行测试生成CPU剖析
     log_info "运行测试并生成CPU剖析..."
     go test -cpuprofile="$PROFILE_DIR/cpu.prof" ./...
-    
+
     # 运行基准测试
     log_info "运行基准测试..."
     go test -bench=. -benchmem -cpuprofile="$PROFILE_DIR/bench.prof" ./...
-    
+
     log_success "剖析数据生成完成"
 }
 
 # PGO构建
 pgo_build() {
     local profile_arg=""
-    
+
     if [ -f "$DEFAULT_PGO_FILE" ]; then
         profile_arg="-pgo=$DEFAULT_PGO_FILE"
         log_info "使用PGO配置文件: $DEFAULT_PGO_FILE"
@@ -93,24 +93,25 @@ pgo_build() {
     else
         log_warning "未找到剖析文件，进行标准构建"
     fi
-    
+
     log_info "开始PGO构建..."
-    
+    mkdir -p "$(dirname "$BINARY_NAME")"
+
     # 构建参数
     local build_args=(
         -o "$BINARY_NAME"
         -ldflags="-s -w"
         -tags="netgo osusergo"
     )
-    
+
     if [ -n "$profile_arg" ]; then
         build_args+=("$profile_arg")
     fi
-    
+
     # 执行构建
     if go build "${build_args[@]}" ./main.go; then
         log_success "PGO构建成功"
-        
+
         # 显示文件信息
         if [ -f "$BINARY_NAME" ]; then
             local size=$(du -h "$BINARY_NAME" | cut -f1)

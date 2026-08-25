@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"time"
 
@@ -20,6 +21,8 @@ type TokenManagerInterface interface {
 	BlacklistToken(ctx context.Context, tokenString string, ttl time.Duration) error
 	IsTokenBlacklisted(ctx context.Context, tokenString string) bool
 }
+
+var _ TokenManagerInterface = (*TokenManagerAdapter)(nil)
 
 // RevocationReason 撤销原因
 type RevocationReason string
@@ -48,6 +51,7 @@ type TokenRevocationService struct {
 	tokenManager TokenManagerInterface
 	redisClient  *redis.Client
 	db           *gorm.DB
+	sessions     *TokenSessionStore
 }
 
 // NewTokenRevocationService 创建令牌撤销服务
@@ -60,6 +64,7 @@ func NewTokenRevocationService(
 		tokenManager: tokenManager,
 		redisClient:  redisClient,
 		db:           db,
+		sessions:     NewTokenSessionStore(db),
 	}
 }
 
@@ -83,7 +88,7 @@ func (s *TokenRevocationService) RevokeSingle(ctx context.Context, tokenString, 
 	}
 
 	ttl := ttlFromClaims(*claims)
-	if err := s.blacklistToken(ctx, tokenString, uuid, ttl); err != nil {
+	if err := s.blacklistTokenForType(ctx, tokenString, uuid, tokenType, ttl); err != nil {
 		return nil, fmt.Errorf("failed to blacklist token: %w", err)
 	}
 
@@ -123,7 +128,7 @@ func (s *TokenRevocationService) RevokeByUser(ctx context.Context, userID uint, 
 	}
 
 	// 2. 记录撤销到数据库
-	_ = s.recordRevocationEvent(ctx, userID, RevokeByUser, ipAddress)
+	_ = s.recordRevocationEvent(ctx, userID, RevokeByUser, ipAddress, start)
 
 	return &RevocationResult{
 		RevokedCount: -1, // 表示所有令牌
@@ -137,46 +142,25 @@ func (s *TokenRevocationService) RevokeByUser(ctx context.Context, userID uint, 
 func (s *TokenRevocationService) RevokeByDevice(ctx context.Context, userID uint, deviceID, ipAddress string) (*RevocationResult, error) {
 	start := time.Now()
 
-	// 1. 查找该设备的所有令牌
-	devicePattern := fmt.Sprintf("user_device:%d:%s", userID, deviceID)
-	deviceKeys, err := s.redisClient.Keys(ctx, devicePattern).Result()
+	// 1. 数据库是设备令牌的权威存储；Redis只做同步失效。
+	sessions, err := s.sessions.RevokeDevice(ctx, userID, deviceID, start)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find device tokens: %w", err)
 	}
-
-	revokedCount := 0
-	var revokedTokens []map[string]interface{}
-
-	for _, deviceKey := range deviceKeys {
-		// 从设备信息中提取令牌UUID
-		var deviceInfo map[string]interface{}
-		err = s.redisClient.Get(ctx, deviceKey).Scan(&deviceInfo)
-		if err != nil {
-			continue
+	revokedCount := len(sessions)
+	revokedTokens := make([]map[string]interface{}, 0, revokedCount*2)
+	for _, session := range sessions {
+		revokedTokens = append(
+			revokedTokens,
+			map[string]interface{}{"type": "access", "uuid": session.AccessTokenUUID},
+			map[string]interface{}{"type": "refresh", "uuid": session.RefreshTokenUUID},
+		)
+		if s.redisClient != nil {
+			_ = s.redisClient.Del(ctx, fmt.Sprintf("access_token:%s", session.AccessTokenUUID)).Err()
+			_ = s.redisClient.Del(ctx, fmt.Sprintf("refresh_token:%s", session.RefreshTokenUUID)).Err()
+			_ = s.redisClient.Set(ctx, fmt.Sprintf("blacklist:%s", session.AccessTokenUUID), "1", time.Hour*24).Err()
+			_ = s.redisClient.Del(ctx, fmt.Sprintf("user_device:%d:%s", userID, deviceID)).Err()
 		}
-
-		// 撤销访问令牌
-		if accessUUID, ok := deviceInfo["access_uuid"].(string); ok && accessUUID != "" {
-			key := fmt.Sprintf("access_token:%s", accessUUID)
-			if s.redisClient.Del(ctx, key).Err() == nil {
-				revokedCount++
-				revokedTokens = append(revokedTokens, map[string]interface{}{"type": "access", "uuid": accessUUID})
-			}
-			// 加入黑名单
-			s.redisClient.Set(ctx, fmt.Sprintf("blacklist:%s", accessUUID), "1", time.Hour*24)
-		}
-
-		// 撤销刷新令牌
-		if refreshUUID, ok := deviceInfo["refresh_uuid"].(string); ok && refreshUUID != "" {
-			key := fmt.Sprintf("refresh_token:%s", refreshUUID)
-			if s.redisClient.Del(ctx, key).Err() == nil {
-				revokedCount++
-				revokedTokens = append(revokedTokens, map[string]interface{}{"type": "refresh", "uuid": refreshUUID})
-			}
-		}
-
-		// 删除设备信息
-		s.redisClient.Del(ctx, deviceKey)
 	}
 
 	// 2. 记录撤销到数据库
@@ -239,37 +223,37 @@ func (s *TokenRevocationService) IsTokenRevoked(ctx context.Context, tokenString
 }
 
 func (s *TokenRevocationService) IsTokenRevokedForClaims(ctx context.Context, tokenString string, userID uint, issuedAt time.Time) bool {
+	revoked, hasDurableSession := s.durableSessionRevocationState(ctx, tokenString)
+	if hasDurableSession {
+		return revoked
+	}
 	if s.isTokenStringRevoked(ctx, tokenString) {
 		return true
 	}
-	if s.redisClient == nil || userID == 0 || issuedAt.IsZero() {
+	if userID == 0 {
 		return false
 	}
-	value, err := s.redisClient.Get(ctx, userRevokedAfterKey(userID)).Int64()
-	if err == redis.Nil {
-		return false
-	}
-	if err != nil {
-		return true
-	}
-	return !issuedAt.After(time.Unix(value, 0))
+	return s.sessions.HasUserTokensRevokedAtOrAfter(ctx, userID, issuedAt)
 }
 
 // GetUserActiveDevices 获取用户的活动设备
 func (s *TokenRevocationService) GetUserActiveDevices(ctx context.Context, userID uint) ([]map[string]interface{}, error) {
-	pattern := fmt.Sprintf("user_device:%d:*", userID)
-	keys, err := s.redisClient.Keys(ctx, pattern).Result()
+	sessions, err := s.sessions.ListActiveDevices(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find user devices: %w", err)
 	}
-
-	devices := make([]map[string]interface{}, 0, len(keys))
-	for _, key := range keys {
-		var deviceInfo map[string]interface{}
-		err = s.redisClient.Get(ctx, key).Scan(&deviceInfo)
-		if err == nil {
-			devices = append(devices, deviceInfo)
-		}
+	devices := make([]map[string]interface{}, 0, len(sessions))
+	for _, session := range sessions {
+		devices = append(devices, map[string]interface{}{
+			"user_id":      session.UserID,
+			"device_id":    session.DeviceID,
+			"ip":           session.IP,
+			"user_agent":   session.UserAgent,
+			"access_uuid":  session.AccessTokenUUID,
+			"refresh_uuid": session.RefreshTokenUUID,
+			"created_at":   session.CreatedAt,
+			"last_active":  session.UpdatedAt,
+		})
 	}
 
 	return devices, nil
@@ -307,6 +291,58 @@ func (s *TokenRevocationService) blacklistToken(ctx context.Context, tokenString
 		}
 	}
 	return nil
+}
+
+// blacklistTokenForType records durable session revocation first, then mirrors
+// it in Redis. Redis failures must not turn a successful logout into a 500.
+func (s *TokenRevocationService) blacklistTokenForType(ctx context.Context, tokenString, uuid, tokenType string, ttl time.Duration) error {
+	if uuid != "" {
+		if _, err := s.sessions.RevokeTokenUUID(ctx, uuid, tokenType, time.Now()); err != nil {
+			return err
+		}
+	}
+	if s.redisClient == nil {
+		return nil
+	}
+	if ttl <= 0 {
+		ttl = time.Hour
+	}
+	if err := s.redisClient.Set(ctx, tokenHashKey(tokenString), "1", ttl).Err(); err != nil {
+		return nil
+	}
+	if uuid == "" {
+		return nil
+	}
+	_ = s.redisClient.Set(ctx, fmt.Sprintf("blacklist:%s", uuid), "1", ttl).Err()
+	return nil
+}
+
+func (s *TokenRevocationService) durableSessionRevocationState(ctx context.Context, tokenString string) (revoked bool, hasDurableSession bool) {
+	claims, err := s.tokenManager.VerifyToken(ctx, tokenString)
+	if err != nil || claims == nil {
+		return false, false
+	}
+	uuid, _ := (*claims)["uuid"].(string)
+	if uuid == "" {
+		uuid, _ = (*claims)["jti"].(string)
+	}
+	if uuid == "" {
+		return false, false
+	}
+
+	session, err := s.sessions.GetByAccessUUID(ctx, uuid)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, false
+		}
+		// Fail closed when the authoritative session store cannot answer.
+		return true, true
+	}
+	hasDurableSession = true
+	now := time.Now()
+	revoked = session.AccessRevokedAt != nil || session.RevokedAt != nil ||
+		session.DeviceRevokedAt != nil || !now.Before(session.AccessTokenExpires)
+	return revoked, hasDurableSession
 }
 
 func (s *TokenRevocationService) isTokenStringRevoked(ctx context.Context, tokenString string) bool {
@@ -396,14 +432,14 @@ func (s *TokenRevocationService) recordRevocation(ctx context.Context, userID ui
 }
 
 // recordRevocationEvent 记录批量撤销事件
-func (s *TokenRevocationService) recordRevocationEvent(ctx context.Context, userID uint, revocationType RevocationReason, ipAddress string) error {
+func (s *TokenRevocationService) recordRevocationEvent(ctx context.Context, userID uint, revocationType RevocationReason, ipAddress string, revokedAt time.Time) error {
 	log := &models.TokenRevocationLog{
 		UserID:         userID,
 		RevocationType: string(revocationType),
 		RevokeAll:      true,
 		RevokedTokens:  models.JSON{"tokens": []string{}}, // 批量撤销时不需要详细记录
 		TokenType:      "all",
-		RevokedAt:      time.Now(),
+		RevokedAt:      revokedAt,
 		IPAddress:      ipAddress,
 	}
 

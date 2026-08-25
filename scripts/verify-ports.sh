@@ -60,11 +60,11 @@ echo ""
 # 检查compose文件中的端口配置
 echo "📄 检查Docker Compose配置："
 echo "==============================="
-if [ -f deployments/docker-compose.prod.yml ]; then
-    echo "生产环境配置文件中的端口映射："
-    grep -A 2 "ports:" deployments/docker-compose.prod.yml | grep -E "^\s+- \"[0-9]+:" | sed 's/^[[:space:]]*- /  /'
+if [ -f docker-compose.yml ]; then
+    echo "默认 Docker Compose 配置文件中的端口映射："
+    grep -A 2 "ports:" docker-compose.yml | grep -E "^\s+- \"[0-9]+:" | sed 's/^[[:space:]]*- /  /'
 else
-    echo "❌ 未找到生产环境Docker Compose文件"
+    echo "❌ 未找到Docker Compose文件"
 fi
 echo ""
 

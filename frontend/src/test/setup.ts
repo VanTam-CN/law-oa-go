@@ -11,29 +11,35 @@ Object.assign(globalThis, {
   TextEncoder,
 })
 
-// Mock localStorage
-const localStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn(),
-  key: jest.fn(),
-  length: 0,
-} as unknown as Storage
+function createStorageMock(): Storage {
+  let values = new Map<string, string>()
+
+  return {
+    get length() {
+      return values.size
+    },
+    clear: jest.fn(() => {
+      values = new Map<string, string>()
+    }),
+    getItem: jest.fn((key: string) => values.get(key) ?? null),
+    key: jest.fn((index: number) => Array.from(values.keys())[index] ?? null),
+    removeItem: jest.fn((key: string) => {
+      values.delete(key)
+    }),
+    setItem: jest.fn((key: string, value: string) => {
+      values.set(key, String(value))
+    }),
+  }
+}
+
+// Use independent in-memory stores so persistence behavior remains testable.
+const localStorageMock = createStorageMock()
 
 Object.defineProperty(window, 'localStorage', {
   value: localStorageMock,
 })
 
-// Mock sessionStorage
-const sessionStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn(),
-  key: jest.fn(),
-  length: 0,
-} as unknown as Storage
+const sessionStorageMock = createStorageMock()
 
 Object.defineProperty(window, 'sessionStorage', {
   value: sessionStorageMock,
@@ -54,14 +60,7 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 })
 
-const originalGetComputedStyle = window.getComputedStyle.bind(window)
-
 const getComputedStyleMock: typeof window.getComputedStyle = (element, pseudoElt) => {
-  const computedStyle = originalGetComputedStyle(element, pseudoElt)
-  if (computedStyle && typeof computedStyle.getPropertyValue === 'function') {
-    return computedStyle
-  }
-
   return {
     getPropertyValue: jest.fn().mockReturnValue(''),
   } as unknown as CSSStyleDeclaration

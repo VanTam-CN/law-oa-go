@@ -5,7 +5,7 @@
 
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
-import { clearStorage, getToken, getUserInfo } from '@/utils/storage'
+import { clearStorage, getToken, getUserInfo, setToken, setUserInfo } from '@/utils/storage'
 
 // 用户状态接口
 export interface User {
@@ -162,8 +162,8 @@ export const useAppStore = create<AppState>()(
 
         // Actions
         login: (user: User, token: string) => {
-          localStorage.setItem('auth_token', token)
-          localStorage.setItem('law_oa_user_info', JSON.stringify(user))
+          setToken(token)
+          setUserInfo(user)
           set({
             user,
             isAuthenticated: true,
@@ -186,7 +186,7 @@ export const useAppStore = create<AppState>()(
           const currentUser = get().user
           if (currentUser) {
             const updatedUser = { ...currentUser, ...userData }
-            localStorage.setItem('law_oa_user_info', JSON.stringify(updatedUser))
+            setUserInfo(updatedUser)
             set({ user: updatedUser })
           }
         },

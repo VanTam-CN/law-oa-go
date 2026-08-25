@@ -1,11 +1,13 @@
 import React from 'react'
 import {
   Avatar,
+  Alert,
   Badge,
   Button,
   Input,
   Modal,
   Progress,
+  Segmented,
   Select,
   Space,
   Switch,
@@ -25,6 +27,7 @@ import {
   ClockCircleOutlined,
   CloudUploadOutlined,
   DollarOutlined,
+  DatabaseOutlined,
   DownloadOutlined,
   FileDoneOutlined,
   FileProtectOutlined,
@@ -139,6 +142,10 @@ interface CommandCenterRiskItem {
   conflict_cases?: Array<Record<string, unknown>>
   evidence?: Array<Record<string, unknown>>
   coverage_status?: string
+  approval_id?: string
+  approval_status?: string
+  approval_request_number?: string
+  approval_current_approver_id?: string | number
 }
 
 interface CommandCenterApprovalItem {
@@ -272,7 +279,7 @@ function textValue(value: unknown, fallback = '未填写') {
 
 function conflictScopeLabel(coverageStatus: unknown) {
   return String(coverageStatus || '').toUpperCase() === 'COMPLETE'
-    ? '已由律所确认完整覆盖的已登记历史'
+    ? '已检索律所配置的权威数据源；最终覆盖范围以审计记录为准'
     : '系统已登记历史（覆盖完整性待确认，未登记档案需人工核查）'
 }
 
@@ -299,6 +306,15 @@ function numberValue(value: unknown, fallback = 0) {
   }
   const parsed = Number(value)
   return Number.isFinite(parsed) ? parsed : fallback
+}
+
+function DiagnosticDetails({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className='batch-diagnostic-details'>
+      <strong className='batch-diagnostic-title'>{label}</strong>
+      <div className='batch-diagnostic-content'>{children}</div>
+    </div>
+  )
 }
 
 function formatApiDate(value?: string) {
@@ -355,6 +371,31 @@ function conflictMatchTypeLabel(value: unknown) {
     RELATED_PARTY: '关联方关系命中',
   }
   return labels[normalized] || textValue(value, '未提供')
+}
+
+function conflictSubjectRoleLabel(value: unknown) {
+  const normalized = textValue(value, '').toUpperCase()
+  const labels: Record<string, string> = {
+    CLIENT: '客户/委托人',
+    OPPOSING: '对方当事人',
+    OPPOSING_PARTY: '对方当事人',
+    RELATED_PARTY: '关联方',
+    BENEFICIAL_OWNER: '实际控制人/受益所有人',
+    LAWYER: '承办律师',
+  }
+  return labels[normalized] || textValue(value, '未提供')
+}
+
+function conflictRuleLabel(value: unknown) {
+  const normalized = textValue(value, '').toUpperCase()
+  const labels: Record<string, string> = {
+    SUBJECT_CANDIDATE_REVIEW: '名称候选，需要核实主体身份',
+    DIRECT_ADVERSE_CURRENT_CLIENT: '对方为本所现有客户',
+    DIRECT_ADVERSE_FORMER_CLIENT: '对方为本所既往客户',
+    STRUCTURED_IDENTITY_EXACT: '主体唯一标识一致',
+    RELATED_PARTY_CONFLICT: '关联方关系命中',
+  }
+  return labels[normalized] || (normalized ? '其他规则（技术编号见审计信息）' : '未提供')
 }
 
 function conflictAlgorithmLabel(value: unknown) {
@@ -487,10 +528,7 @@ function deriveConflictDecisionViewModel(
   )
     decision = 'BLOCKED'
   else if (['no_conflict', 'false_positive'].includes(reviewDecision)) decision = 'CLEAR'
-  else if (
-    ['NO_MATCH_FOUND', 'NO_CONFLICT', 'NO_MATCH'].includes(rawDecision) &&
-    !hasConflict
-  )
+  else if (['NO_MATCH_FOUND', 'NO_CONFLICT', 'NO_MATCH'].includes(rawDecision) && !hasConflict)
     decision = 'CLEAR'
   else if (rawDecision === 'BLOCKED') decision = 'BLOCKED'
   else if (rawDecision === 'CLEAR') decision = 'CLEAR'
@@ -684,7 +722,7 @@ function conflictHitSubject(
   return (record?.has_conflict ?? record?.hasConflict) ? '待人工核实主体' : '未发现匹配记录'
 }
 
-function conflictRecordMatchType(
+export function conflictRecordMatchType(
   conflict: CommandCenterRiskItem | Record<string, any> | null | undefined,
 ) {
   const record = conflict as Record<string, any> | null | undefined
@@ -695,6 +733,10 @@ function conflictRecordMatchType(
   const decision = deriveConflictDecisionViewModel(record).decision
   if (decision === 'CLEAR') return '无命中'
   const evidence = primaryConflictEvidence(record)
+  const hasConflict = record?.has_conflict ?? record?.hasConflict
+  if ((hasConflict === false || hasConflict === 0) && Object.keys(evidence).length === 0) {
+    return '无匹配'
+  }
   const result = recordValue(record?.check_result)
   const rawMatchType = firstPresent(
     evidence.matchType,
@@ -831,6 +873,8 @@ function statusLabel(value?: string) {
     resubmitted: '已重新提交',
     needs_revision: '待补充',
     request_changes: '退回修改',
+    approve: '同意',
+    reject: '拒绝',
     conflict_ready: '待冲突复核',
     conflict_checking: '冲突检测中',
     risk_review: '冲突复核中',
@@ -972,7 +1016,7 @@ function settingEnabled(row: Record<string, unknown>) {
   return value.enabled !== false && textValue(row.setting_key, '').length > 0
 }
 
-interface IntakeFormState {
+export interface IntakeFormState {
   intakeId: string
   intakeCode: string
   idempotencyKey: string
@@ -992,12 +1036,96 @@ interface IntakeFormState {
   clientId: number
   clientName: string
   opponentName: string
+  opponentEntityType: string
+  opponentIdentityType: string
+  opponentIdentityNumber: string
+  opponentAliases: string
   description: string
   billingMethod: string
   feeBase: string
   contingencyRate: string
   minimumFee: string
   lawyerId: number
+}
+
+export type ConflictCheckRequiredField =
+  | 'title'
+  | 'client'
+  | 'opponentName'
+  | 'opponentIdentityNumber'
+  | 'lawyer'
+  | 'caseType'
+  | 'businessArea'
+  | 'subArea'
+
+export const conflictCheckRequiredFieldLabels: Record<ConflictCheckRequiredField, string> = {
+  title: '案件名称',
+  client: '客户',
+  opponentName: '对方当事人',
+  opponentIdentityNumber: '对方身份标识',
+  lawyer: '负责律师',
+  caseType: '案件类型',
+  businessArea: '业务领域',
+  subArea: '子领域',
+}
+
+const hasConflictCheckValue = (value: string | number | null | undefined) =>
+  typeof value === 'number' ? value > 0 : String(value || '').trim().length > 0
+
+export function getMissingConflictCheckFields(
+  form: Pick<
+    IntakeFormState,
+    | 'title'
+    | 'clientId'
+    | 'clientName'
+    | 'opponentName'
+    | 'opponentIdentityNumber'
+    | 'lawyerId'
+    | 'caseType'
+    | 'businessArea'
+    | 'subArea'
+  >,
+): ConflictCheckRequiredField[] {
+  const missing: ConflictCheckRequiredField[] = []
+  if (!hasConflictCheckValue(form.title)) missing.push('title')
+  if (!hasConflictCheckValue(form.clientId) || !hasConflictCheckValue(form.clientName)) {
+    missing.push('client')
+  }
+  if (!hasConflictCheckValue(form.opponentName)) missing.push('opponentName')
+  if (!hasConflictCheckValue(form.opponentIdentityNumber)) {
+    missing.push('opponentIdentityNumber')
+  }
+  if (!hasConflictCheckValue(form.lawyerId)) missing.push('lawyer')
+  if (!hasConflictCheckValue(form.caseType)) missing.push('caseType')
+  if (!hasConflictCheckValue(form.businessArea)) missing.push('businessArea')
+  if (!hasConflictCheckValue(form.subArea)) missing.push('subArea')
+  return missing
+}
+
+function conflictCheckFieldForFormKey(
+  key: keyof IntakeFormState,
+): ConflictCheckRequiredField | undefined {
+  if (key === 'clientId' || key === 'clientName') return 'client'
+  if (key === 'lawyerId') return 'lawyer'
+  if (
+    key === 'title' ||
+    key === 'opponentName' ||
+    key === 'opponentIdentityNumber' ||
+    key === 'caseType' ||
+    key === 'businessArea' ||
+    key === 'subArea'
+  ) {
+    return key
+  }
+  return undefined
+}
+
+interface IntakeRelatedParty {
+  name: string
+  role: string
+  entityType: string
+  identityType: string
+  identityNumber: string
 }
 
 interface IntakeRuntimeState {
@@ -1046,6 +1174,10 @@ const defaultIntakeForm: IntakeFormState = {
   clientId: 0,
   clientName: '',
   opponentName: '',
+  opponentEntityType: 'LEGAL_PERSON',
+  opponentIdentityType: 'SOCIAL_CREDIT_CODE',
+  opponentIdentityNumber: '',
+  opponentAliases: '',
   description: '',
   billingMethod: '',
   feeBase: '',
@@ -1063,19 +1195,38 @@ export function scopedCaseIntakeDraftKey(userID: string, caseID?: string) {
 export function caseIntakeConflictFingerprint(
   form: Pick<
     IntakeFormState,
-    'clientId' | 'clientName' | 'opponentName' | 'title' | 'caseType' | 'lawyerId'
+    | 'clientId'
+    | 'clientName'
+    | 'opponentName'
+    | 'opponentEntityType'
+    | 'opponentIdentityType'
+    | 'opponentIdentityNumber'
+    | 'opponentAliases'
+    | 'title'
+    | 'caseType'
+    | 'lawyerId'
   >,
-  relatedParties: Array<{ name: string; role: string }>,
+  relatedParties: IntakeRelatedParty[],
 ) {
   return JSON.stringify({
     clientId: form.clientId,
     clientName: form.clientName.trim(),
     opponentName: form.opponentName.trim(),
+    opponentEntityType: form.opponentEntityType,
+    opponentIdentityType: form.opponentIdentityType,
+    opponentIdentityNumber: form.opponentIdentityNumber.trim(),
+    opponentAliases: form.opponentAliases.trim(),
     title: form.title.trim(),
     caseType: form.caseType,
     lawyerId: form.lawyerId,
     relatedParties: relatedParties
-      .map((party) => ({ name: party.name.trim(), role: party.role }))
+      .map((party) => ({
+        name: party.name.trim(),
+        role: party.role,
+        entityType: party.entityType,
+        identityType: party.identityType,
+        identityNumber: party.identityNumber.trim(),
+      }))
       .sort((a, b) => a.name.localeCompare(b.name)),
   })
 }
@@ -1093,11 +1244,22 @@ function loadCaseIntakeDraft(draftKey: string): IntakeFormState | null {
     return {
       ...defaultIntakeForm,
       ...parsed,
+      // Identity values are deliberately never restored from browser storage.
+      opponentIdentityNumber: '',
       clientId: Number(parsed.clientId || 0),
       lawyerId: Number(parsed.lawyerId || 0),
     }
   } catch {
     return null
+  }
+}
+
+export function persistableCaseIntakeDraft(form: IntakeFormState) {
+  return {
+    ...form,
+    // A shared workstation must not retain a client's or opponent's identity
+    // number in localStorage. The lawyer re-enters it before confirmation.
+    opponentIdentityNumber: '',
   }
 }
 
@@ -1501,8 +1663,7 @@ export function DashboardCommandCenter() {
       if (item.label === '接案准备中') return { ...item, value: workflow?.intake ?? item.value }
       if (item.label === '在办案件总数') return { ...item, value: activeCases }
       if (item.label === '逾期任务') return { ...item, value: overdueItems.length }
-      if (item.label === '合同回款预警')
-        return { ...item, value: financeWarningAmount, delta: '' }
+      if (item.label === '合同回款预警') return { ...item, value: financeWarningAmount, delta: '' }
       return item
     })
   const urgentTodoCount = todoItems.filter((item) =>
@@ -1582,8 +1743,8 @@ export function DashboardCommandCenter() {
     )
   }
 
- return (
-  <div className='ng-content'>
+  return (
+    <div className='batch-page dashboard-page ng-content'>
       <header className='ng-hero'>
         <div>
           <h1>
@@ -1608,7 +1769,12 @@ export function DashboardCommandCenter() {
             <Button size='small' onClick={refreshCommandCenter} loading={apiLoading}>
               刷新接口
             </Button>
-            <Button size='small' type='primary' icon={<PlusOutlined />} onClick={() => navigate('/case/create')}>
+            <Button
+              size='small'
+              type='primary'
+              icon={<PlusOutlined />}
+              onClick={() => navigate('/case/create')}
+            >
               新建立案
             </Button>
           </span>
@@ -1630,7 +1796,10 @@ export function DashboardCommandCenter() {
       </section>
 
       {globalSearchState.status !== 'idle' && (
-        <section className={`batch-search-feedback ${globalSearchState.status}`} style={{ marginBottom: 16 }}>
+        <section
+          className={`batch-search-feedback ${globalSearchState.status}`}
+          style={{ marginBottom: 16 }}
+        >
           <SearchOutlined />
           <span>{globalSearchState.message}</span>
           {globalSearchState.results.map((result) => (
@@ -1642,7 +1811,10 @@ export function DashboardCommandCenter() {
         </section>
       )}
 
-      <div className='batch-metric-grid' style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginBottom: 22 }}>
+      <div
+        className='batch-metric-grid'
+        style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginBottom: 22 }}
+      >
         {dashboardMetrics.map((item) => {
           const cardTone =
             item.tone === 'red'
@@ -1728,7 +1900,9 @@ export function DashboardCommandCenter() {
                     <div className='ng-todo-desc'>{textValue(item.content, '—')}</div>
                     <div className='ng-todo-foot'>
                       <span>{workItemTypeLabel(item.source_type)}</span>
-                      <span className={`ng-urgency ${urgCls}`}>截止 {formatApiDate(item.due_at)}</span>
+                      <span className={`ng-urgency ${urgCls}`}>
+                        截止 {formatApiDate(item.due_at)}
+                      </span>
                       <RiskTag text={priorityLabel(item.priority)} />
                     </div>
                   </div>
@@ -1745,7 +1919,12 @@ export function DashboardCommandCenter() {
               </div>
             )}
           </div>
-          <Button type='link' aria-label='查看全部待办' onClick={() => navigate('/inbox')} style={{ margin: '8px 22px' }}>
+          <Button
+            type='link'
+            aria-label='查看全部待办'
+            onClick={() => navigate('/inbox')}
+            style={{ margin: '8px 22px' }}
+          >
             查看全部待办
           </Button>
         </section>
@@ -1900,7 +2079,9 @@ export function DashboardCommandCenter() {
           <div className='ng-todo-list'>
             {overdueItems.map((item, index) => (
               <div key={item.id || item.title} className='ng-todo-item'>
-                <div className={`ng-todo-mark ${index < 3 ? 'conflict' : 'deadline'}`}>{index + 1}</div>
+                <div className={`ng-todo-mark ${index < 3 ? 'conflict' : 'deadline'}`}>
+                  {index + 1}
+                </div>
                 <div className='ng-todo-body'>
                   <div className='ng-todo-title'>{textValue(item.title)}</div>
                   <div className='ng-todo-foot'>
@@ -1931,7 +2112,9 @@ export function DashboardCommandCenter() {
           <div className='ng-todo-list'>
             {activities.map((activity, index) => (
               <div key={activity.id || activity.title || index} className='ng-todo-item'>
-                <div className={`ng-todo-mark ${activity.type === 'approval' ? 'approval' : 'doc'}`}>
+                <div
+                  className={`ng-todo-mark ${activity.type === 'approval' ? 'approval' : 'doc'}`}
+                >
                   {activity.type === 'approval' ? '审' : '动'}
                 </div>
                 <div className='ng-todo-body'>
@@ -2000,10 +2183,10 @@ export function DashboardCommandCenter() {
         <div className='ng-shortcut' onClick={() => navigate('/dashboard')}>
           <div className='ng-shortcut-ico'>析</div>
           <div className='ng-shortcut-name'>数据看板</div>
-         <div className='ng-shortcut-desc'>经营分析</div>
-       </div>
-     </div>
-     </div>
+          <div className='ng-shortcut-desc'>经营分析</div>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -2022,6 +2205,7 @@ export function ClientMasterProfile() {
   const [clientDraft, setClientDraft] = React.useState({
     name: '',
     type: '企业',
+    identityNumber: '',
     phone: '',
     email: '',
     address: '',
@@ -2043,12 +2227,10 @@ export function ClientMasterProfile() {
       .then((data) => {
         const rows = listOf<any>(data?.clients || data?.list || data)
         setClientRows(rows)
-        if (!selectedClientId && rows[0]?.id) {
-          setSelectedClientId(rows[0].id)
-        }
+        setSelectedClientId((current) => current || rows[0]?.id || null)
       })
       .catch((error) => message.error(error instanceof Error ? error.message : '加载客户列表失败'))
-  }, [selectedClientId])
+  }, [])
 
   React.useEffect(() => {
     if (!selectedClientId) {
@@ -2065,6 +2247,7 @@ export function ClientMasterProfile() {
   }, [selectedClientId])
 
   const client = profile?.client || {}
+  const primaryContact = profile?.primary_contact || null
   const completeness = profile?.completeness || {}
   const relatedParties = listOf<any>(profile?.related_parties)
   const matterHistory = listOf<any>(profile?.matter_history)
@@ -2075,7 +2258,7 @@ export function ClientMasterProfile() {
       .includes(clientSearch.trim().toLowerCase()),
   )
   const openCreateClient = () => {
-    setClientDraft({ name: '', type: '企业', phone: '', email: '', address: '' })
+    setClientDraft({ name: '', type: '企业', identityNumber: '', phone: '', email: '', address: '' })
     setCreateClientOpen(true)
   }
   const createClient = async () => {
@@ -2083,16 +2266,33 @@ export function ClientMasterProfile() {
       message.warning('请先填写客户名称')
       return
     }
+    if (!clientDraft.identityNumber.trim()) {
+      message.warning(
+        clientDraft.type === '企业' ? '请填写统一社会信用代码' : '请填写身份证件号码',
+      )
+      return
+    }
     setCreatingClient(true)
     try {
-      await apiRequest('/clients', {
+      const createdClient = await apiRequest<any>('/clients', {
         method: 'POST',
-        body: JSON.stringify(clientDraft),
+        body: JSON.stringify({
+          ...clientDraft,
+          identity_type:
+            clientDraft.type === '企业' ? 'SOCIAL_CREDIT_CODE' : 'ID_CARD',
+          identity_number: clientDraft.identityNumber.trim(),
+          identityNumber: undefined,
+        }),
       })
       message.success('客户已创建')
       setCreateClientOpen(false)
       const data = await apiRequest<any>('/clients?page=1&page_size=20')
-      setClientRows(listOf<any>(data?.clients || data?.list || data))
+      const rows = listOf<any>(data?.clients || data?.list || data)
+      setClientRows(rows)
+      if (createdClient?.id) {
+		setClientTab('基本信息')
+        setSelectedClientId(createdClient.id)
+      }
     } catch (error) {
       message.error(error instanceof Error ? error.message : '新增客户失败')
     } finally {
@@ -2100,11 +2300,14 @@ export function ClientMasterProfile() {
     }
   }
   const openContactModal = () => {
+	const legacyContact = Boolean(primaryContact?.legacy)
     setContactDraft({
-      name: textValue(client.contact_person, ''),
-      position: textValue(client.contact_position || client.position, ''),
-      phone: textValue(client.contact_phone || client.phone, ''),
-      email: textValue(client.email, ''),
+      name: textValue(primaryContact?.name || client.contact_person, ''),
+      position: textValue(primaryContact?.position, ''),
+      // Legacy contact phones are masked by the aggregate API. Never persist a
+      // masked display value as if it were the real phone number.
+      phone: legacyContact ? '' : textValue(primaryContact?.phone, ''),
+      email: textValue(primaryContact?.email, ''),
     })
     setContactModalOpen(true)
   }
@@ -2120,36 +2323,23 @@ export function ClientMasterProfile() {
     setContactSaving(true)
     try {
       const payload = {
-        contact_person: contactDraft.name.trim(),
-        contact_phone: contactDraft.phone.trim(),
-        email: contactDraft.email.trim() || undefined,
-        notes: contactDraft.position.trim()
-          ? `${textValue(client.notes, '')}\n主联系人职位：${contactDraft.position.trim()}`.trim()
-          : undefined,
+        version: numberValue(primaryContact?.version, 0),
+        name: contactDraft.name.trim(),
+        position: contactDraft.position.trim(),
+        phone: contactDraft.phone.trim(),
+        email: contactDraft.email.trim(),
       }
-      const saveContact = (version: number) =>
-        apiRequest<any>(`/clients/${client.id}`, {
-          method: 'PUT',
-          body: JSON.stringify({
-            version,
-            ...payload,
-          }),
-        })
-      let updatedClient: any
-      try {
-        updatedClient = await saveContact(Number(client.version || 1))
-      } catch (error) {
-        const latestClient = await apiRequest<any>(`/clients/${client.id}`)
-        updatedClient = await saveContact(Number(latestClient.version || 1))
-      }
+      const updatedContact = await apiRequest<any>(`/clients/${client.id}/primary-contact`, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      })
       setProfile((current: any) => ({
         ...current,
+        primary_contact: updatedContact,
         client: {
           ...(current?.client || {}),
-          ...updatedClient,
-          contact_person: contactDraft.name.trim(),
-          contact_phone: contactDraft.phone.trim(),
-          email: contactDraft.email.trim() || current?.client?.email,
+          contact_person: updatedContact.name,
+          contact_phone: updatedContact.phone,
           updated_at: new Date().toISOString(),
         },
       }))
@@ -2200,467 +2390,474 @@ export function ClientMasterProfile() {
       />
 
       <div className='ng-content'>
-      <div className='batch-client-layout'>
-        <aside className='batch-client-list'>
-          <div className='batch-panel-title'>
-            <h2>客户列表</h2>
-            {canManageClients && (
-              <Button icon={<PlusOutlined />} onClick={openCreateClient}>
-                新增客户
-              </Button>
-            )}
-          </div>
-          <Input
-            id='client-search'
-            name='clientSearch'
-            prefix={<SearchOutlined />}
-            value={clientSearch}
-            onChange={(event) => setClientSearch(event.target.value)}
-            allowClear
-            placeholder='搜索客户名称或邮箱'
-          />
-          <div className='batch-client-items'>
-            {filteredClientRows.map((item) => (
-              <button
-                type='button'
-                key={item.id || item.name}
-                className={String(item.id) === String(selectedClientId) ? 'selected' : ''}
-                onClick={() => setSelectedClientId(item.id)}
-              >
+        <div className='batch-client-layout'>
+          <aside className='batch-client-list'>
+            <div className='batch-panel-title'>
+              <h2>客户列表</h2>
+              {canManageClients && (
+                <Button icon={<PlusOutlined />} onClick={openCreateClient}>
+                  新增客户
+                </Button>
+              )}
+            </div>
+            <Input
+              id='client-search'
+              name='clientSearch'
+              prefix={<SearchOutlined />}
+              value={clientSearch}
+              onChange={(event) => setClientSearch(event.target.value)}
+              allowClear
+              placeholder='搜索客户名称或邮箱'
+            />
+            <div className='batch-client-items'>
+              {filteredClientRows.map((item) => (
+                <button
+                  type='button'
+                  key={item.id || item.name}
+                  className={String(item.id) === String(selectedClientId) ? 'selected' : ''}
+                  onClick={() => setSelectedClientId(item.id)}
+                >
+                  <BankOutlined />
+                  <div>
+                    <strong>{textValue(item.name)}</strong>
+                    <span>{textValue(item.email || item.company, '无邮箱/公司信息')}</span>
+                  </div>
+                  <RiskTag text={statusLabel(item.status)} />
+                </button>
+              ))}
+              {filteredClientRows.length === 0 && (
+                <p>{clientRows.length === 0 ? '暂无数据库客户' : '未找到匹配客户'}</p>
+              )}
+            </div>
+            <div className='batch-pagination'>共 {clientRows.length} 条</div>
+          </aside>
+
+          <main className='batch-profile-main'>
+            <section className='batch-profile-hero'>
+              <span className='batch-company-avatar'>
                 <BankOutlined />
+              </span>
+              <div className='batch-profile-title'>
+                <h1>
+                  {textValue(client.name, loading ? '加载中' : '未选择客户')}{' '}
+                  <Tag color='green'>{statusLabel(client.status)}</Tag>
+                </h1>
+                <p>
+                  客户类型：{textValue(client.type)} · 行业：{textValue(client.industry)}
+                </p>
+              </div>
+              <div className='batch-profile-metrics'>
                 <div>
-                  <strong>{textValue(item.name)}</strong>
-                  <span>{textValue(item.email || item.company, '无邮箱/公司信息')}</span>
+                  <Progress
+                    type='circle'
+                    percent={completeness.score || 0}
+                    size={64}
+                    strokeColor='#12a89d'
+                  />
+                  <span>数据完整度</span>
                 </div>
-                <RiskTag text={statusLabel(item.status)} />
-              </button>
-            ))}
-            {filteredClientRows.length === 0 && (
-              <p>{clientRows.length === 0 ? '暂无数据库客户' : '未找到匹配客户'}</p>
-            )}
-          </div>
-          <div className='batch-pagination'>共 {clientRows.length} 条</div>
-        </aside>
+                <div>
+                  <strong className={conflictHistory.length ? 'orange-text' : 'green-text'}>
+                    {conflictHistory.length ? '有检测记录' : '未见记录'}
+                  </strong>
+                  <span>冲突记录</span>
+                </div>
+                <div>
+                  <strong className='green-text'>{statusLabel(client.status)}</strong>
+                  <span>客户状态</span>
+                </div>
+                <div>
+                  <strong>{formatApiDate(client.created_at).slice(0, 10)}</strong>
+                  <span>首次入库</span>
+                </div>
+                <div>
+                  <strong>{formatApiDate(client.updated_at).slice(0, 10)}</strong>
+                  <span>最近更新</span>
+                </div>
+              </div>
+            </section>
 
-        <main className='batch-profile-main'>
-          <section className='batch-profile-hero'>
-            <span className='batch-company-avatar'>
-              <BankOutlined />
-            </span>
-            <div className='batch-profile-title'>
-              <h1>
-                {textValue(client.name, loading ? '加载中' : '未选择客户')}{' '}
-                <Tag color='green'>{statusLabel(client.status)}</Tag>
-              </h1>
-              <p>
-                客户类型：{textValue(client.type)} · 行业：{textValue(client.industry)}
-              </p>
+            <div className='batch-tabs'>
+              {[
+                '基本信息',
+                '关联方与穿透',
+                '历史委托与案件',
+                '冲突信息池',
+                '联系人',
+                '附件文档',
+                '活动日志',
+              ].map((tab) => (
+                <button
+                  key={tab}
+                  className={clientTab === tab ? 'active' : ''}
+                  aria-label={`${client.name || '客户'} ${tab}`}
+                  onClick={() => setClientTab(tab)}
+                >
+                  {tab}
+                </button>
+              ))}
             </div>
-            <div className='batch-profile-metrics'>
-              <div>
-                <Progress
-                  type='circle'
-                  percent={completeness.score || 0}
-                  size={64}
-                  strokeColor='#12a89d'
-                />
-                <span>数据完整度</span>
-              </div>
-              <div>
-                <strong className={conflictHistory.length ? 'orange-text' : 'green-text'}>
-                  {conflictHistory.length ? '有检测记录' : '未见记录'}
-                </strong>
-                <span>冲突记录</span>
-              </div>
-              <div>
-                <strong className='green-text'>{statusLabel(client.status)}</strong>
-                <span>客户状态</span>
-              </div>
-              <div>
-                <strong>{formatApiDate(client.created_at).slice(0, 10)}</strong>
-                <span>首次入库</span>
-              </div>
-              <div>
-                <strong>{formatApiDate(client.updated_at).slice(0, 10)}</strong>
-                <span>最近更新</span>
-              </div>
-            </div>
-          </section>
 
-          <div className='batch-tabs'>
-            {[
-              '基本信息',
-              '关联方与穿透',
-              '历史委托与案件',
-              '冲突信息池',
-              '联系人',
-              '附件文档',
-              '活动日志',
-            ].map((tab) => (
-              <button
-                key={tab}
-                className={clientTab === tab ? 'active' : ''}
-                aria-label={`${client.name || '客户'} ${tab}`}
-                onClick={() => setClientTab(tab)}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
+            <div className='batch-profile-grid'>
+              {clientTab === '基本信息' && (
+                <SectionCard title='基本信息' className='span-2'>
+                  <div className='batch-info-grid'>
+                    {[
+                      ['客户名称', textValue(client.name)],
+                      ['客户类型', textValue(client.type)],
+                      [
+                        textValue(client.identity_type).toUpperCase() === 'SOCIAL_CREDIT_CODE'
+                          ? '统一社会信用代码'
+                          : '身份证件标识',
+                        textValue(client.identity_status, '未登记'),
+                      ],
+                      ['客户公共邮箱', textValue(client.email)],
+                      ['联系电话', textValue(client.phone)],
+                      ['所属行业', textValue(client.industry)],
+                      ['主联系人', textValue(primaryContact?.name || client.contact_person)],
+                      ['联系地址', textValue(client.address)],
+                      ['客户来源', clientSourceLabel(client.source)],
+                      ['备注', textValue(client.notes)],
+                    ].map(([label, value]) => (
+                      <p key={label}>
+                        <span>{label}</span>
+                        <strong>{value}</strong>
+                      </p>
+                    ))}
+                  </div>
+                </SectionCard>
+              )}
 
-          <div className='batch-profile-grid'>
-            {clientTab === '基本信息' && (
-              <SectionCard title='基本信息' className='span-2'>
-                <div className='batch-info-grid'>
-                  {[
-                    ['客户名称', textValue(client.name)],
-                    ['客户类型', textValue(client.type)],
-                    ['电子邮箱', textValue(client.email)],
-                    ['联系电话', textValue(client.phone)],
-                    ['所属行业', textValue(client.industry)],
-                    ['联系人', textValue(client.contact_person)],
-                    ['联系地址', textValue(client.address)],
-                    ['客户来源', clientSourceLabel(client.source)],
-                    ['备注', textValue(client.notes)],
-                  ].map(([label, value]) => (
-                    <p key={label}>
-                      <span>{label}</span>
-                      <strong>{value}</strong>
-                    </p>
-                  ))}
-                </div>
-              </SectionCard>
-            )}
+              {clientTab === '关联方与穿透' && (
+                <SectionCard title='关系图谱（穿透预览）'>
+                  <div className='batch-relation-graph'>
+                    <span className='node main'>{textValue(client.name, '客户')}</span>
+                    {relatedParties.slice(0, 5).map((party: any, index: number) => (
+                      <span
+                        key={party.name || index}
+                        className={`node small ${['top-left', 'top-right', 'bottom-left', 'bottom-mid', 'bottom-right'][index]}`}
+                      >
+                        {textValue(party.name)}
+                        <br />
+                        {relationshipTypeLabel(party.relationship_type)}
+                      </span>
+                    ))}
+                  </div>
+                </SectionCard>
+              )}
 
-            {clientTab === '关联方与穿透' && (
-              <SectionCard title='关系图谱（穿透预览）'>
-                <div className='batch-relation-graph'>
-                  <span className='node main'>{textValue(client.name, '客户')}</span>
-                  {relatedParties.slice(0, 5).map((party: any, index: number) => (
-                    <span
-                      key={party.name || index}
-                      className={`node small ${['top-left', 'top-right', 'bottom-left', 'bottom-mid', 'bottom-right'][index]}`}
-                    >
-                      {textValue(party.name)}
-                      <br />
-                      {relationshipTypeLabel(party.relationship_type)}
-                    </span>
-                  ))}
-                </div>
-              </SectionCard>
-            )}
-
-            <SectionCard title='快速操作'>
-              <div className='batch-action-list'>
-                <Button
-                  icon={<PlusOutlined />}
-                  onClick={() => navigate(`/case/create?client_id=${client.id}`)}
-                  disabled={!client.id}
-                >
-                  发起新案件
-                </Button>
-                <Button
-                  icon={<FileSearchOutlined />}
-                  onClick={() => navigate(`/case/create?client_id=${client.id}&intent=conflict`)}
-                  disabled={!client.id}
-                >
-                  发起冲突检查
-                </Button>
-                <Button icon={<UserOutlined />} onClick={openContactModal}>
-                  编辑主联系人
-                </Button>
-                <Button icon={<CloudUploadOutlined />} onClick={() => setUploadModalOpen(true)}>
-                  上传附件
-                </Button>
-                <Button
-                  icon={<DownloadOutlined />}
-                  onClick={() => {
-                    try {
-                      const blob = new Blob([JSON.stringify(client, null, 2)], {
-                        type: 'application/json',
-                      })
-                      const url = URL.createObjectURL(blob)
-                      const a = document.createElement('a')
-                      a.href = url
-                      a.download = `client-${client.name || 'export'}.json`
-                      a.click()
-                      URL.revokeObjectURL(url)
-                      message.success('客户档案已导出')
-                    } catch {
-                      message.error('导出失败，请稍后重试')
-                    }
-                  }}
-                >
-                  导出客户档案
-                </Button>
-              </div>
-            </SectionCard>
-
-            <Modal
-              title='编辑主联系人'
-              open={contactModalOpen}
-              onCancel={() => setContactModalOpen(false)}
-              onOk={savePrimaryContact}
-              okText='保存'
-              confirmLoading={contactSaving}
-            >
-              <div className='batch-form-grid two'>
-                <div className='batch-field'>
-                  <label htmlFor='contact-name'>姓名 *</label>
-                  <Input
-                    id='contact-name'
-                    name='contactName'
-                    placeholder='联系人姓名'
-                    value={contactDraft.name}
-                    onChange={(event) =>
-                      setContactDraft((draft) => ({ ...draft, name: event.target.value }))
-                    }
-                  />
-                </div>
-                <div className='batch-field'>
-                  <label htmlFor='contact-position'>职位</label>
-                  <Input
-                    id='contact-position'
-                    name='contactPosition'
-                    placeholder='职位'
-                    value={contactDraft.position}
-                    onChange={(event) =>
-                      setContactDraft((draft) => ({ ...draft, position: event.target.value }))
-                    }
-                  />
-                </div>
-                <div className='batch-field'>
-                  <label htmlFor='contact-phone'>电话</label>
-                  <Input
-                    id='contact-phone'
-                    name='contactPhone'
-                    placeholder='联系电话'
-                    value={contactDraft.phone}
-                    onChange={(event) =>
-                      setContactDraft((draft) => ({ ...draft, phone: event.target.value }))
-                    }
-                  />
-                </div>
-                <div className='batch-field'>
-                  <label htmlFor='contact-email'>邮箱</label>
-                  <Input
-                    id='contact-email'
-                    name='contactEmail'
-                    placeholder='电子邮箱'
-                    value={contactDraft.email}
-                    onChange={(event) =>
-                      setContactDraft((draft) => ({ ...draft, email: event.target.value }))
-                    }
-                  />
-                </div>
-              </div>
-            </Modal>
-            <Modal
-              title='上传附件'
-              open={uploadModalOpen}
-              onCancel={() => setUploadModalOpen(false)}
-              onOk={uploadClientAttachment}
-              okText='上传'
-              confirmLoading={uploadSaving}
-            >
-              <Upload
-                beforeUpload={(file) => {
-                  setUploadFile(file)
-                  return false
-                }}
-                maxCount={1}
-                fileList={
-                  uploadFile
-                    ? [{ uid: uploadFile.name, name: uploadFile.name, status: 'done' }]
-                    : []
-                }
-                onRemove={() => {
-                  setUploadFile(null)
-                  return true
-                }}
-              >
-                <Button icon={<CloudUploadOutlined />}>选择附件</Button>
-              </Upload>
-              <p>附件将关联到当前客户档案：{textValue(client.name, '未选择客户')}</p>
-            </Modal>
-
-            {clientTab === '基本信息' && (
-              <SectionCard title='别名 / 曾用名'>
-                <div className='batch-key-list'>
-                  {listOf<string>(client.aliases).map((name, index) => (
-                    <p key={`${name}-${index}`}>
-                      {name}
-                      <MoreOutlined />
-                    </p>
-                  ))}
-                  {!client.aliases?.length && <p>数据库暂无别名记录</p>}
-                </div>
-              </SectionCard>
-            )}
-
-            {clientTab === '关联方与穿透' && (
-              <SectionCard title='关联方'>
-                <DataTable>
-                  <table>
-                    <tbody>
-                      {relatedParties.map((party: any, index) => (
-                        <tr key={`${textValue(party.id || party.name, 'related')}-${index}`}>
-                          <td>{textValue(party.name)}</td>
-                          <td>{relationshipTypeLabel(party.relationship_type)}</td>
-                        </tr>
-                      ))}
-                      {relatedParties.length === 0 && (
-                        <tr>
-                          <td colSpan={2}>暂无数据库关联方</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </DataTable>
-              </SectionCard>
-            )}
-
-            {clientTab === '历史委托与案件' && (
-              <SectionCard title='关联案件（近12个月）'>
-                <DataTable>
-                  <table>
-                    <tbody>
-                      {matterHistory.map((row: any) => (
-                        <tr key={row.id}>
-                          <td>{textValue(row.title)}</td>
-                          <td>{dbCaseType(textValue(row.case_type))}</td>
-                          <td>
-                            <RiskTag text={statusLabel(row.status)} />
-                          </td>
-                        </tr>
-                      ))}
-                      {matterHistory.length === 0 && (
-                        <tr>
-                          <td colSpan={3}>暂无数据库关联案件</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </DataTable>
-              </SectionCard>
-            )}
-
-            {(clientTab === '冲突信息池' || clientTab === '活动日志') && (
-              <SectionCard title={clientTab === '冲突信息池' ? '冲突信息池' : '最近活动'}>
-                <div className='batch-activity-list profile'>
-                  {conflictHistory.map((activity: any) => (
-                    <p key={activity.check_id}>
-                      <StatusDot color='blue' />
-                      <span>{textValue(activity.case_name)}</span>
-                      <em>{formatApiDate(activity.created_at)}</em>
-                    </p>
-                  ))}
-                  {conflictHistory.length === 0 && <p>暂无数据库冲突活动</p>}
-                </div>
-              </SectionCard>
-            )}
-
-            {clientTab === '联系人' && (
-              <SectionCard title='联系人' className='span-2'>
-                <div className='batch-info-grid'>
-                  <p>
-                    <span>姓名</span>
-                    <strong>{textValue(client.contact_person)}</strong>
-                  </p>
-                  <p>
-                    <span>电话</span>
-                    <strong>{textValue(client.contact_phone || client.phone)}</strong>
-                  </p>
-                  <p>
-                    <span>邮箱</span>
-                    <strong>{textValue(client.email)}</strong>
-                  </p>
-                </div>
-                {canManageClients && (
+              <SectionCard title='快速操作'>
+                <div className='batch-action-list'>
+                  <Button
+                    icon={<PlusOutlined />}
+                    onClick={() => navigate(`/case/create?client_id=${client.id}`)}
+                    disabled={!client.id}
+                  >
+                    发起新案件
+                  </Button>
+                  <Button
+                    icon={<FileSearchOutlined />}
+                    onClick={() => navigate(`/case/create?client_id=${client.id}&intent=conflict`)}
+                    disabled={!client.id}
+                  >
+                    以此客户新建立案并检查冲突
+                  </Button>
                   <Button icon={<UserOutlined />} onClick={openContactModal}>
                     编辑主联系人
                   </Button>
-                )}
-              </SectionCard>
-            )}
-
-            {clientTab === '附件文档' && (
-              <SectionCard title='附件文档' className='span-2'>
-                <p>当前档案附件通过文档服务保存并关联客户。</p>
-                {canManageClients && (
                   <Button icon={<CloudUploadOutlined />} onClick={() => setUploadModalOpen(true)}>
                     上传附件
                   </Button>
-                )}
+                  <Button
+                    icon={<DownloadOutlined />}
+                    onClick={() => {
+                      try {
+                        const blob = new Blob([JSON.stringify(client, null, 2)], {
+                          type: 'application/json',
+                        })
+                        const url = URL.createObjectURL(blob)
+                        const a = document.createElement('a')
+                        a.href = url
+                        a.download = `client-${client.name || 'export'}.json`
+                        a.click()
+                        URL.revokeObjectURL(url)
+                        message.success('客户档案已导出')
+                      } catch {
+                        message.error('导出失败，请稍后重试')
+                      }
+                    }}
+                  >
+                    导出客户档案
+                  </Button>
+                </div>
               </SectionCard>
-            )}
-          </div>
-        </main>
-      </div>
 
-      <Modal
-        title='新增客户'
-        open={createClientOpen}
-        onCancel={() => setCreateClientOpen(false)}
-        onOk={createClient}
-        confirmLoading={creatingClient}
-        okText='保存客户'
-        cancelText='取消'
-      >
-        <div className='batch-client-create-form'>
-          <div className='batch-client-create-field'>
-            <span>客户类型 *</span>
-            <Select
-              value={clientDraft.type}
-              options={[
-                { value: '企业', label: '企业' },
-                { value: '个人', label: '个人' },
-              ]}
-              onChange={(value) => setClientDraft((current) => ({ ...current, type: value }))}
-            />
-          </div>
-          <div className='batch-client-create-field'>
-            <span>客户名称 *</span>
-            <Input
-              value={clientDraft.name}
-              onChange={(event) =>
-                setClientDraft((current) => ({ ...current, name: event.target.value }))
-              }
-              placeholder='请输入客户名称'
-            />
-          </div>
-          <div className='batch-client-create-field'>
-            <span>联系电话</span>
-            <Input
-              value={clientDraft.phone}
-              onChange={(event) =>
-                setClientDraft((current) => ({ ...current, phone: event.target.value }))
-              }
-              placeholder='请输入联系电话'
-            />
-          </div>
-          <div className='batch-client-create-field'>
-            <span>电子邮箱</span>
-            <Input
-              value={clientDraft.email}
-              onChange={(event) =>
-                setClientDraft((current) => ({ ...current, email: event.target.value }))
-              }
-              placeholder='请输入电子邮箱'
-            />
-          </div>
-          <div className='batch-client-create-field'>
-            <span>联系地址</span>
-            <Input
-              value={clientDraft.address}
-              onChange={(event) =>
-                setClientDraft((current) => ({ ...current, address: event.target.value }))
-              }
-              placeholder='请输入联系地址'
-            />
-          </div>
+              <Modal
+                title='编辑主联系人'
+                open={contactModalOpen}
+                onCancel={() => setContactModalOpen(false)}
+                onOk={savePrimaryContact}
+                okText='保存'
+                confirmLoading={contactSaving}
+              >
+                <div className='batch-form-grid two'>
+                  <div className='batch-field'>
+                    <label htmlFor='contact-name'>姓名 *</label>
+                    <Input
+                      id='contact-name'
+                      name='contactName'
+                      placeholder='联系人姓名'
+                      value={contactDraft.name}
+                      onChange={(event) =>
+                        setContactDraft((draft) => ({ ...draft, name: event.target.value }))
+                      }
+                    />
+                  </div>
+                  <div className='batch-field'>
+                    <label htmlFor='contact-position'>职位</label>
+                    <Input
+                      id='contact-position'
+                      name='contactPosition'
+                      placeholder='职位'
+                      value={contactDraft.position}
+                      onChange={(event) =>
+                        setContactDraft((draft) => ({ ...draft, position: event.target.value }))
+                      }
+                    />
+                  </div>
+                  <div className='batch-field'>
+                    <label htmlFor='contact-phone'>电话</label>
+                    <Input
+                      id='contact-phone'
+                      name='contactPhone'
+                      placeholder='联系电话'
+                      value={contactDraft.phone}
+                      onChange={(event) =>
+                        setContactDraft((draft) => ({ ...draft, phone: event.target.value }))
+                      }
+                    />
+                  </div>
+                  <div className='batch-field'>
+                    <label htmlFor='contact-email'>邮箱</label>
+                    <Input
+                      id='contact-email'
+                      name='contactEmail'
+                      placeholder='电子邮箱'
+                      value={contactDraft.email}
+                      onChange={(event) =>
+                        setContactDraft((draft) => ({ ...draft, email: event.target.value }))
+                      }
+                    />
+                  </div>
+                </div>
+              </Modal>
+              <Modal
+                title='上传附件'
+                open={uploadModalOpen}
+                onCancel={() => setUploadModalOpen(false)}
+                onOk={uploadClientAttachment}
+                okText='上传'
+                confirmLoading={uploadSaving}
+              >
+                <Upload
+                  beforeUpload={(file) => {
+                    setUploadFile(file)
+                    return false
+                  }}
+                  maxCount={1}
+                  fileList={
+                    uploadFile
+                      ? [{ uid: uploadFile.name, name: uploadFile.name, status: 'done' }]
+                      : []
+                  }
+                  onRemove={() => {
+                    setUploadFile(null)
+                    return true
+                  }}
+                >
+                  <Button icon={<CloudUploadOutlined />}>选择附件</Button>
+                </Upload>
+                <p>附件将关联到当前客户档案：{textValue(client.name, '未选择客户')}</p>
+              </Modal>
+
+              {clientTab === '基本信息' && (
+                <SectionCard title='别名 / 曾用名'>
+                  <div className='batch-key-list'>
+                    {listOf<string>(client.aliases).map((name, index) => (
+                      <p key={`${name}-${index}`}>
+                        {name}
+                        <MoreOutlined />
+                      </p>
+                    ))}
+                    {!client.aliases?.length && <p>数据库暂无别名记录</p>}
+                  </div>
+                </SectionCard>
+              )}
+
+              {clientTab === '关联方与穿透' && (
+                <SectionCard title='关联方'>
+                  <DataTable>
+                    <table>
+                      <tbody>
+                        {relatedParties.map((party: any, index) => (
+                          <tr key={`${textValue(party.id || party.name, 'related')}-${index}`}>
+                            <td>{textValue(party.name)}</td>
+                            <td>{relationshipTypeLabel(party.relationship_type)}</td>
+                          </tr>
+                        ))}
+                        {relatedParties.length === 0 && (
+                          <tr>
+                            <td colSpan={2}>暂无数据库关联方</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </DataTable>
+                </SectionCard>
+              )}
+
+              {clientTab === '历史委托与案件' && (
+                <SectionCard title='关联案件（近12个月）'>
+                  <DataTable>
+                    <table>
+                      <tbody>
+                        {matterHistory.map((row: any) => (
+                          <tr key={row.id}>
+                            <td>{textValue(row.title)}</td>
+                            <td>{dbCaseType(textValue(row.case_type))}</td>
+                            <td>
+                              <RiskTag text={statusLabel(row.status)} />
+                            </td>
+                          </tr>
+                        ))}
+                        {matterHistory.length === 0 && (
+                          <tr>
+                            <td colSpan={3}>暂无数据库关联案件</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </DataTable>
+                </SectionCard>
+              )}
+
+              {(clientTab === '冲突信息池' || clientTab === '活动日志') && (
+                <SectionCard title={clientTab === '冲突信息池' ? '冲突信息池' : '最近活动'}>
+                  <div className='batch-activity-list profile'>
+                    {conflictHistory.map((activity: any) => (
+                      <p key={activity.check_id}>
+                        <StatusDot color='blue' />
+                        <span>{textValue(activity.case_name)}</span>
+                        <em>{formatApiDate(activity.created_at)}</em>
+                      </p>
+                    ))}
+                    {conflictHistory.length === 0 && <p>暂无数据库冲突活动</p>}
+                  </div>
+                </SectionCard>
+              )}
+
+              {clientTab === '联系人' && (
+                <SectionCard title='联系人' className='span-2'>
+                  <div className='batch-info-grid'>
+                    <p>
+                      <span>姓名</span>
+                      <strong>{textValue(primaryContact?.name || client.contact_person)}</strong>
+                    </p>
+                    <p>
+                      <span>电话</span>
+                      <strong>{textValue(primaryContact?.phone || client.contact_phone)}</strong>
+                    </p>
+                    <p>
+                      <span>邮箱</span>
+                      <strong>{textValue(primaryContact?.email)}</strong>
+                    </p>
+                  </div>
+                </SectionCard>
+              )}
+
+              {clientTab === '附件文档' && (
+                <SectionCard title='附件文档' className='span-2'>
+                  <p>当前档案附件通过文档服务保存并关联客户。</p>
+                </SectionCard>
+              )}
+            </div>
+          </main>
         </div>
-      </Modal>
+
+        <Modal
+          title='新增客户'
+          open={createClientOpen}
+          onCancel={() => setCreateClientOpen(false)}
+          onOk={createClient}
+          confirmLoading={creatingClient}
+          okText='保存客户'
+          cancelText='取消'
+        >
+          <div className='batch-client-create-form'>
+            <div className='batch-client-create-field'>
+              <span>客户类型 *</span>
+              <Select
+                value={clientDraft.type}
+                options={[
+                  { value: '企业', label: '企业' },
+                  { value: '个人', label: '个人' },
+                ]}
+                onChange={(value) => setClientDraft((current) => ({ ...current, type: value }))}
+              />
+            </div>
+            <div className='batch-client-create-field'>
+              <span>客户名称 *</span>
+              <Input
+                value={clientDraft.name}
+                onChange={(event) =>
+                  setClientDraft((current) => ({ ...current, name: event.target.value }))
+                }
+                placeholder='请输入客户名称'
+              />
+            </div>
+            <div className='batch-client-create-field'>
+              <span>{clientDraft.type === '企业' ? '统一社会信用代码 *' : '身份证件号码 *'}</span>
+              <Input.Password
+                value={clientDraft.identityNumber}
+                onChange={(event) =>
+                  setClientDraft((current) => ({ ...current, identityNumber: event.target.value }))
+                }
+                placeholder={clientDraft.type === '企业' ? '按营业执照填写' : '按身份证件填写'}
+                autoComplete='off'
+              />
+            </div>
+            <div className='batch-client-create-field'>
+              <span>联系电话</span>
+              <Input
+                value={clientDraft.phone}
+                onChange={(event) =>
+                  setClientDraft((current) => ({ ...current, phone: event.target.value }))
+                }
+                placeholder='请输入联系电话'
+              />
+            </div>
+            <div className='batch-client-create-field'>
+              <span>电子邮箱</span>
+              <Input
+                value={clientDraft.email}
+                onChange={(event) =>
+                  setClientDraft((current) => ({ ...current, email: event.target.value }))
+                }
+                placeholder='请输入电子邮箱'
+              />
+            </div>
+            <div className='batch-client-create-field'>
+              <span>联系地址</span>
+              <Input
+                value={clientDraft.address}
+                onChange={(event) =>
+                  setClientDraft((current) => ({ ...current, address: event.target.value }))
+                }
+                placeholder='请输入联系地址'
+              />
+            </div>
+          </div>
+        </Modal>
       </div>
     </div>
   )
@@ -2831,7 +3028,13 @@ export function CaseManagementCenter() {
           },
         ].map((item) => {
           const toneClass =
-            item.tone === 'red' ? 'danger' : item.tone === 'orange' ? 'warn' : item.tone === 'green' || item.tone === 'teal' ? 'ok' : ''
+            item.tone === 'red'
+              ? 'danger'
+              : item.tone === 'orange'
+                ? 'warn'
+                : item.tone === 'green' || item.tone === 'teal'
+                  ? 'ok'
+                  : ''
           return (
             <section key={item.label} className={`kpi-card ${toneClass}`}>
               <div className='kpi-label'>
@@ -2881,7 +3084,7 @@ export function CaseManagementCenter() {
                   <th>客户</th>
                   <th>类型</th>
                   <th>状态</th>
-                  <th>风险</th>
+                  <th>优先级</th>
                   <th>负责人</th>
                   <th>更新时间</th>
                   <th>操作</th>
@@ -2960,7 +3163,7 @@ export function CaseManagementCenter() {
 
         <section className='ng-panel'>
           <div className='ng-panel-head'>
-            <div className='ng-panel-title'>高风险案件</div>
+            <div className='ng-panel-title'>高优先级案件</div>
           </div>
           <div className='batch-overdue-list'>
             {filteredCaseRows
@@ -2973,7 +3176,7 @@ export function CaseManagementCenter() {
                 </p>
               ))}
             {filteredCaseRows.filter((row) => (row.priority || '').toLowerCase() === 'high')
-              .length === 0 && <p>暂无数据库高优先级案件</p>}
+              .length === 0 && <p>暂无高优先级案件</p>}
           </div>
         </section>
 
@@ -3018,6 +3221,13 @@ export function CaseDetailCenter() {
   >('ADD_OPPOSING_PARTY')
   const [selectedSubjectEntityID, setSelectedSubjectEntityID] = React.useState<number | null>(null)
   const [subjectChangeReason, setSubjectChangeReason] = React.useState('')
+  const [subjectEntityMode, setSubjectEntityMode] = React.useState<'existing' | 'new'>('existing')
+  const [newSubjectName, setNewSubjectName] = React.useState('')
+  const [newSubjectAlias, setNewSubjectAlias] = React.useState('')
+  const [newSubjectEntityType, setNewSubjectEntityType] = React.useState('LEGAL_PERSON')
+  const [newSubjectIdentityType, setNewSubjectIdentityType] = React.useState('SOCIAL_CREDIT_CODE')
+  const [newSubjectIdentityNumber, setNewSubjectIdentityNumber] = React.useState('')
+  const [pendingSubjectRevision, setPendingSubjectRevision] = React.useState<Record<string, any>>({})
 
   React.useEffect(() => {
     if (!id) return
@@ -3059,7 +3269,12 @@ export function CaseDetailCenter() {
   }, [id, subjectRevisionOpen])
 
   React.useEffect(() => {
-    if (!subjectRevisionOpen || !id || subjectChangeType === 'REMOVE_PARTY') {
+    if (
+      !subjectRevisionOpen ||
+      !id ||
+      subjectChangeType === 'REMOVE_PARTY' ||
+      subjectEntityMode === 'new'
+    ) {
       setSubjectEntityOptions([])
       return
     }
@@ -3086,7 +3301,22 @@ export function CaseDetailCenter() {
       mounted = false
       window.clearTimeout(timer)
     }
-  }, [id, subjectChangeType, subjectEntityQuery, subjectRevisionOpen])
+  }, [id, subjectChangeType, subjectEntityMode, subjectEntityQuery, subjectRevisionOpen])
+
+  React.useEffect(() => {
+    const revisionID = textValue(caseDetail?.pending_subject_revision_id, '')
+    if (!id || !revisionID) {
+      setPendingSubjectRevision({})
+      return
+    }
+    let mounted = true
+    apiRequest<any>(`/cases/${id}/subject-revisions/${revisionID}`)
+      .then((result) => mounted && setPendingSubjectRevision(recordValue(result)))
+      .catch(() => mounted && setPendingSubjectRevision({}))
+    return () => {
+      mounted = false
+    }
+  }, [caseDetail?.pending_subject_revision_id, id])
 
   const client = settingObject(caseDetail?.client)
   const lawyer = settingObject(caseDetail?.lawyer)
@@ -3182,8 +3412,7 @@ export function CaseDetailCenter() {
       )
       return (
         (itemCaseID !== undefined && String(itemCaseID) === String(caseDetail.id)) ||
-        (itemCaseNumber !== undefined &&
-          String(itemCaseNumber) === String(caseDetail.case_number))
+        (itemCaseNumber !== undefined && String(itemCaseNumber) === String(caseDetail.case_number))
       )
     },
   )
@@ -3228,7 +3457,9 @@ export function CaseDetailCenter() {
   }
 
   const isAssistant =
-    activeUser?.roles.some((role) => ['assistant', 'intake_assistant'].includes(role.toLowerCase())) ||
+    activeUser?.roles.some((role) =>
+      ['assistant', 'intake_assistant'].includes(role.toLowerCase()),
+    ) ||
     ['assistant', 'intake_assistant'].includes(textValue(getUserInfo()?.role, '').toLowerCase())
   const currentSubjectState = textValue(caseDetail?.subject_state, 'EFFECTIVE').toUpperCase()
   const subjectRevisionPending =
@@ -3244,6 +3475,12 @@ export function CaseDetailCenter() {
     setSubjectEntityQuery('')
     setSubjectEntityOptions([])
     setSubjectChangeReason('')
+    setSubjectEntityMode('existing')
+    setNewSubjectName('')
+    setNewSubjectAlias('')
+    setNewSubjectEntityType('LEGAL_PERSON')
+    setNewSubjectIdentityType('SOCIAL_CREDIT_CODE')
+    setNewSubjectIdentityNumber('')
   }
 
   const openSubjectRevision = () => {
@@ -3267,6 +3504,38 @@ export function CaseDetailCenter() {
     const reason = subjectChangeReason.trim()
     if (reason.length < 5) {
       message.error('请说明主体发生变化的原因（至少 5 个字）')
+      return
+    }
+    if (subjectChangeType !== 'REMOVE_PARTY' && subjectEntityMode === 'new') {
+      if (newSubjectName.trim().length < 2 || newSubjectIdentityNumber.trim().length < 4) {
+        message.error('请填写主体名称和可核验身份标识')
+        return
+      }
+      setSubjectRevisionLoading(true)
+      try {
+        await apiRequest<any>(`/cases/${id}/subject-entity-registrations`, {
+          method: 'POST',
+          body: JSON.stringify({
+            expected_subject_version: currentSubjectVersion,
+            change_type: subjectChangeType,
+            name: newSubjectName.trim(),
+            alias: newSubjectAlias.trim(),
+            entity_type: newSubjectEntityType,
+            identity_type: newSubjectIdentityType,
+            identity_number: newSubjectIdentityNumber.trim(),
+            reason,
+          }),
+        })
+        const latest = await apiRequest<any>(`/cases/${id}`)
+        setCaseDetail(latest)
+        setSubjectRevisionOpen(false)
+        resetSubjectRevisionForm()
+        message.success('新主体已提报，案件受控动作已暂停；等待冲突核查岗确认主体档案后再运行重检')
+      } catch (error: unknown) {
+        message.error(error instanceof Error ? error.message : '新主体登记申请失败')
+      } finally {
+        setSubjectRevisionLoading(false)
+      }
       return
     }
     if (!selectedSubjectEntityID) {
@@ -3357,7 +3626,13 @@ export function CaseDetailCenter() {
       >
         {metricsForCase.map((item) => {
           const toneClass =
-            item.tone === 'red' ? 'danger' : item.tone === 'orange' ? 'warn' : item.tone === 'green' || item.tone === 'teal' ? 'ok' : ''
+            item.tone === 'red'
+              ? 'danger'
+              : item.tone === 'orange'
+                ? 'warn'
+                : item.tone === 'green' || item.tone === 'teal'
+                  ? 'ok'
+                  : ''
           return (
             <section key={item.label} className={`kpi-card ${toneClass}`}>
               <div className='kpi-label'>
@@ -3420,7 +3695,7 @@ export function CaseDetailCenter() {
         {needsConflictReview && (
           <section className='ng-panel'>
             <div className='ng-panel-head'>
-              <div className='ng-panel-title'>下一步操作</div>
+              <h2 className='ng-panel-title'>下一步操作</h2>
             </div>
             <div className='batch-advice'>
               <strong>下一步：利益冲突复核</strong>
@@ -3451,7 +3726,10 @@ export function CaseDetailCenter() {
             <div className='batch-advice'>
               <strong>
                 {subjectRevisionPending
-                  ? '主体变更待独立复核，受控动作已暂停'
+                  ? textValue(pendingSubjectRevision.status, '') ===
+                    'ENTITY_REGISTRATION_PENDING'
+                    ? '新主体等待核查岗确认，受控动作已暂停'
+                    : '主体变更待独立复核，受控动作已暂停'
                   : `当前生效主体版本 V${currentSubjectVersion}`}
               </strong>
               <p>
@@ -3463,15 +3741,25 @@ export function CaseDetailCenter() {
                 </p>
               )}
               {subjectRevisionPending ? (
-                <Button
-                  type='primary'
-                  block
-                  loading={subjectRevisionLoading}
-                  onClick={continueSubjectRecheck}
-                  disabled={!subjectRevisionID}
-                >
-                  继续运行主体重检
-                </Button>
+                textValue(pendingSubjectRevision.status, '') ===
+                'ENTITY_REGISTRATION_PENDING' ? (
+                  <div className='batch-advice'>
+                    <strong>{textValue(pendingSubjectRevision.candidate_name, '候选新主体')}</strong>
+                    <p>
+                      已提交核查岗确认。确认前不能运行重检，也不能推进受控对外动作；无需重复提交。
+                    </p>
+                  </div>
+                ) : (
+                  <Button
+                    type='primary'
+                    block
+                    loading={subjectRevisionLoading}
+                    onClick={continueSubjectRecheck}
+                    disabled={!subjectRevisionID}
+                  >
+                    继续运行主体重检
+                  </Button>
+                )
               ) : (
                 <Button
                   type='primary'
@@ -3581,15 +3869,25 @@ export function CaseDetailCenter() {
         open={subjectRevisionOpen}
         onCancel={() => !subjectRevisionLoading && setSubjectRevisionOpen(false)}
         onOk={submitSubjectRevision}
-        okText='登记并重新检测'
+        okText={
+          subjectChangeType !== 'REMOVE_PARTY' && subjectEntityMode === 'new'
+            ? '提交核查岗确认'
+            : '登记并重新检测'
+        }
         cancelText='取消'
         confirmLoading={subjectRevisionLoading}
         okButtonProps={{
-          disabled: !selectedSubjectEntityID || subjectChangeReason.trim().length < 5,
+          disabled:
+            subjectChangeReason.trim().length < 5 ||
+            (subjectChangeType === 'REMOVE_PARTY' || subjectEntityMode === 'existing'
+              ? !selectedSubjectEntityID
+              : newSubjectName.trim().length < 2 || newSubjectIdentityNumber.trim().length < 4),
         }}
       >
         <p>
-          请选择已经登记在律所主体库中的主体。系统会先登记变更，再自动运行新的利益冲突检查；独立复核完成前，原主体版本继续生效。
+          {subjectChangeType !== 'REMOVE_PARTY' && subjectEntityMode === 'new'
+            ? '请按身份材料提报全新主体。核查岗完成全所去重和身份确认后，申请律师才能运行新的利益冲突检查；确认前原主体版本继续生效，受控动作保持暂停。'
+            : '请选择当前账号可访问案件中已经登记的主体。搜索结果受案件权限和隔离墙保护；未显示某个名称，不代表全所档案中不存在该主体。系统会先登记变更，再自动运行新的利益冲突检查；独立复核完成前，原主体版本继续生效。'}
         </p>
         <div className='batch-field'>
           <label htmlFor='subject-change-type'>变更内容 *</label>
@@ -3598,6 +3896,7 @@ export function CaseDetailCenter() {
             value={subjectChangeType}
             onChange={(value) => {
               setSubjectChangeType(value)
+              if (value === 'REMOVE_PARTY') setSubjectEntityMode('existing')
               setSelectedSubjectEntityID(null)
               setSubjectEntityQuery('')
               setSubjectEntityOptions([])
@@ -3627,41 +3926,119 @@ export function CaseDetailCenter() {
         ) : (
           <>
             <div className='batch-field'>
-              <label htmlFor='subject-entity-search'>搜索已登记主体 *</label>
-              <Input
-                id='subject-entity-search'
-                value={subjectEntityQuery}
-                onChange={(event) => setSubjectEntityQuery(event.target.value)}
-                placeholder='输入主体名称或曾用名，至少两个字'
-                suffix={subjectEntityLoading ? <ClockCircleOutlined spin /> : <SearchOutlined />}
-                allowClear
+              <label htmlFor='subject-entity-mode'>主体来源 *</label>
+              <Segmented
+                id='subject-entity-mode'
+                block
+                value={subjectEntityMode}
+                onChange={(value) => {
+                  setSubjectEntityMode(value as 'existing' | 'new')
+                  setSelectedSubjectEntityID(null)
+                }}
+                options={[
+                  { value: 'existing', label: '选择已有主体' },
+                  { value: 'new', label: '登记全新主体' },
+                ]}
               />
             </div>
-            <div className='batch-field'>
-              <label htmlFor='subject-entity-select'>选择主体 *</label>
-              <Select
-                id='subject-entity-select'
-                value={selectedSubjectEntityID || undefined}
-                onChange={setSelectedSubjectEntityID}
-                placeholder={
-                  subjectEntityQuery.trim().length < 2 ? '先输入名称进行搜索' : '请选择搜索结果'
-                }
-                options={subjectEntityOptions.map((entity) => ({
-                  value: entity.entity_id,
-                  label: `${entity.name}${entity.identity_hint ? `（标识 ${entity.identity_hint}）` : ''}`,
-                }))}
-                notFoundContent={
-                  subjectEntityQuery.trim().length < 2 ? '请输入至少两个字' : '未找到已登记主体'
-                }
-              />
-            </div>
-            {subjectEntityQuery.trim().length >= 2 &&
-              !subjectEntityLoading &&
-              subjectEntityOptions.length === 0 && (
-                <p className='danger-text'>
-                  未找到已登记主体。请联系冲突核查岗先补充主体档案，不能用自由文本绕过主体登记。
-                </p>
-              )}
+            {subjectEntityMode === 'existing' ? (
+              <>
+                <div className='batch-field'>
+                  <label htmlFor='subject-entity-search'>搜索当前可访问的已登记主体 *</label>
+                  <Input
+                    id='subject-entity-search'
+                    value={subjectEntityQuery}
+                    onChange={(event) => setSubjectEntityQuery(event.target.value)}
+                    placeholder='输入主体名称或曾用名，至少两个字'
+                    suffix={subjectEntityLoading ? <ClockCircleOutlined spin /> : <SearchOutlined />}
+                    allowClear
+                  />
+                </div>
+                <div className='batch-field'>
+                  <label htmlFor='subject-entity-select'>选择主体 *</label>
+                  <Select
+                    id='subject-entity-select'
+                    value={selectedSubjectEntityID || undefined}
+                    onChange={setSelectedSubjectEntityID}
+                    placeholder={
+                      subjectEntityQuery.trim().length < 2
+                        ? '先输入名称进行搜索'
+                        : '请选择搜索结果'
+                    }
+                    options={subjectEntityOptions.map((entity) => ({
+                      value: entity.entity_id,
+                      label: `${entity.name}${entity.identity_hint ? `（标识 ${entity.identity_hint}）` : ''}`,
+                    }))}
+                    notFoundContent={
+                      subjectEntityQuery.trim().length < 2
+                        ? '请输入至少两个字'
+                        : '当前可访问范围内未找到主体'
+                    }
+                  />
+                </div>
+                {subjectEntityQuery.trim().length >= 2 &&
+                  !subjectEntityLoading &&
+                  subjectEntityOptions.length === 0 && (
+                    <p className='danger-text'>
+                      当前可访问范围内未找到该主体，这不等于全所无记录。可切换到“登记全新主体”，由冲突核查岗先做全所去重和身份确认。
+                    </p>
+                  )}
+              </>
+            ) : (
+              <>
+                <div className='batch-field'>
+                  <label htmlFor='new-subject-name'>主体法定名称或证件姓名 *</label>
+                  <Input id='new-subject-name' value={newSubjectName} onChange={(event) => setNewSubjectName(event.target.value)} placeholder='请按营业执照或身份证件填写' />
+                </div>
+                <div className='batch-field'>
+                  <label htmlFor='new-subject-alias'>曾用名或别名</label>
+                  <Input id='new-subject-alias' value={newSubjectAlias} onChange={(event) => setNewSubjectAlias(event.target.value)} placeholder='多个名称用逗号分隔；没有可不填' />
+                </div>
+                <div className='batch-field'>
+                  <label htmlFor='new-subject-type'>主体类型 *</label>
+                  <Select
+                    id='new-subject-type'
+                    value={newSubjectEntityType}
+                    onChange={(value) => {
+                      setNewSubjectEntityType(value)
+                      setNewSubjectIdentityType(value === 'INDIVIDUAL' ? 'ID_CARD' : 'SOCIAL_CREDIT_CODE')
+                    }}
+                    options={[
+                      { value: 'LEGAL_PERSON', label: '法人或企业' },
+                      { value: 'INDIVIDUAL', label: '自然人' },
+                      { value: 'ORGANIZATION', label: '其他组织' },
+                    ]}
+                  />
+                </div>
+                <div className='batch-field'>
+                  <label htmlFor='new-subject-identity-type'>身份标识类型 *</label>
+                  <Select
+                    id='new-subject-identity-type'
+                    value={newSubjectIdentityType}
+                    onChange={setNewSubjectIdentityType}
+                    options={
+                      newSubjectEntityType === 'INDIVIDUAL'
+                        ? [
+                            { value: 'ID_CARD', label: '身份证件号码' },
+                            { value: 'PASSPORT', label: '护照号码' },
+                            { value: 'OTHER', label: '其他有效证件' },
+                          ]
+                        : [
+                            { value: 'SOCIAL_CREDIT_CODE', label: '统一社会信用代码' },
+                            { value: 'BUSINESS_LICENSE', label: '营业执照号码' },
+                            { value: 'ORGANIZATION_CODE', label: '组织机构代码' },
+                            { value: 'OTHER', label: '其他有效登记号码' },
+                          ]
+                    }
+                  />
+                </div>
+                <div className='batch-field'>
+                  <label htmlFor='new-subject-identity-number'>身份标识 *</label>
+                  <Input.Password id='new-subject-identity-number' value={newSubjectIdentityNumber} onChange={(event) => setNewSubjectIdentityNumber(event.target.value)} placeholder='提交后加密保存，仅核查岗可核验脱敏信息' />
+                </div>
+                <p>提交后先由冲突核查岗做全所去重与身份确认，确认完成后才能运行本案冲突重检。</p>
+              </>
+            )}
           </>
         )}
         <div className='batch-field'>
@@ -3686,7 +4063,9 @@ export function CaseIntakeWorkbench() {
   const navigate = useNavigate()
   const { user: activeUser } = useAppStore()
   const isAssistant =
-    activeUser?.roles.some((role) => ['assistant', 'intake_assistant'].includes(role.toLowerCase())) ||
+    activeUser?.roles.some((role) =>
+      ['assistant', 'intake_assistant'].includes(role.toLowerCase()),
+    ) ||
     ['assistant', 'intake_assistant'].includes(textValue(getUserInfo()?.role, '').toLowerCase())
   const [searchParams] = useSearchParams()
   const contextCaseID = searchParams.get('case_id') || ''
@@ -3710,11 +4089,15 @@ export function CaseIntakeWorkbench() {
   const [submitting, setSubmitting] = React.useState(false)
   const [checkingConflict, setCheckingConflict] = React.useState(false)
   const [submissionNotice, setSubmissionNotice] = React.useState('')
+  const [conflictCheckMissingFields, setConflictCheckMissingFields] = React.useState<
+    ConflictCheckRequiredField[]
+  >([])
   const [activeStep, setActiveStep] = React.useState(0)
-  const [relatedParties, setRelatedParties] = React.useState<Array<{ name: string; role: string }>>(
-    [],
-  )
+  const [relatedParties, setRelatedParties] = React.useState<IntakeRelatedParty[]>([])
   const [relatedPartyDraft, setRelatedPartyDraft] = React.useState('')
+  const [relatedPartyEntityType, setRelatedPartyEntityType] = React.useState('LEGAL_PERSON')
+  const [relatedPartyIdentityType, setRelatedPartyIdentityType] = React.useState('SOCIAL_CREDIT_CODE')
+  const [relatedPartyIdentityNumber, setRelatedPartyIdentityNumber] = React.useState('')
   const [caseTags, setCaseTags] = React.useState<string[]>([])
   const [tagDraft, setTagDraft] = React.useState('')
   const [clientOptions, setClientOptions] = React.useState<ClientOption[]>([])
@@ -3727,6 +4110,12 @@ export function CaseIntakeWorkbench() {
   const isConflictResultStale = Boolean(
     runtime.conflict && runtime.conflictInputFingerprint !== conflictInputFingerprint,
   )
+  const conflictCheckMissingSet = React.useMemo(
+    () => new Set(conflictCheckMissingFields),
+    [conflictCheckMissingFields],
+  )
+  const conflictCheckFieldError = (field: ConflictCheckRequiredField) =>
+    conflictCheckMissingSet.has(field) ? '运行利益冲突检查前必须填写' : undefined
 
   React.useEffect(() => {
     window.localStorage.removeItem(legacyCaseIntakeDraftKey)
@@ -3734,7 +4123,7 @@ export function CaseIntakeWorkbench() {
 
   React.useEffect(() => {
     if (!draftActive) return
-    window.localStorage.setItem(draftKey, JSON.stringify(form))
+    window.localStorage.setItem(draftKey, JSON.stringify(persistableCaseIntakeDraft(form)))
   }, [draftActive, draftKey, form])
 
   React.useEffect(() => {
@@ -3816,12 +4205,19 @@ export function CaseIntakeWorkbench() {
 
   const updateForm = (key: keyof IntakeFormState, value: string | number) => {
     setDraftActive(true)
+    const validationField = conflictCheckFieldForFormKey(key)
+    if (validationField) {
+      setConflictCheckMissingFields((current) =>
+        current.filter((field) => field !== validationField),
+      )
+    }
     setForm((current) => ({ ...current, [key]: value }))
   }
 
   const updateClient = (clientId: number) => {
     const selectedClient = clientOptions.find((client) => client.id === clientId)
     setDraftActive(true)
+    setConflictCheckMissingFields((current) => current.filter((field) => field !== 'client'))
     setForm((current) => ({
       ...current,
       clientId,
@@ -3874,15 +4270,20 @@ export function CaseIntakeWorkbench() {
         },
         {
           entity_name: form.opponentName,
-          entity_type: 'company',
+          entity_type: form.opponentEntityType,
           party_role: 'opposing_party',
           relation_depth: 0,
+          identity_type: form.opponentIdentityType,
+          identity_number: form.opponentIdentityNumber,
+          aliases: form.opponentAliases,
         },
         ...relatedParties.map((party) => ({
           entity_name: party.name,
-          entity_type: party.role.includes('自然人') ? 'person' : 'company',
+          entity_type: party.entityType,
           party_role: 'related_party',
           relation_depth: 1,
+          identity_type: party.identityType,
+          identity_number: party.identityNumber,
         })),
       ],
       materials: defaultMaterials,
@@ -4053,11 +4454,18 @@ export function CaseIntakeWorkbench() {
             },
             parties: [
               { role: 'client', name: form.clientName },
-              { role: 'opposing_party', name: form.opponentName },
+              {
+                role: 'opposing_party',
+                name: form.opponentName,
+                entity_type: form.opponentEntityType,
+                identity_type: form.opponentIdentityType,
+              },
               ...relatedParties.map((party) => ({
                 role: 'related_party',
                 name: party.name,
                 party_type: party.role,
+                entity_type: party.entityType,
+                identity_type: party.identityType,
               })),
             ],
             materials: defaultMaterials,
@@ -4100,13 +4508,14 @@ export function CaseIntakeWorkbench() {
           !form.subArea && '子领域',
           (!form.clientId || !form.clientName) && '客户',
           !form.opponentName && '对方当事人',
+          !form.opponentIdentityNumber && '对方身份标识',
           !form.description && '案情摘要',
           !form.lawyerId && '负责律师',
           (!runtime.conflict || isConflictResultStale) && '利益冲突检查',
         ]
   ).filter(Boolean) as string[]
-  const completedSubmitFields = 9 - missingSubmitFields.length
-  const intakeCompleteness = Math.round((completedSubmitFields / 9) * 100)
+  const completedSubmitFields = 10 - missingSubmitFields.length
+  const intakeCompleteness = Math.round((completedSubmitFields / 10) * 100)
   const overviewHint =
     missingSubmitFields.length > 0
       ? `还需补充：${missingSubmitFields.join('、')}`
@@ -4154,9 +4563,23 @@ export function CaseIntakeWorkbench() {
         : conflictDecisionView.guidance
 
   const addRelatedParty = () => {
-    const name = relatedPartyDraft.trim() || `新增相关方 ${relatedParties.length + 1}`
-    setRelatedParties((current) => [...current, { name, role: '待确认' }])
+    const name = relatedPartyDraft.trim()
+    if (name.length < 2 || relatedPartyIdentityNumber.trim().length < 4) {
+      message.error('请填写相关方名称和可核验身份标识后再添加')
+      return
+    }
+    setRelatedParties((current) => [
+      ...current,
+      {
+        name,
+        role: '待确认',
+        entityType: relatedPartyEntityType,
+        identityType: relatedPartyIdentityType,
+        identityNumber: relatedPartyIdentityNumber.trim(),
+      },
+    ])
     setRelatedPartyDraft('')
+    setRelatedPartyIdentityNumber('')
     message.success('已添加相关方，将纳入冲突检索')
   }
 
@@ -4209,18 +4632,17 @@ export function CaseIntakeWorkbench() {
       return
     }
     if (checkingConflict) return
-    const missing: string[] = []
-    if (!form.title) missing.push('案件名称')
-    if (!form.clientId || !form.clientName) missing.push('客户')
-    if (!form.opponentName) missing.push('对方当事人')
-    if (!form.lawyerId) missing.push('负责律师')
-    if (!form.caseType) missing.push('案件类型')
-    if (!form.businessArea) missing.push('业务领域')
-    if (!form.subArea) missing.push('子领域')
+    const missing = getMissingConflictCheckFields(form)
     if (missing.length > 0) {
-      message.error(`以下必填项未完成：${missing.join('、')}，请补充后再运行冲突检查`)
+      setConflictCheckMissingFields(missing)
+      const labels = missing.map((field) => conflictCheckRequiredFieldLabels[field])
+      const notice = `以下必填项未完成：${labels.join('、')}，请补充后再运行冲突检查`
+      setSubmissionNotice(notice)
+      message.error(notice)
       return
     }
+    setConflictCheckMissingFields([])
+    setSubmissionNotice('')
     setCheckingConflict(true)
     try {
       // Always persist the current form before confirming facts. Reusing an
@@ -4354,23 +4776,33 @@ export function CaseIntakeWorkbench() {
                   </button>
                 </div>
                 <div className='batch-form-grid four'>
-                  <div className='batch-field'>
+                  <div className={`batch-field ${conflictCheckMissingSet.has('title') ? 'has-error' : ''}`}>
                     <label htmlFor='intake-title'>案件名称 *</label>
                     <Input
                       id='intake-title'
                       name='title'
                       value={form.title}
+                      status={conflictCheckMissingSet.has('title') ? 'error' : undefined}
+                      aria-invalid={conflictCheckMissingSet.has('title')}
                       onChange={(event) => updateForm('title', event.target.value)}
                     />
+                    {conflictCheckFieldError('title') && (
+                      <span className='batch-field-error'>{conflictCheckFieldError('title')}</span>
+                    )}
                   </div>
-                  <div className='batch-field'>
+                  <div className={`batch-field ${conflictCheckMissingSet.has('caseType') ? 'has-error' : ''}`}>
                     <label htmlFor='intake-case-type'>案件类型 *</label>
                     <Select
                       id='intake-case-type'
                       value={form.caseType || undefined}
+                      status={conflictCheckMissingSet.has('caseType') ? 'error' : undefined}
+                      aria-invalid={conflictCheckMissingSet.has('caseType')}
                       onChange={(value) => updateForm('caseType', value)}
                       options={intakeCaseTypeOptions}
                     />
+                    {conflictCheckFieldError('caseType') && (
+                      <span className='batch-field-error'>{conflictCheckFieldError('caseType')}</span>
+                    )}
                   </div>
                   <div className='batch-field'>
                     <label htmlFor='intake-stage'>案件阶段 *</label>
@@ -4391,11 +4823,13 @@ export function CaseIntakeWorkbench() {
                       placeholder='请输入预计争议金额'
                     />
                   </div>
-                  <div className='batch-field'>
+                  <div className={`batch-field ${conflictCheckMissingSet.has('businessArea') ? 'has-error' : ''}`}>
                     <label htmlFor='intake-business-area'>业务领域 *</label>
                     <Select
                       id='intake-business-area'
                       value={form.businessArea || undefined}
+                      status={conflictCheckMissingSet.has('businessArea') ? 'error' : undefined}
+                      aria-invalid={conflictCheckMissingSet.has('businessArea')}
                       onChange={(value) => updateForm('businessArea', value)}
                       placeholder='请选择业务领域'
                       options={[
@@ -4404,12 +4838,17 @@ export function CaseIntakeWorkbench() {
                         { value: '建设工程' },
                       ]}
                     />
+                    {conflictCheckFieldError('businessArea') && (
+                      <span className='batch-field-error'>{conflictCheckFieldError('businessArea')}</span>
+                    )}
                   </div>
-                  <div className='batch-field'>
+                  <div className={`batch-field ${conflictCheckMissingSet.has('subArea') ? 'has-error' : ''}`}>
                     <label htmlFor='intake-sub-area'>子领域 *</label>
                     <Select
                       id='intake-sub-area'
                       value={form.subArea || undefined}
+                      status={conflictCheckMissingSet.has('subArea') ? 'error' : undefined}
+                      aria-invalid={conflictCheckMissingSet.has('subArea')}
                       onChange={(value) => updateForm('subArea', value)}
                       placeholder='请选择子领域'
                       options={[
@@ -4418,6 +4857,9 @@ export function CaseIntakeWorkbench() {
                         { value: '工程合同' },
                       ]}
                     />
+                    {conflictCheckFieldError('subArea') && (
+                      <span className='batch-field-error'>{conflictCheckFieldError('subArea')}</span>
+                    )}
                   </div>
                   <div className='batch-field'>
                     <label htmlFor='intake-source-channel'>案源渠道</label>
@@ -4528,6 +4970,8 @@ export function CaseIntakeWorkbench() {
                             id='intake-client'
                             aria-label='我方当事人（客户）'
                             value={form.clientId || undefined}
+                            status={conflictCheckMissingSet.has('client') ? 'error' : undefined}
+                            aria-invalid={conflictCheckMissingSet.has('client')}
                             onChange={updateClient}
                             showSearch
                             optionFilterProp='label'
@@ -4538,6 +4982,11 @@ export function CaseIntakeWorkbench() {
                             }))}
                             style={{ minWidth: 240 }}
                           />
+                          {conflictCheckFieldError('client') && (
+                            <span className='batch-field-error'>
+                              {conflictCheckFieldError('client')}
+                            </span>
+                          )}
                           <RiskTag text='现有客户' />
                           <p>
                             {form.clientId ? '已选择数据库客户' : '尚未选择客户'}
@@ -4553,15 +5002,85 @@ export function CaseIntakeWorkbench() {
                       <div className='batch-party-card blue'>
                         <BankOutlined />
                         <div>
+                          <label htmlFor='intake-opponent'>法定名称或证件姓名</label>
                           <Input
                             id='intake-opponent'
                             name='opponentName'
                             value={form.opponentName}
+                            status={conflictCheckMissingSet.has('opponentName') ? 'error' : undefined}
+                            aria-invalid={conflictCheckMissingSet.has('opponentName')}
                             onChange={(event) => updateForm('opponentName', event.target.value)}
                             placeholder='输入对方当事人名称'
                           />
+                          {conflictCheckFieldError('opponentName') && (
+                            <span className='batch-field-error'>
+                              {conflictCheckFieldError('opponentName')}
+                            </span>
+                          )}
+                          <label htmlFor='intake-opponent-entity-type'>主体类型</label>
+                          <Select
+                            id='intake-opponent-entity-type'
+                            value={form.opponentEntityType}
+                            onChange={(value) => {
+                              updateForm('opponentEntityType', value)
+                              updateForm(
+                                'opponentIdentityType',
+                                value === 'INDIVIDUAL' ? 'ID_CARD' : 'SOCIAL_CREDIT_CODE',
+                              )
+                            }}
+                            options={[
+                              { value: 'LEGAL_PERSON', label: '法人或企业' },
+                              { value: 'INDIVIDUAL', label: '自然人' },
+                              { value: 'ORGANIZATION', label: '其他组织' },
+                            ]}
+                          />
+                          <label htmlFor='intake-opponent-identity-type'>身份标识类型</label>
+                          <Select
+                            id='intake-opponent-identity-type'
+                            value={form.opponentIdentityType}
+                            onChange={(value) => updateForm('opponentIdentityType', value)}
+                            options={
+                              form.opponentEntityType === 'INDIVIDUAL'
+                                ? [
+                                    { value: 'ID_CARD', label: '身份证件号码' },
+                                    { value: 'PASSPORT', label: '护照号码' },
+                                    { value: 'OTHER', label: '其他有效证件' },
+                                  ]
+                                : [
+                                    { value: 'SOCIAL_CREDIT_CODE', label: '统一社会信用代码' },
+                                    { value: 'BUSINESS_LICENSE', label: '营业执照号码' },
+                                    { value: 'ORGANIZATION_CODE', label: '组织机构代码' },
+                                    { value: 'OTHER', label: '其他有效登记号码' },
+                                  ]
+                            }
+                          />
+                          <label htmlFor='intake-opponent-identity-number'>身份标识</label>
+                          <Input.Password
+                            id='intake-opponent-identity-number'
+                            value={form.opponentIdentityNumber}
+                            status={
+                              conflictCheckMissingSet.has('opponentIdentityNumber') ? 'error' : undefined
+                            }
+                            aria-invalid={conflictCheckMissingSet.has('opponentIdentityNumber')}
+                            onChange={(event) =>
+                              updateForm('opponentIdentityNumber', event.target.value)
+                            }
+                            placeholder='输入证件号或统一社会信用代码'
+                          />
+                          {conflictCheckFieldError('opponentIdentityNumber') && (
+                            <span className='batch-field-error'>
+                              {conflictCheckFieldError('opponentIdentityNumber')}
+                            </span>
+                          )}
+                          <label htmlFor='intake-opponent-aliases'>曾用名或别名</label>
+                          <Input
+                            id='intake-opponent-aliases'
+                            value={form.opponentAliases}
+                            onChange={(event) => updateForm('opponentAliases', event.target.value)}
+                            placeholder='多个名称用逗号分隔；没有可不填'
+                          />
                           <RiskTag text='新增对方' />
-                          <p>用于真实冲突检查 otherParties</p>
+                          <p>身份标识将加密保存，并与名称、曾用名共同用于冲突检索。</p>
                         </div>
                       </div>
                     </article>
@@ -4591,6 +5110,46 @@ export function CaseIntakeWorkbench() {
                             value={relatedPartyDraft}
                             onChange={(event) => setRelatedPartyDraft(event.target.value)}
                             placeholder='输入关联公司、实控人、保证人'
+                          />
+                          <Select
+                            aria-label='相关方主体类型'
+                            value={relatedPartyEntityType}
+                            onChange={(value) => {
+                              setRelatedPartyEntityType(value)
+                              setRelatedPartyIdentityType(
+                                value === 'INDIVIDUAL' ? 'ID_CARD' : 'SOCIAL_CREDIT_CODE',
+                              )
+                            }}
+                            options={[
+                              { value: 'LEGAL_PERSON', label: '法人或企业' },
+                              { value: 'INDIVIDUAL', label: '自然人' },
+                              { value: 'ORGANIZATION', label: '其他组织' },
+                            ]}
+                          />
+                          <Select
+                            aria-label='相关方身份标识类型'
+                            value={relatedPartyIdentityType}
+                            onChange={setRelatedPartyIdentityType}
+                            options={
+                              relatedPartyEntityType === 'INDIVIDUAL'
+                                ? [
+                                    { value: 'ID_CARD', label: '身份证件号码' },
+                                    { value: 'PASSPORT', label: '护照号码' },
+                                    { value: 'OTHER', label: '其他有效证件' },
+                                  ]
+                                : [
+                                    { value: 'SOCIAL_CREDIT_CODE', label: '统一社会信用代码' },
+                                    { value: 'BUSINESS_LICENSE', label: '营业执照号码' },
+                                    { value: 'ORGANIZATION_CODE', label: '组织机构代码' },
+                                    { value: 'OTHER', label: '其他有效登记号码' },
+                                  ]
+                            }
+                          />
+                          <Input.Password
+                            aria-label='相关方身份标识'
+                            value={relatedPartyIdentityNumber}
+                            onChange={(event) => setRelatedPartyIdentityNumber(event.target.value)}
+                            placeholder='证件号或统一社会信用代码'
                           />
                           <Button type='link' icon={<PlusOutlined />} onClick={addRelatedParty}>
                             添加相关方
@@ -4631,6 +5190,26 @@ export function CaseIntakeWorkbench() {
 
           {activeStep === 1 && (
             <SectionCard title='利益冲突检查'>
+              {conflictCheckMissingFields.length > 0 && (
+                <Alert
+                  className='conflict-check-validation'
+                  type='error'
+                  showIcon
+                  message='冲突检查前置校验未通过'
+                  description={
+                    <>
+                      <p>
+                        请补充：
+                        {conflictCheckMissingFields
+                          .map((field) => conflictCheckRequiredFieldLabels[field])
+                          .join('、')}
+                        。
+                      </p>
+                      <p>未创建接案草稿，也未发起冲突检查。</p>
+                    </>
+                  }
+                />
+              )}
               <div className='batch-approval-risk'>
                 <SafetyCertificateOutlined />
                 <div>
@@ -4688,7 +5267,7 @@ export function CaseIntakeWorkbench() {
                         {conflictDecisionView.stale
                           ? '结果已过期'
                           : runtime.conflict
-                            ? `机器风险：${riskLabel(conflictDecisionView.risk || 'LOW')}，处置状态：${conflictRiskText}，评分：${formatRiskScore(runtime.conflict.riskAssessment?.riskScore)}`
+                            ? `处置状态：${conflictRiskText}。自动检索结果不能替代独立人工复核结论。`
                             : '尚未加载数据'}
                       </td>
                     </tr>
@@ -4717,8 +5296,7 @@ export function CaseIntakeWorkbench() {
                 </table>
               </DataTable>
               {runtime.conflict && !conflictDecisionView.stale && (
-                <details className='batch-diagnostic-details'>
-                  <summary>查看冲突检测审计信息</summary>
+                <DiagnosticDetails label='查看冲突检测审计信息'>
                   <p>检测任务编号：{conflictTaskID || '-'}</p>
                   <p>
                     主命中实体：
@@ -4747,12 +5325,7 @@ export function CaseIntakeWorkbench() {
                       '-',
                     )}
                   </p>
-                  {conflictTaskID && (
-                    <Button type='link' onClick={() => navigate(conflictReviewPath)}>
-                      查看本次检测详情
-                    </Button>
-                  )}
-                </details>
+                </DiagnosticDetails>
               )}
               <Space>
                 <Button icon={<ArrowLeftOutlined />} onClick={() => setActiveStep(0)}>
@@ -4782,12 +5355,14 @@ export function CaseIntakeWorkbench() {
           {activeStep === 2 && (
             <SectionCard title='团队与费用'>
               <div className='batch-form-grid four'>
-                <div className='batch-field'>
+                <div className={`batch-field ${conflictCheckMissingSet.has('lawyer') ? 'has-error' : ''}`}>
                   <label htmlFor='intake-lawyer'>负责律师 *</label>
                   <Select
                     id='intake-lawyer'
                     aria-label='负责律师 *'
                     value={form.lawyerId || undefined}
+                    status={conflictCheckMissingSet.has('lawyer') ? 'error' : undefined}
+                    aria-invalid={conflictCheckMissingSet.has('lawyer')}
                     onChange={(value) => updateForm('lawyerId', value)}
                     showSearch
                     optionFilterProp='label'
@@ -4797,6 +5372,9 @@ export function CaseIntakeWorkbench() {
                       label: `${lawyer.name}${lawyer.department ? ` · ${lawyer.department}` : ''}`,
                     }))}
                   />
+                  {conflictCheckFieldError('lawyer') && (
+                    <span className='batch-field-error'>{conflictCheckFieldError('lawyer')}</span>
+                  )}
                 </div>
                 <div className='batch-field'>
                   <label htmlFor='intake-billing-method'>计费方式</label>
@@ -4927,7 +5505,8 @@ export function CaseIntakeWorkbench() {
             </div>
             {[
               `案件名称 ${form.title || '未填写'}`,
-              `业务领域 ${form.caseType ? dbCaseType(form.caseType) : '未选择'}`,
+              `案件类型 ${form.caseType ? dbCaseType(form.caseType) : '未选择'}`,
+              `业务领域 ${form.businessArea || '未选择'}`,
               '案件阶段 潜在受理',
               '统一编号 待生成',
               `创建人 ${getUserInfo()?.name || getUserInfo()?.username || '当前用户'}`,
@@ -5070,6 +5649,15 @@ export function ConflictCheckResults() {
   )
   const [waiverDurationDays, setWaiverDurationDays] = React.useState('180')
   const [submittingWaiver, setSubmittingWaiver] = React.useState(false)
+  const [subjectRegistrations, setSubjectRegistrations] = React.useState<Array<Record<string, any>>>([])
+  const [selectedSubjectRegistration, setSelectedSubjectRegistration] = React.useState<Record<string, any> | null>(null)
+  const [subjectRegistrationDecision, setSubjectRegistrationDecision] = React.useState('CREATE_NEW')
+  const [subjectRegistrationNotes, setSubjectRegistrationNotes] = React.useState('')
+  const [subjectRegistrationSubmitting, setSubjectRegistrationSubmitting] = React.useState(false)
+  const [registryEntityQuery, setRegistryEntityQuery] = React.useState('')
+  const [registryEntityOptions, setRegistryEntityOptions] = React.useState<Array<Record<string, any>>>([])
+  const [registryEntityLoading, setRegistryEntityLoading] = React.useState(false)
+  const [selectedRegistryEntityID, setSelectedRegistryEntityID] = React.useState<number | undefined>()
 
   React.useEffect(() => {
     const controller = new AbortController()
@@ -5104,9 +5692,9 @@ export function ConflictCheckResults() {
             })
             return view.decision === 'REVIEW_REQUIRED'
           })
-      : riskItems.filter((item) =>
-          riskFilterLevels[riskFilter]?.includes(textValue(item.risk_level, '').toUpperCase()),
-        )
+        : riskItems.filter((item) =>
+            riskFilterLevels[riskFilter]?.includes(textValue(item.risk_level, '').toUpperCase()),
+          )
 
   React.useEffect(() => {
     if (!requestedTaskID || !commandCenter) return
@@ -5125,6 +5713,9 @@ export function ConflictCheckResults() {
     riskItems.find((item) =>
       conflictMatchesCaseContext(item, contextCaseID, contextCaseNumber, contextCaseTitle),
     )
+  const requestedTaskUnavailable = Boolean(
+    requestedTaskID && commandCenter && !contextConflict,
+  )
   const criticalRiskCount = riskItems.filter(
     (item) => (item.risk_level || '').toUpperCase() === 'CRITICAL',
   ).length
@@ -5152,14 +5743,14 @@ export function ConflictCheckResults() {
       : highRiskCount > 0
         ? 'HIGH'
         : mediumRiskCount > 0
-        ? 'MEDIUM'
-        : lowRiskCount > 0
-          ? 'LOW'
-          : reviewRequiredCount > 0
-            ? 'REVIEW_REQUIRED'
-            : minimalRiskCount > 0
-              ? 'MINIMAL'
-            : ''
+          ? 'MEDIUM'
+          : lowRiskCount > 0
+            ? 'LOW'
+            : reviewRequiredCount > 0
+              ? 'REVIEW_REQUIRED'
+              : minimalRiskCount > 0
+                ? 'MINIMAL'
+                : ''
   const selectedCheckResult = recordValue(selectedConflict?.check_result)
   const selectedDecision = recordValue(selectedCheckResult.decision)
   const selectedNormalizedSubjects = listOf<Record<string, unknown>>(
@@ -5260,32 +5851,41 @@ export function ConflictCheckResults() {
   )
   const selectedRestricted =
     textValue(selectedConflict?.source_case || selectedConflict?.sourceCase, '') === '受限' ||
-    textValue(selectedConflict?.evidence_summary || selectedConflict?.evidenceSummary, '').includes('受隔离')
+    textValue(selectedConflict?.evidence_summary || selectedConflict?.evidenceSummary, '').includes(
+      '受隔离',
+    )
+  const selectedHasConflict =
+    selectedConflict?.has_conflict ??
+    (selectedConflict as Record<string, any> | null | undefined)?.hasConflict
+  const selectedNoMatch =
+    !selectedRestricted &&
+    !selectedHasMatchEvidence &&
+    (selectedHasConflict === false || selectedHasConflict === 0)
   const selectedHistoricalSubject = selectedRestricted
     ? '存在受限命中（详情受隔离保护）'
     : selectedHasMatchEvidence
-    ? textValue(
-        firstPresent(
-          selectedRiskAssessment.matchedClientName,
-          selectedRiskAssessment.historicalClientName,
-          selectedStructuredPrimaryEvidence.matchedClientName,
-          selectedStructuredPrimaryEvidence.historicalClientName,
-          selectedMatchEvidence.matchedClientName,
-          selectedMatchEvidence.historicalClientName,
-          selectedMatchEvidence.candidateName,
-          selectedDirectEvidence.matchedClientName,
-          selectedDirectEvidence.historicalClientName,
-          selectedCaseEvidence.matchedClientName,
-          selectedCaseEvidence.historicalClientName,
-          selectedCaseEvidence.historicalParty,
-          selectedCaseEvidence.requestedParty,
-          selectedPrimaryConflictCase.matched_subject,
-          selectedSearchParameters.matchedClientName,
-          selectedConflict?.matched_subject,
-        ),
-        '无命中主体',
-      )
-    : '未发现匹配记录'
+      ? textValue(
+          firstPresent(
+            selectedRiskAssessment.matchedClientName,
+            selectedRiskAssessment.historicalClientName,
+            selectedStructuredPrimaryEvidence.matchedClientName,
+            selectedStructuredPrimaryEvidence.historicalClientName,
+            selectedMatchEvidence.matchedClientName,
+            selectedMatchEvidence.historicalClientName,
+            selectedMatchEvidence.candidateName,
+            selectedDirectEvidence.matchedClientName,
+            selectedDirectEvidence.historicalClientName,
+            selectedCaseEvidence.matchedClientName,
+            selectedCaseEvidence.historicalClientName,
+            selectedCaseEvidence.historicalParty,
+            selectedCaseEvidence.requestedParty,
+            selectedPrimaryConflictCase.matched_subject,
+            selectedSearchParameters.matchedClientName,
+            selectedConflict?.matched_subject,
+          ),
+          '无命中主体',
+        )
+      : '未发现匹配记录'
   const selectedMatchType = textValue(
     firstPresent(
       selectedRiskAssessment.matchType,
@@ -5443,6 +6043,45 @@ export function ConflictCheckResults() {
   )
   const hasExistingReview = Boolean(latestReview.id)
 
+  const loadSubjectRegistrations = React.useCallback(() => {
+    if (!canReviewConflict) {
+      setSubjectRegistrations([])
+      return
+    }
+    apiRequest<Array<Record<string, any>>>('/conflict/subject-entity-registrations')
+      .then((rows) => setSubjectRegistrations(Array.isArray(rows) ? rows : []))
+      .catch(() => setSubjectRegistrations([]))
+  }, [canReviewConflict])
+
+  React.useEffect(() => {
+    loadSubjectRegistrations()
+  }, [loadSubjectRegistrations])
+
+  React.useEffect(() => {
+    if (
+      !selectedSubjectRegistration ||
+      subjectRegistrationDecision !== 'LINK_EXISTING' ||
+      registryEntityQuery.trim().length < 2
+    ) {
+      setRegistryEntityOptions([])
+      return
+    }
+    let mounted = true
+    const timer = window.setTimeout(() => {
+      setRegistryEntityLoading(true)
+      apiRequest<Array<Record<string, any>>>(
+        `/conflict-v2/entities/search?query=${encodeURIComponent(registryEntityQuery.trim())}`,
+      )
+        .then((rows) => mounted && setRegistryEntityOptions(Array.isArray(rows) ? rows : []))
+        .catch(() => mounted && setRegistryEntityOptions([]))
+        .finally(() => mounted && setRegistryEntityLoading(false))
+    }, 250)
+    return () => {
+      mounted = false
+      window.clearTimeout(timer)
+    }
+  }, [registryEntityQuery, selectedSubjectRegistration, subjectRegistrationDecision])
+
   React.useEffect(() => {
     setReviewDecision('')
     setReviewNotes('')
@@ -5479,7 +6118,9 @@ export function ConflictCheckResults() {
           const assignment = recordValue(response?.assignment || response)
           setReviewerAssignment(assignment)
           if (assignment.reviewer_id || assignment.reviewerId) {
-            setSelectedReviewerID(numberValue(assignment.reviewer_id || assignment.reviewerId, 0) || undefined)
+            setSelectedReviewerID(
+              numberValue(assignment.reviewer_id || assignment.reviewerId, 0) || undefined,
+            )
           }
         })
         .catch(() => setReviewerAssignment({}))
@@ -5714,6 +6355,64 @@ export function ConflictCheckResults() {
     }
   }
 
+  const openConflictApproval = (item?: CommandCenterRiskItem | null) => {
+    if (!item?.approval_id) {
+      message.warning('当前记录尚未生成可处理的冲突审批')
+      return
+    }
+    setSelectedConflict(null)
+    navigate(`/approval/${item.approval_id}`)
+  }
+
+  const openSubjectRegistrationReview = (registration: Record<string, any>) => {
+    setSelectedSubjectRegistration(registration)
+    setSubjectRegistrationDecision('CREATE_NEW')
+    setSubjectRegistrationNotes('')
+    setRegistryEntityQuery('')
+    setRegistryEntityOptions([])
+    setSelectedRegistryEntityID(undefined)
+  }
+
+  const submitSubjectRegistrationReview = async () => {
+    if (!selectedSubjectRegistration) return
+    if (subjectRegistrationNotes.trim().length < 10) {
+      message.error('请填写至少 10 个字的身份核验或驳回依据')
+      return
+    }
+    if (subjectRegistrationDecision === 'LINK_EXISTING' && !selectedRegistryEntityID) {
+      message.error('请选择要合并的已有主体')
+      return
+    }
+    setSubjectRegistrationSubmitting(true)
+    try {
+      await apiRequest<any>(
+        `/cases/${selectedSubjectRegistration.case_id}/subject-revisions/${selectedSubjectRegistration.revision_id}/entity-registration-review`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            decision: subjectRegistrationDecision,
+            existing_entity_id:
+              subjectRegistrationDecision === 'LINK_EXISTING'
+                ? selectedRegistryEntityID
+                : undefined,
+            notes: subjectRegistrationNotes.trim(),
+          }),
+        },
+      )
+      setSelectedSubjectRegistration(null)
+      loadSubjectRegistrations()
+      message.success(
+        subjectRegistrationDecision === 'REJECT'
+          ? '主体登记已驳回，原主体版本继续生效'
+          : '主体身份已确认，申请律师待办已生成，可继续运行冲突重检',
+      )
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : '处理主体登记失败')
+    } finally {
+      setSubjectRegistrationSubmitting(false)
+    }
+  }
+
   return (
     <div className='batch-page conflict-page'>
       <PageHeader
@@ -5732,888 +6431,1030 @@ export function ConflictCheckResults() {
       />
 
       <div className='ng-content'>
-      {(contextCaseID || contextCaseNumber || contextCaseTitle) && (
-        <SectionCard title='本案复核上下文'>
-          <div className='batch-advice'>
-            <strong>
-              {contextCaseNumber || contextCaseID || '当前案件'} {contextCaseTitle}
-            </strong>
-            {contextConflict ? (
-              <>
-                <p>已匹配到本案冲突检测记录。请点击查看结果后再创建冲突审核。</p>
-                <Button type='primary' onClick={() => setSelectedConflict(contextConflict)}>
-                  查看本案检测结果
-                </Button>
-              </>
-            ) : (
-              <p>
-                暂未在冲突任务队列中匹配到本案检测记录。请确认是否已从立案工作台运行利益冲突检查；如未检测，请返回补充立案信息并重新检测。
-              </p>
-            )}
-            {!contextConflict && (
-              <Space wrap>
-                <Button
-                  onClick={() => navigate(`/case/${contextCaseID}`)}
-                  disabled={!contextCaseID}
-                >
-                  返回案件详情
-                </Button>
-                <Button
-                  type='primary'
-                  onClick={() =>
-                    navigate(
-                      `/case/create?mode=supplement&case_id=${encodeURIComponent(contextCaseID)}`,
-                    )
-                  }
-                  disabled={!contextCaseID}
-                >
-                  补充立案信息并检测
-                </Button>
-              </Space>
-            )}
-          </div>
-        </SectionCard>
-      )}
-
-      <div className='batch-conflict-top'>
-        <SectionCard title='检测任务概览'>
-          <div className='batch-info-grid compact'>
-            {[
-              loading ? '检测任务 正在加载' : `检测任务 ${riskItems.length} 条`,
-              loading ? '高风险 正在加载' : `高风险 ${highRiskCount} 条`,
-              loading ? '中风险 正在加载' : `中风险 ${mediumRiskCount} 条`,
-              loading ? '低风险 正在加载' : `低风险 ${lowRiskCount} 条`,
-              loading ? '待人工复核 正在加载' : `待人工复核 ${reviewRequiredCount} 条`,
-              loading
-                ? '待处理审批 正在加载'
-                : `待处理审批 ${commandCenter?.summary?.pending_approvals ?? 0} 条`,
-              `最近刷新 ${loading ? '正在加载' : formatDateTime(commandCenter?.generated_at)}`,
-            ].map((line) => (
-              <p key={line}>
-                <span>{line.split(' ')[0]}</span>
-                <strong>{line.substring(line.indexOf(' ') + 1)}</strong>
-              </p>
-            ))}
-          </div>
-        </SectionCard>
-        <section className='batch-risk-banner'>
-          <AlertOutlined />
-          <div>
-            <span>队列最高风险</span>
-            <strong>{loading ? '加载中' : riskLabel(queueRisk)}</strong>
-            <em>
-              {loading
-                ? '正在读取数据库记录'
-                : reviewRequiredCount > 0
-                  ? `${reviewRequiredCount} 项记录需要独立人工复核，不能据此确认无冲突`
-                  : `发现 ${highRiskCount} 项高风险/严重冲突`}
-            </em>
-          </div>
-          <div>
-            <span>任务数量</span>
-            <strong className='score'>{loading ? '—' : riskItems.length}</strong>
-            <em>条</em>
-          </div>
-          <div className='batch-risk-counts'>
-            <p>
-              高风险 <strong>{loading ? '—' : highRiskCount}</strong>
-            </p>
-            <p>
-              中风险 <strong>{loading ? '—' : mediumRiskCount}</strong>
-            </p>
-            <p>
-              低风险 <strong>{loading ? '—' : lowRiskCount}</strong>
-            </p>
-            <p>
-              待人工复核 <strong>{loading ? '—' : reviewRequiredCount}</strong>
-            </p>
-            <p>
-              提示 <strong>{loading ? '—' : minimalRiskCount}</strong>
-            </p>
-          </div>
-          <div>
-            <span>检测来源</span>
-            <p>系统冲突检测记录</p>
-            <p>{loading ? '正在读取数据库记录' : '无记录时显示空状态'}</p>
-            <p>结果来自本地数据库</p>
-          </div>
-        </section>
-      </div>
-
-      <div className='batch-conflict-layout'>
-        <SectionCard
-          title='检测任务清单'
-          extra={
-            <Space>
-              {['全部结果', '高风险', '中风险', '低风险', '待人工复核', '提示'].map((tab) => (
-                <Button
-                  key={tab}
-                  type={riskFilter === tab ? 'primary' : 'default'}
-                  aria-label={`筛选${tab}`}
-                  onClick={() => {
-                    setRiskFilter(tab)
-                    setSelectedConflict(null)
-                    const next = new URLSearchParams(searchParams)
-                    if (tab === '全部结果') next.delete('risk')
-                    else next.set('risk', tab)
-                    setSearchParams(next, { replace: true })
-                  }}
-                >
-                  {tab}
-                </Button>
-              ))}
-            </Space>
-          }
-          className='span-2'
-        >
-          <DataTable>
-            <table className='conflict-list-table'>
-              <thead>
-                <tr>
-                  <th>风险等级</th>
-                  <th>处置状态</th>
-                  <th>命中主体</th>
-                  <th>命中类型</th>
-                  <th>命中范围</th>
-                  <th>置信度</th>
-                  <th>穿透层级</th>
-                  <th>证据概要</th>
-                  <th>来源</th>
-                  <th>操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRiskItems.map((row) => (
-                  <tr
-                    key={row.id || row.title}
-                    className={
-                      ['HIGH', 'CRITICAL'].includes((row.risk_level || '').toUpperCase())
-                        ? 'danger-row'
-                        : ''
-                    }
-                  >
-                    <td>
-                      <RiskTag text={riskLabel(row.risk_level)} />
-                    </td>
-                    <td>
-                      {conflictDispositionLabel(
-                        deriveConflictDecisionViewModel(row, {
-                          stale: textValue(row.status, '').toUpperCase() === 'STALE',
-                        }).decision,
-                      )}
-                    </td>
-                    <td className='strong-cell'>{conflictHitSubject(row)}</td>
-                    <td>{conflictRecordMatchType(row)}</td>
-                    <td>{textValue(row.title, '未关联案件')}</td>
-                    <td>{conflictConfidenceLabel(row)}</td>
-                    <td>-</td>
-                    <td className='conflict-evidence-cell'>
-                      <Tooltip title={conflictRecordEvidenceSummary(row)}>
-                        <span>{conflictRecordEvidenceSummary(row)}</span>
-                      </Tooltip>
-                    </td>
-                    <td>系统冲突检测记录</td>
-                    <td className='conflict-action-cell'>
-                      <Button
-                        size='small'
-                        type='primary'
-                        ghost
-                        onClick={() => setSelectedConflict(row)}
-                      >
-                        查看详情
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-                {filteredRiskItems.length === 0 && (
+        {canReviewConflict && (
+          <SectionCard title={`新主体登记待确认（${subjectRegistrations.length}）`}>
+            <DataTable>
+              <table>
+                <thead>
                   <tr>
-                    <td colSpan={10}>
-                      {loading
-                        ? '正在加载数据库冲突检测记录'
-                        : riskItems.length === 0
-                          ? canReviewConflict
-                            ? '全所冲突核查队列暂无检测记录'
-                            : '当前账号暂无待处理冲突检测任务'
-                          : `暂无${riskFilter}记录`}
-                    </td>
+                    <th>案件</th>
+                    <th>候选主体</th>
+                    <th>主体类型</th>
+                    <th>身份标识</th>
+                    <th>申请人</th>
+                    <th>变更原因</th>
+                    <th>操作</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </DataTable>
-        </SectionCard>
-
-        <aside className='batch-conflict-side'>
-          <SectionCard title='合规建议'>
-            <div className='batch-advice danger'>
-              <strong>
-                {conflictQueueScopeLabel(canReviewConflict)}：
-                {reviewRequiredCount > 0
-                  ? `存在 ${reviewRequiredCount} 条待人工复核记录`
-                  : highRiskCount > 0
-                    ? '存在高风险或严重记录'
-                    : canReviewConflict
-                      ? '当前队列未发现高风险记录'
-                      : '暂无待处理冲突检测任务'}
-              </strong>
+                </thead>
+                <tbody>
+                  {subjectRegistrations.map((registration) => (
+                    <tr key={textValue(registration.revision_id)}>
+                      <td>
+                        {textValue(registration.case_number)}<br />
+                        {textValue(registration.case_title)}
+                      </td>
+                      <td>{textValue(registration.candidate_name)}</td>
+                      <td>{textValue(registration.entity_type)}</td>
+                      <td>
+                        {textValue(registration.identity_type)} · {textValue(registration.identity_hint)}
+                      </td>
+                      <td>{textValue(registration.requested_by_name, registration.requested_by)}</td>
+                      <td>{textValue(registration.reason)}</td>
+                      <td>
+                        <Button type='primary' size='small' onClick={() => openSubjectRegistrationReview(registration)}>
+                          核验主体身份
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                  {subjectRegistrations.length === 0 && (
+                    <tr><td colSpan={7}>当前没有等待确认的新主体登记</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </DataTable>
+          </SectionCard>
+        )}
+        {requestedTaskUnavailable && (
+          <SectionCard title='指定冲突任务不可访问'>
+            <div className='batch-advice'>
+              <strong>未找到该任务，或当前账号无权查看。</strong>
               <p>
-                该判断汇总{canReviewConflict ? '全所核查队列' : '当前账号可见范围'}内的 {riskItems.length}{' '}
-                条记录，不代表当前选中记录的处置结论。
+                系统不会披露无权访问的案件或历史客户信息。请从当前账号的检测任务清单进入，或联系独立冲突核查人确认分派范围。
               </p>
-              {!canReviewConflict && (
-                <p>本页不代表全所已完成冲突检查；如需确认全所范围，请联系独立冲突核查人。</p>
-              )}
-              {reviewRequiredCount > 0 && (
-                <p>
-                  “未发现高风险”不等于“已确认无冲突”；待人工复核记录在独立核查人形成结论前不得继续接案。
-                </p>
-              )}
-              {selectedConflict && (
-                <p>
-                  <strong>当前记录建议：</strong>
-                  {selectedDecisionView.headline}。{selectedDecisionView.guidance}
-                </p>
-              )}
-              <Tooltip title='当前 MVP 暂未开放在线调整承办团队'>
-                <span style={{ display: 'block' }}>
-                  <Button block disabled>
-                    调整团队律师（暂未开放）
-                  </Button>
-                </span>
-              </Tooltip>
-              <Tooltip title='当前 MVP 暂未开放在线退出案件'>
-                <span style={{ display: 'block' }}>
-                  <Button block disabled>
-                    退出案件（暂未开放）
-                  </Button>
-                </span>
-              </Tooltip>
             </div>
           </SectionCard>
-          <SectionCard title='检测范围'>
-            <div className='batch-scope-grid'>
-              <span>冲突记录 {riskItems.length}</span>
-              <span>高风险 {highRiskCount}</span>
-              <span>中风险 {mediumRiskCount}</span>
-              <span>低风险 {lowRiskCount}</span>
-              <span>待人工复核 {reviewRequiredCount}</span>
-              <span>审批待办 {commandCenter?.summary?.pending_approvals ?? 0}</span>
-              <span>案件 {commandCenter?.summary?.active_cases ?? 0}</span>
-              <span>范围 {conflictQueueScopeLabel(canReviewConflict)}</span>
+        )}
+        {(contextCaseID || contextCaseNumber || contextCaseTitle) && (
+          <SectionCard title='本案复核上下文'>
+            <div className='batch-advice'>
+              <strong>
+                {contextCaseNumber || contextCaseID || '当前案件'} {contextCaseTitle}
+              </strong>
+              {contextConflict ? (
+                <>
+                  <p>已匹配到本案冲突检测记录。请点击查看结果后再创建冲突审核。</p>
+                  <Button type='primary' onClick={() => setSelectedConflict(contextConflict)}>
+                    查看本案检测结果
+                  </Button>
+                </>
+              ) : (
+                <p>
+                  暂未在冲突任务队列中匹配到本案检测记录。请确认是否已从立案工作台运行利益冲突检查；如未检测，请返回补充立案信息并重新检测。
+                </p>
+              )}
+              {!contextConflict && (
+                <Space wrap>
+                  <Button
+                    onClick={() => navigate(`/case/${contextCaseID}`)}
+                    disabled={!contextCaseID}
+                  >
+                    返回案件详情
+                  </Button>
+                  <Button
+                    type='primary'
+                    onClick={() =>
+                      navigate(
+                        `/case/create?mode=supplement&case_id=${encodeURIComponent(contextCaseID)}`,
+                      )
+                    }
+                    disabled={!contextCaseID}
+                  >
+                    补充立案信息并检测
+                  </Button>
+                </Space>
+              )}
             </div>
           </SectionCard>
-        </aside>
-      </div>
+        )}
 
-      <Modal
-        title='冲突检测详情'
-        open={Boolean(selectedConflict)}
-        onCancel={() => setSelectedConflict(null)}
-        footer={[
-          <Button key='close' onClick={() => setSelectedConflict(null)}>
-            关闭
-          </Button>,
-          ...(selectedDecisionView.decision === 'BLOCKED' && selectedDecisionView.canRequestWaiver
-            ? [
-                <Button key='waiver' type='primary' onClick={() => setWaiverModalOpen(true)}>
-                  申请豁免评估
-                </Button>,
-              ]
-            : []),
-          ...(selectedDecisionView.needsHumanReview && !canReviewConflict
-            ? [
-                <Button
-                  key='review'
-                  type='primary'
-                  loading={creatingApproval}
-                  disabled={!selectedConflict?.id}
-                  onClick={() => createConflictApproval(selectedConflict)}
-                >
-                  {hasExistingReview ? '进入冲突审批' : '发起冲突审批'}
-                </Button>,
-              ]
-            : []),
-        ]}
-        width={960}
-        destroyOnHidden
-      >
-        {selectedConflict && (
-          <div className='batch-conflict-detail'>
-            <div className='batch-info-grid two'>
+        <div className='batch-conflict-top'>
+          <SectionCard title='检测任务概览'>
+            <div className='batch-info-grid compact'>
               {[
-                ['关联案件', textValue(selectedConflict.title, '-')],
-                ['案件类型', dbCaseType(textValue(selectedConflict.case_type, '-'))],
-                ['客户/委托人', textValue(selectedConflict.client_name, '-')],
-                ['命中历史主体', selectedHistoricalSubject],
-                ['主冲突类型', selectedConflictType],
-                ['检测状态', statusLabel(selectedConflict.status)],
-                ['风险等级', riskLabel(selectedConflict.risk_level)],
-                ['接案状态', selectedDecisionView.headline],
-                [
-                  '命中数量',
-                  selectedRestricted && !canReviewConflict
-                    ? '受隔离保护'
-                    : String(
-                        selectedConflictCases.length ||
-                          numberValue(selectedCheckResult.conflictCases?.length, 0),
-                      ),
-                ],
-                [
-                  '检测耗时',
-                  `${numberValue(selectedConflict.duration || selectedCheckResult.duration, 0)}ms`,
-                ],
-                ['检测时间', formatApiDate(textValue(selectedConflict.check_time, ''))],
-                ['创建时间', formatApiDate(selectedConflict.created_at)],
-                ['更新时间', formatApiDate(selectedConflict.updated_at)],
-              ].map(([label, value]) => (
-                <article key={label}>
-                  <span>{label}</span>
-                  <strong>{value}</strong>
-                </article>
+                loading ? '检测任务 正在加载' : `检测任务 ${riskItems.length} 条`,
+                loading ? '高风险 正在加载' : `高风险 ${highRiskCount} 条`,
+                loading ? '中风险 正在加载' : `中风险 ${mediumRiskCount} 条`,
+                loading ? '低风险 正在加载' : `低风险 ${lowRiskCount} 条`,
+                loading ? '待人工复核 正在加载' : `待人工复核 ${reviewRequiredCount} 条`,
+                loading
+                  ? '待处理审批 正在加载'
+                  : `待处理审批 ${commandCenter?.summary?.pending_approvals ?? 0} 条`,
+                `最近刷新 ${loading ? '正在加载' : formatDateTime(commandCenter?.generated_at)}`,
+              ].map((line) => (
+                <p key={line}>
+                  <span>{line.split(' ')[0]}</span>
+                  <strong>{line.substring(line.indexOf(' ') + 1)}</strong>
+                </p>
               ))}
             </div>
+          </SectionCard>
+          <section className='batch-risk-banner'>
+            <AlertOutlined />
+            <div>
+              <span>队列最高风险</span>
+              <strong>{loading ? '加载中' : riskLabel(queueRisk)}</strong>
+              <em>
+                {loading
+                  ? '正在读取数据库记录'
+                  : reviewRequiredCount > 0
+                    ? `${reviewRequiredCount} 项记录需要独立人工复核，不能据此确认无冲突`
+                    : riskItems.length === 0
+                      ? canReviewConflict
+                        ? '全所核查队列当前没有待处理记录'
+                        : '当前账号没有待处理任务；不代表全所无冲突'
+                      : `当前队列有 ${highRiskCount} 项高风险/严重记录`}
+              </em>
+            </div>
+            <div>
+              <span>任务数量</span>
+              <strong className='score'>{loading ? '—' : riskItems.length}</strong>
+              <em>条</em>
+            </div>
+            <div className='batch-risk-counts'>
+              <p>
+                高风险 <strong>{loading ? '—' : highRiskCount}</strong>
+              </p>
+              <p>
+                中风险 <strong>{loading ? '—' : mediumRiskCount}</strong>
+              </p>
+              <p>
+                低风险 <strong>{loading ? '—' : lowRiskCount}</strong>
+              </p>
+              <p>
+                待人工复核 <strong>{loading ? '—' : reviewRequiredCount}</strong>
+              </p>
+              <p>
+                提示 <strong>{loading ? '—' : minimalRiskCount}</strong>
+              </p>
+            </div>
+            <div>
+              <span>检测来源</span>
+              <p>系统冲突检测记录</p>
+              <p>{loading ? '正在读取数据库记录' : '无记录时显示空状态'}</p>
+              <p>结果来自本地数据库</p>
+            </div>
+          </section>
+        </div>
 
-            <SectionCard title='记录来源'>
-              <DataTable>
-                <table>
-                  <tbody>
-                    <tr>
-                      <td>数据来源</td>
+        <div className='batch-conflict-layout'>
+          <SectionCard
+            title='检测任务清单'
+            extra={
+              <Space>
+                {['全部结果', '高风险', '中风险', '低风险', '待人工复核', '提示'].map((tab) => (
+                  <Button
+                    key={tab}
+                    type={riskFilter === tab ? 'primary' : 'default'}
+                    aria-label={`筛选${tab}`}
+                    onClick={() => {
+                      setRiskFilter(tab)
+                      setSelectedConflict(null)
+                      const next = new URLSearchParams(searchParams)
+                      if (tab === '全部结果') next.delete('risk')
+                      else next.set('risk', tab)
+                      setSearchParams(next, { replace: true })
+                    }}
+                  >
+                    {tab}
+                  </Button>
+                ))}
+              </Space>
+            }
+            className='span-2'
+          >
+            <DataTable>
+              <table className='conflict-list-table'>
+                <thead>
+                  <tr>
+                    <th>风险等级</th>
+                    <th>处置状态</th>
+                    <th>命中主体</th>
+                    <th>命中类型</th>
+                    <th>命中范围</th>
+                    <th>置信度</th>
+                    <th>穿透层级</th>
+                    <th>证据概要</th>
+                    <th>来源</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredRiskItems.map((row) => (
+                    <tr
+                      key={row.id || row.title}
+                      className={
+                        ['HIGH', 'CRITICAL'].includes((row.risk_level || '').toUpperCase())
+                          ? 'danger-row'
+                          : ''
+                      }
+                    >
+                      <td>
+                        <RiskTag text={riskLabel(row.risk_level)} />
+                      </td>
+                      <td>
+                        {conflictDispositionLabel(
+                          deriveConflictDecisionViewModel(row, {
+                            stale: textValue(row.status, '').toUpperCase() === 'STALE',
+                          }).decision,
+                        )}
+                      </td>
+                      <td className='strong-cell'>{conflictHitSubject(row)}</td>
+                      <td>{conflictRecordMatchType(row)}</td>
+                      <td>{textValue(row.title, '未关联案件')}</td>
+                      <td>{conflictConfidenceLabel(row)}</td>
+                      <td>-</td>
+                      <td className='conflict-evidence-cell'>
+                        <Tooltip title={conflictRecordEvidenceSummary(row)}>
+                          <span>{conflictRecordEvidenceSummary(row)}</span>
+                        </Tooltip>
+                      </td>
                       <td>系统冲突检测记录</td>
-                    </tr>
-                    <tr>
-                      <td>风险判断</td>
-                      <td>
-                        {riskLabel(selectedConflict.risk_level)} ·{' '}
-                        {statusLabel(selectedConflict.status)}
+                      <td className='conflict-action-cell'>
+                        <Button
+                          size='small'
+                          type='primary'
+                          ghost
+                          onClick={() => setSelectedConflict(row)}
+                        >
+                          查看详情
+                        </Button>
                       </td>
                     </tr>
+                  ))}
+                  {filteredRiskItems.length === 0 && (
                     <tr>
-                      <td>当前记录建议</td>
-                      <td>
-                        {selectedDecisionView.headline}。{selectedDecisionView.guidance}
+                      <td colSpan={10}>
+                        {loading
+                          ? '正在加载数据库冲突检测记录'
+                          : riskItems.length === 0
+                            ? canReviewConflict
+                              ? '全所冲突核查队列暂无检测记录'
+                              : '当前账号暂无待处理冲突检测任务'
+                            : `暂无${riskFilter}记录`}
                       </td>
                     </tr>
-                  </tbody>
-                </table>
-              </DataTable>
-            </SectionCard>
+                  )}
+                </tbody>
+              </table>
+            </DataTable>
+          </SectionCard>
 
-            <SectionCard title='接案决策'>
-              <div
-                className={`batch-advice ${['BLOCKED', 'STALE'].includes(selectedDecisionView.decision) ? 'danger' : ''}`}
-              >
-                <strong>{selectedDecisionView.headline}</strong>
-                <p>{selectedDecisionView.guidance}</p>
-                {!selectedDecisionView.stale && (
+          <aside className='batch-conflict-side'>
+            <SectionCard title='合规建议'>
+              <div className='batch-advice danger'>
+                <strong>
+                  {conflictQueueScopeLabel(canReviewConflict)}：
+                  {reviewRequiredCount > 0
+                    ? `存在 ${reviewRequiredCount} 条待人工复核记录`
+                    : highRiskCount > 0
+                      ? '存在高风险或严重记录'
+                      : canReviewConflict
+                        ? '当前队列未发现高风险记录'
+                        : '暂无待处理冲突检测任务'}
+                </strong>
+                <p>
+                  该判断汇总{canReviewConflict ? '全所核查队列' : '当前账号可见范围'}内的{' '}
+                  {riskItems.length} 条记录，不代表当前选中记录的处置结论。
+                </p>
+                {!canReviewConflict && (
+                  <p>本页不代表全所已完成冲突检查；如需确认全所范围，请联系独立冲突核查人。</p>
+                )}
+                {reviewRequiredCount > 0 && (
                   <p>
-                    {textValue(
-                      selectedDecision.coverageNotice,
-                      '检索范围受现有客户、案件和关联方数据完整度限制。',
-                    )}
+                    “未发现高风险”不等于“已确认无冲突”；待人工复核记录在独立核查人形成结论前不得继续接案。
+                  </p>
+                )}
+                {selectedConflict && (
+                  <p>
+                    <strong>当前记录建议：</strong>
+                    {selectedDecisionView.headline}。{selectedDecisionView.guidance}
                   </p>
                 )}
               </div>
             </SectionCard>
+            <SectionCard title='检测范围'>
+              <div className='batch-scope-grid'>
+                <span>冲突记录 {riskItems.length}</span>
+                <span>高风险 {highRiskCount}</span>
+                <span>中风险 {mediumRiskCount}</span>
+                <span>低风险 {lowRiskCount}</span>
+                <span>待人工复核 {reviewRequiredCount}</span>
+                <span>审批待办 {commandCenter?.summary?.pending_approvals ?? 0}</span>
+                <span>案件 {commandCenter?.summary?.active_cases ?? 0}</span>
+                <span>范围 {conflictQueueScopeLabel(canReviewConflict)}</span>
+              </div>
+            </SectionCard>
+          </aside>
+        </div>
 
-            {selectedDecisionView.decision === 'WAIVED' && (
-              <SectionCard title='批准条件与期限'>
-                <div className='batch-info-grid two'>
-                  <article>
-                    <span>批准条件</span>
-                    <strong>
-                      {listOf<string>(
-                        (latestWaiver.approved_conditions ||
-                          latestWaiver.proposed_conditions ||
-                          latestWaiver.conditions) as string[] | undefined,
-                      ).join('；') || '按书面批准文件执行'}
-                    </strong>
-                  </article>
-                  <article>
-                    <span>有效期限</span>
-                    <strong>
-                      {formatApiDate(
-                        textValue(
-                          latestWaiver.expiry_date || latestWaiver.requested_expiry_date,
-                          '',
+        <Modal
+          title='冲突检测详情'
+          open={Boolean(selectedConflict)}
+          onCancel={() => setSelectedConflict(null)}
+          footer={[
+            <Button key='close' onClick={() => setSelectedConflict(null)}>
+              关闭
+            </Button>,
+            ...(selectedDecisionView.decision === 'BLOCKED' && selectedDecisionView.canRequestWaiver
+              ? [
+                  <Button key='waiver' type='primary' onClick={() => setWaiverModalOpen(true)}>
+                    申请豁免评估
+                  </Button>,
+                ]
+              : []),
+            ...(selectedConflict?.approval_id
+              ? [
+                  <Button
+                    key='review'
+                    type='primary'
+                    onClick={() => openConflictApproval(selectedConflict)}
+                  >
+                    {canReviewConflict ? '处理冲突审批' : '进入冲突审批'}
+                  </Button>,
+                ]
+              : selectedDecisionView.needsHumanReview && !canReviewConflict
+                ? [
+                    <Button
+                      key='review'
+                      type='primary'
+                      loading={creatingApproval}
+                      disabled={!selectedConflict?.id}
+                      onClick={() => createConflictApproval(selectedConflict)}
+                    >
+                      发起冲突审批
+                    </Button>,
+                  ]
+                : []),
+          ]}
+          width={960}
+          destroyOnHidden
+        >
+          {selectedConflict && (
+            <div className='batch-conflict-detail'>
+              <div className='batch-info-grid two'>
+                {[
+                  ['关联案件', textValue(selectedConflict.title, '-')],
+                  ['案件类型', dbCaseType(textValue(selectedConflict.case_type, '-'))],
+                  ['客户/委托人', textValue(selectedConflict.client_name, '-')],
+                  ['命中历史主体', selectedHistoricalSubject],
+                  ['主冲突类型', selectedConflictType],
+                  [
+                    '自动检索状态',
+                    textValue(selectedConflict.status, '').toUpperCase() === 'COMPLETED'
+                      ? '自动检索已完成；接案结论以复核状态为准'
+                      : statusLabel(selectedConflict.status),
+                  ],
+                  ['风险等级', riskLabel(selectedConflict.risk_level)],
+                  ['接案状态', selectedDecisionView.headline],
+                  [
+                    '命中数量',
+                    selectedRestricted && !canReviewConflict
+                      ? '受隔离保护'
+                      : String(
+                          selectedConflictCases.length ||
+                            numberValue(selectedCheckResult.conflictCases?.length, 0),
                         ),
-                      )}
-                    </strong>
+                  ],
+                  ['检测时间', formatApiDate(textValue(selectedConflict.check_time, ''))],
+                  ['创建时间', formatApiDate(selectedConflict.created_at)],
+                  ['更新时间', formatApiDate(selectedConflict.updated_at)],
+                ].map(([label, value]) => (
+                  <article key={label}>
+                    <span>{label}</span>
+                    <strong>{value}</strong>
                   </article>
+                ))}
+              </div>
+
+              <SectionCard title='记录来源'>
+                <DataTable>
+                  <table>
+                    <tbody>
+                      <tr>
+                        <td>数据来源</td>
+                        <td>系统冲突检测记录</td>
+                      </tr>
+                      <tr>
+                        <td>风险判断</td>
+                        <td>{conflictDecisionStatusLabel(selectedDecisionView)}</td>
+                      </tr>
+                      <tr>
+                        <td>当前记录建议</td>
+                        <td>
+                          {selectedDecisionView.headline}。{selectedDecisionView.guidance}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </DataTable>
+              </SectionCard>
+
+              <SectionCard title='接案决策'>
+                <div
+                  className={`batch-advice ${['BLOCKED', 'STALE'].includes(selectedDecisionView.decision) ? 'danger' : ''}`}
+                >
+                  <strong>{selectedDecisionView.headline}</strong>
+                  <p>{selectedDecisionView.guidance}</p>
+                  {!selectedDecisionView.stale && (
+                    <p>
+                      {textValue(
+                        selectedDecision.coverageNotice,
+                        '检索范围受现有客户、案件和关联方数据完整度限制。',
+                      )}
+                    </p>
+                  )}
                 </div>
               </SectionCard>
-            )}
 
-            {selectedDecisionView.decision === 'WAIVER_PENDING' && (
-              <SectionCard title='独立复核状态'>
-                <div className='batch-advice'>
-                  <strong>等待独立复核</strong>
-                  <p>
-                    申请编号：{textValue(latestWaiver.application_number || latestWaiver.id, '-')}
-                    ；复核截止：{formatApiDate(textValue(latestWaiver.review_deadline, ''))}
-                  </p>
-                </div>
-              </SectionCard>
-            )}
-
-            <SectionCard title={`规范化检索主体（${selectedNormalizedSubjects.length}）`}>
-              <DataTable>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>角色</th>
-                      <th>原始名称</th>
-                      <th>规范化名称</th>
-                      <th>别名数量</th>
-                      <th>身份标识数量</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedNormalizedSubjects.map((subject, index) => (
-                      <tr key={`${textValue(subject.normalizedName)}-${index}`}>
-                        <td>{textValue(subject.role, '-')}</td>
-                        <td>{textValue(subject.originalName, '-')}</td>
-                        <td>{textValue(subject.normalizedName, '-')}</td>
-                        <td>{listOf(subject.aliases as unknown[] | undefined).length}</td>
-                        <td>{Object.keys(recordValue(subject.identifiers)).length}</td>
-                      </tr>
-                    ))}
-                    {selectedNormalizedSubjects.length === 0 && (
-                      <tr>
-                        <td colSpan={5}>历史记录没有规范化主体快照，请重新运行检测</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </DataTable>
-            </SectionCard>
-
-            <SectionCard title='风险评估结果'>
-              <DataTable>
-                <table>
-                  <tbody>
-                    <tr>
-                      <td>总体风险</td>
-                      <td>
-                        {selectedDecisionView.coverageLimited
-                          ? `范围受限，待人工复核（机器风险：${riskLabel(textValue(selectedRiskAssessment.overallRisk || selectedConflict.risk_level, 'LOW'))}）`
-                          : riskLabel(
-                              textValue(
-                                selectedRiskAssessment.overallRisk || selectedConflict.risk_level,
-                                'LOW',
-                              ),
-                            )}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>风险评分</td>
-                      <td>
-                        {selectedDecisionView.decision === 'REVIEW_REQUIRED'
-                          ? '暂不评分（待独立人工复核）'
-                          : selectedRiskScore === undefined
-                            ? '未提供'
-                            : selectedDecisionView.coverageLimited
-                              ? `不作为无冲突结论（机器评分 ${formatRiskScore(selectedRiskScore)} / 100）`
-                              : `${formatRiskScore(selectedRiskScore)} / 100`}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>风险原因</td>
-                      <td>{selectedResolvedRiskReason}</td>
-                    </tr>
-                    <tr>
-                      <td>检索主体</td>
-                      <td>{selectedSearchSubject}</td>
-                    </tr>
-                    <tr>
-                      <td>匹配主体</td>
-                      <td>{selectedHistoricalSubject}</td>
-                    </tr>
-                    <tr>
-                      <td>匹配方式</td>
-                      <td>{conflictMatchTypeLabel(selectedMatchType)}</td>
-                    </tr>
-                    <tr>
-                      <td>比对方法</td>
-                      <td>{selectedAlgorithmLabel}</td>
-                    </tr>
-                    {selectedAutomaticConclusion !== undefined && (
-                      <tr>
-                        <td>自动结论</td>
-                        <td>
-                          {selectedAutomaticConclusion === false
-                            ? '否，必须人工核实主体身份'
-                            : '是'}
-                        </td>
-                      </tr>
-                    )}
-                    <tr>
-                      <td>主体角色</td>
-                      <td>{selectedSubjectRole}</td>
-                    </tr>
-                    <tr>
-                      <td>规则编号</td>
-                      <td>{selectedRuleCode || '未提供'}</td>
-                    </tr>
-                    <tr>
-                      <td>来源案件</td>
-                      <td>
-                        {canReviewConflict
-                          ? selectedSourceCase
-                          : '受限历史事项（请联系独立冲突核查人）'}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>需审批</td>
-                      <td>{selectedDecisionView.requiresApproval ? '是' : '否'}</td>
-                    </tr>
-                    <tr>
-                      <td>检查范围</td>
-                      <td>
-                        {conflictScopeLabel(
-                          selectedDecision.coverageStatus || selectedConflict?.coverage_status,
-                        )}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>统计</td>
-                      <td>
-                        检查案件{' '}
-                        {numberValue(
-                          selectedStatistics.totalCasesChecked,
-                          selectedConflictCases.length,
-                        )}{' '}
-                        件，关联方 {numberValue(selectedStatistics.relatedPartiesChecked, 0)} 个
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </DataTable>
-            </SectionCard>
-
-            <details className='batch-diagnostic-details'>
-              <summary>查看审计技术信息</summary>
-              <p>检测任务编号：{textValue(selectedConflict.id, '-')}</p>
-              <p>数据来源：系统冲突检测记录</p>
-            </details>
-
-            <SectionCard
-              title={
-                selectedRestricted && !canReviewConflict
-                  ? '命中案件明细（受隔离保护）'
-                  : `命中案件明细（${selectedConflictCases.length}）`
-              }
-            >
-              <DataTable>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>案件编号</th>
-                      <th>案件名称</th>
-                      <th>冲突类型</th>
-                      <th>风险</th>
-                      <th>状态</th>
-                      <th>说明</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedConflictCases.map((item, index) => (
-                      <tr
-                        key={`conflict-case-${textValue(
-                          item.id || item.case_id || item.caseId,
-                          'unknown',
-                        )}-${index}`}
-                      >
-                        <td>
-                          {canReviewConflict
-                            ? textValue(
-                                item.case_no ||
-                                  item.case_number ||
-                                  item.caseNo ||
-                                  item.caseNumber ||
-                                  item.case_id ||
-                                  item.caseId,
-                              )
-                            : '受限'}
-                        </td>
-                        <td>
-                          {canReviewConflict
-                            ? textValue(item.case_name || item.caseName)
-                            : '受限历史事项'}
-                        </td>
-                        <td>{textValue(item.conflict_type || item.conflictType, '待人工复核')}</td>
-                        <td>
-                          <RiskTag
-                            text={
-                              canReviewConflict
-                                ? riskLabel(textValue(item.risk_level || item.riskLevel, 'LOW'))
-                                : '受限'
-                            }
-                          />
-                        </td>
-                        <td>
-                          {canReviewConflict
-                            ? statusLabel(textValue(item.case_status || item.caseStatus, '-'))
-                            : '受限'}
-                        </td>
-                        <td>
-                          {canReviewConflict
-                            ? textValue(item.conflict_details || item.description, '-')
-                            : '存在受限命中，请联系独立冲突核查人。'}
-                        </td>
-                      </tr>
-                    ))}
-                    {selectedConflictCases.length === 0 && (
-                      <tr>
-                        <td colSpan={6}>
-                          {selectedRestricted && !canReviewConflict
-                            ? '存在受限记录，具体明细仅对独立冲突核查人可见'
-                            : '暂无命中案件明细'}
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </DataTable>
-            </SectionCard>
-
-            <SectionCard
-              title={
-                selectedRestricted && !canReviewConflict
-                  ? '证据链（受隔离保护）'
-                  : `证据链（${selectedEvidenceRows.length}）`
-              }
-            >
-              <DataTable>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>规则</th>
-                      <th>匹配方式</th>
-                      <th>检索主体</th>
-                      <th>历史角色</th>
-                      <th>来源案件</th>
-                      <th>证据摘要</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedEvidenceRows.map((evidence, index) => (
-                      <tr key={`${textValue(evidence.ruleCode)}-${index}`}>
-                        <td>{textValue(evidence.ruleCode, '-')}</td>
-                        <td>{textValue(evidence.matchType, '-')}</td>
-                        <td>{textValue(evidence.requestedParty, '-')}</td>
-                        <td>{textValue(evidence.historicalRole, '-')}</td>
-                        <td>
-                          {canReviewConflict && !evidence.restricted
-                            ? textValue(evidence.sourceCaseNumber || evidence.sourceCaseName, '-')
-                            : '受限历史事项'}
-                        </td>
-                        <td>
-                          {canReviewConflict
-                            ? textValue(evidence.summary, '-')
-                            : '受限命中，请联系独立冲突核查人。'}
-                        </td>
-                      </tr>
-                    ))}
-                    {selectedEvidenceRows.length === 0 && (
-                      <tr>
-                        <td colSpan={6}>
-                          {selectedRestricted && !canReviewConflict
-                            ? '存在受限证据，具体内容仅对独立冲突核查人可见'
-                            : '历史记录没有结构化证据，请重新运行检测'}
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </DataTable>
-            </SectionCard>
-
-            {selectedDecisionView.needsHumanReview && (
-              <SectionCard title='人工复核记录'>
-                {latestReview.id ? (
+              {selectedDecisionView.decision === 'WAIVED' && (
+                <SectionCard title='批准条件与期限'>
                   <div className='batch-info-grid two'>
                     <article>
-                      <span>复核结论</span>
-                      <strong>{conflictDispositionLabel(latestReview.decision)}</strong>
-                    </article>
-                    <article>
-                      <span>复核人</span>
+                      <span>批准条件</span>
                       <strong>
-                        {textValue(latestReview.reviewerName || latestReview.reviewerId, '-')}
+                        {listOf<string>(
+                          (latestWaiver.approved_conditions ||
+                            latestWaiver.proposed_conditions ||
+                            latestWaiver.conditions) as string[] | undefined,
+                        ).join('；') || '按书面批准文件执行'}
                       </strong>
                     </article>
                     <article>
-                      <span>复核时间</span>
-                      <strong>{formatApiDate(textValue(latestReview.createdAt, ''))}</strong>
-                    </article>
-                    <article>
-                      <span>证据指纹</span>
-                      <strong>{textValue(latestReview.evidenceHash, '-')}</strong>
-                    </article>
-                    <article>
-                      <span>复核依据</span>
-                      <strong>{textValue(latestReview.notes, '-')}</strong>
+                      <span>有效期限</span>
+                      <strong>
+                        {formatApiDate(
+                          textValue(
+                            latestWaiver.expiry_date || latestWaiver.requested_expiry_date,
+                            '',
+                          ),
+                        )}
+                      </strong>
                     </article>
                   </div>
-                ) : (
-                  <p>
-                    尚未完成人工复核。候选命中在复核前不得作为“已确认冲突”，也不得继续提交立案。
-                  </p>
-                )}
-                {canReviewConflict ? (
-                  <Space direction='vertical' style={{ width: '100%', marginTop: 12 }}>
-                    <div className='batch-advice'>
-                      <strong>独立复核指定</strong>
-                      {reviewerAssignment.id ? (
-                        <p>
-                          已指定复核人：
-                          {textValue(
-                            reviewerCandidates.find(
-                              (candidate) =>
-                                numberValue(candidate.id, 0) ===
-                                numberValue(
-                                  reviewerAssignment.reviewer_id || reviewerAssignment.reviewerId,
-                                  0,
-                                ),
-                            )?.name,
-                            textValue(
-                              reviewerAssignment.reviewer_id || reviewerAssignment.reviewerId,
-                              '-',
-                            ),
-                          )}
-                          。已完成回避声明，结论将写入审计记录。
-                        </p>
-                      ) : (
-                        <>
-                          <p>先指定与申请律师、承办律师不存在直接管理关系的业务复核人。</p>
-                          <Space.Compact block>
-                            <Select
-                              aria-label='选择独立复核人'
-                              value={selectedReviewerID}
-                              onChange={setSelectedReviewerID}
-                              placeholder='选择独立复核人'
-                              options={reviewerCandidates.map((candidate) => ({
-                                value: numberValue(candidate.id, 0),
-                                label: `${textValue(candidate.name, candidate.username)} · ${textValue(candidate.role, '业务复核角色')}`,
-                              }))}
-                            />
-                            <Button
-                              type='primary'
-                              loading={assigningReviewer}
-                              disabled={!selectedReviewerID}
-                              onClick={assignConflictReviewer}
-                            >
-                              指定并声明回避
-                            </Button>
-                          </Space.Compact>
-                        </>
-                      )}
-                    </div>
-                    <Select
-                      value={reviewDecision || undefined}
-                      placeholder='选择复核结论'
-                      style={{ width: '100%' }}
-                      disabled={hasExistingReview}
-                      onChange={setReviewDecision}
-                      options={[
-                        { value: 'no_conflict', label: '无冲突' },
-                        { value: 'confirmed_conflict', label: '确认冲突' },
-                        { value: 'false_positive', label: '误报' },
-                        { value: 'insufficient_information', label: '信息不足' },
-                        { value: 'waiver_requested', label: '申请豁免' },
-                      ]}
-                    />
-                    <Input.TextArea
-                      value={reviewNotes}
-                      onChange={(event) => setReviewNotes(event.target.value)}
-                      rows={3}
-                      disabled={hasExistingReview}
-                      placeholder='填写核对对象、数据来源和判断依据'
-                    />
-                    <Button
-                      type='primary'
-                      loading={submittingReview}
-                      disabled={hasExistingReview}
-                      onClick={submitConflictReview}
-                    >
-                      {hasExistingReview ? '已完成复核' : '提交人工复核结论'}
-                    </Button>
-                    {hasExistingReview && (
-                      <p>当前检测记录已有复核结论。如有新证据，请重新运行冲突检测后再复核。</p>
-                    )}
-                  </Space>
-                ) : (
-                  <p>
-                    {latestReview.id
-                      ? '独立复核已完成，但当前结论仍不足以放行接案。请进入冲突审批查看后续处置。'
-                      : '当前账号不能直接下人工复核结论。请点击下方“发起冲突审批”，由独立冲突核查人完成复核。'}
-                  </p>
-                )}
-              </SectionCard>
-            )}
+                </SectionCard>
+              )}
 
-            {selectedDecisionView.decision === 'BLOCKED' && Boolean(latestWaiver.id) && (
-              <SectionCard title='豁免记录'>
-                <div className='batch-info-grid two'>
-                  <article>
-                    <span>申请编号</span>
-                    <strong>{textValue(latestWaiver.application_number, '-')}</strong>
-                  </article>
-                  <article>
-                    <span>状态</span>
-                    <strong>{statusLabel(textValue(latestWaiver.status, '-'))}</strong>
-                  </article>
-                  <article>
-                    <span>申请理由</span>
-                    <strong>{textValue(latestWaiver.rationale, '-')}</strong>
-                  </article>
-                  <article>
-                    <span>到期时间</span>
-                    <strong>
-                      {formatApiDate(textValue(latestWaiver.requested_expiry_date, ''))}
-                    </strong>
-                  </article>
-                </div>
+              {selectedDecisionView.decision === 'WAIVER_PENDING' && (
+                <SectionCard title='独立复核状态'>
+                  <div className='batch-advice'>
+                    <strong>等待独立复核</strong>
+                    <p>
+                      申请编号：{textValue(latestWaiver.application_number || latestWaiver.id, '-')}
+                      ；复核截止：{formatApiDate(textValue(latestWaiver.review_deadline, ''))}
+                    </p>
+                  </div>
+                </SectionCard>
+              )}
+
+              <SectionCard title={`规范化检索主体（${selectedNormalizedSubjects.length}）`}>
+                <DataTable>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>角色</th>
+                        <th>原始名称</th>
+                        <th>规范化名称</th>
+                        <th>别名数量</th>
+                        <th>身份标识数量</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedNormalizedSubjects.map((subject, index) => (
+                        <tr key={`${textValue(subject.normalizedName)}-${index}`}>
+                          <td>{conflictSubjectRoleLabel(subject.role)}</td>
+                          <td>{textValue(subject.originalName, '-')}</td>
+                          <td>{textValue(subject.normalizedName, '-')}</td>
+                          <td>{listOf(subject.aliases as unknown[] | undefined).length}</td>
+                          <td>{Object.keys(recordValue(subject.identifiers)).length}</td>
+                        </tr>
+                      ))}
+                      {selectedNormalizedSubjects.length === 0 && (
+                        <tr>
+                          <td colSpan={5}>历史记录没有规范化主体快照，请重新运行检测</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </DataTable>
               </SectionCard>
-            )}
-          </div>
-        )}
-      </Modal>
+
+              <SectionCard title='风险评估结果'>
+                <DataTable>
+                  <table>
+                    <tbody>
+                      <tr>
+                        <td>总体风险</td>
+                        <td>
+                          {selectedDecisionView.coverageLimited
+                            ? '范围受限，待人工复核'
+                            : riskLabel(
+                                textValue(
+                                  selectedRiskAssessment.overallRisk || selectedConflict.risk_level,
+                                  'LOW',
+                                ),
+                              )}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>风险评分</td>
+                        <td>
+                          {selectedDecisionView.needsHumanReview
+                            ? '暂不评分（待独立人工复核）'
+                            : selectedRiskScore === undefined
+                              ? '未提供'
+                              : selectedDecisionView.coverageLimited
+                                ? `不作为无冲突结论（机器评分 ${formatRiskScore(selectedRiskScore)} / 100）`
+                                : `${formatRiskScore(selectedRiskScore)} / 100`}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>风险原因</td>
+                        <td>{selectedResolvedRiskReason}</td>
+                      </tr>
+                      <tr>
+                        <td>检索主体</td>
+                        <td>{selectedSearchSubject}</td>
+                      </tr>
+                      <tr>
+                        <td>匹配主体</td>
+                        <td>{selectedHistoricalSubject}</td>
+                      </tr>
+                      <tr>
+                        <td>匹配方式</td>
+                        <td>
+                          {selectedNoMatch ? '无匹配' : conflictMatchTypeLabel(selectedMatchType)}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>比对方法</td>
+                        <td>{selectedAlgorithmLabel}</td>
+                      </tr>
+                      {selectedAutomaticConclusion !== undefined && (
+                        <tr>
+                          <td>自动结论</td>
+                          <td>
+                            {selectedAutomaticConclusion === false
+                              ? '否，必须人工核实主体身份'
+                              : '是'}
+                          </td>
+                        </tr>
+                      )}
+                      <tr>
+                        <td>主体角色</td>
+                        <td>{conflictSubjectRoleLabel(selectedSubjectRole)}</td>
+                      </tr>
+                      <tr>
+                        <td>规则编号</td>
+                        <td>{conflictRuleLabel(selectedRuleCode)}</td>
+                      </tr>
+                      <tr>
+                        <td>来源案件</td>
+                        <td>
+                          {selectedNoMatch
+                            ? '不适用（未发现匹配记录）'
+                            : canReviewConflict
+                            ? selectedSourceCase
+                            : '受限历史事项（请联系独立冲突核查人）'}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>需审批</td>
+                        <td>{selectedDecisionView.requiresApproval ? '是' : '否'}</td>
+                      </tr>
+                      <tr>
+                        <td>检查范围</td>
+                        <td>
+                          {conflictScopeLabel(
+                            selectedDecision.coverageStatus || selectedConflict?.coverage_status,
+                          )}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>统计</td>
+                        <td>
+                          检查案件{' '}
+                          {numberValue(
+                            selectedStatistics.totalCasesChecked,
+                            selectedConflictCases.length,
+                          )}{' '}
+                          件，关联方 {numberValue(selectedStatistics.relatedPartiesChecked, 0)} 个
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </DataTable>
+              </SectionCard>
+
+              <DiagnosticDetails label='查看审计技术信息'>
+                <p>检测任务编号：{textValue(selectedConflict.id, '-')}</p>
+                <p>数据来源：系统冲突检测记录</p>
+                <p>
+                  检测耗时：
+                  {numberValue(selectedConflict.duration || selectedCheckResult.duration, 0)}ms
+                </p>
+                {Boolean(latestReview.evidenceHash) && (
+                  <p>证据指纹：{textValue(latestReview.evidenceHash, '-')}</p>
+                )}
+              </DiagnosticDetails>
+
+              <SectionCard
+                title={
+                  selectedRestricted && !canReviewConflict
+                    ? '命中案件明细（受隔离保护）'
+                    : `命中案件明细（${selectedConflictCases.length}）`
+                }
+              >
+                <DataTable>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>案件编号</th>
+                        <th>案件名称</th>
+                        <th>冲突类型</th>
+                        <th>风险</th>
+                        <th>状态</th>
+                        <th>说明</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedConflictCases.map((item, index) => (
+                        <tr
+                          key={`conflict-case-${textValue(
+                            item.id || item.case_id || item.caseId,
+                            'unknown',
+                          )}-${index}`}
+                        >
+                          <td>
+                            {canReviewConflict
+                              ? textValue(
+                                  item.case_no ||
+                                    item.case_number ||
+                                    item.caseNo ||
+                                    item.caseNumber ||
+                                    item.case_id ||
+                                    item.caseId,
+                                )
+                              : '受限'}
+                          </td>
+                          <td>
+                            {canReviewConflict
+                              ? textValue(item.case_name || item.caseName)
+                              : '受限历史事项'}
+                          </td>
+                          <td>
+                            {textValue(item.conflict_type || item.conflictType, '待人工复核')}
+                          </td>
+                          <td>
+                            <RiskTag
+                              text={
+                                canReviewConflict
+                                  ? riskLabel(textValue(item.risk_level || item.riskLevel, 'LOW'))
+                                  : '受限'
+                              }
+                            />
+                          </td>
+                          <td>
+                            {canReviewConflict
+                              ? statusLabel(textValue(item.case_status || item.caseStatus, '-'))
+                              : '受限'}
+                          </td>
+                          <td>
+                            {canReviewConflict
+                              ? textValue(item.conflict_details || item.description, '-')
+                              : '存在受限命中，请联系独立冲突核查人。'}
+                          </td>
+                        </tr>
+                      ))}
+                      {selectedConflictCases.length === 0 && (
+                        <tr>
+                          <td colSpan={6}>
+                            {selectedRestricted && !canReviewConflict
+                              ? '存在受限记录，具体明细仅对独立冲突核查人可见'
+                              : '暂无命中案件明细'}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </DataTable>
+              </SectionCard>
+
+              <SectionCard
+                title={
+                  selectedRestricted && !canReviewConflict
+                    ? '证据链（受隔离保护）'
+                    : `证据链（${selectedEvidenceRows.length}）`
+                }
+              >
+                <DataTable>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>规则</th>
+                        <th>匹配方式</th>
+                        <th>检索主体</th>
+                        <th>历史角色</th>
+                        <th>来源案件</th>
+                        <th>证据摘要</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedEvidenceRows.map((evidence, index) => (
+                        <tr key={`${textValue(evidence.ruleCode)}-${index}`}>
+                          <td>{conflictRuleLabel(evidence.ruleCode)}</td>
+                          <td>{conflictMatchTypeLabel(evidence.matchType)}</td>
+                          <td>{textValue(evidence.requestedParty, '-')}</td>
+                          <td>{conflictSubjectRoleLabel(evidence.historicalRole)}</td>
+                          <td>
+                            {canReviewConflict && !evidence.restricted
+                              ? textValue(evidence.sourceCaseNumber || evidence.sourceCaseName, '-')
+                              : '受限历史事项'}
+                          </td>
+                          <td>
+                            {canReviewConflict
+                              ? textValue(evidence.summary, '-')
+                              : '受限命中，请联系独立冲突核查人。'}
+                          </td>
+                        </tr>
+                      ))}
+                      {selectedEvidenceRows.length === 0 && (
+                        <tr>
+                          <td colSpan={6}>
+                            {selectedRestricted && !canReviewConflict
+                              ? '存在受限证据，具体内容仅对独立冲突核查人可见'
+                              : selectedNoMatch
+                                ? '未发现匹配证据；当前仅因检索覆盖受限进入人工复核'
+                              : '历史记录没有结构化证据，请重新运行检测'}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </DataTable>
+              </SectionCard>
+
+              {selectedDecisionView.needsHumanReview && (
+                <SectionCard title='人工复核记录'>
+                  {latestReview.id ? (
+                    <div className='batch-info-grid two'>
+                      <article>
+                        <span>复核结论</span>
+                        <strong>{conflictDispositionLabel(latestReview.decision)}</strong>
+                      </article>
+                      <article>
+                        <span>复核人</span>
+                        <strong>
+                          {textValue(latestReview.reviewerName || latestReview.reviewerId, '-')}
+                        </strong>
+                      </article>
+                      <article>
+                        <span>复核时间</span>
+                        <strong>{formatApiDate(textValue(latestReview.createdAt, ''))}</strong>
+                      </article>
+                      <article>
+                        <span>复核依据</span>
+                        <strong>{textValue(latestReview.notes, '-')}</strong>
+                      </article>
+                    </div>
+                  ) : (
+                    <p>
+                      {selectedNoMatch
+                        ? '尚未完成人工复核。当前未发现匹配记录，但检索覆盖完整性尚未确认；独立核查确认前不得继续提交立案。'
+                        : '尚未完成人工复核。候选命中在复核前不得作为“已确认冲突”，也不得继续提交立案。'}
+                    </p>
+                  )}
+                  {canReviewConflict ? (
+                    <Space direction='vertical' style={{ width: '100%', marginTop: 12 }}>
+                      <div className='batch-advice'>
+                        <strong>独立复核指定</strong>
+                        {reviewerAssignment.id ? (
+                          <p>
+                            已指定复核人：
+                            {textValue(
+                              reviewerCandidates.find(
+                                (candidate) =>
+                                  numberValue(candidate.id, 0) ===
+                                  numberValue(
+                                    reviewerAssignment.reviewer_id || reviewerAssignment.reviewerId,
+                                    0,
+                                  ),
+                              )?.name,
+                              textValue(
+                                reviewerAssignment.reviewer_id || reviewerAssignment.reviewerId,
+                                '-',
+                              ),
+                            )}
+                            。已完成回避声明，结论将写入审计记录。
+                          </p>
+                        ) : (
+                          <>
+                            <p>先指定与申请律师、承办律师不存在直接管理关系的业务复核人。</p>
+                            <Space.Compact block>
+                              <Select
+                                aria-label='选择独立复核人'
+                                value={selectedReviewerID}
+                                onChange={setSelectedReviewerID}
+                                placeholder='选择独立复核人'
+                                options={reviewerCandidates.map((candidate) => ({
+                                  value: numberValue(candidate.id, 0),
+                                  label: `${textValue(candidate.name, candidate.username)} · ${textValue(candidate.role, '业务复核角色')}`,
+                                }))}
+                              />
+                              <Button
+                                type='primary'
+                                loading={assigningReviewer}
+                                disabled={!selectedReviewerID}
+                                onClick={assignConflictReviewer}
+                              >
+                                指定并声明回避
+                              </Button>
+                            </Space.Compact>
+                          </>
+                        )}
+                      </div>
+                      <Select
+                        value={reviewDecision || undefined}
+                        placeholder='选择复核结论'
+                        style={{ width: '100%' }}
+                        disabled={hasExistingReview}
+                        onChange={setReviewDecision}
+                        options={[
+                          { value: 'no_conflict', label: '无冲突' },
+                          { value: 'confirmed_conflict', label: '确认冲突' },
+                          { value: 'false_positive', label: '误报' },
+                          { value: 'insufficient_information', label: '信息不足' },
+                          { value: 'waiver_requested', label: '申请豁免' },
+                        ]}
+                      />
+                      <Input.TextArea
+                        value={reviewNotes}
+                        onChange={(event) => setReviewNotes(event.target.value)}
+                        rows={3}
+                        disabled={hasExistingReview}
+                        placeholder='填写核对对象、数据来源和判断依据'
+                      />
+                      <Button
+                        type='primary'
+                        loading={submittingReview}
+                        disabled={hasExistingReview}
+                        onClick={submitConflictReview}
+                      >
+                        {hasExistingReview ? '已完成复核' : '提交人工复核结论'}
+                      </Button>
+                      {hasExistingReview && (
+                        <p>当前检测记录已有复核结论。如有新证据，请重新运行冲突检测后再复核。</p>
+                      )}
+                    </Space>
+                  ) : (
+                    <p>
+                      {latestReview.id
+                        ? '独立复核已完成，但当前结论仍不足以放行接案。请进入冲突审批查看后续处置。'
+                        : '当前账号不能直接下人工复核结论。请点击下方“发起冲突审批”，由独立冲突核查人完成复核。'}
+                    </p>
+                  )}
+                </SectionCard>
+              )}
+
+              {selectedDecisionView.decision === 'BLOCKED' && Boolean(latestWaiver.id) && (
+                <SectionCard title='豁免记录'>
+                  <div className='batch-info-grid two'>
+                    <article>
+                      <span>申请编号</span>
+                      <strong>{textValue(latestWaiver.application_number, '-')}</strong>
+                    </article>
+                    <article>
+                      <span>状态</span>
+                      <strong>{statusLabel(textValue(latestWaiver.status, '-'))}</strong>
+                    </article>
+                    <article>
+                      <span>申请理由</span>
+                      <strong>{textValue(latestWaiver.rationale, '-')}</strong>
+                    </article>
+                    <article>
+                      <span>到期时间</span>
+                      <strong>
+                        {formatApiDate(textValue(latestWaiver.requested_expiry_date, ''))}
+                      </strong>
+                    </article>
+                  </div>
+                </SectionCard>
+              )}
+            </div>
+          )}
+        </Modal>
+
+        <Modal
+          title='申请冲突豁免评估'
+          open={waiverModalOpen}
+          onCancel={() => setWaiverModalOpen(false)}
+          onOk={submitWaiverRequest}
+          okText='提交独立复核'
+          confirmLoading={submittingWaiver}
+          destroyOnHidden
+        >
+          <Space direction='vertical' style={{ width: '100%' }}>
+            <p>
+              豁免不会自动消除冲突。申请提交后将由独立的合规、主任或管理人员复核，批准前仍禁止接案。
+            </p>
+            <Input.TextArea
+              rows={4}
+              value={waiverRationale}
+              onChange={(event) => setWaiverRationale(event.target.value)}
+              placeholder='说明知情同意基础、为何仍可代理、替代方案及剩余风险'
+            />
+            <Input.TextArea
+              rows={4}
+              value={waiverConditions}
+              onChange={(event) => setWaiverConditions(event.target.value)}
+              placeholder='每行一项风险控制条件'
+            />
+            <Input
+              value={waiverDurationDays}
+              onChange={(event) => setWaiverDurationDays(event.target.value)}
+              placeholder='豁免有效期（天）'
+            />
+          </Space>
+        </Modal>
+      </div>
 
       <Modal
-        title='申请冲突豁免评估'
-        open={waiverModalOpen}
-        onCancel={() => setWaiverModalOpen(false)}
-        onOk={submitWaiverRequest}
-        okText='提交独立复核'
-        confirmLoading={submittingWaiver}
-        destroyOnHidden
+        title='核验新主体登记'
+        open={Boolean(selectedSubjectRegistration)}
+        onCancel={() => !subjectRegistrationSubmitting && setSelectedSubjectRegistration(null)}
+        onOk={submitSubjectRegistrationReview}
+        okText='确认处理结果'
+        cancelText='取消'
+        confirmLoading={subjectRegistrationSubmitting}
+        okButtonProps={{
+          disabled:
+            subjectRegistrationNotes.trim().length < 10 ||
+            (subjectRegistrationDecision === 'LINK_EXISTING' && !selectedRegistryEntityID),
+        }}
       >
-        <Space direction='vertical' style={{ width: '100%' }}>
+        <div className='batch-advice'>
+          <strong>{textValue(selectedSubjectRegistration?.candidate_name, '候选主体')}</strong>
           <p>
-            豁免不会自动消除冲突。申请提交后将由独立的合规、主任或管理人员复核，批准前仍禁止接案。
+            {textValue(selectedSubjectRegistration?.identity_type)} · 标识尾号
+            {textValue(selectedSubjectRegistration?.identity_hint)}。请依据原始身份材料核验，不得只凭名称判断。
           </p>
-          <Input.TextArea
-            rows={4}
-            value={waiverRationale}
-            onChange={(event) => setWaiverRationale(event.target.value)}
-            placeholder='说明知情同意基础、为何仍可代理、替代方案及剩余风险'
+        </div>
+        <div className='batch-field'>
+          <label htmlFor='subject-registration-decision'>处理方式 *</label>
+          <Select
+            id='subject-registration-decision'
+            value={subjectRegistrationDecision}
+            onChange={(value) => {
+              setSubjectRegistrationDecision(value)
+              setSelectedRegistryEntityID(undefined)
+            }}
+            options={[
+              { value: 'CREATE_NEW', label: '建立新的正式主体档案' },
+              { value: 'LINK_EXISTING', label: '合并到已有主体档案' },
+              { value: 'REJECT', label: '驳回登记申请' },
+            ]}
           />
+        </div>
+        {subjectRegistrationDecision === 'LINK_EXISTING' && (
+          <>
+            <div className='batch-field'>
+              <label htmlFor='registry-entity-query'>搜索全所主体库 *</label>
+              <Input
+                id='registry-entity-query'
+                value={registryEntityQuery}
+                onChange={(event) => setRegistryEntityQuery(event.target.value)}
+                placeholder='输入法定名称或曾用名，至少两个字'
+                suffix={registryEntityLoading ? <ClockCircleOutlined spin /> : <SearchOutlined />}
+              />
+            </div>
+            <div className='batch-field'>
+              <label htmlFor='registry-entity-select'>选择已有主体 *</label>
+              <Select
+                id='registry-entity-select'
+                value={selectedRegistryEntityID}
+                onChange={setSelectedRegistryEntityID}
+                placeholder='选择身份材料对应的已有主体'
+                options={registryEntityOptions.map((entity) => ({
+                  value: numberValue(entity.id, 0),
+                  label: `${textValue(entity.name)} · ${textValue(entity.entity_type)}`,
+                }))}
+                notFoundContent='未找到可合并主体'
+              />
+            </div>
+            <p className='danger-text'>系统会再次比对加密身份摘要；名称相同但身份不一致时无法合并。</p>
+          </>
+        )}
+        <div className='batch-field'>
+          <label htmlFor='subject-registration-notes'>核验或驳回依据 *</label>
           <Input.TextArea
+            id='subject-registration-notes'
+            value={subjectRegistrationNotes}
+            onChange={(event) => setSubjectRegistrationNotes(event.target.value)}
             rows={4}
-            value={waiverConditions}
-            onChange={(event) => setWaiverConditions(event.target.value)}
-            placeholder='每行一项风险控制条件'
+            placeholder='例如：已核验营业执照原件，统一社会信用代码与主体库记录一致。'
           />
-          <Input
-            value={waiverDurationDays}
-            onChange={(event) => setWaiverDurationDays(event.target.value)}
-           placeholder='豁免有效期（天）'
-         />
-       </Space>
-     </Modal>
-      </div>
+        </div>
+      </Modal>
     </div>
   )
 }
@@ -6624,11 +7465,17 @@ export function ApprovalDecisionFlow() {
   const [approval, setApproval] = React.useState<any>(null)
   const [snapshot, setSnapshot] = React.useState<any>(null)
   const [integrationStatus, setIntegrationStatus] = React.useState<any>(null)
-  const [approvalConflictReview, setApprovalConflictReview] = React.useState<Record<string, any>>({})
+  const [approvalConflictReview, setApprovalConflictReview] = React.useState<Record<string, any>>(
+    {},
+  )
   const [apiTimings, setApiTimings] = React.useState<
     Array<{ label: string; duration: number; at: string }>
   >([])
   const [deciding, setDeciding] = React.useState(false)
+  const [decisionDialog, setDecisionDialog] = React.useState<
+    'approve' | 'reject' | 'request_changes' | null
+  >(null)
+  const [decisionReason, setDecisionReason] = React.useState('')
   const [materialFilter, setMaterialFilter] = React.useState('全部材料')
   const [approvalLoadState, setApprovalLoadState] = React.useState<'loading' | 'ready' | 'error'>(
     'loading',
@@ -6657,16 +7504,14 @@ export function ApprovalDecisionFlow() {
   )
 
   const recordTiming = (label: string, startedAt: number) => {
-    setApiTimings((current) =>
-      [
-        {
-          label,
-          duration: Math.round(performance.now() - startedAt),
-          at: new Date().toLocaleTimeString(),
-        },
-        ...current,
-      ].slice(0, 5),
-    )
+    setApiTimings((current) => [
+      {
+        label,
+        duration: Math.round(performance.now() - startedAt),
+        at: new Date().toLocaleTimeString(),
+      },
+      ...current.filter((item) => item.label !== label),
+    ])
   }
 
   const loadApproval = React.useCallback(async () => {
@@ -6780,9 +7625,9 @@ export function ApprovalDecisionFlow() {
     decision: 'approve' | 'reject' | 'request_changes',
     reason: string,
     comments: string,
-  ) => {
+  ): Promise<boolean> => {
     if (!id) {
-      return
+      return false
     }
     setDeciding(true)
     try {
@@ -6812,33 +7657,64 @@ export function ApprovalDecisionFlow() {
       } else {
         message.success('已退回修改，未创建正式案件')
       }
+      return true
     } catch (error) {
       message.error(error instanceof Error ? error.message : '审批处理失败')
+      return false
     } finally {
       setDeciding(false)
     }
   }
 
-  const approve = () =>
-    decideApproval(
-      'approve',
-      '接案材料完整，冲突风险已完成复核，同意承办并创建正式案件。',
-      '通过审批并触发自动成案。',
-    )
+  const openDecisionDialog = (decision: 'approve' | 'reject' | 'request_changes') => {
+    setDecisionDialog(decision)
+    setDecisionReason('')
+  }
 
-  const reject = () =>
-    decideApproval(
-      'reject',
-      '冲突风险或接案条件不满足，拒绝本次新建案件申请。',
-      '审批拒绝后不会创建正式案件。',
-    )
+  const closeDecisionDialog = () => {
+    if (deciding) return
+    setDecisionDialog(null)
+    setDecisionReason('')
+  }
 
-  const requestChanges = () =>
-    decideApproval(
-      'request_changes',
-      '接案资料或冲突说明需要补充，退回申请人修改后重新提交。',
-      '退回修改后暂不创建正式案件。',
-    )
+  const submitDecision = async () => {
+    if (!decisionDialog) return
+    const reason = decisionReason.trim()
+    if (reason.length < 10) {
+      message.warning('请填写不少于 10 个字的处理依据，便于申请人修改和后续审计。')
+      return
+    }
+    const comments =
+      decisionDialog === 'approve'
+        ? '确认通过审批并触发成案。'
+        : decisionDialog === 'reject'
+          ? '确认拒绝，本次申请不会创建正式案件。'
+          : '确认退回申请人补充材料，当前不会创建正式案件。'
+    if (await decideApproval(decisionDialog, reason, comments)) {
+      closeDecisionDialog()
+    }
+  }
+
+  const decisionDialogCopy = {
+    approve: {
+      title: '确认同意并成案',
+      notice: '通过后系统将创建正式案件。请确认冲突复核结论、材料和承办条件均已满足。',
+      placeholder: '填写同意依据、已核验材料和必要的承办条件',
+      okText: '确认同意并成案',
+    },
+    reject: {
+      title: '确认拒绝申请',
+      notice: '拒绝后本次申请终止且不会成案。请写明事实依据，避免申请人无法理解或错误重提。',
+      placeholder: '填写拒绝所依据的冲突事实、规则或接案条件',
+      okText: '确认拒绝',
+    },
+    request_changes: {
+      title: '确认退回修改',
+      notice: '退回后申请人可补充材料并重新提交。请明确列出缺失信息和复核要求。',
+      placeholder: '填写需要补充的主体身份材料、冲突说明或其他事项',
+      okText: '确认退回修改',
+    },
+  }
 
   const approvalMetadata = recordValue(approval?.metadata)
   const snapshotMetadata = recordValue(snapshot?.metadata)
@@ -6907,17 +7783,34 @@ export function ApprovalDecisionFlow() {
   const primarySnapshotEvidence = snapshotEvidence[0] || primaryConflictEvidence(conflictResult)
   const approvalHasRestrictedHit =
     textValue(conflictRecord.source_case || conflictRecord.sourceCase, '') === '受限' ||
-    textValue(conflictRecord.evidence_summary || conflictRecord.evidenceSummary, '').includes('受隔离') ||
-    approvalConflictCases.some((item) =>
-      textValue(item.source_case || item.sourceCase, '') === '受限' ||
-      textValue(item.description || item.conflict_details, '').includes('受隔离'),
+    textValue(conflictRecord.evidence_summary || conflictRecord.evidenceSummary, '').includes(
+      '受隔离',
+    ) ||
+    approvalConflictCases.some(
+      (item) =>
+        textValue(item.source_case || item.sourceCase, '') === '受限' ||
+        textValue(item.description || item.conflict_details, '').includes('受隔离'),
     )
+  const conflictDecision = recordValue(
+    conflictResult?.decision ||
+      recordValue(conflictRecord.check_result).decision ||
+      snapshotRoot.decision ||
+      snapshotMetadata.decision,
+  )
+  const approvalNoMatch =
+    !approvalHasRestrictedHit &&
+    approvalConflictCases.length === 0 &&
+    snapshotEvidence.length === 0 &&
+    numberValue(conflictDecision.evidenceCount, 0) === 0 &&
+    numberValue(conflictDecision.restrictedCount, 0) === 0
   const requestedEvidenceSubject = textValue(
     primarySnapshotEvidence.requestedParty || primarySnapshotEvidence.requested_party,
     '',
   )
   const primarySnapshotSubject = textValue(
-    approvalHasRestrictedHit
+    approvalNoMatch
+      ? snapshotOpposingPartyNames[0]
+      : approvalHasRestrictedHit
       ? '存在受限命中（详情受隔离保护）'
       : primarySnapshotEvidence.matchedSubject ||
           primarySnapshotEvidence.matched_subject ||
@@ -6933,6 +7826,12 @@ export function ApprovalDecisionFlow() {
           snapshotOpposingPartyNames[0],
     '待核实主体',
   )
+  const rawSnapshotRuleCode = textValue(
+    primarySnapshotEvidence.ruleCode ||
+      primarySnapshotEvidence.rule_code ||
+      primarySnapshotEvidence.ruleId,
+    '',
+  )
   const snapshotEvidenceSource = [
     textValue(
       primarySnapshotEvidence.sourceCaseNumber ||
@@ -6941,22 +7840,11 @@ export function ApprovalDecisionFlow() {
         primarySnapshotEvidence.source_case_name,
       '',
     ),
-    textValue(
-      primarySnapshotEvidence.ruleCode ||
-        primarySnapshotEvidence.rule_code ||
-        primarySnapshotEvidence.ruleId,
-      '',
-    ),
+    rawSnapshotRuleCode ? conflictRuleLabel(rawSnapshotRuleCode) : '',
     textValue(primarySnapshotEvidence.summary || primarySnapshotEvidence.description, ''),
   ]
     .filter(Boolean)
     .join(' · ')
-  const conflictDecision = recordValue(
-    conflictResult?.decision ||
-      recordValue(conflictRecord.check_result).decision ||
-      snapshotRoot.decision ||
-      snapshotMetadata.decision,
-  )
   const conflictDecisionStatus = textValue(conflictDecision.status, '').toUpperCase()
   const currentConflictReview =
     Object.keys(approvalConflictReview).length > 0
@@ -7046,6 +7934,15 @@ export function ApprovalDecisionFlow() {
             created_at: approval?.created_at,
           },
         ]
+  const approvalHasPreviousTerminalRecords =
+    ['submitted', 'under_review', 'pending', 'resubmitted'].includes(
+      textValue(approval?.status, '').toLowerCase(),
+    ) &&
+    approvalTraceRows.some((item) =>
+      ['approve', 'approved', 'reject', 'rejected', 'request_changes'].includes(
+        textValue(item.decision, '').toLowerCase(),
+      ),
+    )
   const relatedInfoRows = [
     `关联客户 ${snapshotClientName || '未记录'}`,
     `关联案件 ${applicationCaseTitle}`,
@@ -7163,7 +8060,15 @@ export function ApprovalDecisionFlow() {
                   `案件名称 ${applicationCaseTitle}`,
                   `关联客户 ${snapshotClientName || '未记录'}`,
                   `对方当事人 ${snapshotOpposingPartyNames.join('、') || '未记录'}`,
-                  `案件类型 ${dbCaseType(textValue(snapshot?.case_creation_config?.case_type || metadata.case_creation_config?.case_type, 'commercial'))}`,
+                  `案件类型 ${dbCaseType(
+                    textValue(
+                      snapshot?.case_creation_config?.case_type ||
+                        metadata.case_creation_config?.case_type ||
+                        conflictRecord.case_type ||
+                        metadata.conflict_record?.case_type,
+                      '未记录',
+                    ),
+                  )}`,
                 ].map((line) => (
                   <p key={line}>
                     <span>{line.split(' ')[0]}</span>
@@ -7192,16 +8097,18 @@ export function ApprovalDecisionFlow() {
                   客户：{snapshotClientName || '未记录'}
                 </p>
                 <p>
-                  <RiskTag text='命中历史主体' />
-                  主体：{primarySnapshotSubject}
+                  <RiskTag text={approvalNoMatch ? '检索对方' : '历史主体'} />
+                  {primarySnapshotSubject}
                 </p>
                 <p>
-                  <RiskTag text='来源证据' />
-                  证据：{snapshotEvidenceSource || '未记录'}
+                  <RiskTag text='证据来源' />
+                  {approvalNoMatch
+                    ? '未发现匹配证据（检索覆盖受限）'
+                    : snapshotEvidenceSource || '未记录'}
                 </p>
                 <p>
-                  <RiskTag text={statusLabel(textValue(conflictRecord.status, approval?.status))} />
-                  案件：{applicationCaseTitle}
+                  <RiskTag text='自动检索' />
+                  状态：{statusLabel(textValue(conflictRecord.status, approval?.status))}
                 </p>
                 <p>
                   <RiskTag text={`${approvalConflictCases.length} 条命中`} />
@@ -7213,20 +8120,26 @@ export function ApprovalDecisionFlow() {
                     .join('、') || '审批快照暂无命中明细'}
                 </p>
                 <p>
-                  <RiskTag text='实时数据' />
-                  来源：系统冲突检测记录与审批快照
+                  <RiskTag text='数据来源' />
+                  系统冲突检测记录与审批快照
                 </p>
               </div>
-              <details className='batch-diagnostic-details'>
-                <summary>查看审批审计技术信息</summary>
+              <DiagnosticDetails label='查看审批审计信息'>
                 <p>检测记录编号：{conflictCheckID}</p>
-              </details>
+                {apiTimings.map((item) => (
+                  <p key={`${item.label}-${item.at}`}>
+                    {item.label}：{item.duration}ms，读取时间 {item.at}
+                  </p>
+                ))}
+              </DiagnosticDetails>
               <Button type='link' onClick={() => navigate('/conflict')}>
                 返回利益冲突检测台
               </Button>
               {conflictApprovalBlocked && (
                 <p className='batch-approval-readonly'>
-                  当前不能同意并成案：冲突复核尚未形成可成案结论。请补充主体身份材料并重新复核，或选择“退回修改”。
+                  {canDecisionActions
+                    ? '当前不能同意并成案：冲突复核尚未形成可成案结论。请核对补充要求，或选择“退回修改”。'
+                    : '当前不能成案：请等待独立冲突核查人处理；如申请被退回，再按意见补充主体身份材料并重新提交。'}
                 </p>
               )}
             </SectionCard>
@@ -7333,35 +8246,24 @@ export function ApprovalDecisionFlow() {
               </DataTable>
             </SectionCard>
 
-            <SectionCard title={`意见记录（${approvalCommentRows.length}）`}>
-              <div className='batch-comment-list'>
-                {approvalCommentRows.map((item) => (
-                  <article key={item.id || `${item.approver_name}-${item.created_at}`}>
-                    <Avatar icon={<UserOutlined />} />
-                    <div>
-                      <strong>
-                        {textValue(item.approver_name)} <span>{textValue(item.approver_role)}</span>
-                      </strong>
-                      <p>{textValue(item.decision_comments || item.decision_reason)}</p>
-                    </div>
-                    <RiskTag text={textValue(item.decision)} />
-                    <em>{formatApiDate(item.approval_date || item.created_at)}</em>
-                  </article>
-                ))}
-                {approvalCommentRows.length === 0 && <p>暂无数据库审批意见</p>}
-              </div>
-            </SectionCard>
-
             <SectionCard title={`审批记录（${approvalTraceRows.length}）`}>
+              {approvalHasPreviousTerminalRecords && (
+                <p className='batch-history-notice'>
+                  该申请已重新进入审批流程。以下包含前次处理记录；本轮状态以页面顶部为准。
+                </p>
+              )}
               <div className='batch-comment-list'>
                 {approvalTraceRows.map((item) => (
                   <article key={item.id || `${item.approver_name}-${item.created_at}`}>
                     <Avatar icon={<UserOutlined />} />
                     <div>
                       <strong>
-                        {textValue(item.approver_name)} <span>{textValue(item.approver_role)}</span>
+                        {textValue(item.approver_name, '审批人（历史记录未保存姓名）')}{' '}
+                        {textValue(item.approver_role, '') && (
+                          <span>{roleLabel(textValue(item.approver_role, ''))}</span>
+                        )}
                       </strong>
-                      <p>{textValue(item.decision_comments || item.decision_reason)}</p>
+                      <p>{textValue(item.decision_reason || item.decision_comments)}</p>
                     </div>
                     <RiskTag text={statusLabel(textValue(item.decision, approval?.status))} />
                     <em>{formatApiDate(item.approval_date || item.created_at)}</em>
@@ -7383,17 +8285,6 @@ export function ApprovalDecisionFlow() {
             ].map((line) => (
               <p key={line}>{line}</p>
             ))}
-          </SectionCard>
-          <SectionCard title='接口响应'>
-            {apiTimings.length === 0 ? (
-              <p>正在加载...</p>
-            ) : (
-              apiTimings.map((item) => (
-                <p key={`${item.label}-${item.at}`}>
-                  {item.label} <strong>{item.duration}ms</strong> <span>{item.at}</span>
-                </p>
-              ))
-            )}
           </SectionCard>
           <SectionCard title='关联信息'>
             {relatedInfoRows.map((line) => (
@@ -7424,19 +8315,28 @@ export function ApprovalDecisionFlow() {
                     icon={<CheckCircleOutlined />}
                     loading={deciding}
                     disabled={!canApproveApproval}
-                    onClick={approve}
+                    onClick={() => openDecisionDialog('approve')}
                   >
                     同意并成案
                   </Button>
                 </span>
               </Tooltip>
               {approvalAccess.canReject && (
-                <Button danger type='primary' loading={deciding} onClick={reject}>
+                <Button
+                  danger
+                  type='primary'
+                  loading={deciding}
+                  onClick={() => openDecisionDialog('reject')}
+                >
                   拒绝
                 </Button>
               )}
               {approvalAccess.canReturn && (
-                <Button className='return-btn' loading={deciding} onClick={requestChanges}>
+                <Button
+                  className='return-btn'
+                  loading={deciding}
+                  onClick={() => openDecisionDialog('request_changes')}
+                >
                   退回修改
                 </Button>
               )}
@@ -7457,6 +8357,38 @@ export function ApprovalDecisionFlow() {
             </Space>
           )}
       </div>
+
+      <Modal
+        title={decisionDialog ? decisionDialogCopy[decisionDialog].title : '审批处理确认'}
+        open={Boolean(decisionDialog)}
+        onCancel={closeDecisionDialog}
+        onOk={submitDecision}
+        okText={decisionDialog ? decisionDialogCopy[decisionDialog].okText : '确认'}
+        cancelText='取消'
+        confirmLoading={deciding}
+        okButtonProps={{ danger: decisionDialog === 'reject' }}
+        destroyOnHidden
+      >
+        {decisionDialog && (
+          <Space direction='vertical' style={{ width: '100%' }}>
+            <p>{decisionDialogCopy[decisionDialog].notice}</p>
+            <label htmlFor='approval-decision-reason'>处理依据（必填）</label>
+            <Input.TextArea
+              id='approval-decision-reason'
+              aria-label='处理依据'
+              rows={5}
+              maxLength={1000}
+              showCount
+              value={decisionReason}
+              onChange={(event) => setDecisionReason(event.target.value)}
+              placeholder={decisionDialogCopy[decisionDialog].placeholder}
+            />
+            <p className='batch-muted'>
+              处理依据将写入审批记录，提交后不能删除，只能追加更正说明。
+            </p>
+          </Space>
+        )}
+      </Modal>
     </div>
   )
 }
@@ -7464,20 +8396,15 @@ export function ApprovalDecisionFlow() {
 export function ApprovalWorkbench() {
   const navigate = useNavigate()
   const [workbench, setWorkbench] = React.useState<any>({ items: [], stats: {} })
-  const [apiTiming, setApiTiming] = React.useState<number | null>(null)
   const [approvalSearch, setApprovalSearch] = React.useState('')
   const [approvalFilter, setApprovalFilter] = React.useState('全部')
 
   React.useEffect(() => {
-    const startedAt = performance.now()
     apiRequest<any>('/approvals/workbench')
       .then((data) => {
         setWorkbench(data || { items: [], stats: {} })
-        setApiTiming(Math.round(performance.now() - startedAt))
       })
-      .catch(() => {
-        setApiTiming(null)
-      })
+      .catch(() => setWorkbench({ items: [], stats: {} }))
   }, [])
 
   const approvalRows = listOf<Record<string, unknown>>(workbench.items)
@@ -7506,9 +8433,7 @@ export function ApprovalWorkbench() {
     ? filteredApprovalRows.map((item) => [
         item.request_number || item.id,
         item.title || item.content || '未命名审批',
-        item.priority === 'high' || item.priority === 'critical'
-          ? '高风险'
-          : priorityLabel(textValue(item.priority, 'medium')),
+        priorityLabel(textValue(item.priority, 'medium')),
         item.current_stage
           ? approvalStageLabel(item.current_stage)
           : statusLabel(textValue(item.status, 'pending')),
@@ -7575,198 +8500,198 @@ export function ApprovalWorkbench() {
               allowClear
               placeholder='搜索审批编号、标题、发起人或审批人'
             />
-            <span className='batch-autosave'>
-              加载耗时：{apiTiming === null ? '加载中' : `${apiTiming}ms`}
-            </span>
-           <Button icon={<DownloadOutlined />} onClick={exportApprovals}>
-             导出
-           </Button>
-         </>
-       }
-     />
+            <Button icon={<DownloadOutlined />} onClick={exportApprovals}>
+              导出
+            </Button>
+          </>
+        }
+      />
 
       <div className='ng-content'>
-      <div className='batch-metric-grid approval-metrics'>
-        {[
-          {
-            icon: <AuditOutlined />,
-            label: '待我审批',
-            value: workbench.stats?.pending ?? 0,
-            delta: '',
-            tone: 'blue' as Tone,
-          },
-          {
-            icon: <SafetyCertificateOutlined />,
-            label: '冲突审查',
-            value: workbench.queues?.find?.((queue: any) => queue.key === 'conflict')?.count ?? 0,
-            delta: '',
-            tone: 'red' as Tone,
-          },
-          {
-            icon: <FileProtectOutlined />,
-            label: '豁免披露',
-            value: workbench.stats?.waiver_review ?? 0,
-            delta: '',
-            tone: 'orange' as Tone,
-          },
-          {
-            icon: <ClockCircleOutlined />,
-            label: '需补充',
-            value: workbench.stats?.needs_revision ?? 0,
-            delta: '',
-            tone: 'red' as Tone,
-          },
-          {
-            icon: <CheckCircleOutlined />,
-            label: '队列总数',
-            value: approvalItems.length,
-            delta: '',
-            tone: 'teal' as Tone,
-          },
-        ].map((item) => (
-          <MetricCard key={item.label} {...item} />
-        ))}
-      </div>
+        <div className='batch-metric-grid approval-metrics'>
+          {[
+            {
+              icon: <AuditOutlined />,
+              label: '待我审批',
+              value: workbench.stats?.pending ?? 0,
+              delta: '',
+              tone: 'blue' as Tone,
+            },
+            {
+              icon: <SafetyCertificateOutlined />,
+              label: '冲突审查',
+              value: workbench.queues?.find?.((queue: any) => queue.key === 'conflict')?.count ?? 0,
+              delta: '',
+              tone: 'red' as Tone,
+            },
+            {
+              icon: <FileProtectOutlined />,
+              label: '豁免披露',
+              value: workbench.stats?.waiver_review ?? 0,
+              delta: '',
+              tone: 'orange' as Tone,
+            },
+            {
+              icon: <ClockCircleOutlined />,
+              label: '需补充',
+              value: workbench.stats?.needs_revision ?? 0,
+              delta: '',
+              tone: 'red' as Tone,
+            },
+            {
+              icon: <CheckCircleOutlined />,
+              label: '队列总数',
+              value: approvalItems.length,
+              delta: '',
+              tone: 'teal' as Tone,
+            },
+          ].map((item) => (
+            <MetricCard key={item.label} {...item} />
+          ))}
+        </div>
 
-      <div className='batch-approval-board'>
-        <SectionCard
-          title='审批队列'
-          extra={
-            <Space>
-              {['全部', '冲突审查', '豁免披露', '待补充', '已超时'].map((tab) => (
-                <Button
-                  key={tab}
-                  type={approvalFilter === tab ? 'primary' : 'default'}
-                  onClick={() => setApprovalFilter(tab)}
-                >
-                  {tab}
-                </Button>
-              ))}
-            </Space>
-          }
-          className='span-2'
-        >
-          <DataTable>
-            <table>
-              <thead>
-                <tr>
-                  <th>审批编号</th>
-                  <th>标题</th>
-                  <th>风险</th>
-                  <th>当前节点</th>
-                  <th>负责人</th>
-                  <th>SLA</th>
-                  <th>操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                {approvalItems.map((row: any[]) => (
-                  <tr key={row[0]} className={row[2] === '高风险' ? 'danger-row' : ''}>
-                    <td>{row[0]}</td>
-                    <td>{row[1]}</td>
-                    <td>
-                      <RiskTag text={row[2]} />
-                    </td>
-                    <td>{row[3]}</td>
-                    <td>{row[4]}</td>
-                    <td className={row[5].includes('超时') ? 'danger-text' : ''}>{row[5]}</td>
-                    <td>
-                      <Button
-                        size='small'
-                        aria-label={`进入审批 ${row[0]}`}
-                        onClick={() => navigate(`/approval/${row[6]}`)}
-                      >
-                        进入审批
-                      </Button>
-                    </td>
-                  </tr>
+        <div className='batch-approval-board'>
+          <SectionCard
+            title='审批队列'
+            extra={
+              <Space>
+                {['全部', '冲突审查', '豁免披露', '待补充', '已超时'].map((tab) => (
+                  <Button
+                    key={tab}
+                    type={approvalFilter === tab ? 'primary' : 'default'}
+                    onClick={() => setApprovalFilter(tab)}
+                  >
+                    {tab}
+                  </Button>
                 ))}
-                {approvalItems.length === 0 && (
+              </Space>
+            }
+            className='span-2'
+          >
+            <DataTable>
+              <table>
+                <thead>
                   <tr>
-                    <td colSpan={7}>
-                      {approvalRows.length === 0
-                        ? '暂无数据库审批队列'
-                        : '当前搜索或筛选条件下暂无审批'}
-                    </td>
+                    <th>审批编号</th>
+                    <th>标题</th>
+                    <th>优先级</th>
+                    <th>当前节点</th>
+                    <th>负责人</th>
+                    <th>SLA</th>
+                    <th>操作</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </DataTable>
-        </SectionCard>
+                </thead>
+                <tbody>
+                  {approvalItems.map((row: any[]) => (
+                    <tr
+                      key={row[0]}
+                      className={['高', '紧急'].includes(row[2]) ? 'danger-row' : ''}
+                    >
+                      <td>{row[0]}</td>
+                      <td>{row[1]}</td>
+                      <td>
+                        <RiskTag text={row[2]} />
+                      </td>
+                      <td>{row[3]}</td>
+                      <td>{row[4]}</td>
+                      <td className={row[5].includes('超时') ? 'danger-text' : ''}>{row[5]}</td>
+                      <td>
+                        <Button
+                          size='small'
+                          aria-label={`进入审批 ${row[0]}`}
+                          onClick={() => navigate(`/approval/${row[6]}`)}
+                        >
+                          进入审批
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                  {approvalItems.length === 0 && (
+                    <tr>
+                      <td colSpan={7}>
+                        {approvalRows.length === 0
+                          ? '暂无数据库审批队列'
+                          : '当前搜索或筛选条件下暂无审批'}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </DataTable>
+          </SectionCard>
 
-        <SectionCard title='审批风险分布'>
-          <div className='batch-donut-card'>
-            <Progress
-              type='circle'
-              percent={conflictApprovalPercent}
-              format={() => String(riskDistributionTotal)}
-              strokeColor='#e8434e'
-              trailColor='#f4d8dc'
-              size={126}
-            />
-            <div className='batch-legend'>
-              <span>
-                <StatusDot color='red' />
-                冲突审批 <strong>{conflictApprovalCount}</strong>
-              </span>
-              <span>
-                <StatusDot color='orange' />
-                豁免评估 <strong>{waiverReviewCount}</strong>
-              </span>
-              <span>
-                <StatusDot color='teal' />
-                待补充 <strong>{workbench.stats?.needs_revision ?? 0}</strong>
-              </span>
-              <span>
-                <StatusDot color='blue' />
-                全部 <strong>{approvalItems.length}</strong>
-              </span>
+          <SectionCard title='审批风险分布'>
+            <div className='batch-donut-card'>
+              <Progress
+                type='circle'
+                percent={conflictApprovalPercent}
+                format={() => String(riskDistributionTotal)}
+                strokeColor='#e8434e'
+                trailColor='#f4d8dc'
+                size={126}
+              />
+              <div className='batch-legend'>
+                <span>
+                  <StatusDot color='red' />
+                  冲突审批 <strong>{conflictApprovalCount}</strong>
+                </span>
+                <span>
+                  <StatusDot color='orange' />
+                  豁免评估 <strong>{waiverReviewCount}</strong>
+                </span>
+                <span>
+                  <StatusDot color='teal' />
+                  待补充 <strong>{workbench.stats?.needs_revision ?? 0}</strong>
+                </span>
+                <span>
+                  <StatusDot color='blue' />
+                  全部 <strong>{approvalItems.length}</strong>
+                </span>
+              </div>
             </div>
-          </div>
-        </SectionCard>
+          </SectionCard>
 
-        <SectionCard title='SLA 预警'>
-          <div className='batch-overdue-list'>
-            {slaWarningItems.slice(0, 4).map((row: any[], index: number) => (
-              <p key={row[0]}>
-                <StatusDot color={index === 0 ? 'red' : 'orange'} />
-                {row[1]}
-                <span className='danger-text'>{row[5]}</span>
-              </p>
-            ))}
-            {slaWarningItems.length === 0 && <p>暂无数据库 SLA 预警</p>}
-          </div>
-        </SectionCard>
+          <SectionCard title='SLA 预警'>
+            <div className='batch-overdue-list'>
+              {slaWarningItems.slice(0, 4).map((row: any[], index: number) => (
+                <p key={row[0]}>
+                  <StatusDot color={index === 0 ? 'red' : 'orange'} />
+                  {row[1]}
+                  <span className='danger-text'>{row[5]}</span>
+                </p>
+              ))}
+              {slaWarningItems.length === 0 && <p>暂无数据库 SLA 预警</p>}
+            </div>
+          </SectionCard>
 
-        <SectionCard title='豁免与披露进度'>
-          <p>
-            {waiverReviewCount > 0
-              ? `当前有 ${waiverReviewCount} 项豁免申请待复核，详情以审批队列为准。`
-              : '当前没有进行中的豁免与披露流程。'}
-          </p>
-        </SectionCard>
+          <SectionCard title='豁免与披露进度'>
+            <p>
+              {waiverReviewCount > 0
+                ? `当前有 ${waiverReviewCount} 项豁免申请待复核，详情以审批队列为准。`
+                : '当前没有进行中的豁免与披露流程。'}
+            </p>
+          </SectionCard>
 
-        <SectionCard title='最近审批意见' className='span-2'>
-          <div className='batch-comment-list'>
-            {approvalRows.slice(0, 5).map((item) => (
-              <article key={`approval-${textValue(item.id || item.request_number)}`}>
-                <Avatar icon={<UserOutlined />} />
-                <div>
-                  <strong>
-                    {textValue(item.current_approver_name || item.applicant_name)}
-                    <span>{approvalStageLabel(item.current_stage || item.type)}</span>
-                  </strong>
-                  <p>{textValue(item.content || item.title, '暂无审批说明')}</p>
-                </div>
-                <RiskTag text={statusLabel(textValue(item.status, ''))} />
-                <em>{formatApiDate(textValue(item.updated_at || item.created_at, ''))}</em>
-              </article>
-            ))}
-           {approvalRows.length === 0 && <p>暂无数据库审批意见</p>}
-         </div>
-       </SectionCard>
-     </div>
+          <SectionCard title='最近审批意见' className='span-2'>
+            <div className='batch-comment-list'>
+              {approvalRows.slice(0, 5).map((item) => (
+                <article key={`approval-${textValue(item.id || item.request_number)}`}>
+                  <Avatar icon={<UserOutlined />} />
+                  <div>
+                    <strong>
+                      {textValue(item.current_approver_name || item.applicant_name)}
+                      <span>{approvalStageLabel(item.current_stage || item.type)}</span>
+                    </strong>
+                    <p>{textValue(item.content || item.title, '暂无审批说明')}</p>
+                  </div>
+                  <RiskTag text={statusLabel(textValue(item.status, ''))} />
+                  <em>{formatApiDate(textValue(item.updated_at || item.created_at, ''))}</em>
+                </article>
+              ))}
+              {approvalRows.length === 0 && <p>暂无数据库审批意见</p>}
+            </div>
+          </SectionCard>
+        </div>
       </div>
     </div>
   )
@@ -8672,6 +9597,380 @@ export function SystemSettingsCenter() {
           </div>
         </SectionCard>
       </div>
+    </div>
+  )
+}
+
+interface ConflictPolicyPackageView {
+  package: Record<string, any>
+  endorsements: Array<Record<string, any>>
+  status: string
+}
+
+const emptyPolicyForm = () => {
+  const now = new Date()
+  const review = new Date(now)
+  review.setFullYear(review.getFullYear() + 1)
+  const localValue = (date: Date) => {
+    const offset = date.getTimezoneOffset() * 60_000
+    return new Date(date.getTime() - offset).toISOString().slice(0, 16)
+  }
+  return {
+    policy_version: '',
+    jurisdiction: '',
+    applicable_rule_name: '',
+    applicable_rule_version: '',
+    applicable_rule_authority: '',
+    applicable_rule_reference: '',
+    data_source_policy_reference: '',
+    privacy_basis_matrix_reference: '',
+    retention_policy_reference: '',
+    waiver_policy_reference: '',
+    controlled_actions_reference: '',
+    external_review_reference: '',
+    effective_at: localValue(now),
+    next_review_at: localValue(review),
+    expires_at: '',
+    integrity_hash: '',
+  }
+}
+
+function localDateTimeValue(value?: string) {
+  const date = value ? new Date(value) : new Date()
+  if (Number.isNaN(date.getTime())) return ''
+  const offset = date.getTimezoneOffset() * 60_000
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16)
+}
+
+const emptyScopeForm = (scopeType = '', scope?: Record<string, any>) => ({
+  id: textValue(scope?.id, `scope-${scopeType.toLowerCase()}`),
+  scope_type: scopeType,
+  status: textValue(scope?.status, 'ACTIVE'),
+  coverage_status: textValue(scope?.coverage_status, 'COVERAGE_LIMITED'),
+  source_version: textValue(scope?.source_version, ''),
+  evidence_reference: textValue(scope?.evidence_reference, ''),
+  covered_from: localDateTimeValue(scope?.covered_from),
+  covered_to: localDateTimeValue(scope?.covered_to),
+  missing_sources: (() => {
+    const value = scope?.missing_sources
+    if (Array.isArray(value)) return value.join('\n')
+    try {
+      const parsed = JSON.parse(textValue(value, '[]'))
+      return Array.isArray(parsed) ? parsed.join('\n') : textValue(value, '')
+    } catch {
+      return textValue(value, '')
+    }
+  })(),
+  index_run_id: textValue(scope?.index_run_id, ''),
+  source_of_truth: Boolean(scope?.source_of_truth),
+  sync_mode: textValue(scope?.sync_mode, 'BATCH'),
+  max_sync_lag_minutes: numberValue(scope?.max_sync_lag_minutes, 1440),
+  last_successful_sync_at: localDateTimeValue(scope?.last_successful_sync_at),
+  minimum_field_coverage_percent: numberValue(scope?.minimum_field_coverage_bps, 10000) / 100,
+  measured_field_coverage_percent: numberValue(scope?.measured_field_coverage_bps) / 100,
+  maximum_duplicate_rate_percent: numberValue(scope?.maximum_duplicate_rate_bps) / 100,
+  measured_duplicate_rate_percent: numberValue(scope?.measured_duplicate_rate_bps) / 100,
+  quality_owner_id: numberValue(scope?.quality_owner_id),
+  quality_reviewed_at: localDateTimeValue(scope?.quality_reviewed_at),
+  max_quality_review_age_days: numberValue(scope?.max_quality_review_age_days, 31),
+  failure_alert_reference: textValue(scope?.failure_alert_reference, ''),
+  correction_procedure_reference: textValue(scope?.correction_procedure_reference, ''),
+})
+
+function policyStatusLabel(status: string) {
+  switch (status) {
+    case 'APPROVED':
+      return '双人确认完成'
+    case 'PENDING_MANAGEMENT':
+      return '待主任/管理合伙人确认'
+    case 'PENDING_COMPLIANCE':
+      return '待合规负责人确认'
+    default:
+      return '待双方确认'
+  }
+}
+
+const conflictScopeLabels: Record<string, string> = {
+  CASE_ARCHIVE: '案件档案',
+  CLIENT_ARCHIVE: '客户档案',
+  SUBJECT_REGISTRY: '客户及相关主体名册',
+  RELATION_ARCHIVE: '关联关系档案',
+}
+
+function formatPolicyDate(value?: string) {
+  if (!value) return '未设置'
+  return new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(value))
+}
+
+export function ConflictGovernanceCenter() {
+  const [policies, setPolicies] = React.useState<ConflictPolicyPackageView[]>([])
+  const [scopes, setScopes] = React.useState<Array<Record<string, any>>>([])
+  const [qualityOwners, setQualityOwners] = React.useState<Array<Record<string, any>>>([])
+  const [loading, setLoading] = React.useState(true)
+  const [submitting, setSubmitting] = React.useState(false)
+  const [modalOpen, setModalOpen] = React.useState(false)
+  const [form, setForm] = React.useState(emptyPolicyForm)
+  const [scopeModalOpen, setScopeModalOpen] = React.useState(false)
+  const [scopeForm, setScopeForm] = React.useState(() => emptyScopeForm())
+  const roles = listOf(getRoles()).map((role) => textValue(role.code).toLowerCase())
+  const isManagement = roles.some((role) => ['director', 'partner', 'management'].includes(role))
+  const isCompliance = roles.some((role) => ['compliance', 'risk', 'risk_control'].includes(role))
+  const canManagePolicies = isManagement || isCompliance
+
+  const load = React.useCallback(async () => {
+    setLoading(true)
+    try {
+      const [policyRows, scopeRows, ownerRows] = await Promise.all([
+        canManagePolicies
+          ? apiRequest<ConflictPolicyPackageView[]>('/conflict-v2/governance/policies')
+          : Promise.resolve([]),
+        apiRequest<Array<Record<string, any>>>('/conflict-v2/search-scopes'),
+        apiRequest<Array<Record<string, any>>>('/conflict/reviewer-candidates'),
+      ])
+      setPolicies(Array.isArray(policyRows) ? policyRows : [])
+      setScopes(Array.isArray(scopeRows) ? scopeRows : [])
+      setQualityOwners(Array.isArray(ownerRows) ? ownerRows : [])
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : '冲突治理信息加载失败')
+    } finally {
+      setLoading(false)
+    }
+  }, [canManagePolicies])
+
+  React.useEffect(() => {
+    void load()
+  }, [load])
+
+  const updateField = (field: keyof ReturnType<typeof emptyPolicyForm>, value: string) => {
+    setForm((current) => ({ ...current, [field]: value }))
+  }
+
+  const submitPackage = async () => {
+    setSubmitting(true)
+    try {
+      await apiRequest('/conflict-v2/governance/policies', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...form,
+          effective_at: new Date(form.effective_at).toISOString(),
+          next_review_at: new Date(form.next_review_at).toISOString(),
+          expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
+        }),
+      })
+      message.success('政策材料包已提交，需主任/管理合伙人与合规负责人分别确认')
+      setModalOpen(false)
+      setForm(emptyPolicyForm())
+      await load()
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : '政策材料包提交失败')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const openScopeEditor = (scopeType: string, scope?: Record<string, any>) => {
+    setScopeForm(emptyScopeForm(scopeType, scope))
+    setScopeModalOpen(true)
+  }
+
+  const updateScopeField = (field: string, value: unknown) => {
+    setScopeForm((current) => ({ ...current, [field]: value }))
+  }
+
+  const submitScope = async () => {
+    setSubmitting(true)
+    try {
+      const missingSources = String(scopeForm.missing_sources || '')
+        .split(/[\n,，]/)
+        .map((value) => value.trim())
+        .filter(Boolean)
+      await apiRequest(`/conflict-v2/search-scopes/${encodeURIComponent(scopeForm.id)}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          ...scopeForm,
+          covered_from: scopeForm.covered_from ? new Date(scopeForm.covered_from).toISOString() : null,
+          covered_to: scopeForm.covered_to ? new Date(scopeForm.covered_to).toISOString() : null,
+          last_successful_sync_at: scopeForm.last_successful_sync_at ? new Date(scopeForm.last_successful_sync_at).toISOString() : null,
+          quality_reviewed_at: scopeForm.quality_reviewed_at ? new Date(scopeForm.quality_reviewed_at).toISOString() : null,
+          missing_sources: missingSources,
+          minimum_field_coverage_bps: Math.round(numberValue(scopeForm.minimum_field_coverage_percent) * 100),
+          measured_field_coverage_bps: Math.round(numberValue(scopeForm.measured_field_coverage_percent) * 100),
+          maximum_duplicate_rate_bps: Math.round(numberValue(scopeForm.maximum_duplicate_rate_percent) * 100),
+          measured_duplicate_rate_bps: Math.round(numberValue(scopeForm.measured_duplicate_rate_percent) * 100),
+          quality_owner_id: numberValue(scopeForm.quality_owner_id) || null,
+        }),
+      })
+      message.success('权威档案来源登记已保存并留痕')
+      setScopeModalOpen(false)
+      await load()
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : '权威档案来源登记失败')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const endorse = (item: ConflictPolicyPackageView) => {
+    Modal.confirm({
+      title: '确认当前政策材料包',
+      content: `您将以当前账号确认政策版本 ${textValue(item.package.policy_version)}，完整性摘要为 ${textValue(item.package.integrity_hash)}。确认记录不可修改或删除。`,
+      okText: '确认并留痕',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          await apiRequest(`/conflict-v2/governance/policies/${item.package.id}/endorsements`, {
+            method: 'POST',
+            body: '{}',
+          })
+          message.success('确认记录已保存')
+          await load()
+        } catch (error) {
+          message.error(error instanceof Error ? error.message : '确认记录保存失败')
+        }
+      },
+    })
+  }
+
+  const canEndorse = (item: ConflictPolicyPackageView) => {
+    if (item.status === 'APPROVED') return false
+    const types = item.endorsements.map((entry) => textValue(entry.endorsement_type))
+    return (isManagement && !types.includes('MANAGEMENT')) || (isCompliance && !types.includes('COMPLIANCE'))
+  }
+
+  const completeScopeTypes = new Set(
+    scopes
+      .filter((scope) => textValue(scope.status) === 'ACTIVE' && textValue(scope.coverage_status) === 'COMPLETE')
+      .map((scope) => textValue(scope.scope_type)),
+  )
+  const requiredScopes = ['CASE_ARCHIVE', 'CLIENT_ARCHIVE', 'SUBJECT_REGISTRY', 'RELATION_ARCHIVE']
+
+  return (
+    <div className='batch-page'>
+      <PageHeader
+        eyebrow='利益冲突 / 正式放行治理'
+        title='冲突治理'
+        subtitle='政策签署与权威档案覆盖均完成后，系统才允许正式客户案件使用完整结论。'
+        actions={
+          <Space>
+            <Button onClick={() => void load()} loading={loading}>刷新</Button>
+            {canManagePolicies && (
+              <Button type='primary' icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>
+                提交新政策材料包
+              </Button>
+            )}
+          </Space>
+        }
+      />
+
+      <div className='batch-metric-grid'>
+        {canManagePolicies && <MetricCard icon={<FileProtectOutlined />} label='政策材料包' value={policies.length} delta='' tone='blue' />}
+        {canManagePolicies && <MetricCard icon={<CheckCircleOutlined />} label='双人确认完成' value={policies.filter((item) => item.status === 'APPROVED').length} delta='' tone='green' />}
+        <MetricCard icon={<DatabaseOutlined />} label='权威来源完整' value={`${completeScopeTypes.size}/4`} delta='' tone={completeScopeTypes.size === 4 ? 'green' : 'orange'} />
+      </div>
+
+      {canManagePolicies && <SectionCard title='律所冲突政策签署记录'>
+        <DataTable>
+          <table>
+            <thead><tr><th>政策版本</th><th>适用范围</th><th>生效/复核</th><th>确认状态</th><th>材料摘要</th><th>操作</th></tr></thead>
+            <tbody>
+              {policies.map((item) => (
+                <tr key={textValue(item.package.id)}>
+                  <td><strong>{textValue(item.package.policy_version)}</strong><br /><small>{textValue(item.package.applicable_rule_name)}</small></td>
+                  <td>{textValue(item.package.jurisdiction)}<br /><small>{textValue(item.package.applicable_rule_authority)}</small></td>
+                  <td>{formatPolicyDate(item.package.effective_at)}<br /><small>复核：{formatPolicyDate(item.package.next_review_at)}</small></td>
+                  <td>
+                    <RiskTag text={policyStatusLabel(item.status)} />
+                    <div className='policy-endorser-list'>
+                      {item.endorsements.map((entry) => (
+                        <small key={textValue(entry.id)}>
+                          {textValue(entry.endorsement_type) === 'MANAGEMENT' ? '管理确认' : '合规确认'}：{textValue(entry.endorser_name, '账号已停用')}
+                        </small>
+                      ))}
+                    </div>
+                  </td>
+                  <td><code>{textValue(item.package.integrity_hash).slice(0, 12)}…</code></td>
+                  <td><Button size='small' disabled={!canEndorse(item)} onClick={() => endorse(item)}>确认政策材料</Button></td>
+                </tr>
+              ))}
+              {!loading && policies.length === 0 && <tr><td colSpan={6}>尚未提交政策材料包，正式客户案件保持未放行。</td></tr>}
+            </tbody>
+          </table>
+        </DataTable>
+      </SectionCard>}
+
+      <SectionCard title='权威档案来源覆盖'>
+        <div className='batch-policy-grid'>
+          {requiredScopes.map((scopeType) => {
+            const scope = scopes.find((row) => textValue(row.scope_type) === scopeType)
+            const complete = scope && textValue(scope.status) === 'ACTIVE' && textValue(scope.coverage_status) === 'COMPLETE'
+            return (
+              <article key={scopeType}>
+                <DatabaseOutlined />
+                <div>
+                  <strong>{conflictScopeLabels[scopeType]}</strong>
+                  <p>{scope ? (complete ? '已完成索引和数量对账' : '已登记，尚未完成核对') : '未登记权威来源'}</p>
+                </div>
+                <div className='scope-card-actions'>
+                  <RiskTag text={complete ? '完整并已核对' : '未完成'} />
+                  <Button size='small' onClick={() => openScopeEditor(scopeType, scope)}>登记/更新</Button>
+                </div>
+              </article>
+            )
+          })}
+        </div>
+      </SectionCard>
+
+      <Modal title='提交不可修改的政策材料包' open={modalOpen} onCancel={() => setModalOpen(false)} onOk={() => void submitPackage()} okText='提交材料包' cancelText='取消' confirmLoading={submitting} width={760} destroyOnHidden>
+        <div className='conflict-policy-form'>
+          <div><span>政策版本</span><Input aria-label='政策版本' value={form.policy_version} onChange={(event) => updateField('policy_version', event.target.value)} /></div>
+          <div><span>执业登记地</span><Input aria-label='执业登记地' value={form.jurisdiction} onChange={(event) => updateField('jurisdiction', event.target.value)} /></div>
+          <div><span>适用规则名称</span><Input aria-label='适用规则名称' value={form.applicable_rule_name} onChange={(event) => updateField('applicable_rule_name', event.target.value)} /></div>
+          <div><span>规则版本</span><Input aria-label='规则版本' value={form.applicable_rule_version} onChange={(event) => updateField('applicable_rule_version', event.target.value)} /></div>
+          <div><span>发布/确认机关</span><Input aria-label='发布或确认机关' value={form.applicable_rule_authority} onChange={(event) => updateField('applicable_rule_authority', event.target.value)} /></div>
+          <div><span>适用规则材料引用</span><Input aria-label='适用规则材料引用' value={form.applicable_rule_reference} onChange={(event) => updateField('applicable_rule_reference', event.target.value)} /></div>
+          <div><span>权威来源政策引用</span><Input aria-label='权威来源政策引用' value={form.data_source_policy_reference} onChange={(event) => updateField('data_source_policy_reference', event.target.value)} /></div>
+          <div><span>个人信息处理依据引用</span><Input aria-label='个人信息处理依据引用' value={form.privacy_basis_matrix_reference} onChange={(event) => updateField('privacy_basis_matrix_reference', event.target.value)} /></div>
+          <div><span>档案保留政策引用</span><Input aria-label='档案保留政策引用' value={form.retention_policy_reference} onChange={(event) => updateField('retention_policy_reference', event.target.value)} /></div>
+          <div><span>冲突豁免政策引用</span><Input aria-label='冲突豁免政策引用' value={form.waiver_policy_reference} onChange={(event) => updateField('waiver_policy_reference', event.target.value)} /></div>
+          <div><span>受控对外动作清单引用</span><Input aria-label='受控对外动作清单引用' value={form.controlled_actions_reference} onChange={(event) => updateField('controlled_actions_reference', event.target.value)} /></div>
+          <div><span>外部或内部专项审阅引用</span><Input aria-label='外部或内部专项审阅引用' value={form.external_review_reference} onChange={(event) => updateField('external_review_reference', event.target.value)} /></div>
+          <div><span>生效时间</span><Input aria-label='生效时间' type='datetime-local' value={form.effective_at} onChange={(event) => updateField('effective_at', event.target.value)} /></div>
+          <div><span>下次复核时间</span><Input aria-label='下次复核时间' type='datetime-local' value={form.next_review_at} onChange={(event) => updateField('next_review_at', event.target.value)} /></div>
+          <div><span>到期时间（可不填）</span><Input aria-label='到期时间' type='datetime-local' value={form.expires_at} onChange={(event) => updateField('expires_at', event.target.value)} /></div>
+          <div className='span-2'><span>签署材料包 SHA-256 摘要</span><Input aria-label='签署材料包SHA-256摘要' value={form.integrity_hash} maxLength={64} onChange={(event) => updateField('integrity_hash', event.target.value)} /></div>
+        </div>
+      </Modal>
+      <Modal title={`登记${conflictScopeLabels[scopeForm.scope_type] || '权威档案来源'}`} open={scopeModalOpen} onCancel={() => setScopeModalOpen(false)} onOk={() => void submitScope()} okText='保存并留痕' cancelText='取消' confirmLoading={submitting} width={820} destroyOnHidden>
+        <div className='conflict-policy-form'>
+          <div><span>来源状态</span><Select aria-label='来源状态' value={scopeForm.status} onChange={(value) => updateScopeField('status', value)} options={[{ value: 'ACTIVE', label: '当前有效' }, { value: 'INACTIVE', label: '已停用' }]} /></div>
+          <div><span>覆盖结论</span><Select aria-label='覆盖结论' value={scopeForm.coverage_status} onChange={(value) => updateScopeField('coverage_status', value)} options={[{ value: 'COMPLETE', label: '完整覆盖' }, { value: 'COVERAGE_LIMITED', label: '覆盖受限' }]} /></div>
+          <div><span>来源数据版本</span><Input aria-label='来源数据版本' value={scopeForm.source_version} onChange={(event) => updateScopeField('source_version', event.target.value)} /></div>
+          <div><span>索引构建运行编号</span><Input aria-label='索引构建运行编号' value={scopeForm.index_run_id} onChange={(event) => updateScopeField('index_run_id', event.target.value)} /></div>
+          <div className='span-2'><span>核对凭证引用</span><Input aria-label='核对凭证引用' value={scopeForm.evidence_reference} onChange={(event) => updateScopeField('evidence_reference', event.target.value)} /></div>
+          <div><span>覆盖资料起始时间</span><Input aria-label='覆盖资料起始时间' type='datetime-local' value={scopeForm.covered_from} onChange={(event) => updateScopeField('covered_from', event.target.value)} /></div>
+          <div><span>覆盖资料截止时间</span><Input aria-label='覆盖资料截止时间' type='datetime-local' value={scopeForm.covered_to} onChange={(event) => updateScopeField('covered_to', event.target.value)} /></div>
+          <div className='span-2'><span>未纳入的资料来源（每行一项；完整覆盖时必须为空）</span><Input.TextArea aria-label='未纳入的资料来源' rows={3} value={scopeForm.missing_sources} onChange={(event) => updateScopeField('missing_sources', event.target.value)} /></div>
+          <div><span>是否经律所确认为权威来源</span><Switch aria-label='是否经律所确认为权威来源' checked={scopeForm.source_of_truth} onChange={(value) => updateScopeField('source_of_truth', value)} checkedChildren='是' unCheckedChildren='否' /></div>
+          <div><span>同步方式</span><Select aria-label='同步方式' value={scopeForm.sync_mode} onChange={(value) => updateScopeField('sync_mode', value)} options={[{ value: 'REALTIME', label: '实时同步' }, { value: 'BATCH', label: '定时批量同步' }, { value: 'MANUAL_IMPORT', label: '受控人工导入' }]} /></div>
+          <div><span>允许最大同步延迟（分钟）</span><Input aria-label='允许最大同步延迟' type='number' min={1} value={scopeForm.max_sync_lag_minutes} onChange={(event) => updateScopeField('max_sync_lag_minutes', numberValue(event.target.value))} /></div>
+          <div><span>最近成功同步时间</span><Input aria-label='最近成功同步时间' type='datetime-local' value={scopeForm.last_successful_sync_at} onChange={(event) => updateScopeField('last_successful_sync_at', event.target.value)} /></div>
+          <div><span>最低字段覆盖率（%）</span><Input aria-label='最低字段覆盖率' type='number' min={0.01} max={100} step={0.01} value={scopeForm.minimum_field_coverage_percent} onChange={(event) => updateScopeField('minimum_field_coverage_percent', numberValue(event.target.value))} /></div>
+          <div><span>实测字段覆盖率（%）</span><Input aria-label='实测字段覆盖率' type='number' min={0} max={100} step={0.01} value={scopeForm.measured_field_coverage_percent} onChange={(event) => updateScopeField('measured_field_coverage_percent', numberValue(event.target.value))} /></div>
+          <div><span>允许最高重复率（%）</span><Input aria-label='允许最高重复率' type='number' min={0} max={100} step={0.01} value={scopeForm.maximum_duplicate_rate_percent} onChange={(event) => updateScopeField('maximum_duplicate_rate_percent', numberValue(event.target.value))} /></div>
+          <div><span>实测重复率（%）</span><Input aria-label='实测重复率' type='number' min={0} max={100} step={0.01} value={scopeForm.measured_duplicate_rate_percent} onChange={(event) => updateScopeField('measured_duplicate_rate_percent', numberValue(event.target.value))} /></div>
+          <div><span>数据质量责任人</span><Select aria-label='数据质量责任人' showSearch optionFilterProp='label' value={scopeForm.quality_owner_id || undefined} onChange={(value) => updateScopeField('quality_owner_id', numberValue(value))} options={qualityOwners.map((owner) => ({ value: numberValue(owner.id), label: `${textValue(owner.name || owner.username, '未命名账号')} · ${textValue(owner.department, textValue(owner.role))}` }))} /></div>
+          <div><span>最近质量复核时间</span><Input aria-label='最近质量复核时间' type='datetime-local' value={scopeForm.quality_reviewed_at} onChange={(event) => updateScopeField('quality_reviewed_at', event.target.value)} /></div>
+          <div><span>质量复核有效期（天）</span><Input aria-label='质量复核有效期' type='number' min={1} value={scopeForm.max_quality_review_age_days} onChange={(event) => updateScopeField('max_quality_review_age_days', numberValue(event.target.value))} /></div>
+          <div><span>同步失败告警流程引用</span><Input aria-label='同步失败告警流程引用' value={scopeForm.failure_alert_reference} onChange={(event) => updateScopeField('failure_alert_reference', event.target.value)} /></div>
+          <div className='span-2'><span>数据更正与留痕流程引用</span><Input aria-label='数据更正与留痕流程引用' value={scopeForm.correction_procedure_reference} onChange={(event) => updateScopeField('correction_procedure_reference', event.target.value)} /></div>
+        </div>
+      </Modal>
     </div>
   )
 }

@@ -41,6 +41,7 @@ test.describe('立案工作流：冲突检查留在当前上下文', () => {
 
     // Step 0 当事人：对方当事人
     await page.getByPlaceholder('输入对方当事人名称').fill('测试对方当事人')
+    await page.getByPlaceholder('输入证件号或统一社会信用代码').fill('91310000TESTWORKFLOW01')
 
     // 负责律师在 step 2（团队与费用），通过 stepper 跳到 step 2
     await stepper.nth(2).click()
@@ -83,6 +84,17 @@ test.describe('立案工作流：冲突检查留在当前上下文', () => {
   test('必填项缺失时运行冲突检查不得创建草稿', async ({ page }) => {
     await expect(page.getByRole('heading', { name: '新建案件立案工作台' })).toBeVisible()
 
+    const intakeWrites: string[] = []
+    page.on('request', (request) => {
+      const pathname = new URL(request.url()).pathname
+      if (
+        ['POST', 'PUT'].includes(request.method()) &&
+        (pathname.includes('/case-intakes') || pathname.includes('/conflict-check'))
+      ) {
+        intakeWrites.push(`${request.method()} ${pathname}`)
+      }
+    })
+
     const stepper = page.locator('.batch-stepper button')
 
     // 只选择客户，不填案件名称和对方当事人
@@ -104,10 +116,17 @@ test.describe('立案工作流：冲突检查留在当前上下文', () => {
     await page.getByRole('button', { name: '运行利益冲突检查' }).click()
 
     // 应显示校验错误
-    await expect(page.getByText(/必填项未完成/)).toBeVisible()
+    const validation = page.locator('.conflict-check-validation')
+    await expect(validation).toBeVisible()
+    await expect(validation).toContainText('案件名称')
+    await expect(validation).toContainText('对方当事人')
+    await page.getByRole('button', { name: '返回基本信息' }).click()
+    await expect(page.locator('#intake-title')).toHaveAttribute('aria-invalid', 'true')
+    await expect(page.locator('#intake-opponent')).toHaveAttribute('aria-invalid', 'true')
 
     // 不应创建草稿
     await expect(page.getByText(/接案草稿已创建/)).not.toBeVisible()
+    expect(intakeWrites).toEqual([])
 
     // URL 应仍在 /case/create
     await expect(page).toHaveURL(/\/case\/create$/)

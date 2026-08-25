@@ -7,6 +7,7 @@ set -e
 
 echo "=== Law OA Go Performance Test Suite ==="
 echo "Starting performance tests..."
+echo "Backend entry: go run . or make build && ./bin/law-oa-go"
 
 # 设置测试环境变量
 export ENVIRONMENT=test
@@ -76,7 +77,6 @@ check_dependencies() {
 
     # 检查必要的Go包
     echo "Installing/updating test dependencies..."
-    go mod tidy
     go install github.com/itchyny/gojq/cmd/gojq@latest 2>/dev/null || true
     go install golang.org/x/perf/cmd/benchstat@latest 2>/dev/null || true
 }
@@ -266,7 +266,7 @@ main() {
     # 确保服务正在运行（如果需要）
     if ! curl -s http://localhost:8080/health >/dev/null 2>&1; then
         echo "⚠️  Application not running on localhost:8080"
-        echo "Please start the application with: ./law-oa-server"
+        echo "Please start the application with: go run . or make build && ./bin/law-oa-go"
         echo "Running tests with mock services..."
     else
         echo "✓ Application is running"

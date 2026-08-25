@@ -323,7 +323,7 @@ func (h *ConflictHandlerSimple) prepareConflictRequest(c *gin.Context, request *
 	var clientRecord models.Client
 	if err := h.db.WithContext(c.Request.Context()).
 		Table("clients").
-		Select("id, name, type, status, id_card, id_card_digest, id_card_ciphertext").
+		Select("id, name, type, status, id_card, id_card_digest, id_card_ciphertext, identity_type, identity_number_digest, identity_number_ciphertext, aliases").
 		Where("id = ? AND deleted_at IS NULL", caseRecord.ClientID).
 		Take(&clientRecord).Error; err != nil {
 		common.NewAPIError(c, http.StatusConflict, "CLIENT_CONTEXT_INVALID", "案件客户主体不存在，已阻止冲突检测")
@@ -339,12 +339,16 @@ func (h *ConflictHandlerSimple) prepareConflictRequest(c *gin.Context, request *
 	request.ClientName = clientRecord.Name
 	request.ClientType = normalizeConflictClientType(clientRecord.Type)
 	request.ClientIdentifiers = nil
-	if identityNumber, err := clientRecord.DecryptedIDCard(); err != nil {
+	if identityNumber, err := clientRecord.DecryptedIdentity(); err != nil {
 		common.NewAPIError(c, http.StatusServiceUnavailable, "CLIENT_IDENTITY_UNAVAILABLE", "案件客户身份标识无法安全读取，已阻止冲突检测")
 		return false
 	} else if strings.TrimSpace(identityNumber) != "" {
-		request.ClientIdentifiers = map[string]string{"id_card": identityNumber}
+		request.ClientIdentifiers = map[string]string{clientRecord.IdentityIdentifierKey(): identityNumber}
+	} else {
+		common.NewAPIError(c, http.StatusConflict, "CLIENT_IDENTITY_REQUIRED", "案件客户缺少可核验身份标识，已阻止冲突检测")
+		return false
 	}
+	request.ClientAliases = splitConflictAliases(clientRecord.Aliases)
 	request.CaseName = caseRecord.Title
 	request.CaseType = caseRecord.CaseType
 	request.SearchYears = 0
@@ -364,6 +368,19 @@ func normalizeConflictClientType(value string) string {
 	default:
 		return "ANY"
 	}
+}
+
+func splitConflictAliases(value string) []string {
+	items := strings.FieldsFunc(value, func(r rune) bool {
+		return r == ',' || r == ';' || r == '；' || r == '\n'
+	})
+	result := make([]string, 0, len(items))
+	for _, item := range items {
+		if item = strings.TrimSpace(item); item != "" {
+			result = append(result, item)
+		}
+	}
+	return result
 }
 
 func canRunConflictCheckForOthers(c *gin.Context) bool {

@@ -33,14 +33,14 @@ app.kubernetes.io/component: backend
 {{/*
 Chart名称模板
 */}}
-{{- define "law-oa-go.name" - }}
+{{- define "law-oa-go.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Chart全名模板
 */}}
-{{- define "law-oa-go.fullname" - }}
+{{- define "law-oa-go.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -56,7 +56,7 @@ Chart全名模板
 {{/*
 Chart标识模板
 */}}
-{{- define "law-oa-go.chart" - }}
+{{- define "law-oa-go.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -420,11 +420,11 @@ roleRef:
 - name: VERSION
   value: {{ .Chart.AppVersion | quote }}
 - name: METRICS_ENABLED
-  value: {{ .Values.env.metricsEnabled | default "true" | quote }}
+  value: {{ .Values.env.metricsEnabled | toString | quote }}
 - name: TRACING_ENABLED
-  value: {{ .Values.env.tracingEnabled | default "true" | quote }}
+  value: {{ .Values.env.tracingEnabled | toString | quote }}
 - name: HEALTH_CHECK_ENABLED
-  value: {{ .Values.env.healthCheckEnabled | default "true" | quote }}
+  value: {{ .Values.env.healthCheckEnabled | toString | quote }}
 - name: POD_NAME
   valueFrom:
     fieldRef:
@@ -477,15 +477,8 @@ roleRef:
 - name: JAEGER_ENDPOINT
   value: {{ include "law-oa-go.jaegerConnectionString" . }}
 {{- end }}
-{{- range .Values.env }}
-- name: {{ .name }}
-  {{- if .value }}
-  value: {{ .value | quote }}
-  {{- end }}
-  {{- if .valueFrom }}
-  valueFrom:
-    {{- toYaml .valueFrom | nindent 4 }}
-  {{- end }}
+{{- with .Values.extraEnv }}
+{{ toYaml . }}
 {{- end }}
 {{- end }}
 

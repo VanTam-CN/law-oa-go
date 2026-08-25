@@ -204,8 +204,8 @@ REM 运行数据库迁移函数
 :run_migrations
 call :log_info "运行数据库迁移..."
 
-if exist "migrate\main.go" (
-    go run migrate\main.go up
+if exist "cmd\migrate" (
+    go run ./cmd/migrate -command bootstrap
     if %ERRORLEVEL% neq 0 (
         call :log_error "数据库迁移失败"
         exit /b 1
@@ -229,5 +229,5 @@ if exist ".env" (
 )
 
 REM 启动应用
-go run main.go
+go run .
 goto :eof

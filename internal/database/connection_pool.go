@@ -80,13 +80,14 @@ func NewOptimizedDatabase(cfg *config.Config) (*OptimizedDatabase, error) {
 		if sslMode == "" {
 			sslMode = "disable"
 		}
-		dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s TimeZone=UTC",
+		dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s TimeZone=%s",
 			cfg.Database.Host,
 			cfg.Database.Port,
 			cfg.Database.Username,
 			cfg.Database.Password,
 			cfg.Database.Database,
 			sslMode,
+			cfg.GetDatabaseTimeZone(),
 		)
 		db, err = gorm.Open(postgres.Open(dsn), gormConfig)
 	} else {

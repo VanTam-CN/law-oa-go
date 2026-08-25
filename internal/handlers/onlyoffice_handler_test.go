@@ -52,7 +52,7 @@ func setupOnlyOfficeTestDB(t *testing.T) *gorm.DB {
 func setupOnlyOfficeTestHandler(t *testing.T, db *gorm.DB) *OnlyOfficeHandler {
 	t.Helper()
 	tmpDir := t.TempDir()
-	lockService := services.NewDocumentLockService(db, nil) // redis=nil, 锁功能测试时跳过
+	lockService := services.NewDocumentLockService(db, nil)
 	versionService := services.NewDocumentVersionService(nil, tmpDir)
 	return NewOnlyOfficeHandler(db, versionService, lockService, "", "", "", tmpDir)
 }

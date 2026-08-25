@@ -105,8 +105,8 @@ cat test-report.md
 - **Grafana**: http://localhost:3000 (admin/admin)
 - **Prometheus**: http://localhost:9090
 - **Jaeger**: http://localhost:16686
-- **Kibana**: http://localhost:5601
-- **Elasticsearch**: http://localhost:9200
+
+> 说明：Elasticsearch / Kibana 已退出默认 compose 栈，不再作为 CI/CD 指南里的默认可访问组件。若维护历史部署或 legacy 观测环境，请单独按旧方案处理，且不要把 9200/5601 作为默认入口口径。
 
 ### 3. 监控命令示例
 

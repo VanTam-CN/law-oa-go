@@ -33,7 +33,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerFiles "github.com/swaggo/files"
@@ -81,19 +80,7 @@ func main() {
 		cache.DefaultCacheService = cacheService
 		log.Println("使用数据库模块的缓存服务")
 	} else {
-		// 如果数据库模块的缓存服务不可用，则创建新的
-		if err := cache.InitCache(); err != nil {
-			log.Printf("缓存服务初始化失败，将禁用缓存功能: %v", err)
-		} else {
-			log.Println("缓存服务初始化成功")
-		}
-	}
-
-	// 验证缓存服务是否真的初始化了
-	if cache.DefaultCacheService == nil {
-		log.Fatal("缓存服务初始化失败：DefaultCacheService 仍然为 nil")
-	} else {
-		log.Println("缓存服务验证成功")
+		log.Println("Redis缓存不可用，响应缓存保持关闭")
 	}
 
 	// 初始化增强错误处理器
@@ -133,18 +120,7 @@ func main() {
 	monitorService := metrics.GetDefaultMonitorService()
 
 	// 初始化健康检查系统
-	healthConfig := &health.DefaultHealthConfig
-	if cfg.IsProduction() {
-		healthConfig.CheckInterval = 30 * time.Second
-		healthConfig.FailureThreshold = 3
-		healthConfig.EnableExternalAPICheck = true
-		healthConfig.ElasticsearchTimeout = 5 * time.Second
-	} else {
-		healthConfig.CheckInterval = 15 * time.Second
-		healthConfig.FailureThreshold = 2
-		healthConfig.EnableExternalAPICheck = false
-		healthConfig.ElasticsearchTimeout = 3 * time.Second
-	}
+	healthConfig := buildHealthConfig(cfg)
 
 	healthChecker := health.NewHealthChecker(healthConfig, slog.Default())
 
@@ -161,19 +137,6 @@ func main() {
 		healthChecker.RegisterCheck(health.NewCacheHealthCheck(cacheService, healthConfig.CacheTimeout))
 	}
 
-	// 初始化Elasticsearch客户端
-	var esClient *elasticsearch.Client
-
-	esClient, err = database.InitElasticsearch(cfg.Elasticsearch)
-	if err != nil {
-		log.Printf("Elasticsearch初始化失败: %v, 将使用数据库搜索回退", err)
-		esClient = nil
-	} else {
-		log.Println("Elasticsearch客户端初始化成功")
-		// 注册ES健康检查
-		healthChecker.RegisterCheck(health.NewElasticsearchHealthCheck(esClient, healthConfig.ElasticsearchTimeout))
-	}
-
 	// 注册并发服务检查（暂时注释，需要重构MonitorService）
 	// if monitorService != nil && monitorService.concurrencyService != nil {
 	// 	// 使用监控服务的并发服务（如果有）
@@ -183,8 +146,8 @@ func main() {
 	// 注册存储检查
 	healthChecker.RegisterCheck(health.NewStorageHealthCheck(healthConfig.StoragePath, healthConfig.StorageTimeout))
 
-	// 注册外部API检查（生产环境）
-	if cfg.IsProduction() && healthConfig.EnableExternalAPICheck {
+	// 注册外部API检查（仅显式配置时）
+	if healthConfig.EnableExternalAPICheck && strings.TrimSpace(healthConfig.ExternalServiceURL) != "" {
 		healthChecker.RegisterCheck(health.NewExternalAPIHealthCheck(healthConfig.ExternalServiceURL, healthConfig.ExternalAPITimeout))
 	}
 
@@ -236,8 +199,7 @@ func main() {
 	}
 	router.Init(app,
 		db,
-		database.GetCacheService().GetClient(),
-		database.GetElasticsearchClient())
+		database.GetRedisClient())
 
 	// 注册集成测试路由（仅开发环境）
 	if !cfg.IsProduction() {
@@ -284,6 +246,13 @@ func main() {
 			log.Printf("集成模型自动迁移失败: %v", err)
 		} else {
 			log.Println("集成模型自动迁移成功")
+		}
+
+		// B1：认证会话权威表。生产环境必须由 000078 迁移或 bootstrap 创建。
+		if err := db.AutoMigrate(&models.AuthTokenSession{}); err != nil {
+			log.Printf("认证会话模型自动迁移失败: %v", err)
+		} else {
+			log.Println("认证会话模型自动迁移成功")
 		}
 
 		// 自动迁移财务模型
@@ -596,6 +565,33 @@ func runHealthcheck() error {
 		return fmt.Errorf("本地存活探针返回 HTTP %d", response.StatusCode)
 	}
 	return nil
+}
+
+func buildHealthConfig(cfg *config.Config) *health.HealthConfig {
+	healthConfig := health.DefaultHealthConfig
+
+	switch {
+	case cfg == nil:
+		healthConfig.CheckInterval = 15 * time.Second
+		healthConfig.FailureThreshold = 2
+	case cfg.IsProduction():
+		healthConfig.CheckInterval = 30 * time.Second
+		healthConfig.FailureThreshold = 3
+	default:
+		healthConfig.CheckInterval = 15 * time.Second
+		healthConfig.FailureThreshold = 2
+	}
+
+	healthConfig.EnableExternalAPICheck = false
+	healthConfig.ExternalServiceURL = ""
+	healthConfig.ExternalAPITimeout = 3 * time.Second
+
+	if cfg != nil && cfg.ExternalHealthCheck.Enabled {
+		healthConfig.EnableExternalAPICheck = true
+		healthConfig.ExternalServiceURL = strings.TrimSpace(cfg.ExternalHealthCheck.URL)
+	}
+
+	return &healthConfig
 }
 
 func migratedTablesExist(db *gorm.DB, models ...interface{}) bool {

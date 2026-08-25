@@ -57,7 +57,6 @@ jobs:
     - name: 下载依赖
       run: |
         go mod download
-        go mod tidy
 
     - name: 设置数据库
       run: |
@@ -70,7 +69,7 @@ jobs:
 
     - name: 构建应用
       run: |
-        go build -o bin/law-oa-server .
+        go build -o bin/law-oa-go .
 
     - name: 运行HTTP工作负载
       run: |
@@ -100,7 +99,6 @@ jobs:
     - name: 下载依赖
       run: |
         go mod download
-        go mod tidy
 
     - name: 设置数据库
       run: |
@@ -129,18 +127,18 @@ jobs:
       run: |
         echo "收集HTTP请求性能数据..."
         # 启动服务器并模拟HTTP请求
-        go build -o bin/law-oa-server .
-        ./bin/law-oa-server --config=config/config.yaml &
+        go build -o bin/law-oa-go .
+        ./bin/law-oa-go --config=config/config.yaml &
         SERVER_PID=$!
         sleep 5
-        
+
         # 模拟HTTP请求
         for i in {1..100}; do
           curl -s http://localhost:8080/health || true
           curl -s http://localhost:8080/api/v1/cases || true
           curl -s http://localhost:8080/api/v1/users || true
         done
-        
+
         kill $SERVER_PID 2>/dev/null || true
 
     - name: 验证性能数据文件
@@ -179,7 +177,6 @@ jobs:
     - name: 下载依赖
       run: |
         go mod download
-        go mod tidy
 
     - name: 下载性能数据
       uses: actions/download-artifact@v4
@@ -192,31 +189,31 @@ jobs:
         echo "执行PGO优化构建..."
         mkdir -p bin/
         if [ -f "profiles/cpu.prof" ]; then
-          go build -pgo=profiles/cpu.prof -ldflags="-s -w" -o bin/law-oa-server-pgo .
+          go build -pgo=profiles/cpu.prof -ldflags="-s -w" -o bin/law-oa-go-pgo .
         else
           echo "未找到性能数据，使用标准构建"
-          go build -ldflags="-s -w" -o bin/law-oa-server-pgo .
+          go build -ldflags="-s -w" -o bin/law-oa-go-pgo .
         fi
 
     - name: 构建标准版本作为对比
       run: |
         echo "构建标准版本作为对比..."
-        go build -ldflags="-s -w" -o bin/law-oa-server-standard .
+        go build -ldflags="-s -w" -o bin/law-oa-go-standard .
 
     - name: 验证构建结果
       run: |
         echo "验证构建结果..."
         ls -la bin/
         echo "PGO版本信息:"
-        ./bin/law-oa-server-pgo --version 2>/dev/null || echo "版本信息不可用"
+        ./bin/law-oa-go-pgo --version 2>/dev/null || echo "版本信息不可用"
         echo "标准版本信息:"
-        ./bin/law-oa-server-standard --version 2>/dev/null || echo "版本信息不可用"
+        ./bin/law-oa-go-standard --version 2>/dev/null || echo "版本信息不可用"
 
     - name: 比较二进制文件大小
       run: |
         echo "比较二进制文件大小..."
-        pgo_size=$(stat -c%s bin/law-oa-server-pgo 2>/dev/null || echo 0)
-        standard_size=$(stat -c%s bin/law-oa-server-standard 2>/dev/null || echo 0)
+        pgo_size=$(stat -c%s bin/law-oa-go-pgo 2>/dev/null || echo 0)
+        standard_size=$(stat -c%s bin/law-oa-go-standard 2>/dev/null || echo 0)
         echo "PGO版本大小: $pgo_size bytes"
         echo "标准版本大小: $standard_size bytes"
         if [ $pgo_size -gt 0 ] && [ $standard_size -gt 0 ]; then
@@ -264,31 +261,31 @@ jobs:
     - name: 运行PGO版本基准测试
       run: |
         echo "运行PGO版本基准测试..."
-        chmod +x bin/law-oa-server-pgo
-        timeout 60s ./bin/law-oa-server-pgo --benchmark &
+        chmod +x bin/law-oa-go-pgo
+        timeout 60s ./bin/law-oa-go-pgo --benchmark &
         PGO_PID=$!
         sleep 5
-        
+
         # 模拟负载
         for i in {1..50}; do
           curl -s http://localhost:8080/health || true
         done
-        
+
         kill $PGO_PID 2>/dev/null || true
 
     - name: 运行标准版本基准测试
       run: |
         echo "运行标准版本基准测试..."
-        chmod +x bin/law-oa-server-standard
-        timeout 60s ./bin/law-oa-server-standard --benchmark &
+        chmod +x bin/law-oa-go-standard
+        timeout 60s ./bin/law-oa-go-standard --benchmark &
         STANDARD_PID=$!
         sleep 5
-        
+
         # 模拟负载
         for i in {1..50}; do
           curl -s http://localhost:8080/health || true
         done
-        
+
         kill $STANDARD_PID 2>/dev/null || true
 
     - name: 生成性能比较报告
@@ -296,15 +293,15 @@ jobs:
         echo "# PGO优化性能报告" > pgo-performance-report.md
         echo "## 测试时间: $(date)" >> pgo-performance-report.md
         echo "" >> pgo-performance-report.md
-        
+
         echo "## 构建信息" >> pgo-performance-report.md
         echo "- Go版本: $(go version)" >> pgo-performance-report.md
         echo "- 构建时间: $(date)" >> pgo-performance-report.md
         echo "" >> pgo-performance-report.md
-        
+
         echo "## 二进制文件比较" >> pgo-performance-report.md
-        pgo_size=$(stat -c%s bin/law-oa-server-pgo 2>/dev/null || echo 0)
-        standard_size=$(stat -c%s bin/law-oa-server-standard 2>/dev/null || echo 0)
+        pgo_size=$(stat -c%s bin/law-oa-go-pgo 2>/dev/null || echo 0)
+        standard_size=$(stat -c%s bin/law-oa-go-standard 2>/dev/null || echo 0)
         echo "- PGO优化版本: $pgo_size bytes" >> pgo-performance-report.md
         echo "- 标准版本: $standard_size bytes" >> pgo-performance-report.md
         if [ $pgo_size -gt 0 ] && [ $standard_size -gt 0 ]; then
@@ -313,12 +310,12 @@ jobs:
           echo "- 大小差异: $difference bytes ($percentage%)" >> pgo-performance-report.md
         fi
         echo "" >> pgo-performance-report.md
-        
+
         echo "## 性能基准测试" >> pgo-performance-report.md
         echo "✓ PGO版本基准测试完成" >> pgo-performance-report.md
         echo "✓ 标准版本基准测试完成" >> pgo-performance-report.md
         echo "" >> pgo-performance-report.md
-        
+
         echo "## 优化建议" >> pgo-performance-report.md
         echo "1. **定期更新PGO数据**: 随着使用模式变化，定期重新收集性能数据" >> pgo-performance-report.md
         echo "2. **监控生产环境**: 在生产环境中监控实际性能表现" >> pgo-performance-report.md
@@ -348,15 +345,15 @@ jobs:
         echo "# PGO优化构建报告" > pgo-build-report.md
         echo "## 生成时间: $(date)" >> pgo-build-report.md
         echo "" >> pgo-build-report.md
-        
+
         echo "## 构建状态" >> pgo-build-report.md
-        if [ -f "pgo-optimized-binaries/law-oa-server-pgo" ]; then
+        if [ -f "pgo-optimized-binaries/bin/law-oa-go-pgo" ]; then
           echo "✅ PGO优化构建成功" >> pgo-build-report.md
         else
           echo "❌ PGO优化构建失败" >> pgo-build-report.md
         fi
         echo "" >> pgo-build-report.md
-        
+
         echo "## 性能数据收集" >> pgo-build-report.md
         if [ -f "profile-data/cpu.prof" ]; then
           echo "✅ CPU性能数据收集成功" >> pgo-build-report.md
@@ -364,18 +361,18 @@ jobs:
           echo "❌ CPU性能数据收集失败" >> pgo-build-report.md
         fi
         echo "" >> pgo-build-report.md
-        
+
         echo "## 二进制文件信息" >> pgo-build-report.md
-        if [ -f "pgo-optimized-binaries/law-oa-server-pgo" ]; then
-          pgo_size=$(stat -c%s pgo-optimized-binaries/law-oa-server-pgo)
+        if [ -f "pgo-optimized-binaries/bin/law-oa-go-pgo" ]; then
+          pgo_size=$(stat -c%s pgo-optimized-binaries/bin/law-oa-go-pgo)
           echo "- PGO优化版本: $pgo_size bytes" >> pgo-build-report.md
         fi
-        if [ -f "pgo-optimized-binaries/law-oa-server-standard" ]; then
-          standard_size=$(stat -c%s pgo-optimized-binaries/law-oa-server-standard)
+        if [ -f "pgo-optimized-binaries/bin/law-oa-go-standard" ]; then
+          standard_size=$(stat -c%s pgo-optimized-binaries/bin/law-oa-go-standard)
           echo "- 标准版本: $standard_size bytes" >> pgo-build-report.md
         fi
         echo "" >> pgo-build-report.md
-        
+
         echo "## 下一步行动" >> pgo-build-report.md
         echo "1. **验证性能提升**: 在测试环境中验证PGO版本的性能提升" >> pgo-build-report.md
         echo "2. **监控生产表现**: 部署PGO版本到生产环境并监控性能指标" >> pgo-build-report.md

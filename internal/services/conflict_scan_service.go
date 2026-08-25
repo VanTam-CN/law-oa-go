@@ -547,14 +547,14 @@ func (s *conflictScanService) scanCase(ctx context.Context, case_ *models.Case) 
 	}
 
 	// 构建检测请求
-	idCard, idErr := client.DecryptedIDCard()
+	identityNumber, idErr := client.DecryptedIdentity()
 	if idErr != nil {
 		return nil, fmt.Errorf("读取客户身份标识失败: %w", idErr)
 	}
 	req := &ConflictCheckRequestV2{
 		LawyerID:    case_.LawyerID,
 		ClientName:  client.Name,
-		ClientTaxID: idCard,
+		ClientTaxID: identityNumber,
 		CaseID:      case_.ID,
 		SearchDepth: "standard",
 	}

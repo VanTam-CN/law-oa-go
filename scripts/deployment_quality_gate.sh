@@ -77,25 +77,25 @@ check_test_coverage() {
         add_report "⚠️" "测试覆盖率检查" "已跳过"
         return 0
     fi
-    
+
     log_info "检查测试覆盖率..."
-    
+
     local thresholds=($(get_quality_thresholds "$ENVIRONMENT"))
     local coverage_threshold=${thresholds[0]}
-    
+
     # 检查覆盖率文件是否存在
     if [ ! -f "coverage.out" ]; then
         log_error "覆盖率文件不存在，请先运行测试"
         add_report "❌" "测试覆盖率检查" "覆盖率文件 coverage.out 不存在"
         return 1
     fi
-    
+
     # 获取覆盖率
     local coverage=$(go tool cover -func=coverage.out | tail -1 | awk '{print $3}' | sed 's/%//')
     local coverage_int=${coverage%.*}
-    
+
     log_info "当前测试覆盖率: ${coverage}%"
-    
+
     # 检查是否达到阈值
     if [ "$coverage_int" -ge "$coverage_threshold" ]; then
         log_success "测试覆盖率检查通过 (${coverage}% ≥ ${coverage_threshold}%)"
@@ -112,7 +112,7 @@ check_test_coverage() {
 check_fuzzing_results() {
     local environment=$1
     local max_crashes=""
-    
+
     case $environment in
         dev)
             max_crashes=10
@@ -127,9 +127,9 @@ check_fuzzing_results() {
             max_crashes=10
             ;;
     esac
-    
+
     log_info "检查Fuzzing测试结果 (要求: crashes < $max_crashes)..."
-    
+
     # 检查Fuzzing结果目录
     local fuzzing_results="fuzzing_results"
     if [ ! -d "$fuzzing_results" ]; then
@@ -137,10 +137,10 @@ check_fuzzing_results() {
         echo "0"
         return 0
     fi
-    
+
     # 统计crashes数量
     local crashes=$(find "$fuzzing_results" -name "*.crash" 2>/dev/null | wc -l)
-    
+
     if [ "$crashes" -le "$max_crashes" ]; then
         log_success "Fuzzing crashes数量达标: $crashes (要求: <$max_crashes)"
         echo "$crashes"
@@ -156,39 +156,39 @@ check_fuzzing_results() {
 check_pgo_performance() {
     local environment=$1
     local required_improvement=5
-    
+
     # 只有生产环境需要PGO性能检查
     if [ "$environment" != "production" ]; then
         log_info "跳过PGO性能检查 (非生产环境)"
         echo "0"
         return 0
     fi
-    
+
     log_info "检查PGO性能提升 (要求: >${required_improvement}%)..."
-    
+
     # 检查PGO基准测试结果
     local baseline_results="pgo_results/baseline.json"
     local pgo_results="pgo_results/pgo.json"
-    
+
     if [ ! -f "$baseline_results" ] || [ ! -f "$pgo_results" ]; then
         log_warning "PGO性能测试结果不存在，跳过检查"
         echo "0"
         return 0
     fi
-    
+
     # 读取基准测试结果
     local baseline_rps=$(jq -r '.requests_per_second // 0' "$baseline_results" 2>/dev/null || echo "0")
     local pgo_rps=$(jq -r '.requests_per_second // 0' "$pgo_results" 2>/dev/null || echo "0")
-    
+
     if [ "$baseline_rps" = "0" ] || [ "$pgo_rps" = "0" ]; then
         log_warning "PGO性能测试数据无效，跳过检查"
         echo "0"
         return 0
     fi
-    
+
     # 计算性能提升
     local improvement=$(echo "scale=2; ($pgo_rps - $baseline_rps) * 100 / $baseline_rps" | bc -l 2>/dev/null || echo "0")
-    
+
     if (( $(echo "$improvement >= $required_improvement" | bc -l) )); then
         log_success "PGO性能提升达标: ${improvement}% (要求: >${required_improvement}%)"
         echo "$improvement"
@@ -203,9 +203,9 @@ check_pgo_performance() {
 # 检查安全扫描结果
 check_security_scan() {
     local environment=$1
-    
+
     log_info "检查安全扫描结果..."
-    
+
     # 检查安全扫描报告
     local security_report="security_scan_report.json"
     if [ ! -f "$security_report" ]; then
@@ -213,21 +213,21 @@ check_security_scan() {
         echo "0"
         return 0
     fi
-    
+
     # 检查高危漏洞
     local critical_vulnerabilities=$(jq -r '.critical // 0' "$security_report" 2>/dev/null || echo "0")
     local high_vulnerabilities=$(jq -r '.high // 0' "$security_report" 2>/dev/null || echo "0")
-    
+
     if [ "$environment" = "production" ] && [ "$critical_vulnerabilities" -gt 0 ]; then
         log_error "生产环境发现高危漏洞: $critical_vulnerabilities 个"
         echo "$critical_vulnerabilities"
         return 1
     fi
-    
+
     if [ "$high_vulnerabilities" -gt 5 ]; then
         log_warning "发现较多高危漏洞: $high_vulnerabilities 个"
     fi
-    
+
     log_success "安全扫描通过"
     echo "$((critical_vulnerabilities + high_vulnerabilities))"
     return 0
@@ -236,23 +236,23 @@ check_security_scan() {
 # 检查构建质量
 check_build_quality() {
     local environment=$1
-    
+
     log_info "检查构建质量..."
-    
+
     # 检查构建是否成功
-    if [ ! -f "law-oa-go" ] && [ ! -f "law-oa-go.exe" ]; then
+    if [ ! -f "bin/law-oa-go" ] && [ ! -f "bin/law-oa-go.exe" ]; then
         log_error "构建产物不存在"
         return 1
     fi
-    
+
     # 检查二进制文件大小
-    local binary_size=$(stat -c%s "law-oa-go" 2>/dev/null || stat -c%s "law-oa-go.exe" 2>/dev/null || echo "0")
+    local binary_size=$(stat -c%s "bin/law-oa-go" 2>/dev/null || stat -c%s "bin/law-oa-go.exe" 2>/dev/null || echo "0")
     local max_size=52428800  # 50MB
-    
+
     if [ "$binary_size" -gt "$max_size" ]; then
         log_warning "二进制文件过大: $binary_size bytes (建议: <$max_size bytes)"
     fi
-    
+
     log_success "构建质量检查通过"
     echo "$binary_size"
     return 0
@@ -267,9 +267,9 @@ generate_quality_report() {
     local pgo_improvement=$5
     local security_issues=$6
     local build_size=$7
-    
+
     log_info "生成质量报告: $report_file"
-    
+
     cat > "$report_file" << EOF
 # 部署质量门禁报告
 
@@ -305,7 +305,7 @@ generate_quality_report() {
 
 ## 详细信息
 EOF
-    
+
     # 添加Fuzzing crash详情
     if [ -d "fuzzing_results" ]; then
         echo "" >> "$report_file"
@@ -314,14 +314,14 @@ EOF
             echo "- $(basename "$crash_file")" >> "$report_file"
         done
     fi
-    
+
     # 添加安全漏洞详情
     if [ -f "security_scan_report.json" ]; then
         echo "" >> "$report_file"
         echo "### 安全漏洞详情" >> "$report_file"
         jq -r '.vulnerabilities[]? | "- \(.type): \(.severity)"' "security_scan_report.json" 2>/dev/null >> "$report_file"
     fi
-    
+
     log_success "质量报告已生成: $report_file"
 }
 
@@ -392,13 +392,13 @@ fi
 # 初始化报告
 init_report() {
     local report_file=$1
-    
+
     cat > "$report_file" << EOF
 # Law OA Go 部署质量门禁报告
 
-**检查时间:** $(date '+%Y-%m-%d %H:%M:%S')  
-**部署环境:** $ENVIRONMENT  
-**严格模式:** $STRICT_MODE  
+**检查时间:** $(date '+%Y-%m-%d %H:%M:%S')
+**部署环境:** $ENVIRONMENT
+**严格模式:** $STRICT_MODE
 
 ## 质量标准
 
@@ -420,7 +420,7 @@ add_report() {
     local status=$1
     local title=$2
     local content=$3
-    
+
     if [ -n "$REPORT_FILE" ]; then
         echo "### $status: $title" >> "$REPORT_FILE"
         echo "" >> "$REPORT_FILE"
@@ -432,7 +432,7 @@ add_report() {
 # 获取环境质量标准
 get_quality_thresholds() {
     local env=$1
-    
+
     case $env in
         dev)
             echo "60 10 2500 3 0"
@@ -456,7 +456,7 @@ generate_summary() {
     local passed_checks=$2
     local failed_checks=$3
     local skipped_checks=$4
-    
+
     if [ -n "$REPORT_FILE" ]; then
         cat >> "$REPORT_FILE" << EOF
 
@@ -471,7 +471,7 @@ generate_summary() {
 ## 建议
 
 EOF
-        
+
         if [ "$failed_checks" -gt 0 ]; then
             cat >> "$REPORT_FILE" << EOF
 发现 $failed_checks 个检查项未通过，建议：
@@ -488,11 +488,11 @@ EOF
 
 EOF
         fi
-        
+
         cat >> "$REPORT_FILE" << EOF
 ---
-*报告生成时间: $(date '+%Y-%m-%d %H:%M:%S')*  
-*部署环境: $ENVIRONMENT*  
+*报告生成时间: $(date '+%Y-%m-%d %H:%M:%S')*
+*部署环境: $ENVIRONMENT*
 *严格模式: $STRICT_MODE*
 
 EOF
@@ -502,12 +502,12 @@ EOF
 # 主函数
 main() {
     log_info "开始 $ENVIRONMENT 环境部署质量门禁检查..."
-    
+
     # 初始化报告
     if [ -n "$REPORT_FILE" ]; then
         init_report "$REPORT_FILE"
     fi
-    
+
     # 定义检查函数列表
     local check_functions=(
         "check_test_coverage"
@@ -516,21 +516,21 @@ main() {
         "check_security_scan"
         "check_build_quality"
     )
-    
+
     local total_checks=${#check_functions[@]}
     local passed_checks=0
     local failed_checks=0
     local skipped_checks=0
-    
+
     # 执行所有检查
     for check_func in "${check_functions[@]}"; do
         log_info "执行检查: $check_func"
-        
+
         if $check_func "$ENVIRONMENT"; then
             ((passed_checks++))
         else
             ((failed_checks++))
-            
+
             # 严格模式下立即退出
             if [ "$STRICT_MODE" = true ]; then
                 log_error "严格模式下检查失败，停止部署流程"
@@ -539,28 +539,28 @@ main() {
             fi
         fi
     done
-    
+
     # 生成总结报告
     generate_summary $total_checks $passed_checks $failed_checks $skipped_checks
-    
+
     # 输出最终结果
     if [ "$failed_checks" -eq 0 ]; then
         log_success "所有质量门禁检查通过！"
         log_info "检查结果: $passed_checks/$total_checks 通过，$skipped_checks 跳过"
-        
+
         if [ -n "$REPORT_FILE" ]; then
             log_success "质量门禁报告已生成: $REPORT_FILE"
         fi
-        
+
         exit 0
     else
         log_error "质量门禁检查失败！"
         log_info "检查结果: $passed_checks 通过, $failed_checks 失败, $skipped_checks 跳过"
-        
+
         if [ -n "$REPORT_FILE" ]; then
             log_success "质量门禁报告已生成: $REPORT_FILE"
         fi
-        
+
         exit 1
     fi
 }

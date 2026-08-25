@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -15,20 +16,27 @@ import (
 
 // Config 应用配置
 type Config struct {
-	Environment       string                   `mapstructure:"environment"`
-	Port              string                   `mapstructure:"port"`
-	Database          DatabaseConfig           `mapstructure:"database"`
-	Redis             RedisConfig              `mapstructure:"redis"`
-	Elasticsearch     ElasticsearchConfig      `mapstructure:"elasticsearch"`
-	JWT               JWTConfig                `mapstructure:"jwt"`
-	Log               LogConfig                `mapstructure:"log"`
-	CORS              CORSConfig               `mapstructure:"cors"`
-	ConflictDetection *ConflictDetectionConfig `mapstructure:"conflictDetection"`
-	OnlyOffice        OnlyOfficeConfig         `mapstructure:"onlyoffice"`
+	Environment         string                    `mapstructure:"environment"`
+	Port                string                    `mapstructure:"port"`
+	Database            DatabaseConfig            `mapstructure:"database"`
+	Redis               RedisConfig               `mapstructure:"redis"`
+	JWT                 JWTConfig                 `mapstructure:"jwt"`
+	Log                 LogConfig                 `mapstructure:"log"`
+	CORS                CORSConfig                `mapstructure:"cors"`
+	ConflictDetection   *ConflictDetectionConfig  `mapstructure:"conflictDetection"`
+	ExternalHealthCheck ExternalHealthCheckConfig `mapstructure:"externalHealthCheck"`
+	OnlyOffice          OnlyOfficeConfig          `mapstructure:"onlyoffice"`
+}
+
+// ExternalHealthCheckConfig 外部健康检查配置
+type ExternalHealthCheckConfig struct {
+	Enabled bool   `mapstructure:"enabled"`
+	URL     string `mapstructure:"url"`
 }
 
 // OnlyOfficeConfig OnlyOffice 在线编辑集成配置
 type OnlyOfficeConfig struct {
+	Enabled    bool   `mapstructure:"enabled"`
 	URL        string `mapstructure:"url"`
 	Secret     string `mapstructure:"secret"`
 	BackendURL string `mapstructure:"backendUrl"`
@@ -61,14 +69,6 @@ type RedisConfig struct {
 	Password string `mapstructure:"password"`
 	DB       int    `mapstructure:"db"`
 	PoolSize int    `mapstructure:"pool_size"`
-}
-
-// ElasticsearchConfig Elasticsearch配置
-type ElasticsearchConfig struct {
-	Host     string `mapstructure:"host"`
-	Port     string `mapstructure:"port"`
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
 }
 
 // JWTConfig JWT配置
@@ -125,16 +125,12 @@ func load(validateApplication bool) (*Config, error) {
 	viper.SetDefault("database.database", "law_oa_db")
 	viper.SetDefault("database.charset", "utf8")
 	viper.SetDefault("database.parseTime", true)
-	viper.SetDefault("database.loc", "UTC")
+	viper.SetDefault("database.loc", "Asia/Shanghai")
 	viper.SetDefault("database.sslmode", "disable")
-	viper.SetDefault("redis.host", "localhost")
+	viper.SetDefault("redis.host", "")
 	viper.SetDefault("redis.port", "6379")
 	viper.SetDefault("redis.password", "")
 	viper.SetDefault("redis.db", 0)
-	viper.SetDefault("elasticsearch.host", "localhost")
-	viper.SetDefault("elasticsearch.port", "9200")
-	viper.SetDefault("elasticsearch.username", "")
-	viper.SetDefault("elasticsearch.password", "")
 	viper.SetDefault("jwt.secret", "") // 强制要求配置JWT密钥
 	viper.SetDefault("jwt.expiresIn", 3600)
 	viper.SetDefault("jwt.refreshIn", 7200)
@@ -146,10 +142,15 @@ func load(validateApplication bool) (*Config, error) {
 	viper.SetDefault("cors.allowedHeaders", []string{"Content-Type", "Authorization", "X-Request-ID"})
 	viper.SetDefault("cors.maxAge", "86400")
 
-	// OnlyOffice 默认配置（生产环境必须显式覆盖 Secret）
-	viper.SetDefault("onlyoffice.url", "http://localhost:9090")
+	// OnlyOffice 默认关闭；只有显式启用时才会校验 URL 和 Secret
+	viper.SetDefault("onlyoffice.enabled", false)
+	viper.SetDefault("onlyoffice.url", "")
 	viper.SetDefault("onlyoffice.secret", "")
-	viper.SetDefault("onlyoffice.backendUrl", "http://localhost:8080")
+	viper.SetDefault("onlyoffice.backendUrl", "")
+
+	// 外部健康检查默认关闭；只有显式启用时才会校验 URL
+	viper.SetDefault("externalHealthCheck.enabled", false)
+	viper.SetDefault("externalHealthCheck.url", "")
 
 	// 数据库性能配置默认值
 	viper.SetDefault("database.maxOpen_conns", 25)
@@ -178,29 +179,28 @@ func load(validateApplication bool) (*Config, error) {
 
 	// 绑定环境变量到配置结构
 	bindings := map[string]string{
-		"environment":            "ENVIRONMENT",
-		"port":                   "PORT",
-		"database.driver":        "DB_DRIVER",
-		"database.host":          "DB_HOST",
-		"database.port":          "DB_PORT",
-		"database.username":      "DB_USERNAME",
-		"database.password":      "DB_PASSWORD",
-		"database.database":      "DB_DATABASE",
-		"database.sslmode":       "DB_SSLMODE",
-		"redis.host":             "REDIS_HOST",
-		"redis.port":             "REDIS_PORT",
-		"redis.password":         "REDIS_PASSWORD",
-		"redis.db":               "REDIS_DB",
-		"elasticsearch.host":     "ES_HOST",
-		"elasticsearch.port":     "ES_PORT",
-		"elasticsearch.username": "ES_USERNAME",
-		"elasticsearch.password": "ES_PASSWORD",
-		"jwt.secret":             "JWT_SECRET",
-		"jwt.expiresIn":          "JWT_EXPIRES_IN",
-		"jwt.refreshIn":          "JWT_REFRESH_IN",
-		"onlyoffice.url":         "ONLYOFFICE_URL",
-		"onlyoffice.secret":      "ONLYOFFICE_SECRET",
-		"onlyoffice.backendUrl":  "BACKEND_URL",
+		"environment":                 "ENVIRONMENT",
+		"port":                        "PORT",
+		"database.driver":             "DB_DRIVER",
+		"database.host":               "DB_HOST",
+		"database.port":               "DB_PORT",
+		"database.username":           "DB_USERNAME",
+		"database.password":           "DB_PASSWORD",
+		"database.database":           "DB_DATABASE",
+		"database.sslmode":            "DB_SSLMODE",
+		"redis.host":                  "REDIS_HOST",
+		"redis.port":                  "REDIS_PORT",
+		"redis.password":              "REDIS_PASSWORD",
+		"redis.db":                    "REDIS_DB",
+		"jwt.secret":                  "JWT_SECRET",
+		"jwt.expiresIn":               "JWT_EXPIRES_IN",
+		"jwt.refreshIn":               "JWT_REFRESH_IN",
+		"onlyoffice.enabled":          "ONLYOFFICE_ENABLED",
+		"onlyoffice.url":              "ONLYOFFICE_URL",
+		"onlyoffice.secret":           "ONLYOFFICE_SECRET",
+		"onlyoffice.backendUrl":       "BACKEND_URL",
+		"externalHealthCheck.enabled": "EXTERNAL_HEALTHCHECK_ENABLED",
+		"externalHealthCheck.url":     "EXTERNAL_HEALTHCHECK_URL",
 	}
 
 	for key, env := range bindings {
@@ -243,10 +243,6 @@ func load(validateApplication bool) (*Config, error) {
 		config.Redis.Port = strconv.Itoa(viper.GetInt("redis.port"))
 	}
 
-	// 转换Elasticsearch端口为字符串
-	if config.Elasticsearch.Port == "" {
-		config.Elasticsearch.Port = strconv.Itoa(viper.GetInt("elasticsearch.port"))
-	}
 	config.Database.Driver = strings.ToLower(strings.TrimSpace(config.Database.Driver))
 
 	if validateApplication {
@@ -275,6 +271,9 @@ func validateMigrationConfig(c *Config) error {
 		strings.TrimSpace(c.Database.Database) == "" {
 		return fmt.Errorf("database configuration is incomplete")
 	}
+	if _, err := time.LoadLocation(c.GetDatabaseTimeZone()); err != nil {
+		return fmt.Errorf("database timezone is invalid: %w", err)
+	}
 	if c.IsProduction() {
 		if isDefaultDatabasePassword(c.Database.Password) {
 			return fmt.Errorf("database password must be configured and cannot use a default value in production")
@@ -297,7 +296,7 @@ func (c *Config) GetDatabaseDSN() string {
 			c.Database.Password,
 			c.Database.Database,
 			c.Database.SSLMode,
-			c.Database.Loc,
+			c.GetDatabaseTimeZone(),
 		)
 	}
 
@@ -314,14 +313,18 @@ func (c *Config) GetDatabaseDSN() string {
 	)
 }
 
+// GetDatabaseTimeZone returns the legal-business wall-clock zone used when
+// PostgreSQL legacy timestamp-without-time-zone columns are read and written.
+func (c *Config) GetDatabaseTimeZone() string {
+	if value := strings.TrimSpace(c.Database.Loc); value != "" {
+		return value
+	}
+	return "Asia/Shanghai"
+}
+
 // GetRedisAddr 获取Redis地址
 func (c *Config) GetRedisAddr() string {
 	return fmt.Sprintf("%s:%s", c.Redis.Host, c.Redis.Port)
-}
-
-// GetElasticsearchURL 获取Elasticsearch URL
-func (c *Config) GetElasticsearchURL() string {
-	return fmt.Sprintf("http://%s:%s", c.Elasticsearch.Host, c.Elasticsearch.Port)
 }
 
 // IsProduction 是否为生产环境
@@ -353,6 +356,10 @@ func (c *Config) ValidateProductionReadiness() error {
 
 	if c.ConflictDetection != nil && c.ConflictDetection.AllowSkipConflictCheck {
 		return fmt.Errorf("conflictDetection.allowSkipConflictCheck must be false in production")
+	}
+
+	if err := validateExternalHealthCheckConfig(&c.ExternalHealthCheck); err != nil {
+		return err
 	}
 
 	origins := strings.TrimSpace(os.Getenv("CORS_ALLOWED_ORIGINS"))
@@ -417,6 +424,9 @@ func (c *Config) Validate() error {
 	if c.Database.Host == "" || c.Database.Username == "" || c.Database.Database == "" {
 		return fmt.Errorf("database configuration is incomplete")
 	}
+	if _, err := time.LoadLocation(c.GetDatabaseTimeZone()); err != nil {
+		return fmt.Errorf("database timezone is invalid: %w", err)
+	}
 
 	// 验证冲突检测配置
 	if c.ConflictDetection != nil {
@@ -425,7 +435,10 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	// 生产环境强制校验 OnlyOffice 回调密钥，避免回调被伪造
+	if err := validateExternalHealthCheckConfig(&c.ExternalHealthCheck); err != nil {
+		return err
+	}
+
 	if c.IsProduction() {
 		if isDefaultDatabasePassword(c.Database.Password) {
 			return fmt.Errorf("database password must be configured and cannot use a default value in production")
@@ -436,14 +449,28 @@ func (c *Config) Validate() error {
 				return fmt.Errorf("PostgreSQL sslmode must not be disabled in production")
 			}
 		}
+	}
+
+	// OnlyOffice 默认关闭；仅在显式启用时才要求回调与编辑器 origin
+	if c.OnlyOffice.Enabled {
+		c.OnlyOffice.Secret = strings.TrimSpace(c.OnlyOffice.Secret)
+		c.OnlyOffice.URL = strings.TrimSpace(c.OnlyOffice.URL)
+		c.OnlyOffice.BackendURL = strings.TrimSpace(c.OnlyOffice.BackendURL)
+
 		if c.OnlyOffice.Secret == "" {
-			return fmt.Errorf("ONLYOFFICE_SECRET must be configured in production")
+			return fmt.Errorf("ONLYOFFICE_SECRET must be configured when ONLYOFFICE_ENABLED=true")
 		}
 		if len(c.OnlyOffice.Secret) < 32 {
-			return fmt.Errorf("ONLYOFFICE_SECRET must be at least 32 characters long in production")
+			return fmt.Errorf("ONLYOFFICE_SECRET must be at least 32 characters long when ONLYOFFICE_ENABLED=true")
 		}
-		if c.OnlyOffice.URL == "" {
-			return fmt.Errorf("ONLYOFFICE_URL must be configured in production")
+		if !isSupportedOriginURL(c.OnlyOffice.URL) {
+			return fmt.Errorf("ONLYOFFICE_URL must be a valid HTTP(S) origin without path, query, fragment, or credentials when ONLYOFFICE_ENABLED=true")
+		}
+		if c.OnlyOffice.BackendURL == "" {
+			return fmt.Errorf("BACKEND_URL must be configured when ONLYOFFICE_ENABLED=true")
+		}
+		if !isSupportedOriginURL(c.OnlyOffice.BackendURL) {
+			return fmt.Errorf("BACKEND_URL must be a valid HTTP(S) origin without path, query, fragment, or credentials when ONLYOFFICE_ENABLED=true")
 		}
 	}
 
@@ -486,6 +513,51 @@ func isDefaultDatabasePassword(password string) bool {
 			strings.Contains(normalized, "change-before-production") ||
 			strings.Contains(normalized, "change-in-production")
 	}
+}
+
+func isSupportedOriginURL(raw string) bool {
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return false
+	}
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return false
+	}
+	if parsed.Host == "" {
+		return false
+	}
+	if parsed.User != nil {
+		return false
+	}
+	if parsed.RawQuery != "" || parsed.Fragment != "" {
+		return false
+	}
+	if parsed.Path != "" && parsed.Path != "/" {
+		return false
+	}
+	return true
+}
+
+func validateExternalHealthCheckConfig(cfg *ExternalHealthCheckConfig) error {
+	if cfg == nil || !cfg.Enabled {
+		return nil
+	}
+
+	cfg.URL = strings.TrimSpace(cfg.URL)
+	if cfg.URL == "" {
+		return fmt.Errorf("EXTERNAL_HEALTHCHECK_URL must be configured when EXTERNAL_HEALTHCHECK_ENABLED=true")
+	}
+	if !isSupportedOriginURL(cfg.URL) {
+		return fmt.Errorf("EXTERNAL_HEALTHCHECK_URL must be a valid HTTP(S) origin without path, query, fragment, or credentials when EXTERNAL_HEALTHCHECK_ENABLED=true")
+	}
+	parsed, err := url.Parse(cfg.URL)
+	if err != nil {
+		return fmt.Errorf("EXTERNAL_HEALTHCHECK_URL is invalid: %w", err)
+	}
+	if strings.EqualFold(strings.TrimSpace(parsed.Hostname()), "api.example.com") {
+		return fmt.Errorf("EXTERNAL_HEALTHCHECK_URL must not use api.example.com")
+	}
+	return nil
 }
 
 // GetDatabasePerformanceConfig 获取数据库性能优化配置

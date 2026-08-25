@@ -57,14 +57,14 @@
 ├─────────────────────────────────────────────────────────────┤
 │                     数据层                                   │
 │  ┌─────────────┐ ┌─────────────┐  ┌─────────────────┐      │
-│  │   MySQL     │ │   Redis     │  │  Elasticsearch  │      │
-│  │   Primary   │ │   Cache     │  │     Search      │      │
+│  │   MySQL     │ │   Redis     │  │   Optional      │      │
+│  │   Primary   │ │   Cache     │  │  Search Service  │      │
 │  └─────────────┘ └─────────────┘  └─────────────────┘      │
 ├─────────────────────────────────────────────────────────────┤
 │                    监控和日志层                               │
 │  ┌─────────────┐ ┌─────────────┐  ┌─────────────────┐      │
 │  │ Prometheus  │ │   Grafana   │  │     Jaeger      │      │
-│  │   Metrics   │ │ Dashboard  │  │   Tracing       │      │
+│  │  Metrics    │ │  Dashboard  │  │    Tracing      │      │
 │  └─────────────┘ └─────────────┘  └─────────────────┘      │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -75,7 +75,7 @@
 2. **编排部署**: Kubernetes集群管理和自动扩缩容
 3. **包管理**: Helm Charts版本控制和配置管理
 4. **CI/CD流水线**: GitHub Actions自动化构建和部署
-5. **监控告警**: Prometheus + Grafana全链路监控
+5. **监控告警**: Prometheus + Grafana 全链路监控，默认通过 `observability` profile 启用
 6. **日志收集**: 结构化日志和集中式日志管理
 7. **安全加固**: 网络策略、RBAC、Pod安全策略
 
@@ -143,12 +143,10 @@ sudo mv linux-amd64/helm /usr/local/bin/
 3306/tcp  # MySQL
 5432/tcp  # PostgreSQL
 6379/tcp  # Redis
-9200/tcp  # Elasticsearch
-
 # 监控端口
-9090/tcp  # Prometheus
-3000/tcp  # Grafana
-14268/tcp # Jaeger
+9090/tcp  # Prometheus（observability profile）
+3000/tcp  # Grafana（observability profile）
+14268/tcp # Jaeger（observability profile）
 ```
 
 #### 防火墙配置
@@ -251,20 +249,9 @@ services:
       timeout: 5s
       retries: 5
 
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
-    environment:
-      - discovery.type=single-node
-      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
-      - xpack.security.enabled=false
-    ports:
-      - "9200:9200"
-    volumes:
-      - es_data:/usr/share/elasticsearch/data
-    restart: unless-stopped
-
   prometheus:
     image: prom/prometheus:latest
+    profiles: [observability]
     ports:
       - "9090:9090"
     volumes:
@@ -274,6 +261,7 @@ services:
 
   grafana:
     image: grafana/grafana:latest
+    profiles: [observability]
     ports:
       - "3000:3000"
     environment:
@@ -285,7 +273,6 @@ services:
 volumes:
   mysql_data:
   redis_data:
-  es_data:
   prometheus_data:
   grafana_data:
 ```
@@ -408,6 +395,9 @@ data:
 ### 3.2 应用部署
 
 #### 企业级Deployment配置
+
+OnlyOffice 默认关闭。只有在业务确实需要在线编辑时，才在 Deployment 或 Compose 中显式注入 `ONLYOFFICE_ENABLED=true`、`ONLYOFFICE_URL`、`ONLYOFFICE_SECRET` 和 `BACKEND_URL`；其中两个 URL 必须是纯 origin，不能带路径、查询串、片段或凭据。
+
 ```yaml
 # deployment.yaml
 apiVersion: apps/v1
@@ -666,7 +656,7 @@ cp .env.production .env
 vim .env
 
 # 编译应用
-go build -o /opt/law-oa-go/bin/law-oa-go cmd/server/main.go
+go build -o /opt/law-oa-go/bin/law-oa-go .
 
 # 创建服务配置
 sudo tee /etc/systemd/system/law-oa-go.service > /dev/null <<EOF
@@ -1159,7 +1149,7 @@ journalctl -u law-oa-go --since "1 hour ago" | grep ERROR
 - **Web框架**: Gin
 - **数据库**: MySQL 8.0+ / PostgreSQL 15+
 - **缓存**: Redis 7.0+
-- **搜索**: Elasticsearch 8.11+
+- **搜索**: 数据库搜索回退（默认），Elasticsearch 仅作为可选扩展
 - **ORM**: GORM v1.30
 
 ### 部署和运维
@@ -1167,7 +1157,7 @@ journalctl -u law-oa-go --since "1 hour ago" | grep ERROR
 - **编排**: Kubernetes 1.29+
 - **包管理**: Helm 3.14+
 - **监控**: Prometheus + Grafana
-- **日志**: ELK Stack
+- **日志**: 结构化日志 + 可选集中式日志
 - **追踪**: Jaeger
 
 ### 安全

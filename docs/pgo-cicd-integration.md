@@ -49,9 +49,9 @@ ARG PGO_PROFILE=default.pgo
 
 # 条件性PGO构建
 RUN if [ "$BUILD_TARGET" = "pgo" ] && [ -f "$PGO_PROFILE" ]; then \
-        go build -pgo=$PGO_PROFILE -ldflags="..." -o law-oa .; \
+        go build -pgo=$PGO_PROFILE -ldflags="..." -o law-oa-go .; \
     else \
-        go build -ldflags="..." -o law-oa .; \
+        go build -ldflags="..." -o law-oa-go .; \
     fi
 ```
 
@@ -100,7 +100,7 @@ go test -cpuprofile=profiles/cpu.prof -bench=. ./...
 go test -memprofile=profiles/mem.prof -bench=. ./...
 
 # HTTP请求性能数据
-./bin/law-oa-server &
+./bin/law-oa-go-standard &
 # 模拟HTTP请求...
 ```
 
@@ -262,7 +262,7 @@ go run scripts/comprehensive_pgo_workload.go
 go tool pprof -text profiles/cpu.prof
 
 # 对比构建结果
-diff bin/law-oa-server-standard bin/law-oa-server-pgo
+diff bin/law-oa-go-standard bin/law-oa-go-pgo
 ```
 
 ### 2. 调试工具
@@ -273,7 +273,7 @@ diff bin/law-oa-server-standard bin/law-oa-server-pgo
 go build -pgo=default.pgo -v -work .
 
 # 分析PGO优化效果
-go tool objdump bin/law-oa-server-pgo | less
+go tool objdump bin/law-oa-go-pgo | less
 
 # 检查内联优化
 go build -pgo=default.pgo -gcflags="-m" .

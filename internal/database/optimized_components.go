@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 	"law-oa-go/internal/cache"
 	"law-oa-go/internal/config"
@@ -206,7 +206,7 @@ var (
 	AdvancedCacheService     *cache.AdvancedCacheService
 	QueryOptimizerInst       *QueryOptimizer
 	PerformanceOptimizerInst *PerformanceOptimizer
-	ElasticsearchClient      *elasticsearch.Client
+	RedisClient              *redis.Client
 )
 
 // InitOptimizedComponents 初始化所有优化组件
@@ -241,44 +241,34 @@ func InitOptimizedComponents(cfg *config.Config) error {
 		log.Println("生产环境跳过演示种子数据初始化")
 	}
 
-	// 初始化Redis缓存服务
+	// Redis is an optional performance component. Authentication sessions are
+	// durable in PostgreSQL, so startup must not depend on a Redis connection.
 	redisClient, err := InitRedis(cfg.Redis)
 	if err != nil {
-		return fmt.Errorf("failed to initialize Redis: %w", err)
+		log.Printf("Redis不可用，认证与核心业务继续使用PostgreSQL；缓存功能降级: %v", err)
+		redisClient = nil
 	}
 
-	// 初始化缓存服务
-	CacheService = cache.NewCacheService(redisClient, "lawoa")
+	if redisClient != nil {
+		// 初始化缓存服务
+		CacheService = cache.NewCacheService(redisClient, "lawoa")
 
-	// 初始化高级缓存服务
-	AdvancedCacheService = cache.NewAdvancedCacheService(redisClient, "lawoa_advanced", 30*time.Minute)
+		// 初始化高级缓存服务
+		AdvancedCacheService = cache.NewAdvancedCacheService(redisClient, "lawoa_advanced", 30*time.Minute)
+	}
+	RedisClient = redisClient
 
 	// 初始化查询优化器
-	QueryOptimizerInst = NewQueryOptimizer(OptimizedDB.DB, CacheService)
-
-	// 初始化性能优化器
-	PerformanceOptimizerInst = NewPerformanceOptimizer(OptimizedDB.DB, AdvancedCacheService)
-
-	// 初始化Elasticsearch（可选）
-	ElasticsearchClient, err = InitElasticsearch(cfg.Elasticsearch)
-	if err != nil {
-		fmt.Printf("Elasticsearch连接失败，跳过初始化: %v\n", err)
-		// 不返回错误，Elasticsearch是可选的
-	} else {
-		// 初始化Elasticsearch优化器
-		esConfig := DefaultESConfig()
-		esConfig.Addresses = []string{elasticsearchAddress(cfg.Elasticsearch.Host, cfg.Elasticsearch.Port)}
-		esConfig.Username = cfg.Elasticsearch.Username
-		esConfig.Password = cfg.Elasticsearch.Password
-
-		_, err = NewElasticsearchOptimizer(esConfig)
-		if err != nil {
-			fmt.Printf("Elasticsearch优化器初始化失败: %v\n", err)
-			// 不返回错误，优化器是可选的
-		}
+	if CacheService != nil {
+		QueryOptimizerInst = NewQueryOptimizer(OptimizedDB.DB, CacheService)
 	}
 
-	log.Println("所有优化组件初始化完成 - 包含高级缓存和性能优化器")
+	// 初始化性能优化器
+	if AdvancedCacheService != nil {
+		PerformanceOptimizerInst = NewPerformanceOptimizer(OptimizedDB.DB, AdvancedCacheService)
+	}
+
+	log.Println("所有优化组件初始化完成 - Redis缓存按可用性启用")
 	return nil
 }
 
@@ -292,14 +282,15 @@ func GetCacheService() *cache.CacheService {
 	return CacheService
 }
 
+// GetRedisClient returns the optional Redis client. A nil value means Redis is
+// unavailable and callers must operate without cache/distributed-lock behavior.
+func GetRedisClient() *redis.Client {
+	return RedisClient
+}
+
 // GetQueryOptimizer 获取查询优化器实例
 func GetQueryOptimizer() *QueryOptimizer {
 	return QueryOptimizerInst
-}
-
-// GetElasticsearchClient 获取Elasticsearch客户端实例
-func GetElasticsearchClient() *elasticsearch.Client {
-	return ElasticsearchClient
 }
 
 // GetAdvancedCacheService 获取高级缓存服务实例

@@ -5,18 +5,19 @@
 
 ## 部署前必须完成
 
-1. 准备 PostgreSQL、Redis、Elasticsearch，以及 `law-oa` 命名空间中与
+1. 准备 PostgreSQL、Redis，以及 `law-oa` 命名空间中与
    Service 名称一致的网络入口。数据库不是本目录创建的 StatefulSet。
 2. 把 `k8s/deployments/backend.yaml` 和 `k8s/deployments/frontend.yaml` 中的
    镜像替换为镜像仓库中的同一版本 immutable tag。迁移 initContainer 与后端容器
    必须使用同一个镜像版本；前端镜像必须使用同一提交构建出的 immutable tag。
 3. 用 Secret Manager 或 External Secrets 创建名为 `law-oa-secrets` 的 Secret，至少填充
    `db-user`、`db-password`、`jwt-secret`、`app-secret`、`subject-data-key`、
-   `onlyoffice-url`、`onlyoffice-secret` 和 `cors-allowed-origins`。仓库模板
+   `cors-allowed-origins`。仓库模板
    不进入发布包；缺少或为空会让后端启动门禁或 readiness 失败。
 4. 为 `law-oa-uploads-pvc` 选择已演练备份/恢复的 StorageClass。上传文件与
    数据库同样属于业务证据，不能依赖临时卷。
-5. 为 Elasticsearch、Redis、PostgreSQL 配置网络策略、TLS、备份和监控。
+5. 为 Redis、PostgreSQL 配置网络策略、TLS、备份和监控；Elasticsearch 不属于
+   默认部署，只在独立评估搜索扩展时另行提供。
 
 ## 应用顺序
 

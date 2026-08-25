@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -54,44 +55,40 @@ type HealthChecker struct {
 
 // HealthConfig 健康检查配置
 type HealthConfig struct {
-	EnableDatabaseCheck      bool          `json:"enable_database_check" yaml:"enable_database_check"`
-	EnableCacheCheck         bool          `json:"enable_cache_check" yaml:"enable_cache_check"`
-	EnableExternalAPICheck   bool          `json:"enable_external_api_check" yaml:"enable_external_api_check"`
-	EnableConcurrencyCheck   bool          `json:"enable_concurrency_check" yaml:"enable_concurrency_check"`
-	EnableStorageCheck       bool          `json:"enable_storage_check" yaml:"enable_storage_check"`
-	EnableElasticsearchCheck bool          `json:"enable_elasticsearch_check" yaml:"enable_elasticsearch_check"`
-	DatabaseTimeout          time.Duration `json:"database_timeout" yaml:"database_timeout"`
-	CacheTimeout             time.Duration `json:"cache_timeout" yaml:"cache_timeout"`
-	ExternalAPITimeout       time.Duration `json:"external_api_timeout" yaml:"external_api_timeout"`
-	ConcurrencyTimeout       time.Duration `json:"concurrency_timeout" yaml:"concurrency_timeout"`
-	StorageTimeout           time.Duration `json:"storage_timeout" yaml:"storage_timeout"`
-	ElasticsearchTimeout     time.Duration `json:"elasticsearch_timeout" yaml:"elasticsearch_timeout"`
-	CheckInterval            time.Duration `json:"check_interval" yaml:"check_interval"`
-	FailureThreshold         int           `json:"failure_threshold" yaml:"failure_threshold"`
-	SuccessThreshold         int           `json:"success_threshold" yaml:"success_threshold"`
-	ExternalServiceURL       string        `json:"external_service_url" yaml:"external_service_url"`
-	StoragePath              string        `json:"storage_path" yaml:"storage_path"`
+	EnableDatabaseCheck    bool          `json:"enable_database_check" yaml:"enable_database_check"`
+	EnableCacheCheck       bool          `json:"enable_cache_check" yaml:"enable_cache_check"`
+	EnableExternalAPICheck bool          `json:"enable_external_api_check" yaml:"enable_external_api_check"`
+	EnableConcurrencyCheck bool          `json:"enable_concurrency_check" yaml:"enable_concurrency_check"`
+	EnableStorageCheck     bool          `json:"enable_storage_check" yaml:"enable_storage_check"`
+	DatabaseTimeout        time.Duration `json:"database_timeout" yaml:"database_timeout"`
+	CacheTimeout           time.Duration `json:"cache_timeout" yaml:"cache_timeout"`
+	ExternalAPITimeout     time.Duration `json:"external_api_timeout" yaml:"external_api_timeout"`
+	ConcurrencyTimeout     time.Duration `json:"concurrency_timeout" yaml:"concurrency_timeout"`
+	StorageTimeout         time.Duration `json:"storage_timeout" yaml:"storage_timeout"`
+	CheckInterval          time.Duration `json:"check_interval" yaml:"check_interval"`
+	FailureThreshold       int           `json:"failure_threshold" yaml:"failure_threshold"`
+	SuccessThreshold       int           `json:"success_threshold" yaml:"success_threshold"`
+	ExternalServiceURL     string        `json:"external_service_url" yaml:"external_service_url"`
+	StoragePath            string        `json:"storage_path" yaml:"storage_path"`
 }
 
 // DefaultHealthConfig 默认健康检查配置
 var DefaultHealthConfig = HealthConfig{
-	EnableDatabaseCheck:      true,
-	EnableCacheCheck:         true,
-	EnableExternalAPICheck:   true,
-	EnableConcurrencyCheck:   true,
-	EnableStorageCheck:       true,
-	EnableElasticsearchCheck: true,
-	DatabaseTimeout:          5 * time.Second,
-	CacheTimeout:             2 * time.Second,
-	ExternalAPITimeout:       3 * time.Second,
-	ConcurrencyTimeout:       3 * time.Second,
-	StorageTimeout:           2 * time.Second,
-	ElasticsearchTimeout:     3 * time.Second,
-	CheckInterval:            30 * time.Second,
-	FailureThreshold:         3,
-	SuccessThreshold:         2,
-	ExternalServiceURL:       "https://api.example.com/health",
-	StoragePath:              "/tmp",
+	EnableDatabaseCheck:    true,
+	EnableCacheCheck:       true,
+	EnableExternalAPICheck: false,
+	EnableConcurrencyCheck: true,
+	EnableStorageCheck:     true,
+	DatabaseTimeout:        5 * time.Second,
+	CacheTimeout:           2 * time.Second,
+	ExternalAPITimeout:     3 * time.Second,
+	ConcurrencyTimeout:     3 * time.Second,
+	StorageTimeout:         2 * time.Second,
+	CheckInterval:          30 * time.Second,
+	FailureThreshold:       3,
+	SuccessThreshold:       2,
+	ExternalServiceURL:     "",
+	StoragePath:            "/tmp",
 }
 
 // OverallHealth 总体健康状态
@@ -565,6 +562,13 @@ func (ec *ExternalAPIHealthCheck) Check(ctx context.Context) *HealthCheckResult 
 		Status:    StatusHealthy,
 	}
 
+	if strings.TrimSpace(ec.url) == "" {
+		result.Status = StatusDegraded
+		result.Message = "外部API未配置"
+		result.Duration = time.Since(start).Milliseconds()
+		return result
+	}
+
 	req, err := http.NewRequestWithContext(ctx, "GET", ec.url, nil)
 	if err != nil {
 		result.Status = StatusDegraded
@@ -692,54 +696,4 @@ func (sc *StorageHealthCheck) GetName() string {
 
 func (sc *StorageHealthCheck) GetTimeout() time.Duration {
 	return sc.timeout
-}
-
-// ElasticsearchHealthCheck Elasticsearch健康检查
-type ElasticsearchHealthCheck struct {
-	client  interface{}
-	timeout time.Duration
-}
-
-// NewElasticsearchHealthCheck 创建Elasticsearch健康检查
-func NewElasticsearchHealthCheck(client interface{}, timeout time.Duration) *ElasticsearchHealthCheck {
-	return &ElasticsearchHealthCheck{
-		client:  client,
-		timeout: timeout,
-	}
-}
-
-func (esc *ElasticsearchHealthCheck) Check(ctx context.Context) *HealthCheckResult {
-	start := time.Now()
-	result := &HealthCheckResult{
-		Name:      "elasticsearch",
-		Timestamp: start,
-		Status:    StatusHealthy,
-	}
-
-	// 如果没有ES客户端，直接返回健康状态
-	if esc.client == nil {
-		result.Status = StatusDegraded
-		result.Message = "Elasticsearch客户端未初始化"
-		result.Duration = time.Since(start).Milliseconds()
-		return result
-	}
-
-	// 执行健康检查 - 这里简化处理，实际应该调用ES客户端的健康检查方法
-	// 由于我们的ES客户端设计问题，这里先返回健康状态
-	result.Details = map[string]interface{}{
-		"client_initialized": true,
-		"connection_status":  "connected",
-	}
-
-	result.Message = "Elasticsearch连接正常"
-	result.Duration = time.Since(start).Milliseconds()
-	return result
-}
-
-func (esc *ElasticsearchHealthCheck) GetName() string {
-	return "elasticsearch"
-}
-
-func (esc *ElasticsearchHealthCheck) GetTimeout() time.Duration {
-	return esc.timeout
 }

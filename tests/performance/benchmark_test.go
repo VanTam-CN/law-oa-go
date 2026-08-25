@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
@@ -37,8 +38,12 @@ func setupTestRouter() (*gin.Engine, *gorm.DB, *redis.Client) {
 		DB:   1, // 使用测试数据库
 	})
 
+	if os.Getenv("JWT_SECRET") == "" {
+		_ = os.Setenv("JWT_SECRET", "benchmark-test-jwt-secret-012345678901234567890123")
+	}
+
 	app := gin.New()
-	router.Init(app, db, rdb, nil)
+	router.Init(app, db, rdb)
 	return app, db, rdb
 }
 

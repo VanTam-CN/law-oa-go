@@ -452,8 +452,19 @@ func sanitizeAggregateRow(table string, row map[string]interface{}) map[string]i
 		if value, ok := result["metadata"]; ok {
 			result["metadata"] = redactAggregateSensitiveValue(value)
 		}
-		for _, key := range []string{"identifiers", "client_identifiers", "clientIdentifiers", "id_card", "id_card_ciphertext", "id_card_digest", "unified_social_credit_code"} {
+		identityPresent := false
+		for _, key := range []string{
+			"identifiers", "client_identifiers", "clientIdentifiers", "id_card", "id_card_ciphertext",
+			"id_card_digest", "unified_social_credit_code", "identity_number", "identityNumber",
+			"identity_number_ciphertext", "identity_number_digest",
+		} {
+			if value := strings.TrimSpace(fmt.Sprint(result[key])); value != "" && value != "<nil>" {
+				identityPresent = true
+			}
 			delete(result, key)
+		}
+		if strings.EqualFold(strings.TrimSpace(table), "case_intake_parties") && identityPresent {
+			result["identity_status"] = "已登记（受保护）"
 		}
 	case "approval_requests":
 		// The approval workbench only needs summary columns. Full snapshots,
@@ -482,7 +493,7 @@ func sanitizeClientAggregateRow(row map[string]interface{}) map[string]interface
 		result[key] = value
 	}
 	identityPresent := false
-	for _, key := range []string{"id_card", "id_card_ciphertext", "id_card_digest", "unified_social_credit_code", "unifiedSocialCreditCode", "identifiers"} {
+	for _, key := range []string{"id_card", "id_card_ciphertext", "id_card_digest", "identity_number", "identity_number_ciphertext", "identity_number_digest", "unified_social_credit_code", "unifiedSocialCreditCode", "identifiers"} {
 		if value := strings.TrimSpace(fmt.Sprint(result[key])); value != "" && value != "<nil>" {
 			identityPresent = true
 		}
@@ -490,6 +501,9 @@ func sanitizeClientAggregateRow(row map[string]interface{}) map[string]interface
 	}
 	if identityPresent {
 		result["identity_status"] = "已登记（受保护）"
+	}
+	if aliases, ok := result["aliases"]; ok {
+		result["aliases"] = stringListValue(aliases)
 	}
 	for _, key := range []string{"phone", "contact_phone"} {
 		if value := strings.TrimSpace(fmt.Sprint(result[key])); value != "" && value != "<nil>" {

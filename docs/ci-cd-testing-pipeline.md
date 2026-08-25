@@ -263,8 +263,11 @@ go test -cpuprofile=profiles/cpu.prof -bench=. ./...
 
 ### 2. PGO 构建
 ```bash
-# 使用性能数据构建
-go build -pgo=profiles/cpu.prof -o bin/law-oa-server .
+# 构建标准版本
+go build -o bin/law-oa-go-standard .
+
+# 使用性能数据构建 PGO 版本
+go build -pgo=profiles/cpu.prof -o bin/law-oa-go-pgo .
 
 # 验证优化效果
 go test -bench=. -benchmem ./...

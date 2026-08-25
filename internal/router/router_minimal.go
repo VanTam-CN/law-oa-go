@@ -3,6 +3,8 @@ package router
 import (
 	"log"
 
+	"law-oa-go/internal/auth"
+	"law-oa-go/internal/config"
 	"law-oa-go/internal/handlers"
 	"law-oa-go/internal/middleware"
 	"law-oa-go/internal/repositories"
@@ -10,30 +12,20 @@ import (
 
 	"github.com/gin-gonic/gin"
 	rdb "github.com/redis/go-redis/v9"
-	esv8 "github.com/elastic/go-elasticsearch/v8"
 	"gorm.io/gorm"
 )
 
 // InitMinimal 初始化最小化路由（仅包含法条搜索基本功能）
-func InitMinimal(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient interface{}) {
+func InitMinimal(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client) {
 	log.Println("初始化最小化路由系统...")
 
 	// 初始化法条相关Repository
 	legalStatuteRepo := repositories.NewLegalStatuteRepository(db)
 	legalCategoryRepo := repositories.NewLegalCategoryRepository(db)
 	legalTagRepo := repositories.NewLegalTagRepository(db)
-	var legalEsRepo repositories.ElasticsearchStatuteRepository
-	// 类型断言检查Elasticsearch客户端
-	if esClient != nil {
-		if client, ok := esClient.(*esv8.Client); ok {
-			legalEsRepo = repositories.NewElasticsearchStatuteRepository(client)
-		} else {
-			log.Printf("Elasticsearch客户端类型不匹配，跳过ES功能")
-		}
-	}
 
 	// 初始化法条服务
-	legalStatuteService := services.NewLegalStatuteService(db, legalStatuteRepo, legalCategoryRepo, legalTagRepo, legalEsRepo)
+	legalStatuteService := services.NewLegalStatuteService(db, legalStatuteRepo, legalCategoryRepo, legalTagRepo, nil)
 
 	// 初始化法条处理器
 	legalStatuteHandler := handlers.NewLegalStatuteHandler(legalStatuteService)
@@ -42,16 +34,24 @@ func InitMinimal(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client, esClient
 	public := app.Group("/api/v1")
 	{
 		// 认证相关路由
-		auth := public.Group("/auth")
+		authRoutes := public.Group("/auth")
 		{
 			// 创建用户服务用于认证
 			userRepo := repositories.NewUserRepository(db)
 			userService := services.NewUserService(userRepo)
-			// 在最小化路由中，tokenRevocationService 可以为 nil
-			authHandler := handlers.NewAuthHandler(userService, nil)
+			cfg, err := config.Load()
+			if err != nil {
+				log.Printf("加载配置失败: %v", err)
+				return
+			}
+			// Minimal routes still require durable PostgreSQL sessions so a
+			// login token can be revoked by UUID.
+			tokenManager := auth.NewTokenManager(cfg, redisClient, nil, db)
+			authHandler := handlers.NewAuthHandler(userService, nil, tokenManager)
 
-			auth.POST("/login", authHandler.Login)
-			auth.POST("/register", authHandler.Register)
+			authRoutes.POST("/login", authHandler.Login)
+			authRoutes.POST("/refresh", auth.RefreshTokenMiddleware(tokenManager))
+			authRoutes.POST("/register", authHandler.Register)
 		}
 
 		// 法条搜索（公开，方便测试）

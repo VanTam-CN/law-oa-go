@@ -52,7 +52,8 @@ data:
 
     # Redis配置
     redis:
-      host: "law-oa-redis-service"
+      # Redis is opt-in. Set a service host only when deploying a cache tier.
+      host: ""
       port: "6379"
       password: "${REDIS_PASSWORD}"
       db: 0
@@ -64,17 +65,6 @@ data:
       pool_timeout: 4s
       idle_timeout: 300s
       idle_check_frequency: 60s
-
-    # Elasticsearch配置
-    elasticsearch:
-      hosts:
-        - "http://law-oa-elasticsearch-service.law-oa-logging.svc.cluster.local:9200"
-      username: "${ES_USERNAME:-}"
-      password: "${ES_PASSWORD:-}"
-      index_prefix: "law_oa"
-      max_retries: 3
-      sniff_enabled: false
-      sniff_interval: 5m
 
     # JWT配置
     jwt:
@@ -231,7 +221,8 @@ data:
   # Redis配置
   redis.yaml: |
     # Redis连接配置
-    redis_host: "law-oa-redis-service.law-oa.svc.cluster.local"
+    # Redis is opt-in. Leave empty in the default deployment.
+    redis_host: ""
     redis_port: "6379"
     redis_db: "0"
     redis_pool_size: "10"
@@ -239,14 +230,6 @@ data:
     redis_dial_timeout: "5s"
     redis_read_timeout: "3s"
     redis_write_timeout: "3s"
-
-  # Elasticsearch配置
-  elasticsearch.yaml: |
-    # Elasticsearch连接配置
-    elasticsearch_host: "http://law-oa-elasticsearch-service.law-oa-logging.svc.cluster.local:9200"
-    elasticsearch_index_prefix: "law_oa"
-    elasticsearch_max_retries: "3"
-    elasticsearch_sniff_enabled: "false"
 
   # Jaeger配置
   jaeger.yaml: |

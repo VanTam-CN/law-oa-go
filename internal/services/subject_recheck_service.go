@@ -45,6 +45,52 @@ type SubjectRevisionRequest struct {
 	Reason                 string                 `json:"reason"`
 }
 
+type NewSubjectEntityRevisionRequest struct {
+	ExpectedSubjectVersion int    `json:"expected_subject_version"`
+	ChangeType             string `json:"change_type"`
+	Name                   string `json:"name"`
+	Alias                  string `json:"alias"`
+	EntityType             string `json:"entity_type"`
+	IdentityType           string `json:"identity_type"`
+	IdentityNumber         string `json:"identity_number"`
+	Reason                 string `json:"reason"`
+}
+
+type SubjectEntityRegistrationReviewRequest struct {
+	Decision         string `json:"decision"`
+	ExistingEntityID uint   `json:"existing_entity_id"`
+	Notes            string `json:"notes"`
+}
+
+type PendingSubjectEntityRegistration struct {
+	RevisionID      string    `json:"revision_id"`
+	CaseID          uint      `json:"case_id"`
+	CaseNumber      string    `json:"case_number"`
+	CaseTitle       string    `json:"case_title"`
+	ChangeType      string    `json:"change_type"`
+	CandidateName   string    `json:"candidate_name"`
+	Alias           string    `json:"alias,omitempty"`
+	EntityType      string    `json:"entity_type"`
+	IdentityType    string    `json:"identity_type"`
+	IdentityHint    string    `json:"identity_hint"`
+	Reason          string    `json:"reason"`
+	RequestedBy     uint      `json:"requested_by"`
+	RequestedByName string    `json:"requested_by_name"`
+	CreatedAt       time.Time `json:"created_at"`
+}
+
+type SubjectRevisionStatusView struct {
+	RevisionID    string    `json:"revision_id"`
+	Status        string    `json:"status"`
+	ChangeType    string    `json:"change_type"`
+	Reason        string    `json:"reason"`
+	CandidateName string    `json:"candidate_name,omitempty"`
+	EntityType    string    `json:"entity_type,omitempty"`
+	IdentityType  string    `json:"identity_type,omitempty"`
+	IdentityHint  string    `json:"identity_hint,omitempty"`
+	CreatedAt     time.Time `json:"created_at"`
+}
+
 type SubjectRevisionResult struct {
 	Revision           *models.CaseSubjectRevision   `json:"revision"`
 	CaseSubjectVersion int                           `json:"case_subject_version"`
@@ -113,6 +159,9 @@ func (s *SubjectRecheckService) CreateRevision(ctx context.Context, caseID, acto
 		if caseModel.SubjectVersion != req.ExpectedSubjectVersion {
 			return NewSubjectWorkflowError("SUBJECT_VERSION_CONFLICT", "案件主体已被其他人更新，请刷新后重新提交")
 		}
+		if err := validateSubjectRevisionReferencesTx(tx, caseID, actorID, actorRole, req.Payload); err != nil {
+			return err
+		}
 
 		revision = &models.CaseSubjectRevision{
 			ID:                 uuid.NewString(),
@@ -151,6 +200,609 @@ func (s *SubjectRecheckService) CreateRevision(ctx context.Context, caseID, acto
 		CaseSubjectState:   models.SubjectStateRecheckRequired,
 		ActionGateMessage:  "主体变更已登记，完成独立复核前已阻断受控动作",
 	}, nil
+}
+
+// CreateNewEntityRevision records a previously unknown party without making
+// it authoritative. The encrypted candidate remains inside the pending case
+// revision until an independent registry reviewer either creates a new entity,
+// links an exact identity match, or rejects the request.
+func (s *SubjectRecheckService) CreateNewEntityRevision(ctx context.Context, caseID, actorID uint, actorRole string, req *NewSubjectEntityRevisionRequest) (*SubjectRevisionResult, error) {
+	if s == nil || s.db == nil {
+		return nil, NewSubjectWorkflowError("SUBJECT_GATE_UNAVAILABLE", "案件主体版本服务未初始化，已阻止新主体登记")
+	}
+	if caseID == 0 || actorID == 0 || req == nil {
+		return nil, NewSubjectWorkflowError("INVALID_SUBJECT_REVISION", "案件、操作人和候选主体不能为空")
+	}
+	changeType := strings.ToUpper(strings.TrimSpace(req.ChangeType))
+	role, partyType, ok := newSubjectPartyClassification(changeType)
+	if !ok {
+		return nil, NewSubjectWorkflowError("CHANGE_TYPE_INVALID", "新主体登记只支持新增对方当事人或新增第三人")
+	}
+	name := strings.TrimSpace(req.Name)
+	alias := strings.TrimSpace(req.Alias)
+	entityType := strings.ToUpper(strings.TrimSpace(req.EntityType))
+	identityType := strings.ToUpper(strings.TrimSpace(req.IdentityType))
+	identityNumber := normalizeSubjectIdentity(identityType, req.IdentityNumber)
+	reason := strings.TrimSpace(req.Reason)
+	if len([]rune(name)) < 2 || len([]rune(reason)) < 5 {
+		return nil, NewSubjectWorkflowError("SUBJECT_REGISTRATION_INPUT_REQUIRED", "主体名称至少两个字，变更原因至少五个字")
+	}
+	if !validNewSubjectEntityType(entityType) || !validNewSubjectIdentityType(identityType) || !validIdentityTypeForEntity(entityType, identityType) || len([]rune(identityNumber)) < 4 {
+		return nil, NewSubjectWorkflowError("SUBJECT_IDENTITY_REQUIRED", "新主体必须提供有效的主体类型、身份标识类型和身份标识")
+	}
+	if req.ExpectedSubjectVersion <= 0 {
+		return nil, NewSubjectWorkflowError("SUBJECT_VERSION_REQUIRED", "提交主体变更时必须携带当前主体版本")
+	}
+
+	payloadValues := map[string]interface{}{
+		"candidate_parties": []interface{}{map[string]interface{}{
+			"name": name, "alias": alias, "entity_type": entityType,
+			"identity_type": identityType, "identity_number": identityNumber,
+			"role": role, "party_type": partyType,
+		}},
+	}
+	payload, err := json.Marshal(payloadValues)
+	if err != nil {
+		return nil, NewSubjectWorkflowError("SUBJECT_PAYLOAD_INVALID", "候选主体内容无法保存")
+	}
+	payload, err = protectSubjectPayload(payload, payloadValues)
+	if err != nil {
+		return nil, err
+	}
+
+	revision := &models.CaseSubjectRevision{}
+	reviewerNotified := 0
+	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var caseModel models.Case
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ? AND deleted_at IS NULL", caseID).First(&caseModel).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return NewSubjectWorkflowError("CASE_NOT_FOUND", "案件不存在")
+			}
+			return err
+		}
+		if strings.ToUpper(strings.TrimSpace(caseModel.SubjectState)) != models.SubjectStateEffective || strings.TrimSpace(caseModel.PendingSubjectRevisionID) != "" {
+			return NewSubjectWorkflowError("ACTIVE_RECHECK_EXISTS", "该案件已有待处理的主体变更，请先完成现有流程")
+		}
+		if caseModel.SubjectVersion <= 0 || caseModel.SubjectVersion != req.ExpectedSubjectVersion {
+			return NewSubjectWorkflowError("SUBJECT_VERSION_CONFLICT", "案件主体版本已变化，请刷新后重新提交")
+		}
+		now := time.Now()
+		revision = &models.CaseSubjectRevision{
+			ID: uuid.NewString(), CaseID: caseID, BaseSubjectVersion: req.ExpectedSubjectVersion,
+			ChangeType: changeType, Status: models.SubjectStateEntityRegistrationPending,
+			Payload: string(payload), Reason: reason, RequestedBy: actorID, CreatedAt: now, UpdatedAt: now,
+		}
+		if err := tx.Create(revision).Error; err != nil {
+			return err
+		}
+		if err := tx.Model(&models.Case{}).Where("id = ?", caseID).Updates(map[string]interface{}{
+			"subject_state": models.SubjectStateRecheckRequired, "pending_subject_revision_id": revision.ID, "updated_at": now,
+		}).Error; err != nil {
+			return err
+		}
+		reviewerNotified, err = createSubjectRegistrationReviewerInboxTx(tx, caseModel, *revision)
+		if err != nil {
+			return err
+		}
+		return s.appendAuditTx(tx, actorID, actorRole, "SUBJECT_ENTITY_REGISTRATION_REQUESTED", "CASE_SUBJECT_REVISION", revision.ID, models.SubjectStateEffective, models.SubjectStateEntityRegistrationPending, caseModel.SubjectVersion, map[string]interface{}{
+			"case_id": caseID, "change_type": changeType, "entity_type": entityType, "identity_type": identityType,
+		})
+	})
+	if err != nil {
+		return nil, err
+	}
+	responseRevision := *revision
+	responseRevision.Payload = ""
+	message := "新主体等待核查岗确认，受控动作已暂停"
+	if reviewerNotified == 0 {
+		message = "新主体已登记但暂无可通知的独立核查人；案件保持阻断，请先指定核查人"
+	}
+	return &SubjectRevisionResult{Revision: &responseRevision, CaseSubjectVersion: req.ExpectedSubjectVersion, CaseSubjectState: models.SubjectStateRecheckRequired, ActionGateMessage: message}, nil
+}
+
+func (s *SubjectRecheckService) ReviewEntityRegistration(ctx context.Context, caseID uint, revisionID string, reviewerID uint, reviewerRole string, req *SubjectEntityRegistrationReviewRequest) (*SubjectRevisionResult, error) {
+	if s == nil || s.db == nil {
+		return nil, NewSubjectWorkflowError("SUBJECT_GATE_UNAVAILABLE", "主体登记复核服务未初始化")
+	}
+	if !IsConflictReviewRole(reviewerRole) || reviewerID == 0 || req == nil {
+		return nil, NewSubjectWorkflowError("REVIEWER_FORBIDDEN", "只有独立冲突核查人或获授权管理人员可以确认主体登记")
+	}
+	decision := strings.ToUpper(strings.TrimSpace(req.Decision))
+	notes := strings.TrimSpace(req.Notes)
+	if decision != "CREATE_NEW" && decision != "LINK_EXISTING" && decision != "REJECT" {
+		return nil, NewSubjectWorkflowError("REGISTRATION_DECISION_INVALID", "主体登记处理方式无效")
+	}
+	if len([]rune(notes)) < 10 {
+		return nil, NewSubjectWorkflowError("REVIEW_INPUT_REQUIRED", "主体登记处理依据至少十个字")
+	}
+
+	var revision models.CaseSubjectRevision
+	var caseModel models.Case
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ? AND case_id = ?", revisionID, caseID).First(&revision).Error; err != nil {
+			return NewSubjectWorkflowError("REVISION_NOT_FOUND", "主体登记申请不存在")
+		}
+		if revision.Status != models.SubjectStateEntityRegistrationPending {
+			return NewSubjectWorkflowError("REGISTRATION_STATE_INVALID", "该主体登记申请已处理或状态不允许处理")
+		}
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ? AND deleted_at IS NULL", caseID).First(&caseModel).Error; err != nil {
+			return err
+		}
+		if caseModel.PendingSubjectRevisionID != revision.ID || caseModel.SubjectState != models.SubjectStateRecheckRequired {
+			return NewSubjectWorkflowError("REGISTRATION_STATE_INVALID", "案件当前待处理主体与登记申请不一致")
+		}
+		if reviewerID == revision.RequestedBy || reviewerID == caseModel.LawyerID || strconv.FormatUint(uint64(reviewerID), 10) == strings.TrimSpace(caseModel.CreatedBy) {
+			return NewSubjectWorkflowError("REVIEWER_CONFLICTED", "申请律师或案件负责人不得确认自己的主体登记")
+		}
+		reviewer, err := validateCurrentConflictReviewerAccount(tx, reviewerID, reviewerRole)
+		if err != nil {
+			return err
+		}
+		involvedIDs := []uint{revision.RequestedBy, caseModel.LawyerID}
+		if createdBy, err := strconv.ParseUint(strings.TrimSpace(caseModel.CreatedBy), 10, 32); err == nil && createdBy > 0 {
+			involvedIDs = append(involvedIDs, uint(createdBy))
+		}
+		if hasDirectManagementConflict(tx, *reviewer, involvedIDs) {
+			return NewSubjectWorkflowError("REVIEWER_CONFLICTED", "主体登记核查人与申请人或承办律师存在直接管理关系，必须回避")
+		}
+		candidate, err := registrationCandidateFromRevision(revision)
+		if err != nil {
+			return err
+		}
+		now := time.Now()
+		if decision == "REJECT" {
+			if err := tx.Model(&models.CaseSubjectRevision{}).Where("id = ?", revision.ID).Updates(map[string]interface{}{
+				"status": models.SubjectStateChangeRejected, "reviewed_by": reviewerID,
+				"review_decision": "registration_rejected", "review_notes": notes, "updated_at": now,
+			}).Error; err != nil {
+				return err
+			}
+			if err := tx.Model(&models.Case{}).Where("id = ?", caseID).Updates(map[string]interface{}{
+				"subject_state": models.SubjectStateEffective, "pending_subject_revision_id": nil, "updated_at": now,
+			}).Error; err != nil {
+				return err
+			}
+			if err := createSubjectRegistrationApplicantInboxTx(tx, revision, caseModel, "新主体登记已驳回", "核查岗未确认该主体登记，请根据处理依据补充或更正身份材料后重新提报。", "high"); err != nil {
+				return err
+			}
+			return s.appendAuditTx(tx, reviewerID, reviewerRole, "SUBJECT_ENTITY_REGISTRATION_REJECTED", "CASE_SUBJECT_REVISION", revision.ID, models.SubjectStateEntityRegistrationPending, models.SubjectStateEffective, caseModel.SubjectVersion, map[string]interface{}{"notes": notes})
+		}
+
+		candidate.IdentityNumber = normalizeSubjectIdentity(candidate.IdentityType, candidate.IdentityNumber)
+		if _, _, err := security.ProtectIdentityNumber(candidate.IdentityNumber); err != nil {
+			return NewSubjectWorkflowError("SUBJECT_DATA_KEY_REQUIRED", "主体身份标识保护密钥不可用，已阻止登记确认")
+		}
+		var entity models.Entity
+		if decision == "CREATE_NEW" {
+			duplicate, err := findEntityByNormalizedIdentityTx(tx, candidate)
+			if err != nil {
+				return err
+			}
+			if duplicate != nil {
+				return NewSubjectWorkflowError("DUPLICATE_ENTITY_REQUIRES_LINK", "相同身份标识的主体已存在，请核验后选择合并到已有主体")
+			}
+			entity = models.Entity{EntityType: models.EntityType(candidate.EntityType), Name: candidate.Name, Alias: candidate.Alias, IdentityType: models.IdentityType(candidate.IdentityType), IdentityNumber: candidate.IdentityNumber, Status: models.EntityStatusActive}
+			if err := tx.Create(&entity).Error; err != nil {
+				return NewSubjectWorkflowError("SUBJECT_ENTITY_CREATE_FAILED", "新主体登记失败，案件继续保持阻断")
+			}
+		} else {
+			if req.ExistingEntityID == 0 {
+				return NewSubjectWorkflowError("EXISTING_ENTITY_REQUIRED", "合并到已有主体时必须选择目标主体")
+			}
+			if err := tx.Where("id = ? AND deleted_at IS NULL", req.ExistingEntityID).First(&entity).Error; err != nil {
+				return NewSubjectWorkflowError("SUBJECT_ENTITY_NOT_FOUND", "目标主体不存在")
+			}
+			matches, err := entityMatchesRegistrationCandidate(entity, candidate)
+			if err != nil {
+				return err
+			}
+			if !matches {
+				return NewSubjectWorkflowError("SUBJECT_IDENTITY_MISMATCH", "候选主体与目标主体的身份标识或主体类型不一致，不能合并")
+			}
+		}
+
+		resolvedValues := map[string]interface{}{
+			"add_parties": []interface{}{map[string]interface{}{
+				"entity_id": entity.ID, "role": candidate.Role, "party_type": candidate.PartyType,
+			}},
+			"registration_reviewed_by": reviewerID,
+			"registration_decision":    decision,
+		}
+		resolvedPayload, err := json.Marshal(resolvedValues)
+		if err != nil {
+			return NewSubjectWorkflowError("SUBJECT_PAYLOAD_INVALID", "已确认主体无法写入重检载荷")
+		}
+		if err := tx.Model(&models.CaseSubjectRevision{}).Where("id = ?", revision.ID).Updates(map[string]interface{}{
+			"status": models.SubjectStateChangeProposed, "payload": string(resolvedPayload), "updated_at": now,
+		}).Error; err != nil {
+			return err
+		}
+		if err := createSubjectRegistrationApplicantInboxTx(tx, revision, caseModel, "新主体身份已确认", "核查岗已确认主体档案，请返回案件详情运行主体冲突重检。", "high"); err != nil {
+			return err
+		}
+		return s.appendAuditTx(tx, reviewerID, reviewerRole, "SUBJECT_ENTITY_REGISTRATION_RESOLVED", "CASE_SUBJECT_REVISION", revision.ID, models.SubjectStateEntityRegistrationPending, models.SubjectStateRecheckRequired, caseModel.SubjectVersion, map[string]interface{}{
+			"decision": decision, "entity_id": entity.ID, "notes": notes,
+		})
+	})
+	if err != nil {
+		return nil, err
+	}
+	if decision == "REJECT" {
+		revision.Status = models.SubjectStateChangeRejected
+		revision.Payload = ""
+		caseModel.SubjectState = models.SubjectStateEffective
+		caseModel.PendingSubjectRevisionID = ""
+		return &SubjectRevisionResult{Revision: &revision, CaseSubjectVersion: caseModel.SubjectVersion, CaseSubjectState: models.SubjectStateEffective, ActionGateMessage: "主体登记已驳回，原主体版本继续生效"}, nil
+	}
+	revision.Status = models.SubjectStateChangeProposed
+	revision.Payload = ""
+	return &SubjectRevisionResult{Revision: &revision, CaseSubjectVersion: caseModel.SubjectVersion, CaseSubjectState: models.SubjectStateRecheckRequired, ActionGateMessage: "主体登记已确认，等待申请律师运行冲突重检"}, nil
+}
+
+func createSubjectRegistrationReviewerInboxTx(tx *gorm.DB, caseModel models.Case, revision models.CaseSubjectRevision) (int, error) {
+	roleCodes := []string{"director", "partner", "compliance", "risk", "risk_control", "management", "conflict_officer"}
+	query := tx.Model(&models.User{}).Select("users.id").
+		Where("users.deleted_at IS NULL AND users.status = ? AND users.role IN ?", "active", roleCodes)
+	if caseModel.EthicalWallEnabled {
+		query = query.Where(`EXISTS (
+			SELECT 1 FROM case_ethical_wall_whitelist wall_access
+			WHERE wall_access.case_id = ? AND wall_access.user_id = users.id
+		)`, caseModel.ID)
+	}
+	var reviewerIDs []uint
+	if err := query.Pluck("users.id", &reviewerIDs).Error; err != nil {
+		return 0, NewSubjectWorkflowError("REVIEWER_NOTIFICATION_FAILED", "无法读取可处理主体登记的核查人，案件已阻止但待办创建失败")
+	}
+	dueAt := time.Now().Add(24 * time.Hour)
+	created := 0
+	for _, reviewerID := range reviewerIDs {
+		if reviewerID == revision.RequestedBy || reviewerID == caseModel.LawyerID {
+			continue
+		}
+		item := models.InboxItem{
+			UserID: reviewerID, SourceType: "subject_entity_registration", SourceID: caseModel.ID,
+			Title: "新主体登记待核验", Content: fmt.Sprintf("案件 %s 有新主体等待身份核验和全所去重。", caseModel.CaseNumber),
+			Priority: "high", DueDate: &dueAt, DueDateType: "conflict_review",
+		}
+		if err := tx.Create(&item).Error; err != nil {
+			return 0, NewSubjectWorkflowError("REVIEWER_NOTIFICATION_FAILED", "主体登记已阻止案件，但核查岗待办创建失败")
+		}
+		created++
+	}
+	return created, nil
+}
+
+func createSubjectRegistrationApplicantInboxTx(tx *gorm.DB, revision models.CaseSubjectRevision, caseModel models.Case, title, content, priority string) error {
+	item := models.InboxItem{
+		UserID: revision.RequestedBy, SourceType: "subject_entity_registration", SourceID: caseModel.ID,
+		Title: title, Content: fmt.Sprintf("案件 %s：%s", caseModel.CaseNumber, content), Priority: priority,
+		DueDateType: "conflict_review",
+	}
+	if err := tx.Create(&item).Error; err != nil {
+		return NewSubjectWorkflowError("APPLICANT_NOTIFICATION_FAILED", "主体登记状态已准备更新，但申请律师待办创建失败")
+	}
+	return nil
+}
+
+func (s *SubjectRecheckService) ListPendingEntityRegistrations(ctx context.Context, reviewerID uint, reviewerRole string) ([]PendingSubjectEntityRegistration, error) {
+	if s == nil || s.db == nil {
+		return nil, NewSubjectWorkflowError("SUBJECT_GATE_UNAVAILABLE", "主体登记队列服务未初始化")
+	}
+	if reviewerID == 0 || !IsConflictReviewRole(reviewerRole) {
+		return nil, NewSubjectWorkflowError("REVIEWER_FORBIDDEN", "当前账号不是独立冲突核查人")
+	}
+	if _, err := validateCurrentConflictReviewerAccount(s.db.WithContext(ctx), reviewerID, reviewerRole); err != nil {
+		return nil, err
+	}
+	type registrationRow struct {
+		RevisionID      string
+		CaseID          uint
+		CaseNumber      string
+		CaseTitle       string
+		ChangeType      string
+		Payload         string
+		Reason          string
+		RequestedBy     uint
+		RequestedByName string
+		CreatedAt       time.Time
+	}
+	var rows []registrationRow
+	err := s.db.WithContext(ctx).Table("case_subject_revisions AS revision").
+		Select(`revision.id AS revision_id, revision.case_id, cases.case_number, cases.title AS case_title,
+			revision.change_type, revision.payload, revision.reason, revision.requested_by,
+			COALESCE(users.name, users.username, '') AS requested_by_name, revision.created_at`).
+		Joins("JOIN cases ON cases.id = revision.case_id AND cases.deleted_at IS NULL").
+		Joins("LEFT JOIN users ON users.id = revision.requested_by AND users.deleted_at IS NULL").
+		Where("revision.status = ?", models.SubjectStateEntityRegistrationPending).
+		Where(`(cases.ethical_wall_enabled = ? OR EXISTS (
+			SELECT 1 FROM case_ethical_wall_whitelist wall_access
+			WHERE wall_access.case_id = cases.id AND wall_access.user_id = ?
+		))`, false, reviewerID).
+		Order("revision.created_at ASC").Limit(100).Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+	result := make([]PendingSubjectEntityRegistration, 0, len(rows))
+	for _, row := range rows {
+		candidate, err := registrationCandidateFromRevision(models.CaseSubjectRevision{Payload: row.Payload})
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, PendingSubjectEntityRegistration{
+			RevisionID: row.RevisionID, CaseID: row.CaseID, CaseNumber: row.CaseNumber, CaseTitle: row.CaseTitle,
+			ChangeType: row.ChangeType, CandidateName: candidate.Name, Alias: candidate.Alias,
+			EntityType: candidate.EntityType, IdentityType: candidate.IdentityType,
+			IdentityHint: security.MaskIdentityNumber(candidate.IdentityNumber), Reason: row.Reason,
+			RequestedBy: row.RequestedBy, RequestedByName: row.RequestedByName, CreatedAt: row.CreatedAt,
+		})
+	}
+	return result, nil
+}
+
+func validateCurrentConflictReviewerAccount(db *gorm.DB, reviewerID uint, claimedRole string) (*models.User, error) {
+	var reviewer models.User
+	if err := db.Select("id", "role", "status", "manager_id").Where("id = ? AND deleted_at IS NULL", reviewerID).First(&reviewer).Error; err != nil {
+		return nil, NewSubjectWorkflowError("REVIEWER_NOT_FOUND", "主体登记核查账号不存在")
+	}
+	if !strings.EqualFold(strings.TrimSpace(reviewer.Status), "active") || !IsConflictReviewRole(reviewer.Role) {
+		return nil, NewSubjectWorkflowError("REVIEWER_ROLE_FORBIDDEN", "主体登记核查账号未启用或不再具备业务核查角色")
+	}
+	if !strings.EqualFold(strings.TrimSpace(reviewer.Role), strings.TrimSpace(claimedRole)) {
+		return nil, NewSubjectWorkflowError("REVIEWER_ROLE_STALE", "当前登录角色与核查账号权限不一致，请重新登录")
+	}
+	return &reviewer, nil
+}
+
+func (s *SubjectRecheckService) GetSubjectRevisionStatus(ctx context.Context, caseID uint, revisionID string) (*SubjectRevisionStatusView, error) {
+	if s == nil || s.db == nil {
+		return nil, NewSubjectWorkflowError("SUBJECT_GATE_UNAVAILABLE", "主体修订状态服务未初始化")
+	}
+	var revision models.CaseSubjectRevision
+	if err := s.db.WithContext(ctx).Where("id = ? AND case_id = ?", strings.TrimSpace(revisionID), caseID).First(&revision).Error; err != nil {
+		return nil, NewSubjectWorkflowError("REVISION_NOT_FOUND", "主体变更记录不存在")
+	}
+	view := &SubjectRevisionStatusView{
+		RevisionID: revision.ID, Status: revision.Status, ChangeType: revision.ChangeType,
+		Reason: revision.Reason, CreatedAt: revision.CreatedAt,
+	}
+	if revision.Status == models.SubjectStateEntityRegistrationPending {
+		candidate, err := registrationCandidateFromRevision(revision)
+		if err != nil {
+			return nil, err
+		}
+		view.CandidateName = candidate.Name
+		view.EntityType = candidate.EntityType
+		view.IdentityType = candidate.IdentityType
+		view.IdentityHint = security.MaskIdentityNumber(candidate.IdentityNumber)
+	}
+	return view, nil
+}
+
+type subjectRegistrationCandidate struct {
+	Name           string
+	Alias          string
+	EntityType     string
+	IdentityType   string
+	IdentityNumber string
+	Role           string
+	PartyType      string
+}
+
+func registrationCandidateFromRevision(revision models.CaseSubjectRevision) (*subjectRegistrationCandidate, error) {
+	payload, err := unprotectSubjectPayload(revision.Payload)
+	if err != nil {
+		return nil, err
+	}
+	var values map[string]interface{}
+	if err := json.Unmarshal(payload, &values); err != nil {
+		return nil, NewSubjectWorkflowError("SUBJECT_PAYLOAD_INVALID", "候选主体内容无法读取")
+	}
+	raw, ok := firstSubjectValue(values, "candidate_parties", "candidateParties")
+	if !ok {
+		return nil, NewSubjectWorkflowError("SUBJECT_PAYLOAD_INVALID", "登记申请缺少候选主体")
+	}
+	items, valid := subjectMapSlice(raw)
+	if !valid || len(items) != 1 {
+		return nil, NewSubjectWorkflowError("SUBJECT_PAYLOAD_INVALID", "每次登记申请必须且只能包含一个候选主体")
+	}
+	item := items[0]
+	candidate := &subjectRegistrationCandidate{
+		Name: strings.TrimSpace(subjectString(item, "name")), Alias: strings.TrimSpace(subjectString(item, "alias")),
+		EntityType:     strings.ToUpper(strings.TrimSpace(subjectString(item, "entity_type", "entityType"))),
+		IdentityType:   strings.ToUpper(strings.TrimSpace(subjectString(item, "identity_type", "identityType"))),
+		IdentityNumber: strings.TrimSpace(subjectString(item, "identity_number", "identityNumber")),
+		Role:           strings.ToUpper(strings.TrimSpace(subjectString(item, "role"))),
+		PartyType:      strings.ToUpper(strings.TrimSpace(subjectString(item, "party_type", "partyType"))),
+	}
+	if candidate.Name == "" || candidate.IdentityNumber == "" || !validNewSubjectEntityType(candidate.EntityType) || !validNewSubjectIdentityType(candidate.IdentityType) {
+		return nil, NewSubjectWorkflowError("SUBJECT_PAYLOAD_INVALID", "候选主体身份资料不完整")
+	}
+	return candidate, nil
+}
+
+func newSubjectPartyClassification(changeType string) (string, string, bool) {
+	switch changeType {
+	case "ADD_OPPOSING_PARTY":
+		return "DEFENDANT", "OPPOSING", true
+	case "ADD_THIRD_PARTY":
+		return "THIRD_PARTY", "THIRD_PARTY", true
+	default:
+		return "", "", false
+	}
+}
+
+func validNewSubjectEntityType(value string) bool {
+	return value == string(models.EntityTypeIndividual) || value == string(models.EntityTypeLegalPerson) || value == string(models.EntityTypeOrganization)
+}
+
+func validNewSubjectIdentityType(value string) bool {
+	switch models.IdentityType(value) {
+	case models.IdentityTypeIDCard, models.IdentityTypePassport, models.IdentityTypeBusinessLicense, models.IdentityTypeOrgCode, models.IdentityTypeSocialCredit, models.IdentityTypeOther:
+		return true
+	default:
+		return false
+	}
+}
+
+func validIdentityTypeForEntity(entityType, identityType string) bool {
+	if entityType == string(models.EntityTypeIndividual) {
+		return identityType == string(models.IdentityTypeIDCard) || identityType == string(models.IdentityTypePassport) || identityType == string(models.IdentityTypeOther)
+	}
+	return identityType == string(models.IdentityTypeBusinessLicense) || identityType == string(models.IdentityTypeOrgCode) || identityType == string(models.IdentityTypeSocialCredit) || identityType == string(models.IdentityTypeOther)
+}
+
+func normalizeSubjectIdentity(identityType, value string) string {
+	return security.NormalizeIdentityNumber(identityType, value)
+}
+
+func findEntityByNormalizedIdentityTx(tx *gorm.DB, candidate *subjectRegistrationCandidate) (*models.Entity, error) {
+	if candidate == nil {
+		return nil, NewSubjectWorkflowError("SUBJECT_PAYLOAD_INVALID", "候选主体不能为空")
+	}
+	_, digest, err := security.ProtectIdentityNumber(candidate.IdentityNumber)
+	if err != nil {
+		return nil, NewSubjectWorkflowError("SUBJECT_DATA_KEY_REQUIRED", "主体身份标识保护密钥不可用")
+	}
+	var exact models.Entity
+	if err := tx.Where("identity_number_digest = ? AND entity_type = ? AND identity_type = ? AND deleted_at IS NULL", digest, candidate.EntityType, candidate.IdentityType).First(&exact).Error; err == nil {
+		return &exact, nil
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+	rows, err := tx.Model(&models.Entity{}).
+		Where("entity_type = ? AND identity_type = ? AND identity_number_ciphertext <> '' AND deleted_at IS NULL", candidate.EntityType, candidate.IdentityType).
+		Rows()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var entity models.Entity
+		if err := tx.ScanRows(rows, &entity); err != nil {
+			return nil, err
+		}
+		matches, err := entityMatchesRegistrationCandidate(entity, candidate)
+		if err != nil {
+			return nil, err
+		}
+		if matches {
+			return &entity, nil
+		}
+	}
+	return nil, nil
+}
+
+func entityMatchesRegistrationCandidate(entity models.Entity, candidate *subjectRegistrationCandidate) (bool, error) {
+	if candidate == nil || string(entity.EntityType) != candidate.EntityType || string(entity.IdentityType) != candidate.IdentityType {
+		return false, nil
+	}
+	identityNumber := strings.TrimSpace(entity.IdentityNumber)
+	if identityNumber == "" && strings.TrimSpace(entity.IdentityNumberCiphertext) != "" {
+		var err error
+		identityNumber, err = security.DecryptIdentityNumber(entity.IdentityNumberCiphertext)
+		if err != nil {
+			return false, NewSubjectWorkflowError("SUBJECT_IDENTITY_UNREADABLE", "已有主体身份标识无法安全读取，已阻止合并")
+		}
+	}
+	return normalizeSubjectIdentity(string(entity.IdentityType), identityNumber) == normalizeSubjectIdentity(candidate.IdentityType, candidate.IdentityNumber), nil
+}
+
+// SearchVisibleEntities returns only entities which already occur in a matter
+// the actor may see. A firm-wide entity-name lookup would disclose isolated
+// client names before the conflict workflow has established a lawful need to
+// know. The target case is included because its authorization is checked by
+// the handler before this method is called.
+func (s *SubjectRecheckService) SearchVisibleEntities(ctx context.Context, targetCaseID, actorID uint, actorRole, query, entityType string, limit int) ([]models.Entity, error) {
+	if s == nil || s.db == nil {
+		return nil, NewSubjectWorkflowError("SUBJECT_GATE_UNAVAILABLE", "主体数据服务未初始化")
+	}
+	if targetCaseID == 0 || actorID == 0 {
+		return nil, NewSubjectWorkflowError("ACTOR_REQUIRED", "无法识别当前案件或操作人")
+	}
+	if limit <= 0 || limit > 50 {
+		limit = 20
+	}
+	pattern := "%" + strings.ToLower(strings.TrimSpace(query)) + "%"
+	entityQuery := visibleSubjectEntitiesQuery(s.db.WithContext(ctx), targetCaseID, actorID, actorRole).
+		Where("LOWER(entities.name) LIKE ? OR LOWER(entities.alias) LIKE ?", pattern, pattern).
+		Order("entities.name ASC").Limit(limit)
+	if strings.TrimSpace(entityType) != "" {
+		entityQuery = entityQuery.Where("entities.entity_type = ?", strings.ToUpper(strings.TrimSpace(entityType)))
+	}
+	var entities []models.Entity
+	if err := entityQuery.Find(&entities).Error; err != nil {
+		return nil, err
+	}
+	return entities, nil
+}
+
+func visibleSubjectEntitiesQuery(db *gorm.DB, targetCaseID, actorID uint, actorRole string) *gorm.DB {
+	visibility := `linked_case.id = ? OR (`
+	args := []interface{}{targetCaseID}
+	if IsBusinessMatterManagementRole(actorRole) {
+		visibility += `1 = 1`
+	} else {
+		visibility += `(linked_case.lawyer_id = ? OR linked_case.created_by = ?)`
+		args = append(args, actorID, strconv.FormatUint(uint64(actorID), 10))
+	}
+	visibility += ` AND (linked_case.ethical_wall_enabled = ? OR EXISTS (
+		SELECT 1 FROM case_ethical_wall_whitelist wall_access
+		WHERE wall_access.case_id = linked_case.id AND wall_access.user_id = ?
+	)))`
+	args = append(args, false, actorID)
+	return db.Model(&models.Entity{}).
+		Where("entities.deleted_at IS NULL AND entities.status = ?", models.EntityStatusActive).
+		Where(`EXISTS (
+			SELECT 1 FROM case_parties visible_party
+			JOIN cases linked_case ON linked_case.id = visible_party.case_id
+			WHERE visible_party.entity_id = entities.id
+			AND visible_party.deleted_at IS NULL
+			AND linked_case.deleted_at IS NULL
+			AND (`+visibility+`)
+		)`, args...)
+}
+
+func validateSubjectRevisionReferencesTx(tx *gorm.DB, caseID, actorID uint, actorRole string, values map[string]interface{}) error {
+	for _, keySet := range [][]string{{"case_parties", "caseParties"}, {"add_parties", "addParties"}} {
+		raw, ok := firstSubjectValue(values, keySet...)
+		if !ok {
+			continue
+		}
+		parties, valid := subjectMapSlice(raw)
+		if !valid || len(parties) == 0 {
+			return NewSubjectWorkflowError("SUBJECT_PARTY_PAYLOAD_INVALID", "案件当事人变更格式无效")
+		}
+		for _, party := range parties {
+			entityID, valid := subjectUint(party, "entity_id", "entityId")
+			if !valid {
+				return NewSubjectWorkflowError("SUBJECT_PARTY_REFERENCE_REQUIRED", "主体变更必须引用已登记的结构化主体")
+			}
+			var count int64
+			if err := visibleSubjectEntitiesQuery(tx, caseID, actorID, actorRole).Where("entities.id = ?", entityID).Count(&count).Error; err != nil {
+				return NewSubjectWorkflowError("SUBJECT_ENTITY_ACCESS_CHECK_FAILED", "无法安全核验主体访问权限，已阻止变更")
+			}
+			if count == 0 {
+				return NewSubjectWorkflowError("SUBJECT_ENTITY_NOT_ACCESSIBLE", "所选主体不在当前可访问案件范围内，请由冲突核查岗登记或授权后再提交")
+			}
+		}
+	}
+
+	if raw, ok := firstSubjectValue(values, "remove_party_ids", "removePartyIds"); ok {
+		ids, valid := subjectUintSlice(raw)
+		if !valid || len(ids) == 0 {
+			return NewSubjectWorkflowError("SUBJECT_PARTY_PAYLOAD_INVALID", "移除案件当事人格式无效")
+		}
+		var count int64
+		if err := tx.Model(&models.CaseParty{}).
+			Where("case_id = ? AND entity_id IN ? AND deleted_at IS NULL", caseID, ids).
+			Distinct("entity_id").Count(&count).Error; err != nil {
+			return NewSubjectWorkflowError("SUBJECT_ENTITY_ACCESS_CHECK_FAILED", "无法安全核验待移除主体，已阻止变更")
+		}
+		if count != int64(len(ids)) {
+			return NewSubjectWorkflowError("SUBJECT_ENTITY_NOT_ACCESSIBLE", "只能移除当前案件已经生效的主体")
+		}
+	}
+	return nil
 }
 
 func (s *SubjectRecheckService) RunRecheck(ctx context.Context, caseID uint, revisionID string, actorID uint, actorRole string, request *models.ConflictCheckRequest) (*SubjectRevisionResult, error) {
@@ -240,11 +892,14 @@ func (s *SubjectRecheckService) RunRecheck(ctx context.Context, caseID uint, rev
 	request.ClientID = strconv.FormatUint(uint64(effectiveClientID), 10)
 	request.ClientName = client.Name
 	request.ClientType = subjectClientType(client.Type)
-	if idCard, idErr := client.DecryptedIDCard(); idErr != nil {
-		_ = s.restoreRecheckRequired(ctx, caseID, revision.ID, actorID, actorRole, idErr.Error())
+	if identityNumber, identityErr := client.DecryptedIdentity(); identityErr != nil {
+		_ = s.restoreRecheckRequired(ctx, caseID, revision.ID, actorID, actorRole, identityErr.Error())
 		return nil, NewSubjectWorkflowError("SUBJECT_IDENTITY_UNREADABLE", "客户身份标识无法安全读取，已阻止重检")
-	} else if strings.TrimSpace(idCard) != "" {
-		request.ClientIdentifiers = map[string]string{"id_card": idCard}
+	} else if strings.TrimSpace(identityNumber) != "" {
+		request.ClientIdentifiers = map[string]string{client.IdentityIdentifierKey(): identityNumber}
+	} else {
+		_ = s.restoreRecheckRequired(ctx, caseID, revision.ID, actorID, actorRole, "客户身份标识缺失")
+		return nil, NewSubjectWorkflowError("SUBJECT_IDENTITY_REQUIRED", "客户缺少可核验身份标识，已阻止重检")
 	}
 	if request.UserID == "" {
 		request.UserID = strconv.FormatUint(uint64(caseModel.LawyerID), 10)
@@ -461,6 +1116,13 @@ func (s *SubjectRecheckService) ReviewAndApply(ctx context.Context, caseID uint,
 		if reviewerID == caseModel.LawyerID || strconv.FormatUint(uint64(reviewerID), 10) == strings.TrimSpace(caseModel.CreatedBy) {
 			return NewSubjectWorkflowError("REVIEWER_CONFLICTED", "案件负责人或申请人不得复核自己的主体变更")
 		}
+		registrationReviewerID, err := registrationReviewerFromResolvedRevision(revision)
+		if err != nil {
+			return err
+		}
+		if registrationReviewerID == reviewerID {
+			return NewSubjectWorkflowError("REVIEWER_CONFLICTED", "确认新主体登记的核查人不得同时形成最终冲突复核结论")
+		}
 
 		var record models.ConflictCheckRecord
 		if err := tx.Where("check_id = ?", revision.ConflictCheckID).First(&record).Error; err != nil {
@@ -551,6 +1213,19 @@ func (s *SubjectRecheckService) ReviewAndApply(ctx context.Context, caseID uint,
 		caseModel.PendingSubjectRevisionID = ""
 	}
 	return &SubjectRevisionResult{Revision: &revision, CaseSubjectVersion: caseModel.SubjectVersion, CaseSubjectState: caseModel.SubjectState, ActionGateMessage: actionGateMessage(caseModel.SubjectState)}, nil
+}
+
+func registrationReviewerFromResolvedRevision(revision models.CaseSubjectRevision) (uint, error) {
+	payload, err := unprotectSubjectPayload(revision.Payload)
+	if err != nil {
+		return 0, err
+	}
+	var values map[string]interface{}
+	if err := json.Unmarshal(payload, &values); err != nil {
+		return 0, NewSubjectWorkflowError("SUBJECT_PAYLOAD_INVALID", "主体变更载荷无法校验登记复核人")
+	}
+	reviewerID, _ := subjectUint(values, "registration_reviewed_by", "registrationReviewedBy")
+	return reviewerID, nil
 }
 
 func validateSubjectConflictReviewer(ctx context.Context, tx *gorm.DB, checkID string, caseID, reviewerID uint, reviewerRole string) error {

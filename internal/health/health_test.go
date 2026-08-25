@@ -229,7 +229,7 @@ func TestHealthConfig_Defaults(t *testing.T) {
 
 	assert.True(t, config.EnableDatabaseCheck)
 	assert.True(t, config.EnableCacheCheck)
-	assert.True(t, config.EnableExternalAPICheck)
+	assert.False(t, config.EnableExternalAPICheck)
 	assert.True(t, config.EnableConcurrencyCheck)
 	assert.True(t, config.EnableStorageCheck)
 	assert.Equal(t, 5*time.Second, config.DatabaseTimeout)
@@ -240,6 +240,16 @@ func TestHealthConfig_Defaults(t *testing.T) {
 	assert.Equal(t, 30*time.Second, config.CheckInterval)
 	assert.Equal(t, 3, config.FailureThreshold)
 	assert.Equal(t, 2, config.SuccessThreshold)
+	assert.Empty(t, config.ExternalServiceURL)
+}
+
+func TestExternalAPIHealthCheck_DefaultEmptyURLIsDegraded(t *testing.T) {
+	check := NewExternalAPIHealthCheck("", 3*time.Second)
+
+	result := check.Check(context.Background())
+
+	assert.Equal(t, StatusDegraded, result.Status)
+	assert.Contains(t, result.Message, "未配置")
 }
 
 func TestOverallHealth_StatusCalculation(t *testing.T) {

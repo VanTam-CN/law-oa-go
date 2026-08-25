@@ -220,7 +220,7 @@ FUZZERS ?= $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
 FUZZ_OUTPUT_DIR ?= fuzzing-results
 
 # PGO构建配置
-BINARY_NAME := law-oa-server
+BINARY_NAME := law-oa-go
 PROFILE_DIR := profiles
 DEFAULT_PGO_FILE := default.pgo
 

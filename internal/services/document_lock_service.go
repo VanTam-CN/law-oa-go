@@ -5,16 +5,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"law-oa-go/internal/models"
 )
 
 const (
-	// 文档锁的 Redis key 前缀
-	documentLockKeyPrefix = "doc_lock:"
-
 	// 默认锁过期时间
 	defaultLockExpiration = 30 * time.Minute
 
@@ -27,15 +24,13 @@ const (
 
 // DocumentLockService 文档锁服务
 type DocumentLockService struct {
-	db    *gorm.DB
-	redis *redis.Client
+	db *gorm.DB
 }
 
-// NewDocumentLockService 创建文档锁服务
-func NewDocumentLockService(db *gorm.DB, redisClient *redis.Client) *DocumentLockService {
+// NewDocumentLockService 创建文档锁服务。Redis 参数仅为兼容保留，不再参与锁语义。
+func NewDocumentLockService(db *gorm.DB, _ interface{}) *DocumentLockService {
 	return &DocumentLockService{
-		db:    db,
-		redis: redisClient,
+		db: db,
 	}
 }
 
@@ -87,47 +82,6 @@ func (s *DocumentLockService) AcquireLock(ctx context.Context, req *AcquireLockR
 		return nil, fmt.Errorf("failed to check document: %w", err)
 	}
 
-	// 生成 Redis 锁 key
-	lockKey := s.getLockKey(req.DocumentID)
-
-	// 尝试获取现有锁
-	existingLock, err := s.getLockFromRedis(ctx, lockKey)
-	if err != nil && err != redis.Nil {
-		return nil, fmt.Errorf("failed to check existing lock: %w", err)
-	}
-
-	// 检查是否已被锁定
-	if existingLock != nil {
-		// 检查是否是同一用户
-		if existingLock.LockedBy == req.UserID {
-			// 同一用户，续期锁
-			renewReq := &RenewLockRequest{
-				DocumentID: req.DocumentID,
-				UserID:     req.UserID,
-			}
-			return s.RenewLock(ctx, renewReq)
-		}
-
-		// 检查锁是否已过期
-		if time.Now().Before(existingLock.ExpiresAt) {
-			// 锁仍然有效，返回锁状态
-			return &LockStatus{
-				DocumentID:   req.DocumentID,
-				IsLocked:     true,
-				LockedBy:     existingLock.LockedBy,
-				LockedByName: s.getUserName(ctx, existingLock.LockedBy),
-				LockedAt:     existingLock.LockedAt,
-				ExpiresAt:    existingLock.ExpiresAt,
-				IsCheckedOut: existingLock.IsCheckedOut,
-				CanEdit:      false,
-				Reason:       "Document is locked by another user",
-			}, nil
-		}
-
-		// 锁已过期，删除旧锁
-		s.releaseLockFromRedis(ctx, lockKey)
-	}
-
 	// 确定锁过期时间
 	expiration := defaultLockExpiration
 	if req.IsCheckout {
@@ -152,15 +106,39 @@ func (s *DocumentLockService) AcquireLock(ctx context.Context, req *AcquireLockR
 	lockData.LastActivity = &now
 
 	// 保存到数据库
-	if err := s.db.WithContext(ctx).Save(lockData).Error; err != nil {
-		return nil, fmt.Errorf("failed to save lock to database: %w", err)
+	result := s.db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns: []clause.Column{{Name: "document_id"}},
+		DoUpdates: clause.AssignmentColumns([]string{
+			"locked_by", "locked_at", "expires_at", "is_checked_out",
+			"checked_out_at", "checkout_ip", "last_activity",
+		}),
+		Where: clause.Where{Exprs: []clause.Expression{
+			gorm.Expr("document_locks.expires_at < ? OR document_locks.locked_by = ?", now, req.UserID),
+		}},
+	}).Create(lockData)
+	if result.Error != nil {
+		return nil, fmt.Errorf("failed to save lock to database: %w", result.Error)
 	}
 
-	// 设置 Redis 锁
-	if err := s.setLockInRedis(ctx, lockKey, lockData, expiration); err != nil {
-		// 回滚数据库
-		s.db.WithContext(ctx).Delete(lockData)
-		return nil, fmt.Errorf("failed to set lock in redis: %w", err)
+	if result.RowsAffected == 0 {
+		existingLock, err := s.getActiveLock(ctx, req.DocumentID, now)
+		if err != nil {
+			return nil, err
+		}
+		if existingLock == nil {
+			return nil, fmt.Errorf("failed to acquire document lock")
+		}
+		return &LockStatus{
+			DocumentID:   req.DocumentID,
+			IsLocked:     true,
+			LockedBy:     existingLock.LockedBy,
+			LockedByName: s.getUserName(ctx, existingLock.LockedBy),
+			LockedAt:     existingLock.LockedAt,
+			ExpiresAt:    existingLock.ExpiresAt,
+			IsCheckedOut: existingLock.IsCheckedOut,
+			CanEdit:      false,
+			Reason:       "Document is locked by another user",
+		}, nil
 	}
 
 	return &LockStatus{
@@ -178,46 +156,30 @@ func (s *DocumentLockService) AcquireLock(ctx context.Context, req *AcquireLockR
 
 // ReleaseLock 释放文档锁
 func (s *DocumentLockService) ReleaseLock(ctx context.Context, req *ReleaseLockRequest) error {
-	lockKey := s.getLockKey(req.DocumentID)
-
-	// 获取现有锁
-	existingLock, err := s.getLockFromRedis(ctx, lockKey)
-	if err != nil {
-		if err == redis.Nil {
-			// 锁不存在，可能已过期
-			return s.releaseLockFromDB(ctx, req.DocumentID, req.UserID)
-		}
-		return fmt.Errorf("failed to check existing lock: %w", err)
+	query := s.db.WithContext(ctx).Model(&models.DocumentLock{}).
+		Where("document_id = ?", req.DocumentID)
+	if !req.Force {
+		query = query.Where("locked_by = ?", req.UserID)
 	}
-
-	// 检查权限
-	if !req.Force && existingLock.LockedBy != req.UserID {
+	result := query.Delete(&models.DocumentLock{})
+	if result.Error != nil {
+		return fmt.Errorf("failed to release document lock: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
 		return fmt.Errorf("permission denied: lock is held by another user")
 	}
-
-	// 从 Redis 释放锁
-	if err := s.releaseLockFromRedis(ctx, lockKey); err != nil {
-		return fmt.Errorf("failed to release lock from redis: %w", err)
-	}
-
-	// 从数据库删除锁
-	return s.releaseLockFromDB(ctx, req.DocumentID, req.UserID)
+	return nil
 }
 
 // RenewLock 续期文档锁
 func (s *DocumentLockService) RenewLock(ctx context.Context, req *RenewLockRequest) (*LockStatus, error) {
-	lockKey := s.getLockKey(req.DocumentID)
-
-	// 获取现有锁
-	existingLock, err := s.getLockFromRedis(ctx, lockKey)
+	existingLock, err := s.getActiveLock(ctx, req.DocumentID, time.Now())
 	if err != nil {
-		if err == redis.Nil {
-			return nil, fmt.Errorf("lock not found or expired")
-		}
-		return nil, fmt.Errorf("failed to check existing lock: %w", err)
+		return nil, err
 	}
-
-	// 检查权限
+	if existingLock == nil {
+		return nil, fmt.Errorf("lock not found or expired")
+	}
 	if existingLock.LockedBy != req.UserID {
 		return nil, fmt.Errorf("permission denied: lock is held by another user")
 	}
@@ -233,14 +195,17 @@ func (s *DocumentLockService) RenewLock(ctx context.Context, req *RenewLockReque
 	existingLock.ExpiresAt = newExpiresAt
 	existingLock.LastActivity = &now
 
-	// 更新数据库
-	if err := s.db.WithContext(ctx).Save(existingLock).Error; err != nil {
-		return nil, fmt.Errorf("failed to update lock in database: %w", err)
+	result := s.db.WithContext(ctx).Model(&models.DocumentLock{}).
+		Where("document_id = ? AND locked_by = ?", req.DocumentID, req.UserID).
+		Updates(map[string]interface{}{
+			"expires_at":    newExpiresAt,
+			"last_activity": now,
+		})
+	if result.Error != nil {
+		return nil, fmt.Errorf("failed to update lock in database: %w", result.Error)
 	}
-
-	// 更新 Redis 锁
-	if err := s.setLockInRedis(ctx, lockKey, existingLock, expiration); err != nil {
-		return nil, fmt.Errorf("failed to update lock in redis: %w", err)
+	if result.RowsAffected == 0 {
+		return nil, fmt.Errorf("lock not found or expired")
 	}
 
 	// 获取用户名
@@ -261,41 +226,16 @@ func (s *DocumentLockService) RenewLock(ctx context.Context, req *RenewLockReque
 
 // GetLockStatus 获取文档锁状态
 func (s *DocumentLockService) GetLockStatus(ctx context.Context, documentID, userID uint) (*LockStatus, error) {
-	lockKey := s.getLockKey(documentID)
-
-	// 尝试从 Redis 获取
-	existingLock, err := s.getLockFromRedis(ctx, lockKey)
-	if err != nil && err != redis.Nil {
-		return nil, fmt.Errorf("failed to check lock status: %w", err)
+	existingLock, err := s.getActiveLock(ctx, documentID, time.Now())
+	if err != nil {
+		return nil, err
 	}
-
-	// 如果 Redis 中没有锁，检查数据库
 	if existingLock == nil {
-		var dbLock models.DocumentLock
-		if err := s.db.WithContext(ctx).Where("document_id = ?", documentID).First(&dbLock).Error; err != nil {
-			if err == gorm.ErrRecordNotFound {
-				// 没有锁
-				return &LockStatus{
-					DocumentID: documentID,
-					IsLocked:   false,
-					CanEdit:    true,
-				}, nil
-			}
-			return nil, fmt.Errorf("failed to check lock in database: %w", err)
-		}
-
-		// 检查数据库中的锁是否过期
-		if time.Now().After(dbLock.ExpiresAt) {
-			// 锁已过期，删除
-			s.db.WithContext(ctx).Delete(&dbLock)
-			return &LockStatus{
-				DocumentID: documentID,
-				IsLocked:   false,
-				CanEdit:    true,
-			}, nil
-		}
-
-		existingLock = &dbLock
+		return &LockStatus{
+			DocumentID: documentID,
+			IsLocked:   false,
+			CanEdit:    true,
+		}, nil
 	}
 
 	// 获取用户名
@@ -392,41 +332,23 @@ func (s *DocumentLockService) ValidateEditPermission(ctx context.Context, docume
 
 // Helper methods
 
-// getLockKey 生成 Redis 锁 key
-func (s *DocumentLockService) getLockKey(documentID uint) string {
-	return fmt.Sprintf("%s%d", documentLockKeyPrefix, documentID)
-}
-
-// getLockFromRedis 从 Redis 获取锁
-func (s *DocumentLockService) getLockFromRedis(ctx context.Context, key string) (*models.DocumentLock, error) {
-	data, err := s.redis.Get(ctx, key).Result()
-	if err != nil {
-		return nil, err
+// getActiveLock reads a non-expired lock and opportunistically removes expired rows.
+func (s *DocumentLockService) getActiveLock(ctx context.Context, documentID uint, now time.Time) (*models.DocumentLock, error) {
+	var lock models.DocumentLock
+	err := s.db.WithContext(ctx).Where("document_id = ?", documentID).First(&lock).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil
 	}
-
-	// 解析数据（这里简化处理，实际应该序列化/反序列化）
-	lock := &models.DocumentLock{}
-	// TODO: 实现 JSON 反序列化
-	_ = data // 暂时忽略数据，避免 unused 警告
-	return lock, nil
-}
-
-// setLockInRedis 在 Redis 中设置锁
-func (s *DocumentLockService) setLockInRedis(ctx context.Context, key string, lock *models.DocumentLock, expiration time.Duration) error {
-	// TODO: 实现 JSON 序列化
-	return s.redis.Set(ctx, key, "locked", expiration).Err()
-}
-
-// releaseLockFromRedis 从 Redis 释放锁
-func (s *DocumentLockService) releaseLockFromRedis(ctx context.Context, key string) error {
-	return s.redis.Del(ctx, key).Err()
-}
-
-// releaseLockFromDB 从数据库释放锁
-func (s *DocumentLockService) releaseLockFromDB(ctx context.Context, documentID, userID uint) error {
-	return s.db.WithContext(ctx).
-		Where("document_id = ? AND locked_by = ?", documentID, userID).
-		Delete(&models.DocumentLock{}).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to check document lock: %w", err)
+	}
+	if !now.Before(lock.ExpiresAt) {
+		if err := s.db.WithContext(ctx).Delete(&lock).Error; err != nil {
+			return nil, fmt.Errorf("failed to cleanup expired document lock: %w", err)
+		}
+		return nil, nil
+	}
+	return &lock, nil
 }
 
 // getUserName 获取用户名

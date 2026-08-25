@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	testifymock "github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -46,9 +47,24 @@ func TestAuthHandler_Login(t *testing.T) {
 
 	// 创建token撤销服务
 	tokenService := &auth.TokenRevocationService{}
+	jwtConfig := &config.Config{
+		JWT: config.JWTConfig{
+			Secret:    "test-secret-key-32-bytes-long-for-testing",
+			ExpiresIn: 3600,
+			RefreshIn: 7200,
+		},
+	}
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("打开测试数据库失败: %v", err)
+	}
+	if err := db.AutoMigrate(&models.AuthTokenSession{}, &models.User{}); err != nil {
+		t.Fatalf("迁移认证会话表失败: %v", err)
+	}
+	tokenManager := auth.NewTokenManager(jwtConfig, nil, nil, db)
 
 	userService := services.NewUserService(mockUserRepo)
-	authHandler := NewAuthHandler(userService, tokenService)
+	authHandler := NewAuthHandler(userService, tokenService, tokenManager)
 
 	// 设置测试路由
 	router := gin.New()
@@ -255,22 +271,28 @@ func TestAuthHandler_Login(t *testing.T) {
 func TestAuthHandler_Register(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	// Register handler 现在调用 middleware.GenerateToken，必须初始化 JWT 单例
-	middleware.InitJWT(&config.Config{
+	mockUserRepo := new(testmock.MockUserRepository)
+
+	// 创建token撤销服务
+	tokenService := &auth.TokenRevocationService{}
+	jwtConfig := &config.Config{
 		JWT: config.JWTConfig{
 			Secret:    "test-secret-key-32-bytes-long-for-testing",
 			ExpiresIn: 3600,
 			RefreshIn: 7200,
 		},
-	})
-
-	mockUserRepo := new(testmock.MockUserRepository)
-
-	// 创建token撤销服务
-	tokenService := &auth.TokenRevocationService{}
+	}
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("打开测试数据库失败: %v", err)
+	}
+	if err := db.AutoMigrate(&models.AuthTokenSession{}, &models.User{}); err != nil {
+		t.Fatalf("迁移认证会话表失败: %v", err)
+	}
+	tokenManager := auth.NewTokenManager(jwtConfig, nil, nil, db)
 
 	userService := services.NewUserService(mockUserRepo)
-	authHandler := NewAuthHandler(userService, tokenService)
+	authHandler := NewAuthHandler(userService, tokenService, tokenManager)
 
 	router := gin.New()
 	// 添加错误处理中间件
@@ -470,7 +492,7 @@ func TestAuthHandler_UpdateProfile(t *testing.T) {
 	mockUserRepo := new(testmock.MockUserRepository)
 	userService := services.NewUserService(mockUserRepo)
 	tokenService := &auth.TokenRevocationService{}
-	_ = NewAuthHandler(userService, tokenService) // authHandler not used since method not implemented
+	_ = NewAuthHandler(userService, tokenService, nil) // authHandler not used since method not implemented
 
 	router := gin.New()
 	// 添加错误处理中间件
@@ -591,7 +613,7 @@ func TestAuthHandler_ChangePassword(t *testing.T) {
 	mockUserRepo := new(testmock.MockUserRepository)
 	userService := services.NewUserService(mockUserRepo)
 	tokenService := &auth.TokenRevocationService{}
-	_ = NewAuthHandler(userService, tokenService) // authHandler not used since method not implemented
+	_ = NewAuthHandler(userService, tokenService, nil) // authHandler not used since method not implemented
 
 	router := gin.New()
 	// 添加错误处理中间件
@@ -780,7 +802,7 @@ func TestAuthHandler_RefreshToken(t *testing.T) {
 	mockUserRepo := new(testmock.MockUserRepository)
 	userService := services.NewUserService(mockUserRepo)
 	tokenService := &auth.TokenRevocationService{}
-	_ = NewAuthHandler(userService, tokenService) // authHandler 用于路由设置，但在某些测试中被跳过
+	_ = NewAuthHandler(userService, tokenService, nil) // authHandler 用于路由设置，但在某些测试中被跳过
 
 	router := gin.New()
 	// 添加错误处理中间件
@@ -913,7 +935,7 @@ func TestAuthHandler_Logout(t *testing.T) {
 	if err != nil {
 		t.Fatalf("打开测试数据库失败: %v", err)
 	}
-	if err := db.AutoMigrate(&models.TokenRevocationLog{}); err != nil {
+	if err := db.AutoMigrate(&models.TokenRevocationLog{}, &models.AuthTokenSession{}, &models.User{}); err != nil {
 		t.Fatalf("迁移令牌撤销日志失败: %v", err)
 	}
 	jwtConfig := &config.Config{JWT: config.JWTConfig{
@@ -921,9 +943,9 @@ func TestAuthHandler_Logout(t *testing.T) {
 		ExpiresIn: 3600,
 		RefreshIn: 7200,
 	}}
-	tokenManager := auth.NewTokenManager(jwtConfig, nil, nil)
+	tokenManager := auth.NewTokenManager(jwtConfig, nil, nil, db)
 	tokenService := auth.NewTokenRevocationService(auth.NewTokenManagerAdapter(tokenManager), nil, db)
-	authHandler := NewAuthHandler(userService, tokenService)
+	authHandler := NewAuthHandler(userService, tokenService, tokenManager)
 
 	router := gin.New()
 	// 添加错误处理中间件
@@ -961,10 +983,11 @@ func TestAuthHandler_Logout(t *testing.T) {
 		mockUserRepo.Calls = nil
 
 		// 登出必须明确提交当前令牌；使用运行时 JWT 验证撤销链路。
-		token, _, err := middleware.GenerateToken(1, "test@example.com", "lawyer")
-		if err != nil {
-			t.Fatalf("生成测试令牌失败: %v", err)
-		}
+		user := &models.User{ID: 1, Name: "Test User", Email: "test@example.com", Role: "lawyer", Status: "active", Username: "test"}
+		require.NoError(t, db.Create(user).Error)
+		details, err := tokenManager.CreateTokens(context.Background(), user, "test-device", "127.0.0.1", "test-agent")
+		require.NoError(t, err)
+		token := details.AccessToken
 		body, _ := json.Marshal(map[string]string{"token": token})
 		req, _ := http.NewRequest("POST", "/auth/logout", bytes.NewBuffer(body))
 		req.Header.Set("Content-Type", "application/json")
@@ -1020,8 +1043,23 @@ func TestRegisterAlwaysCreatesUnprivilegedUser(t *testing.T) {
 	})
 	mockUserRepo := new(testmock.MockUserRepository)
 	tokenService := &auth.TokenRevocationService{}
+	jwtConfig := &config.Config{
+		JWT: config.JWTConfig{
+			Secret:    "test-secret-key-32-bytes-long-for-testing",
+			ExpiresIn: 3600,
+			RefreshIn: 7200,
+		},
+	}
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("打开测试数据库失败: %v", err)
+	}
+	if err := db.AutoMigrate(&models.AuthTokenSession{}, &models.User{}); err != nil {
+		t.Fatalf("迁移认证会话表失败: %v", err)
+	}
+	tokenManager := auth.NewTokenManager(jwtConfig, nil, nil, db)
 	userService := services.NewUserService(mockUserRepo)
-	authHandler := NewAuthHandler(userService, tokenService)
+	authHandler := NewAuthHandler(userService, tokenService, tokenManager)
 
 	router := gin.New()
 	router.Use(gin.Recovery())
@@ -1067,10 +1105,15 @@ func TestRegisterAlwaysCreatesUnprivilegedUser(t *testing.T) {
 	assert.NotEqual(t, "simple_token_for_dev", tokenStr,
 		"必须返回真实 JWT，不能用 dev 占位符")
 
-	claims, err := middleware.ValidateToken(tokenStr)
-	assert.NoError(t, err, "token 必须可被 middleware.ValidateToken 验证")
+	claims, err := tokenManager.VerifyToken(context.Background(), tokenStr)
+	assert.NoError(t, err, "token 必须可被会话令牌管理器验证")
 	if err == nil {
-		assert.Equal(t, "user", claims.Role, "JWT claims.Role 必须为 user")
+		payload, payloadErr := tokenManager.ExtractTokenMetadata(context.Background(), tokenStr)
+		assert.NoError(t, payloadErr)
+		if payloadErr == nil {
+			assert.Equal(t, "user", payload.Role, "JWT payload.Role 必须为 user")
+		}
+		_ = claims
 	}
 
 	mockUserRepo.AssertExpectations(t)
@@ -1105,7 +1148,7 @@ func TestAdminCanRevokeAnotherUsersTokens(t *testing.T) {
 	tm := &handlerTestTokenManager{revokeAllUserTokensErr: fmt.Errorf("intentional test error")}
 	tokenService := auth.NewTokenRevocationService(tm, nil, nil)
 	userService := services.NewUserService(mockUserRepo)
-	authHandler := NewAuthHandler(userService, tokenService)
+	authHandler := NewAuthHandler(userService, tokenService, nil)
 
 	router := gin.New()
 	router.Use(gin.Recovery())
@@ -1137,7 +1180,7 @@ func TestNonAdminCannotRevokeAnotherUsersTokens(t *testing.T) {
 	tm := &handlerTestTokenManager{}
 	tokenService := auth.NewTokenRevocationService(tm, nil, nil)
 	userService := services.NewUserService(mockUserRepo)
-	authHandler := NewAuthHandler(userService, tokenService)
+	authHandler := NewAuthHandler(userService, tokenService, nil)
 
 	router := gin.New()
 	router.Use(gin.Recovery())

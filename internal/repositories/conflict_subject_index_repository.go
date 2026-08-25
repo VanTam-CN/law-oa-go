@@ -102,7 +102,7 @@ func (r *conflictRepository) collectConflictSubjectIndexSources(ctx context.Cont
 		if strings.TrimSpace(client.Name) == "" {
 			return nil, fmt.Errorf("客户 %d 缺少主体名称，无法完成冲突索引对账", client.ID)
 		}
-		if strings.TrimSpace(client.IDCard) != "" && strings.TrimSpace(client.IDCardDigest) == "" {
+		if (strings.TrimSpace(client.IdentityNumber) != "" || strings.TrimSpace(client.IDCard) != "") && client.IdentityDigestValue() == "" {
 			return nil, fmt.Errorf("客户 %d 的身份标识尚未完成保护回填", client.ID)
 		}
 		clientByID[client.ID] = client
@@ -145,11 +145,12 @@ func (r *conflictRepository) collectConflictSubjectIndexSources(ctx context.Cont
 	for _, matter := range cases {
 		client := clientByID[matter.ClientID]
 		lawyer := userByID[matter.LawyerID]
+		clientAliases := append(nonEmptyAliases(client.Company), splitAliases(client.Aliases)...)
 		sources = append(sources, conflictSubjectIndexSource{
 			SourceType: "CLIENT_ARCHIVE_CASE", SourceID: fmt.Sprintf("case:%d:client:%d", matter.ID, matter.ClientID),
 			CaseID: fmt.Sprint(matter.ID), ClientID: fmt.Sprint(matter.ClientID), SubjectRole: "CLIENT",
-			SubjectType: indexSubjectType(client.Type), OriginalName: client.Name, Aliases: nonEmptyAliases(client.Company),
-			IdentifierType: "ID_CARD", IdentifierDigest: client.IDCardDigest, IdentifierCiphertext: client.IDCardCiphertext,
+			SubjectType: indexSubjectType(client.Type), OriginalName: client.Name, Aliases: clientAliases,
+			IdentifierType: string(client.EffectiveIdentityType()), IdentifierDigest: client.IdentityDigestValue(), IdentifierCiphertext: client.IdentityCiphertextValue(),
 			CaseNumber: matter.CaseNumber, CaseTitle: matter.Title, CaseType: matter.CaseType, CaseDescription: matter.Description,
 			ClientName: client.Name, LawyerName: lawyer.Name, CreatedAt: matter.CreatedAt,
 		})
@@ -162,11 +163,12 @@ func (r *conflictRepository) collectConflictSubjectIndexSources(ctx context.Cont
 		if clientsWithCases[client.ID] {
 			continue
 		}
+		clientAliases := append(nonEmptyAliases(client.Company), splitAliases(client.Aliases)...)
 		sources = append(sources, conflictSubjectIndexSource{
 			SourceType: "CLIENT_ARCHIVE", SourceID: fmt.Sprintf("client:%d", client.ID), ClientID: fmt.Sprint(client.ID),
 			SubjectRole: "CLIENT", SubjectType: indexSubjectType(client.Type), OriginalName: client.Name,
-			Aliases: nonEmptyAliases(client.Company), IdentifierType: "ID_CARD", IdentifierDigest: client.IDCardDigest,
-			IdentifierCiphertext: client.IDCardCiphertext, ClientName: client.Name, CreatedAt: client.CreatedAt,
+			Aliases: clientAliases, IdentifierType: string(client.EffectiveIdentityType()), IdentifierDigest: client.IdentityDigestValue(),
+			IdentifierCiphertext: client.IdentityCiphertextValue(), ClientName: client.Name, CreatedAt: client.CreatedAt,
 		})
 	}
 

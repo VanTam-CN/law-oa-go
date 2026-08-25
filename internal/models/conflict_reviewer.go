@@ -34,6 +34,31 @@ type ConflictReviewerAssignment struct {
 	UpdatedAt          time.Time  `json:"updated_at" gorm:"column:updated_at;not null"`
 }
 
+// ConflictOfficerAppointment records the firm-level appointment and deputy
+// arrangement. It grants eligibility only; every matter still requires a
+// separate assignment and independence check.
+type ConflictOfficerAppointment struct {
+	ID                         string    `json:"id" gorm:"primaryKey;column:id;size:36"`
+	OfficerID                  uint      `json:"officer_id" gorm:"column:officer_id;not null;index"`
+	DeputyID                   *uint     `json:"deputy_id,omitempty" gorm:"column:deputy_id;index"`
+	AppointedBy                uint      `json:"appointed_by" gorm:"column:appointed_by;not null;index"`
+	EffectiveFrom              time.Time `json:"effective_from" gorm:"column:effective_from;not null;index"`
+	EffectiveTo                time.Time `json:"effective_to" gorm:"column:effective_to;not null;index"`
+	RecusalDeclaration         string    `json:"recusal_declaration" gorm:"column:recusal_declaration;type:text;not null"`
+	ExternalMechanismReference string    `json:"external_mechanism_reference,omitempty" gorm:"column:external_mechanism_reference;type:text"`
+	CreatedAt                  time.Time `json:"created_at" gorm:"column:created_at;not null"`
+}
+
+func (ConflictOfficerAppointment) TableName() string { return "conflict_officer_appointments" }
+
+func (ConflictOfficerAppointment) BeforeDelete(*gorm.DB) error {
+	return errors.New("conflict officer appointments are append-only")
+}
+
+func (ConflictOfficerAppointment) BeforeUpdate(*gorm.DB) error {
+	return errors.New("conflict officer appointments are append-only")
+}
+
 func (ConflictReviewerAssignment) TableName() string { return "conflict_reviewer_assignments" }
 
 func (ConflictReviewerAssignment) BeforeDelete(*gorm.DB) error {

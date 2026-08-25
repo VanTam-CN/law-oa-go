@@ -13,8 +13,13 @@
 - ✅ 批量导入（支持 CSV/Excel）
 - ✅ 批量删除功能
 - ✅ 客户统计信息
-- ✅ 身份证号验证
+- ✅ 自然人/企业通用强身份类型与加密存储
+- ✅ 独立主联系人记录，电话和邮箱加密落库
 - ✅ 重复数据检查
+
+客户邮箱为客户主体的公共邮箱，不是主联系人邮箱。该字段可选：未填写时数据库保存为 `NULL`，多个无邮箱客户可以并存；非空邮箱仍要求唯一。`created_by` 由服务端根据当前登录账号写入，客户端不得传入或覆盖。创建律师在首个案件建立前可以继续查看和维护该客户，但任何后续隔离墙仍优先于创建人权限。
+
+主联系人使用独立的 `/clients/:id/primary-contact` 接口。联系人电话和邮箱只以密文落库；只有通过该客户对象权限检查的账号才能读取，修改者还必须具有客户维护权限。旧 `clients.contact_person/contact_phone` 仅作为历史兼容显示，不再由新页面写入，也不得把脱敏后的旧电话回存为真实号码。
 
 ## API 接口
 
@@ -22,46 +27,70 @@
 
 **请求**
 ```http
-GET /api/v1/clients?page=1&size=10&keyword=张三&client_type=individual&status=active
+GET /api/v1/clients?page=1&page_size=10&search=张三&type=个人&status=active
 Authorization: Bearer <token>
 ```
 
 **查询参数**
 - `page`: 页码（默认：1）
-- `size`: 每页大小（默认：10，最大：100）
-- `keyword`: 搜索关键词（可选，支持客户名称、手机号、邮箱、公司名称）
-- `client_type`: 客户类型（可选：individual/company）
+- `page_size`: 每页大小（默认：20，最大：100）
+- `search`: 搜索关键词（可选；和 `name` 共用搜索入口，优先使用 `search`）
+- `name`: 客户名称搜索（可选）
+- `type`: 客户类型（可选：`个人`/`企业`）
 - `status`: 状态（可选：active/inactive）
-- `sort_field`: 排序字段（可选：id/client_name/created_at）
-- `sort_order`: 排序方式（可选：asc/desc）
+- `company`: 公司名称过滤（可选）
 
 **响应**
 ```json
 {
-  "code": 200,
-  "message": "获取成功",
+  "success": true,
   "data": {
     "clients": [
       {
         "id": 1,
-        "client_name": "张三",
-        "phone": "13800138001",
+        "version": 1,
+        "name": "张三",
+        "type": "个人",
+        "phone": "138****8001",
         "email": "zhangsan@example.com",
-        "client_type": "individual",
         "company": "",
-        "id_card": "110101199001011234",
+        "industry": "",
+        "identity_type": "ID_CARD",
+        "identity_number": "110***1234",
+        "identity_status": "已登记（受保护）",
+        "id_card": "110***1234",
+        "aliases": "",
         "address": "北京市朝阳区",
         "contact_person": "",
+        "contact_phone": "",
+        "source": "",
         "status": "active",
-        "remark": "",
-        "created_at": "2024-01-01 10:00:00",
-        "updated_at": "2024-01-01 10:00:00",
-        "case_count": 3
+        "notes": "",
+        "created_at": "2024-01-01T10:00:00+08:00",
+        "updated_at": "2024-01-01T10:00:00+08:00",
+        "completeness": {
+          "score": 100,
+          "missing_fields": [],
+          "ready_for_conflict_check": true
+        },
+        "related_parties": [],
+        "historical_matters": []
       }
     ],
-    "total": 100,
-    "page": 1,
-    "size": 10
+    "pagination": {
+      "page": 1,
+      "page_size": 10,
+      "total": 100,
+      "total_pages": 10,
+      "has_next": true,
+      "has_prev": false
+    }
+  },
+  "meta": {
+    "timestamp": "2026-08-24T12:00:00+08:00",
+    "version": "v2.4.0",
+    "server": "law-oa-go",
+    "environment": "development"
   }
 }
 ```
@@ -77,23 +106,24 @@ Authorization: Bearer <token>
 **响应**
 ```json
 {
-  "code": 200,
-  "message": "获取成功",
+  "success": true,
   "data": {
     "id": 1,
-    "client_name": "张三",
-    "phone": "13800138001",
+    "name": "张三",
+    "type": "个人",
+    "phone": "138****8001",
     "email": "zhangsan@example.com",
-    "client_type": "individual",
     "company": "",
-    "id_card": "110101199001011234",
+    "identity_type": "ID_CARD",
+    "identity_number": "110***1234",
+    "identity_status": "已登记（受保护）",
     "address": "北京市朝阳区",
     "contact_person": "",
     "status": "active",
-    "remark": "",
+    "notes": "",
     "created_at": "2024-01-01 10:00:00",
     "updated_at": "2024-01-01 10:00:00",
-    "case_count": 3
+    "version": 1
   }
 }
 ```
@@ -107,38 +137,44 @@ Authorization: Bearer <token>
 Content-Type: application/json
 
 {
-  "client_name": "李四",
+  "name": "李四",
+  "type": "个人",
   "phone": "13800138002",
   "email": "lisi@example.com",
-  "client_type": "individual",
-  "id_card": "110101199002021234",
+  "identity_type": "ID_CARD",
+  "identity_number": "110101199002021234",
+  "aliases": "",
   "address": "北京市海淀区",
   "contact_person": "",
-  "remark": ""
+  "notes": ""
 }
 ```
 
 **请求体参数**
-- `client_name`: 客户名称（必填，2-100字符）
-- `phone`: 手机号（必填，11位数字）
-- `email`: 邮箱（必填，有效邮箱格式）
-- `client_type`: 客户类型（必填：individual/company）
+- `name`: 客户名称（必填，1-100字符）
+- `phone`: 联系电话（可选，最多20字符）
+- `email`: 邮箱（可选，有效邮箱格式）
+- `type`: 客户类型（必填：`个人`/`企业`）
 - `company`: 公司名称（企业客户必填，最多100字符）
-- `id_card`: 身份证号（个人客户必填，18位）
-- `address`: 地址（必填，最多255字符）
-- `contact_person`: 联系人（可选，最多50字符）
-- `remark`: 备注（可选，最多255字符）
+- `identity_type`: 身份类型；个人允许 `ID_CARD/PASSPORT/OTHER`，企业允许 `SOCIAL_CREDIT_CODE/BUSINESS_LICENSE/ORGANIZATION_CODE/OTHER`
+- `identity_number`: 身份原文，仅在写入请求中传输；服务端加密后不会原样返回
+- `aliases`: 别名/曾用名，多个值使用逗号或分号分隔
+- `address`: 地址（可选，最多255字符）
+- `contact_person`: 旧版兼容字段；新接入不得使用，请改用主联系人接口
+- `notes`: 备注（可选，最多1000字符）
 
 **响应**
 ```json
 {
-  "code": 201,
-  "message": "创建成功",
+  "success": true,
   "data": {
     "id": 2,
-    "client_name": "李四",
-    "phone": "13800138002",
-    "email": "lisi@example.com"
+    "name": "李四",
+    "phone": "138****8002",
+    "email": "lisi@example.com",
+    "identity_type": "ID_CARD",
+    "identity_number": "110***1234",
+    "identity_status": "已登记（受保护）"
   }
 }
 ```
@@ -152,27 +188,28 @@ Authorization: Bearer <token>
 Content-Type: application/json
 
 {
-  "client_name": "李四（更新）",
+  "version": 1,
+  "name": "李四（更新）",
   "phone": "13800138002",
   "email": "lisi-updated@example.com",
-  "client_type": "individual",
-  "id_card": "110101199002021234",
+  "type": "个人",
+  "identity_type": "ID_CARD",
+  "identity_number": "110101199002021234",
   "address": "北京市海淀区更新地址",
   "contact_person": "",
   "status": "active",
-  "remark": "更新备注"
+  "notes": "更新备注"
 }
 ```
 
 **响应**
 ```json
 {
-  "code": 200,
-  "message": "更新成功",
+  "success": true,
   "data": {
     "id": 2,
-    "client_name": "李四（更新）",
-    "phone": "13800138002",
+    "name": "李四（更新）",
+    "phone": "138****8002",
     "email": "lisi-updated@example.com"
   }
 }
@@ -206,22 +243,71 @@ Authorization: Bearer <token>
 **响应**
 ```json
 {
-  "code": 200,
-  "message": "获取成功",
+  "success": true,
   "data": {
-    "total_clients": 150,
-    "individual_count": 100,
-    "company_count": 50,
-    "active_count": 140,
-    "inactive_count": 10,
-    "monthly_new_clients": 25
+    "total": 150,
+    "active_clients": 140,
+    "inactive_clients": 10,
+    "monthly_new": 25,
+    "type_stats": null,
+    "status_stats": null,
+    "source_stats": null
+  },
+  "meta": {
+    "timestamp": "2026-08-24T12:00:00+08:00",
+    "version": "v2.4.0",
+    "server": "law-oa-go",
+    "environment": "development"
   }
 }
 ```
 
+### 7. 获取主联系人
+
+```http
+GET /api/v1/clients/2/primary-contact
+Authorization: Bearer <token>
+```
+
+无独立联系人记录时 `data` 为 `null`。有记录时仅向有权查看该客户的账号返回：
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": 8,
+    "client_id": 2,
+    "name": "王示例",
+    "position": "法务负责人",
+    "phone": "021-55550000",
+    "email": "legal@example.test",
+    "is_primary": true,
+    "version": 2
+  }
+}
+```
+
+### 8. 新建或更新主联系人
+
+```http
+PUT /api/v1/clients/2/primary-contact
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "version": 2,
+  "name": "王示例",
+  "position": "总法律顾问",
+  "phone": "021-55550001",
+  "email": "gc@example.test"
+}
+```
+
+首次创建时 `version` 传 `0` 或省略；更新时必须传当前联系人版本。版本过期返回 `409 CLIENT_CONTACT_VERSION_CONFLICT`，客户端应刷新后让用户确认，不得自动覆盖。保存联系人不会修改客户公共邮箱、客户电话或客户备注。
 
 
-### 8. 批量导入客户 (待实现)
+
+### 9. 批量导入客户 (待实现)
 
 > **注意：** 此功能当前未实现。
 

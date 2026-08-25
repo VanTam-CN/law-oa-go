@@ -27,6 +27,7 @@ import (
 type DemoAggregateHandler struct {
 	db              *gorm.DB
 	conflictService services.ConflictDetectionService
+	contactService  *services.ClientContactService
 	authz           *services.AuthorizationService
 }
 
@@ -50,6 +51,10 @@ func (h *DemoAggregateHandler) SetConflictDetectionService(service services.Conf
 
 func (h *DemoAggregateHandler) SetAuthorizationService(authz *services.AuthorizationService) {
 	h.authz = authz
+}
+
+func (h *DemoAggregateHandler) SetClientContactService(service *services.ClientContactService) {
+	h.contactService = service
 }
 
 // authorizeIntakeClient keeps a client selected in the intake workbench
@@ -92,6 +97,7 @@ func (h *DemoAggregateHandler) CommandCenter(c *gin.Context) {
 	caseStageArgs := []interface{}{}
 	pendingApprovalWhere := "deleted_at IS NULL AND status IN ?"
 	pendingApprovalArgs := []interface{}{pendingApprovalStatuses}
+	role := c.GetString("role")
 	inboxWhere := h.inboxFilter("is_completed = ?")
 	inboxArgs := []interface{}{false}
 	if userID, ok := middleware.GetCurrentUserID(c); ok && userID > 0 {
@@ -116,6 +122,12 @@ func (h *DemoAggregateHandler) CommandCenter(c *gin.Context) {
 		pendingApprovalArgs = append(pendingApprovalArgs, fmt.Sprint(lawyerID), fmt.Sprint(lawyerID))
 		inboxWhere += " AND user_id = ?"
 		inboxArgs = append(inboxArgs, lawyerID)
+	} else if userID, ok := middleware.GetCurrentUserID(c); ok && services.IsConflictReviewRole(role) {
+		// Dedicated conflict reviewers are not general matter managers, but they
+		// still need approvals explicitly assigned to them. Object-level checks
+		// below continue to enforce the ethical-wall boundary.
+		pendingApprovalWhere += " AND (applicant_id = ? OR current_approver_id = ?)"
+		pendingApprovalArgs = append(pendingApprovalArgs, fmt.Sprint(userID), fmt.Sprint(userID))
 	}
 	if canViewAllMatterData(c) {
 		// inbox_items only stores an assignee and a source ID. The legacy
@@ -133,8 +145,10 @@ func (h *DemoAggregateHandler) CommandCenter(c *gin.Context) {
 			activeCasesArgs = nil
 			caseStageWhere = "1 = 0"
 			caseStageArgs = nil
-			pendingApprovalWhere = "1 = 0"
-			pendingApprovalArgs = nil
+			if !services.IsConflictReviewRole(role) {
+				pendingApprovalWhere = "1 = 0"
+				pendingApprovalArgs = nil
+			}
 			inboxWhere = "1 = 0"
 			inboxArgs = nil
 		}
@@ -214,6 +228,25 @@ func (h *DemoAggregateHandler) ClientMasterProfile(c *gin.Context) {
 		return
 	}
 	safeClient := sanitizeClientAggregateRow(client)
+	clientIDValue, _ := strconv.ParseUint(strings.TrimSpace(fmt.Sprint(client["id"])), 10, 64)
+	var primaryContact *services.ClientContactResponse
+	if h.contactService != nil {
+		contact, contactErr := h.contactService.GetPrimaryContact(c.Request.Context(), uint(clientIDValue))
+		if contactErr != nil {
+			common.APIInternalServerError(c, "读取主联系人失败", contactErr.Error())
+			return
+		}
+		primaryContact = contact
+	}
+	if primaryContact == nil && strings.TrimSpace(valueString(client, "contact_person")) != "" {
+		primaryContact = &services.ClientContactResponse{
+			ClientID:  uint(clientIDValue),
+			Name:      valueString(client, "contact_person"),
+			Phone:     valueString(safeClient, "contact_phone"),
+			IsPrimary: true,
+			Legacy:    true,
+		}
+	}
 
 	actorID, _ := middleware.GetCurrentUserID(c)
 	matterWhere := `client_id = ? AND deleted_at IS NULL AND (
@@ -245,6 +278,7 @@ func (h *DemoAggregateHandler) ClientMasterProfile(c *gin.Context) {
 
 	common.APISuccess(c, gin.H{
 		"client":           safeClient,
+		"primary_contact":  primaryContact,
 		"completeness":     h.clientCompleteness(safeClient),
 		"related_parties":  h.clientRelatedParties(c, id, fmt.Sprint(client["name"])),
 		"matter_history":   h.recentRows("cases", matterWhere, 5, matterArgs...),
@@ -435,6 +469,7 @@ func (h *DemoAggregateHandler) riskRows(c *gin.Context, limit int, includeAll bo
 	if limit > 0 && len(rows) > limit {
 		rows = rows[:limit]
 	}
+	approvalLinks := h.visibleConflictApprovalLinks(c)
 	items := make([]gin.H, 0, len(rows))
 	for _, row := range rows {
 		checkID := fmt.Sprint(row["check_id"])
@@ -466,6 +501,7 @@ func (h *DemoAggregateHandler) riskRows(c *gin.Context, limit int, includeAll bo
 		partyRole := firstNonEmpty(valueString(primaryEvidence, "partyRole"), valueString(primaryEvidence, "party_role"))
 		ruleCode := firstNonEmpty(valueString(primaryEvidence, "ruleCode"), valueString(primaryEvidence, "rule_code"))
 		visibleRiskLevel := row["risk_level"]
+		visibleHasConflict := row["has_conflict"]
 		visibleConflictCases := conflictCases
 		visibleCheckResult := checkResult
 		visibleSearchParameters := row["search_parameters"]
@@ -475,6 +511,18 @@ func (h *DemoAggregateHandler) riskRows(c *gin.Context, limit int, includeAll bo
 			visibleSearchParameters = redactConflictQueueSearchParameters(row["search_parameters"])
 			if isNoConflictQueueRecord(row, checkResult, conflictCases) {
 				visibleCheckResult = redactNoConflictQueueCheckResult(checkResult)
+			} else if isCoverageLimitedNoEvidenceQueueRecord(row, checkResult, conflictCases) {
+				visibleCheckResult = redactCoverageLimitedNoEvidenceCheckResult(checkResult)
+				sourceCase = ""
+				matchedSubject = ""
+				matchedEntity = ""
+				matchType = ""
+				matchAlgorithm = ""
+				partyRole = ""
+				ruleCode = ""
+				visibleRiskLevel = "REVIEW_REQUIRED"
+				visibleHasConflict = false
+				evidenceSummary = "未发现匹配记录，但检索范围受限，需独立人工复核。"
 			} else {
 				visibleConflictCases = redactConflictQueueCases(conflictCases)
 				visibleCheckResult = redactConflictQueueCheckResult(checkResult)
@@ -489,7 +537,7 @@ func (h *DemoAggregateHandler) riskRows(c *gin.Context, limit int, includeAll bo
 				evidenceSummary = "存在受隔离记录，请联系独立冲突核查人。"
 			}
 		}
-		items = append(items, gin.H{
+		item := gin.H{
 			"id":                row["check_id"],
 			"case_id":           firstNonEmpty(valueString(searchParameters, "subjectCaseId"), valueString(searchParameters, "subject_case_id")),
 			"case_number":       firstNonEmpty(valueString(searchParameters, "subjectCaseNumber"), valueString(searchParameters, "subject_case_number")),
@@ -509,7 +557,7 @@ func (h *DemoAggregateHandler) riskRows(c *gin.Context, limit int, includeAll bo
 			"evidence_summary":  evidenceSummary,
 			"status":            row["check_status"],
 			"risk_level":        visibleRiskLevel,
-			"has_conflict":      row["has_conflict"],
+			"has_conflict":      visibleHasConflict,
 			"owner":             row["user_id"],
 			"duration":          row["duration"],
 			"check_time":        row["check_time"],
@@ -518,9 +566,46 @@ func (h *DemoAggregateHandler) riskRows(c *gin.Context, limit int, includeAll bo
 			"search_parameters": visibleSearchParameters,
 			"check_result":      jsonStringValue(visibleCheckResult),
 			"conflict_cases":    visibleConflictCases,
-		})
+		}
+		if approval, ok := approvalLinks[checkID]; ok {
+			item["approval_id"] = approval["id"]
+			item["approval_status"] = approval["status"]
+			item["approval_request_number"] = approval["request_number"]
+			item["approval_current_approver_id"] = approval["current_approver_id"]
+		}
+		items = append(items, item)
 	}
 	return items
+}
+
+// visibleConflictApprovalLinks returns only active conflict approvals the
+// current actor may open. Non-management actors are constrained to approvals
+// they submitted or are currently assigned to process.
+func (h *DemoAggregateHandler) visibleConflictApprovalLinks(c *gin.Context) map[string]map[string]interface{} {
+	links := make(map[string]map[string]interface{})
+	if c == nil || !h.tableExists("approval_requests") {
+		return links
+	}
+	where := "deleted_at IS NULL AND type = ? AND status IN ?"
+	args := []interface{}{"conflict_approval", []string{"submitted", "under_review", "resubmitted"}}
+	if !canViewAllMatterData(c) {
+		userID, ok := middleware.GetCurrentUserID(c)
+		if !ok || userID == 0 {
+			return links
+		}
+		where += " AND (applicant_id = ? OR current_approver_id = ?)"
+		args = append(args, fmt.Sprint(userID), fmt.Sprint(userID))
+	}
+	for _, row := range h.visibleApprovalRows(c, where, args...) {
+		checkID := firstNonEmpty(strings.TrimSpace(fmt.Sprint(row["conflict_check_id"])))
+		if checkID == "" {
+			continue
+		}
+		if _, exists := links[checkID]; !exists {
+			links[checkID] = row
+		}
+	}
+	return links
 }
 
 // isNoConflictQueueRecord identifies the only conflict result that may be
@@ -559,6 +644,36 @@ func isNoConflictQueueRecord(row map[string]interface{}, checkResult map[string]
 		fmt.Sprint(row["risk_level"]),
 	))
 	return risk == "MINIMAL" || risk == "LOW"
+}
+
+// isCoverageLimitedNoEvidenceQueueRecord distinguishes an incomplete search
+// from a real restricted hit. Both remain blocked for independent review, but
+// the ordinary lawyer must not be told that a hidden matter exists when the
+// engine only knows that archive coverage is incomplete.
+func isCoverageLimitedNoEvidenceQueueRecord(row map[string]interface{}, checkResult map[string]interface{}, conflictCases []map[string]interface{}) bool {
+	if len(conflictCases) > 0 {
+		return false
+	}
+	decision := objectValue(checkResult["decision"])
+	coverageStatus := strings.ToUpper(firstNonEmpty(
+		valueString(decision, "coverageStatus"),
+		valueString(decision, "coverage_status"),
+		valueString(checkResult, "coverageStatus"),
+		valueString(checkResult, "coverage_status"),
+	))
+	if coverageStatus != "COVERAGE_LIMITED" {
+		return false
+	}
+	if interfaceInt(decision["restrictedCount"]) > 0 ||
+		interfaceInt(decision["evidenceCount"]) > 0 ||
+		len(mapSliceValue(checkResult["evidence"])) > 0 ||
+		len(mapSliceValue(checkResult["matchEvidence"])) > 0 ||
+		len(mapSliceValue(checkResult["conflictCases"])) > 0 {
+		return false
+	}
+	assessment := objectValue(checkResult["riskAssessment"])
+	return len(mapSliceValue(assessment["evidence"])) == 0 &&
+		len(mapSliceValue(assessment["matchEvidence"])) == 0
 }
 
 // visibleConflictRecordRows is the aggregate-layer counterpart of the
@@ -834,6 +949,26 @@ func redactNoConflictQueueCheckResult(checkResult map[string]interface{}) map[st
 			projected[key] = subjects
 		}
 	}
+	return projected
+}
+
+func redactCoverageLimitedNoEvidenceCheckResult(checkResult map[string]interface{}) map[string]interface{} {
+	projected := redactNoConflictQueueCheckResult(checkResult)
+	decision := objectValue(projected["decision"])
+	decision["status"] = "REVIEW_REQUIRED"
+	decision["requiresManualReview"] = true
+	decision["evidenceCount"] = 0
+	decision["recommendation"] = "未发现匹配记录，但检索范围受限；请由独立冲突核查人补充核查。"
+	projected["decision"] = decision
+	projected["riskAssessment"] = map[string]interface{}{
+		"overallRisk":      "REVIEW_REQUIRED",
+		"riskScore":        nil,
+		"riskReason":       "未发现匹配记录，但权威档案覆盖完整性尚未确认",
+		"requiresApproval": true,
+		"riskFactors":      []interface{}{"检索范围受限"},
+		"mitigation":       []interface{}{"由独立冲突核查人补充核查"},
+	}
+	projected["recommendations"] = []interface{}{"未发现匹配记录，但检索范围受限，不能据此确认无冲突。"}
 	return projected
 }
 
@@ -1439,6 +1574,30 @@ func isAssistantRole(c *gin.Context) bool {
 }
 
 func (h *DemoAggregateHandler) canAccessClientProfile(c *gin.Context, clientID string) bool {
+	if h.authz != nil {
+		parsedClientID, err := strconv.ParseUint(strings.TrimSpace(clientID), 10, 32)
+		if err != nil || parsedClientID == 0 {
+			common.APIBadRequest(c, "客户编号无效", "客户编号必须为有效数字")
+			return false
+		}
+		actor, ok := currentAuthActor(c)
+		if !ok {
+			return false
+		}
+		allowed, err := h.authz.CanReadClient(c.Request.Context(), actor, uint(parsedClientID))
+		if err != nil {
+			common.APIInternalServerError(c, "权限校验失败", err.Error())
+			return false
+		}
+		if !allowed {
+			forbidObjectAccess(c)
+			return false
+		}
+		return true
+	}
+
+	// Compatibility path for isolated aggregate unit tests. Production wiring
+	// always supplies the centralized authorization service above.
 	actorID, ok := currentUserIDString(c)
 	if !ok {
 		return false
@@ -1494,9 +1653,23 @@ func (h *DemoAggregateHandler) clientCompleteness(client map[string]interface{})
 		}
 		checks = append(checks, gin.H{"key": item.Key, "label": item.Label, "status": status})
 	}
+	identityCiphertext := firstNonEmpty(valueString(client, "identity_number_ciphertext"), valueString(client, "id_card_ciphertext"))
+	identityDigest := firstNonEmpty(valueString(client, "identity_number_digest"), valueString(client, "id_card_digest"))
+	identityComplete := identityCiphertext != "" && identityDigest != ""
+	identityLabel := "身份证件号码"
+	if strings.EqualFold(strings.TrimSpace(valueString(client, "type")), "企业") {
+		identityLabel = "统一社会信用代码"
+	}
+	identityStatus := "complete"
+	if !identityComplete {
+		missing = append(missing, "protected_identity")
+		identityStatus = "missing"
+	}
+	checks = append(checks, gin.H{"key": "protected_identity", "label": identityLabel, "status": identityStatus})
 	score := 0
-	if len(required) > 0 {
-		score = (len(required) - len(missing)) * 100 / len(required)
+	totalRequired := len(required) + 1
+	if totalRequired > 0 {
+		score = (totalRequired - len(missing)) * 100 / totalRequired
 	}
 	return gin.H{
 		"score":                    score,
@@ -1635,6 +1808,10 @@ func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
 			return
 		}
 	}
+	if !isAssistantRole(c) && len(parties) > 0 && !h.intakePartyIdentitySchemaReady() {
+		common.NewAPIError(c, http.StatusServiceUnavailable, "INTAKE_PARTY_IDENTITY_SCHEMA_REQUIRED", "接案当事人身份保护字段尚未迁移，已阻止保存；请执行数据库迁移 000070")
+		return
+	}
 	now := time.Now()
 	intakeID := uuid.NewString()
 	intakePayload["id"] = intakeID
@@ -1656,16 +1833,10 @@ func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
 			}
 			if h.tableExists("case_intake_parties") {
 				for _, party := range parties {
-					row := filterMap(party, allowedCaseIntakePartyFields)
-					row["intake_id"] = intakeID
-					row["entity_name"] = stringValue(row["entity_name"], stringValue(party["name"], "未命名主体"))
-					row["entity_type"] = stringValue(row["entity_type"], "company")
-					row["party_role"] = stringValue(row["party_role"], stringValue(party["role"], "related_party"))
-					if _, ok := row["relation_depth"]; !ok {
-						row["relation_depth"] = 0
+					row, err := prepareCaseIntakePartyRow(party, intakeID, now)
+					if err != nil {
+						return err
 					}
-					row["metadata"] = jsonStringValue(row["metadata"])
-					row["created_at"] = now
 					if err := tx.Table("case_intake_parties").Create(row).Error; err != nil {
 						return err
 					}
@@ -1701,11 +1872,19 @@ func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
 					return
 				}
 			}
+			if isSubjectWorkflowError(err) {
+				writeSubjectWorkflowError(c, err)
+				return
+			}
 			common.APIInternalServerError(c, "创建接案失败", err.Error())
 			return
 		}
 	}
-	intakePayload["parties"] = parties
+	safeParties := make([]map[string]interface{}, 0, len(parties))
+	for _, party := range parties {
+		safeParties = append(safeParties, sanitizeAggregateRow("case_intake_parties", party))
+	}
+	intakePayload["parties"] = safeParties
 	intakePayload["materials"] = materials
 	c.JSON(http.StatusCreated, common.APIResponse{Success: true, Data: intakePayload, Meta: common.ResponseMeta{Timestamp: now, Version: "v1", Server: "law-oa-go", Environment: "development"}})
 }
@@ -1746,6 +1925,10 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 	}
 	if _, ok := payload["metadata"]; ok {
 		payload["metadata"] = jsonStringValue(payload["metadata"])
+	}
+	if !isAssistantRole(c) && len(parties) > 0 && !h.intakePartyIdentitySchemaReady() {
+		common.NewAPIError(c, http.StatusServiceUnavailable, "INTAKE_PARTY_IDENTITY_SCHEMA_REQUIRED", "接案当事人身份保护字段尚未迁移，已阻止更新；请执行数据库迁移 000070")
+		return
 	}
 	payload["updated_at"] = time.Now()
 	if !h.tableExists("case_intakes") {
@@ -1821,16 +2004,10 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 				return err
 			}
 			for _, party := range parties {
-				row := filterMap(party, allowedCaseIntakePartyFields)
-				row["intake_id"] = id
-				row["entity_name"] = stringValue(row["entity_name"], stringValue(party["name"], "未命名主体"))
-				row["entity_type"] = stringValue(row["entity_type"], "company")
-				row["party_role"] = stringValue(row["party_role"], stringValue(party["role"], "related_party"))
-				if _, exists := row["relation_depth"]; !exists {
-					row["relation_depth"] = 0
+				row, err := prepareCaseIntakePartyRow(party, id, now)
+				if err != nil {
+					return err
 				}
-				row["metadata"] = jsonStringValue(row["metadata"])
-				row["created_at"] = now
 				if err := tx.Table("case_intake_parties").Create(row).Error; err != nil {
 					return err
 				}
@@ -1860,6 +2037,10 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 		return nil
 	})
 	if err != nil {
+		if isSubjectWorkflowError(err) {
+			writeSubjectWorkflowError(c, err)
+			return
+		}
 		common.APIInternalServerError(c, "更新接案失败", err.Error())
 		return
 	}
@@ -1869,6 +2050,66 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 		return
 	}
 	common.APISuccess(c, updated)
+}
+
+func prepareCaseIntakePartyRow(party map[string]interface{}, intakeID interface{}, now time.Time) (map[string]interface{}, error) {
+	row := filterMap(party, allowedCaseIntakePartyFields)
+	row["intake_id"] = intakeID
+	row["entity_name"] = strings.TrimSpace(stringValue(row["entity_name"], stringValue(party["name"], "")))
+	row["entity_type"] = normalizeIntakeEntityType(stringValue(row["entity_type"], stringValue(party["entityType"], "")))
+	row["party_role"] = strings.ToLower(strings.TrimSpace(stringValue(row["party_role"], stringValue(party["role"], "related_party"))))
+	if row["entity_name"] == "" {
+		return nil, services.NewSubjectWorkflowError("INTAKE_PARTY_NAME_REQUIRED", "接案当事人名称不能为空")
+	}
+	if _, ok := row["relation_depth"]; !ok {
+		row["relation_depth"] = 0
+	}
+	row["metadata"] = jsonStringValue(row["metadata"])
+	row["created_at"] = now
+	if row["party_role"] == "client" {
+		return row, nil
+	}
+	identityType := strings.ToUpper(strings.TrimSpace(stringValue(party["identity_type"], stringValue(party["identityType"], ""))))
+	identityNumber := security.NormalizeIdentityNumber(identityType, stringValue(party["identity_number"], stringValue(party["identityNumber"], "")))
+	if !validIntakeIdentityType(row["entity_type"], identityType) || len([]rune(identityNumber)) < 4 {
+		return nil, services.NewSubjectWorkflowError("INTAKE_PARTY_IDENTITY_REQUIRED", fmt.Sprintf("当事人“%s”必须提供与主体类型匹配的可核验身份标识", row["entity_name"]))
+	}
+	ciphertext, digest, err := security.ProtectIdentityNumber(identityNumber)
+	if err != nil {
+		return nil, services.NewSubjectWorkflowError("SUBJECT_DATA_KEY_REQUIRED", "主体身份保护密钥不可用，已阻止保存接案当事人")
+	}
+	row["identity_type"] = identityType
+	row["identity_number_ciphertext"] = ciphertext
+	row["identity_number_digest"] = digest
+	row["aliases"] = strings.Join(stringListValue(firstNonEmptyValue(party["aliases"], party["alias"])), ",")
+	return row, nil
+}
+
+func normalizeIntakeEntityType(value string) string {
+	switch strings.ToUpper(strings.TrimSpace(value)) {
+	case "PERSON", "INDIVIDUAL", "个人", "自然人":
+		return "INDIVIDUAL"
+	case "ORGANIZATION", "组织", "其他组织":
+		return "ORGANIZATION"
+	default:
+		return "LEGAL_PERSON"
+	}
+}
+
+func validIntakeIdentityType(entityType interface{}, identityType string) bool {
+	if fmt.Sprint(entityType) == "INDIVIDUAL" {
+		return identityType == "ID_CARD" || identityType == "PASSPORT" || identityType == "OTHER"
+	}
+	return identityType == "SOCIAL_CREDIT_CODE" || identityType == "BUSINESS_LICENSE" || identityType == "ORGANIZATION_CODE" || identityType == "OTHER"
+}
+
+func (h *DemoAggregateHandler) intakePartyIdentitySchemaReady() bool {
+	for _, column := range []string{"identity_type", "identity_number_ciphertext", "identity_number_digest", "aliases"} {
+		if !h.hasColumn("case_intake_parties", column) {
+			return false
+		}
+	}
+	return true
 }
 
 // ConfirmIntakeFacts records the lawyer's accountability for the factual
@@ -1967,26 +2208,6 @@ func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
 		return
 	}
 	clientName := firstNonEmpty(fmt.Sprint(client["name"]), fmt.Sprint(intake["client_name"]))
-	clientIdentifiers := stringMapValue(firstNonEmptyValue(
-		client["identifiers"],
-	))
-	idCard := valueString(client, "id_card")
-	if idCard == "" {
-		idCard, _ = security.DecryptIdentityNumber(valueString(client, "id_card_ciphertext"))
-	}
-	if idCard != "" {
-		if clientIdentifiers == nil {
-			clientIdentifiers = map[string]string{}
-		}
-		clientIdentifiers["id_card"] = idCard
-	}
-	if creditCode := firstNonEmpty(valueString(client, "unified_social_credit_code"), valueString(client, "unifiedSocialCreditCode")); creditCode != "" {
-		if clientIdentifiers == nil {
-			clientIdentifiers = map[string]string{}
-		}
-		clientIdentifiers["unified_social_credit_code"] = creditCode
-	}
-	clientAliases := stringListValue(firstNonEmptyValue(metadata["client_aliases"], metadata["clientAliases"]))
 	clientType := strings.ToUpper(strings.TrimSpace(fmt.Sprint(client["type"])))
 	if clientType == "企业" || clientType == "公司" || clientType == "COMPANY" {
 		clientType = "COMPANY"
@@ -1995,6 +2216,44 @@ func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
 	} else {
 		clientType = "ANY"
 	}
+	clientIdentifiers := stringMapValue(firstNonEmptyValue(
+		client["identifiers"],
+	))
+	clientIdentityCiphertext := firstNonEmpty(valueString(client, "identity_number_ciphertext"), valueString(client, "id_card_ciphertext"))
+	clientIdentityDigest := firstNonEmpty(valueString(client, "identity_number_digest"), valueString(client, "id_card_digest"))
+	if clientIdentityCiphertext == "" || clientIdentityDigest == "" {
+		common.NewAPIError(c, http.StatusConflict, "INTAKE_CLIENT_IDENTITY_REQUIRED", "客户主档案缺少受保护的可核验身份标识，不能运行冲突检测")
+		return
+	}
+	clientIdentity, decryptErr := security.DecryptIdentityNumber(clientIdentityCiphertext)
+	if decryptErr != nil || strings.TrimSpace(clientIdentity) == "" {
+		common.NewAPIError(c, http.StatusConflict, "CLIENT_IDENTITY_UNREADABLE", "客户主档案的身份标识无法安全读取，不能运行冲突检测")
+		return
+	}
+	if clientIdentifiers == nil {
+		clientIdentifiers = map[string]string{}
+	}
+	clientIdentityType := strings.ToLower(strings.TrimSpace(valueString(client, "identity_type")))
+	switch strings.ToUpper(clientIdentityType) {
+	case "SOCIAL_CREDIT_CODE":
+		clientIdentityType = "unified_social_credit_code"
+	case "BUSINESS_LICENSE":
+		clientIdentityType = "business_license"
+	case "ORGANIZATION_CODE":
+		clientIdentityType = "organization_code"
+	case "PASSPORT":
+		clientIdentityType = "passport"
+	case "ID_CARD":
+		clientIdentityType = "id_card"
+	default:
+		if clientType == "COMPANY" {
+			clientIdentityType = "unified_social_credit_code"
+		} else {
+			clientIdentityType = "id_card"
+		}
+	}
+	clientIdentifiers[clientIdentityType] = security.NormalizeIdentityNumber(clientIdentityType, clientIdentity)
+	clientAliases := stringListValue(firstNonEmptyValue(metadata["client_aliases"], metadata["clientAliases"]))
 	lawyerID := actorID
 	if canViewAllMatterData(c) {
 		lawyerID = firstNonEmpty(valueString(metadata, "lawyer_id"), actorID)
@@ -2034,7 +2293,18 @@ func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
 				common.APIBadRequest(c, "冲突检查前置资料不完整", "对方或关联方身份标识未登记在受保护的主体档案中")
 				return
 			}
-			identifiers := stringMapValue(row["identifiers"])
+			identityType := strings.ToUpper(strings.TrimSpace(valueString(row, "identity_type")))
+			ciphertext := strings.TrimSpace(valueString(row, "identity_number_ciphertext"))
+			if identityType == "" || ciphertext == "" || strings.TrimSpace(valueString(row, "identity_number_digest")) == "" {
+				common.NewAPIError(c, http.StatusConflict, "INTAKE_PARTY_IDENTITY_REQUIRED", fmt.Sprintf("当事人“%s”缺少受保护的可核验身份标识，不能运行冲突检测", name))
+				return
+			}
+			identityNumber, decryptErr := security.DecryptIdentityNumber(ciphertext)
+			if decryptErr != nil {
+				common.NewAPIError(c, http.StatusConflict, "SUBJECT_IDENTITY_UNREADABLE", fmt.Sprintf("当事人“%s”的身份标识无法安全读取，不能运行冲突检测", name))
+				return
+			}
+			identifiers := map[string]string{strings.ToLower(identityType): security.NormalizeIdentityNumber(identityType, identityNumber)}
 			aliases := stringListValue(firstNonEmptyValue(row["aliases"], partyMetadata["aliases"], partyMetadata["client_aliases"], partyMetadata["clientAliases"]))
 			parties = append(parties, models.ConflictPartyInfo{Name: name, Role: role, EntityType: entityType, Identifiers: identifiers, Aliases: aliases})
 			if _, exists := seenParties[name]; !exists {
@@ -2406,7 +2676,11 @@ func conflictApprovalSnapshotFields(row, parameters, checkResult map[string]inte
 	subjects := firstNonNil(parameters["subjects"], parameters["parties"], normalizedSubjects, []interface{}{})
 	opposingParties := firstNonNil(parameters["opposingParties"], parameters["opposing_parties"], parameters["otherParties"], []interface{}{})
 	return gin.H{
-		"client_name":        strings.TrimSpace(fmt.Sprint(row["client_name"])),
+		"client_name": strings.TrimSpace(fmt.Sprint(row["client_name"])),
+		"case_creation_config": gin.H{
+			"case_type": strings.TrimSpace(fmt.Sprint(row["case_type"])),
+			"case_name": strings.TrimSpace(fmt.Sprint(row["case_name"])),
+		},
 		"opposing_parties":   opposingParties,
 		"subjects":           subjects,
 		"normalizedSubjects": normalizedSubjects,

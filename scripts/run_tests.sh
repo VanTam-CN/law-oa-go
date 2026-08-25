@@ -201,19 +201,19 @@ build_application() {
         log_info "跳过构建步骤"
         return 0
     fi
-    
+
     log_info "构建应用..."
-    
+
     if [ "$DRY_RUN" = true ]; then
-        echo "[DRY RUN] go build -o bin/law-oa-server ."
+        echo "[DRY RUN] go build -o bin/law-oa-go ."
         return 0
     fi
-    
+
     # 清理之前的构建
-    rm -f bin/law-oa-server
-    
+    rm -f bin/law-oa-go
+
     # 构建应用
-    if go build -o bin/law-oa-server .; then
+    if go build -o bin/law-oa-go .; then
         log_success "应用构建成功"
         return 0
     else
@@ -225,22 +225,22 @@ build_application() {
 # 运行单元测试
 run_unit_tests() {
     log_info "运行单元测试..."
-    
+
     local args=""
     if [ "$PARALLEL" = true ]; then
         args="$args -parallel $JOBS"
     fi
     args="$args -v -race -timeout=$TIMEOUT"
-    
+
     if [ "$COVERAGE" = true ]; then
         args="$args -coverprofile=test-reports/unit_coverage.out"
     fi
-    
+
     if [ "$DRY_RUN" = true ]; then
         echo "[DRY RUN] go test $args ./internal/..."
         return 0
     fi
-    
+
     if go test $args ./internal/...; then
         log_success "单元测试通过"
         return 0
@@ -253,22 +253,22 @@ run_unit_tests() {
 # 运行集成测试
 run_integration_tests() {
     log_info "运行集成测试..."
-    
+
     local args=""
     if [ "$PARALLEL" = true ]; then
         args="$args -parallel $JOBS"
     fi
     args="$args -v -race -tags=integration -timeout=$TIMEOUT"
-    
+
     if [ "$COVERAGE" = true ]; then
         args="$args -coverprofile=test-reports/integration_coverage.out"
     fi
-    
+
     if [ "$DRY_RUN" = true ]; then
         echo "[DRY RUN] go test $args ./tests/..."
         return 0
     fi
-    
+
     if go test $args ./tests/...; then
         log_success "集成测试通过"
         return 0
@@ -281,7 +281,7 @@ run_integration_tests() {
 # 运行端到端测试
 run_e2e_tests() {
     log_info "运行端到端测试..."
-    
+
     if [ "$DRY_RUN" = true ]; then
         echo "[DRY RUN] # 启动测试环境"
         echo "[DRY RUN] docker-compose -f docker-compose.test.yml up -d"
@@ -290,14 +290,14 @@ run_e2e_tests() {
         echo "[DRY RUN] go test -v -timeout=$TIMEOUT ./tests/e2e/..."
         return 0
     fi
-    
+
     # 启动测试环境
     docker-compose -f docker-compose.test.yml up -d
-    
+
     # 等待服务就绪
     log_info "等待测试环境就绪..."
     sleep 30
-    
+
     # 运行E2E测试
     if go test -v -timeout=$TIMEOUT ./tests/e2e/...; then
         log_success "端到端测试通过"
@@ -313,19 +313,19 @@ run_e2e_tests() {
 # 运行性能测试
 run_performance_tests() {
     log_info "运行性能测试..."
-    
+
     if [ "$DRY_RUN" = true ]; then
         echo "[DRY RUN] go test -bench=. -benchmem -timeout=$TIMEOUT ./tests/performance/..."
         return 0
     fi
-    
+
     local args="-bench=. -benchmem -timeout=$TIMEOUT"
-    
+
     if [ "$PROFILE" = true ]; then
         args="$args -cpuprofile=profiles/cpu.prof"
         args="$args -memprofile=profiles/mem.prof"
     fi
-    
+
     if go test $args ./tests/performance/... > test-reports/performance.txt 2>&1; then
         log_success "性能测试通过"
         return 0
@@ -338,12 +338,12 @@ run_performance_tests() {
 # 运行基准测试
 run_benchmark_tests() {
     log_info "运行基准测试..."
-    
+
     if [ "$DRY_RUN" = true ]; then
         echo "[DRY RUN] go test -bench=. -benchmem -count=3 ./..."
         return 0
     fi
-    
+
     if go test -bench=. -benchmem -count=3 ./... > test-reports/benchmark.txt 2>&1; then
         log_success "基准测试通过"
         return 0
@@ -356,15 +356,15 @@ run_benchmark_tests() {
 # 运行模糊测试
 run_fuzz_tests() {
     log_info "运行模糊测试..."
-    
+
     if [ "$DRY_RUN" = true ]; then
         echo "[DRY RUN] go test -fuzz=Fuzz -fuzztime=30s ./..."
         return 0
     fi
-    
+
     # 创建模糊测试结果目录
     mkdir -p fuzzing_results
-    
+
     if go test -fuzz=Fuzz -fuzztime=30s ./... > test-reports/fuzz.txt 2>&1; then
         log_success "模糊测试通过"
         return 0
@@ -377,7 +377,7 @@ run_fuzz_tests() {
 # 运行安全测试
 run_security_tests() {
     log_info "运行安全测试..."
-    
+
     if [ "$DRY_RUN" = true ]; then
         echo "[DRY RUN] # 运行安全扫描"
         echo "[DRY RUN] gosec -fmt=json -out=test-reports/security.json ./..."
@@ -385,19 +385,19 @@ run_security_tests() {
         echo "[DRY RUN] govulncheck -json ./... > test-reports/vulnerabilities.json"
         return 0
     fi
-    
+
     # 运行安全扫描
     if command -v gosec &> /dev/null; then
         log_info "运行gosec安全扫描..."
         gosec -fmt=json -out=test-reports/security.json ./...
     fi
-    
+
     # 运行漏洞检查
     if command -v govulncheck &> /dev/null; then
         log_info "运行govulncheck漏洞检查..."
         govulncheck -json ./... > test-reports/vulnerabilities.json 2>/dev/null || true
     fi
-    
+
     log_success "安全测试完成"
     return 0
 }
@@ -407,14 +407,14 @@ generate_coverage_report() {
     if [ "$COVERAGE" = false ]; then
         return 0
     fi
-    
+
     log_info "生成覆盖率报告..."
-    
+
     if [ "$DRY_RUN" = true ]; then
         echo "[DRY RUN] go tool cover -html=test-reports/coverage.out -o test-reports/coverage.html"
         return 0
     fi
-    
+
     # 合并覆盖率文件
     local coverage_files=()
     if [ -f "test-reports/unit_coverage.out" ]; then
@@ -423,20 +423,20 @@ generate_coverage_report() {
     if [ -f "test-reports/integration_coverage.out" ]; then
         coverage_files+=("test-reports/integration_coverage.out")
     fi
-    
+
     if [ ${#coverage_files[@]} -gt 0 ]; then
         # 合并覆盖率文件
         echo "mode: set" > test-reports/coverage.out
         for file in "${coverage_files[@]}"; do
             tail -n +2 "$file" >> test-reports/coverage.out
         done
-        
+
         # 生成HTML报告
         go tool cover -html=test-reports/coverage.out -o test-reports/coverage.html
-        
+
         # 生成文本报告
         go tool cover -func=test-reports/coverage.out > test-reports/coverage.txt
-        
+
         log_success "覆盖率报告已生成"
     fi
 }
@@ -446,22 +446,22 @@ quality_gate_check() {
     if [ "$QUALITY_GATE" = false ]; then
         return 0
     fi
-    
+
     log_info "执行质量门禁检查..."
-    
+
     if [ "$DRY_RUN" = true ]; then
         echo "[DRY RUN] ./scripts/deployment_quality_gate.sh -e $ENVIRONMENT"
         return 0
     fi
-    
+
     if [ -f "scripts/deployment_quality_gate.sh" ]; then
         chmod +x scripts/deployment_quality_gate.sh
-        
+
         local gate_args="-e $ENVIRONMENT"
         if [ "$STRICT_MODE" = true ]; then
             gate_args="$gate_args -s"
         fi
-        
+
         if ./scripts/deployment_quality_gate.sh $gate_args; then
             log_success "质量门禁检查通过"
             return 0
@@ -480,9 +480,9 @@ generate_test_report() {
     if [ -z "$REPORT_FILE" ]; then
         return 0
     fi
-    
+
     log_info "生成测试报告: $REPORT_FILE"
-    
+
     local report_content="# Law OA Go 测试报告
 
 ## 测试执行信息
@@ -495,7 +495,7 @@ generate_test_report() {
 
 ## 测试结果概览
 "
-    
+
     # 添加各个测试的结果
     if [[ "$TEST_TYPE" =~ ^(unit|all)$ ]]; then
         report_content+="### 单元测试
@@ -503,50 +503,50 @@ generate_test_report() {
 - **覆盖率**: ${UNIT_COVERAGE:-0}%
 "
     fi
-    
+
     if [[ "$TEST_TYPE" =~ ^(integration|all)$ ]]; then
         report_content+="### 集成测试
 - **状态**: ${INTEGRATION_TEST_STATUS:-未执行}
 - **覆盖率**: ${INTEGRATION_COVERAGE:-0}%
 "
     fi
-    
+
     if [[ "$TEST_TYPE" =~ ^(e2e|all)$ ]]; then
         report_content+="### 端到端测试
 - **状态**: ${E2E_TEST_STATUS:-未执行}
 "
     fi
-    
+
     if [[ "$TEST_TYPE" =~ ^(performance|all)$ ]]; then
         report_content+="### 性能测试
 - **状态**: ${PERFORMANCE_TEST_STATUS:-未执行}
 "
     fi
-    
+
     if [ "$BENCH" = true ]; then
         report_content+="### 基准测试
 - **状态**: ${BENCHMARK_TEST_STATUS:-未执行}
 "
     fi
-    
+
     if [ "$FUZZ" = true ]; then
         report_content+="### 模糊测试
 - **状态**: ${FUZZ_TEST_STATUS:-未执行}
 "
     fi
-    
+
     if [[ "$TEST_TYPE" =~ ^(security|all)$ ]]; then
         report_content+="### 安全测试
 - **状态**: ${SECURITY_TEST_STATUS:-未执行}
 "
     fi
-    
+
     report_content+="
 ## 详细报告
 
 ### 文件清单
 "
-    
+
     # 添加文件清单
     if [ -f "test-reports/coverage.html" ]; then
         report_content+="- [覆盖率报告](test-reports/coverage.html)
@@ -568,7 +568,7 @@ generate_test_report() {
         report_content+="- [漏洞检查报告](test-reports/vulnerabilities.json)
 "
     fi
-    
+
     report_content+="
 ## 执行日志
 
@@ -577,7 +577,7 @@ $(cat test-execution.log 2>/dev/null || echo "无执行日志")
 ---
 *报告生成时间: $(date)*
 "
-    
+
     echo "$report_content" > "$REPORT_FILE"
     log_success "测试报告已生成: $REPORT_FILE"
 }
@@ -588,25 +588,25 @@ cleanup() {
         log_info "跳过清理步骤"
         return 0
     fi
-    
+
     log_info "清理测试环境..."
-    
+
     if [ "$DRY_RUN" = true ]; then
         echo "[DRY RUN] # 清理Docker容器"
         echo "[DRY RUN] docker-compose -f docker-compose.test.yml down -v"
         echo "[DRY RUN] # 清理临时文件"
         return 0
     fi
-    
+
     # 清理Docker容器
     if [ -f "docker-compose.test.yml" ]; then
         docker-compose -f docker-compose.test.yml down -v 2>/dev/null || true
     fi
-    
+
     # 清理临时文件
     rm -f /tmp/go-build*
     rm -f /tmp/go-runtime*
-    
+
     log_success "清理完成"
 }
 
@@ -621,16 +621,16 @@ exec 2>&1
 main() {
     log_info "开始执行 $ENVIRONMENT 环境的 $TEST_TYPE 测试..."
     log_info "并行模式: $PARALLEL, 任务数: $JOBS"
-    
+
     # 构建应用
     if ! build_application; then
         log_error "应用构建失败，停止测试执行"
         exit 1
     fi
-    
+
     # 执行测试
     local test_failed=false
-    
+
     # 单元测试
     if [[ "$TEST_TYPE" =~ ^(unit|all)$ ]]; then
         if run_unit_tests; then
@@ -645,7 +645,7 @@ main() {
             test_failed=true
         fi
     fi
-    
+
     # 集成测试
     if [[ "$TEST_TYPE" =~ ^(integration|all)$ ]]; then
         if run_integration_tests; then
@@ -660,7 +660,7 @@ main() {
             test_failed=true
         fi
     fi
-    
+
     # 端到端测试
     if [[ "$TEST_TYPE" =~ ^(e2e|all)$ ]]; then
         if run_e2e_tests; then
@@ -670,7 +670,7 @@ main() {
             test_failed=true
         fi
     fi
-    
+
     # 性能测试
     if [[ "$TEST_TYPE" =~ ^(performance|all)$ ]]; then
         if run_performance_tests; then
@@ -680,7 +680,7 @@ main() {
             test_failed=true
         fi
     fi
-    
+
     # 基准测试
     if [ "$BENCH" = true ]; then
         if run_benchmark_tests; then
@@ -690,7 +690,7 @@ main() {
             test_failed=true
         fi
     fi
-    
+
     # 模糊测试
     if [ "$FUZZ" = true ]; then
         if run_fuzz_tests; then
@@ -700,7 +700,7 @@ main() {
             test_failed=true
         fi
     fi
-    
+
     # 安全测试
     if [[ "$TEST_TYPE" =~ ^(security|all)$ ]]; then
         if run_security_tests; then
@@ -710,20 +710,20 @@ main() {
             test_failed=true
         fi
     fi
-    
+
     # 生成覆盖率报告
     generate_coverage_report
-    
+
     # 质量门禁检查
     if [ "$QUALITY_GATE" = true ]; then
         if ! quality_gate_check; then
             test_failed=true
         fi
     fi
-    
+
     # 生成测试报告
     generate_test_report
-    
+
     # 输出最终结果
     if [ "$test_failed" = true ]; then
         log_error "部分测试失败"

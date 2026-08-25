@@ -45,16 +45,12 @@ services:
       - DB_PASSWORD=${DB_PASSWORD:?DB_PASSWORD must be set}
       - DB_DATABASE=${DB_DATABASE:-law_oa}
 
-      # Redis配置
-      - REDIS_HOST=redis
+      # Redis is opt-in. The default stack does not advertise a cache server;
+      # compose enables this address only with the cache profile.
+      - REDIS_HOST=${REDIS_HOST:-}
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
       - REDIS_DB=0
-
-      # Elasticsearch配置
-      - ES_HOST=elasticsearch
-      - ES_USERNAME=${ES_USERNAME:-}
-      - ES_PASSWORD=${ES_PASSWORD:-}
 
       # 安全配置
       - JWT_SECRET=${JWT_SECRET:?JWT_SECRET must be set}
@@ -62,22 +58,20 @@ services:
       # 主体身份标识加密密钥；生产启动门禁会校验其为32字节密钥
       - SUBJECT_DATA_KEY=${SUBJECT_DATA_KEY:?SUBJECT_DATA_KEY must be set}
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:?CORS_ALLOWED_ORIGINS must be set}
-      - ONLYOFFICE_URL=${ONLYOFFICE_URL:?ONLYOFFICE_URL must be set}
-      - ONLYOFFICE_SECRET=${ONLYOFFICE_SECRET:?ONLYOFFICE_SECRET must be set}
+      - ONLYOFFICE_ENABLED=${ONLYOFFICE_ENABLED:-false}
+      - ONLYOFFICE_URL=${ONLYOFFICE_URL:-}
+      - ONLYOFFICE_SECRET=${ONLYOFFICE_SECRET:-}
+      - BACKEND_URL=${BACKEND_URL:-http://backend:8080}
+      - TRACING_ENABLED=${TRACING_ENABLED:-false}
+      - JAEGER_ENDPOINT=${JAEGER_ENDPOINT:-http://jaeger:14268/api/traces}
 
       # 监控和追踪配置
       - METRICS_ENABLED=${METRICS_ENABLED:-true}
-      - TRACING_ENABLED=${TRACING_ENABLED:-true}
-      - JAEGER_ENDPOINT=${JAEGER_ENDPOINT:-http://jaeger:14268/api/traces}
 
     depends_on:
       migrate:
         condition: service_completed_successfully
       postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      elasticsearch:
         condition: service_healthy
     networks:
       - law-oa-network
@@ -168,6 +162,8 @@ services:
       args:
         - REACT_APP_API_URL=${REACT_APP_API_URL:-/api}
         - REACT_APP_ENVIRONMENT=production
+        - VITE_ONLYOFFICE_ENABLED=${ONLYOFFICE_ENABLED:-false}
+        - VITE_ONLYOFFICE_URL=${ONLYOFFICE_URL:-}
     image: law-oa-frontend:${IMAGE_TAG:-latest}
     container_name: law-oa-frontend
     ports:
@@ -271,12 +267,16 @@ services:
 
   # Redis 缓存服务
   redis:
+    profiles: [cache]
     image: redis:7-alpine
     container_name: law-oa-redis
     ports:
       - "${REDIS_PORT:-6379}:6379"
     environment:
       - TZ=Asia/Shanghai
+      # Keep the cache off general networks; require authentication when the
+      # cache profile is enabled in a shared or production-like environment.
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
     volumes:
       - redis_data:/data
       - ./config/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
@@ -285,7 +285,7 @@ services:
 
     # 健康检查配置
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli --no-auth-warning -a \"$REDIS_PASSWORD\" ping | grep -q PONG"]
       timeout: 10s
       retries: 5
       interval: 30s
@@ -295,7 +295,7 @@ services:
     restart: unless-stopped
 
     # Redis 配置命令
-    command: redis-server /usr/local/etc/redis/redis.conf --appendonly yes
+    command: ["sh", "-c", "test -n \"$${REDIS_PASSWORD}\" || { echo 'REDIS_PASSWORD must be set for the cache profile' >&2; exit 1; }; exec redis-server /usr/local/etc/redis/redis.conf --requirepass \"$${REDIS_PASSWORD}\" --appendonly yes"]
 
     # 安全配置
     security_opt:
@@ -318,129 +318,11 @@ services:
       - "com.lawoa.service.type=cache"
       - "com.lawoa.cache.type=redis"
 
-  # Elasticsearch 搜索引擎
-  elasticsearch:
-    image: elasticsearch:8.11.0
-    container_name: law-oa-elasticsearch
-    ports:
-      - "${ELASTICSEARCH_PORT:-9200}:9200"
-      - "${ELASTICSEARCH_NODE_PORT:-9300}:9300"
-    environment:
-      - node.name=law-oa-es-node
-      - cluster.name=law-oa-cluster
-      - discovery.type=single-node
-      - bootstrap.memory_lock=true
-      - xpack.security.enabled=${ELASTICSEARCH_SECURITY_ENABLED:-false}
-      - xpack.security.enrollment.enabled=false
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m -Dlog4j2.formatMsgNoLookups=true"
-      - TZ=Asia/Shanghai
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-      nofile:
-        soft: 65536
-        hard: 65536
-    volumes:
-      - elasticsearch_data:/usr/share/elasticsearch/data
-      - ./config/elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
-    networks:
-      - law-oa-network
-
-    # 健康检查配置
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
-      timeout: 10s
-      retries: 20
-      interval: 30s
-      start_period: 60s
-
-    # 重启策略
-    restart: unless-stopped
-
-    # 安全配置
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - CHOWN
-      - DAC_OVERRIDE
-      - SETGID
-      - SETUID
-
-    # 资源限制
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 1G
-        reservations:
-          cpus: '0.5'
-          memory: 512M
-
-    # 标签
-    labels:
-      - "com.lawoa.service.type=search"
-      - "com.lawoa.search.type=elasticsearch"
-
-  # Kibana 日志分析平台
-  kibana:
-    image: kibana:8.11.0
-    container_name: law-oa-kibana
-    ports:
-      - "${KIBANA_PORT:-5601}:5601"
-    environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-      - SERVER_NAME=law-oa-kibana
-      - SERVER_HOST=0.0.0.0
-      - TZ=Asia/Shanghai
-      - XPACK_SECURITY_ENABLED=${ELASTICSEARCH_SECURITY_ENABLED:-false}
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
-    networks:
-      - law-oa-network
-
-    # 健康检查配置
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
-      timeout: 10s
-      retries: 10
-      interval: 30s
-      start_period: 60s
-
-    # 重启策略
-    restart: unless-stopped
-
-    # 安全配置
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-
-    # 资源限制
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 1G
-        reservations:
-          cpus: '0.25'
-          memory: 256M
-
-    # 标签
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.kibana.rule=Host(`kibana.lawoa.localhost`)"
-      - "traefik.http.services.kibana.loadbalancer.server.port=5601"
-      - "com.lawoa.service.type=analytics"
-      - "com.lawoa.analytics.type=kibana"
-
   # Jaeger 分布式追踪
   jaeger:
     image: jaegertracing/all-in-one:1.50
     container_name: law-oa-jaeger
+    profiles: [observability]
     ports:
       - "${JAEGER_UI_PORT:-16686}:16686"  # Jaeger UI
       - "${JAEGER_COLLECTOR_PORT:-14268}:14268"  # HTTP collector
@@ -491,6 +373,7 @@ services:
   prometheus:
     image: prom/prometheus:v2.47.0
     container_name: law-oa-prometheus
+    profiles: [observability]
     ports:
       - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
     command:
@@ -549,11 +432,13 @@ services:
   grafana:
     image: grafana/grafana:10.2.0
     container_name: law-oa-grafana
+    profiles: [observability]
     ports:
       - "127.0.0.1:${GRAFANA_PORT:-3000}:3000"
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD must be set}
+      - GRAFANA_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-}
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
       - TZ=Asia/Shanghai
@@ -569,7 +454,7 @@ services:
 
     # 健康检查配置
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      test: ["CMD-SHELL", "test -n \"$GRAFANA_ADMIN_PASSWORD\" && wget --spider -q http://localhost:3000/api/health"]
       timeout: 5s
       retries: 5
       interval: 30s
@@ -629,14 +514,6 @@ volumes:
       type: none
       o: bind
       device: ${DATA_DIR:-./data}/redis
-
-  elasticsearch_data:
-    name: law-oa-elasticsearch-data
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${DATA_DIR:-./data}/elasticsearch
 
   prometheus_data:
     name: law-oa-prometheus-data

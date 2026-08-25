@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"law-oa-go/internal/concurrency"
@@ -294,6 +295,12 @@ func (b *HealthCheckBuilder) WithConcurrency(service interface{}) *HealthCheckBu
 
 // WithExternalAPI 添加外部API检查
 func (b *HealthCheckBuilder) WithExternalAPI(url string) *HealthCheckBuilder {
+	if b.config == nil || !b.config.EnableExternalAPICheck {
+		return b
+	}
+	if strings.TrimSpace(url) == "" {
+		return b
+	}
 	timeout := b.config.ExternalAPITimeout
 	if timeout <= 0 {
 		timeout = DefaultHealthConfig.ExternalAPITimeout

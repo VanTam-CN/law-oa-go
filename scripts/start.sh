@@ -35,13 +35,13 @@ log_error() {
 # 检查依赖
 check_dependencies() {
     log_info "检查依赖..."
-    
+
     # 检查 Go
     if ! command -v go &> /dev/null; then
         log_error "Go 未安装，请先安装 Go 1.19 或更高版本"
         exit 1
     fi
-    
+
     # 检查版本
     GO_VERSION=$(go version | awk '{print $3}' | sed 's/go//')
     REQUIRED_VERSION="1.19"
@@ -49,14 +49,14 @@ check_dependencies() {
         log_error "Go 版本过低，需要 $REQUIRED_VERSION 或更高版本，当前版本：$GO_VERSION"
         exit 1
     fi
-    
+
     log_success "Go 版本检查通过: $GO_VERSION"
-    
+
     # 检查 MySQL
     if ! command -v mysql &> /dev/null; then
         log_warning "MySQL 客户端未安装，请确保数据库服务可用"
     fi
-    
+
     # 检查 Redis
     if ! command -v redis-cli &> /dev/null; then
         log_warning "Redis 客户端未安装，请确保 Redis 服务可用"
@@ -66,52 +66,51 @@ check_dependencies() {
 # 检查配置文件
 check_config() {
     log_info "检查配置文件..."
-    
+
     if [ ! -f ".env" ]; then
         log_warning ".env 文件不存在，复制 .env.example"
         cp .env.example .env
         log_warning "请编辑 .env 文件配置您的环境变量"
     fi
-    
+
     if [ ! -f "config/config.yaml" ]; then
         log_error "配置文件 config/config.yaml 不存在"
         exit 1
     fi
-    
+
     log_success "配置文件检查通过"
 }
 
 # 创建必要目录
 create_directories() {
     log_info "创建必要目录..."
-    
+
     mkdir -p logs
     mkdir -p uploads
     mkdir -p uploads/contract
     mkdir -p uploads/evidence
     mkdir -p uploads/letter
     mkdir -p uploads/other
-    
+
     log_success "目录创建完成"
 }
 
 # 下载依赖
 download_dependencies() {
     log_info "下载 Go 依赖..."
-    
-    go mod tidy
+
     go mod download
-    
+
     log_success "依赖下载完成"
 }
 
 # 检查数据库连接
 check_database() {
     log_info "检查数据库连接..."
-    
+
     if [ -f ".env" ]; then
         source .env
-        
+
         if [ -n "$DB_HOST" ] && [ -n "$DB_USER" ] && [ -n "$DB_PASSWORD" ] && [ -n "$DB_NAME" ]; then
             # 等待数据库启动
             log_info "等待数据库启动..."
@@ -137,10 +136,10 @@ check_database() {
 # 检查 Redis 连接
 check_redis() {
     log_info "检查 Redis 连接..."
-    
+
     if [ -f ".env" ]; then
         source .env
-        
+
         if [ -n "$REDIS_HOST" ]; then
             if redis-cli -h "$REDIS_HOST" -p "${REDIS_PORT:-6379}" ping &>/dev/null; then
                 log_success "Redis 连接成功"
@@ -159,26 +158,22 @@ check_redis() {
 # 运行数据库迁移
 run_migrations() {
     log_info "运行数据库迁移..."
-    
-    if [ -f "migrate/main.go" ]; then
-        go run migrate/main.go up
-        log_success "数据库迁移完成"
-    else
-        log_warning "迁移工具不存在，跳过迁移"
-    fi
+
+    go run ./cmd/migrate -command bootstrap
+    log_success "数据库迁移完成"
 }
 
 # 启动应用
 start_application() {
     log_info "启动应用程序..."
-    
+
     # 设置环境变量
     if [ -f ".env" ]; then
         set -a
         source .env
         set +a
     fi
-    
+
     # 启动应用
     go run main.go
 }
@@ -233,17 +228,18 @@ main() {
             check_dependencies
             check_config
             log_info "构建应用程序..."
-            go build -o bin/law-oa main.go
-            log_success "构建完成，输出文件: bin/law-oa"
+            mkdir -p bin
+            go build -o bin/law-oa-go .
+            log_success "构建完成，输出文件: bin/law-oa-go"
             exit 0
             ;;
         -r|--run)
-            if [ ! -f "bin/law-oa" ]; then
+            if [ ! -f "bin/law-oa-go" ]; then
                 log_error "未找到构建文件，请先运行 $0 --build"
                 exit 1
             fi
             log_info "运行应用程序..."
-            ./bin/law-oa
+            ./bin/law-oa-go
             exit 0
             ;;
         -d|--dev)
@@ -262,7 +258,7 @@ main() {
             exit 1
             ;;
     esac
-    
+
     # 正常启动流程
     check_dependencies
     check_config

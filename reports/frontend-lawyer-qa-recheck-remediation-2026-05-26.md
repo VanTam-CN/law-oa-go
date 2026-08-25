@@ -29,7 +29,7 @@
 - `frontend/e2e/client-profile-actions.spec.ts` — QA-RC-005
 
 ### Spec 状态
-- `.spec-workflow/specs/lawyer-frontend-recheck-remediation/tasks.md` — 12/12 完成
+- `.spec-workflow/specs/lawyer-frontend-recheck-remediation/tasks.md` — 已归档，见 [`docs/archive-index-2026-08-24.md`](../docs/archive-index-2026-08-24.md)
 
 ## 验证命令结果
 

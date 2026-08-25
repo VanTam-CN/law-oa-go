@@ -24,22 +24,17 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@reduxjs/toolkit": "^2.9.1",
     "@tanstack/react-query": "^5.90.5",
     "@tanstack/react-query-devtools": "^5.90.2",
-    "@types/moment": "^2.11.29",
     "antd": "^5.16.1",
     "axios": "^1.12.2",
     "dayjs": "^1.11.10",
-    "echarts": "^5.6.0",
-    "echarts-for-react": "^3.0.2",
     "http-proxy-middleware": "^3.0.5",
     "lodash": "^4.17.21",
     "moment": "^2.30.1",
     "puppeteer": "^24.22.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-redux": "^9.2.0",
     "react-router": "^7.9.4",
     "recharts": "^3.1.2",
     "zustand": "^5.0.8"

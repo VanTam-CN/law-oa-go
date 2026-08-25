@@ -2,6 +2,7 @@ export const MVP_MENU_KEYS = [
   'dashboard',
   'case',
   'conflict',
+  'conflict-governance',
   'client',
   'approval',
   'inbox',

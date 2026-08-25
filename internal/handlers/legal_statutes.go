@@ -721,42 +721,6 @@ func (h *LegalStatuteHandler) GetRecentUpdates(c *gin.Context) {
 	common.APISuccess(c, statutes)
 }
 
-// SyncToElasticsearch 同步到Elasticsearch
-// @Summary 同步数据到Elasticsearch
-// @Description 将法条数据同步到Elasticsearch搜索引擎
-// @Tags 系统管理
-// @Accept json
-// @Produce json
-// @Success 200 {object} models.Response
-// @Failure 500 {object} models.Response
-// @Router /api/v1/legal/admin/sync-elasticsearch [post]
-func (h *LegalStatuteHandler) SyncToElasticsearch(c *gin.Context) {
-	if err := h.legalStatuteService.SyncToElasticsearch(c.Request.Context()); err != nil {
-		common.APIInternalServerError(c, "同步失败", err.Error())
-		return
-	}
-
-	common.APISuccess(c, gin.H{"message": "数据同步成功"})
-}
-
-// RebuildSearchIndex 重建搜索索引
-// @Summary 重建搜索索引
-// @Description 重建Elasticsearch搜索索引
-// @Tags 系统管理
-// @Accept json
-// @Produce json
-// @Success 200 {object} models.Response
-// @Failure 500 {object} models.Response
-// @Router /api/v1/legal/admin/rebuild-index [post]
-func (h *LegalStatuteHandler) RebuildSearchIndex(c *gin.Context) {
-	if err := h.legalStatuteService.RebuildSearchIndex(c.Request.Context()); err != nil {
-		common.APIInternalServerError(c, "重建索引失败", err.Error())
-		return
-	}
-
-	common.APISuccess(c, gin.H{"message": "索引重建成功"})
-}
-
 // BulkImportStatutes 批量导入法条
 // @Summary 批量导入法条
 // @Description 通过JSON数据批量导入法条到数据库

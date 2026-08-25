@@ -52,10 +52,6 @@ type LegalStatuteService interface {
 	GetPopularStatutes(ctx context.Context, limit int, userID int) ([]*models.LegalStatuteResponse, error)
 	GetRecentUpdates(ctx context.Context, days int) ([]*models.LegalStatuteResponse, error)
 
-	// 管理功能
-	SyncToElasticsearch(ctx context.Context) error
-	RebuildSearchIndex(ctx context.Context) error
-
 	// 批量导入
 	BulkImportStatutes(ctx context.Context, req *models.LegalStatuteImportRequest, userID int) (*models.LegalStatuteImportResponse, error)
 }
@@ -777,28 +773,6 @@ func (s *legalStatuteService) GetRecentUpdates(ctx context.Context, days int) ([
 	}
 
 	return responses, nil
-}
-
-// SyncToElasticsearch 同步到Elasticsearch
-func (s *legalStatuteService) SyncToElasticsearch(ctx context.Context) error {
-	if s.esRepo == nil {
-		return fmt.Errorf("Elasticsearch未配置")
-	}
-
-	// TODO: 实现同步功能
-	log.Println("Elasticsearch同步功能待实现")
-	return nil
-}
-
-// RebuildSearchIndex 重建搜索索引
-func (s *legalStatuteService) RebuildSearchIndex(ctx context.Context) error {
-	if s.esRepo == nil {
-		return fmt.Errorf("Elasticsearch未配置")
-	}
-
-	// TODO: 实现重建索引功能
-	log.Println("Elasticsearch重建索引功能待实现")
-	return nil
 }
 
 // BulkImportStatutes 批量导入法条

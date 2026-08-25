@@ -144,6 +144,20 @@ func (s *ApprovalService) ListApprovals(userID string, req *models.ApprovalListR
 
 // GetApproval 获取单个审批详情
 func (s *ApprovalService) GetApproval(userID string, id string) (*models.ApprovalRequest, error) {
+	approval, err := s.GetApprovalForAuthorization(userID, id)
+	if err != nil || approval == nil {
+		return approval, err
+	}
+	if err := s.LoadApprovalRecords(approval); err != nil {
+		return nil, err
+	}
+	return approval, nil
+}
+
+// GetApprovalForAuthorization loads only the approval subject. Handlers use it
+// before ethical-wall authorization so related audit rows are not read until
+// the caller's object access has been established.
+func (s *ApprovalService) GetApprovalForAuthorization(userID string, id string) (*models.ApprovalRequest, error) {
 	approval, err := s.approvalRepo.FindByID(id)
 	if err != nil {
 		return nil, fmt.Errorf("获取审批详情失败: %v", err)
@@ -153,12 +167,35 @@ func (s *ApprovalService) GetApproval(userID string, id string) (*models.Approva
 	// a business approval role, so it must not bypass the applicant/approver
 	// boundary by guessing an approval ID.
 	if approval != nil {
-		if approval.ApplicantID != userID && approval.CurrentApproverID != userID {
+		allowed := approval.ApplicantID == userID || approval.CurrentApproverID == userID
+		if !allowed {
+			wasApprover, historyErr := s.approvalRepo.HasApproverRecord(approval.ID, userID)
+			if historyErr != nil {
+				return nil, historyErr
+			}
+			allowed = wasApprover
+		}
+		if !allowed {
 			return nil, fmt.Errorf("无权查看此审批记录")
 		}
 	}
 
 	return approval, nil
+}
+
+// LoadApprovalRecords populates immutable decision history after object-level
+// authorization. Legacy development schemas may lack the table; production
+// readiness independently requires the complete approval schema.
+func (s *ApprovalService) LoadApprovalRecords(approval *models.ApprovalRequest) error {
+	if approval == nil || !s.approvalRepo.DB().Migrator().HasTable(&models.ApprovalRecord{}) {
+		return nil
+	}
+	records, err := s.approvalRepo.FindRecordsByApprovalID(approval.ID)
+	if err != nil {
+		return err
+	}
+	approval.Records = records
+	return nil
 }
 
 func (s *ApprovalService) GetApprovalByID(id string) (*models.ApprovalRequest, error) {
@@ -346,6 +383,15 @@ func (s *ApprovalService) ProcessApprovalDecision(userID string, approvalID stri
 		approval.Status = models.ApprovalStatusUnderReview
 	}
 
+	approverName := approval.CurrentApproverName
+	approverRole := ""
+	if approver, lookupErr := s.userRepo.FindByStringID(userID); lookupErr == nil && approver != nil {
+		if approver.Name != "" {
+			approverName = approver.Name
+		}
+		approverRole = approver.Role
+	}
+
 	// 创建审批记录
 	record := &models.ApprovalRecord{
 		ID:                  generateUUID(),
@@ -353,9 +399,9 @@ func (s *ApprovalService) ProcessApprovalDecision(userID string, approvalID stri
 		Stage:               approval.CurrentStage,
 		StageOrder:          1,
 		ApproverID:          userID,
-		ApproverName:        "",
+		ApproverName:        approverName,
 		ApproverTitle:       "",
-		ApproverRole:        "",
+		ApproverRole:        approverRole,
 		Decision:            req.Decision,
 		DecisionReason:      req.DecisionReason,
 		DecisionComments:    req.DecisionComments,
@@ -448,7 +494,7 @@ func (s *ApprovalService) ProcessApprovalDecision(userID string, approvalID stri
 	}
 
 	// 重新加载数据
-	updatedApproval, err := s.approvalRepo.FindByID(approvalID)
+	updatedApproval, err := s.GetApproval(userID, approvalID)
 	if err != nil {
 		return nil, fmt.Errorf("重新加载审批数据失败: %v", err)
 	}

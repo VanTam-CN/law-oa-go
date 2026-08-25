@@ -1,11 +1,11 @@
 ## 1. Intake Conflict-Check Guardrail
 
-- [ ] 1.1 Read `frontend/src/pages/batch01/Batch01Prototype.tsx` and identify the exact local state fields used for matter title, client, counterparty, responsible lawyer, case type, business domain, and subdomain.
-- [ ] 1.2 Add a single helper that returns missing required fields for the conflict-check action. The helper must be pure and easy to unit-test or assert through E2E.
-- [ ] 1.3 Wire the "运行利益冲突检查" and equivalent footer "保存并进行利益冲突检查" actions to run the helper before any draft-create, draft-update, or conflict-check API call.
-- [ ] 1.4 When required fields are missing, keep the user on the relevant intake context, show field-level errors where possible, show one top-level message listing missing fields, and leave conflict status as "未检测".
-- [ ] 1.5 Ensure no intake draft ID, intake number, conflict task ID, or success toast is created when preflight validation fails.
-- [ ] 1.6 When all required fields are present, preserve the fixed behavior from the previous remediation: remain inside `/case/create`, mark conflict status completed or in progress according to API result, and allow entry to team/fees.
+- [x] 1.1 Read `frontend/src/pages/batch01/Batch01Prototype.tsx` and identify the exact local state fields used for matter title, client, counterparty, responsible lawyer, case type, business domain, and subdomain.
+- [x] 1.2 Add a single helper that returns missing required fields for the conflict-check action. The helper must be pure and easy to unit-test or assert through E2E.
+- [x] 1.3 Wire the "运行利益冲突检查" and equivalent footer "保存并进行利益冲突检查" actions to run the helper before any draft-create, draft-update, or conflict-check API call.
+- [x] 1.4 When required fields are missing, keep the user on the relevant intake context, show field-level errors where possible, show one top-level message listing missing fields, and leave conflict status as "未检测".
+- [x] 1.5 Ensure no intake draft ID, intake number, conflict task ID, or success toast is created when preflight validation fails.
+- [x] 1.6 When all required fields are present, preserve the fixed behavior from the previous remediation: remain inside `/case/create`, mark conflict status completed or in progress according to API result, and allow entry to team/fees.
 
 ## 2. Dashboard Action Feedback and Names
 
@@ -36,18 +36,18 @@
 
 ## 5. Regression Test Matrix
 
-- [ ] 5.1 Add a negative E2E case to `case-create-full-workflow.spec.ts`: with missing matter title and counterparty, selecting only client and lawyer then clicking conflict check must not create a draft and must show validation feedback.
-- [ ] 5.2 Keep the positive full intake E2E case passing: filled matter title, client, counterparty, lawyer, and required select fields can run conflict check and continue to team/fees.
-- [ ] 5.3 Add dashboard route/feedback assertions for "查看全部待办" and "查看全部冲突任务".
+- [x] 5.1 Add a negative E2E case to `case-create-full-workflow.spec.ts`: with missing matter title and counterparty, selecting only client and lawyer then clicking conflict check must not create a draft and must show validation feedback.
+- [x] 5.2 Keep the positive full intake E2E case passing: filled matter title, client, counterparty, lawyer, and required select fields can run conflict check and continue to team/fees.
+- [x] 5.3 Add dashboard route/feedback assertions for "查看全部待办" and "查看全部冲突任务".
 - [ ] 5.4 Add approval detail assertions for unique "更多审批操作" and "更多处理方式" names.
-- [ ] 5.5 Add client profile assertions for "新增联系人", "上传附件", and "导出客户档案" feedback.
-- [ ] 5.6 Run targeted E2E:
+- [x] 5.5 Add client profile assertions for "新增联系人", "上传附件", and "导出客户档案" feedback.
+- [x] 5.6 Run targeted E2E:
   - `npm run test:e2e -- case-create-full-workflow.spec.ts dashboard-actions.spec.ts approval-layout.spec.ts approval-permission-consistency.spec.ts client-profile-actions.spec.ts`
 
 ## 6. Verification and Documentation
 
-- [ ] 6.1 Run frontend verification from `frontend/`: `npm run type-check`, `npm run lint`, and the targeted E2E command above.
-- [ ] 6.2 If backend code changes are needed, run repository backend verification: `go build ./...` and targeted Go tests for touched packages.
+- [x] 6.1 Run frontend verification from `frontend/`: `npm run type-check`, `npm run lint`, and the targeted E2E command above.
+- [x] 6.2 If backend code changes are needed, run repository backend verification: `go build ./...` and targeted Go tests for touched packages.
 - [ ] 6.3 Re-run internal browser smoke test for the exact retest paths in `reports/frontend-lawyer-qa-internal-browser-retest-2026-05-26.md`.
-- [ ] 6.4 Create a short remediation report under `reports/` listing fixed issue IDs `IB-RT-001` through `IB-RT-006`, verification commands, and any remaining limitations.
-- [ ] 6.5 Do not mark this change complete until all required tests pass or failures are documented as unrelated pre-existing defects with evidence.
+- [x] 6.4 Create a short remediation report under `reports/` listing fixed issue IDs `IB-RT-001` through `IB-RT-006`, verification commands, and any remaining limitations.
+- [x] 6.5 Do not mark this change complete until all required tests pass or failures are documented as unrelated pre-existing defects with evidence.

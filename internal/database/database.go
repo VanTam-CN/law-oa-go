@@ -5,12 +5,9 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"net"
-	"net/url"
 	"strings"
 	"time"
 
-	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
@@ -54,8 +51,8 @@ func InitWithConfig(appConfig *config.Config) (*gorm.DB, error) {
 		if sslMode == "" {
 			sslMode = "disable"
 		}
-		dsn = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s TimeZone=UTC",
-			appConfig.Database.Host, appConfig.Database.Port, appConfig.Database.Username, appConfig.Database.Password, appConfig.Database.Database, sslMode)
+		dsn = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s TimeZone=%s",
+			appConfig.Database.Host, appConfig.Database.Port, appConfig.Database.Username, appConfig.Database.Password, appConfig.Database.Database, sslMode, appConfig.GetDatabaseTimeZone())
 
 		// 连接PostgreSQL
 		db, err = gorm.Open(postgres.Open(dsn), gormConfig)
@@ -91,6 +88,9 @@ func InitWithConfig(appConfig *config.Config) (*gorm.DB, error) {
 
 // InitRedis 初始化Redis连接 - 性能优化版本
 func InitRedis(cfg config.RedisConfig) (*redis.Client, error) {
+	if strings.TrimSpace(cfg.Host) == "" {
+		return nil, fmt.Errorf("redis is disabled: REDIS_HOST is empty")
+	}
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%s", cfg.Host, cfg.Port),
 		Password: cfg.Password,
@@ -120,52 +120,6 @@ func InitRedis(cfg config.RedisConfig) (*redis.Client, error) {
 
 	log.Printf("Redis连接成功 - 连接池大小: %d, 最小空闲: %d", rdb.Options().PoolSize, rdb.Options().MinIdleConns)
 	return rdb, nil
-}
-
-// InitElasticsearch 初始化Elasticsearch连接
-func InitElasticsearch(cfg config.ElasticsearchConfig) (*elasticsearch.Client, error) {
-	address := elasticsearchAddress(cfg.Host, cfg.Port)
-
-	// 创建Elasticsearch客户端
-	es, err := elasticsearch.NewClient(elasticsearch.Config{
-		Addresses: []string{address},
-		Username:  cfg.Username,
-		Password:  cfg.Password,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to Elasticsearch: %w", err)
-	}
-
-	// 测试连接
-	res, err := es.Info()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get Elasticsearch info: %w", err)
-	}
-	defer res.Body.Close()
-
-	if res.IsError() {
-		return nil, fmt.Errorf("Elasticsearch returned error: %s", res.Status())
-	}
-
-	log.Println("Elasticsearch连接成功")
-	return es, nil
-}
-
-// elasticsearchAddress accepts the canonical host-only configuration and is
-// also tolerant of older deployments that stored a full URL in ES_HOST. This
-// prevents the invalid http://http://host:port address during upgrades.
-func elasticsearchAddress(host, port string) string {
-	host = strings.TrimSpace(host)
-	port = strings.TrimSpace(port)
-	if strings.HasPrefix(host, "http://") || strings.HasPrefix(host, "https://") {
-		if parsed, err := url.Parse(host); err == nil && parsed.Host != "" {
-			if parsed.Port() == "" && port != "" {
-				parsed.Host = net.JoinHostPort(parsed.Hostname(), port)
-			}
-			return strings.TrimRight(parsed.String(), "/")
-		}
-	}
-	return fmt.Sprintf("http://%s:%s", strings.TrimRight(host, "/"), port)
 }
 
 // Health 健康检查所有组件
@@ -207,37 +161,8 @@ func Health() map[string]interface{} {
 		}
 	} else {
 		status["redis"] = map[string]interface{}{
-			"status":  "error",
-			"message": "Redis not initialized",
-		}
-	}
-
-	// 检查Elasticsearch
-	if ElasticsearchClient != nil {
-		res, err := ElasticsearchClient.Info()
-		if err != nil {
-			status["elasticsearch"] = map[string]interface{}{
-				"status":  "error",
-				"message": err.Error(),
-			}
-		} else {
-			defer res.Body.Close()
-			if res.IsError() {
-				status["elasticsearch"] = map[string]interface{}{
-					"status":  "error",
-					"message": fmt.Sprintf("Elasticsearch returned error: %s", res.Status()),
-				}
-			} else {
-				status["elasticsearch"] = map[string]interface{}{
-					"status":  "healthy",
-					"message": "Elasticsearch connection is healthy",
-				}
-			}
-		}
-	} else {
-		status["elasticsearch"] = map[string]interface{}{
-			"status":  "error",
-			"message": "Elasticsearch not initialized",
+			"status":  "disabled",
+			"message": "Redis is disabled",
 		}
 	}
 
