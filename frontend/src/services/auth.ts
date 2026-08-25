@@ -52,10 +52,11 @@ export const login = (data: LoginParams): Promise<LoginResponse> => {
 
 /**
  * 用户登出
+ * @param token 当前访问令牌
  * @returns 登出响应
  */
-export const logout = (): Promise<any> => {
-  return post('/auth/logout')
+export const logout = (token: string): Promise<any> => {
+  return post('/auth/logout', { token })
 }
 
 /**

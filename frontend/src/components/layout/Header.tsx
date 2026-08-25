@@ -14,6 +14,7 @@ import {
 import { useAppStore } from '@/stores/useAppStore'
 import useNotifications from '@/hooks/useNotifications'
 import { useNavigate } from 'react-router'
+import { getToken, logout as logoutRequest } from '@/services/auth'
 import type { MenuProps } from 'antd'
 import './header.less'
 
@@ -29,7 +30,7 @@ interface Notification {
 }
 
 const AppHeader: React.FC = () => {
-  const { user, logout } = useAppStore()
+  const { user, logout: clearLocalAuth } = useAppStore()
   const { notifications, stats, loading, error, markAsRead, markAllAsRead, deleteNotification } =
     useNotifications()
   const navigate = useNavigate()
@@ -37,6 +38,21 @@ const AppHeader: React.FC = () => {
   const [notificationVisible, setNotificationVisible] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const unreadCount = stats.unread || notifications.filter((item) => !item.isRead).length
+
+  const handleLogout = async () => {
+    const token = getToken()
+
+    try {
+      if (token) {
+        await logoutRequest(token)
+      }
+    } catch {
+      // 服务端撤销失败不阻塞本地退出
+    } finally {
+      clearLocalAuth()
+      navigate('/login')
+    }
+  }
 
   // 用户菜单项
   const userMenuItems: MenuProps['items'] = [
@@ -71,7 +87,7 @@ const AppHeader: React.FC = () => {
       key: 'logout',
       icon: <LogoutOutlined />,
       label: '退出登录',
-      onClick: logout,
+      onClick: handleLogout,
     },
   ]
 
