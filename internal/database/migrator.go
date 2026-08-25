@@ -37,8 +37,7 @@ func NewMigrator(cfg *config.DatabaseConfig, migrationsPath string) (*Migrator, 
 	if driverName != "mysql" && driverName != "postgres" && driverName != "postgresql" {
 		return nil, fmt.Errorf("unsupported migration database driver %q; use mysql or postgres", cfg.Driver)
 	}
-	sqlDriver, databaseName, dsn := buildMigrationDSN(cfg, driverName)
-	db, err := sql.Open(sqlDriver, dsn)
+	db, databaseName, err := openMigrationDatabase(cfg, driverName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
@@ -220,13 +219,13 @@ func firstMigrationMarker(contents string, markers []string) string {
 	return ""
 }
 
-func buildMigrationDSN(cfg *config.DatabaseConfig, driverName string) (sqlDriver string, databaseName string, dsn string) {
+func openMigrationDatabase(cfg *config.DatabaseConfig, driverName string) (*sql.DB, string, error) {
 	if driverName == "postgres" || driverName == "postgresql" {
 		sslMode := cfg.SSLMode
 		if sslMode == "" {
 			sslMode = "disable"
 		}
-		return "postgres", "postgres", fmt.Sprintf(
+		dsn := fmt.Sprintf(
 			"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 			cfg.Host,
 			cfg.Port,
@@ -235,19 +234,12 @@ func buildMigrationDSN(cfg *config.DatabaseConfig, driverName string) (sqlDriver
 			cfg.Database,
 			sslMode,
 		)
+		db, err := sql.Open("postgres", dsn)
+		return db, "postgres", err
 	}
 
-	return "mysql", "mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=%v&loc=%s&multiStatements=true%s",
-		cfg.Username,
-		cfg.Password,
-		cfg.Host,
-		cfg.Port,
-		cfg.Database,
-		cfg.Charset,
-		cfg.ParseTime,
-		cfg.Loc,
-		mysqlTLSParam(cfg.SSLMode),
-	)
+	db, err := openMySQLSQL(*cfg, true)
+	return db, "mysql", err
 }
 
 func newMigrationDriver(db *sql.DB, driverName string) (migratedb.Driver, error) {

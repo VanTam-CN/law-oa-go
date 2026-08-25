@@ -288,6 +288,8 @@ chrome/
 !internal/middleware/ethical_wall_test.go
 !internal/router/router_authorization_test.go
 !internal/handlers/inbox_handler_security_test.go
+!internal/config/mysql_dsn_test.go
+!internal/database/mysql_connector_test.go
 !internal/handlers/approval_conflict_redaction_test.go
 !internal/handlers/conflict_approval_workbench_test.go
 !internal/auth/token_session_store_test.go

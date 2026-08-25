@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
-	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -61,12 +60,8 @@ func InitWithConfig(appConfig *config.Config) (*gorm.DB, error) {
 		}
 		log.Println("使用PostgreSQL数据库")
 	} else {
-		// MySQL DSN (向后兼容)
-		dsn = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=%v&loc=%s%s",
-			appConfig.Database.Username, appConfig.Database.Password, appConfig.Database.Host, appConfig.Database.Port, appConfig.Database.Database, appConfig.Database.Charset, appConfig.Database.ParseTime, appConfig.Database.Loc, mysqlTLSParam(appConfig.Database.SSLMode))
-
-		// 连接MySQL
-		db, err = gorm.Open(mysql.Open(dsn), gormConfig)
+		// MySQL 使用结构化驱动配置，避免凭据经 DSN 字符串再解析
+		db, err = openMySQLGORM(appConfig.Database, gormConfig)
 		if err != nil {
 			return nil, fmt.Errorf("failed to connect to MySQL: %w", err)
 		}

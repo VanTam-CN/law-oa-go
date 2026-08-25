@@ -3,14 +3,12 @@ package main
 import (
 	"context"
 	"log"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
-	"gorm.io/driver/mysql"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"law-oa-go/internal/config"
+	"law-oa-go/internal/database"
 	"law-oa-go/internal/middleware"
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/router"
@@ -94,64 +92,7 @@ func main() {
 
 // initDatabase 初始化数据库连接
 func initDatabase(cfg *config.Config) (*gorm.DB, error) {
-	dsn := cfg.GetDatabaseDSN()
-
-	// 优化GORM配置
-	gormConfig := &gorm.Config{
-		PrepareStmt:                              true, // 预编译语句缓存
-		SkipDefaultTransaction:                   true, // 跳过默认事务
-		DisableForeignKeyConstraintWhenMigrating: true, // 禁用外键约束检查（提高性能）
-	}
-
-	var db *gorm.DB
-	var err error
-
-	// 根据数据库类型选择驱动
-	if cfg.Database.Driver == "postgres" {
-		db, err = gorm.Open(postgres.Open(dsn), gormConfig)
-		if err != nil {
-			return nil, err
-		}
-		log.Printf("Connected to PostgreSQL database: %s", cfg.Database.Database)
-	} else {
-		db, err = gorm.Open(mysql.Open(dsn), gormConfig)
-		if err != nil {
-			return nil, err
-		}
-		log.Printf("Connected to MySQL database: %s", cfg.Database.Database)
-	}
-
-	// 优化连接池配置
-	sqlDB, err := db.DB()
-	if err != nil {
-		return nil, err
-	}
-
-	// 根据环境动态调整连接池大小
-	maxOpenConns := 50
-	maxIdleConns := 10
-	connMaxLifetime := 30 * time.Minute
-	connMaxIdleTime := 5 * time.Minute
-
-	if cfg.IsProduction() {
-		maxOpenConns = 100
-		maxIdleConns = 20
-		connMaxLifetime = time.Hour
-	}
-
-	sqlDB.SetMaxIdleConns(maxIdleConns)
-	sqlDB.SetMaxOpenConns(maxOpenConns)
-	sqlDB.SetConnMaxLifetime(connMaxLifetime)
-	sqlDB.SetConnMaxIdleTime(connMaxIdleTime)
-
-	// 测试连接
-	if err := sqlDB.Ping(); err != nil {
-		return nil, err
-	}
-
-	log.Printf("Database connected successfully (Pool: %d idle/%d max, Lifetime: %v)",
-		maxIdleConns, maxOpenConns, connMaxLifetime)
-	return db, nil
+	return database.InitWithConfig(cfg)
 }
 
 // initRedis 初始化Redis连接

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	drivermysql "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
 )
@@ -286,7 +287,11 @@ func validateMigrationConfig(c *Config) error {
 	return nil
 }
 
-// GetDatabaseDSN 获取数据库DSN
+// GetDatabaseDSN 获取数据库DSN。
+//
+// Deprecated: MySQL 用户名和密码可能包含 DSN 保留字。新的运行时连接应使用
+// DatabaseConfig.MySQLDriverConfig + mysql.NewConnector，不要把本方法的
+// 字符串结果交给 GORM 或 database/sql 重新解析。
 func (c *Config) GetDatabaseDSN() string {
 	if strings.EqualFold(strings.TrimSpace(c.Database.Driver), "postgres") || strings.EqualFold(strings.TrimSpace(c.Database.Driver), "postgresql") {
 		return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s TimeZone=%s",
@@ -301,16 +306,47 @@ func (c *Config) GetDatabaseDSN() string {
 	}
 
 	// MySQL兼容模式
-	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=%v&loc=%s",
-		c.Database.Username,
-		c.Database.Password,
-		c.Database.Host,
-		c.Database.Port,
-		c.Database.Database,
-		c.Database.Charset,
-		c.Database.ParseTime,
-		c.Database.Loc,
-	)
+	return c.buildMySQLDSN()
+}
+
+// buildMySQLDSN is retained only for the deprecated string DSN API above.
+func (c *Config) buildMySQLDSN() string {
+	return c.Database.MySQLDriverConfig().FormatDSN()
+}
+
+// MySQLDriverConfig builds a go-sql-driver configuration from database
+// settings. Connection code should use it with mysql.NewConnector so arbitrary
+// credentials never pass through DSN parsing. An invalid Loc falls back to the
+// driver's default UTC location; configuration validation is responsible for
+// rejecting invalid values earlier.
+func (c DatabaseConfig) MySQLDriverConfig() *drivermysql.Config {
+	dsnConfig := drivermysql.NewConfig()
+	dsnConfig.User = c.Username
+	dsnConfig.Passwd = c.Password
+	dsnConfig.Net = "tcp"
+	dsnConfig.Addr = fmt.Sprintf("%s:%s", c.Host, c.Port)
+	dsnConfig.DBName = c.Database
+	dsnConfig.Params = map[string]string{"charset": c.GetCharset()}
+	dsnConfig.ParseTime = c.GetParseTime()
+	if tlsConfig := mysqlTLSConfig(c.SSLMode); tlsConfig != "" {
+		dsnConfig.TLSConfig = tlsConfig
+	}
+	if location, err := time.LoadLocation(c.GetLoc()); err == nil {
+		dsnConfig.Loc = location
+	}
+	return dsnConfig
+}
+
+func mysqlTLSConfig(sslMode string) string {
+	normalized := strings.TrimSpace(strings.ToLower(sslMode))
+	switch normalized {
+	case "", "disable", "disabled", "false", "0":
+		return ""
+	case "skip-verify", "preferred", "true":
+		return normalized
+	default:
+		return strings.TrimSpace(sslMode)
+	}
 }
 
 // GetDatabaseTimeZone returns the legal-business wall-clock zone used when
