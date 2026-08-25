@@ -3,7 +3,7 @@
 ![Go](https://img.shields.io/badge/Go-1.25-00ADD8?logo=go&logoColor=white)
 ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)
-![License](https://img.shields.io/badge/License-ISC-green.svg)
+![License](https://img.shields.io/badge/License-Apache--2.0-blue.svg)
 
 Law OA Go 是一个面向小型律师事务所的案件协作系统。v3 聚焦一个清晰闭环：律师登记客户与案件线索，系统校验主体身份并执行利益冲突检查，核查人员独立复核，审批通过后生成正式案件，律师再在案件、客户和待办视图中持续协作。
 
@@ -174,4 +174,6 @@ migrations/          SQL 迁移与 schema 材料
 
 ## License
 
-ISC License.
+This project is licensed under the Apache License 2.0. See [LICENSE](LICENSE).
+
+When redistributing the project or derivative works, keep the applicable copyright, patent, trademark, and attribution notices; if a `NOTICE` file is included, retain its attribution notices. The license also provides a patent grant and terminates that grant if you initiate specified patent litigation. The work is provided on an "AS IS" basis, without warranties or conditions.

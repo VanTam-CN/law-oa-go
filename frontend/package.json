@@ -165,5 +165,5 @@
   "main": "debug-console.js",
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "Apache-2.0"
 }
