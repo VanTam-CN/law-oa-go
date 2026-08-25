@@ -35,4 +35,7 @@ func TestGetDatabaseDSNEscapesMySQLCredentials(t *testing.T) {
 	if parsed.Loc.String() != cfg.Database.Loc {
 		t.Fatalf("parsed loc = %q, want %q", parsed.Loc.String(), cfg.Database.Loc)
 	}
+	if _, exists := parsed.Params["charset"]; exists {
+		t.Fatal("charset was treated as a driver system-variable parameter")
+	}
 }

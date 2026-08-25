@@ -311,7 +311,11 @@ func (c *Config) GetDatabaseDSN() string {
 
 // buildMySQLDSN is retained only for the deprecated string DSN API above.
 func (c *Config) buildMySQLDSN() string {
-	return c.Database.MySQLDriverConfig().FormatDSN()
+	dsnConfig, err := c.Database.MySQLDriverConfig()
+	if err != nil {
+		return ""
+	}
+	return dsnConfig.FormatDSN()
 }
 
 // MySQLDriverConfig builds a go-sql-driver configuration from database
@@ -319,14 +323,18 @@ func (c *Config) buildMySQLDSN() string {
 // credentials never pass through DSN parsing. An invalid Loc falls back to the
 // driver's default UTC location; configuration validation is responsible for
 // rejecting invalid values earlier.
-func (c DatabaseConfig) MySQLDriverConfig() *drivermysql.Config {
+func (c DatabaseConfig) MySQLDriverConfig() (*drivermysql.Config, error) {
 	dsnConfig := drivermysql.NewConfig()
+	if err := dsnConfig.Apply(drivermysql.Charset(c.GetCharset(), "")); err != nil {
+		return nil, fmt.Errorf("invalid MySQL charset %q: %w", c.GetCharset(), err)
+	}
+
+	// Credentials are assigned structurally and are never parsed from a DSN.
 	dsnConfig.User = c.Username
 	dsnConfig.Passwd = c.Password
 	dsnConfig.Net = "tcp"
 	dsnConfig.Addr = fmt.Sprintf("%s:%s", c.Host, c.Port)
 	dsnConfig.DBName = c.Database
-	dsnConfig.Params = map[string]string{"charset": c.GetCharset()}
 	dsnConfig.ParseTime = c.GetParseTime()
 	if tlsConfig := mysqlTLSConfig(c.SSLMode); tlsConfig != "" {
 		dsnConfig.TLSConfig = tlsConfig
@@ -334,7 +342,7 @@ func (c DatabaseConfig) MySQLDriverConfig() *drivermysql.Config {
 	if location, err := time.LoadLocation(c.GetLoc()); err == nil {
 		dsnConfig.Loc = location
 	}
-	return dsnConfig
+	return dsnConfig, nil
 }
 
 func mysqlTLSConfig(sslMode string) string {

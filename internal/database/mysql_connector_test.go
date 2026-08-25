@@ -23,7 +23,10 @@ func TestMySQLDriverConfigPreservesCredentials(t *testing.T) {
 		ParseTime: true,
 	}
 
-	got := cfg.MySQLDriverConfig()
+	got, err := cfg.MySQLDriverConfig()
+	if err != nil {
+		t.Fatalf("MySQLDriverConfig() error = %v", err)
+	}
 	if got.User != cfg.Username {
 		t.Fatalf("user = %q, want %q", got.User, cfg.Username)
 	}
@@ -39,8 +42,8 @@ func TestMySQLDriverConfigPreservesCredentials(t *testing.T) {
 	if got.DBName != cfg.Database {
 		t.Fatalf("database = %q, want %q", got.DBName, cfg.Database)
 	}
-	if got.Params["charset"] != cfg.GetCharset() {
-		t.Fatalf("charset = %q, want %q", got.Params["charset"], cfg.GetCharset())
+	if _, exists := got.Params["charset"]; exists {
+		t.Fatal("charset must be handled by the MySQL driver, not sent as a system variable")
 	}
 	if !got.ParseTime {
 		t.Fatal("parseTime = false, want true")
@@ -67,7 +70,10 @@ func TestOpenMySQLSQLSetsMigrationMultiStatements(t *testing.T) {
 	}
 	// The connector itself is opaque; assert construction of the equivalent
 	// configuration to keep migration multi-statement behavior covered.
-	cfg := config.DatabaseConfig{Charset: "utf8mb4", Loc: "UTC"}.MySQLDriverConfig()
+	cfg, err := config.DatabaseConfig{Charset: "utf8mb4", Loc: "UTC"}.MySQLDriverConfig()
+	if err != nil {
+		t.Fatalf("MySQLDriverConfig() error = %v", err)
+	}
 	cfg.MultiStatements = true
 	if _, err := drivermysql.NewConnector(cfg); err != nil {
 		t.Fatalf("NewConnector() error = %v", err)

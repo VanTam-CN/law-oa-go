@@ -14,7 +14,11 @@ import (
 // given the resulting database/sql connection pool directly, so credentials
 // are never formatted into and re-parsed from a DSN.
 func openMySQLGORM(cfg config.DatabaseConfig, gormConfig *gorm.Config) (*gorm.DB, error) {
-	conn, err := drivermysql.NewConnector(cfg.MySQLDriverConfig())
+	driverConfig, err := cfg.MySQLDriverConfig()
+	if err != nil {
+		return nil, err
+	}
+	conn, err := drivermysql.NewConnector(driverConfig)
 	if err != nil {
 		return nil, fmt.Errorf("build MySQL connector: %w", err)
 	}
@@ -24,7 +28,10 @@ func openMySQLGORM(cfg config.DatabaseConfig, gormConfig *gorm.Config) (*gorm.DB
 // openMySQLSQL opens MySQL from a structured driver configuration for callers
 // that need database/sql rather than GORM.
 func openMySQLSQL(cfg config.DatabaseConfig, multiStatements bool) (*sql.DB, error) {
-	driverConfig := cfg.MySQLDriverConfig()
+	driverConfig, err := cfg.MySQLDriverConfig()
+	if err != nil {
+		return nil, err
+	}
 	driverConfig.MultiStatements = multiStatements
 	conn, err := drivermysql.NewConnector(driverConfig)
 	if err != nil {
