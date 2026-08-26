@@ -420,6 +420,7 @@ const AppHeader: React.FC = () => {
               },
             }}
             placement='bottomRight'
+            transitionName=''
             onOpenChange={setNotificationVisible}
             open={notificationVisible}
             trigger={['click']}
@@ -460,6 +461,7 @@ const AppHeader: React.FC = () => {
                 handleMenuContainerKeyDown(event, setUserMenuVisible, userButtonRef),
             }}
             placement='bottomRight'
+            transitionName=''
             onOpenChange={setUserMenuVisible}
             open={userMenuVisible}
             trigger={['click']}
