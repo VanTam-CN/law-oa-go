@@ -1,7 +1,12 @@
 import React from 'react'
 import { Alert, Card, Form, Input, Button, Checkbox } from 'antd'
 import { message } from '@/utils/messageHelper'
-import { UserOutlined, LockOutlined } from '@ant-design/icons'
+import {
+  EyeInvisibleOutlined,
+  EyeOutlined,
+  LockOutlined,
+  UserOutlined,
+} from '@ant-design/icons'
 import { useNavigate } from 'react-router'
 import { login, setToken } from '@/services/auth'
 import { getCurrentUserPermissions, getCurrentUserRoles } from '@/services/role'
@@ -29,6 +34,7 @@ const LoginPage: React.FC = () => {
   const [form] = Form.useForm<LoginFormValues>()
   const [loading, setLoading] = React.useState(false)
   const [loginError, setLoginError] = React.useState('')
+  const [passwordVisible, setPasswordVisible] = React.useState(false)
 
   const onFinish = async (values: LoginFormValues) => {
     try {
@@ -72,7 +78,7 @@ const LoginPage: React.FC = () => {
         // 构造用户对象，映射后端字段到前端需要的格式
         const user = {
           id: userData.id.toString(),
-          username: userData.email, // 使用email作为username
+          username: userData.username || userData.email,
           realName: userData.name || userData.real_name || userData.username || userData.email,
           email: userData.email,
           roles: roleCodes,
@@ -135,13 +141,27 @@ const LoginPage: React.FC = () => {
               prefix={<UserOutlined />}
               placeholder='账号或邮箱'
               autoComplete='username'
+              aria-label='账号或邮箱'
             />
           </Form.Item>
           <Form.Item name='password' rules={[{ required: true, message: '请输入密码' }]}>
-            <Input.Password
+            <Input
+              type={passwordVisible ? 'text' : 'password'}
               prefix={<LockOutlined />}
+              suffix={
+                <button
+                  type='button'
+                  className='login-password-toggle'
+                  aria-label={passwordVisible ? '隐藏密码' : '显示密码'}
+                  aria-pressed={passwordVisible}
+                  onClick={() => setPasswordVisible((visible) => !visible)}
+                >
+                  {passwordVisible ? <EyeOutlined /> : <EyeInvisibleOutlined />}
+                </button>
+              }
               placeholder='密码'
               autoComplete='current-password'
+              aria-label='密码'
             />
           </Form.Item>
           <Form.Item name='remember' valuePropName='checked'>

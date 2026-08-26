@@ -35,3 +35,12 @@ describe('conflict governance roles', () => {
     expect(hasPermission(user, 'conflict:governance')).toBe(false)
   })
 })
+
+describe('compliance reviewer approval access', () => {
+  it('can view assigned conflict approvals without receiving general approval management', () => {
+    const user = { roles: ['compliance'], permissions: [] } as any
+    expect(hasPermission(user, 'approval:view')).toBe(true)
+    expect(hasPermission(user, 'approval:manage')).toBe(false)
+    expect(hasPermission(user, 'conflict:governance')).toBe(true)
+  })
+})

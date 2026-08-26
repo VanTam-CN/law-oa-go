@@ -37,6 +37,30 @@ test.describe('登录流程', () => {
     await expect(page.locator('.ant-message')).toContainText('账号或密码错误')
   })
 
+  test('密码显隐控件应支持键盘操作并同步状态', async ({ page }) => {
+    const passwordInput = page.getByRole('textbox', { name: '密码' })
+    const toggle = page.getByRole('button', { name: '显示密码' })
+
+    await expect(toggle).toBeVisible()
+    await expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    await passwordInput.fill('Demo@2026')
+    await toggle.focus()
+    await page.keyboard.press('Space')
+
+    await expect(passwordInput).toHaveAttribute('type', 'text')
+    await expect(page.getByRole('button', { name: '隐藏密码' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+
+    await page.getByRole('button', { name: '隐藏密码' }).click()
+    await expect(passwordInput).toHaveAttribute('type', 'password')
+    await expect(page.getByRole('button', { name: '显示密码' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+  })
+
   test('律师账号登录后应该进入工作台', async ({ page }) => {
     await login(page, 'lawyer')
     await waitForAppShell(page)
@@ -128,5 +152,39 @@ test.describe('顶部入口反馈', () => {
 
     await expect(page.getByText('暂无通知')).toBeVisible()
     await expect(page.getByText('全部已读')).toHaveCount(0)
+  })
+
+  test('用户菜单应支持键盘打开、焦点管理和关闭', async ({ page }) => {
+    await waitForAppShell(page)
+    const userButton = page.getByRole('button', { name: '用户菜单：张律师' })
+
+    await userButton.focus()
+    await page.keyboard.press('Enter')
+    await expect(userButton).toHaveAttribute('aria-expanded', 'true')
+    await expect(page.getByRole('menu', { name: '用户菜单' })).toBeFocused()
+
+    await page.keyboard.press('Escape')
+    await expect(userButton).toHaveAttribute('aria-expanded', 'false')
+    await expect(userButton).toBeFocused()
+
+    await page.keyboard.press('Space')
+    await expect(userButton).toHaveAttribute('aria-expanded', 'true')
+    await page.mouse.click(600, 300)
+    await expect(userButton).toHaveAttribute('aria-expanded', 'false')
+    await expect(userButton).toBeFocused()
+  })
+
+  test('通知中心应支持键盘打开、关闭和焦点返回', async ({ page }) => {
+    await waitForAppShell(page)
+    const notificationButton = page.getByRole('button', { name: '通知中心' })
+
+    await notificationButton.focus()
+    await page.keyboard.press('Space')
+    await expect(notificationButton).toHaveAttribute('aria-expanded', 'true')
+    await expect(page.getByRole('menu', { name: '通知中心' })).toBeFocused()
+
+    await page.keyboard.press('Escape')
+    await expect(notificationButton).toHaveAttribute('aria-expanded', 'false')
+    await expect(notificationButton).toBeFocused()
   })
 })

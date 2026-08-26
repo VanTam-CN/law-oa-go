@@ -39,6 +39,7 @@ import {
   MoreOutlined,
   PlusOutlined,
   PrinterOutlined,
+  QuestionCircleOutlined,
   SafetyCertificateOutlined,
   SearchOutlined,
   SettingOutlined,
@@ -51,7 +52,7 @@ import type { Role } from '@/services/role'
 import { getRoles, getToken, getUserInfo } from '@/utils/storage'
 import { message } from '@/utils/messageHelper'
 import { useAppStore } from '@/stores/useAppStore'
-import { hasPermission } from '@/utils/accessControl'
+import { canAccess, hasPermission } from '@/utils/accessControl'
 import './Batch01Prototype.less'
 
 type Tone = 'blue' | 'teal' | 'red' | 'orange' | 'green' | 'slate'
@@ -1069,6 +1070,20 @@ export const conflictCheckRequiredFieldLabels: Record<ConflictCheckRequiredField
   subArea: '子领域',
 }
 
+export const firstRunGuidance = {
+  requiredChecklist: Object.values(conflictCheckRequiredFieldLabels),
+  nextStep: '先完成上述最小必填项，再点击“保存最新输入并检测”。其余资料可后续补充。',
+  restoreNotice:
+    '为保护当事人隐私，本机草稿不保留对方身份标识；恢复后请重新填写，再运行利益冲突检查。',
+  saveFailure:
+    '草稿暂存失败，已填写内容仍保留在本页。请检查网络后重试；若持续失败，请联系律所管理员。',
+  help: {
+    title: '立案帮助与支持',
+    content:
+      '首次上手建议：先补齐案件名称、当事人、负责律师和案件分类；中途可点“保存草稿”或“保存并退出”，下次进入本页会提示恢复。若无法登录或页面异常，请联系律所管理员；案件录入问题请在系统内联系负责律师或合伙人。',
+  },
+}
+
 const hasConflictCheckValue = (value: string | number | null | undefined) =>
   typeof value === 'number' ? value > 0 : String(value || '').trim().length > 0
 
@@ -1575,10 +1590,11 @@ function StatusDot({ color }: { color: Tone }) {
 
 export function DashboardCommandCenter() {
   const navigate = useNavigate()
-  const currentUserInfo = getUserInfo()
-  const canViewFinance = ['admin', 'super_admin', 'finance'].includes(
-    textValue(currentUserInfo?.role, '').toLowerCase(),
-  )
+  const currentUserInfo = useAppStore((state) => state.user)
+  const canCreateCase = canAccess(currentUserInfo, 'case:manage', 'assistant')
+  const canCheckConflict = canAccess(currentUserInfo, 'conflict:check')
+  const canViewApproval = canAccess(currentUserInfo, 'approval:view')
+  const canViewFinance = canAccess(currentUserInfo, 'finance:view')
   const [commandCenter, setCommandCenter] = React.useState<CommandCenterPayload | null>(null)
   const [financeOverview, setFinanceOverview] = React.useState<FinanceOverviewPayload | null>(null)
   const [apiLoading, setApiLoading] = React.useState(false)
@@ -1636,9 +1652,62 @@ export function DashboardCommandCenter() {
   const overdueItems = listOf(commandCenter?.overdue_tasks)
   const activities = listOf(commandCenter?.recent_activities)
   const currentUserName = textValue(
-    currentUserInfo?.realName || currentUserInfo?.name || currentUserInfo?.username,
+    currentUserInfo?.realName || currentUserInfo?.username,
     '律师',
   )
+  const dashboardQuickActions = [
+    ...(canCreateCase
+      ? [
+          {
+            key: 'case-create',
+            icon: '案',
+            name: '新建立案',
+            description: '录入新案件信息',
+            path: '/case/create',
+          },
+        ]
+      : []),
+    {
+      key: 'inbox',
+      icon: '办',
+      name: '待办中心',
+      description: '处理 inbox 待办',
+      path: '/inbox',
+    },
+    ...(canCheckConflict
+      ? [
+          {
+            key: 'conflict-check',
+            icon: '冲',
+            name: '冲突检测',
+            description: '复核利益冲突',
+            path: '/conflict',
+          },
+        ]
+      : []),
+    ...(canViewApproval
+      ? [
+          {
+            key: 'approval-queue',
+            icon: '审',
+            name: '审批队列',
+            description: '待审批事项',
+            path: '/approval',
+          },
+        ]
+      : []),
+    ...(canViewFinance
+      ? [
+          {
+            key: 'dashboard',
+            icon: '析',
+            name: '数据看板',
+            description: '经营分析',
+            path: '/dashboard',
+          },
+        ]
+      : []),
+  ]
   const pendingApprovals = summary?.pending_approvals ?? 0
   const openConflicts = summary?.open_conflict_tasks ?? 0
   const activeCases = summary?.active_cases ?? 0
@@ -1769,14 +1838,16 @@ export function DashboardCommandCenter() {
             <Button size='small' onClick={refreshCommandCenter} loading={apiLoading}>
               刷新接口
             </Button>
-            <Button
-              size='small'
-              type='primary'
-              icon={<PlusOutlined />}
-              onClick={() => navigate('/case/create')}
-            >
-              新建立案
-            </Button>
+            {canCreateCase && (
+              <Button
+                size='small'
+                type='primary'
+                icon={<PlusOutlined />}
+                onClick={() => navigate('/case/create')}
+              >
+                新建立案
+              </Button>
+            )}
           </span>
         </div>
       </header>
@@ -2160,31 +2231,25 @@ export function DashboardCommandCenter() {
 
       <div className='ng-section-title'>快捷入口</div>
       <div className='ng-shortcuts'>
-        <div className='ng-shortcut' onClick={() => navigate('/case/create')}>
-          <div className='ng-shortcut-ico'>案</div>
-          <div className='ng-shortcut-name'>新建立案</div>
-          <div className='ng-shortcut-desc'>录入新案件信息</div>
-        </div>
-        <div className='ng-shortcut' onClick={() => navigate('/inbox')}>
-          <div className='ng-shortcut-ico'>办</div>
-          <div className='ng-shortcut-name'>待办中心</div>
-          <div className='ng-shortcut-desc'>处理 inbox 待办</div>
-        </div>
-        <div className='ng-shortcut' onClick={() => navigate('/conflict')}>
-          <div className='ng-shortcut-ico'>冲</div>
-          <div className='ng-shortcut-name'>冲突检测</div>
-          <div className='ng-shortcut-desc'>复核利益冲突</div>
-        </div>
-        <div className='ng-shortcut' onClick={() => navigate('/approval')}>
-          <div className='ng-shortcut-ico'>审</div>
-          <div className='ng-shortcut-name'>审批队列</div>
-          <div className='ng-shortcut-desc'>待审批事项</div>
-        </div>
-        <div className='ng-shortcut' onClick={() => navigate('/dashboard')}>
-          <div className='ng-shortcut-ico'>析</div>
-          <div className='ng-shortcut-name'>数据看板</div>
-          <div className='ng-shortcut-desc'>经营分析</div>
-        </div>
+        {dashboardQuickActions.map((action) => (
+          <button
+            key={action.key}
+            type='button'
+            className='ng-shortcut'
+            onClick={() => navigate(action.path)}
+          >
+            <div className='ng-shortcut-ico'>{action.icon}</div>
+            <div className='ng-shortcut-name'>{action.name}</div>
+            <div className='ng-shortcut-desc'>{action.description}</div>
+          </button>
+        ))}
+        {!canCreateCase && (
+          <div className='ng-shortcut ng-shortcut-guidance' role='note'>
+            <div className='ng-shortcut-ico'>申</div>
+            <div className='ng-shortcut-name'>申请立案指引</div>
+            <div className='ng-shortcut-desc'>请联系管理员开通立案权限</div>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -4181,7 +4246,11 @@ export function CaseIntakeWorkbench() {
         }
       })
       .catch((error) => {
-        message.error(error instanceof Error ? error.message : '加载客户或律师失败')
+        message.error(
+          error instanceof Error
+            ? `客户或律师名单加载失败：${error.message}。已填写内容仍会保留，可稍后刷新重试；若持续失败，请联系律所管理员。`
+            : '客户或律师名单加载失败，已填写内容仍会保留。请稍后刷新重试；若持续失败，请联系律所管理员。',
+        )
       })
 
     return () => {
@@ -4605,7 +4674,11 @@ export function CaseIntakeWorkbench() {
     }
     setStoredDraft(null)
     setDraftActive(true)
-    message.success('已恢复当前账号的未完成草稿')
+    message.success(
+      storedDraft.opponentIdentityNumber
+        ? '已恢复当前账号的未完成草稿'
+        : `已恢复当前账号的未完成草稿。${firstRunGuidance.restoreNotice}`,
+    )
   }
 
   const discardStoredDraft = () => {
@@ -4622,7 +4695,11 @@ export function CaseIntakeWorkbench() {
     try {
       await createIntake()
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '暂存失败')
+      message.error(
+        error instanceof Error
+          ? `${error.message}。${firstRunGuidance.saveFailure}`
+          : firstRunGuidance.saveFailure,
+      )
     }
   }
 
@@ -4677,7 +4754,11 @@ export function CaseIntakeWorkbench() {
       await createIntake()
       navigate('/case')
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '保存并退出失败')
+      message.error(
+        error instanceof Error
+          ? `${error.message}。${firstRunGuidance.saveFailure}`
+          : firstRunGuidance.saveFailure,
+      )
     }
   }
 
@@ -4701,19 +4782,41 @@ export function CaseIntakeWorkbench() {
             : '新建案件默认使用空白表单，未完成草稿需要手动恢复。'
         }
         actions={
-          <span className='batch-autosave'>
-            加载耗时：
-            {runtime.apiTimings[0]
-              ? `${runtime.apiTimings[0].label} ${runtime.apiTimings[0].duration}ms`
-              : '待调用'}
-          </span>
+          <Button
+            icon={<QuestionCircleOutlined />}
+            onClick={() =>
+              Modal.info({
+                title: firstRunGuidance.help.title,
+                content: (
+                  <>
+                    <p>{firstRunGuidance.nextStep}</p>
+                    <p>{firstRunGuidance.help.content}</p>
+                  </>
+                ),
+                okText: '知道了',
+              })
+            }
+          >
+            帮助与支持
+          </Button>
         }
       />
+
+      {!storedDraft && !draftActive && !isAssistant && (
+        <div className='batch-advice' role='status'>
+          <strong>首次上手最小路径</strong>
+          <p>{firstRunGuidance.requiredChecklist.join('、')}</p>
+          <p>{firstRunGuidance.nextStep}</p>
+        </div>
+      )}
 
       {storedDraft && (
         <div className='batch-advice' role='status'>
           <strong>发现当前账号的未完成草稿：{storedDraft.title || '未命名案件'}</strong>
-          <p>草稿不会自动覆盖当前表单。请选择继续草稿或放弃旧草稿。</p>
+          <p>
+            草稿不会自动覆盖当前表单。请选择继续草稿或放弃旧草稿。
+            {!storedDraft.opponentIdentityNumber && firstRunGuidance.restoreNotice}
+          </p>
           <Space>
             <Button type='primary' onClick={continueStoredDraft}>
               继续未完成草稿
@@ -5550,16 +5653,9 @@ export function CaseIntakeWorkbench() {
               </>
             )}
           </SectionCard>
-          <SectionCard title='接口响应'>
-            {runtime.apiTimings.length === 0 ? (
-              <p>尚未加载数据</p>
-            ) : (
-              runtime.apiTimings.map((item) => (
-                <p key={`${item.label}-${item.at}`}>
-                  {item.label} <strong>{item.duration}ms</strong> <span>{item.at}</span>
-                </p>
-              ))
-            )}
+          <SectionCard title='保存状态'>
+            <p>{draftActive ? '系统会随填写保留当前草稿。' : '尚未开始保留本次草稿。'}</p>
+            <p>可在页面底部选择“保存草稿”或“保存并退出”，下次进入本页会提示恢复。</p>
           </SectionCard>
         </aside>
       </div>
@@ -6042,6 +6138,14 @@ export function ConflictCheckResults() {
     ].includes(role),
   )
   const hasExistingReview = Boolean(latestReview.id)
+  const assignedReviewerID = numberValue(
+    reviewerAssignment.reviewer_id || reviewerAssignment.reviewerId,
+    0,
+  )
+  const currentUserIsAssignedReviewer = isAssignedConflictReviewer(
+    currentUserInfo?.id,
+    reviewerAssignment,
+  )
 
   const loadSubjectRegistrations = React.useCallback(() => {
     if (!canReviewConflict) {
@@ -7277,7 +7381,7 @@ export function ConflictCheckResults() {
                         value={reviewDecision || undefined}
                         placeholder='选择复核结论'
                         style={{ width: '100%' }}
-                        disabled={hasExistingReview}
+                        disabled={hasExistingReview || !currentUserIsAssignedReviewer}
                         onChange={setReviewDecision}
                         options={[
                           { value: 'no_conflict', label: '无冲突' },
@@ -7291,19 +7395,31 @@ export function ConflictCheckResults() {
                         value={reviewNotes}
                         onChange={(event) => setReviewNotes(event.target.value)}
                         rows={3}
-                        disabled={hasExistingReview}
+                        disabled={hasExistingReview || !currentUserIsAssignedReviewer}
                         placeholder='填写核对对象、数据来源和判断依据'
                       />
                       <Button
                         type='primary'
                         loading={submittingReview}
-                        disabled={hasExistingReview}
+                        disabled={hasExistingReview || !currentUserIsAssignedReviewer}
                         onClick={submitConflictReview}
                       >
                         {hasExistingReview ? '已完成复核' : '提交人工复核结论'}
                       </Button>
                       {hasExistingReview && (
                         <p>当前检测记录已有复核结论。如有新证据，请重新运行冲突检测后再复核。</p>
+                      )}
+                      {!hasExistingReview && !currentUserIsAssignedReviewer && (
+                        <p>
+                          已指定独立复核人：
+                          {textValue(
+                            reviewerCandidates.find(
+                              (candidate) => numberValue(candidate.id, 0) === assignedReviewerID,
+                            )?.name,
+                            assignedReviewerID > 0 ? String(assignedReviewerID) : '-',
+                          )}
+                          。当前账号负责指定复核人，不能代其提交本次复核结论。
+                        </p>
                       )}
                     </Space>
                   ) : (
@@ -7457,6 +7573,17 @@ export function ConflictCheckResults() {
       </Modal>
     </div>
   )
+}
+
+export function isAssignedConflictReviewer(
+  currentUserID: unknown,
+  reviewerAssignment: Record<string, unknown>,
+) {
+  const assignedReviewerID = numberValue(
+    reviewerAssignment.reviewer_id || reviewerAssignment.reviewerId,
+    0,
+  )
+  return numberValue(currentUserID, 0) === assignedReviewerID && assignedReviewerID > 0
 }
 
 export function ApprovalDecisionFlow() {

@@ -13,6 +13,28 @@ import (
 	"law-oa-go/internal/models"
 )
 
+type mockTokenManager struct{}
+
+func (m *mockTokenManager) VerifyToken(_ context.Context, _ string) (*map[string]interface{}, error) {
+	return &map[string]interface{}{}, nil
+}
+
+func (m *mockTokenManager) ExtractTokenMetadata(_ context.Context, _ string) (*TokenPayload, error) {
+	return nil, fmt.Errorf("not implemented by test double")
+}
+
+func (m *mockTokenManager) RevokeAllUserTokens(_ context.Context, _ uint) error {
+	return nil
+}
+
+func (m *mockTokenManager) BlacklistToken(_ context.Context, _ string, _ time.Duration) error {
+	return nil
+}
+
+func (m *mockTokenManager) IsTokenBlacklisted(_ context.Context, _ string) bool {
+	return false
+}
+
 func newSession(user uint, device string) *models.AuthTokenSession {
 	now := time.Now()
 	return &models.AuthTokenSession{

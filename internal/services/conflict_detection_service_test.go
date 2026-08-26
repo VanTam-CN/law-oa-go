@@ -468,7 +468,7 @@ func TestConflictReviewRejectsLimitedCoverage(t *testing.T) {
 		conflictRepo: repositories.NewConflictRepository(db, nil),
 	}
 	_, err := service.ReviewConflict(context.Background(), "limited-review", "no_conflict", "范围受限不得形成无冲突结论", 8, "独立核查人", nil)
-	if code := reviewerErrorCode(t, err); code != "COVERAGE_LIMITED" {
+	if code := assignedReviewerErrorCode(t, err); code != "COVERAGE_LIMITED" {
 		t.Fatalf("expected coverage gate, got %s", code)
 	}
 
