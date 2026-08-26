@@ -69,7 +69,7 @@ describe('OperationsReadiness', () => {
   })
 
   it('fails closed when the evidence hash chain cannot be verified', async () => {
-    ;(getOperationsReadinessSummary as jest.Mock).mockResolvedValue({
+    (getOperationsReadinessSummary as jest.Mock).mockResolvedValue({
       ...emptySummary,
       score: 0,
       items: emptySummary.items.map((item) => ({ ...item, integrity: 'failed' })),
@@ -82,7 +82,7 @@ describe('OperationsReadiness', () => {
   })
 
   it('shows the auditable evidence hash with the latest registration', async () => {
-    ;(getOperationsReadinessSummary as jest.Mock).mockResolvedValue(registeredSummary)
+    (getOperationsReadinessSummary as jest.Mock).mockResolvedValue(registeredSummary)
 
     render(<OperationsReadiness />)
 
