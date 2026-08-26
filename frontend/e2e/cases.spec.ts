@@ -133,6 +133,21 @@ test.describe('新建立案工作台', () => {
     await expect(page.locator('.batch-field', { hasText: '案件名称' }).getByRole('textbox')).toHaveValue('')
   })
 
+  test('首次新建应显示最小必填路径并隐藏工程诊断', async ({ page }) => {
+    await waitForAppShell(page)
+
+    await expect(page.getByText('首次上手最小路径')).toBeVisible()
+    await expect(page.getByText(/案件名称、客户、对方当事人、对方身份标识/)).toBeVisible()
+    await expect(page.getByText(/先完成上述最小必填项/)).toBeVisible()
+    await expect(page.getByText('加载耗时')).toHaveCount(0)
+    await expect(page.getByText('接口响应')).toHaveCount(0)
+
+    await page.getByRole('button', { name: '帮助与支持' }).click()
+    await expect(page.getByRole('dialog').getByText('立案帮助与支持')).toBeVisible()
+    await expect(page.getByRole('dialog').getByText(/下次进入本页会提示恢复/)).toBeVisible()
+    await expect(page.getByRole('dialog').getByText(/联系律所管理员/)).toBeVisible()
+  })
+
   test('应该能暂存接案草稿', async ({ page }) => {
     await fillCaseIntakeBasics(page)
     await page.getByRole('button', { name: '保存草稿' }).click()

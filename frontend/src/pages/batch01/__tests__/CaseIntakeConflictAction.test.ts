@@ -5,6 +5,7 @@ import {
   conflictCheckRequiredFieldLabels,
   getConflictCheckFallbackMessage,
   getMissingConflictCheckFields,
+  firstRunGuidance,
   persistableCaseIntakeDraft,
   scopedCaseIntakeDraftKey,
 } from '../Batch01Prototype'
@@ -72,6 +73,23 @@ describe('CaseIntakeWorkbench conflict action', () => {
     expect(getConflictCheckFallbackMessage()).toBe(
       '试用版当前使用样例冲突复核流程，请在利益冲突工作台查看待复核事项。',
     )
+  })
+
+  it('provides a lawyer-readable first-run path and support guidance', () => {
+    expect(firstRunGuidance.requiredChecklist).toEqual([
+      '案件名称',
+      '客户',
+      '对方当事人',
+      '对方身份标识',
+      '负责律师',
+      '案件类型',
+      '业务领域',
+      '子领域',
+    ])
+    expect(firstRunGuidance.nextStep).toContain('保存最新输入并检测')
+    expect(firstRunGuidance.help.content).toContain('保存并退出')
+    expect(firstRunGuidance.help.content).toContain('联系律所管理员')
+    expect(JSON.stringify(firstRunGuidance)).not.toMatch(/API|ms|接口响应|诊断/)
   })
 
   it('does not treat a matched conflict case as the subject case', () => {

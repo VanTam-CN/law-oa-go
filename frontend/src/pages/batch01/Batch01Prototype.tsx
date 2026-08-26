@@ -39,6 +39,7 @@ import {
   MoreOutlined,
   PlusOutlined,
   PrinterOutlined,
+  QuestionCircleOutlined,
   SafetyCertificateOutlined,
   SearchOutlined,
   SettingOutlined,
@@ -1067,6 +1068,16 @@ export const conflictCheckRequiredFieldLabels: Record<ConflictCheckRequiredField
   caseType: '案件类型',
   businessArea: '业务领域',
   subArea: '子领域',
+}
+
+export const firstRunGuidance = {
+  requiredChecklist: Object.values(conflictCheckRequiredFieldLabels),
+  nextStep: '先完成上述最小必填项，再点击“保存最新输入并检测”。其余资料可后续补充。',
+  help: {
+    title: '立案帮助与支持',
+    content:
+      '首次上手建议：先补齐案件名称、当事人、负责律师和案件分类；中途可点“保存草稿”或“保存并退出”，下次进入本页会提示恢复。若无法登录或页面异常，请联系律所管理员；案件录入问题请在系统内联系负责律师或合伙人。',
+  },
 }
 
 const hasConflictCheckValue = (value: string | number | null | undefined) =>
@@ -4701,14 +4712,38 @@ export function CaseIntakeWorkbench() {
             : '新建案件默认使用空白表单，未完成草稿需要手动恢复。'
         }
         actions={
-          <span className='batch-autosave'>
-            加载耗时：
-            {runtime.apiTimings[0]
-              ? `${runtime.apiTimings[0].label} ${runtime.apiTimings[0].duration}ms`
-              : '待调用'}
-          </span>
+          <Space>
+            <Button
+              icon={<QuestionCircleOutlined />}
+              onClick={() =>
+                Modal.info({
+                  title: firstRunGuidance.help.title,
+                  content: (
+                    <>
+                      <p>{firstRunGuidance.nextStep}</p>
+                      <p>{firstRunGuidance.help.content}</p>
+                    </>
+                  ),
+                  okText: '知道了',
+                })
+              }
+            >
+              帮助与支持
+            </Button>
+            <span className='batch-autosave' aria-hidden='true'>
+              数据保存中…
+            </span>
+          </Space>
         }
       />
+
+      {!storedDraft && !draftActive && !isAssistant && (
+        <div className='batch-advice' role='status'>
+          <strong>首次上手最小路径</strong>
+          <p>{firstRunGuidance.requiredChecklist.join('、')}</p>
+          <p>{firstRunGuidance.nextStep}</p>
+        </div>
+      )}
 
       {storedDraft && (
         <div className='batch-advice' role='status'>
@@ -5550,16 +5585,9 @@ export function CaseIntakeWorkbench() {
               </>
             )}
           </SectionCard>
-          <SectionCard title='接口响应'>
-            {runtime.apiTimings.length === 0 ? (
-              <p>尚未加载数据</p>
-            ) : (
-              runtime.apiTimings.map((item) => (
-                <p key={`${item.label}-${item.at}`}>
-                  {item.label} <strong>{item.duration}ms</strong> <span>{item.at}</span>
-                </p>
-              ))
-            )}
+          <SectionCard title='保存状态'>
+            <p>{draftActive ? '系统会随填写保留当前草稿。' : '尚未开始保留本次草稿。'}</p>
+            <p>可在页面底部选择“保存草稿”或“保存并退出”，下次进入本页会提示恢复。</p>
           </SectionCard>
         </aside>
       </div>
