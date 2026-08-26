@@ -13,7 +13,7 @@ import (
 // ProductionSchemaVersion identifies the idempotent PostgreSQL bootstrap
 // contract. A future breaking schema change must introduce a new version and
 // an explicit migration instead of relying on application startup side effects.
-const ProductionSchemaVersion = "postgres-mvp-2026-08-05-v13"
+const ProductionSchemaVersion = "postgres-mvp-2026-08-27-v14"
 
 // productionCaseIntake and the following small records back tables that are
 // intentionally written through Table(...) by the intake/approval workflow.
@@ -132,6 +132,24 @@ type productionSchemaState struct {
 }
 
 func (productionSchemaState) TableName() string { return "schema_bootstrap_state" }
+
+// productionExternalEvidence mirrors migration 000079 so a fresh production
+// PostgreSQL database exposes the same append-only evidence surface consumed
+// by the production readiness gate.
+type productionExternalEvidence struct {
+	ID                uint64    `gorm:"primaryKey"`
+	Gate              string    `gorm:"column:gate;size:8;not null;uniqueIndex:uq_production_external_evidence_gate_reviewer,priority:1"`
+	EvidenceReference string    `gorm:"column:evidence_reference;type:text;not null"`
+	ReviewedBy        string    `gorm:"column:reviewed_by;size:120;not null;uniqueIndex:uq_production_external_evidence_gate_reviewer,priority:2"`
+	ReviewerRole      string    `gorm:"column:reviewer_role;size:80;not null"`
+	ReviewResult      string    `gorm:"column:review_result;size:20;not null"`
+	ReviewedAt        string    `gorm:"column:reviewed_at;not null"`
+	IntegrityHash     string    `gorm:"column:integrity_hash;size:64;not null"`
+	CreatedAt         time.Time `gorm:"column:created_at;type:text;not null"`
+	UpdatedAt         time.Time `gorm:"column:updated_at;type:text;not null"`
+}
+
+func (productionExternalEvidence) TableName() string { return "production_external_evidence" }
 
 // productionDepartment avoids pulling the legacy Department.Users relation
 // into GORM's PostgreSQL schema parser. The production runtime currently
@@ -335,6 +353,10 @@ func validateProductionSchemaContract(db *gorm.DB) error {
 		"waiver_signatures":         {"id", "waiver_application_id", "signer_type", "signature_content", "signature_timestamp", "status"},
 		"waiver_monitoring_records": {"id", "waiver_application_id", "monitoring_type", "monitoring_date", "compliance_status", "monitored_by", "status"},
 		"schema_bootstrap_state":    {"id", "version", "applied_at"},
+		"production_external_evidence": {
+			"id", "gate", "evidence_reference", "reviewed_by", "reviewer_role", "review_result",
+			"reviewed_at", "integrity_hash", "created_at", "updated_at",
+		},
 	}
 	for table, columns := range required {
 		columnTypes, err := db.Migrator().ColumnTypes(table)
@@ -418,6 +440,7 @@ func validateProductionSchemaContract(db *gorm.DB) error {
 		{name: "trg_law_firm_policy_packages_append_only", table: "law_firm_compliance_policy_packages"},
 		{name: "trg_law_firm_policy_endorsements_append_only", table: "law_firm_compliance_policy_endorsements"},
 		{name: "trg_conflict_officer_appointments_append_only", table: "conflict_officer_appointments"},
+		{name: "trg_production_external_evidence_append_only", table: "production_external_evidence"},
 	} {
 		var triggerCount int64
 		if err := db.Raw(`
@@ -707,6 +730,7 @@ func validateProductionSchemaRelationalContract(db *gorm.DB) error {
 		{name: "idx_law_firm_compliance_policy_status", table: "law_firm_compliance_policy_profiles", definition: "(status, effective_at, next_review_at)"},
 		{name: "idx_policy_endorsement_actor", table: "law_firm_compliance_policy_endorsements", definition: "(endorsed_by, created_at)"},
 		{name: "idx_conflict_officer_appointment_term", table: "conflict_officer_appointments", definition: "(officer_id, effective_from, effective_to)"},
+		{name: "uq_production_external_evidence_gate_reviewer", table: "production_external_evidence", definition: "(gate, reviewed_by)"},
 		// PostgreSQL simplifies the boolean predicate to WHERE is_primary in
 		// pg_indexes. Require the semantic parts so either supported canonical
 		// spelling proves that the partial uniqueness guarantee is present.
@@ -834,6 +858,7 @@ $$`).Error; err != nil {
 		{name: "trg_law_firm_policy_packages_append_only", table: "law_firm_compliance_policy_packages", operation: "UPDATE OR DELETE"},
 		{name: "trg_law_firm_policy_endorsements_append_only", table: "law_firm_compliance_policy_endorsements", operation: "UPDATE OR DELETE"},
 		{name: "trg_conflict_officer_appointments_append_only", table: "conflict_officer_appointments", operation: "UPDATE OR DELETE"},
+		{name: "trg_production_external_evidence_append_only", table: "production_external_evidence", operation: "UPDATE OR DELETE"},
 	} {
 		if err := db.Exec(fmt.Sprintf("DROP TRIGGER IF EXISTS %s ON %s", table.name, table.table)).Error; err != nil {
 			return fmt.Errorf("刷新 %s 保护触发器失败: %w", table.table, err)
@@ -885,6 +910,7 @@ func productionSchemaModels() []interface{} {
 		&models.ConflictIndexBuildRun{},
 		&models.ConflictReviewerAssignment{},
 		&models.ConflictOfficerAppointment{},
+		&productionExternalEvidence{},
 		&models.ConflictSubjectVersion{}, &models.ConflictSubjectIdentifier{}, &models.ConflictMatchEvidenceV2{},
 		&models.WaiverApplication{}, &models.WaiverApprovalRecord{}, &models.WaiverSignature{}, &models.WaiverMonitoringRecord{},
 		&models.LawyerConflictPool{},
