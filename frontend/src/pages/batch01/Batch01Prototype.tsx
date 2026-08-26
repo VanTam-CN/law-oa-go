@@ -52,7 +52,7 @@ import type { Role } from '@/services/role'
 import { getRoles, getToken, getUserInfo } from '@/utils/storage'
 import { message } from '@/utils/messageHelper'
 import { useAppStore } from '@/stores/useAppStore'
-import { hasPermission } from '@/utils/accessControl'
+import { canAccess, hasPermission } from '@/utils/accessControl'
 import './Batch01Prototype.less'
 
 type Tone = 'blue' | 'teal' | 'red' | 'orange' | 'green' | 'slate'
@@ -1590,10 +1590,11 @@ function StatusDot({ color }: { color: Tone }) {
 
 export function DashboardCommandCenter() {
   const navigate = useNavigate()
-  const currentUserInfo = getUserInfo()
-  const canViewFinance = ['admin', 'super_admin', 'finance'].includes(
-    textValue(currentUserInfo?.role, '').toLowerCase(),
-  )
+  const currentUserInfo = useAppStore((state) => state.user)
+  const canCreateCase = canAccess(currentUserInfo, 'case:manage', 'assistant')
+  const canCheckConflict = canAccess(currentUserInfo, 'conflict:check')
+  const canViewApproval = canAccess(currentUserInfo, 'approval:view')
+  const canViewFinance = canAccess(currentUserInfo, 'finance:view')
   const [commandCenter, setCommandCenter] = React.useState<CommandCenterPayload | null>(null)
   const [financeOverview, setFinanceOverview] = React.useState<FinanceOverviewPayload | null>(null)
   const [apiLoading, setApiLoading] = React.useState(false)
@@ -1651,9 +1652,58 @@ export function DashboardCommandCenter() {
   const overdueItems = listOf(commandCenter?.overdue_tasks)
   const activities = listOf(commandCenter?.recent_activities)
   const currentUserName = textValue(
-    currentUserInfo?.realName || currentUserInfo?.name || currentUserInfo?.username,
+    currentUserInfo?.realName || currentUserInfo?.username,
     '律师',
   )
+  const dashboardQuickActions = [
+    ...(canCreateCase
+      ? [
+          {
+            key: 'case-create',
+            icon: '案',
+            name: '新建立案',
+            description: '录入新案件信息',
+            path: '/case/create',
+          },
+        ]
+      : []),
+    {
+      key: 'inbox',
+      icon: '办',
+      name: '待办中心',
+      description: '处理 inbox 待办',
+      path: '/inbox',
+    },
+    ...(canCheckConflict
+      ? [
+          {
+            key: 'conflict-check',
+            icon: '冲',
+            name: '冲突检测',
+            description: '复核利益冲突',
+            path: '/conflict',
+          },
+        ]
+      : []),
+    ...(canViewApproval
+      ? [
+          {
+            key: 'approval-queue',
+            icon: '审',
+            name: '审批队列',
+            description: '待审批事项',
+            path: '/approval',
+          },
+        ]
+      : []),
+    {
+      key: 'dashboard',
+      icon: '析',
+      name: '数据看板',
+      description: '经营分析',
+      path: '/dashboard',
+    },
+  ]
   const pendingApprovals = summary?.pending_approvals ?? 0
   const openConflicts = summary?.open_conflict_tasks ?? 0
   const activeCases = summary?.active_cases ?? 0
@@ -1784,14 +1834,16 @@ export function DashboardCommandCenter() {
             <Button size='small' onClick={refreshCommandCenter} loading={apiLoading}>
               刷新接口
             </Button>
-            <Button
-              size='small'
-              type='primary'
-              icon={<PlusOutlined />}
-              onClick={() => navigate('/case/create')}
-            >
-              新建立案
-            </Button>
+            {canCreateCase && (
+              <Button
+                size='small'
+                type='primary'
+                icon={<PlusOutlined />}
+                onClick={() => navigate('/case/create')}
+              >
+                新建立案
+              </Button>
+            )}
           </span>
         </div>
       </header>
@@ -2175,31 +2227,24 @@ export function DashboardCommandCenter() {
 
       <div className='ng-section-title'>快捷入口</div>
       <div className='ng-shortcuts'>
-        <div className='ng-shortcut' onClick={() => navigate('/case/create')}>
-          <div className='ng-shortcut-ico'>案</div>
-          <div className='ng-shortcut-name'>新建立案</div>
-          <div className='ng-shortcut-desc'>录入新案件信息</div>
-        </div>
-        <div className='ng-shortcut' onClick={() => navigate('/inbox')}>
-          <div className='ng-shortcut-ico'>办</div>
-          <div className='ng-shortcut-name'>待办中心</div>
-          <div className='ng-shortcut-desc'>处理 inbox 待办</div>
-        </div>
-        <div className='ng-shortcut' onClick={() => navigate('/conflict')}>
-          <div className='ng-shortcut-ico'>冲</div>
-          <div className='ng-shortcut-name'>冲突检测</div>
-          <div className='ng-shortcut-desc'>复核利益冲突</div>
-        </div>
-        <div className='ng-shortcut' onClick={() => navigate('/approval')}>
-          <div className='ng-shortcut-ico'>审</div>
-          <div className='ng-shortcut-name'>审批队列</div>
-          <div className='ng-shortcut-desc'>待审批事项</div>
-        </div>
-        <div className='ng-shortcut' onClick={() => navigate('/dashboard')}>
-          <div className='ng-shortcut-ico'>析</div>
-          <div className='ng-shortcut-name'>数据看板</div>
-          <div className='ng-shortcut-desc'>经营分析</div>
-        </div>
+        {dashboardQuickActions.map((action) => (
+          <div
+            key={action.key}
+            className='ng-shortcut'
+            onClick={() => navigate(action.path)}
+          >
+            <div className='ng-shortcut-ico'>{action.icon}</div>
+            <div className='ng-shortcut-name'>{action.name}</div>
+            <div className='ng-shortcut-desc'>{action.description}</div>
+          </div>
+        ))}
+        {!canCreateCase && (
+          <div className='ng-shortcut ng-shortcut-guidance'>
+            <div className='ng-shortcut-ico'>申</div>
+            <div className='ng-shortcut-name'>申请立案指引</div>
+            <div className='ng-shortcut-desc'>请联系管理员开通立案权限</div>
+          </div>
+        )}
       </div>
     </div>
   )
