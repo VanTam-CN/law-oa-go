@@ -119,7 +119,7 @@ jobs:
       run: |
         # 启动MySQL用于集成测试
         sudo systemctl start mysql
-        sudo mysql -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
+        mysql -u root -proot -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
 
     - name: 设置Redis
       run: |
@@ -211,7 +211,7 @@ jobs:
     - name: 设置数据库
       run: |
         sudo systemctl start mysql
-        sudo mysql -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
+        mysql -u root -proot -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
 
     - name: 设置Redis
       run: |

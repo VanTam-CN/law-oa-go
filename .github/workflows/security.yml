@@ -118,7 +118,7 @@ jobs:
         run: |
           sudo systemctl start redis-server || sudo service redis-server start || true
           sudo systemctl start mysql || sudo service mysql start || true
-          sudo mysql -e "CREATE DATABASE IF NOT EXISTS law_oa_test;" || true
+          mysql -u root -proot -e "CREATE DATABASE IF NOT EXISTS law_oa_test;" || true
 
       - name: 运行历史扩展安全测试并生成报告
         run: |

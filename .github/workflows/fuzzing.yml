@@ -194,7 +194,7 @@ jobs:
     - name: 设置数据库
       run: |
         sudo systemctl start mysql
-        sudo mysql -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
+        mysql -u root -proot -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
 
     - name: 设置脚本权限
       run: |
@@ -361,7 +361,7 @@ jobs:
     - name: 设置数据库
       run: |
         sudo systemctl start mysql
-        sudo mysql -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
+        mysql -u root -proot -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
 
     - name: 设置脚本权限
       run: |
