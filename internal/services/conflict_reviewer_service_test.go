@@ -25,7 +25,7 @@ func reviewerTestDB(t *testing.T) *gorm.DB {
 	return db
 }
 
-func reviewerErrorCode(t *testing.T, err error) string {
+func assignedReviewerErrorCode(t *testing.T, err error) string {
 	t.Helper()
 	var reviewerErr *ConflictReviewerError
 	require.True(t, errors.As(err, &reviewerErr))
@@ -49,7 +49,7 @@ func TestValidateConflictReviewerRequiresAssignment(t *testing.T) {
 	seedReviewerCheck(t, db)
 
 	err := ValidateConflictReviewer(context.Background(), db, "check-reviewer", 100, 20, "conflict_officer")
-	if code := reviewerErrorCode(t, err); code != "REVIEWER_ASSIGNMENT_REQUIRED" {
+	if code := assignedReviewerErrorCode(t, err); code != "REVIEWER_ASSIGNMENT_REQUIRED" {
 		t.Fatalf("expected assignment gate, got %s", code)
 	}
 
@@ -68,7 +68,7 @@ func TestValidateConflictReviewerRejectsTechnicalAdminAndDirectManager(t *testin
 
 	require.NoError(t, db.Model(&models.User{}).Where("id = ?", 20).Update("role", "admin").Error)
 	err := ValidateConflictReviewer(context.Background(), db, "check-reviewer", 100, 20, "admin")
-	if code := reviewerErrorCode(t, err); code != "REVIEWER_ROLE_FORBIDDEN" {
+	if code := assignedReviewerErrorCode(t, err); code != "REVIEWER_ROLE_FORBIDDEN" {
 		t.Fatalf("expected technical admin denial, got %s", code)
 	}
 
@@ -84,7 +84,7 @@ func TestValidateConflictReviewerRejectsTechnicalAdminAndDirectManager(t *testin
 		EffectiveFrom: &now, CreatedAt: now, UpdatedAt: now,
 	}).Error)
 	err = ValidateConflictReviewer(context.Background(), db, "check-reviewer", 100, 20, "conflict_officer")
-	if code := reviewerErrorCode(t, err); code != "REVIEWER_CONFLICTED" {
+	if code := assignedReviewerErrorCode(t, err); code != "REVIEWER_CONFLICTED" {
 		t.Fatalf("expected direct-manager recusal, got %s", code)
 	}
 }
@@ -110,7 +110,7 @@ func TestValidateConflictReviewerRejectsSupersededAssignment(t *testing.T) {
 	}).Error)
 
 	err := ValidateConflictReviewer(context.Background(), db, "check-reviewer", 100, 20, "conflict_officer")
-	if code := reviewerErrorCode(t, err); code != "REVIEWER_ASSIGNMENT_MISMATCH" {
+	if code := assignedReviewerErrorCode(t, err); code != "REVIEWER_ASSIGNMENT_MISMATCH" {
 		t.Fatalf("expected superseded reviewer mismatch, got %s", code)
 	}
 	require.NoError(t, ValidateConflictReviewer(context.Background(), db, "check-reviewer", 100, 21, "compliance"))
