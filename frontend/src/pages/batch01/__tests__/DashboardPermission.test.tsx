@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import { DashboardCommandCenter } from '../Batch01Prototype'
 import { useAppStore } from '@/stores/useAppStore'
 
@@ -47,11 +47,13 @@ async function renderDashboard() {
     json: async () => ({ data: dashboardPayload }),
   })
 
-  render(<DashboardCommandCenter />)
+  const { container } = render(<DashboardCommandCenter />)
 
   await waitFor(() => {
     expect(screen.getByText('实时数据')).toBeInTheDocument()
   })
+
+  return within(container.querySelector('.ng-shortcuts') as HTMLElement)
 }
 
 describe('DashboardCommandCenter action permissions', () => {
@@ -64,29 +66,33 @@ describe('DashboardCommandCenter action permissions', () => {
   it('shows intake and permitted workflow actions for a lawyer', async () => {
     loginUser(['lawyer'])
 
-    await renderDashboard()
+    const shortcuts = await renderDashboard()
 
-    expect(screen.getByRole('button', { name: /新建立案/ })).toBeInTheDocument()
-    expect(screen.getByText('冲突检测')).toBeInTheDocument()
-    expect(screen.getAllByText('审批队列').some((item) => item.closest('.ng-shortcut'))).toBe(
-      true,
-    )
+    expect(shortcuts.getByRole('button', { name: /新建立案 录入新案件信息/ })).toBeInTheDocument()
+    expect(shortcuts.getByRole('button', { name: /冲突检测 复核利益冲突/ })).toBeInTheDocument()
+    expect(shortcuts.getByRole('button', { name: /审批队列 待审批事项/ })).toBeInTheDocument()
+    expect(shortcuts.getAllByRole('button')).toHaveLength(4)
+    expect(shortcuts.queryByText('数据看板')).not.toBeInTheDocument()
+    expect(shortcuts.queryByText('经营分析')).not.toBeInTheDocument()
     expect(screen.queryByText('申请立案指引')).not.toBeInTheDocument()
   })
 
   it('hides inaccessible intake and workflow links from a plain user and shows guidance', async () => {
     loginUser(['user'])
 
-    await renderDashboard()
+    const shortcuts = await renderDashboard()
 
-    expect(screen.queryByRole('button', { name: /新建立案/ })).not.toBeInTheDocument()
-    expect(screen.queryByText('新建立案')).not.toBeInTheDocument()
-    expect(screen.queryByText('冲突检测')).not.toBeInTheDocument()
-    expect(screen.getAllByText('审批队列').some((item) => item.closest('.ng-shortcut'))).toBe(
-      false,
-    )
-    expect(screen.getByText('申请立案指引')).toBeInTheDocument()
-    expect(screen.getByText('请联系管理员开通立案权限')).toBeInTheDocument()
-    expect(screen.getByText('待办中心')).toBeInTheDocument()
+    expect(shortcuts.queryByRole('button', { name: /新建立案/ })).not.toBeInTheDocument()
+    expect(shortcuts.queryByRole('button', { name: /冲突检测/ })).not.toBeInTheDocument()
+    expect(shortcuts.queryByRole('button', { name: /审批队列/ })).not.toBeInTheDocument()
+    expect(shortcuts.queryByRole('button', { name: /数据看板/ })).not.toBeInTheDocument()
+    expect(shortcuts.queryByText('数据看板')).not.toBeInTheDocument()
+    expect(shortcuts.queryByText('经营分析')).not.toBeInTheDocument()
+    const guidance = shortcuts.getByRole('note')
+    expect(guidance).toBeInTheDocument()
+    expect(within(guidance).getByText('申请立案指引')).toBeInTheDocument()
+    expect(guidance.closest('button')).toBeNull()
+    expect(shortcuts.getByText('请联系管理员开通立案权限')).toBeInTheDocument()
+    expect(shortcuts.getByRole('button', { name: /待办中心 处理 inbox 待办/ })).toBeInTheDocument()
   })
 })

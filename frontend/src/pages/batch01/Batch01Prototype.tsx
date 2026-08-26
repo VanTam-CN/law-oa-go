@@ -1696,13 +1696,17 @@ export function DashboardCommandCenter() {
           },
         ]
       : []),
-    {
-      key: 'dashboard',
-      icon: '析',
-      name: '数据看板',
-      description: '经营分析',
-      path: '/dashboard',
-    },
+    ...(canViewFinance
+      ? [
+          {
+            key: 'dashboard',
+            icon: '析',
+            name: '数据看板',
+            description: '经营分析',
+            path: '/dashboard',
+          },
+        ]
+      : []),
   ]
   const pendingApprovals = summary?.pending_approvals ?? 0
   const openConflicts = summary?.open_conflict_tasks ?? 0
@@ -2228,18 +2232,19 @@ export function DashboardCommandCenter() {
       <div className='ng-section-title'>快捷入口</div>
       <div className='ng-shortcuts'>
         {dashboardQuickActions.map((action) => (
-          <div
+          <button
             key={action.key}
+            type='button'
             className='ng-shortcut'
             onClick={() => navigate(action.path)}
           >
             <div className='ng-shortcut-ico'>{action.icon}</div>
             <div className='ng-shortcut-name'>{action.name}</div>
             <div className='ng-shortcut-desc'>{action.description}</div>
-          </div>
+          </button>
         ))}
         {!canCreateCase && (
-          <div className='ng-shortcut ng-shortcut-guidance'>
+          <div className='ng-shortcut ng-shortcut-guidance' role='note'>
             <div className='ng-shortcut-ico'>申</div>
             <div className='ng-shortcut-name'>申请立案指引</div>
             <div className='ng-shortcut-desc'>请联系管理员开通立案权限</div>
