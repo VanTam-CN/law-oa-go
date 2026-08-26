@@ -44,6 +44,24 @@ func registerOperationsEvidenceExcept(t *testing.T, service *OperationsReadiness
 	}
 }
 
+func registerOperationsEvidenceExceptControls(t *testing.T, service *OperationsReadinessService, scope string, excludedControls ...string) {
+	t.Helper()
+	excluded := make(map[string]bool, len(excludedControls))
+	for _, control := range excludedControls {
+		excluded[control] = true
+	}
+	for _, control := range []string{"backup", "restore_drill", "incident_owner", "upgrade", "rollback"} {
+		if excluded[control] {
+			continue
+		}
+		_, err := service.Register(AuthActor{UserID: 7, Role: "admin"}, OperationsReadinessEvidenceInput{
+			Control: control, Scope: scope, EvidenceReference: "ticket://" + control,
+			ReviewedAt: time.Now().Add(-time.Hour),
+		})
+		require.NoError(t, err)
+	}
+}
+
 func TestOperationsReadinessSummaryStartsPendingAndCannotUseHealthChecks(t *testing.T) {
 	summary, err := NewOperationsReadinessService(newOperationsReadinessTestDB(t)).Summary(models.OperationsEvidenceScopeControlledPilot)
 	require.NoError(t, err)
@@ -73,7 +91,7 @@ func TestOperationsReadinessRegistrationIsControlledAndAuditable(t *testing.T) {
 	require.ErrorContains(t, err, "scope must be qa or controlled_pilot")
 
 	directorEvidence, err := service.Register(AuthActor{UserID: 7, Role: "director"}, OperationsReadinessEvidenceInput{
-		Control: "backup", Scope: models.OperationsEvidenceScopeQA, EvidenceReference: "director://backup-review",
+		Control: "backup", Scope: models.OperationsEvidenceScopeQA, EvidenceReference: "archive://backup-review",
 		ReviewedAt: time.Now(),
 	})
 	require.NoError(t, err)
@@ -127,6 +145,57 @@ func TestOperationsReadinessUsesLatestEvidenceAndPreservesHistory(t *testing.T) 
 	require.NotEqual(t, older.EvidenceReference, item.Evidence.EvidenceReference)
 }
 
+func TestOperationsReadinessEvidenceFormsVerifiedHashChain(t *testing.T) {
+	service := NewOperationsReadinessService(newOperationsReadinessTestDB(t))
+	first, err := service.Register(AuthActor{UserID: 7, Role: "admin"}, OperationsReadinessEvidenceInput{
+		Control: "backup", Scope: models.OperationsEvidenceScopeQA,
+		EvidenceReference: "qa://backup-2026-08", ReviewedAt: time.Now().Add(-2 * time.Hour),
+	})
+	require.NoError(t, err)
+	require.Empty(t, first.PreviousEvidenceID)
+	require.NotEmpty(t, first.IntegrityHash)
+
+	second, err := service.Register(AuthActor{UserID: 8, Role: "admin"}, OperationsReadinessEvidenceInput{
+		Control: "restore_drill", Scope: models.OperationsEvidenceScopeQA,
+		EvidenceReference: "qa://restore-2026-08", ReviewedAt: time.Now().Add(-time.Hour),
+	})
+	require.NoError(t, err)
+	require.Equal(t, first.ID, second.PreviousEvidenceID)
+	require.NotEqual(t, first.IntegrityHash, second.IntegrityHash)
+
+	registerOperationsEvidenceExceptControls(t, service, models.OperationsEvidenceScopeQA, "backup", "restore_drill")
+	summary, err := service.Summary(models.OperationsEvidenceScopeQA)
+	require.NoError(t, err)
+	require.Equal(t, "verified", summary.Items[0].Integrity)
+	require.True(t, summary.Ready)
+	require.Equal(t, 7, summary.Score)
+
+	require.NoError(t, service.db.Exec("UPDATE operations_readiness_evidence SET evidence_reference = ? WHERE id = ?", "qa://tampered-evidence", first.ID).Error)
+	summary, err = service.Summary(models.OperationsEvidenceScopeQA)
+	require.NoError(t, err)
+	require.False(t, summary.Ready)
+	require.Equal(t, 0, summary.Score)
+	require.Equal(t, 0, summary.VerifiedCount)
+	require.Equal(t, "failed", summary.Items[0].Integrity)
+}
+
+func TestOperationsReadinessDoesNotTrustLegacyUnchainedRows(t *testing.T) {
+	service := NewOperationsReadinessService(newOperationsReadinessTestDB(t))
+	legacy := models.OperationsReadinessEvidence{
+		ID: "legacy00000000000000000000000001", Control: "backup",
+		Scope: models.OperationsEvidenceScopeQA, Result: models.OperationsEvidenceResultPassed,
+		EvidenceReference: "qa://legacy-backup", ReviewedBy: 7,
+		ReviewedAt: time.Now().Add(-time.Hour),
+	}
+	require.NoError(t, service.db.Create(&legacy).Error)
+
+	summary, err := service.Summary(models.OperationsEvidenceScopeQA)
+	require.NoError(t, err)
+	require.Equal(t, "legacy-rows-present", summary.Items[0].Integrity)
+	require.False(t, summary.Ready)
+	require.Equal(t, 0, summary.Score)
+}
+
 func TestOperationsReadinessEvidenceRemainsAppendOnly(t *testing.T) {
 	service := NewOperationsReadinessService(newOperationsReadinessTestDB(t))
 	evidence, err := service.Register(AuthActor{UserID: 7, Role: "admin"}, OperationsReadinessEvidenceInput{
@@ -173,7 +242,7 @@ func TestOperationsReadinessDoesNotAwardCompletionBonusWhenEvidenceIsMissing(t *
 
 func TestOperationsReadinessRejectsCredentialLikeReferencesAndFutureReviews(t *testing.T) {
 	service := NewOperationsReadinessService(newOperationsReadinessTestDB(t))
-	for _, reference := range []string{"password=1", "secret://doc", "token://doc"} {
+	for _, reference := range []string{"password=1", "secret://doc", "token://doc", "credential://doc", "not-a-uri", "qa://", "https://example.test", "mailto:backup@example.test"} {
 		_, err := service.Register(AuthActor{UserID: 7, Role: "admin"}, OperationsReadinessEvidenceInput{
 			Control: "backup", Scope: models.OperationsEvidenceScopeQA, EvidenceReference: reference,
 			ReviewedAt: time.Now(),
@@ -181,7 +250,7 @@ func TestOperationsReadinessRejectsCredentialLikeReferencesAndFutureReviews(t *t
 		require.Error(t, err)
 	}
 	_, err := service.Register(AuthActor{UserID: 7, Role: "admin"}, OperationsReadinessEvidenceInput{
-		Control: "backup", Scope: models.OperationsEvidenceScopeQA, EvidenceReference: "qa://backup",
+		Control: "backup", Scope: models.OperationsEvidenceScopeQA, EvidenceReference: "controlled-pilot://backup-record",
 		ReviewedAt: time.Now().Add(time.Hour),
 	})
 	require.Error(t, err)

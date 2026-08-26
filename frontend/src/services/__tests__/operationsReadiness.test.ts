@@ -50,7 +50,7 @@ describe('operations readiness evidence boundary', () => {
     (get as jest.Mock).mockResolvedValue({
       scope: 'qa', ready: true, score: 7, maximumScore: 7, verifiedCount: 5, total: 5,
       productionReady: false, productionGate: 'production_external_evidence',
-      items: [{ control: 'restore_drill', status: 'verified', evidence: { control: 'restore_drill' } }],
+      items: [{ control: 'restore_drill', status: 'verified', integrity: 'verified', evidence: { control: 'restore_drill', previousEvidenceId: '', integrityHash: 'a'.repeat(64) } }],
     })
     const summary = await getOperationsReadinessSummary('qa')
     expect(get).toHaveBeenCalledWith('/operations/readiness/evidence', { scope: 'qa' })

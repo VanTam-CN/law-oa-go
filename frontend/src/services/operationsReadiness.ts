@@ -46,6 +46,8 @@ export interface RegisteredOperationsEvidence {
   reviewedBy: number
   reviewedAt: string
   notes?: string
+  previousEvidenceId: string
+  integrityHash: string
   createdAt: string
 }
 
@@ -61,6 +63,7 @@ export interface ServerOperationsReadinessSummary {
   items: Array<{
     control: OperationsControlId
     status: 'pending-evidence' | 'verified'
+    integrity: 'verified' | 'failed' | 'legacy-rows-present'
     evidence?: RegisteredOperationsEvidence
   }>
 }

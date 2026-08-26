@@ -16,7 +16,23 @@ const emptySummary = {
   scope: 'controlled_pilot', ready: false, score: 0, maximumScore: 7,
   verifiedCount: 0, total: 5, productionReady: false, productionGate: 'production_external_evidence',
   items: ['backup', 'restoreDrill', 'incidentOwner', 'upgrade', 'rollback'].map((control) => ({
-    control, status: 'pending-evidence',
+    control, status: 'pending-evidence', integrity: 'verified',
+  })),
+}
+
+const registeredSummary = {
+  ...emptySummary,
+  items: emptySummary.items.map((item) => ({
+    ...item,
+    status: 'verified',
+    evidence: {
+      control: item.control,
+      evidenceReference: 'qa://registered-evidence',
+      reviewedBy: 8,
+      reviewedAt: '2026-08-26T10:00:00Z',
+      previousEvidenceId: '',
+      integrityHash: '0123456789abcdef0123456789abcdef',
+    },
   })),
 }
 
@@ -50,5 +66,26 @@ describe('OperationsReadiness', () => {
     expect(screen.queryByText(/历史登记全部保留/)).toBeInTheDocument()
     expect(screen.queryByText(/按复核时间取最新记录/)).toBeInTheDocument()
     expect(screen.queryByText(/复验时追加新登记/)).toBeInTheDocument()
+  })
+
+  it('fails closed when the evidence hash chain cannot be verified', async () => {
+    ;(getOperationsReadinessSummary as jest.Mock).mockResolvedValue({
+      ...emptySummary,
+      score: 0,
+      items: emptySummary.items.map((item) => ({ ...item, integrity: 'failed' })),
+    })
+
+    render(<OperationsReadiness />)
+
+    expect(await screen.findByText('证据链未通过校验')).toBeInTheDocument()
+    expect(await screen.findByText('0/7（0/5 项证据）')).toBeInTheDocument()
+  })
+
+  it('shows the auditable evidence hash with the latest registration', async () => {
+    ;(getOperationsReadinessSummary as jest.Mock).mockResolvedValue(registeredSummary)
+
+    render(<OperationsReadiness />)
+
+    expect(await screen.findAllByText('0123456789ab')).toHaveLength(5)
   })
 })

@@ -82,6 +82,15 @@ const OperationsReadiness: React.FC = () => {
         <Paragraph>
           这个页面给律所主任和行政人员看：系统当前能用，不代表出事后能恢复。每一项都必须留下可复核的证据。
         </Paragraph>
+        {summary?.items.some((item) => item.integrity !== 'verified') ? (
+          <Alert
+            type='error'
+            showIcon
+            style={{ marginTop: 16 }}
+            message='证据链未通过校验'
+            description='当前范围的追加证据存在旧格式行，或哈希链校验失败。系统已按 0/7 处理，需由系统管理员离线核查后重新追加完整证据链；不能修改历史登记。'
+          />
+        ) : null}
         <Alert
           type='warning'
           showIcon
@@ -187,7 +196,11 @@ const OperationsReadiness: React.FC = () => {
                 record.evidence ? (
                   <Space direction='vertical' size='small'>
                     <Text copyable>{record.evidence.evidenceReference}</Text>
-                    <Text type='secondary'>复核人 #{record.evidence.reviewedBy} / {record.evidence.reviewedAt}</Text>
+                    <Space split='/' size='small' wrap>
+                      <Text type='secondary'>复核人 #{record.evidence.reviewedBy}</Text>
+                      <Text type='secondary'>{record.evidence.reviewedAt}</Text>
+                      {record.evidence.integrityHash ? <Text code>{record.evidence.integrityHash.slice(0, 12)}</Text> : null}
+                    </Space>
                   </Space>
                 ) : (
                 <List

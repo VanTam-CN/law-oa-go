@@ -7,10 +7,23 @@ CREATE TABLE IF NOT EXISTS operations_readiness_evidence (
     reviewed_by BIGINT NOT NULL,
     reviewed_at TIMESTAMPTZ NOT NULL,
     notes TEXT NULL,
+    previous_evidence_id VARCHAR(36) NOT NULL DEFAULT '',
+    integrity_hash VARCHAR(64) NOT NULL DEFAULT '',
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_operations_evidence_scope CHECK (scope IN ('qa', 'controlled_pilot')),
     CONSTRAINT chk_operations_evidence_result CHECK (result = 'passed'),
-    CONSTRAINT chk_operations_evidence_reference CHECK (length(trim(evidence_reference)) BETWEEN 8 AND 1000)
+    CONSTRAINT chk_operations_evidence_reference CHECK (length(trim(evidence_reference)) BETWEEN 8 AND 512),
+    CONSTRAINT chk_operations_evidence_reference_scheme CHECK (
+        evidence_reference ~ '^(archive|ticket|qa|controlled-pilot)://[^/[:space:]]+'
+        OR evidence_reference ~ '^https://[^/[:space:]]+/[^[:space:]]+$'
+    ),
+    CONSTRAINT chk_operations_evidence_chain CHECK (
+        (integrity_hash = '' AND previous_evidence_id = '')
+        OR (integrity_hash ~ '^[0-9a-f]{64}$' AND previous_evidence_id ~ '^[0-9a-f]{32}([0-9a-f]{4})?$')
+    ),
+    CONSTRAINT chk_operations_evidence_id_link CHECK (
+        previous_evidence_id = '' OR previous_evidence_id <> id
+    )
 );
 
 CREATE INDEX IF NOT EXISTS idx_operations_evidence_reviewer ON operations_readiness_evidence (reviewed_by);

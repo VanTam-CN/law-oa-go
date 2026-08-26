@@ -337,6 +337,10 @@ func validateProductionSchemaContract(db *gorm.DB) error {
 			"id", "officer_id", "deputy_id", "appointed_by", "effective_from", "effective_to",
 			"recusal_declaration", "external_mechanism_reference", "created_at",
 		},
+		"operations_readiness_evidence": {
+			"id", "control", "scope", "result", "evidence_reference", "reviewed_by",
+			"reviewed_at", "notes", "previous_evidence_id", "integrity_hash", "created_at",
+		},
 		"approval_requests": {
 			"id", "request_number", "title", "type", "status", "applicant_id", "created_by",
 			"conflict_check_id", "conflict_result", "case_created", "created_case_id", "case_creation_status",

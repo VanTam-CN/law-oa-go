@@ -2,9 +2,12 @@ package services
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
@@ -37,14 +40,16 @@ type OperationsReadinessEvidenceInput struct {
 }
 
 type OperationsReadinessEvidenceView struct {
-	ID                string    `json:"id"`
-	Control           string    `json:"control"`
-	Scope             string    `json:"scope"`
-	EvidenceReference string    `json:"evidence_reference"`
-	ReviewedBy        uint      `json:"reviewed_by"`
-	ReviewedAt        time.Time `json:"reviewed_at"`
-	Notes             string    `json:"notes,omitempty"`
-	CreatedAt         time.Time `json:"created_at"`
+	ID                 string    `json:"id"`
+	Control            string    `json:"control"`
+	Scope              string    `json:"scope"`
+	EvidenceReference  string    `json:"evidence_reference"`
+	ReviewedBy         uint      `json:"reviewed_by"`
+	ReviewedAt         time.Time `json:"reviewed_at"`
+	Notes              string    `json:"notes,omitempty"`
+	PreviousEvidenceID string    `json:"previous_evidence_id"`
+	IntegrityHash      string    `json:"integrity_hash"`
+	CreatedAt          time.Time `json:"created_at"`
 }
 
 type OperationsReadinessSummary struct {
@@ -60,13 +65,26 @@ type OperationsReadinessSummary struct {
 }
 
 type OperationsReadinessControlSummary struct {
-	Control  string                           `json:"control"`
-	Status   string                           `json:"status"`
-	Evidence *OperationsReadinessEvidenceView `json:"evidence,omitempty"`
+	Control   string                           `json:"control"`
+	Status    string                           `json:"status"`
+	Integrity string                           `json:"integrity"`
+	Evidence  *OperationsReadinessEvidenceView `json:"evidence,omitempty"`
 }
 
 type OperationsReadinessService struct {
 	db *gorm.DB
+}
+
+type operationsEvidenceChainPayload struct {
+	ID                 string `json:"id"`
+	Control            string `json:"control"`
+	Scope              string `json:"scope"`
+	Result             string `json:"result"`
+	EvidenceReference  string `json:"evidence_reference"`
+	ReviewedBy         uint   `json:"reviewed_by"`
+	ReviewedAt         string `json:"reviewed_at"`
+	Notes              string `json:"notes"`
+	PreviousEvidenceID string `json:"previous_evidence_id"`
 }
 
 func NewOperationsReadinessService(db *gorm.DB) *OperationsReadinessService {
@@ -89,10 +107,13 @@ func (s *OperationsReadinessService) Register(actor AuthActor, input OperationsR
 	if !operationsReadinessScopes[scope] {
 		return nil, errors.New("scope must be qa or controlled_pilot")
 	}
-	if len(reference) < 8 || len(reference) > 1000 {
-		return nil, errors.New("evidence reference must contain 8 to 1000 characters")
+	if len(reference) < 8 || len(reference) > 512 {
+		return nil, errors.New("evidence reference must contain 8 to 512 characters")
 	}
-	if strings.Contains(strings.ToLower(reference), "password") || strings.Contains(strings.ToLower(reference), "secret") || strings.Contains(strings.ToLower(reference), "token") {
+	if !validOperationsEvidenceReference(reference) {
+		return nil, errors.New("evidence reference must use archive://, ticket://, qa://, controlled-pilot://, or https:// and contain an identifier")
+	}
+	if strings.Contains(strings.ToLower(reference), "password") || strings.Contains(strings.ToLower(reference), "secret") || strings.Contains(strings.ToLower(reference), "token") || strings.Contains(strings.ToLower(reference), "credential") {
 		return nil, errors.New("evidence reference must not contain credentials")
 	}
 	if input.ReviewedAt.IsZero() || input.ReviewedAt.After(time.Now().Add(time.Minute)) {
@@ -112,9 +133,21 @@ func (s *OperationsReadinessService) Register(actor AuthActor, input OperationsR
 		ReviewedBy: actor.UserID, ReviewedAt: input.ReviewedAt.UTC(),
 		Notes: strings.TrimSpace(input.Notes),
 	}
-	err := s.db.Create(&record).Error
-	if err != nil {
-		return nil, fmt.Errorf("register operations evidence: %w", err)
+	var previousID string
+	transactionErr := s.db.Transaction(func(tx *gorm.DB) error {
+		latest := new(models.OperationsReadinessEvidence)
+		if err := tx.Where("scope = ? AND integrity_hash <> ?", scope, "").
+			Order("created_at DESC, reviewed_at DESC, id DESC").
+			First(latest).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+		previousID = latest.ID
+		record.PreviousEvidenceID = previousID
+		record.IntegrityHash = operationsEvidenceHash(record)
+		return tx.Create(&record).Error
+	})
+	if transactionErr != nil {
+		return nil, fmt.Errorf("register operations evidence: %w", transactionErr)
 	}
 	view := operationsEvidenceView(record)
 	return &view, nil
@@ -128,22 +161,40 @@ func (s *OperationsReadinessService) Summary(scope string) (*OperationsReadiness
 	var records []models.OperationsReadinessEvidence
 	if err := s.db.
 		Where("scope = ? AND result = ?", scope, models.OperationsEvidenceResultPassed).
-		Order("control ASC, reviewed_at DESC, created_at DESC, id DESC").
+		Order("created_at ASC, reviewed_at ASC, id ASC").
 		Find(&records).Error; err != nil {
 		return nil, fmt.Errorf("read operations evidence: %w", err)
 	}
+	chainIntegrity := "verified"
+	legacyRows := false
 	byControl := make(map[string]models.OperationsReadinessEvidence, len(records))
+	previousID := ""
 	for _, record := range records {
-		if _, exists := byControl[record.Control]; !exists {
-			byControl[record.Control] = record
+		if record.IntegrityHash == "" || record.PreviousEvidenceID == "" && previousID != "" {
+			legacyRows = true
+			continue
 		}
+		if record.PreviousEvidenceID != previousID || record.IntegrityHash != operationsEvidenceHash(record) {
+			chainIntegrity = "failed"
+			break
+		}
+		previousID = record.ID
+		// The chain is registration-ordered; for repeated validation of one
+		// control, the most recently registered row supersedes older evidence.
+		byControl[record.Control] = record
+	}
+	if chainIntegrity == "failed" {
+		byControl = make(map[string]models.OperationsReadinessEvidence, len(operationsReadinessControls))
+	} else if legacyRows {
+		chainIntegrity = "legacy-rows-present"
+		byControl = make(map[string]models.OperationsReadinessEvidence, len(operationsReadinessControls))
 	}
 	summary := OperationsReadinessSummary{
 		Scope: scope, Total: len(operationsReadinessControls),
 		MaximumScore: OperationsReadinessMaximumScore, ProductionGate: "production_external_evidence",
 	}
 	for control := range operationsReadinessControls {
-		item := OperationsReadinessControlSummary{Control: control, Status: "pending-evidence"}
+		item := OperationsReadinessControlSummary{Control: control, Status: "pending-evidence", Integrity: chainIntegrity}
 		if record, ok := byControl[control]; ok {
 			item.Status = "verified"
 			view := operationsEvidenceView(record)
@@ -155,11 +206,14 @@ func (s *OperationsReadinessService) Summary(scope string) (*OperationsReadiness
 	if summary.Items == nil {
 		summary.Items = []OperationsReadinessControlSummary{}
 	}
-	summary.Ready = summary.VerifiedCount == summary.Total
+	summary.Ready = chainIntegrity == "verified" && summary.VerifiedCount == summary.Total
 	// Five individually verified controls are the minimum sustainable small-firm
 	// operations baseline and therefore reach 7/10. Partial evidence must never
 	// receive the completion bonus or imply that health checks add coverage.
-	summary.Score = summary.VerifiedCount
+	summary.Score = 0
+	if chainIntegrity == "verified" {
+		summary.Score = summary.VerifiedCount
+	}
 	if summary.Ready {
 		summary.Score = OperationsReadinessMaximumScore
 	}
@@ -170,6 +224,40 @@ func operationsEvidenceView(record models.OperationsReadinessEvidence) Operation
 	return OperationsReadinessEvidenceView{
 		ID: record.ID, Control: record.Control, Scope: record.Scope,
 		EvidenceReference: record.EvidenceReference, ReviewedBy: record.ReviewedBy,
-		ReviewedAt: record.ReviewedAt, Notes: record.Notes, CreatedAt: record.CreatedAt,
+		ReviewedAt: record.ReviewedAt, Notes: record.Notes,
+		PreviousEvidenceID: record.PreviousEvidenceID, IntegrityHash: record.IntegrityHash,
+		CreatedAt: record.CreatedAt,
+	}
+}
+
+func operationsEvidenceHash(record models.OperationsReadinessEvidence) string {
+	payload := operationsEvidenceChainPayload{
+		ID: record.ID, Control: record.Control, Scope: record.Scope,
+		Result: record.Result, EvidenceReference: record.EvidenceReference,
+		ReviewedBy: record.ReviewedBy, ReviewedAt: record.ReviewedAt.UTC().Format(time.RFC3339Nano),
+		Notes: record.Notes, PreviousEvidenceID: record.PreviousEvidenceID,
+	}
+	encoded, err := json.Marshal(payload)
+	if err != nil {
+		return ""
+	}
+	sum := sha256.Sum256(encoded)
+	return hex.EncodeToString(sum[:])
+}
+
+func validOperationsEvidenceReference(reference string) bool {
+	parsed, err := url.ParseRequestURI(reference)
+	if err != nil {
+		return false
+	}
+	scheme := strings.ToLower(parsed.Scheme)
+	identifier := strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(reference, scheme+":"), "/"))
+	switch scheme {
+	case "archive", "ticket", "qa", "controlled-pilot":
+		return identifier != "" && !strings.Contains(identifier, "://")
+	case "https":
+		return parsed.Host != "" && parsed.Path != ""
+	default:
+		return false
 	}
 }
