@@ -1,5 +1,5 @@
 import React from 'react'
-import { Card, Form, Input, Button, Checkbox } from 'antd'
+import { Alert, Card, Form, Input, Button, Checkbox } from 'antd'
 import { message } from '@/utils/messageHelper'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router'
@@ -20,7 +20,7 @@ interface LoginFormValues {
 }
 
 const normalizeLoginIdentifier = (value: string) => {
-  return value.trim().toLowerCase()
+  return value.trim()
 }
 
 const LoginPage: React.FC = () => {
@@ -28,10 +28,12 @@ const LoginPage: React.FC = () => {
   const { login: appStoreLogin } = useAppStore()
   const [form] = Form.useForm<LoginFormValues>()
   const [loading, setLoading] = React.useState(false)
+  const [loginError, setLoginError] = React.useState('')
 
   const onFinish = async (values: LoginFormValues) => {
     try {
       setLoading(true)
+      setLoginError('')
       const response = await login({
         ...values,
         account: normalizeLoginIdentifier(values.account),
@@ -95,14 +97,14 @@ const LoginPage: React.FC = () => {
     } catch (error: any) {
       console.error('Login failed:', error)
       if (error?.response?.status === 401) {
-        message.error('账号、邮箱或密码不正确，请重新输入')
+        setLoginError('账号、邮箱或密码不正确，请重新输入')
         return
       }
       const apiMessage =
         error.response?.data?.error?.details ||
         error.response?.data?.error?.message ||
         error.response?.data?.message
-      message.error(apiMessage || '登录失败，请检查账号和密码')
+      setLoginError(apiMessage || '登录失败，请检查账号和密码')
     } finally {
       setLoading(false)
     }
@@ -111,6 +113,15 @@ const LoginPage: React.FC = () => {
   return (
     <div className='login-container'>
       <Card className='login-card' title='示例律师事务所OA登录'>
+        {loginError && (
+          <Alert
+            type='error'
+            showIcon
+            role='alert'
+            message='登录失败'
+            description={loginError}
+          />
+        )}
         <Form
           form={form}
           name='login'

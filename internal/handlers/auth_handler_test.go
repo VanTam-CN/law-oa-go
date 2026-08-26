@@ -266,6 +266,44 @@ func TestAuthHandler_Login(t *testing.T) {
 		// 验证模拟调用
 		mockUserRepo.AssertExpectations(t)
 	})
+
+	t.Run("Login Account Preserves Case", func(t *testing.T) {
+		mockUserRepo.ExpectedCalls = nil
+		mockUserRepo.Calls = nil
+
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
+		require.NoError(t, err)
+		user := &models.User{
+			ID:        1,
+			Username:  "Lawyer.Wang",
+			Name:      "Wang Lawyer",
+			Email:     "wang@example.com",
+			Password:  string(hashedPassword),
+			Role:      "lawyer",
+			Status:    "active",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+
+		mockUserRepo.On("FindByEmail", testifymock.Anything, "Lawyer.Wang").Return(nil, repositories.ErrUserNotFound)
+		mockUserRepo.On("FindByUsername", testifymock.Anything, "Lawyer.Wang").Return(user, nil)
+
+		loginData := map[string]interface{}{
+			"account":  "  Lawyer.Wang  ",
+			"password": "password123",
+		}
+		jsonData, err := json.Marshal(loginData)
+		require.NoError(t, err)
+		req, err := http.NewRequest("POST", "/auth/login", bytes.NewBuffer(jsonData))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		mockUserRepo.AssertExpectations(t)
+	})
 }
 
 func TestAuthHandler_Register(t *testing.T) {

@@ -251,10 +251,10 @@ func TestUserService_AuthenticateUser(t *testing.T) {
 			UpdatedAt: time.Now(),
 		}
 
-		mockUserRepo.On("FindByEmail", mock.Anything, "lawyer.wang").Return(nil, repositories.ErrUserNotFound)
-		mockUserRepo.On("FindByUsername", mock.Anything, "lawyer.wang").Return(user, nil)
+		mockUserRepo.On("FindByEmail", mock.Anything, "Lawyer.Wang").Return(nil, repositories.ErrUserNotFound)
+		mockUserRepo.On("FindByUsername", mock.Anything, "Lawyer.Wang").Return(user, nil)
 
-		profile, err := userService.AuthenticateUser(context.Background(), "lawyer.wang", "Password123!")
+		profile, err := userService.AuthenticateUser(context.Background(), "Lawyer.Wang", "Password123!")
 
 		require.NoError(t, err)
 		assert.NotNil(t, profile)
