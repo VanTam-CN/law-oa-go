@@ -87,6 +87,10 @@ describe('CaseIntakeWorkbench conflict action', () => {
       '子领域',
     ])
     expect(firstRunGuidance.nextStep).toContain('保存最新输入并检测')
+    expect(firstRunGuidance.restoreNotice).toContain('不保留对方身份标识')
+    expect(firstRunGuidance.restoreNotice).toContain('重新填写')
+    expect(firstRunGuidance.saveFailure).toContain('已填写内容仍保留在本页')
+    expect(firstRunGuidance.saveFailure).toContain('联系律所管理员')
     expect(firstRunGuidance.help.content).toContain('保存并退出')
     expect(firstRunGuidance.help.content).toContain('联系律所管理员')
     expect(JSON.stringify(firstRunGuidance)).not.toMatch(/API|ms|接口响应|诊断/)

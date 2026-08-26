@@ -1073,6 +1073,10 @@ export const conflictCheckRequiredFieldLabels: Record<ConflictCheckRequiredField
 export const firstRunGuidance = {
   requiredChecklist: Object.values(conflictCheckRequiredFieldLabels),
   nextStep: '先完成上述最小必填项，再点击“保存最新输入并检测”。其余资料可后续补充。',
+  restoreNotice:
+    '为保护当事人隐私，本机草稿不保留对方身份标识；恢复后请重新填写，再运行利益冲突检查。',
+  saveFailure:
+    '草稿暂存失败，已填写内容仍保留在本页。请检查网络后重试；若持续失败，请联系律所管理员。',
   help: {
     title: '立案帮助与支持',
     content:
@@ -4192,7 +4196,11 @@ export function CaseIntakeWorkbench() {
         }
       })
       .catch((error) => {
-        message.error(error instanceof Error ? error.message : '加载客户或律师失败')
+        message.error(
+          error instanceof Error
+            ? `客户或律师名单加载失败：${error.message}。已填写内容仍会保留，可稍后刷新重试；若持续失败，请联系律所管理员。`
+            : '客户或律师名单加载失败，已填写内容仍会保留。请稍后刷新重试；若持续失败，请联系律所管理员。',
+        )
       })
 
     return () => {
@@ -4616,7 +4624,11 @@ export function CaseIntakeWorkbench() {
     }
     setStoredDraft(null)
     setDraftActive(true)
-    message.success('已恢复当前账号的未完成草稿')
+    message.success(
+      storedDraft.opponentIdentityNumber
+        ? '已恢复当前账号的未完成草稿'
+        : `已恢复当前账号的未完成草稿。${firstRunGuidance.restoreNotice}`,
+    )
   }
 
   const discardStoredDraft = () => {
@@ -4633,7 +4645,11 @@ export function CaseIntakeWorkbench() {
     try {
       await createIntake()
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '暂存失败')
+      message.error(
+        error instanceof Error
+          ? `${error.message}。${firstRunGuidance.saveFailure}`
+          : firstRunGuidance.saveFailure,
+      )
     }
   }
 
@@ -4688,7 +4704,11 @@ export function CaseIntakeWorkbench() {
       await createIntake()
       navigate('/case')
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '保存并退出失败')
+      message.error(
+        error instanceof Error
+          ? `${error.message}。${firstRunGuidance.saveFailure}`
+          : firstRunGuidance.saveFailure,
+      )
     }
   }
 
@@ -4743,7 +4763,10 @@ export function CaseIntakeWorkbench() {
       {storedDraft && (
         <div className='batch-advice' role='status'>
           <strong>发现当前账号的未完成草稿：{storedDraft.title || '未命名案件'}</strong>
-          <p>草稿不会自动覆盖当前表单。请选择继续草稿或放弃旧草稿。</p>
+          <p>
+            草稿不会自动覆盖当前表单。请选择继续草稿或放弃旧草稿。
+            {!storedDraft.opponentIdentityNumber && firstRunGuidance.restoreNotice}
+          </p>
           <Space>
             <Button type='primary' onClick={continueStoredDraft}>
               继续未完成草稿

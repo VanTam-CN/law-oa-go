@@ -179,6 +179,8 @@ test.describe('新建立案工作台', () => {
     await expect(page.locator('.batch-field', { hasText: '案件类型' }).getByTitle('商事诉讼')).toBeVisible()
     await expect(page.locator('.batch-field', { hasText: '业务领域' }).getByTitle('公司与并购')).toBeVisible()
     await expect(page.locator('.batch-field', { hasText: '子领域' }).getByTitle('投资与融资')).toBeVisible()
+    await expect(page.getByPlaceholder('输入证件号或统一社会信用代码')).toHaveValue('')
+    await expect(page.getByText(/恢复后请重新填写/)).toBeVisible()
   })
 
   test('必填控件应具备可访问名称并可由标签定位', async ({ page }) => {
