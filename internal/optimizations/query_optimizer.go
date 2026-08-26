@@ -107,12 +107,12 @@ func (qo *QueryOptimizer) ExecuteOptimizedCaseList(ctx context.Context, query *O
 	if query.OrderBy != "" {
 		// 验证排序字段
 		allowedOrders := map[string]bool{
-			"created_at":   true,
-			"updated_at":   true,
-			"title":        true,
-			"status":       true,
-			"priority":     true,
-			"case_type":    true,
+			"created_at": true,
+			"updated_at": true,
+			"title":      true,
+			"status":     true,
+			"priority":   true,
+			"case_type":  true,
 		}
 
 		if allowedOrders[query.OrderBy] {
@@ -365,7 +365,7 @@ func (qo *QueryOptimizer) OptimizedStatsQuery(ctx context.Context) (map[string]i
 	caseTypeStats := make(map[string]int64)
 	var typeResults []struct {
 		CaseType string `json:"case_type"`
-		Count     int64  `json:"count"`
+		Count    int64  `json:"count"`
 	}
 
 	typeQuery := `SELECT case_type, COUNT(*) as count FROM cases WHERE deleted_at IS NULL GROUP BY case_type`
@@ -473,8 +473,8 @@ func (qo *QueryOptimizer) AnalyzeQueryPerformance(ctx context.Context, query str
 
 	// 分析结果
 	analysis := map[string]interface{}{
-		"query":        query,
-		"explain":      explainResults,
+		"query":         query,
+		"explain":       explainResults,
 		"analysis_time": time.Now(),
 	}
 
@@ -489,8 +489,8 @@ func (qo *QueryOptimizer) OptimizeDatabase() error {
 	if driverName == "mysql" {
 		// MySQL优化配置
 		optimizations := []string{
-			"SET GLOBAL innodb_buffer_pool_size = 1073741824",    // 1GB
-			"SET GLOBAL innodb_log_file_size = 268435456",      // 256MB
+			"SET GLOBAL innodb_buffer_pool_size = 1073741824", // 1GB
+			"SET GLOBAL innodb_log_file_size = 268435456",     // 256MB
 			"SET GLOBAL innodb_flush_log_at_trx_commit = 2",
 			"SET GLOBAL sync_binlog = 0",
 			"SET GLOBAL innodb_flush_method = O_DIRECT",

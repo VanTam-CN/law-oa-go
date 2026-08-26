@@ -50,12 +50,12 @@ func (h *IntegrationTestHandler) TestIntegratedApprovalDemo(c *gin.Context) {
 		"urgency":         "medium",
 		"priority":        "normal",
 		"conflict_check_config": gin.H{
-			"user_id":               "test_lawyer_001",
-			"client_ids":            []string{"test_client_001", "test_client_002"},
-			"search_scope":          "all",
-			"check_type":            "basic",
-			"include_potential":     true,
-			"mitigation_required":   false,
+			"user_id":             "test_lawyer_001",
+			"client_ids":          []string{"test_client_001", "test_client_002"},
+			"search_scope":        "all",
+			"check_type":          "basic",
+			"include_potential":   true,
+			"mitigation_required": false,
 		},
 		"metadata": gin.H{
 			"test_mode":        true,
@@ -68,14 +68,14 @@ func (h *IntegrationTestHandler) TestIntegratedApprovalDemo(c *gin.Context) {
 		"success": true,
 		"message": "集成审批演示请求模拟成功",
 		"data": gin.H{
-			"approval_id":     "demo_approval_" + time.Now().Format("20060102150405"),
-			"status":          "created",
-			"created_at":      time.Now().Format(time.RFC3339),
+			"approval_id": "demo_approval_" + time.Now().Format("20060102150405"),
+			"status":      "created",
+			"created_at":  time.Now().Format(time.RFC3339),
 			"conflict_check": gin.H{
-				"check_id":   "demo_check_" + time.Now().Format("20060102150405"),
-				"status":     "completed",
+				"check_id":     "demo_check_" + time.Now().Format("20060102150405"),
+				"status":       "completed",
 				"has_conflict": false,
-				"risk_level":  "LOW",
+				"risk_level":   "LOW",
 			},
 		},
 		"mock_request": mockRequest,
@@ -86,24 +86,24 @@ func (h *IntegrationTestHandler) TestIntegratedApprovalDemo(c *gin.Context) {
 func (h *IntegrationTestHandler) TestConflictCheckDemo(c *gin.Context) {
 	// 模拟请求数据
 	mockRequest := gin.H{
-		"user_id":        "test_lawyer_001",
-		"client_ids":     []string{"demo_client_001", "demo_client_002"},
-		"search_scope":   "all",
-		"check_type":     "basic",
-		"include_potential": true,
+		"user_id":             "test_lawyer_001",
+		"client_ids":          []string{"demo_client_001", "demo_client_002"},
+		"search_scope":        "all",
+		"check_type":          "basic",
+		"include_potential":   true,
 		"mitigation_required": false,
 	}
 
 	// 模拟响应数据
 	mockResponse := gin.H{
-		"check_id":     "demo_check_" + time.Now().Format("20060102150405"),
-		"status":       "completed",
-		"has_conflict": false,
+		"check_id":       "demo_check_" + time.Now().Format("20060102150405"),
+		"status":         "completed",
+		"has_conflict":   false,
 		"conflict_count": 0,
-		"risk_level":   "LOW",
-		"risk_score":   15.5,
-		"check_time":   time.Now().Format(time.RFC3339),
-		"duration":     1250,
+		"risk_level":     "LOW",
+		"risk_score":     15.5,
+		"check_time":     time.Now().Format(time.RFC3339),
+		"duration":       1250,
 		"conflict_cases": []gin.H{},
 		"recommendations": []string{
 			"未发现明显冲突",
@@ -112,9 +112,9 @@ func (h *IntegrationTestHandler) TestConflictCheckDemo(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "冲突检测演示成功",
-		"data":    mockResponse,
+		"success":      true,
+		"message":      "冲突检测演示成功",
+		"data":         mockResponse,
 		"mock_request": mockRequest,
 	})
 }
@@ -167,12 +167,12 @@ func (h *IntegrationTestHandler) TestDatabaseConnectivity(c *gin.Context) {
 		"success": true,
 		"message": "数据库连接正常",
 		"database": gin.H{
-			"connected": true,
-			"driver":   "postgres",
-			"status":   "healthy",
+			"connected":          true,
+			"driver":             "postgres",
+			"status":             "healthy",
 			"integration_tables": count,
-			"basic_tables":     basicTablesCount,
-			"total_tables":      count + basicTablesCount,
+			"basic_tables":       basicTablesCount,
+			"total_tables":       count + basicTablesCount,
 		},
 	})
 }
@@ -190,15 +190,15 @@ func (h *IntegrationTestHandler) TestIntegrationStatistics(c *gin.Context) {
 		"success_rate":            90.5,
 		"daily_stats": gin.H{
 			"today": gin.H{
-				"created":    8,
-				"completed":  6,
-				"failed":     2,
+				"created":   8,
+				"completed": 6,
+				"failed":    2,
 			},
 		},
 		"weekly_stats": gin.H{
-			"created":    45,
-			"completed":  42,
-			"failed":     3,
+			"created":   45,
+			"completed": 42,
+			"failed":    3,
 		},
 	}
 
@@ -217,10 +217,10 @@ func RegisterTestRoutes(app *gin.Engine, db *gorm.DB) {
 	// 注册测试路由组
 	testGroup := app.Group("/test/integration")
 	{
-		testGroup.GET("/health", testHandler.TestIntegrationHealth)           // 健康检查
-		testGroup.POST("/demo", testHandler.TestIntegratedApprovalDemo)      // 演示集成功能
-		testGroup.POST("/conflict-demo", testHandler.TestConflictCheckDemo)  // 演示冲突检测
+		testGroup.GET("/health", testHandler.TestIntegrationHealth)             // 健康检查
+		testGroup.POST("/demo", testHandler.TestIntegratedApprovalDemo)         // 演示集成功能
+		testGroup.POST("/conflict-demo", testHandler.TestConflictCheckDemo)     // 演示冲突检测
 		testGroup.GET("/db-connectivity", testHandler.TestDatabaseConnectivity) // 数据库连接测试
-		testGroup.GET("/statistics", testHandler.TestIntegrationStatistics)    // 集成统计
+		testGroup.GET("/statistics", testHandler.TestIntegrationStatistics)     // 集成统计
 	}
 }

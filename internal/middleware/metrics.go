@@ -149,7 +149,8 @@ func RecordCacheMetrics(operation, cacheType string, hit bool, duration time.Dur
 // UpdateBusinessMetrics 更新业务指标
 func UpdateBusinessMetrics(usersByRole map[string]map[string]int64,
 	casesByStatus map[string]map[string]int64,
-	clientsByStatus map[string]int64) {
+	clientsByStatus map[string]int64,
+) {
 	// 更新用户指标
 	for role, statusMap := range usersByRole {
 		for status, count := range statusMap {

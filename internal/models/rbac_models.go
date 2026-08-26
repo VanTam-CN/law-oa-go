@@ -21,36 +21,36 @@ type Role struct {
 
 // Permission 权限模型
 type Permission struct {
-	ID          uint           `json:"id" gorm:"primarykey"`
-	CreatedAt   time.Time      `json:"created_at"`
-	UpdatedAt   time.Time      `json:"updated_at"`
-	DeletedAt   gorm.DeletedAt `json:"-" gorm:"index"`
-	Name        string         `json:"name" gorm:"size:100;not null"`
-	Code        string         `json:"code" gorm:"size:100;not null;uniqueIndex"`
-	Type        string         `json:"type" gorm:"size:20;not null;default:'menu'"` // menu, button, api
-	ParentID    *uint          `json:"parent_id" gorm:"column:parent_id"`
-	Path        string         `json:"path" gorm:"size:255"`
-	Icon        string         `json:"icon" gorm:"size:100"`
-	Component   string         `json:"component" gorm:"size:255"`
-	SortOrder   int            `json:"sort_order" gorm:"default:0"`
-	Status      string         `json:"status" gorm:"size:20;default:'active'"`
+	ID        uint           `json:"id" gorm:"primarykey"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
+	Name      string         `json:"name" gorm:"size:100;not null"`
+	Code      string         `json:"code" gorm:"size:100;not null;uniqueIndex"`
+	Type      string         `json:"type" gorm:"size:20;not null;default:'menu'"` // menu, button, api
+	ParentID  *uint          `json:"parent_id" gorm:"column:parent_id"`
+	Path      string         `json:"path" gorm:"size:255"`
+	Icon      string         `json:"icon" gorm:"size:100"`
+	Component string         `json:"component" gorm:"size:255"`
+	SortOrder int            `json:"sort_order" gorm:"default:0"`
+	Status    string         `json:"status" gorm:"size:20;default:'active'"`
 
 	// 关联
-	Parent      *Permission   `json:"parent,omitempty" gorm:"foreignKey:ParentID"`
-	Children    []Permission  `json:"children,omitempty" gorm:"foreignKey:ParentID"`
+	Parent   *Permission  `json:"parent,omitempty" gorm:"foreignKey:ParentID"`
+	Children []Permission `json:"children,omitempty" gorm:"foreignKey:ParentID"`
 }
 
 // RolePermission 角色权限关联模型
 type RolePermission struct {
-	ID           uint           `json:"id" gorm:"primarykey"`
-	CreatedAt    time.Time      `json:"created_at"`
-	UpdatedAt    time.Time      `json:"updated_at"`
-	RoleID       uint           `json:"role_id" gorm:"not null;index"`
-	PermissionID uint           `json:"permission_id" gorm:"not null;index"`
+	ID           uint      `json:"id" gorm:"primarykey"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+	RoleID       uint      `json:"role_id" gorm:"not null;index"`
+	PermissionID uint      `json:"permission_id" gorm:"not null;index"`
 
 	// 关联
-	Role         Role           `json:"role,omitempty" gorm:"foreignKey:RoleID"`
-	Permission   Permission     `json:"permission,omitempty" gorm:"foreignKey:PermissionID"`
+	Role       Role       `json:"role,omitempty" gorm:"foreignKey:RoleID"`
+	Permission Permission `json:"permission,omitempty" gorm:"foreignKey:PermissionID"`
 }
 
 // UserRole 用户角色关联模型
@@ -62,8 +62,8 @@ type UserRole struct {
 	RoleID    uint      `json:"role_id" gorm:"not null;index"`
 
 	// 关联
-	User      User      `json:"user,omitempty" gorm:"foreignKey:UserID"`
-	Role      Role      `json:"role,omitempty" gorm:"foreignKey:RoleID"`
+	User User `json:"user,omitempty" gorm:"foreignKey:UserID"`
+	Role Role `json:"role,omitempty" gorm:"foreignKey:RoleID"`
 }
 
 // TableName 指定表名

@@ -62,14 +62,14 @@ func DefaultMiddlewareConfig() *MiddlewareConfig {
 			"/favicon.ico",
 			"/robots.txt",
 		},
-		LogRequestBody:      false,
-		LogResponseBody:     false,
-		MaxRequestBodySize:  1024 * 1024, // 1MB
-		MaxResponseBodySize: 1024 * 1024, // 1MB
-		LogUserAgent:        true,
-		LogClientIP:         true,
+		LogRequestBody:       false,
+		LogResponseBody:      false,
+		MaxRequestBodySize:   1024 * 1024, // 1MB
+		MaxResponseBodySize:  1024 * 1024, // 1MB
+		LogUserAgent:         true,
+		LogClientIP:          true,
 		SlowRequestThreshold: time.Second,
-		SpanNameFunc:        defaultSpanNameFunc,
+		SpanNameFunc:         defaultSpanNameFunc,
 	}
 }
 

@@ -229,7 +229,6 @@ func (tm *TokenManager) VerifyToken(ctx context.Context, tokenString string) (*j
 		}
 		return tm.secret, nil
 	})
-
 	if err != nil {
 		jwtAuthErrors.WithLabelValues("verify").Inc()
 		return nil, fmt.Errorf("failed to parse token: %w", err)
@@ -582,7 +581,6 @@ func (tm *TokenManager) getTokenUUIDFromToken(tokenString string) string {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return tm.secret, nil
 	})
-
 	if err != nil {
 		return ""
 	}

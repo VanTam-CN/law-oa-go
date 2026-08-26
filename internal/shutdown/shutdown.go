@@ -28,37 +28,37 @@ type HookInfo struct {
 
 // ShutdownManager 优雅关闭管理器
 type ShutdownManager struct {
-	logger     *zap.Logger
-	hooks      []HookInfo
-	timeout    time.Duration
-	mu         sync.Mutex
-	ctx        context.Context
-	cancel     context.CancelFunc
-	wg         sync.WaitGroup
-	signals    []os.Signal
+	logger  *zap.Logger
+	hooks   []HookInfo
+	timeout time.Duration
+	mu      sync.Mutex
+	ctx     context.Context
+	cancel  context.CancelFunc
+	wg      sync.WaitGroup
+	signals []os.Signal
 }
 
 // ShutdownConfig 关闭配置
 type ShutdownConfig struct {
-	Timeout            time.Duration
-	GracePeriod        time.Duration
-	ForceCloseAfter   time.Duration
-	SilenceTimeout     bool
-	EnableSignals      bool
-	EnableHTTPShutdown bool
-	EnableDBShutdown   bool
+	Timeout             time.Duration
+	GracePeriod         time.Duration
+	ForceCloseAfter     time.Duration
+	SilenceTimeout      bool
+	EnableSignals       bool
+	EnableHTTPShutdown  bool
+	EnableDBShutdown    bool
 	EnableCacheShutdown bool
 }
 
 // DefaultShutdownConfig 默认关闭配置
 var DefaultShutdownConfig = ShutdownConfig{
-	Timeout:            30 * time.Second,
-	GracePeriod:        10 * time.Second,
-	ForceCloseAfter:    60 * time.Second,
-	SilenceTimeout:     false,
-	EnableSignals:      true,
-	EnableHTTPShutdown: true,
-	EnableDBShutdown:   true,
+	Timeout:             30 * time.Second,
+	GracePeriod:         10 * time.Second,
+	ForceCloseAfter:     60 * time.Second,
+	SilenceTimeout:      false,
+	EnableSignals:       true,
+	EnableHTTPShutdown:  true,
+	EnableDBShutdown:    true,
 	EnableCacheShutdown: true,
 }
 

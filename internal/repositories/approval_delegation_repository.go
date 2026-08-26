@@ -25,9 +25,9 @@ type ApprovalDelegationRepository interface {
 type DelegationListParams struct {
 	DelegatorID string
 	DelegateID  string
-	IsActive   *bool
-	Page       int
-	PageSize   int
+	IsActive    *bool
+	Page        int
+	PageSize    int
 }
 
 // approvalDelegationRepository 代理审批仓储实现
