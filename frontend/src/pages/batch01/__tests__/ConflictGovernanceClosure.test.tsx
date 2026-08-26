@@ -1,6 +1,7 @@
 import React from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import { Role } from '@/services/role'
+import { getRoles } from '@/utils/storage'
 import {
   ConflictGovernanceCenter,
   currentOfficerAppointments,
@@ -10,7 +11,7 @@ import {
 
 jest.mock('@/utils/storage', () => ({
   ...jest.requireActual('@/utils/storage'),
-  getRoles: jest.fn(() => [{ code: 'director', name: '主任' } as Role]),
+  getRoles: jest.fn(),
   getToken: jest.fn(() => 'test-token'),
   getUserInfo: jest.fn(() => ({})),
 }))
@@ -64,6 +65,8 @@ describe('ConflictGovernanceCenter closure', () => {
   beforeEach(() => {
     sessionStorage.setItem('law_oa_session_only', '1')
     sessionStorage.setItem('law_oa_roles', JSON.stringify([{ code: 'director', name: '主任' }]))
+    const getRolesMock = getRoles as jest.Mock
+    getRolesMock.mockReturnValue([{ code: 'director', name: '主任' } as Role])
   })
 
   it('derives the next policy action without manufacturing approval', () => {
@@ -112,5 +115,24 @@ describe('ConflictGovernanceCenter closure', () => {
     expect(screen.getByText(/回避声明：本人与本案当事人及承办律师无利益冲突/)).toBeInTheDocument()
     expect(screen.getByText('任命与回避完备')).toBeInTheDocument()
     await waitFor(() => expect(screen.queryByText(/加载失败/)).not.toBeInTheDocument())
+  })
+
+  it('keeps conflict officer read-only and avoids unauthorized policy or candidate calls', async () => {
+    const getRolesMock = getRoles as jest.Mock
+    getRolesMock.mockReturnValue([{ code: 'conflict_officer', name: '冲突核查人' } as Role])
+
+    render(<ConflictGovernanceCenter />)
+
+    expect(await screen.findByText('冲突核查人任命与回避')).toBeInTheDocument()
+    expect(await screen.findByText(/主核查人：合规乙 · 代理人：律师丙/)).toBeInTheDocument()
+    expect(screen.queryByText('律所冲突政策双签闭环')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '提交新政策材料包' })).not.toBeInTheDocument()
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /刷\s*新/ })).toBeEnabled())
+    const requestedPaths = (global.fetch as jest.Mock).mock.calls.map(([input]) => String(input))
+    expect(requestedPaths).toEqual([
+      expect.stringContaining('/conflict-v2/search-scopes'),
+      expect.stringContaining('/conflict/officer-appointments'),
+    ])
   })
 })
