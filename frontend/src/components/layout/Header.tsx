@@ -36,6 +36,7 @@ const AppHeader: React.FC = () => {
   const navigate = useNavigate()
 
   const [notificationVisible, setNotificationVisible] = useState(false)
+  const [userMenuVisible, setUserMenuVisible] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const unreadCount = stats.unread || notifications.filter((item) => !item.isRead).length
 
@@ -198,6 +199,26 @@ const AppHeader: React.FC = () => {
     }
   }
 
+  // rc-dropdown 只在打开后处理 Esc/Tab；打开动作本身仍依赖原生 click。
+  // 显式处理 Enter/Space，避免浏览器把 Space 的 click 延迟到 keyup 后丢失或与焦点管理冲突。
+  const handleMenuKeyDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    setVisible: React.Dispatch<React.SetStateAction<boolean>>,
+  ) => {
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      setVisible(false)
+      return
+    }
+
+    if (event.key !== 'Enter' && event.key !== ' ') {
+      return
+    }
+
+    event.preventDefault()
+    setVisible((visible) => !visible)
+  }
+
   // 通知菜单项
   const notificationItems: MenuProps['items'] = [
     {
@@ -345,6 +366,7 @@ const AppHeader: React.FC = () => {
             onOpenChange={setNotificationVisible}
             open={notificationVisible}
             trigger={['click']}
+            destroyOnHidden
           >
             <button
               type='button'
@@ -353,6 +375,7 @@ const AppHeader: React.FC = () => {
               aria-haspopup='menu'
               aria-label={`通知中心${unreadCount > 0 ? `，${unreadCount} 条未读` : ''}`}
               title='通知中心'
+              onKeyDown={(event) => handleMenuKeyDown(event, setNotificationVisible)}
             >
               <Badge
                 count={unreadCount > 0 ? unreadCount : 0}
@@ -366,12 +389,21 @@ const AppHeader: React.FC = () => {
           </Dropdown>
 
           {/* 用户菜单 */}
-          <Dropdown menu={{ items: userMenuItems }} placement='bottomRight' trigger={['click']}>
+          <Dropdown
+            menu={{ items: userMenuItems }}
+            placement='bottomRight'
+            onOpenChange={setUserMenuVisible}
+            open={userMenuVisible}
+            trigger={['click']}
+            destroyOnHidden
+          >
             <button
               type='button'
               className='user-menu'
+              aria-expanded={userMenuVisible}
               aria-haspopup='menu'
               aria-label={`用户菜单：${user?.realName || user?.username || '用户'}`}
+              onKeyDown={(event) => handleMenuKeyDown(event, setUserMenuVisible)}
             >
               <Avatar size='small' icon={<UserOutlined />} className='user-avatar' />
               <span className='user-name'>{user?.realName || user?.username || '用户'}</span>

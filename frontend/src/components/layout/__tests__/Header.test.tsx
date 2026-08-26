@@ -1,5 +1,5 @@
 import React from 'react'
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import AppHeader from '../Header'
@@ -138,6 +138,7 @@ describe('AppHeader keyboard accessibility', () => {
     expect(notificationButton).toHaveAttribute('aria-haspopup', 'menu')
     expect(notificationButton).toHaveAttribute('aria-expanded', 'false')
     expect(userButton).toHaveAttribute('aria-haspopup', 'menu')
+    expect(userButton).toHaveAttribute('aria-expanded', 'false')
   })
 
   it('activates fullscreen from the keyboard', async () => {
@@ -172,7 +173,7 @@ describe('AppHeader keyboard accessibility', () => {
       name: '通知中心，1 条未读',
     })
 
-    await user.click(notificationButton)
+    fireEvent.keyDown(notificationButton, { key: 'Enter' })
     expect(notificationButton).toHaveAttribute('aria-expanded', 'true')
 
     const markAllButton = await screen.findByRole('button', { name: '全部已读' })
@@ -182,9 +183,15 @@ describe('AppHeader keyboard accessibility', () => {
     await waitFor(() => expect(markAllButton).toHaveFocus())
     await user.keyboard('{Enter}')
     expect(markAllAsReadMock).toHaveBeenCalledTimes(1)
+
+    fireEvent.keyDown(notificationButton, { key: 'Escape' })
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: '全部已读' })).not.toBeInTheDocument(),
+    )
+    expect(notificationButton).toHaveAttribute('aria-expanded', 'false')
   })
 
-  it('provides stable actions for reading, deleting, and viewing notifications', async () => {
+  it('provides stable reading and deleting actions for notifications', async () => {
     notificationState = {
       notifications: [
         {
@@ -198,20 +205,61 @@ describe('AppHeader keyboard accessibility', () => {
       ],
       unread: 1,
     }
-    const user = userEvent.setup()
     renderHeader()
 
-    await user.click(screen.getByRole('button', { name: '通知中心，1 条未读' }))
+    fireEvent.keyDown(screen.getByRole('button', { name: '通知中心，1 条未读' }), {
+      key: 'Enter',
+    })
     const notificationButton = await screen.findByRole('button', { name: '未读通知：系统维护通知' })
-    await user.click(notificationButton)
+    fireEvent.click(notificationButton)
     expect(markAsReadMock).toHaveBeenCalledWith(2)
 
-    const deleteButton = screen.getByRole('button', { name: '删除通知：系统维护通知' })
-    await user.click(deleteButton)
+    fireEvent.keyDown(screen.getByRole('button', { name: '通知中心，1 条未读' }), { key: 'Enter' })
+    const deleteButton = await screen.findByRole('button', { name: '删除通知：系统维护通知' })
+    fireEvent.click(deleteButton)
     expect(deleteNotificationMock).toHaveBeenCalledWith(2)
+  })
 
-    const viewAllButton = screen.getByRole('button', { name: '查看全部通知' })
-    await user.click(viewAllButton)
+  it('provides a stable action for viewing all notifications', async () => {
+    notificationState = {
+      notifications: [
+        {
+          id: 3,
+          title: '合同提醒',
+          content: '合同今日到期',
+          type: 'project',
+          isRead: true,
+          createdAt: new Date().toISOString(),
+        },
+      ],
+      unread: 0,
+    }
+    renderHeader()
+    fireEvent.keyDown(screen.getByRole('button', { name: '通知中心' }), {
+      key: 'Enter',
+    })
+    const viewAllButton = await screen.findByRole('button', { name: '查看全部通知' })
+    fireEvent.click(viewAllButton)
     expect(navigateMock).toHaveBeenCalledWith('/notifications')
+  })
+
+  it('opens and closes the user menu with Space and outside click', async () => {
+    const user = userEvent.setup()
+    renderHeader()
+    const userButton = screen.getByRole('button', { name: '用户菜单：测试主任' })
+
+    fireEvent.keyDown(userButton, { key: ' ' })
+    expect(userButton).toHaveAttribute('aria-expanded', 'true')
+    expect(await screen.findByText('个人中心')).toBeVisible()
+
+    fireEvent.keyDown(userButton, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByText('个人中心')).not.toBeInTheDocument())
+    expect(userButton).toHaveAttribute('aria-expanded', 'false')
+
+    fireEvent.keyDown(userButton, { key: ' ' })
+    expect(await screen.findByText('个人中心')).toBeVisible()
+    await user.click(document.body)
+    await waitFor(() => expect(screen.queryByText('个人中心')).not.toBeInTheDocument())
+    expect(userButton).toHaveAttribute('aria-expanded', 'false')
   })
 })
