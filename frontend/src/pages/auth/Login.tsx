@@ -1,7 +1,12 @@
 import React from 'react'
 import { Card, Form, Input, Button, Checkbox } from 'antd'
 import { message } from '@/utils/messageHelper'
-import { UserOutlined, LockOutlined } from '@ant-design/icons'
+import {
+  EyeInvisibleOutlined,
+  EyeOutlined,
+  LockOutlined,
+  UserOutlined,
+} from '@ant-design/icons'
 import { useNavigate } from 'react-router'
 import { login, setToken } from '@/services/auth'
 import { getCurrentUserPermissions, getCurrentUserRoles } from '@/services/role'
@@ -28,6 +33,7 @@ const LoginPage: React.FC = () => {
   const { login: appStoreLogin } = useAppStore()
   const [form] = Form.useForm<LoginFormValues>()
   const [loading, setLoading] = React.useState(false)
+  const [passwordVisible, setPasswordVisible] = React.useState(false)
 
   const onFinish = async (values: LoginFormValues) => {
     try {
@@ -119,13 +125,27 @@ const LoginPage: React.FC = () => {
               prefix={<UserOutlined />}
               placeholder='账号或邮箱'
               autoComplete='username'
+              aria-label='账号或邮箱'
             />
           </Form.Item>
           <Form.Item name='password' rules={[{ required: true, message: '请输入密码' }]}>
-            <Input.Password
+            <Input
+              type={passwordVisible ? 'text' : 'password'}
               prefix={<LockOutlined />}
+              suffix={
+                <button
+                  type='button'
+                  className='login-password-toggle'
+                  aria-label={passwordVisible ? '隐藏密码' : '显示密码'}
+                  aria-pressed={passwordVisible}
+                  onClick={() => setPasswordVisible((visible) => !visible)}
+                >
+                  {passwordVisible ? <EyeOutlined /> : <EyeInvisibleOutlined />}
+                </button>
+              }
               placeholder='密码'
               autoComplete='current-password'
+              aria-label='密码'
             />
           </Form.Item>
           <Form.Item name='remember' valuePropName='checked'>
