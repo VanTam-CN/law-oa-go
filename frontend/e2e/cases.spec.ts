@@ -141,6 +141,7 @@ test.describe('新建立案工作台', () => {
     await expect(page.getByText(/先完成上述最小必填项/)).toBeVisible()
     await expect(page.getByText('加载耗时')).toHaveCount(0)
     await expect(page.getByText('接口响应')).toHaveCount(0)
+    await expect(page.getByText('数据保存中')).toHaveCount(0)
 
     await page.getByRole('button', { name: '帮助与支持' }).click()
     await expect(page.getByRole('dialog').getByText('立案帮助与支持')).toBeVisible()

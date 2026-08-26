@@ -4712,28 +4712,23 @@ export function CaseIntakeWorkbench() {
             : '新建案件默认使用空白表单，未完成草稿需要手动恢复。'
         }
         actions={
-          <Space>
-            <Button
-              icon={<QuestionCircleOutlined />}
-              onClick={() =>
-                Modal.info({
-                  title: firstRunGuidance.help.title,
-                  content: (
-                    <>
-                      <p>{firstRunGuidance.nextStep}</p>
-                      <p>{firstRunGuidance.help.content}</p>
-                    </>
-                  ),
-                  okText: '知道了',
-                })
-              }
-            >
-              帮助与支持
-            </Button>
-            <span className='batch-autosave' aria-hidden='true'>
-              数据保存中…
-            </span>
-          </Space>
+          <Button
+            icon={<QuestionCircleOutlined />}
+            onClick={() =>
+              Modal.info({
+                title: firstRunGuidance.help.title,
+                content: (
+                  <>
+                    <p>{firstRunGuidance.nextStep}</p>
+                    <p>{firstRunGuidance.help.content}</p>
+                  </>
+                ),
+                okText: '知道了',
+              })
+            }
+          >
+            帮助与支持
+          </Button>
         }
       />
 
