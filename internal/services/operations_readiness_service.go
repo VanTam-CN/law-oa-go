@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"law-oa-go/internal/models"
 )
 
@@ -135,9 +136,17 @@ func (s *OperationsReadinessService) Register(actor AuthActor, input OperationsR
 	}
 	var previousID string
 	transactionErr := s.db.Transaction(func(tx *gorm.DB) error {
+		if tx.Dialector.Name() == "postgres" {
+			// Serialize hash-chain extension separately for each scope. The lock
+			// is transaction-scoped and acquired before the latest row is read.
+			if err := tx.Exec("SELECT pg_advisory_xact_lock(hashtext(?))", "operations-readiness-evidence:"+scope).Error; err != nil {
+				return fmt.Errorf("lock operations evidence scope: %w", err)
+			}
+		}
 		latest := new(models.OperationsReadinessEvidence)
 		if err := tx.Where("scope = ? AND integrity_hash <> ?", scope, "").
 			Order("created_at DESC, reviewed_at DESC, id DESC").
+			Clauses(clause.Locking{Strength: "UPDATE"}).
 			First(latest).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
 		}

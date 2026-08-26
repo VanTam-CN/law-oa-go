@@ -88,7 +88,7 @@ const OperationsReadiness: React.FC = () => {
             showIcon
             style={{ marginTop: 16 }}
             message='证据链未通过校验'
-            description='当前范围的追加证据存在旧格式行，或哈希链校验失败。系统已按 0/7 处理，需由系统管理员离线核查后重新追加完整证据链；不能修改历史登记。'
+            description='当前范围存在旧格式无链行，或哈希链校验失败。系统已按 0/7 处理。先离线保全并审计全部行，再由数据库管理员按变更流程移除不可校验旧行；在此之前，追加登记不能使评分恢复。'
           />
         ) : null}
         <Alert

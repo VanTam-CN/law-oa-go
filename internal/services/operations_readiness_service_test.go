@@ -1,7 +1,9 @@
 package services
 
 import (
+	"fmt"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -15,8 +17,67 @@ func newOperationsReadinessTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 	db, err := gorm.Open(sqlite.Open(t.TempDir()+"/operations.db"), &gorm.Config{})
 	require.NoError(t, err)
+	sqlDB, err := db.DB()
+	require.NoError(t, err)
+	sqlDB.SetMaxOpenConns(1)
 	require.NoError(t, db.AutoMigrate(&models.OperationsReadinessEvidence{}))
 	return db
+}
+
+func TestOperationsReadinessConcurrentRegistrationExtendsOneChain(t *testing.T) {
+	service := NewOperationsReadinessService(newOperationsReadinessTestDB(t))
+	const registrations = 12
+
+	start := sync.WaitGroup{}
+	start.Add(1)
+	workers := sync.WaitGroup{}
+	records := make([]*OperationsReadinessEvidenceView, registrations)
+	errs := make([]error, registrations)
+	for index := 0; index < registrations; index++ {
+		workers.Add(1)
+		go func(index int) {
+			defer workers.Done()
+			start.Wait()
+			for attempt := 0; attempt < 4; attempt++ {
+				var registerErr error
+				records[index], registerErr = service.Register(AuthActor{UserID: 7, Role: "director"}, OperationsReadinessEvidenceInput{
+					Control:           "backup",
+					Scope:             models.OperationsEvidenceScopeQA,
+					EvidenceReference: fmt.Sprintf("qa://concurrent-%02d", index),
+					ReviewedAt:        time.Now().Add(-time.Duration(index+1) * time.Minute),
+				})
+				if registerErr == nil {
+					break
+				}
+				if !strings.Contains(registerErr.Error(), "database is locked") {
+					errs[index] = registerErr
+					break
+				}
+				errs[index] = registerErr
+				time.Sleep(10 * time.Millisecond)
+			}
+		}(index)
+	}
+	start.Done()
+	workers.Wait()
+
+	for index, err := range errs {
+		require.NoError(t, err, "registration %d failed", index)
+	}
+
+	var count int64
+	require.NoError(t, service.db.Model(&models.OperationsReadinessEvidence{}).Count(&count).Error)
+	require.Equal(t, int64(registrations), count)
+
+	summary, err := service.Summary(models.OperationsEvidenceScopeQA)
+	require.NoError(t, err)
+	require.Equal(t, "verified", summary.Items[0].Integrity)
+	require.False(t, summary.Ready)
+	require.Equal(t, 1, summary.VerifiedCount)
+
+	var roots int64
+	require.NoError(t, service.db.Model(&models.OperationsReadinessEvidence{}).Where("previous_evidence_id = ?", "").Count(&roots).Error)
+	require.Equal(t, int64(1), roots)
 }
 
 func registerAllOperationsEvidence(t *testing.T, service *OperationsReadinessService, scope string) {
@@ -194,6 +255,20 @@ func TestOperationsReadinessDoesNotTrustLegacyUnchainedRows(t *testing.T) {
 	require.Equal(t, "legacy-rows-present", summary.Items[0].Integrity)
 	require.False(t, summary.Ready)
 	require.Equal(t, 0, summary.Score)
+
+	_, err = service.Register(AuthActor{UserID: 7, Role: "admin"}, OperationsReadinessEvidenceInput{
+		Control: "rollback", Scope: models.OperationsEvidenceScopeQA,
+		EvidenceReference: "qa://legacy-recovery-attempt",
+		ReviewedAt:        time.Now(),
+	})
+	require.NoError(t, err)
+
+	summary, err = service.Summary(models.OperationsEvidenceScopeQA)
+	require.NoError(t, err)
+	require.Equal(t, "legacy-rows-present", summary.Items[0].Integrity)
+	require.False(t, summary.Ready)
+	require.Equal(t, 0, summary.Score)
+	require.Equal(t, 0, summary.VerifiedCount)
 }
 
 func TestOperationsReadinessEvidenceRemainsAppendOnly(t *testing.T) {
