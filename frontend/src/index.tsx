@@ -5,6 +5,7 @@ import { ConfigProvider } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
 import './index.css'
 import './assets/styles/design-tokens.css'
+import './assets/styles/modal-fix.css'
 import App from './App'
 import { initializeApp } from './stores/useAppStore'
 
