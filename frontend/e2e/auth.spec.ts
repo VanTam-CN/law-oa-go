@@ -223,6 +223,32 @@ test.describe('顶部入口反馈', () => {
     await expect(userButton).toBeFocused()
   })
 
+  test('用户菜单应支持仅键盘完成退出登录', async ({ page }) => {
+    await waitForAppShell(page)
+
+    const userButton = page.getByRole('button', { name: '用户菜单：张律师' })
+    await userButton.focus()
+    await page.keyboard.press('Enter')
+    await expect(userButton).toHaveAttribute('aria-expanded', 'true')
+
+    const menu = page.getByRole('menu', { name: '用户菜单' })
+    await expect(menu).toBeFocused()
+    await page.keyboard.press('ArrowDown')
+    await expect(page.getByRole('menuitem', { name: '个人中心' })).toBeFocused()
+    await page.keyboard.press('ArrowDown')
+    await expect(page.getByRole('menuitem', { name: '系统设置' })).toBeFocused()
+    await page.keyboard.press('ArrowDown')
+    await expect(page.getByRole('menuitem', { name: '帮助中心' })).toBeFocused()
+    await page.keyboard.press('ArrowDown')
+    const logoutItem = page.getByRole('menuitem', { name: '退出登录' })
+    await expect(logoutItem).toBeFocused()
+
+    await page.keyboard.press('Enter')
+    await expect(page).toHaveURL(/\/login$/)
+    await expect(page.getByRole('button', { name: '登 录' })).toBeVisible()
+    expect(await page.evaluate(() => window.localStorage.getItem('auth_token'))).toBeNull()
+  })
+
   test('通知中心应支持键盘打开、关闭和焦点返回', async ({ page }) => {
     await waitForAppShell(page)
     const notificationButton = page.getByRole('button', { name: '通知中心' })
