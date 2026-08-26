@@ -701,15 +701,15 @@ func (r *conflictCheckRepository) ListConflictChecks(ctx context.Context, offset
 
 // UpdateConflictCheckStatus 更新冲突检查状态
 func (r *conflictCheckRepository) UpdateConflictCheckStatus(ctx context.Context, id uint, status string, result *models.CheckResult) error {
-	updates := map[string]interface{}{
-		"status": status,
-	}
+	update := models.ConflictCheck{Status: status}
+	columns := []string{"status", "updated_at"}
 
 	if result != nil {
-		updates["result"] = result
+		update.Result = result
+		columns = append(columns, "result")
 	}
 
-	resultCheck := r.db.WithContext(ctx).Model(&models.ConflictCheck{}).Where("id = ?", id).Updates(updates)
+	resultCheck := r.db.WithContext(ctx).Model(&models.ConflictCheck{}).Where("id = ?", id).Select(columns).Updates(&update)
 	if resultCheck.Error != nil {
 		return fmt.Errorf("更新冲突检查状态失败: %w", resultCheck.Error)
 	}
