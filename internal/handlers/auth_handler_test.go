@@ -340,7 +340,7 @@ func TestAuthHandler_Login(t *testing.T) {
 			UpdatedAt: time.Now(),
 		}
 
-		mockUserRepo.On("FindByEmail", testifymock.Anything, "Shared.Account@example.test").Return(user, nil)
+		mockUserRepo.On("FindByEmail", testifymock.Anything, "shared.account@example.test").Return(user, nil)
 
 		loginData := map[string]interface{}{
 			"account":  "Shared.Account@example.test",
@@ -356,6 +356,45 @@ func TestAuthHandler_Login(t *testing.T) {
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
+		mockUserRepo.AssertExpectations(t)
+	})
+
+	t.Run("Login Email Account Normalizes Case Without Username Fallback", func(t *testing.T) {
+		mockUserRepo.ExpectedCalls = nil
+		mockUserRepo.Calls = nil
+
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
+		require.NoError(t, err)
+		user := &models.User{
+			ID:        1,
+			Username:  "demo.lawyer@example.test",
+			Name:      "Mixed Email",
+			Email:     "demo.lawyer@example.test",
+			Password:  string(hashedPassword),
+			Role:      "lawyer",
+			Status:    "active",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+
+		mockUserRepo.On("FindByEmail", testifymock.Anything, "demo.lawyer@example.test").Return(user, nil)
+
+		loginData := map[string]interface{}{
+			"account":  "  Demo.Lawyer@Example.TEST  ",
+			"password": "password123",
+		}
+		jsonData, err := json.Marshal(loginData)
+		require.NoError(t, err)
+		req, err := http.NewRequest("POST", "/auth/login", bytes.NewBuffer(jsonData))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		require.Len(t, mockUserRepo.Calls, 1)
+		assert.Equal(t, "FindByEmail", mockUserRepo.Calls[0].Method)
 		mockUserRepo.AssertExpectations(t)
 	})
 }

@@ -25,7 +25,8 @@ interface LoginFormValues {
 }
 
 const normalizeLoginIdentifier = (value: string) => {
-  return value.trim()
+  const identifier = value.trim()
+  return identifier.includes('@') ? identifier.toLowerCase() : identifier
 }
 
 const LoginPage: React.FC = () => {

@@ -155,6 +155,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 }
 
 func normalizeLoginAccount(email string, account string) string {
+	isEmailInput := strings.TrimSpace(email) != "" || strings.Contains(strings.TrimSpace(account), "@")
 	identifier := strings.TrimSpace(email)
 	if identifier == "" {
 		identifier = strings.TrimSpace(account)
@@ -182,6 +183,10 @@ func normalizeLoginAccount(email string, account string) string {
 	lowerIdentifier := strings.ToLower(identifier)
 	if resolved, ok := aliases[lowerIdentifier]; ok {
 		return resolved
+	}
+
+	if isEmailInput {
+		return lowerIdentifier
 	}
 
 	return identifier

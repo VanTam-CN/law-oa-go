@@ -97,6 +97,28 @@ test.describe('登录流程', () => {
     await expect(page.locator('.user-name')).toHaveText('张律师')
   })
 
+  test('邮箱登录应该发送小写化 account 字段', async ({ page }) => {
+    await installApiMocks(page)
+    let loginPayload: { account?: string } | undefined
+    await page.route('**/api/v1/auth/login', async (route) => {
+      loginPayload = route.request().postDataJSON()
+      await route.fallback()
+    })
+
+    await page.goto('/login')
+    await waitForPageLoad(page)
+    await page.getByPlaceholder('账号或邮箱').fill(' Demo.Lawyer@Example.TEST ')
+    await page.getByPlaceholder('密码').fill('Demo@2026')
+    await page.locator('button[type="submit"]').click()
+
+    await waitForAppShell(page)
+    expect(loginPayload).toEqual({
+      account: 'demo.lawyer@example.test',
+      password: 'Demo@2026',
+      remember: false,
+    })
+  })
+
   test('登出后应该返回登录页', async ({ page }) => {
     await login(page, 'lawyer')
     await logout(page)

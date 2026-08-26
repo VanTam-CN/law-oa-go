@@ -91,4 +91,39 @@ describe('LoginPage login failure', () => {
       remember: false,
     })
   })
+
+  it('normalizes a mixed-case email account for the API', async () => {
+    loginMock.mockResolvedValue({
+      token: 'test-access-token',
+      user: {
+        id: 1,
+        username: 'Lawyer.Wang',
+        name: 'Wang Lawyer',
+        email: 'wang@example.test',
+        role: 'lawyer',
+        status: 'active',
+      },
+    })
+
+    render(
+      <MemoryRouter>
+        <AntdApp>
+          <LoginPage />
+        </AntdApp>
+      </MemoryRouter>,
+    )
+
+    await userEvent.type(screen.getByPlaceholderText('账号或邮箱'), ' Wang@Example.TEST ')
+    await userEvent.type(screen.getByPlaceholderText('密码'), 'Password123!')
+    await userEvent.click(screen.getByRole('button', { name: /登\s*录/ }))
+
+    await waitFor(() => {
+      expect(loginMock).toHaveBeenCalledTimes(1)
+    })
+    expect(loginMock).toHaveBeenCalledWith({
+      account: 'wang@example.test',
+      password: 'Password123!',
+      remember: false,
+    })
+  })
 })
