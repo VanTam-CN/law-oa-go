@@ -48,14 +48,26 @@ describe('token consistency checks', () => {
   it('does not include token fragments in consistency details', () => {
     const encode = (value: object) =>
       btoa(JSON.stringify(value)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-    const token = `${encode({ alg: 'none', typ: 'JWT' })}.${encode({
-      exp: Math.floor(Date.now() / 1000) + 3600,
-    })}.`
+    const header = { alg: 'HS256', typ: 'JWT', kid: 'token-leak-test-key' }
+    const body = { sub: 'token-leak-test-subject', exp: Math.floor(Date.now() / 1000) + 3600 }
+    const encodedHeader = encode(header)
+    const encodedBody = encode(body)
+    const signature = 'token-leak-signature-value'
+    const token = `${encodedHeader}.${encodedBody}.${signature}`
     localStorage.setItem('auth_token', token)
 
     const details = checkTokenConsistency().details.join('\n')
 
-    expect(details).not.toContain('a'.repeat(20))
+    expect(details).not.toContain(token)
+    expect(details).not.toContain(encodedHeader)
+    expect(details).not.toContain(encodedBody)
+    expect(details).not.toContain(signature)
+    ;[JSON.stringify(header), JSON.stringify(body), encodedHeader.slice(0, 8), encodedBody.slice(-8), signature.slice(0, 8)].forEach(
+      (fragment) => {
+        expect(fragment.length).toBeGreaterThanOrEqual(8)
+        expect(details).not.toContain(fragment)
+      },
+    )
     expect(details).toContain('当前token: 已设置')
   })
 })
