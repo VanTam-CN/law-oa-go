@@ -279,19 +279,12 @@ pgo-bench:
 		./main.go
 	@echo "基准测试PGO构建完成: bin/$(BINARY_NAME)"
 
-# 运行工作负载生成器
-.PHONY: workload
-workload:
-	@echo "运行工作负载生成器..."
-	@mkdir -p $(PROFILE_DIR)
-	@go run scripts/comprehensive_pgo_workload.go
-
-# 运行HTTP工作负载
-.PHONY: http-workload
-http-workload:
-	@echo "运行HTTP工作负载..."
-	@mkdir -p $(PROFILE_DIR)
-	@go run scripts/pgo_workload.go
+# 遗留 workload 生成器脚本已在 94722d4 清理，且历史文件没有 func main，
+# 不能通过 go run 恢复执行。重新设计真实 workload 前应使用 profile/pgo-test/pgo-bench。
+.PHONY: workload http-workload
+workload http-workload:
+	@echo "PGO workload 生成器已清理；请使用 make profile、make pgo-test 或 make pgo-bench。"
+	@exit 1
 
 # 快速PGO构建
 .PHONY: quick-pgo
@@ -502,8 +495,7 @@ help:
 	@echo "  make pgo-full      - 完整PGO构建流程（生成剖析+构建）"
 	@echo "  make pgo-test      - 使用测试数据进行PGO构建"
 	@echo "  make pgo-bench     - 使用基准测试数据进行PGO构建"
-	@echo "  make workload       - 运行工作负载生成器"
-	@echo "  make http-workload - 运行HTTP工作负载"
+	@echo "  make workload/http-workload - 已禁用（脚本已清理）"
 	@echo "  make quick-pgo      - 快速PGO构建"
 	@echo "  make check-pgo      - 检查PGO支持"
 	@echo "  make pgo-report     - 生成PGO构建报告"
