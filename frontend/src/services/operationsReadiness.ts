@@ -39,6 +39,7 @@ export interface OperationsReadinessSummary {
 }
 
 export interface RegisteredOperationsEvidence {
+  id: string
   control: OperationsControlId
   scope: OperationsEvidenceScope
   evidenceReference: string

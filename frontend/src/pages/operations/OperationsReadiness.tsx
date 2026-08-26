@@ -97,6 +97,9 @@ const OperationsReadiness: React.FC = () => {
           <Text type='secondary'>
             五项证据全齐时达到受控运维准备度 7/10；缺任一项仍按已验证项数计 0-5。剩余 3 分需 PR #12 的 production_external_evidence 生产门禁独立判定。
           </Text>
+          <Paragraph type='secondary' style={{ marginBottom: 0 }}>
+            历史登记全部保留。本表按复核时间取最新记录；复验时追加新登记。
+          </Paragraph>
         </div>
         {error ? <Alert type='error' showIcon style={{ marginTop: 16 }} message={error} /> : null}
       </Card>
@@ -182,7 +185,7 @@ const OperationsReadiness: React.FC = () => {
               title: '下一步动作',
               render: (_, record) =>
                 record.status === 'verified' ? (
-                  <Text type='secondary'>保持原始证据可检索；复验时登记新的受控范围记录。</Text>
+                  <Text type='secondary'>历史登记全部保留。本表按复核时间取最新记录；复验时追加新登记。</Text>
                 ) : (
                   <Text>{record.requirement?.nextAction}</Text>
                 ),

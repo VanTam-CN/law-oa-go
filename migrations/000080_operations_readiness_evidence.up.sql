@@ -8,13 +8,14 @@ CREATE TABLE IF NOT EXISTS operations_readiness_evidence (
     reviewed_at TIMESTAMPTZ NOT NULL,
     notes TEXT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_operations_evidence_control_scope UNIQUE (control, scope),
     CONSTRAINT chk_operations_evidence_scope CHECK (scope IN ('qa', 'controlled_pilot')),
     CONSTRAINT chk_operations_evidence_result CHECK (result = 'passed'),
     CONSTRAINT chk_operations_evidence_reference CHECK (length(trim(evidence_reference)) BETWEEN 8 AND 1000)
 );
 
 CREATE INDEX IF NOT EXISTS idx_operations_evidence_reviewer ON operations_readiness_evidence (reviewed_by);
+CREATE INDEX IF NOT EXISTS idx_operations_evidence_control_scope_time
+    ON operations_readiness_evidence (control, scope, reviewed_at, created_at);
 
 DO $$
 BEGIN

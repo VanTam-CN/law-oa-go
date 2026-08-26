@@ -47,5 +47,8 @@ describe('OperationsReadiness', () => {
     expect(screen.queryByText(/production ready/i)).not.toBeInTheDocument()
     expect(screen.getByText(/五项证据全齐时达到受控运维准备度 7\/10/)).toBeInTheDocument()
     expect(screen.getByText(/缺任一项仍按已验证项数计 0-5/)).toBeInTheDocument()
+    expect(screen.queryByText(/历史登记全部保留/)).toBeInTheDocument()
+    expect(screen.queryByText(/按复核时间取最新记录/)).toBeInTheDocument()
+    expect(screen.queryByText(/复验时追加新登记/)).toBeInTheDocument()
   })
 })

@@ -33,6 +33,7 @@ type OperationsReadinessEvidenceInput struct {
 }
 
 type OperationsReadinessEvidenceView struct {
+	ID                string    `json:"id"`
 	Control           string    `json:"control"`
 	Scope             string    `json:"scope"`
 	EvidenceReference string    `json:"evidence_reference"`
@@ -108,12 +109,6 @@ func (s *OperationsReadinessService) Register(actor AuthActor, input OperationsR
 		Notes: strings.TrimSpace(input.Notes),
 	}
 	err := s.db.Create(&record).Error
-	if errors.Is(err, gorm.ErrDuplicatedKey) {
-		return nil, errors.New("this control already has evidence in the selected scope")
-	}
-	if err != nil && strings.Contains(strings.ToLower(err.Error()), "unique constraint") {
-		return nil, errors.New("this control already has evidence in the selected scope")
-	}
 	if err != nil {
 		return nil, fmt.Errorf("register operations evidence: %w", err)
 	}
@@ -127,12 +122,17 @@ func (s *OperationsReadinessService) Summary(scope string) (*OperationsReadiness
 		return nil, errors.New("scope must be qa or controlled_pilot")
 	}
 	var records []models.OperationsReadinessEvidence
-	if err := s.db.Where("scope = ? AND result = ?", scope, models.OperationsEvidenceResultPassed).Order("control ASC").Find(&records).Error; err != nil {
+	if err := s.db.
+		Where("scope = ? AND result = ?", scope, models.OperationsEvidenceResultPassed).
+		Order("control ASC, reviewed_at DESC, created_at DESC, id DESC").
+		Find(&records).Error; err != nil {
 		return nil, fmt.Errorf("read operations evidence: %w", err)
 	}
 	byControl := make(map[string]models.OperationsReadinessEvidence, len(records))
 	for _, record := range records {
-		byControl[record.Control] = record
+		if _, exists := byControl[record.Control]; !exists {
+			byControl[record.Control] = record
+		}
 	}
 	summary := OperationsReadinessSummary{
 		Scope: scope, Total: len(operationsReadinessControls),
@@ -164,7 +164,7 @@ func (s *OperationsReadinessService) Summary(scope string) (*OperationsReadiness
 
 func operationsEvidenceView(record models.OperationsReadinessEvidence) OperationsReadinessEvidenceView {
 	return OperationsReadinessEvidenceView{
-		Control: record.Control, Scope: record.Scope,
+		ID: record.ID, Control: record.Control, Scope: record.Scope,
 		EvidenceReference: record.EvidenceReference, ReviewedBy: record.ReviewedBy,
 		ReviewedAt: record.ReviewedAt, Notes: record.Notes, CreatedAt: record.CreatedAt,
 	}

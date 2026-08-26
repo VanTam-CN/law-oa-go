@@ -80,6 +80,62 @@ func TestOperationsReadinessRegistrationIsControlledAndAuditable(t *testing.T) {
 	require.NotEmpty(t, evidence.EvidenceReference)
 }
 
+func TestOperationsReadinessUsesLatestEvidenceAndPreservesHistory(t *testing.T) {
+	service := NewOperationsReadinessService(newOperationsReadinessTestDB(t))
+	older, err := service.Register(AuthActor{UserID: 7, Role: "admin"}, OperationsReadinessEvidenceInput{
+		Control: "backup", Scope: models.OperationsEvidenceScopeQA,
+		EvidenceReference: "qa://backup-2026-07", Notes: "older drill",
+		ReviewedAt: time.Now().Add(-48 * time.Hour),
+	})
+	require.NoError(t, err)
+	latest, err := service.Register(AuthActor{UserID: 8, Role: "admin"}, OperationsReadinessEvidenceInput{
+		Control: "backup", Scope: models.OperationsEvidenceScopeQA,
+		EvidenceReference: "qa://backup-2026-08", Notes: "latest drill",
+		ReviewedAt: time.Now().Add(-time.Hour),
+	})
+	require.NoError(t, err)
+
+	var count int64
+	require.NoError(t, service.db.Model(&models.OperationsReadinessEvidence{}).Where("control = ? AND scope = ?", "backup", models.OperationsEvidenceScopeQA).Count(&count).Error)
+	require.Equal(t, int64(2), count)
+
+	summary, err := service.Summary(models.OperationsEvidenceScopeQA)
+	require.NoError(t, err)
+	var item *OperationsReadinessControlSummary
+	for index := range summary.Items {
+		if summary.Items[index].Control == "backup" {
+			item = &summary.Items[index]
+			break
+		}
+	}
+	require.NotNil(t, item)
+	require.Equal(t, "backup", item.Control)
+	require.Equal(t, "verified", item.Status)
+	require.Equal(t, latest.ID, item.Evidence.ID)
+	require.Equal(t, latest.EvidenceReference, item.Evidence.EvidenceReference)
+	require.Equal(t, latest.Notes, item.Evidence.Notes)
+	require.Equal(t, uint(8), item.Evidence.ReviewedBy)
+	require.NotEqual(t, older.EvidenceReference, item.Evidence.EvidenceReference)
+}
+
+func TestOperationsReadinessEvidenceRemainsAppendOnly(t *testing.T) {
+	service := NewOperationsReadinessService(newOperationsReadinessTestDB(t))
+	evidence, err := service.Register(AuthActor{UserID: 7, Role: "admin"}, OperationsReadinessEvidenceInput{
+		Control: "backup", Scope: models.OperationsEvidenceScopeQA,
+		EvidenceReference: "qa://backup-review", ReviewedAt: time.Now().Add(-time.Hour),
+	})
+	require.NoError(t, err)
+
+	err = service.db.Model(&models.OperationsReadinessEvidence{}).Where("id = ?", evidence.ID).Update("notes", "must not update").Error
+	require.ErrorContains(t, err, "append-only")
+	err = service.db.Where("id = ?", evidence.ID).Delete(&models.OperationsReadinessEvidence{}).Error
+	require.ErrorContains(t, err, "append-only")
+
+	var count int64
+	require.NoError(t, service.db.Model(&models.OperationsReadinessEvidence{}).Where("id = ?", evidence.ID).Count(&count).Error)
+	require.Equal(t, int64(1), count)
+}
+
 func TestOperationsReadinessCapsControlledScopeAtSeven(t *testing.T) {
 	service := NewOperationsReadinessService(newOperationsReadinessTestDB(t))
 	registerAllOperationsEvidence(t, service, models.OperationsEvidenceScopeControlledPilot)
