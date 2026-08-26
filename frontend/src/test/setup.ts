@@ -60,17 +60,6 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 })
 
-const getComputedStyleMock: typeof window.getComputedStyle = (element, pseudoElt) => {
-  return {
-    getPropertyValue: jest.fn().mockReturnValue(''),
-  } as unknown as CSSStyleDeclaration
-}
-
-Object.defineProperty(window, 'getComputedStyle', {
-  writable: true,
-  value: getComputedStyleMock,
-})
-
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {
   observe() {}
