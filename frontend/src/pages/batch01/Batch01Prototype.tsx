@@ -9899,13 +9899,14 @@ export function ConflictGovernanceCenter() {
   const roles = listOf(getRoles()).map((role) => textValue(role.code).toLowerCase())
   const isManagement = roles.some((role) => ['director', 'partner', 'management'].includes(role))
   const isCompliance = roles.some((role) => ['compliance', 'risk', 'risk_control'].includes(role))
-  const canManagePolicies = isManagement || isCompliance
+  const canViewPolicies = isManagement || isCompliance
+  const canSubmitPolicies = isManagement
 
   const load = React.useCallback(async () => {
     setLoading(true)
     try {
       const [policyRows, scopeRows, ownerRows, appointmentRows] = await Promise.all([
-        canManagePolicies
+        canViewPolicies
           ? apiRequest<ConflictPolicyPackageView[]>('/conflict-v2/governance/policies')
           : Promise.resolve([]),
         apiRequest<Array<Record<string, any>>>('/conflict-v2/search-scopes'),
@@ -9923,7 +9924,7 @@ export function ConflictGovernanceCenter() {
     } finally {
       setLoading(false)
     }
-  }, [canManagePolicies, isManagement, isCompliance])
+  }, [canViewPolicies, isManagement, isCompliance])
 
   React.useEffect(() => {
     void load()
@@ -10042,7 +10043,7 @@ export function ConflictGovernanceCenter() {
         actions={
           <Space>
             <Button onClick={() => void load()} loading={loading}>刷新</Button>
-            {canManagePolicies && (
+            {canSubmitPolicies && (
               <Button type='primary' icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>
                 提交新政策材料包
               </Button>
@@ -10052,12 +10053,12 @@ export function ConflictGovernanceCenter() {
       />
 
       <div className='batch-metric-grid'>
-        {canManagePolicies && <MetricCard icon={<FileProtectOutlined />} label='政策材料包' value={policies.length} delta='' tone='blue' />}
-        {canManagePolicies && <MetricCard icon={<CheckCircleOutlined />} label='双人确认完成' value={policies.filter((item) => item.status === 'APPROVED').length} delta='' tone='green' />}
+        {canViewPolicies && <MetricCard icon={<FileProtectOutlined />} label='政策材料包' value={policies.length} delta='' tone='blue' />}
+        {canViewPolicies && <MetricCard icon={<CheckCircleOutlined />} label='双人确认完成' value={policies.filter((item) => item.status === 'APPROVED').length} delta='' tone='green' />}
         <MetricCard icon={<DatabaseOutlined />} label='权威来源完整' value={`${completeScopeTypes.size}/4`} delta='' tone={completeScopeTypes.size === 4 ? 'green' : 'orange'} />
       </div>
 
-      {canManagePolicies && <SectionCard title='律所冲突政策双签闭环'>
+      {canViewPolicies && <SectionCard title='律所冲突政策双签闭环'>
         <DataTable>
           <table>
             <thead><tr><th>政策版本</th><th>适用范围</th><th>生效/复核</th><th>管理/合规双签状态</th><th>材料摘要</th><th>下一步与操作</th></tr></thead>
@@ -10089,7 +10090,7 @@ export function ConflictGovernanceCenter() {
               {!loading && policies.length === 0 && (
                 <tr>
                   <td colSpan={6}>
-                    尚未提交政策材料包。下一步：由管理或合规负责人提交材料包，再分别取得两类独立确认；
+                    尚未提交政策材料包。下一步：由主任/管理合伙人提交材料包，合规负责人仅独立确认；
                     正式客户案件保持未放行。
                   </td>
                 </tr>

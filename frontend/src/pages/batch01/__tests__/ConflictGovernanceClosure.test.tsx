@@ -117,6 +117,17 @@ describe('ConflictGovernanceCenter closure', () => {
     await waitFor(() => expect(screen.queryByText(/加载失败/)).not.toBeInTheDocument())
   })
 
+  it('lets compliance review pending packages without exposing package submission', async () => {
+    const getRolesMock = getRoles as jest.Mock
+    getRolesMock.mockReturnValue([{ code: 'compliance', name: '合规负责人' } as Role])
+
+    render(<ConflictGovernanceCenter />)
+
+    expect(await screen.findByText('合规确认：待合规负责人处理')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '确认政策材料' })).toBeEnabled()
+    expect(screen.queryByRole('button', { name: '提交新政策材料包' })).not.toBeInTheDocument()
+  })
+
   it('keeps conflict officer read-only and avoids unauthorized policy or candidate calls', async () => {
     const getRolesMock = getRoles as jest.Mock
     getRolesMock.mockReturnValue([{ code: 'conflict_officer', name: '冲突核查人' } as Role])
