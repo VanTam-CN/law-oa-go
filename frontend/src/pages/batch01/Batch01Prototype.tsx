@@ -6042,6 +6042,14 @@ export function ConflictCheckResults() {
     ].includes(role),
   )
   const hasExistingReview = Boolean(latestReview.id)
+  const assignedReviewerID = numberValue(
+    reviewerAssignment.reviewer_id || reviewerAssignment.reviewerId,
+    0,
+  )
+  const currentUserIsAssignedReviewer = isAssignedConflictReviewer(
+    currentUserInfo?.id,
+    reviewerAssignment,
+  )
 
   const loadSubjectRegistrations = React.useCallback(() => {
     if (!canReviewConflict) {
@@ -7277,7 +7285,7 @@ export function ConflictCheckResults() {
                         value={reviewDecision || undefined}
                         placeholder='选择复核结论'
                         style={{ width: '100%' }}
-                        disabled={hasExistingReview}
+                        disabled={hasExistingReview || !currentUserIsAssignedReviewer}
                         onChange={setReviewDecision}
                         options={[
                           { value: 'no_conflict', label: '无冲突' },
@@ -7291,19 +7299,31 @@ export function ConflictCheckResults() {
                         value={reviewNotes}
                         onChange={(event) => setReviewNotes(event.target.value)}
                         rows={3}
-                        disabled={hasExistingReview}
+                        disabled={hasExistingReview || !currentUserIsAssignedReviewer}
                         placeholder='填写核对对象、数据来源和判断依据'
                       />
                       <Button
                         type='primary'
                         loading={submittingReview}
-                        disabled={hasExistingReview}
+                        disabled={hasExistingReview || !currentUserIsAssignedReviewer}
                         onClick={submitConflictReview}
                       >
                         {hasExistingReview ? '已完成复核' : '提交人工复核结论'}
                       </Button>
                       {hasExistingReview && (
                         <p>当前检测记录已有复核结论。如有新证据，请重新运行冲突检测后再复核。</p>
+                      )}
+                      {!hasExistingReview && !currentUserIsAssignedReviewer && (
+                        <p>
+                          已指定独立复核人：
+                          {textValue(
+                            reviewerCandidates.find(
+                              (candidate) => numberValue(candidate.id, 0) === assignedReviewerID,
+                            )?.name,
+                            assignedReviewerID > 0 ? String(assignedReviewerID) : '-',
+                          )}
+                          。当前账号负责指定复核人，不能代其提交本次复核结论。
+                        </p>
                       )}
                     </Space>
                   ) : (
@@ -7457,6 +7477,17 @@ export function ConflictCheckResults() {
       </Modal>
     </div>
   )
+}
+
+export function isAssignedConflictReviewer(
+  currentUserID: unknown,
+  reviewerAssignment: Record<string, unknown>,
+) {
+  const assignedReviewerID = numberValue(
+    reviewerAssignment.reviewer_id || reviewerAssignment.reviewerId,
+    0,
+  )
+  return numberValue(currentUserID, 0) === assignedReviewerID && assignedReviewerID > 0
 }
 
 export function ApprovalDecisionFlow() {
