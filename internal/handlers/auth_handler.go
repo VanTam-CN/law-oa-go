@@ -132,7 +132,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		Email:    user.Email,
 		Role:     user.Role,
 		Status:   user.Status,
-		Username: user.Email,
+		Username: user.Username,
 	}
 
 	deviceID := strings.TrimSpace(c.GetHeader("X-Device-ID"))
@@ -155,9 +155,10 @@ func (h *AuthHandler) Login(c *gin.Context) {
 }
 
 func normalizeLoginAccount(email string, account string) string {
-	identifier := strings.ToLower(strings.TrimSpace(email))
+	isEmailInput := strings.TrimSpace(email) != "" || strings.Contains(strings.TrimSpace(account), "@")
+	identifier := strings.TrimSpace(email)
 	if identifier == "" {
-		identifier = strings.ToLower(strings.TrimSpace(account))
+		identifier = strings.TrimSpace(account)
 	}
 
 	if identifier == "" {
@@ -179,8 +180,13 @@ func normalizeLoginAccount(email string, account string) string {
 		"demo.conflict.officer": "demo.conflict.officer@example.test",
 	}
 
-	if resolved, ok := aliases[identifier]; ok {
+	lowerIdentifier := strings.ToLower(identifier)
+	if resolved, ok := aliases[lowerIdentifier]; ok {
 		return resolved
+	}
+
+	if isEmailInput {
+		return lowerIdentifier
 	}
 
 	return identifier

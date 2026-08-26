@@ -69,10 +69,11 @@ func TestTokenManager_VerifyToken(t *testing.T) {
 
 		// 创建测试用户和令牌
 		user := &models.User{
-			ID:    1,
-			Name:  "测试用户",
-			Email: "test@example.com",
-			Role:  "user",
+			ID:       1,
+			Username: "测试账号",
+			Name:     "测试用户",
+			Email:    "test@example.com",
+			Role:     "user",
 		}
 
 		tokenDetails, err := tokenManager.CreateTokens(
@@ -93,7 +94,7 @@ func TestTokenManager_VerifyToken(t *testing.T) {
 		payload, ok := (*accessClaims)["payload"].(map[string]interface{})
 		require.True(t, ok, "Payload should be a map")
 		assert.Equal(t, float64(user.ID), payload["user_id"])
-		assert.Equal(t, user.Name, payload["username"]) // 注意：User模型用的是Name字段
+		assert.Equal(t, user.Username, payload["username"])
 		assert.Equal(t, user.Email, payload["email"])
 		assert.Equal(t, user.Role, payload["role"])
 	})

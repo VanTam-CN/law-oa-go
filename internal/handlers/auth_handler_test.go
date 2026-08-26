@@ -154,8 +154,9 @@ func TestAuthHandler_Login(t *testing.T) {
 		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("correctpassword"), bcrypt.DefaultCost)
 		existingUser := &models.User{
 			ID:        2,
+			Username:  "Wrong.Password",
 			Name:      "Existing User",
-			Email:     "invalid@example.com",
+			Email:     "invalid@example.test",
 			Password:  string(hashedPassword),
 			Role:      "user",
 			Status:    "active",
@@ -164,11 +165,12 @@ func TestAuthHandler_Login(t *testing.T) {
 		}
 
 		// 设置模拟期望 - 用户存在但密码错误
-		mockUserRepo.On("FindByEmail", testifymock.Anything, "invalid@example.com").Return(existingUser, nil)
+		mockUserRepo.On("FindByEmail", testifymock.Anything, "Wrong.Password").Return(nil, repositories.ErrUserNotFound)
+		mockUserRepo.On("FindByUsername", testifymock.Anything, "Wrong.Password").Return(existingUser, nil)
 
 		// 准备请求体 - 使用错误的密码
 		loginData := map[string]interface{}{
-			"email":    "invalid@example.com",
+			"account":  "Wrong.Password",
 			"password": "wrongpassword", // 错误的密码
 		}
 		jsonData, _ := json.Marshal(loginData)
@@ -179,13 +181,17 @@ func TestAuthHandler_Login(t *testing.T) {
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
-		// 断言响应
+		// 账号不存在、密码错误与 inactive 账号都使用同一 401 响应，避免枚举账号。
 		assert.Equal(t, http.StatusUnauthorized, w.Code)
 		var response map[string]interface{}
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.Equal(t, false, response["success"])
 		assert.NotNil(t, response["error"])
+		errorObject, ok := response["error"].(map[string]interface{})
+		require.True(t, ok)
+		assert.Equal(t, "认证失败", errorObject["message"])
+		assert.Equal(t, "邮箱或密码错误", errorObject["details"])
 
 		// 验证模拟调用
 		mockUserRepo.AssertExpectations(t)
@@ -230,8 +236,9 @@ func TestAuthHandler_Login(t *testing.T) {
 		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
 		inactiveUser := &models.User{
 			ID:        2,
+			Username:  "Inactive.Account",
 			Name:      "Inactive User",
-			Email:     "inactive@example.com",
+			Email:     "inactive@example.test",
 			Password:  string(hashedPassword), // 使用真实的bcrypt哈希
 			Role:      "user",
 			Status:    "inactive",
@@ -240,11 +247,12 @@ func TestAuthHandler_Login(t *testing.T) {
 		}
 
 		// 设置模拟期望
-		mockUserRepo.On("FindByEmail", testifymock.Anything, "inactive@example.com").Return(inactiveUser, nil)
+		mockUserRepo.On("FindByEmail", testifymock.Anything, "Inactive.Account").Return(nil, repositories.ErrUserNotFound)
+		mockUserRepo.On("FindByUsername", testifymock.Anything, "Inactive.Account").Return(inactiveUser, nil)
 
 		// 准备请求体
 		loginData := map[string]interface{}{
-			"email":    "inactive@example.com",
+			"account":  "Inactive.Account",
 			"password": "password123", // 与生成哈希时使用的密码相同
 		}
 		jsonData, _ := json.Marshal(loginData)
@@ -264,6 +272,129 @@ func TestAuthHandler_Login(t *testing.T) {
 		assert.NotNil(t, response["error"])
 
 		// 验证模拟调用
+		mockUserRepo.AssertExpectations(t)
+	})
+
+	t.Run("Login Account Preserves Case", func(t *testing.T) {
+		mockUserRepo.ExpectedCalls = nil
+		mockUserRepo.Calls = nil
+
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
+		require.NoError(t, err)
+		user := &models.User{
+			ID:        1,
+			Username:  "Lawyer.Wang",
+			Name:      "Wang Lawyer",
+			Email:     "wang@example.com",
+			Password:  string(hashedPassword),
+			Role:      "lawyer",
+			Status:    "active",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+
+		mockUserRepo.On("FindByEmail", testifymock.Anything, "Lawyer.Wang").Return(nil, repositories.ErrUserNotFound)
+		mockUserRepo.On("FindByUsername", testifymock.Anything, "Lawyer.Wang").Return(user, nil)
+
+		loginData := map[string]interface{}{
+			"account":  "  Lawyer.Wang  ",
+			"password": "password123",
+		}
+		jsonData, err := json.Marshal(loginData)
+		require.NoError(t, err)
+		req, err := http.NewRequest("POST", "/auth/login", bytes.NewBuffer(jsonData))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var response map[string]interface{}
+		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &response))
+		data, ok := response["data"].(map[string]interface{})
+		require.True(t, ok)
+		loggedInUser, ok := data["user"].(map[string]interface{})
+		require.True(t, ok)
+		assert.Equal(t, "Lawyer.Wang", loggedInUser["username"])
+
+		mockUserRepo.AssertExpectations(t)
+	})
+
+	t.Run("Login Account Prefers Email Before Username Fallback", func(t *testing.T) {
+		mockUserRepo.ExpectedCalls = nil
+		mockUserRepo.Calls = nil
+
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
+		require.NoError(t, err)
+		user := &models.User{
+			ID:        1,
+			Username:  "Shared.Account",
+			Name:      "Shared Account",
+			Email:     "Shared.Account@example.test",
+			Password:  string(hashedPassword),
+			Role:      "lawyer",
+			Status:    "active",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+
+		mockUserRepo.On("FindByEmail", testifymock.Anything, "shared.account@example.test").Return(user, nil)
+
+		loginData := map[string]interface{}{
+			"account":  "Shared.Account@example.test",
+			"password": "password123",
+		}
+		jsonData, err := json.Marshal(loginData)
+		require.NoError(t, err)
+		req, err := http.NewRequest("POST", "/auth/login", bytes.NewBuffer(jsonData))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		mockUserRepo.AssertExpectations(t)
+	})
+
+	t.Run("Login Email Account Normalizes Case Without Username Fallback", func(t *testing.T) {
+		mockUserRepo.ExpectedCalls = nil
+		mockUserRepo.Calls = nil
+
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
+		require.NoError(t, err)
+		user := &models.User{
+			ID:        1,
+			Username:  "demo.lawyer@example.test",
+			Name:      "Mixed Email",
+			Email:     "demo.lawyer@example.test",
+			Password:  string(hashedPassword),
+			Role:      "lawyer",
+			Status:    "active",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+
+		mockUserRepo.On("FindByEmail", testifymock.Anything, "demo.lawyer@example.test").Return(user, nil)
+
+		loginData := map[string]interface{}{
+			"account":  "  Demo.Lawyer@Example.TEST  ",
+			"password": "password123",
+		}
+		jsonData, err := json.Marshal(loginData)
+		require.NoError(t, err)
+		req, err := http.NewRequest("POST", "/auth/login", bytes.NewBuffer(jsonData))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		require.Len(t, mockUserRepo.Calls, 1)
+		assert.Equal(t, "FindByEmail", mockUserRepo.Calls[0].Method)
 		mockUserRepo.AssertExpectations(t)
 	})
 }

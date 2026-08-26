@@ -1,5 +1,5 @@
 import React from 'react'
-import { Card, Form, Input, Button, Checkbox } from 'antd'
+import { Alert, Card, Form, Input, Button, Checkbox } from 'antd'
 import { message } from '@/utils/messageHelper'
 import {
   EyeInvisibleOutlined,
@@ -19,13 +19,14 @@ import {
 import './Login.less'
 
 interface LoginFormValues {
-  email: string
+  account: string
   password: string
   remember: boolean
 }
 
 const normalizeLoginIdentifier = (value: string) => {
-  return value.trim().toLowerCase()
+  const identifier = value.trim()
+  return identifier.includes('@') ? identifier.toLowerCase() : identifier
 }
 
 const LoginPage: React.FC = () => {
@@ -33,14 +34,16 @@ const LoginPage: React.FC = () => {
   const { login: appStoreLogin } = useAppStore()
   const [form] = Form.useForm<LoginFormValues>()
   const [loading, setLoading] = React.useState(false)
+  const [loginError, setLoginError] = React.useState('')
   const [passwordVisible, setPasswordVisible] = React.useState(false)
 
   const onFinish = async (values: LoginFormValues) => {
     try {
       setLoading(true)
+      setLoginError('')
       const response = await login({
         ...values,
-        email: normalizeLoginIdentifier(values.email),
+        account: normalizeLoginIdentifier(values.account),
       })
 
       // 处理后端返回的token格式
@@ -76,7 +79,7 @@ const LoginPage: React.FC = () => {
         // 构造用户对象，映射后端字段到前端需要的格式
         const user = {
           id: userData.id.toString(),
-          username: userData.email, // 使用email作为username
+          username: userData.username || userData.email,
           realName: userData.name || userData.real_name || userData.username || userData.email,
           email: userData.email,
           roles: roleCodes,
@@ -100,11 +103,16 @@ const LoginPage: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Login failed:', error)
+      if (error?.response?.status === 401) {
+        message.error('账号或密码错误')
+        setLoginError('账号、邮箱或密码不正确，请重新输入')
+        return
+      }
       const apiMessage =
         error.response?.data?.error?.details ||
         error.response?.data?.error?.message ||
         error.response?.data?.message
-      message.error(apiMessage || '登录失败，请检查账号和密码')
+      setLoginError(apiMessage || '登录失败，请检查账号和密码')
     } finally {
       setLoading(false)
     }
@@ -113,6 +121,15 @@ const LoginPage: React.FC = () => {
   return (
     <div className='login-container'>
       <Card className='login-card' title='示例律师事务所OA登录'>
+        {loginError && (
+          <Alert
+            type='error'
+            showIcon
+            role='alert'
+            message='登录失败'
+            description={loginError}
+          />
+        )}
         <Form
           form={form}
           name='login'
@@ -120,7 +137,7 @@ const LoginPage: React.FC = () => {
           onFinish={onFinish}
           size='large'
         >
-          <Form.Item name='email' rules={[{ required: true, message: '请输入账号或邮箱' }]}>
+          <Form.Item name='account' rules={[{ required: true, message: '请输入账号或邮箱' }]}>
             <Input
               prefix={<UserOutlined />}
               placeholder='账号或邮箱'

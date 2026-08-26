@@ -89,6 +89,7 @@ type UpdateUserRequest struct {
 
 type UserProfile struct {
 	ID         uint      `json:"id"`
+	Username   string    `json:"username"`
 	Name       string    `json:"name"`
 	Email      string    `json:"email"`
 	Role       string    `json:"role"`
@@ -141,16 +142,22 @@ func (s *UserService) CreateUser(ctx context.Context, req *CreateUserRequest) (*
 	return s.toUserProfile(user), nil
 }
 
-func (s *UserService) AuthenticateUser(ctx context.Context, email, password string) (*UserProfile, error) {
-	user, err := s.userRepo.FindByEmail(ctx, email)
+func (s *UserService) AuthenticateUser(ctx context.Context, identifier, password string) (*UserProfile, error) {
+	user, err := s.userRepo.FindByEmail(ctx, identifier)
 	if err != nil {
 		if stderrors.Is(err, repositories.ErrUserNotFound) {
-			return nil, errors.NotFoundError("user", "User not found: "+email, nil)
+			user, err = s.userRepo.FindByUsername(ctx, identifier)
+			if stderrors.Is(err, repositories.ErrUserNotFound) {
+				return nil, errors.NotFoundError("user", "User not found: "+identifier, nil)
+			}
 		}
-		return nil, errors.DatabaseError("authenticate_user", "Failed to authenticate user", err)
+		if err != nil {
+			return nil, errors.DatabaseError("authenticate_user", "Failed to authenticate user", err)
+		}
 	}
+
 	if user == nil || user.Status != "active" {
-		return nil, errors.NotFoundError("user", "User not found: "+email, nil)
+		return nil, errors.NotFoundError("user", "User not found: "+identifier, nil)
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
@@ -315,6 +322,7 @@ func (s *UserService) validatePassword(password string) error {
 func (s *UserService) toUserProfile(user *models.User) *UserProfile {
 	return &UserProfile{
 		ID:         user.ID,
+		Username:   user.Username,
 		Name:       user.Name,
 		Email:      user.Email,
 		Role:       user.Role,
