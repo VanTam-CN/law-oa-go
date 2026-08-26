@@ -4,13 +4,34 @@ set -euo pipefail
 port="${REDIS_PORT:-6379}"
 host="127.0.0.1"
 
-if ! command -v redis-server >/dev/null 2>&1 || ! command -v redis-cli >/dev/null 2>&1; then
+redis_server="redis-server"
+redis_cli="redis-cli"
+
+if ! command -v "$redis_server" >/dev/null 2>&1; then
+  for candidate in /usr/local/bin/redis-server /opt/redis/bin/redis-server /usr/lib/redis/bin/redis-server; do
+    if [ -x "$candidate" ]; then
+      redis_server="$candidate"
+      break
+    fi
+  done
+fi
+
+if ! command -v "$redis_cli" >/dev/null 2>&1; then
+  for candidate in /usr/local/bin/redis-cli /opt/redis/bin/redis-cli /usr/lib/redis/bin/redis-cli; do
+    if [ -x "$candidate" ]; then
+      redis_cli="$candidate"
+      break
+    fi
+  done
+fi
+
+if ! command -v "$redis_server" >/dev/null 2>&1 || ! command -v "$redis_cli" >/dev/null 2>&1; then
   echo "redis-server and redis-cli are required to bootstrap Redis" >&2
   exit 1
 fi
 
 redis_ready() {
-  redis-cli -h "$host" -p "$port" ping 2>/dev/null | grep -qx PONG
+  "$redis_cli" -h "$host" -p "$port" ping 2>/dev/null | grep -qx PONG
 }
 
 wait_for_redis() {
@@ -52,7 +73,7 @@ fi
 
 run_dir="${RUNNER_TEMP:-/tmp}/law-oa-ci-redis"
 mkdir -p "$run_dir"
-if ! redis-server \
+if ! "$redis_server" \
       --daemonize yes \
       --bind "$host" \
       --port "$port" \
