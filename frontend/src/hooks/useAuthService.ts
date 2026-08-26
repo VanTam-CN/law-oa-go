@@ -12,7 +12,7 @@ import { clearStorage, getToken, getUserInfo } from '@/utils/storage'
 
 // 认证相关接口
 export interface LoginRequest {
-  username: string
+  account: string
   password: string
   captcha?: string
 }

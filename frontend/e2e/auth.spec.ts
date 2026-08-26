@@ -35,6 +35,9 @@ test.describe('登录流程', () => {
     await page.locator('button[type="submit"]').click()
 
     await expect(page.locator('.ant-message')).toContainText('账号或密码错误')
+    await expect(page.getByRole('alert')).toContainText(
+      '账号、邮箱或密码不正确，请重新输入',
+    )
   })
 
   test('密码显隐控件应支持键盘操作并同步状态', async ({ page }) => {
@@ -68,6 +71,30 @@ test.describe('登录流程', () => {
     expect(await isLoggedIn(page)).toBe(true)
     await expect(page).toHaveURL(/\/dashboard$/)
     await expect(page.getByRole('heading', { name: '上午好，张律师' })).toBeVisible()
+  })
+
+  test('账号登录应该发送保留大小写的 account 字段并返回 username', async ({ page }) => {
+    await installApiMocks(page)
+    let loginPayload: { account?: string; email?: string } | undefined
+    await page.route('**/api/v1/auth/login', async (route) => {
+      loginPayload = route.request().postDataJSON()
+      await route.fallback()
+    })
+
+    await page.goto('/login')
+    await waitForPageLoad(page)
+    await page.getByPlaceholder('账号或邮箱').fill(' Demo.Lawyer ')
+    await page.getByPlaceholder('密码').fill('Demo@2026')
+    await page.locator('button[type="submit"]').click()
+
+    await waitForAppShell(page)
+    expect(loginPayload).toEqual({
+      account: 'Demo.Lawyer',
+      password: 'Demo@2026',
+      remember: false,
+    })
+    expect(loginPayload?.email).toBeUndefined()
+    await expect(page.locator('.user-name')).toHaveText('张律师')
   })
 
   test('登出后应该返回登录页', async ({ page }) => {

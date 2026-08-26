@@ -96,7 +96,7 @@ func TestTokenManagerWithoutRedisAndCache(t *testing.T) {
 
 func TestSessionBackedTokenCarriesTopLevelAuthClaims(t *testing.T) {
 	db := createAuthTokenDB(t)
-	user := &models.User{Name: "律师", Email: "claims@example.test", Role: "lawyer", Status: "active", Username: "claims"}
+	user := &models.User{Name: "律师", Email: "claims@example.test", Role: "lawyer", Status: "active", Username: "Claims.Account"}
 	require.NoError(t, db.Create(user).Error)
 
 	tm := NewTokenManager(createTestConfig(), nil, nil, db)
@@ -106,7 +106,7 @@ func TestSessionBackedTokenCarriesTopLevelAuthClaims(t *testing.T) {
 	claims, err := tm.VerifyToken(context.Background(), details.AccessToken)
 	require.NoError(t, err)
 	assert.EqualValues(t, user.ID, (*claims)["user_id"])
-	assert.Equal(t, user.Name, (*claims)["username"])
+	assert.Equal(t, user.Username, (*claims)["username"])
 	assert.Equal(t, user.Role, (*claims)["role"])
 }
 

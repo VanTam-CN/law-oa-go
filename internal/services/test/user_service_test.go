@@ -160,6 +160,7 @@ func TestUserService_AuthenticateUser(t *testing.T) {
 
 		user := &models.User{
 			ID:        1,
+			Username:  "test-account",
 			Name:      "Test User",
 			Email:     "test@example.com",
 			Password:  string(hashedPassword),
@@ -181,6 +182,7 @@ func TestUserService_AuthenticateUser(t *testing.T) {
 		assert.NotNil(t, profile)
 		assert.Equal(t, "Test User", profile.Name)
 		assert.Equal(t, "test@example.com", profile.Email)
+		assert.Equal(t, "test-account", profile.Username)
 		assert.Equal(t, "lawyer", profile.Role)
 
 		// 验证模拟调用
@@ -211,6 +213,7 @@ func TestUserService_AuthenticateUser(t *testing.T) {
 
 		user := &models.User{
 			ID:        1,
+			Username:  "test-account",
 			Name:      "Test User",
 			Email:     "test@example.com",
 			Password:  string(hashedPassword),
@@ -258,6 +261,7 @@ func TestUserService_AuthenticateUser(t *testing.T) {
 
 		require.NoError(t, err)
 		assert.NotNil(t, profile)
+		assert.Equal(t, "lawyer.wang", profile.Username)
 		assert.Equal(t, "wang@example.com", profile.Email)
 		assert.Equal(t, "lawyer", profile.Role)
 		mockUserRepo.AssertExpectations(t)

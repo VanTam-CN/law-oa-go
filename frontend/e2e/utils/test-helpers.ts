@@ -12,6 +12,7 @@ type TestUserKey = 'admin' | 'lawyer' | 'assistant' | 'finance' | 'conflictOffic
 export const TEST_USERS: Record<TestUserKey, {
   email: string
   alias: string
+  mixedCaseAlias?: string
   password: string
   role: string
   realName: string
@@ -26,6 +27,7 @@ export const TEST_USERS: Record<TestUserKey, {
   lawyer: {
     email: 'demo.lawyer@example.test',
     alias: 'lawyer',
+    mixedCaseAlias: 'Demo.Lawyer',
     password: 'Demo@2026',
     role: 'lawyer',
     realName: '张律师',
@@ -295,10 +297,10 @@ function userPayload(key: TestUserKey) {
 }
 
 function matchLoginUser(emailOrAlias: string): TestUserKey | null {
-  const normalized = emailOrAlias.trim().toLowerCase()
+  const normalized = emailOrAlias.trim()
   return (Object.keys(TEST_USERS) as TestUserKey[]).find((key) => {
-    const user = TEST_USERS[key]
-    return normalized === user.alias || normalized === user.email
+    const { alias, email, mixedCaseAlias } = TEST_USERS[key]
+    return normalized === alias || normalized === email || normalized === mixedCaseAlias
   }) ?? null
 }
 
@@ -310,8 +312,8 @@ export async function installApiMocks(page: Page) {
     const path = url.pathname.replace('/api/v1', '')
 
     if (path === '/auth/login' && request.method() === 'POST') {
-      const body = request.postDataJSON() as { account?: string; email?: string; password?: string }
-      const identifier = body.account || body.email
+      const body = request.postDataJSON() as { account?: string; password?: string }
+      const identifier = body.account
       const userKey = identifier ? matchLoginUser(identifier) : null
       if (!userKey || body.password !== TEST_USERS[userKey].password) {
         await route.fulfill({

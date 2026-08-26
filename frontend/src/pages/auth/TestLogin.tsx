@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext'
 import { setToken, setUserInfo } from '@/utils/storage'
 
 interface LoginFormValues {
-  email: string
+  account: string
   password: string
 }
 
@@ -41,7 +41,7 @@ const TestLogin: React.FC = () => {
         // 构造用户对象，映射后端字段到前端需要的格式
         const user = {
           id: userData.id,
-          username: userData.email, // 使用email作为username
+          username: userData.username || userData.email,
           real_name: userData.name,
           email: userData.email,
           role: userData.role,
@@ -151,11 +151,11 @@ const TestLogin: React.FC = () => {
               layout='vertical'
               size='large'
             >
-              <Form.Item name='email' rules={[{ required: true, message: '请输入邮箱' }]}>
+              <Form.Item name='account' rules={[{ required: true, message: '请输入账号或邮箱' }]}>
                 <Input
                   prefix={<UserOutlined />}
-                  placeholder='邮箱'
-                  autoComplete='email'
+                  placeholder='账号或邮箱'
+                  autoComplete='username'
                   allowClear
                 />
               </Form.Item>

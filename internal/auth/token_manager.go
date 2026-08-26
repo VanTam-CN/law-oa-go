@@ -187,7 +187,7 @@ func (tm *TokenManager) CreateTokens(ctx context.Context, user *models.User, dev
 func (tm *TokenManager) createToken(user *models.User, uuid string, expires int64, tokenType, deviceID, ip, userAgent string) (string, error) {
 	payload := &TokenPayload{
 		UserID:     user.ID,
-		Username:   user.Name, // User模型中使用Name字段，不是Username
+		Username:   user.Username,
 		Email:      user.Email,
 		Role:       user.Role,
 		DeviceID:   deviceID,
@@ -202,7 +202,7 @@ func (tm *TokenManager) createToken(user *models.User, uuid string, expires int6
 		// Top-level identity claims keep the canonical Gin authentication
 		// middleware from falling back to user_id=0 for session-backed tokens.
 		"user_id":  user.ID,
-		"username": user.Name,
+		"username": user.Username,
 		"role":     user.Role,
 		"uuid":     uuid,
 		"issuer":   tm.issuer,
