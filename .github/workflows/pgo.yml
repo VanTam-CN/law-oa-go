@@ -32,7 +32,7 @@ jobs:
       run: |
         go version
         echo "检查PGO支持..."
-        if go build --help | grep -q "pgo"; then
+        if go help build | grep -Eq '^[[:space:]]+-pgo file$'; then
           echo "✓ PGO支持已启用"
         else
           echo "✗ PGO支持未启用"
@@ -61,7 +61,7 @@ jobs:
     - name: 设置数据库
       run: |
         sudo systemctl start mysql
-        mysql -u root -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
+        sudo mysql -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
 
     - name: 设置Redis
       run: |
@@ -103,7 +103,7 @@ jobs:
     - name: 设置数据库
       run: |
         sudo systemctl start mysql
-        mysql -u root -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
+        sudo mysql -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
 
     - name: 设置Redis
       run: |
@@ -252,7 +252,7 @@ jobs:
     - name: 设置数据库
       run: |
         sudo systemctl start mysql
-        mysql -u root -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
+        sudo mysql -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
 
     - name: 设置Redis
       run: |
