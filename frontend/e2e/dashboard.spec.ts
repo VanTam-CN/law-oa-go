@@ -12,9 +12,15 @@ test.describe('律师工作台', () => {
     await waitForPageLoad(page)
   })
 
-  test('新建立案入口应该直达立案工作台', async ({ page }) => {
+  test('快捷入口新建立案应支持键盘直达立案工作台', async ({ page }) => {
     await waitForAppShell(page)
-    await page.getByRole('button', { name: '新建立案' }).click()
+    const shortcutButton = page.getByRole('button', {
+      name: /^案 新建立案 录入新案件信息$/,
+    })
+
+    await expect(shortcutButton).toBeVisible()
+    await shortcutButton.focus()
+    await page.keyboard.press('Enter')
 
     await expect(page).toHaveURL(/\/case\/create$/)
     await expect(page.getByRole('heading', { name: '新建案件立案工作台' })).toBeVisible()
