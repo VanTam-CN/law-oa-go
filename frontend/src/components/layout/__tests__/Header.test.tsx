@@ -280,6 +280,22 @@ describe('AppHeader keyboard accessibility', () => {
     await waitFor(() => expect(userButton).toHaveFocus())
   })
 
+  it('returns focus to the user-menu trigger after an outside click closes it', async () => {
+    const user = userEvent.setup()
+    renderHeader()
+    const userButton = screen.getByRole('button', { name: '用户菜单：测试主任' })
+
+    await user.click(userButton)
+    await waitFor(() => expect(userButton).toHaveAttribute('aria-expanded', 'true'))
+
+    await user.click(document.body)
+    await waitFor(() =>
+      expect(screen.queryByRole('menu', { name: '用户菜单' })).not.toBeInTheDocument(),
+    )
+    expect(userButton).toHaveAttribute('aria-expanded', 'false')
+    await waitFor(() => expect(userButton).toHaveFocus())
+  })
+
   it('supports the same activation keys for notification and user menus', async () => {
     const user = userEvent.setup()
     renderHeader()

@@ -261,6 +261,28 @@ const AppHeader: React.FC = () => {
     handleMenuKeyDown(event, setVisible, triggerRef)
   }
 
+  const handleMenuOpenChange = (
+    open: boolean,
+    setVisible: React.Dispatch<React.SetStateAction<boolean>>,
+    triggerRef: React.RefObject<HTMLButtonElement | null>,
+  ) => {
+    setVisible(open)
+
+    if (open) {
+      return
+    }
+
+    // Dropdown unmounts its menu after outside-click dismissal. Restore focus on
+    // the next frame only when the browser has dropped it to the document body,
+    // so keyboard users do not lose their place and direct focus elsewhere is
+    // respected.
+    requestAnimationFrame(() => {
+      if (document.activeElement === document.body) {
+        triggerRef.current?.focus()
+      }
+    })
+  }
+
   const handleMenuClickCapture = (event: React.MouseEvent<HTMLButtonElement>) => {
     if (!keyboardMenuActivationRef.current) {
       return
@@ -421,7 +443,9 @@ const AppHeader: React.FC = () => {
             }}
             placement='bottomRight'
             transitionName=''
-            onOpenChange={setNotificationVisible}
+            onOpenChange={(open) =>
+              handleMenuOpenChange(open, setNotificationVisible, notificationButtonRef)
+            }
             open={notificationVisible}
             trigger={['click']}
             destroyOnHidden
@@ -462,7 +486,7 @@ const AppHeader: React.FC = () => {
             }}
             placement='bottomRight'
             transitionName=''
-            onOpenChange={setUserMenuVisible}
+            onOpenChange={(open) => handleMenuOpenChange(open, setUserMenuVisible, userButtonRef)}
             open={userMenuVisible}
             trigger={['click']}
             destroyOnHidden

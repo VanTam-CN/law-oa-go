@@ -169,7 +169,22 @@ test.describe('顶部入口反馈', () => {
 
     await page.keyboard.press('Space')
     await expect(userButton).toHaveAttribute('aria-expanded', 'true')
-    await page.mouse.click(10, 300)
+    await page.mouse.click(600, 300)
     await expect(userButton).toHaveAttribute('aria-expanded', 'false')
+    await expect(userButton).toBeFocused()
+  })
+
+  test('通知中心应支持键盘打开、关闭和焦点返回', async ({ page }) => {
+    await waitForAppShell(page)
+    const notificationButton = page.getByRole('button', { name: '通知中心' })
+
+    await notificationButton.focus()
+    await page.keyboard.press('Space')
+    await expect(notificationButton).toHaveAttribute('aria-expanded', 'true')
+    await expect(page.getByRole('menu', { name: '通知中心' })).toBeFocused()
+
+    await page.keyboard.press('Escape')
+    await expect(notificationButton).toHaveAttribute('aria-expanded', 'false')
+    await expect(notificationButton).toBeFocused()
   })
 })
