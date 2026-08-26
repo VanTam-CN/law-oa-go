@@ -20,15 +20,17 @@ type ConflictP0ReadinessCheck struct {
 
 const ConflictP0ReadinessCheckName = "conflict_p0_readiness"
 
-var productionEvidenceGateActions = []string{
-	"G0:完成并签署 PD-01 至 PD-07 决策物，冻结生产适用规则",
-	"G1:使用独立生产密钥和 TLS 数据库连接，并完成备份恢复演练",
-	"G2:在目标生产库完成 bootstrap/迁移，并保留可追溯成功日志",
-	"G3:完成敏感身份加密回填，复核结果必须为零",
-	"G4:完成案件、客户、主体、关系四类冲突索引回填和对账",
-	"G5:提交双人批准的冲突合规政策，并登记独立核查人与代理人",
-	"G6:停用演示账号并完成 AT-01 至 AT-12 三角色隔离验收",
-	"G7:重新采集 /health/ready 与四类索引运行、政策版本、签署记录",
+var requiredProductionEvidenceGates = []string{"G0", "G1", "G2", "G3", "G4", "G5", "G6", "G7"}
+
+var productionEvidenceGateActions = map[string]string{
+	"G0": "完成并签署 PD-01 至 PD-07 决策物，登记书面签署凭证",
+	"G1": "核验独立生产密钥和 TLS 数据库连接，并完成备份恢复演练登记",
+	"G2": "完成目标生产库 bootstrap/迁移，并登记成功日志凭证",
+	"G3": "完成敏感身份加密回填和零明文复核，并登记复核凭证",
+	"G4": "完成案件、客户、主体、关系四类冲突索引回填、对账和凭证登记",
+	"G5": "提交双人批准的冲突合规政策，登记独立核查人、代理人及范围质量凭证",
+	"G6": "停用演示账号并完成 AT-01 至 AT-12 三角色隔离验收，登记验收记录",
+	"G7": "由运维负责人和合规负责人复核前序凭证，登记最终技术放行记录",
 }
 
 var requiredConflictScopeTypes = []string{
@@ -62,8 +64,8 @@ func (c *ConflictP0ReadinessCheck) Check(ctx context.Context) *HealthCheckResult
 	result.Duration = time.Since(started).Milliseconds()
 
 	if !c.production {
-		result.Message = "QA技术就绪：生产证据门禁未执行；ready=true不代表生产可用"
-		result.Details = conflictP0EvidenceDetails(false)
+		result.Message = "QA技术就绪：生产数据库前置条件未执行；ready=true不代表生产可用"
+		result.Details = conflictP0DatabasePrerequisitesDetails(false, nil)
 		return result
 	}
 	if c.db == nil {
@@ -187,16 +189,19 @@ func (c *ConflictP0ReadinessCheck) Check(ctx context.Context) *HealthCheckResult
 			return conflictP0Unhealthy(result, fmt.Sprintf("P0证据表 %s 不可用: %v", table, err))
 		}
 	}
-	if err := c.verifyG6AcceptanceEvidence(ctx); err != nil {
+	if err := c.verifyG5GovernanceAuditEvidence(ctx); err != nil {
 		return conflictP0Unhealthy(result, err.Error())
 	}
-	result.Message = fmt.Sprintf("生产证据门禁通过：冲突档案覆盖完整，active=%d", activeScopes)
-	result.Details = conflictP0EvidenceDetails(true)
+	if err := c.verifyExternalEvidenceRegistrations(ctx); err != nil {
+		return conflictP0Unhealthy(result, err.Error())
+	}
+	result.Message = fmt.Sprintf("生产数据库前置条件和 G0-G7 外部证据登记复核通过：冲突档案覆盖完整，active=%d", activeScopes)
+	result.Details = conflictP0DatabasePrerequisitesDetails(true, requiredProductionEvidenceGates)
 	result.Duration = time.Since(started).Milliseconds()
 	return result
 }
 
-func (c *ConflictP0ReadinessCheck) verifyG6AcceptanceEvidence(ctx context.Context) error {
+func (c *ConflictP0ReadinessCheck) verifyG5GovernanceAuditEvidence(ctx context.Context) error {
 	eventTypes := []string{
 		"CONFLICT_POLICY_PACKAGE_CREATED",
 		"CONFLICT_POLICY_ENDORSED",
@@ -242,7 +247,148 @@ func (c *ConflictP0ReadinessCheck) verifyG6AcceptanceEvidence(ctx context.Contex
 	if len(missing) > 0 {
 		return fmt.Errorf("缺少带完整性哈希的生产治理审计证据: %s；请完成 G5 双人批准、任命登记和范围质量登记", strings.Join(missing, ","))
 	}
+	if err := ensureProductionExternalEvidenceTable(ctx, c.db); err != nil {
+		return err
+	}
 	return nil
+}
+
+func (c *ConflictP0ReadinessCheck) verifyExternalEvidenceRegistrations(ctx context.Context) error {
+	rows, err := c.db.QueryContext(ctx, `
+		SELECT id, gate, evidence_reference, reviewed_by, reviewer_role, review_result,
+		       reviewed_at, integrity_hash, created_at, updated_at
+		FROM production_external_evidence
+	`)
+	if err != nil {
+		return fmt.Errorf("生产外部证据登记不可用: %w", err)
+	}
+	defer rows.Close()
+
+	registered := make(map[string]error)
+	for rows.Next() {
+		var registration productionExternalEvidenceRegistration
+		if err := rows.Scan(
+			&registration.ID, &registration.Gate, &registration.EvidenceReference, &registration.ReviewedBy,
+			&registration.ReviewerRole, &registration.ReviewResult, &registration.ReviewedAt,
+			&registration.IntegrityHash, &registration.CreatedAt, &registration.UpdatedAt,
+		); err != nil {
+			return fmt.Errorf("生产外部证据登记读取失败: %w", err)
+		}
+		validationError := registration.validate(time.Now().UTC())
+		registered[registration.NormalizedGate()] = validationError
+		if validationError == nil && registration.G7FinalReviewValid() {
+			continue
+		}
+		if validationError == nil {
+			registered[registration.NormalizedGate()] = fmt.Errorf("G7最终复核记录未由两名不同责任人共同签署")
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("生产外部证据登记读取失败: %w", err)
+	}
+
+	missing := make([]string, 0)
+	for _, gate := range requiredProductionEvidenceGates {
+		validationError, exists := registered[gate]
+		if !exists || validationError != nil {
+			missing = append(missing, formatProductionExternalEvidenceGap(gate, validationError))
+		}
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("生产外部证据门禁未完整登记或复核: %s", strings.Join(missing, "；"))
+	}
+	return nil
+}
+
+func ensureProductionExternalEvidenceTable(ctx context.Context, db *sql.DB) error {
+	if db == nil {
+		return fmt.Errorf("生产外部证据登记数据库连接未初始化")
+	}
+	if _, err := db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS production_external_evidence (
+		id BIGSERIAL PRIMARY KEY,
+		gate VARCHAR(8) NOT NULL UNIQUE,
+		evidence_reference TEXT NOT NULL,
+		reviewed_by VARCHAR(120) NOT NULL,
+		reviewer_role VARCHAR(80) NOT NULL,
+		review_result VARCHAR(20) NOT NULL,
+		reviewed_at TEXT NOT NULL,
+		integrity_hash VARCHAR(64) NOT NULL,
+		created_at TEXT NOT NULL,
+		updated_at TEXT NOT NULL,
+		CONSTRAINT chk_production_external_gate CHECK (gate IN ('G0','G1','G2','G3','G4','G5','G6','G7')),
+		CONSTRAINT chk_production_external_result CHECK (review_result IN ('PASSED','FAILED'))
+	)`); err != nil {
+		return fmt.Errorf("生产外部证据登记表不可用: %w", err)
+	}
+	return nil
+}
+
+type productionExternalEvidenceRegistration struct {
+	ID                int64
+	Gate              string
+	EvidenceReference string
+	ReviewedBy        string
+	ReviewerRole      string
+	ReviewResult      string
+	ReviewedAt        string
+	IntegrityHash     string
+	CreatedAt         string
+	UpdatedAt         string
+}
+
+func (r productionExternalEvidenceRegistration) NormalizedGate() string {
+	return strings.ToUpper(strings.TrimSpace(r.Gate))
+}
+
+func (r productionExternalEvidenceRegistration) validate(now time.Time) error {
+	if _, supported := productionEvidenceGateActions[r.NormalizedGate()]; !supported {
+		return fmt.Errorf("未知门禁 %s", r.Gate)
+	}
+	if strings.TrimSpace(r.EvidenceReference) == "" {
+		return fmt.Errorf("缺少凭证引用")
+	}
+	if strings.TrimSpace(r.ReviewedBy) == "" || strings.TrimSpace(r.ReviewerRole) == "" {
+		return fmt.Errorf("缺少复核责任人")
+	}
+	if strings.TrimSpace(r.ReviewResult) != "PASSED" {
+		return fmt.Errorf("复核结论不是 PASSED")
+	}
+	reviewedAt, err := time.Parse(time.RFC3339, strings.TrimSpace(r.ReviewedAt))
+	if err != nil || reviewedAt.IsZero() || reviewedAt.After(now.Add(5*time.Minute)) {
+		return fmt.Errorf("复核时间无效")
+	}
+	if len(strings.TrimSpace(r.IntegrityHash)) != 64 {
+		return fmt.Errorf("完整性哈希无效")
+	}
+	createdAt, createdAtErr := time.Parse(time.RFC3339, strings.TrimSpace(r.CreatedAt))
+	updatedAt, updatedAtErr := time.Parse(time.RFC3339, strings.TrimSpace(r.UpdatedAt))
+	if createdAtErr != nil || updatedAtErr != nil || createdAt.IsZero() || updatedAt.Before(createdAt) {
+		return fmt.Errorf("登记时间无效")
+	}
+	return nil
+}
+
+func (r productionExternalEvidenceRegistration) G7FinalReviewValid() bool {
+	if r.NormalizedGate() != "G7" {
+		return true
+	}
+	// The stored reviewed_by field carries two distinct reviewer identities
+	// separated by '|'. Operator tooling must create this record only from two
+	// separately authenticated acknowledgements; readiness never invents it.
+	reviewers := strings.Split(r.ReviewedBy, "|")
+	if len(reviewers) != 2 {
+		return false
+	}
+	return strings.TrimSpace(reviewers[0]) != "" &&
+		strings.TrimSpace(reviewers[1]) != "" &&
+		strings.TrimSpace(reviewers[0]) != strings.TrimSpace(reviewers[1])
+}
+
+func formatProductionExternalEvidenceGap(gate string, err error) string {
+	if err == nil {
+		return gate
+	}
+	return fmt.Sprintf("%s(%v)", gate, err)
 }
 
 func (c *ConflictP0ReadinessCheck) placeholder(index int) string {
@@ -255,14 +401,22 @@ func (c *ConflictP0ReadinessCheck) placeholder(index int) string {
 func conflictP0Unhealthy(result *HealthCheckResult, message string) *HealthCheckResult {
 	result.Status = StatusUnhealthy
 	result.Message = message
-	result.Details = conflictP0EvidenceDetails(false)
+	result.Details = conflictP0DatabasePrerequisitesDetails(false, nil)
 	result.Duration = time.Since(result.Timestamp).Milliseconds()
 	return result
 }
 
-func conflictP0EvidenceDetails(ready bool) map[string]interface{} {
+func conflictP0DatabasePrerequisitesDetails(ready bool, passedGates []string) map[string]interface{} {
+	externalGates := make(map[string]bool, len(requiredProductionEvidenceGates))
+	for _, gate := range requiredProductionEvidenceGates {
+		externalGates[gate] = false
+	}
+	for _, gate := range passedGates {
+		externalGates[strings.ToUpper(strings.TrimSpace(gate))] = true
+	}
 	return map[string]interface{}{
-		"production_evidence_ready": ready,
-		"next_actions":              productionEvidenceGateActions,
+		"production_database_prerequisites_ready": ready,
+		"external_evidence_gates":                 externalGates,
+		"next_actions":                            productionEvidenceGateActions,
 	}
 }

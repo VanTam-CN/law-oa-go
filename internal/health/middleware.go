@@ -36,21 +36,38 @@ func isProductionEnvironment(environment string) bool {
 }
 
 func productionEvidenceMissing(result *HealthCheckResult) []string {
+	missingGates := func() []string {
+		missing := make([]string, 0, len(requiredProductionEvidenceGates))
+		for _, gate := range requiredProductionEvidenceGates {
+			missing = append(missing, formatProductionExternalEvidenceGap(gate, nil))
+		}
+		return missing
+	}
 	if result == nil {
-		return []string{"缺少 conflict_p0_readiness 检查：请确认生产数据库连接和健康检查初始化成功"}
+		return append([]string{"缺少 conflict_p0_readiness 检查：请确认生产数据库连接和健康检查初始化成功"}, missingGates()...)
 	}
 	if result.Status != StatusHealthy {
-		return []string{result.Message}
+		return append([]string{result.Message}, missingGates()...)
 	}
 	details, ok := result.Details.(map[string]interface{})
 	if !ok {
-		return []string{"conflict_p0_readiness 缺少生产证据声明：请检查健康检查实现"}
+		return append([]string{"conflict_p0_readiness 缺少生产数据库前置条件声明：请检查健康检查实现"}, missingGates()...)
 	}
-	ready, ok := details["production_evidence_ready"].(bool)
-	if !ok || !ready {
-		return []string{result.Message}
+	databaseReady, databaseReadyOK := details["production_database_prerequisites_ready"].(bool)
+	if !databaseReadyOK || !databaseReady {
+		return append([]string{result.Message}, missingGates()...)
 	}
-	return nil
+	externalGates, ok := details["external_evidence_gates"].(map[string]bool)
+	if !ok || len(externalGates) != len(requiredProductionEvidenceGates) {
+		return missingGates()
+	}
+	missing := make([]string, 0)
+	for _, gate := range requiredProductionEvidenceGates {
+		if !externalGates[gate] {
+			missing = append(missing, formatProductionExternalEvidenceGap(gate, nil))
+		}
+	}
+	return missing
 }
 
 // HealthCheckHandler 健康检查处理器
@@ -274,9 +291,8 @@ func (hm *HealthMiddleware) ReadinessHandler(c *gin.Context) {
 
 	// Readiness is environment-scoped. A QA deployment may receive technical
 	// traffic while explicitly reporting that production evidence was not
-	// evaluated. A production deployment must never interpret that omission
-	// as success: the check and its positive evidence declaration are both
-	// required before /health/ready can return true.
+	// evaluated. Production ready additionally requires the database-backed
+	// prerequisites and the explicitly registered G0-G7 external evidence.
 	if production {
 		ready = ready && productionGateExists && len(missingProductionEvidence) == 0
 	}

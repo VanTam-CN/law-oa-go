@@ -32,8 +32,11 @@ func TestConflictP0ReadinessCheck_QAExplicitlySkipsProductionEvidence(t *testing
 
 	details, ok := result.Details.(map[string]interface{})
 	require.True(t, ok)
-	assert.Equal(t, false, details["production_evidence_ready"])
-	assert.Contains(t, details["next_actions"], "G0:完成并签署 PD-01 至 PD-07 决策物，冻结生产适用规则")
+	assert.Equal(t, false, details["production_database_prerequisites_ready"])
+	for _, gate := range requiredProductionEvidenceGates {
+		assert.Equal(t, false, details["external_evidence_gates"].(map[string]bool)[gate])
+	}
+	assert.Equal(t, "完成并签署 PD-01 至 PD-07 决策物，登记书面签署凭证", details["next_actions"].(map[string]string)["G0"])
 }
 
 func TestConflictP0ReadinessCheck_ProductionMissingDatabaseFailsClosed(t *testing.T) {
@@ -47,22 +50,43 @@ func TestConflictP0ReadinessCheck_ProductionMissingDatabaseFailsClosed(t *testin
 
 	details, ok := result.Details.(map[string]interface{})
 	require.True(t, ok)
-	assert.Equal(t, false, details["production_evidence_ready"])
+	assert.Equal(t, false, details["production_database_prerequisites_ready"])
+	for _, gate := range requiredProductionEvidenceGates {
+		assert.Equal(t, false, details["external_evidence_gates"].(map[string]bool)[gate])
+	}
 	assert.NotEmpty(t, details["next_actions"])
 }
 
-func TestConflictP0ReadinessCheck_ProductionCompleteEvidencePasses(t *testing.T) {
+func TestConflictP0ReadinessCheck_ProductionPrerequisitesWithoutExternalEvidenceFailsClosed(t *testing.T) {
 	db, sqlDB := setupConflictP0ProductionDatabase(t)
 	seedCompleteConflictP0ProductionEvidence(t, db)
 
 	result := NewConflictP0ReadinessCheck(sqlDB, true).Check(context.Background())
 
 	require.NotNil(t, result)
-	assert.Equal(t, StatusHealthy, result.Status)
-	assert.Contains(t, result.Message, "生产证据门禁通过")
+	assert.Equal(t, StatusUnhealthy, result.Status)
+	assert.Contains(t, result.Message, "生产外部证据门禁未完整登记或复核")
+	for _, gate := range requiredProductionEvidenceGates {
+		assert.Contains(t, result.Message, gate)
+	}
 	details, ok := result.Details.(map[string]interface{})
 	require.True(t, ok)
-	assert.Equal(t, true, details["production_evidence_ready"])
+	assert.Equal(t, false, details["production_database_prerequisites_ready"])
+}
+
+func TestConflictP0ReadinessCheck_ProductionCompleteExplicitEvidencePasses(t *testing.T) {
+	db, sqlDB := setupConflictP0ProductionDatabase(t)
+	seedCompleteConflictP0ProductionEvidence(t, db)
+	seedCompleteProductionExternalEvidence(t, db)
+
+	result := NewConflictP0ReadinessCheck(sqlDB, true).Check(context.Background())
+
+	require.NotNil(t, result)
+	assert.Equal(t, StatusHealthy, result.Status)
+	assert.Contains(t, result.Message, "生产数据库前置条件和 G0-G7 外部证据登记复核通过")
+	details, ok := result.Details.(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, true, details["production_database_prerequisites_ready"])
 }
 
 func TestConflictP0ReadinessCheck_ProductionMissingGovernanceAuditFailsClosed(t *testing.T) {
@@ -76,6 +100,21 @@ func TestConflictP0ReadinessCheck_ProductionMissingGovernanceAuditFailsClosed(t 
 	assert.Equal(t, StatusUnhealthy, result.Status)
 	assert.Contains(t, result.Message, "CONFLICT_POLICY_APPROVED")
 	assert.Contains(t, result.Message, "G5")
+}
+
+func TestConflictP0ReadinessCheck_ProductionMissingOneExternalEvidenceGateFailsClosed(t *testing.T) {
+	db, sqlDB := setupConflictP0ProductionDatabase(t)
+	seedCompleteConflictP0ProductionEvidence(t, db)
+	seedCompleteProductionExternalEvidence(t, db)
+	require.NoError(t, db.Exec("DELETE FROM production_external_evidence WHERE gate = 'G6'").Error)
+
+	result := NewConflictP0ReadinessCheck(sqlDB, true).Check(context.Background())
+
+	require.NotNil(t, result)
+	assert.Equal(t, StatusUnhealthy, result.Status)
+	assert.Contains(t, result.Message, "生产外部证据门禁未完整登记或复核")
+	assert.Contains(t, result.Message, "G6")
+	assert.NotContains(t, result.Message, "G6(缺失) G7")
 }
 
 func setupConflictP0ProductionDatabase(t *testing.T) (*gorm.DB, *sql.DB) {
@@ -203,6 +242,41 @@ func createGovernanceAudit(db *gorm.DB, eventType, objectID string, payload inte
 		ObjectType: "CONFLICT_P0_PRODUCTION_EVIDENCE", ObjectID: objectID, ToState: "ACTIVE",
 		Payload: string(raw), IntegrityHash: hex.EncodeToString(sum[:]), CreatedAt: time.Now().UTC(),
 	}).Error
+}
+
+func seedCompleteProductionExternalEvidence(t *testing.T, db *gorm.DB) {
+	t.Helper()
+	rawDB, err := db.DB()
+	require.NoError(t, err)
+	require.NoError(t, ensureProductionExternalEvidenceTable(context.Background(), rawDB))
+	now := time.Now().UTC()
+	for _, gate := range requiredProductionEvidenceGates {
+		payload := gate + ":approved:test-registration"
+		sum := sha256.Sum256([]byte(payload))
+		reviewer := "测试复核人"
+		if gate == "G7" {
+			reviewer = "运维负责人|合规负责人"
+		}
+		_, err := rawDB.Exec(`
+			INSERT INTO production_external_evidence
+				(id, gate, evidence_reference, reviewed_by, reviewer_role, review_result, reviewed_at, integrity_hash, created_at, updated_at)
+			VALUES (?, ?, ?, ?, ?, 'PASSED', ?, ?, ?, ?)
+		`, gate[1], gate, "evidence://"+gate, reviewer, "test-reviewer", now.Format(time.RFC3339Nano), hex.EncodeToString(sum[:]), now.Format(time.RFC3339Nano), now.Format(time.RFC3339Nano))
+		require.NoError(t, err)
+	}
+}
+
+func TestConflictP0ReadinessCheck_ProductionG7RequiresDistinctFinalReviewers(t *testing.T) {
+	db, sqlDB := setupConflictP0ProductionDatabase(t)
+	seedCompleteConflictP0ProductionEvidence(t, db)
+	seedCompleteProductionExternalEvidence(t, db)
+	require.NoError(t, db.Exec("UPDATE production_external_evidence SET reviewed_by = '同一复核人' WHERE gate = 'G7'").Error)
+
+	result := NewConflictP0ReadinessCheck(sqlDB, true).Check(context.Background())
+
+	require.NotNil(t, result)
+	assert.Equal(t, StatusUnhealthy, result.Status)
+	assert.Contains(t, result.Message, "G7最终复核记录未由两名不同责任人共同签署")
 }
 
 func ptrUint(value uint) *uint { return &value }
