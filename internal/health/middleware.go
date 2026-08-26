@@ -19,6 +19,8 @@ type HealthMiddleware struct {
 	startTime     time.Time
 }
 
+const productionEnvironmentName = "production"
+
 // NewHealthMiddleware 创建健康检查中间件
 func NewHealthMiddleware(healthChecker *HealthChecker, version, environment string) *HealthMiddleware {
 	return &HealthMiddleware{
@@ -27,6 +29,28 @@ func NewHealthMiddleware(healthChecker *HealthChecker, version, environment stri
 		environment:   environment,
 		startTime:     time.Now(),
 	}
+}
+
+func isProductionEnvironment(environment string) bool {
+	return strings.EqualFold(strings.TrimSpace(environment), productionEnvironmentName)
+}
+
+func productionEvidenceMissing(result *HealthCheckResult) []string {
+	if result == nil {
+		return []string{"缺少 conflict_p0_readiness 检查：请确认生产数据库连接和健康检查初始化成功"}
+	}
+	if result.Status != StatusHealthy {
+		return []string{result.Message}
+	}
+	details, ok := result.Details.(map[string]interface{})
+	if !ok {
+		return []string{"conflict_p0_readiness 缺少生产证据声明：请检查健康检查实现"}
+	}
+	ready, ok := details["production_evidence_ready"].(bool)
+	if !ok || !ready {
+		return []string{result.Message}
+	}
+	return nil
 }
 
 // HealthCheckHandler 健康检查处理器
@@ -244,12 +268,40 @@ func (hm *HealthMiddleware) ReadinessHandler(c *gin.Context) {
 	// removes it from service until every required dependency is healthy again.
 	health := hm.healthChecker.GetOverallHealth(hm.version, hm.environment)
 	ready := health.Status == StatusHealthy
+	production := isProductionEnvironment(hm.environment)
+	productionGate, productionGateExists := hm.healthChecker.GetLastResults()[ConflictP0ReadinessCheckName]
+	missingProductionEvidence := productionEvidenceMissing(productionGate)
+
+	// Readiness is environment-scoped. A QA deployment may receive technical
+	// traffic while explicitly reporting that production evidence was not
+	// evaluated. A production deployment must never interpret that omission
+	// as success: the check and its positive evidence declaration are both
+	// required before /health/ready can return true.
+	if production {
+		ready = ready && productionGateExists && len(missingProductionEvidence) == 0
+	}
+
+	evidence := gin.H{
+		"scope":                         "environment_technical_readiness",
+		"production_ready":              production && ready,
+		"production_evidence_evaluated": production,
+	}
+	if production {
+		evidence["scope"] = "production_technical_and_governance_readiness"
+		evidence["missing"] = missingProductionEvidence
+		evidence["next_actions"] = productionEvidenceGateActions
+	} else {
+		evidence["skipped_gates"] = productionEvidenceGateActions
+		evidence["next_actions"] = []string{"保持 QA 流量边界；生产放行前在 production 环境逐项完成 G0-G7 证据门禁"}
+	}
 
 	status := gin.H{
-		"ready":     ready,
-		"timestamp": time.Now(),
-		"version":   hm.version,
-		"checks":    hm.healthChecker.GetLastResults(),
+		"ready":           ready,
+		"timestamp":       time.Now(),
+		"version":         hm.version,
+		"environment":     hm.environment,
+		"readiness_scope": evidence,
+		"checks":          hm.healthChecker.GetLastResults(),
 	}
 
 	if ready {

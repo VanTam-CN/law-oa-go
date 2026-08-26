@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -15,6 +16,19 @@ type ConflictP0ReadinessCheck struct {
 	db         *sql.DB
 	production bool
 	driver     string
+}
+
+const ConflictP0ReadinessCheckName = "conflict_p0_readiness"
+
+var productionEvidenceGateActions = []string{
+	"G0:完成并签署 PD-01 至 PD-07 决策物，冻结生产适用规则",
+	"G1:使用独立生产密钥和 TLS 数据库连接，并完成备份恢复演练",
+	"G2:在目标生产库完成 bootstrap/迁移，并保留可追溯成功日志",
+	"G3:完成敏感身份加密回填，复核结果必须为零",
+	"G4:完成案件、客户、主体、关系四类冲突索引回填和对账",
+	"G5:提交双人批准的冲突合规政策，并登记独立核查人与代理人",
+	"G6:停用演示账号并完成 AT-01 至 AT-12 三角色隔离验收",
+	"G7:重新采集 /health/ready 与四类索引运行、政策版本、签署记录",
 }
 
 var requiredConflictScopeTypes = []string{
@@ -34,7 +48,7 @@ func NewConflictP0ReadinessCheck(db *sql.DB, production bool, drivers ...string)
 	return &ConflictP0ReadinessCheck{db: db, production: production, driver: driver}
 }
 
-func (c *ConflictP0ReadinessCheck) GetName() string { return "conflict_p0_readiness" }
+func (c *ConflictP0ReadinessCheck) GetName() string { return ConflictP0ReadinessCheckName }
 
 func (c *ConflictP0ReadinessCheck) GetTimeout() time.Duration { return 3 * time.Second }
 
@@ -48,7 +62,8 @@ func (c *ConflictP0ReadinessCheck) Check(ctx context.Context) *HealthCheckResult
 	result.Duration = time.Since(started).Milliseconds()
 
 	if !c.production {
-		result.Message = "生产冲突门禁仅在 production 环境强制执行"
+		result.Message = "QA技术就绪：生产证据门禁未执行；ready=true不代表生产可用"
+		result.Details = conflictP0EvidenceDetails(false)
 		return result
 	}
 	if c.db == nil {
@@ -172,9 +187,62 @@ func (c *ConflictP0ReadinessCheck) Check(ctx context.Context) *HealthCheckResult
 			return conflictP0Unhealthy(result, fmt.Sprintf("P0证据表 %s 不可用: %v", table, err))
 		}
 	}
-	result.Message = fmt.Sprintf("冲突档案覆盖完整，active=%d", activeScopes)
+	if err := c.verifyG6AcceptanceEvidence(ctx); err != nil {
+		return conflictP0Unhealthy(result, err.Error())
+	}
+	result.Message = fmt.Sprintf("生产证据门禁通过：冲突档案覆盖完整，active=%d", activeScopes)
+	result.Details = conflictP0EvidenceDetails(true)
 	result.Duration = time.Since(started).Milliseconds()
 	return result
+}
+
+func (c *ConflictP0ReadinessCheck) verifyG6AcceptanceEvidence(ctx context.Context) error {
+	eventTypes := []string{
+		"CONFLICT_POLICY_PACKAGE_CREATED",
+		"CONFLICT_POLICY_ENDORSED",
+		"CONFLICT_POLICY_APPROVED",
+		"CONFLICT_OFFICER_APPOINTED",
+		"CONFLICT_SCOPE_UPDATED",
+	}
+	placeholders := make([]string, 0, len(eventTypes))
+	args := make([]interface{}, 0, len(eventTypes))
+	for index, eventType := range eventTypes {
+		placeholders = append(placeholders, c.placeholder(index+1))
+		args = append(args, eventType)
+	}
+	query := fmt.Sprintf(
+		"SELECT event_type, COUNT(*) FROM compliance_audit_events WHERE event_type IN (%s) AND integrity_hash IS NOT NULL AND LENGTH(TRIM(integrity_hash)) = 64 GROUP BY event_type",
+		strings.Join(placeholders, ","),
+	)
+	rows, err := c.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("生产治理审计证据不可用: %w", err)
+	}
+	defer rows.Close()
+
+	counts := make(map[string]int64, len(eventTypes))
+	for rows.Next() {
+		var eventType string
+		var count int64
+		if err := rows.Scan(&eventType, &count); err != nil {
+			return fmt.Errorf("生产治理审计证据读取失败: %w", err)
+		}
+		counts[eventType] = count
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("生产治理审计证据读取失败: %w", err)
+	}
+
+	missing := make([]string, 0)
+	for _, eventType := range eventTypes {
+		if counts[eventType] == 0 {
+			missing = append(missing, eventType)
+		}
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("缺少带完整性哈希的生产治理审计证据: %s；请完成 G5 双人批准、任命登记和范围质量登记", strings.Join(missing, ","))
+	}
+	return nil
 }
 
 func (c *ConflictP0ReadinessCheck) placeholder(index int) string {
@@ -187,6 +255,14 @@ func (c *ConflictP0ReadinessCheck) placeholder(index int) string {
 func conflictP0Unhealthy(result *HealthCheckResult, message string) *HealthCheckResult {
 	result.Status = StatusUnhealthy
 	result.Message = message
+	result.Details = conflictP0EvidenceDetails(false)
 	result.Duration = time.Since(result.Timestamp).Milliseconds()
 	return result
+}
+
+func conflictP0EvidenceDetails(ready bool) map[string]interface{} {
+	return map[string]interface{}{
+		"production_evidence_ready": ready,
+		"next_actions":              productionEvidenceGateActions,
+	}
 }
