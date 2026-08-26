@@ -9734,6 +9734,14 @@ interface ConflictPolicyPackageView {
   status: string
 }
 
+export interface ConflictOfficerAppointmentRow extends Record<string, any> {
+  officer_name?: string
+  deputy_name?: string
+  appointer_name?: string
+  current?: boolean
+  recusal_declaration?: string
+}
+
 const emptyPolicyForm = () => {
   const now = new Date()
   const review = new Date(now)
@@ -9817,6 +9825,48 @@ function policyStatusLabel(status: string) {
   }
 }
 
+export function policyGovernanceState(item: ConflictPolicyPackageView) {
+  const management = item.endorsements.find(
+    (entry) => textValue(entry.endorsement_type).toUpperCase() === 'MANAGEMENT',
+  )
+  const compliance = item.endorsements.find(
+    (entry) => textValue(entry.endorsement_type).toUpperCase() === 'COMPLIANCE',
+  )
+  const nextAction =
+    item.status === 'APPROVED'
+      ? '双签已完成；实际放行仍以生产健康检查和审计记录复核为准。'
+      : item.status === 'PENDING_COMPLIANCE'
+        ? '下一步：由另一名合规负责人确认同一 SHA-256 材料包。'
+        : item.status === 'PENDING_MANAGEMENT'
+          ? '下一步：由主任/管理合伙人确认同一 SHA-256 材料包。'
+          : '下一步：分别取得主任/管理合伙人、合规负责人两类独立确认。'
+
+  return {
+    management,
+    compliance,
+    managementStatus: management
+      ? `管理确认：${textValue(management.endorser_name, '账号已停用')}`
+      : '管理确认：待主任/管理合伙人处理',
+    complianceStatus: compliance
+      ? `合规确认：${textValue(compliance.endorser_name, '账号已停用')}`
+      : '合规确认：待合规负责人处理',
+    nextAction,
+  }
+}
+
+export function currentOfficerAppointments(appointments: ConflictOfficerAppointmentRow[]) {
+  return listOf(appointments).filter((item) => Boolean(item.current))
+}
+
+export function officerAppointmentGaps(item: ConflictOfficerAppointmentRow) {
+  const gaps: string[] = []
+  if (!numberValue(item.deputy_id)) gaps.push('缺少独立代理人')
+  if (textValue(item.recusal_declaration, '').trim().length < 10) {
+    gaps.push('回避声明不足')
+  }
+  return gaps
+}
+
 const conflictScopeLabels: Record<string, string> = {
   CASE_ARCHIVE: '案件档案',
   CLIENT_ARCHIVE: '客户档案',
@@ -9839,6 +9889,7 @@ export function ConflictGovernanceCenter() {
   const [policies, setPolicies] = React.useState<ConflictPolicyPackageView[]>([])
   const [scopes, setScopes] = React.useState<Array<Record<string, any>>>([])
   const [qualityOwners, setQualityOwners] = React.useState<Array<Record<string, any>>>([])
+  const [appointments, setAppointments] = React.useState<ConflictOfficerAppointmentRow[]>([])
   const [loading, setLoading] = React.useState(true)
   const [submitting, setSubmitting] = React.useState(false)
   const [modalOpen, setModalOpen] = React.useState(false)
@@ -9848,27 +9899,32 @@ export function ConflictGovernanceCenter() {
   const roles = listOf(getRoles()).map((role) => textValue(role.code).toLowerCase())
   const isManagement = roles.some((role) => ['director', 'partner', 'management'].includes(role))
   const isCompliance = roles.some((role) => ['compliance', 'risk', 'risk_control'].includes(role))
-  const canManagePolicies = isManagement || isCompliance
+  const canViewPolicies = isManagement || isCompliance
+  const canSubmitPolicies = isManagement
 
   const load = React.useCallback(async () => {
     setLoading(true)
     try {
-      const [policyRows, scopeRows, ownerRows] = await Promise.all([
-        canManagePolicies
+      const [policyRows, scopeRows, ownerRows, appointmentRows] = await Promise.all([
+        canViewPolicies
           ? apiRequest<ConflictPolicyPackageView[]>('/conflict-v2/governance/policies')
           : Promise.resolve([]),
         apiRequest<Array<Record<string, any>>>('/conflict-v2/search-scopes'),
-        apiRequest<Array<Record<string, any>>>('/conflict/reviewer-candidates'),
+        isManagement || isCompliance
+          ? apiRequest<Array<Record<string, any>>>('/conflict/reviewer-candidates')
+          : Promise.resolve([]),
+        apiRequest<ConflictOfficerAppointmentRow[]>('/conflict/officer-appointments'),
       ])
       setPolicies(Array.isArray(policyRows) ? policyRows : [])
       setScopes(Array.isArray(scopeRows) ? scopeRows : [])
       setQualityOwners(Array.isArray(ownerRows) ? ownerRows : [])
+      setAppointments(Array.isArray(appointmentRows) ? appointmentRows : [])
     } catch (error) {
       message.error(error instanceof Error ? error.message : '冲突治理信息加载失败')
     } finally {
       setLoading(false)
     }
-  }, [canManagePolicies])
+  }, [canViewPolicies, isManagement, isCompliance])
 
   React.useEffect(() => {
     void load()
@@ -9976,6 +10032,7 @@ export function ConflictGovernanceCenter() {
       .map((scope) => textValue(scope.scope_type)),
   )
   const requiredScopes = ['CASE_ARCHIVE', 'CLIENT_ARCHIVE', 'SUBJECT_REGISTRY', 'RELATION_ARCHIVE']
+  const currentAppointments = currentOfficerAppointments(appointments)
 
   return (
     <div className='batch-page'>
@@ -9986,7 +10043,7 @@ export function ConflictGovernanceCenter() {
         actions={
           <Space>
             <Button onClick={() => void load()} loading={loading}>刷新</Button>
-            {canManagePolicies && (
+            {canSubmitPolicies && (
               <Button type='primary' icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>
                 提交新政策材料包
               </Button>
@@ -9996,40 +10053,85 @@ export function ConflictGovernanceCenter() {
       />
 
       <div className='batch-metric-grid'>
-        {canManagePolicies && <MetricCard icon={<FileProtectOutlined />} label='政策材料包' value={policies.length} delta='' tone='blue' />}
-        {canManagePolicies && <MetricCard icon={<CheckCircleOutlined />} label='双人确认完成' value={policies.filter((item) => item.status === 'APPROVED').length} delta='' tone='green' />}
+        {canViewPolicies && <MetricCard icon={<FileProtectOutlined />} label='政策材料包' value={policies.length} delta='' tone='blue' />}
+        {canViewPolicies && <MetricCard icon={<CheckCircleOutlined />} label='双人确认完成' value={policies.filter((item) => item.status === 'APPROVED').length} delta='' tone='green' />}
         <MetricCard icon={<DatabaseOutlined />} label='权威来源完整' value={`${completeScopeTypes.size}/4`} delta='' tone={completeScopeTypes.size === 4 ? 'green' : 'orange'} />
       </div>
 
-      {canManagePolicies && <SectionCard title='律所冲突政策签署记录'>
+      {canViewPolicies && <SectionCard title='律所冲突政策双签闭环'>
         <DataTable>
           <table>
-            <thead><tr><th>政策版本</th><th>适用范围</th><th>生效/复核</th><th>确认状态</th><th>材料摘要</th><th>操作</th></tr></thead>
+            <thead><tr><th>政策版本</th><th>适用范围</th><th>生效/复核</th><th>管理/合规双签状态</th><th>材料摘要</th><th>下一步与操作</th></tr></thead>
             <tbody>
-              {policies.map((item) => (
-                <tr key={textValue(item.package.id)}>
-                  <td><strong>{textValue(item.package.policy_version)}</strong><br /><small>{textValue(item.package.applicable_rule_name)}</small></td>
-                  <td>{textValue(item.package.jurisdiction)}<br /><small>{textValue(item.package.applicable_rule_authority)}</small></td>
-                  <td>{formatPolicyDate(item.package.effective_at)}<br /><small>复核：{formatPolicyDate(item.package.next_review_at)}</small></td>
-                  <td>
-                    <RiskTag text={policyStatusLabel(item.status)} />
-                    <div className='policy-endorser-list'>
-                      {item.endorsements.map((entry) => (
-                        <small key={textValue(entry.id)}>
-                          {textValue(entry.endorsement_type) === 'MANAGEMENT' ? '管理确认' : '合规确认'}：{textValue(entry.endorser_name, '账号已停用')}
-                        </small>
-                      ))}
-                    </div>
+              {policies.map((item) => {
+                const governance = policyGovernanceState(item)
+                return (
+                  <tr key={textValue(item.package.id)}>
+                    <td><strong>{textValue(item.package.policy_version)}</strong><br /><small>{textValue(item.package.applicable_rule_name)}</small></td>
+                    <td>{textValue(item.package.jurisdiction)}<br /><small>{textValue(item.package.applicable_rule_authority)}</small></td>
+                    <td>{formatPolicyDate(item.package.effective_at)}<br /><small>复核：{formatPolicyDate(item.package.next_review_at)}</small></td>
+                    <td>
+                      <RiskTag text={policyStatusLabel(item.status)} />
+                      <div className='policy-endorser-list'>
+                        <small>{governance.managementStatus}</small>
+                        <small>{governance.complianceStatus}</small>
+                      </div>
+                    </td>
+                    <td><code>{textValue(item.package.integrity_hash).slice(0, 12)}…</code></td>
+                    <td>
+                      <p className='policy-next-action'>{governance.nextAction}</p>
+                      <Button size='small' disabled={!canEndorse(item)} onClick={() => endorse(item)}>
+                        {item.status === 'APPROVED' ? '政策已双签' : '确认政策材料'}
+                      </Button>
+                    </td>
+                  </tr>
+                )
+              })}
+              {!loading && policies.length === 0 && (
+                <tr>
+                  <td colSpan={6}>
+                    尚未提交政策材料包。下一步：由主任/管理合伙人提交材料包，合规负责人仅独立确认；
+                    正式客户案件保持未放行。
                   </td>
-                  <td><code>{textValue(item.package.integrity_hash).slice(0, 12)}…</code></td>
-                  <td><Button size='small' disabled={!canEndorse(item)} onClick={() => endorse(item)}>确认政策材料</Button></td>
                 </tr>
-              ))}
-              {!loading && policies.length === 0 && <tr><td colSpan={6}>尚未提交政策材料包，正式客户案件保持未放行。</td></tr>}
+              )}
             </tbody>
           </table>
         </DataTable>
       </SectionCard>}
+
+      <SectionCard title='冲突核查人任命与回避'>
+        <div className='batch-policy-grid conflict-appointment-grid'>
+          {currentAppointments.map((item) => {
+            const gaps = officerAppointmentGaps(item)
+            return (
+              <article key={textValue(item.id)}>
+                <UserOutlined />
+                <div>
+                  <strong>
+                    主核查人：{textValue(item.officer_name)}
+                    {item.deputy_name ? ` · 代理人：${textValue(item.deputy_name)}` : ''}
+                  </strong>
+                  <p>
+                    任命人：{textValue(item.appointer_name)} · 任期：
+                    {formatPolicyDate(item.effective_from)} 至 {formatPolicyDate(item.effective_to)}
+                  </p>
+                  <p>回避声明：{textValue(item.recusal_declaration)}</p>
+                </div>
+                <div className='scope-card-actions'>
+                  <RiskTag text={gaps.length === 0 ? '任命与回避完备' : gaps.join('；')} />
+                </div>
+              </article>
+            )
+          })}
+          {!loading && currentAppointments.length === 0 && (
+            <p className='span-2'>
+              当前任期缺少可行动的冲突核查人任命。下一步：由主任/管理合伙人任命主核查人和独立代理人，
+              并记录不少于10个字的回避与独立性声明；完成前生产门禁保持阻止。
+            </p>
+          )}
+        </div>
+      </SectionCard>
 
       <SectionCard title='权威档案来源覆盖'>
         <div className='batch-policy-grid'>
