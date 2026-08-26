@@ -296,6 +296,8 @@ chrome/
 !internal/services/document_lock_service_test.go
 !internal/services/conflict_hook_test.go
 !internal/services/conflict_reviewer_service_test.go
+!internal/health/conflict_p0_check_test.go
+!tests/integration/production_external_evidence_test.go
 *_test
 *_tester
 test_*

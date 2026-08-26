@@ -195,6 +195,195 @@ func TestHealthMiddleware_ReadinessRejectsDegradedChecks(t *testing.T) {
 	assert.Equal(t, false, response["ready"])
 }
 
+func TestHealthMiddleware_ReadinessQAMarksProductionEvidenceSkipped(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	healthChecker := NewHealthChecker(&DefaultHealthConfig, nil)
+	healthChecker.RegisterCheck(&MockHealthCheck{
+		name:    ConflictP0ReadinessCheckName,
+		timeout: time.Second,
+		result: &HealthCheckResult{
+			Name:      ConflictP0ReadinessCheckName,
+			Status:    StatusHealthy,
+			Message:   "QA技术就绪：生产数据库前置条件未执行；ready=true不代表生产可用",
+			Details:   map[string]interface{}{"production_database_prerequisites_ready": false, "next_actions": productionEvidenceGateActions},
+			Timestamp: time.Now(),
+		},
+	})
+	middleware := NewHealthMiddleware(healthChecker, "1.0.0", "qa")
+	router := gin.New()
+	router.GET("/ready", middleware.ReadinessHandler)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/ready", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var response map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &response))
+	assert.Equal(t, true, response["ready"])
+	assert.Equal(t, "qa", response["environment"])
+
+	scope, ok := response["readiness_scope"].(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, "environment_technical_readiness", scope["scope"])
+	assert.Equal(t, false, scope["production_ready"])
+	assert.Equal(t, false, scope["production_evidence_evaluated"])
+	assert.Equal(t, "完成并签署 PD-01 至 PD-07 决策物，登记书面签署凭证", scope["skipped_gates"].(map[string]interface{})["G0"])
+	assert.Contains(t, scope["next_actions"], "保持 QA 流量边界；生产放行前在 production 环境逐项完成 G0-G7 证据门禁")
+
+	checks, ok := response["checks"].(map[string]interface{})
+	require.True(t, ok)
+	conflictGate, ok := checks[ConflictP0ReadinessCheckName].(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, "healthy", conflictGate["status"])
+	assert.Contains(t, conflictGate["message"], "不代表生产可用")
+}
+
+func TestHealthMiddleware_ReadinessProductionMissingEvidenceNotReady(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	healthChecker := NewHealthChecker(&DefaultHealthConfig, nil)
+	healthChecker.RegisterCheck(&MockHealthCheck{
+		name:    ConflictP0ReadinessCheckName,
+		timeout: time.Second,
+		result: &HealthCheckResult{
+			Name:      ConflictP0ReadinessCheckName,
+			Status:    StatusHealthy,
+			Message:   "QA技术就绪：生产数据库前置条件未执行；ready=true不代表生产可用",
+			Details:   map[string]interface{}{"production_database_prerequisites_ready": false, "next_actions": productionEvidenceGateActions},
+			Timestamp: time.Now(),
+		},
+	})
+	middleware := NewHealthMiddleware(healthChecker, "1.0.0", "production")
+	router := gin.New()
+	router.GET("/ready", middleware.ReadinessHandler)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/ready", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
+	var response map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &response))
+	assert.Equal(t, false, response["ready"])
+
+	scope, ok := response["readiness_scope"].(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, "production_technical_and_governance_readiness", scope["scope"])
+	assert.Equal(t, false, scope["production_ready"])
+	assert.Equal(t, true, scope["production_evidence_evaluated"])
+	missing := scope["missing"].([]interface{})
+	assert.Equal(t, "QA技术就绪：生产数据库前置条件未执行；ready=true不代表生产可用", missing[0])
+	assert.Len(t, missing, len(requiredProductionEvidenceGates)+1)
+	assert.Equal(t, "由运维负责人和合规负责人复核前序凭证，登记最终技术放行记录", scope["next_actions"].(map[string]interface{})["G7"])
+}
+
+func TestHealthMiddleware_ReadinessProductionRequiresEvidenceCheck(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	healthChecker := NewHealthChecker(&DefaultHealthConfig, nil)
+	middleware := NewHealthMiddleware(healthChecker, "1.0.0", "production")
+	router := gin.New()
+	router.GET("/ready", middleware.ReadinessHandler)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/ready", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
+	var response map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &response))
+	assert.Equal(t, false, response["ready"])
+
+	scope, ok := response["readiness_scope"].(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, false, scope["production_ready"])
+	missing := scope["missing"].([]interface{})
+	assert.Equal(t, "缺少 conflict_p0_readiness 检查：请确认生产数据库连接和健康检查初始化成功", missing[0])
+	assert.Len(t, missing, len(requiredProductionEvidenceGates)+1)
+}
+
+func TestHealthMiddleware_ReadinessProductionDatabasePrerequisitesNotReadyWithoutExternalEvidence(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	healthChecker := NewHealthChecker(&DefaultHealthConfig, nil)
+	healthChecker.RegisterCheck(&MockHealthCheck{
+		name:    ConflictP0ReadinessCheckName,
+		timeout: time.Second,
+		result: &HealthCheckResult{
+			Name:    ConflictP0ReadinessCheckName,
+			Status:  StatusHealthy,
+			Message: "生产数据库前置条件通过：冲突档案覆盖完整；G0-G7外部证据待登记",
+			Details: map[string]interface{}{
+				"production_database_prerequisites_ready": true,
+				"external_evidence_gates":                 map[string]bool{"G0": false, "G1": false, "G2": false, "G3": false, "G4": false, "G5": false, "G6": false, "G7": false},
+				"next_actions":                            productionEvidenceGateActions,
+			},
+			Timestamp: time.Now(),
+		},
+	})
+	middleware := NewHealthMiddleware(healthChecker, "1.0.0", "production")
+	router := gin.New()
+	router.GET("/ready", middleware.ReadinessHandler)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/ready", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
+	var response map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &response))
+	assert.Equal(t, false, response["ready"])
+
+	scope, ok := response["readiness_scope"].(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, "production_technical_and_governance_readiness", scope["scope"])
+	assert.Equal(t, false, scope["production_ready"])
+	assert.Equal(t, true, scope["production_evidence_evaluated"])
+	assert.Len(t, scope["missing"], len(requiredProductionEvidenceGates))
+}
+
+func TestHealthMiddleware_ReadinessProductionCompleteExplicitEvidenceReady(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	healthChecker := NewHealthChecker(&DefaultHealthConfig, nil)
+	healthChecker.RegisterCheck(&MockHealthCheck{
+		name:    ConflictP0ReadinessCheckName,
+		timeout: time.Second,
+		result: &HealthCheckResult{
+			Name:    ConflictP0ReadinessCheckName,
+			Status:  StatusHealthy,
+			Message: "生产数据库前置条件和 G0-G7 外部证据登记复核通过",
+			Details: map[string]interface{}{
+				"production_database_prerequisites_ready": true,
+				"external_evidence_gates":                 map[string]bool{"G0": true, "G1": true, "G2": true, "G3": true, "G4": true, "G5": true, "G6": true, "G7": true},
+				"next_actions":                            productionEvidenceGateActions,
+			},
+			Timestamp: time.Now(),
+		},
+	})
+	middleware := NewHealthMiddleware(healthChecker, "1.0.0", "production")
+	router := gin.New()
+	router.GET("/ready", middleware.ReadinessHandler)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/ready", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var response map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &response))
+	assert.Equal(t, true, response["ready"])
+
+	scope, ok := response["readiness_scope"].(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, "production_technical_and_governance_readiness", scope["scope"])
+	assert.Equal(t, true, scope["production_ready"])
+	assert.Equal(t, true, scope["production_evidence_evaluated"])
+	assert.Empty(t, scope["missing"])
+}
+
 func TestHealthMiddleware_LivenessHandler(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
