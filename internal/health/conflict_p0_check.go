@@ -2,7 +2,9 @@ package health
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"strings"
 	"time"
@@ -247,9 +249,6 @@ func (c *ConflictP0ReadinessCheck) verifyG5GovernanceAuditEvidence(ctx context.C
 	if len(missing) > 0 {
 		return fmt.Errorf("缺少带完整性哈希的生产治理审计证据: %s；请完成 G5 双人批准、任命登记和范围质量登记", strings.Join(missing, ","))
 	}
-	if err := ensureProductionExternalEvidenceTable(ctx, c.db); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -264,7 +263,7 @@ func (c *ConflictP0ReadinessCheck) verifyExternalEvidenceRegistrations(ctx conte
 	}
 	defer rows.Close()
 
-	registered := make(map[string]error)
+	registrationsByGate := make(map[string][]productionExternalEvidenceRegistration)
 	for rows.Next() {
 		var registration productionExternalEvidenceRegistration
 		if err := rows.Scan(
@@ -274,14 +273,7 @@ func (c *ConflictP0ReadinessCheck) verifyExternalEvidenceRegistrations(ctx conte
 		); err != nil {
 			return fmt.Errorf("生产外部证据登记读取失败: %w", err)
 		}
-		validationError := registration.validate(time.Now().UTC())
-		registered[registration.NormalizedGate()] = validationError
-		if validationError == nil && registration.G7FinalReviewValid() {
-			continue
-		}
-		if validationError == nil {
-			registered[registration.NormalizedGate()] = fmt.Errorf("G7最终复核记录未由两名不同责任人共同签署")
-		}
+		registrationsByGate[registration.NormalizedGate()] = append(registrationsByGate[registration.NormalizedGate()], registration)
 	}
 	if err := rows.Err(); err != nil {
 		return fmt.Errorf("生产外部证据登记读取失败: %w", err)
@@ -289,36 +281,12 @@ func (c *ConflictP0ReadinessCheck) verifyExternalEvidenceRegistrations(ctx conte
 
 	missing := make([]string, 0)
 	for _, gate := range requiredProductionEvidenceGates {
-		validationError, exists := registered[gate]
-		if !exists || validationError != nil {
-			missing = append(missing, formatProductionExternalEvidenceGap(gate, validationError))
+		if err := validateExternalEvidenceGate(gate, registrationsByGate[gate], time.Now().UTC()); err != nil {
+			missing = append(missing, formatProductionExternalEvidenceGap(gate, err))
 		}
 	}
 	if len(missing) > 0 {
 		return fmt.Errorf("生产外部证据门禁未完整登记或复核: %s", strings.Join(missing, "；"))
-	}
-	return nil
-}
-
-func ensureProductionExternalEvidenceTable(ctx context.Context, db *sql.DB) error {
-	if db == nil {
-		return fmt.Errorf("生产外部证据登记数据库连接未初始化")
-	}
-	if _, err := db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS production_external_evidence (
-		id BIGSERIAL PRIMARY KEY,
-		gate VARCHAR(8) NOT NULL UNIQUE,
-		evidence_reference TEXT NOT NULL,
-		reviewed_by VARCHAR(120) NOT NULL,
-		reviewer_role VARCHAR(80) NOT NULL,
-		review_result VARCHAR(20) NOT NULL,
-		reviewed_at TEXT NOT NULL,
-		integrity_hash VARCHAR(64) NOT NULL,
-		created_at TEXT NOT NULL,
-		updated_at TEXT NOT NULL,
-		CONSTRAINT chk_production_external_gate CHECK (gate IN ('G0','G1','G2','G3','G4','G5','G6','G7')),
-		CONSTRAINT chk_production_external_result CHECK (review_result IN ('PASSED','FAILED'))
-	)`); err != nil {
-		return fmt.Errorf("生产外部证据登记表不可用: %w", err)
 	}
 	return nil
 }
@@ -357,8 +325,17 @@ func (r productionExternalEvidenceRegistration) validate(now time.Time) error {
 	if err != nil || reviewedAt.IsZero() || reviewedAt.After(now.Add(5*time.Minute)) {
 		return fmt.Errorf("复核时间无效")
 	}
-	if len(strings.TrimSpace(r.IntegrityHash)) != 64 {
-		return fmt.Errorf("完整性哈希无效")
+	hash := strings.TrimSpace(r.IntegrityHash)
+	if len(hash) != 64 {
+		return fmt.Errorf("完整性哈希必须是64位小写SHA-256十六进制值")
+	}
+	for _, char := range hash {
+		if (char < '0' || char > '9') && (char < 'a' || char > 'f') {
+			return fmt.Errorf("完整性哈希必须是64位小写SHA-256十六进制值")
+		}
+	}
+	if hash != r.canonicalHash() {
+		return fmt.Errorf("完整性哈希与登记内容不匹配")
 	}
 	createdAt, createdAtErr := time.Parse(time.RFC3339, strings.TrimSpace(r.CreatedAt))
 	updatedAt, updatedAtErr := time.Parse(time.RFC3339, strings.TrimSpace(r.UpdatedAt))
@@ -368,20 +345,52 @@ func (r productionExternalEvidenceRegistration) validate(now time.Time) error {
 	return nil
 }
 
-func (r productionExternalEvidenceRegistration) G7FinalReviewValid() bool {
-	if r.NormalizedGate() != "G7" {
-		return true
+func (r productionExternalEvidenceRegistration) canonicalHash() string {
+	canonical := strings.Join([]string{
+		r.NormalizedGate(),
+		strings.TrimSpace(r.EvidenceReference),
+		strings.TrimSpace(r.ReviewedBy),
+		strings.TrimSpace(r.ReviewerRole),
+		strings.TrimSpace(r.ReviewResult),
+		strings.TrimSpace(r.ReviewedAt),
+		strings.TrimSpace(r.CreatedAt),
+	}, "\n")
+	sum := sha256.Sum256([]byte(canonical))
+	return hex.EncodeToString(sum[:])
+}
+
+func validateExternalEvidenceGate(gate string, registrations []productionExternalEvidenceRegistration, now time.Time) error {
+	if len(registrations) == 0 {
+		return fmt.Errorf("缺少独立复核登记")
 	}
-	// The stored reviewed_by field carries two distinct reviewer identities
-	// separated by '|'. Operator tooling must create this record only from two
-	// separately authenticated acknowledgements; readiness never invents it.
-	reviewers := strings.Split(r.ReviewedBy, "|")
-	if len(reviewers) != 2 {
-		return false
+	reviewers := make([]string, 0, len(registrations))
+	for _, registration := range registrations {
+		if err := registration.validate(now); err != nil {
+			return err
+		}
+		reviewers = append(reviewers, strings.TrimSpace(registration.ReviewedBy))
 	}
-	return strings.TrimSpace(reviewers[0]) != "" &&
-		strings.TrimSpace(reviewers[1]) != "" &&
-		strings.TrimSpace(reviewers[0]) != strings.TrimSpace(reviewers[1])
+	if gate != "G7" {
+		return nil
+	}
+	// G7 consists of two separately inserted append-only review rows. The
+	// database uniqueness constraint prevents collapsing them into one row.
+	distinctReviewers := make(map[string]struct{}, len(reviewers))
+	hasOperations := false
+	hasCompliance := false
+	for _, registration := range registrations {
+		switch strings.ToLower(strings.TrimSpace(registration.ReviewerRole)) {
+		case "operations", "运维负责人":
+			hasOperations = true
+		case "compliance", "合规负责人":
+			hasCompliance = true
+		}
+		distinctReviewers[strings.TrimSpace(registration.ReviewedBy)] = struct{}{}
+	}
+	if len(registrations) < 2 || len(distinctReviewers) < 2 || !hasOperations || !hasCompliance {
+		return fmt.Errorf("G7最终复核需要运维负责人和合规负责人两条独立PASSED记录")
+	}
+	return nil
 }
 
 func formatProductionExternalEvidenceGap(gate string, err error) string {

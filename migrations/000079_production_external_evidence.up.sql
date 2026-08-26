@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS production_external_evidence (
     id BIGSERIAL PRIMARY KEY,
-    gate VARCHAR(8) NOT NULL UNIQUE,
+    gate VARCHAR(8) NOT NULL,
     evidence_reference TEXT NOT NULL,
     reviewed_by VARCHAR(120) NOT NULL,
     reviewer_role VARCHAR(80) NOT NULL,
@@ -13,6 +13,9 @@ CREATE TABLE IF NOT EXISTS production_external_evidence (
     CONSTRAINT chk_production_external_result CHECK (review_result IN ('PASSED','FAILED')),
     CONSTRAINT chk_production_external_review_time CHECK (reviewed_at <= updated_at)
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_production_external_evidence_gate_reviewer
+    ON production_external_evidence (gate, reviewed_by);
 
 DROP TRIGGER IF EXISTS trg_production_external_evidence_append_only
     ON production_external_evidence;

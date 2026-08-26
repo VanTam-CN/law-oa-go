@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -57,7 +58,7 @@ func TestConflictP0ReadinessCheck_ProductionMissingDatabaseFailsClosed(t *testin
 	assert.NotEmpty(t, details["next_actions"])
 }
 
-func TestConflictP0ReadinessCheck_ProductionPrerequisitesWithoutExternalEvidenceFailsClosed(t *testing.T) {
+func TestConflictP0ReadinessCheck_ProductionMissingEvidenceTableFailsClosed(t *testing.T) {
 	db, sqlDB := setupConflictP0ProductionDatabase(t)
 	seedCompleteConflictP0ProductionEvidence(t, db)
 
@@ -65,13 +66,7 @@ func TestConflictP0ReadinessCheck_ProductionPrerequisitesWithoutExternalEvidence
 
 	require.NotNil(t, result)
 	assert.Equal(t, StatusUnhealthy, result.Status)
-	assert.Contains(t, result.Message, "生产外部证据门禁未完整登记或复核")
-	for _, gate := range requiredProductionEvidenceGates {
-		assert.Contains(t, result.Message, gate)
-	}
-	details, ok := result.Details.(map[string]interface{})
-	require.True(t, ok)
-	assert.Equal(t, false, details["production_database_prerequisites_ready"])
+	assert.Contains(t, result.Message, "生产外部证据登记不可用")
 }
 
 func TestConflictP0ReadinessCheck_ProductionCompleteExplicitEvidencePasses(t *testing.T) {
@@ -100,6 +95,26 @@ func TestConflictP0ReadinessCheck_ProductionMissingGovernanceAuditFailsClosed(t 
 	assert.Equal(t, StatusUnhealthy, result.Status)
 	assert.Contains(t, result.Message, "CONFLICT_POLICY_APPROVED")
 	assert.Contains(t, result.Message, "G5")
+}
+
+func TestConflictP0ReadinessCheck_ProductionPrerequisitesWithoutExternalEvidenceFailsClosed(t *testing.T) {
+	db, sqlDB := setupConflictP0ProductionDatabase(t)
+	seedCompleteConflictP0ProductionEvidence(t, db)
+	rawDB, err := db.DB()
+	require.NoError(t, err)
+	createProductionExternalEvidenceTestTable(t, rawDB)
+
+	result := NewConflictP0ReadinessCheck(sqlDB, true).Check(context.Background())
+
+	require.NotNil(t, result)
+	assert.Equal(t, StatusUnhealthy, result.Status)
+	assert.Contains(t, result.Message, "生产外部证据门禁未完整登记或复核")
+	for _, gate := range requiredProductionEvidenceGates {
+		assert.Contains(t, result.Message, gate)
+	}
+	details, ok := result.Details.(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, false, details["production_database_prerequisites_ready"])
 }
 
 func TestConflictP0ReadinessCheck_ProductionMissingOneExternalEvidenceGateFailsClosed(t *testing.T) {
@@ -248,35 +263,131 @@ func seedCompleteProductionExternalEvidence(t *testing.T, db *gorm.DB) {
 	t.Helper()
 	rawDB, err := db.DB()
 	require.NoError(t, err)
-	require.NoError(t, ensureProductionExternalEvidenceTable(context.Background(), rawDB))
+	createProductionExternalEvidenceTestTable(t, rawDB)
 	now := time.Now().UTC()
 	for _, gate := range requiredProductionEvidenceGates {
-		payload := gate + ":approved:test-registration"
-		sum := sha256.Sum256([]byte(payload))
 		reviewer := "测试复核人"
+		role := "test-reviewer"
 		if gate == "G7" {
-			reviewer = "运维负责人|合规负责人"
+			seedProductionExternalEvidenceReview(t, rawDB, gate, "运维负责人", "运维负责人", now)
+			seedProductionExternalEvidenceReview(t, rawDB, gate, "合规负责人", "合规负责人", now)
+			continue
 		}
-		_, err := rawDB.Exec(`
+		seedProductionExternalEvidenceReview(t, rawDB, gate, reviewer, role, now)
+	}
+}
+
+func seedProductionExternalEvidenceReview(t *testing.T, db *sql.DB, gate, reviewer, role string, now time.Time) {
+	t.Helper()
+	reviewedAt := now.Format(time.RFC3339Nano)
+	createdAt := now.Format(time.RFC3339Nano)
+	canonical := strings.Join([]string{
+		strings.ToUpper(strings.TrimSpace(gate)), "evidence://" + gate,
+		strings.TrimSpace(reviewer), strings.TrimSpace(role), "PASSED", reviewedAt, createdAt,
+	}, "\n")
+	sum := sha256.Sum256([]byte(canonical))
+	_, err := db.Exec(`
 			INSERT INTO production_external_evidence
 				(id, gate, evidence_reference, reviewed_by, reviewer_role, review_result, reviewed_at, integrity_hash, created_at, updated_at)
 			VALUES (?, ?, ?, ?, ?, 'PASSED', ?, ?, ?, ?)
-		`, gate[1], gate, "evidence://"+gate, reviewer, "test-reviewer", now.Format(time.RFC3339Nano), hex.EncodeToString(sum[:]), now.Format(time.RFC3339Nano), now.Format(time.RFC3339Nano))
-		require.NoError(t, err)
-	}
+		`, uniqueProductionExternalEvidenceID(t, db), gate, "evidence://"+gate, reviewer, role, reviewedAt,
+		hex.EncodeToString(sum[:]), createdAt, createdAt)
+	require.NoError(t, err)
+}
+
+func uniqueProductionExternalEvidenceID(t *testing.T, db *sql.DB) int64 {
+	t.Helper()
+	var id int64
+	require.NoError(t, db.QueryRow("SELECT COALESCE(MAX(id), 0) + 1 FROM production_external_evidence").Scan(&id))
+	return id
+}
+
+func createProductionExternalEvidenceTestTable(t *testing.T, db *sql.DB) {
+	t.Helper()
+	_, err := db.Exec(`
+		CREATE TABLE IF NOT EXISTS production_external_evidence (
+			id INTEGER PRIMARY KEY,
+			gate VARCHAR(8) NOT NULL,
+			evidence_reference TEXT NOT NULL,
+			reviewed_by VARCHAR(120) NOT NULL,
+			reviewer_role VARCHAR(80) NOT NULL,
+			review_result VARCHAR(20) NOT NULL,
+			reviewed_at TEXT NOT NULL,
+			integrity_hash VARCHAR(64) NOT NULL,
+			created_at TEXT NOT NULL,
+			updated_at TEXT NOT NULL
+		)
+	`)
+	require.NoError(t, err)
 }
 
 func TestConflictP0ReadinessCheck_ProductionG7RequiresDistinctFinalReviewers(t *testing.T) {
 	db, sqlDB := setupConflictP0ProductionDatabase(t)
 	seedCompleteConflictP0ProductionEvidence(t, db)
 	seedCompleteProductionExternalEvidence(t, db)
-	require.NoError(t, db.Exec("UPDATE production_external_evidence SET reviewed_by = '同一复核人' WHERE gate = 'G7'").Error)
+	require.NoError(t, db.Exec("DELETE FROM production_external_evidence WHERE gate = 'G7' AND reviewed_by = '合规负责人'").Error)
 
 	result := NewConflictP0ReadinessCheck(sqlDB, true).Check(context.Background())
 
 	require.NotNil(t, result)
 	assert.Equal(t, StatusUnhealthy, result.Status)
-	assert.Contains(t, result.Message, "G7最终复核记录未由两名不同责任人共同签署")
+	assert.Contains(t, result.Message, "G7最终复核需要运维负责人和合规负责人两条独立PASSED记录")
+}
+
+func TestConflictP0ReadinessCheck_ProductionG7SameReviewerFails(t *testing.T) {
+	db, sqlDB := setupConflictP0ProductionDatabase(t)
+	seedCompleteConflictP0ProductionEvidence(t, db)
+	seedCompleteProductionExternalEvidence(t, db)
+	rawDB, err := db.DB()
+	require.NoError(t, err)
+	require.NoError(t, db.Exec("DELETE FROM production_external_evidence WHERE gate = 'G7'").Error)
+	now := time.Now().UTC()
+	seedProductionExternalEvidenceReview(t, rawDB, "G7", "同一复核人", "运维负责人", now)
+	seedProductionExternalEvidenceReview(t, rawDB, "G7", "同一复核人", "合规负责人", now)
+
+	result := NewConflictP0ReadinessCheck(sqlDB, true).Check(context.Background())
+
+	require.NotNil(t, result)
+	assert.Equal(t, StatusUnhealthy, result.Status)
+	assert.Contains(t, result.Message, "G7最终复核需要运维负责人和合规负责人两条独立PASSED记录")
+}
+
+func TestProductionExternalEvidenceRegistrationRequiresCanonicalSHA256Hash(t *testing.T) {
+	now := time.Now().UTC()
+	reviewedAt := now.Format(time.RFC3339Nano)
+	registration := productionExternalEvidenceRegistration{
+		Gate: "G1", EvidenceReference: "evidence://G1", ReviewedBy: "测试复核人",
+		ReviewerRole: "test-reviewer", ReviewResult: "PASSED", ReviewedAt: reviewedAt,
+		CreatedAt: reviewedAt, UpdatedAt: reviewedAt,
+	}
+
+	registration.IntegrityHash = strings.ToUpper(registration.canonicalHash())
+	err := registration.validate(now)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "完整性哈希必须是64位小写SHA-256十六进制值")
+
+	registration.IntegrityHash = strings.Repeat("z", 64)
+	err = registration.validate(now)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "完整性哈希必须是64位小写SHA-256十六进制值")
+
+	registration.IntegrityHash = strings.Repeat("0", 64)
+	err = registration.validate(now)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "完整性哈希与登记内容不匹配")
+}
+
+func TestConflictP0ReadinessCheck_ProductionBadCanonicalHashFailsClosed(t *testing.T) {
+	db, sqlDB := setupConflictP0ProductionDatabase(t)
+	seedCompleteConflictP0ProductionEvidence(t, db)
+	seedCompleteProductionExternalEvidence(t, db)
+	require.NoError(t, db.Exec("UPDATE production_external_evidence SET integrity_hash = replace(integrity_hash, substr(integrity_hash, 1, 1), '0') WHERE gate = 'G1'").Error)
+
+	result := NewConflictP0ReadinessCheck(sqlDB, true).Check(context.Background())
+
+	require.NotNil(t, result)
+	assert.Equal(t, StatusUnhealthy, result.Status)
+	assert.Contains(t, result.Message, "G1(完整性哈希与登记内容不匹配")
 }
 
 func ptrUint(value uint) *uint { return &value }
