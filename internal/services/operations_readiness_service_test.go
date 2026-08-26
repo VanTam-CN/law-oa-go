@@ -58,17 +58,26 @@ func TestOperationsReadinessSummaryStartsPendingAndCannotUseHealthChecks(t *test
 
 func TestOperationsReadinessRegistrationIsControlledAndAuditable(t *testing.T) {
 	service := NewOperationsReadinessService(newOperationsReadinessTestDB(t))
-	_, err := service.Register(AuthActor{UserID: 7, Role: "lawyer"}, OperationsReadinessEvidenceInput{
-		Control: "backup", Scope: "production", EvidenceReference: "ops://evidence",
-		ReviewedAt: time.Now(),
-	})
-	require.Error(t, err)
+	for _, role := range []string{"lawyer", "compliance"} {
+		_, err := service.Register(AuthActor{UserID: 7, Role: role}, OperationsReadinessEvidenceInput{
+			Control: "backup", Scope: models.OperationsEvidenceScopeQA, EvidenceReference: "qa://backup-review",
+			ReviewedAt: time.Now().Add(-time.Minute),
+		})
+		require.ErrorContains(t, err, "only directors or system administrators")
+	}
 
-	_, err = service.Register(AuthActor{UserID: 7, Role: "admin"}, OperationsReadinessEvidenceInput{
+	_, err := service.Register(AuthActor{UserID: 7, Role: "admin"}, OperationsReadinessEvidenceInput{
 		Control: "backup", Scope: "production", EvidenceReference: "ops://evidence",
 		ReviewedAt: time.Now(),
 	})
-	require.Error(t, err)
+	require.ErrorContains(t, err, "scope must be qa or controlled_pilot")
+
+	directorEvidence, err := service.Register(AuthActor{UserID: 7, Role: "director"}, OperationsReadinessEvidenceInput{
+		Control: "backup", Scope: models.OperationsEvidenceScopeQA, EvidenceReference: "director://backup-review",
+		ReviewedAt: time.Now(),
+	})
+	require.NoError(t, err)
+	require.Equal(t, uint(7), directorEvidence.ReviewedBy)
 
 	evidence, err := service.Register(AuthActor{UserID: 7, Role: "admin"}, OperationsReadinessEvidenceInput{
 		Control: "backup", Scope: models.OperationsEvidenceScopeQA, EvidenceReference: "qa://backup-review",

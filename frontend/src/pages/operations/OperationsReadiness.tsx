@@ -23,10 +23,13 @@ import {
   registerOperationsEvidence,
   ServerOperationsReadinessSummary,
 } from '@/services/operationsReadiness'
+import { useAppStore } from '@/stores/useAppStore'
+import { hasPermission } from '@/utils/accessControl'
 
 const { Paragraph, Text, Title } = Typography
 
 const OperationsReadiness: React.FC = () => {
+  const { user } = useAppStore()
   const [summary, setSummary] = React.useState<ServerOperationsReadinessSummary | null>(null)
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
@@ -35,6 +38,7 @@ const OperationsReadiness: React.FC = () => {
     reviewedAt: dayjs.Dayjs
   }
   const [form] = Form.useForm<OperationsEvidenceFormValues>()
+  const canRegister = hasPermission(user, 'operations:register')
 
   const loadSummary = React.useCallback(async (selectedScope: OperationsEvidenceScope) => {
     setLoading(true)
@@ -104,37 +108,49 @@ const OperationsReadiness: React.FC = () => {
         {error ? <Alert type='error' showIcon style={{ marginTop: 16 }} message={error} /> : null}
       </Card>
 
-      <Card title='受控证据登记' extra={<Select
-        value={scope}
-        onChange={setScope}
-        style={{ width: 160 }}
-        options={[
-          { value: 'controlled_pilot', label: '受控试点' },
-          { value: 'qa', label: 'QA 环境' },
-        ]}
-      />}>
-        <Form form={form} layout='vertical' onFinish={submitEvidence}>
-          <Space wrap size='large'>
-            <Form.Item name='control' label='事项' rules={[{ required: true, message: '请选择事项' }]} style={{ minWidth: 220 }}>
-              <Select options={OPERATIONS_READINESS_REQUIREMENTS.map((item) => ({ value: item.id, label: item.title }))} />
+      <Card
+        title={canRegister ? '受控证据登记' : '受控证据'}
+        extra={<Select
+          value={scope}
+          onChange={setScope}
+          style={{ width: 160 }}
+          options={[
+            { value: 'controlled_pilot', label: '受控试点' },
+            { value: 'qa', label: 'QA 环境' },
+          ]}
+        />}
+      >
+        {canRegister ? (
+          <Form form={form} layout='vertical' onFinish={submitEvidence}>
+            <Space wrap size='large'>
+              <Form.Item name='control' label='事项' rules={[{ required: true, message: '请选择事项' }]} style={{ minWidth: 220 }}>
+                <Select options={OPERATIONS_READINESS_REQUIREMENTS.map((item) => ({ value: item.id, label: item.title }))} />
+              </Form.Item>
+              <Form.Item name='reviewedAt' label='复核时间' rules={[{ required: true, message: '请选择复核时间' }]} style={{ minWidth: 220 }}>
+                <DatePicker showTime />
+              </Form.Item>
+            </Space>
+            <Form.Item
+              name='evidenceReference'
+              label='证据编号或检索位置'
+              rules={[{ required: true, message: '请输入可复核证据位置' }]}
+              extra='只填写编号、工单或档案位置；不得填写密码、密钥、令牌或联系方式。'
+            >
+              <Input.TextArea rows={2} maxLength={1000} showCount />
             </Form.Item>
-            <Form.Item name='reviewedAt' label='复核时间' rules={[{ required: true, message: '请选择复核时间' }]} style={{ minWidth: 220 }}>
-              <DatePicker showTime />
+            <Form.Item name='notes' label='复核说明（可选）' extra='记录抽查范围和结论，不替代原始证据。'>
+              <Input.TextArea rows={2} maxLength={1000} showCount />
             </Form.Item>
-          </Space>
-          <Form.Item
-            name='evidenceReference'
-            label='证据编号或检索位置'
-            rules={[{ required: true, message: '请输入可复核证据位置' }]}
-            extra='只填写编号、工单或档案位置；不得填写密码、密钥、令牌或联系方式。'
-          >
-            <Input.TextArea rows={2} maxLength={1000} showCount />
-          </Form.Item>
-          <Form.Item name='notes' label='复核说明（可选）' extra='记录抽查范围和结论，不替代原始证据。'>
-            <Input.TextArea rows={2} maxLength={1000} showCount />
-          </Form.Item>
-          <Button type='primary' htmlType='submit' loading={loading}>登记受控证据</Button>
-        </Form>
+            <Button type='primary' htmlType='submit' loading={loading}>登记受控证据</Button>
+          </Form>
+        ) : (
+          <Alert
+            type='info'
+            showIcon
+            message='当前账号可复核证据'
+            description='证据登记由律所主任或系统管理员执行。历史证据和当前缺口对所有运维准备度复核账号可见。'
+          />
+        )}
       </Card>
 
       <Card title='证据清单' loading={loading && !summary} data-testid='operations-readiness-requirements'>

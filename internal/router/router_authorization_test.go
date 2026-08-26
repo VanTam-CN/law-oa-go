@@ -162,6 +162,22 @@ func buildAuthorizationTestEngine() *gin.Engine {
 		technicalAdmin.GET("/settings/overview", stubOK)
 	}
 
+	// Operations readiness separates review from evidence registration. A
+	// compliance reviewer can see gaps without being able to append evidence.
+	operationsReadiness := protected.Group("/operations/readiness/evidence")
+	{
+		operationsReadiness.GET(
+			"",
+			middleware.RoleMiddleware("admin", "super_admin", "director", "compliance"),
+			stubOK,
+		)
+		operationsReadiness.POST(
+			"",
+			middleware.RoleMiddleware("admin", "super_admin", "director"),
+			stubOK,
+		)
+	}
+
 	// /conflict-v2/entities — 仅冲突/合规管理角色
 	conflictV2 := protected.Group("/conflict-v2")
 	{
@@ -241,6 +257,12 @@ func TestAuthorizationMatrix(t *testing.T) {
 		{"lawyer cannot read settings overview", "lawyer", http.MethodGet, "/api/v1/settings/overview", http.StatusForbidden},
 		{"admin can read settings overview", "admin", http.MethodGet, "/api/v1/settings/overview", http.StatusOK},
 		{"director cannot read settings overview", "director", http.MethodGet, "/api/v1/settings/overview", http.StatusForbidden},
+		{"lawyer cannot read operations readiness", "lawyer", http.MethodGet, "/api/v1/operations/readiness/evidence", http.StatusForbidden},
+		{"director can read operations readiness", "director", http.MethodGet, "/api/v1/operations/readiness/evidence", http.StatusOK},
+		{"compliance can read operations readiness", "compliance", http.MethodGet, "/api/v1/operations/readiness/evidence", http.StatusOK},
+		{"director can register operations evidence", "director", http.MethodPost, "/api/v1/operations/readiness/evidence", http.StatusOK},
+		{"compliance cannot register operations evidence", "compliance", http.MethodPost, "/api/v1/operations/readiness/evidence", http.StatusForbidden},
+		{"lawyer cannot register operations evidence", "lawyer", http.MethodPost, "/api/v1/operations/readiness/evidence", http.StatusForbidden},
 
 		// 未认证：所有受保护资源都应 401
 		{"anonymous cannot create users", "", http.MethodPost, "/api/v1/admin/users", http.StatusUnauthorized},

@@ -24,6 +24,10 @@ var operationsReadinessScopes = map[string]bool{
 	models.OperationsEvidenceScopeControlledPilot: true,
 }
 
+func canRegisterOperationsReadinessEvidence(role string) bool {
+	return role == "admin" || role == "super_admin" || role == "director"
+}
+
 type OperationsReadinessEvidenceInput struct {
 	Control           string    `json:"control" binding:"required"`
 	Scope             string    `json:"scope" binding:"required"`
@@ -73,8 +77,8 @@ func (s *OperationsReadinessService) Register(actor AuthActor, input OperationsR
 	if actor.UserID == 0 {
 		return nil, errors.New("authenticated reviewer is required")
 	}
-	if actor.Role != "admin" && actor.Role != "super_admin" {
-		return nil, errors.New("only system administrators can register operations evidence")
+	if !canRegisterOperationsReadinessEvidence(actor.Role) {
+		return nil, errors.New("only directors or system administrators can register operations evidence")
 	}
 	control := strings.ToLower(strings.TrimSpace(input.Control))
 	scope := strings.ToLower(strings.TrimSpace(input.Scope))

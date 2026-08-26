@@ -190,7 +190,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
       icon: <SafetyCertificateOutlined />,
       onClick: () => navigate('/operations/readiness'),
       color: 'var(--color-warning)',
-      permission: 'system:manage',
+      permission: 'operations:read',
     },
     // 非 MVP 项目（MVP 模式下隐藏）
     {

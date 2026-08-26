@@ -44,3 +44,28 @@ describe('compliance reviewer approval access', () => {
     expect(hasPermission(user, 'conflict:governance')).toBe(true)
   })
 })
+
+describe('operations readiness access', () => {
+  it.each(['admin', 'super_admin', 'director', 'compliance'])(
+    '%s can review operations readiness',
+    (role) => {
+      const user = { roles: [role], permissions: [] } as any
+      expect(hasPermission(user, 'operations:read')).toBe(true)
+    },
+  )
+
+  it('separates director registration from compliance review', () => {
+    const director = { roles: ['director'], permissions: [] } as any
+    const compliance = { roles: ['compliance'], permissions: [] } as any
+
+    expect(hasPermission(director, 'operations:register')).toBe(true)
+    expect(hasPermission(compliance, 'operations:register')).toBe(false)
+  })
+
+  it('does not expose operations readiness as general system management', () => {
+    const director = { roles: ['director'], permissions: [] } as any
+
+    expect(hasPermission(director, 'system:manage')).toBe(false)
+    expect(hasPermission(director, 'operations:read')).toBe(true)
+  })
+})

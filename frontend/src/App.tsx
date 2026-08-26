@@ -301,7 +301,7 @@ const AppContent: React.FC = () => {
           <Route path='inbox' element={<InboxList />} />
           <Route
             path='operations/readiness'
-            element={withAccess(<OperationsReadiness />, 'system:manage')}
+            element={withAccess(<OperationsReadiness />, 'operations:read')}
           />
 
           {enableDevRoutes &&

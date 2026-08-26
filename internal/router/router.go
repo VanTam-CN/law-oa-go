@@ -297,10 +297,17 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client) {
 		protected.GET("/admin/access-center", middleware.RoleMiddleware("admin", "super_admin"), demoAggregateHandler.AdminAccessCenter)
 		protected.GET("/settings/overview", middleware.RoleMiddleware("admin", "super_admin"), demoAggregateHandler.SettingsOverview)
 		operationsReadiness := protected.Group("/operations/readiness/evidence")
-		operationsReadiness.Use(middleware.RoleMiddleware("admin", "super_admin"))
 		{
-			operationsReadiness.GET("", operationsReadinessHandler.Summary)
-			operationsReadiness.POST("", operationsReadinessHandler.Register)
+			operationsReadiness.GET(
+				"",
+				middleware.RoleMiddleware("admin", "super_admin", "director", "compliance"),
+				operationsReadinessHandler.Summary,
+			)
+			operationsReadiness.POST(
+				"",
+				middleware.RoleMiddleware("admin", "super_admin", "director"),
+				operationsReadinessHandler.Register,
+			)
 		}
 
 		// 案件类型接口
