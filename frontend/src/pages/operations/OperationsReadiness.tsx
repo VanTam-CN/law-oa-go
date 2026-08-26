@@ -94,7 +94,9 @@ const OperationsReadiness: React.FC = () => {
                 : '读取中'
             }
           />
-          <Text type='secondary'>本页最高 7/10。剩余 3 分仍需 PR #12 的 production_external_evidence 生产门禁独立判定。</Text>
+          <Text type='secondary'>
+            五项证据全齐时达到受控运维准备度 7/10；缺任一项仍按已验证项数计 0-5。剩余 3 分需 PR #12 的 production_external_evidence 生产门禁独立判定。
+          </Text>
         </div>
         {error ? <Alert type='error' showIcon style={{ marginTop: 16 }} message={error} /> : null}
       </Card>

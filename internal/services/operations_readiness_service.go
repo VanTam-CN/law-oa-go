@@ -152,7 +152,13 @@ func (s *OperationsReadinessService) Summary(scope string) (*OperationsReadiness
 		summary.Items = []OperationsReadinessControlSummary{}
 	}
 	summary.Ready = summary.VerifiedCount == summary.Total
+	// Five individually verified controls are the minimum sustainable small-firm
+	// operations baseline and therefore reach 7/10. Partial evidence must never
+	// receive the completion bonus or imply that health checks add coverage.
 	summary.Score = summary.VerifiedCount
+	if summary.Ready {
+		summary.Score = OperationsReadinessMaximumScore
+	}
 	return &summary, nil
 }
 

@@ -48,7 +48,7 @@ describe('operations readiness evidence boundary', () => {
 
   it('maps UI control IDs to stable auditable API control IDs', async () => {
     (get as jest.Mock).mockResolvedValue({
-      scope: 'qa', ready: true, score: 5, maximumScore: 7, verifiedCount: 5, total: 5,
+      scope: 'qa', ready: true, score: 7, maximumScore: 7, verifiedCount: 5, total: 5,
       productionReady: false, productionGate: 'production_external_evidence',
       items: [{ control: 'restore_drill', status: 'verified', evidence: { control: 'restore_drill' } }],
     })

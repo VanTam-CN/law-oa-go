@@ -45,6 +45,7 @@ describe('OperationsReadiness', () => {
 
     await screen.findByText('0/7（0/5 项证据）')
     expect(screen.queryByText(/production ready/i)).not.toBeInTheDocument()
-    expect(screen.getByText(/本页最高 7\/10/)).toBeInTheDocument()
+    expect(screen.getByText(/五项证据全齐时达到受控运维准备度 7\/10/)).toBeInTheDocument()
+    expect(screen.getByText(/缺任一项仍按已验证项数计 0-5/)).toBeInTheDocument()
   })
 })
