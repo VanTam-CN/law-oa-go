@@ -173,8 +173,11 @@ describe('AppHeader keyboard accessibility', () => {
       name: '通知中心，1 条未读',
     })
 
-    fireEvent.keyDown(notificationButton, { key: 'Enter' })
-    expect(notificationButton).toHaveAttribute('aria-expanded', 'true')
+    act(() => {
+      notificationButton.focus()
+    })
+    await user.keyboard('{Enter}')
+    await waitFor(() => expect(notificationButton).toHaveAttribute('aria-expanded', 'true'))
 
     const markAllButton = await screen.findByRole('button', { name: '全部已读' })
     act(() => {
@@ -248,18 +251,40 @@ describe('AppHeader keyboard accessibility', () => {
     renderHeader()
     const userButton = screen.getByRole('button', { name: '用户菜单：测试主任' })
 
-    fireEvent.keyDown(userButton, { key: ' ' })
-    expect(userButton).toHaveAttribute('aria-expanded', 'true')
+    act(() => {
+      userButton.focus()
+    })
+    await user.keyboard(' ')
+    await waitFor(() => expect(userButton).toHaveAttribute('aria-expanded', 'true'))
     expect(await screen.findByText('个人中心')).toBeVisible()
 
     fireEvent.keyDown(userButton, { key: 'Escape' })
     await waitFor(() => expect(screen.queryByText('个人中心')).not.toBeInTheDocument())
     expect(userButton).toHaveAttribute('aria-expanded', 'false')
 
-    fireEvent.keyDown(userButton, { key: ' ' })
+    await user.keyboard(' ')
     expect(await screen.findByText('个人中心')).toBeVisible()
     await user.click(document.body)
     await waitFor(() => expect(screen.queryByText('个人中心')).not.toBeInTheDocument())
     expect(userButton).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('supports the same activation keys for notification and user menus', async () => {
+    const user = userEvent.setup()
+    renderHeader()
+    const notificationButton = screen.getByRole('button', { name: '通知中心' })
+    const userButton = screen.getByRole('button', { name: '用户菜单：测试主任' })
+
+    act(() => {
+      notificationButton.focus()
+    })
+    await user.keyboard(' ')
+    await waitFor(() => expect(notificationButton).toHaveAttribute('aria-expanded', 'true'))
+
+    act(() => {
+      userButton.focus()
+    })
+    await user.keyboard('{Enter}')
+    await waitFor(() => expect(userButton).toHaveAttribute('aria-expanded', 'true'))
   })
 })

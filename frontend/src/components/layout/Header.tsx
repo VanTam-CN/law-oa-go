@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Layout, Dropdown, Space, Badge, Avatar, Menu, Spin, Empty, Modal } from 'antd'
 import {
   BellOutlined,
@@ -38,6 +38,7 @@ const AppHeader: React.FC = () => {
   const [notificationVisible, setNotificationVisible] = useState(false)
   const [userMenuVisible, setUserMenuVisible] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const keyboardMenuActivationRef = useRef(false)
   const unreadCount = stats.unread || notifications.filter((item) => !item.isRead).length
 
   const handleLogout = async () => {
@@ -199,8 +200,7 @@ const AppHeader: React.FC = () => {
     }
   }
 
-  // rc-dropdown 只在打开后处理 Esc/Tab；打开动作本身仍依赖原生 click。
-  // 显式处理 Enter/Space，避免浏览器把 Space 的 click 延迟到 keyup 后丢失或与焦点管理冲突。
+  // 键盘激活直接驱动受控开合，并兼容旧浏览器的按键命名。
   const handleMenuKeyDown = (
     event: React.KeyboardEvent<HTMLButtonElement>,
     setVisible: React.Dispatch<React.SetStateAction<boolean>>,
@@ -211,12 +211,32 @@ const AppHeader: React.FC = () => {
       return
     }
 
-    if (event.key !== 'Enter' && event.key !== ' ') {
+    const isMenuActivationKey =
+      event.key === 'Enter' ||
+      event.key === ' ' ||
+      event.key === 'Spacebar' ||
+      event.code === 'Space' ||
+      event.code === 'NumpadEnter'
+
+    if (!isMenuActivationKey) {
       return
     }
 
+    keyboardMenuActivationRef.current = true
     event.preventDefault()
     setVisible((visible) => !visible)
+    event.stopPropagation()
+  }
+
+  const handleMenuClickCapture = (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (!keyboardMenuActivationRef.current) {
+      return
+    }
+
+    // Space 在 keyup 后才生成 click；避免 Dropdown 对同一次键盘激活做第二次开合。
+    keyboardMenuActivationRef.current = false
+    event.preventDefault()
+    event.stopPropagation()
   }
 
   // 通知菜单项
@@ -376,6 +396,7 @@ const AppHeader: React.FC = () => {
               aria-label={`通知中心${unreadCount > 0 ? `，${unreadCount} 条未读` : ''}`}
               title='通知中心'
               onKeyDown={(event) => handleMenuKeyDown(event, setNotificationVisible)}
+              onClickCapture={handleMenuClickCapture}
             >
               <Badge
                 count={unreadCount > 0 ? unreadCount : 0}
@@ -404,6 +425,7 @@ const AppHeader: React.FC = () => {
               aria-haspopup='menu'
               aria-label={`用户菜单：${user?.realName || user?.username || '用户'}`}
               onKeyDown={(event) => handleMenuKeyDown(event, setUserMenuVisible)}
+              onClickCapture={handleMenuClickCapture}
             >
               <Avatar size='small' icon={<UserOutlined />} className='user-avatar' />
               <span className='user-name'>{user?.realName || user?.username || '用户'}</span>
