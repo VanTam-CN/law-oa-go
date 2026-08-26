@@ -119,18 +119,22 @@ func ValidateConflictReviewer(ctx context.Context, db *gorm.DB, checkID string, 
 		return newConflictReviewerError("REVIEWER_CONFLICTED", "复核人与申请人或承办律师存在直接管理关系，必须回避")
 	}
 
-	var assignments []models.ConflictReviewerAssignment
-	if err := db.WithContext(ctx).
-		Where("check_id = ? AND reviewer_id = ? AND status = ?", checkID, reviewerID, models.ConflictReviewerAssignmentActive).
+	var assignment models.ConflictReviewerAssignment
+	err := db.WithContext(ctx).
+		Where("check_id = ? AND status = ?", checkID, models.ConflictReviewerAssignmentActive).
 		Where("effective_from IS NULL OR effective_from <= ?", time.Now()).
 		Where("effective_to IS NULL OR effective_to > ?", time.Now()).
-		Order("created_at DESC").Find(&assignments).Error; err != nil {
-		return fmt.Errorf("读取冲突复核指定失败: %w", err)
-	}
-	if len(assignments) == 0 {
+		Order("created_at DESC").First(&assignment).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return newConflictReviewerError("REVIEWER_ASSIGNMENT_REQUIRED", "该冲突检测尚未指定独立复核人，请由冲突核查岗或管理合伙人先指定")
 	}
-	if !assignments[0].RecusalDeclared {
+	if err != nil {
+		return fmt.Errorf("读取冲突复核指定失败: %w", err)
+	}
+	if assignment.ReviewerID != reviewerID {
+		return newConflictReviewerError("REVIEWER_ASSIGNMENT_MISMATCH", "当前账号不是该冲突检测最新指定的独立复核人，不能提交复核结论")
+	}
+	if !assignment.RecusalDeclared {
 		return newConflictReviewerError("REVIEWER_RECUSAL_REQUIRED", "复核人尚未完成回避与独立性声明，不能提交结论")
 	}
 	return nil
@@ -176,7 +180,7 @@ func AssignConflictReviewer(ctx context.Context, db *gorm.DB, actor AuthActor, c
 			return err
 		}
 		var reviewer models.User
-		if err := tx.Select("id", "role", "status", "manager_id").Where("id = ? AND deleted_at IS NULL", input.ReviewerID).First(&reviewer).Error; err != nil {
+		if err := tx.Select("id", "name", "role", "status", "manager_id").Where("id = ? AND deleted_at IS NULL", input.ReviewerID).First(&reviewer).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return newConflictReviewerError("REVIEWER_NOT_FOUND", "指定的复核账号不存在")
 			}
@@ -226,8 +230,14 @@ func AssignConflictReviewer(ctx context.Context, db *gorm.DB, actor AuthActor, c
 		}
 
 		var existing models.ConflictReviewerAssignment
-		if err := tx.Where("check_id = ? AND reviewer_id = ? AND status = ?", checkID, input.ReviewerID, models.ConflictReviewerAssignmentActive).Order("created_at DESC").First(&existing).Error; err == nil {
+		if err := tx.Where("check_id = ? AND reviewer_id = ? AND status = ?", checkID, input.ReviewerID, models.ConflictReviewerAssignmentActive).
+			Where("effective_from IS NULL OR effective_from <= ?", time.Now()).
+			Where("effective_to IS NULL OR effective_to > ?", time.Now()).
+			Order("created_at DESC").First(&existing).Error; err == nil {
 			result = existing
+			if err := syncOpenConflictApprovalApprover(tx, checkID, reviewer, actor.UserID, time.Now()); err != nil {
+				return err
+			}
 			return nil
 		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
@@ -251,6 +261,9 @@ func AssignConflictReviewer(ctx context.Context, db *gorm.DB, actor AuthActor, c
 		if err := tx.Create(&result).Error; err != nil {
 			return err
 		}
+		if err := syncOpenConflictApprovalApprover(tx, checkID, reviewer, actor.UserID, now); err != nil {
+			return err
+		}
 		payload := map[string]interface{}{
 			"check_id": checkID, "reviewer_id": input.ReviewerID, "delegate_for_id": input.DelegateForID,
 			"recusal_declared": true, "independence_reason": result.IndependenceReason,
@@ -268,6 +281,29 @@ func AssignConflictReviewer(ctx context.Context, db *gorm.DB, actor AuthActor, c
 		return nil, err
 	}
 	return &result, nil
+}
+
+func syncOpenConflictApprovalApprover(
+	tx *gorm.DB,
+	checkID string,
+	reviewer models.User,
+	actorID uint,
+	now time.Time,
+) error {
+	reviewerID := strconv.FormatUint(uint64(reviewer.ID), 10)
+	if err := tx.Model(&models.ApprovalRequest{}).
+		Where("conflict_check_id = ? AND type = ? AND status IN ?", checkID, "conflict_approval", []string{
+			models.ApprovalStatusSubmitted, models.ApprovalStatusUnderReview, models.ApprovalStatusResubmitted,
+		}).
+		Updates(map[string]interface{}{
+			"current_approver_id":   reviewerID,
+			"current_approver_name": reviewer.Name,
+			"updated_by":            strconv.FormatUint(uint64(actorID), 10),
+			"updated_at":            now,
+		}).Error; err != nil {
+		return fmt.Errorf("同步冲突审批处理人失败: %w", err)
+	}
+	return nil
 }
 
 func GetActiveConflictReviewerAssignment(ctx context.Context, db *gorm.DB, checkID string) (*models.ConflictReviewerAssignment, error) {

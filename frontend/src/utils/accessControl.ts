@@ -53,7 +53,7 @@ const ROLE_FALLBACKS: Record<string, string[]> = {
   'client:view': ['admin', 'super_admin', 'lawyer', 'assistant'],
   'client:manage': ['admin', 'super_admin', 'lawyer'],
   'lawyer:manage': ['admin', 'super_admin'],
-  'approval:view': ['admin', 'super_admin', 'lawyer', 'conflict_officer'],
+  'approval:view': ['admin', 'super_admin', 'lawyer', 'conflict_officer', 'compliance'],
   'approval:manage': ['admin', 'super_admin', 'lawyer'],
   'conflict:check': [
     'lawyer',
