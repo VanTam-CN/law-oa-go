@@ -1,6 +1,7 @@
 import {
   clearStorage,
   getToken,
+  getUserInfo,
   setStoragePersistence,
   setToken,
 } from '../storage'

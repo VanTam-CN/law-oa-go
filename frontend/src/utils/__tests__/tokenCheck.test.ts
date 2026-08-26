@@ -1,4 +1,4 @@
-import { checkTokenConsistency, checkUserInfoConsistency } from '../tokenCheck'
+import { checkTokenConsistency, checkUserInfoConsistency } from '../tokenCheckCore'
 
 describe('token consistency checks', () => {
   beforeEach(() => {
