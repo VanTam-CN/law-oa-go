@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Layout, Dropdown, Space, Badge, Avatar, Menu, Spin, Empty, Modal } from 'antd'
 import {
   BellOutlined,
@@ -78,7 +78,8 @@ const AppHeader: React.FC = () => {
       onClick: () => {
         Modal.info({
           title: '帮助中心',
-          content: '当前 MVP 试用版可在工作台发起立案、进入冲突检测、查看审批和维护客户档案。完整帮助中心建设中。',
+          content:
+            '当前 MVP 试用版可在工作台发起立案、进入冲突检测、查看审批和维护客户档案。完整帮助中心建设中。',
           okText: '知道了',
         })
       },
@@ -170,19 +171,30 @@ const AppHeader: React.FC = () => {
   }
 
   // 处理删除通知
-  const handleDeleteNotification = (id: number, e: React.MouseEvent) => {
+  const handleDeleteNotification = (id: number, e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation()
     deleteNotification(id)
   }
 
-  // 处理全屏切换
-  const handleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen()
-      setIsFullscreen(true)
-    } else {
-      document.exitFullscreen()
-      setIsFullscreen(false)
+  useEffect(() => {
+    const syncFullscreenState = () => setIsFullscreen(Boolean(document.fullscreenElement))
+
+    document.addEventListener('fullscreenchange', syncFullscreenState)
+    syncFullscreenState()
+
+    return () => document.removeEventListener('fullscreenchange', syncFullscreenState)
+  }, [])
+
+  // 处理全屏切换。状态由 fullscreenchange 事件统一同步，避免请求失败时 UI 提前变更。
+  const handleFullscreen = async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen()
+      } else {
+        await document.documentElement.requestFullscreen()
+      }
+    } catch {
+      // 浏览器可能禁止全屏（例如 iframe 权限）。保持真实状态，不向用户伪造成功。
     }
   }
 
@@ -198,9 +210,9 @@ const AppHeader: React.FC = () => {
           </div>
           {unreadCount > 0 && (
             <div className='notification-actions'>
-              <span className='action-link' onClick={handleMarkAllAsRead}>
+              <button type='button' className='action-link' onClick={handleMarkAllAsRead}>
                 全部已读
-              </span>
+              </button>
             </div>
           )}
         </div>
@@ -248,11 +260,13 @@ const AppHeader: React.FC = () => {
               return {
                 key: `notification-${notification.id}`,
                 label: (
-                  <div
-                    className={`notification-item ${notification.isRead ? 'read' : 'unread'}`}
-                    onClick={() => handleNotificationClick(notification)}
-                  >
-                    <div className='notification-content'>
+                  <div className={`notification-item ${notification.isRead ? 'read' : 'unread'}`}>
+                    <button
+                      type='button'
+                      className='notification-content'
+                      aria-label={`${notification.isRead ? '已读' : '未读'}通知：${notification.title}`}
+                      onClick={() => handleNotificationClick(notification)}
+                    >
                       <div className='notification-meta'>
                         <div
                           className='notification-type'
@@ -267,12 +281,16 @@ const AppHeader: React.FC = () => {
                       </div>
                       <div className='notification-title-text'>{notification.title}</div>
                       <div className='notification-description'>{notification.content}</div>
-                    </div>
+                    </button>
                     <div className='notification-actions'>
-                      <DeleteOutlined
+                      <button
+                        type='button'
                         className='delete-btn'
+                        aria-label={`删除通知：${notification.title}`}
                         onClick={(e) => handleDeleteNotification(notification.id, e)}
-                      />
+                      >
+                        <DeleteOutlined />
+                      </button>
                     </div>
                   </div>
                 ),
@@ -285,7 +303,11 @@ const AppHeader: React.FC = () => {
           },
           {
             key: 'view-all',
-            label: <div className='view-all-btn'>查看全部通知</div>,
+            label: (
+              <button type='button' className='view-all-btn'>
+                查看全部通知
+              </button>
+            ),
           },
         ]
       : []),
@@ -298,13 +320,16 @@ const AppHeader: React.FC = () => {
       <div className='header-right'>
         <Space size='large'>
           {/* 全屏切换 */}
-          <div
+          <button
+            type='button'
             className='header-action fullscreen-btn'
             onClick={handleFullscreen}
+            aria-pressed={isFullscreen}
+            aria-label={isFullscreen ? '退出全屏' : '进入全屏'}
             title={isFullscreen ? '退出全屏' : '全屏模式'}
           >
             {isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
-          </div>
+          </button>
 
           {/* 通知中心 */}
           <Dropdown
@@ -321,8 +346,12 @@ const AppHeader: React.FC = () => {
             open={notificationVisible}
             trigger={['click']}
           >
-            <div
+            <button
+              type='button'
               className={`header-action notification-btn ${notificationVisible ? 'active' : ''}`}
+              aria-expanded={notificationVisible}
+              aria-haspopup='menu'
+              aria-label={`通知中心${unreadCount > 0 ? `，${unreadCount} 条未读` : ''}`}
               title='通知中心'
             >
               <Badge
@@ -333,15 +362,20 @@ const AppHeader: React.FC = () => {
               >
                 <BellOutlined className='action-icon' />
               </Badge>
-            </div>
+            </button>
           </Dropdown>
 
           {/* 用户菜单 */}
           <Dropdown menu={{ items: userMenuItems }} placement='bottomRight' trigger={['click']}>
-            <div className='user-menu'>
+            <button
+              type='button'
+              className='user-menu'
+              aria-haspopup='menu'
+              aria-label={`用户菜单：${user?.realName || user?.username || '用户'}`}
+            >
               <Avatar size='small' icon={<UserOutlined />} className='user-avatar' />
               <span className='user-name'>{user?.realName || user?.username || '用户'}</span>
-            </div>
+            </button>
           </Dropdown>
         </Space>
       </div>
