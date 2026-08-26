@@ -8,7 +8,11 @@ redis_server="redis-server"
 redis_cli="redis-cli"
 
 if ! command -v "$redis_server" >/dev/null 2>&1; then
-  for candidate in /usr/local/bin/redis-server /opt/redis/bin/redis-server /usr/lib/redis/bin/redis-server; do
+  for candidate in \
+    /usr/local/bin/redis-server \
+    /usr/bin/redis-server \
+    /opt/redis/bin/redis-server \
+    /usr/lib/redis/bin/redis-server; do
     if [ -x "$candidate" ]; then
       redis_server="$candidate"
       break
@@ -17,7 +21,11 @@ if ! command -v "$redis_server" >/dev/null 2>&1; then
 fi
 
 if ! command -v "$redis_cli" >/dev/null 2>&1; then
-  for candidate in /usr/local/bin/redis-cli /opt/redis/bin/redis-cli /usr/lib/redis/bin/redis-cli; do
+  for candidate in \
+    /usr/local/bin/redis-cli \
+    /usr/bin/redis-cli \
+    /opt/redis/bin/redis-cli \
+    /usr/lib/redis/bin/redis-cli; do
     if [ -x "$candidate" ]; then
       redis_cli="$candidate"
       break
