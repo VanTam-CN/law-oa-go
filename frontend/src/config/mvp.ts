@@ -7,6 +7,7 @@ export const MVP_MENU_KEYS = [
   'approval',
   'inbox',
   'trust',
+  'operations-readiness',
 ] as const
 
 export const MVP_UNAVAILABLE_PATHS = ['/file', '/finance', '/settings'] as const

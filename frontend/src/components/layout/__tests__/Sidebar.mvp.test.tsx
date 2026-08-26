@@ -46,6 +46,7 @@ describe('Sidebar MVP mode', () => {
     expect(screen.getByText('审批中心')).toBeInTheDocument()
     expect(screen.getByText('待办中心')).toBeInTheDocument()
     expect(screen.getByText('代管款管理')).toBeInTheDocument()
+    expect(screen.getByText('运维准备度')).toBeInTheDocument()
 
     expect(screen.queryByText('律师管理')).not.toBeInTheDocument()
     expect(screen.queryByText('文件管理')).not.toBeInTheDocument()
