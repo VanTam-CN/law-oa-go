@@ -196,6 +196,7 @@ describe('AppHeader keyboard accessibility', () => {
       expect(screen.queryByRole('button', { name: '全部已读' })).not.toBeInTheDocument(),
     )
     expect(notificationButton).toHaveAttribute('aria-expanded', 'false')
+    await waitFor(() => expect(notificationButton).toHaveFocus())
   })
 
   it('provides stable reading and deleting actions for notifications', async () => {
@@ -268,6 +269,15 @@ describe('AppHeader keyboard accessibility', () => {
     await user.keyboard('{Enter}')
     expect(await screen.findByRole('menuitem', { name: /个人中心/ })).toBeVisible()
     expect(userButton).toHaveAttribute('aria-expanded', 'true')
+
+    fireEvent.keyDown(await screen.findByRole('menu', { name: '用户菜单' }), {
+      key: 'Escape',
+    })
+    await waitFor(() =>
+      expect(screen.queryByRole('menu', { name: '用户菜单' })).not.toBeInTheDocument(),
+    )
+    expect(userButton).toHaveAttribute('aria-expanded', 'false')
+    await waitFor(() => expect(userButton).toHaveFocus())
   })
 
   it('supports the same activation keys for notification and user menus', async () => {

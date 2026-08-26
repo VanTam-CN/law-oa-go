@@ -39,6 +39,8 @@ const AppHeader: React.FC = () => {
   const [userMenuVisible, setUserMenuVisible] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const keyboardMenuActivationRef = useRef(false)
+  const notificationButtonRef = useRef<HTMLButtonElement>(null)
+  const userButtonRef = useRef<HTMLButtonElement>(null)
   const unreadCount = stats.unread || notifications.filter((item) => !item.isRead).length
 
   const handleLogout = async () => {
@@ -216,12 +218,17 @@ const AppHeader: React.FC = () => {
 
   // 键盘激活直接驱动受控开合，并兼容旧浏览器的按键命名。
   const handleMenuKeyDown = (
-    event: React.KeyboardEvent<HTMLButtonElement>,
+    event: React.KeyboardEvent<HTMLElement>,
     setVisible: React.Dispatch<React.SetStateAction<boolean>>,
+    triggerRef: React.RefObject<HTMLButtonElement | null>,
   ) => {
     if (event.key === 'Escape') {
       event.preventDefault()
       setVisible(false)
+      // rc-menu may schedule a menu-item focus after Escape. Queue the trigger
+      // restoration after that library callback so keyboard users stay on the
+      // toggle when the popup closes.
+      requestAnimationFrame(() => triggerRef.current?.focus())
       return
     }
 
@@ -240,6 +247,18 @@ const AppHeader: React.FC = () => {
     event.preventDefault()
     setVisible((visible) => !visible)
     event.stopPropagation()
+  }
+
+  const handleMenuContainerKeyDown = (
+    event: React.KeyboardEvent<HTMLElement>,
+    setVisible: React.Dispatch<React.SetStateAction<boolean>>,
+    triggerRef: React.RefObject<HTMLButtonElement | null>,
+  ) => {
+    if (event.key !== 'Escape') {
+      return
+    }
+
+    handleMenuKeyDown(event, setVisible, triggerRef)
   }
 
   const handleMenuClickCapture = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -392,6 +411,8 @@ const AppHeader: React.FC = () => {
               items: notificationItems,
               id: 'header-notification-menu',
               'aria-label': '通知中心',
+              onKeyDown: (event) =>
+                handleMenuContainerKeyDown(event, setNotificationVisible, notificationButtonRef),
               onClick: ({ key }) => {
                 if (key === 'view-all') {
                   navigate('/notifications')
@@ -403,9 +424,9 @@ const AppHeader: React.FC = () => {
             open={notificationVisible}
             trigger={['click']}
             destroyOnHidden
-            autoFocus
           >
             <button
+              ref={notificationButtonRef}
               type='button'
               className={`header-action notification-btn ${notificationVisible ? 'active' : ''}`}
               aria-expanded={notificationVisible}
@@ -413,7 +434,9 @@ const AppHeader: React.FC = () => {
               aria-controls='header-notification-menu'
               aria-label={`通知中心${unreadCount > 0 ? `，${unreadCount} 条未读` : ''}`}
               title='通知中心'
-              onKeyDown={(event) => handleMenuKeyDown(event, setNotificationVisible)}
+              onKeyDown={(event) =>
+                handleMenuKeyDown(event, setNotificationVisible, notificationButtonRef)
+              }
               onClickCapture={handleMenuClickCapture}
             >
               <Badge
@@ -429,22 +452,28 @@ const AppHeader: React.FC = () => {
 
           {/* 用户菜单 */}
           <Dropdown
-            menu={{ items: userMenuItems, id: 'header-user-menu', 'aria-label': '用户菜单' }}
+            menu={{
+              items: userMenuItems,
+              id: 'header-user-menu',
+              'aria-label': '用户菜单',
+              onKeyDown: (event) =>
+                handleMenuContainerKeyDown(event, setUserMenuVisible, userButtonRef),
+            }}
             placement='bottomRight'
             onOpenChange={setUserMenuVisible}
             open={userMenuVisible}
             trigger={['click']}
             destroyOnHidden
-            autoFocus
           >
             <button
+              ref={userButtonRef}
               type='button'
               className='user-menu'
               aria-expanded={userMenuVisible}
               aria-haspopup='menu'
               aria-controls='header-user-menu'
               aria-label={`用户菜单：${user?.realName || user?.username || '用户'}`}
-              onKeyDown={(event) => handleMenuKeyDown(event, setUserMenuVisible)}
+              onKeyDown={(event) => handleMenuKeyDown(event, setUserMenuVisible, userButtonRef)}
               onClickCapture={handleMenuClickCapture}
             >
               <Avatar size='small' icon={<UserOutlined />} className='user-avatar' />
