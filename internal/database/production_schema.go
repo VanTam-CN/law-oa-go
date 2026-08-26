@@ -441,6 +441,7 @@ func validateProductionSchemaContract(db *gorm.DB) error {
 		{name: "trg_law_firm_policy_endorsements_append_only", table: "law_firm_compliance_policy_endorsements"},
 		{name: "trg_conflict_officer_appointments_append_only", table: "conflict_officer_appointments"},
 		{name: "trg_production_external_evidence_append_only", table: "production_external_evidence"},
+		{name: "trg_operations_readiness_evidence_append_only", table: "operations_readiness_evidence"},
 	} {
 		var triggerCount int64
 		if err := db.Raw(`
@@ -911,6 +912,7 @@ func productionSchemaModels() []interface{} {
 		&models.ConflictReviewerAssignment{},
 		&models.ConflictOfficerAppointment{},
 		&productionExternalEvidence{},
+		&models.OperationsReadinessEvidence{},
 		&models.ConflictSubjectVersion{}, &models.ConflictSubjectIdentifier{}, &models.ConflictMatchEvidenceV2{},
 		&models.WaiverApplication{}, &models.WaiverApprovalRecord{}, &models.WaiverSignature{}, &models.WaiverMonitoringRecord{},
 		&models.LawyerConflictPool{},

@@ -1,3 +1,5 @@
+import { get, post } from './http'
+
 export type OperationsRequirementId =
   | 'backup'
   | 'restoreDrill'
@@ -6,6 +8,8 @@ export type OperationsRequirementId =
   | 'rollback'
 
 export type OperationsHealthStatus = 'healthy' | 'unhealthy' | 'unknown'
+export type OperationsEvidenceScope = 'qa' | 'controlled_pilot'
+export type OperationsControlId = OperationsRequirementId
 
 export interface VerifiedOperationsEvidence {
   verificationStatus: 'verified'
@@ -33,6 +37,61 @@ export interface OperationsReadinessSummary {
   pendingCount: number
   items: OperationsReadinessView[]
 }
+
+export interface RegisteredOperationsEvidence {
+  control: OperationsControlId
+  scope: OperationsEvidenceScope
+  evidenceReference: string
+  reviewedBy: number
+  reviewedAt: string
+  notes?: string
+  createdAt: string
+}
+
+export interface ServerOperationsReadinessSummary {
+  scope: OperationsEvidenceScope
+  ready: boolean
+  score: number
+  maximumScore: number
+  verifiedCount: number
+  total: number
+  productionReady: boolean
+  productionGate: 'production_external_evidence'
+  items: Array<{
+    control: OperationsControlId
+    status: 'pending-evidence' | 'verified'
+    evidence?: RegisteredOperationsEvidence
+  }>
+}
+
+export interface OperationsEvidenceRegistrationInput {
+  control: OperationsControlId
+  scope: OperationsEvidenceScope
+  evidenceReference: string
+  reviewedAt: string
+  notes?: string
+}
+
+const localControlToApi: Record<OperationsControlId, string> = {
+  backup: 'backup',
+  restoreDrill: 'restore_drill',
+  incidentOwner: 'incident_owner',
+  upgrade: 'upgrade',
+  rollback: 'rollback',
+}
+
+const apiControlToLocal = Object.fromEntries(
+  Object.entries(localControlToApi).map(([local, api]) => [api, local]),
+) as Record<string, OperationsControlId>
+
+const normalizeSummary = (summary: ServerOperationsReadinessSummary): ServerOperationsReadinessSummary => ({
+  ...summary,
+  items: summary.items.map((item) => ({
+    ...item,
+    control: apiControlToLocal[item.control] ?? item.control,
+    evidence: item.evidence ? { ...item.evidence, control: apiControlToLocal[item.evidence.control] ?? item.evidence.control } : undefined,
+  })),
+})
 
 export const OPERATIONS_READINESS_REQUIREMENTS: OperationsRequirement[] = [
   {
@@ -116,3 +175,16 @@ export const summarizeOperationsReadiness = (
     items,
   }
 }
+
+export const getOperationsReadinessSummary = (
+  scope: OperationsEvidenceScope = 'controlled_pilot',
+): Promise<ServerOperationsReadinessSummary> =>
+  get<ServerOperationsReadinessSummary>('/operations/readiness/evidence', { scope }).then(normalizeSummary)
+
+export const registerOperationsEvidence = (
+  input: OperationsEvidenceRegistrationInput,
+): Promise<RegisteredOperationsEvidence> =>
+  post<RegisteredOperationsEvidence>('/operations/readiness/evidence', {
+    ...input,
+    control: localControlToApi[input.control],
+  }).then((evidence) => ({ ...evidence, control: apiControlToLocal[evidence.control] ?? evidence.control }))
