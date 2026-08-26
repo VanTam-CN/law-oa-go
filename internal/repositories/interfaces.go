@@ -77,6 +77,8 @@ type UserRepository interface {
 	FindByID(ctx context.Context, id uint) (*models.User, error)
 	// FindByEmail 根据邮箱查找用户
 	FindByEmail(ctx context.Context, email string) (*models.User, error)
+	// FindByUsername 根据用户名查找用户
+	FindByUsername(ctx context.Context, username string) (*models.User, error)
 	// FindExistingEmails 批量查找已存在的邮箱（解决N+1查询问题）
 	FindExistingEmails(ctx context.Context, emails []string) ([]string, error)
 	// BatchCreate 批量创建用户（优化性能）

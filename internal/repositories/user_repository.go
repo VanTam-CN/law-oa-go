@@ -63,6 +63,19 @@ func (r *UserRepositoryImpl) FindByEmail(ctx context.Context, email string) (*mo
 	return &user, nil
 }
 
+// FindByUsername 根据用户名查找用户
+func (r *UserRepositoryImpl) FindByUsername(ctx context.Context, username string) (*models.User, error) {
+	var user models.User
+	err := r.db.WithContext(ctx).Where("username = ?", username).First(&user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, NewRepositoryError("find by username", "user", ErrUserNotFound)
+		}
+		return nil, NewRepositoryError("find by username", "user", err)
+	}
+	return &user, nil
+}
+
 // Update 更新用户信息
 func (r *UserRepositoryImpl) Update(ctx context.Context, user *models.User) error {
 	return r.BaseRepository.Update(ctx, user.ID, map[string]interface{}{

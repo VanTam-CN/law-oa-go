@@ -123,6 +123,37 @@ func TestUserRepository_FindByEmail(t *testing.T) {
 	assert.Contains(t, err.Error(), "user not found")
 }
 
+func TestUserRepository_FindByUsername(t *testing.T) {
+	db := setupTestDB(t)
+	defer teardownTestDB(db)
+
+	repo := NewUserRepository(db)
+	ctx := context.Background()
+	testUser := &models.User{
+		Username:  "test-account",
+		Name:      "测试用户",
+		Email:     "test@example.com",
+		Password:  "hashed_password",
+		Role:      "user",
+		Status:    "active",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	if err := db.Create(testUser).Error; err != nil {
+		t.Fatalf("Failed to create test user: %v", err)
+	}
+
+	foundUser, err := repo.FindByUsername(ctx, testUser.Username)
+	assert.NoError(t, err)
+	assert.NotNil(t, foundUser)
+	assert.Equal(t, testUser.ID, foundUser.ID)
+	assert.Equal(t, testUser.Username, foundUser.Username)
+
+	_, err = repo.FindByUsername(ctx, "nonexistent-account")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "user not found")
+}
+
 func TestUserRepository_Update(t *testing.T) {
 	db := setupTestDB(t)
 	defer teardownTestDB(db)

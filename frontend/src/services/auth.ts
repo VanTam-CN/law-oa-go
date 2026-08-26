@@ -7,7 +7,8 @@ import {
 
 // 用户登录接口参数类型
 interface LoginParams {
-  email: string
+  account?: string
+  email?: string
   password: string
   remember?: boolean
 }

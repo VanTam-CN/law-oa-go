@@ -14,7 +14,7 @@ import {
 import './Login.less'
 
 interface LoginFormValues {
-  email: string
+  account: string
   password: string
   remember: boolean
 }
@@ -34,7 +34,7 @@ const LoginPage: React.FC = () => {
       setLoading(true)
       const response = await login({
         ...values,
-        email: normalizeLoginIdentifier(values.email),
+        account: normalizeLoginIdentifier(values.account),
       })
 
       // 处理后端返回的token格式
@@ -94,6 +94,10 @@ const LoginPage: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Login failed:', error)
+      if (error?.response?.status === 401) {
+        message.error('账号、邮箱或密码不正确，请重新输入')
+        return
+      }
       const apiMessage =
         error.response?.data?.error?.details ||
         error.response?.data?.error?.message ||
@@ -114,7 +118,7 @@ const LoginPage: React.FC = () => {
           onFinish={onFinish}
           size='large'
         >
-          <Form.Item name='email' rules={[{ required: true, message: '请输入账号或邮箱' }]}>
+          <Form.Item name='account' rules={[{ required: true, message: '请输入账号或邮箱' }]}>
             <Input
               prefix={<UserOutlined />}
               placeholder='账号或邮箱'

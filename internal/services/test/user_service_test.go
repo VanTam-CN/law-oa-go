@@ -190,6 +190,7 @@ func TestUserService_AuthenticateUser(t *testing.T) {
 	t.Run("Authenticate User Not Found", func(t *testing.T) {
 		// 设置模拟期望
 		mockUserRepo.On("FindByEmail", mock.Anything, "nonexistent@example.com").Return(nil, repositories.ErrUserNotFound)
+		mockUserRepo.On("FindByUsername", mock.Anything, "nonexistent@example.com").Return(nil, repositories.ErrUserNotFound)
 
 		// 执行测试
 		profile, err := userService.AuthenticateUser(context.Background(), "nonexistent@example.com", "Password123!")
@@ -231,6 +232,34 @@ func TestUserService_AuthenticateUser(t *testing.T) {
 		assert.Contains(t, err.Error(), "Invalid password")
 
 		// 验证模拟调用
+		mockUserRepo.AssertExpectations(t)
+	})
+
+	t.Run("Authenticate User By Username", func(t *testing.T) {
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte("Password123!"), bcrypt.DefaultCost)
+		require.NoError(t, err)
+
+		user := &models.User{
+			ID:        1,
+			Username:  "lawyer.wang",
+			Name:      "Wang Lawyer",
+			Email:     "wang@example.com",
+			Password:  string(hashedPassword),
+			Role:      "lawyer",
+			Status:    "active",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+
+		mockUserRepo.On("FindByEmail", mock.Anything, "lawyer.wang").Return(nil, repositories.ErrUserNotFound)
+		mockUserRepo.On("FindByUsername", mock.Anything, "lawyer.wang").Return(user, nil)
+
+		profile, err := userService.AuthenticateUser(context.Background(), "lawyer.wang", "Password123!")
+
+		require.NoError(t, err)
+		assert.NotNil(t, profile)
+		assert.Equal(t, "wang@example.com", profile.Email)
+		assert.Equal(t, "lawyer", profile.Role)
 		mockUserRepo.AssertExpectations(t)
 	})
 

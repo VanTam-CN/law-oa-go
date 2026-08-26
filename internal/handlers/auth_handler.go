@@ -132,7 +132,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		Email:    user.Email,
 		Role:     user.Role,
 		Status:   user.Status,
-		Username: user.Email,
+		Username: user.Username,
 	}
 
 	deviceID := strings.TrimSpace(c.GetHeader("X-Device-ID"))
