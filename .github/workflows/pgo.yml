@@ -65,6 +65,8 @@ jobs:
 
     - name: 设置Redis
       run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends redis-server redis-tools
         scripts/ci-bootstrap-redis.sh
 
     - name: 构建应用
