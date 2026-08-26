@@ -97,6 +97,7 @@ const LoginPage: React.FC = () => {
     } catch (error: any) {
       console.error('Login failed:', error)
       if (error?.response?.status === 401) {
+        message.error('账号或密码错误')
         setLoginError('账号、邮箱或密码不正确，请重新输入')
         return
       }

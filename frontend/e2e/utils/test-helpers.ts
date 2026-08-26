@@ -310,8 +310,9 @@ export async function installApiMocks(page: Page) {
     const path = url.pathname.replace('/api/v1', '')
 
     if (path === '/auth/login' && request.method() === 'POST') {
-      const body = request.postDataJSON() as { email?: string; password?: string }
-      const userKey = body.email ? matchLoginUser(body.email) : null
+      const body = request.postDataJSON() as { account?: string; email?: string; password?: string }
+      const identifier = body.account || body.email
+      const userKey = identifier ? matchLoginUser(identifier) : null
       if (!userKey || body.password !== TEST_USERS[userKey].password) {
         await route.fulfill({
           status: 401,
