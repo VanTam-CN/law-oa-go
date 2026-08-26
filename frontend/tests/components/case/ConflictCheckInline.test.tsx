@@ -662,8 +662,8 @@ describe('ConflictCheckInline', () => {
     });
   });
 
-  describe('性能优化', () => {
-    test('应该优化大量冲突的渲染', () => {
+  describe('渲染边界', () => {
+    test('大量冲突应只渲染 maxDisplayCount 个条目', () => {
       const manyConflicts: ConflictCheckResult = {
         ...mockConflictResult,
         conflicts: Array.from({ length: 100 }, (_, i) => ({
@@ -674,7 +674,6 @@ describe('ConflictCheckInline', () => {
         stats: { total: 100, direct: 50, indirect: 30, potential: 20 }
       };
 
-      const startTime = performance.now();
       render(
         <ConflictCheckInline
           {...defaultProps}
@@ -682,13 +681,20 @@ describe('ConflictCheckInline', () => {
           displayConfig={{ maxDisplayCount: 10 }}
         />
       );
-      const endTime = performance.now();
 
-      // 渲染时间应该在合理范围内
-      expect(endTime - startTime).toBeLessThan(100);
+      // 截断发生在渲染前：展示前 10 项，后续冲突和业务列表项都不得进入 DOM。
+      const avatars = screen.getAllByTestId('avatar');
+      expect(avatars).toHaveLength(10);
+      expect(avatars.map((avatar) => avatar.textContent)).toEqual(
+        Array.from({ length: 10 }, (_, index) => String(index + 1))
+      );
+      for (let index = 11; index <= 100; index += 1) {
+        const caseNumber = `CASE_2023_${String(index).padStart(3, '0')}`;
+        expect(screen.queryByText(caseNumber)).not.toBeInTheDocument();
+      }
 
-      // 应该只渲染指定数量的冲突
-      expect(screen.getAllByTestId('avatar')).toHaveLength(10);
+      // 保留完整结果数量提示，避免用户误以为只有 10 条冲突。
+      expect(screen.getByText('(显示前10项，共100项)')).toBeInTheDocument();
     });
 
     // TODO: Skip - setTimeout not properly spied in test environment
