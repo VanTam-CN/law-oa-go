@@ -29,7 +29,7 @@ export function checkTokenConsistency(): TokenCheckResult {
   details.push(`一致性检查: ${consistent ? '✅ 所有模块一致' : '❌ 存在不一致'}`)
 
   if (storageToken) {
-    details.push(`当前token: ${storageToken.substring(0, 20)}...`)
+    details.push('当前token: 已设置')
   }
 
   return {
@@ -43,11 +43,24 @@ export function checkTokenConsistency(): TokenCheckResult {
 
 export function checkUserInfoConsistency(): { userInfo: any; hasUserData: boolean } {
   const userInfo = localStorage.getItem('law_oa_user_info')
-  const hasUserData = !!userInfo
+
+  if (!userInfo) {
+    return { userInfo: null, hasUserData: false }
+  }
+
+  try {
+    const parsedUserInfo = JSON.parse(userInfo)
+
+    if (typeof parsedUserInfo === 'object' && parsedUserInfo !== null && !Array.isArray(parsedUserInfo)) {
+      return { userInfo: parsedUserInfo, hasUserData: true }
+    }
+  } catch {
+    // Treat malformed local data as absent without modifying the user's browser storage.
+  }
 
   return {
-    userInfo: userInfo ? JSON.parse(userInfo) : null,
-    hasUserData,
+    userInfo: null,
+    hasUserData: false,
   }
 }
 
