@@ -475,11 +475,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             await loadUserRolesAndPermissions(userInfo)
           } catch (error) {
             console.error('开发模式下获取用户信息失败:', error)
-            // 如果获取用户信息失败，清除token但不跳转
-            removeToken()
-            removeUserInfo()
-            removeRoles()
-            removePermissions()
+            // 如果获取用户信息失败，保持未登录但不修改本地认证数据
             setUser(null)
             setTokenState(null)
             setRolesState([])
@@ -504,11 +500,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           await loadUserRolesAndPermissions(userInfo)
         } catch (error) {
           console.error('Failed to get user info:', error)
-          // 如果获取用户信息失败，清除token但不跳转
-          removeToken()
-          removeUserInfo()
-          removeRoles()
-          removePermissions()
+          // 如果获取用户信息失败，保持未登录但不修改本地认证数据
           setUser(null)
           setTokenState(null)
           setRolesState([])

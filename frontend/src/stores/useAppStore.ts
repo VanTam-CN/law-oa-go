@@ -368,7 +368,6 @@ export const initializeApp = () => {
       return
     }
 
-    clearStorage()
     useAppStore.setState({
       user: null,
       isAuthenticated: false,
@@ -376,7 +375,6 @@ export const initializeApp = () => {
     })
   } catch (error) {
     console.error('Failed to restore user session:', error)
-    clearStorage()
     useAppStore.setState({
       user: null,
       isAuthenticated: false,

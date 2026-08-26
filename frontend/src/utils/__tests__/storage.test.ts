@@ -1,6 +1,7 @@
 import {
   clearStorage,
   getToken,
+  getUserInfo,
   setStoragePersistence,
   setToken,
 } from '../storage'
@@ -42,5 +43,12 @@ describe('authentication storage persistence', () => {
     clearStorage()
     expect(localStorage.getItem('auth_token')).toBeNull()
     expect(sessionStorage.getItem('auth_token')).toBeNull()
+  })
+
+  it('ignores malformed user info without deleting local authentication data', () => {
+    localStorage.setItem('law_oa_user_info', '[object Object]')
+
+    expect(getUserInfo()).toBeNull()
+    expect(localStorage.getItem('law_oa_user_info')).toBe('[object Object]')
   })
 })
