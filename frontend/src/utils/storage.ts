@@ -63,7 +63,6 @@ export function getToken(): string | null {
   }
 
   if (isTokenExpired(token)) {
-    clearStorage()
     return null
   }
 
@@ -82,7 +81,21 @@ export function removeToken(): void {
 // 用户信息相关操作
 export function getUserInfo(): any | null {
   const userInfo = authStorage().getItem(USER_INFO_KEY)
-  return userInfo ? JSON.parse(userInfo) : null
+
+  if (!userInfo) {
+    return null
+  }
+
+  try {
+    const parsedUserInfo = JSON.parse(userInfo)
+    return typeof parsedUserInfo === 'object' &&
+      parsedUserInfo !== null &&
+      !Array.isArray(parsedUserInfo)
+      ? parsedUserInfo
+      : null
+  } catch {
+    return null
+  }
 }
 
 export function setUserInfo(userInfo: any): void {
