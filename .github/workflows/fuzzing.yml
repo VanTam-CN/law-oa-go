@@ -91,7 +91,7 @@ jobs:
 
     - name: 设置Redis
       run: |
-        sudo systemctl start redis-server
+        scripts/ci-bootstrap-redis.sh
 
     - name: 设置脚本权限
       run: |
@@ -247,7 +247,7 @@ jobs:
 
     - name: 设置Redis
       run: |
-        sudo systemctl start redis-server
+        scripts/ci-bootstrap-redis.sh
 
     - name: 设置脚本权限
       run: |
@@ -356,7 +356,7 @@ jobs:
 
     - name: 设置Redis
       run: |
-        sudo systemctl start redis-server
+        scripts/ci-bootstrap-redis.sh
 
     - name: 设置数据库
       run: |

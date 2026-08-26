@@ -65,7 +65,7 @@ jobs:
 
     - name: 设置Redis
       run: |
-        sudo systemctl start redis-server
+        scripts/ci-bootstrap-redis.sh
 
     - name: 构建应用
       run: |
@@ -107,7 +107,7 @@ jobs:
 
     - name: 设置Redis
       run: |
-        sudo systemctl start redis-server
+        scripts/ci-bootstrap-redis.sh
 
     - name: 创建profiles目录
       run: |
@@ -256,7 +256,7 @@ jobs:
 
     - name: 设置Redis
       run: |
-        sudo systemctl start redis-server
+        scripts/ci-bootstrap-redis.sh
 
     - name: 运行PGO版本基准测试
       run: |

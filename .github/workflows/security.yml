@@ -116,7 +116,7 @@ jobs:
 
       - name: 设置可选服务
         run: |
-          sudo systemctl start redis-server || sudo service redis-server start || true
+          scripts/ci-bootstrap-redis.sh
           sudo systemctl start mysql || sudo service mysql start || true
           mysql -u root -proot -e "CREATE DATABASE IF NOT EXISTS law_oa_test;" || true
 

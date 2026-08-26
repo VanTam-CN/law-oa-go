@@ -124,7 +124,7 @@ jobs:
     - name: 设置Redis
       run: |
         # 启动Redis用于测试
-        sudo systemctl start redis-server
+        scripts/ci-bootstrap-redis.sh
 
     - name: 下载依赖
       run: |
@@ -215,7 +215,7 @@ jobs:
 
     - name: 设置Redis
       run: |
-        sudo systemctl start redis-server
+        scripts/ci-bootstrap-redis.sh
 
     - name: 运行工作负载生成器
       run: |
