@@ -12,6 +12,9 @@ CREATE TABLE IF NOT EXISTS operations_readiness_evidence (
 
 -- Existing QA databases can already contain the pre-hash-chain table. Upgrade
 -- the storage contract without rewriting append-only evidence rows.
+-- The reference constraints are NOT VALID so historical evidence:// values and
+-- the former 1000-character limit remain preserved; PostgreSQL still enforces
+-- both checks on every newly inserted or updated row.
 ALTER TABLE operations_readiness_evidence
     ADD COLUMN IF NOT EXISTS previous_evidence_id VARCHAR(36) NOT NULL DEFAULT '',
     ADD COLUMN IF NOT EXISTS integrity_hash VARCHAR(64) NOT NULL DEFAULT '';
@@ -77,7 +80,8 @@ BEGIN
     ) THEN
         ALTER TABLE operations_readiness_evidence
             ADD CONSTRAINT chk_operations_evidence_reference
-            CHECK (length(trim(evidence_reference)) BETWEEN 8 AND 512);
+            CHECK (length(trim(evidence_reference)) BETWEEN 8 AND 512)
+            NOT VALID;
     END IF;
 
     IF NOT EXISTS (
@@ -89,7 +93,7 @@ BEGIN
             ADD CONSTRAINT chk_operations_evidence_reference_scheme CHECK (
                 evidence_reference ~ '^(archive|ticket|qa|controlled-pilot)://[^/[:space:]]+'
                 OR evidence_reference ~ '^https://[^/[:space:]]+/[^[:space:]]+$'
-            );
+            ) NOT VALID;
     END IF;
 
     IF NOT EXISTS (
