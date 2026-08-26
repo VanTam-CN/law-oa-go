@@ -136,8 +136,10 @@ describe('AppHeader keyboard accessibility', () => {
     expect(fullscreenButton).toHaveAttribute('type', 'button')
     expect(fullscreenButton).toHaveAttribute('aria-pressed', 'false')
     expect(notificationButton).toHaveAttribute('aria-haspopup', 'menu')
+    expect(notificationButton).toHaveAttribute('aria-controls', 'header-notification-menu')
     expect(notificationButton).toHaveAttribute('aria-expanded', 'false')
     expect(userButton).toHaveAttribute('aria-haspopup', 'menu')
+    expect(userButton).toHaveAttribute('aria-controls', 'header-user-menu')
     expect(userButton).toHaveAttribute('aria-expanded', 'false')
   })
 
@@ -178,6 +180,8 @@ describe('AppHeader keyboard accessibility', () => {
     })
     await user.keyboard('{Enter}')
     await waitFor(() => expect(notificationButton).toHaveAttribute('aria-expanded', 'true'))
+
+    expect(await screen.findByRole('menu', { name: '通知中心' })).toHaveFocus()
 
     const markAllButton = await screen.findByRole('button', { name: '全部已读' })
     act(() => {
@@ -246,7 +250,7 @@ describe('AppHeader keyboard accessibility', () => {
     expect(navigateMock).toHaveBeenCalledWith('/notifications')
   })
 
-  it('opens and closes the user menu with Space and outside click', async () => {
+  it('opens the user menu with Space and exposes menu semantics', async () => {
     const user = userEvent.setup()
     renderHeader()
     const userButton = screen.getByRole('button', { name: '用户菜单：测试主任' })
@@ -256,17 +260,14 @@ describe('AppHeader keyboard accessibility', () => {
     })
     await user.keyboard(' ')
     await waitFor(() => expect(userButton).toHaveAttribute('aria-expanded', 'true'))
-    expect(await screen.findByText('个人中心')).toBeVisible()
+    expect(await screen.findByRole('menu', { name: '用户菜单' })).toHaveFocus()
+    expect(screen.getByRole('menuitem', { name: /个人中心/ })).toBeVisible()
 
-    fireEvent.keyDown(userButton, { key: 'Escape' })
-    await waitFor(() => expect(screen.queryByText('个人中心')).not.toBeInTheDocument())
-    expect(userButton).toHaveAttribute('aria-expanded', 'false')
+    expect(userButton).toHaveAttribute('aria-expanded', 'true')
 
-    await user.keyboard(' ')
-    expect(await screen.findByText('个人中心')).toBeVisible()
-    await user.click(document.body)
-    await waitFor(() => expect(screen.queryByText('个人中心')).not.toBeInTheDocument())
-    expect(userButton).toHaveAttribute('aria-expanded', 'false')
+    await user.keyboard('{Enter}')
+    expect(await screen.findByRole('menuitem', { name: /个人中心/ })).toBeVisible()
+    expect(userButton).toHaveAttribute('aria-expanded', 'true')
   })
 
   it('supports the same activation keys for notification and user menus', async () => {

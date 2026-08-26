@@ -187,6 +187,20 @@ const AppHeader: React.FC = () => {
     return () => document.removeEventListener('fullscreenchange', syncFullscreenState)
   }, [])
 
+  useEffect(() => {
+    if (!notificationVisible) {
+      return
+    }
+    document.getElementById('header-notification-menu')?.focus()
+  }, [notificationVisible])
+
+  useEffect(() => {
+    if (!userMenuVisible) {
+      return
+    }
+    document.getElementById('header-user-menu')?.focus()
+  }, [userMenuVisible])
+
   // 处理全屏切换。状态由 fullscreenchange 事件统一同步，避免请求失败时 UI 提前变更。
   const handleFullscreen = async () => {
     try {
@@ -376,6 +390,8 @@ const AppHeader: React.FC = () => {
           <Dropdown
             menu={{
               items: notificationItems,
+              id: 'header-notification-menu',
+              'aria-label': '通知中心',
               onClick: ({ key }) => {
                 if (key === 'view-all') {
                   navigate('/notifications')
@@ -387,12 +403,14 @@ const AppHeader: React.FC = () => {
             open={notificationVisible}
             trigger={['click']}
             destroyOnHidden
+            autoFocus
           >
             <button
               type='button'
               className={`header-action notification-btn ${notificationVisible ? 'active' : ''}`}
               aria-expanded={notificationVisible}
               aria-haspopup='menu'
+              aria-controls='header-notification-menu'
               aria-label={`通知中心${unreadCount > 0 ? `，${unreadCount} 条未读` : ''}`}
               title='通知中心'
               onKeyDown={(event) => handleMenuKeyDown(event, setNotificationVisible)}
@@ -411,18 +429,20 @@ const AppHeader: React.FC = () => {
 
           {/* 用户菜单 */}
           <Dropdown
-            menu={{ items: userMenuItems }}
+            menu={{ items: userMenuItems, id: 'header-user-menu', 'aria-label': '用户菜单' }}
             placement='bottomRight'
             onOpenChange={setUserMenuVisible}
             open={userMenuVisible}
             trigger={['click']}
             destroyOnHidden
+            autoFocus
           >
             <button
               type='button'
               className='user-menu'
               aria-expanded={userMenuVisible}
               aria-haspopup='menu'
+              aria-controls='header-user-menu'
               aria-label={`用户菜单：${user?.realName || user?.username || '用户'}`}
               onKeyDown={(event) => handleMenuKeyDown(event, setUserMenuVisible)}
               onClickCapture={handleMenuClickCapture}
