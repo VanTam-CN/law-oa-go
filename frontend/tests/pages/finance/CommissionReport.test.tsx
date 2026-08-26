@@ -219,8 +219,8 @@ describe('CommissionReport', () => {
         expect(screen.getByText('本月提成')).toBeInTheDocument()
       })
 
-      // 检查统计值
-      expect(screen.getByText('150')).toBeInTheDocument() // total_commissions
+      // 统计请求由列表请求完成后触发，等待统计值渲染而不是等待静态标题。
+      expect(await screen.findByText('150')).toBeInTheDocument() // total_commissions
       expect(screen.getByText('25')).toBeInTheDocument() // calculated_commissions
     })
 
