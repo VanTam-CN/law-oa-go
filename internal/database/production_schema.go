@@ -13,7 +13,7 @@ import (
 // ProductionSchemaVersion identifies the idempotent PostgreSQL bootstrap
 // contract. A future breaking schema change must introduce a new version and
 // an explicit migration instead of relying on application startup side effects.
-const ProductionSchemaVersion = "postgres-mvp-2026-08-27-v14"
+const ProductionSchemaVersion = "postgres-mvp-2026-08-27-v15"
 
 // productionCaseIntake and the following small records back tables that are
 // intentionally written through Table(...) by the intake/approval workflow.
@@ -193,10 +193,14 @@ func BootstrapProductionSchema(db *gorm.DB) error {
 		if err := tx.Exec(`CREATE EXTENSION IF NOT EXISTS pgcrypto`).Error; err != nil {
 			return fmt.Errorf("启用 pgcrypto 扩展失败: %w", err)
 		}
+		if err := validateBootstrapVersionState(tx); err != nil {
+			return err
+		}
 		if err := ensureProductionSchemaAdditiveColumns(tx); err != nil {
 			return err
 		}
 
+		operationsEvidenceWasAbsent := !tx.Migrator().HasTable(&models.OperationsReadinessEvidence{})
 		for _, model := range productionSchemaModels() {
 			// Existing installations may have been created by an older SQL
 			// migration set. GORM AutoMigrate is not a safe compatibility
@@ -221,6 +225,14 @@ func BootstrapProductionSchema(db *gorm.DB) error {
 		if err := ensureProductionSchemaRelationalContract(tx); err != nil {
 			return err
 		}
+		// These constraints are installed only when bootstrap created the table.
+		// Existing QA databases receive them through migration 000080; re-running
+		// that DDL here would turn bootstrap into an unreviewed upgrade path.
+		if operationsEvidenceWasAbsent {
+			if err := ensureOperationsReadinessEvidenceConstraints(tx); err != nil {
+				return err
+			}
+		}
 		if err := installProductionAppendOnlyGuards(tx); err != nil {
 			return err
 		}
@@ -234,13 +246,26 @@ func BootstrapProductionSchema(db *gorm.DB) error {
 		if err := tx.Exec(`
 			INSERT INTO schema_bootstrap_state (id, version, applied_at)
 			VALUES (1, ?, CURRENT_TIMESTAMP)
-			ON CONFLICT (id) DO UPDATE
-			SET version = EXCLUDED.version, applied_at = EXCLUDED.applied_at
+			ON CONFLICT (id) DO NOTHING
 		`, ProductionSchemaVersion).Error; err != nil {
 			return fmt.Errorf("写入生产 schema 版本失败: %w", err)
 		}
 		return nil
 	})
+}
+
+func validateBootstrapVersionState(db *gorm.DB) error {
+	if !db.Migrator().HasTable(&productionSchemaState{}) {
+		return nil
+	}
+	var version string
+	if err := db.Raw(`SELECT version FROM schema_bootstrap_state WHERE id = 1`).Scan(&version).Error; err != nil {
+		return fmt.Errorf("读取既有生产 schema 版本失败: %w", err)
+	}
+	if version != "" && version != ProductionSchemaVersion {
+		return fmt.Errorf("拒绝升级生产 schema bootstrap: 当前版本 %s，目标版本 %s；请先执行经评审的升级方案并保留审计记录", version, ProductionSchemaVersion)
+	}
+	return nil
 }
 
 // validateProductionSchemaContract verifies the columns used by the P0
@@ -736,6 +761,8 @@ func validateProductionSchemaRelationalContract(db *gorm.DB) error {
 		{name: "idx_policy_endorsement_actor", table: "law_firm_compliance_policy_endorsements", definition: "(endorsed_by, created_at)"},
 		{name: "idx_conflict_officer_appointment_term", table: "conflict_officer_appointments", definition: "(officer_id, effective_from, effective_to)"},
 		{name: "uq_production_external_evidence_gate_reviewer", table: "production_external_evidence", definition: "(gate, reviewed_by)"},
+		{name: "idx_operations_evidence_reviewer", table: "operations_readiness_evidence", definition: "(reviewed_by)"},
+		{name: "idx_operations_evidence_control_scope_time", table: "operations_readiness_evidence", definition: "(control, scope, reviewed_at, created_at)"},
 		// PostgreSQL simplifies the boolean predicate to WHERE is_primary in
 		// pg_indexes. Require the semantic parts so either supported canonical
 		// spelling proves that the partial uniqueness guarantee is present.
@@ -761,6 +788,42 @@ func validateProductionSchemaRelationalContract(db *gorm.DB) error {
 				return fmt.Errorf("生产表 %s 的索引 %s 定义不符合数据完整性契约（实际定义：%s）", index.table, index.name, definition)
 			}
 		}
+	}
+	return nil
+}
+
+func ensureOperationsReadinessEvidenceConstraints(db *gorm.DB) error {
+	if err := db.Exec(`
+CREATE INDEX IF NOT EXISTS idx_operations_evidence_reviewer
+	ON operations_readiness_evidence (reviewed_by);
+CREATE INDEX IF NOT EXISTS idx_operations_evidence_control_scope_time
+	ON operations_readiness_evidence (control, scope, reviewed_at, created_at)
+`).Error; err != nil {
+		return fmt.Errorf("建立运营准备证据索引失败: %w", err)
+	}
+	if err := db.Exec(`
+ALTER TABLE operations_readiness_evidence
+	ADD CONSTRAINT chk_operations_evidence_scope
+	CHECK (scope IN ('qa', 'controlled_pilot')),
+	ADD CONSTRAINT chk_operations_evidence_result
+	CHECK (result = 'passed'),
+	ADD CONSTRAINT chk_operations_evidence_reference
+	CHECK (length(trim(evidence_reference)) BETWEEN 8 AND 512) NOT VALID,
+	ADD CONSTRAINT chk_operations_evidence_reference_scheme CHECK (
+		evidence_reference ~ '^(archive|ticket|qa|controlled-pilot)://[^/[:space:]]+'
+		OR evidence_reference ~ '^https://[^/[:space:]]+/[^[:space:]]+$'
+	) NOT VALID,
+	ADD CONSTRAINT chk_operations_evidence_chain CHECK (
+		(integrity_hash = '' AND previous_evidence_id = '')
+		OR (
+			integrity_hash ~ '^[0-9a-f]{64}$'
+			AND previous_evidence_id ~ '^[0-9a-f]{32}([0-9a-f]{4})?$'
+		)
+	),
+	ADD CONSTRAINT chk_operations_evidence_id_link
+	CHECK (previous_evidence_id = '' OR previous_evidence_id <> id)
+	`).Error; err != nil {
+		return fmt.Errorf("建立运营准备证据约束失败: %w", err)
 	}
 	return nil
 }
@@ -864,6 +927,7 @@ $$`).Error; err != nil {
 		{name: "trg_law_firm_policy_endorsements_append_only", table: "law_firm_compliance_policy_endorsements", operation: "UPDATE OR DELETE"},
 		{name: "trg_conflict_officer_appointments_append_only", table: "conflict_officer_appointments", operation: "UPDATE OR DELETE"},
 		{name: "trg_production_external_evidence_append_only", table: "production_external_evidence", operation: "UPDATE OR DELETE"},
+		{name: "trg_operations_readiness_evidence_append_only", table: "operations_readiness_evidence", operation: "UPDATE OR DELETE"},
 	} {
 		if err := db.Exec(fmt.Sprintf("DROP TRIGGER IF EXISTS %s ON %s", table.name, table.table)).Error; err != nil {
 			return fmt.Errorf("刷新 %s 保护触发器失败: %w", table.table, err)
@@ -949,7 +1013,7 @@ func productionSchemaModels() []interface{} {
 		// Legal search and analytics are PostgreSQL-compatible standard models;
 		// they are included because their routes are enabled in the production
 		// router even when the conflict MVP is the primary workflow.
-		&models.LegalStatute{}, &models.LegalCategory{}, &models.LegalHierarchy{},
+		&models.LegalCategory{}, &models.LegalStatute{}, &models.LegalHierarchy{},
 		&models.LegalStatuteVersion{}, &models.UserLegalFavorite{}, &models.LegalSearchHistory{},
 		&models.LegalTag{}, &models.LegalStatuteTag{},
 		&models.AnalyticsUserSession{}, &models.PageView{}, &models.AnalyticsUserEvent{},
