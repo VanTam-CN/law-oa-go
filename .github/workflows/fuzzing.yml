@@ -58,7 +58,7 @@ jobs:
       run: |
         go version
         echo "检查Fuzzing支持..."
-        if go help | grep -q "fuzz"; then
+        if go help testflag | grep -Eq '^[[:space:]]+-fuzz regexp$'; then
           echo "✓ Fuzzing支持已启用"
         else
           echo "✗ Fuzzing支持未启用，请使用Go 1.23+"
@@ -91,7 +91,7 @@ jobs:
 
     - name: 设置Redis
       run: |
-        sudo systemctl start redis-server
+        scripts/ci-bootstrap-redis.sh
 
     - name: 设置脚本权限
       run: |
@@ -194,7 +194,7 @@ jobs:
     - name: 设置数据库
       run: |
         sudo systemctl start mysql
-        mysql -u root -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
+        mysql -u root -proot -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
 
     - name: 设置脚本权限
       run: |
@@ -247,7 +247,7 @@ jobs:
 
     - name: 设置Redis
       run: |
-        sudo systemctl start redis-server
+        scripts/ci-bootstrap-redis.sh
 
     - name: 设置脚本权限
       run: |
@@ -356,12 +356,12 @@ jobs:
 
     - name: 设置Redis
       run: |
-        sudo systemctl start redis-server
+        scripts/ci-bootstrap-redis.sh
 
     - name: 设置数据库
       run: |
         sudo systemctl start mysql
-        mysql -u root -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
+        mysql -u root -proot -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
 
     - name: 设置脚本权限
       run: |

@@ -119,12 +119,12 @@ jobs:
       run: |
         # 启动MySQL用于集成测试
         sudo systemctl start mysql
-        mysql -u root -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
+        mysql -u root -proot -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
 
     - name: 设置Redis
       run: |
         # 启动Redis用于测试
-        sudo systemctl start redis-server
+        scripts/ci-bootstrap-redis.sh
 
     - name: 下载依赖
       run: |
@@ -211,11 +211,11 @@ jobs:
     - name: 设置数据库
       run: |
         sudo systemctl start mysql
-        mysql -u root -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
+        mysql -u root -proot -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
 
     - name: 设置Redis
       run: |
-        sudo systemctl start redis-server
+        scripts/ci-bootstrap-redis.sh
 
     - name: 运行工作负载生成器
       run: |
@@ -264,7 +264,7 @@ jobs:
 
     - name: 检查Fuzzing支持
       run: |
-        go help | grep -q "fuzz" || { echo "Go版本不支持Fuzzing"; exit 1; }
+        go help testflag | grep -Eq '^[[:space:]]+-fuzz regexp$' || { echo "Go版本不支持Fuzzing"; exit 1; }
 
     - name: 设置脚本权限
       run: |
