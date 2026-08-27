@@ -100,7 +100,7 @@ INSERT INTO schema_bootstrap_state (id, version) VALUES (1, 'postgres-mvp-2026-0
 			t.Fatalf("预置 v14 bootstrap 状态失败: %v", err)
 		}
 
-		gormDB, err := gorm.Open(postgres.New(postgres.Config{Conn: conn, DriverName: "pgx"}), &gorm.Config{DisableAutomaticPing: true})
+		gormDB, err := gorm.Open(postgres.New(postgres.Config{Conn: conn, DriverName: "pgx"}), &gorm.Config{PrepareStmt: true, DisableAutomaticPing: true})
 		if err != nil {
 			t.Fatalf("初始化 GORM PostgreSQL 连接失败: %v", err)
 		}
@@ -136,7 +136,7 @@ INSERT INTO schema_bootstrap_state (id, version) VALUES (1, 'postgres-mvp-2026-0
 		}
 		defer conn.Close()
 		setPostgresEvidenceSearchPath(t, ctx, conn, schema)
-		gormDB, err := gorm.Open(postgres.New(postgres.Config{Conn: conn, DriverName: "pgx"}), &gorm.Config{DisableAutomaticPing: true})
+		gormDB, err := gorm.Open(postgres.New(postgres.Config{Conn: conn, DriverName: "pgx"}), &gorm.Config{PrepareStmt: true, DisableAutomaticPing: true})
 		if err != nil {
 			t.Fatalf("初始化 GORM PostgreSQL 连接失败: %v", err)
 		}
@@ -210,7 +210,7 @@ INSERT INTO schema_bootstrap_state (id, version) VALUES (1, 'postgres-mvp-2026-0
 		}
 		defer bootstrapConn.Close()
 		setPostgresEvidenceSearchPath(t, ctx, bootstrapConn, bootstrapSchema)
-		gormDB, err := gorm.Open(postgres.New(postgres.Config{Conn: bootstrapConn, DriverName: "pgx"}), &gorm.Config{DisableAutomaticPing: true})
+		gormDB, err := gorm.Open(postgres.New(postgres.Config{Conn: bootstrapConn, DriverName: "pgx"}), &gorm.Config{PrepareStmt: true, DisableAutomaticPing: true})
 		if err != nil {
 			t.Fatalf("初始化 GORM PostgreSQL 连接失败: %v", err)
 		}

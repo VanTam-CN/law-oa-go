@@ -793,13 +793,25 @@ func validateProductionSchemaRelationalContract(db *gorm.DB) error {
 }
 
 func ensureOperationsReadinessEvidenceConstraints(db *gorm.DB) error {
-	if err := db.Exec(`
-CREATE INDEX IF NOT EXISTS idx_operations_evidence_reviewer
-	ON operations_readiness_evidence (reviewed_by);
-CREATE INDEX IF NOT EXISTS idx_operations_evidence_control_scope_time
-	ON operations_readiness_evidence (control, scope, reviewed_at, created_at)
-`).Error; err != nil {
-		return fmt.Errorf("建立运营准备证据索引失败: %w", err)
+	indexes := []struct {
+		name      string
+		statement string
+	}{
+		{
+			name: "idx_operations_evidence_reviewer",
+			statement: `CREATE INDEX IF NOT EXISTS idx_operations_evidence_reviewer
+	ON operations_readiness_evidence (reviewed_by)`,
+		},
+		{
+			name: "idx_operations_evidence_control_scope_time",
+			statement: `CREATE INDEX IF NOT EXISTS idx_operations_evidence_control_scope_time
+	ON operations_readiness_evidence (control, scope, reviewed_at, created_at)`,
+		},
+	}
+	for _, index := range indexes {
+		if err := db.Exec(index.statement).Error; err != nil {
+			return fmt.Errorf("建立运营准备证据索引 %s 失败: %w", index.name, err)
+		}
 	}
 	if err := db.Exec(`
 ALTER TABLE operations_readiness_evidence
