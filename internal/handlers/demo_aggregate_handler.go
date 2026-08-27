@@ -1750,10 +1750,15 @@ func (h *DemoAggregateHandler) firstByID(table string, id interface{}) map[strin
 }
 
 func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
-	createdBy, ok := currentUserIDString(c)
+	actor, ok := currentAuthActor(c)
 	if !ok {
 		return
 	}
+	if !services.CanCreateCaseIntake(actor.Role) {
+		common.APIForbidden(c, "无权创建接案记录", "当前账号没有接案创建权限")
+		return
+	}
+	createdBy := strconv.FormatUint(uint64(actor.UserID), 10)
 	var payload map[string]interface{}
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		common.APIBadRequest(c, "请求参数错误", err.Error())
@@ -1891,10 +1896,15 @@ func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
 
 func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 	id := c.Param("id")
-	actorID, ok := currentUserIDString(c)
+	actor, ok := currentAuthActor(c)
 	if !ok {
 		return
 	}
+	if !services.CanCreateCaseIntake(actor.Role) {
+		common.APIForbidden(c, "无权更新接案记录", "当前账号没有接案工作台权限")
+		return
+	}
+	actorID := strconv.FormatUint(uint64(actor.UserID), 10)
 	var rawPayload map[string]interface{}
 	if err := c.ShouldBindJSON(&rawPayload); err != nil {
 		common.APIBadRequest(c, "请求参数错误", err.Error())
