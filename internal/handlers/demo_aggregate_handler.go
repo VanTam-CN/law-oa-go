@@ -287,6 +287,11 @@ func (h *DemoAggregateHandler) ClientMasterProfile(c *gin.Context) {
 }
 
 func (h *DemoAggregateHandler) IntakeWorkbench(c *gin.Context) {
+	role, _ := middleware.GetCurrentRole(c)
+	if !services.CanReadCaseIntake(role) {
+		common.APIForbidden(c, "无权读取接案记录", "当前账号没有接案工作台查看权限")
+		return
+	}
 	id := c.Param("id")
 	var intake map[string]interface{}
 	if h.first("case_intakes", id, &intake) != nil {
@@ -321,7 +326,6 @@ func (h *DemoAggregateHandler) IntakeWorkbench(c *gin.Context) {
 		"client":    client,
 		"parties":   parties,
 		"materials": materials,
-		"team":      h.recentRows("users", "deleted_at IS NULL AND role IN ?", 10, []string{"lawyer", "admin"}),
 	})
 }
 

@@ -73,6 +73,13 @@ func CanCreateCaseIntake(role string) bool {
 	}
 }
 
+// CanReadCaseIntake is the read boundary for the intake workbench. Business
+// matter-management roles may inspect the workflow, while technical/admin and
+// unrelated operational roles do not gain matter access by authentication.
+func CanReadCaseIntake(role string) bool {
+	return normalizeRole(role) == "lawyer" || IsIntakeAssistantRole(role) || IsBusinessMatterManagementRole(role)
+}
+
 // IsTechnicalAdminRole distinguishes account/configuration administrators
 // from business roles that have an explicit professional matter appointment.
 // A technical administrator must not receive matter access merely because the

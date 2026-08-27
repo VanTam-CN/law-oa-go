@@ -99,7 +99,7 @@ func TestCreateCaseIntakeAllowsLawyerAndKeepsAssistantDraftBoundary(t *testing.T
 		t.Fatalf("expected assistant identity boundary to remain enforced, got %d: %s", assistantRecorder.Code, assistantRecorder.Body.String())
 	}
 
-	assistantContext, assistantRecorder = caseIntakeAuthzRequest(t, http.MethodPost, "/api/v1/case-intakes", "assistant", 8,
+	assistantContext, assistantRecorder = caseIntakeAuthzRequest(t, http.MethodPost, "/api/v1/case-intakes", "intake_assistant", 8,
 		`{"title":"助理草稿","description":"待律师确认"}`)
 	handler.CreateCaseIntake(assistantContext)
 	if assistantRecorder.Code != http.StatusCreated {
@@ -134,5 +134,58 @@ func TestIntakeWorkbenchRejectsCrossUserRead(t *testing.T) {
 	}
 	if response["data"] != nil {
 		t.Fatalf("cross-user response unexpectedly exposed data: %s", recorder.Body.String())
+	}
+}
+
+func TestIntakeWorkbenchRejectsHistoricalUserOwnerAndOmitsTeam(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db := newCaseIntakeAuthzTestDB(t)
+	if err := db.Exec(`INSERT INTO case_intakes (id, intake_code, title, status, created_by)
+		VALUES ('legacy-user-intake', 'INT-LEGACY', '历史草稿', 'draft', '41')`).Error; err != nil {
+		t.Fatal(err)
+	}
+	handler := NewDemoAggregateHandler(db)
+	userContext, userRecorder := caseIntakeAuthzRequest(t, http.MethodGet, "/api/v1/cases/intake-workbench/legacy-user-intake", "user", 41, "")
+	userContext.Params = gin.Params{{Key: "id", Value: "legacy-user-intake"}}
+	handler.IntakeWorkbench(userContext)
+	if userRecorder.Code != http.StatusForbidden {
+		t.Fatalf("expected historical user owner to receive 403, got %d: %s", userRecorder.Code, userRecorder.Body.String())
+	}
+
+	lawyerContext, lawyerRecorder := caseIntakeAuthzRequest(t, http.MethodGet, "/api/v1/cases/intake-workbench/legacy-user-intake", "lawyer", 41, "")
+	lawyerContext.Params = gin.Params{{Key: "id", Value: "legacy-user-intake"}}
+	handler.IntakeWorkbench(lawyerContext)
+	if lawyerRecorder.Code != http.StatusOK {
+		t.Fatalf("expected lawyer owner to receive 200, got %d: %s", lawyerRecorder.Code, lawyerRecorder.Body.String())
+	}
+	var response map[string]interface{}
+	if err := json.Unmarshal(lawyerRecorder.Body.Bytes(), &response); err != nil {
+		t.Fatal(err)
+	}
+	if _, exists := response["team"]; exists {
+		t.Fatalf("workbench unexpectedly returned team data: %s", lawyerRecorder.Body.String())
+	}
+}
+
+func TestUpdateCaseIntakeRejectsUnauthorizedBeforeParsingOrLookup(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db := newCaseIntakeAuthzTestDB(t)
+	if err := db.Exec(`INSERT INTO case_intakes (id, intake_code, title, status, created_by)
+		VALUES ('legacy-update', 'INT-UPDATE', '原始标题', 'draft', '41')`).Error; err != nil {
+		t.Fatal(err)
+	}
+	handler := NewDemoAggregateHandler(db)
+	c, recorder := caseIntakeAuthzRequest(t, http.MethodPut, "/api/v1/case-intakes/legacy-update", "user", 41, "not-json")
+	c.Params = gin.Params{{Key: "id", Value: "legacy-update"}}
+	handler.UpdateCaseIntake(c)
+	if recorder.Code != http.StatusForbidden {
+		t.Fatalf("expected unauthorized update to receive 403 before parsing, got %d: %s", recorder.Code, recorder.Body.String())
+	}
+	var title string
+	if err := db.Table("case_intakes").Where("id = ?", "legacy-update").Pluck("title", &title).Error; err != nil {
+		t.Fatal(err)
+	}
+	if title != "原始标题" {
+		t.Fatalf("unauthorized update changed the historical intake: %q", title)
 	}
 }
