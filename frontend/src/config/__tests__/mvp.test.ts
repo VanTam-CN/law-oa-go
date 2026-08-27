@@ -17,6 +17,7 @@ describe('mvp route configuration', () => {
       'approval',
       'inbox',
       'trust',
+      'operations-readiness',
     ])
   })
 

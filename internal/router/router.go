@@ -161,6 +161,7 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client) {
 	demoAggregateHandler.SetAuthorizationService(authorizationService)
 	demoAggregateHandler.SetClientContactService(clientContactService)
 	toolsHandler := handlers.NewToolsHandler()
+	operationsReadinessHandler := handlers.NewOperationsReadinessHandler(services.NewOperationsReadinessService(db))
 	log.Println("✅ 仪表盘处理器初始化完成")
 
 	// 调试：初始化冲突检测处理器
@@ -295,6 +296,19 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client) {
 		protected.GET("/analytics/executive-dashboard", middleware.RoleMiddleware("director", "partner", "compliance", "risk", "risk_control", "management"), demoAggregateHandler.ExecutiveDashboard)
 		protected.GET("/admin/access-center", middleware.RoleMiddleware("admin", "super_admin"), demoAggregateHandler.AdminAccessCenter)
 		protected.GET("/settings/overview", middleware.RoleMiddleware("admin", "super_admin"), demoAggregateHandler.SettingsOverview)
+		operationsReadiness := protected.Group("/operations/readiness/evidence")
+		{
+			operationsReadiness.GET(
+				"",
+				middleware.RoleMiddleware("admin", "super_admin", "director", "compliance"),
+				operationsReadinessHandler.Summary,
+			)
+			operationsReadiness.POST(
+				"",
+				middleware.RoleMiddleware("admin", "super_admin", "director"),
+				operationsReadinessHandler.Register,
+			)
+		}
 
 		// 案件类型接口
 		protected.GET("/case-types", caseHandler.GetCaseTypes)
