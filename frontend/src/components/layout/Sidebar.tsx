@@ -90,6 +90,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
       '/finance': 'finance',
       '/trust': 'trust',
       '/settings': 'settings',
+      '/operations/readiness': 'operations-readiness',
     }
 
     // 精确匹配
@@ -182,6 +183,14 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
       onClick: () => navigate('/trust'),
       color: 'var(--color-warning)',
       permission: 'trust:manage',
+    },
+    {
+      key: 'operations-readiness',
+      label: '运维准备度',
+      icon: <SafetyCertificateOutlined />,
+      onClick: () => navigate('/operations/readiness'),
+      color: 'var(--color-warning)',
+      permission: 'system:manage',
     },
     // 非 MVP 项目（MVP 模式下隐藏）
     {
