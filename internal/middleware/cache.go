@@ -20,12 +20,12 @@ import (
 
 // CacheConfig 缓存配置
 type CacheConfig struct {
-	TTL            time.Duration
-	SkipHeader     string
-	RedisClient    *redis.Client
-	KeyPrefix      string
-	MaxBodySize    int64
-	SkipRoutes     []string
+	TTL             time.Duration
+	SkipHeader      string
+	RedisClient     *redis.Client
+	KeyPrefix       string
+	MaxBodySize     int64
+	SkipRoutes      []string
 	CacheableRoutes []string
 }
 
@@ -131,7 +131,7 @@ func getCachedResponse(c *gin.Context, key string, config CacheConfig) (*CacheRe
 		if err := cache.DefaultCacheService.Get(key, &cachedData); err == nil {
 			// 转换为新的格式
 			cached := &CacheResponse{
-				Status: 200,
+				Status:  200,
 				Headers: map[string]string{"Content-Type": "application/json"},
 				Body:    mustMarshalJSON(cachedData),
 			}
@@ -262,9 +262,9 @@ func shouldCacheHeader(key string) bool {
 		"Content-Type":     true,
 		"Content-Encoding": true,
 		"Cache-Control":    true,
-		"ETag":            true,
-		"Last-Modified":   true,
-		"Vary":            true,
+		"ETag":             true,
+		"Last-Modified":    true,
+		"Vary":             true,
 	}
 	return cacheableHeaders[strings.ToLower(key)]
 }
@@ -526,7 +526,6 @@ func (rl *OptimizedRateLimiter) checkRedisLimit(key string) bool {
 	incr := pipe.Incr(ctx, key)
 	pipe.Expire(ctx, key, rl.window)
 	_, err := pipe.Exec(ctx)
-
 	if err != nil {
 		logger.Logger.Error("Rate limit check error", zap.Error(err))
 		return false // 出错时不限流

@@ -1147,16 +1147,20 @@ type handlerTestTokenManager struct {
 func (m *handlerTestTokenManager) VerifyToken(ctx context.Context, tokenString string) (*map[string]interface{}, error) {
 	return nil, fmt.Errorf("not implemented")
 }
+
 func (m *handlerTestTokenManager) ExtractTokenMetadata(ctx context.Context, tokenString string) (*auth.TokenPayload, error) {
 	return nil, fmt.Errorf("not implemented")
 }
+
 func (m *handlerTestTokenManager) RevokeAllUserTokens(ctx context.Context, userID uint) error {
 	m.revokeAllUserTokensCalled++
 	return m.revokeAllUserTokensErr
 }
+
 func (m *handlerTestTokenManager) BlacklistToken(ctx context.Context, tokenString string, ttl time.Duration) error {
 	return nil
 }
+
 func (m *handlerTestTokenManager) IsTokenBlacklisted(ctx context.Context, tokenString string) bool {
 	return false
 }

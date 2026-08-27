@@ -159,7 +159,7 @@ func (h *ConflictReviewHandler) GetConflictDetails(c *gin.Context) {
 
 	common.APISuccess(c, gin.H{
 		"conflicts": report.Conflicts,
-		"summary":  report.Recommendations,
+		"summary":   report.Recommendations,
 	})
 }
 

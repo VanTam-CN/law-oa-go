@@ -78,11 +78,11 @@ type MockJWTKeyManager struct{}
 
 func (m *MockJWTKeyManager) ExtractTokenMetadata(ctx context.Context, token string) (interface{}, error) {
 	return map[string]interface{}{
-		"user_id":   1,
-		"username":  "testuser",
-		"role":      "user",
-		"device_id": "device123",
-		"ip":        "127.0.0.1",
+		"user_id":    1,
+		"username":   "testuser",
+		"role":       "user",
+		"device_id":  "device123",
+		"ip":         "127.0.0.1",
 		"user_agent": "test-agent",
 	}, nil
 }
@@ -108,7 +108,7 @@ func (m *MockRateLimiter) AllowRequest(c *gin.Context, ip string) bool {
 func (m *MockRateLimiter) GetStats() map[string]interface{} {
 	return map[string]interface{}{
 		"requests_blocked": 0,
-		"active_clients": 1,
+		"active_clients":   1,
 	}
 }
 
@@ -295,10 +295,10 @@ func TestEnhancedSecurityMiddleware_ExtractToken(t *testing.T) {
 	esm := &EnhancedSecurityMiddleware{}
 
 	tests := []struct {
-		name         string
-		authHeader   string
-		expected     string
-		queryToken   string
+		name       string
+		authHeader string
+		expected   string
+		queryToken string
 	}{
 		{
 			name:       "Bearer token",
@@ -310,7 +310,7 @@ func TestEnhancedSecurityMiddleware_ExtractToken(t *testing.T) {
 			authHeader: "",
 			expected:   "",
 		},
-			{
+		{
 			name:       "Invalid format",
 			authHeader: "Basic dGVzdDpYXRva2Vu",
 			expected:   "",
@@ -345,9 +345,9 @@ func TestEnhancedSecurityMiddleware_ShouldSkipAuth(t *testing.T) {
 	}
 
 	tests := []struct {
-		name           string
-		path           string
-		expected       bool
+		name     string
+		path     string
+		expected bool
 	}{
 		{
 			name:     "Health check path",
@@ -471,7 +471,7 @@ func TestDevelopmentMiddlewareConfig(t *testing.T) {
 	assert.True(t, config.Security.EnableCORS)
 	assert.False(t, config.Security.EnableRateLimit) // 开发环境关闭
 	assert.True(t, config.Security.EnableJWTValidation)
-	assert.False(t, config.Performance.EnableCompression) // 开发环境关闭
+	assert.False(t, config.Performance.EnableCompression)        // 开发环境关闭
 	assert.False(t, config.Performance.EnableConcurrencyControl) // 开发环境关闭
 }
 

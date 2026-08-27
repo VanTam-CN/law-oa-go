@@ -553,5 +553,7 @@ func TestGetAccessType(t *testing.T) {
 }
 
 // 防止 lint 报未使用 import（当某些断言路径无 require 时仍保留 require 引用）
-var _ = require.New
-var _ = strings.HasPrefix
+var (
+	_ = require.New
+	_ = strings.HasPrefix
+)

@@ -59,6 +59,8 @@ func (r *PaymentRepositoryImpl) GetPaymentAggregation(ctx context.Context, month
 }
 
 // ensure compile-time interface satisfaction
-var _ = gorm.DB{}
-var _ = time.Time{}
-var _ = models.Payment{}
+var (
+	_ = gorm.DB{}
+	_ = time.Time{}
+	_ = models.Payment{}
+)

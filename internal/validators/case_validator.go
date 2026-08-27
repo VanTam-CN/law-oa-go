@@ -309,15 +309,15 @@ func (v *CaseValidator) ValidateSortParams(sortBy, sortOrder string) error {
 	}
 
 	validSortFields := map[string]bool{
-		"id":          true,
-		"title":       true,
-		"case_type":   true,
-		"priority":    true,
-		"status":      true,
-		"created_at":  true,
-		"updated_at":  true,
-		"start_date":  true,
-		"end_date":    true,
+		"id":         true,
+		"title":      true,
+		"case_type":  true,
+		"priority":   true,
+		"status":     true,
+		"created_at": true,
+		"updated_at": true,
+		"start_date": true,
+		"end_date":   true,
 	}
 
 	if !validSortFields[sortBy] {

@@ -8,11 +8,11 @@ import (
 
 // Repositories 统一的仓储集合，遵循Clean Architecture原则
 type Repositories struct {
-	UserRepo       UserRepository
-	ClientRepo     ClientRepository
-	DocumentRepo   DocumentRepository
-	LawyerRepo     LawyerRepository
-	ConflictRepo   BasicConflictRepository
+	UserRepo        UserRepository
+	ClientRepo      ClientRepository
+	DocumentRepo    DocumentRepository
+	LawyerRepo      LawyerRepository
+	ConflictRepo    BasicConflictRepository
 	ConflictExtRepo *ConflictExtendedRepository
 }
 
@@ -26,11 +26,11 @@ func NewRepositories(
 	gormDB := adapter.GetGormDB()
 
 	return &Repositories{
-		UserRepo:       NewUserRepository(gormDB),
-		ClientRepo:     NewClientRepository(gormDB),
-		DocumentRepo:   NewDocumentRepository(gormDB),
-		LawyerRepo:     NewLawyerRepository(gormDB),
-		ConflictRepo:   NewConflictRepository(gormDB, ToRedisClient(redis)),
+		UserRepo:        NewUserRepository(gormDB),
+		ClientRepo:      NewClientRepository(gormDB),
+		DocumentRepo:    NewDocumentRepository(gormDB),
+		LawyerRepo:      NewLawyerRepository(gormDB),
+		ConflictRepo:    NewConflictRepository(gormDB, ToRedisClient(redis)),
 		ConflictExtRepo: NewConflictExtendedRepository(db),
 	}
 }

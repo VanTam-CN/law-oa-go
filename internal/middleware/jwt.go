@@ -22,10 +22,12 @@ type JWTManager struct {
 	mu     sync.RWMutex
 }
 
-var jwtManager *JWTManager
-var once sync.Once
-var revocationChecker TokenRevocationCheckFunc
-var revocationMu sync.RWMutex
+var (
+	jwtManager        *JWTManager
+	once              sync.Once
+	revocationChecker TokenRevocationCheckFunc
+	revocationMu      sync.RWMutex
+)
 
 type TokenRevocationCheckFunc func(ctx context.Context, tokenString string, claims *JWTClaims) bool
 
@@ -122,7 +124,6 @@ func ParseToken(tokenString string) (*JWTClaims, error) {
 		}
 		return manager.getSecret(), nil
 	})
-
 	if err != nil {
 		return nil, err
 	}

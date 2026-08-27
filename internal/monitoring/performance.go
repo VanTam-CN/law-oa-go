@@ -360,8 +360,10 @@ func (pm *PerformanceMetrics) Stop() {
 }
 
 // 全局性能指标实例
-var DefaultPerformanceMetrics *PerformanceMetrics
-var performanceMetricsMu sync.Mutex
+var (
+	DefaultPerformanceMetrics *PerformanceMetrics
+	performanceMetricsMu      sync.Mutex
+)
 
 // InitPerformanceMetrics 初始化性能指标
 func InitPerformanceMetrics() {

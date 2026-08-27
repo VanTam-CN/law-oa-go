@@ -21,9 +21,9 @@ type PerformanceMonitor struct {
 // PerformanceStats 性能统计
 type PerformanceStats struct {
 	// 查询统计
-	TotalQueries     int64         `json:"total_queries"`
-	SlowQueries      int64         `json:"slow_queries"`
-	ErrorQueries      int64         `json:"error_queries"`
+	TotalQueries int64 `json:"total_queries"`
+	SlowQueries  int64 `json:"slow_queries"`
+	ErrorQueries int64 `json:"error_queries"`
 
 	// 时间统计
 	AverageQueryTime time.Duration `json:"average_query_time"`
@@ -31,49 +31,49 @@ type PerformanceStats struct {
 	MinQueryTime     time.Duration `json:"min_query_time"`
 
 	// 连接池统计
-	OpenConnections  int         `json:"open_connections"`
-	InUseConnections   int         `json:"in_use_connections"`
-	IdleConnections    int         `json:"idle_connections"`
-	WaitCount         int64       `json:"wait_count"`
-	WaitDuration      string      `json:"wait_duration"`
+	OpenConnections  int    `json:"open_connections"`
+	InUseConnections int    `json:"in_use_connections"`
+	IdleConnections  int    `json:"idle_connections"`
+	WaitCount        int64  `json:"wait_count"`
+	WaitDuration     string `json:"wait_duration"`
 
 	// 缓存统计
-	CacheHits         int64       `json:"cache_hits"`
-	CacheMisses       int64       `json:"cache_misses"`
-	CacheHitRatio     float64     `json:"cache_hit_ratio"`
+	CacheHits     int64   `json:"cache_hits"`
+	CacheMisses   int64   `json:"cache_misses"`
+	CacheHitRatio float64 `json:"cache_hit_ratio"`
 
 	// 事务统计
-	TotalTransactions int64       `json:"total_transactions"`
-	RollbackCount     int64       `json:"rollback_count"`
+	TotalTransactions int64 `json:"total_transactions"`
+	RollbackCount     int64 `json:"rollback_count"`
 
 	// 锁等待统计
-	LockWaits         int64       `json:"lock_waits"`
-	DeadlockCount     int64       `json:"deadlock_count"`
+	LockWaits     int64 `json:"lock_waits"`
+	DeadlockCount int64 `json:"deadlock_count"`
 
 	// 统计时间范围
-	StartTime         time.Time   `json:"start_time"`
-	LastUpdateTime    time.Time   `json:"last_update_time"`
+	StartTime      time.Time `json:"start_time"`
+	LastUpdateTime time.Time `json:"last_update_time"`
 
 	// 详细查询记录
-	QueryHistory      []QueryRecord `json:"query_history"`
+	QueryHistory []QueryRecord `json:"query_history"`
 }
 
 // QueryRecord 查询记录
 type QueryRecord struct {
 	Timestamp    time.Time     `json:"timestamp"`
-	QueryType   string        `json:"query_type"`
-	Duration    time.Duration `json:"duration"`
+	QueryType    string        `json:"query_type"`
+	Duration     time.Duration `json:"duration"`
 	RowsAffected int64         `json:"rows_affected"`
-	Error       string        `json:"error,omitempty"`
+	Error        string        `json:"error,omitempty"`
 	Parameters   []interface{} `json:"parameters,omitempty"`
 }
 
 // QueryMetrics 查询指标
 type QueryMetrics struct {
-	Type       string
-	Duration   time.Duration
+	Type         string
+	Duration     time.Duration
 	RowsAffected int64
-	Error      error
+	Error        error
 }
 
 // NewPerformanceMonitor 创建新的性能监控器
@@ -84,7 +84,7 @@ func NewPerformanceMonitor(db *gorm.DB, config *config.DatabasePerformanceConfig
 		stats: &PerformanceStats{
 			StartTime:      time.Now(),
 			LastUpdateTime: time.Now(),
-			MinQueryTime:    time.Hour, // 初始化为一个大值
+			MinQueryTime:   time.Hour, // 初始化为一个大值
 			QueryHistory:   make([]QueryRecord, 0),
 		},
 	}
@@ -205,10 +205,10 @@ func (pm *PerformanceMonitor) recordQueryMetrics(queryType string, duration time
 	// 添加到查询历史记录
 	queryRecord := QueryRecord{
 		Timestamp:    time.Now(),
-		QueryType:   queryType,
-		Duration:    duration,
+		QueryType:    queryType,
+		Duration:     duration,
 		RowsAffected: rowsAffected,
-		Error:       "",
+		Error:        "",
 	}
 
 	if err != nil {
@@ -304,15 +304,15 @@ func (pm *PerformanceMonitor) GetConnectionPoolInfo() (map[string]interface{}, e
 	stats := sqlDB.Stats()
 
 	return map[string]interface{}{
-		"max_open_connections":    stats.MaxOpenConnections,
-		"open_connections":       stats.OpenConnections,
-		"in_use":                 stats.InUse,
-		"idle":                   stats.Idle,
-		"wait_count":             stats.WaitCount,
-		"wait_duration":           stats.WaitDuration.String(),
-		"max_idle_closed":         stats.MaxIdleClosed,
-		"max_idle_time_closed":    stats.MaxIdleTimeClosed,
-		"max_lifetime_closed":     stats.MaxLifetimeClosed,
+		"max_open_connections": stats.MaxOpenConnections,
+		"open_connections":     stats.OpenConnections,
+		"in_use":               stats.InUse,
+		"idle":                 stats.Idle,
+		"wait_count":           stats.WaitCount,
+		"wait_duration":        stats.WaitDuration.String(),
+		"max_idle_closed":      stats.MaxIdleClosed,
+		"max_idle_time_closed": stats.MaxIdleTimeClosed,
+		"max_lifetime_closed":  stats.MaxLifetimeClosed,
 	}, nil
 }
 
@@ -387,7 +387,7 @@ func (pm *PerformanceMonitor) ResetStats() {
 	pm.stats = &PerformanceStats{
 		StartTime:      time.Now(),
 		LastUpdateTime: time.Now(),
-		MinQueryTime:    time.Hour,
+		MinQueryTime:   time.Hour,
 		QueryHistory:   make([]QueryRecord, 0),
 	}
 }

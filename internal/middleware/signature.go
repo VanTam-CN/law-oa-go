@@ -32,7 +32,7 @@ func RequestSignatureMiddleware() gin.HandlerFunc {
 		apiKey := c.GetHeader("X-API-Key")
 
 		if timestamp == "" || signature == "" || apiKey == "" {
-			_ = c.Error(errors.ValidationErrorWithDetails("headers",  "missing_headers",  "Missing required headers", []string{ "X-Timestamp, X-Signature, X-API-Key are required"}))
+			_ = c.Error(errors.ValidationErrorWithDetails("headers", "missing_headers", "Missing required headers", []string{"X-Timestamp, X-Signature, X-API-Key are required"}))
 			c.Abort()
 			return
 		}
@@ -40,21 +40,21 @@ func RequestSignatureMiddleware() gin.HandlerFunc {
 		// 验证时间戳（防止重放攻击）
 		requestTime, err := time.Parse(time.RFC3339, timestamp)
 		if err != nil {
-			_ = c.Error(errors.ValidationErrorWithDetails("timestamp",  "invalid_timestamp_format",  "Invalid timestamp format", []string{ "Timestamp must be in RFC3339 format"}))
+			_ = c.Error(errors.ValidationErrorWithDetails("timestamp", "invalid_timestamp_format", "Invalid timestamp format", []string{"Timestamp must be in RFC3339 format"}))
 			c.Abort()
 			return
 		}
 
 		// 时间戳有效期5分钟
 		if time.Since(requestTime) > 5*time.Minute || time.Until(requestTime) > 5*time.Minute {
-			_ = c.Error(errors.ValidationErrorWithDetails("timestamp",  "timestamp_expired",  "Timestamp expired or invalid", []string{ "Timestamp must be within 5 minutes of current time"}))
+			_ = c.Error(errors.ValidationErrorWithDetails("timestamp", "timestamp_expired", "Timestamp expired or invalid", []string{"Timestamp must be within 5 minutes of current time"}))
 			c.Abort()
 			return
 		}
 
 		// 验证API Key
 		if !validateAPIKey(apiKey) {
-			_ = c.Error(errors.SecurityError("invalid_api_key",   "Invalid API key",  nil))
+			_ = c.Error(errors.SecurityError("invalid_api_key", "Invalid API key", nil))
 			c.Abort()
 			return
 		}
@@ -62,7 +62,7 @@ func RequestSignatureMiddleware() gin.HandlerFunc {
 		// 验证签名
 		body, err := c.GetRawData()
 		if err != nil {
-			_ = c.Error(errors.ValidationErrorWithDetails("body",  "body_read_failed",  "Failed to read request body", []string{ "Unable to read request body for signature calculation"}))
+			_ = c.Error(errors.ValidationErrorWithDetails("body", "body_read_failed", "Failed to read request body", []string{"Unable to read request body for signature calculation"}))
 			c.Abort()
 			return
 		}
@@ -75,7 +75,7 @@ func RequestSignatureMiddleware() gin.HandlerFunc {
 
 		// 验证签名
 		if !hmac.Equal([]byte(signature), []byte(expectedSignature)) {
-			_ = c.Error(errors.SecurityError("invalid_signature",   "Invalid signature",  nil))
+			_ = c.Error(errors.SecurityError("invalid_signature", "Invalid signature", nil))
 			c.Abort()
 			return
 		}
@@ -127,14 +127,14 @@ func WebhookSignatureMiddleware(secret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		signature := c.GetHeader("X-Webhook-Signature")
 		if signature == "" {
-			_ = c.Error(errors.SecurityError("missing_webhook_signature",   "Missing webhook signature",  nil))
+			_ = c.Error(errors.SecurityError("missing_webhook_signature", "Missing webhook signature", nil))
 			c.Abort()
 			return
 		}
 
 		body, err := c.GetRawData()
 		if err != nil {
-			_ = c.Error(errors.ValidationErrorWithDetails("body",  "webhook_body_read_failed",  "Failed to read webhook body", []string{ "Unable to read webhook body for signature validation"}))
+			_ = c.Error(errors.ValidationErrorWithDetails("body", "webhook_body_read_failed", "Failed to read webhook body", []string{"Unable to read webhook body for signature validation"}))
 			c.Abort()
 			return
 		}
@@ -145,7 +145,7 @@ func WebhookSignatureMiddleware(secret string) gin.HandlerFunc {
 		// 验证签名
 		expectedSignature := calculateWebhookSignature(body, secret)
 		if !hmac.Equal([]byte(signature), []byte(expectedSignature)) {
-			_ = c.Error(errors.SecurityError("invalid_webhook_signature",   "Invalid webhook signature",  nil))
+			_ = c.Error(errors.SecurityError("invalid_webhook_signature", "Invalid webhook signature", nil))
 			c.Abort()
 			return
 		}
