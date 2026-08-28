@@ -381,7 +381,7 @@ func TestConflictP0ReadinessCheck_ProductionBadCanonicalHashFailsClosed(t *testi
 	db, sqlDB := setupConflictP0ProductionDatabase(t)
 	seedCompleteConflictP0ProductionEvidence(t, db)
 	seedCompleteProductionExternalEvidence(t, db)
-	require.NoError(t, db.Exec("UPDATE production_external_evidence SET integrity_hash = replace(integrity_hash, substr(integrity_hash, 1, 1), '0') WHERE gate = 'G1'").Error)
+	require.NoError(t, db.Exec("UPDATE production_external_evidence SET integrity_hash = CASE substr(integrity_hash, 1, 1) WHEN '0' THEN '1' ELSE '0' END || substr(integrity_hash, 2) WHERE gate = 'G1'").Error)
 
 	result := NewConflictP0ReadinessCheck(sqlDB, true).Check(context.Background())
 
