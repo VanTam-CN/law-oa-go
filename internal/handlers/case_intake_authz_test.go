@@ -5,9 +5,12 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -19,7 +22,7 @@ func newCaseIntakeAuthzTestDB(t *testing.T) *gorm.DB {
 		t.Fatal(err)
 	}
 	if err := db.Exec(`CREATE TABLE case_intakes (
-		id TEXT PRIMARY KEY, intake_code TEXT, title TEXT, case_type TEXT, description TEXT,
+		id TEXT PRIMARY KEY, intake_code TEXT UNIQUE, title TEXT, case_type TEXT, description TEXT,
 		priority TEXT, status TEXT, metadata TEXT, created_by TEXT, idempotency_key TEXT,
 		created_at DATETIME, updated_at DATETIME
 	)`).Error; err != nil {
@@ -111,6 +114,51 @@ func TestCreateCaseIntakeAllowsLawyerAndKeepsAssistantDraftBoundary(t *testing.T
 	}
 	if len(statuses) != 2 || statuses[1] != "assistant_draft" {
 		t.Fatalf("unexpected intake statuses: %v", statuses)
+	}
+}
+
+func TestCreateCaseIntakeCodesAreUniqueWithinTheSameSecond(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	sameSecond := time.Date(2026, 8, 28, 15, 30, 0, 0, time.Local)
+	firstCode := generateIntakeCode(sameSecond, uuid.New())
+	secondCode := generateIntakeCode(sameSecond, uuid.New())
+	if firstCode == secondCode {
+		t.Fatalf("expected distinct codes for the same second, got %q twice", firstCode)
+	}
+	wantPrefix := "INT-20260828153000-"
+	if !strings.HasPrefix(firstCode, wantPrefix) || !strings.HasPrefix(secondCode, wantPrefix) {
+		t.Fatalf("expected readable timestamp prefix %q, got %q and %q", wantPrefix, firstCode, secondCode)
+	}
+
+	db := newCaseIntakeAuthzTestDB(t)
+	handler := NewDemoAggregateHandler(db)
+
+	var codes []string
+	for i := 0; i < 2; i++ {
+		c, recorder := caseIntakeAuthzRequest(t, http.MethodPost, "/api/v1/case-intakes", "lawyer", 7,
+			`{"title":"同秒接案","case_type":"commercial"}`)
+		handler.CreateCaseIntake(c)
+		if recorder.Code != http.StatusCreated {
+			t.Fatalf("expected same-second intake %d to succeed, got %d: %s", i+1, recorder.Code, recorder.Body.String())
+		}
+		var response struct {
+			Data struct {
+				IntakeCode string `json:"intake_code"`
+			} `json:"data"`
+		}
+		if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
+			t.Fatal(err)
+		}
+		if response.Data.IntakeCode == "" {
+			t.Fatalf("same-second intake %d returned no intake_code", i+1)
+		}
+		codes = append(codes, response.Data.IntakeCode)
+	}
+	if codes[0] == codes[1] {
+		t.Fatalf("expected distinct intake codes within the same second, got %q twice", codes[0])
+	}
+	if len(codes[0]) != 41 || len(codes[1]) != 41 || len(firstCode) != 41 || len(secondCode) != 41 {
+		t.Fatalf("expected intake codes of length 41, got %q and %q", codes[0], codes[1])
 	}
 }
 

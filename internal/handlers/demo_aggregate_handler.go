@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -36,6 +37,12 @@ var allowedAssistantDraftFields = map[string]struct{}{
 	"case_type":   {},
 	"priority":    {},
 	"description": {},
+}
+
+// generateIntakeCode keeps the readable INT/timestamp prefix while deriving a
+// random suffix from the intake UUID so concurrent creates remain unique.
+func generateIntakeCode(now time.Time, intakeID uuid.UUID) string {
+	return fmt.Sprintf("INT-%s-%s", now.Format("20060102150405"), base64.RawURLEncoding.EncodeToString(intakeID[:]))
 }
 
 func NewDemoAggregateHandler(db *gorm.DB) *DemoAggregateHandler {
@@ -1822,9 +1829,9 @@ func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
 		return
 	}
 	now := time.Now()
-	intakeID := uuid.NewString()
+	intakeID := uuid.New()
 	intakePayload["id"] = intakeID
-	intakePayload["intake_code"] = fmt.Sprintf("INT-%s", now.Format("20060102150405"))
+	intakePayload["intake_code"] = generateIntakeCode(now, intakeID)
 	intakePayload["status"] = stringValue(intakePayload["status"], "draft")
 	intakePayload["priority"] = stringValue(intakePayload["priority"], "medium")
 	intakePayload["metadata"] = jsonStringValue(intakePayload["metadata"])
