@@ -162,7 +162,11 @@ func TestIntakeWorkbenchRejectsHistoricalUserOwnerAndOmitsTeam(t *testing.T) {
 	if err := json.Unmarshal(lawyerRecorder.Body.Bytes(), &response); err != nil {
 		t.Fatal(err)
 	}
-	if _, exists := response["team"]; exists {
+	data, ok := response["data"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected successful response data object, got %T: %s", response["data"], lawyerRecorder.Body.String())
+	}
+	if _, exists := data["team"]; exists {
 		t.Fatalf("workbench unexpectedly returned team data: %s", lawyerRecorder.Body.String())
 	}
 }
