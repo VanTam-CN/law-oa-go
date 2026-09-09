@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"sort"
@@ -1750,6 +1751,9 @@ func (h *DemoAggregateHandler) firstByID(table string, id interface{}) map[strin
 }
 
 func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
+	if denyIntakeWriteForPlainUser(c) {
+		return
+	}
 	createdBy, ok := currentUserIDString(c)
 	if !ok {
 		return
@@ -1890,6 +1894,9 @@ func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
 }
 
 func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
+	if denyIntakeWriteForPlainUser(c) {
+		return
+	}
 	id := c.Param("id")
 	actorID, ok := currentUserIDString(c)
 	if !ok {
@@ -2345,8 +2352,18 @@ func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
 		common.APIBadRequest(c, "冲突检查前置资料不完整", "案件名称和案件类型不能为空")
 		return
 	}
+	if !models.IsValidConflictCaseType(request.CaseType) {
+		common.NewAPIError(c, http.StatusBadRequest, "VALIDATION_005",
+			fmt.Sprintf("接案草稿保存的案件类型“%s”不在正式冲突检查的规范列表中，请更新案件类型后重试", request.CaseType))
+		return
+	}
 	result, err := h.conflictService.PerformConflictCheck(c.Request.Context(), request)
 	if err != nil {
+		var conflictErr *models.ConflictError
+		if errors.As(err, &conflictErr) {
+			common.NewAPIError(c, http.StatusBadRequest, conflictErr.Code, conflictErr.Message)
+			return
+		}
 		common.APIInternalServerError(c, "执行冲突检查失败", err.Error())
 		return
 	}

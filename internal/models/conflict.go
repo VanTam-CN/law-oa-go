@@ -252,6 +252,32 @@ type ClientRelation struct {
 
 // Validation functions
 
+// ValidConflictCaseTypes is the shared canonical list of case types accepted
+// by the formal conflict-check contract. The intake UI must offer exactly
+// these codes; adding a UI option without registering it here breaks the
+// intake-to-conflict loop at the formal check step.
+var ValidConflictCaseTypes = []string{
+	"civil", "commercial", "criminal", "administrative", "labor",
+	"intellectual", "financial", "arbitration", "consultation",
+	"construction", "other",
+	"civil_litigation", "ma",
+	"知识产权", "民事", "商事", "刑事", "行政", "劳动", "金融",
+	"仲裁", "咨询", "其他", "建设工程",
+	"商事诉讼", "劳动争议", "金融商事", "并购重组",
+	"民事案件", "商事案件", "刑事案件", "行政案件", "知识产权案件",
+}
+
+// IsValidConflictCaseType reports whether the stored case-type code is part
+// of the shared formal-check contract.
+func IsValidConflictCaseType(caseType string) bool {
+	for _, valid := range ValidConflictCaseTypes {
+		if caseType == valid {
+			return true
+		}
+	}
+	return false
+}
+
 // ValidateConflictCheckRequest 验证冲突检测请求
 func (r *ConflictCheckRequest) Validate() error {
 	r.ClientID = strings.TrimSpace(r.ClientID)
@@ -281,19 +307,7 @@ func (r *ConflictCheckRequest) Validate() error {
 	if r.CaseType == "" {
 		return &ConflictError{Code: "VALIDATION_005", Message: "案件类型不能为空"}
 	}
-	// 🔧 修复：验证前端发送的英文案件类型值
-	validCaseTypes := map[string]bool{
-		"civil": true, "commercial": true, "criminal": true,
-		"administrative": true, "labor": true, "intellectual": true,
-		"financial": true, "arbitration": true, "consultation": true, "construction": true,
-		"other": true, "知识产权": true, "民事": true, "商事": true,
-		"刑事": true, "行政": true, "劳动": true, "金融": true,
-		"仲裁": true, "咨询": true, "其他": true, "建设工程": true,
-		"商事诉讼": true, "劳动争议": true, "金融商事": true, "并购重组": true,
-		"民事案件": true, "商事案件": true, "刑事案件": true, "行政案件": true,
-		"知识产权案件": true,
-	}
-	if !validCaseTypes[r.CaseType] {
+	if !IsValidConflictCaseType(r.CaseType) {
 		return &ConflictError{Code: "VALIDATION_005", Message: "案件类型无效，请选择系统提供的案件类型"}
 	}
 	if r.SearchDepth != "" && r.SearchDepth != "BASIC" && r.SearchDepth != "STANDARD" && r.SearchDepth != "DEEP" {
