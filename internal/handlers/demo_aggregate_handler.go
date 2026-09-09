@@ -2146,7 +2146,10 @@ func (h *DemoAggregateHandler) ConfirmIntakeFacts(c *gin.Context) {
 		common.APIBadRequest(c, "冲突检查前置资料不完整", "请先填写客户、案件名称和案件类型")
 		return
 	}
-	if clientID := intakeClientID(intake["client_id"]); clientID == 0 || !h.authorizeIntakeClient(c, clientID) {
+	// authorizeIntakeClient always writes an error response for an invalid or
+	// unreadable client. Calling it unconditionally keeps a NULL client_id
+	// draft from slipping through as an empty HTTP 200.
+	if clientID := intakeClientID(intake["client_id"]); !h.authorizeIntakeClient(c, clientID) {
 		return
 	}
 	if h.tableExists("case_intake_parties") {
@@ -2196,7 +2199,7 @@ func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
 		common.NewAPIError(c, http.StatusConflict, "INTAKE_FACTS_NOT_CONFIRMED", "请由负责律师先确认当事人事实，再运行利益冲突检查")
 		return
 	}
-	if clientID := intakeClientID(intake["client_id"]); clientID == 0 || !h.authorizeIntakeClient(c, clientID) {
+	if clientID := intakeClientID(intake["client_id"]); !h.authorizeIntakeClient(c, clientID) {
 		return
 	}
 	if h.conflictService == nil {
