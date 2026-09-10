@@ -2360,7 +2360,8 @@ func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
 			fmt.Sprintf("接案草稿保存的案件类型“%s”不在正式冲突检查的规范列表中，请更新案件类型后重试", request.CaseType))
 		return
 	}
-	result, err := h.conflictService.PerformConflictCheck(c.Request.Context(), request)
+	factsConfirmedAt := strings.TrimSpace(fmt.Sprint(metadata["lawyer_facts_confirmed_at"]))
+	result, err := h.conflictService.PrepareConflictCheck(c.Request.Context(), request)
 	if err != nil {
 		var conflictErr *models.ConflictError
 		if errors.As(err, &conflictErr) {
@@ -2383,7 +2384,8 @@ func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
 	if result.Decision != nil {
 		coverageStatus = result.Decision.CoverageStatus
 	}
-	if err := repositories.LinkConflictCheckToCase(c.Request.Context(), h.db, repositories.ConflictSubjectAssociation{
+	materials := h.conflictService.BuildConflictCheckRecord(c.Request.Context(), request, result)
+	if err := repositories.CommitIntakeConflictResult(c.Request.Context(), h.db, materials, result.ConflictCases, result.NormalizedSubjects, result, repositories.ConflictSubjectAssociation{
 		CheckID:           result.CheckID,
 		SubjectCaseID:     firstNonEmpty(valueString(metadata, "subject_case_id"), valueString(metadata, "subjectCaseId")),
 		SubjectCaseNumber: firstNonEmpty(valueString(metadata, "subject_case_number"), valueString(metadata, "subjectCaseNumber")),
@@ -2391,24 +2393,10 @@ func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
 		ClientID:          fmt.Sprint(intake["client_id"]),
 		CoverageStatus:    coverageStatus,
 		CheckedAt:         result.CheckTime,
-	}); err != nil {
+	}, factsConfirmedAt); err != nil {
 		common.APIInternalServerError(c, "保存冲突检测结果失败", err.Error())
 		return
 	}
-	metadata["conflict_check_id"] = result.CheckID
-	if result.Decision != nil {
-		metadata["conflict_coverage_status"] = result.Decision.CoverageStatus
-	}
-	metadata["conflict_checked_at"] = result.CheckTime
-	if err := h.db.Table("case_intakes").Where("id = ?", intakeID).Updates(map[string]interface{}{
-		"status":     "conflict_ready",
-		"metadata":   jsonStringValue(metadata),
-		"updated_at": time.Now(),
-	}).Error; err != nil {
-		common.APIInternalServerError(c, "保存冲突检测结果失败", "检测结果未能写回接案记录，已阻止继续办理")
-		return
-	}
-
 	common.APISuccess(c, gin.H{
 		"taskId":                     result.CheckID,
 		"checkId":                    result.CheckID,

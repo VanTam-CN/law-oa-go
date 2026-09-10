@@ -64,6 +64,109 @@ type ConflictSubjectAssociation struct {
 	CheckedAt         time.Time
 }
 
+// IntakeConflictSnapshot is the locked intake-row state used to validate a
+// formal conflict-check commit inside one transaction.
+type IntakeConflictSnapshot struct {
+	ID       uint
+	ClientID uint
+	Status   string
+	Metadata map[string]interface{}
+}
+
+// CommitIntakeConflictResult persists a completed formal conflict check and
+// its intake association in ONE transaction. The intake row is locked first,
+// the facts-confirmation timestamp is re-verified under the lock, and a prior
+// check ID is superseded deliberately on re-check. Any failure rolls back the
+// record, conflict cases, P0 evidence, and intake updates together, so a
+// failed link can no longer leave an orphaned COMPLETED audit record behind.
+func CommitIntakeConflictResult(
+	ctx context.Context,
+	db *gorm.DB,
+	record *models.ConflictCheckRecord,
+	conflictCases []*models.ConflictCase,
+	subjects []models.ConflictNormalizedSubject,
+	response *models.ConflictCheckResponse,
+	association ConflictSubjectAssociation,
+	expectedFactsConfirmedAt string,
+) error {
+	if db == nil {
+		return errors.New("冲突检测提交服务未初始化")
+	}
+	if record == nil || strings.TrimSpace(record.CheckID) == "" {
+		return errors.New("冲突检测记录缺少不可变检测编号")
+	}
+	if association.IntakeID == "" {
+		return errors.New("冲突检测结果缺少接案记录")
+	}
+	return db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var snapshot struct {
+			ID       string
+			ClientID *uint
+			Status   string
+			Metadata []byte
+		}
+		if err := tx.Table("case_intakes").
+			Clauses(clause.Locking{Strength: "UPDATE"}).
+			Select("id, client_id, status, metadata").
+			Where("id = ?", association.IntakeID).
+			First(&snapshot).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return fmt.Errorf("接案关联失败：接案记录不存在")
+			}
+			return fmt.Errorf("读取接案关联失败: %w", err)
+		}
+		if snapshot.ClientID == nil || *snapshot.ClientID == 0 || strconv.FormatUint(uint64(*snapshot.ClientID), 10) != association.ClientID {
+			return fmt.Errorf("接案关联失败：接案客户与检测客户不一致")
+		}
+		metadata := decodeJSONMap(snapshot.Metadata)
+		confirmedAt := strings.TrimSpace(fmt.Sprint(metadata["lawyer_facts_confirmed_at"]))
+		if expectedFactsConfirmedAt != "" && confirmedAt != expectedFactsConfirmedAt {
+			return fmt.Errorf("接案事实在检测期间已发生变化，请重新确认事实后再检测")
+		}
+		metadata["conflict_check_id"] = association.CheckID
+		if coverage := strings.TrimSpace(association.CoverageStatus); coverage != "" {
+			metadata["conflict_coverage_status"] = coverage
+		}
+		if !association.CheckedAt.IsZero() {
+			metadata["conflict_checked_at"] = association.CheckedAt
+		}
+		if association.SubjectCaseID != "" {
+			metadata["subject_case_id"] = association.SubjectCaseID
+		}
+		if association.SubjectCaseNumber != "" {
+			metadata["subject_case_number"] = association.SubjectCaseNumber
+		}
+		if err := tx.Table("case_intakes").Where("id = ?", association.IntakeID).Updates(map[string]interface{}{
+			"status":     "conflict_ready",
+			"metadata":   encodeJSONMap(metadata),
+			"updated_at": time.Now(),
+		}).Error; err != nil {
+			return fmt.Errorf("保存接案冲突检测关联失败: %w", err)
+		}
+		record.UpdatedAt = time.Now()
+		if record.CreatedAt.IsZero() {
+			record.CreatedAt = record.UpdatedAt
+		}
+		if err := tx.Create(record).Error; err != nil {
+			return fmt.Errorf("保存冲突检测记录失败: %w", err)
+		}
+		if len(conflictCases) > 0 {
+			if err := tx.Clauses(clause.OnConflict{
+				Columns:   []clause.Column{{Name: "id"}},
+				UpdateAll: true,
+			}).CreateInBatches(conflictCases, 100).Error; err != nil {
+				return fmt.Errorf("批量保存冲突案例失败: %w", err)
+			}
+		}
+		if response != nil && tx.Migrator().HasTable((&models.ConflictSubjectVersion{}).TableName()) {
+			if err := writeConflictP0Evidence(tx, record.CheckID, subjects, response); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
 // ConflictSubjectLinker is optional on BasicConflictRepository so existing
 // repository test doubles remain source-compatible. Production repositories
 // implement it to persist the case/intake association transactionally.
@@ -307,6 +410,105 @@ func LinkConflictCheckToCase(ctx context.Context, db *gorm.DB, association Confl
 		return errors.New("冲突检测案件关联服务未初始化")
 	}
 	return (&conflictRepository{db: db}).LinkConflictCheckToCase(ctx, association)
+}
+
+// writeConflictP0Evidence mirrors SaveConflictP0Evidence but runs inside the
+// caller's transaction so evidence commits atomically with the check record.
+// Keep the row-building logic aligned with the standalone writer.
+func writeConflictP0Evidence(
+	tx *gorm.DB,
+	checkID string,
+	subjects []models.ConflictNormalizedSubject,
+	response *models.ConflictCheckResponse,
+) error {
+	checkID = strings.TrimSpace(checkID)
+	if checkID == "" || response == nil {
+		return errors.New("P0 冲突证据缺少检测编号或结果")
+	}
+	if !tx.Migrator().HasTable((&models.ConflictSubjectIdentifier{}).TableName()) ||
+		!tx.Migrator().HasTable((&models.ConflictMatchEvidenceV2{}).TableName()) {
+		return errors.New("P0 冲突证据表未部署")
+	}
+	subjectIDs := make(map[string]string, len(subjects))
+	for _, subject := range subjects {
+		if strings.TrimSpace(subject.NormalizedName) == "" {
+			continue
+		}
+		subjectKey := fmt.Sprintf("%s:%s:%s", checkID, subject.Role, subject.NormalizedName)
+		versionID := stableConflictP0ID("SV", subjectKey)
+		snapshot := map[string]interface{}{
+			"originalName":   subject.OriginalName,
+			"normalizedName": subject.NormalizedName,
+			"role":           subject.Role,
+			"entityType":     subject.EntityType,
+			"aliases":        subject.Aliases,
+		}
+		snapshotJSON, err := json.Marshal(snapshot)
+		if err != nil {
+			return fmt.Errorf("序列化主体版本快照失败: %w", err)
+		}
+		aliasJSON, err := json.Marshal(subject.Aliases)
+		if err != nil {
+			return fmt.Errorf("序列化主体别名快照失败: %w", err)
+		}
+		version := &models.ConflictSubjectVersion{
+			ID: versionID, SubjectKey: subjectKey, SourceType: "CONFLICT_CHECK_SUBJECT", SourceID: checkID,
+			SubjectRole: subject.Role, SubjectType: subject.EntityType, OriginalName: subject.OriginalName,
+			NormalizedName: subject.NormalizedName, AliasSnapshot: string(aliasJSON), SourceVersion: checkID,
+			VersionNumber: 1, Verification: "SUBMITTED", Snapshot: string(snapshotJSON), CreatedAt: time.Now(),
+		}
+		if err := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(version).Error; err != nil {
+			return fmt.Errorf("保存主体版本快照失败: %w", err)
+		}
+		subjectIDs[strings.ToLower(subject.OriginalName)] = versionID
+		subjectIDs[strings.ToLower(subject.NormalizedName)] = versionID
+		for _, alias := range subject.Aliases {
+			subjectIDs[strings.ToLower(strings.TrimSpace(alias))] = versionID
+		}
+		for identifierType, identifierValue := range subject.Identifiers {
+			identifierValue = strings.TrimSpace(identifierValue)
+			if identifierValue == "" {
+				continue
+			}
+			ciphertext, digest, err := security.ProtectIdentityNumber(identifierValue)
+			if err != nil {
+				return fmt.Errorf("保护主体身份标识失败: %w", err)
+			}
+			identifierID := stableConflictP0ID("SI", versionID+":"+strings.ToLower(strings.TrimSpace(identifierType))+":"+digest)
+			identifier := &models.ConflictSubjectIdentifier{
+				ID: identifierID, SubjectVersionID: versionID, IdentifierType: strings.ToUpper(strings.TrimSpace(identifierType)),
+				Digest: digest, Ciphertext: ciphertext, MaskedValue: security.MaskIdentityNumber(identifierValue),
+				Verification: "SUBMITTED", SourceReference: "CONFLICT_CHECK:" + checkID, CreatedAt: time.Now(),
+			}
+			if err := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(identifier).Error; err != nil {
+				return fmt.Errorf("保存主体身份索引失败: %w", err)
+			}
+		}
+	}
+	for _, conflict := range response.ConflictCases {
+		if conflict == nil {
+			continue
+		}
+		for _, evidence := range conflict.Evidence {
+			evidenceJSON, err := json.Marshal(evidence)
+			if err != nil {
+				return fmt.Errorf("序列化冲突证据失败: %w", err)
+			}
+			hash := sha256.Sum256(evidenceJSON)
+			evidenceID := stableConflictP0ID("ME", checkID+":"+evidence.EvidenceID+":"+evidence.SourceCaseID)
+			subjectVersionID := subjectIDs[strings.ToLower(strings.TrimSpace(evidence.RequestedParty))]
+			row := &models.ConflictMatchEvidenceV2{
+				ID: evidenceID, CheckID: checkID, SubjectVersionID: subjectVersionID,
+				MatchType: evidence.MatchType, SourceType: evidence.SourceType, SourceObjectID: evidence.SourceCaseID,
+				Restricted: evidence.Restricted, EvidenceSnapshot: string(evidenceJSON),
+				EvidenceHash: fmt.Sprintf("%x", hash[:]), CreatedAt: time.Now(),
+			}
+			if err := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(row).Error; err != nil {
+				return fmt.Errorf("保存冲突命中证据失败: %w", err)
+			}
+		}
+	}
+	return nil
 }
 
 func decodeJSONMap(value interface{}) map[string]interface{} {

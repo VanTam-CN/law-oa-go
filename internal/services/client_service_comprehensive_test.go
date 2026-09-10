@@ -868,6 +868,36 @@ func (fakeConflictDetectionService) PerformConflictCheck(_ context.Context, requ
 	}, nil
 }
 
+func (fakeConflictDetectionService) PrepareConflictCheck(_ context.Context, request *models.ConflictCheckRequest) (*models.ConflictCheckResponse, error) {
+	return &models.ConflictCheckResponse{
+		CheckID:       request.CheckID,
+		HasConflict:   false,
+		ConflictCases: []*models.ConflictCase{},
+		RiskAssessment: &models.RiskAssessment{
+			OverallRisk: "LOW",
+			RiskScore:   0.1,
+		},
+		Recommendations: []string{"可以继续处理此案件"},
+		CheckTime:       time.Now(),
+		Duration:        12,
+	}, nil
+}
+
+func (fakeConflictDetectionService) BuildConflictCheckRecord(_ context.Context, request *models.ConflictCheckRequest, response *models.ConflictCheckResponse) *models.ConflictCheckRecord {
+	return &models.ConflictCheckRecord{
+		CheckID:     response.CheckID,
+		ClientID:    request.ClientID,
+		ClientName:  request.ClientName,
+		CaseName:    request.CaseName,
+		CaseType:    request.CaseType,
+		CheckStatus: "COMPLETED",
+		HasConflict: response.HasConflict,
+		RiskLevel:   response.RiskAssessment.OverallRisk,
+		CheckTime:   response.CheckTime,
+		Duration:    response.Duration,
+	}
+}
+
 func (fakeConflictDetectionService) GetCheckHistory(context.Context, string, int) ([]*models.ConflictCheckRecord, error) {
 	return nil, nil
 }
