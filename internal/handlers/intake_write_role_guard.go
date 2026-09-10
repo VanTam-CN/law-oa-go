@@ -22,8 +22,6 @@ func denyIntakeWriteForPlainUser(c *gin.Context) bool {
 		return false
 	case services.IsBusinessMatterManagementRole(role):
 		return false
-	case services.IsConflictReviewRole(role):
-		return false
 	default:
 		common.NewAPIError(c, http.StatusForbidden, "INTAKE_WRITE_ROLE_FORBIDDEN",
 			"普通账号不能创建或修改接案记录，请由负责律师办理接案")

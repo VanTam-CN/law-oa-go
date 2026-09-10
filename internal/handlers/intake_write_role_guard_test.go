@@ -21,7 +21,7 @@ func TestDenyIntakeWriteForPlainUser(t *testing.T) {
 		{name: "assistant allowed", role: "assistant", want: false},
 		{name: "intake assistant allowed", role: "intake_assistant", want: false},
 		{name: "director allowed", role: "director", want: false},
-		{name: "conflict officer allowed", role: "conflict_officer", want: false},
+		{name: "conflict officer denied", role: "conflict_officer", want: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
