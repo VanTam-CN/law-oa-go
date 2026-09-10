@@ -2465,6 +2465,10 @@ func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
 		return
 	}
 	factsConfirmedAt := strings.TrimSpace(fmt.Sprint(metadata["lawyer_facts_confirmed_at"]))
+	commitToken := ""
+	if tokenValue, ok := metadata["conflict_commit_token"].(string); ok {
+		commitToken = strings.TrimSpace(tokenValue)
+	}
 	result, err := h.conflictService.PrepareConflictCheck(c.Request.Context(), request)
 	if err != nil {
 		var conflictErr *models.ConflictError
@@ -2497,7 +2501,13 @@ func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
 		ClientID:          fmt.Sprint(intake["client_id"]),
 		CoverageStatus:    coverageStatus,
 		CheckedAt:         result.CheckTime,
+		ExpectedCommitToken: commitToken,
 	}, factsConfirmedAt); err != nil {
+		var raceErr *repositories.IntakeConflictCommitRaceError
+		if errors.As(err, &raceErr) {
+			common.NewAPIError(c, http.StatusConflict, "CONFLICT_COMMIT_RACE", raceErr.Error())
+			return
+		}
 		common.APIInternalServerError(c, "保存冲突检测结果失败", err.Error())
 		return
 	}

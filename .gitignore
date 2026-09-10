@@ -305,6 +305,7 @@ chrome/
 !internal/handlers/intake_draft_list_test.go
 !internal/handlers/intake_party_identity_guard_test.go
 !internal/handlers/intake_code_unique_test.go
+!internal/repositories/conflict_intake_commit_race_test.go
 !internal/health/conflict_p0_check_test.go
 !tests/integration/production_external_evidence_test.go
 *_test

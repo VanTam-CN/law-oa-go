@@ -11,12 +11,33 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/security"
 )
+
+// conflictCommitTokenKey is the metadata slot that arbitrates which in-flight
+// conflict check owns the intake commit slot. The handler captures the value
+// when it reads the intake row and CommitIntakeConflictResult re-verifies it
+// under the row lock before accepting a formal check.
+const conflictCommitTokenKey = "conflict_commit_token"
+
+// IntakeConflictCommitRaceError reports that another conflict check committed
+// for the same intake while this one was running. The losing result must not
+// be persisted; the caller should point the client at the winning check.
+type IntakeConflictCommitRaceError struct {
+	WinningCheckID string
+}
+
+func (e *IntakeConflictCommitRaceError) Error() string {
+	if e.WinningCheckID == "" {
+		return "接案冲突检测已由并发请求提交，请刷新后复用已有检测结果"
+	}
+	return fmt.Sprintf("接案冲突检测已由并发请求提交（检测编号 %s），请复用该结果，不要重复提交", e.WinningCheckID)
+}
 
 // BasicConflictRepository 基础冲突检测数据仓库接口
 type BasicConflictRepository interface {
@@ -62,6 +83,10 @@ type ConflictSubjectAssociation struct {
 	ClientID          string
 	CoverageStatus    string
 	CheckedAt         time.Time
+	// ExpectedCommitToken is the conflict_commit_token observed when the
+	// handler read the intake row. An empty value only matches an intake that
+	// has never committed a formal check (the first commit initializes it).
+	ExpectedCommitToken string
 }
 
 // IntakeConflictSnapshot is the locked intake-row state used to validate a
@@ -118,11 +143,32 @@ func CommitIntakeConflictResult(
 		if snapshot.ClientID == nil || *snapshot.ClientID == 0 || strconv.FormatUint(uint64(*snapshot.ClientID), 10) != association.ClientID {
 			return fmt.Errorf("接案关联失败：接案客户与检测客户不一致")
 		}
+		switch snapshot.Status {
+		case "lawyer_facts_confirmed", "conflict_ready":
+			// Still committable: the facts timestamp check below guards the
+			// confirmed snapshot; conflict_ready is the legitimate re-check
+			// state and stays append-only.
+		default:
+			return fmt.Errorf("接案状态为 %s，已不允许提交冲突检测结果", snapshot.Status)
+		}
 		metadata := decodeJSONMap(snapshot.Metadata)
 		confirmedAt := strings.TrimSpace(fmt.Sprint(metadata["lawyer_facts_confirmed_at"]))
 		if expectedFactsConfirmedAt != "" && confirmedAt != expectedFactsConfirmedAt {
 			return fmt.Errorf("接案事实在检测期间已发生变化，请重新确认事实后再检测")
 		}
+		currentToken := ""
+		if tokenValue, ok := metadata[conflictCommitTokenKey].(string); ok {
+			currentToken = strings.TrimSpace(tokenValue)
+		}
+		expectedToken := strings.TrimSpace(association.ExpectedCommitToken)
+		if expectedToken != currentToken {
+			winningID := ""
+			if idValue, ok := metadata["conflict_check_id"].(string); ok {
+				winningID = strings.TrimSpace(idValue)
+			}
+			return &IntakeConflictCommitRaceError{WinningCheckID: winningID}
+		}
+		metadata[conflictCommitTokenKey] = uuid.NewString()
 		metadata["conflict_check_id"] = association.CheckID
 		if coverage := strings.TrimSpace(association.CoverageStatus); coverage != "" {
 			metadata["conflict_coverage_status"] = coverage

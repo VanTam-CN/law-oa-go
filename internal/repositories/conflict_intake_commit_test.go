@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"path/filepath"
@@ -74,6 +75,22 @@ func commitIntakeRow(t *testing.T, db *gorm.DB, id string) (string, string) {
 	return row.Status, row.Metadata
 }
 
+// storedCommitToken extracts the rotated conflict_commit_token after a
+// successful commit; a sequential re-check must present it, exactly as the
+// HTTP handler does when it re-reads the intake before the second check.
+func storedCommitToken(t *testing.T, db *gorm.DB, id string) string {
+	t.Helper()
+	var row struct {
+		Metadata string
+	}
+	require.NoError(t, db.Table("case_intakes").Select("metadata").Where("id = ?", id).Take(&row).Error)
+	var metadata map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(row.Metadata), &metadata))
+	token, _ := metadata["conflict_commit_token"].(string)
+	require.NotEmpty(t, token, "first commit must rotate the commit token")
+	return token
+}
+
 func countCommitRecords(t *testing.T, db *gorm.DB) int64 {
 	t.Helper()
 	var count int64
@@ -121,6 +138,7 @@ func TestCommitIntakeConflictResultRecheckReplacesAssociation(t *testing.T) {
 	require.NoError(t, CommitIntakeConflictResult(context.Background(), db,
 		buildCommitRecord("CCT-COMMIT-002A", client.ID), firstCases, nil, firstResponse,
 		commitAssociation("CCT-COMMIT-002A", "intake-commit-002", client.ID), "2026-09-10T01:00:00Z"))
+	recheckToken := storedCommitToken(t, db, "intake-commit-002")
 
 	secondResponse := &models.ConflictCheckResponse{CheckID: "CCT-COMMIT-002B", HasConflict: true}
 	secondCases := []*models.ConflictCase{{
@@ -131,7 +149,11 @@ func TestCommitIntakeConflictResultRecheckReplacesAssociation(t *testing.T) {
 	}}
 	require.NoError(t, CommitIntakeConflictResult(context.Background(), db,
 		buildCommitRecord("CCT-COMMIT-002B", client.ID), secondCases, nil, secondResponse,
-		commitAssociation("CCT-COMMIT-002B", "intake-commit-002", client.ID), "2026-09-10T01:00:00Z"))
+		func() ConflictSubjectAssociation {
+			a := commitAssociation("CCT-COMMIT-002B", "intake-commit-002", client.ID)
+			a.ExpectedCommitToken = recheckToken
+			return a
+		}(), "2026-09-10T01:00:00Z"))
 
 	status, metadata := commitIntakeRow(t, db, "intake-commit-002")
 	assert.Equal(t, "conflict_ready", status)
