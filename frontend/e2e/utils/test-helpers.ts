@@ -694,7 +694,15 @@ export async function isLoggedIn(page: Page): Promise<boolean> {
 
 export async function waitForAppShell(page: Page) {
   await expect(page.locator('.app-header')).toBeVisible()
-  await expect(page.locator('.app-sidebar')).toBeVisible()
+  const viewportWidth = page.viewportSize()?.width ?? 1280
+  if (viewportWidth <= 768) {
+    // Mobile navigation contract (repair plan P5): the fixed sidebar is
+    // hidden below 768px and the header menu button opens the nav drawer.
+    await expect(page.locator('.app-sidebar')).toBeHidden()
+    await expect(page.locator('.mobile-nav-btn')).toBeVisible()
+  } else {
+    await expect(page.locator('.app-sidebar')).toBeVisible()
+  }
 }
 
 export async function waitForNativeTable(page: Page) {
