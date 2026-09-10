@@ -358,6 +358,69 @@ func (h *DemoAggregateHandler) ApprovalsWorkbench(c *gin.Context) {
 	})
 }
 
+// ListIntakeDrafts is the minimal server-side recovery list for the intake
+// page. A fresh browser session has no localStorage entry, so "saved and
+// exited" drafts must be discoverable from the normal menu without a deep
+// link. The list is server-authoritative, authorization-filtered in SQL,
+// paginated, and masked at the same boundary as the workbench aggregate: no
+// plaintext identity values and no raw workflow metadata.
+func (h *DemoAggregateHandler) ListIntakeDrafts(c *gin.Context) {
+	if !h.tableExists("case_intakes") {
+		common.APISuccess(c, gin.H{"items": []gin.H{}, "page": 1, "page_size": 10, "total": 0})
+		return
+	}
+	actorID, ok := currentUserIDString(c)
+	if !ok {
+		return
+	}
+	page := 1
+	if v, err := strconv.Atoi(c.Query("page")); err == nil && v > 0 {
+		page = v
+	}
+	pageSize := 10
+	if v, err := strconv.Atoi(c.Query("page_size")); err == nil && v > 0 && v <= 50 {
+		pageSize = v
+	}
+	query := h.db.Table("case_intakes").
+		Where("status IN ?", []string{"draft", "assistant_draft"})
+	if !canViewAllMatterData(c) {
+		query = query.Where("created_by = ?", actorID)
+	}
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		common.APIInternalServerError(c, "读取接案草稿列表失败", err.Error())
+		return
+	}
+	rows := []map[string]interface{}{}
+	if err := query.
+		Order("updated_at DESC").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		Find(&rows).Error; err != nil {
+		common.APIInternalServerError(c, "读取接案草稿列表失败", err.Error())
+		return
+	}
+	items := make([]gin.H, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, gin.H{
+			"id":          row["id"],
+			"intake_code": row["intake_code"],
+			"title":       row["title"],
+			"case_type":   row["case_type"],
+			"status":      row["status"],
+			"client_id":   row["client_id"],
+			"created_by":  row["created_by"],
+			"updated_at":  row["updated_at"],
+		})
+	}
+	common.APISuccess(c, gin.H{
+		"items":     items,
+		"page":      page,
+		"page_size": pageSize,
+		"total":     total,
+	})
+}
+
 func (h *DemoAggregateHandler) LawyersResourceCenter(c *gin.Context) {
 	common.APISuccess(c, gin.H{
 		"summary": gin.H{

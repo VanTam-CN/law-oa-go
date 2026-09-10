@@ -302,6 +302,7 @@ chrome/
 !internal/models/conflict_validation_test.go
 !internal/handlers/intake_write_role_guard_test.go
 !internal/handlers/intake_write_http_guard_test.go
+!internal/handlers/intake_draft_list_test.go
 !internal/health/conflict_p0_check_test.go
 !tests/integration/production_external_evidence_test.go
 *_test
