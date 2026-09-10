@@ -10,6 +10,7 @@ import {
   FullscreenOutlined,
   FullscreenExitOutlined,
   QuestionCircleOutlined,
+  MenuUnfoldOutlined,
 } from '@ant-design/icons'
 import { useAppStore } from '@/stores/useAppStore'
 import useNotifications from '@/hooks/useNotifications'
@@ -29,7 +30,12 @@ interface Notification {
   createdAt: string
 }
 
-const AppHeader: React.FC = () => {
+interface AppHeaderProps {
+  mobileOpen?: boolean
+  onMobileToggle?: (open: boolean) => void
+}
+
+const AppHeader: React.FC<AppHeaderProps> = ({ mobileOpen, onMobileToggle }) => {
   const { user, logout: clearLocalAuth } = useAppStore()
   const { notifications, stats, loading, error, markAsRead, markAllAsRead, deleteNotification } =
     useNotifications()
@@ -411,7 +417,18 @@ const AppHeader: React.FC = () => {
 
   return (
     <Header className='app-header'>
-      <div className='header-left'>{/* 面包屑或其他左侧内容可以在这里添加 */}</div>
+      <div className='header-left'>
+        <button
+          type='button'
+          className='header-action mobile-nav-btn'
+          aria-label='打开导航菜单'
+          aria-expanded={mobileOpen ?? false}
+          title='导航菜单'
+          onClick={() => onMobileToggle?.(!mobileOpen)}
+        >
+          <MenuUnfoldOutlined className='action-icon' />
+        </button>
+      </div>
 
       <div className='header-right'>
         <Space size='large'>

@@ -14,6 +14,7 @@ const MainLayout: React.FC = () => {
   const [sidebarWidth, setSidebarWidth] = useState(220)
   const [compactViewport, setCompactViewport] = useState(false)
   const [mobileViewport, setMobileViewport] = useState(false)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   // 处理侧边栏宽度变化
   const handleSidebarWidthChange = (width: number) => {
@@ -79,6 +80,8 @@ const MainLayout: React.FC = () => {
         collapsed={collapsed}
         setCollapsed={setCollapsed}
         onWidthChange={handleSidebarWidthChange}
+        mobileOpen={mobileNavOpen}
+        onMobileClose={() => setMobileNavOpen(false)}
       />
       <Layout
         style={{
@@ -89,7 +92,7 @@ const MainLayout: React.FC = () => {
           overflow: 'hidden',
         }}
       >
-        <Header />
+        <Header mobileOpen={mobileNavOpen} onMobileToggle={setMobileNavOpen} />
         <Content
           style={{
             margin: compactViewport ? '56px 8px 8px 8px' : '56px 16px 16px 16px',
