@@ -1900,7 +1900,7 @@ func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
 			}
 			if h.tableExists("case_intake_parties") {
 				for _, party := range parties {
-					row, err := prepareCaseIntakePartyRow(party, intakeID, now)
+					row, err := h.prepareCaseIntakePartyCreateRow(party, intakeID, now)
 					if err != nil {
 						return err
 					}
@@ -2063,27 +2063,37 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 	}
 
 	now := time.Now()
+	hasIntakeParties := h.tableExists("case_intake_parties")
+	hasIntakeMaterials := h.tableExists("case_materials")
+	intakePartySchemaReady := h.intakePartyIdentitySchemaReady()
 	err := h.db.Transaction(func(tx *gorm.DB) error {
 		if len(payload) > 0 {
 			if err := tx.Table("case_intakes").Where("id = ?", id).Updates(payload).Error; err != nil {
 				return err
 			}
 		}
-		if h.tableExists("case_intake_parties") && rawPayload["parties"] != nil {
-			if err := tx.Table("case_intake_parties").Where("intake_id = ?", id).Delete(map[string]interface{}{}).Error; err != nil {
-				return err
-			}
+		if hasIntakeParties && rawPayload["parties"] != nil {
+			// Resolve every party row while the previous rows are still
+			// present, so an empty identity can inherit the protected
+			// values from the row it replaces.
+			partyRows := make([]map[string]interface{}, 0, len(parties))
 			for _, party := range parties {
-				row, err := prepareCaseIntakePartyRow(party, id, now)
+				row, err := h.prepareCaseIntakePartyUpdateRow(tx, id, party, now, intakePartySchemaReady)
 				if err != nil {
 					return err
 				}
+				partyRows = append(partyRows, row)
+			}
+			if err := tx.Table("case_intake_parties").Where("intake_id = ?", id).Delete(map[string]interface{}{}).Error; err != nil {
+				return err
+			}
+			for _, row := range partyRows {
 				if err := tx.Table("case_intake_parties").Create(row).Error; err != nil {
 					return err
 				}
 			}
 		}
-		if h.tableExists("case_materials") && rawPayload["materials"] != nil {
+		if hasIntakeMaterials && rawPayload["materials"] != nil {
 			if err := tx.Table("case_materials").Where("intake_id = ?", id).Delete(map[string]interface{}{}).Error; err != nil {
 				return err
 			}
@@ -2141,7 +2151,7 @@ func prepareCaseIntakePartyRow(party map[string]interface{}, intakeID interface{
 	}
 	identityType := strings.ToUpper(strings.TrimSpace(stringValue(party["identity_type"], stringValue(party["identityType"], ""))))
 	identityNumber := security.NormalizeIdentityNumber(identityType, stringValue(party["identity_number"], stringValue(party["identityNumber"], "")))
-	if !validIntakeIdentityType(row["entity_type"], identityType) || len([]rune(identityNumber)) < 4 {
+	if strings.TrimSpace(identityNumber) != "" && (!validIntakeIdentityType(row["entity_type"], identityType) || len([]rune(identityNumber)) < 4) {
 		return nil, services.NewSubjectWorkflowError("INTAKE_PARTY_IDENTITY_REQUIRED", fmt.Sprintf("当事人“%s”必须提供与主体类型匹配的可核验身份标识", row["entity_name"]))
 	}
 	ciphertext, digest, err := security.ProtectIdentityNumber(identityNumber)
