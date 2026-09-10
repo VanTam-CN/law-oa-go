@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"sort"
@@ -354,6 +355,69 @@ func (h *DemoAggregateHandler) ApprovalsWorkbench(c *gin.Context) {
 			{"key": "waiver", "label": "豁免评估", "count": int64(len(waiverRows))},
 			{"key": "finance", "label": "财务审批", "count": financeCount},
 		},
+	})
+}
+
+// ListIntakeDrafts is the minimal server-side recovery list for the intake
+// page. A fresh browser session has no localStorage entry, so "saved and
+// exited" drafts must be discoverable from the normal menu without a deep
+// link. The list is server-authoritative, authorization-filtered in SQL,
+// paginated, and masked at the same boundary as the workbench aggregate: no
+// plaintext identity values and no raw workflow metadata.
+func (h *DemoAggregateHandler) ListIntakeDrafts(c *gin.Context) {
+	if !h.tableExists("case_intakes") {
+		common.APISuccess(c, gin.H{"items": []gin.H{}, "page": 1, "page_size": 10, "total": 0})
+		return
+	}
+	actorID, ok := currentUserIDString(c)
+	if !ok {
+		return
+	}
+	page := 1
+	if v, err := strconv.Atoi(c.Query("page")); err == nil && v > 0 {
+		page = v
+	}
+	pageSize := 10
+	if v, err := strconv.Atoi(c.Query("page_size")); err == nil && v > 0 && v <= 50 {
+		pageSize = v
+	}
+	query := h.db.Table("case_intakes").
+		Where("status IN ?", []string{"draft", "assistant_draft"})
+	if !canViewAllMatterData(c) {
+		query = query.Where("created_by = ?", actorID)
+	}
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		common.APIInternalServerError(c, "读取接案草稿列表失败", err.Error())
+		return
+	}
+	rows := []map[string]interface{}{}
+	if err := query.
+		Order("updated_at DESC").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		Find(&rows).Error; err != nil {
+		common.APIInternalServerError(c, "读取接案草稿列表失败", err.Error())
+		return
+	}
+	items := make([]gin.H, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, gin.H{
+			"id":          row["id"],
+			"intake_code": row["intake_code"],
+			"title":       row["title"],
+			"case_type":   row["case_type"],
+			"status":      row["status"],
+			"client_id":   row["client_id"],
+			"created_by":  row["created_by"],
+			"updated_at":  row["updated_at"],
+		})
+	}
+	common.APISuccess(c, gin.H{
+		"items":     items,
+		"page":      page,
+		"page_size": pageSize,
+		"total":     total,
 	})
 }
 
@@ -1750,6 +1814,9 @@ func (h *DemoAggregateHandler) firstByID(table string, id interface{}) map[strin
 }
 
 func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
+	if denyIntakeWriteForPlainUser(c) {
+		return
+	}
 	createdBy, ok := currentUserIDString(c)
 	if !ok {
 		return
@@ -1833,7 +1900,7 @@ func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
 			}
 			if h.tableExists("case_intake_parties") {
 				for _, party := range parties {
-					row, err := prepareCaseIntakePartyRow(party, intakeID, now)
+					row, err := h.prepareCaseIntakePartyCreateRow(party, intakeID, now)
 					if err != nil {
 						return err
 					}
@@ -1890,6 +1957,9 @@ func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
 }
 
 func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
+	if denyIntakeWriteForPlainUser(c) {
+		return
+	}
 	id := c.Param("id")
 	actorID, ok := currentUserIDString(c)
 	if !ok {
@@ -1993,27 +2063,37 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 	}
 
 	now := time.Now()
+	hasIntakeParties := h.tableExists("case_intake_parties")
+	hasIntakeMaterials := h.tableExists("case_materials")
+	intakePartySchemaReady := h.intakePartyIdentitySchemaReady()
 	err := h.db.Transaction(func(tx *gorm.DB) error {
 		if len(payload) > 0 {
 			if err := tx.Table("case_intakes").Where("id = ?", id).Updates(payload).Error; err != nil {
 				return err
 			}
 		}
-		if h.tableExists("case_intake_parties") && rawPayload["parties"] != nil {
-			if err := tx.Table("case_intake_parties").Where("intake_id = ?", id).Delete(map[string]interface{}{}).Error; err != nil {
-				return err
-			}
+		if hasIntakeParties && rawPayload["parties"] != nil {
+			// Resolve every party row while the previous rows are still
+			// present, so an empty identity can inherit the protected
+			// values from the row it replaces.
+			partyRows := make([]map[string]interface{}, 0, len(parties))
 			for _, party := range parties {
-				row, err := prepareCaseIntakePartyRow(party, id, now)
+				row, err := h.prepareCaseIntakePartyUpdateRow(tx, id, party, now, intakePartySchemaReady)
 				if err != nil {
 					return err
 				}
+				partyRows = append(partyRows, row)
+			}
+			if err := tx.Table("case_intake_parties").Where("intake_id = ?", id).Delete(map[string]interface{}{}).Error; err != nil {
+				return err
+			}
+			for _, row := range partyRows {
 				if err := tx.Table("case_intake_parties").Create(row).Error; err != nil {
 					return err
 				}
 			}
 		}
-		if h.tableExists("case_materials") && rawPayload["materials"] != nil {
+		if hasIntakeMaterials && rawPayload["materials"] != nil {
 			if err := tx.Table("case_materials").Where("intake_id = ?", id).Delete(map[string]interface{}{}).Error; err != nil {
 				return err
 			}
@@ -2071,7 +2151,7 @@ func prepareCaseIntakePartyRow(party map[string]interface{}, intakeID interface{
 	}
 	identityType := strings.ToUpper(strings.TrimSpace(stringValue(party["identity_type"], stringValue(party["identityType"], ""))))
 	identityNumber := security.NormalizeIdentityNumber(identityType, stringValue(party["identity_number"], stringValue(party["identityNumber"], "")))
-	if !validIntakeIdentityType(row["entity_type"], identityType) || len([]rune(identityNumber)) < 4 {
+	if strings.TrimSpace(identityNumber) != "" && (!validIntakeIdentityType(row["entity_type"], identityType) || len([]rune(identityNumber)) < 4) {
 		return nil, services.NewSubjectWorkflowError("INTAKE_PARTY_IDENTITY_REQUIRED", fmt.Sprintf("当事人“%s”必须提供与主体类型匹配的可核验身份标识", row["entity_name"]))
 	}
 	ciphertext, digest, err := security.ProtectIdentityNumber(identityNumber)
@@ -2139,7 +2219,10 @@ func (h *DemoAggregateHandler) ConfirmIntakeFacts(c *gin.Context) {
 		common.APIBadRequest(c, "冲突检查前置资料不完整", "请先填写客户、案件名称和案件类型")
 		return
 	}
-	if clientID := intakeClientID(intake["client_id"]); clientID == 0 || !h.authorizeIntakeClient(c, clientID) {
+	// authorizeIntakeClient always writes an error response for an invalid or
+	// unreadable client. Calling it unconditionally keeps a NULL client_id
+	// draft from slipping through as an empty HTTP 200.
+	if clientID := intakeClientID(intake["client_id"]); !h.authorizeIntakeClient(c, clientID) {
 		return
 	}
 	if h.tableExists("case_intake_parties") {
@@ -2189,7 +2272,7 @@ func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
 		common.NewAPIError(c, http.StatusConflict, "INTAKE_FACTS_NOT_CONFIRMED", "请由负责律师先确认当事人事实，再运行利益冲突检查")
 		return
 	}
-	if clientID := intakeClientID(intake["client_id"]); clientID == 0 || !h.authorizeIntakeClient(c, clientID) {
+	if clientID := intakeClientID(intake["client_id"]); !h.authorizeIntakeClient(c, clientID) {
 		return
 	}
 	if h.conflictService == nil {
@@ -2345,8 +2428,19 @@ func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
 		common.APIBadRequest(c, "冲突检查前置资料不完整", "案件名称和案件类型不能为空")
 		return
 	}
-	result, err := h.conflictService.PerformConflictCheck(c.Request.Context(), request)
+	if !models.IsValidConflictCaseType(request.CaseType) {
+		common.NewAPIError(c, http.StatusBadRequest, "VALIDATION_005",
+			fmt.Sprintf("接案草稿保存的案件类型“%s”不在正式冲突检查的规范列表中，请更新案件类型后重试", request.CaseType))
+		return
+	}
+	factsConfirmedAt := strings.TrimSpace(fmt.Sprint(metadata["lawyer_facts_confirmed_at"]))
+	result, err := h.conflictService.PrepareConflictCheck(c.Request.Context(), request)
 	if err != nil {
+		var conflictErr *models.ConflictError
+		if errors.As(err, &conflictErr) {
+			common.NewAPIError(c, http.StatusBadRequest, conflictErr.Code, conflictErr.Message)
+			return
+		}
 		common.APIInternalServerError(c, "执行冲突检查失败", err.Error())
 		return
 	}
@@ -2363,7 +2457,8 @@ func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
 	if result.Decision != nil {
 		coverageStatus = result.Decision.CoverageStatus
 	}
-	if err := repositories.LinkConflictCheckToCase(c.Request.Context(), h.db, repositories.ConflictSubjectAssociation{
+	materials := h.conflictService.BuildConflictCheckRecord(c.Request.Context(), request, result)
+	if err := repositories.CommitIntakeConflictResult(c.Request.Context(), h.db, materials, result.ConflictCases, result.NormalizedSubjects, result, repositories.ConflictSubjectAssociation{
 		CheckID:           result.CheckID,
 		SubjectCaseID:     firstNonEmpty(valueString(metadata, "subject_case_id"), valueString(metadata, "subjectCaseId")),
 		SubjectCaseNumber: firstNonEmpty(valueString(metadata, "subject_case_number"), valueString(metadata, "subjectCaseNumber")),
@@ -2371,24 +2466,10 @@ func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
 		ClientID:          fmt.Sprint(intake["client_id"]),
 		CoverageStatus:    coverageStatus,
 		CheckedAt:         result.CheckTime,
-	}); err != nil {
+	}, factsConfirmedAt); err != nil {
 		common.APIInternalServerError(c, "保存冲突检测结果失败", err.Error())
 		return
 	}
-	metadata["conflict_check_id"] = result.CheckID
-	if result.Decision != nil {
-		metadata["conflict_coverage_status"] = result.Decision.CoverageStatus
-	}
-	metadata["conflict_checked_at"] = result.CheckTime
-	if err := h.db.Table("case_intakes").Where("id = ?", intakeID).Updates(map[string]interface{}{
-		"status":     "conflict_ready",
-		"metadata":   jsonStringValue(metadata),
-		"updated_at": time.Now(),
-	}).Error; err != nil {
-		common.APIInternalServerError(c, "保存冲突检测结果失败", "检测结果未能写回接案记录，已阻止继续办理")
-		return
-	}
-
 	common.APISuccess(c, gin.H{
 		"taskId":                     result.CheckID,
 		"checkId":                    result.CheckID,

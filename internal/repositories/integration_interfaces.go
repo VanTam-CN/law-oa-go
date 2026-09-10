@@ -26,6 +26,9 @@ type IntegrationRepositoryInterface interface {
 	MarkCaseCreationFailed(ctx context.Context, approvalID, message string) error
 	GetConflictCheckRecord(ctx context.Context, checkID string) (*models.ConflictCheckRecord, error)
 	GetLatestConflictReview(ctx context.Context, checkID string) (*models.ConflictReview, error)
+	// LinkConflictCaseParties materializes the reviewed check parties onto
+	// the formal case in one transaction; any failure rolls back the batch.
+	LinkConflictCaseParties(ctx context.Context, caseID uint, parties []models.ConflictPartyInfo) error
 
 	// 集成配置管理
 	CreateIntegrationConfig(ctx context.Context, config *IntegrationConfig) error

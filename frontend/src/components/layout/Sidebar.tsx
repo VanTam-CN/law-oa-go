@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react'
-import { Layout, Menu } from 'antd'
+import { Drawer, Layout, Menu } from 'antd'
 import { message } from '@/utils/messageHelper'
 import {
   FileDoneOutlined,
@@ -51,9 +51,17 @@ interface SidebarProps {
   collapsed: boolean
   setCollapsed: (collapsed: boolean) => void
   onWidthChange?: (width: number) => void
+  mobileOpen?: boolean
+  onMobileClose?: () => void
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChange }) => {
+const Sidebar: React.FC<SidebarProps> = ({
+  collapsed,
+  setCollapsed,
+  onWidthChange,
+  mobileOpen,
+  onMobileClose,
+}) => {
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAppStore()
@@ -69,6 +77,13 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
       onWidthChange(collapsed ? 80 : 240)
     }
   }, [collapsed, onWidthChange])
+
+  // 移动端抽屉：路由切换后自动收起，避免遮挡新页面内容
+  useEffect(() => {
+    if (mobileOpen) {
+      onMobileClose?.()
+    }
+  }, [location.pathname, mobileOpen, onMobileClose])
 
   // 根据当前路径获取选中的菜单项
   const getSelectedKeys = () => {
@@ -328,6 +343,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
   }
 
   return (
+    <>
     <Sider
       collapsible
       collapsed={collapsed}
@@ -389,6 +405,32 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, onWidthChang
         </div>
       )}
     </Sider>
+    <Drawer
+      placement='left'
+      open={mobileOpen ?? false}
+      onClose={() => onMobileClose?.()}
+      width={280}
+      className='mobile-nav-drawer'
+      title={
+        <div className='mobile-nav-title'>
+          <span className='mobile-nav-logo' aria-hidden='true'>⚖</span>
+          <span>导航菜单</span>
+        </div>
+      }
+      styles={{ body: { padding: 0 } }}
+    >
+      <Menu
+        mode='inline'
+        selectedKeys={getSelectedKeys()}
+        defaultOpenKeys={getOpenKeys()}
+        items={renderMenuItems(menuItems)}
+        className='sidebar-menu mobile-nav-menu'
+        inlineCollapsed={false}
+        expandIcon={<span className='menu-expand-icon'>▼</span>}
+        style={{ borderInlineEnd: 'none' }}
+      />
+    </Drawer>
+    </>
   )
 }
 

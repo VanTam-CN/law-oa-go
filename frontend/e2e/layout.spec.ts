@@ -40,7 +40,7 @@ test.describe('律师端响应式布局', () => {
     }
   })
 
-  test('窄屏下侧栏自动折叠且冲突清单仍保留可用宽度', async ({ page }) => {
+  test('窄屏下侧栏隐藏且可通过抽屉菜单导航', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await seedAuthenticatedUser(page, 'lawyer')
     await page.goto('/conflict')
@@ -56,6 +56,11 @@ test.describe('律师端响应式布局', () => {
     )
     expect(siderWidth).toBeLessThanOrEqual(80)
     expect(contentWidth).toBeGreaterThanOrEqual(260)
+
+    await page.locator('.mobile-nav-btn').click()
+    const drawer = page.locator('.mobile-nav-drawer')
+    await expect(drawer).toBeVisible()
+    await expect(drawer.locator('.sidebar-menu')).toBeVisible()
   })
 
   test('客户主档案页面不应该撑破视口', async ({ page }) => {
@@ -68,7 +73,7 @@ test.describe('律师端响应式布局', () => {
     await expectNoPageHorizontalOverflow(page)
   })
 
-  test('平板与小窗口下侧栏偏移和正文宽度保持一致', async ({ page }) => {
+  test('平板与窄窗口下侧栏折叠或隐藏且正文可用', async ({ page }) => {
     await seedAuthenticatedUser(page, 'lawyer')
 
     await page.setViewportSize({ width: 960, height: 760 })
@@ -94,15 +99,11 @@ test.describe('律师端响应式布局', () => {
     await waitForAppShell(page)
     await page.waitForTimeout(500)
     await expectNoPageHorizontalOverflow(page)
-    siderBox = await page.locator('.ant-layout-sider').evaluate((element) => {
-      const box = element.getBoundingClientRect()
-      return { left: box.left, right: box.right, width: box.width }
-    })
     contentBox = await page.locator('main.ant-layout-content').evaluate((element) => {
       const box = element.getBoundingClientRect()
       return { left: box.left, right: box.right, width: box.width }
     })
-    expect(siderBox.right).toBeLessThanOrEqual(0)
+    
     expect(contentBox.left).toBeLessThanOrEqual(16)
     expect(contentBox.width).toBeGreaterThanOrEqual(600)
   })
