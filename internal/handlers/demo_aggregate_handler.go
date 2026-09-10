@@ -1813,6 +1813,30 @@ func (h *DemoAggregateHandler) firstByID(table string, id interface{}) map[strin
 	return nil
 }
 
+// timeNow is a seam so tests can pin timestamps to prove same-second intake
+// code uniqueness without sleeping.
+var timeNow = time.Now
+
+// generateIntakeCode keeps the readable INT-<timestamp> prefix and appends a
+// short random suffix so two valid intakes in the same second never collide on
+// the unique index idx_case_intakes_intake_code.
+var generateIntakeCode = func() string {
+	suffix := strings.ToUpper(strings.ReplaceAll(uuid.NewString(), "-", "")[:6])
+	return fmt.Sprintf("INT-%s-%s", timeNow().Format("20060102150405"), suffix)
+}
+
+// isDuplicateKeyError reports insert failures caused by a unique constraint
+// across the supported drivers (SQLite/PostgreSQL/MySQL).
+func isDuplicateKeyError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "UNIQUE constraint failed") ||
+		strings.Contains(msg, "duplicate key value violates unique constraint") ||
+		strings.Contains(msg, "Error 1062")
+}
+
 func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
 	if denyIntakeWriteForPlainUser(c) {
 		return
@@ -1879,10 +1903,10 @@ func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
 		common.NewAPIError(c, http.StatusServiceUnavailable, "INTAKE_PARTY_IDENTITY_SCHEMA_REQUIRED", "接案当事人身份保护字段尚未迁移，已阻止保存；请执行数据库迁移 000070")
 		return
 	}
-	now := time.Now()
+	now := timeNow()
 	intakeID := uuid.NewString()
 	intakePayload["id"] = intakeID
-	intakePayload["intake_code"] = fmt.Sprintf("INT-%s", now.Format("20060102150405"))
+	intakePayload["intake_code"] = generateIntakeCode()
 	intakePayload["status"] = stringValue(intakePayload["status"], "draft")
 	intakePayload["priority"] = stringValue(intakePayload["priority"], "medium")
 	intakePayload["metadata"] = jsonStringValue(intakePayload["metadata"])
@@ -1894,10 +1918,13 @@ func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
 	intakePayload["updated_at"] = now
 
 	if h.tableExists("case_intakes") {
-		err := h.db.Transaction(func(tx *gorm.DB) error {
-			if err := tx.Table("case_intakes").Create(intakePayload).Error; err != nil {
-				return err
-			}
+		var err error
+		for attempt := 0; attempt < 3; attempt++ {
+			intakePayload["intake_code"] = generateIntakeCode()
+			err = h.db.Transaction(func(tx *gorm.DB) error {
+				if err := tx.Table("case_intakes").Create(intakePayload).Error; err != nil {
+					return err
+				}
 			if h.tableExists("case_intake_parties") {
 				for _, party := range parties {
 					row, err := h.prepareCaseIntakePartyCreateRow(party, intakeID, now)
@@ -1927,8 +1954,12 @@ func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
 					}
 				}
 			}
-			return nil
-		})
+				return nil
+			})
+			if err == nil || !isDuplicateKeyError(err) {
+				break
+			}
+		}
 		if err != nil {
 			if idempotencyKey != "" && h.hasColumn("case_intakes", "idempotency_key") {
 				var existing map[string]interface{}
