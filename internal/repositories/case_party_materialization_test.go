@@ -91,9 +91,10 @@ func TestLinkConflictCasePartiesIsIdempotent(t *testing.T) {
 	assert.EqualValues(t, 2, count)
 }
 
-// Unknown roles must be skipped instead of being written as an unreviewable
-// party class, and the call must stay readable for an empty case id.
-func TestLinkConflictCasePartiesSkipsUnknownRoles(t *testing.T) {
+// Unknown roles must be rejected explicitly instead of being written as an
+// unreviewable party class, and the rejected batch must leave no partial
+// rows behind; the call must stay readable for an empty case id.
+func TestLinkConflictCasePartiesRejectsUnknownRoles(t *testing.T) {
 	db := setupPartyMaterializationDB(t)
 	repo := &IntegrationRepository{db: db}
 	caseID := uint(51)
@@ -101,12 +102,15 @@ func TestLinkConflictCasePartiesSkipsUnknownRoles(t *testing.T) {
 		{Name: "未知角色有限公司", Role: "MYSTERY_ROLE", EntityType: "LEGAL_PERSON", Identifiers: digestIdentifier("digest-unknown")},
 		{Name: "正常对手方有限公司", Role: "opposing", EntityType: "LEGAL_PERSON", Identifiers: digestIdentifier("digest-normal")},
 	}
-	require.NoError(t, repo.LinkConflictCaseParties(context.Background(), caseID, parties))
+	require.Error(t, repo.LinkConflictCaseParties(context.Background(), caseID, parties))
 
 	var rows []models.CaseParty
 	require.NoError(t, db.Where("case_id = ?", caseID).Find(&rows).Error)
-	require.Len(t, rows, 1)
-	assert.Equal(t, models.PartyRoleDefendant, rows[0].Role)
+	require.Len(t, rows, 0, "a rejected batch must not leave partial case-party rows")
+
+	var entities []models.Entity
+	require.NoError(t, db.Find(&entities).Error)
+	require.Len(t, entities, 0, "the rollback must also remove entities created in the rejected batch")
 
 	require.Error(t, repo.LinkConflictCaseParties(context.Background(), 0, parties))
 }

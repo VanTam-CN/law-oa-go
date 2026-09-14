@@ -299,10 +299,13 @@ func normalizeConflictPartyRole(value string) string {
 
 // LinkConflictCaseParties writes every reviewed conflict-check party onto the
 // formal case inside one transaction. Entities are deduplicated by identity
-// digest first and then by exact name so the client row reuses its archive
-// entity. Identity values are stored only as the digest; plaintext and
-// ciphertext columns stay empty per the production gate. Any failure rolls
-// back all party writes for this case.
+// digest first; exact-name reuse is a fallback only for parties without a
+// digest and never merges two different digests. Identity values are stored
+// only as the digest; plaintext and ciphertext columns stay empty per the
+// production gate. One row is written per (entity, role), so a subject with
+// two reviewed roles keeps both. Unknown roles are rejected explicitly and
+// the whole batch rolls back; any failure rolls back all party writes for
+// this case.
 func (r *IntegrationRepository) LinkConflictCaseParties(ctx context.Context, caseID uint, parties []models.ConflictPartyInfo) error {
 	if caseID == 0 {
 		return fmt.Errorf("正式案件ID为空，无法写入案件当事人")
@@ -310,6 +313,9 @@ func (r *IntegrationRepository) LinkConflictCaseParties(ctx context.Context, cas
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		seenDigest := map[string]uint{}
 		seenName := map[string]uint{}
+		// Lowercased name -> true when a digest-bearing party owns the name
+		// in this batch; used to keep digest-less same-name parties separate.
+		seenDigestByName := map[string]bool{}
 		order := 0
 		for _, party := range parties {
 			name := strings.TrimSpace(party.Name)
@@ -318,7 +324,10 @@ func (r *IntegrationRepository) LinkConflictCaseParties(ctx context.Context, cas
 			}
 			role := normalizeConflictPartyRole(party.Role)
 			if role == "" {
-				continue
+				// An unreviewable role must be rejected explicitly. The
+				// surrounding transaction rolls back the whole batch, so a
+				// rejected party never leaves partial case-party rows behind.
+				return fmt.Errorf("当事人 %q 的角色 %q 无法归入案件角色，已拒绝写入", party.Name, party.Role)
 			}
 			digest := ""
 			identityType := models.IdentityType("")
@@ -340,7 +349,7 @@ func (r *IntegrationRepository) LinkConflictCaseParties(ctx context.Context, cas
 			if strings.EqualFold(strings.TrimSpace(party.EntityType), "LEGAL_PERSON") {
 				entityType = models.EntityTypeLegalPerson
 			}
-			entityID, err := ensureConflictPartyEntity(tx, name, digest, identityType, entityType, seenDigest, seenName)
+			entityID, err := ensureConflictPartyEntity(tx, name, digest, identityType, entityType, seenDigest, seenName, seenDigestByName)
 			if err != nil {
 				return err
 			}
@@ -349,7 +358,11 @@ func (r *IntegrationRepository) LinkConflictCaseParties(ctx context.Context, cas
 			}
 			partyType, roleValue := casePartyRoleMapping(role)
 			var existing models.CaseParty
-			if err := tx.Where("case_id = ? AND entity_id = ? AND deleted_at IS NULL", caseID, entityID).First(&existing).Error; err == nil {
+			// The formal schema has no uniqueness constraint on case_parties,
+			// so idempotency is enforced per (case, entity, role): re-running
+			// the batch keeps one row per reviewed role, including when one
+			// subject legitimately holds two reviewed roles.
+			if err := tx.Where("case_id = ? AND entity_id = ? AND role = ? AND deleted_at IS NULL", caseID, entityID, roleValue).First(&existing).Error; err == nil {
 				continue
 			}
 			row := &models.CaseParty{
@@ -372,11 +385,8 @@ func (r *IntegrationRepository) LinkConflictCaseParties(ctx context.Context, cas
 // digest match always wins; exact-name reuse is the only fallback for
 // parties without a protected digest, so low-entropy identifiers never
 // merge two different subjects.
-func ensureConflictPartyEntity(tx *gorm.DB, name, digest string, identityType models.IdentityType, entityType models.EntityType, seenDigest map[string]uint, seenName map[string]uint) (uint, error) {
+func ensureConflictPartyEntity(tx *gorm.DB, name, digest string, identityType models.IdentityType, entityType models.EntityType, seenDigest map[string]uint, seenName map[string]uint, seenDigestByName map[string]bool) (uint, error) {
 	key := strings.ToLower(name)
-	if entityID, ok := seenName[key]; ok {
-		return entityID, nil
-	}
 	if digest != "" {
 		if entityID, ok := seenDigest[digest]; ok {
 			return entityID, nil
@@ -385,11 +395,22 @@ func ensureConflictPartyEntity(tx *gorm.DB, name, digest string, identityType mo
 		if err := tx.Where("identity_number_digest = ? AND deleted_at IS NULL", digest).First(&entity).Error; err == nil {
 			seenDigest[digest] = entity.ID
 			seenName[key] = entity.ID
+			seenDigestByName[key] = true
 			return entity.ID, nil
 		}
-	} else if identityType == "" {
+	} else if identityType == "" && !seenDigestByName[key] {
+		// No digest: exact-name reuse is only safe when no digest-bearing
+		// party already claimed this name in this batch, otherwise a
+		// different digest-backed subject owns the name and this party must
+		// stay a separate subject.
+		if entityID, ok := seenName[key]; ok {
+			return entityID, nil
+		}
 		var entity models.Entity
-		if err := tx.Where("LOWER(name) = ? AND deleted_at IS NULL", key).First(&entity).Error; err == nil {
+		// A stored digest-bearing entity with this name is a different
+		// subject even when the name matches, so exclude it from the
+		// digest-less fallback lookup.
+		if err := tx.Where("LOWER(name) = ? AND deleted_at IS NULL AND (identity_number_digest = '' OR identity_number_digest IS NULL)", key).Order("id").First(&entity).Error; err == nil {
 			seenName[key] = entity.ID
 			return entity.ID, nil
 		}
@@ -412,6 +433,7 @@ func ensureConflictPartyEntity(tx *gorm.DB, name, digest string, identityType mo
 		if err := lookup.First(&entity).Error; err == nil {
 			seenDigest[digest] = entity.ID
 			seenName[key] = entity.ID
+			seenDigestByName[key] = digest != ""
 			return entity.ID, nil
 		}
 		return 0, fmt.Errorf("写入案件主体失败: %w", err)
@@ -420,6 +442,7 @@ func ensureConflictPartyEntity(tx *gorm.DB, name, digest string, identityType mo
 	if digest != "" {
 		seenDigest[digest] = created.ID
 	}
+	seenDigestByName[key] = digest != ""
 	return created.ID, nil
 }
 
