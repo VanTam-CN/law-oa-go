@@ -1936,7 +1936,17 @@ func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
 				}
 			if h.tableExists("case_intake_parties") {
 				for _, party := range parties {
-					row, err := h.prepareCaseIntakePartyCreateRow(party, intakeID, now)
+					var row map[string]interface{}
+					var err error
+					if strings.EqualFold(strings.TrimSpace(stringValue(party["party_role"], "")), "client") {
+						// The client party is authored from the protected client
+						// master record: resolve its guarded identity inside the
+						// same transaction instead of demanding raw identity
+						// input from the browser.
+						row, err = h.prepareCaseIntakeClientPartyRow(intakePayload["client_id"], party, intakeID, now)
+					} else {
+						row, err = h.prepareCaseIntakePartyCreateRow(party, intakeID, now)
+					}
 					if err != nil {
 						return err
 					}

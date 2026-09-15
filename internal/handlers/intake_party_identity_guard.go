@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"law-oa-go/internal/models"
 	"law-oa-go/internal/services"
 
 	"gorm.io/gorm"
@@ -76,6 +77,49 @@ func (h *DemoAggregateHandler) prepareCaseIntakePartyCreateRow(party map[string]
 	}
 	if !caseIntakePartyIdentityInputPresent(party) {
 		return nil, services.NewSubjectWorkflowError("INTAKE_PARTY_IDENTITY_REQUIRED", fmt.Sprintf("当事人“%s”必须提供与主体类型匹配的可核验身份标识", row["entity_name"]))
+	}
+	return row, nil
+}
+
+// prepareCaseIntakeClientPartyRow resolves the client party from the
+// PROTECTED client master record. The master-record lookup re-authorizes
+// nothing by itself: the caller must already have passed
+// authorizeIntakeClient for this client_id on this request, and the row is
+// only accepted when the guarded identity exists and the party name
+// matches the selected client. The identity never leaves the server as
+// plaintext: it is re-protected with the same guarded format used for
+// intake parties (ciphertext + digest). The party payload still cannot
+// override the master identity; mismatches are rejected instead.
+func (h *DemoAggregateHandler) prepareCaseIntakeClientPartyRow(clientIDInput interface{}, party map[string]interface{}, intakeID interface{}, now time.Time) (map[string]interface{}, error) {
+	row, err := prepareCaseIntakePartyRow(party, intakeID, now)
+	if err != nil {
+		return nil, err
+	}
+	clientID := intakeClientID(clientIDInput)
+	if clientID == 0 {
+		return nil, services.NewSubjectWorkflowError("INTAKE_CLIENT_REQUIRED", "客户方当事人必须关联有效的客户档案")
+	}
+	var client models.Client
+	if err := h.db.First(&client, clientID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, services.NewSubjectWorkflowError("INTAKE_CLIENT_REQUIRED", "客户档案不存在，已阻止客户方当事人落库")
+		}
+		return nil, err
+	}
+	ciphertext := client.IdentityCiphertextValue()
+	digest := client.IdentityDigestValue()
+	if ciphertext == "" || digest == "" {
+		return nil, services.NewSubjectWorkflowError("INTAKE_CLIENT_IDENTITY_REQUIRED", "客户主档案缺少受保护的可核验身份标识，不能登记客户方当事人")
+	}
+	clientName := strings.TrimSpace(client.Name)
+	if clientName == "" || !strings.EqualFold(clientName, strings.TrimSpace(fmt.Sprint(row["entity_name"]))) {
+		return nil, services.NewSubjectWorkflowError("INTAKE_CLIENT_MISMATCH", "客户方当事人名称与所选客户档案不一致，已阻止登记")
+	}
+	row["identity_type"] = string(client.EffectiveIdentityType())
+	row["identity_number_ciphertext"] = ciphertext
+	row["identity_number_digest"] = digest
+	if strings.TrimSpace(client.Aliases) != "" {
+		row["aliases"] = client.Aliases
 	}
 	return row, nil
 }

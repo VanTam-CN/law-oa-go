@@ -1159,6 +1159,7 @@ interface ClientOption {
   name: string
   email?: string
   phone?: string
+  clientType?: string
   displayLabel: string
 }
 
@@ -1336,6 +1337,7 @@ function normalizeClientOptions(data: any): ClientOption[] {
       name: textValue(item.name, ''),
       email: textValue(item.email, ''),
       phone: textValue(item.phone, ''),
+      clientType: textValue(item.type, ''),
       displayLabel: '',
     }))
     .filter((item: ClientOption) => item.id > 0 && item.name)
@@ -4376,7 +4378,13 @@ export function CaseIntakeWorkbench() {
       parties: [
         {
           entity_name: form.clientName,
-          entity_type: 'company',
+          entity_type:
+            (clientOptions.find((client) => client.id === form.clientId)?.clientType || '')
+              .includes('个') ||
+            (clientOptions.find((client) => client.id === form.clientId)?.clientType || '')
+              .toLowerCase() === 'person'
+              ? 'INDIVIDUAL'
+              : 'LEGAL_PERSON',
           party_role: 'client',
           relation_depth: 0,
         },
