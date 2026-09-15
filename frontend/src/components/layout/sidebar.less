@@ -480,11 +480,19 @@
 
     .sidebar-menu.mobile-nav-menu {
       border-inline-end: none;
+      // 抽屉是浅色背景，覆盖深色侧栏的白色文字，避免菜单项不可见
+      color: #1f2937 !important;
 
       .ant-menu-item,
       .ant-menu-submenu-title {
         height: 44px;
         line-height: 44px;
+        color: #1f2937 !important;
+
+        &:hover {
+          background: rgba(18, 99, 216, 0.08) !important;
+          color: #1263d8 !important;
+        }
       }
     }
   }

@@ -65,6 +65,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAppStore()
+  const prevPathRef = React.useRef(location.pathname)
 
   const hasPermission = React.useCallback(
     (permission: string): boolean => userHasPermission(user, permission),
@@ -78,11 +79,14 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   }, [collapsed, onWidthChange])
 
-  // 移动端抽屉：路由切换后自动收起，避免遮挡新页面内容
+  // 移动端抽屉：路由切换后自动收起，避免遮挡新页面内容。
+  // 注意：只能在实际路由变化时收起；否则 mobileOpen 从 false 变 true 也会触发，
+  // 导致抽屉刚打开就被立刻关闭。
   useEffect(() => {
-    if (mobileOpen) {
+    if (mobileOpen && prevPathRef.current !== location.pathname) {
       onMobileClose?.()
     }
+    prevPathRef.current = location.pathname
   }, [location.pathname, mobileOpen, onMobileClose])
 
   // 根据当前路径获取选中的菜单项
