@@ -32,6 +32,15 @@ type DemoAggregateHandler struct {
 	authz           *services.AuthorizationService
 }
 
+// lawyerFactsVersionKey is the server-owned facts version token stored in
+// intake metadata. Every ConfirmIntakeFacts call rotates it with uuid.NewString(),
+// so two confirmations in the same RFC3339 second still produce distinct,
+// non-reusable facts snapshots. UpdateCaseIntake deletes it when conflict-relevant
+// facts change, which atomically invalidates any in-flight check built on the
+// prior confirmation. User-supplied metadata cannot override it because the
+// value is (re)assigned server-side after all client metadata is merged.
+var lawyerFactsVersionKey = "lawyer_facts_version"
+
 var allowedAssistantDraftFields = map[string]struct{}{
 	"title":       {},
 	"case_type":   {},
@@ -2088,6 +2097,7 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 			metadata["conflict_invalidated_at"] = time.Now().UTC().Format(time.RFC3339)
 			metadata["conflict_invalidated_by"] = actorID
 			metadata["conflict_invalidation_reason"] = "接案事实发生变化，必须重新确认并检测"
+		delete(metadata, lawyerFactsVersionKey)
 			payload["status"] = "draft"
 			payload["metadata"] = jsonStringValue(metadata)
 		}
@@ -2263,15 +2273,29 @@ func (h *DemoAggregateHandler) ConfirmIntakeFacts(c *gin.Context) {
 			return
 		}
 	}
-	metadata := objectValue(intake["metadata"])
-	metadata["lawyer_facts_confirmed_at"] = time.Now().UTC().Format(time.RFC3339)
-	metadata["lawyer_facts_confirmed_by"] = actorID
-	if err := h.db.Table("case_intakes").Where("id = ?", intakeID).Updates(map[string]interface{}{
-		"created_by": actorID,
-		"status":     "lawyer_facts_confirmed",
-		"metadata":   jsonStringValue(metadata),
-		"updated_at": time.Now(),
-	}).Error; err != nil {
+	// The confirmation must be serialized against a racing update: read the
+	// row under a lock, then rotate the server-owned facts version in the
+	// same transaction. The version token - not the RFC3339 timestamp - is
+	// what an in-flight conflict check is validated against at commit time.
+	if err := h.db.Transaction(func(tx *gorm.DB) error {
+		var row struct {
+			Metadata []byte
+		}
+		if err := tx.Table("case_intakes").Clauses(clause.Locking{Strength: "UPDATE"}).
+			Select("metadata").Where("id = ?", intakeID).Take(&row).Error; err != nil {
+			return err
+		}
+		metadata := objectValue(row.Metadata)
+		metadata["lawyer_facts_confirmed_at"] = time.Now().UTC().Format(time.RFC3339)
+		metadata["lawyer_facts_confirmed_by"] = actorID
+		metadata[lawyerFactsVersionKey] = uuid.NewString()
+		return tx.Table("case_intakes").Where("id = ?", intakeID).Updates(map[string]interface{}{
+			"created_by": actorID,
+			"status":     "lawyer_facts_confirmed",
+			"metadata":   jsonStringValue(metadata),
+			"updated_at": time.Now(),
+		}).Error
+	}); err != nil {
 		common.APIInternalServerError(c, "确认接案事实失败", err.Error())
 		return
 	}
@@ -2469,6 +2493,10 @@ func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
 	if tokenValue, ok := metadata["conflict_commit_token"].(string); ok {
 		commitToken = strings.TrimSpace(tokenValue)
 	}
+	factsVersion := ""
+	if versionValue, ok := metadata["lawyer_facts_version"].(string); ok {
+		factsVersion = strings.TrimSpace(versionValue)
+	}
 	result, err := h.conflictService.PrepareConflictCheck(c.Request.Context(), request)
 	if err != nil {
 		var conflictErr *models.ConflictError
@@ -2502,7 +2530,13 @@ func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
 		CoverageStatus:    coverageStatus,
 		CheckedAt:         result.CheckTime,
 		ExpectedCommitToken: commitToken,
+		ExpectedFactsVersion: factsVersion,
 	}, factsConfirmedAt); err != nil {
+		var staleErr *repositories.IntakeConflictStaleFactsError
+		if errors.As(err, &staleErr) {
+			common.NewAPIError(c, http.StatusConflict, "INTAKE_FACTS_STALE", staleErr.Error())
+			return
+		}
 		var raceErr *repositories.IntakeConflictCommitRaceError
 		if errors.As(err, &raceErr) {
 			common.NewAPIError(c, http.StatusConflict, "CONFLICT_COMMIT_RACE", raceErr.Error())

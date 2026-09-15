@@ -39,6 +39,17 @@ func (e *IntakeConflictCommitRaceError) Error() string {
 	return fmt.Sprintf("接案冲突检测已由并发请求提交（检测编号 %s），请复用该结果，不要重复提交", e.WinningCheckID)
 }
 
+// IntakeConflictStaleFactsError reports that the facts snapshot this conflict
+// check was built from is no longer the confirmed snapshot on the intake row:
+// the facts version (or confirmation) changed while the check was running.
+// This is a typed business conflict: the caller maps it to HTTP 409 with a
+// refresh instruction, not an internal server error.
+type IntakeConflictStaleFactsError struct{}
+
+func (e *IntakeConflictStaleFactsError) Error() string {
+	return "接案事实在检测期间已发生变化，请重新确认事实后再检测"
+}
+
 // BasicConflictRepository 基础冲突检测数据仓库接口
 type BasicConflictRepository interface {
 	// 保存冲突检测记录
@@ -87,6 +98,10 @@ type ConflictSubjectAssociation struct {
 	// handler read the intake row. An empty value only matches an intake that
 	// has never committed a formal check (the first commit initializes it).
 	ExpectedCommitToken string
+	// ExpectedFactsVersion is the lawyer_facts_version observed when the
+	// handler read the intake row. An empty value only matches an intake
+	// whose confirmation predates versioned facts (legacy compatibility).
+	ExpectedFactsVersion string
 }
 
 // IntakeConflictSnapshot is the locked intake-row state used to validate a
@@ -154,7 +169,16 @@ func CommitIntakeConflictResult(
 		metadata := decodeJSONMap(snapshot.Metadata)
 		confirmedAt := strings.TrimSpace(fmt.Sprint(metadata["lawyer_facts_confirmed_at"]))
 		if expectedFactsConfirmedAt != "" && confirmedAt != expectedFactsConfirmedAt {
-			return fmt.Errorf("接案事实在检测期间已发生变化，请重新确认事实后再检测")
+			return &IntakeConflictStaleFactsError{}
+		}
+		// Facts-version gate: a confirm (or a same-second confirm after an
+		// update) rotates lawyer_facts_version, so any in-flight check built
+		// on the prior snapshot is stale even when the RFC3339 timestamp is
+		// unchanged. Empty expectation = legacy pre-versioning compatibility.
+		if versionValue, ok := metadata["lawyer_facts_version"].(string); ok && versionValue != "" {
+			if expectedVersion := strings.TrimSpace(association.ExpectedFactsVersion); expectedVersion != "" && versionValue != expectedVersion {
+				return &IntakeConflictStaleFactsError{}
+			}
 		}
 		currentToken := ""
 		if tokenValue, ok := metadata[conflictCommitTokenKey].(string); ok {
