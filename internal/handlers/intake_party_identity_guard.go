@@ -82,15 +82,17 @@ func (h *DemoAggregateHandler) prepareCaseIntakePartyCreateRow(party map[string]
 }
 
 // prepareCaseIntakeClientPartyRow resolves the client party from the
-// PROTECTED client master record. The master-record lookup re-authorizes
-// nothing by itself: the caller must already have passed
-// authorizeIntakeClient for this client_id on this request, and the row is
-// only accepted when the guarded identity exists and the party name
-// matches the selected client. The identity never leaves the server as
-// plaintext: it is re-protected with the same guarded format used for
-// intake parties (ciphertext + digest). The party payload still cannot
-// override the master identity; mismatches are rejected instead.
-func (h *DemoAggregateHandler) prepareCaseIntakeClientPartyRow(clientIDInput interface{}, party map[string]interface{}, intakeID interface{}, now time.Time) (map[string]interface{}, error) {
+// PROTECTED client master record. The master-record read runs on the
+// caller's transaction; authorization itself must have already passed
+// authorizeIntakeClient for this client_id on this request. The row is
+// only accepted when the guarded identity exists, the party name matches
+// the selected client, and the payload's subject type agrees with the
+// client master type. The identity never leaves the server as plaintext:
+// it is copied in its guarded form (ciphertext + digest).
+func (h *DemoAggregateHandler) prepareCaseIntakeClientPartyRow(tx *gorm.DB, clientIDInput interface{}, party map[string]interface{}, intakeID interface{}, now time.Time) (map[string]interface{}, error) {
+	if tx == nil {
+		return nil, services.NewSubjectWorkflowError("INTAKE_PARTY_IDENTITY_REQUIRED", "客户方当事人缺少事务绑定，已阻止登记")
+	}
 	row, err := prepareCaseIntakePartyRow(party, intakeID, now)
 	if err != nil {
 		return nil, err
@@ -100,7 +102,7 @@ func (h *DemoAggregateHandler) prepareCaseIntakeClientPartyRow(clientIDInput int
 		return nil, services.NewSubjectWorkflowError("INTAKE_CLIENT_REQUIRED", "客户方当事人必须关联有效的客户档案")
 	}
 	var client models.Client
-	if err := h.db.First(&client, clientID).Error; err != nil {
+	if err := tx.First(&client, clientID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, services.NewSubjectWorkflowError("INTAKE_CLIENT_REQUIRED", "客户档案不存在，已阻止客户方当事人落库")
 		}
@@ -115,6 +117,9 @@ func (h *DemoAggregateHandler) prepareCaseIntakeClientPartyRow(clientIDInput int
 	if clientName == "" || !strings.EqualFold(clientName, strings.TrimSpace(fmt.Sprint(row["entity_name"]))) {
 		return nil, services.NewSubjectWorkflowError("INTAKE_CLIENT_MISMATCH", "客户方当事人名称与所选客户档案不一致，已阻止登记")
 	}
+	if !clientEntityTypeMatchesMaster(fmt.Sprint(row["entity_type"]), &client) {
+		return nil, services.NewSubjectWorkflowError("INTAKE_CLIENT_TYPE_MISMATCH", "客户方当事人主体类型与客户档案不一致，已阻止登记")
+	}
 	row["identity_type"] = string(client.EffectiveIdentityType())
 	row["identity_number_ciphertext"] = ciphertext
 	row["identity_number_digest"] = digest
@@ -122,6 +127,37 @@ func (h *DemoAggregateHandler) prepareCaseIntakeClientPartyRow(clientIDInput int
 		row["aliases"] = client.Aliases
 	}
 	return row, nil
+}
+
+// clientEntityTypeMatchesMaster checks the payload subject type against the
+// client master record's effective identity type, so a forged entity_type
+// cannot reclassify a personal client as a legal person (or the reverse)
+// on the server side.
+func clientEntityTypeMatchesMaster(entityType string, client *models.Client) bool {
+	normalized := normalizeIntakeEntityType(entityType)
+	switch client.EffectiveIdentityType() {
+	case models.IdentityTypeSocialCredit, models.IdentityTypeBusinessLicense, models.IdentityTypeOrgCode:
+		return normalized == "LEGAL_PERSON"
+	case models.IdentityTypeIDCard, models.IdentityTypePassport:
+		return normalized == "INDIVIDUAL"
+	}
+	return false
+}
+
+// caseIntakePartyRoleValue is the single normalization point for the
+// client-role decision: it accepts both party_role and the legacy role
+// payload key so the two spellings cannot take different code paths.
+func caseIntakePartyRoleValue(party map[string]interface{}) string {
+	return strings.ToLower(strings.TrimSpace(stringValue(
+		firstNonEmptyValue(party["party_role"], party["role"]),
+		"related_party",
+	)))
+}
+
+// caseIntakePartyIsClient reports whether the payload row is the client
+// party, using the shared role normalization above.
+func caseIntakePartyIsClient(party map[string]interface{}) bool {
+	return caseIntakePartyRoleValue(party) == "client"
 }
 
 // prepareCaseIntakePartyUpdateRow is the update-path wrapper: with identity

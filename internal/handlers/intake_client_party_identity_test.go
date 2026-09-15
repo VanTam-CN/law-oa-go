@@ -24,9 +24,13 @@ func newClientPartyIdentityFixture(t *testing.T) (*DemoAggregateHandler, *gorm.D
 	return NewDemoAggregateHandler(db), db
 }
 
-func seedProtectedClient(t *testing.T, db *gorm.DB, id uint, name, clientType string) models.Client {
+func seedProtectedClient(t *testing.T, db *gorm.DB, id uint, name, clientType string, identityType models.IdentityType) models.Client {
 	t.Helper()
-	ciphertext, digest, err := security.ProtectIdentityNumber(security.NormalizeIdentityNumber("SOCIAL_CREDIT_CODE", "91310000MA1FL0000X"))
+	identityValue := "91310000MA1FL0000X"
+	if identityType == models.IdentityTypeIDCard {
+		identityValue = "310110199001010011"
+	}
+	ciphertext, digest, err := security.ProtectIdentityNumber(security.NormalizeIdentityNumber(string(identityType), identityValue))
 	if err != nil {
 		t.Fatalf("protect identity: %v", err)
 	}
@@ -34,7 +38,7 @@ func seedProtectedClient(t *testing.T, db *gorm.DB, id uint, name, clientType st
 		Name:                    name,
 		Type:                    clientType,
 		Email:                   "client@example.com",
-		IdentityType:            models.IdentityTypeSocialCredit,
+		IdentityType:            identityType,
 		IdentityNumberCiphertext: ciphertext,
 		IdentityNumberDigest:    digest,
 	}
@@ -50,9 +54,10 @@ func seedProtectedClient(t *testing.T, db *gorm.DB, id uint, name, clientType st
 func TestClientPartyRowInheritsProtectedIdentity(t *testing.T) {
 	t.Setenv("SUBJECT_DATA_KEY", strings.Repeat("s", 32))
 	h, db := newClientPartyIdentityFixture(t)
-	client := seedProtectedClient(t, db, 7, "星河智联有限公司", "企业")
+	client := seedProtectedClient(t, db, 7, "星河智联有限公司", "企业", models.IdentityTypeSocialCredit)
 
 	row, err := h.prepareCaseIntakeClientPartyRow(
+		db,
 		uint64(client.ID),
 		map[string]interface{}{"entity_name": client.Name, "party_role": "client", "entity_type": "LEGAL_PERSON"},
 		"intake-1", time.Now(),
@@ -73,9 +78,10 @@ func TestClientPartyRowInheritsProtectedIdentity(t *testing.T) {
 func TestClientPartyRowRejectsNameMismatch(t *testing.T) {
 	t.Setenv("SUBJECT_DATA_KEY", strings.Repeat("s", 32))
 	h, db := newClientPartyIdentityFixture(t)
-	client := seedProtectedClient(t, db, 8, "星河智联有限公司", "企业")
+	client := seedProtectedClient(t, db, 8, "星河智联有限公司", "企业", models.IdentityTypeSocialCredit)
 
 	_, err := h.prepareCaseIntakeClientPartyRow(
+		db,
 		uint64(client.ID),
 		map[string]interface{}{"entity_name": "别的主体有限公司", "party_role": "client", "entity_type": "LEGAL_PERSON"},
 		"intake-2", time.Now(),
@@ -95,6 +101,7 @@ func TestClientPartyRowRejectsClientWithoutIdentity(t *testing.T) {
 	db.Create(&client)
 
 	_, err := h.prepareCaseIntakeClientPartyRow(
+		db,
 		uint64(client.ID),
 		map[string]interface{}{"entity_name": client.Name, "party_role": "client", "entity_type": "LEGAL_PERSON"},
 		"intake-3", time.Now(),
@@ -114,6 +121,42 @@ func TestOpposingPartyStillRequiresIdentity(t *testing.T) {
 	)
 	if err == nil || !contains(err.Error(), "必须提供与主体类型匹配的可核验身份标识") {
 		t.Fatalf("opposing party without identity must still be rejected, got: %v", err)
+	}
+}
+
+// A personal client whose payload forges entity_type LEGAL_PERSON must be
+// rejected server-side; the frontend hint is not a trust boundary.
+func TestClientPartyRowRejectsForgedEntityType(t *testing.T) {
+	t.Setenv("SUBJECT_DATA_KEY", strings.Repeat("s", 32))
+	h, db := newClientPartyIdentityFixture(t)
+	client := seedProtectedClient(t, db, 11, "个人客户姓名", "个人", models.IdentityTypeIDCard)
+
+	_, err := h.prepareCaseIntakeClientPartyRow(
+		db,
+		uint64(client.ID),
+		map[string]interface{}{"entity_name": client.Name, "party_role": "client", "entity_type": "LEGAL_PERSON"},
+		"intake-5", time.Now(),
+	)
+	if err == nil || !contains(err.Error(), "主体类型与客户档案不一致") {
+		t.Fatalf("forged LEGAL_PERSON for a personal client must be rejected, got: %v", err)
+	}
+}
+
+// A corporate client whose payload forges entity_type INDIVIDUAL must also
+// be rejected server-side.
+func TestClientPartyRowRejectsForgedIndividualTypeOnCompany(t *testing.T) {
+	t.Setenv("SUBJECT_DATA_KEY", strings.Repeat("s", 32))
+	h, db := newClientPartyIdentityFixture(t)
+	client := seedProtectedClient(t, db, 12, "星河智联有限公司", "企业", models.IdentityTypeSocialCredit)
+
+	_, err := h.prepareCaseIntakeClientPartyRow(
+		db,
+		uint64(client.ID),
+		map[string]interface{}{"entity_name": client.Name, "party_role": "client", "entity_type": "INDIVIDUAL"},
+		"intake-6", time.Now(),
+	)
+	if err == nil || !contains(err.Error(), "主体类型与客户档案不一致") {
+		t.Fatalf("forged INDIVIDUAL for a corporate client must be rejected, got: %v", err)
 	}
 }
 
