@@ -293,6 +293,7 @@ chrome/
 !internal/services/astra_fail_fix_regress_test.go
 !internal/handlers/intake_client_party_identity_test.go
 !internal/repositories/astra_claim_lock_test.go
+!internal/services/pg_tracking_json_test.go
 !internal/router/router_authorization_test.go
 !internal/handlers/inbox_handler_security_test.go
 !internal/handlers/intake_facts_confirmation_test.go

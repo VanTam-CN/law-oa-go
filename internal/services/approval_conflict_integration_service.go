@@ -1449,6 +1449,7 @@ func (s *approvalConflictIntegrationService) updateCaseTracking(ctx context.Cont
 				return 10
 			}(),
 			ErrorDetails:        "{}",
+			DataMapping:         "{}",
 			MappedFields:        "{}",
 			UnmappedFields:      "{}",
 			AppliedConditions:   "{}",
