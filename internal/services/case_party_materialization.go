@@ -15,6 +15,24 @@ import (
 // actually checked instead of only the client archive row. The primary
 // client is anchored to the client-archive entity so the case and the
 // archive stay one subject.
+// buildReviewedParties assembles the reviewed party list from the frozen
+// conflict-check snapshot. A check record without any usable parties is a
+// broken snapshot: the formal case would silently lose its subjects, so it
+// is rejected instead of materializing an empty party list.
+func buildReviewedParties(record *models.ConflictCheckRecord) ([]models.ConflictPartyInfo, error) {
+	if record == nil {
+		return nil, fmt.Errorf("冲突检测记录不存在，无法写入案件当事人")
+	}
+	parties := casePartiesFromSearchParameters(record.SearchParameters)
+	if client := clientPartyFromRecord(record); client != nil {
+		parties = append([]models.ConflictPartyInfo{*client}, parties...)
+	}
+	if len(parties) == 0 {
+		return nil, fmt.Errorf("冲突复核快照 %s 缺少当事人信息，已阻止成案写入", record.CheckID)
+	}
+	return parties, nil
+}
+
 func (s *approvalConflictIntegrationService) materializeCasePartiesFromCheck(ctx context.Context, checkID, caseID string) error {
 	if strings.TrimSpace(checkID) == "" || strings.TrimSpace(caseID) == "" {
 		return fmt.Errorf("冲突检测记录或正式案件ID为空，无法写入案件当事人")
@@ -23,9 +41,9 @@ func (s *approvalConflictIntegrationService) materializeCasePartiesFromCheck(ctx
 	if err != nil || record == nil {
 		return fmt.Errorf("冲突检测记录不存在，无法写入案件当事人")
 	}
-	parties := casePartiesFromSearchParameters(record.SearchParameters)
-	if client := clientPartyFromRecord(record); client != nil {
-		parties = append([]models.ConflictPartyInfo{*client}, parties...)
+	parties, err := buildReviewedParties(record)
+	if err != nil {
+		return err
 	}
 	return s.integrationRepo.LinkConflictCaseParties(ctx, parseCaseID(caseID), parties)
 }

@@ -9,6 +9,8 @@ import (
 
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/repositories"
+
+	"gorm.io/gorm"
 )
 
 // CaseService 案件服务
@@ -109,6 +111,89 @@ func NewCaseService(caseRepo repositories.CaseRepository, clientRepo repositorie
 // SetSubjectRecheckService installs the production server-side action gate.
 func (s *CaseService) SetSubjectRecheckService(service *SubjectRecheckService) {
 	s.subjectRecheck = service
+}
+
+// CreateCaseOnTx is the transaction-bound form of CreateCase for the
+// approval case-creation workflow. It runs the identical gates and writes
+// through the transaction carried on ctx so the new case commits atomically
+// with the reviewed parties, tracking completion and approval linkage.
+func (s *CaseService) CreateCaseOnTx(ctx context.Context, req *CreateCaseRequest) (*CaseResponse, error) {
+	tx := repositories.ApprovalCaseTxFromContext(ctx)
+	if tx == nil {
+		return nil, NewSubjectWorkflowError("CASE_TX_REQUIRED", "成案写入缺少事务绑定，已阻止创建案件")
+	}
+	return s.createCaseWithTx(ctx, tx, req)
+}
+
+// createCaseWithTx performs the CreateCase body against an explicit
+// transaction. Validation failures return before any write; write failures
+// bubble up so the caller's transaction rolls the case back.
+func (s *CaseService) createCaseWithTx(ctx context.Context, tx *gorm.DB, req *CreateCaseRequest) (*CaseResponse, error) {
+	if req == nil {
+		return nil, errors.New("案件数据不能为空")
+	}
+	if !req.Approved {
+		return nil, NewSubjectWorkflowError("CASE_INTAKE_REQUIRED", "正式案件必须通过立案工作台完成冲突检查和审批后成案")
+	}
+	if req.Approved {
+		if err := s.ValidateApprovedCase(ctx, req); err != nil {
+			return nil, err
+		}
+	}
+	// 验证客户是否存在
+	client, err := s.clientRepo.FindByID(ctx, req.ClientID)
+	if err != nil {
+		return nil, fmt.Errorf("客户不存在: %w", err)
+	}
+	if client == nil {
+		return nil, errors.New("客户不存在")
+	}
+
+	// 解析开始日期
+	var startDate *time.Time
+	if req.StartDate != "" {
+		parsedDate, err := time.Parse("2006-01-02", req.StartDate)
+		if err != nil {
+			return nil, fmt.Errorf("开始日期格式错误，应为 YYYY-MM-DD: %w", err)
+		}
+		startDate = &parsedDate
+	}
+
+	// 创建案件
+	caseStatus := "pending"
+	if req.Approved {
+		caseStatus = "active"
+	}
+	case_ := &models.Case{
+		CaseNumber:  fmt.Sprintf("CASE-%s", time.Now().Format("20060102150405")),
+		Title:       req.Title,
+		Description: req.Description,
+		ClientID:    req.ClientID,
+		LawyerID:    req.LawyerID,
+		CaseType:    req.CaseType,
+		Priority:    req.Priority,
+		Status:      caseStatus,
+		StartDate:   startDate,
+		CreatedBy:   fmt.Sprintf("%d", req.AssignedBy),
+	}
+	if req.Approved {
+		case_.SubjectVersion = 1
+		case_.SubjectState = models.SubjectStateEffective
+		case_.ConflictCheckID = req.ConflictCheckID
+		case_.ConflictCoverageStatus = "COMPLETE"
+	}
+
+	if err := tx.WithContext(ctx).Create(case_).Error; err != nil {
+		return nil, fmt.Errorf("创建案件失败: %w", err)
+	}
+
+	// 获取创建的完整案件信息（事务内读取，含关联）
+	var created models.Case
+	if err := tx.WithContext(ctx).Preload("Client").Preload("Lawyer").First(&created, case_.ID).Error; err != nil {
+		return nil, fmt.Errorf("获取案件详情失败: %w", err)
+	}
+
+	return s.convertToResponse(&created), nil
 }
 
 // CreateCase 创建案件

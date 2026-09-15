@@ -21,13 +21,14 @@ func NewCaseRepository(db *gorm.DB) CaseRepository {
 
 // Create 创建案件
 func (r *CaseRepositoryImpl) Create(ctx context.Context, caseModel *models.Case) error {
-	return r.db.WithContext(ctx).Create(caseModel).Error
+	tx := contextTx(ctx, r.db)
+	return tx.Create(caseModel).Error
 }
 
 // FindByID 根据ID查找案件（包含关联数据）
 func (r *CaseRepositoryImpl) FindByID(ctx context.Context, id uint) (*models.Case, error) {
 	var caseModel models.Case
-	err := r.db.WithContext(ctx).Preload("Client").Preload("Lawyer").First(&caseModel, id).Error
+	err := contextTx(ctx, r.db).Preload("Client").Preload("Lawyer").First(&caseModel, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -39,7 +40,25 @@ func (r *CaseRepositoryImpl) FindByID(ctx context.Context, id uint) (*models.Cas
 
 // Update 更新案件信息
 func (r *CaseRepositoryImpl) Update(ctx context.Context, caseModel *models.Case) error {
-	return r.db.WithContext(ctx).Save(caseModel).Error
+	return contextTx(ctx, r.db).Save(caseModel).Error
+}
+
+// contextTx returns the caller-bound approval-case transaction when one
+// rides on the context; otherwise the repository's own connection. The
+// repository never begins or commits a transaction here.
+func contextTx(ctx context.Context, fallback *gorm.DB) *gorm.DB {
+	if tx, ok := ctx.Value(txContextKey{}).(*gorm.DB); ok && tx != nil {
+		return tx
+	}
+	return fallback.WithContext(ctx)
+}
+
+type txContextKey struct{}
+
+// WithCaseTx binds a transaction to the context for case creation so case
+// rows, parties, tracking and approval linkage share one commit.
+func WithCaseTx(ctx context.Context, tx *gorm.DB) context.Context {
+	return context.WithValue(ctx, txContextKey{}, tx)
 }
 
 // Delete 删除案件

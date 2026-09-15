@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"law-oa-go/internal/models"
+
+	"gorm.io/gorm"
 )
 
 // IntegrationRepositoryInterface 集成数据仓库接口
@@ -26,9 +28,15 @@ type IntegrationRepositoryInterface interface {
 	MarkCaseCreationFailed(ctx context.Context, approvalID, message string) error
 	GetConflictCheckRecord(ctx context.Context, checkID string) (*models.ConflictCheckRecord, error)
 	GetLatestConflictReview(ctx context.Context, checkID string) (*models.ConflictReview, error)
+	// GetDBByApprovalID reads the approval row through the caller-bound
+	// transaction so post-claim re-checks observe transactional state.
+	GetDBByApprovalID(ctx context.Context, approvalID string) (*models.ApprovalRequest, error)
 	// LinkConflictCaseParties materializes the reviewed check parties onto
 	// the formal case in one transaction; any failure rolls back the batch.
 	LinkConflictCaseParties(ctx context.Context, caseID uint, parties []models.ConflictPartyInfo) error
+	// LinkConflictCasePartiesOnTx writes the reviewed parties on the supplied
+	// transaction so they commit atomically with the new formal case.
+	LinkConflictCasePartiesOnTx(ctx context.Context, tx *gorm.DB, caseID uint, parties []models.ConflictPartyInfo) error
 
 	// 集成配置管理
 	CreateIntegrationConfig(ctx context.Context, config *IntegrationConfig) error

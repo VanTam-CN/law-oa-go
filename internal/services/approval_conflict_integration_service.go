@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"gorm.io/gorm"
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/repositories"
 )
@@ -57,10 +58,12 @@ type ApprovalConflictIntegrationService interface {
 
 // approvalConflictIntegrationService 审批冲突集成服务实现
 type approvalConflictIntegrationService struct {
-	approvalService ApprovalServiceInterface
-	conflictService ConflictDetectionServiceInterface
-	caseService     *CaseService
-	integrationRepo repositories.IntegrationRepositoryInterface
+	approvalService       ApprovalServiceInterface
+	conflictService       ConflictDetectionServiceInterface
+	caseService           *CaseService
+	integrationRepo       repositories.IntegrationRepositoryInterface
+	db                    *gorm.DB
+	onWorkflowFailureHook func(error)
 }
 
 // NewApprovalConflictIntegrationService 创建审批冲突集成服务
@@ -69,12 +72,14 @@ func NewApprovalConflictIntegrationService(
 	conflictService ConflictDetectionServiceInterface,
 	caseService *CaseService,
 	integrationRepo repositories.IntegrationRepositoryInterface,
+	db *gorm.DB,
 ) ApprovalConflictIntegrationService {
 	return &approvalConflictIntegrationService{
 		approvalService: approvalService,
 		conflictService: conflictService,
 		caseService:     caseService,
 		integrationRepo: integrationRepo,
+		db:              db,
 	}
 }
 
@@ -362,19 +367,7 @@ func (s *approvalConflictIntegrationService) AutoCreateCaseFromApproval(ctx cont
 	if tracking, err := s.integrationRepo.GetLatestCaseCreationTracking(ctx, approvalID); err != nil {
 		return nil, fmt.Errorf("读取案件创建跟踪失败：%w", err)
 	} else if tracking != nil && tracking.CreationStatus == "completed" && tracking.CaseID != nil && strings.TrimSpace(*tracking.CaseID) != "" {
-		caseNumber := ""
-		if tracking.CaseNumber != nil {
-			caseNumber = *tracking.CaseNumber
-		}
-		association := &models.CaseCreationAssociation{
-			Created: true, CaseID: *tracking.CaseID, CaseNumber: caseNumber,
-			CreationTime: time.Now(), DataMapping: caseData, Status: "completed", StatusMessage: "案件创建成功",
-		}
-		if err := s.integrationRepo.UpdateApprovalCaseAssociation(ctx, approvalID, association); err != nil {
-			_ = s.integrationRepo.MarkCaseCreationFailed(ctx, approvalID, fmt.Sprintf("正式案件已存在但审批关联回填失败：%v", err))
-			return nil, fmt.Errorf("正式案件已存在但审批关联回填失败：%w", err)
-		}
-		return &CaseCreationResult{CaseID: *tracking.CaseID, CaseNumber: caseNumber, Status: "completed", Message: "案件已创建", CreatedAt: time.Now(), CaseData: caseData}, nil
+		return s.reconcileCompletedCaseCreation(ctx, approvalID, tracking, caseData)
 	}
 	claimed, err := s.integrationRepo.ClaimCaseCreation(ctx, approvalID, userIDFromContext(ctx))
 	if err != nil {
@@ -387,19 +380,75 @@ func (s *approvalConflictIntegrationService) AutoCreateCaseFromApproval(ctx cont
 		return nil, NewSubjectWorkflowError("CASE_CREATION_IN_PROGRESS", "该审批的正式案件正在创建或等待重试，请稍后查看成案状态")
 	}
 
-	createCaseReq, err := caseCreationRequestFromMap(caseData)
-	if err != nil {
+	return s.createCaseTxWorkflow(ctx, approvalID, caseData)
+}
+
+// createCaseTxWorkflow runs the whole approval-driven case creation inside
+// ONE database transaction: the in-tx approval re-check, the formal case
+// row, the reviewed parties, the tracking completion and the approval
+// linkage. Any failure rolls the entire batch back; the claim is also
+// recorded transactionally, so a rollback releases the approval for retry.
+func (s *approvalConflictIntegrationService) createCaseTxWorkflow(ctx context.Context, approvalID string, caseData map[string]interface{}) (*CaseCreationResult, error) {
+	committed := false
+	if s.db == nil {
+		return nil, NewSubjectWorkflowError("CASE_TX_UNAVAILABLE", "成案数据库连接不可用，已阻止事务成案")
+	}
+	tx := s.db.WithContext(ctx).Begin()
+	if tx.Error != nil {
+		return nil, fmt.Errorf("成案事务启动失败：%w", tx.Error)
+	}
+	defer func() {
+		if !committed {
+			tx.Rollback()
+		}
+	}()
+	failure := func(err error) (*CaseCreationResult, error) {
+		if !committed {
+			tx.Rollback()
+		}
 		_ = s.integrationRepo.MarkCaseCreationFailed(ctx, approvalID, err.Error())
 		return nil, err
 	}
+
+	var probeHook func(error)
+	if s.onWorkflowFailureHook != nil {
+		probeHook = s.onWorkflowFailureHook
+	}
+	createCaseReq, err := caseCreationRequestFromMap(caseData)
+	if err != nil {
+		if probeHook != nil {
+			probeHook(err)
+		}
+		return failure(err)
+	}
 	createCaseReq.Approved = true
 
-	// 调用CaseService创建案件
-	createdCase, err := s.caseService.CreateCase(ctx, createCaseReq)
+	checkID := conflictCheckIDFromMetadata(caseData)
+	record, err := s.integrationRepo.GetConflictCheckRecord(ctx, checkID)
 	if err != nil {
-		log.Printf("创建案件失败: %v", err)
-		_ = s.integrationRepo.MarkCaseCreationFailed(ctx, approvalID, err.Error())
-		return nil, fmt.Errorf("创建案件失败: %w", err)
+		return failure(fmt.Errorf("读取冲突复核记录失败：%w", err))
+	}
+	parties, err := buildReviewedParties(record)
+	if err != nil {
+		return failure(err)
+	}
+
+	txCtx := repositories.WithApprovalCaseTx(ctx, tx)
+	txCtx = repositories.WithCaseTx(txCtx, tx)
+
+	// In-transaction re-check: the approval must still be approved and
+	// claimable, observed through the transaction itself.
+	approval, err := s.integrationRepo.GetDBByApprovalID(txCtx, approvalID)
+	if err != nil {
+		return failure(fmt.Errorf("事务内读取审批失败：%w", err))
+	}
+	if approval == nil || approval.Status != models.ApprovalStatusApproved {
+		return failure(NewSubjectWorkflowError("CASE_CREATION_NOT_APPROVED", "审批未处于通过状态，已阻止成案"))
+	}
+
+	createdCase, err := s.caseService.CreateCaseOnTx(txCtx, createCaseReq)
+	if err != nil {
+		return failure(fmt.Errorf("创建案件失败: %w", err))
 	}
 
 	caseID := fmt.Sprintf("%d", createdCase.ID)
@@ -407,52 +456,214 @@ func (s *approvalConflictIntegrationService) AutoCreateCaseFromApproval(ctx cont
 	if caseNumber == "" {
 		caseNumber = fmt.Sprintf("CASE-%d", createdCase.ID)
 	}
-	// Persist the completed tracking record before linking the approval. If
-	// only the link update fails, a retry can reconcile this case ID instead of
-	// creating a duplicate case.
-	_ = s.updateCaseTracking(ctx, approvalID, "completed", &caseID, &caseNumber, "")
 
-	// Materialize the reviewed conflict-check parties onto the formal case
-	// before the result is published. A partial party write rolls the new
-	// case back so no incomplete case can masquerade as completed.
-	if err := s.materializeCasePartiesFromCheck(ctx, conflictCheckIDFromMetadata(caseData), caseID); err != nil {
-		log.Printf("写入案件当事人失败，审批ID：%s，案件ID：%s，错误：%v", approvalID, caseID, err)
-		if caseIDUint, ok := parseUintString(caseID); ok {
-			_ = s.caseService.DeleteCase(ctx, caseIDUint)
+	// Parties commit in the same transaction as the case row.
+	partiesRepo := s.integrationRepo
+	if err := partiesRepo.LinkConflictCasePartiesOnTx(txCtx, tx, createdCase.ID, parties); err != nil {
+		return failure(fmt.Errorf("写入案件当事人失败，正式案件已回滚：%w", err))
+	}
+
+	// Tracking completion commits in the same transaction.
+	if err := s.updateCaseTracking(txCtx, approvalID, "completed", &caseID, &caseNumber, ""); err != nil {
+		return failure(fmt.Errorf("成案跟踪写入失败，正式案件已回滚：%w", err))
+	}
+
+	association := &models.CaseCreationAssociation{
+		Created: true, CaseID: caseID, CaseNumber: caseNumber,
+		CreationTime: time.Now(), DataMapping: caseData, Status: "completed", StatusMessage: "案件创建成功",
+	}
+	if err := s.integrationRepo.UpdateApprovalCaseAssociation(txCtx, approvalID, association); err != nil {
+		if s.onWorkflowFailureHook != nil {
+			s.onWorkflowFailureHook(err)
 		}
-		_ = s.integrationRepo.MarkCaseCreationFailed(ctx, approvalID, fmt.Sprintf("案件当事人写入失败，正式案件已回滚：%v", err))
-		return nil, fmt.Errorf("写入案件当事人失败，正式案件已回滚：%w", err)
+		return failure(fmt.Errorf("案件已创建但审批关联回填失败，整体已回滚：%w", err))
 	}
 
-	// 创建案件创建关联信息
-	caseAssociation := &models.CaseCreationAssociation{
-		Created:       true,
-		CaseID:        caseID,
-		CaseNumber:    caseNumber,
-		CreationTime:  time.Now(),
-		DataMapping:   caseData,
-		Status:        "completed",
-		StatusMessage: "案件创建成功",
+	if err := tx.Commit().Error; err != nil {
+		if s.onWorkflowFailureHook != nil {
+			s.onWorkflowFailureHook(err)
+		}
+		return failure(fmt.Errorf("成案事务提交失败：%w", err))
 	}
+	committed = true
 
-	// 更新审批申请的案件关联信息
-	if err := s.integrationRepo.UpdateApprovalCaseAssociation(ctx, approvalID, caseAssociation); err != nil {
-		log.Printf("更新案件关联信息失败：%v", err)
-		_ = s.integrationRepo.MarkCaseCreationFailed(ctx, approvalID, fmt.Sprintf("案件已创建但审批关联回填失败：%v", err))
-		return nil, fmt.Errorf("案件已创建但正式案件ID回填失败：%w", err)
-	}
-
-	result := &CaseCreationResult{
+	return &CaseCreationResult{
 		CaseID:     caseID,
 		CaseNumber: caseNumber,
 		Status:     "completed",
 		Message:    "案件创建成功",
 		CreatedAt:  time.Now(),
 		CaseData:   caseData,
-	}
+	}, nil
+}
 
-	log.Printf("案件创建完成，审批ID：%s，案件ID：%s", approvalID, caseID)
-	return result, nil
+// reconcileCompletedCaseCreation runs the completed-tracking fast path
+// inside one transaction: it re-verifies the approval binding and then
+// compares the case's actual subject identity and role rows with the
+// reviewed snapshot. Missing parties are repaired idempotently on the same
+// case; an incomplete match is never published as a fresh completion.
+func (s *approvalConflictIntegrationService) reconcileCompletedCaseCreation(ctx context.Context, approvalID string, tracking *repositories.CaseCreationTracking, caseData map[string]interface{}) (*CaseCreationResult, error) {
+	if s.db == nil {
+		return nil, NewSubjectWorkflowError("CASE_TX_UNAVAILABLE", "成案数据库连接不可用，已阻止事务成案")
+	}
+	caseID := strings.TrimSpace(*tracking.CaseID)
+	caseIDUint, ok := parseUintString(caseID)
+	if !ok || caseIDUint == 0 {
+		return nil, NewSubjectWorkflowError("CASE_CREATION_INCOMPLETE", fmt.Sprintf("成案跟踪记录指向的正式案件 %q 不存在，已阻止假完成", caseID))
+	}
+	checkID := conflictCheckIDFromMetadata(caseData)
+	record, err := s.integrationRepo.GetConflictCheckRecord(ctx, checkID)
+	if err != nil {
+		return nil, fmt.Errorf("读取冲突复核记录失败：%w", err)
+	}
+	parties, err := buildReviewedParties(record)
+	if err != nil {
+		return nil, err
+	}
+	if len(parties) == 0 {
+		return nil, NewSubjectWorkflowError("CASE_CREATION_INCOMPLETE", "冲突复核快照为空，已阻止成案假完成")
+	}
+	tx := s.db.WithContext(ctx).Begin()
+	if tx.Error != nil {
+		return nil, fmt.Errorf("成案校验事务启动失败：%w", tx.Error)
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			tx.Rollback()
+		}
+	}()
+	approval, err := s.integrationRepo.GetDBByApprovalID(ctx, approvalID)
+	if err != nil {
+		return nil, fmt.Errorf("读取审批成案状态失败：%w", err)
+	}
+	if approval == nil || approval.Status != models.ApprovalStatusApproved {
+		return nil, NewSubjectWorkflowError("CASE_CREATION_NOT_APPROVED", "审批未处于通过状态，已阻止成案关联回填")
+	}
+	txCtx := repositories.WithApprovalCaseTx(ctx, tx)
+	if err := s.integrationRepo.LinkConflictCasePartiesOnTx(txCtx, tx, caseIDUint, parties); err != nil {
+		return nil, fmt.Errorf("成案当事人校验失败，本次变更已回滚：%w", err)
+	}
+	if !casePartiesMatchSnapshot(tx, caseIDUint, parties) {
+		return nil, NewSubjectWorkflowError("CASE_CREATION_INCOMPLETE", "正式案件的主体身份或角色集合与批准快照不一致，已阻止假完成")
+	}
+	caseNumber := ""
+	if tracking.CaseNumber != nil {
+		caseNumber = *tracking.CaseNumber
+	}
+	association := &models.CaseCreationAssociation{
+		Created: true, CaseID: caseID, CaseNumber: caseNumber,
+		CreationTime: time.Now(), DataMapping: caseData, Status: "completed", StatusMessage: "案件创建成功",
+	}
+	if err := s.integrationRepo.UpdateApprovalCaseAssociation(txCtx, approvalID, association); err != nil {
+		return nil, fmt.Errorf("正式案件已存在但审批关联回填失败，本次变更已回滚：%w", err)
+	}
+	if err := tx.Commit().Error; err != nil {
+		return nil, fmt.Errorf("成案校验事务提交失败：%w", err)
+	}
+	committed = true
+	return &CaseCreationResult{CaseID: caseID, CaseNumber: caseNumber, Status: "completed", Message: "案件已创建", CreatedAt: time.Now(), CaseData: caseData}, nil
+}
+
+// casePartiesMatchSnapshot compares the case's live (identity, role) party
+// set with the reviewed snapshot. Identity is digest-first; digest-less
+// parties match on lowercased name. Counts alone are never sufficient.
+func casePartiesMatchSnapshot(tx *gorm.DB, caseID uint, parties []models.ConflictPartyInfo) bool {
+	normalizeConflictPartyRole := func(value string) string {
+		switch strings.ToUpper(strings.TrimSpace(value)) {
+		case "CLIENT", "CO_CLIENT":
+			return "CLIENT"
+		case "OPPOSING_PARTY", "OPPOSING", "ADVERSE":
+			return "OPPOSING_PARTY"
+		case "RELATED_PARTY", "RELATED", "THIRD_PARTY":
+			return "RELATED_PARTY"
+		}
+		return ""
+	}
+	type partyKey struct {
+		digest string
+		name   string
+		role   string
+	}
+	expected := map[partyKey]bool{}
+	digestRoles := map[string]map[string]bool{}
+	nameRoles := map[string]map[string]bool{}
+	for _, party := range parties {
+		name := strings.ToLower(strings.TrimSpace(party.Name))
+		if name == "" {
+			continue
+		}
+		role := normalizeConflictPartyRole(party.Role)
+		if role == "" {
+			return false
+		}
+		digest := ""
+		for _, key := range []string{"id_card", "social_credit_code", "unified_social_credit_code"} {
+			value := strings.TrimSpace(party.Identifiers[key])
+			if strings.HasPrefix(value, "hmac-sha256:") {
+				digest = strings.TrimPrefix(value, "hmac-sha256:")
+				break
+			}
+		}
+		k := partyKey{digest: digest, name: name, role: role}
+		expected[k] = true
+		if digest != "" {
+			if digestRoles[digest] == nil {
+				digestRoles[digest] = map[string]bool{}
+			}
+			digestRoles[digest][role] = true
+		} else {
+			if nameRoles[name] == nil {
+				nameRoles[name] = map[string]bool{}
+			}
+			nameRoles[name][role] = true
+		}
+	}
+	var rows []models.CaseParty
+	if err := tx.Where("case_id = ? AND deleted_at IS NULL", caseID).
+		Find(&rows).Error; err != nil {
+		return false
+	}
+	actual := map[partyKey]bool{}
+	for _, row := range rows {
+		var entity models.Entity
+		if err := tx.First(&entity, row.EntityID).Error; err != nil {
+			return false
+		}
+		// case_parties stores the mapped PartyRole (PLAINTIFF/DEFENDANT/...);
+		// the snapshot side is keyed by the normalized snapshot role.
+		snapshotRole := string(row.Role)
+		switch models.PartyRole(row.Role) {
+		case models.PartyRolePlaintiff:
+			snapshotRole = "CLIENT"
+		case models.PartyRoleDefendant:
+			snapshotRole = "OPPOSING_PARTY"
+		case models.PartyRoleInterestedParty, models.PartyRoleThirdParty:
+			snapshotRole = "RELATED_PARTY"
+		}
+		k := partyKey{digest: strings.TrimSpace(entity.IdentityNumberDigest), name: strings.ToLower(strings.TrimSpace(entity.Name)), role: snapshotRole}
+		if !expected[k] {
+			return false
+		}
+		actual[k] = true
+		if k.digest != "" {
+			delete(digestRoles[k.digest], k.role)
+		} else {
+			delete(nameRoles[k.name], k.role)
+		}
+	}
+	for _, roles := range digestRoles {
+		if len(roles) > 0 {
+			return false
+		}
+	}
+	for _, roles := range nameRoles {
+		if len(roles) > 0 {
+			return false
+		}
+	}
+	_ = actual
+	return true
 }
 
 // RetryCaseCreationForUser retries a previously failed post-approval case
@@ -1155,11 +1366,31 @@ func jsonString(value interface{}) string {
 
 func (s *approvalConflictIntegrationService) updateCaseTracking(ctx context.Context, approvalID, status string, caseID, caseNumber *string, message string) error {
 	tracking, err := s.integrationRepo.GetLatestCaseCreationTracking(ctx, approvalID)
-	if err != nil || tracking == nil {
-		if err != nil {
-			return err
-		}
-		return s.ensureCaseTracking(ctx, approvalID, status, map[string]interface{}{}, userIDFromContext(ctx))
+	if err != nil {
+		return err
+	}
+	if tracking == nil {
+		return s.integrationRepo.CreateCaseCreationTracking(ctx, &repositories.CaseCreationTracking{
+			ID:                fmt.Sprintf("CASE_TRACK_%s_%d", approvalID, time.Now().UnixNano()),
+			ApprovalRequestID: approvalID,
+			CreationStatus:    status,
+			CaseID:            caseID,
+			CaseNumber:        caseNumber,
+			ProgressPercentage: func() float64 {
+				if status == "completed" {
+					return 100
+				}
+				return 10
+			}(),
+			ErrorDetails:        "{}",
+			MappedFields:        "{}",
+			UnmappedFields:      "{}",
+			AppliedConditions:   "{}",
+			ImposedRequirements: "{}",
+			WorkflowActions:     "[]",
+			CreatedBy:           coalesce(userIDFromContext(ctx), "0"),
+			CreatedAt:           time.Now(),
+		})
 	}
 	now := time.Now()
 	updates := map[string]interface{}{

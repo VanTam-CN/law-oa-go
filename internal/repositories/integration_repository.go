@@ -21,6 +21,34 @@ func NewIntegrationRepository(db *gorm.DB) *IntegrationRepository {
 	return &IntegrationRepository{db: db}
 }
 
+// tx returns the caller-bound transaction when one rides on the context,
+// otherwise the repository's own connection. Repositories never begin or
+// commit here; transaction ownership stays with the service workflow.
+func (r *IntegrationRepository) tx(ctx context.Context) *gorm.DB {
+	if tx, ok := ctx.Value(approvalCaseTxKey{}).(*gorm.DB); ok && tx != nil {
+		return tx
+	}
+	return r.db.WithContext(ctx)
+}
+
+type approvalCaseTxKey struct{}
+
+// WithApprovalCaseTx binds a transaction to the context for the approval
+// case-creation workflow. Repositories consulted inside the workflow write
+// and read through this transaction.
+func WithApprovalCaseTx(ctx context.Context, tx *gorm.DB) context.Context {
+	return context.WithValue(ctx, approvalCaseTxKey{}, tx)
+}
+
+// ApprovalCaseTxFromContext exposes the bound transaction for callers that
+// must hand the same transaction to another repository explicitly.
+func ApprovalCaseTxFromContext(ctx context.Context) *gorm.DB {
+	if tx, ok := ctx.Value(approvalCaseTxKey{}).(*gorm.DB); ok {
+		return tx
+	}
+	return nil
+}
+
 // ConflictAssociation 冲突检测关联数据模型
 type ConflictAssociation struct {
 	ID                 string    `gorm:"primaryKey" json:"id"`
@@ -178,7 +206,7 @@ func (r *IntegrationRepository) UpdateConflictAssociationStatus(ctx context.Cont
 
 // CreateCaseCreationTracking 创建案件创建跟踪记录
 func (r *IntegrationRepository) CreateCaseCreationTracking(ctx context.Context, tracking *CaseCreationTracking) error {
-	if err := r.db.WithContext(ctx).Create(tracking).Error; err != nil {
+	if err := r.tx(ctx).Create(tracking).Error; err != nil {
 		return NewRepositoryError("create case creation tracking", "CaseCreationTracking", err)
 	}
 	return nil
@@ -201,7 +229,7 @@ func (r *IntegrationRepository) GetCaseCreationTrackingByApprovalID(ctx context.
 // GetLatestCaseCreationTracking 获取最新的案件创建跟踪记录
 func (r *IntegrationRepository) GetLatestCaseCreationTracking(ctx context.Context, approvalID string) (*CaseCreationTracking, error) {
 	var tracking CaseCreationTracking
-	err := r.db.WithContext(ctx).
+	err := r.tx(ctx).
 		Where("approval_request_id = ?", approvalID).
 		Order("created_at DESC").
 		First(&tracking).Error
@@ -217,7 +245,7 @@ func (r *IntegrationRepository) GetLatestCaseCreationTracking(ctx context.Contex
 
 // UpdateCaseCreationTracking 更新案件创建跟踪
 func (r *IntegrationRepository) UpdateCaseCreationTracking(ctx context.Context, id string, updates map[string]interface{}) error {
-	result := r.db.WithContext(ctx).
+	result := r.tx(ctx).
 		Model(&CaseCreationTracking{}).
 		Where("id = ?", id).
 		Updates(updates)
@@ -229,6 +257,33 @@ func (r *IntegrationRepository) UpdateCaseCreationTracking(ctx context.Context, 
 		return NewRepositoryErrorWithID("update case creation tracking", "CaseCreationTracking", id, ErrRecordNotFound)
 	}
 	return nil
+}
+
+// GetDBByApprovalID reads the approval row, honoring an in-flight
+// transaction bound through context so post-claim re-checks observe the
+// transactional state instead of a stale snapshot.
+func (r *IntegrationRepository) GetDBByApprovalID(ctx context.Context, approvalID string) (*models.ApprovalRequest, error) {
+	var approval models.ApprovalRequest
+	err := r.tx(ctx).Where("id = ?", approvalID).First(&approval).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, NewRepositoryError("get approval by id", "ApprovalRequest", err)
+	}
+	return &approval, nil
+}
+
+// LinkConflictCasePartiesOnTx is the transaction-bound form of
+// LinkConflictCaseParties. It writes on the supplied transaction so the
+// reviewed parties commit atomically with the new formal case; any error
+// aborts the surrounding transaction. Identity and idempotency semantics
+// are identical to the standalone entry point.
+func (r *IntegrationRepository) LinkConflictCasePartiesOnTx(ctx context.Context, tx *gorm.DB, caseID uint, parties []models.ConflictPartyInfo) error {
+	if tx == nil {
+		return fmt.Errorf("案件当事人写入缺少事务绑定，已拒绝写入")
+	}
+	return linkConflictCasePartiesOnTx(ctx, tx, caseID, parties)
 }
 
 // ClaimCaseCreation atomically moves an approved request into processing.
@@ -281,22 +336,6 @@ func (r *IntegrationRepository) GetConflictCheckRecord(ctx context.Context, chec
 	return &record, nil
 }
 
-// normalizeConflictPartyRole merges the role spellings accepted by the
-// conflict-check contract into the three canonical case-party classes.
-// Unknown roles return empty so callers skip them instead of writing an
-// unreviewable party role onto the formal case.
-func normalizeConflictPartyRole(value string) string {
-	switch strings.ToUpper(strings.TrimSpace(value)) {
-	case "CLIENT", "CO_CLIENT":
-		return "CLIENT"
-	case "OPPOSING_PARTY", "OPPOSING", "ADVERSE":
-		return "OPPOSING_PARTY"
-	case "RELATED_PARTY", "RELATED", "THIRD_PARTY":
-		return "RELATED_PARTY"
-	}
-	return ""
-}
-
 // LinkConflictCaseParties writes every reviewed conflict-check party onto the
 // formal case inside one transaction. Entities are deduplicated by identity
 // digest first; exact-name reuse is a fallback only for parties without a
@@ -311,74 +350,92 @@ func (r *IntegrationRepository) LinkConflictCaseParties(ctx context.Context, cas
 		return fmt.Errorf("正式案件ID为空，无法写入案件当事人")
 	}
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		seenDigest := map[string]uint{}
-		seenName := map[string]uint{}
-		// Lowercased name -> true when a digest-bearing party owns the name
-		// in this batch; used to keep digest-less same-name parties separate.
-		seenDigestByName := map[string]bool{}
-		order := 0
-		for _, party := range parties {
-			name := strings.TrimSpace(party.Name)
-			if name == "" {
-				continue
-			}
-			role := normalizeConflictPartyRole(party.Role)
-			if role == "" {
-				// An unreviewable role must be rejected explicitly. The
-				// surrounding transaction rolls back the whole batch, so a
-				// rejected party never leaves partial case-party rows behind.
-				return fmt.Errorf("当事人 %q 的角色 %q 无法归入案件角色，已拒绝写入", party.Name, party.Role)
-			}
-			digest := ""
-			identityType := models.IdentityType("")
-			for _, key := range []string{"id_card", "social_credit_code", "unified_social_credit_code"} {
-				value := strings.TrimSpace(party.Identifiers[key])
-				const digestPrefix = "hmac-sha256:"
-				if !strings.HasPrefix(value, digestPrefix) {
-					continue
-				}
-				digest = strings.TrimPrefix(value, digestPrefix)
-				if key == "id_card" {
-					identityType = models.IdentityTypeIDCard
-				} else {
-					identityType = models.IdentityTypeSocialCredit
-				}
-				break
-			}
-			entityType := models.EntityTypeIndividual
-			if strings.EqualFold(strings.TrimSpace(party.EntityType), "LEGAL_PERSON") {
-				entityType = models.EntityTypeLegalPerson
-			}
-			entityID, err := ensureConflictPartyEntity(tx, name, digest, identityType, entityType, seenDigest, seenName, seenDigestByName)
-			if err != nil {
-				return err
-			}
-			if entityID == 0 {
-				continue
-			}
-			partyType, roleValue := casePartyRoleMapping(role)
-			var existing models.CaseParty
-			// The formal schema has no uniqueness constraint on case_parties,
-			// so idempotency is enforced per (case, entity, role): re-running
-			// the batch keeps one row per reviewed role, including when one
-			// subject legitimately holds two reviewed roles.
-			if err := tx.Where("case_id = ? AND entity_id = ? AND role = ? AND deleted_at IS NULL", caseID, entityID, roleValue).First(&existing).Error; err == nil {
-				continue
-			}
-			row := &models.CaseParty{
-				CaseID:       caseID,
-				EntityID:     entityID,
-				Role:         roleValue,
-				PartyType:    partyType,
-				DisplayOrder: order,
-			}
-			order++
-			if err := tx.Create(row).Error; err != nil {
-				return fmt.Errorf("写入案件当事人失败: %w", err)
-			}
-		}
-		return nil
+		return linkConflictCasePartiesOnTx(ctx, tx, caseID, parties)
 	})
+}
+
+func normalizeConflictPartyRole(value string) string {
+	switch strings.ToUpper(strings.TrimSpace(value)) {
+	case "CLIENT", "CO_CLIENT":
+		return "CLIENT"
+	case "OPPOSING_PARTY", "OPPOSING", "ADVERSE":
+		return "OPPOSING_PARTY"
+	case "RELATED_PARTY", "RELATED", "THIRD_PARTY":
+		return "RELATED_PARTY"
+	}
+	return ""
+}
+
+// linkConflictCasePartiesOnTx is the transaction-bound implementation shared
+// by the standalone and tx-bound entry points.
+func linkConflictCasePartiesOnTx(ctx context.Context, tx *gorm.DB, caseID uint, parties []models.ConflictPartyInfo) error {
+	if caseID == 0 {
+		return fmt.Errorf("正式案件ID为空，无法写入案件当事人")
+	}
+	seenDigest := map[string]uint{}
+	seenName := map[string]uint{}
+	// Lowercased name -> true when a digest-bearing party owns the name
+	// in this batch; used to keep digest-less same-name parties separate.
+	seenDigestByName := map[string]bool{}
+	order := 0
+	for _, party := range parties {
+		name := strings.TrimSpace(party.Name)
+		if name == "" {
+			continue
+		}
+		role := normalizeConflictPartyRole(party.Role)
+		if role == "" {
+			// An unreviewable role must be rejected explicitly. The
+			// surrounding transaction rolls the whole batch back, so a
+			// rejected party never leaves partial case-party rows behind.
+			return fmt.Errorf("当事人 %q 的角色 %q 无法归入案件角色，已拒绝写入", party.Name, party.Role)
+		}
+		digest := ""
+		identityType := models.IdentityType("")
+		for _, key := range []string{"id_card", "social_credit_code", "unified_social_credit_code"} {
+			value := strings.TrimSpace(party.Identifiers[key])
+			const digestPrefix = "hmac-sha256:"
+			if !strings.HasPrefix(value, digestPrefix) {
+				continue
+			}
+			digest = strings.TrimPrefix(value, digestPrefix)
+			if key == "id_card" {
+				identityType = models.IdentityTypeIDCard
+			} else {
+				identityType = models.IdentityTypeSocialCredit
+			}
+			break
+		}
+		entityType := models.EntityTypeIndividual
+		if strings.EqualFold(strings.TrimSpace(party.EntityType), "LEGAL_PERSON") {
+			entityType = models.EntityTypeLegalPerson
+		}
+		entityID, err := ensureConflictPartyEntity(tx, name, digest, identityType, entityType, seenDigest, seenName, seenDigestByName)
+		if err != nil {
+			return err
+		}
+		if entityID == 0 {
+			continue
+		}
+		partyType, roleValue := casePartyRoleMapping(role)
+		var existing models.CaseParty
+		if err := tx.Where("case_id = ? AND entity_id = ? AND role = ? AND deleted_at IS NULL", caseID, entityID, roleValue).First(&existing).Error; err == nil {
+			continue
+		}
+		row := &models.CaseParty{
+			CaseID:       caseID,
+			EntityID:     entityID,
+			Role:         roleValue,
+			PartyType:    partyType,
+			DisplayOrder: order,
+		}
+		order++
+		if err := tx.Create(row).Error; err != nil {
+			return fmt.Errorf("写入案件当事人失败: %w", err)
+		}
+	}
+	_ = ctx
+	return nil
 }
 
 // ensureConflictPartyEntity resolves one party to its subject entity. A
@@ -637,7 +694,7 @@ func (r *IntegrationRepository) UpdateApprovalCaseAssociation(ctx context.Contex
 		"updated_at":           time.Now(),
 	}
 
-	result := r.db.WithContext(ctx).
+	result := r.tx(ctx).
 		Model(&models.ApprovalRequest{}).
 		Where("id = ?", approvalID).
 		Updates(updates)

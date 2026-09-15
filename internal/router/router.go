@@ -621,6 +621,7 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client) {
 			conflictService,
 			caseService,
 			integrationRepo,
+			db,
 		)
 		approvalHandler.SetIntegratedDecisionService(approvalConflictIntegrationService)
 		integrationHandler := handlers.NewIntegrationHandler(approvalConflictIntegrationService, conflictService, db)
