@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"gorm.io/gorm/clause"
+
 	"law-oa-go/internal/models"
 
 	"gorm.io/gorm"
@@ -315,10 +317,11 @@ func (r *IntegrationRepository) ClaimCaseCreationOnTx(ctx context.Context, tx *g
 	if tx == nil {
 		return false, fmt.Errorf("案件创建锁定缺少事务绑定，已拒绝执行")
 	}
-	lockQuery := tx.WithContext(ctx)
-	if dialector := tx.Dialector.Name(); dialector == "mysql" || dialector == "postgres" {
-		lockQuery = lockQuery.Set("gorm:query_option", "FOR UPDATE")
-	}
+	// clause.Locking is the GORM v2 mechanism for SELECT ... FOR UPDATE.
+	// The legacy "gorm:query_option" Set is GORM v1-only and silently
+	// produces no lock clause on v1.30, which an independent DryRun capture
+	// proved; keep the lock on the row being claimed.
+	lockQuery := tx.WithContext(ctx).Clauses(clause.Locking{Strength: "UPDATE"})
 	locked := lockQuery.
 		Where("id = ?", approvalID).
 		First(&models.ApprovalRequest{})
