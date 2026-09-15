@@ -2511,11 +2511,6 @@ func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
 		common.NewAPIError(c, http.StatusServiceUnavailable, "CONFLICT_RESULT_UNAVAILABLE", "冲突检测未返回可追溯的检测记录，已阻止继续办理")
 		return
 	}
-	// This is the primary intake workflow, so it must apply the same
-	// least-disclosure projection as the standalone conflict endpoint before
-	// serializing the result to the requesting lawyer. The persisted evidence
-	// remains available to the independently authorized reviewer workflow.
-	projectConflictResponseForViewer(c, result)
 	coverageStatus := ""
 	if result.Decision != nil {
 		coverageStatus = result.Decision.CoverageStatus
@@ -2545,6 +2540,15 @@ func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
 		common.APIInternalServerError(c, "保存冲突检测结果失败", err.Error())
 		return
 	}
+	// This is the primary intake workflow, so it must apply the same
+	// least-disclosure projection as the standalone conflict endpoint before
+	// serializing the result to the requesting lawyer. The projection runs
+	// only after the evidence transaction commits: it mutates the in-memory
+	// conflict case IDs, and persisting the projected copy would collide on
+	// the shared empty-suffix primary key whenever a check yields two or
+	// more hits. The persisted evidence remains available to the
+	// independently authorized reviewer workflow.
+	projectConflictResponseForViewer(c, result)
 	common.APISuccess(c, gin.H{
 		"taskId":                     result.CheckID,
 		"checkId":                    result.CheckID,
