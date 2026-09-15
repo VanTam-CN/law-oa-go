@@ -25,6 +25,11 @@ type IntegrationRepositoryInterface interface {
 	// attempt for an approved request. This prevents duplicate cases when a
 	// user retries or two browser tabs submit at the same time.
 	ClaimCaseCreation(ctx context.Context, approvalID, actorID string) (bool, error)
+	// ClaimCaseCreationOnTx performs the same reservation inside the
+	// caller's transaction with a locked approval re-check, so a rollback
+	// releases the claim and no failure path strands a persistent
+	// "processing" state.
+	ClaimCaseCreationOnTx(ctx context.Context, tx *gorm.DB, approvalID, actorID string) (bool, error)
 	MarkCaseCreationFailed(ctx context.Context, approvalID, message string) error
 	GetConflictCheckRecord(ctx context.Context, checkID string) (*models.ConflictCheckRecord, error)
 	GetLatestConflictReview(ctx context.Context, checkID string) (*models.ConflictReview, error)

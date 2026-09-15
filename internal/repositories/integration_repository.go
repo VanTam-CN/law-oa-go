@@ -305,6 +305,44 @@ func (r *IntegrationRepository) ClaimCaseCreation(ctx context.Context, approvalI
 	return result.RowsAffected == 1, nil
 }
 
+// ClaimCaseCreationOnTx is the transaction-bound form of ClaimCaseCreation.
+// It locks the approval row FOR UPDATE, re-checks claimability under the
+// lock, and performs the claim inside the caller's transaction, so a
+// rollback releases the claim and a crash cannot strand a persistent
+// "processing" state. RowsAffected==0 means another writer already holds
+// the claim or the approval has completed case creation.
+func (r *IntegrationRepository) ClaimCaseCreationOnTx(ctx context.Context, tx *gorm.DB, approvalID, actorID string) (bool, error) {
+	if tx == nil {
+		return false, fmt.Errorf("案件创建锁定缺少事务绑定，已拒绝执行")
+	}
+	lockQuery := tx.WithContext(ctx)
+	if dialector := tx.Dialector.Name(); dialector == "mysql" || dialector == "postgres" {
+		lockQuery = lockQuery.Set("gorm:query_option", "FOR UPDATE")
+	}
+	locked := lockQuery.
+		Where("id = ?", approvalID).
+		First(&models.ApprovalRequest{})
+	if locked.Error != nil {
+		if locked.Error == gorm.ErrRecordNotFound {
+			return false, NewRepositoryErrorWithID("lock approval for case creation claim", "ApprovalRequest", approvalID, ErrRecordNotFound)
+		}
+		return false, NewRepositoryError("lock approval for case creation claim", "ApprovalRequest", locked.Error)
+	}
+	result := tx.WithContext(ctx).Model(&models.ApprovalRequest{}).
+		Where("id = ? AND status = ? AND case_created = ?", approvalID, models.ApprovalStatusApproved, false).
+		Where("(case_creation_status IS NULL OR case_creation_status IN ?)", []string{"", "pending", "failed", "retrying"}).
+		Updates(map[string]interface{}{
+			"case_creation_status": "processing",
+			"case_creation_time":   time.Now(),
+			"updated_by":           actorID,
+			"updated_at":           time.Now(),
+		})
+	if result.Error != nil {
+		return false, NewRepositoryError("claim case creation", "ApprovalRequest", result.Error)
+	}
+	return result.RowsAffected == 1, nil
+}
+
 func (r *IntegrationRepository) MarkCaseCreationFailed(ctx context.Context, approvalID, message string) error {
 	result := r.db.WithContext(ctx).Model(&models.ApprovalRequest{}).
 		Where("id = ?", approvalID).

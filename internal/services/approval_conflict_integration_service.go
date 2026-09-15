@@ -359,37 +359,17 @@ func (s *approvalConflictIntegrationService) AutoCreateCaseFromApproval(ctx cont
 	if s == nil || s.caseService == nil {
 		return nil, NewSubjectWorkflowError("CASE_CREATION_GATE_UNAVAILABLE", "正式成案服务未初始化，已阻止成案")
 	}
-	if approval, err := s.approvalService.GetApprovalByID(approvalID); err != nil {
-		return nil, fmt.Errorf("读取审批成案状态失败：%w", err)
-	} else if approval != nil && approval.CaseCreated && approval.CreatedCaseID != "" {
-		return &CaseCreationResult{CaseID: approval.CreatedCaseID, Status: "completed", Message: "案件已创建", CreatedAt: time.Now(), CaseData: caseData}, nil
-	}
-	if tracking, err := s.integrationRepo.GetLatestCaseCreationTracking(ctx, approvalID); err != nil {
-		return nil, fmt.Errorf("读取案件创建跟踪失败：%w", err)
-	} else if tracking != nil && tracking.CreationStatus == "completed" && tracking.CaseID != nil && strings.TrimSpace(*tracking.CaseID) != "" {
-		return s.reconcileCompletedCaseCreation(ctx, approvalID, tracking, caseData)
-	}
-	claimed, err := s.integrationRepo.ClaimCaseCreation(ctx, approvalID, userIDFromContext(ctx))
-	if err != nil {
-		return nil, fmt.Errorf("锁定案件创建任务失败：%w", err)
-	}
-	if !claimed {
-		if approval, lookupErr := s.approvalService.GetApprovalByID(approvalID); lookupErr == nil && approval != nil && approval.CaseCreated && approval.CreatedCaseID != "" {
-			return &CaseCreationResult{CaseID: approval.CreatedCaseID, Status: "completed", Message: "案件已创建", CreatedAt: time.Now(), CaseData: caseData}, nil
-		}
-		return nil, NewSubjectWorkflowError("CASE_CREATION_IN_PROGRESS", "该审批的正式案件正在创建或等待重试，请稍后查看成案状态")
-	}
-
 	return s.createCaseTxWorkflow(ctx, approvalID, caseData)
 }
 
 // createCaseTxWorkflow runs the whole approval-driven case creation inside
-// ONE database transaction: the in-tx approval re-check, the formal case
-// row, the reviewed parties, the tracking completion and the approval
-// linkage. Any failure rolls the entire batch back; the claim is also
-// recorded transactionally, so a rollback releases the approval for retry.
+// ONE database transaction: the transactional claim with a locked approval
+// re-check, the completed fast paths (all of which verify the REAL case and
+// its subject/role set), the formal case row, the reviewed parties, the
+// tracking completion and the approval linkage. Any failure rolls the whole
+// batch back, so no failure path can strand a persistent "processing" claim
+// and no completed exit can bypass actual party integrity.
 func (s *approvalConflictIntegrationService) createCaseTxWorkflow(ctx context.Context, approvalID string, caseData map[string]interface{}) (*CaseCreationResult, error) {
-	committed := false
 	if s.db == nil {
 		return nil, NewSubjectWorkflowError("CASE_TX_UNAVAILABLE", "成案数据库连接不可用，已阻止事务成案")
 	}
@@ -397,58 +377,63 @@ func (s *approvalConflictIntegrationService) createCaseTxWorkflow(ctx context.Co
 	if tx.Error != nil {
 		return nil, fmt.Errorf("成案事务启动失败：%w", tx.Error)
 	}
+	committed := false
 	defer func() {
 		if !committed {
 			tx.Rollback()
 		}
 	}()
-	failure := func(err error) (*CaseCreationResult, error) {
-		if !committed {
-			tx.Rollback()
-		}
-		_ = s.integrationRepo.MarkCaseCreationFailed(ctx, approvalID, err.Error())
-		return nil, err
-	}
 
 	var probeHook func(error)
 	if s.onWorkflowFailureHook != nil {
 		probeHook = s.onWorkflowFailureHook
 	}
+	txCtx := repositories.WithApprovalCaseTx(ctx, tx)
+	txCtx = repositories.WithCaseTx(txCtx, tx)
+
+	// Lock the approval row and re-check it inside this transaction, then
+	// claim the single case-creation attempt ON THE SAME TRANSACTION. A
+	// crash mid-transaction rolls the claim back with everything else, so
+	// no external write ever strands the approval in a persistent
+	// "processing" state.
+	claimed, err := s.integrationRepo.ClaimCaseCreationOnTx(txCtx, tx, approvalID, userIDFromContext(ctx))
+	if err != nil {
+		return nil, fmt.Errorf("锁定案件创建任务失败：%w", err)
+	}
+	if !claimed {
+		return s.settleClaimedCaseCreation(txCtx, tx, approvalID, caseData)
+	}
+
 	createCaseReq, err := caseCreationRequestFromMap(caseData)
 	if err != nil {
 		if probeHook != nil {
 			probeHook(err)
 		}
-		return failure(err)
+		return nil, err
 	}
 	createCaseReq.Approved = true
 
 	checkID := conflictCheckIDFromMetadata(caseData)
 	record, err := s.integrationRepo.GetConflictCheckRecord(ctx, checkID)
 	if err != nil {
-		return failure(fmt.Errorf("读取冲突复核记录失败：%w", err))
+		return nil, fmt.Errorf("读取冲突复核记录失败：%w", err)
 	}
 	parties, err := buildReviewedParties(record)
 	if err != nil {
-		return failure(err)
+		return nil, err
 	}
 
-	txCtx := repositories.WithApprovalCaseTx(ctx, tx)
-	txCtx = repositories.WithCaseTx(txCtx, tx)
-
-	// In-transaction re-check: the approval must still be approved and
-	// claimable, observed through the transaction itself.
 	approval, err := s.integrationRepo.GetDBByApprovalID(txCtx, approvalID)
 	if err != nil {
-		return failure(fmt.Errorf("事务内读取审批失败：%w", err))
+		return nil, fmt.Errorf("事务内读取审批失败：%w", err)
 	}
 	if approval == nil || approval.Status != models.ApprovalStatusApproved {
-		return failure(NewSubjectWorkflowError("CASE_CREATION_NOT_APPROVED", "审批未处于通过状态，已阻止成案"))
+		return nil, NewSubjectWorkflowError("CASE_CREATION_NOT_APPROVED", "审批未处于通过状态，已阻止成案")
 	}
 
 	createdCase, err := s.caseService.CreateCaseOnTx(txCtx, createCaseReq)
 	if err != nil {
-		return failure(fmt.Errorf("创建案件失败: %w", err))
+		return nil, fmt.Errorf("创建案件失败: %w", err)
 	}
 
 	caseID := fmt.Sprintf("%d", createdCase.ID)
@@ -460,12 +445,12 @@ func (s *approvalConflictIntegrationService) createCaseTxWorkflow(ctx context.Co
 	// Parties commit in the same transaction as the case row.
 	partiesRepo := s.integrationRepo
 	if err := partiesRepo.LinkConflictCasePartiesOnTx(txCtx, tx, createdCase.ID, parties); err != nil {
-		return failure(fmt.Errorf("写入案件当事人失败，正式案件已回滚：%w", err))
+		return nil, fmt.Errorf("写入案件当事人失败，正式案件已回滚：%w", err)
 	}
 
 	// Tracking completion commits in the same transaction.
 	if err := s.updateCaseTracking(txCtx, approvalID, "completed", &caseID, &caseNumber, ""); err != nil {
-		return failure(fmt.Errorf("成案跟踪写入失败，正式案件已回滚：%w", err))
+		return nil, fmt.Errorf("成案跟踪写入失败，正式案件已回滚：%w", err)
 	}
 
 	association := &models.CaseCreationAssociation{
@@ -476,14 +461,14 @@ func (s *approvalConflictIntegrationService) createCaseTxWorkflow(ctx context.Co
 		if s.onWorkflowFailureHook != nil {
 			s.onWorkflowFailureHook(err)
 		}
-		return failure(fmt.Errorf("案件已创建但审批关联回填失败，整体已回滚：%w", err))
+		return nil, fmt.Errorf("案件已创建但审批关联回填失败，整体已回滚：%w", err)
 	}
 
 	if err := tx.Commit().Error; err != nil {
 		if s.onWorkflowFailureHook != nil {
 			s.onWorkflowFailureHook(err)
 		}
-		return failure(fmt.Errorf("成案事务提交失败：%w", err))
+		return nil, fmt.Errorf("成案事务提交失败：%w", err)
 	}
 	committed = true
 
@@ -495,6 +480,87 @@ func (s *approvalConflictIntegrationService) createCaseTxWorkflow(ctx context.Co
 		CreatedAt:  time.Now(),
 		CaseData:   caseData,
 	}, nil
+}
+
+// settleClaimedCaseCreation resolves a lost claim race inside the claim
+// transaction. Every completed exit re-reads the REAL approval row through
+// the transaction and then verifies the case's actual subject identity and
+// role set against the reviewed snapshot; a case with missing or damaged
+// parties is repaired idempotently on the SAME case or rejected loudly — it
+// is never published as a fresh completion and never duplicated.
+func (s *approvalConflictIntegrationService) settleClaimedCaseCreation(ctx context.Context, tx *gorm.DB, approvalID string, caseData map[string]interface{}) (*CaseCreationResult, error) {
+	approval, err := s.integrationRepo.GetDBByApprovalID(ctx, approvalID)
+	if err != nil {
+		return nil, fmt.Errorf("读取审批成案状态失败：%w", err)
+	}
+	if approval == nil || approval.Status != models.ApprovalStatusApproved {
+		return nil, NewSubjectWorkflowError("CASE_CREATION_NOT_APPROVED", "审批未处于通过状态，已阻止成案")
+	}
+	caseID := strings.TrimSpace(approval.CreatedCaseID)
+	if approval.CaseCreated && caseID != "" {
+		return s.verifyExistingCaseCompletion(ctx, tx, approvalID, caseID, nil, caseData)
+	}
+	tracking, err := s.integrationRepo.GetLatestCaseCreationTracking(ctx, approvalID)
+	if err != nil {
+		return nil, fmt.Errorf("读取案件创建跟踪失败：%w", err)
+	}
+	if tracking != nil && tracking.CreationStatus == "completed" && tracking.CaseID != nil && strings.TrimSpace(*tracking.CaseID) != "" {
+		return s.verifyExistingCaseCompletion(ctx, tx, approvalID, strings.TrimSpace(*tracking.CaseID), tracking, caseData)
+	}
+	return nil, NewSubjectWorkflowError("CASE_CREATION_IN_PROGRESS", "该审批的正式案件正在创建或等待重试，请稍后查看成案状态")
+}
+
+// verifyExistingCaseCompletion runs the completed fast path inside the
+// caller's transaction: it validates the real case, re-materializes any
+// missing reviewed parties on the same case, then confirms the live
+// (identity, role) set matches the snapshot before allowing a completed
+// response. Counts alone are never sufficient.
+func (s *approvalConflictIntegrationService) verifyExistingCaseCompletion(ctx context.Context, tx *gorm.DB, approvalID, caseID string, tracking *repositories.CaseCreationTracking, caseData map[string]interface{}) (*CaseCreationResult, error) {
+	caseIDUint, ok := parseUintString(caseID)
+	if !ok || caseIDUint == 0 {
+		return nil, NewSubjectWorkflowError("CASE_CREATION_INCOMPLETE", fmt.Sprintf("成案记录指向的正式案件 %q 不存在，已阻止假完成", caseID))
+	}
+	var existing models.Case
+	err := tx.Where("id = ?", caseIDUint).First(&existing).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, NewSubjectWorkflowError("CASE_CREATION_INCOMPLETE", fmt.Sprintf("成案记录指向的正式案件 %q 实际不存在，已阻止假完成", caseID))
+		}
+		return nil, fmt.Errorf("读取正式案件失败：%w", err)
+	}
+	checkID := conflictCheckIDFromMetadata(caseData)
+	record, err := s.integrationRepo.GetConflictCheckRecord(ctx, checkID)
+	if err != nil {
+		return nil, fmt.Errorf("读取冲突复核记录失败：%w", err)
+	}
+	parties, err := buildReviewedParties(record)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.integrationRepo.LinkConflictCasePartiesOnTx(ctx, tx, caseIDUint, parties); err != nil {
+		return nil, fmt.Errorf("成案当事人校验失败，本次变更已回滚：%w", err)
+	}
+	if !casePartiesMatchSnapshot(tx, caseIDUint, parties) {
+		return nil, NewSubjectWorkflowError("CASE_CREATION_INCOMPLETE", "正式案件的主体身份或角色集合与批准快照不一致，已阻止假完成")
+	}
+	caseNumber := existing.CaseNumber
+	if caseNumber == "" && tracking != nil && tracking.CaseNumber != nil {
+		caseNumber = *tracking.CaseNumber
+	}
+	if caseNumber == "" {
+		caseNumber = fmt.Sprintf("CASE-%d", caseIDUint)
+	}
+	association := &models.CaseCreationAssociation{
+		Created: true, CaseID: caseID, CaseNumber: caseNumber,
+		CreationTime: time.Now(), DataMapping: caseData, Status: "completed", StatusMessage: "案件创建成功",
+	}
+	if err := s.integrationRepo.UpdateApprovalCaseAssociation(ctx, approvalID, association); err != nil {
+		return nil, fmt.Errorf("正式案件已存在但审批关联回填失败，本次变更已回滚：%w", err)
+	}
+	if err := tx.Commit().Error; err != nil {
+		return nil, fmt.Errorf("成案校验事务提交失败：%w", err)
+	}
+	return &CaseCreationResult{CaseID: caseID, CaseNumber: caseNumber, Status: "completed", Message: "案件已创建", CreatedAt: time.Now(), CaseData: caseData}, nil
 }
 
 // reconcileCompletedCaseCreation runs the completed-tracking fast path
