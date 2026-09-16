@@ -1342,6 +1342,83 @@ export function persistableCaseIntakeDraft(form: IntakeFormState) {
   }
 }
 
+
+export interface IntakeDraftRestore {
+  form: IntakeFormState
+  relatedParties: IntakeRelatedParty[]
+}
+
+const aliasesTextFromServer = (raw: unknown): string => {
+  if (Array.isArray(raw)) {
+    return raw.map((item) => String(item ?? '').trim()).filter(Boolean).join('、')
+  }
+  if (typeof raw === 'string' && raw.trim()) {
+    try {
+      const parsed = JSON.parse(raw) as unknown
+      if (Array.isArray(parsed)) {
+        return parsed.map((item) => String(item ?? '').trim()).filter(Boolean).join('、')
+      }
+    } catch {
+      // Plain-text aliases are kept as-is.
+    }
+    return raw.trim()
+  }
+  return ''
+}
+
+// intakeDraftFromServer restores EVERY saved business field of a draft, not
+// only the header columns: the 5ddbdba regression showed that restoring a
+// three-party draft and saving again silently dropped the business metadata
+// and the related party. Related rows come back with their stored role, and
+// protected identity numbers stay empty because the server never returns
+// them; the lawyer re-enters the opponent identity before facts confirmation.
+export function intakeDraftFromServer(payload: Record<string, any>): IntakeDraftRestore {
+  const form = intakeFormFromServer(payload)
+  const intake = recordValue(payload.intake)
+  const metadata = recordValue(intake.metadata)
+  const parties = listOf<Record<string, any>>(payload.parties)
+  const opponentParty = parties.find(
+    (party: any) =>
+      textValue(party.party_role || party.role, '').toLowerCase().includes('opposing'),
+  )
+  const relatedParties = parties
+    .filter((party: any) =>
+      textValue(party.party_role || party.role, '').toLowerCase().includes('related'),
+    )
+    .map((party: any) => {
+      const partyMetadata = recordValue(party.metadata)
+      return {
+        name: textValue(party.entity_name || party.entityName, ''),
+        role: textValue(partyMetadata.party_type || partyMetadata.role, '') || '待确认',
+        entityType: textValue(party.entity_type || party.entityType, '') || 'LEGAL_PERSON',
+        identityType: textValue(party.identity_type || party.identityType, '') || 'SOCIAL_CREDIT_CODE',
+        // Server redacts identity values at the API boundary.
+        identityNumber: '',
+      }
+    })
+    .filter((party) => party.name.length > 0)
+  const restored: IntakeFormState = {
+    ...form,
+    businessArea: textValue(metadata.business_area, ''),
+    subArea: textValue(metadata.sub_area, ''),
+    disputeAmount: textValue(metadata.dispute_amount, ''),
+    sourceChannel: textValue(metadata.source_channel, ''),
+    sourceContact: textValue(metadata.source_contact, ''),
+    investmentAgreementDate: textValue(metadata.investment_agreement_date, ''),
+    disputeDate: textValue(metadata.dispute_date, ''),
+    breachDate: textValue(metadata.breach_date, ''),
+    proposedFilingDate: textValue(metadata.proposed_filing_date, ''),
+    jurisdiction: textValue(metadata.jurisdiction, ''),
+    billingMethod: textValue(metadata.billing_method, ''),
+    feeBase: textValue(metadata.fee_base, ''),
+    contingencyRate: textValue(metadata.contingency_rate, ''),
+    minimumFee: textValue(metadata.minimum_fee, ''),
+    lawyerId: numberValue(metadata.lawyer_id || intake.created_by, 0),
+    opponentAliases: aliasesTextFromServer(opponentParty?.aliases ?? opponentParty?.entityAliases),
+  }
+  return { form: restored, relatedParties }
+}
+
 const defaultMaterials = [
   { name: '客户主体资料', material_type: 'identity', status: 'missing', required: true },
   { name: '投资协议及补充协议', material_type: 'contract', status: 'missing', required: true },
@@ -4841,6 +4918,12 @@ export function CaseIntakeWorkbench() {
   const continueStoredDraft = () => {
     if (!storedDraft) return
     setForm(storedDraft)
+    // Switching drafts must not carry related parties or tags from the
+
+    // previously opened matter into the restored one.
+
+    setRelatedParties([])
+    setCaseTags([])
     setRevisionConflict(null)
     if (storedDraft.intakeId) {
       setRuntime((current) => ({
@@ -4890,18 +4973,20 @@ export function CaseIntakeWorkbench() {
   const fetchAndApplyServerDraft = (draft: IntakeFormState) => {
     apiRequest<any>(`/case-intakes/${draft.intakeId}`)
       .then((payload) => {
-        const restored = intakeFormFromServer(payload)
-        setForm(restored)
+        const restored = intakeDraftFromServer(payload)
+        setForm(restored.form)
+        setRelatedParties(restored.relatedParties)
+        setCaseTags([])
         setRuntime((current) => ({
           ...current,
-          intake: { id: restored.intakeId, intake_code: restored.intakeCode },
+          intake: { id: restored.form.intakeId, intake_code: restored.form.intakeCode },
           conflict: undefined,
           conflictTask: undefined,
         }))
         setRevisionConflict(null)
         setDraftActive(true)
         message.success(
-          restored.opponentIdentityNumber
+          restored.form.opponentIdentityNumber
             ? '已恢复所选服务端草稿'
             : `已恢复所选服务端草稿。${firstRunGuidance.restoreNotice}`,
         )
@@ -4940,7 +5025,10 @@ export function CaseIntakeWorkbench() {
     }
     apiRequest<any>(`/case-intakes/${intakeID}`)
       .then((payload) => {
-        setForm(intakeFormFromServer(payload))
+        const restored = intakeDraftFromServer(payload)
+        setForm(restored.form)
+        setRelatedParties(restored.relatedParties)
+        setCaseTags([])
         setRevisionConflict(null)
         message.success('已加载服务端最新草稿，本地未保存内容已被替换')
       })

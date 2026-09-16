@@ -2193,13 +2193,20 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 	}
 	// Stamp the NEW revision onto the merged metadata. Non-metadata updates
 	// keep the stored metadata and only rotate the revision token.
+	// A save without a metadata key (e.g. only the title) must keep the STORED
+	// business metadata. objectValue(nil) returns an empty map, so the old nil
+	// check never fired and such a save erased every stored metadata field. The
+	// stored metadata is now the base; a present client metadata object is only
+	// merged on top of it. Assistant drafts keep their focused overwrite contract.
 	nextRevision := uuid.NewString()
-	revisionMetadata := objectValue(payload["metadata"])
-	if revisionMetadata == nil {
+	revisionMetadata := map[string]interface{}{}
+	if !isAssistantRole(c) {
 		revisionMetadata = objectValue(existing["metadata"])
 	}
-	if revisionMetadata == nil {
-		revisionMetadata = map[string]interface{}{}
+	if providedMetadata, ok := rawPayload["metadata"]; ok && providedMetadata != nil && !isAssistantRole(c) {
+		for key, value := range objectValue(providedMetadata) {
+			revisionMetadata[key] = value
+		}
 	}
 	revisionMetadata[intakeDraftRevisionKey] = nextRevision
 	payload["metadata"] = jsonStringValue(revisionMetadata)

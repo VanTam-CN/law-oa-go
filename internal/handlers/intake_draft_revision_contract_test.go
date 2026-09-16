@@ -206,3 +206,99 @@ func TestConfirmAndConflictCheckAuthorizeBeforeRevisionHint(t *testing.T) {
 		t.Fatalf("conflict context must carry current revision, got %v", payload)
 	}
 }
+
+// Regression for the independent 221d468 finding (real API + Postgres): a
+// partial PUT WITHOUT a metadata key (title only, correct expected_revision)
+// returned 200 but erased every stored business metadata field, because
+// objectValue(nil) returns an empty map and the nil fallback never fired.
+func TestUpdateIntakeWithoutMetadataKeepsStoredBusinessFields(t *testing.T) {
+	h, db := newDraftRevisionDB(t)
+	r := newDraftRevisionRouter(h)
+	businessMetadata := "{\"draft_revision\":\"rev-1\",\"business_area\":\"争议解决\",\"sub_area\":\"商事诉讼\",\"dispute_amount\":\"120000\",\"source_channel\":\"客户转介\"}"
+	if err := db.Table("case_intakes").Where("id = ?", "intake-rev").
+		Update("metadata", businessMetadata).Error; err != nil {
+		t.Fatalf("seed business metadata: %v", err)
+	}
+
+	code, saved := draftRevisionRequest(t, r, http.MethodPut,
+		"/api/v1/case-intakes/intake-rev",
+		"{\"expected_revision\":\"rev-1\",\"title\":\"仅更新标题\"}",
+		"")
+	if code != http.StatusOK {
+		t.Fatalf("partial update: status=%d payload=%v", code, saved)
+	}
+	data, _ := saved["data"].(map[string]interface{})
+	responseRevision, _ := data["revision"].(string)
+	if responseRevision == "" || responseRevision == "rev-1" {
+		t.Fatalf("revision must rotate on partial save, got %q", responseRevision)
+	}
+
+	var row struct {
+		Title    string
+		Metadata []byte
+	}
+	if err := db.Table("case_intakes").Select("title, metadata").
+		Where("id = ?", "intake-rev").Take(&row).Error; err != nil {
+		t.Fatalf("reload intake: %v", err)
+	}
+	metadata := objectValue(row.Metadata)
+	if intakeDraftRevision(row.Metadata) != responseRevision {
+		t.Fatalf("stored revision %q must equal response %q",
+			intakeDraftRevision(row.Metadata), responseRevision)
+	}
+	if row.Title != "仅更新标题" {
+		t.Fatalf("title must update, got %q", row.Title)
+	}
+	for key, want := range map[string]string{
+		"business_area":  "争议解决",
+		"sub_area":       "商事诉讼",
+		"dispute_amount": "120000",
+		"source_channel": "客户转介",
+	} {
+		if got := fmt.Sprint(metadata[key]); got != want {
+			t.Fatalf("partial save must keep stored metadata %s: got %q want %q (metadata=%v)",
+				key, got, want, metadata)
+		}
+	}
+}
+
+// A save that DOES provide metadata merges onto the stored metadata: fields
+// the client sends win, fields it omits stay untouched.
+func TestUpdateIntakeMergesProvidedMetadataWithoutErasingStoredFields(t *testing.T) {
+	h, db := newDraftRevisionDB(t)
+	r := newDraftRevisionRouter(h)
+	businessMetadata := "{\"draft_revision\":\"rev-1\",\"business_area\":\"争议解决\",\"dispute_amount\":\"120000\",\"fee_base\":\"固定费\"}"
+	if err := db.Table("case_intakes").Where("id = ?", "intake-rev").
+		Update("metadata", businessMetadata).Error; err != nil {
+		t.Fatalf("seed business metadata: %v", err)
+	}
+
+	code, saved := draftRevisionRequest(t, r, http.MethodPut,
+		"/api/v1/case-intakes/intake-rev",
+		"{\"expected_revision\":\"rev-1\",\"metadata\":{\"fee_base\":\"风险代理\"}}",
+		"")
+	if code != http.StatusOK {
+		t.Fatalf("metadata merge update: status=%d payload=%v", code, saved)
+	}
+
+	var row struct {
+		Metadata []byte
+	}
+	if err := db.Table("case_intakes").Select("metadata").
+		Where("id = ?", "intake-rev").Take(&row).Error; err != nil {
+		t.Fatalf("reload intake: %v", err)
+	}
+	metadata := objectValue(row.Metadata)
+	if got := fmt.Sprint(metadata["fee_base"]); got != "风险代理" {
+		t.Fatalf("provided metadata field must win, got fee_base=%q", got)
+	}
+	for key, want := range map[string]string{
+		"business_area":  "争议解决",
+		"dispute_amount": "120000",
+	} {
+		if got := fmt.Sprint(metadata[key]); got != want {
+			t.Fatalf("merge must keep stored metadata %s: got %q want %q (metadata=%v)",
+				key, got, want, metadata)
+		}
+	}
+}
