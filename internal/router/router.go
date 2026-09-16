@@ -378,6 +378,12 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client) {
 		caseIntakes := protected.Group("/case-intakes")
 		{
 			caseIntakes.GET("", demoAggregateHandler.ListIntakeDrafts)
+			// Single-draft restore endpoint. It reuses the intake-workbench
+			// aggregate (owner scope + ethical-wall client authorization +
+			// sanitized facts/parties) so a fresh session can resume a
+			// non-latest saved draft with its revision, roles and protected
+			// identity status instead of only the newest row.
+			caseIntakes.GET("/:id", demoAggregateHandler.IntakeWorkbench)
 			caseIntakes.POST("", demoAggregateHandler.CreateCaseIntake)
 			caseIntakes.PUT("/:id", demoAggregateHandler.UpdateCaseIntake)
 			caseIntakes.POST("/:id/facts-confirmation", demoAggregateHandler.ConfirmIntakeFacts)

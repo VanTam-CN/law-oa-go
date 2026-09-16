@@ -178,6 +178,9 @@ func f04BCheckCount(t *testing.T, db *gorm.DB) int64 {
 	return n
 }
 
+// f04BIntakeRevision reads the server-owned draft revision. db may be nil
+// inside f04BRunConfirmCheckCycle; the caller there passes the fixture db.
+
 func seedF04BIntakeWithParty(t *testing.T, db *gorm.DB, clientID uint) string {
 	t.Helper()
 	intakeID := "f04b-intake-1"
@@ -194,7 +197,7 @@ func seedF04BIntakeWithParty(t *testing.T, db *gorm.DB, clientID uint) string {
 	return intakeID
 }
 
-func f04BRunConfirmCheckCycle(t *testing.T, r *gin.Engine, intakeID string) {
+func f04BRunConfirmCheckCycle(t *testing.T, db *gorm.DB, r *gin.Engine, intakeID string) string {
 	t.Helper()
 	if code, resp := doF04B(r, "POST", "/api/v1/case-intakes/"+intakeID+"/facts-confirmation", ""); code != http.StatusOK {
 		t.Fatalf("confirm: code=%d resp=%v", code, resp)
@@ -202,6 +205,23 @@ func f04BRunConfirmCheckCycle(t *testing.T, r *gin.Engine, intakeID string) {
 	if code, resp := doF04B(r, "POST", "/api/v1/case-intakes/"+intakeID+"/conflict-check", ""); code != http.StatusOK {
 		t.Fatalf("check: code=%d resp=%v", code, resp)
 	}
+	return f04BIntakeRevision(t, db, intakeID)
+}
+
+// f04BIntakeRevision reads the current server-owned draft revision token
+// so contract-aware test saves can name the version they are based on.
+func f04BIntakeRevision(t *testing.T, db *gorm.DB, intakeID string) string {
+	t.Helper()
+	var row struct {
+		Metadata string
+	}
+	if err := db.Table("case_intakes").Select("metadata").Where("id = ?", intakeID).Take(&row).Error; err != nil {
+		t.Fatalf("load intake revision: %v", err)
+	}
+	var meta map[string]interface{}
+	_ = json.Unmarshal([]byte(row.Metadata), &meta)
+	rev, _ := meta["draft_revision"].(string)
+	return rev
 }
 
 func TestF04BSameSecondReconfirmInvalidatesCommittedSnapshot(t *testing.T) {
@@ -210,7 +230,7 @@ func TestF04BSameSecondReconfirmInvalidatesCommittedSnapshot(t *testing.T) {
 	seedF04BLawyer(t, db)
 	intakeID := seedF04BIntakeWithParty(t, db, client.ID)
 	r := newF04BRouter(t, db)
-	f04BRunConfirmCheckCycle(t, r, intakeID)
+	f04BRunConfirmCheckCycle(t, db, r, intakeID)
 	if n := f04BCheckCount(t, db); n != 1 {
 		t.Fatalf("first cycle must land one record, got %d", n)
 	}
@@ -229,11 +249,12 @@ func TestF04BUpdateThenReconfirmInvalidatesPriorSnapshot(t *testing.T) {
 	seedF04BLawyer(t, db)
 	intakeID := seedF04BIntakeWithParty(t, db, client.ID)
 	r := newF04BRouter(t, db)
-	f04BRunConfirmCheckCycle(t, r, intakeID)
+	f04BRunConfirmCheckCycle(t, db, r, intakeID)
 	// Same-second fact change: update deletes the server-owned version and
 	// re-confirm installs a fresh one, so the prior snapshot is gone even
 	// if the RFC3339 second matches.
-	if code, resp := doF04B(r, "PUT", "/api/v1/case-intakes/"+intakeID, fmt.Sprintf("{\"client_id\": %d}", client2.ID)); code != http.StatusOK {
+	revision := f04BIntakeRevision(t, db, intakeID)
+	if code, resp := doF04B(r, "PUT", "/api/v1/case-intakes/"+intakeID, fmt.Sprintf("{\"expected_revision\":%q,\"client_id\": %d}", revision, client2.ID)); code != http.StatusOK {
 		t.Fatalf("update: code=%d resp=%v", code, resp)
 	}
 	if code, resp := doF04B(r, "POST", "/api/v1/case-intakes/"+intakeID+"/facts-confirmation", ""); code != http.StatusOK {
@@ -278,7 +299,7 @@ func TestF04BStaleVersionCommitRejectedAndRolledBack(t *testing.T) {
 	seedF04BLawyer(t, db)
 	intakeID := seedF04BIntakeWithParty(t, db, client.ID)
 	r := newF04BRouter(t, db)
-	f04BRunConfirmCheckCycle(t, r, intakeID)
+	f04BRunConfirmCheckCycle(t, db, r, intakeID)
 	if code, resp := doF04B(r, "POST", "/api/v1/case-intakes/"+intakeID+"/facts-confirmation", ""); code != http.StatusOK {
 		t.Fatalf("re-confirm: code=%d resp=%v", code, resp)
 	}

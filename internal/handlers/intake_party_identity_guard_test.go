@@ -30,9 +30,10 @@ func newPartyIdentityGuardDB(t *testing.T) *gorm.DB {
 	if err := db.Exec(`CREATE TABLE case_intake_parties (id INTEGER PRIMARY KEY AUTOINCREMENT, intake_id TEXT, entity_name TEXT, entity_type TEXT, party_role TEXT, relation_depth INTEGER, identity_type TEXT, identity_number_ciphertext TEXT, identity_number_digest TEXT, aliases TEXT, metadata TEXT, created_at DATETIME)`).Error; err != nil {
 		t.Fatalf("create case_intake_parties: %v", err)
 	}
-	if err := db.Exec(`INSERT INTO case_intakes (id, title, case_type, client_id, created_by, status, metadata) VALUES ('intake-guarded', '被保护草稿', 'civil', 3, '7', 'draft', '{}')`).Error; err != nil {
-		t.Fatalf("seed intake: %v", err)
-	}
+	seedMetadata := `{"draft_revision":"guard-rev-1"}`
+	if err := db.Exec(`INSERT INTO case_intakes (id, title, case_type, client_id, created_by, status, metadata) VALUES ('intake-guarded', '被保护草稿', 'civil', 3, '7', 'draft', ?)`, seedMetadata).Error; err != nil {
+			t.Fatalf("seed intake: %v", err)
+		}
 	if err := db.Exec(`INSERT INTO case_intake_parties (intake_id, entity_name, entity_type, party_role, identity_type, identity_number_ciphertext, identity_number_digest, aliases) VALUES ('intake-guarded', '对手公司', 'LEGAL_PERSON', 'opponent', 'SOCIAL_CREDIT_CODE', 'old-ciphertext', 'old-digest', '对手别名')`).Error; err != nil {
 		t.Fatalf("seed party: %v", err)
 	}
@@ -42,6 +43,14 @@ func newPartyIdentityGuardDB(t *testing.T) *gorm.DB {
 func partyIdentityGuardRequest(t *testing.T, r *gin.Engine, body string) (int, map[string]interface{}) {
 	t.Helper()
 	req := httptest.NewRequest(http.MethodPut, "/api/v1/case-intakes/intake-guarded", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Test-Role", "lawyer")
+	req.Header.Set("X-Test-User-Id", "7")
+	// The revision guard fronts every update now: contract-aware callers
+	// must name the revision they loaded, so these probes carry the seeded
+	// token instead of bypassing the lost-update protection.
+	body = strings.Replace(body, "{", `{"expected_revision":"guard-rev-1",`, 1)
+	req = httptest.NewRequest(http.MethodPut, "/api/v1/case-intakes/intake-guarded", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Test-Role", "lawyer")
 	req.Header.Set("X-Test-User-Id", "7")
