@@ -85,6 +85,20 @@ func intakeDraftRevision(raw interface{}) string {
 	return strings.TrimSpace(value)
 }
 
+// intakeDraftRevisionFor returns the server-owned revision token for an
+// intake row, deriving a stable legacy token from the row identity when the
+// stored metadata predates the revision guard. The derivation must stay
+// server-side and identical across every read path (list, workbench detail,
+// conflict hints, and the locked update/confirm re-check) so pre-guard drafts
+// can be loaded and saved exactly once instead of being permanently locked
+// behind a missing token.
+func intakeDraftRevisionFor(intakeID string, raw interface{}) string {
+	if revision := intakeDraftRevision(raw); revision != "" {
+		return revision
+	}
+	return "legacy-" + strings.TrimSpace(intakeID)
+}
+
 var allowedAssistantDraftFields = map[string]struct{}{
 	"title":       {},
 	"case_type":   {},
@@ -379,7 +393,7 @@ func (h *DemoAggregateHandler) IntakeWorkbench(c *gin.Context) {
 		// Draft restore must resume from the exact saved version, so the
 		// workbench row carries the server-owned revision token next to the
 		// sanitized facts (the raw metadata itself is redacted).
-		"revision": intakeDraftRevision(intake["metadata"]),
+		"revision": intakeDraftRevisionFor(id, intake["metadata"]),
 	})
 }
 
@@ -468,7 +482,7 @@ func (h *DemoAggregateHandler) ListIntakeDrafts(c *gin.Context) {
 			"client_id":   row["client_id"],
 			"created_by":  row["created_by"],
 			"updated_at":  row["updated_at"],
-			"revision":    intakeDraftRevision(row["metadata"]),
+			"revision":    intakeDraftRevisionFor(fmt.Sprint(row["id"]), row["metadata"]),
 		})
 	}
 	common.APISuccess(c, gin.H{
@@ -2201,6 +2215,11 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 			for key, value := range objectValue(rawPayload["metadata"]) {
 				metadata[key] = value
 			}
+			// The rebuilt metadata starts from the STORED metadata, so the
+			// freshly stamped revision is re-applied last: otherwise the
+			// pre-save token is written back and a stale tab can overwrite
+			// the very next save (confirmed/conflict_ready regression).
+			metadata[intakeDraftRevisionKey] = nextRevision
 			metadata["conflict_invalidated_at"] = time.Now().UTC().Format(time.RFC3339)
 			metadata["conflict_invalidated_by"] = actorID
 			metadata["conflict_invalidation_reason"] = "接案事实发生变化，必须重新确认并检测"
@@ -2227,7 +2246,7 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 			Where("id = ?", id).Take(&locked).Error; err != nil {
 			return err
 		}
-		if lockedRevision := intakeDraftRevision(locked.Metadata); lockedRevision != expectedRevision {
+		if lockedRevision := intakeDraftRevisionFor(id, locked.Metadata); lockedRevision != expectedRevision {
 			return newIntakeDraftRevisionError(expectedRevision == "")
 		}
 		if len(payload) > 0 {
@@ -2329,7 +2348,7 @@ func (h *DemoAggregateHandler) currentIntakeRevision(id string) string {
 	if err := h.db.Table("case_intakes").Select("metadata").Where("id = ?", id).Take(&row).Error; err != nil {
 		return ""
 	}
-	return intakeDraftRevision(row.Metadata)
+	return intakeDraftRevisionFor(id, row.Metadata)
 }
 
 func prepareCaseIntakePartyRow(party map[string]interface{}, intakeID interface{}, now time.Time) (map[string]interface{}, error) {
@@ -2411,20 +2430,21 @@ func (h *DemoAggregateHandler) ConfirmIntakeFacts(c *gin.Context) {
 		common.APINotFound(c, "接案记录不存在", "指定接案记录不存在")
 		return
 	}
-	// Facts confirmation rotates the draft revision, so a stale tab cannot
-	// bypass the lost-update guard by re-confirming from an old page: the
-	// page must name the revision it loaded, or provide none and fail later.
-	if reqRevision := strings.TrimSpace(c.GetHeader("X-Intake-Revision")); reqRevision != "" {
-		if reqRevision != intakeDraftRevision(intake["metadata"]) {
-			common.APIErrorWithContext(c, http.StatusConflict, "INTAKE_DRAFT_REVISION_CONFLICT",
-				"草稿已被其他页面更新，当前页面是旧版本，已停止重新确认以避免覆盖。",
-				map[string]interface{}{"current_revision": intakeDraftRevision(intake["metadata"])})
-			return
-		}
-	}
 	if !canViewAllMatterData(c) && strings.TrimSpace(fmt.Sprint(intake["created_by"])) != actorID && strings.TrimSpace(fmt.Sprint(intake["status"])) != "assistant_draft" {
 		forbidObjectAccess(c)
 		return
+	}
+	// Facts confirmation rotates the draft revision, so a stale tab cannot
+	// bypass the lost-update guard by re-confirming from an old page. The
+	// revision guard runs after the object-authorization boundary so an
+	// unauthorized caller sees 403, not a revision hint.
+	if reqRevision := strings.TrimSpace(c.GetHeader("X-Intake-Revision")); reqRevision != "" {
+		if reqRevision != intakeDraftRevisionFor(intakeID, intake["metadata"]) {
+			common.APIErrorWithContext(c, http.StatusConflict, "INTAKE_DRAFT_REVISION_CONFLICT",
+				"草稿已被其他页面更新，当前页面是旧版本，已停止重新确认以避免覆盖。",
+				map[string]interface{}{"current_revision": intakeDraftRevisionFor(intakeID, intake["metadata"])})
+			return
+		}
 	}
 	if strings.TrimSpace(fmt.Sprint(intake["client_id"])) == "" || strings.TrimSpace(fmt.Sprint(intake["title"])) == "" || strings.TrimSpace(fmt.Sprint(intake["case_type"])) == "" {
 		common.APIBadRequest(c, "冲突检查前置资料不完整", "请先填写客户、案件名称和案件类型")
@@ -2456,6 +2476,17 @@ func (h *DemoAggregateHandler) ConfirmIntakeFacts(c *gin.Context) {
 			Select("metadata").Where("id = ?", intakeID).Take(&row).Error; err != nil {
 			return err
 		}
+		// Re-check the revision under the row lock: the unlocked read above
+		// may already be stale by the time this transaction runs, and the
+		// guard is only real if it compares against the version it locks.
+		if reqRevision := strings.TrimSpace(c.GetHeader("X-Intake-Revision")); reqRevision != "" {
+			if reqRevision != intakeDraftRevisionFor(intakeID, row.Metadata) {
+				return &IntakeDraftRevisionError{
+					Code:    "INTAKE_DRAFT_REVISION_CONFLICT",
+					Message: "草稿已被其他页面更新，当前页面是旧版本，已停止重新确认以避免覆盖。",
+				}
+			}
+		}
 		metadata := objectValue(row.Metadata)
 		metadata["lawyer_facts_confirmed_at"] = time.Now().UTC().Format(time.RFC3339)
 		metadata["lawyer_facts_confirmed_by"] = actorID
@@ -2470,6 +2501,13 @@ func (h *DemoAggregateHandler) ConfirmIntakeFacts(c *gin.Context) {
 			"updated_at": time.Now(),
 		}).Error
 	}); err != nil {
+		var revisionErr *IntakeDraftRevisionError
+		if errors.As(err, &revisionErr) {
+			common.APIErrorWithContext(c, http.StatusConflict, revisionErr.Code, revisionErr.Message, map[string]interface{}{
+				"current_revision": h.currentIntakeRevision(intakeID),
+			})
+			return
+		}
 		common.APIInternalServerError(c, "确认接案事实失败", err.Error())
 		return
 	}
@@ -2487,16 +2525,6 @@ func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
 		common.APINotFound(c, "接案记录不存在", "指定接案记录不存在")
 		return
 	}
-	// A conflict check consumes the confirmed snapshot, so a page holding an
-	// outdated revision must reload before starting another check.
-	if reqRevision := strings.TrimSpace(c.GetHeader("X-Intake-Revision")); reqRevision != "" {
-		if reqRevision != intakeDraftRevision(intake["metadata"]) {
-			common.APIErrorWithContext(c, http.StatusConflict, "INTAKE_DRAFT_REVISION_CONFLICT",
-				"草稿已被其他页面更新，请重新加载服务端版本后再运行冲突检查。",
-				map[string]interface{}{"current_revision": intakeDraftRevision(intake["metadata"])})
-			return
-		}
-	}
 	actorID, ok := currentUserIDString(c)
 	if !ok {
 		return
@@ -2504,6 +2532,18 @@ func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
 	if !canViewAllMatterData(c) {
 		if strings.TrimSpace(fmt.Sprint(intake["created_by"])) != actorID {
 			forbidObjectAccess(c)
+			return
+		}
+	}
+	// A conflict check consumes the confirmed snapshot, so a page holding an
+	// outdated revision must reload before starting another check. The
+	// revision guard runs after the object-authorization boundary so an
+	// unauthorized caller sees 403, not a revision hint.
+	if reqRevision := strings.TrimSpace(c.GetHeader("X-Intake-Revision")); reqRevision != "" {
+		if reqRevision != intakeDraftRevisionFor(intakeID, intake["metadata"]) {
+			common.APIErrorWithContext(c, http.StatusConflict, "INTAKE_DRAFT_REVISION_CONFLICT",
+				"草稿已被其他页面更新，请重新加载服务端版本后再运行冲突检查。",
+				map[string]interface{}{"current_revision": intakeDraftRevisionFor(intakeID, intake["metadata"])})
 			return
 		}
 	}

@@ -414,3 +414,4 @@ frontend/test-results/
 # 这里不配置 `/frontend/reports/` 忽略规则；如果需要保留前端证据，请显式跟踪对应文件。
 
 !internal/handlers/intake_draft_revision_test.go
+!internal/handlers/intake_draft_revision_contract_test.go
