@@ -308,6 +308,7 @@ chrome/
 !internal/models/conflict_validation_test.go
 !internal/handlers/intake_write_role_guard_test.go
 !internal/handlers/intake_write_http_guard_test.go
+!internal/handlers/intake_party_metadata_serialization_test.go
 !internal/handlers/intake_draft_list_test.go
 !internal/handlers/intake_party_identity_guard_test.go
 !internal/handlers/intake_code_unique_test.go

@@ -1203,6 +1203,7 @@ interface IntakeRelatedParty {
   entityType: string
   identityType: string
   identityNumber: string
+  depth?: number
 }
 
 interface IntakeRuntimeState {
@@ -1333,6 +1334,60 @@ function loadCaseIntakeDraft(draftKey: string): IntakeFormState | null {
   }
 }
 
+// Server persistence contract for intake party rows (932972c follow-up):
+// each related party's business role and row depth are stored in the party's
+// metadata column, so restoring a saved draft reproduces the same party list
+// instead of degrading every role to "待确认" and flattening depths
+// to 1. Kept pure and exported so the round-trip contract can be tested
+// against the real save payload rather than hand-written fixtures.
+export function buildIntakePartyRows(
+  form: Pick<
+    IntakeFormState,
+    | 'clientId'
+    | 'clientName'
+    | 'opponentName'
+    | 'opponentEntityType'
+    | 'opponentIdentityType'
+    | 'opponentIdentityNumber'
+    | 'opponentAliases'
+  >,
+  clientTypeLabel: string,
+  relatedParties: IntakeRelatedParty[],
+) {
+  const clientEntityType =
+    clientTypeLabel.includes('个') || clientTypeLabel.toLowerCase() === 'person'
+      ? 'INDIVIDUAL'
+      : 'LEGAL_PERSON'
+  return [
+    {
+      entity_name: form.clientName,
+      entity_type: clientEntityType,
+      party_role: 'client',
+      relation_depth: 0,
+      metadata: { party_type: 'client' },
+    },
+    {
+      entity_name: form.opponentName,
+      entity_type: form.opponentEntityType,
+      party_role: 'opposing_party',
+      relation_depth: 0,
+      identity_type: form.opponentIdentityType,
+      identity_number: form.opponentIdentityNumber,
+      aliases: form.opponentAliases,
+      metadata: { party_type: 'opposing_party' },
+    },
+    ...relatedParties.map((party) => ({
+      entity_name: party.name,
+      entity_type: party.entityType,
+      party_role: 'related_party',
+      relation_depth: numberValue(party.depth, 1),
+      identity_type: party.identityType,
+      identity_number: party.identityNumber,
+      metadata: { party_type: party.role },
+    })),
+  ]
+}
+
 export function persistableCaseIntakeDraft(form: IntakeFormState) {
   return {
     ...form,
@@ -1345,6 +1400,7 @@ export function persistableCaseIntakeDraft(form: IntakeFormState) {
 
 export interface IntakeDraftRestore {
   form: IntakeFormState
+  caseTags: string[]
   relatedParties: IntakeRelatedParty[]
 }
 
@@ -1394,6 +1450,7 @@ export function intakeDraftFromServer(payload: Record<string, any>): IntakeDraft
         identityType: textValue(party.identity_type || party.identityType, '') || 'SOCIAL_CREDIT_CODE',
         // Server redacts identity values at the API boundary.
         identityNumber: '',
+        depth: numberValue(party.relation_depth, 1),
       }
     })
     .filter((party) => party.name.length > 0)
@@ -1416,7 +1473,10 @@ export function intakeDraftFromServer(payload: Record<string, any>): IntakeDraft
     lawyerId: numberValue(metadata.lawyer_id || intake.created_by, 0),
     opponentAliases: aliasesTextFromServer(opponentParty?.aliases ?? opponentParty?.entityAliases),
   }
-  return { form: restored, relatedParties }
+  const caseTags = listOf<unknown>(metadata.case_tags)
+    .map((tag) => textValue(tag, ''))
+    .filter((tag) => tag.length > 0)
+  return { form: restored, caseTags, relatedParties }
 }
 
 const defaultMaterials = [
@@ -4552,38 +4612,13 @@ export function CaseIntakeWorkbench() {
         contingency_rate: form.contingencyRate,
         minimum_fee: form.minimumFee,
         lawyer_id: form.lawyerId,
+        case_tags: caseTags,
       },
-      parties: [
-        {
-          entity_name: form.clientName,
-          entity_type:
-            (clientOptions.find((client) => client.id === form.clientId)?.clientType || '')
-              .includes('个') ||
-            (clientOptions.find((client) => client.id === form.clientId)?.clientType || '')
-              .toLowerCase() === 'person'
-              ? 'INDIVIDUAL'
-              : 'LEGAL_PERSON',
-          party_role: 'client',
-          relation_depth: 0,
-        },
-        {
-          entity_name: form.opponentName,
-          entity_type: form.opponentEntityType,
-          party_role: 'opposing_party',
-          relation_depth: 0,
-          identity_type: form.opponentIdentityType,
-          identity_number: form.opponentIdentityNumber,
-          aliases: form.opponentAliases,
-        },
-        ...relatedParties.map((party) => ({
-          entity_name: party.name,
-          entity_type: party.entityType,
-          party_role: 'related_party',
-          relation_depth: 1,
-          identity_type: party.identityType,
-          identity_number: party.identityNumber,
-        })),
-      ],
+      parties: buildIntakePartyRows(
+        form,
+        clientOptions.find((client) => client.id === form.clientId)?.clientType || '',
+        relatedParties,
+      ),
       materials: defaultMaterials,
     }
   }
@@ -4976,7 +5011,7 @@ export function CaseIntakeWorkbench() {
         const restored = intakeDraftFromServer(payload)
         setForm(restored.form)
         setRelatedParties(restored.relatedParties)
-        setCaseTags([])
+        setCaseTags(restored.caseTags)
         setRuntime((current) => ({
           ...current,
           intake: { id: restored.form.intakeId, intake_code: restored.form.intakeCode },
@@ -5028,7 +5063,7 @@ export function CaseIntakeWorkbench() {
         const restored = intakeDraftFromServer(payload)
         setForm(restored.form)
         setRelatedParties(restored.relatedParties)
-        setCaseTags([])
+        setCaseTags(restored.caseTags)
         setRevisionConflict(null)
         message.success('已加载服务端最新草稿，本地未保存内容已被替换')
       })
