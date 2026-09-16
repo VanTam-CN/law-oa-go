@@ -264,8 +264,28 @@ interface SettingsOverviewPayload {
 interface ApiEnvelope<T> {
   success?: boolean
   data?: T
-  error?: { message?: string } | string
+  error?: { message?: string; code?: string; context?: Record<string, unknown> } | string
   message?: string
+}
+
+// ApiRequestError carries the machine-readable error code and context so the
+// intake page can tell a lost-update 409 (INTAKE_DRAFT_REVISION_CONFLICT)
+// apart from any other failure without parsing strings.
+export class ApiRequestError extends Error {
+  status: number
+  code: string
+  context: Record<string, unknown>
+
+  constructor(
+    message: string,
+    options: { status: number; code: string; context?: Record<string, unknown> },
+  ) {
+    super(message)
+    this.name = "ApiRequestError"
+    this.status = options.status
+    this.code = options.code
+    this.context = options.context || {}
+  }
 }
 
 function listOf<T>(items: T[] | undefined | null): T[] {
@@ -1013,6 +1033,46 @@ function recordValue(value: unknown): Record<string, any> {
   return {}
 }
 
+// intakeFormFromServer maps a restored workbench row onto the editable
+// form. Protected identity values are deliberately not copied: the server
+// redacts ciphertext and digest at the API boundary, and the lawyer
+// re-enters the identity number before facts confirmation. The revision
+// token is copied so the next save passes the lost-update guard.
+function intakeFormFromServer(payload: Record<string, any>): IntakeFormState {
+  const intake = recordValue(payload.intake)
+  const parties = Array.isArray(payload.parties) ? payload.parties : []
+  const clientParty = parties.find(
+    (party: any) =>
+      textValue(party.party_role || party.role, '').toLowerCase() === 'client',
+  )
+  const opponentParty = parties.find(
+    (party: any) =>
+      textValue(party.party_role || party.role, '').toLowerCase().includes('opposing'),
+  )
+  const fallbackParty = opponentParty || (parties.length > 0 ? parties[0] : null)
+  return {
+    ...defaultIntakeForm,
+    intakeId: textValue(intake.id, ''),
+    intakeCode: textValue(intake.intake_code, ''),
+    title: textValue(intake.title, ''),
+    caseType: textValue(intake.case_type, ''),
+    priority: textValue(intake.priority, 'medium'),
+    description: textValue(intake.description, ''),
+    clientId: numberValue(intake.client_id, 0),
+    clientName:
+      textValue(clientParty?.entity_name || clientParty?.entityName || recordValue(payload.client).name, ''),
+    opponentName: textValue(fallbackParty?.entity_name || fallbackParty?.entityName, ''),
+    opponentEntityType:
+      textValue(fallbackParty?.entity_type || fallbackParty?.entityType, '') || 'LEGAL_PERSON',
+    opponentIdentityType:
+      textValue(fallbackParty?.identity_type || fallbackParty?.identityType, '') ||
+      'SOCIAL_CREDIT_CODE',
+    opponentIdentityNumber: '',
+    lawyerId: numberValue(recordValue(intake.metadata).lawyer_id || intake.created_by, 0),
+    revision: textValue(payload.revision, '') || textValue(recordValue(intake.metadata).draft_revision, ''),
+  }
+}
+
 function settingEnabled(row: Record<string, unknown>) {
   const value = settingObject(row.setting_value)
   return value.enabled !== false && textValue(row.setting_key, '').length > 0
@@ -1048,6 +1108,7 @@ export interface IntakeFormState {
   contingencyRate: string
   minimumFee: string
   lawyerId: number
+  revision: string
 }
 
 export type ConflictCheckRequiredField =
@@ -1201,6 +1262,7 @@ const defaultIntakeForm: IntakeFormState = {
   contingencyRate: '',
   minimumFee: '',
   lawyerId: 0,
+  revision: '',
 }
 
 const legacyCaseIntakeDraftKey = 'law-oa-case-intake-draft-v1'
@@ -1393,7 +1455,12 @@ async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T
   if (!response.ok || body.success === false) {
     const error =
       body.message || (typeof body.error === 'string' ? body.error : body.error?.message)
-    throw new Error(error || `API 请求失败：${response.status}`)
+    const errorBody = typeof body.error === 'object' && body.error !== null ? body.error : null
+    throw new ApiRequestError(error || `API 请求失败：${response.status}`, {
+      status: response.status,
+      code: textValue(errorBody?.code, ''),
+      context: errorBody?.context || {},
+    })
   }
   return (body.data ?? body) as T
 }
@@ -4143,6 +4210,15 @@ export function CaseIntakeWorkbench() {
   const newIntakeIdempotencyKey = React.useRef(
     `case-intake-${currentUserID}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
   )
+  // Synchronous mirror of form.revision: createIntake rotates the revision
+  // right before runConflictCheck consumes it in the same task. A state
+  // read inside this closure would still see the pre-save token and cause a
+  // false 409 on facts confirmation.
+  // Synchronous mirror of form.revision: createIntake rotates the revision
+  // right before runConflictCheck consumes it in the same task. A state
+  // read inside this closure would still see the pre-save token and cause a
+  // false 409 on facts confirmation. Assigned after form is declared.
+  const formRevisionRef = React.useRef('')
   const draftKey = React.useMemo(
     () => scopedCaseIntakeDraftKey(currentUserID, isSupplementMode ? contextCaseID : undefined),
     [contextCaseID, currentUserID, isSupplementMode],
@@ -4152,6 +4228,17 @@ export function CaseIntakeWorkbench() {
   )
   const [serverDrafts, setServerDrafts] = React.useState<IntakeFormState[]>([])
   const [form, setForm] = React.useState<IntakeFormState>({ ...defaultIntakeForm })
+  // Draft discovery is a real list, not just the newest row: the page keeps
+  // items, total, and page so older drafts stay reachable via "load more"
+  // (P4.3). revisionConflict holds the server-side current revision after a
+  // 409 so the visible reload action can fetch the exact newer version.
+  const [serverDraftsTotal, setServerDraftsTotal] = React.useState(0)
+  const [serverDraftsPage, setServerDraftsPage] = React.useState(0)
+  const [serverDraftsLoading, setServerDraftsLoading] = React.useState(false)
+  const [revisionConflict, setRevisionConflict] = React.useState<{
+    message: string
+    currentRevision: string
+  } | null>(null)
   const [draftActive, setDraftActive] = React.useState(false)
   const [sourceCase, setSourceCase] = React.useState<Record<string, any> | null>(null)
 
@@ -4162,6 +4249,7 @@ export function CaseIntakeWorkbench() {
     : null
   const storedDraft =
     localStorageDraft ?? (serverDraft ? { ...serverDraft, idempotencyKey: '' } : null)
+  formRevisionRef.current = form.revision
   const [runtime, setRuntime] = React.useState<IntakeRuntimeState>({ apiTimings: [] })
   const [submitting, setSubmitting] = React.useState(false)
   const [checkingConflict, setCheckingConflict] = React.useState(false)
@@ -4272,19 +4360,21 @@ export function CaseIntakeWorkbench() {
 
   // Saved-and-exited drafts live on the server, so a fresh session or device
   // can rediscover them even without the localStorage entry.
-  React.useEffect(() => {
-    if (isAssistant || isSupplementMode) return
-    let mounted = true
-    apiRequest<any>('/case-intakes?page=1&page_size=10')
-      .then((payload) => {
-        if (!mounted) return
-        const rows = Array.isArray(payload?.items)
-          ? payload.items
-          : Array.isArray(payload)
-            ? payload
-            : []
-        setServerDrafts(
-          rows.map((row: any) => ({
+  // Draft discovery is a real paginated list (P4.3): page 1 renders first,
+  // and "load more" appends older rows so drafts beyond the first page stay
+  // selectable instead of silently showing only the newest entry.
+  const loadServerDrafts = React.useCallback(
+    (page: number, append: boolean) => {
+      if (isAssistant || isSupplementMode) return
+      setServerDraftsLoading(true)
+      apiRequest<any>(`/case-intakes?page=${page}&page_size=10`)
+        .then((payload) => {
+          const rows = Array.isArray(payload?.items)
+            ? payload.items
+            : Array.isArray(payload)
+              ? payload
+              : []
+          const drafts = rows.map((row: any) => ({
             ...defaultIntakeForm,
             intakeId: textValue(row.id, ''),
             intakeCode: textValue(row.intake_code, ''),
@@ -4292,16 +4382,22 @@ export function CaseIntakeWorkbench() {
             caseType: textValue(row.case_type, ''),
             clientId: numberValue(row.client_id, 0),
             lawyerId: numberValue(row.created_by, 0),
-          })),
-        )
-      })
-      .catch(() => {
-        // Discovery is best-effort: the page stays usable without it.
-      })
-    return () => {
-      mounted = false
-    }
-  }, [isAssistant, isSupplementMode])
+            revision: textValue(row.revision, ''),
+          }))
+          setServerDrafts((current) => (append ? [...current, ...drafts] : drafts))
+          setServerDraftsTotal(numberValue(payload?.total, drafts.length))
+          setServerDraftsPage(page)
+        })
+        .catch(() => {
+          // Discovery is best-effort: the page stays usable without it.
+        })
+        .finally(() => setServerDraftsLoading(false))
+    },
+    [isAssistant, isSupplementMode],
+  )
+  React.useEffect(() => {
+    loadServerDrafts(1, false)
+  }, [loadServerDrafts])
 
   const recordTiming = (label: string, startedAt: number) => {
     setRuntime((current) => ({
@@ -4346,6 +4442,10 @@ export function CaseIntakeWorkbench() {
         case_type: form.caseType,
         priority: form.priority,
         description: form.description,
+        // Lost-update guard (R10): sends the revision this page loaded; the
+        // server rejects the save when it no longer matches, so a second tab
+        // cannot silently overwrite the first tab's content.
+        expected_revision: form.revision || undefined,
         materials: defaultMaterials,
       }
     }
@@ -4355,6 +4455,7 @@ export function CaseIntakeWorkbench() {
       case_type: form.caseType,
       priority: form.priority,
       description: form.description,
+      expected_revision: form.revision || undefined,
       metadata: {
         source: 'batch01_real_api',
         subject_case_id: contextCaseID || undefined,
@@ -4428,6 +4529,14 @@ export function CaseIntakeWorkbench() {
         body: JSON.stringify(buildIntakePayload()),
       },
     )
+    // Keep the page on the server-owned revision chain: the saved row
+    // carries the new token, and any conflict banner from a previous
+    // failed attempt is cleared because this save just succeeded.
+    const savedRevision = textValue(saved?.revision, '')
+    if (savedRevision) {
+      setForm((current) => ({ ...current, revision: savedRevision }))
+    }
+    setRevisionConflict(null)
     const intake = existingIntakeID ? { ...runtime.intake, ...saved, id: existingIntakeID } : saved
     recordTiming(existingIntakeID ? '更新接案' : '创建接案', startedAt)
     setRuntime((current) => ({ ...current, intake }))
@@ -4455,10 +4564,25 @@ export function CaseIntakeWorkbench() {
     const startedAt = performance.now()
     const intakeID = textValue(intake?.id, '')
     if (!intakeID) throw new Error('请先保存接案草稿，再运行利益冲突检查')
-    await apiRequest(`/case-intakes/${intakeID}/facts-confirmation`, { method: 'POST', body: '{}' })
+    // Facts confirmation and the check itself both consume the revision this
+    // page holds. Both endpoints reject stale tokens with 409, so a tab that
+    // missed another tab's save cannot re-confirm over it (acceptance #5).
+    const revisionHeaders = formRevisionRef.current
+      ? { 'X-Intake-Revision': formRevisionRef.current }
+      : undefined
+    const confirmed = await apiRequest<any>(`/case-intakes/${intakeID}/facts-confirmation`, {
+      method: 'POST',
+      body: '{}',
+      headers: revisionHeaders,
+    })
+    const confirmedRevision = textValue(confirmed?.revision, '')
+    if (confirmedRevision) {
+      setForm((current) => ({ ...current, revision: confirmedRevision }))
+    }
     const task = await apiRequest<any>(`/case-intakes/${intakeID}/conflict-check`, {
       method: 'POST',
       body: '{}',
+      headers: confirmedRevision ? { 'X-Intake-Revision': confirmedRevision } : revisionHeaders,
     })
     setRuntime((current) => ({
       ...current,
@@ -4717,6 +4841,7 @@ export function CaseIntakeWorkbench() {
   const continueStoredDraft = () => {
     if (!storedDraft) return
     setForm(storedDraft)
+    setRevisionConflict(null)
     if (storedDraft.intakeId) {
       setRuntime((current) => ({
         ...current,
@@ -4742,15 +4867,93 @@ export function CaseIntakeWorkbench() {
     message.success('旧草稿已放弃')
   }
 
+  // Draft restore (P4.4): the selected server row is fetched by ID, so an
+  // OLDER draft can be restored, not only the newest one. The current form
+  // state is replaced only after the lawyer confirms the switch; nothing
+  // auto-overwrites unsaved input. Protected identity numbers are never
+  // returned by the server, so the opponent identity re-entry stays enforced.
+  const restoreServerDraft = (draft: IntakeFormState) => {
+    if (!draft.intakeId) return
+    if (draftActive) {
+      Modal.confirm({
+        title: '切换到服务端草稿',
+        content: '当前页面有未保存内容，切换后会用所选服务端草稿替换表单。确定切换吗？',
+        okText: '切换并恢复所选草稿',
+        cancelText: '继续编辑当前内容',
+        onOk: () => fetchAndApplyServerDraft(draft),
+      })
+      return
+    }
+    fetchAndApplyServerDraft(draft)
+  }
+
+  const fetchAndApplyServerDraft = (draft: IntakeFormState) => {
+    apiRequest<any>(`/case-intakes/${draft.intakeId}`)
+      .then((payload) => {
+        const restored = intakeFormFromServer(payload)
+        setForm(restored)
+        setRuntime((current) => ({
+          ...current,
+          intake: { id: restored.intakeId, intake_code: restored.intakeCode },
+          conflict: undefined,
+          conflictTask: undefined,
+        }))
+        setRevisionConflict(null)
+        setDraftActive(true)
+        message.success(
+          restored.opponentIdentityNumber
+            ? '已恢复所选服务端草稿'
+            : `已恢复所选服务端草稿。${firstRunGuidance.restoreNotice}`,
+        )
+      })
+      .catch((error) =>
+        message.error(error instanceof Error ? error.message : '恢复服务端草稿失败'),
+      )
+  }
+
+  // Lost-update conflict handling (P4.1/P4.2): a 409 keeps every unsaved
+  // field on screen, shows a visible banner, and only the explicit reload
+  // action replaces the form with the server's newer version. There is no
+  // automatic retry, no fake success, and no auto-exit.
+  const handleIntakeSaveError = (error: unknown) => {
+    if (error instanceof ApiRequestError && error.code.startsWith('INTAKE_DRAFT_REVISION')) {
+      const currentRevision = textValue(error.context.current_revision, '')
+      setRevisionConflict({
+        message: error.message,
+        currentRevision,
+      })
+      message.warning(error.message)
+      return
+    }
+    message.error(
+      error instanceof Error
+        ? `${error.message}。${firstRunGuidance.saveFailure}`
+        : firstRunGuidance.saveFailure,
+    )
+  }
+
+  const reloadServerDraftAfterConflict = () => {
+    const intakeID = textValue(runtime.intake?.id || form.intakeId, '')
+    if (!intakeID) {
+      message.error('未找到草稿编号，请从草稿列表重新选择')
+      return
+    }
+    apiRequest<any>(`/case-intakes/${intakeID}`)
+      .then((payload) => {
+        setForm(intakeFormFromServer(payload))
+        setRevisionConflict(null)
+        message.success('已加载服务端最新草稿，本地未保存内容已被替换')
+      })
+      .catch((error) =>
+        message.error(error instanceof Error ? error.message : '加载服务端草稿失败'),
+      )
+  }
+
   const handleCreateIntake = async () => {
     try {
       await createIntake()
     } catch (error) {
-      message.error(
-        error instanceof Error
-          ? `${error.message}。${firstRunGuidance.saveFailure}`
-          : firstRunGuidance.saveFailure,
-      )
+      handleIntakeSaveError(error)
     }
   }
 
@@ -4781,7 +4984,7 @@ export function CaseIntakeWorkbench() {
       setActiveStep(1)
       message.success('利益冲突检查已完成，当前草稿：' + (form.title || '未命名案件'))
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '冲突检查失败，请检查网络后重试')
+      handleIntakeSaveError(error)
     } finally {
       setCheckingConflict(false)
     }
@@ -4861,7 +5064,73 @@ export function CaseIntakeWorkbench() {
         </div>
       )}
 
-      {storedDraft && (
+      {revisionConflict && (
+        <Alert
+          type='warning'
+          showIcon
+          banner
+          role='alert'
+          message='保存被拒绝：服务端已有更新的草稿版本'
+          description={
+            <div>
+              <p>{revisionConflict.message}</p>
+              <p>页面中未保存的内容仍保留在表单里，不会被自动覆盖。</p>
+              <Space>
+                <Button type='primary' onClick={reloadServerDraftAfterConflict}>
+                  重新加载服务端草稿
+                </Button>
+                {revisionConflict.currentRevision && (
+                  <span className='muted-text'>
+                    服务端当前版本：{revisionConflict.currentRevision.slice(0, 8)}
+                  </span>
+                )}
+              </Space>
+            </div>
+          }
+        />
+      )}
+
+      {serverDrafts.length > 0 && !isAssistant && (
+        <div className='batch-advice' role='status'>
+          <strong>
+            服务端草稿（{serverDrafts.length}/{serverDraftsTotal}）
+          </strong>
+          <p>已保存的草稿可手动选择恢复；身份标识不在列表中展示，恢复后需重新填写。</p>
+          <div>
+            {serverDrafts.map((draft) => (
+              <div
+                key={draft.intakeId || draft.intakeCode}
+                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 0' }}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {draft.title || '未命名案件'}
+                  </div>
+                  <div className='muted-text'>
+                    {draft.intakeCode || '草稿'}
+                    {draft.revision ? ` · 版本 ${draft.revision.slice(0, 8)}` : ''}
+                  </div>
+                </div>
+                <Button size="small" onClick={() => restoreServerDraft(draft)}>
+                  恢复此草稿
+                </Button>
+              </div>
+            ))}
+          </div>
+          {serverDrafts.length < serverDraftsTotal && (
+            <Button
+              size="small"
+              loading={serverDraftsLoading}
+              onClick={() => loadServerDrafts(serverDraftsPage + 1, true)}
+              style={{ marginTop: 8 }}
+            >
+              加载更多草稿
+            </Button>
+          )}
+        </div>
+      )}
+
+      {localStorageDraft && storedDraft && (
         <div className='batch-advice' role='status'>
           <strong>发现当前账号的未完成草稿：{storedDraft.title || '未命名案件'}</strong>
           <p>
@@ -10254,3 +10523,5 @@ export function ConflictGovernanceCenter() {
     </div>
   )
 }
+  // Draft discovery is a real paginated list (P4.3): page 1 renders first,
+  // and "load more" appends older rows so drafts beyond the first page stay
