@@ -2657,9 +2657,21 @@ func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
 			if name == "" || strings.EqualFold(name, clientName) {
 				continue
 			}
-			role := strings.ToUpper(firstNonEmpty(valueString(row, "party_role"), valueString(row, "role"), "RELATED_PARTY"))
-			entityType := strings.ToUpper(firstNonEmpty(valueString(row, "entity_type"), "ANY"))
+			// The intake UI stores the lawyer's real related-party business
+			// role (WITNESS/GUARANTOR/EXPERT/RELATED_PARTY) in
+			// metadata.party_type while party_role stays the storage-level
+			// bucket "related_party". Conflict checks must consume the
+			// reviewed business role, not collapse it here; an unknown
+			// value still falls back to RELATED_PARTY and later fails
+			// closed at case creation.
 			partyMetadata := objectValue(row["metadata"])
+			role := strings.ToUpper(firstNonEmpty(valueString(row, "party_role"), valueString(row, "role"), "RELATED_PARTY"))
+			if role == "RELATED_PARTY" {
+				if businessRole := strings.ToUpper(strings.TrimSpace(valueString(partyMetadata, "party_type"))); businessRole != "" {
+					role = businessRole
+				}
+			}
+			entityType := strings.ToUpper(firstNonEmpty(valueString(row, "entity_type"), "ANY"))
 			if containsPlaintextIdentityField(partyMetadata) {
 				common.APIBadRequest(c, "冲突检查前置资料不完整", "对方或关联方身份标识未登记在受保护的主体档案中")
 				return
