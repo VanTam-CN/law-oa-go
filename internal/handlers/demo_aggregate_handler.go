@@ -1922,6 +1922,7 @@ func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
 		common.APIBadRequest(c, "请求参数错误", err.Error())
 		return
 	}
+	if !validateIntakeCaseType(c, payload) { return }
 	idempotencyKey := strings.TrimSpace(c.GetHeader("Idempotency-Key"))
 	if len(idempotencyKey) > 120 {
 		common.APIBadRequest(c, "幂等键无效", "Idempotency-Key 长度不能超过 120 个字符")
@@ -2144,6 +2145,7 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 		forbidObjectAccess(c)
 		return
 	}
+	if !validateIntakeCaseType(c, rawPayload) { return }
 	if isAssistantRole(c) {
 		if rawPayload["client_id"] != nil || rawPayload["parties"] != nil {
 			common.APIForbidden(c, "助理协作草稿不能录入当事人身份信息", "客户、对方和关联方必须由执业律师确认后录入")
@@ -2761,6 +2763,11 @@ func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
 		var staleErr *repositories.IntakeConflictStaleFactsError
 		if errors.As(err, &staleErr) {
 			common.NewAPIError(c, http.StatusConflict, "INTAKE_FACTS_STALE", staleErr.Error())
+			return
+		}
+		var stateErr *repositories.IntakeConflictNotCommittableError
+		if errors.As(err, &stateErr) {
+			common.NewAPIError(c, http.StatusConflict, "INTAKE_CONFLICT_STATE_INVALID", stateErr.Error())
 			return
 		}
 		var raceErr *repositories.IntakeConflictCommitRaceError

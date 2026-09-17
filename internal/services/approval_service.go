@@ -12,6 +12,9 @@ import (
 	"law-oa-go/internal/repositories"
 )
 
+// ErrApprovalForbidden identifies an object-level access denial.
+var ErrApprovalForbidden = errors.New("无权查看此审批记录")
+
 // ApprovalService 审批服务
 type ApprovalService struct {
 	approvalRepo *repositories.ApprovalRepository
@@ -176,7 +179,7 @@ func (s *ApprovalService) GetApprovalForAuthorization(userID string, id string) 
 			allowed = wasApprover
 		}
 		if !allowed {
-			return nil, fmt.Errorf("无权查看此审批记录")
+			return nil, ErrApprovalForbidden
 		}
 	}
 

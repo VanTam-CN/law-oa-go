@@ -321,6 +321,9 @@ func (h *IntegrationHandler) GetApprovalIntegrationStatus(c *gin.Context) {
 	// 调用集成服务
 	status, err := h.integrationService.GetIntegrationStatusForUser(c.Request.Context(), userID, approvalID)
 	if err != nil {
+		if writeApprovalLookupError(c, err) {
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "internal_error",
 			"message": "获取集成状态失败: " + err.Error(),
@@ -369,6 +372,9 @@ func (h *IntegrationHandler) PerformCaseCreation(c *gin.Context) {
 	// 调用集成服务
 	result, err := h.integrationService.AutoCreateCaseFromApprovalForUser(c.Request.Context(), userID, approvalID, req.CaseData)
 	if err != nil {
+		if writeApprovalLookupError(c, err) {
+			return
+		}
 		if isSubjectWorkflowError(err) {
 			writeSubjectWorkflowError(c, err)
 			return
@@ -623,6 +629,9 @@ func (h *IntegrationHandler) RetryFailedIntegration(c *gin.Context) {
 	}
 	result, err := h.integrationService.RetryCaseCreationForUser(c.Request.Context(), userID, approvalID)
 	if err != nil {
+		if writeApprovalLookupError(c, err) {
+			return
+		}
 		if isSubjectWorkflowError(err) {
 			writeSubjectWorkflowError(c, err)
 			return
@@ -643,4 +652,17 @@ func (h *IntegrationHandler) RetryFailedIntegration(c *gin.Context) {
 // CancelIntegration 取消集成
 func (h *IntegrationHandler) CancelIntegration(c *gin.Context) {
 	common.NewAPIError(c, http.StatusServiceUnavailable, "INTEGRATION_CANCEL_UNAVAILABLE", "集成取消尚未接入真实状态机，当前不可用")
+}
+
+// Only known lookup outcomes change status; infrastructure errors stay 500.
+func writeApprovalLookupError(c *gin.Context, err error) bool {
+	switch {
+	case errors.Is(err, services.ErrApprovalForbidden):
+		c.JSON(http.StatusForbidden, gin.H{"success": false, "error": "APPROVAL_ACCESS_DENIED", "message": "无权查看此审批记录"})
+	case errors.Is(err, gorm.ErrRecordNotFound):
+		c.JSON(http.StatusNotFound, gin.H{"success": false, "error": "APPROVAL_NOT_FOUND", "message": "审批记录不存在"})
+	default:
+		return false
+	}
+	return true
 }

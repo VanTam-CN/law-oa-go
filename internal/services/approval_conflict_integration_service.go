@@ -741,11 +741,14 @@ func (s *approvalConflictIntegrationService) RetryCaseCreationForUser(ctx contex
 	if err != nil {
 		return nil, fmt.Errorf("获取审批申请失败：%w", err)
 	}
+	if approval == nil {
+		return nil, gorm.ErrRecordNotFound
+	}
 	if !RequiresCaseCreationApproval(approval) {
 		return nil, fmt.Errorf("该审批不包含正式成案步骤")
 	}
 	if approval.Status != models.ApprovalStatusApproved {
-		return nil, fmt.Errorf("审批通过后才能重试成案")
+		return nil, NewSubjectWorkflowError("CASE_CREATION_NOT_APPROVED", "审批未处于通过状态，已阻止成案")
 	}
 	caseData, err := s.buildCaseDataForApprovedApproval(ctx, approval, userID)
 	if err != nil {
@@ -759,8 +762,11 @@ func (s *approvalConflictIntegrationService) AutoCreateCaseFromApprovalForUser(c
 	if err != nil {
 		return nil, fmt.Errorf("获取审批申请失败：%w", err)
 	}
+	if approval == nil {
+		return nil, gorm.ErrRecordNotFound
+	}
 	if approval.Status != models.ApprovalStatusApproved {
-		return nil, fmt.Errorf("审批通过后才能创建案件")
+		return nil, NewSubjectWorkflowError("CASE_CREATION_NOT_APPROVED", "审批未处于通过状态，已阻止成案")
 	}
 	metadata := parseMetadata(approval.Metadata)
 	expectedCheckID := conflictCheckIDFromMetadata(metadata)
@@ -797,6 +803,9 @@ func (s *approvalConflictIntegrationService) GetIntegrationStatus(ctx context.Co
 	approval, err := s.approvalService.GetApprovalByID(approvalID)
 	if err != nil {
 		return nil, fmt.Errorf("获取审批申请失败：%w", err)
+	}
+	if approval == nil {
+		return nil, gorm.ErrRecordNotFound
 	}
 
 	status := &IntegrationStatus{
@@ -863,6 +872,9 @@ func (s *approvalConflictIntegrationService) GetIntegrationStatusForUser(ctx con
 	if err != nil {
 		return nil, fmt.Errorf("获取审批申请失败：%w", err)
 	}
+	if approval == nil {
+		return nil, gorm.ErrRecordNotFound
+	}
 	status, err := s.GetIntegrationStatus(ctx, approvalID)
 	if err != nil {
 		return nil, err
@@ -892,6 +904,9 @@ func (s *approvalConflictIntegrationService) ProcessApprovalWithConflict(ctx con
 	approval, err := s.approvalService.GetApproval(userID, approvalID)
 	if err != nil {
 		return nil, fmt.Errorf("获取审批申请失败：%w", err)
+	}
+	if approval == nil {
+		return nil, gorm.ErrRecordNotFound
 	}
 
 	requiresCaseCreation := RequiresCaseCreationApproval(approval)

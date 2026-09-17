@@ -50,6 +50,21 @@ func (e *IntakeConflictStaleFactsError) Error() string {
 	return "接案事实在检测期间已发生变化，请重新确认事实后再检测"
 }
 
+// IntakeConflictNotCommittableError reports that the intake row is in a
+// business state that can never accept a formal conflict-check commit (for
+// example a cancelled matter). This is a typed business conflict mapped to
+// HTTP 409 by the handler, not an internal server error.
+type IntakeConflictNotCommittableError struct {
+	Status string
+}
+
+func (e *IntakeConflictNotCommittableError) Error() string {
+	if e.Status == "" {
+		return "接案记录当前状态不允许提交冲突检测结果，请刷新后按页面指引办理"
+	}
+	return fmt.Sprintf("接案记录当前状态为 %s，已不允许提交冲突检测结果", e.Status)
+}
+
 // BasicConflictRepository 基础冲突检测数据仓库接口
 type BasicConflictRepository interface {
 	// 保存冲突检测记录
@@ -164,7 +179,14 @@ func CommitIntakeConflictResult(
 			// confirmed snapshot; conflict_ready is the legitimate re-check
 			// state and stays append-only.
 		default:
-			return fmt.Errorf("接案状态为 %s，已不允许提交冲突检测结果", snapshot.Status)
+			// A mid-flight facts edit rolls the row back to draft, so this
+			// branch is the expected stale-snapshot signal for R03-style
+			// probes; other business states map to the same 409 family with
+			// a state-specific message. Real DB faults above stay 500.
+			if snapshot.Status == "draft" {
+				return &IntakeConflictStaleFactsError{}
+			}
+			return &IntakeConflictNotCommittableError{Status: snapshot.Status}
 		}
 		metadata := decodeJSONMap(snapshot.Metadata)
 		confirmedAt := strings.TrimSpace(fmt.Sprint(metadata["lawyer_facts_confirmed_at"]))
