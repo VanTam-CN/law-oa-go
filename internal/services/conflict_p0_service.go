@@ -369,6 +369,53 @@ func conflictEvidenceHash(response *models.ConflictCheckResponse) string {
 	return hex.EncodeToString(sum[:])
 }
 
+// ensureConflictRecordMatchesCurrentIntakeFacts blocks downstream writes
+// (reviewer conclusions, conflict approvals) that would consume an intake
+// conflict snapshot whose underlying lawyer facts have since been reconfirmed.
+// A check is current only when it is still the intake's bound check and its
+// time is not older than the intake's latest facts confirmation. Records
+// without an intake binding predate the intake workflow and are skipped.
+func EnsureConflictRecordMatchesCurrentIntakeFacts(tx *gorm.DB, intakeID string, checkID string, checkTime time.Time) error {
+	intakeID = strings.TrimSpace(intakeID)
+	if intakeID == "" {
+		return nil
+	}
+	var intake struct {
+		Metadata []byte
+	}
+	if err := tx.Table("case_intakes").Select("metadata").Where("id = ?", intakeID).Take(&intake).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return newConflictReviewerError("STALE_CONFLICT_SNAPSHOT", "冲突检测记录对应的接案草稿已不存在，旧结果不能再进入复核或审批")
+		}
+		return err
+	}
+	metadata := map[string]interface{}{}
+	if len(intake.Metadata) > 0 {
+		if err := json.Unmarshal(intake.Metadata, &metadata); err != nil {
+			return newConflictReviewerError("STALE_CONFLICT_SNAPSHOT", "接案记录事实版本信息无法解析，旧结果不能再进入复核或审批")
+		}
+	}
+	boundCheckID := strings.TrimSpace(fmt.Sprint(metadata["conflict_check_id"]))
+	if boundCheckID == "<nil>" {
+		boundCheckID = ""
+	}
+	if boundCheckID != checkID {
+		return newConflictReviewerError("STALE_CONFLICT_SNAPSHOT", "该冲突检测已不是该接案记录的当前有效检测，请重新运行冲突检测后再提交")
+	}
+	confirmedAtRaw := strings.TrimSpace(fmt.Sprint(metadata["lawyer_facts_confirmed_at"]))
+	if confirmedAtRaw == "" || confirmedAtRaw == "<nil>" {
+		return nil
+	}
+	confirmedAt, parseErr := time.Parse(time.RFC3339, confirmedAtRaw)
+	if parseErr != nil {
+		return newConflictReviewerError("STALE_CONFLICT_SNAPSHOT", "接案记录事实确认时间无法解析，旧结果不能再进入复核或审批")
+	}
+	if checkTime.Before(confirmedAt) {
+		return newConflictReviewerError("STALE_CONFLICT_SNAPSHOT", "该冲突检测基于已过期的事实版本，请重新运行冲突检测后再提交")
+	}
+	return nil
+}
+
 func (s *conflictDetectionService) ReviewConflict(ctx context.Context, checkID, decision, notes string, reviewerID uint, reviewerName string, nextReviewAt *time.Time) (*models.ConflictReview, error) {
 	decision = strings.ToLower(strings.TrimSpace(decision))
 	if !allowedConflictReviewDecisions[decision] {
@@ -392,6 +439,9 @@ func (s *conflictDetectionService) ReviewConflict(ctx context.Context, checkID, 
 		}
 		if strings.ToUpper(strings.TrimSpace(record.CheckStatus)) != "COMPLETED" {
 			return &ConflictReviewerError{Code: "REVIEW_REQUIRED", Message: "冲突检测尚未完成，不能提交人工复核结论"}
+		}
+		if err := EnsureConflictRecordMatchesCurrentIntakeFacts(tx, conflictRecordIntakeID(record.SearchParameters), checkID, record.CheckTime); err != nil {
+			return err
 		}
 		if err := ValidateConflictReviewer(ctx, tx, checkID, 0, reviewerID, ""); err != nil {
 			return err
@@ -426,6 +476,20 @@ func (s *conflictDetectionService) ReviewConflict(ctx context.Context, checkID, 
 	// own append-only row and is read through GetConflictReview; do not rewrite
 	// the frozen check-result JSON merely to denormalize the review summary.
 	return &review, nil
+}
+
+// conflictRecordIntakeID extracts the intake binding from frozen
+// search_parameters JSON. Keys mirror what the intake check workflow writes.
+func conflictRecordIntakeID(parameters models.JSON) string {
+	for _, key := range []string{"intakeId", "intake_id"} {
+		if value, ok := parameters[key]; ok {
+			candidate := strings.TrimSpace(fmt.Sprint(value))
+			if candidate != "" && candidate != "<nil>" {
+				return candidate
+			}
+		}
+	}
+	return ""
 }
 
 func (s *conflictDetectionService) GetConflictReview(ctx context.Context, checkID string) (*models.ConflictReview, error) {

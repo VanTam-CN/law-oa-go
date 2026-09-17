@@ -2852,6 +2852,14 @@ func (h *DemoAggregateHandler) createConflictApproval(c *gin.Context, taskID, ap
 		if strings.ToUpper(strings.TrimSpace(fmt.Sprint(row["check_status"]))) != "COMPLETED" {
 			return conflictApprovalError{status: http.StatusConflict, code: "CONFLICT_CHECK_NOT_COMPLETED", message: "冲突检测尚未完成，不能创建冲突审批"}
 		}
+		checkTime, _ := row["check_time"].(time.Time)
+		if err := services.EnsureConflictRecordMatchesCurrentIntakeFacts(tx, subjectIntakeIDFromAggregateSearchParameters(row["search_parameters"]), taskID, checkTime); err != nil {
+			var reviewerErr *services.ConflictReviewerError
+			if errors.As(err, &reviewerErr) {
+				return conflictApprovalError{status: http.StatusConflict, code: reviewerErr.Code, message: reviewerErr.Message}
+			}
+			return err
+		}
 
 		checkResult := objectValue(row["check_result"])
 		decision := objectValue(checkResult["decision"])
