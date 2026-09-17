@@ -635,17 +635,6 @@ func (s *approvalConflictIntegrationService) reconcileCompletedCaseCreation(ctx 
 // set with the reviewed snapshot. Identity is digest-first; digest-less
 // parties match on lowercased name. Counts alone are never sufficient.
 func casePartiesMatchSnapshot(tx *gorm.DB, caseID uint, parties []models.ConflictPartyInfo) bool {
-	normalizeConflictPartyRole := func(value string) string {
-		switch strings.ToUpper(strings.TrimSpace(value)) {
-		case "CLIENT", "CO_CLIENT":
-			return "CLIENT"
-		case "OPPOSING_PARTY", "OPPOSING", "ADVERSE":
-			return "OPPOSING_PARTY"
-		case "RELATED_PARTY", "RELATED", "THIRD_PARTY":
-			return "RELATED_PARTY"
-		}
-		return ""
-	}
 	type partyKey struct {
 		digest string
 		name   string
@@ -659,7 +648,12 @@ func casePartiesMatchSnapshot(tx *gorm.DB, caseID uint, parties []models.Conflic
 		if name == "" {
 			continue
 		}
-		role := normalizeConflictPartyRole(party.Role)
+		// Use the repository-side whitelist so verification and
+		// materialization can never drift apart again: WITNESS, EXPERT
+		// and GUARANTOR are valid reviewed roles today, and any future
+		// whitelist change applies to both paths at once. An unknown role
+		// still fails closed here exactly as it fails closed on write.
+		role := repositories.NormalizeConflictPartyRole(party.Role)
 		if role == "" {
 			return false
 		}

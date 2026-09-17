@@ -418,6 +418,14 @@ func normalizeConflictPartyRole(value string) string {
 
 // linkConflictCasePartiesOnTx is the transaction-bound implementation shared
 // by the standalone and tx-bound entry points.
+// NormalizeConflictPartyRole exposes the reviewed-role whitelist to the
+// service layer. Snapshot verification must classify roles exactly like
+// case-party materialization, so both paths share this one function; an
+// unknown role fails closed for both.
+func NormalizeConflictPartyRole(value string) string {
+	return normalizeConflictPartyRole(value)
+}
+
 func linkConflictCasePartiesOnTx(ctx context.Context, tx *gorm.DB, caseID uint, parties []models.ConflictPartyInfo) error {
 	if caseID == 0 {
 		return fmt.Errorf("正式案件ID为空，无法写入案件当事人")

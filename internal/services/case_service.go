@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/repositories"
 
@@ -165,7 +166,6 @@ func (s *CaseService) createCaseWithTx(ctx context.Context, tx *gorm.DB, req *Cr
 		caseStatus = "active"
 	}
 	case_ := &models.Case{
-		CaseNumber:  fmt.Sprintf("CASE-%s", time.Now().Format("20060102150405")),
 		Title:       req.Title,
 		Description: req.Description,
 		ClientID:    req.ClientID,
@@ -183,8 +183,32 @@ func (s *CaseService) createCaseWithTx(ctx context.Context, tx *gorm.DB, req *Cr
 		case_.ConflictCoverageStatus = "COMPLETE"
 	}
 
-	if err := tx.WithContext(ctx).Create(case_).Error; err != nil {
-		return nil, fmt.Errorf("创建案件失败: %w", err)
+	// Case numbers collide when two approvals complete in the same second;
+	// a Postgres aborted transaction cannot retry in place, so each attempt
+	// runs inside a savepoint: insert, release on success, or roll back to
+	// the savepoint and retry with a -2, -3, ... suffix on the case number.
+	baseNumber := fmt.Sprintf("CASE-%s", time.Now().Format("20060102150405"))
+	case_.CaseNumber = baseNumber
+	for attempt := 2; ; attempt++ {
+		if err := tx.Exec("SAVEPOINT case_number_attempt").Error; err != nil {
+			return nil, fmt.Errorf("创建案件失败: %w", err)
+		}
+		insertErr := tx.WithContext(ctx).Create(case_).Error
+		if insertErr == nil {
+			if err := tx.Exec("RELEASE SAVEPOINT case_number_attempt").Error; err != nil {
+				return nil, fmt.Errorf("创建案件失败: %w", err)
+			}
+			break
+		}
+		var pgErr *pgconn.PgError
+		if !errors.As(insertErr, &pgErr) || pgErr.Code != "23505" || attempt > 10 {
+			return nil, fmt.Errorf("创建案件失败: %w", insertErr)
+		}
+		if err := tx.Exec("ROLLBACK TO SAVEPOINT case_number_attempt").Error; err != nil {
+			return nil, fmt.Errorf("创建案件失败: %w", err)
+		}
+		case_.ID = 0
+		case_.CaseNumber = fmt.Sprintf("%s-%d", baseNumber, attempt)
 	}
 
 	// 获取创建的完整案件信息（事务内读取，含关联）
@@ -234,7 +258,6 @@ func (s *CaseService) CreateCase(ctx context.Context, req *CreateCaseRequest) (*
 		caseStatus = "active"
 	}
 	case_ := &models.Case{
-		CaseNumber:  fmt.Sprintf("CASE-%s", time.Now().Format("20060102150405")),
 		Title:       req.Title,
 		Description: req.Description,
 		ClientID:    req.ClientID,
@@ -252,9 +275,20 @@ func (s *CaseService) CreateCase(ctx context.Context, req *CreateCaseRequest) (*
 		case_.ConflictCoverageStatus = "COMPLETE"
 	}
 
-	err = s.caseRepo.Create(ctx, case_)
-	if err != nil {
-		return nil, fmt.Errorf("创建案件失败: %w", err)
+	// Case numbers collide when two approvals complete in the same second;
+	// each attempt is an independent statement here, so retry directly
+	// with a -2, -3, ... suffix on the case number.
+	case_.CaseNumber = fmt.Sprintf("CASE-%s", time.Now().Format("20060102150405"))
+	for attempt := 2; ; attempt++ {
+		err := s.caseRepo.Create(ctx, case_)
+		if err == nil {
+			break
+		}
+		var pgErr *pgconn.PgError
+		if !errors.As(err, &pgErr) || pgErr.Code != "23505" || attempt > 10 {
+			return nil, fmt.Errorf("创建案件失败: %w", err)
+		}
+		case_.CaseNumber = fmt.Sprintf("%s-%d", case_.CaseNumber, attempt)
 	}
 
 	// 获取创建的完整案件信息
