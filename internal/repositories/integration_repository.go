@@ -399,10 +399,19 @@ func normalizeConflictPartyRole(value string) string {
 	switch strings.ToUpper(strings.TrimSpace(value)) {
 	case "CLIENT", "CO_CLIENT":
 		return "CLIENT"
+	case "GUARANTOR":
+		// A guarantor is a related interested party in the formal-case
+		// archive: business role preserved upstream, archival role here.
+		return "RELATED_PARTY"
 	case "OPPOSING_PARTY", "OPPOSING", "ADVERSE":
 		return "OPPOSING_PARTY"
 	case "RELATED_PARTY", "RELATED", "THIRD_PARTY":
 		return "RELATED_PARTY"
+	case "WITNESS", "EXPERT":
+		// Reviewed witnesses and experts are case participants in the
+		// PartyRole whitelist; they must not block case creation, but they
+		// are also not silently dropped from the archived party list.
+		return strings.ToUpper(strings.TrimSpace(value))
 	}
 	return ""
 }
@@ -552,6 +561,10 @@ func casePartyRoleMapping(role string) (models.PartyType, models.PartyRole) {
 		return models.PartyTypeClient, models.PartyRolePlaintiff
 	case "OPPOSING_PARTY":
 		return models.PartyTypeOpposing, models.PartyRoleDefendant
+	case "WITNESS":
+		return models.PartyType("RELATED"), models.PartyRoleWitness
+	case "EXPERT":
+		return models.PartyType("RELATED"), models.PartyRoleExpert
 	default:
 		return models.PartyType("RELATED"), models.PartyRoleInterestedParty
 	}
