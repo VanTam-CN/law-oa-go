@@ -1358,7 +1358,7 @@ export function buildIntakePartyRows(
     clientTypeLabel.includes('个') || clientTypeLabel.toLowerCase() === 'person'
       ? 'INDIVIDUAL'
       : 'LEGAL_PERSON'
-  return [
+  const rows = [
     {
       entity_name: form.clientName,
       entity_type: clientEntityType,
@@ -1376,16 +1376,29 @@ export function buildIntakePartyRows(
       aliases: form.opponentAliases,
       metadata: { party_type: 'opposing_party' },
     },
-    ...relatedParties.map((party) => ({
-      entity_name: party.name,
-      entity_type: party.entityType,
-      party_role: 'related_party',
-      relation_depth: numberValue(party.depth, 1),
-      identity_type: party.identityType,
-      identity_number: party.identityNumber,
-      metadata: { party_type: party.role },
-    })),
+    // A blank row is not a party: restoring a draft whose opponent was never
+    // filled must not send an empty entity_name (the server rejects it with
+    // INTAKE_PARTY_NAME_REQUIRED). Rows that DO carry a name are always sent,
+    // even when their identity fields are blank, so a real party can never
+    // silently disappear from the conflict-check subject list.
+    ...relatedParties
+      .filter((party) => party.name.trim().length > 0)
+      .map((party) => ({
+        entity_name: party.name,
+        entity_type: party.entityType,
+        party_role: 'related_party',
+        relation_depth: numberValue(party.depth, 1),
+        identity_type: party.identityType,
+        identity_number: party.identityNumber,
+        metadata: { party_type: party.role },
+      })),
   ]
+  // Blank names never reach the server: a restored draft whose client or
+  // opponent was never filled must not trigger INTAKE_PARTY_NAME_REQUIRED.
+  // Rows that DO carry a name are always sent, even with blank identity
+  // fields, so a real party can never silently disappear from the
+  // conflict-check subject list.
+  return rows.filter((row) => row.entity_name.trim().length > 0)
 }
 
 export function persistableCaseIntakeDraft(form: IntakeFormState) {
@@ -4647,6 +4660,10 @@ export function CaseIntakeWorkbench() {
     const savedRevision = textValue(saved?.revision, '')
     if (savedRevision) {
       setForm((current) => ({ ...current, revision: savedRevision }))
+      // Keep the synchronous mirror in step with the rotated token: the very
+      // next runConflictCheck in the same task reads this ref, and a stale
+      // value here caused the restore -> save+check 409 (defect #1).
+      formRevisionRef.current = savedRevision
     }
     setRevisionConflict(null)
     const intake = existingIntakeID ? { ...runtime.intake, ...saved, id: existingIntakeID } : saved
@@ -4978,6 +4995,13 @@ export function CaseIntakeWorkbench() {
   const discardStoredDraft = () => {
     window.localStorage.removeItem(draftKey)
     setLocalStorageDraft(null)
+    // Dropping the draft must also drop the server intake link. The stale
+    // runtime.intake id made the next save PUT to the discarded draft and
+    // overwrite it (defect #4) instead of creating a fresh intake.
+    setRuntime((current) => ({ ...current, intake: undefined }))
+    newIntakeIdempotencyKey.current = `case-intake-${currentUserID}-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2)}`
     if (!isSupplementMode) {
       setForm({ ...defaultIntakeForm })
       setDraftActive(false)
