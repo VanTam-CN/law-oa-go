@@ -1106,13 +1106,28 @@
 }
 
 .batch-inline-add {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(130px, 0.7fr) minmax(130px, 0.7fr);
   gap: 8px;
-  align-items: center;
+  align-items: start;
 }
 
 .batch-inline-add .ant-input {
-  min-width: 220px;
+  min-width: 0;
+}
+
+.batch-inline-add .batch-field-error {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 560px) {
+  .batch-inline-add {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .batch-inline-add .ant-btn {
+    justify-self: start;
+  }
 }
 
 .batch-tags {
@@ -1178,6 +1193,12 @@
   border-top: 1px solid var(--batch-border);
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(8px);
+}
+
+.batch-bottom-bar > .ant-space {
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 100%;
 }
 
 .batch-conflict-top {

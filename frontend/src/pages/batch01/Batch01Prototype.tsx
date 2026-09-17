@@ -1206,6 +1206,27 @@ interface IntakeRelatedParty {
   depth?: number
 }
 
+// These values must stay aligned with the backend conflict-party role
+// whitelist; the UI never invents a role the formal-case contract would
+// reject at case creation.
+const relatedPartyRoleOptions = [
+  { value: 'RELATED_PARTY', label: '其他相关方' },
+  { value: 'GUARANTOR', label: '保证人' },
+  { value: 'WITNESS', label: '证人' },
+  { value: 'EXPERT', label: '专家' },
+]
+
+function relatedPartyInvalidReasons(name: string, identityNumber: string): string[] {
+  const reasons: string[] = []
+  if (name.length < 2) {
+    reasons.push('请填写相关方名称（至少2个字）')
+  }
+  if (identityNumber.trim().length < 4) {
+    reasons.push('请填写可核验身份标识（至少4个字符）')
+  }
+  return reasons
+}
+
 interface IntakeRuntimeState {
   intake?: any
   conflict?: any
@@ -4410,6 +4431,9 @@ export function CaseIntakeWorkbench() {
   const [activeStep, setActiveStep] = React.useState(0)
   const [relatedParties, setRelatedParties] = React.useState<IntakeRelatedParty[]>([])
   const [relatedPartyDraft, setRelatedPartyDraft] = React.useState('')
+  const [relatedPartyRole, setRelatedPartyRole] = React.useState('RELATED_PARTY')
+  const [relatedPartyDepth, setRelatedPartyDepth] = React.useState(1)
+  const [relatedPartyAttempted, setRelatedPartyAttempted] = React.useState(false)
   const [relatedPartyEntityType, setRelatedPartyEntityType] = React.useState('LEGAL_PERSON')
   const [relatedPartyIdentityType, setRelatedPartyIdentityType] = React.useState('SOCIAL_CREDIT_CODE')
   const [relatedPartyIdentityNumber, setRelatedPartyIdentityNumber] = React.useState('')
@@ -4936,22 +4960,28 @@ export function CaseIntakeWorkbench() {
         : conflictDecisionView.guidance
 
   const addRelatedParty = () => {
+    setRelatedPartyAttempted(true)
     const name = relatedPartyDraft.trim()
-    if (name.length < 2 || relatedPartyIdentityNumber.trim().length < 4) {
-      message.error('请填写相关方名称和可核验身份标识后再添加')
+    const reasons = relatedPartyInvalidReasons(name, relatedPartyIdentityNumber)
+    if (reasons.length > 0) {
+      message.error(reasons.join('；'))
       return
     }
     setRelatedParties((current) => [
       ...current,
       {
         name,
-        role: '待确认',
+        role: relatedPartyRole,
         entityType: relatedPartyEntityType,
         identityType: relatedPartyIdentityType,
         identityNumber: relatedPartyIdentityNumber.trim(),
+        depth: relatedPartyDepth,
       },
     ])
     setRelatedPartyDraft('')
+    setRelatedPartyRole('RELATED_PARTY')
+    setRelatedPartyDepth(1)
+    setRelatedPartyAttempted(false)
     setRelatedPartyIdentityNumber('')
     message.success('已添加相关方，将纳入冲突检索')
   }
@@ -5680,6 +5710,35 @@ export function CaseIntakeWorkbench() {
                             value={relatedPartyDraft}
                             onChange={(event) => setRelatedPartyDraft(event.target.value)}
                             placeholder='输入关联公司、实控人、保证人'
+                            status={
+                              relatedPartyAttempted && relatedPartyDraft.trim().length < 2
+                                ? 'error'
+                                : undefined
+                            }
+                            aria-invalid={
+                              relatedPartyAttempted && relatedPartyDraft.trim().length < 2
+                            }
+                          />
+                          {relatedPartyAttempted && relatedPartyDraft.trim().length < 2 && (
+                            <span className='batch-field-error' role='alert'>
+                              请填写相关方名称（至少2个字）
+                            </span>
+                          )}
+                          <Select
+                            aria-label='相关方角色'
+                            value={relatedPartyRole}
+                            onChange={setRelatedPartyRole}
+                            options={relatedPartyRoleOptions}
+                          />
+                          <Select
+                            aria-label='相关方关系层级'
+                            value={relatedPartyDepth}
+                            onChange={(value) => setRelatedPartyDepth(numberValue(value, 1))}
+                            options={[
+                              { value: 1, label: '一级关系' },
+                              { value: 2, label: '二级关系' },
+                              { value: 3, label: '三级关系' },
+                            ]}
                           />
                           <Select
                             aria-label='相关方主体类型'
@@ -5718,9 +5777,22 @@ export function CaseIntakeWorkbench() {
                           <Input.Password
                             aria-label='相关方身份标识'
                             value={relatedPartyIdentityNumber}
+                            status={
+                              relatedPartyAttempted && relatedPartyIdentityNumber.trim().length < 4
+                                ? 'error'
+                                : undefined
+                            }
+                            aria-invalid={
+                              relatedPartyAttempted && relatedPartyIdentityNumber.trim().length < 4
+                            }
                             onChange={(event) => setRelatedPartyIdentityNumber(event.target.value)}
                             placeholder='证件号或统一社会信用代码'
                           />
+                          {relatedPartyAttempted && relatedPartyIdentityNumber.trim().length < 4 && (
+                            <span className='batch-field-error' role='alert'>
+                              请填写可核验身份标识（至少4个字符）
+                            </span>
+                          )}
                           <Button type='link' icon={<PlusOutlined />} onClick={addRelatedParty}>
                             添加相关方
                           </Button>
