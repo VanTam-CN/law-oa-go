@@ -77,16 +77,25 @@ func TestListIntakeDraftsScopesAndFields(t *testing.T) {
 		t.Fatalf("owner list: status=%d want 200", code)
 	}
 	items, _ := data["items"].([]interface{})
-	if len(items) != 2 {
-		t.Fatalf("owner list: items=%d want 2 (own drafts only, confirmed intake excluded)", len(items))
+	// Recovery contract (defect-3 fix): in-progress intakes such as
+	// lawyer_facts_confirmed must stay discoverable after the browser
+	// localStorage snapshot is gone. Only terminal states stay out.
+	if len(items) != 3 {
+		t.Fatalf("owner list: items=%d want 3 (own drafts + own in-progress confirmed intake)", len(items))
 	}
+	statuses := map[string]bool{}
 	for _, raw := range items {
 		row, _ := raw.(map[string]interface{})
+		status, _ := row["status"].(string)
+		statuses[status] = true
 		for _, forbidden := range []string{"metadata", "parties", "materials"} {
 			if _, exists := row[forbidden]; exists {
 				t.Fatalf("owner list: forbidden field %q leaked", forbidden)
 			}
 		}
+	}
+	if !statuses["lawyer_facts_confirmed"] {
+		t.Fatalf("owner list: in-progress lawyer_facts_confirmed intake missing from recovery list")
 	}
 
 	code, data = listIntakeDrafts(t, r, "director", "9", "")
@@ -94,8 +103,8 @@ func TestListIntakeDraftsScopesAndFields(t *testing.T) {
 		t.Fatalf("management list: status=%d want 200", code)
 	}
 	items, _ = data["items"].([]interface{})
-	if len(items) != 3 {
-		t.Fatalf("management list: items=%d want 3", len(items))
+	if len(items) != 4 {
+		t.Fatalf("management list: items=%d want 4", len(items))
 	}
 	code, _ = listIntakeDrafts(t, r, "director", "9", "?page=2&page_size=2")
 	if code != http.StatusOK {

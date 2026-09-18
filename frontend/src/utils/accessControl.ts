@@ -53,7 +53,10 @@ const ROLE_FALLBACKS: Record<string, string[]> = {
   'client:view': ['admin', 'super_admin', 'lawyer', 'assistant'],
   'client:manage': ['admin', 'super_admin', 'lawyer'],
   'lawyer:manage': ['admin', 'super_admin'],
-  'approval:view': ['admin', 'super_admin', 'lawyer', 'conflict_officer', 'compliance'],
+  // Directors review conflict approvals on the backend
+  // (GetApprovalForAuthorization admits approvers and history approvers);
+  // the frontend fallback list must not block them from the detail route.
+  'approval:view': ['admin', 'super_admin', 'lawyer', 'conflict_officer', 'compliance', 'director'],
   'approval:manage': ['admin', 'super_admin', 'lawyer'],
   'conflict:check': [
     'lawyer',

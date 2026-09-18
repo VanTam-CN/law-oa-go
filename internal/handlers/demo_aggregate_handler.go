@@ -452,8 +452,14 @@ func (h *DemoAggregateHandler) ListIntakeDrafts(c *gin.Context) {
 	if v, err := strconv.Atoi(c.Query("page_size")); err == nil && v > 0 && v <= 50 {
 		pageSize = v
 	}
+	// Recovery must cover every in-progress state a lawyer can get stuck
+	// outside of: a draft that already passed facts confirmation or conflict
+	// detection is exactly the one whose localStorage snapshot is missing
+	// after a fresh session, so it must stay discoverable here. Statuses
+	// mirror visibleIntakeCount plus lawyer_facts_confirmed; terminal states
+	// (approved/completed) and refused drafts stay out of the recovery list.
 	query := h.db.Table("case_intakes").
-		Where("status IN ?", []string{"draft", "assistant_draft"})
+		Where("status IN ?", []string{"draft", "assistant_draft", "materials_pending", "lawyer_facts_confirmed", "conflict_ready", "conflict_checking"})
 	if !canViewAllMatterData(c) {
 		query = query.Where("created_by = ?", actorID)
 	}

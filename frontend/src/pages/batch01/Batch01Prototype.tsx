@@ -1049,7 +1049,11 @@ function intakeFormFromServer(payload: Record<string, any>): IntakeFormState {
     (party: any) =>
       textValue(party.party_role || party.role, '').toLowerCase().includes('opposing'),
   )
-  const fallbackParty = opponentParty || (parties.length > 0 ? parties[0] : null)
+  // Only a real opposing party may prefill the opponent fields. Falling back
+  // to parties[0] used to paste the client's own name into the opponent
+  // inputs when a draft was saved without an opponent, and the lawyer could
+  // save the corrupted mapping straight back to the server.
+  const fallbackParty = opponentParty
   return {
     ...defaultIntakeForm,
     intakeId: textValue(intake.id, ''),
