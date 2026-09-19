@@ -165,6 +165,19 @@ func (h *IntegrationHandler) CreateApprovalWithConflict(c *gin.Context) {
 		return
 	}
 
+	// Atomic duplicate-submission claim: the handler-level guard above is a
+	// plain SELECT, so concurrent first submissions can all pass it and each
+	// create an approval (race reproduced 4x200 on candidate 9cf53fa). The
+	// conditional UPDATE below is the cross-request lock: exactly one caller
+	// moves the intake off conflict_ready and may create the approval; the
+	// losers observe 0 affected rows and get the same 409 contract as the
+	// sequential guard. The row is restored before the success response.
+	intakeIDForClaim := integrationMetadataString(req.Metadata, "intake_id")
+	claimRes, ok := h.claimIntakeForApproval(c, intakeIDForClaim)
+	if !ok {
+		return
+	}
+
 	userNameStr := "未知用户"
 	if userName, ok := c.Get("username"); ok {
 		if name, ok := userName.(string); ok && strings.TrimSpace(name) != "" {
@@ -175,6 +188,7 @@ func (h *IntegrationHandler) CreateApprovalWithConflict(c *gin.Context) {
 	// 调用集成服务
 	result, err := h.integrationService.CreateIntegratedApproval(c.Request.Context(), userIDStr, userNameStr, &req)
 	if err != nil {
+		h.releaseIntakeClaim(intakeIDForClaim, claimRes)
 		log.Printf("创建带冲突检测的审批申请失败: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "internal_error",
@@ -183,10 +197,52 @@ func (h *IntegrationHandler) CreateApprovalWithConflict(c *gin.Context) {
 		return
 	}
 
+	h.releaseIntakeClaim(intakeIDForClaim, claimRes)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data":    result,
 	})
+}
+
+// claimIntakeForApproval atomically moves the intake from conflict_ready to
+// approval_submitting. The conditional UPDATE is the cross-request lock: when
+// two first submissions race, exactly one observes RowsAffected==1 and may
+// create the approval; the loser gets the same 409 contract as the sequential
+// guard (the guard's plain SELECT alone cannot close that window, reproduced
+// as 4x200 / 4 approvals on candidate 9cf53fa).
+func (h *IntegrationHandler) claimIntakeForApproval(c *gin.Context, intakeID string) (bool, bool) {
+	// A crashed process could strand a claim (release never runs), so a
+	// stale claim older than the window any live request needs is
+	// reclaimable. The cutoff is computed in Go and passed as a value, so
+	// the predicate stays portable across PostgreSQL and SQLite.
+	staleBefore := time.Now().Add(-5 * time.Minute)
+	claim := h.db.Table("case_intakes").
+		Where("id = ? AND (status = ? OR (status = ? AND updated_at < ?))",
+			intakeID, "conflict_ready", "approval_submitting", staleBefore).
+		Update("status", "approval_submitting")
+	if claim.Error != nil {
+		common.NewAPIError(c, http.StatusInternalServerError, "INTAKE_APPROVAL_GATE_ERROR", "接案审批防重锁定失败，已阻止提交")
+		return false, false
+	}
+	if claim.RowsAffected == 0 {
+		common.NewAPIError(c, http.StatusConflict, "INTAKE_APPROVAL_ALREADY_IN_PROGRESS", "该接案已有进行中的成案审批，不能重复提交；请在原审批单上继续处理")
+		return false, false
+	}
+	return true, true
+}
+
+// releaseIntakeClaim restores the intake to conflict_ready after the approval
+// creation attempt. Success and failure both restore: the approval row itself
+// is the durable duplicate guard, the status flip only serializes creation.
+func (h *IntegrationHandler) releaseIntakeClaim(intakeID string, claimed bool) {
+	if !claimed {
+		return
+	}
+	if err := h.db.Table("case_intakes").
+		Where("id = ? AND status = ?", intakeID, "approval_submitting").
+		Update("status", "conflict_ready").Error; err != nil {
+		log.Printf("恢复接案状态失败 intake=%s err=%v", intakeID, err)
+	}
 }
 
 // validateCaseIntakeApproval binds the approval request to the server-side
