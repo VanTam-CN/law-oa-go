@@ -525,6 +525,23 @@ func (h *IntegrationHandler) ProcessApprovalWithConflict(c *gin.Context) {
 		if writeApprovalLookupError(c, err) {
 			return
 		}
+		// Business gates surfaced as SubjectWorkflowError (for example a
+		// replay whose live parties no longer match the reviewed snapshot)
+		// are decision outcomes for the client, not infrastructure faults:
+		// keep them off the generic 500 path, matching the shared
+		// writeSubjectWorkflowError contract used by the other handlers.
+		var workflowErr *services.SubjectWorkflowError
+		if errors.As(err, &workflowErr) {
+			status := http.StatusConflict
+			if strings.HasSuffix(workflowErr.Code, "FORBIDDEN") {
+				status = http.StatusForbidden
+			}
+			c.JSON(status, gin.H{
+				"error":   workflowErr.Code,
+				"message": workflowErr.Message,
+			})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "internal_error",
 			"message": "处理审批申请失败: " + err.Error(),

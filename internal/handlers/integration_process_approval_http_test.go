@@ -91,3 +91,25 @@ func TestProcessApprovalWithConflictLookupErrors(t *testing.T) {
 		t.Fatalf("forbidden error = %q, want APPROVAL_ACCESS_DENIED", payload.Error)
 	}
 }
+
+// A replay whose live case parties no longer match the reviewed snapshot is a
+// business gate (CASE_CREATION_INCOMPLETE), not an infrastructure fault: the
+// decision endpoint must publish it as 409 with the canonical code instead of
+// the generic 500 wrapper.
+func TestProcessApprovalWithConflictSubjectWorkflowError(t *testing.T) {
+	gateErr := services.NewSubjectWorkflowError("CASE_CREATION_INCOMPLETE", "正式案件的主体身份或角色集合与批准快照不一致，已阻止假完成")
+	router := newProcessApprovalTestServer(t, &stubProcessApprovalService{err: gateErr})
+	rec := postApprovalDecision(t, router, "18d6a9a182d49308")
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("case creation incomplete: got %d %s, want 409", rec.Code, rec.Body.String())
+	}
+	var payload struct {
+		Error string `json:"error"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode body: %v", err)
+	}
+	if payload.Error != "CASE_CREATION_INCOMPLETE" {
+		t.Fatalf("case creation incomplete error = %q, want CASE_CREATION_INCOMPLETE", payload.Error)
+	}
+}
