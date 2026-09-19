@@ -286,7 +286,10 @@ func integrationMetadataString(metadata map[string]interface{}, key string) stri
 	if metadata == nil {
 		return ""
 	}
-	return strings.TrimSpace(fmt.Sprint(metadata[key]))
+	if value, ok := metadata[key]; ok && value != nil {
+		return strings.TrimSpace(fmt.Sprint(value))
+	}
+	return ""
 }
 
 func firstIntegrationMetadataString(metadata map[string]interface{}, keys ...string) string {
@@ -514,6 +517,12 @@ func (h *IntegrationHandler) ProcessApprovalWithConflict(c *gin.Context) {
 				"error":   gateErr.Code,
 				"message": gateErr.Message,
 			})
+			return
+		}
+		// Lookup-class outcomes keep the canonical contract on the decision
+		// endpoint too: a missing ID is 404 and an object-level access denial
+		// is 403. Everything else remains a 500 infrastructure error.
+		if writeApprovalLookupError(c, err) {
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{

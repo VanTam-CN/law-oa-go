@@ -280,6 +280,9 @@ chrome/
 
 # 项目特定的测试和验证文件
 *_test.go
+!internal/handlers/integration_metadata_string_test.go
+!internal/handlers/integration_process_approval_http_test.go
+!internal/services/approval_process_replay_test.go
 !internal/handlers/conflict_handler_simple_test.go
 !internal/repositories/conflict_repository_test.go
 !internal/repositories/conflict_intake_commit_test.go

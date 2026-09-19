@@ -904,6 +904,31 @@ func (s *approvalConflictIntegrationService) ProcessApprovalWithConflict(ctx con
 	}
 
 	requiresCaseCreation := RequiresCaseCreationApproval(approval)
+	// An "approve" replay on an already-approved, already-linked case-creation
+	// approval is an idempotent retry of the SAME decision, not a new decision.
+	// The generic decision path would reject it with a state/permission error
+	// before the case-creation idempotency short-circuit could ever run, so the
+	// replay must settle here. The real case row must still exist; a dangling
+	// link is never published as a completed replay.
+	if decisionReq.Decision == models.ApprovalDecisionApprove && requiresCaseCreation &&
+		approval.Status == models.ApprovalStatusApproved && approval.CaseCreated &&
+		strings.TrimSpace(approval.CreatedCaseID) != "" {
+		caseIDUint, ok := parseUintString(approval.CreatedCaseID)
+		if !ok || caseIDUint == 0 {
+			return nil, NewSubjectWorkflowError("CASE_CREATION_INCOMPLETE", fmt.Sprintf("成案记录指向的正式案件 %q 不存在，已阻止假完成", approval.CreatedCaseID))
+		}
+		if s.caseService == nil {
+			return nil, NewSubjectWorkflowError("CASE_CREATION_GATE_UNAVAILABLE", "正式成案服务未初始化，已阻止成案重放校验")
+		}
+		if existingCase, caseErr := s.caseService.GetCaseByID(ctx, caseIDUint); caseErr != nil || existingCase == nil {
+			return nil, NewSubjectWorkflowError("CASE_CREATION_INCOMPLETE", fmt.Sprintf("成案记录指向的正式案件 %q 实际不存在，已阻止假完成", approval.CreatedCaseID))
+		}
+		if _, err := s.ensureApprovedApprovalHasCase(ctx, approval, userID, userName); err != nil {
+			return nil, err
+		}
+		log.Printf("重放审批同意请求命中已成案幂等短路，审批ID=%s，案件ID=%s，操作人=%s", approval.ID, approval.CreatedCaseID, userID)
+		return approval, nil
+	}
 	var latestConflictReview *models.ConflictReview
 	if decisionReq.Decision == models.ApprovalDecisionApprove && requiresCaseCreation {
 		latestConflictReview, err = s.validateConflictApprovalGate(ctx, approval)
@@ -1233,6 +1258,12 @@ func (s *approvalConflictIntegrationService) buildCaseDataForApprovedApproval(ct
 		caseData := normalizeCaseCreationConfig(config, approval, userID)
 		if approval.Type == "conflict_approval" {
 			applyConflictRecordOwnership(caseData, record)
+		} else if record != nil && record.CheckID != "" {
+			// Intake-workbench case_creation approvals carry a conflict check
+			// that validateCaseIntakeApproval already verified against the
+			// intake. Link that evidence so formal case creation cannot bypass
+			// the disposition gate; ownership stays as frozen in the config.
+			caseData["conflict_check_id"] = record.CheckID
 		}
 		return validateCaseCreationOwnership(caseData)
 	}
