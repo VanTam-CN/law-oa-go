@@ -5128,23 +5128,44 @@ export function CaseIntakeWorkbench() {
     if (!storedDraft) return
     setForm(storedDraft)
     // Switching drafts must not carry related parties or tags from the
-
     // previously opened matter into the restored one.
-
     setRelatedParties([])
     setCaseTags([])
     setRevisionConflict(null)
+    setLocalStorageDraft(null)
     if (storedDraft.intakeId) {
       setRuntime((current) => ({
         ...current,
         intake: { id: storedDraft.intakeId, intake_code: storedDraft.intakeCode },
       }))
-      restoreConflictResultForDraft(
-        textValue(storedDraft.intakeId, ''),
-        storedDraft.clientId,
-      )
+      // The local draft snapshot stores form fields only; related parties
+      // and tags live in the server intake rows. The saved server rows are
+      // the source of truth, so they must be merged back BEFORE the next
+      // save: continuing a local draft used to restore the intake ID with
+      // an empty related-party list, and the next PUT deleted the saved
+      // WITNESS/GUARANTOR rows (the 091903 party-loss defect). If the
+      // server snapshot cannot be loaded, leave saving disabled instead of
+      // risking that overwrite.
+      apiRequest<any>(`/case-intakes/${storedDraft.intakeId}`)
+        .then((payload) => {
+          const restored = intakeDraftFromServer(payload)
+          // Keep the locally restored form fields (they may hold unsaved
+          // lawyer input), but related parties and tags come from the
+          // authoritative server snapshot.
+          setRelatedParties(restored.relatedParties)
+          setCaseTags(restored.caseTags)
+          restoreConflictResultForDraft(
+            textValue(storedDraft.intakeId, ''),
+            storedDraft.clientId,
+          )
+        })
+        .catch(() => {
+          setDraftActive(false)
+          setRuntime((current) => ({ ...current, intake: undefined }))
+          setLocalStorageDraft(loadCaseIntakeDraft(draftKey))
+          message.error('恢复草稿关联方失败，已锁定保存；请重试或放弃草稿')
+        })
     }
-    setLocalStorageDraft(null)
     setDraftActive(true)
     message.success(
       storedDraft.opponentIdentityNumber
