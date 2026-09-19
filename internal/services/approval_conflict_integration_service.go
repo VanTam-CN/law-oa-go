@@ -1340,6 +1340,9 @@ func normalizeCaseCreationConfig(config map[string]interface{}, approval *models
 	if _, ok := caseData["priority"]; !ok {
 		caseData["priority"] = coalesce(approval.Priority, "medium")
 	}
+	if trimmed, ok := caseData["billing_method"].(string); ok && strings.TrimSpace(trimmed) == "" {
+		caseData["billing_method"] = "hourly"
+	}
 	if _, ok := caseData["billing_method"]; !ok {
 		caseData["billing_method"] = "hourly"
 	}

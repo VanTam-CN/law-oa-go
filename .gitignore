@@ -420,3 +420,4 @@ frontend/test-results/
 
 !internal/handlers/intake_draft_revision_test.go
 !internal/handlers/intake_draft_revision_contract_test.go
+!internal/services/approval_case_creation_config_test.go
