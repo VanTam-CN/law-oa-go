@@ -83,7 +83,7 @@ func seedApprovalCaseWorld(t *testing.T) *seededFixture {
 		ID: "APR-TX-1", RequestNumber: fmt.Sprintf("RN-%d", time.Now().UnixNano()), Title: "成案事务审批",
 		Type: "CASE_CREATION", Content: "approval body", ApplicantID: "u1", ApplicantName: "申请人",
 		DepartmentName: "业务部", Status: models.ApprovalStatusApproved, WorkflowType: "case_creation",
-		Metadata: "{}",
+		Metadata: `{"conflict_check_id":"CHK-TX-1"}`,
 	}
 	require.NoError(t, db.Create(approval).Error)
 

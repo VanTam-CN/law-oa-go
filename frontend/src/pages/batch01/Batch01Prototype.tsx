@@ -1214,6 +1214,8 @@ interface IntakeRelatedParty {
 // whitelist; the UI never invents a role the formal-case contract would
 // reject at case creation.
 const relatedPartyRoleOptions = [
+  { value: 'CO_CLIENT', label: '共同委托方' },
+  { value: 'OPPOSING_PARTY', label: '对方当事人' },
   { value: 'RELATED_PARTY', label: '其他相关方' },
   { value: 'GUARANTOR', label: '保证人' },
   { value: 'WITNESS', label: '证人' },

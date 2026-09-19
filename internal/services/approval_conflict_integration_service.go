@@ -1218,13 +1218,17 @@ func (s *approvalConflictIntegrationService) buildCaseCreationStatus(ctx context
 
 func (s *approvalConflictIntegrationService) ensureApprovedApprovalHasCase(ctx context.Context, approval *models.ApprovalRequest, userID, userName string) (*CaseCreationResult, error) {
 	if approval.CaseCreated && approval.CreatedCaseID != "" {
-		return &CaseCreationResult{
-			CaseID:    approval.CreatedCaseID,
-			Status:    coalesce(approval.CaseCreationStatus, "completed"),
-			Message:   "案件已创建",
-			CreatedAt: time.Now(),
-			CaseData:  map[string]interface{}{},
-		}, nil
+		// A completed approval re-enters the claim transaction, loses the
+		// claim (case_created is already true), and lands in
+		// verifyExistingCaseCompletion: the completed result is only
+		// published after the case's real party set matches the reviewed
+		// snapshot, with missing parties repaired on the same case inside
+		// the same transaction. Case rows alone never prove completion.
+		// The frozen approval metadata is the only input: replay must not
+		// re-run ownership assembly (the approval is already approved; the
+		// check pointer for snapshot verification comes from this map).
+		caseData := parseMetadata(approval.Metadata)
+		return s.AutoCreateCaseFromApproval(ctx, approval.ID, caseData)
 	}
 	caseData, err := s.buildCaseDataForApprovedApproval(ctx, approval, userID)
 	if err != nil {
