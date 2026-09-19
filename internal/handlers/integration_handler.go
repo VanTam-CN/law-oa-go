@@ -16,6 +16,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+
+	"law-oa-go/internal/repositories"
 )
 
 // IntegrationHandler 集成处理器
@@ -41,6 +43,22 @@ func NewIntegrationHandler(
 		conflictService:    conflictService,
 		db:                 database,
 	}
+}
+
+// newIntegrationHandlerForTest lets guard tests reuse the real service
+// wiring while keeping the test-scoped database; production callers keep
+// using NewIntegrationHandler directly.
+var newIntegrationHandlerForTest = func(db *gorm.DB) *IntegrationHandler {
+	approvalHandler := NewApprovalHandler(db)
+	integrationRepo := repositories.NewIntegrationRepository(db)
+	caseSvc := services.NewCaseService(
+		repositories.NewCaseRepository(db),
+		repositories.NewClientRepository(db),
+		repositories.NewUserRepository(db),
+	)
+	integrationSvc := services.NewApprovalConflictIntegrationService(
+		approvalHandler.GetApprovalService(), nil, caseSvc, integrationRepo, db)
+	return NewIntegrationHandler(integrationSvc, nil, db)
 }
 
 func (h *IntegrationHandler) SetAuthorizationService(authz *services.AuthorizationService) {
@@ -220,6 +238,50 @@ func (h *IntegrationHandler) validateCaseIntakeApproval(c *gin.Context, req *ser
 	}
 	if strings.TrimSpace(fmt.Sprint(intake["status"])) != "conflict_ready" {
 		common.NewAPIError(c, http.StatusConflict, "INTAKE_CONFLICT_RESULT_STALE", "接案事实已变化或尚未完成检测，请重新确认并运行利益冲突检查")
+		return false
+	}
+	// Duplicate-submission guard: one intake carries at most one live
+	// case-creation approval. Without this gate an identical resubmit
+	// silently creates another approval and later another formal case for
+	// the same facts (observed as cases 34/35/36), which the acceptance
+	// plan classifies as duplicate case creation (P1).
+	var prior struct {
+		ID     string
+		Status string
+	}
+	// The intake linkage lives in the approval metadata JSON, which has no
+	// portable cross-database query path; filter in Go after selecting the
+	// live case-creation approvals instead of a global unscoped check that
+	// would block every intake in the system.
+	var live []struct {
+		ID       string
+		Status   string
+		Metadata string
+	}
+	if err := h.db.Table("approval_requests").
+		Select("id, status, metadata").
+		Where("type = ? AND status IN ?", "case_creation", []string{
+			models.ApprovalStatusSubmitted, models.ApprovalStatusUnderReview,
+			models.ApprovalStatusApproved, models.ApprovalStatusResubmitted,
+		}).
+		Order("created_at DESC").
+		Scan(&live).Error; err != nil {
+		common.NewAPIError(c, http.StatusInternalServerError, "INTAKE_APPROVAL_GATE_ERROR", "接案审批防重检查失败，已阻止提交")
+		return false
+	}
+	for i := range live {
+		if integrationMetadataString(integrationJSONMap(live[i].Metadata), "intake_id") == intakeID {
+			prior.ID = live[i].ID
+			prior.Status = live[i].Status
+			break
+		}
+	}
+	if prior.ID != "" {
+		if prior.Status == models.ApprovalStatusApproved {
+			common.NewAPIError(c, http.StatusConflict, "INTAKE_ALREADY_CASE_CREATED", "该接案已批准成案，不能再次提交；请直接使用已有案件")
+			return false
+		}
+		common.NewAPIError(c, http.StatusConflict, "INTAKE_APPROVAL_ALREADY_IN_PROGRESS", "该接案已有进行中的成案审批，不能重复提交；请在原审批单上继续处理")
 		return false
 	}
 	if req.CaseCreationConfig != nil {

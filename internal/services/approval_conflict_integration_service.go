@@ -722,6 +722,14 @@ func casePartiesMatchSnapshot(tx *gorm.DB, caseID uint, parties []models.Conflic
 			return false
 		}
 	}
+	// Cardinality guard: after repair the live row count must equal the
+	// reviewed snapshot count. A set-equivalent match with extra rows means
+	// a stale or duplicated mapping survived; the (identity, role) set check
+	// above cannot see that, so fail closed instead of publishing a
+	// completed replay over a damaged party table.
+	if len(rows) != len(parties) {
+		return false
+	}
 	_ = actual
 	return true
 }

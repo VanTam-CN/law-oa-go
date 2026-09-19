@@ -156,6 +156,11 @@ func TestCasePartiesMatchSnapshotUnit(t *testing.T) {
 	var diagRows []models.CaseParty
 	require.NoError(t, tx.Where("case_id = ?", case_.ID).Find(&diagRows).Error)
 	assert.True(t, casePartiesMatchSnapshot(tx, case_.ID, snapshot))
+	// An extra live row with an in-snapshot (identity, role) pair must fail
+	// the cardinality guard: set equality alone cannot see the surplus.
+	extra := &models.CaseParty{CaseID: case_.ID, EntityID: entities[1].ID, Role: models.PartyRoleDefendant, PartyType: models.PartyTypeOpposing}
+	require.NoError(t, tx.Create(extra).Error)
+	assert.False(t, casePartiesMatchSnapshot(tx, case_.ID, snapshot))
 	// A role mismatch must fail.
 	swapped := []models.ConflictPartyInfo{
 		{Name: "成案客户有限公司", Role: "OPPOSING_PARTY", EntityType: "LEGAL_PERSON"},
