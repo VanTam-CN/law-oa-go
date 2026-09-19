@@ -1234,6 +1234,10 @@ function relatedPartyInvalidReasons(name: string, identityNumber: string): strin
 interface IntakeRuntimeState {
   intake?: any
   conflict?: any
+  conflictDecisionExtras?: {
+    review?: Record<string, unknown>
+    waiver?: Record<string, unknown>
+  }
   conflictTask?: any
   conflictInputFingerprint?: string
   approval?: any
@@ -4453,6 +4457,53 @@ export function CaseIntakeWorkbench() {
   const isConflictResultStale = Boolean(
     runtime.conflict && runtime.conflictInputFingerprint !== conflictInputFingerprint,
   )
+  const conflictTaskIDForReview = textValue(
+    runtime.conflict?.record?.id ||
+      runtime.conflict?.record?.check_id ||
+      runtime.conflict?.checkId ||
+      runtime.conflictTask?.taskId,
+    '',
+  )
+  React.useEffect(() => {
+    if (isAssistant) return
+    if (isConflictResultStale || !conflictTaskIDForReview) return
+    let mounted = true
+    const refreshDecisionExtras = async () => {
+      try {
+        const reviewResponse = await apiRequest<any>(
+          `/conflict/tasks/${conflictTaskIDForReview}/review`,
+        )
+        let waiverValue: Record<string, unknown> = {}
+        try {
+          const waiverResponse = await apiRequest<any>(
+            `/conflict/tasks/${conflictTaskIDForReview}/waiver`,
+          )
+          waiverValue = recordValue(waiverResponse)
+        } catch {
+          // 无豁免是常态；读取失败不阻断复核结论刷新。
+        }
+        if (mounted) {
+          setRuntime((current) => ({
+            ...current,
+            conflictDecisionExtras: {
+              review: recordValue(reviewResponse?.review || reviewResponse),
+              waiver: waiverValue,
+            },
+          }))
+        }
+      } catch {
+        // 未复核/读取失败保持空结论，门禁逻辑自行兜底。
+      }
+    }
+    void refreshDecisionExtras()
+    return () => {
+      mounted = false
+    }
+  }, [
+    conflictTaskIDForReview,
+    isAssistant,
+    isConflictResultStale,
+  ])
   const conflictCheckMissingSet = React.useMemo(
     () => new Set(conflictCheckMissingFields),
     [conflictCheckMissingFields],
@@ -4758,6 +4809,11 @@ export function CaseIntakeWorkbench() {
       conflictTask: { ...current.conflictTask, status: 'COMPLETED' },
       conflictInputFingerprint,
     }))
+    // Keep the exact checked fingerprint with the draft so a reload or
+    // relogin can reattach the reviewer's decision: re-entering the same
+    // protected identity reproduces this fingerprint, any real edit breaks
+    // it and honestly marks the result stale.
+    window.localStorage.setItem(draftKey + ':conflictFingerprint', conflictInputFingerprint)
     setSubmissionNotice('')
     message.success('利益冲突检查已完成')
     return conflict
@@ -4933,6 +4989,8 @@ export function CaseIntakeWorkbench() {
   const currentStep = intakeSteps[activeStep] || intakeSteps[0]
   const conflictDecisionView = deriveConflictDecisionViewModel(runtime.conflict, {
     stale: isConflictResultStale,
+    review: runtime.conflictDecisionExtras?.review,
+    waiver: runtime.conflictDecisionExtras?.waiver,
   })
   const conflictRiskText = runtime.conflict
     ? conflictDecisionStatusLabel(conflictDecisionView)
@@ -5001,6 +5059,71 @@ export function CaseIntakeWorkbench() {
     message.success('已添加标签')
   }
 
+  // Restoring a draft deliberately drops the in-memory check result, but the
+  // server already holds the completed check for this intake. Reattach the
+  // newest completed record so an independent reviewer's decision survives a
+  // page reload or relogin; without it the approval submit stays locked and
+  // the lawyer would have to re-run a check on unchanged input. Fail closed:
+  // when no matching record exists the page stays untested and the lawyer
+  // simply runs the check again.
+  const restoreConflictResultForDraft = (intakeID: string, clientID: number | string) => {
+    if (isAssistant) return
+    const scopedIntakeID = intakeID.trim()
+    const scopedClientID = textValue(clientID, '').trim()
+    if (!scopedIntakeID || !scopedClientID) return
+    apiRequest<any>(`/conflict/history?clientId=${encodeURIComponent(scopedClientID)}`)
+      .then((payload) => {
+        const rows = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.records)
+            ? payload.records
+            : Array.isArray(payload?.items)
+              ? payload.items
+              : []
+        const matches = rows
+          .map((row: any) => recordValue(row))
+          .filter((row: Record<string, any>) => {
+            const params = recordValue(row.searchParameters ?? row.search_parameters)
+            const rowIntakeID = textValue(params.intakeId ?? params.intake_id, '')
+            const status = textValue(row.checkStatus ?? row.check_status, '').toUpperCase()
+            return rowIntakeID === scopedIntakeID && status === 'COMPLETED'
+          })
+        if (matches.length === 0) return
+        const startedAt = (row: Record<string, any>) => {
+          const parsed = new Date(
+            textValue(row.checkTime ?? row.check_time ?? row.createdAt ?? row.created_at, ''),
+          ).getTime()
+          return Number.isNaN(parsed) ? 0 : parsed
+        }
+        const latest = matches.reduce((acc: Record<string, any>, row: Record<string, any>) =>
+          startedAt(row) >= startedAt(acc) ? row : acc,
+        )
+        const checkID = textValue(latest.checkId ?? latest.check_id, '')
+        if (!checkID) return
+        setRuntime((current) => ({
+          ...current,
+          conflict: {
+            ...recordValue(latest.checkResult ?? latest.check_result),
+            checkId: checkID,
+            record: {
+              id: checkID,
+              check_id: checkID,
+              check_status: 'COMPLETED',
+              risk_level: latest.riskLevel ?? latest.risk_level,
+            },
+          },
+          conflictTask: { taskId: checkID, checkId: checkID, status: 'COMPLETED' },
+          conflictInputFingerprint:
+            window.localStorage.getItem(draftKey + ':conflictFingerprint') ||
+            caseIntakeConflictFingerprint(form, relatedParties),
+        }))
+        message.info('已恢复本草稿最近一次冲突检测结果；如输入有变化请重新检测')
+      })
+      .catch(() => {
+        // 历史读取失败不阻断草稿恢复；页面保持未检测状态，可重新检测。
+      })
+  }
+
   const continueStoredDraft = () => {
     if (!storedDraft) return
     setForm(storedDraft)
@@ -5016,6 +5139,10 @@ export function CaseIntakeWorkbench() {
         ...current,
         intake: { id: storedDraft.intakeId, intake_code: storedDraft.intakeCode },
       }))
+      restoreConflictResultForDraft(
+        textValue(storedDraft.intakeId, ''),
+        storedDraft.clientId,
+      )
     }
     setLocalStorageDraft(null)
     setDraftActive(true)
@@ -5076,6 +5203,10 @@ export function CaseIntakeWorkbench() {
           conflict: undefined,
           conflictTask: undefined,
         }))
+        restoreConflictResultForDraft(
+          textValue(restored.form.intakeId, ''),
+          restored.form.clientId,
+        )
         setRevisionConflict(null)
         setDraftActive(true)
         message.success(

@@ -238,7 +238,19 @@ export const processApprovalDecision = async (
 ): Promise<ApprovalItem> => {
   try {
     console.log('🔍 处理审批决定 - ID:', id, '决定:', params.decision)
-    const response = (await post(`/approvals/${id}/decision`, params)) as any
+    // 后端 ApprovalDecisionRequest 使用 snake_case 字段；这里统一映射，避免
+    // 驼峰载荷被必填校验判空（decision_reason is required）。
+    const response = (await post(`/approvals/${id}/decision`, {
+      decision: params.decision,
+      decision_reason: params.decisionReason,
+      decision_comments: params.decisionComments,
+      approved_conditions: params.approvedConditions,
+      imposed_requirements: params.imposedRequirements,
+      follow_up_actions: params.followUpActions,
+      supporting_documents: params.supportingDocuments,
+      evidence_references: params.evidenceReferences,
+      next_approver_id: params.nextApproverId,
+    })) as any
     console.log('✅ 审批决定响应:', response)
     return response
   } catch (error) {
