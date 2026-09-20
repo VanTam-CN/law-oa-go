@@ -250,10 +250,63 @@ func (s *approvalConflictIntegrationService) CreateIntegratedApproval(ctx contex
 		log.Printf("创建审批申请失败：%v", err)
 		return nil, fmt.Errorf("创建审批申请失败：%w", err)
 	}
+	// Bind this approval to its source intake in the tracking table. The
+	// UNIQUE index on intake_id is the durable duplicate guard: if this
+	// request's claim was stolen between reacquire and insert by a stale-
+	// timeout takeover, the thief already bound the intake and this insert
+	// fails here instead of producing a second live approval. The approval
+	// draft row this leaves behind is not a live status, so legitimate
+	// retries still pass the guards.
+	if intakeID := metadataString(metadata, "intake_id"); intakeID != "" {
+		bound := intakeID
+		tracking := &repositories.CaseCreationTracking{
+			ID:                  fmt.Sprintf("INTAKE_BIND_%s", createdApproval.ID),
+			ApprovalRequestID:   createdApproval.ID,
+			IntakeID:            &bound,
+			CreationStatus:      "pending",
+			ErrorDetails:        "{}",
+			DataMapping:         "{}",
+			MappedFields:        "{}",
+			UnmappedFields:      "{}",
+			AppliedConditions:   "{}",
+			ImposedRequirements: "{}",
+			WorkflowActions:     "[]",
+			CreatedBy:           userID,
+			CreatedAt:           time.Now(),
+		}
+		if err := s.integrationRepo.CreateCaseCreationTracking(ctx, tracking); err != nil {
+			log.Printf("接案绑定跟踪记录创建失败：%v", err)
+			// The UNIQUE index on intake_id rejected the bind: another
+			// creator legitimately owns the intake→approval slot (stale-
+			// takeover window). Fail closed with the standard 409 contract
+			// and abandon this draft (it is not a live status, so legitimate
+			// retries still pass the guards).
+			return nil, &ApprovalConflictGateError{
+				Code:    "INTAKE_APPROVAL_ALREADY_IN_PROGRESS",
+				Message: "该接案已有进行中的成案审批，不能重复提交；请在原审批单上继续处理",
+			}
+		}
+	}
 	if submittedApproval, err := s.approvalService.SubmitApproval(userID, createdApproval.ID); err == nil && submittedApproval != nil {
 		createdApproval = submittedApproval
 	} else if err != nil {
 		log.Printf("提交集成审批申请失败：%v", err)
+		// Compensate the bind row written just before the submit. Without
+		// this cleanup a transient submit failure (for example no eligible
+		// approver) permanently locks the intake: every retry loses at the
+		// UNIQUE bind with an "already in progress" 409 even though no live
+		// approval exists. The intake slot is released for a legitimate
+		// retry; a takeover-losers bind is never submitted, so it keeps the
+		// UNIQUE protection intact.
+		if intakeID := metadataString(metadata, "intake_id"); intakeID != "" {
+			if delErr := s.integrationRepo.DeleteCaseCreationTracking(ctx, fmt.Sprintf("INTAKE_BIND_%s", createdApproval.ID)); delErr != nil {
+				// Fail closed: leave the bind in place and surface the
+				// underlying submit error. A permanent 409 on retry is
+				// safer than silently unbinding a slot whose winner is
+				// unknown.
+				log.Printf("提交失败后清理接案绑定记录失败（保留绑定以fail-closed）：%v", delErr)
+			}
+		}
 		return nil, fmt.Errorf("提交集成审批申请失败：%w", err)
 	}
 

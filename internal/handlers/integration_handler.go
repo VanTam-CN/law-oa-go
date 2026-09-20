@@ -264,12 +264,6 @@ func (h *IntegrationHandler) CreateApprovalWithConflict(c *gin.Context) {
 		}
 		return
 	}
-	approvalCreateGate()
-	if !h.reacquireIntakeClaim(c, intakeIDForClaim, claimToken) {
-		h.releaseIntakeClaim(intakeIDForClaim, claimRes, claimToken)
-		return
-	}
-
 	userNameStr := "未知用户"
 	if userName, ok := c.Get("username"); ok {
 		if name, ok := userName.(string); ok && strings.TrimSpace(name) != "" {
@@ -277,10 +271,30 @@ func (h *IntegrationHandler) CreateApprovalWithConflict(c *gin.Context) {
 		}
 	}
 
-	// 调用集成服务
+	// The reacquire above is a check-then-act on its own: a creator parked
+	// between reacquire and the approval insert can have its claim stolen by
+	// a legitimate stale-timeout takeover, and the parked creator would then
+	// still insert a second live approval (probe-reproduced as B=200/A=200,
+	// approvals=2 on HEAD 0b1a4a2). The durable closure is the UNIQUE index
+	// on approval_case_creation_tracking.intake_id: the
+	// first binding of the intake to an approval wins at the database, and a
+	// stolen creator's insert is rejected with the standard 409 contract
+	// instead of layering a second live approval. The gate below stays AFTER
+	// reacquire so the probe exercises the exact reacquire→create window.
+	if !h.reacquireIntakeClaim(c, intakeIDForClaim, claimToken) {
+		h.releaseIntakeClaim(intakeIDForClaim, claimRes, claimToken)
+		return
+	}
+	approvalCreateGate()
+
 	result, err := h.integrationService.CreateIntegratedApproval(c.Request.Context(), userIDStr, userNameStr, &req)
 	if err != nil {
 		h.releaseIntakeClaim(intakeIDForClaim, claimRes, claimToken)
+		var gateErr *services.ApprovalConflictGateError
+		if errors.As(err, &gateErr) {
+			common.NewAPIError(c, http.StatusConflict, gateErr.Code, gateErr.Message)
+			return
+		}
 		log.Printf("创建带冲突检测的审批申请失败: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "internal_error",
@@ -347,19 +361,34 @@ func (h *IntegrationHandler) reacquireIntakeClaim(c *gin.Context, intakeID, clai
 	if claimToken == "" {
 		return true
 	}
-	reacquire := h.db.Table("case_intakes").
+	_, status, code, message := reacquireIntakeClaimOn(h.db, intakeID, claimToken)
+	if code != "" {
+		common.NewAPIError(c, status, code, message)
+		return false
+	}
+	return true
+}
+
+// reacquireIntakeClaimOn is the transaction-scoped core of
+// reacquireIntakeClaim: inside the create transaction the UPDATE takes the
+// claim row's write lock, which is what serializes the creator against a
+// stale-timeout thief. Returns ok=false with a filled HTTP contract on
+// rejection; ok=true (code empty) when ownership was revalidated.
+func reacquireIntakeClaimOn(db *gorm.DB, intakeID, claimToken string) (bool, int, string, string) {
+	if claimToken == "" {
+		return true, 0, "", ""
+	}
+	reacquire := db.Table("case_intakes").
 		Where("id = ? AND status = ? AND approval_claim_token = ?",
 			intakeID, "approval_submitting", claimToken).
 		Updates(map[string]interface{}{"updated_at": approvalClaimClock()})
 	if reacquire.Error != nil {
-		common.NewAPIError(c, http.StatusInternalServerError, "INTAKE_APPROVAL_GATE_ERROR", "接案审批防重锁定校验失败，已阻止提交")
-		return false
+		return false, http.StatusInternalServerError, "INTAKE_APPROVAL_GATE_ERROR", "接案审批防重锁定校验失败，已阻止提交"
 	}
 	if reacquire.RowsAffected == 0 {
-		common.NewAPIError(c, http.StatusConflict, "INTAKE_APPROVAL_ALREADY_IN_PROGRESS", "该接案已有进行中的成案审批，不能重复提交；请在原审批单上继续处理")
-		return false
+		return false, http.StatusConflict, "INTAKE_APPROVAL_ALREADY_IN_PROGRESS", "该接案已有进行中的成案审批，不能重复提交；请在原审批单上继续处理"
 	}
-	return true
+	return true, 0, "", ""
 }
 
 // releaseIntakeClaim restores the intake to conflict_ready after the approval
@@ -369,6 +398,12 @@ func (h *IntegrationHandler) releaseIntakeClaim(intakeID string, claimed bool, c
 	if !claimed {
 		return
 	}
+	releaseIntakeClaimOn(h.db, intakeID, claimToken)
+}
+
+// releaseIntakeClaimOn is the transaction-scoped release used inside the
+// create transaction; the token predicate keeps it owner-scoped.
+func releaseIntakeClaimOn(db *gorm.DB, intakeID, claimToken string) {
 	// Mirror the claim: refresh updated_at on release so a later stale
 	// test measures from the last state transition, not from before it.
 	// The token predicate makes the release owner-scoped: a request whose
@@ -378,7 +413,7 @@ func (h *IntegrationHandler) releaseIntakeClaim(intakeID string, claimed bool, c
 	if claimToken != "" {
 		releaseToken = claimToken
 	}
-	if err := h.db.Table("case_intakes").
+	if err := db.Table("case_intakes").
 		Where("id = ? AND status = ? AND approval_claim_token = ?", intakeID, "approval_submitting", releaseToken).
 		Updates(map[string]interface{}{
 			"status":               "conflict_ready",

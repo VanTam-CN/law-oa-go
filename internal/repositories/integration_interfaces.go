@@ -18,6 +18,10 @@ type IntegrationRepositoryInterface interface {
 
 	// 案件创建跟踪管理
 	CreateCaseCreationTracking(ctx context.Context, tracking *CaseCreationTracking) error
+	// DeleteCaseCreationTracking removes the intake→approval bind row on
+	// failed-submit compensation so a legitimate retry is not permanently
+	// locked out by a stale bind left behind by an error path.
+	DeleteCaseCreationTracking(ctx context.Context, id string) error
 	GetCaseCreationTrackingByApprovalID(ctx context.Context, approvalID string) ([]*CaseCreationTracking, error)
 	GetLatestCaseCreationTracking(ctx context.Context, approvalID string) (*CaseCreationTracking, error)
 	UpdateCaseCreationTracking(ctx context.Context, id string, updates map[string]interface{}) error

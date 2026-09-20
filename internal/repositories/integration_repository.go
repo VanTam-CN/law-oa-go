@@ -80,8 +80,18 @@ func (ConflictAssociation) TableName() string {
 
 // CaseCreationTracking 案件创建跟踪数据模型
 type CaseCreationTracking struct {
-	ID                  string     `gorm:"primaryKey" json:"id"`
-	ApprovalRequestID   string     `gorm:"not null;index" json:"approval_request_id"`
+	ID                string `gorm:"primaryKey" json:"id"`
+	ApprovalRequestID string `gorm:"not null;index" json:"approval_request_id"`
+	// IntakeID pins the case-intake this approval was created from. A
+	// UNIQUE index makes the intake→live-approval binding a database
+	// invariant, not a check-then-act: when a creator's claim is stolen by
+	// a stale-timeout takeover between reacquireIntakeClaim and the
+	// approval insert, the thief's insert wins and the stale creator's
+	// insert is rejected by the database instead of layering a second
+	// live approval on the same intake (probe-reproduced 200/200 with two
+	// approvals on 0b1a4a2). NULL is allowed so approvals not created
+	// through the intake path are unaffected.
+	IntakeID            *string    `gorm:"uniqueIndex" json:"intake_id"`
 	CaseID              *string    `gorm:"index" json:"case_id"`
 	CaseNumber          *string    `gorm:"index" json:"case_number"`
 	CaseType            *string    `json:"case_type"`
@@ -210,6 +220,15 @@ func (r *IntegrationRepository) UpdateConflictAssociationStatus(ctx context.Cont
 func (r *IntegrationRepository) CreateCaseCreationTracking(ctx context.Context, tracking *CaseCreationTracking) error {
 	if err := r.tx(ctx).Create(tracking).Error; err != nil {
 		return NewRepositoryError("create case creation tracking", "CaseCreationTracking", err)
+	}
+	return nil
+}
+
+// DeleteCaseCreationTracking deletes the bind row by primary key. It is
+// used only as failed-submit compensation for INTAKE_BIND_* rows.
+func (r *IntegrationRepository) DeleteCaseCreationTracking(ctx context.Context, id string) error {
+	if err := r.tx(ctx).Delete(&CaseCreationTracking{}, "id = ?", id).Error; err != nil {
+		return NewRepositoryError("delete case creation tracking", "CaseCreationTracking", err)
 	}
 	return nil
 }
