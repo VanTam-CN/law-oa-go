@@ -22,9 +22,16 @@ import (
 func newDuplicateApprovalGuardDB(t *testing.T) *gorm.DB {
 	t.Helper()
 	dbPath := filepath.Join(t.TempDir(), fmt.Sprintf("dup_guard_%d.db", time.Now().UnixNano()))
-	db, err := gorm.Open(sqlite.Open("file:"+dbPath), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+	// busy_timeout + WAL (mattn DSN params): concurrent requests in the
+	// guard tests hit the
+	// same SQLite file; without a busy timeout a read racing a write fails
+	// immediately instead of waiting out the write lock.
+	db, err := gorm.Open(sqlite.Open("file:"+dbPath+"?_busy_timeout=5000&_journal_mode=WAL&_fk=0"), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
+	}
+	if sqlDB, err := db.DB(); err == nil {
+		sqlDB.SetMaxOpenConns(1)
 	}
 	if err := db.AutoMigrate(
 		&models.ConflictCheckRecord{},

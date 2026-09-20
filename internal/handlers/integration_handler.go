@@ -61,6 +61,43 @@ var newIntegrationHandlerForTest = func(db *gorm.DB) *IntegrationHandler {
 	return NewIntegrationHandler(integrationSvc, nil, db)
 }
 
+// approvalClaimGate lets the delayed-interleaving test pause the first
+// request between validate (the durable live-approval guard) and the
+// atomic claim. Production installs a no-op gate so the hot path is
+// unchanged; only the test replaces it to hold that request until the
+// other one has fully claimed, created, and released its approval.
+var approvalClaimGate = func() {}
+
+// findLiveIntakeApproval returns the live (submitted, under_review,
+// approved, resubmitted) case-creation approval bound to intakeID via its
+// metadata, or empty strings when none exists. The intake linkage lives in
+// the approval metadata JSON, which has no portable cross-database query
+// path; filter in Go after selecting the live case-creation approvals
+// instead of a global unscoped check that would block every intake.
+func (h *IntegrationHandler) findLiveIntakeApproval(intakeID string) (string, string, error) {
+	var live []struct {
+		ID       string
+		Status   string
+		Metadata string
+	}
+	if err := h.db.Table("approval_requests").
+		Select("id, status, metadata").
+		Where("type = ? AND status IN ?", "case_creation", []string{
+			models.ApprovalStatusSubmitted, models.ApprovalStatusUnderReview,
+			models.ApprovalStatusApproved, models.ApprovalStatusResubmitted,
+		}).
+		Order("created_at DESC").
+		Scan(&live).Error; err != nil {
+		return "", "", err
+	}
+	for i := range live {
+		if integrationMetadataString(integrationJSONMap(live[i].Metadata), "intake_id") == intakeID {
+			return live[i].ID, live[i].Status, nil
+		}
+	}
+	return "", "", nil
+}
+
 func (h *IntegrationHandler) SetAuthorizationService(authz *services.AuthorizationService) {
 	h.authz = authz
 }
@@ -165,6 +202,9 @@ func (h *IntegrationHandler) CreateApprovalWithConflict(c *gin.Context) {
 		return
 	}
 
+	// Test hook: between the durable guard (above) and the claim (below).
+	approvalClaimGate()
+
 	// Atomic duplicate-submission claim: the handler-level guard above is a
 	// plain SELECT, so concurrent first submissions can all pass it and each
 	// create an approval (race reproduced 4x200 on candidate 9cf53fa). The
@@ -175,6 +215,29 @@ func (h *IntegrationHandler) CreateApprovalWithConflict(c *gin.Context) {
 	intakeIDForClaim := integrationMetadataString(req.Metadata, "intake_id")
 	claimRes, ok := h.claimIntakeForApproval(c, intakeIDForClaim)
 	if !ok {
+		return
+	}
+
+	// Post-claim recheck: the durable guard ran before the claim, so a
+	// request delayed between validate and claim can resume after another
+	// request fully created and released an approval (reproduced as
+	// 200/200 with two live approvals). The claim serializes creators, so
+	// re-running the same live-approval lookup here closes that window. A
+	// residual draft from a failed submit is not a live status, so
+	// legitimate retries still pass.
+	priorID, priorStatus, recheckErr := h.findLiveIntakeApproval(intakeIDForClaim)
+	if recheckErr != nil {
+		h.releaseIntakeClaim(intakeIDForClaim, claimRes)
+		common.NewAPIError(c, http.StatusInternalServerError, "INTAKE_APPROVAL_GATE_ERROR", "接案审批防重检查失败，已阻止提交")
+		return
+	}
+	if priorID != "" {
+		h.releaseIntakeClaim(intakeIDForClaim, claimRes)
+		if priorStatus == models.ApprovalStatusApproved {
+			common.NewAPIError(c, http.StatusConflict, "INTAKE_ALREADY_CASE_CREATED", "该接案已批准成案，不能再次提交；请直接使用已有案件")
+		} else {
+			common.NewAPIError(c, http.StatusConflict, "INTAKE_APPROVAL_ALREADY_IN_PROGRESS", "该接案已有进行中的成案审批，不能重复提交；请在原审批单上继续处理")
+		}
 		return
 	}
 
