@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -26,6 +27,13 @@ type ApprovalService struct {
 	userRepo     repositories.UserRepository
 	stateMachine *ApprovalStateMachine
 	assigner     *ApprovalAssigner
+	// terminalBinding releases the intake bind row when a case-creation
+	// approval reaches a lifecycle end for its current submission
+	// (rejected/needs-revision/cancelled) and rebinds it on Resubmit.
+	// Without the release the bind row permanently locks the intake
+	// behind INTAKE_APPROVAL_ALREADY_IN_PROGRESS even though no live
+	// approval remains (probe-reproduced on 58a91ed).
+	terminalBinding *terminalBindingReleaser
 }
 
 // NewApprovalService 创建审批服务
@@ -34,10 +42,11 @@ func NewApprovalService(db *gorm.DB) *ApprovalService {
 	userRepo := repositories.NewUserRepository(db)
 
 	return &ApprovalService{
-		approvalRepo: approvalRepo,
-		userRepo:     userRepo,
-		stateMachine: NewApprovalStateMachine(),
-		assigner:     NewApprovalAssigner(db, approvalRepo, userRepo),
+		approvalRepo:    approvalRepo,
+		userRepo:        userRepo,
+		stateMachine:    NewApprovalStateMachine(),
+		assigner:        NewApprovalAssigner(db, approvalRepo, userRepo),
+		terminalBinding: newTerminalBindingReleaser(db),
 	}
 }
 
@@ -513,6 +522,14 @@ func (s *ApprovalService) ProcessApprovalDecision(userID string, approvalID stri
 		return nil, fmt.Errorf("更新审批状态失败: %v", err)
 	}
 
+	// Release the intake bind row only after the terminal state is
+	// durably recorded. Best-effort: a failed release leaves the bind
+	// in place (fail-closed) and the same 409 contract as before.
+	if req.Decision == models.ApprovalDecisionReject ||
+		req.Decision == models.ApprovalDecisionRequestChanges {
+		s.terminalBinding.release(context.Background(), approval.ID)
+	}
+
 	// 重新加载数据
 	updatedApproval, err := s.GetApproval(userID, approvalID)
 	if err != nil {
@@ -572,6 +589,13 @@ func (s *ApprovalService) ResubmitApproval(userID string, approvalID string, rev
 		return nil, fmt.Errorf("重新提交失败: %v", err)
 	}
 
+	// Rebind the intake slot: revival reuses the SAME approval, so its
+	// case-creation capability must be armed again. If a competing
+	// submission re-claimed the UNIQUE slot while this approval sat in a
+	// terminal state, this insert fails and the revived approval can
+	// never create a second case for that intake (fail-closed).
+	s.terminalBinding.rebindAfterResubmit(context.Background(), approval)
+
 	// 发送重新提交通知
 	_ = s.sendApprovalNotification(approval, "重新提交")
 
@@ -615,6 +639,14 @@ func (s *ApprovalService) CancelApproval(userID string, approvalID string) error
 	if err := s.approvalRepo.Update(approval); err != nil {
 		return fmt.Errorf("撤回审批失败: %v", err)
 	}
+
+	// Cancelled is a state-machine terminal state: the only way back to a
+	// live case-creation attempt is a NEW approval through the intake
+	// submission, which owns the UNIQUE bind slot itself. Release the old
+	// bind so that new submission is not blocked forever. Best-effort:
+	// a failed release leaves the bind in place (fail-closed 409) and
+	// never fails the cancellation itself.
+	s.terminalBinding.release(context.Background(), approval.ID)
 
 	return nil
 }

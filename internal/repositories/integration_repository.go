@@ -233,6 +233,21 @@ func (r *IntegrationRepository) DeleteCaseCreationTracking(ctx context.Context, 
 	return nil
 }
 
+// DeleteCaseCreationTrackingByApprovalID drops the intake bind row when an
+// approval reaches a lifecycle end (rejected/needs-revision/cancelled) so
+// the same intake can be resubmitted. Bind rows not created through the
+// intake path have NULL intake_id and are untouched; case-linked rows of
+// approved approvals are never deleted because their approvals cannot
+// reach these terminal states again (state machine).
+func (r *IntegrationRepository) DeleteCaseCreationTrackingByApprovalID(ctx context.Context, approvalID string) error {
+	if err := r.tx(ctx).
+		Where("approval_request_id = ? AND intake_id IS NOT NULL", approvalID).
+		Delete(&CaseCreationTracking{}).Error; err != nil {
+		return NewRepositoryError("delete case creation tracking by approval", "CaseCreationTracking", err)
+	}
+	return nil
+}
+
 // GetCaseCreationTrackingByApprovalID 根据审批ID获取案件创建跟踪
 func (r *IntegrationRepository) GetCaseCreationTrackingByApprovalID(ctx context.Context, approvalID string) ([]*CaseCreationTracking, error) {
 	var trackings []*CaseCreationTracking
