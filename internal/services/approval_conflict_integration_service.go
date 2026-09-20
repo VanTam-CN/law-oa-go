@@ -665,7 +665,16 @@ func casePartiesMatchSnapshot(tx *gorm.DB, caseID uint, parties []models.Conflic
 				break
 			}
 		}
-		k := partyKey{digest: digest, name: name, role: role}
+		// Digest-first identity: when a digest is present the canonical
+		// entity name may differ from the snapshot name (repository-side
+		// same-digest merging keeps its own canonical name), so the name
+		// must not participate in the key on either side. Digest-less
+		// parties still match on lowercased name.
+		keyName := name
+		if digest != "" {
+			keyName = ""
+		}
+		k := partyKey{digest: digest, name: keyName, role: role}
 		expected[k] = true
 		if digest != "" {
 			if digestRoles[digest] == nil {
@@ -701,7 +710,12 @@ func casePartiesMatchSnapshot(tx *gorm.DB, caseID uint, parties []models.Conflic
 		case models.PartyRoleInterestedParty, models.PartyRoleThirdParty:
 			snapshotRole = "RELATED_PARTY"
 		}
-		k := partyKey{digest: strings.TrimSpace(entity.IdentityNumberDigest), name: strings.ToLower(strings.TrimSpace(entity.Name)), role: snapshotRole}
+		entityDigest := strings.TrimSpace(entity.IdentityNumberDigest)
+		entityName := ""
+		if entityDigest == "" {
+			entityName = strings.ToLower(strings.TrimSpace(entity.Name))
+		}
+		k := partyKey{digest: entityDigest, name: entityName, role: snapshotRole}
 		if !expected[k] {
 			return false
 		}
@@ -1145,6 +1159,7 @@ func copyMetadata(source map[string]interface{}) map[string]interface{} {
 }
 
 func caseCreationRequestFromMap(caseData map[string]interface{}) (*CreateCaseRequest, error) {
+	coerceCaseNumericFields(caseData)
 	jsonData, err := json.Marshal(caseData)
 	if err != nil {
 		return nil, fmt.Errorf("序列化案件前置校验数据失败：%w", err)
@@ -1154,6 +1169,33 @@ func caseCreationRequestFromMap(caseData map[string]interface{}) (*CreateCaseReq
 		return nil, fmt.Errorf("解析案件前置校验数据失败：%w", err)
 	}
 	return &request, nil
+}
+
+// coerceCaseNumericFields normalizes the uint-typed CreateCaseRequest fields
+// that the intake workbench freezes into approval metadata as JSON strings
+// (client_id was "1"). Without coercion the preflight unmarshal fails with
+// "cannot unmarshal string into Go struct field CreateCaseRequest.client_id"
+// and the approve chain 500s; the no-config path already yields numbers via
+// metadataUint, so this restores the same contract for the config path.
+// Values are normalized in place on a per-request copy; the frozen approval
+// metadata is never rewritten.
+func coerceCaseNumericFields(caseData map[string]interface{}) {
+	for _, key := range []string{"client_id", "lawyer_id", "assigned_by", "assisting_lawyer_id"} {
+		value, ok := caseData[key]
+		if !ok {
+			continue
+		}
+		switch v := value.(type) {
+		case string:
+			if parsed, ok := parseUintString(v); ok {
+				caseData[key] = parsed
+			}
+		case float64:
+			if v > 0 && v == float64(uint(v)) {
+				caseData[key] = uint(v)
+			}
+		}
+	}
 }
 
 func shouldExposeCaseCreation(metadata map[string]interface{}, approval *models.ApprovalRequest) bool {
@@ -1276,6 +1318,44 @@ func (s *approvalConflictIntegrationService) buildCaseDataForApprovedApproval(ct
 			// intake. Link that evidence so formal case creation cannot bypass
 			// the disposition gate; ownership stays as frozen in the config.
 			caseData["conflict_check_id"] = record.CheckID
+		}
+		// Intake-workbench configs freeze client/title but intentionally omit
+		// lawyer_id: the submitting lawyer is recorded on the approval row.
+		// Without this fallback the approve preflight always failed with
+		// "无法从审批或冲突检测记录中确定主办律师ID" (reproduced 500 on
+		// approval 18d6e90c26b417d8), blocking the whole chain. Ownership
+		// follows the applicant, never the deciding approver.
+		if _, ok := caseData["lawyer_id"]; !ok {
+			if lawyerID, ok := parseUintString(approval.ApplicantID); ok {
+				caseData["lawyer_id"] = lawyerID
+				if _, hasAssignedBy := caseData["assigned_by"]; !hasAssignedBy {
+					caseData["assigned_by"] = lawyerID
+				}
+			}
+		}
+		// The workbench UI can freeze a thin config (title/client only). The
+		// intake row behind metadata.intake_id is the frozen facts source for
+		// this submission, so a missing case_type/priority is filled from that
+		// row instead of failing the approve preflight with CASE_DATA_INVALID
+		// (reproduced on approval 18d6e90c26b417d8). Nothing is invented:
+		// an intake without those facts still fails validation downstream.
+		if missingText(caseData["case_type"]) || missingText(caseData["priority"]) {
+			var intake struct {
+				CaseType string
+				Priority string
+			}
+			if intakeID := metadataString(metadata, "intake_id"); intakeID != "" {
+				_ = s.db.WithContext(ctx).Table("case_intakes").
+					Select("case_type, priority").
+					Where("id = ?", intakeID).
+					Take(&intake).Error
+			}
+			if missingText(caseData["case_type"]) && intake.CaseType != "" {
+				caseData["case_type"] = intake.CaseType
+			}
+			if missingText(caseData["priority"]) && intake.Priority != "" {
+				caseData["priority"] = intake.Priority
+			}
 		}
 		return validateCaseCreationOwnership(caseData)
 	}
@@ -1432,6 +1512,16 @@ func metadataString(metadata map[string]interface{}, key string) string {
 		return strings.TrimSpace(value)
 	}
 	return ""
+}
+
+// missingText reports whether a case-data value is absent or blank after the
+// JSON round-trip (nil, "" or the literal "<nil>" produced by fmt.Sprint).
+func missingText(value interface{}) bool {
+	text, ok := value.(string)
+	if !ok {
+		return value == nil
+	}
+	return strings.TrimSpace(text) == ""
 }
 
 func metadataUint(metadata map[string]interface{}, key string) (uint, bool) {
