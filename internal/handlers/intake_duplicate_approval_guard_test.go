@@ -58,7 +58,8 @@ func newDuplicateApprovalGuardDB(t *testing.T) *gorm.DB {
 		status TEXT,
 		metadata TEXT,
 		created_at DATETIME,
-		updated_at DATETIME)`).Error; err != nil {
+		updated_at DATETIME,
+		approval_claim_token TEXT)`).Error; err != nil {
 		t.Fatalf("create case_intakes: %v", err)
 	}
 	const checkResult = `{"coverage_status":"COMPLETE","parties":[]}`

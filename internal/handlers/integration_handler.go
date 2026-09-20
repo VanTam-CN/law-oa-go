@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -67,6 +69,23 @@ var newIntegrationHandlerForTest = func(db *gorm.DB) *IntegrationHandler {
 // unchanged; only the test replaces it to hold that request until the
 // other one has fully claimed, created, and released its approval.
 var approvalClaimGate = func() {}
+
+// approvalClaimClock lets the true-timeout takeover test advance the claim
+// staleness clock without real sleeping: the production clock is time.Now,
+// and the probe replaces it so the 5-minute stale window elapses in test
+// time while the intake rows are untouched by backdating.
+var approvalClaimClock = func() time.Time { return time.Now() }
+
+// approvalClaimTokenSource yields the ownership token written with each
+// claim. Production randomness comes from crypto/rand; tests pin it to
+// tell the two claimers apart deterministically.
+var approvalClaimTokenSource = func() string {
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		return fmt.Sprintf("claim-%d", time.Now().UnixNano())
+	}
+	return hex.EncodeToString(b)
+}
 
 // approvalCreateGate lets the stale-claim probe pause the first request
 // after its claim and post-claim recheck, but before approval creation.
@@ -218,8 +237,8 @@ func (h *IntegrationHandler) CreateApprovalWithConflict(c *gin.Context) {
 	// losers observe 0 affected rows and get the same 409 contract as the
 	// sequential guard. The row is restored before the success response.
 	intakeIDForClaim := integrationMetadataString(req.Metadata, "intake_id")
-	claimRes, ok := h.claimIntakeForApproval(c, intakeIDForClaim)
-	if !ok {
+	claimRes, claimOK, claimToken := h.claimIntakeForApproval(c, intakeIDForClaim)
+	if !claimOK {
 		return
 	}
 
@@ -232,12 +251,12 @@ func (h *IntegrationHandler) CreateApprovalWithConflict(c *gin.Context) {
 	// legitimate retries still pass.
 	priorID, priorStatus, recheckErr := h.findLiveIntakeApproval(intakeIDForClaim)
 	if recheckErr != nil {
-		h.releaseIntakeClaim(intakeIDForClaim, claimRes)
+		h.releaseIntakeClaim(intakeIDForClaim, claimRes, claimToken)
 		common.NewAPIError(c, http.StatusInternalServerError, "INTAKE_APPROVAL_GATE_ERROR", "接案审批防重检查失败，已阻止提交")
 		return
 	}
 	if priorID != "" {
-		h.releaseIntakeClaim(intakeIDForClaim, claimRes)
+		h.releaseIntakeClaim(intakeIDForClaim, claimRes, claimToken)
 		if priorStatus == models.ApprovalStatusApproved {
 			common.NewAPIError(c, http.StatusConflict, "INTAKE_ALREADY_CASE_CREATED", "该接案已批准成案，不能再次提交；请直接使用已有案件")
 		} else {
@@ -246,6 +265,10 @@ func (h *IntegrationHandler) CreateApprovalWithConflict(c *gin.Context) {
 		return
 	}
 	approvalCreateGate()
+	if !h.reacquireIntakeClaim(c, intakeIDForClaim, claimToken) {
+		h.releaseIntakeClaim(intakeIDForClaim, claimRes, claimToken)
+		return
+	}
 
 	userNameStr := "未知用户"
 	if userName, ok := c.Get("username"); ok {
@@ -257,7 +280,7 @@ func (h *IntegrationHandler) CreateApprovalWithConflict(c *gin.Context) {
 	// 调用集成服务
 	result, err := h.integrationService.CreateIntegratedApproval(c.Request.Context(), userIDStr, userNameStr, &req)
 	if err != nil {
-		h.releaseIntakeClaim(intakeIDForClaim, claimRes)
+		h.releaseIntakeClaim(intakeIDForClaim, claimRes, claimToken)
 		log.Printf("创建带冲突检测的审批申请失败: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "internal_error",
@@ -266,7 +289,7 @@ func (h *IntegrationHandler) CreateApprovalWithConflict(c *gin.Context) {
 		return
 	}
 
-	h.releaseIntakeClaim(intakeIDForClaim, claimRes)
+	h.releaseIntakeClaim(intakeIDForClaim, claimRes, claimToken)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data":    result,
@@ -279,7 +302,7 @@ func (h *IntegrationHandler) CreateApprovalWithConflict(c *gin.Context) {
 // create the approval; the loser gets the same 409 contract as the sequential
 // guard (the guard's plain SELECT alone cannot close that window, reproduced
 // as 4x200 / 4 approvals on candidate 9cf53fa).
-func (h *IntegrationHandler) claimIntakeForApproval(c *gin.Context, intakeID string) (bool, bool) {
+func (h *IntegrationHandler) claimIntakeForApproval(c *gin.Context, intakeID string) (bool, bool, string) {
 	// A crashed process could strand a claim (release never runs), so a
 	// stale claim older than the window any live request needs is
 	// reclaimable. The cutoff is computed in Go and passed as a value, so
@@ -293,39 +316,74 @@ func (h *IntegrationHandler) claimIntakeForApproval(c *gin.Context, intakeID str
 	// leaves a pre-claim timestamp that a concurrent request immediately
 	// classifies as a stale orphan claim and steals while the first
 	// request is still creating its approval.
-	staleBefore := time.Now().Add(-5 * time.Minute)
+	now := approvalClaimClock()
+	staleBefore := now.Add(-5 * time.Minute)
+	claimToken := approvalClaimTokenSource()
 	claim := h.db.Table("case_intakes").
 		Where("id = ? AND (status = ? OR (status = ? AND updated_at < ?))",
 			intakeID, "conflict_ready", "approval_submitting", staleBefore).
 		Updates(map[string]interface{}{
-			"status":     "approval_submitting",
-			"updated_at": time.Now(),
+			"status":               "approval_submitting",
+			"updated_at":           now,
+			"approval_claim_token": claimToken,
 		})
 	if claim.Error != nil {
 		common.NewAPIError(c, http.StatusInternalServerError, "INTAKE_APPROVAL_GATE_ERROR", "接案审批防重锁定失败，已阻止提交")
-		return false, false
+		return false, false, ""
 	}
 	if claim.RowsAffected == 0 {
 		common.NewAPIError(c, http.StatusConflict, "INTAKE_APPROVAL_ALREADY_IN_PROGRESS", "该接案已有进行中的成案审批，不能重复提交；请在原审批单上继续处理")
-		return false, false
+		return false, false, ""
 	}
-	return true, true
+	return true, true, claimToken
+}
+
+// reacquireIntakeClaim re-checks ownership immediately before the approval
+// insert: if this request's claim was stolen through the stale-takeover
+// branch (its token no longer matches), it must not layer a second approval
+// on top of the new owner's claim. The conditional UPDATE doubles as the
+// refresh of updated_at so the stolen-check and the timestamp stay in sync.
+func (h *IntegrationHandler) reacquireIntakeClaim(c *gin.Context, intakeID, claimToken string) bool {
+	if claimToken == "" {
+		return true
+	}
+	reacquire := h.db.Table("case_intakes").
+		Where("id = ? AND status = ? AND approval_claim_token = ?",
+			intakeID, "approval_submitting", claimToken).
+		Updates(map[string]interface{}{"updated_at": approvalClaimClock()})
+	if reacquire.Error != nil {
+		common.NewAPIError(c, http.StatusInternalServerError, "INTAKE_APPROVAL_GATE_ERROR", "接案审批防重锁定校验失败，已阻止提交")
+		return false
+	}
+	if reacquire.RowsAffected == 0 {
+		common.NewAPIError(c, http.StatusConflict, "INTAKE_APPROVAL_ALREADY_IN_PROGRESS", "该接案已有进行中的成案审批，不能重复提交；请在原审批单上继续处理")
+		return false
+	}
+	return true
 }
 
 // releaseIntakeClaim restores the intake to conflict_ready after the approval
 // creation attempt. Success and failure both restore: the approval row itself
 // is the durable duplicate guard, the status flip only serializes creation.
-func (h *IntegrationHandler) releaseIntakeClaim(intakeID string, claimed bool) {
+func (h *IntegrationHandler) releaseIntakeClaim(intakeID string, claimed bool, claimToken string) {
 	if !claimed {
 		return
 	}
 	// Mirror the claim: refresh updated_at on release so a later stale
 	// test measures from the last state transition, not from before it.
+	// The token predicate makes the release owner-scoped: a request whose
+	// claim was stolen through the stale-takeover branch can no longer
+	// clobber the new owner's claim on its way out.
+	releaseToken := ""
+	if claimToken != "" {
+		releaseToken = claimToken
+	}
 	if err := h.db.Table("case_intakes").
-		Where("id = ? AND status = ?", intakeID, "approval_submitting").
+		Where("id = ? AND status = ? AND approval_claim_token = ?", intakeID, "approval_submitting", releaseToken).
 		Updates(map[string]interface{}{
-			"status":     "conflict_ready",
-			"updated_at": time.Now(),
+			"status":               "conflict_ready",
+			"updated_at":           approvalClaimClock(),
+			"approval_claim_token": nil,
 		}).Error; err != nil {
 		log.Printf("恢复接案状态失败 intake=%s err=%v", intakeID, err)
 	}

@@ -19,7 +19,10 @@ import (
 // it; the recheck of B sees no live approval yet (A has not created), so
 // B creates a second approval for the same intake. Post-fix the claim
 // refreshes updated_at, so the claim of B finds 0 eligible rows and B
-// gets 409. Channel close order (never re-closed) keeps cleanup safe.
+// gets 409. The injected approvalClaimClock (no backdating, no real
+// sleep) puts this on the REAL timeout takeover path: the stale window
+// elapses in test time while A holds a fresh claim. Channel close order
+// (never re-closed) keeps cleanup safe.
 func TestStaleClaimStealWhileCreatorInProgress(t *testing.T) {
 	db := newDuplicateApprovalGuardDB(t)
 	r := newDuplicateApprovalGuardRouter(db)
@@ -31,9 +34,9 @@ func TestStaleClaimStealWhileCreatorInProgress(t *testing.T) {
 	}
 	body := `{"type":"case_creation","title":"陈旧claim抢占样本","content":"陈旧claim抢占样本","applicant_name":"qa_lawyer_a","department_name":"公司业务部","workflow_type":"CASE_APPROVAL","metadata":{"intake_id":"intake-dup","conflict_check_id":"CHK-DUP-1"}}`
 
-	bParked := make(chan struct{})   // B parked between validate and claim
-	bMayClaim := make(chan struct{}) // closed once: releases B after A parked
-	aParked := make(chan struct{})   // A parked after recheck, before create
+	bParked := make(chan struct{})    // B parked between validate and claim
+	bMayClaim := make(chan struct{})  // closed once: releases B after A parked
+	aParked := make(chan struct{})    // A parked after recheck, before create
 	aMayCreate := make(chan struct{}) // closed once: lets parked creators run
 	var claimArrivals int32
 	var createArrivals int32
@@ -47,6 +50,13 @@ func TestStaleClaimStealWhileCreatorInProgress(t *testing.T) {
 		}
 		// A (second arrival) passes through and claims immediately.
 	}
+	// Advance the claim clock far past the 5-minute stale window between
+	// A parking and B resuming, so B goes through the REAL timeout
+	// takeover path (the stale branch of the claim predicate). The intake
+	// updated_at is not backdated here: the window elapses in test time
+	// via the injected clock.
+	fakeNow := time.Now()
+	approvalClaimClock = func() time.Time { return fakeNow.Add(10 * time.Minute) }
 	approvalCreateGate = func() {
 		if atomic.AddInt32(&createArrivals, 1) == 1 {
 			// First creator (A) parks after its claim+recheck.
@@ -68,6 +78,7 @@ func TestStaleClaimStealWhileCreatorInProgress(t *testing.T) {
 		}
 		approvalClaimGate = origClaimGate
 		approvalCreateGate = origCreateGate
+		approvalClaimClock = func() time.Time { return time.Now() }
 	}
 	t.Cleanup(releaseAll)
 
