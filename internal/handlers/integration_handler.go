@@ -68,6 +68,11 @@ var newIntegrationHandlerForTest = func(db *gorm.DB) *IntegrationHandler {
 // other one has fully claimed, created, and released its approval.
 var approvalClaimGate = func() {}
 
+// approvalCreateGate lets the stale-claim probe pause the first request
+// after its claim and post-claim recheck, but before approval creation.
+// Production installs a no-op gate; only tests replace it.
+var approvalCreateGate = func() {}
+
 // findLiveIntakeApproval returns the live (submitted, under_review,
 // approved, resubmitted) case-creation approval bound to intakeID via its
 // metadata, or empty strings when none exists. The intake linkage lives in
@@ -240,6 +245,7 @@ func (h *IntegrationHandler) CreateApprovalWithConflict(c *gin.Context) {
 		}
 		return
 	}
+	approvalCreateGate()
 
 	userNameStr := "未知用户"
 	if userName, ok := c.Get("username"); ok {
@@ -278,11 +284,23 @@ func (h *IntegrationHandler) claimIntakeForApproval(c *gin.Context, intakeID str
 	// stale claim older than the window any live request needs is
 	// reclaimable. The cutoff is computed in Go and passed as a value, so
 	// the predicate stays portable across PostgreSQL and SQLite.
+	//
+	// The stale test only works if every claim refreshes updated_at:
+	// Table().Update() carries no model, so GORM does NOT touch the
+	// timestamp automatically (probe-verified). Writing updated_at
+	// explicitly keeps the invariant "any status write refreshes
+	// updated_at"; otherwise a claim on a long-conflict_ready intake
+	// leaves a pre-claim timestamp that a concurrent request immediately
+	// classifies as a stale orphan claim and steals while the first
+	// request is still creating its approval.
 	staleBefore := time.Now().Add(-5 * time.Minute)
 	claim := h.db.Table("case_intakes").
 		Where("id = ? AND (status = ? OR (status = ? AND updated_at < ?))",
 			intakeID, "conflict_ready", "approval_submitting", staleBefore).
-		Update("status", "approval_submitting")
+		Updates(map[string]interface{}{
+			"status":     "approval_submitting",
+			"updated_at": time.Now(),
+		})
 	if claim.Error != nil {
 		common.NewAPIError(c, http.StatusInternalServerError, "INTAKE_APPROVAL_GATE_ERROR", "接案审批防重锁定失败，已阻止提交")
 		return false, false
@@ -301,9 +319,14 @@ func (h *IntegrationHandler) releaseIntakeClaim(intakeID string, claimed bool) {
 	if !claimed {
 		return
 	}
+	// Mirror the claim: refresh updated_at on release so a later stale
+	// test measures from the last state transition, not from before it.
 	if err := h.db.Table("case_intakes").
 		Where("id = ? AND status = ?", intakeID, "approval_submitting").
-		Update("status", "conflict_ready").Error; err != nil {
+		Updates(map[string]interface{}{
+			"status":     "conflict_ready",
+			"updated_at": time.Now(),
+		}).Error; err != nil {
 		log.Printf("恢复接案状态失败 intake=%s err=%v", intakeID, err)
 	}
 }
