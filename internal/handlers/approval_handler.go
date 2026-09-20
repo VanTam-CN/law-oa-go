@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
@@ -221,11 +222,12 @@ func (h *ApprovalHandler) GetApproval(c *gin.Context) {
 
 	approval, err := h.approvalService.GetApprovalForAuthorization(userIDStr, id)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound || strings.Contains(err.Error(), "record not found") {
+		switch {
+		case errors.Is(err, services.ErrApprovalRecordNotFound), err == gorm.ErrRecordNotFound, strings.Contains(err.Error(), "record not found"):
 			common.Error(c, http.StatusNotFound, "审批记录不存在")
-		} else if strings.Contains(err.Error(), "无权") {
+		case strings.Contains(err.Error(), "无权"):
 			common.Error(c, http.StatusForbidden, "无权查看此审批记录")
-		} else {
+		default:
 			log.Printf("获取审批详情失败: %v", err)
 			common.Error(c, http.StatusInternalServerError, "获取审批详情失败")
 		}
@@ -250,11 +252,12 @@ func (h *ApprovalHandler) GetApproval(c *gin.Context) {
 func (h *ApprovalHandler) authorizeApprovalMutation(c *gin.Context, userID, approvalID string) bool {
 	approval, err := h.approvalService.GetApprovalForAuthorization(userID, approvalID)
 	if err != nil {
-		if strings.Contains(err.Error(), "无权") {
-			common.Error(c, http.StatusForbidden, "无权操作此审批记录")
-		} else if err == gorm.ErrRecordNotFound || strings.Contains(err.Error(), "record not found") {
+		switch {
+		case errors.Is(err, services.ErrApprovalRecordNotFound):
 			common.Error(c, http.StatusNotFound, "审批记录不存在")
-		} else {
+		case strings.Contains(err.Error(), "无权"):
+			common.Error(c, http.StatusForbidden, "无权操作此审批记录")
+		default:
 			log.Printf("获取审批上下文失败: %v", err)
 			common.Error(c, http.StatusInternalServerError, "获取审批记录失败")
 		}
@@ -380,7 +383,7 @@ func (h *ApprovalHandler) SubmitApproval(c *gin.Context) {
 	if err != nil {
 		log.Printf("提交审批失败: %v", err)
 		switch {
-		case err.Error() == "审批记录不存在":
+		case errors.Is(err, services.ErrApprovalRecordNotFound):
 			common.Error(c, http.StatusNotFound, "审批记录不存在")
 		case err.Error() == "只有申请人才能提交审批":
 			common.Error(c, http.StatusForbidden, "只有申请人才能提交审批")
@@ -436,7 +439,14 @@ func (h *ApprovalHandler) ProcessApprovalDecision(c *gin.Context) {
 	if h.integratedDecision != nil {
 		existing, lookupErr := h.approvalService.GetApprovalForAuthorization(userIDStr, id)
 		if lookupErr != nil {
-			common.Error(c, http.StatusInternalServerError, "获取审批记录失败")
+			switch {
+			case errors.Is(lookupErr, services.ErrApprovalRecordNotFound):
+				common.Error(c, http.StatusNotFound, "审批记录不存在")
+			case strings.Contains(lookupErr.Error(), "无权"):
+				common.Error(c, http.StatusForbidden, "无权审批此申请")
+			default:
+				common.Error(c, http.StatusInternalServerError, "获取审批记录失败")
+			}
 			return
 		}
 		if !h.authorizeApprovalConflictContext(c, existing) {
@@ -459,7 +469,14 @@ func (h *ApprovalHandler) ProcessApprovalDecision(c *gin.Context) {
 	} else {
 		existing, lookupErr := h.approvalService.GetApprovalForAuthorization(userIDStr, id)
 		if lookupErr != nil {
-			common.Error(c, http.StatusInternalServerError, "获取审批记录失败")
+			switch {
+			case errors.Is(lookupErr, services.ErrApprovalRecordNotFound):
+				common.Error(c, http.StatusNotFound, "审批记录不存在")
+			case strings.Contains(lookupErr.Error(), "无权"):
+				common.Error(c, http.StatusForbidden, "无权审批此申请")
+			default:
+				common.Error(c, http.StatusInternalServerError, "获取审批记录失败")
+			}
 			return
 		}
 		if !h.authorizeApprovalConflictContext(c, existing) {
@@ -553,7 +570,7 @@ func (h *ApprovalHandler) ResubmitApproval(c *gin.Context) {
 	if err != nil {
 		log.Printf("重新提交审批失败: %v", err)
 		switch {
-		case err.Error() == "审批记录不存在":
+		case errors.Is(err, services.ErrApprovalRecordNotFound):
 			common.Error(c, http.StatusNotFound, "审批记录不存在")
 		case err.Error() == "只有申请人才能重新提交":
 			common.Error(c, http.StatusForbidden, "只有申请人才能重新提交")

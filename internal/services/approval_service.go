@@ -15,6 +15,11 @@ import (
 // ErrApprovalForbidden identifies an object-level access denial.
 var ErrApprovalForbidden = errors.New("无权查看此审批记录")
 
+// ErrApprovalRecordNotFound marks a missing approval subject. It wraps
+// gorm.ErrRecordNotFound so both errors.Is checks and the legacy
+// strings.Contains handlers map it to the canonical 404 contract.
+var ErrApprovalRecordNotFound = fmt.Errorf("审批记录不存在: %w", gorm.ErrRecordNotFound)
+
 // ApprovalService 审批服务
 type ApprovalService struct {
 	approvalRepo *repositories.ApprovalRepository
@@ -165,6 +170,9 @@ func (s *ApprovalService) GetApprovalForAuthorization(userID string, id string) 
 	if err != nil {
 		return nil, fmt.Errorf("获取审批详情失败: %v", err)
 	}
+	if approval == nil {
+		return nil, ErrApprovalRecordNotFound
+	}
 
 	// The approval detail is an object-scoped resource. Technical admin is not
 	// a business approval role, so it must not bypass the applicant/approver
@@ -205,6 +213,9 @@ func (s *ApprovalService) GetApprovalByID(id string) (*models.ApprovalRequest, e
 	approval, err := s.approvalRepo.FindByID(id)
 	if err != nil {
 		return nil, fmt.Errorf("获取审批详情失败: %v", err)
+	}
+	if approval == nil {
+		return nil, ErrApprovalRecordNotFound
 	}
 	return approval, nil
 }
@@ -318,6 +329,9 @@ func (s *ApprovalService) SubmitApproval(userID string, approvalID string) (*mod
 	if err != nil {
 		return nil, fmt.Errorf("查找审批记录失败: %v", err)
 	}
+	if approval == nil {
+		return nil, ErrApprovalRecordNotFound
+	}
 
 	// 确保是申请人本人
 	if approval != nil && approval.ApplicantID != userID {
@@ -358,6 +372,9 @@ func (s *ApprovalService) ProcessApprovalDecision(userID string, approvalID stri
 	approval, err := s.approvalRepo.FindByID(approvalID)
 	if err != nil {
 		return nil, fmt.Errorf("查找审批记录失败: %v", err)
+	}
+	if approval == nil {
+		return nil, ErrApprovalRecordNotFound
 	}
 
 	// 确保是当前审批人
@@ -510,6 +527,9 @@ func (s *ApprovalService) ResubmitApproval(userID string, approvalID string, rev
 	approval, err := s.approvalRepo.FindByID(approvalID)
 	if err != nil {
 		return nil, fmt.Errorf("查找审批记录失败: %v", err)
+	}
+	if approval == nil {
+		return nil, ErrApprovalRecordNotFound
 	}
 
 	// 确保是申请人本人
