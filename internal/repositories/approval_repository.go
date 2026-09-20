@@ -21,6 +21,14 @@ func (r *ApprovalRepository) DB() *gorm.DB {
 	return r.db
 }
 
+// Transaction runs fn inside one database transaction on the approval
+// repository's connection. The service layer cannot reach the unexported
+// db field directly, so status persistence and bind-row rebinding can be
+// made atomic through this accessor.
+func (r *ApprovalRepository) Transaction(fn func(tx *gorm.DB) error) error {
+	return r.db.Transaction(fn)
+}
+
 // FindByID 根据ID查找审批记录
 func (r *ApprovalRepository) FindByID(id string) (*models.ApprovalRequest, error) {
 	var approval models.ApprovalRequest

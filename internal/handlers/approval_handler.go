@@ -569,6 +569,11 @@ func (h *ApprovalHandler) ResubmitApproval(c *gin.Context) {
 	approval, err := h.approvalService.ResubmitApproval(userIDStr, id, req.RevisionNote)
 	if err != nil {
 		log.Printf("重新提交审批失败: %v", err)
+		var gateErr *services.ApprovalConflictGateError
+		if errors.As(err, &gateErr) {
+			common.NewAPIError(c, http.StatusConflict, gateErr.Code, gateErr.Message)
+			return
+		}
 		switch {
 		case errors.Is(err, services.ErrApprovalRecordNotFound):
 			common.Error(c, http.StatusNotFound, "审批记录不存在")

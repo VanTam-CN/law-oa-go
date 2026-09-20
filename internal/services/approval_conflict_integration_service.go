@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"strconv"
@@ -482,6 +483,31 @@ func (s *approvalConflictIntegrationService) createCaseTxWorkflow(ctx context.Co
 	}
 	if approval == nil || approval.Status != models.ApprovalStatusApproved {
 		return nil, NewSubjectWorkflowError("CASE_CREATION_NOT_APPROVED", "审批未处于通过状态，已阻止成案")
+	}
+
+	// Intake-slot guard (audit-25f1d4b P1, belt-and-braces layer): the
+	// resubmit side now fails atomically, but this workflow must also refuse
+	// to arm a case when the approval's intake slot belongs to a competing
+	// approval (e.g. an approval created before this guard or through a
+	// path that skipped the rebind). Row-missing approvals (legacy rows that
+	// predate the bind invariant, incl. migration 000081) still pass to keep
+	// the historical no-op contract; the completed replay path above already
+	// short-circuits genuine duplicates.
+	if intakeID := metadataString(parseMetadata(approval.Metadata), "intake_id"); intakeID != "" {
+		var bindRow repositories.CaseCreationTracking
+		err = tx.Where("intake_id = ?", intakeID).Take(&bindRow).Error
+		switch {
+		case err == nil:
+			if bindRow.ApprovalRequestID != approval.ID {
+				return nil, NewSubjectWorkflowError("INTAKE_APPROVAL_ALREADY_IN_PROGRESS", "该接案已有进行中的成案审批，不能重复成案；请在持有该接案槽位的审批单上继续处理")
+			}
+		case errors.Is(err, gorm.ErrRecordNotFound):
+			// Legacy approval without a bind row: keep the historical
+			// behavior instead of inventing a regression for pre-invariant
+			// data (000081 does not backfill history).
+		default:
+			return nil, fmt.Errorf("读取接案绑定失败：%w", err)
+		}
 	}
 
 	createdCase, err := s.caseService.CreateCaseOnTx(txCtx, createCaseReq)

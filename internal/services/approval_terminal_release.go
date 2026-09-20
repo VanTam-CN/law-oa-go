@@ -12,6 +12,26 @@ import (
 	"law-oa-go/internal/repositories"
 )
 
+// uniqueConstraintError wraps a driver-reported UNIQUE/DUPLICATE rejection.
+// SQLite and PostgreSQL word the violation differently, and the GORM error
+// is a chain of wrapped layers, so the match is a case-insensitive scan of
+// the full message across both dialects.
+type uniqueConstraintError struct{ err error }
+
+func (e *uniqueConstraintError) Error() string { return e.err.Error() }
+func (e *uniqueConstraintError) Unwrap() error { return e.err }
+
+func asUniqueConstraintError(err error) *uniqueConstraintError {
+	if err == nil {
+		return nil
+	}
+	msg := strings.ToLower(err.Error())
+	if strings.Contains(msg, "unique constraint") || strings.Contains(msg, "duplicate key value") {
+		return &uniqueConstraintError{err: err}
+	}
+	return nil
+}
+
 // terminalBindingReleaser keeps the intake→approval bind row in sync with
 // the approval lifecycle. The bind row (approval_case_creation_tracking)
 // plus the UNIQUE index on intake_id is the durable duplicate guard: while
@@ -101,4 +121,51 @@ func (r *terminalBindingReleaser) rebindAfterResubmit(ctx context.Context, appro
 	if err := r.integrationRepo.CreateCaseCreationTracking(ctx, tracking); err != nil {
 		log.Printf("重新提交后重绑接案失败（UNIQUE守卫拒绝，fail-closed，审批ID=%s，接案=%s）：%v", approval.ID, bound, err)
 	}
+}
+
+// rebindAfterResubmitInTx is the transactional twin of rebindAfterResubmit:
+// the caller persists the approval status and rebinds the intake slot inside
+// ONE transaction, so a UNIQUE rejection rolls the revival back instead of
+// leaving a resubmitted approval whose case-creation capability was never
+// armed (audit-25f1d4b P1: that gap let two cases be created for one
+// intake). The repository's context-bound tx() cannot see this foreign
+// transaction handle, so create through the handle directly.
+func (r *terminalBindingReleaser) rebindAfterResubmitInTx(tx *gorm.DB, approval *models.ApprovalRequest) error {
+	if tx == nil {
+		return fmt.Errorf("接案重绑缺少事务绑定，已拒绝执行")
+	}
+	if r == nil || approval == nil {
+		return nil
+	}
+	metadata := make(map[string]interface{})
+	if strings.TrimSpace(approval.Metadata) != "" {
+		if err := json.Unmarshal([]byte(approval.Metadata), &metadata); err != nil {
+			return fmt.Errorf("重新提交时解析审批元数据失败：%w", err)
+		}
+	}
+	bound := metadataString(metadata, "intake_id")
+	if bound == "" {
+		return nil
+	}
+	tracking := &repositories.CaseCreationTracking{
+		ID:                  fmt.Sprintf("INTAKE_BIND_%s", approval.ID),
+		ApprovalRequestID:   approval.ID,
+		IntakeID:            &bound,
+		CreationStatus:      "pending",
+		ErrorDetails:        "{}",
+		DataMapping:         "{}",
+		MappedFields:        "{}",
+		UnmappedFields:      "{}",
+		AppliedConditions:   "{}",
+		ImposedRequirements: "{}",
+		WorkflowActions:     "[]",
+		CreatedBy:           approval.UpdatedBy,
+	}
+	if err := tx.Create(tracking).Error; err != nil {
+		if uniq := asUniqueConstraintError(err); uniq != nil {
+			return uniq
+		}
+		return fmt.Errorf("接案重绑被数据库拒绝：%w", err)
+	}
+	return nil
 }

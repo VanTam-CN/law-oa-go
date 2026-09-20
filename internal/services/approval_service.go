@@ -575,26 +575,44 @@ func (s *ApprovalService) ResubmitApproval(userID string, approvalID string, rev
 	metadata["resubmitted_at"] = time.Now().Format(time.RFC3339)
 	metadataBytes, _ := json.Marshal(metadata)
 	approval.Metadata = string(metadataBytes)
-
-	// 重新分配审批人
-	if err := s.assigner.AssignApprover(approval); err != nil {
-		return nil, fmt.Errorf("重新分配审批人失败: %v", err)
-	}
-
-	approval.Status = models.ApprovalStatusResubmitted
 	approval.UpdatedBy = userID
 
-	// 执行更新
-	if err := s.approvalRepo.Update(approval); err != nil {
-		return nil, fmt.Errorf("重新提交失败: %v", err)
+	// Revival is atomic (audit-25f1d4b P1): the resubmitted status and the
+	// intake rebind commit together or not at all. The previous best-effort
+	// rebind left a revived approval whose case-creation capability was
+	// never armed when a competing submission owned the UNIQUE slot — the
+	// revived approval then created a second case for the same intake.
+	// A UNIQUE rejection rolls everything back and surfaces the standard
+	// 409 contract: the slot owner's approval is the one to continue on.
+	rebind := func(tx *gorm.DB) error {
+		if err := s.terminalBinding.rebindAfterResubmitInTx(tx, approval); err != nil {
+			if asUniqueConstraintError(err) != nil {
+				return &ApprovalConflictGateError{
+					Code:    "INTAKE_APPROVAL_ALREADY_IN_PROGRESS",
+					Message: "该接案已有进行中的成案审批，不能重新提交；请在原审批单上继续处理",
+				}
+			}
+			return err
+		}
+		// Re-assign inside the transaction: the metadata/status writes above
+		// only exist on this tx handle until commit, and the approver
+		// assignment only touches approval fields in memory.
+		if err := s.assigner.AssignApprover(approval); err != nil {
+			return fmt.Errorf("重新分配审批人失败: %w", err)
+		}
+		approval.Status = models.ApprovalStatusResubmitted
+		if err := tx.Save(approval).Error; err != nil {
+			return fmt.Errorf("重新提交失败: %w", err)
+		}
+		return nil
 	}
-
-	// Rebind the intake slot: revival reuses the SAME approval, so its
-	// case-creation capability must be armed again. If a competing
-	// submission re-claimed the UNIQUE slot while this approval sat in a
-	// terminal state, this insert fails and the revived approval can
-	// never create a second case for that intake (fail-closed).
-	s.terminalBinding.rebindAfterResubmit(context.Background(), approval)
+	if err := s.approvalRepo.Transaction(rebind); err != nil {
+		var gateErr *ApprovalConflictGateError
+		if errors.As(err, &gateErr) {
+			return nil, gateErr
+		}
+		return nil, err
+	}
 
 	// 发送重新提交通知
 	_ = s.sendApprovalNotification(approval, "重新提交")
