@@ -396,3 +396,8 @@ frontend/test-results/
 # `/.claude/reports/` 仅用于助手临时报告和重复输出；正式结论与权威证据保留在 docs/reports/。
 /.claude/reports/
 # 这里不配置 `/frontend/reports/` 忽略规则；如果需要保留前端证据，请显式跟踪对应文件。
+
+# AI assistant working dirs and generated reports (never upload)
+/.claude/
+/.spec-workflow/
+/.cleanup_workspace/
