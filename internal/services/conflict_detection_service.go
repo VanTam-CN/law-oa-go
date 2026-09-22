@@ -18,6 +18,10 @@ import (
 type ConflictDetectionService interface {
 	// PerformConflictCheck 执行冲突检测
 	PerformConflictCheck(ctx context.Context, request *models.ConflictCheckRequest) (*models.ConflictCheckResponse, error)
+	// PrepareConflictCheck 只计算不落库，由调用方负责原子提交
+	PrepareConflictCheck(ctx context.Context, request *models.ConflictCheckRequest) (*models.ConflictCheckResponse, error)
+	// BuildConflictCheckRecord 只构建审计记录，不写库
+	BuildConflictCheckRecord(ctx context.Context, request *models.ConflictCheckRequest, response *models.ConflictCheckResponse) *models.ConflictCheckRecord
 	// GetCheckHistory 获取检测历史
 	GetCheckHistory(ctx context.Context, clientID string, limit int) ([]*models.ConflictCheckRecord, error)
 	// GetConflictStats 获取冲突统计
@@ -85,8 +89,38 @@ func NewConflictDetectionService(
 	}
 }
 
-// PerformConflictCheck 执行冲突检测
+// PerformConflictCheck 执行冲突检测并立即落库（独立端点保留该行为）
 func (s *conflictDetectionService) PerformConflictCheck(ctx context.Context, request *models.ConflictCheckRequest) (*models.ConflictCheckResponse, error) {
+	response, err := s.computeConflictCheck(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+	// The standalone endpoint keeps the historical save-inside-service flow.
+	if record := s.BuildConflictCheckRecord(ctx, request, response); record != nil {
+		if err := s.conflictRepo.SaveCheckRecord(ctx, record); err != nil {
+			return nil, fmt.Errorf("保存冲突检测审计记录失败: %w", err)
+		}
+		if len(response.ConflictCases) > 0 {
+			if err := s.conflictRepo.SaveConflictCases(ctx, response.ConflictCases); err != nil {
+				return nil, fmt.Errorf("保存冲突案例失败: %w", err)
+			}
+		}
+		if err := s.saveP0EvidenceIfAvailable(ctx, response.CheckID, response.NormalizedSubjects, response); err != nil {
+			return nil, fmt.Errorf("保存P0冲突证据失败: %w", err)
+		}
+	}
+	return response, nil
+}
+
+// PrepareConflictCheck 只计算不落库；调用方负责通过 repositories.
+// CommitIntakeConflictResult 在单事务内提交全部证据。
+func (s *conflictDetectionService) PrepareConflictCheck(ctx context.Context, request *models.ConflictCheckRequest) (*models.ConflictCheckResponse, error) {
+	return s.computeConflictCheck(ctx, request)
+}
+
+// computeConflictCheck contains the shared detection pipeline. It performs no
+// writes: persistence decisions belong to the entry points above.
+func (s *conflictDetectionService) computeConflictCheck(ctx context.Context, request *models.ConflictCheckRequest) (*models.ConflictCheckResponse, error) {
 	startTime := time.Now()
 
 	log.Printf("🔍 开始执行冲突检测，客户端ID: %s, 案件名称: %s", request.ClientID, request.CaseName)
@@ -146,12 +180,6 @@ func (s *conflictDetectionService) PerformConflictCheck(ctx context.Context, req
 		Duration:           time.Since(startTime).Milliseconds(),
 		NormalizedSubjects: normalizeConflictSubjects(request),
 		Decision:           decision,
-	}
-
-	// 保存检测记录
-	if err := s.saveCheckRecord(ctx, request, response); err != nil {
-		log.Printf("❌ 保存检测记录失败: %v", err)
-		return nil, fmt.Errorf("保存冲突检测审计记录失败: %w", err)
 	}
 
 	log.Printf("✅ 冲突检测完成，检测到 %d 个冲突案例，风险等级: %s", len(conflictCases), riskAssessment.OverallRisk)
@@ -1535,8 +1563,10 @@ func (s *conflictDetectionService) searchStartTime(request *models.ConflictCheck
 	return time.Now().AddDate(-request.SearchYears, 0, 0)
 }
 
-// saveCheckRecord 保存检测记录
-func (s *conflictDetectionService) saveCheckRecord(ctx context.Context, request *models.ConflictCheckRequest, response *models.ConflictCheckResponse) error {
+// BuildConflictCheckRecord builds the immutable audit record for a completed
+// check without writing it. The intake commit path reuses this so the atomic
+// transaction writes exactly the same evidence as the legacy standalone path.
+func (s *conflictDetectionService) BuildConflictCheckRecord(ctx context.Context, request *models.ConflictCheckRequest, response *models.ConflictCheckResponse) *models.ConflictCheckRecord {
 	// 转换用户ID为uint用于数据库存储
 	userIDUint, err := strconv.ParseUint(request.UserID, 10, 32)
 	if err != nil {
@@ -1571,14 +1601,6 @@ func (s *conflictDetectionService) saveCheckRecord(ctx context.Context, request 
 		UpdatedAt:        now,
 	}
 
-	if err := s.conflictRepo.SaveCheckRecord(ctx, record); err != nil {
-		return err
-	}
-
-	if len(response.ConflictCases) == 0 {
-		return s.saveP0EvidenceIfAvailable(ctx, response.CheckID, response.NormalizedSubjects, response)
-	}
-
 	for _, conflict := range response.ConflictCases {
 		if conflict == nil {
 			continue
@@ -1599,10 +1621,7 @@ func (s *conflictDetectionService) saveCheckRecord(ctx context.Context, request 
 		}
 	}
 
-	if err := s.conflictRepo.SaveConflictCases(ctx, response.ConflictCases); err != nil {
-		return err
-	}
-	return s.saveP0EvidenceIfAvailable(ctx, response.CheckID, response.NormalizedSubjects, response)
+	return record
 }
 
 // saveP0EvidenceIfAvailable keeps legacy test doubles compatible while making

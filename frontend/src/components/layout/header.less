@@ -590,10 +590,24 @@
 }
 
 /* 手机设备 */
+
+.mobile-nav-btn {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .app-header {
     left: 0 !important;
     padding: 0 var(--space-2) !important;
+  }
+
+  .mobile-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
   }
 
   .header-right {

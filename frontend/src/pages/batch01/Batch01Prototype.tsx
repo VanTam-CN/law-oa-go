@@ -53,6 +53,7 @@ import { getRoles, getToken, getUserInfo } from '@/utils/storage'
 import { message } from '@/utils/messageHelper'
 import { useAppStore } from '@/stores/useAppStore'
 import { canAccess, hasPermission } from '@/utils/accessControl'
+import { type IntakeCaseType } from './intake/caseTypeContract'
 import './Batch01Prototype.less'
 
 type Tone = 'blue' | 'teal' | 'red' | 'orange' | 'green' | 'slate'
@@ -1311,7 +1312,7 @@ function dbCaseType(value: string) {
   return labels[value] || '其他'
 }
 
-const intakeCaseTypeOptions = [
+const intakeCaseTypeOptions: { value: IntakeCaseType; label: string }[] = [
   { value: 'commercial', label: '商事诉讼' },
   { value: 'civil', label: '民事' },
   { value: 'civil_litigation', label: '民事诉讼' },
@@ -4144,12 +4145,21 @@ export function CaseIntakeWorkbench() {
     () => scopedCaseIntakeDraftKey(currentUserID, isSupplementMode ? contextCaseID : undefined),
     [contextCaseID, currentUserID, isSupplementMode],
   )
-  const [storedDraft, setStoredDraft] = React.useState<IntakeFormState | null>(() =>
+  const [localStorageDraft, setLocalStorageDraft] = React.useState<IntakeFormState | null>(() =>
     loadCaseIntakeDraft(draftKey),
   )
+  const [serverDrafts, setServerDrafts] = React.useState<IntakeFormState[]>([])
   const [form, setForm] = React.useState<IntakeFormState>({ ...defaultIntakeForm })
   const [draftActive, setDraftActive] = React.useState(false)
   const [sourceCase, setSourceCase] = React.useState<Record<string, any> | null>(null)
+
+  // Server drafts restore only the minimal field set: identity values stay
+  // protected server-side and are re-entered before the conflict check.
+  const serverDraft: IntakeFormState | null = serverDrafts.length
+    ? serverDrafts[0]
+    : null
+  const storedDraft =
+    localStorageDraft ?? (serverDraft ? { ...serverDraft, idempotencyKey: '' } : null)
   const [runtime, setRuntime] = React.useState<IntakeRuntimeState>({ apiTimings: [] })
   const [submitting, setSubmitting] = React.useState(false)
   const [checkingConflict, setCheckingConflict] = React.useState(false)
@@ -4257,6 +4267,39 @@ export function CaseIntakeWorkbench() {
       mounted = false
     }
   }, [isAssistant, requestedClientID])
+
+  // Saved-and-exited drafts live on the server, so a fresh session or device
+  // can rediscover them even without the localStorage entry.
+  React.useEffect(() => {
+    if (isAssistant || isSupplementMode) return
+    let mounted = true
+    apiRequest<any>('/case-intakes?page=1&page_size=10')
+      .then((payload) => {
+        if (!mounted) return
+        const rows = Array.isArray(payload?.items)
+          ? payload.items
+          : Array.isArray(payload)
+            ? payload
+            : []
+        setServerDrafts(
+          rows.map((row: any) => ({
+            ...defaultIntakeForm,
+            intakeId: textValue(row.id, ''),
+            intakeCode: textValue(row.intake_code, ''),
+            title: textValue(row.title, ''),
+            caseType: textValue(row.case_type, ''),
+            clientId: numberValue(row.client_id, 0),
+            lawyerId: numberValue(row.created_by, 0),
+          })),
+        )
+      })
+      .catch(() => {
+        // Discovery is best-effort: the page stays usable without it.
+      })
+    return () => {
+      mounted = false
+    }
+  }, [isAssistant, isSupplementMode])
 
   const recordTiming = (label: string, startedAt: number) => {
     setRuntime((current) => ({
@@ -4672,7 +4715,7 @@ export function CaseIntakeWorkbench() {
         intake: { id: storedDraft.intakeId, intake_code: storedDraft.intakeCode },
       }))
     }
-    setStoredDraft(null)
+    setLocalStorageDraft(null)
     setDraftActive(true)
     message.success(
       storedDraft.opponentIdentityNumber
@@ -4683,7 +4726,7 @@ export function CaseIntakeWorkbench() {
 
   const discardStoredDraft = () => {
     window.localStorage.removeItem(draftKey)
-    setStoredDraft(null)
+    setLocalStorageDraft(null)
     if (!isSupplementMode) {
       setForm({ ...defaultIntakeForm })
       setDraftActive(false)

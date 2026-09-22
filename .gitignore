@@ -282,12 +282,15 @@ chrome/
 *_test.go
 !internal/handlers/conflict_handler_simple_test.go
 !internal/repositories/conflict_repository_test.go
+!internal/repositories/conflict_intake_commit_test.go
+!internal/repositories/case_party_materialization_test.go
 !internal/services/risk_assessor_test.go
 !internal/services/conflict_detection_service_test.go
 !internal/middleware/authorization_test.go
 !internal/middleware/ethical_wall_test.go
 !internal/router/router_authorization_test.go
 !internal/handlers/inbox_handler_security_test.go
+!internal/handlers/intake_facts_confirmation_test.go
 !internal/config/mysql_dsn_test.go
 !internal/database/mysql_connector_test.go
 !internal/handlers/approval_conflict_redaction_test.go
@@ -296,6 +299,11 @@ chrome/
 !internal/services/document_lock_service_test.go
 !internal/services/conflict_hook_test.go
 !internal/services/conflict_reviewer_service_test.go
+!internal/models/conflict_validation_test.go
+!internal/handlers/intake_write_role_guard_test.go
+!internal/handlers/intake_write_http_guard_test.go
+!internal/handlers/intake_draft_list_test.go
+!internal/handlers/intake_party_identity_guard_test.go
 !internal/health/conflict_p0_check_test.go
 !tests/integration/production_external_evidence_test.go
 *_test

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -80,12 +81,57 @@ func (f *fakeConflictDetectionService) PerformConflictCheck(_ context.Context, r
 	}, nil
 }
 
+func (f *fakeConflictDetectionService) PrepareConflictCheck(_ context.Context, request *models.ConflictCheckRequest) (*models.ConflictCheckResponse, error) {
+	f.received = request
+	return &models.ConflictCheckResponse{
+		CheckID:       "check-test",
+		HasConflict:   false,
+		ConflictCases: []*models.ConflictCase{},
+		RiskAssessment: &models.RiskAssessment{
+			OverallRisk:      "LOW",
+			RiskScore:        0,
+			RiskReason:       "未发现冲突",
+			RequiresApproval: false,
+			RiskFactors:      []string{},
+			Mitigation:       []string{},
+		},
+		CheckStatistics: &models.CheckStatistics{},
+		Recommendations: []string{},
+		CheckTime:       time.Now(),
+		Duration:        1,
+	}, nil
+}
+
+func (f *fakeConflictDetectionService) BuildConflictCheckRecord(_ context.Context, request *models.ConflictCheckRequest, response *models.ConflictCheckResponse) *models.ConflictCheckRecord {
+	return &models.ConflictCheckRecord{
+		CheckID:     response.CheckID,
+		ClientID:    request.ClientID,
+		ClientName:  request.ClientName,
+		CaseName:    request.CaseName,
+		CaseType:    request.CaseType,
+		CheckStatus: "COMPLETED",
+		HasConflict: response.HasConflict,
+		RiskLevel:   response.RiskAssessment.OverallRisk,
+		UserID:      parseStubUserID(request.UserID),
+		Duration:    response.Duration,
+		CheckTime:   response.CheckTime,
+	}
+}
+
 func (f *fakeConflictDetectionService) GetCheckHistory(context.Context, string, int) ([]*models.ConflictCheckRecord, error) {
 	return nil, nil
 }
 
 func (f *fakeConflictDetectionService) GetConflictStats(context.Context, string) (*repositories.ConflictStats, error) {
 	return &repositories.ConflictStats{}, nil
+}
+
+func parseStubUserID(userID string) uint {
+	parsed, err := strconv.ParseUint(userID, 10, 32)
+	if err != nil {
+		return 0
+	}
+	return uint(parsed)
 }
 
 func performConflictHandlerRequest(handler *ConflictHandlerSimple, role string, jwtUserID uint, requestedUserID string) *httptest.ResponseRecorder {

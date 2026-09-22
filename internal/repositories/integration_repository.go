@@ -2,6 +2,8 @@ package repositories
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	"law-oa-go/internal/models"
@@ -277,6 +279,161 @@ func (r *IntegrationRepository) GetConflictCheckRecord(ctx context.Context, chec
 		return nil, NewRepositoryError("get conflict check record", "ConflictCheckRecord", err)
 	}
 	return &record, nil
+}
+
+// normalizeConflictPartyRole merges the role spellings accepted by the
+// conflict-check contract into the three canonical case-party classes.
+// Unknown roles return empty so callers skip them instead of writing an
+// unreviewable party role onto the formal case.
+func normalizeConflictPartyRole(value string) string {
+	switch strings.ToUpper(strings.TrimSpace(value)) {
+	case "CLIENT", "CO_CLIENT":
+		return "CLIENT"
+	case "OPPOSING_PARTY", "OPPOSING", "ADVERSE":
+		return "OPPOSING_PARTY"
+	case "RELATED_PARTY", "RELATED", "THIRD_PARTY":
+		return "RELATED_PARTY"
+	}
+	return ""
+}
+
+// LinkConflictCaseParties writes every reviewed conflict-check party onto the
+// formal case inside one transaction. Entities are deduplicated by identity
+// digest first and then by exact name so the client row reuses its archive
+// entity. Identity values are stored only as the digest; plaintext and
+// ciphertext columns stay empty per the production gate. Any failure rolls
+// back all party writes for this case.
+func (r *IntegrationRepository) LinkConflictCaseParties(ctx context.Context, caseID uint, parties []models.ConflictPartyInfo) error {
+	if caseID == 0 {
+		return fmt.Errorf("正式案件ID为空，无法写入案件当事人")
+	}
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		seenDigest := map[string]uint{}
+		seenName := map[string]uint{}
+		order := 0
+		for _, party := range parties {
+			name := strings.TrimSpace(party.Name)
+			if name == "" {
+				continue
+			}
+			role := normalizeConflictPartyRole(party.Role)
+			if role == "" {
+				continue
+			}
+			digest := ""
+			identityType := models.IdentityType("")
+			for _, key := range []string{"id_card", "social_credit_code", "unified_social_credit_code"} {
+				value := strings.TrimSpace(party.Identifiers[key])
+				const digestPrefix = "hmac-sha256:"
+				if !strings.HasPrefix(value, digestPrefix) {
+					continue
+				}
+				digest = strings.TrimPrefix(value, digestPrefix)
+				if key == "id_card" {
+					identityType = models.IdentityTypeIDCard
+				} else {
+					identityType = models.IdentityTypeSocialCredit
+				}
+				break
+			}
+			entityType := models.EntityTypeIndividual
+			if strings.EqualFold(strings.TrimSpace(party.EntityType), "LEGAL_PERSON") {
+				entityType = models.EntityTypeLegalPerson
+			}
+			entityID, err := ensureConflictPartyEntity(tx, name, digest, identityType, entityType, seenDigest, seenName)
+			if err != nil {
+				return err
+			}
+			if entityID == 0 {
+				continue
+			}
+			partyType, roleValue := casePartyRoleMapping(role)
+			var existing models.CaseParty
+			if err := tx.Where("case_id = ? AND entity_id = ? AND deleted_at IS NULL", caseID, entityID).First(&existing).Error; err == nil {
+				continue
+			}
+			row := &models.CaseParty{
+				CaseID:       caseID,
+				EntityID:     entityID,
+				Role:         roleValue,
+				PartyType:    partyType,
+				DisplayOrder: order,
+			}
+			order++
+			if err := tx.Create(row).Error; err != nil {
+				return fmt.Errorf("写入案件当事人失败: %w", err)
+			}
+		}
+		return nil
+	})
+}
+
+// ensureConflictPartyEntity resolves one party to its subject entity. A
+// digest match always wins; exact-name reuse is the only fallback for
+// parties without a protected digest, so low-entropy identifiers never
+// merge two different subjects.
+func ensureConflictPartyEntity(tx *gorm.DB, name, digest string, identityType models.IdentityType, entityType models.EntityType, seenDigest map[string]uint, seenName map[string]uint) (uint, error) {
+	key := strings.ToLower(name)
+	if entityID, ok := seenName[key]; ok {
+		return entityID, nil
+	}
+	if digest != "" {
+		if entityID, ok := seenDigest[digest]; ok {
+			return entityID, nil
+		}
+		var entity models.Entity
+		if err := tx.Where("identity_number_digest = ? AND deleted_at IS NULL", digest).First(&entity).Error; err == nil {
+			seenDigest[digest] = entity.ID
+			seenName[key] = entity.ID
+			return entity.ID, nil
+		}
+	} else if identityType == "" {
+		var entity models.Entity
+		if err := tx.Where("LOWER(name) = ? AND deleted_at IS NULL", key).First(&entity).Error; err == nil {
+			seenName[key] = entity.ID
+			return entity.ID, nil
+		}
+	}
+	created := &models.Entity{
+		EntityType:   entityType,
+		Name:         name,
+		IdentityType: identityType,
+		Status:       models.EntityStatusActive,
+	}
+	if digest != "" {
+		created.IdentityNumberDigest = digest
+	}
+	if err := tx.Create(created).Error; err != nil {
+		var entity models.Entity
+		lookup := tx.Where("LOWER(name) = ? AND deleted_at IS NULL", key)
+		if digest != "" {
+			lookup = tx.Where("identity_number_digest = ? AND deleted_at IS NULL", digest)
+		}
+		if err := lookup.First(&entity).Error; err == nil {
+			seenDigest[digest] = entity.ID
+			seenName[key] = entity.ID
+			return entity.ID, nil
+		}
+		return 0, fmt.Errorf("写入案件主体失败: %w", err)
+	}
+	seenName[key] = created.ID
+	if digest != "" {
+		seenDigest[digest] = created.ID
+	}
+	return created.ID, nil
+}
+
+// casePartyRoleMapping converts a conflict-check role into the case-party
+// role and party type used by the formal case view.
+func casePartyRoleMapping(role string) (models.PartyType, models.PartyRole) {
+	switch role {
+	case "CLIENT":
+		return models.PartyTypeClient, models.PartyRolePlaintiff
+	case "OPPOSING_PARTY":
+		return models.PartyTypeOpposing, models.PartyRoleDefendant
+	default:
+		return models.PartyType("RELATED"), models.PartyRoleInterestedParty
+	}
 }
 
 // GetLatestConflictReview reads the append-only professional conclusion that

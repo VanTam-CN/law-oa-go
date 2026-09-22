@@ -377,6 +377,7 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client) {
 
 		caseIntakes := protected.Group("/case-intakes")
 		{
+			caseIntakes.GET("", demoAggregateHandler.ListIntakeDrafts)
 			caseIntakes.POST("", demoAggregateHandler.CreateCaseIntake)
 			caseIntakes.PUT("/:id", demoAggregateHandler.UpdateCaseIntake)
 			caseIntakes.POST("/:id/facts-confirmation", demoAggregateHandler.ConfirmIntakeFacts)

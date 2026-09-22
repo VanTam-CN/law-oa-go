@@ -412,6 +412,18 @@ func (s *approvalConflictIntegrationService) AutoCreateCaseFromApproval(ctx cont
 	// creating a duplicate case.
 	_ = s.updateCaseTracking(ctx, approvalID, "completed", &caseID, &caseNumber, "")
 
+	// Materialize the reviewed conflict-check parties onto the formal case
+	// before the result is published. A partial party write rolls the new
+	// case back so no incomplete case can masquerade as completed.
+	if err := s.materializeCasePartiesFromCheck(ctx, conflictCheckIDFromMetadata(caseData), caseID); err != nil {
+		log.Printf("写入案件当事人失败，审批ID：%s，案件ID：%s，错误：%v", approvalID, caseID, err)
+		if caseIDUint, ok := parseUintString(caseID); ok {
+			_ = s.caseService.DeleteCase(ctx, caseIDUint)
+		}
+		_ = s.integrationRepo.MarkCaseCreationFailed(ctx, approvalID, fmt.Sprintf("案件当事人写入失败，正式案件已回滚：%v", err))
+		return nil, fmt.Errorf("写入案件当事人失败，正式案件已回滚：%w", err)
+	}
+
 	// 创建案件创建关联信息
 	caseAssociation := &models.CaseCreationAssociation{
 		Created:       true,
