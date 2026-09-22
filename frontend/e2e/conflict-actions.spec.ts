@@ -471,6 +471,29 @@ test.describe('冲突决策单一状态', () => {
     expect(createApprovalRequests).toBe(0)
   })
 
+  test('小视口下长冲突详情底部审批按钮在滚动后可点击且不被裁切', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 })
+    await openConflictScenario(page, 'ASSIGNED_APPROVAL', 'conflictOfficer')
+
+    const action = page
+      .getByRole('dialog', { name: '冲突检测详情' })
+      .getByRole('button', { name: '处理冲突审批' })
+    await expect(action).toBeVisible()
+    await action.scrollIntoViewIfNeeded()
+    const box = await action.boundingBox()
+    expect(box).not.toBeNull()
+    expect(
+      await page.evaluate(({ x, y }) => {
+        const element = document.elementFromPoint(x, y)
+        return element?.closest('button') !== null
+      }, { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 }),
+    ).toBe(true)
+
+    await action.click({ position: { x: box!.width / 2, y: box!.height / 2 } })
+
+    await expect(page).toHaveURL(/\/approval\/880$/)
+  })
+
   test('技术管理员不能代替专业冲突复核人查看冲突详情', async ({ page }) => {
     await seedAuthenticatedUser(page, 'admin')
     await page.goto('/conflict?task_id=CCT_373e_complete_evidence')
