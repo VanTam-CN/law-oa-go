@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -36,6 +37,12 @@ var allowedAssistantDraftFields = map[string]struct{}{
 	"case_type":   {},
 	"priority":    {},
 	"description": {},
+}
+
+// generateIntakeCode keeps the readable INT/timestamp prefix while deriving a
+// random suffix from the intake UUID so concurrent creates remain unique.
+func generateIntakeCode(now time.Time, intakeID uuid.UUID) string {
+	return fmt.Sprintf("INT-%s-%s", now.Format("20060102150405"), base64.RawURLEncoding.EncodeToString(intakeID[:]))
 }
 
 func NewDemoAggregateHandler(db *gorm.DB) *DemoAggregateHandler {
@@ -287,6 +294,11 @@ func (h *DemoAggregateHandler) ClientMasterProfile(c *gin.Context) {
 }
 
 func (h *DemoAggregateHandler) IntakeWorkbench(c *gin.Context) {
+	role, _ := middleware.GetCurrentRole(c)
+	if !services.CanReadCaseIntake(role) {
+		common.APIForbidden(c, "无权读取接案记录", "当前账号没有接案工作台查看权限")
+		return
+	}
 	id := c.Param("id")
 	var intake map[string]interface{}
 	if h.first("case_intakes", id, &intake) != nil {
@@ -321,7 +333,6 @@ func (h *DemoAggregateHandler) IntakeWorkbench(c *gin.Context) {
 		"client":    client,
 		"parties":   parties,
 		"materials": materials,
-		"team":      h.recentRows("users", "deleted_at IS NULL AND role IN ?", 10, []string{"lawyer", "admin"}),
 	})
 }
 
@@ -1750,10 +1761,15 @@ func (h *DemoAggregateHandler) firstByID(table string, id interface{}) map[strin
 }
 
 func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
-	createdBy, ok := currentUserIDString(c)
+	actor, ok := currentAuthActor(c)
 	if !ok {
 		return
 	}
+	if !services.CanCreateCaseIntake(actor.Role) {
+		common.APIForbidden(c, "无权创建接案记录", "当前账号没有接案创建权限")
+		return
+	}
+	createdBy := strconv.FormatUint(uint64(actor.UserID), 10)
 	var payload map[string]interface{}
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		common.APIBadRequest(c, "请求参数错误", err.Error())
@@ -1813,9 +1829,9 @@ func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
 		return
 	}
 	now := time.Now()
-	intakeID := uuid.NewString()
+	intakeID := uuid.New()
 	intakePayload["id"] = intakeID
-	intakePayload["intake_code"] = fmt.Sprintf("INT-%s", now.Format("20060102150405"))
+	intakePayload["intake_code"] = generateIntakeCode(now, intakeID)
 	intakePayload["status"] = stringValue(intakePayload["status"], "draft")
 	intakePayload["priority"] = stringValue(intakePayload["priority"], "medium")
 	intakePayload["metadata"] = jsonStringValue(intakePayload["metadata"])
@@ -1891,10 +1907,15 @@ func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
 
 func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 	id := c.Param("id")
-	actorID, ok := currentUserIDString(c)
+	actor, ok := currentAuthActor(c)
 	if !ok {
 		return
 	}
+	if !services.CanCreateCaseIntake(actor.Role) {
+		common.APIForbidden(c, "无权更新接案记录", "当前账号没有接案工作台权限")
+		return
+	}
+	actorID := strconv.FormatUint(uint64(actor.UserID), 10)
 	var rawPayload map[string]interface{}
 	if err := c.ShouldBindJSON(&rawPayload); err != nil {
 		common.APIBadRequest(c, "请求参数错误", err.Error())
