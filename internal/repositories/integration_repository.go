@@ -129,7 +129,6 @@ func (r *IntegrationRepository) GetConflictAssociationByApprovalID(ctx context.C
 	err := r.db.WithContext(ctx).
 		Where("approval_request_id = ? AND association_status = ?", approvalID, "active").
 		First(&association).Error
-
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
@@ -145,7 +144,6 @@ func (r *IntegrationRepository) GetConflictAssociationByCheckID(ctx context.Cont
 	err := r.db.WithContext(ctx).
 		Where("conflict_check_id = ? AND association_status = ?", checkID, "active").
 		First(&association).Error
-
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
@@ -189,7 +187,6 @@ func (r *IntegrationRepository) GetCaseCreationTrackingByApprovalID(ctx context.
 		Where("approval_request_id = ?", approvalID).
 		Order("created_at DESC").
 		Find(&trackings).Error
-
 	if err != nil {
 		return nil, NewRepositoryError("get case creation tracking by approval id", "CaseCreationTracking", err)
 	}
@@ -203,7 +200,6 @@ func (r *IntegrationRepository) GetLatestCaseCreationTracking(ctx context.Contex
 		Where("approval_request_id = ?", approvalID).
 		Order("created_at DESC").
 		First(&tracking).Error
-
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
@@ -310,7 +306,6 @@ func (r *IntegrationRepository) GetIntegrationConfigByName(ctx context.Context, 
 	err := r.db.WithContext(ctx).
 		Where("config_name = ? AND status = ?", name, "active").
 		First(&config).Error
-
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
@@ -327,7 +322,6 @@ func (r *IntegrationRepository) GetIntegrationConfigsByType(ctx context.Context,
 		Where("config_type = ? AND status = ?", configType, "active").
 		Order("priority DESC, created_at ASC").
 		Find(&configs).Error
-
 	if err != nil {
 		return nil, NewRepositoryError("get integration configs by type", "IntegrationConfig", err)
 	}
@@ -374,7 +368,6 @@ func (r *IntegrationRepository) GetIntegratedApprovalsWithConflict(ctx context.C
 		Limit(limit).
 		Offset(offset).
 		Find(&approvals).Error
-
 	if err != nil {
 		return nil, 0, NewRepositoryError("get integrated approvals with conflict", "ApprovalRequest", err)
 	}
@@ -402,7 +395,6 @@ func (r *IntegrationRepository) GetApprovalsAwaitingCaseCreation(ctx context.Con
 		Limit(limit).
 		Offset(offset).
 		Find(&approvals).Error
-
 	if err != nil {
 		return nil, 0, NewRepositoryError("get approvals awaiting case creation", "ApprovalRequest", err)
 	}

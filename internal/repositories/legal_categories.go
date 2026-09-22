@@ -93,12 +93,12 @@ func (r *legalCategoryRepository) buildCategoryTree(categories []*models.LegalCa
 	for _, category := range categories {
 		if (parentID == 0 && category.ParentID == nil) || (category.ParentID != nil && *category.ParentID == parentID) {
 			node := &models.CategoryTreeNode{
-				ID:            category.ID,
-				Name:          category.Name,
-				Code:          category.Code,
-				Level:         category.Level,
-				StatuteCount:  0, // 需要统计，暂时设为0
-				Children:      r.buildCategoryTree(categories, category.ID),
+				ID:           category.ID,
+				Name:         category.Name,
+				Code:         category.Code,
+				Level:        category.Level,
+				StatuteCount: 0, // 需要统计，暂时设为0
+				Children:     r.buildCategoryTree(categories, category.ID),
 			}
 			tree = append(tree, node)
 		}

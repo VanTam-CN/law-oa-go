@@ -11,9 +11,9 @@ import (
 
 // 预置模板常量
 const (
-	TemplateSealApproval   = "seal_approval"   // 用印审批
-	TemplateCaseFiling     = "case_filing"     // 立案审批
-	TemplateLeaveApproval  = "leave_approval"  // 请假审批
+	TemplateSealApproval     = "seal_approval"     // 用印审批
+	TemplateCaseFiling       = "case_filing"       // 立案审批
+	TemplateLeaveApproval    = "leave_approval"    // 请假审批
 	TemplatePurchaseApproval = "purchase_approval" // 采购审批
 )
 
@@ -147,33 +147,33 @@ type FormField struct {
 
 // SealApprovalMetadata 用印审批元数据
 type SealApprovalMetadata struct {
-	SealType        string   `json:"seal_type"`         // 印章类型：公章、合同章、法人章等
-	SealCount       int      `json:"seal_count"`        // 用印次数
-	SealImportance  string   `json:"seal_importance"`   // 重要程度：low, medium, high
-	DocumentTitle   string   `json:"document_title"`    // 文件标题
-	DocumentType    string   `json:"document_type"`     // 文件类型
-	ContractValue   float64  `json:"contract_value"`    // 合同金额（如有）
-	DocumentFiles   []string `json:"document_files"`    // 附件文件列表
-	UsePurpose      string   `json:"use_purpose"`       // 用印目的
-	ExpectedDate     string   `json:"expected_date"`     // 预计用印日期
+	SealType       string   `json:"seal_type"`       // 印章类型：公章、合同章、法人章等
+	SealCount      int      `json:"seal_count"`      // 用印次数
+	SealImportance string   `json:"seal_importance"` // 重要程度：low, medium, high
+	DocumentTitle  string   `json:"document_title"`  // 文件标题
+	DocumentType   string   `json:"document_type"`   // 文件类型
+	ContractValue  float64  `json:"contract_value"`  // 合同金额（如有）
+	DocumentFiles  []string `json:"document_files"`  // 附件文件列表
+	UsePurpose     string   `json:"use_purpose"`     // 用印目的
+	ExpectedDate   string   `json:"expected_date"`   // 预计用印日期
 }
 
 // CaseCreationMetadata 立案审批元数据
 type CaseCreationMetadata struct {
-	ClientID                uint    `json:"client_id"`                  // 客户ID
-	ClientName              string  `json:"client_name"`                // 客户名称
-	CaseTitle               string  `json:"case_title"`                 // 案件标题
-	CaseType                string  `json:"case_type"`                  // 案件类型
-	CaseValue               float64 `json:"case_value"`                 // 标的额
-	OpposingParty           string  `json:"opposing_party"`             // 对方当事人
-	LawyerID                uint    `json:"lawyer_id"`                  // 承办律师ID
-	LawyerName              string  `json:"lawyer_name"`                // 承办律师姓名
-	Urgency                 string  `json:"urgency"`                    // 紧急程度
-	ExpectedPeriod          string  `json:"expected_period"`            // 预计期限
-	RiskLevel               string  `json:"risk_level"`                 // 风险等级
-	ConflictCheckRequired   bool    `json:"conflict_check_required"`    // 是否需要冲突核查
-	CaseDescription         string  `json:"case_description"`           // 案件描述
-	LegalBasis              string  `json:"legal_basis"`                 // 法律依据
+	ClientID              uint    `json:"client_id"`               // 客户ID
+	ClientName            string  `json:"client_name"`             // 客户名称
+	CaseTitle             string  `json:"case_title"`              // 案件标题
+	CaseType              string  `json:"case_type"`               // 案件类型
+	CaseValue             float64 `json:"case_value"`              // 标的额
+	OpposingParty         string  `json:"opposing_party"`          // 对方当事人
+	LawyerID              uint    `json:"lawyer_id"`               // 承办律师ID
+	LawyerName            string  `json:"lawyer_name"`             // 承办律师姓名
+	Urgency               string  `json:"urgency"`                 // 紧急程度
+	ExpectedPeriod        string  `json:"expected_period"`         // 预计期限
+	RiskLevel             string  `json:"risk_level"`              // 风险等级
+	ConflictCheckRequired bool    `json:"conflict_check_required"` // 是否需要冲突核查
+	CaseDescription       string  `json:"case_description"`        // 案件描述
+	LegalBasis            string  `json:"legal_basis"`             // 法律依据
 }
 
 // GetSealApprovalTemplate 获取用印审批模板配置
@@ -257,11 +257,11 @@ func GetSealApprovalTemplate() ApprovalTemplateConfig {
 			"director_review":   72,
 		},
 		Notifications: NotificationConfig{
-			OnSubmit:      true,
-			OnApprove:     true,
-			OnReject:      true,
-			OnTimeout:     true,
-			TimeoutHours:  24,
+			OnSubmit:     true,
+			OnApprove:    true,
+			OnReject:     true,
+			OnTimeout:    true,
+			TimeoutHours: 24,
 		},
 		FormSchema: &FormSchema{
 			Fields: []FormField{
@@ -378,11 +378,11 @@ func GetCaseCreationApprovalTemplate() ApprovalTemplateConfig {
 			"director_review":   72,
 		},
 		Notifications: NotificationConfig{
-			OnSubmit:      true,
-			OnApprove:     true,
-			OnReject:      true,
-			OnTimeout:     true,
-			TimeoutHours:  24,
+			OnSubmit:     true,
+			OnApprove:    true,
+			OnReject:     true,
+			OnTimeout:    true,
+			TimeoutHours: 24,
 		},
 		FormSchema: &FormSchema{
 			Fields: []FormField{
@@ -422,41 +422,40 @@ func GetPresetTemplates() map[string]ApprovalTemplateConfig {
 	}
 }
 
-
 // ApprovalTemplate 审批模板定义
 // 用于定义不同类型审批的流程模板，如用印审批、立案审批等
 type ApprovalTemplate struct {
-	ID          uint      `json:"id" gorm:"primarykey"`
-	Name        string    `json:"name" gorm:"size:50;not null;uniqueIndex"`        // 模板标识名: seal_approval, case_filing
-	DisplayName string    `json:"display_name" gorm:"size:100;not null"`           // 显示名称: 用印审批, 立案审批
-	Description string    `json:"description" gorm:"type:text"`                    // 模板描述
-	Steps       string    `json:"steps" gorm:"type:jsonb;not null"`               // 审批步骤配置(JSON)
-	Conditions  string    `json:"conditions" gorm:"type:jsonb"`                   // 条件分支配置(JSON)
-	IsActive    bool      `json:"is_active" gorm:"default:true;not null"`         // 是否启用
-	CreatedAt   time.Time `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt   time.Time `json:"updated_at" gorm:"autoUpdateTime"`
+	ID          uint           `json:"id" gorm:"primarykey"`
+	Name        string         `json:"name" gorm:"size:50;not null;uniqueIndex"` // 模板标识名: seal_approval, case_filing
+	DisplayName string         `json:"display_name" gorm:"size:100;not null"`    // 显示名称: 用印审批, 立案审批
+	Description string         `json:"description" gorm:"type:text"`             // 模板描述
+	Steps       string         `json:"steps" gorm:"type:jsonb;not null"`         // 审批步骤配置(JSON)
+	Conditions  string         `json:"conditions" gorm:"type:jsonb"`             // 条件分支配置(JSON)
+	IsActive    bool           `json:"is_active" gorm:"default:true;not null"`   // 是否启用
+	CreatedAt   time.Time      `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt   time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
 	DeletedAt   gorm.DeletedAt `json:"-" gorm:"index"`
 }
 
 // ApprovalStep 审批步骤配置
 type ApprovalStep struct {
-	Order        int      `json:"order"`         // 步骤顺序
-	Name         string   `json:"name"`          // 步骤名称
-	ApproverType string   `json:"approver_type"` // ROLE, SPECIFIC_USER, DEPARTMENT_HEAD
-	ApproverRole string   `json:"approver_role"` // 角色名(当type=ROLE时)
-	ApproverID   uint     `json:"approver_id"`   // 具体审批人ID(当type=SPECIFIC_USER时)
-	IsRequired   bool     `json:"is_required"`   // 是否必须
-	SignType     string   `json:"sign_type"`     // 签章类型: SINGLE, COUNTERSIGN(会签), OR_SIGN(或签)
-	AutoPass     bool     `json:"auto_pass"`     // 是否自动通过(用于条件分支)
+	Order        int    `json:"order"`         // 步骤顺序
+	Name         string `json:"name"`          // 步骤名称
+	ApproverType string `json:"approver_type"` // ROLE, SPECIFIC_USER, DEPARTMENT_HEAD
+	ApproverRole string `json:"approver_role"` // 角色名(当type=ROLE时)
+	ApproverID   uint   `json:"approver_id"`   // 具体审批人ID(当type=SPECIFIC_USER时)
+	IsRequired   bool   `json:"is_required"`   // 是否必须
+	SignType     string `json:"sign_type"`     // 签章类型: SINGLE, COUNTERSIGN(会签), OR_SIGN(或签)
+	AutoPass     bool   `json:"auto_pass"`     // 是否自动通过(用于条件分支)
 }
 
 // ApprovalCondition 审批条件配置
 type ApprovalCondition struct {
-	Field      string      `json:"field"`       // 判断字段
-	Operator   string      `json:"operator"`    // 操作符: gt, lt, eq, contains
-	Value      interface{} `json:"value"`       // 比较值
-	ThenStep   int         `json:"then_step"`   // 满足条件跳转到的步骤
-	ElseStep   int         `json:"else_step"`   // 不满足条件跳转到的步骤
+	Field    string      `json:"field"`     // 判断字段
+	Operator string      `json:"operator"`  // 操作符: gt, lt, eq, contains
+	Value    interface{} `json:"value"`     // 比较值
+	ThenStep int         `json:"then_step"` // 满足条件跳转到的步骤
+	ElseStep int         `json:"else_step"` // 不满足条件跳转到的步骤
 }
 
 // TableName 设置表名
@@ -466,15 +465,15 @@ func (ApprovalTemplate) TableName() string {
 
 // 审批人类型常量
 const (
-	ApproverTypeRole           = "ROLE"             // 角色审批
-	ApproverTypeSpecificUser   = "SPECIFIC_USER"    // 指定用户
-	ApproverTypeDepartmentHead = "DEPARTMENT_HEAD"  // 部门主任
-	ApproverTypeSuperior       = "SUPERIOR"         // 上级
+	ApproverTypeRole           = "ROLE"            // 角色审批
+	ApproverTypeSpecificUser   = "SPECIFIC_USER"   // 指定用户
+	ApproverTypeDepartmentHead = "DEPARTMENT_HEAD" // 部门主任
+	ApproverTypeSuperior       = "SUPERIOR"        // 上级
 )
 
 // 签章类型常量
 const (
-	SignTypeSingle      = "SINGLE"       // 单签
-	SignTypeCountersign = "COUNTERSIGN"  // 会签(所有审批人都需要审批)
-	SignTypeOrSign      = "OR_SIGN"      // 或签(任意一人审批即可)
+	SignTypeSingle      = "SINGLE"      // 单签
+	SignTypeCountersign = "COUNTERSIGN" // 会签(所有审批人都需要审批)
+	SignTypeOrSign      = "OR_SIGN"     // 或签(任意一人审批即可)
 )

@@ -11,39 +11,39 @@ import (
 // 业务指标收集器
 type BusinessMetrics struct {
 	// 案件相关指标
-	TotalCases           prometheus.Gauge
-	ActiveCases          prometheus.Gauge
-	CasesByStatus        *prometheus.GaugeVec
-	CasesByType          *prometheus.GaugeVec
-	CasesByPriority      *prometheus.GaugeVec
-	CasesCreatedTotal    prometheus.Counter
-	CasesUpdatedTotal    prometheus.Counter
+	TotalCases        prometheus.Gauge
+	ActiveCases       prometheus.Gauge
+	CasesByStatus     *prometheus.GaugeVec
+	CasesByType       *prometheus.GaugeVec
+	CasesByPriority   *prometheus.GaugeVec
+	CasesCreatedTotal prometheus.Counter
+	CasesUpdatedTotal prometheus.Counter
 
 	// 客户相关指标
-	TotalClients         prometheus.Gauge
-	ClientsCreatedTotal  prometheus.Counter
+	TotalClients        prometheus.Gauge
+	ClientsCreatedTotal prometheus.Counter
 
 	// 律师相关指标
-	TotalLawyers         prometheus.Gauge
-	LawyersCreatedTotal  prometheus.Counter
+	TotalLawyers        prometheus.Gauge
+	LawyersCreatedTotal prometheus.Counter
 
 	// 用户活动指标
-	UserActionsTotal     *prometheus.CounterVec
-	ActiveUsers          prometheus.Gauge
+	UserActionsTotal *prometheus.CounterVec
+	ActiveUsers      prometheus.Gauge
 
 	// 文档相关指标
 	DocumentsUploadedTotal prometheus.Counter
-	StorageUsedBytes      prometheus.Gauge
+	StorageUsedBytes       prometheus.Gauge
 
 	// 冲突检测指标
-	ConflictChecksTotal   prometheus.Counter
+	ConflictChecksTotal    prometheus.Counter
 	ConflictsDetectedTotal prometheus.Counter
-	ConflictCheckDuration prometheus.Histogram
+	ConflictCheckDuration  prometheus.Histogram
 
 	// API性能指标
-	HTTPRequestsTotal     *prometheus.CounterVec
-	HTTPRequestDuration   *prometheus.HistogramVec
-	HTTPResponseSize      *prometheus.HistogramVec
+	HTTPRequestsTotal   *prometheus.CounterVec
+	HTTPRequestDuration *prometheus.HistogramVec
+	HTTPResponseSize    *prometheus.HistogramVec
 
 	// 数据库指标
 	DatabaseConnections   prometheus.Gauge
@@ -51,11 +51,11 @@ type BusinessMetrics struct {
 	DatabaseErrorsTotal   prometheus.Counter
 
 	// 缓存指标
-	CacheHitsTotal        prometheus.Counter
-	CacheMissesTotal      prometheus.Counter
-	CacheHitRatio         prometheus.Gauge
+	CacheHitsTotal   prometheus.Counter
+	CacheMissesTotal prometheus.Counter
+	CacheHitRatio    prometheus.Gauge
 
-	mu                    sync.RWMutex
+	mu sync.RWMutex
 }
 
 var (
@@ -409,7 +409,6 @@ func (m *BusinessMetrics) RecordClientCreated() {
 	valuesMutex.Unlock()
 }
 
-
 // getInternalGaugeValue 获取内部Gauge数值（临时解决方案）
 func (m *BusinessMetrics) getInternalGaugeValue(metricName string) float64 {
 	valuesMutex.RLock()
@@ -462,22 +461,22 @@ func (m *BusinessMetrics) GetMetricsForExport() map[string]interface{} {
 
 	return map[string]interface{}{
 		// 使用内部跟踪的数值（需要添加额外的内部跟踪）
-		"cases_total":         m.getInternalGaugeValue("cases_total"),
-		"active_cases":        m.getInternalGaugeValue("active_cases"),
-		"clients_total":       m.getInternalGaugeValue("clients_total"),
-		"lawyers_total":       m.getInternalGaugeValue("lawyers_total"),
-		"active_users":        m.getInternalGaugeValue("active_users"),
-		"storage_used_bytes":  m.getInternalGaugeValue("storage_used_bytes"),
-		"cache_hit_ratio":     m.getInternalGaugeValue("cache_hit_ratio"),
-		"db_connections":      m.getInternalGaugeValue("db_connections"),
+		"cases_total":        m.getInternalGaugeValue("cases_total"),
+		"active_cases":       m.getInternalGaugeValue("active_cases"),
+		"clients_total":      m.getInternalGaugeValue("clients_total"),
+		"lawyers_total":      m.getInternalGaugeValue("lawyers_total"),
+		"active_users":       m.getInternalGaugeValue("active_users"),
+		"storage_used_bytes": m.getInternalGaugeValue("storage_used_bytes"),
+		"cache_hit_ratio":    m.getInternalGaugeValue("cache_hit_ratio"),
+		"db_connections":     m.getInternalGaugeValue("db_connections"),
 
 		// 使用累计计数器（需要使用Prometheus的HTTP API获取）
-		"conflict_checks":     m.getCounterValue("conflict_checks"),
-		"conflicts_detected":  m.getCounterValue("conflicts_detected"),
-		"documents_uploaded":  m.getCounterValue("documents_uploaded"),
-		"cases_created":       m.getCounterValue("cases_created"),
-		"clients_created":     m.getCounterValue("clients_created"),
-		"lawyers_created":     m.getCounterValue("lawyers_created"),
+		"conflict_checks":    m.getCounterValue("conflict_checks"),
+		"conflicts_detected": m.getCounterValue("conflicts_detected"),
+		"documents_uploaded": m.getCounterValue("documents_uploaded"),
+		"cases_created":      m.getCounterValue("cases_created"),
+		"clients_created":    m.getCounterValue("clients_created"),
+		"lawyers_created":    m.getCounterValue("lawyers_created"),
 	}
 }
 

@@ -267,7 +267,6 @@ func (s *TokenRevocationService) GetRevocationHistory(ctx context.Context, userI
 		Order("revoked_at DESC").
 		Limit(limit).
 		Find(&logs).Error
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to query revocation history: %w", err)
 	}

@@ -16,35 +16,35 @@ import (
 // RateLimiterConfig 限流配置
 type RateLimiterConfig struct {
 	// IP级别限流
-	IPRateLimit    int           // 每分钟IP限流次数
-	IPWindow       time.Duration // IP限流时间窗口
+	IPRateLimit int           // 每分钟IP限流次数
+	IPWindow    time.Duration // IP限流时间窗口
 
 	// 用户级别限流
-	UserRateLimit  int           // 每分钟用户限流次数
-	UserWindow     time.Duration // 用户限流时间窗口
+	UserRateLimit int           // 每分钟用户限流次数
+	UserWindow    time.Duration // 用户限流时间窗口
 
 	// API级别限流
-	APIRateLimit   int           // 每分钟API限流次数
-	APIWindow      time.Duration // API限流时间窗口
+	APIRateLimit int           // 每分钟API限流次数
+	APIWindow    time.Duration // API限流时间窗口
 
 	// 白名单
-	Whitelist      []string      // 不受限流的IP段
+	Whitelist []string // 不受限流的IP段
 
 	// 限流策略
-	Strategy       string        // "fixed_window", "sliding_window", "token_bucket"
+	Strategy string // "fixed_window", "sliding_window", "token_bucket"
 }
 
 // DefaultRateLimiterConfig 默认限流配置
 func DefaultRateLimiterConfig() RateLimiterConfig {
 	return RateLimiterConfig{
-		IPRateLimit:    60,   // IP级别：每分钟60次
-		IPWindow:       time.Minute,
-		UserRateLimit:  120,  // 用户级别：每分钟120次
-		UserWindow:     time.Minute,
-		APIRateLimit:   100,  // API级别：每分钟100次
-		APIWindow:      time.Minute,
-		Whitelist:      []string{"127.0.0.1", "::1"}, // 本地回环不受限
-		Strategy:       "sliding_window",
+		IPRateLimit:   60, // IP级别：每分钟60次
+		IPWindow:      time.Minute,
+		UserRateLimit: 120, // 用户级别：每分钟120次
+		UserWindow:    time.Minute,
+		APIRateLimit:  100, // API级别：每分钟100次
+		APIWindow:     time.Minute,
+		Whitelist:     []string{"127.0.0.1", "::1"}, // 本地回环不受限
+		Strategy:      "sliding_window",
 	}
 }
 
@@ -137,9 +137,9 @@ func getUserID(c *gin.Context) string {
 // responseRateLimitExceeded 响应限流超出
 func responseRateLimitExceeded(c *gin.Context, limitType string) {
 	c.JSON(http.StatusTooManyRequests, gin.H{
-		"code":    429,
-		"message": fmt.Sprintf("%s级别请求过于频繁，请稍后再试", limitType),
-		"type":    limitType,
+		"code":        429,
+		"message":     fmt.Sprintf("%s级别请求过于频繁，请稍后再试", limitType),
+		"type":        limitType,
 		"retry_after": 60, // 建议重试时间（秒）
 	})
 	c.Abort()

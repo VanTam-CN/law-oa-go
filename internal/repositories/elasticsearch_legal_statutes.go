@@ -14,8 +14,8 @@ import (
 
 // elasticsearchStatuteRepository Elasticsearch法条搜索仓储实现
 type elasticsearchStatuteRepository struct {
-	client           *esv8.Client
-	indexManager     *elasticsearch.LegalStatuteIndexManager
+	client       *esv8.Client
+	indexManager *elasticsearch.LegalStatuteIndexManager
 }
 
 // NewElasticsearchStatuteRepository 创建Elasticsearch法条仓储实例
@@ -134,13 +134,13 @@ func (r *elasticsearchStatuteRepository) GetRelatedStatutes(ctx context.Context,
 
 	// 基于当前法条的类别、关键词等查找相关法条
 	relatedReq := &elasticsearch.LegalSearchRequest{
-		Query:         fmt.Sprintf("category.code:%s OR law_name:%s",
+		Query: fmt.Sprintf("category.code:%s OR law_name:%s",
 			currentDoc.Category.Code, currentDoc.LawName),
-		Page:          1,
-		PageSize:      limit,
-		SortBy:        "relevance",
-		SortOrder:     "desc",
-		Highlight:     false,
+		Page:      1,
+		PageSize:  limit,
+		SortBy:    "relevance",
+		SortOrder: "desc",
+		Highlight: false,
 	}
 
 	// 排除当前法条
@@ -216,11 +216,11 @@ func (r *elasticsearchStatuteRepository) GetLawNameAggregation(ctx context.Conte
 	// 这里需要实现实际的ES聚合查询逻辑
 	// 为了简化，返回模拟数据
 	result := map[string]int64{
-		"中华人民共和国民法典":       89,
-		"中华人民共和国公司法":       67,
-		"中华人民共和国劳动合同法":   45,
-		"中华人民共和国刑法":         78,
-		"中华人民共和国民事诉讼法":   34,
+		"中华人民共和国民法典":   89,
+		"中华人民共和国公司法":   67,
+		"中华人民共和国劳动合同法": 45,
+		"中华人民共和国刑法":    78,
+		"中华人民共和国民事诉讼法": 34,
 	}
 
 	return result, nil
@@ -248,11 +248,11 @@ func (r *elasticsearchStatuteRepository) GetTagAggregation(ctx context.Context) 
 	// 这里需要实现实际的ES聚合查询逻辑
 	// 为了简化，返回模拟数据
 	result := map[string]int64{
-		"常用":   120,
-		"重要":   89,
-		"最新":   45,
-		"基础":   67,
-		"专业":   34,
+		"常用": 120,
+		"重要": 89,
+		"最新": 45,
+		"基础": 67,
+		"专业": 34,
 	}
 
 	return result, nil
@@ -300,27 +300,27 @@ func (r *elasticsearchStatuteRepository) SyncFromPostgreSQL(ctx context.Context,
 // convertToESDocument 将数据库模型转换为ES文档
 func (r *elasticsearchStatuteRepository) convertToESDocument(statute *models.LegalStatute) *elasticsearch.LegalStatuteDocument {
 	doc := &elasticsearch.LegalStatuteDocument{
-		ID:                 statute.ID,
-		StatuteNumber:      statute.StatuteNumber,
-		Title:              statute.Title,
-		Content:            statute.Content,
-		LawName:            statute.LawName,
-		Chapter:            statute.Chapter,
-		Section:            statute.Section,
-		Part:               statute.Part,
-		EffectiveDate:      "",
-		ExpiryDate:         "",
+		ID:                  statute.ID,
+		StatuteNumber:       statute.StatuteNumber,
+		Title:               statute.Title,
+		Content:             statute.Content,
+		LawName:             statute.LawName,
+		Chapter:             statute.Chapter,
+		Section:             statute.Section,
+		Part:                statute.Part,
+		EffectiveDate:       "",
+		ExpiryDate:          "",
 		PublishingAuthority: statute.PublishingAuthority,
-		Status:             statute.Status,
-		HierarchyLevel:     statute.HierarchyLevel,
-		Tags:               statute.Tags,
-		Keywords:           statute.Keywords,
-		CreatedAt:          statute.CreatedAt.Format("2006-01-02T15:04:05Z"),
-		UpdatedAt:          statute.UpdatedAt.Format("2006-01-02T15:04:05Z"),
-		ContentLength:      len(statute.Content),
-		ViewCount:          0,
-		FavoriteCount:      0,
-		SearchWeight:       1.0,
+		Status:              statute.Status,
+		HierarchyLevel:      statute.HierarchyLevel,
+		Tags:                statute.Tags,
+		Keywords:            statute.Keywords,
+		CreatedAt:           statute.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		UpdatedAt:           statute.UpdatedAt.Format("2006-01-02T15:04:05Z"),
+		ContentLength:       len(statute.Content),
+		ViewCount:           0,
+		FavoriteCount:       0,
+		SearchWeight:        1.0,
 	}
 
 	// 处理可选字段

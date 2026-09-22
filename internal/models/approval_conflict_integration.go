@@ -71,63 +71,63 @@ func (m *StringMap) Scan(value interface{}) error {
 type ConflictCheckAssociation struct {
 	gorm.Model
 	// 冲突检测基本信息
-	CheckID          string    `json:"check_id" gorm:"type:varchar(255);index"`       // 冲突检测ID
-	CheckTime        time.Time `json:"check_time"`                                       // 检测时间
-	RiskLevel        string    `json:"risk_level" gorm:"type:varchar(50)"`             // 风险等级
-	RiskScore        float64   `json:"risk_score"`                                       // 风险评分
-	HasConflict      bool      `json:"has_conflict"`                                     // 是否存在冲突
+	CheckID     string    `json:"check_id" gorm:"type:varchar(255);index"` // 冲突检测ID
+	CheckTime   time.Time `json:"check_time"`                              // 检测时间
+	RiskLevel   string    `json:"risk_level" gorm:"type:varchar(50)"`      // 风险等级
+	RiskScore   float64   `json:"risk_score"`                              // 风险评分
+	HasConflict bool      `json:"has_conflict"`                            // 是否存在冲突
 
 	// 检测结果摘要
-	ConflictCount    int        `json:"conflict_count"`                                 // 冲突案例数量
-	ConflictTypes    StringSlice `json:"conflict_types" gorm:"type:json"`              // 冲突类型列表
+	ConflictCount int         `json:"conflict_count"`                  // 冲突案例数量
+	ConflictTypes StringSlice `json:"conflict_types" gorm:"type:json"` // 冲突类型列表
 
 	// 客户和案件信息
-	ClientID         string `json:"client_id" gorm:"type:varchar(255);index"`           // 客户ID
-	ClientName       string `json:"client_name" gorm:"type:varchar(255)"`              // 客户名称
-	CaseName         string `json:"case_name" gorm:"type:varchar(255)"`                // 案件名称
-	CaseType         string `json:"case_type" gorm:"type:varchar(100)"`                // 案件类型
+	ClientID   string `json:"client_id" gorm:"type:varchar(255);index"` // 客户ID
+	ClientName string `json:"client_name" gorm:"type:varchar(255)"`     // 客户名称
+	CaseName   string `json:"case_name" gorm:"type:varchar(255)"`       // 案件名称
+	CaseType   string `json:"case_type" gorm:"type:varchar(100)"`       // 案件类型
 
 	// 检测参数和范围
-	SearchParameters  StringMap `json:"search_parameters" gorm:"type:json"`            // 搜索参数
-	SearchScope      string    `json:"search_scope" gorm:"type:varchar(100)"`          // 搜索范围
+	SearchParameters StringMap `json:"search_parameters" gorm:"type:json"`    // 搜索参数
+	SearchScope      string    `json:"search_scope" gorm:"type:varchar(100)"` // 搜索范围
 
 	// 建议和处理
-	Recommendations StringSlice `json:"recommendations" gorm:"type:json"`            // 建议
-	Mitigation      StringSlice `json:"mitigation" gorm:"type:json"`                 // 缓解措施
+	Recommendations StringSlice `json:"recommendations" gorm:"type:json"` // 建议
+	Mitigation      StringSlice `json:"mitigation" gorm:"type:json"`      // 缓解措施
 
 	// 审批指导信息
-	RequiresApproval bool        `json:"requires_approval"`                            // 是否需要审批
-	ApprovalLevel   string      `json:"approval_level" gorm:"type:varchar(100)"`      // 审批级别
-	RiskFactors     StringSlice `json:"risk_factors" gorm:"type:json"`               // 风险因素
+	RequiresApproval bool        `json:"requires_approval"`                       // 是否需要审批
+	ApprovalLevel    string      `json:"approval_level" gorm:"type:varchar(100)"` // 审批级别
+	RiskFactors      StringSlice `json:"risk_factors" gorm:"type:json"`           // 风险因素
 }
 
 // CaseCreationAssociation 案件创建关联信息
 type CaseCreationAssociation struct {
 	gorm.Model
 	// 案件创建状态
-	Created            bool      `json:"created"`                                              // 是否已创建案件
-	CaseID            string    `json:"case_id" gorm:"type:varchar(255);index"`             // 案件ID
-	CaseNumber        string    `json:"case_number" gorm:"type:varchar(255)"`               // 案件编号
-	CreationTime      time.Time `json:"creation_time"`                                        // 案件创建时间
+	Created      bool      `json:"created"`                                // 是否已创建案件
+	CaseID       string    `json:"case_id" gorm:"type:varchar(255);index"` // 案件ID
+	CaseNumber   string    `json:"case_number" gorm:"type:varchar(255)"`   // 案件编号
+	CreationTime time.Time `json:"creation_time"`                          // 案件创建时间
 
 	// 数据映射信息
-	DataMapping       StringMap   `json:"data_mapping" gorm:"type:json"`                     // 数据映射详情
-	MappedFields      StringSlice `json:"mapped_fields" gorm:"type:json"`                    // 已映射字段列表
-	ValidationErrors  StringSlice `json:"validation_errors" gorm:"type:json"`                // 验证错误列表
+	DataMapping      StringMap   `json:"data_mapping" gorm:"type:json"`      // 数据映射详情
+	MappedFields     StringSlice `json:"mapped_fields" gorm:"type:json"`     // 已映射字段列表
+	ValidationErrors StringSlice `json:"validation_errors" gorm:"type:json"` // 验证错误列表
 
 	// 条件和限制
-	AppliedConditions   StringSlice `json:"applied_conditions" gorm:"type:json"`           // 应用的条件
-	ImposedRequirements StringSlice `json:"imposed_requirements" gorm:"type:json"`         // 施加的要求
+	AppliedConditions   StringSlice `json:"applied_conditions" gorm:"type:json"`   // 应用的条件
+	ImposedRequirements StringSlice `json:"imposed_requirements" gorm:"type:json"` // 施加的要求
 
 	// 状态和跟踪
-	Status           string `json:"status" gorm:"type:varchar(100)"`                       // 创建状态
-	StatusMessage    string `json:"status_message" gorm:"type:text"`                       // 状态消息
-	RetryAttempts    int    `json:"retry_attempts"`                                         // 重试次数
-	LastError        string `json:"last_error" gorm:"type:text"`                            // 最后错误信息
+	Status        string `json:"status" gorm:"type:varchar(100)"` // 创建状态
+	StatusMessage string `json:"status_message" gorm:"type:text"` // 状态消息
+	RetryAttempts int    `json:"retry_attempts"`                  // 重试次数
+	LastError     string `json:"last_error" gorm:"type:text"`     // 最后错误信息
 
 	// 工作流信息
-	WorkflowStep     string `json:"workflow_step" gorm:"type:varchar(100)"`              // 当前工作流步骤
-	NextAction       string `json:"next_action" gorm:"type:varchar(100)"`                // 下一步操作
+	WorkflowStep string `json:"workflow_step" gorm:"type:varchar(100)"` // 当前工作流步骤
+	NextAction   string `json:"next_action" gorm:"type:varchar(100)"`   // 下一步操作
 }
 
 // ApprovalIntegrationMetadata 审批集成元数据
@@ -135,27 +135,27 @@ type CaseCreationAssociation struct {
 type ApprovalIntegrationMetadata struct {
 	gorm.Model
 	// 关联信息标识
-	IntegrationType   string    `json:"integration_type" gorm:"type:varchar(50);index"`     // 集成类型: conflict, case, both
-	IntegrationID     string    `json:"integration_id" gorm:"type:varchar(255);uniqueIndex"` // 集成ID
-	IntegrationTime   time.Time `json:"integration_time"`                                     // 集成时间
+	IntegrationType string    `json:"integration_type" gorm:"type:varchar(50);index"`      // 集成类型: conflict, case, both
+	IntegrationID   string    `json:"integration_id" gorm:"type:varchar(255);uniqueIndex"` // 集成ID
+	IntegrationTime time.Time `json:"integration_time"`                                    // 集成时间
 
 	// 冲突检测关联 - 外键关联
-	ConflictCheckID   uint      `json:"conflict_check_id,omitempty" gorm:"index"`           // 冲突检测关联ID
-	ConflictCheck     ConflictCheckAssociation `json:"conflict_check,omitempty" gorm:"foreignKey:ConflictCheckID"`
+	ConflictCheckID uint                     `json:"conflict_check_id,omitempty" gorm:"index"` // 冲突检测关联ID
+	ConflictCheck   ConflictCheckAssociation `json:"conflict_check,omitempty" gorm:"foreignKey:ConflictCheckID"`
 
 	// 案件创建关联 - 外键关联
-	CaseCreationID    uint        `json:"case_creation_id,omitempty" gorm:"index"`          // 案件创建关联ID
-	CaseCreation      CaseCreationAssociation `json:"case_creation,omitempty" gorm:"foreignKey:CaseCreationID"`
+	CaseCreationID uint                    `json:"case_creation_id,omitempty" gorm:"index"` // 案件创建关联ID
+	CaseCreation   CaseCreationAssociation `json:"case_creation,omitempty" gorm:"foreignKey:CaseCreationID"`
 
 	// 流程控制
-	AutoSubmitted     bool      `json:"auto_submitted" gorm:"default:false"`                 // 是否自动提交
-	TriggerSource     string    `json:"trigger_source" gorm:"type:varchar(50);default:'manual'"` // 触发源: manual, auto
-	WorkflowOverride   StringMap `json:"workflow_override" gorm:"type:json"`                   // 工作流覆盖配置
+	AutoSubmitted    bool      `json:"auto_submitted" gorm:"default:false"`                     // 是否自动提交
+	TriggerSource    string    `json:"trigger_source" gorm:"type:varchar(50);default:'manual'"` // 触发源: manual, auto
+	WorkflowOverride StringMap `json:"workflow_override" gorm:"type:json"`                      // 工作流覆盖配置
 
 	// 审计信息
-	CreatedBy         string `json:"created_by" gorm:"type:varchar(255)"`                       // 创建人
-	UpdatedBy         string `json:"updated_by" gorm:"type:varchar(255)"`                       // 更新人
-	Version           int    `json:"version" gorm:"default:1"`                                 // 元数据版本
+	CreatedBy string `json:"created_by" gorm:"type:varchar(255)"` // 创建人
+	UpdatedBy string `json:"updated_by" gorm:"type:varchar(255)"` // 更新人
+	Version   int    `json:"version" gorm:"default:1"`            // 元数据版本
 }
 
 // GetConflictIntegrationType 获取冲突集成类型
@@ -227,7 +227,6 @@ func (m *ApprovalIntegrationMetadata) Validate() error {
 
 	return nil
 }
-
 
 // IsIntegrationComplete 检查集成是否完成
 func (m *ApprovalIntegrationMetadata) IsIntegrationComplete() bool {

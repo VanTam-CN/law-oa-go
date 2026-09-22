@@ -497,7 +497,7 @@ func (s *DocumentRecycleService) GetRecycleStats(ctx context.Context) (*RecycleS
 func (s *DocumentRecycleService) moveToRecycleBin(from, to string) error {
 	// Create destination directory if it doesn't exist
 	dir := filepath.Dir(to)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 

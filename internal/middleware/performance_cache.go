@@ -469,7 +469,7 @@ func DevelopmentCacheConfig(redisClient *redis.Client) PerformanceCacheConfig {
 // 便捷函数：创建生产环境缓存配置
 func ProductionCacheConfig(redisClient *redis.Client) PerformanceCacheConfig {
 	config := DefaultCacheConfig(redisClient)
-	config.TTL = 15 * time.Minute  // 生产环境长缓存时间
+	config.TTL = 15 * time.Minute // 生产环境长缓存时间
 	config.Compression = true
 	return config
 }

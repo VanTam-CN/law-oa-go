@@ -49,7 +49,6 @@ func (cb *CircuitBreaker) Execute(ctx context.Context, operation func() error) e
 	cb.mu.Unlock()
 
 	err := operation()
-
 	if err != nil {
 		cb.RecordFailure()
 		return err

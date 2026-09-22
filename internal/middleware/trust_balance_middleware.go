@@ -64,7 +64,7 @@ func (m *TrustBalanceMiddleware) CheckBalance() gin.HandlerFunc {
 		// 检查账户状态
 		if account.Status != "active" {
 			c.JSON(http.StatusForbidden, gin.H{
-				"error": fmt.Sprintf("账户状态不正确，当前状态: %s", account.Status),
+				"error":  fmt.Sprintf("账户状态不正确，当前状态: %s", account.Status),
 				"status": account.Status,
 			})
 			c.Abort()
@@ -108,10 +108,10 @@ func (m *TrustBalanceMiddleware) RequireSufficientBalance() gin.HandlerFunc {
 
 		if amount > availableBalance {
 			c.JSON(http.StatusForbidden, gin.H{
-				"error": "可用余额不足",
+				"error":             "可用余额不足",
 				"available_balance": availableBalance,
-				"required_amount":    amount,
-				"shortage":           amount - availableBalance,
+				"required_amount":   amount,
+				"shortage":          amount - availableBalance,
 			})
 			c.Abort()
 			return
@@ -204,8 +204,8 @@ func (m *TrustBalanceMiddleware) RequireSufficientBalanceForAmount(amountGetter 
 			c.JSON(http.StatusForbidden, gin.H{
 				"error":             "可用余额不足",
 				"available_balance": availableBalance,
-				"required_amount":    amount,
-				"shortage":           amount - availableBalance,
+				"required_amount":   amount,
+				"shortage":          amount - availableBalance,
 			})
 			c.Abort()
 			return

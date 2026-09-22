@@ -14,9 +14,9 @@ import (
 
 // DocumentVersionHandler 文档版本管理处理器
 type DocumentVersionHandler struct {
-	db            *gorm.DB
+	db             *gorm.DB
 	versionService *services.DocumentVersionService
-	lockService   *services.DocumentLockService
+	lockService    *services.DocumentLockService
 }
 
 // NewDocumentVersionHandler 创建文档版本处理器
@@ -72,7 +72,6 @@ func (h *DocumentVersionHandler) CreateVersion(c *gin.Context) {
 
 	// 从当前文档创建新版本
 	version, err := h.versionService.CreateVersion(ctx, versionReq)
-
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -109,10 +108,10 @@ func (h *DocumentVersionHandler) GetVersions(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"data":       versions,
-		"total":      total,
-		"page":       page,
-		"page_size":  pageSize,
+		"data":        versions,
+		"total":       total,
+		"page":        page,
+		"page_size":   pageSize,
 		"total_pages": (total + int64(pageSize) - 1) / int64(pageSize),
 	})
 }

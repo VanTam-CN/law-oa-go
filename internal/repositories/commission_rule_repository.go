@@ -3,8 +3,8 @@ package repositories
 import (
 	"context"
 
-	"law-oa-go/internal/models"
 	"gorm.io/gorm"
+	"law-oa-go/internal/models"
 )
 
 // CommissionRuleRepository 分成规则数据仓库接口

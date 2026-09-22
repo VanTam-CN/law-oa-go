@@ -168,7 +168,6 @@ func (s *OffboardingServiceImpl) InitiateOffboarding(ctx context.Context, req *O
 		result = record
 		return nil
 	})
-
 	if err != nil {
 		return nil, err
 	}

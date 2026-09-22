@@ -593,7 +593,7 @@ func (h *OnlyOfficeHandler) saveDocument(ctx context.Context, documentID uint, d
 
 	// 创建版本备份目录
 	versionDir := filepath.Join(h.storageDir, "versions", fmt.Sprintf("doc_%d", documentID))
-	if err := os.MkdirAll(versionDir, 0755); err != nil {
+	if err := os.MkdirAll(versionDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create version directory: %w", err)
 	}
 
@@ -927,7 +927,7 @@ func (h *OnlyOfficeHandler) processConversionResult(taskID string, resp *Convers
 
 	// 保存转换后的文件
 	convertDir := filepath.Join(h.storageDir, "converted", fmt.Sprintf("doc_%d", task.DocumentID))
-	if err := os.MkdirAll(convertDir, 0755); err != nil {
+	if err := os.MkdirAll(convertDir, 0o755); err != nil {
 		h.conversionMu.Lock()
 		task.Status = ConversionStatusError
 		task.Error = fmt.Sprintf("Failed to create directory: %v", err)

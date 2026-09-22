@@ -4,13 +4,13 @@ import (
 	"database/sql"
 	"log"
 
-	"gorm.io/gorm"
 	redis "github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
 )
 
 // DBAdapter 数据库适配器，用于处理不同类型的数据库连接
 type DBAdapter struct {
-	sqlDB *sql.DB
+	sqlDB  *sql.DB
 	gormDB *gorm.DB
 }
 

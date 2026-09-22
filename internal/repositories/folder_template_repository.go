@@ -201,7 +201,7 @@ func (r *folderTemplateRepository) DeleteFolder(ctx context.Context, id uint) er
 // GetFolderPath 获取文件夹路径（使用递归 CTE 单次查询，避免 N+1）
 func (r *folderTemplateRepository) GetFolderPath(ctx context.Context, id uint) (string, error) {
 	type pathRow struct {
-		Name string
+		Name  string
 		Depth int
 	}
 	var rows []pathRow

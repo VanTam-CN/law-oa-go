@@ -7,8 +7,8 @@ import (
 	"log"
 	"strings"
 
-	"law-oa-go/internal/models"
 	"gorm.io/gorm"
+	"law-oa-go/internal/models"
 )
 
 // ConflictExtendedRepository 扩展的冲突检测仓储实现
@@ -55,7 +55,6 @@ func (r *ConflictExtendedRepository) CreateOrUpdateIndustry(ctx context.Context,
 		industry.Code, industry.Name, industry.ParentID, industry.Level,
 		industry.Description, industry.Keywords,
 	).Scan(&industry.ID, &industry.CreatedAt, &industry.UpdatedAt)
-
 	if err != nil {
 		log.Printf("创建/更新行业失败: %v", err)
 		return fmt.Errorf("创建/更新行业失败: %w", err)
@@ -82,7 +81,6 @@ func (r *ConflictExtendedRepository) GetIndustryByKeywords(ctx context.Context, 
 		&industry.Level, &industry.Description, &industry.Keywords,
 		&industry.CreatedAt, &industry.UpdatedAt,
 	)
-
 	if err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("未找到匹配的行业: %s", keywords)
@@ -98,20 +96,20 @@ func (r *ConflictExtendedRepository) GetIndustryByKeywords(ctx context.Context, 
 func (r *ConflictExtendedRepository) GetIndustryByClientName(ctx context.Context, clientName string) (*models.IndustryClassification, error) {
 	// 客户名称到行业的映射规则
 	clientIndustryMappings := map[string]string{
-		"阿里巴巴": "TMT",
+		"阿里巴巴":   "TMT",
 		"阿里":     "TMT",
 		"淘宝":     "TMT",
 		"天猫":     "TMT",
-		"支付宝":   "TMT",
-		"蚂蚁金服": "TMT",
-		"蚂蚁集团": "TMT",
-		"阿里云":   "TMT",
+		"支付宝":    "TMT",
+		"蚂蚁金服":   "TMT",
+		"蚂蚁集团":   "TMT",
+		"阿里云":    "TMT",
 		"腾讯":     "TMT",
 		"微信":     "TMT",
-		"字节跳动": "TMT",
+		"字节跳动":   "TMT",
 		"抖音":     "TMT",
-		"TikTok":   "TMT",
-		"今日头条": "TMT",
+		"TikTok": "TMT",
+		"今日头条":   "TMT",
 		"百度":     "TMT",
 		"京东":     "TMT",
 		"美团":     "TMT",
@@ -125,9 +123,9 @@ func (r *ConflictExtendedRepository) GetIndustryByClientName(ctx context.Context
 
 	// 如果没有匹配，返回默认的"其他"行业
 	return &models.IndustryClassification{
-		ID:   999,
-		Code: "OTHER",
-		Name: "其他",
+		ID:    999,
+		Code:  "OTHER",
+		Name:  "其他",
 		Level: 1,
 	}, nil
 }
@@ -152,7 +150,6 @@ func (r *ConflictExtendedRepository) CreateOrUpdateCompetitiveRelation(ctx conte
 		relation.IndustryID, relation.CompetitorType, relation.CompetitorName,
 		relation.CompetitorPattern, relation.ConflictLevel, relation.Description, relation.IsActive,
 	).Scan(&relation.ID, &relation.CreatedAt, &relation.UpdatedAt)
-
 	if err != nil {
 		log.Printf("创建/更新竞争关系失败: %v", err)
 		return fmt.Errorf("创建/更新竞争关系失败: %w", err)
@@ -217,7 +214,6 @@ func (r *ConflictExtendedRepository) CreateOrUpdateConflictRule(ctx context.Cont
 		rule.Name, rule.RuleType, rule.TriggerPattern, rule.ActionType,
 		rule.RiskScore, rule.Conditions, rule.IsActive, rule.Priority,
 	).Scan(&rule.ID, &rule.CreatedAt, &rule.UpdatedAt)
-
 	if err != nil {
 		log.Printf("创建/更新冲突规则失败: %v", err)
 		return fmt.Errorf("创建/更新冲突规则失败: %w", err)
@@ -274,7 +270,6 @@ func (r *ConflictExtendedRepository) CreateConflictDetectionHistory(ctx context.
 		history.CaseType, history.DetectionResult, history.ConflictsFound,
 		history.RiskLevel, history.UserAction,
 	).Scan(&history.ID)
-
 	if err != nil {
 		log.Printf("创建冲突检测历史失败: %v", err)
 		return fmt.Errorf("创建冲突检测历史失败: %w", err)
@@ -635,10 +630,10 @@ func (r *ConflictExtendedRepository) GetConflictStats(ctx context.Context, lawye
 	}
 
 	stats := map[string]interface{}{
-		"total_checks":      totalChecks,
-		"conflict_checks":   conflictChecks,
-		"high_risk_checks":  highRiskChecks,
-		"avg_duration":      avgDuration,
+		"total_checks":     totalChecks,
+		"conflict_checks":  conflictChecks,
+		"high_risk_checks": highRiskChecks,
+		"avg_duration":     avgDuration,
 		"lawyer_id":        lawyerID,
 	}
 

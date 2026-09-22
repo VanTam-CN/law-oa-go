@@ -410,8 +410,7 @@ func (s *PaymentService) GetPaymentStats(ctx context.Context) (*PaymentStats, er
 	currentMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
 	nextMonth := currentMonth.AddDate(0, 1, 0)
 
-	total, pendingCount, confirmedCount, rejectedCount, totalAmount, monthAmount, pendingAmount, err :=
-		s.paymentRepo.GetPaymentAggregation(ctx, currentMonth.Format("2006-01-02"), nextMonth.Format("2006-01-02"))
+	total, pendingCount, confirmedCount, rejectedCount, totalAmount, monthAmount, pendingAmount, err := s.paymentRepo.GetPaymentAggregation(ctx, currentMonth.Format("2006-01-02"), nextMonth.Format("2006-01-02"))
 	if err != nil {
 		return nil, fmt.Errorf("查询回款统计失败: %w", err)
 	}

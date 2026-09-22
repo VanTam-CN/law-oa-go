@@ -11,7 +11,6 @@ import (
 )
 
 func TestHealthChecker_Basic(t *testing.T) {
-
 	config := &DefaultHealthConfig
 	healthChecker := NewHealthChecker(config, nil)
 	require.NotNil(t, healthChecker)

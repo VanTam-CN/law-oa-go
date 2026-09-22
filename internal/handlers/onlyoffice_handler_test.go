@@ -186,7 +186,7 @@ func TestSaveDocument_Success(t *testing.T) {
 	db.Create(doc)
 
 	// 创建初始文件
-	if err := os.WriteFile(doc.Filepath, []byte("original content"), 0644); err != nil {
+	if err := os.WriteFile(doc.Filepath, []byte("original content"), 0o644); err != nil {
 		t.Fatalf("创建初始文件失败: %v", err)
 	}
 
@@ -238,7 +238,7 @@ func TestSaveDocument_CreatesVersionBackup(t *testing.T) {
 		Status:   "active",
 	}
 	db.Create(doc)
-	os.WriteFile(doc.Filepath, []byte("original"), 0644)
+	os.WriteFile(doc.Filepath, []byte("original"), 0o644)
 
 	ts := newIPv4TestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("new version"))
@@ -277,7 +277,7 @@ func TestHandleCallback_MustSave(t *testing.T) {
 		Status:   "active",
 	}
 	db.Create(doc)
-	os.WriteFile(doc.Filepath, []byte("before"), 0644)
+	os.WriteFile(doc.Filepath, []byte("before"), 0o644)
 
 	ts := newIPv4TestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("after save"))
@@ -439,7 +439,7 @@ func TestSaveDocument_SSRF_RejectsDifferentHost(t *testing.T) {
 		Filesize: 10, Status: "active",
 	}
 	db.Create(doc)
-	os.WriteFile(doc.Filepath, []byte("orig"), 0644)
+	os.WriteFile(doc.Filepath, []byte("orig"), 0o644)
 
 	// 配置 onlyOfficeURL 指向 onlyoffice.example, 但下载 URL 指向 evil.example
 	h := setupOnlyOfficeHandlerWithServer(t, db, "http://onlyoffice.example:9090")
@@ -463,7 +463,7 @@ func TestSaveDocument_SSRF_RejectsDifferentPort(t *testing.T) {
 		Filesize: 10, Status: "active",
 	}
 	db.Create(doc)
-	os.WriteFile(doc.Filepath, []byte("orig"), 0644)
+	os.WriteFile(doc.Filepath, []byte("orig"), 0o644)
 
 	h := setupOnlyOfficeHandlerWithServer(t, db, "http://onlyoffice.example:9090")
 
@@ -481,7 +481,7 @@ func TestSaveDocument_SSRF_RejectsLoopback(t *testing.T) {
 		Filesize: 10, Status: "active",
 	}
 	db.Create(doc)
-	os.WriteFile(doc.Filepath, []byte("orig"), 0644)
+	os.WriteFile(doc.Filepath, []byte("orig"), 0o644)
 
 	// 配置 onlyOfficeURL 为公网，下载 URL 指向 127.0.0.1
 	h := setupOnlyOfficeHandlerWithServer(t, db, "http://onlyoffice.example:9090")
@@ -500,7 +500,7 @@ func TestSaveDocument_SSRF_RejectsUnsupportedScheme(t *testing.T) {
 		Filesize: 10, Status: "active",
 	}
 	db.Create(doc)
-	os.WriteFile(doc.Filepath, []byte("orig"), 0644)
+	os.WriteFile(doc.Filepath, []byte("orig"), 0o644)
 
 	h := setupOnlyOfficeHandlerWithServer(t, db, "http://onlyoffice.example:9090")
 
@@ -523,7 +523,7 @@ func TestSaveDocument_SSRF_RejectsUserInfo(t *testing.T) {
 		Filesize: 10, Status: "active",
 	}
 	db.Create(doc)
-	os.WriteFile(doc.Filepath, []byte("orig"), 0644)
+	os.WriteFile(doc.Filepath, []byte("orig"), 0o644)
 
 	h := setupOnlyOfficeHandlerWithServer(t, db, "http://onlyoffice.example:9090")
 
@@ -541,7 +541,7 @@ func TestSaveDocument_SizeLimit_50MiB(t *testing.T) {
 		Filesize: 10, Status: "active",
 	}
 	db.Create(doc)
-	os.WriteFile(doc.Filepath, []byte("orig"), 0644)
+	os.WriteFile(doc.Filepath, []byte("orig"), 0o644)
 
 	// 模拟 OnlyOffice 服务器返回超过 50 MiB 的内容
 	ts := newIPv4TestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -573,7 +573,7 @@ func TestSaveDocument_DownloadFailure_PreservesOriginal(t *testing.T) {
 		Filesize: 10, Status: "active",
 	}
 	db.Create(doc)
-	os.WriteFile(doc.Filepath, []byte("orig"), 0644)
+	os.WriteFile(doc.Filepath, []byte("orig"), 0o644)
 
 	ts := newIPv4TestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -602,7 +602,7 @@ func TestSaveDocument_RedirectRejected(t *testing.T) {
 		Filesize: 10, Status: "active",
 	}
 	db.Create(doc)
-	os.WriteFile(doc.Filepath, []byte("orig"), 0644)
+	os.WriteFile(doc.Filepath, []byte("orig"), 0o644)
 
 	// 目标 host：allowed.com:9090；重定向到 evil.com
 	ts := newIPv4TestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -632,7 +632,7 @@ func TestSaveDocument_SSRF_AllowedHostSucceeds(t *testing.T) {
 		Filesize: 10, Status: "active",
 	}
 	db.Create(doc)
-	os.WriteFile(doc.Filepath, []byte("orig"), 0644)
+	os.WriteFile(doc.Filepath, []byte("orig"), 0o644)
 
 	ts := newIPv4TestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")

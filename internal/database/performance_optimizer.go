@@ -56,72 +56,72 @@ type PerformanceOptimizer struct {
 
 // QueryStats 查询统计
 type QueryStats struct {
-	TotalQueries    int64         `json:"total_queries"`
-	CacheHits       int64         `json:"cache_hits"`
-	CacheMisses     int64         `json:"cache_misses"`
-	SlowQueries     int64         `json:"slow_queries"`
-	AvgQueryTime    time.Duration `json:"avg_query_time"`
-	ErrorCount      int64         `json:"error_count"`
-	TotalQueryTime  time.Duration `json:"total_query_time"`
+	TotalQueries   int64         `json:"total_queries"`
+	CacheHits      int64         `json:"cache_hits"`
+	CacheMisses    int64         `json:"cache_misses"`
+	SlowQueries    int64         `json:"slow_queries"`
+	AvgQueryTime   time.Duration `json:"avg_query_time"`
+	ErrorCount     int64         `json:"error_count"`
+	TotalQueryTime time.Duration `json:"total_query_time"`
 }
 
 // QueryOptions 查询选项
 type QueryOptions struct {
-	CacheKey       string        `json:"cache_key"`
-	CacheTTL       time.Duration `json:"cache_ttl"`
-	UseCache       bool          `json:"use_cache"`
-	EnableStats    bool          `json:"enable_stats"`
-	RetryAttempts  int           `json:"retry_attempts"`
+	CacheKey           string        `json:"cache_key"`
+	CacheTTL           time.Duration `json:"cache_ttl"`
+	UseCache           bool          `json:"use_cache"`
+	EnableStats        bool          `json:"enable_stats"`
+	RetryAttempts      int           `json:"retry_attempts"`
 	SlowQueryThreshold time.Duration `json:"slow_query_threshold"`
 }
 
 // PaginatedQueryOptions 分页查询选项
 type PaginatedQueryOptions struct {
 	QueryOptions
-	Page       int `json:"page"`
-	PageSize   int `json:"page_size"`
-	MaxPage    int `json:"max_page"` // 防止过大分页
-	UseCursor  bool `json:"use_cursor"` // 使用游标分页
+	Page      int  `json:"page"`
+	PageSize  int  `json:"page_size"`
+	MaxPage   int  `json:"max_page"`   // 防止过大分页
+	UseCursor bool `json:"use_cursor"` // 使用游标分页
 }
 
 // BatchOperationOptions 批量操作选项
 type BatchOperationOptions struct {
-	BatchSize     int           `json:"batch_size"`
-	MaxRetries    int           `json:"max_retries"`
-	RetryDelay    time.Duration `json:"retry_delay"`
-	UseTransaction bool        `json:"use_transaction"`
+	BatchSize      int           `json:"batch_size"`
+	MaxRetries     int           `json:"max_retries"`
+	RetryDelay     time.Duration `json:"retry_delay"`
+	UseTransaction bool          `json:"use_transaction"`
 }
 
 // DefaultQueryOptions 默认查询选项
 func DefaultQueryOptions() QueryOptions {
 	return QueryOptions{
-		CacheKey:            "",
-		CacheTTL:            5 * time.Minute,
-		UseCache:            true,
-		EnableStats:         true,
-		RetryAttempts:       3,
-		SlowQueryThreshold:  100 * time.Millisecond,
+		CacheKey:           "",
+		CacheTTL:           5 * time.Minute,
+		UseCache:           true,
+		EnableStats:        true,
+		RetryAttempts:      3,
+		SlowQueryThreshold: 100 * time.Millisecond,
 	}
 }
 
 // DefaultPaginatedQueryOptions 默认分页查询选项
 func DefaultPaginatedQueryOptions() PaginatedQueryOptions {
 	return PaginatedQueryOptions{
-		QueryOptions:        DefaultQueryOptions(),
-		Page:               1,
-		PageSize:           20,
-		MaxPage:            1000, // 防止过大分页
-		UseCursor:          false,
+		QueryOptions: DefaultQueryOptions(),
+		Page:         1,
+		PageSize:     20,
+		MaxPage:      1000, // 防止过大分页
+		UseCursor:    false,
 	}
 }
 
 // DefaultBatchOperationOptions 默认批量操作选项
 func DefaultBatchOperationOptions() BatchOperationOptions {
 	return BatchOperationOptions{
-		BatchSize:          100,
-		MaxRetries:         3,
-		RetryDelay:         100 * time.Millisecond,
-		UseTransaction:     true,
+		BatchSize:      100,
+		MaxRetries:     3,
+		RetryDelay:     100 * time.Millisecond,
+		UseTransaction: true,
 	}
 }
 
@@ -327,7 +327,6 @@ func (po *PerformanceOptimizer) OptimizedBatchUpdate(ctx context.Context, opts B
 			err := po.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 				return tx.Table(tableName).Where("id IN ?", batchIDs).Updates(updates).Error
 			})
-
 			if err != nil {
 				po.recordStats("error", tableName, operation, "batch", time.Since(start))
 				return fmt.Errorf("batch update transaction failed: %w", err)
@@ -491,14 +490,14 @@ func (po *PerformanceOptimizer) GetConnectionStats() map[string]interface{} {
 	dbConnections.WithLabelValues("idle").Set(float64(stats.Idle))
 
 	return map[string]interface{}{
-		"max_open_connections":     stats.MaxOpenConnections,
-		"open_connections":        stats.OpenConnections,
-		"in_use":                  stats.InUse,
-		"idle":                    stats.Idle,
-		"wait_count":              stats.WaitCount,
-		"wait_duration":           stats.WaitDuration,
-		"max_idle_closed":         stats.MaxIdleClosed,
-		"max_idle_time_closed":    stats.MaxIdleTimeClosed,
-		"max_lifetime_closed":     stats.MaxLifetimeClosed,
+		"max_open_connections": stats.MaxOpenConnections,
+		"open_connections":     stats.OpenConnections,
+		"in_use":               stats.InUse,
+		"idle":                 stats.Idle,
+		"wait_count":           stats.WaitCount,
+		"wait_duration":        stats.WaitDuration,
+		"max_idle_closed":      stats.MaxIdleClosed,
+		"max_idle_time_closed": stats.MaxIdleTimeClosed,
+		"max_lifetime_closed":  stats.MaxLifetimeClosed,
 	}
 }

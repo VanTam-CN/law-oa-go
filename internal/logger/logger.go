@@ -25,21 +25,21 @@ var (
 
 // LogConfig 增强的日志配置结构
 type LogConfig struct {
-	Level             string   `json:"level" yaml:"level"`                         // 日志级别: debug, info, warn, error, dpanic, panic, fatal
-	Development       bool     `json:"development" yaml:"development"`               // 开发模式
-	Encoding          string   `json:"encoding" yaml:"encoding"`                     // 编码格式: json, console
-	OutputPaths       []string `json:"outputPaths" yaml:"outputPaths"`               // 输出路径
-	ErrorOutputPaths  []string `json:"errorOutputPaths" yaml:"errorOutputPaths"`     // 错误输出路径
-	RotateSize        int      `json:"rotateSize" yaml:"rotateSize"`                 // 日志轮转大小(MB)
-	RotateAge         int      `json:"rotateAge" yaml:"rotateAge"`                   // 日志保留天数
-	RotateBackups     int      `json:"rotateBackups" yaml:"rotateBackups"`           // 日志备份数量
-	Compress          bool     `json:"compress" yaml:"compress"`                     // 是否压缩
-	EnableCaller      bool     `json:"enableCaller" yaml:"enableCaller"`             // 启用调用者信息
-	EnableStacktrace  bool     `json:"enableStacktrace" yaml:"enableStacktrace"`     // 启用堆栈跟踪
-	SamplingRate      int      `json:"samplingRate" yaml:"samplingRate"`             // 采样率
-	InitialFields     map[string]interface{} `json:"initialFields" yaml:"initialFields"` // 初始字段
-	OutputBuffer      int      `json:"outputBuffer" yaml:"outputBuffer"`             // 输出缓冲区大小
-	FlushInterval     time.Duration `json:"flushInterval" yaml:"flushInterval"`       // 刷新间隔
+	Level            string                 `json:"level" yaml:"level"`                       // 日志级别: debug, info, warn, error, dpanic, panic, fatal
+	Development      bool                   `json:"development" yaml:"development"`           // 开发模式
+	Encoding         string                 `json:"encoding" yaml:"encoding"`                 // 编码格式: json, console
+	OutputPaths      []string               `json:"outputPaths" yaml:"outputPaths"`           // 输出路径
+	ErrorOutputPaths []string               `json:"errorOutputPaths" yaml:"errorOutputPaths"` // 错误输出路径
+	RotateSize       int                    `json:"rotateSize" yaml:"rotateSize"`             // 日志轮转大小(MB)
+	RotateAge        int                    `json:"rotateAge" yaml:"rotateAge"`               // 日志保留天数
+	RotateBackups    int                    `json:"rotateBackups" yaml:"rotateBackups"`       // 日志备份数量
+	Compress         bool                   `json:"compress" yaml:"compress"`                 // 是否压缩
+	EnableCaller     bool                   `json:"enableCaller" yaml:"enableCaller"`         // 启用调用者信息
+	EnableStacktrace bool                   `json:"enableStacktrace" yaml:"enableStacktrace"` // 启用堆栈跟踪
+	SamplingRate     int                    `json:"samplingRate" yaml:"samplingRate"`         // 采样率
+	InitialFields    map[string]interface{} `json:"initialFields" yaml:"initialFields"`       // 初始字段
+	OutputBuffer     int                    `json:"outputBuffer" yaml:"outputBuffer"`         // 输出缓冲区大小
+	FlushInterval    time.Duration          `json:"flushInterval" yaml:"flushInterval"`       // 刷新间隔
 }
 
 // Config 向后兼容的配置结构
@@ -104,7 +104,6 @@ func createEncoder(cfg *LogConfig) zapcore.Encoder {
 		encoderConfig.EncodeCaller = zapcore.FullCallerEncoder
 	}
 
-	
 	if cfg.Encoding == ConsoleEncoding {
 		return zapcore.NewConsoleEncoder(encoderConfig)
 	}
@@ -125,7 +124,7 @@ func createWriteSyncers(cfg *LogConfig) ([]zapcore.WriteSyncer, []zapcore.WriteS
 		} else {
 			// 创建日志目录
 			dir := filepath.Dir(path)
-			if err := os.MkdirAll(dir, 0755); err != nil {
+			if err := os.MkdirAll(dir, 0o755); err != nil {
 				return nil, nil, fmt.Errorf("failed to create log directory %s: %w", dir, err)
 			}
 
@@ -150,7 +149,7 @@ func createWriteSyncers(cfg *LogConfig) ([]zapcore.WriteSyncer, []zapcore.WriteS
 		} else {
 			// 创建日志目录
 			dir := filepath.Dir(path)
-			if err := os.MkdirAll(dir, 0755); err != nil {
+			if err := os.MkdirAll(dir, 0o755); err != nil {
 				return nil, nil, fmt.Errorf("failed to create error log directory %s: %w", dir, err)
 			}
 
@@ -175,7 +174,6 @@ func Init(cfg *LogConfig) error {
 		cfg = GetDefaultConfig()
 	}
 
-	
 	// 解析日志级别
 	level := parseLogLevel(cfg.Level)
 
@@ -243,19 +241,19 @@ func Init(cfg *LogConfig) error {
 // GetDefaultConfig 获取默认配置
 func GetDefaultConfig() *LogConfig {
 	return &LogConfig{
-		Level:             InfoLevel,
-		Development:       false,
-		Encoding:          JSONEncoding,
-		OutputPaths:       []string{"stdout"},
-		ErrorOutputPaths:  []string{"stderr"},
-		RotateSize:        100,
-		RotateAge:         30,
-		RotateBackups:     10,
-		Compress:          true,
-		EnableCaller:      true,
-		EnableStacktrace:  false,
-		SamplingRate:      0,
-		InitialFields:     map[string]interface{}{
+		Level:            InfoLevel,
+		Development:      false,
+		Encoding:         JSONEncoding,
+		OutputPaths:      []string{"stdout"},
+		ErrorOutputPaths: []string{"stderr"},
+		RotateSize:       100,
+		RotateAge:        30,
+		RotateBackups:    10,
+		Compress:         true,
+		EnableCaller:     true,
+		EnableStacktrace: false,
+		SamplingRate:     0,
+		InitialFields: map[string]interface{}{
 			"service": "law-oa-go",
 			"version": "2.1.0",
 		},
@@ -267,18 +265,18 @@ func GetDefaultConfig() *LogConfig {
 // GetDevelopmentConfig 获取开发环境配置
 func GetDevelopmentConfig() *LogConfig {
 	return &LogConfig{
-		Level:             DebugLevel,
-		Development:       true,
-		Encoding:          ConsoleEncoding,
-		OutputPaths:       []string{"stdout"},
-		ErrorOutputPaths:  []string{"stderr"},
-		RotateSize:        10,
-		RotateAge:         7,
-		RotateBackups:     3,
-		Compress:          false,
-		EnableCaller:      true,
-		EnableStacktrace:  true,
-		SamplingRate:      0,
+		Level:            DebugLevel,
+		Development:      true,
+		Encoding:         ConsoleEncoding,
+		OutputPaths:      []string{"stdout"},
+		ErrorOutputPaths: []string{"stderr"},
+		RotateSize:       10,
+		RotateAge:        7,
+		RotateBackups:    3,
+		Compress:         false,
+		EnableCaller:     true,
+		EnableStacktrace: true,
+		SamplingRate:     0,
 		InitialFields: map[string]interface{}{
 			"service": "law-oa-go",
 			"version": "2.1.0",
@@ -292,18 +290,18 @@ func GetDevelopmentConfig() *LogConfig {
 // GetProductionConfig 获取生产环境配置
 func GetProductionConfig() *LogConfig {
 	return &LogConfig{
-		Level:             InfoLevel,
-		Development:       false,
-		Encoding:          JSONEncoding,
-		OutputPaths:       []string{"logs/app.log", "stdout"},
-		ErrorOutputPaths:  []string{"logs/error.log", "stderr"},
-		RotateSize:        100,
-		RotateAge:         30,
-		RotateBackups:     10,
-		Compress:          true,
-		EnableCaller:      false,
-		EnableStacktrace:  false,
-		SamplingRate:      100, // 采样100条/秒
+		Level:            InfoLevel,
+		Development:      false,
+		Encoding:         JSONEncoding,
+		OutputPaths:      []string{"logs/app.log", "stdout"},
+		ErrorOutputPaths: []string{"logs/error.log", "stderr"},
+		RotateSize:       100,
+		RotateAge:        30,
+		RotateBackups:    10,
+		Compress:         true,
+		EnableCaller:     false,
+		EnableStacktrace: false,
+		SamplingRate:     100, // 采样100条/秒
 		InitialFields: map[string]interface{}{
 			"service": "law-oa-go",
 			"version": "2.1.0",
@@ -317,18 +315,18 @@ func GetProductionConfig() *LogConfig {
 // GetTestingConfig 获取测试环境配置
 func GetTestingConfig() *LogConfig {
 	return &LogConfig{
-		Level:             DebugLevel,
-		Development:       true,
-		Encoding:          JSONEncoding,
-		OutputPaths:       []string{"stdout"},
-		ErrorOutputPaths:  []string{"stderr"},
-		RotateSize:        5,
-		RotateAge:         3,
-		RotateBackups:     2,
-		Compress:          false,
-		EnableCaller:      true,
-		EnableStacktrace:  false,
-		SamplingRate:      0,
+		Level:            DebugLevel,
+		Development:      true,
+		Encoding:         JSONEncoding,
+		OutputPaths:      []string{"stdout"},
+		ErrorOutputPaths: []string{"stderr"},
+		RotateSize:       5,
+		RotateAge:        3,
+		RotateBackups:    2,
+		Compress:         false,
+		EnableCaller:     true,
+		EnableStacktrace: false,
+		SamplingRate:     0,
 		InitialFields: map[string]interface{}{
 			"service": "law-oa-go",
 			"version": "2.1.0",
@@ -975,11 +973,9 @@ type LogStats struct {
 	LoggerStartTime time.Time `json:"logger_start_time"`
 }
 
-var (
-	logStats = &LogStats{
-		LoggerStartTime: time.Now(),
-	}
-)
+var logStats = &LogStats{
+	LoggerStartTime: time.Now(),
+}
 
 // GetLogStats 获取日志统计信息
 func GetLogStats() *LogStats {
