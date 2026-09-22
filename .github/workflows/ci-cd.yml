@@ -187,7 +187,9 @@ jobs:
         name: benchmark-results
         path: benchmark.txt
 
-  # PGO优化构建
+  # PGO优化构建：仅使用 Go benchmark 生成 profile。
+  # 旧的综合 workload 脚本已在 94722d4 清理，且历史文件本身不是
+  # 可执行入口（没有 func main），不能作为 CI workload 恢复。
   pgo-build:
     name: PGO优化构建
     runs-on: ubuntu-latest
@@ -208,22 +210,9 @@ jobs:
         go mod download
         go mod verify
 
-    - name: 设置数据库
-      run: |
-        sudo systemctl start mysql
-        mysql -u root -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
-
-    - name: 设置Redis
-      run: |
-        sudo systemctl start redis-server
-
-    - name: 运行工作负载生成器
-      run: |
-        chmod +x scripts/comprehensive_pgo_workload.go
-        go run scripts/comprehensive_pgo_workload.go
-
     - name: 收集CPU性能数据
       run: |
+        mkdir -p profiles
         go test -cpuprofile=profiles/cpu.prof -bench=. ./...
 
     - name: 构建PGO优化版本
