@@ -53,6 +53,7 @@ import { getRoles, getToken, getUserInfo } from '@/utils/storage'
 import { message } from '@/utils/messageHelper'
 import { useAppStore } from '@/stores/useAppStore'
 import { canAccess, hasPermission } from '@/utils/accessControl'
+import { type IntakeCaseType } from './intake/caseTypeContract'
 import './Batch01Prototype.less'
 
 type Tone = 'blue' | 'teal' | 'red' | 'orange' | 'green' | 'slate'
@@ -1311,7 +1312,7 @@ function dbCaseType(value: string) {
   return labels[value] || '其他'
 }
 
-const intakeCaseTypeOptions = [
+const intakeCaseTypeOptions: { value: IntakeCaseType; label: string }[] = [
   { value: 'commercial', label: '商事诉讼' },
   { value: 'civil', label: '民事' },
   { value: 'civil_litigation', label: '民事诉讼' },
