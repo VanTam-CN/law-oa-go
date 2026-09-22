@@ -671,10 +671,17 @@ func upsertLegacyConflictEvidence(db *gorm.DB, result seedResult, clientA, clien
 		}
 	} else if err != nil {
 		return err
-	} else if err := db.Model(&existingCheck).Updates(map[string]interface{}{"status": check.Status, "checked_by": check.CheckedBy, "checked_at": check.CheckedAt, "result": check.Result, "result_summary": check.ResultSummary, "total_conflicts": check.TotalConflicts, "medium_count": check.MediumCount, "check_params": check.CheckParams, "updated_at": now}).Error; err != nil {
+	} else if err := updateConflictCheckForRepeatSeed(db, existingCheck.ID, check); err != nil {
 		return fmt.Errorf("更新结构化冲突检测失败: %w", err)
 	}
 	return nil
+}
+
+func updateConflictCheckForRepeatSeed(db *gorm.DB, id uint, check models.ConflictCheck) error {
+	return db.Model(&models.ConflictCheck{}).
+		Where("id = ?", id).
+		Select("status", "checked_by", "checked_at", "result", "result_summary", "total_conflicts", "medium_count", "check_params", "updated_at").
+		Updates(&check).Error
 }
 
 func upsertReviewerAssignment(db *gorm.DB, result seedResult) error {
