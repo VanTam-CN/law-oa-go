@@ -305,7 +305,7 @@ quick-pgo:
 check-pgo:
 	@echo "检查PGO支持..."
 	@echo "Go版本: $(GO_VERSION)"
-	@if go build --help | grep -q "pgo"; then \
+	@if go help build | grep -Eq '^[[:space:]]+-pgo file$$'; then \
 		echo "✓ PGO支持已启用"; \
 	else \
 		echo "✗ PGO支持未启用"; \
@@ -435,7 +435,7 @@ fuzz-manual-concurrent:
 check-fuzz:
 	@echo "检查Fuzzing支持..."
 	@echo "Go版本: $(GO_VERSION)"
-	@if go help | grep -q "fuzz"; then \
+	@if go help testflag | grep -Eq '^[[:space:]]+-fuzz regexp$$'; then \
 		echo "✓ Fuzzing支持已启用"; \
 	else \
 		echo "✗ Fuzzing支持未启用，请使用Go 1.23+"; \
