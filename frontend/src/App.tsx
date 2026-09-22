@@ -81,6 +81,7 @@ import Profile from './pages/profile/Profile'
 
 // 收件箱模块
 import InboxList from './pages/inbox/InboxList'
+import OperationsReadiness from './pages/operations/OperationsReadiness'
 
 // MVP 组件
 import MvpUnavailable from './components/mvp/MvpUnavailable'
@@ -298,6 +299,10 @@ const AppContent: React.FC = () => {
 
           {/* 收件箱模块 */}
           <Route path='inbox' element={<InboxList />} />
+          <Route
+            path='operations/readiness'
+            element={withAccess(<OperationsReadiness />, 'operations:read')}
+          />
 
           {enableDevRoutes &&
             DevApiTest &&

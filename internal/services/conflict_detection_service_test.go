@@ -18,6 +18,14 @@ import (
 	"law-oa-go/internal/repositories"
 )
 
+func reviewerErrorCode(t *testing.T, err error) string {
+	t.Helper()
+	require.Error(t, err)
+	var reviewerErr *ConflictReviewerError
+	require.ErrorAs(t, err, &reviewerErr)
+	return reviewerErr.Code
+}
+
 func TestBuildCheckStatisticsDoesNotClaimCompleteHistoryWithoutCoverage(t *testing.T) {
 	service := &conflictDetectionService{}
 

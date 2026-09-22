@@ -21,6 +21,8 @@ const PERMISSION_ALIASES: Record<string, string[]> = {
   'finance:view': ['finance_management', 'finance:view'],
   'finance:manage': ['finance_management', 'finance:create', 'finance:edit'],
   'system:manage': ['system_settings'],
+  'operations:read': ['operations_readiness'],
+  'operations:register': ['operations_readiness_register'],
   'tools:view': ['tools_center'],
   'reports:view': ['statistics_reports'],
 }
@@ -80,6 +82,8 @@ const ROLE_FALLBACKS: Record<string, string[]> = {
   'finance:manage': ['admin', 'super_admin', 'finance'],
   'trust:manage': ['admin', 'super_admin', 'finance'],
   'system:manage': ['admin', 'super_admin'],
+  'operations:read': ['admin', 'super_admin', 'director', 'compliance'],
+  'operations:register': ['admin', 'super_admin', 'director'],
   'tools:view': ['admin', 'super_admin', 'lawyer', 'assistant', 'finance', 'intern', 'user'],
   'reports:view': ['admin', 'super_admin', 'lawyer', 'finance'],
 }
