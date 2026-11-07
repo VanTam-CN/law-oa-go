@@ -1,0 +1,77 @@
+{
+  "time": "2026-11-07T08:13:32.449140+00:00",
+  "source": {
+    "internal/services/inbox_workflow_action.go": {
+      "sha256": "b9d800edaec9b38fbc8919f0ee79b7e32e51c1a52a8dc44bd1ac570d8d6ad590",
+      "mtime_ns": 1794039013729537862
+    },
+    "internal/services/inbox_service.go": {
+      "sha256": "2561a0ff9393af189e9d246ddbd84cac9f4990ebdff67989fa362c711985ec83",
+      "mtime_ns": 1794035736323431938
+    },
+    "internal/services/inbox_workflow_contract_test.go": {
+      "sha256": "0cc0baeac4012396ea74be4f44b9c5dfb11bae1a27bf1e8d3ac27797ba4f47ed",
+      "mtime_ns": 1794039033651868053
+    },
+    "internal/services/inbox_active_snapshot_test.go": {
+      "sha256": "55028f81e94cc3483b0c4f4bfb99d85a6be243351726df6cf2ae7d870d986a0c",
+      "mtime_ns": 1794039185408328761
+    },
+    "internal/services/inbox_workflow_postgres_test.go": {
+      "sha256": "04e82f376132e16cf6ffdc6aca1b7fa1bb6ee4f42cf7744f6ecd713d50373f23",
+      "mtime_ns": 1794038700185520702
+    },
+    "internal/services/inbox_workflow_postgres_http_test.go": {
+      "sha256": "aea925938d2bf1cfd06002a3bd5d6779dd1c17116df958127438d79122a4d052",
+      "mtime_ns": 1794039116621649169
+    },
+    "internal/services/intake_submission_snapshot.go": {
+      "sha256": "bae6fffc4ecafd9e7afcc43e63c21c6f67c84baef2b773241df2f63e42ffe7eb",
+      "mtime_ns": 1794038924239818543
+    },
+    "internal/services/intake_inbox_handoff.go": {
+      "sha256": "68ae6b1fbeee91f0957ead8cc3aaf33b5bc5c8bf30f098a2ec9e4830284d6687",
+      "mtime_ns": 1794035830816257358
+    },
+    "internal/services/approval_workflow_transactions.go": {
+      "sha256": "9f6aee86973937ab0ef6acd1785386bf24421a6528abe691d39775fa91e5b4ef",
+      "mtime_ns": 1794038924216394631
+    },
+    "internal/services/approval_service.go": {
+      "sha256": "daedcc7d0883dedaf7b8f8d60cb4d529a639bf85aa51aafe8ff1f95948f7b796",
+      "mtime_ns": 1794036821055752349
+    },
+    "internal/services/approval_conflict_integration_service.go": {
+      "sha256": "471fcb384830af50f1e2159cfb91ec35ed8feaf89e4c928f2cc56567ec100dce",
+      "mtime_ns": 1794039200227745583
+    },
+    "internal/services/approval_submission_history.go": {
+      "sha256": "5d17fb0f54914ced8e702a4797fbcf3f3240057ab67d6764503915c46ecf9204",
+      "mtime_ns": 1794036723993463956
+    },
+    "internal/services/approval_intake_case_guard.go": {
+      "sha256": "9cb41b27f05dc28ade12398a0257cd7470b3e34cf1d15dc554bfb1998e896774",
+      "mtime_ns": 1794038924192844306
+    },
+    "internal/services/approval_collaboration_postgres_test.go": {
+      "sha256": "af917a6cd01442f8deca505c2c0ce4ee14bd86979f319b15a8e5874063db040f",
+      "mtime_ns": 1794037666271786075
+    },
+    "internal/models/intake_collaboration.go": {
+      "sha256": "af70ac41f036ccf3f726182af42f15d35a50f0008954ffdb8434316046f15781",
+      "mtime_ns": 1794034807055588170
+    },
+    "internal/models/approval_models.go": {
+      "sha256": "6b1b1de758175dbe47e1bbaafb97ab8aed80ff4709befd58adeff08fab99d98b",
+      "mtime_ns": 1794034889445305900
+    },
+    "internal/handlers/demo_aggregate_handler.go": {
+      "sha256": "b65a7539b8450de37559a00fd0e807ddc3ab18bd5c00d5ef0ab804e06d34bb43",
+      "mtime_ns": 1794038924289567524
+    },
+    "internal/handlers/inbox_handler.go": {
+      "sha256": "f839870d14b99b9ede33d430b6302a3ef46b88cc434a8cc23823d67cd2873dde",
+      "mtime_ns": 1794035220730333348
+    }
+  }
+}

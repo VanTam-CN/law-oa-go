@@ -1,0 +1,382 @@
+
+> law-oa-frontend@0.0.0 test
+> jest --runInBand --coverage=false --runTestsByPath src/pages/batch01/__tests__/ConflictDetailModal.test.tsx -t updates only|describes missing
+
+  console.error
+    Error: Not implemented: window.getComputedStyle(elt, pseudoElt)
+        at module.exports (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-environment-jsdom/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+        at window.getComputedStyle (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-environment-jsdom/node_modules/jsdom/lib/jsdom/browser/Window.js:895:7)
+        at measureScrollbarSize (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:35:32)
+        at getTargetScrollBarSize (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:83:10)
+        at /Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@rc-component/portal/lib/useScrollLocker.js:27:72
+        at /Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/hooks/useLayoutEffect.js:18:12
+        at commitHookEffectListMount (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:23189:26)
+        at commitPassiveMountOnFiber (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24970:11)
+        at commitPassiveMountEffects_complete (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24930:9)
+        at commitPassiveMountEffects_begin (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24917:7)
+        at commitPassiveMountEffects (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24905:3)
+        at flushPassiveEffectsImpl (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27078:3)
+        at flushPassiveEffects (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27023:14)
+        at performSyncWorkOnRoot (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26115:3)
+        at flushSyncCallbacks (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+        at commitRootImpl (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26998:3)
+        at commitRoot (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26721:5)
+        at finishConcurrentRender (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26020:9)
+        at performConcurrentWorkOnRoot (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:25848:7)
+        at workLoop (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/scheduler/cjs/scheduler.development.js:266:34)
+        at flushWork (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/scheduler/cjs/scheduler.development.js:239:14)
+        at performWorkUntilDeadline (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/scheduler/cjs/scheduler.development.js:533:21)
+        at Timeout.task [as _onTimeout] (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-environment-jsdom/node_modules/jsdom/lib/jsdom/browser/Window.js:579:19)
+        at listOnTimeout (node:internal/timers:588:17)
+        at processTimers (node:internal/timers:523:7) {
+      type: 'not implemented'
+    }
+
+      at VirtualConsole.<anonymous> (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@jest/environment-jsdom-abstract/build/index.js:87:23)
+      at measureScrollbarSize (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:35:32)
+      at getTargetScrollBarSize (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:83:10)
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@rc-component/portal/lib/useScrollLocker.js:27:72
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/hooks/useLayoutEffect.js:18:12
+      at commitHookEffectListMount (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:23189:26)
+      at commitPassiveMountOnFiber (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24970:11)
+      at commitPassiveMountEffects_complete (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24930:9)
+      at commitPassiveMountEffects_begin (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24917:7)
+      at commitPassiveMountEffects (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24905:3)
+      at flushPassiveEffectsImpl (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27078:3)
+      at flushPassiveEffects (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27023:14)
+      at performSyncWorkOnRoot (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26115:3)
+      at flushSyncCallbacks (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+      at commitRootImpl (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26998:3)
+      at commitRoot (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26721:5)
+      at finishConcurrentRender (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26020:9)
+      at performConcurrentWorkOnRoot (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:25848:7)
+      at workLoop (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/scheduler/cjs/scheduler.development.js:266:34)
+      at flushWork (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/scheduler/cjs/scheduler.development.js:239:14)
+      at performWorkUntilDeadline (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/scheduler/cjs/scheduler.development.js:533:21)
+
+  console.error
+    Error: Not implemented: window.getComputedStyle(elt, pseudoElt)
+        at module.exports (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-environment-jsdom/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+        at window.getComputedStyle (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-environment-jsdom/node_modules/jsdom/lib/jsdom/browser/Window.js:895:7)
+        at measureScrollbarSize (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:35:32)
+        at getTargetScrollBarSize (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:83:10)
+        at /Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@rc-component/portal/lib/useScrollLocker.js:27:72
+        at /Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/hooks/useLayoutEffect.js:18:12
+        at commitHookEffectListMount (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:23189:26)
+        at commitPassiveMountOnFiber (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24970:11)
+        at commitPassiveMountEffects_complete (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24930:9)
+        at commitPassiveMountEffects_begin (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24917:7)
+        at commitPassiveMountEffects (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24905:3)
+        at flushPassiveEffectsImpl (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27078:3)
+        at flushPassiveEffects (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27023:14)
+        at performSyncWorkOnRoot (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26115:3)
+        at flushSyncCallbacks (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+        at commitRootImpl (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26998:3)
+        at commitRoot (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26721:5)
+        at finishConcurrentRender (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26020:9)
+        at performConcurrentWorkOnRoot (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:25848:7)
+        at workLoop (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/scheduler/cjs/scheduler.development.js:266:34)
+        at flushWork (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/scheduler/cjs/scheduler.development.js:239:14)
+        at performWorkUntilDeadline (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/scheduler/cjs/scheduler.development.js:533:21)
+        at Timeout.task [as _onTimeout] (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-environment-jsdom/node_modules/jsdom/lib/jsdom/browser/Window.js:579:19)
+        at listOnTimeout (node:internal/timers:588:17)
+        at processTimers (node:internal/timers:523:7) {
+      type: 'not implemented'
+    }
+
+      at VirtualConsole.<anonymous> (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@jest/environment-jsdom-abstract/build/index.js:87:23)
+      at measureScrollbarSize (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:35:32)
+      at getTargetScrollBarSize (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:83:10)
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@rc-component/portal/lib/useScrollLocker.js:27:72
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/hooks/useLayoutEffect.js:18:12
+      at commitHookEffectListMount (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:23189:26)
+      at commitPassiveMountOnFiber (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24970:11)
+      at commitPassiveMountEffects_complete (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24930:9)
+      at commitPassiveMountEffects_begin (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24917:7)
+      at commitPassiveMountEffects (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24905:3)
+      at flushPassiveEffectsImpl (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27078:3)
+      at flushPassiveEffects (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27023:14)
+      at performSyncWorkOnRoot (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26115:3)
+      at flushSyncCallbacks (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+      at commitRootImpl (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26998:3)
+      at commitRoot (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26721:5)
+      at finishConcurrentRender (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26020:9)
+      at performConcurrentWorkOnRoot (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:25848:7)
+      at workLoop (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/scheduler/cjs/scheduler.development.js:266:34)
+      at flushWork (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/scheduler/cjs/scheduler.development.js:239:14)
+      at performWorkUntilDeadline (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/scheduler/cjs/scheduler.development.js:533:21)
+
+FAIL Law OA Frontend src/pages/batch01/__tests__/ConflictDetailModal.test.tsx
+  ✕ updates only the opened queue row from its already-fetched independent review, without a review request per row (1331 ms)
+  ✕ describes missing matches without inventing limited search coverage (138 ms)
+  ○ skipped assigns and submits an intake independent review directly, including automatic-clear=false
+  ○ skipped assigns and submits an intake independent review directly, including automatic-clear=true
+  ○ skipped guides the intake applicant to independent review without offering the legacy approval writer
+  ○ skipped keeps the long detail and reviewer popup above fixed navigation, with a separately scrolling body
+
+  ● updates only the opened queue row from its already-fetched independent review, without a review request per row
+
+    Unable to find an element with the text: 未发现可识别冲突. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+    Ignored nodes: comments, script, style
+    [36m<tr[39m
+      [33mclass[39m=[32m""[39m
+    [36m>[39m
+      [36m<td>[39m
+        [36m<span[39m
+          [33mclass[39m=[32m"ng-risk l"[39m
+        [36m>[39m
+          [0m待人工复核[0m
+        [36m</span>[39m
+      [36m</td>[39m
+      [36m<td>[39m
+        [0m待人工复核[0m
+      [36m</td>[39m
+      [36m<td[39m
+        [33mclass[39m=[32m"strong-cell"[39m
+      [36m>[39m
+        [0m未发现匹配记录[0m
+      [36m</td>[39m
+      [36m<td>[39m
+        [0m无匹配[0m
+      [36m</td>[39m
+      [36m<td>[39m
+        [0m长冲突详情[0m
+      [36m</td>[39m
+      [36m<td>[39m
+        [0m-[0m
+      [36m</td>[39m
+      [36m<td>[39m
+        [0m-[0m
+      [36m</td>[39m
+      [36m<td[39m
+        [33mclass[39m=[32m"conflict-evidence-cell"[39m
+      [36m>[39m
+        [36m<span[39m
+          [33maria-describedby[39m=[32m"test-id"[39m
+        [36m>[39m
+          [0m暂无结构化证据摘要[0m
+        [36m</span>[39m
+      [36m</td>[39m
+      [36m<td>[39m
+        [0m系统冲突检测记录[0m
+      [36m</td>[39m
+      [36m<td[39m
+        [33mclass[39m=[32m"conflict-action-cell"[39m
+      [36m>[39m
+        [36m<button[39m
+          [33mclass[39m=[32m"ant-btn css-dev-only-do-not-override-1odpy5d ant-btn-primary ant-btn-color-primary ant-btn-variant-solid ant-btn-sm ant-btn-background-ghost"[39m
+          [33mtype[39m=[32m"button"[39m
+        [36m>[39m
+          [36m<span>[39m
+            [0m查看详情[0m
+          [36m</span>[39m
+        [36m</button>[39m
+      [36m</td>[39m
+    [36m</tr>[39m
+
+      56 |   render(<MemoryRouter initialEntries={['/conflict?task_id=check-fictional']}><ConflictCheckResults /></MemoryRouter>)
+      57 |   const row = (await screen.findByText('长冲突详情', { selector: 'td' })).closest('tr')!
+    > 58 |   await waitFor(() => expect(within(row).getByText('未发现可识别冲突')).toBeInTheDocument())
+         |                ^
+      59 |   const unopened = screen.getByText('未打开的另一条检测', { selector: 'td' }).closest('tr')!
+      60 |   expect(within(unopened).getAllByText('待人工复核').length).toBeGreaterThan(0)
+      61 |   const reviewReads = (global.fetch as jest.Mock).mock.calls.filter(([url, options]) => String(url).endsWith('/review') && !options?.method)
+
+      at waitForWrapper (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/wait-for.js:163:27)
+      at Object.<anonymous> (src/pages/batch01/__tests__/ConflictDetailModal.test.tsx:58:16)
+
+  ● describes missing matches without inventing limited search coverage
+
+    TestingLibraryElementError: Unable to find an element with the text: 未发现匹配证据. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+    Ignored nodes: comments, script, style
+    [36m<div[39m
+      [33maria-labelledby[39m=[32m"test-id"[39m
+      [33maria-modal[39m=[32m"true"[39m
+      [33mclass[39m=[32m"ant-modal css-dev-only-do-not-override-1odpy5d ant-zoom-appear ant-zoom-appear-prepare ant-zoom"[39m
+      [33mrole[39m=[32m"dialog"[39m
+      [33mstyle[39m=[32m"width: 960px;"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mstyle[39m=[32m"outline: none;"[39m
+        [33mtabindex[39m=[32m"0"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"ant-modal-content"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33maria-label[39m=[32m"Close"[39m
+            [33mclass[39m=[32m"ant-modal-close"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [36m<span[39m
+              [33maria-label[39m=[32m"Close"[39m
+              [33mclass[39m=[32m"ant-modal-close-x"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33maria-label[39m=[32m"close"[39m
+                [33mclass[39m=[32m"anticon anticon-close ant-modal-close-icon"[39m
+                [33mrole[39m=[32m"img"[39m
+              [36m>[39m
+                [36m<svg[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mdata-icon[39m=[32m"close"[39m
+                  [33mfill[39m=[32m"currentColor"[39m
+                  [33mfill-rule[39m=[32m"evenodd"[39m
+                  [33mfocusable[39m=[32m"false"[39m
+                  [33mheight[39m=[32m"1em"[39m
+                  [33mviewBox[39m=[32m"64 64 896 896"[39m
+                  [33mwidth[39m=[32m"1em"[39m
+                [36m>[39m
+                  [36m<path[39m
+                    [33md[39m=[32m"M799.86 166.31c.02 0 .04.02.08.06l57.69 57.7c.04.03.05.05.06.08a.12.12 0 010 .06c0 .03-.02.05-.06.09L569.93 512l287.7 287.7c.04.04.05.06.06.09a.12.12 0 010 .07c0 .02-.02.04-.06.08l-57.7 57.69c-.03.04-.05.05-.07.06a.12.12 0 01-.07 0c-.03 0-.05-.02-.09-.06L512 569.93l-287.7 287.7c-.04.04-.06.05-.09.06a.12.12 0 01-.07 0c-.02 0-.04-.02-.08-.06l-57.69-57.7c-.04-.03-.05-.05-.06-.07a.12.12 0 010-.07c0-.03.02-.05.06-.09L454.07 512l-287.7-287.7c-.04-.04-.05-.06-.06-.09a.12.12 0 010-.07c0-.02.02-.04.06-.08l57.7-57.69c.03-.04.05-.05.07-.06a.12.12 0 01.07 0c.03 0 .05.02.09.06L512 454.07l287.7-287.7c.04-.04.06-.05.09-.06a.12.12 0 01.07 0z"[39m
+                  [36m/>[39m
+                [36m</svg>[39m
+              [36m</span>[39m
+            [36m</span>[39m
+          [36m</button>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"ant-modal-header"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"ant-modal-title"[39m
+              [33mid[39m=[32m"test-id"[39m
+            [36m>[39m
+              [0m冲突检测详情[0m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"ant-modal-body"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"batch-conflict-detail"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"ant-alert ant-alert-info ant-alert-with-description css-dev-only-do-not-override-1odpy5d"[39m
+                [33mdata-show[39m=[32m"true"[39m
+                [33mrole[39m=[32m"alert"[39m
+              [36m>[39m
+                [36m<span[39m
+                  [33maria-label[39m=[32m"info-circle"[39m
+                  [33mclass[39m=[32m"anticon anticon-info-circle ant-alert-icon"[39m
+                  [33mrole[39m=[32m"img"[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mdata-icon[39m=[32m"info-circle"[39m
+                    [33mfill[39m=[32m"currentColor"[39m
+                    [33mfocusable[39m=[32m"false"[39m
+                    [33mheight[39m=[32m"1em"[39m
+                    [33mviewBox[39m=[32m"64 64 896 896"[39m
+                    [33mwidth[39m=[32m"1em"[39m
+                  [36m>[39m
+                    [36m<path[39m
+                      [33md[39m=[32m"M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm32 664c0 4.4-3.6 8-8 8h-48c-4.4 0-8-3.6-8-8V456c0-4.4 3.6-8 8-8h48c4.4 0 8 3.6 8 8v272zm-32-344a48.01 48.01 0 010-96 48.01 48.01 0 010 96z"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                [36m</span>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"ant-alert-content"[39m
+                [36m>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"ant-alert-message"[39m
+                  [36m>[39m
+                    [0m接案检测须先完成独立复核[0m
+                  [36m</div>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"ant-alert-description"[39m
+                  [36m>[39m
+                    [0m请在本页指定独立复核人并完成复核，再由申请律师回到原草稿提交接案审批。检测详情不另行发起冲突审批。[0m
+                  [36m</div>[39m
+                [36m</div>[39m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"batch-info-grid two"[39m
+              [36m>[39m
+                [36m<article>[39m
+                  [36m<span>[39m
+                    [0m关联案件[0m
+                  [36m</span>[39m
+                  [36m<strong>[39m
+                    [0m长冲突详情[0m
+                  [36m</strong>[39m
+                [36m</article>[39m
+                [36m<article>[39m
+                  [36m<span>[39m
+                    [0m案件类型[0m
+                  [36m</span>[39m
+                  [36m<strong>[39m
+                    [0m其他[0m
+                  [36m</strong>[39m
+                [36m</article>[39m
+                [36m<article>[39m
+                  [36m<span>[39m
+                    [0m客户/委托人[0m
+                  [36m</span>[39m
+                  [36m<strong>[39m
+                    [0m-[0m
+                  [36m</strong>[39m
+                [36m</article>[39m
+                [36m<article>[39m
+                  [36m<span>[39m
+                    [0m命中历史主体[0m
+                  [36m</span>[39m
+                  [36m<strong>[39m
+                    [0m未发现匹配记录[0m
+                  [36m</strong>[39m
+                [36m</article>[39m
+                [36m<article>[39m
+                  [36m<span>[39m
+                    [0m主冲突类型[0m
+                  [36m</span>[39m
+                  [36m<strong>[39m
+                    [0m未标注冲突类型[0m
+                  [36m</strong>[39m
+                [36m</article>[39m
+                [36m<article>[39m
+                  [36m<span>[39m
+                    [0m自动检索状态[0m
+                  [36m</span>[39m
+                  [36m<strong>[39m
+                    [0m自动检索已完成；接案结论以复核状态为准[0m
+                  [36m</strong>[39m
+                [36m</article>[39m
+                [36m<article>[39m
+                  [36m<span>[39m
+                    [0m风险等级[0m
+                  [36m</span>[39m
+                  [36m<strong>[39m
+                    [0m待人工复核[0m
+                  [36m</strong>[39m
+                [36m</article>[39m
+                [36m<article>[39m
+                  [36m<span>[39m
+                    [0m接案状态[0m
+                  [36m</span>[39m
+                  [36m<strong>[39m
+                    [0m需要独立人工复核[0m
+                  [36m</strong>[39m
+                [36m</article>[39m
+                [36m<article>[39m
+            ...
+
+      67 |   render(<MemoryRouter initialEntries={['/conflict?task_id=check-fictional']}><ConflictCheckResults /></MemoryRouter>)
+      68 |   const dialog = await screen.findByRole('dialog', { name: '冲突检测详情' })
+    > 69 |   expect(within(dialog).getByText('未发现匹配证据')).toBeInTheDocument()
+         |                         ^
+      70 |   expect(within(dialog).queryByText(/当前仅因检索覆盖受限|检索覆盖完整性尚未确认/)).not.toBeInTheDocument()
+      71 | })
+      72 |
+
+      at Object.getElementError (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/config.js:37:19)
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+      at Object.<anonymous> (src/pages/batch01/__tests__/ConflictDetailModal.test.tsx:69:25)
+
+Test Suites: 1 failed, 1 total
+Tests:       2 failed, 4 skipped, 6 total
+Snapshots:   0 total
+Time:        3.472 s
+Ran all test suites within paths "src/pages/batch01/__tests__/ConflictDetailModal.test.tsx".

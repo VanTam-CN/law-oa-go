@@ -1,0 +1,1558 @@
+
+> law-oa-frontend@0.0.0 test
+> jest --runInBand --coverage=false --runTestsByPath src/pages/batch01/__tests__/ApprovalCollaborationPage.test.tsx
+
+  console.error
+    Error: Not implemented: window.getComputedStyle(elt, pseudoElt)
+        at module.exports (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-environment-jsdom/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+        at window.getComputedStyle (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-environment-jsdom/node_modules/jsdom/lib/jsdom/browser/Window.js:895:7)
+        at measureScrollbarSize (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:35:32)
+        at getTargetScrollBarSize (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:83:10)
+        at /Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@rc-component/portal/lib/useScrollLocker.js:27:72
+        at /Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/hooks/useLayoutEffect.js:18:12
+        at commitHookEffectListMount (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:23189:26)
+        at commitPassiveMountOnFiber (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24970:11)
+        at commitPassiveMountEffects_complete (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24930:9)
+        at commitPassiveMountEffects_begin (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24917:7)
+        at commitPassiveMountEffects (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24905:3)
+        at flushPassiveEffectsImpl (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27078:3)
+        at flushPassiveEffects (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27023:14)
+        at performSyncWorkOnRoot (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26115:3)
+        at flushSyncCallbacks (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+        at commitRootImpl (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26998:3)
+        at commitRoot (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26721:5)
+        at finishConcurrentRender (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26020:9)
+        at performConcurrentWorkOnRoot (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:25848:7)
+        at flushActQueue (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react/cjs/react.development.js:2667:24)
+        at act (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react/cjs/react.development.js:2582:11)
+        at /Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/react/dist/act-compat.js:47:25
+        at Object.eventWrapper (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/react/dist/pure.js:107:28)
+        at fireEvent (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/events.js:12:35)
+        at Function.fireEvent.<computed> [as click] (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/events.js:110:36)
+        at Function.fireEvent.<computed> [as click] (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/react/dist/fire-event.js:15:52)
+        at Object.<anonymous> (/private/tmp/lawoa-intake-collaboration-20261107/frontend/src/pages/batch01/__tests__/ApprovalCollaborationPage.test.tsx:53:13) {
+      type: 'not implemented'
+    }
+
+      51 | it('returns two structured requirements as an object with the exact server action version', async () => {
+      52 |   mount()
+    > 53 |   fireEvent.click(await screen.findByRole('button', { name: '退回修改' }))
+         |             ^
+      54 |   fireEvent.change(screen.getByLabelText('处理依据'), { target: { value: '请核对当前申请并分别补充以下两项说明' } })
+      55 |   fireEvent.change(screen.getByLabelText('补正要求 1'), { target: { value: '说明第一项事项' } })
+      56 |   fireEvent.click(screen.getByRole('button', { name: '增加补正要求' }))
+
+      at VirtualConsole.<anonymous> (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@jest/environment-jsdom-abstract/build/index.js:87:23)
+      at measureScrollbarSize (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:35:32)
+      at getTargetScrollBarSize (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:83:10)
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@rc-component/portal/lib/useScrollLocker.js:27:72
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/hooks/useLayoutEffect.js:18:12
+      at commitHookEffectListMount (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:23189:26)
+      at commitPassiveMountOnFiber (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24970:11)
+      at commitPassiveMountEffects_complete (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24930:9)
+      at commitPassiveMountEffects_begin (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24917:7)
+      at commitPassiveMountEffects (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24905:3)
+      at flushPassiveEffectsImpl (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27078:3)
+      at flushPassiveEffects (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27023:14)
+      at performSyncWorkOnRoot (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26115:3)
+      at flushSyncCallbacks (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+      at commitRootImpl (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26998:3)
+      at commitRoot (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26721:5)
+      at finishConcurrentRender (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26020:9)
+      at performConcurrentWorkOnRoot (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:25848:7)
+      at flushActQueue (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react/cjs/react.development.js:2667:24)
+      at act (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react/cjs/react.development.js:2582:11)
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/react/dist/act-compat.js:47:25
+      at Object.eventWrapper (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/react/dist/pure.js:107:28)
+      at fireEvent (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/events.js:12:35)
+      at Function.fireEvent.<computed> [as click] (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/events.js:110:36)
+      at Function.fireEvent.<computed> [as click] (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/react/dist/fire-event.js:15:52)
+      at Object.<anonymous> (src/pages/batch01/__tests__/ApprovalCollaborationPage.test.tsx:53:13)
+
+FAIL Law OA Frontend src/pages/batch01/__tests__/ApprovalCollaborationPage.test.tsx (11.473 s)
+  ✓ returns two structured requirements as an object with the exact server action version (563 ms)
+  ✓ makes a historical snapshot read-only until switching back to the current submission (272 ms)
+  ✓ disables decisions when the submission snapshot cannot be read (61 ms)
+  ✕ treats the server-verified legacy current snapshot as current and consumes the live review (1013 ms)
+  ✓ keeps explicitly selected legacy history read-only even with a null active pointer (247 ms)
+  ✕ allows an explicitly snapshot-free ordinary approval without case promises or a snapshot token (1005 ms)
+  ✓ keeps decisions blocked for missing capability (58 ms)
+  ✓ keeps decisions blocked for required snapshot (62 ms)
+  ✓ keeps decisions blocked for active pointer contradicts optional (63 ms)
+  ✓ keeps decisions blocked for intake source contradicts optional (59 ms)
+  ✓ keeps decisions blocked for case type contradicts optional (56 ms)
+  ✓ keeps decisions blocked for forbidden (57 ms)
+  ✓ keeps decisions blocked for conflict (55 ms)
+  ✓ keeps decisions blocked for server error (59 ms)
+  ✕ reports only the completed stage for a two-node approval (1007 ms)
+  ✕ reports a created case only after final approval and a real case id (1009 ms)
+  ✕ does not retry or fall back when a readable old intake approval is refused by the server (1007 ms)
+  ✕ separates frozen automatic results, complete coverage and the current independent review (1006 ms)
+  ✕ keeps incomplete coverage blocking despite a no-conflict review (1007 ms)
+  ✕ shows only the chosen historical review and coverage until returning to current (1006 ms)
+
+  ● treats the server-verified legacy current snapshot as current and consumes the live review
+
+    Unable to find role="button" and name `/同意并通过本阶段/`
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"batch-page approval-page"[39m
+        [36m>[39m
+          [36m<header[39m
+            [33mclass[39m=[32m"ng-page-head"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"eyebrow"[39m
+              [36m>[39m
+                [0m审批中心 / 我的审批 / 审批详情[0m
+              [36m</div>[39m
+              [36m<h1>[39m
+                [0m审批事项[0m
+              [36m</h1>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"sub"[39m
+              [36m>[39m
+                [0m审批编号：approval-uuid 状态：已提交 当前审批人：待分配[0m
+              [36m</p>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"ng-head-actions"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"ant-badge ant-badge-not-a-wrapper css-dev-only-do-not-override-1odpy5d"[39m
+              [36m>[39m
+                [36m<sup[39m
+                  [33mclass[39m=[32m"ant-scroll-number ant-badge-count ant-badge-multiple-words"[39m
+                  [33mdata-show[39m=[32m"true"[39m
+                  [33mstyle[39m=[32m"background: rgb(245, 159, 47);"[39m
+                  [33mtitle[39m=[32m"尚未成案"[39m
+                [36m>[39m
+                  [0m尚未成案[0m
+                [36m</sup>[39m
+              [36m</span>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"ant-btn css-dev-only-do-not-override-1odpy5d ant-btn-default ant-btn-color-default ant-btn-variant-outlined"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"ant-btn-icon"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33maria-label[39m=[32m"printer"[39m
+                    [33mclass[39m=[32m"anticon anticon-printer"[39m
+                    [33mrole[39m=[32m"img"[39m
+                  [36m>[39m
+                    [36m<svg[39m
+                      [33maria-hidden[39m=[32m"true"[39m
+                      [33mdata-icon[39m=[32m"printer"[39m
+                      [33mfill[39m=[32m"currentColor"[39m
+                      [33mfocusable[39m=[32m"false"[39m
+                      [33mheight[39m=[32m"1em"[39m
+                      [33mviewBox[39m=[32m"64 64 896 896"[39m
+                      [33mwidth[39m=[32m"1em"[39m
+                    [36m>[39m
+                      [36m<path[39m
+                        [33md[39m=[32m"M820 436h-40c-4.4 0-8 3.6-8 8v40c0 4.4 3.6 8 8 8h40c4.4 0 8-3.6 8-8v-40c0-4.4-3.6-8-8-8zm32-104H732V120c0-4.4-3.6-8-8-8H300c-4.4 0-8 3.6-8 8v212H172c-44.2 0-80 35.8-80 80v328c0 17.7 14.3 32 32 32h168v132c0 4.4 3.6 8 8 8h424c4.4 0 8-3.6 8-8V772h168c17.7 0 32-14.3 32-32V412c0-44.2-35.8-80-80-80zM360 180h304v152H360V180zm304 664H360V568h304v276zm200-140H732V500H292v204H160V412c0-6.6 5.4-12 12-12h680c6.6 0 12 5.4 12 12v292z"[39m
+                      [36m/>[39m
+                    [36m</svg>[39m
+                  [36m</span>[39m
+                [36m</span>[39m
+                [36m<span>[39m
+                  [0m打印[0m
+                [36m</span>[39m
+              [36m</button>[39m
+              [36m<button[39m
+                [33maria-describedby[39m=[32m"test-id"[39m
+                [33mclass[39m=[32m"ant-btn css-dev-only-do-not-override-1odpy5d ant-btn-primary ant-btn-color-primary ant-btn-variant-solid"[39m
+                [33mdisabled[39m=[32m""[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [36m<span>[39m
+                  [0m查看关联案件[0m
+                [36m</span>[39m
+              [36m</button>[39m
+            [36m</div>[39m
+          [36m</header>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"batch-approval-layout"[39m
+          [36m>[39m
+            [36m<section[39m
+              [33mclass[39m=[32m"ng-panel "[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"ng-panel-head"[39m
+              [36m>[39m
+                [36m<h2[39m
+                  [33mclass[39m=[32m"ng-panel-title"[39m
+                [36m>[39m
+                  [0m审批流程[0m
+                [36m</h2>[39m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"batch-approval-steps"[39m
+              [36m>[39m
+                [36m<article[39m
+                  [33mclass[39m=[32m"done"[39m
+                [36m>[39m
+                  [36m<span>[39m
+                    [36m<span[39m
+                      [33maria-label[39m=[32m"check-circle"[39m
+                      [33mclass[39m=[32m"anticon anticon-check-circle"[39m
+                      [33mrole[39m=[32m"img"[39m
+                    [36m>[39m
+                      [36m<svg[39m
+                        [33maria-hidden[39m=[32m"true"[39m
+                        [33mdata-icon[39m=[32m"check-circle"[39m
+                        [33mfill[39m=[32m"currentColor"[39m
+                        [33mfocusable[39m=[32m"false"[39m
+                        [33mheight[39m=[32m"1em"[39m
+                        [33mviewBox[39m=[32m"64 64 896 896"[39m
+                        [33mwidth[39m=[32m"1em"[39m
+                      [36m>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m"M699 353h-46.9c-10.2 0-19.9 4.9-25.9 13.3L469 584.3l-71.2-98.8c-6-8.3-15.6-13.3-25.9-13.3H325c-6.5 0-10.3 7.4-6.5 12.7l124.6 172.8a31.8 31.8 0 0051.7 0l210.6-292c3.9-5.3.1-12.7-6.4-12.7z"[39m
+                        [36m/>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m"M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z"[39m
+                        [36m/>[39m
+                      [36m</svg>[39m
+                    [36m</span>[39m
+                  [36m</span>[39m
+                  [36m<div>[39m
+                    [36m<strong>[39m
+                      [0m1. 申请提交[0m
+                    [36m</strong>[39m
+                    [36m<p>[39m
+                      [0m申请人[0m
+                    [36m</p>[39m
+                    [36m<em>[39m
+                      [0m已提交审批申请[0m
+                    [36m</em>[39m
+                  [36m</div>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"ng-risk l"[39m
+                  [36m>[39m
+                    [0m草稿[0m
+                  [36m</span>[39m
+                [36m</article>[39m
+                [36m<article[39m
+                  [33mclass[39m=[32m"active"[39m
+                [36m>[39m
+                  [36m<span>[39m
+                    [0m2[0m
+                  [36m</span>[39m
+                  [36m<div>[39m
+                    [36m<strong>[39m
+                      [0m2. 当前审批[0m
+                    [36m</strong>[39m
+                    [36m<p>[39m
+                      [0m待分配[0m
+                    [36m</p>[39m
+                    [36m<em>[39m
+                      [0m等待当前审批人处理[0m
+                    [36m</em>[39m
+                  [36m</div>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"ng-risk l"[39m
+                  [36m>[39m
+                    [0m已提交...
+
+      90 |   legacyCurrent = true
+      91 |   mount()
+    > 92 |   const approve = await screen.findByRole('button', { name: /同意并通过本阶段/ })
+         |                                ^
+      93 |   expect(approve).toBeEnabled()
+      94 |   expect(screen.getByRole('button', { name: '退回修改' })).toBeEnabled()
+      95 |   expect(screen.queryByText('正在查看历史提交版本，仅供查阅')).not.toBeInTheDocument()
+
+      at waitForWrapper (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/wait-for.js:163:27)
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+      at Object.<anonymous> (src/pages/batch01/__tests__/ApprovalCollaborationPage.test.tsx:92:32)
+
+  ● allows an explicitly snapshot-free ordinary approval without case promises or a snapshot token
+
+    Unable to find role="button" and name "同意并通过本阶段"
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"batch-page approval-page"[39m
+        [36m>[39m
+          [36m<header[39m
+            [33mclass[39m=[32m"ng-page-head"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"eyebrow"[39m
+              [36m>[39m
+                [0m审批中心 / 我的审批 / 审批详情[0m
+              [36m</div>[39m
+              [36m<h1>[39m
+                [0m审批事项[0m
+              [36m</h1>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"sub"[39m
+              [36m>[39m
+                [0m审批编号：approval-uuid 状态：已提交 当前审批人：待分配[0m
+              [36m</p>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"ng-head-actions"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"ant-badge ant-badge-not-a-wrapper css-dev-only-do-not-override-1odpy5d"[39m
+              [36m>[39m
+                [36m<sup[39m
+                  [33mclass[39m=[32m"ant-scroll-number ant-badge-count ant-badge-multiple-words"[39m
+                  [33mdata-show[39m=[32m"true"[39m
+                  [33mstyle[39m=[32m"background: rgb(245, 159, 47);"[39m
+                  [33mtitle[39m=[32m"尚未成案"[39m
+                [36m>[39m
+                  [0m尚未成案[0m
+                [36m</sup>[39m
+              [36m</span>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"ant-btn css-dev-only-do-not-override-1odpy5d ant-btn-default ant-btn-color-default ant-btn-variant-outlined"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"ant-btn-icon"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33maria-label[39m=[32m"printer"[39m
+                    [33mclass[39m=[32m"anticon anticon-printer"[39m
+                    [33mrole[39m=[32m"img"[39m
+                  [36m>[39m
+                    [36m<svg[39m
+                      [33maria-hidden[39m=[32m"true"[39m
+                      [33mdata-icon[39m=[32m"printer"[39m
+                      [33mfill[39m=[32m"currentColor"[39m
+                      [33mfocusable[39m=[32m"false"[39m
+                      [33mheight[39m=[32m"1em"[39m
+                      [33mviewBox[39m=[32m"64 64 896 896"[39m
+                      [33mwidth[39m=[32m"1em"[39m
+                    [36m>[39m
+                      [36m<path[39m
+                        [33md[39m=[32m"M820 436h-40c-4.4 0-8 3.6-8 8v40c0 4.4 3.6 8 8 8h40c4.4 0 8-3.6 8-8v-40c0-4.4-3.6-8-8-8zm32-104H732V120c0-4.4-3.6-8-8-8H300c-4.4 0-8 3.6-8 8v212H172c-44.2 0-80 35.8-80 80v328c0 17.7 14.3 32 32 32h168v132c0 4.4 3.6 8 8 8h424c4.4 0 8-3.6 8-8V772h168c17.7 0 32-14.3 32-32V412c0-44.2-35.8-80-80-80zM360 180h304v152H360V180zm304 664H360V568h304v276zm200-140H732V500H292v204H160V412c0-6.6 5.4-12 12-12h680c6.6 0 12 5.4 12 12v292z"[39m
+                      [36m/>[39m
+                    [36m</svg>[39m
+                  [36m</span>[39m
+                [36m</span>[39m
+                [36m<span>[39m
+                  [0m打印[0m
+                [36m</span>[39m
+              [36m</button>[39m
+              [36m<button[39m
+                [33maria-describedby[39m=[32m"test-id"[39m
+                [33mclass[39m=[32m"ant-btn css-dev-only-do-not-override-1odpy5d ant-btn-primary ant-btn-color-primary ant-btn-variant-solid"[39m
+                [33mdisabled[39m=[32m""[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [36m<span>[39m
+                  [0m查看关联案件[0m
+                [36m</span>[39m
+              [36m</button>[39m
+            [36m</div>[39m
+          [36m</header>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"batch-approval-layout"[39m
+          [36m>[39m
+            [36m<section[39m
+              [33mclass[39m=[32m"ng-panel "[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"ng-panel-head"[39m
+              [36m>[39m
+                [36m<h2[39m
+                  [33mclass[39m=[32m"ng-panel-title"[39m
+                [36m>[39m
+                  [0m审批流程[0m
+                [36m</h2>[39m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"batch-approval-steps"[39m
+              [36m>[39m
+                [36m<article[39m
+                  [33mclass[39m=[32m"done"[39m
+                [36m>[39m
+                  [36m<span>[39m
+                    [36m<span[39m
+                      [33maria-label[39m=[32m"check-circle"[39m
+                      [33mclass[39m=[32m"anticon anticon-check-circle"[39m
+                      [33mrole[39m=[32m"img"[39m
+                    [36m>[39m
+                      [36m<svg[39m
+                        [33maria-hidden[39m=[32m"true"[39m
+                        [33mdata-icon[39m=[32m"check-circle"[39m
+                        [33mfill[39m=[32m"currentColor"[39m
+                        [33mfocusable[39m=[32m"false"[39m
+                        [33mheight[39m=[32m"1em"[39m
+                        [33mviewBox[39m=[32m"64 64 896 896"[39m
+                        [33mwidth[39m=[32m"1em"[39m
+                      [36m>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m"M699 353h-46.9c-10.2 0-19.9 4.9-25.9 13.3L469 584.3l-71.2-98.8c-6-8.3-15.6-13.3-25.9-13.3H325c-6.5 0-10.3 7.4-6.5 12.7l124.6 172.8a31.8 31.8 0 0051.7 0l210.6-292c3.9-5.3.1-12.7-6.4-12.7z"[39m
+                        [36m/>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m"M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z"[39m
+                        [36m/>[39m
+                      [36m</svg>[39m
+                    [36m</span>[39m
+                  [36m</span>[39m
+                  [36m<div>[39m
+                    [36m<strong>[39m
+                      [0m1. 申请提交[0m
+                    [36m</strong>[39m
+                    [36m<p>[39m
+                      [0m申请人[0m
+                    [36m</p>[39m
+                    [36m<em>[39m
+                      [0m已提交审批申请[0m
+                    [36m</em>[39m
+                  [36m</div>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"ng-risk l"[39m
+                  [36m>[39m
+                    [0m草稿[0m
+                  [36m</span>[39m
+                [36m</article>[39m
+                [36m<article[39m
+                  [33mclass[39m=[32m"active"[39m
+                [36m>[39m
+                  [36m<span>[39m
+                    [0m2[0m
+                  [36m</span>[39m
+                  [36m<div>[39m
+                    [36m<strong>[39m
+                      [0m2. 当前审批[0m
+                    [36m</strong>[39m
+                    [36m<p>[39m
+                      [0m待分配[0m
+                    [36m</p>[39m
+                    [36m<em>[39m
+                      [0m等待当前审批人处理[0m
+                    [36m</em>[39m
+                  [36m</div>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"ng-risk l"[39m
+                  [36m>[39m
+                    [0m已提交...
+
+      119 | }
+      120 | async function approve() {
+    > 121 |   fireEvent.click(await screen.findByRole('button', { name: '同意并通过本阶段' }))
+          |                                ^
+      122 |   fireEvent.change(screen.getByLabelText('处理依据'), { target: { value: '已经核对本阶段申请事项及相关条件' } })
+      123 |   fireEvent.click(screen.getByRole('button', { name: '确认同意并通过本阶段' }))
+      124 |   await waitFor(() => expect(decisions).toHaveLength(1))
+
+      at waitForWrapper (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/wait-for.js:163:27)
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+      at approve (src/pages/batch01/__tests__/ApprovalCollaborationPage.test.tsx:121:32)
+      at Object.<anonymous> (src/pages/batch01/__tests__/ApprovalCollaborationPage.test.tsx:128:9)
+
+  ● reports only the completed stage for a two-node approval
+
+    Unable to find role="button" and name "同意并通过本阶段"
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"batch-page approval-page"[39m
+        [36m>[39m
+          [36m<header[39m
+            [33mclass[39m=[32m"ng-page-head"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"eyebrow"[39m
+              [36m>[39m
+                [0m审批中心 / 我的审批 / 审批详情[0m
+              [36m</div>[39m
+              [36m<h1>[39m
+                [0m审批事项[0m
+              [36m</h1>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"sub"[39m
+              [36m>[39m
+                [0m审批编号：approval-uuid 状态：已提交 当前审批人：待分配[0m
+              [36m</p>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"ng-head-actions"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"ant-badge ant-badge-not-a-wrapper css-dev-only-do-not-override-1odpy5d"[39m
+              [36m>[39m
+                [36m<sup[39m
+                  [33mclass[39m=[32m"ant-scroll-number ant-badge-count ant-badge-multiple-words"[39m
+                  [33mdata-show[39m=[32m"true"[39m
+                  [33mstyle[39m=[32m"background: rgb(245, 159, 47);"[39m
+                  [33mtitle[39m=[32m"尚未成案"[39m
+                [36m>[39m
+                  [0m尚未成案[0m
+                [36m</sup>[39m
+              [36m</span>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"ant-btn css-dev-only-do-not-override-1odpy5d ant-btn-default ant-btn-color-default ant-btn-variant-outlined"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"ant-btn-icon"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33maria-label[39m=[32m"printer"[39m
+                    [33mclass[39m=[32m"anticon anticon-printer"[39m
+                    [33mrole[39m=[32m"img"[39m
+                  [36m>[39m
+                    [36m<svg[39m
+                      [33maria-hidden[39m=[32m"true"[39m
+                      [33mdata-icon[39m=[32m"printer"[39m
+                      [33mfill[39m=[32m"currentColor"[39m
+                      [33mfocusable[39m=[32m"false"[39m
+                      [33mheight[39m=[32m"1em"[39m
+                      [33mviewBox[39m=[32m"64 64 896 896"[39m
+                      [33mwidth[39m=[32m"1em"[39m
+                    [36m>[39m
+                      [36m<path[39m
+                        [33md[39m=[32m"M820 436h-40c-4.4 0-8 3.6-8 8v40c0 4.4 3.6 8 8 8h40c4.4 0 8-3.6 8-8v-40c0-4.4-3.6-8-8-8zm32-104H732V120c0-4.4-3.6-8-8-8H300c-4.4 0-8 3.6-8 8v212H172c-44.2 0-80 35.8-80 80v328c0 17.7 14.3 32 32 32h168v132c0 4.4 3.6 8 8 8h424c4.4 0 8-3.6 8-8V772h168c17.7 0 32-14.3 32-32V412c0-44.2-35.8-80-80-80zM360 180h304v152H360V180zm304 664H360V568h304v276zm200-140H732V500H292v204H160V412c0-6.6 5.4-12 12-12h680c6.6 0 12 5.4 12 12v292z"[39m
+                      [36m/>[39m
+                    [36m</svg>[39m
+                  [36m</span>[39m
+                [36m</span>[39m
+                [36m<span>[39m
+                  [0m打印[0m
+                [36m</span>[39m
+              [36m</button>[39m
+              [36m<button[39m
+                [33maria-describedby[39m=[32m"test-id"[39m
+                [33mclass[39m=[32m"ant-btn css-dev-only-do-not-override-1odpy5d ant-btn-primary ant-btn-color-primary ant-btn-variant-solid"[39m
+                [33mdisabled[39m=[32m""[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [36m<span>[39m
+                  [0m查看关联案件[0m
+                [36m</span>[39m
+              [36m</button>[39m
+            [36m</div>[39m
+          [36m</header>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"batch-approval-layout"[39m
+          [36m>[39m
+            [36m<section[39m
+              [33mclass[39m=[32m"ng-panel "[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"ng-panel-head"[39m
+              [36m>[39m
+                [36m<h2[39m
+                  [33mclass[39m=[32m"ng-panel-title"[39m
+                [36m>[39m
+                  [0m审批流程[0m
+                [36m</h2>[39m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"batch-approval-steps"[39m
+              [36m>[39m
+                [36m<article[39m
+                  [33mclass[39m=[32m"done"[39m
+                [36m>[39m
+                  [36m<span>[39m
+                    [36m<span[39m
+                      [33maria-label[39m=[32m"check-circle"[39m
+                      [33mclass[39m=[32m"anticon anticon-check-circle"[39m
+                      [33mrole[39m=[32m"img"[39m
+                    [36m>[39m
+                      [36m<svg[39m
+                        [33maria-hidden[39m=[32m"true"[39m
+                        [33mdata-icon[39m=[32m"check-circle"[39m
+                        [33mfill[39m=[32m"currentColor"[39m
+                        [33mfocusable[39m=[32m"false"[39m
+                        [33mheight[39m=[32m"1em"[39m
+                        [33mviewBox[39m=[32m"64 64 896 896"[39m
+                        [33mwidth[39m=[32m"1em"[39m
+                      [36m>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m"M699 353h-46.9c-10.2 0-19.9 4.9-25.9 13.3L469 584.3l-71.2-98.8c-6-8.3-15.6-13.3-25.9-13.3H325c-6.5 0-10.3 7.4-6.5 12.7l124.6 172.8a31.8 31.8 0 0051.7 0l210.6-292c3.9-5.3.1-12.7-6.4-12.7z"[39m
+                        [36m/>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m"M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z"[39m
+                        [36m/>[39m
+                      [36m</svg>[39m
+                    [36m</span>[39m
+                  [36m</span>[39m
+                  [36m<div>[39m
+                    [36m<strong>[39m
+                      [0m1. 申请提交[0m
+                    [36m</strong>[39m
+                    [36m<p>[39m
+                      [0m申请人[0m
+                    [36m</p>[39m
+                    [36m<em>[39m
+                      [0m已提交审批申请[0m
+                    [36m</em>[39m
+                  [36m</div>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"ng-risk l"[39m
+                  [36m>[39m
+                    [0m草稿[0m
+                  [36m</span>[39m
+                [36m</article>[39m
+                [36m<article[39m
+                  [33mclass[39m=[32m"active"[39m
+                [36m>[39m
+                  [36m<span>[39m
+                    [0m2[0m
+                  [36m</span>[39m
+                  [36m<div>[39m
+                    [36m<strong>[39m
+                      [0m2. 当前审批[0m
+                    [36m</strong>[39m
+                    [36m<p>[39m
+                      [0m待分配[0m
+                    [36m</p>[39m
+                    [36m<em>[39m
+                      [0m等待当前审批人处理[0m
+                    [36m</em>[39m
+                  [36m</div>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"ng-risk l"[39m
+                  [36m>[39m
+                    [0m已提交...
+
+      119 | }
+      120 | async function approve() {
+    > 121 |   fireEvent.click(await screen.findByRole('button', { name: '同意并通过本阶段' }))
+          |                                ^
+      122 |   fireEvent.change(screen.getByLabelText('处理依据'), { target: { value: '已经核对本阶段申请事项及相关条件' } })
+      123 |   fireEvent.click(screen.getByRole('button', { name: '确认同意并通过本阶段' }))
+      124 |   await waitFor(() => expect(decisions).toHaveLength(1))
+
+      at waitForWrapper (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/wait-for.js:163:27)
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+      at approve (src/pages/batch01/__tests__/ApprovalCollaborationPage.test.tsx:121:32)
+      at Object.<anonymous> (src/pages/batch01/__tests__/ApprovalCollaborationPage.test.tsx:150:18)
+
+  ● reports a created case only after final approval and a real case id
+
+    Unable to find role="button" and name "同意并通过本阶段"
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"batch-page approval-page"[39m
+        [36m>[39m
+          [36m<header[39m
+            [33mclass[39m=[32m"ng-page-head"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"eyebrow"[39m
+              [36m>[39m
+                [0m审批中心 / 我的审批 / 审批详情[0m
+              [36m</div>[39m
+              [36m<h1>[39m
+                [0m审批事项[0m
+              [36m</h1>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"sub"[39m
+              [36m>[39m
+                [0m审批编号：approval-uuid 状态：已提交 当前审批人：待分配[0m
+              [36m</p>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"ng-head-actions"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"ant-badge ant-badge-not-a-wrapper css-dev-only-do-not-override-1odpy5d"[39m
+              [36m>[39m
+                [36m<sup[39m
+                  [33mclass[39m=[32m"ant-scroll-number ant-badge-count ant-badge-multiple-words"[39m
+                  [33mdata-show[39m=[32m"true"[39m
+                  [33mstyle[39m=[32m"background: rgb(18, 168, 157);"[39m
+                  [33mtitle[39m=[32m"已成案 CASE-001"[39m
+                [36m>[39m
+                  [0m已成案 CASE-001[0m
+                [36m</sup>[39m
+              [36m</span>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"ant-btn css-dev-only-do-not-override-1odpy5d ant-btn-default ant-btn-color-default ant-btn-variant-outlined"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"ant-btn-icon"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33maria-label[39m=[32m"printer"[39m
+                    [33mclass[39m=[32m"anticon anticon-printer"[39m
+                    [33mrole[39m=[32m"img"[39m
+                  [36m>[39m
+                    [36m<svg[39m
+                      [33maria-hidden[39m=[32m"true"[39m
+                      [33mdata-icon[39m=[32m"printer"[39m
+                      [33mfill[39m=[32m"currentColor"[39m
+                      [33mfocusable[39m=[32m"false"[39m
+                      [33mheight[39m=[32m"1em"[39m
+                      [33mviewBox[39m=[32m"64 64 896 896"[39m
+                      [33mwidth[39m=[32m"1em"[39m
+                    [36m>[39m
+                      [36m<path[39m
+                        [33md[39m=[32m"M820 436h-40c-4.4 0-8 3.6-8 8v40c0 4.4 3.6 8 8 8h40c4.4 0 8-3.6 8-8v-40c0-4.4-3.6-8-8-8zm32-104H732V120c0-4.4-3.6-8-8-8H300c-4.4 0-8 3.6-8 8v212H172c-44.2 0-80 35.8-80 80v328c0 17.7 14.3 32 32 32h168v132c0 4.4 3.6 8 8 8h424c4.4 0 8-3.6 8-8V772h168c17.7 0 32-14.3 32-32V412c0-44.2-35.8-80-80-80zM360 180h304v152H360V180zm304 664H360V568h304v276zm200-140H732V500H292v204H160V412c0-6.6 5.4-12 12-12h680c6.6 0 12 5.4 12 12v292z"[39m
+                      [36m/>[39m
+                    [36m</svg>[39m
+                  [36m</span>[39m
+                [36m</span>[39m
+                [36m<span>[39m
+                  [0m打印[0m
+                [36m</span>[39m
+              [36m</button>[39m
+              [36m<button[39m
+                [33maria-describedby[39m=[32m"test-id"[39m
+                [33mclass[39m=[32m"ant-btn css-dev-only-do-not-override-1odpy5d ant-btn-primary ant-btn-color-primary ant-btn-variant-solid"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [36m<span>[39m
+                  [0m查看关联案件[0m
+                [36m</span>[39m
+              [36m</button>[39m
+            [36m</div>[39m
+          [36m</header>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"batch-approval-layout"[39m
+          [36m>[39m
+            [36m<section[39m
+              [33mclass[39m=[32m"ng-panel "[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"ng-panel-head"[39m
+              [36m>[39m
+                [36m<h2[39m
+                  [33mclass[39m=[32m"ng-panel-title"[39m
+                [36m>[39m
+                  [0m审批流程[0m
+                [36m</h2>[39m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"batch-approval-steps"[39m
+              [36m>[39m
+                [36m<article[39m
+                  [33mclass[39m=[32m"done"[39m
+                [36m>[39m
+                  [36m<span>[39m
+                    [36m<span[39m
+                      [33maria-label[39m=[32m"check-circle"[39m
+                      [33mclass[39m=[32m"anticon anticon-check-circle"[39m
+                      [33mrole[39m=[32m"img"[39m
+                    [36m>[39m
+                      [36m<svg[39m
+                        [33maria-hidden[39m=[32m"true"[39m
+                        [33mdata-icon[39m=[32m"check-circle"[39m
+                        [33mfill[39m=[32m"currentColor"[39m
+                        [33mfocusable[39m=[32m"false"[39m
+                        [33mheight[39m=[32m"1em"[39m
+                        [33mviewBox[39m=[32m"64 64 896 896"[39m
+                        [33mwidth[39m=[32m"1em"[39m
+                      [36m>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m"M699 353h-46.9c-10.2 0-19.9 4.9-25.9 13.3L469 584.3l-71.2-98.8c-6-8.3-15.6-13.3-25.9-13.3H325c-6.5 0-10.3 7.4-6.5 12.7l124.6 172.8a31.8 31.8 0 0051.7 0l210.6-292c3.9-5.3.1-12.7-6.4-12.7z"[39m
+                        [36m/>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m"M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z"[39m
+                        [36m/>[39m
+                      [36m</svg>[39m
+                    [36m</span>[39m
+                  [36m</span>[39m
+                  [36m<div>[39m
+                    [36m<strong>[39m
+                      [0m1. 申请提交[0m
+                    [36m</strong>[39m
+                    [36m<p>[39m
+                      [0m申请人[0m
+                    [36m</p>[39m
+                    [36m<em>[39m
+                      [0m已提交审批申请[0m
+                    [36m</em>[39m
+                  [36m</div>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"ng-risk l"[39m
+                  [36m>[39m
+                    [0m草稿[0m
+                  [36m</span>[39m
+                [36m</article>[39m
+                [36m<article[39m
+                  [33mclass[39m=[32m"active"[39m
+                [36m>[39m
+                  [36m<span>[39m
+                    [0m2[0m
+                  [36m</span>[39m
+                  [36m<div>[39m
+                    [36m<strong>[39m
+                      [0m2. 当前审批[0m
+                    [36m</strong>[39m
+                    [36m<p>[39m
+                      [0m待分配[0m
+                    [36m</p>[39m
+                    [36m<em>[39m
+                      [0m等待当前审批人处理[0m
+                    [36m</em>[39m
+                  [36m</div>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"ng-risk l"[39m
+                  [36m>[39m
+                    [0m已提交[0m
+                  [36m</spa...
+
+      119 | }
+      120 | async function approve() {
+    > 121 |   fireEvent.click(await screen.findByRole('button', { name: '同意并通过本阶段' }))
+          |                                ^
+      122 |   fireEvent.change(screen.getByLabelText('处理依据'), { target: { value: '已经核对本阶段申请事项及相关条件' } })
+      123 |   fireEvent.click(screen.getByRole('button', { name: '确认同意并通过本阶段' }))
+      124 |   await waitFor(() => expect(decisions).toHaveLength(1))
+
+      at waitForWrapper (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/wait-for.js:163:27)
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+      at approve (src/pages/batch01/__tests__/ApprovalCollaborationPage.test.tsx:121:32)
+      at Object.<anonymous> (src/pages/batch01/__tests__/ApprovalCollaborationPage.test.tsx:157:18)
+
+  ● does not retry or fall back when a readable old intake approval is refused by the server
+
+    Unable to find role="button" and name "同意并通过本阶段"
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"batch-page approval-page"[39m
+        [36m>[39m
+          [36m<header[39m
+            [33mclass[39m=[32m"ng-page-head"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"eyebrow"[39m
+              [36m>[39m
+                [0m审批中心 / 我的审批 / 审批详情[0m
+              [36m</div>[39m
+              [36m<h1>[39m
+                [0m审批事项[0m
+              [36m</h1>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"sub"[39m
+              [36m>[39m
+                [0m审批编号：approval-uuid 状态：已提交 当前审批人：待分配[0m
+              [36m</p>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"ng-head-actions"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"ant-badge ant-badge-not-a-wrapper css-dev-only-do-not-override-1odpy5d"[39m
+              [36m>[39m
+                [36m<sup[39m
+                  [33mclass[39m=[32m"ant-scroll-number ant-badge-count ant-badge-multiple-words"[39m
+                  [33mdata-show[39m=[32m"true"[39m
+                  [33mstyle[39m=[32m"background: rgb(245, 159, 47);"[39m
+                  [33mtitle[39m=[32m"尚未成案"[39m
+                [36m>[39m
+                  [0m尚未成案[0m
+                [36m</sup>[39m
+              [36m</span>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"ant-btn css-dev-only-do-not-override-1odpy5d ant-btn-default ant-btn-color-default ant-btn-variant-outlined"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"ant-btn-icon"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33maria-label[39m=[32m"printer"[39m
+                    [33mclass[39m=[32m"anticon anticon-printer"[39m
+                    [33mrole[39m=[32m"img"[39m
+                  [36m>[39m
+                    [36m<svg[39m
+                      [33maria-hidden[39m=[32m"true"[39m
+                      [33mdata-icon[39m=[32m"printer"[39m
+                      [33mfill[39m=[32m"currentColor"[39m
+                      [33mfocusable[39m=[32m"false"[39m
+                      [33mheight[39m=[32m"1em"[39m
+                      [33mviewBox[39m=[32m"64 64 896 896"[39m
+                      [33mwidth[39m=[32m"1em"[39m
+                    [36m>[39m
+                      [36m<path[39m
+                        [33md[39m=[32m"M820 436h-40c-4.4 0-8 3.6-8 8v40c0 4.4 3.6 8 8 8h40c4.4 0 8-3.6 8-8v-40c0-4.4-3.6-8-8-8zm32-104H732V120c0-4.4-3.6-8-8-8H300c-4.4 0-8 3.6-8 8v212H172c-44.2 0-80 35.8-80 80v328c0 17.7 14.3 32 32 32h168v132c0 4.4 3.6 8 8 8h424c4.4 0 8-3.6 8-8V772h168c17.7 0 32-14.3 32-32V412c0-44.2-35.8-80-80-80zM360 180h304v152H360V180zm304 664H360V568h304v276zm200-140H732V500H292v204H160V412c0-6.6 5.4-12 12-12h680c6.6 0 12 5.4 12 12v292z"[39m
+                      [36m/>[39m
+                    [36m</svg>[39m
+                  [36m</span>[39m
+                [36m</span>[39m
+                [36m<span>[39m
+                  [0m打印[0m
+                [36m</span>[39m
+              [36m</button>[39m
+              [36m<button[39m
+                [33maria-describedby[39m=[32m"test-id"[39m
+                [33mclass[39m=[32m"ant-btn css-dev-only-do-not-override-1odpy5d ant-btn-primary ant-btn-color-primary ant-btn-variant-solid"[39m
+                [33mdisabled[39m=[32m""[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [36m<span>[39m
+                  [0m查看关联案件[0m
+                [36m</span>[39m
+              [36m</button>[39m
+            [36m</div>[39m
+          [36m</header>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"batch-approval-layout"[39m
+          [36m>[39m
+            [36m<section[39m
+              [33mclass[39m=[32m"ng-panel "[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"ng-panel-head"[39m
+              [36m>[39m
+                [36m<h2[39m
+                  [33mclass[39m=[32m"ng-panel-title"[39m
+                [36m>[39m
+                  [0m审批流程[0m
+                [36m</h2>[39m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"batch-approval-steps"[39m
+              [36m>[39m
+                [36m<article[39m
+                  [33mclass[39m=[32m"done"[39m
+                [36m>[39m
+                  [36m<span>[39m
+                    [36m<span[39m
+                      [33maria-label[39m=[32m"check-circle"[39m
+                      [33mclass[39m=[32m"anticon anticon-check-circle"[39m
+                      [33mrole[39m=[32m"img"[39m
+                    [36m>[39m
+                      [36m<svg[39m
+                        [33maria-hidden[39m=[32m"true"[39m
+                        [33mdata-icon[39m=[32m"check-circle"[39m
+                        [33mfill[39m=[32m"currentColor"[39m
+                        [33mfocusable[39m=[32m"false"[39m
+                        [33mheight[39m=[32m"1em"[39m
+                        [33mviewBox[39m=[32m"64 64 896 896"[39m
+                        [33mwidth[39m=[32m"1em"[39m
+                      [36m>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m"M699 353h-46.9c-10.2 0-19.9 4.9-25.9 13.3L469 584.3l-71.2-98.8c-6-8.3-15.6-13.3-25.9-13.3H325c-6.5 0-10.3 7.4-6.5 12.7l124.6 172.8a31.8 31.8 0 0051.7 0l210.6-292c3.9-5.3.1-12.7-6.4-12.7z"[39m
+                        [36m/>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m"M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z"[39m
+                        [36m/>[39m
+                      [36m</svg>[39m
+                    [36m</span>[39m
+                  [36m</span>[39m
+                  [36m<div>[39m
+                    [36m<strong>[39m
+                      [0m1. 申请提交[0m
+                    [36m</strong>[39m
+                    [36m<p>[39m
+                      [0m申请人[0m
+                    [36m</p>[39m
+                    [36m<em>[39m
+                      [0m已提交审批申请[0m
+                    [36m</em>[39m
+                  [36m</div>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"ng-risk l"[39m
+                  [36m>[39m
+                    [0m草稿[0m
+                  [36m</span>[39m
+                [36m</article>[39m
+                [36m<article[39m
+                  [33mclass[39m=[32m"active"[39m
+                [36m>[39m
+                  [36m<span>[39m
+                    [0m2[0m
+                  [36m</span>[39m
+                  [36m<div>[39m
+                    [36m<strong>[39m
+                      [0m2. 当前审批[0m
+                    [36m</strong>[39m
+                    [36m<p>[39m
+                      [0m待分配[0m
+                    [36m</p>[39m
+                    [36m<em>[39m
+                      [0m等待当前审批人处理[0m
+                    [36m</em>[39m
+                  [36m</div>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"ng-risk l"[39m
+                  [36m>[39m
+                    [0m已提交...
+
+      119 | }
+      120 | async function approve() {
+    > 121 |   fireEvent.click(await screen.findByRole('button', { name: '同意并通过本阶段' }))
+          |                                ^
+      122 |   fireEvent.change(screen.getByLabelText('处理依据'), { target: { value: '已经核对本阶段申请事项及相关条件' } })
+      123 |   fireEvent.click(screen.getByRole('button', { name: '确认同意并通过本阶段' }))
+      124 |   await waitFor(() => expect(decisions).toHaveLength(1))
+
+      at waitForWrapper (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/wait-for.js:163:27)
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+      at approve (src/pages/batch01/__tests__/ApprovalCollaborationPage.test.tsx:121:32)
+      at Object.<anonymous> (src/pages/batch01/__tests__/ApprovalCollaborationPage.test.tsx:162:18)
+
+  ● separates frozen automatic results, complete coverage and the current independent review
+
+    Unable to find an element with the text: 当前可读独立复核：无冲突. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"batch-page approval-page"[39m
+        [36m>[39m
+          [36m<header[39m
+            [33mclass[39m=[32m"ng-page-head"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"eyebrow"[39m
+              [36m>[39m
+                [0m审批中心 / 我的审批 / 审批详情[0m
+              [36m</div>[39m
+              [36m<h1>[39m
+                [0m审批事项[0m
+              [36m</h1>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"sub"[39m
+              [36m>[39m
+                [0m审批编号：approval-uuid 状态：已提交 当前审批人：待分配[0m
+              [36m</p>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"ng-head-actions"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"ant-badge ant-badge-not-a-wrapper css-dev-only-do-not-override-1odpy5d"[39m
+              [36m>[39m
+                [36m<sup[39m
+                  [33mclass[39m=[32m"ant-scroll-number ant-badge-count ant-badge-multiple-words"[39m
+                  [33mdata-show[39m=[32m"true"[39m
+                  [33mstyle[39m=[32m"background: rgb(245, 159, 47);"[39m
+                  [33mtitle[39m=[32m"尚未成案"[39m
+                [36m>[39m
+                  [0m尚未成案[0m
+                [36m</sup>[39m
+              [36m</span>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"ant-btn css-dev-only-do-not-override-1odpy5d ant-btn-default ant-btn-color-default ant-btn-variant-outlined"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"ant-btn-icon"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33maria-label[39m=[32m"printer"[39m
+                    [33mclass[39m=[32m"anticon anticon-printer"[39m
+                    [33mrole[39m=[32m"img"[39m
+                  [36m>[39m
+                    [36m<svg[39m
+                      [33maria-hidden[39m=[32m"true"[39m
+                      [33mdata-icon[39m=[32m"printer"[39m
+                      [33mfill[39m=[32m"currentColor"[39m
+                      [33mfocusable[39m=[32m"false"[39m
+                      [33mheight[39m=[32m"1em"[39m
+                      [33mviewBox[39m=[32m"64 64 896 896"[39m
+                      [33mwidth[39m=[32m"1em"[39m
+                    [36m>[39m
+                      [36m<path[39m
+                        [33md[39m=[32m"M820 436h-40c-4.4 0-8 3.6-8 8v40c0 4.4 3.6 8 8 8h40c4.4 0 8-3.6 8-8v-40c0-4.4-3.6-8-8-8zm32-104H732V120c0-4.4-3.6-8-8-8H300c-4.4 0-8 3.6-8 8v212H172c-44.2 0-80 35.8-80 80v328c0 17.7 14.3 32 32 32h168v132c0 4.4 3.6 8 8 8h424c4.4 0 8-3.6 8-8V772h168c17.7 0 32-14.3 32-32V412c0-44.2-35.8-80-80-80zM360 180h304v152H360V180zm304 664H360V568h304v276zm200-140H732V500H292v204H160V412c0-6.6 5.4-12 12-12h680c6.6 0 12 5.4 12 12v292z"[39m
+                      [36m/>[39m
+                    [36m</svg>[39m
+                  [36m</span>[39m
+                [36m</span>[39m
+                [36m<span>[39m
+                  [0m打印[0m
+                [36m</span>[39m
+              [36m</button>[39m
+              [36m<button[39m
+                [33maria-describedby[39m=[32m"test-id"[39m
+                [33mclass[39m=[32m"ant-btn css-dev-only-do-not-override-1odpy5d ant-btn-primary ant-btn-color-primary ant-btn-variant-solid"[39m
+                [33mdisabled[39m=[32m""[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [36m<span>[39m
+                  [0m查看关联案件[0m
+                [36m</span>[39m
+              [36m</button>[39m
+            [36m</div>[39m
+          [36m</header>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"batch-approval-layout"[39m
+          [36m>[39m
+            [36m<section[39m
+              [33mclass[39m=[32m"ng-panel "[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"ng-panel-head"[39m
+              [36m>[39m
+                [36m<h2[39m
+                  [33mclass[39m=[32m"ng-panel-title"[39m
+                [36m>[39m
+                  [0m审批流程[0m
+                [36m</h2>[39m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"batch-approval-steps"[39m
+              [36m>[39m
+                [36m<article[39m
+                  [33mclass[39m=[32m"done"[39m
+                [36m>[39m
+                  [36m<span>[39m
+                    [36m<span[39m
+                      [33maria-label[39m=[32m"check-circle"[39m
+                      [33mclass[39m=[32m"anticon anticon-check-circle"[39m
+                      [33mrole[39m=[32m"img"[39m
+                    [36m>[39m
+                      [36m<svg[39m
+                        [33maria-hidden[39m=[32m"true"[39m
+                        [33mdata-icon[39m=[32m"check-circle"[39m
+                        [33mfill[39m=[32m"currentColor"[39m
+                        [33mfocusable[39m=[32m"false"[39m
+                        [33mheight[39m=[32m"1em"[39m
+                        [33mviewBox[39m=[32m"64 64 896 896"[39m
+                        [33mwidth[39m=[32m"1em"[39m
+                      [36m>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m"M699 353h-46.9c-10.2 0-19.9 4.9-25.9 13.3L469 584.3l-71.2-98.8c-6-8.3-15.6-13.3-25.9-13.3H325c-6.5 0-10.3 7.4-6.5 12.7l124.6 172.8a31.8 31.8 0 0051.7 0l210.6-292c3.9-5.3.1-12.7-6.4-12.7z"[39m
+                        [36m/>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m"M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z"[39m
+                        [36m/>[39m
+                      [36m</svg>[39m
+                    [36m</span>[39m
+                  [36m</span>[39m
+                  [36m<div>[39m
+                    [36m<strong>[39m
+                      [0m1. 申请提交[0m
+                    [36m</strong>[39m
+                    [36m<p>[39m
+                      [0m申请人[0m
+                    [36m</p>[39m
+                    [36m<em>[39m
+                      [0m已提交审批申请[0m
+                    [36m</em>[39m
+                  [36m</div>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"ng-risk l"[39m
+                  [36m>[39m
+                    [0m草稿[0m
+                  [36m</span>[39m
+                [36m</article>[39m
+                [36m<article[39m
+                  [33mclass[39m=[32m"active"[39m
+                [36m>[39m
+                  [36m<span>[39m
+                    [0m2[0m
+                  [36m</span>[39m
+                  [36m<div>[39m
+                    [36m<strong>[39m
+                      [0m2. 当前审批[0m
+                    [36m</strong>[39m
+                    [36m<p>[39m
+                      [0m待分配[0m
+                    [36m</p>[39m
+                    [36m<em>[39m
+                      [0m等待当前审批人处理[0m
+                    [36m</em>[39m
+                  [36m</div>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"ng-risk l"[39m
+                  [36m>[39m
+                    [0m已提交...
+
+      167 | it('separates frozen automatic results, complete coverage and the current independent review', async () => {
+      168 |   mount()
+    > 169 |   expect(await screen.findByText('当前可读独立复核：无冲突')).toBeInTheDocument()
+          |                       ^
+      170 |   expect(screen.getByText('检索覆盖：完整')).toBeInTheDocument()
+      171 |   expect(screen.getByText('冻结自动检索结果：待人工复核')).toBeInTheDocument()
+      172 |   expect(screen.getByText('未发现匹配证据')).toBeInTheDocument()
+
+      at waitForWrapper (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/wait-for.js:163:27)
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+      at Object.<anonymous> (src/pages/batch01/__tests__/ApprovalCollaborationPage.test.tsx:169:23)
+
+  ● keeps incomplete coverage blocking despite a no-conflict review
+
+    Unable to find an element with the text: 当前可读独立复核：无冲突. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"batch-page approval-page"[39m
+        [36m>[39m
+          [36m<header[39m
+            [33mclass[39m=[32m"ng-page-head"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"eyebrow"[39m
+              [36m>[39m
+                [0m审批中心 / 我的审批 / 审批详情[0m
+              [36m</div>[39m
+              [36m<h1>[39m
+                [0m审批事项[0m
+              [36m</h1>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"sub"[39m
+              [36m>[39m
+                [0m审批编号：approval-uuid 状态：已提交 当前审批人：待分配[0m
+              [36m</p>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"ng-head-actions"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"ant-badge ant-badge-not-a-wrapper css-dev-only-do-not-override-1odpy5d"[39m
+              [36m>[39m
+                [36m<sup[39m
+                  [33mclass[39m=[32m"ant-scroll-number ant-badge-count ant-badge-multiple-words"[39m
+                  [33mdata-show[39m=[32m"true"[39m
+                  [33mstyle[39m=[32m"background: rgb(245, 159, 47);"[39m
+                  [33mtitle[39m=[32m"尚未成案"[39m
+                [36m>[39m
+                  [0m尚未成案[0m
+                [36m</sup>[39m
+              [36m</span>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"ant-btn css-dev-only-do-not-override-1odpy5d ant-btn-default ant-btn-color-default ant-btn-variant-outlined"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"ant-btn-icon"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33maria-label[39m=[32m"printer"[39m
+                    [33mclass[39m=[32m"anticon anticon-printer"[39m
+                    [33mrole[39m=[32m"img"[39m
+                  [36m>[39m
+                    [36m<svg[39m
+                      [33maria-hidden[39m=[32m"true"[39m
+                      [33mdata-icon[39m=[32m"printer"[39m
+                      [33mfill[39m=[32m"currentColor"[39m
+                      [33mfocusable[39m=[32m"false"[39m
+                      [33mheight[39m=[32m"1em"[39m
+                      [33mviewBox[39m=[32m"64 64 896 896"[39m
+                      [33mwidth[39m=[32m"1em"[39m
+                    [36m>[39m
+                      [36m<path[39m
+                        [33md[39m=[32m"M820 436h-40c-4.4 0-8 3.6-8 8v40c0 4.4 3.6 8 8 8h40c4.4 0 8-3.6 8-8v-40c0-4.4-3.6-8-8-8zm32-104H732V120c0-4.4-3.6-8-8-8H300c-4.4 0-8 3.6-8 8v212H172c-44.2 0-80 35.8-80 80v328c0 17.7 14.3 32 32 32h168v132c0 4.4 3.6 8 8 8h424c4.4 0 8-3.6 8-8V772h168c17.7 0 32-14.3 32-32V412c0-44.2-35.8-80-80-80zM360 180h304v152H360V180zm304 664H360V568h304v276zm200-140H732V500H292v204H160V412c0-6.6 5.4-12 12-12h680c6.6 0 12 5.4 12 12v292z"[39m
+                      [36m/>[39m
+                    [36m</svg>[39m
+                  [36m</span>[39m
+                [36m</span>[39m
+                [36m<span>[39m
+                  [0m打印[0m
+                [36m</span>[39m
+              [36m</button>[39m
+              [36m<button[39m
+                [33maria-describedby[39m=[32m"test-id"[39m
+                [33mclass[39m=[32m"ant-btn css-dev-only-do-not-override-1odpy5d ant-btn-primary ant-btn-color-primary ant-btn-variant-solid"[39m
+                [33mdisabled[39m=[32m""[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [36m<span>[39m
+                  [0m查看关联案件[0m
+                [36m</span>[39m
+              [36m</button>[39m
+            [36m</div>[39m
+          [36m</header>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"batch-approval-layout"[39m
+          [36m>[39m
+            [36m<section[39m
+              [33mclass[39m=[32m"ng-panel "[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"ng-panel-head"[39m
+              [36m>[39m
+                [36m<h2[39m
+                  [33mclass[39m=[32m"ng-panel-title"[39m
+                [36m>[39m
+                  [0m审批流程[0m
+                [36m</h2>[39m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"batch-approval-steps"[39m
+              [36m>[39m
+                [36m<article[39m
+                  [33mclass[39m=[32m"done"[39m
+                [36m>[39m
+                  [36m<span>[39m
+                    [36m<span[39m
+                      [33maria-label[39m=[32m"check-circle"[39m
+                      [33mclass[39m=[32m"anticon anticon-check-circle"[39m
+                      [33mrole[39m=[32m"img"[39m
+                    [36m>[39m
+                      [36m<svg[39m
+                        [33maria-hidden[39m=[32m"true"[39m
+                        [33mdata-icon[39m=[32m"check-circle"[39m
+                        [33mfill[39m=[32m"currentColor"[39m
+                        [33mfocusable[39m=[32m"false"[39m
+                        [33mheight[39m=[32m"1em"[39m
+                        [33mviewBox[39m=[32m"64 64 896 896"[39m
+                        [33mwidth[39m=[32m"1em"[39m
+                      [36m>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m"M699 353h-46.9c-10.2 0-19.9 4.9-25.9 13.3L469 584.3l-71.2-98.8c-6-8.3-15.6-13.3-25.9-13.3H325c-6.5 0-10.3 7.4-6.5 12.7l124.6 172.8a31.8 31.8 0 0051.7 0l210.6-292c3.9-5.3.1-12.7-6.4-12.7z"[39m
+                        [36m/>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m"M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z"[39m
+                        [36m/>[39m
+                      [36m</svg>[39m
+                    [36m</span>[39m
+                  [36m</span>[39m
+                  [36m<div>[39m
+                    [36m<strong>[39m
+                      [0m1. 申请提交[0m
+                    [36m</strong>[39m
+                    [36m<p>[39m
+                      [0m申请人[0m
+                    [36m</p>[39m
+                    [36m<em>[39m
+                      [0m已提交审批申请[0m
+                    [36m</em>[39m
+                  [36m</div>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"ng-risk l"[39m
+                  [36m>[39m
+                    [0m草稿[0m
+                  [36m</span>[39m
+                [36m</article>[39m
+                [36m<article[39m
+                  [33mclass[39m=[32m"active"[39m
+                [36m>[39m
+                  [36m<span>[39m
+                    [0m2[0m
+                  [36m</span>[39m
+                  [36m<div>[39m
+                    [36m<strong>[39m
+                      [0m2. 当前审批[0m
+                    [36m</strong>[39m
+                    [36m<p>[39m
+                      [0m待分配[0m
+                    [36m</p>[39m
+                    [36m<em>[39m
+                      [0m等待当前审批人处理[0m
+                    [36m</em>[39m
+                  [36m</div>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"ng-risk l"[39m
+                  [36m>[39m
+                    [0m已提交...
+
+      177 |   detail.conflict_result = { checkId: 'check-1', decision: { status: 'REVIEW_REQUIRED', coverageStatus: 'PARTIAL' } }
+      178 |   mount()
+    > 179 |   expect(await screen.findByText('当前可读独立复核：无冲突')).toBeInTheDocument()
+          |                       ^
+      180 |   expect(screen.getByText('检索覆盖：未完整（PARTIAL）')).toBeInTheDocument()
+      181 |   expect(screen.getByRole('button', { name: '同意并通过本阶段' })).toBeDisabled()
+      182 | })
+
+      at waitForWrapper (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/wait-for.js:163:27)
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+      at Object.<anonymous> (src/pages/batch01/__tests__/ApprovalCollaborationPage.test.tsx:179:23)
+
+  ● shows only the chosen historical review and coverage until returning to current
+
+    Unable to find an element with the text: 当前可读独立复核：无冲突. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"batch-page approval-page"[39m
+        [36m>[39m
+          [36m<header[39m
+            [33mclass[39m=[32m"ng-page-head"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"eyebrow"[39m
+              [36m>[39m
+                [0m审批中心 / 我的审批 / 审批详情[0m
+              [36m</div>[39m
+              [36m<h1>[39m
+                [0m审批事项[0m
+              [36m</h1>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"sub"[39m
+              [36m>[39m
+                [0m审批编号：approval-uuid 状态：已提交 当前审批人：待分配[0m
+              [36m</p>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"ng-head-actions"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"ant-badge ant-badge-not-a-wrapper css-dev-only-do-not-override-1odpy5d"[39m
+              [36m>[39m
+                [36m<sup[39m
+                  [33mclass[39m=[32m"ant-scroll-number ant-badge-count ant-badge-multiple-words"[39m
+                  [33mdata-show[39m=[32m"true"[39m
+                  [33mstyle[39m=[32m"background: rgb(245, 159, 47);"[39m
+                  [33mtitle[39m=[32m"尚未成案"[39m
+                [36m>[39m
+                  [0m尚未成案[0m
+                [36m</sup>[39m
+              [36m</span>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"ant-btn css-dev-only-do-not-override-1odpy5d ant-btn-default ant-btn-color-default ant-btn-variant-outlined"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"ant-btn-icon"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33maria-label[39m=[32m"printer"[39m
+                    [33mclass[39m=[32m"anticon anticon-printer"[39m
+                    [33mrole[39m=[32m"img"[39m
+                  [36m>[39m
+                    [36m<svg[39m
+                      [33maria-hidden[39m=[32m"true"[39m
+                      [33mdata-icon[39m=[32m"printer"[39m
+                      [33mfill[39m=[32m"currentColor"[39m
+                      [33mfocusable[39m=[32m"false"[39m
+                      [33mheight[39m=[32m"1em"[39m
+                      [33mviewBox[39m=[32m"64 64 896 896"[39m
+                      [33mwidth[39m=[32m"1em"[39m
+                    [36m>[39m
+                      [36m<path[39m
+                        [33md[39m=[32m"M820 436h-40c-4.4 0-8 3.6-8 8v40c0 4.4 3.6 8 8 8h40c4.4 0 8-3.6 8-8v-40c0-4.4-3.6-8-8-8zm32-104H732V120c0-4.4-3.6-8-8-8H300c-4.4 0-8 3.6-8 8v212H172c-44.2 0-80 35.8-80 80v328c0 17.7 14.3 32 32 32h168v132c0 4.4 3.6 8 8 8h424c4.4 0 8-3.6 8-8V772h168c17.7 0 32-14.3 32-32V412c0-44.2-35.8-80-80-80zM360 180h304v152H360V180zm304 664H360V568h304v276zm200-140H732V500H292v204H160V412c0-6.6 5.4-12 12-12h680c6.6 0 12 5.4 12 12v292z"[39m
+                      [36m/>[39m
+                    [36m</svg>[39m
+                  [36m</span>[39m
+                [36m</span>[39m
+                [36m<span>[39m
+                  [0m打印[0m
+                [36m</span>[39m
+              [36m</button>[39m
+              [36m<button[39m
+                [33maria-describedby[39m=[32m"test-id"[39m
+                [33mclass[39m=[32m"ant-btn css-dev-only-do-not-override-1odpy5d ant-btn-primary ant-btn-color-primary ant-btn-variant-solid"[39m
+                [33mdisabled[39m=[32m""[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [36m<span>[39m
+                  [0m查看关联案件[0m
+                [36m</span>[39m
+              [36m</button>[39m
+            [36m</div>[39m
+          [36m</header>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"batch-approval-layout"[39m
+          [36m>[39m
+            [36m<section[39m
+              [33mclass[39m=[32m"ng-panel "[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"ng-panel-head"[39m
+              [36m>[39m
+                [36m<h2[39m
+                  [33mclass[39m=[32m"ng-panel-title"[39m
+                [36m>[39m
+                  [0m审批流程[0m
+                [36m</h2>[39m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"batch-approval-steps"[39m
+              [36m>[39m
+                [36m<article[39m
+                  [33mclass[39m=[32m"done"[39m
+                [36m>[39m
+                  [36m<span>[39m
+                    [36m<span[39m
+                      [33maria-label[39m=[32m"check-circle"[39m
+                      [33mclass[39m=[32m"anticon anticon-check-circle"[39m
+                      [33mrole[39m=[32m"img"[39m
+                    [36m>[39m
+                      [36m<svg[39m
+                        [33maria-hidden[39m=[32m"true"[39m
+                        [33mdata-icon[39m=[32m"check-circle"[39m
+                        [33mfill[39m=[32m"currentColor"[39m
+                        [33mfocusable[39m=[32m"false"[39m
+                        [33mheight[39m=[32m"1em"[39m
+                        [33mviewBox[39m=[32m"64 64 896 896"[39m
+                        [33mwidth[39m=[32m"1em"[39m
+                      [36m>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m"M699 353h-46.9c-10.2 0-19.9 4.9-25.9 13.3L469 584.3l-71.2-98.8c-6-8.3-15.6-13.3-25.9-13.3H325c-6.5 0-10.3 7.4-6.5 12.7l124.6 172.8a31.8 31.8 0 0051.7 0l210.6-292c3.9-5.3.1-12.7-6.4-12.7z"[39m
+                        [36m/>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m"M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z"[39m
+                        [36m/>[39m
+                      [36m</svg>[39m
+                    [36m</span>[39m
+                  [36m</span>[39m
+                  [36m<div>[39m
+                    [36m<strong>[39m
+                      [0m1. 申请提交[0m
+                    [36m</strong>[39m
+                    [36m<p>[39m
+                      [0m申请人[0m
+                    [36m</p>[39m
+                    [36m<em>[39m
+                      [0m已提交审批申请[0m
+                    [36m</em>[39m
+                  [36m</div>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"ng-risk l"[39m
+                  [36m>[39m
+                    [0m草稿[0m
+                  [36m</span>[39m
+                [36m</article>[39m
+                [36m<article[39m
+                  [33mclass[39m=[32m"active"[39m
+                [36m>[39m
+                  [36m<span>[39m
+                    [0m2[0m
+                  [36m</span>[39m
+                  [36m<div>[39m
+                    [36m<strong>[39m
+                      [0m2. 当前审批[0m
+                    [36m</strong>[39m
+                    [36m<p>[39m
+                      [0m待分配[0m
+                    [36m</p>[39m
+                    [36m<em>[39m
+                      [0m等待当前审批人处理[0m
+                    [36m</em>[39m
+                  [36m</div>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"ng-risk l"[39m
+                  [36m>[39m
+                    [0m已提交...
+
+      182 | })
+      183 | it('shows only the chosen historical review and coverage until returning to current', async () => {
+    > 184 |   mount(); await screen.findByText('当前可读独立复核：无冲突')
+          |                         ^
+      185 |   fireEvent.mouseDown(screen.getByRole('combobox', { name: '提交版本' }))
+      186 |   fireEvent.click(await screen.findByText('第 1 次提交 · 历史只读'))
+      187 |   await screen.findByText('正在查看历史提交版本，仅供查阅')
+
+      at waitForWrapper (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/wait-for.js:163:27)
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+      at Object.<anonymous> (src/pages/batch01/__tests__/ApprovalCollaborationPage.test.tsx:184:25)
+
+Test Suites: 1 failed, 1 total
+Tests:       8 failed, 12 passed, 20 total
+Snapshots:   0 total
+Time:        11.792 s
+Ran all test suites within paths "src/pages/batch01/__tests__/ApprovalCollaborationPage.test.tsx".

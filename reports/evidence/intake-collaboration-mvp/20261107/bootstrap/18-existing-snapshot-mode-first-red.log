@@ -1,0 +1,27 @@
+2026-11-07T17:05:43.314+0800	INFO	logger/logger.go:867	Logger package initialized with default development logger
+=== RUN   TestApprovalSnapshotModePostgresHTTP
+=== RUN   TestApprovalSnapshotModePostgresHTTP/ordinary_with_legacy_snapshot
+    approval_backend_final_review_postgres_test.go:177: PostgreSQL fixture schema=approval_collab_ee7cdd1aeb574244b172a0506093aa3d server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] POST   /approvals/:id/decision   --> law-oa-go/internal/handlers.(*ApprovalHandler).ProcessApprovalDecision-fm (2 handlers)
+[GIN-debug] POST   /integration/approvals/:id/decision --> law-oa-go/internal/handlers.(*IntegrationHandler).ProcessApprovalWithConflict-fm (2 handlers)
+[GIN-debug] POST   /integration/approvals/:id/retry --> law-oa-go/internal/handlers.(*IntegrationHandler).RetryFailedIntegration-fm (2 handlers)
+[GIN-debug] POST   /conflict/tasks/:task_id/approval --> law-oa-go/internal/handlers.(*DemoAggregateHandler).CreateConflictApproval-fm (2 handlers)
+[GIN-debug] GET    /approvals/:id/snapshot   --> law-oa-go/internal/handlers.(*DemoAggregateHandler).GetApprovalSnapshot-fm (2 handlers)
+[GIN-debug] GET    /approvals/:id            --> law-oa-go/internal/handlers.(*ApprovalHandler).GetApproval-fm (2 handlers)
+[GIN-debug] POST   /approvals/:id/resubmit   --> law-oa-go/internal/handlers.(*ApprovalHandler).ResubmitApproval-fm (2 handlers)
+[GIN-debug] PUT    /case-intakes/:id         --> law-oa-go/internal/handlers.(*DemoAggregateHandler).UpdateCaseIntake-fm (2 handlers)
+    approval_snapshot_mode_postgres_http_test.go:56: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_snapshot_mode_postgres_http_test.go:56
+        	Error:      	Not equal: 
+        	            	expected: true
+        	            	actual  : false
+        	Test:       	TestApprovalSnapshotModePostgresHTTP/ordinary_with_legacy_snapshot
+--- FAIL: TestApprovalSnapshotModePostgresHTTP (0.15s)
+    --- FAIL: TestApprovalSnapshotModePostgresHTTP/ordinary_with_legacy_snapshot (0.15s)
+FAIL
+FAIL	law-oa-go/internal/services	1.770s
+FAIL

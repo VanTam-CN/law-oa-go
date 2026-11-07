@@ -1,0 +1,30 @@
+{
+  "baseline": "7c5618f26ed5600de76e4ed94a682252d10a8aef",
+  "frozen_files": {
+    "internal/services/approval_conflict_integration_service.go": "7690825d8accd27d47132f78cd003332293f544727acd10ed00185f6f2e5373e",
+    "internal/services/approval_multistage_postgres_http_test.go": "40d8de57765cb8030288061130f639010eef72de98251fe0bc322e6f1f837f84"
+  },
+  "red_log_sha256": "a5d5a2b5098f21df7d9436503a437d364cba80c71d0e35c6204204d4175d6b2f",
+  "http_race": {
+    "log": "03-http-recheck.log",
+    "leaves_pass": 4,
+    "fail": 0,
+    "skip": 0,
+    "exit_code": 0
+  },
+  "completion_inbox_race": {
+    "log": "02-targeted-recheck.log",
+    "leaves_pass": 4,
+    "note": "These four existing completion/replay rollback leaves passed; this combined run also contains the preserved ordinary HTTP error-envelope expectation failure, corrected and rerun in 03."
+  },
+  "build": {
+    "log": "04-build.log",
+    "exit_code": 0
+  },
+  "vet": {
+    "log": "05-vet.log",
+    "exit_code": 0
+  },
+  "diff_check_exit_code": 0,
+  "final_hashes_unchanged": true
+}

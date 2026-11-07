@@ -1,0 +1,203 @@
+
+> law-oa-frontend@0.0.0 test
+> jest --runInBand --coverage=false --runTestsByPath src/pages/batch01/__tests__/IntakeRecoveryRegression.test.tsx -t re-reads the bound check
+
+FAIL Law OA Frontend src/pages/batch01/__tests__/IntakeRecoveryRegression.test.tsx
+  ✕ re-reads the bound check and live review, submits without protected identity re-entry or a redundant fact save/check (1424 ms)
+  ○ skipped invalidates the restored check immediately when the lawyer changes a fact
+  ○ skipped also invalidates a restored check for edited matter details outside the party fingerprint
+  ○ skipped does not revive a historical check when the authoritative draft is no longer conflict_ready
+  ○ skipped fails closed when restoring the check is mismatch, without creating another check
+  ○ skipped fails closed when restoring the check is unavailable, without creating another check
+  ○ skipped keeps the latest selected draft when two restore responses arrive in reverse order
+  ○ skipped does not let an in-flight restore overwrite input entered while it was loading
+  ○ skipped drops a late previous-account restore without putting its facts into the new account cache
+  ○ skipped guards a server-backed local cache restore against an account change while it is loading
+  ○ skipped preserves edits made while an explicit 409 reload is still in flight
+  ○ skipped clears object and revision state on SPA navigation from a concrete draft to the blank entry
+
+  ● re-reads the bound check and live review, submits without protected identity re-entry or a redundant fact save/check
+
+    expect(element).toBeEnabled()
+
+    Received element is not enabled:
+      <button class="ant-btn css-dev-only-do-not-override-1odpy5d ant-btn-primary ant-btn-color-primary ant-btn-variant-solid" disabled="" type="button" />
+
+    Ignored nodes: comments, script, style
+    [36m<html[39m
+      [33mlang[39m=[32m"zh-CN"[39m
+    [36m>[39m
+      [36m<head />[39m
+      [36m<body>[39m
+        [36m<div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"batch-page intake-page"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"ant-alert ant-alert-warning ant-alert-with-description ant-alert-no-icon css-dev-only-do-not-override-1odpy5d"[39m
+              [33mdata-show[39m=[32m"true"[39m
+              [33mrole[39m=[32m"alert"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"ant-alert-content"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"ant-alert-message"[39m
+                [36m>[39m
+                  [0m检测结果与当前草稿关联不一致，请刷新后核对[0m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"ant-alert-description"[39m
+                [36m>[39m
+                  [0m未确认的检测状态不会用于提交；无需重新检测，可重新读取当前草稿。[0m
+                [36m</div>[39m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"ant-alert-action"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33mclass[39m=[32m"ant-btn css-dev-only-do-not-override-1odpy5d ant-btn-default ant-btn-color-default ant-btn-variant-outlined"[39m
+                  [33mtype[39m=[32m"button"[39m
+                [36m>[39m
+                  [36m<span>[39m
+                    [0m重新读取草稿和检测状态[0m
+                  [36m</span>[39m
+                [36m</button>[39m
+              [36m</div>[39m
+            [36m</div>[39m
+            [36m<header[39m
+              [33mclass[39m=[32m"ng-page-head"[39m
+            [36m>[39m
+              [36m<div>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"eyebrow"[39m
+                [36m>[39m
+                  [0m案件管理 / 新建案件 / 立案工作台[0m
+                [36m</div>[39m
+                [36m<h1>[39m
+                  [0m新建案件立案工作台[0m
+                [36m</h1>[39m
+                [36m<p[39m
+                  [33mclass[39m=[32m"sub"[39m
+                [36m>[39m
+                  [0m新建案件默认使用空白表单，未完成草稿需要手动恢复。[0m
+                [36m</p>[39m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"ng-head-actions"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33mclass[39m=[32m"ant-btn css-dev-only-do-not-override-1odpy5d ant-btn-default ant-btn-color-default ant-btn-variant-outlined"[39m
+                  [33mtype[39m=[32m"button"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"ant-btn-icon"[39m
+                  [36m>[39m
+                    [36m<span[39m
+                      [33maria-label[39m=[32m"question-circle"[39m
+                      [33mclass[39m=[32m"anticon anticon-question-circle"[39m
+                      [33mrole[39m=[32m"img"[39m
+                    [36m>[39m
+                      [36m<svg[39m
+                        [33maria-hidden[39m=[32m"true"[39m
+                        [33mdata-icon[39m=[32m"question-circle"[39m
+                        [33mfill[39m=[32m"currentColor"[39m
+                        [33mfocusable[39m=[32m"false"[39m
+                        [33mheight[39m=[32m"1em"[39m
+                        [33mviewBox[39m=[32m"64 64 896 896"[39m
+                        [33mwidth[39m=[32m"1em"[39m
+                      [36m>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m"M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z"[39m
+                        [36m/>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m"M623.6 316.7C593.6 290.4 554 276 512 276s-81.6 14.5-111.6 40.7C369.2 344 352 380.7 352 420v7.6c0 4.4 3.6 8 8 8h48c4.4 0 8-3.6 8-8V420c0-44.1 43.1-80 96-80s96 35.9 96 80c0 31.1-22 59.6-56.1 72.7-21.2 8.1-39.2 22.3-52.1 40.9-13.1 19-19.9 41.8-19.9 64.9V620c0 4.4 3.6 8 8 8h48c4.4 0 8-3.6 8-8v-22.7a48.3 48.3 0 0130.9-44.8c59-22.7 97.1-74.7 97.1-132.5.1-39.3-17.1-76-48.3-103.3zM472 732a40 40 0 1080 0 40 40 0 10-80 0z"[39m
+                        [36m/>[39m
+                      [36m</svg>[39m
+                    [36m</span>[39m
+                  [36m</span>[39m
+                  [36m<span>[39m
+                    [0m帮助与支持[0m
+                  [36m</span>[39m
+                [36m</button>[39m
+              [36m</div>[39m
+            [36m</header>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"batch-advice"[39m
+              [33mrole[39m=[32m"status"[39m
+            [36m>[39m
+              [36m<strong>[39m
+                [0m服务端草稿（[0m
+                [0m2[0m
+                [0m/[0m
+                [0m2[0m
+                [0m）[0m
+              [36m</strong>[39m
+              [36m<p>[39m
+                [0m已保存的草稿可手动选择恢复；身份标识不在列表中展示，已登记且未变更的身份可继续使用。[0m
+              [36m</p>[39m
+              [36m<div>[39m
+                [36m<div[39m
+                  [33mstyle[39m=[32m"display: flex; align-items: center; gap: 12px; padding: 6px 0px;"[39m
+                [36m>[39m
+                  [36m<div[39m
+                    [33mstyle[39m=[32m"flex: 1 1 0%; min-width: 0;"[39m
+                  [36m>[39m
+                    [36m<div[39m
+                      [33mstyle[39m=[32m"font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"[39m
+                    [36m>[39m
+                      [0m草稿A[0m
+                    [36m</div>[39m
+                    [36m<div[39m
+                      [33mclass[39m=[32m"muted-text"[39m
+                    [36m>[39m
+                      [0mINT-A[0m
+                    [36m</div>[39m
+                  [36m</div>[39m
+                  [36m<button[39m
+                    [33mclass[39m=[32m"ant-btn css-dev-only-do-not-override-1odpy5d ant-btn-default ant-btn-color-default ant-btn-variant-outlined ant-btn-sm"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [36m<span>[39m
+                      [0m恢复此草稿[0m
+                    [36m</span>[39m
+                  [36m</button>[39m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33mstyle[39m=[32m"display: flex; align-items: center; gap: 12px; padding: 6px 0px;"[39m
+                [36m>[39m
+                  [36m<div[39m
+                    [33mstyle[39m=[32m"flex: 1 1 0%; min-width: 0;"[39m
+                  [36m>[39m
+                    [36m<div[39m
+                      [33mstyle[39m=[32m"font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"[39m
+                    [36m>[39m
+                      [0m草稿B[0m
+                    [36m</div>[39m
+                    [36m<div[39m
+                      [33mclass[39m=[32m"muted-text"[39m
+                    [36m>[39m
+                      [0mINT-B[0m
+                    [36m</div>[39m
+                  [36m</div>[39m
+                  [36m<button[39m
+                    [33mclass[39m=[32m"ant-btn css-dev-only-do-not-override-1odpy5d ant-btn-default ant-btn-color-default ant-btn-variant-outlined ant-btn-sm...
+
+      54 |   mount()
+      55 |   const submit = await screen.findByRole('button', { name: '提交审批并等待成案' })
+    > 56 |   await waitFor(() => expect(submit).toBeEnabled())
+         |                                      ^
+      57 |   expect(screen.getByLabelText('身份标识')).toHaveValue('')
+      58 |   fireEvent.click(screen.getByRole('button', { name: '保存草稿' }))
+      59 |   expect(writes()).toHaveLength(0)
+
+      at src/pages/batch01/__tests__/IntakeRecoveryRegression.test.tsx:56:38
+      at runWithExpensiveErrorDiagnosticsDisabled (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/config.js:47:12)
+      at checkCallback (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/wait-for.js:124:77)
+      at checkRealTimersCallback (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/wait-for.js:118:16)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 11 skipped, 12 total
+Snapshots:   0 total
+Time:        3.24 s, estimated 7 s
+Ran all test suites within paths "src/pages/batch01/__tests__/IntakeRecoveryRegression.test.tsx".

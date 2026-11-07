@@ -1,0 +1,228 @@
+{
+  "runtime_source_commit": "3f970040f5e40b8016c18a070b5aa1345d2b2eec",
+  "initial_source_commit": "7c5618f26ed5600de76e4ed94a682252d10a8aef",
+  "bootstrap_601_to_initial_commit": {
+    "matched": 601,
+    "not_tracked_at_initial_commit": [],
+    "mismatches": []
+  },
+  "frontend_r4_checks": [
+    {
+      "path": "frontend/src/components/client/ClientCreateDialog.tsx",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/components/client/ClientSearchSelect.tsx",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/components/client/__tests__/ClientCollaboration.test.tsx",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/components/layout/Sidebar.tsx",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/components/layout/__tests__/MobileNavigationLayer.test.tsx",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/components/workflow/PersonalWorkQueue.tsx",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/components/workflow/WorkflowActions.tsx",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/index.tsx",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/main.tsx",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/pages/batch01/Batch01Prototype.less",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/pages/batch01/Batch01Prototype.tsx",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/ApprovalCollaborationPage.test.tsx",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/ConflictDetailModal.test.tsx",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/IntakeCollaborationContracts.test.ts",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/IntakeCollaborationPage.test.tsx",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/IntakeRecoveryRegression.test.tsx",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/pages/batch01/intake/DraftNavigationGuard.tsx",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/pages/batch01/intake/SupplementChecklist.tsx",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/pages/batch01/intake/conflictRecovery.ts",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/pages/batch01/intake/draftState.ts",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/pages/inbox/InboxList.tsx",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/pages/inbox/__tests__/InboxWorkflowActions.test.tsx",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/services/approval.ts",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/services/approvalPresentation.ts",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/services/client.ts",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/services/collaborationRequest.ts",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/services/intakeSupplement.ts",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/test/fetchJsdomEnvironment.cjs",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/components/client/__tests__/ClientCollaboration.test.tsx",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/components/layout/__tests__/MobileNavigationLayer.test.tsx",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/components/layout/__tests__/Sidebar.mvp.test.tsx",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/ApprovalCollaborationPage.test.tsx",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/ConflictDetailModal.test.tsx",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/ConflictReviewerSubmit.test.ts",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/DashboardPermission.test.tsx",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/IntakeCollaborationContracts.test.ts",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/IntakeCollaborationPage.test.tsx",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/IntakeDraftRestore.test.ts",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/IntakePartyRoleRoundTrip.test.ts",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/IntakeRecoveryRegression.test.tsx",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/pages/inbox/__tests__/InboxWorkflowActions.test.tsx",
+      "matches": true
+    },
+    {
+      "path": "frontend/index.html",
+      "matches": true
+    },
+    {
+      "path": "frontend/package.json",
+      "matches": true
+    },
+    {
+      "path": "frontend/package-lock.json",
+      "matches": true
+    },
+    {
+      "path": "frontend/vite.config.ts",
+      "matches": true
+    },
+    {
+      "path": "frontend/tsconfig.json",
+      "matches": true
+    },
+    {
+      "path": "reports/evidence/intake-collaboration-mvp/20261107/frontend/approval-review-fix/frontend-source.tar.gz",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/pages/batch01/Batch01Prototype.tsx",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/ApprovalCollaborationPage.test.tsx",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/services/approval.ts",
+      "matches": true
+    },
+    {
+      "path": "frontend/src/services/approvalPresentation.ts",
+      "matches": true
+    }
+  ],
+  "tracked_source_delta_after_runtime_commit": [
+    "internal/services/approval_multistage_postgres_http_test.go"
+  ],
+  "final_added_tests": {
+    "internal/services/inbox_c06_postgres_http_test.go": "fdeda3a62b9beaa237180892faced5f357ba89c97d190d1da972900e2c4316bb",
+    "internal/services/approval_multistage_postgres_http_test.go": "bd432dd45b244a236d563a8f96f7017f31dab4c3fe936c5e7cf83aabc7a8d563"
+  },
+  "scope": "7c 300-leaf run inherited where unchanged; 3f product delta covered by targeted PG, independent 4-leaf rerun and two fresh browser chains; final additions are tests/docs/evidence only",
+  "production_ready": false
+}

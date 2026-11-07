@@ -1,0 +1,20 @@
+{
+  "time": "2026-11-07T10:29:26.154493+00:00",
+  "command": [
+    "git",
+    "diff",
+    "--cached",
+    "--check",
+    "--",
+    "*.go",
+    "*.ts",
+    "*.tsx",
+    "*.sql",
+    "*.md",
+    "*.json",
+    "*.yaml"
+  ],
+  "exit_code": 0,
+  "log": "delivery-diff-check.log",
+  "scope": "source and structured documents; raw historical log/JSONL whitespace preserved"
+}

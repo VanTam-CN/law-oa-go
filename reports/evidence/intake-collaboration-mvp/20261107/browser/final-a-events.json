@@ -1,0 +1,86 @@
+{
+  "client_id": 71,
+  "events": [
+    {
+      "step": "new_client",
+      "status": 200
+    },
+    {
+      "step": "save_draft",
+      "observed": "已保存/INT-20261107171510-67D9A3"
+    },
+    {
+      "step": "relogin_restore",
+      "title": "QA 最终接案 A 20261107",
+      "other_account_hidden": true
+    },
+    {
+      "step": "stale_window_save",
+      "status": 409,
+      "input_retained": true
+    },
+    {
+      "step": "formal_check",
+      "status": 200
+    },
+    {
+      "step": "initial_submit",
+      "status": 200
+    },
+    {
+      "step": "return_and_inbox_resume",
+      "url": "http://127.0.0.1:13004/case/create?intake_id=eba99230-1fa1-48ee-b9a0-b0b532879462&approval_id=18e5b8f062cb0200&mode=revision"
+    },
+    {
+      "step": "supplement_mobile_saved_reload",
+      "replies": [
+        {
+          "id": "reply-4689f8a1-1f89-48f7-83b8-aa9c858fca9a",
+          "value": "已核对虚构身份来源，准备修正主对方身份；保存事实后重新检测并请独立核查人复核。"
+        },
+        {
+          "id": "reply-5cb82773-d268-4be5-89a1-ca30b6def9f0",
+          "value": "共同委托与保证关系均为本轮虚构练习中的不同业务角色；摘要与角色逐项核对，未确认事项单独记录。"
+        }
+      ],
+      "focus": [
+        "",
+        ""
+      ],
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "scrollWidth": 390
+    },
+    {
+      "step": "mobile_locator_focus_settled",
+      "focus": [
+        "intake-description",
+        "intake-opponent-identity-number"
+      ]
+    },
+    {
+      "step": "changed_facts_stale_review_rejected",
+      "status": 409,
+      "error": {
+        "code": "INTAKE_FACTS_STALE",
+        "message": "请确认当前接案事实并完成正式冲突检测"
+      }
+    },
+    {
+      "step": "recheck_changed_facts",
+      "status": 200,
+      "check_id": "CCT_d39c57dd-6262-4f34-a98a-5bc2e24c460e"
+    },
+    {
+      "step": "same_approval_resubmit",
+      "status": 200
+    }
+  ],
+  "intake_id": "eba99230-1fa1-48ee-b9a0-b0b532879462",
+  "approval_id": "18e5b8f062cb0200",
+  "first_snapshot_id": "e903f608-1687-4ad6-8a11-1bcf25f16790",
+  "first_check_id": "CCT_ecb20634-76c9-497f-8328-30c3b85e9be6",
+  "second_check_id": "CCT_d39c57dd-6262-4f34-a98a-5bc2e24c460e"
+}

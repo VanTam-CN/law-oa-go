@@ -1,0 +1,15 @@
+{
+  "candidate": "3f970040f5e40b8016c18a070b5aa1345d2b2eec",
+  "role": "conflict_officer",
+  "check_id": "CCT_7e1b29bd-1bd0-46e4-a7ea-59397488a97a",
+  "assignment": "Assigned in actual conflict detail UI, then returned to dashboard before review",
+  "dashboard_action": "独立复核",
+  "needs_action_before": 2,
+  "opened_correct_check": true,
+  "review_http_status": 200,
+  "review_path": "/api/v1/conflict/tasks/CCT_7e1b29bd-1bd0-46e4-a7ea-59397488a97a/review",
+  "note": "One unrelated old approval task remains; counts must be compared as deltas",
+  "needs_action_after": 1,
+  "target_review_action_after": 0,
+  "after_observation": "Actual dashboard DOM after successful review; unrelated old approval remains"
+}

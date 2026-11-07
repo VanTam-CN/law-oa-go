@@ -1,0 +1,41 @@
+2026-11-07T16:59:05.572+0800	INFO	logger/logger.go:867	Logger package initialized with default development logger
+=== RUN   TestApprovalBootstrapPostgresClaimAndSlotParity
+    approval_bootstrap_postgres_contract_test.go:28: actual BootstrapProductionSchema version=postgres-mvp-2026-11-07-v16 empty_schema=bootstrap_intake_745ff11eaadc4a8cbeece839f3c2343c created_tables=119
+--- PASS: TestApprovalBootstrapPostgresClaimAndSlotParity (1.40s)
+=== RUN   TestApprovalBootstrapPostgresV15UpgradeFirstHTTPSubmission
+    approval_bootstrap_postgres_contract_test.go:46: actual BootstrapProductionSchema version=postgres-mvp-2026-11-07-v16 empty_schema=bootstrap_intake_967e6ae69ae444a98211e0e651a986a9 created_tables=119
+    approval_bootstrap_postgres_contract_test.go:55: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_bootstrap_postgres_contract_test.go:55
+        	Error:      	Received unexpected error:
+        	            	读取生产表 case_intakes 结构失败: ERROR: cached plan must not change result type (SQLSTATE 0A000)
+        	Test:       	TestApprovalBootstrapPostgresV15UpgradeFirstHTTPSubmission
+--- FAIL: TestApprovalBootstrapPostgresV15UpgradeFirstHTTPSubmission (1.47s)
+=== RUN   TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract
+    approval_bootstrap_postgres_contract_test.go:72: actual BootstrapProductionSchema version=postgres-mvp-2026-11-07-v16 empty_schema=bootstrap_intake_532aea08620c4353ba1ab0be1090ab0c created_tables=119
+=== RUN   TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract/missing_claim
+=== RUN   TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract/short_claim
+=== RUN   TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract/nonnull_claim
+=== RUN   TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract/missing_index
+=== RUN   TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract/nonunique_index
+=== RUN   TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract/partial_index
+=== RUN   TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract/wrong_column_index
+--- PASS: TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract (2.36s)
+    --- PASS: TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract/missing_claim (0.06s)
+    --- PASS: TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract/short_claim (0.01s)
+    --- PASS: TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract/nonnull_claim (0.20s)
+    --- PASS: TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract/missing_index (0.20s)
+    --- PASS: TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract/nonunique_index (0.20s)
+    --- PASS: TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract/partial_index (0.19s)
+    --- PASS: TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract/wrong_column_index (0.20s)
+=== RUN   TestApprovalBootstrapPostgresDuplicateLegacySlotsFailAtomically
+    approval_bootstrap_postgres_contract_test.go:97: actual BootstrapProductionSchema version=postgres-mvp-2026-11-07-v16 empty_schema=bootstrap_intake_e7c9a75c68554c1d858d9fe953195d97 created_tables=119
+--- PASS: TestApprovalBootstrapPostgresDuplicateLegacySlotsFailAtomically (1.16s)
+=== RUN   TestApprovalBootstrapPostgresFirstHTTPSubmission
+    approval_bootstrap_postgres_http_test.go:19: actual BootstrapProductionSchema version=postgres-mvp-2026-11-07-v16 empty_schema=bootstrap_intake_5782491433a843928c0f3913d9e2aaca created_tables=119
+2026/11/07 16:59:12 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:59:13 集成审批申请创建完成，ID：18e5b7a6a8b424b8
+    approval_bootstrap_postgres_http_test.go:19: fresh bootstrap -> real HTTP claim -> frozen snapshot + unique slot + decision task; duplicate=409; cases=0
+--- PASS: TestApprovalBootstrapPostgresFirstHTTPSubmission (1.15s)
+FAIL
+FAIL	law-oa-go/internal/services	9.168s
+FAIL

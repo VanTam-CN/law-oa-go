@@ -1,0 +1,85 @@
+2026-11-07T17:06:29.651+0800	INFO	logger/logger.go:867	Logger package initialized with default development logger
+=== RUN   TestApprovalSnapshotModePostgresHTTP
+=== RUN   TestApprovalSnapshotModePostgresHTTP/ordinary_leave
+    approval_backend_final_review_postgres_test.go:177: PostgreSQL fixture schema=approval_collab_33680e86838f4ea3a778acba5b99e37c server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] POST   /approvals/:id/decision   --> law-oa-go/internal/handlers.(*ApprovalHandler).ProcessApprovalDecision-fm (2 handlers)
+[GIN-debug] POST   /integration/approvals/:id/decision --> law-oa-go/internal/handlers.(*IntegrationHandler).ProcessApprovalWithConflict-fm (2 handlers)
+[GIN-debug] POST   /integration/approvals/:id/retry --> law-oa-go/internal/handlers.(*IntegrationHandler).RetryFailedIntegration-fm (2 handlers)
+[GIN-debug] POST   /conflict/tasks/:task_id/approval --> law-oa-go/internal/handlers.(*DemoAggregateHandler).CreateConflictApproval-fm (2 handlers)
+[GIN-debug] GET    /approvals/:id/snapshot   --> law-oa-go/internal/handlers.(*DemoAggregateHandler).GetApprovalSnapshot-fm (2 handlers)
+[GIN-debug] GET    /approvals/:id            --> law-oa-go/internal/handlers.(*ApprovalHandler).GetApproval-fm (2 handlers)
+[GIN-debug] POST   /approvals/:id/resubmit   --> law-oa-go/internal/handlers.(*ApprovalHandler).ResubmitApproval-fm (2 handlers)
+[GIN-debug] PUT    /case-intakes/:id         --> law-oa-go/internal/handlers.(*DemoAggregateHandler).UpdateCaseIntake-fm (2 handlers)
+=== RUN   TestApprovalSnapshotModePostgresHTTP/ordinary_with_legacy_snapshot
+    approval_backend_final_review_postgres_test.go:177: PostgreSQL fixture schema=approval_collab_6db54618284a4b178e40993613f505d8 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] POST   /approvals/:id/decision   --> law-oa-go/internal/handlers.(*ApprovalHandler).ProcessApprovalDecision-fm (2 handlers)
+[GIN-debug] POST   /integration/approvals/:id/decision --> law-oa-go/internal/handlers.(*IntegrationHandler).ProcessApprovalWithConflict-fm (2 handlers)
+[GIN-debug] POST   /integration/approvals/:id/retry --> law-oa-go/internal/handlers.(*IntegrationHandler).RetryFailedIntegration-fm (2 handlers)
+[GIN-debug] POST   /conflict/tasks/:task_id/approval --> law-oa-go/internal/handlers.(*DemoAggregateHandler).CreateConflictApproval-fm (2 handlers)
+[GIN-debug] GET    /approvals/:id/snapshot   --> law-oa-go/internal/handlers.(*DemoAggregateHandler).GetApprovalSnapshot-fm (2 handlers)
+[GIN-debug] GET    /approvals/:id            --> law-oa-go/internal/handlers.(*ApprovalHandler).GetApproval-fm (2 handlers)
+[GIN-debug] POST   /approvals/:id/resubmit   --> law-oa-go/internal/handlers.(*ApprovalHandler).ResubmitApproval-fm (2 handlers)
+[GIN-debug] PUT    /case-intakes/:id         --> law-oa-go/internal/handlers.(*DemoAggregateHandler).UpdateCaseIntake-fm (2 handlers)
+=== RUN   TestApprovalSnapshotModePostgresHTTP/legacy_check_binding
+    approval_backend_final_review_postgres_test.go:177: PostgreSQL fixture schema=approval_collab_bfd42febf829406296a102c94f47b29b server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] POST   /approvals/:id/decision   --> law-oa-go/internal/handlers.(*ApprovalHandler).ProcessApprovalDecision-fm (2 handlers)
+[GIN-debug] POST   /integration/approvals/:id/decision --> law-oa-go/internal/handlers.(*IntegrationHandler).ProcessApprovalWithConflict-fm (2 handlers)
+[GIN-debug] POST   /integration/approvals/:id/retry --> law-oa-go/internal/handlers.(*IntegrationHandler).RetryFailedIntegration-fm (2 handlers)
+[GIN-debug] POST   /conflict/tasks/:task_id/approval --> law-oa-go/internal/handlers.(*DemoAggregateHandler).CreateConflictApproval-fm (2 handlers)
+[GIN-debug] GET    /approvals/:id/snapshot   --> law-oa-go/internal/handlers.(*DemoAggregateHandler).GetApprovalSnapshot-fm (2 handlers)
+[GIN-debug] GET    /approvals/:id            --> law-oa-go/internal/handlers.(*ApprovalHandler).GetApproval-fm (2 handlers)
+[GIN-debug] POST   /approvals/:id/resubmit   --> law-oa-go/internal/handlers.(*ApprovalHandler).ResubmitApproval-fm (2 handlers)
+[GIN-debug] PUT    /case-intakes/:id         --> law-oa-go/internal/handlers.(*DemoAggregateHandler).UpdateCaseIntake-fm (2 handlers)
+2026/11/07 17:06:30 处理包含冲突检测的审批申请，审批ID：18e5b80c6b39d810，决定：approve
+2026/11/07 17:06:30 处理受控成案审批决定失败: 处理审批决定失败：此旧冲突审批仅保留历史记录，不能同意并成案；请完成独立冲突复核后从原接案工作台提交接案审批
+=== RUN   TestApprovalSnapshotModePostgresHTTP/legacy_tracking_binding
+    approval_backend_final_review_postgres_test.go:177: PostgreSQL fixture schema=approval_collab_f9feea4cd8564bd4a186458693cb6958 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] POST   /approvals/:id/decision   --> law-oa-go/internal/handlers.(*ApprovalHandler).ProcessApprovalDecision-fm (2 handlers)
+[GIN-debug] POST   /integration/approvals/:id/decision --> law-oa-go/internal/handlers.(*IntegrationHandler).ProcessApprovalWithConflict-fm (2 handlers)
+[GIN-debug] POST   /integration/approvals/:id/retry --> law-oa-go/internal/handlers.(*IntegrationHandler).RetryFailedIntegration-fm (2 handlers)
+[GIN-debug] POST   /conflict/tasks/:task_id/approval --> law-oa-go/internal/handlers.(*DemoAggregateHandler).CreateConflictApproval-fm (2 handlers)
+[GIN-debug] GET    /approvals/:id/snapshot   --> law-oa-go/internal/handlers.(*DemoAggregateHandler).GetApprovalSnapshot-fm (2 handlers)
+[GIN-debug] GET    /approvals/:id            --> law-oa-go/internal/handlers.(*ApprovalHandler).GetApproval-fm (2 handlers)
+[GIN-debug] POST   /approvals/:id/resubmit   --> law-oa-go/internal/handlers.(*ApprovalHandler).ResubmitApproval-fm (2 handlers)
+[GIN-debug] PUT    /case-intakes/:id         --> law-oa-go/internal/handlers.(*DemoAggregateHandler).UpdateCaseIntake-fm (2 handlers)
+=== RUN   TestApprovalSnapshotModePostgresHTTP/legacy_snapshot_binding
+    approval_backend_final_review_postgres_test.go:177: PostgreSQL fixture schema=approval_collab_d27aaff81ff04f36b646cd02fe50d4c1 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] POST   /approvals/:id/decision   --> law-oa-go/internal/handlers.(*ApprovalHandler).ProcessApprovalDecision-fm (2 handlers)
+[GIN-debug] POST   /integration/approvals/:id/decision --> law-oa-go/internal/handlers.(*IntegrationHandler).ProcessApprovalWithConflict-fm (2 handlers)
+[GIN-debug] POST   /integration/approvals/:id/retry --> law-oa-go/internal/handlers.(*IntegrationHandler).RetryFailedIntegration-fm (2 handlers)
+[GIN-debug] POST   /conflict/tasks/:task_id/approval --> law-oa-go/internal/handlers.(*DemoAggregateHandler).CreateConflictApproval-fm (2 handlers)
+[GIN-debug] GET    /approvals/:id/snapshot   --> law-oa-go/internal/handlers.(*DemoAggregateHandler).GetApprovalSnapshot-fm (2 handlers)
+[GIN-debug] GET    /approvals/:id            --> law-oa-go/internal/handlers.(*ApprovalHandler).GetApproval-fm (2 handlers)
+[GIN-debug] POST   /approvals/:id/resubmit   --> law-oa-go/internal/handlers.(*ApprovalHandler).ResubmitApproval-fm (2 handlers)
+[GIN-debug] PUT    /case-intakes/:id         --> law-oa-go/internal/handlers.(*DemoAggregateHandler).UpdateCaseIntake-fm (2 handlers)
+--- PASS: TestApprovalSnapshotModePostgresHTTP (0.73s)
+    --- PASS: TestApprovalSnapshotModePostgresHTTP/ordinary_leave (0.16s)
+    --- PASS: TestApprovalSnapshotModePostgresHTTP/ordinary_with_legacy_snapshot (0.14s)
+    --- PASS: TestApprovalSnapshotModePostgresHTTP/legacy_check_binding (0.14s)
+    --- PASS: TestApprovalSnapshotModePostgresHTTP/legacy_tracking_binding (0.14s)
+    --- PASS: TestApprovalSnapshotModePostgresHTTP/legacy_snapshot_binding (0.15s)
+=== RUN   TestApprovalSnapshotModePostgresCaseCreationAndEmbeddedMode
+    approval_backend_final_review_postgres_test.go:177: PostgreSQL fixture schema=approval_collab_9c9896ee60b6437d87b84c3c1e7d9167 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+--- PASS: TestApprovalSnapshotModePostgresCaseCreationAndEmbeddedMode (0.13s)
+PASS
+ok  	law-oa-go/internal/services	2.495s

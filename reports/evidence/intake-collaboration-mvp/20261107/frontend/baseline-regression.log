@@ -1,0 +1,45 @@
+
+> law-oa-frontend@0.0.0 test
+> jest --runInBand --coverage=false --runTestsByPath src/pages/batch01/__tests__/IntakeDraftRestore.test.ts src/pages/batch01/__tests__/IntakePartyRoleRoundTrip.test.ts src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts src/pages/batch01/__tests__/DashboardPermission.test.tsx
+
+PASS Law OA Frontend src/pages/batch01/__tests__/DashboardPermission.test.tsx
+  DashboardCommandCenter action permissions
+    ✓ shows intake and permitted workflow actions for a lawyer (234 ms)
+    ✓ hides inaccessible intake and workflow links from a plain user and shows guidance (57 ms)
+
+PASS Law OA Frontend src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts
+  CaseIntakeWorkbench conflict action
+    ✓ returns stable required fields before any draft or conflict request (1 ms)
+    ✓ returns no missing fields for a complete conflict-check input
+    ✓ labels a coverage-limited record with no evidence as no match (1 ms)
+    ✓ keeps a clear MVP fallback message for unavailable conflict checks
+    ✓ provides a lawyer-readable first-run path and support guidance
+    ✓ does not treat a matched conflict case as the subject case (1 ms)
+    ✓ matches only explicit subject case identifiers
+    ✓ matches subject identifiers nested in the persisted search parameters
+    ✓ matches the command-center task title used by a case-context link (1 ms)
+    ✓ does not use a historical hit case as the subject context
+    ✓ isolates local drafts by user and case context (1 ms)
+    ✓ never persists an opponent identity number in a browser draft
+    ✓ invalidates a frozen result when a material conflict input changes (1 ms)
+    ✓ keeps the same fingerprint when related parties are only reordered
+
+PASS Law OA Frontend src/pages/batch01/__tests__/IntakeDraftRestore.test.ts
+  intakeDraftFromServer full-fidelity restore
+    ✓ restores every saved business field after a server draft reload (1 ms)
+    ✓ restores the related party row with its stored role and no plaintext identity (1 ms)
+    ✓ restores opponent aliases so a protected identity can re-save safely
+    ✓ keeps a switched-in draft clean with no phantom related rows
+
+PASS Law OA Frontend src/pages/batch01/__tests__/IntakePartyRoleRoundTrip.test.ts
+  intake party save -> server -> restore round trip
+    ✓ writes the business role and depth into the party metadata contract (1 ms)
+    ✓ restores the related party role and depth from the served party rows
+    ✓ flattens the rows back out with the same depth on a re-save
+    ✓ rejects the old contract shape where the save omitted metadata.party_type
+
+Test Suites: 4 passed, 4 total
+Tests:       24 passed, 24 total
+Snapshots:   0 total
+Time:        2.29 s
+Ran all test suites within paths "src/pages/batch01/__tests__/IntakeDraftRestore.test.ts", "src/pages/batch01/__tests__/IntakePartyRoleRoundTrip.test.ts", "src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts", "src/pages/batch01/__tests__/DashboardPermission.test.tsx".

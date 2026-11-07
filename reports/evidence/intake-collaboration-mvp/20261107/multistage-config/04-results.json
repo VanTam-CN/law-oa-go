@@ -1,0 +1,60 @@
+{
+  "baseline": "3f970040f5e40b8016c18a070b5aa1345d2b2eec",
+  "production_file_count": 321,
+  "production_hashes_unchanged": true,
+  "production_go_diff_from_baseline": [],
+  "test_file": "internal/services/approval_multistage_postgres_http_test.go",
+  "test_sha256": "bd432dd45b244a236d563a8f96f7017f31dab4c3fe936c5e7cf83aabc7a8d563",
+  "go_test_exit_code": 0,
+  "race": true,
+  "leaf_counts": {
+    "pass": 6,
+    "fail": 0,
+    "skip": 0
+  },
+  "leaves": [
+    {
+      "Time": "2026-11-07T18:17:59.611426+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalMultistagePostgresHTTP/ordinary/complete",
+      "Elapsed": 1.96
+    },
+    {
+      "Time": "2026-11-07T18:18:01.507023+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalMultistagePostgresHTTP/ordinary/final_case_failure_retry",
+      "Elapsed": 1.89
+    },
+    {
+      "Time": "2026-11-07T18:18:03.470756+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalMultistagePostgresHTTP/ordinary/config_direct_two_stages",
+      "Elapsed": 1.96
+    },
+    {
+      "Time": "2026-11-07T18:18:05.306927+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalMultistagePostgresHTTP/integrated/complete",
+      "Elapsed": 1.84
+    },
+    {
+      "Time": "2026-11-07T18:18:07.248745+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalMultistagePostgresHTTP/integrated/final_case_failure_retry",
+      "Elapsed": 1.94
+    },
+    {
+      "Time": "2026-11-07T18:18:09.129317+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalMultistagePostgresHTTP/integrated/config_direct_two_stages",
+      "Elapsed": 1.88
+    }
+  ],
+  "scope": "local isolated PostgreSQL; actual bootstrap and HTTP handlers; no browser runtime DB changes; no production source changes"
+}

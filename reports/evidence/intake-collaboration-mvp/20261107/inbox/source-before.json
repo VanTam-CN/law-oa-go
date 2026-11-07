@@ -1,0 +1,17 @@
+{
+  "captured_at": "2026-11-07T07:39:55.557832+00:00",
+  "head": "a806831a7cef839c2b971cd4ab260cce77f42b8b",
+  "files": {
+    "internal/models/v2_2_0_models.go": "a6f8c1a96089565963f9482f12db17b6b00ec130a2b38e7231a7a9415f335c48",
+    "internal/repositories/inbox_repository.go": "a9d4c30da683e7a8bbdfddbffe682005b70046f76a1a037082e26d2d320ff5a3",
+    "internal/services/inbox_service.go": "2561a0ff9393af189e9d246ddbd84cac9f4990ebdff67989fa362c711985ec83",
+    "internal/services/inbox_workflow_action.go": "792296f17c0b3ca35a2ba127fdcadf077c68f2704424dd4bfc11c74f47e6990f",
+    "internal/services/intake_inbox_handoff.go": "68ae6b1fbeee91f0957ead8cc3aaf33b5bc5c8bf30f098a2ec9e4830284d6687",
+    "internal/handlers/inbox_handler.go": "f839870d14b99b9ede33d430b6302a3ef46b88cc434a8cc23823d67cd2873dde",
+    "internal/handlers/inbox_handler_security_test.go": "151ae236f5d5fed28eb9129c3bec268754fa41a6cef37d34742e3cafbdf19abf",
+    "internal/services/inbox_workflow_contract_test.go": "520e3e9d439c53e852300a402ad9aa1e8acdfd463780e9b8fa7920089688edcd",
+    "internal/handlers/inbox_workflow_security_test.go": "cdfcafd9a4ac6d9a082fe9e7a372a81880fc49c61f316a02c8efec2f45f02aca",
+    "migrations/000084_intake_workflow_inbox.up.sql": "2b4040c4f74fce5c074e420e3de1e6e9c0b09c5da3beeb761a487946de8d0467",
+    "migrations/000084_intake_workflow_inbox.down.sql": "f71eed150dc3d95e0460f86f83093460d9c45c3f5595c528d3166cd049a7e763"
+  }
+}

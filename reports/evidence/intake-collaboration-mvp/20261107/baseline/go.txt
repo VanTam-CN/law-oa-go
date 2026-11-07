@@ -1,0 +1,21 @@
+=== RUN   TestResubmitAtomic_CompetingSlotRollsBackStatus
+--- PASS: TestResubmitAtomic_CompetingSlotRollsBackStatus (0.03s)
+=== RUN   TestResubmitAtomic_FreeSlotCommitsBoth
+通知发送: 申请 RN-RA-1794034053621218000 - 重新提交
+--- PASS: TestResubmitAtomic_FreeSlotCommitsBoth (0.02s)
+=== RUN   TestCaseTxGuard_CompetingIntakeSlotBlocked
+2026/11/07 14:47:33 从审批申请自动创建案件，审批ID：APR-TX-1
+--- PASS: TestCaseTxGuard_CompetingIntakeSlotBlocked (0.02s)
+=== RUN   TestCaseTxGuard_SelfOwnedSlotPasses
+2026/11/07 14:47:33 从审批申请自动创建案件，审批ID：APR-TX-1
+--- PASS: TestCaseTxGuard_SelfOwnedSlotPasses (0.03s)
+=== RUN   TestCaseTxGuard_LegacyNoIntakeMetadataPasses
+2026/11/07 14:47:33 从审批申请自动创建案件，审批ID：APR-TX-1
+--- PASS: TestCaseTxGuard_LegacyNoIntakeMetadataPasses (0.03s)
+PASS
+ok  	law-oa-go/internal/services	1.568s
+2026-11-07T14:47:33.967+0800	INFO	logger/logger.go:867	Logger package initialized with default development logger
+=== RUN   TestListIntakeDraftsScopesAndFields
+--- PASS: TestListIntakeDraftsScopesAndFields (0.01s)
+PASS
+ok  	law-oa-go/internal/handlers	1.747s

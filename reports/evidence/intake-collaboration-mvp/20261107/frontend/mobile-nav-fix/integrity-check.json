@@ -1,0 +1,16 @@
+{
+  "checked_at": "2026-11-07T08:25:55.807Z",
+  "source_files": 27,
+  "build_files": 7,
+  "archive_contents_match": true,
+  "delta_from_r2_files": 5,
+  "main_js": "frontend/dist/assets/index-p6KdlFyE.js",
+  "source_archive": {
+    "path": "reports/evidence/intake-collaboration-mvp/20261107/frontend/mobile-nav-fix/frontend-source.tar.gz",
+    "sha256": "31f28869cd5706c3d733038abf5bcb5655b1a7fb0e7a6ba54334f585da6c6860"
+  },
+  "build_archive": {
+    "path": "reports/evidence/intake-collaboration-mvp/20261107/frontend/mobile-nav-fix/frontend-dist.tar.gz",
+    "sha256": "ef0dcd9b5cee75717585aeddd487edadee337378609a83722c4e80c802c0254b"
+  }
+}

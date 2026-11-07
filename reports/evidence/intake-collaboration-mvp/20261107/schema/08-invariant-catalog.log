@@ -1,0 +1,14 @@
+                  tgname                  
+------------------------------------------
+ trg_intake_submission_snapshot_immutable
+ trg_intake_submission_decision_immutable
+(2 rows)
+
+          indexname           
+------------------------------
+ idx_intake_submission_round
+ idx_intake_submission_return
+ uq_client_creation_scope
+ uq_inbox_workflow_task_key
+(4 rows)
+

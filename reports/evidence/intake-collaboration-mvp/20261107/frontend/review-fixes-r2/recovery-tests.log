@@ -1,0 +1,24 @@
+
+> law-oa-frontend@0.0.0 test
+> jest --runInBand --coverage=false --runTestsByPath src/pages/batch01/__tests__/IntakeRecoveryRegression.test.tsx
+
+PASS Law OA Frontend src/pages/batch01/__tests__/IntakeRecoveryRegression.test.tsx (6.754 s)
+  ✓ re-reads the bound check and live review, submits without protected identity re-entry or a redundant fact save/check (626 ms)
+  ✓ invalidates the restored check immediately when the lawyer changes a fact (227 ms)
+  ✓ also invalidates a restored check for edited matter details outside the party fingerprint (217 ms)
+  ✓ does not revive a historical check when the authoritative draft is no longer conflict_ready (195 ms)
+  ✓ fails closed when restoring the check is mismatch, without creating another check (198 ms)
+  ✓ fails closed when restoring the check is review-mismatch, without creating another check (192 ms)
+  ✓ fails closed when restoring the check is unavailable, without creating another check (208 ms)
+  ✓ keeps the latest selected draft when two restore responses arrive in reverse order (453 ms)
+  ✓ does not let an in-flight restore overwrite input entered while it was loading (495 ms)
+  ✓ drops a late previous-account restore without putting its facts into the new account cache (569 ms)
+  ✓ guards a server-backed local cache restore against an account change while it is loading (305 ms)
+  ✓ preserves edits made while an explicit 409 reload is still in flight (728 ms)
+  ✓ clears object and revision state on SPA navigation from a concrete draft to the blank entry (785 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       13 passed, 13 total
+Snapshots:   0 total
+Time:        7.049 s
+Ran all test suites within paths "src/pages/batch01/__tests__/IntakeRecoveryRegression.test.tsx".

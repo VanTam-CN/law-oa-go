@@ -1,0 +1,88 @@
+{
+  "source_frozen_at": "2026-11-07T09:05:06.532Z",
+  "actual_entry": "frontend/index.html -> /src/index.tsx",
+  "main_js": "frontend/dist/assets/index-fDMF1BW8.js",
+  "files": [
+    {
+      "path": "frontend/dist/assets/antd-DzIAar_E.js",
+      "sha256": "d4a549080a9dceca2e5f8135f0f25731fff9939ccd49b2b6c3b89961f753e537",
+      "bytes": 1133167
+    },
+    {
+      "path": "frontend/dist/assets/index-Bfz438sN.css",
+      "sha256": "e1ab09bedabd8a246204221bf4fc1cbe3e0a26b5d8e2363a02fe57f1a63882f5",
+      "bytes": 85955
+    },
+    {
+      "path": "frontend/dist/assets/index-fDMF1BW8.js",
+      "sha256": "1231ccd77e41527faa7491e8b8a04b212bff03647c0e734d5cef8ee21067c6df",
+      "bytes": 478229
+    },
+    {
+      "path": "frontend/dist/assets/router-DR8pEzmh.js",
+      "sha256": "507687dd0a0fb84b95c367ab6e6fccfba2ea747dccf388622e9268063569ae70",
+      "bytes": 81241
+    },
+    {
+      "path": "frontend/dist/assets/utils-Bef3mNe6.js",
+      "sha256": "7d7dc7e3b944280794b1074ee1a9e1cadc4566baaccc58f348f132fc41aa3055",
+      "bytes": 28
+    },
+    {
+      "path": "frontend/dist/assets/vendor-DGvbWsQX.js",
+      "sha256": "97c009ec7c34778ba699ab341759d7b54b58fe21804f7a900107cd765000b29e",
+      "bytes": 140344
+    },
+    {
+      "path": "frontend/dist/index.html",
+      "sha256": "33bf9ce9025b650ef2e970af9ff529f5fb0934038c0c80f425a50e7391e19cc4",
+      "bytes": 702
+    }
+  ],
+  "archive": {
+    "path": "reports/evidence/intake-collaboration-mvp/20261107/frontend/approval-review-fix/frontend-dist.tar.gz",
+    "sha256": "700670964c653995638de2586e69459dc9aa7029f3134fb18718281653879d5f",
+    "bytes": 569473
+  },
+  "supersedes": "../mobile-nav-fix/build-manifest.json",
+  "checks": {
+    "typecheck": {
+      "exit_code": 0,
+      "command": "npm --prefix frontend run type-check",
+      "log": "type-check.log"
+    },
+    "lint": {
+      "exit_code": 0,
+      "command": "frontend/node_modules/.bin/eslint (four changed frontend files) --max-warnings 0",
+      "log": "lint.log"
+    },
+    "regression": {
+      "exit_code": 0,
+      "suites": 2,
+      "tests": 32,
+      "command": "npm --prefix frontend test -- --runInBand --coverage=false --runTestsByPath src/pages/batch01/__tests__/ApprovalCollaborationPage.test.tsx src/pages/batch01/__tests__/IntakeCollaborationContracts.test.ts",
+      "log": "regression.log"
+    },
+    "build": {
+      "exit_code": 0,
+      "command": "npm --prefix frontend run build",
+      "log": "build.log"
+    },
+    "diff_check": {
+      "exit_code": 0,
+      "command": "git diff --check -- frontend",
+      "log": "diff-check.log"
+    }
+  },
+  "backend_capability_source_observed": {
+    "path": "internal/handlers/approval_handler.go",
+    "sha256": "2c63411ecd7ef3d3720a249cc06efb499d1b9707599e79a687cf2e6c95173188",
+    "bytes": 33804
+  },
+  "limitations": [
+    "Mock API/JSDOM author regression only; no live browser, API or database verification by this worker.",
+    "Backend capability observed in shared source; running server must use the corresponding build.",
+    "F5/F6 require Planck independent review; two new full chains and C16 remain unverified here.",
+    "Existing large AntD chunk warning remains; build completed successfully."
+  ]
+}

@@ -1,0 +1,24 @@
+2026-11-07T15:24:30.421+0800	INFO	logger/logger.go:867	Logger package initialized with default development logger
+=== RUN   TestApprovalCollaborationPostgresHTTPInitialSubmission
+=== RUN   TestApprovalCollaborationPostgresHTTPInitialSubmission/first_submit_then_duplicate
+    approval_collaboration_postgres_http_test.go:31: PostgreSQL fixture schema=approval_collab_4479e6b1a9874958893df81fe0d0f7c6 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+    approval_collaboration_postgres_http_test.go:98: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_http_test.go:98
+        	Error:      	Not equal: 
+        	            	expected: 200
+        	            	actual  : 400
+        	Test:       	TestApprovalCollaborationPostgresHTTPInitialSubmission/first_submit_then_duplicate
+        	Messages:   	{"error":"invalid_request","message":"请求参数无效: Key: 'IntegrationRequest.DepartmentName' Error:Field validation for 'DepartmentName' failed on the 'required' tag"}
+=== RUN   TestApprovalCollaborationPostgresHTTPInitialSubmission/snapshot_failure_then_original_retry
+    approval_collaboration_postgres_http_test.go:31: PostgreSQL fixture schema=approval_collab_3d915ecaa62749178835d42e64540d4b server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+    approval_collaboration_postgres_http_test.go:88: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_http_test.go:88
+        	Error:      	"0" is not positive
+        	Test:       	TestApprovalCollaborationPostgresHTTPInitialSubmission/snapshot_failure_then_original_retry
+        	Messages:   	must reach actual freeze write, not fail an earlier gate: {"error":"invalid_request","message":"请求参数无效: Key: 'IntegrationRequest.DepartmentName' Error:Field validation for 'DepartmentName' failed on the 'required' tag"}
+--- FAIL: TestApprovalCollaborationPostgresHTTPInitialSubmission (0.27s)
+    --- FAIL: TestApprovalCollaborationPostgresHTTPInitialSubmission/first_submit_then_duplicate (0.14s)
+    --- FAIL: TestApprovalCollaborationPostgresHTTPInitialSubmission/snapshot_failure_then_original_retry (0.13s)
+FAIL
+FAIL	law-oa-go/internal/services	1.815s
+FAIL

@@ -1,0 +1,10 @@
+=== RUN   TestApprovalSubmissionPreservesBusinessRole
+    intake_submission_snapshot_test.go:444: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/intake_submission_snapshot_test.go:444
+        	Error:      	An error is expected but got nil.
+        	Test:       	TestApprovalSubmissionPreservesBusinessRole
+        	Messages:   	archive role aliases cannot hide a changed professional role
+--- FAIL: TestApprovalSubmissionPreservesBusinessRole (0.00s)
+FAIL
+FAIL	law-oa-go/internal/services	1.362s
+FAIL

@@ -1,0 +1,14 @@
+{
+  "baseline": "a806831a7cef839c2b971cd4ab260cce77f42b8b",
+  "path": "/private/tmp/lawoa-client-verify-20261107.znuj4lyn",
+  "overlaid_files": [
+    "internal/handlers/client_handler.go",
+    "internal/handlers/client_idempotency_test.go",
+    "internal/repositories/client_repository.go",
+    "internal/services/client_idempotency.go",
+    "internal/services/client_idempotency_test.go",
+    "internal/models/client_creation_request.go",
+    "migrations/000083_client_creation_idempotency.up.sql",
+    "migrations/000083_client_creation_idempotency.down.sql"
+  ]
+}

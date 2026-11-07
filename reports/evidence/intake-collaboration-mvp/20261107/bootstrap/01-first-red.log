@@ -1,0 +1,6 @@
+# law-oa-go/internal/services
+package law-oa-go/internal/services
+	imports law-oa-go/internal/database from approval_bootstrap_postgres_fixture_test.go
+	imports law-oa-go/internal/services from rbac_init.go: import cycle not allowed in test
+FAIL	law-oa-go/internal/services [setup failed]
+FAIL

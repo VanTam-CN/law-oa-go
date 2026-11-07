@@ -1,0 +1,43 @@
+# law-oa-go/internal/services.test
+ld: warning: '/private/var/folders/4p/bng36r_s65d26yqk0lfpw2rh0000gn/T/go-link-3525820006/000023.o' has malformed LC_DYSYMTAB, expected 98 undefined symbols to start at index 884, found 95 undefined symbols starting at index 884
+2026-11-07T16:36:38.415+0800	INFO	logger/logger.go:867	Logger package initialized with default development logger
+=== RUN   TestBackendFinalReviewPostgresPendingClientChangeHTTP
+=== RUN   TestBackendFinalReviewPostgresPendingClientChangeHTTP/lawyer
+    approval_backend_final_review_postgres_test.go:186: PostgreSQL fixture schema=approval_collab_a9248f8203504fe99b19d578548e7e6d server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:36:38 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:36:38 集成审批申请创建完成，ID：18e5b66b4f2c1a68
+通知发送: 申请 AP-20261107-3ae9aa55-b50f-470f-b005-95c09fc3c6c1 - 需要修改
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] POST   /approvals/:id/decision   --> law-oa-go/internal/handlers.(*ApprovalHandler).ProcessApprovalDecision-fm (2 handlers)
+[GIN-debug] POST   /integration/approvals/:id/decision --> law-oa-go/internal/handlers.(*IntegrationHandler).ProcessApprovalWithConflict-fm (2 handlers)
+[GIN-debug] POST   /integration/approvals/:id/retry --> law-oa-go/internal/handlers.(*IntegrationHandler).RetryFailedIntegration-fm (2 handlers)
+[GIN-debug] POST   /conflict/tasks/:task_id/approval --> law-oa-go/internal/handlers.(*DemoAggregateHandler).CreateConflictApproval-fm (2 handlers)
+[GIN-debug] GET    /approvals/:id/snapshot   --> law-oa-go/internal/handlers.(*DemoAggregateHandler).GetApprovalSnapshot-fm (2 handlers)
+[GIN-debug] GET    /approvals/:id            --> law-oa-go/internal/handlers.(*ApprovalHandler).GetApproval-fm (2 handlers)
+[GIN-debug] POST   /approvals/:id/resubmit   --> law-oa-go/internal/handlers.(*ApprovalHandler).ResubmitApproval-fm (2 handlers)
+[GIN-debug] PUT    /case-intakes/:id         --> law-oa-go/internal/handlers.(*DemoAggregateHandler).UpdateCaseIntake-fm (2 handlers)
+=== RUN   TestBackendFinalReviewPostgresPendingClientChangeHTTP/partner
+    approval_backend_final_review_postgres_test.go:186: PostgreSQL fixture schema=approval_collab_defebf1f6e7242ff87eed4be343c75ac server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:36:39 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:36:39 集成审批申请创建完成，ID：18e5b66b692aef20
+通知发送: 申请 AP-20261107-961e2a33-130f-43c1-9414-bdb5e7ec6cf6 - 需要修改
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] POST   /approvals/:id/decision   --> law-oa-go/internal/handlers.(*ApprovalHandler).ProcessApprovalDecision-fm (2 handlers)
+[GIN-debug] POST   /integration/approvals/:id/decision --> law-oa-go/internal/handlers.(*IntegrationHandler).ProcessApprovalWithConflict-fm (2 handlers)
+[GIN-debug] POST   /integration/approvals/:id/retry --> law-oa-go/internal/handlers.(*IntegrationHandler).RetryFailedIntegration-fm (2 handlers)
+[GIN-debug] POST   /conflict/tasks/:task_id/approval --> law-oa-go/internal/handlers.(*DemoAggregateHandler).CreateConflictApproval-fm (2 handlers)
+[GIN-debug] GET    /approvals/:id/snapshot   --> law-oa-go/internal/handlers.(*DemoAggregateHandler).GetApprovalSnapshot-fm (2 handlers)
+[GIN-debug] GET    /approvals/:id            --> law-oa-go/internal/handlers.(*ApprovalHandler).GetApproval-fm (2 handlers)
+[GIN-debug] POST   /approvals/:id/resubmit   --> law-oa-go/internal/handlers.(*ApprovalHandler).ResubmitApproval-fm (2 handlers)
+[GIN-debug] PUT    /case-intakes/:id         --> law-oa-go/internal/handlers.(*DemoAggregateHandler).UpdateCaseIntake-fm (2 handlers)
+--- PASS: TestBackendFinalReviewPostgresPendingClientChangeHTTP (0.77s)
+    --- PASS: TestBackendFinalReviewPostgresPendingClientChangeHTTP/lawyer (0.46s)
+    --- PASS: TestBackendFinalReviewPostgresPendingClientChangeHTTP/partner (0.30s)
+PASS
+ok  	law-oa-go/internal/services	4.090s

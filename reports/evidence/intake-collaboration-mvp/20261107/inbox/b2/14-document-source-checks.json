@@ -1,0 +1,47 @@
+[
+  {
+    "file": "internal/services/inbox_workflow_action.go",
+    "check": "whitespace",
+    "exit_code": 1,
+    "output": ""
+  },
+  {
+    "file": "internal/services/inbox_service.go",
+    "check": "whitespace",
+    "exit_code": 1,
+    "output": ""
+  },
+  {
+    "file": "internal/services/inbox_workflow_contract_test.go",
+    "check": "whitespace",
+    "exit_code": 1,
+    "output": ""
+  },
+  {
+    "file": "internal/services/inbox_active_snapshot_test.go",
+    "check": "whitespace",
+    "exit_code": 1,
+    "output": ""
+  },
+  {
+    "file": "internal/services/inbox_workflow_postgres_test.go",
+    "check": "whitespace",
+    "exit_code": 1,
+    "output": ""
+  },
+  {
+    "file": "internal/services/inbox_workflow_postgres_http_test.go",
+    "check": "whitespace",
+    "exit_code": 1,
+    "output": ""
+  },
+  {
+    "check": "gofmt",
+    "exit_code": 0,
+    "output": ""
+  },
+  {
+    "check": "report_links",
+    "missing": []
+  }
+]

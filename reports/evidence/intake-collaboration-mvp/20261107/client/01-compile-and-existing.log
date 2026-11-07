@@ -1,0 +1,6 @@
+# law-oa-go/internal/handlers [law-oa-go/internal/handlers.test]
+internal/handlers/client_handler.go:115:68: undefined: apperrors.CategoryValidation
+internal/handlers/client_handler.go:115:121: undefined: apperrors.CategoryBusiness
+ok  	law-oa-go/internal/services	1.341s
+FAIL	law-oa-go/internal/handlers [build failed]
+FAIL

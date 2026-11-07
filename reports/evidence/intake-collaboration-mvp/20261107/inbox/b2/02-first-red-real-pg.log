@@ -1,0 +1,17 @@
+2026-11-07T16:05:43.933+0800	INFO	logger/logger.go:867	Logger package initialized with default development logger
+=== RUN   TestInboxB2PostgresRevisedSubmission
+    inbox_workflow_postgres_test.go:46: PostgreSQL fixture schema=approval_collab_cd41413989594f278ae5ddd837c56002 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:05:44 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:05:44 集成审批申请创建完成，ID：18e5b4bb83d1f208
+通知发送: 申请 AP-20261107-824a5183-c452-49a8-81f3-71d3030c7c34 - 需要修改
+    inbox_workflow_postgres_test.go:46: B2 real resubmit approval=18e5b4bb83d1f208 intake=18fef9d4-a124-4270-acb6-5009ff2a10f2 C1=COLLAB-PG-8cb0ac84-e0c2-4808-a12e-81a50cbd60c2 C2=COLLAB-PG-REVISED-c3ca156c-1753-4d82-8772-ed5dcc184b15 active=a3d6b9f0-65fa-47cf-b21a-572dfd09ee73 historical_metadata_unchanged=true
+    inbox_workflow_postgres_test.go:70: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/inbox_workflow_postgres_test.go:53
+        	            				/private/tmp/lawoa-intake-collaboration-20261107/internal/services/inbox_workflow_postgres_test.go:70
+        	Error:      	"[]" should have 1 item(s), but has 0
+        	Test:       	TestInboxB2PostgresRevisedSubmission
+        	Messages:   	authorized new round must remain visible
+--- FAIL: TestInboxB2PostgresRevisedSubmission (0.17s)
+FAIL
+FAIL	law-oa-go/internal/services	1.706s
+FAIL

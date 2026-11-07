@@ -1,0 +1,189 @@
+2026-11-07T16:22:17.579+0800	INFO	logger/logger.go:867	Logger package initialized with default development logger
+=== RUN   TestBackendFinalReviewPostgresLegacyApprovalOrders
+=== RUN   TestBackendFinalReviewPostgresLegacyApprovalOrders/formal_created_first
+    approval_backend_final_review_postgres_test.go:37: PostgreSQL fixture schema=approval_collab_bc3c99ac67374659a6f91d3b65cf0fe6 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:22:17 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:22:17 集成审批申请创建完成，ID：18e5b5a2de50eaa8
+2026/11/07 16:22:17 处理包含冲突检测的审批申请，审批ID：18e5b5a2dfa971e0，决定：approve
+2026/11/07 16:22:17 处理包含冲突检测的审批申请，审批ID：18e5b5a2de50eaa8，决定：approve
+2026/11/07 16:22:17 从审批申请自动创建案件，审批ID：18e5b5a2de50eaa8
+2026/11/07 16:22:17 审批通过后已自动成案，审批ID=18e5b5a2de50eaa8，操作人=虚构审批人，案件ID=1
+2026/11/07 16:22:17 审批申请处理完成，ID：18e5b5a2de50eaa8，最终状态：approved
+=== RUN   TestBackendFinalReviewPostgresLegacyApprovalOrders/formal_approved_first
+    approval_backend_final_review_postgres_test.go:37: PostgreSQL fixture schema=approval_collab_25b3d9bd6daf4775a5c0d1f9659087c9 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:22:17 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:22:17 集成审批申请创建完成，ID：18e5b5a2ea32c580
+2026/11/07 16:22:17 处理包含冲突检测的审批申请，审批ID：18e5b5a2ea32c580，决定：approve
+2026/11/07 16:22:17 从审批申请自动创建案件，审批ID：18e5b5a2ea32c580
+2026/11/07 16:22:17 审批通过后已自动成案，审批ID=18e5b5a2ea32c580，操作人=虚构审批人，案件ID=1
+2026/11/07 16:22:17 审批申请处理完成，ID：18e5b5a2ea32c580，最终状态：approved
+2026/11/07 16:22:17 处理包含冲突检测的审批申请，审批ID：18e5b5a2ea00b518，决定：approve
+=== RUN   TestBackendFinalReviewPostgresLegacyApprovalOrders/simultaneous_1
+    approval_backend_final_review_postgres_test.go:37: PostgreSQL fixture schema=approval_collab_7b8e98407f564f25bfcec345805f239a server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:22:18 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:22:18 集成审批申请创建完成，ID：18e5b5a2f8511720
+2026/11/07 16:22:18 处理包含冲突检测的审批申请，审批ID：18e5b5a2f8511720，决定：approve
+2026/11/07 16:22:18 处理包含冲突检测的审批申请，审批ID：18e5b5a2f81c1ca0，决定：approve
+2026/11/07 16:22:18 从审批申请自动创建案件，审批ID：18e5b5a2f8511720
+2026/11/07 16:22:18 审批通过后已自动成案，审批ID=18e5b5a2f8511720，操作人=虚构审批人，案件ID=1
+2026/11/07 16:22:18 审批申请处理完成，ID：18e5b5a2f8511720，最终状态：approved
+=== RUN   TestBackendFinalReviewPostgresLegacyApprovalOrders/simultaneous_2
+    approval_backend_final_review_postgres_test.go:37: PostgreSQL fixture schema=approval_collab_0c4deb71a54348d69285432d6de86b66 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:22:18 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:22:18 集成审批申请创建完成，ID：18e5b5a304af26d8
+2026/11/07 16:22:18 处理包含冲突检测的审批申请，审批ID：18e5b5a3047aa958，决定：approve
+2026/11/07 16:22:18 处理包含冲突检测的审批申请，审批ID：18e5b5a304af26d8，决定：approve
+2026/11/07 16:22:18 从审批申请自动创建案件，审批ID：18e5b5a304af26d8
+2026/11/07 16:22:18 审批通过后已自动成案，审批ID=18e5b5a304af26d8，操作人=虚构审批人，案件ID=1
+2026/11/07 16:22:18 审批申请处理完成，ID：18e5b5a304af26d8，最终状态：approved
+=== RUN   TestBackendFinalReviewPostgresLegacyApprovalOrders/simultaneous_3
+    approval_backend_final_review_postgres_test.go:37: PostgreSQL fixture schema=approval_collab_e8c25911fc8a4a768625bb206054c2cd server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:22:18 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:22:18 集成审批申请创建完成，ID：18e5b5a30fcd4c20
+2026/11/07 16:22:18 处理包含冲突检测的审批申请，审批ID：18e5b5a30fcd4c20，决定：approve
+2026/11/07 16:22:18 处理包含冲突检测的审批申请，审批ID：18e5b5a30fa05c38，决定：approve
+2026/11/07 16:22:18 从审批申请自动创建案件，审批ID：18e5b5a30fcd4c20
+2026/11/07 16:22:18 审批通过后已自动成案，审批ID=18e5b5a30fcd4c20，操作人=虚构审批人，案件ID=1
+2026/11/07 16:22:18 审批申请处理完成，ID：18e5b5a30fcd4c20，最终状态：approved
+--- PASS: TestBackendFinalReviewPostgresLegacyApprovalOrders (1.03s)
+    --- PASS: TestBackendFinalReviewPostgresLegacyApprovalOrders/formal_created_first (0.21s)
+    --- PASS: TestBackendFinalReviewPostgresLegacyApprovalOrders/formal_approved_first (0.19s)
+    --- PASS: TestBackendFinalReviewPostgresLegacyApprovalOrders/simultaneous_1 (0.26s)
+    --- PASS: TestBackendFinalReviewPostgresLegacyApprovalOrders/simultaneous_2 (0.18s)
+    --- PASS: TestBackendFinalReviewPostgresLegacyApprovalOrders/simultaneous_3 (0.19s)
+=== RUN   TestBackendFinalReviewPostgresLegacyServiceBoundaries
+=== RUN   TestBackendFinalReviewPostgresLegacyServiceBoundaries/ordinary_decision
+    approval_backend_final_review_postgres_test.go:88: PostgreSQL fixture schema=approval_collab_d99a4771e232442fb4c30a5fc4a6ba65 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+=== RUN   TestBackendFinalReviewPostgresLegacyServiceBoundaries/auto_case
+    approval_backend_final_review_postgres_test.go:88: PostgreSQL fixture schema=approval_collab_e91d9fd1ecb44411b450474d00077042 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:22:18 从审批申请自动创建案件，审批ID：18e5b5a322c86da0
+=== RUN   TestBackendFinalReviewPostgresLegacyServiceBoundaries/retry_case
+    approval_backend_final_review_postgres_test.go:88: PostgreSQL fixture schema=approval_collab_e52193cd09eb4f5aa6b949745887f5e0 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:22:18 从审批申请自动创建案件，审批ID：18e5b5a32ac4e470
+=== RUN   TestBackendFinalReviewPostgresLegacyServiceBoundaries/frozen_reference_only
+    approval_backend_final_review_postgres_test.go:88: PostgreSQL fixture schema=approval_collab_fd696425656e4246b04114faa0d49622 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:22:19 从审批申请自动创建案件，审批ID：18e5b5a333066708
+--- PASS: TestBackendFinalReviewPostgresLegacyServiceBoundaries (0.54s)
+    --- PASS: TestBackendFinalReviewPostgresLegacyServiceBoundaries/ordinary_decision (0.14s)
+    --- PASS: TestBackendFinalReviewPostgresLegacyServiceBoundaries/auto_case (0.13s)
+    --- PASS: TestBackendFinalReviewPostgresLegacyServiceBoundaries/retry_case (0.14s)
+    --- PASS: TestBackendFinalReviewPostgresLegacyServiceBoundaries/frozen_reference_only (0.14s)
+=== RUN   TestBackendFinalReviewPostgresExistingLegacyCase
+=== RUN   TestBackendFinalReviewPostgresExistingLegacyCase/completed_replay
+    approval_backend_final_review_postgres_test.go:130: PostgreSQL fixture schema=approval_collab_1f405cd5bcc048309dfe9f672b6aa44e server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:22:19 从审批申请自动创建案件，审批ID：18e5b5a33b444bd8
+2026/11/07 16:22:19 从审批申请自动创建案件，审批ID：18e5b5a33b444bd8
+    approval_backend_final_review_postgres_test.go:160: legacy compatibility mode=completed_replay case=1 case_count=1
+=== RUN   TestBackendFinalReviewPostgresExistingLegacyCase/stale_flags_replay
+    approval_backend_final_review_postgres_test.go:130: PostgreSQL fixture schema=approval_collab_48bba4b924924b5cbed95ff63247dbca server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:22:19 从审批申请自动创建案件，审批ID：18e5b5a34546b850
+2026/11/07 16:22:19 从审批申请自动创建案件，审批ID：18e5b5a34546b850
+    approval_backend_final_review_postgres_test.go:160: legacy compatibility mode=stale_flags_replay case=1 case_count=1
+=== RUN   TestBackendFinalReviewPostgresExistingLegacyCase/new_check_submit
+    approval_backend_final_review_postgres_test.go:130: PostgreSQL fixture schema=approval_collab_29fd808a0fd04676a5a8447dde571630 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:22:19 创建集成审批申请，用户：虚构律师，类型：case_creation
+2026/11/07 16:22:19 提交集成审批申请失败：该接案已生成正式案件，请使用已有案件，不能再次提交成案
+    approval_backend_final_review_postgres_test.go:160: legacy compatibility mode=new_check_submit case=1 case_count=1
+=== RUN   TestBackendFinalReviewPostgresExistingLegacyCase/formal_already_submitted
+    approval_backend_final_review_postgres_test.go:130: PostgreSQL fixture schema=approval_collab_480488e972cd43838f54cd2cb3096b83 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:22:19 创建集成审批申请，用户：虚构律师，类型：case_creation
+2026/11/07 16:22:19 集成审批申请创建完成，ID：18e5b5a357d861d0
+2026/11/07 16:22:19 处理包含冲突检测的审批申请，审批ID：18e5b5a357d861d0，决定：approve
+    approval_backend_final_review_postgres_test.go:160: legacy compatibility mode=formal_already_submitted case=1 case_count=1
+--- PASS: TestBackendFinalReviewPostgresExistingLegacyCase (0.63s)
+    --- PASS: TestBackendFinalReviewPostgresExistingLegacyCase/completed_replay (0.16s)
+    --- PASS: TestBackendFinalReviewPostgresExistingLegacyCase/stale_flags_replay (0.17s)
+    --- PASS: TestBackendFinalReviewPostgresExistingLegacyCase/new_check_submit (0.15s)
+    --- PASS: TestBackendFinalReviewPostgresExistingLegacyCase/formal_already_submitted (0.16s)
+=== RUN   TestBackendFinalReviewPostgresNonIntakeLegacyCompatibility
+    approval_backend_final_review_postgres_test.go:166: PostgreSQL fixture schema=approval_collab_2764f863b86a4332afe5da115b6ed5c2 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+    approval_backend_final_review_postgres_test.go:167: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_backend_final_review_postgres_test.go:167
+        	Error:      	Received unexpected error:
+        	            	ERROR: operator does not exist: json - unknown (SQLSTATE 42883)
+        	Test:       	TestBackendFinalReviewPostgresNonIntakeLegacyCompatibility
+--- FAIL: TestBackendFinalReviewPostgresNonIntakeLegacyCompatibility (0.13s)
+=== RUN   TestBackendFinalReviewPostgresLegacyCannotCreateSecondCase
+    approval_backend_final_review_postgres_test.go:207: PostgreSQL fixture schema=approval_collab_10a43a317b3e47068f4126acbd1ad41d server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:22:20 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:22:20 集成审批申请创建完成，ID：18e5b5a36895e790
+2026/11/07 16:22:20 处理包含冲突检测的审批申请，审批ID：18e5b5a3686b0ae8，决定：approve
+2026/11/07 16:22:20 处理包含冲突检测的审批申请，审批ID：18e5b5a36895e790，决定：approve
+2026/11/07 16:22:20 从审批申请自动创建案件，审批ID：18e5b5a36895e790
+2026/11/07 16:22:20 审批通过后已自动成案，审批ID=18e5b5a36895e790，操作人=虚构审批合伙人，案件ID=1
+2026/11/07 16:22:20 审批申请处理完成，ID：18e5b5a36895e790，最终状态：approved
+    approval_backend_final_review_postgres_test.go:215: B1 real PG legacy_error=处理审批决定失败：此旧冲突审批仅保留历史记录，不能同意并成案；请完成独立冲突复核后从原接案工作台提交接案审批 formal_error=<nil> cases=1 legacy_records=0
+--- PASS: TestBackendFinalReviewPostgresLegacyCannotCreateSecondCase (0.19s)
+=== RUN   TestBackendFinalReviewPostgresHTTPLegacyBoundaries
+=== RUN   TestBackendFinalReviewPostgresHTTPLegacyBoundaries/ordinary
+    approval_backend_final_review_postgres_test.go:177: PostgreSQL fixture schema=approval_collab_7d197efdf2b247b1bbc694b6f437bde6 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:22:20 处理包含冲突检测的审批申请，审批ID：18e5b5a373825648，决定：approve
+2026/11/07 16:22:20 处理受控成案审批决定失败: 处理审批决定失败：此旧冲突审批仅保留历史记录，不能同意并成案；请完成独立冲突复核后从原接案工作台提交接案审批
+=== RUN   TestBackendFinalReviewPostgresHTTPLegacyBoundaries/integrated
+    approval_backend_final_review_postgres_test.go:177: PostgreSQL fixture schema=approval_collab_8783067f5b4343438f8aded1b324110b server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:22:20 处理包含冲突检测的审批申请，审批ID：18e5b5a37bf54150，决定：approve
+=== RUN   TestBackendFinalReviewPostgresHTTPLegacyBoundaries/retry
+    approval_backend_final_review_postgres_test.go:177: PostgreSQL fixture schema=approval_collab_8b043db0f2fd4766aec7cc19c4f5005d server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:22:20 从审批申请自动创建案件，审批ID：18e5b5a384569088
+=== RUN   TestBackendFinalReviewPostgresHTTPLegacyBoundaries/create_old_ticket
+    approval_backend_final_review_postgres_test.go:177: PostgreSQL fixture schema=approval_collab_d8e4b4c4d0124512bf5850b0ec1af5d6 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+--- PASS: TestBackendFinalReviewPostgresHTTPLegacyBoundaries (0.57s)
+    --- PASS: TestBackendFinalReviewPostgresHTTPLegacyBoundaries/ordinary (0.14s)
+    --- PASS: TestBackendFinalReviewPostgresHTTPLegacyBoundaries/integrated (0.14s)
+    --- PASS: TestBackendFinalReviewPostgresHTTPLegacyBoundaries/retry (0.15s)
+    --- PASS: TestBackendFinalReviewPostgresHTTPLegacyBoundaries/create_old_ticket (0.14s)
+=== RUN   TestBackendFinalReviewPostgresHistoricalSnapshotClientRevoked
+=== RUN   TestBackendFinalReviewPostgresHistoricalSnapshotClientRevoked/lawyer
+    approval_backend_final_review_postgres_test.go:186: PostgreSQL fixture schema=approval_collab_5ebcdd0034474e21a2af5fdfd824a8fa server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:22:20 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:22:20 集成审批申请创建完成，ID：18e5b5a395e8c398
+通知发送: 申请 AP-20261107-88d20e8e-63b6-46dd-a570-e6ed0f87bcf7 - 需要修改
+    approval_backend_final_review_http_test.go:118: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_backend_final_review_http_test.go:118
+        	Error:      	Received unexpected error:
+        	            	ERROR: insert or update on table "case_ethical_wall_whitelist" violates foreign key constraint "fk_case_ethical_wall_whitelist_granted_by_user" (SQLSTATE 23503)
+        	Test:       	TestBackendFinalReviewPostgresHistoricalSnapshotClientRevoked/lawyer
+=== RUN   TestBackendFinalReviewPostgresHistoricalSnapshotClientRevoked/partner
+    approval_backend_final_review_postgres_test.go:186: PostgreSQL fixture schema=approval_collab_c4f32c10555346faa6bb0e1ac0ffc5da server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:22:20 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:22:20 集成审批申请创建完成，ID：18e5b5a3a0cd9ce8
+通知发送: 申请 AP-20261107-fc842649-e87f-447d-98af-488c269906b7 - 需要修改
+    approval_backend_final_review_http_test.go:118: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_backend_final_review_http_test.go:118
+        	Error:      	Received unexpected error:
+        	            	ERROR: insert or update on table "case_ethical_wall_whitelist" violates foreign key constraint "fk_case_ethical_wall_whitelist_granted_by_user" (SQLSTATE 23503)
+        	Test:       	TestBackendFinalReviewPostgresHistoricalSnapshotClientRevoked/partner
+=== RUN   TestBackendFinalReviewPostgresHistoricalSnapshotClientRevoked/conflict_officer
+    approval_backend_final_review_postgres_test.go:186: PostgreSQL fixture schema=approval_collab_12108eb1fd534d988e72b14bc031f06b server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:22:21 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:22:21 集成审批申请创建完成，ID：18e5b5a3ab2e0010
+通知发送: 申请 AP-20261107-462dad3f-6a36-45a6-87e1-0d825e1ca411 - 需要修改
+    approval_backend_final_review_http_test.go:118: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_backend_final_review_http_test.go:118
+        	Error:      	Received unexpected error:
+        	            	ERROR: insert or update on table "case_ethical_wall_whitelist" violates foreign key constraint "fk_case_ethical_wall_whitelist_granted_by_user" (SQLSTATE 23503)
+        	Test:       	TestBackendFinalReviewPostgresHistoricalSnapshotClientRevoked/conflict_officer
+--- FAIL: TestBackendFinalReviewPostgresHistoricalSnapshotClientRevoked (0.54s)
+    --- FAIL: TestBackendFinalReviewPostgresHistoricalSnapshotClientRevoked/lawyer (0.19s)
+    --- FAIL: TestBackendFinalReviewPostgresHistoricalSnapshotClientRevoked/partner (0.18s)
+    --- FAIL: TestBackendFinalReviewPostgresHistoricalSnapshotClientRevoked/conflict_officer (0.17s)
+=== RUN   TestBackendFinalReviewPostgresSnapshotRevokedContext
+=== RUN   TestBackendFinalReviewPostgresSnapshotRevokedContext/lawyer
+    approval_backend_final_review_http_test.go:132: PostgreSQL fixture schema=approval_collab_e3f22e34e34c43ecaed2994685c4fd2f server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:22:21 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:22:21 集成审批申请创建完成，ID：18e5b5a3b6045e58
+=== RUN   TestBackendFinalReviewPostgresSnapshotRevokedContext/partner
+    approval_backend_final_review_http_test.go:132: PostgreSQL fixture schema=approval_collab_cf6c5ff782b647e399c917017ad86d83 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:22:21 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:22:21 集成审批申请创建完成，ID：18e5b5a3bfc4f358
+=== RUN   TestBackendFinalReviewPostgresSnapshotRevokedContext/conflict_officer
+    approval_backend_final_review_http_test.go:132: PostgreSQL fixture schema=approval_collab_1c29747e491e430d8bf573852a61b163 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:22:21 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:22:21 集成审批申请创建完成，ID：18e5b5a3c9ea1e58
+--- PASS: TestBackendFinalReviewPostgresSnapshotRevokedContext (0.50s)
+    --- PASS: TestBackendFinalReviewPostgresSnapshotRevokedContext/lawyer (0.17s)
+    --- PASS: TestBackendFinalReviewPostgresSnapshotRevokedContext/partner (0.17s)
+    --- PASS: TestBackendFinalReviewPostgresSnapshotRevokedContext/conflict_officer (0.16s)
+FAIL
+FAIL	law-oa-go/internal/services	5.701s
+FAIL

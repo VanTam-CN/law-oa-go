@@ -1,0 +1,80 @@
+=== RUN   TestApprovalSubmissionResolverPointerBeatsCreatedTime
+--- PASS: TestApprovalSubmissionResolverPointerBeatsCreatedTime (0.01s)
+=== RUN   TestApprovalSubmissionResolverLegacyAgreement
+--- PASS: TestApprovalSubmissionResolverLegacyAgreement (0.00s)
+=== RUN   TestApprovalSubmissionResolverNonIntakeLegacy
+--- PASS: TestApprovalSubmissionResolverNonIntakeLegacy (0.00s)
+=== RUN   TestIntakeSubmissionPGFreezeResponsesReplayAndImmutability
+--- PASS: TestIntakeSubmissionPGFreezeResponsesReplayAndImmutability (0.11s)
+=== RUN   TestIntakeSubmissionPGNegativeGates
+=== RUN   TestIntakeSubmissionPGNegativeGates/changed_party_identity
+=== RUN   TestIntakeSubmissionPGNegativeGates/changed_party_role
+=== RUN   TestIntakeSubmissionPGNegativeGates/changed_client
+=== RUN   TestIntakeSubmissionPGNegativeGates/missing_current_check
+=== RUN   TestIntakeSubmissionPGNegativeGates/unconfirmed_facts
+=== RUN   TestIntakeSubmissionPGNegativeGates/review_mismatch
+=== RUN   TestIntakeSubmissionPGNegativeGates/expired_review
+=== RUN   TestIntakeSubmissionPGNegativeGates/self_review
+=== RUN   TestIntakeSubmissionPGNegativeGates/manager_review
+=== RUN   TestIntakeSubmissionPGNegativeGates/assignment_replaced_after_review
+=== RUN   TestIntakeSubmissionPGNegativeGates/assignment_bound_to_other_case
+=== RUN   TestIntakeSubmissionPGNegativeGates/assignment_revoked
+=== RUN   TestIntakeSubmissionPGNegativeGates/missing_dependency
+=== RUN   TestIntakeSubmissionPGNegativeGates/insufficient_decision
+--- PASS: TestIntakeSubmissionPGNegativeGates (1.04s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/changed_party_identity (0.08s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/changed_party_role (0.07s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/changed_client (0.07s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/missing_current_check (0.08s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/unconfirmed_facts (0.07s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/review_mismatch (0.07s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/expired_review (0.07s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/self_review (0.07s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/manager_review (0.07s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/assignment_replaced_after_review (0.07s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/assignment_bound_to_other_case (0.08s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/assignment_revoked (0.07s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/missing_dependency (0.07s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/insufficient_decision (0.08s)
+=== RUN   TestIntakeSubmissionPGTransactionRollbackAndConcurrentReplay
+--- PASS: TestIntakeSubmissionPGTransactionRollbackAndConcurrentReplay (0.14s)
+=== RUN   TestIntakeSubmissionPGMigrationUpDownAndRefusal
+--- PASS: TestIntakeSubmissionPGMigrationUpDownAndRefusal (0.09s)
+=== RUN   TestIntakeSubmissionPGControlledResponsePermissionsAndRollback
+=== RUN   TestIntakeSubmissionPGControlledResponsePermissionsAndRollback/other_lawyer
+=== RUN   TestIntakeSubmissionPGControlledResponsePermissionsAndRollback/assistant
+=== RUN   TestIntakeSubmissionPGControlledResponsePermissionsAndRollback/stale_revision
+=== RUN   TestIntakeSubmissionPGControlledResponsePermissionsAndRollback/wrong_return
+=== RUN   TestIntakeSubmissionPGControlledResponsePermissionsAndRollback/forged_item
+--- PASS: TestIntakeSubmissionPGControlledResponsePermissionsAndRollback (0.08s)
+    --- PASS: TestIntakeSubmissionPGControlledResponsePermissionsAndRollback/other_lawyer (0.00s)
+    --- PASS: TestIntakeSubmissionPGControlledResponsePermissionsAndRollback/assistant (0.00s)
+    --- PASS: TestIntakeSubmissionPGControlledResponsePermissionsAndRollback/stale_revision (0.00s)
+    --- PASS: TestIntakeSubmissionPGControlledResponsePermissionsAndRollback/wrong_return (0.00s)
+    --- PASS: TestIntakeSubmissionPGControlledResponsePermissionsAndRollback/forged_item (0.00s)
+=== RUN   TestIntakeSubmissionPGSnapshotWriteFailureRollsBack
+--- PASS: TestIntakeSubmissionPGSnapshotWriteFailureRollsBack (0.08s)
+=== RUN   TestApprovalSubmissionPreservesBusinessRole
+--- PASS: TestApprovalSubmissionPreservesBusinessRole (0.00s)
+=== RUN   TestIntakeSupplementNormalization
+--- PASS: TestIntakeSupplementNormalization (0.00s)
+=== RUN   TestIntakeSupplementRejectUncontrolledKeys
+=== RUN   TestIntakeSupplementRejectUncontrolledKeys/unknown_envelope
+=== RUN   TestIntakeSupplementRejectUncontrolledKeys/spoofed_ID
+=== RUN   TestIntakeSupplementRejectUncontrolledKeys/unknown_item_field
+=== RUN   TestIntakeSupplementRejectUncontrolledKeys/arbitrary_path
+=== RUN   TestIntakeSupplementRejectUncontrolledKeys/upload
+=== RUN   TestIntakeSupplementRejectUncontrolledKeys/HTML
+=== RUN   TestIntakeSupplementRejectUncontrolledKeys/empty_list
+--- PASS: TestIntakeSupplementRejectUncontrolledKeys (0.00s)
+    --- PASS: TestIntakeSupplementRejectUncontrolledKeys/unknown_envelope (0.00s)
+    --- PASS: TestIntakeSupplementRejectUncontrolledKeys/spoofed_ID (0.00s)
+    --- PASS: TestIntakeSupplementRejectUncontrolledKeys/unknown_item_field (0.00s)
+    --- PASS: TestIntakeSupplementRejectUncontrolledKeys/arbitrary_path (0.00s)
+    --- PASS: TestIntakeSupplementRejectUncontrolledKeys/upload (0.00s)
+    --- PASS: TestIntakeSupplementRejectUncontrolledKeys/HTML (0.00s)
+    --- PASS: TestIntakeSupplementRejectUncontrolledKeys/empty_list (0.00s)
+=== RUN   TestIntakeSupplementLegacyReadOnlyAndFingerprint
+--- PASS: TestIntakeSupplementLegacyReadOnlyAndFingerprint (0.00s)
+PASS
+ok  	law-oa-go/internal/services	2.995s

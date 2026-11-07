@@ -1,0 +1,101 @@
+{
+  "baseline": "a806831a7cef839c2b971cd4ab260cce77f42b8b",
+  "branch": "codex/intake-collaboration-mvp",
+  "source_frozen_at": "2026-11-07T07:23:28.424Z",
+  "node": "v22.17.0",
+  "frontend_files": [
+    {
+      "path": "frontend/src/index.tsx",
+      "sha256": "82538333af1beca24d9edec403abdc391e2dfdc9d0267896f0c3d16336737788"
+    },
+    {
+      "path": "frontend/src/main.tsx",
+      "sha256": "76ca3de1fad962700750fc9a644bb9bce94aa97cedd1a706dd25c7bb8c3529e9"
+    },
+    {
+      "path": "frontend/src/pages/batch01/Batch01Prototype.less",
+      "sha256": "150f673f1e2efb0b573f404881b0a6945974cb9c0a511cdf07f844174d363ce2"
+    },
+    {
+      "path": "frontend/src/pages/batch01/Batch01Prototype.tsx",
+      "sha256": "756014f69937af470fba46d6baa5ac96efd9b1b7432299aaf47eef7fad91034f"
+    },
+    {
+      "path": "frontend/src/pages/inbox/InboxList.tsx",
+      "sha256": "99813b02b8de0bce9bd1363462b796720f3457c0d4477caaaef4f548fa6d3a03"
+    },
+    {
+      "path": "frontend/src/services/approval.ts",
+      "sha256": "e4e9ad9e6c4acf428e926f02b2aa570d9a285279da4ab20008697e8d39d6723b"
+    },
+    {
+      "path": "frontend/src/services/client.ts",
+      "sha256": "2dc27bbcfd86d8189992522e2077d887f0ea91e905c6c84573d50cf406a7c1ee"
+    },
+    {
+      "path": "frontend/src/components/client/ClientCreateDialog.tsx",
+      "sha256": "bf407df46d9084bec173d8de66174105a86b2e811950d1cc047a8553dd068e04"
+    },
+    {
+      "path": "frontend/src/components/client/ClientSearchSelect.tsx",
+      "sha256": "e6445b5d37d541dc96123e83a96aa706acb1ec20fc64134dd1c5a7a70a589355"
+    },
+    {
+      "path": "frontend/src/components/client/__tests__/ClientCollaboration.test.tsx",
+      "sha256": "0ef1fe0d921550fe726bd4378b4cad79907646dfeb62eb4e73b01755bd237f2e"
+    },
+    {
+      "path": "frontend/src/components/workflow/PersonalWorkQueue.tsx",
+      "sha256": "de995e38967920429ea5519b0bde6083dcd77aa6319b5e92aa50f05095070438"
+    },
+    {
+      "path": "frontend/src/components/workflow/WorkflowActions.tsx",
+      "sha256": "08c2cbdcdaeecadded83f97d8977388bed3907ea6fdb859aa61e1faf6e9556b5"
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/ApprovalCollaborationPage.test.tsx",
+      "sha256": "46452c1b2c00fe11b290939d8c0289afbbab2c9e071c1d4923cd414f72b56897"
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/IntakeCollaborationContracts.test.ts",
+      "sha256": "c4fe463482df6faaba7520eae5e5af51066c8ededd7692ccc42ac2dd272bd118"
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/IntakeCollaborationPage.test.tsx",
+      "sha256": "85f12671face0bfedfaf047b5b2230aa8cb8166556ac79e75b17631330e02a2f"
+    },
+    {
+      "path": "frontend/src/pages/batch01/intake/DraftNavigationGuard.tsx",
+      "sha256": "afa90747dad37124b5a8f7363146ec48e52862585032f54e95b25ecfc1301c4d"
+    },
+    {
+      "path": "frontend/src/pages/batch01/intake/SupplementChecklist.tsx",
+      "sha256": "826e9188f1729ae8e51188f612a28763283d245304b3ec863fdfe6dcb0bdeb7d"
+    },
+    {
+      "path": "frontend/src/pages/batch01/intake/draftState.ts",
+      "sha256": "e3c8c9b34c010c696ebe53a79239a546867a0afafc0eaac340e48d0765d99a38"
+    },
+    {
+      "path": "frontend/src/pages/inbox/__tests__/InboxWorkflowActions.test.tsx",
+      "sha256": "e31b092b6c3b9c63155994cbe119b9cf2a88b44b1e19ef8a5e663ddf485467a7"
+    },
+    {
+      "path": "frontend/src/services/collaborationRequest.ts",
+      "sha256": "6a3b4407f4a5d14ba9da676dbac912bb50fcc9b818cb58c659ccd5e6170cdc32"
+    },
+    {
+      "path": "frontend/src/services/intakeSupplement.ts",
+      "sha256": "c90b5bb298b8d2475ea59211750129bcbd5ed5c974c3767cadf52617b854d170"
+    },
+    {
+      "path": "frontend/src/test/fetchJsdomEnvironment.cjs",
+      "sha256": "3772b1922112c69f6d5c58d4f0c6914aeb7b9e2956e42406a3e2c917746ee77a"
+    }
+  ],
+  "lockfiles": {
+    "candidate": "9efa885d6ea029854c5cb6748e579fd95bb5af6e8679c18fff942b5092840435",
+    "reference": "9efa885d6ea029854c5cb6748e579fd95bb5af6e8679c18fff942b5092840435"
+  },
+  "node_modules": "/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules"
+}

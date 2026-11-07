@@ -1,0 +1,88 @@
+# law-oa-go/internal/services.test
+ld: warning: '/private/var/folders/4p/bng36r_s65d26yqk0lfpw2rh0000gn/T/go-link-3667980386/000023.o' has malformed LC_DYSYMTAB, expected 98 undefined symbols to start at index 884, found 95 undefined symbols starting at index 884
+2026-11-07T17:42:48.499+0800	INFO	logger/logger.go:867	Logger package initialized with default development logger
+=== RUN   TestApprovalMultistagePostgresHTTP
+=== RUN   TestApprovalMultistagePostgresHTTP/ordinary/complete
+    approval_multistage_postgres_http_test.go:31: actual BootstrapProductionSchema version=postgres-mvp-2026-11-07-v16 empty_schema=bootstrap_intake_3491d893e9fe4376a8051c00ed8340ce created_tables=119
+2026/11/07 17:42:50 创建集成审批申请，用户：虚构回归用户，类型：case_creation
+2026/11/07 17:42:50 集成审批申请创建完成，ID：18e5ba0832f0c010
+2026/11/07 17:42:51 处理包含冲突检测的审批申请，审批ID：18e5ba0832f0c010，决定：approve
+2026/11/07 17:42:51 处理受控成案审批决定失败: 正式成案前置校验失败：正式成案指定的承办律师不存在或已停用
+2026/11/07 17:42:51 处理包含冲突检测的审批申请，审批ID：18e5ba0832f0c010，决定：approve
+通知发送: 申请 AP-20261107-6f261636-a254-4a4a-856e-8a9635ea9420 - 下一阶段审批
+2026/11/07 17:42:51 审批申请处理完成，ID：18e5ba0832f0c010，最终状态：under_review
+    approval_multistage_postgres_http_test.go:115: first node HTTP=200 approval=under_review next=compliance approver=44 tracking=pending tracking_rows=1 cases=0
+2026/11/07 17:42:51 处理包含冲突检测的审批申请，审批ID：18e5ba0832f0c010，决定：approve
+2026/11/07 17:42:51 处理受控成案审批决定失败: 审批节点已经变化，请刷新后重新处理
+2026/11/07 17:42:51 处理包含冲突检测的审批申请，审批ID：18e5ba0832f0c010，决定：approve
+2026/11/07 17:42:51 从审批申请自动创建案件，审批ID：18e5ba0832f0c010
+2026/11/07 17:42:51 审批通过后已自动成案，审批ID=18e5ba0832f0c010，操作人=虚构回归用户，案件ID=1
+2026/11/07 17:42:51 审批申请处理完成，ID：18e5ba0832f0c010，最终状态：approved
+2026/11/07 17:42:51 处理包含冲突检测的审批申请，审批ID：18e5ba0832f0c010，决定：approve
+2026/11/07 17:42:51 从审批申请自动创建案件，审批ID：18e5ba0832f0c010
+2026/11/07 17:42:51 重放审批同意请求命中已成案幂等短路，审批ID=18e5ba0832f0c010，案件ID=1，操作人=44
+    approval_multistage_postgres_http_test.go:173: two nodes complete fault=false records=2 cases=1 parties=2 same-case replay=true
+=== RUN   TestApprovalMultistagePostgresHTTP/ordinary/final_case_failure_retry
+    approval_multistage_postgres_http_test.go:31: actual BootstrapProductionSchema version=postgres-mvp-2026-11-07-v16 empty_schema=bootstrap_intake_3d6158c141f341a885b9184f5d42306c created_tables=119
+2026/11/07 17:42:54 创建集成审批申请，用户：虚构回归用户，类型：case_creation
+2026/11/07 17:42:54 集成审批申请创建完成，ID：18e5ba08f2b5d048
+2026/11/07 17:42:54 处理包含冲突检测的审批申请，审批ID：18e5ba08f2b5d048，决定：approve
+2026/11/07 17:42:54 处理受控成案审批决定失败: 正式成案前置校验失败：正式成案指定的承办律师不存在或已停用
+2026/11/07 17:42:54 处理包含冲突检测的审批申请，审批ID：18e5ba08f2b5d048，决定：approve
+通知发送: 申请 AP-20261107-60cfccdf-283a-4aa0-b063-5a898ecbc447 - 下一阶段审批
+2026/11/07 17:42:54 审批申请处理完成，ID：18e5ba08f2b5d048，最终状态：under_review
+    approval_multistage_postgres_http_test.go:115: first node HTTP=200 approval=under_review next=compliance approver=44 tracking=pending tracking_rows=1 cases=0
+2026/11/07 17:42:54 处理包含冲突检测的审批申请，审批ID：18e5ba08f2b5d048，决定：approve
+2026/11/07 17:42:54 处理受控成案审批决定失败: 审批节点已经变化，请刷新后重新处理
+2026/11/07 17:42:54 处理包含冲突检测的审批申请，审批ID：18e5ba08f2b5d048，决定：approve
+2026/11/07 17:42:54 从审批申请自动创建案件，审批ID：18e5ba08f2b5d048
+2026/11/07 17:42:54 自动创建案件失败：创建案件失败: 创建案件失败: injected-final-case-write
+2026/11/07 17:42:54 处理受控成案审批决定失败: 审批已记录，但正式成案失败，已进入失败重试状态：创建案件失败: 创建案件失败: injected-final-case-write
+2026/11/07 17:42:54 从审批申请自动创建案件，审批ID：18e5ba08f2b5d048
+2026/11/07 17:42:54 处理包含冲突检测的审批申请，审批ID：18e5ba08f2b5d048，决定：approve
+2026/11/07 17:42:54 从审批申请自动创建案件，审批ID：18e5ba08f2b5d048
+2026/11/07 17:42:54 重放审批同意请求命中已成案幂等短路，审批ID=18e5ba08f2b5d048，案件ID=1，操作人=44
+    approval_multistage_postgres_http_test.go:173: two nodes complete fault=true records=2 cases=1 parties=2 same-case replay=true
+=== RUN   TestApprovalMultistagePostgresHTTP/integrated/complete
+    approval_multistage_postgres_http_test.go:31: actual BootstrapProductionSchema version=postgres-mvp-2026-11-07-v16 empty_schema=bootstrap_intake_26d233a6a9b04e559f316b118fec098c created_tables=119
+2026/11/07 17:42:56 创建集成审批申请，用户：虚构回归用户，类型：case_creation
+2026/11/07 17:42:56 集成审批申请创建完成，ID：18e5ba0969c181a0
+2026/11/07 17:42:56 处理包含冲突检测的审批申请，审批ID：18e5ba0969c181a0，决定：approve
+2026/11/07 17:42:56 处理包含冲突检测的审批申请，审批ID：18e5ba0969c181a0，决定：approve
+通知发送: 申请 AP-20261107-6e0b2c19-cc83-4519-9e83-cab9e922d003 - 下一阶段审批
+2026/11/07 17:42:56 审批申请处理完成，ID：18e5ba0969c181a0，最终状态：under_review
+    approval_multistage_postgres_http_test.go:115: first node HTTP=200 approval=under_review next=compliance approver=44 tracking=pending tracking_rows=1 cases=0
+2026/11/07 17:42:56 处理包含冲突检测的审批申请，审批ID：18e5ba0969c181a0，决定：approve
+2026/11/07 17:42:56 处理包含冲突检测的审批申请，审批ID：18e5ba0969c181a0，决定：approve
+2026/11/07 17:42:56 从审批申请自动创建案件，审批ID：18e5ba0969c181a0
+2026/11/07 17:42:56 审批通过后已自动成案，审批ID=18e5ba0969c181a0，操作人=虚构回归用户，案件ID=1
+2026/11/07 17:42:56 审批申请处理完成，ID：18e5ba0969c181a0，最终状态：approved
+2026/11/07 17:42:56 处理包含冲突检测的审批申请，审批ID：18e5ba0969c181a0，决定：approve
+2026/11/07 17:42:56 从审批申请自动创建案件，审批ID：18e5ba0969c181a0
+2026/11/07 17:42:56 重放审批同意请求命中已成案幂等短路，审批ID=18e5ba0969c181a0，案件ID=1，操作人=44
+    approval_multistage_postgres_http_test.go:173: two nodes complete fault=false records=2 cases=1 parties=2 same-case replay=true
+=== RUN   TestApprovalMultistagePostgresHTTP/integrated/final_case_failure_retry
+    approval_multistage_postgres_http_test.go:31: actual BootstrapProductionSchema version=postgres-mvp-2026-11-07-v16 empty_schema=bootstrap_intake_524c387505264e228a2b32097edffdbd created_tables=119
+2026/11/07 17:42:58 创建集成审批申请，用户：虚构回归用户，类型：case_creation
+2026/11/07 17:42:58 集成审批申请创建完成，ID：18e5ba09dad05100
+2026/11/07 17:42:58 处理包含冲突检测的审批申请，审批ID：18e5ba09dad05100，决定：approve
+2026/11/07 17:42:58 处理包含冲突检测的审批申请，审批ID：18e5ba09dad05100，决定：approve
+通知发送: 申请 AP-20261107-82e34110-672a-4ec9-ac51-a6e3f96d444c - 下一阶段审批
+2026/11/07 17:42:58 审批申请处理完成，ID：18e5ba09dad05100，最终状态：under_review
+    approval_multistage_postgres_http_test.go:115: first node HTTP=200 approval=under_review next=compliance approver=44 tracking=pending tracking_rows=1 cases=0
+2026/11/07 17:42:58 处理包含冲突检测的审批申请，审批ID：18e5ba09dad05100，决定：approve
+2026/11/07 17:42:58 处理包含冲突检测的审批申请，审批ID：18e5ba09dad05100，决定：approve
+2026/11/07 17:42:58 从审批申请自动创建案件，审批ID：18e5ba09dad05100
+2026/11/07 17:42:58 自动创建案件失败：创建案件失败: 创建案件失败: injected-final-case-write
+2026/11/07 17:42:58 从审批申请自动创建案件，审批ID：18e5ba09dad05100
+2026/11/07 17:42:58 处理包含冲突检测的审批申请，审批ID：18e5ba09dad05100，决定：approve
+2026/11/07 17:42:58 从审批申请自动创建案件，审批ID：18e5ba09dad05100
+2026/11/07 17:42:58 重放审批同意请求命中已成案幂等短路，审批ID=18e5ba09dad05100，案件ID=1，操作人=44
+    approval_multistage_postgres_http_test.go:173: two nodes complete fault=true records=2 cases=1 parties=2 same-case replay=true
+--- PASS: TestApprovalMultistagePostgresHTTP (9.98s)
+    --- PASS: TestApprovalMultistagePostgresHTTP/ordinary/complete (3.06s)
+    --- PASS: TestApprovalMultistagePostgresHTTP/ordinary/final_case_failure_retry (3.05s)
+    --- PASS: TestApprovalMultistagePostgresHTTP/integrated/complete (1.91s)
+    --- PASS: TestApprovalMultistagePostgresHTTP/integrated/final_case_failure_retry (1.96s)
+PASS
+ok  	law-oa-go/internal/services	13.695s

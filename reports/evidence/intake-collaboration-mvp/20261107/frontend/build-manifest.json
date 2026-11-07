@@ -1,0 +1,65 @@
+{
+  "built_at": "2026-11-07T07:24:49.156Z",
+  "source_manifest_sha256": "d123c53648340557e58d3e75e829a9ea9e6925662f9c57a5db2e5f7300379fb2",
+  "archive": "frontend-dist.tar.gz",
+  "archive_sha256": "90f94d92d467773cce9e335c7175ad8a07762fab2d7844aeafc9dc6b2c2cad16",
+  "files": [
+    {
+      "path": "frontend/dist/assets/antd-DzIAar_E.js",
+      "sha256": "d4a549080a9dceca2e5f8135f0f25731fff9939ccd49b2b6c3b89961f753e537"
+    },
+    {
+      "path": "frontend/dist/assets/index-B9EuJOIn.css",
+      "sha256": "817598f6a6de19b7a60649fbb113dbbfa8e007ce958a01e71392a53f6b0c651f"
+    },
+    {
+      "path": "frontend/dist/assets/index-CRjDLMzv.js",
+      "sha256": "6b3c3a05f3ae21910b9be1037493372627cb5531644e0f802bec5a59591fcbd3"
+    },
+    {
+      "path": "frontend/dist/assets/router-DR8pEzmh.js",
+      "sha256": "507687dd0a0fb84b95c367ab6e6fccfba2ea747dccf388622e9268063569ae70"
+    },
+    {
+      "path": "frontend/dist/assets/utils-Bef3mNe6.js",
+      "sha256": "7d7dc7e3b944280794b1074ee1a9e1cadc4566baaccc58f348f132fc41aa3055"
+    },
+    {
+      "path": "frontend/dist/assets/vendor-DGvbWsQX.js",
+      "sha256": "97c009ec7c34778ba699ab341759d7b54b58fe21804f7a900107cd765000b29e"
+    },
+    {
+      "path": "frontend/dist/index.html",
+      "sha256": "69e250c1c346a3efe85fca20bd35602510a55292ac81cf57801208f71eee1c8e"
+    }
+  ],
+  "checks": {
+    "typecheck": {
+      "command": "npm run type-check",
+      "exit_code": 0,
+      "log": "typecheck-handoff.log"
+    },
+    "lint": {
+      "command": "npm run lint",
+      "exit_code": 0,
+      "log": "lint-handoff.log"
+    },
+    "build": {
+      "command": "npm run build",
+      "exit_code": 0,
+      "log": "build-handoff.log"
+    },
+    "jest": {
+      "files": 9,
+      "tests": 47,
+      "exit_code": 0,
+      "log": "jest-final.log"
+    },
+    "last_source_change_regression": {
+      "files": 1,
+      "tests": 5,
+      "exit_code": 0,
+      "log": "intake-handoff.log"
+    }
+  }
+}

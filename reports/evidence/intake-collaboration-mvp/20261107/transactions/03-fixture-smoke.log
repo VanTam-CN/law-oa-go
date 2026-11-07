@@ -1,0 +1,17 @@
+=== RUN   TestApprovalCollaborationPostgresReturnRollback
+=== RUN   TestApprovalCollaborationPostgresReturnRollback/ordinary_inbox_update
+    approval_collaboration_postgres_test.go:280: PostgreSQL fixture schema=approval_collab_7cc1d9e7e4be4977b6af6f584ebe320b server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 15:07:57 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 15:07:57 提交集成审批申请失败：ERROR: relation "case_materials" does not exist (SQLSTATE 42P01)
+    approval_collaboration_postgres_test.go:280: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:178
+        	            				/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:280
+        	Error:      	Received unexpected error:
+        	            	提交集成审批申请失败：ERROR: relation "case_materials" does not exist (SQLSTATE 42P01)
+        	Test:       	TestApprovalCollaborationPostgresReturnRollback/ordinary_inbox_update
+        	Messages:   	real initial integrated submission must succeed before any fault is installed
+--- FAIL: TestApprovalCollaborationPostgresReturnRollback (0.13s)
+    --- FAIL: TestApprovalCollaborationPostgresReturnRollback/ordinary_inbox_update (0.13s)
+FAIL
+FAIL	law-oa-go/internal/services	1.465s
+FAIL

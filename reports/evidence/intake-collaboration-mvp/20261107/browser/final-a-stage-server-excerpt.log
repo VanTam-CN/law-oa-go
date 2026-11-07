@@ -1,0 +1,20 @@
+2026/11/07 17:22:49 集成审批申请创建完成，ID：18e5b8f062cb0200
+2026/11/07 17:22:49 获取集成状态，审批ID：18e5b8f062cb0200
+2026/11/07 17:23:38 获取集成状态，审批ID：18e5b8f062cb0200
+2026/11/07 17:24:58 处理包含冲突检测的审批申请，审批ID：18e5b8f062cb0200，决定：request_changes
+2026/11/07 17:24:58 审批申请处理完成，ID：18e5b8f062cb0200，最终状态：needs_revision
+2026/11/07 17:24:58 获取集成状态，审批ID：18e5b8f062cb0200
+2026/11/07 17:33:03 获取集成状态，审批ID：18e5b8f062cb0200
+2026/11/07 17:33:42 获取集成状态，审批ID：18e5b8f062cb0200
+2026/11/07 17:35:23 处理包含冲突检测的审批申请，审批ID：18e5b8f062cb0200，决定：approve
+2026/11/07 17:35:23 [31;1m/private/tmp/lawoa-intake-collaboration-20261107/internal/repositories/integration_repository.go:173 [35;1mrecord not found
+[0m[33m[0.482ms] [34;1m[rows:0][0m SELECT * FROM "approval_conflict_associations" WHERE approval_request_id = '18e5b8f062cb0200' AND association_status = 'active' ORDER BY "approval_conflict_associations"."id" LIMIT 1
+2026/11/07 17:35:23 [31;1m/private/tmp/lawoa-intake-collaboration-20261107/internal/repositories/integration_repository.go:173 [35;1mrecord not found
+[0m[33m[0.143ms] [34;1m[rows:0][0m SELECT * FROM "approval_conflict_associations" WHERE approval_request_id = '18e5b8f062cb0200' AND association_status = 'active' ORDER BY "approval_conflict_associations"."id" LIMIT 1
+2026/11/07 17:35:23 [31;1m/private/tmp/lawoa-intake-collaboration-20261107/internal/repositories/integration_repository.go:173 [35;1mrecord not found
+[0m[33m[0.183ms] [34;1m[rows:0][0m SELECT * FROM "approval_conflict_associations" WHERE approval_request_id = '18e5b8f062cb0200' AND association_status = 'active' ORDER BY "approval_conflict_associations"."id" LIMIT 1
+2026/11/07 17:35:23 从审批申请自动创建案件，审批ID：18e5b8f062cb0200
+2026/11/07 17:35:23 [31;1m/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_conflict_integration_service.go:506 [35;1mrecord not found
+[0m[33m[0.736ms] [34;1m[rows:0][0m SELECT * FROM "approval_case_creation_tracking" WHERE approval_request_id = '18e5b8f062cb0200' AND creation_status = 'completed' AND case_id IS NOT NULL ORDER BY "approval_case_creation_tracking"."id" LIMIT 1
+2026/11/07 17:35:23 自动创建案件失败：审批未处于通过状态，已阻止成案
+2026/11/07 17:35:39 获取集成状态，审批ID：18e5b8f062cb0200

@@ -1,0 +1,6 @@
+# law-oa-go/internal/services
+# [law-oa-go/internal/services]
+vet: internal/services/approval_service.go:370:13: undefined: ensureInitialIntakeBinding
+# law-oa-go/internal/handlers
+# [law-oa-go/internal/handlers]
+vet: internal/handlers/integration_handler.go:292:6: req.IntakeClaimToken undefined (type services.IntegrationRequest has no field or method IntakeClaimToken)

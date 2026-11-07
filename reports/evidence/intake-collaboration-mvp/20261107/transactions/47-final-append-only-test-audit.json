@@ -1,0 +1,17 @@
+{
+  "captured_at": "2026-11-07T15:48:33.154901+08:00",
+  "result": "PASS",
+  "original_pg_file_prefix_unchanged": true,
+  "original_pg_bytes": 42059,
+  "unchanged_files": [
+    "internal/services/approval_collaboration_postgres_http_test.go",
+    "internal/handlers/intake_duplicate_approval_guard_test.go",
+    "internal/handlers/intake_delayed_interleave_guard_test.go"
+  ],
+  "new_test_functions": [
+    "TestApprovalCollaborationPostgresCaseCompletionInboxRollback",
+    "TestApprovalCollaborationPostgresLegacyMissingIntakeLinkNoWrites"
+  ],
+  "added_leaf_cases": 5,
+  "replaced_or_removed_tests": 0
+}

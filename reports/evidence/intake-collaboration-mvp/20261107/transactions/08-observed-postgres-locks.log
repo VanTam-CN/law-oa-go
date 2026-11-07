@@ -1,0 +1,19 @@
+2026-11-07T15:15:52.689+0800	INFO	logger/logger.go:867	Logger package initialized with default development logger
+=== RUN   TestApprovalCollaborationPostgresOverlappingLockOrder
+    approval_collaboration_postgres_test.go:584: PostgreSQL fixture schema=approval_collab_727030e1fa8b4077a5cd7489796fc328 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 15:15:53 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 15:15:53 集成审批申请创建完成，ID：18e5b2033272c0f0
+通知发送: 申请 AP-20261107-36000 - 需要修改
+2026/11/07 15:15:53 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+    approval_collaboration_postgres_test.go:685: C12 lock evidence: new_backend=43521 wait_event_type=Lock blockers_present=true slot_not_inserted_while_waiting=true
+    approval_collaboration_postgres_test.go:692: C12 controlled_overlap actor=resubmit approval=18e5b2033272c0f0 error=<nil>
+2026/11/07 15:15:54 接案绑定跟踪记录创建失败：repository create case creation tracking failed for CaseCreationTracking: ERROR: duplicate key value violates unique constraint "idx_approval_case_creation_tracking_intake_id" (SQLSTATE 23505)
+    approval_collaboration_postgres_test.go:692: C12 controlled_overlap actor=new approval= error=该接案已有进行中的成案审批，不能重复提交；请在原审批单上继续处理
+2026/11/07 15:15:54 处理包含冲突检测的审批申请，审批ID：18e5b2033272c0f0，决定：approve
+2026/11/07 15:15:54 从审批申请自动创建案件，审批ID：18e5b2033272c0f0
+2026/11/07 15:15:54 审批通过后已自动成案，审批ID=18e5b2033272c0f0，操作人=虚构审批合伙人，案件ID=1
+2026/11/07 15:15:54 审批申请处理完成，ID：18e5b2033272c0f0，最终状态：approved
+    approval_collaboration_postgres_test.go:719: C12 controlled_overlap slots=1 valid_approvals=1 cases=1 complete_parties=2; error contract evaluated separately
+--- PASS: TestApprovalCollaborationPostgresOverlappingLockOrder (1.48s)
+PASS
+ok  	law-oa-go/internal/services	4.084s

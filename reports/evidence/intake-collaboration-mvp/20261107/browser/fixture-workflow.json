@@ -1,0 +1,22 @@
+{
+  "database": "lawoa_intake_mvp_test",
+  "workflow_id": "d3327ca1-d11a-4041-bb18-8d4b47646aa0",
+  "workflow_type": "CASE_APPROVAL",
+  "stages": [
+    {
+      "stage_name": "partner_review",
+      "stage_order": 1,
+      "approver_id": "4",
+      "required": true
+    },
+    {
+      "stage_name": "compliance_review",
+      "stage_order": 2,
+      "approver_id": "5",
+      "required": true
+    }
+  ],
+  "existing_workflows_before": 0,
+  "scope": "fictional fixture only; no production change",
+  "sql_result": "BEGIN\nDO\nd3327ca1-d11a-4041-bb18-8d4b47646aa0|QA_INTAKE_COLLAB_20261107|[{\"stage_name\": \"partner_review\", \"stage_order\": 1, \"approver_id\": \"4\", \"required\": true}, {\"stage_name\": \"compliance_review\", \"stage_order\": 2, \"approver_id\": \"5\", \"required\": true}]\nINSERT 0 1\nCOMMIT\n"
+}

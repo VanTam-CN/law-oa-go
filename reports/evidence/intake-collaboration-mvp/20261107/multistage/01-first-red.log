@@ -1,0 +1,64 @@
+2026-11-07T17:41:02.147+0800	INFO	logger/logger.go:867	Logger package initialized with default development logger
+=== RUN   TestApprovalMultistagePostgresHTTP
+=== RUN   TestApprovalMultistagePostgresHTTP/ordinary/complete
+    approval_multistage_postgres_http_test.go:31: actual BootstrapProductionSchema version=postgres-mvp-2026-11-07-v16 empty_schema=bootstrap_intake_1b6f4d28197f4a058b49cf7e65a2b514 created_tables=119
+2026/11/07 17:41:03 创建集成审批申请，用户：虚构回归用户，类型：case_creation
+2026/11/07 17:41:03 集成审批申请创建完成，ID：18e5b9ef2365a548
+2026/11/07 17:41:03 处理包含冲突检测的审批申请，审批ID：18e5b9ef2365a548，决定：approve
+2026/11/07 17:41:03 处理受控成案审批决定失败: 正式成案前置校验失败：正式成案指定的承办律师不存在或已停用
+    approval_multistage_postgres_http_test.go:105: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_multistage_postgres_http_test.go:105
+        	Error:      	"{\"code\":409,\"message\":\"正式成案前置校验失败：正式成案指定的承办律师不存在或已停用\"}" does not contain "LAWYER_NOT_AVAILABLE"
+        	Test:       	TestApprovalMultistagePostgresHTTP/ordinary/complete
+=== RUN   TestApprovalMultistagePostgresHTTP/ordinary/final_case_failure_retry
+    approval_multistage_postgres_http_test.go:31: actual BootstrapProductionSchema version=postgres-mvp-2026-11-07-v16 empty_schema=bootstrap_intake_589b5079b0664c62b90d88274444de18 created_tables=119
+2026/11/07 17:41:04 创建集成审批申请，用户：虚构回归用户，类型：case_creation
+2026/11/07 17:41:04 集成审批申请创建完成，ID：18e5b9ef6b539dd8
+2026/11/07 17:41:04 处理包含冲突检测的审批申请，审批ID：18e5b9ef6b539dd8，决定：approve
+2026/11/07 17:41:04 处理受控成案审批决定失败: 正式成案前置校验失败：正式成案指定的承办律师不存在或已停用
+    approval_multistage_postgres_http_test.go:105: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_multistage_postgres_http_test.go:105
+        	Error:      	"{\"code\":409,\"message\":\"正式成案前置校验失败：正式成案指定的承办律师不存在或已停用\"}" does not contain "LAWYER_NOT_AVAILABLE"
+        	Test:       	TestApprovalMultistagePostgresHTTP/ordinary/final_case_failure_retry
+=== RUN   TestApprovalMultistagePostgresHTTP/integrated/complete
+    approval_multistage_postgres_http_test.go:31: actual BootstrapProductionSchema version=postgres-mvp-2026-11-07-v16 empty_schema=bootstrap_intake_a453822e7f0a49a29d062f6bb77b4920 created_tables=119
+2026/11/07 17:41:05 创建集成审批申请，用户：虚构回归用户，类型：case_creation
+2026/11/07 17:41:05 集成审批申请创建完成，ID：18e5b9efb320f6d8
+2026/11/07 17:41:05 处理包含冲突检测的审批申请，审批ID：18e5b9efb320f6d8，决定：approve
+2026/11/07 17:41:05 处理包含冲突检测的审批申请，审批ID：18e5b9efb320f6d8，决定：approve
+通知发送: 申请 AP-20261107-56cfaf4f-3faf-4ba3-870e-41bdb414f12e - 下一阶段审批
+2026/11/07 17:41:05 从审批申请自动创建案件，审批ID：18e5b9efb320f6d8
+2026/11/07 17:41:05 自动创建案件失败：审批未处于通过状态，已阻止成案
+    approval_multistage_postgres_http_test.go:115: first node HTTP=409 approval=under_review next=compliance approver=44 tracking=failed tracking_rows=1 cases=0
+    approval_multistage_postgres_http_test.go:116: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_multistage_postgres_http_test.go:116
+        	Error:      	Not equal: 
+        	            	expected: 200
+        	            	actual  : 409
+        	Test:       	TestApprovalMultistagePostgresHTTP/integrated/complete
+        	Messages:   	{"error":"CASE_CREATION_NOT_APPROVED","message":"审批未处于通过状态，已阻止成案"}
+=== RUN   TestApprovalMultistagePostgresHTTP/integrated/final_case_failure_retry
+    approval_multistage_postgres_http_test.go:31: actual BootstrapProductionSchema version=postgres-mvp-2026-11-07-v16 empty_schema=bootstrap_intake_bc7dd15940094d69980b1c713a58937c created_tables=119
+2026/11/07 17:41:07 创建集成审批申请，用户：虚构回归用户，类型：case_creation
+2026/11/07 17:41:07 集成审批申请创建完成，ID：18e5b9f003701f60
+2026/11/07 17:41:07 处理包含冲突检测的审批申请，审批ID：18e5b9f003701f60，决定：approve
+2026/11/07 17:41:07 处理包含冲突检测的审批申请，审批ID：18e5b9f003701f60，决定：approve
+通知发送: 申请 AP-20261107-cbae9124-1e7b-4682-aa1a-c02fda2e7018 - 下一阶段审批
+2026/11/07 17:41:07 从审批申请自动创建案件，审批ID：18e5b9f003701f60
+2026/11/07 17:41:07 自动创建案件失败：审批未处于通过状态，已阻止成案
+    approval_multistage_postgres_http_test.go:115: first node HTTP=409 approval=under_review next=compliance approver=44 tracking=failed tracking_rows=1 cases=0
+    approval_multistage_postgres_http_test.go:116: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_multistage_postgres_http_test.go:116
+        	Error:      	Not equal: 
+        	            	expected: 200
+        	            	actual  : 409
+        	Test:       	TestApprovalMultistagePostgresHTTP/integrated/final_case_failure_retry
+        	Messages:   	{"error":"CASE_CREATION_NOT_APPROVED","message":"审批未处于通过状态，已阻止成案"}
+--- FAIL: TestApprovalMultistagePostgresHTTP (5.08s)
+    --- FAIL: TestApprovalMultistagePostgresHTTP/ordinary/complete (1.31s)
+    --- FAIL: TestApprovalMultistagePostgresHTTP/ordinary/final_case_failure_retry (1.19s)
+    --- FAIL: TestApprovalMultistagePostgresHTTP/integrated/complete (1.23s)
+    --- FAIL: TestApprovalMultistagePostgresHTTP/integrated/final_case_failure_retry (1.34s)
+FAIL
+FAIL	law-oa-go/internal/services	6.771s
+FAIL

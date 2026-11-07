@@ -1,0 +1,40 @@
+
+> law-oa-frontend@0.0.0 test
+> jest --runInBand --coverage=false --runTestsByPath src/pages/batch01/__tests__/IntakeDraftRestore.test.ts src/pages/batch01/__tests__/IntakePartyRoleRoundTrip.test.ts src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts
+
+PASS Law OA Frontend src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts
+  CaseIntakeWorkbench conflict action
+    ✓ returns stable required fields before any draft or conflict request (3 ms)
+    ✓ returns no missing fields for a complete conflict-check input (1 ms)
+    ✓ labels a coverage-limited record with no evidence as no match (1 ms)
+    ✓ keeps a clear MVP fallback message for unavailable conflict checks
+    ✓ provides a lawyer-readable first-run path and support guidance (3 ms)
+    ✓ does not treat a matched conflict case as the subject case (1 ms)
+    ✓ matches only explicit subject case identifiers
+    ✓ matches subject identifiers nested in the persisted search parameters (1 ms)
+    ✓ matches the command-center task title used by a case-context link
+    ✓ does not use a historical hit case as the subject context (1 ms)
+    ✓ isolates local drafts by user and case context
+    ✓ never persists an opponent identity number in a browser draft
+    ✓ invalidates a frozen result when a material conflict input changes (1 ms)
+    ✓ keeps the same fingerprint when related parties are only reordered (7 ms)
+
+PASS Law OA Frontend src/pages/batch01/__tests__/IntakePartyRoleRoundTrip.test.ts
+  intake party save -> server -> restore round trip
+    ✓ writes the business role and depth into the party metadata contract (1 ms)
+    ✓ restores the related party role and depth from the served party rows (1 ms)
+    ✓ flattens the rows back out with the same depth on a re-save
+    ✓ rejects the old contract shape where the save omitted metadata.party_type (1 ms)
+
+PASS Law OA Frontend src/pages/batch01/__tests__/IntakeDraftRestore.test.ts
+  intakeDraftFromServer full-fidelity restore
+    ✓ restores every saved business field after a server draft reload (1 ms)
+    ✓ restores the related party row with its stored role and no plaintext identity
+    ✓ restores opponent aliases so a protected identity can re-save safely (1 ms)
+    ✓ keeps a switched-in draft clean with no phantom related rows
+
+Test Suites: 3 passed, 3 total
+Tests:       22 passed, 22 total
+Snapshots:   0 total
+Time:        3.186 s
+Ran all test suites within paths "src/pages/batch01/__tests__/IntakeDraftRestore.test.ts", "src/pages/batch01/__tests__/IntakePartyRoleRoundTrip.test.ts", "src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts".

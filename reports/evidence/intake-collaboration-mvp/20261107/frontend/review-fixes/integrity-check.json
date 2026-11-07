@@ -1,0 +1,16 @@
+{
+  "checked_at": "2026-11-07T08:05:21.237Z",
+  "source_files": 25,
+  "regression_files": 12,
+  "build_files": 7,
+  "archives_verified": true,
+  "main_js": "frontend/dist/assets/index-CxoHfApU.js",
+  "source_archive": {
+    "path": "reports/evidence/intake-collaboration-mvp/20261107/frontend/review-fixes/frontend-source.tar.gz",
+    "sha256": "680b493d7e866d6abf746aa0be0da9c0c20d8a1f2f00013f4602d1fddd7789bd"
+  },
+  "build_archive": {
+    "path": "reports/evidence/intake-collaboration-mvp/20261107/frontend/review-fixes/frontend-dist.tar.gz",
+    "sha256": "f65e673cf086fcaeaabbe61f501e2e7ecfbf15cd395e24f84eac8b52f018ad0f"
+  }
+}

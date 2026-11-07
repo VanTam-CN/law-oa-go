@@ -1,0 +1,75 @@
+{
+  "source_frozen_at": "2026-11-07T08:05:21.019Z",
+  "actual_entry": "frontend/index.html -> /src/index.tsx",
+  "files": [
+    {
+      "path": "frontend/dist/assets/antd-DzIAar_E.js",
+      "sha256": "d4a549080a9dceca2e5f8135f0f25731fff9939ccd49b2b6c3b89961f753e537",
+      "bytes": 1133167
+    },
+    {
+      "path": "frontend/dist/assets/index-Bfz438sN.css",
+      "sha256": "e1ab09bedabd8a246204221bf4fc1cbe3e0a26b5d8e2363a02fe57f1a63882f5",
+      "bytes": 85955
+    },
+    {
+      "path": "frontend/dist/assets/index-CxoHfApU.js",
+      "sha256": "0a7f6c4c76661709a57d95f30cfc2ee9a160612c7614af97cd0582d5943cb85b",
+      "bytes": 476185
+    },
+    {
+      "path": "frontend/dist/assets/router-DR8pEzmh.js",
+      "sha256": "507687dd0a0fb84b95c367ab6e6fccfba2ea747dccf388622e9268063569ae70",
+      "bytes": 81241
+    },
+    {
+      "path": "frontend/dist/assets/utils-Bef3mNe6.js",
+      "sha256": "7d7dc7e3b944280794b1074ee1a9e1cadc4566baaccc58f348f132fc41aa3055",
+      "bytes": 28
+    },
+    {
+      "path": "frontend/dist/assets/vendor-DGvbWsQX.js",
+      "sha256": "97c009ec7c34778ba699ab341759d7b54b58fe21804f7a900107cd765000b29e",
+      "bytes": 140344
+    },
+    {
+      "path": "frontend/dist/index.html",
+      "sha256": "fa893a5fca8d3c799bd2f24696761e1618217bdf721a246dea0ff4aa1a7b7918",
+      "bytes": 702
+    }
+  ],
+  "archive": {
+    "path": "reports/evidence/intake-collaboration-mvp/20261107/frontend/review-fixes/frontend-dist.tar.gz",
+    "sha256": "f65e673cf086fcaeaabbe61f501e2e7ecfbf15cd395e24f84eac8b52f018ad0f"
+  },
+  "checks": {
+    "typecheck": {
+      "exit_code": 0,
+      "log": "typecheck-final.log"
+    },
+    "lint": {
+      "exit_code": 0,
+      "log": "lint-final.log"
+    },
+    "build": {
+      "exit_code": 0,
+      "log": "build-final.log"
+    },
+    "jest": {
+      "exit_code": 0,
+      "suites": 12,
+      "tests": 73,
+      "log": "jest-final.log"
+    },
+    "diff_check": {
+      "exit_code": 0,
+      "log": "diff-check.log"
+    }
+  },
+  "limitations": [
+    "Mock fetch and JSDOM only; no browser tools or real API calls",
+    "C16 not passed; C17 real 390px keyboard/layout pending",
+    "Independent frontend review pending recheck",
+    "Existing build chunk-size warning and JSDOM layout/act warnings retained"
+  ]
+}

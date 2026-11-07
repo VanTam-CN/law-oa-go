@@ -1,0 +1,98 @@
+{
+  "head": "3f970040f5e40b8016c18a070b5aa1345d2b2eec",
+  "new_run": {
+    "start": "2026-11-07T18:08:59.908674+08:00",
+    "end": "2026-11-07T18:09:09.515435+08:00",
+    "command": [
+      "go",
+      "test",
+      "-mod=readonly",
+      "-race",
+      "-p",
+      "1",
+      "./internal/services",
+      "-run",
+      "^TestInboxC06PostgresHTTP$",
+      "-count=1",
+      "-timeout=120s",
+      "-json"
+    ],
+    "exit_code": 0,
+    "test_sha256": "c6968466e034b121ba113838ff888c69d571aecdefacc97139339de897599b10"
+  },
+  "new_leaves": [
+    {
+      "name": "TestInboxC06PostgresHTTP/assistant_controlled_write",
+      "result": "pass",
+      "line": 16,
+      "elapsed": 0.36
+    },
+    {
+      "name": "TestInboxC06PostgresHTTP/conflict_officer_revoked_context",
+      "result": "pass",
+      "line": 26,
+      "elapsed": 0.31
+    }
+  ],
+  "existing_300_pass_refs": [
+    {
+      "name": "TestConflictOfficerSeesOnlyAssignedConflictApproval",
+      "line": 246
+    },
+    {
+      "name": "TestIntakeWriteDeniesPlainUserAndConflictOfficerBeforeObjectScope",
+      "line": 571
+    },
+    {
+      "name": "TestIntakeWriteDeniesOtherLawyerViaObjectScope",
+      "line": 575
+    },
+    {
+      "name": "TestDenyIntakeWriteForPlainUser/assistant_allowed",
+      "line": 593
+    },
+    {
+      "name": "TestIntakeSubmissionPGControlledResponsePermissionsAndRollback/assistant",
+      "line": 1464
+    },
+    {
+      "name": "TestBackendFinalReviewPostgresHistoricalSnapshotClientRevoked/conflict_officer",
+      "line": 1580
+    },
+    {
+      "name": "TestBackendFinalReviewPostgresSnapshotRevokedContext/conflict_officer",
+      "line": 1605
+    },
+    {
+      "name": "TestInboxR1PostgresClientEditBeforeResubmitHTTP",
+      "line": 1807
+    },
+    {
+      "name": "TestInboxB2PostgresHTTPListStatsGetAndHome/partner",
+      "line": 1819
+    },
+    {
+      "name": "TestInboxB2PostgresHTTPListStatsGetAndHome/lawyer",
+      "line": 1824
+    }
+  ],
+  "product_files_checked": 323,
+  "product_files_changed": [],
+  "test_file": "internal/services/inbox_c06_postgres_http_test.go",
+  "test_sha256": "fdeda3a62b9beaa237180892faced5f357ba89c97d190d1da972900e2c4316bb",
+  "format_only_after_run": "05-format-only.diff: one indentation tab; no changed test tokens/assertions",
+  "ignored": true,
+  "evidence_sha256": {
+    "02-http-race.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "03-http-race.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "03-run-result.json": "eef1bdbdefa63c22c8f60e3ea0d9421d9ad03286d3a1606ce63b2dbfe9179753",
+    "05-format-only.diff": "0b8d03f24ce384d9a7ab6bfabbc1fda5b721c7163aaeae69f1f57bfa8a7868b9",
+    "02-http-race.jsonl": "8ce019d4f41397f413a97e18f3381c3acbd9019351605351fd1e58d170ba2862",
+    "04-run-result.json": "89d7f0db843f43b9096627de58785660e7dcf302663288b872c71a375b189615",
+    "04-http-race.jsonl": "243d261767ca5d7480ff4b67dc51c5a9e58ee3e5e4c713527d5fa6e54d82833f",
+    "02-run-result.json": "6eb9a8e5d56b9458de34872a3934b35eea3e72796884bb1ed1a5f210b730acba",
+    "03-http-race.jsonl": "1a19afbf17ee4ce5f681d2a81223464022b157defdbac6886be20531debfce9c",
+    "01-source-before.json": "db779bdd7db37f00735a54a110da7ee497d5112ddd96bf57bb452812f48f4f72",
+    "04-http-race.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

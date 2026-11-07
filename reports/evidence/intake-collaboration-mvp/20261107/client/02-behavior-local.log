@@ -1,0 +1,15 @@
+# law-oa-go/internal/services
+internal/services/approval_service.go:4:2: "context" imported and not used
+internal/services/approval_service.go:168:12: undefined: ApplyApprovalSubmission
+internal/services/approval_service.go:230:12: undefined: ApplyApprovalSubmission
+internal/services/approval_service.go:363:12: undefined: FreezeIntakeSubmissionInTx
+internal/services/approval_service.go:408:12: undefined: validateApprovalDecisionVersion
+internal/services/approval_service.go:409:12: undefined: authorizeApprovalSubject
+internal/services/approval_service.go:412:12: undefined: ApplyApprovalSubmission
+internal/services/approval_service.go:487:24: undefined: NormalizeSupplementRequirements
+internal/services/approval_service.go:546:13: undefined: releaseIntakeBindingInTx
+internal/services/approval_service.go:684:12: undefined: releaseIntakeBindingInTx
+internal/services/approval_service.go:4:2: too many errors
+FAIL	law-oa-go/internal/services [build failed]
+FAIL	law-oa-go/internal/handlers [build failed]
+FAIL

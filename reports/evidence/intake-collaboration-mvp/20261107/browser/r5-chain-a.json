@@ -1,0 +1,86 @@
+{
+  "candidate": "3f970040f5e40b8016c18a070b5aa1345d2b2eec",
+  "events": [
+    {
+      "step": "independent_login"
+    },
+    {
+      "step": "new_client",
+      "status": 200
+    },
+    {
+      "step": "save_exit",
+      "status": 201
+    },
+    {
+      "step": "relogin_restore",
+      "title": "",
+      "url": "http://127.0.0.1:13004/case/create?intake_id=5eeb7bd3-ec6a-48e9-834b-4b5edff6c055"
+    },
+    {
+      "step": "formal_check",
+      "status": 200
+    },
+    {
+      "step": "initial_submit",
+      "status": 200,
+      "restored_title": "QA R5闭环 A 20261107"
+    },
+    {
+      "step": "two_replies_saved",
+      "status": 200,
+      "ids": [
+        "reply-75b2f0af-50e0-49bd-9376-04be196101ee",
+        "reply-7743207f-2705-4acb-9944-c7bcde10ff83"
+      ]
+    },
+    {
+      "step": "reply_refresh",
+      "values": [
+        "已核对主对方虚构身份，按登记材料更正并重新检测复核。",
+        "共同委托和保证为同一主体不同角色；两名同名对方具有不同身份，未合并。"
+      ]
+    },
+    {
+      "step": "new_check_after_fact_edit",
+      "status": 200
+    },
+    {
+      "step": "resubmit_same_approval",
+      "id": "18e5ba60a968c0a0",
+      "status": 200
+    },
+    {
+      "step": "partner_approve",
+      "http": 200,
+      "status": "under_review",
+      "next": "5",
+      "case_created": false
+    },
+    {
+      "step": "compliance_approve",
+      "http": 200,
+      "status": "approved",
+      "case_created": true,
+      "case_id": "3"
+    },
+    {
+      "step": "case_detail",
+      "url": "http://127.0.0.1:13004/case/3"
+    },
+    {
+      "step": "case_detail_settled",
+      "url": "http://127.0.0.1:13004/case/3",
+      "title": "QA R5闭环 A 20261107",
+      "description_matches": true
+    }
+  ],
+  "client_id": 72,
+  "intake_id": "5eeb7bd3-ec6a-48e9-834b-4b5edff6c055",
+  "first_check_id": "CCT_eb6d9199-b7f7-44d2-a0cb-0f61d8329b3c",
+  "approval_id": "18e5ba60a968c0a0",
+  "first_snapshot_id": "c449240b-27ee-452c-a67d-1e88facbeb68",
+  "second_check_id": "CCT_de912498-232a-4033-9ac5-637bd3ce4781",
+  "second_snapshot_id": "de35f82e-35ef-4af3-a5bc-6a1051348a0d",
+  "case_id": "3"
+}

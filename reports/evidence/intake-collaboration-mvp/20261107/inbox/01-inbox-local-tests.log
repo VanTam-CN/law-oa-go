@@ -1,0 +1,20 @@
+law-oa-go/internal/services TestInboxWorkflowCannotBeManuallyCompleted
+law-oa-go/internal/services TestInboxLegacyArchiveIsNotBusinessCompletion
+law-oa-go/internal/services TestInboxApprovalHandoffIdempotentAndRollback
+law-oa-go/internal/services TestInboxSupplementActionJSONContract
+law-oa-go/internal/services TestInboxAuthorizationBeforePaginationAndCount
+law-oa-go/internal/services TestInboxMoreThan1000AndSnoozeKeepsActionableCount
+law-oa-go/internal/services TestInboxRejectsForgedServiceFields
+law-oa-go/internal/services TestInboxReassignmentAndCaseFailureProjection
+law-oa-go/internal/services TestInboxReconcileReadsDurableApprovalInsteadOfCallerTimestamp
+law-oa-go/internal/services TestInboxTrustedLegacyHandoffDoesNotGainBusinessCapability
+law-oa-go/internal/services TestInboxConflictAssignmentCompletionAndRollback
+law-oa-go/internal/services TestInboxProjectionUsesBatchQueries
+law-oa-go/internal/services TestInboxConflictReassignmentAndReturnToEarlierActiveAssignment
+law-oa-go/internal/handlers TestInboxItemHandlersRejectCrossUserAccess
+law-oa-go/internal/handlers TestInboxItemHandlersAllowOwnerAccess
+law-oa-go/internal/handlers TestInboxItemHandlersRequireAuthenticatedUser
+law-oa-go/internal/handlers TestInboxPublicAPIDeniesForgedWorkflowFields
+law-oa-go/internal/handlers TestInboxLegacyHTTPArchiveContract
+law-oa-go/internal/handlers TestInboxWorkflowHTTPMutationAndSnoozeContract
+Top-level inbox tests passed: 19

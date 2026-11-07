@@ -1,0 +1,10 @@
+{
+  "approval_id": "18e5b8f062cb0200",
+  "status": "under_review",
+  "current_stage": "compliance_review",
+  "current_approver_id": "5",
+  "case_created": false,
+  "case_count": 0,
+  "tracking_rows": [{"creation_status":"pending"},{"creation_status":"failed"}],
+  "observation": "Read-only SQL after B5; no manual changes to sample"
+}

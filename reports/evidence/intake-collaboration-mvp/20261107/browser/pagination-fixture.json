@@ -1,0 +1,25 @@
+{
+  "fixture": "fictional local HTTP clients",
+  "created_or_replayed": 65,
+  "distinct_ids": 65,
+  "page2_total": 67,
+  "page2_ids": [
+    18,
+    17,
+    16,
+    15,
+    14,
+    13,
+    12,
+    11,
+    10,
+    9,
+    8,
+    7,
+    6,
+    5,
+    4,
+    3,
+    1
+  ]
+}

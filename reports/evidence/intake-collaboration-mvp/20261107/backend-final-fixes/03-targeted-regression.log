@@ -1,0 +1,25 @@
+ok  	law-oa-go/internal/services	2.141s
+2026-11-07T16:15:09.606+0800	INFO	logger/logger.go:867	Logger package initialized with default development logger
+通知发送: 申请 AP-20261107-ce73367d-2db7-4b61-89d5-39d28a4a4b18 - 需要修改
+通知发送: 申请 AP-20261107-ce73367d-2db7-4b61-89d5-39d28a4a4b18 - 重新提交
+2026/11/07 16:15:09 更新审批失败: 当前状态 resubmitted 不允许编辑
+--- FAIL: TestCoreReviewSnapshotHistoryAndMissing (0.02s)
+    --- FAIL: TestCoreReviewSnapshotHistoryAndMissing/version/ (0.00s)
+        approval_core_review_test.go:338: HTTP 403, want 200: {"success":false,"error":{"code":"FORBIDDEN","message":"无权访问该资源","details":"当前账号无权访问或操作该资源"},"meta":{"timestamp":"2026-11-07T16:15:09.752791+08:00","version":"v1","server":"law-oa-go","environment":"development"}}
+    --- FAIL: TestCoreReviewSnapshotHistoryAndMissing/version/52ca8249-e945-4166-aedd-425644cb781a (0.00s)
+        approval_core_review_test.go:338: HTTP 403, want 200: {"success":false,"error":{"code":"FORBIDDEN","message":"无权访问该资源","details":"当前账号无权访问或操作该资源"},"meta":{"timestamp":"2026-11-07T16:15:09.753335+08:00","version":"v1","server":"law-oa-go","environment":"development"}}
+    --- FAIL: TestCoreReviewSnapshotHistoryAndMissing/version/95530a17-b236-45b9-98b2-ec02973d2454 (0.00s)
+        approval_core_review_test.go:338: HTTP 403, want 200: {"success":false,"error":{"code":"FORBIDDEN","message":"无权访问该资源","details":"当前账号无权访问或操作该资源"},"meta":{"timestamp":"2026-11-07T16:15:09.753805+08:00","version":"v1","server":"law-oa-go","environment":"development"}}
+--- FAIL: TestCoreReviewHistoryDoesNotRelaxAuthority (0.01s)
+    approval_core_review_test.go:464: HTTP 403, want 200: {"success":false,"error":{"code":"FORBIDDEN","message":"无权访问该资源","details":"当前账号无权访问或操作该资源"},"meta":{"timestamp":"2026-11-07T16:15:09.795671+08:00","version":"v1","server":"law-oa-go","environment":"development"}}
+
+2026/11/07 16:15:09 [31;1m/private/tmp/lawoa-intake-collaboration-20261107/internal/repositories/inbox_repository.go:406 [35;1mno such table: inbox_items
+[0m[33m[0.544ms] [34;1m[rows:0][0m SELECT * FROM `inbox_items` WHERE user_id = 35 ORDER BY created_at DESC, id DESC
+--- FAIL: TestConflictOfficerSeesOnlyAssignedConflictApproval (0.01s)
+    conflict_approval_workbench_test.go:89: assigned reviewer response: 500 {"success":false,"error":{"code":"INTERNAL_ERROR","message":"逾期待办读取失败","details":"no such table: inbox_items"},"meta":{"timestamp":"2026-11-07T16:15:09.80273+08:00","version":"v1","server":"law-oa-go","environment":"development"}}
+2026/11/07 16:15:09 创建集成审批申请，用户：未知用户，类型：case_creation
+2026/11/07 16:15:09 集成审批申请创建完成，ID：18e5b53f3ea78218
+FAIL
+FAIL	law-oa-go/internal/handlers	1.695s
+ok  	law-oa-go/internal/repositories	1.579s [no tests to run]
+FAIL

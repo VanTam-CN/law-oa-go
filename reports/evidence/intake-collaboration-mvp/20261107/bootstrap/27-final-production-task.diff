@@ -1,0 +1,195 @@
+--- internal/database/production_schema.go (before bootstrap task)
++++ internal/database/production_schema.go
+@@ -13,25 +13,26 @@
+ // ProductionSchemaVersion identifies the idempotent PostgreSQL bootstrap
+ // contract. A future breaking schema change must introduce a new version and
+ // an explicit migration instead of relying on application startup side effects.
+-const ProductionSchemaVersion = "postgres-mvp-2026-11-07-v15"
++const ProductionSchemaVersion = "postgres-mvp-2026-11-07-v16"
+ 
+ // productionCaseIntake and the following small records back tables that are
+ // intentionally written through Table(...) by the intake/approval workflow.
+ // Keeping their schema in this bootstrap prevents those raw writes from being
+ // silently absent in a fresh production database.
+ type productionCaseIntake struct {
+-	ID          string    `gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
+-	IntakeCode  string    `gorm:"size:50;not null;uniqueIndex"`
+-	ClientID    *uint     `gorm:"index"`
+-	Title       string    `gorm:"size:255;not null"`
+-	CaseType    string    `gorm:"size:100"`
+-	Status      string    `gorm:"size:40;not null;default:'draft';index"`
+-	Priority    string    `gorm:"size:20;not null;default:'medium'"`
+-	Description string    `gorm:"type:text"`
+-	Metadata    string    `gorm:"type:jsonb;not null;default:'{}'"`
+-	CreatedBy   *uint     `gorm:"index"`
+-	CreatedAt   time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
+-	UpdatedAt   time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
++	ID                 string    `gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
++	IntakeCode         string    `gorm:"size:50;not null;uniqueIndex"`
++	ClientID           *uint     `gorm:"index"`
++	Title              string    `gorm:"size:255;not null"`
++	CaseType           string    `gorm:"size:100"`
++	Status             string    `gorm:"size:40;not null;default:'draft';index"`
++	ApprovalClaimToken *string   `gorm:"size:64"`
++	Priority           string    `gorm:"size:20;not null;default:'medium'"`
++	Description        string    `gorm:"type:text"`
++	Metadata           string    `gorm:"type:jsonb;not null;default:'{}'"`
++	CreatedBy          *uint     `gorm:"index"`
++	CreatedAt          time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
++	UpdatedAt          time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
+ }
+ 
+ func (productionCaseIntake) TableName() string { return "case_intakes" }
+@@ -344,10 +345,11 @@
+ 			"id", "request_number", "title", "type", "status", "applicant_id", "created_by",
+ 			"conflict_check_id", "conflict_result", "case_created", "created_case_id", "case_creation_status", "active_submission_snapshot_id",
+ 		},
+-		"approval_records":         {"id", "submission_snapshot_id", "action_version"},
+-		"client_creation_requests": {"operator_id", "operation", "key_digest", "request_digest", "client_id", "status"},
+-		"inbox_items":              {"source_ref", "completion_mode", "workflow_task_key", "workflow_group", "workflow_purpose", "workflow_version", "closed_reason", "archived_at"},
+-		"case_intakes":             {"id", "intake_code", "title", "status", "metadata", "created_by"},
++		"approval_records":                {"id", "submission_snapshot_id", "action_version"},
++		"client_creation_requests":        {"operator_id", "operation", "key_digest", "request_digest", "client_id", "status"},
++		"inbox_items":                     {"source_ref", "completion_mode", "workflow_task_key", "workflow_group", "workflow_purpose", "workflow_version", "closed_reason", "archived_at"},
++		"case_intakes":                    {"id", "intake_code", "title", "status", "metadata", "created_by", "approval_claim_token"},
++		"approval_case_creation_tracking": {"approval_request_id", "intake_id", "creation_status"},
+ 		"case_intake_parties": {
+ 			"id", "intake_id", "entity_name", "entity_type", "entity_id", "party_role", "metadata",
+ 			"identity_type", "identity_number_ciphertext", "identity_number_digest", "aliases",
+@@ -464,6 +466,9 @@
+ 		if triggerCount != 1 {
+ 			return fmt.Errorf("%s 缺少 append-only 保护触发器", trigger.table)
+ 		}
++	}
++	if err := validateIntakeApprovalClaimContract(db); err != nil {
++		return err
+ 	}
+ 	return validateProductionSchemaRelationalContract(db)
+ }
+--- internal/database/intake_collaboration_schema.go (before bootstrap task)
++++ internal/database/intake_collaboration_schema.go
+@@ -5,10 +5,13 @@
+ 	"gorm.io/gorm"
+ )
+ 
+-// Explicit additive upgrade, equivalent to migrations 000082-000084. Existing
++// Explicit additive upgrade, equivalent to migrations 000080-000084. Existing
+ // snapshots and inbox text are retained; old NULL modes are resolved at read time.
+ func ensureIntakeCollaborationSchema(db *gorm.DB) error {
+ 	statements := []string{
++		`ALTER TABLE case_intakes ADD COLUMN IF NOT EXISTS approval_claim_token VARCHAR(64)`,
++		`ALTER TABLE approval_case_creation_tracking ADD COLUMN IF NOT EXISTS intake_id VARCHAR(36)`,
++		`CREATE UNIQUE INDEX IF NOT EXISTS idx_case_creation_tracking_intake_unique ON approval_case_creation_tracking(intake_id)`,
+ 		`ALTER TABLE approval_requests ADD COLUMN IF NOT EXISTS active_submission_snapshot_id UUID`,
+ 		`ALTER TABLE approval_records ADD COLUMN IF NOT EXISTS submission_snapshot_id UUID`,
+ 		`ALTER TABLE approval_records ADD COLUMN IF NOT EXISTS action_version VARCHAR(100) NOT NULL DEFAULT ''`,
+@@ -73,3 +76,43 @@
+ 	}
+ 	return nil
+ }
++
++// Do not let IF NOT EXISTS hide a malformed pre-existing claim column or slot
++// index. This is also called by the runtime startup gate, before HTTP traffic.
++func validateIntakeApprovalClaimContract(db *gorm.DB) error {
++	var count int64
++	if err := db.Raw(`SELECT count(*) FROM information_schema.columns
++		WHERE table_schema = current_schema() AND table_name = 'case_intakes'
++		AND column_name = 'approval_claim_token' AND data_type = 'character varying'
++		AND character_maximum_length = 64 AND is_nullable = 'YES'`).Scan(&count).Error; err != nil {
++		return err
++	}
++	if count != 1 {
++		return fmt.Errorf("case_intakes.approval_claim_token 必须为可空 VARCHAR(64)；请执行 bootstrap 或迁移 000080")
++	}
++	if err := db.Raw(`SELECT count(*) FROM information_schema.columns
++		WHERE table_schema = current_schema() AND table_name = 'approval_case_creation_tracking'
++		AND column_name = 'intake_id' AND is_nullable = 'YES'`).Scan(&count).Error; err != nil {
++		return err
++	}
++	if count != 1 {
++		return fmt.Errorf("approval_case_creation_tracking.intake_id 必须可空，以保留普通审批语义")
++	}
++	if err := db.Raw(`SELECT count(*) FROM pg_index i
++		JOIN pg_class idx ON idx.oid = i.indexrelid
++		JOIN pg_class tbl ON tbl.oid = i.indrelid
++		JOIN pg_namespace n ON n.oid = tbl.relnamespace
++		JOIN pg_attribute a ON a.attrelid = tbl.oid AND a.attnum = i.indkey[0]
++		WHERE n.nspname = current_schema() AND tbl.relname = 'approval_case_creation_tracking'
++		AND idx.relname = 'idx_case_creation_tracking_intake_unique'
++		AND i.indisunique AND i.indisvalid AND i.indisready AND i.indimmediate
++		AND i.indnatts = 1 AND i.indpred IS NULL AND i.indexprs IS NULL
++		AND a.attname = 'intake_id'
++		AND pg_get_indexdef(i.indexrelid) NOT LIKE '%NULLS NOT DISTINCT%'`).Scan(&count).Error; err != nil {
++		return err
++	}
++	if count != 1 {
++		return fmt.Errorf("approval_case_creation_tracking 缺少完整 intake_id 唯一占槽索引；请执行 bootstrap 或迁移 000081")
++	}
++	return nil
++}
+--- internal/handlers/approval_handler.go (before bootstrap task)
++++ internal/handlers/approval_handler.go
+@@ -243,6 +243,13 @@
+ 	if !h.authorizeApprovalConflictContext(c, approval) {
+ 		return
+ 	}
++	// This is a read-only business-mode projection, not decision permission.
++	// Durable bindings remain authoritative when legacy metadata was edited.
++	snapshotRequired, err := services.ApprovalRequiresSubmissionSnapshot(h.db, approval)
++	if err != nil {
++		writeIntakeCollaborationError(c, err)
++		return
++	}
+ 	if err := services.ApplyApprovalSubmission(h.db, approval); err != nil {
+ 		writeIntakeCollaborationError(c, err)
+ 		return
+@@ -261,7 +268,8 @@
+ 	response := struct {
+ 		*models.ApprovalRequest
+ 		*services.ApprovalSupplementContext
+-	}{approval, supplement}
++		SubmissionSnapshotRequired bool `json:"submission_snapshot_required"`
++	}{approval, supplement, snapshotRequired}
+ 	common.APISuccess(c, projectApprovalResponseForViewer(response, c.GetString("role")))
+ }
+ 
+--- internal/services/approval_snapshot_mode.go (before bootstrap task)
++++ internal/services/approval_snapshot_mode.go
+@@ -0,0 +1,37 @@
++package services
++
++import (
++	"fmt"
++	"strings"
++
++	"gorm.io/gorm"
++	"law-oa-go/internal/models"
++)
++
++// ApprovalRequiresSubmissionSnapshot is a read-only business-mode projection,
++// not authorization or a substitute for transaction-time version/slot checks.
++// Only an ordinary approval with no durable intake or snapshot can return false.
++func ApprovalRequiresSubmissionSnapshot(db *gorm.DB, approval *models.ApprovalRequest) (bool, error) {
++	intakeID, err := ResolveApprovalIntakeID(db, approval)
++	if err != nil {
++		return false, err
++	}
++	if intakeID != "" || approval.ActiveSubmissionSnapshotID != nil || strings.EqualFold(strings.TrimSpace(approval.Type), "case_creation") {
++		return true, nil
++	}
++	metadata, err := submissionMetadata(approval.Metadata)
++	if err != nil {
++		return false, err
++	}
++	if metadata["approval_snapshot"] != nil {
++		return true, nil
++	}
++	if db == nil {
++		return false, fmt.Errorf("审批提交快照模式服务未初始化")
++	}
++	var count int64
++	if err := db.Model(&models.ApprovalSnapshot{}).Where("approval_request_id = ?", approval.ID).Count(&count).Error; err != nil {
++		return false, fmt.Errorf("读取审批提交快照模式失败: %w", err)
++	}
++	return count > 0, nil
++}

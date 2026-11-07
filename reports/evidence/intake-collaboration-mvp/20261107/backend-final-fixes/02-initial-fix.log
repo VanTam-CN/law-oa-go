@@ -1,0 +1,26 @@
+2026-11-07T16:14:18.020+0800	INFO	logger/logger.go:867	Logger package initialized with default development logger
+=== RUN   TestBackendFinalReviewPostgresLegacyCannotCreateSecondCase
+    approval_backend_final_review_postgres_test.go:31: PostgreSQL fixture schema=approval_collab_8691de875e164e0e876b10d53bec1a8b server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:14:18 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:14:18 集成审批申请创建完成，ID：18e5b533376ba238
+2026/11/07 16:14:18 处理包含冲突检测的审批申请，审批ID：18e5b5333739a170，决定：approve
+2026/11/07 16:14:18 处理包含冲突检测的审批申请，审批ID：18e5b533376ba238，决定：approve
+2026/11/07 16:14:18 从审批申请自动创建案件，审批ID：18e5b533376ba238
+2026/11/07 16:14:18 审批通过后已自动成案，审批ID=18e5b533376ba238，操作人=虚构审批合伙人，案件ID=1
+2026/11/07 16:14:18 审批申请处理完成，ID：18e5b533376ba238，最终状态：approved
+    approval_backend_final_review_postgres_test.go:39: B1 real PG legacy_error=处理审批决定失败：此旧冲突审批仅保留历史记录，不能同意并成案；请完成独立冲突复核后从原接案工作台提交接案审批 formal_error=<nil> cases=1 legacy_records=0
+--- PASS: TestBackendFinalReviewPostgresLegacyCannotCreateSecondCase (0.22s)
+=== RUN   TestBackendFinalReviewPostgresSnapshotRevokedContext
+=== RUN   TestBackendFinalReviewPostgresSnapshotRevokedContext/lawyer
+    approval_backend_final_review_http_test.go:23: PostgreSQL fixture schema=approval_collab_1b4b1a82a82b4b3c9ad6538731a93b00 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:14:18 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:14:18 集成审批申请创建完成，ID：18e5b5334326f1e0
+=== RUN   TestBackendFinalReviewPostgresSnapshotRevokedContext/partner
+    approval_backend_final_review_http_test.go:23: PostgreSQL fixture schema=approval_collab_7bd5117ef83a4e62877f79776a3aaaa0 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:14:18 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:14:18 集成审批申请创建完成，ID：18e5b5334c6c28d8
+--- PASS: TestBackendFinalReviewPostgresSnapshotRevokedContext (0.31s)
+    --- PASS: TestBackendFinalReviewPostgresSnapshotRevokedContext/lawyer (0.16s)
+    --- PASS: TestBackendFinalReviewPostgresSnapshotRevokedContext/partner (0.16s)
+PASS
+ok  	law-oa-go/internal/services	2.127s

@@ -1,0 +1,11 @@
+{
+  "internal/database/production_schema.go": "bcfa04989c1a865f0a068e26cb8de92a4d98e97bf61cd5028a13fa55a8fcf51b",
+  "internal/database/intake_collaboration_schema.go": "bbcd2b9522454fb7cbd93d82a581e24d00ef2afad3f7e0cb8c6c57fe28677d14",
+  "internal/handlers/approval_handler.go": "15eab93c86d34ca71d1f4ec9d7844e49cc08ba99ecb4580cb8cf07ab18e6615e",
+  "internal/services/approval_snapshot_mode.go": "c762942156e3076549dd407c295f53e690a46c084f13c45b79459931a0820dc5",
+  "internal/services/approval_bootstrap_postgres_fixture_test.go": "a9816f1b9c78463c958ac8f997e3486d44016d39e5967eb241da6bbc910a234c",
+  "internal/services/approval_bootstrap_postgres_contract_test.go": "a09760f576bb358e4bd22d3fb0eb7d4943bf016b2c0ca2c13f3d8f52d87641cc",
+  "internal/services/approval_bootstrap_postgres_http_test.go": "39b9449a1e5f1c06afa71d5c17eafe5c69d72a54375622c05ba2bda243f64672",
+  "internal/services/approval_snapshot_mode_postgres_http_test.go": "156750c4eea21e0c250447b1c4b876405992e003563a08a79b0ef0bc589fb957",
+  "internal/services/approval_collaboration_postgres_test.go": "8aa6b363410844379acc3ffac7113f8cb44dd8c1a69549814e6c063a135c5900"
+}

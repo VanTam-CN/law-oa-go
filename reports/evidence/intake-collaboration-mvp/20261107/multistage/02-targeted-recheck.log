@@ -1,0 +1,131 @@
+# law-oa-go/internal/services.test
+ld: warning: '/private/var/folders/4p/bng36r_s65d26yqk0lfpw2rh0000gn/T/go-link-313089178/000023.o' has malformed LC_DYSYMTAB, expected 98 undefined symbols to start at index 884, found 95 undefined symbols starting at index 884
+2026-11-07T17:42:07.406+0800	INFO	logger/logger.go:867	Logger package initialized with default development logger
+=== RUN   TestApprovalCollaborationPostgresCaseCompletionInboxRollback
+=== RUN   TestApprovalCollaborationPostgresCaseCompletionInboxRollback/initial_completion_inbox_update
+    approval_collaboration_postgres_test.go:812: PostgreSQL fixture schema=approval_collab_f20cf28adc124a688e4809502f094257 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 17:42:07 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 17:42:07 集成审批申请创建完成，ID：18e5b9fe19b4ae90
+2026/11/07 17:42:07 从审批申请自动创建案件，审批ID：18e5b9fe19b4ae90
+2026/11/07 17:42:07 从审批申请自动创建案件，审批ID：18e5b9fe19b4ae90
+2026/11/07 17:42:07 从审批申请自动创建案件，审批ID：18e5b9fe19b4ae90
+    approval_collaboration_postgres_test.go:855: C13/C14 case_completion phase=initial_completion fault=inbox_update hits=1 rollback_exact=true cases=1 parties=2 result_tasks=1 same_result_key=true replay_case=2
+=== RUN   TestApprovalCollaborationPostgresCaseCompletionInboxRollback/initial_completion_inbox_create
+    approval_collaboration_postgres_test.go:812: PostgreSQL fixture schema=approval_collab_1b10ee5e75a44bb9968b50f8df55d7b8 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 17:42:07 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 17:42:07 集成审批申请创建完成，ID：18e5b9fe2d6a4e40
+2026/11/07 17:42:07 从审批申请自动创建案件，审批ID：18e5b9fe2d6a4e40
+2026/11/07 17:42:08 从审批申请自动创建案件，审批ID：18e5b9fe2d6a4e40
+2026/11/07 17:42:08 从审批申请自动创建案件，审批ID：18e5b9fe2d6a4e40
+    approval_collaboration_postgres_test.go:855: C13/C14 case_completion phase=initial_completion fault=inbox_create hits=1 rollback_exact=true cases=1 parties=2 result_tasks=1 same_result_key=true replay_case=2
+=== RUN   TestApprovalCollaborationPostgresCaseCompletionInboxRollback/completed_replay_inbox_update
+    approval_collaboration_postgres_test.go:812: PostgreSQL fixture schema=approval_collab_a8cfb0b0f18a4922b4ed3ffa6669f2d0 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 17:42:08 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 17:42:08 集成审批申请创建完成，ID：18e5b9fe3ff9e098
+2026/11/07 17:42:08 从审批申请自动创建案件，审批ID：18e5b9fe3ff9e098
+2026/11/07 17:42:08 从审批申请自动创建案件，审批ID：18e5b9fe3ff9e098
+2026/11/07 17:42:08 从审批申请自动创建案件，审批ID：18e5b9fe3ff9e098
+2026/11/07 17:42:08 从审批申请自动创建案件，审批ID：18e5b9fe3ff9e098
+    approval_collaboration_postgres_test.go:855: C13/C14 case_completion phase=completed_replay fault=inbox_update hits=1 rollback_exact=true cases=1 parties=2 result_tasks=1 same_result_key=true replay_case=1
+=== RUN   TestApprovalCollaborationPostgresCaseCompletionInboxRollback/completed_replay_inbox_create
+    approval_collaboration_postgres_test.go:812: PostgreSQL fixture schema=approval_collab_695a455ca45945ad9570ec35aa957190 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 17:42:08 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 17:42:08 集成审批申请创建完成，ID：18e5b9fe528e4550
+2026/11/07 17:42:08 从审批申请自动创建案件，审批ID：18e5b9fe528e4550
+2026/11/07 17:42:08 从审批申请自动创建案件，审批ID：18e5b9fe528e4550
+2026/11/07 17:42:08 从审批申请自动创建案件，审批ID：18e5b9fe528e4550
+2026/11/07 17:42:08 从审批申请自动创建案件，审批ID：18e5b9fe528e4550
+    approval_collaboration_postgres_test.go:855: C13/C14 case_completion phase=completed_replay fault=inbox_create hits=1 rollback_exact=true cases=1 parties=2 result_tasks=1 same_result_key=true replay_case=1
+--- PASS: TestApprovalCollaborationPostgresCaseCompletionInboxRollback (1.29s)
+    --- PASS: TestApprovalCollaborationPostgresCaseCompletionInboxRollback/initial_completion_inbox_update (0.36s)
+    --- PASS: TestApprovalCollaborationPostgresCaseCompletionInboxRollback/initial_completion_inbox_create (0.30s)
+    --- PASS: TestApprovalCollaborationPostgresCaseCompletionInboxRollback/completed_replay_inbox_update (0.32s)
+    --- PASS: TestApprovalCollaborationPostgresCaseCompletionInboxRollback/completed_replay_inbox_create (0.30s)
+=== RUN   TestApprovalMultistagePostgresHTTP
+=== RUN   TestApprovalMultistagePostgresHTTP/ordinary/complete
+    approval_multistage_postgres_http_test.go:31: actual BootstrapProductionSchema version=postgres-mvp-2026-11-07-v16 empty_schema=bootstrap_intake_4e2f254e0c7f4e5888dd4d506019d2d8 created_tables=119
+2026/11/07 17:42:10 创建集成审批申请，用户：虚构回归用户，类型：case_creation
+2026/11/07 17:42:10 集成审批申请创建完成，ID：18e5b9feb7eb4e70
+2026/11/07 17:42:10 处理包含冲突检测的审批申请，审批ID：18e5b9feb7eb4e70，决定：approve
+2026/11/07 17:42:10 处理受控成案审批决定失败: 正式成案前置校验失败：正式成案指定的承办律师不存在或已停用
+2026/11/07 17:42:10 处理包含冲突检测的审批申请，审批ID：18e5b9feb7eb4e70，决定：approve
+通知发送: 申请 AP-20261107-df2c31f6-79dd-4772-8efa-c0c829103308 - 下一阶段审批
+2026/11/07 17:42:10 审批申请处理完成，ID：18e5b9feb7eb4e70，最终状态：under_review
+    approval_multistage_postgres_http_test.go:115: first node HTTP=200 approval=under_review next=compliance approver=44 tracking=pending tracking_rows=1 cases=0
+2026/11/07 17:42:10 处理包含冲突检测的审批申请，审批ID：18e5b9feb7eb4e70，决定：approve
+2026/11/07 17:42:10 处理受控成案审批决定失败: 审批节点已经变化，请刷新后重新处理
+2026/11/07 17:42:10 处理包含冲突检测的审批申请，审批ID：18e5b9feb7eb4e70，决定：approve
+2026/11/07 17:42:10 从审批申请自动创建案件，审批ID：18e5b9feb7eb4e70
+2026/11/07 17:42:10 审批通过后已自动成案，审批ID=18e5b9feb7eb4e70，操作人=虚构回归用户，案件ID=1
+2026/11/07 17:42:10 审批申请处理完成，ID：18e5b9feb7eb4e70，最终状态：approved
+2026/11/07 17:42:10 处理包含冲突检测的审批申请，审批ID：18e5b9feb7eb4e70，决定：approve
+2026/11/07 17:42:10 从审批申请自动创建案件，审批ID：18e5b9feb7eb4e70
+2026/11/07 17:42:10 重放审批同意请求命中已成案幂等短路，审批ID=18e5b9feb7eb4e70，案件ID=1，操作人=44
+    approval_multistage_postgres_http_test.go:169: two nodes complete fault=false records=2 cases=1 parties=2 same-case replay=true
+=== RUN   TestApprovalMultistagePostgresHTTP/ordinary/final_case_failure_retry
+    approval_multistage_postgres_http_test.go:31: actual BootstrapProductionSchema version=postgres-mvp-2026-11-07-v16 empty_schema=bootstrap_intake_09171803c3a54fbe8d953c704d4c5ecb created_tables=119
+2026/11/07 17:42:12 创建集成审批申请，用户：虚构回归用户，类型：case_creation
+2026/11/07 17:42:12 集成审批申请创建完成，ID：18e5b9ff2a2c5470
+2026/11/07 17:42:12 处理包含冲突检测的审批申请，审批ID：18e5b9ff2a2c5470，决定：approve
+2026/11/07 17:42:12 处理受控成案审批决定失败: 正式成案前置校验失败：正式成案指定的承办律师不存在或已停用
+2026/11/07 17:42:12 处理包含冲突检测的审批申请，审批ID：18e5b9ff2a2c5470，决定：approve
+通知发送: 申请 AP-20261107-41665c50-336e-4131-86f1-ae29693c3a37 - 下一阶段审批
+2026/11/07 17:42:12 审批申请处理完成，ID：18e5b9ff2a2c5470，最终状态：under_review
+    approval_multistage_postgres_http_test.go:115: first node HTTP=200 approval=under_review next=compliance approver=44 tracking=pending tracking_rows=1 cases=0
+2026/11/07 17:42:12 处理包含冲突检测的审批申请，审批ID：18e5b9ff2a2c5470，决定：approve
+2026/11/07 17:42:12 处理受控成案审批决定失败: 审批节点已经变化，请刷新后重新处理
+2026/11/07 17:42:12 处理包含冲突检测的审批申请，审批ID：18e5b9ff2a2c5470，决定：approve
+2026/11/07 17:42:12 从审批申请自动创建案件，审批ID：18e5b9ff2a2c5470
+2026/11/07 17:42:12 自动创建案件失败：创建案件失败: 创建案件失败: injected-final-case-write
+2026/11/07 17:42:12 处理受控成案审批决定失败: 审批已记录，但正式成案失败，已进入失败重试状态：创建案件失败: 创建案件失败: injected-final-case-write
+    approval_multistage_postgres_http_test.go:139: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_multistage_postgres_http_test.go:139
+        	Error:      	Not equal: 
+        	            	expected: 500
+        	            	actual  : 409
+        	Test:       	TestApprovalMultistagePostgresHTTP/ordinary/final_case_failure_retry
+        	Messages:   	{"code":409,"message":"审批已记录，但正式成案失败，已进入失败重试状态：创建案件失败: 创建案件失败: injected-final-case-write"}
+=== RUN   TestApprovalMultistagePostgresHTTP/integrated/complete
+    approval_multistage_postgres_http_test.go:31: actual BootstrapProductionSchema version=postgres-mvp-2026-11-07-v16 empty_schema=bootstrap_intake_10e43ebc94384a36877e7de6391e0bd6 created_tables=119
+2026/11/07 17:42:13 创建集成审批申请，用户：虚构回归用户，类型：case_creation
+2026/11/07 17:42:14 集成审批申请创建完成，ID：18e5b9ff97c444c0
+2026/11/07 17:42:14 处理包含冲突检测的审批申请，审批ID：18e5b9ff97c444c0，决定：approve
+2026/11/07 17:42:14 处理包含冲突检测的审批申请，审批ID：18e5b9ff97c444c0，决定：approve
+通知发送: 申请 AP-20261107-7abeb7d3-e1ca-4615-9c09-fad8828fa434 - 下一阶段审批
+2026/11/07 17:42:14 审批申请处理完成，ID：18e5b9ff97c444c0，最终状态：under_review
+    approval_multistage_postgres_http_test.go:115: first node HTTP=200 approval=under_review next=compliance approver=44 tracking=pending tracking_rows=1 cases=0
+2026/11/07 17:42:14 处理包含冲突检测的审批申请，审批ID：18e5b9ff97c444c0，决定：approve
+2026/11/07 17:42:14 处理包含冲突检测的审批申请，审批ID：18e5b9ff97c444c0，决定：approve
+2026/11/07 17:42:14 从审批申请自动创建案件，审批ID：18e5b9ff97c444c0
+2026/11/07 17:42:14 审批通过后已自动成案，审批ID=18e5b9ff97c444c0，操作人=虚构回归用户，案件ID=1
+2026/11/07 17:42:14 审批申请处理完成，ID：18e5b9ff97c444c0，最终状态：approved
+2026/11/07 17:42:14 处理包含冲突检测的审批申请，审批ID：18e5b9ff97c444c0，决定：approve
+2026/11/07 17:42:14 从审批申请自动创建案件，审批ID：18e5b9ff97c444c0
+2026/11/07 17:42:14 重放审批同意请求命中已成案幂等短路，审批ID=18e5b9ff97c444c0，案件ID=1，操作人=44
+    approval_multistage_postgres_http_test.go:169: two nodes complete fault=false records=2 cases=1 parties=2 same-case replay=true
+=== RUN   TestApprovalMultistagePostgresHTTP/integrated/final_case_failure_retry
+    approval_multistage_postgres_http_test.go:31: actual BootstrapProductionSchema version=postgres-mvp-2026-11-07-v16 empty_schema=bootstrap_intake_d1d0a7cdbaec4224b344f7a90fa2bfed created_tables=119
+2026/11/07 17:42:15 创建集成审批申请，用户：虚构回归用户，类型：case_creation
+2026/11/07 17:42:15 集成审批申请创建完成，ID：18e5ba00058c9f98
+2026/11/07 17:42:15 处理包含冲突检测的审批申请，审批ID：18e5ba00058c9f98，决定：approve
+2026/11/07 17:42:15 处理包含冲突检测的审批申请，审批ID：18e5ba00058c9f98，决定：approve
+通知发送: 申请 AP-20261107-0b8b1e2a-1ff1-4456-b54f-27bbc228234f - 下一阶段审批
+2026/11/07 17:42:15 审批申请处理完成，ID：18e5ba00058c9f98，最终状态：under_review
+    approval_multistage_postgres_http_test.go:115: first node HTTP=200 approval=under_review next=compliance approver=44 tracking=pending tracking_rows=1 cases=0
+2026/11/07 17:42:15 处理包含冲突检测的审批申请，审批ID：18e5ba00058c9f98，决定：approve
+2026/11/07 17:42:15 处理包含冲突检测的审批申请，审批ID：18e5ba00058c9f98，决定：approve
+2026/11/07 17:42:15 从审批申请自动创建案件，审批ID：18e5ba00058c9f98
+2026/11/07 17:42:16 自动创建案件失败：创建案件失败: 创建案件失败: injected-final-case-write
+2026/11/07 17:42:16 从审批申请自动创建案件，审批ID：18e5ba00058c9f98
+2026/11/07 17:42:16 处理包含冲突检测的审批申请，审批ID：18e5ba00058c9f98，决定：approve
+2026/11/07 17:42:16 从审批申请自动创建案件，审批ID：18e5ba00058c9f98
+2026/11/07 17:42:16 重放审批同意请求命中已成案幂等短路，审批ID=18e5ba00058c9f98，案件ID=1，操作人=44
+    approval_multistage_postgres_http_test.go:169: two nodes complete fault=true records=2 cases=1 parties=2 same-case replay=true
+--- FAIL: TestApprovalMultistagePostgresHTTP (7.51s)
+    --- PASS: TestApprovalMultistagePostgresHTTP/ordinary/complete (1.92s)
+    --- FAIL: TestApprovalMultistagePostgresHTTP/ordinary/final_case_failure_retry (1.85s)
+    --- PASS: TestApprovalMultistagePostgresHTTP/integrated/complete (1.89s)
+    --- PASS: TestApprovalMultistagePostgresHTTP/integrated/final_case_failure_retry (1.85s)
+FAIL
+FAIL	law-oa-go/internal/services	11.281s
+FAIL

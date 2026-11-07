@@ -1,0 +1,20 @@
+2026-11-07T15:14:25.838+0800	INFO	logger/logger.go:867	Logger package initialized with default development logger
+=== RUN   TestApprovalCollaborationPostgresOverlappingLockOrder
+    approval_collaboration_postgres_test.go:584: PostgreSQL fixture schema=approval_collab_48be9684609f44248ae43d1cbc6f2551 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 15:14:25 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 15:14:25 集成审批申请创建完成，ID：18e5b1eed7c61350
+通知发送: 申请 AP-20261107-425000 - 需要修改
+2026/11/07 15:14:25 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+    approval_collaboration_postgres_test.go:648: C12 controlled_overlap actor=resubmit approval= error=test schedule could not observe the new approval slot
+    approval_collaboration_postgres_test.go:661: C12 overlapping intake/slot locks returned uncontrolled error (SQLSTATE=not-a-pg-error), expected INTAKE_APPROVAL_ALREADY_IN_PROGRESS: test schedule could not observe the new approval slot
+2026/11/07 15:14:31 集成审批申请创建完成，ID：18e5b1eed9d6de68
+    approval_collaboration_postgres_test.go:648: C12 controlled_overlap actor=new approval=18e5b1eed9d6de68 error=<nil>
+2026/11/07 15:14:31 处理包含冲突检测的审批申请，审批ID：18e5b1eed9d6de68，决定：approve
+2026/11/07 15:14:31 从审批申请自动创建案件，审批ID：18e5b1eed9d6de68
+2026/11/07 15:14:31 审批通过后已自动成案，审批ID=18e5b1eed9d6de68，操作人=虚构审批合伙人，案件ID=1
+2026/11/07 15:14:31 审批申请处理完成，ID：18e5b1eed9d6de68，最终状态：approved
+    approval_collaboration_postgres_test.go:675: C12 controlled_overlap slots=1 valid_approvals=1 cases=1 complete_parties=2; error contract evaluated separately
+--- FAIL: TestApprovalCollaborationPostgresOverlappingLockOrder (5.23s)
+FAIL
+FAIL	law-oa-go/internal/services	6.803s
+FAIL

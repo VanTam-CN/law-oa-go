@@ -1,0 +1,75 @@
+{
+  "source_frozen_at": "2026-11-07T08:10:46.811Z",
+  "actual_entry": "frontend/index.html -> /src/index.tsx",
+  "files": [
+    {
+      "path": "frontend/dist/assets/antd-DzIAar_E.js",
+      "sha256": "d4a549080a9dceca2e5f8135f0f25731fff9939ccd49b2b6c3b89961f753e537",
+      "bytes": 1133167
+    },
+    {
+      "path": "frontend/dist/assets/index-Bfz438sN.css",
+      "sha256": "e1ab09bedabd8a246204221bf4fc1cbe3e0a26b5d8e2363a02fe57f1a63882f5",
+      "bytes": 85955
+    },
+    {
+      "path": "frontend/dist/assets/index-Cm1X_6UB.js",
+      "sha256": "c1d4eb25e0b6195f2b7002d1900c38241c2b5d3b7f00b11dea6461a60e435ea7",
+      "bytes": 476536
+    },
+    {
+      "path": "frontend/dist/assets/router-DR8pEzmh.js",
+      "sha256": "507687dd0a0fb84b95c367ab6e6fccfba2ea747dccf388622e9268063569ae70",
+      "bytes": 81241
+    },
+    {
+      "path": "frontend/dist/assets/utils-Bef3mNe6.js",
+      "sha256": "7d7dc7e3b944280794b1074ee1a9e1cadc4566baaccc58f348f132fc41aa3055",
+      "bytes": 28
+    },
+    {
+      "path": "frontend/dist/assets/vendor-DGvbWsQX.js",
+      "sha256": "97c009ec7c34778ba699ab341759d7b54b58fe21804f7a900107cd765000b29e",
+      "bytes": 140344
+    },
+    {
+      "path": "frontend/dist/index.html",
+      "sha256": "3b50d27684e90bf6890867153ed5ef98d9782f99a20b999c5e163d1972a4463f",
+      "bytes": 702
+    }
+  ],
+  "archive": {
+    "path": "reports/evidence/intake-collaboration-mvp/20261107/frontend/review-fixes-r2/frontend-dist.tar.gz",
+    "sha256": "78651531095b8b917c051a28df1bf904acc6fe593a71eeb400a220552fd71d1b"
+  },
+  "supersedes": "../review-fixes/frontend-dist.tar.gz (index-CxoHfApU.js; incorrect review.check_id binding)",
+  "checks": {
+    "typecheck": {
+      "exit_code": 0,
+      "log": "typecheck-final.log"
+    },
+    "lint": {
+      "exit_code": 0,
+      "log": "lint-final.log"
+    },
+    "build": {
+      "exit_code": 0,
+      "log": "build-final.log"
+    },
+    "jest": {
+      "exit_code": 0,
+      "suites": 12,
+      "tests": 75,
+      "log": "jest-final.log"
+    },
+    "diff_check": {
+      "exit_code": 0,
+      "log": "diff-check.log"
+    }
+  },
+  "limitations": [
+    "Author mock/JSDOM only. No browser tools or real API access by frontend author.",
+    "C16 not passed; independent re-review, two real same-object chains and C17 keyboard/layout pending.",
+    "Chunk-size and JSDOM layout/act warnings retained."
+  ]
+}

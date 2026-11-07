@@ -1,0 +1,86 @@
+
+> law-oa-frontend@0.0.0 test
+> jest --runInBand --coverage=false --runTestsByPath src/pages/batch01/__tests__/ConflictDetailModal.test.tsx src/pages/batch01/__tests__/ConflictReviewerSubmit.test.ts src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts
+
+  console.error
+    Error: Not implemented: window.getComputedStyle(elt, pseudoElt)
+        at module.exports (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-environment-jsdom/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+        at window.getComputedStyle (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-environment-jsdom/node_modules/jsdom/lib/jsdom/browser/Window.js:895:7)
+        at measureScrollbarSize (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:35:32)
+        at getTargetScrollBarSize (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:83:10)
+        at /Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@rc-component/portal/lib/useScrollLocker.js:27:72
+        at /Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/hooks/useLayoutEffect.js:18:12
+        at commitHookEffectListMount (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:23189:26)
+        at commitPassiveMountOnFiber (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24970:11)
+        at commitPassiveMountEffects_complete (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24930:9)
+        at commitPassiveMountEffects_begin (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24917:7)
+        at commitPassiveMountEffects (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24905:3)
+        at flushPassiveEffectsImpl (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27078:3)
+        at flushPassiveEffects (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27023:14)
+        at performSyncWorkOnRoot (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26115:3)
+        at flushSyncCallbacks (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+        at commitRootImpl (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26998:3)
+        at commitRoot (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26721:5)
+        at finishConcurrentRender (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26020:9)
+        at performConcurrentWorkOnRoot (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:25848:7)
+        at workLoop (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/scheduler/cjs/scheduler.development.js:266:34)
+        at flushWork (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/scheduler/cjs/scheduler.development.js:239:14)
+        at performWorkUntilDeadline (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/scheduler/cjs/scheduler.development.js:533:21)
+        at Timeout.task [as _onTimeout] (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-environment-jsdom/node_modules/jsdom/lib/jsdom/browser/Window.js:579:19)
+        at listOnTimeout (node:internal/timers:588:17)
+        at processTimers (node:internal/timers:523:7) {
+      type: 'not implemented'
+    }
+
+      at VirtualConsole.<anonymous> (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@jest/environment-jsdom-abstract/build/index.js:87:23)
+      at measureScrollbarSize (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:35:32)
+      at getTargetScrollBarSize (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:83:10)
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@rc-component/portal/lib/useScrollLocker.js:27:72
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/hooks/useLayoutEffect.js:18:12
+      at commitHookEffectListMount (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:23189:26)
+      at commitPassiveMountOnFiber (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24970:11)
+      at commitPassiveMountEffects_complete (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24930:9)
+      at commitPassiveMountEffects_begin (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24917:7)
+      at commitPassiveMountEffects (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24905:3)
+      at flushPassiveEffectsImpl (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27078:3)
+      at flushPassiveEffects (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27023:14)
+      at performSyncWorkOnRoot (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26115:3)
+      at flushSyncCallbacks (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+      at commitRootImpl (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26998:3)
+      at commitRoot (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26721:5)
+      at finishConcurrentRender (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26020:9)
+      at performConcurrentWorkOnRoot (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:25848:7)
+      at workLoop (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/scheduler/cjs/scheduler.development.js:266:34)
+      at flushWork (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/scheduler/cjs/scheduler.development.js:239:14)
+      at performWorkUntilDeadline (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/scheduler/cjs/scheduler.development.js:533:21)
+
+PASS Law OA Frontend src/pages/batch01/__tests__/ConflictDetailModal.test.tsx
+  ✓ keeps the long detail and reviewer popup above fixed navigation, with a separately scrolling body (531 ms)
+
+PASS Law OA Frontend src/pages/batch01/__tests__/ConflictReviewerSubmit.test.ts
+  assigned conflict reviewer submit gate
+    ✓ allows only the currently assigned reviewer to submit
+    ✓ blocks submission before an active assignment is loaded
+
+PASS Law OA Frontend src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts
+  CaseIntakeWorkbench conflict action
+    ✓ returns stable required fields before any draft or conflict request (1 ms)
+    ✓ returns no missing fields for a complete conflict-check input
+    ✓ labels a coverage-limited record with no evidence as no match
+    ✓ keeps a clear MVP fallback message for unavailable conflict checks
+    ✓ provides a lawyer-readable first-run path and support guidance (1 ms)
+    ✓ does not treat a matched conflict case as the subject case
+    ✓ matches only explicit subject case identifiers (1 ms)
+    ✓ matches subject identifiers nested in the persisted search parameters (1 ms)
+    ✓ matches the command-center task title used by a case-context link
+    ✓ does not use a historical hit case as the subject context
+    ✓ isolates local drafts by user and case context (1 ms)
+    ✓ never persists an opponent identity number in a browser draft
+    ✓ invalidates a frozen result when a material conflict input changes (1 ms)
+    ✓ keeps the same fingerprint when related parties are only reordered (7 ms)
+
+Test Suites: 3 passed, 3 total
+Tests:       17 passed, 17 total
+Snapshots:   0 total
+Time:        3.089 s
+Ran all test suites within paths "src/pages/batch01/__tests__/ConflictDetailModal.test.tsx", "src/pages/batch01/__tests__/ConflictReviewerSubmit.test.ts", "src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts".

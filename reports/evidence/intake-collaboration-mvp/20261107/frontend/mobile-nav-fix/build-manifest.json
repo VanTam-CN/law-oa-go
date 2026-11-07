@@ -1,0 +1,89 @@
+{
+  "source_frozen_at": "2026-11-07T08:25:55.807Z",
+  "actual_entry": "frontend/index.html -> /src/index.tsx",
+  "main_js": "frontend/dist/assets/index-p6KdlFyE.js",
+  "files": [
+    {
+      "path": "frontend/dist/assets/antd-DzIAar_E.js",
+      "sha256": "d4a549080a9dceca2e5f8135f0f25731fff9939ccd49b2b6c3b89961f753e537",
+      "bytes": 1133167
+    },
+    {
+      "path": "frontend/dist/assets/index-Bfz438sN.css",
+      "sha256": "e1ab09bedabd8a246204221bf4fc1cbe3e0a26b5d8e2363a02fe57f1a63882f5",
+      "bytes": 85955
+    },
+    {
+      "path": "frontend/dist/assets/index-p6KdlFyE.js",
+      "sha256": "9221fc5e276b9375a744b51dcbc652b8e12ca6422f07eea76e3df79df9d823d5",
+      "bytes": 476768
+    },
+    {
+      "path": "frontend/dist/assets/router-DR8pEzmh.js",
+      "sha256": "507687dd0a0fb84b95c367ab6e6fccfba2ea747dccf388622e9268063569ae70",
+      "bytes": 81241
+    },
+    {
+      "path": "frontend/dist/assets/utils-Bef3mNe6.js",
+      "sha256": "7d7dc7e3b944280794b1074ee1a9e1cadc4566baaccc58f348f132fc41aa3055",
+      "bytes": 28
+    },
+    {
+      "path": "frontend/dist/assets/vendor-DGvbWsQX.js",
+      "sha256": "97c009ec7c34778ba699ab341759d7b54b58fe21804f7a900107cd765000b29e",
+      "bytes": 140344
+    },
+    {
+      "path": "frontend/dist/index.html",
+      "sha256": "c7ee2754cca48352e6d7755e981eb31385f4c2ca330caaf5df63d4275487da51",
+      "bytes": 702
+    }
+  ],
+  "archive": {
+    "path": "reports/evidence/intake-collaboration-mvp/20261107/frontend/mobile-nav-fix/frontend-dist.tar.gz",
+    "sha256": "ef0dcd9b5cee75717585aeddd487edadee337378609a83722c4e80c802c0254b"
+  },
+  "supersedes": "../review-fixes-r2/build-manifest.json",
+  "checks": {
+    "typecheck": {
+      "exit_code": 0,
+      "log": "typecheck-final.log"
+    },
+    "lint": {
+      "exit_code": 0,
+      "log": "lint-final.log"
+    },
+    "build": {
+      "exit_code": 0,
+      "log": "build-final.log"
+    },
+    "drawer_navigation_jest": {
+      "exit_code": 0,
+      "suites": 3,
+      "tests": 9,
+      "log": "jest-final.log"
+    },
+    "conflict_accuracy_jest": {
+      "exit_code": 0,
+      "suites": 1,
+      "tests": 6,
+      "log": "accuracy-tests-final.log"
+    },
+    "diff_check": {
+      "exit_code": 0,
+      "log": "diff-check.log"
+    }
+  },
+  "prior_evidence": {
+    "source_manifest": "../review-fixes-r2/source-manifest.json",
+    "log": "../review-fixes-r2/jest-final.log",
+    "suites": 12,
+    "tests": 75,
+    "rerun_in_this_patch": false
+  },
+  "limitations": [
+    "JSDOM checks stacking order and navigation state, not real pointer hit testing or keyboard geometry.",
+    "Mobile drawer close and accurate list/text require main-thread live recheck.",
+    "C16 and overall C17 are not declared passed."
+  ]
+}

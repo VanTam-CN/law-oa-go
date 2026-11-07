@@ -1,0 +1,7 @@
+{
+  "02-first-http-red.log": "ca091f23c97782793081512a689e270fab67d93ab0ba31b12564111bdb50dee5",
+  "04-first-http-recheck.log": "b7b5d7f0423bf2655209ab2a92a31f7e5a554b8bc92f8bf4d64c219756ca5cd1",
+  "05-bootstrap-contracts.log": "4133427ab6335506290a9c181b5842576b5df1d62aaaaeedfdf3b7431434acd4",
+  "06-bootstrap-mode-first-red.log": "343bc1a168b98c8ff5a9cfcee2958a7c3c67f9357ab0dbd97197c29c7f922b5a",
+  "18-existing-snapshot-mode-first-red.log": "739f51b053c4c9e84f6c5691f6c01278c18207760b0407627f943b93ebd3848b"
+}

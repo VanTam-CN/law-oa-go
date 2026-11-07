@@ -1,0 +1,9 @@
+cd /private/tmp/lawoa-intake-collaboration-20261107/frontend
+
+npm run type-check
+npm run lint
+npm run build
+npm test -- --runInBand --coverage=false --runTestsByPath src/components/client/__tests__/ClientCollaboration.test.tsx src/pages/batch01/__tests__/ApprovalCollaborationPage.test.tsx src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts src/pages/batch01/__tests__/ConflictDetailModal.test.tsx src/pages/batch01/__tests__/ConflictReviewerSubmit.test.ts src/pages/batch01/__tests__/DashboardPermission.test.tsx src/pages/batch01/__tests__/IntakeCollaborationContracts.test.ts src/pages/batch01/__tests__/IntakeCollaborationPage.test.tsx src/pages/batch01/__tests__/IntakeDraftRestore.test.ts src/pages/batch01/__tests__/IntakePartyRoleRoundTrip.test.ts src/pages/batch01/__tests__/IntakeRecoveryRegression.test.tsx src/pages/inbox/__tests__/InboxWorkflowActions.test.tsx
+
+cd /private/tmp/lawoa-intake-collaboration-20261107
+git diff --check -- frontend

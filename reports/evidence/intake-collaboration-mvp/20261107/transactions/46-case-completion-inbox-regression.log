@@ -1,0 +1,49 @@
+# law-oa-go/internal/services.test
+ld: warning: '/private/var/folders/4p/bng36r_s65d26yqk0lfpw2rh0000gn/T/go-link-3463258783/000023.o' has malformed LC_DYSYMTAB, expected 98 undefined symbols to start at index 884, found 95 undefined symbols starting at index 884
+2026-11-07T15:48:05.482+0800	INFO	logger/logger.go:867	Logger package initialized with default development logger
+=== RUN   TestApprovalCollaborationPostgresCaseCompletionInboxRollback
+=== RUN   TestApprovalCollaborationPostgresCaseCompletionInboxRollback/initial_completion_inbox_update
+    approval_collaboration_postgres_test.go:806: PostgreSQL fixture schema=approval_collab_96503bfd2437471192a47d5fb65043b3 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 15:48:05 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 15:48:05 集成审批申请创建完成，ID：18e5b3c516dcbd28
+2026/11/07 15:48:05 从审批申请自动创建案件，审批ID：18e5b3c516dcbd28
+2026/11/07 15:48:05 从审批申请自动创建案件，审批ID：18e5b3c516dcbd28
+2026/11/07 15:48:05 从审批申请自动创建案件，审批ID：18e5b3c516dcbd28
+    approval_collaboration_postgres_test.go:849: C13/C14 case_completion phase=initial_completion fault=inbox_update hits=1 rollback_exact=true cases=1 parties=2 result_tasks=1 same_result_key=true replay_case=2
+=== RUN   TestApprovalCollaborationPostgresCaseCompletionInboxRollback/initial_completion_inbox_create
+    approval_collaboration_postgres_test.go:806: PostgreSQL fixture schema=approval_collab_f919c2a4d3924c6c87a0a7e40d853eef server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 15:48:05 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 15:48:05 集成审批申请创建完成，ID：18e5b3c527b18020
+2026/11/07 15:48:05 从审批申请自动创建案件，审批ID：18e5b3c527b18020
+2026/11/07 15:48:06 从审批申请自动创建案件，审批ID：18e5b3c527b18020
+2026/11/07 15:48:06 从审批申请自动创建案件，审批ID：18e5b3c527b18020
+    approval_collaboration_postgres_test.go:849: C13/C14 case_completion phase=initial_completion fault=inbox_create hits=1 rollback_exact=true cases=1 parties=2 result_tasks=1 same_result_key=true replay_case=2
+=== RUN   TestApprovalCollaborationPostgresCaseCompletionInboxRollback/completed_replay_inbox_update
+    approval_collaboration_postgres_test.go:806: PostgreSQL fixture schema=approval_collab_2e23371c5a53401983d9f9e981c36730 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 15:48:06 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 15:48:06 集成审批申请创建完成，ID：18e5b3c536f93e60
+2026/11/07 15:48:06 从审批申请自动创建案件，审批ID：18e5b3c536f93e60
+2026/11/07 15:48:06 从审批申请自动创建案件，审批ID：18e5b3c536f93e60
+2026/11/07 15:48:06 从审批申请自动创建案件，审批ID：18e5b3c536f93e60
+2026/11/07 15:48:06 从审批申请自动创建案件，审批ID：18e5b3c536f93e60
+    approval_collaboration_postgres_test.go:849: C13/C14 case_completion phase=completed_replay fault=inbox_update hits=1 rollback_exact=true cases=1 parties=2 result_tasks=1 same_result_key=true replay_case=1
+=== RUN   TestApprovalCollaborationPostgresCaseCompletionInboxRollback/completed_replay_inbox_create
+    approval_collaboration_postgres_test.go:806: PostgreSQL fixture schema=approval_collab_d05d96696bad432da5b29b14c4979fa6 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 15:48:06 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 15:48:06 集成审批申请创建完成，ID：18e5b3c546c50180
+2026/11/07 15:48:06 从审批申请自动创建案件，审批ID：18e5b3c546c50180
+2026/11/07 15:48:06 从审批申请自动创建案件，审批ID：18e5b3c546c50180
+2026/11/07 15:48:06 从审批申请自动创建案件，审批ID：18e5b3c546c50180
+2026/11/07 15:48:06 从审批申请自动创建案件，审批ID：18e5b3c546c50180
+    approval_collaboration_postgres_test.go:849: C13/C14 case_completion phase=completed_replay fault=inbox_create hits=1 rollback_exact=true cases=1 parties=2 result_tasks=1 same_result_key=true replay_case=1
+--- PASS: TestApprovalCollaborationPostgresCaseCompletionInboxRollback (1.10s)
+    --- PASS: TestApprovalCollaborationPostgresCaseCompletionInboxRollback/initial_completion_inbox_update (0.32s)
+    --- PASS: TestApprovalCollaborationPostgresCaseCompletionInboxRollback/initial_completion_inbox_create (0.26s)
+    --- PASS: TestApprovalCollaborationPostgresCaseCompletionInboxRollback/completed_replay_inbox_update (0.26s)
+    --- PASS: TestApprovalCollaborationPostgresCaseCompletionInboxRollback/completed_replay_inbox_create (0.26s)
+=== RUN   TestApprovalCollaborationPostgresLegacyMissingIntakeLinkNoWrites
+    approval_collaboration_postgres_test.go:856: PostgreSQL fixture schema=approval_collab_0051ad161c8447df8a6fef956d74a232 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+    approval_collaboration_postgres_test.go:880: C11 legacy_missing_metadata_link=typed_409 writes=0 restored_link_submit=success snapshot=1 slot=1
+--- PASS: TestApprovalCollaborationPostgresLegacyMissingIntakeLinkNoWrites (0.19s)
+PASS
+ok  	law-oa-go/internal/services	4.544s

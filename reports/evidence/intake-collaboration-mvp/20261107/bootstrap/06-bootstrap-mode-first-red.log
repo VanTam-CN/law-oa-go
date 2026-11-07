@@ -1,0 +1,73 @@
+2026-11-07T17:00:33.293+0800	INFO	logger/logger.go:867	Logger package initialized with default development logger
+=== RUN   TestApprovalBootstrapPostgresClaimAndSlotParity
+    approval_bootstrap_postgres_contract_test.go:28: actual BootstrapProductionSchema version=postgres-mvp-2026-11-07-v16 empty_schema=bootstrap_intake_76bbb3b86fa648ca9beadd47a5f62572 created_tables=119
+--- PASS: TestApprovalBootstrapPostgresClaimAndSlotParity (1.36s)
+=== RUN   TestApprovalBootstrapPostgresV15UpgradeFirstHTTPSubmission
+    approval_bootstrap_postgres_contract_test.go:46: actual BootstrapProductionSchema version=postgres-mvp-2026-11-07-v16 empty_schema=bootstrap_intake_8657e13a71394534b857e35400fe87a2 created_tables=119
+2026/11/07 17:00:36 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 17:00:36 集成审批申请创建完成，ID：18e5b7ba18dee6c0
+    approval_bootstrap_postgres_contract_test.go:70: fresh bootstrap -> real HTTP claim -> frozen snapshot + unique slot + decision task; duplicate=409; cases=0
+--- PASS: TestApprovalBootstrapPostgresV15UpgradeFirstHTTPSubmission (1.96s)
+=== RUN   TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract
+    approval_bootstrap_postgres_contract_test.go:74: actual BootstrapProductionSchema version=postgres-mvp-2026-11-07-v16 empty_schema=bootstrap_intake_1a2e3ccf4f794cf1bdc8472336fe1519 created_tables=119
+=== RUN   TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract/missing_claim
+=== RUN   TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract/short_claim
+=== RUN   TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract/nonnull_claim
+=== RUN   TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract/missing_index
+=== RUN   TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract/nonunique_index
+=== RUN   TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract/partial_index
+=== RUN   TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract/wrong_column_index
+--- PASS: TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract (3.51s)
+    --- PASS: TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract/missing_claim (0.20s)
+    --- PASS: TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract/short_claim (0.32s)
+    --- PASS: TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract/nonnull_claim (0.32s)
+    --- PASS: TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract/missing_index (0.34s)
+    --- PASS: TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract/nonunique_index (0.32s)
+    --- PASS: TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract/partial_index (0.33s)
+    --- PASS: TestApprovalBootstrapPostgresStartupRejectsBrokenClaimContract/wrong_column_index (0.35s)
+=== RUN   TestApprovalBootstrapPostgresDuplicateLegacySlotsFailAtomically
+    approval_bootstrap_postgres_contract_test.go:103: actual BootstrapProductionSchema version=postgres-mvp-2026-11-07-v16 empty_schema=bootstrap_intake_69bfc09fa71743ebab9df385e1afc6ba created_tables=119
+--- PASS: TestApprovalBootstrapPostgresDuplicateLegacySlotsFailAtomically (1.13s)
+=== RUN   TestApprovalBootstrapPostgresFirstHTTPSubmission
+    approval_bootstrap_postgres_http_test.go:19: actual BootstrapProductionSchema version=postgres-mvp-2026-11-07-v16 empty_schema=bootstrap_intake_94ff764006c0422f8e39684d455b59a9 created_tables=119
+2026/11/07 17:00:42 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 17:00:42 集成审批申请创建完成，ID：18e5b7bb758fa818
+    approval_bootstrap_postgres_http_test.go:19: fresh bootstrap -> real HTTP claim -> frozen snapshot + unique slot + decision task; duplicate=409; cases=0
+--- PASS: TestApprovalBootstrapPostgresFirstHTTPSubmission (1.20s)
+=== RUN   TestApprovalSnapshotModePostgresHTTP
+=== RUN   TestApprovalSnapshotModePostgresHTTP/ordinary_leave
+    approval_backend_final_review_postgres_test.go:177: PostgreSQL fixture schema=approval_collab_e396c9c53cba4052acb9a534d085a827 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+    approval_snapshot_mode_postgres_http_test.go:53: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_snapshot_mode_postgres_http_test.go:53
+        	Error:      	Expected value not to be nil.
+        	Test:       	TestApprovalSnapshotModePostgresHTTP/ordinary_leave
+        	Messages:   	detail must expose an explicit server-resolved mode
+=== RUN   TestApprovalSnapshotModePostgresHTTP/legacy_check_binding
+    approval_backend_final_review_postgres_test.go:177: PostgreSQL fixture schema=approval_collab_8be837dfb43d43cf9542e49958be17a8 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+    approval_snapshot_mode_postgres_http_test.go:53: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_snapshot_mode_postgres_http_test.go:53
+        	Error:      	Expected value not to be nil.
+        	Test:       	TestApprovalSnapshotModePostgresHTTP/legacy_check_binding
+        	Messages:   	detail must expose an explicit server-resolved mode
+=== RUN   TestApprovalSnapshotModePostgresHTTP/legacy_tracking_binding
+    approval_backend_final_review_postgres_test.go:177: PostgreSQL fixture schema=approval_collab_1111d80a88de41b3a09af32bfdb93a64 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+    approval_snapshot_mode_postgres_http_test.go:35: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_snapshot_mode_postgres_http_test.go:35
+        	Error:      	Received unexpected error:
+        	            	approval snapshots are append-only
+        	Test:       	TestApprovalSnapshotModePostgresHTTP/legacy_tracking_binding
+=== RUN   TestApprovalSnapshotModePostgresHTTP/legacy_snapshot_binding
+    approval_backend_final_review_postgres_test.go:177: PostgreSQL fixture schema=approval_collab_d161140651704340956eb9ae3aa7b8f5 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+    approval_snapshot_mode_postgres_http_test.go:35: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_snapshot_mode_postgres_http_test.go:35
+        	Error:      	Received unexpected error:
+        	            	approval snapshots are append-only
+        	Test:       	TestApprovalSnapshotModePostgresHTTP/legacy_snapshot_binding
+--- FAIL: TestApprovalSnapshotModePostgresHTTP (0.54s)
+    --- FAIL: TestApprovalSnapshotModePostgresHTTP/ordinary_leave (0.15s)
+    --- FAIL: TestApprovalSnapshotModePostgresHTTP/legacy_check_binding (0.13s)
+    --- FAIL: TestApprovalSnapshotModePostgresHTTP/legacy_tracking_binding (0.13s)
+    --- FAIL: TestApprovalSnapshotModePostgresHTTP/legacy_snapshot_binding (0.12s)
+FAIL
+FAIL	law-oa-go/internal/services	11.305s
+FAIL

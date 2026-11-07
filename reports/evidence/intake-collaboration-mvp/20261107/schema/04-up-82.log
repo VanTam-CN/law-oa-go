@@ -1,0 +1,13 @@
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE FUNCTION
+psql:/private/tmp/lawoa-intake-collaboration-20261107/migrations/000082_intake_submission_snapshots.up.sql:22: NOTICE:  trigger "trg_intake_submission_snapshot_immutable" for relation "approval_snapshots" does not exist, skipping
+DROP TRIGGER
+CREATE TRIGGER
+CREATE FUNCTION
+psql:/private/tmp/lawoa-intake-collaboration-20261107/migrations/000082_intake_submission_snapshots.up.sql:33: NOTICE:  trigger "trg_intake_submission_decision_immutable" for relation "approval_records" does not exist, skipping
+DROP TRIGGER
+CREATE TRIGGER
