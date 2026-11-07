@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/repositories"
 )
@@ -86,6 +87,8 @@ func NewApprovalConflictIntegrationService(
 
 // IntegrationRequest 集成请求
 type IntegrationRequest struct {
+	// Set only by the HTTP claim owner; never bind this value from JSON.
+	IntakeClaimToken    string                       `json:"-"`
 	Type                string                       `json:"type" binding:"required"`
 	Title               string                       `json:"title" binding:"required"`
 	Content             string                       `json:"content" binding:"required"`
@@ -193,7 +196,30 @@ type TimelineEvent struct {
 }
 
 // CreateIntegratedApproval 创建集成的审批申请
+type approvalTransactionBinder interface {
+	BindApprovalTransaction(*gorm.DB) ApprovalServiceInterface
+}
+
+// Intake submission is one transaction: draft, unique slot, immutable snapshot,
+// assignment and workflow inbox either all commit or all roll back.
 func (s *approvalConflictIntegrationService) CreateIntegratedApproval(ctx context.Context, userID, userName string, req *IntegrationRequest) (*IntegrationResult, error) {
+	if binder, ok := s.approvalService.(approvalTransactionBinder); ok && metadataString(req.Metadata, "intake_id") != "" {
+		var result *IntegrationResult
+		err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+			bound := *s
+			bound.db = tx
+			bound.integrationRepo = repositories.NewIntegrationRepository(tx)
+			bound.approvalService = binder.BindApprovalTransaction(tx)
+			var err error
+			result, err = bound.createIntegratedApprovalInTx(ctx, userID, userName, req)
+			return err
+		})
+		return result, err
+	}
+	return s.createIntegratedApprovalInTx(ctx, userID, userName, req)
+}
+
+func (s *approvalConflictIntegrationService) createIntegratedApprovalInTx(ctx context.Context, userID, userName string, req *IntegrationRequest) (*IntegrationResult, error) {
 	log.Printf("创建集成审批申请，用户：%s，类型：%s", userName, req.Type)
 
 	// 设置元数据
@@ -259,6 +285,22 @@ func (s *approvalConflictIntegrationService) CreateIntegratedApproval(ctx contex
 	// draft row this leaves behind is not a live status, so legitimate
 	// retries still pass the guards.
 	if intakeID := metadataString(metadata, "intake_id"); intakeID != "" {
+		if _, inTx := s.db.Statement.ConnPool.(gorm.TxCommitter); inTx {
+			if _, _, err := lockSubmissionIntake(s.db, intakeID, userID); err != nil {
+				return nil, err
+			}
+			if req.IntakeClaimToken != "" {
+				claim := s.db.Table("case_intakes").Where("id = ? AND status = ? AND approval_claim_token = ?", intakeID, "approval_submitting", req.IntakeClaimToken).
+					Updates(map[string]interface{}{"status": "conflict_ready", "approval_claim_token": nil, "updated_at": time.Now().UTC()})
+				if claim.Error != nil {
+					return nil, claim.Error
+				}
+				if claim.RowsAffected != 1 {
+					return nil, intakeCollaborationError("INTAKE_APPROVAL_ALREADY_IN_PROGRESS", "接案提交占用已变化，请刷新后重试", 409)
+				}
+			}
+		}
+
 		bound := intakeID
 		tracking := &repositories.CaseCreationTracking{
 			ID:                  fmt.Sprintf("INTAKE_BIND_%s", createdApproval.ID),
@@ -311,6 +353,13 @@ func (s *approvalConflictIntegrationService) CreateIntegratedApproval(ctx contex
 		return nil, fmt.Errorf("提交集成审批申请失败：%w", err)
 	}
 
+	if createdApproval.ActiveSubmissionSnapshotID != nil {
+		var snapshotErr error
+		approvalSnapshot, snapshotErr = ResolveApprovalSubmission(s.db, createdApproval)
+		if snapshotErr != nil {
+			return nil, snapshotErr
+		}
+	}
 	// 创建集成元数据
 	integrationMetadata := &models.ApprovalIntegrationMetadata{
 		IntegrationType: "conflict", // 默认类型
@@ -444,6 +493,23 @@ func (s *approvalConflictIntegrationService) createCaseTxWorkflow(ctx context.Co
 	}
 	txCtx := repositories.WithApprovalCaseTx(ctx, tx)
 	txCtx = repositories.WithCaseTx(txCtx, tx)
+	var frozenApproval models.ApprovalRequest
+	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&frozenApproval, "id = ?", approvalID).Error; err != nil {
+		return nil, err
+	}
+	if err := requireIntakeCaseAuthority(tx, &frozenApproval, true); err != nil {
+		return nil, err
+	}
+	// A durable case link or completed tracking record wins over stale
+	// case_created/status flags. Never turn recovery of that case into a new claim.
+	var completed repositories.CaseCreationTracking
+	completedErr := tx.Where("approval_request_id = ? AND creation_status = 'completed' AND case_id IS NOT NULL", approvalID).First(&completed).Error
+	if completedErr != nil && !errors.Is(completedErr, gorm.ErrRecordNotFound) {
+		return nil, completedErr
+	}
+	if strings.TrimSpace(frozenApproval.CreatedCaseID) != "" || completedErr == nil {
+		return s.settleClaimedCaseCreation(txCtx, tx, approvalID, caseData)
+	}
 
 	// Lock the approval row and re-check it inside this transaction, then
 	// claim the single case-creation attempt ON THE SAME TRANSACTION. A
@@ -453,6 +519,18 @@ func (s *approvalConflictIntegrationService) createCaseTxWorkflow(ctx context.Co
 	claimed, err := s.integrationRepo.ClaimCaseCreationOnTx(txCtx, tx, approvalID, userIDFromContext(ctx))
 	if err != nil {
 		return nil, fmt.Errorf("锁定案件创建任务失败：%w", err)
+	}
+	if frozenApproval.ActiveSubmissionSnapshotID != nil {
+		if err := ApplyApprovalSubmission(tx, &frozenApproval); err != nil {
+			return nil, err
+		}
+		bound := *s
+		bound.db = tx
+		bound.integrationRepo = repositories.NewIntegrationRepository(tx)
+		caseData, err = bound.buildCaseDataForApprovedApproval(txCtx, &frozenApproval, frozenApproval.ApplicantID)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if !claimed {
 		return s.settleClaimedCaseCreation(txCtx, tx, approvalID, caseData)
@@ -468,11 +546,7 @@ func (s *approvalConflictIntegrationService) createCaseTxWorkflow(ctx context.Co
 	createCaseReq.Approved = true
 
 	checkID := conflictCheckIDFromMetadata(caseData)
-	record, err := s.integrationRepo.GetConflictCheckRecord(ctx, checkID)
-	if err != nil {
-		return nil, fmt.Errorf("读取冲突复核记录失败：%w", err)
-	}
-	parties, err := buildReviewedParties(record)
+	parties, err := s.approvedCaseParties(txCtx, tx, approvalID, checkID)
 	if err != nil {
 		return nil, err
 	}
@@ -485,28 +559,9 @@ func (s *approvalConflictIntegrationService) createCaseTxWorkflow(ctx context.Co
 		return nil, NewSubjectWorkflowError("CASE_CREATION_NOT_APPROVED", "审批未处于通过状态，已阻止成案")
 	}
 
-	// Intake-slot guard (audit-25f1d4b P1, belt-and-braces layer): the
-	// resubmit side now fails atomically, but this workflow must also refuse
-	// to arm a case when the approval's intake slot belongs to a competing
-	// approval (e.g. an approval created before this guard or through a
-	// path that skipped the rebind). Row-missing approvals (legacy rows that
-	// predate the bind invariant, incl. migration 000081) still pass to keep
-	// the historical no-op contract; the completed replay path above already
-	// short-circuits genuine duplicates.
-	if intakeID := metadataString(parseMetadata(approval.Metadata), "intake_id"); intakeID != "" {
-		var bindRow repositories.CaseCreationTracking
-		err = tx.Where("intake_id = ?", intakeID).Take(&bindRow).Error
-		switch {
-		case err == nil:
-			if bindRow.ApprovalRequestID != approval.ID {
-				return nil, NewSubjectWorkflowError("INTAKE_APPROVAL_ALREADY_IN_PROGRESS", "该接案已有进行中的成案审批，不能重复成案；请在持有该接案槽位的审批单上继续处理")
-			}
-		case errors.Is(err, gorm.ErrRecordNotFound):
-			// Legacy approval without a bind row: keep the historical
-			// behavior instead of inventing a regression for pre-invariant
-			// data (000081 does not backfill history).
-		default:
-			return nil, fmt.Errorf("读取接案绑定失败：%w", err)
+	if approval.ActiveSubmissionSnapshotID != nil {
+		if err := ApplyApprovalSubmission(tx, approval); err != nil {
+			return nil, err
 		}
 	}
 
@@ -543,6 +598,9 @@ func (s *approvalConflictIntegrationService) createCaseTxWorkflow(ctx context.Co
 		return nil, fmt.Errorf("案件已创建但审批关联回填失败，整体已回滚：%w", err)
 	}
 
+	if err := reconcileApprovalTransition(tx, &models.ApprovalRequest{ID: approvalID}); err != nil {
+		return nil, fmt.Errorf("成案待办交接失败，整体已回滚：%w", err)
+	}
 	if err := tx.Commit().Error; err != nil {
 		if s.onWorkflowFailureHook != nil {
 			s.onWorkflowFailureHook(err)
@@ -576,7 +634,7 @@ func (s *approvalConflictIntegrationService) settleClaimedCaseCreation(ctx conte
 		return nil, NewSubjectWorkflowError("CASE_CREATION_NOT_APPROVED", "审批未处于通过状态，已阻止成案")
 	}
 	caseID := strings.TrimSpace(approval.CreatedCaseID)
-	if approval.CaseCreated && caseID != "" {
+	if caseID != "" {
 		return s.verifyExistingCaseCompletion(ctx, tx, approvalID, caseID, nil, caseData)
 	}
 	tracking, err := s.integrationRepo.GetLatestCaseCreationTracking(ctx, approvalID)
@@ -608,11 +666,7 @@ func (s *approvalConflictIntegrationService) verifyExistingCaseCompletion(ctx co
 		return nil, fmt.Errorf("读取正式案件失败：%w", err)
 	}
 	checkID := conflictCheckIDFromMetadata(caseData)
-	record, err := s.integrationRepo.GetConflictCheckRecord(ctx, checkID)
-	if err != nil {
-		return nil, fmt.Errorf("读取冲突复核记录失败：%w", err)
-	}
-	parties, err := buildReviewedParties(record)
+	parties, err := s.approvedCaseParties(ctx, tx, approvalID, checkID)
 	if err != nil {
 		return nil, err
 	}
@@ -635,6 +689,9 @@ func (s *approvalConflictIntegrationService) verifyExistingCaseCompletion(ctx co
 	}
 	if err := s.integrationRepo.UpdateApprovalCaseAssociation(ctx, approvalID, association); err != nil {
 		return nil, fmt.Errorf("正式案件已存在但审批关联回填失败，本次变更已回滚：%w", err)
+	}
+	if err := reconcileApprovalTransition(tx, &models.ApprovalRequest{ID: approvalID}); err != nil {
+		return nil, fmt.Errorf("成案待办交接失败，整体已回滚：%w", err)
 	}
 	if err := tx.Commit().Error; err != nil {
 		return nil, fmt.Errorf("成案校验事务提交失败：%w", err)
@@ -925,7 +982,7 @@ func (s *approvalConflictIntegrationService) GetIntegrationStatus(ctx context.Co
 		var metadata map[string]interface{}
 		if err := json.Unmarshal([]byte(approval.Metadata), &metadata); err == nil {
 			if integrationType, ok := metadata["integration_type"].(string); ok && (integrationType == "conflict" || integrationType == "both") {
-				checkID := approvalID
+				checkID := conflictCheckIDFromMetadata(metadata)
 				hasConflict := false
 				riskLevel := ""
 
@@ -942,12 +999,20 @@ func (s *approvalConflictIntegrationService) GetIntegrationStatus(ctx context.Co
 					}
 				}
 
+				lastChecked := time.Time{}
+				if record, err := s.integrationRepo.GetConflictCheckRecord(ctx, checkID); err != nil {
+					return nil, err
+				} else if record != nil {
+					hasConflict = record.HasConflict
+					riskLevel = record.RiskLevel
+					lastChecked = record.CheckTime
+				}
 				status.ConflictCheck = &ConflictCheckStatus{
 					Status:      "completed",
 					CheckID:     checkID,
 					HasConflict: hasConflict,
 					RiskLevel:   riskLevel,
-					LastChecked: time.Now(),
+					LastChecked: lastChecked,
 				}
 			}
 
@@ -1002,6 +1067,16 @@ func (s *approvalConflictIntegrationService) ProcessApprovalWithConflict(ctx con
 	}
 	if approval == nil {
 		return nil, gorm.ErrRecordNotFound
+	}
+
+	if err := authorizeApprovalSubject(s.db.WithContext(ctx), userID, approval); err != nil {
+		return nil, err
+	}
+	if err := ApplyApprovalSubmission(s.db.WithContext(ctx), approval); err != nil {
+		return nil, err
+	}
+	if err := validateApprovalDecisionVersion(approval, decisionReq); err != nil {
+		return nil, err
 	}
 
 	requiresCaseCreation := RequiresCaseCreationApproval(approval)
@@ -1418,7 +1493,7 @@ func (s *approvalConflictIntegrationService) buildCaseDataForApprovedApproval(ct
 		// row instead of failing the approve preflight with CASE_DATA_INVALID
 		// (reproduced on approval 18d6e90c26b417d8). Nothing is invented:
 		// an intake without those facts still fails validation downstream.
-		if missingText(caseData["case_type"]) || missingText(caseData["priority"]) {
+		if approval.ActiveSubmissionSnapshotID == nil && (missingText(caseData["case_type"]) || missingText(caseData["priority"])) {
 			var intake struct {
 				CaseType string
 				Priority string

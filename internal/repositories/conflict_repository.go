@@ -143,6 +143,7 @@ func CommitIntakeConflictResult(
 	response *models.ConflictCheckResponse,
 	association ConflictSubjectAssociation,
 	expectedFactsConfirmedAt string,
+	handoffs ...func(*gorm.DB, string) error,
 ) error {
 	if db == nil {
 		return errors.New("冲突检测提交服务未初始化")
@@ -253,6 +254,13 @@ func CommitIntakeConflictResult(
 		if response != nil && tx.Migrator().HasTable((&models.ConflictSubjectVersion{}).TableName()) {
 			if err := writeConflictP0Evidence(tx, record.CheckID, subjects, response); err != nil {
 				return err
+			}
+		}
+		for _, handoff := range handoffs {
+			if handoff != nil {
+				if err := handoff(tx, record.CheckID); err != nil {
+					return err
+				}
 			}
 		}
 		return nil

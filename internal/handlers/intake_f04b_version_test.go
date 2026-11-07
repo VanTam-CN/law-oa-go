@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -86,9 +87,9 @@ func (s *stubF04BConflictService) PerformConflictCheck(ctx context.Context, r *m
 }
 
 func (s *stubF04BConflictService) PrepareConflictCheck(ctx context.Context, r *models.ConflictCheckRequest) (*models.ConflictCheckResponse, error) {
-	s.calls++
+	call := atomic.AddInt32(&s.calls, 1)
 	return &models.ConflictCheckResponse{
-		CheckID: "CCT-F04B-" + fmt.Sprintf("%d", s.calls), HasConflict: false,
+		CheckID: "CCT-F04B-" + fmt.Sprintf("%d", call), HasConflict: false,
 		ConflictCases:   []*models.ConflictCase{},
 		RiskAssessment:  &models.RiskAssessment{OverallRisk: "LOW", RiskScore: 0, RiskReason: "OK", RequiresApproval: false, RiskFactors: []string{}, Mitigation: []string{}},
 		CheckStatistics: &models.CheckStatistics{}, Recommendations: []string{},

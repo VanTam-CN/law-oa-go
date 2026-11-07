@@ -693,12 +693,13 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client) {
 		{
 			inbox := protected.Group("/inbox")
 			{
-				inbox.GET("", inboxHandler.ListInboxItems)               // 获取待办列表
-				inbox.GET("/stats", inboxHandler.GetInboxStats)          // 获取统计
-				inbox.GET("/:id", inboxHandler.GetInboxItem)             // 获取详情
-				inbox.POST("", inboxHandler.CreateInboxItem)             // 创建待办
-				inbox.PUT("/:id", inboxHandler.UpdateInboxItem)          // 更新待办
-				inbox.DELETE("/:id", inboxHandler.DeleteInboxItem)       // 删除待办
+				inbox.GET("", inboxHandler.ListInboxItems)         // 获取待办列表
+				inbox.GET("/stats", inboxHandler.GetInboxStats)    // 获取统计
+				inbox.GET("/:id", inboxHandler.GetInboxItem)       // 获取详情
+				inbox.POST("", inboxHandler.CreateInboxItem)       // 创建待办
+				inbox.PUT("/:id", inboxHandler.UpdateInboxItem)    // 更新待办
+				inbox.DELETE("/:id", inboxHandler.DeleteInboxItem) // 删除待办
+				inbox.PUT("/:id/archive", inboxHandler.ArchiveInboxItem)
 				inbox.PUT("/:id/read", inboxHandler.MarkAsRead)          // 标记已读
 				inbox.PUT("/:id/complete", inboxHandler.MarkAsCompleted) // 标记完成
 				inbox.PUT("/:id/snooze", inboxHandler.SnoozeInboxItem)   // 延后待办

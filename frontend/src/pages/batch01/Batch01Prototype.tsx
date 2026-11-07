@@ -1,3 +1,4 @@
+import { allowsSnapshotFreeDecision, approvalCreatesCase } from '@/services/approvalPresentation'
 import React from 'react'
 import {
   Avatar,
@@ -54,6 +55,18 @@ import { message } from '@/utils/messageHelper'
 import { useAppStore } from '@/stores/useAppStore'
 import { canAccess, hasPermission } from '@/utils/accessControl'
 import { type IntakeCaseType } from './intake/caseTypeContract'
+import { apiRequest, ApiRequestError } from '@/services/collaborationRequest'
+export { ApiRequestError } from '@/services/collaborationRequest'
+import ClientCreateDialog from '@/components/client/ClientCreateDialog'
+import ClientSearchSelect from '@/components/client/ClientSearchSelect'
+import type { ClientSummary } from '@/services/client'
+import { intakeEditSignature, intakeSaveLabel, purgeIntakeIdentityCaches } from './intake/draftState'
+import DraftNavigationGuard from './intake/DraftNavigationGuard'
+import SupplementChecklist from './intake/SupplementChecklist'
+import { readBoundIntakeConflict } from './intake/conflictRecovery'
+import { currentSubmissionSnapshotID, latestSupplementReturn, objectFromJSON, resubmitIntakeApproval, saveSupplementResponses, supplementFields, type SupplementReturn, type SupplementResponse, type SupplementItem } from '@/services/intakeSupplement'
+import PersonalWorkQueue from '@/components/workflow/PersonalWorkQueue'
+import WorkflowActions, { workflowActionsOf, type WorkflowAction } from '@/components/workflow/WorkflowActions'
 import './Batch01Prototype.less'
 
 type Tone = 'blue' | 'teal' | 'red' | 'orange' | 'green' | 'slate'
@@ -104,6 +117,8 @@ interface CommandCenterWorkflow {
 }
 
 interface CommandCenterTodo {
+  actions?: WorkflowAction[]
+  workflow_action?: WorkflowAction | null
   id?: string | number
   type?: string
   title?: string
@@ -115,6 +130,7 @@ interface CommandCenterTodo {
 }
 
 interface CommandCenterRiskItem {
+  intake_id?: string
   id?: string
   case_id?: string | number
   case_number?: string
@@ -266,26 +282,6 @@ interface ApiEnvelope<T> {
   data?: T
   error?: { message?: string; code?: string; context?: Record<string, unknown> } | string
   message?: string
-}
-
-// ApiRequestError carries the machine-readable error code and context so the
-// intake page can tell a lost-update 409 (INTAKE_DRAFT_REVISION_CONFLICT)
-// apart from any other failure without parsing strings.
-export class ApiRequestError extends Error {
-  status: number
-  code: string
-  context: Record<string, unknown>
-
-  constructor(
-    message: string,
-    options: { status: number; code: string; context?: Record<string, unknown> },
-  ) {
-    super(message)
-    this.name = "ApiRequestError"
-    this.status = options.status
-    this.code = options.code
-    this.context = options.context || {}
-  }
 }
 
 function listOf<T>(items: T[] | undefined | null): T[] {
@@ -1063,6 +1059,8 @@ function intakeFormFromServer(payload: Record<string, any>): IntakeFormState {
     priority: textValue(intake.priority, 'medium'),
     description: textValue(intake.description, ''),
     clientId: numberValue(intake.client_id, 0),
+    clientLocalId: textValue(recordValue(clientParty?.metadata).local_id || recordValue(clientParty?.metadata).localId, 'client'),
+    opponentLocalId: textValue(recordValue(opponentParty?.metadata).local_id || recordValue(opponentParty?.metadata).localId, 'opponent'),
     clientName:
       textValue(clientParty?.entity_name || clientParty?.entityName || recordValue(payload.client).name, ''),
     opponentName: textValue(fallbackParty?.entity_name || fallbackParty?.entityName, ''),
@@ -1083,6 +1081,8 @@ function settingEnabled(row: Record<string, unknown>) {
 }
 
 export interface IntakeFormState {
+  clientLocalId?: string
+  opponentLocalId?: string
   intakeId: string
   intakeCode: string
   idempotencyKey: string
@@ -1140,7 +1140,7 @@ export const firstRunGuidance = {
   requiredChecklist: Object.values(conflictCheckRequiredFieldLabels),
   nextStep: '先完成上述最小必填项，再点击“保存最新输入并检测”。其余资料可后续补充。',
   restoreNotice:
-    '为保护当事人隐私，本机草稿不保留对方身份标识；恢复后请重新填写，再运行利益冲突检查。',
+    '为保护当事人隐私，本机草稿不保留对方身份标识；服务端已登记且未变更的身份可继续使用，未登记或变更时请重新填写。',
   saveFailure:
     '草稿暂存失败，已填写内容仍保留在本页。请检查网络后重试；若持续失败，请联系律所管理员。',
   help: {
@@ -1166,6 +1166,7 @@ export function getMissingConflictCheckFields(
     | 'businessArea'
     | 'subArea'
   >,
+  protectedOpponentIdentity = false,
 ): ConflictCheckRequiredField[] {
   const missing: ConflictCheckRequiredField[] = []
   if (!hasConflictCheckValue(form.title)) missing.push('title')
@@ -1173,7 +1174,7 @@ export function getMissingConflictCheckFields(
     missing.push('client')
   }
   if (!hasConflictCheckValue(form.opponentName)) missing.push('opponentName')
-  if (!hasConflictCheckValue(form.opponentIdentityNumber)) {
+  if (!hasConflictCheckValue(form.opponentIdentityNumber) && !protectedOpponentIdentity) {
     missing.push('opponentIdentityNumber')
   }
   if (!hasConflictCheckValue(form.lawyerId)) missing.push('lawyer')
@@ -1202,6 +1203,7 @@ function conflictCheckFieldForFormKey(
 }
 
 interface IntakeRelatedParty {
+  localId?: string
   name: string
   role: string
   entityType: string
@@ -1242,6 +1244,8 @@ interface IntakeRuntimeState {
   }
   conflictTask?: any
   conflictInputFingerprint?: string
+  conflictDraftSignature?: string
+  protectedOpponentFingerprint?: string
   approval?: any
   integrationStatus?: any
   apiTimings: Array<{ label: string; duration: number; at: string }>
@@ -1374,6 +1378,8 @@ function loadCaseIntakeDraft(draftKey: string): IntakeFormState | null {
 export function buildIntakePartyRows(
   form: Pick<
     IntakeFormState,
+    | 'clientLocalId'
+    | 'opponentLocalId'
     | 'clientId'
     | 'clientName'
     | 'opponentName'
@@ -1395,7 +1401,7 @@ export function buildIntakePartyRows(
       entity_type: clientEntityType,
       party_role: 'client',
       relation_depth: 0,
-      metadata: { party_type: 'client' },
+      metadata: { party_type: 'client', local_id: form.clientLocalId || 'client' },
     },
     {
       entity_name: form.opponentName,
@@ -1405,7 +1411,7 @@ export function buildIntakePartyRows(
       identity_type: form.opponentIdentityType,
       identity_number: form.opponentIdentityNumber,
       aliases: form.opponentAliases,
-      metadata: { party_type: 'opposing_party' },
+      metadata: { party_type: 'opposing_party', local_id: form.opponentLocalId || 'opponent' },
     },
     // A blank row is not a party: restoring a draft whose opponent was never
     // filled must not send an empty entity_name (the server rejects it with
@@ -1421,7 +1427,7 @@ export function buildIntakePartyRows(
         relation_depth: numberValue(party.depth, 1),
         identity_type: party.identityType,
         identity_number: party.identityNumber,
-        metadata: { party_type: party.role },
+        metadata: { party_type: party.role, ...(party.localId ? { local_id: party.localId } : {}) },
       })),
   ]
   // Blank names never reach the server: a restored draft whose client or
@@ -1488,6 +1494,7 @@ export function intakeDraftFromServer(payload: Record<string, any>): IntakeDraft
     .map((party: any) => {
       const partyMetadata = recordValue(party.metadata)
       return {
+        localId: textValue(party.local_id || partyMetadata.local_id || partyMetadata.localId, '') || undefined,
         name: textValue(party.entity_name || party.entityName, ''),
         role: textValue(partyMetadata.party_type || partyMetadata.role, '') || '待确认',
         entityType: textValue(party.entity_type || party.entityType, '') || 'LEGAL_PERSON',
@@ -1619,31 +1626,6 @@ function normalizeCaseRows(data: any): Record<string, unknown>[] {
     : data?.cases || data?.list || data?.data?.cases || data?.data?.list || data?.data || []
 
   return Array.isArray(rows) ? rows : []
-}
-
-async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = getToken()
-  const isFormData = options.body instanceof FormData
-  const response = await fetch(`/api/v1${path}`, {
-    ...options,
-    headers: {
-      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options.headers || {}),
-    },
-  })
-  const body = (await response.json().catch(() => ({}))) as ApiEnvelope<T>
-  if (!response.ok || body.success === false) {
-    const error =
-      body.message || (typeof body.error === 'string' ? body.error : body.error?.message)
-    const errorBody = typeof body.error === 'object' && body.error !== null ? body.error : null
-    throw new ApiRequestError(error || `API 请求失败：${response.status}`, {
-      status: response.status,
-      code: textValue(errorBody?.code, ''),
-      context: errorBody?.context || {},
-    })
-  }
-  return (body.data ?? body) as T
 }
 
 async function fetchCommandCenter(
@@ -1847,10 +1829,20 @@ export function DashboardCommandCenter() {
   const canViewApproval = canAccess(currentUserInfo, 'approval:view')
   const canViewFinance = canAccess(currentUserInfo, 'finance:view')
   const [commandCenter, setCommandCenter] = React.useState<CommandCenterPayload | null>(null)
+  const [apiRefreshKey, setApiRefreshKey] = React.useState(0)
+  const [recentDrafts, setRecentDrafts] = React.useState<any[]>([])
+  const [draftListError, setDraftListError] = React.useState('')
+  React.useEffect(() => {
+    setRecentDrafts([]); setDraftListError('')
+    if (!canCreateCase) return
+    const controller = new AbortController()
+    apiRequest<any>('/case-intakes?page=1&page_size=5', { signal: controller.signal }).then((data) => { if (!controller.signal.aborted) setRecentDrafts(listOf(data.items)) })
+      .catch((error) => { if (!controller.signal.aborted) setDraftListError(error instanceof Error ? error.message : '草稿读取失败') })
+    return () => controller.abort()
+  }, [canCreateCase, currentUserInfo?.id, apiRefreshKey])
   const [financeOverview, setFinanceOverview] = React.useState<FinanceOverviewPayload | null>(null)
   const [apiLoading, setApiLoading] = React.useState(false)
   const [apiError, setApiError] = React.useState(false)
-  const [apiRefreshKey, setApiRefreshKey] = React.useState(0)
   const [todoFilter, setTodoFilter] = React.useState('全部')
   const [globalSearchQuery, setGlobalSearchQuery] = React.useState('')
   const [globalSearchState, setGlobalSearchState] = React.useState<{
@@ -2087,7 +2079,7 @@ export function DashboardCommandCenter() {
           <span style={{ display: 'flex', gap: 8, marginTop: 8, justifyContent: 'flex-end' }}>
             <Badge color={apiError ? '#e8434e' : '#12a89d'} text='实时数据' />
             <Button size='small' onClick={refreshCommandCenter} loading={apiLoading}>
-              刷新接口
+              刷新
             </Button>
             {canCreateCase && (
               <Button
@@ -2102,6 +2094,18 @@ export function DashboardCommandCenter() {
           </span>
         </div>
       </header>
+
+      <div className='ng-grid'>
+        <PersonalWorkQueue key={currentUserInfo?.id} />
+      {canCreateCase && <SectionCard title='继续草稿'>
+        {draftListError && <Alert type='warning' message={draftListError} />}
+        <Space direction='vertical' style={{ width: '100%' }}>
+          {recentDrafts.map((draft) => <Button key={draft.id} onClick={() => navigate('/case/create?intake_id=' + encodeURIComponent(draft.id))}>{draft.title || '未命名草稿'} · 继续编辑</Button>)}
+          {!recentDrafts.length && !draftListError && <p>暂无可继续的草稿</p>}
+          <Button type='link' onClick={() => navigate('/case/create')}>查看全部草稿 / 新建立案</Button>
+        </Space>
+      </SectionCard>}
+      </div>
 
       <section className='ng-hero-search' style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
         <Input.Search
@@ -2159,97 +2163,9 @@ export function DashboardCommandCenter() {
         })}
       </div>
 
+
+
       <div className='ng-grid'>
-        <section className='ng-panel'>
-          <header className='ng-panel-head'>
-            <div className='ng-panel-title'>
-              我的待办
-              <span className='count'>{unreadInbox}</span>
-            </div>
-            <div className='ng-panel-actions'>
-              <button
-                type='button'
-                className={`ng-chip ${todoFilter === '全部' ? 'active' : ''}`}
-                onClick={() => setTodoFilter('全部')}
-              >
-                全部
-              </button>
-              <button
-                type='button'
-                className={`ng-chip ${todoFilter === '紧急' ? 'active' : ''}`}
-                onClick={() => setTodoFilter('紧急')}
-              >
-                紧急 {urgentTodoCount}
-              </button>
-              <button
-                type='button'
-                className={`ng-chip ${todoFilter === '审批' ? 'active' : ''}`}
-                onClick={() => setTodoFilter('审批')}
-              >
-                审批 {approvalTodoCount}
-              </button>
-              <button
-                type='button'
-                className={`ng-chip ${todoFilter === '任务' ? 'active' : ''}`}
-                onClick={() => setTodoFilter('任务')}
-              >
-                任务
-              </button>
-            </div>
-          </header>
-          <div className='ng-todo-list'>
-            {filteredTodoItems.map((item) => {
-              const rawType = textValue(item.type || item.source_type, '').toLowerCase()
-              const markCls = ['approval', 'approval_request'].includes(rawType)
-                ? 'approval'
-                : rawType.includes('conflict')
-                  ? 'conflict'
-                  : rawType.includes('deadline')
-                    ? 'deadline'
-                    : 'doc'
-              const pri = textValue(item.priority, '').toLowerCase()
-              const urgCls = ['critical', 'high'].includes(pri)
-                ? 'now'
-                : pri === 'medium'
-                  ? 'today'
-                  : 'soon'
-              const markText = workItemTypeLabel(item.type || item.source_type).slice(0, 1)
-              return (
-                <div key={item.id || item.title} className='ng-todo-item'>
-                  <div className={`ng-todo-mark ${markCls}`}>{markText}</div>
-                  <div className='ng-todo-body'>
-                    <div className='ng-todo-title'>{textValue(item.title)}</div>
-                    <div className='ng-todo-desc'>{textValue(item.content, '—')}</div>
-                    <div className='ng-todo-foot'>
-                      <span>{workItemTypeLabel(item.source_type)}</span>
-                      <span className={`ng-urgency ${urgCls}`}>
-                        截止 {formatApiDate(item.due_at)}
-                      </span>
-                      <RiskTag text={priorityLabel(item.priority)} />
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-            {filteredTodoItems.length === 0 && (
-              <div className='ng-todo-item'>
-                <div className='ng-todo-body'>
-                  <div className='ng-todo-desc'>
-                    {todoItems.length === 0 ? '暂无数据库待办' : `暂无${todoFilter}待办`}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-          <Button
-            type='link'
-            aria-label='查看全部待办'
-            onClick={() => navigate('/inbox')}
-            style={{ margin: '8px 22px' }}
-          >
-            查看全部待办
-          </Button>
-        </section>
 
         <section className='ng-panel'>
           <header className='ng-panel-head'>
@@ -2517,15 +2433,6 @@ export function ClientMasterProfile() {
   const [profile, setProfile] = React.useState<any>(null)
   const [loading, setLoading] = React.useState(false)
   const [createClientOpen, setCreateClientOpen] = React.useState(false)
-  const [creatingClient, setCreatingClient] = React.useState(false)
-  const [clientDraft, setClientDraft] = React.useState({
-    name: '',
-    type: '企业',
-    identityNumber: '',
-    phone: '',
-    email: '',
-    address: '',
-  })
   const [contactModalOpen, setContactModalOpen] = React.useState(false)
   const [uploadModalOpen, setUploadModalOpen] = React.useState(false)
   const [contactSaving, setContactSaving] = React.useState(false)
@@ -2573,47 +2480,13 @@ export function ClientMasterProfile() {
       .toLowerCase()
       .includes(clientSearch.trim().toLowerCase()),
   )
-  const openCreateClient = () => {
-    setClientDraft({ name: '', type: '企业', identityNumber: '', phone: '', email: '', address: '' })
-    setCreateClientOpen(true)
-  }
-  const createClient = async () => {
-    if (!clientDraft.name.trim()) {
-      message.warning('请先填写客户名称')
-      return
-    }
-    if (!clientDraft.identityNumber.trim()) {
-      message.warning(
-        clientDraft.type === '企业' ? '请填写统一社会信用代码' : '请填写身份证件号码',
-      )
-      return
-    }
-    setCreatingClient(true)
-    try {
-      const createdClient = await apiRequest<any>('/clients', {
-        method: 'POST',
-        body: JSON.stringify({
-          ...clientDraft,
-          identity_type:
-            clientDraft.type === '企业' ? 'SOCIAL_CREDIT_CODE' : 'ID_CARD',
-          identity_number: clientDraft.identityNumber.trim(),
-          identityNumber: undefined,
-        }),
-      })
-      message.success('客户已创建')
-      setCreateClientOpen(false)
-      const data = await apiRequest<any>('/clients?page=1&page_size=20')
-      const rows = listOf<any>(data?.clients || data?.list || data)
-      setClientRows(rows)
-      if (createdClient?.id) {
-		setClientTab('基本信息')
-        setSelectedClientId(createdClient.id)
-      }
-    } catch (error) {
-      message.error(error instanceof Error ? error.message : '新增客户失败')
-    } finally {
-      setCreatingClient(false)
-    }
+  const openCreateClient = () => setCreateClientOpen(true)
+  const clientCreated = (client: ClientSummary) => {
+    setClientRows((rows) => [client, ...rows.filter((row) => row.id !== client.id)])
+    setSelectedClientId(client.id)
+    setClientTab('基本信息')
+    setCreateClientOpen(false)
+    message.success('客户已建档')
   }
   const openContactModal = () => {
 	const legacyContact = Boolean(primaryContact?.legacy)
@@ -3100,80 +2973,7 @@ export function ClientMasterProfile() {
           </main>
         </div>
 
-        <Modal
-          title='新增客户'
-          open={createClientOpen}
-          onCancel={() => setCreateClientOpen(false)}
-          onOk={createClient}
-          confirmLoading={creatingClient}
-          okText='保存客户'
-          cancelText='取消'
-        >
-          <div className='batch-client-create-form'>
-            <div className='batch-client-create-field'>
-              <span>客户类型 *</span>
-              <Select
-                value={clientDraft.type}
-                options={[
-                  { value: '企业', label: '企业' },
-                  { value: '个人', label: '个人' },
-                ]}
-                onChange={(value) => setClientDraft((current) => ({ ...current, type: value }))}
-              />
-            </div>
-            <div className='batch-client-create-field'>
-              <span>客户名称 *</span>
-              <Input
-                value={clientDraft.name}
-                onChange={(event) =>
-                  setClientDraft((current) => ({ ...current, name: event.target.value }))
-                }
-                placeholder='请输入客户名称'
-              />
-            </div>
-            <div className='batch-client-create-field'>
-              <span>{clientDraft.type === '企业' ? '统一社会信用代码 *' : '身份证件号码 *'}</span>
-              <Input.Password
-                value={clientDraft.identityNumber}
-                onChange={(event) =>
-                  setClientDraft((current) => ({ ...current, identityNumber: event.target.value }))
-                }
-                placeholder={clientDraft.type === '企业' ? '按营业执照填写' : '按身份证件填写'}
-                autoComplete='off'
-              />
-            </div>
-            <div className='batch-client-create-field'>
-              <span>联系电话</span>
-              <Input
-                value={clientDraft.phone}
-                onChange={(event) =>
-                  setClientDraft((current) => ({ ...current, phone: event.target.value }))
-                }
-                placeholder='请输入联系电话'
-              />
-            </div>
-            <div className='batch-client-create-field'>
-              <span>电子邮箱</span>
-              <Input
-                value={clientDraft.email}
-                onChange={(event) =>
-                  setClientDraft((current) => ({ ...current, email: event.target.value }))
-                }
-                placeholder='请输入电子邮箱'
-              />
-            </div>
-            <div className='batch-client-create-field'>
-              <span>联系地址</span>
-              <Input
-                value={clientDraft.address}
-                onChange={(event) =>
-                  setClientDraft((current) => ({ ...current, address: event.target.value }))
-                }
-                placeholder='请输入联系地址'
-              />
-            </div>
-          </div>
-        </Modal>
+        <ClientCreateDialog open={createClientOpen} onCancel={() => setCreateClientOpen(false)} onCreated={clientCreated} />
       </div>
     </div>
   )
@@ -4376,6 +4176,13 @@ export function CaseDetailCenter() {
 }
 
 export function CaseIntakeWorkbench() {
+  const owner = useAppStore((state) => state.user?.id) || getUserInfo()?.id || 'anonymous'
+  const [params] = useSearchParams()
+  // Each account/URL identifies a distinct editing session, including blank new intake.
+  return <CaseIntakeSession key={String(owner) + ':' + params.toString()} />
+}
+
+function CaseIntakeSession() {
   const navigate = useNavigate()
   const { user: activeUser } = useAppStore()
   const isAssistant =
@@ -4386,15 +4193,36 @@ export function CaseIntakeWorkbench() {
   const [searchParams] = useSearchParams()
   const contextCaseID = searchParams.get('case_id') || ''
   const requestedClientID = numberValue(searchParams.get('client_id'), 0)
+  const requestedIntakeID = searchParams.get('intake_id') || ''
+  const requestedApprovalID = searchParams.get('approval_id') || ''
+  const isRevisionMode = searchParams.get('mode') === 'revision'
+  const [revisionApproval, setRevisionApproval] = React.useState<Record<string, any> | null>(null)
+  const [supplementReturn, setSupplementReturn] = React.useState<SupplementReturn | null>(null)
+  const [supplementResponses, setSupplementResponses] = React.useState<SupplementResponse[]>([])
+  const [savedReplySignature, setSavedReplySignature] = React.useState('[]')
+  const [replySaving, setReplySaving] = React.useState(false)
+  const [revisionNote, setRevisionNote] = React.useState('')
+  const replySavingRef = React.useRef(false)
+  const replySignature = JSON.stringify(supplementResponses)
+  const replySignatureRef = React.useRef(replySignature)
+  replySignatureRef.current = replySignature
+  const repliesDirty = replySignature !== savedReplySignature
   const isSupplementMode = searchParams.get('mode') === 'supplement' && Boolean(contextCaseID)
-  const currentUserID = textValue(getUserInfo()?.id, 'anonymous')
+  const currentUserID = textValue(activeUser?.id || getUserInfo()?.id, 'anonymous')
+  const restoreGeneration = React.useRef(0)
+  const sessionMounted = React.useRef(true)
+  React.useEffect(() => {
+    sessionMounted.current = true
+    return () => { sessionMounted.current = false; ++restoreGeneration.current }
+  }, [])
+  const requestOwner = React.useRef(currentUserID)
+  requestOwner.current = currentUserID
+  const assertCurrentOwner = () => {
+    if (!sessionMounted.current || requestOwner.current !== currentUserID) throw new Error('账号已切换，请重新读取当前账号的草稿')
+  }
   const newIntakeIdempotencyKey = React.useRef(
     `case-intake-${currentUserID}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
   )
-  // Synchronous mirror of form.revision: createIntake rotates the revision
-  // right before runConflictCheck consumes it in the same task. A state
-  // read inside this closure would still see the pre-save token and cause a
-  // false 409 on facts confirmation.
   // Synchronous mirror of form.revision: createIntake rotates the revision
   // right before runConflictCheck consumes it in the same task. A state
   // read inside this closure would still see the pre-save token and cause a
@@ -4404,6 +4232,7 @@ export function CaseIntakeWorkbench() {
     () => scopedCaseIntakeDraftKey(currentUserID, isSupplementMode ? contextCaseID : undefined),
     [contextCaseID, currentUserID, isSupplementMode],
   )
+  const [formOwner, setFormOwner] = React.useState(currentUserID)
   const [localStorageDraft, setLocalStorageDraft] = React.useState<IntakeFormState | null>(() =>
     loadCaseIntakeDraft(draftKey),
   )
@@ -4421,10 +4250,20 @@ export function CaseIntakeWorkbench() {
     currentRevision: string
   } | null>(null)
   const [draftActive, setDraftActive] = React.useState(false)
+  const [savePhase, setSavePhase] = React.useState<'unsaved' | 'saving' | 'saved' | 'error'>('unsaved')
+  const [savedAt, setSavedAt] = React.useState('')
+  const [savedSignature, setSavedSignature] = React.useState('')
+  const savingRef = React.useRef(false)
+  const allowNavigation = React.useRef(false)
+  const [restoreLoading, setRestoreLoading] = React.useState(Boolean(requestedIntakeID))
+  const [restoreError, setRestoreError] = React.useState('')
+  const [conflictRestoreError, setConflictRestoreError] = React.useState('')
+  const [inlineClientOpen, setInlineClientOpen] = React.useState(false)
+  const [createdClientNotice, setCreatedClientNotice] = React.useState(false)
   const [sourceCase, setSourceCase] = React.useState<Record<string, any> | null>(null)
 
-  // Server drafts restore only the minimal field set: identity values stay
-  // protected server-side and are re-entered before the conflict check.
+  // Identity values stay protected server-side. An unchanged restored party
+  // can reuse its registered identity without sending it back to the browser.
   const serverDraft: IntakeFormState | null = serverDrafts.length
     ? serverDrafts[0]
     : null
@@ -4451,13 +4290,40 @@ export function CaseIntakeWorkbench() {
   const [tagDraft, setTagDraft] = React.useState('')
   const [clientOptions, setClientOptions] = React.useState<ClientOption[]>([])
   const [lawyerOptions, setLawyerOptions] = React.useState<LawyerOption[]>([])
+  const editSignature = intakeEditSignature({ ...form }, relatedParties, caseTags)
+  const editSignatureRef = React.useRef(editSignature)
+  editSignatureRef.current = editSignature
+  const hasUnsavedChanges = draftActive && editSignature !== savedSignature
+  const saveState = savePhase === 'saving' || savePhase === 'error' ? savePhase : hasUnsavedChanges || repliesDirty || !savedSignature ? 'unsaved' : 'saved'
+  const mergeClient = (client: ClientSummary) => {
+    setClientOptions((rows) => [...rows.filter((row) => row.id !== client.id), ...normalizeClientOptions([client])])
+    setDraftActive(true)
+    setForm((current) => ({ ...current, clientId: client.id, clientName: client.name }))
+  }
+  const markRestored = (restored: IntakeDraftRestore, updatedAt?: unknown) => {
+    setSavedSignature(intakeEditSignature({ ...restored.form }, restored.relatedParties, restored.caseTags))
+    setSavePhase('saved')
+    const time = updatedAt ? new Date(String(updatedAt)) : null
+    setSavedAt(time && !Number.isNaN(time.getTime()) ? time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '')
+  }
+  React.useEffect(() => {
+    if (!form.clientId || clientOptions.some((client) => client.id === form.clientId)) return
+    let active = true
+    apiRequest<ClientSummary>('/clients/' + form.clientId).then((client) => {
+      if (active) setClientOptions((rows) => [...rows.filter((row) => row.id !== client.id), ...normalizeClientOptions([client])])
+    }).catch(() => { if (active) setRestoreError('关联客户读取失败，请重试后再保存') })
+    return () => { active = false }
+  }, [form.clientId, clientOptions])
 
   const conflictInputFingerprint = React.useMemo(
     () => caseIntakeConflictFingerprint(form, relatedParties),
     [form, relatedParties],
   )
+  const opponentFingerprint = (value: IntakeFormState) => JSON.stringify([value.opponentName.trim(), value.opponentEntityType, value.opponentIdentityType, value.opponentAliases.trim()])
+  const hasProtectedOpponentIdentity = runtime.protectedOpponentFingerprint === opponentFingerprint(form)
   const isConflictResultStale = Boolean(
-    runtime.conflict && runtime.conflictInputFingerprint !== conflictInputFingerprint,
+    runtime.conflict && (runtime.conflictInputFingerprint !== conflictInputFingerprint ||
+      (runtime.conflictDraftSignature !== undefined && runtime.conflictDraftSignature !== editSignature)),
   )
   const conflictTaskIDForReview = textValue(
     runtime.conflict?.record?.id ||
@@ -4514,13 +4380,29 @@ export function CaseIntakeWorkbench() {
     conflictCheckMissingSet.has(field) ? '运行利益冲突检查前必须填写' : undefined
 
   React.useEffect(() => {
+    if (formOwner === currentUserID) return
+    setFormOwner(currentUserID)
+    savingRef.current = false; replySavingRef.current = false; allowNavigation.current = false
+    setSubmitting(false); setReplySaving(false); setRevisionConflict(null)
+    setForm({ ...defaultIntakeForm })
+    setRelatedParties([]); setCaseTags([]); setRuntime({ apiTimings: [] })
+    setServerDrafts([]); setClientOptions([]); setDraftActive(false)
+    setSavedSignature(''); setSavedAt(''); setSavePhase('unsaved')
+    setLocalStorageDraft(loadCaseIntakeDraft(draftKey))
+    setSupplementResponses([]); setSavedReplySignature('[]'); setRevisionNote('')
+    setInlineClientOpen(false); setCreatedClientNotice(false)
+    newIntakeIdempotencyKey.current = 'case-intake-' + currentUserID + '-' + crypto.randomUUID()
+  }, [currentUserID, formOwner, draftKey])
+
+  React.useEffect(() => {
     window.localStorage.removeItem(legacyCaseIntakeDraftKey)
+    purgeIntakeIdentityCaches(window.localStorage)
   }, [])
 
   React.useEffect(() => {
-    if (!draftActive) return
+    if (!draftActive || formOwner !== currentUserID) return
     window.localStorage.setItem(draftKey, JSON.stringify(persistableCaseIntakeDraft(form)))
-  }, [draftActive, draftKey, form])
+  }, [draftActive, draftKey, form, formOwner, currentUserID])
 
   React.useEffect(() => {
     if (isAssistant) return
@@ -4587,7 +4469,7 @@ export function CaseIntakeWorkbench() {
     return () => {
       mounted = false
     }
-  }, [isAssistant, requestedClientID])
+  }, [isAssistant, requestedClientID, currentUserID])
 
   // Saved-and-exited drafts live on the server, so a fresh session or device
   // can rediscover them even without the localStorage entry.
@@ -4596,10 +4478,11 @@ export function CaseIntakeWorkbench() {
   // selectable instead of silently showing only the newest entry.
   const loadServerDrafts = React.useCallback(
     (page: number, append: boolean) => {
-      if (isAssistant || isSupplementMode) return
+      if (isAssistant || isSupplementMode || isRevisionMode) return
       setServerDraftsLoading(true)
       apiRequest<any>(`/case-intakes?page=${page}&page_size=10`)
         .then((payload) => {
+          if (requestOwner.current !== currentUserID) return
           const rows = Array.isArray(payload?.items)
             ? payload.items
             : Array.isArray(payload)
@@ -4622,13 +4505,52 @@ export function CaseIntakeWorkbench() {
         .catch(() => {
           // Discovery is best-effort: the page stays usable without it.
         })
-        .finally(() => setServerDraftsLoading(false))
+        .finally(() => { if (requestOwner.current === currentUserID) setServerDraftsLoading(false) })
     },
-    [isAssistant, isSupplementMode],
+    [isAssistant, isSupplementMode, isRevisionMode, currentUserID],
   )
   React.useEffect(() => {
     loadServerDrafts(1, false)
   }, [loadServerDrafts])
+
+  React.useEffect(() => {
+    if (isRevisionMode && (!requestedIntakeID || !requestedApprovalID)) {
+      setRestoreError('补正入口缺少接案或审批编号，请从审批详情重新进入')
+      setRestoreLoading(false)
+      return
+    }
+    if (!requestedIntakeID || isAssistant) return
+    const ticket = beginRestore()
+    setRestoreLoading(true)
+    setRestoreError('')
+    Promise.all([
+      apiRequest<any>('/case-intakes/' + encodeURIComponent(requestedIntakeID)),
+      isRevisionMode ? apiRequest<any>('/approvals/' + encodeURIComponent(requestedApprovalID)) : Promise.resolve(null),
+    ]).then(async ([payload, approval]) => {
+      if (!mayApplyRestore(ticket)) return
+      if (isRevisionMode) {
+        const linkedIntake = String(approval?.intake_id || objectFromJSON(approval?.metadata).intake_id || '')
+        if (approval?.status !== 'needs_revision' || linkedIntake !== requestedIntakeID) throw new Error('审批状态或关联接案已变化，请返回审批详情刷新')
+        const returned = latestSupplementReturn(approval)
+        if (!returned) throw new Error('无法确定本轮退回记录，请返回审批详情核对')
+        const snapshot = await apiRequest<any>('/approvals/' + encodeURIComponent(requestedApprovalID) + '/snapshot')
+        if (!mayApplyRestore(ticket)) return
+        const submissionSnapshotID = currentSubmissionSnapshotID(snapshot)
+        setRevisionApproval({ ...approval, submissionSnapshotID })
+        setSupplementReturn(returned)
+        const saved = payload.supplement_responses || objectFromJSON(payload.intake?.metadata).supplement_responses || []
+        const savedRecord = String(payload.return_record_id || objectFromJSON(payload.intake?.metadata).supplement_return_record_id || objectFromJSON(payload.intake?.metadata).return_record_id || '')
+        const replies = savedRecord === returned.recordId && Array.isArray(saved) ? saved.filter((reply: SupplementResponse) => returned.items.some((item) => item.item_id === reply.item_id)) : []
+        setSupplementResponses(replies)
+        setSavedReplySignature(JSON.stringify(replies))
+      }
+      const restored = intakeDraftFromServer(payload)
+      await applyServerDraft(payload, restored, ticket)
+    }).catch((error) => { if (restoreIsCurrent(ticket)) setRestoreError(error instanceof Error ? error.message : '草稿恢复失败') })
+      .finally(() => { if (restoreIsCurrent(ticket)) setRestoreLoading(false) })
+    return () => { ++restoreGeneration.current }
+    // The URL identifies the server draft; user edits never trigger a reload.
+  }, [requestedIntakeID, requestedApprovalID, isRevisionMode, currentUserID, isAssistant])
 
   const recordTiming = (label: string, startedAt: number) => {
     setRuntime((current) => ({
@@ -4717,7 +4639,7 @@ export function CaseIntakeWorkbench() {
     }
   }
 
-  const createIntake = async () => {
+  const persistIntake = async () => {
     if (!isAssistant && (!form.clientId || !form.clientName || !form.lawyerId)) {
       throw new Error('请先选择数据库中的客户和负责律师')
     }
@@ -4735,6 +4657,7 @@ export function CaseIntakeWorkbench() {
         body: JSON.stringify(buildIntakePayload()),
       },
     )
+    assertCurrentOwner()
     // Keep the page on the server-owned revision chain: the saved row
     // carries the new token, and any conflict banner from a previous
     // failed attempt is cleared because this save just succeeded.
@@ -4749,7 +4672,7 @@ export function CaseIntakeWorkbench() {
     setRevisionConflict(null)
     const intake = existingIntakeID ? { ...runtime.intake, ...saved, id: existingIntakeID } : saved
     recordTiming(existingIntakeID ? '更新接案' : '创建接案', startedAt)
-    setRuntime((current) => ({ ...current, intake }))
+    setRuntime((current) => ({ ...current, intake, ...(current.conflict ? { conflictInputFingerprint: undefined, conflictDecisionExtras: undefined } : {}) }))
     setDraftActive(true)
     setForm((current) => ({
       ...current,
@@ -4762,6 +4685,108 @@ export function CaseIntakeWorkbench() {
         : `接案草稿已创建：${intake.intake_code}`,
     )
     return intake
+  }
+
+  const createIntake = async () => {
+    if (savingRef.current || replySavingRef.current) throw new Error('正在保存，请稍候')
+    if (restoreLoading || restoreError) throw new Error(restoreError || '正在恢复草稿，请稍候')
+    const signature = editSignatureRef.current
+    savingRef.current = true
+    setSavePhase('saving')
+    try {
+      const saved = await persistIntake()
+      setSavedSignature(signature)
+      setSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
+      setSavePhase('saved')
+      setCreatedClientNotice(false)
+      return saved
+    } catch (error) {
+      if (requestOwner.current === currentUserID) setSavePhase('error')
+      throw error
+    } finally { if (requestOwner.current === currentUserID) savingRef.current = false }
+  }
+  const persistReplies = async () => {
+    if (!isRevisionMode || !supplementReturn || !repliesDirty) return
+    if (replySavingRef.current || savingRef.current) throw new Error('正在保存，请稍候')
+    if (restoreError || restoreLoading) throw new Error(restoreError || '正在读取补正资料')
+    const signature = replySignatureRef.current
+    replySavingRef.current = true
+    setReplySaving(true)
+    setSavePhase('saving')
+    try {
+      const saved = await saveSupplementResponses(form.intakeId, requestedApprovalID, formRevisionRef.current, supplementReturn.recordId, supplementResponses)
+      assertCurrentOwner()
+      if (!saved.revision) throw new Error('保存响应缺少草稿版本，请重新读取后核对')
+      formRevisionRef.current = String(saved.revision)
+      setForm((current) => ({ ...current, revision: String(saved.revision) }))
+      setSavedReplySignature(signature)
+      setSavePhase('saved')
+      setSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
+      message.success('逐项回复已保存')
+    } catch (error) { if (requestOwner.current === currentUserID) { setSavePhase('error'); handleIntakeSaveError(error) } throw error }
+    finally { if (requestOwner.current === currentUserID) { replySavingRef.current = false; setReplySaving(false) } }
+  }
+  const saveCurrent = async () => {
+    if (!form.intakeId || hasUnsavedChanges) await createIntake()
+    await persistReplies()
+  }
+  const saveBeforeLeaving = async () => {
+    const signature = editSignatureRef.current
+    const replies = replySignatureRef.current
+    try { await saveCurrent() } catch (error) { handleIntakeSaveError(error); throw error }
+    if (signature !== editSignatureRef.current || replies !== replySignatureRef.current) throw new Error('保存期间又有修改，请再次保存后离开')
+    if (revisionNote.trim()) throw new Error('修改说明随重新提交保存；请先重新提交，或选择直接离开')
+  }
+  const resubmitRevision = async () => {
+    if (!revisionApproval || !supplementReturn || submitting || savingRef.current || replySavingRef.current) return
+    if (supplementReturn.items.some((item) => item.required !== false && !supplementResponses.find((reply) => reply.item_id === item.item_id)?.response.trim())) {
+      message.warning('请逐项填写本轮补正回复'); return
+    }
+    if (!revisionNote.trim()) { message.warning('请填写本轮修改说明'); return }
+    setSubmitting(true)
+    const facts = editSignatureRef.current
+    const replies = replySignatureRef.current
+    try {
+      await saveCurrent()
+      if (facts !== editSignatureRef.current || replies !== replySignatureRef.current) throw new Error('保存期间又有修改，请核对后重新提交')
+      await resubmitIntakeApproval(requestedApprovalID, {
+        expected_intake_revision: formRevisionRef.current,
+        expected_submission_snapshot_id: revisionApproval.submissionSnapshotID,
+        return_record_id: supplementReturn.recordId,
+        supplement_responses: supplementResponses,
+        revision_note: revisionNote.trim(),
+      })
+      assertCurrentOwner()
+      allowNavigation.current = true
+      window.localStorage.removeItem(draftKey)
+      message.success('已重新提交原审批')
+      navigate('/approval/' + encodeURIComponent(requestedApprovalID))
+    } catch (error) { handleIntakeSaveError(error) }
+    finally { if (requestOwner.current === currentUserID) setSubmitting(false) }
+  }
+  const locateSupplement = (item: SupplementItem) => {
+    if (item.party_local_id === (form.clientLocalId || 'client')) {
+      setActiveStep(0); window.setTimeout(() => document.getElementById('intake-client')?.focus(), 0); return
+    }
+    if (item.party_local_id === (form.opponentLocalId || 'opponent')) {
+      setActiveStep(0); window.setTimeout(() => document.getElementById(item.field_key === 'party_identity' ? 'intake-opponent-identity-number' : 'intake-opponent')?.focus(), 0); return
+    }
+    if (item.party_local_id) {
+      const party = relatedParties.find((row) => row.localId === item.party_local_id)
+      if (!party) { message.warning('该当事人已删除或无法定位，请核对补正要求'); return }
+      setActiveStep(0)
+      window.setTimeout(() => document.getElementById('party-' + party.localId)?.focus(), 0)
+      return
+    }
+    const target = item.field_key ? supplementFields[item.field_key] : undefined
+    if (!target) { message.info('请根据补正说明核对事项摘要'); return }
+    setActiveStep(target.step)
+    window.setTimeout(() => {
+      const node = document.getElementById(target.id)
+      if (!node) { message.warning('当前字段无法定位，请核对补正要求'); return }
+      node.scrollIntoView?.({ block: 'center', behavior: 'smooth' })
+      node.focus()
+    }, 0)
   }
 
   const runConflictCheck = async (intake = runtime.intake) => {
@@ -4800,6 +4825,7 @@ export function CaseIntakeWorkbench() {
       conflict: undefined,
       conflictTask: task,
       conflictInputFingerprint,
+      conflictDraftSignature: editSignature,
     }))
     const conflict = task?.result
     if (!conflict) throw new Error('利益冲突检查仍在后台运行，请稍后在冲突清单查看结果')
@@ -4810,12 +4836,9 @@ export function CaseIntakeWorkbench() {
       conflict,
       conflictTask: { ...current.conflictTask, status: 'COMPLETED' },
       conflictInputFingerprint,
+      conflictDraftSignature: editSignature,
     }))
-    // Keep the exact checked fingerprint with the draft so a reload or
-    // relogin can reattach the reviewer's decision: re-entering the same
-    // protected identity reproduces this fingerprint, any real edit breaks
-    // it and honestly marks the result stale.
-    window.localStorage.setItem(draftKey + ':conflictFingerprint', conflictInputFingerprint)
+    // Identity-bearing comparison stays in memory only.
     setSubmissionNotice('')
     message.success('利益冲突检查已完成')
     return conflict
@@ -4878,8 +4901,8 @@ export function CaseIntakeWorkbench() {
         review: conflictReview,
         waiver: conflictWaiver,
       })
-      if (!decisionView.canSubmit) {
-        const notice = decisionView.guidance
+      if (!conflictReview.id || !decisionView.canSubmit) {
+        const notice = conflictReview.id ? decisionView.guidance : '接案须先完成独立复核，请进入本案冲突复核'
         setSubmissionNotice(notice)
         message.error(notice)
         return
@@ -4948,6 +4971,7 @@ export function CaseIntakeWorkbench() {
       setSubmissionNotice('')
       window.localStorage.removeItem(draftKey)
       message.success('已提交真实审批')
+      allowNavigation.current = true
       navigate(`/approval/${approval.approval_id}`)
     } catch (error) {
       message.error(error instanceof Error ? error.message : '提交审批失败')
@@ -4967,7 +4991,7 @@ export function CaseIntakeWorkbench() {
           !form.subArea && '子领域',
           (!form.clientId || !form.clientName) && '客户',
           !form.opponentName && '对方当事人',
-          !form.opponentIdentityNumber && '对方身份标识',
+          !form.opponentIdentityNumber && !hasProtectedOpponentIdentity && '对方身份标识',
           !form.description && '案情摘要',
           !form.lawyerId && '负责律师',
           (!runtime.conflict || isConflictResultStale) && '利益冲突检查',
@@ -4989,11 +5013,14 @@ export function CaseIntakeWorkbench() {
         { title: '立案提交', desc: '提交审批并创建案件' },
       ]
   const currentStep = intakeSteps[activeStep] || intakeSteps[0]
-  const conflictDecisionView = deriveConflictDecisionViewModel(runtime.conflict, {
+  const detectedDecisionView = deriveConflictDecisionViewModel(runtime.conflict, {
     stale: isConflictResultStale,
     review: runtime.conflictDecisionExtras?.review,
     waiver: runtime.conflictDecisionExtras?.waiver,
   })
+  const conflictDecisionView = detectedDecisionView.canSubmit && !runtime.conflictDecisionExtras?.review?.id
+    ? { ...detectedDecisionView, decision: 'REVIEW_REQUIRED' as const, canSubmit: false, showReviewAction: true, headline: '等待独立复核', guidance: '接案须先完成独立复核，请进入本案冲突复核' }
+    : detectedDecisionView
   const conflictRiskText = runtime.conflict
     ? conflictDecisionStatusLabel(conflictDecisionView)
     : '未检测'
@@ -5015,7 +5042,7 @@ export function CaseIntakeWorkbench() {
   if (form.title) conflictReviewParams.set('case_title', form.title)
   const conflictReviewPath = `/conflict?${conflictReviewParams.toString()}`
   const submitDisabled =
-    submitting || missingSubmitFields.length > 0 || !conflictDecisionView.canSubmit
+    submitting || restoreLoading || Boolean(restoreError || conflictRestoreError) || missingSubmitFields.length > 0 || !conflictDecisionView.canSubmit
   const submitTooltip =
     missingSubmitFields.length > 0
       ? `请先完成：${missingSubmitFields.join('、')}`
@@ -5031,9 +5058,11 @@ export function CaseIntakeWorkbench() {
       message.error(reasons.join('；'))
       return
     }
+    setDraftActive(true)
     setRelatedParties((current) => [
       ...current,
       {
+        localId: crypto.randomUUID(),
         name,
         role: relatedPartyRole,
         entityType: relatedPartyEntityType,
@@ -5061,128 +5090,68 @@ export function CaseIntakeWorkbench() {
     message.success('已添加标签')
   }
 
-  // Restoring a draft deliberately drops the in-memory check result, but the
-  // server already holds the completed check for this intake. Reattach the
-  // newest completed record so an independent reviewer's decision survives a
-  // page reload or relogin; without it the approval submit stays locked and
-  // the lawyer would have to re-run a check on unchanged input. Fail closed:
-  // when no matching record exists the page stays untested and the lawyer
-  // simply runs the check again.
-  const restoreConflictResultForDraft = (intakeID: string, clientID: number | string) => {
+  const beginRestore = () => ({ sequence: ++restoreGeneration.current, owner: currentUserID, edit: editSignatureRef.current })
+  const restoreIsCurrent = (ticket: ReturnType<typeof beginRestore>) => sessionMounted.current && ticket.owner === requestOwner.current && ticket.sequence === restoreGeneration.current
+  const mayApplyRestore = (ticket: ReturnType<typeof beginRestore>) => {
+    if (!restoreIsCurrent(ticket)) return false
+    if (ticket.edit !== editSignatureRef.current) {
+      setRestoreError('读取期间有新输入，已保留当前编辑；请重新选择草稿或重新打开当前入口')
+      return false
+    }
+    return true
+  }
+  const restoreConflictResultForDraft = async (payload: Record<string, any>, restored: IntakeDraftRestore, ticket: ReturnType<typeof beginRestore>) => {
     if (isAssistant) return
-    const scopedIntakeID = intakeID.trim()
-    const scopedClientID = textValue(clientID, '').trim()
-    if (!scopedIntakeID || !scopedClientID) return
-    apiRequest<any>(`/conflict/history?clientId=${encodeURIComponent(scopedClientID)}`)
-      .then((payload) => {
-        const rows = Array.isArray(payload)
-          ? payload
-          : Array.isArray(payload?.records)
-            ? payload.records
-            : Array.isArray(payload?.items)
-              ? payload.items
-              : []
-        const matches = rows
-          .map((row: any) => recordValue(row))
-          .filter((row: Record<string, any>) => {
-            const params = recordValue(row.searchParameters ?? row.search_parameters)
-            const rowIntakeID = textValue(params.intakeId ?? params.intake_id, '')
-            const status = textValue(row.checkStatus ?? row.check_status, '').toUpperCase()
-            return rowIntakeID === scopedIntakeID && status === 'COMPLETED'
-          })
-        if (matches.length === 0) return
-        const startedAt = (row: Record<string, any>) => {
-          const parsed = new Date(
-            textValue(row.checkTime ?? row.check_time ?? row.createdAt ?? row.created_at, ''),
-          ).getTime()
-          return Number.isNaN(parsed) ? 0 : parsed
-        }
-        const latest = matches.reduce((acc: Record<string, any>, row: Record<string, any>) =>
-          startedAt(row) >= startedAt(acc) ? row : acc,
-        )
-        const checkID = textValue(latest.checkId ?? latest.check_id, '')
-        if (!checkID) return
-        setRuntime((current) => ({
-          ...current,
-          conflict: {
-            ...recordValue(latest.checkResult ?? latest.check_result),
-            checkId: checkID,
-            record: {
-              id: checkID,
-              check_id: checkID,
-              check_status: 'COMPLETED',
-              risk_level: latest.riskLevel ?? latest.risk_level,
-            },
-          },
-          conflictTask: { taskId: checkID, checkId: checkID, status: 'COMPLETED' },
-          conflictInputFingerprint:
-            window.localStorage.getItem(draftKey + ':conflictFingerprint') ||
-            caseIntakeConflictFingerprint(form, relatedParties),
-        }))
-        message.info('已恢复本草稿最近一次冲突检测结果；如输入有变化请重新检测')
-      })
-      .catch(() => {
-        // 历史读取失败不阻断草稿恢复；页面保持未检测状态，可重新检测。
-      })
+    setConflictRestoreError('')
+    try {
+      const bound = await readBoundIntakeConflict(payload)
+      if (!restoreIsCurrent(ticket) || !bound) return
+      setRuntime((current) => ({ ...current, ...bound, conflictInputFingerprint: caseIntakeConflictFingerprint(restored.form, restored.relatedParties), conflictDraftSignature: intakeEditSignature({ ...restored.form }, restored.relatedParties, restored.caseTags) }))
+    } catch (error) {
+      if (restoreIsCurrent(ticket)) setConflictRestoreError(error instanceof Error ? error.message : '检测状态读取失败，请重试读取')
+    }
+  }
+  const applyServerDraft = (payload: Record<string, any>, restored: IntakeDraftRestore, ticket: ReturnType<typeof beginRestore>, localForm?: IntakeFormState) => {
+    const opponent = listOf<any>(payload.parties).find((party) => String(party.party_role || party.role || '').toLowerCase().includes('opposing'))
+    setForm(localForm || restored.form)
+    setRelatedParties(restored.relatedParties); setCaseTags(restored.caseTags)
+    setRuntime({ apiTimings: [], intake: { id: restored.form.intakeId, intake_code: restored.form.intakeCode }, protectedOpponentFingerprint: opponent?.identity_status === '已登记（受保护）' ? opponentFingerprint(restored.form) : undefined })
+    setRevisionConflict(null); setDraftActive(true)
+    markRestored(restored, payload.intake?.updated_at)
+    return restoreConflictResultForDraft(payload, restored, ticket)
   }
 
-  const continueStoredDraft = () => {
+  const continueStoredDraft = async () => {
     if (!storedDraft) return
-    setForm(storedDraft)
-    // Switching drafts must not carry related parties or tags from the
-    // previously opened matter into the restored one.
-    setRelatedParties([])
-    setCaseTags([])
-    setRevisionConflict(null)
-    setLocalStorageDraft(null)
-    if (storedDraft.intakeId) {
-      setRuntime((current) => ({
-        ...current,
-        intake: { id: storedDraft.intakeId, intake_code: storedDraft.intakeCode },
-      }))
-      // The local draft snapshot stores form fields only; related parties
-      // and tags live in the server intake rows. The saved server rows are
-      // the source of truth, so they must be merged back BEFORE the next
-      // save: continuing a local draft used to restore the intake ID with
-      // an empty related-party list, and the next PUT deleted the saved
-      // WITNESS/GUARANTOR rows (the 091903 party-loss defect). If the
-      // server snapshot cannot be loaded, leave saving disabled instead of
-      // risking that overwrite.
-      apiRequest<any>(`/case-intakes/${storedDraft.intakeId}`)
-        .then((payload) => {
-          const restored = intakeDraftFromServer(payload)
-          // Keep the locally restored form fields (they may hold unsaved
-          // lawyer input), but related parties and tags come from the
-          // authoritative server snapshot.
-          setRelatedParties(restored.relatedParties)
-          setCaseTags(restored.caseTags)
-          restoreConflictResultForDraft(
-            textValue(storedDraft.intakeId, ''),
-            storedDraft.clientId,
-          )
-        })
-        .catch(() => {
-          setDraftActive(false)
-          setRuntime((current) => ({ ...current, intake: undefined }))
-          setLocalStorageDraft(loadCaseIntakeDraft(draftKey))
-          message.error('恢复草稿关联方失败，已锁定保存；请重试或放弃草稿')
-        })
+    if (!storedDraft.intakeId) {
+      ++restoreGeneration.current
+      setRuntime({ apiTimings: [] }); setForm(storedDraft); setRelatedParties([]); setCaseTags([])
+      setDraftActive(true); setSavedSignature(''); setSavePhase('unsaved'); setLocalStorageDraft(null)
+      return
     }
-    setDraftActive(true)
-    message.success(
-      storedDraft.opponentIdentityNumber
-        ? '已恢复当前账号的未完成草稿'
-        : `已恢复当前账号的未完成草稿。${firstRunGuidance.restoreNotice}`,
-    )
+    const ticket = beginRestore()
+    setRestoreLoading(true); setRestoreError('')
+    try {
+      const payload = await apiRequest<any>('/case-intakes/' + encodeURIComponent(storedDraft.intakeId))
+      if (!mayApplyRestore(ticket)) return
+      const restored = intakeDraftFromServer(payload)
+      // Local edits may differ; their fingerprint must not be authorized as the server baseline.
+      await applyServerDraft(payload, restored, ticket, storedDraft)
+      if (restoreIsCurrent(ticket)) setLocalStorageDraft(null)
+    } catch (error) {
+      if (restoreIsCurrent(ticket)) setRestoreError(error instanceof Error ? error.message : '恢复草稿关联方失败，请重新选择草稿')
+    } finally { if (restoreIsCurrent(ticket)) setRestoreLoading(false) }
   }
 
   const discardStoredDraft = () => {
+    ++restoreGeneration.current
+    setRestoreLoading(false); setRestoreError(''); setConflictRestoreError('')
     window.localStorage.removeItem(draftKey)
     setLocalStorageDraft(null)
     // Dropping the draft must also drop the server intake link. The stale
     // runtime.intake id made the next save PUT to the discarded draft and
     // overwrite it (defect #4) instead of creating a fresh intake.
-    setRuntime((current) => ({ ...current, intake: undefined }))
+    setRuntime({ apiTimings: [] })
     newIntakeIdempotencyKey.current = `case-intake-${currentUserID}-${Date.now()}-${Math.random()
       .toString(36)
       .slice(2)}`
@@ -5197,7 +5166,7 @@ export function CaseIntakeWorkbench() {
   // OLDER draft can be restored, not only the newest one. The current form
   // state is replaced only after the lawyer confirms the switch; nothing
   // auto-overwrites unsaved input. Protected identity numbers are never
-  // returned by the server, so the opponent identity re-entry stays enforced.
+  // returned by the server; only its registration marker is restored.
   const restoreServerDraft = (draft: IntakeFormState) => {
     if (!draft.intakeId) return
     if (draftActive) {
@@ -5213,41 +5182,20 @@ export function CaseIntakeWorkbench() {
     fetchAndApplyServerDraft(draft)
   }
 
-  const fetchAndApplyServerDraft = (draft: IntakeFormState) => {
-    apiRequest<any>(`/case-intakes/${draft.intakeId}`)
-      .then((payload) => {
-        const restored = intakeDraftFromServer(payload)
-        setForm(restored.form)
-        setRelatedParties(restored.relatedParties)
-        setCaseTags(restored.caseTags)
-        setRuntime((current) => ({
-          ...current,
-          intake: { id: restored.form.intakeId, intake_code: restored.form.intakeCode },
-          conflict: undefined,
-          conflictTask: undefined,
-        }))
-        restoreConflictResultForDraft(
-          textValue(restored.form.intakeId, ''),
-          restored.form.clientId,
-        )
-        setRevisionConflict(null)
-        setDraftActive(true)
-        message.success(
-          restored.form.opponentIdentityNumber
-            ? '已恢复所选服务端草稿'
-            : `已恢复所选服务端草稿。${firstRunGuidance.restoreNotice}`,
-        )
-      })
-      .catch((error) =>
-        message.error(error instanceof Error ? error.message : '恢复服务端草稿失败'),
-      )
+  const fetchAndApplyServerDraft = async (draft: IntakeFormState) => {
+    const ticket = beginRestore()
+    setRestoreLoading(true); setRestoreError('')
+    try {
+      const payload = await apiRequest<any>('/case-intakes/' + encodeURIComponent(draft.intakeId))
+      if (!mayApplyRestore(ticket)) return
+      await applyServerDraft(payload, intakeDraftFromServer(payload), ticket)
+    } catch (error) {
+      if (restoreIsCurrent(ticket)) setRestoreError(error instanceof Error ? error.message : '恢复服务端草稿失败')
+    } finally { if (restoreIsCurrent(ticket)) setRestoreLoading(false) }
   }
 
-  // Lost-update conflict handling (P4.1/P4.2): a 409 keeps every unsaved
-  // field on screen, shows a visible banner, and only the explicit reload
-  // action replaces the form with the server's newer version. There is no
-  // automatic retry, no fake success, and no auto-exit.
   const handleIntakeSaveError = (error: unknown) => {
+    if (requestOwner.current !== currentUserID) return
     if (error instanceof ApiRequestError && error.code.startsWith('INTAKE_DRAFT_REVISION')) {
       const currentRevision = textValue(error.context.current_revision, '')
       setRevisionConflict({
@@ -5266,27 +5214,13 @@ export function CaseIntakeWorkbench() {
 
   const reloadServerDraftAfterConflict = () => {
     const intakeID = textValue(runtime.intake?.id || form.intakeId, '')
-    if (!intakeID) {
-      message.error('未找到草稿编号，请从草稿列表重新选择')
-      return
-    }
-    apiRequest<any>(`/case-intakes/${intakeID}`)
-      .then((payload) => {
-        const restored = intakeDraftFromServer(payload)
-        setForm(restored.form)
-        setRelatedParties(restored.relatedParties)
-        setCaseTags(restored.caseTags)
-        setRevisionConflict(null)
-        message.success('已加载服务端最新草稿，本地未保存内容已被替换')
-      })
-      .catch((error) =>
-        message.error(error instanceof Error ? error.message : '加载服务端草稿失败'),
-      )
+    if (!intakeID) { message.error('未找到草稿编号，请重新选择'); return }
+    void fetchAndApplyServerDraft({ ...form, intakeId: intakeID })
   }
 
   const handleCreateIntake = async () => {
     try {
-      await createIntake()
+      await saveCurrent()
     } catch (error) {
       handleIntakeSaveError(error)
     }
@@ -5298,7 +5232,7 @@ export function CaseIntakeWorkbench() {
       return
     }
     if (checkingConflict) return
-    const missing = getMissingConflictCheckFields(form)
+    const missing = getMissingConflictCheckFields(form, hasProtectedOpponentIdentity)
     if (missing.length > 0) {
       setConflictCheckMissingFields(missing)
       const labels = missing.map((field) => conflictCheckRequiredFieldLabels[field])
@@ -5333,6 +5267,7 @@ export function CaseIntakeWorkbench() {
       cancelText: '继续编辑',
       onOk: () => {
         window.localStorage.removeItem(draftKey)
+        allowNavigation.current = true
         navigate('/case')
       },
     })
@@ -5340,7 +5275,8 @@ export function CaseIntakeWorkbench() {
 
   const handleSaveDraftAndExit = async () => {
     try {
-      await createIntake()
+      await saveBeforeLeaving()
+      allowNavigation.current = true
       navigate('/case')
     } catch (error) {
       message.error(
@@ -5362,11 +5298,22 @@ export function CaseIntakeWorkbench() {
 
   return (
     <div className='batch-page intake-page'>
+      <DraftNavigationGuard dirty={hasUnsavedChanges || repliesDirty || Boolean(revisionNote.trim())} busy={replySaving || savePhase === 'saving' || submitting || checkingConflict} bypass={allowNavigation} save={saveBeforeLeaving} />
+      <ClientCreateDialog key={currentUserID} open={inlineClientOpen} onCancel={() => setInlineClientOpen(false)} onCreated={(client) => {
+        mergeClient(client); setInlineClientOpen(false); setCreatedClientNotice(true)
+        message.success('客户已建档并选中，立案尚未保存')
+      }} />
+      {restoreLoading && <Alert type='info' message='正在恢复所选草稿' />}
+      {conflictRestoreError && <Alert type='warning' message={conflictRestoreError} description='未确认的检测状态不会用于提交；无需重新检测，可重新读取当前草稿。' action={<Button onClick={reloadServerDraftAfterConflict}>重新读取草稿和检测状态</Button>} />}
+      {restoreError && <Alert type='error' message={restoreError} description='为避免覆盖其他草稿，当前保存已锁定。请重新打开所选草稿。' />}
+      {createdClientNotice && <Alert type='info' message='客户已建档，立案尚未保存' description='再次保存立案将复用此客户，不会重复建档。' />}
       <PageHeader
         eyebrow='案件管理 / 新建案件 / 立案工作台'
-        title={isSupplementMode ? '补充案件信息并重新检测' : '新建案件立案工作台'}
+        title={isRevisionMode ? '补正接案申请' : isSupplementMode ? '补充案件信息并重新检测' : '新建案件立案工作台'}
         subtitle={
-          isSupplementMode
+          isRevisionMode
+            ? '本页对应原申请，请按本轮退回要求修改并逐项回复。'
+            : isSupplementMode
             ? `当前案件：${textValue(sourceCase?.case_number, contextCaseID)} ${textValue(sourceCase?.title, '')}`
             : '新建案件默认使用空白表单，未完成草稿需要手动恢复。'
         }
@@ -5399,6 +5346,11 @@ export function CaseIntakeWorkbench() {
         </div>
       )}
 
+      {isRevisionMode && supplementReturn && !restoreError && <>
+        <SupplementChecklist returned={supplementReturn} responses={supplementResponses} onChange={setSupplementResponses} onLocate={locateSupplement} saving={replySaving} onSave={() => { void persistReplies().catch(() => undefined) }} />
+        <label htmlFor='revision-note'>修改说明（随重新提交保存）</label>
+        <Input.TextArea id='revision-note' value={revisionNote} maxLength={2000} onChange={(event) => setRevisionNote(event.target.value)} />
+      </>}
       {revisionConflict && (
         <Alert
           type='warning'
@@ -5415,9 +5367,7 @@ export function CaseIntakeWorkbench() {
                   重新加载服务端草稿
                 </Button>
                 {revisionConflict.currentRevision && (
-                  <span className='muted-text'>
-                    服务端当前版本：{revisionConflict.currentRevision.slice(0, 8)}
-                  </span>
+                  <DiagnosticDetails label='查看版本信息'>服务端当前版本：{revisionConflict.currentRevision}</DiagnosticDetails>
                 )}
               </Space>
             </div>
@@ -5425,12 +5375,12 @@ export function CaseIntakeWorkbench() {
         />
       )}
 
-      {serverDrafts.length > 0 && !isAssistant && (
+      {serverDrafts.length > 0 && !isAssistant && !isRevisionMode && (
         <div className='batch-advice' role='status'>
           <strong>
             服务端草稿（{serverDrafts.length}/{serverDraftsTotal}）
           </strong>
-          <p>已保存的草稿可手动选择恢复；身份标识不在列表中展示，恢复后需重新填写。</p>
+          <p>已保存的草稿可手动选择恢复；身份标识不在列表中展示，已登记且未变更的身份可继续使用。</p>
           <div>
             {serverDrafts.map((draft) => (
               <div
@@ -5443,7 +5393,6 @@ export function CaseIntakeWorkbench() {
                   </div>
                   <div className='muted-text'>
                     {draft.intakeCode || '草稿'}
-                    {draft.revision ? ` · 版本 ${draft.revision.slice(0, 8)}` : ''}
                   </div>
                 </div>
                 <Button size="small" onClick={() => restoreServerDraft(draft)}>
@@ -5465,7 +5414,7 @@ export function CaseIntakeWorkbench() {
         </div>
       )}
 
-      {localStorageDraft && storedDraft && (
+      {localStorageDraft && storedDraft && !isRevisionMode && !requestedIntakeID && (
         <div className='batch-advice' role='status'>
           <strong>发现当前账号的未完成草稿：{storedDraft.title || '未命名案件'}</strong>
           <p>
@@ -5724,22 +5673,12 @@ export function CaseIntakeWorkbench() {
                       <div className='batch-party-card green'>
                         <TeamOutlined />
                         <div>
-                          <Select
-                            id='intake-client'
-                            aria-label='我方当事人（客户）'
-                            value={form.clientId || undefined}
-                            status={conflictCheckMissingSet.has('client') ? 'error' : undefined}
-                            aria-invalid={conflictCheckMissingSet.has('client')}
-                            onChange={updateClient}
-                            showSearch
-                            optionFilterProp='label'
-                            placeholder='选择数据库客户'
-                            options={clientOptions.map((client) => ({
-                              value: client.id,
-                              label: client.displayLabel,
-                            }))}
-                            style={{ minWidth: 240 }}
+                          <ClientSearchSelect key={currentUserID}
+                            value={form.clientId ? { id: form.clientId, name: form.clientName, type: clientOptions.find((client) => client.id === form.clientId)?.clientType === '个人' ? '个人' : '企业' } : undefined}
+                            invalid={conflictCheckMissingSet.has('client')}
+                            onChange={mergeClient}
                           />
+                          {hasPermission(activeUser, 'client:manage') && <Button onClick={() => setInlineClientOpen(true)}>新增客户</Button>}
                           {conflictCheckFieldError('client') && (
                             <span className='batch-field-error'>
                               {conflictCheckFieldError('client')}
@@ -5846,8 +5785,10 @@ export function CaseIntakeWorkbench() {
                       <strong>其他相关方（可选）</strong>
                       <div className='batch-related-party'>
                         {relatedParties.map((party, index) => (
-                          <p key={`${party.name}-${index}`}>
-                            {party.name} <RiskTag text={party.role} />
+                          <div key={party.localId || index} id={party.localId ? 'party-' + party.localId : undefined} tabIndex={-1}>
+                            <Input aria-label={'相关方名称 ' + (index + 1)} value={party.name} onChange={(event) => setRelatedParties((rows) => rows.map((row, i) => i === index ? { ...row, name: event.target.value } : row))} />
+                            <Select aria-label={'相关方角色 ' + (index + 1)} value={party.role} options={relatedPartyRoleOptions} onChange={(role) => setRelatedParties((rows) => rows.map((row, i) => i === index ? { ...row, role } : row))} />
+                            <Input.Password aria-label={'相关方身份 ' + (index + 1)} autoComplete='off' placeholder='保持原身份可留空；变更时重新填写' value={party.identityNumber} onChange={(event) => setRelatedParties((rows) => rows.map((row, i) => i === index ? { ...row, identityNumber: event.target.value } : row))} />
                             <Button
                               type='link'
                               size='small'
@@ -5859,7 +5800,7 @@ export function CaseIntakeWorkbench() {
                             >
                               移除
                             </Button>
-                          </p>
+                          </div>
                         ))}
                         <div className='batch-inline-add'>
                           <Input
@@ -6351,7 +6292,7 @@ export function CaseIntakeWorkbench() {
             )}
           </SectionCard>
           <SectionCard title='保存状态'>
-            <p>{draftActive ? '系统会随填写保留当前草稿。' : '尚未开始保留本次草稿。'}</p>
+            <p role='status' aria-live='polite'>{intakeSaveLabel(saveState, savedAt)}</p>
             <p>可在页面底部选择“保存草稿”或“保存并退出”，下次进入本页会提示恢复。</p>
           </SectionCard>
         </aside>
@@ -6381,13 +6322,14 @@ export function CaseIntakeWorkbench() {
           </Button>
         )}
         <Space>
-          <Button onClick={handleCreateIntake}>保存草稿</Button>
-          <Button onClick={handleSaveDraftAndExit}>保存并退出</Button>
+          <Button loading={savePhase === 'saving'} disabled={restoreLoading || Boolean(restoreError)} onClick={handleCreateIntake}>保存草稿</Button>
+          <Button disabled={savePhase === 'saving' || restoreLoading || Boolean(restoreError)} onClick={handleSaveDraftAndExit}>保存并退出</Button>
           {!isAssistant && (
             <Button
               aria-label='保存并进行利益冲突检查'
               icon={<SafetyCertificateOutlined />}
               loading={checkingConflict}
+              disabled={restoreLoading || Boolean(restoreError)}
               onClick={handleRunConflictCheck}
             >
               保存最新输入并检测
@@ -6399,10 +6341,10 @@ export function CaseIntakeWorkbench() {
                 <Button
                   type='primary'
                   loading={submitting}
-                  disabled={submitDisabled}
-                  onClick={submitApproval}
+                  disabled={isRevisionMode ? restoreLoading || Boolean(restoreError) || !supplementReturn : submitDisabled}
+                  onClick={isRevisionMode ? resubmitRevision : submitApproval}
                 >
-                  提交审批并等待成案
+                  {isRevisionMode ? '重新提交原审批' : '提交审批并等待成案'}
                 </Button>
               </span>
             </Tooltip>
@@ -6427,6 +6369,7 @@ export function ConflictCheckResults() {
   )
   const [creatingApproval, setCreatingApproval] = React.useState(false)
   const [latestReview, setLatestReview] = React.useState<Record<string, unknown>>({})
+  const [readReviews, setReadReviews] = React.useState<Record<string, Record<string, unknown>>>({})
   const [reviewerAssignment, setReviewerAssignment] = React.useState<Record<string, unknown>>({})
   const [reviewerCandidates, setReviewerCandidates] = React.useState<Array<Record<string, any>>>([])
   const [selectedReviewerID, setSelectedReviewerID] = React.useState<number | undefined>()
@@ -6466,7 +6409,11 @@ export function ConflictCheckResults() {
     return () => controller.abort()
   }, [])
 
-  const riskItems = listOf(commandCenter?.risk_queue)
+  // Reuse reviews read for opened details; never fan out a request per queue row.
+  const riskItems = listOf(commandCenter?.risk_queue).map((row) => {
+    const review = readReviews[textValue(row.id, '')]
+    return review ? { ...row, check_result: { ...recordValue(row.check_result), review } } : row
+  })
   const requestedTaskID = searchParams.get('task_id') || ''
   const riskFilterLevels: Record<string, string[]> = {
     高风险: ['HIGH', 'CRITICAL'],
@@ -6555,6 +6502,7 @@ export function ConflictCheckResults() {
   )
   const selectedStatistics = recordValue(selectedCheckResult.checkStatistics)
   const selectedSearchParameters = recordValue(selectedConflict?.search_parameters)
+  const selectedIntakeID = textValue(selectedConflict?.intake_id, '')
   const frozenConflictCases = listOf<Record<string, unknown>>(
     selectedCheckResult.conflictCases as Array<Record<string, unknown>> | undefined,
   )
@@ -6891,14 +6839,19 @@ export function ConflictCheckResults() {
     setSelectedReviewerID(undefined)
     setLatestWaiver(recordValue(selectedCheckResult.waiver))
     if (!selectedConflict?.id) return
-    apiRequest<any>(`/conflict/tasks/${selectedConflict.id}/review`)
+    const checkID = selectedConflict.id
+    let active = true
+    apiRequest<any>(`/conflict/tasks/${checkID}/review`)
       .then((response) => {
+        if (!active) return
         const review = recordValue(response?.review || response)
+        if (review.id && review.checkId !== checkID) { setLatestReview({}); return }
         setLatestReview(
           Object.keys(review).length > 0 ? review : recordValue(selectedCheckResult.review),
         )
+        if (review.id) setReadReviews((rows) => ({ ...rows, [checkID]: review }))
       })
-      .catch(() => setLatestReview(recordValue(selectedCheckResult.review)))
+      .catch(() => { if (active) setLatestReview(recordValue(selectedCheckResult.review)) })
     const selectedWaiver = recordValue(selectedCheckResult.waiver)
     const shouldLoadWaiver =
       Object.keys(selectedWaiver).length > 0 ||
@@ -6932,6 +6885,7 @@ export function ConflictCheckResults() {
         })
         .catch(() => setReviewerCandidates([]))
     }
+    return () => { active = false }
   }, [selectedConflict?.id, canReviewConflict])
 
   const assignConflictReviewer = async () => {
@@ -6974,6 +6928,7 @@ export function ConflictCheckResults() {
       message.warning('请先指定独立复核人并完成回避声明')
       return
     }
+    const checkID = selectedConflict.id
     setSubmittingReview(true)
     try {
       const response = await apiRequest<any>(`/conflict/tasks/${selectedConflict.id}/review`, {
@@ -6982,6 +6937,9 @@ export function ConflictCheckResults() {
       })
       const review = recordValue(response?.review || response)
       setLatestReview(review)
+      if (review.id && review.checkId === checkID) {
+        setReadReviews((rows) => ({ ...rows, [checkID]: review }))
+      }
       setSelectedConflict((current) =>
         current
           ? {
@@ -7118,6 +7076,10 @@ export function ConflictCheckResults() {
   const createConflictApproval = async (item?: CommandCenterRiskItem | null) => {
     if (!item?.id) {
       message.warning('请选择一条冲突检测记录')
+      return
+    }
+    if (item.intake_id) {
+      message.info('接案检测须先完成独立复核，再由申请律师回到原草稿提交接案审批')
       return
     }
     if (
@@ -7428,7 +7390,7 @@ export function ConflictCheckResults() {
               <table className='conflict-list-table'>
                 <thead>
                   <tr>
-                    <th>风险等级</th>
+                    <th>自动检索风险</th>
                     <th>处置状态</th>
                     <th>命中主体</th>
                     <th>命中类型</th>
@@ -7551,6 +7513,8 @@ export function ConflictCheckResults() {
 
         <Modal
           title='冲突检测详情'
+          wrapClassName='batch-conflict-detail-modal'
+          zIndex={1050}
           open={Boolean(selectedConflict)}
           onCancel={() => setSelectedConflict(null)}
           footer={[
@@ -7564,7 +7528,9 @@ export function ConflictCheckResults() {
                   </Button>,
                 ]
               : []),
-            ...(selectedConflict?.approval_id
+            ...(selectedIntakeID
+              ? []
+              : selectedConflict?.approval_id
               ? [
                   <Button
                     key='review'
@@ -7593,6 +7559,7 @@ export function ConflictCheckResults() {
         >
           {selectedConflict && (
             <div className='batch-conflict-detail'>
+              {selectedIntakeID && <Alert type='info' showIcon message='接案检测须先完成独立复核' description='请在本页指定独立复核人并完成复核，再由申请律师回到原草稿提交接案审批。检测详情不另行发起冲突审批。' />}
               <div className='batch-info-grid two'>
                 {[
                   ['关联案件', textValue(selectedConflict.title, '-')],
@@ -7985,7 +7952,7 @@ export function ConflictCheckResults() {
                             {selectedRestricted && !canReviewConflict
                               ? '存在受限证据，具体内容仅对独立冲突核查人可见'
                               : selectedNoMatch
-                                ? '未发现匹配证据；当前仅因检索覆盖受限进入人工复核'
+                                ? '未发现匹配证据'
                               : '历史记录没有结构化证据，请重新运行检测'}
                           </td>
                         </tr>
@@ -7995,7 +7962,7 @@ export function ConflictCheckResults() {
                 </DataTable>
               </SectionCard>
 
-              {selectedDecisionView.needsHumanReview && (
+              {(selectedDecisionView.needsHumanReview || Boolean(selectedIntakeID)) && (
                 <SectionCard title='人工复核记录'>
                   {latestReview.id ? (
                     <div className='batch-info-grid two'>
@@ -8021,7 +7988,7 @@ export function ConflictCheckResults() {
                   ) : (
                     <p>
                       {selectedNoMatch
-                        ? '尚未完成人工复核。当前未发现匹配记录，但检索覆盖完整性尚未确认；独立核查确认前不得继续提交立案。'
+                        ? '尚未完成人工复核。未发现匹配证据；接案仍须完成独立复核。'
                         : '尚未完成人工复核。候选命中在复核前不得作为“已确认冲突”，也不得继续提交立案。'}
                     </p>
                   )}
@@ -8051,7 +8018,7 @@ export function ConflictCheckResults() {
                         ) : (
                           <>
                             <p>先指定与申请律师、承办律师不存在直接管理关系的业务复核人。</p>
-                            <Space.Compact block>
+                            <div className='batch-conflict-reviewer-assignment'>
                               <Select
                                 aria-label='选择独立复核人'
                                 value={selectedReviewerID}
@@ -8070,11 +8037,12 @@ export function ConflictCheckResults() {
                               >
                                 指定并声明回避
                               </Button>
-                            </Space.Compact>
+                            </div>
                           </>
                         )}
                       </div>
                       <Select
+                        aria-label='独立复核结论'
                         value={reviewDecision || undefined}
                         placeholder='选择复核结论'
                         style={{ width: '100%' }}
@@ -8089,6 +8057,7 @@ export function ConflictCheckResults() {
                         ]}
                       />
                       <Input.TextArea
+                        aria-label='独立复核依据'
                         value={reviewNotes}
                         onChange={(event) => setReviewNotes(event.target.value)}
                         rows={3}
@@ -8121,7 +8090,11 @@ export function ConflictCheckResults() {
                     </Space>
                   ) : (
                     <p>
-                      {latestReview.id
+                      {selectedIntakeID
+                        ? latestReview.id
+                          ? '独立复核结论已记录。请按结论核对接案条件；满足条件后由申请律师回到原草稿提交接案审批。'
+                          : '请等待冲突核查岗在本页指定独立复核人并完成复核，无需先发起冲突审批。'
+                        : latestReview.id
                         ? '独立复核已完成，但当前结论仍不足以放行接案。请进入冲突审批查看后续处置。'
                         : '当前账号不能直接下人工复核结论。请点击下方“发起冲突审批”，由独立冲突核查人完成复核。'}
                     </p>
@@ -8159,6 +8132,7 @@ export function ConflictCheckResults() {
 
         <Modal
           title='申请冲突豁免评估'
+          zIndex={1060}
           open={waiverModalOpen}
           onCancel={() => setWaiverModalOpen(false)}
           onOk={submitWaiverRequest}
@@ -8288,6 +8262,28 @@ export function ApprovalDecisionFlow() {
   const navigate = useNavigate()
   const [approval, setApproval] = React.useState<any>(null)
   const [snapshot, setSnapshot] = React.useState<any>(null)
+  const [snapshotHistory, setSnapshotHistory] = React.useState<any[]>([])
+  const [activeSnapshotID, setActiveSnapshotID] = React.useState('')
+  const [viewedSnapshotID, setViewedSnapshotID] = React.useState('')
+  const [snapshotLoading, setSnapshotLoading] = React.useState(false)
+  const [snapshotError, setSnapshotError] = React.useState('')
+  const [snapshotNotRequired, setSnapshotNotRequired] = React.useState(false)
+  const snapshotRequest = React.useRef(0)
+  const viewingHistoricalSnapshot = Boolean(activeSnapshotID && viewedSnapshotID && viewedSnapshotID !== activeSnapshotID)
+  const selectSnapshot = async (snapshotID: string) => {
+    const sequence = ++snapshotRequest.current
+    setSnapshotLoading(true)
+    setSnapshotError('')
+    try {
+      const data = await apiRequest<any>('/approvals/' + encodeURIComponent(String(id)) + '/snapshot?snapshot_id=' + encodeURIComponent(snapshotID))
+      if (sequence !== snapshotRequest.current) return
+      setSnapshot(recordValue(data.snapshot))
+      setViewedSnapshotID(data.viewed_snapshot_id || snapshotID)
+      if (data.active_submission_snapshot_id) setActiveSnapshotID(data.active_submission_snapshot_id)
+      setSnapshotHistory(listOf<any>(data.submission_history).filter((row) => typeof row.id === 'string' && row.id))
+    } catch (error) { if (sequence === snapshotRequest.current) setSnapshotError(error instanceof Error ? error.message : '提交版本读取失败') }
+    finally { if (sequence === snapshotRequest.current) setSnapshotLoading(false) }
+  }
   const [integrationStatus, setIntegrationStatus] = React.useState<any>(null)
   const [approvalConflictReview, setApprovalConflictReview] = React.useState<Record<string, any>>(
     {},
@@ -8300,6 +8296,7 @@ export function ApprovalDecisionFlow() {
     'approve' | 'reject' | 'request_changes' | null
   >(null)
   const [decisionReason, setDecisionReason] = React.useState('')
+  const [decisionRequirements, setDecisionRequirements] = React.useState<Omit<SupplementItem, 'item_id'>[]>([{ category: 'matter_explanation', field_key: 'description', description: '', required: true }])
   const [materialFilter, setMaterialFilter] = React.useState('全部材料')
   const [approvalLoadState, setApprovalLoadState] = React.useState<'loading' | 'ready' | 'error'>(
     'loading',
@@ -8346,6 +8343,10 @@ export function ApprovalDecisionFlow() {
     }
     setApprovalLoadState('loading')
     setApprovalLoadError('')
+    setSnapshotError('')
+    setSnapshotHistory([])
+    setSnapshotNotRequired(false)
+    setActiveSnapshotID(''); setViewedSnapshotID('')
     try {
       const approvalStartedAt = performance.now()
       const approvalData = await apiRequest<any>(`/approvals/${id}`)
@@ -8379,20 +8380,30 @@ export function ApprovalDecisionFlow() {
         const snapshotStartedAt = performance.now()
         const snapshotData = await apiRequest<any>(`/approvals/${id}/snapshot`)
         recordTiming('审批快照', snapshotStartedAt)
+        ++snapshotRequest.current
         setSnapshot(recordValue(snapshotData.snapshot))
-      } catch {
+        const currentID = currentSubmissionSnapshotID(snapshotData)
+        setActiveSnapshotID(currentID)
+        setViewedSnapshotID(currentID)
+        setSnapshotHistory(listOf<any>(snapshotData.submission_history).filter((row) => typeof row.id === 'string' && row.id))
+      } catch (error) {
         setSnapshot({})
+        if (allowsSnapshotFreeDecision(approvalData, error)) setSnapshotNotRequired(true)
+        else setSnapshotError('提交版本读取失败，请重新加载后再处理审批')
       }
 
+      let refreshedStatus: any = null
       try {
         const statusStartedAt = performance.now()
         const statusData = await apiRequest<any>(`/integration/approvals/${id}/status`)
         recordTiming('集成状态', statusStartedAt)
         setIntegrationStatus(statusData)
+        refreshedStatus = statusData
       } catch {
         setIntegrationStatus(null)
       }
       setApprovalLoadState('ready')
+      return { approval: approvalData, integration: refreshedStatus }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '加载审批详情失败'
       setApproval(null)
@@ -8456,30 +8467,38 @@ export function ApprovalDecisionFlow() {
     setDeciding(true)
     try {
       const startedAt = performance.now()
-      await apiRequest<any>(`/integration/approvals/${id}/decision`, {
+      const decisionData = await apiRequest<any>(`/integration/approvals/${id}/decision`, {
         method: 'POST',
         body: JSON.stringify({
           decision,
           decision_reason: reason,
           decision_comments: comments,
+          ...(!snapshotNotRequired ? { expected_submission_snapshot_id: activeSnapshotID } : {}),
+          expected_action_version: approval?.action_version || '',
+          ...(decision === 'request_changes' ? { imposed_requirements: { schema_version: 1, supplement_requests: decisionRequirements } } : {}),
         }),
       })
       recordTiming(
-        decision === 'approve' ? '审批通过并成案' : decision === 'reject' ? '审批拒绝' : '退回修改',
+        decision === 'approve' ? '同意本阶段' : decision === 'reject' ? '审批拒绝' : '退回修改',
         startedAt,
       )
-      await loadApproval()
-      const statusData = await apiRequest<any>(`/integration/approvals/${id}/status`)
+      const refreshed = await loadApproval()
+      const statusData = refreshed?.integration
+      const updatedApproval = refreshed?.approval || statusData?.approval || decisionData?.approval || decisionData
       if (decision === 'approve') {
-        message.success(
-          statusData?.case_creation?.case_id
-            ? `已成案：${statusData.case_creation.case_number}`
-            : '审批已通过',
-        )
+        if (updatedApproval?.status === 'approved') {
+          if (statusData?.case_creation?.case_id) message.success('最终审批已通过，已成案：' + (statusData.case_creation.case_number || statusData.case_creation.case_id))
+          else if (approvalCreatesCase(approval)) message.success(statusData?.case_creation?.status === 'failed' ? '最终审批已通过，成案失败，请查看成案状态' : '最终审批已通过，成案状态请以关联案件为准')
+          else message.success('审批已通过')
+        } else if (['pending', 'submitted', 'under_review', 'resubmitted'].includes(updatedApproval?.status)) {
+          const nextStage = updatedApproval.current_stage ? approvalStageLabel(updatedApproval.current_stage) : ''
+          const nextApprover = updatedApproval.current_approver_name || ''
+          message.success(nextStage ? '本阶段已通过，下一节点：' + nextStage + (nextApprover ? '（' + nextApprover + '）' : '') : '本阶段已通过，等待后续审批')
+        } else message.warning('决定已记录，审批状态尚未确认，请刷新核对')
       } else if (decision === 'reject') {
-        message.success('审批已拒绝，未创建正式案件')
+        message.success('审批已拒绝')
       } else {
-        message.success('已退回修改，未创建正式案件')
+        message.success('已退回修改')
       }
       return true
     } catch (error) {
@@ -8493,6 +8512,7 @@ export function ApprovalDecisionFlow() {
   const openDecisionDialog = (decision: 'approve' | 'reject' | 'request_changes') => {
     setDecisionDialog(decision)
     setDecisionReason('')
+    setDecisionRequirements([{ category: 'matter_explanation', field_key: 'description', description: '', required: true }])
   }
 
   const closeDecisionDialog = () => {
@@ -8503,6 +8523,12 @@ export function ApprovalDecisionFlow() {
 
   const submitDecision = async () => {
     if (!decisionDialog) return
+    if (viewingHistoricalSnapshot || snapshotLoading || snapshotError) { message.warning('请切回当前提交版本后处理审批'); return }
+    if ((!snapshotNotRequired && !activeSnapshotID) || !approval?.action_version) { message.error('审批版本尚未加载，请刷新详情后处理'); return }
+    if (decisionDialog === 'request_changes' && (!decisionRequirements.length || decisionRequirements.some((item) => !item.description.trim()))) {
+      message.warning('请至少填写一项完整补正要求'); return
+    }
+    if (decisionRequirements.some((item) => item.field_key?.startsWith('party_') && !item.party_local_id)) { message.warning('请为当事人补正项选择对应主体'); return }
     const reason = decisionReason.trim()
     if (reason.length < 10) {
       message.warning('请填写不少于 10 个字的处理依据，便于申请人修改和后续审计。')
@@ -8510,25 +8536,27 @@ export function ApprovalDecisionFlow() {
     }
     const comments =
       decisionDialog === 'approve'
-        ? '确认通过审批并触发成案。'
+        ? '确认同意并通过本阶段审批。'
         : decisionDialog === 'reject'
-          ? '确认拒绝，本次申请不会创建正式案件。'
-          : '确认退回申请人补充材料，当前不会创建正式案件。'
+          ? '确认拒绝本次申请。'
+          : '确认退回申请人补充材料。'
     if (await decideApproval(decisionDialog, reason, comments)) {
-      closeDecisionDialog()
+      setDecisionDialog(null)
+      setDecisionReason('')
     }
   }
 
+  const createsCase = approvalCreatesCase(approval)
   const decisionDialogCopy = {
     approve: {
-      title: '确认同意并成案',
-      notice: '通过后系统将创建正式案件。请确认冲突复核结论、材料和承办条件均已满足。',
+      title: '确认同意并通过本阶段',
+      notice: createsCase ? '本次同意仅通过当前审批阶段；全部审批通过且成案条件满足后，系统才会生成正式案件。请核对本阶段所需的冲突复核、材料和承办条件。' : '本次同意通过当前审批阶段；若还有后续节点，申请将继续流转，最终结果以审批状态为准。',
       placeholder: '填写同意依据、已核验材料和必要的承办条件',
-      okText: '确认同意并成案',
+      okText: '确认同意并通过本阶段',
     },
     reject: {
       title: '确认拒绝申请',
-      notice: '拒绝后本次申请终止且不会成案。请写明事实依据，避免申请人无法理解或错误重提。',
+      notice: '拒绝后本次申请终止。请写明事实依据，避免申请人无法理解或错误重提。',
       placeholder: '填写拒绝所依据的冲突事实、规则或接案条件',
       okText: '确认拒绝',
     },
@@ -8540,15 +8568,16 @@ export function ApprovalDecisionFlow() {
     },
   }
 
-  const approvalMetadata = recordValue(approval?.metadata)
+  // Historical facts come only from the selected immutable submission.
+  const approvalMetadata = viewingHistoricalSnapshot ? {} : recordValue(approval?.metadata)
   const snapshotMetadata = recordValue(snapshot?.metadata)
   const metadata = { ...approvalMetadata, ...snapshotMetadata }
   const snapshotRoot = recordValue(snapshot)
-  const approvalConflictResult = recordValue(approval?.conflict_result)
+  const approvalConflictResult = viewingHistoricalSnapshot ? {} : recordValue(approval?.conflict_result)
   const conflictResult =
     Object.keys(approvalConflictResult).length > 0
       ? approvalConflictResult
-      : metadata.conflict_result || snapshot?.conflict_result
+      : recordValue(metadata.conflict_result || snapshot?.conflict_result)
   const conflictRecord = recordValue(
     metadata.conflict_record || snapshot?.conflict_record || conflictResult?.record,
   )
@@ -8670,10 +8699,11 @@ export function ApprovalDecisionFlow() {
     .filter(Boolean)
     .join(' · ')
   const conflictDecisionStatus = textValue(conflictDecision.status, '').toUpperCase()
-  const currentConflictReview =
-    Object.keys(approvalConflictReview).length > 0
+  const currentConflictReview = viewingHistoricalSnapshot
+    ? recordValue(snapshotRoot.conflict_review)
+    : Object.keys(approvalConflictReview).length > 0
       ? approvalConflictReview
-      : recordValue(recordValue(conflictRecord.check_result).review)
+      : recordValue(snapshotRoot.conflict_review || recordValue(conflictRecord.check_result).review)
   const conflictReviewDecision = textValue(currentConflictReview.decision, '').toLowerCase()
   const conflictCoverageStatus = textValue(
     conflictDecision.coverageStatus ||
@@ -8693,12 +8723,8 @@ export function ApprovalDecisionFlow() {
     ['confirmed_conflict', 'insufficient_information', 'waiver_requested'].includes(
       conflictReviewDecision,
     )
-  const conflictRisk = textValue(
-    conflictNeedsHumanReview
-      ? 'REVIEW_REQUIRED'
-      : conflictResult?.riskAssessment?.overallRisk || conflictRecord.risk_level,
-    approval?.type === 'conflict_approval' ? 'REVIEW_REQUIRED' : '',
-  )
+  const conflictRisk = textValue(conflictResult?.riskAssessment?.overallRisk || conflictRecord.risk_level, '')
+  const independentReviewLabel = viewingHistoricalSnapshot ? '该版本冻结独立复核' : Object.keys(approvalConflictReview).length > 0 ? '当前可读独立复核' : '本次提交冻结独立复核'
   const conflictCheckID = textValue(
     conflictResult?.checkId || conflictRecord.check_id || metadata.conflict_task_id,
     '已随审批快照冻结',
@@ -8727,7 +8753,7 @@ export function ApprovalDecisionFlow() {
     metadata.case_creation_config?.title ||
       snapshot?.case_creation_config?.title ||
       conflictRecord.case_name ||
-      approval?.title,
+      (viewingHistoricalSnapshot ? '' : approval?.title),
     '未命名案件',
   )
   const approvalMaterialRows = listOf<any>(metadata.materials || snapshot?.materials)
@@ -8777,7 +8803,7 @@ export function ApprovalDecisionFlow() {
     approvalAccess.canApprove && !hasConflictEvidenceMismatch && !conflictApprovalBlocked
   const canOtherDecision =
     !hasConflictEvidenceMismatch && (approvalAccess.canReject || approvalAccess.canReturn)
-  const canDecisionActions = canApproveApproval || canOtherDecision
+  const canDecisionActions = !viewingHistoricalSnapshot && !snapshotLoading && !snapshotError && (canApproveApproval || canOtherDecision)
 
   return (
     <div className='batch-page approval-page'>
@@ -8788,19 +8814,19 @@ export function ApprovalDecisionFlow() {
         actions={
           <>
             <Badge
-              count={caseCreationLabel}
+              count={createsCase ? caseCreationLabel : statusLabel(approval?.status)}
               color={caseCreation?.case_id ? '#12a89d' : '#f59f2f'}
             />
             <Button icon={<PrinterOutlined />} onClick={() => window.print()}>
               打印
             </Button>
-            <Tooltip
+            {createsCase && <Tooltip
               title={
                 canOpenRelatedCase
                   ? '跳转到关联案件详情'
                   : caseCreation?.case_id
                     ? '关联案件权限尚未同步，请联系管理员处理'
-                    : '暂无关联案件，审批通过后生成案件'
+                    : '最终审批通过且成案条件满足后生成案件'
               }
             >
               <Button
@@ -8810,7 +8836,7 @@ export function ApprovalDecisionFlow() {
               >
                 查看关联案件
               </Button>
-            </Tooltip>
+            </Tooltip>}
           </>
         }
       />
@@ -8839,10 +8865,10 @@ export function ApprovalDecisionFlow() {
                 approvalAccess.readonlyReason || '等待当前审批人处理',
               ],
               [
-                '3. 成案与归档',
+                createsCase ? '3. 成案与归档' : '3. 审批结果',
                 '系统自动处理',
-                caseCreation?.case_id ? '已完成' : '待处理',
-                caseCreation?.case_number || '审批通过后生成正式案件',
+                createsCase ? (caseCreation?.case_id ? '已完成' : '待处理') : statusLabel(approval?.status),
+                createsCase ? (caseCreation?.case_number || '最终审批通过且成案条件满足后生成正式案件') : '全部审批节点处理后，以最终审批状态为准',
               ],
             ].map((step, index) => (
               <article
@@ -8878,7 +8904,7 @@ export function ApprovalDecisionFlow() {
             <SectionCard title='申请信息'>
               <div className='batch-info-grid two'>
                 {[
-                  `申请类型 ${approval?.type === 'conflict_approval' ? '冲突审核' : '立案审批'}`,
+                  `申请类型 ${approval?.type === 'conflict_approval' ? '冲突审核' : createsCase ? '立案审批' : approval?.type || '未记录'}`,
                   `申请人 ${approval?.applicant_name || snapshot?.applicant?.submitted_name || '当前用户'}`,
                   `申请部门 ${approval?.department_name || snapshot?.applicant?.department_name || '公司业务部'}`,
                   `案件名称 ${applicationCaseTitle}`,
@@ -8906,18 +8932,18 @@ export function ApprovalDecisionFlow() {
               <div className='batch-approval-risk'>
                 <AlertOutlined />
                 <div>
-                  <strong>总体风险等级：{riskLabel(conflictRisk)}</strong>
+                  <strong>冻结自动检索结果：{conflictDispositionLabel(conflictDecisionStatus || conflictRisk)}</strong>
                   <p>
-                    {conflictNeedsHumanReview
-                      ? '当前结果不能作为无冲突结论，须由独立冲突核查人完成人工复核。'
-                      : `风险评分：${formatRiskScore(conflictResult?.riskAssessment?.riskScore)} / 100`}
-                    {' · '}检测记录：证据已冻结
+                    {independentReviewLabel}：{conflictDispositionLabel(conflictReviewDecision)}
+                  </p>
+                  <p>
+                    检索覆盖：{conflictCoverageStatus === 'COMPLETE' ? '完整' : conflictCoverageStatus ? '未完整（' + conflictCoverageStatus + '）' : '未记录'}
                   </p>
                 </div>
               </div>
               <div className='batch-hit-list'>
                 <p>
-                  <RiskTag text={riskLabel(conflictRisk)} />
+                  <RiskTag text='客户' />
                   客户：{snapshotClientName || '未记录'}
                 </p>
                 <p>
@@ -8927,7 +8953,7 @@ export function ApprovalDecisionFlow() {
                 <p>
                   <RiskTag text='证据来源' />
                   {approvalNoMatch
-                    ? '未发现匹配证据（检索覆盖受限）'
+                    ? '未发现匹配证据'
                     : snapshotEvidenceSource || '未记录'}
                 </p>
                 <p>
@@ -8962,7 +8988,7 @@ export function ApprovalDecisionFlow() {
               {conflictApprovalBlocked && (
                 <p className='batch-approval-readonly'>
                   {canDecisionActions
-                    ? '当前不能同意并成案：冲突复核尚未形成可成案结论。请核对补充要求，或选择“退回修改”。'
+                    ? '当前不能同意并通过本阶段：冲突复核尚未形成可成案结论。请核对补充要求，或选择“退回修改”。'
                     : '当前不能成案：请等待独立冲突核查人处理；如申请被退回，再按意见补充主体身份材料并重新提交。'}
                 </p>
               )}
@@ -9104,8 +9130,7 @@ export function ApprovalDecisionFlow() {
               `审批状态 ${statusLabel(approval?.status || '加载中')}`,
               `优先级 ${priorityLabel(approval?.priority)}`,
               `发起时间 ${approval?.created_at ? new Date(approval.created_at).toLocaleString() : '加载中'}`,
-              `成案状态 ${caseCreation?.case_id ? '已生成正式案件' : approval?.status === 'approved' ? '审批已通过，待生成正式案件' : '尚未成案（等待审批通过）'}`,
-              `正式案件 ${caseCreation?.case_number || '审批通过后生成'}`,
+              ...(createsCase ? [`成案状态 ${caseCreationLabel}`, `正式案件 ${caseCreation?.case_number || '最终审批通过且成案条件满足后生成'}`] : []),
             ].map((line) => (
               <p key={line}>{line}</p>
             ))}
@@ -9118,17 +9143,35 @@ export function ApprovalDecisionFlow() {
         </aside>
       </div>
 
+      {snapshotError && <Alert type='error' message={snapshotError} action={<Button onClick={loadApproval}>重新加载</Button>} />}
+      {snapshotHistory.length > 0 && <SectionCard title='提交版本'>
+        <Select aria-label='提交版本' loading={snapshotLoading} value={viewedSnapshotID || undefined} style={{ width: '100%' }} options={snapshotHistory.map((row) => ({ value: String(row.id), label: '第 ' + row.source_version + ' 次提交' + (row.id === activeSnapshotID ? ' · 当前版本' : ' · 历史只读') }))} onChange={(value) => { void selectSnapshot(value) }} />
+        {viewingHistoricalSnapshot && <Alert type='warning' message='正在查看历史提交版本，仅供查阅' description='请切回当前版本后再作决定或进入补正。历史版本不会覆盖当前审批依据。' action={<Button onClick={() => { void selectSnapshot(activeSnapshotID) }}>切回当前版本</Button>} />}
+      </SectionCard>}
+      {approval?.status === 'needs_revision' && <SectionCard title='退回补正'>
+        {(() => {
+          const returned = latestSupplementReturn(approval)
+          const intakeID = String(approval.intake_id || objectFromJSON(approval.metadata).intake_id || '')
+          const canSupplement = String(approval.applicant_id || approval.applicantId || '') === String(getUserInfo()?.id || '')
+          return <>
+            <p style={{ whiteSpace: 'pre-wrap' }}>{returned?.legacyText || '请核对审批记录中的退回意见'}</p>
+            {returned?.items.map((item) => <p key={item.item_id}>{item.description}</p>)}
+            {canSupplement && <Button type='primary' disabled={!intakeID || !returned || viewingHistoricalSnapshot || snapshotLoading || Boolean(snapshotError)} onClick={() => navigate('/case/create?' + new URLSearchParams({ intake_id: intakeID, approval_id: String(id), mode: 'revision' }).toString())}>补正并重新提交</Button>}
+            {canSupplement && !intakeID && <p>关联接案暂无法确定，请核对后再办理。</p>}
+          </>
+        })()}
+      </SectionCard>}
       <div className='batch-bottom-bar approval-actions'>
         <Button onClick={() => navigate('/approval')}>返回</Button>
         {(approval?.status === 'submitted' ||
           approval?.status === 'under_review' ||
-          approval?.status === 'pending') &&
+          approval?.status === 'pending' || approval?.status === 'resubmitted') &&
           canDecisionActions && (
             <Space>
               <Tooltip
                 title={
                   conflictApprovalBlocked
-                    ? '冲突复核未形成可成案结论，补充材料并重新复核后才能同意并成案'
+                    ? '冲突复核未形成可成案结论，补充材料并重新复核后才能同意并通过本阶段'
                     : undefined
                 }
               >
@@ -9141,7 +9184,7 @@ export function ApprovalDecisionFlow() {
                     disabled={!canApproveApproval}
                     onClick={() => openDecisionDialog('approve')}
                   >
-                    同意并成案
+                    同意并通过本阶段
                   </Button>
                 </span>
               </Tooltip>
@@ -9168,14 +9211,14 @@ export function ApprovalDecisionFlow() {
           )}
         {(approval?.status === 'submitted' ||
           approval?.status === 'under_review' ||
-          approval?.status === 'pending') &&
+          approval?.status === 'pending' || approval?.status === 'resubmitted') &&
           !canDecisionActions && (
             <Space>
               <span className='batch-approval-readonly'>
                 {hasConflictEvidenceMismatch
                   ? '审批证据不一致，已禁止处理'
                   : conflictApprovalBlocked
-                    ? '冲突复核尚未形成可成案结论，当前不能同意并成案。'
+                    ? '冲突复核尚未形成可成案结论，当前不能同意并通过本阶段。'
                     : approvalAccess.readonlyReason}
               </span>
             </Space>
@@ -9207,6 +9250,23 @@ export function ApprovalDecisionFlow() {
               onChange={(event) => setDecisionReason(event.target.value)}
               placeholder={decisionDialogCopy[decisionDialog].placeholder}
             />
+            {decisionDialog === 'request_changes' && <section aria-label='补正要求清单'>
+              <p>补正要求（1—20 项，不填写身份号码，不支持材料上传）</p>
+              {decisionRequirements.map((item, index) => <div key={index} className='batch-supplement-request'>
+                <Select aria-label={'要求类型 ' + (index + 1)} value={item.category} options={[{ value: 'field_correction', label: '字段更正' }, { value: 'identity_verification', label: '身份核验' }, { value: 'matter_explanation', label: '事项说明' }]} onChange={(category) => setDecisionRequirements((rows) => rows.map((row, i) => i === index ? { ...row, category } : row))} />
+                <Select aria-label={'定位字段 ' + (index + 1)} placeholder='定位字段' value={item.field_key} options={Object.entries(supplementFields).map(([value, field]) => ({ value, label: field.label }))} onChange={(field_key) => setDecisionRequirements((rows) => rows.map((row, i) => i === index ? { ...row, field_key, party_local_id: undefined } : row))} />
+                {['party_name', 'party_role', 'party_identity', 'parties'].includes(item.field_key || '') && <Select aria-label={'定位当事人 ' + (index + 1)} placeholder='选择快照中的当事人' value={item.party_local_id}
+                  options={listOf<any>(objectFromJSON(snapshot?.metadata).intake_parties || snapshot?.parties || objectFromJSON(snapshot?.metadata).parties).flatMap((party) => {
+                    const meta = objectFromJSON(party.metadata)
+                    const value = meta.local_id || meta.localId
+                    return value ? [{ value: String(value), label: String(party.entity_name || party.name || '当事人') }] : []
+                  })}
+                  onChange={(party_local_id) => setDecisionRequirements((rows) => rows.map((row, i) => i === index ? { ...row, party_local_id } : row))} />}
+                <Input.TextArea aria-label={'补正要求 ' + (index + 1)} maxLength={1000} rows={3} value={item.description} onChange={(event) => setDecisionRequirements((rows) => rows.map((row, i) => i === index ? { ...row, description: event.target.value } : row))} />
+                <Button disabled={decisionRequirements.length === 1} onClick={() => setDecisionRequirements((rows) => rows.filter((_, i) => i !== index))}>移除此项</Button>
+              </div>)}
+              <Button disabled={decisionRequirements.length >= 20} onClick={() => setDecisionRequirements((rows) => [...rows, { category: 'matter_explanation', field_key: 'description', description: '', required: true }])}>增加补正要求</Button>
+            </section>}
             <p className='batch-muted'>
               处理依据将写入审批记录，提交后不能删除，只能追加更正说明。
             </p>

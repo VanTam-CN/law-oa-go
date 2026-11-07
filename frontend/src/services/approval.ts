@@ -2,6 +2,9 @@ import { get, post, put, del } from './http'
 import { getUserInfo } from '@/utils/storage'
 
 export interface ApprovalItem {
+  submission_snapshot_required?: boolean
+  active_submission_snapshot_id?: string | null
+  action_version?: string
   id: string // 后端使用UUID字符串
   type: string
   title: string
@@ -215,6 +218,8 @@ export const handleApproval = (
  * 审批决定请求参数
  */
 export interface ApprovalDecisionParams {
+  expectedSubmissionSnapshotId?: string
+  expectedActionVersion?: string
   decision: 'approve' | 'reject' | 'request_changes' | 'defer' | 'escalate' | 'reassign'
   decisionReason: string
   decisionComments?: string
@@ -246,6 +251,8 @@ export const processApprovalDecision = async (
       decision_comments: params.decisionComments,
       approved_conditions: params.approvedConditions,
       imposed_requirements: params.imposedRequirements,
+      expected_submission_snapshot_id: params.expectedSubmissionSnapshotId,
+      expected_action_version: params.expectedActionVersion,
       follow_up_actions: params.followUpActions,
       supporting_documents: params.supportingDocuments,
       evidence_references: params.evidenceReferences,

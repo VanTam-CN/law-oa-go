@@ -36,6 +36,16 @@ type InboxItem struct {
 	Title      string `json:"title" gorm:"size:255;not null"`
 	Content    string `json:"content" gorm:"type:text"`
 
+	// Workflow fields are server-owned; empty historical modes stay unresolved.
+	SourceRef       string     `json:"source_ref,omitempty" gorm:"size:100;default:null"`
+	CompletionMode  string     `json:"completion_mode" gorm:"size:20;default:null"`
+	WorkflowTaskKey string     `json:"-" gorm:"size:200;default:null;uniqueIndex:uq_inbox_workflow_task_key"`
+	WorkflowGroup   string     `json:"-" gorm:"size:150;index"`
+	WorkflowPurpose string     `json:"-" gorm:"size:40"`
+	WorkflowVersion string     `json:"-" gorm:"size:100"`
+	ClosedReason    string     `json:"closed_reason,omitempty" gorm:"size:30"`
+	ArchivedAt      *time.Time `json:"archived_at,omitempty"`
+
 	// 优先级与时间
 	Priority    string     `json:"priority" gorm:"size:20;not null;default:'medium';index,priority:2;comment:优先级: critical/high/medium/low"`
 	DueDate     *time.Time `json:"due_date" gorm:"index,priority:3"`

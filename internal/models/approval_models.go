@@ -41,6 +41,9 @@ type ApprovalRequest struct {
 	CurrentApproverID   string `json:"current_approver_id" gorm:"column:current_approver_id;type:varchar(36)"`
 	CurrentApproverName string `json:"current_approver_name" gorm:"column:current_approver_name;type:varchar(255)"`
 
+	ActiveSubmissionSnapshotID *string `json:"active_submission_snapshot_id" gorm:"column:active_submission_snapshot_id;type:uuid"`
+	ActionVersion              string  `json:"action_version" gorm:"-"`
+
 	// 超时与升级
 	TimeoutAt   *time.Time `json:"timeout_at,omitempty" gorm:"column:timeout_at"`
 	Escalated   bool       `json:"escalated" gorm:"column:escalated;default:false"`
@@ -132,6 +135,9 @@ func (a *ApprovalWorkflow) BeforeCreate(tx *gorm.DB) error {
 type ApprovalRecord struct {
 	ID                string `json:"id" gorm:"column:id;type:varchar(36);primaryKey"`
 	ApprovalRequestID string `json:"approval_request_id" gorm:"column:approval_request_id;type:varchar(36);not null;index"`
+
+	SubmissionSnapshotID *string `json:"submission_snapshot_id" gorm:"column:submission_snapshot_id;type:uuid"`
+	ActionVersion        string  `json:"action_version" gorm:"column:action_version;type:varchar(100)"`
 
 	// 审批基本信息
 	Stage         string `json:"stage" gorm:"column:stage;type:varchar(100);not null"`
@@ -336,15 +342,17 @@ type UpdateApprovalRequest struct {
 
 // ApprovalDecisionRequest 审批决定请求
 type ApprovalDecisionRequest struct {
-	Decision            string                   `json:"decision" binding:"required,oneof=approve reject request_changes defer escalate reassign"`
-	DecisionReason      string                   `json:"decision_reason" binding:"required"`
-	DecisionComments    string                   `json:"decision_comments"`
-	ApprovedConditions  map[string]interface{}   `json:"approved_conditions"`
-	ImposedRequirements map[string]interface{}   `json:"imposed_requirements"`
-	FollowUpActions     []map[string]interface{} `json:"follow_up_actions"`
-	SupportingDocuments []map[string]interface{} `json:"supporting_documents"`
-	EvidenceReferences  []map[string]interface{} `json:"evidence_references"`
-	NextApproverID      string                   `json:"next_approver_id"` // 用于转派
+	ExpectedSubmissionSnapshotID string                   `json:"expected_submission_snapshot_id"`
+	ExpectedActionVersion        string                   `json:"expected_action_version"`
+	Decision                     string                   `json:"decision" binding:"required,oneof=approve reject request_changes defer escalate reassign"`
+	DecisionReason               string                   `json:"decision_reason" binding:"required"`
+	DecisionComments             string                   `json:"decision_comments"`
+	ApprovedConditions           map[string]interface{}   `json:"approved_conditions"`
+	ImposedRequirements          map[string]interface{}   `json:"imposed_requirements"`
+	FollowUpActions              []map[string]interface{} `json:"follow_up_actions"`
+	SupportingDocuments          []map[string]interface{} `json:"supporting_documents"`
+	EvidenceReferences           []map[string]interface{} `json:"evidence_references"`
+	NextApproverID               string                   `json:"next_approver_id"` // 用于转派
 }
 
 // TableName 设置表名
@@ -446,3 +454,9 @@ const (
 	SendStatusFailed    = "failed"
 	SendStatusCancelled = "cancelled"
 )
+
+// AfterFind supplies an opaque server version; browsers must not reconstruct nanoseconds.
+func (a *ApprovalRequest) AfterFind(tx *gorm.DB) error {
+	a.ActionVersion = a.UpdatedAt.UTC().Format(time.RFC3339Nano)
+	return nil
+}

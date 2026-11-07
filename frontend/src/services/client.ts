@@ -1,3 +1,4 @@
+import { apiRequest } from './collaborationRequest'
 import { get, post, put, del } from './http'
 
 export interface Client {
@@ -84,3 +85,46 @@ export const clientService = {
  * @deprecated 使用 clientService.getClientList 替代
  */
 export const getClients = (params?: ClientQueryParams) => clientService.getClientList(params || {})
+
+export interface ClientSummary {
+  id: number
+  name: string
+  type: '个人' | '企业'
+  identity_type?: string
+  identity_status?: string
+}
+export interface CreateIntakeClient {
+  name: string
+  type: '个人' | '企业'
+  identity_type: string
+  identity_number: string
+  phone?: string
+  email?: string
+  address?: string
+}
+export const createIntakeClient = (input: CreateIntakeClient, key: string) =>
+  apiRequest<ClientSummary>('/clients', {
+    method: 'POST',
+    headers: { 'Idempotency-Key': key },
+    body: JSON.stringify(
+      Object.fromEntries(
+        Object.entries(input).map(([field, value]) => [
+          field,
+          typeof value === 'string' ? value.trim() : value,
+        ]),
+      ),
+    ),
+  })
+export const getIntakeClientPage = (search: string, page: number, signal?: AbortSignal) =>
+  apiRequest<{
+    clients: ClientSummary[]
+    pagination: { page: number; page_size: number; total: number }
+  }>(
+    '/clients?' +
+      new URLSearchParams({
+        search: search.trim(),
+        page: String(page),
+        page_size: '50',
+      }).toString(),
+    { signal },
+  )

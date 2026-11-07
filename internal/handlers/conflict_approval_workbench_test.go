@@ -49,7 +49,7 @@ func TestConflictOfficerSeesOnlyAssignedConflictApproval(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if err := db.AutoMigrate(&models.Client{}, &models.Case{}, &models.CaseEthicalWallWhitelist{}); err != nil {
+	if err := db.AutoMigrate(&models.Client{}, &models.Case{}, &models.CaseEthicalWallWhitelist{}, &models.InboxItem{}); err != nil {
 		t.Fatal(err)
 	}
 	if err := db.Create(&models.Client{ID: 1, Name: "新案客户", Type: "企业", Status: "active", Version: 1}).Error; err != nil {

@@ -411,6 +411,8 @@ const Sidebar: React.FC<SidebarProps> = ({
     </Sider>
     <Drawer
       placement='left'
+      // Above fixed navigation (1030), below the unsaved-change modal (1050).
+      zIndex={1040}
       open={mobileOpen ?? false}
       onClose={() => onMobileClose?.()}
       width={280}

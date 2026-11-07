@@ -100,23 +100,7 @@ func TestIntakeConcurrentDistinctIntakesAllSucceed(t *testing.T) {
 	// Clone the baseline seeded intake/check (valid shape already proven
 	// by the sequential guard test) into three more intakes.
 	for i := 2; i <= 4; i++ {
-		if err := db.Exec(
-			`INSERT INTO case_intakes (id, title, case_type, client_id, created_by, status, metadata)
-			  SELECT 'intake-dup-' || ?, 'parallel-' || ?, case_type, client_id, created_by, status,
-			         replace(metadata, 'CHK-DUP-1', 'CHK-DUP-' || ?)
-			  FROM case_intakes WHERE id = 'intake-dup'`,
-			fmt.Sprintf("%d", i), fmt.Sprintf("%d", i), fmt.Sprintf("%d", i),
-		).Error; err != nil {
-			t.Fatalf("clone intake %d: %v", i, err)
-		}
-		if err := db.Exec(
-			`INSERT INTO conflict_check_records (check_id, check_status, check_result)
-			  SELECT 'CHK-DUP-' || ?, check_status, check_result
-			  FROM conflict_check_records WHERE check_id = 'CHK-DUP-1'`,
-			fmt.Sprintf("%d", i),
-		).Error; err != nil {
-			t.Fatalf("clone check %d: %v", i, err)
-		}
+		seedDuplicateApprovalGuardIntake(t, db, fmt.Sprintf("intake-dup-%d", i), fmt.Sprintf("CHK-DUP-%d", i), fmt.Sprintf("parallel-%d", i))
 	}
 	r := newDuplicateApprovalGuardRouter(db)
 

@@ -38,6 +38,8 @@ import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
 import { getToken } from '@/utils/storage'
+import WorkflowActions, { workflowActionsOf, reminderCompletionMode, type WorkflowAction } from '@/components/workflow/WorkflowActions'
+import { apiRequest } from '@/services/collaborationRequest'
 
 dayjs.extend(relativeTime)
 dayjs.locale('zh-cn')
@@ -54,6 +56,9 @@ const authHeaders = (extra: Record<string, string> = {}) => {
 }
 
 interface InboxItem {
+  actions?: WorkflowAction[]
+  workflow_action?: WorkflowAction | null
+  completion_mode?: string
   id: number
   user_id: number
   source_type: string
@@ -78,6 +83,8 @@ interface InboxItem {
 }
 
 interface InboxStats {
+  needs_action?: number
+  waiting?: number
   total: number
   unread: number
   pending: number
@@ -120,6 +127,9 @@ const InboxList: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [items, setItems] = useState<InboxItem[]>([])
   const [stats, setStats] = useState<InboxStats | null>(null)
+  const [detailError, setDetailError] = useState('')
+  const listRequest = React.useRef(0)
+  const detailRequest = React.useRef(0)
   const [detailVisible, setDetailVisible] = useState(false)
   const [snoozeVisible, setSnoozeVisible] = useState(false)
   const [selectedItem, setSelectedItem] = useState<InboxItem | null>(null)
@@ -129,6 +139,7 @@ const InboxList: React.FC = () => {
   const [isReadFilter, setIsReadFilter] = useState<boolean | undefined>(undefined)
   const [isCompletedFilter, setIsCompletedFilter] = useState<boolean | undefined>(undefined)
   const [priorityFilter, setPriorityFilter] = useState<string>('')
+  const [workflowBucketFilter, setWorkflowBucketFilter] = useState('')
   const [sourceTypeFilter, setSourceTypeFilter] = useState<string>('')
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null)
   const [searchText, setSearchText] = useState('')
@@ -146,9 +157,10 @@ const InboxList: React.FC = () => {
   useEffect(() => {
     fetchItems()
     fetchStats()
-  }, [pagination.current, pagination.pageSize, isReadFilter, isCompletedFilter, priorityFilter, sourceTypeFilter, orderBy])
+  }, [pagination.current, pagination.pageSize, isReadFilter, isCompletedFilter, priorityFilter, sourceTypeFilter, orderBy, workflowBucketFilter])
 
   const fetchItems = async () => {
+    const sequence = ++listRequest.current
     setLoading(true)
     try {
       const params: any = {
@@ -160,6 +172,7 @@ const InboxList: React.FC = () => {
       if (isReadFilter !== undefined) params.is_read = isReadFilter
       if (isCompletedFilter !== undefined) params.is_completed = isCompletedFilter
       if (priorityFilter) params.priority = priorityFilter
+      if (workflowBucketFilter) params.workflow_bucket = workflowBucketFilter
       if (sourceTypeFilter) params.source_type = sourceTypeFilter
       if (searchText) params.search = searchText
       if (dateRange) {
@@ -172,20 +185,25 @@ const InboxList: React.FC = () => {
         headers: authHeaders(),
       })
       const data = await response.json()
+      if (sequence !== listRequest.current) return
+      if (!response.ok) throw new Error(data.error?.message || data.message || '读取待办失败')
 
       if (data.success || data.data) {
         const result = data.data || data
         setItems(result.items || [])
+        if (result.stats) setStats(result.stats)
         setPagination({
           ...pagination,
           total: result.pagination?.total || 0,
         })
       }
     } catch (error) {
-      console.error('获取待办列表失败:', error)
-      appMessage.error('获取待办列表失败')
+      if (sequence === listRequest.current) {
+        setItems([])
+        appMessage.error(error instanceof Error ? error.message : '获取待办列表失败')
+      }
     } finally {
-      setLoading(false)
+      if (sequence === listRequest.current) setLoading(false)
     }
   }
 
@@ -222,16 +240,25 @@ const InboxList: React.FC = () => {
   }
 
   const handleMarkAsCompleted = async (id: number) => {
+    const item = selectedItem?.id === id ? selectedItem : items.find((row) => row.id === id)
+    if (!item?.completion_mode || reminderCompletionMode(item) === 'workflow') {
+      appMessage.warning('请进入业务页面办理，此事项不能手工完成'); return
+    }
     try {
-      const response = await fetch(`/api/v1/inbox/${id}/complete`, {
+      const operation = reminderCompletionMode(item) === 'manual' ? 'complete' : 'archive'
+      const response = await fetch(`/api/v1/inbox/${id}/${operation}`, {
         method: 'PUT',
         headers: authHeaders(),
       })
 
       if (response.ok) {
-        appMessage.success('已标记为完成')
+        appMessage.success(reminderCompletionMode(item) === 'manual' ? '已标记为完成' : '已归档提醒，业务状态未改变')
         fetchItems()
         fetchStats()
+      } else {
+        const failure = await response.json().catch(() => ({}))
+        appMessage.error(failure.error?.message || failure.message || '事项状态已变化，请刷新后办理')
+        fetchItems()
       }
     } catch (error) {
       appMessage.error('操作失败')
@@ -262,14 +289,17 @@ const InboxList: React.FC = () => {
     }
   }
 
-  const showDetail = (item: InboxItem) => {
-    setSelectedItem(item)
+  const showDetail = async (item: InboxItem) => {
+    const sequence = ++detailRequest.current
+    setSelectedItem(null)
+    setDetailError('')
     setDetailVisible(true)
-
-    // 自动标记为已读
-    if (!item.is_read) {
-      handleMarkAsRead(item.id)
-    }
+    try {
+      const detail = await apiRequest<InboxItem>('/inbox/' + item.id)
+      if (sequence !== detailRequest.current) return
+      setSelectedItem(detail)
+      if (!detail.is_read) void handleMarkAsRead(detail.id)
+    } catch (error) { if (sequence === detailRequest.current) setDetailError(error instanceof Error ? error.message : '待办详情读取失败') }
   }
 
   const showSnooze = (item: InboxItem) => {
@@ -381,7 +411,7 @@ const InboxList: React.FC = () => {
       title: '操作',
       width: 120,
       render: (_, record: InboxItem) => {
-        const canComplete = !record.is_completed
+        const canComplete = !record.is_completed && Boolean(record.completion_mode) && reminderCompletionMode(record) !== 'workflow'
         const items: MenuProps['items'] = [
           {
             key: 'detail',
@@ -401,21 +431,22 @@ const InboxList: React.FC = () => {
           },
           {
             key: 'complete',
-            label: '标记完成',
+            label: reminderCompletionMode(record) === 'manual' ? '标记完成' : '归档提醒',
             icon: <CheckOutlined />,
             onClick: () => handleMarkAsCompleted(record.id),
-            disabled: record.is_completed,
+            disabled: !canComplete,
           },
         ]
 
         return (
-          <Space>
+          <Space wrap>
+            <WorkflowActions actions={workflowActionsOf(record)} />
             {canComplete && (
-              <Tooltip title="标记完成">
+              <Tooltip title={reminderCompletionMode(record) === 'manual' ? '标记完成' : '归档提醒'}>
                 <Button
                   type="text"
                   icon={<CheckOutlined />}
-                  aria-label={`标记完成：${record.title}`}
+                  aria-label={`${reminderCompletionMode(record) === 'manual' ? '标记完成' : '归档提醒'}：${record.title}`}
                   title="标记完成"
                   onClick={() => handleMarkAsCompleted(record.id)}
                 />
@@ -443,6 +474,7 @@ const InboxList: React.FC = () => {
     setIsCompletedFilter(undefined)
     setPriorityFilter('')
     setSourceTypeFilter('')
+    setWorkflowBucketFilter('')
     setDateRange(null)
     setSearchText('')
   }
@@ -475,8 +507,8 @@ const InboxList: React.FC = () => {
           <Col span={6}>
             <Card>
               <Statistic
-                title="待处理"
-                value={stats.pending}
+                title="需要我处理"
+                value={stats.needs_action ?? stats.pending}
                 prefix={<ClockCircleOutlined />}
                 valueStyle={{ color: '#faad14' }}
               />
@@ -523,13 +555,13 @@ const InboxList: React.FC = () => {
           <Select
             aria-label="完成状态"
             placeholder="完成状态"
-            value={isCompletedFilter === undefined ? undefined : (isCompletedFilter ? '已完成' : '待处理')}
-            onChange={(value) => setIsCompletedFilter(value === undefined ? undefined : value === '已完成')}
+            value={isCompletedFilter === undefined ? undefined : (isCompletedFilter ? '已处理' : '待处理')}
+            onChange={(value) => setIsCompletedFilter(value === undefined ? undefined : value === '已处理')}
             style={{ width: 120 }}
             allowClear
           >
             <Option value="待处理">待处理</Option>
-            <Option value="已完成">已完成</Option>
+            <Option value="已处理">已处理</Option>
           </Select>
           <Select
             aria-label="优先级"
@@ -562,6 +594,7 @@ const InboxList: React.FC = () => {
             onChange={(dates) => setDateRange(dates as [dayjs.Dayjs, dayjs.Dayjs] | null)}
             placeholder={['开始日期', '结束日期']}
           />
+          <Select aria-label='办理分类' value={workflowBucketFilter} onChange={(value) => { setWorkflowBucketFilter(value); setPagination((old) => ({ ...old, current: 1 })) }} style={{ width: 150 }} options={[{ value: '', label: '全部事项' }, { value: 'needs_action', label: '需要我处理' }, { value: 'waiting', label: '等待他人' }, { value: 'completed', label: '已处理／结果提醒' }]} />
           <Select
             aria-label="排序方式"
             placeholder="排序方式"
@@ -601,12 +634,12 @@ const InboxList: React.FC = () => {
       <Modal
         title="待办详情"
         open={detailVisible}
-        onCancel={() => setDetailVisible(false)}
+        onCancel={() => { ++detailRequest.current; setDetailVisible(false) }}
         footer={[
           <Button key="close" onClick={() => setDetailVisible(false)}>
             关闭
           </Button>,
-          !selectedItem?.is_completed && (
+          selectedItem && !selectedItem.is_completed && selectedItem.completion_mode && reminderCompletionMode(selectedItem) !== 'workflow' && (
             <Button
               key="complete"
               type="primary"
@@ -618,14 +651,18 @@ const InboxList: React.FC = () => {
                 }
               }}
             >
-              标记完成
+              {selectedItem && reminderCompletionMode(selectedItem) === 'manual' ? '标记完成' : '归档提醒'}
             </Button>
           ),
         ]}
         width={600}
       >
+        {detailError && <p role='alert'>{detailError}</p>}
+        {!selectedItem && !detailError && <p>正在读取最新事项</p>}
         {selectedItem && (
           <Space direction="vertical" style={{ width: '100%' }} size="large">
+            <WorkflowActions actions={workflowActionsOf(selectedItem)} />
+            {reminderCompletionMode(selectedItem) === 'workflow' && <p>请进入业务页面办理。延后仅改变提醒时间，不改变办理期限或业务状态。</p>}
             <div>
               <Space>
                 <Tag color={priorityConfig[selectedItem.priority]?.color}>

@@ -1,7 +1,11 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/gin-gonic/gin/binding"
+	"io"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -38,7 +42,7 @@ func NewInboxHandler(inboxService *services.InboxService) *InboxHandler {
 // @Router /inbox [post]
 func (h *InboxHandler) CreateInboxItem(c *gin.Context) {
 	var req services.CreateInboxItemRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := bindInboxJSON(c, &req); err != nil {
 		common.APIBadRequest(c, "请求参数错误", err.Error())
 		return
 	}
@@ -49,11 +53,14 @@ func (h *InboxHandler) CreateInboxItem(c *gin.Context) {
 		common.APIUnauthorized(c, "未授权", "用户未登录")
 		return
 	}
-	req.UserID = uint(userID)
 
+	if req.SourceID != 0 || req.SourceType != "" && req.SourceType != "task" {
+		respondInboxItemError(c, "创建待办事项失败", services.ErrInboxProtectedField)
+		return
+	}
 	itemResp, err := h.inboxService.CreateInboxItem(c.Request.Context(), uint(userID), &req)
 	if err != nil {
-		common.APIInternalServerError(c, "创建待办事项失败", err.Error())
+		respondInboxItemError(c, "创建待办事项失败", err)
 		return
 	}
 
@@ -120,7 +127,7 @@ func (h *InboxHandler) UpdateInboxItem(c *gin.Context) {
 	}
 
 	var req services.UpdateInboxItemRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := bindInboxJSON(c, &req); err != nil {
 		common.APIBadRequest(c, "请求参数错误", err.Error())
 		return
 	}
@@ -198,7 +205,7 @@ func (h *InboxHandler) DeleteInboxItem(c *gin.Context) {
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /inbox [get]
 func (h *InboxHandler) ListInboxItems(c *gin.Context) {
-	var req services.ListInboxItemsRequest
+	req := services.ListInboxItemsRequest{Page: 1, PageSize: 20}
 	if err := c.ShouldBindQuery(&req); err != nil {
 		common.APIBadRequest(c, "查询参数错误", err.Error())
 		return
@@ -316,7 +323,7 @@ func (h *InboxHandler) SnoozeInboxItem(c *gin.Context) {
 	}
 
 	var req services.SnoozeInboxItemRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := bindInboxJSON(c, &req); err != nil {
 		common.APIBadRequest(c, "请求参数错误", err.Error())
 		return
 	}
@@ -373,6 +380,19 @@ func currentInboxUserID(c *gin.Context) (uint, bool) {
 }
 
 func respondInboxItemError(c *gin.Context, operation string, err error) {
+	if errors.Is(err, services.ErrInboxProtectedField) {
+		common.NewAPIError(c, 400, "INBOX_PROTECTED_FIELD", "只能创建或修改个人提醒，业务来源、指派及状态由服务端管理")
+		return
+	}
+	if errors.Is(err, repositories.ErrInboxWorkflowActionRequired) {
+		common.NewAPIError(c, 409, "INBOX_WORKFLOW_ACTION_REQUIRED", "请进入对应业务办理，不能手工完成、修改或归档未办业务任务")
+		return
+	}
+	if errors.Is(err, repositories.ErrInboxArchiveRequired) {
+		common.NewAPIError(c, 409, "INBOX_ARCHIVE_REQUIRED", "历史事项只能归档提醒，不计为业务完成")
+		return
+	}
+
 	if errors.Is(err, repositories.ErrInboxItemDeletionUnavailable) {
 		common.NewAPIError(c, 409, "INBOX_ITEM_DELETE_UNAVAILABLE", "待办事项必须通过完成、延后或移交处理，系统不会删除留痕记录")
 		return
@@ -383,4 +403,37 @@ func respondInboxItemError(c *gin.Context, operation string, err error) {
 		return
 	}
 	common.APIInternalServerError(c, operation, err.Error())
+}
+
+// ArchiveInboxItem is registered by the composition root as PUT /inbox/:id/archive.
+func (h *InboxHandler) ArchiveInboxItem(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		common.APIBadRequest(c, "待办事项ID必须是有效数字")
+		return
+	}
+	userID, ok := currentInboxUserID(c)
+	if !ok {
+		return
+	}
+	if err := h.inboxService.ArchiveInboxItem(c.Request.Context(), uint(id), userID); err != nil {
+		respondInboxItemError(c, "归档提醒失败", err)
+		return
+	}
+	common.APISuccess(c, gin.H{"message": "提醒已归档，业务状态未改变"})
+}
+
+// Reject unknown fields (including attempts to write server-only workflow DTOs)
+// and trailing JSON, rather than silently accepting a forged request.
+func bindInboxJSON(c *gin.Context, target interface{}) error {
+	decoder := json.NewDecoder(c.Request.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(target); err != nil {
+		return err
+	}
+	var extra interface{}
+	if err := decoder.Decode(&extra); err != io.EOF {
+		return fmt.Errorf("请求只能包含一个JSON对象")
+	}
+	return binding.Validator.ValidateStruct(target)
 }

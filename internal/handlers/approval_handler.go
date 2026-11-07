@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -74,6 +76,11 @@ func (a *approvalServiceAdapter) SubmitApproval(userID string, id string) (*mode
 
 func (a *approvalServiceAdapter) ProcessApproval(userID string, userName string, id string, decisionReq *models.ApprovalDecisionRequest) (*models.ApprovalRequest, error) {
 	return a.service.ProcessApprovalDecision(userID, id, decisionReq)
+}
+
+// BindApprovalTransaction keeps initial creation, binding, snapshot and inbox in one transaction.
+func (a *approvalServiceAdapter) BindApprovalTransaction(tx *gorm.DB) services.ApprovalServiceInterface {
+	return &approvalServiceAdapter{service: services.NewApprovalService(tx)}
 }
 
 // GetApprovalStats 获取审批统计
@@ -186,7 +193,7 @@ func (h *ApprovalHandler) ListApprovals(c *gin.Context) {
 		return
 	}
 
-	common.APISuccess(c, approvals)
+	common.APISuccess(c, projectApprovalResponseForViewer(approvals, c.GetString("role")))
 }
 
 // GetApproval 获取单个审批详情
@@ -236,13 +243,34 @@ func (h *ApprovalHandler) GetApproval(c *gin.Context) {
 	if !h.authorizeApprovalConflictContext(c, approval) {
 		return
 	}
+	// This is a read-only business-mode projection, not decision permission.
+	// Durable bindings remain authoritative when legacy metadata was edited.
+	snapshotRequired, err := services.ApprovalRequiresSubmissionSnapshot(h.db, approval)
+	if err != nil {
+		writeIntakeCollaborationError(c, err)
+		return
+	}
+	if err := services.ApplyApprovalSubmission(h.db, approval); err != nil {
+		writeIntakeCollaborationError(c, err)
+		return
+	}
 	if err := h.approvalService.LoadApprovalRecords(approval); err != nil {
 		log.Printf("获取审批记录失败: %v", err)
 		common.Error(c, http.StatusInternalServerError, "获取审批记录失败")
 		return
 	}
 
-	common.APISuccess(c, projectApprovalForViewer(approval, c.GetString("role")))
+	supplement, err := services.ReadApprovalSupplementContext(h.db, approval)
+	if err != nil {
+		writeIntakeCollaborationError(c, err)
+		return
+	}
+	response := struct {
+		*models.ApprovalRequest
+		*services.ApprovalSupplementContext
+		SubmissionSnapshotRequired bool `json:"submission_snapshot_required"`
+	}{approval, supplement, snapshotRequired}
+	common.APISuccess(c, projectApprovalResponseForViewer(response, c.GetString("role")))
 }
 
 // authorizeApprovalMutation re-checks the object boundary immediately before
@@ -325,11 +353,7 @@ func (h *ApprovalHandler) CreateApproval(c *gin.Context) {
 		common.Error(c, http.StatusBadRequest, "请求参数错误")
 		return
 	}
-	typeName := strings.ToLower(strings.TrimSpace(req.Type))
-	workflowType := strings.ToLower(strings.TrimSpace(req.WorkflowType))
-	if typeName == "case_creation" || typeName == "conflict" || typeName == "conflict_approval" ||
-		workflowType == "case_creation" || workflowType == "conflict_approval" {
-		common.NewAPIError(c, http.StatusConflict, "APPROVAL_CONTROLLED_WORKFLOW_REQUIRED", "成案和冲突审批必须从接案工作台或带案件上下文的受控流程发起")
+	if rejectControlledApprovalCreation(c, &req) {
 		return
 	}
 
@@ -341,7 +365,39 @@ func (h *ApprovalHandler) CreateApproval(c *gin.Context) {
 		return
 	}
 
-	common.APISuccess(c, approval)
+	common.APISuccess(c, projectApprovalResponseForViewer(approval, c.GetString("role")))
+}
+
+// Generic creation cannot manufacture an intake/check binding under an ordinary
+// business type. The same boundary applies to the template entry point.
+func rejectControlledApprovalCreation(c *gin.Context, req *models.CreateApprovalRequest) bool {
+	controlled := false
+	for _, value := range []string{req.Type, req.WorkflowType} {
+		switch strings.ToLower(strings.TrimSpace(value)) {
+		case "case_creation", "conflict", "conflict_approval":
+			controlled = true
+		}
+	}
+	for _, key := range []string{"intake_id", "conflict_task_id", "conflict_check_id", "approval_snapshot", "active_submission_snapshot_id", "case_creation_config"} {
+		if _, exists := req.Metadata[key]; exists {
+			controlled = true
+		}
+	}
+	if integrationMetadataString(req.Metadata, "integration_type") == "both" {
+		controlled = true
+	}
+	for _, key := range []string{"conflict_result", "conflict_check"} {
+		nested := integrationJSONMap(req.Metadata[key])
+		for _, alias := range []string{"conflict_check_id", "check_id", "checkId", "id"} {
+			if _, exists := nested[alias]; exists {
+				controlled = true
+			}
+		}
+	}
+	if controlled {
+		common.NewAPIError(c, http.StatusConflict, "APPROVAL_CONTROLLED_WORKFLOW_REQUIRED", "接案、成案和冲突审批必须从工作台或带案件上下文的受控流程发起")
+	}
+	return controlled
 }
 
 // SubmitApproval 提交审批申请（从草稿状态提交）
@@ -381,6 +437,9 @@ func (h *ApprovalHandler) SubmitApproval(c *gin.Context) {
 	// 调用服务提交审批
 	approval, err := h.approvalService.SubmitApproval(userIDStr, id)
 	if err != nil {
+		if writeKnownApprovalWorkflowError(c, err) {
+			return
+		}
 		log.Printf("提交审批失败: %v", err)
 		switch {
 		case errors.Is(err, services.ErrApprovalRecordNotFound):
@@ -395,7 +454,7 @@ func (h *ApprovalHandler) SubmitApproval(c *gin.Context) {
 		return
 	}
 
-	common.APISuccess(c, approval)
+	common.APISuccess(c, projectApprovalResponseForViewer(approval, c.GetString("role")))
 }
 
 // ProcessApprovalDecision 处理审批决定（批准/拒绝/要求修改/转派）
@@ -463,7 +522,7 @@ func (h *ApprovalHandler) ProcessApprovalDecision(c *gin.Context) {
 				h.writeApprovalDecisionError(c, err)
 				return
 			}
-			common.APISuccess(c, approval)
+			common.APISuccess(c, projectApprovalResponseForViewer(approval, c.GetString("role")))
 			return
 		}
 	} else {
@@ -487,26 +546,17 @@ func (h *ApprovalHandler) ProcessApprovalDecision(c *gin.Context) {
 	// 调用服务处理审批决定
 	approval, err := h.approvalService.ProcessApprovalDecision(userIDStr, id, &req)
 	if err != nil {
-		log.Printf("处理审批决定失败: %v", err)
-		switch {
-		case err.Error() == "审批记录不存在":
-			common.Error(c, http.StatusNotFound, "审批记录不存在")
-		case err.Error() == "无权审批此申请":
-			common.Error(c, http.StatusForbidden, "无权审批此申请")
-		case err.Error() == "审批状态不允许此操作":
-			common.Error(c, http.StatusBadRequest, "当前状态不允许此操作")
-		case err.Error() == "审批决定类型无效":
-			common.Error(c, http.StatusBadRequest, "无效的审批决定类型")
-		default:
-			common.Error(c, http.StatusInternalServerError, "处理审批决定失败")
-		}
+		h.writeApprovalDecisionError(c, err)
 		return
 	}
 
-	common.APISuccess(c, approval)
+	common.APISuccess(c, projectApprovalResponseForViewer(approval, c.GetString("role")))
 }
 
 func (h *ApprovalHandler) writeApprovalDecisionError(c *gin.Context, err error) {
+	if writeKnownApprovalWorkflowError(c, err) {
+		return
+	}
 	switch err.Error() {
 	case "审批记录不存在":
 		common.Error(c, http.StatusNotFound, "审批记录不存在")
@@ -519,6 +569,26 @@ func (h *ApprovalHandler) writeApprovalDecisionError(c *gin.Context, err error) 
 	default:
 		common.Error(c, http.StatusConflict, err.Error())
 	}
+}
+
+func writeKnownApprovalWorkflowError(c *gin.Context, err error) bool {
+	if writeKnownIntakeCollaborationError(c, err) {
+		return true
+	}
+	var gate *services.ApprovalConflictGateError
+	if errors.As(err, &gate) {
+		common.NewAPIError(c, http.StatusConflict, gate.Code, gate.Message)
+		return true
+	}
+	if errors.Is(err, services.ErrApprovalForbidden) {
+		forbidObjectAccess(c)
+		return true
+	}
+	if errors.Is(err, services.ErrApprovalRecordNotFound) || errors.Is(err, gorm.ErrRecordNotFound) {
+		common.Error(c, http.StatusNotFound, "审批记录不存在")
+		return true
+	}
+	return false
 }
 
 // ResubmitApproval 重新提交被驳回的审批申请
@@ -551,29 +621,58 @@ func (h *ApprovalHandler) ResubmitApproval(c *gin.Context) {
 		common.Error(c, http.StatusUnauthorized, "用户ID格式错误")
 		return
 	}
-	if !h.authorizeApprovalMutation(c, userIDStr, id) {
-		return
-	}
-
-	// 解析请求数据
-	var req struct {
-		RevisionNote string `json:"revision_note"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		log.Printf("请求参数错误: %v", err)
-		common.Error(c, http.StatusBadRequest, "请求参数错误")
-		return
-	}
-
-	// 调用服务重新提交
-	approval, err := h.approvalService.ResubmitApproval(userIDStr, id, req.RevisionNote)
+	// Resolve durable associations before selecting the legacy or intake DTO.
+	subject, err := h.approvalService.GetApprovalForAuthorization(userIDStr, id)
 	if err != nil {
-		log.Printf("重新提交审批失败: %v", err)
-		var gateErr *services.ApprovalConflictGateError
-		if errors.As(err, &gateErr) {
-			common.NewAPIError(c, http.StatusConflict, gateErr.Code, gateErr.Message)
+		writeIntakeCollaborationError(c, err)
+		return
+	}
+	if err := services.AuthorizeApprovalResubmission(h.db.WithContext(c.Request.Context()), userIDStr, subject); err != nil {
+		if errors.Is(err, services.ErrApprovalForbidden) {
+			forbidObjectAccess(c)
+		} else {
+			writeIntakeCollaborationError(c, err)
+		}
+		return
+	}
+	intakeID, err := services.ResolveApprovalIntakeID(h.db, subject)
+	if err != nil {
+		writeIntakeCollaborationError(c, err)
+		return
+	}
+	var approval *models.ApprovalRequest
+	if subject.ActiveSubmissionSnapshotID == nil && intakeID == "" {
+		var req struct {
+			RevisionNote string `json:"revision_note"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			common.Error(c, http.StatusBadRequest, "请求参数错误")
 			return
 		}
+		approval, err = h.approvalService.ResubmitApproval(userIDStr, id, req.RevisionNote)
+	} else {
+		var req models.ResubmitApprovalRequest
+		decoder := json.NewDecoder(c.Request.Body)
+		decoder.DisallowUnknownFields()
+		if err := decoder.Decode(&req); err != nil {
+			common.Error(c, http.StatusBadRequest, "请求参数错误")
+			return
+		}
+		if err := decoder.Decode(new(interface{})); err != io.EOF {
+			common.Error(c, http.StatusBadRequest, "请求参数错误")
+			return
+		}
+		if strings.TrimSpace(req.ExpectedIntakeRevision) == "" || strings.TrimSpace(req.ExpectedSubmissionSnapshotID) == "" || strings.TrimSpace(req.ReturnRecordID) == "" {
+			common.NewAPIError(c, http.StatusBadRequest, "INTAKE_RESUBMIT_VERSION_REQUIRED", "请携带接案版本、提交快照和当前退回记录重新提交")
+			return
+		}
+		approval, err = h.approvalService.ResubmitIntakeApproval(userIDStr, id, &req)
+	}
+	if err != nil {
+		if writeKnownApprovalWorkflowError(c, err) {
+			return
+		}
+		log.Printf("重新提交审批失败: %v", err)
 		switch {
 		case errors.Is(err, services.ErrApprovalRecordNotFound):
 			common.Error(c, http.StatusNotFound, "审批记录不存在")
@@ -587,7 +686,7 @@ func (h *ApprovalHandler) ResubmitApproval(c *gin.Context) {
 		return
 	}
 
-	common.APISuccess(c, approval)
+	common.APISuccess(c, projectApprovalResponseForViewer(approval, c.GetString("role")))
 }
 
 // CancelApproval 取消审批申请
@@ -691,13 +790,16 @@ func (h *ApprovalHandler) UpdateApproval(c *gin.Context) {
 	// 调用服务更新审批
 	approval, err := h.approvalService.UpdateApproval(userIDStr, id, &req)
 	if err != nil {
+		if writeKnownApprovalWorkflowError(c, err) {
+			return
+		}
 		log.Printf("更新审批失败: %v", err)
 		switch {
 		case err.Error() == "审批记录不存在":
 			common.Error(c, http.StatusNotFound, "审批记录不存在")
-		case err.Error() == "只有申请人才能更新审批":
+		case err.Error() == "只有申请人才能更新审批", err.Error() == "无权更新此审批记录":
 			common.Error(c, http.StatusForbidden, "只有申请人才能更新审批")
-		case err.Error() == "只有草稿或需要修改状态的审批才能更新":
+		case err.Error() == "只有草稿或需要修改状态的审批才能更新", strings.HasSuffix(err.Error(), "不允许编辑"):
 			common.Error(c, http.StatusBadRequest, "当前状态不允许更新")
 		default:
 			common.Error(c, http.StatusInternalServerError, "更新审批失败")
@@ -705,7 +807,7 @@ func (h *ApprovalHandler) UpdateApproval(c *gin.Context) {
 		return
 	}
 
-	common.APISuccess(c, approval)
+	common.APISuccess(c, projectApprovalResponseForViewer(approval, c.GetString("role")))
 }
 
 // CreateFromTemplate 从模板创建审批
@@ -758,6 +860,9 @@ func (h *ApprovalHandler) CreateFromTemplate(c *gin.Context) {
 		Metadata:     req.Metadata,
 		Attachments:  req.Attachments,
 	}
+	if rejectControlledApprovalCreation(c, createReq) {
+		return
+	}
 
 	// 从模板创建审批
 	approval, err := h.approvalTemplateService.CreateFromTemplate(req.TemplateName, userIDStr, "", createReq, req.Metadata)
@@ -767,7 +872,7 @@ func (h *ApprovalHandler) CreateFromTemplate(c *gin.Context) {
 		return
 	}
 
-	common.APISuccess(c, approval)
+	common.APISuccess(c, projectApprovalResponseForViewer(approval, c.GetString("role")))
 }
 
 // GetApprovalFlow 获取审批流程

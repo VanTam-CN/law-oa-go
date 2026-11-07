@@ -5,7 +5,7 @@
 
 import React, { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter } from 'react-router'
+import { createBrowserRouter, RouterProvider } from 'react-router'
 import { ConfigProvider } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
 import dayjs from 'dayjs'
@@ -111,19 +111,27 @@ const RootComponent: React.FC = () => {
               },
             }}
           >
-            <BrowserRouter>
-              <React.Suspense fallback={<SuspenseFallback />}>
-                <App />
-                {/* 开发工具 - 仅在开发环境显示 */}
-                {import.meta.env.DEV && <DevTools />}
-              </React.Suspense>
-            </BrowserRouter>
+            <RouterProvider router={appRouter} />
           </ConfigProvider>
         </QueryProvider>
       </ErrorBoundary>
     </StrictMode>
   )
 }
+
+// One data router preserves the route tree and supports draft leave guards.
+const appRouter = createBrowserRouter([
+  {
+    path: '*',
+    element: (
+      <React.Suspense fallback={<SuspenseFallback />}>
+        <App />
+        {/* 开发工具 - 仅在开发环境显示 */}
+        {import.meta.env.DEV && <DevTools />}
+      </React.Suspense>
+    ),
+  },
+])
 
 // 获取root元素
 const container = document.getElementById('root')

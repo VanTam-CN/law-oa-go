@@ -1,11 +1,10 @@
 package services
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
+	"github.com/google/uuid"
 	"time"
 
 	"gorm.io/gorm"
@@ -165,6 +164,9 @@ func (s *ApprovalService) GetApproval(userID string, id string) (*models.Approva
 	if err != nil || approval == nil {
 		return approval, err
 	}
+	if err := ApplyApprovalSubmission(s.approvalRepo.DB(), approval); err != nil {
+		return nil, err
+	}
 	if err := s.LoadApprovalRecords(approval); err != nil {
 		return nil, err
 	}
@@ -225,6 +227,9 @@ func (s *ApprovalService) GetApprovalByID(id string) (*models.ApprovalRequest, e
 	}
 	if approval == nil {
 		return nil, ErrApprovalRecordNotFound
+	}
+	if err := ApplyApprovalSubmission(s.approvalRepo.DB(), approval); err != nil {
+		return nil, err
 	}
 	return approval, nil
 }
@@ -333,7 +338,7 @@ func (s *ApprovalService) CreateApproval(userID string, userName string, req *mo
 }
 
 // SubmitApproval 提交审批申请
-func (s *ApprovalService) SubmitApproval(userID string, approvalID string) (*models.ApprovalRequest, error) {
+func (s *ApprovalService) submitApprovalInTx(userID string, approvalID string) (*models.ApprovalRequest, error) {
 	approval, err := s.approvalRepo.FindByID(approvalID)
 	if err != nil {
 		return nil, fmt.Errorf("查找审批记录失败: %v", err)
@@ -357,6 +362,15 @@ func (s *ApprovalService) SubmitApproval(userID string, approvalID string) (*mod
 		return nil, err
 	}
 
+	// Freeze server-owned intake facts before assigning a new approval.
+	if err := FreezeIntakeSubmissionInTx(s.approvalRepo.DB(), approval, userID, nil); err != nil {
+		return nil, err
+	}
+	if approval.ActiveSubmissionSnapshotID != nil {
+		if err := ensureInitialIntakeBinding(s.approvalRepo.DB(), approval); err != nil {
+			return nil, err
+		}
+	}
 	// 分配审批人
 	if err := s.assigner.AssignApprover(approval); err != nil {
 		return nil, fmt.Errorf("分配审批人失败: %v", err)
@@ -377,7 +391,7 @@ func (s *ApprovalService) SubmitApproval(userID string, approvalID string) (*mod
 }
 
 // ProcessApprovalDecision 处理审批决定（通过/拒绝/要求修改/转派）
-func (s *ApprovalService) ProcessApprovalDecision(userID string, approvalID string, req *models.ApprovalDecisionRequest) (*models.ApprovalRequest, error) {
+func (s *ApprovalService) processApprovalDecisionInTx(userID string, approvalID string, req *models.ApprovalDecisionRequest) (*models.ApprovalRequest, error) {
 	approval, err := s.approvalRepo.FindByID(approvalID)
 	if err != nil {
 		return nil, fmt.Errorf("查找审批记录失败: %v", err)
@@ -401,6 +415,22 @@ func (s *ApprovalService) ProcessApprovalDecision(userID string, approvalID stri
 		return nil, errors.New("审批状态不允许处理")
 	}
 
+	if err := validateApprovalDecisionVersion(approval, req); err != nil {
+		return nil, err
+	}
+	if err := authorizeApprovalSubject(s.approvalRepo.DB(), userID, approval); err != nil {
+		return nil, err
+	}
+	// The immutable reader is used for validation, without rewriting stored metadata.
+	frozen := *approval
+	if err := ApplyApprovalSubmission(s.approvalRepo.DB(), &frozen); err != nil {
+		return nil, err
+	}
+	if req.Decision == models.ApprovalDecisionApprove {
+		if err := validateCurrentIntakeSubmission(s.approvalRepo.DB(), &frozen); err != nil {
+			return nil, err
+		}
+	}
 	// 获取下一个状态
 	nextStatus, err := s.stateMachine.GetNextState(approval.Status, req.Decision)
 	if err != nil {
@@ -423,26 +453,28 @@ func (s *ApprovalService) ProcessApprovalDecision(userID string, approvalID stri
 
 	// 创建审批记录
 	record := &models.ApprovalRecord{
-		ID:                  generateUUID(),
-		ApprovalRequestID:   approval.ID,
-		Stage:               approval.CurrentStage,
-		StageOrder:          1,
-		ApproverID:          userID,
-		ApproverName:        approverName,
-		ApproverTitle:       "",
-		ApproverRole:        approverRole,
-		Decision:            req.Decision,
-		DecisionReason:      req.DecisionReason,
-		DecisionComments:    req.DecisionComments,
-		ApprovedConditions:  "{}",
-		ImposedRequirements: "{}",
-		FollowUpActions:     "[]",
-		ApprovalDate:        time.Now(),
-		EffectiveDate:       nil,
-		NextReviewDate:      nil,
-		SupportingDocuments: "[]",
-		EvidenceReferences:  "[]",
-		Status:              "active",
+		ID:                   generateUUID(),
+		ApprovalRequestID:    approval.ID,
+		SubmissionSnapshotID: approval.ActiveSubmissionSnapshotID,
+		ActionVersion:        approval.ActionVersion,
+		Stage:                approval.CurrentStage,
+		StageOrder:           1,
+		ApproverID:           userID,
+		ApproverName:         approverName,
+		ApproverTitle:        "",
+		ApproverRole:         approverRole,
+		Decision:             req.Decision,
+		DecisionReason:       req.DecisionReason,
+		DecisionComments:     req.DecisionComments,
+		ApprovedConditions:   "{}",
+		ImposedRequirements:  "{}",
+		FollowUpActions:      "[]",
+		ApprovalDate:         time.Now(),
+		EffectiveDate:        nil,
+		NextReviewDate:       nil,
+		SupportingDocuments:  "[]",
+		EvidenceReferences:   "[]",
+		Status:               "active",
 	}
 
 	// 处理JSON字段
@@ -470,6 +502,14 @@ func (s *ApprovalService) ProcessApprovalDecision(userID string, approvalID stri
 		if data, err := json.Marshal(req.EvidenceReferences); err == nil {
 			record.EvidenceReferences = string(data)
 		}
+	}
+
+	if req.Decision == models.ApprovalDecisionRequestChanges && (approval.ActiveSubmissionSnapshotID != nil || metadataString(parseMetadata(approval.Metadata), "intake_id") != "") {
+		requirements, err := NormalizeSupplementRequirements(req.ImposedRequirements, req.DecisionReason)
+		if err != nil {
+			return nil, err
+		}
+		record.ImposedRequirements = requirements
 	}
 
 	// 保存审批记录
@@ -527,7 +567,9 @@ func (s *ApprovalService) ProcessApprovalDecision(userID string, approvalID stri
 	// in place (fail-closed) and the same 409 contract as before.
 	if req.Decision == models.ApprovalDecisionReject ||
 		req.Decision == models.ApprovalDecisionRequestChanges {
-		s.terminalBinding.release(context.Background(), approval.ID)
+		if err := releaseIntakeBindingInTx(s.approvalRepo.DB(), approval.ID); err != nil {
+			return nil, err
+		}
 	}
 
 	// 重新加载数据
@@ -540,7 +582,7 @@ func (s *ApprovalService) ProcessApprovalDecision(userID string, approvalID stri
 }
 
 // ResubmitApproval 重新提交被拒绝或要求修改的审批
-func (s *ApprovalService) ResubmitApproval(userID string, approvalID string, revisionNote string) (*models.ApprovalRequest, error) {
+func (s *ApprovalService) resubmitApprovalInTx(userID string, approvalID string, revisionNote string) (*models.ApprovalRequest, error) {
 	approval, err := s.approvalRepo.FindByID(approvalID)
 	if err != nil {
 		return nil, fmt.Errorf("查找审批记录失败: %v", err)
@@ -549,6 +591,9 @@ func (s *ApprovalService) ResubmitApproval(userID string, approvalID string, rev
 		return nil, ErrApprovalRecordNotFound
 	}
 
+	if approval.ActiveSubmissionSnapshotID != nil {
+		return nil, &ApprovalConflictGateError{Code: "INTAKE_RESUBMIT_VERSION_REQUIRED", Message: "请从接案补充页面携带当前版本重新提交"}
+	}
 	// 确保是申请人本人
 	if approval != nil && approval.ApplicantID != userID {
 		return nil, fmt.Errorf("无权重新提交此审批记录")
@@ -621,7 +666,7 @@ func (s *ApprovalService) ResubmitApproval(userID string, approvalID string, rev
 }
 
 // CancelApproval 撤回审批
-func (s *ApprovalService) CancelApproval(userID string, approvalID string) error {
+func (s *ApprovalService) cancelApprovalInTx(userID string, approvalID string) error {
 	approval, err := s.approvalRepo.FindByID(approvalID)
 	if err != nil {
 		return fmt.Errorf("查找审批记录失败: %v", err)
@@ -664,7 +709,9 @@ func (s *ApprovalService) CancelApproval(userID string, approvalID string) error
 	// bind so that new submission is not blocked forever. Best-effort:
 	// a failed release leaves the bind in place (fail-closed 409) and
 	// never fails the cancellation itself.
-	s.terminalBinding.release(context.Background(), approval.ID)
+	if err := releaseIntakeBindingInTx(s.approvalRepo.DB(), approval.ID); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -681,6 +728,16 @@ func (s *ApprovalService) UpdateApproval(userID string, id string, req *models.U
 		return nil, fmt.Errorf("无权更新此审批记录")
 	}
 
+	if approval == nil {
+		return nil, ErrApprovalRecordNotFound
+	}
+	intakeID, err := ResolveApprovalIntakeID(s.approvalRepo.DB(), approval)
+	if err != nil {
+		return nil, err
+	}
+	if approval.ActiveSubmissionSnapshotID != nil || intakeID != "" || submissionText(req.Metadata["intake_id"]) != "" || conflictCheckIDFromMetadata(req.Metadata) != "" {
+		return nil, &ApprovalConflictGateError{Code: "INTAKE_REVISION_ROUTE_REQUIRED", Message: "接案请通过工作台或补充页面修改，不能改写审批关联和快照"}
+	}
 	// 只能更新可编辑状态的审批
 	if !s.stateMachine.CanEdit(approval.Status) {
 		return nil, fmt.Errorf("当前状态 %s 不允许编辑", approval.Status)
@@ -770,8 +827,13 @@ func (s *ApprovalService) sendApprovalNotification(approval *models.ApprovalRequ
 // generateRequestNumber 生成申请编号
 func (s *ApprovalService) generateRequestNumber() (string, error) {
 	timestamp := time.Now().Format("20060102")
-	random := strconv.FormatInt(time.Now().UnixNano()%1000000, 10)
-	return fmt.Sprintf("AP-%s-%s", timestamp, random), nil
+	// A six-digit clock suffix collides under parallel intake submissions.
+	// Keep the date prefix, using a full random UUID within the 50-byte column.
+	random, err := uuid.NewRandom()
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("AP-%s-%s", timestamp, random.String()), nil
 }
 
 // generateUUID 生成UUID

@@ -133,20 +133,22 @@ func seedInboxOwnershipItems(t *testing.T, db *gorm.DB) {
 	t.Helper()
 	items := []models.InboxItem{
 		{
-			ID:         inboxOwnerID,
-			UserID:     inboxOwnerUID,
-			SourceType: "task",
-			SourceID:   1,
-			Title:      "owner inbox item",
-			Priority:   "medium",
+			ID:             inboxOwnerID,
+			UserID:         inboxOwnerUID,
+			SourceType:     "task",
+			SourceID:       0,
+			CompletionMode: "manual",
+			Title:          "owner inbox item",
+			Priority:       "medium",
 		},
 		{
-			ID:         inboxOtherID,
-			UserID:     inboxOtherUID,
-			SourceType: "task",
-			SourceID:   2,
-			Title:      "other user inbox item",
-			Priority:   "high",
+			ID:             inboxOtherID,
+			UserID:         inboxOtherUID,
+			SourceType:     "task",
+			SourceID:       0,
+			CompletionMode: "manual",
+			Title:          "other user inbox item",
+			Priority:       "high",
 		},
 	}
 	if err := db.Create(&items).Error; err != nil {

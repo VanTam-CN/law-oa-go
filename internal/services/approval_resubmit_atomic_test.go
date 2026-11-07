@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -143,6 +144,7 @@ func TestCaseTxGuard_CompetingIntakeSlotBlocked(t *testing.T) {
 	// Point the approval at the contested intake.
 	f.approval.Metadata = fmt.Sprintf(`{"conflict_check_id":"CHK-TX-1","intake_id":"%s"}`, intake)
 	require.NoError(t, f.db.Save(f.approval).Error)
+	seedAtomicApprovedIntakeSnapshot(t, f, intake)
 
 	_, err := f.svc.AutoCreateCaseFromApproval(context.Background(), "APR-TX-1", caseTxData())
 	require.Error(t, err)
@@ -163,11 +165,34 @@ func TestCaseTxGuard_SelfOwnedSlotPasses(t *testing.T) {
 	seedAtomicBind(t, f.db, "APR-TX-1", intake)
 	f.approval.Metadata = fmt.Sprintf(`{"conflict_check_id":"CHK-TX-1","intake_id":"%s"}`, intake)
 	require.NoError(t, f.db.Save(f.approval).Error)
+	seedAtomicApprovedIntakeSnapshot(t, f, intake)
 
 	result, err := f.svc.AutoCreateCaseFromApproval(context.Background(), "APR-TX-1", caseTxData())
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	require.Equal(t, "completed", result.Status)
+}
+
+// Post-approval guard fixtures need the frozen protocol and real intake row;
+// an intake metadata string alone no longer authorizes case creation.
+func seedAtomicApprovedIntakeSnapshot(t *testing.T, f *seededFixture, intakeID string) {
+	t.Helper()
+	require.NoError(t, f.db.AutoMigrate(&models.ApprovalSnapshot{}, &models.InboxItem{}, &models.ApprovalRecord{}))
+	require.NoError(t, f.db.Exec("CREATE TABLE case_intakes(id TEXT PRIMARY KEY, client_id INTEGER, created_by TEXT)").Error)
+	require.NoError(t, f.db.Exec("INSERT INTO case_intakes VALUES(?,1,'1')", intakeID).Error)
+	var check models.ConflictCheckRecord
+	require.NoError(t, f.db.First(&check, "check_id = ?", "CHK-TX-1").Error)
+	check.SearchParameters["intakeId"] = intakeID
+	check.SearchParameters["clientIdentifiers"] = map[string]interface{}{"id_card": "hmac-sha256:atomic-client"}
+	require.NoError(t, f.db.Save(&check).Error)
+	parties, err := buildReviewedParties(&check)
+	require.NoError(t, err)
+	id := uuid.NewString()
+	metadata := map[string]interface{}{"intake_id": intakeID, "conflict_check_id": check.CheckID, "parties": parties, "case_creation_config": caseTxData()}
+	snapshot := map[string]interface{}{"snapshot_id": id, "approval_request_id": f.approval.ID, "source_version": 1, "intake_id": intakeID, "conflict_check_id": check.CheckID, "metadata": metadata}
+	require.NoError(t, f.db.Create(&models.ApprovalSnapshot{ID: id, ApprovalRequestID: f.approval.ID, SnapshotType: models.IntakeSubmissionSnapshotType, SourceVersion: 1, SnapshotData: snapshotJSON(t, snapshot)}).Error)
+	f.approval.ActiveSubmissionSnapshotID, f.approval.ApplicantID, f.approval.ConflictCheckID = &id, "1", check.CheckID
+	require.NoError(t, f.db.Save(f.approval).Error)
 }
 
 // Legacy rows created before the bind invariant have no intake metadata and

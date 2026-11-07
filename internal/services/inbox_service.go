@@ -2,8 +2,13 @@ package services
 
 import (
 	"context"
+	"encoding/json"
+	"sort"
+	"strings"
+
 	"errors"
 	"fmt"
+	"gorm.io/gorm"
 	"time"
 
 	"law-oa-go/internal/models"
@@ -26,9 +31,17 @@ func NewInboxService(inboxRepo repositories.InboxRepository, userRepo repositori
 
 // CreateInboxItemRequest 创建待办事项请求
 type CreateInboxItemRequest struct {
-	UserID      uint    `json:"user_id" binding:"required"`
-	SourceType  string  `json:"source_type" binding:"required,oneof=deadline approval task handoff waiver conflict"`
-	SourceID    uint    `json:"source_id" binding:"required"`
+	CompletionMode  json.RawMessage `json:"completion_mode"`
+	SourceRef       json.RawMessage `json:"source_ref"`
+	WorkflowTaskKey json.RawMessage `json:"workflow_task_key"`
+	AssignedTo      json.RawMessage `json:"assigned_to"`
+	WorkflowGroup   json.RawMessage `json:"workflow_group"`
+	WorkflowPurpose json.RawMessage `json:"workflow_purpose"`
+	WorkflowVersion json.RawMessage `json:"workflow_version"`
+
+	UserID      uint    `json:"user_id"`
+	SourceType  string  `json:"source_type" binding:"omitempty,oneof=deadline approval task handoff waiver conflict"`
+	SourceID    uint    `json:"source_id"`
 	Title       string  `json:"title" binding:"required,min=1,max=255"`
 	Content     string  `json:"content" binding:"max=5000"`
 	Priority    string  `json:"priority" binding:"required,oneof=critical high medium low"`
@@ -38,6 +51,20 @@ type CreateInboxItemRequest struct {
 
 // UpdateInboxItemRequest 更新待办事项请求
 type UpdateInboxItemRequest struct {
+	CompletionMode  json.RawMessage `json:"completion_mode"`
+	SourceRef       json.RawMessage `json:"source_ref"`
+	WorkflowTaskKey json.RawMessage `json:"workflow_task_key"`
+	AssignedTo      json.RawMessage `json:"assigned_to"`
+	WorkflowGroup   json.RawMessage `json:"workflow_group"`
+	WorkflowPurpose json.RawMessage `json:"workflow_purpose"`
+	WorkflowVersion json.RawMessage `json:"workflow_version"`
+
+	UserID      json.RawMessage `json:"user_id"`
+	SourceType  json.RawMessage `json:"source_type"`
+	SourceID    json.RawMessage `json:"source_id"`
+	IsCompleted json.RawMessage `json:"is_completed"`
+	ArchivedAt  json.RawMessage `json:"archived_at"`
+
 	Title       string  `json:"title" binding:"omitempty,min=1,max=255"`
 	Content     string  `json:"content" binding:"omitempty,max=5000"`
 	Priority    string  `json:"priority" binding:"omitempty,oneof=critical high medium low"`
@@ -53,6 +80,9 @@ type SnoozeInboxItemRequest struct {
 
 // ListInboxItemsRequest 待办事项列表请求
 type ListInboxItemsRequest struct {
+	WorkflowBucket string `json:"workflow_bucket" form:"workflow_bucket" binding:"omitempty,oneof=needs_action waiting completed"`
+	Archived       *bool  `json:"archived" form:"archived"`
+
 	Page        int    `json:"page" form:"page" binding:"min=1"`
 	PageSize    int    `json:"page_size" form:"page_size" binding:"min=1,max=100"`
 	IsRead      *bool  `json:"is_read" form:"is_read"`
@@ -67,6 +97,13 @@ type ListInboxItemsRequest struct {
 
 // InboxItemResponse 待办事项响应
 type InboxItemResponse struct {
+	SourceRef      string          `json:"source_ref,omitempty"`
+	CompletionMode string          `json:"completion_mode"`
+	WorkflowAction *WorkflowAction `json:"workflow_action"`
+	WorkflowBucket string          `json:"workflow_bucket"`
+	ClosedReason   string          `json:"closed_reason,omitempty"`
+	ArchivedAt     *time.Time      `json:"archived_at,omitempty"`
+
 	ID            uint       `json:"id"`
 	UserID        uint       `json:"user_id"`
 	SourceType    string     `json:"source_type"`
@@ -99,6 +136,11 @@ type ListInboxItemsResponse struct {
 
 // InboxStatsResponse 待办事项统计响应
 type InboxStatsResponse struct {
+	NeedsAction      int64 `json:"needs_action"`
+	Waiting          int64 `json:"waiting"`
+	Archived         int64 `json:"archived"`
+	LegacyUnresolved int64 `json:"legacy_unresolved"`
+
 	Total       int64 `json:"total"`
 	Unread      int64 `json:"unread"`
 	Pending     int64 `json:"pending"`
@@ -112,6 +154,16 @@ type InboxStatsResponse struct {
 
 // CreateInboxItem 创建待办事项
 func (s *InboxService) CreateInboxItem(ctx context.Context, userID uint, req *CreateInboxItemRequest) (*InboxItemResponse, error) {
+	// The existing trusted client-handoff producer calls this service directly.
+	// Its numeric source is kept as an unresolved reminder, never upgraded to a
+	// business capability. The public HTTP endpoint only permits personal tasks.
+	legacyHandoff := req != nil && req.SourceType == "handoff" && req.SourceID > 0
+	if req == nil || req.UserID != 0 && req.UserID != userID || !legacyHandoff && (req.SourceID != 0 || req.SourceType != "" && req.SourceType != "task") || hasInboxProtected(req.CompletionMode, req.SourceRef, req.WorkflowTaskKey, req.AssignedTo, req.WorkflowGroup, req.WorkflowPurpose, req.WorkflowVersion) {
+		return nil, ErrInboxProtectedField
+	}
+	if userID == 0 || s.userRepo == nil {
+		return nil, fmt.Errorf("待办接收人验证服务不可用")
+	}
 	// 验证用户是否存在
 	user, err := s.userRepo.FindByID(ctx, userID)
 	if err != nil {
@@ -142,39 +194,42 @@ func (s *InboxService) CreateInboxItem(ctx context.Context, userID uint, req *Cr
 
 	// 创建待办事项
 	item := &models.InboxItem{
-		UserID:      userID,
-		SourceType:  req.SourceType,
-		SourceID:    req.SourceID,
-		Title:       req.Title,
-		Content:     req.Content,
-		Priority:    req.Priority,
-		DueDate:     dueDate,
-		DueDateType: req.DueDateType,
+		UserID:         userID,
+		SourceType:     "task",
+		CompletionMode: "manual",
+		Title:          req.Title,
+		Content:        req.Content,
+		Priority:       req.Priority,
+		DueDate:        dueDate,
+		DueDateType:    req.DueDateType,
 	}
 
+	if legacyHandoff {
+		item.SourceType, item.SourceID, item.CompletionMode = "handoff", req.SourceID, "legacy_unresolved"
+	}
 	err = s.inboxRepo.Create(ctx, item)
 	if err != nil {
 		return nil, fmt.Errorf("创建待办事项失败: %w", err)
 	}
 
-	return s.convertToResponse(item), nil
+	return s.projectOneInbox(ctx, item, userID)
 }
 
 // GetInboxItemByID 根据ID获取待办事项
 func (s *InboxService) GetInboxItemByID(ctx context.Context, id, userID uint) (*InboxItemResponse, error) {
 	item, err := s.inboxRepo.FindByIDAndUserID(ctx, id, userID)
 	if err != nil {
-		return nil, fmt.Errorf("获取待办事项失败: %w", err)
+		return nil, err
 	}
-	if item == nil {
-		return nil, errors.New("待办事项不存在")
-	}
-
-	return s.convertToResponse(item), nil
+	return s.projectOneInbox(ctx, item, userID)
 }
 
 // UpdateInboxItem 更新待办事项
 func (s *InboxService) UpdateInboxItem(ctx context.Context, id, userID uint, req *UpdateInboxItemRequest) (*InboxItemResponse, error) {
+	if req == nil || hasInboxProtected(req.CompletionMode, req.SourceRef, req.WorkflowTaskKey, req.AssignedTo, req.WorkflowGroup, req.WorkflowPurpose, req.WorkflowVersion, req.UserID, req.SourceType, req.SourceID, req.IsCompleted, req.ArchivedAt) {
+		return nil, ErrInboxProtectedField
+	}
+
 	// 获取现有待办事项
 	item, err := s.inboxRepo.FindByIDAndUserID(ctx, id, userID)
 	if err != nil {
@@ -182,6 +237,13 @@ func (s *InboxService) UpdateInboxItem(ctx context.Context, id, userID uint, req
 	}
 	if item == nil {
 		return nil, errors.New("待办事项不存在")
+	}
+
+	if _, err := s.projectOneInbox(ctx, item, userID); err != nil {
+		return nil, err
+	}
+	if !repositories.IsManualInboxItem(item) {
+		return nil, repositories.ErrInboxWorkflowActionRequired
 	}
 
 	// 解析到期日期
@@ -225,14 +287,14 @@ func (s *InboxService) UpdateInboxItem(ctx context.Context, id, userID uint, req
 		return nil, fmt.Errorf("更新待办事项失败: %w", err)
 	}
 
-	return s.convertToResponse(item), nil
+	return s.projectOneInbox(ctx, item, userID)
 }
 
 // DeleteInboxItem 删除待办事项
 func (s *InboxService) DeleteInboxItem(ctx context.Context, id, userID uint) error {
 	// Preserve the same ownership/not-found response used by every other
 	// inbox operation before exposing the retention policy.
-	if _, err := s.inboxRepo.FindByIDAndUserID(ctx, id, userID); err != nil {
+	if _, err := s.GetInboxItemByID(ctx, id, userID); err != nil {
 		return err
 	}
 	return s.inboxRepo.DeleteByUserID(ctx, id, userID)
@@ -240,80 +302,125 @@ func (s *InboxService) DeleteInboxItem(ctx context.Context, id, userID uint) err
 
 // ListInboxItems 获取待办事项列表
 func (s *InboxService) ListInboxItems(ctx context.Context, userID uint, req *ListInboxItemsRequest) (*ListInboxItemsResponse, error) {
-	// 设置默认值
+	if req == nil {
+		req = &ListInboxItemsRequest{}
+	}
 	if req.Page <= 0 {
 		req.Page = 1
 	}
 	if req.PageSize <= 0 {
 		req.PageSize = 20
 	}
-
-	// 解析日期范围
+	if req.PageSize > 100 {
+		req.PageSize = 100
+	}
+	visible, err := s.visibleInbox(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	stats := inboxStats(visible)
 	var dueBefore, dueAfter *time.Time
 	if req.DueBefore != "" {
-		if t, err := time.Parse("2006-01-02", req.DueBefore); err == nil {
-			dueBefore = &t
+		at, err := parseInboxBoundary(req.DueBefore)
+		if err != nil {
+			return nil, err
 		}
+		dueBefore = &at
 	}
 	if req.DueAfter != "" {
-		if t, err := time.Parse("2006-01-02", req.DueAfter); err == nil {
-			dueAfter = &t
+		at, err := parseInboxBoundary(req.DueAfter)
+		if err != nil {
+			return nil, err
 		}
+		dueAfter = &at
 	}
-
-	// 构建查询参数
-	params := repositories.InboxListParams{
-		Page:        req.Page,
-		PageSize:    req.PageSize,
-		UserID:      userID,
-		IsRead:      req.IsRead,
-		IsCompleted: req.IsCompleted,
-		Priority:    req.Priority,
-		SourceType:  req.SourceType,
-		DueBefore:   dueBefore,
-		DueAfter:    dueAfter,
-		Search:      req.Search,
-		OrderBy:     req.OrderBy,
+	filtered := make([]*InboxItemResponse, 0, len(visible))
+	for _, item := range visible {
+		archived := req.Archived != nil && *req.Archived
+		if (item.ArchivedAt != nil) != archived {
+			continue
+		}
+		if req.WorkflowBucket != "" && item.WorkflowBucket != req.WorkflowBucket {
+			continue
+		}
+		if req.IsRead != nil && item.IsRead != *req.IsRead {
+			continue
+		}
+		if req.IsCompleted != nil && item.IsCompleted != *req.IsCompleted {
+			continue
+		}
+		if req.Priority != "" && item.Priority != req.Priority {
+			continue
+		}
+		if req.SourceType != "" && item.SourceType != req.SourceType {
+			continue
+		}
+		if req.Search != "" && !strings.Contains(strings.ToLower(item.Title+" "+item.Content), strings.ToLower(req.Search)) {
+			continue
+		}
+		if dueBefore != nil && (item.DueDate == nil || item.DueDate.After(*dueBefore)) {
+			continue
+		}
+		if dueAfter != nil && (item.DueDate == nil || item.DueDate.Before(*dueAfter)) {
+			continue
+		}
+		filtered = append(filtered, item)
 	}
-
-	// 获取待办事项列表
-	items, total, err := s.inboxRepo.List(ctx, &params)
-	if err != nil {
-		return nil, fmt.Errorf("获取待办事项列表失败: %w", err)
+	sort.SliceStable(filtered, func(i, j int) bool {
+		a, b := filtered[i], filtered[j]
+		if req.OrderBy == "priority" && inboxPriority(a.Priority) != inboxPriority(b.Priority) {
+			return inboxPriority(a.Priority) > inboxPriority(b.Priority)
+		}
+		if req.OrderBy != "created_at" {
+			if a.DueDate == nil && b.DueDate != nil {
+				return false
+			}
+			if a.DueDate != nil && b.DueDate == nil {
+				return true
+			}
+			if a.DueDate != nil && b.DueDate != nil && !a.DueDate.Equal(*b.DueDate) {
+				return a.DueDate.Before(*b.DueDate)
+			}
+		}
+		if !a.CreatedAt.Equal(b.CreatedAt) {
+			return a.CreatedAt.After(b.CreatedAt)
+		}
+		return a.ID > b.ID
+	})
+	total := int64(len(filtered))
+	start := int64(req.Page-1) * int64(req.PageSize)
+	page := []*InboxItemResponse{}
+	if start >= 0 && start < total {
+		end := start + int64(req.PageSize)
+		if end > total {
+			end = total
+		}
+		page = filtered[start:end]
 	}
-
-	// 转换为响应格式
-	itemResponses := make([]*InboxItemResponse, len(items))
-	for i, item := range items {
-		itemResponses[i] = s.convertToResponse(item)
-	}
-
-	// 构建分页信息
-	pagination := PaginationWithTotalPage{
-		Page:      req.Page,
-		PageSize:  req.PageSize,
-		Total:     total,
-		TotalPage: (total + int64(req.PageSize) - 1) / int64(req.PageSize),
-	}
-
-	return &ListInboxItemsResponse{
-		Items:      itemResponses,
-		Pagination: pagination,
-	}, nil
+	return &ListInboxItemsResponse{Items: page, Stats: stats, Pagination: PaginationWithTotalPage{Page: req.Page, PageSize: req.PageSize, Total: total, TotalPage: (total + int64(req.PageSize) - 1) / int64(req.PageSize)}}, nil
 }
 
 // MarkAsRead 标记为已读
 func (s *InboxService) MarkAsRead(ctx context.Context, id, userID uint) error {
+	if _, err := s.GetInboxItemByID(ctx, id, userID); err != nil {
+		return err
+	}
 	return s.inboxRepo.MarkAsReadByUserID(ctx, id, userID)
 }
 
 // MarkAsCompleted 标记为已完成
 func (s *InboxService) MarkAsCompleted(ctx context.Context, id, userID uint) error {
+	if _, err := s.GetInboxItemByID(ctx, id, userID); err != nil {
+		return err
+	}
 	return s.inboxRepo.MarkAsCompletedByUserID(ctx, id, userID)
 }
 
 // SnoozeInboxItem 延后待办事项
 func (s *InboxService) SnoozeInboxItem(ctx context.Context, id, userID uint, req *SnoozeInboxItemRequest) error {
+	if _, err := s.GetInboxItemByID(ctx, id, userID); err != nil {
+		return err
+	}
 	var until time.Time
 	var err error
 
@@ -341,63 +448,191 @@ func (s *InboxService) SnoozeInboxItem(ctx context.Context, id, userID uint, req
 
 // GetInboxStats 获取待办事项统计
 func (s *InboxService) GetInboxStats(ctx context.Context, userID uint) (*InboxStatsResponse, error) {
-	unread, err := s.inboxRepo.GetUnreadCount(ctx, userID)
+	items, err := s.visibleInbox(ctx, userID)
 	if err != nil {
-		return nil, fmt.Errorf("获取未读数量失败: %w", err)
+		return nil, err
 	}
+	return inboxStats(items), nil
+}
 
-	// 获取所有待办事项
-	allItems, total, err := s.inboxRepo.List(ctx, &repositories.InboxListParams{
-		Page:     1,
-		PageSize: 1000,
-		UserID:   userID,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("获取待办事项列表失败: %w", err)
-	}
-
-	stats := &InboxStatsResponse{
-		Total:    total,
-		Unread:   unread,
-		Pending:  0,
-		Critical: 0,
-		High:     0,
-		Overdue:  0,
-		DueToday: 0,
-	}
-
+func inboxStats(items []*InboxItemResponse) *InboxStatsResponse {
+	stats := &InboxStatsResponse{}
 	now := time.Now()
 	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	weekEnd := today.AddDate(0, 0, 7)
-
-	for _, item := range allItems {
-		if !item.IsCompleted {
-			stats.Pending++
-		} else {
-			stats.Completed++
+	for _, item := range items {
+		if item.ArchivedAt != nil {
+			stats.Archived++
+			continue
 		}
-
-		switch item.Priority {
-		case "critical":
+		stats.Total++
+		if !item.IsRead {
+			stats.Unread++
+		}
+		if item.CompletionMode == "legacy_unresolved" {
+			stats.LegacyUnresolved++
+			continue
+		}
+		if item.IsCompleted {
+			stats.Completed++
+		} else {
+			stats.Pending++
+		}
+		if item.WorkflowBucket == "needs_action" {
+			stats.NeedsAction++
+		}
+		if item.WorkflowBucket == "waiting" {
+			stats.Waiting++
+		}
+		if item.Priority == "critical" {
 			stats.Critical++
-		case "high":
+		}
+		if item.Priority == "high" {
 			stats.High++
 		}
-
 		if item.DueDate != nil && !item.IsCompleted {
 			if item.DueDate.Before(now) {
 				stats.Overdue++
 			}
-			if item.DueDate.After(today) && item.DueDate.Before(weekEnd) {
+			if !item.DueDate.Before(today) && item.DueDate.Before(weekEnd) {
 				stats.DueThisWeek++
 			}
-			if item.DueDate.Year() == today.Year() && item.DueDate.YearDay() == today.YearDay() {
+			if !item.DueDate.Before(today) && item.DueDate.Before(today.AddDate(0, 0, 1)) {
 				stats.DueToday++
 			}
 		}
 	}
+	return stats
+}
 
-	return stats, nil
+var ErrInboxProtectedField = errors.New("待办来源、模式、指派及业务状态由服务器管理")
+
+func hasInboxProtected(fields ...json.RawMessage) bool {
+	for _, field := range fields {
+		if len(field) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func parseInboxBoundary(raw string) (time.Time, error) {
+	if at, err := time.Parse(time.RFC3339, raw); err == nil {
+		return at, nil
+	}
+	return time.Parse("2006-01-02", raw)
+}
+
+func inboxPriority(priority string) int {
+	switch priority {
+	case "critical":
+		return 4
+	case "high":
+		return 3
+	case "medium":
+		return 2
+	default:
+		return 1
+	}
+}
+
+type inboxProjectionRepository interface {
+	InboxDB() *gorm.DB
+	ListOwnedForProjection(context.Context, uint) ([]*models.InboxItem, error)
+	ArchiveByUserID(context.Context, uint, uint) error
+}
+
+func (s *InboxService) visibleInbox(ctx context.Context, userID uint) ([]*InboxItemResponse, error) {
+	repo, ok := s.inboxRepo.(inboxProjectionRepository)
+	if !ok {
+		return nil, fmt.Errorf("待办授权查询不可用")
+	}
+	items, err := repo.ListOwnedForProjection(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	actions, err := projectWorkflowInbox(ctx, repo.InboxDB(), userID, items)
+	if err != nil {
+		return nil, err
+	}
+	responses := make([]*InboxItemResponse, 0, len(items))
+	for _, item := range items {
+		if item.CompletionMode == "workflow" && actions[item.ID] == nil {
+			continue
+		}
+		responses = append(responses, s.inboxResponse(item, actions[item.ID]))
+	}
+	return responses, nil
+}
+
+func (s *InboxService) projectOneInbox(ctx context.Context, item *models.InboxItem, userID uint) (*InboxItemResponse, error) {
+	if item == nil || userID == 0 || item.UserID != userID {
+		return nil, repositories.ErrInboxItemNotFound
+	}
+	var db *gorm.DB
+	if repo, ok := s.inboxRepo.(inboxProjectionRepository); ok {
+		db = repo.InboxDB()
+	}
+	actions, err := projectWorkflowInbox(ctx, db, userID, []*models.InboxItem{item})
+	if err != nil {
+		return nil, err
+	}
+	if item.CompletionMode == "workflow" && actions[item.ID] == nil {
+		return nil, repositories.ErrInboxItemNotFound
+	}
+	return s.inboxResponse(item, actions[item.ID]), nil
+}
+
+func (s *InboxService) inboxResponse(item *models.InboxItem, action *WorkflowAction) *InboxItemResponse {
+	r := s.convertToResponse(item)
+	r.ArchivedAt = item.ArchivedAt
+	r.ClosedReason = item.ClosedReason
+	if item.CompletionMode == "workflow" {
+		r.CompletionMode, r.SourceRef, r.WorkflowAction = "workflow", item.SourceRef, action
+		r.WorkflowBucket = "waiting"
+		if action != nil && action.ActionCode != "view_only" {
+			r.WorkflowBucket = "needs_action"
+		}
+		if item.IsCompleted {
+			r.WorkflowBucket = "completed"
+		}
+	} else if repositories.IsManualInboxItem(item) {
+		r.CompletionMode = "manual"
+		r.WorkflowBucket = "needs_action"
+		status := "pending"
+		if item.IsCompleted {
+			r.WorkflowBucket, status = "completed", "completed"
+		}
+		r.WorkflowAction = &WorkflowAction{ActionCode: "view_only", ActionLabel: "个人提醒", WorkflowStatus: status, CompletionMode: "manual"}
+	} else {
+		r.CompletionMode = "legacy_unresolved"
+		r.Title = "历史事项，关联对象待确认"
+		r.Content = ""
+		r.DueDateType = ""
+		r.SourceID = 0
+		r.SourceRef = ""
+		r.IsCompleted = false
+		r.CompletedAt = nil
+		r.ClosedReason = ""
+		r.WorkflowBucket = "legacy_unresolved"
+		r.WorkflowAction = &WorkflowAction{ActionCode: "view_only", ActionLabel: "归档提醒", WorkflowStatus: "legacy_unresolved", CompletionMode: "legacy_unresolved", BlockedCode: "LEGACY_SOURCE_UNRESOLVED", BlockedReason: "历史关联无法确认，归档只收起提醒，不改变业务状态"}
+	}
+	return r
+}
+
+func (s *InboxService) ArchiveInboxItem(ctx context.Context, id, userID uint) error {
+	item, err := s.GetInboxItemByID(ctx, id, userID)
+	if err != nil {
+		return err
+	}
+	if item.CompletionMode == "workflow" && !item.IsCompleted {
+		return repositories.ErrInboxWorkflowActionRequired
+	}
+	repo, ok := s.inboxRepo.(inboxProjectionRepository)
+	if !ok {
+		return fmt.Errorf("待办归档服务不可用")
+	}
+	return repo.ArchiveByUserID(ctx, id, userID)
 }
 
 // convertToResponse 转换为响应格式

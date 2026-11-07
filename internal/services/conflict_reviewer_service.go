@@ -238,7 +238,7 @@ func AssignConflictReviewer(ctx context.Context, db *gorm.DB, actor AuthActor, c
 			if err := syncOpenConflictApprovalApprover(tx, checkID, reviewer, actor.UserID, time.Now()); err != nil {
 				return err
 			}
-			return nil
+			return reconcileConflictTransition(tx, checkID)
 		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
 		}
@@ -262,6 +262,9 @@ func AssignConflictReviewer(ctx context.Context, db *gorm.DB, actor AuthActor, c
 			return err
 		}
 		if err := syncOpenConflictApprovalApprover(tx, checkID, reviewer, actor.UserID, now); err != nil {
+			return err
+		}
+		if err := reconcileConflictTransition(tx, checkID); err != nil {
 			return err
 		}
 		payload := map[string]interface{}{
@@ -302,6 +305,17 @@ func syncOpenConflictApprovalApprover(
 			"updated_at":            now,
 		}).Error; err != nil {
 		return fmt.Errorf("同步冲突审批处理人失败: %w", err)
+	}
+	if tx.Migrator().HasTable("inbox_items") {
+		var approvals []models.ApprovalRequest
+		if err := tx.Where("conflict_check_id = ? AND type = ? AND status IN ?", checkID, "conflict_approval", []string{models.ApprovalStatusSubmitted, models.ApprovalStatusUnderReview, models.ApprovalStatusResubmitted}).Find(&approvals).Error; err != nil {
+			return err
+		}
+		for i := range approvals {
+			if err := reconcileApprovalTransition(tx, &approvals[i]); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
