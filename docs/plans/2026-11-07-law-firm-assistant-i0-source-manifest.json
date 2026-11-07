@@ -1,0 +1,5160 @@
+{
+  "audit_date": "2026-11-07",
+  "timezone": "Asia/Shanghai",
+  "kind": "READ_ONLY_SOURCE_OBSERVATION_NOT_RELEASE_CANDIDATE",
+  "head": "10ce908ca9fab8ff8e8489d6c52ad4eeec0aaa0a",
+  "scope": "internal, frontend/src, frontend/e2e, migrations, main.go, go.mod/go.sum, frontend package manifests; source extensions only",
+  "excluded": "runtime configuration and secrets, real data, generated reports, binary assets, deployment state; no patch/archive of source content",
+  "entry_count": 858,
+  "entries_sha256": "89cb74142f493ece4bd1b6c617d6a05c84abbbbd3cf91cec8c1bf03d7f49fdcd",
+  "entries": [
+    {
+      "path": "frontend/e2e/approval-layout.spec.ts",
+      "sha256": "dfe50a78815e8991802dc67c51a6e2e14174edfa4f18289829a0bcd73f3af637",
+      "bytes": 2136,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/e2e/approval-permission-consistency.spec.ts",
+      "sha256": "402e74975c675f7684fabcc7a583b684062652b852cbf646735628addbf8c557",
+      "bytes": 1299,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/e2e/approval.spec.ts",
+      "sha256": "fda5a0ba2ad20f9e7d0f13580cb29c29c7b06cb356de315b3c0a7ec338eecbf2",
+      "bytes": 8776,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/e2e/auth.spec.ts",
+      "sha256": "1190db80073efce100a1622e8f46f05e462732e3ff97b1dde75626c0a4b95368",
+      "bytes": 4349,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/e2e/b6-acceptance-probes.spec.ts",
+      "sha256": "f560fc28c2d10a89fd91d4c05caa2bd87a21ca91f29e61816bd1235564d94170",
+      "bytes": 7239,
+      "git_tracked": false
+    },
+    {
+      "path": "frontend/e2e/case-create-full-workflow.spec.ts",
+      "sha256": "0aac91dfc65304be0e026321d85feda339f4c11d70f41eb4e3ce40eeba474682",
+      "bytes": 6181,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/e2e/cases.spec.ts",
+      "sha256": "14d3908624e4f6350f4809d39a5e0cf3cd4b59b0d9a9b5ae8691f5c3e7d66e51",
+      "bytes": 11064,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/e2e/client-profile-actions.spec.ts",
+      "sha256": "27b9d7b6f63a188ce98abbe795bdfa702e1b34c2897239ba142e335735abb82b",
+      "bytes": 2165,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/e2e/clients.spec.ts",
+      "sha256": "844ad106ea41fe949561ad204d2c9a92b188a50168f9ae1d0e7bc22de8fc1563",
+      "bytes": 2805,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/e2e/conflict-actions.spec.ts",
+      "sha256": "949e96ad2c660a8abcf9aa2329108cca6a2ad7ce84f7358edf93aa1b8c2c9fc1",
+      "bytes": 30772,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/e2e/dashboard-actions.spec.ts",
+      "sha256": "b3a873cf10aece5199f0cb14dc28a45bf7511f7372757af4842c675653920248",
+      "bytes": 2205,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/e2e/dashboard.spec.ts",
+      "sha256": "d2d2a657cc7e72e2347dcd48d66b7abfedf2256cf2da6732260c92fbf32cdf99",
+      "bytes": 1096,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/e2e/finance.spec.ts",
+      "sha256": "f828f350750b6124585ca927a8b926c4cefd451ad6decedab759c3fe7f15883d",
+      "bytes": 1387,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/e2e/header-keyboard-a11y.spec.ts",
+      "sha256": "7d20d8296ccd171883ec9aedcb5dc0e2513d56861a186ddee7d365095ab6da51",
+      "bytes": 4850,
+      "git_tracked": false
+    },
+    {
+      "path": "frontend/e2e/layout.spec.ts",
+      "sha256": "77d1e8adf721bda06f4332049977746cea06fb4b624dfe76f58e3159125d8d9e",
+      "bytes": 4432,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/e2e/profile.spec.ts",
+      "sha256": "abeb7655824dbf40eb91197dc3fe4cd4c2ada627b346077d982d7085261b8730",
+      "bytes": 809,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/e2e/utils/test-helpers.ts",
+      "sha256": "02d94c9136780c5714645ede9161e6474ea1cefb49265e955479484923a7fb0e",
+      "bytes": 24085,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/e2e/ux-remaining-probes.spec.ts",
+      "sha256": "a0710ff843c37cf309410759c9f630a502611e7df2e1a16355f9c41c146777d2",
+      "bytes": 17409,
+      "git_tracked": false
+    },
+    {
+      "path": "frontend/e2e/wizard-real-api.spec.ts",
+      "sha256": "5e8c99344536d4dda6297c5afc8716392e7212d02bf6f8ab09e0e4320f10aef3",
+      "bytes": 6555,
+      "git_tracked": false
+    },
+    {
+      "path": "frontend/package-lock.json",
+      "sha256": "9efa885d6ea029854c5cb6748e579fd95bb5af6e8679c18fff942b5092840435",
+      "bytes": 548361,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/package.json",
+      "sha256": "071e0b7b4be39630810cd4d3f98a92da6dc5eafe8fa757f62bd6fe83f5c3b0bd",
+      "bytes": 4083,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "sha256": "feb14af1433f9be9368ac3b2965e77518c7336aa3e475ffc7e8aa891210f043f",
+      "bytes": 12857,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/AppOptimized.tsx",
+      "sha256": "e20269664cafcc99beafa24cd3a79787dd81255ec0cdc1a958b83e92cb91f440",
+      "bytes": 4396,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/api/auth.ts",
+      "sha256": "fe12ae16ca76098543db312b14dce9de72c6c476441e3a6305f710df523e94a9",
+      "bytes": 1800,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/api/case.ts",
+      "sha256": "0af7901ebddf82cfe2cbd887e96c6cf130dd104a5175ec47ad5c00d0965e2b02",
+      "bytes": 567,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/api/conflict.ts",
+      "sha256": "46e587bc9af5800cff75d6e41739a833324237e44c0573d365314bd3f82f6206",
+      "bytes": 5646,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/api/department.ts",
+      "sha256": "8d896e281197d29f40137efa034d7211aa304f92616014931cb84dda112ef6e5",
+      "bytes": 513,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/api/enhancedCase.ts",
+      "sha256": "94a67b4d3455c7b3a29e9ee1d9e3fa101a681e6437e260e2a2a91bd16945e70f",
+      "bytes": 1507,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/api/index.ts",
+      "sha256": "d0f89b01c1652637d2e4574263cc6279e08d407e45d1d666b0e2d3b02e5df6ee",
+      "bytes": 121,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/api/role.ts",
+      "sha256": "d4c726573372811da6947f3da64eaea42b8636e5a845d5a289c484c3bf34f841",
+      "bytes": 412,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/api/search.ts",
+      "sha256": "d9544af1bf7ba9fbf24e7e4855460d44f2ae70a1f0d8242fdfa71ac2262d94a8",
+      "bytes": 1457,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/api/user.ts",
+      "sha256": "c7842103b03b4e2badd2436d06fbd8e118a8e7b2c2acbcb69ecf4049d976d475",
+      "bytes": 471,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/AdvancedSearch.tsx",
+      "sha256": "5b36cf6f0a52b84c54db208008ff8933bce7cab2316e42de95a2f5020b978090",
+      "bytes": 14054,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/CreateCaseModal.tsx",
+      "sha256": "f4a6f8bae2fb1ea49630c3f7076a39b42fa9eda8d7910f9975dff71f3b8e5269",
+      "bytes": 15317,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/CreateCaseWizard.tsx",
+      "sha256": "a0d38af220263b817db052dc138d73d1872a8e59463269a13e9cd7704e3e8c29",
+      "bytes": 67930,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/DocumentManagement.tsx",
+      "sha256": "b8c9794ed859487108e8e0406f3c2339b2424cc00f4db3e78a219ec600b836ec",
+      "bytes": 23558,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/EnhancedCaseCreateExample.tsx",
+      "sha256": "1b69c4a2fbca44c5e70781cfb5ff17f70467a1d68217a86120ef4caf5964306d",
+      "bytes": 1011,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/EnhancedCaseWithWaiver.tsx",
+      "sha256": "5466f847ca973f3912d09c06f577f690cfff957e12c19dfb3be7cd0737ad46bd",
+      "bytes": 15719,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/EnhancedCreateCaseModal.tsx",
+      "sha256": "56f8a565f63727ae784c37be597693000f846c30b1b49db99b8fcccc082e76cc",
+      "bytes": 17438,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/FullTextSearch.tsx",
+      "sha256": "5c311b2b5a6186f312ecc47226ba773003dda7abd31de5d2785e1edbb19f6a84",
+      "bytes": 15469,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/LawDetailModal.tsx",
+      "sha256": "7ef3efbac687be1bb529553903cb7e52a92bf80db626f15574f284fdeedc5ebb",
+      "bytes": 11976,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/OptimizedTable.tsx",
+      "sha256": "2a74e36bf4506d726d502f7a6890a3cc0c252b441175e070137b96c9b8be07d8",
+      "bytes": 7032,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/PerformanceDashboard.tsx",
+      "sha256": "95190e84d4f5a15a9519905a9dc576b432b8184eb2832865c9f32c750d182a8a",
+      "bytes": 11561,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/PermissionGuard.tsx",
+      "sha256": "fdaee767c490b13046bc794f25a7aabc4ea711f020656e383f341e5f18dedd1f",
+      "bytes": 2394,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/SearchHighlight.tsx",
+      "sha256": "f6ac38b1697458b96046198cd2bb652d69f7455b354815b64bc95eb7cffe0648",
+      "bytes": 3787,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/SearchHistory.tsx",
+      "sha256": "33cc96751994261ed94612d42e229db5bd4fbb04c82ca4e2cfed2a0b0ab7a76f",
+      "bytes": 8737,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/StandardForm.tsx",
+      "sha256": "ea37cde0849b296c430d2b09f4b363155294e6ff5ccb679b373f065260fbd04c",
+      "bytes": 19896,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/StandardList.tsx",
+      "sha256": "867eea5fe9b25b18787243364bb6525e7dd97fe35705900690d3a46fdfde4ad4",
+      "bytes": 16215,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/StandardTable.tsx",
+      "sha256": "9257e29f144378f21f7e9bdec0a40bf004d9486e6bf1f26527cbf9bb2660c25f",
+      "bytes": 16216,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/TimeTracker.tsx",
+      "sha256": "838dcbacf6a115543edd08787d6597c571d97113499c4f22d8ed5239e7647b23",
+      "bytes": 15525,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/__tests__/Button.unit.test.tsx",
+      "sha256": "cd5aa4e7d816dff9e2870e544649f3844972e9ee0cbbb4ef9eaa782caa2db4cb",
+      "bytes": 2115,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/auth/ProtectedRoute.tsx",
+      "sha256": "3cfc644669ab1b13deb22a06d8f44dd0287bcdfc7845fdceaf6f075de37ab709",
+      "bytes": 439,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/auth/PublicRoute.tsx",
+      "sha256": "748ee0ad63ca2b6af9b22c5f705a7bfa609784ccdf8018d8587156825e85b7e7",
+      "bytes": 504,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/case/CompactCaseForm.tsx",
+      "sha256": "6caafe2278fcfb7446c625874451d096e0a7bf1d0871fbe91662915add44b69f",
+      "bytes": 27848,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/case/CompactCaseFormWrapper.tsx",
+      "sha256": "870e7f7d947c07b5703b7e728f4cb1441cda07290e3b862842262f5d46c3ea08",
+      "bytes": 21015,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/case/ConflictCheckInline.tsx",
+      "sha256": "b10caaebedf40b00cfa88b7bdb78b3c8a7edfa05c62dfd36cc2c68e72758a3ab",
+      "bytes": 19359,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/case/EthicalWallSection.tsx",
+      "sha256": "099c68a6e67db4c5999ad4c58439bb3c8a9e132a6dbfc61f84336df468c10b05",
+      "bytes": 8808,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/case/MultiClientSelector.tsx",
+      "sha256": "6cffdabc1e71965b8b5e59bbee81910b41c801cc1481d37545452fb2a931183e",
+      "bytes": 18502,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/case/PerformanceOptimizer.tsx",
+      "sha256": "caa77f0ca798907218063bdcba0227ce3a9e51638949ee1bfa40e5d267cdaab7",
+      "bytes": 9450,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/case/ProgressIndicator.tsx",
+      "sha256": "b8ad6d198db61ff3ae503a6c26c2034d5f1c35a7be7b811237704eee4d6be9be",
+      "bytes": 14449,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/case/ResponsiveFormLayout.tsx",
+      "sha256": "c9db023c70ae139b8369bd6322b27dd4dd6772a37dbb4d5655fee10bc5544a9e",
+      "bytes": 6026,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/case/SmartFieldGroup.tsx",
+      "sha256": "72d04ff3f26b15f23a0a77c98276d6803371ff156d3f3b6abb5f26af11a4d0f1",
+      "bytes": 10664,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/case/WhitelistModal.tsx",
+      "sha256": "19fe4b86fbde8cb5e61ee85bb60f2d32326bb18f749ec94fd9ef3628dcc05103",
+      "bytes": 11863,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/case/index.ts",
+      "sha256": "60232155dbf68098b4ab9b27c0a44fd3d17da544117457d5c1be2768bef58ce2",
+      "bytes": 258,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/case/types/CompactCaseForm.types.ts",
+      "sha256": "7529808ae9a912ccb78c0bfa1a2ccd4a3836cc4d4c89ff47138905e3480d2ef5",
+      "bytes": 9055,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/case/types/ConflictCheckInline.types.ts",
+      "sha256": "5d0009f857c33c732592f21790c3f58b7f01e33294c8f7e15cda1108cf57e0fc",
+      "bytes": 6604,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/case/types/ProgressIndicator.types.ts",
+      "sha256": "5d01e7a9eef8eecd7538f8ab1a82974f442ccabe0e68c6906d8a54a3719093af",
+      "bytes": 4161,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/case/types/ResponsiveFormLayout.types.ts",
+      "sha256": "5da2da1db729396109f129da63ab102a5b107c83d1c66366f12fe482244ddbe8",
+      "bytes": 2546,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/case/types/SmartFieldGroup.types.ts",
+      "sha256": "46166a6a2f5113fb1f24e7d81bba3cd12a59a7675ece0ddc959147889bedb244",
+      "bytes": 2777,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/common/ErrorBoundary.tsx",
+      "sha256": "40153a42591ba29906a8be45b2b4264647692f2a17db8c1e3ca086fd0913ab86",
+      "bytes": 10866,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/common/LoadingFallback.tsx",
+      "sha256": "b34582b4a883df0c5b1d6d2aff7ce15aaa2b9624d07d09f22ad3c2a162dbaac2",
+      "bytes": 8394,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/conflict/ConflictCaseDetail.tsx",
+      "sha256": "85cfdeafb0f9c6967bcf0889f905e297143ea0b438f389d1ddba5a5019a26a69",
+      "bytes": 11892,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/conflict/ConflictCheckResult.tsx",
+      "sha256": "82255eb524965aa79f60b84bf1c3ee1f8c520d3ade8009324a9fb65962ee921e",
+      "bytes": 29413,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/devtools/DevTools.tsx",
+      "sha256": "8208af825666e4516fae14a85077e9bcfa1d25b34706b7ac00390580d5ae21bf",
+      "bytes": 3343,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/document/OnlineEditor.tsx",
+      "sha256": "d9c32459002f94e1ee34a0816814adde473e91ce29ac7ef9961151d62f8a6c6c",
+      "bytes": 14675,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/document/VersionHistory.tsx",
+      "sha256": "85ac352eb4bc9f683aaec4efee4b9be039ecbea3ba627606a2eaaccd8c07381a",
+      "bytes": 15294,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/document/index.ts",
+      "sha256": "71392e50ccae806e3aba05bb25f04bf29a341bf84b53bb7c32539d22a1075582",
+      "bytes": 98,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/fee/FeeCalculator.tsx",
+      "sha256": "2923df95be41196d1d599f7d4dd3d9b9d2aeaf700c89d3273f487b94f8707804",
+      "bytes": 10045,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/layout/Header.tsx",
+      "sha256": "7ceebaa6b200f07167961533863a694ccb61556d7add6abcb152770761bb3055",
+      "bytes": 11424,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/layout/Sidebar.tsx",
+      "sha256": "3648e0e5e23ac44c43730e839818822acd28cc034c05fbf7aff8a00539711ec6",
+      "bytes": 10484,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/layout/__tests__/Header.test.tsx",
+      "sha256": "648ffd689db565200504d08a2f1569ca9ad272342c6e98cb0ef165510f57c3f0",
+      "bytes": 2337,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/layout/__tests__/Sidebar.mvp.test.tsx",
+      "sha256": "7908e434da3dedb986fc68353b4b339a5654f7627590a760122c3aa9b19ce9f8",
+      "bytes": 1878,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/mvp/MvpUnavailable.tsx",
+      "sha256": "37dad9d22f7dbf006104228d35cc04aab211f48699adb0a76f4cc76a83cea362",
+      "bytes": 813,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/mvp/__tests__/MvpUnavailable.test.tsx",
+      "sha256": "38ed4d2cd5d93e1f843475e94412863e4c3da9a8389ab96d9d78c7e59c30e6ff",
+      "bytes": 1208,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/notification/NotificationConfirm.tsx",
+      "sha256": "224b2deca0d0c044b4086028c3d35b181434bfba50006901606c8f2532cece39",
+      "bytes": 22973,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/offboarding/OffboardingManagement.tsx",
+      "sha256": "07400a303f9bf4dad27f548fc7d4c44b12492d0bff1a1127153318eb670b6c5e",
+      "bytes": 42206,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/trust/TrustAccountList.tsx",
+      "sha256": "4e10ffb858a65e72d736c7a18c267fe4b9a8423f8f5ec9423487ad20bfdbd4bf",
+      "bytes": 34510,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/ui/StandardCard.tsx",
+      "sha256": "78b0e681d751f1a202fdba34b82cfceb9e92b0d5f59fd48bab97d68c9f0702ee",
+      "bytes": 2636,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/ui/StandardPage.tsx",
+      "sha256": "3bb7cbba841c0cf29a8e944da163885edb567ce57dddabc93a89dc3aaf1ebd7f",
+      "bytes": 4144,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/ui/StandardTable.tsx",
+      "sha256": "5f161aa7b2b5cbcf76cd51884afbf5d7f5d85b553f014a8fd6cbd1a99dfe8aad",
+      "bytes": 7286,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/ui/index.ts",
+      "sha256": "dccb46437a451c5d8121930eb7b7699666726abe9e6ebe38ab70950a40899bb5",
+      "bytes": 440,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/waiver/EnhancedWaiverApprovalInterface.tsx",
+      "sha256": "72dbac7a825808607a5b21de951c99a6feddb0eab11c9ef052a8bc82a404cfef",
+      "bytes": 28998,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/waiver/WaiverApplicationForm.tsx",
+      "sha256": "1eb5667cc59df005456c548754b5e662a57f9dbd2f59e94409d9a35d4ec35150",
+      "bytes": 25078,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/waiver/WaiverApprovalExample.tsx",
+      "sha256": "d4d11ac9473d198d14cc5d98bfcc2ba646e80ab938c852bb2a93fb1726b11505",
+      "bytes": 9230,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/waiver/WaiverApprovalInterface.tsx",
+      "sha256": "626d0400fb5060f2ef4b20ad2103f1453f707adeb084b4b8badb431cadea0254",
+      "bytes": 31358,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/components/waiver/WaiverMonitoringDashboard.tsx",
+      "sha256": "7827d8f010f6f74019f84a2824dd2edbe19b6df3cbf194cf98afe4c48c3f1438",
+      "bytes": 29751,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/config/__tests__/mvp.test.ts",
+      "sha256": "ce2945359067d8b7109b1e3216579d461e5f3cff2ab59bd3724e286f7c8fd437",
+      "bytes": 1370,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/config/__tests__/onlyoffice.test.ts",
+      "sha256": "377a551322c1d46286757c41d6b8c209dc7885e49e0dc1136199a7e59696dca9",
+      "bytes": 2483,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/config/api.ts",
+      "sha256": "be68c9e0382c39d61719f5e070a9f0ea9683f9eaed91ee99d52f322c43a29569",
+      "bytes": 4857,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/config/features.ts",
+      "sha256": "3cfc6897478f7d9195f7346d921833524da38b4bdcad66a0dbcc14a0277437dd",
+      "bytes": 418,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/config/mvp.ts",
+      "sha256": "193a36e052a2a9adc843bb697de2a218a766774e1ffab87b4cafef33bd245fa3",
+      "bytes": 984,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/config/onlyoffice.ts",
+      "sha256": "04e95044d12c4c9108f3f829d2b3a8542dce4feaf052fb8dc63db2f711d0070c",
+      "bytes": 1632,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/config/theme.ts",
+      "sha256": "bdf7b4437f629a0e082e0b780fd82c416ba28b43a651929ab44be6f3c1259ab2",
+      "bytes": 10100,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/constants/design-system.ts",
+      "sha256": "7263d6d6bb576c22df0d79fe4bbbb8a3d93ffc69c3acd278651261b78c10b624",
+      "bytes": 15270,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/context/AuthContext.tsx",
+      "sha256": "8ddf67fd2dc24c2cefd65cbd4de22a6bb6839fdc6c666a1a063894cebd554726",
+      "bytes": 18032,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/hooks/useAuth.ts",
+      "sha256": "7779e341415078e489359d54f6a737258aaddc3e51af985f9aa2741480ff0aca",
+      "bytes": 473,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/hooks/useAuthService.ts",
+      "sha256": "2bf05e147541c6327bc4f826e5eab6ec8440b849ecfb70b8733d6e230148c820",
+      "bytes": 12321,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/hooks/useCaseService.ts",
+      "sha256": "fcac7e55d10c7359f65c1401a76c2aec69852a9da3af37c4ac82988395c94495",
+      "bytes": 15212,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/hooks/useEthicalWall.ts",
+      "sha256": "d5c1b3d7f25a11a82e109f96c2483fce819ded5aaa8f7474b0daeae0992be414",
+      "bytes": 6938,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/hooks/useForm.ts",
+      "sha256": "562bb95ca9aa1b54d018e4f1a721042283ac41dbe00a9eab2d5a098fd09a67ef",
+      "bytes": 2157,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/hooks/useNotifications.ts",
+      "sha256": "a15b0b4dc7b03b2c6ea857cdf810220d1e2d64b20ad9116c46c800c6f63dc463",
+      "bytes": 3319,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/hooks/usePerformanceHooks.ts",
+      "sha256": "64bc7a521d64c192e716efe18e61264d13df2c90206319183ae51f73e8d8e4d1",
+      "bytes": 9536,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/hooks/useQueryClient.tsx",
+      "sha256": "efeed80bf706bc965372c1f13eeec0cb3d97530eaf74a1f7da066f99f2b42278",
+      "bytes": 523,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/index.tsx",
+      "sha256": "3c8eed198d573061f447f2cb72639a12401abb7badf7c9416b4a919937d19e90",
+      "bytes": 532,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/layouts/MainLayout.tsx",
+      "sha256": "9e8b6aec4fd309fe1d3a2abb407060429e343ac21432ebba2b0e02930eccc114",
+      "bytes": 3567,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/main.tsx",
+      "sha256": "2b34de3ec161c7209defd7980b15d685d68b11e5d6c3280e943dd1487e43e264",
+      "bytes": 5404,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/ApiTest.tsx",
+      "sha256": "759c0a9440e4c15896188b3aaebc7d38cb01520ea80779de3497df2d9591da38",
+      "bytes": 2766,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/AuthTest.tsx",
+      "sha256": "a16c058b3e52b8b92b13fb925802eaf58d4a71a21c4032a2d6d8fd5e496f2c3f",
+      "bytes": 2813,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/ConflictDataDemo.tsx",
+      "sha256": "cc7ce4e7981380dab5cd8d7fe52532ce6ba618944024aa275def4fb3a3320ed2",
+      "bytes": 14202,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/DirectTest.tsx",
+      "sha256": "e6a4e08f7c36144d1f710290b3a3f71a39cc149a9a46b2ba39e15f4664391cf5",
+      "bytes": 766,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/IntegratedWaiverTest.tsx",
+      "sha256": "7e40abf96138affbefab6fc7b9f75900e3e5f402e00b719121df312f423bf552",
+      "bytes": 10952,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/MinimalTest.tsx",
+      "sha256": "38a680d638eda3293d625d6bc381e7c10a5db68b5fb97fc48e4cf8d3b660aca8",
+      "bytes": 369,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/PermissionTestPage.tsx",
+      "sha256": "f7d544b64c51ce0e9d1ce695679ccfcac9bb3ef3aa0a4da8d1c469ed4e6f799f",
+      "bytes": 204,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/SimpleTest.tsx",
+      "sha256": "0a10338d61d28b8ba411950e89fa426c0eeccd12a321e2074ff45b16f659c204",
+      "bytes": 1609,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/SystemTest.tsx",
+      "sha256": "a9808e57a15ee2febdc49bb9f90ff8e7b9d289e11b29096d842177e8a7795319",
+      "bytes": 2970,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/TestPage.tsx",
+      "sha256": "47fc509e657eaaa6ef19af2760d558119b566eebb580b3199d52e0f2309ec758",
+      "bytes": 891,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/WaiverTestPage.tsx",
+      "sha256": "efc5addf2fd954228e5bd4ea2485f47d3036769f23f9241fce3f82d24cafc3a5",
+      "bytes": 4463,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/__tests__/LoginPage.integration.test.tsx",
+      "sha256": "63db13dea334d0e5eea0257e2e3c4d7a8a4af193caa9a32c6f7595e2b517f63d",
+      "bytes": 2414,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/admin/AdminManagement.tsx",
+      "sha256": "40c884c63a94435890cc6ce5cd31ee85fb870e9d4a0f4e2027ce5aee510ad73a",
+      "bytes": 17071,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/admin/PermissionManagement.tsx",
+      "sha256": "f1753e07c809afb5ff0be597c65b991e9f095083ac5b9e28c8db227533a64be8",
+      "bytes": 10276,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/admin/RoleManagement.tsx",
+      "sha256": "fd34024feb1b39879455293557caf2069183f2d2d0d82dfbbca98dc6bf612c6d",
+      "bytes": 10815,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/analytics/AnalyticsDashboard.tsx",
+      "sha256": "2c7667e60e9207c015f2a3249b316d0808e2612cb4049698741a03f6e3cdc959",
+      "bytes": 19207,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/approval/ApprovalDetail.tsx",
+      "sha256": "9da2161311c491e9790c456e0b0be4f9dd80de334965f55bd96a56d47830f3bc",
+      "bytes": 27466,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/approval/ApprovalList.tsx",
+      "sha256": "e48ce487f501be85560b2b95be68f6811a8efefb0a400d4f7f5f88f41638effb",
+      "bytes": 7492,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/approval/CreateApproval.tsx",
+      "sha256": "dd4f4ba727b0e4b55ae34f68dee963186fca30db0c0a5c2800c6fb79778884f9",
+      "bytes": 9043,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/auth/Login.tsx",
+      "sha256": "1907366623a904976d8e655d175a2aed8040b119a578cd135b6dbd0e9c642f43",
+      "bytes": 4804,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/auth/SimpleLogin.tsx",
+      "sha256": "2471a78b3f408b41a4492061a5f96d10936c8c6e6274926ddc382ced580d638b",
+      "bytes": 1730,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/auth/TestLogin.tsx",
+      "sha256": "72b039ee3745afe8e9bb802d21bb247ba8b8621f545db07fa5d8439b03c87c31",
+      "bytes": 6614,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/batch01/Batch01Prototype.tsx",
+      "sha256": "0982caf70ec620bdf549965de250b19e7b16c89955b08c23fd5f68767b4ee78a",
+      "bytes": 413660,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts",
+      "sha256": "c0a4b900b94d6c35e1b80ae68031774a5284736189d689ca73f81aeabc1f96d5",
+      "bytes": 8701,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/CaseTypeContract.test.ts",
+      "sha256": "b9758ea47075546421955a9e1af17b257c5a0fdeaac34ff2477fc1231f343a34",
+      "bytes": 1586,
+      "git_tracked": false
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/ClientRemoteSearch.test.ts",
+      "sha256": "c2c3b66ed3422225114f2891d789023304abd774a8ce439bf7133b2701bff0b5",
+      "bytes": 1867,
+      "git_tracked": false
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/ConflictReviewChecklist.test.ts",
+      "sha256": "3bc0d18065943c7abdf75de6b4666d813881930faba7fe2cce305d9c96d881a5",
+      "bytes": 1444,
+      "git_tracked": false
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/ConflictScopeWizard.test.ts",
+      "sha256": "16aa6db5fa30c3080449acc60968708481a53ef787fedf2da4f20b1e7af99edb",
+      "bytes": 2252,
+      "git_tracked": false
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/PartyContract.test.ts",
+      "sha256": "b1c4da19768ff3de71fba7344e4ba57efc1256d7b37561f503dc4bdb1c3ae2cf",
+      "bytes": 3621,
+      "git_tracked": false
+    },
+    {
+      "path": "frontend/src/pages/batch01/conflict/reviewChecklist.ts",
+      "sha256": "870610bdadf152de96da7be7dfd768b48f340c14dc36fd74a606aa320683dadf",
+      "bytes": 1076,
+      "git_tracked": false
+    },
+    {
+      "path": "frontend/src/pages/batch01/intake/caseTypeContract.ts",
+      "sha256": "b0f7c931b4f27ca38cfebbc1652435ab44367eda4b48ad0917a33d30aa275f26",
+      "bytes": 722,
+      "git_tracked": false
+    },
+    {
+      "path": "frontend/src/pages/batch01/intake/conflictCheck.ts",
+      "sha256": "7acdcef62298dca53d195ae87090f03defe837157c3a6ec1b04d720b65ab94bf",
+      "bytes": 7380,
+      "git_tracked": false
+    },
+    {
+      "path": "frontend/src/pages/batch01/intake/partyContract.ts",
+      "sha256": "446b067a4f83afbd15579f39c5d5410bdd8e1ce208bcae27bc443c154b56ee59",
+      "bytes": 7109,
+      "git_tracked": false
+    },
+    {
+      "path": "frontend/src/pages/case/CaseDetail.tsx",
+      "sha256": "dcb12ba544980515ded5dd42aebaad461842a86d3d3a286d0a22585b1fc41998",
+      "bytes": 21385,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/case/CaseManagement.tsx",
+      "sha256": "10839b43d7884baa6275b15d47ed8cd24409f9f9510ab120e18528c92349e29f",
+      "bytes": 28002,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/case/CreateCase.tsx",
+      "sha256": "54f18195d19b2f1d620019cafcb3b1b5db03f6bd6cccb4157dd9a94829e7bff8",
+      "bytes": 48948,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/client/ClientManagement.tsx",
+      "sha256": "8c999bdf016bf0dab3a40e056420c6ad71f6408fb490f9397874ccb34d511861",
+      "bytes": 24156,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/conflict/ConflictCheck.tsx",
+      "sha256": "048df38bf80fa0d9a6583cdb0a8c787469cdf7e1b81d0cbc96f0529b6e4e1b7c",
+      "bytes": 9308,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/conflict/ConflictCheckEnhanced.tsx",
+      "sha256": "ee26416d660a9fe0e60a09bc5e13d3ea09aed5a8a83fa0ab8a3f1b2b348ef68d",
+      "bytes": 12628,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/conflict/ConflictDebug.tsx",
+      "sha256": "cfd358297f5a7c7e65128677ccff893f9ca1853f0e84f38fdc9259f7976784bb",
+      "bytes": 6843,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/conflict/ConflictDetectionV2.tsx",
+      "sha256": "5e76d26c6583437f64cf38a2ce347308f414e75b1a46c42cf4c89fce088d7be0",
+      "bytes": 26784,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/conflict/ConflictPrecheckPanel.tsx",
+      "sha256": "eb9965ca2a553ddb24f60e3eecfbe1abc905c4de00301088744083ffe2c12fc6",
+      "bytes": 12265,
+      "git_tracked": false
+    },
+    {
+      "path": "frontend/src/pages/conflict/ConflictResult.tsx",
+      "sha256": "a90f4ef9754d08e3d1bd909037e904a9705ea4245d7ee0802c7b55007506e1be",
+      "bytes": 9333,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/conflict/ConflictWorkbench.tsx",
+      "sha256": "b3fd9a06a2240bb529ea04d8d47d9225d8c03099bb649b0e4a5a0f53c51bc150",
+      "bytes": 109,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/conflict/EntitySelector.tsx",
+      "sha256": "13ccb189968dabb8526a0fcbd69dac8f5da260a951c0ff7b8dd49e6a7ddc4bea",
+      "bytes": 7441,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/conflict/__tests__/ConflictPrecheckPanel.test.tsx",
+      "sha256": "55b7a5e0cd12e98d649183d44d9085ba2afe2fcc884462f3b8cf928da7a8f0e2",
+      "bytes": 6145,
+      "git_tracked": false
+    },
+    {
+      "path": "frontend/src/pages/conflict/__tests__/ConflictWorkbench.test.tsx",
+      "sha256": "b799ace5514ad5b9c65a5ce0447a913c975343843175c1b244eacd9ddb3e0c8b",
+      "bytes": 525,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/conflict/resultSummary.ts",
+      "sha256": "cc66ea3dc0bd56b43cec35523915b09a00ebcdb091d54b5a76ce664e4bab8901",
+      "bytes": 22696,
+      "git_tracked": false
+    },
+    {
+      "path": "frontend/src/pages/dashboard/Dashboard.tsx",
+      "sha256": "2c1013f1b590b144960bf035220d0755d1934d4ad19bf30f6bb564b00d585869",
+      "bytes": 31429,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/dashboard/__tests__/DashboardQuickActions.test.ts",
+      "sha256": "6188bd05aafde6d1aa64591b0c7123be48c18fbbf366eba470734d427362133c",
+      "bytes": 596,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/enhanced/EnhancedRoutes.tsx",
+      "sha256": "c3dbdec09cbd8cdb3f06d9f34ccbde8634fcc93f8f183117e43c23f37efb48af",
+      "bytes": 1429,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/file/FileManagement.tsx",
+      "sha256": "5bebd82c2d3ab2d1939d0dc513ff42d2996a30e768714d35e178a7cce2c60e71",
+      "bytes": 17560,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/finance/BadDebtList.tsx",
+      "sha256": "67593de4978d388c20b36392964ca2134efa02b6682ae57d71084a1cf8a45318",
+      "bytes": 22460,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/finance/CommissionReport.tsx",
+      "sha256": "d8434e27f4ff6a6af02ae1895d245cd81dcaf1751278b62707fb3f0e8e0170fd",
+      "bytes": 28586,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/finance/CommissionRuleList.tsx",
+      "sha256": "9faa16b69239f3dcb70e14ad33b3d00c7a4c11c6aa41d1012d817c0b1a96ec80",
+      "bytes": 8228,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/finance/ContractDetail.tsx",
+      "sha256": "31d6dd24581ad353e53b5dd87548e4122ebd7518ffe3194e443d74f5ddc0490f",
+      "bytes": 12735,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/finance/ContractList.tsx",
+      "sha256": "cf93d72654fbba61e8219ed4aafb7d694fcafb8463c4b2b3dbe6c16b82584fa8",
+      "bytes": 33816,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/finance/FilterSelect.tsx",
+      "sha256": "8729c90ae786e4fcf187e29076218da114f8fdd2d08af107d3ce1937c4c86ab9",
+      "bytes": 1837,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/finance/FinanceManagement.tsx",
+      "sha256": "1a60db7ecb7448aebdf86611a51e151e7272f411dabe47e06052d6a374b672f2",
+      "bytes": 10375,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/finance/InvoiceList.tsx",
+      "sha256": "d1180920cf40771c4274f5ce14eb27e96a64d04a81ec842b73c708534617f771",
+      "bytes": 30986,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/finance/PaymentList.tsx",
+      "sha256": "b385542464db654d9d8ce5c60ccfb9114ab49d38194352922f2b4b3b9887b62d",
+      "bytes": 25580,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/inbox/InboxList.tsx",
+      "sha256": "bb9e13e8df2dacea1ffba96cc62cbb0a8b600ac4c7ac1e11daea280e645e918a",
+      "bytes": 25296,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/inbox/__tests__/inboxWorkflow.test.ts",
+      "sha256": "040cae22cf607a6663b279ca6644b47ad945936e5b0faca4d2d25396acbbefd4",
+      "bytes": 1183,
+      "git_tracked": false
+    },
+    {
+      "path": "frontend/src/pages/inbox/inboxWorkflow.ts",
+      "sha256": "fc81ee6e76d0456eea13eebf43fed3b3b9fbb0a664cc2311b664cf34a66b5657",
+      "bytes": 628,
+      "git_tracked": false
+    },
+    {
+      "path": "frontend/src/pages/lawyer/LawyerDetail.tsx",
+      "sha256": "54b408175a86bce70dd84afaae301bf9241b816c61846d93fc42aee64d2b9dcf",
+      "bytes": 13124,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/lawyer/LawyerManagement.tsx",
+      "sha256": "7a390b833ec9a7faccb3f5215064a734ea45b241cb92b4f77e9f8866efbb205c",
+      "bytes": 15441,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/lawyer/SimpleLawyerManagement.tsx",
+      "sha256": "dbf5cbf1a83defd5bfb5f306ecbdb9465e9d2895c08fcf1a8e37670a927daacc",
+      "bytes": 2917,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/legal/LegalCaseSearch.tsx",
+      "sha256": "b1be1c7a0bb27eee3208f7feb30607541b27c9f1ac609190e9d421580795c673",
+      "bytes": 18327,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/notification/NotificationQueue.tsx",
+      "sha256": "7b88d1efce1a2c3bb2e7bc50fb06c6f6510b84645939eb7bb43c4551fb77f36f",
+      "bytes": 20394,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/offboarding/Offboarding.tsx",
+      "sha256": "807983afbc3068950188a62dc8061850cea579d979100dc1370ad38d5c15c3db",
+      "bytes": 559,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/profile/Profile.tsx",
+      "sha256": "9926f89535b0470f87e337c09215c2c11c2c2883e6008df64820a65559244761",
+      "bytes": 10630,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/project/ProjectManagement.tsx",
+      "sha256": "b7da46a2c50f70dcb7517716e257fee4baabff35d950343d8045f4679906c8ea",
+      "bytes": 11636,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/settings/Settings.tsx",
+      "sha256": "57ed324ec27593ad9ea6fd25dc427c98d52aab394984bf0b86bb52e5cd925b1f",
+      "bytes": 6407,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/tools/DeadlineCalculator.tsx",
+      "sha256": "13661d28ff94c0b948279ecba1633a7f50ac3bf3e84f9fa90d7f46ca9f48b4e4",
+      "bytes": 6539,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/tools/InterestCalculator.tsx",
+      "sha256": "2a2b2c8aad22f8d005447a650260dce4a47f776282f355a1c427598a29c36ad2",
+      "bytes": 6198,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/tools/LawSearch.tsx",
+      "sha256": "81a83fad92cd0e577f0581da574a1f666ae08df15cea7c5cee5ae40aa882ccea",
+      "bytes": 25744,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/tools/LitigationFeeCalculator.tsx",
+      "sha256": "8b7519a723d927010f67d2f6d62c4d64a289d9eb0ed612d18e0ae31b911fa549",
+      "bytes": 3660,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/tools/ToolsPage.tsx",
+      "sha256": "54886f6123ac8620ef8f8abcef8152db0364675187194fff3cd2f2a29c6fe749",
+      "bytes": 3544,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/trust/TrustAccountManagement.tsx",
+      "sha256": "39d2651dce70dd24b1ceeedccbc128f9ec21544c2a2833ee81c08174eb7195a6",
+      "bytes": 27326,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/trust/TrustAccounts.tsx",
+      "sha256": "0d4af82e0ef35879c6636b43e4be54b38dec4b9d41d5a52977778f25cc9209bd",
+      "bytes": 518,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/trust/TrustManagement.tsx",
+      "sha256": "b7c579b06b6fec25daa54d2183930e4efe35c8580ba0051787ab059596cfe599",
+      "bytes": 1431,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/trust/TrustTransactionManagement.tsx",
+      "sha256": "08ac3d82d73cbeadbf8a057c2317901cd79b65531a687d0267473ae4b01120de",
+      "bytes": 22965,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/pages/user/UserManagement.tsx",
+      "sha256": "18c406c1f48d5b348faf9a76d633b64b12d22d337be6af6c0540ca7047112739",
+      "bytes": 22521,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/__tests__/auth.test.ts",
+      "sha256": "4dba5db2e11e20abc9937a5e91c83999ce8a6ab2570cecb3b9b1ac78be2dc591",
+      "bytes": 487,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/admin.ts",
+      "sha256": "6c04462f0c01fa139dd272aa5ee91353a80830a1a321f2b9da83887136044810",
+      "bytes": 3763,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/api.ts",
+      "sha256": "ea6c0e61edc4ec7225a07df0191fb1ea754ffc856158fb7e52664185c605bdfa",
+      "bytes": 7549,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/apiClient.ts",
+      "sha256": "e2f8e6acf54610485db7733d3fe15adf890eac7afad337928f0d48d5b967b832",
+      "bytes": 6636,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/approval.ts",
+      "sha256": "7e507ba3e7e3f08657948ea4ce4469128643711e0f1a362024e36c8ad5c77ac4",
+      "bytes": 14427,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/auth.ts",
+      "sha256": "f5c23dcee55a85a0cac66e333b4ca792c8a631bc125741a910f18792b910b98d",
+      "bytes": 1889,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/case.ts",
+      "sha256": "a7783b8128970c5ecef41e68c563c7df598fad3dae2140ecff04e74c4e133810",
+      "bytes": 4175,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/caseCreation.ts",
+      "sha256": "cd6b676940f08226c348db65f495ff7e34dcc33068dd4adf9dd58ad6ca68b707",
+      "bytes": 11867,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/client.ts",
+      "sha256": "a7eb338783e6b8d4cee152bc959bc42833e2b4db7bdd4a11656bd7d49bda1e91",
+      "bytes": 2377,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/conflict.ts",
+      "sha256": "d88a3ab1e943caa57a2c8890043381a6e7335d4ee4338981846977d7c594919f",
+      "bytes": 10872,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/conflictCheck.ts",
+      "sha256": "23b32afd540d557e5e7a1b3d9ab57ab6da833230056be6a9e689c27f45a5b377",
+      "bytes": 5866,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/conflictDetectionAdapter.ts",
+      "sha256": "6dec156cb23d23c2fd552a0ebb6a13dc1b4158babd2e8db1571c34308d557c66",
+      "bytes": 12050,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/conflictV2.ts",
+      "sha256": "85857212040fc3ebcab1a5957a08a4b2614ff75618f66da46514c499e2099669",
+      "bytes": 3931,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/dashboard.ts",
+      "sha256": "9a34ea322a0bc2f999dc34306676db3f83e10c87c7f78a56cf46c6d1b3796984",
+      "bytes": 1245,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/dataService.ts",
+      "sha256": "1a59bcad22e189ca9daa6295aaded4b3708b011583014150af06072739a4b0cc",
+      "bytes": 18229,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/deadline.ts",
+      "sha256": "1b74295933a1b157405dbd08c026040f718b39180a8db6b5282f48a79037d8b6",
+      "bytes": 1323,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/department.ts",
+      "sha256": "d0ad941dd93f2de27da858eb7226d3d34e81c71e5429cf05b1604b204f63d672",
+      "bytes": 1217,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/documentVersion.ts",
+      "sha256": "c1a6b9dd00da1d3693b25f86e36678cfd5843983ce19136aa73537a7c8b4ab92",
+      "bytes": 6778,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/enhancedCase.ts",
+      "sha256": "8c5b46ea271a46c3d5368c39171809401c13eb33266bf0ed509130e109706833",
+      "bytes": 8147,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/file.ts",
+      "sha256": "8a5fd895c8f135bab2b3186e96b70f9a79dc7d23dd0bbbf50ab8e4b139634e08",
+      "bytes": 6950,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/finance.ts",
+      "sha256": "516172f14e43bab2bcb4f298a3f6eb3bbc574d481bedb19268cfc1e15ab91073",
+      "bytes": 26533,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/http.ts",
+      "sha256": "040fd05194a661a0e37b369d02d5d37a7c0dc0a7cf740de45471276ac5cbdc04",
+      "bytes": 6200,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/integration.ts",
+      "sha256": "e6592cdc06a53445b596f5c85b8f43c7326b79cb37ad1a5e1383dca3d6353750",
+      "bytes": 8921,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/lawfirm.ts",
+      "sha256": "8caf7b7cabe251b4d1112203d33fcf8378e935164990dc6160f9baa4fd7054e2",
+      "bytes": 7079,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/lawyer.ts",
+      "sha256": "a07b91c0b4ad41cd7b87e669bafd5fc4b72c6c45b23b2e9d42de61054b0c7d9c",
+      "bytes": 3818,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/notification.ts",
+      "sha256": "051ed27dd366bcfb5cf3f9bcb880db1534a4ee5491d19c8f603c70b7379fcdaa",
+      "bytes": 7886,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/permission.ts",
+      "sha256": "4eb6f3ce5f9f1aea95602eb525a6cead99c28933ede0d32db97726d619cc0203",
+      "bytes": 5911,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/project.ts",
+      "sha256": "878ae0cdf945c3ddf8cbf2b1a2a5184ed87a2ead9032fb6765466a2303180920",
+      "bytes": 1508,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/role.ts",
+      "sha256": "ff5cda1dd6e01def3b54e1b7ea640b9e1d9ebfcbfc8163e7f2ac4152d872fdc2",
+      "bytes": 6335,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/tools.ts",
+      "sha256": "02a7535fdc869a1f4219af308d1678716bc23569bba3d8eb848f949bd9e9d11f",
+      "bytes": 14823,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/trust.ts",
+      "sha256": "4325b918aaa59996c56b39a97837a97e6646ad4ca7e41968e0ed71e82f8697c5",
+      "bytes": 12683,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/user.ts",
+      "sha256": "8bcace7101aaefebc7f98cb843c7343ce12ed2261252223cf775664a8b111b11",
+      "bytes": 614,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/services/waiverApproval.ts",
+      "sha256": "f59f2c9d781161425d57733cf2029e3940aadad14749196b6b87281f4b979f68",
+      "bytes": 17100,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/stores/useAppStore.ts",
+      "sha256": "422dcec537764b0ba74d73d3ec570fec8c4421f647e6d0c0182044a289155b4f",
+      "bytes": 10241,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/test/mocks/api-client.ts",
+      "sha256": "b91a3bdb366a4382b626940e6e9358c47580e3a90173d5b6190996333cb3ff7d",
+      "bytes": 6280,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/test/mocks/auth-service.ts",
+      "sha256": "02f2f5889c8c1da488911219a86c2c2bfc5377d0f27b271882925f9068461f35",
+      "bytes": 7625,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/test/mocks/factory.ts",
+      "sha256": "76f61323a8fd895218b713def9e0548eaeb05f0377dca50d12808942e810eabb",
+      "bytes": 9009,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/test/mocks/index.ts",
+      "sha256": "2f9ace2ce92cc4b0502f325474465ef77ea9083f00853293ea88da430b22e33e",
+      "bytes": 680,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/test/setup.ts",
+      "sha256": "615dfaa19ac1f57879c6a9ab98255eed81d845bfa288d813cc963301cde069af",
+      "bytes": 2032,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/types/approval.ts",
+      "sha256": "1548ff7daa77f0329de170b11f3978a492b28cc3eabf86c2f7102c11ac856995",
+      "bytes": 6085,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/types/conflict.ts",
+      "sha256": "9f4da82d552c9291d6a9674772458724ffb7d8754d3cf79b3bab83ecabb257b7",
+      "bytes": 6506,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/types/ethicalWall.ts",
+      "sha256": "4f7dee9197ea28f94a765700752f211bb52b5103bee61ea610fb9da988eb4635",
+      "bytes": 1602,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/types/waiverApproval.ts",
+      "sha256": "e55e0a6feef77c86acd338aa4f31cb74f8e4279fe54588e4eb2c8efd9c08e66c",
+      "bytes": 8879,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/utils/__tests__/accessControl.test.ts",
+      "sha256": "92ef3ea48a9e9b2157434612e47f323614436d5eedef5fca85127d80d18a7489",
+      "bytes": 1818,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/utils/__tests__/conflictTransform.test.ts",
+      "sha256": "6069fb572bb518261e39fd0b1cfdd2c95c1a522a7bbdd5960f253a66824277ca",
+      "bytes": 9828,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/utils/__tests__/errorHandler.test.ts",
+      "sha256": "81ecada281e9e3211a2a041e6d50634b2616b2abd4421c3550a46e072bd1d51a",
+      "bytes": 6775,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/utils/__tests__/storage.test.ts",
+      "sha256": "ba6ebc674cb021a862a00b41f4a61d3e4e966fd846fa1f54d784dcabb5d2df6d",
+      "bytes": 1275,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/utils/accessControl.ts",
+      "sha256": "d99898746c02d6d7eb41456058a74046a3c313794662f78411847d886e0b6171",
+      "bytes": 4906,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/utils/auth.ts",
+      "sha256": "2a267e0cbc2ad1660b52b4c33a3cbe771e3edadea7b476f15d3678ccb338728f",
+      "bytes": 271,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/utils/conflictTransform.ts",
+      "sha256": "cbfece8078ba60fa41c542dcb5914821240a7edb331a0593293672e94a5ce16c",
+      "bytes": 11359,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/utils/debugHelper.ts",
+      "sha256": "880b8682c421d215aea118a30542713cccb347cc78001b94558597ac85cfc218",
+      "bytes": 4369,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/utils/envCheck.ts",
+      "sha256": "69ae6dafc7cbd0cde5db061ac26468526fa093cf70dd18dd3450bff87b8fe146",
+      "bytes": 3198,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/utils/errorHandler.ts",
+      "sha256": "11202cdf9a3d0393eb8be5a22eab1b1cde8b6d4ce736c6ac043febc52ed1fc8c",
+      "bytes": 9043,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/utils/export.ts",
+      "sha256": "67db280ce2f887bd5906f83d55acbd542409e258902cfdb2bacf767ba7a3269b",
+      "bytes": 1730,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/utils/financeStatus.ts",
+      "sha256": "919f3eab22cc73ccf8846beba8cb764d01a72169b24d55342a24d2c23b66062e",
+      "bytes": 6767,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/utils/formValidation.ts",
+      "sha256": "623a173883409638815a7ddcafac520cf16b35fe3bfb680955d5c2237225371e",
+      "bytes": 8092,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/utils/format.ts",
+      "sha256": "a810a56e2d709310ba1098ed6f6da20366b5cbbffc0f9d0ecbda058273d21b09",
+      "bytes": 2566,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/utils/messageHelper.ts",
+      "sha256": "bf05dd944a495e45d64e3afe5f20d2571692eaa60ca3461224cd6933810c304b",
+      "bytes": 2517,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/utils/performance.ts",
+      "sha256": "e8cb1c53b9277236c81d4f5d883a04496b0819ed512dd0b2d9c3a0e2b70fac01",
+      "bytes": 9583,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/utils/request.d.ts",
+      "sha256": "b34e2d8821aad88af5965a83fe435c8add4029ff72816cede28bbf3fa6a69c4c",
+      "bytes": 172,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/utils/storage.ts",
+      "sha256": "d8fcab170de6ba52679006cb552258cb2d21858c8b03a89153d96ca890290510",
+      "bytes": 3519,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/utils/tokenCheck.ts",
+      "sha256": "d6c6c6ef8f5dc28e2b93679cf9e76a720ee7c44557d39e2b8d19c302a6b193e7",
+      "bytes": 2339,
+      "git_tracked": true
+    },
+    {
+      "path": "frontend/src/vite-env.d.ts",
+      "sha256": "b39aa94ccb143db9ddca7eed19c912e5f9bed66e834be215d7351c6cf887c735",
+      "bytes": 773,
+      "git_tracked": true
+    },
+    {
+      "path": "go.mod",
+      "sha256": "99006e438be379cd2eb3ec356f1e4168c432a31f5972b10a4c408ddb0a5bae65",
+      "bytes": 6315,
+      "git_tracked": true
+    },
+    {
+      "path": "go.sum",
+      "sha256": "134d120c3cf46dfe5d545b377ad144909eb69485d39a54421137b0e4e6945e28",
+      "bytes": 84554,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/api/base_handler.go",
+      "sha256": "e32a2fcac101d9a969d6ee801cfcbd4c2a83969f46bf8a6cbbd91922ba3c712c",
+      "bytes": 2862,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/api/crud_handler.go",
+      "sha256": "89877a630c1e5fc72d65a96ac00f0007dad018759692c2534fd09790a8955cca",
+      "bytes": 6516,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/api/response.go",
+      "sha256": "def061b8f7170ed02446e75eb7c22882621ef20dcb9ecf2b1fcca868ebe5b0bd",
+      "bytes": 9710,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/auth/auth_simple_test.go",
+      "sha256": "e46e935300f7eccc84213617a0f657203a5735e4342f4a40ebd2e543869447c5",
+      "bytes": 3358,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/auth/claims.go",
+      "sha256": "a3e687e3012120344f55fcb38af3ec0784ca87c7cbc4cad3d3d2da45320f6029",
+      "bytes": 1772,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/auth/context.go",
+      "sha256": "ec046b5806d99591713a176dd54f59cfd85075b07b5d1f6bf0d429e2b5a25e4c",
+      "bytes": 2547,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/auth/integration_test.go",
+      "sha256": "7bc7d5f0f744fd5836b048003af3f24aa1f681f15831b525d5e12b45d4d08438",
+      "bytes": 3567,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/auth/middleware.go",
+      "sha256": "033c204122c66c2d9b8a10098f5afb7a0d924ad8166b44fac45860bcf39cc6d5",
+      "bytes": 11738,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/auth/test_utils.go",
+      "sha256": "c8e0e4d9531586bbd4015527fde972b28b6dd56918230dc99d376583096ee172",
+      "bytes": 2122,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/auth/token_manager.go",
+      "sha256": "f75408b333e4ee00844cf09d37145e6896a6f243b2bfb4f7067868ebcdd26d24",
+      "bytes": 19523,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/auth/token_revocation.go",
+      "sha256": "bc2a792cc3a32762860dd306777a672d94ef69a7bf8023a6b98a64e5cbab636c",
+      "bytes": 16309,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/auth/token_revocation_exact_test.go",
+      "sha256": "9166b78a0206a04e2f903204aeb777e89bd12282d554a2ef87f4bf8ed14d8bb6",
+      "bytes": 1760,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/auth/token_revocation_test.go",
+      "sha256": "a59f43b1916d0fd992c9e7603ef64b4a652a836aebf5fb254227b32c176074ae",
+      "bytes": 12472,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/auth/token_session_store.go",
+      "sha256": "9f1d28618de723b2c5724eefa8fb5959ea1762d72cf3d1aab646af74e027108e",
+      "bytes": 7323,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/auth/token_session_store_test.go",
+      "sha256": "24430a4eccaefcc277e247f372a2c4263eb06bdb0b9b0637f4b86d90214ec23a",
+      "bytes": 11778,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/auth/unified_test.go",
+      "sha256": "649814d25ed65e2c1271d955b511fccf8ba852f5fc343e251ff9ac4527f9c094",
+      "bytes": 3771,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/benchmark/simple_benchmark_test.go",
+      "sha256": "42c4952c0176c7b9fde37bca95ba710e1c2b4d4ace9119fc4af3e01d4ccbd4c3",
+      "bytes": 189,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/cache/advanced_cache.go",
+      "sha256": "498eb3f461803dc21d1c5fb829ea863a956d883bae6405ffb06966a3d756549a",
+      "bytes": 10652,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/cache/cache.go",
+      "sha256": "7f8cc9f1ca8246a25ccb087863281946502564621258034eedb234097174ead3",
+      "bytes": 2298,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/cache/cache_test.go",
+      "sha256": "a55d2a30df66b2479ca9ceeae06eb99d7fa8196f22931bbc22eb7a816699f0e9",
+      "bytes": 7077,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/cache/layered_cache.go",
+      "sha256": "ade6cb6afc1c2c8f8decd625076b8ab3b3d541b910ae029afa71d46ebc6eb439",
+      "bytes": 3569,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/common/common_test.go",
+      "sha256": "43724bbf373c7c772c740e31741154c4447fcc2d7b068116a361350d51bc422f",
+      "bytes": 25467,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/common/env.go",
+      "sha256": "67c6072946fb80ff0824d88fe5cf0a7e6e80ea638be1e0b9475b173ec093edc4",
+      "bytes": 738,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/common/errors.go",
+      "sha256": "7a56e61d0031d50333bd3deae0e581795c1fcd3deff981f45440d2bf25944e5f",
+      "bytes": 4272,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/common/response.go",
+      "sha256": "0fa1e7e5b842f8c2f379cd92580d4fab0e8a4eb59314750aedf3138301070627",
+      "bytes": 9693,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/common/response_test.go",
+      "sha256": "e4f41da5672f50aebd5ba67d5e687c113a90498a7f46234d29880b72a27585e5",
+      "bytes": 7983,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/common/stream.go",
+      "sha256": "ad56e80f870160abd182cfcde232b74795e72f92f9875a86e7df60c4cb832042",
+      "bytes": 4380,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/concurrency/concurrent_service.go",
+      "sha256": "9da95abc06a9dc5826e847799d37dcb99f9bf9026c4f7daf71cbbd2bacdaca96",
+      "bytes": 8608,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/concurrency/concurrent_service_test.go",
+      "sha256": "60743f06a1c1eddaea832d9b08021cae46f7d5379b9eacf49b305444265f9b07",
+      "bytes": 10014,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/concurrency/safety.go",
+      "sha256": "c45203e8c9fa8169802d011ba1c817c9c6a716eff645b5f3aa4571468e03e5e8",
+      "bytes": 5430,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/concurrency/safety_test.go",
+      "sha256": "5de0f932321d1400b0601a16f6bdbc276b7850cd6c2861bc761b913d2f1774c7",
+      "bytes": 8619,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/concurrency/worker_pool.go",
+      "sha256": "4a70d9dd1a5b2b7c0217442b09a19472f190418b9932849275de2cf379d67ef8",
+      "bytes": 10186,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/concurrency/worker_pool_test.go",
+      "sha256": "982b8d62d95acc310ad7fc049e2fe0e3b8e16cd01ff5dd86c770266d8a1f7808",
+      "bytes": 9314,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/config/config.go",
+      "sha256": "bbb6281a13cccf483a220fafcbbbbdc9f4425c583f0ce44a7742ff4ed8386467",
+      "bytes": 24607,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/config/config_test.go",
+      "sha256": "9d93b5fa090e66174032bddf5cc0f83647db8faec5523c70a18860464ee9c2db",
+      "bytes": 4981,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/config/conflict_detection.go",
+      "sha256": "9fd8ac3312298fd387ee13c8483ea571e0556a2987bbe1afdea95accc50b77ad",
+      "bytes": 2714,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/config/conflict_detection_test.go",
+      "sha256": "1b99b7a63f87b2dd4d59b3d06d2828e2da041551dae885ed560333600f09b821",
+      "bytes": 444,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/config/mysql_dsn_test.go",
+      "sha256": "665637affec48192b4209f27478b072fb0e7422d7168cb6a6545607c5b5429d1",
+      "bytes": 1031,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/config/production_readiness_test.go",
+      "sha256": "b422668a9c32e4fc97dec97e6e2ee0d60f1750f2fecf4ebce3273cc0eac65015",
+      "bytes": 2499,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/database/cache_manager.go",
+      "sha256": "f0319ef9fdbf3080900eb5dcb7b20fa4f666b72c6f9235942c3e53036c131f27",
+      "bytes": 8948,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/database/connection_pool.go",
+      "sha256": "242c22b7336a6bb6cb743812350a27a8614b0cece9e1b5fe21261264275eb3d1",
+      "bytes": 8667,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/database/database.go",
+      "sha256": "aa451c6aa32741ea4acfcfddcdf36cad6b20d377af6d053560c20f48c5b368ea",
+      "bytes": 7953,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/database/elasticsearch_optimizer.go",
+      "sha256": "7ecac5144a7f6c1b314b90ccb25b5f1110e58fc73601f74925bea9fa21f100db",
+      "bytes": 16810,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/database/migrator.go",
+      "sha256": "3a1be4e140df81f55c15cbb9f17956b2fa1fe2c543a4a0b9967a13aa67b2ca02",
+      "bytes": 12524,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/database/migrator_test.go",
+      "sha256": "d4912dfb314b282ae2ca5438e3380344d8316a8ad2710d067db4c5340bd2212a",
+      "bytes": 3191,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/database/mysql_connector.go",
+      "sha256": "e053d791e389c70df36aa8d7b749b9abf4fb076005d4fb6fdbde053e2c782379",
+      "bytes": 1271,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/database/mysql_connector_test.go",
+      "sha256": "9db831b7a183879a6e27b09f3be5238b2a1af1d7e81c0513fe5532b37d2d3bba",
+      "bytes": 2405,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/database/optimized_components.go",
+      "sha256": "b29ce3d29e8c4ef47b9be46126c3cd18739eca25abbd6c535ab06ab1dece1bf0",
+      "bytes": 11830,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/database/performance_monitor.go",
+      "sha256": "f70a20da5c585585208ca1e64f216b0b41b9d8020ad0c16d215389be2319fa31",
+      "bytes": 13092,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/database/performance_optimizer.go",
+      "sha256": "ae8e9fac5faec2000ce95671812c0f299028269e460bb1c464d3519f2ae060f4",
+      "bytes": 15848,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/database/production_schema.go",
+      "sha256": "a640f0b2690f571ff9bd5cd1eb8dc82cd75ee8622403bf6d6fa1004fcf2752a0",
+      "bytes": 51797,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/database/query_builder.go",
+      "sha256": "faa543d1a13ac3160cdcbbbefab23d9ed9db25a3702f1bdb46ff96879599d964",
+      "bytes": 9155,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/database/rbac_init.go",
+      "sha256": "5ecde6e44f22792be54faf41b4f33f68e684a11a1b2bf32d8f175a2d0d670d8d",
+      "bytes": 15844,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/database/rbac_init_test.go",
+      "sha256": "4bd5385bab92157c6284bd5b356420fcd22ee02a19518e265e0442518a1dc484",
+      "bytes": 2358,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/database/repository.go",
+      "sha256": "ec4d18d82cc718969daf8fc7cc0a695b43caf2745d729e303b0ba4cc14175476",
+      "bytes": 4901,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/elasticsearch/client.go",
+      "sha256": "01a4414ae939cd68e9c178444af640de6bfc89726b1ab61d2abaf31e077d9bda",
+      "bytes": 5212,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/errors/enhanced_errors.go",
+      "sha256": "c0f3492e354b3326647096edf4744154d027c1cec1e17c99fc9599d466ab58b3",
+      "bytes": 15512,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/errors/error_handler.go",
+      "sha256": "2698f3d385d13e669c911de3108be265b84695b2d54b0f469a236604a76b5077",
+      "bytes": 15863,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/errors/simple_test.go",
+      "sha256": "9d3ec00a3f7435e556a1d23bdeeca06ac3127c2556b02637380e77d0e782ee5e",
+      "bytes": 4378,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/analytics_handler.go",
+      "sha256": "00292d9778e65100701f4234348c913b350ebf52b919f27f1a40f943112944ae",
+      "bytes": 17762,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/api_handler.go",
+      "sha256": "a7b87546a5d9c0fc051e094ad067c298872c6425446697a1982234ebbd619b38",
+      "bytes": 4055,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/approval_conflict_redaction.go",
+      "sha256": "ec18160a24d5b622d48282420ffd9ed9f111f849de631b9497ce9bcfbf5ec765",
+      "bytes": 5737,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/approval_conflict_redaction_test.go",
+      "sha256": "e2a1358d31380b03c90d50a3a013984a4757e99a3e31410c962ef2be245884f9",
+      "bytes": 3635,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/approval_delegation_handler.go",
+      "sha256": "cdcb4e413971e9c7612423121560b1143512394b0004e3ce47b94a32800686f9",
+      "bytes": 8345,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/approval_handler.go",
+      "sha256": "b12cd984ef4b459f37304748aeedff5b06a8ee13ea8fb7bb502c6a31cd7354c3",
+      "bytes": 28949,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/approval_handler_security_test.go",
+      "sha256": "fcabff10b1fdb7402644836543e2c26af7341fb125707efc3bdd8a9d48c7737d",
+      "bytes": 5087,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/handlers/approval_subject_authorization.go",
+      "sha256": "301df2d649e94b1d3dc1792cb8c29855ae49cfb2d7454dfbe1502b71e14be490",
+      "bytes": 3382,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/auth_handler.go",
+      "sha256": "0f2071acca07c151622002fc72ce1fb1aadcba5b41043d877310976a8f10086c",
+      "bytes": 18219,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/auth_handler_test.go",
+      "sha256": "a3ae9a67c5cf46ffdbd51b3cf2000b75f019e11d584e7d7377f017ba70f52a73",
+      "bytes": 39662,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/authz_helpers.go",
+      "sha256": "c51b2bf628bf2c551ad088cfcab0a2245f831859e4798705c0ce736a6a95602e",
+      "bytes": 1142,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/case_handler.go",
+      "sha256": "d39b3efe50002bd85022056b4e88eb0a6082f5467891f7953ab4288cce4f1dc9",
+      "bytes": 11586,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/case_handler_test.go",
+      "sha256": "7d7dbb2deba11e4ca2f9135d4d699b86ea583549ee0d8a2c9f0361b40b829b02",
+      "bytes": 1507,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/client_handler.go",
+      "sha256": "7a59e77c77687ead543e9375e1c4a76eb5730885351c541ee35eefa994564a55",
+      "bytes": 15857,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/client_handler_test.go",
+      "sha256": "7fcb53316b53b4791f1a73eb0a38089712b3e588057ffaebe458649c872c2f87",
+      "bytes": 1508,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/client_masking.go",
+      "sha256": "1806de9c0d4aaec344096415740d0236386bbf301c78dcb4797ebefc06efdd50",
+      "bytes": 1359,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/handlers/commission_rule_handler.go",
+      "sha256": "eb280f33f0c44119dae2ca7e1fcd5f2698b614a9d25ef8c245195ac35f17340a",
+      "bytes": 3896,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/conflict_approval_workbench_test.go",
+      "sha256": "f5c61bd34883b1752acc45b581dbdb16785c15ba500dfcebdfd5cab396c86a7a",
+      "bytes": 5297,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/conflict_check_handler.go",
+      "sha256": "25247d16a7257268c238e18ad0e61a37ac65dbb341d2b0a867ef5101e4e8242b",
+      "bytes": 25309,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/conflict_check_handler_security_test.go",
+      "sha256": "d5b5c8724a5c91803c0e818255b534f73a5805bf19f237a68b3b9d18ad9ab74c",
+      "bytes": 4762,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/handlers/conflict_handler_simple.go",
+      "sha256": "abbc1c6ab7e620dec08bcfc07fe4a0e01f21c1436da02b7fab9d49f337aac17d",
+      "bytes": 32524,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/conflict_handler_simple_test.go",
+      "sha256": "5981313abfd64857cc564f06a7b3df47bd8e8fdbf9cc8138661fc14f09e94ac0",
+      "bytes": 33008,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/conflict_policy_handler.go",
+      "sha256": "a728d9ecd5b172a8d8b26fb258e37eb8ea76cc27894181068cfb07a10b463ad3",
+      "bytes": 1759,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/conflict_precheck_handler.go",
+      "sha256": "b62f1ee1de46ade85094ee81828483c16f8872bd1b94c7f1d9251a31e1c0aed2",
+      "bytes": 2596,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/handlers/conflict_precheck_handler_test.go",
+      "sha256": "52f3df7bb9080a71f5d57e677f29f61475a6954d0b92938211a19a05d6ab40cc",
+      "bytes": 1838,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/handlers/conflict_review_checklist_handler_test.go",
+      "sha256": "69470e80d9f16cf488ef7f1172a572cdacd5ef2788fc2eeb72512dabbba2ff8f",
+      "bytes": 5240,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/handlers/conflict_review_handler.go",
+      "sha256": "9a52213ceaa1bcd987bfde9737411bbbf618717655a254edc67f602280c7d9f9",
+      "bytes": 9386,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/conflict_reviewer_handler.go",
+      "sha256": "d375340111a0ceae1958d6726e2666630088b09bc7a524f53274afc4578e109c",
+      "bytes": 6326,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/conflict_scope_build_runs_handler_test.go",
+      "sha256": "cb669c7690c86479c77cf7f6416ca0056b4b3cca09e7b7bdc407b7a46971ba0f",
+      "bytes": 2882,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/handlers/conflict_scope_handler.go",
+      "sha256": "d87742929071199fe62518450da5cd66ce7adcd658ce38ad7c011acea88dfdad",
+      "bytes": 2685,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/conflict_v2_handler.go",
+      "sha256": "1056098a705659b97cb742afc28c6eac63a5cd388016df8cc7260210428db301",
+      "bytes": 10512,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/content_filter_handler.go",
+      "sha256": "0c08f280711beec7bd80c7cb472bfaa617ee2f8140d76a7dff2bcd79f139fa99",
+      "bytes": 12269,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/dashboard_handler.go",
+      "sha256": "3a7b303329cae8bc4335ea0c8d4f7b8067088cd9d10a483804080704049ec0db",
+      "bytes": 11610,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/dashboard_handler_security_test.go",
+      "sha256": "b80332fd6e01bd4e527a8406ff519246a4ffa3af7541916b49c25d3e1c1d1aa6",
+      "bytes": 4744,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/handlers/deadline_handler.go",
+      "sha256": "143635fb90bcb047381c0842fa75e83dc60b7cca5c5384f410369e6acacd42e3",
+      "bytes": 8789,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/demo_aggregate_approval_test.go",
+      "sha256": "bfa6feea668e696db658ca324c9238bff6fef7a364809736e49a708f7e7fc197",
+      "bytes": 1568,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/handlers/demo_aggregate_handler.go",
+      "sha256": "482e7959dc234d48b8c4578f682a691518e7e96c5f35fa653a00f731a72dad26",
+      "bytes": 130648,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/demo_aggregate_handler_security_test.go",
+      "sha256": "970bfa0c0171dd20aa205f9e2cd17116431190d0243e9c24f17c91c8532f986c",
+      "bytes": 42348,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/handlers/demo_aggregate_helpers.go",
+      "sha256": "5c05fd667345064b6c0d6a36677cfb474c17a78369f311740f9b05830ed25194",
+      "bytes": 16695,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/demo_aggregate_intake_co_client_test.go",
+      "sha256": "cbfac7a94e61a986c856f274cae2c7a7bdfe0f2222300e11b1c8edd82d03268a",
+      "bytes": 5317,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/handlers/demo_aggregate_intake_identity_guard_test.go",
+      "sha256": "dbdb289505ace05172a1fdfd15421a053dfbc043a0cc6f89ca5e12697b485972",
+      "bytes": 2612,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/handlers/demo_aggregate_party_contract_test.go",
+      "sha256": "26eb4a743ed4a8f63f264488c25cc4ec5364dd0e99a9bd9508195d2b18d47c5d",
+      "bytes": 5734,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/handlers/document_handler_enhanced.go",
+      "sha256": "6cec6b9e06cb0ae8d267b159408419b0ea3c5c17cabdf8d024ba28dab1e65b01",
+      "bytes": 28162,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/document_handler_test.go",
+      "sha256": "a4d34a5173e28baebfdfee2e44c82d2c86932971483208d1b7ec774dbf8eedc7",
+      "bytes": 27549,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/document_stats_handler.go",
+      "sha256": "41166311a6104ce2f53497dc5873dbd0ee1adb55af01a6645791bec7dc5fefa5",
+      "bytes": 5139,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/document_stats_handler_security_test.go",
+      "sha256": "4eee411e0b8aebf554d8f9e44169a59f8a7681986c38e51140f187e29c9046bf",
+      "bytes": 1722,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/handlers/document_version_handler.go",
+      "sha256": "2325d25f4660dcd74192b5da469e8e534efead33cba0028877e762a6c6e7646f",
+      "bytes": 12385,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/enhanced_case_handler.go",
+      "sha256": "8579d6ae4419fa60b2bbbd088b4de1b33e719a0a5854cfb40432bc819cca7500",
+      "bytes": 12158,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/ethical_wall.go",
+      "sha256": "8e9d99ba7889cbcc76ce8e80bf229c3347edaf0d2eba5f4fedba816c81cca30d",
+      "bytes": 13520,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/finance_handler.go",
+      "sha256": "5801232b10e161ce61e1e546001ee09391ada9d47a26e0cb7c2d201c454f3c24",
+      "bytes": 78836,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/folder_template_handler.go",
+      "sha256": "6f86efc72690654a16364ab613e448feb6962ef2d27868083ccd1c96710c03a4",
+      "bytes": 10543,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/handoff_handler.go",
+      "sha256": "3c0122b58c7d04dcc56e4b8f756cd5aa4dd013eb475dedb2e22dc0f3883b67c6",
+      "bytes": 2087,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/inbox_handler.go",
+      "sha256": "edec97007f6353eab67b9ac9c53f359e5582ca412285c106312063c131b6481a",
+      "bytes": 13162,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/inbox_handler_security_test.go",
+      "sha256": "4cad03c82251723fec1311cef576d948f1dfcd7deaeb1e959028c6f13d433f3d",
+      "bytes": 6584,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/intake_write_role_guard.go",
+      "sha256": "344393f6cf1b4882944428c04bff7546c95ca35c90e827f295157b592e8618fa",
+      "bytes": 910,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/handlers/intake_write_role_guard_test.go",
+      "sha256": "7ad0bbeb255d09eb71bd52112299141d5cdb6ee5160957a48d0913653c103b5d",
+      "bytes": 1201,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/handlers/integration_handler.go",
+      "sha256": "a412cff3374c634298769880d4d8f4f46b876483ab820aab7465ee12b41d0f6a",
+      "bytes": 20975,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/integration_handler_security_test.go",
+      "sha256": "9d5ee8b685142a0578e2889c6a567991b5c14d0867fa5d2f59da98b2d2289932",
+      "bytes": 8477,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/handlers/integration_test_handler.go",
+      "sha256": "05f19423a5b10e76b2e8240675515d2c9cba30e6471b1f9648069a4bd48775c2",
+      "bytes": 6832,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/lawyer_detail_handler_test.go",
+      "sha256": "c4c7a34dc7903739acd666f4e5885ac878e055747f04dec4c6afde5961480d4a",
+      "bytes": 1762,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/handlers/legal_statutes.go",
+      "sha256": "649cac9b66c5727a1a329c5801fe76fe966a9a4c017f60c59c81c4c67fd01167",
+      "bytes": 23872,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/mvp_unavailable.go",
+      "sha256": "f59ef05e2075188a7e0e197775f9e1c4336b510f357cc28b9bb1984190034f5d",
+      "bytes": 609,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/notification_handler.go",
+      "sha256": "0724b359b2df74292780f698a60528eb19d94f8d211f6b5b37ecfa7fefda26f8",
+      "bytes": 29319,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/notification_handler_security_test.go",
+      "sha256": "c08a721325497a91666f8957e1da117e5af7917c578b02b42b4b47f8ef14eda5",
+      "bytes": 4203,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/handlers/onlyoffice_handler.go",
+      "sha256": "b4e6be8771e99557bb04204ed515ad9935cce3bb1bc8eb32cf756208ad5338c1",
+      "bytes": 34515,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/onlyoffice_handler_test.go",
+      "sha256": "ea1833e92f36c51d37dab4fa090442e989122bf3c7016506afba34ff5d827d46",
+      "bytes": 21615,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/rbac_handler.go",
+      "sha256": "0a0968b5fc0c846646469793f006c1a8ec6057915ec6732a1e01e085b8620b77",
+      "bytes": 22476,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/rbac_handler_test.go",
+      "sha256": "05b532ab7b28b5a1875dc94b726a511b82ac43df7f0e810bd9f62966a491113f",
+      "bytes": 4010,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/handlers/role_handler.go",
+      "sha256": "fcaa96598881fbc0ad53bfb5ceb0570b8ae6788d9a2514009b96141d115679d0",
+      "bytes": 2327,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/subject_recheck_handler.go",
+      "sha256": "4ef250d4c716bda2d95108d35c17e7d3e39fcfa692ed7e5df1f21e2eaacb47fd",
+      "bytes": 13739,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/team_handler.go",
+      "sha256": "5a86cb0e2b6b69063a1e0016dd10b3658170e1426bf1de58b60d19ef7b5c81f4",
+      "bytes": 11111,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/tools_handler.go",
+      "sha256": "0d0d3757d1d1e72f6984b7ae548df7d6881392cb8fe616ee84853f86701c15e0",
+      "bytes": 6211,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/tools_handler_test.go",
+      "sha256": "227b4def87b78aadec192226fa57b60589f9745b63e7d6b0e6db42dfe9459f12",
+      "bytes": 2514,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/handlers/trust_account_handler.go",
+      "sha256": "7e40d6f8989b783f6cb6923b543c9ad408a428e7f7103a64085ff34182c8a031",
+      "bytes": 17485,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/trust_account_handler_test.go",
+      "sha256": "7d58282198391659974acb2e10f685cd4310fb08560abd1a03cad23913fef9ea",
+      "bytes": 15349,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/handlers/user_handler.go",
+      "sha256": "2ee2ef829c2dd3f37aac368b13a2a82d4747f38b3958b04b82bf934a6fb4537a",
+      "bytes": 10222,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/user_handler_test.go",
+      "sha256": "d0023c8e1b962d4433df19ac8240f8a4ee48239f7d72b3926f7ae8c5bedb8c2b",
+      "bytes": 1506,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/waiver_handler.go",
+      "sha256": "79951f562c00cddf2cabc697a31d739e546ffe4f26174ad6a8777faded406161",
+      "bytes": 9172,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/handlers/waiver_handler_test.go",
+      "sha256": "62c63efe9f4b8403785887cd62ea115b3f220ae8caf1365dc195dc03d8318594",
+      "bytes": 5150,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/health/config.go",
+      "sha256": "c377b23bb42f2423a20d89dbe6b5b3a0d72ebd17f4202d2b9fdae4f26232fd47",
+      "bytes": 11509,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/health/config_test.go",
+      "sha256": "40a988e81f94a5858c96b8111a3fc5313819c7f95059b6f74eaf075b8b516f58",
+      "bytes": 11075,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/health/conflict_p0_check.go",
+      "sha256": "1650b1da4b4b2cf0911011782d2f01c27386ea2746ae819be715805aef8694f5",
+      "bytes": 14276,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/health/conflict_p0_check_test.go",
+      "sha256": "7984909fbaebe1d1c58a23d5298f31a49104d41a15fc8c3b9a799cc38ed4b6b3",
+      "bytes": 10743,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/health/health.go",
+      "sha256": "856833924cc1ed9d37ec73ca4087386f4be9e7d774bafbf7d46299f9b1bae2b9",
+      "bytes": 19281,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/health/health_test.go",
+      "sha256": "688a8932ac423b8ba172ebd67abb41ae5ef66203642b2561a43ff9999386a048",
+      "bytes": 9658,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/health/middleware.go",
+      "sha256": "764a9fd6dc9cf1f5b57d0c054cf72d0515db5fd9bc3de5c76d22b7546e134095",
+      "bytes": 11566,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/health/middleware_test.go",
+      "sha256": "8e82eb5deb9a3230915c98f38df7824987835cc0335292f9e7ad738ea16f77f4",
+      "bytes": 13855,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/infrastructure/database.go",
+      "sha256": "d0052b2f36d7f316453fb58bdb8856c485c401f56a77e06bced0b38a87e9a6fa",
+      "bytes": 699,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/logger/logger.go",
+      "sha256": "2a3f45dbba430e7610b5d1018ebc4271a62dc1c66244075234c5e349befa109a",
+      "bytes": 29349,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/logging/logging.go",
+      "sha256": "2c78641acb89a87cbd6788d57b1bead686ddcfafe04cea5da27817bb0a8c1cba",
+      "bytes": 22801,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/metrics/application_metrics.go",
+      "sha256": "ba9ddf17346bcf7485be037ac8c17000d546830f587b156517449e0ce4f4cd1c",
+      "bytes": 14063,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/metrics/fuzzing_metrics.go",
+      "sha256": "e66c24fb670ee54a1a954e52e50229500a81dd691e64bb9d5fb88e73d8ca1269",
+      "bytes": 20212,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/metrics/metrics.go",
+      "sha256": "de433553fe5c76cc8213d2de98203551b43e0913f219e6b5d02dcc8b174207a1",
+      "bytes": 22296,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/metrics/metrics_basic_test.go",
+      "sha256": "8360eb8c1e77fd9d56592092554ac886834bbb85fd9201b60757d6a7eb9cbc47",
+      "bytes": 5562,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/metrics/metrics_test.go",
+      "sha256": "cb1dea991eae15d69a3f9b8a47adaf27bca6d55150ee37991f45f3ffc9d9051b",
+      "bytes": 12785,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/metrics/performance_monitor.go",
+      "sha256": "e87ce0c1326f55bc95b8d2e68e4e561ad3118a0813931dfedc908abcdacfc6d2",
+      "bytes": 7667,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/middleware/admin.go",
+      "sha256": "926e2a4998f6d470634e955827b66447cb4700cf47906474d245e2f01b8b8360",
+      "bytes": 622,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/middleware/audit.go",
+      "sha256": "2a9e2a734acc0989f13f4b31f0a5c16b34e4b7a94edf3bc5b3cc29ce3fffc736",
+      "bytes": 5222,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/middleware/authorization_test.go",
+      "sha256": "eff17954316aee61ce47a8688bdacb01c558465f5a159312d1673b882846061e",
+      "bytes": 3053,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/middleware/business_metrics.go",
+      "sha256": "4d447126fbe29843c62ee5aed996673d9ad64c5e0e89e6aa5ec1fe718ef20a13",
+      "bytes": 3654,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/middleware/cache.go",
+      "sha256": "2ac9237e6ed67f448eca3d21c2948b4a4b268138ee3ec3877d78f0c24d20bf85",
+      "bytes": 14016,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/middleware/common.go",
+      "sha256": "79cb29cbd8f224b78c23b924171b3738bba687394a54ace3557b13df231e56d7",
+      "bytes": 9927,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/middleware/common_test.go",
+      "sha256": "3475401712e8c7ea0c314a2a7f7a9991226d4c52e8c97f8af4bf652e33e09898",
+      "bytes": 1065,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/middleware/document_resolver.go",
+      "sha256": "47a86d4726da4ebdfce4170d501a3473cf16bb102890867e8b549be477fa02f1",
+      "bytes": 1376,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/middleware/enhanced_error_middleware_test.go",
+      "sha256": "52502832249dae0f9b0518fa7cd0c6254b43ed7c0aa7697fcc5c7a555d5ba50a",
+      "bytes": 6462,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/middleware/enhanced_middleware_test.go",
+      "sha256": "53552d771ebf810dc9c6630915bcc70da3e53a408b87f217783bcdd5be41cb91",
+      "bytes": 16814,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/middleware/error_handler_test.go",
+      "sha256": "8810c49dbe850b18c6fe09f60c0130aa8db8af6c334f42cdea75f730d9ea6058",
+      "bytes": 12464,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/middleware/ethical_wall.go",
+      "sha256": "bf132bab75fbcbec352ccdc6507eaf8d09dd06bfc1d8a7558688eaa6d2f20fd0",
+      "bytes": 13631,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/middleware/ethical_wall_test.go",
+      "sha256": "cc6b61d0a2e9b9341f825dc2c11007b04bb0d28d4170faedcfaa5a839573b603",
+      "bytes": 21986,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/middleware/jwt.go",
+      "sha256": "97fed698ab504b698f41a8025e01d4a2b3436dbdcb3064bdd3b00e161062b17f",
+      "bytes": 6836,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/middleware/logging.go",
+      "sha256": "d8b2e71d74d7126241064b74d693fda769c423536fd679d146bc07592d129ebc",
+      "bytes": 1776,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/middleware/metrics.go",
+      "sha256": "3a763bc040e431238830607211ec8a525755869ae4376d1a4933baed276aea63",
+      "bytes": 4403,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/middleware/middleware_test.go",
+      "sha256": "f24e5c12f226f3bd8834b0faddafe22de132fe95a0b4be01ee3af55aab1d9e7a",
+      "bytes": 664,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/middleware/performance_cache.go",
+      "sha256": "39e7513eb09ee917e87cde9c0c0a1f24494fbd4fb570e7b8b95621e79ad46913",
+      "bytes": 12275,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/middleware/rate_limit.go",
+      "sha256": "58850d7f1524b07b2994a53bf19ad40db77cfc1cfb4bc0f6165b581e4bf0ef8f",
+      "bytes": 6166,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/middleware/security_test.go",
+      "sha256": "10b9f0767cd1767b0fcd73f96b2938729b03e33cd6e015bb163d742c73f7c468",
+      "bytes": 12609,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/middleware/signature.go",
+      "sha256": "7c9297d5116d356b2fbcc4ad34901bebc12721d0791da344223e7ae906a59647",
+      "bytes": 5213,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/middleware/trust_balance_middleware.go",
+      "sha256": "031361bec6bd1f820f9d587d9af3e7d8720715fc2bbcea964402ded4ec9065d4",
+      "bytes": 6873,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/middleware/v2/v2_middleware_factory.go",
+      "sha256": "e3997544debc9fd0bb0a99659d844aa0480ba2c4462bc549201e5021d3fea7ce",
+      "bytes": 12122,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/middleware/v2/v2_performance_middleware.go",
+      "sha256": "67f8835cdf4da273148df99ebd857d190725bbd5a014915b4a37ac983cffc32c",
+      "bytes": 16110,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/middleware/v2/v2_security_middleware.go",
+      "sha256": "90bf0acc1b7f0feb69ab5809571e31d98ed1c14988115a313ce173e6a1295dde",
+      "bytes": 16094,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/models/analytics_models.go",
+      "sha256": "6844827e42dbf3a1553822ca2a0485fa06dc09c91a9171c0f3ce78101feb1dfc",
+      "bytes": 24021,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/models/approval_conflict_integration.go",
+      "sha256": "d0acd6704d899c64aa452bb00d5b3ed9985cc3c7dcf5f96a55b016c387e2a755",
+      "bytes": 10232,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/models/approval_delegation.go",
+      "sha256": "49cc15bb013e556eb0ec23638d7c2eda6ad027594dbfcb326fb2900b72272043",
+      "bytes": 1583,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/models/approval_models.go",
+      "sha256": "b26371331b1306ef53ee78752aa27123ac08d861cadd3a201e8b5a4b6881ab9b",
+      "bytes": 20686,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/models/approval_node.go",
+      "sha256": "8ad8f02ff0695716652d2ca6573572bbc8925215c0c90d0e28376551017e54a0",
+      "bytes": 3309,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/models/approval_template.go",
+      "sha256": "7bab41116232a421a5719f85da8f703c32c8ebba519698f7b6bd08e4336702e4",
+      "bytes": 16886,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/models/auth_token_session.go",
+      "sha256": "9bf04dfb7bb34c754f0985ef05573803f1dceb9ef45dea58aef5b3f6142c5193",
+      "bytes": 1495,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/models/basic_test.go",
+      "sha256": "48b37654e4e037224895e66f789f26fe92192a759a57147fcc6eed2f3a9cc511",
+      "bytes": 4795,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/models/case_folder.go",
+      "sha256": "aac75820ffd4cb9ca5bd34b42649d55d0d397849423875107f1d8867383a6a7e",
+      "bytes": 1746,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/models/case_status.go",
+      "sha256": "72af3347c1347fc0936fa16e9d27901252323b75ba3ab520d1fbdeae7830f618",
+      "bytes": 1440,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/models/client.go",
+      "sha256": "2813c19b033b70ef5093bfd0306ce99720c5eb43e2d12d897525cfe36cedef3d",
+      "bytes": 6621,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/models/client_creation_request.go",
+      "sha256": "46cc841fd66af051c96b6b761774be35b4e1a5b91a4fc610ae83a6192b261bcc",
+      "bytes": 1200,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/models/client_test.go",
+      "sha256": "82652797d3c9d434d7814df0faf5b9b1061f5648ed6b499a52cddefdd558efe8",
+      "bytes": 2134,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/models/complete_models.go",
+      "sha256": "78742d76bd0e6533081b94e01aa92a8b43687ac08c2df05cd7b0c5ad72af9f14",
+      "bytes": 28872,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/models/conflict.go",
+      "sha256": "d9f219f54066c17664751f3b72b794af77d0e46a8babe5ce3edabde34732121b",
+      "bytes": 25029,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/models/conflict_p0_foundation.go",
+      "sha256": "8bbc52bd8568f8ad4343e8f84d46ebc5a6065902bef83d33a91f249a3943c856",
+      "bytes": 5276,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/models/conflict_reviewer.go",
+      "sha256": "224ebf8c8b623283b13348546fd93cf9c6388eca0e7a73d1bdb542e44aa4cc6f",
+      "bytes": 3683,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/models/conflict_rules.go",
+      "sha256": "e01dba7bab180d330a13583759eb727e4a0575e548c8c29ec2bb2ece7780be80",
+      "bytes": 3996,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/models/conflict_subject.go",
+      "sha256": "ba1d0eaffe3e387462b66befd0560fdfa2969604a42e9c47fcc29c1b0cc08b8f",
+      "bytes": 17092,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/models/conflict_validation_test.go",
+      "sha256": "4ebb903825989c50cc70cef9c64591c56fde41c21cd26f42973b067b24a1eacc",
+      "bytes": 2487,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/models/document.go",
+      "sha256": "2bbbcd5ebc4557a1bf86cc92989218a2e8e66d065d6d44e8fc8d5552e7fc6ee4",
+      "bytes": 1364,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/models/elasticsearch/legal_statutes.go",
+      "sha256": "aaa56b65c85c302d2d5ebb3090c588d1e9a2fb365afe65f6c58382b4f30d69d4",
+      "bytes": 12791,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/models/enhanced_case_models.go",
+      "sha256": "eea624d4b82ba89af252a4ca2c5cfef2a77e52bfa1cd090d2530d855be037504",
+      "bytes": 23685,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/models/enhanced_conflict_models.go",
+      "sha256": "86429e3c04389c81badd943c66c7a1ad907f11f7f017269abef3b13fd496ed28",
+      "bytes": 47084,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/models/entity.go",
+      "sha256": "d67dfec873a7345ecd1a77fc177ed8fbdbec4ae894e01a48b606cec1c7e10356",
+      "bytes": 16512,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/models/fee_template.go",
+      "sha256": "4b4b8715d55be79f8fcf1bb8fdced0bacac2f147bad123d9a9afe15af1cf19ec",
+      "bytes": 1443,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/models/financial_models_test.go",
+      "sha256": "17320f21c31ed6b46514aec4270fe9422158aec59ce8b54d542790bdaa3db5f5",
+      "bytes": 10337,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/models/json_types.go",
+      "sha256": "832342425b61fdf3d5abeada3f7c757ec182c9a4fa55353b8974989d9fd341bb",
+      "bytes": 3933,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/models/json_types_test.go",
+      "sha256": "047097c58c3185eaf4605f28b8c5c08febc1088bd7303e6a1695cbc098153d74",
+      "bytes": 878,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/models/legal_statutes.go",
+      "sha256": "970ba95b3ef7b9fef42adedf740268d746cc6b47f4435151bb89757070a6ae9f",
+      "bytes": 12588,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/models/legal_statutes_helpers.go",
+      "sha256": "2657f5c2b22426e40b9cd1c8bb0207cca5ace45f174f3b684137d6488cef5485",
+      "bytes": 12960,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/models/models.go",
+      "sha256": "45b9b70eda9606d13b76b8a2187cb9552b5fa0f9ffbc9045cc082617e7c0481f",
+      "bytes": 9604,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/models/rbac_models.go",
+      "sha256": "92b64a6f3124bb20be4e70b5e8e6eb5f30b8a6d7db1416eb053e3ba560ee7789",
+      "bytes": 3117,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/models/sensitive_identity_test.go",
+      "sha256": "7ae208619c9c3884ba6ec756f8c15bb81a2dcd966fa3537705e5c6d775b180fe",
+      "bytes": 4289,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/models/testing_models.go",
+      "sha256": "24002e910c33fdda63f2899b557267825f87a0915b1e127a21d2d19742cd4b8c",
+      "bytes": 14402,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/models/testing_models_test.go",
+      "sha256": "bbb88d55f8ffb03626fd7e47711acd8b107f6918c20647475ad9fa105e302237",
+      "bytes": 10055,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/models/v2_2_0_models.go",
+      "sha256": "4a8124cc7d80b36f56762686d1290dad4021d657b8a1f188038b62c316fd4f19",
+      "bytes": 57041,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/monitoring/metrics.go",
+      "sha256": "d40213b57b8c6e4f81adaacd1830acad1205373b897fb0e02dfd20f87751a228",
+      "bytes": 16224,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/monitoring/monitoring.go",
+      "sha256": "46426d2b306c9d79076f266c0b50e49dc876e58ee5a799dd4eb5a403b72a4e13",
+      "bytes": 6525,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/monitoring/performance.go",
+      "sha256": "30605ef9806457318b68f16f147faac2771c0d87e2d463b70e6555575e0ce685",
+      "bytes": 10887,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/optimizations/query_optimizer.go",
+      "sha256": "b886a0e0c894010be1087c39097b355bb22bf1fa8fe116acb1351c73fbd9d0db",
+      "bytes": 15971,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/performance/performance_test.go",
+      "sha256": "f890c5131c840513f66851317633fe7c073dab1b98b56d228de1392f5aa72bde",
+      "bytes": 4833,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/rbac/rbac_service.go",
+      "sha256": "5604e9d81c7c5e4785971fdda2b6887290879a45c52f9f5eb41b9c2353a29b58",
+      "bytes": 4706,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/analytics_repository.go",
+      "sha256": "aca8b7a517cd87c1c85b2cfa66db1a1577e6ede8ff76d7cd271999a60503a51c",
+      "bytes": 21989,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/approval_delegation_repository.go",
+      "sha256": "1e7fa46eb14240b9a422f73f3e65ef299ea9ea21f0907302bddf22fdeb3e5875",
+      "bytes": 5025,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/approval_node_repository.go",
+      "sha256": "f0ec74bc27a185ea8dcbd1fa6007ed5f3d8c62f135e53a889747d0efe99bb1d3",
+      "bytes": 4646,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/approval_repository.go",
+      "sha256": "3f657a1758f5141c24f09a5e1906b87dfd2c0d91a94e14939d402e81fbe56138",
+      "bytes": 6850,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/approval_template_repository.go",
+      "sha256": "b431da83abd14cc8954653e02b47a850aac8a8e2e9a84433452ba2a39df837b8",
+      "bytes": 2736,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/approval_workflow_repository.go",
+      "sha256": "8c44312f23232f452fde361da8b2a03dc579f8111261880a1ae3c77e2472460c",
+      "bytes": 2431,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/base_repository.go",
+      "sha256": "855cb94a523d6144b05cb3ff6773d1bc2dfeec035f452203d276b217c9c6a755",
+      "bytes": 9093,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/base_repository_test.go",
+      "sha256": "426d82daa2a9cd946c2ca4f1e4855ff321621404370542a0229e8cc21a05d42c",
+      "bytes": 6608,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/case_repository.go",
+      "sha256": "7b38fd6f08fb6e43ce2b0054734ea05a700efeb058f9ab04a56b7910431a1450",
+      "bytes": 6817,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/case_repository_test.go",
+      "sha256": "882afc4e889843deca681a9098dd717dbf896d5a8e69212f666ee9ccb737597b",
+      "bytes": 11080,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/client_repository.go",
+      "sha256": "a5c80e26dffefac783ee77501873daafeaed3c65fdfcca31b88602ad532d5102",
+      "bytes": 9296,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/client_repository_access_test.go",
+      "sha256": "28f1469589a4b4d3e0715cdc8c786b37bee389fa6e0a600dfaa7d64472011610",
+      "bytes": 2221,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/repositories/client_repository_test.go",
+      "sha256": "7f7b155e1bebd085f7fe09eba08f8afa18a6b625ce0531d3c6fc8b21c95af2ba",
+      "bytes": 9729,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/commission_rule_repository.go",
+      "sha256": "edfa73f580cd535be52bab6c768f0b77a56c02f5701b55099f72e1b52c8040b6",
+      "bytes": 3019,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/conflict_extended_repository.go",
+      "sha256": "5ba0a68861c92d707c974067d6c69d88753878a7d2109491ae686297f6117d34",
+      "bytes": 22770,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/conflict_p0_foundation_test.go",
+      "sha256": "43ce665119c1a0e712b427f6d78d0c05e7dd7333620c1f4bc98e31282fba4ff5",
+      "bytes": 5817,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/repositories/conflict_repository.go",
+      "sha256": "8d43cbce6892eb60e6af68851a996179ebfda0987e08b9fa8ff6f4ce1acedfe3",
+      "bytes": 36761,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/conflict_repository_test.go",
+      "sha256": "742db4228d43471ff19fd1e8e61b3a9ad1c2c072a798922ba489ef2fa8435711",
+      "bytes": 14219,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/conflict_requests.go",
+      "sha256": "c38b73125d6b2d0a73ff3e8d833ccc39127ada77293e9215c49b9aef827fc191",
+      "bytes": 7262,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/conflict_requests_test.go",
+      "sha256": "3c5f4931ab53a3a8afdc8df65f8f36a11bbbe7933f9cdce47b640e6ff7654de3",
+      "bytes": 1025,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/repositories/conflict_subject_index_repository.go",
+      "sha256": "06b86bc559d1f7e499d5ddef8bc6417ca9c401d24271459a31e6140581724be4",
+      "bytes": 30221,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/conflict_subject_index_self_reference_test.go",
+      "sha256": "6ab706ad893e611fc4ba40b62a7f9618f33dbe0bad6cad2634525517d167e91f",
+      "bytes": 6267,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/repositories/conflict_subject_index_status_test.go",
+      "sha256": "c160d39e52fd28e505cbe2cf0f3f3a563f4c4189566d9b13c0142c88d1a1b033",
+      "bytes": 6154,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/repositories/contract_repository.go",
+      "sha256": "32da251a2c63dfe649e683ebff237bdcc30242a056c195a6b28b90f25b3cd1d9",
+      "bytes": 42563,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/db_adapter.go",
+      "sha256": "9264f1079f485e86422861366a83eb636ef818e817a90457381c3946325cbf46",
+      "bytes": 1915,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/document_repository.go",
+      "sha256": "9aac0e325fdaafec17dfe233cfaf8fe5114a2f0793e586152885abd7032e643b",
+      "bytes": 2052,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/document_repository_impl.go",
+      "sha256": "94534dd111103d25d73cd67401874ab769aea8479a2e9489499b58c3f85c9296",
+      "bytes": 8169,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/elasticsearch_legal_statutes.go",
+      "sha256": "f8670967ad627c8acfbc00a469843ab6498e33119004054cc6f0c5bc01490062",
+      "bytes": 10639,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/enhanced_conflict_repository.go",
+      "sha256": "f35f11e56eb75fc0e67322e56835d12f2adc4fbac65148785140dd750e375aff",
+      "bytes": 40859,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/entity_repository.go",
+      "sha256": "fa03e3c8288ea36b469892360f7059284db691b37da36f14299441d9131b33f6",
+      "bytes": 27663,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/entity_repository_test.go",
+      "sha256": "5b995700dd42aaf0812b273dbf491569d5ab0d689f7dc4cd36b44e4529f64a6a",
+      "bytes": 2690,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/repositories/ethical_wall_list_test.go",
+      "sha256": "de482ed2eca450d45812af490580a15f2d65873e5e21f032bbfd30237548a157",
+      "bytes": 4421,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/repositories/ethical_wall_repository.go",
+      "sha256": "ea53f571d96b0ec2299b2caf9bc0bdc8957cccd4b5fea0ea94ce86bae2c9d5fe",
+      "bytes": 8068,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/fee_template_repository.go",
+      "sha256": "6ec33f5be5864e96e79086d617cafce1fdf9d95fe4a1420911cdbffdbec4066b",
+      "bytes": 2252,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/financial_repository_test.go",
+      "sha256": "14fbc7da3cd9cce7ecdf49346ca2e567718394b2a77876a28a53cfa39c704a8f",
+      "bytes": 19370,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/repositories/folder_template_repository.go",
+      "sha256": "4ba767cc3e355e70c19998254184ff6e96189b528cb0015a0c9b95dd88981a5f",
+      "bytes": 7993,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/inbox_repository.go",
+      "sha256": "325ad231a01a7191e29388e30a8de403752fca1b7048c01386e7ae617d30e3af",
+      "bytes": 19584,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/inbox_repository_test.go",
+      "sha256": "5e363db09aa09b719b84f74b88cc43dc795be2736d8ba395e9a4c93cb9274fc9",
+      "bytes": 6504,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/repositories/integration_interfaces.go",
+      "sha256": "f43eebb0b0c2773efb5d67df5424339a300fa77ead2ed385d95c98caf49963aa",
+      "bytes": 2928,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/integration_link_parties_test.go",
+      "sha256": "6ee2b4719f2d295b1c4d8911e5db590652321542986107d8f6a114911e74e2b8",
+      "bytes": 4001,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/repositories/integration_repository.go",
+      "sha256": "a9e2b6d42553e1bca3cb61ab3a7bb0e3f47e1c10eba6a20f6cda94aa66d744b3",
+      "bytes": 25334,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/interfaces.go",
+      "sha256": "91189a713d90ed7f8e13310a946c893b86055f787035834222e4874702009948",
+      "bytes": 6813,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/lawyer_repository.go",
+      "sha256": "5d2cd6f790018472ef9579c0e75e67b42c02c7dfcb8c6857538e06bd94c48e44",
+      "bytes": 1737,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/legal_categories.go",
+      "sha256": "f2ff408748f8de66bd81c684f808460469b65075dd2dbb66df888869bf995ad2",
+      "bytes": 3510,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/legal_statutes.go",
+      "sha256": "3732beafd8c4abe6c0008d162c6d94811837652abcac2a794147b5809456f42e",
+      "bytes": 16745,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/legal_tags.go",
+      "sha256": "92878a11b38b281e186cd8b37154508f275862cb7e89d8caf4f297795dacc6df",
+      "bytes": 2300,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/memory_cache_repository.go",
+      "sha256": "5cf865e8e1bfbd22f2b8ab6d414e4b9bb918bc1b122f7165cef98226d39415b4",
+      "bytes": 2046,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/notification_repository.go",
+      "sha256": "67a02345ab46e00c38555007a831b13a3e1d95ca811d435a15a159e9d0ca26a0",
+      "bytes": 32546,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/payment_aggregation.go",
+      "sha256": "e456eaee60c77f48904d3f20250b340e4ab7da16096d7361708fdf7b1066db38",
+      "bytes": 1540,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/postgresql_case_test.go",
+      "sha256": "3a34d08f5dfdeca84b54cbf6cbae9112f40aa321030ea1c565cc54052abe7817",
+      "bytes": 11327,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/postgresql_fulltext_search_test.go",
+      "sha256": "2a3581e8191d8e7026adfa2b167e39a1ac8b0fd57158b628b0307fd1a46d4bb0",
+      "bytes": 9440,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/postgresql_query_optimizer_test.go",
+      "sha256": "ee66efcb8cd6b6df7459178e70aae5f85d07116be79457d3207a1c79e101557e",
+      "bytes": 6456,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/postgresql_test.go",
+      "sha256": "690a009d071b9eb55e7e874ae10dc5d73309429a5e6b49f23e471a0186862bb8",
+      "bytes": 8146,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/professional_conflict_detection_repository.go",
+      "sha256": "3e82652edeb4a0bf7baf77780108ae3dd960d75cee07a957d97a6f95f8df4095",
+      "bytes": 15493,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/query_builder_test.go",
+      "sha256": "026a2de61e4359416da651ee0ed803390627db55e9728120ef34e9e000dfa286",
+      "bytes": 14472,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/rbac_repository.go",
+      "sha256": "46b77f0092eeb023e31aea9b91d593ea5585e6b9a1803e3cce2a7bb45fbf9695",
+      "bytes": 10454,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/repositories.go",
+      "sha256": "c5aca5f18afb3894c2bf5449623288c6a5db06865842e03d8cc566b7d353639a",
+      "bytes": 4007,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/repositories_test.go",
+      "sha256": "0091fdbda5e8695596c2b58fb5ecef9c9d03cf55c25c73d5625beaff6c8e0c1e",
+      "bytes": 4234,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/statistics_repository.go",
+      "sha256": "d9495384c590d7d23b1400eafe074733945726315d0768b38d2424fc979a7f41",
+      "bytes": 16239,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/test_repository.go",
+      "sha256": "e063542373713c03c1c062de8d651c83e61cab890f6683f6cc5eefe0e60c59d5",
+      "bytes": 33242,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/trust_account_repository.go",
+      "sha256": "3866b87ea9751adb1f9a5d5828f6b0059f2df760d632f09666d68f46e77e7b9e",
+      "bytes": 10202,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/user_repository.go",
+      "sha256": "13c557911ba1ae295f10c280a657e8e2ef543bb92796815e0f4ffb2d89a27d01",
+      "bytes": 8081,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/user_repository_order_test.go",
+      "sha256": "806f9931b1829e85141b399c03a9fafadd65811a25b1f2f0e3a4830f6e2a9e8c",
+      "bytes": 1496,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/repositories/user_repository_test.go",
+      "sha256": "2c32035f92b4bfb6c7b44a95077bb7b666e07b25e3a7eae939b61af0e00d0b96",
+      "bytes": 8702,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/repositories/waiver_repository.go",
+      "sha256": "6a7c16ca0438a50fe42765dbf3bbfb8cf0679e444f6826b770ba1cf12fc4b448",
+      "bytes": 13756,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/retry/retry.go",
+      "sha256": "59b96b555a0bc2ed3389a552dd2471da502c00ee9a3dcd3dbc2718be4d5ddc44",
+      "bytes": 7688,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/retry/retry_test.go",
+      "sha256": "bee40ac03a4daf4b7da08adc8c641bc0479c5470205eb108567170733d82a39d",
+      "bytes": 11517,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/router/analytics_routes.go",
+      "sha256": "6d2cd0fdb88ddf501ddfda9c1aa82e5f4b4924746a4c84ab1b82e2075f60ec2a",
+      "bytes": 2778,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/router/router.go",
+      "sha256": "05d405fcdab8be7ecba85778929514f5dfb08d731264887f72580ba911d90635",
+      "bytes": 54129,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/router/router_authorization_test.go",
+      "sha256": "b477a1bc1ffe5107b633f68b384d00da1b202ddb4875997f67c05f85f788dfe1",
+      "bytes": 13070,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/router/router_minimal.go",
+      "sha256": "d5c987f3d8fc1bcbfa0017c421c50602c2e996c1d07e6f2c0138248ecab616e1",
+      "bytes": 2841,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/router/router_onlyoffice_test.go",
+      "sha256": "301e3c356ce023409b495284e34f803093539c560f968a578af10f4091d0a037",
+      "bytes": 676,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/security/cors_test.go",
+      "sha256": "7a0eb54fc752cb755e12ef8121bd37731ca08cc17cf86787b9e493684ca17e14",
+      "bytes": 1225,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/security/identity.go",
+      "sha256": "d46543d227a6db9b09a17aa861e98e7e5a139797e397e152e560fa74c411fe66",
+      "bytes": 7457,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/security/identity_test.go",
+      "sha256": "381f4e16472968c562f60dc30478488a0e13d7248b111913bd47c82740718911",
+      "bytes": 1177,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/security/security_test.go",
+      "sha256": "69aff017177ceb7558c8e4964742f04003321b1567855c671c8e1acb9a2757d5",
+      "bytes": 5293,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/security/types.go",
+      "sha256": "91132272717c8466b9599c2cf6ae83b27a669889529c96f66c83593505717b05",
+      "bytes": 10035,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/server/server.go",
+      "sha256": "d3a7c66a509ed93a3c51e5fa38986f6c2845da4a9e620e9c0301f0e8e39363ec",
+      "bytes": 2319,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/analytics_service.go",
+      "sha256": "f4f6fd3091cd80b12e87b0fe5c94221934d401debdfce9a47882b1caa3c84525",
+      "bytes": 23326,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/approval_access_test.go",
+      "sha256": "7f4dc0cd84dbb00116f9441c76304c5ffabeb55bfedb5e21ee42ea44dd0b7d3a",
+      "bytes": 3738,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/services/approval_assigner.go",
+      "sha256": "f7cb82b7ed99bbd613795594c4d07bf73f97ff620e779621649b00d6397186ac",
+      "bytes": 8702,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/approval_business_hooks.go",
+      "sha256": "382a0a63e402e33bdf6e96e30357a0ab1aa3655abb034ced6d924ed2f775cdbf",
+      "bytes": 11927,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/approval_conflict_integration_service.go",
+      "sha256": "0d5d0b161c33cf28f3b1df7c42c0479e075db8bcb8802cb5dc7fc7d947db4179",
+      "bytes": 50402,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/approval_conflict_integration_service_test.go",
+      "sha256": "c9b23aeb777ed2e91286c65cdfb871fd517d1a8fad554f8271955c0b164ce22a",
+      "bytes": 5393,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/services/approval_conflict_review_gate_test.go",
+      "sha256": "36a70e9f1702c40995e0ddf982a154de5d8292f22c1320ad4767b3733d5495a7",
+      "bytes": 1913,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/services/approval_delegation_service.go",
+      "sha256": "a1c3c05a16332ba03173dd58e0b15b82f063745dda9a55f5c6291fcabdaa2e38",
+      "bytes": 6254,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/approval_delegation_test.go",
+      "sha256": "11f117aa384c69494434aa660f5ec0d44568d1e4e689822cc01fedaf8967808b",
+      "bytes": 8731,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/approval_service.go",
+      "sha256": "8a41fab4dbb58ed72ddb605cf0e480d22163a8042ead6430c799069a9431a923",
+      "bytes": 22323,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/approval_sod_test.go",
+      "sha256": "6f57962619a7a13ebb54c35c1b6d6124f0ca0535d211343a2dc234c2878c3eb5",
+      "bytes": 2567,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/services/approval_state_machine.go",
+      "sha256": "ad3acfca148a4cf1293bfefdc63e674f9dfd193d94fa9e65a83880fe3b78eadd",
+      "bytes": 13178,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/approval_template_service.go",
+      "sha256": "eb4768052daf79c911b1a7146d723c1717874aa87c3ebb8e0b743f78e3996293",
+      "bytes": 14053,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/approval_terminal_release.go",
+      "sha256": "d1fd3bdae1d377250b51f5950d7a33c098d59b9972a7089586f41edf49ded6ac",
+      "bytes": 1162,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/services/async_conflict_check_service.go",
+      "sha256": "098752f70be90bebc77f515e983a749803d9ac164c151d4e4ca427d89ff7668d",
+      "bytes": 9382,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/authorization_service.go",
+      "sha256": "e557105056558454a87684c01cd7a6ced051a53cb42a3e8955b2a32229de47b7",
+      "bytes": 12421,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/authorization_service_test.go",
+      "sha256": "a1bf689c8186bad7e5f0937a2fea47a3031cdd4e188e96e236fc31dcedc9fe2b",
+      "bytes": 10939,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/services/bad_debt_service.go",
+      "sha256": "334af00457aa0960a7d655b940117a21a34e3815230023334b65a9ae9f173556",
+      "bytes": 9866,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/basic_test.go",
+      "sha256": "5eac3e944f69596b0df27eea7c459069ee19f834e61b5e372fa757e10addfc2d",
+      "bytes": 876,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/batch_service.go",
+      "sha256": "525d9de2c9aaaf03df68fc64659496869b9a9533e21d429392556c6a6d29dca6",
+      "bytes": 10200,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/build_exclude.go",
+      "sha256": "6d5a0beca6c87d1b54e5edf3b9d37fd7dada6a121921b6daad4bda5202f84ab4",
+      "bytes": 174,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/case_party_materialization.go",
+      "sha256": "434265403ddc97b10841b0b27178d18d5b98754917db7eefb66d0b07620f17b8",
+      "bytes": 3098,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/services/case_service.go",
+      "sha256": "2876d829ef4978999ecef61592c63b3f5bf308bc4367128b91926c8d47278a55",
+      "bytes": 15142,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/case_state_machine.go",
+      "sha256": "5d88301e69f4f5cdaf84c9214fff2f8efbb04dd575b4152eaafa291abdc709e0",
+      "bytes": 3801,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/case_state_machine_test.go",
+      "sha256": "26715149964cad2338185407f882fdef19681b01946e8b7ce768d869cc9054cf",
+      "bytes": 5551,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/client_contact_service.go",
+      "sha256": "c00d15a909f20f4fd5d522e7adf47785275f1f1badf7d47e0c2d443a78e92f78",
+      "bytes": 5129,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/client_contact_service_test.go",
+      "sha256": "e5f8c34db94111ea22a76c2c230f0b44baad27e8fcb92bff1375f2dd996ee323",
+      "bytes": 3202,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/services/client_idempotency.go",
+      "sha256": "1028b3de2691a9dce1b72bfcb5c6352ae66e8092aedb85202ae0b84dd5cd478f",
+      "bytes": 5146,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/services/client_idempotency_test.go",
+      "sha256": "ca354eda2e8b73608b8eb5c12aef00dc36d5e87b6a9b7c0765435c09bcc8925e",
+      "bytes": 8484,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/services/client_service.go",
+      "sha256": "50f765babfdf18f72a5d2655f573be89ebd61d7c1411976a4f80db8f07d8c0b7",
+      "bytes": 21545,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/client_service_comprehensive_test.go",
+      "sha256": "7d243fbb729a7dcbc37d8c582d1a6e14b850c4c5d4cee86eb6cf9d3ee43ce609",
+      "bytes": 33270,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/commission_rule_test.go",
+      "sha256": "798f4706bac110b9e36da84632bec1ded9b5f57e7facb56e0f4255f3135e5f18",
+      "bytes": 3740,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/commission_service.go",
+      "sha256": "1567d4f107ba8dec73bfbeceb6f7d17462f25de8a1e203220e198ecefc3c9652",
+      "bytes": 17942,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/common_types.go",
+      "sha256": "68098238101105c098e2e9b690194b95c232e65326f856f37904f4f4a55137c1",
+      "bytes": 880,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/company_api_service.go",
+      "sha256": "ef1ee30f334d96e702e2ae4353d8d111b3a6877c0a76583097f31b58ca8579ce",
+      "bytes": 25555,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/conflict_check_service.go",
+      "sha256": "a3ae6dc5bf7a26ca9a3c158e4421a9e3e5af56f3ea85bb5382ca9c638c0530e8",
+      "bytes": 35047,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/conflict_check_service_security_test.go",
+      "sha256": "c254d30511c9079990d7a45e48c3e1feedc52ca7667e515dc28ed65429f75b81",
+      "bytes": 4134,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/services/conflict_check_service_test.go",
+      "sha256": "c5a66334fa6f0c97cdd1a4822fdc715e6c200b757010b6052b0fc863a2f702b9",
+      "bytes": 3989,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/services/conflict_classification_service.go",
+      "sha256": "d1e72c11d789642fae3af6d57fb023dea79050ba9eb1ee7b0f034296b3c492fd",
+      "bytes": 9172,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/conflict_context.go",
+      "sha256": "db30b776e00d3e2173222c147b5df6328ccb7aa1db90a7d2a5c96b0366a69495",
+      "bytes": 4908,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/conflict_detection_service.go",
+      "sha256": "70dcf75e69b71c0a14e6b84721b249f73307398211b5b2f5519d14b238aa6af3",
+      "bytes": 70528,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/conflict_detection_service_test.go",
+      "sha256": "ee2a668ca9ab33ccb4b52c10aef1ca23a135c5bdd2025992bb14818e6b1d5ef4",
+      "bytes": 33110,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/conflict_hook_service.go",
+      "sha256": "ada09c6c400e72dfe96f0b86125841ec27f2ce90c5d5638c34e25373e05a56ff",
+      "bytes": 6782,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/conflict_hook_test.go",
+      "sha256": "7c5680f8309945a6f9730a532fdf7aaa8fd74bcab96986f58e4a5ef2aafbd564",
+      "bytes": 6480,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/conflict_officer_appointment_service.go",
+      "sha256": "a6a24c2858411b3d7662e37e72c17f8a3094fe103c0ecfe6f70bf80722cb939c",
+      "bytes": 7647,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/conflict_officer_appointment_service_test.go",
+      "sha256": "ccfdf656c6b1b8aca489b57f274ac37c3b02b32bd7548b2d50331c1866a842ca",
+      "bytes": 3511,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/services/conflict_p0_service.go",
+      "sha256": "613961ffb3635946fd2fbdbadc33bc86cb1d7a570b6986fba862e8993748d8d5",
+      "bytes": 17088,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/conflict_party_contract_test.go",
+      "sha256": "814bdca780c3ee130efa6eed458320f6f8a07bc9e4475d79021cf566b991e8e9",
+      "bytes": 2271,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/services/conflict_policy_service.go",
+      "sha256": "6321cf41a98be015897857a1b6f96a3dc3d29314a9caed75e3ea671d2e7eab44",
+      "bytes": 15409,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/conflict_policy_service_test.go",
+      "sha256": "13005fe7a9dee12d5903abc0ea4d8f59050dc526cc87e6953b7943f2976b2cbb",
+      "bytes": 4495,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/services/conflict_pool_service.go",
+      "sha256": "d96f59c8556f1585cdd9df178ed88183991be2b8c43fe9b552ede3e1cb44cac8",
+      "bytes": 22677,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/conflict_precheck_service.go",
+      "sha256": "b5eaa9c2ad6c8f50e48ec2fc23b16b4565dbe1a4374b51bdb93be126441715b2",
+      "bytes": 13716,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/services/conflict_precheck_service_test.go",
+      "sha256": "fd6bc1a6f42cd4a642f9c35f8e2c4434d1cbfa5f0d33316fa58eb452f50ec962",
+      "bytes": 11748,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/services/conflict_review_checklist_service_test.go",
+      "sha256": "13cd9526ccd66ed60de955762a506362e8cff12995092a8c3b4023d72a403ed3",
+      "bytes": 4743,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/services/conflict_review_rule_judgment_test.go",
+      "sha256": "762b2ba4abf09e497fab9e18c1a45e10e61fc5d2c8ef2ec6e04850c182e9119b",
+      "bytes": 2550,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/services/conflict_reviewer_service.go",
+      "sha256": "c57f3b81293fa5c0619353cb272a8a6c85fadfe9b8259698d6f5422b781f8b66",
+      "bytes": 17374,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/conflict_reviewer_service_test.go",
+      "sha256": "2f1eea636bf31c142ba5a3c1c45102d99e3cf0c8ea7ef6c37d95b932463e3ca4",
+      "bytes": 8583,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/services/conflict_scan_service.go",
+      "sha256": "b920b829a390c627b8a8a1d846db305582904a6356f7a074f193ff080fddb1f9",
+      "bytes": 22109,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/conflict_scope_a19_a22_test.go",
+      "sha256": "4e7093856fb70c06467d51fc3ae125357a6a5d32f483f75129aca2ddd9f14d9b",
+      "bytes": 3617,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/services/conflict_scope_build_runs_test.go",
+      "sha256": "d983ed9fb59b06e2b19e894b03f2aec8e104c76dbd96e791b0b9e5cbc3fce246",
+      "bytes": 2228,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/services/conflict_scope_service.go",
+      "sha256": "15365ed382a75b7c37d4e11fce2b058cbe2595828b4b8842dbc95178f0606d67",
+      "bytes": 18780,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/conflict_scope_service_test.go",
+      "sha256": "6d954bd87dd5c0506000ccbda8e86857befa014a28eaa1cb5dcbd73525b451b7",
+      "bytes": 8653,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/services/conflict_subject_index_service.go",
+      "sha256": "a28ec4c0c99102df7aa5d14cab62ecd2db8258c9aca699242596d521057a9936",
+      "bytes": 6287,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/conflict_subject_index_service_test.go",
+      "sha256": "9fd57769413a6308b23626d92e01236da6c16856b87fc249cc08ed66e1adaf62",
+      "bytes": 2071,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/services/content_filter_service.go",
+      "sha256": "d39674d4434ae5f7b0f1084598244e644f954cefeb15166148420d8dee79c563",
+      "bytes": 12713,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/contract_service.go",
+      "sha256": "e4275ac2e79271fb0f2cede43074ca7430b1329f5c4dde4c988faaabcafe930d",
+      "bytes": 33253,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/deadline_calculator.go",
+      "sha256": "5016c2c548ddd0373ad91fea521746c0360d1191964156e34879502647c11fb7",
+      "bytes": 13386,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/deadline_calculator_test.go",
+      "sha256": "21e6243dbb38eded5d9f36e750534697831e265d6071f35c3d98612b76f569b4",
+      "bytes": 9192,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/document_lock_service.go",
+      "sha256": "fb095a5499e42890eb0f95d1c337a558484e4abd0be45219831724f2e61da795",
+      "bytes": 10655,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/document_lock_service_test.go",
+      "sha256": "b3feeeb24d1d3416f9a17f1e87636f769a39c46ea671ec9cb5611ed3d6a09cd8",
+      "bytes": 3458,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/document_permission_service.go",
+      "sha256": "8e35e83669209e294d2ab03f8a5fd8a497ffcc8504cc33acccb62f60f19ea73d",
+      "bytes": 16156,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/document_preview_service.go",
+      "sha256": "1f9cbc33406e8026f1df930916700b464db31a836cb342c01b814b33c5001779",
+      "bytes": 8941,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/document_recycle_service.go",
+      "sha256": "df47f19328f3b13caebec562c80b503a5595a923cc5ed4f4dbd3d0316dbbb48e",
+      "bytes": 17363,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/document_search_service.go",
+      "sha256": "3f71b9c127ca30c73fa6733c611d88651ec23682e6ecec68ce3e53ee92abdc36",
+      "bytes": 22569,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/document_service.go",
+      "sha256": "f5b81588a5f61372a9eac83df40270b88e2d2435dd292e6c36f858d11522d489",
+      "bytes": 12813,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/document_stats_service.go",
+      "sha256": "86ecba09f6368a1010055e2877b085700d23b15b57a29b792e04b747294e523a",
+      "bytes": 22746,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/document_version_service.go",
+      "sha256": "d7b778aa4bffeabe26dcbcb3038823e6a5a5e433343904deab81a93ebfe85a1b",
+      "bytes": 15493,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/elasticsearch_sync_service.go",
+      "sha256": "f6993d246a06bd699093a2375441921c66dd08241a93900d875eccee81ab543b",
+      "bytes": 8849,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/enhanced_case_service.go",
+      "sha256": "0ef6b0eb6f0ddfcd1730aedcd3e22fe7d08a9a77e82d5a577687c248e5c3ce3f",
+      "bytes": 26650,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/enhanced_conflict_detection_service.go",
+      "sha256": "2a629dccec8bce3914bdd98416db0956400ac5d367e617ea48b5b9b832165726",
+      "bytes": 9849,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/entity_recursive_test.go",
+      "sha256": "3f42242f46ac0e2065859b67301c82d000578980801d628eb9c1bd3027715e7d",
+      "bytes": 8520,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/entity_service.go",
+      "sha256": "36ebc4748620a5bd8e427df115e5a6740fc1fe8cc2863ba1fc86fbed87f6e73a",
+      "bytes": 12130,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/escalation_service.go",
+      "sha256": "034bdf18e1c9e71f52afce3991bf4761b8509b01efa990008184109f9eba7a85",
+      "bytes": 8097,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/ethical_wall_service.go",
+      "sha256": "ddaebb6f77bb14de87e486a4905322dfbdc5d4347a4cbdd90aa826aca8f0f0c3",
+      "bytes": 9493,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/event_dispatcher.go",
+      "sha256": "76e499df4b83081d1c82aa7ad49b9788c4a8759b3e324af1e93382912e760947",
+      "bytes": 14111,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/event_dispatcher_test.go",
+      "sha256": "719526df1a5ac7e8361d0ae8040ffb0bc84c6571a1b90c1d14e5e5baab3f2e75",
+      "bytes": 5299,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/services/fee_template_service.go",
+      "sha256": "ca68003c8e288421c778cecce8402ebb956012ca4f42dc75984d70f2d1abfa79",
+      "bytes": 4885,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/finance_types.go",
+      "sha256": "fbc9a8a6879f7b6ab6918b965ae854bab228176367865632855942631e864111",
+      "bytes": 323,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/folder_template_service.go",
+      "sha256": "4b91e41b940dbf34a5e7b9bd1d0eb3642d62bdf5bef15f18b83fbcf43f5758d7",
+      "bytes": 11076,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/folder_template_test.go",
+      "sha256": "85b0c3162e7e8982a80a1bc7ae10656742c9a00058f0f844bd06e40a6f4c6dc1",
+      "bytes": 7940,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/services/handoff_service.go",
+      "sha256": "b218ee668c7962a16bf31fb7b9bd59214a5360243d6e0e654b838d0beaf965b8",
+      "bytes": 2749,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/inbox_service.go",
+      "sha256": "a427134b97b5302f4a82fd5a6e851932687f57d3d8fd98ceda2f98e1c96a398c",
+      "bytes": 20380,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/inbox_service_test.go",
+      "sha256": "0d5ee30bb6d717c85a6d2713bde641a7cfb4d7a33e165848ddb86926655db187",
+      "bytes": 8472,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/services/inbox_workflow_action.go",
+      "sha256": "f0963af957d6e762455733a0dcfb6a53a5fc69c3938f9944b62ec5d96571a355",
+      "bytes": 1900,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/services/intake_inbox_handoff.go",
+      "sha256": "2abbf10bf303fe2dc9d0d6aa8f56258d00d516666cf808815d20e1de884075c2",
+      "bytes": 4511,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/services/invoice_service.go",
+      "sha256": "5bc13fc00727b7a0536e7d2132a7aa88e14f111c7b6613a7b04ee932cde5927e",
+      "bytes": 23856,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/lawyer_service.go",
+      "sha256": "14ff9553da7bb7fcf96e6084f9da21a57d06dba0cd01a9671207c79d3230698b",
+      "bytes": 4076,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/legal_statutes.go",
+      "sha256": "42d50d98cb6c6ad721e777b4570887f80be72992b860487797f478e576ee87a2",
+      "bytes": 36497,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/mcp_client.go",
+      "sha256": "4b6eb199d8d88298a9f9f9330be7596e036447a1befd0b3ec221bd14ddc19f45",
+      "bytes": 10146,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/mock_service_test.go",
+      "sha256": "e97a98f5020462ae607fa6e737c931190d7179bcd986dcfe1ac7405a817f2269",
+      "bytes": 2191,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/notification_queue_service.go",
+      "sha256": "4ca11316b6e347149e98979c5cebb651630cc223bf677b0d6a4532772c27c4b7",
+      "bytes": 22205,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/notification_service.go",
+      "sha256": "c2a5a9e7916489ca7eb835a61e8f419e9ff6da8ce4afbcd33c040ed4f5857f17",
+      "bytes": 1345,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/notification_template_service.go",
+      "sha256": "89aaeebbf9f50acb05fe3bcdd11d510ced0da4949725f9d1e703fa9f67ab049c",
+      "bytes": 12669,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/offboarding_service.go",
+      "sha256": "14c6bc921d16c409268a8714a3d5cd1baac6e2c87909cd285df42a7b261f5f3d",
+      "bytes": 16243,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/payment_service.go",
+      "sha256": "17712759bfc32403b98d9492f6292b9f8a90b3232789e48065461254e00207e5",
+      "bytes": 14699,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/pdf_report_service.go",
+      "sha256": "2cb0e2c278a47b391a36f66e634f7abf7bb17d266dfe6ead3195f7904a6b5c23",
+      "bytes": 27437,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/rbac_service.go",
+      "sha256": "849589e29948135a4a157f65d286c1385f105e9736536183634a86bfa9fb77b5",
+      "bytes": 14408,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/risk_assessment_service_v2.go",
+      "sha256": "8db6bbff82a5dbf2ee208ab2ecebb14640e41fdf1fedddf30c95f50ddd8ef6c8",
+      "bytes": 5793,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/risk_assessor.go",
+      "sha256": "f064b48ccaadb690aee449154bcdd39a8ded3f2f74a14af8c44cd9d027e5adb3",
+      "bytes": 20422,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/risk_assessor_test.go",
+      "sha256": "546db6f8f34f9ac292ccfb856d13a8d8e63f0187bdef57dd8242519f9cf0e6fc",
+      "bytes": 2354,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/scheduler_service.go",
+      "sha256": "d2f23be1674bdb4652f496221a2b3afe16fb5a432653348300f1a4dbeae9feea",
+      "bytes": 16296,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/search_service.go",
+      "sha256": "1af96ac5f65457e25a90dc8960c526778b8f0c1e0f61b059baa8ab7a185dab0a",
+      "bytes": 15383,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/security_control_test.go",
+      "sha256": "50bff3b8bc0ce3f66815e0c8663e41a0964143d19867683290d13e795a81b199",
+      "bytes": 13693,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/sensitive_word_filter_service.go",
+      "sha256": "47c9cd6f68860144b46ea17e52daddeb9d8b0bc281da0318bae369a567e8ba7a",
+      "bytes": 13166,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/subject_recheck_service.go",
+      "sha256": "9586f9c3f00f597cdbce37a02ef3976f5de297fc2860f52fd701e349bb79934b",
+      "bytes": 92404,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/subject_recheck_service_test.go",
+      "sha256": "5bb895fd4099425c3a3926befa178ac21448f16499e1c924694d6d989741aa62",
+      "bytes": 34407,
+      "git_tracked": false
+    },
+    {
+      "path": "internal/services/team_permission_service.go",
+      "sha256": "39edcc740fea430e4fb9eb7c0a176df0a2a8a4f278f118a92f571a7883bebeeb",
+      "bytes": 15636,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/test/user_service_test.go",
+      "sha256": "1528edb8d339cacbb4e332df174d8f285d247ee20c17a44e16ff6a9f9700dea6",
+      "bytes": 18256,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/token_revocation_service.go",
+      "sha256": "47def7fa6c75ac1d42ead74f020d48d4411ba702a6ac9ab206cb68f090bcdf94",
+      "bytes": 4447,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/trust_account_service.go",
+      "sha256": "b911aad27df8541728de20aac8d29350a4cf69ffa148877788b7d647a7de2aeb",
+      "bytes": 23546,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/trust_account_service_test.go",
+      "sha256": "b70d790d2215f4a3210579108ce5a7f9561bfbbdd5d74c77cfd37b58031f1630",
+      "bytes": 9720,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/types.go",
+      "sha256": "9441953b054642550cc546fd95b51d8c3af50b68a051387e9b832d45cbe17804",
+      "bytes": 941,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/user_service.go",
+      "sha256": "10a12e779ac039ed52b52f0c78d3f83d40c7ef4e61f6bbf1b50c1148c9b998f9",
+      "bytes": 23497,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/v2_conflict_detection_service.go",
+      "sha256": "867e08e30010c238c47dfea0365cee58dfa147f83da41eae3d510b77c40e1060",
+      "bytes": 20198,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/services/waiver_workflow_service.go",
+      "sha256": "7a2b94c9a7c7b766e125c44e9077a058be44dad15cf678bf5c9dad8923222111",
+      "bytes": 27615,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/shutdown/shutdown.go",
+      "sha256": "05375816f4ab92c1fc11d140eeabe5936cbb6ef32b70f302085cc91e91c8e17a",
+      "bytes": 9903,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/test_compile_only.go",
+      "sha256": "2063d119f89ebc7a4eab81026b856d57bb4e20fa3a3032668d2f4f65fe7bbde7",
+      "bytes": 398,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/tracing/middleware.go",
+      "sha256": "94d07650ca2123900d26805690e2b073152bf2a5077d4e994cac252288d354cc",
+      "bytes": 10782,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/tracing/tracer.go",
+      "sha256": "8191f36983583c78562ac48f68b01692360a3ed499e3cd2f4e4979c7dd124e15",
+      "bytes": 15510,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/validation/validator.go",
+      "sha256": "8704127c00c1e2ca1ab36ea94d298aaf45685d5aae82cabb9d7f4ffe1e91df37",
+      "bytes": 23735,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/validators/case_validator.go",
+      "sha256": "7973bd4fb4e4e729cb190166301b084eabb1a28b5146a24c6a83f40acf1ef66e",
+      "bytes": 9809,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/validators/case_validator_test.go",
+      "sha256": "ed73878cd368a4cdc22d60bba2d054257acdcaaa78e2496be7bb9fb2027ac17e",
+      "bytes": 8853,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/validators/client_validator.go",
+      "sha256": "a0e74520326a2a03321f65c7e41514e183fdf4751738187bdaa5c7ca25598b00",
+      "bytes": 2394,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/validators/lawyer_validator.go",
+      "sha256": "0b0e5548d06bce550dfea5620b7143d4899d65ef78df1df2cc3097a773f67d7f",
+      "bytes": 2107,
+      "git_tracked": true
+    },
+    {
+      "path": "internal/validators/test_validator_simple.go",
+      "sha256": "eba8c736e1d5238346479c35210167a0f3c7e456f8081124896e76974103eef4",
+      "bytes": 12429,
+      "git_tracked": true
+    },
+    {
+      "path": "main.go",
+      "sha256": "da42d9d127963a608b975d7fb5adeb3352707285bab185bde5e90bd7e54868af",
+      "bytes": 20410,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000001_create_tables.up.sql",
+      "sha256": "c553154bd901be906a6d4706ab96f00d5fb24079343f26222965fdeccbc018ae",
+      "bytes": 3936,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000002_create_clients_table.down.sql",
+      "sha256": "f64b724e03c21a9f3391c3b8d1cc9e435b00abf5db5d37f42149875686269306",
+      "bytes": 48,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000002_create_clients_table.up.sql",
+      "sha256": "db1ed63d0ba2bf7a15b9b65e249b37893a2ec04e63b08fb048af8d23c11a3d47",
+      "bytes": 1033,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000003_create_cases_table.down.sql",
+      "sha256": "550bada6123dc3cdd62eb1178a3224b810d6b71866f508883dfa6deb2715f485",
+      "bytes": 46,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000003_create_cases_table.up.sql",
+      "sha256": "4fa277aaa022a1537becbf78ce4b861ed02b7e351d9a68742fa6f7a6b9b6e6c9",
+      "bytes": 1426,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000004_add_indexes_and_constraints.down.sql",
+      "sha256": "12cea96377fe1ebc4f967d0292a91bfed384e2b23db9bce00874084308498687",
+      "bytes": 667,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000004_add_indexes_and_constraints.up.sql",
+      "sha256": "64cb28e6d112ed742c70c48ce95da2fb1cf77d3f5d97040642dcbe23b7adaf65",
+      "bytes": 1072,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000005_seed_initial_data.down.sql",
+      "sha256": "233f55d2448a0035b925f66a9a6f1003c5988d2c50ccb58db5ced55de5005646",
+      "bytes": 266,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000005_seed_initial_data.up.sql",
+      "sha256": "0f1fb3dbbf4c0656cb37471ac272a3489426efc63b722b7b369e67d73d39c804",
+      "bytes": 1297,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000006_create_documents_table.down.sql",
+      "sha256": "dea3bbd07aabdf79f9ff45ff7dc9adbb7150401ed47332689eb61268d3e15101",
+      "bytes": 51,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000006_create_documents_table.up.sql",
+      "sha256": "8c14191482b03d2ec01d8ab803def9b2fe685ad1e513efc41d0bb527d13aa52e",
+      "bytes": 1532,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000007_update_seed_data.down.sql",
+      "sha256": "56298e3f1d075f4968aaeda6df32968f549da616668a319bfe416c4afbcc0125",
+      "bytes": 764,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000007_update_seed_data.up.sql",
+      "sha256": "792eb2b7ace1e815645ad31345be3c1294b2f8b5f9c29b8c03d0e266715c2540",
+      "bytes": 4925,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000008_rbac_tables.down.sql",
+      "sha256": "49cd0083b327e5f9e7f279fb749a75d812f224b9bf3b3ecfd41dde329a82e90d",
+      "bytes": 276,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000008_rbac_tables.up.sql",
+      "sha256": "659f305a633d4c7af52fb2c8871d4d9327e6b5f036c668cd2a37a7468a9f0252",
+      "bytes": 3678,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000009_add_user_missing_fields.down.sql",
+      "sha256": "045c1fe6e8f82a95bfe71decbcf284a134588c75a4f68b12fc7a5146f3f6ca1e",
+      "bytes": 247,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000009_add_user_missing_fields.up.sql",
+      "sha256": "c72c9db4a653f52d6128e2bfe1a7561e311541eab7f9682edd4ce82d0c333e69",
+      "bytes": 639,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000010_conflict_detection_tables.down.sql",
+      "sha256": "b90a8c960fc60c0d2b5e73ac1180dbd27430da38a97ecfbabbe9912bc562c154",
+      "bytes": 229,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000010_conflict_detection_tables.up.sql",
+      "sha256": "81dc786a3452d9af8805643e16b6d500171b04981d0d9ad9a398d8d324d23719",
+      "bytes": 7142,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000011_analytics_tables.down.sql",
+      "sha256": "784837807d2467757a55c3c43d2b6798ada921e470e84a707a7fe923b6f3cb59",
+      "bytes": 1052,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000011_analytics_tables.up.sql",
+      "sha256": "65c566fafa66fca8bbc6fe6a3232928acc0cafc250965462a12b731b66090ee3",
+      "bytes": 20290,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000012_update_conflict_tables.down.sql",
+      "sha256": "9958e26580b4b73b83f83dddcbed80dbdc8f49ebc0d93b14cbf562c8e7a503e5",
+      "bytes": 1401,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000012_update_conflict_tables.up.sql",
+      "sha256": "1172c69d552a9f9beb6fc724cf4386174d5730768b1a710576f5be8c217f48ed",
+      "bytes": 4603,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000013_create_legal_statutes_tables.down.sql",
+      "sha256": "7402f8823916580a0c442045a550357beb86385b318d8ea163161b1da28c8d81",
+      "bytes": 683,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000013_create_legal_statutes_tables.up.sql",
+      "sha256": "03ce299eb6407f6ee18254ee0072fe1ca8f5186ee958ded861bce8e96ec6c046",
+      "bytes": 9683,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000014_enhance_client_management.down.sql",
+      "sha256": "7a735ac4ebb369b1457dd21cd6b193592d152fbc9b923a5c74e409fc4a3ce15b",
+      "bytes": 460,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000014_enhance_client_management.up.sql",
+      "sha256": "99c11b8e7ab3adad4c33a6859692bd1939856f1c355facb6352f45838ca88c1f",
+      "bytes": 16404,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000015_conflict_classification_standards.down.sql",
+      "sha256": "3882c03d617d14fb743289663d68b12dded14dab6dfca0e291ab9cd39d0370b7",
+      "bytes": 228,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000015_conflict_classification_standards.up.sql",
+      "sha256": "5174ddc7f9632f8be058caed4fbc4821f72f5033c7b69f02b6d62842d5a1208a",
+      "bytes": 18936,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000016_waiver_management.down.sql",
+      "sha256": "9f69010ec8f362621c2bf036f71d497e4a0a7f286e8b1e98d64e2e624ba86ba9",
+      "bytes": 515,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000016_waiver_management.up.sql",
+      "sha256": "35ba7c0dd06a9505ae2afca8ec7d12ef2d6fae4121a585c8ef3ac00c3ee6895f",
+      "bytes": 21851,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000017_enhanced_conflict_detection.down.sql",
+      "sha256": "dcd289015292c3a9d34ec2f73b953f1ae40d09eae22cc83098e6aa6d52c5fc42",
+      "bytes": 533,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000017_enhanced_conflict_detection.up.sql",
+      "sha256": "5c9a97950765b14ac369cdc78cc90534ecb70c8ee9de9b1f94c6a642a938b861",
+      "bytes": 25214,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000018_enhance_case_integration.up.sql",
+      "sha256": "8cfe39f9fd62bb7a41f4705e9a9c533b9e037012b0328a961512000e34916a2a",
+      "bytes": 12537,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000019_approval_system.down.sql",
+      "sha256": "c6e7cba252407c7d2191436788aa0cecb3fad6cc8f7063c9e8ca26ae2370eac8",
+      "bytes": 530,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000019_approval_system.up.sql",
+      "sha256": "0cb47fbe7535bb85495708586a6dbe1fe56fca40bfeb17f72af25e3d7dd39088",
+      "bytes": 19537,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000020_add_conflict_approval_integration.down.sql",
+      "sha256": "4a301c2fc79a7d5f596c5b5a3e9d0604fbf6e77296db59fbd39a1b605bff8303",
+      "bytes": 2006,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000020_add_conflict_approval_integration.up.sql",
+      "sha256": "63a57b0e69270544d915c6a2caba37bc8fa8b148d5dba4480424a69842dfead4",
+      "bytes": 16857,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000021_entity_and_conflict_tables.down.sql",
+      "sha256": "438bb3b074b601e72343043d4dd68b8d1dfd830e1a926fc415f11de68ae72d40",
+      "bytes": 937,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000021_entity_and_conflict_tables.up.sql",
+      "sha256": "a7ed80294c302da3e821ae40a3c738b44b37b9505af05f9e25c5aa3dffc81b4a",
+      "bytes": 10221,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000022_create_fee_templates_table.down.sql",
+      "sha256": "d74f483e1469a80930d7340c8a1b619e92d7b6665e95328f048c011767dd00ae",
+      "bytes": 36,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000022_create_fee_templates_table.up.sql",
+      "sha256": "d609e6e4a16d9f168f08f6222310ffb21154fee8d476766a7c2b43d5d59a655c",
+      "bytes": 1430,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000023_create_commission_rules.down.sql",
+      "sha256": "f8e16144629b302a2de00d0adbd09aee9402f52c1d2b04f7773e633b3741471d",
+      "bytes": 39,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000023_create_commission_rules.up.sql",
+      "sha256": "ec2e2c3ab64c3f1ac70184ba8118bec0e6d533654de3a2ce5c627aa2066517c9",
+      "bytes": 1616,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000024_approval_delegation.down.sql",
+      "sha256": "0229e2c616f6f4c3d21bcb60c2be9e6b155449e0c20c68e7696f21cf7302daea",
+      "bytes": 483,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000024_approval_delegation.up.sql",
+      "sha256": "5a36ced34db2ba59a585371d5c95791fbe4af528813b3fd892c8cb4f54cc439e",
+      "bytes": 1639,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000025_case_folders.down.sql",
+      "sha256": "d779612d7948db065c9fecc5963e9a20629532573319ba4026c90b2308997b56",
+      "bytes": 68,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000025_case_folders.up.sql",
+      "sha256": "989e749abfee7a4fdb93e3957848cc2d001d642066aea6c459747b228c83f9b5",
+      "bytes": 797,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000026_client_intake_metadata.down.sql",
+      "sha256": "eecb19d2187b42adee89048d56ee010ad92848a83cbd3b74afa8c05cf0fd3f2f",
+      "bytes": 93,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000026_client_intake_metadata.up.sql",
+      "sha256": "9f85045bae6fd6a4a500ee442bab93b8f68850a8c30407500c25be9bfb5b487b",
+      "bytes": 308,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000027_conflict_async_tasks.down.sql",
+      "sha256": "7c78b4b6090949148401c5cf80c81b79c10f3ae71c4b84f3e1cf1a8ea12c49c9",
+      "bytes": 672,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000027_conflict_async_tasks.up.sql",
+      "sha256": "7f48a1d415e28cfef2ce488656dba1dca2dc0aa04d6c582001269fef0403b89e",
+      "bytes": 871,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000028_demo_postgresql_schema.down.sql",
+      "sha256": "bd35bef5b3c638696c922442a87b957caf647640386e970053296e23aa421aad",
+      "bytes": 279,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000028_demo_postgresql_schema.up.sql",
+      "sha256": "94a843c7f6b1be2b8eacae99ea3998d85f724fc04b852ac56b91d812372c8382",
+      "bytes": 6456,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000029_approval_e2e_postgresql_compat.down.sql",
+      "sha256": "95f078dfa5cabba6c2231888df0174053ba23f2076665194e4285df6810bef53",
+      "bytes": 1292,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000029_approval_e2e_postgresql_compat.up.sql",
+      "sha256": "7f74c31083ecff74a3407ae455be2846d388993550284eb5b894c133292b4fe4",
+      "bytes": 3555,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000030_batch01_real_test_data.down.sql",
+      "sha256": "ed6545f9e40a42219d8b72bff33853c216a8012c760afb41286e742bc0d00697",
+      "bytes": 1539,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000030_batch01_real_test_data.up.sql",
+      "sha256": "89adb1b3c43dce7bd95ea64fec58a03898a60415faaf619e507d10d2aee16a40",
+      "bytes": 31056,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000031_conflict_production_hardening.down.sql",
+      "sha256": "5ff84a79a8e49cb0d01298cd015aa5bbf93d7586265426178cebf5b3a36de518",
+      "bytes": 787,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000031_conflict_production_hardening.up.sql",
+      "sha256": "b116ac9fe40c04ef3b9b9a6fa2346e70660f225ccf9f5a64c790d94bbab2af50",
+      "bytes": 4074,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000032_rbac_trial_seed.down.sql",
+      "sha256": "f19117aeb70d11ca13949eae064d60b28097f4a866b05dc3f9385bfa706fbc08",
+      "bytes": 2346,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000032_rbac_trial_seed.up.sql",
+      "sha256": "8f75781845cb34301833ed8a6e1d378e034d10f8d6f37b947b46ef8de4b668bc",
+      "bytes": 11336,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000033_mvp_trial_pg_data.down.sql",
+      "sha256": "72a754f4432e1094c78e689a2e3377d84a749f7856012430409cd719af9e34c5",
+      "bytes": 2542,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000033_mvp_trial_pg_data.up.sql",
+      "sha256": "bcc79e990b8313df19af9ad46d3419074438dc3c55675872e772057e676507eb",
+      "bytes": 15236,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000034_demo_trial_accounts.down.sql",
+      "sha256": "cf3c270e576e348966026b8466972d786a959b41f876c9a83d087fdf44c2de02",
+      "bytes": 693,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000034_demo_trial_accounts.up.sql",
+      "sha256": "fe412b0b43ead0b9a628e10e7bc15f40d0d3ebaa7ca78ba17a70ea3e9f2edc80",
+      "bytes": 10233,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000035_rbac_runtime_schema_compat.down.sql",
+      "sha256": "c0bc02a703dd8f114205638ac3c69e0fede4b5e4b3e5072c29d0bc9767ba79cd",
+      "bytes": 57,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000035_rbac_runtime_schema_compat.up.sql",
+      "sha256": "6791d31253d0e9229c7e76e869f7df94f6ef20259808978df543bd5b65140bf7",
+      "bytes": 251,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000036_notification_runtime_tables.down.sql",
+      "sha256": "a79efd61b613c5670d0284fa40c5a9a0dc37a07899f7ea60e3afea3eae06e530",
+      "bytes": 373,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000036_notification_runtime_tables.up.sql",
+      "sha256": "892b8d89d919b422919c677b4147f9c44e9befe96f33ed1576cbf0fd7ea372ab",
+      "bytes": 4802,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000037_approval_status_runtime_compat.down.sql",
+      "sha256": "d5ed3a39f6c37f0dda62b91463b83fc824eb30213bf4327087c55fd9f221bd26",
+      "bytes": 130,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000037_approval_status_runtime_compat.up.sql",
+      "sha256": "970d8c2af736fb6cd235dc8aaac0909176e70156d20944bbcae064e3e6c2de43",
+      "bytes": 135,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000038_conflict_cases_opposing_parties_jsonb.down.sql",
+      "sha256": "d8024ab448098cd7de76df26c7b849c23654dc84f37a46196658ff20cab15c8c",
+      "bytes": 477,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000038_conflict_cases_opposing_parties_jsonb.up.sql",
+      "sha256": "9e3f266b4d5a919f34bdeb6ac2e9db6098ee922a4296cedd76b06b73c3ca7d50",
+      "bytes": 577,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000039_lawyer_trial_acceptance_seed.down.sql",
+      "sha256": "032ad9570ebf11d93a13f1e186833515dbb216a9718348a4c6ce9077dff25a2a",
+      "bytes": 884,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000039_lawyer_trial_acceptance_seed.up.sql",
+      "sha256": "82533870d280496de2b62bdb6689c66f93550a74c07f1c329c0acb8221bf6e24",
+      "bytes": 11363,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000040_conflict_evidence_remediation.down.sql",
+      "sha256": "9f925665f08e5054fcfb3adde2ed9ee6ce1048d460aadc581a3976c6b9791865",
+      "bytes": 1385,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000040_conflict_evidence_remediation.up.sql",
+      "sha256": "0a02993307859b00573869e62803086a0718b1e52156a4a0686a19889b390f0e",
+      "bytes": 2401,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000041_public_demo_anonymization.down.sql",
+      "sha256": "5ab2b26b40893510e09c0bbd6d08a1dd35d066b4049e253d3f4d8637d7df9148",
+      "bytes": 176,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000041_public_demo_anonymization.up.sql",
+      "sha256": "1de51ad90f067c24fe0c23467e44c86c1e93c12c9298247fa1bcbec3b1311bb5",
+      "bytes": 8020,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000042_case_intake_idempotency.down.sql",
+      "sha256": "a35abc8fc89293ccf8cc4983de56338fd34b33a28b072a1ae4437ea47a358e97",
+      "bytes": 124,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000042_case_intake_idempotency.up.sql",
+      "sha256": "e11392d768bdce41722ffa0b9dbcb01d865d86d03b89ea6437087377d783753a",
+      "bytes": 229,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000043_public_demo_text_cleanup.down.sql",
+      "sha256": "8f4814c3abaca5730719550939a2aeea2fad8a92784e93b0ef47e990ccc217fb",
+      "bytes": 164,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000043_public_demo_text_cleanup.up.sql",
+      "sha256": "7a0dac45859e41eb492502c38f840e6a537204ff6442726efa057d30e05f9831",
+      "bytes": 500,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000044_conflict_approval_evidence_consistency.down.sql",
+      "sha256": "f332b14fc3cd9cf88641c83a98019462d99a9578f173910be1ed627f621c8083",
+      "bytes": 164,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000044_conflict_approval_evidence_consistency.up.sql",
+      "sha256": "5406103e9621e4e51f5916a9ad7f66dc16f754c81a556f01b5fccc52ccbd8042",
+      "bytes": 1573,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000045_conflict_created_case_ownership.down.sql",
+      "sha256": "1dace02371a4090ee1455fd54ca06ab7193d7e8d80aea8410de727bde22a8a2e",
+      "bytes": 161,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000045_conflict_created_case_ownership.up.sql",
+      "sha256": "cf99abdb8546f2fc155155f78e429706ab786f4b5f9e93079c1005c7efa4ba14",
+      "bytes": 735,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000046_conflict_created_case_state.down.sql",
+      "sha256": "3b4f80ea3b19054f5eec69809d485a2ff3a5f549eb611a53162138a09ec1224e",
+      "bytes": 161,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000046_conflict_created_case_state.up.sql",
+      "sha256": "2caa75a22e9c791995087eccef5268aefcd934297bdbc8bd73a42beda2370f10",
+      "bytes": 795,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000047_approval_actor_display_repair.down.sql",
+      "sha256": "a1dd11c0b9bd5f0e3ba9315d47c5697b0cb0310aa0b7da9ae5e88dbe02d07b0b",
+      "bytes": 167,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000047_approval_actor_display_repair.up.sql",
+      "sha256": "7f24ca844b3e1d2d011e9583eafbe3c72f86ce7e3d5ac02698c70c760d177efd",
+      "bytes": 1117,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000048_trial_case_approval_assignee_repair.down.sql",
+      "sha256": "9b5e2eb392106e911635a8ad7de00e73093d1961488d30911f7c5ae1b97652db",
+      "bytes": 156,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000048_trial_case_approval_assignee_repair.up.sql",
+      "sha256": "7500527cf6ca721051195bef7f0659000b740509ab5691361c9e575b5c6b5dbc",
+      "bytes": 626,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000049_case_type_canonicalization.down.sql",
+      "sha256": "3dcd2c56e516872f10faab20e9c8aab76a05de9ebd94d83bb413c8c8ff06006c",
+      "bytes": 89,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000049_case_type_canonicalization.up.sql",
+      "sha256": "2b85cd97a99977430122efcb2ddcca248accc5b6da00802db07b58aa12e2b955",
+      "bytes": 1392,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000050_pending_case_approval_assignee_repair.down.sql",
+      "sha256": "b4e0497804e46e0a0b0b8c31975b062152d551bac49c3c2e80932567b4085dcd",
+      "bytes": 10,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000050_pending_case_approval_assignee_repair.up.sql",
+      "sha256": "0ff8f57d65007b1a42f4fa665855c330ea4bb8ae495a9f9166e740ca619d1cbe",
+      "bytes": 609,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000051_conflict_p0_review_and_evidence.down.sql",
+      "sha256": "ca842d0212bd98259b9f06a74ff9732be131c7a55a476a21ea501e07f5d63a9c",
+      "bytes": 39,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000051_conflict_p0_review_and_evidence.up.sql",
+      "sha256": "d38dc80193ffb7b33cf93579df388a4b70ad006a93bce1306751cb9bb40dcb16",
+      "bytes": 1033,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000052_portable_waiver_workflow.down.sql",
+      "sha256": "8e4c6928c428a14f2e4cb76ffee36fd3cace096d9ceddbe8b1da477759fff946",
+      "bytes": 219,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000052_portable_waiver_workflow.up.sql",
+      "sha256": "07f99d319024c4719eec59cabee413597873f89b8af777c9d1de5e39d88b0434",
+      "bytes": 5894,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000053_conflict_officer_acceptance_seed.down.sql",
+      "sha256": "3da59a206eb29a9118ef81090238a91a5e5256727377ddb7789f453c7e57e8f1",
+      "bytes": 398,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000053_conflict_officer_acceptance_seed.up.sql",
+      "sha256": "03fd29e8f63ce71faa7d3234ab4193b6dd58c334dee867a0de7ca7733a1594fc",
+      "bytes": 2529,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000054_conflict_p0_ethical_wall_acceptance_seed.down.sql",
+      "sha256": "d1311828a45f088c8fd1cabe4d5b86f969f14f8f06ed8e1cbf1a3d6145625f8c",
+      "bytes": 165,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000054_conflict_p0_ethical_wall_acceptance_seed.up.sql",
+      "sha256": "e8209a4da2f2455eb73c9d55e73a5d0c072680b38973d0551730a059ed5c8416",
+      "bytes": 495,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000055_conflict_officer_password_repair.down.sql",
+      "sha256": "33a90d1ac946d2b1eecd9000c7b6f870a09a06fc46d60e38d81dca79c9a44f8f",
+      "bytes": 154,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000055_conflict_officer_password_repair.up.sql",
+      "sha256": "32ac430a6ffce44ae41f45b8269033042cefc146bc1d28744b93919168a96867",
+      "bytes": 486,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000056_conflict_subject_recheck_gate.down.sql",
+      "sha256": "c78954a985d668e1b9e52fc018854407a0028591bebc46e490f54f73c700b910",
+      "bytes": 248,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000056_conflict_subject_recheck_gate.up.sql",
+      "sha256": "5ec72c29e75ce364dbcaeedd56527cfe29d0aac2753025a57b69549f2bc80727",
+      "bytes": 2917,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000057_conflict_scope_evidence_reference.down.sql",
+      "sha256": "3f3ee7505a92cc88a69e285ee1cbffbfbd4b625dcacb1af32674762b297dfd60",
+      "bytes": 67,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000057_conflict_scope_evidence_reference.up.sql",
+      "sha256": "63482eecbca5a3ae0689810a5f791ed9b1346c024891c26d523a004a72f008b2",
+      "bytes": 90,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000058_document_folder_id.down.sql",
+      "sha256": "308161dc8cecde3dae18be3401aefa7b4ec5b6a4fc8ded027575c6192483ecf4",
+      "bytes": 106,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000058_document_folder_id.up.sql",
+      "sha256": "fa4f14aaff5353afcc0669967d0004acf78598c2fcb0a21b3487f3cc2eb7ccb0",
+      "bytes": 234,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000059_entity_identity_protection.down.sql",
+      "sha256": "627ba92237db3349fcf3698a111c8eb800de33f752b0b44b91605cc13ba0df79",
+      "bytes": 296,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000059_entity_identity_protection.up.sql",
+      "sha256": "a0da76714fbfe37617e013befdb5e414acd6e665fdcf633d592875512be391d6",
+      "bytes": 730,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000060_client_identity_protection.down.sql",
+      "sha256": "90c46fd7535e80c0884a66a1c1612b37b92a9ae59c6f212b95ac498bfb7f4ed5",
+      "bytes": 169,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000060_client_identity_protection.up.sql",
+      "sha256": "2c9e43f5bb4ef685ba1d9dfe8b6d10e27f23aafdc41d730087a4b9f71bf20c23",
+      "bytes": 379,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000061_conflict_reviewer_assignments.down.sql",
+      "sha256": "2a1d74f62f9209a494d6e2b23b29f57d59fec99ce871e827e7e03ad349777a12",
+      "bytes": 147,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000061_conflict_reviewer_assignments.up.sql",
+      "sha256": "da81d7df1c4c5b99bfe38c3fb9bed7359b50176b95599277986b7165a79870ec",
+      "bytes": 1430,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000062_append_only_evidence_guards.down.sql",
+      "sha256": "4c0f15b74a54bc81628ff8967586180361d570099025a288b60b2d160ebcb56c",
+      "bytes": 319,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000062_append_only_evidence_guards.up.sql",
+      "sha256": "e69e1976caa28a80236eecc8ff3f14b550e26b77112b8aab3149c6ac402e5e45",
+      "bytes": 1207,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000063_conflict_review_single_decision.down.sql",
+      "sha256": "c6cb4ed3a5aba218485fd65e3502b36d81b1381c9e73b5dd167e41fcbf00ee43",
+      "bytes": 192,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000063_conflict_review_single_decision.up.sql",
+      "sha256": "d4f159ec0298699bec2ca7ce79e6ce41d5af0db4aba15c431c765bc8699b57b7",
+      "bytes": 349,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000064_conflict_evidence_delete_guards.down.sql",
+      "sha256": "300bf3b59dc404b1841308ba6a43501d4f0c16120979f6f9cc3b924fdb471135",
+      "bytes": 129,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000064_conflict_evidence_delete_guards.up.sql",
+      "sha256": "81331aac47a12c4f43a7afa3437399015e83e8433f725afc9fb7678274abce09",
+      "bytes": 1065,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000065_backfill_ethical_wall_owner_whitelist.down.sql",
+      "sha256": "56c6c695e73b2420a0d2669c50725d9e7666b53f82744d0c5881a49497cecb21",
+      "bytes": 139,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000065_backfill_ethical_wall_owner_whitelist.up.sql",
+      "sha256": "d33ec703309fb9acd337bae71ecfd01e761f16d4d2e68a237612b111865cf472",
+      "bytes": 672,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000066_conflict_p0_subject_index.down.sql",
+      "sha256": "f671f993b037c8aa5cff839da0d3e3d926ac1abebebff0a3108c6074fe9b6dd7",
+      "bytes": 148,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000066_conflict_p0_subject_index.up.sql",
+      "sha256": "fe5bad34d270b25893be41b1cda0e79c95f2cb4db6bb37895d5910f412987987",
+      "bytes": 2521,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000067_conflict_index_build_runs.down.sql",
+      "sha256": "67db57c55369679c7614b451ac3a6f899b2705dfff16a690d31852bab49094c0",
+      "bytes": 148,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000067_conflict_index_build_runs.up.sql",
+      "sha256": "ca8b9fcdf5803f07148c6031f6d5e4f9f1b66dccdbe1047a7daeaf6fdec5fabc",
+      "bytes": 1217,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000068_conflict_policy_and_source_quality.down.sql",
+      "sha256": "80565d89faf4d558e1a8dcca66e063dcbb0cde847b6e5e89fbe273053fa7d193",
+      "bytes": 914,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000068_conflict_policy_and_source_quality.up.sql",
+      "sha256": "0ed084a3eb0f0da2b276f56b3a8c7b4537575d03c8d999521561cca86a308cd7",
+      "bytes": 2647,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000069_case_subject_revision_state_guard.down.sql",
+      "sha256": "f0bc0442ab3b99aa6af041eebb1c73503dea0dcb958160b769ca2dbc52c5e417",
+      "bytes": 324,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000069_case_subject_revision_state_guard.up.sql",
+      "sha256": "cbf406f393d34a3bf670acd61a3378464fb146af5e5733a7443ccb5cbe8a40df",
+      "bytes": 2155,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000070_case_intake_party_identity.down.sql",
+      "sha256": "ab34ab91cb419a8b5963526ffd7e63e940ae25098c902037a784a9a99781d429",
+      "bytes": 368,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000070_case_intake_party_identity.up.sql",
+      "sha256": "c3f47a425c76a2011bd5737703d8716da79fedeaf70895cdc3e4f32fcc426280",
+      "bytes": 623,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000071_client_generic_identity.down.sql",
+      "sha256": "f657b4610ce7b2d49110abd2be6d9f04376aa062fe03a13235f3a7b0798f09bb",
+      "bytes": 306,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000071_client_generic_identity.up.sql",
+      "sha256": "eed8066d634058faceff72e1593ae7e90ad0d314b03a5b9b675ed1ae0f3dba6b",
+      "bytes": 877,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000072_client_creator_access.down.sql",
+      "sha256": "670d596b062ebe5958f7b65a118a1b48cb4ef251111e5ecab8cfb3f06a60f790",
+      "bytes": 99,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000072_client_creator_access.up.sql",
+      "sha256": "ce13e0dc9eaeaee6b2b02881ade8de64d211c6da8afd664c8b690997d1eb2997",
+      "bytes": 230,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000073_client_optional_email_null.down.sql",
+      "sha256": "7f0e4056a3f5414df2bc468b7ca20ee44e05bb7395470df4aa06018879b890fd",
+      "bytes": 153,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000073_client_optional_email_null.up.sql",
+      "sha256": "40a57aa496e451b0810a7a4697903c5271a761420e459ff99e96f740dd95d756",
+      "bytes": 192,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000074_approval_audit_timestamps_timezone.down.sql",
+      "sha256": "95c31dee442b57820ab9b0c16f7be792bbb8e59fc47dbc975d167e24385b3fb8",
+      "bytes": 162,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000074_approval_audit_timestamps_timezone.up.sql",
+      "sha256": "64db144a6f6734b8c8cfb7d93c0368ba34cd5abb1608cb29a5ecee3c0bd371e7",
+      "bytes": 1624,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000075_client_primary_contacts.down.sql",
+      "sha256": "3f3c0684c2bdfb95296356268b74366b4c3e3ec22c2cd7fa3d861ebc5465edec",
+      "bytes": 38,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000075_client_primary_contacts.up.sql",
+      "sha256": "8e7c2657c77fcf0ebe2f55f9024e54883650bb4c295591a3b11ba22fb14bc1fd",
+      "bytes": 1259,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000076_conflict_policy_endorsement_workflow.down.sql",
+      "sha256": "df39db639df29b1f55c8f3a061fcdf6b0b75c5e45be41582705906ce53841247",
+      "bytes": 344,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000076_conflict_policy_endorsement_workflow.up.sql",
+      "sha256": "e5f1bb7475a0279005d5e39acfe43a5fe1ddb03f444bf70da88db0814a00d965",
+      "bytes": 2317,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000077_conflict_officer_appointments.down.sql",
+      "sha256": "2930ecf63f5271b171190f184937291a96e39787a136c740b2810cf2c49328fa",
+      "bytes": 159,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000077_conflict_officer_appointments.up.sql",
+      "sha256": "0149becc2b2dbe529b0c24e8f3ce2cccd3c0908e50135fd817131ec0a1550e94",
+      "bytes": 1129,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000078_auth_token_sessions.down.sql",
+      "sha256": "c14f6d6a4660223a5fbd994bf7e2360af2d8266d7b163fca8bb65b6cfe3f572d",
+      "bytes": 42,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000078_auth_token_sessions.up.sql",
+      "sha256": "7ad78e1ba43dbf3d97524ed60677cc70f3d1efc117818f654d15647baf918972",
+      "bytes": 1572,
+      "git_tracked": true
+    },
+    {
+      "path": "migrations/000082_intake_collaboration_mvp.down.sql",
+      "sha256": "185f74ace1ef86530736f150ee67cc409dfa4396176c5503a9f5b8994f9aa0ac",
+      "bytes": 816,
+      "git_tracked": false
+    },
+    {
+      "path": "migrations/000082_intake_collaboration_mvp.up.sql",
+      "sha256": "43896d370cf3683fa19468d8e7f2170de5517486e7f431875765b590bff9f514",
+      "bytes": 2948,
+      "git_tracked": false
+    },
+    {
+      "path": "migrations/001_schema_v2.2.0.sql",
+      "sha256": "1553313503bdc4dfc5ae4817d94b147b368864d150cc21ea19b77368658979b4",
+      "bytes": 55363,
+      "git_tracked": true
+    }
+  ]
+}
