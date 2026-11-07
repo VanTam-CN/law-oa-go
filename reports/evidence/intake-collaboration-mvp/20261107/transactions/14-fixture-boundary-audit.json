@@ -1,0 +1,9 @@
+{
+  "checked_at": "2026-11-07T15:24:47.425358+08:00",
+  "result": "PASS",
+  "scope": "Only fixture setup and distinct-intake cloning changed; original router, request helper, all four test bodies outside clone setup, schedules and assertions are byte-identical to pre-edit copies",
+  "files": [
+    "internal/handlers/intake_duplicate_approval_guard_test.go",
+    "internal/handlers/intake_delayed_interleave_guard_test.go"
+  ]
+}

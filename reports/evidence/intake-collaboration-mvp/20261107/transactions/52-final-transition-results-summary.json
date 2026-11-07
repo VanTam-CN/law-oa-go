@@ -1,0 +1,251 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-race",
+    "-count=1",
+    "-timeout=180s",
+    "-json",
+    "./internal/services",
+    "./internal/handlers",
+    "-run",
+    "^(TestApprovalCollaborationPostgres.*|TestIntakeDuplicateApprovalGuard|TestIntakeDelayedInterleaveDuplicateApproval|TestIntakeConcurrentDistinctIntakesAllSucceed|TestIntakeResidualDraftRetryAfterFailedSubmit)$"
+  ],
+  "command_exit_code": 0,
+  "vet_exit_code": 0,
+  "packages": [
+    {
+      "package": "law-oa-go/internal/handlers",
+      "result": "pass",
+      "elapsed": 3.51
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "result": "pass",
+      "elapsed": 11.448
+    }
+  ],
+  "leaf_total": 34,
+  "leaf_pass": 34,
+  "leaf_fail": 0,
+  "leaf_skip": 0,
+  "leaves": [
+    {
+      "package": "law-oa-go/internal/handlers",
+      "test": "TestIntakeDelayedInterleaveDuplicateApproval",
+      "result": "pass",
+      "elapsed": 0.08
+    },
+    {
+      "package": "law-oa-go/internal/handlers",
+      "test": "TestIntakeConcurrentDistinctIntakesAllSucceed",
+      "result": "pass",
+      "elapsed": 0.09
+    },
+    {
+      "package": "law-oa-go/internal/handlers",
+      "test": "TestIntakeResidualDraftRetryAfterFailedSubmit",
+      "result": "pass",
+      "elapsed": 0.05
+    },
+    {
+      "package": "law-oa-go/internal/handlers",
+      "test": "TestIntakeDuplicateApprovalGuard",
+      "result": "pass",
+      "elapsed": 0.05
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresReturnRollback/ordinary_inbox_update",
+      "result": "pass",
+      "elapsed": 0.29
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresReturnRollback/ordinary_inbox_create",
+      "result": "pass",
+      "elapsed": 0.22
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresReturnRollback/integrated_inbox_update",
+      "result": "pass",
+      "elapsed": 0.24
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresReturnRollback/integrated_inbox_create",
+      "result": "pass",
+      "elapsed": 0.23
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresResubmitRollback/approval_snapshots_create",
+      "result": "pass",
+      "elapsed": 0.27
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresResubmitRollback/inbox_items_update",
+      "result": "pass",
+      "elapsed": 0.3
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresResubmitRollback/inbox_items_create",
+      "result": "pass",
+      "elapsed": 0.29
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresStaleDecisionNoWrites/ordinary_snapshot",
+      "result": "pass",
+      "elapsed": 0.24
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresStaleDecisionNoWrites/ordinary_node",
+      "result": "pass",
+      "elapsed": 0.24
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresStaleDecisionNoWrites/integrated_snapshot",
+      "result": "pass",
+      "elapsed": 0.25
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresStaleDecisionNoWrites/integrated_node",
+      "result": "pass",
+      "elapsed": 0.25
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresResubmitVersusNewApproval/simultaneous-1",
+      "result": "pass",
+      "elapsed": 0.36
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresResubmitVersusNewApproval/simultaneous-2",
+      "result": "pass",
+      "elapsed": 0.3
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresResubmitVersusNewApproval/simultaneous-3",
+      "result": "pass",
+      "elapsed": 0.31
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresResubmitVersusNewApproval/resubmit-then-new",
+      "result": "pass",
+      "elapsed": 0.32
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresResubmitVersusNewApproval/new-then-resubmit",
+      "result": "pass",
+      "elapsed": 0.3
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresCasePartyRollback",
+      "result": "pass",
+      "elapsed": 0.3
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresApprovedSnapshotSurvivesCheckMutation",
+      "result": "pass",
+      "elapsed": 0.28
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresOverlappingLockOrder",
+      "result": "pass",
+      "elapsed": 0.3
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresCaseCompletionInboxRollback/initial_completion_inbox_update",
+      "result": "pass",
+      "elapsed": 0.28
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresCaseCompletionInboxRollback/initial_completion_inbox_create",
+      "result": "pass",
+      "elapsed": 0.26
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresCaseCompletionInboxRollback/completed_replay_inbox_update",
+      "result": "pass",
+      "elapsed": 0.27
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresCaseCompletionInboxRollback/completed_replay_inbox_create",
+      "result": "pass",
+      "elapsed": 0.26
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresLegacyMissingIntakeLinkNoWrites",
+      "result": "pass",
+      "elapsed": 0.18
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresHTTPInitialSubmission/first_submit_then_duplicate",
+      "result": "pass",
+      "elapsed": 0.2
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresHTTPInitialSubmission/snapshot_failure_then_original_retry",
+      "result": "pass",
+      "elapsed": 0.2
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresHTTPStaleDecision/ordinary_snapshot",
+      "result": "pass",
+      "elapsed": 0.22
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresHTTPStaleDecision/ordinary_node",
+      "result": "pass",
+      "elapsed": 0.21
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresHTTPStaleDecision/integrated_snapshot",
+      "result": "pass",
+      "elapsed": 0.22
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresHTTPStaleDecision/integrated_node",
+      "result": "pass",
+      "elapsed": 0.23
+    }
+  ],
+  "source_files_hashed": 447,
+  "source_changed_during_run": [],
+  "original_leaf_cases_retained": true,
+  "added_leaf_cases": [
+    "TestApprovalCollaborationPostgresCaseCompletionInboxRollback/completed_replay_inbox_create",
+    "TestApprovalCollaborationPostgresCaseCompletionInboxRollback/completed_replay_inbox_update",
+    "TestApprovalCollaborationPostgresCaseCompletionInboxRollback/initial_completion_inbox_create",
+    "TestApprovalCollaborationPostgresCaseCompletionInboxRollback/initial_completion_inbox_update",
+    "TestApprovalCollaborationPostgresLegacyMissingIntakeLinkNoWrites"
+  ],
+  "original_test_bytes_retained": true,
+  "retained_red_evidence_changed": [],
+  "non_json_tool_output": []
+}

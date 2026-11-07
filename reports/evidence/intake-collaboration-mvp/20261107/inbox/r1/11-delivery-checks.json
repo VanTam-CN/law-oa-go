@@ -1,0 +1,134 @@
+{
+  "time": "2026-11-07T09:00:22.602128+00:00",
+  "missing_document_links": [
+    {
+      "document": "reports/evidence/intake-collaboration-mvp/20261107/inbox/r1/REPORT.md",
+      "target": "/private/tmp/lawoa-intake-collaboration-mvp/20261107/reports/evidence/intake-collaboration-mvp/20261107/inbox/r1/02-inbox-regression.jsonl"
+    },
+    {
+      "document": "reports/evidence/intake-collaboration-mvp/20261107/inbox/r1/REPORT.md",
+      "target": "/private/tmp/lawoa-intake-collaboration-mvp/20261107/reports/evidence/intake-collaboration-mvp/20261107/inbox/r1/04-final-regression.jsonl"
+    },
+    {
+      "document": "reports/evidence/intake-collaboration-mvp/20261107/inbox/r1/REPORT.md",
+      "target": "/private/tmp/lawoa-intake-collaboration-mvp/20261107/reports/evidence/intake-collaboration-mvp/20261107/inbox/r1/07-fixture-recheck.jsonl"
+    },
+    {
+      "document": "reports/evidence/intake-collaboration-mvp/20261107/inbox/r1/REPORT.md",
+      "target": "/private/tmp/lawoa-intake-collaboration-mvp/20261107/reports/evidence/intake-collaboration-mvp/20261107/inbox/r1/09-final-race.jsonl"
+    },
+    {
+      "document": "reports/evidence/intake-collaboration-mvp/20261107/inbox/r1/REPORT.md",
+      "target": "/private/tmp/lawoa-intake-collaboration-mvp/20261107/reports/evidence/intake-collaboration-mvp/20261107/inbox/r1/10-final-results.json"
+    },
+    {
+      "document": "reports/evidence/intake-collaboration-mvp/20261107/inbox/r1/REPORT.md",
+      "target": "/private/tmp/lawoa-intake-collaboration-mvp/20261107/reports/evidence/intake-collaboration-mvp/20261107/inbox/r1/06-vet.log"
+    },
+    {
+      "document": "reports/evidence/intake-collaboration-mvp/20261107/inbox/r1/REPORT.md",
+      "target": "/private/tmp/lawoa-intake-collaboration-mvp/20261107/reports/evidence/intake-collaboration-mvp/20261107/inbox/r1/08-final-source-before.json"
+    },
+    {
+      "document": "reports/evidence/intake-collaboration-mvp/20261107/inbox/r1/REPORT.md",
+      "target": "/private/tmp/lawoa-intake-collaboration-mvp/20261107/reports/evidence/intake-collaboration-mvp/20261107/inbox/r1/10-final-results.json"
+    },
+    {
+      "document": "reports/evidence/intake-collaboration-mvp/20261107/inbox/r1/REPORT.md",
+      "target": "/private/tmp/lawoa-intake-collaboration-mvp/20261107/reports/evidence/intake-collaboration-mvp/20261107/contract-map.md"
+    },
+    {
+      "document": "reports/evidence/intake-collaboration-mvp/20261107/inbox/r1/REPORT.md",
+      "target": "/private/tmp/lawoa-intake-collaboration-mvp/20261107/reports/evidence/intake-collaboration-mvp/20261107/acceptance-matrix.md"
+    }
+  ],
+  "matrix_condition_ids": [
+    "C01",
+    "C02",
+    "C03",
+    "C04",
+    "C05",
+    "C06",
+    "C07",
+    "C08",
+    "C09",
+    "C10",
+    "C11",
+    "C12",
+    "C13",
+    "C14",
+    "C15",
+    "C16",
+    "C17",
+    "C18"
+  ],
+  "matrix_conditions_equal_plan": true,
+  "matrix_verdicts": [
+    "待主线程填写",
+    "待主线程填写",
+    "待主线程填写",
+    "待主线程填写",
+    "待主线程填写",
+    "待主线程填写",
+    "待主线程填写",
+    "待主线程填写",
+    "待主线程填写",
+    "待主线程填写",
+    "待主线程填写",
+    "待主线程填写",
+    "待主线程填写",
+    "待主线程填写",
+    "待主线程填写",
+    "待主线程填写",
+    "待主线程填写",
+    "待主线程填写"
+  ],
+  "whitespace_checks": [
+    {
+      "file": "internal/services/inbox_workflow_action.go",
+      "exit_code": 1,
+      "whitespace_diagnostics": "",
+      "note": "no-index exit 1 means file differs from /dev/null; diagnostics determine whitespace errors"
+    },
+    {
+      "file": "internal/services/inbox_workflow_contract_test.go",
+      "exit_code": 1,
+      "whitespace_diagnostics": "",
+      "note": "no-index exit 1 means file differs from /dev/null; diagnostics determine whitespace errors"
+    },
+    {
+      "file": "internal/services/inbox_revision_authorization_test.go",
+      "exit_code": 1,
+      "whitespace_diagnostics": "",
+      "note": "no-index exit 1 means file differs from /dev/null; diagnostics determine whitespace errors"
+    },
+    {
+      "file": "internal/services/inbox_revision_postgres_test.go",
+      "exit_code": 1,
+      "whitespace_diagnostics": "",
+      "note": "no-index exit 1 means file differs from /dev/null; diagnostics determine whitespace errors"
+    },
+    {
+      "file": "internal/services/inbox_revision_postgres_http_test.go",
+      "exit_code": 1,
+      "whitespace_diagnostics": "",
+      "note": "no-index exit 1 means file differs from /dev/null; diagnostics determine whitespace errors"
+    }
+  ],
+  "gofmt": {
+    "exit_code": 0,
+    "output": ""
+  },
+  "ignored_tests": [
+    ".gitignore:282:*_test.go\tinternal/services/inbox_workflow_contract_test.go",
+    ".gitignore:282:*_test.go\tinternal/services/inbox_revision_authorization_test.go",
+    ".gitignore:282:*_test.go\tinternal/services/inbox_revision_postgres_test.go",
+    ".gitignore:282:*_test.go\tinternal/services/inbox_revision_postgres_http_test.go"
+  ],
+  "owned_changed_since_verified": [],
+  "document_hashes": {
+    "reports/evidence/intake-collaboration-mvp/20261107/contract-map.md": "f2a6f706813b60a1f2b15f171954a5018d11b302c716aa498a38b3747bbcdea0",
+    "reports/evidence/intake-collaboration-mvp/20261107/acceptance-matrix.md": "0ddc4ae777966b333a381cb03ffb4a2ce9f579581894ab8c43a5f81f6f6f6cf3",
+    "reports/evidence/intake-collaboration-mvp/20261107/inbox/r1/REPORT.md": "7174ccf0e1eea2bf4fba0cbfa56becc02f00b0221ce488ea6c0d20f3769535cc"
+  }
+}

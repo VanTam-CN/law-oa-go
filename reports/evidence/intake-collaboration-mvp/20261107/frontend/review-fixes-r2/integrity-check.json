@@ -1,0 +1,16 @@
+{
+  "checked_at": "2026-11-07T08:10:46.811Z",
+  "source_files": 25,
+  "regression_files": 12,
+  "build_files": 7,
+  "archive_contents_match_source_and_dist": true,
+  "main_js": "frontend/dist/assets/index-Cm1X_6UB.js",
+  "source_archive": {
+    "path": "reports/evidence/intake-collaboration-mvp/20261107/frontend/review-fixes-r2/frontend-source.tar.gz",
+    "sha256": "ec81e39c57d56e5592c0d0a7ede4f8606eb22986895d97c8ebc603a33b6ca835"
+  },
+  "build_archive": {
+    "path": "reports/evidence/intake-collaboration-mvp/20261107/frontend/review-fixes-r2/frontend-dist.tar.gz",
+    "sha256": "78651531095b8b917c051a28df1bf904acc6fe593a71eeb400a220552fd71d1b"
+  }
+}

@@ -827,6 +827,51 @@
   gap: 14px;
 }
 
+// Keep the long detail inside the viewport; only its body scrolls. Scope this
+// to the conflict dialog so other modals retain their existing layout.
+.batch-conflict-detail-modal {
+  .ant-modal {
+    top: 16px;
+    max-width: calc(100vw - 32px);
+    padding-bottom: 16px;
+  }
+
+  .ant-modal-content {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 32px);
+    max-height: calc(100dvh - 32px);
+  }
+
+  .ant-modal-header,
+  .ant-modal-footer {
+    flex: 0 0 auto;
+  }
+
+  .ant-modal-body {
+    min-height: 0;
+    overflow-x: auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .batch-conflict-detail > * {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .batch-conflict-reviewer-assignment {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    > .ant-select {
+      flex: 1 1 180px;
+      min-width: 0;
+    }
+  }
+}
+
 .batch-diagnostic-details {
   border-top: 1px solid #e5e7eb;
   color: #64748b;
@@ -2255,4 +2300,21 @@
   .batch-tabs button {
     white-space: nowrap;
   }
+}
+
+.batch-supplement-checklist,
+.batch-supplement-request {
+  padding: 16px;
+  margin-block: 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  background: #fff;
+  overflow-wrap: anywhere;
+  label { display: block; margin-top: 8px; }
+  .ant-select { min-width: 160px; max-width: 100%; margin: 4px; }
+}
+@media (max-width: 600px) {
+  .intake-page .batch-bottom-bar { position: static; flex-wrap: wrap; }
+  .intake-page .batch-bottom-bar .ant-space { flex-wrap: wrap; }
+  .batch-supplement-request .ant-select { width: 100%; margin-inline: 0; }
 }

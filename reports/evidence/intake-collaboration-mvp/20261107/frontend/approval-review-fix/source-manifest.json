@@ -1,0 +1,283 @@
+{
+  "baseline": "a806831a7cef839c2b971cd4ab260cce77f42b8b",
+  "branch": "codex/intake-collaboration-mvp",
+  "workspace": "/private/tmp/lawoa-intake-collaboration-20261107",
+  "source_frozen_at": "2026-11-07T09:05:06.532Z",
+  "status": "author_verified_pending_independent_review_and_live_browser",
+  "node": "v22.17.0",
+  "frontend_files": [
+    {
+      "path": "frontend/src/components/client/ClientCreateDialog.tsx",
+      "sha256": "bf407df46d9084bec173d8de66174105a86b2e811950d1cc047a8553dd068e04",
+      "bytes": 4974
+    },
+    {
+      "path": "frontend/src/components/client/ClientSearchSelect.tsx",
+      "sha256": "e6445b5d37d541dc96123e83a96aa706acb1ec20fc64134dd1c5a7a70a589355",
+      "bytes": 3669
+    },
+    {
+      "path": "frontend/src/components/client/__tests__/ClientCollaboration.test.tsx",
+      "sha256": "0ef1fe0d921550fe726bd4378b4cad79907646dfeb62eb4e73b01755bd237f2e",
+      "bytes": 5322
+    },
+    {
+      "path": "frontend/src/components/layout/Sidebar.tsx",
+      "sha256": "baaf0398c42ac766cfa962ed301f10613bb326ba53e789eaf3310c7df3e5782d",
+      "bytes": 11974
+    },
+    {
+      "path": "frontend/src/components/layout/__tests__/MobileNavigationLayer.test.tsx",
+      "sha256": "425a034f6d08b2cf71fcb24c73148c72812ba434a9cbc11bd332fef820b1b97b",
+      "bytes": 4312
+    },
+    {
+      "path": "frontend/src/components/workflow/PersonalWorkQueue.tsx",
+      "sha256": "de995e38967920429ea5519b0bde6083dcd77aa6319b5e92aa50f05095070438",
+      "bytes": 3685
+    },
+    {
+      "path": "frontend/src/components/workflow/WorkflowActions.tsx",
+      "sha256": "bbb0df785be86ba1066a78a97a1d402bb691c292815af4bfa1f855b106cbb26f",
+      "bytes": 4293
+    },
+    {
+      "path": "frontend/src/index.tsx",
+      "sha256": "82538333af1beca24d9edec403abdc391e2dfdc9d0267896f0c3d16336737788",
+      "bytes": 586
+    },
+    {
+      "path": "frontend/src/main.tsx",
+      "sha256": "76ca3de1fad962700750fc9a644bb9bce94aa97cedd1a706dd25c7bb8c3529e9",
+      "bytes": 5546
+    },
+    {
+      "path": "frontend/src/pages/batch01/Batch01Prototype.less",
+      "sha256": "c60383045c3ea1282306ea4e1016cbd9e37ed6510ab1d6d03a13baa4971b7dad",
+      "bytes": 44442
+    },
+    {
+      "path": "frontend/src/pages/batch01/Batch01Prototype.tsx",
+      "sha256": "804bad90d90c6dc93c550438bd3dbb36acd70d9c2fd3182992267e9ff0c83569",
+      "bytes": 458626
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/ApprovalCollaborationPage.test.tsx",
+      "sha256": "e8f35352911392d381be3ea9afbe8babf7b8f5ea8223c597c8cb0bfc09137940",
+      "bytes": 14219
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/ConflictDetailModal.test.tsx",
+      "sha256": "d119cec41a6c1f4d7e01553404f5d502ba12894decdc193af572252e125653d6",
+      "bytes": 8971
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/IntakeCollaborationContracts.test.ts",
+      "sha256": "b734b70d0cfb9c74b50ce8224af4d8762767ca507c41d088c42cf5a9ba26a1b4",
+      "bytes": 5195
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/IntakeCollaborationPage.test.tsx",
+      "sha256": "7ac59d5ac5b9f5b5c0797f7dbf8394e4a35231dc9c98895d9d1d6a422083efd4",
+      "bytes": 10134
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/IntakeRecoveryRegression.test.tsx",
+      "sha256": "04431b273069c7a62a5c9a10f7f4be74e54b2a47ede2971a0c09d53045368b31",
+      "bytes": 13096
+    },
+    {
+      "path": "frontend/src/pages/batch01/intake/DraftNavigationGuard.tsx",
+      "sha256": "d2c3e291b8b5eac39a717dc63e5a5309da5b07f81f261da5669b7b01e6243315",
+      "bytes": 2463
+    },
+    {
+      "path": "frontend/src/pages/batch01/intake/SupplementChecklist.tsx",
+      "sha256": "826e9188f1729ae8e51188f612a28763283d245304b3ec863fdfe6dcb0bdeb7d",
+      "bytes": 2714
+    },
+    {
+      "path": "frontend/src/pages/batch01/intake/conflictRecovery.ts",
+      "sha256": "374a3cb95f34dc556ec9e94ad185b8f34de87a8637d3283187b8d95720bace18",
+      "bytes": 1650
+    },
+    {
+      "path": "frontend/src/pages/batch01/intake/draftState.ts",
+      "sha256": "e3c8c9b34c010c696ebe53a79239a546867a0afafc0eaac340e48d0765d99a38",
+      "bytes": 921
+    },
+    {
+      "path": "frontend/src/pages/inbox/InboxList.tsx",
+      "sha256": "e4b974a369f35e4d12d78b155cdcd5071c78f2074d8c049d6d5f38c4c0953cff",
+      "bytes": 25501
+    },
+    {
+      "path": "frontend/src/pages/inbox/__tests__/InboxWorkflowActions.test.tsx",
+      "sha256": "9d366d3bf79ae4c5fade6f3f90a950d454d91890c4f53a21f8b0b20347d033be",
+      "bytes": 3702
+    },
+    {
+      "path": "frontend/src/services/approval.ts",
+      "sha256": "a4153a28ea618f5106c4d1eb7692403e20dfd386851d0e0511f455d7431d03d8",
+      "bytes": 15368
+    },
+    {
+      "path": "frontend/src/services/approvalPresentation.ts",
+      "sha256": "59436a2167871ff965153fe60f75f08631fa40d0ba948ac1471d163a651f3e1b",
+      "bytes": 1049
+    },
+    {
+      "path": "frontend/src/services/client.ts",
+      "sha256": "2dc27bbcfd86d8189992522e2077d887f0ea91e905c6c84573d50cf406a7c1ee",
+      "bytes": 3537
+    },
+    {
+      "path": "frontend/src/services/collaborationRequest.ts",
+      "sha256": "6a3b4407f4a5d14ba9da676dbac912bb50fcc9b818cb58c659ccd5e6170cdc32",
+      "bytes": 1493
+    },
+    {
+      "path": "frontend/src/services/intakeSupplement.ts",
+      "sha256": "5d383cc470cc17f9f141c031e44ca1d93e0292a331d6182c8472e3a71a2886ed",
+      "bytes": 4508
+    },
+    {
+      "path": "frontend/src/test/fetchJsdomEnvironment.cjs",
+      "sha256": "3772b1922112c69f6d5c58d4f0c6914aeb7b9e2956e42406a3e2c917746ee77a",
+      "bytes": 444
+    }
+  ],
+  "regression_test_files": [
+    {
+      "path": "frontend/src/components/client/__tests__/ClientCollaboration.test.tsx",
+      "sha256": "0ef1fe0d921550fe726bd4378b4cad79907646dfeb62eb4e73b01755bd237f2e",
+      "bytes": 5322
+    },
+    {
+      "path": "frontend/src/components/layout/__tests__/MobileNavigationLayer.test.tsx",
+      "sha256": "425a034f6d08b2cf71fcb24c73148c72812ba434a9cbc11bd332fef820b1b97b",
+      "bytes": 4312
+    },
+    {
+      "path": "frontend/src/components/layout/__tests__/Sidebar.mvp.test.tsx",
+      "sha256": "7908e434da3dedb986fc68353b4b339a5654f7627590a760122c3aa9b19ce9f8",
+      "bytes": 1878
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/ApprovalCollaborationPage.test.tsx",
+      "sha256": "e8f35352911392d381be3ea9afbe8babf7b8f5ea8223c597c8cb0bfc09137940",
+      "bytes": 14219
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts",
+      "sha256": "bbbbac7c94ef4cdba63ca65e69d35bcd0a1f68c8c1ac211f3372e73a8272029f",
+      "bytes": 8355
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/ConflictDetailModal.test.tsx",
+      "sha256": "d119cec41a6c1f4d7e01553404f5d502ba12894decdc193af572252e125653d6",
+      "bytes": 8971
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/ConflictReviewerSubmit.test.ts",
+      "sha256": "3d007ae36f526697e69880be05d36aa6d02dfb22a9d2b53a5c3c846c4cef063b",
+      "bytes": 762
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/DashboardPermission.test.tsx",
+      "sha256": "972994e8ab9969818bb89f11dd44f1487f9cbc7cb0b24d980f113d86486bf308",
+      "bytes": 3494
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/IntakeCollaborationContracts.test.ts",
+      "sha256": "b734b70d0cfb9c74b50ce8224af4d8762767ca507c41d088c42cf5a9ba26a1b4",
+      "bytes": 5195
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/IntakeCollaborationPage.test.tsx",
+      "sha256": "7ac59d5ac5b9f5b5c0797f7dbf8394e4a35231dc9c98895d9d1d6a422083efd4",
+      "bytes": 10134
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/IntakeDraftRestore.test.ts",
+      "sha256": "1f3b4e9bfb5e0b32b0f2a5b01608ae2620e5ce13e1de00a469a8fd846d457eec",
+      "bytes": 3699
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/IntakePartyRoleRoundTrip.test.ts",
+      "sha256": "41e913971b9513b131798b935a16c3cb213b27bc35b5674d215997841be9c8dd",
+      "bytes": 4232
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/IntakeRecoveryRegression.test.tsx",
+      "sha256": "04431b273069c7a62a5c9a10f7f4be74e54b2a47ede2971a0c09d53045368b31",
+      "bytes": 13096
+    },
+    {
+      "path": "frontend/src/pages/inbox/__tests__/InboxWorkflowActions.test.tsx",
+      "sha256": "9d366d3bf79ae4c5fade6f3f90a950d454d91890c4f53a21f8b0b20347d033be",
+      "bytes": 3702
+    }
+  ],
+  "build_inputs": [
+    {
+      "path": "frontend/index.html",
+      "sha256": "9a6515ea15742d12440db869f2a327b9b4f4cf80fdca6cf7ac3002b0478e84f4",
+      "bytes": 376
+    },
+    {
+      "path": "frontend/package.json",
+      "sha256": "071e0b7b4be39630810cd4d3f98a92da6dc5eafe8fa757f62bd6fe83f5c3b0bd",
+      "bytes": 4083
+    },
+    {
+      "path": "frontend/package-lock.json",
+      "sha256": "9efa885d6ea029854c5cb6748e579fd95bb5af6e8679c18fff942b5092840435",
+      "bytes": 548361
+    },
+    {
+      "path": "frontend/vite.config.ts",
+      "sha256": "002549b216f712f9f1295e4f4fbe3195e3107a87d35bc8af12f2ac1382fccdd4",
+      "bytes": 1816
+    },
+    {
+      "path": "frontend/tsconfig.json",
+      "sha256": "69a92f35a9e91381b779e6dc0381d7701fcf0ee4d9af0f892b02f75320c776e8",
+      "bytes": 730
+    }
+  ],
+  "shared_lock_sha256": "9efa885d6ea029854c5cb6748e579fd95bb5af6e8679c18fff942b5092840435",
+  "dependencies": "existing node_modules symlink; no install or dependency/lock change",
+  "source_archive": {
+    "path": "reports/evidence/intake-collaboration-mvp/20261107/frontend/approval-review-fix/frontend-source.tar.gz",
+    "sha256": "0caadc64bb0d059c45bb55106369d723d62029137968d557f1128216c69a8f2e",
+    "bytes": 151777
+  },
+  "delta_from_manifest": "../mobile-nav-fix/source-manifest.json",
+  "delta_from_r3": [
+    {
+      "path": "frontend/src/pages/batch01/Batch01Prototype.tsx",
+      "sha256": "804bad90d90c6dc93c550438bd3dbb36acd70d9c2fd3182992267e9ff0c83569",
+      "bytes": 458626,
+      "previous_sha256": "eabb5c25c92516a04862a835f0149f787af0d4fa1a0393082d9703ab8b9d8b44"
+    },
+    {
+      "path": "frontend/src/pages/batch01/__tests__/ApprovalCollaborationPage.test.tsx",
+      "sha256": "e8f35352911392d381be3ea9afbe8babf7b8f5ea8223c597c8cb0bfc09137940",
+      "bytes": 14219,
+      "previous_sha256": "3c175cace0405dfcc5b4322dfd6ae837c92b3cce06c463ba1ba65af380ea642b"
+    },
+    {
+      "path": "frontend/src/services/approval.ts",
+      "sha256": "a4153a28ea618f5106c4d1eb7692403e20dfd386851d0e0511f455d7431d03d8",
+      "bytes": 15368,
+      "previous_sha256": "e4e9ad9e6c4acf428e926f02b2aa570d9a285279da4ab20008697e8d39d6723b"
+    },
+    {
+      "path": "frontend/src/services/approvalPresentation.ts",
+      "sha256": "59436a2167871ff965153fe60f75f08631fa40d0ba948ac1471d163a651f3e1b",
+      "bytes": 1049,
+      "previous_sha256": null
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "verified_at": "2026-11-07T09:05:08.701Z",
+  "source_files_verified": 28,
+  "dist_files_verified": 7,
+  "method": "tar extraction byte SHA256 equals manifest and current files",
+  "source_archive": {
+    "path": "reports/evidence/intake-collaboration-mvp/20261107/frontend/approval-review-fix/frontend-source.tar.gz",
+    "sha256": "0caadc64bb0d059c45bb55106369d723d62029137968d557f1128216c69a8f2e",
+    "bytes": 151777
+  },
+  "dist_archive": {
+    "path": "reports/evidence/intake-collaboration-mvp/20261107/frontend/approval-review-fix/frontend-dist.tar.gz",
+    "sha256": "700670964c653995638de2586e69459dc9aa7029f3134fb18718281653879d5f",
+    "bytes": 569473
+  }
+}

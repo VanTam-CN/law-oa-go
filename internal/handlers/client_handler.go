@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"law-oa-go/internal/common"
+	apperrors "law-oa-go/internal/errors"
 	"law-oa-go/internal/security"
 	"law-oa-go/internal/services"
 )
@@ -56,9 +57,12 @@ func (h *ClientHandler) requireAuthorization(c *gin.Context) bool {
 // @Produce json
 // @Security BearerAuth
 // @Param request body services.CreateClientRequest true "创建客户请求"
+// @Param Idempotency-Key header string false "同次创建重试键，1至120个可见ASCII字符（不含空格）"
 // @Success 200 {object} common.APIResponse{data=services.ClientResponse} "创建成功"
 // @Failure 400 {object} common.APIResponse "请求参数错误"
 // @Failure 401 {object} common.APIResponse "未授权"
+// @Failure 409 {object} common.APIResponse "幂等键对应另一份创建请求"
+// @Failure 503 {object} common.APIResponse "身份保护或幂等存储不可用"
 // @Failure 500 {object} common.APIResponse "内部错误"
 // @Router /clients [post]
 func (h *ClientHandler) CreateClient(c *gin.Context) {
@@ -85,14 +89,50 @@ func (h *ClientHandler) CreateClient(c *gin.Context) {
 	}
 	req.CreatedBy = actor.UserID
 
-	client, err := h.clientService.CreateClient(c.Request.Context(), &req)
+	keys := c.Request.Header.Values("Idempotency-Key")
+	var client *services.ClientResponse
+	if len(keys) > 0 {
+		if len(keys) != 1 || services.ValidateClientIdempotencyKey(keys[0]) != nil {
+			common.NewAPIError(c, http.StatusBadRequest, "CLIENT_CREATE_KEY_INVALID", "Idempotency-Key 必须是1至120个可见ASCII字符，不能包含空格或重复请求头")
+			return
+		}
+		client, err = h.clientService.CreateClientWithIdempotencyKey(c.Request.Context(), &req, actor.UserID, keys[0])
+	} else {
+		client, err = h.clientService.CreateClient(c.Request.Context(), &req)
+	}
 	if err != nil {
 		if errors.Is(err, security.ErrSubjectDataKeyMissing) || errors.Is(err, security.ErrSubjectDataKeyInvalid) {
 			common.NewAPIError(c, http.StatusServiceUnavailable, "SUBJECT_DATA_KEY_REQUIRED", "客户身份保护服务未配置，已阻止保存")
 			return
 		}
+		if len(keys) > 0 {
+			var appErr *apperrors.EnhancedError
+			switch {
+			case errors.Is(err, services.ErrClientIdempotencyConflict):
+				common.NewAPIError(c, http.StatusConflict, "CLIENT_CREATE_KEY_CONFLICT", "该创建请求键已用于另一份资料，请核对后重试")
+			case errors.Is(err, services.ErrClientIdempotencyIncomplete):
+				common.NewAPIError(c, http.StatusConflict, "CLIENT_CREATE_RESULT_UNAVAILABLE", "原创建结果暂不可用，请联系有权人员核实，勿重复建档")
+			case errors.As(err, &appErr) && (appErr.Category() == apperrors.ErrorCategoryValidation || appErr.Category() == apperrors.ErrorCategoryBusiness):
+				// Do not expose another client's existence or storage error details.
+				common.NewAPIError(c, http.StatusBadRequest, "CLIENT_CREATE_REJECTED", "无法创建客户，请核对资料或联系有权人员处理")
+			default:
+				common.NewAPIError(c, http.StatusServiceUnavailable, "CLIENT_CREATE_UNAVAILABLE", "客户创建服务暂不可用，请保留原请求键重试")
+			}
+			return
+		}
 		common.APIInternalServerError(c, "创建客户失败", err.Error())
 		return
+	}
+	if len(keys) > 0 {
+		allowed, err := h.authz.CanReadClient(c.Request.Context(), actor, client.ID)
+		if err != nil {
+			common.NewAPIError(c, http.StatusServiceUnavailable, "CLIENT_AUTHZ_UNAVAILABLE", "客户权限检查暂不可用，请保留原请求键重试")
+			return
+		}
+		if !allowed {
+			forbidObjectAccess(c)
+			return
+		}
 	}
 
 	common.APISuccess(c, client)

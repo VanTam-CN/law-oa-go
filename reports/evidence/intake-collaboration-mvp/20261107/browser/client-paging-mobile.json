@@ -1,0 +1,65 @@
+{
+  "time": "2026-11-07T16:12:00+08:00",
+  "frontend_bundle": "index-CxoHfApU.js",
+  "pagination": {
+    "query": "分页客户",
+    "page": 2,
+    "page_size": 50,
+    "total": 65,
+    "total_page": 2,
+    "http": 200,
+    "second_page_ids": [
+      18,
+      17,
+      16,
+      15,
+      14,
+      13,
+      12,
+      11,
+      10,
+      9,
+      8,
+      7,
+      6,
+      5,
+      4
+    ],
+    "selected_id": 14,
+    "selected_label": "QA 分页客户 011 · 企业 · 编号 14",
+    "keyboard_selection": "54 ArrowDown then Enter after loading page 2"
+  },
+  "mobile": {
+    "viewport": [
+      390,
+      844
+    ],
+    "document_scroll_width": 390,
+    "dialog_tab_cycle": "12 Tab steps remained within modal, reached cancel/save buttons; Shift+Tab worked",
+    "button_rects": {
+      "cancel": [
+        182.32,
+        754,
+        73.68,
+        40
+      ],
+      "save": [
+        260,
+        754,
+        98,
+        40
+      ]
+    },
+    "escape_closed_client_dialog": true,
+    "menu_opened_by_enter": true,
+    "menu_navigation_triggered_unsaved_prompt": true,
+    "continue_editing_preserved_input": true,
+    "drawer_close_click": "FAIL: app-header intercepts pointer events; screenshot 05"
+  },
+  "limits": [
+    "Long supplement checklist not yet tested",
+    "Not a full C17 pass",
+    "Final candidate binding pending",
+    "Mobile drawer close blocked; fix and retest required"
+  ]
+}

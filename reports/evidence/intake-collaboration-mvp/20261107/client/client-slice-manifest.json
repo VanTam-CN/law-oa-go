@@ -1,0 +1,46 @@
+{
+  "baseline": "a806831a7cef839c2b971cd4ab260cce77f42b8b",
+  "verification_path": "/private/tmp/lawoa-client-verify-20261107.znuj4lyn",
+  "files": [
+    {
+      "path": "internal/handlers/client_handler.go",
+      "sha256": "1b11db41c4a8eff3f84dadd31e7892d0f3994b85948cf16d0e0b18ed3a728bcc",
+      "verified_copy_matches": true
+    },
+    {
+      "path": "internal/handlers/client_idempotency_test.go",
+      "sha256": "305d7ff0cab6d4e03b48dacc4b5cd95e4f9e56caea7266893b874981ac22ee8b",
+      "verified_copy_matches": true
+    },
+    {
+      "path": "internal/repositories/client_repository.go",
+      "sha256": "daa32d01f6d6c0c222234e4b61af42beafd03734ef61c9f8ad5b8e7599823a51",
+      "verified_copy_matches": true
+    },
+    {
+      "path": "internal/services/client_idempotency.go",
+      "sha256": "7b1bb4fb31660618c91e13796b205e9f84f7177383c34fbf8fc11c1402df4bd2",
+      "verified_copy_matches": true
+    },
+    {
+      "path": "internal/services/client_idempotency_test.go",
+      "sha256": "48b65b8c60ec887d50c5e7da3c7e5c6426942a0a0e09052b980dc3d5769bf4b0",
+      "verified_copy_matches": true
+    },
+    {
+      "path": "internal/models/client_creation_request.go",
+      "sha256": "cc31751f1ba5e7ba7ce039b92ca0431270854ced0afdf4b6ed5606191e9de425",
+      "verified_copy_matches": true
+    },
+    {
+      "path": "migrations/000083_client_creation_idempotency.up.sql",
+      "sha256": "3909ffcaee1e12369ef5952c5841e180542d220dccef4640ada006075845f61d",
+      "verified_copy_matches": true
+    },
+    {
+      "path": "migrations/000083_client_creation_idempotency.down.sql",
+      "sha256": "f5e6bdd829c8dc5c555a3964973948a1f47200d2068b7ed0e194c65b493f50e9",
+      "verified_copy_matches": true
+    }
+  ]
+}

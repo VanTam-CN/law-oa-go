@@ -53,9 +53,9 @@ var intakeDraftRevisionKey = "draft_revision"
 // revision. StaleRequest is false when the page sent an outdated revision,
 // which means another tab or session already saved newer content.
 type IntakeDraftRevisionError struct {
-	Code    string
-	Message string
-	Details string
+	Code         string
+	Message      string
+	Details      string
 	StaleRequest bool
 }
 
@@ -71,9 +71,9 @@ func newIntakeDraftRevisionError(staleRequest bool) *IntakeDraftRevisionError {
 		}
 	}
 	return &IntakeDraftRevisionError{
-		Code:         "INTAKE_DRAFT_REVISION_CONFLICT",
-		Message:      "草稿已被其他页面更新，当前页面是旧版本，已停止保存以避免覆盖。",
-		Details:      "页面中未保存的内容仍保留在表单里，可复制后点击“重新加载服务端草稿”",
+		Code:    "INTAKE_DRAFT_REVISION_CONFLICT",
+		Message: "草稿已被其他页面更新，当前页面是旧版本，已停止保存以避免覆盖。",
+		Details: "页面中未保存的内容仍保留在表单里，可复制后点击“重新加载服务端草稿”",
 	}
 }
 
@@ -166,8 +166,6 @@ func (h *DemoAggregateHandler) CommandCenter(c *gin.Context) {
 	pendingApprovalWhere := "deleted_at IS NULL AND status IN ?"
 	pendingApprovalArgs := []interface{}{pendingApprovalStatuses}
 	role := c.GetString("role")
-	inboxWhere := h.inboxFilter("is_completed = ?")
-	inboxArgs := []interface{}{false}
 	if userID, ok := middleware.GetCurrentUserID(c); ok && userID > 0 {
 		wallWhere := `(
 			ethical_wall_enabled = ?
@@ -188,8 +186,6 @@ func (h *DemoAggregateHandler) CommandCenter(c *gin.Context) {
 		caseStageArgs = append(caseStageArgs, lawyerID)
 		pendingApprovalWhere += " AND (applicant_id = ? OR current_approver_id = ?)"
 		pendingApprovalArgs = append(pendingApprovalArgs, fmt.Sprint(lawyerID), fmt.Sprint(lawyerID))
-		inboxWhere += " AND user_id = ?"
-		inboxArgs = append(inboxArgs, lawyerID)
 	} else if userID, ok := middleware.GetCurrentUserID(c); ok && services.IsConflictReviewRole(role) {
 		// Dedicated conflict reviewers are not general matter managers, but they
 		// still need approvals explicitly assigned to them. Object-level checks
@@ -197,12 +193,7 @@ func (h *DemoAggregateHandler) CommandCenter(c *gin.Context) {
 		pendingApprovalWhere += " AND (applicant_id = ? OR current_approver_id = ?)"
 		pendingApprovalArgs = append(pendingApprovalArgs, fmt.Sprint(userID), fmt.Sprint(userID))
 	}
-	if canViewAllMatterData(c) {
-		// inbox_items only stores an assignee and a source ID. The legacy
-		// aggregate query cannot prove that source belongs to a visible case.
-		inboxWhere = "1 = 0"
-		inboxArgs = nil
-	}
+
 	if !canViewAllMatterData(c) {
 		// Conflict officers and technical administrators are not general matter
 		// managers. They may use their dedicated queues, but must not infer firm
@@ -217,8 +208,6 @@ func (h *DemoAggregateHandler) CommandCenter(c *gin.Context) {
 				pendingApprovalWhere = "1 = 0"
 				pendingApprovalArgs = nil
 			}
-			inboxWhere = "1 = 0"
-			inboxArgs = nil
 		}
 	}
 	pendingApprovalRows := h.visibleApprovalRows(c, pendingApprovalWhere, pendingApprovalArgs...)
@@ -259,13 +248,23 @@ func (h *DemoAggregateHandler) CommandCenter(c *gin.Context) {
 		}
 	}
 
+	todos, inboxStats, err := h.workflowTodoRows(c, 10)
+	if err != nil {
+		common.APIInternalServerError(c, "待办读取失败", err.Error())
+		return
+	}
+	overdue, err := h.overdueRows(c, 5)
+	if err != nil {
+		common.APIInternalServerError(c, "逾期待办读取失败", err.Error())
+		return
+	}
 	common.APISuccess(c, gin.H{
 		"summary": gin.H{
 			"active_cases":        h.count("cases", activeCasesWhere, activeCasesArgs...),
 			"clients":             clientCount,
 			"pending_approvals":   pendingApprovalCount,
 			"open_conflict_tasks": h.visibleConflictRecordCount(c, conflictWhere, conflictArgs...),
-			"unread_inbox":        h.countAny([]string{"inbox_items"}, inboxWhere, inboxArgs...),
+			"unread_inbox":        inboxStats.Unread,
 		},
 		"workflow": gin.H{
 			"intake":     intakeCount,
@@ -273,13 +272,14 @@ func (h *DemoAggregateHandler) CommandCenter(c *gin.Context) {
 			"approval":   pendingApprovalCount,
 			"activation": h.count("cases", activeCasesWhere, activeCasesArgs...),
 		},
-		"todo_items":              h.todoRows(c, 10),
+		"todo_items":              todos,
+		"inbox_stats":             inboxStats,
 		"risk_queue":              riskQueue,
 		"approval_queue":          h.approvalRows(c, 8),
 		"case_rows":               h.caseRows(c, 20),
 		"case_stage_distribution": h.groupedCounts("cases", "status", caseStageWhere, 10, caseStageArgs...),
 		"risk_distribution":       h.visibleConflictRiskCounts(c, conflictWhere, 10, conflictArgs...),
-		"overdue_tasks":           h.overdueRows(c, 5),
+		"overdue_tasks":           overdue,
 		"recent_activities":       h.activityRows(c, 10),
 		"generated_at":            time.Now(),
 	})
@@ -500,6 +500,11 @@ func (h *DemoAggregateHandler) ListIntakeDrafts(c *gin.Context) {
 }
 
 func (h *DemoAggregateHandler) LawyersResourceCenter(c *gin.Context) {
+	todos, stats, err := h.workflowTodoRows(c, 8)
+	if err != nil {
+		common.APIInternalServerError(c, "待办读取失败", err.Error())
+		return
+	}
 	common.APISuccess(c, gin.H{
 		"summary": gin.H{
 			"lawyers":      h.count("users", "deleted_at IS NULL AND role IN ?", []string{"lawyer", "admin"}),
@@ -507,12 +512,12 @@ func (h *DemoAggregateHandler) LawyersResourceCenter(c *gin.Context) {
 			"active_cases": h.visibleCaseCount(c, "deleted_at IS NULL AND status IN ?", []interface{}{[]string{"pending", "in_progress"}}),
 			// The legacy task table has no verified subject-case join. Keep the
 			// resource center honest until it can use a wall-aware task query.
-			"pending_tasks": int64(0),
+			"pending_tasks": stats.NeedsAction,
 		},
 		"lawyers":     h.recentRows("users", "deleted_at IS NULL AND role IN ?", 20, []string{"lawyer", "admin"}),
 		"capacity":    h.groupedCounts("users", "department", "deleted_at IS NULL AND role IN ?", 20, []string{"lawyer", "admin"}),
 		"assignments": h.caseRows(c, 8),
-		"tasks":       h.todoRows(c, 8),
+		"tasks":       todos,
 	})
 }
 
@@ -561,33 +566,25 @@ func (h *DemoAggregateHandler) ExecutiveDashboard(c *gin.Context) {
 	})
 }
 
-func (h *DemoAggregateHandler) todoRows(c *gin.Context, limit int) []gin.H {
-	where := h.inboxFilter("is_completed = ?")
-	args := []interface{}{false}
-	if c != nil {
-		if userID, ok := middleware.GetCurrentUserID(c); ok && !canViewAllMatterData(c) {
-			where += " AND user_id = ?"
-			args = append(args, userID)
-		} else if canViewAllMatterData(c) {
-			return []gin.H{}
-		}
+func (h *DemoAggregateHandler) workflowTodoRows(c *gin.Context, limit int) ([]gin.H, *services.InboxStatsResponse, error) {
+	items := []gin.H{}
+	empty := &services.InboxStatsResponse{}
+	userID, ok := middleware.GetCurrentUserID(c)
+	if !ok || userID == 0 {
+		return items, empty, services.ErrApprovalForbidden
 	}
-	rows := h.recentRowsAny([]string{"inbox_items"}, where, limit, args...)
-	items := make([]gin.H, 0, len(rows))
-	for _, row := range rows {
-		items = append(items, gin.H{
-			"id":          row["id"],
-			"type":        row["source_type"],
-			"title":       row["title"],
-			"content":     row["content"],
-			"priority":    row["priority"],
-			"due_at":      row["due_date"],
-			"is_read":     row["is_read"],
-			"source_id":   row["source_id"],
-			"source_type": row["source_type"],
-		})
+	if !h.tableExists("inbox_items") {
+		return items, empty, nil
 	}
-	return items
+	svc := services.NewInboxService(repositories.NewInboxRepository(h.db), repositories.NewUserRepository(h.db))
+	result, err := svc.ListInboxItems(c.Request.Context(), userID, &services.ListInboxItemsRequest{Page: 1, PageSize: limit, WorkflowBucket: "needs_action"})
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, row := range result.Items {
+		items = append(items, gin.H{"id": row.ID, "type": row.SourceType, "title": row.Title, "content": row.Content, "priority": row.Priority, "due_at": row.DueDate, "is_read": row.IsRead, "source_id": row.SourceID, "source_type": row.SourceType, "source_ref": row.SourceRef, "completion_mode": row.CompletionMode, "workflow_action": row.WorkflowAction, "workflow_bucket": row.WorkflowBucket})
+	}
+	return items, result.Stats, nil
 }
 
 func (h *DemoAggregateHandler) riskRows(c *gin.Context, limit int, includeAll bool) []gin.H {
@@ -1651,27 +1648,21 @@ func (h *DemoAggregateHandler) caseRows(c *gin.Context, limit int) []gin.H {
 	return items
 }
 
-func (h *DemoAggregateHandler) overdueRows(c *gin.Context, limit int) []gin.H {
-	if canViewAllMatterData(c) {
-		return []gin.H{}
+func (h *DemoAggregateHandler) overdueRows(c *gin.Context, limit int) ([]gin.H, error) {
+	userID, ok := middleware.GetCurrentUserID(c)
+	if !ok {
+		return nil, services.ErrApprovalForbidden
 	}
-	where := h.inboxFilter("is_completed = ? AND due_date < ?")
-	args := []interface{}{false, time.Now()}
-	if userID, ok := middleware.GetCurrentUserID(c); ok && !canViewAllMatterData(c) {
-		where += " AND user_id = ?"
-		args = append(args, userID)
+	completed := false
+	result, err := services.NewInboxService(repositories.NewInboxRepository(h.db), repositories.NewUserRepository(h.db)).ListInboxItems(c.Request.Context(), userID, &services.ListInboxItemsRequest{Page: 1, PageSize: limit, IsCompleted: &completed, DueBefore: time.Now().UTC().Format(time.RFC3339), OrderBy: "due_date"})
+	if err != nil {
+		return nil, err
 	}
-	rows := h.recentRowsAny([]string{"inbox_items"}, where, limit, args...)
-	items := make([]gin.H, 0, len(rows))
-	for _, row := range rows {
-		items = append(items, gin.H{
-			"id":       row["id"],
-			"title":    row["title"],
-			"priority": row["priority"],
-			"due_at":   row["due_date"],
-		})
+	items := make([]gin.H, 0, len(result.Items))
+	for _, row := range result.Items {
+		items = append(items, gin.H{"id": row.ID, "title": row.Title, "priority": row.Priority, "due_at": row.DueDate, "workflow_action": row.WorkflowAction})
 	}
-	return items
+	return items, nil
 }
 
 func (h *DemoAggregateHandler) activityRows(c *gin.Context, limit int) []gin.H {
@@ -1928,7 +1919,12 @@ func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
 		common.APIBadRequest(c, "请求参数错误", err.Error())
 		return
 	}
-	if !validateIntakeCaseType(c, payload) { return }
+	if rejectControlledIntakeMetadata(c, payload["metadata"]) {
+		return
+	}
+	if !validateIntakeCaseType(c, payload) {
+		return
+	}
 	idempotencyKey := strings.TrimSpace(c.GetHeader("Idempotency-Key"))
 	if len(idempotencyKey) > 120 {
 		common.APIBadRequest(c, "幂等键无效", "Idempotency-Key 长度不能超过 120 个字符")
@@ -2012,45 +2008,45 @@ func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
 				if err := tx.Table("case_intakes").Create(intakePayload).Error; err != nil {
 					return err
 				}
-			if h.tableExists("case_intake_parties") {
-				for _, party := range parties {
-					var row map[string]interface{}
-					var err error
-					if caseIntakePartyIsClient(party) {
-						// The client party is authored from the protected client
-						// master record: resolve its guarded identity inside the
-						// same transaction instead of demanding raw identity
-						// input from the browser.
-						row, err = h.prepareCaseIntakeClientPartyRow(tx, intakePayload["client_id"], party, intakeID, now)
-					} else {
-						row, err = h.prepareCaseIntakePartyCreateRow(party, intakeID, now)
-					}
-					if err != nil {
-						return err
-					}
-					if err := tx.Table("case_intake_parties").Create(row).Error; err != nil {
-						return err
-					}
-				}
-			}
-			if h.tableExists("case_materials") {
-				for _, material := range materials {
-					row := filterMap(material, allowedCaseMaterialFields)
-					row["intake_id"] = intakeID
-					row["name"] = stringValue(row["name"], "未命名材料")
-					row["material_type"] = stringValue(row["material_type"], "document")
-					row["status"] = stringValue(row["status"], "missing")
-					if _, ok := row["required"]; !ok {
-						row["required"] = true
-					}
-					row["metadata"] = jsonStringValue(row["metadata"])
-					row["created_at"] = now
-					row["updated_at"] = now
-					if err := tx.Table("case_materials").Create(row).Error; err != nil {
-						return err
+				if h.tableExists("case_intake_parties") {
+					for _, party := range parties {
+						var row map[string]interface{}
+						var err error
+						if caseIntakePartyIsClient(party) {
+							// The client party is authored from the protected client
+							// master record: resolve its guarded identity inside the
+							// same transaction instead of demanding raw identity
+							// input from the browser.
+							row, err = h.prepareCaseIntakeClientPartyRow(tx, intakePayload["client_id"], party, intakeID, now)
+						} else {
+							row, err = h.prepareCaseIntakePartyCreateRow(party, intakeID, now)
+						}
+						if err != nil {
+							return err
+						}
+						if err := tx.Table("case_intake_parties").Create(row).Error; err != nil {
+							return err
+						}
 					}
 				}
-			}
+				if h.tableExists("case_materials") {
+					for _, material := range materials {
+						row := filterMap(material, allowedCaseMaterialFields)
+						row["intake_id"] = intakeID
+						row["name"] = stringValue(row["name"], "未命名材料")
+						row["material_type"] = stringValue(row["material_type"], "document")
+						row["status"] = stringValue(row["status"], "missing")
+						if _, ok := row["required"]; !ok {
+							row["required"] = true
+						}
+						row["metadata"] = jsonStringValue(row["metadata"])
+						row["created_at"] = now
+						row["updated_at"] = now
+						if err := tx.Table("case_materials").Create(row).Error; err != nil {
+							return err
+						}
+					}
+				}
 				return nil
 			})
 			if err == nil || !isDuplicateKeyError(err) {
@@ -2098,6 +2094,13 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 	var rawPayload map[string]interface{}
 	if err := c.ShouldBindJSON(&rawPayload); err != nil {
 		common.APIBadRequest(c, "请求参数错误", err.Error())
+		return
+	}
+	if _, replies := rawPayload["supplement_responses"]; replies {
+		h.saveIntakeSupplement(c, id, actorID, rawPayload)
+		return
+	}
+	if rejectControlledIntakeMetadata(c, rawPayload["metadata"]) {
 		return
 	}
 	parties := mapSliceValue(rawPayload["parties"])
@@ -2151,7 +2154,9 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 		forbidObjectAccess(c)
 		return
 	}
-	if !validateIntakeCaseType(c, rawPayload) { return }
+	if !validateIntakeCaseType(c, rawPayload) {
+		return
+	}
 	if isAssistantRole(c) {
 		if rawPayload["client_id"] != nil || rawPayload["parties"] != nil {
 			common.APIForbidden(c, "助理协作草稿不能录入当事人身份信息", "客户、对方和关联方必须由执业律师确认后录入")
@@ -2238,7 +2243,7 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 			metadata["conflict_invalidated_at"] = time.Now().UTC().Format(time.RFC3339)
 			metadata["conflict_invalidated_by"] = actorID
 			metadata["conflict_invalidation_reason"] = "接案事实发生变化，必须重新确认并检测"
-		delete(metadata, lawyerFactsVersionKey)
+			delete(metadata, lawyerFactsVersionKey)
 			payload["status"] = "draft"
 			payload["metadata"] = jsonStringValue(metadata)
 		}
@@ -2256,7 +2261,7 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 			ClientID *uint
 			Metadata []byte
 		}
-	if err := tx.Table("case_intakes").Clauses(clause.Locking{Strength: "UPDATE"}).
+		if err := tx.Table("case_intakes").Clauses(clause.Locking{Strength: "UPDATE"}).
 			Select("client_id, metadata").
 			Where("id = ?", id).Take(&locked).Error; err != nil {
 			return err
@@ -2768,16 +2773,16 @@ func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
 	}
 	materials := h.conflictService.BuildConflictCheckRecord(c.Request.Context(), request, result)
 	if err := repositories.CommitIntakeConflictResult(c.Request.Context(), h.db, materials, result.ConflictCases, result.NormalizedSubjects, result, repositories.ConflictSubjectAssociation{
-		CheckID:           result.CheckID,
-		SubjectCaseID:     firstNonEmpty(valueString(metadata, "subject_case_id"), valueString(metadata, "subjectCaseId")),
-		SubjectCaseNumber: firstNonEmpty(valueString(metadata, "subject_case_number"), valueString(metadata, "subjectCaseNumber")),
-		IntakeID:          intakeID,
-		ClientID:          fmt.Sprint(intake["client_id"]),
-		CoverageStatus:    coverageStatus,
-		CheckedAt:         result.CheckTime,
-		ExpectedCommitToken: commitToken,
+		CheckID:              result.CheckID,
+		SubjectCaseID:        firstNonEmpty(valueString(metadata, "subject_case_id"), valueString(metadata, "subjectCaseId")),
+		SubjectCaseNumber:    firstNonEmpty(valueString(metadata, "subject_case_number"), valueString(metadata, "subjectCaseNumber")),
+		IntakeID:             intakeID,
+		ClientID:             fmt.Sprint(intake["client_id"]),
+		CoverageStatus:       coverageStatus,
+		CheckedAt:            result.CheckTime,
+		ExpectedCommitToken:  commitToken,
 		ExpectedFactsVersion: factsVersion,
-	}, factsConfirmedAt); err != nil {
+	}, factsConfirmedAt, services.ReconcileFormalConflictInbox); err != nil {
 		var staleErr *repositories.IntakeConflictStaleFactsError
 		if errors.As(err, &staleErr) {
 			common.NewAPIError(c, http.StatusConflict, "INTAKE_FACTS_STALE", staleErr.Error())
@@ -2873,6 +2878,9 @@ func (h *DemoAggregateHandler) createConflictApproval(c *gin.Context, taskID, ap
 		}
 		if parseErr != nil || !canAccessConflictTaskForActor(c, h.authz, task) {
 			return conflictApprovalError{status: http.StatusForbidden, code: "FORBIDDEN", message: "无权为其他律师的冲突任务创建审批"}
+		}
+		if intakeID := subjectIntakeIDFromAggregateSearchParameters(row["search_parameters"]); intakeID != "" {
+			return conflictApprovalError{status: http.StatusConflict, code: "INTAKE_CONFLICT_REVIEW_REQUIRED", message: "接案的冲突检测请由指定独立复核人提交复核结论；完成后从原接案工作台提交接案审批", details: "intake_id=" + intakeID}
 		}
 		if strings.ToUpper(strings.TrimSpace(fmt.Sprint(row["check_status"]))) != "COMPLETED" {
 			return conflictApprovalError{status: http.StatusConflict, code: "CONFLICT_CHECK_NOT_COMPLETED", message: "冲突检测尚未完成，不能创建冲突审批"}
@@ -3017,6 +3025,15 @@ func (h *DemoAggregateHandler) createConflictApproval(c *gin.Context, taskID, ap
 				"snapshot_data": jsonStringValue(snapshotFields), "source_version": 1, "created_at": now,
 			}
 			if err := tx.Table("approval_snapshots").Create(cleanInsertMap(snapshot)).Error; err != nil {
+				return err
+			}
+		}
+		if tx.Migrator().HasTable("inbox_items") {
+			var saved models.ApprovalRequest
+			if err := tx.First(&saved, "id = ?", approvalID).Error; err != nil {
+				return err
+			}
+			if err := services.ReconcileApprovalInboxInTx(tx, &saved); err != nil {
 				return err
 			}
 		}
@@ -3211,85 +3228,98 @@ func (h *DemoAggregateHandler) GetApprovalSnapshot(c *gin.Context) {
 		common.APINotFound(c, "审批不存在", "指定审批不存在或已删除")
 		return
 	}
-	if !h.canAccessApprovalSnapshot(c, approval) {
+	var typed models.ApprovalRequest
+	if err := h.db.First(&typed, "id = ?", id).Error; err != nil {
+		common.APINotFound(c, "审批不存在", "指定审批不存在")
 		return
 	}
+	if !h.canAccessApprovalSnapshot(c, &typed) {
+		return
+	}
+	actor, _ := currentAuthActor(c)
+	activeID := typed.ActiveSubmissionSnapshotID
+	requested := strings.TrimSpace(c.Query("snapshot_id"))
+	snapshot, err := services.ReadApprovalSubmissionSnapshot(h.db, &typed, requested)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		common.APINotFound(c, "审批快照不存在", "指定审批没有可用的不可变快照")
+		return
+	}
+	if err != nil {
+		writeIntakeCollaborationError(c, err)
+		return
+	}
+	if snapshot == nil {
+		common.APINotFound(c, "审批快照不存在", "指定审批没有可用的不可变快照")
+		return
+	}
+	if err := services.AuthorizeApprovalSnapshotContext(c.Request.Context(), h.db, h.authz, actor, &typed, snapshot); err != nil {
+		if errors.Is(err, services.ErrApprovalForbidden) {
+			forbidObjectAccess(c)
+		} else {
+			common.APIInternalServerError(c, "审批快照权限校验失败", err.Error())
+		}
+		return
+	}
+	type historyVersion struct {
+		ID            string    `json:"id"`
+		SourceVersion int       `json:"source_version"`
+		SnapshotType  string    `json:"snapshot_type"`
+		CreatedAt     time.Time `json:"created_at"`
+	}
+	history := []historyVersion{}
+	visibleVersions := map[string]bool{}
 	if h.tableExists("approval_snapshots") {
-		var row map[string]interface{}
-		if err := h.db.Table("approval_snapshots").Where("approval_request_id = ?", id).Order("created_at DESC").Take(&row).Error; err == nil {
-			common.APISuccess(c, gin.H{
-				"approval_id": id,
-				"snapshot":    projectApprovalSnapshotForViewer(row["snapshot_data"], c.GetString("role")),
-				"immutable":   true,
-			})
+		var versions []historyVersion
+		if err := h.db.Table("approval_snapshots").Select("id, source_version, snapshot_type, created_at").Where("approval_request_id = ?", id).Order("source_version DESC, id ASC").Find(&versions).Error; err != nil {
+			common.APIInternalServerError(c, "读取审批版本失败", err.Error())
 			return
 		}
-	}
-	metadataText := fmt.Sprint(approval["metadata"])
-	var metadata map[string]interface{}
-	if err := json.Unmarshal([]byte(metadataText), &metadata); err == nil {
-		if snapshot, ok := metadata["approval_snapshot"]; ok {
-			common.APISuccess(c, gin.H{
-				"approval_id": id,
-				"snapshot":    projectApprovalSnapshotForViewer(snapshot, c.GetString("role")),
-				"immutable":   true,
-			})
-			return
+		for _, version := range versions {
+			frozen, err := services.ReadApprovalSubmissionSnapshot(h.db, &typed, version.ID)
+			if err != nil {
+				writeIntakeCollaborationError(c, err)
+				return
+			}
+			if err := services.AuthorizeApprovalSnapshotContext(c.Request.Context(), h.db, h.authz, actor, &typed, frozen); err != nil {
+				if errors.Is(err, services.ErrApprovalForbidden) {
+					continue
+				}
+				common.APIInternalServerError(c, "历史快照权限校验失败", err.Error())
+				return
+			}
+			history = append(history, version)
+			visibleVersions[version.ID] = true
 		}
 	}
-	common.APINotFound(c, "审批快照不存在", "指定审批没有可用的不可变快照")
+	viewedID := requested
+	if viewedID == "" {
+		viewedID = valueString(snapshot, "snapshot_id")
+	}
+	projected := projectApprovalSnapshotForViewer(snapshot, c.GetString("role"))
+	if object, ok := projected.(map[string]interface{}); ok {
+		if previous := valueString(object, "previous_snapshot_id"); previous != "" && !visibleVersions[previous] {
+			delete(object, "previous_snapshot_id")
+		}
+	}
+	common.APISuccess(c, gin.H{"approval_id": id, "active_submission_snapshot_id": activeID, "viewed_snapshot_id": viewedID, "submission_history": history, "snapshot": projected, "immutable": true})
 }
 
-func (h *DemoAggregateHandler) canAccessApprovalSnapshot(c *gin.Context, approval map[string]interface{}) bool {
+func (h *DemoAggregateHandler) canAccessApprovalSnapshot(c *gin.Context, approval *models.ApprovalRequest) bool {
 	actor, ok := currentAuthActor(c)
 	if !ok {
 		return false
 	}
-	applicantID := strings.TrimSpace(fmt.Sprint(approval["applicant_id"]))
-	approverID := strings.TrimSpace(fmt.Sprint(approval["current_approver_id"]))
-	if strconv.FormatUint(uint64(actor.UserID), 10) == applicantID || strconv.FormatUint(uint64(actor.UserID), 10) == approverID {
-		return true
-	}
-	if h.authz == nil || (!services.IsConflictReviewRole(actor.Role) && !services.IsBusinessMatterManagementRole(actor.Role)) {
-		forbidObjectAccess(c)
+	// Match approval detail membership, including previous approvers; neither
+	// a remembered assignment nor a broad role bypasses subject authorization.
+	_, err := services.NewApprovalService(h.db).GetApprovalForAuthorization(strconv.FormatUint(uint64(actor.UserID), 10), approval.ID)
+	if err != nil {
+		if errors.Is(err, services.ErrApprovalForbidden) {
+			forbidObjectAccess(c)
+		} else {
+			common.APIInternalServerError(c, "审批快照权限校验失败", err.Error())
+		}
 		return false
 	}
-
-	checkID := firstNonEmpty(
-		strings.TrimSpace(fmt.Sprint(approval["conflict_check_id"])),
-	)
-	metadata := integrationJSONMap(approval["metadata"])
-	if checkID == "" {
-		checkID = firstNonEmpty(
-			integrationMetadataString(metadata, "conflict_check_id"),
-			integrationMetadataString(metadata, "conflict_task_id"),
-		)
-	}
-	if checkID == "" || !h.tableExists("conflict_check_records") {
-		forbidObjectAccess(c)
-		return false
-	}
-	var record struct {
-		SearchParameters []byte
-	}
-	if err := h.db.Table("conflict_check_records").Select("search_parameters").Where("check_id = ?", checkID).Take(&record).Error; err != nil {
-		forbidObjectAccess(c)
-		return false
-	}
-	caseIDText := subjectCaseIDFromAggregateSearchParameters(record.SearchParameters)
-	caseID, err := strconv.ParseUint(caseIDText, 10, 32)
-	if err != nil || caseID == 0 {
-		forbidObjectAccess(c)
-		return false
-	}
-	allowed, authErr := h.authz.CanReadConflictContext(c.Request.Context(), actor, uint(caseID))
-	if authErr != nil {
-		common.APIInternalServerError(c, "审批快照权限校验失败", authErr.Error())
-		return false
-	}
-	if !allowed {
-		forbidObjectAccess(c)
-		return false
-	}
-	return true
+	authorizer := &ApprovalHandler{db: h.db, authorization: h.authz}
+	return authorizer.authorizeApprovalConflictContext(c, approval)
 }

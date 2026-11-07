@@ -1,0 +1,2 @@
+ok  	law-oa-go/internal/handlers	1.701s
+ok  	law-oa-go/internal/services	2.199s

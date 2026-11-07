@@ -1,0 +1,2421 @@
+{
+  "time": "2026-11-07T16:38:19.138468+08:00",
+  "head": "a806831a7cef839c2b971cd4ab260cce77f42b8b",
+  "commands": [
+    {
+      "log": "32-final-race.jsonl",
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "-count=1",
+        "-timeout=180s",
+        "-json",
+        "./internal/services",
+        "./internal/handlers",
+        "./internal/repositories",
+        "./internal/models",
+        "-run",
+        "^Test(BackendFinalReviewPostgres|ApprovalCollaborationPostgres|Inbox|ClientCreation|ClientParty|OpposingParty|IntakeSubmission|IntakeSupplement|ApprovalSubmission|CoreReview|CreateCaseIntake|UpdateIntake|ConfirmIntake|StartIntake|DraftRestore|DraftList|ListIntake|F04B|LegacyDraft|ConfirmAndConflict|PrepareCaseIntake|IntakeWrite|DenyIntake|ResubmitAtomic|CaseTxGuard|ConflictApproval|ConflictOfficer|IntakeDuplicateApprovalGuard|IntakeDelayedInterleaveDuplicateApproval|IntakeConcurrentDistinctIntakesAllSucceed|IntakeResidualDraftRetryAfterFailedSubmit)"
+      ],
+      "exit_code": 0,
+      "seconds": 36.380710707999995
+    },
+    {
+      "log": "33-final-vet.log",
+      "command": [
+        "go",
+        "vet",
+        "./internal/services",
+        "./internal/handlers",
+        "./internal/repositories",
+        "./internal/models"
+      ],
+      "exit_code": 0,
+      "seconds": 4.982749208000001
+    },
+    {
+      "log": "34-final-build.log",
+      "command": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "exit_code": 0,
+      "seconds": 11.319241458
+    },
+    {
+      "log": "35-final-diff-check.log",
+      "command": [
+        "git",
+        "diff",
+        "--check",
+        "--",
+        "internal"
+      ],
+      "exit_code": 0,
+      "seconds": 0.0376474999999985
+    }
+  ],
+  "source_count": 593,
+  "changed_during_run": [],
+  "packages": [
+    {
+      "Time": "2026-11-07T16:37:40.177025+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/repositories",
+      "Elapsed": 2.826
+    },
+    {
+      "Time": "2026-11-07T16:37:40.578568+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/models",
+      "Elapsed": 3.227
+    },
+    {
+      "Time": "2026-11-07T16:37:42.064609+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Elapsed": 4.715
+    },
+    {
+      "Time": "2026-11-07T16:38:02.629701+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Elapsed": 25.28
+    }
+  ],
+  "leaf_counts": {
+    "pass": 262,
+    "fail": 0,
+    "skip": 0
+  },
+  "pg_leaves": [
+    {
+      "Time": "2026-11-07T16:37:41.039952+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresLegacyApprovalOrders/formal_created_first",
+      "Elapsed": 0.4
+    },
+    {
+      "Time": "2026-11-07T16:37:41.404433+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresLegacyApprovalOrders/formal_approved_first",
+      "Elapsed": 0.36
+    },
+    {
+      "Time": "2026-11-07T16:37:41.715226+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresLegacyApprovalOrders/simultaneous_1",
+      "Elapsed": 0.31
+    },
+    {
+      "Time": "2026-11-07T16:37:42.050475+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresLegacyApprovalOrders/simultaneous_2",
+      "Elapsed": 0.34
+    },
+    {
+      "Time": "2026-11-07T16:37:42.35424+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresLegacyApprovalOrders/simultaneous_3",
+      "Elapsed": 0.3
+    },
+    {
+      "Time": "2026-11-07T16:37:42.571356+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresLegacyServiceBoundaries/ordinary_decision",
+      "Elapsed": 0.22
+    },
+    {
+      "Time": "2026-11-07T16:37:42.778724+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresLegacyServiceBoundaries/auto_case",
+      "Elapsed": 0.21
+    },
+    {
+      "Time": "2026-11-07T16:37:42.995779+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresLegacyServiceBoundaries/retry_case",
+      "Elapsed": 0.22
+    },
+    {
+      "Time": "2026-11-07T16:37:43.203321+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresLegacyServiceBoundaries/frozen_reference_only",
+      "Elapsed": 0.21
+    },
+    {
+      "Time": "2026-11-07T16:37:43.449285+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresExistingLegacyCase/completed_replay",
+      "Elapsed": 0.25
+    },
+    {
+      "Time": "2026-11-07T16:37:43.64773+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresExistingLegacyCase/stale_flags_replay",
+      "Elapsed": 0.2
+    },
+    {
+      "Time": "2026-11-07T16:37:43.827771+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresExistingLegacyCase/new_check_submit",
+      "Elapsed": 0.18
+    },
+    {
+      "Time": "2026-11-07T16:37:44.042937+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresExistingLegacyCase/formal_already_submitted",
+      "Elapsed": 0.22
+    },
+    {
+      "Time": "2026-11-07T16:37:44.23649+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresNonIntakeLegacyCompatibility",
+      "Elapsed": 0.19
+    },
+    {
+      "Time": "2026-11-07T16:37:44.515337+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresLegacyCannotCreateSecondCase",
+      "Elapsed": 0.28
+    },
+    {
+      "Time": "2026-11-07T16:37:44.726576+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresReturnRollback/ordinary_inbox_update",
+      "Elapsed": 0.21
+    },
+    {
+      "Time": "2026-11-07T16:37:44.960863+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresReturnRollback/ordinary_inbox_create",
+      "Elapsed": 0.23
+    },
+    {
+      "Time": "2026-11-07T16:37:45.182+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresReturnRollback/integrated_inbox_update",
+      "Elapsed": 0.22
+    },
+    {
+      "Time": "2026-11-07T16:37:45.40957+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresReturnRollback/integrated_inbox_create",
+      "Elapsed": 0.23
+    },
+    {
+      "Time": "2026-11-07T16:37:45.675968+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresResubmitRollback/approval_snapshots_create",
+      "Elapsed": 0.27
+    },
+    {
+      "Time": "2026-11-07T16:37:45.948315+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresResubmitRollback/inbox_items_update",
+      "Elapsed": 0.27
+    },
+    {
+      "Time": "2026-11-07T16:37:46.219732+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresResubmitRollback/inbox_items_create",
+      "Elapsed": 0.27
+    },
+    {
+      "Time": "2026-11-07T16:37:46.455657+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresStaleDecisionNoWrites/ordinary_snapshot",
+      "Elapsed": 0.24
+    },
+    {
+      "Time": "2026-11-07T16:37:46.703895+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresStaleDecisionNoWrites/ordinary_node",
+      "Elapsed": 0.25
+    },
+    {
+      "Time": "2026-11-07T16:37:46.945027+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresStaleDecisionNoWrites/integrated_snapshot",
+      "Elapsed": 0.24
+    },
+    {
+      "Time": "2026-11-07T16:37:47.185945+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresStaleDecisionNoWrites/integrated_node",
+      "Elapsed": 0.24
+    },
+    {
+      "Time": "2026-11-07T16:37:47.519646+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresResubmitVersusNewApproval/simultaneous-1",
+      "Elapsed": 0.33
+    },
+    {
+      "Time": "2026-11-07T16:37:47.853291+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresResubmitVersusNewApproval/simultaneous-2",
+      "Elapsed": 0.33
+    },
+    {
+      "Time": "2026-11-07T16:37:48.207358+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresResubmitVersusNewApproval/simultaneous-3",
+      "Elapsed": 0.35
+    },
+    {
+      "Time": "2026-11-07T16:37:48.526398+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresResubmitVersusNewApproval/resubmit-then-new",
+      "Elapsed": 0.32
+    },
+    {
+      "Time": "2026-11-07T16:37:48.85233+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresResubmitVersusNewApproval/new-then-resubmit",
+      "Elapsed": 0.33
+    },
+    {
+      "Time": "2026-11-07T16:37:49.188497+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresCasePartyRollback",
+      "Elapsed": 0.34
+    },
+    {
+      "Time": "2026-11-07T16:37:49.494701+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresApprovedSnapshotSurvivesCheckMutation",
+      "Elapsed": 0.31
+    },
+    {
+      "Time": "2026-11-07T16:37:49.844171+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresOverlappingLockOrder",
+      "Elapsed": 0.35
+    },
+    {
+      "Time": "2026-11-07T16:37:50.131902+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresCaseCompletionInboxRollback/initial_completion_inbox_update",
+      "Elapsed": 0.29
+    },
+    {
+      "Time": "2026-11-07T16:37:50.422521+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresCaseCompletionInboxRollback/initial_completion_inbox_create",
+      "Elapsed": 0.29
+    },
+    {
+      "Time": "2026-11-07T16:37:50.717135+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresCaseCompletionInboxRollback/completed_replay_inbox_update",
+      "Elapsed": 0.29
+    },
+    {
+      "Time": "2026-11-07T16:37:51.005797+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresCaseCompletionInboxRollback/completed_replay_inbox_create",
+      "Elapsed": 0.29
+    },
+    {
+      "Time": "2026-11-07T16:37:51.188696+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresLegacyMissingIntakeLinkNoWrites",
+      "Elapsed": 0.18
+    },
+    {
+      "Time": "2026-11-07T16:37:51.823306+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestClientCreationIdempotency/postgres/lost_response_reconnect_canonical_replay_and_no_plaintext",
+      "Elapsed": 0.07
+    },
+    {
+      "Time": "2026-11-07T16:37:51.887828+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestClientCreationIdempotency/postgres/different_payload_conflicts_and_scope_isolation",
+      "Elapsed": 0.06
+    },
+    {
+      "Time": "2026-11-07T16:37:51.977198+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestClientCreationIdempotency/postgres/concurrent_requests_different_payload_false",
+      "Elapsed": 0.09
+    },
+    {
+      "Time": "2026-11-07T16:37:52.068882+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestClientCreationIdempotency/postgres/concurrent_requests_different_payload_true",
+      "Elapsed": 0.09
+    },
+    {
+      "Time": "2026-11-07T16:37:52.123032+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestClientCreationIdempotency/postgres/claim_and_client_rollback_on_late_failure",
+      "Elapsed": 0.05
+    },
+    {
+      "Time": "2026-11-07T16:37:52.175861+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestClientCreationIdempotency/postgres/existing_email_rule_and_failed_claim_release",
+      "Elapsed": 0.05
+    },
+    {
+      "Time": "2026-11-07T16:37:52.226464+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestClientCreationIdempotency/postgres/missing_or_invalid_key_material_fails_closed",
+      "Elapsed": 0.05
+    },
+    {
+      "Time": "2026-11-07T16:37:52.278628+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestClientCreationIdempotency/postgres/deleted_result_never_creates_replacement",
+      "Elapsed": 0.05
+    },
+    {
+      "Time": "2026-11-07T16:37:52.327112+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestClientCreationIdempotency/postgres/no_key_preserves_optional_identity_and_no_ledger_dependency",
+      "Elapsed": 0.05
+    },
+    {
+      "Time": "2026-11-07T16:37:52.388955+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestClientCreationPostgresMigrationUpDownUp",
+      "Elapsed": 0.06
+    },
+    {
+      "Time": "2026-11-07T16:37:54.514294+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxB2PostgresRevisedSubmission",
+      "Elapsed": 0.45
+    },
+    {
+      "Time": "2026-11-07T16:37:57.02959+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresHTTPLegacyBoundaries/ordinary",
+      "Elapsed": 0.21
+    },
+    {
+      "Time": "2026-11-07T16:37:57.215623+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresHTTPLegacyBoundaries/integrated",
+      "Elapsed": 0.19
+    },
+    {
+      "Time": "2026-11-07T16:37:57.386236+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresHTTPLegacyBoundaries/retry",
+      "Elapsed": 0.17
+    },
+    {
+      "Time": "2026-11-07T16:37:57.553217+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresHTTPLegacyBoundaries/create_old_ticket",
+      "Elapsed": 0.17
+    },
+    {
+      "Time": "2026-11-07T16:37:57.86312+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresHistoricalSnapshotClientRevoked/lawyer",
+      "Elapsed": 0.31
+    },
+    {
+      "Time": "2026-11-07T16:37:58.165112+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresHistoricalSnapshotClientRevoked/partner",
+      "Elapsed": 0.3
+    },
+    {
+      "Time": "2026-11-07T16:37:58.465505+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresHistoricalSnapshotClientRevoked/conflict_officer",
+      "Elapsed": 0.3
+    },
+    {
+      "Time": "2026-11-07T16:37:58.688769+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresSnapshotRevokedContext/lawyer",
+      "Elapsed": 0.22
+    },
+    {
+      "Time": "2026-11-07T16:37:58.908845+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresSnapshotRevokedContext/partner",
+      "Elapsed": 0.22
+    },
+    {
+      "Time": "2026-11-07T16:37:59.13064+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresSnapshotRevokedContext/conflict_officer",
+      "Elapsed": 0.22
+    },
+    {
+      "Time": "2026-11-07T16:37:59.547518+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresPendingClientChangeHTTP/lawyer",
+      "Elapsed": 0.42
+    },
+    {
+      "Time": "2026-11-07T16:37:59.851528+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresPendingClientChangeHTTP/partner",
+      "Elapsed": 0.3
+    },
+    {
+      "Time": "2026-11-07T16:38:00.063265+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresHTTPInitialSubmission/first_submit_then_duplicate",
+      "Elapsed": 0.21
+    },
+    {
+      "Time": "2026-11-07T16:38:00.269464+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresHTTPInitialSubmission/snapshot_failure_then_original_retry",
+      "Elapsed": 0.21
+    },
+    {
+      "Time": "2026-11-07T16:38:00.510429+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresHTTPStaleDecision/ordinary_snapshot",
+      "Elapsed": 0.24
+    },
+    {
+      "Time": "2026-11-07T16:38:00.756582+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresHTTPStaleDecision/ordinary_node",
+      "Elapsed": 0.25
+    },
+    {
+      "Time": "2026-11-07T16:38:01.003659+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresHTTPStaleDecision/integrated_snapshot",
+      "Elapsed": 0.25
+    },
+    {
+      "Time": "2026-11-07T16:38:01.244949+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresHTTPStaleDecision/integrated_node",
+      "Elapsed": 0.24
+    },
+    {
+      "Time": "2026-11-07T16:38:01.543408+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxB2PostgresHTTPListStatsGetAndHome/partner",
+      "Elapsed": 0.07
+    },
+    {
+      "Time": "2026-11-07T16:38:01.589225+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxB2PostgresHTTPListStatsGetAndHome/lawyer",
+      "Elapsed": 0.05
+    }
+  ],
+  "leaves": [
+    {
+      "Time": "2026-11-07T16:37:39.862929+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewProjectionProtectsAllRolesAndCopies/lawyer",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-11-07T16:37:39.865201+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewProjectionProtectsAllRolesAndCopies/conflict_officer",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:39.902473+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewCreateBlocksControlledMetadata/create/0",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:39.902765+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewCreateBlocksControlledMetadata/create/1",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:39.902886+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewCreateBlocksControlledMetadata/create/2",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:39.90306+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewCreateBlocksControlledMetadata/create/3",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:39.903236+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewCreateBlocksControlledMetadata/create/4",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:39.903407+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewCreateBlocksControlledMetadata/create/5",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:39.903575+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewCreateBlocksControlledMetadata/create/6",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:39.90376+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewCreateBlocksControlledMetadata/create/7",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:39.903928+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewCreateBlocksControlledMetadata/create/8",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:39.904098+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewCreateBlocksControlledMetadata/create/9",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:39.90426+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewCreateBlocksControlledMetadata/create/10",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:39.90443+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewCreateBlocksControlledMetadata/create/11",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:39.906112+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewCreateBlocksControlledMetadata/create/12",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:39.906409+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewCreateBlocksControlledMetadata/template/0",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:39.906592+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewCreateBlocksControlledMetadata/template/1",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:39.906775+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewCreateBlocksControlledMetadata/template/2",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:39.906948+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewCreateBlocksControlledMetadata/template/3",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:39.907671+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewCreateBlocksControlledMetadata/template/4",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:39.907831+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewCreateBlocksControlledMetadata/template/5",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:39.908005+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewCreateBlocksControlledMetadata/template/6",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:39.908177+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewCreateBlocksControlledMetadata/template/7",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:39.90833+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewCreateBlocksControlledMetadata/template/8",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:39.908496+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewCreateBlocksControlledMetadata/template/9",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:39.908675+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewCreateBlocksControlledMetadata/template/10",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:39.908823+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewCreateBlocksControlledMetadata/template/11",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:39.908982+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewCreateBlocksControlledMetadata/template/12",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:39.963024+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewMutationResponsesAndUpdateErrors",
+      "Elapsed": 0.05
+    },
+    {
+      "Time": "2026-11-07T16:37:40.007656+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewDetailSupplementContextReadOnly/false",
+      "Elapsed": 0.04
+    },
+    {
+      "Time": "2026-11-07T16:37:40.045452+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewDetailSupplementContextReadOnly/true",
+      "Elapsed": 0.04
+    },
+    {
+      "Time": "2026-11-07T16:37:40.077992+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewDetailAuthorizationAndAmbiguousReturn",
+      "Elapsed": 0.03
+    },
+    {
+      "Time": "2026-11-07T16:37:40.103456+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewResubmitUsesDurableIntakeAssociation",
+      "Elapsed": 0.03
+    },
+    {
+      "Time": "2026-11-07T16:37:40.149106+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewSnapshotHistoryAndMissing/version/",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-11-07T16:37:40.152862+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewSnapshotHistoryAndMissing/version/745b91d5-2d7d-422b-ae1c-0d8d5a98547b",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.15554+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewSnapshotHistoryAndMissing/version/49f1e967-d0cf-420d-ad28-9ae7cc9c284d",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.189261+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewIntegratedDecisionResponseProjection/lawyer",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.190561+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewIntegratedDecisionResponseProjection/conflict_officer",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.227692+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewCurrentReturnMustMatchSubmission",
+      "Elapsed": 0.04
+    },
+    {
+      "Time": "2026-11-07T16:37:40.276107+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCoreReviewHistoryDoesNotRelaxAuthority",
+      "Elapsed": 0.05
+    },
+    {
+      "Time": "2026-11-07T16:37:40.296441+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestClientCreationHTTPContract",
+      "Elapsed": 0.02
+    },
+    {
+      "Time": "2026-11-07T16:37:40.310935+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestClientCreationHTTPFailuresAndLegacyCompatibility",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-11-07T16:37:40.434751+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestClientCreationC03SameNameDistinctIdentityAndAuthorizedPagination",
+      "Elapsed": 0.12
+    },
+    {
+      "Time": "2026-11-07T16:37:40.458674+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestConflictOfficerSeesOnlyAssignedConflictApproval",
+      "Elapsed": 0.02
+    },
+    {
+      "Time": "2026-11-07T16:37:40.459078+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestConflictApprovalSnapshotPreservesCaseType",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.459869+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestConflictApprovalDoesNotTreatLimitedCoverageAsClear",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.466206+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestInboxItemHandlersRejectCrossUserAccess/get",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.467457+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestInboxItemHandlersRejectCrossUserAccess/update",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.468322+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestInboxItemHandlersRejectCrossUserAccess/mark_read",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.46907+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestInboxItemHandlersRejectCrossUserAccess/complete",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.469717+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestInboxItemHandlersRejectCrossUserAccess/snooze",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.470154+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestInboxItemHandlersRejectCrossUserAccess/delete",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.482239+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestInboxItemHandlersAllowOwnerAccess",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-11-07T16:37:40.487531+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestInboxItemHandlersRequireAuthenticatedUser",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-11-07T16:37:40.502313+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestInboxPublicAPIDeniesForgedWorkflowFields/completion_mode",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.502498+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestInboxPublicAPIDeniesForgedWorkflowFields/source_ref",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.502647+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestInboxPublicAPIDeniesForgedWorkflowFields/workflow_task_key",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.502802+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestInboxPublicAPIDeniesForgedWorkflowFields/workflow_group",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.502939+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestInboxPublicAPIDeniesForgedWorkflowFields/workflow_purpose",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.503079+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestInboxPublicAPIDeniesForgedWorkflowFields/workflow_version",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.503219+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestInboxPublicAPIDeniesForgedWorkflowFields/assigned_to",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.503335+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestInboxPublicAPIDeniesForgedWorkflowFields/workflow_action",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.503451+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestInboxPublicAPIDeniesForgedWorkflowFields/is_completed",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.503567+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestInboxPublicAPIDeniesForgedWorkflowFields/closed_reason",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.503685+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestInboxPublicAPIDeniesForgedWorkflowFields/archived_at",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.51355+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestInboxLegacyHTTPArchiveContract",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-11-07T16:37:40.539331+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestInboxWorkflowHTTPMutationAndSnoozeContract",
+      "Elapsed": 0.03
+    },
+    {
+      "Time": "2026-11-07T16:37:40.541975+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestClientPartyRowInheritsProtectedIdentity",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.544889+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestClientPartyRowRejectsNameMismatch",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.547313+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestClientPartyRowRejectsClientWithoutIdentity",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.549595+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestOpposingPartyStillRequiresIdentity",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.553095+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestClientPartyRowRejectsForgedEntityType",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.556134+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestClientPartyRowRejectsForgedIndividualTypeOnCompany",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.560438+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCreateCaseIntakeSameSecondUniqueCodes",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.563775+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCreateCaseIntakeCodeConflictRetriesWithNewCode",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.600878+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestCreateCaseIntakeConcurrentSameSecond",
+      "Elapsed": 0.04
+    },
+    {
+      "Time": "2026-11-07T16:37:40.663028+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestIntakeDelayedInterleaveDuplicateApproval",
+      "Elapsed": 0.06
+    },
+    {
+      "Time": "2026-11-07T16:37:40.762864+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestIntakeConcurrentDistinctIntakesAllSucceed",
+      "Elapsed": 0.1
+    },
+    {
+      "Time": "2026-11-07T16:37:40.814049+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestIntakeResidualDraftRetryAfterFailedSubmit",
+      "Elapsed": 0.05
+    },
+    {
+      "Time": "2026-11-07T16:37:40.817862+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestListIntakeDraftsScopesAndFields",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.823595+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestUpdateIntakeInvalidatesConfirmedSnapshotAndRotatesRevision/lawyer_facts_confirmed",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-11-07T16:37:40.830994+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestUpdateIntakeInvalidatesConfirmedSnapshotAndRotatesRevision/conflict_ready",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-11-07T16:37:40.839425+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestLegacyDraftWithoutStoredRevisionLoadsAndSavesOnce",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-11-07T16:37:40.843068+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestConfirmAndConflictCheckAuthorizeBeforeRevisionHint",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.848107+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestUpdateIntakeWithoutMetadataKeepsStoredBusinessFields",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.852254+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestUpdateIntakeMergesProvidedMetadataWithoutErasingStoredFields",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.856616+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestUpdateIntakeRejectsMissingExpectedRevisionWithoutMutation",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.862222+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestUpdateIntakeRejectsStaleRevisionWithoutOverwrite",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-11-07T16:37:40.868907+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestUpdateIntakeSwitchClientUsesNewMasterIdentity",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-11-07T16:37:40.875415+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestConfirmIntakeFactsRotatesRevisionAndRejectsStaleHeader",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-11-07T16:37:40.88218+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestDraftRestoreReturnsRevisionAndProtectedIdentityStatus",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-11-07T16:37:40.886067+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestDraftListCarriesRevisionTokens",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:40.9349+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestIntakeDuplicateApprovalGuard",
+      "Elapsed": 0.05
+    },
+    {
+      "Time": "2026-11-07T16:37:40.958935+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestF04BSameSecondReconfirmInvalidatesCommittedSnapshot",
+      "Elapsed": 0.02
+    },
+    {
+      "Time": "2026-11-07T16:37:40.986561+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestF04BUpdateThenReconfirmInvalidatesPriorSnapshot",
+      "Elapsed": 0.03
+    },
+    {
+      "Time": "2026-11-07T16:37:41.011847+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestF04BDoubleCheckRaceYieldsOneWinner",
+      "Elapsed": 0.03
+    },
+    {
+      "Time": "2026-11-07T16:37:41.03814+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestF04BStaleVersionCommitRejectedAndRolledBack",
+      "Elapsed": 0.03
+    },
+    {
+      "Time": "2026-11-07T16:37:41.03917+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestConfirmIntakeFactsRejectsMissingClientWithReadableError",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:41.039941+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestStartIntakeConflictCheckRejectsMissingClientWithReadableError",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:41.039952+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresLegacyApprovalOrders/formal_created_first",
+      "Elapsed": 0.4
+    },
+    {
+      "Time": "2026-11-07T16:37:41.044499+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestUpdateIntakeDraftInheritsProtectedIdentityWhenInputEmpty",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:41.047582+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestUpdateIntakeDraftKeepsNewIdentityWhenProvided",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:41.049168+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestUpdateIntakeDraftStillRequiresIdentityForNewParty",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:41.05008+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestPrepareCaseIntakePartyRowPreservesRoleMetadata",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:41.051126+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestIntakeWriteDeniesPlainUserAndConflictOfficerBeforeObjectScope",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:41.052089+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestIntakeWriteDeniesOtherLawyerViaObjectScope",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:41.052544+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestDenyIntakeWriteForPlainUser/plain_user_denied",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:41.052828+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestDenyIntakeWriteForPlainUser/empty_role_denied",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:41.052906+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestDenyIntakeWriteForPlainUser/lawyer_allowed",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:41.052976+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestDenyIntakeWriteForPlainUser/assistant_allowed",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:41.053055+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestDenyIntakeWriteForPlainUser/intake_assistant_allowed",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:41.05313+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestDenyIntakeWriteForPlainUser/director_allowed",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:41.05323+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/handlers",
+      "Test": "TestDenyIntakeWriteForPlainUser/conflict_officer_denied",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:41.404433+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresLegacyApprovalOrders/formal_approved_first",
+      "Elapsed": 0.36
+    },
+    {
+      "Time": "2026-11-07T16:37:41.715226+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresLegacyApprovalOrders/simultaneous_1",
+      "Elapsed": 0.31
+    },
+    {
+      "Time": "2026-11-07T16:37:42.050475+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresLegacyApprovalOrders/simultaneous_2",
+      "Elapsed": 0.34
+    },
+    {
+      "Time": "2026-11-07T16:37:42.35424+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresLegacyApprovalOrders/simultaneous_3",
+      "Elapsed": 0.3
+    },
+    {
+      "Time": "2026-11-07T16:37:42.571356+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresLegacyServiceBoundaries/ordinary_decision",
+      "Elapsed": 0.22
+    },
+    {
+      "Time": "2026-11-07T16:37:42.778724+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresLegacyServiceBoundaries/auto_case",
+      "Elapsed": 0.21
+    },
+    {
+      "Time": "2026-11-07T16:37:42.995779+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresLegacyServiceBoundaries/retry_case",
+      "Elapsed": 0.22
+    },
+    {
+      "Time": "2026-11-07T16:37:43.203321+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresLegacyServiceBoundaries/frozen_reference_only",
+      "Elapsed": 0.21
+    },
+    {
+      "Time": "2026-11-07T16:37:43.449285+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresExistingLegacyCase/completed_replay",
+      "Elapsed": 0.25
+    },
+    {
+      "Time": "2026-11-07T16:37:43.64773+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresExistingLegacyCase/stale_flags_replay",
+      "Elapsed": 0.2
+    },
+    {
+      "Time": "2026-11-07T16:37:43.827771+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresExistingLegacyCase/new_check_submit",
+      "Elapsed": 0.18
+    },
+    {
+      "Time": "2026-11-07T16:37:44.042937+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresExistingLegacyCase/formal_already_submitted",
+      "Elapsed": 0.22
+    },
+    {
+      "Time": "2026-11-07T16:37:44.23649+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresNonIntakeLegacyCompatibility",
+      "Elapsed": 0.19
+    },
+    {
+      "Time": "2026-11-07T16:37:44.515337+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresLegacyCannotCreateSecondCase",
+      "Elapsed": 0.28
+    },
+    {
+      "Time": "2026-11-07T16:37:44.726576+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresReturnRollback/ordinary_inbox_update",
+      "Elapsed": 0.21
+    },
+    {
+      "Time": "2026-11-07T16:37:44.960863+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresReturnRollback/ordinary_inbox_create",
+      "Elapsed": 0.23
+    },
+    {
+      "Time": "2026-11-07T16:37:45.182+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresReturnRollback/integrated_inbox_update",
+      "Elapsed": 0.22
+    },
+    {
+      "Time": "2026-11-07T16:37:45.40957+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresReturnRollback/integrated_inbox_create",
+      "Elapsed": 0.23
+    },
+    {
+      "Time": "2026-11-07T16:37:45.675968+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresResubmitRollback/approval_snapshots_create",
+      "Elapsed": 0.27
+    },
+    {
+      "Time": "2026-11-07T16:37:45.948315+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresResubmitRollback/inbox_items_update",
+      "Elapsed": 0.27
+    },
+    {
+      "Time": "2026-11-07T16:37:46.219732+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresResubmitRollback/inbox_items_create",
+      "Elapsed": 0.27
+    },
+    {
+      "Time": "2026-11-07T16:37:46.455657+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresStaleDecisionNoWrites/ordinary_snapshot",
+      "Elapsed": 0.24
+    },
+    {
+      "Time": "2026-11-07T16:37:46.703895+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresStaleDecisionNoWrites/ordinary_node",
+      "Elapsed": 0.25
+    },
+    {
+      "Time": "2026-11-07T16:37:46.945027+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresStaleDecisionNoWrites/integrated_snapshot",
+      "Elapsed": 0.24
+    },
+    {
+      "Time": "2026-11-07T16:37:47.185945+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresStaleDecisionNoWrites/integrated_node",
+      "Elapsed": 0.24
+    },
+    {
+      "Time": "2026-11-07T16:37:47.519646+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresResubmitVersusNewApproval/simultaneous-1",
+      "Elapsed": 0.33
+    },
+    {
+      "Time": "2026-11-07T16:37:47.853291+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresResubmitVersusNewApproval/simultaneous-2",
+      "Elapsed": 0.33
+    },
+    {
+      "Time": "2026-11-07T16:37:48.207358+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresResubmitVersusNewApproval/simultaneous-3",
+      "Elapsed": 0.35
+    },
+    {
+      "Time": "2026-11-07T16:37:48.526398+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresResubmitVersusNewApproval/resubmit-then-new",
+      "Elapsed": 0.32
+    },
+    {
+      "Time": "2026-11-07T16:37:48.85233+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresResubmitVersusNewApproval/new-then-resubmit",
+      "Elapsed": 0.33
+    },
+    {
+      "Time": "2026-11-07T16:37:49.188497+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresCasePartyRollback",
+      "Elapsed": 0.34
+    },
+    {
+      "Time": "2026-11-07T16:37:49.494701+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresApprovedSnapshotSurvivesCheckMutation",
+      "Elapsed": 0.31
+    },
+    {
+      "Time": "2026-11-07T16:37:49.844171+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresOverlappingLockOrder",
+      "Elapsed": 0.35
+    },
+    {
+      "Time": "2026-11-07T16:37:50.131902+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresCaseCompletionInboxRollback/initial_completion_inbox_update",
+      "Elapsed": 0.29
+    },
+    {
+      "Time": "2026-11-07T16:37:50.422521+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresCaseCompletionInboxRollback/initial_completion_inbox_create",
+      "Elapsed": 0.29
+    },
+    {
+      "Time": "2026-11-07T16:37:50.717135+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresCaseCompletionInboxRollback/completed_replay_inbox_update",
+      "Elapsed": 0.29
+    },
+    {
+      "Time": "2026-11-07T16:37:51.005797+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresCaseCompletionInboxRollback/completed_replay_inbox_create",
+      "Elapsed": 0.29
+    },
+    {
+      "Time": "2026-11-07T16:37:51.188696+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresLegacyMissingIntakeLinkNoWrites",
+      "Elapsed": 0.18
+    },
+    {
+      "Time": "2026-11-07T16:37:51.241226+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestResubmitAtomic_CompetingSlotRollsBackStatus",
+      "Elapsed": 0.05
+    },
+    {
+      "Time": "2026-11-07T16:37:51.262728+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestResubmitAtomic_FreeSlotCommitsBoth",
+      "Elapsed": 0.02
+    },
+    {
+      "Time": "2026-11-07T16:37:51.332323+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestCaseTxGuard_CompetingIntakeSlotBlocked",
+      "Elapsed": 0.07
+    },
+    {
+      "Time": "2026-11-07T16:37:51.406469+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestCaseTxGuard_SelfOwnedSlotPasses",
+      "Elapsed": 0.07
+    },
+    {
+      "Time": "2026-11-07T16:37:51.454023+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestCaseTxGuard_LegacyNoIntakeMetadataPasses",
+      "Elapsed": 0.05
+    },
+    {
+      "Time": "2026-11-07T16:37:51.468898+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestClientCreationIdempotency/sqlite/lost_response_reconnect_canonical_replay_and_no_plaintext",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-11-07T16:37:51.484877+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestClientCreationIdempotency/sqlite/different_payload_conflicts_and_scope_isolation",
+      "Elapsed": 0.02
+    },
+    {
+      "Time": "2026-11-07T16:37:51.612991+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestClientCreationIdempotency/sqlite/concurrent_requests_different_payload_false",
+      "Elapsed": 0.13
+    },
+    {
+      "Time": "2026-11-07T16:37:51.701119+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestClientCreationIdempotency/sqlite/concurrent_requests_different_payload_true",
+      "Elapsed": 0.09
+    },
+    {
+      "Time": "2026-11-07T16:37:51.711508+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestClientCreationIdempotency/sqlite/claim_and_client_rollback_on_late_failure",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-11-07T16:37:51.723731+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestClientCreationIdempotency/sqlite/existing_email_rule_and_failed_claim_release",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-11-07T16:37:51.731277+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestClientCreationIdempotency/sqlite/missing_or_invalid_key_material_fails_closed",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-11-07T16:37:51.740225+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestClientCreationIdempotency/sqlite/deleted_result_never_creates_replacement",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-11-07T16:37:51.748648+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestClientCreationIdempotency/sqlite/no_key_preserves_optional_identity_and_no_ledger_dependency",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-11-07T16:37:51.823306+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestClientCreationIdempotency/postgres/lost_response_reconnect_canonical_replay_and_no_plaintext",
+      "Elapsed": 0.07
+    },
+    {
+      "Time": "2026-11-07T16:37:51.887828+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestClientCreationIdempotency/postgres/different_payload_conflicts_and_scope_isolation",
+      "Elapsed": 0.06
+    },
+    {
+      "Time": "2026-11-07T16:37:51.977198+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestClientCreationIdempotency/postgres/concurrent_requests_different_payload_false",
+      "Elapsed": 0.09
+    },
+    {
+      "Time": "2026-11-07T16:37:52.068882+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestClientCreationIdempotency/postgres/concurrent_requests_different_payload_true",
+      "Elapsed": 0.09
+    },
+    {
+      "Time": "2026-11-07T16:37:52.123032+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestClientCreationIdempotency/postgres/claim_and_client_rollback_on_late_failure",
+      "Elapsed": 0.05
+    },
+    {
+      "Time": "2026-11-07T16:37:52.175861+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestClientCreationIdempotency/postgres/existing_email_rule_and_failed_claim_release",
+      "Elapsed": 0.05
+    },
+    {
+      "Time": "2026-11-07T16:37:52.226464+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestClientCreationIdempotency/postgres/missing_or_invalid_key_material_fails_closed",
+      "Elapsed": 0.05
+    },
+    {
+      "Time": "2026-11-07T16:37:52.278628+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestClientCreationIdempotency/postgres/deleted_result_never_creates_replacement",
+      "Elapsed": 0.05
+    },
+    {
+      "Time": "2026-11-07T16:37:52.327112+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestClientCreationIdempotency/postgres/no_key_preserves_optional_identity_and_no_ledger_dependency",
+      "Elapsed": 0.05
+    },
+    {
+      "Time": "2026-11-07T16:37:52.388955+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestClientCreationPostgresMigrationUpDownUp",
+      "Elapsed": 0.06
+    },
+    {
+      "Time": "2026-11-07T16:37:52.433398+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxActiveSnapshotBindingFailClosed/missing",
+      "Elapsed": 0.04
+    },
+    {
+      "Time": "2026-11-07T16:37:52.473184+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxActiveSnapshotBindingFailClosed/blank_pointer",
+      "Elapsed": 0.04
+    },
+    {
+      "Time": "2026-11-07T16:37:52.511102+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxActiveSnapshotBindingFailClosed/foreign_approval",
+      "Elapsed": 0.04
+    },
+    {
+      "Time": "2026-11-07T16:37:52.551058+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxActiveSnapshotBindingFailClosed/wrong_type",
+      "Elapsed": 0.04
+    },
+    {
+      "Time": "2026-11-07T16:37:52.592058+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxActiveSnapshotBindingFailClosed/invalid_json",
+      "Elapsed": 0.04
+    },
+    {
+      "Time": "2026-11-07T16:37:52.632786+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxActiveSnapshotBindingFailClosed/snapshot_id",
+      "Elapsed": 0.04
+    },
+    {
+      "Time": "2026-11-07T16:37:52.670635+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxActiveSnapshotBindingFailClosed/approval_id",
+      "Elapsed": 0.04
+    },
+    {
+      "Time": "2026-11-07T16:37:52.709469+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxActiveSnapshotBindingFailClosed/round",
+      "Elapsed": 0.04
+    },
+    {
+      "Time": "2026-11-07T16:37:52.749626+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxActiveSnapshotBindingFailClosed/zero_round",
+      "Elapsed": 0.04
+    },
+    {
+      "Time": "2026-11-07T16:37:52.788979+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxActiveSnapshotBindingFailClosed/intake_id",
+      "Elapsed": 0.04
+    },
+    {
+      "Time": "2026-11-07T16:37:52.829613+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxActiveSnapshotBindingFailClosed/original_intake",
+      "Elapsed": 0.04
+    },
+    {
+      "Time": "2026-11-07T16:37:52.869342+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxActiveSnapshotBindingFailClosed/check_id",
+      "Elapsed": 0.04
+    },
+    {
+      "Time": "2026-11-07T16:37:52.908538+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxActiveSnapshotBindingFailClosed/task_id",
+      "Elapsed": 0.04
+    },
+    {
+      "Time": "2026-11-07T16:37:52.954128+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxActiveSnapshotBindingFailClosed/unauthorized_check",
+      "Elapsed": 0.05
+    },
+    {
+      "Time": "2026-11-07T16:37:52.991783+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxActiveSnapshotSchemaErrorIsNotEmptySuccess",
+      "Elapsed": 0.04
+    },
+    {
+      "Time": "2026-11-07T16:37:53.031447+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxLegacyMetadataConsistencyStillRequired",
+      "Elapsed": 0.04
+    },
+    {
+      "Time": "2026-11-07T16:37:53.276013+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxActiveSnapshotsBatchAcrossApprovals",
+      "Elapsed": 0.24
+    },
+    {
+      "Time": "2026-11-07T16:37:53.281154+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxWorkflowCannotBeManuallyCompleted",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-11-07T16:37:53.287356+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxLegacyArchiveIsNotBusinessCompletion",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-11-07T16:37:53.341165+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxApprovalHandoffIdempotentAndRollback",
+      "Elapsed": 0.05
+    },
+    {
+      "Time": "2026-11-07T16:37:53.388454+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxSupplementActionJSONContract",
+      "Elapsed": 0.05
+    },
+    {
+      "Time": "2026-11-07T16:37:53.442523+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxAuthorizationBeforePaginationAndCount",
+      "Elapsed": 0.05
+    },
+    {
+      "Time": "2026-11-07T16:37:53.729444+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxMoreThan1000AndSnoozeKeepsActionableCount",
+      "Elapsed": 0.29
+    },
+    {
+      "Time": "2026-11-07T16:37:53.73004+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxRejectsForgedServiceFields",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:53.7908+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxReassignmentAndCaseFailureProjection",
+      "Elapsed": 0.06
+    },
+    {
+      "Time": "2026-11-07T16:37:53.828011+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxReconcileReadsDurableApprovalInsteadOfCallerTimestamp",
+      "Elapsed": 0.04
+    },
+    {
+      "Time": "2026-11-07T16:37:53.864165+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxTrustedLegacyHandoffDoesNotGainBusinessCapability",
+      "Elapsed": 0.04
+    },
+    {
+      "Time": "2026-11-07T16:37:53.917039+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxConflictAssignmentCompletionAndRollback",
+      "Elapsed": 0.05
+    },
+    {
+      "Time": "2026-11-07T16:37:54.006241+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxProjectionUsesBatchQueries",
+      "Elapsed": 0.09
+    },
+    {
+      "Time": "2026-11-07T16:37:54.06511+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxConflictReassignmentAndReturnToEarlierActiveAssignment",
+      "Elapsed": 0.06
+    },
+    {
+      "Time": "2026-11-07T16:37:54.514294+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxB2PostgresRevisedSubmission",
+      "Elapsed": 0.45
+    },
+    {
+      "Time": "2026-11-07T16:37:54.52069+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalSubmissionResolverPointerBeatsCreatedTime",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-11-07T16:37:54.528087+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalSubmissionResolverLegacyAgreement",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-11-07T16:37:54.532699+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalSubmissionResolverNonIntakeLegacy",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:54.6881+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSubmissionPGFreezeResponsesReplayAndImmutability",
+      "Elapsed": 0.16
+    },
+    {
+      "Time": "2026-11-07T16:37:54.793047+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSubmissionPGNegativeGates/changed_party_identity",
+      "Elapsed": 0.1
+    },
+    {
+      "Time": "2026-11-07T16:37:54.89545+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSubmissionPGNegativeGates/changed_party_role",
+      "Elapsed": 0.1
+    },
+    {
+      "Time": "2026-11-07T16:37:54.99705+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSubmissionPGNegativeGates/changed_client",
+      "Elapsed": 0.1
+    },
+    {
+      "Time": "2026-11-07T16:37:55.094804+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSubmissionPGNegativeGates/missing_current_check",
+      "Elapsed": 0.1
+    },
+    {
+      "Time": "2026-11-07T16:37:55.192194+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSubmissionPGNegativeGates/unconfirmed_facts",
+      "Elapsed": 0.1
+    },
+    {
+      "Time": "2026-11-07T16:37:55.287835+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSubmissionPGNegativeGates/review_mismatch",
+      "Elapsed": 0.1
+    },
+    {
+      "Time": "2026-11-07T16:37:55.38285+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSubmissionPGNegativeGates/expired_review",
+      "Elapsed": 0.09
+    },
+    {
+      "Time": "2026-11-07T16:37:55.48689+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSubmissionPGNegativeGates/self_review",
+      "Elapsed": 0.1
+    },
+    {
+      "Time": "2026-11-07T16:37:55.586573+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSubmissionPGNegativeGates/manager_review",
+      "Elapsed": 0.1
+    },
+    {
+      "Time": "2026-11-07T16:37:55.685867+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSubmissionPGNegativeGates/assignment_replaced_after_review",
+      "Elapsed": 0.1
+    },
+    {
+      "Time": "2026-11-07T16:37:55.784728+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSubmissionPGNegativeGates/assignment_bound_to_other_case",
+      "Elapsed": 0.1
+    },
+    {
+      "Time": "2026-11-07T16:37:55.893038+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSubmissionPGNegativeGates/assignment_revoked",
+      "Elapsed": 0.11
+    },
+    {
+      "Time": "2026-11-07T16:37:55.992093+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSubmissionPGNegativeGates/missing_dependency",
+      "Elapsed": 0.1
+    },
+    {
+      "Time": "2026-11-07T16:37:56.126356+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSubmissionPGNegativeGates/insufficient_decision",
+      "Elapsed": 0.13
+    },
+    {
+      "Time": "2026-11-07T16:37:56.364746+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSubmissionPGTransactionRollbackAndConcurrentReplay",
+      "Elapsed": 0.24
+    },
+    {
+      "Time": "2026-11-07T16:37:56.49099+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSubmissionPGMigrationUpDownAndRefusal",
+      "Elapsed": 0.13
+    },
+    {
+      "Time": "2026-11-07T16:37:56.593871+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSubmissionPGControlledResponsePermissionsAndRollback/other_lawyer",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:56.594456+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSubmissionPGControlledResponsePermissionsAndRollback/assistant",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:56.604768+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSubmissionPGControlledResponsePermissionsAndRollback/stale_revision",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-11-07T16:37:56.614414+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSubmissionPGControlledResponsePermissionsAndRollback/wrong_return",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-11-07T16:37:56.623204+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSubmissionPGControlledResponsePermissionsAndRollback/forged_item",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-11-07T16:37:56.810385+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSubmissionPGSnapshotWriteFailureRollsBack",
+      "Elapsed": 0.16
+    },
+    {
+      "Time": "2026-11-07T16:37:56.812444+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalSubmissionPreservesBusinessRole",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:56.814703+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSupplementNormalization",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:56.815212+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSupplementRejectUncontrolledKeys/unknown_envelope",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:56.8173+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSupplementRejectUncontrolledKeys/spoofed_ID",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:56.817612+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSupplementRejectUncontrolledKeys/unknown_item_field",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:56.817827+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSupplementRejectUncontrolledKeys/arbitrary_path",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:56.818095+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSupplementRejectUncontrolledKeys/upload",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:56.81825+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSupplementRejectUncontrolledKeys/HTML",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:56.818472+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSupplementRejectUncontrolledKeys/empty_list",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:56.8197+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestIntakeSupplementLegacyReadOnlyAndFingerprint",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-11-07T16:37:57.02959+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresHTTPLegacyBoundaries/ordinary",
+      "Elapsed": 0.21
+    },
+    {
+      "Time": "2026-11-07T16:37:57.215623+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresHTTPLegacyBoundaries/integrated",
+      "Elapsed": 0.19
+    },
+    {
+      "Time": "2026-11-07T16:37:57.386236+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresHTTPLegacyBoundaries/retry",
+      "Elapsed": 0.17
+    },
+    {
+      "Time": "2026-11-07T16:37:57.553217+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresHTTPLegacyBoundaries/create_old_ticket",
+      "Elapsed": 0.17
+    },
+    {
+      "Time": "2026-11-07T16:37:57.86312+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresHistoricalSnapshotClientRevoked/lawyer",
+      "Elapsed": 0.31
+    },
+    {
+      "Time": "2026-11-07T16:37:58.165112+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresHistoricalSnapshotClientRevoked/partner",
+      "Elapsed": 0.3
+    },
+    {
+      "Time": "2026-11-07T16:37:58.465505+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresHistoricalSnapshotClientRevoked/conflict_officer",
+      "Elapsed": 0.3
+    },
+    {
+      "Time": "2026-11-07T16:37:58.688769+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresSnapshotRevokedContext/lawyer",
+      "Elapsed": 0.22
+    },
+    {
+      "Time": "2026-11-07T16:37:58.908845+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresSnapshotRevokedContext/partner",
+      "Elapsed": 0.22
+    },
+    {
+      "Time": "2026-11-07T16:37:59.13064+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresSnapshotRevokedContext/conflict_officer",
+      "Elapsed": 0.22
+    },
+    {
+      "Time": "2026-11-07T16:37:59.547518+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresPendingClientChangeHTTP/lawyer",
+      "Elapsed": 0.42
+    },
+    {
+      "Time": "2026-11-07T16:37:59.851528+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestBackendFinalReviewPostgresPendingClientChangeHTTP/partner",
+      "Elapsed": 0.3
+    },
+    {
+      "Time": "2026-11-07T16:38:00.063265+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresHTTPInitialSubmission/first_submit_then_duplicate",
+      "Elapsed": 0.21
+    },
+    {
+      "Time": "2026-11-07T16:38:00.269464+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresHTTPInitialSubmission/snapshot_failure_then_original_retry",
+      "Elapsed": 0.21
+    },
+    {
+      "Time": "2026-11-07T16:38:00.510429+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresHTTPStaleDecision/ordinary_snapshot",
+      "Elapsed": 0.24
+    },
+    {
+      "Time": "2026-11-07T16:38:00.756582+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresHTTPStaleDecision/ordinary_node",
+      "Elapsed": 0.25
+    },
+    {
+      "Time": "2026-11-07T16:38:01.003659+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresHTTPStaleDecision/integrated_snapshot",
+      "Elapsed": 0.25
+    },
+    {
+      "Time": "2026-11-07T16:38:01.244949+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestApprovalCollaborationPostgresHTTPStaleDecision/integrated_node",
+      "Elapsed": 0.24
+    },
+    {
+      "Time": "2026-11-07T16:38:01.543408+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxB2PostgresHTTPListStatsGetAndHome/partner",
+      "Elapsed": 0.07
+    },
+    {
+      "Time": "2026-11-07T16:38:01.589225+08:00",
+      "Action": "pass",
+      "Package": "law-oa-go/internal/services",
+      "Test": "TestInboxB2PostgresHTTPListStatsGetAndHome/lawyer",
+      "Elapsed": 0.05
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+=== RUN   TestIntakeSubmissionPGFreezeResponsesReplayAndImmutability
+--- PASS: TestIntakeSubmissionPGFreezeResponsesReplayAndImmutability (0.09s)
+=== RUN   TestIntakeSubmissionPGNegativeGates
+=== RUN   TestIntakeSubmissionPGNegativeGates/changed_party_identity
+=== RUN   TestIntakeSubmissionPGNegativeGates/changed_party_role
+=== RUN   TestIntakeSubmissionPGNegativeGates/changed_client
+=== RUN   TestIntakeSubmissionPGNegativeGates/missing_current_check
+=== RUN   TestIntakeSubmissionPGNegativeGates/unconfirmed_facts
+=== RUN   TestIntakeSubmissionPGNegativeGates/review_mismatch
+=== RUN   TestIntakeSubmissionPGNegativeGates/expired_review
+=== RUN   TestIntakeSubmissionPGNegativeGates/self_review
+=== RUN   TestIntakeSubmissionPGNegativeGates/manager_review
+=== RUN   TestIntakeSubmissionPGNegativeGates/assignment_revoked
+=== RUN   TestIntakeSubmissionPGNegativeGates/missing_dependency
+=== RUN   TestIntakeSubmissionPGNegativeGates/insufficient_decision
+--- PASS: TestIntakeSubmissionPGNegativeGates (0.75s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/changed_party_identity (0.07s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/changed_party_role (0.06s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/changed_client (0.07s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/missing_current_check (0.06s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/unconfirmed_facts (0.06s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/review_mismatch (0.06s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/expired_review (0.06s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/self_review (0.06s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/manager_review (0.06s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/assignment_revoked (0.06s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/missing_dependency (0.06s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/insufficient_decision (0.06s)
+=== RUN   TestIntakeSubmissionPGTransactionRollbackAndConcurrentReplay
+--- PASS: TestIntakeSubmissionPGTransactionRollbackAndConcurrentReplay (0.10s)
+=== RUN   TestIntakeSubmissionPGMigrationUpDownAndRefusal
+--- PASS: TestIntakeSubmissionPGMigrationUpDownAndRefusal (0.07s)
+PASS
+ok  	law-oa-go/internal/services	2.365s

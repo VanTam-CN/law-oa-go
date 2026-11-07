@@ -1,0 +1,48 @@
+=== RUN   TestIntakeSubmissionPGFreezeResponsesReplayAndImmutability
+    intake_submission_snapshot_test.go:221: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/intake_submission_snapshot_test.go:221
+        	Error:      	Not equal: 
+        	            	expected: "{\"case_creation_config\":{\"lawyer_id\":999,\"title\":\"伪造旧审批标题\"},\"forged_fact\":\"not allowed\",\"intake_id\":\"2d7f164a-6ab6-4659-b078-b5add441f1b8\"}"
+        	            	actual  : "{\"intake_id\": \"2d7f164a-6ab6-4659-b078-b5add441f1b8\", \"forged_fact\": \"not allowed\", \"case_creation_config\": {\"title\": \"伪造旧审批标题\", \"lawyer_id\": 999}}"
+        	            	
+        	            	Diff:
+        	            	--- Expected
+        	            	+++ Actual
+        	            	@@ -1 +1 @@
+        	            	-{"case_creation_config":{"lawyer_id":999,"title":"伪造旧审批标题"},"forged_fact":"not allowed","intake_id":"2d7f164a-6ab6-4659-b078-b5add441f1b8"}
+        	            	+{"intake_id": "2d7f164a-6ab6-4659-b078-b5add441f1b8", "forged_fact": "not allowed", "case_creation_config": {"title": "伪造旧审批标题", "lawyer_id": 999}}
+        	Test:       	TestIntakeSubmissionPGFreezeResponsesReplayAndImmutability
+--- FAIL: TestIntakeSubmissionPGFreezeResponsesReplayAndImmutability (0.07s)
+=== RUN   TestIntakeSubmissionPGNegativeGates
+=== RUN   TestIntakeSubmissionPGNegativeGates/changed_party_identity
+=== RUN   TestIntakeSubmissionPGNegativeGates/changed_party_role
+=== RUN   TestIntakeSubmissionPGNegativeGates/changed_client
+=== RUN   TestIntakeSubmissionPGNegativeGates/missing_current_check
+=== RUN   TestIntakeSubmissionPGNegativeGates/unconfirmed_facts
+=== RUN   TestIntakeSubmissionPGNegativeGates/review_mismatch
+=== RUN   TestIntakeSubmissionPGNegativeGates/expired_review
+=== RUN   TestIntakeSubmissionPGNegativeGates/self_review
+=== RUN   TestIntakeSubmissionPGNegativeGates/manager_review
+=== RUN   TestIntakeSubmissionPGNegativeGates/assignment_revoked
+=== RUN   TestIntakeSubmissionPGNegativeGates/missing_dependency
+=== RUN   TestIntakeSubmissionPGNegativeGates/insufficient_decision
+--- PASS: TestIntakeSubmissionPGNegativeGates (0.78s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/changed_party_identity (0.06s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/changed_party_role (0.06s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/changed_client (0.07s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/missing_current_check (0.07s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/unconfirmed_facts (0.07s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/review_mismatch (0.07s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/expired_review (0.06s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/self_review (0.06s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/manager_review (0.06s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/assignment_revoked (0.07s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/missing_dependency (0.07s)
+    --- PASS: TestIntakeSubmissionPGNegativeGates/insufficient_decision (0.06s)
+=== RUN   TestIntakeSubmissionPGTransactionRollbackAndConcurrentReplay
+--- PASS: TestIntakeSubmissionPGTransactionRollbackAndConcurrentReplay (0.10s)
+=== RUN   TestIntakeSubmissionPGMigrationUpDownAndRefusal
+--- PASS: TestIntakeSubmissionPGMigrationUpDownAndRefusal (0.08s)
+FAIL
+FAIL	law-oa-go/internal/services	2.367s
+FAIL

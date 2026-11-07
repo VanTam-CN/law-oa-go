@@ -1,0 +1,160 @@
+{
+  "time": "2026-11-07T08:14:13.669878+00:00",
+  "head": "a806831a7cef839c2b971cd4ab260cce77f42b8b",
+  "source": {
+    "internal/services/inbox_workflow_action.go": {
+      "sha256": "b9d800edaec9b38fbc8919f0ee79b7e32e51c1a52a8dc44bd1ac570d8d6ad590",
+      "mtime_ns": 1794039013729537862
+    },
+    "internal/services/inbox_service.go": {
+      "sha256": "2561a0ff9393af189e9d246ddbd84cac9f4990ebdff67989fa362c711985ec83",
+      "mtime_ns": 1794035736323431938
+    },
+    "internal/services/inbox_workflow_contract_test.go": {
+      "sha256": "0cc0baeac4012396ea74be4f44b9c5dfb11bae1a27bf1e8d3ac27797ba4f47ed",
+      "mtime_ns": 1794039033651868053
+    },
+    "internal/services/inbox_active_snapshot_test.go": {
+      "sha256": "55028f81e94cc3483b0c4f4bfb99d85a6be243351726df6cf2ae7d870d986a0c",
+      "mtime_ns": 1794039185408328761
+    },
+    "internal/services/inbox_workflow_postgres_test.go": {
+      "sha256": "04e82f376132e16cf6ffdc6aca1b7fa1bb6ee4f42cf7744f6ecd713d50373f23",
+      "mtime_ns": 1794038700185520702
+    },
+    "internal/services/inbox_workflow_postgres_http_test.go": {
+      "sha256": "aea925938d2bf1cfd06002a3bd5d6779dd1c17116df958127438d79122a4d052",
+      "mtime_ns": 1794039116621649169
+    },
+    "internal/services/intake_submission_snapshot.go": {
+      "sha256": "bae6fffc4ecafd9e7afcc43e63c21c6f67c84baef2b773241df2f63e42ffe7eb",
+      "mtime_ns": 1794038924239818543
+    },
+    "internal/services/intake_inbox_handoff.go": {
+      "sha256": "68ae6b1fbeee91f0957ead8cc3aaf33b5bc5c8bf30f098a2ec9e4830284d6687",
+      "mtime_ns": 1794035830816257358
+    },
+    "internal/services/approval_workflow_transactions.go": {
+      "sha256": "9f6aee86973937ab0ef6acd1785386bf24421a6528abe691d39775fa91e5b4ef",
+      "mtime_ns": 1794038924216394631
+    },
+    "internal/services/approval_service.go": {
+      "sha256": "daedcc7d0883dedaf7b8f8d60cb4d529a639bf85aa51aafe8ff1f95948f7b796",
+      "mtime_ns": 1794036821055752349
+    },
+    "internal/services/approval_conflict_integration_service.go": {
+      "sha256": "b93d681c3e6e79a6f06ed9642e17f18631c983bb7fde0710b1c9520fd7fe19f8",
+      "mtime_ns": 1794039249948538612
+    },
+    "internal/services/approval_submission_history.go": {
+      "sha256": "5d17fb0f54914ced8e702a4797fbcf3f3240057ab67d6764503915c46ecf9204",
+      "mtime_ns": 1794036723993463956
+    },
+    "internal/services/approval_intake_case_guard.go": {
+      "sha256": "9cb41b27f05dc28ade12398a0257cd7470b3e34cf1d15dc554bfb1998e896774",
+      "mtime_ns": 1794038924192844306
+    },
+    "internal/services/approval_collaboration_postgres_test.go": {
+      "sha256": "af917a6cd01442f8deca505c2c0ce4ee14bd86979f319b15a8e5874063db040f",
+      "mtime_ns": 1794037666271786075
+    },
+    "internal/models/intake_collaboration.go": {
+      "sha256": "af70ac41f036ccf3f726182af42f15d35a50f0008954ffdb8434316046f15781",
+      "mtime_ns": 1794034807055588170
+    },
+    "internal/models/approval_models.go": {
+      "sha256": "6b1b1de758175dbe47e1bbaafb97ab8aed80ff4709befd58adeff08fab99d98b",
+      "mtime_ns": 1794034889445305900
+    },
+    "internal/handlers/demo_aggregate_handler.go": {
+      "sha256": "fac37d40842438ae5a96a79a9392dceae6776ead10fe37d2a2ba14ead32ea3e4",
+      "mtime_ns": 1794039242964973435
+    },
+    "internal/handlers/inbox_handler.go": {
+      "sha256": "f839870d14b99b9ede33d430b6302a3ef46b88cc434a8cc23823d67cd2873dde",
+      "mtime_ns": 1794035220730333348
+    }
+  },
+  "changed_since_checkpoint": [
+    "internal/services/approval_conflict_integration_service.go",
+    "internal/handlers/demo_aggregate_handler.go"
+  ],
+  "tracked_changes": [
+    " M frontend/src/index.tsx",
+    " M frontend/src/main.tsx",
+    " M frontend/src/pages/batch01/Batch01Prototype.less",
+    " M frontend/src/pages/batch01/Batch01Prototype.tsx",
+    " M frontend/src/pages/inbox/InboxList.tsx",
+    " M frontend/src/services/approval.ts",
+    " M frontend/src/services/client.ts",
+    " M internal/database/production_schema.go",
+    " M internal/handlers/approval_conflict_redaction.go",
+    " M internal/handlers/approval_handler.go",
+    " M internal/handlers/client_handler.go",
+    " M internal/handlers/demo_aggregate_handler.go",
+    " M internal/handlers/inbox_handler.go",
+    " M internal/handlers/inbox_handler_security_test.go",
+    " M internal/handlers/intake_delayed_interleave_guard_test.go",
+    " M internal/handlers/intake_duplicate_approval_guard_test.go",
+    " M internal/handlers/integration_handler.go",
+    " M internal/models/approval_models.go",
+    " M internal/models/v2_2_0_models.go",
+    " M internal/repositories/approval_repository.go",
+    " M internal/repositories/client_repository.go",
+    " M internal/repositories/conflict_repository.go",
+    " M internal/repositories/inbox_repository.go",
+    " M internal/router/router.go",
+    " M internal/services/approval_conflict_integration_service.go",
+    " M internal/services/approval_service.go",
+    " M internal/services/conflict_p0_service.go",
+    " M internal/services/conflict_reviewer_service.go",
+    " M internal/services/inbox_service.go",
+    "?? docs/plans/2026-09-22-intake-collaboration-mvp-glm.md",
+    "?? \"docs/\\350\\257\\225\\347\\224\\250\\350\\200\\205\\346\\223\\215\\344\\275\\234\\346\\211\\213\\345\\206\\214.md\"",
+    "?? frontend/src/components/client/",
+    "?? frontend/src/components/workflow/",
+    "?? frontend/src/pages/batch01/__tests__/ApprovalCollaborationPage.test.tsx",
+    "?? frontend/src/pages/batch01/__tests__/ConflictDetailModal.test.tsx",
+    "?? frontend/src/pages/batch01/__tests__/IntakeCollaborationContracts.test.ts",
+    "?? frontend/src/pages/batch01/__tests__/IntakeCollaborationPage.test.tsx",
+    "?? frontend/src/pages/batch01/__tests__/IntakeRecoveryRegression.test.tsx",
+    "?? frontend/src/pages/batch01/intake/DraftNavigationGuard.tsx",
+    "?? frontend/src/pages/batch01/intake/SupplementChecklist.tsx",
+    "?? frontend/src/pages/batch01/intake/conflictRecovery.ts",
+    "?? frontend/src/pages/batch01/intake/draftState.ts",
+    "?? frontend/src/pages/inbox/__tests__/",
+    "?? frontend/src/services/collaborationRequest.ts",
+    "?? frontend/src/services/intakeSupplement.ts",
+    "?? frontend/src/test/fetchJsdomEnvironment.cjs",
+    "?? internal/database/intake_collaboration_schema.go",
+    "?? internal/handlers/intake_supplement_handler.go",
+    "?? internal/models/client_creation_request.go",
+    "?? internal/models/intake_collaboration.go",
+    "?? internal/services/approval_frozen_parties.go",
+    "?? internal/services/approval_intake_case_guard.go",
+    "?? internal/services/approval_intake_identity.go",
+    "?? internal/services/approval_snapshot_authorization.go",
+    "?? internal/services/approval_submission_history.go",
+    "?? internal/services/approval_workflow_transactions.go",
+    "?? internal/services/client_idempotency.go",
+    "?? internal/services/inbox_workflow_action.go",
+    "?? internal/services/intake_inbox_handoff.go",
+    "?? internal/services/intake_submission_snapshot.go",
+    "?? internal/services/intake_supplement.go",
+    "?? migrations/000082_intake_submission_snapshots.down.sql",
+    "?? migrations/000082_intake_submission_snapshots.up.sql",
+    "?? migrations/000083_client_creation_idempotency.down.sql",
+    "?? migrations/000083_client_creation_idempotency.up.sql",
+    "?? migrations/000084_intake_workflow_inbox.down.sql",
+    "?? migrations/000084_intake_workflow_inbox.up.sql",
+    "?? openspec/changes/add-intake-collaboration-mvp/",
+    "?? reports/evidence/",
+    "?? scripts/qa-intake-browser.go"
+  ],
+  "ignored_inbox_tests": [
+    "internal/services/inbox_active_snapshot_test.go",
+    "internal/services/inbox_workflow_postgres_test.go",
+    "internal/services/inbox_workflow_postgres_http_test.go",
+    "internal/services/inbox_workflow_contract_test.go"
+  ]
+}

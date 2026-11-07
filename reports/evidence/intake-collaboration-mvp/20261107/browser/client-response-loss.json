@@ -1,0 +1,41 @@
+{
+  "time": "2026-11-07T16:10:00+08:00",
+  "environment": "loopback real router + isolated PostgreSQL fictional data",
+  "frontend_bundle": "index-CxoHfApU.js",
+  "client_id": 69,
+  "cancel_post_count": 0,
+  "double_click_post_count": 1,
+  "response_loss": "Playwright route.fetch completed actual server POST then route.abort; no response reached UI",
+  "requests": [
+    {
+      "status": 200,
+      "client_id": 69,
+      "browser_response": "aborted"
+    },
+    {
+      "status": 409,
+      "code": "CLIENT_CREATE_KEY_CONFLICT",
+      "changed_name": true
+    },
+    {
+      "status": 200,
+      "client_id": 69,
+      "same_original_body": true
+    }
+  ],
+  "same_idempotency_key": true,
+  "original_intake_title_and_summary_preserved": true,
+  "identity_in_localStorage": false,
+  "selected_returned_client_visible": true,
+  "source_sha256": {
+    "frontend/src/components/client/ClientCreateDialog.tsx": "bf407df46d9084bec173d8de66174105a86b2e811950d1cc047a8553dd068e04",
+    "frontend/src/components/client/ClientSearchSelect.tsx": "e6445b5d37d541dc96123e83a96aa706acb1ec20fc64134dd1c5a7a70a589355",
+    "frontend/src/services/client.ts": "2dc27bbcfd86d8189992522e2077d887f0ea91e905c6c84573d50cf406a7c1ee",
+    "internal/services/client_idempotency.go": "7b1bb4fb31660618c91e13796b205e9f84f7177383c34fbf8fc11c1402df4bd2",
+    "internal/handlers/client_handler.go": "1b11db41c4a8eff3f84dadd31e7892d0f3994b85948cf16d0e0b18ed3a728bcc"
+  },
+  "limits": [
+    "Not C16 full-chain evidence",
+    "Other frontend/backend files remain under review; final candidate rebinding required"
+  ]
+}

@@ -13,25 +13,26 @@ import (
 // ProductionSchemaVersion identifies the idempotent PostgreSQL bootstrap
 // contract. A future breaking schema change must introduce a new version and
 // an explicit migration instead of relying on application startup side effects.
-const ProductionSchemaVersion = "postgres-mvp-2026-08-27-v14"
+const ProductionSchemaVersion = "postgres-mvp-2026-11-07-v16"
 
 // productionCaseIntake and the following small records back tables that are
 // intentionally written through Table(...) by the intake/approval workflow.
 // Keeping their schema in this bootstrap prevents those raw writes from being
 // silently absent in a fresh production database.
 type productionCaseIntake struct {
-	ID          string    `gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
-	IntakeCode  string    `gorm:"size:50;not null;uniqueIndex"`
-	ClientID    *uint     `gorm:"index"`
-	Title       string    `gorm:"size:255;not null"`
-	CaseType    string    `gorm:"size:100"`
-	Status      string    `gorm:"size:40;not null;default:'draft';index"`
-	Priority    string    `gorm:"size:20;not null;default:'medium'"`
-	Description string    `gorm:"type:text"`
-	Metadata    string    `gorm:"type:jsonb;not null;default:'{}'"`
-	CreatedBy   *uint     `gorm:"index"`
-	CreatedAt   time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
-	UpdatedAt   time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
+	ID                 string    `gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
+	IntakeCode         string    `gorm:"size:50;not null;uniqueIndex"`
+	ClientID           *uint     `gorm:"index"`
+	Title              string    `gorm:"size:255;not null"`
+	CaseType           string    `gorm:"size:100"`
+	Status             string    `gorm:"size:40;not null;default:'draft';index"`
+	ApprovalClaimToken *string   `gorm:"size:64"`
+	Priority           string    `gorm:"size:20;not null;default:'medium'"`
+	Description        string    `gorm:"type:text"`
+	Metadata           string    `gorm:"type:jsonb;not null;default:'{}'"`
+	CreatedBy          *uint     `gorm:"index"`
+	CreatedAt          time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
+	UpdatedAt          time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
 }
 
 func (productionCaseIntake) TableName() string { return "case_intakes" }
@@ -218,6 +219,9 @@ func BootstrapProductionSchema(db *gorm.DB) error {
 		if err := ensureProductionSchemaContractColumns(tx); err != nil {
 			return err
 		}
+		if err := ensureIntakeCollaborationSchema(tx); err != nil {
+			return err
+		}
 		if err := ensureProductionSchemaRelationalContract(tx); err != nil {
 			return err
 		}
@@ -339,9 +343,13 @@ func validateProductionSchemaContract(db *gorm.DB) error {
 		},
 		"approval_requests": {
 			"id", "request_number", "title", "type", "status", "applicant_id", "created_by",
-			"conflict_check_id", "conflict_result", "case_created", "created_case_id", "case_creation_status",
+			"conflict_check_id", "conflict_result", "case_created", "created_case_id", "case_creation_status", "active_submission_snapshot_id",
 		},
-		"case_intakes": {"id", "intake_code", "title", "status", "metadata", "created_by"},
+		"approval_records":                {"id", "submission_snapshot_id", "action_version"},
+		"client_creation_requests":        {"operator_id", "operation", "key_digest", "request_digest", "client_id", "status"},
+		"inbox_items":                     {"source_ref", "completion_mode", "workflow_task_key", "workflow_group", "workflow_purpose", "workflow_version", "closed_reason", "archived_at"},
+		"case_intakes":                    {"id", "intake_code", "title", "status", "metadata", "created_by", "approval_claim_token"},
+		"approval_case_creation_tracking": {"approval_request_id", "intake_id", "creation_status"},
 		"case_intake_parties": {
 			"id", "intake_id", "entity_name", "entity_type", "entity_id", "party_role", "metadata",
 			"identity_type", "identity_number_ciphertext", "identity_number_digest", "aliases",
@@ -458,6 +466,9 @@ func validateProductionSchemaContract(db *gorm.DB) error {
 		if triggerCount != 1 {
 			return fmt.Errorf("%s 缺少 append-only 保护触发器", trigger.table)
 		}
+	}
+	if err := validateIntakeApprovalClaimContract(db); err != nil {
+		return err
 	}
 	return validateProductionSchemaRelationalContract(db)
 }
@@ -920,7 +931,7 @@ func productionSchemaModels() []interface{} {
 		// production bootstrap until that model is ported to portable checks.
 
 		// Approval and controlled case creation.
-		&models.ApprovalRequest{}, &models.ApprovalWorkflow{}, &models.ApprovalRecord{},
+		&models.ApprovalRequest{}, &models.ApprovalWorkflow{}, &models.ApprovalRecord{}, &models.ClientCreationRequest{},
 		&models.ApprovalNode{}, &models.ApprovalNotification{}, &models.ApprovalDelegation{},
 		&productionApprovalTemplate{}, &models.ConflictCheckAssociation{}, &models.CaseCreationAssociation{},
 		&models.ApprovalIntegrationMetadata{},

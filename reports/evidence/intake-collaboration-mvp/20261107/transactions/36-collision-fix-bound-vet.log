@@ -1,0 +1,3 @@
+# law-oa-go/internal/handlers
+# [law-oa-go/internal/handlers]
+vet: internal/handlers/approval_core_review_test.go:423:94: cannot convert `{"metadata":{"intake_id":"current-intake"}}` (untyped string constant "{\"metadata\":{\"intake_id\":\"current-intake\"}}") to type models.JSON

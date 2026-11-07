@@ -1,0 +1,59 @@
+# law-oa-go/internal/services.test
+ld: warning: '/private/var/folders/4p/bng36r_s65d26yqk0lfpw2rh0000gn/T/go-link-2189547111/000023.o' has malformed LC_DYSYMTAB, expected 98 undefined symbols to start at index 884, found 95 undefined symbols starting at index 884
+# law-oa-go/internal/handlers.test
+ld: warning: '/private/var/folders/4p/bng36r_s65d26yqk0lfpw2rh0000gn/T/go-link-3033040020/000023.o' has malformed LC_DYSYMTAB, expected 98 undefined symbols to start at index 884, found 95 undefined symbols starting at index 884
+=== RUN   TestClientCreationIdempotency
+=== RUN   TestClientCreationIdempotency/sqlite
+=== RUN   TestClientCreationIdempotency/sqlite/lost_response_reconnect_canonical_replay_and_no_plaintext
+=== RUN   TestClientCreationIdempotency/sqlite/different_payload_conflicts_and_scope_isolation
+=== RUN   TestClientCreationIdempotency/sqlite/concurrent_requests_different_payload_false
+=== RUN   TestClientCreationIdempotency/sqlite/concurrent_requests_different_payload_true
+=== RUN   TestClientCreationIdempotency/sqlite/claim_and_client_rollback_on_late_failure
+=== RUN   TestClientCreationIdempotency/sqlite/existing_email_rule_and_failed_claim_release
+=== RUN   TestClientCreationIdempotency/sqlite/missing_or_invalid_key_material_fails_closed
+=== RUN   TestClientCreationIdempotency/sqlite/deleted_result_never_creates_replacement
+=== RUN   TestClientCreationIdempotency/sqlite/no_key_preserves_optional_identity_and_no_ledger_dependency
+=== RUN   TestClientCreationIdempotency/postgres
+=== RUN   TestClientCreationIdempotency/postgres/lost_response_reconnect_canonical_replay_and_no_plaintext
+=== RUN   TestClientCreationIdempotency/postgres/different_payload_conflicts_and_scope_isolation
+=== RUN   TestClientCreationIdempotency/postgres/concurrent_requests_different_payload_false
+=== RUN   TestClientCreationIdempotency/postgres/concurrent_requests_different_payload_true
+=== RUN   TestClientCreationIdempotency/postgres/claim_and_client_rollback_on_late_failure
+=== RUN   TestClientCreationIdempotency/postgres/existing_email_rule_and_failed_claim_release
+=== RUN   TestClientCreationIdempotency/postgres/missing_or_invalid_key_material_fails_closed
+=== RUN   TestClientCreationIdempotency/postgres/deleted_result_never_creates_replacement
+=== RUN   TestClientCreationIdempotency/postgres/no_key_preserves_optional_identity_and_no_ledger_dependency
+--- PASS: TestClientCreationIdempotency (0.86s)
+    --- PASS: TestClientCreationIdempotency/sqlite (0.26s)
+        --- PASS: TestClientCreationIdempotency/sqlite/lost_response_reconnect_canonical_replay_and_no_plaintext (0.03s)
+        --- PASS: TestClientCreationIdempotency/sqlite/different_payload_conflicts_and_scope_isolation (0.02s)
+        --- PASS: TestClientCreationIdempotency/sqlite/concurrent_requests_different_payload_false (0.11s)
+        --- PASS: TestClientCreationIdempotency/sqlite/concurrent_requests_different_payload_true (0.06s)
+        --- PASS: TestClientCreationIdempotency/sqlite/claim_and_client_rollback_on_late_failure (0.01s)
+        --- PASS: TestClientCreationIdempotency/sqlite/existing_email_rule_and_failed_claim_release (0.01s)
+        --- PASS: TestClientCreationIdempotency/sqlite/missing_or_invalid_key_material_fails_closed (0.01s)
+        --- PASS: TestClientCreationIdempotency/sqlite/deleted_result_never_creates_replacement (0.01s)
+        --- PASS: TestClientCreationIdempotency/sqlite/no_key_preserves_optional_identity_and_no_ledger_dependency (0.01s)
+    --- PASS: TestClientCreationIdempotency/postgres (0.60s)
+        --- PASS: TestClientCreationIdempotency/postgres/lost_response_reconnect_canonical_replay_and_no_plaintext (0.09s)
+        --- PASS: TestClientCreationIdempotency/postgres/different_payload_conflicts_and_scope_isolation (0.06s)
+        --- PASS: TestClientCreationIdempotency/postgres/concurrent_requests_different_payload_false (0.10s)
+        --- PASS: TestClientCreationIdempotency/postgres/concurrent_requests_different_payload_true (0.10s)
+        --- PASS: TestClientCreationIdempotency/postgres/claim_and_client_rollback_on_late_failure (0.05s)
+        --- PASS: TestClientCreationIdempotency/postgres/existing_email_rule_and_failed_claim_release (0.06s)
+        --- PASS: TestClientCreationIdempotency/postgres/missing_or_invalid_key_material_fails_closed (0.04s)
+        --- PASS: TestClientCreationIdempotency/postgres/deleted_result_never_creates_replacement (0.05s)
+        --- PASS: TestClientCreationIdempotency/postgres/no_key_preserves_optional_identity_and_no_ledger_dependency (0.05s)
+=== RUN   TestClientCreationPostgresMigrationUpDownUp
+--- PASS: TestClientCreationPostgresMigrationUpDownUp (0.06s)
+PASS
+ok  	law-oa-go/internal/services	3.865s
+2026-11-07T14:58:20.787+0800	INFO	logger/logger.go:867	Logger package initialized with default development logger
+=== RUN   TestClientCreationHTTPContract
+--- PASS: TestClientCreationHTTPContract (0.04s)
+=== RUN   TestClientCreationHTTPFailuresAndLegacyCompatibility
+--- PASS: TestClientCreationHTTPFailuresAndLegacyCompatibility (0.02s)
+=== RUN   TestClientCreationC03SameNameDistinctIdentityAndAuthorizedPagination
+--- PASS: TestClientCreationC03SameNameDistinctIdentityAndAuthorizedPagination (0.15s)
+PASS
+ok  	law-oa-go/internal/handlers	3.596s

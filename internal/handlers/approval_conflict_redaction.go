@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
+	"reflect"
 	"strings"
 
 	"law-oa-go/internal/models"
@@ -13,35 +15,45 @@ import (
 // cannot be the disclosure boundary because the same response is also used by
 // exports and other clients.
 func projectApprovalForViewer(approval *models.ApprovalRequest, role string) *models.ApprovalRequest {
-	if approval == nil || services.IsConflictReviewRole(role) {
+	if approval == nil {
 		return approval
 	}
 
-	projected := *approval
-	projected.Metadata = redactApprovalJSON(projected.Metadata)
-	projected.ConflictResult = redactApprovalJSON(projected.ConflictResult)
+	var projected models.ApprovalRequest
+	raw, err := json.Marshal(projectApprovalResponseForViewer(approval, role))
+	if err != nil || json.Unmarshal(raw, &projected) != nil {
+		return nil
+	}
 	return &projected
+}
+
+// projectApprovalResponseForViewer is the shared success-response boundary for
+// approval DTOs, lists and integrated results. It copies the payload, preserves
+// JSON-string fields, and never changes persisted snapshots or caller objects.
+func projectApprovalResponseForViewer(value interface{}, role string) interface{} {
+	raw, err := json.Marshal(value)
+	if err != nil {
+		return nil // Never fall back to an unprojected sensitive response.
+	}
+	var decoded interface{}
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.UseNumber()
+	if decoder.Decode(&decoded) != nil {
+		return nil
+	}
+	decoded = sanitizeSubmissionSecrets(decoded)
+	if services.IsConflictReviewRole(role) {
+		return decoded
+	}
+	return redactApprovalConflictPayload(decoded)
 }
 
 // projectApprovalSnapshotForViewer applies the same disclosure rule to the
 // immutable snapshot endpoint. Conflict officers and authorized business
 // management roles retain the frozen evidence needed for independent review.
 func projectApprovalSnapshotForViewer(value interface{}, role string) interface{} {
-	if services.IsConflictReviewRole(role) {
-		return value
-	}
-	return redactApprovalConflictPayload(value)
-}
-
-func redactApprovalJSON(raw string) string {
-	if strings.TrimSpace(raw) == "" {
-		return raw
-	}
-	var value interface{}
-	if err := json.Unmarshal([]byte(raw), &value); err != nil {
-		return "冲突证据详情仅向获授权独立冲突核查人展示。"
-	}
-	return jsonStringValue(redactApprovalConflictPayload(value))
+	value, _ = decodeApprovalJSON(value)
+	return projectApprovalResponseForViewer(value, role)
 }
 
 // redactApprovalConflictPayload recursively projects only the conflict
@@ -54,6 +66,12 @@ func redactApprovalConflictPayload(value interface{}) interface{} {
 		for key, item := range typed {
 			normalized := strings.ToLower(strings.ReplaceAll(key, "-", "_"))
 			switch normalized {
+			case "metadata":
+				if raw, ok := item.(string); ok && strings.TrimSpace(raw) != "" && !json.Valid([]byte(raw)) {
+					projected[key] = "冲突证据详情仅向获授权独立冲突核查人展示。"
+				} else {
+					projected[key] = redactApprovalConflictPayload(item)
+				}
 			case "conflictcases", "conflict_cases":
 				projected[key] = redactApprovalConflictCases(item)
 			case "conflictresult", "conflict_result":
@@ -84,7 +102,13 @@ func redactApprovalConflictPayload(value interface{}) interface{} {
 	case string:
 		var decoded interface{}
 		if json.Unmarshal([]byte(typed), &decoded) == nil {
-			return redactApprovalConflictPayload(decoded)
+			switch decoded.(type) {
+			case map[string]interface{}, []interface{}:
+				projected := redactApprovalConflictPayload(decoded)
+				if !reflect.DeepEqual(decoded, projected) {
+					return jsonStringValue(projected)
+				}
+			}
 		}
 		return typed
 	default:
@@ -136,6 +160,9 @@ func redactApprovalConflictCases(value interface{}) interface{} {
 }
 
 func redactApprovalConflictResult(value interface{}) interface{} {
+	if raw, ok := value.(string); ok && strings.TrimSpace(raw) != "" && !json.Valid([]byte(raw)) {
+		return "冲突证据详情仅向获授权独立冲突核查人展示。"
+	}
 	decoded, wasJSON := decodeApprovalJSON(value)
 	if result, ok := decoded.(map[string]interface{}); ok {
 		projected := redactConflictQueueCheckResult(result)
@@ -188,4 +215,57 @@ func decodeApprovalJSON(value interface{}) (interface{}, bool) {
 		}
 	}
 	return value, false
+}
+
+// Protected identifiers remain on the server, including for authorized reviewers.
+// The frozen audit uses digests/ciphertext; the UI needs only masked identities.
+func sanitizeSubmissionSecrets(value interface{}) interface{} {
+	switch typed := value.(type) {
+	case map[string]interface{}:
+		result := make(map[string]interface{}, len(typed))
+		for key, item := range typed {
+			normalized := strings.ToLower(strings.NewReplacer("_", "", "-", "").Replace(key))
+			switch normalized {
+			case "identitynumberciphertext", "identitynumberdigest", "idcardciphertext", "idcarddigest", "ciphertext", "digest", "identitynumber", "idcard",
+				"identifiers", "clientidentifiers", "passport", "passportnumber", "socialcreditcode", "unifiedsocialcreditcode", "businesslicense", "organizationcode":
+				continue
+			}
+			result[key] = sanitizeSubmissionSecrets(item)
+		}
+		return result
+	case []interface{}:
+		result := make([]interface{}, len(typed))
+		for i, item := range typed {
+			result[i] = sanitizeSubmissionSecrets(item)
+		}
+		return result
+	case []byte:
+		var decoded interface{}
+		if json.Unmarshal(typed, &decoded) == nil {
+			return sanitizeSubmissionSecrets(decoded)
+		}
+		return string(typed)
+	case string:
+		if strings.Contains(strings.ToLower(typed), "hmac-sha256:") {
+			// Decode JSON before replacing scalar HMAC values so unrelated fields
+			// inside metadata/search_parameters remain available.
+			var decoded interface{}
+			if json.Unmarshal([]byte(typed), &decoded) != nil {
+				return "受保护标识"
+			}
+		}
+		var decoded interface{}
+		if json.Unmarshal([]byte(typed), &decoded) == nil {
+			switch decoded.(type) {
+			case map[string]interface{}, []interface{}, string:
+				projected := sanitizeSubmissionSecrets(decoded)
+				if !reflect.DeepEqual(decoded, projected) {
+					return jsonStringValue(projected)
+				}
+			}
+		}
+		return typed
+	default:
+		return value
+	}
 }

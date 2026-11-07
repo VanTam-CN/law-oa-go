@@ -1,0 +1,11 @@
+
+> law-oa-frontend@0.0.0 lint
+> eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0
+
+
+/private/tmp/lawoa-intake-collaboration-20261107/frontend/src/pages/batch01/Batch01Prototype.tsx
+  4708:122  error  Unnecessary semicolon  no-extra-semi
+
+✖ 1 problem (1 error, 0 warnings)
+  1 error and 0 warnings potentially fixable with the `--fix` option.
+

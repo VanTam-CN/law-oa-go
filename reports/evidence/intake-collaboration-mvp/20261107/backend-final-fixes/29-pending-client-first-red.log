@@ -1,0 +1,56 @@
+2026-11-07T16:35:15.467+0800	INFO	logger/logger.go:867	Logger package initialized with default development logger
+=== RUN   TestBackendFinalReviewPostgresPendingClientChangeHTTP
+=== RUN   TestBackendFinalReviewPostgresPendingClientChangeHTTP/lawyer
+    approval_backend_final_review_postgres_test.go:186: PostgreSQL fixture schema=approval_collab_392f158c47c64a0fadea8a475eb02546 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:35:15 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:35:15 集成审批申请创建完成，ID：18e5b657fc4e6db8
+通知发送: 申请 AP-20261107-05cae587-ffb4-45f0-b4d2-59a7620c18e6 - 需要修改
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] POST   /approvals/:id/decision   --> law-oa-go/internal/handlers.(*ApprovalHandler).ProcessApprovalDecision-fm (2 handlers)
+[GIN-debug] POST   /integration/approvals/:id/decision --> law-oa-go/internal/handlers.(*IntegrationHandler).ProcessApprovalWithConflict-fm (2 handlers)
+[GIN-debug] POST   /integration/approvals/:id/retry --> law-oa-go/internal/handlers.(*IntegrationHandler).RetryFailedIntegration-fm (2 handlers)
+[GIN-debug] POST   /conflict/tasks/:task_id/approval --> law-oa-go/internal/handlers.(*DemoAggregateHandler).CreateConflictApproval-fm (2 handlers)
+[GIN-debug] GET    /approvals/:id/snapshot   --> law-oa-go/internal/handlers.(*DemoAggregateHandler).GetApprovalSnapshot-fm (2 handlers)
+[GIN-debug] GET    /approvals/:id            --> law-oa-go/internal/handlers.(*ApprovalHandler).GetApproval-fm (2 handlers)
+[GIN-debug] POST   /approvals/:id/resubmit   --> law-oa-go/internal/handlers.(*ApprovalHandler).ResubmitApproval-fm (2 handlers)
+[GIN-debug] PUT    /case-intakes/:id         --> law-oa-go/internal/handlers.(*DemoAggregateHandler).UpdateCaseIntake-fm (2 handlers)
+    approval_backend_final_review_http_test.go:179: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_backend_final_review_http_test.go:179
+        	Error:      	Not equal: 
+        	            	expected: 200
+        	            	actual  : 403
+        	Test:       	TestBackendFinalReviewPostgresPendingClientChangeHTTP/lawyer
+        	Messages:   	pending client change: {"success":false,"error":{"code":"FORBIDDEN","message":"无权访问该资源","details":"当前账号无权访问或操作该资源"},"meta":{"timestamp":"2026-11-07T16:35:15.62668+08:00","version":"v1","server":"law-oa-go","environment":"development"}}
+=== RUN   TestBackendFinalReviewPostgresPendingClientChangeHTTP/partner
+    approval_backend_final_review_postgres_test.go:186: PostgreSQL fixture schema=approval_collab_d180e6d11fe14a089083b0d59fe0db7d server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:35:15 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:35:15 集成审批申请创建完成，ID：18e5b65806125e18
+通知发送: 申请 AP-20261107-ab975017-bc3f-453d-9e90-b86c5d30ff41 - 需要修改
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] POST   /approvals/:id/decision   --> law-oa-go/internal/handlers.(*ApprovalHandler).ProcessApprovalDecision-fm (2 handlers)
+[GIN-debug] POST   /integration/approvals/:id/decision --> law-oa-go/internal/handlers.(*IntegrationHandler).ProcessApprovalWithConflict-fm (2 handlers)
+[GIN-debug] POST   /integration/approvals/:id/retry --> law-oa-go/internal/handlers.(*IntegrationHandler).RetryFailedIntegration-fm (2 handlers)
+[GIN-debug] POST   /conflict/tasks/:task_id/approval --> law-oa-go/internal/handlers.(*DemoAggregateHandler).CreateConflictApproval-fm (2 handlers)
+[GIN-debug] GET    /approvals/:id/snapshot   --> law-oa-go/internal/handlers.(*DemoAggregateHandler).GetApprovalSnapshot-fm (2 handlers)
+[GIN-debug] GET    /approvals/:id            --> law-oa-go/internal/handlers.(*ApprovalHandler).GetApproval-fm (2 handlers)
+[GIN-debug] POST   /approvals/:id/resubmit   --> law-oa-go/internal/handlers.(*ApprovalHandler).ResubmitApproval-fm (2 handlers)
+[GIN-debug] PUT    /case-intakes/:id         --> law-oa-go/internal/handlers.(*DemoAggregateHandler).UpdateCaseIntake-fm (2 handlers)
+    approval_backend_final_review_http_test.go:179: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_backend_final_review_http_test.go:179
+        	Error:      	Not equal: 
+        	            	expected: 200
+        	            	actual  : 403
+        	Test:       	TestBackendFinalReviewPostgresPendingClientChangeHTTP/partner
+        	Messages:   	pending client change: {"success":false,"error":{"code":"FORBIDDEN","message":"无权访问该资源","details":"当前账号无权访问或操作该资源"},"meta":{"timestamp":"2026-11-07T16:35:15.783134+08:00","version":"v1","server":"law-oa-go","environment":"development"}}
+--- FAIL: TestBackendFinalReviewPostgresPendingClientChangeHTTP (0.33s)
+    --- FAIL: TestBackendFinalReviewPostgresPendingClientChangeHTTP/lawyer (0.18s)
+    --- FAIL: TestBackendFinalReviewPostgresPendingClientChangeHTTP/partner (0.16s)
+FAIL
+FAIL	law-oa-go/internal/services	1.943s
+FAIL

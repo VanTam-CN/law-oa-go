@@ -1,0 +1,108 @@
+{
+  "time": "2026-11-07T08:15:06.210869+00:00",
+  "source": {
+    "internal/services/inbox_workflow_action.go": "b9d800edaec9b38fbc8919f0ee79b7e32e51c1a52a8dc44bd1ac570d8d6ad590",
+    "internal/services/inbox_service.go": "2561a0ff9393af189e9d246ddbd84cac9f4990ebdff67989fa362c711985ec83",
+    "internal/services/inbox_workflow_contract_test.go": "0cc0baeac4012396ea74be4f44b9c5dfb11bae1a27bf1e8d3ac27797ba4f47ed",
+    "internal/services/inbox_active_snapshot_test.go": "55028f81e94cc3483b0c4f4bfb99d85a6be243351726df6cf2ae7d870d986a0c",
+    "internal/services/inbox_workflow_postgres_test.go": "04e82f376132e16cf6ffdc6aca1b7fa1bb6ee4f42cf7744f6ecd713d50373f23",
+    "internal/services/inbox_workflow_postgres_http_test.go": "aea925938d2bf1cfd06002a3bd5d6779dd1c17116df958127438d79122a4d052",
+    "internal/services/intake_submission_snapshot.go": "bae6fffc4ecafd9e7afcc43e63c21c6f67c84baef2b773241df2f63e42ffe7eb",
+    "internal/services/intake_inbox_handoff.go": "68ae6b1fbeee91f0957ead8cc3aaf33b5bc5c8bf30f098a2ec9e4830284d6687",
+    "internal/services/approval_workflow_transactions.go": "9f6aee86973937ab0ef6acd1785386bf24421a6528abe691d39775fa91e5b4ef",
+    "internal/services/approval_service.go": "daedcc7d0883dedaf7b8f8d60cb4d529a639bf85aa51aafe8ff1f95948f7b796",
+    "internal/services/approval_conflict_integration_service.go": "b93d681c3e6e79a6f06ed9642e17f18631c983bb7fde0710b1c9520fd7fe19f8",
+    "internal/services/approval_submission_history.go": "5d17fb0f54914ced8e702a4797fbcf3f3240057ab67d6764503915c46ecf9204",
+    "internal/services/approval_intake_case_guard.go": "f65b0791c5a14d05a69fc3aed68e1d091333f3d149df5648eedfb33161041b2b",
+    "internal/services/approval_collaboration_postgres_test.go": "af917a6cd01442f8deca505c2c0ce4ee14bd86979f319b15a8e5874063db040f",
+    "internal/models/intake_collaboration.go": "af70ac41f036ccf3f726182af42f15d35a50f0008954ffdb8434316046f15781",
+    "internal/models/approval_models.go": "6b1b1de758175dbe47e1bbaafb97ab8aed80ff4709befd58adeff08fab99d98b",
+    "internal/handlers/demo_aggregate_handler.go": "fac37d40842438ae5a96a79a9392dceae6776ead10fe37d2a2ba14ead32ea3e4",
+    "internal/handlers/inbox_handler.go": "f839870d14b99b9ede33d430b6302a3ef46b88cc434a8cc23823d67cd2873dde",
+    "internal/services/approval_snapshot_authorization.go": "213eb26a29db615e6a8469cc97a89f26afc945831c2b6f76d845e044c371c213"
+  },
+  "changed_during_run": [
+    "internal/services/approval_intake_case_guard.go"
+  ],
+  "test_results": {
+    "subtest": {
+      "pass": [
+        "TestInboxActiveSnapshotBindingFailClosed/missing",
+        "TestInboxActiveSnapshotBindingFailClosed/blank_pointer",
+        "TestInboxActiveSnapshotBindingFailClosed/foreign_approval",
+        "TestInboxActiveSnapshotBindingFailClosed/wrong_type",
+        "TestInboxActiveSnapshotBindingFailClosed/invalid_json",
+        "TestInboxActiveSnapshotBindingFailClosed/snapshot_id",
+        "TestInboxActiveSnapshotBindingFailClosed/approval_id",
+        "TestInboxActiveSnapshotBindingFailClosed/round",
+        "TestInboxActiveSnapshotBindingFailClosed/zero_round",
+        "TestInboxActiveSnapshotBindingFailClosed/intake_id",
+        "TestInboxActiveSnapshotBindingFailClosed/original_intake",
+        "TestInboxActiveSnapshotBindingFailClosed/check_id",
+        "TestInboxActiveSnapshotBindingFailClosed/task_id",
+        "TestInboxActiveSnapshotBindingFailClosed/unauthorized_check",
+        "TestInboxB2PostgresHTTPListStatsGetAndHome/partner",
+        "TestInboxB2PostgresHTTPListStatsGetAndHome/lawyer",
+        "TestInboxItemHandlersRejectCrossUserAccess/get",
+        "TestInboxItemHandlersRejectCrossUserAccess/update",
+        "TestInboxItemHandlersRejectCrossUserAccess/mark_read",
+        "TestInboxItemHandlersRejectCrossUserAccess/complete",
+        "TestInboxItemHandlersRejectCrossUserAccess/snooze",
+        "TestInboxItemHandlersRejectCrossUserAccess/delete",
+        "TestInboxPublicAPIDeniesForgedWorkflowFields/completion_mode",
+        "TestInboxPublicAPIDeniesForgedWorkflowFields/source_ref",
+        "TestInboxPublicAPIDeniesForgedWorkflowFields/workflow_task_key",
+        "TestInboxPublicAPIDeniesForgedWorkflowFields/workflow_group",
+        "TestInboxPublicAPIDeniesForgedWorkflowFields/workflow_purpose",
+        "TestInboxPublicAPIDeniesForgedWorkflowFields/workflow_version",
+        "TestInboxPublicAPIDeniesForgedWorkflowFields/assigned_to",
+        "TestInboxPublicAPIDeniesForgedWorkflowFields/workflow_action",
+        "TestInboxPublicAPIDeniesForgedWorkflowFields/is_completed",
+        "TestInboxPublicAPIDeniesForgedWorkflowFields/closed_reason",
+        "TestInboxPublicAPIDeniesForgedWorkflowFields/archived_at"
+      ]
+    },
+    "test": {
+      "pass": [
+        "TestInboxActiveSnapshotBindingFailClosed",
+        "TestInboxActiveSnapshotSchemaErrorIsNotEmptySuccess",
+        "TestInboxLegacyMetadataConsistencyStillRequired",
+        "TestInboxActiveSnapshotsBatchAcrossApprovals",
+        "TestInboxWorkflowCannotBeManuallyCompleted",
+        "TestInboxLegacyArchiveIsNotBusinessCompletion",
+        "TestInboxApprovalHandoffIdempotentAndRollback",
+        "TestInboxSupplementActionJSONContract",
+        "TestInboxAuthorizationBeforePaginationAndCount",
+        "TestInboxMoreThan1000AndSnoozeKeepsActionableCount",
+        "TestInboxRejectsForgedServiceFields",
+        "TestInboxReassignmentAndCaseFailureProjection",
+        "TestInboxReconcileReadsDurableApprovalInsteadOfCallerTimestamp",
+        "TestInboxTrustedLegacyHandoffDoesNotGainBusinessCapability",
+        "TestInboxConflictAssignmentCompletionAndRollback",
+        "TestInboxProjectionUsesBatchQueries",
+        "TestInboxConflictReassignmentAndReturnToEarlierActiveAssignment",
+        "TestInboxB2PostgresRevisedSubmission",
+        "TestInboxB2PostgresHTTPListStatsGetAndHome",
+        "TestInboxItemHandlersRejectCrossUserAccess",
+        "TestInboxItemHandlersAllowOwnerAccess",
+        "TestInboxItemHandlersRequireAuthenticatedUser",
+        "TestInboxPublicAPIDeniesForgedWorkflowFields",
+        "TestInboxLegacyHTTPArchiveContract",
+        "TestInboxWorkflowHTTPMutationAndSnoozeContract"
+      ]
+    },
+    "package": {
+      "pass": [
+        "law-oa-go/internal/services",
+        "law-oa-go/internal/handlers"
+      ]
+    }
+  },
+  "evidence_type": [
+    "author",
+    "realPG"
+  ],
+  "independent": false,
+  "browser": false,
+  "production_ready": false
+}

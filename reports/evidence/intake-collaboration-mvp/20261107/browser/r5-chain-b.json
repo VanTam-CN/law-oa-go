@@ -1,0 +1,79 @@
+{
+  "candidate": "3f970040f5e40b8016c18a070b5aa1345d2b2eec",
+  "events": [
+    {
+      "step": "independent_relogin_for_second_chain"
+    },
+    {
+      "step": "new_client",
+      "status": 200
+    },
+    {
+      "step": "save_exit",
+      "status": 201
+    },
+    {
+      "step": "relogin_restore",
+      "title": "QA R5闭环 B 20261107"
+    },
+    {
+      "step": "formal_check",
+      "status": 200
+    },
+    {
+      "step": "initial_submit",
+      "status": 200
+    },
+    {
+      "step": "mobile_long_checklist",
+      "http": 200,
+      "focus": "intake-description",
+      "width": 390,
+      "height": 844,
+      "scroll_width": 390,
+      "ids": [
+        "reply-c7768f8c-9d16-4625-b9d7-a6a2feb37d22",
+        "reply-f9735371-ce3b-4038-afe2-73e2d898f392"
+      ]
+    },
+    {
+      "step": "replies_reload",
+      "values": [
+        "本轮仅为虚构案件接案与审批的操作验证，现有双方身份和委托事实不变；未确认事项单列，回复不替代复核。",
+        "已核对当前虚构客户和对方登记资料及摘要，当前独立复核保持有效。本次不增加材料或变更事实。"
+      ]
+    },
+    {
+      "step": "reply_only_resubmit_same_approval",
+      "http": 200,
+      "id": "18e5bad3447ea150",
+      "snapshot": "49bf3616-98b6-4504-8ff6-56c188469135"
+    },
+    {
+      "step": "partner_approve",
+      "http": 200,
+      "status": "under_review",
+      "next": "5",
+      "case_created": false
+    },
+    {
+      "step": "compliance_approve",
+      "http": 200,
+      "status": "approved",
+      "case_created": true,
+      "case_id": "4"
+    },
+    {
+      "step": "case_detail_settled",
+      "url": "http://127.0.0.1:13004/case/4",
+      "title": "QA R5闭环 B 20261107"
+    }
+  ],
+  "client_id": 73,
+  "intake_id": "839f3fd3-81e8-4329-83da-46a486ac36ef",
+  "first_check_id": "CCT_88806f4d-3662-4daa-a522-278bfdfbb89e",
+  "approval_id": "18e5bad3447ea150",
+  "first_snapshot_id": "23b7faf4-193a-4150-8d84-6837de6c28e9",
+  "second_snapshot_id": "49bf3616-98b6-4504-8ff6-56c188469135",
+  "case_id": "4"
+}

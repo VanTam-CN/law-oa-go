@@ -62,6 +62,7 @@ func (r *ApprovalRepository) FindPendingByApproverID(approverID string, limit, o
 	err := r.db.Where("current_approver_id = ? AND status IN ?", approverID, []string{
 		models.ApprovalStatusSubmitted,
 		models.ApprovalStatusUnderReview,
+		models.ApprovalStatusResubmitted,
 	}).
 		Order("created_at ASC").
 		Limit(limit).
@@ -96,6 +97,7 @@ func (r *ApprovalRepository) CountPendingByApproverID(approverID string) (int64,
 		Where("current_approver_id = ? AND status IN ?", approverID, []string{
 			models.ApprovalStatusSubmitted,
 			models.ApprovalStatusUnderReview,
+			models.ApprovalStatusResubmitted,
 		}).
 		Count(&count).Error
 	if err != nil {
@@ -130,6 +132,7 @@ func (r *ApprovalRepository) CountPending() (int64, error) {
 		Where("status IN ?", []string{
 			models.ApprovalStatusSubmitted,
 			models.ApprovalStatusUnderReview,
+			models.ApprovalStatusResubmitted,
 		}).
 		Count(&count).Error
 	if err != nil {

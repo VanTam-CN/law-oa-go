@@ -1,0 +1,396 @@
+
+> law-oa-frontend@0.0.0 test
+> jest --runInBand --coverage=false --runTestsByPath src/components/layout/__tests__/MobileNavigationLayer.test.tsx src/components/layout/__tests__/Sidebar.mvp.test.tsx src/pages/batch01/__tests__/IntakeCollaborationPage.test.tsx
+
+  console.error
+    Error: Not implemented: window.getComputedStyle(elt, pseudoElt)
+        at module.exports (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-environment-jsdom/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+        at window.getComputedStyle (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-environment-jsdom/node_modules/jsdom/lib/jsdom/browser/Window.js:895:7)
+        at measureScrollbarSize (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:35:32)
+        at getTargetScrollBarSize (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:83:10)
+        at /Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@rc-component/portal/lib/useScrollLocker.js:27:72
+        at /Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/hooks/useLayoutEffect.js:18:12
+        at commitHookEffectListMount (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:23189:26)
+        at commitPassiveMountOnFiber (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24970:11)
+        at commitPassiveMountEffects_complete (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24930:9)
+        at commitPassiveMountEffects_begin (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24917:7)
+        at commitPassiveMountEffects (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24905:3)
+        at flushPassiveEffectsImpl (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27078:3)
+        at flushPassiveEffects (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27023:14)
+        at commitRootImpl (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26974:5)
+        at commitRoot (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26721:5)
+        at performSyncWorkOnRoot (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26156:3)
+        at flushSyncCallbacks (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+        at flushActQueue (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react/cjs/react.development.js:2667:24)
+        at act (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react/cjs/react.development.js:2582:11)
+        at /Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/react/dist/act-compat.js:47:25
+        at Object.eventWrapper (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/react/dist/pure.js:107:28)
+        at fireEvent (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/events.js:12:35)
+        at Function.fireEvent.<computed> [as click] (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/events.js:110:36)
+        at Function.fireEvent.<computed> [as click] (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/react/dist/fire-event.js:15:52)
+        at openBlockedNavigation (/private/tmp/lawoa-intake-collaboration-20261107/frontend/src/components/layout/__tests__/MobileNavigationLayer.test.tsx:49:13)
+        at Object.<anonymous> (/private/tmp/lawoa-intake-collaboration-20261107/frontend/src/components/layout/__tests__/MobileNavigationLayer.test.tsx:57:44)
+        at Promise.finally.completed (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1557:28)
+        at new Promise (<anonymous>)
+        at callAsyncCircusFn (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1497:10)
+        at _callCircusTest (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1007:40)
+        at async _runTest (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-circus/build/jestAdapterInit.js:947:3)
+        at async /Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-circus/build/jestAdapterInit.js:849:7
+        at async _runTestsForDescribeBlock (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-circus/build/jestAdapterInit.js:862:11)
+        at async run (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-circus/build/jestAdapterInit.js:761:3)
+        at async runAndTransformResultsToJestFormat (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1918:21)
+        at async jestAdapter (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-circus/build/runner.js:101:19)
+        at async runTestInternal (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-runner/build/index.js:275:16)
+        at async runTest (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-runner/build/index.js:343:7) {
+      type: 'not implemented'
+    }
+
+      47 |   render(<ConfigProvider locale={zhCN}><RouterProvider router={router} /></ConfigProvider>)
+      48 |   fireEvent.change(screen.getByRole('textbox', { name: '案件名称' }), { target: { value: '未保存的事项' } })
+    > 49 |   fireEvent.click(screen.getByRole('button', { name: '打开导航菜单' }))
+         |             ^
+      50 |   const drawer = await screen.findByRole('dialog')
+      51 |   fireEvent.click(within(drawer).getByRole('menuitem', { name: /工作台/ }))
+      52 |   const prompt = await screen.findByRole('dialog', { name: '尚有未保存修改' })
+
+      at VirtualConsole.<anonymous> (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@jest/environment-jsdom-abstract/build/index.js:87:23)
+      at measureScrollbarSize (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:35:32)
+      at getTargetScrollBarSize (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:83:10)
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@rc-component/portal/lib/useScrollLocker.js:27:72
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/hooks/useLayoutEffect.js:18:12
+      at commitHookEffectListMount (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:23189:26)
+      at commitPassiveMountOnFiber (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24970:11)
+      at commitPassiveMountEffects_complete (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24930:9)
+      at commitPassiveMountEffects_begin (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24917:7)
+      at commitPassiveMountEffects (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24905:3)
+      at flushPassiveEffectsImpl (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27078:3)
+      at flushPassiveEffects (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27023:14)
+      at commitRootImpl (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26974:5)
+      at commitRoot (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26721:5)
+      at performSyncWorkOnRoot (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26156:3)
+      at flushSyncCallbacks (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+      at flushActQueue (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react/cjs/react.development.js:2667:24)
+      at act (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react/cjs/react.development.js:2582:11)
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/react/dist/act-compat.js:47:25
+      at Object.eventWrapper (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/react/dist/pure.js:107:28)
+      at fireEvent (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/events.js:12:35)
+      at Function.fireEvent.<computed> [as click] (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/events.js:110:36)
+      at Function.fireEvent.<computed> [as click] (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/react/dist/fire-event.js:15:52)
+      at openBlockedNavigation (src/components/layout/__tests__/MobileNavigationLayer.test.tsx:49:13)
+      at Object.<anonymous> (src/components/layout/__tests__/MobileNavigationLayer.test.tsx:57:44)
+
+  console.error
+    Error: Not implemented: window.getComputedStyle(elt, pseudoElt)
+        at module.exports (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-environment-jsdom/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+        at window.getComputedStyle (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-environment-jsdom/node_modules/jsdom/lib/jsdom/browser/Window.js:895:7)
+        at measureScrollbarSize (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:35:32)
+        at getTargetScrollBarSize (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:83:10)
+        at /Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@rc-component/portal/lib/useScrollLocker.js:27:72
+        at /Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/hooks/useLayoutEffect.js:18:12
+        at commitHookEffectListMount (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:23189:26)
+        at commitPassiveMountOnFiber (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24970:11)
+        at commitPassiveMountEffects_complete (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24930:9)
+        at commitPassiveMountEffects_begin (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24917:7)
+        at commitPassiveMountEffects (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24905:3)
+        at flushPassiveEffectsImpl (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27078:3)
+        at flushPassiveEffects (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27023:14)
+        at performSyncWorkOnRoot (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26115:3)
+        at flushSyncCallbacks (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+        at commitRootImpl (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26998:3)
+        at commitRoot (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26721:5)
+        at finishConcurrentRender (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26020:9)
+        at performConcurrentWorkOnRoot (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:25848:7)
+        at flushActQueue (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react/cjs/react.development.js:2667:24)
+        at act (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react/cjs/react.development.js:2582:11)
+        at /Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/react/dist/act-compat.js:47:25
+        at Object.eventWrapper (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/react/dist/pure.js:107:28)
+        at fireEvent (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/events.js:12:35)
+        at Function.fireEvent.<computed> [as click] (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/events.js:110:36)
+        at Function.fireEvent.<computed> [as click] (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/react/dist/fire-event.js:15:52)
+        at openBlockedNavigation (/private/tmp/lawoa-intake-collaboration-20261107/frontend/src/components/layout/__tests__/MobileNavigationLayer.test.tsx:51:13)
+        at async Object.<anonymous> (/private/tmp/lawoa-intake-collaboration-20261107/frontend/src/components/layout/__tests__/MobileNavigationLayer.test.tsx:57:38) {
+      type: 'not implemented'
+    }
+
+      49 |   fireEvent.click(screen.getByRole('button', { name: '打开导航菜单' }))
+      50 |   const drawer = await screen.findByRole('dialog')
+    > 51 |   fireEvent.click(within(drawer).getByRole('menuitem', { name: /工作台/ }))
+         |             ^
+      52 |   const prompt = await screen.findByRole('dialog', { name: '尚有未保存修改' })
+      53 |   return { router, drawer, prompt }
+      54 | }
+
+      at VirtualConsole.<anonymous> (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@jest/environment-jsdom-abstract/build/index.js:87:23)
+      at measureScrollbarSize (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:35:32)
+      at getTargetScrollBarSize (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:83:10)
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@rc-component/portal/lib/useScrollLocker.js:27:72
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/hooks/useLayoutEffect.js:18:12
+      at commitHookEffectListMount (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:23189:26)
+      at commitPassiveMountOnFiber (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24970:11)
+      at commitPassiveMountEffects_complete (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24930:9)
+      at commitPassiveMountEffects_begin (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24917:7)
+      at commitPassiveMountEffects (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24905:3)
+      at flushPassiveEffectsImpl (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27078:3)
+      at flushPassiveEffects (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27023:14)
+      at performSyncWorkOnRoot (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26115:3)
+      at flushSyncCallbacks (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+      at commitRootImpl (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26998:3)
+      at commitRoot (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26721:5)
+      at finishConcurrentRender (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26020:9)
+      at performConcurrentWorkOnRoot (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:25848:7)
+      at flushActQueue (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react/cjs/react.development.js:2667:24)
+      at act (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react/cjs/react.development.js:2582:11)
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/react/dist/act-compat.js:47:25
+      at Object.eventWrapper (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/react/dist/pure.js:107:28)
+      at fireEvent (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/events.js:12:35)
+      at Function.fireEvent.<computed> [as click] (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/events.js:110:36)
+      at Function.fireEvent.<computed> [as click] (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/react/dist/fire-event.js:15:52)
+      at openBlockedNavigation (src/components/layout/__tests__/MobileNavigationLayer.test.tsx:51:13)
+      at async Object.<anonymous> (src/components/layout/__tests__/MobileNavigationLayer.test.tsx:57:38)
+
+  console.error
+    Error: Not implemented: window.getComputedStyle(elt, pseudoElt)
+        at module.exports (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-environment-jsdom/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+        at window.getComputedStyle (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-environment-jsdom/node_modules/jsdom/lib/jsdom/browser/Window.js:895:7)
+        at measureScrollbarSize (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:35:32)
+        at getTargetScrollBarSize (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:83:10)
+        at /Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@rc-component/portal/lib/useScrollLocker.js:27:72
+        at /Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/hooks/useLayoutEffect.js:18:12
+        at commitHookEffectListMount (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:23189:26)
+        at commitPassiveMountOnFiber (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24970:11)
+        at commitPassiveMountEffects_complete (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24930:9)
+        at commitPassiveMountEffects_begin (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24917:7)
+        at commitPassiveMountEffects (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24905:3)
+        at flushPassiveEffectsImpl (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27078:3)
+        at flushPassiveEffects (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27023:14)
+        at commitRootImpl (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26974:5)
+        at commitRoot (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26721:5)
+        at performSyncWorkOnRoot (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26156:3)
+        at flushSyncCallbacks (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+        at flushActQueue (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react/cjs/react.development.js:2667:24)
+        at act (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react/cjs/react.development.js:2582:11)
+        at /Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/react/dist/act-compat.js:47:25
+        at Object.eventWrapper (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/react/dist/pure.js:107:28)
+        at fireEvent (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/events.js:12:35)
+        at Function.fireEvent.<computed> [as click] (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/events.js:110:36)
+        at Function.fireEvent.<computed> [as click] (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/react/dist/fire-event.js:15:52)
+        at openBlockedNavigation (/private/tmp/lawoa-intake-collaboration-20261107/frontend/src/components/layout/__tests__/MobileNavigationLayer.test.tsx:49:13)
+        at Object.<anonymous> (/private/tmp/lawoa-intake-collaboration-20261107/frontend/src/components/layout/__tests__/MobileNavigationLayer.test.tsx:75:44)
+        at Promise.finally.completed (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1557:28)
+        at new Promise (<anonymous>)
+        at callAsyncCircusFn (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1497:10)
+        at _callCircusTest (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1007:40)
+        at async _runTest (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-circus/build/jestAdapterInit.js:947:3)
+        at async /Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-circus/build/jestAdapterInit.js:849:7
+        at async _runTestsForDescribeBlock (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-circus/build/jestAdapterInit.js:862:11)
+        at async run (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-circus/build/jestAdapterInit.js:761:3)
+        at async runAndTransformResultsToJestFormat (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1918:21)
+        at async jestAdapter (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-circus/build/runner.js:101:19)
+        at async runTestInternal (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-runner/build/index.js:275:16)
+        at async runTest (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-runner/build/index.js:343:7) {
+      type: 'not implemented'
+    }
+
+      47 |   render(<ConfigProvider locale={zhCN}><RouterProvider router={router} /></ConfigProvider>)
+      48 |   fireEvent.change(screen.getByRole('textbox', { name: '案件名称' }), { target: { value: '未保存的事项' } })
+    > 49 |   fireEvent.click(screen.getByRole('button', { name: '打开导航菜单' }))
+         |             ^
+      50 |   const drawer = await screen.findByRole('dialog')
+      51 |   fireEvent.click(within(drawer).getByRole('menuitem', { name: /工作台/ }))
+      52 |   const prompt = await screen.findByRole('dialog', { name: '尚有未保存修改' })
+
+      at VirtualConsole.<anonymous> (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@jest/environment-jsdom-abstract/build/index.js:87:23)
+      at measureScrollbarSize (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:35:32)
+      at getTargetScrollBarSize (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:83:10)
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@rc-component/portal/lib/useScrollLocker.js:27:72
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/hooks/useLayoutEffect.js:18:12
+      at commitHookEffectListMount (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:23189:26)
+      at commitPassiveMountOnFiber (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24970:11)
+      at commitPassiveMountEffects_complete (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24930:9)
+      at commitPassiveMountEffects_begin (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24917:7)
+      at commitPassiveMountEffects (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24905:3)
+      at flushPassiveEffectsImpl (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27078:3)
+      at flushPassiveEffects (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27023:14)
+      at commitRootImpl (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26974:5)
+      at commitRoot (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26721:5)
+      at performSyncWorkOnRoot (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26156:3)
+      at flushSyncCallbacks (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+      at flushActQueue (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react/cjs/react.development.js:2667:24)
+      at act (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react/cjs/react.development.js:2582:11)
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/react/dist/act-compat.js:47:25
+      at Object.eventWrapper (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/react/dist/pure.js:107:28)
+      at fireEvent (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/events.js:12:35)
+      at Function.fireEvent.<computed> [as click] (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/events.js:110:36)
+      at Function.fireEvent.<computed> [as click] (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/react/dist/fire-event.js:15:52)
+      at openBlockedNavigation (src/components/layout/__tests__/MobileNavigationLayer.test.tsx:49:13)
+      at Object.<anonymous> (src/components/layout/__tests__/MobileNavigationLayer.test.tsx:75:44)
+
+  console.error
+    Error: Not implemented: window.getComputedStyle(elt, pseudoElt)
+        at module.exports (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-environment-jsdom/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+        at window.getComputedStyle (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-environment-jsdom/node_modules/jsdom/lib/jsdom/browser/Window.js:895:7)
+        at measureScrollbarSize (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:35:32)
+        at getTargetScrollBarSize (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:83:10)
+        at /Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@rc-component/portal/lib/useScrollLocker.js:27:72
+        at /Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/hooks/useLayoutEffect.js:18:12
+        at commitHookEffectListMount (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:23189:26)
+        at commitPassiveMountOnFiber (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24970:11)
+        at commitPassiveMountEffects_complete (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24930:9)
+        at commitPassiveMountEffects_begin (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24917:7)
+        at commitPassiveMountEffects (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24905:3)
+        at flushPassiveEffectsImpl (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27078:3)
+        at flushPassiveEffects (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27023:14)
+        at performSyncWorkOnRoot (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26115:3)
+        at flushSyncCallbacks (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+        at commitRootImpl (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26998:3)
+        at commitRoot (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26721:5)
+        at finishConcurrentRender (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26020:9)
+        at performConcurrentWorkOnRoot (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:25848:7)
+        at flushActQueue (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react/cjs/react.development.js:2667:24)
+        at act (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react/cjs/react.development.js:2582:11)
+        at /Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/react/dist/act-compat.js:47:25
+        at Object.eventWrapper (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/react/dist/pure.js:107:28)
+        at fireEvent (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/events.js:12:35)
+        at Function.fireEvent.<computed> [as click] (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/events.js:110:36)
+        at Function.fireEvent.<computed> [as click] (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/react/dist/fire-event.js:15:52)
+        at openBlockedNavigation (/private/tmp/lawoa-intake-collaboration-20261107/frontend/src/components/layout/__tests__/MobileNavigationLayer.test.tsx:51:13)
+        at async Object.<anonymous> (/private/tmp/lawoa-intake-collaboration-20261107/frontend/src/components/layout/__tests__/MobileNavigationLayer.test.tsx:75:38) {
+      type: 'not implemented'
+    }
+
+      49 |   fireEvent.click(screen.getByRole('button', { name: '打开导航菜单' }))
+      50 |   const drawer = await screen.findByRole('dialog')
+    > 51 |   fireEvent.click(within(drawer).getByRole('menuitem', { name: /工作台/ }))
+         |             ^
+      52 |   const prompt = await screen.findByRole('dialog', { name: '尚有未保存修改' })
+      53 |   return { router, drawer, prompt }
+      54 | }
+
+      at VirtualConsole.<anonymous> (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@jest/environment-jsdom-abstract/build/index.js:87:23)
+      at measureScrollbarSize (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:35:32)
+      at getTargetScrollBarSize (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:83:10)
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@rc-component/portal/lib/useScrollLocker.js:27:72
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/hooks/useLayoutEffect.js:18:12
+      at commitHookEffectListMount (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:23189:26)
+      at commitPassiveMountOnFiber (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24970:11)
+      at commitPassiveMountEffects_complete (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24930:9)
+      at commitPassiveMountEffects_begin (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24917:7)
+      at commitPassiveMountEffects (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24905:3)
+      at flushPassiveEffectsImpl (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27078:3)
+      at flushPassiveEffects (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27023:14)
+      at performSyncWorkOnRoot (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26115:3)
+      at flushSyncCallbacks (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+      at commitRootImpl (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26998:3)
+      at commitRoot (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26721:5)
+      at finishConcurrentRender (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26020:9)
+      at performConcurrentWorkOnRoot (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:25848:7)
+      at flushActQueue (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react/cjs/react.development.js:2667:24)
+      at act (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react/cjs/react.development.js:2582:11)
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/react/dist/act-compat.js:47:25
+      at Object.eventWrapper (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/react/dist/pure.js:107:28)
+      at fireEvent (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/events.js:12:35)
+      at Function.fireEvent.<computed> [as click] (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/dom/dist/events.js:110:36)
+      at Function.fireEvent.<computed> [as click] (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@testing-library/react/dist/fire-event.js:15:52)
+      at openBlockedNavigation (src/components/layout/__tests__/MobileNavigationLayer.test.tsx:51:13)
+      at async Object.<anonymous> (src/components/layout/__tests__/MobileNavigationLayer.test.tsx:75:38)
+
+PASS Law OA Frontend src/components/layout/__tests__/MobileNavigationLayer.test.tsx
+  ✓ keeps the drawer above the fixed header and the unsaved prompt above the drawer, then allows closing after staying (572 ms)
+  ✓ still closes navigation only after the user permits leaving the unsaved form (197 ms)
+
+  console.error
+    Warning: An update to ForwardRef inside a test was not wrapped in act(...).
+    
+    When testing, code that causes React state updates should be wrapped into act(...):
+    
+    act(() => {
+      /* fire events that update state */
+    });
+    /* assert on the output */
+    
+    This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+        at /Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-menu/lib/Menu.js:56:27
+        at /Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/antd/lib/menu/menu.js:46:26
+        at /Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/antd/lib/menu/index.js:19:37
+        at div
+        at div
+        at aside
+        at /Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/antd/lib/layout/Sider.js:48:18
+        at Sidebar (/private/tmp/lawoa-intake-collaboration-20261107/frontend/src/components/layout/Sidebar.tsx:59:3)
+        at Router (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-router/dist/development/chunk-72XNTZCV.js:552:13)
+        at MemoryRouter (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-router/dist/development/chunk-72XNTZCV.js:474:3)
+
+      at printWarning (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at warnIfUpdatesNotWrappedWithActDEV (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27628:9)
+      at scheduleUpdateOnFiber (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:25547:5)
+      at dispatchSetState (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:16708:7)
+      at forceUpdate (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-menu/lib/hooks/useKeyRecords.js:40:7)
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-menu/lib/hooks/useKeyRecords.js:57:9
+
+PASS Law OA Frontend src/components/layout/__tests__/Sidebar.mvp.test.tsx
+  Sidebar MVP mode
+    ✓ renders only director MVP menu entries and keeps conflict visible (65 ms)
+
+  console.error
+    Error: Not implemented: window.getComputedStyle(elt, pseudoElt)
+        at module.exports (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-environment-jsdom/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+        at window.getComputedStyle (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/jest-environment-jsdom/node_modules/jsdom/lib/jsdom/browser/Window.js:895:7)
+        at measureScrollbarSize (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:35:32)
+        at getTargetScrollBarSize (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:83:10)
+        at /Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@rc-component/portal/lib/useScrollLocker.js:27:72
+        at /Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/hooks/useLayoutEffect.js:18:12
+        at commitHookEffectListMount (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:23189:26)
+        at commitPassiveMountOnFiber (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24970:11)
+        at commitPassiveMountEffects_complete (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24930:9)
+        at commitPassiveMountEffects_begin (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24917:7)
+        at commitPassiveMountEffects (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24905:3)
+        at flushPassiveEffectsImpl (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27078:3)
+        at flushPassiveEffects (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27023:14)
+        at performSyncWorkOnRoot (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26115:3)
+        at flushSyncCallbacks (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+        at commitRootImpl (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26998:3)
+        at commitRoot (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26721:5)
+        at finishConcurrentRender (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26020:9)
+        at performConcurrentWorkOnRoot (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:25848:7)
+        at flushActQueue (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react/cjs/react.development.js:2667:24)
+        at recursivelyFlushAsyncActWork (/Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react/cjs/react.development.js:2633:9)
+        at /Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react/cjs/react.development.js:2545:15 {
+      type: 'not implemented'
+    }
+
+      at VirtualConsole.<anonymous> (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@jest/environment-jsdom-abstract/build/index.js:87:23)
+      at measureScrollbarSize (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:35:32)
+      at getTargetScrollBarSize (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/getScrollBarSize.js:83:10)
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/@rc-component/portal/lib/useScrollLocker.js:27:72
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/rc-util/lib/hooks/useLayoutEffect.js:18:12
+      at commitHookEffectListMount (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:23189:26)
+      at commitPassiveMountOnFiber (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24970:11)
+      at commitPassiveMountEffects_complete (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24930:9)
+      at commitPassiveMountEffects_begin (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24917:7)
+      at commitPassiveMountEffects (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:24905:3)
+      at flushPassiveEffectsImpl (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27078:3)
+      at flushPassiveEffects (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:27023:14)
+      at performSyncWorkOnRoot (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26115:3)
+      at flushSyncCallbacks (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+      at commitRootImpl (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26998:3)
+      at commitRoot (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26721:5)
+      at finishConcurrentRender (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:26020:9)
+      at performConcurrentWorkOnRoot (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react-dom/cjs/react-dom.development.js:25848:7)
+      at flushActQueue (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react/cjs/react.development.js:2667:24)
+      at recursivelyFlushAsyncActWork (../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react/cjs/react.development.js:2633:9)
+      at ../../../../Users/mac/Desktop/FT/law-oa-go/frontend/node_modules/react/cjs/react.development.js:2545:15
+
+PASS Law OA Frontend src/pages/batch01/__tests__/IntakeCollaborationPage.test.tsx
+  ✓ restores the exact URL draft and preserves local edits on a stale save without exiting (530 ms)
+  ✓ does not mark edits made during saving as saved (313 ms)
+  ✓ blocks leaving and keeps the page open when save-before-leave fails (300 ms)
+  ✓ saves only controlled replies then resubmits the same approval with the rotated revision (472 ms)
+  ✓ never copies a previous account draft into the new account cache (237 ms)
+  ✓ resubmits a normalized legacy return with the verified persisted snapshot id and preserves it on an uncertain retry (605 ms)
+
+Test Suites: 3 passed, 3 total
+Tests:       9 passed, 9 total
+Snapshots:   0 total
+Time:        7.022 s
+Ran all test suites within paths "src/components/layout/__tests__/MobileNavigationLayer.test.tsx", "src/components/layout/__tests__/Sidebar.mvp.test.tsx", "src/pages/batch01/__tests__/IntakeCollaborationPage.test.tsx".

@@ -1,0 +1,9 @@
+{
+  "internal/models/intake_collaboration.go": "af70ac41f036ccf3f726182af42f15d35a50f0008954ffdb8434316046f15781",
+  "internal/services/intake_submission_snapshot.go": "bb8c0311d8befd882e2ffc5f9023ac27f6f8807c51ae6fa4ca66723394503b68",
+  "internal/services/intake_supplement.go": "835aee29380e063e8b4c06f68bb9ae15dcb7118726311431f58b95e457299d51",
+  "internal/services/intake_submission_snapshot_test.go": "ba113099b3e2b4f78e267a71c40d5673762ea063e32ab8f0ad21a17dc99d6af9",
+  "internal/services/intake_supplement_test.go": "f6e1c521a8d07de61d9116b5e31a3e72777e5a99f5fa9a1dcef45bee58a036b2",
+  "migrations/000082_intake_submission_snapshots.up.sql": "2de0b6aed542acbee814e2b61cc6430e39870ae1f93ce03e08730fef2ac804ec",
+  "migrations/000082_intake_submission_snapshots.down.sql": "ce87953bba9d16aaa4c62c043a9b5d2c13d91bc3d6cb91fb70b2c83b4fbde1d5"
+}

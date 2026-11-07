@@ -1,0 +1,192 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-race",
+    "-count=1",
+    "-timeout=180s",
+    "-json",
+    "./internal/services",
+    "./internal/handlers",
+    "-run",
+    "^(TestApprovalCollaborationPostgres.*|TestIntakeDuplicateApprovalGuard|TestIntakeDelayedInterleaveDuplicateApproval|TestIntakeConcurrentDistinctIntakesAllSucceed|TestIntakeResidualDraftRetryAfterFailedSubmit)$"
+  ],
+  "command_exit_code": 1,
+  "vet_exit_code": 1,
+  "packages": [
+    {
+      "package": "law-oa-go/internal/handlers",
+      "result": "fail",
+      "elapsed": 0.001
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "result": "pass",
+      "elapsed": 9.5
+    }
+  ],
+  "leaf_total": 25,
+  "leaf_pass": 25,
+  "leaf_fail": 0,
+  "leaf_skip": 0,
+  "leaves": [
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresReturnRollback/ordinary_inbox_update",
+      "result": "pass",
+      "elapsed": 0.27
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresReturnRollback/ordinary_inbox_create",
+      "result": "pass",
+      "elapsed": 0.21
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresReturnRollback/integrated_inbox_update",
+      "result": "pass",
+      "elapsed": 0.25
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresReturnRollback/integrated_inbox_create",
+      "result": "pass",
+      "elapsed": 0.24
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresResubmitRollback/approval_snapshots_create",
+      "result": "pass",
+      "elapsed": 0.24
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresResubmitRollback/inbox_items_update",
+      "result": "pass",
+      "elapsed": 0.24
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresResubmitRollback/inbox_items_create",
+      "result": "pass",
+      "elapsed": 0.24
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresStaleDecisionNoWrites/ordinary_snapshot",
+      "result": "pass",
+      "elapsed": 0.22
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresStaleDecisionNoWrites/ordinary_node",
+      "result": "pass",
+      "elapsed": 0.21
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresStaleDecisionNoWrites/integrated_snapshot",
+      "result": "pass",
+      "elapsed": 0.22
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresStaleDecisionNoWrites/integrated_node",
+      "result": "pass",
+      "elapsed": 0.21
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresResubmitVersusNewApproval/simultaneous-1",
+      "result": "pass",
+      "elapsed": 0.32
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresResubmitVersusNewApproval/simultaneous-2",
+      "result": "pass",
+      "elapsed": 0.36
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresResubmitVersusNewApproval/simultaneous-3",
+      "result": "pass",
+      "elapsed": 0.29
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresResubmitVersusNewApproval/resubmit-then-new",
+      "result": "pass",
+      "elapsed": 0.3
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresResubmitVersusNewApproval/new-then-resubmit",
+      "result": "pass",
+      "elapsed": 0.29
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresCasePartyRollback",
+      "result": "pass",
+      "elapsed": 0.28
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresApprovedSnapshotSurvivesCheckMutation",
+      "result": "pass",
+      "elapsed": 0.27
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresOverlappingLockOrder",
+      "result": "pass",
+      "elapsed": 0.29
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresHTTPInitialSubmission/first_submit_then_duplicate",
+      "result": "pass",
+      "elapsed": 0.19
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresHTTPInitialSubmission/snapshot_failure_then_original_retry",
+      "result": "pass",
+      "elapsed": 0.19
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresHTTPStaleDecision/ordinary_snapshot",
+      "result": "pass",
+      "elapsed": 0.21
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresHTTPStaleDecision/ordinary_node",
+      "result": "pass",
+      "elapsed": 0.22
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresHTTPStaleDecision/integrated_snapshot",
+      "result": "pass",
+      "elapsed": 0.23
+    },
+    {
+      "package": "law-oa-go/internal/services",
+      "test": "TestApprovalCollaborationPostgresHTTPStaleDecision/integrated_node",
+      "result": "pass",
+      "elapsed": 0.22
+    }
+  ],
+  "source_files_hashed": 447,
+  "source_changed_during_run": [
+    "internal/handlers/approval_core_review_test.go"
+  ],
+  "same_leaf_set_as_original_red_run": false,
+  "same_owned_test_files_as_original_red_run": true,
+  "retained_red_evidence_changed": [],
+  "non_json_tool_output": []
+}

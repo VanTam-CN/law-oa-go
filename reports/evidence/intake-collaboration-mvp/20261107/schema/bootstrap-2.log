@@ -1,0 +1,5 @@
+Warning: .env file not found, using environment variables
+2026/11/07 15:26:26 使用PostgreSQL数据库
+2026/11/07 15:26:26 数据库连接池优化完成 - 环境: test, 数据库: postgres, 最大连接数: 25, 空闲连接数: 0, 性能优化: true
+2026/11/07 15:26:26 数据库连接成功 - 类型: postgres, 环境: test
+2026/11/07 15:26:26 生产 schema bootstrap 失败: failed to connect to `user=mac database=lawoa_intake_mvp_test`: /private/tmp/lawoa-intake-collaboration-runtime/socket/.s.PGSQL.55437 (/private/tmp/lawoa-intake-collaboration-runtime/socket): dial error: dial unix /private/tmp/lawoa-intake-collaboration-runtime/socket/.s.PGSQL.55437: connect: operation not permitted

@@ -14,6 +14,8 @@ var (
 	ErrInboxItemNotFound            = errors.New("inbox item not found")
 	ErrInboxItemInvalid             = errors.New("invalid inbox item data")
 	ErrInboxItemDeletionUnavailable = errors.New("inbox item deletion is disabled for audit retention")
+	ErrInboxWorkflowActionRequired  = errors.New("business tasks must be completed through the workflow")
+	ErrInboxArchiveRequired         = errors.New("historical reminders must be archived, not completed")
 	ErrReminderRuleNotFound         = errors.New("reminder rule not found")
 )
 
@@ -162,14 +164,19 @@ func (r *InboxRepositoryImpl) Update(ctx context.Context, item *models.InboxItem
 func (r *InboxRepositoryImpl) UpdateByUserID(ctx context.Context, item *models.InboxItem, userID uint) error {
 	result := r.ownedItemQuery(ctx, item.ID, userID).
 		Model(&models.InboxItem{}).
-		Updates(inboxItemUpdates(item))
+		Where("completion_mode = ? AND source_type = ? AND source_id = 0 AND COALESCE(source_ref, '') = '' AND COALESCE(workflow_task_key, '') = '' AND COALESCE(workflow_group, '') = ''", "manual", "task").
+		Updates(map[string]interface{}{"title": item.Title, "content": item.Content, "priority": item.Priority, "due_date": item.DueDate, "due_date_type": item.DueDateType})
 	if result.Error != nil {
 		return NewRepositoryErrorWithID("update", "inbox_item", item.ID, result.Error)
 	}
 	if result.RowsAffected == 0 {
 		// MySQL may report zero affected rows when every submitted value is unchanged.
-		if _, err := r.FindByIDAndUserID(ctx, item.ID, userID); err != nil {
+		existing, err := r.FindByIDAndUserID(ctx, item.ID, userID)
+		if err != nil {
 			return err
+		}
+		if !IsManualInboxItem(existing) {
+			return ErrInboxWorkflowActionRequired
 		}
 	}
 	return nil
@@ -184,8 +191,6 @@ func inboxItemUpdates(item *models.InboxItem) map[string]interface{} {
 		"due_date_type":  item.DueDateType,
 		"is_read":        item.IsRead,
 		"read_at":        item.ReadAt,
-		"is_completed":   item.IsCompleted,
-		"completed_at":   item.CompletedAt,
 		"reminder_sent":  item.ReminderSent,
 		"reminder_count": item.ReminderCount,
 		"escalated":      item.Escalated,
@@ -215,7 +220,7 @@ func (r *InboxRepositoryImpl) List(ctx context.Context, params *InboxListParams)
 		pageSize = 20
 	}
 
-	queryBuilder := NewQueryBuilder[models.InboxItem](r.db)
+	queryBuilder := NewQueryBuilder[models.InboxItem](r.db).Where("archived_at IS NULL")
 
 	// 添加用户ID过滤
 	if params.UserID > 0 {
@@ -257,7 +262,7 @@ func (r *InboxRepositoryImpl) List(ctx context.Context, params *InboxListParams)
 	}
 
 	// 排除延后的待办（如果延后时间未到）
-	queryBuilder = queryBuilder.Where("(snoozed_until IS NULL OR snoozed_until <= NOW())")
+	queryBuilder = queryBuilder.Where("(snoozed_until IS NULL OR snoozed_until <= ?)", time.Now())
 
 	// 获取总数
 	total, err := queryBuilder.Count(ctx)
@@ -301,7 +306,8 @@ func (r *InboxRepositoryImpl) FindByUserID(ctx context.Context, userID uint) ([]
 	err := r.db.WithContext(ctx).
 		Where("user_id = ?", userID).
 		Where("is_completed = ?", false).
-		Where("(snoozed_until IS NULL OR snoozed_until <= NOW())").
+		Where("archived_at IS NULL").
+		Where("(snoozed_until IS NULL OR snoozed_until <= ?)", time.Now()).
 		Order("priority DESC, due_date ASC").
 		Find(&items).Error
 
@@ -350,9 +356,23 @@ func (r *InboxRepositoryImpl) MarkAsCompletedByUserID(ctx context.Context, id, u
 }
 
 func (r *InboxRepositoryImpl) markAsCompleted(ctx context.Context, query *gorm.DB, id uint) error {
+	var item models.InboxItem
+	if err := query.Session(&gorm.Session{}).First(&item).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrInboxItemNotFound
+		}
+		return err
+	}
+	if item.CompletionMode == "workflow" {
+		return ErrInboxWorkflowActionRequired
+	}
+	if !IsManualInboxItem(&item) {
+		return ErrInboxArchiveRequired
+	}
 	now := time.Now()
 	result := query.
 		Model(&models.InboxItem{}).
+		Where("completion_mode = ? AND source_type = ? AND source_id = 0 AND COALESCE(source_ref, '') = '' AND COALESCE(workflow_task_key, '') = '' AND COALESCE(workflow_group, '') = ''", "manual", "task").
 		Updates(map[string]interface{}{
 			"is_completed": true,
 			"completed_at": now,
@@ -365,6 +385,38 @@ func (r *InboxRepositoryImpl) markAsCompleted(ctx context.Context, query *gorm.D
 		return NewRepositoryErrorWithID("mark_as_completed", "inbox_item", id, ErrInboxItemNotFound)
 	}
 
+	return nil
+}
+
+// IsManualInboxItem requires an explicitly registered personal reminder.
+// source_type=task alone also covers historical system-generated tasks.
+func IsManualInboxItem(item *models.InboxItem) bool {
+	return item != nil && item.CompletionMode == "manual" && item.SourceType == "task" && item.SourceID == 0 && item.SourceRef == "" && item.WorkflowTaskKey == "" && item.WorkflowGroup == ""
+}
+
+// InboxDB is used by the service's batch subject projection.
+func (r *InboxRepositoryImpl) InboxDB() *gorm.DB { return r.db }
+
+// No pagination/count is applied until batch object authorization has run.
+func (r *InboxRepositoryImpl) ListOwnedForProjection(ctx context.Context, userID uint) ([]*models.InboxItem, error) {
+	if userID == 0 {
+		return nil, ErrInboxItemNotFound
+	}
+	var items []*models.InboxItem
+	err := r.db.WithContext(ctx).Where("user_id = ?", userID).Order("created_at DESC, id DESC").Find(&items).Error
+	return items, err
+}
+
+func (r *InboxRepositoryImpl) ArchiveByUserID(ctx context.Context, id, userID uint) error {
+	result := r.ownedItemQuery(ctx, id, userID).Model(&models.InboxItem{}).
+		Where("COALESCE(completion_mode, '') <> ? OR is_completed = ?", "workflow", true).
+		Updates(map[string]interface{}{"archived_at": time.Now()})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return ErrInboxWorkflowActionRequired
+	}
 	return nil
 }
 
@@ -427,7 +479,8 @@ func (r *InboxRepositoryImpl) GetUnreadCount(ctx context.Context, userID uint) (
 		Model(&models.InboxItem{}).
 		Where("user_id = ?", userID).
 		Where("is_read = ?", false).
-		Where("(snoozed_until IS NULL OR snoozed_until <= NOW())").
+		Where("archived_at IS NULL").
+		Where("(snoozed_until IS NULL OR snoozed_until <= ?)", time.Now()).
 		Count(&count).Error
 
 	if err != nil {
@@ -444,7 +497,8 @@ func (r *InboxRepositoryImpl) GetDueItems(ctx context.Context, before time.Time)
 		Where("is_completed = ?", false).
 		Where("due_date <= ?", before).
 		Where("reminder_sent = ?", false).
-		Where("(snoozed_until IS NULL OR snoozed_until <= NOW())").
+		Where("archived_at IS NULL").
+		Where("(snoozed_until IS NULL OR snoozed_until <= ?)", time.Now()).
 		Find(&items).Error
 
 	if err != nil {
@@ -462,7 +516,8 @@ func (r *InboxRepositoryImpl) GetOverdueCriticalItems(ctx context.Context, befor
 		Where("priority = ?", "critical").
 		Where("due_date < ?", before).
 		Where("escalated = ?", false).
-		Where("(snoozed_until IS NULL OR snoozed_until <= NOW())").
+		Where("archived_at IS NULL").
+		Where("(snoozed_until IS NULL OR snoozed_until <= ?)", time.Now()).
 		Find(&items).Error
 
 	if err != nil {

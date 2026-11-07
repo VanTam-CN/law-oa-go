@@ -1,0 +1,11 @@
+
+> law-oa-frontend@0.0.0 lint
+> eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0
+
+
+/private/tmp/lawoa-intake-collaboration-20261107/frontend/src/pages/batch01/Batch01Prototype.tsx
+  6939:47  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+✖ 1 problem (0 errors, 1 warning)
+
+ESLint found too many warnings (maximum: 0).

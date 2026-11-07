@@ -1,0 +1,96 @@
+=== RUN   TestApprovalCollaborationPostgresResubmitVersusNewApproval
+=== RUN   TestApprovalCollaborationPostgresResubmitVersusNewApproval/simultaneous-1
+    approval_collaboration_postgres_test.go:406: PostgreSQL fixture schema=approval_collab_d4a1c7420e0d4bcf8ae6cf5f9aee85e2 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 15:10:17 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 15:10:17 集成审批申请创建完成，ID：18e5b1b51102f898
+通知发送: 申请 AP-20261107-615000 - 需要修改
+2026/11/07 15:10:17 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 15:10:17 接案绑定跟踪记录创建失败：repository create case creation tracking failed for CaseCreationTracking: ERROR: duplicate key value violates unique constraint "idx_approval_case_creation_tracking_intake_id" (SQLSTATE 23505)
+    approval_collaboration_postgres_test.go:458: C12 sequence=simultaneous-1 actor=resubmit approval=18e5b1b51102f898 elapsed=9.497125ms error=<nil>
+    approval_collaboration_postgres_test.go:458: C12 sequence=simultaneous-1 actor=new approval= elapsed=12.924625ms error=该接案已有进行中的成案审批，不能重复提交；请在原审批单上继续处理
+2026/11/07 15:10:17 处理包含冲突检测的审批申请，审批ID：18e5b1b51102f898，决定：approve
+2026/11/07 15:10:17 从审批申请自动创建案件，审批ID：18e5b1b51102f898
+2026/11/07 15:10:17 审批通过后已自动成案，审批ID=18e5b1b51102f898，操作人=虚构审批合伙人，案件ID=1
+2026/11/07 15:10:17 审批申请处理完成，ID：18e5b1b51102f898，最终状态：approved
+2026/11/07 15:10:17 从审批申请自动创建案件，审批ID：18e5b1b51102f898
+    approval_collaboration_postgres_test.go:486: C12 sequence=simultaneous-1 slots=1 valid_approvals=1 cases=1 complete_parties=2 replay_case=1
+=== RUN   TestApprovalCollaborationPostgresResubmitVersusNewApproval/simultaneous-2
+    approval_collaboration_postgres_test.go:406: PostgreSQL fixture schema=approval_collab_bad6c5ec71b34060962f288d1ddfd381 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 15:10:18 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 15:10:18 集成审批申请创建完成，ID：18e5b1b51cec9f88
+通知发送: 申请 AP-20261107-475000 - 需要修改
+2026/11/07 15:10:18 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 15:10:18 接案绑定跟踪记录创建失败：repository create case creation tracking failed for CaseCreationTracking: ERROR: duplicate key value violates unique constraint "idx_approval_case_creation_tracking_intake_id" (SQLSTATE 23505)
+    approval_collaboration_postgres_test.go:458: C12 sequence=simultaneous-2 actor=resubmit approval=18e5b1b51cec9f88 elapsed=6.308959ms error=<nil>
+    approval_collaboration_postgres_test.go:458: C12 sequence=simultaneous-2 actor=new approval= elapsed=11.659792ms error=该接案已有进行中的成案审批，不能重复提交；请在原审批单上继续处理
+2026/11/07 15:10:18 处理包含冲突检测的审批申请，审批ID：18e5b1b51cec9f88，决定：approve
+2026/11/07 15:10:18 从审批申请自动创建案件，审批ID：18e5b1b51cec9f88
+2026/11/07 15:10:18 审批通过后已自动成案，审批ID=18e5b1b51cec9f88，操作人=虚构审批合伙人，案件ID=1
+2026/11/07 15:10:18 审批申请处理完成，ID：18e5b1b51cec9f88，最终状态：approved
+2026/11/07 15:10:18 从审批申请自动创建案件，审批ID：18e5b1b51cec9f88
+    approval_collaboration_postgres_test.go:486: C12 sequence=simultaneous-2 slots=1 valid_approvals=1 cases=1 complete_parties=2 replay_case=1
+=== RUN   TestApprovalCollaborationPostgresResubmitVersusNewApproval/simultaneous-3
+    approval_collaboration_postgres_test.go:406: PostgreSQL fixture schema=approval_collab_fd19bf04261147d08a7dfbe1e1143efb server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 15:10:18 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 15:10:18 集成审批申请创建完成，ID：18e5b1b527e56e38
+通知发送: 申请 AP-20261107-554000 - 需要修改
+2026/11/07 15:10:18 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 15:10:18 集成审批申请创建完成，ID：18e5b1b5290d6ba8
+    approval_collaboration_postgres_test.go:458: C12 sequence=simultaneous-3 actor=new approval=18e5b1b5290d6ba8 elapsed=4.315792ms error=<nil>
+    approval_collaboration_postgres_test.go:458: C12 sequence=simultaneous-3 actor=resubmit approval= elapsed=29.197459ms error=该接案已有进行中的审批，不能重新提交
+2026/11/07 15:10:18 处理包含冲突检测的审批申请，审批ID：18e5b1b5290d6ba8，决定：approve
+2026/11/07 15:10:18 从审批申请自动创建案件，审批ID：18e5b1b5290d6ba8
+2026/11/07 15:10:18 审批通过后已自动成案，审批ID=18e5b1b5290d6ba8，操作人=虚构审批合伙人，案件ID=1
+2026/11/07 15:10:18 审批申请处理完成，ID：18e5b1b5290d6ba8，最终状态：approved
+2026/11/07 15:10:18 从审批申请自动创建案件，审批ID：18e5b1b527e56e38
+2026/11/07 15:10:18 从审批申请自动创建案件，审批ID：18e5b1b5290d6ba8
+    approval_collaboration_postgres_test.go:486: C12 sequence=simultaneous-3 slots=1 valid_approvals=1 cases=1 complete_parties=2 replay_case=1
+=== RUN   TestApprovalCollaborationPostgresResubmitVersusNewApproval/resubmit-then-new
+    approval_collaboration_postgres_test.go:406: PostgreSQL fixture schema=approval_collab_b47a99170e2f4faf854d88ee0d9b2b8d server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 15:10:18 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 15:10:18 集成审批申请创建完成，ID：18e5b1b53345e028
+通知发送: 申请 AP-20261107-424000 - 需要修改
+2026/11/07 15:10:18 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 15:10:18 接案绑定跟踪记录创建失败：repository create case creation tracking failed for CaseCreationTracking: ERROR: duplicate key value violates unique constraint "idx_approval_case_creation_tracking_intake_id" (SQLSTATE 23505)
+    approval_collaboration_postgres_test.go:458: C12 sequence=resubmit-then-new actor=resubmit approval=18e5b1b53345e028 elapsed=6.232625ms error=<nil>
+    approval_collaboration_postgres_test.go:458: C12 sequence=resubmit-then-new actor=new approval= elapsed=721.791µs error=该接案已有进行中的成案审批，不能重复提交；请在原审批单上继续处理
+2026/11/07 15:10:18 处理包含冲突检测的审批申请，审批ID：18e5b1b53345e028，决定：approve
+2026/11/07 15:10:18 从审批申请自动创建案件，审批ID：18e5b1b53345e028
+2026/11/07 15:10:18 审批通过后已自动成案，审批ID=18e5b1b53345e028，操作人=虚构审批合伙人，案件ID=1
+2026/11/07 15:10:18 审批申请处理完成，ID：18e5b1b53345e028，最终状态：approved
+2026/11/07 15:10:18 从审批申请自动创建案件，审批ID：18e5b1b53345e028
+    approval_collaboration_postgres_test.go:486: C12 sequence=resubmit-then-new slots=1 valid_approvals=1 cases=1 complete_parties=2 replay_case=1
+=== RUN   TestApprovalCollaborationPostgresResubmitVersusNewApproval/new-then-resubmit
+    approval_collaboration_postgres_test.go:406: PostgreSQL fixture schema=approval_collab_040aa31ed06b4ec89aba55ef6f468d42 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 15:10:18 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 15:10:18 集成审批申请创建完成，ID：18e5b1b53db66438
+通知发送: 申请 AP-20261107-570000 - 需要修改
+2026/11/07 15:10:18 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 15:10:18 集成审批申请创建完成，ID：18e5b1b53ecec978
+    approval_collaboration_postgres_test.go:458: C12 sequence=new-then-resubmit actor=new approval=18e5b1b53ecec978 elapsed=4.311458ms error=<nil>
+    approval_collaboration_postgres_test.go:458: C12 sequence=new-then-resubmit actor=resubmit approval= elapsed=4.536125ms error=该接案已有进行中的审批，不能重新提交
+2026/11/07 15:10:18 处理包含冲突检测的审批申请，审批ID：18e5b1b53ecec978，决定：approve
+2026/11/07 15:10:18 从审批申请自动创建案件，审批ID：18e5b1b53ecec978
+2026/11/07 15:10:18 审批通过后已自动成案，审批ID=18e5b1b53ecec978，操作人=虚构审批合伙人，案件ID=1
+2026/11/07 15:10:18 审批申请处理完成，ID：18e5b1b53ecec978，最终状态：approved
+2026/11/07 15:10:18 从审批申请自动创建案件，审批ID：18e5b1b53db66438
+2026/11/07 15:10:18 从审批申请自动创建案件，审批ID：18e5b1b53ecec978
+    approval_collaboration_postgres_test.go:486: C12 sequence=new-then-resubmit slots=1 valid_approvals=1 cases=1 complete_parties=2 replay_case=1
+--- PASS: TestApprovalCollaborationPostgresResubmitVersusNewApproval (0.94s)
+    --- PASS: TestApprovalCollaborationPostgresResubmitVersusNewApproval/simultaneous-1 (0.21s)
+    --- PASS: TestApprovalCollaborationPostgresResubmitVersusNewApproval/simultaneous-2 (0.18s)
+    --- PASS: TestApprovalCollaborationPostgresResubmitVersusNewApproval/simultaneous-3 (0.20s)
+    --- PASS: TestApprovalCollaborationPostgresResubmitVersusNewApproval/resubmit-then-new (0.17s)
+    --- PASS: TestApprovalCollaborationPostgresResubmitVersusNewApproval/new-then-resubmit (0.18s)
+=== RUN   TestApprovalCollaborationPostgresCasePartyRollback
+    approval_collaboration_postgres_test.go:492: PostgreSQL fixture schema=approval_collab_1383fbebda8544efb7f6393c22ce4faf server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 15:10:18 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 15:10:18 集成审批申请创建完成，ID：18e5b1b5486d6b10
+通知发送: 申请 AP-20261107-338000 - 需要修改
+2026/11/07 15:10:18 从审批申请自动创建案件，审批ID：18e5b1b5486d6b10
+2026/11/07 15:10:18 从审批申请自动创建案件，审批ID：18e5b1b5486d6b10
+2026/11/07 15:10:18 从审批申请自动创建案件，审批ID：18e5b1b5486d6b10
+    approval_collaboration_postgres_test.go:519: C14 case-party fault_hits=1 rollback_exact=true snapshots_sha256_before=f086e1fcf5c1891be5f229a8f00bb838d6c8e98f2d58d9089d6cea00b1b16dc5 cases=1 parties=2 active_snapshot=a2db523d-f9f0-46b1-a6e3-990cd58814ea retry_case=2
+--- PASS: TestApprovalCollaborationPostgresCasePartyRollback (0.18s)
+PASS
+ok  	law-oa-go/internal/services	2.506s

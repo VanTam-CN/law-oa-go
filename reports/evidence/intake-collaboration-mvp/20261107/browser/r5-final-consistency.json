@@ -1,0 +1,20 @@
+[
+  {
+    "approval_id": "18e5ba60a968c0a0",
+    "case_id": 3,
+    "case_count_for_unique_fixture_title": 1,
+    "missing_approved_party_roles": 0,
+    "extra_case_party_roles": 0,
+    "canonical_slot_count": 1,
+    "canonical_slot_completed": 1
+  },
+  {
+    "approval_id": "18e5bad3447ea150",
+    "case_id": 4,
+    "case_count_for_unique_fixture_title": 1,
+    "missing_approved_party_roles": 0,
+    "extra_case_party_roles": 0,
+    "canonical_slot_count": 1,
+    "canonical_slot_completed": 1
+  }
+]

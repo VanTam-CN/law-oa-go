@@ -159,16 +159,24 @@ func (h *IntegrationHandler) CreateIntegratedApproval(c *gin.Context) {
 	// 调用集成服务
 	result, err := h.integrationService.CreateIntegratedApproval(c.Request.Context(), userID, userName, &req)
 	if err != nil {
+		if writeKnownIntakeCollaborationError(c, err) {
+			return
+		}
+		var gateErr *services.ApprovalConflictGateError
+		if errors.As(err, &gateErr) {
+			common.NewAPIError(c, http.StatusConflict, gateErr.Code, gateErr.Message)
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "internal_error",
-			"message": "创建集成审批申请失败: " + err.Error(),
+			"message": "创建集成审批申请失败",
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"data":    result,
+		"data":    projectApprovalResponseForViewer(result, c.GetString("role")),
 	})
 }
 
@@ -286,10 +294,14 @@ func (h *IntegrationHandler) CreateApprovalWithConflict(c *gin.Context) {
 		return
 	}
 	approvalCreateGate()
+	req.IntakeClaimToken = claimToken
 
 	result, err := h.integrationService.CreateIntegratedApproval(c.Request.Context(), userIDStr, userNameStr, &req)
 	if err != nil {
 		h.releaseIntakeClaim(intakeIDForClaim, claimRes, claimToken)
+		if writeKnownIntakeCollaborationError(c, err) {
+			return
+		}
 		var gateErr *services.ApprovalConflictGateError
 		if errors.As(err, &gateErr) {
 			common.NewAPIError(c, http.StatusConflict, gateErr.Code, gateErr.Message)
@@ -306,7 +318,7 @@ func (h *IntegrationHandler) CreateApprovalWithConflict(c *gin.Context) {
 	h.releaseIntakeClaim(intakeIDForClaim, claimRes, claimToken)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"data":    result,
+		"data":    projectApprovalResponseForViewer(result, c.GetString("role")),
 	})
 }
 
@@ -633,7 +645,7 @@ func (h *IntegrationHandler) GetApprovalIntegrationStatus(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"data":    status,
+		"data":    projectApprovalResponseForViewer(status, c.GetString("role")),
 	})
 }
 
@@ -688,7 +700,7 @@ func (h *IntegrationHandler) PerformCaseCreation(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"data":    result,
+		"data":    projectApprovalResponseForViewer(result, c.GetString("role")),
 	})
 }
 
@@ -767,7 +779,7 @@ func (h *IntegrationHandler) TriggerConflictCheck(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"data":    result,
+		"data":    projectApprovalResponseForViewer(result, c.GetString("role")),
 	})
 }
 
@@ -808,6 +820,9 @@ func (h *IntegrationHandler) ProcessApprovalWithConflict(c *gin.Context) {
 	// 调用集成服务处理审批
 	updatedApproval, err := h.integrationService.ProcessApprovalWithConflict(c.Request.Context(), userID, userName, approvalID, &req)
 	if err != nil {
+		if writeKnownIntakeCollaborationError(c, err) {
+			return
+		}
 		var gateErr *services.ApprovalConflictGateError
 		if errors.As(err, &gateErr) {
 			c.JSON(http.StatusConflict, gin.H{
@@ -848,7 +863,7 @@ func (h *IntegrationHandler) ProcessApprovalWithConflict(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"data":    updatedApproval,
+		"data":    projectApprovalResponseForViewer(updatedApproval, c.GetString("role")),
 	})
 }
 
@@ -952,6 +967,9 @@ func (h *IntegrationHandler) RetryFailedIntegration(c *gin.Context) {
 	}
 	result, err := h.integrationService.RetryCaseCreationForUser(c.Request.Context(), userID, approvalID)
 	if err != nil {
+		if writeKnownIntakeCollaborationError(c, err) {
+			return
+		}
 		if writeApprovalLookupError(c, err) {
 			return
 		}
@@ -968,7 +986,7 @@ func (h *IntegrationHandler) RetryFailedIntegration(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"data":    result,
+		"data":    projectApprovalResponseForViewer(result, c.GetString("role")),
 	})
 }
 

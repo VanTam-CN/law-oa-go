@@ -1,0 +1,29 @@
+Warning: .env file not found, using environment variables
+2026/11/07 15:27:11 使用PostgreSQL数据库
+2026/11/07 15:27:11 数据库连接池优化完成 - 环境: test, 数据库: postgres, 最大连接数: 25, 空闲连接数: 0, 性能优化: true
+2026/11/07 15:27:11 数据库连接成功 - 类型: postgres, 环境: test
+
+2026/11/07 15:27:11 [31;1m/private/tmp/lawoa-intake-collaboration-20261107/internal/database/intake_collaboration_schema.go:47 [35;1mERROR: cannot insert multiple commands into a prepared statement (SQLSTATE 42601)
+[0m[33m[0.993ms] [34;1m[rows:0][0m CREATE OR REPLACE FUNCTION guard_intake_submission_snapshot_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF OLD.snapshot_type = 'intake_submission' OR (TG_OP = 'UPDATE' AND NEW.snapshot_type = 'intake_submission') THEN
+  RAISE EXCEPTION 'intake submission snapshots are append-only' USING ERRCODE = '55000';
+ END IF;
+ IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
+ RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS trg_intake_submission_snapshot_immutable ON approval_snapshots;
+CREATE TRIGGER trg_intake_submission_snapshot_immutable BEFORE UPDATE OR DELETE ON approval_snapshots
+ FOR EACH ROW EXECUTE FUNCTION guard_intake_submission_snapshot_immutable();
+CREATE OR REPLACE FUNCTION guard_intake_submission_decision_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF OLD.submission_snapshot_id IS NOT NULL OR (TG_OP = 'UPDATE' AND NEW.submission_snapshot_id IS NOT NULL) THEN
+  RAISE EXCEPTION 'versioned approval decisions are append-only' USING ERRCODE = '55000';
+ END IF;
+ IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
+ RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS trg_intake_submission_decision_immutable ON approval_records;
+CREATE TRIGGER trg_intake_submission_decision_immutable BEFORE UPDATE OR DELETE ON approval_records
+ FOR EACH ROW EXECUTE FUNCTION guard_intake_submission_decision_immutable();
+2026/11/07 15:27:11 生产 schema bootstrap 失败: 安装提交审计不可变保护失败: ERROR: cannot insert multiple commands into a prepared statement (SQLSTATE 42601)

@@ -1,0 +1,12 @@
+2026-11-07T16:57:09.552+0800	INFO	logger/logger.go:867	Logger package initialized with default development logger
+=== RUN   TestApprovalBootstrapPostgresFirstHTTPSubmission
+    approval_bootstrap_postgres_http_test.go:20: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_bootstrap_postgres_fixture_test.go:57
+        	            				/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_bootstrap_postgres_http_test.go:20
+        	Error:      	Received unexpected error:
+        	            	生产表 approval_case_creation_tracking 缺少关键字段: status；请执行对应的评审迁移后重试
+        	Test:       	TestApprovalBootstrapPostgresFirstHTTPSubmission
+--- FAIL: TestApprovalBootstrapPostgresFirstHTTPSubmission (0.65s)
+FAIL
+FAIL	law-oa-go/internal/services	2.281s
+FAIL

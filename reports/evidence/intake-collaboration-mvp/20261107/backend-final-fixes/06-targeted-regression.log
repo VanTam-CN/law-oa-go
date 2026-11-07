@@ -1,0 +1,16 @@
+ok  	law-oa-go/internal/services	1.931s
+2026-11-07T16:20:34.084+0800	INFO	logger/logger.go:867	Logger package initialized with default development logger
+通知发送: 申请 AP-20261107-3ef28f8e-9e28-4c3c-9c27-2ddd66a395c0 - 需要修改
+通知发送: 申请 AP-20261107-3ef28f8e-9e28-4c3c-9c27-2ddd66a395c0 - 重新提交
+2026/11/07 16:20:34 更新审批失败: 当前状态 resubmitted 不允许编辑
+
+2026/11/07 16:20:34 [31;1m/private/tmp/lawoa-intake-collaboration-20261107/internal/repositories/inbox_repository.go:406 [35;1mno such table: inbox_items
+[0m[33m[0.129ms] [34;1m[rows:0][0m SELECT * FROM `inbox_items` WHERE user_id = 35 ORDER BY created_at DESC, id DESC
+--- FAIL: TestConflictOfficerSeesOnlyAssignedConflictApproval (0.01s)
+    conflict_approval_workbench_test.go:89: assigned reviewer response: 500 {"success":false,"error":{"code":"INTERNAL_ERROR","message":"逾期待办读取失败","details":"no such table: inbox_items"},"meta":{"timestamp":"2026-11-07T16:20:34.303952+08:00","version":"v1","server":"law-oa-go","environment":"development"}}
+2026/11/07 16:20:34 创建集成审批申请，用户：未知用户，类型：case_creation
+2026/11/07 16:20:34 集成审批申请创建完成，ID：18e5b58acca2bbf0
+FAIL
+FAIL	law-oa-go/internal/handlers	1.787s
+ok  	law-oa-go/internal/repositories	1.921s [no tests to run]
+FAIL

@@ -1,0 +1,17 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-count=1",
+    "-timeout=180s",
+    "-json",
+    "./internal/services",
+    "./internal/handlers",
+    "./internal/repositories",
+    "./internal/models",
+    "-run",
+    "Test(ClientCreation|ClientParty|OpposingParty|IntakeSubmission|IntakeSupplement|ApprovalSubmission|CoreReview|Inbox|CreateCaseIntake|UpdateIntake|ConfirmIntake|StartIntake|DraftRestore|DraftList|ListIntake|F04B|LegacyDraft|ConfirmAndConflict|PrepareCaseIntake|IntakeWrite|DenyIntake|ResubmitAtomic|CaseTxGuard)"
+  ],
+  "exit_code": 0,
+  "duration_seconds": 19.300005674362183
+}

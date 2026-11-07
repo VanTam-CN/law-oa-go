@@ -1,0 +1,14 @@
+{
+  "time": "2026-11-07T10:29:26.331436+00:00",
+  "command_records": 42,
+  "converted_markdown_links": 0,
+  "missing_links": [],
+  "remaining_absolute_local_links": [],
+  "credential_scan": {
+    "files": 450,
+    "archive_members": 149,
+    "private_value_hits": [],
+    "jwt_pattern_locations": []
+  },
+  "note": "Exact private runtime values checked without outputting them. No secret material is stored in this report. Earlier JSON/CSV/log paths remain historical runtime provenance."
+}

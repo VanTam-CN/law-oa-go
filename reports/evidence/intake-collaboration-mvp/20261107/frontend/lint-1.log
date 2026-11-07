@@ -1,0 +1,19 @@
+
+> law-oa-frontend@0.0.0 lint
+> eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0
+
+
+/private/tmp/lawoa-intake-collaboration-20261107/frontend/src/components/client/ClientCreateDialog.tsx
+  26:5  error  Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+
+/private/tmp/lawoa-intake-collaboration-20261107/frontend/src/pages/batch01/Batch01Prototype.tsx
+  4453:5    error    Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+  4613:5    error    Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+  9227:130  warning  Invalid operand for a '+' operation. Operands must each be a number or string, allowing a string + any of: `any`, `boolean`, `null`, `RegExp`, `undefined`. Got `URLSearchParams`  @typescript-eslint/restrict-plus-operands
+
+/private/tmp/lawoa-intake-collaboration-20261107/frontend/src/services/client.ts
+  113:19  warning  Invalid operand for a '+' operation. Operands must each be a number or string, allowing a string + any of: `any`, `boolean`, `null`, `RegExp`, `undefined`. Got `URLSearchParams`  @typescript-eslint/restrict-plus-operands
+
+✖ 5 problems (3 errors, 2 warnings)
+  3 errors and 0 warnings potentially fixable with the `--fix` option.
+

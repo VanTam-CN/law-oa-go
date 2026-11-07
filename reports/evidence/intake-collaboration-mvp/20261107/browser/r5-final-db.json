@@ -1,0 +1,139 @@
+[
+  {
+    "approval_id": "18e5ba60a968c0a0",
+    "status": "approved",
+    "case_id": "3",
+    "case_created": true,
+    "active_snapshot": "de35f82e-35ef-4af3-a5bc-6a1051348a0d",
+    "case_count": 1,
+    "tracking_count": 2,
+    "tracking_complete_count": 1,
+    "open_workflow_tasks": 0,
+    "parties": [
+      {
+        "entity_id": 4,
+        "role": "PLAINTIFF",
+        "name": "QA R5客户 A 20261107"
+      },
+      {
+        "entity_id": 5,
+        "role": "DEFENDANT",
+        "name": "QA R5同名对方 A"
+      },
+      {
+        "entity_id": 6,
+        "role": "PLAINTIFF",
+        "name": "QA R5共同主体 A"
+      },
+      {
+        "entity_id": 7,
+        "role": "DEFENDANT",
+        "name": "QA R5同名对方 A"
+      },
+      {
+        "entity_id": 6,
+        "role": "INTERESTED_PARTY",
+        "name": "QA R5共同主体 A"
+      }
+    ],
+    "plaintext_identity_count": 0,
+    "snapshots": [
+      {
+        "id": "c449240b-27ee-452c-a67d-1e88facbeb68",
+        "round": 1,
+        "check_id": "CCT_eb6d9199-b7f7-44d2-a0cb-0f61d8329b3c",
+        "review_id": "5",
+        "return_record_id": null,
+        "request_ids": null,
+        "response_ids": null,
+        "reply_count": 0
+      },
+      {
+        "id": "de35f82e-35ef-4af3-a5bc-6a1051348a0d",
+        "round": 2,
+        "check_id": "CCT_de912498-232a-4033-9ac5-637bd3ce4781",
+        "review_id": "6",
+        "return_record_id": "18e5ba644d5a5fb8",
+        "request_ids": [
+          "75b2f0af-50e0-49bd-9376-04be196101ee",
+          "7743207f-2705-4acb-9944-c7bcde10ff83"
+        ],
+        "response_ids": [
+          "75b2f0af-50e0-49bd-9376-04be196101ee",
+          "7743207f-2705-4acb-9944-c7bcde10ff83"
+        ],
+        "reply_count": 2
+      }
+    ],
+    "return_record": {
+      "id": "18e5ba644d5a5fb8",
+      "snapshot_id": "c449240b-27ee-452c-a67d-1e88facbeb68",
+      "item_ids": [
+        "75b2f0af-50e0-49bd-9376-04be196101ee",
+        "7743207f-2705-4acb-9944-c7bcde10ff83"
+      ]
+    },
+    "description_matches_approved_snapshot": true
+  },
+  {
+    "approval_id": "18e5bad3447ea150",
+    "status": "approved",
+    "case_id": "4",
+    "case_created": true,
+    "active_snapshot": "49bf3616-98b6-4504-8ff6-56c188469135",
+    "case_count": 1,
+    "tracking_count": 2,
+    "tracking_complete_count": 1,
+    "open_workflow_tasks": 0,
+    "parties": [
+      {
+        "entity_id": 8,
+        "role": "PLAINTIFF",
+        "name": "QA R5客户 B 20261107"
+      },
+      {
+        "entity_id": 9,
+        "role": "DEFENDANT",
+        "name": "QA R5对方 B"
+      }
+    ],
+    "plaintext_identity_count": 0,
+    "snapshots": [
+      {
+        "id": "23b7faf4-193a-4150-8d84-6837de6c28e9",
+        "round": 1,
+        "check_id": "CCT_88806f4d-3662-4daa-a522-278bfdfbb89e",
+        "review_id": "7",
+        "return_record_id": null,
+        "request_ids": null,
+        "response_ids": null,
+        "reply_count": 0
+      },
+      {
+        "id": "49bf3616-98b6-4504-8ff6-56c188469135",
+        "round": 2,
+        "check_id": "CCT_88806f4d-3662-4daa-a522-278bfdfbb89e",
+        "review_id": "7",
+        "return_record_id": "18e5badbf3cb74a0",
+        "request_ids": [
+          "c7768f8c-9d16-4625-b9d7-a6a2feb37d22",
+          "f9735371-ce3b-4038-afe2-73e2d898f392"
+        ],
+        "response_ids": [
+          "c7768f8c-9d16-4625-b9d7-a6a2feb37d22",
+          "f9735371-ce3b-4038-afe2-73e2d898f392"
+        ],
+        "reply_count": 2
+      }
+    ],
+    "return_record": {
+      "id": "18e5badbf3cb74a0",
+      "snapshot_id": "23b7faf4-193a-4150-8d84-6837de6c28e9",
+      "item_ids": [
+        "c7768f8c-9d16-4625-b9d7-a6a2feb37d22",
+        "f9735371-ce3b-4038-afe2-73e2d898f392"
+      ]
+    },
+    "description_matches_approved_snapshot": true
+  }
+]

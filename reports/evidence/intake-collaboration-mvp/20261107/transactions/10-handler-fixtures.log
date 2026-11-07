@@ -1,0 +1,41 @@
+2026-11-07T15:21:25.696+0800	INFO	logger/logger.go:867	Logger package initialized with default development logger
+=== RUN   TestIntakeDelayedInterleaveDuplicateApproval
+2026/11/07 15:21:25 创建集成审批申请，用户：未知用户，类型：case_creation
+2026/11/07 15:21:25 提交集成审批申请失败：请确认当前接案事实并完成正式冲突检测
+2026/11/07 15:21:25 创建带冲突检测的审批申请失败: 提交集成审批申请失败：请确认当前接案事实并完成正式冲突检测
+2026/11/07 15:21:25 创建集成审批申请，用户：未知用户，类型：case_creation
+2026/11/07 15:21:25 提交集成审批申请失败：请确认当前接案事实并完成正式冲突检测
+2026/11/07 15:21:25 创建带冲突检测的审批申请失败: 提交集成审批申请失败：请确认当前接案事实并完成正式冲突检测
+    intake_delayed_interleave_guard_test.go:85: status codes: [500 500]
+    intake_delayed_interleave_guard_test.go:90: delayed interleave must not create a second live approval, got 0
+--- FAIL: TestIntakeDelayedInterleaveDuplicateApproval (0.04s)
+=== RUN   TestIntakeConcurrentDistinctIntakesAllSucceed
+2026/11/07 15:21:25 创建集成审批申请，用户：未知用户，类型：case_creation
+2026/11/07 15:21:25 提交集成审批申请失败：请确认当前接案事实并完成正式冲突检测
+2026/11/07 15:21:25 创建集成审批申请，用户：未知用户，类型：case_creation
+2026/11/07 15:21:25 创建带冲突检测的审批申请失败: 提交集成审批申请失败：请确认当前接案事实并完成正式冲突检测
+2026/11/07 15:21:25 提交集成审批申请失败：请确认当前接案事实并完成正式冲突检测
+2026/11/07 15:21:25 创建集成审批申请，用户：未知用户，类型：case_creation
+2026/11/07 15:21:25 提交集成审批申请失败：请确认当前接案事实并完成正式冲突检测
+2026/11/07 15:21:25 创建带冲突检测的审批申请失败: 提交集成审批申请失败：请确认当前接案事实并完成正式冲突检测
+2026/11/07 15:21:25 创建带冲突检测的审批申请失败: 提交集成审批申请失败：请确认当前接案事实并完成正式冲突检测
+2026/11/07 15:21:25 创建集成审批申请，用户：未知用户，类型：case_creation
+2026/11/07 15:21:25 提交集成审批申请失败：请确认当前接案事实并完成正式冲突检测
+2026/11/07 15:21:25 创建带冲突检测的审批申请失败: 提交集成审批申请失败：请确认当前接案事实并完成正式冲突检测
+    intake_delayed_interleave_guard_test.go:133: distinct intake 1 must succeed concurrently, got 500 ()
+--- FAIL: TestIntakeConcurrentDistinctIntakesAllSucceed (0.02s)
+=== RUN   TestIntakeResidualDraftRetryAfterFailedSubmit
+2026/11/07 15:21:25 创建集成审批申请，用户：未知用户，类型：case_creation
+2026/11/07 15:21:25 提交集成审批申请失败：请确认当前接案事实并完成正式冲突检测
+2026/11/07 15:21:25 创建带冲突检测的审批申请失败: 提交集成审批申请失败：请确认当前接案事实并完成正式冲突检测
+    intake_delayed_interleave_guard_test.go:171: retry after failed submit must succeed, got 500: map[error:internal_error message:创建审批失败，请稍后重试；已保存的接案草稿不会丢失]
+--- FAIL: TestIntakeResidualDraftRetryAfterFailedSubmit (0.02s)
+=== RUN   TestIntakeDuplicateApprovalGuard
+2026/11/07 15:21:25 创建集成审批申请，用户：未知用户，类型：case_creation
+2026/11/07 15:21:25 提交集成审批申请失败：请确认当前接案事实并完成正式冲突检测
+2026/11/07 15:21:25 创建带冲突检测的审批申请失败: 提交集成审批申请失败：请确认当前接案事实并完成正式冲突检测
+    intake_duplicate_approval_guard_test.go:212: first submission must pass the guard, got 500: map[error:internal_error message:创建审批失败，请稍后重试；已保存的接案草稿不会丢失]
+--- FAIL: TestIntakeDuplicateApprovalGuard (0.02s)
+FAIL
+FAIL	law-oa-go/internal/handlers	1.767s
+FAIL

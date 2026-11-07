@@ -1,0 +1,41 @@
+=== RUN   TestApprovalCollaborationPostgresReturnRollback
+=== RUN   TestApprovalCollaborationPostgresReturnRollback/ordinary_inbox_update
+    approval_collaboration_postgres_test.go:280: NOT_RUN: LAW_OA_COLLAB_PG_DSN unset; PostgreSQL coverage must not be reported PASS
+=== RUN   TestApprovalCollaborationPostgresReturnRollback/ordinary_inbox_create
+    approval_collaboration_postgres_test.go:280: NOT_RUN: LAW_OA_COLLAB_PG_DSN unset; PostgreSQL coverage must not be reported PASS
+=== RUN   TestApprovalCollaborationPostgresReturnRollback/integrated_inbox_update
+    approval_collaboration_postgres_test.go:280: NOT_RUN: LAW_OA_COLLAB_PG_DSN unset; PostgreSQL coverage must not be reported PASS
+=== RUN   TestApprovalCollaborationPostgresReturnRollback/integrated_inbox_create
+    approval_collaboration_postgres_test.go:280: NOT_RUN: LAW_OA_COLLAB_PG_DSN unset; PostgreSQL coverage must not be reported PASS
+--- PASS: TestApprovalCollaborationPostgresReturnRollback (0.00s)
+    --- SKIP: TestApprovalCollaborationPostgresReturnRollback/ordinary_inbox_update (0.00s)
+    --- SKIP: TestApprovalCollaborationPostgresReturnRollback/ordinary_inbox_create (0.00s)
+    --- SKIP: TestApprovalCollaborationPostgresReturnRollback/integrated_inbox_update (0.00s)
+    --- SKIP: TestApprovalCollaborationPostgresReturnRollback/integrated_inbox_create (0.00s)
+=== RUN   TestApprovalCollaborationPostgresResubmitRollback
+=== RUN   TestApprovalCollaborationPostgresResubmitRollback/approval_snapshots_create
+    approval_collaboration_postgres_test.go:310: NOT_RUN: LAW_OA_COLLAB_PG_DSN unset; PostgreSQL coverage must not be reported PASS
+=== RUN   TestApprovalCollaborationPostgresResubmitRollback/inbox_items_update
+    approval_collaboration_postgres_test.go:310: NOT_RUN: LAW_OA_COLLAB_PG_DSN unset; PostgreSQL coverage must not be reported PASS
+=== RUN   TestApprovalCollaborationPostgresResubmitRollback/inbox_items_create
+    approval_collaboration_postgres_test.go:310: NOT_RUN: LAW_OA_COLLAB_PG_DSN unset; PostgreSQL coverage must not be reported PASS
+--- PASS: TestApprovalCollaborationPostgresResubmitRollback (0.00s)
+    --- SKIP: TestApprovalCollaborationPostgresResubmitRollback/approval_snapshots_create (0.00s)
+    --- SKIP: TestApprovalCollaborationPostgresResubmitRollback/inbox_items_update (0.00s)
+    --- SKIP: TestApprovalCollaborationPostgresResubmitRollback/inbox_items_create (0.00s)
+=== RUN   TestApprovalCollaborationPostgresStaleDecisionNoWrites
+=== RUN   TestApprovalCollaborationPostgresStaleDecisionNoWrites/ordinary_snapshot
+    approval_collaboration_postgres_test.go:341: NOT_RUN: LAW_OA_COLLAB_PG_DSN unset; PostgreSQL coverage must not be reported PASS
+=== RUN   TestApprovalCollaborationPostgresStaleDecisionNoWrites/ordinary_node
+    approval_collaboration_postgres_test.go:341: NOT_RUN: LAW_OA_COLLAB_PG_DSN unset; PostgreSQL coverage must not be reported PASS
+=== RUN   TestApprovalCollaborationPostgresStaleDecisionNoWrites/integrated_snapshot
+    approval_collaboration_postgres_test.go:341: NOT_RUN: LAW_OA_COLLAB_PG_DSN unset; PostgreSQL coverage must not be reported PASS
+=== RUN   TestApprovalCollaborationPostgresStaleDecisionNoWrites/integrated_node
+    approval_collaboration_postgres_test.go:341: NOT_RUN: LAW_OA_COLLAB_PG_DSN unset; PostgreSQL coverage must not be reported PASS
+--- PASS: TestApprovalCollaborationPostgresStaleDecisionNoWrites (0.00s)
+    --- SKIP: TestApprovalCollaborationPostgresStaleDecisionNoWrites/ordinary_snapshot (0.00s)
+    --- SKIP: TestApprovalCollaborationPostgresStaleDecisionNoWrites/ordinary_node (0.00s)
+    --- SKIP: TestApprovalCollaborationPostgresStaleDecisionNoWrites/integrated_snapshot (0.00s)
+    --- SKIP: TestApprovalCollaborationPostgresStaleDecisionNoWrites/integrated_node (0.00s)
+PASS
+ok  	law-oa-go/internal/services	1.356s

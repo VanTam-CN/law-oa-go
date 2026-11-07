@@ -1,0 +1,11 @@
+# law-oa-go/internal/handlers [law-oa-go/internal/handlers.test]
+internal/handlers/demo_aggregate_handler.go:1657:42: not enough arguments in call to services.NewInboxService
+	have (*gorm.DB)
+	want ("law-oa-go/internal/repositories".InboxRepository, "law-oa-go/internal/repositories".UserRepository)
+FAIL	law-oa-go/internal/handlers [build failed]
+# law-oa-go/internal/handlers [law-oa-go/internal/services.test]
+internal/handlers/demo_aggregate_handler.go:1657:42: not enough arguments in call to services.NewInboxService
+	have (*gorm.DB)
+	want ("law-oa-go/internal/repositories".InboxRepository, "law-oa-go/internal/repositories".UserRepository)
+FAIL	law-oa-go/internal/services [build failed]
+FAIL

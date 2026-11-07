@@ -1,0 +1,75 @@
+package database
+
+import (
+	"fmt"
+	"gorm.io/gorm"
+)
+
+// Explicit additive upgrade, equivalent to migrations 000082-000084. Existing
+// snapshots and inbox text are retained; old NULL modes are resolved at read time.
+func ensureIntakeCollaborationSchema(db *gorm.DB) error {
+	statements := []string{
+		`ALTER TABLE approval_requests ADD COLUMN IF NOT EXISTS active_submission_snapshot_id UUID`,
+		`ALTER TABLE approval_records ADD COLUMN IF NOT EXISTS submission_snapshot_id UUID`,
+		`ALTER TABLE approval_records ADD COLUMN IF NOT EXISTS action_version VARCHAR(100) NOT NULL DEFAULT ''`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_intake_submission_round ON approval_snapshots(approval_request_id,snapshot_type,source_version) WHERE snapshot_type = 'intake_submission'`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_intake_submission_return ON approval_snapshots(approval_request_id,(snapshot_data->>'return_record_id')) WHERE snapshot_type = 'intake_submission' AND COALESCE(snapshot_data->>'return_record_id','') <> ''`,
+		`ALTER TABLE inbox_items ADD COLUMN IF NOT EXISTS source_ref VARCHAR(100), ADD COLUMN IF NOT EXISTS completion_mode VARCHAR(20), ADD COLUMN IF NOT EXISTS workflow_task_key VARCHAR(200), ADD COLUMN IF NOT EXISTS workflow_group VARCHAR(150), ADD COLUMN IF NOT EXISTS workflow_purpose VARCHAR(40), ADD COLUMN IF NOT EXISTS workflow_version VARCHAR(100), ADD COLUMN IF NOT EXISTS closed_reason VARCHAR(30), ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS uq_inbox_workflow_task_key ON inbox_items(workflow_task_key)`,
+		`CREATE INDEX IF NOT EXISTS idx_inbox_workflow_group ON inbox_items(workflow_group)`,
+		`CREATE INDEX IF NOT EXISTS idx_inbox_owner_archive ON inbox_items(user_id,archived_at)`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS uq_client_creation_scope ON client_creation_requests(operator_id,operation,key_digest)`,
+	}
+	for _, statement := range statements {
+		if err := db.Exec(statement).Error; err != nil {
+			return fmt.Errorf("接案协作结构升级失败: %w", err)
+		}
+	}
+	constraints := []struct{ table, name, body string }{
+		{"inbox_items", "ck_inbox_workflow_contract", `CHECK (completion_mode IS DISTINCT FROM 'workflow' OR (NULLIF(BTRIM(source_ref),'') IS NOT NULL AND NULLIF(BTRIM(workflow_task_key),'') IS NOT NULL AND NULLIF(BTRIM(workflow_group),'') IS NOT NULL AND NULLIF(BTRIM(workflow_purpose),'') IS NOT NULL AND NULLIF(BTRIM(workflow_version),'') IS NOT NULL))`},
+		{"inbox_items", "ck_inbox_workflow_key", `CHECK (workflow_task_key IS NULL OR LENGTH(BTRIM(workflow_task_key)) > 0)`},
+		{"client_creation_requests", "ck_client_creation_result", `CHECK ((status='pending' AND client_id IS NULL) OR (status='completed' AND client_id IS NOT NULL))`},
+		{"client_creation_requests", "ck_client_creation_digests", `CHECK (length(key_digest)=64 AND length(request_digest)=64)`},
+		{"client_creation_requests", "ck_client_creation_operator", `CHECK (operator_id > 0)`},
+		{"client_creation_requests", "fk_client_creation_result", `FOREIGN KEY(client_id) REFERENCES clients(id)`},
+	}
+	for _, constraint := range constraints {
+		var present bool
+		if err := db.Raw(`SELECT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid = ?::regclass AND conname = ?)`, constraint.table, constraint.name).Scan(&present).Error; err != nil {
+			return err
+		}
+		if !present {
+			if err := db.Exec(fmt.Sprintf("ALTER TABLE %s ADD CONSTRAINT %s %s", constraint.table, constraint.name, constraint.body)).Error; err != nil {
+				return err
+			}
+		}
+	}
+	guards := []string{`CREATE OR REPLACE FUNCTION guard_intake_submission_snapshot_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF OLD.snapshot_type = 'intake_submission' OR (TG_OP = 'UPDATE' AND NEW.snapshot_type = 'intake_submission') THEN
+  RAISE EXCEPTION 'intake submission snapshots are append-only' USING ERRCODE = '55000';
+ END IF;
+ IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
+ RETURN NEW;
+END $$;`,
+		`DROP TRIGGER IF EXISTS trg_intake_submission_snapshot_immutable ON approval_snapshots;`,
+		`CREATE TRIGGER trg_intake_submission_snapshot_immutable BEFORE UPDATE OR DELETE ON approval_snapshots
+ FOR EACH ROW EXECUTE FUNCTION guard_intake_submission_snapshot_immutable();`,
+		`CREATE OR REPLACE FUNCTION guard_intake_submission_decision_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF OLD.submission_snapshot_id IS NOT NULL OR (TG_OP = 'UPDATE' AND NEW.submission_snapshot_id IS NOT NULL) THEN
+  RAISE EXCEPTION 'versioned approval decisions are append-only' USING ERRCODE = '55000';
+ END IF;
+ IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
+ RETURN NEW;
+END $$;`,
+		`DROP TRIGGER IF EXISTS trg_intake_submission_decision_immutable ON approval_records;`,
+		`CREATE TRIGGER trg_intake_submission_decision_immutable BEFORE UPDATE OR DELETE ON approval_records
+ FOR EACH ROW EXECUTE FUNCTION guard_intake_submission_decision_immutable();`}
+	for _, guard := range guards {
+		if err := db.Exec(guard).Error; err != nil {
+			return fmt.Errorf("安装提交审计不可变保护失败: %w", err)
+		}
+	}
+	return nil
+}

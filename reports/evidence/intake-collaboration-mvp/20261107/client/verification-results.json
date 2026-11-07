@@ -1,0 +1,53 @@
+{
+  "recorded_at": "2026-11-07T15:00:38.805462+08:00",
+  "runs": [
+    {
+      "log": "01-compile-and-existing.log",
+      "exit_code": 1,
+      "status": "initial compile error fixed",
+      "reason": "handler error category names corrected"
+    },
+    {
+      "log": "02-behavior-local.log",
+      "exit_code": 1,
+      "status": "shared worktree blocked",
+      "reason": "approval slice was being edited; undefined helper functions"
+    },
+    {
+      "log": "03-behavior-isolated-postgres.log",
+      "exit_code": 0,
+      "status": "PASS",
+      "scope": "a806831 + 8 client files; SQLite/PostgreSQL real behavior and existing client service tests"
+    },
+    {
+      "log": "04-build-isolated.log",
+      "exit_code": 0,
+      "status": "PASS",
+      "scope": "go build ./... on isolated snapshot"
+    },
+    {
+      "log": "05-vet-isolated.log",
+      "exit_code": 0,
+      "status": "PASS",
+      "scope": "go vet services handlers repositories models on isolated snapshot"
+    },
+    {
+      "log": "06-race-isolated.log",
+      "exit_code": 0,
+      "status": "PASS",
+      "scope": "go test -race TestClientCreation on isolated snapshot, including PostgreSQL"
+    },
+    {
+      "log": "07-scope-format-check.log",
+      "exit_code": 0,
+      "status": "PASS",
+      "scope": "all owned files whitespace, gofmt, verification copy matching"
+    },
+    {
+      "log": "08-shared-worktree-integration.log",
+      "exit_code": 1,
+      "status": "PARTIAL",
+      "scope": "shared worktree: client HTTP tests PASS; service test compilation blocked by inbox contract tests"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+2026-11-07T16:05:11.869+0800	INFO	logger/logger.go:867	Logger package initialized with default development logger
+=== RUN   TestInboxB2PostgresRevisedSubmission
+    inbox_workflow_postgres_test.go:46: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:68
+        	            				/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:136
+        	            				/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:184
+        	            				/private/tmp/lawoa-intake-collaboration-20261107/internal/services/inbox_workflow_postgres_test.go:17
+        	            				/private/tmp/lawoa-intake-collaboration-20261107/internal/services/inbox_workflow_postgres_test.go:46
+        	            				/usr/local/Cellar/go/1.25.6/libexec/src/runtime/asm_amd64.s:1693
+        	Error:      	Received unexpected error:
+        	            	failed to connect to `user=mac database=lawoa_intake_mvp_test`: /private/tmp/lawoa-intake-collaboration-runtime/socket/.s.PGSQL.55437 (/private/tmp/lawoa-intake-collaboration-runtime/socket): dial error: dial unix /private/tmp/lawoa-intake-collaboration-runtime/socket/.s.PGSQL.55437: connect: operation not permitted
+        	Test:       	TestInboxB2PostgresRevisedSubmission
+--- FAIL: TestInboxB2PostgresRevisedSubmission (0.01s)
+FAIL
+FAIL	law-oa-go/internal/services	1.632s
+FAIL

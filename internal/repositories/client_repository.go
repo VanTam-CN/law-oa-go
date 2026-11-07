@@ -22,6 +22,12 @@ func NewClientRepository(db *gorm.DB) ClientRepository {
 	return &ClientRepositoryImpl{db: db}
 }
 
+// WithClientCreationTransaction keeps the request claim and client write on
+// the same database connection without changing the shared repository contract.
+func (r *ClientRepositoryImpl) WithClientCreationTransaction(ctx context.Context, fn func(*gorm.DB) error) error {
+	return r.db.WithContext(ctx).Transaction(fn)
+}
+
 // Create 创建客户
 func (r *ClientRepositoryImpl) Create(ctx context.Context, client *models.Client) error {
 	db := r.db.WithContext(ctx)

@@ -1,0 +1,28 @@
+=== RUN   TestApprovalSubmissionResolverPointerBeatsCreatedTime
+--- PASS: TestApprovalSubmissionResolverPointerBeatsCreatedTime (0.01s)
+=== RUN   TestApprovalSubmissionResolverLegacyAgreement
+--- PASS: TestApprovalSubmissionResolverLegacyAgreement (0.00s)
+=== RUN   TestApprovalSubmissionResolverNonIntakeLegacy
+--- PASS: TestApprovalSubmissionResolverNonIntakeLegacy (0.00s)
+=== RUN   TestIntakeSupplementNormalization
+--- PASS: TestIntakeSupplementNormalization (0.00s)
+=== RUN   TestIntakeSupplementRejectUncontrolledKeys
+=== RUN   TestIntakeSupplementRejectUncontrolledKeys/unknown_envelope
+=== RUN   TestIntakeSupplementRejectUncontrolledKeys/spoofed_ID
+=== RUN   TestIntakeSupplementRejectUncontrolledKeys/unknown_item_field
+=== RUN   TestIntakeSupplementRejectUncontrolledKeys/arbitrary_path
+=== RUN   TestIntakeSupplementRejectUncontrolledKeys/upload
+=== RUN   TestIntakeSupplementRejectUncontrolledKeys/HTML
+=== RUN   TestIntakeSupplementRejectUncontrolledKeys/empty_list
+--- PASS: TestIntakeSupplementRejectUncontrolledKeys (0.00s)
+    --- PASS: TestIntakeSupplementRejectUncontrolledKeys/unknown_envelope (0.00s)
+    --- PASS: TestIntakeSupplementRejectUncontrolledKeys/spoofed_ID (0.00s)
+    --- PASS: TestIntakeSupplementRejectUncontrolledKeys/unknown_item_field (0.00s)
+    --- PASS: TestIntakeSupplementRejectUncontrolledKeys/arbitrary_path (0.00s)
+    --- PASS: TestIntakeSupplementRejectUncontrolledKeys/upload (0.00s)
+    --- PASS: TestIntakeSupplementRejectUncontrolledKeys/HTML (0.00s)
+    --- PASS: TestIntakeSupplementRejectUncontrolledKeys/empty_list (0.00s)
+=== RUN   TestIntakeSupplementLegacyReadOnlyAndFingerprint
+--- PASS: TestIntakeSupplementLegacyReadOnlyAndFingerprint (0.00s)
+PASS
+ok  	law-oa-go/internal/services	1.391s

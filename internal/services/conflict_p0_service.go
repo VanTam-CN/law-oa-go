@@ -467,7 +467,7 @@ func (s *conflictDetectionService) ReviewConflict(ctx context.Context, checkID, 
 		if err := tx.Create(&review).Error; err != nil {
 			return fmt.Errorf("保存冲突复核失败: %w", err)
 		}
-		return nil
+		return reconcileConflictTransition(tx, checkID)
 	})
 	if err != nil {
 		return nil, err

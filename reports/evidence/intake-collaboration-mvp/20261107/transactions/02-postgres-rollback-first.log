@@ -1,0 +1,130 @@
+=== RUN   TestApprovalCollaborationPostgresReturnRollback
+=== RUN   TestApprovalCollaborationPostgresReturnRollback/ordinary_inbox_update
+    approval_collaboration_postgres_test.go:280: PostgreSQL fixture schema=approval_collab_6d4c8cc4049748758d1a801579396795 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+    approval_collaboration_postgres_test.go:280: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:111
+        	            				/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:134
+        	            				/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:280
+        	Error:      	Received unexpected error:
+        	            	ERROR: relation "approval_records" does not exist (SQLSTATE 42P01)
+        	Test:       	TestApprovalCollaborationPostgresReturnRollback/ordinary_inbox_update
+        	Messages:   	000082_intake_submission_snapshots.up.sql
+=== RUN   TestApprovalCollaborationPostgresReturnRollback/ordinary_inbox_create
+    approval_collaboration_postgres_test.go:280: PostgreSQL fixture schema=approval_collab_cf001ceb070f46e29b750c07d14894c2 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+    approval_collaboration_postgres_test.go:280: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:111
+        	            				/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:134
+        	            				/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:280
+        	Error:      	Received unexpected error:
+        	            	ERROR: relation "approval_records" does not exist (SQLSTATE 42P01)
+        	Test:       	TestApprovalCollaborationPostgresReturnRollback/ordinary_inbox_create
+        	Messages:   	000082_intake_submission_snapshots.up.sql
+=== RUN   TestApprovalCollaborationPostgresReturnRollback/integrated_inbox_update
+    approval_collaboration_postgres_test.go:280: PostgreSQL fixture schema=approval_collab_1e794e72253a4581bf862f9c22ed9fc8 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+    approval_collaboration_postgres_test.go:280: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:111
+        	            				/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:134
+        	            				/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:280
+        	Error:      	Received unexpected error:
+        	            	ERROR: relation "approval_records" does not exist (SQLSTATE 42P01)
+        	Test:       	TestApprovalCollaborationPostgresReturnRollback/integrated_inbox_update
+        	Messages:   	000082_intake_submission_snapshots.up.sql
+=== RUN   TestApprovalCollaborationPostgresReturnRollback/integrated_inbox_create
+    approval_collaboration_postgres_test.go:280: PostgreSQL fixture schema=approval_collab_b870edaab384447ca7aba30b3c05a6af server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+    approval_collaboration_postgres_test.go:280: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:111
+        	            				/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:134
+        	            				/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:280
+        	Error:      	Received unexpected error:
+        	            	ERROR: relation "approval_records" does not exist (SQLSTATE 42P01)
+        	Test:       	TestApprovalCollaborationPostgresReturnRollback/integrated_inbox_create
+        	Messages:   	000082_intake_submission_snapshots.up.sql
+--- FAIL: TestApprovalCollaborationPostgresReturnRollback (0.42s)
+    --- FAIL: TestApprovalCollaborationPostgresReturnRollback/ordinary_inbox_update (0.11s)
+    --- FAIL: TestApprovalCollaborationPostgresReturnRollback/ordinary_inbox_create (0.10s)
+    --- FAIL: TestApprovalCollaborationPostgresReturnRollback/integrated_inbox_update (0.11s)
+    --- FAIL: TestApprovalCollaborationPostgresReturnRollback/integrated_inbox_create (0.11s)
+=== RUN   TestApprovalCollaborationPostgresResubmitRollback
+=== RUN   TestApprovalCollaborationPostgresResubmitRollback/approval_snapshots_create
+    approval_collaboration_postgres_test.go:310: PostgreSQL fixture schema=approval_collab_5ffa1327a4b946da9fecf74d9deacd92 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+    approval_collaboration_postgres_test.go:310: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:111
+        	            				/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:134
+        	            				/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:310
+        	Error:      	Received unexpected error:
+        	            	ERROR: relation "approval_records" does not exist (SQLSTATE 42P01)
+        	Test:       	TestApprovalCollaborationPostgresResubmitRollback/approval_snapshots_create
+        	Messages:   	000082_intake_submission_snapshots.up.sql
+=== RUN   TestApprovalCollaborationPostgresResubmitRollback/inbox_items_update
+    approval_collaboration_postgres_test.go:310: PostgreSQL fixture schema=approval_collab_01f67293cb214e918ac1af03531f9159 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+    approval_collaboration_postgres_test.go:310: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:111
+        	            				/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:134
+        	            				/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:310
+        	Error:      	Received unexpected error:
+        	            	ERROR: relation "approval_records" does not exist (SQLSTATE 42P01)
+        	Test:       	TestApprovalCollaborationPostgresResubmitRollback/inbox_items_update
+        	Messages:   	000082_intake_submission_snapshots.up.sql
+=== RUN   TestApprovalCollaborationPostgresResubmitRollback/inbox_items_create
+    approval_collaboration_postgres_test.go:310: PostgreSQL fixture schema=approval_collab_aa2dcd340993486486bb628ccdda22dc server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+    approval_collaboration_postgres_test.go:310: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:111
+        	            				/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:134
+        	            				/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:310
+        	Error:      	Received unexpected error:
+        	            	ERROR: relation "approval_records" does not exist (SQLSTATE 42P01)
+        	Test:       	TestApprovalCollaborationPostgresResubmitRollback/inbox_items_create
+        	Messages:   	000082_intake_submission_snapshots.up.sql
+--- FAIL: TestApprovalCollaborationPostgresResubmitRollback (0.32s)
+    --- FAIL: TestApprovalCollaborationPostgresResubmitRollback/approval_snapshots_create (0.11s)
+    --- FAIL: TestApprovalCollaborationPostgresResubmitRollback/inbox_items_update (0.11s)
+    --- FAIL: TestApprovalCollaborationPostgresResubmitRollback/inbox_items_create (0.10s)
+=== RUN   TestApprovalCollaborationPostgresStaleDecisionNoWrites
+=== RUN   TestApprovalCollaborationPostgresStaleDecisionNoWrites/ordinary_snapshot
+    approval_collaboration_postgres_test.go:341: PostgreSQL fixture schema=approval_collab_462f12ca55184a0388e5e7be17515250 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+    approval_collaboration_postgres_test.go:341: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:111
+        	            				/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:134
+        	            				/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:341
+        	Error:      	Received unexpected error:
+        	            	ERROR: relation "approval_records" does not exist (SQLSTATE 42P01)
+        	Test:       	TestApprovalCollaborationPostgresStaleDecisionNoWrites/ordinary_snapshot
+        	Messages:   	000082_intake_submission_snapshots.up.sql
+=== RUN   TestApprovalCollaborationPostgresStaleDecisionNoWrites/ordinary_node
+    approval_collaboration_postgres_test.go:341: PostgreSQL fixture schema=approval_collab_e7276ca592104633beabc03a439d7469 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+    approval_collaboration_postgres_test.go:341: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:111
+        	            				/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:134
+        	            				/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:341
+        	Error:      	Received unexpected error:
+        	            	ERROR: relation "approval_records" does not exist (SQLSTATE 42P01)
+        	Test:       	TestApprovalCollaborationPostgresStaleDecisionNoWrites/ordinary_node
+        	Messages:   	000082_intake_submission_snapshots.up.sql
+=== RUN   TestApprovalCollaborationPostgresStaleDecisionNoWrites/integrated_snapshot
+    approval_collaboration_postgres_test.go:341: PostgreSQL fixture schema=approval_collab_44439a400ed24cc3a1a551266514fa44 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+    approval_collaboration_postgres_test.go:341: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:111
+        	            				/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:134
+        	            				/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:341
+        	Error:      	Received unexpected error:
+        	            	ERROR: relation "approval_records" does not exist (SQLSTATE 42P01)
+        	Test:       	TestApprovalCollaborationPostgresStaleDecisionNoWrites/integrated_snapshot
+        	Messages:   	000082_intake_submission_snapshots.up.sql
+=== RUN   TestApprovalCollaborationPostgresStaleDecisionNoWrites/integrated_node
+    approval_collaboration_postgres_test.go:341: PostgreSQL fixture schema=approval_collab_ae9e4ee67bf946d389b62380bcfeb2fd server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+    approval_collaboration_postgres_test.go:341: 
+        	Error Trace:	/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:111
+        	            				/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:134
+        	            				/private/tmp/lawoa-intake-collaboration-20261107/internal/services/approval_collaboration_postgres_test.go:341
+        	Error:      	Received unexpected error:
+        	            	ERROR: relation "approval_records" does not exist (SQLSTATE 42P01)
+        	Test:       	TestApprovalCollaborationPostgresStaleDecisionNoWrites/integrated_node
+        	Messages:   	000082_intake_submission_snapshots.up.sql
+--- FAIL: TestApprovalCollaborationPostgresStaleDecisionNoWrites (0.42s)
+    --- FAIL: TestApprovalCollaborationPostgresStaleDecisionNoWrites/ordinary_snapshot (0.10s)
+    --- FAIL: TestApprovalCollaborationPostgresStaleDecisionNoWrites/ordinary_node (0.10s)
+    --- FAIL: TestApprovalCollaborationPostgresStaleDecisionNoWrites/integrated_snapshot (0.11s)
+    --- FAIL: TestApprovalCollaborationPostgresStaleDecisionNoWrites/integrated_node (0.12s)
+FAIL
+FAIL	law-oa-go/internal/services	2.673s
+FAIL

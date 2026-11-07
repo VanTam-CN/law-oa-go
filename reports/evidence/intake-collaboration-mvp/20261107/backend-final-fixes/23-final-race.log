@@ -1,0 +1,1021 @@
+# law-oa-go/internal/models.test
+ld: warning: '/private/var/folders/4p/bng36r_s65d26yqk0lfpw2rh0000gn/T/go-link-1655538676/000023.o' has malformed LC_DYSYMTAB, expected 98 undefined symbols to start at index 884, found 95 undefined symbols starting at index 884
+# law-oa-go/internal/repositories.test
+ld: warning: '/private/var/folders/4p/bng36r_s65d26yqk0lfpw2rh0000gn/T/go-link-3706309378/000023.o' has malformed LC_DYSYMTAB, expected 98 undefined symbols to start at index 884, found 95 undefined symbols starting at index 884
+# law-oa-go/internal/handlers.test
+ld: warning: '/private/var/folders/4p/bng36r_s65d26yqk0lfpw2rh0000gn/T/go-link-2750836872/000023.o' has malformed LC_DYSYMTAB, expected 98 undefined symbols to start at index 884, found 95 undefined symbols starting at index 884
+# law-oa-go/internal/services.test
+ld: warning: '/private/var/folders/4p/bng36r_s65d26yqk0lfpw2rh0000gn/T/go-link-1663698971/000023.o' has malformed LC_DYSYMTAB, expected 98 undefined symbols to start at index 884, found 95 undefined symbols starting at index 884
+2026-11-07T16:32:01.989+0800	INFO	logger/logger.go:867	Logger package initialized with default development logger
+=== RUN   TestCoreReviewProjectionProtectsAllRolesAndCopies
+=== RUN   TestCoreReviewProjectionProtectsAllRolesAndCopies/lawyer
+--- PASS: TestCoreReviewProjectionProtectsAllRolesAndCopies/lawyer (0.01s)
+=== RUN   TestCoreReviewProjectionProtectsAllRolesAndCopies/conflict_officer
+--- PASS: TestCoreReviewProjectionProtectsAllRolesAndCopies/conflict_officer (0.00s)
+--- PASS: TestCoreReviewProjectionProtectsAllRolesAndCopies (0.01s)
+=== RUN   TestCoreReviewCreateBlocksControlledMetadata
+=== RUN   TestCoreReviewCreateBlocksControlledMetadata/create/0
+--- PASS: TestCoreReviewCreateBlocksControlledMetadata/create/0 (0.00s)
+=== RUN   TestCoreReviewCreateBlocksControlledMetadata/create/1
+--- PASS: TestCoreReviewCreateBlocksControlledMetadata/create/1 (0.00s)
+=== RUN   TestCoreReviewCreateBlocksControlledMetadata/create/2
+--- PASS: TestCoreReviewCreateBlocksControlledMetadata/create/2 (0.00s)
+=== RUN   TestCoreReviewCreateBlocksControlledMetadata/create/3
+--- PASS: TestCoreReviewCreateBlocksControlledMetadata/create/3 (0.00s)
+=== RUN   TestCoreReviewCreateBlocksControlledMetadata/create/4
+--- PASS: TestCoreReviewCreateBlocksControlledMetadata/create/4 (0.00s)
+=== RUN   TestCoreReviewCreateBlocksControlledMetadata/create/5
+--- PASS: TestCoreReviewCreateBlocksControlledMetadata/create/5 (0.00s)
+=== RUN   TestCoreReviewCreateBlocksControlledMetadata/create/6
+--- PASS: TestCoreReviewCreateBlocksControlledMetadata/create/6 (0.00s)
+=== RUN   TestCoreReviewCreateBlocksControlledMetadata/create/7
+--- PASS: TestCoreReviewCreateBlocksControlledMetadata/create/7 (0.00s)
+=== RUN   TestCoreReviewCreateBlocksControlledMetadata/create/8
+--- PASS: TestCoreReviewCreateBlocksControlledMetadata/create/8 (0.00s)
+=== RUN   TestCoreReviewCreateBlocksControlledMetadata/create/9
+--- PASS: TestCoreReviewCreateBlocksControlledMetadata/create/9 (0.00s)
+=== RUN   TestCoreReviewCreateBlocksControlledMetadata/create/10
+--- PASS: TestCoreReviewCreateBlocksControlledMetadata/create/10 (0.00s)
+=== RUN   TestCoreReviewCreateBlocksControlledMetadata/create/11
+--- PASS: TestCoreReviewCreateBlocksControlledMetadata/create/11 (0.00s)
+=== RUN   TestCoreReviewCreateBlocksControlledMetadata/create/12
+--- PASS: TestCoreReviewCreateBlocksControlledMetadata/create/12 (0.00s)
+=== RUN   TestCoreReviewCreateBlocksControlledMetadata/template/0
+--- PASS: TestCoreReviewCreateBlocksControlledMetadata/template/0 (0.00s)
+=== RUN   TestCoreReviewCreateBlocksControlledMetadata/template/1
+--- PASS: TestCoreReviewCreateBlocksControlledMetadata/template/1 (0.00s)
+=== RUN   TestCoreReviewCreateBlocksControlledMetadata/template/2
+--- PASS: TestCoreReviewCreateBlocksControlledMetadata/template/2 (0.00s)
+=== RUN   TestCoreReviewCreateBlocksControlledMetadata/template/3
+--- PASS: TestCoreReviewCreateBlocksControlledMetadata/template/3 (0.00s)
+=== RUN   TestCoreReviewCreateBlocksControlledMetadata/template/4
+--- PASS: TestCoreReviewCreateBlocksControlledMetadata/template/4 (0.00s)
+=== RUN   TestCoreReviewCreateBlocksControlledMetadata/template/5
+--- PASS: TestCoreReviewCreateBlocksControlledMetadata/template/5 (0.00s)
+=== RUN   TestCoreReviewCreateBlocksControlledMetadata/template/6
+--- PASS: TestCoreReviewCreateBlocksControlledMetadata/template/6 (0.00s)
+=== RUN   TestCoreReviewCreateBlocksControlledMetadata/template/7
+--- PASS: TestCoreReviewCreateBlocksControlledMetadata/template/7 (0.00s)
+=== RUN   TestCoreReviewCreateBlocksControlledMetadata/template/8
+--- PASS: TestCoreReviewCreateBlocksControlledMetadata/template/8 (0.00s)
+=== RUN   TestCoreReviewCreateBlocksControlledMetadata/template/9
+--- PASS: TestCoreReviewCreateBlocksControlledMetadata/template/9 (0.00s)
+=== RUN   TestCoreReviewCreateBlocksControlledMetadata/template/10
+--- PASS: TestCoreReviewCreateBlocksControlledMetadata/template/10 (0.00s)
+=== RUN   TestCoreReviewCreateBlocksControlledMetadata/template/11
+--- PASS: TestCoreReviewCreateBlocksControlledMetadata/template/11 (0.00s)
+=== RUN   TestCoreReviewCreateBlocksControlledMetadata/template/12
+--- PASS: TestCoreReviewCreateBlocksControlledMetadata/template/12 (0.00s)
+--- PASS: TestCoreReviewCreateBlocksControlledMetadata (0.04s)
+=== RUN   TestCoreReviewMutationResponsesAndUpdateErrors
+通知发送: 申请 AP-20261107-1e6ec6f7-e728-4a6e-abf8-6032365dfc45 - 需要修改
+通知发送: 申请 AP-20261107-1e6ec6f7-e728-4a6e-abf8-6032365dfc45 - 重新提交
+testing: warning: no tests to run
+PASS
+2026/11/07 16:32:02 更新审批失败: 当前状态 resubmitted 不允许编辑
+--- PASS: TestCoreReviewMutationResponsesAndUpdateErrors (0.06s)
+=== RUN   TestCoreReviewDetailSupplementContextReadOnly
+=== RUN   TestCoreReviewDetailSupplementContextReadOnly/false
+--- PASS: TestCoreReviewDetailSupplementContextReadOnly/false (0.04s)
+=== RUN   TestCoreReviewDetailSupplementContextReadOnly/true
+--- PASS: TestCoreReviewDetailSupplementContextReadOnly/true (0.04s)
+--- PASS: TestCoreReviewDetailSupplementContextReadOnly (0.08s)
+=== RUN   TestCoreReviewDetailAuthorizationAndAmbiguousReturn
+--- PASS: TestCoreReviewDetailAuthorizationAndAmbiguousReturn (0.03s)
+=== RUN   TestCoreReviewResubmitUsesDurableIntakeAssociation
+--- PASS: TestCoreReviewResubmitUsesDurableIntakeAssociation (0.03s)
+=== RUN   TestCoreReviewSnapshotHistoryAndMissing
+=== RUN   TestCoreReviewSnapshotHistoryAndMissing/version/
+--- PASS: TestCoreReviewSnapshotHistoryAndMissing/version/ (0.01s)
+=== RUN   TestCoreReviewSnapshotHistoryAndMissing/version/30cd321b-e009-463f-b457-367f42b85435
+--- PASS: TestCoreReviewSnapshotHistoryAndMissing/version/30cd321b-e009-463f-b457-367f42b85435 (0.00s)
+=== RUN   TestCoreReviewSnapshotHistoryAndMissing/version/d4a80371-2587-4856-a0b3-8f521611af96
+--- PASS: TestCoreReviewSnapshotHistoryAndMissing/version/d4a80371-2587-4856-a0b3-8f521611af96 (0.00s)
+--- PASS: TestCoreReviewSnapshotHistoryAndMissing (0.07s)
+=== RUN   TestCoreReviewIntegratedDecisionResponseProjection
+=== RUN   TestCoreReviewIntegratedDecisionResponseProjection/lawyer
+--- PASS: TestCoreReviewIntegratedDecisionResponseProjection/lawyer (0.00s)
+=== RUN   TestCoreReviewIntegratedDecisionResponseProjection/conflict_officer
+--- PASS: TestCoreReviewIntegratedDecisionResponseProjection/conflict_officer (0.00s)
+--- PASS: TestCoreReviewIntegratedDecisionResponseProjection (0.03s)
+=== RUN   TestCoreReviewCurrentReturnMustMatchSubmission
+--- PASS: TestCoreReviewCurrentReturnMustMatchSubmission (0.04s)
+=== RUN   TestCoreReviewHistoryDoesNotRelaxAuthority
+--- PASS: TestCoreReviewHistoryDoesNotRelaxAuthority (0.06s)
+=== RUN   TestClientCreationHTTPContract
+--- PASS: TestClientCreationHTTPContract (0.02s)
+=== RUN   TestClientCreationHTTPFailuresAndLegacyCompatibility
+2026-11-07T16:32:02.456+0800	INFO	logger/logger.go:867	Logger package initialized with default development logger
+=== RUN   TestBackendFinalReviewPostgresLegacyApprovalOrders
+=== RUN   TestBackendFinalReviewPostgresLegacyApprovalOrders/formal_created_first
+--- PASS: TestClientCreationHTTPFailuresAndLegacyCompatibility (0.02s)
+=== RUN   TestClientCreationC03SameNameDistinctIdentityAndAuthorizedPagination
+    approval_backend_final_review_postgres_test.go:37: PostgreSQL fixture schema=approval_collab_22382c32929143a7a0697689e785ec71 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+--- PASS: TestClientCreationC03SameNameDistinctIdentityAndAuthorizedPagination (0.13s)
+=== RUN   TestConflictOfficerSeesOnlyAssignedConflictApproval
+--- PASS: TestConflictOfficerSeesOnlyAssignedConflictApproval (0.02s)
+=== RUN   TestConflictApprovalSnapshotPreservesCaseType
+--- PASS: TestConflictApprovalSnapshotPreservesCaseType (0.00s)
+=== RUN   TestConflictApprovalDoesNotTreatLimitedCoverageAsClear
+--- PASS: TestConflictApprovalDoesNotTreatLimitedCoverageAsClear (0.00s)
+=== RUN   TestInboxItemHandlersRejectCrossUserAccess
+=== RUN   TestInboxItemHandlersRejectCrossUserAccess/get
+
+2026/11/07 16:32:02 [31;1m/private/tmp/lawoa-intake-collaboration-20261107/internal/repositories/inbox_repository.go:150 [35;1mrecord not found
+[0m[33m[0.169ms] [34;1m[rows:0][0m SELECT * FROM `inbox_items` WHERE id = 202 AND user_id = 11 ORDER BY `inbox_items`.`id` LIMIT 1
+--- PASS: TestInboxItemHandlersRejectCrossUserAccess/get (0.00s)
+=== RUN   TestInboxItemHandlersRejectCrossUserAccess/update
+
+2026/11/07 16:32:02 [31;1m/private/tmp/lawoa-intake-collaboration-20261107/internal/repositories/inbox_repository.go:150 [35;1mrecord not found
+[0m[33m[0.076ms] [34;1m[rows:0][0m SELECT * FROM `inbox_items` WHERE id = 202 AND user_id = 11 ORDER BY `inbox_items`.`id` LIMIT 1
+--- PASS: TestInboxItemHandlersRejectCrossUserAccess/update (0.00s)
+=== RUN   TestInboxItemHandlersRejectCrossUserAccess/mark_read
+
+2026/11/07 16:32:02 [31;1m/private/tmp/lawoa-intake-collaboration-20261107/internal/repositories/inbox_repository.go:150 [35;1mrecord not found
+[0m[33m[0.083ms] [34;1m[rows:0][0m SELECT * FROM `inbox_items` WHERE id = 202 AND user_id = 11 ORDER BY `inbox_items`.`id` LIMIT 1
+--- PASS: TestInboxItemHandlersRejectCrossUserAccess/mark_read (0.00s)
+=== RUN   TestInboxItemHandlersRejectCrossUserAccess/complete
+
+2026/11/07 16:32:02 [31;1m/private/tmp/lawoa-intake-collaboration-20261107/internal/repositories/inbox_repository.go:150 [35;1mrecord not found
+[0m[33m[0.071ms] [34;1m[rows:0][0m SELECT * FROM `inbox_items` WHERE id = 202 AND user_id = 11 ORDER BY `inbox_items`.`id` LIMIT 1
+--- PASS: TestInboxItemHandlersRejectCrossUserAccess/complete (0.00s)
+=== RUN   TestInboxItemHandlersRejectCrossUserAccess/snooze
+
+2026/11/07 16:32:02 [31;1m/private/tmp/lawoa-intake-collaboration-20261107/internal/repositories/inbox_repository.go:150 [35;1mrecord not found
+[0m[33m[0.128ms] [34;1m[rows:0][0m SELECT * FROM `inbox_items` WHERE id = 202 AND user_id = 11 ORDER BY `inbox_items`.`id` LIMIT 1
+--- PASS: TestInboxItemHandlersRejectCrossUserAccess/snooze (0.00s)
+=== RUN   TestInboxItemHandlersRejectCrossUserAccess/delete
+
+2026/11/07 16:32:02 [31;1m/private/tmp/lawoa-intake-collaboration-20261107/internal/repositories/inbox_repository.go:150 [35;1mrecord not found
+[0m[33m[0.068ms] [34;1m[rows:0][0m SELECT * FROM `inbox_items` WHERE id = 202 AND user_id = 11 ORDER BY `inbox_items`.`id` LIMIT 1
+--- PASS: TestInboxItemHandlersRejectCrossUserAccess/delete (0.00s)
+--- PASS: TestInboxItemHandlersRejectCrossUserAccess (0.01s)
+=== RUN   TestInboxItemHandlersAllowOwnerAccess
+2026/11/07 16:32:02 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+--- PASS: TestInboxItemHandlersAllowOwnerAccess (0.02s)
+=== RUN   TestInboxItemHandlersRequireAuthenticatedUser
+--- PASS: TestInboxItemHandlersRequireAuthenticatedUser (0.00s)
+=== RUN   TestInboxPublicAPIDeniesForgedWorkflowFields
+2026/11/07 16:32:02 集成审批申请创建完成，ID：18e5b62b0f5fdb80
+=== RUN   TestInboxPublicAPIDeniesForgedWorkflowFields/completion_mode
+--- PASS: TestInboxPublicAPIDeniesForgedWorkflowFields/completion_mode (0.00s)
+=== RUN   TestInboxPublicAPIDeniesForgedWorkflowFields/source_ref
+--- PASS: TestInboxPublicAPIDeniesForgedWorkflowFields/source_ref (0.00s)
+=== RUN   TestInboxPublicAPIDeniesForgedWorkflowFields/workflow_task_key
+--- PASS: TestInboxPublicAPIDeniesForgedWorkflowFields/workflow_task_key (0.00s)
+=== RUN   TestInboxPublicAPIDeniesForgedWorkflowFields/workflow_group
+--- PASS: TestInboxPublicAPIDeniesForgedWorkflowFields/workflow_group (0.00s)
+=== RUN   TestInboxPublicAPIDeniesForgedWorkflowFields/workflow_purpose
+--- PASS: TestInboxPublicAPIDeniesForgedWorkflowFields/workflow_purpose (0.00s)
+=== RUN   TestInboxPublicAPIDeniesForgedWorkflowFields/workflow_version
+--- PASS: TestInboxPublicAPIDeniesForgedWorkflowFields/workflow_version (0.00s)
+=== RUN   TestInboxPublicAPIDeniesForgedWorkflowFields/assigned_to
+--- PASS: TestInboxPublicAPIDeniesForgedWorkflowFields/assigned_to (0.00s)
+=== RUN   TestInboxPublicAPIDeniesForgedWorkflowFields/workflow_action
+--- PASS: TestInboxPublicAPIDeniesForgedWorkflowFields/workflow_action (0.00s)
+=== RUN   TestInboxPublicAPIDeniesForgedWorkflowFields/is_completed
+--- PASS: TestInboxPublicAPIDeniesForgedWorkflowFields/is_completed (0.00s)
+=== RUN   TestInboxPublicAPIDeniesForgedWorkflowFields/closed_reason
+--- PASS: TestInboxPublicAPIDeniesForgedWorkflowFields/closed_reason (0.00s)
+=== RUN   TestInboxPublicAPIDeniesForgedWorkflowFields/archived_at
+--- PASS: TestInboxPublicAPIDeniesForgedWorkflowFields/archived_at (0.00s)
+--- PASS: TestInboxPublicAPIDeniesForgedWorkflowFields (0.02s)
+=== RUN   TestInboxLegacyHTTPArchiveContract
+2026/11/07 16:32:02 处理包含冲突检测的审批申请，审批ID：18e5b62b11b2acf0，决定：approve
+testing: warning: no tests to run
+PASS
+
+2026/11/07 16:32:02 [31;1m/private/tmp/lawoa-intake-collaboration-20261107/internal/repositories/inbox_repository.go:150 [35;1mrecord not found
+[0m[33m[0.084ms] [34;1m[rows:0][0m SELECT * FROM `inbox_items` WHERE id = 202 AND user_id = 11 ORDER BY `inbox_items`.`id` LIMIT 1
+--- PASS: TestInboxLegacyHTTPArchiveContract (0.01s)
+=== RUN   TestInboxWorkflowHTTPMutationAndSnoozeContract
+2026/11/07 16:32:02 处理包含冲突检测的审批申请，审批ID：18e5b62b0f5fdb80，决定：approve
+--- PASS: TestInboxWorkflowHTTPMutationAndSnoozeContract (0.03s)
+=== RUN   TestClientPartyRowInheritsProtectedIdentity
+--- PASS: TestClientPartyRowInheritsProtectedIdentity (0.00s)
+=== RUN   TestClientPartyRowRejectsNameMismatch
+--- PASS: TestClientPartyRowRejectsNameMismatch (0.00s)
+=== RUN   TestClientPartyRowRejectsClientWithoutIdentity
+--- PASS: TestClientPartyRowRejectsClientWithoutIdentity (0.00s)
+=== RUN   TestOpposingPartyStillRequiresIdentity
+--- PASS: TestOpposingPartyStillRequiresIdentity (0.00s)
+=== RUN   TestClientPartyRowRejectsForgedEntityType
+--- PASS: TestClientPartyRowRejectsForgedEntityType (0.00s)
+=== RUN   TestClientPartyRowRejectsForgedIndividualTypeOnCompany
+--- PASS: TestClientPartyRowRejectsForgedIndividualTypeOnCompany (0.00s)
+=== RUN   TestCreateCaseIntakeSameSecondUniqueCodes
+2026/11/07 16:32:02 从审批申请自动创建案件，审批ID：18e5b62b0f5fdb80
+--- PASS: TestCreateCaseIntakeSameSecondUniqueCodes (0.00s)
+=== RUN   TestCreateCaseIntakeCodeConflictRetriesWithNewCode
+--- PASS: TestCreateCaseIntakeCodeConflictRetriesWithNewCode (0.00s)
+=== RUN   TestCreateCaseIntakeConcurrentSameSecond
+2026/11/07 16:32:02 审批通过后已自动成案，审批ID=18e5b62b0f5fdb80，操作人=虚构审批人，案件ID=1
+2026/11/07 16:32:02 审批申请处理完成，ID：18e5b62b0f5fdb80，最终状态：approved
+--- PASS: TestCreateCaseIntakeConcurrentSameSecond (0.05s)
+=== RUN   TestIntakeDelayedInterleaveDuplicateApproval
+--- PASS: TestBackendFinalReviewPostgresLegacyApprovalOrders/formal_created_first (0.34s)
+=== RUN   TestBackendFinalReviewPostgresLegacyApprovalOrders/formal_approved_first
+    approval_backend_final_review_postgres_test.go:37: PostgreSQL fixture schema=approval_collab_fb652a51776d479d9ebb8aff5bcc9c4d server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:02 创建集成审批申请，用户：未知用户，类型：case_creation
+2026/11/07 16:32:02 集成审批申请创建完成，ID：18e5b62b1aefa2a0
+    intake_delayed_interleave_guard_test.go:85: status codes: [409 200]
+--- PASS: TestIntakeDelayedInterleaveDuplicateApproval (0.06s)
+=== RUN   TestIntakeConcurrentDistinctIntakesAllSucceed
+2026/11/07 16:32:02 创建集成审批申请，用户：未知用户，类型：case_creation
+2026/11/07 16:32:02 集成审批申请创建完成，ID：18e5b62b1ed3ca40
+2026/11/07 16:32:02 创建集成审批申请，用户：未知用户，类型：case_creation
+2026/11/07 16:32:02 集成审批申请创建完成，ID：18e5b62b1fa579f0
+2026/11/07 16:32:02 创建集成审批申请，用户：未知用户，类型：case_creation
+2026/11/07 16:32:02 集成审批申请创建完成，ID：18e5b62b2054c108
+2026/11/07 16:32:02 创建集成审批申请，用户：未知用户，类型：case_creation
+2026/11/07 16:32:02 集成审批申请创建完成，ID：18e5b62b212d3718
+2026/11/07 16:32:02 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+--- PASS: TestIntakeConcurrentDistinctIntakesAllSucceed (0.10s)
+=== RUN   TestIntakeResidualDraftRetryAfterFailedSubmit
+2026/11/07 16:32:02 集成审批申请创建完成，ID：18e5b62b22409b18
+2026/11/07 16:32:02 处理包含冲突检测的审批申请，审批ID：18e5b62b22409b18，决定：approve
+2026/11/07 16:32:02 创建集成审批申请，用户：未知用户，类型：case_creation
+2026/11/07 16:32:02 集成审批申请创建完成，ID：18e5b62b244832b8
+--- PASS: TestIntakeResidualDraftRetryAfterFailedSubmit (0.05s)
+=== RUN   TestListIntakeDraftsScopesAndFields
+--- PASS: TestListIntakeDraftsScopesAndFields (0.00s)
+=== RUN   TestUpdateIntakeInvalidatesConfirmedSnapshotAndRotatesRevision
+=== RUN   TestUpdateIntakeInvalidatesConfirmedSnapshotAndRotatesRevision/lawyer_facts_confirmed
+--- PASS: TestUpdateIntakeInvalidatesConfirmedSnapshotAndRotatesRevision/lawyer_facts_confirmed (0.01s)
+=== RUN   TestUpdateIntakeInvalidatesConfirmedSnapshotAndRotatesRevision/conflict_ready
+2026/11/07 16:32:03 从审批申请自动创建案件，审批ID：18e5b62b22409b18
+--- PASS: TestUpdateIntakeInvalidatesConfirmedSnapshotAndRotatesRevision/conflict_ready (0.01s)
+--- PASS: TestUpdateIntakeInvalidatesConfirmedSnapshotAndRotatesRevision (0.01s)
+=== RUN   TestLegacyDraftWithoutStoredRevisionLoadsAndSavesOnce
+
+2026/11/07 16:32:03 [31;1m/private/tmp/lawoa-intake-collaboration-20261107/internal/handlers/demo_aggregate_helpers.go:282 [35;1mno such column: deleted_at
+[0m[33m[0.064ms] [34;1m[rows:0][0m SELECT * FROM `users` WHERE deleted_at IS NULL AND role IN ("lawyer","admin") LIMIT 10
+--- PASS: TestLegacyDraftWithoutStoredRevisionLoadsAndSavesOnce (0.01s)
+=== RUN   TestConfirmAndConflictCheckAuthorizeBeforeRevisionHint
+--- PASS: TestConfirmAndConflictCheckAuthorizeBeforeRevisionHint (0.00s)
+=== RUN   TestUpdateIntakeWithoutMetadataKeepsStoredBusinessFields
+--- PASS: TestUpdateIntakeWithoutMetadataKeepsStoredBusinessFields (0.00s)
+=== RUN   TestUpdateIntakeMergesProvidedMetadataWithoutErasingStoredFields
+--- PASS: TestUpdateIntakeMergesProvidedMetadataWithoutErasingStoredFields (0.01s)
+=== RUN   TestUpdateIntakeRejectsMissingExpectedRevisionWithoutMutation
+--- PASS: TestUpdateIntakeRejectsMissingExpectedRevisionWithoutMutation (0.00s)
+=== RUN   TestUpdateIntakeRejectsStaleRevisionWithoutOverwrite
+--- PASS: TestUpdateIntakeRejectsStaleRevisionWithoutOverwrite (0.01s)
+=== RUN   TestUpdateIntakeSwitchClientUsesNewMasterIdentity
+2026/11/07 16:32:03 审批通过后已自动成案，审批ID=18e5b62b22409b18，操作人=虚构审批人，案件ID=1
+2026/11/07 16:32:03 审批申请处理完成，ID：18e5b62b22409b18，最终状态：approved
+--- PASS: TestUpdateIntakeSwitchClientUsesNewMasterIdentity (0.01s)
+=== RUN   TestConfirmIntakeFactsRotatesRevisionAndRejectsStaleHeader
+2026/11/07 16:32:03 处理包含冲突检测的审批申请，审批ID：18e5b62b220182c0，决定：approve
+--- PASS: TestConfirmIntakeFactsRotatesRevisionAndRejectsStaleHeader (0.01s)
+=== RUN   TestDraftRestoreReturnsRevisionAndProtectedIdentityStatus
+
+2026/11/07 16:32:03 [31;1m/private/tmp/lawoa-intake-collaboration-20261107/internal/handlers/demo_aggregate_helpers.go:282 [35;1mno such column: deleted_at
+[0m[33m[0.033ms] [34;1m[rows:0][0m SELECT * FROM `users` WHERE deleted_at IS NULL AND role IN ("lawyer","admin") LIMIT 10
+--- PASS: TestDraftRestoreReturnsRevisionAndProtectedIdentityStatus (0.01s)
+=== RUN   TestDraftListCarriesRevisionTokens
+--- PASS: TestDraftListCarriesRevisionTokens (0.00s)
+=== RUN   TestIntakeDuplicateApprovalGuard
+--- PASS: TestBackendFinalReviewPostgresLegacyApprovalOrders/formal_approved_first (0.29s)
+=== RUN   TestBackendFinalReviewPostgresLegacyApprovalOrders/simultaneous_1
+2026/11/07 16:32:03 创建集成审批申请，用户：未知用户，类型：case_creation
+ok  	law-oa-go/internal/models	3.333s [no tests to run]
+    approval_backend_final_review_postgres_test.go:37: PostgreSQL fixture schema=approval_collab_52a401e037e9420cbdd509b2d71e3843 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:03 集成审批申请创建完成，ID：18e5b62b2ba87d10
+--- PASS: TestIntakeDuplicateApprovalGuard (0.05s)
+=== RUN   TestF04BSameSecondReconfirmInvalidatesCommittedSnapshot
+--- PASS: TestF04BSameSecondReconfirmInvalidatesCommittedSnapshot (0.02s)
+=== RUN   TestF04BUpdateThenReconfirmInvalidatesPriorSnapshot
+--- PASS: TestF04BUpdateThenReconfirmInvalidatesPriorSnapshot (0.03s)
+=== RUN   TestF04BDoubleCheckRaceYieldsOneWinner
+--- PASS: TestF04BDoubleCheckRaceYieldsOneWinner (0.03s)
+=== RUN   TestF04BStaleVersionCommitRejectedAndRolledBack
+--- PASS: TestF04BStaleVersionCommitRejectedAndRolledBack (0.02s)
+=== RUN   TestConfirmIntakeFactsRejectsMissingClientWithReadableError
+--- PASS: TestConfirmIntakeFactsRejectsMissingClientWithReadableError (0.00s)
+=== RUN   TestStartIntakeConflictCheckRejectsMissingClientWithReadableError
+--- PASS: TestStartIntakeConflictCheckRejectsMissingClientWithReadableError (0.00s)
+=== RUN   TestUpdateIntakeDraftInheritsProtectedIdentityWhenInputEmpty
+--- PASS: TestUpdateIntakeDraftInheritsProtectedIdentityWhenInputEmpty (0.00s)
+=== RUN   TestUpdateIntakeDraftKeepsNewIdentityWhenProvided
+--- PASS: TestUpdateIntakeDraftKeepsNewIdentityWhenProvided (0.00s)
+=== RUN   TestUpdateIntakeDraftStillRequiresIdentityForNewParty
+--- PASS: TestUpdateIntakeDraftStillRequiresIdentityForNewParty (0.00s)
+=== RUN   TestPrepareCaseIntakePartyRowPreservesRoleMetadata
+--- PASS: TestPrepareCaseIntakePartyRowPreservesRoleMetadata (0.00s)
+=== RUN   TestIntakeWriteDeniesPlainUserAndConflictOfficerBeforeObjectScope
+--- PASS: TestIntakeWriteDeniesPlainUserAndConflictOfficerBeforeObjectScope (0.00s)
+=== RUN   TestIntakeWriteDeniesOtherLawyerViaObjectScope
+2026/11/07 16:32:03 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+--- PASS: TestIntakeWriteDeniesOtherLawyerViaObjectScope (0.00s)
+=== RUN   TestDenyIntakeWriteForPlainUser
+=== RUN   TestDenyIntakeWriteForPlainUser/plain_user_denied
+--- PASS: TestDenyIntakeWriteForPlainUser/plain_user_denied (0.00s)
+=== RUN   TestDenyIntakeWriteForPlainUser/empty_role_denied
+--- PASS: TestDenyIntakeWriteForPlainUser/empty_role_denied (0.00s)
+=== RUN   TestDenyIntakeWriteForPlainUser/lawyer_allowed
+--- PASS: TestDenyIntakeWriteForPlainUser/lawyer_allowed (0.00s)
+=== RUN   TestDenyIntakeWriteForPlainUser/assistant_allowed
+--- PASS: TestDenyIntakeWriteForPlainUser/assistant_allowed (0.00s)
+=== RUN   TestDenyIntakeWriteForPlainUser/intake_assistant_allowed
+--- PASS: TestDenyIntakeWriteForPlainUser/intake_assistant_allowed (0.00s)
+=== RUN   TestDenyIntakeWriteForPlainUser/director_allowed
+--- PASS: TestDenyIntakeWriteForPlainUser/director_allowed (0.00s)
+=== RUN   TestDenyIntakeWriteForPlainUser/conflict_officer_denied
+--- PASS: TestDenyIntakeWriteForPlainUser/conflict_officer_denied (0.00s)
+--- PASS: TestDenyIntakeWriteForPlainUser (0.00s)
+PASS
+2026/11/07 16:32:03 集成审批申请创建完成，ID：18e5b62b33782ef0
+2026/11/07 16:32:03 处理包含冲突检测的审批申请，审批ID：18e5b62b33782ef0，决定：approve
+2026/11/07 16:32:03 处理包含冲突检测的审批申请，审批ID：18e5b62b334426a0，决定：approve
+2026/11/07 16:32:03 从审批申请自动创建案件，审批ID：18e5b62b33782ef0
+2026/11/07 16:32:03 审批通过后已自动成案，审批ID=18e5b62b33782ef0，操作人=虚构审批人，案件ID=1
+2026/11/07 16:32:03 审批申请处理完成，ID：18e5b62b33782ef0，最终状态：approved
+--- PASS: TestBackendFinalReviewPostgresLegacyApprovalOrders/simultaneous_1 (0.26s)
+=== RUN   TestBackendFinalReviewPostgresLegacyApprovalOrders/simultaneous_2
+    approval_backend_final_review_postgres_test.go:37: PostgreSQL fixture schema=approval_collab_8a0f483d0a234436b290905304354758 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:03 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:03 集成审批申请创建完成，ID：18e5b62b428ed6c8
+2026/11/07 16:32:03 处理包含冲突检测的审批申请，审批ID：18e5b62b428ed6c8，决定：approve
+2026/11/07 16:32:03 处理包含冲突检测的审批申请，审批ID：18e5b62b42535080，决定：approve
+2026/11/07 16:32:03 从审批申请自动创建案件，审批ID：18e5b62b428ed6c8
+2026/11/07 16:32:03 审批通过后已自动成案，审批ID=18e5b62b428ed6c8，操作人=虚构审批人，案件ID=1
+2026/11/07 16:32:03 审批申请处理完成，ID：18e5b62b428ed6c8，最终状态：approved
+--- PASS: TestBackendFinalReviewPostgresLegacyApprovalOrders/simultaneous_2 (0.25s)
+=== RUN   TestBackendFinalReviewPostgresLegacyApprovalOrders/simultaneous_3
+    approval_backend_final_review_postgres_test.go:37: PostgreSQL fixture schema=approval_collab_67f8dc4e573c427ca4c28885f3d6b3dd server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+ok  	law-oa-go/internal/repositories	3.916s [no tests to run]
+2026/11/07 16:32:03 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:03 集成审批申请创建完成，ID：18e5b62b51ac1238
+2026/11/07 16:32:03 处理包含冲突检测的审批申请，审批ID：18e5b62b51ac1238，决定：approve
+2026/11/07 16:32:03 处理包含冲突检测的审批申请，审批ID：18e5b62b51721e48，决定：approve
+2026/11/07 16:32:03 从审批申请自动创建案件，审批ID：18e5b62b51ac1238
+2026/11/07 16:32:03 审批通过后已自动成案，审批ID=18e5b62b51ac1238，操作人=虚构审批人，案件ID=1
+2026/11/07 16:32:03 审批申请处理完成，ID：18e5b62b51ac1238，最终状态：approved
+--- PASS: TestBackendFinalReviewPostgresLegacyApprovalOrders/simultaneous_3 (0.25s)
+--- PASS: TestBackendFinalReviewPostgresLegacyApprovalOrders (1.40s)
+=== RUN   TestBackendFinalReviewPostgresLegacyServiceBoundaries
+=== RUN   TestBackendFinalReviewPostgresLegacyServiceBoundaries/ordinary_decision
+    approval_backend_final_review_postgres_test.go:88: PostgreSQL fixture schema=approval_collab_14158effbfbc4ded8836169cffba3afe server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+--- PASS: TestBackendFinalReviewPostgresLegacyServiceBoundaries/ordinary_decision (0.17s)
+=== RUN   TestBackendFinalReviewPostgresLegacyServiceBoundaries/auto_case
+    approval_backend_final_review_postgres_test.go:88: PostgreSQL fixture schema=approval_collab_11c7b4c964ad42e184f016233b791141 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:04 从审批申请自动创建案件，审批ID：18e5b62b6a6f1b30
+--- PASS: TestBackendFinalReviewPostgresLegacyServiceBoundaries/auto_case (0.16s)
+=== RUN   TestBackendFinalReviewPostgresLegacyServiceBoundaries/retry_case
+    approval_backend_final_review_postgres_test.go:88: PostgreSQL fixture schema=approval_collab_a9b2bf947b624ba2ad55f2554d187a90 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+ok  	law-oa-go/internal/handlers	4.474s
+2026/11/07 16:32:04 从审批申请自动创建案件，审批ID：18e5b62b748da2f8
+--- PASS: TestBackendFinalReviewPostgresLegacyServiceBoundaries/retry_case (0.17s)
+=== RUN   TestBackendFinalReviewPostgresLegacyServiceBoundaries/frozen_reference_only
+    approval_backend_final_review_postgres_test.go:88: PostgreSQL fixture schema=approval_collab_57e7ba8daea5458192aab7eeeba99aeb server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:04 从审批申请自动创建案件，审批ID：18e5b62b7eb1c840
+--- PASS: TestBackendFinalReviewPostgresLegacyServiceBoundaries/frozen_reference_only (0.17s)
+--- PASS: TestBackendFinalReviewPostgresLegacyServiceBoundaries (0.68s)
+=== RUN   TestBackendFinalReviewPostgresExistingLegacyCase
+=== RUN   TestBackendFinalReviewPostgresExistingLegacyCase/completed_replay
+    approval_backend_final_review_postgres_test.go:130: PostgreSQL fixture schema=approval_collab_24ef6b51fb99418aaea97016a0abf0be server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:04 从审批申请自动创建案件，审批ID：18e5b62b88c207c8
+2026/11/07 16:32:04 从审批申请自动创建案件，审批ID：18e5b62b88c207c8
+    approval_backend_final_review_postgres_test.go:160: legacy compatibility mode=completed_replay case=1 case_count=1
+--- PASS: TestBackendFinalReviewPostgresExistingLegacyCase/completed_replay (0.20s)
+=== RUN   TestBackendFinalReviewPostgresExistingLegacyCase/stale_flags_replay
+    approval_backend_final_review_postgres_test.go:130: PostgreSQL fixture schema=approval_collab_01bd938b69554f83870ad2f976efe7b5 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:04 从审批申请自动创建案件，审批ID：18e5b62b95a22860
+2026/11/07 16:32:04 从审批申请自动创建案件，审批ID：18e5b62b95a22860
+    approval_backend_final_review_postgres_test.go:160: legacy compatibility mode=stale_flags_replay case=1 case_count=1
+--- PASS: TestBackendFinalReviewPostgresExistingLegacyCase/stale_flags_replay (0.21s)
+=== RUN   TestBackendFinalReviewPostgresExistingLegacyCase/new_check_submit
+    approval_backend_final_review_postgres_test.go:130: PostgreSQL fixture schema=approval_collab_c310cd1baeaa49ab923323c554a8090d server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:05 创建集成审批申请，用户：虚构律师，类型：case_creation
+2026/11/07 16:32:05 提交集成审批申请失败：该接案已生成正式案件，请使用已有案件，不能再次提交成案
+    approval_backend_final_review_postgres_test.go:160: legacy compatibility mode=new_check_submit case=1 case_count=1
+--- PASS: TestBackendFinalReviewPostgresExistingLegacyCase/new_check_submit (0.18s)
+=== RUN   TestBackendFinalReviewPostgresExistingLegacyCase/formal_already_submitted
+    approval_backend_final_review_postgres_test.go:130: PostgreSQL fixture schema=approval_collab_a0543458b6394385944a7ccaef908146 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:05 创建集成审批申请，用户：虚构律师，类型：case_creation
+2026/11/07 16:32:05 集成审批申请创建完成，ID：18e5b62bac66bd90
+2026/11/07 16:32:05 处理包含冲突检测的审批申请，审批ID：18e5b62bac66bd90，决定：approve
+    approval_backend_final_review_postgres_test.go:160: legacy compatibility mode=formal_already_submitted case=1 case_count=1
+--- PASS: TestBackendFinalReviewPostgresExistingLegacyCase/formal_already_submitted (0.21s)
+--- PASS: TestBackendFinalReviewPostgresExistingLegacyCase (0.81s)
+=== RUN   TestBackendFinalReviewPostgresNonIntakeLegacyCompatibility
+    approval_backend_final_review_postgres_test.go:166: PostgreSQL fixture schema=approval_collab_75a7e72d45cd4475b0f7bfed14bec924 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:05 从审批申请自动创建案件，审批ID：18e5b62bb93657b0
+--- PASS: TestBackendFinalReviewPostgresNonIntakeLegacyCompatibility (0.20s)
+=== RUN   TestBackendFinalReviewPostgresLegacyCannotCreateSecondCase
+    approval_backend_final_review_postgres_test.go:207: PostgreSQL fixture schema=approval_collab_0a7f722d20fc41f190f269c4babfb56e server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:05 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:05 集成审批申请创建完成，ID：18e5b62bc4ddaa28
+2026/11/07 16:32:05 处理包含冲突检测的审批申请，审批ID：18e5b62bc4844f28，决定：approve
+2026/11/07 16:32:05 处理包含冲突检测的审批申请，审批ID：18e5b62bc4ddaa28，决定：approve
+2026/11/07 16:32:05 从审批申请自动创建案件，审批ID：18e5b62bc4ddaa28
+2026/11/07 16:32:05 审批通过后已自动成案，审批ID=18e5b62bc4ddaa28，操作人=虚构审批合伙人，案件ID=1
+2026/11/07 16:32:05 审批申请处理完成，ID：18e5b62bc4ddaa28，最终状态：approved
+    approval_backend_final_review_postgres_test.go:215: B1 real PG legacy_error=处理审批决定失败：此旧冲突审批仅保留历史记录，不能同意并成案；请完成独立冲突复核后从原接案工作台提交接案审批 formal_error=<nil> cases=1 legacy_records=0
+--- PASS: TestBackendFinalReviewPostgresLegacyCannotCreateSecondCase (0.28s)
+=== RUN   TestApprovalCollaborationPostgresReturnRollback
+=== RUN   TestApprovalCollaborationPostgresReturnRollback/ordinary_inbox_update
+    approval_collaboration_postgres_test.go:288: PostgreSQL fixture schema=approval_collab_953045828ea84598b62f0dcd0f5b8411 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:05 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:05 集成审批申请创建完成，ID：18e5b62bd5555900
+通知发送: 申请 AP-20261107-ebcd8310-0f80-4508-a044-e0eb7fb1b499 - 需要修改
+通知发送: 申请 AP-20261107-ebcd8310-0f80-4508-a044-e0eb7fb1b499 - 需要修改
+    approval_collaboration_postgres_test.go:309: C13 return entry=ordinary fault=update hits=1 rollback_exact=true retry_supplement_tasks=1
+--- PASS: TestApprovalCollaborationPostgresReturnRollback/ordinary_inbox_update (0.22s)
+=== RUN   TestApprovalCollaborationPostgresReturnRollback/ordinary_inbox_create
+    approval_collaboration_postgres_test.go:288: PostgreSQL fixture schema=approval_collab_bfd74f1964c54e9eb726a0216d5729af server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:06 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:06 集成审批申请创建完成，ID：18e5b62be2615428
+通知发送: 申请 AP-20261107-e2e84ff5-3f91-4f03-a403-8afeef64551d - 需要修改
+通知发送: 申请 AP-20261107-e2e84ff5-3f91-4f03-a403-8afeef64551d - 需要修改
+    approval_collaboration_postgres_test.go:309: C13 return entry=ordinary fault=create hits=1 rollback_exact=true retry_supplement_tasks=1
+--- PASS: TestApprovalCollaborationPostgresReturnRollback/ordinary_inbox_create (0.21s)
+=== RUN   TestApprovalCollaborationPostgresReturnRollback/integrated_inbox_update
+    approval_collaboration_postgres_test.go:288: PostgreSQL fixture schema=approval_collab_9425c6586ea34753b51a11c307f763fb server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:06 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:06 集成审批申请创建完成，ID：18e5b62bef16c6f8
+2026/11/07 16:32:06 处理包含冲突检测的审批申请，审批ID：18e5b62bef16c6f8，决定：request_changes
+通知发送: 申请 AP-20261107-eb642d1f-baa5-4255-bb64-35bf2daf14d2 - 需要修改
+2026/11/07 16:32:06 处理包含冲突检测的审批申请，审批ID：18e5b62bef16c6f8，决定：request_changes
+通知发送: 申请 AP-20261107-eb642d1f-baa5-4255-bb64-35bf2daf14d2 - 需要修改
+2026/11/07 16:32:06 审批申请处理完成，ID：18e5b62bef16c6f8，最终状态：needs_revision
+    approval_collaboration_postgres_test.go:309: C13 return entry=integrated fault=update hits=1 rollback_exact=true retry_supplement_tasks=1
+--- PASS: TestApprovalCollaborationPostgresReturnRollback/integrated_inbox_update (0.23s)
+=== RUN   TestApprovalCollaborationPostgresReturnRollback/integrated_inbox_create
+    approval_collaboration_postgres_test.go:288: PostgreSQL fixture schema=approval_collab_2844cda2a20c4ed696a8a6fef99a628c server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:06 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:06 集成审批申请创建完成，ID：18e5b62bfc9611a8
+2026/11/07 16:32:06 处理包含冲突检测的审批申请，审批ID：18e5b62bfc9611a8，决定：request_changes
+通知发送: 申请 AP-20261107-98c224b4-176a-4a6d-9a46-56533d41cd95 - 需要修改
+2026/11/07 16:32:06 处理包含冲突检测的审批申请，审批ID：18e5b62bfc9611a8，决定：request_changes
+通知发送: 申请 AP-20261107-98c224b4-176a-4a6d-9a46-56533d41cd95 - 需要修改
+2026/11/07 16:32:06 审批申请处理完成，ID：18e5b62bfc9611a8，最终状态：needs_revision
+    approval_collaboration_postgres_test.go:309: C13 return entry=integrated fault=create hits=1 rollback_exact=true retry_supplement_tasks=1
+--- PASS: TestApprovalCollaborationPostgresReturnRollback/integrated_inbox_create (0.22s)
+--- PASS: TestApprovalCollaborationPostgresReturnRollback (0.89s)
+=== RUN   TestApprovalCollaborationPostgresResubmitRollback
+=== RUN   TestApprovalCollaborationPostgresResubmitRollback/approval_snapshots_create
+    approval_collaboration_postgres_test.go:318: PostgreSQL fixture schema=approval_collab_5af2484cbfeb4b2998de457835bf4c8b server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:06 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:06 集成审批申请创建完成，ID：18e5b62c09d3d300
+通知发送: 申请 AP-20261107-1253d675-1082-4310-b469-a546ea3071ea - 需要修改
+    approval_collaboration_postgres_test.go:347: C13/C14 resubmit fault=approval_snapshots/create hits=1 rollback_exact=true snapshots=2 slot=1 active_decision_task=1 replay_no_writes=true
+--- PASS: TestApprovalCollaborationPostgresResubmitRollback/approval_snapshots_create (0.26s)
+=== RUN   TestApprovalCollaborationPostgresResubmitRollback/inbox_items_update
+    approval_collaboration_postgres_test.go:318: PostgreSQL fixture schema=approval_collab_4d49944b0b854231b0a0bbf28b73031e server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:07 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:07 集成审批申请创建完成，ID：18e5b62c19e7f960
+通知发送: 申请 AP-20261107-d4140f4d-8509-4fc7-8ce7-7f4f259bfb70 - 需要修改
+    approval_collaboration_postgres_test.go:347: C13/C14 resubmit fault=inbox_items/update hits=1 rollback_exact=true snapshots=2 slot=1 active_decision_task=1 replay_no_writes=true
+--- PASS: TestApprovalCollaborationPostgresResubmitRollback/inbox_items_update (0.27s)
+=== RUN   TestApprovalCollaborationPostgresResubmitRollback/inbox_items_create
+    approval_collaboration_postgres_test.go:318: PostgreSQL fixture schema=approval_collab_5b558c786aa248f4a5a0a8eca8c30939 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:07 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:07 集成审批申请创建完成，ID：18e5b62c2b5bf228
+通知发送: 申请 AP-20261107-6e897b2f-8b66-47ff-b3c1-c1ce5f03b567 - 需要修改
+    approval_collaboration_postgres_test.go:347: C13/C14 resubmit fault=inbox_items/create hits=1 rollback_exact=true snapshots=2 slot=1 active_decision_task=1 replay_no_writes=true
+--- PASS: TestApprovalCollaborationPostgresResubmitRollback/inbox_items_create (0.29s)
+--- PASS: TestApprovalCollaborationPostgresResubmitRollback (0.82s)
+=== RUN   TestApprovalCollaborationPostgresStaleDecisionNoWrites
+=== RUN   TestApprovalCollaborationPostgresStaleDecisionNoWrites/ordinary_snapshot
+    approval_collaboration_postgres_test.go:356: PostgreSQL fixture schema=approval_collab_5074aacb1dec4f159e1d43f0ad06dea0 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:07 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:07 集成审批申请创建完成，ID：18e5b62c3aed3c88
+通知发送: 申请 AP-20261107-374510b2-fd96-4c9c-984a-5eabc180f454 - 需要修改
+    approval_collaboration_postgres_test.go:382: C11 entry=ordinary stale=snapshot typed_409=APPROVAL_SUBMISSION_VERSION_CONFLICT writes=0
+--- PASS: TestApprovalCollaborationPostgresStaleDecisionNoWrites/ordinary_snapshot (0.23s)
+=== RUN   TestApprovalCollaborationPostgresStaleDecisionNoWrites/ordinary_node
+    approval_collaboration_postgres_test.go:356: PostgreSQL fixture schema=approval_collab_86ad6b21c5bf4acfaa333639cf18ce25 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:07 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:07 集成审批申请创建完成，ID：18e5b62c48bec200
+通知发送: 申请 AP-20261107-1fbbdf75-acff-4763-b71b-3c43aafc3994 - 需要修改
+    approval_collaboration_postgres_test.go:382: C11 entry=ordinary stale=node typed_409=APPROVAL_ACTION_VERSION_CONFLICT writes=0
+--- PASS: TestApprovalCollaborationPostgresStaleDecisionNoWrites/ordinary_node (0.24s)
+=== RUN   TestApprovalCollaborationPostgresStaleDecisionNoWrites/integrated_snapshot
+    approval_collaboration_postgres_test.go:356: PostgreSQL fixture schema=approval_collab_dae6d344d2314426974f90d697d23c4f server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:08 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:08 集成审批申请创建完成，ID：18e5b62c572dc7c8
+通知发送: 申请 AP-20261107-09da0efc-a72b-4564-ad05-723ab66d5f3e - 需要修改
+2026/11/07 16:32:08 处理包含冲突检测的审批申请，审批ID：18e5b62c572dc7c8，决定：request_changes
+    approval_collaboration_postgres_test.go:382: C11 entry=integrated stale=snapshot typed_409=APPROVAL_SUBMISSION_VERSION_CONFLICT writes=0
+--- PASS: TestApprovalCollaborationPostgresStaleDecisionNoWrites/integrated_snapshot (0.24s)
+=== RUN   TestApprovalCollaborationPostgresStaleDecisionNoWrites/integrated_node
+    approval_collaboration_postgres_test.go:356: PostgreSQL fixture schema=approval_collab_1243c80bf4eb403f960362e62459da22 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:08 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:08 集成审批申请创建完成，ID：18e5b62c654b5618
+通知发送: 申请 AP-20261107-da2c4135-3c6d-474e-80d4-f6666f396cde - 需要修改
+2026/11/07 16:32:08 处理包含冲突检测的审批申请，审批ID：18e5b62c654b5618，决定：request_changes
+    approval_collaboration_postgres_test.go:382: C11 entry=integrated stale=node typed_409=APPROVAL_ACTION_VERSION_CONFLICT writes=0
+--- PASS: TestApprovalCollaborationPostgresStaleDecisionNoWrites/integrated_node (0.23s)
+--- PASS: TestApprovalCollaborationPostgresStaleDecisionNoWrites (0.94s)
+=== RUN   TestApprovalCollaborationPostgresResubmitVersusNewApproval
+=== RUN   TestApprovalCollaborationPostgresResubmitVersusNewApproval/simultaneous-1
+    approval_collaboration_postgres_test.go:424: PostgreSQL fixture schema=approval_collab_31824f8949214c2a9b5754668ab04935 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:08 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:08 集成审批申请创建完成，ID：18e5b62c72b47118
+通知发送: 申请 AP-20261107-c4eb4135-9483-4c29-b93e-131837c5c386 - 需要修改
+2026/11/07 16:32:08 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:08 集成审批申请创建完成，ID：18e5b62c7541fdb0
+    approval_collaboration_postgres_test.go:476: C12 sequence=simultaneous-1 actor=new approval=18e5b62c7541fdb0 elapsed=15.345584ms error=<nil>
+    approval_collaboration_postgres_test.go:476: C12 sequence=simultaneous-1 actor=resubmit approval= elapsed=49.012084ms error=该接案已有进行中的审批，不能重新提交
+2026/11/07 16:32:08 处理包含冲突检测的审批申请，审批ID：18e5b62c7541fdb0，决定：approve
+2026/11/07 16:32:08 从审批申请自动创建案件，审批ID：18e5b62c7541fdb0
+2026/11/07 16:32:08 审批通过后已自动成案，审批ID=18e5b62c7541fdb0，操作人=虚构审批合伙人，案件ID=1
+2026/11/07 16:32:08 审批申请处理完成，ID：18e5b62c7541fdb0，最终状态：approved
+2026/11/07 16:32:08 从审批申请自动创建案件，审批ID：18e5b62c72b47118
+2026/11/07 16:32:08 从审批申请自动创建案件，审批ID：18e5b62c7541fdb0
+    approval_collaboration_postgres_test.go:504: C12 sequence=simultaneous-1 slots=1 valid_approvals=1 cases=1 complete_parties=2 replay_case=1
+--- PASS: TestApprovalCollaborationPostgresResubmitVersusNewApproval/simultaneous-1 (0.32s)
+=== RUN   TestApprovalCollaborationPostgresResubmitVersusNewApproval/simultaneous-2
+    approval_collaboration_postgres_test.go:424: PostgreSQL fixture schema=approval_collab_9af31c67785749fdba2b60c63bb98648 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:08 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:08 集成审批申请创建完成，ID：18e5b62c867956f0
+通知发送: 申请 AP-20261107-490a2f54-902f-4f87-bee4-8a53b77042f9 - 需要修改
+2026/11/07 16:32:08 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:09 接案绑定跟踪记录创建失败：repository create case creation tracking failed for CaseCreationTracking: ERROR: duplicate key value violates unique constraint "idx_approval_case_creation_tracking_intake_id" (SQLSTATE 23505)
+    approval_collaboration_postgres_test.go:476: C12 sequence=simultaneous-2 actor=resubmit approval=18e5b62c867956f0 elapsed=27.534292ms error=<nil>
+    approval_collaboration_postgres_test.go:476: C12 sequence=simultaneous-2 actor=new approval= elapsed=30.843375ms error=该接案已有进行中的成案审批，不能重复提交；请在原审批单上继续处理
+2026/11/07 16:32:09 处理包含冲突检测的审批申请，审批ID：18e5b62c867956f0，决定：approve
+2026/11/07 16:32:09 从审批申请自动创建案件，审批ID：18e5b62c867956f0
+2026/11/07 16:32:09 审批通过后已自动成案，审批ID=18e5b62c867956f0，操作人=虚构审批合伙人，案件ID=1
+2026/11/07 16:32:09 审批申请处理完成，ID：18e5b62c867956f0，最终状态：approved
+2026/11/07 16:32:09 从审批申请自动创建案件，审批ID：18e5b62c867956f0
+    approval_collaboration_postgres_test.go:504: C12 sequence=simultaneous-2 slots=1 valid_approvals=1 cases=1 complete_parties=2 replay_case=1
+--- PASS: TestApprovalCollaborationPostgresResubmitVersusNewApproval/simultaneous-2 (0.33s)
+=== RUN   TestApprovalCollaborationPostgresResubmitVersusNewApproval/simultaneous-3
+    approval_collaboration_postgres_test.go:424: PostgreSQL fixture schema=approval_collab_4c22ae28ab974d76a74c8c7c97c0eef3 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:09 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:09 集成审批申请创建完成，ID：18e5b62c9a4fc8f8
+通知发送: 申请 AP-20261107-6bf2ae71-477a-48a2-9c1d-16f044d2f6e7 - 需要修改
+2026/11/07 16:32:09 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:09 集成审批申请创建完成，ID：18e5b62c9d5a4dc0
+    approval_collaboration_postgres_test.go:476: C12 sequence=simultaneous-3 actor=new approval=18e5b62c9d5a4dc0 elapsed=50.991875ms error=<nil>
+    approval_collaboration_postgres_test.go:476: C12 sequence=simultaneous-3 actor=resubmit approval= elapsed=58.442709ms error=该接案已有进行中的审批，不能重新提交
+2026/11/07 16:32:09 处理包含冲突检测的审批申请，审批ID：18e5b62c9d5a4dc0，决定：approve
+2026/11/07 16:32:09 从审批申请自动创建案件，审批ID：18e5b62c9d5a4dc0
+2026/11/07 16:32:09 审批通过后已自动成案，审批ID=18e5b62c9d5a4dc0，操作人=虚构审批合伙人，案件ID=1
+2026/11/07 16:32:09 审批申请处理完成，ID：18e5b62c9d5a4dc0，最终状态：approved
+2026/11/07 16:32:09 从审批申请自动创建案件，审批ID：18e5b62c9a4fc8f8
+2026/11/07 16:32:09 从审批申请自动创建案件，审批ID：18e5b62c9d5a4dc0
+    approval_collaboration_postgres_test.go:504: C12 sequence=simultaneous-3 slots=1 valid_approvals=1 cases=1 complete_parties=2 replay_case=1
+--- PASS: TestApprovalCollaborationPostgresResubmitVersusNewApproval/simultaneous-3 (0.34s)
+=== RUN   TestApprovalCollaborationPostgresResubmitVersusNewApproval/resubmit-then-new
+    approval_collaboration_postgres_test.go:424: PostgreSQL fixture schema=approval_collab_37501f8ba9ab4c12b8ee9c8e0d7c34d9 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:09 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:09 集成审批申请创建完成，ID：18e5b62cae61c918
+通知发送: 申请 AP-20261107-8d5a9e8e-579f-4038-b881-27890cddb72a - 需要修改
+2026/11/07 16:32:09 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:09 接案绑定跟踪记录创建失败：repository create case creation tracking failed for CaseCreationTracking: ERROR: duplicate key value violates unique constraint "idx_approval_case_creation_tracking_intake_id" (SQLSTATE 23505)
+    approval_collaboration_postgres_test.go:476: C12 sequence=resubmit-then-new actor=resubmit approval=18e5b62cae61c918 elapsed=26.858125ms error=<nil>
+    approval_collaboration_postgres_test.go:476: C12 sequence=resubmit-then-new actor=new approval= elapsed=1.808208ms error=该接案已有进行中的成案审批，不能重复提交；请在原审批单上继续处理
+2026/11/07 16:32:09 处理包含冲突检测的审批申请，审批ID：18e5b62cae61c918，决定：approve
+2026/11/07 16:32:09 从审批申请自动创建案件，审批ID：18e5b62cae61c918
+2026/11/07 16:32:09 审批通过后已自动成案，审批ID=18e5b62cae61c918，操作人=虚构审批合伙人，案件ID=1
+2026/11/07 16:32:09 审批申请处理完成，ID：18e5b62cae61c918，最终状态：approved
+2026/11/07 16:32:09 从审批申请自动创建案件，审批ID：18e5b62cae61c918
+    approval_collaboration_postgres_test.go:504: C12 sequence=resubmit-then-new slots=1 valid_approvals=1 cases=1 complete_parties=2 replay_case=1
+--- PASS: TestApprovalCollaborationPostgresResubmitVersusNewApproval/resubmit-then-new (0.32s)
+=== RUN   TestApprovalCollaborationPostgresResubmitVersusNewApproval/new-then-resubmit
+    approval_collaboration_postgres_test.go:424: PostgreSQL fixture schema=approval_collab_379dd328a11849c08159671280b0c440 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:09 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:09 集成审批申请创建完成，ID：18e5b62cc1b51100
+通知发送: 申请 AP-20261107-b34ffa3d-41ad-41ed-a045-969603ce6f6f - 需要修改
+2026/11/07 16:32:09 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:09 集成审批申请创建完成，ID：18e5b62cc46ae230
+    approval_collaboration_postgres_test.go:476: C12 sequence=new-then-resubmit actor=new approval=18e5b62cc46ae230 elapsed=14.836708ms error=<nil>
+    approval_collaboration_postgres_test.go:476: C12 sequence=new-then-resubmit actor=resubmit approval= elapsed=20.215041ms error=该接案已有进行中的审批，不能重新提交
+2026/11/07 16:32:10 处理包含冲突检测的审批申请，审批ID：18e5b62cc46ae230，决定：approve
+2026/11/07 16:32:10 从审批申请自动创建案件，审批ID：18e5b62cc46ae230
+2026/11/07 16:32:10 审批通过后已自动成案，审批ID=18e5b62cc46ae230，操作人=虚构审批合伙人，案件ID=1
+2026/11/07 16:32:10 审批申请处理完成，ID：18e5b62cc46ae230，最终状态：approved
+2026/11/07 16:32:10 从审批申请自动创建案件，审批ID：18e5b62cc1b51100
+2026/11/07 16:32:10 从审批申请自动创建案件，审批ID：18e5b62cc46ae230
+    approval_collaboration_postgres_test.go:504: C12 sequence=new-then-resubmit slots=1 valid_approvals=1 cases=1 complete_parties=2 replay_case=1
+--- PASS: TestApprovalCollaborationPostgresResubmitVersusNewApproval/new-then-resubmit (0.33s)
+--- PASS: TestApprovalCollaborationPostgresResubmitVersusNewApproval (1.64s)
+=== RUN   TestApprovalCollaborationPostgresCasePartyRollback
+    approval_collaboration_postgres_test.go:510: PostgreSQL fixture schema=approval_collab_13e6fe4a87f346da9cac79d0b452a40b server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:10 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:10 集成审批申请创建完成，ID：18e5b62cd51f72f8
+通知发送: 申请 AP-20261107-fe797250-e584-4860-a717-34d419c82aaf - 需要修改
+2026/11/07 16:32:10 从审批申请自动创建案件，审批ID：18e5b62cd51f72f8
+2026/11/07 16:32:10 从审批申请自动创建案件，审批ID：18e5b62cd51f72f8
+2026/11/07 16:32:10 从审批申请自动创建案件，审批ID：18e5b62cd51f72f8
+    approval_collaboration_postgres_test.go:546: C14 case-party fault_hits=1 rollback_exact=true snapshots_sha256_before=e25f36089d1d9185768fb0f3f5b80f94e799de1ae5c867614cebe60b0ed0d3a4 cases=1 parties=2 active_snapshot=4e887507-97cc-45e9-a844-13dbd5490f9c retry_case=2
+--- PASS: TestApprovalCollaborationPostgresCasePartyRollback (0.33s)
+=== RUN   TestApprovalCollaborationPostgresApprovedSnapshotSurvivesCheckMutation
+    approval_collaboration_postgres_test.go:550: PostgreSQL fixture schema=approval_collab_2cb7eb0a36f14aed9ad8527a269c0393 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:10 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:10 集成审批申请创建完成，ID：18e5b62ce8bb9f08
+通知发送: 申请 AP-20261107-dbf52125-3d04-430c-a6c1-3c1dcc42b88f - 需要修改
+2026/11/07 16:32:10 从审批申请自动创建案件，审批ID：18e5b62ce8bb9f08
+2026/11/07 16:32:10 从审批申请自动创建案件，审批ID：18e5b62ce8bb9f08
+    approval_collaboration_postgres_test.go:596: C14 mutable_check_changed_twice=true cases=1 approved_parties=2 mutated_entities=0 snapshot_round=2 snapshots_unchanged=true replay_case=1
+--- PASS: TestApprovalCollaborationPostgresApprovedSnapshotSurvivesCheckMutation (0.31s)
+=== RUN   TestApprovalCollaborationPostgresOverlappingLockOrder
+    approval_collaboration_postgres_test.go:649: PostgreSQL fixture schema=approval_collab_f5a29fd6bef6411ba92a2d903a9968a8 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:10 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:10 集成审批申请创建完成，ID：18e5b62cfb1d91b0
+通知发送: 申请 AP-20261107-84ef2459-ecc2-4fec-8751-b571ac4d8c71 - 需要修改
+2026/11/07 16:32:10 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+    approval_collaboration_postgres_test.go:765: C12 lock evidence: new_backend=9330 wait_event_type=Lock blockers_present=true slot_not_inserted_while_waiting=true
+    approval_collaboration_postgres_test.go:772: C12 controlled_overlap actor=resubmit approval=18e5b62cfb1d91b0 error=<nil>
+2026/11/07 16:32:10 接案绑定跟踪记录创建失败：repository create case creation tracking failed for CaseCreationTracking: ERROR: duplicate key value violates unique constraint "idx_approval_case_creation_tracking_intake_id" (SQLSTATE 23505)
+    approval_collaboration_postgres_test.go:772: C12 controlled_overlap actor=new approval= error=该接案已有进行中的成案审批，不能重复提交；请在原审批单上继续处理
+2026/11/07 16:32:10 处理包含冲突检测的审批申请，审批ID：18e5b62cfb1d91b0，决定：approve
+2026/11/07 16:32:11 从审批申请自动创建案件，审批ID：18e5b62cfb1d91b0
+2026/11/07 16:32:11 审批通过后已自动成案，审批ID=18e5b62cfb1d91b0，操作人=虚构审批合伙人，案件ID=1
+2026/11/07 16:32:11 审批申请处理完成，ID：18e5b62cfb1d91b0，最终状态：approved
+    approval_collaboration_postgres_test.go:799: C12 controlled_overlap slots=1 valid_approvals=1 cases=1 complete_parties=2; error contract evaluated separately
+--- PASS: TestApprovalCollaborationPostgresOverlappingLockOrder (0.33s)
+=== RUN   TestApprovalCollaborationPostgresCaseCompletionInboxRollback
+=== RUN   TestApprovalCollaborationPostgresCaseCompletionInboxRollback/initial_completion_inbox_update
+    approval_collaboration_postgres_test.go:806: PostgreSQL fixture schema=approval_collab_6ce8a8d53b104e7d8be227c09e2a021e server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:11 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:11 集成审批申请创建完成，ID：18e5b62d0e61b698
+2026/11/07 16:32:11 从审批申请自动创建案件，审批ID：18e5b62d0e61b698
+2026/11/07 16:32:11 从审批申请自动创建案件，审批ID：18e5b62d0e61b698
+2026/11/07 16:32:11 从审批申请自动创建案件，审批ID：18e5b62d0e61b698
+    approval_collaboration_postgres_test.go:849: C13/C14 case_completion phase=initial_completion fault=inbox_update hits=1 rollback_exact=true cases=1 parties=2 result_tasks=1 same_result_key=true replay_case=2
+--- PASS: TestApprovalCollaborationPostgresCaseCompletionInboxRollback/initial_completion_inbox_update (0.28s)
+=== RUN   TestApprovalCollaborationPostgresCaseCompletionInboxRollback/initial_completion_inbox_create
+    approval_collaboration_postgres_test.go:806: PostgreSQL fixture schema=approval_collab_9c187f51064449e0939f81308fa6bbc2 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:11 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:11 集成审批申请创建完成，ID：18e5b62d1fcd9cf8
+2026/11/07 16:32:11 从审批申请自动创建案件，审批ID：18e5b62d1fcd9cf8
+2026/11/07 16:32:11 从审批申请自动创建案件，审批ID：18e5b62d1fcd9cf8
+2026/11/07 16:32:11 从审批申请自动创建案件，审批ID：18e5b62d1fcd9cf8
+    approval_collaboration_postgres_test.go:849: C13/C14 case_completion phase=initial_completion fault=inbox_create hits=1 rollback_exact=true cases=1 parties=2 result_tasks=1 same_result_key=true replay_case=2
+--- PASS: TestApprovalCollaborationPostgresCaseCompletionInboxRollback/initial_completion_inbox_create (0.31s)
+=== RUN   TestApprovalCollaborationPostgresCaseCompletionInboxRollback/completed_replay_inbox_update
+    approval_collaboration_postgres_test.go:806: PostgreSQL fixture schema=approval_collab_51cb7e3c21ba414b85f4eee63a2cfe7c server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:11 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:11 集成审批申请创建完成，ID：18e5b62d31b59510
+2026/11/07 16:32:11 从审批申请自动创建案件，审批ID：18e5b62d31b59510
+2026/11/07 16:32:11 从审批申请自动创建案件，审批ID：18e5b62d31b59510
+2026/11/07 16:32:11 从审批申请自动创建案件，审批ID：18e5b62d31b59510
+2026/11/07 16:32:11 从审批申请自动创建案件，审批ID：18e5b62d31b59510
+    approval_collaboration_postgres_test.go:849: C13/C14 case_completion phase=completed_replay fault=inbox_update hits=1 rollback_exact=true cases=1 parties=2 result_tasks=1 same_result_key=true replay_case=1
+--- PASS: TestApprovalCollaborationPostgresCaseCompletionInboxRollback/completed_replay_inbox_update (0.29s)
+=== RUN   TestApprovalCollaborationPostgresCaseCompletionInboxRollback/completed_replay_inbox_create
+    approval_collaboration_postgres_test.go:806: PostgreSQL fixture schema=approval_collab_c6693168f21b446cb5f947f1c3979261 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:12 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:12 集成审批申请创建完成，ID：18e5b62d42bda4d8
+2026/11/07 16:32:12 从审批申请自动创建案件，审批ID：18e5b62d42bda4d8
+2026/11/07 16:32:12 从审批申请自动创建案件，审批ID：18e5b62d42bda4d8
+2026/11/07 16:32:12 从审批申请自动创建案件，审批ID：18e5b62d42bda4d8
+2026/11/07 16:32:12 从审批申请自动创建案件，审批ID：18e5b62d42bda4d8
+    approval_collaboration_postgres_test.go:849: C13/C14 case_completion phase=completed_replay fault=inbox_create hits=1 rollback_exact=true cases=1 parties=2 result_tasks=1 same_result_key=true replay_case=1
+--- PASS: TestApprovalCollaborationPostgresCaseCompletionInboxRollback/completed_replay_inbox_create (0.29s)
+--- PASS: TestApprovalCollaborationPostgresCaseCompletionInboxRollback (1.16s)
+=== RUN   TestApprovalCollaborationPostgresLegacyMissingIntakeLinkNoWrites
+    approval_collaboration_postgres_test.go:856: PostgreSQL fixture schema=approval_collab_a2d3715eb741415386d23da42b70ae94 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+    approval_collaboration_postgres_test.go:880: C11 legacy_missing_metadata_link=typed_409 writes=0 restored_link_submit=success snapshot=1 slot=1
+--- PASS: TestApprovalCollaborationPostgresLegacyMissingIntakeLinkNoWrites (0.19s)
+=== RUN   TestResubmitAtomic_CompetingSlotRollsBackStatus
+--- PASS: TestResubmitAtomic_CompetingSlotRollsBackStatus (0.05s)
+=== RUN   TestResubmitAtomic_FreeSlotCommitsBoth
+通知发送: 申请 RN-RA-1794040332507185000 - 重新提交
+--- PASS: TestResubmitAtomic_FreeSlotCommitsBoth (0.03s)
+=== RUN   TestCaseTxGuard_CompetingIntakeSlotBlocked
+2026/11/07 16:32:12 从审批申请自动创建案件，审批ID：APR-TX-1
+--- PASS: TestCaseTxGuard_CompetingIntakeSlotBlocked (0.07s)
+=== RUN   TestCaseTxGuard_SelfOwnedSlotPasses
+2026/11/07 16:32:12 从审批申请自动创建案件，审批ID：APR-TX-1
+--- PASS: TestCaseTxGuard_SelfOwnedSlotPasses (0.08s)
+=== RUN   TestCaseTxGuard_LegacyNoIntakeMetadataPasses
+2026/11/07 16:32:12 从审批申请自动创建案件，审批ID：APR-TX-1
+--- PASS: TestCaseTxGuard_LegacyNoIntakeMetadataPasses (0.04s)
+=== RUN   TestClientCreationIdempotency
+=== RUN   TestClientCreationIdempotency/sqlite
+=== RUN   TestClientCreationIdempotency/sqlite/lost_response_reconnect_canonical_replay_and_no_plaintext
+--- PASS: TestClientCreationIdempotency/sqlite/lost_response_reconnect_canonical_replay_and_no_plaintext (0.01s)
+=== RUN   TestClientCreationIdempotency/sqlite/different_payload_conflicts_and_scope_isolation
+--- PASS: TestClientCreationIdempotency/sqlite/different_payload_conflicts_and_scope_isolation (0.01s)
+=== RUN   TestClientCreationIdempotency/sqlite/concurrent_requests_different_payload_false
+--- PASS: TestClientCreationIdempotency/sqlite/concurrent_requests_different_payload_false (0.16s)
+=== RUN   TestClientCreationIdempotency/sqlite/concurrent_requests_different_payload_true
+--- PASS: TestClientCreationIdempotency/sqlite/concurrent_requests_different_payload_true (0.10s)
+=== RUN   TestClientCreationIdempotency/sqlite/claim_and_client_rollback_on_late_failure
+--- PASS: TestClientCreationIdempotency/sqlite/claim_and_client_rollback_on_late_failure (0.01s)
+=== RUN   TestClientCreationIdempotency/sqlite/existing_email_rule_and_failed_claim_release
+--- PASS: TestClientCreationIdempotency/sqlite/existing_email_rule_and_failed_claim_release (0.01s)
+=== RUN   TestClientCreationIdempotency/sqlite/missing_or_invalid_key_material_fails_closed
+--- PASS: TestClientCreationIdempotency/sqlite/missing_or_invalid_key_material_fails_closed (0.01s)
+=== RUN   TestClientCreationIdempotency/sqlite/deleted_result_never_creates_replacement
+--- PASS: TestClientCreationIdempotency/sqlite/deleted_result_never_creates_replacement (0.01s)
+=== RUN   TestClientCreationIdempotency/sqlite/no_key_preserves_optional_identity_and_no_ledger_dependency
+--- PASS: TestClientCreationIdempotency/sqlite/no_key_preserves_optional_identity_and_no_ledger_dependency (0.01s)
+--- PASS: TestClientCreationIdempotency/sqlite (0.34s)
+=== RUN   TestClientCreationIdempotency/postgres
+=== RUN   TestClientCreationIdempotency/postgres/lost_response_reconnect_canonical_replay_and_no_plaintext
+--- PASS: TestClientCreationIdempotency/postgres/lost_response_reconnect_canonical_replay_and_no_plaintext (0.07s)
+=== RUN   TestClientCreationIdempotency/postgres/different_payload_conflicts_and_scope_isolation
+--- PASS: TestClientCreationIdempotency/postgres/different_payload_conflicts_and_scope_isolation (0.06s)
+=== RUN   TestClientCreationIdempotency/postgres/concurrent_requests_different_payload_false
+--- PASS: TestClientCreationIdempotency/postgres/concurrent_requests_different_payload_false (0.09s)
+=== RUN   TestClientCreationIdempotency/postgres/concurrent_requests_different_payload_true
+--- PASS: TestClientCreationIdempotency/postgres/concurrent_requests_different_payload_true (0.09s)
+=== RUN   TestClientCreationIdempotency/postgres/claim_and_client_rollback_on_late_failure
+--- PASS: TestClientCreationIdempotency/postgres/claim_and_client_rollback_on_late_failure (0.05s)
+=== RUN   TestClientCreationIdempotency/postgres/existing_email_rule_and_failed_claim_release
+--- PASS: TestClientCreationIdempotency/postgres/existing_email_rule_and_failed_claim_release (0.05s)
+=== RUN   TestClientCreationIdempotency/postgres/missing_or_invalid_key_material_fails_closed
+--- PASS: TestClientCreationIdempotency/postgres/missing_or_invalid_key_material_fails_closed (0.04s)
+=== RUN   TestClientCreationIdempotency/postgres/deleted_result_never_creates_replacement
+--- PASS: TestClientCreationIdempotency/postgres/deleted_result_never_creates_replacement (0.05s)
+=== RUN   TestClientCreationIdempotency/postgres/no_key_preserves_optional_identity_and_no_ledger_dependency
+--- PASS: TestClientCreationIdempotency/postgres/no_key_preserves_optional_identity_and_no_ledger_dependency (0.05s)
+--- PASS: TestClientCreationIdempotency/postgres (0.56s)
+--- PASS: TestClientCreationIdempotency (0.90s)
+=== RUN   TestClientCreationPostgresMigrationUpDownUp
+--- PASS: TestClientCreationPostgresMigrationUpDownUp (0.06s)
+=== RUN   TestInboxActiveSnapshotBindingFailClosed
+=== RUN   TestInboxActiveSnapshotBindingFailClosed/missing
+--- PASS: TestInboxActiveSnapshotBindingFailClosed/missing (0.04s)
+=== RUN   TestInboxActiveSnapshotBindingFailClosed/blank_pointer
+--- PASS: TestInboxActiveSnapshotBindingFailClosed/blank_pointer (0.04s)
+=== RUN   TestInboxActiveSnapshotBindingFailClosed/foreign_approval
+--- PASS: TestInboxActiveSnapshotBindingFailClosed/foreign_approval (0.04s)
+=== RUN   TestInboxActiveSnapshotBindingFailClosed/wrong_type
+--- PASS: TestInboxActiveSnapshotBindingFailClosed/wrong_type (0.04s)
+=== RUN   TestInboxActiveSnapshotBindingFailClosed/invalid_json
+--- PASS: TestInboxActiveSnapshotBindingFailClosed/invalid_json (0.04s)
+=== RUN   TestInboxActiveSnapshotBindingFailClosed/snapshot_id
+--- PASS: TestInboxActiveSnapshotBindingFailClosed/snapshot_id (0.04s)
+=== RUN   TestInboxActiveSnapshotBindingFailClosed/approval_id
+--- PASS: TestInboxActiveSnapshotBindingFailClosed/approval_id (0.04s)
+=== RUN   TestInboxActiveSnapshotBindingFailClosed/round
+--- PASS: TestInboxActiveSnapshotBindingFailClosed/round (0.04s)
+=== RUN   TestInboxActiveSnapshotBindingFailClosed/zero_round
+--- PASS: TestInboxActiveSnapshotBindingFailClosed/zero_round (0.04s)
+=== RUN   TestInboxActiveSnapshotBindingFailClosed/intake_id
+--- PASS: TestInboxActiveSnapshotBindingFailClosed/intake_id (0.04s)
+=== RUN   TestInboxActiveSnapshotBindingFailClosed/original_intake
+--- PASS: TestInboxActiveSnapshotBindingFailClosed/original_intake (0.04s)
+=== RUN   TestInboxActiveSnapshotBindingFailClosed/check_id
+--- PASS: TestInboxActiveSnapshotBindingFailClosed/check_id (0.04s)
+=== RUN   TestInboxActiveSnapshotBindingFailClosed/task_id
+--- PASS: TestInboxActiveSnapshotBindingFailClosed/task_id (0.04s)
+=== RUN   TestInboxActiveSnapshotBindingFailClosed/unauthorized_check
+--- PASS: TestInboxActiveSnapshotBindingFailClosed/unauthorized_check (0.04s)
+--- PASS: TestInboxActiveSnapshotBindingFailClosed (0.55s)
+=== RUN   TestInboxActiveSnapshotSchemaErrorIsNotEmptySuccess
+
+2026/11/07 16:32:14 [31;1m/private/tmp/lawoa-intake-collaboration-20261107/internal/services/inbox_workflow_action.go:77 [35;1mno such table: approval_snapshots
+[0m[33m[0.049ms] [34;1m[rows:0][0m SELECT * FROM `approval_snapshots` WHERE id IN ("snapshot-one")
+
+2026/11/07 16:32:14 [31;1m/private/tmp/lawoa-intake-collaboration-20261107/internal/services/inbox_workflow_action.go:77 [35;1mno such table: approval_snapshots
+[0m[33m[0.030ms] [34;1m[rows:0][0m SELECT * FROM `approval_snapshots` WHERE id IN ("snapshot-one")
+--- PASS: TestInboxActiveSnapshotSchemaErrorIsNotEmptySuccess (0.05s)
+=== RUN   TestInboxLegacyMetadataConsistencyStillRequired
+--- PASS: TestInboxLegacyMetadataConsistencyStillRequired (0.13s)
+=== RUN   TestInboxActiveSnapshotsBatchAcrossApprovals
+    inbox_active_snapshot_test.go:135: approval_count=76 snapshot_queries=1 total_queries=11 one_approval_queries=11
+--- PASS: TestInboxActiveSnapshotsBatchAcrossApprovals (0.26s)
+=== RUN   TestInboxWorkflowCannotBeManuallyCompleted
+--- PASS: TestInboxWorkflowCannotBeManuallyCompleted (0.01s)
+=== RUN   TestInboxLegacyArchiveIsNotBusinessCompletion
+--- PASS: TestInboxLegacyArchiveIsNotBusinessCompletion (0.01s)
+=== RUN   TestInboxApprovalHandoffIdempotentAndRollback
+
+2026/11/07 16:32:14 [34;1m/private/tmp/lawoa-intake-collaboration-20261107/internal/services/inbox_workflow_contract_test.go:136
+[0m[35m[warn] [0mremoving callback `inbox:fail` from /private/tmp/lawoa-intake-collaboration-20261107/internal/services/inbox_workflow_contract_test.go:136
+--- PASS: TestInboxApprovalHandoffIdempotentAndRollback (0.05s)
+=== RUN   TestInboxSupplementActionJSONContract
+--- PASS: TestInboxSupplementActionJSONContract (0.04s)
+=== RUN   TestInboxAuthorizationBeforePaginationAndCount
+--- PASS: TestInboxAuthorizationBeforePaginationAndCount (0.05s)
+=== RUN   TestInboxMoreThan1000AndSnoozeKeepsActionableCount
+--- PASS: TestInboxMoreThan1000AndSnoozeKeepsActionableCount (0.29s)
+=== RUN   TestInboxRejectsForgedServiceFields
+--- PASS: TestInboxRejectsForgedServiceFields (0.00s)
+=== RUN   TestInboxReassignmentAndCaseFailureProjection
+--- PASS: TestInboxReassignmentAndCaseFailureProjection (0.06s)
+=== RUN   TestInboxReconcileReadsDurableApprovalInsteadOfCallerTimestamp
+--- PASS: TestInboxReconcileReadsDurableApprovalInsteadOfCallerTimestamp (0.04s)
+=== RUN   TestInboxTrustedLegacyHandoffDoesNotGainBusinessCapability
+--- PASS: TestInboxTrustedLegacyHandoffDoesNotGainBusinessCapability (0.04s)
+=== RUN   TestInboxConflictAssignmentCompletionAndRollback
+
+2026/11/07 16:32:15 [34;1m/private/tmp/lawoa-intake-collaboration-20261107/internal/services/inbox_workflow_contract_test.go:386
+[0m[35m[warn] [0mremoving callback `inbox:conflict-fail` from /private/tmp/lawoa-intake-collaboration-20261107/internal/services/inbox_workflow_contract_test.go:386
+
+2026/11/07 16:32:15 [31;1m/private/tmp/lawoa-intake-collaboration-20261107/internal/services/conflict_reviewer_service.go:332 [35;1mrecord not found
+[0m[33m[0.104ms] [34;1m[rows:0][0m SELECT * FROM `conflict_reviewer_assignments` WHERE (check_id = "check-uuid" AND status = "ACTIVE") AND (effective_from IS NULL OR effective_from <= "2026-11-07 16:32:15.294") AND (effective_to IS NULL OR effective_to > "2026-11-07 16:32:15.294") ORDER BY created_at DESC,`conflict_reviewer_assignments`.`id` LIMIT 1
+--- PASS: TestInboxConflictAssignmentCompletionAndRollback (0.05s)
+=== RUN   TestInboxProjectionUsesBatchQueries
+--- PASS: TestInboxProjectionUsesBatchQueries (0.09s)
+=== RUN   TestInboxConflictReassignmentAndReturnToEarlierActiveAssignment
+--- PASS: TestInboxConflictReassignmentAndReturnToEarlierActiveAssignment (0.05s)
+=== RUN   TestInboxB2PostgresRevisedSubmission
+    inbox_workflow_postgres_test.go:46: PostgreSQL fixture schema=approval_collab_653ee558f24641e5ab5e0f2a1470d26b server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:15 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:15 集成审批申请创建完成，ID：18e5b62e12533af0
+通知发送: 申请 AP-20261107-6176d334-c21d-42cc-9cf7-6ebc6d70f396 - 需要修改
+    inbox_workflow_postgres_test.go:46: B2 real resubmit approval=18e5b62e12533af0 intake=e82d8f53-c799-49a0-beb5-6fa82fa693ba C1=COLLAB-PG-feb4f813-3b24-439d-82a3-3e40ef53a5c1 C2=COLLAB-PG-REVISED-853f5b19-39a3-4c5e-af7f-2ca53f43bd30 active=4ead713c-c81a-49d2-8438-51c30b5ed220 historical_metadata_unchanged=true
+通知发送: 申请 AP-20261107-6176d334-c21d-42cc-9cf7-6ebc6d70f396 - 需要修改
+2026/11/07 16:32:15 处理包含冲突检测的审批申请，审批ID：18e5b62e12533af0，决定：approve
+2026/11/07 16:32:15 从审批申请自动创建案件，审批ID：18e5b62e12533af0
+2026/11/07 16:32:15 审批通过后已自动成案，审批ID=18e5b62e12533af0，操作人=虚构审批合伙人，案件ID=1
+2026/11/07 16:32:15 审批申请处理完成，ID：18e5b62e12533af0，最终状态：approved
+    inbox_workflow_postgres_test.go:97: B2 list/stats/get current-round agreement=true second_return_supplement=true case=1 result=9
+--- PASS: TestInboxB2PostgresRevisedSubmission (0.44s)
+=== RUN   TestApprovalSubmissionResolverPointerBeatsCreatedTime
+--- PASS: TestApprovalSubmissionResolverPointerBeatsCreatedTime (0.01s)
+=== RUN   TestApprovalSubmissionResolverLegacyAgreement
+--- PASS: TestApprovalSubmissionResolverLegacyAgreement (0.01s)
+=== RUN   TestApprovalSubmissionResolverNonIntakeLegacy
+--- PASS: TestApprovalSubmissionResolverNonIntakeLegacy (0.00s)
+=== RUN   TestIntakeSubmissionPGFreezeResponsesReplayAndImmutability
+--- PASS: TestIntakeSubmissionPGFreezeResponsesReplayAndImmutability (0.14s)
+=== RUN   TestIntakeSubmissionPGNegativeGates
+=== RUN   TestIntakeSubmissionPGNegativeGates/changed_party_identity
+--- PASS: TestIntakeSubmissionPGNegativeGates/changed_party_identity (0.10s)
+=== RUN   TestIntakeSubmissionPGNegativeGates/changed_party_role
+--- PASS: TestIntakeSubmissionPGNegativeGates/changed_party_role (0.10s)
+=== RUN   TestIntakeSubmissionPGNegativeGates/changed_client
+--- PASS: TestIntakeSubmissionPGNegativeGates/changed_client (0.10s)
+=== RUN   TestIntakeSubmissionPGNegativeGates/missing_current_check
+--- PASS: TestIntakeSubmissionPGNegativeGates/missing_current_check (0.10s)
+=== RUN   TestIntakeSubmissionPGNegativeGates/unconfirmed_facts
+--- PASS: TestIntakeSubmissionPGNegativeGates/unconfirmed_facts (0.10s)
+=== RUN   TestIntakeSubmissionPGNegativeGates/review_mismatch
+--- PASS: TestIntakeSubmissionPGNegativeGates/review_mismatch (0.10s)
+=== RUN   TestIntakeSubmissionPGNegativeGates/expired_review
+--- PASS: TestIntakeSubmissionPGNegativeGates/expired_review (0.10s)
+=== RUN   TestIntakeSubmissionPGNegativeGates/self_review
+--- PASS: TestIntakeSubmissionPGNegativeGates/self_review (0.10s)
+=== RUN   TestIntakeSubmissionPGNegativeGates/manager_review
+--- PASS: TestIntakeSubmissionPGNegativeGates/manager_review (0.10s)
+=== RUN   TestIntakeSubmissionPGNegativeGates/assignment_replaced_after_review
+--- PASS: TestIntakeSubmissionPGNegativeGates/assignment_replaced_after_review (0.10s)
+=== RUN   TestIntakeSubmissionPGNegativeGates/assignment_bound_to_other_case
+--- PASS: TestIntakeSubmissionPGNegativeGates/assignment_bound_to_other_case (0.10s)
+=== RUN   TestIntakeSubmissionPGNegativeGates/assignment_revoked
+--- PASS: TestIntakeSubmissionPGNegativeGates/assignment_revoked (0.10s)
+=== RUN   TestIntakeSubmissionPGNegativeGates/missing_dependency
+--- PASS: TestIntakeSubmissionPGNegativeGates/missing_dependency (0.10s)
+=== RUN   TestIntakeSubmissionPGNegativeGates/insufficient_decision
+--- PASS: TestIntakeSubmissionPGNegativeGates/insufficient_decision (0.10s)
+--- PASS: TestIntakeSubmissionPGNegativeGates (1.37s)
+=== RUN   TestIntakeSubmissionPGTransactionRollbackAndConcurrentReplay
+--- PASS: TestIntakeSubmissionPGTransactionRollbackAndConcurrentReplay (0.19s)
+=== RUN   TestIntakeSubmissionPGMigrationUpDownAndRefusal
+--- PASS: TestIntakeSubmissionPGMigrationUpDownAndRefusal (0.12s)
+=== RUN   TestIntakeSubmissionPGControlledResponsePermissionsAndRollback
+=== RUN   TestIntakeSubmissionPGControlledResponsePermissionsAndRollback/other_lawyer
+--- PASS: TestIntakeSubmissionPGControlledResponsePermissionsAndRollback/other_lawyer (0.00s)
+=== RUN   TestIntakeSubmissionPGControlledResponsePermissionsAndRollback/assistant
+--- PASS: TestIntakeSubmissionPGControlledResponsePermissionsAndRollback/assistant (0.00s)
+=== RUN   TestIntakeSubmissionPGControlledResponsePermissionsAndRollback/stale_revision
+--- PASS: TestIntakeSubmissionPGControlledResponsePermissionsAndRollback/stale_revision (0.00s)
+=== RUN   TestIntakeSubmissionPGControlledResponsePermissionsAndRollback/wrong_return
+--- PASS: TestIntakeSubmissionPGControlledResponsePermissionsAndRollback/wrong_return (0.00s)
+=== RUN   TestIntakeSubmissionPGControlledResponsePermissionsAndRollback/forged_item
+--- PASS: TestIntakeSubmissionPGControlledResponsePermissionsAndRollback/forged_item (0.00s)
+--- PASS: TestIntakeSubmissionPGControlledResponsePermissionsAndRollback (0.13s)
+=== RUN   TestIntakeSubmissionPGSnapshotWriteFailureRollsBack
+--- PASS: TestIntakeSubmissionPGSnapshotWriteFailureRollsBack (0.11s)
+=== RUN   TestApprovalSubmissionPreservesBusinessRole
+--- PASS: TestApprovalSubmissionPreservesBusinessRole (0.00s)
+=== RUN   TestIntakeSupplementNormalization
+--- PASS: TestIntakeSupplementNormalization (0.00s)
+=== RUN   TestIntakeSupplementRejectUncontrolledKeys
+=== RUN   TestIntakeSupplementRejectUncontrolledKeys/unknown_envelope
+--- PASS: TestIntakeSupplementRejectUncontrolledKeys/unknown_envelope (0.00s)
+=== RUN   TestIntakeSupplementRejectUncontrolledKeys/spoofed_ID
+--- PASS: TestIntakeSupplementRejectUncontrolledKeys/spoofed_ID (0.00s)
+=== RUN   TestIntakeSupplementRejectUncontrolledKeys/unknown_item_field
+--- PASS: TestIntakeSupplementRejectUncontrolledKeys/unknown_item_field (0.00s)
+=== RUN   TestIntakeSupplementRejectUncontrolledKeys/arbitrary_path
+--- PASS: TestIntakeSupplementRejectUncontrolledKeys/arbitrary_path (0.00s)
+=== RUN   TestIntakeSupplementRejectUncontrolledKeys/upload
+--- PASS: TestIntakeSupplementRejectUncontrolledKeys/upload (0.00s)
+=== RUN   TestIntakeSupplementRejectUncontrolledKeys/HTML
+--- PASS: TestIntakeSupplementRejectUncontrolledKeys/HTML (0.00s)
+=== RUN   TestIntakeSupplementRejectUncontrolledKeys/empty_list
+--- PASS: TestIntakeSupplementRejectUncontrolledKeys/empty_list (0.00s)
+--- PASS: TestIntakeSupplementRejectUncontrolledKeys (0.00s)
+=== RUN   TestIntakeSupplementLegacyReadOnlyAndFingerprint
+--- PASS: TestIntakeSupplementLegacyReadOnlyAndFingerprint (0.00s)
+=== RUN   TestBackendFinalReviewPostgresHTTPLegacyBoundaries
+=== RUN   TestBackendFinalReviewPostgresHTTPLegacyBoundaries/ordinary
+    approval_backend_final_review_postgres_test.go:177: PostgreSQL fixture schema=approval_collab_4e5085ab1d054d7bab1701de509f2cdf server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:18 处理包含冲突检测的审批申请，审批ID：18e5b62ea8ea0ac0，决定：approve
+2026/11/07 16:32:18 处理受控成案审批决定失败: 处理审批决定失败：此旧冲突审批仅保留历史记录，不能同意并成案；请完成独立冲突复核后从原接案工作台提交接案审批
+--- PASS: TestBackendFinalReviewPostgresHTTPLegacyBoundaries/ordinary (0.18s)
+=== RUN   TestBackendFinalReviewPostgresHTTPLegacyBoundaries/integrated
+    approval_backend_final_review_postgres_test.go:177: PostgreSQL fixture schema=approval_collab_0fda8446b3c24956b05df7c3156f7b29 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:18 处理包含冲突检测的审批申请，审批ID：18e5b62eb3798c68，决定：approve
+--- PASS: TestBackendFinalReviewPostgresHTTPLegacyBoundaries/integrated (0.18s)
+=== RUN   TestBackendFinalReviewPostgresHTTPLegacyBoundaries/retry
+    approval_backend_final_review_postgres_test.go:177: PostgreSQL fixture schema=approval_collab_01f80e9e4af34fff93697d3dd9d63290 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:18 从审批申请自动创建案件，审批ID：18e5b62ebe6c0600
+--- PASS: TestBackendFinalReviewPostgresHTTPLegacyBoundaries/retry (0.17s)
+=== RUN   TestBackendFinalReviewPostgresHTTPLegacyBoundaries/create_old_ticket
+    approval_backend_final_review_postgres_test.go:177: PostgreSQL fixture schema=approval_collab_41aaba4cc3fe4744aac4431a2cb64279 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+--- PASS: TestBackendFinalReviewPostgresHTTPLegacyBoundaries/create_old_ticket (0.17s)
+--- PASS: TestBackendFinalReviewPostgresHTTPLegacyBoundaries (0.69s)
+=== RUN   TestBackendFinalReviewPostgresHistoricalSnapshotClientRevoked
+=== RUN   TestBackendFinalReviewPostgresHistoricalSnapshotClientRevoked/lawyer
+    approval_backend_final_review_postgres_test.go:186: PostgreSQL fixture schema=approval_collab_e15d03ab7cc740298bc7cae51b6bb3f2 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:18 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:18 集成审批申请创建完成，ID：18e5b62ed211f610
+通知发送: 申请 AP-20261107-e228f765-897d-4d2f-8ae9-83ae6423c443 - 需要修改
+--- PASS: TestBackendFinalReviewPostgresHistoricalSnapshotClientRevoked/lawyer (0.29s)
+=== RUN   TestBackendFinalReviewPostgresHistoricalSnapshotClientRevoked/partner
+    approval_backend_final_review_postgres_test.go:186: PostgreSQL fixture schema=approval_collab_705cd7271c5b4a759690e2667efe3920 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:19 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:19 集成审批申请创建完成，ID：18e5b62ee37f3430
+通知发送: 申请 AP-20261107-ab4bb169-306f-436a-bd1c-11e640749086 - 需要修改
+--- PASS: TestBackendFinalReviewPostgresHistoricalSnapshotClientRevoked/partner (0.28s)
+=== RUN   TestBackendFinalReviewPostgresHistoricalSnapshotClientRevoked/conflict_officer
+    approval_backend_final_review_postgres_test.go:186: PostgreSQL fixture schema=approval_collab_9043668d3fb2477a8104ca3923a1c1e6 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:19 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:19 集成审批申请创建完成，ID：18e5b62ef4ac5440
+通知发送: 申请 AP-20261107-7ee3c9e1-fc70-43c3-8958-5a0b246fca95 - 需要修改
+--- PASS: TestBackendFinalReviewPostgresHistoricalSnapshotClientRevoked/conflict_officer (0.29s)
+--- PASS: TestBackendFinalReviewPostgresHistoricalSnapshotClientRevoked (0.86s)
+=== RUN   TestBackendFinalReviewPostgresSnapshotRevokedContext
+=== RUN   TestBackendFinalReviewPostgresSnapshotRevokedContext/lawyer
+    approval_backend_final_review_http_test.go:132: PostgreSQL fixture schema=approval_collab_42f155e094c043d6b50ab4faf3956302 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:19 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:19 集成审批申请创建完成，ID：18e5b62f05e77258
+--- PASS: TestBackendFinalReviewPostgresSnapshotRevokedContext/lawyer (0.21s)
+=== RUN   TestBackendFinalReviewPostgresSnapshotRevokedContext/partner
+    approval_backend_final_review_http_test.go:132: PostgreSQL fixture schema=approval_collab_918f70b5a57f4832bbc22027fb219c7c server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:19 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:19 集成审批申请创建完成，ID：18e5b62f12c095e0
+--- PASS: TestBackendFinalReviewPostgresSnapshotRevokedContext/partner (0.21s)
+=== RUN   TestBackendFinalReviewPostgresSnapshotRevokedContext/conflict_officer
+    approval_backend_final_review_http_test.go:132: PostgreSQL fixture schema=approval_collab_814161d84dd54e42b512381b19dca19c server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:20 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:20 集成审批申请创建完成，ID：18e5b62f1f6cae28
+--- PASS: TestBackendFinalReviewPostgresSnapshotRevokedContext/conflict_officer (0.21s)
+--- PASS: TestBackendFinalReviewPostgresSnapshotRevokedContext (0.63s)
+=== RUN   TestApprovalCollaborationPostgresHTTPInitialSubmission
+=== RUN   TestApprovalCollaborationPostgresHTTPInitialSubmission/first_submit_then_duplicate
+    approval_collaboration_postgres_http_test.go:31: PostgreSQL fixture schema=approval_collab_7f966dee0e6f4ca3a5fc8a730f1cd6e2 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:20 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:20 集成审批申请创建完成，ID：18e5b62f2d03d638
+    approval_collaboration_postgres_http_test.go:122: initial HTTP actual_claims=1 snapshot_fault_hits=0 approval=1 snapshot=1 slot=1 decision_task=1 duplicate=409 no_writes=true
+--- PASS: TestApprovalCollaborationPostgresHTTPInitialSubmission/first_submit_then_duplicate (0.22s)
+=== RUN   TestApprovalCollaborationPostgresHTTPInitialSubmission/snapshot_failure_then_original_retry
+    approval_collaboration_postgres_http_test.go:31: PostgreSQL fixture schema=approval_collab_bce2c3aa9c544d26ac9303701ea302cb server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:20 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:20 提交集成审批申请失败：injected-http-initial-snapshot-failure
+2026/11/07 16:32:20 创建带冲突检测的审批申请失败: 提交集成审批申请失败：injected-http-initial-snapshot-failure
+2026/11/07 16:32:20 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:20 集成审批申请创建完成，ID：18e5b62f3b0df3f8
+    approval_collaboration_postgres_http_test.go:122: initial HTTP actual_claims=2 snapshot_fault_hits=1 approval=1 snapshot=1 slot=1 decision_task=1 duplicate=409 no_writes=true
+--- PASS: TestApprovalCollaborationPostgresHTTPInitialSubmission/snapshot_failure_then_original_retry (0.26s)
+--- PASS: TestApprovalCollaborationPostgresHTTPInitialSubmission (0.49s)
+=== RUN   TestApprovalCollaborationPostgresHTTPStaleDecision
+=== RUN   TestApprovalCollaborationPostgresHTTPStaleDecision/ordinary_snapshot
+    approval_collaboration_postgres_http_test.go:133: PostgreSQL fixture schema=approval_collab_403e367f35714d629b813e9f5af0e62c server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:20 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:20 集成审批申请创建完成，ID：18e5b62f4927b5a0
+通知发送: 申请 AP-20261107-3a0d9a1c-f8ec-48b9-a96a-15191b6cea7e - 需要修改
+    approval_collaboration_postgres_http_test.go:172: C11 actual HTTP entry=ordinary stale=snapshot status=409 code=APPROVAL_SUBMISSION_VERSION_CONFLICT writes=0
+--- PASS: TestApprovalCollaborationPostgresHTTPStaleDecision/ordinary_snapshot (0.24s)
+=== RUN   TestApprovalCollaborationPostgresHTTPStaleDecision/ordinary_node
+    approval_collaboration_postgres_http_test.go:133: PostgreSQL fixture schema=approval_collab_9c9c1838923a48f09a68a3ae2085f9b2 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:21 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:21 集成审批申请创建完成，ID：18e5b62f578ee398
+通知发送: 申请 AP-20261107-10afa51a-39b8-49b8-8730-f7a973e13e64 - 需要修改
+    approval_collaboration_postgres_http_test.go:172: C11 actual HTTP entry=ordinary stale=node status=409 code=APPROVAL_ACTION_VERSION_CONFLICT writes=0
+--- PASS: TestApprovalCollaborationPostgresHTTPStaleDecision/ordinary_node (0.24s)
+=== RUN   TestApprovalCollaborationPostgresHTTPStaleDecision/integrated_snapshot
+    approval_collaboration_postgres_http_test.go:133: PostgreSQL fixture schema=approval_collab_6f7d18b5bfca405d8e464941127e007d server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:21 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:21 集成审批申请创建完成，ID：18e5b62f657f9970
+通知发送: 申请 AP-20261107-5897d734-d1b9-4cd3-a4e2-b8fbf0618f04 - 需要修改
+2026/11/07 16:32:21 处理包含冲突检测的审批申请，审批ID：18e5b62f657f9970，决定：approve
+    approval_collaboration_postgres_http_test.go:172: C11 actual HTTP entry=integrated stale=snapshot status=409 code=APPROVAL_SUBMISSION_VERSION_CONFLICT writes=0
+--- PASS: TestApprovalCollaborationPostgresHTTPStaleDecision/integrated_snapshot (0.25s)
+=== RUN   TestApprovalCollaborationPostgresHTTPStaleDecision/integrated_node
+    approval_collaboration_postgres_http_test.go:133: PostgreSQL fixture schema=approval_collab_27739a14cc6f49a39cc66203acd6523d server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:21 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:21 集成审批申请创建完成，ID：18e5b62f74df7b60
+通知发送: 申请 AP-20261107-56c958d4-9b4f-4dfa-8b45-bd9ae3c0e257 - 需要修改
+2026/11/07 16:32:21 处理包含冲突检测的审批申请，审批ID：18e5b62f74df7b60，决定：approve
+    approval_collaboration_postgres_http_test.go:172: C11 actual HTTP entry=integrated stale=node status=409 code=APPROVAL_ACTION_VERSION_CONFLICT writes=0
+--- PASS: TestApprovalCollaborationPostgresHTTPStaleDecision/integrated_node (0.25s)
+--- PASS: TestApprovalCollaborationPostgresHTTPStaleDecision (0.98s)
+=== RUN   TestInboxB2PostgresHTTPListStatsGetAndHome
+    inbox_workflow_postgres_http_test.go:19: PostgreSQL fixture schema=approval_collab_0ca61d97f97148f68366c9eb83891752 server=PostgreSQL 16.10 (Homebrew) on x86_64-apple-darwin23.6.0, compiled by Apple clang version 16.0.0 (clang-1600.0.26.6), 64-bit
+2026/11/07 16:32:21 创建集成审批申请，用户：虚构申请律师，类型：case_creation
+2026/11/07 16:32:21 集成审批申请创建完成，ID：18e5b62f8361f988
+通知发送: 申请 AP-20261107-c0e5adaa-1a1c-4775-89ee-dcfa82de7746 - 需要修改
+    inbox_workflow_postgres_http_test.go:19: B2 real resubmit approval=18e5b62f8361f988 intake=4ee46551-aa61-4ae9-a923-57c2d5de8e08 C1=COLLAB-PG-b424df70-f46c-4233-8efa-5b0203e83088 C2=COLLAB-PG-REVISED-a6ee1e85-033e-4520-bf79-5763ae50969f active=ec7cb58b-4bd3-4dc0-a32a-066e4844a6d9 historical_metadata_unchanged=true
+=== RUN   TestInboxB2PostgresHTTPListStatsGetAndHome/partner
+    inbox_workflow_postgres_http_test.go:76: B2 real HTTP actor=partner list=1 get_id=4 stats_needs_action=1 stats_waiting=0 home_todos=1 home_stats_equal=true
+--- PASS: TestInboxB2PostgresHTTPListStatsGetAndHome/partner (0.07s)
+=== RUN   TestInboxB2PostgresHTTPListStatsGetAndHome/lawyer
+    inbox_workflow_postgres_http_test.go:76: B2 real HTTP actor=lawyer list=1 get_id=5 stats_needs_action=0 stats_waiting=1 home_todos=0 home_stats_equal=true
+--- PASS: TestInboxB2PostgresHTTPListStatsGetAndHome/lawyer (0.05s)
+--- PASS: TestInboxB2PostgresHTTPListStatsGetAndHome (0.34s)
+PASS
+ok  	law-oa-go/internal/services	23.208s

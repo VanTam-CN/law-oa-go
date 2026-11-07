@@ -1,0 +1,3 @@
+ok  	law-oa-go/internal/services	1.367s [no tests to run]
+ok  	law-oa-go/internal/handlers	1.713s [no tests to run]
+ok  	law-oa-go/internal/database	1.731s [no tests to run]

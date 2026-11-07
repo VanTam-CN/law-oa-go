@@ -1,0 +1,12 @@
+diff internal/services/inbox_c06_postgres_http_test.go.orig internal/services/inbox_c06_postgres_http_test.go
+--- internal/services/inbox_c06_postgres_http_test.go.orig
++++ internal/services/inbox_c06_postgres_http_test.go
+@@ -113,7 +113,7 @@
+ 		now := time.Now().UTC().Truncate(time.Microsecond)
+ 		checkID := "C06-" + uuid.NewString()
+ 		check := models.ConflictCheckRecord{CheckID: checkID, ClientID: fmt.Sprint(matter.ClientID), ClientName: "C06_PRIVATE_CLIENT", CaseName: "C06_PRIVATE_TITLE", UserID: 11, CheckStatus: "COMPLETED", CheckTime: now,
+-				SearchParameters: models.JSON{"subjectCaseId": fmt.Sprint(caseID)}, CheckResult: models.JSON{"checkId": checkID, "decision": map[string]interface{}{"coverageStatus": "COMPLETE"}}}
++			SearchParameters: models.JSON{"subjectCaseId": fmt.Sprint(caseID)}, CheckResult: models.JSON{"checkId": checkID, "decision": map[string]interface{}{"coverageStatus": "COMPLETE"}}}
+ 		require.NoError(t, db.Create(&check).Error)
+ 		assignment := models.ConflictReviewerAssignment{ID: uuid.NewString(), CheckID: checkID, CaseID: &caseID, ReviewerID: 33, AssignedBy: 22, Status: models.ConflictReviewerAssignmentActive, RecusalDeclared: true, EffectiveFrom: &now, CreatedAt: now, UpdatedAt: now}
+ 		require.NoError(t, db.Create(&assignment).Error)

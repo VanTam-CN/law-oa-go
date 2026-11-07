@@ -1,0 +1,66 @@
+[
+  {
+    "check": "01-create-isolated-db",
+    "exit_code": 0
+  },
+  {
+    "check": "02-bootstrap",
+    "exit_code": 0
+  },
+  {
+    "check": "03-down-84",
+    "exit_code": 0
+  },
+  {
+    "check": "03-down-83",
+    "exit_code": 0
+  },
+  {
+    "check": "03-down-82",
+    "exit_code": 0
+  },
+  {
+    "check": "04-up-82",
+    "exit_code": 0
+  },
+  {
+    "check": "04-up-83",
+    "exit_code": 0
+  },
+  {
+    "check": "04-up-84",
+    "exit_code": 0
+  },
+  {
+    "check": "05-down-84",
+    "exit_code": 0
+  },
+  {
+    "check": "05-down-83",
+    "exit_code": 0
+  },
+  {
+    "check": "05-down-82",
+    "exit_code": 0
+  },
+  {
+    "check": "06-up-82",
+    "exit_code": 0
+  },
+  {
+    "check": "06-up-83",
+    "exit_code": 0
+  },
+  {
+    "check": "06-up-84",
+    "exit_code": 0
+  },
+  {
+    "check": "07-bootstrap-repeat",
+    "exit_code": 0
+  },
+  {
+    "check": "08-invariant-catalog",
+    "exit_code": 0
+  }
+]

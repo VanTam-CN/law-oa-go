@@ -1,0 +1,6 @@
+# law-oa-go/internal/services [law-oa-go/internal/services.test]
+internal/services/inbox_workflow_contract_test.go:40:49: response.CompletionMode undefined (type *InboxItemResponse has no field or method CompletionMode)
+internal/services/inbox_workflow_contract_test.go:44:25: svc.ArchiveInboxItem undefined (type *InboxService has no field or method ArchiveInboxItem)
+FAIL	law-oa-go/internal/services [build failed]
+ok  	law-oa-go/internal/handlers	1.450s [no tests to run]
+FAIL

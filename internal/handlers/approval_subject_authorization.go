@@ -26,6 +26,13 @@ func (h *ApprovalHandler) authorizeApprovalConflictContext(c *gin.Context, appro
 	if !ok {
 		return false
 	}
+	if approval.Status == models.ApprovalStatusNeedsRevision && approval.ActiveSubmissionSnapshotID != nil {
+		if err := services.AuthorizeApprovalRevisionContext(c.Request.Context(), h.db, h.authorization, actor, approval); err != nil {
+			writeIntakeCollaborationError(c, err)
+			return false
+		}
+		return true
+	}
 
 	checkID := approvalConflictCheckID(approval)
 	if checkID == "" {
