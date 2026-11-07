@@ -1162,10 +1162,10 @@ func (s *approvalConflictIntegrationService) ProcessApprovalWithConflict(ctx con
 		return nil, fmt.Errorf("处理审批决定失败：%w", err)
 	}
 
-	// “同意并成案”必须在审批通过后立即创建并回填正式案件。只有明确
-	// 绑定成案的审批类型才进入此分支，普通合同/财务等审批不会误成案。
-	if decisionReq.Decision == models.ApprovalDecisionApprove && requiresCaseCreation {
-		if _, err := s.ensureApprovedApprovalHasCase(ctx, approval, userID, userName); err != nil {
+	// Only the final approved outcome creates a case. An intermediate approve
+	// advances the next node and must leave case tracking untouched.
+	if decisionReq.Decision == models.ApprovalDecisionApprove && requiresCaseCreation && updatedApproval.Status == models.ApprovalStatusApproved {
+		if _, err := s.ensureApprovedApprovalHasCase(ctx, updatedApproval, userID, userName); err != nil {
 			log.Printf("自动创建案件失败：%v", err)
 			_ = s.updateCaseTracking(ctx, approvalID, "failed", nil, nil, err.Error())
 			return nil, fmt.Errorf("审批已记录，但正式成案失败，已进入失败重试状态：%w", err)
