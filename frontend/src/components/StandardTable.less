@@ -1,0 +1,710 @@
+/* 
+ * 律所OA系统标准表格组件样式
+ * 基于设计标记系统的专业表格样式
+ */
+
+/* =============================================================================
+   1. 表格容器 (Table Container) - 主要容器样式
+   ============================================================================= */
+
+.standard-table {
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-sm) !important;
+  border: 1px solid var(--color-border-base) !important;
+  transition: all var(--duration-normal) var(--ease-out) !important;
+
+  &:hover {
+    box-shadow: var(--shadow-md) !important;
+  }
+
+  &.fullscreen {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    z-index: var(--z-index-modal) !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    border: none !important;
+    height: 100vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+
+    .ant-card-body {
+      flex: 1 !important;
+      overflow: hidden !important;
+      display: flex !important;
+      flex-direction: column !important;
+    }
+
+    .ant-table {
+      height: 100% !important;
+    }
+
+    .ant-table-container {
+      height: 100% !important;
+      display: flex !important;
+      flex-direction: column !important;
+    }
+
+    .ant-table-body {
+      flex: 1 !important;
+      overflow-y: auto !important;
+    }
+  }
+}
+
+/* =============================================================================
+   2. 表格头部 (Table Header) - 头部区域样式
+   ============================================================================= */
+
+.table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border-split);
+  background-color: var(--color-bg-container);
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .table-title {
+    font-size: var(--font-size-lg);
+    margin: 0;
+    color: var(--color-text-primary);
+  }
+}
+
+/* =============================================================================
+   3. 工具栏 (Toolbar) - 搜索和过滤工具
+   ============================================================================= */
+
+.table-toolbar {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border-split);
+  background-color: var(--color-bg-container);
+
+  .ant-input-search {
+    .ant-input {
+      border-radius: var(--radius-md) !important;
+      border: 1px solid var(--color-border-base) !important;
+
+      &:focus {
+        border-color: var(--color-primary) !important;
+        box-shadow: 0 0 0 2px var(--color-primary-100) !important;
+      }
+    }
+
+    .ant-btn {
+      border-radius: 0 var(--radius-md) var(--radius-md) 0 !important;
+    }
+  }
+
+  .ant-select {
+    .ant-select-selector {
+      border-radius: var(--radius-md) !important;
+      border: 1px solid var(--color-border-base) !important;
+
+      &:focus {
+        border-color: var(--color-primary) !important;
+        box-shadow: 0 0 0 2px var(--color-primary-100) !important;
+      }
+    }
+  }
+
+  .ant-btn {
+    border-radius: var(--radius-md) !important;
+    border: 1px solid var(--color-border-base) !important;
+    transition: all var(--duration-fast) var(--ease-out) !important;
+
+    &:hover {
+      border-color: var(--color-primary) !important;
+      color: var(--color-primary) !important;
+    }
+  }
+}
+
+/* =============================================================================
+   4. 表格主体 (Table Body) - 表格内容样式
+   ============================================================================= */
+
+.ant-table {
+  background: transparent !important;
+
+  .ant-table-container {
+    border: none !important;
+  }
+
+  .ant-table-thead > tr > th {
+    background: var(--color-bg-container) !important;
+    border-bottom: 2px solid var(--color-border-split) !important;
+    color: var(--color-text-primary) !important;
+    font-weight: var(--font-weight-semibold) !important;
+    font-size: var(--font-size-sm) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    padding: var(--space-3) var(--space-4) !important;
+    transition: all var(--duration-fast) var(--ease-out) !important;
+
+    &:hover {
+      background: var(--color-bg-hover) !important;
+    }
+
+    &.ant-table-column-has-sorters {
+      cursor: pointer !important;
+
+      &:hover {
+        background: var(--color-bg-hover) !important;
+      }
+    }
+  }
+
+  .ant-table-tbody > tr {
+    transition: all var(--duration-fast) var(--ease-out) !important;
+
+    > td {
+      border-bottom: 1px solid var(--color-border-base) !important;
+      padding: var(--space-3) var(--space-4) !important;
+      color: var(--color-text-primary) !important;
+      font-size: var(--font-size-sm) !important;
+
+      .ant-tag {
+        margin: 0 !important;
+        font-size: var(--font-size-xs) !important;
+        border-radius: var(--radius-sm) !important;
+        border: none !important;
+        padding: 2px 8px !important;
+        font-weight: var(--font-weight-medium) !important;
+      }
+
+      .ant-avatar {
+        border-radius: var(--radius-md) !important;
+        border: 1px solid var(--color-border-base) !important;
+      }
+
+      .ant-image {
+        border-radius: var(--radius-md) !important;
+        overflow: hidden !important;
+
+        img {
+          transition: transform var(--duration-normal) var(--ease-out) !important;
+        }
+
+        &:hover img {
+          transform: scale(1.05) !important;
+        }
+      }
+    }
+
+    &:hover > td {
+      background-color: var(--color-bg-hover) !important;
+    }
+
+    &.selectable-row {
+      cursor: pointer !important;
+
+      &:hover {
+        background-color: var(--color-primary-50) !important;
+      }
+
+      &.ant-table-row-selected {
+        background-color: var(--color-primary-100) !important;
+
+        > td {
+          border-bottom: 1px solid var(--color-primary-200) !important;
+        }
+      }
+    }
+  }
+
+  .ant-table-empty {
+    .ant-empty {
+      padding: var(--space-8) var(--space-4) !important;
+    }
+  }
+}
+
+/* 表格行选择器 */
+.ant-table-selection-col {
+  width: 50px !important;
+  text-align: center !important;
+
+  .ant-checkbox-wrapper {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+}
+
+/* 固定列样式 */
+.ant-table-cell-fix-right,
+.ant-table-cell-fix-left {
+  background: var(--color-bg-container) !important;
+
+  &::before {
+    background-color: var(--color-border-split) !important;
+  }
+}
+
+/* =============================================================================
+   5. 分页组件 (Pagination) - 分页样式
+   ============================================================================= */
+
+.ant-pagination {
+  margin: var(--space-4) 0 var(--space-2) 0 !important;
+  text-align: center !important;
+
+  .ant-pagination-item {
+    border-radius: var(--radius-sm) !important;
+    border: 1px solid var(--color-border-base) !important;
+    margin: 0 2px !important;
+    transition: all var(--duration-fast) var(--ease-out) !important;
+
+    &:hover {
+      border-color: var(--color-primary) !important;
+      color: var(--color-primary) !important;
+    }
+
+    &.ant-pagination-item-active {
+      background-color: var(--color-primary) !important;
+      border-color: var(--color-primary) !important;
+      color: var(--color-text-inverse) !important;
+
+      a {
+        color: var(--color-text-inverse) !important;
+      }
+    }
+  }
+
+  .ant-pagination-prev,
+  .ant-pagination-next {
+    border-radius: var(--radius-sm) !important;
+    border: 1px solid var(--color-border-base) !important;
+    transition: all var(--duration-fast) var(--ease-out) !important;
+
+    &:hover {
+      border-color: var(--color-primary) !important;
+      color: var(--color-primary) !important;
+    }
+  }
+
+  .ant-pagination-options {
+    .ant-select {
+      .ant-select-selector {
+        border-radius: var(--radius-sm) !important;
+        border: 1px solid var(--color-border-base) !important;
+      }
+    }
+  }
+}
+
+/* =============================================================================
+   6. 表格底部 (Table Footer) - 底部信息样式
+   ============================================================================= */
+
+.table-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border-split);
+  background-color: var(--color-bg-container);
+
+  .footer-left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .footer-right {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+}
+
+/* =============================================================================
+   7. 空状态 (Empty State) - 空数据样式
+   ============================================================================= */
+
+.ant-empty {
+  padding: var(--space-8) var(--space-4) !important;
+
+  .ant-empty-image {
+    height: 100px !important;
+    opacity: 0.6;
+  }
+
+  .ant-empty-description {
+    color: var(--color-text-tertiary) !important;
+    font-size: var(--font-size-base) !important;
+  }
+}
+
+/* =============================================================================
+   8. 加载状态 (Loading State) - 加载动画样式
+   ============================================================================= */
+
+.ant-spin-nested-loading {
+  .ant-spin-container {
+    min-height: 200px;
+  }
+
+  .ant-spin {
+    .ant-spin-text {
+      color: var(--color-text-secondary) !important;
+      font-size: var(--font-size-sm) !important;
+      margin-top: var(--space-2) !important;
+    }
+  }
+}
+
+/* =============================================================================
+   9. 列设置菜单 (Column Settings Menu) - 列显示控制
+   ============================================================================= */
+
+.column-settings-menu {
+  .ant-checkbox-wrapper {
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+    margin: var(--space-1) 0 !important;
+
+    .ant-checkbox {
+      margin-right: var(--space-2) !important;
+    }
+
+    span:last-child {
+      flex: 1 !important;
+      font-size: var(--font-size-sm) !important;
+      color: var(--color-text-primary) !important;
+    }
+  }
+}
+
+/* =============================================================================
+   10. 密度设置菜单 (Density Menu) - 表格密度控制
+   ============================================================================= */
+
+.density-menu {
+  .ant-menu-item {
+    display: flex !important;
+    align-items: center !important;
+    padding: var(--space-2) var(--space-4) !important;
+
+    &:hover {
+      background-color: var(--color-bg-hover) !important;
+    }
+
+    span {
+      margin-left: var(--space-2) !important;
+    }
+  }
+}
+
+/* =============================================================================
+   11. 行操作菜单 (Row Actions Menu) - 行级操作
+   ============================================================================= */
+
+.row-actions-menu {
+  .ant-menu-item {
+    display: flex !important;
+    align-items: center !important;
+    padding: var(--space-2) var(--space-4) !important;
+
+    .anticon {
+      margin-right: var(--space-2) !important;
+    }
+
+    &:hover {
+      background-color: var(--color-bg-hover) !important;
+    }
+
+    &.ant-menu-item-danger {
+      color: var(--color-error) !important;
+
+      &:hover {
+        background-color: var(--color-error-50) !important;
+        color: var(--color-error) !important;
+      }
+    }
+  }
+}
+
+/* =============================================================================
+   12. 响应式设计 (Responsive Design) - 移动端适配
+   ============================================================================= */
+
+/* 平板设备 */
+@media (max-width: 1024px) {
+  .standard-table {
+    .table-header,
+    .table-toolbar,
+    .table-footer {
+      padding: var(--space-2) var(--space-3);
+    }
+
+    .ant-table {
+      .ant-table-thead > tr > th,
+      .ant-table-tbody > tr > td {
+        padding: var(--space-2) var(--space-3) !important;
+      }
+    }
+
+    .table-toolbar {
+      .ant-space {
+        flex-wrap: wrap !important;
+
+        .ant-input-search,
+        .ant-select {
+          flex: 1 !important;
+          min-width: 120px !important;
+        }
+      }
+    }
+  }
+}
+
+/* 手机设备 */
+@media (max-width: 768px) {
+  .standard-table {
+    .table-header {
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      gap: var(--space-2);
+    }
+
+    .table-toolbar {
+      .ant-space {
+        flex-direction: column !important;
+        width: 100% !important;
+
+        .ant-input-search,
+        .ant-select,
+        .ant-btn {
+          width: 100% !important;
+        }
+      }
+    }
+
+    .ant-table {
+      .ant-table-thead > tr > th {
+        font-size: var(--font-size-xs) !important;
+        padding: var(--space-2) !important;
+
+        .ant-table-column-title {
+          white-space: nowrap !important;
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
+          max-width: 100px !important;
+        }
+      }
+
+      .ant-table-tbody > tr > td {
+        padding: var(--space-1) var(--space-2) !important;
+        font-size: var(--font-size-xs) !important;
+      }
+    }
+
+    .ant-pagination {
+      flex-direction: column !important;
+      gap: var(--space-2);
+
+      .ant-pagination-total-text {
+        order: -1;
+        margin-bottom: var(--space-2);
+      }
+    }
+  }
+}
+
+/* =============================================================================
+   13. 动画效果 (Animations) - 交互动画
+   ============================================================================= */
+
+/* 表格行进入动画 */
+@keyframes tableRowSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ant-table-tbody > tr {
+  animation: tableRowSlideIn var(--duration-normal) var(--ease-out);
+  animation-fill-mode: both;
+
+  &:nth-child(1) {
+    animation-delay: 0.1s;
+  }
+  &:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+  &:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+  &:nth-child(4) {
+    animation-delay: 0.4s;
+  }
+  &:nth-child(5) {
+    animation-delay: 0.5s;
+  }
+}
+
+/* 悬停动画 */
+.ant-table-tbody > tr:hover > td {
+  position: relative !important;
+
+  &::before {
+    content: '' !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    width: 3px !important;
+    background: var(--color-primary) !important;
+    animation: slideIn var(--duration-fast) var(--ease-out) !important;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+/* =============================================================================
+   14. 主题适配 (Theme Adaptation) - 暗色模式支持
+   ============================================================================= */
+
+/* 暗色模式 */
+@media (prefers-color-scheme: dark) {
+  .standard-table {
+    background-color: var(--color-bg-card) !important;
+    border-color: var(--color-border-base) !important;
+  }
+
+  .table-header,
+  .table-toolbar,
+  .table-footer {
+    background-color: var(--color-bg-container) !important;
+    border-color: var(--color-border-split) !important;
+  }
+
+  .ant-table {
+    .ant-table-thead > tr > th {
+      background-color: var(--color-bg-container) !important;
+      border-color: var(--color-border-split) !important;
+      color: var(--color-text-primary) !important;
+    }
+
+    .ant-table-tbody > tr > td {
+      border-color: var(--color-border-base) !important;
+      color: var(--color-text-primary) !important;
+    }
+  }
+}
+
+/* =============================================================================
+   15. 无障碍支持 (Accessibility) - 辅助功能
+   ============================================================================= */
+
+/* 键盘导航 */
+.ant-table-tbody > tr {
+  &:focus-within {
+    outline: 2px solid var(--color-primary);
+    outline-offset: -2px;
+  }
+}
+
+/* 高对比度模式 */
+@media (prefers-contrast: high) {
+  .standard-table {
+    border-width: 2px !important;
+  }
+
+  .ant-table {
+    .ant-table-thead > tr > th {
+      border-bottom-width: 3px !important;
+    }
+
+    .ant-table-tbody > tr > td {
+      border-bottom-width: 2px !important;
+    }
+  }
+}
+
+/* 减少动画模式 */
+@media (prefers-reduced-motion: reduce) {
+  .ant-table-tbody > tr {
+    animation: none;
+  }
+
+  .standard-table,
+  .ant-table,
+  .ant-btn,
+  .ant-select,
+  .ant-input {
+    transition: none;
+  }
+}
+
+/* =============================================================================
+   16. 打印样式 (Print Styles) - 打印优化
+   ============================================================================= */
+
+@media print {
+  .standard-table {
+    box-shadow: none !important;
+    border: 1px solid var(--color-gray-300) !important;
+  }
+
+  .table-toolbar,
+  .table-footer {
+    display: none !important;
+  }
+
+  .ant-table {
+    .ant-table-tbody > tr {
+      page-break-inside: avoid;
+
+      > td {
+        border-bottom: 1px solid var(--color-gray-200) !important;
+      }
+    }
+  }
+}
+
+/* =============================================================================
+   17. 兼容性别名 (Legacy Aliases) - 保持向后兼容
+   ============================================================================= */
+
+/* 旧版本样式兼容 */
+.standard-table {
+  /* 兼容旧的颜色变量 */
+  --table-bg: var(--color-bg-card);
+  --table-border: var(--color-border-base);
+  --table-hover: var(--color-bg-hover);
+  --table-selected: var(--color-primary-50);
+  --table-text: var(--color-text-primary);
+  --table-text-secondary: var(--color-text-secondary);
+}

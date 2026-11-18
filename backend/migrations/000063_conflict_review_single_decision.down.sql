@@ -1,0 +1,3 @@
+-- The single-decision invariant is part of the P0 evidence model and is not
+-- removed by ordinary rollback. Reverting application code must not reopen
+-- duplicate professional conclusions.

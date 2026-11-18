@@ -1,0 +1,2 @@
+-- Evidence deletion guards are part of the P0 production contract and are
+-- intentionally not removed by an ordinary rollback.

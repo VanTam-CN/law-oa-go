@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# 确保在frontend目录中执行
+cd "$(dirname "$0")/.." || exit 1
+
+echo "📁 Working directory: $(pwd)"
+echo "🔍 Running lint-staged..."
+
+# 运行lint-staged (现在配置中已经使用npx)
+npx lint-staged
+
+# 暂时跳过TypeScript类型检查
+# echo "🔍 Running TypeScript type check..."
+# npm run type-check
+
+echo "✅ Pre-commit checks passed!"

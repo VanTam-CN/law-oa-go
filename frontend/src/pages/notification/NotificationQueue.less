@@ -1,0 +1,204 @@
+.notification-queue {
+  padding: 12px;
+  background: transparent;
+
+  /* ==================== 统计卡片行 ==================== */
+  .stats-row {
+    margin-bottom: 12px;
+
+    .ant-col {
+      margin-bottom: 8px;
+    }
+
+    .ant-card {
+      border-radius: 8px;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+      background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+      transition: all 0.2s ease-out;
+
+      &:hover {
+        box-shadow: 0 2px 8px rgba(24, 144, 255, 0.12);
+        transform: translateY(-1px);
+      }
+
+      .ant-card-body {
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .ant-statistic {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        justify-content: center;
+
+        .ant-statistic-title {
+          font-size: 14px;
+          color: #374151;
+          margin-bottom: 0;
+          font-weight: 600;
+        }
+
+        .ant-statistic-content {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+
+          .ant-statistic-content-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: inherit;
+          }
+
+          .anticon {
+            color: #1890ff;
+            opacity: 0.9;
+            font-size: 18px;
+          }
+        }
+      }
+    }
+  }
+
+  /* ==================== 搜索卡片 ==================== */
+  .search-card {
+    margin-bottom: 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+
+    .ant-card-body {
+      padding: 12px 16px;
+    }
+  }
+
+  /* ==================== 表格卡片 ==================== */
+  .table-card {
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+
+    .ant-card-head {
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      padding: 14px 18px;
+      min-height: auto;
+    }
+
+    .ant-card-head-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a1a1a;
+      padding: 0;
+    }
+
+    .ant-card-body {
+      padding: 14px 18px;
+    }
+  }
+
+  /* ==================== 表格样式 ==================== */
+  .ant-table {
+    .ant-table-thead > tr > th {
+      background: linear-gradient(180deg, #e8eef5 0%, #d9e2ec 100%);
+      color: #1a1a1a;
+      font-weight: 700;
+      font-size: 14px;
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+    }
+
+    .ant-table-tbody > tr {
+      transition: all 0.2s ease-out;
+
+      > td {
+        height: 56px;
+        padding: 14px 14px;
+        font-size: 14px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        vertical-align: middle;
+      }
+
+      &:hover > td {
+        background: linear-gradient(90deg, rgba(24, 144, 255, 0.03) 0%, rgba(24, 144, 255, 0.01) 100%);
+      }
+    }
+
+    .ant-tag {
+      border-radius: 4px;
+      font-size: 12px;
+      padding: 2px 8px;
+      font-weight: 500;
+      border: none;
+    }
+  }
+}
+
+/* ==================== 通知详情抽屉 ==================== */
+.notification-detail {
+  .detail-label {
+    font-weight: 600;
+    color: #6B7280;
+    margin-right: 8px;
+  }
+
+  .ant-card {
+    margin-bottom: 12px;
+    border-radius: 6px;
+
+    .ant-card-head {
+      padding: 8px 12px;
+      min-height: auto;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    .ant-card-head-title {
+      font-size: 14px;
+      font-weight: 600;
+      padding: 0;
+    }
+
+    .ant-card-body {
+      padding: 12px;
+    }
+
+    .ant-row {
+      .ant-col {
+        margin-bottom: 8px;
+        font-size: 14px;
+      }
+    }
+  }
+}
+
+/* ==================== 响应式设计 ==================== */
+@media (max-width: 768px) {
+  .notification-queue {
+    padding: 8px;
+
+    .stats-row {
+      margin-bottom: 8px;
+    }
+
+    .search-card,
+    .table-card {
+      margin-bottom: 8px;
+    }
+
+    .ant-table-wrapper {
+      overflow-x: auto;
+    }
+
+    .ant-table {
+      font-size: 12px;
+
+      .ant-table-thead > tr > th,
+      .ant-table-tbody > tr > td {
+        padding: 8px;
+      }
+    }
+  }
+}

@@ -1,0 +1,3587 @@
+package handlers
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
+
+	"law-oa-go/internal/common"
+	"law-oa-go/internal/middleware"
+	"law-oa-go/internal/models"
+	"law-oa-go/internal/repositories"
+	"law-oa-go/internal/security"
+	"law-oa-go/internal/services"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+)
+
+// DemoAggregateHandler provides stable, database-backed aggregate payloads for
+// the demo workbenches while the underlying domain services continue to evolve.
+type DemoAggregateHandler struct {
+	db              *gorm.DB
+	conflictService services.ConflictDetectionService
+	contactService  *services.ClientContactService
+	authz           *services.AuthorizationService
+	inboxService    *services.InboxService
+}
+
+// lawyerFactsVersionKey is the server-owned facts version token stored in
+// intake metadata. Every ConfirmIntakeFacts call rotates it with uuid.NewString(),
+// so two confirmations in the same RFC3339 second still produce distinct,
+// non-reusable facts snapshots. UpdateCaseIntake deletes it when conflict-relevant
+// facts change, which atomically invalidates any in-flight check built on the
+// prior confirmation. User-supplied metadata cannot override it because the
+// value is (re)assigned server-side after all client metadata is merged.
+var lawyerFactsVersionKey = "lawyer_facts_version"
+
+// intakeDraftRevisionKey is the server-owned draft revision token stored in
+// the intake metadata. It is rotated on every successful update and on facts
+// confirmation, so two browser tabs holding the same draft cannot silently
+// overwrite each other (lost update, plan item R10 / P4.2).
+var intakeDraftRevisionKey = "draft_revision"
+
+// IntakeDraftRevisionError reports a lost-update rejection. StaleRequest is
+// true when the page itself never sent a revision (legacy or scripted
+// client): the caller must reload the server draft and resend with a
+// revision. StaleRequest is false when the page sent an outdated revision,
+// which means another tab or session already saved newer content.
+type IntakeDraftRevisionError struct {
+	Code         string
+	Message      string
+	Details      string
+	StaleRequest bool
+}
+
+func (e *IntakeDraftRevisionError) Error() string { return e.Message }
+
+func newIntakeDraftRevisionError(staleRequest bool) *IntakeDraftRevisionError {
+	if staleRequest {
+		return &IntakeDraftRevisionError{
+			Code:         "INTAKE_DRAFT_REVISION_REQUIRED",
+			Message:      "本页缺少草稿版本号，不能确认保存结果。请重新加载服务端草稿后再保存；本次未写入任何内容。",
+			Details:      "缺少 expected_revision 的保存被拒绝，避免旧页面静默覆盖已保存内容",
+			StaleRequest: true,
+		}
+	}
+	return &IntakeDraftRevisionError{
+		Code:    "INTAKE_DRAFT_REVISION_CONFLICT",
+		Message: "草稿已被其他页面更新，当前页面是旧版本，已停止保存以避免覆盖。",
+		Details: "页面中未保存的内容仍保留在表单里，可复制后点击“重新加载服务端草稿”",
+	}
+}
+
+// intakeDraftRevision reads the server-owned draft revision token from a raw
+// metadata value (map, JSON string, or JSON bytes). Missing or malformed
+// metadata yields an empty token.
+func intakeDraftRevision(raw interface{}) string {
+	value, _ := objectValue(raw)[intakeDraftRevisionKey].(string)
+	return strings.TrimSpace(value)
+}
+
+// intakeDraftRevisionFor returns the server-owned revision token for an
+// intake row, deriving a stable legacy token from the row identity when the
+// stored metadata predates the revision guard. The derivation must stay
+// server-side and identical across every read path (list, workbench detail,
+// conflict hints, and the locked update/confirm re-check) so pre-guard drafts
+// can be loaded and saved exactly once instead of being permanently locked
+// behind a missing token.
+func intakeDraftRevisionFor(intakeID string, raw interface{}) string {
+	if revision := intakeDraftRevision(raw); revision != "" {
+		return revision
+	}
+	return "legacy-" + strings.TrimSpace(intakeID)
+}
+
+var allowedAssistantDraftFields = map[string]struct{}{
+	"title":       {},
+	"case_type":   {},
+	"priority":    {},
+	"description": {},
+}
+
+func NewDemoAggregateHandler(db *gorm.DB) *DemoAggregateHandler {
+	return &DemoAggregateHandler{db: db}
+}
+
+// SetConflictDetectionService wires the real conflict engine into the intake
+// workbench. The legacy endpoint used to create a queued row without ever
+// executing a search, which made the UI report a result that did not exist.
+func (h *DemoAggregateHandler) SetConflictDetectionService(service services.ConflictDetectionService) {
+	h.conflictService = service
+}
+
+// SetInboxService wires the inbox projection so dashboard todo rows carry
+// the same whitelisted workflow action as the inbox list page.
+func (h *DemoAggregateHandler) SetInboxService(service *services.InboxService) {
+	h.inboxService = service
+}
+
+func (h *DemoAggregateHandler) SetAuthorizationService(authz *services.AuthorizationService) {
+	h.authz = authz
+}
+
+func (h *DemoAggregateHandler) SetClientContactService(service *services.ClientContactService) {
+	h.contactService = service
+}
+
+// authorizeIntakeClient keeps a client selected in the intake workbench
+// behind the same object boundary as the client API. The production router
+// always wires authz; a missing service is therefore an explicit fail-closed
+// configuration error rather than an invitation to trust a caller-supplied ID.
+func (h *DemoAggregateHandler) authorizeIntakeClient(c *gin.Context, clientID uint) bool {
+	if clientID == 0 {
+		common.APIBadRequest(c, "接案客户无效", "必须选择有效的客户档案")
+		return false
+	}
+	if h.authz == nil {
+		common.NewAPIError(c, http.StatusServiceUnavailable, "CLIENT_AUTHZ_UNAVAILABLE", "客户权限服务未初始化，已阻止使用案件客户上下文")
+		return false
+	}
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return false
+	}
+	allowed, err := h.authz.CanReadClient(c.Request.Context(), actor, clientID)
+	if err != nil {
+		common.APIInternalServerError(c, "客户权限校验失败", err.Error())
+		return false
+	}
+	if !allowed {
+		forbidObjectAccess(c)
+		return false
+	}
+	return true
+}
+
+func (h *DemoAggregateHandler) CommandCenter(c *gin.Context) {
+	activeStatuses := []string{"pending", "in_progress", "active"}
+	openConflictStatuses := []string{"QUEUED", "RUNNING", "PROCESSING"}
+	visibleConflictRiskLevels := []string{"HIGH", "CRITICAL", "MEDIUM"}
+	pendingApprovalStatuses := []string{"submitted", "under_review", "resubmitted"}
+	activeCasesWhere := "deleted_at IS NULL AND status IN ?"
+	activeCasesArgs := []interface{}{activeStatuses}
+	caseStageWhere := "deleted_at IS NULL"
+	caseStageArgs := []interface{}{}
+	pendingApprovalWhere := "deleted_at IS NULL AND status IN ?"
+	pendingApprovalArgs := []interface{}{pendingApprovalStatuses}
+	role := c.GetString("role")
+	inboxWhere := h.inboxFilter("is_completed = ?")
+	inboxArgs := []interface{}{false}
+	if userID, ok := middleware.GetCurrentUserID(c); ok && userID > 0 {
+		wallWhere := `(
+			ethical_wall_enabled = ?
+			OR EXISTS (
+				SELECT 1 FROM case_ethical_wall_whitelist wall_access
+				WHERE wall_access.case_id = cases.id AND wall_access.user_id = ?
+			)
+		)`
+		activeCasesWhere += " AND " + wallWhere
+		activeCasesArgs = append(activeCasesArgs, false, userID)
+		caseStageWhere += " AND " + wallWhere
+		caseStageArgs = append(caseStageArgs, false, userID)
+	}
+	if lawyerID, ok := currentLawyerScope(c); ok {
+		activeCasesWhere += " AND lawyer_id = ?"
+		activeCasesArgs = append(activeCasesArgs, lawyerID)
+		caseStageWhere += " AND lawyer_id = ?"
+		caseStageArgs = append(caseStageArgs, lawyerID)
+		pendingApprovalWhere += " AND (applicant_id = ? OR current_approver_id = ?)"
+		pendingApprovalArgs = append(pendingApprovalArgs, fmt.Sprint(lawyerID), fmt.Sprint(lawyerID))
+		inboxWhere += " AND user_id = ?"
+		inboxArgs = append(inboxArgs, lawyerID)
+	} else if userID, ok := middleware.GetCurrentUserID(c); ok && services.IsConflictReviewRole(role) {
+		// Dedicated conflict reviewers are not general matter managers, but they
+		// still need approvals explicitly assigned to them. Object-level checks
+		// below continue to enforce the ethical-wall boundary.
+		pendingApprovalWhere += " AND (applicant_id = ? OR current_approver_id = ?)"
+		pendingApprovalArgs = append(pendingApprovalArgs, fmt.Sprint(userID), fmt.Sprint(userID))
+	}
+	if canViewAllMatterData(c) {
+		// inbox_items only stores an assignee and a source ID. The legacy
+		// aggregate query cannot prove that source belongs to a visible case.
+		inboxWhere = "1 = 0"
+		inboxArgs = nil
+	}
+	if !canViewAllMatterData(c) {
+		// Conflict officers and technical administrators are not general matter
+		// managers. They may use their dedicated queues, but must not infer firm
+		// workload, approval volume, inbox volume, or stage distribution from the
+		// command-center aggregates.
+		if _, lawyerScoped := currentLawyerScope(c); !lawyerScoped {
+			activeCasesWhere = "1 = 0"
+			activeCasesArgs = nil
+			caseStageWhere = "1 = 0"
+			caseStageArgs = nil
+			if !services.IsConflictReviewRole(role) {
+				pendingApprovalWhere = "1 = 0"
+				pendingApprovalArgs = nil
+			}
+			inboxWhere = "1 = 0"
+			inboxArgs = nil
+		}
+	}
+	pendingApprovalRows := h.visibleApprovalRows(c, pendingApprovalWhere, pendingApprovalArgs...)
+	pendingApprovalCount := int64(len(pendingApprovalRows))
+	conflictWhere := "check_status IN ? OR risk_level IN ?"
+	conflictArgs := []interface{}{openConflictStatuses, visibleConflictRiskLevels}
+	if lawyerID, ok := currentLawyerScope(c); ok {
+		conflictWhere = "(" + conflictWhere + ") AND user_id = ?"
+		conflictArgs = append(conflictArgs, lawyerID)
+	}
+	if !canReadConflictQueue(c) {
+		conflictWhere = "1 = 0"
+		conflictArgs = nil
+	}
+	includeAllConflicts := c.Query("conflict_scope") == "all"
+	riskQueueLimit := 8
+	if includeAllConflicts {
+		riskQueueLimit = 100
+	}
+	riskQueue := h.riskRows(c, riskQueueLimit, includeAllConflicts)
+	clientCount := h.visibleClientCount(c)
+	if lawyerID, ok := currentLawyerScope(c); ok {
+		// Keep the command-center aggregate consistent with the client list:
+		// a lawyer must not learn the size of another lawyer's client portfolio.
+		clientCount = h.accessibleClientCount(lawyerID)
+	}
+	intakeCount := h.visibleIntakeCount(c)
+	if isAssistantRole(c) {
+		// Assistants work only with their own collaboration drafts. Global client
+		// and intake counts reveal information that is unrelated to that draft.
+		clientCount = 0
+		intakeCount = 0
+	}
+	if !canViewAllMatterData(c) {
+		if _, lawyerScoped := currentLawyerScope(c); !lawyerScoped {
+			clientCount = 0
+			intakeCount = 0
+		}
+	}
+
+	common.APISuccess(c, gin.H{
+		"summary": gin.H{
+			"active_cases":        h.count("cases", activeCasesWhere, activeCasesArgs...),
+			"clients":             clientCount,
+			"pending_approvals":   pendingApprovalCount,
+			"open_conflict_tasks": h.visibleConflictRecordCount(c, conflictWhere, conflictArgs...),
+			"unread_inbox":        h.countAny([]string{"inbox_items"}, inboxWhere, inboxArgs...),
+		},
+		"workflow": gin.H{
+			"intake":     intakeCount,
+			"conflict":   h.visibleConflictRecordCount(c, conflictWhere, conflictArgs...),
+			"approval":   pendingApprovalCount,
+			"activation": h.count("cases", activeCasesWhere, activeCasesArgs...),
+		},
+		"todo_items":              h.todoRows(c, 10),
+		"risk_queue":              riskQueue,
+		"approval_queue":          h.approvalRows(c, 8),
+		"case_rows":               h.caseRows(c, 20),
+		"case_stage_distribution": h.groupedCounts("cases", "status", caseStageWhere, 10, caseStageArgs...),
+		"risk_distribution":       h.visibleConflictRiskCounts(c, conflictWhere, 10, conflictArgs...),
+		"overdue_tasks":           h.overdueRows(c, 5),
+		"recent_activities":       h.activityRows(c, 10),
+		"generated_at":            time.Now(),
+	})
+}
+
+func (h *DemoAggregateHandler) ClientMasterProfile(c *gin.Context) {
+	id := c.Param("id")
+	if !h.canAccessClientProfile(c, id) {
+		return
+	}
+	var client map[string]interface{}
+	if h.first("clients", id, &client) != nil {
+		common.APINotFound(c, "客户不存在", "指定客户不存在或已删除")
+		return
+	}
+	safeClient := sanitizeClientAggregateRow(client)
+	clientIDValue, _ := strconv.ParseUint(strings.TrimSpace(fmt.Sprint(client["id"])), 10, 64)
+	var primaryContact *services.ClientContactResponse
+	if h.contactService != nil {
+		contact, contactErr := h.contactService.GetPrimaryContact(c.Request.Context(), uint(clientIDValue))
+		if contactErr != nil {
+			common.APIInternalServerError(c, "读取主联系人失败", contactErr.Error())
+			return
+		}
+		primaryContact = contact
+	}
+	if primaryContact == nil && strings.TrimSpace(valueString(client, "contact_person")) != "" {
+		primaryContact = &services.ClientContactResponse{
+			ClientID:  uint(clientIDValue),
+			Name:      valueString(client, "contact_person"),
+			Phone:     valueString(safeClient, "contact_phone"),
+			IsPrimary: true,
+			Legacy:    true,
+		}
+	}
+	if actor, ok := currentAuthActor(c); ok && services.IsBusinessMatterManagementRole(actor.Role) {
+		primaryContact = maskContactResponseForC06(primaryContact)
+		if value := strings.TrimSpace(valueString(safeClient, "contact_person")); value != "" {
+			safeClient["contact_person"] = models.MaskContactPerson(value)
+		}
+	}
+
+	actorID, _ := middleware.GetCurrentUserID(c)
+	matterWhere := `client_id = ? AND deleted_at IS NULL AND (
+		ethical_wall_enabled = ?
+		OR EXISTS (
+			SELECT 1 FROM case_ethical_wall_whitelist wall_access
+			WHERE wall_access.case_id = cases.id AND wall_access.user_id = ?
+		)
+	)`
+	matterArgs := []interface{}{id, false, actorID}
+	if !canViewAllMatterData(c) {
+		actorIDText, _ := currentUserIDString(c)
+		matterWhere = `client_id = ? AND deleted_at IS NULL AND (lawyer_id = ? OR created_by = ?) AND (
+			ethical_wall_enabled = ?
+			OR EXISTS (
+				SELECT 1 FROM case_ethical_wall_whitelist wall_access
+				WHERE wall_access.case_id = cases.id AND wall_access.user_id = ?
+			)
+		)`
+		matterArgs = []interface{}{id, actorIDText, actorIDText, false, actorID}
+	}
+	conflictWhere := "client_id = ?"
+	conflictArgs := []interface{}{fmt.Sprint(client["id"])}
+	if !canViewAllMatterData(c) {
+		actorIDText, _ := currentUserIDString(c)
+		conflictWhere += " AND user_id = ?"
+		conflictArgs = append(conflictArgs, actorIDText)
+	}
+
+	common.APISuccess(c, gin.H{
+		"client":           safeClient,
+		"primary_contact":  primaryContact,
+		"completeness":     h.clientCompleteness(safeClient),
+		"related_parties":  h.clientRelatedParties(c, id, fmt.Sprint(client["name"])),
+		"matter_history":   h.recentRows("cases", matterWhere, 5, matterArgs...),
+		"conflict_history": h.clientConflictHistory(c, conflictWhere, conflictArgs...),
+	})
+}
+
+func (h *DemoAggregateHandler) IntakeWorkbench(c *gin.Context) {
+	id := c.Param("id")
+	var intake map[string]interface{}
+	if h.first("case_intakes", id, &intake) != nil {
+		common.APINotFound(c, "接案记录不存在", "指定接案记录不存在")
+		return
+	}
+	if !canViewAllMatterData(c) {
+		actorID, ok := currentUserIDString(c)
+		if !ok {
+			return
+		}
+		if strings.TrimSpace(fmt.Sprint(intake["created_by"])) != actorID {
+			forbidObjectAccess(c)
+			return
+		}
+	}
+	if clientID := intakeClientID(intake["client_id"]); clientID > 0 && !isAssistantRole(c) {
+		// A management role may open the intake row by workflow permission, but
+		// the selected client still has to pass the same ethical-wall boundary as
+		// the client and conflict APIs. This prevents a guessed intake ID from
+		// becoming a back door into a walled client context.
+		if !h.authorizeIntakeClient(c, clientID) {
+			return
+		}
+	}
+	parties := h.recentRows("case_intake_parties", "intake_id = ?", 20, intake["id"])
+	materials := h.recentRows("case_materials", "intake_id = ?", 20, intake["id"])
+	client := sanitizeClientAggregateRow(h.firstByID("clients", intake["client_id"]))
+	if actor, ok := currentAuthActor(c); ok && services.IsBusinessMatterManagementRole(actor.Role) {
+		if value := strings.TrimSpace(valueString(client, "contact_person")); value != "" {
+			client["contact_person"] = models.MaskContactPerson(value)
+		}
+	}
+
+	common.APISuccess(c, gin.H{
+		"intake":    sanitizeAggregateRow("case_intakes", intake),
+		"client":    client,
+		"parties":   parties,
+		"materials": materials,
+		"team":      h.recentRows("users", "deleted_at IS NULL AND role IN ?", 10, []string{"lawyer", "admin"}),
+		// Draft restore must resume from the exact saved version, so the
+		// workbench row carries the server-owned revision token next to the
+		// sanitized facts (the raw metadata itself is redacted).
+		"revision": intakeDraftRevisionFor(id, intake["metadata"]),
+	})
+}
+
+func (h *DemoAggregateHandler) ApprovalsWorkbench(c *gin.Context) {
+	where := "deleted_at IS NULL"
+	args := []interface{}{}
+	waiverWhere := "status IN ?"
+	waiverArgs := []interface{}{[]string{"SUBMITTED", "UNDER_REVIEW"}}
+	if userID, ok := middleware.GetCurrentUserID(c); ok && !canViewAllMatterData(c) {
+		where += " AND (applicant_id = ? OR current_approver_id = ?)"
+		args = append(args, fmt.Sprint(userID), fmt.Sprint(userID))
+		waiverWhere += " AND (created_by = ? OR assigned_reviewer = ?)"
+		waiverArgs = append(waiverArgs, fmt.Sprint(userID), fmt.Sprint(userID))
+	}
+	rows := h.visibleApprovalRows(c, where, args...)
+	waiverRows := h.visibleWaiverRows(c, waiverWhere, waiverArgs...)
+	pendingCount := countApprovalAggregateRows(rows, "status", "submitted", "under_review", "resubmitted")
+	revisionCount := countApprovalAggregateRows(rows, "status", "needs_revision")
+	conflictCount := countApprovalAggregateRows(rows, "type", "conflict_approval")
+	financeCount := countApprovalAggregateRows(rows, "type", "finance")
+	common.APISuccess(c, gin.H{
+		"stats": gin.H{
+			"pending":        pendingCount,
+			"needs_revision": revisionCount,
+			"waiver_review":  int64(len(waiverRows)),
+		},
+		"items": approvalAggregateSummaryRows(rows, 12),
+		"queues": []gin.H{
+			{"key": "conflict", "label": "冲突审批", "count": conflictCount},
+			{"key": "waiver", "label": "豁免评估", "count": int64(len(waiverRows))},
+			{"key": "finance", "label": "财务审批", "count": financeCount},
+		},
+	})
+}
+
+// ListIntakeDrafts is the minimal server-side recovery list for the intake
+// page. A fresh browser session has no localStorage entry, so "saved and
+// exited" drafts must be discoverable from the normal menu without a deep
+// link. The list is server-authoritative, authorization-filtered in SQL,
+// paginated, and masked at the same boundary as the workbench aggregate: no
+// plaintext identity values and no raw workflow metadata.
+func (h *DemoAggregateHandler) ListIntakeDrafts(c *gin.Context) {
+	if !h.tableExists("case_intakes") {
+		common.APISuccess(c, gin.H{"items": []gin.H{}, "page": 1, "page_size": 10, "total": 0})
+		return
+	}
+	actorID, ok := currentUserIDString(c)
+	if !ok {
+		return
+	}
+	page := 1
+	if v, err := strconv.Atoi(c.Query("page")); err == nil && v > 0 {
+		page = v
+	}
+	pageSize := 10
+	if v, err := strconv.Atoi(c.Query("page_size")); err == nil && v > 0 && v <= 50 {
+		pageSize = v
+	}
+	// Recovery must cover every in-progress state a lawyer can get stuck
+	// outside of: a draft that already passed facts confirmation or conflict
+	// detection is exactly the one whose localStorage snapshot is missing
+	// after a fresh session, so it must stay discoverable here. Statuses
+	// mirror visibleIntakeCount plus lawyer_facts_confirmed; terminal states
+	// (approved/completed) and refused drafts stay out of the recovery list.
+	query := h.db.Table("case_intakes").
+		Where("status IN ?", []string{"draft", "assistant_draft", "materials_pending", "lawyer_facts_confirmed", "conflict_ready", "conflict_checking"})
+	if !canViewAllMatterData(c) {
+		query = query.Where("created_by = ?", actorID)
+	}
+	query = h.excludeIntakesWithCompletedCaseCreation(query)
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		common.APIInternalServerError(c, "读取接案草稿列表失败", err.Error())
+		return
+	}
+	rows := []map[string]interface{}{}
+	if err := query.
+		Order("updated_at DESC").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		Find(&rows).Error; err != nil {
+		common.APIInternalServerError(c, "读取接案草稿列表失败", err.Error())
+		return
+	}
+	items := make([]gin.H, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, gin.H{
+			"id":          row["id"],
+			"intake_code": row["intake_code"],
+			"title":       row["title"],
+			"case_type":   row["case_type"],
+			"status":      row["status"],
+			"client_id":   row["client_id"],
+			"created_by":  row["created_by"],
+			"updated_at":  row["updated_at"],
+			"revision":    intakeDraftRevisionFor(fmt.Sprint(row["id"]), row["metadata"]),
+		})
+	}
+	common.APISuccess(c, gin.H{
+		"items":     items,
+		"page":      page,
+		"page_size": pageSize,
+		"total":     total,
+	})
+}
+
+// excludeIntakesWithCompletedCaseCreation removes intakes whose formal-case
+// approval has already been completed as a real case from the recovery-draft
+// projection. The intake row itself stays conflict_ready (frozen submission
+// snapshots are audit history), so the only durable signal that a draft no
+// longer needs recovery is the tracking row written inside the case-creation
+// transaction. Both case_creation and conflict_approval bindings are excluded
+// (mirroring RequiresCaseCreationApproval); metadata-config approvals cannot
+// be matched portably in SQL and stay listed, erring toward over-listing so a
+// still-recoverable draft is never hidden. Approved approvals with
+// pending/failed/missing tracking keep the draft listed so a stuck approval
+// can still be recovered. When the tracking table is absent or predates the
+// intake_id column (older schemas) the predicate degrades to a no-op so the
+// recovery list never breaks.
+func (h *DemoAggregateHandler) excludeIntakesWithCompletedCaseCreation(query *gorm.DB) *gorm.DB {
+	if !h.tableExists("approval_requests") || !h.tableExists("approval_case_creation_tracking") {
+		return query
+	}
+	if !h.hasColumn("approval_case_creation_tracking", "intake_id") {
+		return query
+	}
+	return query.Where(h.completedCaseCreationPredicate())
+}
+
+// completedCaseCreationPredicate returns the shared NOT EXISTS filter that
+// keeps already-created intakes off the recovery projection. It is dialect
+// aware only through intakeIDMatchExpr; every other comparison stays raw so
+// the same text renders on SQLite, MySQL, and PostgreSQL.
+func (h *DemoAggregateHandler) completedCaseCreationPredicate() string {
+	return `NOT EXISTS (
+		SELECT 1 FROM approval_requests approved_creation
+		JOIN approval_case_creation_tracking completed_creation
+		  ON completed_creation.approval_request_id = approved_creation.id
+		WHERE approved_creation.type IN ('case_creation', 'conflict_approval')
+		  AND approved_creation.status = 'approved'
+		  AND approved_creation.deleted_at IS NULL
+		  AND completed_creation.intake_id = ` + h.intakeIDMatchExpr("case_intakes.id") + `
+		  AND completed_creation.creation_status = 'completed'
+	)`
+}
+
+// intakeIDMatchExpr compares the tracking intake_id column (text in every
+// shipped schema) against the enclosing case_intakes id column. PostgreSQL
+// keeps case_intakes.id in the uuid type, so the raw equality raised
+// SQLSTATE 42883 (text = uuid) and turned both the recovery list and the
+// workbench count into 500/0; casting the uuid side to text restores the
+// portable comparison without converting arbitrary tracking text into uuid.
+// SQLite stores text directly, and MySQL has no uuid column type (values are
+// char/binary, which coerce implicitly), so those dialects keep the plain
+// text comparison.
+func (h *DemoAggregateHandler) intakeIDMatchExpr(intakeIDColumn string) string {
+	if h.db != nil && h.db.Config != nil && h.db.Config.Dialector != nil && h.db.Config.Dialector.Name() == "postgres" {
+		return "CAST(" + intakeIDColumn + " AS TEXT)"
+	}
+	return intakeIDColumn
+}
+
+func (h *DemoAggregateHandler) LawyersResourceCenter(c *gin.Context) {
+	common.APISuccess(c, gin.H{
+		"summary": gin.H{
+			"lawyers":      h.count("users", "deleted_at IS NULL AND role IN ?", []string{"lawyer", "admin"}),
+			"departments":  h.distinctCount("users", "department", "deleted_at IS NULL"),
+			"active_cases": h.visibleCaseCount(c, "deleted_at IS NULL AND status IN ?", []interface{}{[]string{"pending", "in_progress"}}),
+			// The legacy task table has no verified subject-case join. Keep the
+			// resource center honest until it can use a wall-aware task query.
+			"pending_tasks": int64(0),
+		},
+		"lawyers":     h.recentRows("users", "deleted_at IS NULL AND role IN ?", 20, []string{"lawyer", "admin"}),
+		"capacity":    h.groupedCounts("users", "department", "deleted_at IS NULL AND role IN ?", 20, []string{"lawyer", "admin"}),
+		"assignments": h.caseRows(c, 8),
+		"tasks":       h.todoRows(c, 8),
+	})
+}
+
+func (h *DemoAggregateHandler) AdminAccessCenter(c *gin.Context) {
+	common.APISuccess(c, gin.H{
+		"summary": gin.H{
+			"users":           h.count("users", "deleted_at IS NULL"),
+			"active_users":    h.count("users", "deleted_at IS NULL AND status = ?", "active"),
+			"disabled_users":  h.count("users", "deleted_at IS NULL AND status <> ?", "active"),
+			"roles":           h.countAny([]string{"roles"}, "deleted_at IS NULL"),
+			"permissions":     h.countAny([]string{"permissions"}, ""),
+			"pending_changes": h.count("approval_requests", "deleted_at IS NULL AND type IN ? AND status IN ?", []string{"permission_change", "access_request"}, []string{"submitted", "under_review"}),
+		},
+		"users":              h.recentRows("users", "deleted_at IS NULL", 20),
+		"roles":              h.rbacRoleRows(20),
+		"permission_changes": h.recentRows("approval_requests", "deleted_at IS NULL AND type IN ?", 8, []string{"permission_change", "access_request"}),
+		"audit_events":       h.recentRowsAny([]string{"risk_audit_events", "audit_logs"}, "", 10),
+	})
+}
+
+func (h *DemoAggregateHandler) SettingsOverview(c *gin.Context) {
+	common.APISuccess(c, gin.H{
+		"summary": gin.H{
+			"settings": h.count("system_settings", ""),
+			"modules":  h.distinctCount("system_settings", "category", ""),
+		},
+		"modules":  h.groupedCounts("system_settings", "category", "", 20),
+		"settings": h.recentRowsAny([]string{"system_settings"}, "", 50),
+	})
+}
+
+func (h *DemoAggregateHandler) ExecutiveDashboard(c *gin.Context) {
+	common.APISuccess(c, gin.H{
+		"kpis": gin.H{
+			// The legacy payment aggregate has no verified case subject join.
+			// Finance must provide a separate wall-aware report.
+			"revenue_ytd":       float64(0),
+			"active_cases":      h.visibleCaseCount(c, "deleted_at IS NULL AND status IN ?", []interface{}{[]string{"pending", "in_progress"}}),
+			"new_clients_30d":   h.visibleClientCountWithWhere(c, "clients.created_at >= ?", []interface{}{time.Now().AddDate(0, 0, -30)}),
+			"high_risk_matters": h.visibleConflictRecordCount(c, "risk_level IN ?", []string{"HIGH", "CRITICAL"}),
+		},
+		// Keep dashboard trends on the same wall-aware, minimum-field projection
+		// as the case list. Returning raw case rows here would bypass the
+		// response boundary used by the rest of the workbench.
+		"trends": h.caseRows(c, 12),
+	})
+}
+
+func (h *DemoAggregateHandler) todoRows(c *gin.Context, limit int) []gin.H {
+	where := h.inboxFilter("is_completed = ?")
+	args := []interface{}{false}
+	if c != nil {
+		if userID, ok := middleware.GetCurrentUserID(c); ok && !canViewAllMatterData(c) {
+			where += " AND user_id = ?"
+			args = append(args, userID)
+		} else if canViewAllMatterData(c) {
+			return []gin.H{}
+		}
+	}
+	rows := h.recentRowsAny([]string{"inbox_items"}, where, limit, args...)
+	// Reuse the inbox projection so the command center exposes the same
+	// related_title / next_step / action contract as the inbox list. The
+	// handler only holds loose maps, so rebuild minimal model rows for the
+	// batched resolver instead of issuing per-row queries.
+	var modelRows []*models.InboxItem
+	if h.inboxService != nil {
+		modelRows = make([]*models.InboxItem, 0, len(rows))
+		for _, row := range rows {
+			item := &models.InboxItem{ID: uintFromAny(row["id"])}
+			item.UserID = uintFromAny(row["user_id"])
+			item.SourceID = uintFromAny(row["source_id"])
+			item.SourceRef = valueString(row, "source_ref")
+			item.CompletionMode = valueString(row, "completion_mode")
+			item.WorkflowTaskKey = valueString(row, "workflow_task_key")
+			modelRows = append(modelRows, item)
+		}
+	}
+	actions := map[uint]*services.WorkflowAction{}
+	if h.inboxService != nil && len(modelRows) > 0 {
+		actorID := uint(0)
+		if id, ok := middleware.GetCurrentUserID(c); ok {
+			actorID = id
+		}
+		actions = h.inboxService.ProjectWorkflowActions(actorID, modelRows)
+	}
+	items := make([]gin.H, 0, len(rows))
+	for i, row := range rows {
+		entry := gin.H{
+			"id":          row["id"],
+			"type":        row["source_type"],
+			"title":       row["title"],
+			"content":     row["content"],
+			"priority":    row["priority"],
+			"due_at":      row["due_date"],
+			"is_read":     row["is_read"],
+			"source_id":   row["source_id"],
+			"source_type": row["source_type"],
+		}
+		if i < len(modelRows) {
+			if action := actions[modelRows[i].ID]; action != nil {
+				entry["workflow_action"] = action
+			}
+		}
+		items = append(items, entry)
+	}
+	return items
+}
+
+func (h *DemoAggregateHandler) riskRows(c *gin.Context, limit int, includeAll bool) []gin.H {
+	if !canReadConflictQueue(c) {
+		return []gin.H{}
+	}
+	where := "check_status IN ? OR risk_level IN ?"
+	args := []interface{}{
+		[]string{"QUEUED", "RUNNING", "PROCESSING"},
+		[]string{"HIGH", "CRITICAL", "MEDIUM"},
+	}
+	if includeAll {
+		where = "check_status IN ?"
+		args = []interface{}{[]string{"QUEUED", "RUNNING", "PROCESSING", "COMPLETED"}}
+	}
+	if lawyerID, ok := currentLawyerScope(c); ok {
+		where = "(" + where + ") AND user_id = ?"
+		args = append(args, lawyerID)
+	}
+	rows := h.visibleConflictRecordRows(c, where, args...)
+	if limit > 0 && len(rows) > limit {
+		rows = rows[:limit]
+	}
+	approvalLinks := h.visibleConflictApprovalLinks(c)
+	// Current human-review projection: the frozen check_result keeps the
+	// machine suggestion (REVIEW_REQUIRED) forever, so the queue needs a
+	// separate read-only signal for whether an independent review has already
+	// been saved for THIS check. Rows start as "unknown": only a successfully
+	// read review row may claim reviewed, and a query failure never silently
+	// becomes pending_review (which would dress an unknown state up as a
+	// verified conclusion).
+	reviewStates := make(map[string]map[string]interface{})
+	if h.tableExists("conflict_reviews") {
+		queuedCheckIDs := make([]string, 0, len(rows))
+		for _, row := range rows {
+			checkID := strings.TrimSpace(fmt.Sprint(row["check_id"]))
+			if checkID == "" {
+				continue
+			}
+			if _, seen := reviewStates[checkID]; seen {
+				continue
+			}
+			reviewStates[checkID] = map[string]interface{}{"state": "unknown"}
+			queuedCheckIDs = append(queuedCheckIDs, checkID)
+		}
+		for _, checkID := range queuedCheckIDs {
+			var latest struct {
+				Decision string
+			}
+			err := h.db.Table("conflict_reviews").
+				Select("decision").
+				Where("check_id = ?", checkID).
+				Order("id DESC").
+				Limit(1).
+				Scan(&latest).Error
+			if err != nil {
+				// The read failed: keep the row explicitly unknown. The UI
+				// renders this as an unconfirmed state that asks for a
+				// refresh, never as a completed human conclusion.
+				continue
+			}
+			if strings.TrimSpace(latest.Decision) == "" {
+				// No review row exists for this check: the machine suggestion
+				// really is still waiting for the first human review.
+				reviewStates[checkID] = map[string]interface{}{"state": "pending_review"}
+				continue
+			}
+			reviewStates[checkID] = map[string]interface{}{
+				"state":    "reviewed",
+				"decision": latest.Decision,
+			}
+		}
+	}
+	items := make([]gin.H, 0, len(rows))
+	for _, row := range rows {
+		checkID := fmt.Sprint(row["check_id"])
+		searchParameters := objectValue(row["search_parameters"])
+		conflictCases := []map[string]interface{}{}
+		if checkID != "" && h.tableExists("conflict_cases") {
+			_ = h.db.Table("conflict_cases").
+				Where("check_id = ?", checkID).
+				Order("CASE risk_level WHEN 'CRITICAL' THEN 4 WHEN 'HIGH' THEN 3 WHEN 'MEDIUM' THEN 2 WHEN 'LOW' THEN 1 ELSE 0 END DESC, created_at DESC").
+				Find(&conflictCases).Error
+		}
+		primaryConflict := primaryConflictCase(conflictCases)
+		checkResult := objectValue(row["check_result"])
+		primaryEvidence := primaryConflictEvidence(primaryConflict, checkResult)
+		matchedSubject := firstNonEmpty(
+			valueString(primaryEvidence, "requestedParty"),
+			valueString(primaryEvidence, "requested_party"),
+			valueString(primaryEvidence, "matchedEntity"),
+			valueString(primaryEvidence, "matched_entity"),
+			primaryConflictSubject(primaryConflict, row),
+		)
+		matchedEntity := firstNonEmpty(valueString(primaryEvidence, "matchedEntity"), valueString(primaryEvidence, "matched_entity"))
+		matchType := firstNonEmpty(valueString(primaryEvidence, "matchType"), valueString(primaryEvidence, "match_type"), primaryConflictValue(primaryConflict, "conflict_type"))
+		matchAlgorithm := firstNonEmpty(
+			valueString(primaryEvidence, "matchAlgorithm"),
+			valueString(primaryEvidence, "match_algorithm"),
+			valueString(objectValue(objectValue(checkResult["riskAssessment"])["matchEvidence"]), "algorithm"),
+		)
+		partyRole := firstNonEmpty(valueString(primaryEvidence, "partyRole"), valueString(primaryEvidence, "party_role"))
+		ruleCode := firstNonEmpty(valueString(primaryEvidence, "ruleCode"), valueString(primaryEvidence, "rule_code"))
+		visibleRiskLevel := row["risk_level"]
+		visibleHasConflict := row["has_conflict"]
+		visibleConflictCases := conflictCases
+		visibleCheckResult := checkResult
+		visibleSearchParameters := row["search_parameters"]
+		sourceCase := primaryEvidenceSourceCase(primaryEvidence)
+		evidenceSummary := primaryConflictValue(primaryConflict, "description")
+		if !canReviewConflict(c) {
+			visibleSearchParameters = redactConflictQueueSearchParameters(row["search_parameters"])
+			if isNoConflictQueueRecord(row, checkResult, conflictCases) {
+				visibleCheckResult = redactNoConflictQueueCheckResult(checkResult)
+			} else if isCoverageLimitedNoEvidenceQueueRecord(row, checkResult, conflictCases) {
+				visibleCheckResult = redactCoverageLimitedNoEvidenceCheckResult(checkResult)
+				sourceCase = ""
+				matchedSubject = ""
+				matchedEntity = ""
+				matchType = ""
+				matchAlgorithm = ""
+				partyRole = ""
+				ruleCode = ""
+				visibleRiskLevel = "REVIEW_REQUIRED"
+				visibleHasConflict = false
+				evidenceSummary = "未发现匹配记录，但检索范围受限，需独立人工复核。"
+			} else {
+				visibleConflictCases = redactConflictQueueCases(conflictCases)
+				visibleCheckResult = redactConflictQueueCheckResult(checkResult)
+				sourceCase = "受限"
+				matchedSubject = ""
+				matchedEntity = ""
+				matchType = ""
+				matchAlgorithm = ""
+				partyRole = ""
+				ruleCode = ""
+				visibleRiskLevel = "REVIEW_REQUIRED"
+				evidenceSummary = "存在受隔离记录，请联系独立冲突核查人。"
+			}
+		}
+		item := gin.H{
+			"id":                row["check_id"],
+			"case_id":           firstNonEmpty(valueString(searchParameters, "subjectCaseId"), valueString(searchParameters, "subject_case_id")),
+			"case_number":       firstNonEmpty(valueString(searchParameters, "subjectCaseNumber"), valueString(searchParameters, "subject_case_number")),
+			"intake_id":         firstNonEmpty(valueString(searchParameters, "intakeId"), valueString(searchParameters, "intake_id")),
+			"title":             row["case_name"],
+			"case_type":         row["case_type"],
+			"client_id":         row["client_id"],
+			"client_name":       row["client_name"],
+			"matched_subject":   matchedSubject,
+			"matched_entity":    matchedEntity,
+			"matched_type":      matchType,
+			"match_type":        matchType,
+			"match_algorithm":   matchAlgorithm,
+			"party_role":        partyRole,
+			"rule_code":         ruleCode,
+			"source_case":       sourceCase,
+			"evidence_summary":  evidenceSummary,
+			"status":            row["check_status"],
+			"risk_level":        visibleRiskLevel,
+			"has_conflict":      visibleHasConflict,
+			"owner":             row["user_id"],
+			"duration":          row["duration"],
+			"check_time":        row["check_time"],
+			"created_at":        row["created_at"],
+			"updated_at":        row["updated_at"],
+			"search_parameters": visibleSearchParameters,
+			"check_result":      jsonStringValue(visibleCheckResult),
+			"conflict_cases":    visibleConflictCases,
+		}
+		if state, ok := reviewStates[checkID]; ok {
+			item["review_state"] = state["state"]
+			item["review_decision"] = state["decision"]
+		}
+		if approval, ok := approvalLinks[checkID]; ok {
+			item["approval_id"] = approval["id"]
+			item["approval_status"] = approval["status"]
+			item["approval_request_number"] = approval["request_number"]
+			item["approval_current_approver_id"] = approval["current_approver_id"]
+		}
+		items = append(items, item)
+	}
+	return items
+}
+
+// visibleConflictApprovalLinks returns only active conflict approvals the
+// current actor may open. Non-management actors are constrained to approvals
+// they submitted or are currently assigned to process.
+func (h *DemoAggregateHandler) visibleConflictApprovalLinks(c *gin.Context) map[string]map[string]interface{} {
+	links := make(map[string]map[string]interface{})
+	if c == nil || !h.tableExists("approval_requests") {
+		return links
+	}
+	where := "deleted_at IS NULL AND type = ? AND status IN ?"
+	args := []interface{}{"conflict_approval", []string{"submitted", "under_review", "resubmitted"}}
+	if !canViewAllMatterData(c) {
+		userID, ok := middleware.GetCurrentUserID(c)
+		if !ok || userID == 0 {
+			return links
+		}
+		where += " AND (applicant_id = ? OR current_approver_id = ?)"
+		args = append(args, fmt.Sprint(userID), fmt.Sprint(userID))
+	}
+	for _, row := range h.visibleApprovalRows(c, where, args...) {
+		checkID := firstNonEmpty(strings.TrimSpace(fmt.Sprint(row["conflict_check_id"])))
+		if checkID == "" {
+			continue
+		}
+		if _, exists := links[checkID]; !exists {
+			links[checkID] = row
+		}
+	}
+	return links
+}
+
+// isNoConflictQueueRecord identifies the only conflict result that may be
+// shown to an ordinary lawyer without the restricted-hit projection. It must
+// be an explicit no-match result with complete archive coverage and no hidden
+// evidence; missing coverage fails closed into the review-required branch.
+func isNoConflictQueueRecord(row map[string]interface{}, checkResult map[string]interface{}, conflictCases []map[string]interface{}) bool {
+	if interfaceBool(row["has_conflict"]) || len(conflictCases) > 0 {
+		return false
+	}
+	decision := objectValue(checkResult["decision"])
+	decisionStatus := strings.ToUpper(firstNonEmpty(
+		valueString(decision, "status"),
+		valueString(checkResult, "decisionStatus"),
+	))
+	if decisionStatus != "NO_MATCH_FOUND" && decisionStatus != "NO_CONFLICT" && decisionStatus != "CLEAR" {
+		return false
+	}
+	coverageStatus := strings.ToUpper(firstNonEmpty(
+		valueString(decision, "coverageStatus"),
+		valueString(decision, "coverage_status"),
+		valueString(checkResult, "coverageStatus"),
+		valueString(checkResult, "coverage_status"),
+	))
+	if coverageStatus != "COMPLETE" {
+		return false
+	}
+	if interfaceBool(objectValue(checkResult["riskAssessment"])["requiresApproval"]) {
+		return false
+	}
+	if interfaceInt(decision["evidenceCount"]) > 0 || len(mapSliceValue(checkResult["evidence"])) > 0 || len(mapSliceValue(checkResult["matchEvidence"])) > 0 {
+		return false
+	}
+	risk := strings.ToUpper(firstNonEmpty(
+		valueString(objectValue(checkResult["riskAssessment"]), "overallRisk"),
+		fmt.Sprint(row["risk_level"]),
+	))
+	return risk == "MINIMAL" || risk == "LOW"
+}
+
+// isCoverageLimitedNoEvidenceQueueRecord distinguishes an incomplete search
+// from a real restricted hit. Both remain blocked for independent review, but
+// the ordinary lawyer must not be told that a hidden matter exists when the
+// engine only knows that archive coverage is incomplete.
+func isCoverageLimitedNoEvidenceQueueRecord(row map[string]interface{}, checkResult map[string]interface{}, conflictCases []map[string]interface{}) bool {
+	if len(conflictCases) > 0 {
+		return false
+	}
+	decision := objectValue(checkResult["decision"])
+	coverageStatus := strings.ToUpper(firstNonEmpty(
+		valueString(decision, "coverageStatus"),
+		valueString(decision, "coverage_status"),
+		valueString(checkResult, "coverageStatus"),
+		valueString(checkResult, "coverage_status"),
+	))
+	if coverageStatus != "COVERAGE_LIMITED" {
+		return false
+	}
+	if interfaceInt(decision["restrictedCount"]) > 0 ||
+		interfaceInt(decision["evidenceCount"]) > 0 ||
+		len(mapSliceValue(checkResult["evidence"])) > 0 ||
+		len(mapSliceValue(checkResult["matchEvidence"])) > 0 ||
+		len(mapSliceValue(checkResult["conflictCases"])) > 0 {
+		return false
+	}
+	assessment := objectValue(checkResult["riskAssessment"])
+	return len(mapSliceValue(assessment["evidence"])) == 0 &&
+		len(mapSliceValue(assessment["matchEvidence"])) == 0
+}
+
+// visibleConflictRecordRows is the aggregate-layer counterpart of the
+// conflict-check repository's ethical-wall predicate. The legacy record table
+// stores the subject case in JSON, so filtering after loading is deliberate:
+// it avoids dialect-specific JSON SQL while keeping pagination and aggregate
+// counts on the same authorized set.
+func (h *DemoAggregateHandler) visibleConflictRecordRows(c *gin.Context, where string, args ...interface{}) []map[string]interface{} {
+	if !h.tableExists("conflict_check_records") {
+		return []map[string]interface{}{}
+	}
+	var rows []map[string]interface{}
+	query := h.db.Table("conflict_check_records")
+	if where != "" {
+		query = query.Where(where, args...)
+	}
+	if h.hasColumn("conflict_check_records", "created_at") {
+		query = query.Order("created_at DESC")
+	}
+	if err := query.Find(&rows).Error; err != nil {
+		return []map[string]interface{}{}
+	}
+	visible := make([]map[string]interface{}, 0, len(rows))
+	for _, row := range rows {
+		if h.conflictRecordVisibleToActor(c, row) {
+			visible = append(visible, sanitizeAggregateRow("conflict_check_records", row))
+		}
+	}
+	return visible
+}
+
+func (h *DemoAggregateHandler) visibleConflictRecordCount(c *gin.Context, where string, args ...interface{}) int64 {
+	return int64(len(h.visibleConflictRecordRows(c, where, args...)))
+}
+
+func (h *DemoAggregateHandler) visibleConflictRiskCounts(c *gin.Context, where string, limit int, args ...interface{}) []gin.H {
+	rows := h.visibleConflictRecordRows(c, where, args...)
+	counts := make(map[string]int64)
+	for _, row := range rows {
+		key := strings.TrimSpace(fmt.Sprint(row["risk_level"]))
+		if key == "" || key == "<nil>" {
+			key = "UNKNOWN"
+		}
+		counts[key]++
+	}
+	result := make([]gin.H, 0, len(counts))
+	for key, count := range counts {
+		result = append(result, gin.H{"key": key, "count": count})
+	}
+	sort.SliceStable(result, func(i, j int) bool {
+		left := result[i]["count"].(int64)
+		right := result[j]["count"].(int64)
+		if left == right {
+			return fmt.Sprint(result[i]["key"]) < fmt.Sprint(result[j]["key"])
+		}
+		return left > right
+	})
+	if limit > 0 && len(result) > limit {
+		result = result[:limit]
+	}
+	return result
+}
+
+// conflictRecordVisibleToActor intentionally fails closed for a reviewer when
+// the record has no provable subject-case context. Ownership is sufficient for
+// a normal lawyer's own legacy task, but a management/reviewer queue must never
+// expose a global record whose ethical-wall status cannot be checked.
+func (h *DemoAggregateHandler) conflictRecordVisibleToActor(c *gin.Context, row map[string]interface{}) bool {
+	if c == nil || row == nil || !canReadConflictQueue(c) {
+		return false
+	}
+	actorID, ok := middleware.GetCurrentUserID(c)
+	if !ok || actorID == 0 {
+		return false
+	}
+	role, _ := middleware.GetCurrentRole(c)
+	ownerID, ownerErr := strconv.ParseUint(strings.TrimSpace(fmt.Sprint(row["user_id"])), 10, 32)
+	ownerOK := ownerErr == nil && ownerID > 0
+	checkID := strings.TrimSpace(fmt.Sprint(row["check_id"]))
+	caseIDText := h.conflictRecordSubjectCaseID(checkID, row["search_parameters"])
+	if caseIDText == "" || caseIDText == "0" {
+		intakeID := subjectIntakeIDFromAggregateSearchParameters(row["search_parameters"])
+		if intakeID != "" && h.authz != nil {
+			actor, actorOK := currentAuthActor(c)
+			if !actorOK {
+				return false
+			}
+			allowed, authErr := h.authz.CanReadConflictIntakeContext(c.Request.Context(), actor, intakeID, uint(ownerID), fmt.Sprint(row["client_id"]))
+			if authErr != nil || !allowed {
+				return false
+			}
+			if strings.EqualFold(role, "lawyer") || services.IsIntakeAssistantRole(role) {
+				return ownerOK && uint(ownerID) == actorID
+			}
+			return services.IsConflictReviewRole(role)
+		}
+		return ownerOK && uint(ownerID) == actorID && !services.IsConflictReviewRole(role)
+	}
+	caseID, err := strconv.ParseUint(caseIDText, 10, 32)
+	if err != nil || caseID == 0 || h.authz == nil {
+		return false
+	}
+	actor := services.AuthActor{UserID: actorID, Role: role}
+	allowed, authErr := h.authz.CanReadConflictContext(c.Request.Context(), actor, uint(caseID))
+	if authErr != nil || !allowed {
+		return false
+	}
+	if strings.EqualFold(role, "lawyer") || services.IsIntakeAssistantRole(role) {
+		return ownerOK && uint(ownerID) == actorID
+	}
+	return services.IsConflictReviewRole(role)
+}
+
+func (h *DemoAggregateHandler) conflictRecordSubjectCaseID(checkID string, searchParameters interface{}) string {
+	if caseID := subjectCaseIDFromAggregateSearchParameters(searchParameters); caseID != "" {
+		return caseID
+	}
+	if checkID == "" || !h.tableExists("cases") || !h.hasColumn("cases", "conflict_check_id") {
+		return ""
+	}
+	var caseIDs []uint
+	if err := h.db.Table("cases").Where("conflict_check_id = ? AND deleted_at IS NULL", checkID).Limit(2).Pluck("id", &caseIDs).Error; err != nil {
+		return ""
+	}
+	if len(caseIDs) != 1 {
+		if len(caseIDs) > 1 {
+			return "ambiguous"
+		}
+		return ""
+	}
+	return strconv.FormatUint(uint64(caseIDs[0]), 10)
+}
+
+func redactConflictQueueSearchParameters(value interface{}) interface{} {
+	parameters := objectValue(value)
+	if len(parameters) == 0 {
+		return map[string]interface{}{}
+	}
+	serialized, err := json.Marshal(parameters)
+	if err != nil {
+		return map[string]interface{}{}
+	}
+	var projected map[string]interface{}
+	if err := json.Unmarshal(serialized, &projected); err != nil {
+		return map[string]interface{}{}
+	}
+	for _, key := range []string{"clientIdentifiers", "client_identifiers", "identifiers"} {
+		if projected[key] != nil {
+			projected[key] = redactedIdentifierNotice()
+		}
+	}
+	for _, key := range []string{"parties", "otherParties", "other_parties"} {
+		items := mapSliceValue(projected[key])
+		if len(items) == 0 {
+			continue
+		}
+		for _, item := range items {
+			redactIdentifierFields(item)
+		}
+		projected[key] = items
+	}
+	return projected
+}
+
+// redactConflictQueueCases applies the same disclosure boundary as the task
+// result endpoint. The dashboard is a separate API surface and must never
+// rely on the browser to hide historical matter details.
+func redactConflictQueueCases(conflictCases []map[string]interface{}) []map[string]interface{} {
+	if len(conflictCases) == 0 {
+		return []map[string]interface{}{}
+	}
+	result := make([]map[string]interface{}, 0, len(conflictCases))
+	for _, conflictCase := range conflictCases {
+		result = append(result, redactConflictQueueCase(conflictCase))
+	}
+	return result
+}
+
+func redactConflictQueueCheckResult(checkResult map[string]interface{}) map[string]interface{} {
+	if checkResult == nil {
+		return map[string]interface{}{}
+	}
+	serialized, err := json.Marshal(checkResult)
+	if err != nil {
+		return map[string]interface{}{}
+	}
+	var projected map[string]interface{}
+	if err := json.Unmarshal(serialized, &projected); err != nil {
+		return map[string]interface{}{}
+	}
+	for _, key := range []string{"conflictCases", "conflict_cases"} {
+		cases := mapSliceValue(projected[key])
+		if len(cases) == 0 {
+			continue
+		}
+		redacted := make([]interface{}, 0, len(cases))
+		for _, conflictCase := range cases {
+			redacted = append(redacted, redactConflictQueueCase(conflictCase))
+		}
+		projected[key] = redacted
+	}
+	projected["review"] = nil
+	for _, key := range []string{"evidence", "matchEvidence"} {
+		if evidence := mapSliceValue(projected[key]); len(evidence) > 0 {
+			redacted := make([]interface{}, 0, len(evidence))
+			for _, item := range evidence {
+				redacted = append(redacted, redactConflictQueueEvidence(item))
+			}
+			projected[key] = redacted
+		}
+	}
+	for _, key := range []string{"clientIdentifiers", "client_identifiers", "identifiers"} {
+		if projected[key] != nil {
+			projected[key] = redactedIdentifierNotice()
+		}
+	}
+	for _, key := range []string{"normalizedSubjects", "normalized_subjects"} {
+		subjects := mapSliceValue(projected[key])
+		if len(subjects) == 0 {
+			continue
+		}
+		for _, subject := range subjects {
+			redactIdentifierFields(subject)
+		}
+		projected[key] = subjects
+	}
+	// Keep legacy dashboard records conservative until an independent review or
+	// an approved waiver is present. The UI derives the final display from this
+	// status plus the review/waiver objects.
+	decision := objectValue(projected["decision"])
+	decision["status"] = "REVIEW_REQUIRED"
+	decision["recommendation"] = "存在受隔离记录，请联系独立冲突核查人；确认前不得视为已确认冲突或无冲突。"
+	decision["requiresManualReview"] = true
+	decision["ruleCodes"] = []interface{}{}
+	decision["evidenceCount"] = 0
+	decision["restrictedCount"] = len(mapSliceValue(projected["conflictCases"]))
+	projected["decision"] = decision
+	projected["riskAssessment"] = map[string]interface{}{
+		"overallRisk":      "REVIEW_REQUIRED",
+		"riskScore":        0,
+		"riskReason":       "存在受隔离记录，需独立冲突核查人处理",
+		"requiresApproval": true,
+		"riskFactors":      []interface{}{"存在受隔离记录"},
+		"mitigation":       []interface{}{"联系独立冲突核查人"},
+	}
+	projected["recommendations"] = []interface{}{"存在受隔离记录，请联系独立冲突核查人。"}
+	return projected
+}
+
+func redactNoConflictQueueCheckResult(checkResult map[string]interface{}) map[string]interface{} {
+	if checkResult == nil {
+		return map[string]interface{}{}
+	}
+	serialized, err := json.Marshal(checkResult)
+	if err != nil {
+		return map[string]interface{}{}
+	}
+	var projected map[string]interface{}
+	if err := json.Unmarshal(serialized, &projected); err != nil {
+		return map[string]interface{}{}
+	}
+	for _, key := range []string{"clientIdentifiers", "client_identifiers", "identifiers"} {
+		if projected[key] != nil {
+			projected[key] = redactedIdentifierNotice()
+		}
+	}
+	for _, key := range []string{"normalizedSubjects", "normalized_subjects"} {
+		subjects := mapSliceValue(projected[key])
+		for _, subject := range subjects {
+			redactIdentifierFields(subject)
+		}
+		if len(subjects) > 0 {
+			projected[key] = subjects
+		}
+	}
+	return projected
+}
+
+func redactCoverageLimitedNoEvidenceCheckResult(checkResult map[string]interface{}) map[string]interface{} {
+	projected := redactNoConflictQueueCheckResult(checkResult)
+	decision := objectValue(projected["decision"])
+	decision["status"] = "REVIEW_REQUIRED"
+	decision["requiresManualReview"] = true
+	decision["evidenceCount"] = 0
+	decision["recommendation"] = "未发现匹配记录，但检索范围受限；请由独立冲突核查人补充核查。"
+	projected["decision"] = decision
+	projected["riskAssessment"] = map[string]interface{}{
+		"overallRisk":      "REVIEW_REQUIRED",
+		"riskScore":        nil,
+		"riskReason":       "未发现匹配记录，但权威档案覆盖完整性尚未确认",
+		"requiresApproval": true,
+		"riskFactors":      []interface{}{"检索范围受限"},
+		"mitigation":       []interface{}{"由独立冲突核查人补充核查"},
+	}
+	projected["recommendations"] = []interface{}{"未发现匹配记录，但检索范围受限，不能据此确认无冲突。"}
+	return projected
+}
+
+func redactedIdentifierNotice() map[string]interface{} {
+	return map[string]interface{}{"notice": "完整身份标识仅向获授权冲突核查人显示"}
+}
+
+func redactIdentifierFields(value map[string]interface{}) {
+	for _, key := range []string{"identifiers", "clientIdentifiers", "client_identifiers"} {
+		if value[key] != nil {
+			value[key] = redactedIdentifierNotice()
+		}
+	}
+}
+
+func redactConflictQueueCase(conflictCase map[string]interface{}) map[string]interface{} {
+	if conflictCase == nil {
+		return map[string]interface{}{}
+	}
+	serialized, err := json.Marshal(conflictCase)
+	if err != nil {
+		return map[string]interface{}{}
+	}
+	var projected map[string]interface{}
+	if err := json.Unmarshal(serialized, &projected); err != nil {
+		return map[string]interface{}{}
+	}
+	for _, key := range []string{"caseId", "case_id"} {
+		projected[key] = ""
+	}
+	for _, key := range []string{"caseNo", "case_no"} {
+		projected[key] = "受限"
+	}
+	for _, key := range []string{"caseName", "case_name"} {
+		projected[key] = "受限历史事项"
+	}
+	for _, key := range []string{"caseType", "case_type"} {
+		projected[key] = ""
+	}
+	for _, key := range []string{"id", "checkId", "check_id", "clientId", "client_id", "caseStatus", "case_status", "createdAt", "created_at", "riskLevel", "risk_level", "matchType", "match_type", "ruleCode", "rule_code"} {
+		projected[key] = ""
+	}
+	projected["conflictType"] = "受限记录"
+	projected["conflict_type"] = "受限记录"
+	projected["opposingParties"] = []interface{}{}
+	projected["opposing_parties"] = []interface{}{}
+	projected["requiresManualReview"] = true
+	projected["restricted"] = true
+	for _, key := range []string{"description", "conflictDetails", "conflict_details"} {
+		projected[key] = "存在受隔离记录，请联系独立冲突核查人。"
+	}
+	for _, key := range []string{"evidence", "matchEvidence"} {
+		if evidence := mapSliceValue(projected[key]); len(evidence) > 0 {
+			redacted := make([]interface{}, 0, len(evidence))
+			for _, item := range evidence {
+				redacted = append(redacted, redactConflictQueueEvidence(item))
+			}
+			projected[key] = redacted
+		}
+	}
+	return projected
+}
+
+func redactConflictQueueEvidence(evidence map[string]interface{}) map[string]interface{} {
+	if evidence == nil {
+		return map[string]interface{}{}
+	}
+	serialized, err := json.Marshal(evidence)
+	if err != nil {
+		return map[string]interface{}{}
+	}
+	var projected map[string]interface{}
+	if err := json.Unmarshal(serialized, &projected); err != nil {
+		return map[string]interface{}{}
+	}
+	for _, key := range []string{"sourceCaseId", "source_case_id", "sourceCaseNumber", "source_case_number", "sourceCaseName", "source_case_name", "lawyerName", "lawyer_name"} {
+		projected[key] = ""
+	}
+	for _, key := range []string{"evidenceId", "evidence_id", "ruleCode", "rule_code", "matchType", "match_type", "sourceType", "source_type", "requestedParty", "requested_party", "matchedEntity", "matched_entity", "partyRole", "party_role", "historicalRole", "historical_role", "sourceUpdatedAt", "source_updated_at", "lawyerName", "lawyer_name"} {
+		projected[key] = ""
+	}
+	projected["summary"] = "存在受隔离记录，请联系独立冲突核查人。"
+	projected["restricted"] = true
+	return projected
+}
+
+func primaryConflictCase(conflictCases []map[string]interface{}) map[string]interface{} {
+	if len(conflictCases) == 0 {
+		return nil
+	}
+	return conflictCases[0]
+}
+
+func primaryConflictValue(conflictCase map[string]interface{}, key string) string {
+	if conflictCase == nil {
+		return ""
+	}
+	return strings.TrimSpace(fmt.Sprint(conflictCase[key]))
+}
+
+func primaryConflictEvidence(conflictCase map[string]interface{}, checkResult map[string]interface{}) map[string]interface{} {
+	structuredCases := mapSliceValue(checkResult["conflictCases"])
+	primaryID := firstNonEmpty(primaryConflictValue(conflictCase, "id"), primaryConflictValue(conflictCase, "case_id"))
+	for _, candidate := range structuredCases {
+		candidateID := firstNonEmpty(valueString(candidate, "id"), valueString(candidate, "caseId"), valueString(candidate, "case_id"))
+		if primaryID != "" && candidateID == primaryID {
+			if evidence := firstEvidence(candidate["evidence"]); evidence != nil {
+				return evidence
+			}
+		}
+	}
+	for _, candidate := range structuredCases {
+		if evidence := firstEvidence(candidate["evidence"]); evidence != nil {
+			return evidence
+		}
+	}
+	return firstEvidence(checkResult["evidence"])
+}
+
+func firstEvidence(value interface{}) map[string]interface{} {
+	items, ok := value.([]interface{})
+	if !ok || len(items) == 0 {
+		return nil
+	}
+	evidence, _ := items[0].(map[string]interface{})
+	return evidence
+}
+
+func primaryEvidenceSourceCase(evidence map[string]interface{}) string {
+	return firstNonEmpty(
+		valueString(evidence, "sourceCaseName"), valueString(evidence, "source_case_name"),
+		valueString(evidence, "sourceCaseNumber"), valueString(evidence, "source_case_number"),
+		valueString(evidence, "sourceCaseId"), valueString(evidence, "source_case_id"),
+	)
+}
+
+func primaryConflictSubject(conflictCase map[string]interface{}, fallback map[string]interface{}) string {
+	description := primaryConflictValue(conflictCase, "description")
+	if subject := extractQuotedSubject(description, "当前对方当事人"); subject != "" {
+		return subject
+	}
+	if subject := firstNonEmpty(primaryConflictValue(conflictCase, "client_name")); subject != "" {
+		return subject
+	}
+	return strings.TrimSpace(fmt.Sprint(fallback["client_name"]))
+}
+
+func extractQuotedSubject(text string, label string) string {
+	for _, quote := range [][2]string{{"'", "'"}, {"\"", "\""}, {"“", "”"}, {"‘", "’"}} {
+		prefix := label + " " + quote[0]
+		start := strings.Index(text, prefix)
+		if start < 0 {
+			prefix = label + quote[0]
+			start = strings.Index(text, prefix)
+		}
+		if start < 0 {
+			continue
+		}
+		remaining := text[start+len(prefix):]
+		if end := strings.Index(remaining, quote[1]); end >= 0 {
+			return strings.TrimSpace(remaining[:end])
+		}
+	}
+	return ""
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		trimmed := strings.TrimSpace(value)
+		if trimmed != "" && trimmed != "<nil>" {
+			return trimmed
+		}
+	}
+	return ""
+}
+
+// visibleApprovalRows applies the same object-level conflict context check to
+// approval aggregates that the dedicated approval detail endpoint applies.
+// Loading the rows before sanitizing is intentional: conflict_check_id and
+// metadata are authorization inputs, never response fields.
+func (h *DemoAggregateHandler) visibleApprovalRows(c *gin.Context, where string, args ...interface{}) []map[string]interface{} {
+	if !h.tableExists("approval_requests") {
+		return []map[string]interface{}{}
+	}
+	var rows []map[string]interface{}
+	query := h.db.Table("approval_requests")
+	if where != "" {
+		query = query.Where(where, args...)
+	}
+	if h.hasColumn("approval_requests", "created_at") {
+		query = query.Order("created_at DESC")
+	}
+	if err := query.Find(&rows).Error; err != nil {
+		return []map[string]interface{}{}
+	}
+	visible := make([]map[string]interface{}, 0, len(rows))
+	for _, row := range rows {
+		if h.approvalRowVisibleToActor(c, row) {
+			visible = append(visible, sanitizeAggregateRow("approval_requests", row))
+		}
+	}
+	return visible
+}
+
+func (h *DemoAggregateHandler) approvalRowVisibleToActor(c *gin.Context, row map[string]interface{}) bool {
+	if c == nil || row == nil {
+		return false
+	}
+	actorID, ok := middleware.GetCurrentUserID(c)
+	if !ok || actorID == 0 {
+		return false
+	}
+	checkID := firstNonEmpty(
+		strings.TrimSpace(fmt.Sprint(row["conflict_check_id"])),
+	)
+	metadata := integrationJSONMap(row["metadata"])
+	if checkID == "" {
+		checkID = firstNonEmpty(
+			integrationMetadataString(metadata, "conflict_check_id"),
+			integrationMetadataString(metadata, "conflict_task_id"),
+		)
+	}
+	isConflictApproval := strings.EqualFold(strings.TrimSpace(fmt.Sprint(row["type"])), "conflict_approval") || checkID != ""
+	if !isConflictApproval {
+		// The base query already scopes ordinary approvals to the viewer where
+		// required. Only conflict-bound records need the stricter case check.
+		return true
+	}
+	// Applicant/current-approver identity is not an ethical-wall grant. The
+	// underlying case context must still be resolved and authorized below.
+	return h.conflictContextVisibleToActor(c, checkID)
+}
+
+func (h *DemoAggregateHandler) conflictContextVisibleToActor(c *gin.Context, checkID string) bool {
+	if c == nil || strings.TrimSpace(checkID) == "" || h.authz == nil || !h.tableExists("conflict_check_records") {
+		return false
+	}
+	var record map[string]interface{}
+	if err := h.db.Table("conflict_check_records").Select("search_parameters, user_id, client_id").Where("check_id = ?", checkID).Take(&record).Error; err != nil {
+		return false
+	}
+	actorID, ok := middleware.GetCurrentUserID(c)
+	if !ok || actorID == 0 {
+		return false
+	}
+	role, _ := middleware.GetCurrentRole(c)
+	actor := services.AuthActor{UserID: actorID, Role: role}
+	caseIDText := h.conflictRecordSubjectCaseID(checkID, record["search_parameters"])
+	if strings.EqualFold(caseIDText, "ambiguous") {
+		return false
+	}
+	var allowed bool
+	var authErr error
+	if caseID, err := strconv.ParseUint(caseIDText, 10, 32); err == nil && caseID > 0 {
+		allowed, authErr = h.authz.CanReadConflictContext(c.Request.Context(), actor, uint(caseID))
+	} else {
+		intakeID := subjectIntakeIDFromAggregateSearchParameters(record["search_parameters"])
+		if intakeID == "" {
+			return false
+		}
+		ownerID, _ := strconv.ParseUint(strings.TrimSpace(fmt.Sprint(record["user_id"])), 10, 32)
+		allowed, authErr = h.authz.CanReadConflictIntakeContext(c.Request.Context(), actor, intakeID, uint(ownerID), fmt.Sprint(record["client_id"]))
+	}
+	return authErr == nil && allowed
+}
+
+func (h *DemoAggregateHandler) visibleWaiverRows(c *gin.Context, where string, args ...interface{}) []map[string]interface{} {
+	if !h.tableExists("waiver_applications") {
+		return []map[string]interface{}{}
+	}
+	var rows []map[string]interface{}
+	query := h.db.Table("waiver_applications")
+	if where != "" {
+		query = query.Where(where, args...)
+	}
+	if h.hasColumn("waiver_applications", "created_at") {
+		query = query.Order("created_at DESC")
+	}
+	if err := query.Find(&rows).Error; err != nil {
+		return []map[string]interface{}{}
+	}
+	visible := make([]map[string]interface{}, 0, len(rows))
+	for _, row := range rows {
+		if h.waiverRowVisibleToActor(c, row) {
+			visible = append(visible, sanitizeAggregateRow("waiver_applications", row))
+		}
+	}
+	return visible
+}
+
+func (h *DemoAggregateHandler) waiverRowVisibleToActor(c *gin.Context, row map[string]interface{}) bool {
+	if c == nil || row == nil {
+		return false
+	}
+	actorID, ok := middleware.GetCurrentUserID(c)
+	if !ok || actorID == 0 {
+		return false
+	}
+	actorIDText := strconv.FormatUint(uint64(actorID), 10)
+	if actorIDText == strings.TrimSpace(fmt.Sprint(row["created_by"])) || actorIDText == strings.TrimSpace(fmt.Sprint(row["assigned_reviewer"])) || actorIDText == strings.TrimSpace(fmt.Sprint(row["lawyer_id"])) {
+		return true
+	}
+	return h.conflictContextVisibleToActor(c, strings.TrimSpace(fmt.Sprint(row["conflict_check_id"])))
+}
+
+func countApprovalAggregateRows(rows []map[string]interface{}, key string, values ...string) int64 {
+	wanted := make(map[string]struct{}, len(values))
+	for _, value := range values {
+		wanted[strings.ToLower(strings.TrimSpace(value))] = struct{}{}
+	}
+	var count int64
+	for _, row := range rows {
+		if _, ok := wanted[strings.ToLower(strings.TrimSpace(fmt.Sprint(row[key])))]; ok {
+			count++
+		}
+	}
+	return count
+}
+
+func approvalAggregateSummaryRows(rows []map[string]interface{}, limit int) []gin.H {
+	if limit > 0 && len(rows) > limit {
+		rows = rows[:limit]
+	}
+	items := make([]gin.H, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, gin.H{
+			"id":                    row["id"],
+			"request_number":        row["request_number"],
+			"title":                 row["title"],
+			"type":                  row["type"],
+			"status":                row["status"],
+			"priority":              row["priority"],
+			"current_stage":         row["current_stage"],
+			"current_approver_name": row["current_approver_name"],
+			"created_at":            row["created_at"],
+			"timeout_at":            row["timeout_at"],
+		})
+	}
+	return items
+}
+
+func (h *DemoAggregateHandler) approvalRows(c *gin.Context, limit int) []gin.H {
+	where := "deleted_at IS NULL AND status IN ?"
+	args := []interface{}{[]string{"submitted", "under_review", "resubmitted"}}
+	if c != nil {
+		if userID, ok := middleware.GetCurrentUserID(c); ok && !canViewAllMatterData(c) {
+			where += " AND (applicant_id = ? OR current_approver_id = ?)"
+			args = append(args, fmt.Sprint(userID), fmt.Sprint(userID))
+		}
+	}
+	return approvalAggregateSummaryRows(h.visibleApprovalRows(c, where, args...), limit)
+}
+
+func currentLawyerScope(c *gin.Context) (uint, bool) {
+	role, _ := middleware.GetCurrentRole(c)
+	if role != "lawyer" && !services.IsIntakeAssistantRole(role) {
+		return 0, false
+	}
+	return middleware.GetCurrentUserID(c)
+}
+
+func (h *DemoAggregateHandler) accessibleClientCount(lawyerID uint) int64 {
+	if !h.tableExists("cases") {
+		return 0
+	}
+	var total int64
+	_ = h.db.Table("cases").
+		Where(`deleted_at IS NULL AND client_id IS NOT NULL AND (lawyer_id = ? OR created_by = ?)
+			AND (
+				ethical_wall_enabled = ?
+				OR EXISTS (
+					SELECT 1 FROM case_ethical_wall_whitelist wall_access
+					WHERE wall_access.case_id = cases.id AND wall_access.user_id = ?
+				)
+			)`, lawyerID, fmt.Sprint(lawyerID), false, lawyerID).
+		Distinct("client_id").
+		Count(&total).Error
+	return total
+}
+
+// visibleClientCount is the management-side client aggregate for the command
+// center. Management roles can operate firm-wide, but an ethical wall still
+// removes protected clients unless the current actor is explicitly whitelisted
+// on every protected matter that would make the client visible.
+func (h *DemoAggregateHandler) visibleClientCount(c *gin.Context) int64 {
+	return h.visibleClientCountWithWhere(c, "", nil)
+}
+
+func (h *DemoAggregateHandler) visibleClientCountWithWhere(c *gin.Context, where string, args []interface{}) int64 {
+	if !h.tableExists("clients") || !h.tableExists("cases") || !h.tableExists("case_ethical_wall_whitelist") ||
+		!h.hasColumn("cases", "client_id") || !h.hasColumn("cases", "ethical_wall_enabled") {
+		return 0
+	}
+	userID, ok := middleware.GetCurrentUserID(c)
+	if !ok || userID == 0 {
+		return 0
+	}
+	query := h.db.Table("clients AS clients").Where("clients.deleted_at IS NULL")
+	if where != "" {
+		query = query.Where(where, args...)
+	}
+	query = query.Where(`NOT EXISTS (
+		SELECT 1 FROM cases protected_cases
+		WHERE protected_cases.client_id = clients.id
+		  AND protected_cases.deleted_at IS NULL
+		  AND protected_cases.ethical_wall_enabled = ?
+		  AND NOT EXISTS (
+			SELECT 1 FROM case_ethical_wall_whitelist wall_access
+			WHERE wall_access.case_id = protected_cases.id AND wall_access.user_id = ?
+		  )
+	)`, true, userID)
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return 0
+	}
+	return total
+}
+
+func (h *DemoAggregateHandler) visibleCaseCount(c *gin.Context, where string, args []interface{}) int64 {
+	if !h.tableExists("cases") || !h.tableExists("case_ethical_wall_whitelist") || !h.hasColumn("cases", "ethical_wall_enabled") {
+		return 0
+	}
+	userID, ok := middleware.GetCurrentUserID(c)
+	if !ok || userID == 0 {
+		return 0
+	}
+	query := h.db.Table("cases").Where(where, args...)
+	if lawyerID, scoped := currentLawyerScope(c); scoped {
+		query = query.Where("(lawyer_id = ? OR created_by = ?)", lawyerID, fmt.Sprint(lawyerID))
+	}
+	query = query.Where(`(
+		ethical_wall_enabled = ?
+		OR EXISTS (
+			SELECT 1 FROM case_ethical_wall_whitelist wall_access
+			WHERE wall_access.case_id = cases.id AND wall_access.user_id = ?
+		)
+	)`, false, userID)
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return 0
+	}
+	return total
+}
+
+// visibleIntakeCount keeps the command-center intake badge consistent with
+// the object-level intake boundary. A lawyer/assistant only counts their own
+// drafts; management counts unprotected or explicitly whitelisted contexts.
+func (h *DemoAggregateHandler) visibleIntakeCount(c *gin.Context) int64 {
+	if !h.tableExists("case_intakes") || !h.hasColumn("case_intakes", "status") ||
+		!h.tableExists("cases") || !h.tableExists("case_ethical_wall_whitelist") ||
+		!h.hasColumn("cases", "client_id") || !h.hasColumn("cases", "ethical_wall_enabled") {
+		return 0
+	}
+	actorID, ok := middleware.GetCurrentUserID(c)
+	if !ok || actorID == 0 {
+		return 0
+	}
+	query := h.db.Table("case_intakes").Where("status IN ?", []string{"draft", "materials_pending", "conflict_ready", "conflict_checking"})
+	if lawyerID, scoped := currentLawyerScope(c); scoped && h.hasColumn("case_intakes", "created_by") {
+		query = query.Where("created_by = ?", fmt.Sprint(lawyerID))
+	} else if !canViewAllMatterData(c) {
+		return 0
+	}
+	query = h.excludeIntakesWithCompletedCaseCreation(query)
+	if h.hasColumn("case_intakes", "client_id") {
+		query = query.Where(`(
+			case_intakes.client_id IS NULL
+			OR case_intakes.client_id = 0
+			OR NOT EXISTS (
+				SELECT 1 FROM cases protected_cases
+				WHERE protected_cases.client_id = case_intakes.client_id
+				  AND protected_cases.deleted_at IS NULL
+				  AND protected_cases.ethical_wall_enabled = ?
+				  AND NOT EXISTS (
+					SELECT 1 FROM case_ethical_wall_whitelist wall_access
+					WHERE wall_access.case_id = protected_cases.id AND wall_access.user_id = ?
+				  )
+			)
+		)`, true, actorID)
+	}
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return 0
+	}
+	return total
+}
+
+func (h *DemoAggregateHandler) caseRows(c *gin.Context, limit int) []gin.H {
+	if !h.tableExists("cases") {
+		return []gin.H{}
+	}
+	role, _ := middleware.GetCurrentRole(c)
+	if services.IsTechnicalAdminRole(role) || (services.IsConflictReviewRole(role) && !services.IsBusinessMatterManagementRole(role)) {
+		// Conflict officers use the conflict queue. A general case list would
+		// disclose unrelated matter names and client identities. Technical
+		// administrators have the same boundary unless separately assigned a
+		// business role.
+		return []gin.H{}
+	}
+	var rows []map[string]interface{}
+	q := h.db.Table("cases AS c").
+		Select("c.id, c.case_number, c.title, c.client_id, c.lawyer_id, c.case_type, c.status, c.priority, c.updated_at, cl.name AS client_name, u.name AS lawyer_name").
+		Joins("LEFT JOIN clients cl ON c.client_id = cl.id").
+		Joins("LEFT JOIN users u ON c.lawyer_id = u.id").
+		Where("c.deleted_at IS NULL").
+		Order("c.updated_at DESC").
+		Limit(limit)
+	if lawyerID, ok := currentLawyerScope(c); ok {
+		q = q.Where("c.lawyer_id = ?", lawyerID)
+	}
+	userID, ok := middleware.GetCurrentUserID(c)
+	if !ok || userID == 0 {
+		return []gin.H{}
+	}
+	q = q.Where(`(
+		c.ethical_wall_enabled = ?
+		OR EXISTS (
+			SELECT 1 FROM case_ethical_wall_whitelist wall_access
+			WHERE wall_access.case_id = c.id AND wall_access.user_id = ?
+		)
+	)`, false, userID)
+	_ = q.Scan(&rows).Error
+	items := make([]gin.H, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, gin.H{
+			"id":          row["id"],
+			"case_number": row["case_number"],
+			"title":       row["title"],
+			"client_id":   row["client_id"],
+			"lawyer_id":   row["lawyer_id"],
+			"client_name": row["client_name"],
+			"case_type":   row["case_type"],
+			"status":      row["status"],
+			"priority":    row["priority"],
+			"lawyer_name": row["lawyer_name"],
+			"updated_at":  row["updated_at"],
+		})
+	}
+	return items
+}
+
+func (h *DemoAggregateHandler) overdueRows(c *gin.Context, limit int) []gin.H {
+	if canViewAllMatterData(c) {
+		return []gin.H{}
+	}
+	where := h.inboxFilter("is_completed = ? AND due_date < ?")
+	args := []interface{}{false, time.Now()}
+	if userID, ok := middleware.GetCurrentUserID(c); ok && !canViewAllMatterData(c) {
+		where += " AND user_id = ?"
+		args = append(args, userID)
+	}
+	rows := h.recentRowsAny([]string{"inbox_items"}, where, limit, args...)
+	items := make([]gin.H, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, gin.H{
+			"id":       row["id"],
+			"title":    row["title"],
+			"priority": row["priority"],
+			"due_at":   row["due_date"],
+		})
+	}
+	return items
+}
+
+func (h *DemoAggregateHandler) activityRows(c *gin.Context, limit int) []gin.H {
+	if !canViewAllMatterData(c) {
+		return []gin.H{}
+	}
+	rows := h.recentRowsAny([]string{"risk_audit_events"}, "", limit)
+	if len(rows) == 0 {
+		// Approval rows may contain conflict titles and applicant identities.
+		// The fallback must use the same conflict-context filter as the approval
+		// workbench instead of reading the table directly.
+		rows = h.visibleApprovalRows(c, "deleted_at IS NULL")
+		if limit > 0 && len(rows) > limit {
+			rows = rows[:limit]
+		}
+	}
+	items := make([]gin.H, 0, len(rows))
+	for _, row := range rows {
+		title := row["summary"]
+		if title == nil {
+			title = row["title"]
+		}
+		items = append(items, gin.H{
+			"id":         row["id"],
+			"title":      title,
+			"type":       row["event_type"],
+			"created_at": row["created_at"],
+			"actor_id":   row["actor_id"],
+		})
+	}
+	return items
+}
+
+func canReadConflictQueue(c *gin.Context) bool {
+	role, _ := middleware.GetCurrentRole(c)
+	return strings.EqualFold(role, "lawyer") || services.IsConflictReviewRole(role)
+}
+
+func isAssistantRole(c *gin.Context) bool {
+	role, _ := middleware.GetCurrentRole(c)
+	return services.IsIntakeAssistantRole(role)
+}
+
+func (h *DemoAggregateHandler) canAccessClientProfile(c *gin.Context, clientID string) bool {
+	if h.authz != nil {
+		parsedClientID, err := strconv.ParseUint(strings.TrimSpace(clientID), 10, 32)
+		if err != nil || parsedClientID == 0 {
+			common.APIBadRequest(c, "客户编号无效", "客户编号必须为有效数字")
+			return false
+		}
+		actor, ok := currentAuthActor(c)
+		if !ok {
+			return false
+		}
+		allowed, err := h.authz.CanReadClient(c.Request.Context(), actor, uint(parsedClientID))
+		if err != nil {
+			common.APIInternalServerError(c, "权限校验失败", err.Error())
+			return false
+		}
+		if !allowed {
+			forbidObjectAccess(c)
+			return false
+		}
+		return true
+	}
+
+	// Compatibility path for isolated aggregate unit tests. Production wiring
+	// always supplies the centralized authorization service above.
+	actorID, ok := currentUserIDString(c)
+	if !ok {
+		return false
+	}
+	actorNumericID, _ := middleware.GetCurrentUserID(c)
+	query := h.db.Table("cases").Where(`client_id = ? AND deleted_at IS NULL AND (
+		ethical_wall_enabled = ?
+		OR EXISTS (
+			SELECT 1 FROM case_ethical_wall_whitelist wall_access
+			WHERE wall_access.case_id = cases.id AND wall_access.user_id = ?
+		)
+	)`, clientID, false, actorNumericID)
+	if !canViewAllMatterData(c) {
+		query = query.Where("(lawyer_id = ? OR created_by = ?)", actorID, actorID)
+	}
+	var count int64
+	err := query.Count(&count).Error
+	if err != nil {
+		common.APIInternalServerError(c, "权限校验失败", err.Error())
+		return false
+	}
+	if count == 0 {
+		forbidObjectAccess(c)
+		return false
+	}
+	return true
+}
+
+func (h *DemoAggregateHandler) clientCompleteness(client map[string]interface{}) gin.H {
+	required := []struct {
+		Key   string
+		Label string
+	}{
+		{"name", "客户名称"},
+		{"type", "客户类型"},
+		{"email", "电子邮箱"},
+		{"phone", "联系电话"},
+		{"address", "地址"},
+		{"industry", "所属行业"},
+		{"contact_person", "联系人"},
+	}
+	missing := make([]string, 0)
+	checks := make([]gin.H, 0, len(required))
+	for _, item := range required {
+		value := fmt.Sprint(client[item.Key])
+		complete := value != "" && value != "<nil>"
+		if !complete {
+			missing = append(missing, item.Key)
+		}
+		status := "complete"
+		if !complete {
+			status = "missing"
+		}
+		checks = append(checks, gin.H{"key": item.Key, "label": item.Label, "status": status})
+	}
+	identityCiphertext := firstNonEmpty(valueString(client, "identity_number_ciphertext"), valueString(client, "id_card_ciphertext"))
+	identityDigest := firstNonEmpty(valueString(client, "identity_number_digest"), valueString(client, "id_card_digest"))
+	identityComplete := identityCiphertext != "" && identityDigest != ""
+	identityLabel := "身份证件号码"
+	if strings.EqualFold(strings.TrimSpace(valueString(client, "type")), "企业") {
+		identityLabel = "统一社会信用代码"
+	}
+	identityStatus := "complete"
+	if !identityComplete {
+		missing = append(missing, "protected_identity")
+		identityStatus = "missing"
+	}
+	checks = append(checks, gin.H{"key": "protected_identity", "label": identityLabel, "status": identityStatus})
+	score := 0
+	totalRequired := len(required) + 1
+	if totalRequired > 0 {
+		score = (totalRequired - len(missing)) * 100 / totalRequired
+	}
+	return gin.H{
+		"score":                    score,
+		"missing_fields":           missing,
+		"ready_for_conflict_check": len(missing) == 0,
+		"checks":                   checks,
+	}
+}
+
+func (h *DemoAggregateHandler) clientRelatedParties(c *gin.Context, clientID, clientName string) []gin.H {
+	if !h.tableExists("case_intake_parties") || !h.tableExists("case_intakes") {
+		return []gin.H{}
+	}
+	var rows []map[string]interface{}
+	query := h.db.Table("case_intake_parties AS p").
+		Select("p.entity_name AS name, p.party_role AS relationship_type, p.relation_depth AS depth, p.metadata").
+		Joins("JOIN case_intakes ci ON ci.id = p.intake_id").
+		Where("ci.client_id = ? AND p.entity_name <> ?", clientID, clientName)
+	if actorID, ok := currentUserIDString(c); ok {
+		actorNumericID, _ := middleware.GetCurrentUserID(c)
+		query = query.Where(`(
+			(p.case_id IS NULL AND ci.created_by = ?)
+			OR (p.case_id IS NOT NULL AND EXISTS (
+				SELECT 1 FROM cases party_cases
+				WHERE party_cases.id = p.case_id
+				  AND party_cases.deleted_at IS NULL
+				  AND (
+					  party_cases.ethical_wall_enabled = ?
+					  OR EXISTS (
+						  SELECT 1 FROM case_ethical_wall_whitelist wall_access
+						  WHERE wall_access.case_id = party_cases.id AND wall_access.user_id = ?
+					  )
+				  )
+				  AND (? OR party_cases.lawyer_id = ? OR party_cases.created_by = ?)
+			))
+		)`, actorID, false, actorNumericID, canViewAllMatterData(c), actorNumericID, actorID)
+	}
+	_ = query.Order("p.created_at DESC").Limit(20).Scan(&rows).Error
+	items := make([]gin.H, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, gin.H{
+			"name":              row["name"],
+			"relationship_type": row["relationship_type"],
+			"depth":             row["depth"],
+			"metadata":          redactAggregateSensitiveValue(row["metadata"]),
+		})
+	}
+	return items
+}
+
+func (h *DemoAggregateHandler) clientConflictHistory(c *gin.Context, where string, args ...interface{}) []map[string]interface{} {
+	rows := h.visibleConflictRecordRows(c, where, args...)
+	if len(rows) > 5 {
+		rows = rows[:5]
+	}
+	if canReviewConflict(c) {
+		return rows
+	}
+	for _, row := range rows {
+		if result := objectValue(row["check_result"]); len(result) > 0 {
+			row["check_result"] = redactConflictQueueCheckResult(result)
+		}
+		row["search_parameters"] = redactConflictQueueSearchParameters(row["search_parameters"])
+		delete(row, "conflict_cases")
+	}
+	return rows
+}
+
+func (h *DemoAggregateHandler) firstByID(table string, id interface{}) map[string]interface{} {
+	if id == nil {
+		return nil
+	}
+	var row map[string]interface{}
+	if h.first(table, fmt.Sprint(id), &row) == nil {
+		return row
+	}
+	return nil
+}
+
+// timeNow is a seam so tests can pin timestamps to prove same-second intake
+// code uniqueness without sleeping.
+var timeNow = time.Now
+
+// generateIntakeCode keeps the readable INT-<timestamp> prefix and appends a
+// short random suffix so two valid intakes in the same second never collide on
+// the unique index idx_case_intakes_intake_code.
+var generateIntakeCode = func() string {
+	suffix := strings.ToUpper(strings.ReplaceAll(uuid.NewString(), "-", "")[:6])
+	return fmt.Sprintf("INT-%s-%s", timeNow().Format("20060102150405"), suffix)
+}
+
+// isDuplicateKeyError reports insert failures caused by a unique constraint
+// across the supported drivers (SQLite/PostgreSQL/MySQL).
+func isDuplicateKeyError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "UNIQUE constraint failed") ||
+		strings.Contains(msg, "duplicate key value violates unique constraint") ||
+		strings.Contains(msg, "Error 1062")
+}
+
+func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
+	if denyIntakeWriteForPlainUser(c) {
+		return
+	}
+	createdBy, ok := currentUserIDString(c)
+	if !ok {
+		return
+	}
+	var payload map[string]interface{}
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		common.APIBadRequest(c, "请求参数错误", err.Error())
+		return
+	}
+	if !validateIntakeCaseType(c, payload) {
+		return
+	}
+	idempotencyKey := strings.TrimSpace(c.GetHeader("Idempotency-Key"))
+	if len(idempotencyKey) > 120 {
+		common.APIBadRequest(c, "幂等键无效", "Idempotency-Key 长度不能超过 120 个字符")
+		return
+	}
+	if idempotencyKey != "" && h.hasColumn("case_intakes", "idempotency_key") {
+		var existing map[string]interface{}
+		if err := h.db.Table("case_intakes").
+			Where("idempotency_key = ? AND created_by = ?", idempotencyKey, createdBy).
+			Take(&existing).Error; err == nil {
+			common.APISuccess(c, existing)
+			return
+		}
+	}
+	parties := mapSliceValue(payload["parties"])
+	materials := mapSliceValue(payload["materials"])
+	if containsPlaintextIdentityField(payload["metadata"]) {
+		common.APIBadRequest(c, "身份信息登记方式不受支持", "身份证号、统一社会信用代码等身份标识必须登记到受保护的客户或主体档案，不能写入接案备注")
+		return
+	}
+	for _, party := range parties {
+		if containsPlaintextIdentityField(party["metadata"]) {
+			common.APIBadRequest(c, "身份信息登记方式不受支持", "对方或关联方身份标识必须登记到受保护的主体档案，不能写入接案备注")
+			return
+		}
+	}
+	for _, material := range materials {
+		if containsPlaintextIdentityField(material["metadata"]) {
+			common.APIBadRequest(c, "身份信息登记方式不受支持", "材料备注不能包含未保护的身份标识")
+			return
+		}
+	}
+	intakePayload := filterMap(payload, allowedCaseIntakeCreateFields)
+	if isAssistantRole(c) {
+		if payload["client_id"] != nil || payload["parties"] != nil {
+			common.APIForbidden(c, "助理协作草稿不能录入当事人身份信息", "客户、对方和关联方必须由执业律师确认后录入")
+			return
+		}
+		intakePayload = filterMap(payload, allowedAssistantDraftFields)
+		intakePayload["status"] = "assistant_draft"
+		intakePayload["metadata"] = jsonStringValue(map[string]interface{}{
+			"assistant_draft": true,
+			"created_by_role": "assistant",
+		})
+	} else if value, present := payload["client_id"]; present && value != nil && strings.TrimSpace(fmt.Sprint(value)) != "" {
+		if !h.authorizeIntakeClient(c, intakeClientID(value)) {
+			return
+		}
+	}
+	if !isAssistantRole(c) && len(parties) > 0 && !h.intakePartyIdentitySchemaReady() {
+		common.NewAPIError(c, http.StatusServiceUnavailable, "INTAKE_PARTY_IDENTITY_SCHEMA_REQUIRED", "接案当事人身份保护字段尚未迁移，已阻止保存；请执行数据库迁移 000070")
+		return
+	}
+	now := timeNow()
+	intakeID := uuid.NewString()
+	intakePayload["id"] = intakeID
+	intakePayload["intake_code"] = generateIntakeCode()
+	intakePayload["status"] = stringValue(intakePayload["status"], "draft")
+	intakePayload["priority"] = stringValue(intakePayload["priority"], "medium")
+	intakePayload["metadata"] = jsonStringValue(intakePayload["metadata"])
+	// A fresh draft starts at revision 1 so the first two-tab race is already
+	// protected: the create response pins the version both tabs must carry.
+	createMetadata := objectValue(intakePayload["metadata"])
+	if createMetadata == nil {
+		createMetadata = map[string]interface{}{}
+	}
+	createMetadata[intakeDraftRevisionKey] = "1"
+	intakePayload["metadata"] = jsonStringValue(createMetadata)
+	intakePayload["created_by"] = createdBy
+	if idempotencyKey != "" && h.hasColumn("case_intakes", "idempotency_key") {
+		intakePayload["idempotency_key"] = idempotencyKey
+	}
+	intakePayload["created_at"] = now
+	intakePayload["updated_at"] = now
+
+	if h.tableExists("case_intakes") {
+		var err error
+		for attempt := 0; attempt < 3; attempt++ {
+			intakePayload["intake_code"] = generateIntakeCode()
+			err = h.db.Transaction(func(tx *gorm.DB) error {
+				if err := tx.Table("case_intakes").Create(intakePayload).Error; err != nil {
+					return err
+				}
+				if h.tableExists("case_intake_parties") {
+					for _, party := range parties {
+						var row map[string]interface{}
+						var err error
+						if caseIntakePartyIsClient(party) {
+							// The client party is authored from the protected client
+							// master record: resolve its guarded identity inside the
+							// same transaction instead of demanding raw identity
+							// input from the browser.
+							row, err = h.prepareCaseIntakeClientPartyRow(tx, intakePayload["client_id"], party, intakeID, now)
+						} else {
+							row, err = h.prepareCaseIntakePartyCreateRow(party, intakeID, now)
+						}
+						if err != nil {
+							return err
+						}
+						if err := tx.Table("case_intake_parties").Create(row).Error; err != nil {
+							return err
+						}
+					}
+				}
+				if h.tableExists("case_materials") {
+					for _, material := range materials {
+						row := filterMap(material, allowedCaseMaterialFields)
+						row["intake_id"] = intakeID
+						row["name"] = stringValue(row["name"], "未命名材料")
+						row["material_type"] = stringValue(row["material_type"], "document")
+						row["status"] = stringValue(row["status"], "missing")
+						if _, ok := row["required"]; !ok {
+							row["required"] = true
+						}
+						row["metadata"] = jsonStringValue(row["metadata"])
+						row["created_at"] = now
+						row["updated_at"] = now
+						if err := tx.Table("case_materials").Create(row).Error; err != nil {
+							return err
+						}
+					}
+				}
+				return nil
+			})
+			if err == nil || !isDuplicateKeyError(err) {
+				break
+			}
+		}
+		if err != nil {
+			if idempotencyKey != "" && h.hasColumn("case_intakes", "idempotency_key") {
+				var existing map[string]interface{}
+				if findErr := h.db.Table("case_intakes").
+					Where("idempotency_key = ? AND created_by = ?", idempotencyKey, createdBy).
+					Take(&existing).Error; findErr == nil {
+					common.APISuccess(c, existing)
+					return
+				}
+			}
+			if isSubjectWorkflowError(err) {
+				writeSubjectWorkflowError(c, err)
+				return
+			}
+			common.APIInternalServerError(c, "创建接案失败", err.Error())
+			return
+		}
+	}
+	safeParties := make([]map[string]interface{}, 0, len(parties))
+	for _, party := range parties {
+		safeParties = append(safeParties, sanitizeAggregateRow("case_intake_parties", party))
+	}
+	intakePayload["parties"] = safeParties
+	intakePayload["materials"] = materials
+	intakePayload["revision"] = intakeDraftRevision(intakePayload["metadata"])
+	delete(intakePayload, "metadata")
+	c.JSON(http.StatusCreated, common.APIResponse{Success: true, Data: intakePayload, Meta: common.ResponseMeta{Timestamp: now, Version: "v1", Server: "law-oa-go", Environment: "development"}})
+}
+
+func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
+	if denyIntakeWriteForPlainUser(c) {
+		return
+	}
+	id := c.Param("id")
+	actorID, ok := currentUserIDString(c)
+	if !ok {
+		return
+	}
+	var rawPayload map[string]interface{}
+	if err := c.ShouldBindJSON(&rawPayload); err != nil {
+		common.APIBadRequest(c, "请求参数错误", err.Error())
+		return
+	}
+	partiesReplaceRequested := rawPayload["parties"] != nil
+	parties := mapSliceValue(rawPayload["parties"])
+	materials := mapSliceValue(rawPayload["materials"])
+	if containsPlaintextIdentityField(rawPayload["metadata"]) {
+		common.APIBadRequest(c, "身份信息登记方式不受支持", "身份证号、统一社会信用代码等身份标识必须登记到受保护的客户或主体档案，不能写入接案备注")
+		return
+	}
+	for _, party := range parties {
+		if containsPlaintextIdentityField(party["metadata"]) {
+			common.APIBadRequest(c, "身份信息登记方式不受支持", "对方或关联方身份标识必须登记到受保护的主体档案，不能写入接案备注")
+			return
+		}
+	}
+	for _, material := range materials {
+		if containsPlaintextIdentityField(material["metadata"]) {
+			common.APIBadRequest(c, "身份信息登记方式不受支持", "材料备注不能包含未保护的身份标识")
+			return
+		}
+	}
+	payload := filterMap(rawPayload, allowedCaseIntakeUpdateFields)
+	if len(payload) == 0 && !partiesReplaceRequested && len(materials) == 0 {
+		common.APIBadRequest(c, "请求参数错误", "没有可更新的字段")
+		return
+	}
+	if _, ok := payload["metadata"]; ok {
+		payload["metadata"] = jsonStringValue(payload["metadata"])
+	}
+	// Lost-update guard (R10): every update must name the revision the page
+	// is based on. Missing revisions are rejected instead of silently
+	// overwriting newer server content; the transaction below re-checks the
+	// revision under a row lock.
+	expectedRevision := strings.TrimSpace(fmt.Sprint(rawPayload["expected_revision"]))
+	if !isAssistantRole(c) && len(parties) > 0 && !h.intakePartyIdentitySchemaReady() {
+		common.NewAPIError(c, http.StatusServiceUnavailable, "INTAKE_PARTY_IDENTITY_SCHEMA_REQUIRED", "接案当事人身份保护字段尚未迁移，已阻止更新；请执行数据库迁移 000070")
+		return
+	}
+	payload["updated_at"] = time.Now()
+	if !h.tableExists("case_intakes") {
+		common.APINotFound(c, "接案记录不存在", "接案记录表不可用")
+		return
+	}
+	var existing map[string]interface{}
+	if err := h.db.Table("case_intakes").Where("id = ?", id).Take(&existing).Error; err != nil {
+		common.APINotFound(c, "接案记录不存在", "指定接案记录不存在")
+		return
+	}
+	role, _ := middleware.GetCurrentRole(c)
+	isLawyerTakingOverAssistantDraft := strings.EqualFold(strings.TrimSpace(role), "lawyer") && strings.TrimSpace(fmt.Sprint(existing["status"])) == "assistant_draft"
+	if !canViewAllMatterData(c) && strings.TrimSpace(fmt.Sprint(existing["created_by"])) != actorID && !isLawyerTakingOverAssistantDraft {
+		forbidObjectAccess(c)
+		return
+	}
+	if !validateIntakeCaseType(c, rawPayload) {
+		return
+	}
+	if isAssistantRole(c) {
+		if rawPayload["client_id"] != nil || rawPayload["parties"] != nil {
+			common.APIForbidden(c, "助理协作草稿不能录入当事人身份信息", "客户、对方和关联方必须由执业律师确认后录入")
+			return
+		}
+		if strings.TrimSpace(fmt.Sprint(existing["status"])) != "assistant_draft" {
+			common.APIForbidden(c, "该接案草稿已进入律师处理阶段", "助理不能修改律师确认后的接案信息")
+			return
+		}
+		payload = filterMap(rawPayload, allowedAssistantDraftFields)
+		payload["status"] = "assistant_draft"
+		payload["metadata"] = jsonStringValue(map[string]interface{}{
+			"assistant_draft": true,
+			"created_by_role": "assistant",
+		})
+		// Keep the server-owned revision token across the assistant overwrite:
+		// the assistant page sends the revision it loaded, so the token from
+		// the stored draft must survive this metadata replacement.
+		if stored := intakeDraftRevision(existing["metadata"]); stored != "" {
+			assistantMetadata := objectValue(payload["metadata"])
+			assistantMetadata[intakeDraftRevisionKey] = stored
+			payload["metadata"] = jsonStringValue(assistantMetadata)
+		}
+	}
+	if clientIDValue, present := rawPayload["client_id"]; present && clientIDValue != nil && !isAssistantRole(c) {
+		if !h.authorizeIntakeClient(c, intakeClientID(clientIDValue)) {
+			return
+		}
+	}
+	if isLawyerTakingOverAssistantDraft {
+		// Revision validation runs after the authorization boundary (object
+		// scope and client scope) so an unauthorized caller sees 403, not a
+		// revision hint. The transaction below still re-checks the token
+		// A lawyer taking over an assistant draft becomes accountable for the
+		// later confirmation and conflict-check trail.
+		payload["created_by"] = actorID
+	}
+	// Revision validation runs after the authorization boundary (object
+	// scope and client scope) so an unauthorized caller sees 403, not a
+	// revision hint. The transaction below still re-checks the token under
+	// the row lock.
+	if rawPayload["expected_revision"] == nil || expectedRevision == "" || expectedRevision == "<nil>" {
+		common.NewAPIError(c, http.StatusConflict, "INTAKE_DRAFT_REVISION_REQUIRED",
+			"缺少草稿版本号：为避免旧页面覆盖已保存内容，请重新加载服务端草稿后再保存；本次未写入任何内容",
+			"缺少 expected_revision 的保存会被拒绝")
+		return
+	}
+	// Stamp the NEW revision onto the merged metadata. Non-metadata updates
+	// keep the stored metadata and only rotate the revision token.
+	// A save without a metadata key (e.g. only the title) must keep the STORED
+	// business metadata. objectValue(nil) returns an empty map, so the old nil
+	// check never fired and such a save erased every stored metadata field. The
+	// stored metadata is now the base; a present client metadata object is only
+	// merged on top of it. Assistant drafts keep their focused overwrite contract.
+	nextRevision := uuid.NewString()
+	revisionMetadata := map[string]interface{}{}
+	if !isAssistantRole(c) {
+		revisionMetadata = objectValue(existing["metadata"])
+	}
+	if providedMetadata, ok := rawPayload["metadata"]; ok && providedMetadata != nil && !isAssistantRole(c) {
+		for key, value := range objectValue(providedMetadata) {
+			revisionMetadata[key] = value
+		}
+	}
+	revisionMetadata[intakeDraftRevisionKey] = nextRevision
+	payload["metadata"] = jsonStringValue(revisionMetadata)
+	// Any CHANGE to facts that can affect the conflict result invalidates the
+	// prior conclusion at the server boundary. The UI may show a stale badge,
+	// but the backend must enforce the same rule for API clients and scripts.
+	// Key presence alone is not a change: the structured resubmit flow saves
+	// replies via the approval API and then re-submits without rewriting any
+	// fact, and a full-form intake save that repeats identical values must
+	// keep the committed conclusion usable (C15/C16 second sample).
+	conflictInputChanged := h.caseIntakeConflictFactsChanged(existing, rawPayload, parties)
+	if !isAssistantRole(c) && conflictInputChanged {
+		currentStatus := strings.TrimSpace(fmt.Sprint(existing["status"]))
+		if currentStatus == "lawyer_facts_confirmed" || currentStatus == "conflict_ready" {
+			metadata := objectValue(existing["metadata"])
+			for key, value := range objectValue(rawPayload["metadata"]) {
+				metadata[key] = value
+			}
+			// The rebuilt metadata starts from the STORED metadata, so the
+			// freshly stamped revision is re-applied last: otherwise the
+			// pre-save token is written back and a stale tab can overwrite
+			// the very next save (confirmed/conflict_ready regression).
+			metadata[intakeDraftRevisionKey] = nextRevision
+			metadata["conflict_invalidated_at"] = time.Now().UTC().Format(time.RFC3339)
+			metadata["conflict_invalidated_by"] = actorID
+			metadata["conflict_invalidation_reason"] = "接案事实发生变化，必须重新确认并检测"
+			delete(metadata, lawyerFactsVersionKey)
+			payload["status"] = "draft"
+			payload["metadata"] = jsonStringValue(metadata)
+		}
+	}
+
+	now := time.Now()
+	hasIntakeParties := h.tableExists("case_intake_parties")
+	hasIntakeMaterials := h.tableExists("case_materials")
+	intakePartySchemaReady := h.intakePartyIdentitySchemaReady()
+	err := h.db.Transaction(func(tx *gorm.DB) error {
+		// Re-read the draft under a row lock inside the write transaction so
+		// two same-second saves serialize here: the loser must see the
+		// winner's revision, not the pre-transaction snapshot read above.
+		var locked struct {
+			ClientID *uint
+			Metadata []byte
+		}
+		if err := tx.Table("case_intakes").Clauses(clause.Locking{Strength: "UPDATE"}).
+			Select("client_id, metadata").
+			Where("id = ?", id).Take(&locked).Error; err != nil {
+			return err
+		}
+		if lockedRevision := intakeDraftRevisionFor(id, locked.Metadata); lockedRevision != expectedRevision {
+			return newIntakeDraftRevisionError(expectedRevision == "")
+		}
+		if len(payload) > 0 {
+			if err := tx.Table("case_intakes").Where("id = ?", id).Updates(payload).Error; err != nil {
+				return err
+			}
+		}
+		if hasIntakeParties && partiesReplaceRequested {
+			// Resolve every party row while the previous rows are still
+			// present, so an empty identity can inherit the protected
+			// values from the row it replaces.
+			// The client party is resolved from the effective client master
+			// record: when the save switches client_id, the row must carry
+			// the NEW client's protected identity, never the previous
+			// client's inherited values (P4 update-path contract).
+			effectiveClientID := intakeClientID(locked.ClientID)
+			if clientIDValue, present := rawPayload["client_id"]; present && clientIDValue != nil {
+				effectiveClientID = intakeClientID(clientIDValue)
+			}
+			partyRows := make([]map[string]interface{}, 0, len(parties))
+			for _, party := range parties {
+				var row map[string]interface{}
+				var err error
+				if caseIntakePartyIsClient(party) {
+					row, err = h.prepareCaseIntakeClientPartyRow(tx, effectiveClientID, party, id, now)
+				} else {
+					row, err = h.prepareCaseIntakePartyUpdateRow(tx, id, party, now, intakePartySchemaReady)
+				}
+				if err != nil {
+					return err
+				}
+				partyRows = append(partyRows, row)
+			}
+			if err := tx.Table("case_intake_parties").Where("intake_id = ?", id).Delete(map[string]interface{}{}).Error; err != nil {
+				return err
+			}
+			for _, row := range partyRows {
+				if err := tx.Table("case_intake_parties").Create(row).Error; err != nil {
+					return err
+				}
+			}
+		}
+		if hasIntakeMaterials && rawPayload["materials"] != nil {
+			// Diff-based merge (review 2026-09-30, defect 1). The old
+			// delete-all-rewrite dropped every uploaded attachment whose
+			// row was echoed back with the same id. Rules now:
+			//   - rows WITH id: update ledger fields in place; the client
+			//     cannot change intake_id, case_id, owner_id, uploaded_by,
+			//     uploaded_at or status=uploaded -- those stay server-owned.
+			//   - rows WITHOUT id: create fresh ledger rows at status
+			//     missing; a client cannot forge storage or uploaded state
+			//     through the save path.
+			//   - rows absent from the payload: keep them (they may hold
+			//     attachments) unless the caller sends materials: [] with a
+			//     non-empty list of ids that all have no files; plain UI
+			//     saves just never see such a payload shape here.
+			providedIDs := map[uint]bool{}
+			for _, material := range materials {
+				if rawID, exists := material["id"]; exists && rawID != nil {
+					if parsed, perr := toUintValue(rawID); perr == nil && parsed > 0 {
+						providedIDs[parsed] = true
+					}
+				}
+			}
+			for _, material := range materials {
+				row := filterMap(material, allowedCaseMaterialFields)
+				if rawID, exists := material["id"]; exists && rawID != nil {
+					if parsed, perr := toUintValue(rawID); perr == nil && parsed > 0 {
+						// Server-owned columns are stripped from the echo
+						// before the update: storage_url, uploaded flags and
+						// status cannot be forged through a save.
+						delete(row, "intake_id")
+						delete(row, "case_id")
+						delete(row, "owner_id")
+						delete(row, "uploaded_by")
+						delete(row, "uploaded_at")
+						delete(row, "storage_url")
+						if st, isStatus := row["status"]; isStatus {
+							if stringValue(st, "") == models.MaterialStatusUploaded {
+								// Preserve the real upload state: a save that
+								// echoes an uploaded row cannot downgrade or
+								// fake it; only missing/not_required passes.
+								delete(row, "status")
+							}
+						}
+						// If nothing else is left to change on this echo,
+						// keep the touch minimal but still bump updated_at
+						// so the UI sees a fresh row.
+						row["updated_at"] = now
+						if err := tx.Table("case_materials").
+							Where("id = ? AND intake_id = ?", parsed, id).
+							Updates(row).Error; err != nil {
+							return err
+						}
+						continue
+					}
+				}
+				// No usable id: create. Uploaded state is unreachable here.
+				delete(row, "id")
+				row["intake_id"] = id
+				row["name"] = stringValue(row["name"], "未命名材料")
+				row["material_type"] = stringValue(row["material_type"], "document")
+				row["status"] = models.MaterialStatusMissing
+				if _, exists := row["required"]; !exists {
+					row["required"] = true
+				}
+				row["metadata"] = jsonStringValue(row["metadata"])
+				row["created_at"] = now
+				row["updated_at"] = now
+				if err := tx.Table("case_materials").Create(row).Error; err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
+	var revisionErr *IntakeDraftRevisionError
+	if err != nil {
+		if errors.As(err, &revisionErr) {
+			common.APIErrorWithContext(c, http.StatusConflict, revisionErr.Code, revisionErr.Message, map[string]interface{}{
+				"current_revision": h.currentIntakeRevision(id),
+				"details":          revisionErr.Details,
+			})
+			return
+		}
+		if isSubjectWorkflowError(err) {
+			writeSubjectWorkflowError(c, err)
+			return
+		}
+		common.APIInternalServerError(c, "更新接案失败", err.Error())
+		return
+	}
+	var updated map[string]interface{}
+	if err := h.db.Table("case_intakes").Where("id = ?", id).Take(&updated).Error; err != nil {
+		common.APIInternalServerError(c, "读取更新后的接案失败", err.Error())
+		return
+	}
+	updated["revision"] = intakeDraftRevision(updated["metadata"])
+	delete(updated, "metadata")
+	common.APISuccess(c, updated)
+}
+
+// currentIntakeRevision reads the current draft revision for conflict
+// responses; read failures degrade to an empty value rather than masking the
+// original 409.
+func (h *DemoAggregateHandler) currentIntakeRevision(id string) string {
+	var row struct {
+		Metadata []byte
+	}
+	if err := h.db.Table("case_intakes").Select("metadata").Where("id = ?", id).Take(&row).Error; err != nil {
+		return ""
+	}
+	return intakeDraftRevisionFor(id, row.Metadata)
+}
+
+func prepareCaseIntakePartyRow(party map[string]interface{}, intakeID interface{}, now time.Time) (map[string]interface{}, error) {
+	row := filterMap(party, allowedCaseIntakePartyFields)
+	row["intake_id"] = intakeID
+	row["entity_name"] = strings.TrimSpace(stringValue(row["entity_name"], stringValue(party["name"], "")))
+	row["entity_type"] = normalizeIntakeEntityType(stringValue(row["entity_type"], stringValue(party["entityType"], "")))
+	row["party_role"] = strings.ToLower(strings.TrimSpace(stringValue(row["party_role"], stringValue(party["role"], "related_party"))))
+	if row["entity_name"] == "" {
+		return nil, services.NewSubjectWorkflowError("INTAKE_PARTY_NAME_REQUIRED", "接案当事人名称不能为空")
+	}
+	if _, ok := row["relation_depth"]; !ok {
+		row["relation_depth"] = 0
+	}
+	row["metadata"] = jsonStringValue(row["metadata"])
+	row["created_at"] = now
+	if row["party_role"] == "client" {
+		return row, nil
+	}
+	identityType := strings.ToUpper(strings.TrimSpace(stringValue(party["identity_type"], stringValue(party["identityType"], ""))))
+	identityNumber := security.NormalizeIdentityNumber(identityType, stringValue(party["identity_number"], stringValue(party["identityNumber"], "")))
+	if strings.TrimSpace(identityNumber) != "" && (!validIntakeIdentityType(row["entity_type"], identityType) || len([]rune(identityNumber)) < 4) {
+		return nil, services.NewSubjectWorkflowError("INTAKE_PARTY_IDENTITY_REQUIRED", fmt.Sprintf("当事人“%s”必须提供与主体类型匹配的可核验身份标识", row["entity_name"]))
+	}
+	ciphertext, digest, err := security.ProtectIdentityNumber(identityNumber)
+	if err != nil {
+		return nil, services.NewSubjectWorkflowError("SUBJECT_DATA_KEY_REQUIRED", "主体身份保护密钥不可用，已阻止保存接案当事人")
+	}
+	row["identity_type"] = identityType
+	row["identity_number_ciphertext"] = ciphertext
+	row["identity_number_digest"] = digest
+	row["aliases"] = strings.Join(stringListValue(firstNonEmptyValue(party["aliases"], party["alias"])), ",")
+	return row, nil
+}
+
+func normalizeIntakeEntityType(value string) string {
+	switch strings.ToUpper(strings.TrimSpace(value)) {
+	case "PERSON", "INDIVIDUAL", "个人", "自然人":
+		return "INDIVIDUAL"
+	case "ORGANIZATION", "组织", "其他组织":
+		return "ORGANIZATION"
+	default:
+		return "LEGAL_PERSON"
+	}
+}
+
+func validIntakeIdentityType(entityType interface{}, identityType string) bool {
+	if fmt.Sprint(entityType) == "INDIVIDUAL" {
+		return identityType == "ID_CARD" || identityType == "PASSPORT" || identityType == "OTHER"
+	}
+	return identityType == "SOCIAL_CREDIT_CODE" || identityType == "BUSINESS_LICENSE" || identityType == "ORGANIZATION_CODE" || identityType == "OTHER"
+}
+
+func (h *DemoAggregateHandler) intakePartyIdentitySchemaReady() bool {
+	for _, column := range []string{"identity_type", "identity_number_ciphertext", "identity_number_digest", "aliases"} {
+		if !h.hasColumn("case_intake_parties", column) {
+			return false
+		}
+	}
+	return true
+}
+
+// ConfirmIntakeFacts records the lawyer's accountability for the factual
+// intake before a conflict query can be started. Status is deliberately not a
+// client-controlled field: only this transition may enter the checked state.
+func (h *DemoAggregateHandler) ConfirmIntakeFacts(c *gin.Context) {
+	role, _ := middleware.GetCurrentRole(c)
+	if !strings.EqualFold(strings.TrimSpace(role), "lawyer") {
+		common.NewAPIError(c, http.StatusForbidden, "INTAKE_FACT_CONFIRMATION_FORBIDDEN", "仅执业律师可以确认当事人事实")
+		return
+	}
+	intakeID := c.Param("id")
+	actorID, ok := currentUserIDString(c)
+	if !ok {
+		return
+	}
+	var intake map[string]interface{}
+	if h.first("case_intakes", intakeID, &intake) != nil {
+		common.APINotFound(c, "接案记录不存在", "指定接案记录不存在")
+		return
+	}
+	if !canViewAllMatterData(c) && strings.TrimSpace(fmt.Sprint(intake["created_by"])) != actorID && strings.TrimSpace(fmt.Sprint(intake["status"])) != "assistant_draft" {
+		forbidObjectAccess(c)
+		return
+	}
+	// Facts confirmation rotates the draft revision, so a stale tab cannot
+	// bypass the lost-update guard by re-confirming from an old page. The
+	// revision guard runs after the object-authorization boundary so an
+	// unauthorized caller sees 403, not a revision hint.
+	if reqRevision := strings.TrimSpace(c.GetHeader("X-Intake-Revision")); reqRevision != "" {
+		if reqRevision != intakeDraftRevisionFor(intakeID, intake["metadata"]) {
+			common.APIErrorWithContext(c, http.StatusConflict, "INTAKE_DRAFT_REVISION_CONFLICT",
+				"草稿已被其他页面更新，当前页面是旧版本，已停止重新确认以避免覆盖。",
+				map[string]interface{}{"current_revision": intakeDraftRevisionFor(intakeID, intake["metadata"])})
+			return
+		}
+	}
+	if strings.TrimSpace(fmt.Sprint(intake["client_id"])) == "" || strings.TrimSpace(fmt.Sprint(intake["title"])) == "" || strings.TrimSpace(fmt.Sprint(intake["case_type"])) == "" {
+		common.APIBadRequest(c, "冲突检查前置资料不完整", "请先填写客户、案件名称和案件类型")
+		return
+	}
+	// authorizeIntakeClient always writes an error response for an invalid or
+	// unreadable client. Calling it unconditionally keeps a NULL client_id
+	// draft from slipping through as an empty HTTP 200.
+	if clientID := intakeClientID(intake["client_id"]); !h.authorizeIntakeClient(c, clientID) {
+		return
+	}
+	if h.tableExists("case_intake_parties") {
+		var count int64
+		if err := h.db.Table("case_intake_parties").Where("intake_id = ?", intakeID).Count(&count).Error; err != nil || count == 0 {
+			common.APIBadRequest(c, "冲突检查前置资料不完整", "至少需要一名对方当事人或相关方")
+			return
+		}
+	}
+	// The confirmation must be serialized against a racing update: read the
+	// row under a lock, then rotate the server-owned facts version in the
+	// same transaction. The version token - not the RFC3339 timestamp - is
+	// what an in-flight conflict check is validated against at commit time.
+	confirmedRevision := uuid.NewString()
+	if err := h.db.Transaction(func(tx *gorm.DB) error {
+		var row struct {
+			Metadata []byte
+		}
+		if err := tx.Table("case_intakes").Clauses(clause.Locking{Strength: "UPDATE"}).
+			Select("metadata").Where("id = ?", intakeID).Take(&row).Error; err != nil {
+			return err
+		}
+		// Re-check the revision under the row lock: the unlocked read above
+		// may already be stale by the time this transaction runs, and the
+		// guard is only real if it compares against the version it locks.
+		if reqRevision := strings.TrimSpace(c.GetHeader("X-Intake-Revision")); reqRevision != "" {
+			if reqRevision != intakeDraftRevisionFor(intakeID, row.Metadata) {
+				return &IntakeDraftRevisionError{
+					Code:    "INTAKE_DRAFT_REVISION_CONFLICT",
+					Message: "草稿已被其他页面更新，当前页面是旧版本，已停止重新确认以避免覆盖。",
+				}
+			}
+		}
+		metadata := objectValue(row.Metadata)
+		metadata["lawyer_facts_confirmed_at"] = time.Now().UTC().Format(time.RFC3339)
+		metadata["lawyer_facts_confirmed_by"] = actorID
+		metadata[lawyerFactsVersionKey] = uuid.NewString()
+		// Rotate the draft revision too: confirmation is a snapshot boundary,
+		// and pages must reload the confirmed version before further edits.
+		metadata[intakeDraftRevisionKey] = confirmedRevision
+		return tx.Table("case_intakes").Where("id = ?", intakeID).Updates(map[string]interface{}{
+			"created_by": actorID,
+			"status":     "lawyer_facts_confirmed",
+			"metadata":   jsonStringValue(metadata),
+			"updated_at": time.Now(),
+		}).Error
+	}); err != nil {
+		var revisionErr *IntakeDraftRevisionError
+		if errors.As(err, &revisionErr) {
+			common.APIErrorWithContext(c, http.StatusConflict, revisionErr.Code, revisionErr.Message, map[string]interface{}{
+				"current_revision": h.currentIntakeRevision(intakeID),
+			})
+			return
+		}
+		common.APIInternalServerError(c, "确认接案事实失败", err.Error())
+		return
+	}
+	common.APISuccess(c, gin.H{"id": intakeID, "status": "lawyer_facts_confirmed", "revision": confirmedRevision})
+}
+
+func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
+	if !canRunConflictCheck(c) {
+		common.NewAPIError(c, http.StatusForbidden, "CONFLICT_CHECK_FORBIDDEN", "仅执业律师或独立冲突核查人可以运行利益冲突检查")
+		return
+	}
+	intakeID := c.Param("id")
+	var intake map[string]interface{}
+	if h.first("case_intakes", intakeID, &intake) != nil {
+		common.APINotFound(c, "接案记录不存在", "指定接案记录不存在")
+		return
+	}
+	actorID, ok := currentUserIDString(c)
+	if !ok {
+		return
+	}
+	if !canViewAllMatterData(c) {
+		if strings.TrimSpace(fmt.Sprint(intake["created_by"])) != actorID {
+			forbidObjectAccess(c)
+			return
+		}
+	}
+	// A conflict check consumes the confirmed snapshot, so a page holding an
+	// outdated revision must reload before starting another check. The
+	// revision guard runs after the object-authorization boundary so an
+	// unauthorized caller sees 403, not a revision hint.
+	if reqRevision := strings.TrimSpace(c.GetHeader("X-Intake-Revision")); reqRevision != "" {
+		if reqRevision != intakeDraftRevisionFor(intakeID, intake["metadata"]) {
+			common.APIErrorWithContext(c, http.StatusConflict, "INTAKE_DRAFT_REVISION_CONFLICT",
+				"草稿已被其他页面更新，请重新加载服务端版本后再运行冲突检查。",
+				map[string]interface{}{"current_revision": intakeDraftRevisionFor(intakeID, intake["metadata"])})
+			return
+		}
+	}
+	if strings.TrimSpace(fmt.Sprint(intake["status"])) != "lawyer_facts_confirmed" {
+		common.NewAPIError(c, http.StatusConflict, "INTAKE_FACTS_NOT_CONFIRMED", "请由负责律师先确认当事人事实，再运行利益冲突检查")
+		return
+	}
+	if clientID := intakeClientID(intake["client_id"]); !h.authorizeIntakeClient(c, clientID) {
+		return
+	}
+	if h.conflictService == nil {
+		common.NewAPIError(c, http.StatusServiceUnavailable, "CONFLICT_SERVICE_UNAVAILABLE", "正式冲突检测服务未初始化，已阻止创建空任务")
+		return
+	}
+
+	var client map[string]interface{}
+	if err := h.db.Table("clients").Where("id = ?", intake["client_id"]).Take(&client).Error; err != nil {
+		common.APIBadRequest(c, "冲突检查前置资料不完整", "接案草稿关联的客户不存在")
+		return
+	}
+	metadata := objectValue(intake["metadata"])
+	if containsPlaintextIdentityField(metadata) {
+		common.APIBadRequest(c, "冲突检查前置资料不完整", "接案记录包含未保护的身份标识，请先登记到受保护的客户或主体档案")
+		return
+	}
+	clientName := firstNonEmpty(fmt.Sprint(client["name"]), fmt.Sprint(intake["client_name"]))
+	clientType := strings.ToUpper(strings.TrimSpace(fmt.Sprint(client["type"])))
+	if clientType == "企业" || clientType == "公司" || clientType == "COMPANY" {
+		clientType = "COMPANY"
+	} else if clientType == "个人" || clientType == "PERSON" {
+		clientType = "PERSON"
+	} else {
+		clientType = "ANY"
+	}
+	clientIdentifiers := stringMapValue(firstNonEmptyValue(
+		client["identifiers"],
+	))
+	clientIdentityCiphertext := firstNonEmpty(valueString(client, "identity_number_ciphertext"), valueString(client, "id_card_ciphertext"))
+	clientIdentityDigest := firstNonEmpty(valueString(client, "identity_number_digest"), valueString(client, "id_card_digest"))
+	if clientIdentityCiphertext == "" || clientIdentityDigest == "" {
+		common.NewAPIError(c, http.StatusConflict, "INTAKE_CLIENT_IDENTITY_REQUIRED", "客户主档案缺少受保护的可核验身份标识，不能运行冲突检测")
+		return
+	}
+	clientIdentity, decryptErr := security.DecryptIdentityNumber(clientIdentityCiphertext)
+	if decryptErr != nil || strings.TrimSpace(clientIdentity) == "" {
+		common.NewAPIError(c, http.StatusConflict, "CLIENT_IDENTITY_UNREADABLE", "客户主档案的身份标识无法安全读取，不能运行冲突检测")
+		return
+	}
+	if clientIdentifiers == nil {
+		clientIdentifiers = map[string]string{}
+	}
+	clientIdentityType := strings.ToLower(strings.TrimSpace(valueString(client, "identity_type")))
+	switch strings.ToUpper(clientIdentityType) {
+	case "SOCIAL_CREDIT_CODE":
+		clientIdentityType = "unified_social_credit_code"
+	case "BUSINESS_LICENSE":
+		clientIdentityType = "business_license"
+	case "ORGANIZATION_CODE":
+		clientIdentityType = "organization_code"
+	case "PASSPORT":
+		clientIdentityType = "passport"
+	case "ID_CARD":
+		clientIdentityType = "id_card"
+	default:
+		if clientType == "COMPANY" {
+			clientIdentityType = "unified_social_credit_code"
+		} else {
+			clientIdentityType = "id_card"
+		}
+	}
+	clientIdentifiers[clientIdentityType] = security.NormalizeIdentityNumber(clientIdentityType, clientIdentity)
+	// The frozen client alias fact must cover EVERY storage copy of the
+	// fact: intake metadata aliases plus the protected clients.aliases
+	// column. Client management writes the column, so a check that ignored
+	// it could freeze an incomplete identity set and later pass while the
+	// client master carries an alias the check never compared. The merge
+	// trims, drops blanks, and de-duplicates so the same alias stored in
+	// both places freezes as one fact, not two.
+	clientAliases := deduplicateConflictAliasList(append(
+		stringListValue(firstNonEmptyValue(metadata["client_aliases"], metadata["clientAliases"])),
+		splitConflictAliases(valueString(client, "aliases"))...,
+	))
+	lawyerID := actorID
+	if canViewAllMatterData(c) {
+		lawyerID = firstNonEmpty(valueString(metadata, "lawyer_id"), actorID)
+	}
+	lawyerIDUint, lawyerErr := strconv.ParseUint(strings.TrimSpace(lawyerID), 10, 32)
+	if lawyerErr != nil || lawyerIDUint == 0 {
+		common.NewAPIError(c, http.StatusConflict, "INTAKE_LAWYER_REQUIRED", "冲突检测必须绑定有效的承办律师")
+		return
+	}
+	var lawyer map[string]interface{}
+	if err := h.db.Table("users").Select("id, role, status").Where("id = ? AND deleted_at IS NULL", uint(lawyerIDUint)).Take(&lawyer).Error; err != nil {
+		common.NewAPIError(c, http.StatusConflict, "INTAKE_LAWYER_INVALID", "接案记录绑定的承办律师不存在")
+		return
+	}
+	if !strings.EqualFold(strings.TrimSpace(fmt.Sprint(lawyer["status"])), "active") || !strings.EqualFold(strings.TrimSpace(fmt.Sprint(lawyer["role"])), "lawyer") {
+		common.NewAPIError(c, http.StatusConflict, "INTAKE_LAWYER_INVALID", "接案记录绑定的承办律师未启用或账号角色无效")
+		return
+	}
+	parties := make([]models.ConflictPartyInfo, 0)
+	otherParties := make([]string, 0)
+	if h.tableExists("case_intake_parties") {
+		var partyRows []map[string]interface{}
+		if err := h.db.Table("case_intake_parties").Where("intake_id = ?", intakeID).Find(&partyRows).Error; err != nil {
+			common.APIInternalServerError(c, "读取接案当事人失败", err.Error())
+			return
+		}
+		seenParties := map[string]struct{}{}
+		for _, row := range partyRows {
+			name := firstNonEmpty(valueString(row, "entity_name"), valueString(row, "name"))
+			if name == "" || strings.EqualFold(name, clientName) {
+				continue
+			}
+			// The intake UI stores the lawyer's real related-party business
+			// role (WITNESS/GUARANTOR/EXPERT/RELATED_PARTY) in
+			// metadata.party_type while party_role stays the storage-level
+			// bucket "related_party". Conflict checks must consume the
+			// reviewed business role, not collapse it here; an unknown
+			// value still falls back to RELATED_PARTY and later fails
+			// closed at case creation.
+			partyMetadata := objectValue(row["metadata"])
+			role := strings.ToUpper(firstNonEmpty(valueString(row, "party_role"), valueString(row, "role"), "RELATED_PARTY"))
+			if role == "RELATED_PARTY" {
+				if businessRole := strings.ToUpper(strings.TrimSpace(valueString(partyMetadata, "party_type"))); businessRole != "" {
+					role = businessRole
+				}
+			}
+			entityType := strings.ToUpper(firstNonEmpty(valueString(row, "entity_type"), "ANY"))
+			if containsPlaintextIdentityField(partyMetadata) {
+				common.APIBadRequest(c, "冲突检查前置资料不完整", "对方或关联方身份标识未登记在受保护的主体档案中")
+				return
+			}
+			identityType := strings.ToUpper(strings.TrimSpace(valueString(row, "identity_type")))
+			ciphertext := strings.TrimSpace(valueString(row, "identity_number_ciphertext"))
+			if identityType == "" || ciphertext == "" || strings.TrimSpace(valueString(row, "identity_number_digest")) == "" {
+				common.NewAPIError(c, http.StatusConflict, "INTAKE_PARTY_IDENTITY_REQUIRED", fmt.Sprintf("当事人“%s”缺少受保护的可核验身份标识，不能运行冲突检测", name))
+				return
+			}
+			identityNumber, decryptErr := security.DecryptIdentityNumber(ciphertext)
+			if decryptErr != nil {
+				common.NewAPIError(c, http.StatusConflict, "SUBJECT_IDENTITY_UNREADABLE", fmt.Sprintf("当事人“%s”的身份标识无法安全读取，不能运行冲突检测", name))
+				return
+			}
+			identifiers := map[string]string{strings.ToLower(identityType): security.NormalizeIdentityNumber(identityType, identityNumber)}
+			// The frozen party alias fact covers EVERY storage copy the
+			// intake can hold: the party aliases column AND the intake
+			// metadata lists. firstNonEmptyValue here would freeze only the
+			// first non-empty copy and later reject the same party when the
+			// continuation gate unions both copies, so the handler freezes
+			// the same union with the same split/trim/dedup contract.
+			// The frozen party alias fact unions EVERY storage copy the
+			// intake can hold: the party aliases column AND the intake
+			// metadata lists. firstNonEmptyValue here froze only the first
+			// non-empty copy, so a party stored once in the column and once
+			// in metadata later failed the continuation gate's union
+			// compare. Freeze the same union the gate compares, with one
+			// shared trim/split/dedup contract.
+			aliases := deduplicateConflictAliasList(append(
+				stringListValue(row["aliases"]),
+				stringListValue(firstNonEmptyValue(partyMetadata["aliases"], partyMetadata["client_aliases"], partyMetadata["clientAliases"]))...,
+			))
+			parties = append(parties, models.ConflictPartyInfo{Name: name, Role: role, EntityType: entityType, Identifiers: identifiers, Aliases: aliases})
+			if _, exists := seenParties[name]; !exists {
+				seenParties[name] = struct{}{}
+				otherParties = append(otherParties, name)
+			}
+		}
+	}
+	if len(otherParties) == 0 {
+		common.APIBadRequest(c, "冲突检查前置资料不完整", "至少需要一名对方当事人或相关方")
+		return
+	}
+	actorIDUint, _ := strconv.ParseUint(actorID, 10, 32)
+	actorRole, _ := middleware.GetCurrentRole(c)
+	request := &models.ConflictCheckRequest{
+		CheckID:                   "CCT_" + uuid.NewString(),
+		SubjectCaseID:             firstNonEmpty(valueString(metadata, "subject_case_id"), valueString(metadata, "subjectCaseId")),
+		SubjectCaseNumber:         firstNonEmpty(valueString(metadata, "subject_case_number"), valueString(metadata, "subjectCaseNumber")),
+		IntakeID:                  intakeID,
+		ClientID:                  fmt.Sprint(intake["client_id"]),
+		ClientName:                clientName,
+		ClientType:                clientType,
+		ClientIdentifiers:         clientIdentifiers,
+		ClientAliases:             clientAliases,
+		OtherParties:              otherParties,
+		Parties:                   parties,
+		CaseName:                  strings.TrimSpace(fmt.Sprint(intake["title"])),
+		CaseType:                  strings.TrimSpace(fmt.Sprint(intake["case_type"])),
+		SearchYears:               0,
+		IncludeCorporateRelations: true,
+		SearchDepth:               "STANDARD",
+		UserID:                    lawyerID,
+		ActorUserID:               uint(actorIDUint),
+		ActorRole:                 actorRole,
+		RequestTime:               time.Now(),
+	}
+	if request.CaseName == "" || request.CaseType == "" {
+		common.APIBadRequest(c, "冲突检查前置资料不完整", "案件名称和案件类型不能为空")
+		return
+	}
+	if !models.IsValidConflictCaseType(request.CaseType) {
+		common.NewAPIError(c, http.StatusBadRequest, "VALIDATION_005",
+			fmt.Sprintf("接案草稿保存的案件类型“%s”不在正式冲突检查的规范列表中，请更新案件类型后重试", request.CaseType))
+		return
+	}
+	factsConfirmedAt := strings.TrimSpace(fmt.Sprint(metadata["lawyer_facts_confirmed_at"]))
+	commitToken := ""
+	if tokenValue, ok := metadata["conflict_commit_token"].(string); ok {
+		commitToken = strings.TrimSpace(tokenValue)
+	}
+	factsVersion := ""
+	if versionValue, ok := metadata["lawyer_facts_version"].(string); ok {
+		factsVersion = strings.TrimSpace(versionValue)
+	}
+	result, err := h.conflictService.PrepareConflictCheck(c.Request.Context(), request)
+	if err != nil {
+		var conflictErr *models.ConflictError
+		if errors.As(err, &conflictErr) {
+			common.NewAPIError(c, http.StatusBadRequest, conflictErr.Code, conflictErr.Message)
+			return
+		}
+		common.APIInternalServerError(c, "执行冲突检查失败", err.Error())
+		return
+	}
+	if result == nil || strings.TrimSpace(result.CheckID) == "" {
+		common.NewAPIError(c, http.StatusServiceUnavailable, "CONFLICT_RESULT_UNAVAILABLE", "冲突检测未返回可追溯的检测记录，已阻止继续办理")
+		return
+	}
+	coverageStatus := ""
+	if result.Decision != nil {
+		coverageStatus = result.Decision.CoverageStatus
+	}
+	materials := h.conflictService.BuildConflictCheckRecord(c.Request.Context(), request, result)
+	if err := repositories.CommitIntakeConflictResult(c.Request.Context(), h.db, materials, result.ConflictCases, result.NormalizedSubjects, result, repositories.ConflictSubjectAssociation{
+		CheckID:              result.CheckID,
+		SubjectCaseID:        firstNonEmpty(valueString(metadata, "subject_case_id"), valueString(metadata, "subjectCaseId")),
+		SubjectCaseNumber:    firstNonEmpty(valueString(metadata, "subject_case_number"), valueString(metadata, "subjectCaseNumber")),
+		IntakeID:             intakeID,
+		ClientID:             fmt.Sprint(intake["client_id"]),
+		CoverageStatus:       coverageStatus,
+		CheckedAt:            result.CheckTime,
+		ExpectedCommitToken:  commitToken,
+		ExpectedFactsVersion: factsVersion,
+	}, factsConfirmedAt); err != nil {
+		var staleErr *repositories.IntakeConflictStaleFactsError
+		if errors.As(err, &staleErr) {
+			common.NewAPIError(c, http.StatusConflict, "INTAKE_FACTS_STALE", staleErr.Error())
+			return
+		}
+		var stateErr *repositories.IntakeConflictNotCommittableError
+		if errors.As(err, &stateErr) {
+			common.NewAPIError(c, http.StatusConflict, "INTAKE_CONFLICT_STATE_INVALID", stateErr.Error())
+			return
+		}
+		var raceErr *repositories.IntakeConflictCommitRaceError
+		if errors.As(err, &raceErr) {
+			common.NewAPIError(c, http.StatusConflict, "CONFLICT_COMMIT_RACE", raceErr.Error())
+			return
+		}
+		common.APIInternalServerError(c, "保存冲突检测结果失败", err.Error())
+		return
+	}
+	// This is the primary intake workflow, so it must apply the same
+	// least-disclosure projection as the standalone conflict endpoint before
+	// serializing the result to the requesting lawyer. The projection runs
+	// only after the evidence transaction commits: it mutates the in-memory
+	// conflict case IDs, and persisting the projected copy would collide on
+	// the shared empty-suffix primary key whenever a check yields two or
+	// more hits. The persisted evidence remains available to the
+	// independently authorized reviewer workflow.
+	projectConflictResponseForViewer(c, result)
+	common.APISuccess(c, gin.H{
+		"taskId":                     result.CheckID,
+		"checkId":                    result.CheckID,
+		"intake_id":                  intakeID,
+		"status":                     "COMPLETED",
+		"recommendedPollingInterval": 2,
+		"createdAt":                  result.CheckTime,
+		"result":                     result,
+	})
+}
+
+func (h *DemoAggregateHandler) CreateConflictApproval(c *gin.Context) {
+	taskID := c.Param("task_id")
+	if !h.tableExists("approval_requests") {
+		common.APIInternalServerError(c, "审批表不存在", "approval_requests table is required")
+		return
+	}
+	applicantID, ok := currentUserIDString(c)
+	if !ok {
+		return
+	}
+	var payload map[string]interface{}
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		common.APIBadRequest(c, "请求参数错误", err.Error())
+		return
+	}
+	response, err := h.createConflictApproval(c, taskID, applicantID, payload)
+	if err != nil {
+		if businessErr, ok := err.(conflictApprovalError); ok {
+			common.NewAPIError(c, businessErr.status, businessErr.code, businessErr.message, businessErr.details)
+			return
+		}
+		common.APIInternalServerError(c, "创建冲突审批失败", err.Error())
+		return
+	}
+	common.APISuccess(c, response)
+}
+
+type conflictApprovalError struct {
+	status  int
+	code    string
+	message string
+	details string
+}
+
+func (e conflictApprovalError) Error() string { return e.message }
+
+func (h *DemoAggregateHandler) createConflictApproval(c *gin.Context, taskID, applicantID string, payload map[string]interface{}) (gin.H, error) {
+	var response gin.H
+	hasConflictApprovalID := h.hasColumn("approval_requests", "conflict_check_id")
+	hasWaiverApplications := h.tableExists("waiver_applications")
+	hasConflictCases := h.tableExists("conflict_cases")
+	hasApprovalSnapshots := h.tableExists("approval_snapshots")
+	err := h.db.Transaction(func(tx *gorm.DB) error {
+		var row map[string]interface{}
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Table("conflict_check_records").Where("check_id = ?", taskID).Take(&row).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return conflictApprovalError{status: http.StatusNotFound, code: "CONFLICT_TASK_NOT_FOUND", message: "冲突检测记录不存在"}
+			}
+			return err
+		}
+		ownerID, parseErr := strconv.ParseUint(strings.TrimSpace(fmt.Sprint(row["user_id"])), 10, 32)
+		task := &services.ConflictCheckTaskResponse{
+			OwnerID:       uint(ownerID),
+			SubjectCaseID: subjectCaseIDFromAggregateSearchParameters(row["search_parameters"]),
+		}
+		if parseErr != nil || !canAccessConflictTaskForActor(c, h.authz, task) {
+			return conflictApprovalError{status: http.StatusForbidden, code: "FORBIDDEN", message: "无权为其他律师的冲突任务创建审批"}
+		}
+		if strings.ToUpper(strings.TrimSpace(fmt.Sprint(row["check_status"]))) != "COMPLETED" {
+			return conflictApprovalError{status: http.StatusConflict, code: "CONFLICT_CHECK_NOT_COMPLETED", message: "冲突检测尚未完成，不能创建冲突审批"}
+		}
+		checkTime, _ := row["check_time"].(time.Time)
+		if err := services.EnsureConflictRecordMatchesCurrentIntakeFacts(tx, subjectIntakeIDFromAggregateSearchParameters(row["search_parameters"]), taskID, checkTime); err != nil {
+			var reviewerErr *services.ConflictReviewerError
+			if errors.As(err, &reviewerErr) {
+				return conflictApprovalError{status: http.StatusConflict, code: reviewerErr.Code, message: reviewerErr.Message}
+			}
+			return err
+		}
+
+		checkResult := objectValue(row["check_result"])
+		decision := objectValue(checkResult["decision"])
+		decisionStatus := strings.ToUpper(valueString(decision, "status"))
+		waiverStatus := strings.ToUpper(valueString(objectValue(checkResult["waiver"]), "status"))
+		if decisionStatus == "WAIVED" || waiverStatus == "APPROVED" {
+			return conflictApprovalError{status: http.StatusConflict, code: "CONFLICT_ALREADY_WAIVED", message: "冲突记录已获批准豁免，不能再创建冲突审批"}
+		}
+		if decisionStatus == "WAIVER_PENDING" || decisionStatus == "UNDER_REVIEW" || waiverStatus == "UNDER_REVIEW" || waiverStatus == "SUBMITTED" {
+			return conflictApprovalError{status: http.StatusConflict, code: "CONFLICT_WAIVER_IN_PROGRESS", message: "冲突豁免正在复核，不能并行创建冲突审批"}
+		}
+		if hasWaiverApplications {
+			var waiver map[string]interface{}
+			waiverErr := tx.Table("waiver_applications").Select("id, status").
+				Where("conflict_check_id = ? AND deleted_at IS NULL", taskID).Order("created_at DESC").Take(&waiver).Error
+			if waiverErr == nil {
+				switch strings.ToUpper(strings.TrimSpace(fmt.Sprint(waiver["status"]))) {
+				case "APPROVED":
+					return conflictApprovalError{status: http.StatusConflict, code: "CONFLICT_ALREADY_WAIVED", message: "冲突记录已获批准豁免，不能再创建冲突审批"}
+				case "SUBMITTED", "UNDER_REVIEW":
+					return conflictApprovalError{status: http.StatusConflict, code: "CONFLICT_WAIVER_IN_PROGRESS", message: "冲突豁免正在复核，不能并行创建冲突审批"}
+				}
+			} else if waiverErr != gorm.ErrRecordNotFound {
+				return waiverErr
+			}
+		}
+
+		if hasConflictApprovalID {
+			var existing map[string]interface{}
+			existingErr := tx.Table("approval_requests").
+				Where("conflict_check_id = ? AND type = ? AND deleted_at IS NULL", taskID, "conflict_approval").
+				Order("created_at DESC").Take(&existing).Error
+			if existingErr == nil {
+				status := strings.ToLower(strings.TrimSpace(fmt.Sprint(existing["status"])))
+				if status == "submitted" || status == "under_review" || status == "resubmitted" {
+					if strings.TrimSpace(fmt.Sprint(existing["applicant_id"])) != applicantID {
+						return conflictApprovalError{status: http.StatusConflict, code: "CONFLICT_APPROVAL_OWNER_MISMATCH", message: "现有冲突审批的申请人与检测任务所有者不一致，请联系管理员修复数据后重试"}
+					}
+					response = conflictApprovalResponse(existing, taskID, true)
+					return nil
+				}
+				return conflictApprovalError{status: http.StatusConflict, code: "CONFLICT_APPROVAL_FINAL", message: "该冲突任务已有终态审批，不能重复创建同类审批"}
+			}
+			if existingErr != gorm.ErrRecordNotFound {
+				return existingErr
+			}
+		}
+		if terminalConflictReview(checkResult) {
+			return conflictApprovalError{status: http.StatusConflict, code: "CONFLICT_REVIEW_FINAL", message: "冲突记录已有终态人工复核结论，不能重复创建冲突审批"}
+		}
+
+		parameters := objectValue(row["search_parameters"])
+		expectedSubjectCaseID := strings.TrimSpace(fmt.Sprint(payload["expected_subject_case_id"]))
+		if expectedSubjectCaseID != "" && expectedSubjectCaseID != "<nil>" {
+			actualSubjectCaseID := firstNonEmpty(valueString(parameters, "subjectCaseId"), valueString(parameters, "subject_case_id"))
+			if actualSubjectCaseID == "" || actualSubjectCaseID != expectedSubjectCaseID {
+				return conflictApprovalError{status: http.StatusBadRequest, code: "CONFLICT_CASE_MISMATCH", message: "检测记录与当前案件不一致，已阻止创建冲突审批"}
+			}
+		}
+
+		conflictCases := []map[string]interface{}{}
+		if hasConflictCases {
+			if err := tx.Table("conflict_cases").Where("check_id = ?", taskID).
+				Order("CASE risk_level WHEN 'CRITICAL' THEN 4 WHEN 'HIGH' THEN 3 WHEN 'MEDIUM' THEN 2 WHEN 'LOW' THEN 1 ELSE 0 END DESC, created_at DESC").
+				Find(&conflictCases).Error; err != nil {
+				return err
+			}
+		}
+		if conflictApprovalNotRequired(row, checkResult, decision, len(conflictCases)) {
+			return conflictApprovalError{status: http.StatusConflict, code: "CONFLICT_APPROVAL_NOT_REQUIRED", message: "当前冲突检查结果为 CLEAR/LOW 且无有效命中，不需要独立冲突审批"}
+		}
+
+		var applicantRow map[string]interface{}
+		applicantName := c.GetString("username")
+		if err := tx.Table("users").Select("id, name, username, department").Where("id = ? AND deleted_at IS NULL", applicantID).Take(&applicantRow).Error; err == nil {
+			applicantName = firstNonEmpty(fmt.Sprint(applicantRow["name"]), fmt.Sprint(applicantRow["username"]), applicantName)
+		}
+		applicantName = firstNonEmpty(applicantName, "当前用户")
+		approver, err := h.findConflictApproverDB(tx, applicantID)
+		if err != nil {
+			return conflictApprovalError{status: http.StatusBadRequest, code: "CONFLICT_APPROVER_REQUIRED", message: "未找到可用的独立审批人", details: err.Error()}
+		}
+
+		approvalID := uuid.NewString()
+		now := time.Now()
+		requestNumber := fmt.Sprintf("APR-%s-%s", now.Format("20060102150405"), strings.ToUpper(approvalID[:8]))
+		conflictRecord := conflictApprovalRecord(row)
+		conflictResult := conflictApprovalResult(taskID, row, conflictRecord, checkResult, conflictCases)
+		snapshotFields := conflictApprovalSnapshotFields(row, parameters, checkResult, conflictCases)
+		metadata := gin.H{
+			"conflict_task_id": taskID, "source": "real_api", "conflict_record": conflictRecord,
+			"conflict_result": conflictResult, "conflict_cases": conflictCases,
+			"client_name": snapshotFields["client_name"], "opposing_parties": snapshotFields["opposing_parties"],
+			"subjects": snapshotFields["subjects"], "normalizedSubjects": snapshotFields["normalizedSubjects"],
+			"decision": snapshotFields["decision"], "evidence": snapshotFields["evidence"],
+		}
+		approval := gin.H{
+			"id": approvalID, "request_number": requestNumber,
+			"title": stringValue(payload["title"], fmt.Sprintf("冲突审查审批 - %s", taskID)),
+			"type":  "conflict_approval", "category": "conflict_review",
+			"content":      stringValue(payload["content"], "利益冲突检查结果进入审批复核。"),
+			"applicant_id": applicantID, "applicant_name": applicantName,
+			"applicant_title": stringValue(payload["applicant_title"], "律师"),
+			"department_id":   stringValue(payload["department_id"], "risk"),
+			"department_name": firstNonEmpty(fmt.Sprint(applicantRow["department"]), "业务部门"),
+			"urgency":         stringValue(payload["urgency"], "urgent"), "priority": stringValue(payload["priority"], "high"),
+			"status": "submitted", "submission_date": now, "current_stage": "合规复核",
+			"current_approver_id": approver["id"], "current_approver_name": approver["name"],
+			"workflow_type": "CONFLICT_APPROVAL", "workflow_config": "{}", "attachments": "[]",
+			"metadata": jsonStringValue(metadata), "created_by": applicantID, "created_at": now, "updated_at": now,
+		}
+		if hasConflictApprovalID {
+			approval["conflict_check_id"] = taskID
+			approval["conflict_risk_level"] = row["risk_level"]
+			approval["conflict_check_time"] = row["created_at"]
+			approval["conflict_result"] = jsonStringValue(conflictResult)
+		}
+		if err := tx.Table("approval_requests").Create(cleanInsertMap(approval)).Error; err != nil {
+			return err
+		}
+		if hasApprovalSnapshots {
+			snapshotFields["conflict_task_id"] = taskID
+			snapshotFields["conflict_record"] = conflictRecord
+			snapshotFields["conflict_result"] = conflictResult
+			snapshotFields["conflict_cases"] = conflictCases
+			snapshotFields["approval"] = approval
+			snapshotFields["metadata"] = metadata
+			snapshot := gin.H{
+				"id": uuid.NewString(), "approval_request_id": approvalID, "snapshot_type": "conflict_approval",
+				"snapshot_data": jsonStringValue(snapshotFields), "source_version": 1, "created_at": now,
+			}
+			if err := tx.Table("approval_snapshots").Create(cleanInsertMap(snapshot)).Error; err != nil {
+				return err
+			}
+		}
+		response = conflictApprovalResponse(approval, taskID, false)
+		response["snapshot_url"] = fmt.Sprintf("/api/v1/approvals/%s/snapshot", approvalID)
+		response["submitted_at"] = now
+		return nil
+	})
+	return response, err
+}
+
+func terminalConflictReview(checkResult map[string]interface{}) bool {
+	reviewDecision := strings.ToLower(valueString(objectValue(checkResult["review"]), "decision"))
+	switch reviewDecision {
+	case "no_conflict", "confirmed_conflict", "false_positive":
+		return true
+	default:
+		return false
+	}
+}
+
+func conflictApprovalResponse(approval map[string]interface{}, taskID string, reused bool) gin.H {
+	return gin.H{
+		"approval_id": approval["id"], "request_number": approval["request_number"], "conflict_task": taskID,
+		"status": approval["status"], "current_approver_id": approval["current_approver_id"],
+		"current_approver_name": approval["current_approver_name"], "reused": reused,
+	}
+}
+
+func conflictApprovalRecord(row map[string]interface{}) gin.H {
+	return gin.H{
+		"check_id": row["check_id"], "user_id": row["user_id"], "case_name": row["case_name"],
+		"client_id": row["client_id"], "client_name": row["client_name"], "case_type": row["case_type"],
+		"status": row["check_status"], "risk_level": row["risk_level"], "has_conflict": row["has_conflict"],
+		"check_result": row["check_result"], "search_parameters": row["search_parameters"],
+		"created_at": row["created_at"], "updated_at": row["updated_at"],
+	}
+}
+
+func conflictApprovalNotRequired(row, checkResult, decision map[string]interface{}, conflictCaseCount int) bool {
+	// Intake-sourced checks ALWAYS keep the independent review workflow:
+	// the machine CLEAR/LOW no-match result of the primary intake path is
+	// still only machine evidence, and case creation depends on the
+	// independent reviewer conclusion. Without this, the lawyer UI has no
+	// legitimate way to hand the intake to a reviewer. Historical
+	// non-intake checks keep the original approval-optional boundary.
+	if subjectIntakeIDFromAggregateSearchParameters(row["search_parameters"]) != "" {
+		return false
+	}
+	coverageStatus := strings.ToUpper(firstNonEmpty(
+		valueString(decision, "coverageStatus"),
+		valueString(decision, "coverage_status"),
+	))
+	// A machine CLEAR/LOW result is never sufficient when the authoritative
+	// archive coverage is incomplete or absent. The caller must create an
+	// independently reviewable approval instead of treating a limited search
+	// as a clean result.
+	if coverageStatus != "COMPLETE" {
+		return false
+	}
+	status := strings.ToUpper(valueString(decision, "status"))
+	if status == "CLEAR" {
+		return true
+	}
+	risk := strings.ToUpper(firstNonEmpty(valueString(objectValue(checkResult["riskAssessment"]), "overallRisk"), fmt.Sprint(row["risk_level"])))
+	requiresApproval := interfaceBool(objectValue(checkResult["riskAssessment"])["requiresApproval"]) || interfaceBool(decision["requiresManualReview"])
+	evidenceCount := interfaceInt(decision["evidenceCount"])
+	hasConflict := interfaceBool(row["has_conflict"])
+	return risk == "LOW" && !requiresApproval && !hasConflict && evidenceCount == 0 && conflictCaseCount == 0
+}
+
+func conflictApprovalResult(taskID string, row map[string]interface{}, record gin.H, checkResult map[string]interface{}, conflictCases []map[string]interface{}) gin.H {
+	result := gin.H{}
+	for key, value := range checkResult {
+		result[key] = value
+	}
+	result["checkId"] = taskID
+	result["record"] = record
+	if _, ok := result["conflictCases"]; !ok {
+		result["conflictCases"] = conflictCases
+	}
+	if _, ok := result["riskAssessment"]; !ok {
+		result["riskAssessment"] = gin.H{"overallRisk": stringValue(row["risk_level"], "LOW"), "riskScore": 0}
+	}
+	return result
+}
+
+func conflictApprovalSnapshotFields(row, parameters, checkResult map[string]interface{}, conflictCases []map[string]interface{}) gin.H {
+	normalizedSubjects := firstNonNil(checkResult["normalizedSubjects"], checkResult["normalized_subjects"], []interface{}{})
+	subjects := firstNonNil(parameters["subjects"], parameters["parties"], normalizedSubjects, []interface{}{})
+	opposingParties := firstNonNil(parameters["opposingParties"], parameters["opposing_parties"], parameters["otherParties"], []interface{}{})
+	return gin.H{
+		"client_name": strings.TrimSpace(fmt.Sprint(row["client_name"])),
+		"case_creation_config": gin.H{
+			"case_type": strings.TrimSpace(fmt.Sprint(row["case_type"])),
+			"case_name": strings.TrimSpace(fmt.Sprint(row["case_name"])),
+		},
+		"opposing_parties":   opposingParties,
+		"subjects":           subjects,
+		"normalizedSubjects": normalizedSubjects,
+		"decision":           firstNonNil(checkResult["decision"], map[string]interface{}{}),
+		"evidence":           conflictApprovalEvidence(checkResult, conflictCases),
+	}
+}
+
+func conflictApprovalEvidence(checkResult map[string]interface{}, conflictCases []map[string]interface{}) []interface{} {
+	evidence := make([]interface{}, 0)
+	if direct, ok := checkResult["evidence"].([]interface{}); ok {
+		evidence = append(evidence, direct...)
+	}
+	for _, conflictCase := range mapSliceValue(checkResult["conflictCases"]) {
+		if items, ok := conflictCase["evidence"].([]interface{}); ok {
+			evidence = append(evidence, items...)
+		}
+	}
+	if len(evidence) == 0 {
+		for _, conflictCase := range conflictCases {
+			evidence = append(evidence, conflictCase)
+		}
+	}
+	return evidence
+}
+
+func firstNonNil(values ...interface{}) interface{} {
+	for _, value := range values {
+		if value != nil {
+			return value
+		}
+	}
+	return nil
+}
+
+func interfaceBool(value interface{}) bool {
+	switch typed := value.(type) {
+	case bool:
+		return typed
+	case float64:
+		return typed != 0
+	case int64:
+		return typed != 0
+	case []byte:
+		return strings.EqualFold(strings.TrimSpace(string(typed)), "true") || string(typed) == "1"
+	case string:
+		return strings.EqualFold(strings.TrimSpace(typed), "true") || strings.TrimSpace(typed) == "1"
+	default:
+		return false
+	}
+}
+
+func interfaceInt(value interface{}) int {
+	switch typed := value.(type) {
+	case int:
+		return typed
+	case int64:
+		return int(typed)
+	case float64:
+		return int(typed)
+	default:
+		return 0
+	}
+}
+
+func (h *DemoAggregateHandler) findConflictApprover(applicantID string) (map[string]interface{}, error) {
+	if !h.tableExists("users") {
+		return nil, fmt.Errorf("用户表不存在")
+	}
+	return h.findConflictApproverDB(h.db, applicantID)
+}
+
+func (h *DemoAggregateHandler) findConflictApproverDB(db *gorm.DB, applicantID string) (map[string]interface{}, error) {
+	var approver map[string]interface{}
+	err := db.Table("users").
+		Select("id, name, username, role").
+		Where("deleted_at IS NULL AND status = ? AND id <> ?", "active", applicantID).
+		Where("role IN ?", []string{"director", "partner", "compliance", "risk", "risk_control", "management", "conflict_officer"}).
+		Order("CASE role WHEN 'conflict_officer' THEN 1 WHEN 'compliance' THEN 2 WHEN 'risk' THEN 3 WHEN 'risk_control' THEN 4 WHEN 'director' THEN 5 WHEN 'partner' THEN 6 WHEN 'management' THEN 7 ELSE 8 END").
+		Order("id ASC").
+		Take(&approver).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, fmt.Errorf("请先配置合规、风控、主任、合伙人或冲突核查人账号")
+		}
+		return nil, err
+	}
+	approver["id"] = strings.TrimSpace(fmt.Sprint(approver["id"]))
+	approver["name"] = firstNonEmpty(fmt.Sprint(approver["name"]), fmt.Sprint(approver["username"]), "合规负责人")
+	if approver["id"] == applicantID {
+		return nil, fmt.Errorf("申请人不能审批自己的冲突申请")
+	}
+	return approver, nil
+}
+
+func (h *DemoAggregateHandler) GetApprovalSnapshot(c *gin.Context) {
+	id := c.Param("id")
+	if !h.tableExists("approval_requests") {
+		common.APINotFound(c, "审批不存在", "审批记录表不可用")
+		return
+	}
+	var approval map[string]interface{}
+	if err := h.db.Table("approval_requests").Where("id = ? AND deleted_at IS NULL", id).Take(&approval).Error; err != nil {
+		common.APINotFound(c, "审批不存在", "指定审批不存在或已删除")
+		return
+	}
+	if !h.canAccessApprovalSnapshot(c, approval) {
+		return
+	}
+	// Intake scope is decided BEFORE any snapshot read: an intake-bound
+	// approval resolves only through its active submission pointer, and a
+	// missing or unresolvable pointer is a fail-closed 404 — never a
+	// newest-by-created_at fallback (spec review 2026-09-27, HOLD 3a).
+	intakeScoped := false
+	metaRaw, _ := approval["metadata"].(string)
+	var scopeCheck map[string]interface{}
+	if json.Unmarshal([]byte(metaRaw), &scopeCheck) == nil {
+		if v, _ := scopeCheck["intake_id"].(string); strings.TrimSpace(v) != "" {
+			intakeScoped = true
+		}
+	}
+	pointer := ""
+	switch v := approval["active_submission_snapshot_id"].(type) {
+	case string:
+		pointer = v
+	case []byte:
+		pointer = string(v)
+	}
+	if h.tableExists("approval_snapshots") {
+		var row map[string]interface{}
+		if p := strings.TrimSpace(pointer); p != "" {
+			if err := h.db.Table("approval_snapshots").Where("id = ? AND approval_request_id = ?", p, id).Take(&row).Error; err == nil {
+				common.APISuccess(c, gin.H{
+					"approval_id": id,
+					"snapshot_id": strings.TrimSpace(pointer),
+					"snapshot":    projectApprovalSnapshotForViewer(row["snapshot_data"], c.GetString("role")),
+					"immutable":   true,
+				})
+				return
+			}
+		}
+		if intakeScoped {
+			common.APINotFound(c, "审批快照不存在", "接案审批缺少可解析的当前提交快照")
+			return
+		}
+		if err := h.db.Table("approval_snapshots").Where("approval_request_id = ?", id).Order("created_at DESC").Take(&row).Error; err == nil {
+			common.APISuccess(c, gin.H{
+				"approval_id": id,
+				"snapshot_id": strings.TrimSpace(fmt.Sprint(row["id"])),
+				"snapshot":    projectApprovalSnapshotForViewer(row["snapshot_data"], c.GetString("role")),
+				"immutable":   true,
+			})
+			return
+		}
+	} else if intakeScoped {
+		common.APINotFound(c, "审批快照不存在", "接案审批缺少可解析的当前提交快照")
+		return
+	}
+	metadataText := fmt.Sprint(approval["metadata"])
+	var metadata map[string]interface{}
+	if err := json.Unmarshal([]byte(metadataText), &metadata); err == nil {
+		if snapshot, ok := metadata["approval_snapshot"]; ok {
+			common.APISuccess(c, gin.H{
+				"approval_id": id,
+				"snapshot":    projectApprovalSnapshotForViewer(snapshot, c.GetString("role")),
+				"immutable":   true,
+			})
+			return
+		}
+	}
+	common.APINotFound(c, "审批快照不存在", "指定审批没有可用的不可变快照")
+}
+
+func (h *DemoAggregateHandler) canAccessApprovalSnapshot(c *gin.Context, approval map[string]interface{}) bool {
+	actor, ok := currentAuthActor(c)
+	if !ok {
+		return false
+	}
+	applicantID := strings.TrimSpace(fmt.Sprint(approval["applicant_id"]))
+	approverID := strings.TrimSpace(fmt.Sprint(approval["current_approver_id"]))
+	if strconv.FormatUint(uint64(actor.UserID), 10) == applicantID || strconv.FormatUint(uint64(actor.UserID), 10) == approverID {
+		return true
+	}
+	if h.authz == nil || (!services.IsConflictReviewRole(actor.Role) && !services.IsBusinessMatterManagementRole(actor.Role)) {
+		forbidObjectAccess(c)
+		return false
+	}
+
+	checkID := firstNonEmpty(
+		strings.TrimSpace(fmt.Sprint(approval["conflict_check_id"])),
+	)
+	metadata := integrationJSONMap(approval["metadata"])
+	if checkID == "" {
+		checkID = firstNonEmpty(
+			integrationMetadataString(metadata, "conflict_check_id"),
+			integrationMetadataString(metadata, "conflict_task_id"),
+		)
+	}
+	if checkID == "" || !h.tableExists("conflict_check_records") {
+		forbidObjectAccess(c)
+		return false
+	}
+	var record struct {
+		SearchParameters []byte
+	}
+	if err := h.db.Table("conflict_check_records").Select("search_parameters").Where("check_id = ?", checkID).Take(&record).Error; err != nil {
+		forbidObjectAccess(c)
+		return false
+	}
+	caseIDText := subjectCaseIDFromAggregateSearchParameters(record.SearchParameters)
+	caseID, err := strconv.ParseUint(caseIDText, 10, 32)
+	if err != nil || caseID == 0 {
+		forbidObjectAccess(c)
+		return false
+	}
+	allowed, authErr := h.authz.CanReadConflictContext(c.Request.Context(), actor, uint(caseID))
+	if authErr != nil {
+		common.APIInternalServerError(c, "审批快照权限校验失败", authErr.Error())
+		return false
+	}
+	if !allowed {
+		forbidObjectAccess(c)
+		return false
+	}
+	return true
+}

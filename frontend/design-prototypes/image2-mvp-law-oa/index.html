@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Law OA MVP 设计原型</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="brand-mark">秩</span>
+          <div>
+            <strong>律所 OA</strong>
+            <small>MVP Prototype</small>
+          </div>
+        </div>
+        <nav class="nav-list" aria-label="主导航">
+          <button class="nav-item active" data-view="dashboard">
+            <span class="nav-icon">⌂</span><span>工作台</span>
+          </button>
+          <button class="nav-item" data-view="cases">
+            <span class="nav-icon">▣</span><span>案件管理</span>
+          </button>
+          <button class="nav-item" data-view="clients">
+            <span class="nav-icon">◉</span><span>客户管理</span>
+          </button>
+          <button class="nav-item" data-view="conflicts">
+            <span class="nav-icon">⚑</span><span>利益冲突</span>
+          </button>
+        </nav>
+        <div class="sidebar-panel">
+          <span class="panel-label">今日优先级</span>
+          <strong>3 个冲突待复核</strong>
+          <p>2 个建案申请卡在客户补全，1 个红色命中需要合规负责人处理。</p>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">法律服务机构数字化办公</p>
+            <h1 id="pageTitle">MVP 工作台</h1>
+          </div>
+          <div class="topbar-actions">
+            <label class="search-box">
+              <span>⌕</span>
+              <input id="globalSearch" type="search" placeholder="搜索案件、客户、对方当事人" />
+            </label>
+            <button class="icon-button" title="通知">●</button>
+            <button class="primary-button" id="quickCaseBtn">新建案件</button>
+          </div>
+        </header>
+
+        <section class="view active" id="dashboardView">
+          <div class="hero-strip">
+            <div>
+              <p class="eyebrow">MVP 流程闭环</p>
+              <h2>先做成“接案前可控”：客户建档、冲突检查、审批留痕、案件启用。</h2>
+            </div>
+            <div class="hero-metrics" aria-label="关键指标">
+              <div><strong>18</strong><span>待处理建案</span></div>
+              <div><strong>96%</strong><span>客户字段完整率</span></div>
+              <div><strong>04</strong><span>红色冲突命中</span></div>
+            </div>
+          </div>
+
+          <div class="dashboard-grid">
+            <section class="work-lane">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">MVP 看板</p>
+                  <h3>接案流程</h3>
+                </div>
+                <button class="ghost-button">查看全部</button>
+              </div>
+              <div class="pipeline">
+                <article class="pipeline-step done">
+                  <span>1</span>
+                  <strong>客户建档</strong>
+                  <p>主体、联系人、关联方已补齐</p>
+                </article>
+                <article class="pipeline-step active">
+                  <span>2</span>
+                  <strong>冲突检查</strong>
+                  <p>自动命中 5 条，需人工复核</p>
+                </article>
+                <article class="pipeline-step">
+                  <span>3</span>
+                  <strong>合规审批</strong>
+                  <p>不可豁免、可豁免分流</p>
+                </article>
+                <article class="pipeline-step">
+                  <span>4</span>
+                  <strong>案件启用</strong>
+                  <p>生成案号、团队和文件夹</p>
+                </article>
+              </div>
+            </section>
+
+            <section class="work-lane">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">风险雷达</p>
+                  <h3>冲突分布</h3>
+                </div>
+              </div>
+              <div class="risk-chart" aria-label="冲突风险分布图">
+                <span style="--size: 86%; --color: #bd3a3a">直接对立</span>
+                <span style="--size: 68%; --color: #c98122">前任客户</span>
+                <span style="--size: 42%; --color: #247a6b">关联实体</span>
+                <span style="--size: 28%; --color: #4468a8">关系冲突</span>
+              </div>
+            </section>
+          </div>
+
+          <section class="data-section">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">需要马上处理</p>
+                <h3>待办队列</h3>
+              </div>
+              <div class="segmented">
+                <button class="selected">全部</button>
+                <button>我的</button>
+                <button>超时</button>
+              </div>
+            </div>
+            <div class="task-list" id="taskList"></div>
+          </section>
+        </section>
+
+        <section class="view" id="casesView">
+          <div class="toolbar">
+            <div class="filter-tabs">
+              <button class="selected">全部案件</button>
+              <button>待冲突检查</button>
+              <button>审批中</button>
+              <button>已立案</button>
+            </div>
+            <button class="primary-button" id="caseCreateBtn">新建案件</button>
+          </div>
+          <section class="data-section">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">案件管理</p>
+                <h3>案件列表</h3>
+              </div>
+              <span class="muted">按风险优先排序</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>案号/名称</th>
+                    <th>客户</th>
+                    <th>对方当事人</th>
+                    <th>负责人</th>
+                    <th>冲突状态</th>
+                    <th>下一步</th>
+                  </tr>
+                </thead>
+                <tbody id="caseRows"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section class="view" id="clientsView">
+          <div class="toolbar">
+            <div class="filter-tabs">
+              <button class="selected">机构客户</button>
+              <button>个人客户</button>
+              <button>潜在客户</button>
+              <button>前任客户</button>
+            </div>
+            <button class="primary-button" id="clientCreateBtn">新增客户</button>
+          </div>
+          <div class="client-layout">
+            <section class="data-section">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">客户管理</p>
+                  <h3>客户主数据</h3>
+                </div>
+                <span class="muted">支持别名、关联方、历史委托</span>
+              </div>
+              <div class="client-list" id="clientList"></div>
+            </section>
+            <aside class="profile-panel" id="clientProfile"></aside>
+          </div>
+        </section>
+
+        <section class="view" id="conflictsView">
+          <div class="conflict-workbench">
+            <section class="conflict-query">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">利益冲突检查</p>
+                  <h3>接案前检索</h3>
+                </div>
+                <span class="status-pill danger">红色清单优先</span>
+              </div>
+              <form class="conflict-form" id="conflictForm">
+                <label>
+                  <span>拟代理客户</span>
+                  <input value="上海衡岳新能源有限公司" />
+                </label>
+                <label>
+                  <span>对方当事人</span>
+                  <input value="北辰资本管理有限公司" />
+                </label>
+                <label>
+                  <span>事项类型</span>
+                  <select>
+                    <option>股权回购争议</option>
+                    <option>常年法律顾问</option>
+                    <option>劳动争议</option>
+                  </select>
+                </label>
+                <label>
+                  <span>负责人</span>
+                  <input value="周律师" />
+                </label>
+                <button class="primary-button" type="submit">重新检查</button>
+              </form>
+              <div class="check-summary">
+                <div><strong>5</strong><span>命中记录</span></div>
+                <div><strong>2</strong><span>高风险</span></div>
+                <div><strong>1</strong><span>可豁免</span></div>
+              </div>
+            </section>
+
+            <section class="data-section">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">命中结果</p>
+                  <h3>风险评估与处理建议</h3>
+                </div>
+                <button class="ghost-button">导出报告</button>
+              </div>
+              <div class="conflict-results" id="conflictResults"></div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="drawer" id="drawer" aria-hidden="true">
+      <div class="drawer-backdrop" data-close="drawer"></div>
+      <aside class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
+        <div class="drawer-head">
+          <div>
+            <p class="eyebrow">MVP 快速录入</p>
+            <h2 id="drawerTitle">新建案件</h2>
+          </div>
+          <button class="icon-button" data-close="drawer" title="关闭">×</button>
+        </div>
+        <div class="drawer-body">
+          <div class="stepper">
+            <span class="current">客户</span>
+            <span>案件</span>
+            <span>冲突</span>
+            <span>提交</span>
+          </div>
+          <label>
+            <span>客户名称</span>
+            <input value="上海衡岳新能源有限公司" />
+          </label>
+          <label>
+            <span>对方当事人</span>
+            <input value="北辰资本管理有限公司" />
+          </label>
+          <label>
+            <span>案件类型</span>
+            <select>
+              <option>商事争议</option>
+              <option>投融资</option>
+              <option>知识产权</option>
+            </select>
+          </label>
+          <label>
+            <span>案件摘要</span>
+            <textarea>股权回购争议，涉及历史融资文件、董事席位安排和关联公司担保。</textarea>
+          </label>
+          <div class="inline-alert">
+            <strong>提交后自动触发利益冲突检查</strong>
+            <span>系统会同时检索客户、对方当事人、关联公司、历史委托与律师关系。</span>
+          </div>
+        </div>
+        <div class="drawer-foot">
+          <button class="ghost-button" data-close="drawer">取消</button>
+          <button class="primary-button">保存并检查冲突</button>
+        </div>
+      </aside>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

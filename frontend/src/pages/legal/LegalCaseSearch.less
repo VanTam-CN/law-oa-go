@@ -1,0 +1,533 @@
+/* =============================================================================
+   法律案例检索页面样式 - 基于专业设计系统
+   ============================================================================= */
+
+.legal-case-search {
+  padding: 12px;
+  background: transparent;
+
+  /* ==================== Modal样式 - 仅针对详情Modal ==================== */
+  :global(.ant-modal),
+  :global(.ant-modal-mask) {
+    z-index: 1050 !important;
+  }
+
+  /* 统计卡片行 */
+  .stats-row {
+    margin-bottom: 12px;
+
+    .ant-col {
+      margin-bottom: 8px;
+    }
+
+    .ant-card {
+      border-radius: var(--radius-md, 8px);
+      border: 1px solid var(--color-border-split, rgba(0, 0, 0, 0.06));
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+      background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+      transition: all var(--duration-fast, 0.2s) var(--ease-out, ease-out);
+
+      &:hover {
+        box-shadow: 0 2px 8px rgba(30, 90, 141, 0.12);
+        transform: translateY(-1px);
+      }
+
+      .ant-card-body {
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .ant-statistic {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        justify-content: center;
+
+        .ant-statistic-title {
+          font-size: 14px;
+          color: #374151;
+          margin-bottom: 0;
+          font-weight: 600;
+        }
+
+        .ant-statistic-content {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+
+          .ant-statistic-content-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: inherit;
+          }
+
+          .anticon {
+            color: var(--color-primary, #1E5A8D);
+            opacity: 0.9;
+            font-size: 18px;
+          }
+        }
+      }
+    }
+  }
+
+  /* 搜索卡片 */
+  .search-card {
+    margin-bottom: 16px;
+    border-radius: var(--radius-md, 8px);
+    border: 1px solid var(--color-border-split, rgba(0, 0, 0, 0.06));
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+
+    .ant-card-head {
+      border-bottom: 1px solid var(--color-border-split, rgba(0, 0, 0, 0.06));
+      padding: 12px 18px;
+      min-height: auto;
+    }
+
+    .ant-card-head-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a1a1a;
+      padding: 0;
+    }
+
+    .ant-card-body {
+      padding: 16px 18px;
+    }
+
+    .search-filters {
+      margin-bottom: 0;
+      padding: 16px;
+      background: #fafafa;
+      border-radius: 8px;
+      border: 1px solid #f0f0f0;
+
+      .ant-select {
+        .ant-select-selector {
+          border-radius: 6px;
+          font-size: 14px;
+        }
+
+        .ant-select-selection-placeholder {
+          color: #bfbfbf !important;
+          font-size: 14px !important;
+          font-weight: 400 !important;
+          opacity: 1 !important;
+        }
+
+        .ant-select-selection-item {
+          color: #262626;
+          font-size: 14px;
+        }
+
+        .ant-select-dropdown {
+          .ant-select-item {
+            padding: 8px 12px;
+
+            .ant-select-item-option-content {
+              width: 100%;
+            }
+          }
+
+          .ant-select-item-disabled {
+            cursor: default;
+            background: transparent;
+
+            .ant-select-item-option-content {
+              color: #999;
+              font-size: 12px;
+            }
+          }
+        }
+      }
+
+      .ant-input-search {
+        .ant-input {
+          border-radius: 6px 0 0 6px;
+          font-size: 14px;
+
+          &::placeholder {
+            color: #bfbfbf;
+          }
+        }
+
+        .ant-input-search-button {
+          border-radius: 0 6px 6px 0;
+          background: linear-gradient(135deg, #1E5A8D 0%, #163C5D 100%);
+          border: none;
+          box-shadow: 0 2px 6px rgba(30, 90, 141, 0.3);
+
+          &:hover {
+            background: linear-gradient(135deg, #2A6BA5 0%, #1E4A6B 100%);
+            box-shadow: 0 3px 8px rgba(30, 90, 141, 0.4);
+          }
+        }
+      }
+
+      .ant-btn {
+        border-radius: 6px;
+        font-size: 14px;
+        height: 38px;
+        padding: 0 16px;
+        border-color: #d1d5db;
+
+        &:hover {
+          color: #1E5A8D;
+          border-color: #1E5A8D;
+        }
+
+        .anticon {
+          font-size: 14px;
+        }
+      }
+    }
+  }
+
+  /* 主表格卡片 */
+  .ant-card {
+    &:not(.search-card) {
+      border-radius: var(--radius-md, 8px);
+      border: 1px solid var(--color-border-split, rgba(0, 0, 0, 0.06));
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+
+      .ant-card-head {
+        border-bottom: 1px solid var(--color-border-split, rgba(0, 0, 0, 0.06));
+        padding: 14px 18px;
+        min-height: auto;
+      }
+
+      .ant-card-head-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #1a1a1a;
+        padding: 0;
+      }
+
+      .ant-card-extra {
+        padding: 0;
+        color: #999;
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      .ant-card-body {
+        padding: 14px 18px;
+      }
+    }
+  }
+
+  /* 表格样式 */
+  .ant-table {
+    .ant-table-thead > tr > th {
+      background: linear-gradient(180deg, #e8eef5 0%, #d9e2ec 100%);
+      color: #1a1a1a;
+      font-weight: 700;
+      font-size: 14px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--color-border-base, rgba(0, 0, 0, 0.12));
+    }
+
+    .ant-table-tbody > tr {
+      transition: all var(--duration-fast, 0.2s) var(--ease-out, ease-out);
+
+      > td {
+        height: 56px;
+        padding: 14px 14px;
+        font-size: 14px;
+        border-bottom: 1px solid var(--color-border-split, rgba(0, 0, 0, 0.06));
+        vertical-align: middle;
+      }
+
+      &:hover > td {
+        background: linear-gradient(90deg, rgba(30, 90, 141, 0.03) 0%, rgba(197, 165, 114, 0.02) 100%);
+      }
+    }
+
+    .ant-table-cell {
+      .ant-space {
+        font-size: 13px;
+      }
+    }
+
+    .ant-tag {
+      border-radius: var(--radius-sm, 4px);
+      font-size: 12px;
+      padding: 2px 8px;
+      font-weight: 500;
+      border: none;
+
+      &.ant-tag-blue {
+        background: rgba(30, 90, 141, 0.1);
+        color: #1E5A8D;
+      }
+
+      &.ant-tag-green {
+        background: rgba(63, 175, 86, 0.1);
+        color: #3FAF56;
+      }
+
+      &.ant-tag-orange {
+        background: rgba(245, 166, 35, 0.1);
+        color: #F5A623;
+      }
+
+      &.ant-tag-red {
+        background: rgba(232, 72, 76, 0.1);
+        color: #E8484C;
+      }
+
+      &.ant-tag-purple {
+        background: rgba(139, 92, 246, 0.1);
+        color: #8B5CF6;
+      }
+
+      &.ant-tag-magenta {
+        background: rgba(236, 72, 153, 0.1);
+        color: #EC4899;
+      }
+
+      &.ant-tag-volcano {
+        background: rgba(245, 101, 101, 0.1);
+        color: #F56565;
+      }
+
+      &.ant-tag-default {
+        background: rgba(107, 114, 128, 0.1);
+        color: #6B7280;
+      }
+    }
+  }
+
+  /* 分页样式 */
+  .ant-pagination {
+    margin-top: 12px;
+    font-size: 13px;
+
+    .ant-pagination-item {
+      border-radius: var(--radius-sm, 4px);
+      border-color: var(--color-border-base, rgba(0, 0, 0, 0.15));
+      min-height: 28px;
+      height: 28px;
+      line-height: 26px;
+
+      a {
+        font-size: 13px;
+      }
+    }
+
+    .ant-pagination-prev,
+    .ant-pagination-next {
+      min-height: 28px;
+      height: 28px;
+      line-height: 26px;
+
+      .ant-pagination-item-link {
+        height: 28px;
+        line-height: 26px;
+      }
+    }
+
+    .ant-pagination-jump-prev,
+    .ant-pagination-jump-next {
+      min-height: 28px;
+      height: 28px;
+      line-height: 26px;
+    }
+
+    .ant-pagination-item-active {
+      background: linear-gradient(135deg, #1E5A8D 0%, #163C5D 100%);
+      border-color: transparent;
+
+      a {
+        color: #ffffff;
+      }
+    }
+
+    .ant-pagination-total-text {
+      color: #374151;
+      font-size: 13px;
+      font-weight: 500;
+      height: 28px;
+      line-height: 28px;
+    }
+
+    .ant-pagination-options {
+      height: 28px;
+
+      .ant-select-selector {
+        height: 28px !important;
+        min-height: 28px;
+
+        .ant-selection-item {
+          line-height: 26px;
+        }
+      }
+    }
+  }
+
+  /* 操作按钮 */
+  .ant-btn-link {
+    font-size: 14px;
+    padding: 0 4px;
+    height: auto;
+
+    .anticon {
+      font-size: 14px;
+    }
+  }
+
+  /* 案例详情弹窗样式 */
+  .case-detail {
+    // Modal整体布局优化
+    :global(.ant-modal) {
+      max-height: 90vh;
+    }
+
+    // Modal body滚动优化
+    :global(.ant-modal-body) {
+      max-height: 75vh;
+      overflow-y: auto;
+    }
+
+    // Descriptions组件优化
+    .ant-descriptions {
+      width: 100%;
+      table-layout: auto;
+
+      .ant-descriptions-item-label {
+        font-weight: 600;
+        color: #374151;
+        font-size: 13px;
+        width: 100px;
+        min-width: 100px;
+      }
+
+      .ant-descriptions-item-content {
+        font-size: 13px;
+        color: #4B5563;
+        width: auto;
+        max-width: 750px;
+        word-wrap: break-word;
+        word-break: break-word;
+        overflow-wrap: break-word;
+
+        // 确保内容自动换行
+        .description-content,
+        .judgment-content {
+          white-space: pre-wrap;
+          word-break: break-word;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+          line-height: 1.6;
+          min-height: 60px;
+          padding: 12px;
+          background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+          border-radius: var(--radius-sm, 4px);
+          border: 1px solid var(--color-border-split, rgba(0, 0, 0, 0.06));
+          font-size: 13px;
+          color: #374151;
+          margin: 0;
+          width: 100%;
+          max-width: 100%;
+        }
+
+        // 引用法条自动换行
+        .references-content {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          padding: 8px 0;
+          width: 100%;
+        }
+      }
+    }
+  }
+}
+
+/* =============================================================================
+   响应式设计
+   ============================================================================= */
+
+@media (max-width: 1024px) {
+  .legal-case-search {
+    padding: 8px;
+
+    .stats-row {
+      margin-bottom: 8px;
+    }
+
+    .search-card,
+    .ant-card:not(.search-card) {
+      margin-bottom: 8px;
+    }
+
+    .search-card {
+      .search-filters {
+        .ant-space {
+          flex-wrap: wrap;
+        }
+
+        .ant-select {
+          width: 100% !important;
+          margin-bottom: 8px;
+        }
+
+        .ant-input-search {
+          width: 100% !important;
+          margin-bottom: 8px;
+        }
+
+        .ant-btn {
+          width: 100%;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .legal-case-search {
+    padding: 4px;
+
+    .stats-row {
+      .ant-col {
+        margin-bottom: 6px;
+      }
+    }
+
+    .search-card {
+      .search-filters {
+        padding: 12px;
+
+        .ant-space {
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          gap: 8px !important;
+        }
+
+        .ant-select,
+        .ant-input-search,
+        .ant-btn {
+          width: 100% !important;
+        }
+      }
+    }
+
+    .ant-table-wrapper {
+      overflow-x: auto;
+    }
+
+    .ant-table {
+      font-size: 12px;
+
+      .ant-table-thead > tr > th,
+      .ant-table-tbody > tr > td {
+        padding: 8px;
+      }
+    }
+  }
+}

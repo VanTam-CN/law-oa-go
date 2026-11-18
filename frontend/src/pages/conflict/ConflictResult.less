@@ -1,0 +1,182 @@
+/* =============================================================================
+   冲突检测结果组件样式
+   ============================================================================= */
+
+.conflict-result-container {
+  .risk-summary-card {
+    .ant-alert {
+      border-radius: var(--radius-md, 8px);
+      border-left-width: 4px;
+
+      .anticon {
+        font-size: 16px;
+      }
+    }
+  }
+
+  .stats-card {
+    .ant-descriptions {
+      .ant-descriptions-item-label {
+        color: #666;
+        font-weight: 500;
+      }
+
+      .ant-descriptions-item-content {
+        color: #1a1a1a;
+        font-weight: 600;
+      }
+    }
+  }
+
+  .conflict-list-card {
+    .conflict-table {
+      .ant-table-thead > tr > th {
+        background: linear-gradient(180deg, #fff5f5 0%, #ffe8e8 100%);
+        color: #1a1a1a;
+        font-weight: 700;
+        font-size: 13px;
+        padding: 10px 12px;
+      }
+
+      .ant-table-tbody > tr {
+        &:hover > td {
+          background: linear-gradient(90deg, rgba(255, 77, 79, 0.05) 0%, rgba(255, 77, 79, 0.02) 100%);
+        }
+
+        > td {
+          padding: 10px 12px;
+          font-size: 13px;
+        }
+      }
+
+      a {
+        color: var(--color-primary, #1E5A8D);
+        font-weight: 500;
+
+        &:hover {
+          color: #2A6BA5;
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+
+  .no-conflict-card {
+    border: 1px solid #d9f7be;
+    background: linear-gradient(135deg, #f6ffed 0%, #f0f9ff 100%);
+    border-radius: var(--radius-md, 8px);
+
+    .anticon {
+      filter: drop-shadow(0 2px 8px rgba(82, 196, 26, 0.3));
+    }
+  }
+
+  /* 标签样式优化 */
+  .ant-tag {
+    border-radius: var(--radius-sm, 4px);
+    font-size: 12px;
+    padding: 2px 8px;
+    font-weight: 500;
+    border: none;
+    margin: 0;
+
+    .anticon {
+      font-size: 11px;
+      margin-right: 3px;
+    }
+
+    &.ant-tag-success {
+      background: rgba(82, 196, 26, 0.1);
+      color: #52c41a;
+    }
+
+    &.ant-tag-error {
+      background: rgba(255, 77, 79, 0.1);
+      color: #ff4d4f;
+    }
+
+    &.ant-tag-warning {
+      background: rgba(250, 173, 35, 0.1);
+      color: #faad14;
+    }
+
+    &.ant-tag-processing {
+      background: rgba(24, 144, 255, 0.1);
+      color: #1890ff;
+    }
+
+    &.ant-tag-default {
+      background: rgba(107, 114, 128, 0.1);
+      color: #6b7280;
+    }
+  }
+
+  /* 进度条样式 */
+  .ant-progress {
+    .ant-progress-bg {
+      border-radius: var(--radius-sm, 4px);
+    }
+
+    .ant-progress-inner {
+      border-radius: var(--radius-sm, 4px);
+    }
+  }
+
+  /* 分页样式 */
+  .ant-pagination {
+    margin-top: 16px;
+    font-size: 13px;
+
+    .ant-pagination-item {
+      border-radius: var(--radius-sm, 4px);
+
+      a {
+        font-size: 13px;
+      }
+    }
+
+    .ant-pagination-item-active {
+      background: linear-gradient(135deg, #1E5A8D 0%, #163C5D 100%);
+      border-color: transparent;
+
+      a {
+        color: #ffffff;
+      }
+    }
+  }
+}
+
+/* =============================================================================
+   响应式设计
+   ============================================================================= */
+
+@media (max-width: 768px) {
+  .conflict-result-container {
+    .conflict-list-card {
+      .conflict-table {
+        font-size: 12px;
+
+        .ant-table-thead > tr > th,
+        .ant-table-tbody > tr > td {
+          padding: 8px;
+        }
+      }
+    }
+
+    .ant-card {
+      .ant-card-head {
+        padding: 10px 12px;
+      }
+
+      .ant-card-body {
+        padding: 10px 12px;
+      }
+    }
+
+    .ant-descriptions {
+      .ant-descriptions-item {
+        padding-bottom: 8px;
+      }
+    }
+  }
+}

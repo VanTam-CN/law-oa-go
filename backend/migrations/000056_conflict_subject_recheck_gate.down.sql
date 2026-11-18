@@ -1,0 +1,4 @@
+-- Intentionally left as a non-destructive rollback marker. Removing these
+-- columns or evidence tables would destroy compliance history in a real
+-- environment and therefore requires an explicit, separately reviewed data
+-- retention operation.

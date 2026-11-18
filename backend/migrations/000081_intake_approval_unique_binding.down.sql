@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS idx_case_creation_tracking_intake_unique;

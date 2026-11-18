@@ -1,0 +1,69 @@
+package repositories
+
+import (
+	"context"
+
+	"law-oa-go/internal/models"
+
+	"gorm.io/gorm"
+)
+
+// IntegrationRepositoryInterface 集成数据仓库接口
+type IntegrationRepositoryInterface interface {
+	// 冲突检测关联管理
+	CreateConflictAssociation(ctx context.Context, association *ConflictAssociation) error
+	GetConflictAssociationByApprovalID(ctx context.Context, approvalID string) (*ConflictAssociation, error)
+	GetConflictAssociationByCheckID(ctx context.Context, checkID string) (*ConflictAssociation, error)
+	UpdateConflictAssociationStatus(ctx context.Context, id string, status string) error
+
+	// 案件创建跟踪管理
+	CreateCaseCreationTracking(ctx context.Context, tracking *CaseCreationTracking) error
+	// DeleteCaseCreationTracking removes the intake→approval bind row on
+	// failed-submit compensation so a legitimate retry is not permanently
+	// locked out by a stale bind left behind by an error path.
+	DeleteCaseCreationTracking(ctx context.Context, id string) error
+	GetCaseCreationTrackingByApprovalID(ctx context.Context, approvalID string) ([]*CaseCreationTracking, error)
+	GetLatestCaseCreationTracking(ctx context.Context, approvalID string) (*CaseCreationTracking, error)
+	UpdateCaseCreationTracking(ctx context.Context, id string, updates map[string]interface{}) error
+	// ClaimCaseCreation atomically reserves the single formal-case creation
+	// attempt for an approved request. This prevents duplicate cases when a
+	// user retries or two browser tabs submit at the same time.
+	ClaimCaseCreation(ctx context.Context, approvalID, actorID string) (bool, error)
+	// ClaimCaseCreationOnTx performs the same reservation inside the
+	// caller's transaction with a locked approval re-check, so a rollback
+	// releases the claim and no failure path strands a persistent
+	// "processing" state.
+	ClaimCaseCreationOnTx(ctx context.Context, tx *gorm.DB, approvalID, actorID string) (bool, error)
+	MarkCaseCreationFailed(ctx context.Context, approvalID, message string) error
+	GetConflictCheckRecord(ctx context.Context, checkID string) (*models.ConflictCheckRecord, error)
+	GetLatestConflictReview(ctx context.Context, checkID string) (*models.ConflictReview, error)
+	// GetDBByApprovalID reads the approval row through the caller-bound
+	// transaction so post-claim re-checks observe transactional state.
+	GetDBByApprovalID(ctx context.Context, approvalID string) (*models.ApprovalRequest, error)
+	// LinkConflictCaseParties materializes the reviewed check parties onto
+	// the formal case in one transaction; any failure rolls back the batch.
+	LinkConflictCaseParties(ctx context.Context, caseID uint, parties []models.ConflictPartyInfo) error
+	// LinkConflictCasePartiesOnTx writes the reviewed parties on the supplied
+	// transaction so they commit atomically with the new formal case.
+	LinkConflictCasePartiesOnTx(ctx context.Context, tx *gorm.DB, caseID uint, parties []models.ConflictPartyInfo) error
+
+	// 集成配置管理
+	CreateIntegrationConfig(ctx context.Context, config *IntegrationConfig) error
+	GetIntegrationConfigByName(ctx context.Context, name string) (*IntegrationConfig, error)
+	GetIntegrationConfigsByType(ctx context.Context, configType string) ([]*IntegrationConfig, error)
+	UpdateIntegrationConfigUsage(ctx context.Context, configID string) error
+
+	// 集成审批申请查询
+	GetIntegratedApprovalsWithConflict(ctx context.Context, limit, offset int) ([]*models.ApprovalRequest, int64, error)
+	GetApprovalsAwaitingCaseCreation(ctx context.Context, limit, offset int) ([]*models.ApprovalRequest, int64, error)
+
+	// 统计信息
+	GetIntegrationStatistics(ctx context.Context) (map[string]interface{}, error)
+
+	// 审批申请关联更新
+	UpdateApprovalConflictAssociation(ctx context.Context, approvalID string, conflictResult *models.ConflictCheckResponse) error
+	UpdateApprovalCaseAssociation(ctx context.Context, approvalID string, caseResult *models.CaseCreationAssociation) error
+}
+
+// 验证接口实现
+var _ IntegrationRepositoryInterface = (*IntegrationRepository)(nil)

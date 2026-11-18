@@ -1,0 +1,32 @@
+.app-sider {
+  height: 100vh;
+  overflow: auto;
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 10;
+
+  .logo {
+    height: @layout-header-height;
+    padding: 16px;
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .ant-menu {
+    border-right: none;
+  }
+
+  @media (max-width: 768px) {
+    .logo {
+      padding: 16px 8px;
+      font-size: 16px;
+    }
+  }
+}

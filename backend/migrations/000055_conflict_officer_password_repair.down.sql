@@ -1,0 +1,2 @@
+-- The acceptance password repair is intentionally irreversible for local seed data.
+-- Do not restore an unknown or stale password hash during rollback.
