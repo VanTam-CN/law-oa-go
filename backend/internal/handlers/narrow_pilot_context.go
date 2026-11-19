@@ -49,6 +49,7 @@ type npContext struct {
 	Sources                                 []npSource
 	Replays                                 map[string]npTurnReplay
 	Saving                                  bool
+	timer                                   *time.Timer
 }
 
 func NewNarrowPilotHandler(h *DemoAggregateHandler) *NarrowPilotHandler {
@@ -184,7 +185,7 @@ func (n *NarrowPilotHandler) CreateContext(c *gin.Context) {
 	defer release()
 	for id, x := range n.contexts {
 		if !now.Before(npExpiry(x)) && !x.Saving {
-			delete(n.contexts, id)
+			n.dropContext(id)
 		}
 	}
 	for id, x := range n.contexts {
@@ -193,7 +194,7 @@ func (n *NarrowPilotHandler) CreateContext(c *gin.Context) {
 				response.err = &npError{"SAVE_IN_PROGRESS", 409}
 				return
 			}
-			delete(n.contexts, id)
+			n.dropContext(id)
 		}
 	}
 	if len(n.contexts) >= 32 {
@@ -202,7 +203,8 @@ func (n *NarrowPilotHandler) CreateContext(c *gin.Context) {
 	}
 	x := &npContext{ID: uuid.NewString(), Version: 1, Actor: actor, Access: access, Intake: body.Intake, Client: strconv.FormatUint(uint64(intakeClientID(row["client_id"])), 10), Revision: body.Revision, Created: now, Touched: now, AccessExpiry: expires, Replays: map[string]npTurnReplay{}}
 	n.contexts[x.ID] = x
-	time.AfterFunc(time.Until(npExpiry(x)), func() { n.expireContext(x.ID) })
+	contextID := x.ID
+	x.timer = time.AfterFunc(time.Until(npExpiry(x)), func() { n.expireContext(contextID) })
 	response.data = npView(x)
 }
 
@@ -273,7 +275,7 @@ func (n *NarrowPilotHandler) DeleteContext(c *gin.Context) {
 		response.err = &npError{"CONTEXT_STALE", 409}
 		return
 	}
-	delete(n.contexts, x.ID)
+	n.dropContext(x.ID)
 	response.data = gin.H{"ended": true}
 }
 func (n *NarrowPilotHandler) Turn(c *gin.Context) {
@@ -369,7 +371,7 @@ func (n *NarrowPilotHandler) finishSource(pack *npSourcePack, committed bool) {
 	defer n.mu.Unlock()
 	if x := n.contexts[pack.ContextID]; x != nil {
 		if committed || !time.Now().Before(npExpiry(x)) {
-			delete(n.contexts, x.ID)
+			n.dropContext(x.ID)
 		} else {
 			x.Saving = false
 		}
@@ -385,13 +387,13 @@ func (n *NarrowPilotHandler) expireContext(id string) {
 	}
 	remaining := time.Until(npExpiry(x))
 	if remaining <= 0 && !x.Saving {
-		delete(n.contexts, id)
+		n.dropContext(id)
 		return
 	}
 	if remaining <= 0 {
 		remaining = time.Minute
 	}
-	time.AfterFunc(remaining, func() { n.expireContext(id) })
+	x.timer = time.AfterFunc(remaining, func() { n.expireContext(id) })
 }
 
 // Build a response under the short memory lock, then release it before socket I/O.
@@ -411,4 +413,12 @@ func (n *NarrowPilotHandler) lockResponse(c *gin.Context) (*npResponse, func()) 
 			common.APISuccess(c, r.data)
 		}
 	}
+}
+
+// Called with mu held, so ended conversations do not retain bodies or timer closures.
+func (n *NarrowPilotHandler) dropContext(id string) {
+	if x := n.contexts[id]; x != nil && x.timer != nil {
+		x.timer.Stop()
+	}
+	delete(n.contexts, id)
 }

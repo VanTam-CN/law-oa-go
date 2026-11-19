@@ -44,6 +44,7 @@ func npContextFixture(t *testing.T) (*NarrowPilotHandler, *gin.Engine, string, *
 	r.Use(middleware.AuthMiddleware())
 	r.POST("/contexts", n.CreateContext)
 	r.GET("/contexts/:id", n.GetContext)
+	r.DELETE("/contexts/:id", n.DeleteContext)
 	r.POST("/contexts/:id/turns", n.Turn)
 	return n, r, token, db
 }
@@ -133,5 +134,27 @@ func TestNPContextExpiryAndChangedDraft(t *testing.T) {
 	code, _ = npCall(t, r, token, "GET", "/contexts/"+id, nil)
 	if code != 409 {
 		t.Fatal("changed object still delivered applicable candidate")
+	}
+}
+
+func TestNPContextEndReleasesExpiryTimer(t *testing.T) {
+	n, r, token, _ := npContextFixture(t)
+	code, out := npCall(t, r, token, "POST", "/contexts", map[string]interface{}{"intake_id": "intake-rev", "expected_revision": "legacy-intake-rev"})
+	id := npData(t, code, out)["id"].(string)
+	n.mu.Lock()
+	prior := n.contexts[id]
+	n.mu.Unlock()
+	code, out = npCall(t, r, token, "DELETE", "/contexts/"+id, map[string]interface{}{"expected_context_version": 1})
+	npData(t, code, out)
+	n.mu.Lock()
+	_, present := n.contexts[id]
+	n.mu.Unlock()
+	if present {
+		t.Fatal("ended context retained")
+	}
+	wasActive := prior.timer.Reset(time.Hour)
+	prior.timer.Stop()
+	if wasActive {
+		t.Fatal("ended context retained its expiry timer")
 	}
 }

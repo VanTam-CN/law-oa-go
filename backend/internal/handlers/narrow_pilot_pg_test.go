@@ -568,3 +568,25 @@ func TestNPPostgresLegacySaveAfterStrictManualStillChecksRevision(t *testing.T) 
 		t.Fatal("legacy bypassed revision", text, err)
 	}
 }
+
+func TestNPPostgresDescriptionWhitespaceIsExact(t *testing.T) {
+	f := npPostgresFixture(t)
+	path := "/api/v1/case-intakes/" + f.id
+	if err := f.db.Table("case_intakes").Where("id=?", f.id).Update("description", "  字段原文  ").Error; err != nil {
+		t.Fatal(err)
+	}
+	code, out := f.request(t, "PUT", path, uuid.NewString(), f.body("  字段原文  ", nil))
+	same := npData(t, code, out)
+	if same["state"] != "no_change" || same["revision"] != f.revision {
+		t.Fatal("identical whitespace was treated as a change", same)
+	}
+	code, out = f.request(t, "PUT", path, uuid.NewString(), f.body("字段原文", nil))
+	changed := npData(t, code, out)
+	if changed["state"] != "committed" || changed["revision"] == f.revision {
+		t.Fatal("explicit whitespace removal was lost", changed)
+	}
+	var stored string
+	if err := f.db.Table("case_intakes").Select("description").Where("id=?", f.id).Scan(&stored).Error; err != nil || stored != "字段原文" {
+		t.Fatal("not exact stored text", stored, err)
+	}
+}

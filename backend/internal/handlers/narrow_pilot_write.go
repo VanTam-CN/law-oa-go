@@ -257,7 +257,17 @@ func (n *NarrowPilotHandler) strictUpdate(c *gin.Context, actor, key string, req
 				return e
 			}
 		}
-		if valueString(row, "description") != desired || pack != nil {
+		existingDescription := ""
+		switch value := row["description"].(type) {
+		case string:
+			existingDescription = value
+		case []byte:
+			existingDescription = string(value)
+		case nil:
+		default:
+			return &npError{"INTAKE_DESCRIPTION_UNAVAILABLE", 503}
+		}
+		if existingDescription != desired || pack != nil {
 			revision = uuid.NewString()
 			state = "committed"
 			// Update reserved JSON paths in PostgreSQL; decoding unknown numbers through float64 would round them.
