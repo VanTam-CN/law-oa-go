@@ -1,4 +1,6 @@
 import React from 'react'
+import { NarrowPilotAssistant } from '@/components/intake/NarrowPilotAssistant'
+import { useNarrowPilotSave } from '@/components/intake/useNarrowPilotSave'
 import {
   Avatar,
   Alert,
@@ -5593,6 +5595,11 @@ export function CaseIntakeWorkbench() {
   const currentInputProjection = buildIntakeSavedProjection(form, relatedParties, caseTags)
   const currentInputProjectionRef = React.useRef(currentInputProjection)
   currentInputProjectionRef.current = currentInputProjection
+  const narrowPilot = useNarrowPilotSave({
+    actorID: currentUserID, intakeID: form.intakeId || '', revision: form.revision || '',
+    description: form.description, projection: currentInputProjection,
+    baseline: lastServerSavedProjection, apiRequest,
+  })
   const continuationScope = JSON.stringify([
     currentUserID, contextCaseID, isRevisionMode ? revisionIntakeID : requestedDraftID,
     isRevisionMode ? revisionApprovalID : '', form.intakeId, form.revision,
@@ -6572,7 +6579,10 @@ export function CaseIntakeWorkbench() {
     if (!form.idempotencyKey) {
       setForm((current) => ({ ...current, idempotencyKey }))
     }
-    const saved = await apiRequest<any>(
+    const descriptionOnly = !isAssistant && !isRevisionMode && !isSupplementMode && existingIntakeID && narrowPilot.eligible
+    if (narrowPilot.pending && !descriptionOnly) throw new Error('原摘要保存尚待核实，请先回查或明确结束原保存')
+    if (narrowPilot.selection && !descriptionOnly) throw new Error('首切片只支持摘要整理；请先核对其他人工改动，不能混入全量保存')
+    const saved = descriptionOnly ? await narrowPilot.save() : await apiRequest<any>(
       existingIntakeID ? `/case-intakes/${existingIntakeID}` : '/case-intakes',
       {
         method: existingIntakeID ? 'PUT' : 'POST',
@@ -7217,7 +7227,7 @@ export function CaseIntakeWorkbench() {
     setCaseTags(restored.caseTags)
     setRuntime((current) => ({
       ...current,
-      intake: { id: restored.form.intakeId, intake_code: restored.form.intakeCode, revision: restored.form.revision },
+      intake: { id: restored.form.intakeId, intake_code: restored.form.intakeCode, revision: restored.form.revision, status: payload.intake?.status },
       conflict: undefined,
       conflictTask: undefined,
       conflictDecisionExtras: undefined,
@@ -7757,6 +7767,24 @@ export function CaseIntakeWorkbench() {
                     onChange={(event) => updateForm('description', event.target.value)}
                   />
                 </div>
+                {!isAssistant && !isRevisionMode && !isSupplementMode && form.intakeId && form.revision && (
+                  <NarrowPilotAssistant
+                    key={`${currentUserID}:${form.intakeId}:${form.revision}`}
+                    intakeId={form.intakeId} revision={form.revision} description={form.description}
+                    apiRequest={apiRequest} onInvalidate={narrowPilot.invalidate}
+                    onApply={(text, selection) => { updateForm('description', text); narrowPilot.apply(text, selection) }}
+                  />
+                )}
+                {(narrowPilot.notice || narrowPilot.pending) && (
+                  <Alert type='warning' showIcon message={narrowPilot.notice || '原保存结果待核实'} description={
+                    <Space wrap>
+                      {narrowPilot.confirmManual && <Button onClick={narrowPilot.acceptManual}>改为人工摘要保存（不关联来源）</Button>}
+                      {narrowPilot.pending && <Button loading={narrowPilot.busy} onClick={() => void narrowPilot.query()}>回查原保存结果</Button>}
+                      {narrowPilot.pending && <Button disabled={narrowPilot.busy} onClick={() => Modal.confirm({ title: '结束原保存并核实结果', content: '这不会撤销已提交内容。若原保存尚未提交，将阻止迟到原请求再写入。', onOk: narrowPilot.abandon })}>结束原保存并核实结果</Button>}
+                      <Button onClick={reloadServerDraftAfterConflict}>重新加载服务端草稿</Button>
+                    </Space>
+                  } />
+                )}
                 <div className='batch-form-grid five'>
                   <div className='batch-field'>
                     <label htmlFor='intake-investment-date'>投资协议签署日</label>

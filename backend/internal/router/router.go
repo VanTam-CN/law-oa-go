@@ -161,6 +161,7 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client) {
 	demoAggregateHandler.SetConflictDetectionService(conflictService)
 	demoAggregateHandler.SetAuthorizationService(authorizationService)
 	demoAggregateHandler.SetClientContactService(clientContactService)
+	narrowPilotHandler := handlers.NewNarrowPilotHandler(demoAggregateHandler)
 	matterCollaborationHandler := handlers.NewMatterCollaborationHandler(authorizationService, db)
 	caseTaskChangeHandler := handlers.NewCaseTaskChangeHandler(authorizationService, db)
 	toolsHandler := handlers.NewToolsHandler()
@@ -379,8 +380,12 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client) {
 		}
 
 		caseIntakes := protected.Group("/case-intakes")
+		caseIntakes.Use(narrowPilotHandler.RequestBudget)
 		{
 			caseIntakes.GET("", demoAggregateHandler.ListIntakeDrafts)
+			caseIntakes.GET("/write-results/:request_id", narrowPilotHandler.WriteResult)
+			caseIntakes.POST("/write-results/:request_id/abandon", narrowPilotHandler.Abandon)
+			caseIntakes.GET("/:id/source-snapshots/:revision", narrowPilotHandler.SourceSnapshot)
 			// Single-draft restore endpoint. It reuses the intake-workbench
 			// aggregate (owner scope + ethical-wall client authorization +
 			// sanitized facts/parties) so a fresh session can resume a
@@ -395,6 +400,13 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client) {
 			caseIntakes.POST("/:id/facts-confirmation", demoAggregateHandler.ConfirmIntakeFacts)
 			caseIntakes.POST("/:id/conflict-check", demoAggregateHandler.StartIntakeConflictCheck)
 		}
+		intakeAssist := protected.Group("/case-intake-assist")
+		intakeAssist.Use(narrowPilotHandler.RequestBudget)
+		intakeAssist.GET("/capabilities", narrowPilotHandler.Capabilities)
+		intakeAssist.POST("/contexts", narrowPilotHandler.CreateContext)
+		intakeAssist.GET("/contexts/:id", narrowPilotHandler.GetContext)
+		intakeAssist.POST("/contexts/:id/turns", narrowPilotHandler.Turn)
+		intakeAssist.DELETE("/contexts/:id", narrowPilotHandler.DeleteContext)
 
 		// Initialize and register folder routes before the terminal case detail
 		// route. Gin's radix tree rejects adding a child below a dynamic route

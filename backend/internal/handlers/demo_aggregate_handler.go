@@ -31,6 +31,7 @@ type DemoAggregateHandler struct {
 	contactService  *services.ClientContactService
 	authz           *services.AuthorizationService
 	inboxService    *services.InboxService
+	narrowPilot     *NarrowPilotHandler
 }
 
 // lawyerFactsVersionKey is the server-owned facts version token stored in
@@ -2249,6 +2250,7 @@ func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
 }
 
 func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 128*1024)
 	if denyIntakeWriteForPlainUser(c) {
 		return
 	}
@@ -2260,6 +2262,9 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 	var rawPayload map[string]interface{}
 	if err := c.ShouldBindJSON(&rawPayload); err != nil {
 		common.APIBadRequest(c, "请求参数错误", err.Error())
+		return
+	}
+	if h.narrowPilot != nil && h.narrowPilot.HandleUpdate(c, rawPayload) {
 		return
 	}
 	partiesReplaceRequested := rawPayload["parties"] != nil

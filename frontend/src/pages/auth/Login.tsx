@@ -94,10 +94,8 @@ const LoginPage: React.FC = () => {
         appStoreLogin(user, token)
         message.success('登录成功')
 
-        // 等待一下让状态更新完成
-        setTimeout(() => {
-          navigate('/')
-        }, 500)
+        // A delayed redirect can pull an already-opened draft back to the dashboard.
+        navigate('/')
       } else {
         throw new Error('未获取到有效的登录凭证')
       }
