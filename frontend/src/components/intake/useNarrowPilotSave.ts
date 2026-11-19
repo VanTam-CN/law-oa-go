@@ -69,7 +69,8 @@ export function useNarrowPilotSave(props: {
       return result
     } catch (error) {
       const api = error as { status?: number; code?: string }
-      if (api.status && api.status >= 400 && api.status < 500 && !['SAVE_GUARD_BUSY', 'SAVE_RESULT_UNKNOWN'].includes(api.code || '')) clear(scope)
+      // Only these server refusals prove this key cannot still commit; all other errors retain recovery.
+      if (api.status === 409 && ['INTAKE_DRAFT_REVISION_CONFLICT', 'SOURCE_SELECTION_STALE', 'SAVE_REQUEST_ABANDONED'].includes(api.code || '')) clear(scope)
       else if (scopeRef.current === scope) setNotice('原保存结果待核实；不能换键重发，请回查结果或明确结束原保存。')
       throw error
     } finally { inFlight.current = false; if (scopeRef.current === scope) setBusy(false) }
