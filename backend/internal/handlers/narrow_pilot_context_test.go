@@ -105,9 +105,23 @@ func TestNPMultiTurnInvalidationAndSessionExpiry(t *testing.T) {
 	c.Request.Header.Set("Authorization", "Bearer "+token)
 	c.Set("user_id", uint(7))
 	selection := &npSourceSelection{ContextID: id, ExpectedContextVersion: 2, Fields: map[string]npFieldSelection{"description": {CandidateID: oldID, RequestedMode: "candidate_sources", Reviewed: true}}}
-	if _, err := n.prepareSource(c, map[string]interface{}{"id": "intake-rev", "metadata": "{}"}, selection, first["candidate"].(map[string]interface{})["description"].(string)); err == nil {
+	row := map[string]interface{}{"id": "intake-rev", "client_id": 33, "metadata": "{}"}
+	if _, err := n.prepareSource(c, row, selection, first["candidate"].(map[string]interface{})["description"].(string)); err == nil {
 		t.Fatal("old candidate retained eligibility")
 	}
+	selection.ExpectedContextVersion = 3
+	if _, err := n.prepareSource(c, row, selection, latest["description"].(string)); err == nil {
+		t.Fatal("old candidate accepted with a forged latest context version")
+	}
+	selection.Fields["description"] = npFieldSelection{CandidateID: latest["id"].(string), RequestedMode: "candidate_sources", Reviewed: true}
+	if _, err := n.prepareSource(c, row, selection, latest["description"].(string)+"人工变化"); err == nil {
+		t.Fatal("manual edit falsely inherited candidate sources")
+	}
+	pack, err := n.prepareSource(c, row, selection, latest["description"].(string))
+	if err != nil || len(pack.Sources) != 2 {
+		t.Fatal("valid latest candidate rejected", err)
+	}
+	n.finishSource(pack, false)
 	if err := db.Table("auth_token_sessions").Where("user_id = ?", 7).Update("access_revoked_at", time.Now()).Error; err != nil {
 		t.Fatal(err)
 	}

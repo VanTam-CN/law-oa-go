@@ -1,0 +1,4 @@
+Frozen commit: bcd1b8992b3f3450d5ab406afd74336cc282eece
+Command: go test ./internal/handlers -count=1 -run '^(TestDraftRestoreReturnsRevisionAndProtectedIdentityStatus|TestDraftListCarriesRevisionTokens|TestUpdateIntakeRejectsMissingExpectedRevisionWithoutMutation|TestUpdateIntakeRejectsStaleRevisionWithoutOverwrite|TestUpdateIntakeWithoutMetadataKeepsStoredBusinessFields|TestUpdateIntakeDraftInheritsProtectedIdentityWhenInputEmpty|TestIndependentMaterialVersionsDownloadOriginalBytes)$'
+Result: ok law-oa-go/internal/handlers 2.146s
+Scope: original SQLite tests; not PG proof

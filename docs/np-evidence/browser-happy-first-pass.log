@@ -1,0 +1,14 @@
+[2m[WebServer] [22m(node:15929) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+[2m[WebServer] [22m[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+(node:15943) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:15943) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m[BABEL] Note: The code generator has deoptimised the styling of /Users/mac/Desktop/FT/law-oa-go/output/np-v04-first-slice/frontend/src/pages/batch01/Batch01Prototype.tsx as it exceeds the max of 500KB.
+  ✓  1 [chromium] › e2e/np-first-slice.live.spec.ts:17:1 › 真实服务：多轮核对，仅应用摘要，原生保存后新会话从原菜单重开来源 (5.2s)
+
+  1 passed (6.5s)

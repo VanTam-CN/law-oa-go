@@ -1,0 +1,2 @@
+Connection to 127.0.0.1 port 18790 [tcp/*] succeeded!
+PROBE_OK np_first_slice_dev|server=16.14 (Debian 16.14-1.pgdg13+1)|user=np_first_slice loopback=127.0.0.1:18790
