@@ -1,0 +1,15 @@
+{
+  "utc": "2026-11-19T09:50:48.955553+00:00",
+  "runner_pid": 75491,
+  "executable": "/Users/mac/Desktop/FT/law-oa-go/output/np-v04-first-slice/scripts/np-first-slice/.bin/np-local-check",
+  "signal": "SIGTERM",
+  "volumes_retained": true,
+  "containers": {
+    "np-first-slice-db-1": "exited",
+    "np-first-slice-redis-1": "exited"
+  },
+  "listeners_closed": {
+    "18789": true,
+    "3003": true
+  }
+}

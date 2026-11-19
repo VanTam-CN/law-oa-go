@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -16,35 +17,35 @@ import (
 // RateLimiterConfig 限流配置
 type RateLimiterConfig struct {
 	// IP级别限流
-	IPRateLimit    int           // 每分钟IP限流次数
-	IPWindow       time.Duration // IP限流时间窗口
+	IPRateLimit int           // 每分钟IP限流次数
+	IPWindow    time.Duration // IP限流时间窗口
 
 	// 用户级别限流
-	UserRateLimit  int           // 每分钟用户限流次数
-	UserWindow     time.Duration // 用户限流时间窗口
+	UserRateLimit int           // 每分钟用户限流次数
+	UserWindow    time.Duration // 用户限流时间窗口
 
 	// API级别限流
-	APIRateLimit   int           // 每分钟API限流次数
-	APIWindow      time.Duration // API限流时间窗口
+	APIRateLimit int           // 每分钟API限流次数
+	APIWindow    time.Duration // API限流时间窗口
 
 	// 白名单
-	Whitelist      []string      // 不受限流的IP段
+	Whitelist []string // 不受限流的IP段
 
 	// 限流策略
-	Strategy       string        // "fixed_window", "sliding_window", "token_bucket"
+	Strategy string // "fixed_window", "sliding_window", "token_bucket"
 }
 
 // DefaultRateLimiterConfig 默认限流配置
 func DefaultRateLimiterConfig() RateLimiterConfig {
 	return RateLimiterConfig{
-		IPRateLimit:    60,   // IP级别：每分钟60次
-		IPWindow:       time.Minute,
-		UserRateLimit:  120,  // 用户级别：每分钟120次
-		UserWindow:     time.Minute,
-		APIRateLimit:   100,  // API级别：每分钟100次
-		APIWindow:      time.Minute,
-		Whitelist:      []string{"127.0.0.1", "::1"}, // 本地回环不受限
-		Strategy:       "sliding_window",
+		IPRateLimit:   60, // IP级别：每分钟60次
+		IPWindow:      time.Minute,
+		UserRateLimit: 120, // 用户级别：每分钟120次
+		UserWindow:    time.Minute,
+		APIRateLimit:  100, // API级别：每分钟100次
+		APIWindow:     time.Minute,
+		Whitelist:     []string{"127.0.0.1", "::1"}, // 本地回环不受限
+		Strategy:      "sliding_window",
 	}
 }
 
@@ -137,9 +138,9 @@ func getUserID(c *gin.Context) string {
 // responseRateLimitExceeded 响应限流超出
 func responseRateLimitExceeded(c *gin.Context, limitType string) {
 	c.JSON(http.StatusTooManyRequests, gin.H{
-		"code":    429,
-		"message": fmt.Sprintf("%s级别请求过于频繁，请稍后再试", limitType),
-		"type":    limitType,
+		"code":        429,
+		"message":     fmt.Sprintf("%s级别请求过于频繁，请稍后再试", limitType),
+		"type":        limitType,
 		"retry_after": 60, // 建议重试时间（秒）
 	})
 	c.Abort()
@@ -237,6 +238,9 @@ func Logger() gin.HandlerFunc {
 // LoggerWithFormatter 格式化日志中间件（符合Gin最佳实践）
 func LoggerWithFormatter() gin.HandlerFunc {
 	return gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
+		if containsSensitiveData(param.Request.URL.Path) {
+			return fmt.Sprintf("%s %s %d %s\n", param.Method, param.Request.URL.Path, param.StatusCode, param.Latency)
+		}
 		// 使用结构化日志格式，便于日志分析工具处理
 		return fmt.Sprintf("%s - [%s] \"%s %s %s\" %d %s \"%s\" %s\n",
 			param.ClientIP,
@@ -254,9 +258,9 @@ func LoggerWithFormatter() gin.HandlerFunc {
 
 // Recovery 恢复中间件（改进版本，符合Gin最佳实践）
 func Recovery() gin.HandlerFunc {
-	return gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
+	return gin.CustomRecoveryWithWriter(io.Discard, func(c *gin.Context, recovered interface{}) {
 		// 记录详细的错误信息
-		if logger.Logger != nil {
+		if logger.Logger != nil && !containsSensitiveData(c.Request.URL.Path) {
 			if err, ok := recovered.(error); ok {
 				logger.Logger.Error("Panic recovered",
 					zap.Error(err),

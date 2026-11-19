@@ -1,0 +1,39 @@
+# law-oa-go/internal/handlers.test
+ld: warning: '/private/var/folders/4p/bng36r_s65d26yqk0lfpw2rh0000gn/T/go-link-3871408425/000023.o' has malformed LC_DYSYMTAB, expected 98 undefined symbols to start at index 884, found 95 undefined symbols starting at index 884
+2026-11-19T15:42:09.433+0800	INFO	logger/logger.go:867	Logger package initialized with default development logger
+=== RUN   TestNPMultiTurnInvalidationAndSessionExpiry
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] POST   /contexts                 --> law-oa-go/internal/handlers.(*NarrowPilotHandler).CreateContext-fm (2 handlers)
+[GIN-debug] GET    /contexts/:id             --> law-oa-go/internal/handlers.(*NarrowPilotHandler).GetContext-fm (2 handlers)
+[GIN-debug] DELETE /contexts/:id             --> law-oa-go/internal/handlers.(*NarrowPilotHandler).DeleteContext-fm (2 handlers)
+[GIN-debug] POST   /contexts/:id/turns       --> law-oa-go/internal/handlers.(*NarrowPilotHandler).Turn-fm (2 handlers)
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+--- PASS: TestNPMultiTurnInvalidationAndSessionExpiry (0.03s)
+=== RUN   TestNPContextExpiryAndChangedDraft
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] POST   /contexts                 --> law-oa-go/internal/handlers.(*NarrowPilotHandler).CreateContext-fm (2 handlers)
+[GIN-debug] GET    /contexts/:id             --> law-oa-go/internal/handlers.(*NarrowPilotHandler).GetContext-fm (2 handlers)
+[GIN-debug] DELETE /contexts/:id             --> law-oa-go/internal/handlers.(*NarrowPilotHandler).DeleteContext-fm (2 handlers)
+[GIN-debug] POST   /contexts/:id/turns       --> law-oa-go/internal/handlers.(*NarrowPilotHandler).Turn-fm (2 handlers)
+--- PASS: TestNPContextExpiryAndChangedDraft (0.01s)
+=== RUN   TestNPContextEndReleasesExpiryTimer
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] POST   /contexts                 --> law-oa-go/internal/handlers.(*NarrowPilotHandler).CreateContext-fm (2 handlers)
+[GIN-debug] GET    /contexts/:id             --> law-oa-go/internal/handlers.(*NarrowPilotHandler).GetContext-fm (2 handlers)
+[GIN-debug] DELETE /contexts/:id             --> law-oa-go/internal/handlers.(*NarrowPilotHandler).DeleteContext-fm (2 handlers)
+[GIN-debug] POST   /contexts/:id/turns       --> law-oa-go/internal/handlers.(*NarrowPilotHandler).Turn-fm (2 handlers)
+--- PASS: TestNPContextEndReleasesExpiryTimer (0.01s)
+PASS
+ok  	law-oa-go/internal/handlers	3.783s

@@ -1,0 +1,1 @@
+FAIL: 仅允许本机 Docker Desktop，拒绝远程或覆盖的 Docker context

@@ -31,6 +31,7 @@ type DemoAggregateHandler struct {
 	contactService  *services.ClientContactService
 	authz           *services.AuthorizationService
 	inboxService    *services.InboxService
+	narrowPilot     *NarrowPilotHandler
 }
 
 // lawyerFactsVersionKey is the server-owned facts version token stored in
@@ -2157,6 +2158,7 @@ func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
 	if createMetadata == nil {
 		createMetadata = map[string]interface{}{}
 	}
+	delete(createMetadata, npDescriptionSourceRevisionKey)
 	createMetadata[intakeDraftRevisionKey] = "1"
 	intakePayload["metadata"] = jsonStringValue(createMetadata)
 	intakePayload["created_by"] = createdBy
@@ -2249,6 +2251,7 @@ func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
 }
 
 func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 128*1024)
 	if denyIntakeWriteForPlainUser(c) {
 		return
 	}
@@ -2260,6 +2263,9 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 	var rawPayload map[string]interface{}
 	if err := c.ShouldBindJSON(&rawPayload); err != nil {
 		common.APIBadRequest(c, "请求参数错误", err.Error())
+		return
+	}
+	if h.narrowPilot != nil && h.narrowPilot.HandleUpdate(c, rawPayload) {
 		return
 	}
 	partiesReplaceRequested := rawPayload["parties"] != nil
@@ -2378,7 +2384,9 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 	}
 	if providedMetadata, ok := rawPayload["metadata"]; ok && providedMetadata != nil && !isAssistantRole(c) {
 		for key, value := range objectValue(providedMetadata) {
-			revisionMetadata[key] = value
+			if key != npDescriptionSourceRevisionKey {
+				revisionMetadata[key] = value
+			}
 		}
 	}
 	revisionMetadata[intakeDraftRevisionKey] = nextRevision
@@ -2396,7 +2404,9 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 		if currentStatus == "lawyer_facts_confirmed" || currentStatus == "conflict_ready" {
 			metadata := objectValue(existing["metadata"])
 			for key, value := range objectValue(rawPayload["metadata"]) {
-				metadata[key] = value
+				if key != npDescriptionSourceRevisionKey {
+					metadata[key] = value
+				}
 			}
 			// The rebuilt metadata starts from the STORED metadata, so the
 			// freshly stamped revision is re-applied last: otherwise the

@@ -1,0 +1,26 @@
+{
+  "label": "go-build-fixed",
+  "cwd": "backend",
+  "argv": [
+    "go",
+    "build",
+    "./..."
+  ],
+  "source_head": "4c184d5d46f1e101d3ff0ced04f62ebd0b16d6f3",
+  "source_status": [
+    " M docs/np-first-slice-contract.md",
+    " M docs/np-first-slice-progress.md",
+    " M docs/np-first-slice-review.md",
+    "?? docs/np-evidence/review-r1/",
+    "?? docs/np-pr47-review-r1.md"
+  ],
+  "started_utc": "2026-11-19T09:41:08.732696+00:00",
+  "environment_names_only": [
+    "NP_TEST_DSN",
+    "NP_FIXTURE_PASSWORD",
+    "VITE_API_PROXY_TARGET"
+  ],
+  "exit_code": 0,
+  "finished_utc": "2026-11-19T09:41:25.607298+00:00",
+  "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

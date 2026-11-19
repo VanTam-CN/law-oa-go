@@ -1,0 +1,6 @@
+frontend/test-results/
+frontend/playwright-report/
+frontend/dist/
+frontend/.cache/
+frontend/coverage/
+backend/uploads/

@@ -61,9 +61,10 @@ func NewOptimizedDatabase(cfg *config.Config) (*OptimizedDatabase, error) {
 		Logger: logger.New(
 			&SlowQueryLogger{threshold: poolConfig.SlowThreshold},
 			logger.Config{
-				SlowThreshold: poolConfig.SlowThreshold,
-				LogLevel:      logger.Warn,
-				Colorful:      false,
+				SlowThreshold:        poolConfig.SlowThreshold,
+				LogLevel:             logger.Warn,
+				Colorful:             false,
+				ParameterizedQueries: true,
 			},
 		),
 	}

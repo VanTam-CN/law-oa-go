@@ -1,0 +1,39 @@
+# NP v0.4 首切片本地隔离基础：仅回环映射；全新独立卷；项目名唯一 np-first-slice。
+name: np-first-slice
+
+services:
+  db:
+    image: postgres:16.14
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?set fictional creds in .env}
+      POSTGRES_USER: ${POSTGRES_USER:?set fictional creds in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set fictional creds in .env}
+    ports:
+      # 18790 为已授权的联调调整：host Go/实际 service 的回环探针，仅绑定本机。
+      - "127.0.0.1:18790:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?set fictional creds in .env}
+    command: ["sh", "-c", "exec redis-server --requirepass \"$$REDIS_PASSWORD\""]
+    ports:
+      - "127.0.0.1:18791:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli --no-auth-warning -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  db-data:
+  redis-data:

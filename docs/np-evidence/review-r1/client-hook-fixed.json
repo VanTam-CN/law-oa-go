@@ -1,0 +1,33 @@
+{
+  "label": "client-hook-fixed",
+  "cwd": "frontend",
+  "argv": [
+    "npm",
+    "test",
+    "--",
+    "--runInBand",
+    "--runTestsByPath",
+    "src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
+    "--coverage=false"
+  ],
+  "source_head": "58da474bf917c60ff3107ce4aee56eb41c7441da",
+  "source_status": [
+    " M docs/np-first-slice-contract.md",
+    " M docs/np-first-slice-progress.md",
+    " M docs/np-first-slice-review.md",
+    " M frontend/src/components/intake/NarrowPilotAssistant.tsx",
+    " M frontend/src/components/intake/useNarrowPilotSave.ts",
+    "?? docs/np-evidence/review-r1/",
+    "?? docs/np-pr47-review-r1.md",
+    "?? frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx"
+  ],
+  "started_utc": "2026-11-19T09:35:46.110815+00:00",
+  "environment_names_only": [
+    "NP_TEST_DSN",
+    "NP_FIXTURE_PASSWORD",
+    "VITE_API_PROXY_TARGET"
+  ],
+  "exit_code": 0,
+  "finished_utc": "2026-11-19T09:35:48.353390+00:00",
+  "log_sha256": "f12db31a788c84866d8c0fe69a8db61a03b867de4030102258b9114398c1b372"
+}

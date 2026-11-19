@@ -1,0 +1,118 @@
+
+> law-oa-frontend@0.0.0 test
+> jest --runInBand --runTestsByPath src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx --coverage=false
+
+FAIL Law OA Frontend src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx
+  ✕ 同挂载切换intakeId：旧 GET 成功或失败均不影响新草稿，拒绝=false (235 ms)
+  ✕ 同挂载切换intakeId：旧 GET 成功或失败均不影响新草稿，拒绝=true (1067 ms)
+  ✕ 切换草稿后迟到的生成响应不能显示旧候选，新草稿不被旧 busy 锁住 (114 ms)
+  ✕ 切换后又返回同一草稿，旧 GET 仍失效且不能调用应用回调 (73 ms)
+
+  ● 同挂载切换intakeId：旧 GET 成功或失败均不影响新草稿，拒绝=false
+
+    expect(element).not.toBeInTheDocument()
+
+    expected document not to contain element, found <pre style="white-space: pre-wrap; background: rgb(246, 255, 237); padding: 8px;">第一轮候选摘要</pre> instead
+
+      111 |   expect(screen.getByTestId('selection')).toHaveTextContent('none')
+      112 |   expect(screen.getByLabelText('案情摘要')).toHaveValue('I2保存版本摘要')
+    > 113 |   expect(screen.queryByText('第一轮候选摘要')).not.toBeInTheDocument()
+          |                                             ^
+      114 | })
+      115 |
+      116 | test('切换草稿后迟到的生成响应不能显示旧候选，新草稿不被旧 busy 锁住', async () => {
+
+      at src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx:113:45
+
+  ● 同挂载切换intakeId：旧 GET 成功或失败均不影响新草稿，拒绝=true
+
+    Unable to find an element with the text: I2已保存来源. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<button>[39m
+          [0m切换草稿[0m
+        [36m</button>[39m
+        [36m<button>[39m
+          [0m返回原草稿[0m
+        [36m</button>[39m
+        [36m<textarea[39m
+          [33maria-label[39m=[32m"案情摘要"[39m
+        [36m>[39m
+          [0mI2保存版本摘要[0m
+        [36m</textarea>[39m
+        [36m<span[39m
+          [33mdata-testid[39m=[32m"intake"[39m
+        [36m>[39m
+          [0mI2[0m
+        [36m</span>[39m
+        [36m<section[39m
+          [33maria-label[39m=[32m"窄版摘要助手"[39m
+          [33mclass[39m=[32m"np-assistant"[39m
+        [36m>[39m
+          [36m<h3>[39m
+            [0m窄版摘要助手（首切片：仅案情摘要）[0m
+          [36m</h3>[39m
+          [36m<p[39m
+            [33mstyle[39m=[32m"margin: 8px 0px 0px; color: rgb(153, 153, 153);"[39m
+          [36m>[39m
+            [0m当前账号未启用摘要助手，仅展示已保存来源。[0m
+          [36m</p>[39m
+        [36m</section>[39m
+        [36m<span[39m
+          [33mdata-testid[39m=[32m"selection"[39m
+        [36m>[39m
+          [0mnone[0m
+        [36m</span>[39m
+      [36m</div>[39m
+    [36m</body>[39m
+
+      107 |     else release(contextView(candidate('cand-1', '第一轮候选摘要'), 2))
+      108 |   })
+    > 109 |   await waitFor(() => expect(screen.getByText('I2已保存来源')).toBeInTheDocument())
+          |                ^
+      110 |   expect(applySpy).not.toHaveBeenCalled()
+      111 |   expect(screen.getByTestId('selection')).toHaveTextContent('none')
+      112 |   expect(screen.getByLabelText('案情摘要')).toHaveValue('I2保存版本摘要')
+
+      at waitForWrapper (../../../../Users/mac/Desktop/FT/law-oa-go/output/np-v04-first-slice/frontend/node_modules/@testing-library/dom/dist/wait-for.js:163:27)
+      at src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx:109:16
+
+  ● 切换草稿后迟到的生成响应不能显示旧候选，新草稿不被旧 busy 锁住
+
+    expect(element).not.toBeInTheDocument()
+
+    expected document not to contain element, found <pre style="white-space: pre-wrap; background: rgb(246, 246, 246); padding: 8px;">迟到的旧草稿候选</pre> instead
+
+      128 |   await screen.findByText('I2已保存来源')
+      129 |   await act(async () => { release(contextView(candidate('old', '迟到的旧草稿候选'), 2)) })
+    > 130 |   expect(screen.queryByText('迟到的旧草稿候选')).not.toBeInTheDocument()
+          |                                              ^
+      131 |   expect(screen.getByLabelText('摘要对话输入')).toBeEnabled()
+      132 |   expect(screen.getByLabelText('案情摘要')).toHaveValue('I2保存版本摘要')
+      133 | })
+
+      at Object.<anonymous> (src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx:130:46)
+
+  ● 切换后又返回同一草稿，旧 GET 仍失效且不能调用应用回调
+
+    expect(element).not.toBeInTheDocument()
+
+    expected document not to contain element, found <pre style="white-space: pre-wrap; background: rgb(246, 255, 237); padding: 8px;">第一轮候选摘要</pre> instead
+
+      149 |   await act(async () => { release(contextView(candidate('cand-1', '第一轮候选摘要'), 2)) })
+      150 |   expect(applySpy).not.toHaveBeenCalled()
+    > 151 |   expect(screen.queryByText('第一轮候选摘要')).not.toBeInTheDocument()
+          |                                             ^
+      152 |   expect(screen.getByLabelText('案情摘要')).toHaveValue('I1新编辑摘要')
+      153 | })
+      154 |
+
+      at Object.<anonymous> (src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx:151:45)
+
+Test Suites: 1 failed, 1 total
+Tests:       4 failed, 4 total
+Snapshots:   0 total
+Time:        2.753 s
+Ran all test suites within paths "src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx".

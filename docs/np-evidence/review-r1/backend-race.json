@@ -1,0 +1,39 @@
+{
+  "label": "backend-race",
+  "cwd": "backend",
+  "argv": [
+    "go",
+    "test",
+    "-race",
+    "./internal/database",
+    "./internal/handlers",
+    "./internal/middleware",
+    "-run",
+    "^(TestOptimizedDatabaseSlowQueryLogDoesNotLeakParameters|TestNP.*|TestNarrowPilotAuditSkipsSensitiveBodyBeforeRead|TestDraftRestoreReturnsRevisionAndProtectedIdentityStatus|TestDraftListCarriesRevisionTokens|TestUpdateIntakeRejectsMissingExpectedRevisionWithoutMutation|TestUpdateIntakeRejectsStaleRevisionWithoutOverwrite|TestUpdateIntakeWithoutMetadataKeepsStoredBusinessFields|TestUpdateIntakeDraftInheritsProtectedIdentityWhenInputEmpty|TestIndependentMaterialVersionsDownloadOriginalBytes)$",
+    "-count=1",
+    "-v"
+  ],
+  "source_head": "b3809f604dfa2b0b43e8108bc5644d0ba6ed8c29",
+  "source_status": [
+    " M backend/internal/database/connection_pool.go",
+    " M backend/internal/handlers/demo_aggregate_handler.go",
+    " M backend/internal/handlers/narrow_pilot_pg_test.go",
+    " M backend/internal/handlers/narrow_pilot_write.go",
+    " M docs/np-first-slice-contract.md",
+    " M docs/np-first-slice-progress.md",
+    " M docs/np-first-slice-review.md",
+    "?? backend/internal/database/narrow_pilot_pool_logging_test.go",
+    "?? backend/internal/handlers/narrow_pilot_review_pg_test.go",
+    "?? docs/np-evidence/review-r1/",
+    "?? docs/np-pr47-review-r1.md"
+  ],
+  "started_utc": "2026-11-19T09:31:12.815027+00:00",
+  "environment_names_only": [
+    "NP_TEST_DSN",
+    "NP_FIXTURE_PASSWORD",
+    "VITE_API_PROXY_TARGET"
+  ],
+  "exit_code": 0,
+  "finished_utc": "2026-11-19T09:31:25.297474+00:00",
+  "log_sha256": "9c95279eaa7e8eef775ab2aad2c0b1d03f9e94653d537badcb362dcddeb093ac"
+}

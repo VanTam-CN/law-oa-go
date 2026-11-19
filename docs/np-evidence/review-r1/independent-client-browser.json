@@ -1,0 +1,49 @@
+{
+  "task": "np-v04-first-slice independent browser r1",
+  "head_actual": "4c184d5d46f1e101d3ff0ced04f62ebd0b16d6f3",
+  "worktree": "/tmp/np-r1-independent-client-4c184d5",
+  "worktree_clean": true,
+  "argv": [
+    "npx",
+    "playwright",
+    "test",
+    "e2e/np-first-slice.live.spec.ts"
+  ],
+  "start_utc": "2026-11-19T09:44:51.605Z",
+  "end_utc": "2026-11-19T09:45:11.506Z",
+  "exit_code": 0,
+  "tests_passed": 4,
+  "env_injected": "VITE_API_PROXY_TARGET=http://127.0.0.1:18789, NP_FIXTURE_PASSWORD (value not logged)",
+  "compare_script": {
+    "source": "scripts/np-first-slice/compare-browser-db.py",
+    "copy": "/tmp/compare-browser-db-r1.py",
+    "adapted_lines": [
+      "L9 ROOT -> fixed repo root",
+      "L10 REPORT -> docs/np-evidence/review-r1/browser-pg-comparison.json"
+    ],
+    "queries_and_assertions_unchanged": true
+  },
+  "db_comparison": {
+    "report": "docs/np-evidence/review-r1/browser-pg-comparison.json",
+    "before_sources": 15,
+    "after_sources": 18,
+    "before_receipts": 18,
+    "after_receipts": 22,
+    "delta_sources": 3,
+    "delta_receipts": 4,
+    "protected_sha256_before": "5373dedc89c7",
+    "protected_sha256_after": "5373dedc89c7",
+    "protected_unchanged": true
+  },
+  "historical_file_restored": {
+    "path": "docs/np-evidence/browser-pg-comparison.json",
+    "sha256_restored": "69e719d4bbd3e49f7067f7b04f151707c9bd13cb0dd67e1453ecdd01b95a0631"
+  },
+  "playwright_config": {
+    "config_file": "playwright.config.ts (default, no --config flag passed)",
+    "argv_matches_subprocess": true,
+    "baseURL": "http://127.0.0.1:3003",
+    "reuseExistingServer": "!process.env.CI (default config allows reuse); runtime [WebServer] log shows fresh Vite start and BABEL compile path in independent worktree, so this run did NOT reuse the prior frontend server; this is runtime observation, not a config-level enforcement",
+    "standard_reproduction_note": "future standard reproduction uses playwright.np.config.ts"
+  }
+}

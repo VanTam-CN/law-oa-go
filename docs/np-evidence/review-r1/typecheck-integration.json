@@ -1,0 +1,28 @@
+{
+  "label": "typecheck-integration",
+  "cwd": "frontend",
+  "argv": [
+    "npm",
+    "run",
+    "type-check"
+  ],
+  "source_head": "62ea83a1be0e02a3e693389c13efdaccd499abdc",
+  "source_status": [
+    " M docs/np-first-slice-contract.md",
+    " M docs/np-first-slice-progress.md",
+    " M docs/np-first-slice-review.md",
+    " M frontend/src/components/intake/NarrowPilotAssistant.tsx",
+    "?? docs/np-evidence/review-r1/",
+    "?? docs/np-pr47-review-r1.md",
+    "?? frontend/src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx"
+  ],
+  "started_utc": "2026-11-19T09:40:16.890105+00:00",
+  "environment_names_only": [
+    "NP_TEST_DSN",
+    "NP_FIXTURE_PASSWORD",
+    "VITE_API_PROXY_TARGET"
+  ],
+  "exit_code": 0,
+  "finished_utc": "2026-11-19T09:40:21.621954+00:00",
+  "log_sha256": "3d0a7528399a250a68017a4179ef123c402206346106b4b766bd2f386b5b559f"
+}

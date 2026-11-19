@@ -1,0 +1,30 @@
+{
+  "label": "typecheck-preintegration",
+  "cwd": "frontend",
+  "argv": [
+    "npm",
+    "run",
+    "type-check"
+  ],
+  "source_head": "58da474bf917c60ff3107ce4aee56eb41c7441da",
+  "source_status": [
+    " M docs/np-first-slice-contract.md",
+    " M docs/np-first-slice-progress.md",
+    " M docs/np-first-slice-review.md",
+    " M frontend/src/components/intake/NarrowPilotAssistant.tsx",
+    " M frontend/src/components/intake/useNarrowPilotSave.ts",
+    "?? docs/np-evidence/review-r1/",
+    "?? docs/np-pr47-review-r1.md",
+    "?? frontend/src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx",
+    "?? frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx"
+  ],
+  "started_utc": "2026-11-19T09:36:29.464120+00:00",
+  "environment_names_only": [
+    "NP_TEST_DSN",
+    "NP_FIXTURE_PASSWORD",
+    "VITE_API_PROXY_TARGET"
+  ],
+  "exit_code": 0,
+  "finished_utc": "2026-11-19T09:36:34.037213+00:00",
+  "log_sha256": "3d0a7528399a250a68017a4179ef123c402206346106b4b766bd2f386b5b559f"
+}

@@ -1,0 +1,33 @@
+{
+  "label": "component-scope",
+  "cwd": "frontend",
+  "argv": [
+    "npm",
+    "test",
+    "--",
+    "--runInBand",
+    "--runTestsByPath",
+    "src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx",
+    "src/components/intake/__tests__/NarrowPilotAssistant.test.tsx",
+    "--coverage=false"
+  ],
+  "source_head": "62ea83a1be0e02a3e693389c13efdaccd499abdc",
+  "source_status": [
+    " M docs/np-first-slice-contract.md",
+    " M docs/np-first-slice-progress.md",
+    " M docs/np-first-slice-review.md",
+    " M frontend/src/components/intake/NarrowPilotAssistant.tsx",
+    "?? docs/np-evidence/review-r1/",
+    "?? docs/np-pr47-review-r1.md",
+    "?? frontend/src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx"
+  ],
+  "started_utc": "2026-11-19T09:39:20.729915+00:00",
+  "environment_names_only": [
+    "NP_TEST_DSN",
+    "NP_FIXTURE_PASSWORD",
+    "VITE_API_PROXY_TARGET"
+  ],
+  "exit_code": 0,
+  "finished_utc": "2026-11-19T09:39:23.781853+00:00",
+  "log_sha256": "e64a2d485affa15f224a818784c877626566fa8fc6508af42494b1d64ea729a6"
+}

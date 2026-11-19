@@ -1,0 +1,59 @@
+[2m[WebServer] [22m(node:26026) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 4 tests using 1 worker
+
+[2m[WebServer] [22m[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+(node:26101) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:26101) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m[BABEL] Note: The code generator has deoptimised the styling of /Users/mac/Desktop/FT/law-oa-go/output/np-v04-first-slice/frontend/src/pages/batch01/Batch01Prototype.tsx as it exceeds the max of 500KB.
+  ✓  1 [chromium] › frontend/e2e/np-first-slice.live.spec.ts:31:1 › 真实服务：多轮核对，仅应用摘要，原生保存后新会话从原菜单重开来源 (4.8s)
+  ✓  2 [chromium] › frontend/e2e/np-first-slice.live.spec.ts:62:1 › 真实服务：A来源保存后，B旧版纯手工摘要不得覆盖并保留输入 (4.4s)
+[2m[WebServer] [22m[PROXY ERROR]: socket hang up
+[2m[WebServer] [22m3:07:53 PM [vite] http proxy error: /api/v1/case-intakes/00000000-0000-4000-8000-000000009801
+[2m[WebServer] [22mError: socket hang up
+[2m[WebServer] [22m    at Socket.socketOnEnd (node:_http_client:542:25)
+[2m[WebServer] [22m    at Socket.emit (node:events:530:35)
+[2m[WebServer] [22m    at endReadableNT (node:internal/streams/readable:1698:12)
+[2m[WebServer] [22m    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+  ✓  3 [chromium] › frontend/e2e/np-first-slice.live.spec.ts:80:1 › 真实上游断线：提交后断开TCP，重登按原键回查且重开来源 (5.3s)
+  ✘  4 [chromium] › frontend/e2e/np-first-slice.live.spec.ts:111:1 › 生成期间保留未发送输入；人工摘要不被候选静默覆盖 (1.5m)
+
+
+  1) [chromium] › frontend/e2e/np-first-slice.live.spec.ts:111:1 › 生成期间保留未发送输入；人工摘要不被候选静默覆盖 ────────
+
+    [31mTest timeout of 90000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 90000ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: '取消', exact: true })[22m
+
+
+      128 |   await expect(page.getByRole('alertdialog', { name: '覆盖确认' })).toBeVisible()
+      129 |   await expect(page.locator('#intake-description')).toHaveValue('人工清点后保留的摘要')
+    > 130 |   await page.getByRole('button', { name: '取消', exact: true }).click()
+          |                                                               ^
+      131 |   await expect(page.locator('#intake-description')).toHaveValue('人工清点后保留的摘要')
+      132 | })
+      133 |
+        at /Users/mac/Desktop/FT/law-oa-go/output/np-v04-first-slice/frontend/e2e/np-first-slice.live.spec.ts:130:63
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    frontend/test-results/np-first-slice.live-生成期间保留未发送输入；人工摘要不被候选静默覆盖-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: frontend/test-results/np-first-slice.live-生成期间保留未发送输入；人工摘要不被候选静默覆盖-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    frontend/test-results/np-first-slice.live-生成期间保留未发送输入；人工摘要不被候选静默覆盖-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace frontend/test-results/np-first-slice.live-生成期间保留未发送输入；人工摘要不被候选静默覆盖-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [chromium] › frontend/e2e/np-first-slice.live.spec.ts:111:1 › 生成期间保留未发送输入；人工摘要不被候选静默覆盖 ─────────
+  3 passed (1.8m)

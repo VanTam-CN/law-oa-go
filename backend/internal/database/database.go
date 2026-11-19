@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -33,10 +34,10 @@ func InitWithConfig(appConfig *config.Config) (*gorm.DB, error) {
 
 	// 配置GORM - 基于最新最佳实践优化
 	gormConfig := &gorm.Config{
-		Logger:                                   logger.Default.LogMode(logger.Warn), // 生产环境优化
-		PrepareStmt:                              true,                                // 启用预编译语句缓存
-		SkipDefaultTransaction:                   true,                                // 禁用默认事务提升性能
-		DisableForeignKeyConstraintWhenMigrating: true,                                // 禁用自动外键
+		Logger:                                   logger.New(log.New(os.Stderr, "", log.LstdFlags), logger.Config{LogLevel: logger.Warn, SlowThreshold: 200 * time.Millisecond, ParameterizedQueries: true}),
+		PrepareStmt:                              true, // 启用预编译语句缓存
+		SkipDefaultTransaction:                   true, // 禁用默认事务提升性能
+		DisableForeignKeyConstraintWhenMigrating: true, // 禁用自动外键
 		// 新增性能优化配置
 		AllowGlobalUpdate:    false, // 禁止全局更新提升安全性
 		DisableAutomaticPing: true,  // 禁用自动ping减少开销

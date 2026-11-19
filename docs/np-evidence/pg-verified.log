@@ -1,0 +1,127 @@
+# law-oa-go/internal/handlers.test
+ld: warning: '/private/var/folders/4p/bng36r_s65d26yqk0lfpw2rh0000gn/T/go-link-3242688747/000023.o' has malformed LC_DYSYMTAB, expected 98 undefined symbols to start at index 884, found 95 undefined symbols starting at index 884
+2026-11-19T15:36:02.454+0800	INFO	logger/logger.go:867	Logger package initialized with default development logger
+=== RUN   TestNPPostgresSaveReopenConcurrencyAndReceipts
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] POST   /api/v1/case-materials/:materialId/files --> law-oa-go/internal/handlers.(*MatterCollaborationHandler).UploadCaseMaterial-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-materials/:materialId/files --> law-oa-go/internal/handlers.(*MatterCollaborationHandler).ListCaseMaterialFiles-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-materials/:materialId/files/:fileId/download --> law-oa-go/internal/handlers.(*MatterCollaborationHandler).DownloadCaseMaterialFile-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-intakes/:id  --> law-oa-go/internal/handlers.(*DemoAggregateHandler).IntakeWorkbench-fm (2 handlers)
+[GIN-debug] PUT    /api/v1/case-intakes/:id  --> law-oa-go/internal/handlers.(*DemoAggregateHandler).UpdateCaseIntake-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-intakes/:id/source-snapshots/:revision --> law-oa-go/internal/handlers.(*NarrowPilotHandler).SourceSnapshot-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-intakes/write-results/:request_id --> law-oa-go/internal/handlers.(*NarrowPilotHandler).WriteResult-fm (2 handlers)
+[GIN-debug] POST   /api/v1/case-intakes/write-results/:request_id/abandon --> law-oa-go/internal/handlers.(*NarrowPilotHandler).Abandon-fm (2 handlers)
+[GIN-debug] POST   /api/v1/case-intake-assist/contexts --> law-oa-go/internal/handlers.(*NarrowPilotHandler).CreateContext-fm (2 handlers)
+[GIN-debug] POST   /api/v1/case-intake-assist/contexts/:id/turns --> law-oa-go/internal/handlers.(*NarrowPilotHandler).Turn-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-intake-assist/contexts/:id --> law-oa-go/internal/handlers.(*NarrowPilotHandler).GetContext-fm (2 handlers)
+    narrow_pilot_pg_test.go:267: PG: multi-turn source, native reopen, stale manual, exact replay, different digest, read-only unknown, tombstone late arrival, no-change and manual unlink verified
+--- PASS: TestNPPostgresSaveReopenConcurrencyAndReceipts (0.32s)
+=== RUN   TestNPPostgresActualDisconnectAfterCommit
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] POST   /api/v1/case-materials/:materialId/files --> law-oa-go/internal/handlers.(*MatterCollaborationHandler).UploadCaseMaterial-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-materials/:materialId/files --> law-oa-go/internal/handlers.(*MatterCollaborationHandler).ListCaseMaterialFiles-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-materials/:materialId/files/:fileId/download --> law-oa-go/internal/handlers.(*MatterCollaborationHandler).DownloadCaseMaterialFile-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-intakes/:id  --> law-oa-go/internal/handlers.(*DemoAggregateHandler).IntakeWorkbench-fm (2 handlers)
+[GIN-debug] PUT    /api/v1/case-intakes/:id  --> law-oa-go/internal/handlers.(*DemoAggregateHandler).UpdateCaseIntake-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-intakes/:id/source-snapshots/:revision --> law-oa-go/internal/handlers.(*NarrowPilotHandler).SourceSnapshot-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-intakes/write-results/:request_id --> law-oa-go/internal/handlers.(*NarrowPilotHandler).WriteResult-fm (2 handlers)
+[GIN-debug] POST   /api/v1/case-intakes/write-results/:request_id/abandon --> law-oa-go/internal/handlers.(*NarrowPilotHandler).Abandon-fm (2 handlers)
+[GIN-debug] POST   /api/v1/case-intake-assist/contexts --> law-oa-go/internal/handlers.(*NarrowPilotHandler).CreateContext-fm (2 handlers)
+[GIN-debug] POST   /api/v1/case-intake-assist/contexts/:id/turns --> law-oa-go/internal/handlers.(*NarrowPilotHandler).Turn-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-intake-assist/contexts/:id --> law-oa-go/internal/handlers.(*NarrowPilotHandler).GetContext-fm (2 handlers)
+    narrow_pilot_pg_test.go:392: PG commit observed before real downstream TCP close; GET and same-key replay recovered the original revision
+--- PASS: TestNPPostgresActualDisconnectAfterCommit (0.10s)
+=== RUN   TestNPPostgresActualDisconnectBeforeCommit
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] POST   /api/v1/case-materials/:materialId/files --> law-oa-go/internal/handlers.(*MatterCollaborationHandler).UploadCaseMaterial-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-materials/:materialId/files --> law-oa-go/internal/handlers.(*MatterCollaborationHandler).ListCaseMaterialFiles-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-materials/:materialId/files/:fileId/download --> law-oa-go/internal/handlers.(*MatterCollaborationHandler).DownloadCaseMaterialFile-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-intakes/:id  --> law-oa-go/internal/handlers.(*DemoAggregateHandler).IntakeWorkbench-fm (2 handlers)
+[GIN-debug] PUT    /api/v1/case-intakes/:id  --> law-oa-go/internal/handlers.(*DemoAggregateHandler).UpdateCaseIntake-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-intakes/:id/source-snapshots/:revision --> law-oa-go/internal/handlers.(*NarrowPilotHandler).SourceSnapshot-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-intakes/write-results/:request_id --> law-oa-go/internal/handlers.(*NarrowPilotHandler).WriteResult-fm (2 handlers)
+[GIN-debug] POST   /api/v1/case-intakes/write-results/:request_id/abandon --> law-oa-go/internal/handlers.(*NarrowPilotHandler).Abandon-fm (2 handlers)
+[GIN-debug] POST   /api/v1/case-intake-assist/contexts --> law-oa-go/internal/handlers.(*NarrowPilotHandler).CreateContext-fm (2 handlers)
+[GIN-debug] POST   /api/v1/case-intake-assist/contexts/:id/turns --> law-oa-go/internal/handlers.(*NarrowPilotHandler).Turn-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-intake-assist/contexts/:id --> law-oa-go/internal/handlers.(*NarrowPilotHandler).GetContext-fm (2 handlers)
+    narrow_pilot_pg_test.go:466: Observed real PG row-lock wait; client TCP close cancelled transaction; read-only unknown, explicit tombstone and late retry verified
+--- PASS: TestNPPostgresActualDisconnectBeforeCommit (0.16s)
+=== RUN   TestNPPostgresParallelWritersAndBusyAbandon
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] POST   /api/v1/case-materials/:materialId/files --> law-oa-go/internal/handlers.(*MatterCollaborationHandler).UploadCaseMaterial-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-materials/:materialId/files --> law-oa-go/internal/handlers.(*MatterCollaborationHandler).ListCaseMaterialFiles-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-materials/:materialId/files/:fileId/download --> law-oa-go/internal/handlers.(*MatterCollaborationHandler).DownloadCaseMaterialFile-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-intakes/:id  --> law-oa-go/internal/handlers.(*DemoAggregateHandler).IntakeWorkbench-fm (2 handlers)
+[GIN-debug] PUT    /api/v1/case-intakes/:id  --> law-oa-go/internal/handlers.(*DemoAggregateHandler).UpdateCaseIntake-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-intakes/:id/source-snapshots/:revision --> law-oa-go/internal/handlers.(*NarrowPilotHandler).SourceSnapshot-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-intakes/write-results/:request_id --> law-oa-go/internal/handlers.(*NarrowPilotHandler).WriteResult-fm (2 handlers)
+[GIN-debug] POST   /api/v1/case-intakes/write-results/:request_id/abandon --> law-oa-go/internal/handlers.(*NarrowPilotHandler).Abandon-fm (2 handlers)
+[GIN-debug] POST   /api/v1/case-intake-assist/contexts --> law-oa-go/internal/handlers.(*NarrowPilotHandler).CreateContext-fm (2 handlers)
+[GIN-debug] POST   /api/v1/case-intake-assist/contexts/:id/turns --> law-oa-go/internal/handlers.(*NarrowPilotHandler).Turn-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-intake-assist/contexts/:id --> law-oa-go/internal/handlers.(*NarrowPilotHandler).GetContext-fm (2 handlers)
+--- PASS: TestNPPostgresParallelWritersAndBusyAbandon (0.11s)
+=== RUN   TestNPPostgresSourcePermissionsAndStrictBoundary
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] POST   /api/v1/case-materials/:materialId/files --> law-oa-go/internal/handlers.(*MatterCollaborationHandler).UploadCaseMaterial-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-materials/:materialId/files --> law-oa-go/internal/handlers.(*MatterCollaborationHandler).ListCaseMaterialFiles-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-materials/:materialId/files/:fileId/download --> law-oa-go/internal/handlers.(*MatterCollaborationHandler).DownloadCaseMaterialFile-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-intakes/:id  --> law-oa-go/internal/handlers.(*DemoAggregateHandler).IntakeWorkbench-fm (2 handlers)
+[GIN-debug] PUT    /api/v1/case-intakes/:id  --> law-oa-go/internal/handlers.(*DemoAggregateHandler).UpdateCaseIntake-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-intakes/:id/source-snapshots/:revision --> law-oa-go/internal/handlers.(*NarrowPilotHandler).SourceSnapshot-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-intakes/write-results/:request_id --> law-oa-go/internal/handlers.(*NarrowPilotHandler).WriteResult-fm (2 handlers)
+[GIN-debug] POST   /api/v1/case-intakes/write-results/:request_id/abandon --> law-oa-go/internal/handlers.(*NarrowPilotHandler).Abandon-fm (2 handlers)
+[GIN-debug] POST   /api/v1/case-intake-assist/contexts --> law-oa-go/internal/handlers.(*NarrowPilotHandler).CreateContext-fm (2 handlers)
+[GIN-debug] POST   /api/v1/case-intake-assist/contexts/:id/turns --> law-oa-go/internal/handlers.(*NarrowPilotHandler).Turn-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-intake-assist/contexts/:id --> law-oa-go/internal/handlers.(*NarrowPilotHandler).GetContext-fm (2 handlers)
+--- PASS: TestNPPostgresSourcePermissionsAndStrictBoundary (0.11s)
+=== RUN   TestNPPostgresLegacySaveAfterStrictManualStillChecksRevision
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] POST   /api/v1/case-materials/:materialId/files --> law-oa-go/internal/handlers.(*MatterCollaborationHandler).UploadCaseMaterial-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-materials/:materialId/files --> law-oa-go/internal/handlers.(*MatterCollaborationHandler).ListCaseMaterialFiles-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-materials/:materialId/files/:fileId/download --> law-oa-go/internal/handlers.(*MatterCollaborationHandler).DownloadCaseMaterialFile-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-intakes/:id  --> law-oa-go/internal/handlers.(*DemoAggregateHandler).IntakeWorkbench-fm (2 handlers)
+[GIN-debug] PUT    /api/v1/case-intakes/:id  --> law-oa-go/internal/handlers.(*DemoAggregateHandler).UpdateCaseIntake-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-intakes/:id/source-snapshots/:revision --> law-oa-go/internal/handlers.(*NarrowPilotHandler).SourceSnapshot-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-intakes/write-results/:request_id --> law-oa-go/internal/handlers.(*NarrowPilotHandler).WriteResult-fm (2 handlers)
+[GIN-debug] POST   /api/v1/case-intakes/write-results/:request_id/abandon --> law-oa-go/internal/handlers.(*NarrowPilotHandler).Abandon-fm (2 handlers)
+[GIN-debug] POST   /api/v1/case-intake-assist/contexts --> law-oa-go/internal/handlers.(*NarrowPilotHandler).CreateContext-fm (2 handlers)
+[GIN-debug] POST   /api/v1/case-intake-assist/contexts/:id/turns --> law-oa-go/internal/handlers.(*NarrowPilotHandler).Turn-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-intake-assist/contexts/:id --> law-oa-go/internal/handlers.(*NarrowPilotHandler).GetContext-fm (2 handlers)
+--- PASS: TestNPPostgresLegacySaveAfterStrictManualStillChecksRevision (0.08s)
+=== RUN   TestNPPostgresDescriptionWhitespaceIsExact
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] POST   /api/v1/case-materials/:materialId/files --> law-oa-go/internal/handlers.(*MatterCollaborationHandler).UploadCaseMaterial-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-materials/:materialId/files --> law-oa-go/internal/handlers.(*MatterCollaborationHandler).ListCaseMaterialFiles-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-materials/:materialId/files/:fileId/download --> law-oa-go/internal/handlers.(*MatterCollaborationHandler).DownloadCaseMaterialFile-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-intakes/:id  --> law-oa-go/internal/handlers.(*DemoAggregateHandler).IntakeWorkbench-fm (2 handlers)
+[GIN-debug] PUT    /api/v1/case-intakes/:id  --> law-oa-go/internal/handlers.(*DemoAggregateHandler).UpdateCaseIntake-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-intakes/:id/source-snapshots/:revision --> law-oa-go/internal/handlers.(*NarrowPilotHandler).SourceSnapshot-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-intakes/write-results/:request_id --> law-oa-go/internal/handlers.(*NarrowPilotHandler).WriteResult-fm (2 handlers)
+[GIN-debug] POST   /api/v1/case-intakes/write-results/:request_id/abandon --> law-oa-go/internal/handlers.(*NarrowPilotHandler).Abandon-fm (2 handlers)
+[GIN-debug] POST   /api/v1/case-intake-assist/contexts --> law-oa-go/internal/handlers.(*NarrowPilotHandler).CreateContext-fm (2 handlers)
+[GIN-debug] POST   /api/v1/case-intake-assist/contexts/:id/turns --> law-oa-go/internal/handlers.(*NarrowPilotHandler).Turn-fm (2 handlers)
+[GIN-debug] GET    /api/v1/case-intake-assist/contexts/:id --> law-oa-go/internal/handlers.(*NarrowPilotHandler).GetContext-fm (2 handlers)
+--- PASS: TestNPPostgresDescriptionWhitespaceIsExact (0.08s)
+PASS
+ok  	law-oa-go/internal/handlers	4.339s

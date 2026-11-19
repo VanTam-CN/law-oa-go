@@ -1,0 +1,61 @@
+
+> law-oa-frontend@0.0.0 test
+> jest --runInBand --runTestsByPath src/components/intake/__tests__/NarrowPilotAssistant.test.tsx src/pages/auth/__tests__/Login.accessibility.test.tsx src/pages/auth/__tests__/Login.failure.test.tsx --coverage=false
+
+  console.error
+    Login failed: { response: { status: 401, data: { error: [Object] } } }
+
+      101 |       }
+      102 |     } catch (error: any) {
+    > 103 |       console.error('Login failed:', error)
+          |               ^
+      104 |       if (error?.response?.status === 401) {
+      105 |         message.error('账号或密码错误')
+      106 |         setLoginError('账号、邮箱或密码不正确，请重新输入')
+
+      at onFinish (src/pages/auth/Login.tsx:103:15)
+
+  console.error
+    ERROR: 账号或密码错误
+
+      38 |     } else {
+      39 |       // 作为后备方案，使用console
+    > 40 |       console.error('ERROR:', content)
+         |               ^
+      41 |     }
+      42 |   },
+      43 |
+
+      at Object.error (src/utils/messageHelper.ts:40:15)
+      at onFinish (src/pages/auth/Login.tsx:105:17)
+
+  console.log
+    SUCCESS: 登录成功
+
+      at Object.success (src/utils/messageHelper.ts:26:15)
+
+  console.log
+    SUCCESS: 登录成功
+
+      at Object.success (src/utils/messageHelper.ts:26:15)
+
+PASS Law OA Frontend src/pages/auth/__tests__/Login.failure.test.tsx
+  LoginPage login failure
+    ✓ renders a visible non-sensitive alert and preserves account case on 401 (525 ms)
+    ✓ sends the account field for a mixed-case username (238 ms)
+    ✓ normalizes a mixed-case email account for the API (224 ms)
+
+PASS Law OA Frontend src/pages/auth/__tests__/Login.accessibility.test.tsx
+  LoginPage keyboard accessibility
+    ✓ provides an operable password visibility button with a synchronized name and state (316 ms)
+
+PASS Law OA Frontend src/components/intake/__tests__/NarrowPilotAssistant.test.tsx
+  ✓ 应用等待GET期间人工改摘要：恢复后进入对比确认，不得用旧闭包覆盖 (103 ms)
+  ✓ 开始新一轮立即清除旧来源选择并保留表单文字；原句原样提交 (68 ms)
+  ✓ 来源权限被收回后清除已显示的来源，不再应用候选 (46 ms)
+
+Test Suites: 3 passed, 3 total
+Tests:       7 passed, 7 total
+Snapshots:   0 total
+Time:        3.973 s, estimated 4 s
+Ran all test suites within paths "src/components/intake/__tests__/NarrowPilotAssistant.test.tsx", "src/pages/auth/__tests__/Login.accessibility.test.tsx", "src/pages/auth/__tests__/Login.failure.test.tsx".

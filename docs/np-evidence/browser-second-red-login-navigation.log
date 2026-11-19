@@ -1,0 +1,48 @@
+[2m[WebServer] [22m(node:8410) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+[2m[WebServer] [22m[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+(node:8456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:8456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m[BABEL] Note: The code generator has deoptimised the styling of /Users/mac/Desktop/FT/law-oa-go/output/np-v04-first-slice/frontend/src/pages/batch01/Batch01Prototype.tsx as it exceeds the max of 500KB.
+  ✘  1 [chromium] › e2e/np-first-slice.live.spec.ts:17:1 › 真实服务：多轮核对，仅应用摘要，原生保存后新会话从原菜单重开来源 (1.6m)
+
+
+  1) [chromium] › e2e/np-first-slice.live.spec.ts:17:1 › 真实服务：多轮核对，仅应用摘要，原生保存后新会话从原菜单重开来源 ──────────
+
+    [31mTest timeout of 90000ms exceeded.[39m
+
+    Error: locator.inputValue: Test timeout of 90000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('#intake-title')[22m
+
+
+      17 | test('真实服务：多轮核对，仅应用摘要，原生保存后新会话从原菜单重开来源', async ({ page, browser }) => {
+      18 |   await loginAndOpenDraft(page)
+    > 19 |   const originalTitle = await page.locator('#intake-title').inputValue()
+         |                                                             ^
+      20 |   await page.getByRole('textbox', { name: '摘要对话输入', exact: true }).fill('这是虚构资料。因对方未按时交货，我方要求确认交付时间。')
+      21 |   await page.getByRole('button', { name: '开始摘要整理', exact: true }).click()
+      22 |   await expect(page.getByText('据本次录入（待核实）：', { exact: false }).first()).toBeVisible()
+        at /Users/mac/Desktop/FT/law-oa-go/output/np-v04-first-slice/frontend/e2e/np-first-slice.live.spec.ts:19:61
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/np-first-slice.live-真实服务：多轮核对，仅应用摘要，原生保存后新会话从原菜单重开来源-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/np-first-slice.live-真实服务：多轮核对，仅应用摘要，原生保存后新会话从原菜单重开来源-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/np-first-slice.live-真实服务：多轮核对，仅应用摘要，原生保存后新会话从原菜单重开来源-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/np-first-slice.live-真实服务：多轮核对，仅应用摘要，原生保存后新会话从原菜单重开来源-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [chromium] › e2e/np-first-slice.live.spec.ts:17:1 › 真实服务：多轮核对，仅应用摘要，原生保存后新会话从原菜单重开来源 ───────────

@@ -1,0 +1,24 @@
+{
+  "task": "np-v04-first-slice independent client tests r1",
+  "head_actual": "4c184d5d46f1e101d3ff0ced04f62ebd0b16d6f3",
+  "worktree": "/tmp/np-r1-independent-client-4c184d5",
+  "worktree_clean": true,
+  "argv": [
+    "npm",
+    "test",
+    "--",
+    "--runInBand",
+    "--runTestsByPath",
+    "src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
+    "src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx",
+    "src/components/intake/__tests__/NarrowPilotAssistant.test.tsx",
+    "src/pages/auth/__tests__/Login.accessibility.test.tsx",
+    "src/pages/auth/__tests__/Login.failure.test.tsx",
+    "--coverage=false"
+  ],
+  "start_utc": "2026-11-19T09:42:19.986Z",
+  "end_utc": "2026-11-19T09:42:27.045Z",
+  "exit_code": 0,
+  "tests_passed": 33,
+  "suites_passed": 5
+}

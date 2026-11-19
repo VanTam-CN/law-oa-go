@@ -1,0 +1,31 @@
+{
+  "label": "client-hook-first-red",
+  "cwd": "frontend",
+  "argv": [
+    "npm",
+    "test",
+    "--",
+    "--runInBand",
+    "--runTestsByPath",
+    "src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
+    "--coverage=false"
+  ],
+  "source_head": "58da474bf917c60ff3107ce4aee56eb41c7441da",
+  "source_status": [
+    " M docs/np-first-slice-contract.md",
+    " M docs/np-first-slice-progress.md",
+    " M docs/np-first-slice-review.md",
+    "?? docs/np-evidence/review-r1/",
+    "?? docs/np-pr47-review-r1.md",
+    "?? frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx"
+  ],
+  "started_utc": "2026-11-19T09:35:23.921317+00:00",
+  "environment_names_only": [
+    "NP_TEST_DSN",
+    "NP_FIXTURE_PASSWORD",
+    "VITE_API_PROXY_TARGET"
+  ],
+  "exit_code": 1,
+  "finished_utc": "2026-11-19T09:35:26.061397+00:00",
+  "log_sha256": "7e3162caf9a5c4ef6b6ed44005394688c6c33f5d90f809acbf671b7d9ed03243"
+}

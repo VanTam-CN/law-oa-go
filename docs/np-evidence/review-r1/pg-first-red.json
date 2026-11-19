@@ -1,0 +1,27 @@
+{
+  "label": "pg-first-red",
+  "cwd": "backend",
+  "argv": [
+    "go",
+    "test",
+    "./internal/handlers",
+    "-run",
+    "^TestNPPostgres(NativeCannotForgeSourcePointer|LegacyNullMetadataIsInitialized|MalformedIntakeIDIsBadRequest)$",
+    "-count=1",
+    "-v"
+  ],
+  "source_head": "b3809f604dfa2b0b43e8108bc5644d0ba6ed8c29",
+  "source_status": [
+    " M backend/internal/handlers/narrow_pilot_pg_test.go",
+    "?? backend/internal/handlers/narrow_pilot_review_pg_test.go"
+  ],
+  "started_utc": "2026-11-19T09:27:22.701313+00:00",
+  "environment_names_only": [
+    "NP_TEST_DSN",
+    "NP_FIXTURE_PASSWORD",
+    "VITE_API_PROXY_TARGET"
+  ],
+  "exit_code": 1,
+  "finished_utc": "2026-11-19T09:27:33.403865+00:00",
+  "log_sha256": "992bf260f1654847affa9696d5a0eb0c94fcfd23130ce787154e809bfa609c03"
+}
