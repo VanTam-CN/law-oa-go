@@ -66,6 +66,6 @@ GLM Hooke 另对未参与实现的 hook 白名单与后端抛错点作只读复�
 
 最终复审核对 `apiRequest` 实际透传 HTTP status 和 `body.error.code`，白名单不依赖错误消息解析。只对本轮差异及相关调用链复核，没有声称完成全库安全审计。
 
-本机专用 18789/3003 已关闭，np-first-slice 的 PG/Redis 容器已停止，合成卷保留；NULL 夹具恢复 NOT NULL 已只读确认。冻结 worktree 仍 clean，原脏工作树未纳入。新增证据目录公开上传检查零命中；整条 Git 历史仍有原冻结的六个已识别测试/存储键命中，未改写为零命中。Git 保持原提交历史，推送到原开发分支和 Draft PR #47；最终确切远端 SHA 以 PR head 读回为准。
+本机专用 18789/3003 已关闭，np-first-slice 的 PG/Redis 容器已停止，合成卷保留；NULL 夹具恢复 NOT NULL 已只读确认。冻结 worktree 仍 clean，原脏工作树未纳入。证据索引生成前目录扫描零命中；最终整条 Git 历史扫描实际为八处：六处原冻结测试/存储键，加上 evidence-index.json 中两个文件 SHA-256 被 generic-api-key 规则误报。两个新增项已逐项对照实际文件重算散列，确认不是凭据；不报告“零新增命中”。Git 保持原提交历史，推送到原开发分支和 Draft PR #47；最终确切远端 SHA 以 PR head 读回为准。
 
 原始 stdout 的 CR/结尾空行按原字节保留，未为消除 whitespace 提示改写证据；代码和说明文档的差异检查通过，日志散列由 evidence-index.json 绑定。
