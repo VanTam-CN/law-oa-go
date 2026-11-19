@@ -1,6 +1,6 @@
 # np-main-integration CI 静态核验
 
-- 性质：只读静态审查；本文件是本次唯一新增文件。未运行构建、测试或安装工具，未触发远端 Actions。
+- 性质：GLM初稿为只读静态审查，随后主控复核修订。未运行构建、测试或安装工具，未手动触发远端Actions；准备分支发布后的自动失败记录见末节。
 - 目标 main worktree：`output/np-main-integration-prep`，HEAD 固定 `d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7`，分支 `codex/np-main-integration-prep`，开始时工作树干净。
 - 源首切片：`output/np-v04-first-slice`，HEAD 固定 `2d659d9dd750f49ddb1f517746e22851392231a6`，分支 `codex/np-v04-first-slice`，工作树干净。
 - 本报告内 `.github/...`、`frontend/...` 等路径均指目标 worktree 内路径。
@@ -71,3 +71,7 @@
 ## 主控复核更正
 
 GLM Flash提供初稿；主代理核对并纠正了PG版本、REDIS变量、NP与跨方言测试的区别、空测试放行退路、未运行不等于已红，以及notify在PR上的条件。缓存提案由主代理复核，未将本代理未完成的缓存复核计为独立通过。CI矩阵和未来实际运行均NOT_RUN。
+
+## 发布后只读观察
+
+准备分支26355fc发布后，既有fuzzing.yml形成[push失败记录44508335288](https://github.com/VanTam-CN/law-oa-go/actions/runs/44508335288)。jobs接口返回0，commit check-runs接口返回0；`gh run view`仅提示likely workflow file issue，具体校验错误未取到。不得声称“本轮没有任何Actions记录”，也不得将其称作已运行的NP/PG测试失败。文件与主干相同，本轮不修、不手动触发；M2必须在创建PR前查明配置问题。实际记录见remote-observation.json。
