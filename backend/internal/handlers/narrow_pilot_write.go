@@ -68,6 +68,10 @@ func (n *NarrowPilotHandler) strictReady(c *gin.Context) *npError {
 
 // Every legacy caller is checked, including compatibility tokens and disabled assistants.
 func (n *NarrowPilotHandler) HandleUpdate(c *gin.Context, raw map[string]interface{}) bool {
+	if _, err := uuid.Parse(c.Param("id")); err != nil {
+		npFail(c, &npError{"INVALID_REQUEST", 400})
+		return true
+	}
 	if _, strict := raw["changed_fields"]; !strict {
 		if !n.db.WithContext(c.Request.Context()).Migrator().HasTable(&npSnapshotRow{}) {
 			if len(n.allowed) > 0 {
@@ -271,7 +275,7 @@ func (n *NarrowPilotHandler) strictUpdate(c *gin.Context, actor, key string, req
 			revision = uuid.NewString()
 			state = "committed"
 			// Update reserved JSON paths in PostgreSQL; decoding unknown numbers through float64 would round them.
-			metadataUpdate := gorm.Expr("jsonb_set(metadata - ?, '{draft_revision}', to_jsonb(?::text), true)", npDescriptionSourceRevisionKey, revision)
+			metadataUpdate := gorm.Expr("jsonb_set(COALESCE(metadata, '{}'::jsonb) - ?, '{draft_revision}', to_jsonb(?::text), true)", npDescriptionSourceRevisionKey, revision)
 			if pack != nil {
 				encoded, err := json.Marshal(pack)
 				if err != nil {
@@ -281,7 +285,7 @@ func (n *NarrowPilotHandler) strictUpdate(c *gin.Context, actor, key string, req
 					return err
 				}
 				sourceRevision = revision
-				metadataUpdate = gorm.Expr("jsonb_set(jsonb_set(metadata, '{draft_revision}', to_jsonb(?::text), true), '{np_description_source_revision}', to_jsonb(?::text), true)", revision, revision)
+				metadataUpdate = gorm.Expr("jsonb_set(jsonb_set(COALESCE(metadata, '{}'::jsonb), '{draft_revision}', to_jsonb(?::text), true), '{np_description_source_revision}', to_jsonb(?::text), true)", revision, revision)
 			} else {
 				sourceRevision = ""
 			}

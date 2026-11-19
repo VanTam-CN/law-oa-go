@@ -2158,6 +2158,7 @@ func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
 	if createMetadata == nil {
 		createMetadata = map[string]interface{}{}
 	}
+	delete(createMetadata, npDescriptionSourceRevisionKey)
 	createMetadata[intakeDraftRevisionKey] = "1"
 	intakePayload["metadata"] = jsonStringValue(createMetadata)
 	intakePayload["created_by"] = createdBy
@@ -2383,7 +2384,9 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 	}
 	if providedMetadata, ok := rawPayload["metadata"]; ok && providedMetadata != nil && !isAssistantRole(c) {
 		for key, value := range objectValue(providedMetadata) {
-			revisionMetadata[key] = value
+			if key != npDescriptionSourceRevisionKey {
+				revisionMetadata[key] = value
+			}
 		}
 	}
 	revisionMetadata[intakeDraftRevisionKey] = nextRevision
@@ -2401,7 +2404,9 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 		if currentStatus == "lawyer_facts_confirmed" || currentStatus == "conflict_ready" {
 			metadata := objectValue(existing["metadata"])
 			for key, value := range objectValue(rawPayload["metadata"]) {
-				metadata[key] = value
+				if key != npDescriptionSourceRevisionKey {
+					metadata[key] = value
+				}
 			}
 			// The rebuilt metadata starts from the STORED metadata, so the
 			// freshly stamped revision is re-applied last: otherwise the

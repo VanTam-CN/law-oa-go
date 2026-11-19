@@ -98,6 +98,7 @@ func npPostgresFixture(t *testing.T) *npPGFixture {
 	r.GET("/api/v1/case-materials/:materialId/files", materialHandler.ListCaseMaterialFiles)
 	r.GET("/api/v1/case-materials/:materialId/files/:fileId/download", materialHandler.DownloadCaseMaterialFile)
 	r.GET("/api/v1/case-intakes/:id", h.IntakeWorkbench)
+	r.POST("/api/v1/case-intakes", h.CreateCaseIntake)
 	r.PUT("/api/v1/case-intakes/:id", h.UpdateCaseIntake)
 	r.GET("/api/v1/case-intakes/:id/source-snapshots/:revision", n.SourceSnapshot)
 	r.GET("/api/v1/case-intakes/write-results/:request_id", n.WriteResult)
