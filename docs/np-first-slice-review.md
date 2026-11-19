@@ -9,7 +9,7 @@
 - 最终应用代码候选：`b41c82c705f4c4ceb6ff1350ae6cd82e6cf35e46`。初次实现 `f9146e5`，再经本地环境边界、摘要逐字判定及临时上下文释放修复，保留完整提交链。验收测试与证据见本报告所在提交；末次仅补齐测试夹具的客户绑定，隔离验证旧候选/新版本混配、人工改文和有效候选。
 - 初次实现的直接父提交：冻结 final5 `bcd1b8992b3f3450d5ab406afd74336cc282eece`。
 - 分支：`codex/np-v04-first-slice`，工作目录 `output/np-v04-first-slice`（独立 worktree）。冻结 worktree 未改动。
-- 这是交付包源码布局的本地候选仓库，未配置远端、未推送或合入原审核/主分支。不能将本目录的构建输出直接替换试用制品。
+- 这是交付包源码布局的候选仓库。本轮发布到 Git 开发分支并以冻结分支为比较基线创建 Draft PR；协作入口和提交安排见 [Git 交接](np-git-handoff.md)。尚未合入原审核/main 分支，不能将本目录构建输出直接替换试用制品。
 
 完整边界见 [G00 首切片合同](np-first-slice-contract.md)，运行方式见 [隔离环境](np-first-slice-environment.md)。完整窄版的 G00～G05/A01～A40 没有被自动改为 PASS。
 
@@ -27,7 +27,7 @@
 | Go 全包构建 | PASS | `go build ./...`；`np-evidence/go-build-verified.log`；退出码 0，空输出 |
 | 原生七项回归复测 | PASS | `np-evidence/native-verified.log`；缺/旧版本拒绝、恢复、未知 metadata、保护主体、材料原件 |
 | 上下文三项测试 | PASS | `np-evidence/context-verified.log`；`-race`，多轮失效/同键轮去重、实际会话期限、空闲过期、撤销、业务版本改变、结束后释放计时器 |
-| 实际 PG 七项测试 | PASS | `np-evidence/pg-verified.log`；`-race`，与 SQLite 证据分列 |
+| 实际 PG 七项测试 | PASS | `np-evidence/pg-verified.log`；作者记录 `-race`，原始 stdout 不编码该参数；与 SQLite 证据分列 |
 | 前端组件及原登录回归 | PASS | 三套、七用例；`np-evidence/components-verified.log`，含等待期间人工改文、新轮清旧选择、已知撤权清已显示来源 |
 | 前端类型及构建 | PASS | `np-evidence/typecheck-verified.log`、`frontend-build-verified.log`；保留现有大包提示，未作无关拆包 |
 | 真实浏览器四条链路 | PASS | `np-evidence/browser-verified.log`；实际登录、原菜单、真实路由、PG，无 API 假响应 |

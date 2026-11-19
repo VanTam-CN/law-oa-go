@@ -1,0 +1,56 @@
+{
+  "tool": "gitleaks 8.30.1",
+  "scope": {
+    "base": "bcd1b8992b3f3450d5ab406afd74336cc282eece",
+    "head": "ae032d7",
+    "commits": 5,
+    "approx_bytes_scanned": 12642576
+  },
+  "findings_count": 6,
+  "findings": [
+    {
+      "rule": "generic-api-key",
+      "file": "backend/internal/auth/test_utils.go",
+      "line": 51,
+      "commit": "bcd1b8992b3f3450d5ab406afd74336cc282eece",
+      "adjudication": "固定测试 JWT 配置；createTestConfig 的调用方为测试"
+    },
+    {
+      "rule": "generic-api-key",
+      "file": "backend/internal/handlers/client_masking_c06_test.go",
+      "line": 116,
+      "commit": "bcd1b8992b3f3450d5ab406afd74336cc282eece",
+      "adjudication": "_test.go 内的固定 32 字节重复模式加密测试值"
+    },
+    {
+      "rule": "generic-api-key",
+      "file": "backend/internal/handlers/client_masking_c06_test.go",
+      "line": 416,
+      "commit": "bcd1b8992b3f3450d5ab406afd74336cc282eece",
+      "adjudication": "_test.go 内的固定 32 字节重复模式加密测试值"
+    },
+    {
+      "rule": "generic-api-key",
+      "file": "backend/internal/services/client_masking_c06_test.go",
+      "line": 30,
+      "commit": "bcd1b8992b3f3450d5ab406afd74336cc282eece",
+      "adjudication": "_test.go 内的固定 32 字节重复模式加密测试值"
+    },
+    {
+      "rule": "generic-api-key",
+      "file": "backend/internal/services/client_idempotency_test.go",
+      "line": 83,
+      "commit": "bcd1b8992b3f3450d5ab406afd74336cc282eece",
+      "adjudication": "_test.go 内的固定 32 字节重复模式加密测试值"
+    },
+    {
+      "rule": "generic-api-key",
+      "file": "frontend/src/pages/batch01/Batch01Prototype.tsx",
+      "line": 125,
+      "commit": "bcd1b8992b3f3450d5ab406afd74336cc282eece",
+      "adjudication": "浏览器预填存储键名；不是认证凭据"
+    }
+  ],
+  "private_artifacts_tracked": false,
+  "result": "六条均经用途核对为测试值/存储标识；不是扫描零命中，也不证明绝对无敏感信息。无抑制配置。"
+}
