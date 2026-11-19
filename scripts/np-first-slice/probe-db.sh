@@ -2,6 +2,11 @@
 # 只读探针：核对 127.0.0.1:18790 确为 np-first-slice 隔离 PG 16.14 / np_first_slice_dev。不改数据。
 set -eu
 
+[ -z "${DOCKER_HOST:-}" ] && [ -z "${DOCKER_CONTEXT:-}" ] &&
+  [ "$(docker context show)" = desktop-linux ] && [ "$(docker info --format '{{.Name}}')" = docker-desktop ] || {
+  echo 'FAIL: 仅允许本机 Docker Desktop，拒绝远程或覆盖的 Docker context'; exit 2;
+}
+
 cd "$(dirname "$0")"
 ENV_FILE="${1:-./.env}"
 if [ ! -f "$ENV_FILE" ]; then

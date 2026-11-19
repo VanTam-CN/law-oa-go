@@ -3,6 +3,11 @@
 # 凭据只从私有 .env 读取且不打印；任何一步失败立即停止，保留首失败。
 set -eu
 
+[ -z "${DOCKER_HOST:-}" ] && [ -z "${DOCKER_CONTEXT:-}" ] &&
+  [ "$(docker context show)" = desktop-linux ] && [ "$(docker info --format '{{.Name}}')" = docker-desktop ] || {
+  echo 'FAIL: 仅允许本机 Docker Desktop，拒绝远程或覆盖的 Docker context'; exit 2;
+}
+
 cd "$(dirname "$0")"
 ROOT="$(cd ../.. && pwd)"
 ENV_FILE="${1:-./.env}"
