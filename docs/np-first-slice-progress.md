@@ -38,3 +38,20 @@
 - 当前协作入口和完整提示词：np-git-handoff.md、np-independent-review-prompt.md；以实际远端 head/PR 状态为准。
 
 - 远端回执：[Draft PR #47](https://github.com/VanTam-CN/law-oa-go/pull/47)，base bcd1b899，原已验收交付 ae032d7；本次仅追加 Git 交接文档。当前 head 以 PR 为准。
+
+## PR #47 外部独立审核后修复（R1）
+
+固定审查输入 b3809f604dfa2b0b43e8108bc5644d0ba6ed8c29；保持冻结基线和同一 Draft PR，不合并、不部署。
+
+| 范围 | 责任 | 当前状态 |
+|---|---|---|
+| 主连接池参数化和行为回归 | GLM Hooke，主代理复审 | 完成，独立 -race 复测通过 |
+| 不明错误原键保留 | 主代理，GLM Hooke 只读复核 | 完成，22 个 hook 用例独立复跑通过 |
+| 跨对象回包隔离 | GLM Noether 初稿，主代理收口 | 完成，4 个 unkeyed 回归及前端集成独立通过 |
+| 原生来源保留路径、遗留 NULL、防非法 ID | 主代理 | 完成，PG 原七项与新增三项独立通过 |
+| 固定 SHA 独立执行与实际浏览器 | GLM Maxwell | 完成，-race、前端 33 用例、类型与浏览器 4 条均退出 0 |
+| 证据、复审、同一 PR 增量推送 | 主代理 | 本地复审完成，远端以 PR 实际 head 为准 |
+
+详见 np-pr47-review-r1.md；首次失败和修复记录追加在 np-evidence/review-r1，不覆盖旧证据。
+
+本节取代首次交付的当前状态结论：首切片工程 PASS，扩大试用/合并部署 HOLD。源代码候选 4c184d5，后续仅证据/文档和测试断言补强；同宿主独立代理不等于另一台机器。正式 main+Redis 联调、完整迁移与升级回滚演练继续未运行。

@@ -1,0 +1,19 @@
+
+> law-oa-frontend@0.0.0 test
+> jest --runInBand --runTestsByPath src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx src/components/intake/__tests__/NarrowPilotAssistant.test.tsx --coverage=false
+
+PASS Law OA Frontend src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx
+  ✓ 同挂载延迟GET期间切换intakeId：旧apply不得写入新草稿 (239 ms)
+  ✓ 切换草稿后迟到的生成响应不能显示旧候选，新草稿不被旧 busy 锁住 (50 ms)
+  ✓ 切换后又返回同一草稿，旧 GET 仍失效且不能调用应用回调 (80 ms)
+
+PASS Law OA Frontend src/components/intake/__tests__/NarrowPilotAssistant.test.tsx
+  ✓ 应用等待GET期间人工改摘要：恢复后进入对比确认，不得用旧闭包覆盖 (116 ms)
+  ✓ 开始新一轮立即清除旧来源选择并保留表单文字；原句原样提交 (64 ms)
+  ✓ 来源权限被收回后清除已显示的来源，不再应用候选 (48 ms)
+
+Test Suites: 2 passed, 2 total
+Tests:       6 passed, 6 total
+Snapshots:   0 total
+Time:        1.821 s, estimated 2 s
+Ran all test suites within paths "src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx", "src/components/intake/__tests__/NarrowPilotAssistant.test.tsx".

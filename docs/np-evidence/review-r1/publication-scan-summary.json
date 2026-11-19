@@ -1,0 +1,11 @@
+{
+  "scanned_code_head": "4c184d5",
+  "scanner": "gitleaks 8.30.1",
+  "git_findings": 6,
+  "all_findings_in_frozen_base": true,
+  "classification": "six previously reviewed test fixtures and browser storage key, not zero findings",
+  "evidence_directory_findings_initial": 0,
+  "note": "No env values, DSN, tokens, browser traces or private env files included. Final evidence directory rescanned before publication.",
+  "evidence_directory_findings_final": 0,
+  "code_new_findings": 0
+}

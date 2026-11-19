@@ -1,0 +1,36 @@
+{
+  "task": "np-v04-first-slice independent backend review r1",
+  "head_actual": "58da474bf917c60ff3107ce4aee56eb41c7441da",
+  "head_parent": "b3809f604dfa2b0b43e8108bc5644d0ba6ed8c29",
+  "worktree": "/tmp/np-r1-independent-58da474",
+  "worktree_clean": true,
+  "worktree_status": "## HEAD (no branch)",
+  "argv": [
+    "go",
+    "test",
+    "-race",
+    "./internal/database",
+    "./internal/handlers",
+    "./internal/middleware",
+    "-run",
+    "^(TestOptimizedDatabaseSlowQueryLogDoesNotLeakParameters|TestNP.*|TestNarrowPilotAuditSkipsSensitiveBodyBeforeRead|TestDraftRestoreReturnsRevisionAndProtectedIdentityStatus|TestDraftListCarriesRevisionTokens|TestUpdateIntakeRejectsMissingExpectedRevisionWithoutMutation|TestUpdateIntakeRejectsStaleRevisionWithoutOverwrite|TestUpdateIntakeWithoutMetadataKeepsStoredBusinessFields|TestUpdateIntakeDraftInheritsProtectedIdentityWhenInputEmpty|TestIndependentMaterialVersionsDownloadOriginalBytes)$",
+    "-count=1",
+    "-v"
+  ],
+  "start_utc": "2026-11-19T09:35:10.977Z",
+  "end_utc": "2026-11-19T09:35:41.137Z",
+  "duration_seconds": 30.16,
+  "exit_code": 0,
+  "go_version": "go1.25.6 darwin/amd64",
+  "log_path": "docs/np-evidence/review-r1/independent-backend.log",
+  "log_line_count": 76,
+  "log_run_count": 27,
+  "log_fail_count": 0,
+  "environment": {
+    "database": "isolated local PostgreSQL 127.0.0.1:18790/np_first_slice_dev",
+    "env_values_recorded": false,
+    "dsn_recorded": false,
+    "note": "NP_TEST_DSN injected from scripts/np-first-slice/.env via python3+shlex; values not logged"
+  },
+  "host_shared_cache_note": "same-host shared Go cache; not another machine"
+}

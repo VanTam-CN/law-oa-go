@@ -129,6 +129,8 @@ test('切换草稿后迟到的生成响应不能显示旧候选，新草稿不�
   await act(async () => { release(contextView(candidate('old', '迟到的旧草稿候选'), 2)) })
   expect(screen.queryByText('迟到的旧草稿候选')).not.toBeInTheDocument()
   expect(screen.getByLabelText('摘要对话输入')).toBeEnabled()
+  fireEvent.change(screen.getByLabelText('摘要对话输入'), { target: { value: '新草稿继续整理' } })
+  expect(screen.getByRole('button', { name: '开始摘要整理' })).toBeEnabled()
   expect(screen.getByLabelText('案情摘要')).toHaveValue('I2保存版本摘要')
 })
 
@@ -151,4 +153,3 @@ test('切换后又返回同一草稿，旧 GET 仍失效且不能调用应用回
   expect(screen.queryByText('第一轮候选摘要')).not.toBeInTheDocument()
   expect(screen.getByLabelText('案情摘要')).toHaveValue('I1新编辑摘要')
 })
-

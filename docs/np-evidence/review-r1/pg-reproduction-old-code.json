@@ -1,0 +1,32 @@
+{
+  "label": "pg-reproduction-old-code",
+  "cwd": "/tmp/np-review-r1-before/backend",
+  "argv": [
+    "go",
+    "test",
+    "./internal/handlers",
+    "-run",
+    "^TestNPPostgres(NativeCannotForgeSourcePointer|LegacyNullMetadataIsInitialized|MalformedIntakeIDIsBadRequest)$",
+    "-count=1",
+    "-v"
+  ],
+  "source_head": "b3809f604dfa2b0b43e8108bc5644d0ba6ed8c29",
+  "source_status": [
+    " M backend/internal/database/connection_pool.go",
+    " M backend/internal/handlers/demo_aggregate_handler.go",
+    " M backend/internal/handlers/narrow_pilot_pg_test.go",
+    " M backend/internal/handlers/narrow_pilot_write.go",
+    "?? backend/internal/database/narrow_pilot_pool_logging_test.go",
+    "?? backend/internal/handlers/narrow_pilot_review_pg_test.go",
+    "?? docs/np-evidence/review-r1/"
+  ],
+  "started_utc": "2026-11-19T09:29:07.719892+00:00",
+  "environment_names_only": [
+    "NP_TEST_DSN",
+    "NP_FIXTURE_PASSWORD",
+    "VITE_API_PROXY_TARGET"
+  ],
+  "exit_code": 1,
+  "finished_utc": "2026-11-19T09:29:17.830813+00:00",
+  "log_sha256": "1ecaf6da820b11660ce9107d67b238d287c8ac515426dc4efbc720c1867fc863"
+}

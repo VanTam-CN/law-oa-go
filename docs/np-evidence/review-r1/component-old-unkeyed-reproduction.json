@@ -1,0 +1,32 @@
+{
+  "label": "component-old-unkeyed-reproduction",
+  "cwd": "/tmp/np-review-r1-before/frontend",
+  "argv": [
+    "npm",
+    "test",
+    "--",
+    "--runInBand",
+    "--runTestsByPath",
+    "src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx",
+    "--coverage=false"
+  ],
+  "source_head": "62ea83a1be0e02a3e693389c13efdaccd499abdc",
+  "source_status": [
+    " M docs/np-first-slice-contract.md",
+    " M docs/np-first-slice-progress.md",
+    " M docs/np-first-slice-review.md",
+    " M frontend/src/components/intake/NarrowPilotAssistant.tsx",
+    "?? docs/np-evidence/review-r1/",
+    "?? docs/np-pr47-review-r1.md",
+    "?? frontend/src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx"
+  ],
+  "started_utc": "2026-11-19T09:40:22.413345+00:00",
+  "environment_names_only": [
+    "NP_TEST_DSN",
+    "NP_FIXTURE_PASSWORD",
+    "VITE_API_PROXY_TARGET"
+  ],
+  "exit_code": 1,
+  "finished_utc": "2026-11-19T09:40:26.506909+00:00",
+  "log_sha256": "825f0596ddb97a74647b36c1f67a87c27c829c27de2312d5cc53283583d30335"
+}

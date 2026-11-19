@@ -1,0 +1,31 @@
+{
+  "label": "pg-boundaries",
+  "cwd": "backend",
+  "argv": [
+    "go",
+    "test",
+    "./internal/handlers",
+    "-run",
+    "^TestNPPostgres(NativeCannotForgeSourcePointer|LegacyNullMetadataIsInitialized|MalformedIntakeIDIsBadRequest)$",
+    "-count=1",
+    "-v"
+  ],
+  "source_head": "b3809f604dfa2b0b43e8108bc5644d0ba6ed8c29",
+  "source_status": [
+    " M backend/internal/handlers/demo_aggregate_handler.go",
+    " M backend/internal/handlers/narrow_pilot_pg_test.go",
+    " M backend/internal/handlers/narrow_pilot_write.go",
+    "?? backend/internal/database/narrow_pilot_pool_logging_test.go",
+    "?? backend/internal/handlers/narrow_pilot_review_pg_test.go",
+    "?? docs/np-evidence/review-r1/"
+  ],
+  "started_utc": "2026-11-19T09:28:06.453921+00:00",
+  "environment_names_only": [
+    "NP_TEST_DSN",
+    "NP_FIXTURE_PASSWORD",
+    "VITE_API_PROXY_TARGET"
+  ],
+  "exit_code": 1,
+  "finished_utc": "2026-11-19T09:28:13.076834+00:00",
+  "log_sha256": "e69ef7d937623be08e65a16cbbc5c8b467321e155a4a7bf16f4601932b4b83dc"
+}

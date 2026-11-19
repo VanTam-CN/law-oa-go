@@ -1,0 +1,36 @@
+{
+  "label": "client-integration",
+  "cwd": "frontend",
+  "argv": [
+    "npm",
+    "test",
+    "--",
+    "--runInBand",
+    "--runTestsByPath",
+    "src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
+    "src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx",
+    "src/components/intake/__tests__/NarrowPilotAssistant.test.tsx",
+    "src/pages/auth/__tests__/Login.accessibility.test.tsx",
+    "src/pages/auth/__tests__/Login.failure.test.tsx",
+    "--coverage=false"
+  ],
+  "source_head": "62ea83a1be0e02a3e693389c13efdaccd499abdc",
+  "source_status": [
+    " M docs/np-first-slice-contract.md",
+    " M docs/np-first-slice-progress.md",
+    " M docs/np-first-slice-review.md",
+    " M frontend/src/components/intake/NarrowPilotAssistant.tsx",
+    "?? docs/np-evidence/review-r1/",
+    "?? docs/np-pr47-review-r1.md",
+    "?? frontend/src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx"
+  ],
+  "started_utc": "2026-11-19T09:40:09.747216+00:00",
+  "environment_names_only": [
+    "NP_TEST_DSN",
+    "NP_FIXTURE_PASSWORD",
+    "VITE_API_PROXY_TARGET"
+  ],
+  "exit_code": 0,
+  "finished_utc": "2026-11-19T09:40:16.783311+00:00",
+  "log_sha256": "b36ee38e949ce1a84488069d29af8867e7cfe5c727a4ea6847c7d0073e8d8d0b"
+}

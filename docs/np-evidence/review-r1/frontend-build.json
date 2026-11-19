@@ -1,0 +1,26 @@
+{
+  "label": "frontend-build",
+  "cwd": "frontend",
+  "argv": [
+    "npm",
+    "run",
+    "build"
+  ],
+  "source_head": "4c184d5d46f1e101d3ff0ced04f62ebd0b16d6f3",
+  "source_status": [
+    " M docs/np-first-slice-contract.md",
+    " M docs/np-first-slice-progress.md",
+    " M docs/np-first-slice-review.md",
+    "?? docs/np-evidence/review-r1/",
+    "?? docs/np-pr47-review-r1.md"
+  ],
+  "started_utc": "2026-11-19T09:41:25.718628+00:00",
+  "environment_names_only": [
+    "NP_TEST_DSN",
+    "NP_FIXTURE_PASSWORD",
+    "VITE_API_PROXY_TARGET"
+  ],
+  "exit_code": 0,
+  "finished_utc": "2026-11-19T09:41:33.126204+00:00",
+  "log_sha256": "1e000cbad9d4eb6a9097e1b8c9144473a28f34692363eba2e6a5fc6e7db2f0b8"
+}

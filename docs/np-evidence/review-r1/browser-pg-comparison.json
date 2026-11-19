@@ -1,0 +1,24 @@
+{
+  "before": {
+    "files": 2,
+    "sources": 15,
+    "receipts": 18,
+    "revision": "b0bd49d9-b881-4bf0-8174-65e2cbaffb4d",
+    "source_revision": null,
+    "protected_sha256": "5373dedc89c773c84a158d2462afc8c5a2f3d37d82d6506e01f3537e0dea5f0e"
+  },
+  "after": {
+    "files": 2,
+    "sources": 18,
+    "receipts": 22,
+    "revision": "4cdf0d3c-1c71-4c0c-9d4b-4a47303b2401",
+    "source_revision": null,
+    "protected_sha256": "5373dedc89c773c84a158d2462afc8c5a2f3d37d82d6506e01f3537e0dea5f0e"
+  },
+  "assertions": {
+    "protected_fields_children_files_and_D2_unchanged": true,
+    "source_snapshot_delta": 3,
+    "receipt_delta": 4,
+    "manual_source_unlinked": true
+  }
+}

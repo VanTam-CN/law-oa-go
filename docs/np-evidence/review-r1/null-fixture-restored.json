@@ -1,0 +1,8 @@
+{
+  "query": "SELECT is_nullable FROM information_schema.columns WHERE table_schema='public' AND table_name='case_intakes' AND column_name='metadata'",
+  "utc": "2026-11-19T09:47:05.102103+00:00",
+  "exit_code": 0,
+  "is_nullable": "NO",
+  "isolated_database": "np_first_slice_dev",
+  "note": "synthetic legacy fixture restored NOT NULL"
+}

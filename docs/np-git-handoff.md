@@ -55,3 +55,9 @@
 - Draft PR：https://github.com/VanTam-CN/law-oa-go/pull/47 。本交接文档提交随后追加到同一分支/PR；当前确切 head 由 PR/API 读取，不在文档里写入自身提交 SHA。
 - 审查工作从本 PR 开始。完整提示词：[np-independent-review-prompt.md](np-independent-review-prompt.md)。
 - 发布完成后没有启动本地或试用服务。原 main 与原方案审核分支仍保持本轮点验的提交。
+
+## 7. PR #47 独立审查反馈 R1
+
+首次独立审查固定 b3809f6，三个 P1 作为本轮修复依据，不再沿用旧“无未关闭 P1”的放行表述。后端修复提交 58da474；不明错误恢复提交 62ea83a；组件作用域隔离提交 4c184d5。每个提交保留首失败与针对性复测，不强推、不另建重复 PR。
+
+本轮独立后端执行固定 58da474，实际 `-race` 命令、退出码和 clean 状态保存在 `np-evidence/review-r1/independent-backend.json`；后续前端与浏览器独立执行以对应 JSON 的实际 SHA 为准。这些是在同一宿主的独立代理执行，不是另一台机器或 GitHub CI。完整处置、缓存边界与剩余门禁见 [R1 报告](np-pr47-review-r1.md)。

@@ -1,0 +1,30 @@
+
+> law-oa-frontend@0.0.0 test
+> jest --runInBand --runTestsByPath src/components/intake/__tests__/useNarrowPilotSave.test.tsx --coverage=false
+
+PASS Law OA Frontend src/components/intake/__tests__/useNarrowPilotSave.test.tsx
+  ✓ 不明保存结果保留原键、冻结体且不把正文存浏览器：408 undefined (16 ms)
+  ✓ 不明保存结果保留原键、冻结体且不把正文存浏览器：429 undefined (5 ms)
+  ✓ 不明保存结果保留原键、冻结体且不把正文存浏览器：499 undefined (2 ms)
+  ✓ 不明保存结果保留原键、冻结体且不把正文存浏览器：400 undefined (1 ms)
+  ✓ 不明保存结果保留原键、冻结体且不把正文存浏览器：401 undefined (2 ms)
+  ✓ 不明保存结果保留原键、冻结体且不把正文存浏览器：403 OBJECT_ACCESS_DENIED (1 ms)
+  ✓ 不明保存结果保留原键、冻结体且不把正文存浏览器：404 undefined (2 ms)
+  ✓ 不明保存结果保留原键、冻结体且不把正文存浏览器：401 ACCESS_SESSION_REQUIRED (2 ms)
+  ✓ 不明保存结果保留原键、冻结体且不把正文存浏览器：409 IDEMPOTENCY_PAYLOAD_MISMATCH (2 ms)
+  ✓ 不明保存结果保留原键、冻结体且不把正文存浏览器：409 SAVE_GUARD_BUSY (3 ms)
+  ✓ 不明保存结果保留原键、冻结体且不把正文存浏览器：409 UNRECOGNIZED (1 ms)
+  ✓ 不明保存结果保留原键、冻结体且不把正文存浏览器：503 SAVE_RESULT_UNKNOWN (1 ms)
+  ✓ 不明保存结果保留原键、冻结体且不把正文存浏览器：undefined undefined (1 ms)
+  ✓ 明确终态 409 INTAKE_DRAFT_REVISION_CONFLICT 才清恢复键 (1 ms)
+  ✓ 明确终态 409 SOURCE_SELECTION_STALE 才清恢复键 (1 ms)
+  ✓ 明确终态 409 SAVE_REQUEST_ABANDONED 才清恢复键 (1 ms)
+  ✓ 重挂载无冻结正文时不能新键保存，unknown 查询不放弃，明确放弃后才解锁 (1 ms)
+  ✓ 成功回执 committed 清理恢复键 (1 ms)
+  ✓ 成功回执 no_change 清理恢复键
+
+Test Suites: 1 passed, 1 total
+Tests:       19 passed, 19 total
+Snapshots:   0 total
+Time:        0.751 s, estimated 1 s
+Ran all test suites within paths "src/components/intake/__tests__/useNarrowPilotSave.test.tsx".

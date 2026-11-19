@@ -1,0 +1,4 @@
+=== RUN   TestOptimizedDatabaseSlowQueryLogDoesNotLeakParameters
+--- PASS: TestOptimizedDatabaseSlowQueryLogDoesNotLeakParameters (0.01s)
+PASS
+ok  	law-oa-go/internal/database	1.383s

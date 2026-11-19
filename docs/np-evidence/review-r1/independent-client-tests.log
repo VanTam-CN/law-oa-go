@@ -1,0 +1,91 @@
+
+> law-oa-frontend@0.0.0 test
+> jest --runInBand --runTestsByPath src/components/intake/__tests__/useNarrowPilotSave.test.tsx src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx src/components/intake/__tests__/NarrowPilotAssistant.test.tsx src/pages/auth/__tests__/Login.accessibility.test.tsx src/pages/auth/__tests__/Login.failure.test.tsx --coverage=false
+
+PASS Law OA Frontend src/components/intake/__tests__/NarrowPilotAssistant.test.tsx
+  ✓ 应用等待GET期间人工改摘要：恢复后进入对比确认，不得用旧闭包覆盖 (230 ms)
+  ✓ 开始新一轮立即清除旧来源选择并保留表单文字；原句原样提交 (76 ms)
+  ✓ 来源权限被收回后清除已显示的来源，不再应用候选 (51 ms)
+
+PASS Law OA Frontend src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx
+  ✓ 同挂载切换intakeId：旧 GET 成功或失败均不影响新草稿，拒绝=false (141 ms)
+  ✓ 同挂载切换intakeId：旧 GET 成功或失败均不影响新草稿，拒绝=true (68 ms)
+  ✓ 切换草稿后迟到的生成响应不能显示旧候选，新草稿不被旧 busy 锁住 (98 ms)
+  ✓ 切换后又返回同一草稿，旧 GET 仍失效且不能调用应用回调 (87 ms)
+
+PASS Law OA Frontend src/components/intake/__tests__/useNarrowPilotSave.test.tsx
+  ✓ 不明保存结果保留原键、冻结体且不把正文存浏览器：408 undefined (9 ms)
+  ✓ 不明保存结果保留原键、冻结体且不把正文存浏览器：408 SOURCE_SELECTION_STALE (3 ms)
+  ✓ 不明保存结果保留原键、冻结体且不把正文存浏览器：429 undefined (2 ms)
+  ✓ 不明保存结果保留原键、冻结体且不把正文存浏览器：499 undefined (1 ms)
+  ✓ 不明保存结果保留原键、冻结体且不把正文存浏览器：400 undefined (2 ms)
+  ✓ 不明保存结果保留原键、冻结体且不把正文存浏览器：400 INVALID_REQUEST (1 ms)
+  ✓ 不明保存结果保留原键、冻结体且不把正文存浏览器：401 undefined (1 ms)
+  ✓ 不明保存结果保留原键、冻结体且不把正文存浏览器：403 OBJECT_ACCESS_DENIED (1 ms)
+  ✓ 不明保存结果保留原键、冻结体且不把正文存浏览器：404 undefined (3 ms)
+  ✓ 不明保存结果保留原键、冻结体且不把正文存浏览器：401 ACCESS_SESSION_REQUIRED (1 ms)
+  ✓ 不明保存结果保留原键、冻结体且不把正文存浏览器：409 IDEMPOTENCY_PAYLOAD_MISMATCH (1 ms)
+  ✓ 不明保存结果保留原键、冻结体且不把正文存浏览器：409 SAVE_GUARD_BUSY (1 ms)
+  ✓ 不明保存结果保留原键、冻结体且不把正文存浏览器：409 UNRECOGNIZED (1 ms)
+  ✓ 不明保存结果保留原键、冻结体且不把正文存浏览器：503 SAVE_RESULT_UNKNOWN (2 ms)
+  ✓ 不明保存结果保留原键、冻结体且不把正文存浏览器：undefined undefined (1 ms)
+  ✓ 明确终态 409 INTAKE_DRAFT_REVISION_CONFLICT 才清恢复键 (1 ms)
+  ✓ 明确终态 409 SOURCE_SELECTION_STALE 才清恢复键
+  ✓ 明确终态 409 SAVE_REQUEST_ABANDONED 才清恢复键 (1 ms)
+  ✓ 重挂载无冻结正文时不能新键保存，unknown 查询不放弃，明确放弃后才解锁 (3 ms)
+  ✓ 成功回执 committed 清理恢复键
+  ✓ 成功回执 no_change 清理恢复键 (1 ms)
+  ✓ 带来源的未决请求只缓存恢复标识，正文和选择仅保留在内存 (1 ms)
+
+  console.error
+    Login failed: { response: { status: 401, data: { error: [Object] } } }
+
+      101 |       }
+      102 |     } catch (error: any) {
+    > 103 |       console.error('Login failed:', error)
+          |               ^
+      104 |       if (error?.response?.status === 401) {
+      105 |         message.error('账号或密码错误')
+      106 |         setLoginError('账号、邮箱或密码不正确，请重新输入')
+
+      at onFinish (src/pages/auth/Login.tsx:103:15)
+
+  console.error
+    ERROR: 账号或密码错误
+
+      38 |     } else {
+      39 |       // 作为后备方案，使用console
+    > 40 |       console.error('ERROR:', content)
+         |               ^
+      41 |     }
+      42 |   },
+      43 |
+
+      at Object.error (src/utils/messageHelper.ts:40:15)
+      at onFinish (src/pages/auth/Login.tsx:105:17)
+
+  console.log
+    SUCCESS: 登录成功
+
+      at Object.success (src/utils/messageHelper.ts:26:15)
+
+  console.log
+    SUCCESS: 登录成功
+
+      at Object.success (src/utils/messageHelper.ts:26:15)
+
+PASS Law OA Frontend src/pages/auth/__tests__/Login.failure.test.tsx
+  LoginPage login failure
+    ✓ renders a visible non-sensitive alert and preserves account case on 401 (426 ms)
+    ✓ sends the account field for a mixed-case username (228 ms)
+    ✓ normalizes a mixed-case email account for the API (229 ms)
+
+PASS Law OA Frontend src/pages/auth/__tests__/Login.accessibility.test.tsx
+  LoginPage keyboard accessibility
+    ✓ provides an operable password visibility button with a synchronized name and state (332 ms)
+
+Test Suites: 5 passed, 5 total
+Tests:       33 passed, 33 total
+Snapshots:   0 total
+Time:        5.547 s
+Ran all test suites within paths "src/components/intake/__tests__/useNarrowPilotSave.test.tsx", "src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx", "src/components/intake/__tests__/NarrowPilotAssistant.test.tsx", "src/pages/auth/__tests__/Login.accessibility.test.tsx", "src/pages/auth/__tests__/Login.failure.test.tsx".

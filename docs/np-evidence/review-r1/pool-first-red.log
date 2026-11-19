@@ -1,0 +1,6 @@
+=== RUN   TestOptimizedDatabaseSlowQueryLogDoesNotLeakParameters
+    narrow_pilot_pool_logging_test.go:79: slow/error SQL log leaked canary parameter: "[SLOW QUERY] /Users/mac/Desktop/FT/law-oa-go/output/np-v04-first-slice/backend/internal/database/narrow_pilot_pool_logging_test.go:69 near \"SELEC\": syntax error\n[0.197ms] [rows:0] SELEC * FROM np_pool_logging WHERE token = \"NP1-CANARY-9f31d2\"\n"
+--- FAIL: TestOptimizedDatabaseSlowQueryLogDoesNotLeakParameters (0.02s)
+FAIL
+FAIL	law-oa-go/internal/database	1.447s
+FAIL
