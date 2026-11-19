@@ -108,6 +108,11 @@ export function NarrowPilotAssistant({
   onApply,
   onInvalidate,
 }: NarrowPilotAssistantProps) {
+  // A monotonic epoch also rejects late responses after switching away and back.
+  const scope = `${intakeId}|${revision}`
+  const scopeRef = React.useRef(scope)
+  const requestEpochRef = React.useRef(0)
+  if (scopeRef.current !== scope) { scopeRef.current = scope; requestEpochRef.current++ }
   const [enabled, setEnabled] = React.useState(false)
   const [snapshot, setSnapshot] = React.useState<NarrowPilotSnapshot | null>(null)
   const [ctx, setCtx] = React.useState<NarrowPilotContextView | null>(null)
@@ -143,9 +148,11 @@ export function NarrowPilotAssistant({
     return () => window.clearTimeout(timer)
   }, [ctx?.id, ctx?.expires_at])
 
-  const contextKey = `${intakeId}|${revision}`
   React.useEffect(() => {
     let cancelled = false
+    setBusy(false)
+    setSnapshot(null)
+    setEnabled(false)
     setCtx(null)
     setInput('')
     setReviewed(false)
@@ -176,7 +183,7 @@ export function NarrowPilotAssistant({
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contextKey])
+  }, [scope])
 
   const invalidateCandidate = (text: string, notifyParent: boolean) => {
     setCtx(null)
@@ -197,6 +204,8 @@ export function NarrowPilotAssistant({
     // 仅判空用 trim；原句原样提交，服务端 Stub 逐字保存为可核对来源。
     const hasText = input.trim().length > 0
     if (!hasText || !intakeId || !revision || busy) return
+    const epoch = ++requestEpochRef.current
+    const stillCurrent = () => aliveRef.current && requestEpochRef.current === epoch
     const sentText = input
     // 新输入一旦发出即保守失效旧选择：即便请求失败、状态不明，
     // 旧 selection 也不能再随保存提交；表单文字保持不动。
@@ -215,6 +224,7 @@ export function NarrowPilotAssistant({
             method: 'POST',
             body: JSON.stringify({ intake_id: intakeId, expected_revision: revision }),
           })
+      if (!stillCurrent()) return
       const updated = await apiRequest<NarrowPilotContextView>(
         `/case-intake-assist/contexts/${view.id}/turns`,
         {
@@ -226,7 +236,7 @@ export function NarrowPilotAssistant({
           }),
         },
       )
-      if (!aliveRef.current) return
+      if (!stillCurrent()) return
       setCtx(updated)
       setInput(current => current === sentText ? '' : current)
       if (updated.candidate) {
@@ -239,7 +249,7 @@ export function NarrowPilotAssistant({
         setStalePair(null)
       }
     } catch (turnError) {
-      if (!aliveRef.current) return
+      if (!stillCurrent()) return
       clearDeniedContent(turnError)
       if (INVALIDATING_CODES.has(errorCodeOf(turnError))) {
         invalidateCandidate('整理上下文或草稿版本已失效，请核对当前草稿后重新开始', true)
@@ -247,7 +257,7 @@ export function NarrowPilotAssistant({
         setError(errorTextOf(turnError))
       }
     } finally {
-      if (aliveRef.current) setBusy(false)
+      if (stillCurrent()) setBusy(false)
     }
   }
 
@@ -276,11 +286,13 @@ export function NarrowPilotAssistant({
     const candidate = context?.candidate
     const baseline = baselineRef.current
     if (!context || !candidate || !baseline || !reviewed || busy) return
+    const epoch = ++requestEpochRef.current
+    const stillCurrent = () => aliveRef.current && requestEpochRef.current === epoch
     setBusy(true)
     setError('')
     try {
       const view = await apiRequest<NarrowPilotContextView>(`/case-intake-assist/contexts/${context.id}`)
-      if (!aliveRef.current) return
+      if (!stillCurrent()) return
       setCtx(view)
       const current = view.candidate
       if (!current || view.context_version !== baseline.version || current.id !== baseline.candidateId) {
@@ -302,7 +314,7 @@ export function NarrowPilotAssistant({
       }
       confirmApply(current)
     } catch (applyError) {
-      if (!aliveRef.current) return
+      if (!stillCurrent()) return
       clearDeniedContent(applyError)
       if (INVALIDATING_CODES.has(errorCodeOf(applyError)) || errorCodeOf(applyError) === 'SOURCE_SELECTION_STALE') {
         invalidateCandidate('整理上下文已失效，请重新生成候选', true)
@@ -310,7 +322,7 @@ export function NarrowPilotAssistant({
         setError(errorTextOf(applyError))
       }
     } finally {
-      if (aliveRef.current) setBusy(false)
+      if (stillCurrent()) setBusy(false)
     }
   }
 
