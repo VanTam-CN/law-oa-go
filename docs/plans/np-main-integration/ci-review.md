@@ -75,3 +75,20 @@ GLM Flash提供初稿；主代理核对并纠正了PG版本、REDIS变量、NP�
 ## 发布后只读观察
 
 准备分支26355fc发布后，既有fuzzing.yml形成[push失败记录44508335288](https://github.com/VanTam-CN/law-oa-go/actions/runs/44508335288)。jobs接口返回0，commit check-runs接口返回0；`gh run view`仅提示likely workflow file issue，具体校验错误未取到。不得声称“本轮没有任何Actions记录”，也不得将其称作已运行的NP/PG测试失败。文件与主干相同，本轮不修、不手动触发；M2必须在创建PR前查明配置问题。实际记录见remote-observation.json。
+
+## 2026-11-20定位补充（仅修订方案）
+
+独立复核提供了job级if使用env.TEST_TYPE的定位，主控已对固定main文件和[官方上下文可用性表](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#context-availability)核验：job级if不支持env，step级if支持。这六处是已确认的工作流校验错误，与零job现象一致；历史run详细校验注解仍未取得，不补造，也不称唯一错误。
+
+| job | 固定文件中的实际if行号 | M2条件取舍 |
+|---|---|---|
+| security-fuzzing | 73 | 缺输入默认all，否则仅security |
+| validators-fuzzing | 126 | 缺输入默认all，否则仅validators |
+| repositories-fuzzing | 175 | 缺输入默认all，否则仅repositories |
+| cache-fuzzing | 229 | 缺输入默认all，否则仅cache |
+| concurrency-fuzzing | 287 | 缺输入默认all，否则仅concurrency |
+| comprehensive-fuzzing | 341 | 仅all |
+
+拟在M2把上述job条件中的选择值改为`(github.event.inputs.test_type || 'all')`，保留原类别分支、needs和失败传播；step/run内合法env引用不全局替换。例：security条件为`${{ (github.event.inputs.test_type || 'all') == 'all' || (github.event.inputs.test_type || 'all') == 'security' }}`。此例仅是文档里的实施指引，真实workflow未修改。
+
+验收须覆盖缺输入的push/PR/schedule、手动all与五种类别、综合job仅all和未知值不假绿；准备/汇总job遵守原依赖。离线语法/上下文校验、后续获准CI验证及PG强制门禁分开记结果，当前全部NOT_RUN。修复该校验错误不能直接声明fuzz目标存在、测试通过或整条CI已绿。
