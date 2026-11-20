@@ -59,7 +59,7 @@
 3. NP fixture保持127.0.0.1:18790、库np_first_slice_dev与NP_TEST_DSN隔离保护。CI固定PG16.14、按主干最小依赖闭包显式初始化，再验证实际数据库身份和NP两表/唯一索引。另组conflict_dialects测试不能代替它。变量用DB_USERNAME/DB_DATABASE、REDIS_HOST/REDIS_PORT，不推荐未绑定的REDIS_ADDR。
 4. npm ci、类型、关键Jest、build必须实际执行。不得使用passWithNoTests或允许错误来放行；已有test:ci脚本含该参数时，在后续实施中收口脚本或采用明确的关键文件命令，并核对必需测试已执行。Playwright单独job使用playwright.np.config.ts，不复用旧前端。
 5. Docker仅构建并核对制品SHA，不login、不push。root main+Redis联调与fixture入口分别记录，不把cmd/server或测试故障入口当成真实main。
-6. 每项记录head/base/实际checkout或test_merge SHA、argv、UTC、显式退出码、测试事件及run链接；包括缺PG/缺DSN的负向红灯证据。未来创建Draft PR后核实只运行检查、没有外部通知/上传或部署；此演练本轮NOT_RUN。
+6. 每项记录head/base/实际checkout或test_merge SHA、argv、UTC、显式退出码、测试事件及run链接；包括缺PG/缺DSN的负向红灯证据。未来创建Draft PR后核实只运行检查，没有自动评论、第三方上传、外部通知或部署；GitHub artifact仅允许经过白名单/脱敏检查的结构证据，不上传原始浏览器/正文/token产物；此演练本轮NOT_RUN。
 
 ## 未运行 / 未核界限
 
@@ -92,3 +92,11 @@ GLM Flash提供初稿；主代理核对并纠正了PG版本、REDIS变量、NP�
 拟在M2把上述job条件中的选择值改为`(github.event.inputs.test_type || 'all')`，保留原类别分支、needs和失败传播；step/run内合法env引用不全局替换。例：security条件为`${{ (github.event.inputs.test_type || 'all') == 'all' || (github.event.inputs.test_type || 'all') == 'security' }}`。此例仅是文档里的实施指引，真实workflow未修改。
 
 验收须覆盖缺输入的push/PR/schedule、手动all与五种类别、综合job仅all和未知值不假绿；准备/汇总job遵守原依赖。离线语法/上下文校验、后续获准CI验证及PG强制门禁分开记结果，当前全部NOT_RUN。修复该校验错误不能直接声明fuzz目标存在、测试通过或整条CI已绿。
+
+## v0.3产物及负向门禁补充（MI-R05 / MI-R06）
+
+上文表格的“无外部写入”仅指当时核对的评论/第三方通知/发布，不等于没有GitHub artifact。main `tests.yml:258-272`会上传Playwright报告和test-results；`frontend/playwright.config.ts:19-21`保留失败trace/截图/video；fuzzing含各job上传、`:428`下载及`:512`汇总上传。均为配置事实，未验证实际外发。
+
+M0枚举六套workflow全部PR可达产物流（含always/failure），M2按[实施计划§5](implementation-and-acceptance-plan.md)收口：默认不上传，仅从独立脱敏目录按明确文件白名单发布结构证据；原始正文、token、trace/截图/video和未审目录一律不上传，不以私有artifact例外。同步调整download/summary，不能消费未经核对的整包产物，也不能因产物被阻断而把缺失证据判绿。保留安全证据，不整体禁用Actions或替换发布平台。
+
+fuzzing六处job if修复之外，必执行输入校验只允许all/security/validators/repositories/cache/concurrency；缺输入默认all，非空未知输入明确失败。汇总检查本次选中job的实际结果及必需证据，前序失败/取消/意外Skip或缺证据均不得以“零crasher文件”盖成成功。I11须包含正常路由、未知输入、选中job失败/Skip及产物缺失的负向证据。M2远端执行先完成离线副作用隔离检查，实际远端正常/负向运行后才能验收I11；本轮均NOT_RUN。
