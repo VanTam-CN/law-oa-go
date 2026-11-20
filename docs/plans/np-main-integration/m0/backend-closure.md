@@ -32,3 +32,5 @@
 本报告已按主干实际行号修正同步二次回写位置（2378–2387）、repository事务回写（246–280）及expected_revision是请求体字段的表述。当前主干无draft_revision/expected_revision字段合同，异步使用conflict_check_records和search_parameters，不需要新增独立任务表；来源两表实际名称为case_intake_source_snapshots、case_intake_write_requests。M1改造建议不等于实施授权，静态风险不算已运行复现。
 
 主代理新增结构证据：在全新主干v14合成库直接执行源2d659d9的000086原SQL成功，case_intake_source_snapshots/case_intake_write_requests及两个唯一索引/接案外键均存在，未执行82–85。故“86核心两表依赖必须整组移植82–85”不成立；完整源fixture、应用读写与迁移编排仍待封板，不能据结构成功报告M1完成。
+
+本报告“未查”属于第一轮快照；当前迁移86、原生增量、前端revision与测试依赖以[依赖封板](dependency-seal.md)和[路线B清单](route-b-test-split.md)为准。完整facts-version/continuation提交平台不纳入首切片，不能再把其未移植作为M0阻塞。

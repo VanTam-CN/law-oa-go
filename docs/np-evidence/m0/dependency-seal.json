@@ -1,0 +1,520 @@
+{
+  "task": "t_7f6ad58e",
+  "kind": "m0_dependency_seal",
+  "design_seal_only": true,
+  "main_worktree": {
+    "path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0",
+    "head": "213da4c7c6710c99d660c33a5701a230c674ede9",
+    "app_main": "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7"
+  },
+  "source": {
+    "repo": "/Users/mac/Desktop/FT/law-oa-go/output/np-v04-first-slice",
+    "head": "2d659d9dd750f49ddb1f517746e22851392231a6",
+    "object_store_separate": true
+  },
+  "baseline_ref": "docs/plans/np-main-integration/source-baseline.json",
+  "m_package_legend": {
+    "M1": "原生版本合同与冲突基础最小范围",
+    "M2": "CI/本地检查工具",
+    "M3": "NP handler/types/context/write + UI/hook/router挂接 + 日志保护（含必跑测试）",
+    "M4": "缓存/连接池净增量",
+    "M5": "live端到端必跑",
+    "DEFERRED": "I09-FILES 真延期，不在本轮验收"
+  },
+  "non_docs_mapping_33": [
+    {
+      "n": 1,
+      "source_path": ".gitignore",
+      "slice_blob": "f28796668ba6f3703f5ca5b256c098477c0a221f",
+      "target_path": ".gitignore",
+      "main_blob": "54c0192109cfeaddfa4be77e9daa4b7835e8c34d",
+      "slice_equals_main": false,
+      "disposition": "复用主干并追加净增量",
+      "m_package": "M2",
+      "verify": "V-GIT"
+    },
+    {
+      "n": 2,
+      "source_path": "backend/cmd/np-local-check/main.go",
+      "slice_blob": "2b831befa86ee28853570430ab06e5565fb40264",
+      "target_path": "cmd/np-local-check/main.go",
+      "main_blob": null,
+      "slice_equals_main": null,
+      "disposition": "B版本地fixture入口适配；去掉材料文件handler绑定，不引入material_files/case_tasks；M2消费此工具",
+      "m_package": "M3",
+      "verify": "V-TOOL"
+    },
+    {
+      "n": 3,
+      "source_path": "backend/internal/database/connection_pool.go",
+      "slice_blob": "767484d6b0e7aa914d324c0956c14806fb89512a",
+      "target_path": "internal/database/connection_pool.go",
+      "main_blob": "1994656d10a687b160d314a9653cfa3a3b8e94e7",
+      "slice_equals_main": false,
+      "disposition": "移植ParameterizedQueries等SQL日志保护净增量；池日志安全测试同阶段必跑，不是缓存功能",
+      "m_package": "M3",
+      "verify": "V-BUILD"
+    },
+    {
+      "n": 4,
+      "source_path": "backend/internal/database/database.go",
+      "slice_blob": "a333f80ea82981e546fb42aa146d38e6eb3c7ce3",
+      "target_path": "internal/database/database.go",
+      "main_blob": "e87a38a26214d86f8757a278ca6640bb60de82ce",
+      "slice_equals_main": false,
+      "disposition": "移植ParameterizedQueries等SQL日志保护净增量；池日志安全测试同阶段必跑，不是缓存功能",
+      "m_package": "M3",
+      "verify": "V-BUILD"
+    },
+    {
+      "n": 5,
+      "source_path": "backend/internal/database/narrow_pilot_pool_logging_test.go",
+      "slice_blob": "e6be4c76bac76a80a79caeda947cdd2330c265d3",
+      "target_path": "internal/database/narrow_pilot_pool_logging_test.go",
+      "main_blob": null,
+      "slice_equals_main": null,
+      "disposition": "移植ParameterizedQueries等SQL日志保护净增量；池日志安全测试同阶段必跑，不是缓存功能",
+      "m_package": "M3",
+      "verify": "V-POOL-TEST"
+    },
+    {
+      "n": 6,
+      "source_path": "backend/internal/handlers/demo_aggregate_handler.go",
+      "slice_blob": "d578e2c0aa7df0f3ab80370eb9080b34b1fdef04",
+      "target_path": "internal/handlers/demo_aggregate_handler.go",
+      "main_blob": "911c172aa72f5243a261703a80493c167b203b83",
+      "slice_equals_main": false,
+      "disposition": "复用主干并移植expected_revision合同净增量（M1基础，handler侧随M3收口）",
+      "m_package": "M1",
+      "verify": "V-INTAKE"
+    },
+    {
+      "n": 7,
+      "source_path": "backend/internal/handlers/narrow_pilot_context.go",
+      "slice_blob": "8c85015154eba339c1cc8e5363dd189cfeef41e3",
+      "target_path": "internal/handlers/narrow_pilot_context.go",
+      "main_blob": null,
+      "slice_equals_main": null,
+      "disposition": "移植净增量",
+      "m_package": "M3",
+      "verify": "V-NP-API"
+    },
+    {
+      "n": 8,
+      "source_path": "backend/internal/handlers/narrow_pilot_context_test.go",
+      "slice_blob": "0acba711a3cf7e4a466fcd8372a38b3d9be5a769",
+      "target_path": "internal/handlers/narrow_pilot_context_test.go",
+      "main_blob": null,
+      "slice_equals_main": null,
+      "disposition": "fixture延期到M3但必跑",
+      "m_package": "M3",
+      "verify": "V-NP-API"
+    },
+    {
+      "n": 9,
+      "source_path": "backend/internal/handlers/narrow_pilot_pg_test.go",
+      "slice_blob": "9aa14a20934d877c6923e51deb66becda9b63138",
+      "target_path": "internal/handlers/narrow_pilot_pg_test.go",
+      "main_blob": null,
+      "slice_equals_main": null,
+      "disposition": "合成PG fixture延期到M3但必跑",
+      "m_package": "M3",
+      "verify": "V-PG"
+    },
+    {
+      "n": 10,
+      "source_path": "backend/internal/handlers/narrow_pilot_review_pg_test.go",
+      "slice_blob": "49fa7735b37f16fb6e3111bdd74fff1307df8e16",
+      "target_path": "internal/handlers/narrow_pilot_review_pg_test.go",
+      "main_blob": null,
+      "slice_equals_main": null,
+      "disposition": "合成PG fixture延期到M3但必跑",
+      "m_package": "M3",
+      "verify": "V-PG"
+    },
+    {
+      "n": 11,
+      "source_path": "backend/internal/handlers/narrow_pilot_types.go",
+      "slice_blob": "2a68eebfcefe838eaeb56bbb7f6c97f985b76ab7",
+      "target_path": "internal/handlers/narrow_pilot_types.go",
+      "main_blob": null,
+      "slice_equals_main": null,
+      "disposition": "移植净增量",
+      "m_package": "M3",
+      "verify": "V-NP-API"
+    },
+    {
+      "n": 12,
+      "source_path": "backend/internal/handlers/narrow_pilot_write.go",
+      "slice_blob": "59605719f176ab9c42e8cd93a3d9ab0f20c77b7d",
+      "target_path": "internal/handlers/narrow_pilot_write.go",
+      "main_blob": null,
+      "slice_equals_main": null,
+      "disposition": "移植净增量",
+      "m_package": "M3",
+      "verify": "V-INTAKE"
+    },
+    {
+      "n": 13,
+      "source_path": "backend/internal/middleware/audit.go",
+      "slice_blob": "1a538650432851e968cbebed712f2c97f47bbd64",
+      "target_path": "internal/middleware/audit.go",
+      "main_blob": "82a04852eeaeabefee7a7264d5ac68a6e55381b5",
+      "slice_equals_main": false,
+      "disposition": "main与frozen相同但slice已改：须按slice_blob移植日志保护净增量",
+      "m_package": "M3",
+      "verify": "V-LOG"
+    },
+    {
+      "n": 14,
+      "source_path": "backend/internal/middleware/common.go",
+      "slice_blob": "3c895aa956cf7b837f6bb1fa6e3f4a2b7e51dd1b",
+      "target_path": "internal/middleware/common.go",
+      "main_blob": "8f23506ab485cc12164d9cb8595f0f4bb21a1d15",
+      "slice_equals_main": false,
+      "disposition": "main与frozen相同但slice已改：须按slice_blob移植日志保护净增量",
+      "m_package": "M3",
+      "verify": "V-LOG"
+    },
+    {
+      "n": 15,
+      "source_path": "backend/internal/middleware/narrow_pilot_logging_test.go",
+      "slice_blob": "86f1fd6d0090b3b892ba24bffeaa2effe3ff2117",
+      "target_path": "internal/middleware/narrow_pilot_logging_test.go",
+      "main_blob": null,
+      "slice_equals_main": null,
+      "disposition": "日志安全测试fixture延期到M3但必跑，不得真延期",
+      "m_package": "M3",
+      "verify": "V-LOG"
+    },
+    {
+      "n": 16,
+      "source_path": "backend/internal/router/router.go",
+      "slice_blob": "280726fe35586e89d67bf8ead789793a8fcd8185",
+      "target_path": "internal/router/router.go",
+      "main_blob": "25d9d4f150e39b2d728c9d257a5e27ea3e3ab04c",
+      "slice_equals_main": false,
+      "disposition": "NP挂接净增量；复用既有AuthTokenSession/TokenSessionStore与中间件",
+      "m_package": "M3",
+      "verify": "V-ROUTE"
+    },
+    {
+      "n": 17,
+      "source_path": "backend/migrations/000086_narrow_pilot.up.sql",
+      "slice_blob": "80bd6a4368faee52cebbd0d09d972e2831cd8508",
+      "target_path": "migrations/000086_narrow_pilot.up.sql",
+      "main_blob": null,
+      "slice_equals_main": null,
+      "disposition": "冻结拟用不执行；主干止79且000086编号未占",
+      "m_package": "M1",
+      "verify": "V-MIG86"
+    },
+    {
+      "n": 18,
+      "source_path": "frontend/e2e/np-first-slice.live.spec.ts",
+      "slice_blob": "b5a4625e6e118b13ea030c82df50642cef3e0b5d",
+      "target_path": "frontend/e2e/np-first-slice.live.spec.ts",
+      "main_blob": null,
+      "slice_equals_main": null,
+      "disposition": "live端到端fixture延期到M5但必跑",
+      "m_package": "M5",
+      "verify": "V-E2E"
+    },
+    {
+      "n": 19,
+      "source_path": "frontend/playwright.np.config.ts",
+      "slice_blob": "7eec39cdfa3e27e8b6c9d0fef98433e2b331329b",
+      "target_path": "frontend/playwright.np.config.ts",
+      "main_blob": null,
+      "slice_equals_main": null,
+      "disposition": "fixture延期到M5但必跑",
+      "m_package": "M5",
+      "verify": "V-E2E"
+    },
+    {
+      "n": 20,
+      "source_path": "frontend/src/components/intake/NarrowPilotAssistant.tsx",
+      "slice_blob": "15a0173d3bb5d326c405171cf3513bff522b8ff5",
+      "target_path": "frontend/src/components/intake/NarrowPilotAssistant.tsx",
+      "main_blob": null,
+      "slice_equals_main": null,
+      "disposition": "移植净增量",
+      "m_package": "M3",
+      "verify": "V-UI"
+    },
+    {
+      "n": 21,
+      "source_path": "frontend/src/components/intake/__tests__/NarrowPilotAssistant.test.tsx",
+      "slice_blob": "efabc490f958e2ae6c48053284d0246901662ae6",
+      "target_path": "frontend/src/components/intake/__tests__/NarrowPilotAssistant.test.tsx",
+      "main_blob": null,
+      "slice_equals_main": null,
+      "disposition": "fixture延期到M3但必跑",
+      "m_package": "M3",
+      "verify": "V-UI"
+    },
+    {
+      "n": 22,
+      "source_path": "frontend/src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx",
+      "slice_blob": "28947fea5a4e1011cdee837c83ebc88c3294e3d6",
+      "target_path": "frontend/src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx",
+      "main_blob": null,
+      "slice_equals_main": null,
+      "disposition": "fixture延期到M3但必跑",
+      "m_package": "M3",
+      "verify": "V-UI"
+    },
+    {
+      "n": 23,
+      "source_path": "frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
+      "slice_blob": "222d2e9f896058a22601a85f2a9f76708b511838",
+      "target_path": "frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
+      "main_blob": null,
+      "slice_equals_main": null,
+      "disposition": "fixture延期到M3但必跑",
+      "m_package": "M3",
+      "verify": "V-UI"
+    },
+    {
+      "n": 24,
+      "source_path": "frontend/src/components/intake/useNarrowPilotSave.ts",
+      "slice_blob": "92b069b544e3c91a114ff0b546d80768033cb293",
+      "target_path": "frontend/src/components/intake/useNarrowPilotSave.ts",
+      "main_blob": null,
+      "slice_equals_main": null,
+      "disposition": "移植净增量",
+      "m_package": "M3",
+      "verify": "V-UI"
+    },
+    {
+      "n": 25,
+      "source_path": "frontend/src/pages/auth/Login.tsx",
+      "slice_blob": "10efe8703d454ad6d5d2ee2fb25f66eadddd64f0",
+      "target_path": "frontend/src/pages/auth/Login.tsx",
+      "main_blob": "d9700ebbc0d3c9b5b5c80488bc2be673b088f965",
+      "slice_equals_main": false,
+      "disposition": "按slice_blob评审净增量后随UI组并入",
+      "m_package": "M3",
+      "verify": "V-UI"
+    },
+    {
+      "n": 26,
+      "source_path": "frontend/src/pages/batch01/Batch01Prototype.tsx",
+      "slice_blob": "07b35638820305609da4d5823c7f474f87d33597",
+      "target_path": "frontend/src/pages/batch01/Batch01Prototype.tsx",
+      "main_blob": "ca27c5d252a515032c4b2665b39b0db5b37695e6",
+      "slice_equals_main": false,
+      "disposition": "按slice_blob评审净增量后并入",
+      "m_package": "M3",
+      "verify": "V-UI"
+    },
+    {
+      "n": 27,
+      "source_path": "scripts/np-first-slice/.gitignore",
+      "slice_blob": "2120d0d1248cbb45e6f841855f97b15f8a5f6146",
+      "target_path": "scripts/np-first-slice/.gitignore",
+      "main_blob": null,
+      "slice_equals_main": null,
+      "disposition": "CI环境fixture，M2",
+      "m_package": "M2",
+      "verify": "V-TOOL"
+    },
+    {
+      "n": 28,
+      "source_path": "scripts/np-first-slice/compare-browser-db.py",
+      "slice_blob": "2a73792ef2e07a4465bc4b1df6c85b6fd9c32133",
+      "target_path": "scripts/np-first-slice/compare-browser-db.py",
+      "main_blob": null,
+      "slice_equals_main": null,
+      "disposition": "SPLIT：来源/回执/原生保全保留，文件两版断言原样留源并后置；M5用于实际main联调",
+      "m_package": "M3",
+      "verify": "V-TOOL",
+      "planned_adaptation_target": "scripts/np-first-slice/compare-main-browser-db.py"
+    },
+    {
+      "n": 29,
+      "source_path": "scripts/np-first-slice/compose.yml",
+      "slice_blob": "2620418435db22b00b944a7f2012f6e327f4fff5",
+      "target_path": "scripts/np-first-slice/compose.yml",
+      "main_blob": null,
+      "slice_equals_main": null,
+      "disposition": "CI环境fixture，M2",
+      "m_package": "M2",
+      "verify": "V-TOOL"
+    },
+    {
+      "n": 30,
+      "source_path": "scripts/np-first-slice/init-db.sh",
+      "slice_blob": "da6f0a11750786376d2583d7c702d9da91b4da0e",
+      "target_path": "scripts/np-first-slice/init-db.sh",
+      "main_blob": null,
+      "slice_equals_main": null,
+      "disposition": "SPLIT：保留本地Docker/空库/身份校验；主干B初始化v14+86，不执行82–85；不放宽CI以外本地隔离限制",
+      "m_package": "M2",
+      "verify": "V-TOOL"
+    },
+    {
+      "n": 31,
+      "source_path": "scripts/np-first-slice/probe-db.sh",
+      "slice_blob": "a3df577767669c3058f3710153f66b80787e64a2",
+      "target_path": "scripts/np-first-slice/probe-db.sh",
+      "main_blob": null,
+      "slice_equals_main": null,
+      "disposition": "CI探针fixture，M2",
+      "m_package": "M2",
+      "verify": "V-TOOL"
+    },
+    {
+      "n": 32,
+      "source_path": "scripts/np-first-slice/run-local-check.sh",
+      "slice_blob": "5a8754a24418af8a0438033a10a243ca9427c45b",
+      "target_path": "scripts/np-first-slice/run-local-check.sh",
+      "main_blob": null,
+      "slice_equals_main": null,
+      "disposition": "CI检查入口fixture，M2",
+      "m_package": "M2",
+      "verify": "V-TOOL"
+    },
+    {
+      "n": 33,
+      "source_path": "scripts/np-first-slice/seed-browser.py",
+      "slice_blob": "8be598448fbb92db456f478ee6914448c790e3e3",
+      "target_path": "scripts/np-first-slice/seed-browser.py",
+      "main_blob": null,
+      "slice_equals_main": null,
+      "disposition": "SPLIT：来源/回执/原生保全保留，文件两版断言原样留源并后置；M5用于实际main联调",
+      "m_package": "M3",
+      "verify": "V-TOOL"
+    }
+  ],
+  "deferred_vs_required": {
+    "deferred_to_must_run": "第5/8/9/10/15/18/19/21/22/23条为夹具延后到对应里程碑，但在该里程碑必跑；日志安全测试（5/15）不得真延期。",
+    "i09_files_deferred": "I09-FILES是真后置的材料文件流；完整continuation正向提交判断不纳入本首切片。既有权限/版本/脱敏/保全语义不后置，任何fixture不为此引入material_files/case_tasks。",
+    "continuation_excluded": "源 continuation_handler_test 的 can_submit/can_reuse_check+facts_version 完整复核不属于当前首切片；不引入 IntakeContinuationService，不新增 continuation 端点。主干原生详情/恢复的角色/版本/缺对象/脱敏场景仍必跑，由主干适用入口适配。",
+    "m1_scope": "M1仅按最小范围估算净工时：000086两表+expected_revision行锁合同+冲突revision载体与单事务回写；不加完整平台。"
+  },
+  "migration_86_freeze": {
+    "main_state": "主干迁移止于000079+001，000086编号未占用（0个000086文件）",
+    "probe_evidence": "docs/np-evidence/m0/np86-dependency-probe.json：源原SQL在全新主干v14合成库独立执行成功，两表/两唯一索引/接案外键均在，未执行82-85",
+    "dependency": "000086不依赖000080-000085，不整组带入",
+    "action": "冻结拟用，M0不执行正式迁移"
+  },
+  "compat_rollback_policy": {
+    "read_write_compat": "无历史旧对象时允许原生合同；保护历史/未知来源不得降级；助手（前端）关闭不解除服务端保护",
+    "rollback": "只回滚至保留revision/来源保护的候选；持久墓碑不删除",
+    "drill_gates_not_verified": "单实例部署与旧客户端控制为演练门禁要求，尚未验证，不得当已验证结论",
+    "new_candidate_schema": "新集成候选启动要求先显式应用86并检查两表/索引，不依赖助手开关；从未启用NP的未升级旧环境可保留旧原生版本，不标NP通过。不能把缺表/查询错误当无历史。",
+    "native_contract": "无来源历史的对象可用原生全量入口，但仍必须满足M1统一权限/expected_revision/幂等；已保护/未知对象禁止降级旧全量。外部旧客户端不承诺透明兼容，缺协议拒绝且保留输入。"
+  },
+  "verification_index": {
+    "V-GIT/V-TOOL/V-BUILD": "integrated candidate NOT_RUN; M0 native baseline results preserved separately",
+    "V-INTAKE": "native revision/history guard M1 before M3; NP strict write M3; all integrated cases NOT_RUN",
+    "V-CONFLICT": "M1 I15 before M3; NOT_RUN",
+    "V-NP-API/V-ROUTE/V-LOG/V-POOL-TEST/V-UI": "M3 required including SQL/audit log protection; NOT_RUN",
+    "V-E2E": "M5 real root entry; NOT_RUN",
+    "V-PG": "M0 v14+86 structure probe PASS only; M1 native/M3 NP/M5 real-entry writes NOT_RUN",
+    "V-MIG86": "source SQL structure compatibility PASS; target migration/upgrade execution NOT_RUN"
+  },
+  "boundaries": [
+    "仅写本JSON与docs/plans/np-main-integration/m0/dependency-seal.md",
+    "不改看板、不提交推送",
+    "M0设计封板≠运行验收",
+    "M1实现不在本轮授权"
+  ],
+  "native_extensions": [
+    {
+      "target_path": "internal/models/conflict.go",
+      "main_blob": "7a18c99152a0b63db19ded77caa08c37ebdf6e24",
+      "symbol": "ConflictCheckRequest",
+      "required_delta": "服务端检测取数revision字段；不是客户端可自行覆盖的确认事实",
+      "m_package": "M1",
+      "acceptance": "I15",
+      "runtime": "NOT_RUN"
+    },
+    {
+      "target_path": "internal/services/async_conflict_check_service.go",
+      "main_blob": "ec5772807d7ab7db038f80fc915c81ea3ed3c803",
+      "symbol": "CreateTask / runTask",
+      "required_delta": "沿search_parameters保存取数版本并传递完成关联",
+      "m_package": "M1",
+      "acceptance": "I15",
+      "runtime": "NOT_RUN"
+    },
+    {
+      "target_path": "internal/services/conflict_detection_service.go",
+      "main_blob": "79dfb66a56da00337217390f78bb94a3cd6f9f4b",
+      "symbol": "auditSafeConflictRequest / saveCheckRecord",
+      "required_delta": "审计快照明确保留输入版本、继续保护身份；不能凭浅拷贝推定全链通过",
+      "m_package": "M1",
+      "acceptance": "I15",
+      "runtime": "NOT_RUN"
+    },
+    {
+      "target_path": "internal/repositories/conflict_repository.go",
+      "main_blob": "db62a74ad2b3d5e328d10d7d704c05d6676856e1",
+      "symbol": "ConflictSubjectAssociation / LinkConflictCheckToCase",
+      "required_delta": "版本条件/接案行锁与cases关联同事务；陈旧时全回滚",
+      "m_package": "M1",
+      "acceptance": "I05/I15",
+      "runtime": "NOT_RUN"
+    },
+    {
+      "target_path": "main.go",
+      "main_blob": "c9494a015f68d09efe15b9179de048ee5ee0acd7",
+      "symbol": "router.Init前的结构检查及真实main入口",
+      "required_delta": "集成候选启动先检查86两表/唯一索引，助手关闭也不解除；M4注册三类响应缓存绕过",
+      "m_package": "M1/M4",
+      "acceptance": "I10/I14",
+      "runtime": "NOT_RUN"
+    },
+    {
+      "target_path": "internal/middleware/cache.go",
+      "main_blob": "38a5fd8479c4be5197e11dcd587809bb7b9dedab",
+      "symbol": "CacheMiddleware / shouldSkipCache",
+      "required_delta": "三类路由业务响应缓存读写前显式排除；不改全站缓存语义",
+      "m_package": "M4",
+      "acceptance": "I10/C10",
+      "runtime": "NOT_RUN"
+    },
+    {
+      "target_path": "frontend/src/main.tsx",
+      "main_blob": "0acb0f451e63d935f5d81113d3aca9e9c5fa05fb",
+      "symbol": "production serviceWorker register(/sw.js)",
+      "required_delta": "显式核对注册/控制者与Cache Storage；未确认不承诺无旧worker，不全站清除",
+      "m_package": "M4",
+      "acceptance": "C10",
+      "runtime": "NOT_RUN"
+    },
+    {
+      "target_path": "internal/database/production_schema.go",
+      "main_blob": "84a647d6da346911549aaf0d74a2acf864165b7c",
+      "symbol": "ProductionSchemaVersion v14 / ValidateProductionSchema",
+      "required_delta": "沿用v14原合同，不重写历史bootstrap；86通过显式迁移及新增就绪检查补足",
+      "m_package": "M1",
+      "acceptance": "I02/I14",
+      "runtime": "NOT_RUN"
+    }
+  ],
+  "planned_foundation_files": [
+    {
+      "target_path": "internal/handlers/intake_draft_revision.go",
+      "source_path": "backend/internal/handlers/demo_aggregate_handler.go",
+      "purpose": "按原生读写最小符号集移植revision/恢复合同，不整份带入续办提交逻辑",
+      "m_package": "M1",
+      "source_symbols": [
+        "IntakeDraftRevisionError",
+        "newIntakeDraftRevisionError",
+        "intakeDraftRevision",
+        "intakeDraftRevisionFor"
+      ],
+      "source_blob": "d578e2c0aa7df0f3ab80370eb9080b34b1fdef04"
+    },
+    {
+      "target_path": "internal/database/narrow_pilot_schema.go",
+      "source_path": null,
+      "purpose": "计划新增：检查PG及86两表/两唯一索引；不新增业务表/模型/工作流",
+      "m_package": "M1"
+    }
+  ],
+  "m0_review": "coordinator corrected phases/logging, froze 8 extra native targets and 2 planned foundation files; object identities verified by seal-blob-verification.json"
+}

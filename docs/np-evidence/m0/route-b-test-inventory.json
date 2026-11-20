@@ -1,0 +1,720 @@
+{
+  "task": "t_cbc0ab2c",
+  "revision": "review-fix-2",
+  "generated": "2026-11-20",
+  "source_repo": {
+    "path": "/Users/mac/Desktop/FT/law-oa-go/output/np-v04-first-slice",
+    "head": "2d659d9"
+  },
+  "main_repo_head": "213da4c",
+  "app_main": "d9c92fb",
+  "status": "M0 doc/evidence closure; nothing implemented or run; all executions NOT_RUN",
+  "counts": {
+    "source_go_required": 26,
+    "source_frontend_suites": 5,
+    "source_frontend_expanded_cases": 33,
+    "source_browser_scenarios": 4,
+    "source_required_cases_and_scenarios": 63,
+    "planned_detail_route_cases": 2,
+    "new_security_cache_groups": "separately listed, not counted in historical 63"
+  },
+  "keep_go": [
+    {
+      "file": "backend/internal/handlers/narrow_pilot_context_test.go",
+      "cases": [
+        "TestNPMultiTurnInvalidationAndSessionExpiry",
+        "TestNPContextExpiryAndChangedDraft",
+        "TestNPContextEndReleasesExpiryTimer"
+      ],
+      "acceptance": [
+        "I07"
+      ]
+    },
+    {
+      "file": "backend/internal/handlers/narrow_pilot_review_pg_test.go",
+      "cases": [
+        "TestNPPostgresNativeCannotForgeSourcePointer",
+        "TestNPPostgresLegacyNullMetadataIsInitialized",
+        "TestNPPostgresMalformedIntakeIDIsBadRequest"
+      ],
+      "acceptance": [
+        "I06",
+        "I14"
+      ]
+    },
+    {
+      "file": "backend/internal/handlers/narrow_pilot_pg_test.go",
+      "cases": [
+        "TestNPPostgresSaveReopenConcurrencyAndReceipts",
+        "TestNPPostgresActualDisconnectAfterCommit",
+        "TestNPPostgresActualDisconnectBeforeCommit",
+        "TestNPPostgresParallelWritersAndBusyAbandon",
+        "TestNPPostgresSourcePermissionsAndStrictBoundary",
+        "TestNPPostgresLegacySaveAfterStrictManualStillChecksRevision",
+        "TestNPPostgresDescriptionWhitespaceIsExact"
+      ],
+      "scope": "TestNPPostgresSaveReopenConcurrencyAndReceipts剔除materialVersions(:170/:190)及文件流断言；preserved()的material_files join由I09-MAIN替代；fixture不注册case-materials文件路由(:95-99归I09-FILES)",
+      "acceptance": [
+        "I05",
+        "I08",
+        "I13",
+        "I09-MAIN"
+      ]
+    },
+    {
+      "file": "backend/internal/handlers/intake_draft_revision_test.go",
+      "helper": "newDraftRevisionDB",
+      "helper_note": "AutoMigrate Client + 手工DDL五表(case_intakes/case_intake_parties/users/cases/case_ethical_wall_whitelist) + seed客户33/999；与material_files无关；等价移植非新增实现",
+      "cases": [
+        "TestUpdateIntakeRejectsMissingExpectedRevisionWithoutMutation",
+        "TestUpdateIntakeRejectsStaleRevisionWithoutOverwrite",
+        "TestUpdateIntakeSwitchClientUsesNewMasterIdentity",
+        "TestConfirmIntakeFactsRotatesRevisionAndRejectsStaleHeader",
+        "TestDraftRestoreReturnsRevisionAndProtectedIdentityStatus",
+        "TestDraftListCarriesRevisionTokens"
+      ],
+      "acceptance": [
+        "I01",
+        "I05",
+        "I13"
+      ]
+    },
+    {
+      "file": "backend/internal/handlers/intake_draft_revision_contract_test.go",
+      "cases": [
+        "TestUpdateIntakeInvalidatesConfirmedSnapshotAndRotatesRevision",
+        "TestLegacyDraftWithoutStoredRevisionLoadsAndSavesOnce",
+        "TestConfirmAndConflictCheckAuthorizeBeforeRevisionHint",
+        "TestUpdateIntakeWithoutMetadataKeepsStoredBusinessFields",
+        "TestUpdateIntakeMergesProvidedMetadataWithoutErasingStoredFields"
+      ],
+      "acceptance": [
+        "I05",
+        "I06",
+        "I13"
+      ]
+    },
+    {
+      "file": "backend/internal/middleware/narrow_pilot_logging_test.go",
+      "cases": [
+        "TestNarrowPilotAuditSkipsSensitiveBodyBeforeRead"
+      ],
+      "acceptance": [
+        "I11",
+        "audit"
+      ]
+    },
+    {
+      "file": "backend/internal/database/narrow_pilot_pool_logging_test.go",
+      "cases": [
+        "TestOptimizedDatabaseSlowQueryLogDoesNotLeakParameters"
+      ],
+      "acceptance": [
+        "I11",
+        "audit"
+      ]
+    }
+  ],
+  "continuation": {
+    "file": "backend/internal/handlers/intake_continuation_handler_test.go",
+    "defer": [
+      {
+        "case": "TestIntakeContinuationHandlerReturnsVerifiedDecision",
+        "reason": "依赖can_submit/can_reuse_check、完整facts_version/conflict复核与/continuation端点，超出首切片；不移植IntakeContinuationService；源断言不变"
+      }
+    ],
+    "split_planned": [
+      {
+        "source_case": "TestIntakeContinuationHandlerRejectsStaleRevision",
+        "main_case": "TestUpdateIntakeRejectsStaleRevisionWithoutOverwrite (existing KEEP)",
+        "entry": "native PUT",
+        "assert": "stale write rejected, input/data preserved; GET reload can fetch latest authorized draft",
+        "acceptance": [
+          "I05"
+        ],
+        "main_case_origin": "EXISTING_KEEP"
+      },
+      {
+        "source_case": "TestIntakeContinuationHandlerForbidsOtherLawyer",
+        "entry": "现有详情/恢复入口",
+        "assert": "403",
+        "acceptance": [
+          "I04"
+        ],
+        "main_case": "TestMainDraftDetailForbidsOtherLawyer",
+        "main_case_origin": "PLANNED_NOT_IMPLEMENTED"
+      },
+      {
+        "source_case": "TestIntakeContinuationHandlerMissingIntake",
+        "entry": "现有详情/恢复入口",
+        "assert": "404",
+        "acceptance": [
+          "I04"
+        ],
+        "main_case": "TestMainDraftDetailMissingIntake",
+        "main_case_origin": "PLANNED_NOT_IMPLEMENTED"
+      }
+    ],
+    "redaction": "Extend existing TestDraftRestoreReturnsRevisionAndProtectedIdentityStatus to cover client and opposing party; no identity_digest/ciphertext/plaintext/hmac marker leaks"
+  },
+  "keep_frontend_unit": [
+    {
+      "suite": "frontend/src/components/intake/__tests__/NarrowPilotAssistant.test.tsx",
+      "cases": [
+        "应用等待GET期间人工改摘要：恢复后进入对比确认，不得用旧闭包覆盖",
+        "开始新一轮立即清除旧来源选择并保留表单文字；原句原样提交",
+        "来源权限被收回后清除已显示的来源，不再应用候选"
+      ],
+      "acceptance": [
+        "I07"
+      ],
+      "count_basis": "expanded fixed-source historical Jest cases, not literal test block count"
+    },
+    {
+      "suite": "frontend/src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx",
+      "cases": [
+        "同挂载切换intakeId：旧 GET 成功或失败均不影响新草稿，拒绝=false",
+        "同挂载切换intakeId：旧 GET 成功或失败均不影响新草稿，拒绝=true",
+        "切换草稿后迟到的生成响应不能显示旧候选，新草稿不被旧 busy 锁住",
+        "切换后又返回同一草稿，旧 GET 仍失效且不能调用应用回调"
+      ],
+      "acceptance": [
+        "I07"
+      ],
+      "count_basis": "expanded fixed-source historical Jest cases, not literal test block count"
+    },
+    {
+      "suite": "frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
+      "cases": [
+        "不明保存结果保留原键、冻结体且不把正文存浏览器：408 undefined",
+        "不明保存结果保留原键、冻结体且不把正文存浏览器：408 SOURCE_SELECTION_STALE",
+        "不明保存结果保留原键、冻结体且不把正文存浏览器：429 undefined",
+        "不明保存结果保留原键、冻结体且不把正文存浏览器：499 undefined",
+        "不明保存结果保留原键、冻结体且不把正文存浏览器：400 undefined",
+        "不明保存结果保留原键、冻结体且不把正文存浏览器：400 INVALID_REQUEST",
+        "不明保存结果保留原键、冻结体且不把正文存浏览器：401 undefined",
+        "不明保存结果保留原键、冻结体且不把正文存浏览器：403 OBJECT_ACCESS_DENIED",
+        "不明保存结果保留原键、冻结体且不把正文存浏览器：404 undefined",
+        "不明保存结果保留原键、冻结体且不把正文存浏览器：401 ACCESS_SESSION_REQUIRED",
+        "不明保存结果保留原键、冻结体且不把正文存浏览器：409 IDEMPOTENCY_PAYLOAD_MISMATCH",
+        "不明保存结果保留原键、冻结体且不把正文存浏览器：409 SAVE_GUARD_BUSY",
+        "不明保存结果保留原键、冻结体且不把正文存浏览器：409 UNRECOGNIZED",
+        "不明保存结果保留原键、冻结体且不把正文存浏览器：503 SAVE_RESULT_UNKNOWN",
+        "不明保存结果保留原键、冻结体且不把正文存浏览器：undefined undefined",
+        "明确终态 409 INTAKE_DRAFT_REVISION_CONFLICT 才清恢复键",
+        "明确终态 409 SOURCE_SELECTION_STALE 才清恢复键",
+        "明确终态 409 SAVE_REQUEST_ABANDONED 才清恢复键",
+        "重挂载无冻结正文时不能新键保存，unknown 查询不放弃，明确放弃后才解锁",
+        "成功回执 committed 清理恢复键",
+        "成功回执 no_change 清理恢复键",
+        "带来源的未决请求只缓存恢复标识，正文和选择仅保留在内存"
+      ],
+      "acceptance": [
+        "C04"
+      ],
+      "count_basis": "expanded fixed-source historical Jest cases, not literal test block count"
+    },
+    {
+      "suite": "frontend/src/pages/auth/__tests__/Login.failure.test.tsx",
+      "cases": [
+        "renders a visible non-sensitive alert and preserves account case on 401",
+        "sends the account field for a mixed-case username",
+        "normalizes a mixed-case email account for the API"
+      ],
+      "acceptance": [
+        "I03"
+      ],
+      "count_basis": "expanded fixed-source historical Jest cases, not literal test block count"
+    },
+    {
+      "suite": "frontend/src/pages/auth/__tests__/Login.accessibility.test.tsx",
+      "cases": [
+        "provides an operable password visibility button with a synchronized name and state"
+      ],
+      "acceptance": [
+        "accessibility"
+      ],
+      "count_basis": "expanded fixed-source historical Jest cases, not literal test block count"
+    }
+  ],
+  "browser_chain": [
+    {
+      "test": "真实服务：多轮核对，仅应用摘要，原生保存后新会话从原菜单重开来源",
+      "deps": "18789合成服务+intake…9801",
+      "acceptance": [
+        "I07"
+      ]
+    },
+    {
+      "test": "真实服务：A来源保存后，B旧版纯手工摘要不得覆盖并保留输入",
+      "deps": "同上",
+      "acceptance": [
+        "I05",
+        "I07"
+      ]
+    },
+    {
+      "test": "真实上游断线：提交后断开TCP，重登按原键回查且重开来源",
+      "deps": "同上+X-NP-Drop-Response故障注入",
+      "acceptance": [
+        "I08"
+      ]
+    },
+    {
+      "test": "生成期间保留未发送输入；人工摘要不被候选静默覆盖",
+      "deps": "同上",
+      "acceptance": [
+        "I07"
+      ]
+    }
+  ],
+  "scripts": {
+    "init_db_sh": {
+      "verdict": "SPLIT",
+      "evidence": "源init-db.sh:56按序执行000082/83/84/85；000084建material_files与case_tasks；主干版=v14 bootstrap(production_schema.go:16 postgres-mvp-2026-08-27-v14)+仅追加源000086_narrow_pilot原SQL；源脚本不变"
+    },
+    "seed_browser_py": {
+      "verdict": "SPLIT",
+      "target": "I09-FILES"
+    },
+    "compare_browser_db_py": {
+      "verdict": "SPLIT files断言 + KEEP来源回执断言",
+      "source_unchanged": true,
+      "main_planned_script": "scripts/np-first-slice/compare-main-browser-db.py",
+      "required_browser_deltas": {
+        "scope": "clean deterministic original four-scenario sequence",
+        "sources": 3,
+        "receipts": 4,
+        "other": "revision must advance; explicit manual unlink clears only current source pointer, not immutable history; original assertions preserved"
+      }
+    },
+    "run_local_check_probe_compose": {
+      "verdict": "KEEP isolation controls / ADAPT root paths",
+      "boundary": "127.0.0.1:18790/np_first_slice_dev; build tag np_local_check and NP_LOCAL_CHECK=synthetic-only; run-local-check.sh:13,18 backend path becomes root; compose PG16.14 and loopback mounts stay isolated"
+    }
+  },
+  "i09_main_contract": {
+    "protected": [
+      "case_materials",
+      "case_intake_parties",
+      "clients",
+      "control intake entire row"
+    ],
+    "nonempty": "at least 2 materials + unknown metadata integer >2^53; authorized client/parties and separate control draft",
+    "projection": "PostgreSQL to_jsonb(row)::text ordered by stable PK; no JS Number conversion",
+    "hash": "Go crypto/sha256 in PG tests; Python hashlib.sha256 in compare-main-browser-db.py; same canonical text, no raw body output",
+    "exclude_only_target_intake": [
+      "description",
+      "updated_at",
+      "metadata.draft_revision",
+      "metadata.np_description_source_revision"
+    ],
+    "no_exclusions_for_other_rows": true,
+    "material_files": "not required or queried",
+    "control_id": "provided by fixture, not guessed hardcoded ID",
+    "script_planned": "scripts/np-first-slice/compare-main-browser-db.py"
+  },
+  "defer": [
+    {
+      "id": "I09-FILES",
+      "status": "DEFERRED/HOLD",
+      "extra": "continuation正向verified-decision同样DEFER",
+      "source_assertions": "全部保留于源仓库，不Skip、不删除"
+    }
+  ],
+  "main_required_fixtures_planned_not_existing": [
+    "newDraftRevisionDB等价移植（AutoMigrate Client+五表DDL+seed，无material_files）",
+    "npPGFixture等价物（无case-materials文件路由；NP_TEST_DSN隔离校验）",
+    "I09-MAIN整行to_jsonb+内存SHA-256比较（按i09_main_contract）",
+    "compare-main-browser-db.py（计划名已冻结）",
+    "主干版init：v14 bootstrap+仅000086",
+    "2个403/404详情适配；陈旧写入复用已有PUT测试，GET可读最新"
+  ],
+  "open_items": [
+    "implementation/runtime verification remains; no undecided route-B projection or script naming at M0"
+  ],
+  "frozen_go_cases": [
+    {
+      "source_path": "backend/internal/handlers/narrow_pilot_context_test.go",
+      "case": "TestNPMultiTurnInvalidationAndSessionExpiry",
+      "status": "required on new main; NOT_RUN"
+    },
+    {
+      "source_path": "backend/internal/handlers/narrow_pilot_context_test.go",
+      "case": "TestNPContextExpiryAndChangedDraft",
+      "status": "required on new main; NOT_RUN"
+    },
+    {
+      "source_path": "backend/internal/handlers/narrow_pilot_context_test.go",
+      "case": "TestNPContextEndReleasesExpiryTimer",
+      "status": "required on new main; NOT_RUN"
+    },
+    {
+      "source_path": "backend/internal/handlers/narrow_pilot_review_pg_test.go",
+      "case": "TestNPPostgresNativeCannotForgeSourcePointer",
+      "status": "required on new main; NOT_RUN"
+    },
+    {
+      "source_path": "backend/internal/handlers/narrow_pilot_review_pg_test.go",
+      "case": "TestNPPostgresLegacyNullMetadataIsInitialized",
+      "status": "required on new main; NOT_RUN"
+    },
+    {
+      "source_path": "backend/internal/handlers/narrow_pilot_review_pg_test.go",
+      "case": "TestNPPostgresMalformedIntakeIDIsBadRequest",
+      "status": "required on new main; NOT_RUN"
+    },
+    {
+      "source_path": "backend/internal/handlers/narrow_pilot_pg_test.go",
+      "case": "TestNPPostgresSaveReopenConcurrencyAndReceipts",
+      "status": "required on new main; NOT_RUN"
+    },
+    {
+      "source_path": "backend/internal/handlers/narrow_pilot_pg_test.go",
+      "case": "TestNPPostgresActualDisconnectAfterCommit",
+      "status": "required on new main; NOT_RUN"
+    },
+    {
+      "source_path": "backend/internal/handlers/narrow_pilot_pg_test.go",
+      "case": "TestNPPostgresActualDisconnectBeforeCommit",
+      "status": "required on new main; NOT_RUN"
+    },
+    {
+      "source_path": "backend/internal/handlers/narrow_pilot_pg_test.go",
+      "case": "TestNPPostgresParallelWritersAndBusyAbandon",
+      "status": "required on new main; NOT_RUN"
+    },
+    {
+      "source_path": "backend/internal/handlers/narrow_pilot_pg_test.go",
+      "case": "TestNPPostgresSourcePermissionsAndStrictBoundary",
+      "status": "required on new main; NOT_RUN"
+    },
+    {
+      "source_path": "backend/internal/handlers/narrow_pilot_pg_test.go",
+      "case": "TestNPPostgresLegacySaveAfterStrictManualStillChecksRevision",
+      "status": "required on new main; NOT_RUN"
+    },
+    {
+      "source_path": "backend/internal/handlers/narrow_pilot_pg_test.go",
+      "case": "TestNPPostgresDescriptionWhitespaceIsExact",
+      "status": "required on new main; NOT_RUN"
+    },
+    {
+      "source_path": "backend/internal/handlers/intake_draft_revision_test.go",
+      "case": "TestUpdateIntakeRejectsMissingExpectedRevisionWithoutMutation",
+      "status": "required on new main; NOT_RUN"
+    },
+    {
+      "source_path": "backend/internal/handlers/intake_draft_revision_test.go",
+      "case": "TestUpdateIntakeRejectsStaleRevisionWithoutOverwrite",
+      "status": "required on new main; NOT_RUN"
+    },
+    {
+      "source_path": "backend/internal/handlers/intake_draft_revision_test.go",
+      "case": "TestUpdateIntakeSwitchClientUsesNewMasterIdentity",
+      "status": "required on new main; NOT_RUN"
+    },
+    {
+      "source_path": "backend/internal/handlers/intake_draft_revision_test.go",
+      "case": "TestConfirmIntakeFactsRotatesRevisionAndRejectsStaleHeader",
+      "status": "required on new main; NOT_RUN"
+    },
+    {
+      "source_path": "backend/internal/handlers/intake_draft_revision_test.go",
+      "case": "TestDraftRestoreReturnsRevisionAndProtectedIdentityStatus",
+      "status": "required on new main; NOT_RUN"
+    },
+    {
+      "source_path": "backend/internal/handlers/intake_draft_revision_test.go",
+      "case": "TestDraftListCarriesRevisionTokens",
+      "status": "required on new main; NOT_RUN"
+    },
+    {
+      "source_path": "backend/internal/handlers/intake_draft_revision_contract_test.go",
+      "case": "TestUpdateIntakeInvalidatesConfirmedSnapshotAndRotatesRevision",
+      "status": "required on new main; NOT_RUN"
+    },
+    {
+      "source_path": "backend/internal/handlers/intake_draft_revision_contract_test.go",
+      "case": "TestLegacyDraftWithoutStoredRevisionLoadsAndSavesOnce",
+      "status": "required on new main; NOT_RUN"
+    },
+    {
+      "source_path": "backend/internal/handlers/intake_draft_revision_contract_test.go",
+      "case": "TestConfirmAndConflictCheckAuthorizeBeforeRevisionHint",
+      "status": "required on new main; NOT_RUN"
+    },
+    {
+      "source_path": "backend/internal/handlers/intake_draft_revision_contract_test.go",
+      "case": "TestUpdateIntakeWithoutMetadataKeepsStoredBusinessFields",
+      "status": "required on new main; NOT_RUN"
+    },
+    {
+      "source_path": "backend/internal/handlers/intake_draft_revision_contract_test.go",
+      "case": "TestUpdateIntakeMergesProvidedMetadataWithoutErasingStoredFields",
+      "status": "required on new main; NOT_RUN"
+    },
+    {
+      "source_path": "backend/internal/middleware/narrow_pilot_logging_test.go",
+      "case": "TestNarrowPilotAuditSkipsSensitiveBodyBeforeRead",
+      "status": "required on new main; NOT_RUN"
+    },
+    {
+      "source_path": "backend/internal/database/narrow_pilot_pool_logging_test.go",
+      "case": "TestOptimizedDatabaseSlowQueryLogDoesNotLeakParameters",
+      "status": "required on new main; NOT_RUN"
+    }
+  ],
+  "frozen_frontend_expanded_cases": [
+    {
+      "source_path": "frontend/src/components/intake/__tests__/NarrowPilotAssistant.test.tsx",
+      "case": "应用等待GET期间人工改摘要：恢复后进入对比确认，不得用旧闭包覆盖",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/components/intake/__tests__/NarrowPilotAssistant.test.tsx",
+      "case": "开始新一轮立即清除旧来源选择并保留表单文字；原句原样提交",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/components/intake/__tests__/NarrowPilotAssistant.test.tsx",
+      "case": "来源权限被收回后清除已显示的来源，不再应用候选",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx",
+      "case": "同挂载切换intakeId：旧 GET 成功或失败均不影响新草稿，拒绝=false",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx",
+      "case": "同挂载切换intakeId：旧 GET 成功或失败均不影响新草稿，拒绝=true",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx",
+      "case": "切换草稿后迟到的生成响应不能显示旧候选，新草稿不被旧 busy 锁住",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx",
+      "case": "切换后又返回同一草稿，旧 GET 仍失效且不能调用应用回调",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
+      "case": "不明保存结果保留原键、冻结体且不把正文存浏览器：408 undefined",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
+      "case": "不明保存结果保留原键、冻结体且不把正文存浏览器：408 SOURCE_SELECTION_STALE",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
+      "case": "不明保存结果保留原键、冻结体且不把正文存浏览器：429 undefined",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
+      "case": "不明保存结果保留原键、冻结体且不把正文存浏览器：499 undefined",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
+      "case": "不明保存结果保留原键、冻结体且不把正文存浏览器：400 undefined",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
+      "case": "不明保存结果保留原键、冻结体且不把正文存浏览器：400 INVALID_REQUEST",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
+      "case": "不明保存结果保留原键、冻结体且不把正文存浏览器：401 undefined",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
+      "case": "不明保存结果保留原键、冻结体且不把正文存浏览器：403 OBJECT_ACCESS_DENIED",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
+      "case": "不明保存结果保留原键、冻结体且不把正文存浏览器：404 undefined",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
+      "case": "不明保存结果保留原键、冻结体且不把正文存浏览器：401 ACCESS_SESSION_REQUIRED",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
+      "case": "不明保存结果保留原键、冻结体且不把正文存浏览器：409 IDEMPOTENCY_PAYLOAD_MISMATCH",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
+      "case": "不明保存结果保留原键、冻结体且不把正文存浏览器：409 SAVE_GUARD_BUSY",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
+      "case": "不明保存结果保留原键、冻结体且不把正文存浏览器：409 UNRECOGNIZED",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
+      "case": "不明保存结果保留原键、冻结体且不把正文存浏览器：503 SAVE_RESULT_UNKNOWN",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
+      "case": "不明保存结果保留原键、冻结体且不把正文存浏览器：undefined undefined",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
+      "case": "明确终态 409 INTAKE_DRAFT_REVISION_CONFLICT 才清恢复键",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
+      "case": "明确终态 409 SOURCE_SELECTION_STALE 才清恢复键",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
+      "case": "明确终态 409 SAVE_REQUEST_ABANDONED 才清恢复键",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
+      "case": "重挂载无冻结正文时不能新键保存，unknown 查询不放弃，明确放弃后才解锁",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
+      "case": "成功回执 committed 清理恢复键",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
+      "case": "成功回执 no_change 清理恢复键",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
+      "case": "带来源的未决请求只缓存恢复标识，正文和选择仅保留在内存",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/pages/auth/__tests__/Login.failure.test.tsx",
+      "case": "renders a visible non-sensitive alert and preserves account case on 401",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/pages/auth/__tests__/Login.failure.test.tsx",
+      "case": "sends the account field for a mixed-case username",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/pages/auth/__tests__/Login.failure.test.tsx",
+      "case": "normalizes a mixed-case email account for the API",
+      "status": "historical source PASS; new main NOT_RUN"
+    },
+    {
+      "source_path": "frontend/src/pages/auth/__tests__/Login.accessibility.test.tsx",
+      "case": "provides an operable password visibility button with a synchronized name and state",
+      "status": "historical source PASS; new main NOT_RUN"
+    }
+  ],
+  "frontend_count_basis": {
+    "source_sha": "2d659d9dd750f49ddb1f517746e22851392231a6",
+    "path": "docs/np-evidence/review-r1/independent-client-tests.log",
+    "sha256": "293be6b637c51e8403b76edf6cd19776ddef9629195590cecd19a26ed8fecadd",
+    "suites": 5,
+    "expanded_cases": 33,
+    "literal_blocks_do_not_count_parameters": true,
+    "new_main": "NOT_RUN"
+  },
+  "planned_main_regression_groups": [
+    {
+      "id": "I09-MAIN",
+      "name": "TestNPMainProtectedRowsRemainUnchanged",
+      "subcases": [
+        "strict_source_save",
+        "strict_manual_save",
+        "negative_comparator_detects_changed_material"
+      ],
+      "status": "PLANNED_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "I14",
+      "name": "TestNPMainHistoryGuardFailsClosed",
+      "subcases": [
+        "schema_missing",
+        "history_query_error",
+        "assistant_disabled",
+        "legacy_full_write_race"
+      ],
+      "status": "PLANNED_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "I15",
+      "name": "TestNPMainConflictCompletionUsesInputRevision",
+      "subcases": [
+        "sync_fresh",
+        "sync_stale",
+        "async_fresh",
+        "async_stale",
+        "linked_case_atomic_rollback",
+        "start_no_revision_increment"
+      ],
+      "status": "PLANNED_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "I16",
+      "name": "TestNPMainReceiptIdentityBeforeCleanup",
+      "subcases": [
+        "put_query_abandon_wrong_request",
+        "wrong_object",
+        "missing_identity",
+        "invalid_success_revision",
+        "optional_action_absent_allowed",
+        "action_mismatch_rejected"
+      ],
+      "status": "PLANNED_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "C01-C14",
+      "name": "Cache/Hook/browser groups from sealed acceptance matrix",
+      "subcases": [
+        "WebStorage no_body",
+        "reload_saved_only",
+        "leave_dirty_confirm",
+        "pending_recovery",
+        "uncertain_errors",
+        "storage_failure_prevents_write",
+        "same_context_two_pages",
+        "actor_isolation",
+        "legacy_before_close",
+        "HTTP_SW_cache_bypass",
+        "old_key_compat",
+        "I09_MAIN_not_FILES",
+        "save_A_edit_B_stays",
+        "confirm_reload_edit_C_kept"
+      ],
+      "status": "PLANNED_NOT_IMPLEMENTED"
+    }
+  ],
+  "browser_entry_split": {
+    "fixture": "source 4 scenarios adapted to B fixture; X-NP-Drop-Response only in np_local_check build",
+    "real_main": "M5 root main + actual login/PG/Redis; external synthetic TCP fault proxy, never production handler fault headers",
+    "runtime": "NOT_RUN"
+  },
+  "coordinator_review": "M0 document seal accepted; shared redaction moved to existing restore test; 2 planned detail cases, stale maps existing PUT; runtime NOT_RUN"
+}

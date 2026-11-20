@@ -1,0 +1,209 @@
+{
+  "result": "PASS",
+  "source_repository": "/Users/mac/Desktop/FT/law-oa-go/output/np-v04-first-slice",
+  "main_repository": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0",
+  "slice_sha": "2d659d9dd750f49ddb1f517746e22851392231a6",
+  "main_sha": "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
+  "count": 33,
+  "verified": [
+    {
+      "source_path": ".gitignore",
+      "target_path": ".gitignore",
+      "slice_blob": "f28796668ba6f3703f5ca5b256c098477c0a221f",
+      "main_blob": "54c0192109cfeaddfa4be77e9daa4b7835e8c34d"
+    },
+    {
+      "source_path": "backend/cmd/np-local-check/main.go",
+      "target_path": "cmd/np-local-check/main.go",
+      "slice_blob": "2b831befa86ee28853570430ab06e5565fb40264",
+      "main_blob": null
+    },
+    {
+      "source_path": "backend/internal/database/connection_pool.go",
+      "target_path": "internal/database/connection_pool.go",
+      "slice_blob": "767484d6b0e7aa914d324c0956c14806fb89512a",
+      "main_blob": "1994656d10a687b160d314a9653cfa3a3b8e94e7"
+    },
+    {
+      "source_path": "backend/internal/database/database.go",
+      "target_path": "internal/database/database.go",
+      "slice_blob": "a333f80ea82981e546fb42aa146d38e6eb3c7ce3",
+      "main_blob": "e87a38a26214d86f8757a278ca6640bb60de82ce"
+    },
+    {
+      "source_path": "backend/internal/database/narrow_pilot_pool_logging_test.go",
+      "target_path": "internal/database/narrow_pilot_pool_logging_test.go",
+      "slice_blob": "e6be4c76bac76a80a79caeda947cdd2330c265d3",
+      "main_blob": null
+    },
+    {
+      "source_path": "backend/internal/handlers/demo_aggregate_handler.go",
+      "target_path": "internal/handlers/demo_aggregate_handler.go",
+      "slice_blob": "d578e2c0aa7df0f3ab80370eb9080b34b1fdef04",
+      "main_blob": "911c172aa72f5243a261703a80493c167b203b83"
+    },
+    {
+      "source_path": "backend/internal/handlers/narrow_pilot_context.go",
+      "target_path": "internal/handlers/narrow_pilot_context.go",
+      "slice_blob": "8c85015154eba339c1cc8e5363dd189cfeef41e3",
+      "main_blob": null
+    },
+    {
+      "source_path": "backend/internal/handlers/narrow_pilot_context_test.go",
+      "target_path": "internal/handlers/narrow_pilot_context_test.go",
+      "slice_blob": "0acba711a3cf7e4a466fcd8372a38b3d9be5a769",
+      "main_blob": null
+    },
+    {
+      "source_path": "backend/internal/handlers/narrow_pilot_pg_test.go",
+      "target_path": "internal/handlers/narrow_pilot_pg_test.go",
+      "slice_blob": "9aa14a20934d877c6923e51deb66becda9b63138",
+      "main_blob": null
+    },
+    {
+      "source_path": "backend/internal/handlers/narrow_pilot_review_pg_test.go",
+      "target_path": "internal/handlers/narrow_pilot_review_pg_test.go",
+      "slice_blob": "49fa7735b37f16fb6e3111bdd74fff1307df8e16",
+      "main_blob": null
+    },
+    {
+      "source_path": "backend/internal/handlers/narrow_pilot_types.go",
+      "target_path": "internal/handlers/narrow_pilot_types.go",
+      "slice_blob": "2a68eebfcefe838eaeb56bbb7f6c97f985b76ab7",
+      "main_blob": null
+    },
+    {
+      "source_path": "backend/internal/handlers/narrow_pilot_write.go",
+      "target_path": "internal/handlers/narrow_pilot_write.go",
+      "slice_blob": "59605719f176ab9c42e8cd93a3d9ab0f20c77b7d",
+      "main_blob": null
+    },
+    {
+      "source_path": "backend/internal/middleware/audit.go",
+      "target_path": "internal/middleware/audit.go",
+      "slice_blob": "1a538650432851e968cbebed712f2c97f47bbd64",
+      "main_blob": "82a04852eeaeabefee7a7264d5ac68a6e55381b5"
+    },
+    {
+      "source_path": "backend/internal/middleware/common.go",
+      "target_path": "internal/middleware/common.go",
+      "slice_blob": "3c895aa956cf7b837f6bb1fa6e3f4a2b7e51dd1b",
+      "main_blob": "8f23506ab485cc12164d9cb8595f0f4bb21a1d15"
+    },
+    {
+      "source_path": "backend/internal/middleware/narrow_pilot_logging_test.go",
+      "target_path": "internal/middleware/narrow_pilot_logging_test.go",
+      "slice_blob": "86f1fd6d0090b3b892ba24bffeaa2effe3ff2117",
+      "main_blob": null
+    },
+    {
+      "source_path": "backend/internal/router/router.go",
+      "target_path": "internal/router/router.go",
+      "slice_blob": "280726fe35586e89d67bf8ead789793a8fcd8185",
+      "main_blob": "25d9d4f150e39b2d728c9d257a5e27ea3e3ab04c"
+    },
+    {
+      "source_path": "backend/migrations/000086_narrow_pilot.up.sql",
+      "target_path": "migrations/000086_narrow_pilot.up.sql",
+      "slice_blob": "80bd6a4368faee52cebbd0d09d972e2831cd8508",
+      "main_blob": null
+    },
+    {
+      "source_path": "frontend/e2e/np-first-slice.live.spec.ts",
+      "target_path": "frontend/e2e/np-first-slice.live.spec.ts",
+      "slice_blob": "b5a4625e6e118b13ea030c82df50642cef3e0b5d",
+      "main_blob": null
+    },
+    {
+      "source_path": "frontend/playwright.np.config.ts",
+      "target_path": "frontend/playwright.np.config.ts",
+      "slice_blob": "7eec39cdfa3e27e8b6c9d0fef98433e2b331329b",
+      "main_blob": null
+    },
+    {
+      "source_path": "frontend/src/components/intake/NarrowPilotAssistant.tsx",
+      "target_path": "frontend/src/components/intake/NarrowPilotAssistant.tsx",
+      "slice_blob": "15a0173d3bb5d326c405171cf3513bff522b8ff5",
+      "main_blob": null
+    },
+    {
+      "source_path": "frontend/src/components/intake/__tests__/NarrowPilotAssistant.test.tsx",
+      "target_path": "frontend/src/components/intake/__tests__/NarrowPilotAssistant.test.tsx",
+      "slice_blob": "efabc490f958e2ae6c48053284d0246901662ae6",
+      "main_blob": null
+    },
+    {
+      "source_path": "frontend/src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx",
+      "target_path": "frontend/src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx",
+      "slice_blob": "28947fea5a4e1011cdee837c83ebc88c3294e3d6",
+      "main_blob": null
+    },
+    {
+      "source_path": "frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
+      "target_path": "frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
+      "slice_blob": "222d2e9f896058a22601a85f2a9f76708b511838",
+      "main_blob": null
+    },
+    {
+      "source_path": "frontend/src/components/intake/useNarrowPilotSave.ts",
+      "target_path": "frontend/src/components/intake/useNarrowPilotSave.ts",
+      "slice_blob": "92b069b544e3c91a114ff0b546d80768033cb293",
+      "main_blob": null
+    },
+    {
+      "source_path": "frontend/src/pages/auth/Login.tsx",
+      "target_path": "frontend/src/pages/auth/Login.tsx",
+      "slice_blob": "10efe8703d454ad6d5d2ee2fb25f66eadddd64f0",
+      "main_blob": "d9700ebbc0d3c9b5b5c80488bc2be673b088f965"
+    },
+    {
+      "source_path": "frontend/src/pages/batch01/Batch01Prototype.tsx",
+      "target_path": "frontend/src/pages/batch01/Batch01Prototype.tsx",
+      "slice_blob": "07b35638820305609da4d5823c7f474f87d33597",
+      "main_blob": "ca27c5d252a515032c4b2665b39b0db5b37695e6"
+    },
+    {
+      "source_path": "scripts/np-first-slice/.gitignore",
+      "target_path": "scripts/np-first-slice/.gitignore",
+      "slice_blob": "2120d0d1248cbb45e6f841855f97b15f8a5f6146",
+      "main_blob": null
+    },
+    {
+      "source_path": "scripts/np-first-slice/compare-browser-db.py",
+      "target_path": "scripts/np-first-slice/compare-browser-db.py",
+      "slice_blob": "2a73792ef2e07a4465bc4b1df6c85b6fd9c32133",
+      "main_blob": null
+    },
+    {
+      "source_path": "scripts/np-first-slice/compose.yml",
+      "target_path": "scripts/np-first-slice/compose.yml",
+      "slice_blob": "2620418435db22b00b944a7f2012f6e327f4fff5",
+      "main_blob": null
+    },
+    {
+      "source_path": "scripts/np-first-slice/init-db.sh",
+      "target_path": "scripts/np-first-slice/init-db.sh",
+      "slice_blob": "da6f0a11750786376d2583d7c702d9da91b4da0e",
+      "main_blob": null
+    },
+    {
+      "source_path": "scripts/np-first-slice/probe-db.sh",
+      "target_path": "scripts/np-first-slice/probe-db.sh",
+      "slice_blob": "a3df577767669c3058f3710153f66b80787e64a2",
+      "main_blob": null
+    },
+    {
+      "source_path": "scripts/np-first-slice/run-local-check.sh",
+      "target_path": "scripts/np-first-slice/run-local-check.sh",
+      "slice_blob": "5a8754a24418af8a0438033a10a243ca9427c45b",
+      "main_blob": null
+    },
+    {
+      "source_path": "scripts/np-first-slice/seed-browser.py",
+      "target_path": "scripts/np-first-slice/seed-browser.py",
+      "slice_blob": "8be598448fbb92db456f478ee6914448c790e3e3",
+      "main_blob": null
+    }
+  ],
+  "scope": "object identity only, not ported build or runtime"
+}

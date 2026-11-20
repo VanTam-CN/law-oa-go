@@ -1,0 +1,239 @@
+{
+  "status": "M0_REVIEWED_CONDITIONAL_ENGINEERING_ESTIMATE",
+  "scope": "remaining native-main first-slice integration M1-M6, route B, existing own draft description only, Stub only",
+  "base_application_sha": "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
+  "source_slice_sha": "2d659d9dd750f49ddb1f517746e22851392231a6",
+  "packs": [
+    {
+      "id": "M1",
+      "name": "原生最小基础",
+      "low": 7,
+      "high": 11,
+      "scope": [
+        "原生详情/列表/恢复revision与旧/新写入者锁内保护、schema历史未知失败关闭",
+        "检测输入revision经现有请求/search_parameters/association传递，同步二次回写收口",
+        "NP两表就绪检查与最小授权复用、必要原生回归"
+      ],
+      "historical": [
+        "W02",
+        "W03 partial",
+        "W04 partial"
+      ],
+      "reuse": "AuthTokenSession/TokenSessionStore/AuthorizationService，PG v14；NP源事务不重写",
+      "included_checks": "本包单元/定点作者回归",
+      "excludes": "全局WorkItem、审批/材料版本平台、独立任务表"
+    },
+    {
+      "id": "M2",
+      "name": "CI门禁与产物流",
+      "low": 3,
+      "high": 5,
+      "scope": [
+        "PR可达评论/第三方上传/通知/发布隔离，脱敏artifact白名单及消费链",
+        "强制PG/DSN/关键用例与Skip失败检查、fuzz输入/汇总状态",
+        "离线条件检查及授权后的正常/负向workflow证据"
+      ],
+      "historical": [
+        "W10 verification overlap only"
+      ],
+      "reuse": "现有6套workflow局部修订，不整体替换",
+      "included_checks": "I11正常/负向与路由条件检查只计此包",
+      "excludes": "发布平台重建、其他历史全库lint治理"
+    },
+    {
+      "id": "M3",
+      "name": "助手净增量与路线B夹具适配",
+      "low": 4,
+      "high": 6,
+      "scope": [
+        "源Go新文件/8共享文件净增量、前端组件/Hook/原生按钮挂接",
+        "原生新建/补正/他人草稿与严格摘要分流、正确回执身份字段",
+        "根目录脚本与B夹具/测试适配，源完整用例保留"
+      ],
+      "historical": [
+        "W04 remainder",
+        "W05",
+        "W06 Stub only",
+        "W07 integration",
+        "W08 existing implementation"
+      ],
+      "reuse": "2d659d9已审首切片代码、Stub、多轮/来源和回执原实现",
+      "included_checks": "适配后的单元/组件/fixture定点作者检查",
+      "excludes": "重写现有助手、真实提供方、完整模型评测/律师试用"
+    },
+    {
+      "id": "M4",
+      "name": "缓存与编辑防丢失增量",
+      "low": 4,
+      "high": 7,
+      "scope": [
+        "接案正文仅内存与旧内容定向处置、请求独立恢复键",
+        "保存中编辑B留页/重载前确认与晚到C保护、终态清键一致性",
+        "三类HTTP路由缓存绕过及SW注册/控制边界"
+      ],
+      "historical": [
+        "W03 content",
+        "W07 UI",
+        "W08 partial"
+      ],
+      "reuse": "原生表单/保存入口/回查协议；无需离线或加密框架",
+      "included_checks": "C01–C14组件/合成fixture前置检查；非M5实际main联调",
+      "excludes": "改造全站缓存/PWA、通用离线草稿"
+    },
+    {
+      "id": "M5",
+      "name": "同候选实际main集成",
+      "low": 4,
+      "high": 7,
+      "scope": [
+        "root main+Redis+PG实际认证/来源/回执链",
+        "物理断线/重放/墓碑、并发、主体/现有材料保全、双标签/SW检查",
+        "统一浏览器/PG对照与构建元数据、候选绑定"
+      ],
+      "historical": [
+        "W10 author integration"
+      ],
+      "reuse": "前包已有单测不重复计实现，源故障夹具/结构校验可改造",
+      "included_checks": "实际入口全链作者执行与问题定位；不重复M2 I11成本",
+      "excludes": "真实案件/现网/生产上线"
+    },
+    {
+      "id": "M6",
+      "name": "独立复核及合成切换",
+      "low": 3,
+      "high": 5,
+      "scope": [
+        "未参与实现者代码/证据复审、固定候选必要独立复跑",
+        "I12合成升级/回滚/重启/最多单实例承接助手请求",
+        "门禁清单及首失败修复后定点复查"
+      ],
+      "historical": [
+        "W10 independent"
+      ],
+      "reuse": "作者证据用于定位；不能继承源PASS替代独立结果",
+      "included_checks": "独立执行与切换演练，区别于M5作者执行",
+      "excludes": "真实服务器演练/生产部署/真人律师试用"
+    }
+  ],
+  "base_person_days": [
+    25,
+    41
+  ],
+  "buffer_percent": 20,
+  "buffered_person_days": [
+    30,
+    50
+  ],
+  "rounding": "ceil(low*1.2), ceil(high*1.2)",
+  "not_included": [
+    "already performed M0 work; no model wall-clock conversion",
+    "W09 full model evaluation",
+    "W11 lawyer simulation",
+    "real environment remediation/trial/deploy",
+    "new material version platform or multi-tenant/multi-instance redesign"
+  ],
+  "basis": "engineering work-package judgement anchored to M0 evidence; not measured productivity or fixed delivery quote",
+  "overlap_resolution": {
+    "M1_demo_aggregate": "仅原生API revision/锁内权限与历史保护、统一原生全量写/恢复DTO；不含NP delegate挂接",
+    "M3_demo_aggregate": "仅把NP handler/DTO/组件接到M1已完成合同；不再次计原生UpdateCaseIntake改造",
+    "source_shared_files": "一个文件可分阶段改不同hunk，但同一逻辑/测试实现只在一个包计价；JSON33项引用同一主归属，子动作在此区分",
+    "M2_vs_M3_fixture": "M3写B fixture/比较器适配，M2只消费并实现CI门禁；I11正常负向只计M2",
+    "M3_vs_M5_tests": "M3组件/合成fixture验证，M5仅新增真实root入口全链；同一个作者单测不重复计",
+    "M5_vs_M6": "作者集成与未参与者独立复跑是不同任务，按各自证据记录"
+  },
+  "decomposition": {
+    "M1": {
+      "native_revision_ownership_recovery": [
+        3,
+        5
+      ],
+      "sync_async_input_revision_atomic_link": [
+        2,
+        3
+      ],
+      "schema_history_guard_and_native_fixtures": [
+        2,
+        3
+      ]
+    },
+    "M2": {
+      "pr_artifact_side_effects": [
+        1,
+        2
+      ],
+      "pg_fuzz_fail_closed_jobs": [
+        1,
+        2
+      ],
+      "normal_negative_ci_evidence": [
+        1,
+        1
+      ]
+    },
+    "M3": {
+      "np_components_native_hook_wiring": [
+        2,
+        3
+      ],
+      "route_b_fixtures_scripts": [
+        1,
+        2
+      ],
+      "sql_audit_logging_and_targeted_tests": [
+        1,
+        1
+      ]
+    },
+    "M4": {
+      "memory_recovery_keys": [
+        1,
+        2
+      ],
+      "dirty_B_C_protection": [
+        1,
+        2
+      ],
+      "http_sw_boundary": [
+        1,
+        2
+      ],
+      "legacy_storage_and_error_tests": [
+        1,
+        1
+      ]
+    },
+    "M5": {
+      "real_root_main_pg_redis_setup": [
+        1,
+        2
+      ],
+      "browser_tcp_concurrency": [
+        2,
+        3
+      ],
+      "structural_db_artifact_comparison": [
+        1,
+        2
+      ]
+    },
+    "M6": {
+      "independent_diff_evidence_review": [
+        1,
+        2
+      ],
+      "required_independent_reruns": [
+        1,
+        2
+      ],
+      "synthetic_cutover_rollback": [
+        1,
+        1
+      ]
+    }
+  },
+  "review": {
+    "glm_cross_review": "sum/buffer correct; M1/M3 shared handler overlap flagged",
+    "coordinator_resolution": "explicit hunk/responsibility split above; no extra package added and no required gate removed",
+    "future_calibration": "M1 first bounded result must compare actual scope/cost; changed prerequisites or upper-bound overrun trigger reestimate"
+  }
+}
