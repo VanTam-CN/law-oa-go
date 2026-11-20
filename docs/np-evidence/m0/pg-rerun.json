@@ -1,0 +1,140 @@
+[
+  {
+    "key": "pg2-network-create",
+    "argv": [
+      "docker",
+      "network",
+      "create",
+      "--label",
+      "law-oa.scope=m0",
+      "law-oa-m0-2481a47-net"
+    ],
+    "started_at": "2026-11-20T03:30:53.728566+00:00",
+    "ended_at": "2026-11-20T03:30:53.763243+00:00",
+    "exit_code": 0,
+    "stdout": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg2-network-create.stdout.log",
+      "sha256": "60dee7bd8c56af79985d087fa2b71059c7018f92522cdbb6cca26681b918beaf",
+      "bytes": 65,
+      "committed": false
+    },
+    "stderr": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg2-network-create.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "committed": false
+    }
+  },
+  {
+    "key": "pg2-container-create",
+    "argv": [
+      "docker",
+      "run",
+      "-d",
+      "--name",
+      "law-oa-m0-2481a47-pg",
+      "--network",
+      "law-oa-m0-2481a47-net",
+      "--label",
+      "law-oa.scope=m0",
+      "-p",
+      "127.0.0.1:18894:5432",
+      "-e",
+      "POSTGRES_USER=np_m0",
+      "-e",
+      "POSTGRES_DB=law_oa_m0",
+      "-e",
+      "POSTGRES_HOST_AUTH_METHOD=trust",
+      "postgres:16.14"
+    ],
+    "started_at": "2026-11-20T03:30:53.763429+00:00",
+    "ended_at": "2026-11-20T03:30:53.909921+00:00",
+    "exit_code": 0,
+    "stdout": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg2-container-create.stdout.log",
+      "sha256": "2669d6089f42e15d888fedce631c246253ac53f83d3987276926c7f04296cf76",
+      "bytes": 65,
+      "committed": false
+    },
+    "stderr": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg2-container-create.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "committed": false
+    }
+  },
+  {
+    "key": "pg2-bootstrap",
+    "argv": [
+      "go",
+      "run",
+      "./cmd/migrate",
+      "-command",
+      "bootstrap"
+    ],
+    "started_at": "2026-11-20T03:30:55.746905+00:00",
+    "ended_at": "2026-11-20T03:30:58.852223+00:00",
+    "exit_code": 1,
+    "stdout": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg2-bootstrap.stdout.log",
+      "sha256": "28313f6dcf2333f63eccbf6289aa31f0d1696575525e62bf665184c676ec0292",
+      "bytes": 58,
+      "committed": false
+    },
+    "stderr": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg2-bootstrap.stderr.log",
+      "sha256": "db0235cff03de1d6e7eb882b89a727f53ff3f91998470ad68083ef0a230f02e2",
+      "bytes": 144,
+      "committed": false
+    }
+  },
+  {
+    "key": "pg2-container-cleanup",
+    "argv": [
+      "docker",
+      "rm",
+      "-f",
+      "-v",
+      "law-oa-m0-2481a47-pg"
+    ],
+    "started_at": "2026-11-20T03:30:58.852513+00:00",
+    "ended_at": "2026-11-20T03:30:59.049820+00:00",
+    "exit_code": 0,
+    "stdout": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg2-container-cleanup.stdout.log",
+      "sha256": "a646bb737a9849d85570ad28631671331c3150f4270c36f4b5394328efec767d",
+      "bytes": 21,
+      "committed": false
+    },
+    "stderr": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg2-container-cleanup.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "committed": false
+    }
+  },
+  {
+    "key": "pg2-network-cleanup",
+    "argv": [
+      "docker",
+      "network",
+      "rm",
+      "law-oa-m0-2481a47-net"
+    ],
+    "started_at": "2026-11-20T03:30:59.050018+00:00",
+    "ended_at": "2026-11-20T03:30:59.215855+00:00",
+    "exit_code": 0,
+    "stdout": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg2-network-cleanup.stdout.log",
+      "sha256": "c956fed4d54499d45db8113204576e70a23acc0ba1da4ca534a080a57bf45b95",
+      "bytes": 22,
+      "committed": false
+    },
+    "stderr": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg2-network-cleanup.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "committed": false
+    }
+  }
+]

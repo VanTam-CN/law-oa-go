@@ -1,0 +1,187 @@
+ current_database | current_user |                                                          version
+------------------+--------------+----------------------------------------------------------------------------------------------------------------------------
+ law_oa_m0        | np_m0        | PostgreSQL 16.14 (Debian 16.14-1.pgdg13+1) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+(1 row)
+
+           version
+-----------------------------
+ postgres-mvp-2026-08-27-v14
+(1 row)
+
+                tablename
+-----------------------------------------
+ analytics_reports
+ approval_case_creation_tracking
+ approval_conflict_associations
+ approval_delegations
+ approval_integration_configs
+ approval_integration_metadata
+ approval_nodes
+ approval_notifications
+ approval_records
+ approval_requests
+ approval_snapshots
+ approval_templates
+ approval_workflows
+ auth_token_sessions
+ bad_debt_records
+ behavior_patterns
+ case_creation_associations
+ case_ethical_wall_whitelist
+ case_folder_templates
+ case_folders
+ case_intake_parties
+ case_intakes
+ case_materials
+ case_parties
+ case_subject_revisions
+ cases
+ clickstream_records
+ client_contacts
+ client_relations
+ client_trust_accounts
+ client_trust_transactions
+ clients
+ commission_records
+ commission_rules
+ company_api_calls
+ compliance_audit_events
+ conflict_cases
+ conflict_check_associations
+ conflict_check_records
+ conflict_checks
+ conflict_details
+ conflict_index_build_runs
+ conflict_match_evidence_v2
+ conflict_officer_appointments
+ conflict_reports
+ conflict_reviewer_assignments
+ conflict_reviews
+ conflict_rules
+ conflict_scan_jobs
+ conflict_search_scopes
+ conflict_subject_identifiers
+ conflict_subject_versions
+ content_filter_logs
+ contracts
+ conversion_events
+ data_import_errors
+ data_import_tasks
+ departments
+ document_index_queue
+ document_locks
+ document_versions
+ documents
+ entities
+ entity_name_history
+ entity_relations
+ ethical_wall_access_logs
+ fee_templates
+ form_interactions
+ funnel_analyses
+ heatmap_data
+ inbox_items
+ inbox_reminder_rules
+ invoices
+ law_firm_compliance_policy_endorsements
+ law_firm_compliance_policy_packages
+ law_firm_compliance_policy_profiles
+ lawyer_conflict_pool
+ legal_categories
+ legal_hierarchy
+ legal_search_history
+ legal_statute_tags
+ legal_statute_versions
+ legal_statutes
+ legal_tags
+ notification_queue
+ notification_templates
+ notifications
+ offboarding_records
+ offboarding_transfer_details
+ operation_logs
+ page_views
+ payment_milestones
+ payments
+ performance_metrics
+ permissions
+ production_external_evidence
+ real_time_stats
+ retention_analyses
+ role_permissions
+ roles
+ schema_bootstrap_state
+ search_events
+ sensitive_words
+ system_configs
+ token_revocation_logs
+ user_behavior_records
+ user_events
+ user_journeys
+ user_legal_favorites
+ user_roles
+ user_segment_memberships
+ user_segments
+ user_sessions
+ users
+ waiver_applications
+ waiver_approval_records
+ waiver_monitoring_records
+ waiver_signatures
+(118 rows)
+
+     table_name      |        column_name         |        data_type
+---------------------+----------------------------+--------------------------
+ auth_token_sessions | id                         | character varying
+ auth_token_sessions | user_id                    | bigint
+ auth_token_sessions | device_id                  | character varying
+ auth_token_sessions | ip                         | character varying
+ auth_token_sessions | user_agent                 | character varying
+ auth_token_sessions | access_token_uuid          | character varying
+ auth_token_sessions | refresh_token_uuid         | character varying
+ auth_token_sessions | access_token_expires       | timestamp with time zone
+ auth_token_sessions | refresh_token_expires      | timestamp with time zone
+ auth_token_sessions | access_revoked_at          | timestamp with time zone
+ auth_token_sessions | refresh_revoked_at         | timestamp with time zone
+ auth_token_sessions | revoked_at                 | timestamp with time zone
+ auth_token_sessions | device_revoked_at          | timestamp with time zone
+ auth_token_sessions | created_at                 | timestamp with time zone
+ auth_token_sessions | updated_at                 | timestamp with time zone
+ case_intake_parties | id                         | bigint
+ case_intake_parties | case_id                    | bigint
+ case_intake_parties | intake_id                  | uuid
+ case_intake_parties | entity_name                | character varying
+ case_intake_parties | entity_type                | character varying
+ case_intake_parties | entity_id                  | bigint
+ case_intake_parties | identity_type              | character varying
+ case_intake_parties | identity_number_ciphertext | text
+ case_intake_parties | identity_number_digest     | character varying
+ case_intake_parties | aliases                    | text
+ case_intake_parties | party_role                 | character varying
+ case_intake_parties | relation_depth             | bigint
+ case_intake_parties | metadata                   | jsonb
+ case_intake_parties | created_at                 | timestamp with time zone
+ case_intakes        | id                         | uuid
+ case_intakes        | intake_code                | character varying
+ case_intakes        | client_id                  | bigint
+ case_intakes        | title                      | character varying
+ case_intakes        | case_type                  | character varying
+ case_intakes        | status                     | character varying
+ case_intakes        | priority                   | character varying
+ case_intakes        | description                | text
+ case_intakes        | metadata                   | jsonb
+ case_intakes        | created_by                 | bigint
+ case_intakes        | created_at                 | timestamp with time zone
+ case_intakes        | updated_at                 | timestamp with time zone
+ case_materials      | id                         | bigint
+ case_materials      | case_id                    | bigint
+ case_materials      | intake_id                  | uuid
+ case_materials      | name                       | character varying
+ case_materials      | material_type              | character varying
+ case_materials      | status                     | character varying
+ case_materials      | required                   | boolean
+ case_materials      | storage_url                | text
+ case_materials      | metadata                   | jsonb
+ case_materials      | created_at                 | timestamp with time zone
+ case_materials      | updated_at                 | timestamp with time zone
+(52 rows)

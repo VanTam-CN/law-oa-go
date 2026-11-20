@@ -1,0 +1,1796 @@
+[
+  {
+    "Time": "2026-11-20T11:28:55.073501+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestProjectApprovalForViewerRedactsHistoricalConflictEvidence"
+  },
+  {
+    "Time": "2026-11-20T11:28:55.077496+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestProjectApprovalForViewerRedactsHistoricalConflictEvidence",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:28:55.077967+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestProjectApprovalForViewerKeepsEvidenceForConflictReviewer"
+  },
+  {
+    "Time": "2026-11-20T11:28:55.078512+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestProjectApprovalForViewerKeepsEvidenceForConflictReviewer",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:28:55.078562+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestProjectApprovalSnapshotForViewerRedactsJSONSnapshot"
+  },
+  {
+    "Time": "2026-11-20T11:28:55.078981+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestProjectApprovalSnapshotForViewerRedactsJSONSnapshot",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:28:55.079034+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestProjectApprovalForViewerRedactsNestedConflictRecordResult"
+  },
+  {
+    "Time": "2026-11-20T11:28:55.0796+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestProjectApprovalForViewerRedactsNestedConflictRecordResult",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:28:55.080204+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_Login"
+  },
+  {
+    "Time": "2026-11-20T11:28:55.10846+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_Login/Login_Success"
+  },
+  {
+    "Time": "2026-11-20T11:28:55.130654+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestTokenManager_NewTokenManager"
+  },
+  {
+    "Time": "2026-11-20T11:28:55.130734+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestTokenManager_NewTokenManager/创建TokenManager"
+  },
+  {
+    "Time": "2026-11-20T11:28:55.130781+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestTokenManager_NewTokenManager/创建TokenManager",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:28:55.131533+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestTokenManager_NewTokenManager",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:28:55.131539+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestTokenManager_CreateTokens"
+  },
+  {
+    "Time": "2026-11-20T11:28:55.131579+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestTokenManager_CreateTokens/创建访问令牌和刷新令牌"
+  },
+  {
+    "Time": "2026-11-20T11:28:55.166978+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestTokenManager_CreateTokens/创建访问令牌和刷新令牌",
+    "Elapsed": 0.04
+  },
+  {
+    "Time": "2026-11-20T11:28:55.167627+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestTokenManager_CreateTokens",
+    "Elapsed": 0.04
+  },
+  {
+    "Time": "2026-11-20T11:28:55.16763+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestTokenManager_VerifyToken"
+  },
+  {
+    "Time": "2026-11-20T11:28:55.167635+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestTokenManager_VerifyToken/验证有效令牌"
+  },
+  {
+    "Time": "2026-11-20T11:28:55.178907+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestTokenManager_VerifyToken/验证有效令牌",
+    "Elapsed": 0.01
+  },
+  {
+    "Time": "2026-11-20T11:28:55.179193+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestTokenManager_VerifyToken/验证无效令牌"
+  },
+  {
+    "Time": "2026-11-20T11:28:55.179648+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestTokenManager_VerifyToken/验证无效令牌",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:28:55.179713+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestTokenManager_VerifyToken",
+    "Elapsed": 0.01
+  },
+  {
+    "Time": "2026-11-20T11:28:55.179716+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestTokenSessionStoreLifecycle"
+  },
+  {
+    "Time": "2026-11-20T11:28:55.19143+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestTokenSessionStoreLifecycle",
+    "Elapsed": 0.01
+  },
+  {
+    "Time": "2026-11-20T11:28:55.191443+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestTokenManagerWithoutRedisAndCache"
+  },
+  {
+    "Time": "2026-11-20T11:28:55.204071+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestTokenManagerWithoutRedisAndCache",
+    "Elapsed": 0.01
+  },
+  {
+    "Time": "2026-11-20T11:28:55.204076+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestSessionBackedTokenCarriesTopLevelAuthClaims"
+  },
+  {
+    "Time": "2026-11-20T11:28:55.213856+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestSessionBackedTokenCarriesTopLevelAuthClaims",
+    "Elapsed": 0.01
+  },
+  {
+    "Time": "2026-11-20T11:28:55.213868+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestTokenRevocationServiceRevokeSingleWithoutRedis"
+  },
+  {
+    "Time": "2026-11-20T11:28:55.224096+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestTokenRevocationServiceRevokeSingleWithoutRedis",
+    "Elapsed": 0.01
+  },
+  {
+    "Time": "2026-11-20T11:28:55.224103+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestDurableSessionCheckerRejectsRevokedSessionWithoutRedis"
+  },
+  {
+    "Time": "2026-11-20T11:28:55.239321+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestDurableSessionCheckerRejectsRevokedSessionWithoutRedis",
+    "Elapsed": 0.02
+  },
+  {
+    "Time": "2026-11-20T11:28:55.239328+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestSingleLogoutDoesNotRevokeNewConcurrentSession"
+  },
+  {
+    "Time": "2026-11-20T11:28:55.252366+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestSingleLogoutDoesNotRevokeNewConcurrentSession",
+    "Elapsed": 0.01
+  },
+  {
+    "Time": "2026-11-20T11:28:55.252373+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestUserLevelRevocationDoesNotRevokeLaterSession"
+  },
+  {
+    "Time": "2026-11-20T11:28:55.275347+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestUserLevelRevocationDoesNotRevokeLaterSession",
+    "Elapsed": 0.02
+  },
+  {
+    "Time": "2026-11-20T11:28:55.275353+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestTokenManagerRefreshRotatesDurableSession"
+  },
+  {
+    "Time": "2026-11-20T11:28:55.289045+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestTokenManagerRefreshRotatesDurableSession",
+    "Elapsed": 0.01
+  },
+  {
+    "Time": "2026-11-20T11:28:55.289052+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestTokenManagerRefreshRejectsConcurrentReplay"
+  },
+  {
+    "Time": "2026-11-20T11:28:55.310385+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestTokenManagerRefreshRejectsConcurrentReplay",
+    "Elapsed": 0.02
+  },
+  {
+    "Time": "2026-11-20T11:28:55.310398+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestTokenRevocationServiceRevokeDeviceUsesPostgreSQL"
+  },
+  {
+    "Time": "2026-11-20T11:28:55.320232+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestTokenRevocationServiceRevokeDeviceUsesPostgreSQL",
+    "Elapsed": 0.01
+  },
+  {
+    "Time": "2026-11-20T11:28:55.320242+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestTokenRevocationServiceRevokeEmptyDeviceOnlyTargetsEmptyDevice"
+  },
+  {
+    "Time": "2026-11-20T11:28:55.331725+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/auth",
+    "Test": "TestTokenRevocationServiceRevokeEmptyDeviceOnlyTargetsEmptyDevice",
+    "Elapsed": 0.01
+  },
+  {
+    "Time": "2026-11-20T11:28:56.527451+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_Login/Login_Success",
+    "Elapsed": 1.42
+  },
+  {
+    "Time": "2026-11-20T11:28:56.527463+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_Login/Login_Invalid_Credentials"
+  },
+  {
+    "Time": "2026-11-20T11:28:57.904169+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_Login/Login_Invalid_Credentials",
+    "Elapsed": 1.38
+  },
+  {
+    "Time": "2026-11-20T11:28:57.904197+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_Login/Login_Invalid_Request"
+  },
+  {
+    "Time": "2026-11-20T11:28:57.904606+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_Login/Login_Invalid_Request",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:28:57.904623+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_Login/Login_Inactive_User"
+  },
+  {
+    "Time": "2026-11-20T11:28:58.591223+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_Login/Login_Inactive_User",
+    "Elapsed": 0.69
+  },
+  {
+    "Time": "2026-11-20T11:28:58.591282+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_Login/Login_Account_Preserves_Case"
+  },
+  {
+    "Time": "2026-11-20T11:28:59.942217+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_Login/Login_Account_Preserves_Case",
+    "Elapsed": 1.35
+  },
+  {
+    "Time": "2026-11-20T11:28:59.942234+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_Login/Login_Account_Prefers_Email_Before_Username_Fallback"
+  },
+  {
+    "Time": "2026-11-20T11:29:01.310895+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_Login/Login_Account_Prefers_Email_Before_Username_Fallback",
+    "Elapsed": 1.37
+  },
+  {
+    "Time": "2026-11-20T11:29:01.310916+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_Login/Login_Email_Account_Normalizes_Case_Without_Username_Fallback"
+  },
+  {
+    "Time": "2026-11-20T11:29:02.675058+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_Login/Login_Email_Account_Normalizes_Case_Without_Username_Fallback",
+    "Elapsed": 1.36
+  },
+  {
+    "Time": "2026-11-20T11:29:02.675072+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_Login",
+    "Elapsed": 7.6
+  },
+  {
+    "Time": "2026-11-20T11:29:02.675076+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_Register"
+  },
+  {
+    "Time": "2026-11-20T11:29:02.681242+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_Register/Register_Success"
+  },
+  {
+    "Time": "2026-11-20T11:29:03.358033+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_Register/Register_Success",
+    "Elapsed": 0.68
+  },
+  {
+    "Time": "2026-11-20T11:29:03.358041+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_Register/Register_Email_Already_Exists"
+  },
+  {
+    "Time": "2026-11-20T11:29:03.358591+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_Register/Register_Email_Already_Exists",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:03.358762+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_Register/Register_Invalid_Data"
+  },
+  {
+    "Time": "2026-11-20T11:29:03.359139+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_Register/Register_Invalid_Data",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:03.359173+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_Register/Register_Ignores_Unknown_Role_Field"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.034688+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_Register/Register_Ignores_Unknown_Role_Field",
+    "Elapsed": 0.68
+  },
+  {
+    "Time": "2026-11-20T11:29:04.034701+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_Register",
+    "Elapsed": 1.36
+  },
+  {
+    "Time": "2026-11-20T11:29:04.034705+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_GetProfile"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.034933+08:00",
+    "Action": "skip",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_GetProfile",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.034953+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_UpdateProfile"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.035382+08:00",
+    "Action": "skip",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_UpdateProfile",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.035399+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_ChangePassword"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.035472+08:00",
+    "Action": "skip",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_ChangePassword",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.035478+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_RefreshToken"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.035547+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_RefreshToken/Refresh_Token_Success"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.03562+08:00",
+    "Action": "skip",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_RefreshToken/Refresh_Token_Success",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.035667+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_RefreshToken/Refresh_Token_Invalid_Token"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.035746+08:00",
+    "Action": "skip",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_RefreshToken/Refresh_Token_Invalid_Token",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.035764+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_RefreshToken",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.035787+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_Logout"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.04248+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_Logout/Logout_Success"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.047041+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_Logout/Logout_Success",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.047071+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAuthHandler_Logout",
+    "Elapsed": 0.01
+  },
+  {
+    "Time": "2026-11-20T11:29:04.047084+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestRegisterAlwaysCreatesUnprivilegedUser"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.723328+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestRegisterAlwaysCreatesUnprivilegedUser",
+    "Elapsed": 0.68
+  },
+  {
+    "Time": "2026-11-20T11:29:04.723333+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestRegisterRejectsWhenPublicRegistrationDisabled"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.724413+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestRegisterRejectsWhenPublicRegistrationDisabled",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.724419+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAdminCanRevokeAnotherUsersTokens"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.724694+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestAdminCanRevokeAnotherUsersTokens",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.724698+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestNonAdminCannotRevokeAnotherUsersTokens"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.724932+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestNonAdminCannotRevokeAnotherUsersTokens",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.724956+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestCaseHandler_CreateCase"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.725079+08:00",
+    "Action": "skip",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestCaseHandler_CreateCase",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.725083+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestClientHandler_GetClient"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.725552+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestClientHandler_GetClient/Get_Client_Success"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.726014+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestClientHandler_GetClient/Get_Client_Success",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.72608+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestClientHandler_GetClient/Get_Client_Not_Found"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.726337+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestClientHandler_GetClient/Get_Client_Not_Found",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.726348+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestClientHandler_GetClient",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.726423+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictOfficerSeesOnlyAssignedConflictApproval"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.75256+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictOfficerSeesOnlyAssignedConflictApproval",
+    "Elapsed": 0.03
+  },
+  {
+    "Time": "2026-11-20T11:29:04.752567+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictApprovalSnapshotPreservesCaseType"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.752854+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictApprovalSnapshotPreservesCaseType",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.752866+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictCheckRejectsForgedLawyerIDForLawyer"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.773436+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictCheckRejectsForgedLawyerIDForLawyer",
+    "Elapsed": 0.02
+  },
+  {
+    "Time": "2026-11-20T11:29:04.773442+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictCheckAllowsCurrentLawyerScope"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.795721+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictCheckAllowsCurrentLawyerScope",
+    "Elapsed": 0.02
+  },
+  {
+    "Time": "2026-11-20T11:29:04.795743+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictCheckRejectsAssistant"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.796912+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictCheckRejectsAssistant",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.796935+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictCheckRejectsIntakeAssistantAlias"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.797208+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictCheckRejectsIntakeAssistantAlias",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.797232+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictTaskRejectsIntakeContextOutsideControlledEndpoint"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.797422+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictTaskRejectsIntakeContextOutsideControlledEndpoint",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.797433+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictCheckAllowsConflictOfficerToCheckOtherLawyer"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.818727+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictCheckAllowsConflictOfficerToCheckOtherLawyer",
+    "Elapsed": 0.02
+  },
+  {
+    "Time": "2026-11-20T11:29:04.818915+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictCheckRejectsClientDifferentFromCase"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.841716+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictCheckRejectsClientDifferentFromCase",
+    "Elapsed": 0.02
+  },
+  {
+    "Time": "2026-11-20T11:29:04.841723+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictCheckRequiresCaseContext"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.842047+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictCheckRequiresCaseContext",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.842059+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestLegacyConflictHistoryFailsClosedForReviewerWithoutMatterContext"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.842259+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestLegacyConflictHistoryFailsClosedForReviewerWithoutMatterContext",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.842264+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestLegacyConflictHistoryFiltersSharedClientByMatterContext"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.866881+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestLegacyConflictHistoryFiltersSharedClientByMatterContext",
+    "Elapsed": 0.02
+  },
+  {
+    "Time": "2026-11-20T11:29:04.86689+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictTaskReadEnforcesObjectOwnership"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.867336+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictTaskReadEnforcesObjectOwnership",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.867341+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictReviewEnforcesEthicalWallBeforeWritingConclusion"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.891463+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictReviewEnforcesEthicalWallBeforeWritingConclusion",
+    "Elapsed": 0.02
+  },
+  {
+    "Time": "2026-11-20T11:29:04.891556+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictTaskResultRedactsHistoricalMatterForLawyer"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.893944+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictTaskResultRedactsHistoricalMatterForLawyer",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.893949+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictTaskResultShowsLimitedIdentityAndTypeWithoutHistoricalCaseDetails"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.894942+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictTaskResultShowsLimitedIdentityAndTypeWithoutHistoricalCaseDetails",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.894956+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictTaskResultHidesRestrictedSubjectFromLawyer"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.896024+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictTaskResultHidesRestrictedSubjectFromLawyer",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.896103+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSanitizeCSVCellNeutralizesFormulaPrefixes"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.8962+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSanitizeCSVCellNeutralizesFormulaPrefixes/equals"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.896304+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSanitizeCSVCellNeutralizesFormulaPrefixes/equals",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.896372+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSanitizeCSVCellNeutralizesFormulaPrefixes/plus_after_whitespace"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.89643+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSanitizeCSVCellNeutralizesFormulaPrefixes/plus_after_whitespace",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.896434+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSanitizeCSVCellNeutralizesFormulaPrefixes/minus"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.89647+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSanitizeCSVCellNeutralizesFormulaPrefixes/minus",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.89649+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSanitizeCSVCellNeutralizesFormulaPrefixes/at"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.896546+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSanitizeCSVCellNeutralizesFormulaPrefixes/at",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.896554+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSanitizeCSVCellNeutralizesFormulaPrefixes/plain_text"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.896707+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSanitizeCSVCellNeutralizesFormulaPrefixes/plain_text",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.896711+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSanitizeCSVCellNeutralizesFormulaPrefixes/empty"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.89672+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSanitizeCSVCellNeutralizesFormulaPrefixes/empty",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.896726+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSanitizeCSVCellNeutralizesFormulaPrefixes",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.896729+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestBlockedConflictApprovalLifecycle"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.896734+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestBlockedConflictApprovalLifecycle/blocked_without_approval_creates_first_independent_review"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.904143+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestBlockedConflictApprovalLifecycle/blocked_without_approval_creates_first_independent_review",
+    "Elapsed": 0.01
+  },
+  {
+    "Time": "2026-11-20T11:29:04.90424+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestBlockedConflictApprovalLifecycle/blocked_with_terminal_approval_is_rejected"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.909035+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestBlockedConflictApprovalLifecycle/blocked_with_terminal_approval_is_rejected",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.909039+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestBlockedConflictApprovalLifecycle/blocked_with_active_approval_is_reused"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.913777+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestBlockedConflictApprovalLifecycle/blocked_with_active_approval_is_reused",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.91385+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestBlockedConflictApprovalLifecycle",
+    "Elapsed": 0.02
+  },
+  {
+    "Time": "2026-11-20T11:29:04.913861+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictApprovalDoesNotTreatLimitedCoverageAsClear"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.914202+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConflictApprovalDoesNotTreatLimitedCoverageAsClear",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.914205+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_UploadDocumentSuccess"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.915143+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_UploadDocumentSuccess",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.915196+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_GetDocumentSuccess"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.915821+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_GetDocumentSuccess",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.915872+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_GetDocumentInvalidID"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.916113+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_GetDocumentInvalidID",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.916131+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_GetDocumentNotFound"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.916357+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_GetDocumentNotFound",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.916363+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_UpdateDocumentSuccess"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.917373+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_UpdateDocumentSuccess",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.917377+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_DeleteDocumentSuccess"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.91772+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_DeleteDocumentSuccess",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.917739+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_ListDocumentsSuccess"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.918148+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_ListDocumentsSuccess",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.918168+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_GetDocumentStatsSuccess"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.918638+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_GetDocumentStatsSuccess",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.918641+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_DownloadDocumentSuccess"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.918872+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_DownloadDocumentSuccess",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.918875+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_UploadDocumentMissingFile"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.919365+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_UploadDocumentMissingFile",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.919369+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_UploadDocumentInvalidEntityID"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.91988+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_UploadDocumentInvalidEntityID",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.919884+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_UpdateDocumentInvalidJSON"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.920106+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_UpdateDocumentInvalidJSON",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.920116+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_ListDocumentsInvalidQuery"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.920362+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_ListDocumentsInvalidQuery",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.920382+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_DownloadDocumentInvalidID"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.920559+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_DownloadDocumentInvalidID",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.920563+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_ServiceError"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.920749+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_ServiceError",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.920752+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_BoundaryCases"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.920788+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_BoundaryCases/LargeEntityID"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.921211+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_BoundaryCases/LargeEntityID",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.921258+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_BoundaryCases/EmptyFormFields"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.921492+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_BoundaryCases/EmptyFormFields",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.921507+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_BoundaryCases/SpecialCharactersInFormFields"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.923384+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_BoundaryCases/SpecialCharactersInFormFields",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.923443+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_BoundaryCases",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.923467+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_Performance"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.927477+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestDocumentHandler_Performance",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.92748+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestInboxItemHandlersRejectCrossUserAccess"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.931074+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestInboxItemHandlersRejectCrossUserAccess/get"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.93221+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestInboxItemHandlersRejectCrossUserAccess/get",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.932268+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestInboxItemHandlersRejectCrossUserAccess/update"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.932932+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestInboxItemHandlersRejectCrossUserAccess/update",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.932951+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestInboxItemHandlersRejectCrossUserAccess/mark_read"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.934065+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestInboxItemHandlersRejectCrossUserAccess/mark_read",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.93408+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestInboxItemHandlersRejectCrossUserAccess/complete"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.934574+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestInboxItemHandlersRejectCrossUserAccess/complete",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.934577+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestInboxItemHandlersRejectCrossUserAccess/snooze"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.93527+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestInboxItemHandlersRejectCrossUserAccess/snooze",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.935289+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestInboxItemHandlersRejectCrossUserAccess/delete"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.935768+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestInboxItemHandlersRejectCrossUserAccess/delete",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.936123+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestInboxItemHandlersRejectCrossUserAccess",
+    "Elapsed": 0.01
+  },
+  {
+    "Time": "2026-11-20T11:29:04.93613+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestInboxItemHandlersAllowOwnerAccess"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.945366+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestInboxItemHandlersAllowOwnerAccess",
+    "Elapsed": 0.01
+  },
+  {
+    "Time": "2026-11-20T11:29:04.945379+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestInboxItemHandlersRequireAuthenticatedUser"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.948311+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestInboxItemHandlersRequireAuthenticatedUser",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.948317+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestGetDocumentType"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.948398+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestGetDocumentType",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.948425+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestGenerateAndParseDocKey"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.94844+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestGenerateAndParseDocKey",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.94846+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestParseDocKey_Invalid"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.948501+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestParseDocKey_Invalid",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.948504+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestIsValidOutputType"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.948564+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestIsValidOutputType",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.948566+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSaveDocument_InvalidURL"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.954794+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSaveDocument_InvalidURL",
+    "Elapsed": 0.01
+  },
+  {
+    "Time": "2026-11-20T11:29:04.954799+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSaveDocument_DocumentNotFound"
+  },
+  {
+    "Time": "2026-11-20T11:29:04.959753+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSaveDocument_DocumentNotFound",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:04.959757+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSaveDocument_Success"
+  },
+  {
+    "Time": "2026-11-20T11:29:05.01281+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSaveDocument_Success",
+    "Elapsed": 0.05
+  },
+  {
+    "Time": "2026-11-20T11:29:05.012931+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSaveDocument_CreatesVersionBackup"
+  },
+  {
+    "Time": "2026-11-20T11:29:05.036662+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSaveDocument_CreatesVersionBackup",
+    "Elapsed": 0.02
+  },
+  {
+    "Time": "2026-11-20T11:29:05.036672+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestHandleCallback_MustSave"
+  },
+  {
+    "Time": "2026-11-20T11:29:05.061545+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestHandleCallback_MustSave",
+    "Elapsed": 0.02
+  },
+  {
+    "Time": "2026-11-20T11:29:05.061859+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestHandleCallback_RejectsMissingSecret"
+  },
+  {
+    "Time": "2026-11-20T11:29:05.062485+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestHandleCallback_RejectsMissingSecret",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:05.062488+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestHandleCallback_RejectsInvalidToken"
+  },
+  {
+    "Time": "2026-11-20T11:29:05.062502+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestHandleCallback_RejectsInvalidToken",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:05.062503+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConvertDocument_InvalidOutputType"
+  },
+  {
+    "Time": "2026-11-20T11:29:05.07239+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestConvertDocument_InvalidOutputType",
+    "Elapsed": 0.01
+  },
+  {
+    "Time": "2026-11-20T11:29:05.0724+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestCheckConversionStatus_NotFound"
+  },
+  {
+    "Time": "2026-11-20T11:29:05.077717+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestCheckConversionStatus_NotFound",
+    "Elapsed": 0.01
+  },
+  {
+    "Time": "2026-11-20T11:29:05.077736+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestGenerateCallbackToken"
+  },
+  {
+    "Time": "2026-11-20T11:29:05.077749+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestGenerateCallbackToken",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:05.077815+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestGenerateCallbackToken_EmptySecret"
+  },
+  {
+    "Time": "2026-11-20T11:29:05.077884+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestGenerateCallbackToken_EmptySecret",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:05.07789+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSaveDocument_SSRF_RejectsDifferentHost"
+  },
+  {
+    "Time": "2026-11-20T11:29:05.086703+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSaveDocument_SSRF_RejectsDifferentHost",
+    "Elapsed": 0.01
+  },
+  {
+    "Time": "2026-11-20T11:29:05.086707+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSaveDocument_SSRF_RejectsDifferentPort"
+  },
+  {
+    "Time": "2026-11-20T11:29:05.093407+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSaveDocument_SSRF_RejectsDifferentPort",
+    "Elapsed": 0.01
+  },
+  {
+    "Time": "2026-11-20T11:29:05.093411+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSaveDocument_SSRF_RejectsLoopback"
+  },
+  {
+    "Time": "2026-11-20T11:29:05.103049+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSaveDocument_SSRF_RejectsLoopback",
+    "Elapsed": 0.01
+  },
+  {
+    "Time": "2026-11-20T11:29:05.103065+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSaveDocument_SSRF_RejectsUnsupportedScheme"
+  },
+  {
+    "Time": "2026-11-20T11:29:05.110322+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSaveDocument_SSRF_RejectsUnsupportedScheme",
+    "Elapsed": 0.01
+  },
+  {
+    "Time": "2026-11-20T11:29:05.11033+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSaveDocument_SSRF_RejectsUserInfo"
+  },
+  {
+    "Time": "2026-11-20T11:29:05.117711+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSaveDocument_SSRF_RejectsUserInfo",
+    "Elapsed": 0.01
+  },
+  {
+    "Time": "2026-11-20T11:29:05.117814+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSaveDocument_SizeLimit_50MiB"
+  },
+  {
+    "Time": "2026-11-20T11:29:05.262923+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSaveDocument_SizeLimit_50MiB",
+    "Elapsed": 0.14
+  },
+  {
+    "Time": "2026-11-20T11:29:05.262931+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSaveDocument_DownloadFailure_PreservesOriginal"
+  },
+  {
+    "Time": "2026-11-20T11:29:05.269044+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSaveDocument_DownloadFailure_PreservesOriginal",
+    "Elapsed": 0.01
+  },
+  {
+    "Time": "2026-11-20T11:29:05.269049+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSaveDocument_RedirectRejected"
+  },
+  {
+    "Time": "2026-11-20T11:29:10.544486+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSaveDocument_RedirectRejected",
+    "Elapsed": 5.28
+  },
+  {
+    "Time": "2026-11-20T11:29:10.544497+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSaveDocument_SSRF_AllowedHostSucceeds"
+  },
+  {
+    "Time": "2026-11-20T11:29:10.564763+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestSaveDocument_SSRF_AllowedHostSucceeds",
+    "Elapsed": 0.02
+  },
+  {
+    "Time": "2026-11-20T11:29:10.564828+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestProcessConversionResult_RejectsNonOnlyOfficeURL"
+  },
+  {
+    "Time": "2026-11-20T11:29:10.571196+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestProcessConversionResult_RejectsNonOnlyOfficeURL",
+    "Elapsed": 0.01
+  },
+  {
+    "Time": "2026-11-20T11:29:10.571229+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestGetUserGroup"
+  },
+  {
+    "Time": "2026-11-20T11:29:10.571294+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestGetUserGroup",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:10.571307+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestUserHandler_GetUser"
+  },
+  {
+    "Time": "2026-11-20T11:29:10.57136+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestUserHandler_GetUser/Get_User_Success"
+  },
+  {
+    "Time": "2026-11-20T11:29:10.571641+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestUserHandler_GetUser/Get_User_Success",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:10.571689+08:00",
+    "Action": "run",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestUserHandler_GetUser/Get_User_Not_Found"
+  },
+  {
+    "Time": "2026-11-20T11:29:10.571888+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestUserHandler_GetUser/Get_User_Not_Found",
+    "Elapsed": 0
+  },
+  {
+    "Time": "2026-11-20T11:29:10.571941+08:00",
+    "Action": "pass",
+    "Package": "law-oa-go/internal/handlers",
+    "Test": "TestUserHandler_GetUser",
+    "Elapsed": 0
+  }
+]

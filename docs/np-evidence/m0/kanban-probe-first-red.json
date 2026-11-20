@@ -1,0 +1,76 @@
+{
+  "schema": "law-oa.m0.kanban-probe.v1",
+  "board": "law-oa-np-main",
+  "task_id": "t_92a9739d",
+  "result": "FAILED_PROBE_V1_ARCHIVED",
+  "first_red": {
+    "argv": [
+      "/Users/mac/.local/bin/hermes",
+      "kanban",
+      "--board",
+      "law-oa-np-main",
+      "unblock",
+      "t_92a9739d",
+      "仅主调度认领探针；无自动执行者"
+    ],
+    "exit_code": 1,
+    "error": "cannot unblock 仅主调度认领探针；无自动执行者 (not blocked/scheduled?)",
+    "cause": "reason must use --reason; positional text was interpreted as second task id; first id had already unblocked",
+    "timestamps": "not retained from first attempt"
+  },
+  "steps": [
+    {
+      "argv": [
+        "/Users/mac/.local/bin/hermes",
+        "kanban",
+        "--board",
+        "law-oa-np-main",
+        "create",
+        "M0-00 看板接入闭环",
+        "--idempotency-key",
+        "law-oa-m0-kanban-probe-2481a47",
+        "--json"
+      ],
+      "started_at": "2026-11-20T03:23:55.199054+00:00",
+      "ended_at": "2026-11-20T03:23:55.963975+00:00",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"t_92a9739d\",\n  \"title\": \"M0-00 看板接入闭环\",\n  \"body\": \"接入探针：仅虚构任务，验证create/show/comment/block/unblock/claim/request-review/complete/readback。执行者Codex coordinator；local-only；无业务代码修改/外部通知/自动派工。\",\n  \"assignee\": null,\n  \"status\": \"ready\",\n  \"priority\": 0,\n  \"tenant\": null,\n  \"workspace_kind\": \"dir\",\n  \"workspace_path\": \"/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0\",\n  \"branch_name\": null,\n  \"project_id\": null,\n  \"created_by\": \"codex-coordinator\",\n  \"created_at\": 1795144927,\n  \"started_at\": null,\n  \"completed_at\": null,\n  \"result\": null,\n  \"skills\": [],\n  \"max_runtime_seconds\": null,\n  \"max_retries\": null,\n  \"model_override\": null,\n  \"provider_override\": null,\n  \"session_id\": null,\n  \"workflow_template_id\": null,\n  \"current_step_key\": null,\n  \"completion_contract\": \"local-only\",\n  \"last_failure_error\": null\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/Users/mac/.local/bin/hermes",
+        "kanban",
+        "--board",
+        "law-oa-np-main",
+        "block",
+        "t_92a9739d",
+        "--kind",
+        "needs_input",
+        "synthetic pause for corrected unblock verification"
+      ],
+      "started_at": "2026-11-20T03:23:55.964647+00:00",
+      "ended_at": "2026-11-20T03:23:56.952599+00:00",
+      "exit_code": 0,
+      "stdout": "t_92a9739d → triage (unblock loop detected — needs a human decision): synthetic pause for corrected unblock verification\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/Users/mac/.local/bin/hermes",
+        "kanban",
+        "--board",
+        "law-oa-np-main",
+        "unblock",
+        "--reason",
+        "主调度恢复接入探针",
+        "t_92a9739d"
+      ],
+      "started_at": "2026-11-20T03:23:56.953018+00:00",
+      "ended_at": "2026-11-20T03:23:57.750096+00:00",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "cannot unblock t_92a9739d (not blocked/scheduled?)\n"
+    }
+  ]
+}
