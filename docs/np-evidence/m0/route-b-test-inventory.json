@@ -1,22 +1,23 @@
 {
-  "task": "t_cbc0ab2c",
-  "revision": "review-fix-2",
+  "task": "t_23c34a57",
+  "revision": "route-b-v0.4-coordinator-reviewed",
   "generated": "2026-11-20",
   "source_repo": {
     "path": "/Users/mac/Desktop/FT/law-oa-go/output/np-v04-first-slice",
     "head": "2d659d9"
   },
-  "main_repo_head": "213da4c",
+  "main_repo_head": "c8716b7",
   "app_main": "d9c92fb",
-  "status": "M0 doc/evidence closure; nothing implemented or run; all executions NOT_RUN",
+  "status": "DOCUMENT_RULES_REVIEWED_RUNTIME_NOT_RUN",
   "counts": {
     "source_go_required": 26,
     "source_frontend_suites": 5,
     "source_frontend_expanded_cases": 33,
     "source_browser_scenarios": 4,
     "source_required_cases_and_scenarios": 63,
-    "planned_detail_route_cases": 2,
-    "new_security_cache_groups": "separately listed, not counted in historical 63"
+    "planned_detail_route_cases": 3,
+    "new_security_cache_groups": "separately listed, not counted in historical 63",
+    "issue_register_note": "M0-R01..R08 registered here; distinct from legacy MI-R01..08"
   },
   "keep_go": [
     {
@@ -126,17 +127,17 @@
     "split_planned": [
       {
         "source_case": "TestIntakeContinuationHandlerRejectsStaleRevision",
-        "main_case": "TestUpdateIntakeRejectsStaleRevisionWithoutOverwrite (existing KEEP)",
+        "main_case": "TestUpdateIntakeRejectsStaleRevisionWithoutOverwrite (existing KEEP) + planned same-user GET latest assertion",
         "entry": "native PUT",
-        "assert": "stale write rejected, input/data preserved; GET reload can fetch latest authorized draft",
+        "assert": "stale write rejected, input/data preserved; after stale PUT 409 the same user GET on the registered main detail route returns the latest draft; normal detail/restore GET gains no new 409 gate",
         "acceptance": [
           "I05"
         ],
-        "main_case_origin": "EXISTING_KEEP"
+        "main_case_origin": "EXISTING_KEEP_PLUS_PLANNED_GET_ASSERTION"
       },
       {
         "source_case": "TestIntakeContinuationHandlerForbidsOtherLawyer",
-        "entry": "现有详情/恢复入口",
+        "entry": "main registered router detail route (M1); source self-registered route is not reachability evidence",
         "assert": "403",
         "acceptance": [
           "I04"
@@ -146,16 +147,27 @@
       },
       {
         "source_case": "TestIntakeContinuationHandlerMissingIntake",
-        "entry": "现有详情/恢复入口",
+        "entry": "main registered router detail route (M1); unregistered-path 404 must not pass this check",
         "assert": "404",
         "acceptance": [
           "I04"
         ],
         "main_case": "TestMainDraftDetailMissingIntake",
         "main_case_origin": "PLANNED_NOT_IMPLEMENTED"
+      },
+      {
+        "source_case": "route-b ruling P1-1 / M0-R01: source self-registered route does not prove main reachability",
+        "entry": "main registered router detail route (M1)",
+        "assert": "self returns 200 with latest draft; detail and list alias carry client + opposing-party sentinels and full-response redaction",
+        "acceptance": [
+          "I04",
+          "I05"
+        ],
+        "main_case": "TestMainDraftDetailSelfReturnsLatest",
+        "main_case_origin": "PLANNED_NOT_IMPLEMENTED"
       }
     ],
-    "redaction": "Extend existing TestDraftRestoreReturnsRevisionAndProtectedIdentityStatus to cover client and opposing party; no identity_digest/ciphertext/plaintext/hmac marker leaks"
+    "redaction": "Detail/list-alias full-response redaction covers client and opposing-party sentinels; no identity_digest/ciphertext/plaintext/hmac marker leaks; extends existing restore/list tests"
   },
   "keep_frontend_unit": [
     {
@@ -210,9 +222,13 @@
         "带来源的未决请求只缓存恢复标识，正文和选择仅保留在内存"
       ],
       "acceptance": [
-        "C04"
+        "I16",
+        "C04",
+        "C05",
+        "C07"
       ],
-      "count_basis": "expanded fixed-source historical Jest cases, not literal test block count"
+      "count_basis": "expanded fixed-source historical Jest cases, not literal test block count",
+      "main_disposition": "ADAPT positive fixture identities and per-request keys; keep old malformed identities as negative; historical22 is not new total"
     },
     {
       "suite": "frontend/src/pages/auth/__tests__/Login.failure.test.tsx",
@@ -275,7 +291,8 @@
     },
     "seed_browser_py": {
       "verdict": "SPLIT",
-      "target": "I09-FILES"
+      "target": "I09-FILES",
+      "evidence": "source seeds one material with two versions only; does not satisfy route-B supply"
     },
     "compare_browser_db_py": {
       "verdict": "SPLIT files断言 + KEEP来源回执断言",
@@ -291,6 +308,19 @@
     "run_local_check_probe_compose": {
       "verdict": "KEEP isolation controls / ADAPT root paths",
       "boundary": "127.0.0.1:18790/np_first_slice_dev; build tag np_local_check and NP_LOCAL_CHECK=synthetic-only; run-local-check.sh:13,18 backend path becomes root; compose PG16.14 and loopback mounts stay isolated"
+    },
+    "np_local_check_seed": {
+      "verdict": "SPLIT/EXTEND (planned)",
+      "evidence": "backend/cmd/np-local-check/main.go seed() creates user/client/target intake/control intake/parties only; no material rows",
+      "b_seed_requirements_m3": [
+        ">=2 independent material rows",
+        "non-empty clients and parties",
+        "exact target and control ids",
+        "unknown metadata integer >2^53",
+        "ids returned to compare scripts, never hardcoded"
+      ],
+      "m2": "consumes seed output only",
+      "m5": "real entry uses separate synthetic data; production handlers never accept test fault headers"
     }
   },
   "i09_main_contract": {
@@ -331,7 +361,10 @@
     "2个403/404详情适配；陈旧写入复用已有PUT测试，GET可读最新"
   ],
   "open_items": [
-    "implementation/runtime verification remains; no undecided route-B projection or script naming at M0"
+    "runtime verification remains; all M0-R01..R08 dispositions are rule-level and NOT_RUN",
+    "M0-R02/M0-R07 dispositions are outside the two authorized files; owned by their owners",
+    "main plan legacy-7 mislabel and CI item-list cleanup owned by the main agent",
+    "C10 cache-policy revision owned by the main agent; route-B files only align citations"
   ],
   "frozen_go_cases": [
     {
@@ -674,7 +707,13 @@
         "linked_case_atomic_rollback",
         "start_no_revision_increment"
       ],
-      "status": "PLANNED_NOT_IMPLEMENTED"
+      "status": "PLANNED_NOT_IMPLEMENTED",
+      "stages": {
+        "M1": "I15-NATIVE legal confirmed-facts change, old sync and service async completions",
+        "M3": "I15-NP source-save overlap",
+        "M5": "real root entry"
+      },
+      "comparison_baseline": "snapshot AFTER lawful fact edit / NP save; reject old completion without further intake/cases mutation; fresh matched version positive case required"
     },
     {
       "id": "I16",
@@ -712,9 +751,119 @@
     }
   ],
   "browser_entry_split": {
-    "fixture": "source 4 scenarios adapted to B fixture; X-NP-Drop-Response only in np_local_check build",
+    "fixture": "M3 prepares four B fixture scenarios/spec/config/seed; M4 consumes; full I11 then M2; fault header only np_local_check build",
     "real_main": "M5 root main + actual login/PG/Redis; external synthetic TCP fault proxy, never production handler fault headers",
     "runtime": "NOT_RUN"
   },
-  "coordinator_review": "M0 document seal accepted; shared redaction moved to existing restore test; 2 planned detail cases, stale maps existing PUT; runtime NOT_RUN"
+  "coordinator_review": "GLM route-B draft corrected and integrated by coordinator: 3 planned real-router detail cases; current id/request_id contract and stage split; source63 historic unchanged; runtime NOT_RUN",
+  "issue_register": [
+    {
+      "id": "M0-R01",
+      "source": "P1-1",
+      "scope": "draftrevision detail reachability",
+      "disposition": "source self-registered route is not main-router evidence; M1 real router: self 200 / cross-user 403 / missing 404 / stale PUT 409 then same-user GET latest; detail + list alias redaction with client and opposing-party sentinels; unregistered 404 cannot pass; continuation forward capability stays deferred",
+      "status": "rule revised; NOT_RUN"
+    },
+    {
+      "id": "M0-R02",
+      "source": "P1-2",
+      "scope": "主体保全与授权挂接（dependency-seal 承接）",
+      "disposition": "不在本文件展开处置；按 [dependency-seal](../../plans/np-main-integration/m0/dependency-seal.md) §三 主体最小 helper、事务顺序、失败回滚与授权 db/tx 挂接规则执行；验收锚点 I04/I06/I09-MAIN（主计划 §6 验收矩阵）。rule registered here, owned by dependency-seal; NOT_RUN",
+      "status": "cross-referenced to dependency-seal; NOT_RUN"
+    },
+    {
+      "id": "M0-R03",
+      "source": "P1-3",
+      "scope": "I15 reachable scenarios",
+      "disposition": "M1: legal native confirmed-facts edit -> snapshot invalidated / back to draft / revision advances once -> old sync and service-level async write-back rejected; intake status/metadata/source pointer and linked cases unchanged; old public async intake entry rejection is not late-write evidence; M3 NP summary source overlap; M5 real entry",
+      "status": "rule revised; NOT_RUN"
+    },
+    {
+      "id": "M0-R04",
+      "source": "P1-4",
+      "scope": "useNarrowPilotSave fixtures",
+      "disposition": "success abandon fixture lacks intake id and success committed lacks request_id; old single-slot scope assertion does not fit v2; ADAPT success fixtures to echo really captured request_id + server receipt field id (compare identity intake_id); action asserted only when returned; committed/no_change need legal revision, abandoned does not; old missing-field cases become negative keep-key keep-input; assert v2 keys, wrong ids / unknown / doublepages; keep original scenarios and source history 33; do not claim verbatim KEEP or new PASS",
+      "status": "rule revised; NOT_RUN"
+    },
+    {
+      "id": "M0-R05",
+      "source": "P1-5",
+      "scope": "B fixture and CI/M5 boundary",
+      "disposition": "four B fixture specs/config: M3 prepare, M4 verify; CI normal I11 only after fixture completion; M5 only real root entry with PG/Redis and external TCP proxy; fixture results never labeled as real main",
+      "status": "rule revised; NOT_RUN"
+    },
+    {
+      "id": "M0-R06",
+      "source": "P2-6",
+      "scope": "B seed supply",
+      "disposition": "source np-local-check seed only target/control/client/party and seed-browser.py one material two versions, insufficient for B; M3 main B seed (planned) via isolated np-local-check seed extension or dedicated B seed entry provides >=2 independent material rows, non-empty clients/parties, exact target+control ids and >2^53 unknown metadata, returns ids to compare without hardcoding; M2 consumes only; original 4 browser scenarios keep clean deterministic source+3/receipt+4; negative cases use independent seed/db windows; M5 real entry uses separate synthetic data and never accepts production fault headers",
+      "status": "rule revised; NOT_RUN"
+    },
+    {
+      "id": "M0-R07",
+      "source": "P2-7",
+      "scope": "迁移/受控追加入口与备用入口（dependency-seal 承接）",
+      "disposition": "不在本文件展开处置；按 [dependency-seal](../../plans/np-main-integration/m0/dependency-seal.md) §四 000086 冻结迁移、受控追加、已应用核验、回滚不删来源/回执/墓碑及 root 唯一支持入口规则执行；验收锚点 I12（M1 方案+M6 演练）。rule registered here, owned by dependency-seal; NOT_RUN",
+      "status": "cross-referenced to dependency-seal; NOT_RUN"
+    },
+    {
+      "id": "M0-R08",
+      "source": "P2-8",
+      "scope": "C10 / service worker boundary",
+      "disposition": "main-agent split: PROD build real assets and registration observation (recording sw.js absence or registration failure allowed; a 404 alone must not be reported as no old worker) + same-origin controlled old SW fixture requiring 200 correct JS MIME and actual controller, or legacy terminal HOLD; never force production to add sw.js/PWA; clean-profile evidence kept separate from old-worker path; M4 build/fixture, M5 real root may reuse the same build with separate evidence; these two files only align citations, cache policy owned by main agent",
+      "status": "boundary recorded; NOT_RUN"
+    }
+  ],
+  "i15_split": {
+    "id": "M0-R03",
+    "m1_reachable": [
+      "legal native confirmed-facts edit",
+      "snapshot invalidated and status returns to draft",
+      "revision advances exactly once",
+      "old sync write-back rejected",
+      "service-level async write-back rejected",
+      "intake status/metadata/source pointer unchanged",
+      "linked cases unchanged"
+    ],
+    "evidence_boundary": "old public async intake entry rejection is recorded as entry rejection only and is not late-write evidence",
+    "m3": "NP summary source overlap scenarios",
+    "m5": "real root entry verification",
+    "group": "TestNPMainConflictCompletionUsesInputRevision (planned, unchanged name)",
+    "comparison_baseline": "state AFTER legal edit/NP save; old completion must not cause any additional intake/cases mutation"
+  },
+  "browser_gates": {
+    "id": "M0-R05",
+    "fixture": "four B fixture specs/config prepared M3, verified M4",
+    "ci": "normal I11 runs only after fixture completion",
+    "m5": "real root entry only; real login + PG/Redis + external synthetic TCP fault proxy; fixture never labeled real main",
+    "data": "clean deterministic four-scenario sequence keeps source+3/receipt+4; negative cases use independent seed/db windows; M5 uses separate synthetic data and production handlers never receive fault headers",
+    "evidence_split": "clean-profile evidence separate from old-worker path per M0-R08",
+    "full_I11_gate": "only after M3/M4 fixtures ready; then before M5; early M2 configuration/independent negatives not full I11"
+  },
+  "sw_cache_boundary": {
+    "id": "M0-R08",
+    "source_evidence": "frontend/src/main.tsx registers /sw.js only when import.meta.env.PROD; neither repo ships frontend/public/sw.js",
+    "prod_build_observation": "serve same-candidate PROD build on an isolated static host locally without deploying; actually observe /sw.js status and MIME, registration/controller outcome; recording sw.js absence or registration failure is allowed; a bare 404 must not be reported as proof there is no old worker",
+    "controlled_fixture": "same-origin controlled old-SW fixture requires 200 with correct JS MIME and an actual controller; otherwise legacy terminal HOLD",
+    "forbidden": "never force production to add sw.js/PWA to satisfy a 200",
+    "stages": "M4 build/fixture; M5 real root may reuse the same build but evidence is recorded separately; clean-profile evidence separate from old-worker path",
+    "ownership": "cache policy owned by main agent; this file only aligns citations"
+  },
+  "use_save_adapt": {
+    "id": "M0-R04",
+    "planned_changes": [
+      "success fixtures echo the server receipt identity field id together with request_id (both really captured, not fabricated)",
+      "pending/recovery identification continues to use intake_id; compare scripts match receipts by intake_id",
+      "action is asserted only when the response actually returns it; absent action is not compared",
+      "committed/no_change success fixtures carry a legal revision; abandoned success fixtures do not require revision",
+      "old missing-field cases become negative keep-key keep-input; assert per-request v2 keys for wrong ids / unknown / doublepages"
+    ],
+    "constraints": [
+      "original scenarios preserved",
+      "source history 33 preserved",
+      "no verbatim KEEP claim",
+      "no claimed new-main PASS"
+    ]
+  },
+  "previous_task": "t_cbc0ab2c"
 }

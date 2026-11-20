@@ -1,5 +1,5 @@
 {
-  "status": "M0_REVIEWED_CONDITIONAL_ENGINEERING_ESTIMATE",
+  "status": "M0_REVISED_CONDITIONAL_ENGINEERING_ESTIMATE_NOT_DELIVERY_CAP",
   "scope": "remaining native-main first-slice integration M1-M6, route B, existing own draft description only, Stub only",
   "base_application_sha": "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
   "source_slice_sha": "2d659d9dd750f49ddb1f517746e22851392231a6",
@@ -7,12 +7,15 @@
     {
       "id": "M1",
       "name": "原生最小基础",
-      "low": 7,
-      "high": 11,
+      "low": 8,
+      "high": 13,
       "scope": [
         "原生详情/列表/恢复revision与旧/新写入者锁内保护、schema历史未知失败关闭",
         "检测输入revision经现有请求/search_parameters/association传递，同步二次回写收口",
-        "NP两表就绪检查与最小授权复用、必要原生回归"
+        "NP两表就绪检查与最小授权复用、必要原生回归",
+        "真实原生list/detail/alias/dashboard读取与router正反例（原包已计）",
+        "最小主体身份helper：新客户主档/对方继承、先准备后替换及失败回滚（净增1–2）",
+        "共享router装配schema guard及86受控追加/已应用核验；root唯一支持入口（基础原包已计）"
       ],
       "historical": [
         "W02",
@@ -31,7 +34,8 @@
       "scope": [
         "PR可达评论/第三方上传/通知/发布隔离，脱敏artifact白名单及消费链",
         "强制PG/DSN/关键用例与Skip失败检查、fuzz输入/汇总状态",
-        "离线条件检查及授权后的正常/负向workflow证据"
+        "离线条件检查及授权后的正常/负向workflow证据",
+        "早期配置/独立负向先行；完整正常/负向I11待M3/M4 fixture完成后、M5前执行，成本不移转或重计"
       ],
       "historical": [
         "W10 verification overlap only"
@@ -44,11 +48,13 @@
       "id": "M3",
       "name": "助手净增量与路线B夹具适配",
       "low": 4,
-      "high": 6,
+      "high": 7,
       "scope": [
         "源Go新文件/8共享文件净增量、前端组件/Hook/原生按钮挂接",
         "原生新建/补正/他人草稿与严格摘要分流、正确回执身份字段",
-        "根目录脚本与B夹具/测试适配，源完整用例保留"
+        "根目录脚本与B夹具/测试适配，源完整用例保留",
+        "现有四repo按db/tx授权适配（挂接原已计）",
+        "回执成功fixture身份ADAPT、缺字段负向；B非空/大整数seed、spec/config/比较器；共同适配上界净增1，不按问题数叠加"
       ],
       "historical": [
         "W04 remainder",
@@ -69,7 +75,8 @@
       "scope": [
         "接案正文仅内存与旧内容定向处置、请求独立恢复键",
         "保存中编辑B留页/重载前确认与晚到C保护、终态清键一致性",
-        "三类HTTP路由缓存绕过及SW注册/控制边界"
+        "三类HTTP路由缓存绕过及SW注册/控制边界",
+        "同候选PROD前端产物与受控旧worker fixture验证，缺资产不等于无旧worker；归既有http_sw_boundary不再新增预算"
       ],
       "historical": [
         "W03 content",
@@ -88,7 +95,8 @@
       "scope": [
         "root main+Redis+PG实际认证/来源/回执链",
         "物理断线/重放/墓碑、并发、主体/现有材料保全、双标签/SW检查",
-        "统一浏览器/PG对照与构建元数据、候选绑定"
+        "统一浏览器/PG对照与构建元数据、候选绑定",
+        "消费前包同候选PROD产物/fixture；只记录真实root+PG/Redis/TCP及DB全链，不再计fixture实现或完整I11"
       ],
       "historical": [
         "W10 author integration"
@@ -101,11 +109,12 @@
       "id": "M6",
       "name": "独立复核及合成切换",
       "low": 3,
-      "high": 5,
+      "high": 6,
       "scope": [
         "未参与实现者代码/证据复审、固定候选必要独立复跑",
         "I12合成升级/回滚/重启/最多单实例承接助手请求",
-        "门禁清单及首失败修复后定点复查"
+        "门禁清单及首失败修复后定点复查",
+        "合成追加升级/已应用状态核验/安全回滚与保留历史，单实例演练上界由1扩至2；净增上界1，不重计M1实现"
       ],
       "historical": [
         "W10 independent"
@@ -116,13 +125,13 @@
     }
   ],
   "base_person_days": [
-    25,
-    41
+    26,
+    45
   ],
   "buffer_percent": 20,
   "buffered_person_days": [
-    30,
-    50
+    32,
+    54
   ],
   "rounding": "ceil(low*1.2), ceil(high*1.2)",
   "not_included": [
@@ -154,6 +163,10 @@
       "schema_history_guard_and_native_fixtures": [
         2,
         3
+      ],
+      "party_identity_helpers_transaction_and_regressions": [
+        1,
+        2
       ]
     },
     "M2": {
@@ -177,7 +190,7 @@
       ],
       "route_b_fixtures_scripts": [
         1,
-        2
+        3
       ],
       "sql_audit_logging_and_targeted_tests": [
         1,
@@ -227,13 +240,304 @@
       ],
       "synthetic_cutover_rollback": [
         1,
-        1
+        2
       ]
     }
   },
   "review": {
-    "glm_cross_review": "sum/buffer correct; M1/M3 shared handler overlap flagged",
-    "coordinator_resolution": "explicit hunk/responsibility split above; no extra package added and no required gate removed",
-    "future_calibration": "M1 first bounded result must compare actual scope/cost; changed prerequisites or upper-bound overrun trigger reestimate"
-  }
+    "glm_cross_review": "Current GLM contribution was partial dependency/test-plan drafting. No completed independent GLM effort verdict claimed; coordinator reviewed original scope/decomposition, net additions, arithmetic and limits.",
+    "coordinator_resolution": "按原包已计、主体保全净新增、B共同适配上界、I12演练上界及纯阶段移转分开核算；无新平台、不删门禁",
+    "future_calibration": "M1首个有界结果必须校准；26–45/缓冲32–54是范围受限工程判断，不是可靠最大工时/报价/交付期限；外部客户端长期兼容、多实例或额外基础平台触发重新拆包"
+  },
+  "previous_estimate": {
+    "packs": [
+      {
+        "id": "M1",
+        "name": "原生最小基础",
+        "low": 7,
+        "high": 11,
+        "scope": [
+          "原生详情/列表/恢复revision与旧/新写入者锁内保护、schema历史未知失败关闭",
+          "检测输入revision经现有请求/search_parameters/association传递，同步二次回写收口",
+          "NP两表就绪检查与最小授权复用、必要原生回归"
+        ],
+        "historical": [
+          "W02",
+          "W03 partial",
+          "W04 partial"
+        ],
+        "reuse": "AuthTokenSession/TokenSessionStore/AuthorizationService，PG v14；NP源事务不重写",
+        "included_checks": "本包单元/定点作者回归",
+        "excludes": "全局WorkItem、审批/材料版本平台、独立任务表"
+      },
+      {
+        "id": "M2",
+        "name": "CI门禁与产物流",
+        "low": 3,
+        "high": 5,
+        "scope": [
+          "PR可达评论/第三方上传/通知/发布隔离，脱敏artifact白名单及消费链",
+          "强制PG/DSN/关键用例与Skip失败检查、fuzz输入/汇总状态",
+          "离线条件检查及授权后的正常/负向workflow证据"
+        ],
+        "historical": [
+          "W10 verification overlap only"
+        ],
+        "reuse": "现有6套workflow局部修订，不整体替换",
+        "included_checks": "I11正常/负向与路由条件检查只计此包",
+        "excludes": "发布平台重建、其他历史全库lint治理"
+      },
+      {
+        "id": "M3",
+        "name": "助手净增量与路线B夹具适配",
+        "low": 4,
+        "high": 6,
+        "scope": [
+          "源Go新文件/8共享文件净增量、前端组件/Hook/原生按钮挂接",
+          "原生新建/补正/他人草稿与严格摘要分流、正确回执身份字段",
+          "根目录脚本与B夹具/测试适配，源完整用例保留"
+        ],
+        "historical": [
+          "W04 remainder",
+          "W05",
+          "W06 Stub only",
+          "W07 integration",
+          "W08 existing implementation"
+        ],
+        "reuse": "2d659d9已审首切片代码、Stub、多轮/来源和回执原实现",
+        "included_checks": "适配后的单元/组件/fixture定点作者检查",
+        "excludes": "重写现有助手、真实提供方、完整模型评测/律师试用"
+      },
+      {
+        "id": "M4",
+        "name": "缓存与编辑防丢失增量",
+        "low": 4,
+        "high": 7,
+        "scope": [
+          "接案正文仅内存与旧内容定向处置、请求独立恢复键",
+          "保存中编辑B留页/重载前确认与晚到C保护、终态清键一致性",
+          "三类HTTP路由缓存绕过及SW注册/控制边界"
+        ],
+        "historical": [
+          "W03 content",
+          "W07 UI",
+          "W08 partial"
+        ],
+        "reuse": "原生表单/保存入口/回查协议；无需离线或加密框架",
+        "included_checks": "C01–C14组件/合成fixture前置检查；非M5实际main联调",
+        "excludes": "改造全站缓存/PWA、通用离线草稿"
+      },
+      {
+        "id": "M5",
+        "name": "同候选实际main集成",
+        "low": 4,
+        "high": 7,
+        "scope": [
+          "root main+Redis+PG实际认证/来源/回执链",
+          "物理断线/重放/墓碑、并发、主体/现有材料保全、双标签/SW检查",
+          "统一浏览器/PG对照与构建元数据、候选绑定"
+        ],
+        "historical": [
+          "W10 author integration"
+        ],
+        "reuse": "前包已有单测不重复计实现，源故障夹具/结构校验可改造",
+        "included_checks": "实际入口全链作者执行与问题定位；不重复M2 I11成本",
+        "excludes": "真实案件/现网/生产上线"
+      },
+      {
+        "id": "M6",
+        "name": "独立复核及合成切换",
+        "low": 3,
+        "high": 5,
+        "scope": [
+          "未参与实现者代码/证据复审、固定候选必要独立复跑",
+          "I12合成升级/回滚/重启/最多单实例承接助手请求",
+          "门禁清单及首失败修复后定点复查"
+        ],
+        "historical": [
+          "W10 independent"
+        ],
+        "reuse": "作者证据用于定位；不能继承源PASS替代独立结果",
+        "included_checks": "独立执行与切换演练，区别于M5作者执行",
+        "excludes": "真实服务器演练/生产部署/真人律师试用"
+      }
+    ],
+    "decomposition": {
+      "M1": {
+        "native_revision_ownership_recovery": [
+          3,
+          5
+        ],
+        "sync_async_input_revision_atomic_link": [
+          2,
+          3
+        ],
+        "schema_history_guard_and_native_fixtures": [
+          2,
+          3
+        ]
+      },
+      "M2": {
+        "pr_artifact_side_effects": [
+          1,
+          2
+        ],
+        "pg_fuzz_fail_closed_jobs": [
+          1,
+          2
+        ],
+        "normal_negative_ci_evidence": [
+          1,
+          1
+        ]
+      },
+      "M3": {
+        "np_components_native_hook_wiring": [
+          2,
+          3
+        ],
+        "route_b_fixtures_scripts": [
+          1,
+          2
+        ],
+        "sql_audit_logging_and_targeted_tests": [
+          1,
+          1
+        ]
+      },
+      "M4": {
+        "memory_recovery_keys": [
+          1,
+          2
+        ],
+        "dirty_B_C_protection": [
+          1,
+          2
+        ],
+        "http_sw_boundary": [
+          1,
+          2
+        ],
+        "legacy_storage_and_error_tests": [
+          1,
+          1
+        ]
+      },
+      "M5": {
+        "real_root_main_pg_redis_setup": [
+          1,
+          2
+        ],
+        "browser_tcp_concurrency": [
+          2,
+          3
+        ],
+        "structural_db_artifact_comparison": [
+          1,
+          2
+        ]
+      },
+      "M6": {
+        "independent_diff_evidence_review": [
+          1,
+          2
+        ],
+        "required_independent_reruns": [
+          1,
+          2
+        ],
+        "synthetic_cutover_rollback": [
+          1,
+          1
+        ]
+      }
+    },
+    "base_person_days": [
+      25,
+      41
+    ],
+    "buffered_person_days": [
+      30,
+      50
+    ],
+    "buffer_percent": 20,
+    "input_document_sha": "c8716b7a964e4035b938761b8d4201b28b501cba"
+  },
+  "revision_input_sha": "c8716b7a964e4035b938761b8d4201b28b501cba",
+  "deduplicated_adjustments": [
+    {
+      "key": "D01",
+      "findings": [
+        "M0-R01",
+        "M0-R03"
+      ],
+      "owner": "M1",
+      "treatment": "原生恢复/真实router与检测版本保护已有计量；明确可达用例与分层，不再追加",
+      "net_delta": [
+        0,
+        0
+      ]
+    },
+    {
+      "key": "D02",
+      "findings": [
+        "M0-R02"
+      ],
+      "owner": "M1",
+      "treatment": "旧账未明确覆盖主体身份helper/先准备后替换/失败回滚，净增独立子项；M3 auth构造仍归原挂接，不叠加",
+      "net_delta": [
+        1,
+        2
+      ]
+    },
+    {
+      "key": "D03",
+      "findings": [
+        "M0-R04",
+        "M0-R06"
+      ],
+      "owner": "M3",
+      "treatment": "回执适配与B seed原包已有，增加缺身份负向/精确v2断言/独立数据窗口的适配不确定性，仅共同上界+1；不对两条各加一次",
+      "net_delta": [
+        0,
+        1
+      ]
+    },
+    {
+      "key": "D04",
+      "findings": [
+        "M0-R05"
+      ],
+      "owner": "M3/M4 fixture implementation; M2 I11 execution",
+      "treatment": "spec/config提前交付只移阶段；M5不再计fixture实现，完整I11仍只M2",
+      "net_delta": [
+        0,
+        0
+      ]
+    },
+    {
+      "key": "D05",
+      "findings": [
+        "M0-R07"
+      ],
+      "owner": "M1 implementation / M6 exercise",
+      "treatment": "受控追加与共享schema检查在M1原包；合成重复状态与回滚演练细化上界+1，仅计M6一次",
+      "net_delta": [
+        0,
+        1
+      ]
+    },
+    {
+      "key": "D06",
+      "findings": [
+        "M0-R08"
+      ],
+      "owner": "M4 preparation / M5 real entry / M6 independent checks",
+      "treatment": "PROD/旧worker纳入既有HTTP/SW边界及真实入口，复用同构建不重复计框架",
+      "net_delta": [
+        0,
+        0
+      ]
+    }
+  ]
 }

@@ -1,10 +1,10 @@
 {
-  "task": "t_7f6ad58e",
+  "task": "t_5a4a0afa",
   "kind": "m0_dependency_seal",
   "design_seal_only": true,
   "main_worktree": {
     "path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0",
-    "head": "213da4c7c6710c99d660c33a5701a230c674ede9",
+    "head": "c8716b7a964e4035b938761b8d4201b28b501cba",
     "app_main": "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7"
   },
   "source": {
@@ -14,12 +14,13 @@
   },
   "baseline_ref": "docs/plans/np-main-integration/source-baseline.json",
   "m_package_legend": {
-    "M1": "原生版本合同与冲突基础最小范围",
-    "M2": "CI/本地检查工具",
-    "M3": "NP handler/types/context/write + UI/hook/router挂接 + 日志保护（含必跑测试）",
-    "M4": "缓存/连接池净增量",
-    "M5": "live端到端必跑",
-    "DEFERRED": "I09-FILES 真延期，不在本轮验收"
+    "M1": "原生读取/revision/主体保全/检测回写/共享schema守卫与86追加最小范围",
+    "M2": "早期CI配置与独立负向；M3/M4 fixture完成后完整正常/负向I11",
+    "M3": "NP净增量/db-tx授权、B seed/spec/config/比较器、回执fixture ADAPT、SQL/审计日志",
+    "M4": "缓存/编辑/恢复键增量及同候选PROD/旧worker定点验证；不含连接池日志",
+    "M5": "真实root main+PG/Redis/外置TCP代理；消费前包fixture不重计实现",
+    "DEFERRED": "I09-FILES 真延期，不在本轮验收",
+    "M6": "独立复核/必要复跑及合成升级回滚单实例演练"
   },
   "non_docs_mapping_33": [
     {
@@ -40,7 +41,7 @@
       "target_path": "cmd/np-local-check/main.go",
       "main_blob": null,
       "slice_equals_main": null,
-      "disposition": "B版本地fixture入口适配；去掉材料文件handler绑定，不引入material_files/case_tasks；M2消费此工具",
+      "disposition": "主干B隔离seed适配：目标/对照精确IDs、非空客户主体、至少两独立材料、未知大整数；不带文件handler；M2消费",
       "m_package": "M3",
       "verify": "V-TOOL"
     },
@@ -216,9 +217,9 @@
       "target_path": "frontend/e2e/np-first-slice.live.spec.ts",
       "main_blob": null,
       "slice_equals_main": null,
-      "disposition": "live端到端fixture延期到M5但必跑",
-      "m_package": "M5",
-      "verify": "V-E2E"
+      "disposition": "B fixture spec/config在M3准备，M4消费；完整I11在M3/M4后M2运行；M5只真实root入口",
+      "m_package": "M3",
+      "verify": "V-FIXTURE/V-E2E"
     },
     {
       "n": 19,
@@ -227,9 +228,9 @@
       "target_path": "frontend/playwright.np.config.ts",
       "main_blob": null,
       "slice_equals_main": null,
-      "disposition": "fixture延期到M5但必跑",
-      "m_package": "M5",
-      "verify": "V-E2E"
+      "disposition": "B fixture spec/config在M3准备，M4消费；完整I11在M3/M4后M2运行；M5只真实root入口",
+      "m_package": "M3",
+      "verify": "V-FIXTURE/V-E2E"
     },
     {
       "n": 20,
@@ -271,7 +272,7 @@
       "target_path": "frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx",
       "main_blob": null,
       "slice_equals_main": null,
-      "disposition": "fixture延期到M3但必跑",
+      "disposition": "按源场景ADAPT成功回执真实request_id/id/revision及v2逐请求键；缺字段保留为负向；源历史33非原样KEEP承诺",
       "m_package": "M3",
       "verify": "V-UI"
     },
@@ -388,16 +389,24 @@
     }
   ],
   "deferred_vs_required": {
-    "deferred_to_must_run": "第5/8/9/10/15/18/19/21/22/23条为夹具延后到对应里程碑，但在该里程碑必跑；日志安全测试（5/15）不得真延期。",
+    "deferred_to_must_run": "源适用测试在其实施阶段必跑；spec/config n18/19交付由旧M5前移M3，M4消费，M2完整I11在fixture完成后执行；M5不承担fixture实现；日志测试5/15仍M3必跑",
     "i09_files_deferred": "I09-FILES是真后置的材料文件流；完整continuation正向提交判断不纳入本首切片。既有权限/版本/脱敏/保全语义不后置，任何fixture不为此引入material_files/case_tasks。",
     "continuation_excluded": "源 continuation_handler_test 的 can_submit/can_reuse_check+facts_version 完整复核不属于当前首切片；不引入 IntakeContinuationService，不新增 continuation 端点。主干原生详情/恢复的角色/版本/缺对象/脱敏场景仍必跑，由主干适用入口适配。",
-    "m1_scope": "M1仅按最小范围估算净工时：000086两表+expected_revision行锁合同+冲突revision载体与单事务回写；不加完整平台。"
+    "m1_scope": "M1包含真实原生list/detail/alias/dashboard读契约、主体保全helper/事务序、revision/锁内历史、检测输入及关联原子写、86受控追加与共享装配守卫；不加完整平台"
   },
   "migration_86_freeze": {
     "main_state": "主干迁移止于000079+001，000086编号未占用（0个000086文件）",
     "probe_evidence": "docs/np-evidence/m0/np86-dependency-probe.json：源原SQL在全新主干v14合成库独立执行成功，两表/两唯一索引/接案外键均在，未执行82-85",
     "dependency": "000086不依赖000080-000085，不整组带入",
-    "action": "冻结拟用，M0不执行正式迁移"
+    "action": "冻结拟用，M0不执行正式迁移",
+    "execution_plan": {
+      "owner": "M1",
+      "planned_entry": "scripts/np-first-slice/apply-main-np86.sh",
+      "legacy_cli": "cmd/migrate -command bootstrap remains v14 and does not append86; no production historical up/down override",
+      "transaction": "verify PG/target identity + baseline schema + fixed source SQL sha256; locked transaction applies86 only if absent; partial/mismatched schema fails; repeat verifies applied structure without rerunning DDL",
+      "schema_check": "verify columns, foreign keys and actual unique index definitions, not table-name-only",
+      "execution": "NOT_RUN; M6 I12 later exercises upgrade/repeat-check/failure/safe rollback preserving receipts/tombstones"
+    }
   },
   "compat_rollback_policy": {
     "read_write_compat": "无历史旧对象时允许原生合同；保护历史/未知来源不得降级；助手（前端）关闭不解除服务端保护",
@@ -408,12 +417,14 @@
   },
   "verification_index": {
     "V-GIT/V-TOOL/V-BUILD": "integrated candidate NOT_RUN; M0 native baseline results preserved separately",
-    "V-INTAKE": "native revision/history guard M1 before M3; NP strict write M3; all integrated cases NOT_RUN",
-    "V-CONFLICT": "M1 I15 before M3; NOT_RUN",
+    "V-INTAKE": "M1真实router本人200/越权403/业务404、409后GET最新和全响应脱敏；NOT_RUN",
+    "V-CONFLICT": "I15-NATIVE M1先行；I15-NP在M3追加；M5真实入口；公共async拒绝非晚到完成证据，NOT_RUN",
     "V-NP-API/V-ROUTE/V-LOG/V-POOL-TEST/V-UI": "M3 required including SQL/audit log protection; NOT_RUN",
-    "V-E2E": "M5 real root entry; NOT_RUN",
+    "V-E2E": "M5真实root main/PG/Redis及同候选PROD前端；NOT_RUN",
     "V-PG": "M0 v14+86 structure probe PASS only; M1 native/M3 NP/M5 real-entry writes NOT_RUN",
-    "V-MIG86": "source SQL structure compatibility PASS; target migration/upgrade execution NOT_RUN"
+    "V-MIG86": "旧M0结构兼容探针PASS仅结构；M1受控追加/已应用核验及M6升级安全回滚演练NOT_RUN",
+    "V-FIXTURE": "M3 B seed/spec/config/比较器及回执ADAPT，M4缓存fixture，完整I11此后M2；NOT_RUN",
+    "V-SW": "M4 C10-PROD/OLD准备与验证，M5同产物真实root链，旧终端未知HOLD；NOT_RUN"
   },
   "boundaries": [
     "仅写本JSON与docs/plans/np-main-integration/m0/dependency-seal.md",
@@ -462,7 +473,7 @@
       "target_path": "main.go",
       "main_blob": "c9494a015f68d09efe15b9179de048ee5ee0acd7",
       "symbol": "router.Init前的结构检查及真实main入口",
-      "required_delta": "集成候选启动先检查86两表/唯一索引，助手关闭也不解除；M4注册三类响应缓存绕过",
+      "required_delta": "root为唯一支持入口；NP schema guard放共享router.Init装配，在接案路由可用前检查以覆盖cmd/server；本条不把现有v14生产检查误记NP已就绪",
       "m_package": "M1/M4",
       "acceptance": "I10/I14",
       "runtime": "NOT_RUN"
@@ -493,6 +504,17 @@
       "m_package": "M1",
       "acceptance": "I02/I14",
       "runtime": "NOT_RUN"
+    },
+    {
+      "target_path": "internal/services/authorization_service.go",
+      "main_blob": "a3d7277b17f6683922f9cee445b0bf0ff756fff3",
+      "source_path": "backend/internal/services/authorization_service.go",
+      "source_blob": "e4eba7f9d1fdba0d1a909da8c85d43846dc24b3f",
+      "symbol": "NewAuthorizationService / four existing repository constructors",
+      "required_delta": "M3最小db/tx绑定适配源NewAuthorizationServiceWithDB调用，复用四repo构造，读取和写事务逐次授权；不复制整个权限平台",
+      "m_package": "M3",
+      "acceptance": "I04/I13",
+      "runtime": "NOT_RUN"
     }
   ],
   "planned_foundation_files": [
@@ -514,7 +536,126 @@
       "source_path": null,
       "purpose": "计划新增：检查PG及86两表/两唯一索引；不新增业务表/模型/工作流",
       "m_package": "M1"
+    },
+    {
+      "target_path": "internal/handlers/intake_party_identity_guard.go",
+      "source_path": "backend/internal/handlers/intake_party_identity_guard.go",
+      "source_blob": "5aab40a0ebee94cfe9faf7dbaeed1256f2bc1691",
+      "main_blob": null,
+      "purpose": "M1最小主体保全，prepare全部行后delete；不是整组移植源其他平台",
+      "m_package": "M1",
+      "source_symbols": [
+        "lookupCaseIntakePartyRows",
+        "caseIntakePartyIdentityInputPresent",
+        "inheritCaseIntakePartyIdentity",
+        "prepareCaseIntakeClientPartyRow",
+        "clientEntityTypeMatchesMaster",
+        "caseIntakePartyRoleValue",
+        "caseIntakePartyIsClient",
+        "prepareCaseIntakePartyUpdateRow"
+      ],
+      "verify": "new-client master identity / old opposing identity / failed preparation rolls back all; NOT_RUN"
+    },
+    {
+      "target_path": "scripts/np-first-slice/apply-main-np86.sh",
+      "source_path": null,
+      "main_blob": null,
+      "purpose": "计划M1合成候选受控离线psql事务入口；只v14+固定86，校验目标库/SQL摘要/实际schema、事务锁、失败即停；已应用只验不盲重跑DDL；不是通用迁移平台，不放宽旧CLI production限制",
+      "m_package": "M1",
+      "runtime": "NOT_RUN"
     }
   ],
-  "m0_review": "coordinator corrected phases/logging, froze 8 extra native targets and 2 planned foundation files; object identities verified by seal-blob-verification.json"
+  "m0_review": "current revision: coordinator completed dependency JSON/seal after GLM partial backend draft; source33 unchanged +9 native target references +4 planned foundation files +native-read hunks; historical seal-blob-verification.json unchanged, fresh static validation in m0-review-revision.json",
+  "previous_task": "t_7f6ad58e",
+  "revision": "M0-review-v0.4-documents-only",
+  "planned_native_reads": {
+    "kind": "delta inside existing mapped files, not a 34th source mapping",
+    "m_package": "M1",
+    "targets": [
+      {
+        "target_path": "internal/router/router.go",
+        "main_blob": "25d9d4f150e39b2d728c9d257a5e27ea3e3ab04c",
+        "source_path": "backend/internal/router/router.go",
+        "source_blob": "280726fe35586e89d67bf8ead789793a8fcd8185",
+        "symbols": [
+          "case-intakes GET list / GET :id",
+          "existing intake-workbench alias"
+        ]
+      },
+      {
+        "target_path": "internal/handlers/demo_aggregate_handler.go",
+        "main_blob": "911c172aa72f5243a261703a80493c167b203b83",
+        "source_path": "backend/internal/handlers/demo_aggregate_handler.go",
+        "source_blob": "d578e2c0aa7df0f3ab80370eb9080b34b1fdef04",
+        "symbols": [
+          "ListIntakeDrafts minimal reader",
+          "IntakeWorkbench revision/redaction",
+          "dashboard draft-reader projection"
+        ]
+      }
+    ],
+    "acceptance": [
+      "real-router self 200, other lawyer 403, registered business missing 404",
+      "stale PUT409 then GET latest revision/description",
+      "full-response client/opposing identity plaintext/ciphertext/digest sentinel absent; safe protected status present"
+    ],
+    "excludes": "continuation can_submit/can_reuse_check full platform",
+    "runtime": "NOT_RUN"
+  },
+  "reused_identity_dependencies": [
+    {
+      "path": "internal/models/client.go",
+      "main_blob": "cabeb4f0ad39111809d2849af66661fb4e1b2391",
+      "symbols": [
+        "EffectiveIdentityType",
+        "IdentityDigestValue",
+        "IdentityCiphertextValue"
+      ],
+      "disposition": "main exists; reuse, do not port whole source models/services"
+    },
+    {
+      "path": "internal/handlers/demo_aggregate_handler.go",
+      "main_blob": "911c172aa72f5243a261703a80493c167b203b83",
+      "symbols": [
+        "prepareCaseIntakePartyRow",
+        "normalizeIntakeEntityType"
+      ],
+      "disposition": "main exists; reuse, do not port whole source models/services"
+    },
+    {
+      "path": "internal/handlers/demo_aggregate_helpers.go",
+      "main_blob": "2ad40ccfa8f515bdf806d43fcf81d3804f57d2ee",
+      "symbols": [
+        "intakeClientID",
+        "firstNonEmptyValue",
+        "stringValue"
+      ],
+      "disposition": "main exists; reuse, do not port whole source models/services"
+    },
+    {
+      "path": "internal/services/subject_recheck_service.go",
+      "main_blob": "3620f83a6c28914285b4f023548d75f3f3d2bbf8",
+      "symbols": [
+        "NewSubjectWorkflowError"
+      ],
+      "disposition": "main exists; reuse, do not port whole source models/services"
+    }
+  ],
+  "entrypoint_policy": {
+    "supported": "root main.go only",
+    "alternate": {
+      "path": "cmd/server/main.go",
+      "main_blob": "c9a81bc2435f309cf59aeaa412b785d1dc98372f",
+      "fact": "calls router.Init at82",
+      "policy": "not a supported/released candidate entry; shared router NP schema guard still protects accidental invocation; test missing schema before route availability"
+    },
+    "legacy_migrate": {
+      "path": "cmd/migrate/main.go",
+      "main_blob": "6252aa85b4bb92f87311f361b6de73c87a125e8c",
+      "fact": "production bootstrap-only at32; explicit candidate append script planned, no generic up/down bypass"
+    },
+    "implementation": "NOT_STARTED",
+    "runtime": "NOT_RUN"
+  },
+  "review_resolution": "M0-R01..M0-R08 in implementation-and-acceptance-plan.md / m0/astra-review-resolution.md; rules documented, all runtime NOT_RUN"
 }

@@ -1,50 +1,67 @@
-# M0 依赖封板（dependency-seal）
+# M0最小依赖封板 v0.4（审核修订）
 
-- 任务 t_7f6ad58e。主工作树 output/np-main-m0 @ 213da4c7c6710c99d660c33a5701a230c674ede9；应用 main d9c92fb；源 np-v04-first-slice @ 2d659d9（对象库分离，git show 须 -C 源仓）。
-- 本文件为 M0 设计封板，非运行验收；M1 实现不在本轮授权。
-- 33 条逐项展开以 [dependency-seal.json](../../../np-evidence/m0/dependency-seal.json) 为准，本文件只做摘要。
+- 输入`codex/np-main-m0 @ c8716b7a964e4035b938761b8d4201b28b501cba`；应用main `d9c92fb`；源独立对象库`np-v04-first-slice @2d659d9`。
+- 当前任务`t_5a4a0afa`，历史`t_7f6ad58e`保留。GLM完成后端增补初稿，主调度纠正引用并接手本清单/JSON整合，不称GLM已独立完成封板或复审。
+- 本轮只是设计/依赖记录；任何新文件、路由、helper、脚本与检查均为后续计划，未实施、未运行；不进入M1。
+- [结构化依赖账](../../../np-evidence/m0/dependency-seal.json)保留**33条原来源映射**，另列**9个已有原生目标、4个计划基础文件**及现有router/handler内读取hunk；这些集合可能引用同一文件，不机械相加为文件总数。旧8目标/2计划的blob复核文件保持历史不改。
 
-## 一、M 包分工摘要（33 条明细见 JSON）
+## 一、工作包与交付顺序
 
-| M包 | 覆盖条目（JSON n） | 内容 |
+| 包 | 具体依赖 | 验证时点 |
 |---|---|---|
-| M1 | 6、17 | expected_revision 合同净增量 + 000086 冻结迁移（两表，不整组带入82–85）；最小范围，不加完整平台 |
-| M2 | 1、27、29–32 | CI与环境脚本；初始化改为main v14+86，保持隔离校验，不执行82–85 |
-| M3 | 2–5、7–16、20–26、28、33 | NP挂接、B夹具/脚本适配、SQL/审计日志保护与同阶段测试；不引入材料文件handler |
-| M4 | 复用M3表单/Hook；额外main/cache入口 | 仅内存、恢复键与编辑保护、三类响应缓存/SW边界；不是连接池日志功能 |
-| M5 | 18–19 | live 端到端 |
+| M1 | 原生revision/锁内历史、真实list/detail/alias/dashboard恢复读取、主体保全最小helper、检测输入revision和关联事务、86受控追加及共享router schema保护 | 原生真实router/权限/主体回归、I14原生和I15-NATIVE先于M3；不要求NP来源联动提前可用 |
+| M2 | CI局部隔离、PG/关键Skip失败、fuzz输入/汇总、产物白名单及消费链 | 早期配置/独立负向可先行；完整正常/负向I11待M3/M4 fixture后、M5前完成，只计一次 |
+| M3 | JSON n2–5/7–16/18–26/28/33的NP、日志、B seed/spec/config/比较器与回执ADAPT；db/tx授权最小构造 | 源适用场景和新增负向同阶段必跑，B fixture不能延到M5才提供；I15-NP此后追加 |
+| M4 | 仅内存、旧正文/每请求恢复键、编辑B/C防覆盖、响应缓存及PROD/受控旧worker | 消费M3稳定入口/夹具；组件和合成fixture先验，C10-PROD/OLD分开，不把dev当前端生产证据 |
+| M5 | root main+PG/Redis、同候选PROD产物、外置TCP故障代理与浏览器/PG保全 | 真入口新增作者联调，消费前包产物，不再计fixture实现或完整I11 |
+| M6 | 独立复审及必要复跑、I12合成追加升级/已应用核验/安全回滚/单实例 | 不回退未保护候选，不执行真实环境发布 |
 
-## 二、修正要点（相对初稿）
+## 二、33条原映射与新增依赖的计数
 
-- **audit/common（13/14）**：source-baseline.json 中 slice_equals_main=false，即使 frozen==main，slice 已改，必须按 slice_blob 移植日志保护，不得写"无需改"。
-- **"拆fixture后置"区分**：夹具延后到对应里程碑（M3/M4/M5）但在该里程碑**必跑**；日志安全测试（5/15）不得真延期。I09-FILES材料文件流明确DEFERRED/HOLD，完整continuation正向提交判断也不纳入本首切片；既有保护语义不后置，夹具不引入material_files/case_tasks。
-- **continuation 排除**：源 continuation_handler_test 的 can_submit/can_reuse_check+facts_version 完整复核不属于首切片；不引入 IntakeContinuationService 或新 continuation 端点。主干原生详情/恢复的角色/版本/缺对象/脱敏场景仍必跑，由主干适用入口适配。
+33条来源路径、slice_blob、main_blob保持固定对象身份；变更的是n18/19的交付从旧M5前移M3，以及夹具适配处置。它们不是新增两个来源项，不把原映射改称34条。
 
-## 三、原生额外改动（必要符号/调用点，详见 JSON 与 backend-closure）
+9个原生目标在旧8项基础上增加`internal/services/authorization_service.go`：源`NewAuthorizationServiceWithDB`在main不存在，M3复用main四repository按当前db/tx构造或最小工厂，撤权仍由服务端判定。不复制完整授权系统。
 
-- 冲突链路：ConflictCheckRequest（internal/models/conflict.go:12）无 revision 载体 → M1 增服务端取数 revision，落入既有 search_parameters 审计快照；异步沿用 conflict_check_records（async_conflict_check_service.go:17-22），不新增任务表；Link 与 intake 二次更新（demo_aggregate_handler.go:2378-2387）合并单事务。
-- 接案合同：主干 UpdateCaseIntake 无 expected_revision/行锁（demo_aggregate_handler.go:1892-2053）；源合同（源 demo_aggregate_handler.go:2295-2460，必填:2367、行锁:2437-2446、来源键:2390-2404）。
-- production schema：case_materials单表无版本列，删除重建在demo_aggregate_handler.go:2017-2035；沿用v14历史bootstrap，86显式迁移并增加两表/索引就绪检查，不重写旧bootstrap；路线B不新增版本栈。
-- session/router：复用 AuthTokenSession+TokenSessionStore+000078，不移植源会话代码；NP 路由挂接复用既有中间件。
+4个计划基础文件如下（均未创建）：
 
-## 四、迁移 86 冻结与兼容/回滚
+| 路径 | 固定来源/目的 | 归属 |
+|---|---|---|
+| internal/handlers/intake_draft_revision.go | 源demo_aggregate_handler中最小revision helper/恢复合同，不带完整continuation平台 | M1 |
+| internal/database/narrow_pilot_schema.go | PG/两表/列/唯一索引/外键及异常失败关闭；调用放共享router装配点 | M1 |
+| internal/handlers/intake_party_identity_guard.go | 源同名helper文件blob `5aab40a0ebee94cfe9faf7dbaeed1256f2bc1691`，仅必要主体保全符号 | M1 |
+| scripts/np-first-slice/apply-main-np86.sh | 受控合成候选离线psql事务入口，固定86/SQL校验和/目标身份及schema，已应用只核验；不是通用迁移平台 | M1 |
 
-- 主干迁移止于 000079+001，000086 编号未占（实测 0 个文件）。
-- 源 000086 在全新主干 v14 合成库独立执行成功（docs/np-evidence/m0/np86-dependency-probe.json，np86-verify exit 0：两表、两唯一索引、接案外键均在）；未执行 82–85。不依赖、不整组带入。
-- 兼容：无历史旧对象允许原生合同；保护历史/未知不得降级；助手关闭不解除服务端保护。
-- 回滚：只至保留 revision/来源保护的候选；持久墓碑不删除。单实例与旧客户端控制是演练门禁要求，尚未验证。
+## 三、原生读写、身份与I15最小符号闭包
 
-## 五、验证状态
+**M0-R01 / P1-1 读取恢复**：main接案组只有POST/PUT等（router:378–384），工作台别名在:399。源router:385/:394的ListIntakeDrafts/IntakeWorkbench读取应按最小DTO/投影移植至真实原生list/detail/alias及dashboard读取，不能只在测试中注册。真实router须本人200、他人403、路由命中后的业务对象404；陈旧PUT409后同用户GET返回最新摘要/revision。客户/对方身份明文、密文和digest哨兵不得出现在全响应含嵌套metadata中，仅保留获准保护状态。GET不增加旧revision拒绝门槛。不新增continuation端点或can_submit/can_reuse_check平台。
 
-本封板对应的未来集成验证均NOT_RUN；M0原main构建/回归证据不失效，也不自动继承至新集成候选。V-INTAKE原生部分与V-CONFLICT（I14/I15）必须在M1通过后再到M3；NP API/严格写/日志/组件在M3验证，真实main入口在M5。000086独立结构探针PASS仅限结构，正式目标迁移/升级不算通过。M0设计封板不关闭运行待验项。
+**M0-R02 / P1-2 主体保全**：源原生handler:2450–2481在事务内先准备全部party rows，再delete/insert；main:1996–2013先删除再generic prepare。M1须区分切换客户取新client master与空对方身份继承旧受保护值；准备/插入失败时回滚全部写入。
 
-## 六、边界
+必要源符号：lookupCaseIntakePartyRows、caseIntakePartyIdentityInputPresent、inheritCaseIntakePartyIdentity、prepareCaseIntakeClientPartyRow、clientEntityTypeMatchesMaster、caseIntakePartyRoleValue、caseIntakePartyIsClient、prepareCaseIntakePartyUpdateRow；不因为同一文件存在create包装就整组引入新平台。其依赖main已存在的Client.EffectiveIdentityType/IdentityDigestValue/IdentityCiphertextValue、prepareCaseIntakePartyRow/normalizeIntakeEntityType、intakeClientID/firstNonEmptyValue/stringValue与NewSubjectWorkflowError，JSON逐路径登记复用，不能再算模型/服务重建。
 
-只写本文件与 dependency-seal.json；不改看板、不提交推送、不改队友文件。复核与推送由主代理执行。
+M3授权构造将NP调用绑定当前db/tx的四个现有repo，客户撤权后须拒绝；源factory只是参考，不能把存在现有AuthorizationService当作同名factory已经存在。
 
-## 七、主代理封板裁决
+**M0-R03 / P1-3 I15分层**：main正式检测要求lawyer_facts_confirmed（handler:2188），源严格NP要求draft（narrow_pilot_context.go:113）。M1合法原生事实更新使确认快照失效、回draft并推进revision；旧同步和服务级异步完成必须因输入revision不符拒绝，修改后基准的intake状态/metadata/指针及关联cases原子不变。公共async intake入口被拒绝不证明在途完成保护。匹配版本正常完成只推进一次，检测启动不额外推进。输入revision走现有ConflictCheckRequest/search_parameters/association及conflict_check_records，不建队列/任务表；同步repository与handler二次整体写合并为同一受保护事务。NP来源联动在M3，真入口在M5。
 
-- JSON另列8个原生扩展目标的main blob、符号、必要增量与验收；2个计划基础文件是未来M1待实现，不是当前已存在代码。接案revision helper只移植最小符号，不借此加入完整续办/提交判断。
-- 新集成候选必须先显式应用86，并在启动时检查两表/两唯一索引，助手关闭也不解除。旧的、确定从未启用NP的未升级环境可继续其旧原生版本，不标作NP候选通过；不增加永久生命周期平台。已升级库缺表/查询错误失败关闭，不能回退旧全量写。
-- 无来源历史的对象可用原生全量入口，但仍须满足M1权限/expected_revision/幂等；不承诺外部旧客户端透明兼容。升级/回滚、单实例和客户端切换的实际演练仍是I12/试用前门禁，不是M0纸面通过。
-- 33条身份已由主代理逐项从正确Git对象库复核，见[blob复核](../../../np-evidence/m0/seal-blob-verification.json)。本清单封板针对固定SHA；基线变化或编号86被新提交占用时重核，不静默换号。
+## 四、86追加、装配入口与回滚（M0-R07 / P2-7）
+
+- 固定main止于79+001，86号未占；旧M0全新v14合成库执行源86成功，只证明两表/两个唯一索引/接案外键结构兼容，不是正式升级/回滚验收。
+- 旧`cmd/migrate`production只允许`-command bootstrap`，不能假设执行它会追加86，不放宽历史混合方言up/down限制。
+- M1拟用上表受控离线入口：确认合成目标PG/数据库身份、v14结构和固定源SQL SHA-256；排他事务内仅首次追加86，部分存在/结构不符/权限错误立即失败；已应用只核对实际列、外键和唯一索引定义，不无条件重复DDL，不依赖AutoMigrate补表。M1定点检查与M6实际演练分开计量。
+- root main是本轮唯一支持/构建发布启动目标。`cmd/server/main.go:82`仍调用router.Init，NP schema检查必须放共享装配点，在路由可用前覆盖误启动；仅文档写“不支持”或只检查root不足以防旁路。备用entry不列为产品支持目标，也不增加独立服务实现。
+- 新候选必须86就绪，即使助手关闭/白名单空也不解除历史保护。原从未启用NP的未升级旧版本可保留旧合同，但不报NP通过；已升级缺表/查询失败按未知拒绝写入。
+- 回滚只至保留revision/来源保护的候选，保留来源、回执、墓碑；不执行down删表，不退回未保护main。升级/重复状态/失败后恢复/重启/单实例及旧客户端切换均在M6合成I12演练，尚NOT_RUN；真实环境仍未授权。
+
+## 五、回执、B seed和SW交叉规则
+
+M0-R04 / P1-4：成功回执fixture用捕获的request_id及服务端id（与恢复intake_id比较）；committed/no_change有合法revision，abandoned不要求保存revision，action返回才比；缺身份改负向保键保输入，按v2逐请求键断言。M0-R05 / P1-5：B spec/config前移M3/M4，完整I11此后由M2执行。
+
+M0-R06 / P2-6：M3 B seed必须>=2独立case_materials、非空客户/主体/目标及对照精确IDs、大整数未知metadata；四场景来源+3/回执+4在干净确定窗口，新负向独立seed不污染。M0-R08 / P2-8：M4同候选PROD构建及受控旧worker，M5同产物真root链，不凭缺sw.js推定无旧worker；不扩建PWA。
+
+上述用例与JSON见[路线B清单](route-b-test-split.md)，缓存规则见[缓存策略](../cache-policy-proposal.md)。源历史26+33+4来源计数不改，ADAPT/新增组另列，全部集成执行NOT_RUN；I09-FILES仍DEFERRED/HOLD。
+
+## 六、复审、工作量与边界
+
+[M0净工时账](net-effort-estimate.md)把读取/I15/迁移基础、授权挂接及缓存的原已计部分与主体净新增分开，不按9目标/4计划文件条数加价。源码编号/基线前进必须重核；保留[旧blob复核](../../../np-evidence/m0/seal-blob-verification.json)历史，新静态校验在[本轮复审证据](../../../np-evidence/m0/m0-review-revision.json)。
+
+本轮仅完成文档规则，不关闭运行缺陷、不替代独立集成验收或给M1实施授权。外部旧全量调用方、实际升级回滚单实例、真实main+Redis/TLS及律师试用仍待后续验证；不承诺外部旧客户端长期透明兼容。

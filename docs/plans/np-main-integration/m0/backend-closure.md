@@ -34,3 +34,16 @@
 主代理新增结构证据：在全新主干v14合成库直接执行源2d659d9的000086原SQL成功，case_intake_source_snapshots/case_intake_write_requests及两个唯一索引/接案外键均存在，未执行82–85。故“86核心两表依赖必须整组移植82–85”不成立；完整源fixture、应用读写与迁移编排仍待封板，不能据结构成功报告M1完成。
 
 本报告“未查”属于第一轮快照；当前迁移86、原生增量、前端revision与测试依赖以[依赖封板](dependency-seal.md)和[路线B清单](route-b-test-split.md)为准。完整facts-version/continuation提交平台不纳入首切片，不能再把其未移植作为M0阻塞。
+
+## 2026-11-20 独立审核修订与主调度接手
+
+GLM完成增补初稿后，主调度纠正源码位置与问题编号并接手依赖清单/JSON；不能将该初稿视为独立封板PASS。以下是本轮最小修订，未实施、全部运行NOT_RUN：
+
+- **M0-R01/P1-1**：main router:378–384缺原生GET列表/详情，:399已有工作台别名；源router:385/:394为读取参考。M1真实router本人200/越权403/业务404及409后GET最新，含全响应客户/对方身份脱敏，不引入完整continuation。
+- **M0-R02/P1-2**：源demo_aggregate_handler:2450–2481先prepareCaseIntakeClientPartyRow/prepareCaseIntakePartyUpdateRow后delete，不是strictUpdate的prepareSource。helper实现在源intake_party_identity_guard.go:100/:175（blob5aab40a0ebee94cfe9faf7dbaeed1256f2bc1691），本轮作为计划最小符号集登记。main旧handler:1996–2013缺该保全顺序；既有Client身份方法和通用helper可复用。源context:109用db factory，main授权仅四repo构造，M3用当前db/tx最小适配并验证撤权。
+- **M0-R03/P1-3**：main:2188正式检测仅lawyer_facts_confirmed，严格NP状态检查在源narrow_pilot_context.go:113。M1合法原生事实更新失效快照/回draft/推进revision后，旧同步及服务级async完成须拒绝且intake/cases原子不变；公共async拒绝不是完成保护证据。M3再来源联动，M5真入口。
+- **M0-R05/P1-5**：B spec/config归M3准备、M4消费；M2早期配置与完整I11分开，完整正常/负向在fixture就绪后、M5前执行，不能构成阶段循环。
+- **M0-R07/P2-7**：main已有root生产v14 schema检查，尚无NP就绪guard。旧production CLI只bootstrap；M1计划受控86离线事务入口（目标/SQL摘要/schema/已应用核验），共享router.Init检查覆盖cmd/server误启动；root为唯一支持启动目标。M6合成演练，回滚不删来源/回执/墓碑，不改旧v14或带82–85。
+- **M0-R04/P1-4、M0-R06/P2-6、M0-R08/P2-8**分别为回执fixture、B seed与PROD/SW边界，不是材料平台/切换演练的误编号。具体见[路线B清单](route-b-test-split.md)及[缓存策略](../cache-policy-proposal.md)。
+
+当前[依赖封板](dependency-seal.md)和JSON保留33来源映射，另列9原生已有目标、4计划基础文件及原生读取hunk；不是34条来源映射。后续实现/迁移/回归尚未运行，不因该文档启动M1。
