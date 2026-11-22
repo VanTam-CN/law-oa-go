@@ -4224,6 +4224,12 @@ export function CaseIntakeWorkbench() {
     const epoch = editorEpoch.current
     return () => epoch === editorEpoch.current
   }
+  const savedFactsEpoch = React.useRef(0)
+  const factsGuard = () => {
+    const active = editorGuard()
+    const epoch = savedFactsEpoch.current
+    return () => active() && epoch === savedFactsEpoch.current
+  }
   React.useEffect(() => () => {
     editorEpoch.current++
     serverRestoreEpochRef.current++
@@ -4686,10 +4692,12 @@ export function CaseIntakeWorkbench() {
     savedPartyInputs.current = partyInputs(form, relatedParties)
     const intake = existingIntakeID ? { ...runtime.intake, ...saved, id: existingIntakeID } : saved
     recordTiming(existingIntakeID ? '更新接案' : '创建接案', startedAt)
+    const invalidated = saved.status === 'draft' || saved.status === 'assistant_draft'
+    if (invalidated) savedFactsEpoch.current++
     setRuntime((current) => ({
       ...current,
       intake,
-      ...(saved.status === 'draft' || saved.status === 'assistant_draft'
+      ...(invalidated
         ? { conflict: undefined, conflictTask: undefined, conflictInputFingerprint: undefined, approval: undefined, integrationStatus: undefined }
         : {}),
     }))
@@ -4709,7 +4717,7 @@ export function CaseIntakeWorkbench() {
   }
 
   const runConflictCheck = async (intake = runtime.intake) => {
-    const current = editorGuard()
+    const current = factsGuard()
     if (isAssistant) {
       throw new Error('助理不能运行利益冲突检查，请由负责律师确认当事人信息后操作')
     }
@@ -4776,7 +4784,8 @@ export function CaseIntakeWorkbench() {
       message.error('助理协作草稿不能提交审批，请由负责律师确认当事人信息并提交')
       return
     }
-    const current = editorGuard()
+    const active = editorGuard()
+    let current = active
     setSubmitting(true)
     try {
       if (missingSubmitFields.length > 0) {
@@ -4789,9 +4798,10 @@ export function CaseIntakeWorkbench() {
         ? await createIntake()
         : runtime.intake || (await createIntake())
       if (!current() || !intake) return
+      current = factsGuard()
       let conflict =
         (!isConflictResultStale && runtime.conflict) || (await runConflictCheck(intake))
-      if (!current()) return
+      if (!current() || !conflict) return
       const latestTaskID = textValue(
         conflict?.record?.id ||
           conflict?.record?.check_id ||
@@ -4909,7 +4919,7 @@ export function CaseIntakeWorkbench() {
     } catch (error) {
       if (current()) message.error(error instanceof Error ? error.message : '提交审批失败')
     } finally {
-      if (current()) setSubmitting(false)
+      if (active()) setSubmitting(false)
     }
   }
 
@@ -5098,8 +5108,8 @@ export function CaseIntakeWorkbench() {
       // as the result for newly edited parties.
       const intake = await createIntake()
       if (!current() || !intake) return
-      await runConflictCheck(intake)
-      if (!current()) return
+      const result = await runConflictCheck(intake)
+      if (!current() || !result) return
       setActiveStep(1)
       message.success('利益冲突检查已完成，当前草稿：' + (form.title || '未命名案件'))
     } catch (error) {
