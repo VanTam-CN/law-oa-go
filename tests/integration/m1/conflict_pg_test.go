@@ -266,3 +266,40 @@ func TestConflictPGLinkRollsBackAcrossIntakeAndCases(t *testing.T) {
 		t.Fatalf("pre-bound case pointer changed: %q", got)
 	}
 }
+
+func TestConflictPGRecheckRejectsForeignOrUnversionedPriorRecord(t *testing.T) {
+	for _, scenario := range []string{"other-intake", "other-case", "other-client", "missing-version", "same-version", "failed-check"} {
+		t.Run(scenario, func(t *testing.T) {
+			db := isolatedDB(t)
+			oldID := "prior-" + uuid.NewString()
+			f := seedConflictPGFixture(t, db, true, oldID)
+			old := f
+			version := "earlier"
+			switch scenario {
+			case "other-intake":
+				old.intakeID = uuid.NewString()
+			case "other-case":
+				old.caseID = "0"
+			case "other-client":
+				old.clientID = "0"
+			case "missing-version":
+				version = ""
+			case "same-version":
+				version = f.revision
+			}
+			insertConflictPGRecord(t, db, old, oldID, version)
+			if scenario == "failed-check" {
+				if err := db.Table("conflict_check_records").Where("check_id=?", oldID).Update("check_status", "FAILED").Error; err != nil {
+					t.Fatal(err)
+				}
+			}
+			next := "next-" + uuid.NewString()
+			insertConflictPGRecord(t, db, f, next, f.revision)
+			err := repositories.LinkConflictCheckToCase(context.Background(), db, repositories.ConflictSubjectAssociation{CheckID: next, IntakeID: f.intakeID, SubjectCaseID: f.caseID, ClientID: f.clientID, IntakeRevision: f.revision})
+			rev, status, link, precision := conflictPGIntakeState(t, db, f.intakeID)
+			if err == nil || rev != f.revision || status != "lawyer_facts_confirmed" || link != "" || precision != conflictPGBigPrecision || conflictPGCaseCheckID(t, db, f.caseID) != oldID {
+				t.Fatal("unproven replacement accepted or mutated business state", err)
+			}
+		})
+	}
+}

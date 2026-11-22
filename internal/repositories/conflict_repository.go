@@ -180,15 +180,7 @@ func (r *conflictRepository) LinkConflictCheckToCase(ctx context.Context, associ
 		if strings.TrimSpace(record.ClientID) == "" || record.ClientID != association.ClientID {
 			return fmt.Errorf("案件关联失败：检测记录客户与关联客户不一致")
 		}
-		var context struct {
-			IntakeRevision     string `json:"intakeRevision"`
-			ClientID           string `json:"clientId"`
-			ClientIDSnake      string `json:"client_id"`
-			SubjectCaseID      string `json:"subjectCaseId"`
-			SubjectCaseIDSnake string `json:"subject_case_id"`
-			IntakeID           string `json:"intakeId"`
-			IntakeIDSnake      string `json:"intake_id"`
-		}
+		var context recordedAssociation
 		if raw := strings.TrimSpace(record.SearchParameters); raw != "" {
 			if err := json.Unmarshal([]byte(raw), &context); err != nil {
 				return fmt.Errorf("案件关联失败：检测记录上下文无效")
@@ -302,7 +294,13 @@ func (r *conflictRepository) LinkConflictCheckToCase(ctx context.Context, associ
 				}
 			}
 			if existingCheckID := strings.TrimSpace(target.ConflictCheckID); existingCheckID != "" && existingCheckID != association.CheckID {
-				return fmt.Errorf("案件关联失败：案件已绑定其他冲突检测记录")
+				allowed, err := mayReplaceIntakeCheck(tx, existingCheckID, association)
+				if err != nil {
+					return err
+				}
+				if !allowed {
+					return fmt.Errorf("案件关联失败：案件已绑定其他冲突检测记录")
+				}
 			}
 
 			updates := map[string]interface{}{"conflict_check_id": association.CheckID}
@@ -316,6 +314,41 @@ func (r *conflictRepository) LinkConflictCheckToCase(ctx context.Context, associ
 
 		return nil
 	})
+}
+
+type recordedAssociation struct {
+	IntakeRevision     string `json:"intakeRevision"`
+	ClientID           string `json:"clientId"`
+	ClientIDSnake      string `json:"client_id"`
+	SubjectCaseID      string `json:"subjectCaseId"`
+	SubjectCaseIDSnake string `json:"subject_case_id"`
+	IntakeID           string `json:"intakeId"`
+	IntakeIDSnake      string `json:"intake_id"`
+}
+
+// A case pointer can be superseded only by a fresh check for the same intake.
+// The caller holds the case and intake locks and has validated the new input revision.
+func mayReplaceIntakeCheck(tx *gorm.DB, previousID string, current ConflictSubjectAssociation) (bool, error) {
+	if current.IntakeID == "" || current.IntakeRevision == "" {
+		return false, nil
+	}
+	var prior struct{ SearchParameters string }
+	err := tx.Table("conflict_check_records").Select("search_parameters").
+		Where("check_id = ? AND client_id = ? AND check_status = ?", previousID, current.ClientID, "COMPLETED").Take(&prior).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("读取原检测上下文失败: %w", err)
+	}
+	var origin recordedAssociation
+	if err := json.Unmarshal([]byte(prior.SearchParameters), &origin); err != nil {
+		return false, err
+	}
+	return origin.IntakeRevision != "" && origin.IntakeRevision != current.IntakeRevision &&
+		firstAssociationValue(origin.IntakeID, origin.IntakeIDSnake) == current.IntakeID &&
+		firstAssociationValue(origin.SubjectCaseID, origin.SubjectCaseIDSnake) == current.SubjectCaseID &&
+		firstAssociationValue(origin.ClientID, origin.ClientIDSnake) == current.ClientID, nil
 }
 
 func firstAssociationValue(values ...string) string {
