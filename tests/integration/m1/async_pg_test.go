@@ -37,10 +37,12 @@ func (a gatedRiskAssessor) GenerateRecommendations(ctx context.Context, risk str
 	}
 }
 
-func TestAsyncPGCompletionAfterNativeEdit(t *testing.T)   { checkFormalAsyncPG(t, true) }
-func TestAsyncPGFormalDetectorCompletesOnce(t *testing.T) { checkFormalAsyncPG(t, false) }
+func TestAsyncPGCompletionAfterNativeEdit(t *testing.T)   { checkFormalAsyncPG(t, true, false) }
+func TestAsyncPGFormalDetectorCompletesOnce(t *testing.T) { checkFormalAsyncPG(t, false, false) }
 
-func checkFormalAsyncPG(t *testing.T, editDuringCheck bool) {
+func TestAsyncPGTerminalWriteFailureRollsBack(t *testing.T) { checkFormalAsyncPG(t, false, true) }
+
+func checkFormalAsyncPG(t *testing.T, editDuringCheck, rejectTerminal bool) {
 	t.Helper()
 	db := isolatedDB(t)
 	f := seedConflictPGFixture(t, db, true, "")
@@ -100,6 +102,21 @@ func checkFormalAsyncPG(t *testing.T, editDuringCheck bool) {
 		return current
 	}
 	snapshot := read()
+	if rejectTerminal {
+		var quoted string
+		if err := db.Raw("SELECT quote_literal(?)", task.CheckID).Scan(&quoted).Error; err != nil {
+			t.Fatal(err)
+		}
+		const constraint = "m1_fixture_terminal_failure"
+		if err := db.Exec("ALTER TABLE conflict_check_records ADD CONSTRAINT " + constraint + " CHECK (check_id <> " + quoted + " OR check_status <> 'COMPLETED')").Error; err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() {
+			if err := db.Exec("ALTER TABLE conflict_check_records DROP CONSTRAINT " + constraint).Error; err != nil {
+				t.Error(err)
+			}
+		})
+	}
 	close(gate.resume)
 	resumed = true
 	for {
@@ -108,16 +125,19 @@ func checkFormalAsyncPG(t *testing.T, editDuringCheck bool) {
 			t.Fatal(err)
 		}
 		if record.CheckStatus == services.ConflictTaskStatusFailed {
-			if !editDuringCheck || !strings.Contains(fmt.Sprint(record.CheckResult["error"]), repositories.ErrIntakeRevisionConflict.Error()) {
+			if !rejectTerminal && (!editDuringCheck || !strings.Contains(fmt.Sprint(record.CheckResult["error"]), repositories.ErrIntakeRevisionConflict.Error())) {
 				t.Fatal("unexpected failure", record.CheckResult["error"])
 			}
 			break
 		}
 		if record.CheckStatus == services.ConflictTaskStatusCompleted {
-			if editDuringCheck {
+			if editDuringCheck || rejectTerminal {
 				t.Fatal("late result marked completed")
 			}
 			break
+		}
+		if rejectTerminal && conflictPGCaseCheckID(t, db, f.caseID) != "" {
+			t.Fatal("business link committed although terminal write rejected")
 		}
 		select {
 		case <-ctx.Done():
@@ -129,7 +149,7 @@ func checkFormalAsyncPG(t *testing.T, editDuringCheck bool) {
 	if err := db.Table("conflict_check_records").Where("check_id=?", task.CheckID).Count(&count).Error; err != nil || count != 1 {
 		t.Fatal("incorrect audit record count", count, err)
 	}
-	if editDuringCheck {
+	if editDuringCheck || rejectTerminal {
 		if snapshot != read() || conflictPGCaseCheckID(t, db, f.caseID) != "" {
 			t.Fatal("late completion altered edited intake or case pointer")
 		}
