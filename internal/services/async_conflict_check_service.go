@@ -200,6 +200,7 @@ func (s *asyncConflictCheckService) runTask(taskID string, request *models.Confl
 			SubjectCaseID:     request.SubjectCaseID,
 			SubjectCaseNumber: request.SubjectCaseNumber,
 			IntakeID:          request.IntakeID,
+			IntakeRevision:    request.IntakeRevision,
 			ClientID:          request.ClientID,
 			CoverageStatus:    coverageStatus,
 			CheckedAt:         record.CheckTime,

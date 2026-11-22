@@ -14,6 +14,7 @@ type ConflictCheckRequest struct {
 	SubjectCaseID             string              `json:"subjectCaseId,omitempty"`
 	SubjectCaseNumber         string              `json:"subjectCaseNumber,omitempty"`
 	IntakeID                  string              `json:"intakeId,omitempty"`
+	IntakeRevision            string              `json:"intakeRevision,omitempty"`
 	ClientID                  string              `json:"clientId" validate:"required"`
 	ClientName                string              `json:"clientName" validate:"required"`
 	ClientType                string              `json:"clientType" validate:"oneof=PERSON COMPANY ANY"`

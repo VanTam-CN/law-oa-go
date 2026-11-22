@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"sort"
@@ -316,12 +317,22 @@ func (h *DemoAggregateHandler) IntakeWorkbench(c *gin.Context) {
 	materials := h.recentRows("case_materials", "intake_id = ?", 20, intake["id"])
 	client := sanitizeClientAggregateRow(h.firstByID("clients", intake["client_id"]))
 
+	if actor, ok := currentAuthActor(c); ok && services.IsBusinessMatterManagementRole(actor.Role) {
+		if value := strings.TrimSpace(valueString(client, "contact_person")); value != "" {
+			client["contact_person"] = models.MaskContactPerson(value)
+		}
+	}
+
 	common.APISuccess(c, gin.H{
 		"intake":    sanitizeAggregateRow("case_intakes", intake),
 		"client":    client,
 		"parties":   parties,
 		"materials": materials,
 		"team":      h.recentRows("users", "deleted_at IS NULL AND role IN ?", 10, []string{"lawyer", "admin"}),
+		// Draft restore must resume from the exact saved version, so the
+		// workbench row carries the server-owned revision token next to the
+		// sanitized facts (the raw metadata itself is redacted).
+		"revision": intakeDraftRevisionFor(id, intake["metadata"]),
 	})
 }
 
@@ -1416,22 +1427,23 @@ func (h *DemoAggregateHandler) visibleCaseCount(c *gin.Context, where string, ar
 // visibleIntakeCount keeps the command-center intake badge consistent with
 // the object-level intake boundary. A lawyer/assistant only counts their own
 // drafts; management counts unprotected or explicitly whitelisted contexts.
-func (h *DemoAggregateHandler) visibleIntakeCount(c *gin.Context) int64 {
+func (h *DemoAggregateHandler) visibleDraftQuery(c *gin.Context) *gorm.DB {
 	if !h.tableExists("case_intakes") || !h.hasColumn("case_intakes", "status") ||
 		!h.tableExists("cases") || !h.tableExists("case_ethical_wall_whitelist") ||
 		!h.hasColumn("cases", "client_id") || !h.hasColumn("cases", "ethical_wall_enabled") {
-		return 0
+		return nil
 	}
 	actorID, ok := middleware.GetCurrentUserID(c)
 	if !ok || actorID == 0 {
-		return 0
+		return nil
 	}
-	query := h.db.Table("case_intakes").Where("status IN ?", []string{"draft", "materials_pending", "conflict_ready", "conflict_checking"})
+	query := h.db.WithContext(c.Request.Context()).Table("case_intakes").Where("status IN ?", []string{"draft", "assistant_draft", "materials_pending", "lawyer_facts_confirmed", "conflict_ready", "conflict_checking"})
 	if lawyerID, scoped := currentLawyerScope(c); scoped && h.hasColumn("case_intakes", "created_by") {
 		query = query.Where("created_by = ?", fmt.Sprint(lawyerID))
 	} else if !canViewAllMatterData(c) {
-		return 0
+		return nil
 	}
+	query = h.excludeIntakesWithCompletedCaseCreation(query)
 	if h.hasColumn("case_intakes", "client_id") {
 		query = query.Where(`(
 			case_intakes.client_id IS NULL
@@ -1447,6 +1459,19 @@ func (h *DemoAggregateHandler) visibleIntakeCount(c *gin.Context) int64 {
 				  )
 			)
 		)`, true, actorID)
+	}
+	if role, _ := middleware.GetCurrentRole(c); role == "lawyer" {
+		query = query.Where(`(case_intakes.client_id IS NULL OR case_intakes.client_id = 0 OR EXISTS
+		  (SELECT 1 FROM clients c WHERE c.id=case_intakes.client_id AND c.deleted_at IS NULL
+		     AND (c.created_by=? OR EXISTS (SELECT 1 FROM cases m WHERE m.client_id=c.id AND m.deleted_at IS NULL AND (m.lawyer_id=? OR m.created_by=?)))))`, actorID, actorID, fmt.Sprint(actorID))
+	}
+	return query
+}
+
+func (h *DemoAggregateHandler) visibleIntakeCount(c *gin.Context) int64 {
+	query := h.visibleDraftQuery(c)
+	if query == nil {
+		return 0
 	}
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
@@ -1755,8 +1780,10 @@ func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
 		return
 	}
 	var payload map[string]interface{}
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		common.APIBadRequest(c, "请求参数错误", err.Error())
+	decoder := json.NewDecoder(c.Request.Body)
+	decoder.UseNumber()
+	if err := decoder.Decode(&payload); err != nil || payload == nil {
+		common.APIBadRequest(c, "请求参数错误", "需要 JSON 对象")
 		return
 	}
 	idempotencyKey := strings.TrimSpace(c.GetHeader("Idempotency-Key"))
@@ -1769,7 +1796,11 @@ func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
 		if err := h.db.Table("case_intakes").
 			Where("idempotency_key = ? AND created_by = ?", idempotencyKey, createdBy).
 			Take(&existing).Error; err == nil {
-			common.APISuccess(c, existing)
+			if clientID := intakeClientID(existing["client_id"]); clientID > 0 && !h.authorizeIntakeClient(c, clientID) {
+				return
+			}
+			existing["revision"] = intakeDraftRevisionFor(valueString(existing, "id"), existing["metadata"])
+			common.APISuccess(c, sanitizeAggregateRow("case_intakes", existing))
 			return
 		}
 	}
@@ -1818,7 +1849,16 @@ func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
 	intakePayload["intake_code"] = fmt.Sprintf("INT-%s", now.Format("20060102150405"))
 	intakePayload["status"] = stringValue(intakePayload["status"], "draft")
 	intakePayload["priority"] = stringValue(intakePayload["priority"], "medium")
-	intakePayload["metadata"] = jsonStringValue(intakePayload["metadata"])
+	metadata, err := decodeIntakeMetadata(intakePayload["metadata"])
+	if err != nil {
+		common.APIBadRequest(c, "接案元数据格式无效", err.Error())
+		return
+	}
+	delete(metadata, npDescriptionSourceRevisionKey)
+	delete(metadata, lawyerFactsVersionKey)
+	nextRevision := uuid.NewString()
+	metadata[intakeDraftRevisionKey] = nextRevision
+	intakePayload["metadata"] = jsonStringValue(metadata)
 	intakePayload["created_by"] = createdBy
 	if idempotencyKey != "" && h.hasColumn("case_intakes", "idempotency_key") {
 		intakePayload["idempotency_key"] = idempotencyKey
@@ -1826,67 +1866,91 @@ func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
 	intakePayload["created_at"] = now
 	intakePayload["updated_at"] = now
 
-	if h.tableExists("case_intakes") {
-		err := h.db.Transaction(func(tx *gorm.DB) error {
-			if err := tx.Table("case_intakes").Create(intakePayload).Error; err != nil {
-				return err
-			}
-			if h.tableExists("case_intake_parties") {
-				for _, party := range parties {
-					row, err := prepareCaseIntakePartyRow(party, intakeID, now)
-					if err != nil {
-						return err
-					}
-					if err := tx.Table("case_intake_parties").Create(row).Error; err != nil {
-						return err
-					}
+	if !h.tableExists("case_intakes") {
+		common.NewAPIError(c, http.StatusServiceUnavailable, "INTAKE_SCHEMA_REQUIRED", "接案表不可用")
+		return
+	}
+	err = h.db.WithContext(c.Request.Context()).Transaction(func(tx *gorm.DB) error {
+		bound := h.intakeWriteTransaction(tx)
+		if clientID := intakeClientID(intakePayload["client_id"]); clientID > 0 && !bound.authorizeIntakeClient(c, clientID) {
+			return gorm.ErrInvalidTransaction
+		}
+		if err := tx.Table("case_intakes").Create(intakePayload).Error; err != nil {
+			return err
+		}
+		if len(parties) > 0 {
+			for _, party := range parties {
+				var row map[string]interface{}
+				var err error
+				if caseIntakePartyIsClient(party) {
+					row, err = bound.prepareCaseIntakeClientPartyRow(tx, intakePayload["client_id"], party, intakeID, now)
+				} else {
+					row, err = bound.prepareCaseIntakePartyCreateRow(party, intakeID, now)
+				}
+				if err != nil {
+					return err
+				}
+				if err := tx.Table("case_intake_parties").Create(row).Error; err != nil {
+					return err
 				}
 			}
-			if h.tableExists("case_materials") {
-				for _, material := range materials {
-					row := filterMap(material, allowedCaseMaterialFields)
-					row["intake_id"] = intakeID
-					row["name"] = stringValue(row["name"], "未命名材料")
-					row["material_type"] = stringValue(row["material_type"], "document")
-					row["status"] = stringValue(row["status"], "missing")
-					if _, ok := row["required"]; !ok {
-						row["required"] = true
-					}
-					row["metadata"] = jsonStringValue(row["metadata"])
-					row["created_at"] = now
-					row["updated_at"] = now
-					if err := tx.Table("case_materials").Create(row).Error; err != nil {
-						return err
-					}
+		}
+		if len(materials) > 0 {
+			for _, material := range materials {
+				row := filterMap(material, allowedCaseMaterialFields)
+				row["intake_id"] = intakeID
+				row["name"] = stringValue(row["name"], "未命名材料")
+				row["material_type"] = stringValue(row["material_type"], "document")
+				row["status"] = stringValue(row["status"], "missing")
+				if _, ok := row["required"]; !ok {
+					row["required"] = true
+				}
+				row["metadata"] = jsonStringValue(row["metadata"])
+				row["created_at"] = now
+				row["updated_at"] = now
+				if err := tx.Table("case_materials").Create(row).Error; err != nil {
+					return err
 				}
 			}
-			return nil
-		})
-		if err != nil {
-			if idempotencyKey != "" && h.hasColumn("case_intakes", "idempotency_key") {
-				var existing map[string]interface{}
-				if findErr := h.db.Table("case_intakes").
-					Where("idempotency_key = ? AND created_by = ?", idempotencyKey, createdBy).
-					Take(&existing).Error; findErr == nil {
-					common.APISuccess(c, existing)
-					return
-				}
-			}
-			if isSubjectWorkflowError(err) {
-				writeSubjectWorkflowError(c, err)
-				return
-			}
-			common.APIInternalServerError(c, "创建接案失败", err.Error())
+		}
+		return nil
+	})
+	if err != nil {
+		if c.Writer.Written() {
 			return
 		}
+		if idempotencyKey != "" && h.hasColumn("case_intakes", "idempotency_key") {
+			var existing map[string]interface{}
+			if findErr := h.db.Table("case_intakes").
+				Where("idempotency_key = ? AND created_by = ?", idempotencyKey, createdBy).
+				Take(&existing).Error; findErr == nil {
+				if clientID := intakeClientID(existing["client_id"]); clientID > 0 && !h.authorizeIntakeClient(c, clientID) {
+					return
+				}
+				existing["revision"] = intakeDraftRevisionFor(valueString(existing, "id"), existing["metadata"])
+				common.APISuccess(c, sanitizeAggregateRow("case_intakes", existing))
+				return
+			}
+		}
+		if isSubjectWorkflowError(err) {
+			writeSubjectWorkflowError(c, err)
+			return
+		}
+		common.APIInternalServerError(c, "创建接案失败", err.Error())
+		return
 	}
 	safeParties := make([]map[string]interface{}, 0, len(parties))
 	for _, party := range parties {
 		safeParties = append(safeParties, sanitizeAggregateRow("case_intake_parties", party))
 	}
+	intakePayload["revision"] = nextRevision
 	intakePayload["parties"] = safeParties
-	intakePayload["materials"] = materials
-	c.JSON(http.StatusCreated, common.APIResponse{Success: true, Data: intakePayload, Meta: common.ResponseMeta{Timestamp: now, Version: "v1", Server: "law-oa-go", Environment: "development"}})
+	safeMaterials := make([]map[string]interface{}, 0, len(materials))
+	for _, m := range materials {
+		safeMaterials = append(safeMaterials, sanitizeAggregateRow("case_materials", m))
+	}
+	intakePayload["materials"] = safeMaterials
+	c.JSON(http.StatusCreated, common.APIResponse{Success: true, Data: sanitizeAggregateRow("case_intakes", intakePayload), Meta: common.ResponseMeta{Timestamp: now, Version: "v1", Server: "law-oa-go", Environment: "development"}})
 }
 
 func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
@@ -1896,8 +1960,10 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 		return
 	}
 	var rawPayload map[string]interface{}
-	if err := c.ShouldBindJSON(&rawPayload); err != nil {
-		common.APIBadRequest(c, "请求参数错误", err.Error())
+	decoder := json.NewDecoder(c.Request.Body)
+	decoder.UseNumber()
+	if err := decoder.Decode(&rawPayload); err != nil || rawPayload == nil {
+		common.APIBadRequest(c, "请求参数错误", "需要 JSON 对象")
 		return
 	}
 	parties := mapSliceValue(rawPayload["parties"])
@@ -1923,97 +1989,153 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 		common.APIBadRequest(c, "请求参数错误", "没有可更新的字段")
 		return
 	}
-	if _, ok := payload["metadata"]; ok {
-		payload["metadata"] = jsonStringValue(payload["metadata"])
-	}
-	if !isAssistantRole(c) && len(parties) > 0 && !h.intakePartyIdentitySchemaReady() {
-		common.NewAPIError(c, http.StatusServiceUnavailable, "INTAKE_PARTY_IDENTITY_SCHEMA_REQUIRED", "接案当事人身份保护字段尚未迁移，已阻止更新；请执行数据库迁移 000070")
+	expected, _ := rawPayload["expected_revision"].(string)
+	expected = strings.TrimSpace(expected)
+	if _, strict := rawPayload["changed_fields"]; strict {
+		common.APIBadRequest(c, "不支持此保存协议", "请使用原生接案表单")
 		return
 	}
-	payload["updated_at"] = time.Now()
-	if !h.tableExists("case_intakes") {
-		common.APINotFound(c, "接案记录不存在", "接案记录表不可用")
-		return
-	}
-	var existing map[string]interface{}
-	if err := h.db.Table("case_intakes").Where("id = ?", id).Take(&existing).Error; err != nil {
-		common.APINotFound(c, "接案记录不存在", "指定接案记录不存在")
-		return
-	}
-	role, _ := middleware.GetCurrentRole(c)
-	isLawyerTakingOverAssistantDraft := strings.EqualFold(strings.TrimSpace(role), "lawyer") && strings.TrimSpace(fmt.Sprint(existing["status"])) == "assistant_draft"
-	if !canViewAllMatterData(c) && strings.TrimSpace(fmt.Sprint(existing["created_by"])) != actorID && !isLawyerTakingOverAssistantDraft {
-		forbidObjectAccess(c)
-		return
-	}
-	if isAssistantRole(c) {
-		if rawPayload["client_id"] != nil || rawPayload["parties"] != nil {
-			common.APIForbidden(c, "助理协作草稿不能录入当事人身份信息", "客户、对方和关联方必须由执业律师确认后录入")
-			return
-		}
-		if strings.TrimSpace(fmt.Sprint(existing["status"])) != "assistant_draft" {
-			common.APIForbidden(c, "该接案草稿已进入律师处理阶段", "助理不能修改律师确认后的接案信息")
-			return
-		}
-		payload = filterMap(rawPayload, allowedAssistantDraftFields)
-		payload["status"] = "assistant_draft"
-		payload["metadata"] = jsonStringValue(map[string]interface{}{
-			"assistant_draft": true,
-			"created_by_role": "assistant",
-		})
-	}
-	if clientIDValue, present := rawPayload["client_id"]; present && clientIDValue != nil && !isAssistantRole(c) {
-		if !h.authorizeIntakeClient(c, intakeClientID(clientIDValue)) {
-			return
-		}
-	}
-	if isLawyerTakingOverAssistantDraft {
-		// A lawyer taking over an assistant draft becomes accountable for the
-		// later confirmation and conflict-check trail.
-		payload["created_by"] = actorID
-	}
-	// Any change to facts that can affect the conflict result invalidates the
-	// prior conclusion at the server boundary. The UI may show a stale badge,
-	// but the backend must enforce the same rule for API clients and scripts.
-	conflictInputChanged := rawPayload["client_id"] != nil || rawPayload["title"] != nil ||
-		rawPayload["case_type"] != nil || rawPayload["metadata"] != nil || rawPayload["parties"] != nil
-	if !isAssistantRole(c) && conflictInputChanged {
-		currentStatus := strings.TrimSpace(fmt.Sprint(existing["status"]))
-		if currentStatus == "lawyer_facts_confirmed" || currentStatus == "conflict_ready" {
-			metadata := objectValue(existing["metadata"])
-			for key, value := range objectValue(rawPayload["metadata"]) {
-				metadata[key] = value
+	for _, key := range []string{"parties", "materials"} {
+		if value, present := rawPayload[key]; present && value != nil {
+			rows, valid := value.([]interface{})
+			if !valid || len(mapSliceValue(value)) != len(rows) {
+				common.APIBadRequest(c, "无效的列表字段", key)
+				return
 			}
-			metadata["conflict_invalidated_at"] = time.Now().UTC().Format(time.RFC3339)
+		}
+	}
+	now := time.Now()
+	next := uuid.NewString()
+	var updated map[string]interface{}
+	err := h.db.WithContext(c.Request.Context()).Transaction(func(tx *gorm.DB) error {
+		var existing map[string]interface{}
+		if err := tx.Table("case_intakes").Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", id).Take(&existing).Error; err != nil {
+			return err
+		}
+		bound := h.intakeWriteTransaction(tx)
+		status := valueString(existing, "status")
+		role, _ := middleware.GetCurrentRole(c)
+		takeover := role == "lawyer" && status == "assistant_draft"
+		if !canViewAllMatterData(c) && valueString(existing, "created_by") != actorID && !takeover {
+			forbidObjectAccess(c)
+			return gorm.ErrInvalidTransaction
+		}
+		clientID := intakeClientID(existing["client_id"])
+		if isAssistantRole(c) {
+			if status != "assistant_draft" || rawPayload["client_id"] != nil || rawPayload["parties"] != nil {
+				common.APIForbidden(c, "助理仅可修改自己的协作草稿", "主体由律师确认")
+				return gorm.ErrInvalidTransaction
+			}
+			payload = filterMap(rawPayload, allowedAssistantDraftFields)
+		} else {
+			if clientID > 0 && !bound.authorizeIntakeClient(c, clientID) {
+				return gorm.ErrInvalidTransaction
+			}
+			if target, present := rawPayload["client_id"]; present {
+				if !bound.authorizeIntakeClient(c, intakeClientID(target)) {
+					return gorm.ErrInvalidTransaction
+				}
+			}
+		}
+		current := intakeDraftRevisionFor(id, existing["metadata"])
+		if expected == "" {
+			common.NewAPIError(c, http.StatusConflict, "INTAKE_DRAFT_REVISION_REQUIRED", "请重新打开草稿后保存")
+			return gorm.ErrInvalidTransaction
+		}
+		if expected != current {
+			common.APIErrorWithContext(c, http.StatusConflict, "INTAKE_DRAFT_REVISION_CONFLICT", "草稿已被其他页面更新", map[string]interface{}{"current_revision": current})
+			return gorm.ErrInvalidTransaction
+		}
+		var history bool
+		if err := tx.Raw("SELECT EXISTS(SELECT 1 FROM case_intake_source_snapshots WHERE intake_id = ?)", id).Scan(&history).Error; err != nil {
+			common.NewAPIError(c, http.StatusServiceUnavailable, "SAVE_RESULT_UNKNOWN", "无法核实来源历史，已停止保存")
+			return err
+		}
+		if history || valueString(objectValue(existing["metadata"]), npDescriptionSourceRevisionKey) != "" {
+			common.NewAPIError(c, http.StatusConflict, "UPDATE_PROTOCOL_REQUIRED", "此草稿已有来源历史，不能使用全量保存")
+			return gorm.ErrInvalidTransaction
+		}
+		metadata, err := decodeIntakeMetadata(existing["metadata"])
+		if err != nil {
+			return err
+		}
+		if value, present := payload["metadata"]; present {
+			patch, ok := value.(map[string]interface{})
+			if !ok {
+				common.APIBadRequest(c, "接案元数据格式无效", "需要 JSON 对象")
+				return gorm.ErrInvalidTransaction
+			}
+			for k, v := range patch {
+				if k != intakeDraftRevisionKey && k != npDescriptionSourceRevisionKey && !strings.HasPrefix(k, "lawyer_facts_") && !strings.HasPrefix(k, "conflict_") {
+					metadata[k] = v
+				}
+			}
+		}
+		factsChanged := rawPayload["client_id"] != nil || rawPayload["title"] != nil || rawPayload["case_type"] != nil || rawPayload["description"] != nil || rawPayload["metadata"] != nil || rawPayload["parties"] != nil
+		if factsChanged && (status == "lawyer_facts_confirmed" || status == "conflict_ready") {
+			for _, key := range []string{lawyerFactsVersionKey, "lawyer_facts_confirmed_at", "lawyer_facts_confirmed_by", "conflict_check_id", "conflictCheckId", "conflict_checked_at", "conflict_coverage_status"} {
+				delete(metadata, key)
+			}
+			metadata["conflict_invalidated_at"] = now.UTC().Format(time.RFC3339)
 			metadata["conflict_invalidated_by"] = actorID
 			metadata["conflict_invalidation_reason"] = "接案事实发生变化，必须重新确认并检测"
 			payload["status"] = "draft"
-			payload["metadata"] = jsonStringValue(metadata)
 		}
-	}
-
-	now := time.Now()
-	err := h.db.Transaction(func(tx *gorm.DB) error {
-		if len(payload) > 0 {
-			if err := tx.Table("case_intakes").Where("id = ?", id).Updates(payload).Error; err != nil {
+		if takeover {
+			payload["created_by"] = actorID
+			payload["status"] = "draft"
+		}
+		metadata[intakeDraftRevisionKey] = next
+		payload["metadata"] = jsonStringValue(metadata)
+		payload["updated_at"] = now
+		targetClient := clientID
+		if target, present := payload["client_id"]; present {
+			targetClient = intakeClientID(target)
+		}
+		if targetClient != clientID && clientID > 0 {
+			var count int64
+			if err := tx.Table("case_intake_parties").Where("intake_id=? AND LOWER(party_role)='client'", id).Count(&count).Error; err != nil {
 				return err
 			}
-		}
-		if h.tableExists("case_intake_parties") && rawPayload["parties"] != nil {
-			if err := tx.Table("case_intake_parties").Where("intake_id = ?", id).Delete(map[string]interface{}{}).Error; err != nil {
-				return err
-			}
+			hasClient := false
 			for _, party := range parties {
-				row, err := prepareCaseIntakePartyRow(party, id, now)
+				if caseIntakePartyIsClient(party) {
+					hasClient = true
+					break
+				}
+			}
+			if count > 0 && !hasClient {
+				return services.NewSubjectWorkflowError("INTAKE_CLIENT_MISMATCH", "更换客户时请同步核对客户方主体")
+			}
+		}
+		if err := tx.Table("case_intakes").Where("id = ?", id).Updates(payload).Error; err != nil {
+			return err
+		}
+		if rawPayload["parties"] != nil {
+			prepared := make([]map[string]interface{}, 0, len(parties))
+			for _, party := range parties {
+				var row map[string]interface{}
+				var err error
+				if caseIntakePartyIsClient(party) {
+					row, err = bound.prepareCaseIntakeClientPartyRow(tx, targetClient, party, id, now)
+				} else {
+					row, err = bound.prepareCaseIntakePartyUpdateRow(tx, id, party, now, true)
+				}
 				if err != nil {
 					return err
 				}
+				prepared = append(prepared, row)
+			}
+			if err := tx.Table("case_intake_parties").Where("intake_id = ?", id).Delete(map[string]interface{}{}).Error; err != nil {
+				return err
+			}
+			for _, row := range prepared {
 				if err := tx.Table("case_intake_parties").Create(row).Error; err != nil {
 					return err
 				}
 			}
 		}
-		if h.tableExists("case_materials") && rawPayload["materials"] != nil {
+		if rawPayload["materials"] != nil {
 			if err := tx.Table("case_materials").Where("intake_id = ?", id).Delete(map[string]interface{}{}).Error; err != nil {
 				return err
 			}
@@ -2034,22 +2156,25 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 				}
 			}
 		}
-		return nil
+		return tx.Table("case_intakes").Where("id = ?", id).Take(&updated).Error
 	})
 	if err != nil {
+		if c.Writer.Written() {
+			return
+		}
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			common.APINotFound(c, "接案记录不存在", "指定接案记录不存在")
+			return
+		}
 		if isSubjectWorkflowError(err) {
 			writeSubjectWorkflowError(c, err)
 			return
 		}
-		common.APIInternalServerError(c, "更新接案失败", err.Error())
+		common.APIInternalServerError(c, "更新接案失败", "事务未完成")
 		return
 	}
-	var updated map[string]interface{}
-	if err := h.db.Table("case_intakes").Where("id = ?", id).Take(&updated).Error; err != nil {
-		common.APIInternalServerError(c, "读取更新后的接案失败", err.Error())
-		return
-	}
-	common.APISuccess(c, updated)
+	updated["revision"] = next
+	common.APISuccess(c, sanitizeAggregateRow("case_intakes", updated))
 }
 
 func prepareCaseIntakePartyRow(party map[string]interface{}, intakeID interface{}, now time.Time) (map[string]interface{}, error) {
@@ -2071,7 +2196,10 @@ func prepareCaseIntakePartyRow(party map[string]interface{}, intakeID interface{
 	}
 	identityType := strings.ToUpper(strings.TrimSpace(stringValue(party["identity_type"], stringValue(party["identityType"], ""))))
 	identityNumber := security.NormalizeIdentityNumber(identityType, stringValue(party["identity_number"], stringValue(party["identityNumber"], "")))
-	if !validIntakeIdentityType(row["entity_type"], identityType) || len([]rune(identityNumber)) < 4 {
+	// Empty identity input reaches the update-path inheritance guard, so only
+	// a non-empty but invalid value is rejected here. The guard still fails
+	// closed when inheritance cannot produce a complete protected identity.
+	if identityNumber != "" && (!validIntakeIdentityType(row["entity_type"], identityType) || len([]rune(identityNumber)) < 4) {
 		return nil, services.NewSubjectWorkflowError("INTAKE_PARTY_IDENTITY_REQUIRED", fmt.Sprintf("当事人“%s”必须提供与主体类型匹配的可核验身份标识", row["entity_name"]))
 	}
 	ciphertext, digest, err := security.ProtectIdentityNumber(identityNumber)
@@ -2126,42 +2254,58 @@ func (h *DemoAggregateHandler) ConfirmIntakeFacts(c *gin.Context) {
 	if !ok {
 		return
 	}
-	var intake map[string]interface{}
-	if h.first("case_intakes", intakeID, &intake) != nil {
-		common.APINotFound(c, "接案记录不存在", "指定接案记录不存在")
-		return
-	}
-	if !canViewAllMatterData(c) && strings.TrimSpace(fmt.Sprint(intake["created_by"])) != actorID && strings.TrimSpace(fmt.Sprint(intake["status"])) != "assistant_draft" {
-		forbidObjectAccess(c)
-		return
-	}
-	if strings.TrimSpace(fmt.Sprint(intake["client_id"])) == "" || strings.TrimSpace(fmt.Sprint(intake["title"])) == "" || strings.TrimSpace(fmt.Sprint(intake["case_type"])) == "" {
-		common.APIBadRequest(c, "冲突检查前置资料不完整", "请先填写客户、案件名称和案件类型")
-		return
-	}
-	if clientID := intakeClientID(intake["client_id"]); clientID == 0 || !h.authorizeIntakeClient(c, clientID) {
-		return
-	}
-	if h.tableExists("case_intake_parties") {
+	confirmed := uuid.NewString()
+	err := h.db.WithContext(c.Request.Context()).Transaction(func(tx *gorm.DB) error {
+		var intake map[string]interface{}
+		if err := tx.Table("case_intakes").Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", intakeID).Take(&intake).Error; err != nil {
+			return err
+		}
+		if !canViewAllMatterData(c) && valueString(intake, "created_by") != actorID && valueString(intake, "status") != "assistant_draft" {
+			forbidObjectAccess(c)
+			return gorm.ErrInvalidTransaction
+		}
+		if !h.intakeWriteTransaction(tx).authorizeIntakeClient(c, intakeClientID(intake["client_id"])) {
+			return gorm.ErrInvalidTransaction
+		}
+		current := intakeDraftRevisionFor(intakeID, intake["metadata"])
+		if expected := strings.TrimSpace(c.GetHeader("X-Intake-Revision")); expected != "" && current != expected {
+			common.APIErrorWithContext(c, http.StatusConflict, "INTAKE_DRAFT_REVISION_CONFLICT", "草稿已更新，请重新核对", map[string]interface{}{"current_revision": current})
+			return gorm.ErrInvalidTransaction
+		}
+		if valueString(intake, "title") == "" || valueString(intake, "case_type") == "" {
+			common.APIBadRequest(c, "冲突检查前置资料不完整", "请先填写客户、案件名称和案件类型")
+			return gorm.ErrInvalidTransaction
+		}
 		var count int64
-		if err := h.db.Table("case_intake_parties").Where("intake_id = ?", intakeID).Count(&count).Error; err != nil || count == 0 {
+		if err := tx.Table("case_intake_parties").Where("intake_id = ? AND party_role <> ?", intakeID, "client").Count(&count).Error; err != nil {
+			return err
+		}
+		if count == 0 {
 			common.APIBadRequest(c, "冲突检查前置资料不完整", "至少需要一名对方当事人或相关方")
+			return gorm.ErrInvalidTransaction
+		}
+		metadata, err := decodeIntakeMetadata(intake["metadata"])
+		if err != nil {
+			return err
+		}
+		metadata["lawyer_facts_confirmed_at"] = time.Now().UTC().Format(time.RFC3339)
+		metadata["lawyer_facts_confirmed_by"] = actorID
+		metadata[lawyerFactsVersionKey] = uuid.NewString()
+		metadata[intakeDraftRevisionKey] = confirmed
+		return tx.Table("case_intakes").Where("id = ?", intakeID).Updates(map[string]interface{}{"created_by": actorID, "status": "lawyer_facts_confirmed", "metadata": jsonStringValue(metadata), "updated_at": time.Now()}).Error
+	})
+	if err != nil {
+		if c.Writer.Written() {
 			return
 		}
-	}
-	metadata := objectValue(intake["metadata"])
-	metadata["lawyer_facts_confirmed_at"] = time.Now().UTC().Format(time.RFC3339)
-	metadata["lawyer_facts_confirmed_by"] = actorID
-	if err := h.db.Table("case_intakes").Where("id = ?", intakeID).Updates(map[string]interface{}{
-		"created_by": actorID,
-		"status":     "lawyer_facts_confirmed",
-		"metadata":   jsonStringValue(metadata),
-		"updated_at": time.Now(),
-	}).Error; err != nil {
-		common.APIInternalServerError(c, "确认接案事实失败", err.Error())
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			common.APINotFound(c, "接案记录不存在", "指定接案记录不存在")
+			return
+		}
+		common.APIInternalServerError(c, "确认接案事实失败", "事务未完成")
 		return
 	}
-	common.APISuccess(c, gin.H{"id": intakeID, "status": "lawyer_facts_confirmed"})
+	common.APISuccess(c, gin.H{"id": intakeID, "status": "lawyer_facts_confirmed", "revision": confirmed})
 }
 
 func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
@@ -2190,6 +2334,11 @@ func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
 		return
 	}
 	if clientID := intakeClientID(intake["client_id"]); clientID == 0 || !h.authorizeIntakeClient(c, clientID) {
+		return
+	}
+	revision := intakeDraftRevisionFor(intakeID, intake["metadata"])
+	if expected := strings.TrimSpace(c.GetHeader("X-Intake-Revision")); expected != "" && expected != revision {
+		common.APIErrorWithContext(c, http.StatusConflict, "INTAKE_DRAFT_REVISION_CONFLICT", "草稿已更新，请重新核对后检测", map[string]interface{}{"current_revision": revision})
 		return
 	}
 	if h.conflictService == nil {
@@ -2324,6 +2473,7 @@ func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
 		SubjectCaseID:             firstNonEmpty(valueString(metadata, "subject_case_id"), valueString(metadata, "subjectCaseId")),
 		SubjectCaseNumber:         firstNonEmpty(valueString(metadata, "subject_case_number"), valueString(metadata, "subjectCaseNumber")),
 		IntakeID:                  intakeID,
+		IntakeRevision:            revision,
 		ClientID:                  fmt.Sprint(intake["client_id"]),
 		ClientName:                clientName,
 		ClientType:                clientType,
@@ -2363,33 +2513,27 @@ func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
 	if result.Decision != nil {
 		coverageStatus = result.Decision.CoverageStatus
 	}
+	nextRevision := uuid.NewString()
 	if err := repositories.LinkConflictCheckToCase(c.Request.Context(), h.db, repositories.ConflictSubjectAssociation{
-		CheckID:           result.CheckID,
-		SubjectCaseID:     firstNonEmpty(valueString(metadata, "subject_case_id"), valueString(metadata, "subjectCaseId")),
-		SubjectCaseNumber: firstNonEmpty(valueString(metadata, "subject_case_number"), valueString(metadata, "subjectCaseNumber")),
-		IntakeID:          intakeID,
-		ClientID:          fmt.Sprint(intake["client_id"]),
-		CoverageStatus:    coverageStatus,
-		CheckedAt:         result.CheckTime,
+		CheckID:            result.CheckID,
+		SubjectCaseID:      firstNonEmpty(valueString(metadata, "subject_case_id"), valueString(metadata, "subjectCaseId")),
+		SubjectCaseNumber:  firstNonEmpty(valueString(metadata, "subject_case_number"), valueString(metadata, "subjectCaseNumber")),
+		IntakeID:           intakeID,
+		IntakeRevision:     revision,
+		CompletionRevision: nextRevision,
+		ClientID:           fmt.Sprint(intake["client_id"]),
+		CoverageStatus:     coverageStatus,
+		CheckedAt:          result.CheckTime,
 	}); err != nil {
+		if errors.Is(err, repositories.ErrIntakeRevisionConflict) {
+			common.NewAPIError(c, http.StatusConflict, "INTAKE_DRAFT_REVISION_CONFLICT", "检测所用事实已变化，请重新确认")
+			return
+		}
 		common.APIInternalServerError(c, "保存冲突检测结果失败", err.Error())
 		return
 	}
-	metadata["conflict_check_id"] = result.CheckID
-	if result.Decision != nil {
-		metadata["conflict_coverage_status"] = result.Decision.CoverageStatus
-	}
-	metadata["conflict_checked_at"] = result.CheckTime
-	if err := h.db.Table("case_intakes").Where("id = ?", intakeID).Updates(map[string]interface{}{
-		"status":     "conflict_ready",
-		"metadata":   jsonStringValue(metadata),
-		"updated_at": time.Now(),
-	}).Error; err != nil {
-		common.APIInternalServerError(c, "保存冲突检测结果失败", "检测结果未能写回接案记录，已阻止继续办理")
-		return
-	}
-
 	common.APISuccess(c, gin.H{
+		"revision":                   nextRevision,
 		"taskId":                     result.CheckID,
 		"checkId":                    result.CheckID,
 		"intake_id":                  intakeID,

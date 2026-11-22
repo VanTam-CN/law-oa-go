@@ -1,11 +1,13 @@
 package repositories
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"log"
 	"strconv"
 	"strings"
@@ -55,14 +57,18 @@ type BasicConflictRepository interface {
 // only accepted with an explicit case ID; title-only matching is deliberately
 // unsupported.
 type ConflictSubjectAssociation struct {
-	CheckID           string
-	SubjectCaseID     string
-	SubjectCaseNumber string
-	IntakeID          string
-	ClientID          string
-	CoverageStatus    string
-	CheckedAt         time.Time
+	IntakeRevision     string
+	CompletionRevision string
+	CheckID            string
+	SubjectCaseID      string
+	SubjectCaseNumber  string
+	IntakeID           string
+	ClientID           string
+	CoverageStatus     string
+	CheckedAt          time.Time
 }
+
+var ErrIntakeRevisionConflict = errors.New("接案事实版本已变化，请重新确认并检测")
 
 // ConflictSubjectLinker is optional on BasicConflictRepository so existing
 // repository test doubles remain source-compatible. Production repositories
@@ -175,6 +181,7 @@ func (r *conflictRepository) LinkConflictCheckToCase(ctx context.Context, associ
 			return fmt.Errorf("案件关联失败：检测记录客户与关联客户不一致")
 		}
 		var context struct {
+			IntakeRevision     string `json:"intakeRevision"`
 			ClientID           string `json:"clientId"`
 			ClientIDSnake      string `json:"client_id"`
 			SubjectCaseID      string `json:"subjectCaseId"`
@@ -196,13 +203,77 @@ func (r *conflictRepository) LinkConflictCheckToCase(ctx context.Context, associ
 				return fmt.Errorf("案件关联失败：案件 ID 与检测记录上下文不一致")
 			}
 		}
-		if association.IntakeID != "" {
+		if association.IntakeID != "" || firstAssociationValue(context.IntakeID, context.IntakeIDSnake) != "" {
 			recordedIntakeID := firstAssociationValue(context.IntakeID, context.IntakeIDSnake)
 			if recordedIntakeID == "" || recordedIntakeID != association.IntakeID {
 				return fmt.Errorf("接案关联失败：接案 ID 与检测记录上下文不一致")
 			}
 		}
 
+		if association.IntakeID != "" {
+			var intake struct {
+				ClientID string
+				Status   string
+				Metadata []byte
+			}
+			if err := tx.Table("case_intakes").Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", association.IntakeID).Take(&intake).Error; err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					return fmt.Errorf("接案关联失败：接案记录不存在")
+				}
+				return fmt.Errorf("读取接案关联失败: %w", err)
+			}
+			intakeClientID := intake.ClientID
+			if intakeClientID == "" || intakeClientID != association.ClientID {
+				return fmt.Errorf("接案关联失败：接案客户与检测客户不一致")
+			}
+			metadata := map[string]interface{}{}
+			if len(intake.Metadata) > 0 {
+				decoder := json.NewDecoder(bytes.NewReader(intake.Metadata))
+				decoder.UseNumber()
+				if err := decoder.Decode(&metadata); err != nil || metadata == nil {
+					return errors.New("接案版本信息不可读")
+				}
+			}
+			revision, _ := metadata["draft_revision"].(string)
+			if revision == "" {
+				revision = "legacy-" + association.IntakeID
+			}
+			if association.IntakeRevision == "" || association.IntakeRevision != context.IntakeRevision || association.IntakeRevision != revision || intake.Status != "lawyer_facts_confirmed" {
+				return ErrIntakeRevisionConflict
+			}
+			next := association.CompletionRevision
+			if next == "" {
+				next = uuid.NewString()
+			}
+			metadata["draft_revision"] = next
+			if existingCheckID := firstAssociationValue(associationMapValue(metadata, "conflict_check_id"), associationMapValue(metadata, "conflictCheckId")); existingCheckID != "" && existingCheckID != association.CheckID {
+				return fmt.Errorf("接案关联失败：接案记录已绑定其他冲突检测记录")
+			}
+			metadata["conflict_check_id"] = association.CheckID
+			if coverageStatus := strings.TrimSpace(association.CoverageStatus); coverageStatus != "" {
+				metadata["conflict_coverage_status"] = coverageStatus
+			}
+			if !association.CheckedAt.IsZero() {
+				metadata["conflict_checked_at"] = association.CheckedAt
+			}
+			if association.SubjectCaseID != "" {
+				metadata["subject_case_id"] = association.SubjectCaseID
+			}
+			if association.SubjectCaseNumber != "" {
+				metadata["subject_case_number"] = association.SubjectCaseNumber
+			}
+			encoded, err := json.Marshal(metadata)
+			if err != nil {
+				return err
+			}
+			if err := tx.Table("case_intakes").Where("id = ?", association.IntakeID).Updates(map[string]interface{}{
+				"status":     "conflict_ready",
+				"metadata":   string(encoded),
+				"updated_at": time.Now(),
+			}).Error; err != nil {
+				return fmt.Errorf("保存接案冲突检测关联失败: %w", err)
+			}
+		}
 		if association.SubjectCaseID != "" {
 			caseID, err := strconv.ParseUint(association.SubjectCaseID, 10, 32)
 			if err != nil || caseID == 0 {
@@ -215,7 +286,7 @@ func (r *conflictRepository) LinkConflictCheckToCase(ctx context.Context, associ
 				ClientID        uint
 				ConflictCheckID string
 			}
-			if err := tx.Table("cases").Select("id, case_number, client_id, conflict_check_id").Where("id = ? AND deleted_at IS NULL", caseID).Take(&target).Error; err != nil {
+			if err := tx.Table("cases").Clauses(clause.Locking{Strength: "UPDATE"}).Select("id, case_number, client_id, conflict_check_id").Where("id = ? AND deleted_at IS NULL", caseID).Take(&target).Error; err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					return fmt.Errorf("案件关联失败：案件不存在或已归档")
 				}
@@ -243,43 +314,6 @@ func (r *conflictRepository) LinkConflictCheckToCase(ctx context.Context, associ
 			}
 		}
 
-		if association.IntakeID != "" {
-			var intake map[string]interface{}
-			if err := tx.Table("case_intakes").Where("id = ?", association.IntakeID).Take(&intake).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return fmt.Errorf("接案关联失败：接案记录不存在")
-				}
-				return fmt.Errorf("读取接案关联失败: %w", err)
-			}
-			intakeClientID := strings.TrimSpace(fmt.Sprint(intake["client_id"]))
-			if intakeClientID == "" || intakeClientID != association.ClientID {
-				return fmt.Errorf("接案关联失败：接案客户与检测客户不一致")
-			}
-			metadata := decodeJSONMap(intake["metadata"])
-			if existingCheckID := firstAssociationValue(associationMapValue(metadata, "conflict_check_id"), associationMapValue(metadata, "conflictCheckId")); existingCheckID != "" && existingCheckID != association.CheckID {
-				return fmt.Errorf("接案关联失败：接案记录已绑定其他冲突检测记录")
-			}
-			metadata["conflict_check_id"] = association.CheckID
-			if coverageStatus := strings.TrimSpace(association.CoverageStatus); coverageStatus != "" {
-				metadata["conflict_coverage_status"] = coverageStatus
-			}
-			if !association.CheckedAt.IsZero() {
-				metadata["conflict_checked_at"] = association.CheckedAt
-			}
-			if association.SubjectCaseID != "" {
-				metadata["subject_case_id"] = association.SubjectCaseID
-			}
-			if association.SubjectCaseNumber != "" {
-				metadata["subject_case_number"] = association.SubjectCaseNumber
-			}
-			if err := tx.Table("case_intakes").Where("id = ?", association.IntakeID).Updates(map[string]interface{}{
-				"status":     "conflict_ready",
-				"metadata":   encodeJSONMap(metadata),
-				"updated_at": time.Now(),
-			}).Error; err != nil {
-				return fmt.Errorf("保存接案冲突检测关联失败: %w", err)
-			}
-		}
 		return nil
 	})
 }
@@ -307,41 +341,6 @@ func LinkConflictCheckToCase(ctx context.Context, db *gorm.DB, association Confl
 		return errors.New("冲突检测案件关联服务未初始化")
 	}
 	return (&conflictRepository{db: db}).LinkConflictCheckToCase(ctx, association)
-}
-
-func decodeJSONMap(value interface{}) map[string]interface{} {
-	if value == nil {
-		return map[string]interface{}{}
-	}
-	if values, ok := value.(map[string]interface{}); ok {
-		return values
-	}
-	var raw []byte
-	switch typed := value.(type) {
-	case []byte:
-		raw = typed
-	case string:
-		raw = []byte(typed)
-	default:
-		encoded, err := json.Marshal(typed)
-		if err != nil {
-			return map[string]interface{}{}
-		}
-		raw = encoded
-	}
-	var values map[string]interface{}
-	if json.Unmarshal(raw, &values) != nil || values == nil {
-		return map[string]interface{}{}
-	}
-	return values
-}
-
-func encodeJSONMap(values map[string]interface{}) string {
-	encoded, err := json.Marshal(values)
-	if err != nil {
-		return "{}"
-	}
-	return string(encoded)
 }
 
 // SaveCheckRecord 保存冲突检测记录

@@ -197,9 +197,9 @@ func main() {
 			log.Fatal("生产数据库结构门禁失败:", err)
 		}
 	}
-	router.Init(app,
-		db,
-		database.GetRedisClient())
+	if err := router.Init(app, db, database.GetRedisClient()); err != nil {
+		log.Fatal("路由装配失败: ", err)
+	}
 
 	// 注册集成测试路由（仅开发环境）
 	if !cfg.IsProduction() {

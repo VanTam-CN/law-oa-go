@@ -8,6 +8,7 @@ import (
 	"law-oa-go/internal/auth"
 	"law-oa-go/internal/cache"
 	"law-oa-go/internal/config"
+	"law-oa-go/internal/database"
 	"law-oa-go/internal/handlers"
 	"law-oa-go/internal/middleware"
 	"law-oa-go/internal/repositories"
@@ -19,7 +20,10 @@ import (
 )
 
 // Init 初始化完整的路由系统
-func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client) {
+func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client) error {
+	if err := database.RequireNarrowPilotSchema(db); err != nil {
+		return err
+	}
 	log.Println("初始化完整路由系统...")
 	app.Static("/uploads/avatars", "./uploads/avatars")
 
@@ -92,8 +96,7 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client) {
 	// 初始化令牌管理器
 	cfg, err := config.Load()
 	if err != nil {
-		log.Printf("加载配置失败: %v", err)
-		return
+		return err
 	}
 	var cacheService *cache.CacheService
 	if redisClient != nil {
@@ -377,7 +380,12 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client) {
 
 		caseIntakes := protected.Group("/case-intakes")
 		{
+			caseIntakes.GET("", demoAggregateHandler.ListIntakeDrafts)
 			caseIntakes.POST("", demoAggregateHandler.CreateCaseIntake)
+			// Recovery detail reuses the intake-workbench aggregate (owner
+			// scope + ethical-wall client authorization + sanitized facts) so
+			// a fresh browser session can resume a saved draft by id.
+			caseIntakes.GET("/:id", demoAggregateHandler.IntakeWorkbench)
 			caseIntakes.PUT("/:id", demoAggregateHandler.UpdateCaseIntake)
 			caseIntakes.POST("/:id/facts-confirmation", demoAggregateHandler.ConfirmIntakeFacts)
 			caseIntakes.POST("/:id/conflict-check", demoAggregateHandler.StartIntakeConflictCheck)
@@ -991,4 +999,5 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client) {
 
 		log.Println("完整路由系统初始化完成")
 	}
+	return nil
 }
