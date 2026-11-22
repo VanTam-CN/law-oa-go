@@ -60,3 +60,15 @@ func TestMatchConflictIndexSubjectIDCardExactBeatsNameCandidates(t *testing.T) {
 		t.Fatal("alias alone must remain a person-name candidate", matchType, ruleCode, matched)
 	}
 }
+
+func TestMatchConflictIndexStackedHistoricalAlias(t *testing.T) {
+	label := "甲集团控股有限公司"
+	version := aliasMatchVersion("历史主体", "CLIENT_ARCHIVE")
+	aliases := normalizeConflictIndexAliases([]string{label}, "COMPANY", version.NormalizedName)
+	subject := aliasMatchSubject("COMPANY", "现主体", aliases[0])
+	subject.AliasLabels = map[string]string{aliases[0]: label}
+	match, _, name := matchConflictIndexSubject(version, aliases, subject, nil, nil)
+	if match != "CANDIDATE" || name != label {
+		t.Fatalf("match=%q name=%q", match, name)
+	}
+}

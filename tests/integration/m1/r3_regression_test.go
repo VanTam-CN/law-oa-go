@@ -111,73 +111,76 @@ func TestM1R3SameIdentityEcho(t *testing.T) {
 
 func TestM1R3NativeCheckUsesEditedAlias(t *testing.T) {
 	for _, suffix := range []string{"", "甲集团控股有限公司"} {
-		t.Run("native alias "+suffix, func(t *testing.T) {
-			db := isolatedDB(t)
-			f := seedConflictPGFixture(t, db, true, "")
-			hist := seedConflictPGFixture(t, db, false, "")
-			send := nativePartyRequest(t, db, f)
-			name := "Archive " + hist.intakeID + suffix
-			exec := func(q string, args ...any) {
-				t.Helper()
-				if err := db.Exec(q, args...).Error; err != nil {
-					t.Fatal(err)
-				}
+		t.Run("native alias "+suffix, func(t *testing.T) { m1R3NativeCheckUsesEditedAlias(t, suffix) })
+	}
+}
+
+func m1R3NativeCheckUsesEditedAlias(t *testing.T, suffix string) {
+	t.Helper()
+	db := isolatedDB(t)
+	f := seedConflictPGFixture(t, db, true, "")
+	hist := seedConflictPGFixture(t, db, false, "")
+	send := nativePartyRequest(t, db, f)
+	name := "Archive " + hist.intakeID + suffix
+	exec := func(q string, args ...any) {
+		t.Helper()
+		if err := db.Exec(q, args...).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	exec("UPDATE clients SET name=? WHERE id=?", name, hist.clientID)
+	cipher, digest, err := security.ProtectIdentityNumber("CLIENT-" + f.intakeID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	exec("UPDATE clients SET identity_type='SOCIAL_CREDIT_CODE',identity_number_ciphertext=?,identity_number_digest=? WHERE id=?", cipher, digest, f.clientID)
+	exec("UPDATE case_intakes SET metadata=metadata||jsonb_build_object('subject_case_id',?::text) WHERE id=?", f.caseID, f.intakeID)
+	cipher, digest, err = security.ProtectIdentityNumber("OPPONENT-" + f.intakeID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	exec("INSERT INTO case_intake_parties(intake_id,entity_name,entity_type,party_role,identity_type,identity_number_ciphertext,identity_number_digest,metadata) VALUES(?,'Separate current brand','LEGAL_PERSON','opposing_party','SOCIAL_CREDIT_CODE',?,?,jsonb_build_object('aliases',jsonb_build_array(?::text)))", f.intakeID, cipher, digest, name)
+	path := "/api/v1/case-intakes/" + f.intakeID
+	for step, alias := range []string{name, "Unrelated、" + name, ""} {
+		expected := alias != ""
+		if step > 0 {
+			rev, _, _, _ := conflictPGIntakeState(t, db, f.intakeID)
+			if w := send("PUT", path, map[string]any{"expected_revision": rev, "opponent_identity_update": map[string]string{"entity_name": "Separate current brand", "entity_type": "LEGAL_PERSON", "identity_type": "SOCIAL_CREDIT_CODE", "identity_number": "OPPONENT-" + f.intakeID, "aliases": alias}}); w.Code != 200 {
+				t.Fatalf("clear alias: HTTP %d", w.Code)
 			}
-			exec("UPDATE clients SET name=? WHERE id=?", name, hist.clientID)
-			cipher, digest, err := security.ProtectIdentityNumber("CLIENT-" + f.intakeID)
-			if err != nil {
-				t.Fatal(err)
+			if w := send("POST", path+"/facts-confirmation", map[string]any{}); w.Code != 200 {
+				t.Fatalf("confirm: HTTP %d", w.Code)
 			}
-			exec("UPDATE clients SET identity_type='SOCIAL_CREDIT_CODE',identity_number_ciphertext=?,identity_number_digest=? WHERE id=?", cipher, digest, f.clientID)
-			exec("UPDATE case_intakes SET metadata=metadata||jsonb_build_object('subject_case_id',?::text) WHERE id=?", f.caseID, f.intakeID)
-			cipher, digest, err = security.ProtectIdentityNumber("OPPONENT-" + f.intakeID)
-			if err != nil {
-				t.Fatal(err)
-			}
-			exec("INSERT INTO case_intake_parties(intake_id,entity_name,entity_type,party_role,identity_type,identity_number_ciphertext,identity_number_digest,metadata) VALUES(?,'Separate current brand','LEGAL_PERSON','opposing_party','SOCIAL_CREDIT_CODE',?,?,jsonb_build_object('aliases',jsonb_build_array(?::text)))", f.intakeID, cipher, digest, name)
-			path := "/api/v1/case-intakes/" + f.intakeID
-			for step, alias := range []string{name, "Unrelated、" + name, ""} {
-				expected := alias != ""
-				if step > 0 {
-					rev, _, _, _ := conflictPGIntakeState(t, db, f.intakeID)
-					if w := send("PUT", path, map[string]any{"expected_revision": rev, "opponent_identity_update": map[string]string{"entity_name": "Separate current brand", "entity_type": "LEGAL_PERSON", "identity_type": "SOCIAL_CREDIT_CODE", "identity_number": "OPPONENT-" + f.intakeID, "aliases": alias}}); w.Code != 200 {
-						t.Fatalf("clear alias: HTTP %d", w.Code)
+		}
+		w := send("POST", path+"/conflict-check", map[string]any{})
+		var res struct {
+			Data struct{ Result models.ConflictCheckResponse }
+		}
+		if err := json.Unmarshal(w.Body.Bytes(), &res); w.Code != 200 || err != nil {
+			t.Fatalf("native check HTTP %d, %v", w.Code, err)
+		}
+		// The lawyer receives a redacted result. Follow the returned check ID
+		// to the persisted evidence that the independent reviewer reads.
+		var raw string
+		if err := db.Table("conflict_check_records").Select("check_result").Where("check_id = ?", res.Data.Result.CheckID).Scan(&raw).Error; err != nil {
+			t.Fatal(err)
+		}
+		var stored models.ConflictCheckResponse
+		if err := json.Unmarshal([]byte(raw), &stored); err != nil {
+			t.Fatal(err)
+		}
+		var hits int
+		for _, c := range stored.ConflictCases {
+			if c.ClientID == hist.clientID {
+				for _, e := range c.Evidence {
+					if e.RequestedParty == name && e.MatchType == "CANDIDATE" {
+						hits++
 					}
-					if w := send("POST", path+"/facts-confirmation", map[string]any{}); w.Code != 200 {
-						t.Fatalf("confirm: HTTP %d", w.Code)
-					}
-				}
-				w := send("POST", path+"/conflict-check", map[string]any{})
-				var res struct {
-					Data struct{ Result models.ConflictCheckResponse }
-				}
-				if err := json.Unmarshal(w.Body.Bytes(), &res); w.Code != 200 || err != nil {
-					t.Fatalf("native check HTTP %d, %v", w.Code, err)
-				}
-				// The lawyer receives a redacted result. Follow the returned check ID
-				// to the persisted evidence that the independent reviewer reads.
-				var raw string
-				if err := db.Table("conflict_check_records").Select("check_result").Where("check_id = ?", res.Data.Result.CheckID).Scan(&raw).Error; err != nil {
-					t.Fatal(err)
-				}
-				var stored models.ConflictCheckResponse
-				if err := json.Unmarshal([]byte(raw), &stored); err != nil {
-					t.Fatal(err)
-				}
-				var hits int
-				for _, c := range stored.ConflictCases {
-					if c.ClientID == hist.clientID {
-						for _, e := range c.Evidence {
-							if e.RequestedParty == name && e.MatchType == "CANDIDATE" {
-								hits++
-							}
-						}
-					}
-				}
-				if (hits > 0) != expected {
-					t.Errorf("expected alias candidate=%v, matched evidence=%d", expected, hits)
 				}
 			}
-		})
+		}
+		if (hits > 0) != expected {
+			t.Errorf("expected alias candidate=%v, matched evidence=%d", expected, hits)
+		}
 	}
 }

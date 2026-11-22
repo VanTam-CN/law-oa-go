@@ -41,8 +41,13 @@ test('M1 R3 same-revision local recovery retains the related party', async ({ pa
   await expect(page.locator('.batch-related-party')).toContainText('Synthetic related party')
 })
 
-test('M1 R4 empty historical key falls through until a column explicitly clears it', async ({ page }) => {
+test('M1 R4 empty historical alias key falls through to the next legacy key', async ({ page }) => {
   const metadata = { aliases: [], client_aliases: ['Historic Alias'] }
   await openSavedDraft(page, metadata)
   await expect(page.locator('#intake-opponent-aliases')).toHaveValue('Historic Alias')
+})
+
+test('M1 R4 explicit empty column wins over historical aliases', async ({ page }) => {
+  await openSavedDraft(page, { aliases: ['Historic Alias'] }, '')
+  await expect(page.locator('#intake-opponent-aliases')).toHaveValue('')
 })

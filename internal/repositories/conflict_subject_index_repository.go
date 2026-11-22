@@ -532,6 +532,10 @@ func matchConflictIndexSubject(version models.ConflictSubjectVersion, aliases []
 	// Prefer the primary name. An incoming alias can establish a name
 	// candidate, while only a protected identifier can establish EXACT.
 	for i, name := range append([]string{subject.OriginalName}, subject.Aliases...) {
+		// Normalize the original alias once. Stacked suffixes are not idempotent.
+		if i > 0 && subject.AliasLabels[name] != "" {
+			name = subject.AliasLabels[name]
+		}
 		requested := normalizeConflictIndexName(name, subject.EntityType)
 		if requested == "" {
 			continue
@@ -540,7 +544,7 @@ func matchConflictIndexSubject(version models.ConflictSubjectVersion, aliases []
 		matched := primary
 		if !matched {
 			for _, alias := range aliases {
-				if strings.EqualFold(normalizeConflictIndexName(alias, subject.EntityType), requested) {
+				if strings.EqualFold(alias, requested) {
 					matched = true
 					break
 				}
@@ -548,9 +552,6 @@ func matchConflictIndexSubject(version models.ConflictSubjectVersion, aliases []
 		}
 		if !matched {
 			continue
-		}
-		if i > 0 && subject.AliasLabels[name] != "" {
-			name = subject.AliasLabels[name]
 		}
 		switch {
 		case indexSubjectType(subject.EntityType) == "PERSON" && len(subject.Identifiers) == 0:

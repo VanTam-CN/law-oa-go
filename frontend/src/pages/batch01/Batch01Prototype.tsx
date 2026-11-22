@@ -4433,6 +4433,7 @@ export function CaseIntakeWorkbench() {
     const metadata = recordValue(intake.metadata)
     const opponentParty = restoredOpponent(payload)
     const opponentMetadata = recordValue(opponentParty?.metadata)
+    const aliasColumn = opponentParty?.aliases ?? opponentParty?.entityAliases
     return {
       ...form,
       businessArea: textValue(metadata.business_area, ''),
@@ -4450,7 +4451,8 @@ export function CaseIntakeWorkbench() {
       contingencyRate: textValue(metadata.contingency_rate, ''),
       minimumFee: textValue(metadata.minimum_fee, ''),
       lawyerId: numberValue(metadata.lawyer_id || intake.created_by, 0),
-      opponentAliases: aliasesTextFromServer(opponentParty?.aliases ?? opponentParty?.entityAliases ?? opponentMetadata.aliases ?? opponentMetadata.client_aliases ?? opponentMetadata.clientAliases),
+      opponentAliases: aliasColumn != null ? aliasesTextFromServer(aliasColumn)
+        : [opponentMetadata.aliases, opponentMetadata.client_aliases, opponentMetadata.clientAliases].map(aliasesTextFromServer).find(Boolean) || '',
     }
   }
 
