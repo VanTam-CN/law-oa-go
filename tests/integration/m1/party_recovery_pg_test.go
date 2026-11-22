@@ -5,6 +5,8 @@ package m1_test
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"gorm.io/gorm"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -17,9 +19,8 @@ import (
 	"law-oa-go/internal/security"
 )
 
-func TestNativeRecoveredOpponentPreservesPartyAndMaterialRows(t *testing.T) {
-	db := isolatedDB(t)
-	f := seedConflictPGFixture(t, db, false, "")
+func nativePartyRequest(t *testing.T, db *gorm.DB, f conflictPGFixture) func(string, string, any) *httptest.ResponseRecorder {
+	t.Helper()
 	t.Setenv("SUBJECT_DATA_KEY", strings.Repeat("t", 32))
 	t.Setenv("JWT_SECRET", "synthetic-only-for-the-isolated-m1-test")
 	cfg, err := config.Load()
@@ -35,6 +36,25 @@ func TestNativeRecoveredOpponentPreservesPartyAndMaterialRows(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	return func(method, path string, input any) *httptest.ResponseRecorder {
+		t.Helper()
+		body, err := json.Marshal(input)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req := httptest.NewRequest(method, path, bytes.NewReader(body))
+		req.Header.Set("Authorization", "Bearer "+token)
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		g.ServeHTTP(w, req)
+		return w
+	}
+}
+
+func TestNativeRecoveredOpponentPreservesPartyAndMaterialRows(t *testing.T) {
+	db := isolatedDB(t)
+	f := seedConflictPGFixture(t, db, false, "")
+	send := nativePartyRequest(t, db, f)
 	exec := func(sql string, args ...any) {
 		t.Helper()
 		if err := db.Exec(sql, args...).Error; err != nil {
@@ -62,18 +82,10 @@ func TestNativeRecoveredOpponentPreservesPartyAndMaterialRows(t *testing.T) {
 	}
 	before := snapshot()
 	const identity = "TEST-NEW-IDENTITY"
-	body, err := json.Marshal(map[string]any{
+	w := send(http.MethodPut, "/api/v1/case-intakes/"+f.intakeID, map[string]any{
 		"description": "reviewed native draft", "expected_revision": f.revision,
 		"opponent_identity_update": map[string]string{"entity_name": "Test opponent", "entity_type": "LEGAL_PERSON", "identity_type": "SOCIAL_CREDIT_CODE", "identity_number": identity},
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	req := httptest.NewRequest(http.MethodPut, "/api/v1/case-intakes/"+f.intakeID, bytes.NewReader(body))
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("Content-Type", "application/json")
-	w := httptest.NewRecorder()
-	g.ServeHTTP(w, req)
 	if w.Code != 200 {
 		t.Fatalf("native save returned %d", w.Code)
 	}
@@ -91,5 +103,59 @@ func TestNativeRecoveredOpponentPreservesPartyAndMaterialRows(t *testing.T) {
 	version, state, _, _ := conflictPGIntakeState(t, db, f.intakeID)
 	if version == "" || version == f.revision || state != "draft" {
 		t.Fatal("identity correction must invalidate confirmation")
+	}
+}
+
+func TestNativeCreateRejectsNormalizedEmptyIdentityAtomically(t *testing.T) {
+	db := isolatedDB(t)
+	f := seedConflictPGFixture(t, db, false, "")
+	send := nativePartyRequest(t, db, f)
+	title := "empty-identity-" + f.intakeID
+	party := func(suffix, number string) map[string]string {
+		return map[string]string{"entity_name": title + suffix, "party_role": "related_party", "entity_type": "LEGAL_PERSON", "identity_type": "SOCIAL_CREDIT_CODE", "identity_number": number}
+	}
+	w := send("POST", "/api/v1/case-intakes", map[string]any{"title": title, "case_type": "civil", "client_id": f.clientID, "parties": []any{party("-valid", "FIXTURE1234"), party("-empty", "- - -")}, "materials": []any{map[string]string{"name": title}}})
+	if w.Code != http.StatusConflict || !strings.Contains(w.Body.String(), "INTAKE_PARTY_IDENTITY_REQUIRED") {
+		t.Fatalf("wanted identity rejection, got %d", w.Code)
+	}
+	var rows int
+	if err := db.Raw("SELECT (SELECT count(*) FROM case_intakes WHERE title=?) + (SELECT count(*) FROM case_intake_parties WHERE entity_name IN (?,?)) + (SELECT count(*) FROM case_materials WHERE name=?)", title, title+"-valid", title+"-empty", title).Scan(&rows).Error; err != nil || rows != 0 {
+		t.Fatalf("rollback: rows=%d err=%v", rows, err)
+	}
+}
+
+func TestNativeFullSaveOnlyChangesExplicitAlias(t *testing.T) {
+	db := isolatedDB(t)
+	f := seedConflictPGFixture(t, db, false, "")
+	send := nativePartyRequest(t, db, f)
+	var parties []map[string]string
+	for i, role := range []string{"opposing_party", "related_party", "related_party"} {
+		name := fmt.Sprintf("party-%d", i)
+		if err := db.Exec(`INSERT INTO case_intake_parties(intake_id,entity_name,entity_type,entity_id,party_role,relation_depth,aliases,metadata,identity_type,identity_number_ciphertext,identity_number_digest)
+   VALUES(?,?,'LEGAL_PERSON',?,?,1,'old alias','{"party_type":"guarantor","opaque":9007199254740993}'::jsonb,'SOCIAL_CREDIT_CODE',?,?)`, f.intakeID, name, 100+i, role, "cipher-"+name, "digest-"+name).Error; err != nil {
+			t.Fatal(err)
+		}
+		parties = append(parties, map[string]string{"entity_name": name, "entity_type": "LEGAL_PERSON", "party_role": role})
+	}
+	snapshot := func() string {
+		t.Helper()
+		var value string
+		if err := db.Raw(`SELECT jsonb_agg(jsonb_build_array(entity_name,entity_type,entity_id,party_role,relation_depth,metadata,identity_type,identity_number_ciphertext,identity_number_digest,CASE WHEN party_role='opposing_party' THEN '' ELSE aliases END) ORDER BY entity_name)::text FROM case_intake_parties WHERE intake_id=?`, f.intakeID).Scan(&value).Error; err != nil {
+			t.Fatal(err)
+		}
+		return value
+	}
+	before := snapshot()
+	parties[0]["aliases"] = "new alias"
+	w := send("PUT", "/api/v1/case-intakes/"+f.intakeID, map[string]any{"expected_revision": f.revision, "parties": parties})
+	if w.Code != 200 {
+		t.Fatalf("full save returned %d", w.Code)
+	}
+	var alias string
+	if err := db.Raw("SELECT aliases FROM case_intake_parties WHERE intake_id=? AND party_role='opposing_party'", f.intakeID).Scan(&alias).Error; err != nil || alias != "new alias" {
+		t.Fatal("explicit alias was not applied", err)
+	}
+	if snapshot() != before {
+		t.Fatal("an unrelated party fact or protected identity changed")
 	}
 }
