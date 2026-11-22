@@ -139,7 +139,7 @@ func m1R3NativeCheckUsesEditedAlias(t *testing.T, suffix string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	exec("INSERT INTO case_intake_parties(intake_id,entity_name,entity_type,party_role,identity_type,identity_number_ciphertext,identity_number_digest,metadata) VALUES(?,'Separate current brand','LEGAL_PERSON','opposing_party','SOCIAL_CREDIT_CODE',?,?,jsonb_build_object('aliases',jsonb_build_array(?::text)))", f.intakeID, cipher, digest, name)
+	exec("INSERT INTO case_intake_parties(intake_id,entity_name,entity_type,party_role,identity_type,identity_number_ciphertext,identity_number_digest,metadata) VALUES(?,'Separate current brand','LEGAL_PERSON','opposing_party','SOCIAL_CREDIT_CODE',?,?,jsonb_build_object('aliases','[]'::text,'client_aliases',jsonb_build_array(?::text)))", f.intakeID, cipher, digest, name)
 	path := "/api/v1/case-intakes/" + f.intakeID
 	for step, alias := range []string{name, "Unrelated、" + name, ""} {
 		expected := alias != ""

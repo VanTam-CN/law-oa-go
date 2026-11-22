@@ -47,6 +47,11 @@ test('M1 R4 empty historical alias key falls through to the next legacy key', as
   await expect(page.locator('#intake-opponent-aliases')).toHaveValue('Historic Alias')
 })
 
+test('M1 R4 serialized empty historical array falls through to the next legacy key', async ({ page }) => {
+  await openSavedDraft(page, { aliases: '[]', client_aliases: ['Historic Alias'] })
+  await expect(page.locator('#intake-opponent-aliases')).toHaveValue('Historic Alias')
+})
+
 test('M1 R4 explicit empty column wins over historical aliases', async ({ page }) => {
   await openSavedDraft(page, { aliases: ['Historic Alias'] }, '')
   await expect(page.locator('#intake-opponent-aliases')).toHaveValue('')
