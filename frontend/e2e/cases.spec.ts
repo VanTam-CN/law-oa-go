@@ -2,42 +2,25 @@
  * E2E: 当前 MVP 案件流程.
  */
 
-import { test, expect, type Locator, type Page } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 import {
   seedAuthenticatedUser,
+  selectIntakeOption,
   waitForAppShell,
   waitForNativeTable,
   waitForPageLoad,
 } from './utils/test-helpers'
 
 async function fillCaseIntakeBasics(page: Page) {
-  const selectOption = async (field: Locator, title: string) => {
-    const input = field.getByRole('combobox')
-    await input.focus()
-    await input.press('ArrowDown')
-    const list = await input.getAttribute('aria-controls')
-    const options = page.locator('.ant-select-dropdown').filter({ has: page.locator(`[id="${list}"]`) })
-    await expect(options.getByTitle(title, { exact: true })).toBeVisible()
-    const count = await options.locator('.ant-select-item-option').count()
-    for (let i = 0; i <= count; i++) {
-      if (await options.locator('.ant-select-item-option-active').getAttribute('title') === title) {
-        await input.press('Enter')
-        await expect(field.getByTitle(title, { exact: true })).toBeVisible()
-        return
-      }
-      await input.press('ArrowDown')
-    }
-    throw new Error('未能选中 ' + title)
-  }
   await page.locator('.batch-field', { hasText: '案件名称' }).getByRole('textbox').fill('示例科技服务合同纠纷案')
-  await selectOption(page.locator('.batch-field', { hasText: '案件类型' }), '商事诉讼')
-  await selectOption(page.locator('.batch-field', { hasText: '业务领域' }), '公司与并购')
-  await selectOption(page.locator('.batch-field', { hasText: '子领域' }), '投资与融资')
-  await selectOption(page.locator('article', { hasText: '我方当事人' }), '上海示例科技有限公司')
+  await selectIntakeOption(page.locator('.batch-field', { hasText: '案件类型' }).getByRole('combobox'), '商事诉讼')
+  await selectIntakeOption(page.locator('.batch-field', { hasText: '业务领域' }).getByRole('combobox'), '公司与并购')
+  await selectIntakeOption(page.locator('.batch-field', { hasText: '子领域' }).getByRole('combobox'), '投资与融资')
+  await selectIntakeOption(page.locator('article', { hasText: '我方当事人' }).getByRole('combobox'), '上海示例科技有限公司')
   await page.getByRole('textbox', { name: '法定名称或证件姓名' }).fill('上海华信建设集团有限公司')
   await page.getByPlaceholder('输入证件号或统一社会信用代码').fill('91310000TESTCASE0001')
   await page.locator('.batch-wide-label', { hasText: '案情摘要' }).getByRole('textbox').fill('客户拟就服务合同争议提起诉讼。')
-  await selectOption(page.locator('.batch-intake-aside'), '张律师 · 争议解决部')
+  await selectIntakeOption(page.locator('.batch-intake-aside').getByRole('combobox'), '张律师 · 争议解决部')
 }
 
 test.describe('案件管理', () => {

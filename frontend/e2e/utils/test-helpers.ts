@@ -5,7 +5,27 @@
  * on a developer having PostgreSQL, Redis, Elasticsearch, or seeded data running.
  */
 
-import { Page, type Request, expect } from '@playwright/test'
+import { Page, type Locator, type Request, expect } from '@playwright/test'
+
+// Select through the keyboard so virtualized popups can move during page scrolling.
+export async function selectIntakeOption(input: Locator, title: string) {
+  await input.focus()
+  await input.press('ArrowDown')
+  const list = await input.getAttribute('aria-controls')
+  const page = input.page()
+  const popup = page.locator('.ant-select-dropdown').filter({ has: page.locator(`[id="${list}"]`) })
+  await expect(popup.getByTitle(title, { exact: true })).toBeVisible()
+  const count = await popup.locator('.ant-select-item-option').count()
+  for (let i = 0; i <= count; i++) {
+    if (await popup.locator('.ant-select-item-option-active').getAttribute('title') === title) {
+      await input.press('Enter')
+      await expect(input).toHaveAttribute('aria-expanded', 'false')
+      return
+    }
+    await input.press('ArrowDown')
+  }
+  throw new Error('未能选中 ' + title)
+}
 
 type TestUserKey = 'admin' | 'lawyer' | 'assistant' | 'finance' | 'conflictOfficer'
 
