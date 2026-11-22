@@ -2150,6 +2150,9 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 				var err error
 				if caseIntakePartyIsClient(party) {
 					row, err = bound.prepareCaseIntakeClientPartyRow(tx, targetClient, party, id, now)
+					if err == nil && targetClient == clientID {
+						err = bound.preserveStoredParty(tx, id, row, party, false)
+					}
 				} else {
 					row, err = bound.prepareCaseIntakePartyUpdateRow(tx, id, party, now, true)
 				}

@@ -43,38 +43,64 @@ func caseIntakePartyIdentityInputPresent(party map[string]interface{}) bool {
 	return false
 }
 
-// inheritCaseIntakePartyIdentity copies the protected identity of the matching
-// previous row into the replacement row when the payload carries no identity.
-// It fails closed unless exactly one same-name, same-role row remains, the
-// entity type also matches, and that row carries both ciphertext and digest.
-// Genuinely new parties still require a fresh identity.
-func (h *DemoAggregateHandler) inheritCaseIntakePartyIdentity(tx *gorm.DB, intakeID interface{}, row map[string]interface{}, party map[string]interface{}, hasIdentityColumns bool) bool {
-	if caseIntakePartyIdentityInputPresent(party) {
-		return caseIntakePartyGuardedIdentityValid(row)
-	}
-	if !hasIdentityColumns {
-		return false
+// Full replacement is also used by older native clients. Only fields actually
+// supplied by that client may replace stored facts on the same party.
+func (h *DemoAggregateHandler) preserveStoredParty(tx *gorm.DB, intakeID interface{}, row, party map[string]interface{}, requireStoredIdentity bool) error {
+	invalid := func() error {
+		return services.NewSubjectWorkflowError("INTAKE_PARTY_IDENTITY_REQUIRED", fmt.Sprintf("无法唯一核对当事人“%s”的身份，请重新核对", row["entity_name"]))
 	}
 	rows, err := h.lookupCaseIntakePartyRows(tx, intakeID, fmt.Sprint(row["entity_name"]), fmt.Sprint(row["party_role"]))
 	if err != nil {
-		return false
+		return err
 	}
-	if len(rows) != 1 {
-		// Ambiguous multi-match inheritance would pick an arbitrary protected
-		// identity, so the save must fail closed and ask for fresh input.
-		return false
+	if len(rows) == 0 {
+		if requireStoredIdentity {
+			return invalid()
+		}
+		return nil
 	}
-	existing := rows[0]
-	if fmt.Sprint(existing["entity_type"]) != fmt.Sprint(row["entity_type"]) || !caseIntakePartyGuardedIdentityValid(existing) {
-		return false
+	if len(rows) != 1 || normalizeIntakeEntityType(fmt.Sprint(rows[0]["entity_type"])) != fmt.Sprint(row["entity_type"]) {
+		return invalid()
 	}
-	row["identity_type"] = existing["identity_type"]
-	row["identity_number_ciphertext"] = existing["identity_number_ciphertext"]
-	row["identity_number_digest"] = existing["identity_number_digest"]
-	if aliases := existing["aliases"]; aliases != nil {
-		row["aliases"] = aliases
+	previous := rows[0]
+	if requireStoredIdentity {
+		if !caseIntakePartyGuardedIdentityValid(previous) {
+			return invalid()
+		}
+		for _, k := range []string{"identity_type", "identity_number_ciphertext", "identity_number_digest"} {
+			row[k] = previous[k]
+		}
 	}
-	return true
+	for _, k := range []string{"id", "case_id", "entity_id", "created_at"} {
+		if value, ok := previous[k]; ok {
+			row[k] = value
+		}
+	}
+	if _, present := party["relation_depth"]; !present {
+		row["relation_depth"] = previous["relation_depth"]
+	}
+	_, aliases := party["aliases"]
+	_, legacyAlias := party["alias"]
+	if !aliases && !legacyAlias {
+		row["aliases"] = previous["aliases"]
+	}
+	if patch, present := party["metadata"]; present {
+		incoming, ok := patch.(map[string]interface{})
+		if !ok {
+			return services.NewSubjectWorkflowError("INTAKE_PROTOCOL_INVALID", "主体元数据必须是 JSON 对象")
+		}
+		stored, err := decodeIntakeMetadata(previous["metadata"])
+		if err != nil {
+			return err
+		}
+		for key, value := range incoming {
+			stored[key] = value
+		}
+		row["metadata"] = jsonStringValue(stored)
+	} else {
+		row["metadata"] = previous["metadata"]
+	}
+	return nil
 }
 
 // caseIntakePartyGuardedIdentityValid requires both halves of the protected
@@ -93,7 +119,7 @@ func (h *DemoAggregateHandler) prepareCaseIntakePartyCreateRow(party map[string]
 	if err != nil {
 		return nil, err
 	}
-	if !caseIntakePartyIdentityInputPresent(party) {
+	if !caseIntakePartyGuardedIdentityValid(row) {
 		return nil, services.NewSubjectWorkflowError("INTAKE_PARTY_IDENTITY_REQUIRED", fmt.Sprintf("当事人“%s”必须提供与主体类型匹配的可核验身份标识", row["entity_name"]))
 	}
 	return row, nil
@@ -187,8 +213,12 @@ func (h *DemoAggregateHandler) prepareCaseIntakePartyUpdateRow(tx *gorm.DB, inta
 	if err != nil {
 		return nil, err
 	}
-	if !h.inheritCaseIntakePartyIdentity(tx, intakeID, row, party, hasIdentityColumns) {
-		return nil, services.NewSubjectWorkflowError("INTAKE_PARTY_IDENTITY_REQUIRED", fmt.Sprintf("当事人“%s”必须提供与主体类型匹配的可核验身份标识", row["entity_name"]))
+	fresh := caseIntakePartyIdentityInputPresent(party)
+	if (fresh && !caseIntakePartyGuardedIdentityValid(row)) || (!fresh && !hasIdentityColumns) {
+		return nil, services.NewSubjectWorkflowError("INTAKE_PARTY_IDENTITY_REQUIRED", "无法确认主体身份标识")
+	}
+	if err := h.preserveStoredParty(tx, intakeID, row, party, !fresh); err != nil {
+		return nil, err
 	}
 	return row, nil
 }

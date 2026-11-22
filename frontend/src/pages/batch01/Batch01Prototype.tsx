@@ -1286,15 +1286,18 @@ export function persistableCaseIntakeDraft(form: IntakeFormState) {
 // redacts ciphertext, digest and raw metadata at the API boundary, and the
 // lawyer re-enters the identity number before facts confirmation. The
 // revision token is copied so the next save passes the lost-update guard.
+function isIntakeOpponent(party: Record<string, any>): boolean {
+  const role = textValue(party.party_role || party.role, '').toLowerCase()
+  return role === 'opponent' || role.includes('opposing')
+}
+
 function intakeFormFromServer(payload: Record<string, any>): IntakeFormState {
   const intake = recordValue(payload.intake)
   const parties = listOf<Record<string, any>>(payload.parties)
   const clientParty = parties.find(
     (party: any) => textValue(party.party_role || party.role, '').toLowerCase() === 'client',
   )
-  const opponentParty = parties.find(
-    (party: any) => textValue(party.party_role || party.role, '').toLowerCase().includes('opposing'),
-  )
+  const opponentParty = parties.find(isIntakeOpponent)
   // Only a real opposing party may prefill the opponent fields. Falling back
   // to parties[0] used to paste the client's own name into the opponent
   // inputs when a draft was saved without an opponent.
@@ -4417,9 +4420,7 @@ export function CaseIntakeWorkbench() {
     const intake = recordValue(payload.intake)
     const metadata = recordValue(intake.metadata)
     const parties = listOf<Record<string, any>>(payload.parties)
-    const opponentParty = parties.find(
-      (party: any) => textValue(party.party_role || party.role, '').toLowerCase().includes('opposing'),
-    )
+    const opponentParty = parties.find(isIntakeOpponent)
     return {
       ...form,
       businessArea: textValue(metadata.business_area, ''),

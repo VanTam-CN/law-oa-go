@@ -140,22 +140,26 @@ func TestNativeFullSaveOnlyChangesExplicitAlias(t *testing.T) {
 	snapshot := func() string {
 		t.Helper()
 		var value string
-		if err := db.Raw(`SELECT jsonb_agg(jsonb_build_array(entity_name,entity_type,entity_id,party_role,relation_depth,metadata,identity_type,identity_number_ciphertext,identity_number_digest,CASE WHEN party_role='opposing_party' THEN '' ELSE aliases END) ORDER BY entity_name)::text FROM case_intake_parties WHERE intake_id=?`, f.intakeID).Scan(&value).Error; err != nil {
+		if err := db.Raw(`SELECT jsonb_agg(CASE WHEN party_role='opposing_party' THEN to_jsonb(p)-'aliases' ELSE to_jsonb(p) END ORDER BY id)::text FROM case_intake_parties p WHERE intake_id=?`, f.intakeID).Scan(&value).Error; err != nil {
 			t.Fatal(err)
 		}
 		return value
 	}
 	before := snapshot()
-	parties[0]["aliases"] = "new alias"
-	w := send("PUT", "/api/v1/case-intakes/"+f.intakeID, map[string]any{"expected_revision": f.revision, "parties": parties})
-	if w.Code != 200 {
-		t.Fatalf("full save returned %d", w.Code)
-	}
-	var alias string
-	if err := db.Raw("SELECT aliases FROM case_intake_parties WHERE intake_id=? AND party_role='opposing_party'", f.intakeID).Scan(&alias).Error; err != nil || alias != "new alias" {
-		t.Fatal("explicit alias was not applied", err)
-	}
-	if snapshot() != before {
-		t.Fatal("an unrelated party fact or protected identity changed")
+	revision := f.revision
+	for _, want := range []string{"new alias", ""} {
+		parties[0]["aliases"] = want
+		w := send("PUT", "/api/v1/case-intakes/"+f.intakeID, map[string]any{"expected_revision": revision, "parties": parties})
+		if w.Code != 200 {
+			t.Fatalf("full save returned %d", w.Code)
+		}
+		var alias string
+		if err := db.Raw("SELECT aliases FROM case_intake_parties WHERE intake_id=? AND party_role='opposing_party'", f.intakeID).Scan(&alias).Error; err != nil || alias != want {
+			t.Fatal("explicit alias was not applied", err)
+		}
+		if snapshot() != before {
+			t.Fatal("an unrelated party fact or protected identity changed")
+		}
+		revision, _, _, _ = conflictPGIntakeState(t, db, f.intakeID)
 	}
 }
