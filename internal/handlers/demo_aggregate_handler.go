@@ -1916,7 +1916,7 @@ func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
 				var row map[string]interface{}
 				var err error
 				if caseIntakePartyIsClient(party) {
-					row, err = bound.prepareCaseIntakeClientPartyRow(tx, intakePayload["client_id"], party, intakeID, now)
+					row, err = bound.prepareCaseIntakeClientPartyRow(tx, intakePayload["client_id"], party, intakeID, now, false)
 				} else {
 					row, err = bound.prepareCaseIntakePartyCreateRow(party, intakeID, now)
 				}
@@ -2181,10 +2181,7 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 				var row map[string]interface{}
 				var err error
 				if caseIntakePartyIsClient(party) {
-					row, err = bound.prepareCaseIntakeClientPartyRow(tx, targetClient, party, id, now)
-					if err == nil && targetClient == clientID {
-						err = bound.preserveStoredParty(tx, id, row, party, false)
-					}
+					row, err = bound.prepareCaseIntakeClientPartyRow(tx, targetClient, party, id, now, targetClient == clientID)
 				} else {
 					row, err = bound.prepareCaseIntakePartyUpdateRow(tx, id, party, now, true)
 				}

@@ -71,12 +71,21 @@ func (h *DemoAggregateHandler) preserveStoredParty(tx *gorm.DB, intakeID interfa
 			row[k] = previous[k]
 		}
 	}
+	return preserveIntakePartyFields(row, party, previous)
+}
+
+func preserveIntakePartyFields(row, party, previous map[string]interface{}) error {
 	for _, k := range []string{"id", "case_id", "entity_id", "created_at"} {
 		if value, ok := previous[k]; ok {
 			row[k] = value
 		}
 	}
-	if _, present := party["relation_depth"]; !present {
+	// Earlier native forms always sent 0 for clients/opponents and 1 for related parties.
+	defaultDepth := "0"
+	if row["party_role"] == "related_party" {
+		defaultDepth = "1"
+	}
+	if depth, present := party["relation_depth"]; !present || fmt.Sprint(depth) == defaultDepth {
 		row["relation_depth"] = previous["relation_depth"]
 	}
 	_, aliases := party["aliases"]
@@ -133,7 +142,7 @@ func (h *DemoAggregateHandler) prepareCaseIntakePartyCreateRow(party map[string]
 // the selected client, and the payload's subject type agrees with the
 // client master type. The identity never leaves the server as plaintext:
 // it is copied in its guarded form (ciphertext + digest).
-func (h *DemoAggregateHandler) prepareCaseIntakeClientPartyRow(tx *gorm.DB, clientIDInput interface{}, party map[string]interface{}, intakeID interface{}, now time.Time) (map[string]interface{}, error) {
+func (h *DemoAggregateHandler) prepareCaseIntakeClientPartyRow(tx *gorm.DB, clientIDInput interface{}, party map[string]interface{}, intakeID interface{}, now time.Time, sameClient bool) (map[string]interface{}, error) {
 	if tx == nil {
 		return nil, services.NewSubjectWorkflowError("INTAKE_PARTY_IDENTITY_REQUIRED", "客户方当事人缺少事务绑定，已阻止登记")
 	}
@@ -144,6 +153,30 @@ func (h *DemoAggregateHandler) prepareCaseIntakeClientPartyRow(tx *gorm.DB, clie
 	clientID := intakeClientID(clientIDInput)
 	if clientID == 0 {
 		return nil, services.NewSubjectWorkflowError("INTAKE_CLIENT_REQUIRED", "客户方当事人必须关联有效的客户档案")
+	}
+	// A full-save echo belongs to this intake's snapshot. Switching clients
+	// or creating an intake instead resolves identity from the selected master.
+	var previous map[string]interface{}
+	if sameClient {
+		var rows []map[string]interface{}
+		if err := tx.Table("case_intake_parties").Where("intake_id = ? AND LOWER(TRIM(party_role)) = 'client'", intakeID).Limit(2).Find(&rows).Error; err != nil {
+			return nil, err
+		}
+		if len(rows) > 1 {
+			return nil, services.NewSubjectWorkflowError("INTAKE_CLIENT_MISMATCH", "客户方主体不唯一，请重新核对")
+		}
+		if len(rows) == 1 {
+			previous = rows[0]
+			if !strings.EqualFold(valueString(previous, "entity_name"), valueString(row, "entity_name")) || normalizeIntakeEntityType(valueString(previous, "entity_type")) != valueString(row, "entity_type") {
+				return nil, services.NewSubjectWorkflowError("INTAKE_CLIENT_MISMATCH", "客户方主体与已保存事实不一致")
+			}
+			if caseIntakePartyGuardedIdentityValid(previous) && validIntakeIdentityType(valueString(row, "entity_type"), valueString(previous, "identity_type")) {
+				for _, k := range []string{"identity_type", "identity_number_ciphertext", "identity_number_digest"} {
+					row[k] = previous[k]
+				}
+				return row, preserveIntakePartyFields(row, party, previous)
+			}
+		}
 	}
 	var client models.Client
 	if err := tx.First(&client, clientID).Error; err != nil {
@@ -169,6 +202,9 @@ func (h *DemoAggregateHandler) prepareCaseIntakeClientPartyRow(tx *gorm.DB, clie
 	row["identity_number_digest"] = digest
 	if strings.TrimSpace(client.Aliases) != "" {
 		row["aliases"] = client.Aliases
+	}
+	if previous != nil {
+		return row, preserveIntakePartyFields(row, party, previous)
 	}
 	return row, nil
 }
