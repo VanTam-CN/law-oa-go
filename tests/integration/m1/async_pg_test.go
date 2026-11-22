@@ -5,6 +5,7 @@ package m1_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http/httptest"
 	"strings"
@@ -18,28 +19,35 @@ import (
 	"law-oa-go/internal/services"
 )
 
-type pausedDetector struct {
-	services.ConflictDetectionService
+// Pause inside the normal risk assessment. The detector, queue, evidence persistence
+// and version-guarded association all remain wired to their production implementations.
+type gatedRiskAssessor struct {
+	services.RiskAssessor
 	started chan struct{}
 	resume  chan struct{}
 }
 
-func (d pausedDetector) PerformConflictCheck(ctx context.Context, r *models.ConflictCheckRequest) (*models.ConflictCheckResponse, error) {
-	close(d.started)
+func (a gatedRiskAssessor) GenerateRecommendations(ctx context.Context, risk string, cases []*models.ConflictCase) ([]string, error) {
+	close(a.started)
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
-	case <-d.resume:
-		return &models.ConflictCheckResponse{CheckID: r.CheckID, CheckTime: time.Now()}, nil
+	case <-a.resume:
+		return a.RiskAssessor.GenerateRecommendations(ctx, risk, cases)
 	}
 }
 
-func TestAsyncPGCompletionAfterNativeEdit(t *testing.T) {
+func TestAsyncPGCompletionAfterNativeEdit(t *testing.T)   { checkFormalAsyncPG(t, true) }
+func TestAsyncPGFormalDetectorCompletesOnce(t *testing.T) { checkFormalAsyncPG(t, false) }
+
+func checkFormalAsyncPG(t *testing.T, editDuringCheck bool) {
+	t.Helper()
 	db := isolatedDB(t)
 	f := seedConflictPGFixture(t, db, true, "")
 	repo := repositories.NewConflictRepository(db, nil)
-	engine := pausedDetector{started: make(chan struct{}), resume: make(chan struct{})}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	gate := gatedRiskAssessor{RiskAssessor: services.NewRiskAssessor(nil, nil), started: make(chan struct{}), resume: make(chan struct{})}
+	engine := services.NewConflictDetectionService(repo, gate, repositories.NewUserRepository(db), repositories.NewClientRepository(db), repositories.NewCaseRepository(db))
+	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
 	defer cancel()
 	service := services.NewAsyncConflictCheckService(repo, engine)
 	req := &models.ConflictCheckRequest{IntakeID: f.intakeID, IntakeRevision: f.revision, SubjectCaseID: f.caseID, ClientID: f.clientID, ClientType: "COMPANY", ClientName: "Synthetic client", CaseName: "Synthetic intake", CaseType: "civil", OtherParties: []string{"Synthetic opponent"}, UserID: fmt.Sprint(f.userID)}
@@ -50,11 +58,11 @@ func TestAsyncPGCompletionAfterNativeEdit(t *testing.T) {
 	resumed := false
 	defer func() {
 		if !resumed {
-			close(engine.resume)
+			close(gate.resume)
 		}
 	}()
 	select {
-	case <-engine.started:
+	case <-gate.started:
 	case <-ctx.Done():
 		t.Fatal("async detector did not start")
 	}
@@ -66,19 +74,20 @@ func TestAsyncPGCompletionAfterNativeEdit(t *testing.T) {
 	if rev != f.revision || status != "lawyer_facts_confirmed" {
 		t.Fatal("start changed confirmed input")
 	}
-	h := handlers.NewDemoAggregateHandler(db)
-	h.SetAuthorizationService(services.NewAuthorizationService(repositories.NewCaseRepository(db), repositories.NewClientRepository(db), repositories.NewUserRepository(db), repositories.NewDocumentRepository(db)))
-	r := gin.New()
-	r.PUT("/case-intakes/:id", func(c *gin.Context) { c.Set("role", "lawyer"); c.Set("user_id", f.userID); h.UpdateCaseIntake(c) })
-	body, _ := json.Marshal(map[string]string{"expected_revision": rev, "title": "Edited while check was running"})
-	put := httptest.NewRequest("PUT", "/case-intakes/"+f.intakeID, strings.NewReader(string(body)))
-	put.Header.Set("Content-Type", "application/json")
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, put)
-	if w.Code != 200 {
-		t.Fatalf("native edit returned %d", w.Code)
+	if editDuringCheck {
+		h := handlers.NewDemoAggregateHandler(db)
+		h.SetAuthorizationService(services.NewAuthorizationService(repositories.NewCaseRepository(db), repositories.NewClientRepository(db), repositories.NewUserRepository(db), repositories.NewDocumentRepository(db)))
+		r := gin.New()
+		r.PUT("/case-intakes/:id", func(c *gin.Context) { c.Set("role", "lawyer"); c.Set("user_id", f.userID); h.UpdateCaseIntake(c) })
+		body, _ := json.Marshal(map[string]string{"expected_revision": rev, "title": "Edited while check was running"})
+		put := httptest.NewRequest("PUT", "/case-intakes/"+f.intakeID, strings.NewReader(string(body)))
+		put.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, put)
+		if w.Code != 200 {
+			t.Fatalf("native edit returned %d", w.Code)
+		}
 	}
-	var snapshot string
 	read := func() string {
 		t.Helper()
 		var current string
@@ -87,8 +96,8 @@ func TestAsyncPGCompletionAfterNativeEdit(t *testing.T) {
 		}
 		return current
 	}
-	snapshot = read()
-	close(engine.resume)
+	snapshot := read()
+	close(gate.resume)
 	resumed = true
 	for {
 		record, err := repo.GetCheckRecord(ctx, task.CheckID)
@@ -96,13 +105,16 @@ func TestAsyncPGCompletionAfterNativeEdit(t *testing.T) {
 			t.Fatal(err)
 		}
 		if record.CheckStatus == services.ConflictTaskStatusFailed {
-			if !strings.Contains(fmt.Sprint(record.CheckResult["error"]), repositories.ErrIntakeRevisionConflict.Error()) {
+			if !editDuringCheck || !strings.Contains(fmt.Sprint(record.CheckResult["error"]), repositories.ErrIntakeRevisionConflict.Error()) {
 				t.Fatal("unexpected failure", record.CheckResult["error"])
 			}
 			break
 		}
 		if record.CheckStatus == services.ConflictTaskStatusCompleted {
-			t.Fatal("late result marked completed")
+			if editDuringCheck {
+				t.Fatal("late result marked completed")
+			}
+			break
 		}
 		select {
 		case <-ctx.Done():
@@ -110,7 +122,32 @@ func TestAsyncPGCompletionAfterNativeEdit(t *testing.T) {
 		case <-time.After(10 * time.Millisecond):
 		}
 	}
-	if snapshot != read() || conflictPGCaseCheckID(t, db, f.caseID) != "" {
-		t.Fatal("late completion altered edited intake or case pointer")
+	var count int64
+	if err := db.Table("conflict_check_records").Where("check_id=?", task.CheckID).Count(&count).Error; err != nil || count != 1 {
+		t.Fatal("incorrect audit record count", count, err)
 	}
+	if editDuringCheck {
+		if snapshot != read() || conflictPGCaseCheckID(t, db, f.caseID) != "" {
+			t.Fatal("late completion altered edited intake or case pointer")
+		}
+		return
+	}
+	savedRev, state, linked, precision := conflictPGIntakeState(t, db, f.intakeID)
+	if savedRev == "" || savedRev == rev || state != "conflict_ready" || linked != task.CheckID || precision != conflictPGBigPrecision || conflictPGCaseCheckID(t, db, f.caseID) != task.CheckID {
+		t.Fatal("fresh formal check did not atomically link both objects")
+	}
+	var subjects int64
+	if err := db.Model(&models.ConflictSubjectVersion{}).Where("source_id=?", task.CheckID).Count(&subjects).Error; err != nil || subjects == 0 {
+		t.Fatal("missing formal detector evidence", err)
+	}
+	// Re-delivery of the original completion cannot rotate the version a second time.
+	replayed := repositories.ConflictSubjectAssociation{CheckID: task.CheckID, ClientID: f.clientID, SubjectCaseID: f.caseID, IntakeID: f.intakeID, IntakeRevision: rev}
+	if err := repositories.LinkConflictCheckToCase(ctx, db, replayed); !errors.Is(err, repositories.ErrIntakeRevisionConflict) {
+		t.Fatal("unexpected completion replay outcome", err)
+	}
+	endRev, _, _, _ := conflictPGIntakeState(t, db, f.intakeID)
+	if endRev != savedRev {
+		t.Fatal("completion replay advanced draft revision")
+	}
+
 }
