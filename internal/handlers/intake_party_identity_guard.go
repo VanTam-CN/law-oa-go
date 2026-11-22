@@ -22,10 +22,14 @@ func (h *DemoAggregateHandler) lookupCaseIntakePartyRows(tx *gorm.DB, intakeID i
 	if db == nil {
 		db = h.db
 	}
+	roles := []string{strings.ToLower(strings.TrimSpace(partyRole))}
+	if roles[0] == "opponent" || roles[0] == "opposing_party" {
+		roles = []string{"opponent", "opposing_party"}
+	}
 	err := db.Table("case_intake_parties").
 		Where("intake_id = ?", intakeID).
 		Where("LOWER(TRIM(entity_name)) = ?", strings.ToLower(strings.TrimSpace(entityName))).
-		Where("LOWER(TRIM(party_role)) = ?", strings.ToLower(strings.TrimSpace(partyRole))).
+		Where("LOWER(TRIM(party_role)) IN ?", roles).
 		Find(&rows).Error
 	return rows, err
 }
@@ -63,7 +67,9 @@ func (h *DemoAggregateHandler) preserveStoredParty(tx *gorm.DB, intakeID interfa
 		return invalid()
 	}
 	previous := rows[0]
-	if requireStoredIdentity {
+	sameIdentity := valueString(previous, "identity_number_digest") == valueString(row, "identity_number_digest") &&
+		strings.EqualFold(valueString(previous, "identity_type"), valueString(row, "identity_type")) && caseIntakePartyGuardedIdentityValid(previous)
+	if requireStoredIdentity || sameIdentity {
 		if !caseIntakePartyGuardedIdentityValid(previous) {
 			return invalid()
 		}
@@ -75,7 +81,7 @@ func (h *DemoAggregateHandler) preserveStoredParty(tx *gorm.DB, intakeID interfa
 }
 
 func preserveIntakePartyFields(row, party, previous map[string]interface{}) error {
-	for _, k := range []string{"id", "case_id", "entity_id", "created_at"} {
+	for _, k := range []string{"id", "case_id", "entity_id", "created_at", "party_role", "entity_type"} {
 		if value, ok := previous[k]; ok {
 			row[k] = value
 		}
@@ -257,4 +263,39 @@ func (h *DemoAggregateHandler) prepareCaseIntakePartyUpdateRow(tx *gorm.DB, inta
 		return nil, err
 	}
 	return row, nil
+}
+
+// replaceIntakePartyRoster reconciles an explicitly supplied full list. IDs
+// in prepared rows came from matching the locked intake, never from the client.
+func replaceIntakePartyRoster(tx *gorm.DB, intakeID string, rows []map[string]interface{}) error {
+	retained := make(map[string]bool)
+	var ids []string
+	for _, row := range rows {
+		if id := valueString(row, "id"); id != "" {
+			if retained[id] {
+				return services.NewSubjectWorkflowError("INTAKE_PARTY_AMBIGUOUS", "提交的主体清单重复指向同一条记录")
+			}
+			retained[id] = true
+			ids = append(ids, id)
+		}
+	}
+	removed := tx.Table("case_intake_parties").Where("intake_id = ?", intakeID)
+	if len(ids) > 0 {
+		removed = removed.Where("id NOT IN ?", ids)
+	}
+	if err := removed.Delete(map[string]interface{}{}).Error; err != nil {
+		return err
+	}
+	for _, row := range rows {
+		parties := tx.Table("case_intake_parties")
+		if id := row["id"]; id != nil {
+			result := parties.Where("intake_id = ? AND id = ?", intakeID, id).Omit("id", "intake_id", "case_id", "entity_id", "created_at").Updates(row)
+			if result.Error != nil {
+				return result.Error
+			}
+		} else if err := parties.Create(row).Error; err != nil {
+			return err
+		}
+	}
+	return nil
 }

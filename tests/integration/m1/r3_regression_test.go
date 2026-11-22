@@ -97,12 +97,12 @@ func TestM1R3SameIdentityEcho(t *testing.T) {
 			w := send("PUT", "/api/v1/case-intakes/"+f.intakeID, map[string]any{"expected_revision": f.revision, "parties": []any{map[string]string{"entity_name": "Sample opponent", "party_role": "opposing_party", "entity_type": "LEGAL_PERSON", "identity_type": "SOCIAL_CREDIT_CODE", "identity_number": "SYNTHETIC-OPPONENT", "aliases": "New Alias"}}})
 			after, kept := read()
 			t.Logf("http=%d same_row=%v opaque_preserved=%v", w.Code, before == after, kept)
-			var equal struct{ Cipher, Digest bool }
-			if err := db.Raw("SELECT identity_number_ciphertext=? AS cipher,identity_number_digest=? AS digest FROM case_intake_parties WHERE intake_id=?", c, d, f.intakeID).Scan(&equal).Error; err != nil {
+			var equal struct{ Cipher, Digest, Alias bool }
+			if err := db.Raw("SELECT identity_number_ciphertext=? AS cipher,identity_number_digest=? AS digest, aliases=? AS alias FROM case_intake_parties WHERE intake_id=?", c, d, "New Alias", f.intakeID).Scan(&equal).Error; err != nil {
 				t.Fatal(err)
 			}
 			t.Logf("same_cipher=%v same_digest=%v", equal.Cipher, equal.Digest)
-			if w.Code != 200 || after != before || !kept || !equal.Digest || !equal.Cipher || snapshot() != original {
+			if w.Code != 200 || after != before || !kept || !equal.Digest || !equal.Cipher || !equal.Alias || snapshot() != original {
 				t.Fatal("same identity echo changed guarded columns")
 			}
 		})

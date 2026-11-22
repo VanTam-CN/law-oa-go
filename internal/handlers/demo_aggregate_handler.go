@@ -2218,13 +2218,8 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 				}
 				prepared = append(prepared, row)
 			}
-			if err := tx.Table("case_intake_parties").Where("intake_id = ?", id).Delete(map[string]interface{}{}).Error; err != nil {
+			if err := replaceIntakePartyRoster(tx, id, prepared); err != nil {
 				return err
-			}
-			for _, row := range prepared {
-				if err := tx.Table("case_intake_parties").Create(row).Error; err != nil {
-					return err
-				}
 			}
 		}
 		if narrowUpdatePresent {
