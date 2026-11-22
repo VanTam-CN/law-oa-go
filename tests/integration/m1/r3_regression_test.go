@@ -132,12 +132,13 @@ func TestM1R3NativeCheckUsesEditedAlias(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	exec("INSERT INTO case_intake_parties(intake_id,entity_name,entity_type,party_role,identity_type,identity_number_ciphertext,identity_number_digest,aliases) VALUES(?,'Separate current brand','LEGAL_PERSON','opposing_party','SOCIAL_CREDIT_CODE',?,?,?)", f.intakeID, cipher, digest, "Synthetic other alias、"+name)
+	exec("INSERT INTO case_intake_parties(intake_id,entity_name,entity_type,party_role,identity_type,identity_number_ciphertext,identity_number_digest,metadata) VALUES(?,'Separate current brand','LEGAL_PERSON','opposing_party','SOCIAL_CREDIT_CODE',?,?,jsonb_build_object('aliases',jsonb_build_array(?::text)))", f.intakeID, cipher, digest, name)
 	path := "/api/v1/case-intakes/" + f.intakeID
-	for _, expected := range []bool{true, false} {
-		if !expected {
+	for step, alias := range []string{name, "Unrelated、" + name, ""} {
+		expected := alias != ""
+		if step > 0 {
 			rev, _, _, _ := conflictPGIntakeState(t, db, f.intakeID)
-			if w := send("PUT", path, map[string]any{"expected_revision": rev, "opponent_identity_update": map[string]string{"entity_name": "Separate current brand", "entity_type": "LEGAL_PERSON", "identity_type": "SOCIAL_CREDIT_CODE", "identity_number": "OPPONENT-" + f.intakeID, "aliases": ""}}); w.Code != 200 {
+			if w := send("PUT", path, map[string]any{"expected_revision": rev, "opponent_identity_update": map[string]string{"entity_name": "Separate current brand", "entity_type": "LEGAL_PERSON", "identity_type": "SOCIAL_CREDIT_CODE", "identity_number": "OPPONENT-" + f.intakeID, "aliases": alias}}); w.Code != 200 {
 				t.Fatalf("clear alias: HTTP %d", w.Code)
 			}
 			if w := send("POST", path+"/facts-confirmation", map[string]any{}); w.Code != 200 {
