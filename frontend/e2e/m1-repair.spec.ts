@@ -75,7 +75,7 @@ async function runFactsConfirmation(page: Page) {
   await expect(page.getByRole('button', { name: '进入团队与费用' })).toBeEnabled()
 }
 
-for (const source of ['本机草稿', '服务端20行投影', '本机别名', '投影外对方', '检测后保存'] as const) {
+for (const source of ['本机草稿', '服务端20行投影', '本机别名', '投影外对方', '检测后保存', '投影对方有歧义'] as const) {
   test(`${source}恢复后以原生 PUT 更新指定对方并确认检测`, async ({ page }) => {
     await seedAuthenticatedUser(page, 'lawyer')
     const path = '/api/v1/case-intakes'
@@ -98,7 +98,7 @@ for (const source of ['本机草稿', '服务端20行投影', '本机别名', '�
         const parties = truncatedParties()
         const opponent = parties[1]
         if (source === '投影外对方') parties[1] = makeParty('related_party', '合成关联人')
-        return route.fulfill(ok({ ...detailPayload(revision, parties), opponent_party: opponent }))
+        return route.fulfill(ok({ ...detailPayload(revision, parties), opponent_party: source === '投影对方有歧义' ? null : opponent }))
       }
       if (req.method() === 'POST' && url === path) {
         expect(req.postDataJSON().parties.find((p: Party) => p.party_role === 'opposing_party').identity_number).toBe(ORIGINAL_IDENTITY)
@@ -134,6 +134,12 @@ for (const source of ['本机草稿', '服务端20行投影', '本机别名', '�
       await page.getByRole('button', { name: '打开合成样例' }).click()
     }
     await expect(page.getByRole('textbox', { name: '案件名称 *' })).toHaveValue('示例科技服务合同纠纷案')
+    if (source === '投影对方有歧义') {
+      await expect(page.getByRole('textbox', { name: '法定名称或证件姓名' })).toHaveValue('')
+      expect(writes).toHaveLength(0)
+      expect(headers).toHaveLength(0)
+      return
+    }
     await expect(page.getByRole('textbox', { name: '法定名称或证件姓名' })).toHaveValue(OPPONENT_NAME)
     if (source === '本机别名') await expect(page.locator('#intake-opponent-aliases')).toHaveValue(alias)
     await fillUpdatedOpponentIdentity(page)
