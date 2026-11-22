@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"testing"
-	"time"
 
 	"law-oa-go/internal/models"
 )
@@ -12,7 +11,6 @@ func aliasMatchVersion(name string, sourceType string) models.ConflictSubjectVer
 		ID: "SV-test", SubjectKey: "k", SourceType: sourceType, SourceID: "src",
 		SubjectRole: "OPPOSING_PARTY", SubjectType: "COMPANY", OriginalName: name,
 		NormalizedName: normalizeConflictIndexName(name, "COMPANY"),
-		SourceVersion:  "v1", Verification: "SOURCE_REGISTERED", CreatedAt: time.Now(),
 	}
 }
 
@@ -28,7 +26,7 @@ func TestMatchConflictIndexSubjectReturnsMatchedRequestedAlias(t *testing.T) {
 	version := aliasMatchVersion("Historical Star Firm", "CLIENT_ARCHIVE_CASE")
 	subject := aliasMatchSubject("COMPANY", "Independent Current Brand", "Historical Star Firm")
 	matchType, _, matched := matchConflictIndexSubject(version, nil, subject, map[string]string{}, nil)
-	if matchType == "" || matched != "Historical Star Firm" {
+	if matchType != "CANDIDATE" || matched != "Historical Star Firm" {
 		t.Fatalf("alias hit must report the alias that matched: match=%q matched=%q", matchType, matched)
 	}
 }
@@ -37,8 +35,8 @@ func TestMatchConflictIndexSubjectReturnsMatchedRequestedAlias(t *testing.T) {
 func TestMatchConflictIndexSubjectPrimaryNameWinsOverAlias(t *testing.T) {
 	version := aliasMatchVersion("Alpha Base Ltd", "CLIENT")
 	subject := aliasMatchSubject("COMPANY", "Alpha Base Ltd", "Unrelated Brand")
-	matchType, _, matched := matchConflictIndexSubject(version, nil, subject, map[string]string{}, nil)
-	if matchType == "" || matched != "Alpha Base Ltd" {
+	matchType, _, matched := matchConflictIndexSubject(version, []string{"Unrelated Brand"}, subject, map[string]string{}, nil)
+	if matchType != "CANDIDATE" || matched != "Alpha Base Ltd" {
 		t.Fatalf("primary hit must keep the primary label: match=%q matched=%q", matchType, matched)
 	}
 }
@@ -56,5 +54,9 @@ func TestMatchConflictIndexSubjectIDCardExactBeatsNameCandidates(t *testing.T) {
 	}
 	if matched != "历史用名张三" {
 		t.Fatalf("id card label changed: %q", matched)
+	}
+	matchType, ruleCode, matched = matchConflictIndexSubject(version, nil, subject, nil, storedIDs)
+	if matchType != "CANDIDATE" || ruleCode != "PERSON_NAME_ONLY_INSUFFICIENT" || matched != "张三" {
+		t.Fatal("alias alone must remain a person-name candidate", matchType, ruleCode, matched)
 	}
 }

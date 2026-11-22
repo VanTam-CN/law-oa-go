@@ -22,8 +22,12 @@ func TestUpdateIntakeTransactionFailureRollsBackFullSave(t *testing.T) {
 		t.Fatalf("create rollback trigger: %v", err)
 	}
 
-	body := "{\"expected_revision\":\"rev-1\",\"title\":\"回滚前改标题\",\"parties\":[" +
-		"{\"entity_name\":\"对手公司\",\"entity_type\":\"LEGAL_PERSON\",\"party_role\":\"opposing_party\",\"identity_type\":\"SOCIAL_CREDIT_CODE\",\"identity_number\":\"91310000MA1FL0000X\"}]}"
+	// The first row updates in place. Inserting the second must roll back
+	// that update, the removed client row, and the parent revision.
+	body := `{"expected_revision":"rev-1","title":"回滚前改标题","parties":[
+        {"entity_name":"对手公司","entity_type":"LEGAL_PERSON","party_role":"opposing_party","identity_type":"SOCIAL_CREDIT_CODE","identity_number":"91310000MA1FL0000X"},
+        {"entity_name":"新增合成主体","entity_type":"LEGAL_PERSON","party_role":"related_party","identity_type":"SOCIAL_CREDIT_CODE","identity_number":"SYNTHETIC-NEW"}
+    ]}`
 	code, payload := draftRevisionRequest(t, r, http.MethodPut, "/api/v1/case-intakes/intake-rev", body, "")
 	if code < http.StatusBadRequest {
 		t.Fatalf("forced insert failure must reject the save, got status=%d payload=%v", code, payload)
