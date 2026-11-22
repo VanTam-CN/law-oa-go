@@ -115,6 +115,18 @@ func stringListValue(value interface{}) []string {
 	return result
 }
 
+// Native forms display multiple aliases separated by a Chinese enumeration comma.
+func intakeAliasList(raw interface{}) []string {
+	if text, ok := raw.(string); ok {
+		var list []string
+		if strings.HasPrefix(strings.TrimSpace(text), "[") && json.Unmarshal([]byte(text), &list) == nil {
+			return stringListValue(list)
+		}
+		raw = strings.NewReplacer("、", ",", "，", ",").Replace(text)
+	}
+	return stringListValue(raw)
+}
+
 func stringMapValue(value interface{}) map[string]string {
 	result := map[string]string{}
 	if values, ok := value.(map[string]interface{}); ok {

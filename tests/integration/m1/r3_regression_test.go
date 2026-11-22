@@ -132,7 +132,7 @@ func TestM1R3NativeCheckUsesEditedAlias(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	exec("INSERT INTO case_intake_parties(intake_id,entity_name,entity_type,party_role,identity_type,identity_number_ciphertext,identity_number_digest,aliases) VALUES(?,'Separate current brand','LEGAL_PERSON','opposing_party','SOCIAL_CREDIT_CODE',?,?,?)", f.intakeID, cipher, digest, name)
+	exec("INSERT INTO case_intake_parties(intake_id,entity_name,entity_type,party_role,identity_type,identity_number_ciphertext,identity_number_digest,aliases) VALUES(?,'Separate current brand','LEGAL_PERSON','opposing_party','SOCIAL_CREDIT_CODE',?,?,?)", f.intakeID, cipher, digest, "Synthetic other alias、"+name)
 	path := "/api/v1/case-intakes/" + f.intakeID
 	for _, expected := range []bool{true, false} {
 		if !expected {
@@ -151,8 +151,18 @@ func TestM1R3NativeCheckUsesEditedAlias(t *testing.T) {
 		if err := json.Unmarshal(w.Body.Bytes(), &res); w.Code != 200 || err != nil {
 			t.Fatalf("native check HTTP %d, %v", w.Code, err)
 		}
+		// The lawyer receives a redacted result. Follow the returned check ID
+		// to the persisted evidence that the independent reviewer reads.
+		var raw string
+		if err := db.Table("conflict_check_records").Select("check_result").Where("check_id = ?", res.Data.Result.CheckID).Scan(&raw).Error; err != nil {
+			t.Fatal(err)
+		}
+		var stored models.ConflictCheckResponse
+		if err := json.Unmarshal([]byte(raw), &stored); err != nil {
+			t.Fatal(err)
+		}
 		var hits int
-		for _, c := range res.Data.Result.ConflictCases {
+		for _, c := range stored.ConflictCases {
 			if c.ClientID == hist.clientID {
 				for _, e := range c.Evidence {
 					if e.RequestedParty == name && e.MatchType == "CANDIDATE" {

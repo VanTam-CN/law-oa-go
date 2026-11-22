@@ -501,7 +501,7 @@ func (r *conflictRepository) SearchConflictSubjectIndex(ctx context.Context, sub
 		aliases := []string{}
 		_ = json.Unmarshal([]byte(version.AliasSnapshot), &aliases)
 		for index, subject := range subjects {
-			matchType, ruleCode, _ := matchConflictIndexSubject(version, aliases, subject, inputIDs[index], identifierByVersion[version.ID])
+			matchType, ruleCode, requested := matchConflictIndexSubject(version, aliases, subject, inputIDs[index], identifierByVersion[version.ID])
 			if matchType == "" {
 				continue
 			}
@@ -512,7 +512,7 @@ func (r *conflictRepository) SearchConflictSubjectIndex(ctx context.Context, sub
 			seen[key] = struct{}{}
 			hits = append(hits, ConflictP0SubjectIndexHit{
 				Version: version, Identifiers: identifierByVersion[version.ID], MatchType: matchType,
-				RuleCode: ruleCode, RequestedParty: subject.OriginalName, MatchedName: version.OriginalName,
+				RuleCode: ruleCode, RequestedParty: requested, MatchedName: version.OriginalName,
 				MatchSource: version.SourceType, RelationType: relationTypeFromSnapshot(version.Snapshot),
 			})
 		}
@@ -520,40 +520,52 @@ func (r *conflictRepository) SearchConflictSubjectIndex(ctx context.Context, sub
 	return hits, nil
 }
 
+// matchConflictIndexSubject returns (matchType, ruleCode, matchedRequestedName).
+// The third value is the incoming name or alias that actually produced the
+// match, so review records never attribute an alias hit to the primary name.
 func matchConflictIndexSubject(version models.ConflictSubjectVersion, aliases []string, subject models.ConflictNormalizedSubject, inputIDs map[string]string, storedIDs []models.ConflictSubjectIdentifier) (string, string, string) {
 	for _, stored := range storedIDs {
 		if inputIDs[canonicalIndexIdentifier(stored.IdentifierType)] != "" && strings.EqualFold(inputIDs[canonicalIndexIdentifier(stored.IdentifierType)], stored.Digest) {
 			return "EXACT", "STRUCTURED_IDENTITY_EXACT", subject.OriginalName
 		}
 	}
+	// Prefer the primary name. An incoming alias can establish a name
+	// candidate, while only a protected identifier can establish EXACT.
+	for i, name := range append([]string{subject.OriginalName}, subject.Aliases...) {
+		requested := normalizeConflictIndexName(name, subject.EntityType)
+		if requested == "" {
+			continue
+		}
+		primary := strings.EqualFold(version.NormalizedName, requested)
+		matched := primary
+		if !matched {
+			for _, alias := range aliases {
+				if strings.EqualFold(normalizeConflictIndexName(alias, subject.EntityType), requested) {
+					matched = true
+					break
+				}
+			}
+		}
+		if !matched {
+			continue
+		}
+		if i > 0 && subject.AliasLabels[name] != "" {
+			name = subject.AliasLabels[name]
+		}
+		switch {
+		case indexSubjectType(subject.EntityType) == "PERSON" && len(subject.Identifiers) == 0:
+			return "CANDIDATE", "PERSON_NAME_ONLY_INSUFFICIENT", name
+		case version.SourceType == "RELATED_ENTITY":
+			return "RELATION", "RELATED_ENTITY_ADVERSE_REVIEW", name
+		case i > 0 || !primary:
+			return "CANDIDATE", "FORMER_NAME_CANDIDATE_REVIEW", name
+		case version.SourceType == "CLIENT_ARCHIVE" || version.SourceType == "CLIENT_ARCHIVE_CASE":
+			return "CANDIDATE", "CLIENT_ARCHIVE_NAME_CANDIDATE", name
+		default:
+			return "CANDIDATE", "SUBJECT_CANDIDATE_REVIEW", name
+		}
+	}
 	requested := normalizeConflictIndexName(subject.OriginalName, subject.EntityType)
-	if requested == "" {
-		return "", "", ""
-	}
-	nameExact := strings.EqualFold(version.NormalizedName, requested)
-	aliasExact := false
-	for _, alias := range aliases {
-		candidate := normalizeConflictIndexName(alias, subject.EntityType)
-		if strings.EqualFold(candidate, requested) {
-			aliasExact = true
-			break
-		}
-	}
-	if nameExact || aliasExact {
-		if strings.EqualFold(indexSubjectType(subject.EntityType), "PERSON") && len(subject.Identifiers) == 0 {
-			return "CANDIDATE", "PERSON_NAME_ONLY_INSUFFICIENT", subject.OriginalName
-		}
-		if version.SourceType == "RELATED_ENTITY" {
-			return "RELATION", "RELATED_ENTITY_ADVERSE_REVIEW", subject.OriginalName
-		}
-		if aliasExact {
-			return "CANDIDATE", "FORMER_NAME_CANDIDATE_REVIEW", subject.OriginalName
-		}
-		if version.SourceType == "CLIENT_ARCHIVE" || version.SourceType == "CLIENT_ARCHIVE_CASE" {
-			return "CANDIDATE", "CLIENT_ARCHIVE_NAME_CANDIDATE", subject.OriginalName
-		}
-		return "CANDIDATE", "SUBJECT_CANDIDATE_REVIEW", subject.OriginalName
-	}
 	if len([]rune(requested)) >= 3 && len([]rune(version.NormalizedName)) >= 3 &&
 		(strings.Contains(version.NormalizedName, requested) || strings.Contains(requested, version.NormalizedName)) {
 		return "CANDIDATE", "SUBJECT_CANDIDATE_REVIEW", subject.OriginalName

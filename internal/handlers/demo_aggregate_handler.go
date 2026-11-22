@@ -2545,7 +2545,7 @@ func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
 			if storedAliases == nil {
 				storedAliases = firstNonEmptyValue(partyMetadata["aliases"], partyMetadata["client_aliases"], partyMetadata["clientAliases"])
 			}
-			aliases := stringListValue(storedAliases)
+			aliases := intakeAliasList(storedAliases)
 			parties = append(parties, models.ConflictPartyInfo{Name: name, Role: role, EntityType: entityType, Identifiers: identifiers, Aliases: aliases})
 			if _, exists := seenParties[name]; !exists {
 				seenParties[name] = struct{}{}

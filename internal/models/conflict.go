@@ -67,6 +67,7 @@ type ConflictNormalizedSubject struct {
 	EntityType     string            `json:"entityType"`
 	Identifiers    map[string]string `json:"identifiers,omitempty"`
 	Aliases        []string          `json:"aliases,omitempty"`
+	AliasLabels    map[string]string `json:"-" gorm:"-"` // Original spelling for indexed evidence; Aliases keeps normalized keys.
 }
 
 // ConflictDecisionSummary separates machine-found facts from the intake recommendation.
