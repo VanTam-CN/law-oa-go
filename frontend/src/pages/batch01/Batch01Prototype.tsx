@@ -4432,6 +4432,7 @@ export function CaseIntakeWorkbench() {
     const intake = recordValue(payload.intake)
     const metadata = recordValue(intake.metadata)
     const opponentParty = restoredOpponent(payload)
+    const opponentMetadata = recordValue(opponentParty?.metadata)
     return {
       ...form,
       businessArea: textValue(metadata.business_area, ''),
@@ -4449,19 +4450,12 @@ export function CaseIntakeWorkbench() {
       contingencyRate: textValue(metadata.contingency_rate, ''),
       minimumFee: textValue(metadata.minimum_fee, ''),
       lawyerId: numberValue(metadata.lawyer_id || intake.created_by, 0),
-      opponentAliases: aliasesTextFromServer(opponentParty?.aliases ?? opponentParty?.entityAliases),
+      opponentAliases: aliasesTextFromServer(opponentParty?.aliases ?? opponentParty?.entityAliases ?? opponentMetadata.aliases ?? opponentMetadata.client_aliases ?? opponentMetadata.clientAliases),
     }
   }
 
-  const applyServerDraftPayload = (payload: Record<string, any>) => {
-    changeEditor()
-    const restored = intakeDraftFromServer(payload)
-    setForm(restored)
-    setStoredDraft(null)
-    // Restore every editable projection so an unedited save resends the same
-    // values instead of wiping stored rows with empty defaults.
-    const parties = listOf<Record<string, any>>(payload.parties)
-    const restoredRelated = parties
+  const relatedFromServer = (payload: Record<string, any>): IntakeRelatedParty[] => {
+    return listOf<Record<string, any>>(payload.related_parties ?? payload.parties)
       .filter((party: any) => textValue(party.party_role || party.role, '').toLowerCase().includes('related'))
       .map((party: any) => {
         const partyMetadata = recordValue(party.metadata)
@@ -4475,6 +4469,17 @@ export function CaseIntakeWorkbench() {
         }
       })
       .filter((party) => party.name.length > 0)
+  }
+
+  const applyServerDraftPayload = (payload: Record<string, any>) => {
+    changeEditor()
+    const restored = intakeDraftFromServer(payload)
+    setForm(restored)
+    setStoredDraft(null)
+    // Restore every editable projection so an unedited save resends the same
+    // values instead of wiping stored rows with empty defaults.
+    const parties = listOf<Record<string, any>>(payload.parties)
+    const restoredRelated = relatedFromServer(payload)
     setRelatedParties(restoredRelated)
     partiesTruncatedRef.current = parties.length >= 20 ||
       parties.some(p => !['client','opposing_party','related_party'].includes(p.party_role)) ||
@@ -4776,7 +4781,7 @@ export function CaseIntakeWorkbench() {
     }))
     setSubmissionNotice('')
     message.success('利益冲突检查已完成')
-    return conflict
+    return { conflict, revision: checkedRevision }
   }
 
   const submitApproval = async () => {
@@ -4799,9 +4804,11 @@ export function CaseIntakeWorkbench() {
         : runtime.intake || (await createIntake())
       if (!current() || !intake) return
       current = factsGuard()
-      let conflict =
-        (!isConflictResultStale && runtime.conflict) || (await runConflictCheck(intake))
-      if (!current() || !conflict) return
+      const checked = !isConflictResultStale && runtime.conflict
+        ? { conflict: runtime.conflict, revision: textValue(runtime.conflictTask?.revision, '') }
+        : await runConflictCheck(intake)
+      if (!current() || !checked) return
+      let conflict = checked.conflict
       const latestTaskID = textValue(
         conflict?.record?.id ||
           conflict?.record?.check_id ||
@@ -4867,6 +4874,7 @@ export function CaseIntakeWorkbench() {
           metadata: {
             intake_id: intake.id,
             intake_code: intake.intake_code,
+            ...(checked.revision ? { intake_revision: checked.revision } : {}),
             client: { id: form.clientId, name: form.clientName },
             case_creation_config: {
               title: form.title,
@@ -5028,11 +5036,15 @@ export function CaseIntakeWorkbench() {
     // The cache contains the lawyer's edits. Only server detail at the same
     // revision can establish which opponent and aliases had already been saved.
     let baseline: IntakeFormState | undefined
+    let restoredRelated: IntakeRelatedParty[] = []
     if (storedDraft.intakeId && storedDraft.revision) {
       try {
         const payload = await apiRequest<any>(`/case-intakes/${encodeURIComponent(storedDraft.intakeId)}`)
         const server = intakeDraftFromServer(payload)
-        if (server.intakeId === storedDraft.intakeId && server.revision === storedDraft.revision) baseline = server
+        if (server.intakeId === storedDraft.intakeId && server.revision === storedDraft.revision) {
+          baseline = server
+          restoredRelated = relatedFromServer(payload)
+        }
       } catch {
         // Keep the local edits readable. A save requires a verified revision.
       }
@@ -5042,12 +5054,12 @@ export function CaseIntakeWorkbench() {
           liveEditor.current.caseTags !== atRequest.caseTags) return
     }
     setRuntime({ apiTimings: [] })
-    setRelatedParties([])
+    setRelatedParties(restoredRelated)
     setCaseTags([])
     savedTags.current = '[]'
     savedOpponentAliases.current = baseline?.opponentAliases ?? ''
-    savedPartyStructure.current = baseline ? partyStructure(baseline, []) : ''
-    savedPartyInputs.current = baseline ? partyInputs(baseline, []) : ''
+    savedPartyStructure.current = baseline ? partyStructure(baseline, restoredRelated) : ''
+    savedPartyInputs.current = baseline ? partyInputs(baseline, restoredRelated) : ''
     localRestore.current = Boolean(storedDraft.intakeId)
     setForm(storedDraft)
     setDraftActive(true)
