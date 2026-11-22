@@ -313,7 +313,16 @@ func (h *DemoAggregateHandler) IntakeWorkbench(c *gin.Context) {
 			return
 		}
 	}
-	parties := h.recentRows("case_intake_parties", "intake_id = ?", 20, intake["id"])
+	// A failed lookup must not look like an empty editable party list.
+	var parties []map[string]interface{}
+	if err := h.db.WithContext(c.Request.Context()).Table("case_intake_parties").
+		Where("intake_id = ?", intake["id"]).Order("id").Limit(20).Find(&parties).Error; err != nil {
+		common.NewAPIError(c, http.StatusServiceUnavailable, "INTAKE_PARTIES_UNAVAILABLE", "无法核对接案主体，请稍后重开")
+		return
+	}
+	for i, row := range parties {
+		parties[i] = sanitizeAggregateRow("case_intake_parties", row)
+	}
 	materials := h.recentRows("case_materials", "intake_id = ?", 20, intake["id"])
 	client := sanitizeClientAggregateRow(h.firstByID("clients", intake["client_id"]))
 
@@ -2329,16 +2338,16 @@ func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
 			return
 		}
 	}
-	if strings.TrimSpace(fmt.Sprint(intake["status"])) != "lawyer_facts_confirmed" {
-		common.NewAPIError(c, http.StatusConflict, "INTAKE_FACTS_NOT_CONFIRMED", "请由负责律师先确认当事人事实，再运行利益冲突检查")
-		return
-	}
-	if clientID := intakeClientID(intake["client_id"]); clientID == 0 || !h.authorizeIntakeClient(c, clientID) {
+	if clientID := intakeClientID(intake["client_id"]); !h.authorizeIntakeClient(c, clientID) {
 		return
 	}
 	revision := intakeDraftRevisionFor(intakeID, intake["metadata"])
 	if expected := strings.TrimSpace(c.GetHeader("X-Intake-Revision")); expected != "" && expected != revision {
 		common.APIErrorWithContext(c, http.StatusConflict, "INTAKE_DRAFT_REVISION_CONFLICT", "草稿已更新，请重新核对后检测", map[string]interface{}{"current_revision": revision})
+		return
+	}
+	if strings.TrimSpace(fmt.Sprint(intake["status"])) != "lawyer_facts_confirmed" {
+		common.NewAPIError(c, http.StatusConflict, "INTAKE_FACTS_NOT_CONFIRMED", "请由负责律师先确认当事人事实，再运行利益冲突检查")
 		return
 	}
 	if h.conflictService == nil {

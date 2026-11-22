@@ -334,3 +334,14 @@ func TestDraftListCarriesRevisionTokens(t *testing.T) {
 		t.Fatalf("draft row missing from list: %v", items)
 	}
 }
+
+func TestDraftRestoreRequiresReadableParties(t *testing.T) {
+	h, db := newDraftRevisionDB(t)
+	if err := db.Exec("DROP TABLE case_intake_parties").Error; err != nil {
+		t.Fatal(err)
+	}
+	code, _ := draftRevisionRequest(t, newDraftRevisionRouter(h), http.MethodGet, "/api/v1/case-intakes/intake-rev", "", "")
+	if code != http.StatusServiceUnavailable {
+		t.Fatalf("incomplete party projection returned %d", code)
+	}
+}

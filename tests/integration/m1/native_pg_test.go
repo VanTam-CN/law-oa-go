@@ -149,6 +149,15 @@ func TestNativeConcurrentDraftAndHistory(t *testing.T) {
 			t.Fatalf("foreign detail %s: %d", path, w.Code)
 		}
 	}
+	for token, expected := range map[string]int{owner: 1, foreign: 0} {
+		w := request(http.MethodGet, "/dashboard/command-center", token, nil)
+		var response struct {
+			Data struct{ Workflow struct{ Intake *int } }
+		}
+		if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &response) != nil || response.Data.Workflow.Intake == nil || *response.Data.Workflow.Intake != expected || strings.Contains(w.Body.String(), "private-") {
+			t.Fatalf("dashboard intake count or redaction mismatch: %d", w.Code)
+		}
+	}
 	w := request(http.MethodGet, "/case-intakes/"+uuid.NewString(), owner, nil)
 	if w.Code != 404 || !json.Valid(w.Body.Bytes()) {
 		t.Fatal("missing intake did not reach business handler")
