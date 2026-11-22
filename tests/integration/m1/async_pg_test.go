@@ -185,3 +185,27 @@ func checkFormalAsyncPG(t *testing.T, editDuringCheck, rejectTerminal bool) {
 		t.Fatal("completion replay advanced draft revision")
 	}
 }
+
+func TestAsyncPGTerminalReplayPreservesOriginalAudit(t *testing.T) {
+	db := isolatedDB(t)
+	f := seedConflictPGFixture(t, db, true, "")
+	check := "done-" + f.intakeID
+	insertConflictPGRecord(t, db, f, check, f.revision)
+	repo := repositories.NewConflictRepository(db, nil)
+	record, err := repo.GetCheckRecord(context.Background(), check)
+	if err != nil {
+		t.Fatal(err)
+	}
+	record.CheckStatus = services.ConflictTaskStatusFailed
+	record.CheckResult = models.JSON{"error": "late delivery"}
+	if err := repo.FinalizeConflictCheck(context.Background(), record); err == nil {
+		t.Fatal("late failure overwrote terminal audit")
+	}
+	if err := repo.ClaimConflictCheckRun(context.Background(), check); err == nil {
+		t.Fatal("terminal task was claimed again")
+	}
+	record, err = repo.GetCheckRecord(context.Background(), check)
+	if err != nil || record.CheckStatus != services.ConflictTaskStatusCompleted || record.CheckResult["error"] != nil {
+		t.Fatal("terminal audit changed", err)
+	}
+}

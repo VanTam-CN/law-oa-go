@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	stderrors "errors"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -154,16 +155,26 @@ func (s *asyncConflictCheckService) runTask(taskID string, request *models.Confl
 		return
 	}
 
-	record.CheckStatus = ConflictTaskStatusRunning
-	record.UpdatedAt = time.Now()
-	_ = s.conflictRepo.UpdateCheckRecord(ctx, record)
+	if err := s.conflictRepo.ClaimConflictCheckRun(ctx, taskID); err != nil {
+		return
+	}
 
-	if s.conflictService == nil {
+	initialRisk := record.RiskLevel
+	fail := func(cause error) {
+		// After a detector timeout its context cannot persist the failure receipt.
+		receiptCtx, done := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+		defer done()
 		record.CheckStatus = ConflictTaskStatusFailed
-		record.CheckResult = models.JSON{"error": "conflict detection service is not initialized"}
+		record.HasConflict = false
+		record.RiskLevel = initialRisk
+		record.CheckResult = models.JSON{"error": cause.Error()}
 		record.Duration = time.Since(startTime).Milliseconds()
-		record.UpdatedAt = time.Now()
-		_ = s.conflictRepo.UpdateCheckRecord(ctx, record)
+		if err := s.conflictRepo.FinalizeConflictCheck(receiptCtx, record); err != nil {
+			log.Print("无法写入冲突检测失败终态，请核对任务记录")
+		}
+	}
+	if s.conflictService == nil {
+		fail(stderrors.New("conflict detection service is not initialized"))
 		return
 	}
 
@@ -173,20 +184,19 @@ func (s *asyncConflictCheckService) runTask(taskID string, request *models.Confl
 	} else {
 		result, err = s.conflictService.PerformConflictCheck(ctx, request)
 	}
-	record, getErr := s.conflictRepo.GetCheckRecord(ctx, taskID)
-	if getErr != nil || record == nil {
-		return
-	}
-
-	record.Duration = time.Since(startTime).Milliseconds()
-	record.UpdatedAt = time.Now()
 	if err != nil {
-		record.CheckStatus = ConflictTaskStatusFailed
-		record.CheckResult = models.JSON{"error": err.Error()}
-		_ = s.conflictRepo.UpdateCheckRecord(ctx, record)
+		fail(err)
 		return
 	}
-
+	if ctx.Err() != nil {
+		fail(ctx.Err())
+		return
+	}
+	if result == nil {
+		fail(stderrors.New("conflict detector returned no result"))
+		return
+	}
+	record.Duration = time.Since(startTime).Milliseconds()
 	record.CheckStatus = ConflictTaskStatusCompleted
 	record.HasConflict = result.HasConflict
 	auditResult := *result
@@ -201,8 +211,7 @@ func (s *asyncConflictCheckService) runTask(taskID string, request *models.Confl
 		if result.Decision != nil {
 			coverageStatus = result.Decision.CoverageStatus
 		}
-		linker, _ := s.conflictRepo.(repositories.ConflictSubjectLinker)
-		if err := linker.LinkConflictCheckToCase(ctx, repositories.ConflictSubjectAssociation{
+		association := repositories.ConflictSubjectAssociation{
 			CheckID:           record.CheckID,
 			SubjectCaseID:     request.SubjectCaseID,
 			SubjectCaseNumber: request.SubjectCaseNumber,
@@ -211,14 +220,14 @@ func (s *asyncConflictCheckService) runTask(taskID string, request *models.Confl
 			ClientID:          request.ClientID,
 			CoverageStatus:    coverageStatus,
 			CheckedAt:         record.CheckTime,
-		}); err != nil {
-			record.CheckStatus = ConflictTaskStatusFailed
-			record.CheckResult = models.JSON{"error": err.Error()}
-			_ = s.conflictRepo.UpdateCheckRecord(ctx, record)
-			return
 		}
+		err = s.conflictRepo.FinalizeConflictCheckWithAssociation(ctx, record, association)
+	} else {
+		err = s.conflictRepo.FinalizeConflictCheck(ctx, record)
 	}
-	_ = s.conflictRepo.UpdateCheckRecord(ctx, record)
+	if err != nil {
+		fail(err)
+	}
 }
 
 func hasConflictSubjectLinker(repo repositories.BasicConflictRepository) bool {

@@ -28,6 +28,12 @@ type BasicConflictRepository interface {
 	GetCheckRecord(ctx context.Context, checkID string) (*models.ConflictCheckRecord, error)
 	// 更新冲突检测记录
 	UpdateCheckRecord(ctx context.Context, record *models.ConflictCheckRecord) error
+	// 将 QUEUED 任务条件更新为 RUNNING，未命中已有行时报错
+	ClaimConflictCheckRun(ctx context.Context, checkID string) error
+	// 将 RUNNING 任务条件更新为终态或失败回执，未命中已有行时报错
+	FinalizeConflictCheck(ctx context.Context, record *models.ConflictCheckRecord) error
+	// 在同一事务内先关联案件/接案，再将 RUNNING 任务条件更新为终态
+	FinalizeConflictCheckWithAssociation(ctx context.Context, record *models.ConflictCheckRecord, association ConflictSubjectAssociation) error
 	// 获取冲突检测历史
 	GetCheckHistory(ctx context.Context, clientID string, limit int) ([]*models.ConflictCheckRecord, error)
 	// 获取冲突案例
@@ -151,6 +157,93 @@ func NewConflictRepository(db *gorm.DB, redis *redis.Client) BasicConflictReposi
 // or missing case is a hard error because silently attaching a result to the
 // wrong matter would be worse than leaving it unlinked.
 func (r *conflictRepository) LinkConflictCheckToCase(ctx context.Context, association ConflictSubjectAssociation) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		return linkConflictCheckInTx(tx, association)
+	})
+}
+
+// Async task states stored in conflict_check_records. The service layer owns
+// the exported names; the repository keeps its own literals to avoid an
+// import cycle.
+const (
+	conflictCheckStatusQueued  = "QUEUED"
+	conflictCheckStatusRunning = "RUNNING"
+)
+
+// ClaimConflictCheckRun transitions a queued task to RUNNING with a row-count
+// guard so a requeue race cannot create two concurrent runs of one check.
+func (r *conflictRepository) ClaimConflictCheckRun(ctx context.Context, checkID string) error {
+	result := r.db.WithContext(ctx).Model(&models.ConflictCheckRecord{}).
+		Where("check_id = ? AND check_status = ?", strings.TrimSpace(checkID), conflictCheckStatusQueued).
+		Updates(map[string]interface{}{"check_status": conflictCheckStatusRunning, "updated_at": time.Now()})
+	if result.Error != nil {
+		return fmt.Errorf("认领冲突检测任务失败: %w", result.Error)
+	}
+	if result.RowsAffected != 1 {
+		return errors.New("冲突检测任务认领失败：任务不存在或已被处理")
+	}
+	return nil
+}
+
+// finalizeRunningCheck applies the terminal state guarded by RUNNING so
+// a failure receipt can never overwrite an already-committed terminal result
+// of the same task.
+func finalizeRunningCheck(tx *gorm.DB, record *models.ConflictCheckRecord) error {
+	if record == nil || strings.TrimSpace(record.CheckID) == "" {
+		return errors.New("冲突检测记录缺少不可变检测编号")
+	}
+	if record.CheckStatus != "FAILED" && record.CheckStatus != "COMPLETED" {
+		return errors.New("无效的检测终态")
+	}
+	record.UpdatedAt = time.Now()
+	result := tx.Model(&models.ConflictCheckRecord{}).
+		Where("check_id = ? AND check_status = ?", record.CheckID, conflictCheckStatusRunning).
+		Updates(map[string]interface{}{
+			"check_status": record.CheckStatus,
+			"has_conflict": record.HasConflict,
+			"risk_level":   record.RiskLevel,
+			"check_result": record.CheckResult,
+			"duration":     record.Duration,
+			"check_time":   record.CheckTime,
+			"updated_at":   record.UpdatedAt,
+		})
+	if result.Error != nil {
+		return fmt.Errorf("更新冲突检测记录失败: %w", result.Error)
+	}
+	if result.RowsAffected != 1 {
+		return errors.New("冲突检测终态失败：任务不存在或已不在 RUNNING 状态")
+	}
+	return nil
+}
+
+// FinalizeConflictCheck commits a terminal state or failure receipt only
+// while the task is still RUNNING, with a row-count guard against upsert.
+func (r *conflictRepository) FinalizeConflictCheck(ctx context.Context, record *models.ConflictCheckRecord) error {
+	return finalizeRunningCheck(r.db.WithContext(ctx), record)
+}
+
+// FinalizeConflictCheckWithAssociation commits the case/intake association
+// and the RUNNING-guarded terminal state in one transaction. A rejected
+// terminal write also rolls back the association.
+func (r *conflictRepository) FinalizeConflictCheckWithAssociation(ctx context.Context, record *models.ConflictCheckRecord, association ConflictSubjectAssociation) error {
+	if record == nil || strings.TrimSpace(record.CheckID) == "" {
+		return errors.New("冲突检测记录缺少不可变检测编号")
+	}
+	if strings.TrimSpace(association.CheckID) != record.CheckID {
+		return errors.New("冲突检测终态失败：关联检测编号与终态记录不一致")
+	}
+	if record.CheckStatus != "COMPLETED" {
+		return errors.New("冲突检测终态失败：带关联终态必须为 COMPLETED")
+	}
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := linkConflictCheckInTx(tx, association); err != nil {
+			return err
+		}
+		return finalizeRunningCheck(tx, record)
+	})
+}
+
+func linkConflictCheckInTx(tx *gorm.DB, association ConflictSubjectAssociation) error {
 	association.CheckID = strings.TrimSpace(association.CheckID)
 	association.SubjectCaseID = strings.TrimSpace(association.SubjectCaseID)
 	association.SubjectCaseNumber = strings.TrimSpace(association.SubjectCaseNumber)
@@ -166,7 +259,7 @@ func (r *conflictRepository) LinkConflictCheckToCase(ctx context.Context, associ
 		return errors.New("案件关联失败：客户绑定不能为空")
 	}
 
-	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	{
 		var record struct {
 			ClientID         string
 			SearchParameters string
@@ -313,7 +406,7 @@ func (r *conflictRepository) LinkConflictCheckToCase(ctx context.Context, associ
 		}
 
 		return nil
-	})
+	}
 }
 
 type recordedAssociation struct {

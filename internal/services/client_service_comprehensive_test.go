@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -805,6 +806,34 @@ func (r *asyncConflictRepoMock) UpdateCheckRecord(_ context.Context, record *mod
 	copied := *record
 	r.records[record.CheckID] = &copied
 	return nil
+}
+
+func (r *asyncConflictRepoMock) ClaimConflictCheckRun(_ context.Context, checkID string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	record, ok := r.records[checkID]
+	if !ok || record.CheckStatus != ConflictTaskStatusQueued {
+		return errors.New("conflict check task not claimable")
+	}
+	record.CheckStatus = ConflictTaskStatusRunning
+	record.UpdatedAt = time.Now()
+	return nil
+}
+
+func (r *asyncConflictRepoMock) FinalizeConflictCheck(_ context.Context, record *models.ConflictCheckRecord) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	stored, ok := r.records[record.CheckID]
+	if !ok || stored.CheckStatus != ConflictTaskStatusRunning {
+		return errors.New("conflict check task not running")
+	}
+	copied := *record
+	r.records[record.CheckID] = &copied
+	return nil
+}
+
+func (r *asyncConflictRepoMock) FinalizeConflictCheckWithAssociation(ctx context.Context, record *models.ConflictCheckRecord, _ repositories.ConflictSubjectAssociation) error {
+	return r.FinalizeConflictCheck(ctx, record)
 }
 
 func (r *asyncConflictRepoMock) GetCheckHistory(context.Context, string, int) ([]*models.ConflictCheckRecord, error) {

@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"sync"
 	"testing"
@@ -82,6 +83,46 @@ func (r *intakeRevisionAsyncRepo) UpdateCheckRecord(_ context.Context, record *m
 	// Production UpdateCheckRecord is a Save upsert.
 	stored := *record
 	r.records[record.CheckID] = &stored
+	return nil
+}
+
+func (r *intakeRevisionAsyncRepo) ClaimConflictCheckRun(_ context.Context, checkID string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	record, ok := r.records[checkID]
+	if !ok || record.CheckStatus != ConflictTaskStatusQueued {
+		return errors.New("conflict check task not claimable")
+	}
+	record.CheckStatus = ConflictTaskStatusRunning
+	record.UpdatedAt = time.Now()
+	return nil
+}
+
+func (r *intakeRevisionAsyncRepo) FinalizeConflictCheck(_ context.Context, record *models.ConflictCheckRecord) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	stored, ok := r.records[record.CheckID]
+	if !ok || stored.CheckStatus != ConflictTaskStatusRunning {
+		return errors.New("conflict check task not running")
+	}
+	copied := *record
+	r.records[record.CheckID] = &copied
+	return nil
+}
+
+func (r *intakeRevisionAsyncRepo) FinalizeConflictCheckWithAssociation(_ context.Context, record *models.ConflictCheckRecord, association repositories.ConflictSubjectAssociation) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	stored, ok := r.records[record.CheckID]
+	if !ok || stored.CheckStatus != ConflictTaskStatusRunning {
+		return errors.New("conflict check task not running")
+	}
+	if association.IntakeRevision == "" || association.IntakeRevision != r.linkRevision {
+		return repositories.ErrIntakeRevisionConflict
+	}
+	r.accepted = append(r.accepted, association)
+	copied := *record
+	r.records[record.CheckID] = &copied
 	return nil
 }
 
@@ -300,5 +341,37 @@ func TestAsyncConflictCheckServiceFailsStaleInFlightRevision(t *testing.T) {
 	}
 	if stored := repo.recordByID("CCT-ASYNC-STALE"); stored == nil || stored.CheckStatus != ConflictTaskStatusFailed {
 		t.Fatalf("stored task not failed: %+v", stored)
+	}
+}
+
+type timedOutDetector struct{ intakeRevisionAsyncDetector }
+
+func (*timedOutDetector) PerformConflictCheck(ctx context.Context, _ *models.ConflictCheckRequest) (*models.ConflictCheckResponse, error) {
+	<-ctx.Done()
+	return nil, ctx.Err()
+}
+
+type contextCheckingRepo struct{ *intakeRevisionAsyncRepo }
+
+func (r contextCheckingRepo) FinalizeConflictCheck(ctx context.Context, record *models.ConflictCheckRecord) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if _, ok := ctx.Deadline(); !ok {
+		return errors.New("missing receipt deadline")
+	}
+	return r.intakeRevisionAsyncRepo.FinalizeConflictCheck(ctx, record)
+}
+
+func TestAsyncConflictCheckServicePersistsTimeout(t *testing.T) {
+	repo := newIntakeRevisionAsyncRepo("rev-A")
+	service := &asyncConflictCheckService{conflictRepo: contextCheckingRepo{repo}, conflictService: &timedOutDetector{}, taskTimeout: 50 * time.Millisecond}
+	task, err := service.CreateTask(context.Background(), intakeRevisionAsyncRequest("CCT-TIMEOUT", "rev-A"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	record := waitForIntakeRevisionAsyncStatus(t, repo, task.CheckID, ConflictTaskStatusFailed)
+	if record.CheckResult["error"] != context.DeadlineExceeded.Error() || len(repo.acceptedAssociations()) != 0 {
+		t.Fatal("timeout linked a business result or lost its reason")
 	}
 }
