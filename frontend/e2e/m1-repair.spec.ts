@@ -12,7 +12,12 @@ import {
   waitForPageLoad,
 } from './utils/test-helpers'
 
-const INTAKE_ID = 801
+// The isolated Go/Chrome test supplies a loopback approval endpoint and fixture IDs.
+const nativeApproval = process.env.NP_M1_BROWSER_FIXTURE
+  ? JSON.parse(process.env.NP_M1_BROWSER_FIXTURE) as { url: string; intake: string; client: number; check: string }
+  : undefined
+const INTAKE_ID = nativeApproval?.intake ?? 801
+const checkID = nativeApproval?.check ?? 'CHECK-801'
 const OPPONENT_NAME = '上海华信建设集团有限公司'
 const ORIGINAL_IDENTITY = '91310000TESTCASE0001'
 const UPDATED_IDENTITY = '91310000TESTCASE0002'
@@ -40,7 +45,7 @@ function detailPayload(revision: string, parties: Party[]) {
       case_type: 'commercial',
       priority: 'medium',
       description: '客户拟就服务合同争议提起诉讼。',
-      client_id: 1,
+      client_id: nativeApproval?.client ?? 1,
       status: 'draft',
       metadata: { business_area: '公司与并购', sub_area: '投资与融资', lawyer_id: 2 },
     },
@@ -78,6 +83,20 @@ async function runFactsConfirmation(page: Page) {
 for (const source of ['本机草稿', '服务端20行投影', '本机别名', '投影外对方', '检测后保存', '投影对方有歧义', '本机版本已过期', '本机未保存的对方名称', '检测回执晚于新保存'] as const) {
   test(`${source}恢复后以原生 PUT 更新指定对方并确认检测`, async ({ page }) => {
     await seedAuthenticatedUser(page, 'lawyer')
+    let approvalID = '701'
+    if (nativeApproval) {
+      const endpoint = new URL(nativeApproval.url)
+      expect(endpoint.hostname).toBe('127.0.0.1')
+      await page.route(url => url.pathname === '/api/v1/clients', route => route.fulfill({
+        json: { success: true, data: { list: [{ id: nativeApproval.client, name: '上海示例科技有限公司' }], total: 1 } },
+      }))
+      await page.route(url => url.pathname === endpoint.pathname, async route => {
+        const response = await route.fetch({ url: endpoint.href, maxRedirects: 0 })
+        expect(response.status()).toBe(200)
+        approvalID = (await response.json()).data.approval_id
+        await route.fulfill({ response })
+      })
+    }
     const path = '/api/v1/case-intakes'
     const detail = path + '/' + INTAKE_ID
     const writes: Record<string, any>[] = []
@@ -123,8 +142,8 @@ for (const source of ['本机草稿', '服务端20行投影', '本机别名', '�
       }
       expect(url).toBe(detail + '/conflict-check')
       if (source === '检测回执晚于新保存') await delayedCheck
-      return route.fulfill(ok({ taskId: 'CHECK-801', status: 'COMPLETED', revision: 'checked',
-        result: { checkId: 'CHECK-801', hasConflict: false, conflictCases: [], riskAssessment: { overallRisk: 'LOW' },
+      return route.fulfill(ok({ taskId: checkID, status: 'COMPLETED', revision: 'checked',
+        result: { checkId: checkID, hasConflict: false, conflictCases: [], riskAssessment: { overallRisk: 'LOW' },
           decision: { status: 'CLEAR' }, coverage_status: 'COMPLETE' } }))
     })
     await page.goto('/case/create')
@@ -202,7 +221,7 @@ for (const source of ['本机草稿', '服务端20行投影', '本机别名', '�
       expect(metadata.intake_revision).toBe('checked')
       const names = metadata.parties.map((party: { name: string }) => party.name)
       expect(names).toEqual([...truncatedParties().map(party => party.entity_name), '投影外合成关联方'])
-      await expect(page).toHaveURL(/\/approval\/701$/)
+      await expect(page).toHaveURL(url => url.pathname === '/approval/' + approvalID)
     }
 
     if (source === '检测后保存') {

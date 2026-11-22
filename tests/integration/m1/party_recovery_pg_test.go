@@ -22,7 +22,7 @@ import (
 	"law-oa-go/internal/security"
 )
 
-func nativePartyRequest(t *testing.T, db *gorm.DB, f conflictPGFixture) func(string, string, any) *httptest.ResponseRecorder {
+func nativePartyRouter(t *testing.T, db *gorm.DB, f conflictPGFixture) (http.Handler, string) {
 	t.Helper()
 	t.Setenv("SUBJECT_DATA_KEY", strings.Repeat("t", 32))
 	t.Setenv("JWT_SECRET", "synthetic-only-for-the-isolated-m1-test")
@@ -39,6 +39,12 @@ func nativePartyRequest(t *testing.T, db *gorm.DB, f conflictPGFixture) func(str
 	if err != nil {
 		t.Fatal(err)
 	}
+	return g, token
+}
+
+func nativePartyRequest(t *testing.T, db *gorm.DB, f conflictPGFixture) func(string, string, any) *httptest.ResponseRecorder {
+	t.Helper()
+	g, token := nativePartyRouter(t, db, f)
 	return func(method, path string, input any) *httptest.ResponseRecorder {
 		t.Helper()
 		body, err := json.Marshal(input)
