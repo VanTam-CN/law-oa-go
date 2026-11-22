@@ -1977,6 +1977,14 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 	}
 	parties := mapSliceValue(rawPayload["parties"])
 	materials := mapSliceValue(rawPayload["materials"])
+	if _, present := rawPayload["material_changes"]; present {
+		common.APIBadRequest(c, "不支持材料变更", "原生草稿保存仅支持回显已有材料")
+		return
+	}
+	if v, present := rawPayload["materials"]; present && v == nil {
+		common.APIBadRequest(c, "无效的列表字段", "materials")
+		return
+	}
 	if containsPlaintextIdentityField(rawPayload["metadata"]) {
 		common.APIBadRequest(c, "身份信息登记方式不受支持", "身份证号、统一社会信用代码等身份标识必须登记到受保护的客户或主体档案，不能写入接案备注")
 		return
@@ -2175,25 +2183,9 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 				return err
 			}
 		}
-		if rawPayload["materials"] != nil {
-			if err := tx.Table("case_materials").Where("intake_id = ?", id).Delete(map[string]interface{}{}).Error; err != nil {
+		if _, present := rawPayload["materials"]; present {
+			if err := validateIntakeMaterialEcho(tx, id, materials); err != nil {
 				return err
-			}
-			for _, material := range materials {
-				row := filterMap(material, allowedCaseMaterialFields)
-				row["intake_id"] = id
-				row["name"] = stringValue(row["name"], "未命名材料")
-				row["material_type"] = stringValue(row["material_type"], "document")
-				row["status"] = stringValue(row["status"], "missing")
-				if _, exists := row["required"]; !exists {
-					row["required"] = true
-				}
-				row["metadata"] = jsonStringValue(row["metadata"])
-				row["created_at"] = now
-				row["updated_at"] = now
-				if err := tx.Table("case_materials").Create(row).Error; err != nil {
-					return err
-				}
 			}
 		}
 		return tx.Table("case_intakes").Where("id = ?", id).Take(&updated).Error

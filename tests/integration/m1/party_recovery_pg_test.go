@@ -220,6 +220,9 @@ func TestNativeLegacyFullEchoPreservesRows(t *testing.T) {
 	f := seedConflictPGFixture(t, db, false, "")
 	send := nativePartyRequest(t, db, f)
 	parties, snapshot := legacyPartyEcho(t, db, f)
+	if err := db.Exec("UPDATE case_intake_parties SET relation_depth=3 WHERE intake_id=? AND party_role='related_party'", f.intakeID).Error; err != nil {
+		t.Fatal(err)
+	}
 	beforeParties := snapshot()
 	if err := db.Exec("INSERT INTO case_materials(intake_id,name,metadata) VALUES(?,'sample','{}')", f.intakeID).Error; err != nil {
 		t.Fatal(err)
@@ -260,6 +263,13 @@ func TestNativeLegacyFullEchoPreservesRows(t *testing.T) {
 	bad := send("PUT", "/api/v1/case-intakes/"+f.intakeID, map[string]any{"expected_revision": rev, "description": "must roll back", "materials": []any{map[string]any{"name": "different"}}})
 	if bad.Code < 400 || bad.Code >= 500 {
 		t.Fatalf("unsupported material edit: HTTP %d", bad.Code)
+	}
+	for _, props := range []map[string]any{{"materials": nil}, {"materials": []any{}}, {"material_changes": []any{}}, {"materials": []any{map[string]any{"name": "sample", "unknown": true}}}} {
+		props["expected_revision"] = rev
+		props["title"] = "must roll back"
+		if w := send("PUT", "/api/v1/case-intakes/"+f.intakeID, props); w.Code < 400 || w.Code >= 500 {
+			t.Fatalf("invalid material change accepted: HTTP %d", w.Code)
+		}
 	}
 	endRev, _, _, _ := conflictPGIntakeState(t, db, f.intakeID)
 	materialSnapshot(&after)
