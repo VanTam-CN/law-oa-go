@@ -1291,13 +1291,19 @@ function isIntakeOpponent(party: Record<string, any>): boolean {
   return role === 'opponent' || role.includes('opposing')
 }
 
+function restoredOpponent(payload: Record<string, any>) {
+  if ('opponent_party' in payload) return payload.opponent_party || undefined
+  const visible = listOf<Record<string, any>>(payload.parties).filter(isIntakeOpponent)
+  return visible.length === 1 ? visible[0] : undefined
+}
+
 function intakeFormFromServer(payload: Record<string, any>): IntakeFormState {
   const intake = recordValue(payload.intake)
   const parties = listOf<Record<string, any>>(payload.parties)
   const clientParty = parties.find(
     (party: any) => textValue(party.party_role || party.role, '').toLowerCase() === 'client',
   )
-  const opponentParty = parties.find(isIntakeOpponent)
+  const opponentParty = restoredOpponent(payload)
   // Only a real opposing party may prefill the opponent fields. Falling back
   // to parties[0] used to paste the client's own name into the opponent
   // inputs when a draft was saved without an opponent.
@@ -4247,7 +4253,7 @@ export function CaseIntakeWorkbench() {
     JSON.stringify([draft.clientId,draft.clientName,draft.opponentName,draft.opponentEntityType,
       draft.opponentIdentityType,draft.opponentIdentityNumber,draft.opponentAliases,related])
   const partyStructure = (draft: IntakeFormState, related: IntakeRelatedParty[]) =>
-    partyInputs({ ...draft, opponentIdentityType: '', opponentIdentityNumber: '' }, related)
+    partyInputs({ ...draft, opponentIdentityType: '', opponentIdentityNumber: '', opponentAliases: '' }, related)
   const changeEditor = () => {
     editorEpoch.current++
     setCheckingConflict(false)
@@ -4419,8 +4425,7 @@ export function CaseIntakeWorkbench() {
     const form = intakeFormFromServer(payload)
     const intake = recordValue(payload.intake)
     const metadata = recordValue(intake.metadata)
-    const parties = listOf<Record<string, any>>(payload.parties)
-    const opponentParty = parties.find(isIntakeOpponent)
+    const opponentParty = restoredOpponent(payload)
     return {
       ...form,
       businessArea: textValue(metadata.business_area, ''),
@@ -4609,6 +4614,7 @@ export function CaseIntakeWorkbench() {
           entity_type: form.opponentEntityType,
           identity_type: form.opponentIdentityType,
           identity_number: form.opponentIdentityNumber,
+          ...(savedOpponentAliases.current !== form.opponentAliases ? { aliases: form.opponentAliases } : {}),
         }
         return payload
       }
@@ -4658,6 +4664,9 @@ export function CaseIntakeWorkbench() {
       setForm((current) => ({ ...current, idempotencyKey }))
     }
     if (existingIntakeID && !form.revision) throw new Error('本机草稿缺少版本号。请保留未保存内容，重新打开服务端草稿后核对。')
+    if (existingIntakeID && localRestore.current && !savedPartyStructure.current) {
+      throw new Error('本机内容已保留。请先重新打开服务端草稿，核对对象和版本后再保存。')
+    }
     const body = buildIntakePayload(Boolean(existingIntakeID))
     const saved = await apiRequest<any>(
       existingIntakeID ? `/case-intakes/${existingIntakeID}` : '/case-intakes',
@@ -4677,7 +4686,13 @@ export function CaseIntakeWorkbench() {
     savedPartyInputs.current = partyInputs(form, relatedParties)
     const intake = existingIntakeID ? { ...runtime.intake, ...saved, id: existingIntakeID } : saved
     recordTiming(existingIntakeID ? '更新接案' : '创建接案', startedAt)
-    setRuntime((current) => ({ ...current, intake }))
+    setRuntime((current) => ({
+      ...current,
+      intake,
+      ...(saved.status === 'draft' || saved.status === 'assistant_draft'
+        ? { conflict: undefined, conflictTask: undefined, conflictInputFingerprint: undefined, approval: undefined, integrationStatus: undefined }
+        : {}),
+    }))
     setDraftActive(true)
     setForm((current) => ({
       ...current,
@@ -4995,19 +5010,36 @@ export function CaseIntakeWorkbench() {
     message.success('已添加标签')
   }
 
-  const continueStoredDraft = () => {
+  const continueStoredDraft = async () => {
     if (!storedDraft) return
-    serverRestoreEpochRef.current++
+    const epoch = ++serverRestoreEpochRef.current
     changeEditor()
+    const atRequest = liveEditor.current
+    // The cache contains the lawyer's edits. Only server detail at the same
+    // revision can establish which opponent and aliases had already been saved.
+    let baseline: IntakeFormState | undefined
+    if (storedDraft.intakeId && storedDraft.revision) {
+      try {
+        const payload = await apiRequest<any>(`/case-intakes/${encodeURIComponent(storedDraft.intakeId)}`)
+        const server = intakeDraftFromServer(payload)
+        if (server.intakeId === storedDraft.intakeId && server.revision === storedDraft.revision) baseline = server
+      } catch {
+        // Keep the local edits readable. A save requires a verified revision.
+      }
+      if (epoch !== serverRestoreEpochRef.current ||
+          liveEditor.current.form !== atRequest.form ||
+          liveEditor.current.relatedParties !== atRequest.relatedParties ||
+          liveEditor.current.caseTags !== atRequest.caseTags) return
+    }
     setRuntime({ apiTimings: [] })
     setRelatedParties([])
     setCaseTags([])
     savedTags.current = '[]'
-    savedOpponentAliases.current = storedDraft.opponentAliases
-    savedPartyStructure.current = partyStructure(storedDraft, [])
-    setForm(storedDraft)
+    savedOpponentAliases.current = baseline?.opponentAliases ?? ''
+    savedPartyStructure.current = baseline ? partyStructure(baseline, []) : ''
+    savedPartyInputs.current = baseline ? partyInputs(baseline, []) : ''
     localRestore.current = Boolean(storedDraft.intakeId)
-    savedPartyInputs.current = partyInputs(storedDraft, [])
+    setForm(storedDraft)
     setDraftActive(true)
     setStoredDraft(null)
     message.success(storedDraft.opponentIdentityNumber ? '已恢复本机草稿' : firstRunGuidance.restoreNotice)

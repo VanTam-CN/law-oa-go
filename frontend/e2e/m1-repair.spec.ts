@@ -75,7 +75,7 @@ async function runFactsConfirmation(page: Page) {
   await expect(page.getByRole('button', { name: '进入团队与费用' })).toBeEnabled()
 }
 
-for (const source of ['本机草稿', '服务端20行投影', '本机别名', '投影外对方', '检测后保存', '投影对方有歧义'] as const) {
+for (const source of ['本机草稿', '服务端20行投影', '本机别名', '投影外对方', '检测后保存', '投影对方有歧义', '本机版本已过期', '本机未保存的对方名称'] as const) {
   test(`${source}恢复后以原生 PUT 更新指定对方并确认检测`, async ({ page }) => {
     await seedAuthenticatedUser(page, 'lawyer')
     const path = '/api/v1/case-intakes'
@@ -83,7 +83,7 @@ for (const source of ['本机草稿', '服务端20行投影', '本机别名', '�
     const writes: Record<string, any>[] = []
     const reads: string[] = []
     const headers: string[] = []
-    const local = source === '本机草稿' || source === '本机别名'
+    const local = source.startsWith('本机')
     const alias = 'SYNTHETIC-EDIT-ONLY'
     const revision = local ? 'created801' : 'restored801'
     const ok = (data: unknown) => ({ json: { success: true, data } })
@@ -98,7 +98,7 @@ for (const source of ['本机草稿', '服务端20行投影', '本机别名', '�
         const parties = truncatedParties()
         const opponent = parties[1]
         if (source === '投影外对方') parties[1] = makeParty('related_party', '合成关联人')
-        return route.fulfill(ok({ ...detailPayload(revision, parties), opponent_party: source === '投影对方有歧义' ? null : opponent }))
+        return route.fulfill(ok({ ...detailPayload(source === '本机版本已过期' ? 'newer' : revision, parties), opponent_party: source === '投影对方有歧义' ? null : opponent }))
       }
       if (req.method() === 'POST' && url === path) {
         expect(req.postDataJSON().parties.find((p: Party) => p.party_role === 'opposing_party').identity_number).toBe(ORIGINAL_IDENTITY)
@@ -123,6 +123,10 @@ for (const source of ['本机草稿', '服务端20行投影', '本机别名', '�
       await fillIntakeBasics(page)
       await page.getByRole('button', { name: '保存草稿', exact: true }).click()
       await expect(page.locator('.ant-message')).toContainText('接案草稿已创建')
+      if (source === '本机未保存的对方名称') {
+        await page.getByRole('textbox', { name: '法定名称或证件姓名' }).fill('未保存的合成主体')
+        await expect.poll(() => page.evaluate(() => Object.values(localStorage).some(v => v.includes('未保存的合成主体')))).toBe(true)
+      }
       if (source === '本机别名') {
         await page.locator('#intake-opponent-aliases').fill(alias)
         await expect.poll(() => page.evaluate(value => Object.values(localStorage).some(v => v.includes(value)), alias)).toBe(true)
@@ -136,6 +140,16 @@ for (const source of ['本机草稿', '服务端20行投影', '本机别名', '�
     await expect(page.getByRole('textbox', { name: '案件名称 *' })).toHaveValue('示例科技服务合同纠纷案')
     if (source === '投影对方有歧义') {
       await expect(page.getByRole('textbox', { name: '法定名称或证件姓名' })).toHaveValue('')
+      expect(writes).toHaveLength(0)
+      expect(headers).toHaveLength(0)
+      return
+    }
+    if (source === '本机版本已过期' || source === '本机未保存的对方名称') {
+      const changedName = source === '本机未保存的对方名称'
+      await expect(page.getByRole('textbox', { name: '法定名称或证件姓名' })).toHaveValue(changedName ? '未保存的合成主体' : OPPONENT_NAME)
+      await fillUpdatedOpponentIdentity(page)
+      await page.getByRole('button', { name: '保存草稿', exact: true }).click()
+      await expect(page.locator('.ant-message')).toContainText(changedName ? '无法保存主体变更' : '核对对象和版本')
       expect(writes).toHaveLength(0)
       expect(headers).toHaveLength(0)
       return
