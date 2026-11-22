@@ -75,7 +75,7 @@ async function runFactsConfirmation(page: Page) {
   await expect(page.getByRole('button', { name: '进入团队与费用' })).toBeEnabled()
 }
 
-for (const source of ['本机草稿', '服务端20行投影', '本机别名', '投影外对方', '检测后保存', '投影对方有歧义', '本机版本已过期', '本机未保存的对方名称'] as const) {
+for (const source of ['本机草稿', '服务端20行投影', '本机别名', '投影外对方', '检测后保存', '投影对方有歧义', '本机版本已过期', '本机未保存的对方名称', '检测回执晚于新保存'] as const) {
   test(`${source}恢复后以原生 PUT 更新指定对方并确认检测`, async ({ page }) => {
     await seedAuthenticatedUser(page, 'lawyer')
     const path = '/api/v1/case-intakes'
@@ -83,6 +83,8 @@ for (const source of ['本机草稿', '服务端20行投影', '本机别名', '�
     const writes: Record<string, any>[] = []
     const reads: string[] = []
     const headers: string[] = []
+    let releaseCheck!: () => void
+    const delayedCheck = new Promise<void>(resolve => { releaseCheck = resolve })
     const local = source.startsWith('本机')
     const alias = 'SYNTHETIC-EDIT-ONLY'
     const revision = local ? 'created801' : 'restored801'
@@ -113,6 +115,7 @@ for (const source of ['本机草稿', '服务端20行投影', '本机别名', '�
         return route.fulfill(ok({ id: INTAKE_ID, revision: 'confirmed', status: 'lawyer_facts_confirmed' }))
       }
       expect(url).toBe(detail + '/conflict-check')
+      if (source === '检测回执晚于新保存') await delayedCheck
       return route.fulfill(ok({ taskId: 'CHECK-801', status: 'COMPLETED', revision: 'checked',
         result: { checkId: 'CHECK-801', hasConflict: false, conflictCases: [], riskAssessment: { overallRisk: 'LOW' },
           decision: { status: 'CLEAR' }, coverage_status: 'COMPLETE' } }))
@@ -159,6 +162,20 @@ for (const source of ['本机草稿', '服务端20行投影', '本机别名', '�
     await fillUpdatedOpponentIdentity(page)
     await page.getByRole('button', { name: '保存草稿', exact: true }).click()
     await expect(page.locator('.ant-message')).toContainText('接案草稿已更新')
+    if (source === '检测回执晚于新保存') {
+      await page.locator('.batch-stepper').getByRole('button', { name: /利益冲突检查/ }).click()
+      await page.getByRole('button', { name: '运行利益冲突检查' }).click()
+      await expect.poll(() => headers.length).toBe(2)
+      await page.getByRole('button', { name: '保存草稿', exact: true }).click()
+      await expect.poll(() => writes.length).toBe(3)
+      const response = page.waitForResponse(r => new URL(r.url()).pathname === detail + '/conflict-check')
+      releaseCheck()
+      await response
+      await expect(page.getByRole('button', { name: '运行利益冲突检查' })).toBeEnabled()
+      await expect(page.locator('.batch-bottom-bar')).toContainText('未检测')
+      await expect(page.getByRole('button', { name: '进入团队与费用' })).toBeDisabled()
+      return
+    }
     await runFactsConfirmation(page)
     expect(writes).toHaveLength(2)
     expect(writes[0].expected_revision).toBe(revision)
