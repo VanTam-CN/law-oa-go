@@ -370,6 +370,30 @@ func (h *DemoAggregateHandler) IntakeWorkbench(c *gin.Context) {
 			response["opponent_party"] = nil
 		}
 	}
+	if truncatedParties && !isAssistantRole(c) {
+		roster, err := approvalIntakeParties(h.db.WithContext(c.Request.Context()), id, nil)
+		if err != nil {
+			common.NewAPIError(c, http.StatusServiceUnavailable, "INTAKE_PARTIES_UNAVAILABLE", "无法核对完整的关联主体清单")
+			return
+		}
+		related := make([]gin.H, 0)
+		for _, party := range roster {
+			if strings.Contains(party["role"], "related") {
+				related = append(related, gin.H{"party_role": party["role"], "entity_name": party["name"], "entity_type": party["entity_type"], "identity_type": party["identity_type"], "metadata": gin.H{"party_type": party["party_type"]}})
+			}
+		}
+		response["related_parties"] = related
+	}
+	// The projection spans multiple queries. Reject a mixed-version read.
+	var current map[string]interface{}
+	if err := h.db.WithContext(c.Request.Context()).Table("case_intakes").Select("metadata").Where("id = ?", id).Take(&current).Error; err != nil {
+		common.NewAPIError(c, http.StatusServiceUnavailable, "INTAKE_PARTIES_UNAVAILABLE", "无法核对接案版本")
+		return
+	}
+	if intakeDraftRevisionFor(id, current["metadata"]) != response["revision"] {
+		common.NewAPIError(c, http.StatusConflict, "INTAKE_DRAFT_REVISION_CONFLICT", "接案已更新，请重新打开")
+		return
+	}
 	common.APISuccess(c, response)
 }
 

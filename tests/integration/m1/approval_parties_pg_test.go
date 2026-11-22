@@ -30,6 +30,17 @@ func TestM1R3ApprovalPartySnapshot(t *testing.T) {
 	if err := db.Create(&admin).Error; err != nil {
 		t.Fatal(err)
 	}
+	detail := send("GET", "/api/v1/case-intakes/"+f.intakeID, nil)
+	var restored struct {
+		Data struct {
+			Related []struct {
+				Name string `json:"entity_name"`
+			} `json:"related_parties"`
+		}
+	}
+	if err := json.Unmarshal(detail.Body.Bytes(), &restored); err != nil || detail.Code != 200 || len(restored.Data.Related) != 22 {
+		t.Fatal("incomplete workbench roster", detail.Code, err, len(restored.Data.Related))
+	}
 	metadata := map[string]any{"intake_id": f.intakeID, "intake_revision": f.revision, "conflict_check_id": checkID, "parties": []any{map[string]any{"role": "related_party", "name": "Browser placeholder"}}}
 	req := map[string]any{"type": "case_creation", "workflow_type": "CASE_APPROVAL", "title": "Fixture approval", "content": "Fixture content", "department_name": "Fixture", "applicant_name": "Fixture", "case_creation_config": map[string]any{}, "metadata": metadata}
 	const path = "/api/v1/integration/approvals/with-conflict"
@@ -73,6 +84,11 @@ func TestM1R3ApprovalPartySnapshot(t *testing.T) {
 	for n := 1; n <= 23; n++ {
 		if snapshot.Parties[n]["name"] != fmt.Sprintf("Party %d", n) || snapshot.Parties[n]["party_type"] != "affiliate" {
 			t.Fatal("party ordering or label lost", n)
+		}
+	}
+	for i, party := range restored.Data.Related {
+		if snapshot.Parties[i+2]["name"] != party.Name {
+			t.Fatal("workbench and persisted approval disagree", i)
 		}
 	}
 	metadata["intake_revision"] = "stale"
