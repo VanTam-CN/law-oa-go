@@ -1994,7 +1994,8 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 		}
 	}
 	payload := filterMap(rawPayload, allowedCaseIntakeUpdateFields)
-	if len(payload) == 0 && len(parties) == 0 && len(materials) == 0 {
+	_, narrowUpdatePresent := rawPayload["opponent_identity_update"]
+	if !narrowUpdatePresent && len(payload) == 0 && len(parties) == 0 && len(materials) == 0 {
 		common.APIBadRequest(c, "请求参数错误", "没有可更新的字段")
 		return
 	}
@@ -2003,6 +2004,18 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 	if _, strict := rawPayload["changed_fields"]; strict {
 		common.APIBadRequest(c, "不支持此保存协议", "请使用原生接案表单")
 		return
+	}
+	if narrowUpdatePresent {
+		_, hasParties := rawPayload["parties"]
+		_, hasMaterials := rawPayload["materials"]
+		if hasParties || hasMaterials {
+			common.APIBadRequest(c, "不支持此保存协议", "opponent_identity_update 不能与 parties 或 materials 混用")
+			return
+		}
+		if role, _ := middleware.GetCurrentRole(c); role != "lawyer" {
+			common.NewAPIError(c, http.StatusForbidden, "INTAKE_OPPONENT_IDENTITY_FORBIDDEN", "仅执业律师可以更新对方身份")
+			return
+		}
 	}
 	for _, key := range []string{"parties", "materials"} {
 		if value, present := rawPayload[key]; present && value != nil {
@@ -2080,7 +2093,7 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 				}
 			}
 		}
-		factsChanged := rawPayload["parties"] != nil
+		factsChanged := rawPayload["parties"] != nil || narrowUpdatePresent
 		// A permitted SQL NULL is an explicit edit; an omitted field is untouched.
 		for _, key := range []string{"client_id", "title", "case_type", "description", "metadata"} {
 			if _, supplied := payload[key]; supplied {
@@ -2107,6 +2120,9 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 		targetClient := clientID
 		if target, present := payload["client_id"]; present {
 			targetClient = intakeClientID(target)
+		}
+		if narrowUpdatePresent && targetClient != clientID {
+			return services.NewSubjectWorkflowError("INTAKE_CLIENT_MISMATCH", "更新对方身份时不能切换客户")
 		}
 		if targetClient != clientID && clientID > 0 {
 			var count int64
@@ -2149,6 +2165,11 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 				if err := tx.Table("case_intake_parties").Create(row).Error; err != nil {
 					return err
 				}
+			}
+		}
+		if narrowUpdatePresent {
+			if err := applyOpponentIdentityUpdate(tx, id, rawPayload["opponent_identity_update"]); err != nil {
+				return err
 			}
 		}
 		if rawPayload["materials"] != nil {
