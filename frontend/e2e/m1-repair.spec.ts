@@ -100,7 +100,14 @@ for (const source of ['本机草稿', '服务端20行投影', '本机别名', '�
         const parties = truncatedParties()
         const opponent = parties[1]
         if (source === '投影外对方') parties[1] = makeParty('related_party', '合成关联人')
-        return route.fulfill(ok({ ...detailPayload(source === '本机版本已过期' ? 'newer' : revision, parties), opponent_party: source === '投影对方有歧义' ? null : opponent }))
+        const allRelated = source === '本机草稿'
+          ? [...parties.slice(2), makeParty('related_party', '投影外合成关联方')]
+          : undefined
+        return route.fulfill(ok({
+          ...detailPayload(source === '本机版本已过期' ? 'newer' : revision, parties),
+          opponent_party: source === '投影对方有歧义' ? null : opponent,
+          related_parties: allRelated,
+        }))
       }
       if (req.method() === 'POST' && url === path) {
         expect(req.postDataJSON().parties.find((p: Party) => p.party_role === 'opposing_party').identity_number).toBe(ORIGINAL_IDENTITY)
@@ -187,6 +194,17 @@ for (const source of ['本机草稿', '服务端20行投影', '本机别名', '�
     expect(writes[1].opponent_identity_update).toBeUndefined()
     expect(headers).toEqual(['saved-2', 'confirmed'])
     if (!local) expect(reads).toHaveLength(1)
+    if (source === '本机草稿') {
+      const posted = page.waitForRequest(req => req.method() === 'POST' &&
+        new URL(req.url()).pathname === '/api/v1/integration/approvals/with-conflict')
+      await page.getByRole('button', { name: '提交审批并等待成案' }).first().click()
+      const { metadata } = (await posted).postDataJSON()
+      expect(metadata.intake_revision).toBe('checked')
+      const names = metadata.parties.map((party: { name: string }) => party.name)
+      expect(names).toEqual([...truncatedParties().map(party => party.entity_name), '投影外合成关联方'])
+      await expect(page).toHaveURL(/\/approval\/701$/)
+    }
+
     if (source === '检测后保存') {
       await page.getByRole('button', { name: '保存草稿', exact: true }).click()
       await expect.poll(() => writes.length).toBe(3)
