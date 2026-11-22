@@ -2499,7 +2499,12 @@ func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
 				return
 			}
 			identifiers := map[string]string{strings.ToLower(identityType): security.NormalizeIdentityNumber(identityType, identityNumber)}
-			aliases := stringListValue(firstNonEmptyValue(row["aliases"], partyMetadata["aliases"], partyMetadata["client_aliases"], partyMetadata["clientAliases"]))
+			storedAliases := row["aliases"]
+			// NULL identifies an unmigrated row. An explicitly saved empty string clears old aliases.
+			if storedAliases == nil {
+				storedAliases = firstNonEmptyValue(partyMetadata["aliases"], partyMetadata["client_aliases"], partyMetadata["clientAliases"])
+			}
+			aliases := stringListValue(storedAliases)
 			parties = append(parties, models.ConflictPartyInfo{Name: name, Role: role, EntityType: entityType, Identifiers: identifiers, Aliases: aliases})
 			if _, exists := seenParties[name]; !exists {
 				seenParties[name] = struct{}{}
