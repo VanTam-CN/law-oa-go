@@ -4,6 +4,8 @@ package m1_test
 
 import (
 	"encoding/json"
+	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -62,11 +64,23 @@ func TestM1R3ApprovalPartySnapshot(t *testing.T) {
 			names[p["name"]] = p["role"]
 		}
 		if len(parties) != 24 || names["Party 23"] != "related_party" || names["Party 1"] != "opposing_party" || names["M1 conflict synthetic client"] != "client" || strings.Contains(raw, "must-stay-private") {
-			t.Errorf("stored approval has wrong or unsafe party list, total=%d", len(parties))
+			t.Fatalf("stored approval has wrong or unsafe party list, total=%d", len(parties))
+		}
+	}
+	if !reflect.DeepEqual(snapshot.Parties, snapshot.ApprovalSnapshot.Metadata.Parties) {
+		t.Fatal("frozen list differs from approval metadata")
+	}
+	for n := 1; n <= 23; n++ {
+		if snapshot.Parties[n]["name"] != fmt.Sprintf("Party %d", n) || snapshot.Parties[n]["party_type"] != "affiliate" {
+			t.Fatal("party ordering or label lost", n)
 		}
 	}
 	metadata["intake_revision"] = "stale"
 	if w := send("POST", path, req); w.Code != 409 {
 		t.Errorf("stale approval HTTP %d", w.Code)
+	}
+	var count int64
+	if err := db.Table("approval_requests").Where("metadata::jsonb->>'intake_id' = ?", f.intakeID).Count(&count).Error; err != nil || count != 1 {
+		t.Fatal("unexpected persisted approval count", count, err)
 	}
 }

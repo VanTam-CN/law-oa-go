@@ -4,6 +4,8 @@ package m1_test
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/repositories"
 	"law-oa-go/internal/security"
@@ -56,7 +58,7 @@ func TestM1R3SameIdentityEcho(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if err := db.Exec("INSERT INTO case_intake_parties(intake_id,entity_name,entity_type,party_role,identity_type,identity_number_ciphertext,identity_number_digest,aliases,metadata) VALUES(?,'Sample opponent','LEGAL_PERSON',?,'SOCIAL_CREDIT_CODE',?,?,'Sample Alias','{\"preserve_me\":true}')", f.intakeID, role, c, d).Error; err != nil {
+			if err := db.Exec("INSERT INTO case_intake_parties(intake_id,entity_name,entity_type,party_role,identity_type,identity_number_ciphertext,identity_number_digest,aliases,metadata) VALUES(?,'Sample opponent','LEGAL_PERSON',?,'SOCIAL_CREDIT_CODE',?,?,'Sample Alias','{\"preserve_me\":9007199254740993}')", f.intakeID, role, c, d).Error; err != nil {
 				t.Fatal(err)
 			}
 			read := func() (int, bool) {
@@ -70,6 +72,28 @@ func TestM1R3SameIdentityEcho(t *testing.T) {
 				return r.ID, r.Kept
 			}
 			before, _ := read()
+			// A dependent row makes a delete/reinsert with the same ID observable.
+			pin := fmt.Sprintf("m1_test_party_pin_%d", before)
+			if err := db.Exec("CREATE TABLE " + pin + " (party bigint REFERENCES case_intake_parties(id))").Error; err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() {
+				if err := db.Exec("DROP TABLE " + pin).Error; err != nil {
+					t.Error(err)
+				}
+			})
+			if err := db.Exec("INSERT INTO "+pin+" VALUES (?)", before).Error; err != nil {
+				t.Fatal(err)
+			}
+			snapshot := func() string {
+				t.Helper()
+				var raw string
+				if err := db.Raw("SELECT (to_jsonb(p)-'aliases')::text FROM case_intake_parties p WHERE id=?", before).Scan(&raw).Error; err != nil {
+					t.Fatal(err)
+				}
+				return raw
+			}
+			original := snapshot()
 			w := send("PUT", "/api/v1/case-intakes/"+f.intakeID, map[string]any{"expected_revision": f.revision, "parties": []any{map[string]string{"entity_name": "Sample opponent", "party_role": "opposing_party", "entity_type": "LEGAL_PERSON", "identity_type": "SOCIAL_CREDIT_CODE", "identity_number": "SYNTHETIC-OPPONENT", "aliases": "New Alias"}}})
 			after, kept := read()
 			t.Logf("http=%d same_row=%v opaque_preserved=%v", w.Code, before == after, kept)
@@ -78,9 +102,67 @@ func TestM1R3SameIdentityEcho(t *testing.T) {
 				t.Fatal(err)
 			}
 			t.Logf("same_cipher=%v same_digest=%v", equal.Cipher, equal.Digest)
-			if w.Code != 200 || after != before || !kept || !equal.Digest || !equal.Cipher {
+			if w.Code != 200 || after != before || !kept || !equal.Digest || !equal.Cipher || snapshot() != original {
 				t.Fatal("same identity echo changed guarded columns")
 			}
 		})
+	}
+}
+
+func TestM1R3NativeCheckUsesEditedAlias(t *testing.T) {
+	db := isolatedDB(t)
+	f := seedConflictPGFixture(t, db, true, "")
+	hist := seedConflictPGFixture(t, db, false, "")
+	send := nativePartyRequest(t, db, f)
+	name := "Archive " + hist.intakeID
+	exec := func(q string, args ...any) {
+		t.Helper()
+		if err := db.Exec(q, args...).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	exec("UPDATE clients SET name=? WHERE id=?", name, hist.clientID)
+	cipher, digest, err := security.ProtectIdentityNumber("CLIENT-" + f.intakeID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	exec("UPDATE clients SET identity_type='SOCIAL_CREDIT_CODE',identity_number_ciphertext=?,identity_number_digest=? WHERE id=?", cipher, digest, f.clientID)
+	exec("UPDATE case_intakes SET metadata=metadata||jsonb_build_object('subject_case_id',?::text) WHERE id=?", f.caseID, f.intakeID)
+	cipher, digest, err = security.ProtectIdentityNumber("OPPONENT-" + f.intakeID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	exec("INSERT INTO case_intake_parties(intake_id,entity_name,entity_type,party_role,identity_type,identity_number_ciphertext,identity_number_digest,aliases) VALUES(?,'Separate current brand','LEGAL_PERSON','opposing_party','SOCIAL_CREDIT_CODE',?,?,?)", f.intakeID, cipher, digest, name)
+	path := "/api/v1/case-intakes/" + f.intakeID
+	for _, expected := range []bool{true, false} {
+		if !expected {
+			rev, _, _, _ := conflictPGIntakeState(t, db, f.intakeID)
+			if w := send("PUT", path, map[string]any{"expected_revision": rev, "opponent_identity_update": map[string]string{"entity_name": "Separate current brand", "entity_type": "LEGAL_PERSON", "identity_type": "SOCIAL_CREDIT_CODE", "identity_number": "OPPONENT-" + f.intakeID, "aliases": ""}}); w.Code != 200 {
+				t.Fatalf("clear alias: HTTP %d", w.Code)
+			}
+			if w := send("POST", path+"/facts-confirmation", map[string]any{}); w.Code != 200 {
+				t.Fatalf("confirm: HTTP %d", w.Code)
+			}
+		}
+		w := send("POST", path+"/conflict-check", map[string]any{})
+		var res struct {
+			Data struct{ Result models.ConflictCheckResponse }
+		}
+		if err := json.Unmarshal(w.Body.Bytes(), &res); w.Code != 200 || err != nil {
+			t.Fatalf("native check HTTP %d, %v", w.Code, err)
+		}
+		var hits int
+		for _, c := range res.Data.Result.ConflictCases {
+			if c.ClientID == hist.clientID {
+				for _, e := range c.Evidence {
+					if e.RequestedParty == name && e.MatchType == "CANDIDATE" {
+						hits++
+					}
+				}
+			}
+		}
+		if (hits > 0) != expected {
+			t.Errorf("expected alias candidate=%v, matched evidence=%d", expected, hits)
+		}
 	}
 }

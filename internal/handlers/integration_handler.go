@@ -209,10 +209,20 @@ func (h *IntegrationHandler) validateCaseIntakeApproval(c *gin.Context, req *ser
 		common.NewAPIError(c, http.StatusConflict, "INTAKE_CONFLICT_CHECK_MUST_PRECEDE_APPROVAL", "接案审批必须使用已绑定的冲突检测结果，不支持审批接口自动补跑检测")
 		return false
 	}
+	// Authorize before borrowing the transaction connection. The locked read
+	// below pins the authorized client even if another save switches it.
+	var scoped struct{ ClientID uint }
+	if err := h.db.WithContext(c.Request.Context()).Table("case_intakes").Select("client_id").Where("id = ?", intakeID).Take(&scoped).Error; err != nil {
+		common.NewAPIError(c, http.StatusConflict, "INTAKE_NOT_FOUND", "关联接案记录不存在，已阻止提交")
+		return false
+	}
+	if !authorizeIntakeClient(c, h.authz, scoped.ClientID) {
+		return false
+	}
 	// Native saves lock the same parent before changing its parties.
 	var accepted bool
 	err := h.db.WithContext(c.Request.Context()).Transaction(func(tx *gorm.DB) error {
-		accepted = h.validateStoredIntakeApproval(c, req, actorID, intakeID, tx)
+		accepted = validateStoredIntakeApproval(c, req, actorID, intakeID, scoped.ClientID, tx)
 		return nil
 	})
 	if err != nil {
@@ -224,9 +234,9 @@ func (h *IntegrationHandler) validateCaseIntakeApproval(c *gin.Context, req *ser
 	return accepted
 }
 
-func (h *IntegrationHandler) validateStoredIntakeApproval(c *gin.Context, req *services.IntegrationRequest, actorID, intakeID string, tx *gorm.DB) bool {
+func validateStoredIntakeApproval(c *gin.Context, req *services.IntegrationRequest, actorID, intakeID string, authorizedClient uint, tx *gorm.DB) bool {
 	var intake map[string]interface{}
-	if err := tx.Clauses(clause.Locking{Strength: "SHARE"}).Table("case_intakes").Where("id = ?", intakeID).Take(&intake).Error; err != nil {
+	if err := tx.Clauses(clause.Locking{Strength: "SHARE"}).Table("case_intakes").Where("id = ? AND client_id = ?", intakeID, authorizedClient).Take(&intake).Error; err != nil {
 		common.NewAPIError(c, http.StatusConflict, "INTAKE_NOT_FOUND", "关联接案记录不存在，已阻止提交")
 		return false
 	}
@@ -237,9 +247,6 @@ func (h *IntegrationHandler) validateStoredIntakeApproval(c *gin.Context, req *s
 	}
 	if strings.TrimSpace(fmt.Sprint(intake["status"])) != "conflict_ready" {
 		common.NewAPIError(c, http.StatusConflict, "INTAKE_CONFLICT_RESULT_STALE", "接案事实已变化或尚未完成检测，请重新确认并运行利益冲突检查")
-		return false
-	}
-	if !authorizeIntakeClient(c, h.authz, intakeClientID(intake["client_id"])) {
 		return false
 	}
 	revision := intakeDraftRevisionFor(intakeID, intake["metadata"])
