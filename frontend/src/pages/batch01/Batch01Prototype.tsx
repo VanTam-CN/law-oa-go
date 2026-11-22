@@ -4208,6 +4208,17 @@ export function CaseIntakeWorkbench() {
   const savedTags = React.useRef('[]')
   const savedPartyInputs = React.useRef('')
   const localRestore = React.useRef(false)
+  const savedPartyStructure = React.useRef('')
+  const savedOpponentAliases = React.useRef('')
+  const editorEpoch = React.useRef(0)
+  const editorGuard = () => {
+    const epoch = editorEpoch.current
+    return () => epoch === editorEpoch.current
+  }
+  React.useEffect(() => () => {
+    editorEpoch.current++
+    serverRestoreEpochRef.current++
+  }, [draftKey])
   const [form, setForm] = React.useState<IntakeFormState>({ ...defaultIntakeForm })
   const [draftActive, setDraftActive] = React.useState(false)
   const [sourceCase, setSourceCase] = React.useState<Record<string, any> | null>(null)
@@ -4232,6 +4243,15 @@ export function CaseIntakeWorkbench() {
   const partyInputs = (draft: IntakeFormState, related: IntakeRelatedParty[]) =>
     JSON.stringify([draft.clientId,draft.clientName,draft.opponentName,draft.opponentEntityType,
       draft.opponentIdentityType,draft.opponentIdentityNumber,draft.opponentAliases,related])
+  const partyStructure = (draft: IntakeFormState, related: IntakeRelatedParty[]) =>
+    partyInputs({ ...draft, opponentIdentityType: '', opponentIdentityNumber: '' }, related)
+  const changeEditor = () => {
+    editorEpoch.current++
+    setCheckingConflict(false)
+    setSubmitting(false)
+    setSubmissionNotice('')
+    setConflictCheckMissingFields([])
+  }
   const liveEditor = React.useRef({form,relatedParties,caseTags})
   liveEditor.current = {form,relatedParties,caseTags}
 
@@ -4422,6 +4442,7 @@ export function CaseIntakeWorkbench() {
   }
 
   const applyServerDraftPayload = (payload: Record<string, any>) => {
+    changeEditor()
     const restored = intakeDraftFromServer(payload)
     setForm(restored)
     setStoredDraft(null)
@@ -4447,6 +4468,8 @@ export function CaseIntakeWorkbench() {
       parties.some(p => !['client','opposing_party','related_party'].includes(p.party_role)) ||
       parties.filter(p => p.party_role === 'opposing_party').length > 1 ||
       parties.filter(p => p.party_role === 'client').length > 1
+    savedOpponentAliases.current = restored.opponentAliases
+    savedPartyStructure.current = partyStructure(restored, restoredRelated)
     savedPartyInputs.current = partyInputs(restored, restoredRelated)
     localRestore.current = false
     const restoredTags = listOf<unknown>(recordValue(recordValue(payload.intake).metadata).case_tags)
@@ -4473,6 +4496,7 @@ export function CaseIntakeWorkbench() {
     // A slow detail response for an earlier draft must never overwrite a
     // draft the user already switched to and edited, so every response is
     // bound to the latest restore request through this epoch.
+    changeEditor()
     const restoreEpoch = ++serverRestoreEpochRef.current
     const atRequest = liveEditor.current
     const isCurrent = () =>
@@ -4578,6 +4602,15 @@ export function CaseIntakeWorkbench() {
     // caps party rows at 20) must never replace stored rows with partial
     // data, so parties are sent only while the restored list is complete.
     if (!existing || savedPartyInputs.current !== partyInputs(form, relatedParties)) {
+      if (existing && form.opponentIdentityNumber.trim() && savedPartyStructure.current === partyStructure(form, relatedParties)) {
+        payload.opponent_identity_update = {
+          entity_name: form.opponentName,
+          entity_type: form.opponentEntityType,
+          identity_type: form.opponentIdentityType,
+          identity_number: form.opponentIdentityNumber,
+        }
+        return payload
+      }
       if (existing && (partiesTruncatedRef.current || localRestore.current)) {
         throw new Error('当前草稿仅显示部分主体，无法保存主体变更。请重新核对完整的服务端草稿。')
       }
@@ -4586,22 +4619,23 @@ export function CaseIntakeWorkbench() {
           entity_name: form.clientName,
           entity_type: clientOptions.find(client => client.id === form.clientId)?.entityType || 'company',
           party_role: 'client',
-          relation_depth: 0,
+          ...(!existing ? { relation_depth: 0 } : {}),
         },
         {
           entity_name: form.opponentName,
           entity_type: form.opponentEntityType,
           party_role: 'opposing_party',
-          relation_depth: 0,
+          ...(!existing ? { relation_depth: 0 } : {}),
           identity_type: form.opponentIdentityType,
           identity_number: form.opponentIdentityNumber,
-          aliases: form.opponentAliases,
+          ...(!existing || savedOpponentAliases.current !== form.opponentAliases ? { aliases: form.opponentAliases } : {}),
         },
         ...relatedParties.map((party) => ({
           entity_name: party.name,
           entity_type: party.entityType,
           party_role: 'related_party',
-          relation_depth: 1,
+          ...(!existing || party.identityNumber ? { relation_depth: 1 } : {}),
+          ...(party.identityNumber && party.role ? { metadata: { party_type: party.role } } : {}),
           identity_type: party.identityType,
           identity_number: party.identityNumber,
         })),
@@ -4612,6 +4646,7 @@ export function CaseIntakeWorkbench() {
   }
 
   const createIntake = async () => {
+    const current = editorGuard()
     if (!isAssistant && (!form.clientId || !form.clientName || !form.lawyerId)) {
       throw new Error('请先选择数据库中的客户和负责律师')
     }
@@ -4631,10 +4666,13 @@ export function CaseIntakeWorkbench() {
         body: JSON.stringify(body),
       },
     )
+    if (!current()) return
     if (!saved?.id || !saved?.revision || (existingIntakeID && textValue(saved.id, '') !== existingIntakeID)) {
       throw new Error('保存回执缺少草稿编号或版本，请从服务端草稿列表核对。')
     }
     savedTags.current = JSON.stringify(caseTags)
+    savedOpponentAliases.current = form.opponentAliases
+    savedPartyStructure.current = partyStructure(form, relatedParties)
     savedPartyInputs.current = partyInputs(form, relatedParties)
     const intake = existingIntakeID ? { ...runtime.intake, ...saved, id: existingIntakeID } : saved
     recordTiming(existingIntakeID ? '更新接案' : '创建接案', startedAt)
@@ -4655,6 +4693,7 @@ export function CaseIntakeWorkbench() {
   }
 
   const runConflictCheck = async (intake = runtime.intake) => {
+    const current = editorGuard()
     if (isAssistant) {
       throw new Error('助理不能运行利益冲突检查，请由负责律师确认当事人信息后操作')
     }
@@ -4675,6 +4714,7 @@ export function CaseIntakeWorkbench() {
       body: '{}',
       headers: revisionHeaders,
     })
+    if (!current()) return
     const confirmedRevision = textValue(confirmed?.revision, '')
     if (confirmedRevision) {
       setForm((current) => ({ ...current, revision: confirmedRevision }))
@@ -4688,6 +4728,7 @@ export function CaseIntakeWorkbench() {
     })
     // A completed check returns the post-check revision. Adopt it here so the
     // next write from this page sends exactly the server's current token.
+    if (!current()) return
     const checkedRevision = textValue(task?.revision, '')
     if (checkedRevision) {
       setForm((current) => ({ ...current, revision: checkedRevision }))
@@ -4719,6 +4760,7 @@ export function CaseIntakeWorkbench() {
       message.error('助理协作草稿不能提交审批，请由负责律师确认当事人信息并提交')
       return
     }
+    const current = editorGuard()
     setSubmitting(true)
     try {
       if (missingSubmitFields.length > 0) {
@@ -4730,8 +4772,10 @@ export function CaseIntakeWorkbench() {
       const intake = isConflictResultStale
         ? await createIntake()
         : runtime.intake || (await createIntake())
+      if (!current() || !intake) return
       let conflict =
         (!isConflictResultStale && runtime.conflict) || (await runConflictCheck(intake))
+      if (!current()) return
       const latestTaskID = textValue(
         conflict?.record?.id ||
           conflict?.record?.check_id ||
@@ -4747,6 +4791,7 @@ export function CaseIntakeWorkbench() {
           // The frozen in-memory result remains authoritative if refreshing the task fails.
         }
       }
+      if (!current()) return
       let conflictReview = recordValue(conflict?.review)
       let conflictWaiver = recordValue(conflict?.waiver)
       const conflictTaskID = textValue(
@@ -4760,6 +4805,7 @@ export function CaseIntakeWorkbench() {
         } catch {
           // A missing review is an expected state and is handled by the gate below.
         }
+        if (!current()) return
         try {
           const waiverResponse = await apiRequest<any>(`/conflict/tasks/${conflictTaskID}/waiver`)
           conflictWaiver = recordValue(waiverResponse)
@@ -4767,6 +4813,7 @@ export function CaseIntakeWorkbench() {
           // No waiver is the normal state for clear and manually reviewed checks.
         }
       }
+      if (!current()) return
       const decisionView = deriveConflictDecisionViewModel(conflict, {
         review: conflictReview,
         waiver: conflictWaiver,
@@ -4836,6 +4883,7 @@ export function CaseIntakeWorkbench() {
           },
         }),
       })
+      if (!current()) return
       recordTiming('提交审批', startedAt)
       setRuntime((current) => ({ ...current, approval }))
       setSubmissionNotice('')
@@ -4843,9 +4891,9 @@ export function CaseIntakeWorkbench() {
       message.success('已提交真实审批')
       navigate(`/approval/${approval.approval_id}`)
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '提交审批失败')
+      if (current()) message.error(error instanceof Error ? error.message : '提交审批失败')
     } finally {
-      setSubmitting(false)
+      if (current()) setSubmitting(false)
     }
   }
 
@@ -4949,6 +4997,13 @@ export function CaseIntakeWorkbench() {
   const continueStoredDraft = () => {
     if (!storedDraft) return
     serverRestoreEpochRef.current++
+    changeEditor()
+    setRuntime({ apiTimings: [] })
+    setRelatedParties([])
+    setCaseTags([])
+    savedTags.current = '[]'
+    savedOpponentAliases.current = storedDraft.opponentAliases
+    savedPartyStructure.current = partyStructure(storedDraft, [])
     setForm(storedDraft)
     localRestore.current = Boolean(storedDraft.intakeId)
     savedPartyInputs.current = partyInputs(storedDraft, [])
@@ -4958,6 +5013,10 @@ export function CaseIntakeWorkbench() {
   }
 
   const discardStoredDraft = () => {
+    serverRestoreEpochRef.current++
+    changeEditor()
+    setRuntime({ apiTimings: [] })
+    newIntakeIdempotencyKey.current = `case-intake-${currentUserID}-${Date.now()}-${Math.random().toString(36).slice(2)}`
     window.localStorage.removeItem(draftKey)
     setStoredDraft(null)
     if (!isSupplementMode) {
@@ -4968,9 +5027,11 @@ export function CaseIntakeWorkbench() {
   }
 
   const handleCreateIntake = async () => {
+    const current = editorGuard()
     try {
       await createIntake()
     } catch (error) {
+      if (!current()) return
       message.error(
         error instanceof Error
           ? `${error.message}。${firstRunGuidance.saveFailure}`
@@ -4996,19 +5057,22 @@ export function CaseIntakeWorkbench() {
     }
     setConflictCheckMissingFields([])
     setSubmissionNotice('')
+    const current = editorGuard()
     setCheckingConflict(true)
     try {
       // Always persist the current form before confirming facts. Reusing an
       // existing intake here would let the UI label an old server-side check
       // as the result for newly edited parties.
       const intake = await createIntake()
+      if (!current() || !intake) return
       await runConflictCheck(intake)
+      if (!current()) return
       setActiveStep(1)
       message.success('利益冲突检查已完成，当前草稿：' + (form.title || '未命名案件'))
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '冲突检查失败，请检查网络后重试')
+      if (current()) message.error(error instanceof Error ? error.message : '冲突检查失败，请检查网络后重试')
     } finally {
-      setCheckingConflict(false)
+      if (current()) setCheckingConflict(false)
     }
   }
 
@@ -5026,10 +5090,12 @@ export function CaseIntakeWorkbench() {
   }
 
   const handleSaveDraftAndExit = async () => {
+    const current = editorGuard()
     try {
       await createIntake()
-      navigate('/case')
+      if (current()) navigate('/case')
     } catch (error) {
+      if (!current()) return
       message.error(
         error instanceof Error
           ? `${error.message}。${firstRunGuidance.saveFailure}`
