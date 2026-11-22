@@ -316,12 +316,21 @@ func (h *DemoAggregateHandler) IntakeWorkbench(c *gin.Context) {
 	// A failed lookup must not look like an empty editable party list.
 	var parties []map[string]interface{}
 	if err := h.db.WithContext(c.Request.Context()).Table("case_intake_parties").
-		Where("intake_id = ?", intake["id"]).Order("id").Limit(20).Find(&parties).Error; err != nil {
+		Where("intake_id = ?", intake["id"]).Order("id").Limit(21).Find(&parties).Error; err != nil {
 		common.NewAPIError(c, http.StatusServiceUnavailable, "INTAKE_PARTIES_UNAVAILABLE", "无法核对接案主体，请稍后重开")
 		return
 	}
 	for i, row := range parties {
 		parties[i] = sanitizeAggregateRow("case_intake_parties", row)
+	}
+	// The workbench projection caps party rows at 20. One extra probe row
+	// tells restore that the draft holds more, so it can return the one
+	// unambiguous opposing party the lawyer can still fix. opponent_party
+	// is null when a truncated draft has zero or several opponents; the key
+	// is absent only for short drafts read by the original contract.
+	truncatedParties := len(parties) > 20
+	if truncatedParties {
+		parties = parties[:20]
 	}
 	materials := h.recentRows("case_materials", "intake_id = ?", 20, intake["id"])
 	client := sanitizeClientAggregateRow(h.firstByID("clients", intake["client_id"]))
@@ -332,7 +341,7 @@ func (h *DemoAggregateHandler) IntakeWorkbench(c *gin.Context) {
 		}
 	}
 
-	common.APISuccess(c, gin.H{
+	response := gin.H{
 		"intake":    sanitizeAggregateRow("case_intakes", intake),
 		"client":    client,
 		"parties":   parties,
@@ -342,7 +351,22 @@ func (h *DemoAggregateHandler) IntakeWorkbench(c *gin.Context) {
 		// workbench row carries the server-owned revision token next to the
 		// sanitized facts (the raw metadata itself is redacted).
 		"revision": intakeDraftRevisionFor(id, intake["metadata"]),
-	})
+	}
+	if truncatedParties {
+		var opponentRows []map[string]interface{}
+		if err := h.db.WithContext(c.Request.Context()).Table("case_intake_parties").
+			Where("intake_id = ? AND LOWER(TRIM(party_role)) IN ?", intake["id"], []string{"opponent", "opposing_party"}).
+			Limit(2).Find(&opponentRows).Error; err != nil {
+			common.NewAPIError(c, http.StatusServiceUnavailable, "INTAKE_PARTIES_UNAVAILABLE", "无法核对接案主体，请稍后重开")
+			return
+		}
+		if len(opponentRows) == 1 {
+			response["opponent_party"] = sanitizeAggregateRow("case_intake_parties", opponentRows[0])
+		} else {
+			response["opponent_party"] = nil
+		}
+	}
+	common.APISuccess(c, response)
 }
 
 func (h *DemoAggregateHandler) ApprovalsWorkbench(c *gin.Context) {

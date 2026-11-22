@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -303,6 +304,39 @@ func TestUpdateIntakeDraftIdentityInheritanceFailsClosed(t *testing.T) {
 		defer tx.Rollback()
 		return h.prepareCaseIntakePartyUpdateRow(tx, "intake-guarded", party, time.Now(), true)
 	}
+
+	// The narrow identity update writes only the fields the caller named.
+	// A missing aliases key must leave the stored aliases untouched inside
+	// the same transaction; an explicit key (including an empty string) is
+	// the only way to clear stored aliases.
+	t.Run("narrow update without aliases key preserves stored aliases", func(t *testing.T) {
+		t.Setenv("SUBJECT_DATA_KEY", strings.Repeat("j", 32))
+		db := newPartyIdentityGuardDB(t)
+		h := NewDemoAggregateHandler(db)
+		h.SetAuthorizationService(services.NewAuthorizationService(repositories.NewCaseRepository(db), repositories.NewClientRepository(db), repositories.NewUserRepository(db), repositories.NewDocumentRepository(db)))
+		gin.SetMode(gin.TestMode)
+		g := gin.New()
+		g.PUT("/api/v1/case-intakes/:id", func(c *gin.Context) { c.Set("role", "lawyer"); c.Set("user_id", "7"); h.UpdateCaseIntake(c) })
+		operand := map[string]any{"entity_name": "对手公司", "entity_type": "LEGAL_PERSON", "identity_type": "SOCIAL_CREDIT_CODE", "identity_number": "91310000MA1FL00X0B"}
+		body, err := json.Marshal(map[string]any{"opponent_identity_update": operand, "expected_revision": "guard-rev-1"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		req := httptest.NewRequest(http.MethodPut, "/api/v1/case-intakes/intake-guarded", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		g.ServeHTTP(w, req)
+		if w.Code != http.StatusOK {
+			t.Fatalf("narrow save without aliases status=%d body=%s", w.Code, w.Body.String())
+		}
+		row := map[string]interface{}{}
+		if err := db.Table("case_intake_parties").Where("intake_id = ?", "intake-guarded").Take(&row).Error; err != nil {
+			t.Fatalf("reload party: %v", err)
+		}
+		if fmt.Sprint(row["aliases"]) != "对手别名" {
+			t.Fatalf("stored aliases must be preserved, got %q", fmt.Sprint(row["aliases"]))
+		}
+	})
 
 	t.Run("helper inherits only a single fully guarded exact match", func(t *testing.T) {
 		db := newPartyIdentityGuardDB(t)

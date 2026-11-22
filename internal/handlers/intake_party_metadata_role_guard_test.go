@@ -20,7 +20,8 @@ func TestUpdateIntakeNarrowIdentityRejectsUncertainTarget(t *testing.T) {
 		{"ambiguous party", nil, true, 409},
 		{"wrong entity type", func(p map[string]any) { p["entity_type"] = "INDIVIDUAL"; p["identity_type"] = "PASSPORT" }, false, 409},
 		{"non-string identity", func(p map[string]any) { p["identity_number"] = 1234 }, false, 409},
-		{"unknown field", func(p map[string]any) { p["aliases"] = "not allowed" }, false, 409},
+		{"non-string aliases", func(p map[string]any) { p["aliases"] = 1234 }, false, 409},
+		{"unknown field", func(p map[string]any) { p["truly_unknown"] = "not allowed" }, false, 409},
 		{"mixed list", nil, false, 400}, {"mixed null", nil, false, 400}, {"null update", nil, false, 409},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

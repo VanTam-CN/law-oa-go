@@ -81,7 +81,7 @@ func newDraftRevisionDB(t *testing.T) (*DemoAggregateHandler, *gorm.DB) {
 		"INSERT INTO users (id, name, role, status, department) VALUES (7, '律师甲', 'lawyer', 'active', '争议解决')",
 		"INSERT INTO case_intakes (id, intake_code, title, case_type, client_id, created_by, status, metadata) VALUES ('intake-rev', 'INT-900', '版本守护草稿', 'civil', 33, '7', 'draft', '{}')",
 		"INSERT INTO case_intake_parties (intake_id, entity_name, entity_type, party_role, identity_type, identity_number_ciphertext, identity_number_digest) VALUES ('intake-rev', '星河智联科技有限公司', 'LEGAL_PERSON', 'client', 'SOCIAL_CREDIT_CODE', '" + clientA.IdentityNumberCiphertext + "', '" + clientA.IdentityNumberDigest + "')",
-		"INSERT INTO case_intake_parties (intake_id, entity_name, entity_type, party_role, identity_type, identity_number_ciphertext, identity_number_digest) VALUES ('intake-rev', '对手公司', 'LEGAL_PERSON', 'opposing_party', 'SOCIAL_CREDIT_CODE', 'opp-enc', 'opp-digest')",
+		"INSERT INTO case_intake_parties (intake_id, entity_name, entity_type, party_role, identity_type, identity_number_ciphertext, identity_number_digest, aliases) VALUES ('intake-rev', '对手公司', 'LEGAL_PERSON', 'opposing_party', 'SOCIAL_CREDIT_CODE', 'opp-enc', 'opp-digest', '对手别名')",
 	}
 	for _, stmt := range seeds {
 		if err := db.Exec(stmt).Error; err != nil {
@@ -307,6 +307,87 @@ func TestDraftRestoreReturnsRevisionAndProtectedIdentityStatus(t *testing.T) {
 	if clientStatus != "已登记（受保护）" {
 		t.Fatalf("client party must carry protected status, got %q", clientStatus)
 	}
+}
+
+// TestDraftRestoreReturnsOpponentPartyOnlyForTruncatedUniqueOpponent locks
+// the over-20-row recovery contract: only a projection that exceeds the
+// 20-row aggregate cap needs the extra opponent projection, the projection
+// must stay sanitized, and an ambiguous opponent set must omit the field
+// instead of guessing which row the lawyer means.
+func TestDraftRestoreReturnsOpponentPartyOnlyForTruncatedUniqueOpponent(t *testing.T) {
+	seedRelated := func(t *testing.T, db *gorm.DB, count int) {
+		t.Helper()
+		for index := 0; index < count; index++ {
+			stmt := fmt.Sprintf("INSERT INTO case_intake_parties (intake_id, entity_name, entity_type, party_role) VALUES ('intake-rev', '关联主体%02d', 'LEGAL_PERSON', 'related_party')", index)
+			if err := db.Exec(stmt).Error; err != nil {
+				t.Fatalf("seed related party: %v", err)
+			}
+		}
+	}
+	opponentPartyOf := func(payload map[string]interface{}) map[string]interface{} {
+		data, _ := payload["data"].(map[string]interface{})
+		party, _ := data["opponent_party"].(map[string]interface{})
+		return party
+	}
+
+	t.Run("truncated unique opponent returns sanitized projection", func(t *testing.T) {
+		h, db := newDraftRevisionDB(t)
+		r := newDraftRevisionRouter(h)
+		stampDraftRevision(t, db, "rev-1")
+		seedRelated(t, db, 20)
+
+		code, payload := draftRevisionRequest(t, r, http.MethodGet, "/api/v1/case-intakes/intake-rev", "", "")
+		if code != http.StatusOK {
+			t.Fatalf("truncated restore: status=%d payload=%v", code, payload)
+		}
+		party := opponentPartyOf(payload)
+		if party == nil {
+			t.Fatalf("truncated restore must expose opponent_party: %v", payload)
+		}
+		if party["entity_name"] != "对手公司" || party["entity_type"] != "LEGAL_PERSON" || party["identity_type"] != "SOCIAL_CREDIT_CODE" || party["aliases"] != "对手别名" {
+			t.Fatalf("opponent_party must carry the sanitized opponent facts, got %v", party)
+		}
+		for _, key := range []string{"identity_number", "identityNumber", "identity_number_ciphertext", "identity_number_digest"} {
+			if _, leak := party[key]; leak {
+				t.Fatalf("opponent_party must not leak %s: %v", key, party)
+			}
+		}
+	})
+
+	t.Run("short projection omits opponent_party", func(t *testing.T) {
+		h, db := newDraftRevisionDB(t)
+		r := newDraftRevisionRouter(h)
+		stampDraftRevision(t, db, "rev-1")
+		seedRelated(t, db, 18)
+
+		code, payload := draftRevisionRequest(t, r, http.MethodGet, "/api/v1/case-intakes/intake-rev", "", "")
+		if code != http.StatusOK {
+			t.Fatalf("short restore: status=%d payload=%v", code, payload)
+		}
+		if party := opponentPartyOf(payload); party != nil {
+			t.Fatalf("short projection must not add opponent_party: %v", party)
+		}
+	})
+
+	t.Run("ambiguous opponents omit opponent_party", func(t *testing.T) {
+		h, db := newDraftRevisionDB(t)
+		r := newDraftRevisionRouter(h)
+		stampDraftRevision(t, db, "rev-1")
+		seedRelated(t, db, 20)
+		if err := db.Exec("INSERT INTO case_intake_parties (intake_id, entity_name, entity_type, party_role) VALUES ('intake-rev', '第二对手公司', 'LEGAL_PERSON', 'opposing_party')").Error; err != nil {
+			t.Fatalf("seed second opponent: %v", err)
+		}
+
+		code, payload := draftRevisionRequest(t, r, http.MethodGet, "/api/v1/case-intakes/intake-rev", "", "")
+		if code != http.StatusOK {
+			t.Fatalf("ambiguous restore: status=%d payload=%v", code, payload)
+		}
+		data, _ := payload["data"].(map[string]interface{})
+		value, present := data["opponent_party"]
+		if !present || value != nil {
+			t.Fatalf("ambiguous opponents must send opponent_party null, got present=%v value=%v", present, value)
+		}
+	})
 }
 
 func TestDraftListCarriesRevisionTokens(t *testing.T) {

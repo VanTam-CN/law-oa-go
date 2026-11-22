@@ -22,8 +22,18 @@ func applyOpponentIdentityUpdate(tx *gorm.DB, intakeID string, input interface{}
 			return services.NewSubjectWorkflowError("INTAKE_PROTOCOL_INVALID", fmt.Sprintf("opponent_identity_update 缺少 %s", key))
 		}
 	}
-	if len(payload) != 4 {
-		return services.NewSubjectWorkflowError("INTAKE_PROTOCOL_INVALID", "opponent_identity_update 只允许 entity_name、entity_type、identity_type、identity_number")
+	aliasesSupplied := false
+	for key := range payload {
+		switch key {
+		case "entity_name", "entity_type", "identity_type", "identity_number":
+		case "aliases":
+			aliasesSupplied = true
+		default:
+			return services.NewSubjectWorkflowError("INTAKE_PROTOCOL_INVALID", "opponent_identity_update 只允许 entity_name、entity_type、identity_type、identity_number、aliases")
+		}
+	}
+	if _, ok := payload["aliases"].(string); aliasesSupplied && !ok {
+		return services.NewSubjectWorkflowError("INTAKE_PROTOCOL_INVALID", "aliases 需要字符串")
 	}
 	entityName := strings.TrimSpace(stringValue(payload["entity_name"], ""))
 	if entityName == "" {
@@ -71,6 +81,12 @@ func applyOpponentIdentityUpdate(tx *gorm.DB, intakeID string, input interface{}
 		"identity_type":              identityType,
 		"identity_number_ciphertext": ciphertext,
 		"identity_number_digest":     digest,
+	}
+	if aliasesSupplied {
+		updates["aliases"] = payload["aliases"]
+	}
+	if aliasesSupplied {
+		updates["aliases"] = payload["aliases"]
 	}
 	result := tx.Table("case_intake_parties").Where("intake_id = ? AND id = ?", intakeID, row.ID).Updates(updates)
 	if result.Error != nil {
