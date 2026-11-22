@@ -331,3 +331,53 @@ func TestNativeRejectedClientSourcePointer(t *testing.T) {
 		t.Fatal("client altered reserved metadata")
 	}
 }
+
+func TestConfirmIntakeRequiresObservedRevision(t *testing.T) {
+	h, db := newDraftRevisionDB(t)
+	stampDraftRevision(t, db, "current")
+	read := func() string {
+		t.Helper()
+		var row string
+		if err := db.Raw("SELECT json_array(status, metadata, updated_at, created_by) FROM case_intakes WHERE id = 'intake-rev'").Scan(&row).Error; err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	before := read()
+	code, response := draftRevisionRequest(t, newDraftRevisionRouter(h), http.MethodPost, "/api/v1/case-intakes/intake-rev/facts-confirmation", "{}", "")
+	if code != http.StatusConflict || objectValue(response["error"])["code"] != "INTAKE_DRAFT_REVISION_REQUIRED" || read() != before {
+		t.Fatalf("confirmation without a revision must refuse without mutation: status=%d", code)
+	}
+}
+
+func TestUpdateIntakeExplicitNullClearsConfirmation(t *testing.T) {
+	for _, status := range []string{"lawyer_facts_confirmed", "conflict_ready"} {
+		t.Run(status, func(t *testing.T) {
+			h, db := newDraftRevisionDB(t)
+			r := newDraftRevisionRouter(h)
+			const path = "/api/v1/case-intakes/intake-rev"
+			meta := `{"draft_revision":"r1","lawyer_facts_version":"confirmed","conflict_check_id":"old"}`
+			if err := db.Exec("UPDATE case_intakes SET description='original',status=?,metadata=? WHERE id='intake-rev'", status, meta).Error; err != nil {
+				t.Fatal(err)
+			}
+			code, response := draftRevisionRequest(t, r, http.MethodPut, path, `{"priority":"high","expected_revision":"r1"}`, "")
+			data := objectValue(response["data"])
+			if code != 200 || data["description"] != "original" || data["status"] != status {
+				t.Fatal("omitted description changed facts or state", code)
+			}
+			body, err := json.Marshal(map[string]interface{}{"expected_revision": data["revision"], "description": nil})
+			if err != nil {
+				t.Fatal(err)
+			}
+			code, response = draftRevisionRequest(t, r, http.MethodPut, path, string(body), "")
+			var row map[string]interface{}
+			if err := db.Table("case_intakes").Where("id=?", "intake-rev").Take(&row).Error; err != nil {
+				t.Fatal(err)
+			}
+			m := objectValue(row["metadata"])
+			if code != 200 || row["description"] != nil || row["status"] != "draft" || m["lawyer_facts_version"] != nil || m["conflict_check_id"] != nil || m["draft_revision"] == data["revision"] {
+				t.Fatalf("explicit clear did not invalidate confirmation: status=%d state=%v", code, row["status"])
+			}
+		})
+	}
+}

@@ -228,7 +228,7 @@ func intakeRevisionData(t *testing.T, payload map[string]interface{}) map[string
 
 func TestStartIntakeConflictCheckFreshRevisionLinksOnce(t *testing.T) {
 	_, router, db, stub := newIntakeRevisionWorld(t)
-	code, payload := intakeRevisionRequest(t, router, http.MethodPost, "/api/v1/case-intakes/intake-revision/facts-confirmation", "{}", "")
+	code, payload := intakeRevisionRequest(t, router, http.MethodPost, "/api/v1/case-intakes/intake-revision/facts-confirmation", "{}", "legacy-intake-revision")
 	if code != http.StatusOK {
 		t.Fatalf("confirm status=%d body=%v", code, payload)
 	}
@@ -257,7 +257,7 @@ func TestStartIntakeConflictCheckFreshRevisionLinksOnce(t *testing.T) {
 
 func TestStartIntakeConflictCheckRejectsStaleRevisionAfterNativeEdit(t *testing.T) {
 	_, router, db, stub := newIntakeRevisionWorld(t)
-	code, payload := intakeRevisionRequest(t, router, http.MethodPost, "/api/v1/case-intakes/intake-revision/facts-confirmation", "{}", "")
+	code, payload := intakeRevisionRequest(t, router, http.MethodPost, "/api/v1/case-intakes/intake-revision/facts-confirmation", "{}", "legacy-intake-revision")
 	if code != http.StatusOK {
 		t.Fatalf("confirm status=%d body=%v", code, payload)
 	}
@@ -282,7 +282,7 @@ func TestStartIntakeConflictCheckRejectsStaleRevisionAfterNativeEdit(t *testing.
 	if boundCases := countIntakeRevisionBoundCases(t, db); boundCases != 0 {
 		t.Fatalf("stale start bound cases=%d want 0", boundCases)
 	}
-	code, payload = intakeRevisionRequest(t, router, http.MethodPost, "/api/v1/case-intakes/intake-revision/facts-confirmation", "{}", "")
+	code, payload = intakeRevisionRequest(t, router, http.MethodPost, "/api/v1/case-intakes/intake-revision/facts-confirmation", "{}", fresh)
 	if code != http.StatusOK {
 		t.Fatalf("reconfirm status=%d body=%v", code, payload)
 	}
@@ -308,7 +308,7 @@ func TestStartIntakeConflictCheckRejectsStaleRevisionAfterNativeEdit(t *testing.
 
 func TestStartIntakeConflictCheckRejectsSecondSubmissionWithOldRevision(t *testing.T) {
 	_, router, db, stub := newIntakeRevisionWorld(t)
-	code, payload := intakeRevisionRequest(t, router, http.MethodPost, "/api/v1/case-intakes/intake-revision/facts-confirmation", "{}", "")
+	code, payload := intakeRevisionRequest(t, router, http.MethodPost, "/api/v1/case-intakes/intake-revision/facts-confirmation", "{}", "legacy-intake-revision")
 	if code != http.StatusOK {
 		t.Fatalf("confirm status=%d body=%v", code, payload)
 	}
@@ -344,7 +344,7 @@ func (s *intakeRevisionStubService) insertCount() int {
 func TestStartIntakeConflictCheckLateResultAfterNativeEdit(t *testing.T) {
 	_, r, db, stub := newIntakeRevisionWorld(t)
 	path := "/api/v1/case-intakes/intake-revision"
-	code, body := intakeRevisionRequest(t, r, http.MethodPost, path+"/facts-confirmation", "{}", "")
+	code, body := intakeRevisionRequest(t, r, http.MethodPost, path+"/facts-confirmation", "{}", "legacy-intake-revision")
 	if code != 200 {
 		t.Fatalf("confirm: %d %v", code, body)
 	}

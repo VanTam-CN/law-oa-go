@@ -2080,7 +2080,14 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 				}
 			}
 		}
-		factsChanged := rawPayload["client_id"] != nil || rawPayload["title"] != nil || rawPayload["case_type"] != nil || rawPayload["description"] != nil || rawPayload["metadata"] != nil || rawPayload["parties"] != nil
+		factsChanged := rawPayload["parties"] != nil
+		// A permitted SQL NULL is an explicit edit; an omitted field is untouched.
+		for _, key := range []string{"client_id", "title", "case_type", "description", "metadata"} {
+			if _, supplied := payload[key]; supplied {
+				factsChanged = true
+				break
+			}
+		}
 		if factsChanged && (status == "lawyer_facts_confirmed" || status == "conflict_ready") {
 			for _, key := range []string{lawyerFactsVersionKey, "lawyer_facts_confirmed_at", "lawyer_facts_confirmed_by", "conflict_check_id", "conflictCheckId", "conflict_checked_at", "conflict_coverage_status"} {
 				delete(metadata, key)
@@ -2277,7 +2284,12 @@ func (h *DemoAggregateHandler) ConfirmIntakeFacts(c *gin.Context) {
 			return gorm.ErrInvalidTransaction
 		}
 		current := intakeDraftRevisionFor(intakeID, intake["metadata"])
-		if expected := strings.TrimSpace(c.GetHeader("X-Intake-Revision")); expected != "" && current != expected {
+		expected := strings.TrimSpace(c.GetHeader("X-Intake-Revision"))
+		if expected == "" {
+			common.NewAPIError(c, http.StatusConflict, "INTAKE_DRAFT_REVISION_REQUIRED", "请重新打开并核对草稿后确认")
+			return gorm.ErrInvalidTransaction
+		}
+		if expected != current {
 			common.APIErrorWithContext(c, http.StatusConflict, "INTAKE_DRAFT_REVISION_CONFLICT", "草稿已更新，请重新核对", map[string]interface{}{"current_revision": current})
 			return gorm.ErrInvalidTransaction
 		}
