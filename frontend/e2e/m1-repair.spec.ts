@@ -92,7 +92,7 @@ for (const source of ['本机草稿', '服务端20行投影', '本机别名', '�
       }))
       await page.route(url => url.pathname === endpoint.pathname, async route => {
         const response = await route.fetch({ url: endpoint.href, maxRedirects: 0 })
-        expect(response.status()).toBe(200)
+        expect(response.status(), (await response.text()).slice(0, 300)).toBe(200)
         approvalID = (await response.json()).data.approval_id
         await route.fulfill({ response })
       })
@@ -219,8 +219,8 @@ for (const source of ['本机草稿', '服务端20行投影', '本机别名', '�
       await page.getByRole('button', { name: '提交审批并等待成案' }).first().click()
       const { metadata } = (await posted).postDataJSON()
       expect(metadata.intake_revision).toBe('checked')
-      const names = metadata.parties.map((party: { name: string }) => party.name)
-      expect(names).toEqual([...truncatedParties().map(party => party.entity_name), '投影外合成关联方'])
+      const roster = metadata.parties.map((p: { role: string; name: string }) => [p.role, p.name])
+      expect(roster).toEqual([...truncatedParties().map(p => [p.party_role, p.entity_name]), ['related_party', '投影外合成关联方']])
       await expect(page).toHaveURL(url => url.pathname === '/approval/' + approvalID)
     }
 

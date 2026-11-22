@@ -269,10 +269,19 @@ func validateStoredIntakeApproval(c *gin.Context, req *services.IntegrationReque
 		}
 	}
 	checkID := integrationMetadataString(req.Metadata, "conflict_check_id")
+	nestedCheckID := ""
+	if result, ok := req.Metadata["conflict_result"].(map[string]interface{}); ok {
+		nestedCheckID = firstIntegrationMetadataString(result, "checkId", "check_id", "id")
+	}
+	// The flat key and the frozen result each identify one check. When both
+	// are present they must name the same check, otherwise the payload is
+	// ambiguous and must fail closed instead of silently picking one.
+	if nestedCheckID != "" && checkID != "" && nestedCheckID != checkID {
+		common.NewAPIError(c, http.StatusConflict, "CONFLICT_CHECK_LINK_AMBIGUOUS", "提交的冲突检测编号存在歧义，已阻止提交")
+		return false
+	}
 	if checkID == "" {
-		if result, ok := req.Metadata["conflict_result"].(map[string]interface{}); ok {
-			checkID = firstIntegrationMetadataString(result, "checkId", "check_id", "id")
-		}
+		checkID = nestedCheckID
 	}
 	intakeMetadata := integrationJSONMap(intake["metadata"])
 	if checkID == "" || integrationMetadataString(intakeMetadata, "conflict_check_id") != checkID {
@@ -325,7 +334,13 @@ func integrationMetadataString(metadata map[string]interface{}, key string) stri
 	if metadata == nil {
 		return ""
 	}
-	return strings.TrimSpace(fmt.Sprint(metadata[key]))
+	value := metadata[key]
+	if value == nil {
+		// A present-but-null key carries no identity. Treating it as a
+		// non-empty "<nil>" string would silently disable matching gates.
+		return ""
+	}
+	return strings.TrimSpace(fmt.Sprint(value))
 }
 
 func firstIntegrationMetadataString(metadata map[string]interface{}, keys ...string) string {

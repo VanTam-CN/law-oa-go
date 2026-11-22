@@ -7,8 +7,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"os/exec"
+	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"law-oa-go/internal/models"
@@ -35,6 +36,7 @@ func TestM1R4WorkbenchApprovalBrowser(t *testing.T) {
 		t.Fatal(err)
 	}
 	const path = "/api/v1/integration/approvals/with-conflict"
+	submitted := make(chan struct{}, 1)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost || r.URL.Path != path {
 			http.NotFound(w, r)
@@ -42,24 +44,35 @@ func TestM1R4WorkbenchApprovalBrowser(t *testing.T) {
 		}
 		r.Header.Set("Authorization", "Bearer "+token)
 		g.ServeHTTP(w, r)
+		submitted <- struct{}{}
 	}))
 	defer server.Close()
 	fixture, err := json.Marshal(map[string]any{"url": server.URL + path, "intake": f.intakeID, "client": json.Number(f.clientID), "check": check})
 	if err != nil {
 		t.Fatal(err)
 	}
-	cmd := exec.Command("node", "node_modules/@playwright/test/cli.js", "test", "--config", "playwright.m1.config.ts", "m1-repair.spec.ts", "-g", "本机草稿恢复后", "--output", t.TempDir())
-	cmd.Dir = "../../../frontend"
-	cmd.Env = append(os.Environ(), "NP_M1_BROWSER_FIXTURE="+string(fixture))
-	if output, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("browser approval: %v\n%s", err, output)
+	dir := os.Getenv("NP_M1_FIXTURE_DIR")
+	if dir == "" {
+		t.Fatal("run scripts/np-first-slice/verify-m1-browser-approval.sh")
+	}
+	tmp := filepath.Join(dir, "pending.json")
+	if err := os.WriteFile(tmp, fixture, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(tmp, filepath.Join(dir, "ready.json")); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case <-submitted:
+	case <-time.After(90 * time.Second):
+		t.Fatal("no browser approval received")
 	}
 	var count int
 	err = db.Raw(`SELECT count(*) FROM approval_requests a WHERE metadata::jsonb->>'intake_id'=? AND metadata::jsonb->>'conflict_check_id'=?
  AND metadata::jsonb->>'intake_revision'='checked'
  AND metadata::jsonb->'parties'=metadata::jsonb#>'{approval_snapshot,metadata,parties}'
- AND (SELECT jsonb_agg(p->>'name' ORDER BY ord) FROM jsonb_array_elements(metadata::jsonb->'parties') WITH ORDINALITY AS row(p,ord))=
- (SELECT jsonb_agg(entity_name ORDER BY id) FROM case_intake_parties WHERE intake_id=?)`, f.intakeID, check, f.intakeID).Scan(&count).Error
+ AND (SELECT jsonb_agg(jsonb_build_array(p->>'role',p->>'name') ORDER BY ord) FROM jsonb_array_elements(metadata::jsonb->'parties') WITH ORDINALITY AS row(p,ord))=
+ (SELECT jsonb_agg(jsonb_build_array(CASE party_role WHEN 'opponent' THEN 'opposing_party' ELSE party_role END,entity_name) ORDER BY id) FROM case_intake_parties WHERE intake_id=?)`, f.intakeID, check, f.intakeID).Scan(&count).Error
 	if err != nil || count != 1 {
 		t.Fatalf("expected one persisted matching roster and frozen snapshot: count=%d err=%v", count, err)
 	}
