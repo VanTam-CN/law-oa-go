@@ -41,7 +41,7 @@ func TestM1R4LegacyMetadataEcho(t *testing.T) {
 	if n, ok := meta["opaque"].(json.Number); !ok || n.String() != "9007199254740993" {
 		t.Fatalf("GET must preserve the JSON number; got %v", meta["opaque"])
 	}
-	row := map[string]any{"entity_name": party["entity_name"], "entity_type": party["entity_type"], "party_role": "opposing_party", "metadata": meta}
+	row := party
 	put := send("PUT", path, map[string]any{"expected_revision": detail.Data.Revision, "parties": []any{row}})
 	var after string
 	if err := db.Raw("SELECT metadata->>'opaque' FROM case_intake_parties WHERE intake_id=?", f.intakeID).Scan(&after).Error; err != nil {
@@ -65,7 +65,7 @@ func TestM1R4LegacyMetadataEcho(t *testing.T) {
 	echo := browser.Data.Parties[0]["metadata"].(map[string]any)
 	echo["extra"].(map[string]any)["note"] = "new note"
 	echo["party_type"] = "updated role"
-	row["metadata"] = echo
+	row = browser.Data.Parties[0]
 	put = send("PUT", path, map[string]any{"expected_revision": browser.Data.Revision, "metadata": map[string]any{"precision": json.Number("9007199254740992")}, "parties": []any{row}})
 	var ok bool
 	if err := db.Raw(`SELECT metadata->>'opaque'='9007199254740993' AND metadata#>>'{extra,weights,0}'='9007199254740995'

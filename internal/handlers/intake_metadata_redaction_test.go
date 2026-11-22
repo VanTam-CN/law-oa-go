@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"testing"
 )
 
@@ -24,7 +25,7 @@ func TestAggregateMetadataStringFormIsRedacted(t *testing.T) {
 	if metadata["source"] != "batch01_real_api" {
 		t.Fatalf("legal metadata keys must survive, got %v", metadata)
 	}
-	if amount, ok := metadata["dispute_amount"].(float64); !ok || amount != 1234567.89 {
+	if wire, err := json.Marshal(metadata["dispute_amount"]); err != nil || string(wire) != "1234567.89" {
 		t.Fatalf("business value precision must be preserved, got %T %v", metadata["dispute_amount"], metadata["dispute_amount"])
 	}
 	if _, leak := metadata["identity_number"]; leak {
@@ -59,7 +60,7 @@ func TestAggregateMetadataUndecodableAndByteFormsClose(t *testing.T) {
 	if _, leak := metadata["identity_number"]; leak {
 		t.Fatalf("[]byte form must drop identity_number: %v", metadata)
 	}
-	if metadata["keep"] != float64(1) {
+	if wire, err := json.Marshal(metadata["keep"]); err != nil || string(wire) != "1" {
 		t.Fatalf("[]byte form must keep business values, got %v", metadata["keep"])
 	}
 	if got := sanitizeAggregateRow("case_intakes", map[string]interface{}{"metadata": nil})["metadata"]; got != nil {
