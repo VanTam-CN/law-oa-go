@@ -22,6 +22,7 @@ import (
 )
 
 type intakeRevisionStubService struct {
+	lastParties  []models.ConflictPartyInfo
 	beforeReturn func()
 	mu           sync.Mutex
 	inserts      int
@@ -33,6 +34,7 @@ func (s *intakeRevisionStubService) PerformConflictCheck(ctx context.Context, re
 		return nil, fmt.Errorf("请求为空")
 	}
 	s.mu.Lock()
+	s.lastParties = request.Parties
 	s.inserts++
 	checkID := fmt.Sprintf("CCT-I15-%d", s.inserts)
 	parameters, err := json.Marshal(map[string]string{
@@ -369,5 +371,30 @@ func TestStartIntakeConflictCheckLateResultAfterNativeEdit(t *testing.T) {
 	}
 	if after == "" || status != "draft" || rev != after || check != "" || meta != final || countIntakeRevisionBoundCases(t, db) != 0 || stub.insertCount() != 1 {
 		t.Fatal("late completion changed edited facts or case binding")
+	}
+}
+
+func TestStartIntakeConflictCheckUsesSavedAliases(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		stored any
+		want   string
+	}{{"legacy without column value", nil, "historic"}, {"explicit clear", "", ""}, {"explicit replacement", "updated", "updated"}} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, r, db, stub := newIntakeRevisionWorld(t)
+			if err := db.Exec(`UPDATE case_intake_parties SET metadata='{"aliases":["historic"]}',aliases=? WHERE party_role='opposing_party'`, tc.stored).Error; err != nil {
+				t.Fatal(err)
+			}
+			const base = "/api/v1/case-intakes/intake-revision/"
+			code, out := intakeRevisionRequest(t, r, "POST", base+"facts-confirmation", "{}", "legacy-intake-revision")
+			if code != 200 {
+				t.Fatal("confirm", code)
+			}
+			rev := fmt.Sprint(intakeRevisionData(t, out)["revision"])
+			code, _ = intakeRevisionRequest(t, r, "POST", base+"conflict-check", "{}", rev)
+			if code != 200 || len(stub.lastParties) != 1 || strings.Join(stub.lastParties[0].Aliases, ",") != tc.want {
+				t.Fatal("detector input differs from saved aliases", code, stub.lastParties)
+			}
+		})
 	}
 }
