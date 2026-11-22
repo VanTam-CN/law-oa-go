@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { seedAuthenticatedUser } from './utils/test-helpers'
 
-async function openSavedDraft(page: Page) {
+async function openSavedDraft(page: Page, metadata: Record<string, unknown> = { aliases: ['Historic Alias'] }, aliases: string | null = null) {
   await seedAuthenticatedUser(page, 'lawyer')
   const list = '/api/v1/case-intakes'
   await page.route(url => url.pathname === list, route => route.fulfill({
@@ -15,7 +15,7 @@ async function openSavedDraft(page: Page) {
         revision: 'fixture-rev',
         parties: [
           { party_role: 'opposing_party', entity_type: 'LEGAL_PERSON', entity_name: 'Sample opponent',
-            aliases: null, metadata: { aliases: ['Historic Alias'] } },
+            aliases, metadata },
           { party_role: 'related_party', entity_type: 'LEGAL_PERSON', entity_name: 'Synthetic related party' },
         ],
         materials: [],
@@ -39,4 +39,10 @@ test('M1 R3 same-revision local recovery retains the related party', async ({ pa
   await page.reload()
   await page.getByRole('button', { name: '继续未完成草稿' }).click()
   await expect(page.locator('.batch-related-party')).toContainText('Synthetic related party')
+})
+
+test('M1 R4 empty historical key falls through until a column explicitly clears it', async ({ page }) => {
+  const metadata = { aliases: [], client_aliases: ['Historic Alias'] }
+  await openSavedDraft(page, metadata)
+  await expect(page.locator('#intake-opponent-aliases')).toHaveValue('Historic Alias')
 })
