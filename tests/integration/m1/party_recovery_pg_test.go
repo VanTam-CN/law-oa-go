@@ -200,7 +200,11 @@ func TestNativeFullSaveOnlyChangesExplicitAlias(t *testing.T) {
 	revision := f.revision
 	for _, want := range []string{"new alias", ""} {
 		parties[0]["aliases"] = want
-		w := send("PUT", "/api/v1/case-intakes/"+f.intakeID, map[string]any{"expected_revision": revision, "parties": parties})
+		body := map[string]any{"expected_revision": revision, "parties": parties}
+		if want == "" {
+			body["client_id"] = f.clientID
+		}
+		w := send("PUT", "/api/v1/case-intakes/"+f.intakeID, body)
 		if w.Code != 200 {
 			t.Fatalf("full save returned %d", w.Code)
 		}
