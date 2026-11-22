@@ -125,6 +125,9 @@ func checkFormalAsyncPG(t *testing.T, editDuringCheck, rejectTerminal bool) {
 			t.Fatal(err)
 		}
 		if record.CheckStatus == services.ConflictTaskStatusFailed {
+			if rejectTerminal && record.CheckResult["error"] == nil {
+				t.Fatal("terminal failure missing reason")
+			}
 			if !rejectTerminal && (!editDuringCheck || !strings.Contains(fmt.Sprint(record.CheckResult["error"]), repositories.ErrIntakeRevisionConflict.Error())) {
 				t.Fatal("unexpected failure", record.CheckResult["error"])
 			}

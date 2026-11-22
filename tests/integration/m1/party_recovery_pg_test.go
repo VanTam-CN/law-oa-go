@@ -150,10 +150,8 @@ func TestNativeCreateRejectsNormalizedEmptyIdentityAtomically(t *testing.T) {
 	}
 }
 
-func TestNativeFullSaveOnlyChangesExplicitAlias(t *testing.T) {
-	db := isolatedDB(t)
-	f := seedConflictPGFixture(t, db, false, "")
-	send := nativePartyRequest(t, db, f)
+func legacyPartyEcho(t *testing.T, db *gorm.DB, f conflictPGFixture) ([]map[string]string, func() string) {
+	t.Helper()
 	var parties []map[string]string
 	for i, role := range []string{"opposing_party", "related_party", "related_party"} {
 		name := fmt.Sprintf("party-%d", i)
@@ -171,6 +169,14 @@ func TestNativeFullSaveOnlyChangesExplicitAlias(t *testing.T) {
 		}
 		return value
 	}
+	return parties, snapshot
+}
+
+func TestNativeFullSaveOnlyChangesExplicitAlias(t *testing.T) {
+	db := isolatedDB(t)
+	f := seedConflictPGFixture(t, db, false, "")
+	send := nativePartyRequest(t, db, f)
+	parties, snapshot := legacyPartyEcho(t, db, f)
 	var cname string
 	if err := db.Table("clients").Select("name").Where("id=?", f.clientID).Scan(&cname).Error; err != nil {
 		t.Fatal(err)
@@ -213,34 +219,18 @@ func TestNativeLegacyFullEchoPreservesRows(t *testing.T) {
 	db := isolatedDB(t)
 	f := seedConflictPGFixture(t, db, false, "")
 	send := nativePartyRequest(t, db, f)
-	var parties []map[string]string
-	for i, role := range []string{"opposing_party", "related_party", "related_party"} {
-		name := fmt.Sprintf("party-%d", i)
-		if err := db.Exec(`INSERT INTO case_intake_parties(intake_id,entity_name,entity_type,entity_id,party_role,relation_depth,aliases,metadata,identity_type,identity_number_ciphertext,identity_number_digest)
-   VALUES(?,?,'LEGAL_PERSON',?,?,1,'old alias','{"party_type":"guarantor","opaque":9007199254740993}'::jsonb,'SOCIAL_CREDIT_CODE',?,?)`, f.intakeID, name, 100+i, role, "cipher-"+name, "digest-"+name).Error; err != nil {
-			t.Fatal(err)
-		}
-		parties = append(parties, map[string]string{"entity_name": name, "entity_type": "LEGAL_PERSON", "party_role": role})
-	}
-	snapshot := func() string {
-		t.Helper()
-		var value string
-		if err := db.Raw(`SELECT jsonb_agg(CASE WHEN party_role='opposing_party' THEN to_jsonb(p)-'aliases' ELSE to_jsonb(p) END ORDER BY id)::text FROM case_intake_parties p WHERE intake_id=?`, f.intakeID).Scan(&value).Error; err != nil {
-			t.Fatal(err)
-		}
-		return value
-	}
+	parties, snapshot := legacyPartyEcho(t, db, f)
 	beforeParties := snapshot()
 	if err := db.Exec("INSERT INTO case_materials(intake_id,name,metadata) VALUES(?,'sample','{}')", f.intakeID).Error; err != nil {
 		t.Fatal(err)
 	}
-	var before, after int
-	mid := func(dest *int) {
-		if err := db.Table("case_materials").Select("id").Where("intake_id=?", f.intakeID).Scan(dest).Error; err != nil {
+	var before, after string
+	materialSnapshot := func(dest *string) {
+		if err := db.Raw("SELECT jsonb_agg(to_jsonb(m) ORDER BY id)::text FROM case_materials m WHERE intake_id=?", f.intakeID).Scan(dest).Error; err != nil {
 			t.Fatal(err)
 		}
 	}
-	mid(&before)
+	materialSnapshot(&before)
 	var wire []map[string]any
 	for i, p := range parties {
 		m := map[string]any{}
@@ -258,13 +248,13 @@ func TestNativeLegacyFullEchoPreservesRows(t *testing.T) {
 	if w.Code != 200 {
 		t.Fatalf("HTTP %d", w.Code)
 	}
-	mid(&after)
+	materialSnapshot(&after)
 	var depth int
 	if err := db.Table("case_intake_parties").Select("relation_depth").Where("intake_id=? AND party_role='opposing_party'", f.intakeID).Scan(&depth).Error; err != nil {
 		t.Fatal(err)
 	}
 	if depth != 1 || before != after || beforeParties != snapshot() {
-		t.Fatalf("legacy echo changed stored rows: depth=%d material_id_preserved=%v", depth, before == after)
+		t.Fatalf("legacy echo changed stored rows: depth=%d material_rows_preserved=%v", depth, before == after)
 	}
 	rev, _, _, _ := conflictPGIntakeState(t, db, f.intakeID)
 	bad := send("PUT", "/api/v1/case-intakes/"+f.intakeID, map[string]any{"expected_revision": rev, "description": "must roll back", "materials": []any{map[string]any{"name": "different"}}})
@@ -272,7 +262,7 @@ func TestNativeLegacyFullEchoPreservesRows(t *testing.T) {
 		t.Fatalf("unsupported material edit: HTTP %d", bad.Code)
 	}
 	endRev, _, _, _ := conflictPGIntakeState(t, db, f.intakeID)
-	mid(&after)
+	materialSnapshot(&after)
 	if endRev != rev || before != after || beforeParties != snapshot() {
 		t.Fatal("rejected material edit changed the draft")
 	}
