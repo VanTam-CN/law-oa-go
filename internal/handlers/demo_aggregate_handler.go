@@ -2149,7 +2149,7 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 			}
 			for k, v := range patch {
 				if k != intakeDraftRevisionKey && k != npDescriptionSourceRevisionKey && !strings.HasPrefix(k, "lawyer_facts_") && !strings.HasPrefix(k, "conflict_") {
-					metadata[k] = v
+					metadata[k] = preserveBrowserNumbers(metadata[k], v)
 				}
 			}
 		}

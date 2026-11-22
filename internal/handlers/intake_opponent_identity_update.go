@@ -53,11 +53,14 @@ func applyOpponentIdentityUpdate(tx *gorm.DB, intakeID string, input interface{}
 	}
 	normalizedName := strings.ToLower(entityName)
 	var rows []struct {
-		ID         uint
-		EntityType string
+		ID           uint
+		EntityType   string
+		IdentityType string
+		Cipher       string
+		Digest       string
 	}
 	if err := tx.Table("case_intake_parties").
-		Select("id, entity_type").Where("intake_id = ?", intakeID).
+		Select("id, entity_type, identity_type, identity_number_ciphertext AS cipher, identity_number_digest AS digest").Where("intake_id = ?", intakeID).
 		Where("LOWER(TRIM(party_role)) IN ?", []string{"opponent", "opposing_party"}).
 		Where("LOWER(TRIM(entity_name)) = ?", normalizedName).
 		Limit(2).Find(&rows).Error; err != nil {
@@ -73,20 +76,27 @@ func applyOpponentIdentityUpdate(tx *gorm.DB, intakeID string, input interface{}
 	if normalizeIntakeEntityType(row.EntityType) != entityType {
 		return services.NewSubjectWorkflowError("INTAKE_CLIENT_TYPE_MISMATCH", "对方主体类型与保存值不一致，已拒绝更新")
 	}
-	ciphertext, digest, err := security.ProtectIdentityNumber(identityNumber)
-	if err != nil {
+	nextDigest, digestErr := security.IdentityDigest(identityNumber)
+	if digestErr != nil {
 		return services.NewSubjectWorkflowError("SUBJECT_DATA_KEY_REQUIRED", "主体身份保护密钥不可用，已阻止保存对方主体")
 	}
-	updates := map[string]interface{}{
-		"identity_type":              identityType,
-		"identity_number_ciphertext": ciphertext,
-		"identity_number_digest":     digest,
+	// Preserve the existing ciphertext on an identical re-entry, including alias-only edits.
+	sameIdentity := strings.EqualFold(strings.TrimSpace(row.IdentityType), identityType) && row.Cipher != "" && row.Digest == nextDigest
+	updates := map[string]interface{}{}
+	if !sameIdentity {
+		ciphertext, digest, err := security.ProtectIdentityNumber(identityNumber)
+		if err != nil {
+			return services.NewSubjectWorkflowError("SUBJECT_DATA_KEY_REQUIRED", "主体身份保护密钥不可用，已阻止保存对方主体")
+		}
+		updates["identity_type"] = identityType
+		updates["identity_number_ciphertext"] = ciphertext
+		updates["identity_number_digest"] = digest
 	}
 	if aliasesSupplied {
 		updates["aliases"] = payload["aliases"]
 	}
-	if aliasesSupplied {
-		updates["aliases"] = payload["aliases"]
+	if len(updates) == 0 {
+		return nil
 	}
 	result := tx.Table("case_intake_parties").Where("intake_id = ? AND id = ?", intakeID, row.ID).Updates(updates)
 	if result.Error != nil {

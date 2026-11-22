@@ -20,7 +20,7 @@ func TestM1R4LegacyMetadataEcho(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := db.Exec(`INSERT INTO case_intake_parties(intake_id,entity_name,entity_type,party_role,identity_type,identity_number_ciphertext,identity_number_digest,metadata)
- VALUES(?,'Fixture peer','LEGAL_PERSON','opponent','SOCIAL_CREDIT_CODE',?,?,'{"opaque":9007199254740993,"extra":{"note":"keep"}}'::jsonb)`, f.intakeID, c, d).Error; err != nil {
+ VALUES(?,'Fixture peer','LEGAL_PERSON','opponent','SOCIAL_CREDIT_CODE',?,?,'{"opaque":9007199254740993,"extra":{"note":"keep","weights":[9007199254740995]}}'::jsonb)`, f.intakeID, c, d).Error; err != nil {
 		t.Fatal(err)
 	}
 	path := "/api/v1/case-intakes/" + f.intakeID
@@ -38,6 +38,9 @@ func TestM1R4LegacyMetadataEcho(t *testing.T) {
 	}
 	party := detail.Data.Parties[0]
 	meta := party["metadata"].(map[string]any)
+	if n, ok := meta["opaque"].(json.Number); !ok || n.String() != "9007199254740993" {
+		t.Fatalf("GET must preserve the JSON number; got %v", meta["opaque"])
+	}
 	row := map[string]any{"entity_name": party["entity_name"], "entity_type": party["entity_type"], "party_role": "opposing_party", "metadata": meta}
 	put := send("PUT", path, map[string]any{"expected_revision": detail.Data.Revision, "parties": []any{row}})
 	var after string
@@ -48,7 +51,39 @@ func TestM1R4LegacyMetadataEcho(t *testing.T) {
 	if put.Code != 200 || after != "9007199254740993" {
 		t.Fatal("unchanged legacy echo did not preserve metadata")
 	}
+	// The browser parses JSON numbers as doubles before stringifying the full form.
+	w = send("GET", path, nil)
+	var browser struct {
+		Data struct {
+			Revision string
+			Parties  []map[string]any
+		}
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &browser); w.Code != 200 || err != nil || len(browser.Data.Parties) != 1 {
+		t.Fatal("browser GET", w.Code, err)
+	}
+	echo := browser.Data.Parties[0]["metadata"].(map[string]any)
+	echo["extra"].(map[string]any)["note"] = "new note"
+	echo["party_type"] = "updated role"
+	row["metadata"] = echo
+	put = send("PUT", path, map[string]any{"expected_revision": browser.Data.Revision, "metadata": map[string]any{"precision": json.Number("9007199254740992")}, "parties": []any{row}})
+	var ok bool
+	if err := db.Raw(`SELECT metadata->>'opaque'='9007199254740993' AND metadata#>>'{extra,weights,0}'='9007199254740995'
+        AND metadata#>>'{extra,note}'='new note' AND (SELECT metadata->>'precision' FROM case_intakes WHERE id=?)='9007199254740993'
+ AND metadata->>'party_type'='updated role' FROM case_intake_parties WHERE intake_id=?`, f.intakeID, f.intakeID).Scan(&ok).Error; err != nil {
+		t.Fatal(err)
+	}
+	if put.Code != 200 || !ok {
+		t.Fatalf("legacy numeric echo plus legitimate edit: status=%d preserved=%t", put.Code, ok)
+	}
+	rev, _, _, _ := conflictPGIntakeState(t, db, f.intakeID)
+	echo["opaque"] = json.Number("9007199254740995")
+	put = send("PUT", path, map[string]any{"expected_revision": rev, "parties": []any{row}})
+	if err := db.Raw("SELECT metadata->>'opaque' FROM case_intake_parties WHERE intake_id=?", f.intakeID).Scan(&after).Error; err != nil || put.Code != 200 || after != "9007199254740995" {
+		t.Fatalf("explicit lossless edit: status=%d after=%s err=%v", put.Code, after, err)
+	}
 }
+
 func TestM1R4NarrowSameIdentity(t *testing.T) {
 	db := isolatedDB(t)
 	f := seedConflictPGFixture(t, db, false, "")

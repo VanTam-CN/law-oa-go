@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -571,13 +572,13 @@ func redactAggregateMetadataValue(value interface{}) interface{} {
 		return nil
 	case string:
 		var decoded interface{}
-		if err := json.Unmarshal([]byte(typed), &decoded); err != nil {
+		if err := decodeIntakeMetadataJSON([]byte(typed), &decoded); err != nil {
 			return "已脱敏"
 		}
 		return redactAggregateSensitiveValue(decoded)
 	case []byte:
 		var decoded interface{}
-		if err := json.Unmarshal(typed, &decoded); err != nil {
+		if err := decodeIntakeMetadataJSON(typed, &decoded); err != nil {
 			return "已脱敏"
 		}
 		return redactAggregateSensitiveValue(decoded)
@@ -592,6 +593,15 @@ func maskAggregatePhone(value string) string {
 		return "***"
 	}
 	return value[:3] + "****" + value[len(value)-4:]
+}
+
+func decodeIntakeMetadataJSON(data []byte, target *interface{}) error {
+	if !json.Valid(data) {
+		return fmt.Errorf("invalid metadata JSON")
+	}
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.UseNumber()
+	return decoder.Decode(target)
 }
 
 func (h *DemoAggregateHandler) isAllowedSumColumn(table, column string) bool {
