@@ -27,8 +27,12 @@ func approvalIntakeParties(tx *gorm.DB, intakeID string, clientID interface{}) (
 		if role == "client" {
 			hasClient = true
 		}
-		if partyType := firstIntegrationMetadataString(integrationJSONMap(row.Metadata), "party_type", "role"); partyType != "" {
-			p["party_type"] = partyType
+		meta := integrationJSONMap(row.Metadata)
+		for _, key := range []string{"party_type", "role"} {
+			if label, ok := meta[key].(string); ok && strings.TrimSpace(label) != "" {
+				p["party_type"] = label
+				break
+			}
 		}
 		parties = append(parties, p)
 	}

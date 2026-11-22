@@ -63,11 +63,15 @@ func (h *DemoAggregateHandler) SetClientContactService(service *services.ClientC
 // always wires authz; a missing service is therefore an explicit fail-closed
 // configuration error rather than an invitation to trust a caller-supplied ID.
 func (h *DemoAggregateHandler) authorizeIntakeClient(c *gin.Context, clientID uint) bool {
+	return authorizeIntakeClient(c, h.authz, clientID)
+}
+
+func authorizeIntakeClient(c *gin.Context, authz *services.AuthorizationService, clientID uint) bool {
 	if clientID == 0 {
 		common.APIBadRequest(c, "接案客户无效", "必须选择有效的客户档案")
 		return false
 	}
-	if h.authz == nil {
+	if authz == nil {
 		common.NewAPIError(c, http.StatusServiceUnavailable, "CLIENT_AUTHZ_UNAVAILABLE", "客户权限服务未初始化，已阻止使用案件客户上下文")
 		return false
 	}
@@ -75,7 +79,7 @@ func (h *DemoAggregateHandler) authorizeIntakeClient(c *gin.Context, clientID ui
 	if !ok {
 		return false
 	}
-	allowed, err := h.authz.CanReadClient(c.Request.Context(), actor, clientID)
+	allowed, err := authz.CanReadClient(c.Request.Context(), actor, clientID)
 	if err != nil {
 		common.APIInternalServerError(c, "客户权限校验失败", err.Error())
 		return false

@@ -212,7 +212,7 @@ func (h *IntegrationHandler) validateCaseIntakeApproval(c *gin.Context, req *ser
 	// Native saves lock the same parent before changing its parties.
 	var accepted bool
 	err := h.db.WithContext(c.Request.Context()).Transaction(func(tx *gorm.DB) error {
-		accepted = validateStoredIntakeApproval(c, req, actorID, intakeID, tx)
+		accepted = h.validateStoredIntakeApproval(c, req, actorID, intakeID, tx)
 		return nil
 	})
 	if err != nil {
@@ -224,7 +224,7 @@ func (h *IntegrationHandler) validateCaseIntakeApproval(c *gin.Context, req *ser
 	return accepted
 }
 
-func validateStoredIntakeApproval(c *gin.Context, req *services.IntegrationRequest, actorID, intakeID string, tx *gorm.DB) bool {
+func (h *IntegrationHandler) validateStoredIntakeApproval(c *gin.Context, req *services.IntegrationRequest, actorID, intakeID string, tx *gorm.DB) bool {
 	var intake map[string]interface{}
 	if err := tx.Clauses(clause.Locking{Strength: "SHARE"}).Table("case_intakes").Where("id = ?", intakeID).Take(&intake).Error; err != nil {
 		common.NewAPIError(c, http.StatusConflict, "INTAKE_NOT_FOUND", "关联接案记录不存在，已阻止提交")
@@ -237,6 +237,9 @@ func validateStoredIntakeApproval(c *gin.Context, req *services.IntegrationReque
 	}
 	if strings.TrimSpace(fmt.Sprint(intake["status"])) != "conflict_ready" {
 		common.NewAPIError(c, http.StatusConflict, "INTAKE_CONFLICT_RESULT_STALE", "接案事实已变化或尚未完成检测，请重新确认并运行利益冲突检查")
+		return false
+	}
+	if !authorizeIntakeClient(c, h.authz, intakeClientID(intake["client_id"])) {
 		return false
 	}
 	revision := intakeDraftRevisionFor(intakeID, intake["metadata"])
