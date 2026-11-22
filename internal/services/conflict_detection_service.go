@@ -87,6 +87,11 @@ func NewConflictDetectionService(
 
 // PerformConflictCheck 执行冲突检测
 func (s *conflictDetectionService) PerformConflictCheck(ctx context.Context, request *models.ConflictCheckRequest) (*models.ConflictCheckResponse, error) {
+	return s.performConflictCheck(ctx, request, false)
+}
+
+// A queued task already owns its immutable audit row. Both paths persist the same evidence.
+func (s *conflictDetectionService) performConflictCheck(ctx context.Context, request *models.ConflictCheckRequest, queued bool) (*models.ConflictCheckResponse, error) {
 	startTime := time.Now()
 
 	log.Printf("🔍 开始执行冲突检测，客户端ID: %s, 案件名称: %s", request.ClientID, request.CaseName)
@@ -149,7 +154,12 @@ func (s *conflictDetectionService) PerformConflictCheck(ctx context.Context, req
 	}
 
 	// 保存检测记录
-	if err := s.saveCheckRecord(ctx, request, response); err != nil {
+	if !queued {
+		if err := s.saveCheckRecord(ctx, request, response); err != nil {
+			return nil, fmt.Errorf("保存冲突检测审计记录失败: %w", err)
+		}
+	}
+	if err := s.saveCheckEvidence(ctx, request.CaseType, response); err != nil {
 		log.Printf("❌ 保存检测记录失败: %v", err)
 		return nil, fmt.Errorf("保存冲突检测审计记录失败: %w", err)
 	}
@@ -1571,10 +1581,11 @@ func (s *conflictDetectionService) saveCheckRecord(ctx context.Context, request 
 		UpdatedAt:        now,
 	}
 
-	if err := s.conflictRepo.SaveCheckRecord(ctx, record); err != nil {
-		return err
-	}
+	return s.conflictRepo.SaveCheckRecord(ctx, record)
+}
 
+func (s *conflictDetectionService) saveCheckEvidence(ctx context.Context, caseType string, response *models.ConflictCheckResponse) error {
+	now := time.Now()
 	if len(response.ConflictCases) == 0 {
 		return s.saveP0EvidenceIfAvailable(ctx, response.CheckID, response.NormalizedSubjects, response)
 	}
@@ -1586,7 +1597,7 @@ func (s *conflictDetectionService) saveCheckRecord(ctx context.Context, request 
 		conflict.CheckID = response.CheckID
 		conflict.ID = fmt.Sprintf("%s_%s", response.CheckID, conflict.ID)
 		if conflict.CaseType == "" {
-			conflict.CaseType = request.CaseType
+			conflict.CaseType = caseType
 		}
 		if conflict.RiskLevel == "" {
 			conflict.RiskLevel = "LOW"

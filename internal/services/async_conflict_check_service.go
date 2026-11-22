@@ -167,7 +167,12 @@ func (s *asyncConflictCheckService) runTask(taskID string, request *models.Confl
 		return
 	}
 
-	result, err := s.conflictService.PerformConflictCheck(ctx, request)
+	var result *models.ConflictCheckResponse
+	if formal, ok := s.conflictService.(*conflictDetectionService); ok {
+		result, err = formal.performConflictCheck(ctx, request, true)
+	} else {
+		result, err = s.conflictService.PerformConflictCheck(ctx, request)
+	}
 	record, getErr := s.conflictRepo.GetCheckRecord(ctx, taskID)
 	if getErr != nil || record == nil {
 		return
@@ -184,7 +189,9 @@ func (s *asyncConflictCheckService) runTask(taskID string, request *models.Confl
 
 	record.CheckStatus = ConflictTaskStatusCompleted
 	record.HasConflict = result.HasConflict
-	record.CheckResult = toModelJSON(result)
+	auditResult := *result
+	auditResult.NormalizedSubjects = auditSafeNormalizedSubjects(result.NormalizedSubjects)
+	record.CheckResult = toModelJSON(&auditResult)
 	if result.RiskAssessment != nil {
 		record.RiskLevel = result.RiskAssessment.OverallRisk
 	}

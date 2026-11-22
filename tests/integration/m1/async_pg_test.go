@@ -51,6 +51,9 @@ func checkFormalAsyncPG(t *testing.T, editDuringCheck bool) {
 	defer cancel()
 	service := services.NewAsyncConflictCheckService(repo, engine)
 	req := &models.ConflictCheckRequest{IntakeID: f.intakeID, IntakeRevision: f.revision, SubjectCaseID: f.caseID, ClientID: f.clientID, ClientType: "COMPANY", ClientName: "Synthetic client", CaseName: "Synthetic intake", CaseType: "civil", OtherParties: []string{"Synthetic opponent"}, UserID: fmt.Sprint(f.userID)}
+	const syntheticIdentifier = "M1-ASYNC-SYNTHETIC-ID"
+	t.Setenv("SUBJECT_DATA_KEY", strings.Repeat("p", 32))
+	req.ClientIdentifiers = map[string]string{"registration": syntheticIdentifier}
 	task, err := service.CreateTask(ctx, req)
 	if err != nil {
 		t.Fatal(err)
@@ -136,6 +139,15 @@ func checkFormalAsyncPG(t *testing.T, editDuringCheck bool) {
 	if savedRev == "" || savedRev == rev || state != "conflict_ready" || linked != task.CheckID || precision != conflictPGBigPrecision || conflictPGCaseCheckID(t, db, f.caseID) != task.CheckID {
 		t.Fatal("fresh formal check did not atomically link both objects")
 	}
+	var audit struct{ Input, Result string }
+	if err := db.Raw("SELECT search_parameters::text AS input,check_result::text AS result FROM conflict_check_records WHERE check_id=?", task.CheckID).Scan(&audit).Error; err != nil {
+		t.Fatal(err)
+	}
+	for _, document := range []string{audit.Input, audit.Result} {
+		if strings.Contains(document, syntheticIdentifier) || !strings.Contains(document, "hmac-sha256:") {
+			t.Fatal("identifier missing or unprotected in persisted audit")
+		}
+	}
 	var subjects int64
 	if err := db.Model(&models.ConflictSubjectVersion{}).Where("source_id=?", task.CheckID).Count(&subjects).Error; err != nil || subjects == 0 {
 		t.Fatal("missing formal detector evidence", err)
@@ -149,5 +161,4 @@ func checkFormalAsyncPG(t *testing.T, editDuringCheck bool) {
 	if endRev != savedRev {
 		t.Fatal("completion replay advanced draft revision")
 	}
-
 }
