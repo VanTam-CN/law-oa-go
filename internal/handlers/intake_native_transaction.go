@@ -108,6 +108,38 @@ func preserveBrowserNumbers(stored, incoming any) (any, error) {
 	return incoming, nil
 }
 
+// An echo-bearing slot must retain its previous contents. Recursion permits
+// an append inside a child array without mistaking it for a moved number.
+func retainsMetadataPrefix(old, restored any) bool {
+	switch before := old.(type) {
+	case []any:
+		after, ok := restored.([]any)
+		if !ok || len(after) < len(before) {
+			return false
+		}
+		for i := range before {
+			if !retainsMetadataPrefix(before[i], after[i]) {
+				return false
+			}
+		}
+		return true
+	case map[string]any:
+		after, ok := restored.(map[string]any)
+		if !ok || len(after) != len(before) {
+			return false
+		}
+		for k, v := range before {
+			next, exists := after[k]
+			if !exists || !retainsMetadataPrefix(v, next) {
+				return false
+			}
+		}
+		return true
+	default:
+		return reflect.DeepEqual(old, restored)
+	}
+}
+
 func restoreMetadataArray(old, values []any) ([]any, error) {
 	// Compare before recursively restoring values in-place. A matching rounded
 	// token may have moved to another element during an insert or reorder.
@@ -125,11 +157,24 @@ func restoreMetadataArray(old, values []any) ([]any, error) {
 			}
 		}
 	})
-	containsEcho := func(value any) bool {
+	// A raw wire number can denote either a rounded old value or its exact
+	// neighbour. Guard every possible source slot as well as its destination.
+	echoes := make(map[json.Number]bool)
+	if len(rounded) != 0 {
+		visitMetadataNumbers(values, func(n json.Number) {
+			if rounded[n] {
+				echoes[n] = true
+			}
+		})
+	}
+	containsEcho := func(value any, stored bool) bool {
 		found := false
-		if len(rounded) > 0 {
+		if len(echoes) != 0 {
 			visitMetadataNumbers(value, func(n json.Number) {
-				if rounded[n] {
+				if stored && n != "" {
+					n = browserNumber(n)
+				}
+				if echoes[n] {
 					found = true
 				}
 			})
@@ -140,7 +185,7 @@ func restoreMetadataArray(old, values []any) ([]any, error) {
 		return services.NewSubjectWorkflowError("INTAKE_METADATA_ARRAY_AMBIGUOUS", "数组顺序或内容已变化，无法核对原数值精度，已停止保存")
 	}
 	for i, value := range values {
-		echo := containsEcho(value)
+		echo := containsEcho(value, false)
 		// A rounded survivor in a shortened array, or a rounded token in the
 		// new tail, could belong to a different occurrence of the old value.
 		if echo && (len(values) < len(old) || i >= len(old)) {
@@ -153,7 +198,7 @@ func restoreMetadataArray(old, values []any) ([]any, error) {
 		if err != nil {
 			return nil, err
 		}
-		if echo && !reflect.DeepEqual(v, old[i]) {
+		if (echo || containsEcho(old[i], true)) && !retainsMetadataPrefix(old[i], v) {
 			return nil, ambiguous()
 		}
 		values[i] = v
