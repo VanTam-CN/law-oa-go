@@ -42,9 +42,12 @@ func TestM1R5TruncatedLegacyRoster(t *testing.T) {
 		return state
 	}
 	before := snapshot()
-	w = send("PUT", p, map[string]any{"expected_revision": detail.Data.Revision, "parties": detail.Data.Parties})
-	if w.Code != 409 || snapshot() != before {
-		t.Fatalf("truncated roster must reject atomically, HTTP %d", w.Code)
+	newParty := map[string]any{"entity_name": "New Fixture", "entity_type": "LEGAL_PERSON", "party_role": "related_party", "identity_type": "SOCIAL_CREDIT_CODE", "identity_number": "SYNTHETIC-NEW"}
+	for _, incomplete := range [][]map[string]any{detail.Data.Parties, {}, append(append([]map[string]any{}, detail.Data.Parties...), newParty)} {
+		w = send("PUT", p, map[string]any{"expected_revision": detail.Data.Revision, "parties": incomplete})
+		if w.Code != 409 || snapshot() != before {
+			t.Fatalf("incomplete roster (%d inputs) must reject atomically, HTTP %d", len(incomplete), w.Code)
+		}
 	}
 	// A caller that really supplies every stored identity can still update this draft.
 	wire := append(detail.Data.Parties, map[string]any{"entity_name": "Fixture-21", "entity_type": "LEGAL_PERSON", "party_role": "related_party"})
