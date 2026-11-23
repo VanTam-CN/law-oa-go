@@ -109,6 +109,17 @@ func visitMetadataNumbers(value any, visit func(json.Number)) {
 }
 
 func preserveBrowserNumbers(stored, incoming any) (any, error) {
+	restored, err := restoreMetadataValue(stored, incoming)
+	if err != nil {
+		return nil, err
+	}
+	if err := checkMovedHiddenObjects(stored, incoming, restored); err != nil {
+		return nil, err
+	}
+	return restored, nil
+}
+
+func restoreMetadataValue(stored, incoming any) (any, error) {
 	switch old := stored.(type) {
 	case json.Number:
 		wire := browserNumber(old)
@@ -132,7 +143,7 @@ func preserveBrowserNumbers(stored, incoming any) (any, error) {
 			}
 			result := maps.Clone(patch)
 			for key, value := range patch {
-				restored, err := preserveBrowserNumbers(old[key], value)
+				restored, err := restoreMetadataValue(old[key], value)
 				if err != nil {
 					return nil, err
 				}
@@ -267,7 +278,7 @@ func restoreMetadataArray(old, values []any) ([]any, error) {
 		if i >= len(old) {
 			continue
 		}
-		v, err := preserveBrowserNumbers(old[i], value)
+		v, err := restoreMetadataValue(old[i], value)
 		if err != nil {
 			return nil, err
 		}
@@ -308,43 +319,23 @@ func ambiguousMetadataArray() error {
 // Compare only whole elements whose original position no longer matches the GET
 // projection. Their exact values include keys that the client could not see.
 func checkDisplacedMetadataSlots(old, values, result []any) error {
-	displaced := make(map[string][]any)
+	displaced := make(metadataOrigins)
 	for i, original := range old {
 		if i < len(values) && matchesMetadataEcho(original, values[i]) {
 			continue
 		}
-		encoded, err := json.Marshal(metadataArrayProjection(original))
-		if err != nil {
+		if err := displaced.add(original); err != nil {
 			return err
-		}
-		key := string(encoded)
-		group := displaced[key]
-		if len(group) == 0 || !equalMetadataValue(group[0], original) {
-			displaced[key] = append(group, original)
 		}
 	}
 	if len(displaced) == 0 {
 		return nil
 	}
 	for i, value := range values {
-		projection := metadataArrayProjection(value)
-		key, err := json.Marshal(projection)
-		if err != nil {
+		if err := displaced.check(value, result[i]); err != nil {
 			return err
 		}
-		group := displaced[string(key)]
-		// Distinct originals with this exact browser projection all match.
-		if len(group) > 1 && equalMetadataValue(value, projection) {
-			return ambiguousMetadataArray()
-		}
-		// A lossless client can discriminate numbers sharing a browser key.
-		for _, original := range group {
-			if matchesMetadataEcho(original, value) && !equalMetadataValue(original, result[i]) {
-				return ambiguousMetadataArray()
-			}
-		}
 	}
-
 	return nil
 }
 
