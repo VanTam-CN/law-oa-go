@@ -28,11 +28,16 @@ func TestM1R4WorkbenchApprovalBrowser(t *testing.T) {
 	}
 	if err := db.Exec(`INSERT INTO case_intake_parties(intake_id,party_role,entity_type,entity_name)
  SELECT ?,CASE n WHEN 0 THEN 'client' WHEN 1 THEN 'opponent' ELSE 'related_party' END,'LEGAL_PERSON',
- CASE n WHEN 0 THEN '上海示例科技有限公司' WHEN 1 THEN '上海华信建设集团有限公司' WHEN 20 THEN '投影外合成关联方' ELSE '虚构关联主体'||n END FROM generate_series(0,20) n`, f.intakeID).Error; err != nil {
+ CASE n WHEN 0 THEN '上海示例科技有限公司' WHEN 1 THEN '上海华信建设集团有限公司' WHEN 20 THEN '投影外合成关联方' ELSE '虚构关联主体'||n END FROM generate_series(0,20) n ORDER BY CASE n WHEN 1 THEN 2 WHEN 2 THEN 1 ELSE n END`, f.intakeID).Error; err != nil {
 		t.Fatal(err)
 	}
 	admin := models.User{Username: "browser-" + check, Name: "Fixture approver", Email: check + "@np.invalid", Password: "disabled", Role: "admin", Status: "active"}
 	if err := db.Create(&admin).Error; err != nil {
+		t.Fatal(err)
+	}
+	var expectedRoster string
+	if err := db.Raw(`SELECT jsonb_agg(jsonb_build_array(CASE party_role WHEN 'opponent' THEN 'opposing_party' ELSE party_role END,entity_name)
+        ORDER BY CASE party_role WHEN 'client' THEN 0 WHEN 'opponent' THEN 1 ELSE 2 END,id)::text FROM case_intake_parties WHERE intake_id=?`, f.intakeID).Scan(&expectedRoster).Error; err != nil {
 		t.Fatal(err)
 	}
 	const path = "/api/v1/integration/approvals/with-conflict"
@@ -72,7 +77,7 @@ func TestM1R4WorkbenchApprovalBrowser(t *testing.T) {
  AND metadata::jsonb->>'intake_revision'='checked'
  AND metadata::jsonb->'parties'=metadata::jsonb#>'{approval_snapshot,metadata,parties}'
  AND (SELECT jsonb_agg(jsonb_build_array(p->>'role',p->>'name') ORDER BY ord) FROM jsonb_array_elements(metadata::jsonb->'parties') WITH ORDINALITY AS row(p,ord))=
- (SELECT jsonb_agg(jsonb_build_array(CASE party_role WHEN 'opponent' THEN 'opposing_party' ELSE party_role END,entity_name) ORDER BY id) FROM case_intake_parties WHERE intake_id=?)`, f.intakeID, check, f.intakeID).Scan(&count).Error
+ ?::jsonb`, f.intakeID, check, expectedRoster).Scan(&count).Error
 	if err != nil || count != 1 {
 		t.Fatalf("expected one persisted matching roster and frozen snapshot: count=%d err=%v", count, err)
 	}

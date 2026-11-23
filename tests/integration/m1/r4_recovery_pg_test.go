@@ -63,14 +63,20 @@ func TestM1R4LegacyMetadataEcho(t *testing.T) {
 		t.Fatal("browser GET", w.Code, err)
 	}
 	echo := browser.Data.Parties[0]["metadata"].(map[string]any)
-	echo["extra"].(map[string]any)["note"] = "new note"
+	extra := echo["extra"].(map[string]any)
+	var originalWeights string
+	if err := db.Raw("SELECT (metadata#>'{extra,weights}')::text FROM case_intake_parties WHERE intake_id=?", f.intakeID).Scan(&originalWeights).Error; err != nil {
+		t.Fatal(err)
+	}
+	extra["weights"] = append(extra["weights"].([]any), 7)
+	extra["note"] = "new note"
 	echo["party_type"] = "updated role"
 	row = browser.Data.Parties[0]
 	put = send("PUT", path, map[string]any{"expected_revision": browser.Data.Revision, "metadata": map[string]any{"precision": json.Number("9007199254740992")}, "parties": []any{row}})
 	var ok bool
-	if err := db.Raw(`SELECT metadata->>'opaque'='9007199254740993' AND metadata#>>'{extra,weights,0}'='9007199254740995'
+	if err := db.Raw(`SELECT metadata->>'opaque'='9007199254740993' AND metadata#>'{extra,weights}'=(?::jsonb || '[7]'::jsonb)
         AND metadata#>>'{extra,note}'='new note' AND (SELECT metadata->>'precision' FROM case_intakes WHERE id=?)='9007199254740993'
- AND metadata->>'party_type'='updated role' FROM case_intake_parties WHERE intake_id=?`, f.intakeID, f.intakeID).Scan(&ok).Error; err != nil {
+ AND metadata->>'party_type'='updated role' FROM case_intake_parties WHERE intake_id=?`, originalWeights, f.intakeID, f.intakeID).Scan(&ok).Error; err != nil {
 		t.Fatal(err)
 	}
 	if put.Code != 200 || !ok {

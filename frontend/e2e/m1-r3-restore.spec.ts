@@ -56,3 +56,8 @@ test('M1 R4 explicit empty column wins over historical aliases', async ({ page }
   await openSavedDraft(page, { aliases: ['Historic Alias'] }, '')
   await expect(page.locator('#intake-opponent-aliases')).toHaveValue('')
 })
+
+test('M1 R5 separator-only historical field falls through to the next alias', async ({ page }) => {
+  await openSavedDraft(page, { aliases: '、,， ', client_aliases: ['Historic Alias'] })
+  await expect(page.locator('#intake-opponent-aliases')).toHaveValue('Historic Alias')
+})

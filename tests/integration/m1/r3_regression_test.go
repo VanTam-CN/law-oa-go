@@ -141,11 +141,27 @@ func m1R3NativeCheckUsesEditedAlias(t *testing.T, suffix string) {
 	}
 	exec("INSERT INTO case_intake_parties(intake_id,entity_name,entity_type,party_role,identity_type,identity_number_ciphertext,identity_number_digest,metadata) VALUES(?,'Separate current brand','LEGAL_PERSON','opposing_party','SOCIAL_CREDIT_CODE',?,?,jsonb_build_object('aliases','[]'::text,'client_aliases',jsonb_build_array(?::text)))", f.intakeID, cipher, digest, name)
 	path := "/api/v1/case-intakes/" + f.intakeID
-	for step, alias := range []string{name, "Unrelated、" + name, ""} {
+	for step, alias := range []string{name, name, "Unrelated、" + name, ""} {
 		expected := alias != ""
 		if step > 0 {
 			rev, _, _, _ := conflictPGIntakeState(t, db, f.intakeID)
-			if w := send("PUT", path, map[string]any{"expected_revision": rev, "opponent_identity_update": map[string]string{"entity_name": "Separate current brand", "entity_type": "LEGAL_PERSON", "identity_type": "SOCIAL_CREDIT_CODE", "identity_number": "OPPONENT-" + f.intakeID, "aliases": alias}}); w.Code != 200 {
+			if step == 1 {
+				var detail struct {
+					Data struct{ Parties []map[string]any }
+				}
+				get := send("GET", path, nil)
+				if err := json.Unmarshal(get.Body.Bytes(), &detail); err != nil || get.Code != 200 || len(detail.Data.Parties) != 1 {
+					t.Fatalf("detail %d: %v", get.Code, err)
+				}
+				if value, present := detail.Data.Parties[0]["aliases"]; !present || value != nil {
+					t.Fatal("expected NULL alias column in detail")
+				}
+				w := send("PUT", path, map[string]any{"expected_revision": rev, "parties": detail.Data.Parties})
+				var isNull bool
+				if err := db.Raw("SELECT aliases IS NULL FROM case_intake_parties WHERE intake_id=?", f.intakeID).Scan(&isNull).Error; err != nil || w.Code != 200 || !isNull {
+					t.Errorf("unchanged alias: status=%d null=%v err=%v", w.Code, isNull, err)
+				}
+			} else if w := send("PUT", path, map[string]any{"expected_revision": rev, "opponent_identity_update": map[string]string{"entity_name": "Separate current brand", "entity_type": "LEGAL_PERSON", "identity_type": "SOCIAL_CREDIT_CODE", "identity_number": "OPPONENT-" + f.intakeID, "aliases": alias}}); w.Code != 200 {
 				t.Fatalf("clear alias: HTTP %d", w.Code)
 			}
 			if w := send("POST", path+"/facts-confirmation", map[string]any{}); w.Code != 200 {
