@@ -320,7 +320,7 @@ func (h *DemoAggregateHandler) IntakeWorkbench(c *gin.Context) {
 	// A failed lookup must not look like an empty editable party list.
 	var parties []map[string]interface{}
 	if err := h.db.WithContext(c.Request.Context()).Table("case_intake_parties").
-		Where("intake_id = ?", intake["id"]).Order("id").Limit(intakePartyProjectionLimit+1).Find(&parties).Error; err != nil {
+		Where("intake_id = ?", intake["id"]).Order("id").Limit(intakePartyProjectionLimit + 1).Find(&parties).Error; err != nil {
 		common.NewAPIError(c, http.StatusServiceUnavailable, "INTAKE_PARTIES_UNAVAILABLE", "无法核对接案主体，请稍后重开")
 		return
 	}
@@ -2133,13 +2133,13 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 			common.NewAPIError(c, http.StatusServiceUnavailable, "SAVE_RESULT_UNKNOWN", "无法核实来源历史，已停止保存")
 			return err
 		}
-		if history || valueString(objectValue(existing["metadata"]), npDescriptionSourceRevisionKey) != "" {
-			common.NewAPIError(c, http.StatusConflict, "UPDATE_PROTOCOL_REQUIRED", "此草稿已有来源历史，不能使用全量保存")
-			return gorm.ErrInvalidTransaction
-		}
 		metadata, err := decodeIntakeMetadata(existing["metadata"])
 		if err != nil {
 			return err
+		}
+		if history || valueString(metadata, npDescriptionSourceRevisionKey) != "" {
+			common.NewAPIError(c, http.StatusConflict, "UPDATE_PROTOCOL_REQUIRED", "此草稿已有来源历史，不能使用全量保存")
+			return gorm.ErrInvalidTransaction
 		}
 		if value, present := payload["metadata"]; present {
 			patch, ok := value.(map[string]interface{})
@@ -2149,7 +2149,11 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 			}
 			for k, v := range patch {
 				if k != intakeDraftRevisionKey && k != npDescriptionSourceRevisionKey && !strings.HasPrefix(k, "lawyer_facts_") && !strings.HasPrefix(k, "conflict_") {
-					metadata[k] = preserveBrowserNumbers(metadata[k], v)
+					restored, err := preserveBrowserNumbers(metadata[k], v)
+					if err != nil {
+						return err
+					}
+					metadata[k] = restored
 				}
 			}
 		}

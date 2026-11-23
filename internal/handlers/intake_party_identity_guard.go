@@ -108,7 +108,11 @@ func preserveIntakePartyFields(row, party, previous map[string]interface{}) erro
 			return err
 		}
 		for key, value := range incoming {
-			stored[key] = preserveBrowserNumbers(stored[key], value)
+			restored, err := preserveBrowserNumbers(stored[key], value)
+			if err != nil {
+				return err
+			}
+			stored[key] = restored
 		}
 		row["metadata"] = jsonStringValue(stored)
 	} else {

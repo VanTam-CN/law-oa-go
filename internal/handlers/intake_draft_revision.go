@@ -20,7 +20,8 @@ const intakeDraftRevisionKey = "draft_revision"
 // metadata value (map, JSON string, or JSON bytes). Missing or malformed
 // metadata yields an empty token.
 func intakeDraftRevision(raw interface{}) string {
-	value, _ := objectValue(raw)[intakeDraftRevisionKey].(string)
+	metadata, _ := decodeIntakeMetadata(raw)
+	value, _ := metadata[intakeDraftRevisionKey].(string)
 	return strings.TrimSpace(value)
 }
 

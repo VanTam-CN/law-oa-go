@@ -44,7 +44,7 @@ func TestM1R5TruncatedLegacyRoster(t *testing.T) {
 	before := snapshot()
 	newParty := map[string]any{"entity_name": "New Fixture", "entity_type": "LEGAL_PERSON", "party_role": "related_party", "identity_type": "SOCIAL_CREDIT_CODE", "identity_number": "SYNTHETIC-NEW"}
 	for _, incomplete := range [][]map[string]any{detail.Data.Parties, {}, append(append([]map[string]any{}, detail.Data.Parties...), newParty)} {
-		w = send("PUT", p, map[string]any{"expected_revision": detail.Data.Revision, "parties": incomplete})
+		w = send("PUT", p, map[string]any{"expected_revision": detail.Data.Revision, "description": "must roll back", "parties": incomplete})
 		if w.Code != 409 || snapshot() != before {
 			t.Fatalf("incomplete roster (%d inputs) must reject atomically, HTTP %d", len(incomplete), w.Code)
 		}
@@ -56,5 +56,4 @@ func TestM1R5TruncatedLegacyRoster(t *testing.T) {
 	if err := db.Table("case_intake_parties").Where("intake_id=?", f.intakeID).Count(&count).Error; err != nil || w.Code != 200 || count != 21 {
 		t.Fatalf("full roster HTTP %d, count %d, err=%v", w.Code, count, err)
 	}
-
 }
