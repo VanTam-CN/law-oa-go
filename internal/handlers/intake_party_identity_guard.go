@@ -94,9 +94,8 @@ func preserveIntakePartyFields(row, party, previous map[string]interface{}) erro
 	if depth, present := party["relation_depth"]; !present || fmt.Sprint(depth) == defaultDepth {
 		row["relation_depth"] = previous["relation_depth"]
 	}
-	_, aliases := party["aliases"]
-	_, legacyAlias := party["alias"]
-	if !aliases && !legacyAlias {
+	// A NULL echo represents the unmigrated column. An empty string is an explicit clear.
+	if party["aliases"] == nil && party["alias"] == nil {
 		row["aliases"] = previous["aliases"]
 	}
 	if patch, present := party["metadata"]; present {
@@ -265,6 +264,8 @@ func (h *DemoAggregateHandler) prepareCaseIntakePartyUpdateRow(tx *gorm.DB, inta
 	return row, nil
 }
 
+const intakePartyProjectionLimit = 20
+
 // replaceIntakePartyRoster reconciles an explicitly supplied full list. IDs
 // in prepared rows came from matching the locked intake, never from the client.
 func replaceIntakePartyRoster(tx *gorm.DB, intakeID string, rows []map[string]interface{}) error {
@@ -278,6 +279,14 @@ func replaceIntakePartyRoster(tx *gorm.DB, intakeID string, rows []map[string]in
 			retained[id] = true
 			ids = append(ids, id)
 		}
+	}
+	var storedCount int64
+	if err := tx.Table("case_intake_parties").Where("intake_id = ?", intakeID).Count(&storedCount).Error; err != nil {
+		return err
+	}
+	// The detail projection cannot authorize removal of rows it did not show.
+	if storedCount > intakePartyProjectionLimit && int64(len(ids)) < storedCount {
+		return services.NewSubjectWorkflowError("INTAKE_PARTY_LIST_TRUNCATED", "主体清单超出详情展示范围，已阻止删除既有主体")
 	}
 	removed := tx.Table("case_intake_parties").Where("intake_id = ?", intakeID)
 	if len(ids) > 0 {

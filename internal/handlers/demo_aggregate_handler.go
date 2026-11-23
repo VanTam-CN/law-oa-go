@@ -320,7 +320,7 @@ func (h *DemoAggregateHandler) IntakeWorkbench(c *gin.Context) {
 	// A failed lookup must not look like an empty editable party list.
 	var parties []map[string]interface{}
 	if err := h.db.WithContext(c.Request.Context()).Table("case_intake_parties").
-		Where("intake_id = ?", intake["id"]).Order("id").Limit(21).Find(&parties).Error; err != nil {
+		Where("intake_id = ?", intake["id"]).Order("id").Limit(intakePartyProjectionLimit+1).Find(&parties).Error; err != nil {
 		common.NewAPIError(c, http.StatusServiceUnavailable, "INTAKE_PARTIES_UNAVAILABLE", "无法核对接案主体，请稍后重开")
 		return
 	}
@@ -332,9 +332,9 @@ func (h *DemoAggregateHandler) IntakeWorkbench(c *gin.Context) {
 	// unambiguous opposing party the lawyer can still fix. opponent_party
 	// is null when a truncated draft has zero or several opponents; the key
 	// is absent only for short drafts read by the original contract.
-	truncatedParties := len(parties) > 20
+	truncatedParties := len(parties) > intakePartyProjectionLimit
 	if truncatedParties {
-		parties = parties[:20]
+		parties = parties[:intakePartyProjectionLimit]
 	}
 	materials := h.recentRows("case_materials", "intake_id = ?", 20, intake["id"])
 	client := sanitizeClientAggregateRow(h.firstByID("clients", intake["client_id"]))
