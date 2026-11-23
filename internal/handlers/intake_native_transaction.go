@@ -61,6 +61,36 @@ func browserNumber(n json.Number) json.Number {
 	return json.Number(encoded)
 }
 
+func metadataNumbersEqual(a, b json.Number) bool {
+	if a == b {
+		return true
+	}
+	left, ok := new(big.Rat).SetString(a.String())
+	if !ok {
+		return false
+	}
+	right, valid := new(big.Rat).SetString(b.String())
+	return valid && left.Cmp(right) == 0
+}
+
+// Compare exact restore candidates with JSON numeric semantics. Browser
+// rounding is only for recognizing echoes; it cannot establish equality.
+func equalMetadataValue(left, right any) bool {
+	switch a := left.(type) {
+	case json.Number:
+		b, ok := right.(json.Number)
+		return ok && metadataNumbersEqual(a, b)
+	case []any:
+		b, ok := right.([]any)
+		return ok && slices.EqualFunc(a, b, equalMetadataValue)
+	case map[string]any:
+		b, ok := right.(map[string]any)
+		return ok && maps.EqualFunc(a, b, equalMetadataValue)
+	default:
+		return reflect.DeepEqual(left, right)
+	}
+}
+
 func visitMetadataNumbers(value any, visit func(json.Number)) {
 	switch v := value.(type) {
 	case nil:
@@ -152,13 +182,8 @@ func restoreMetadataArray(old, values []any) ([]any, error) {
 		if n == "" {
 			return
 		}
-		if wire := browserNumber(n); wire != n {
-			// A difference in decimal formatting alone does not lose precision.
-			exact, ok := new(big.Rat).SetString(n.String())
-			parsed, valid := new(big.Rat).SetString(wire.String())
-			if !ok || !valid || exact.Cmp(parsed) != 0 {
-				rounded[wire] = true
-			}
+		if wire := browserNumber(n); !metadataNumbersEqual(n, wire) {
+			rounded[wire] = true
 		}
 	})
 	// A raw wire number can denote either a rounded old value or its exact
@@ -209,9 +234,6 @@ func restoreMetadataArray(old, values []any) ([]any, error) {
 		if err != nil {
 			return nil, err
 		}
-		if (echo || containsEcho(old[i], true)) && !retainsMetadataPrefix(old[i], v) {
-			return nil, ambiguous()
-		}
 		if drop >= 0 && i >= drop {
 			// A shifted survivor retains its exact PG value. An appended item
 			// is new, so it retains the value actually supplied on the wire.
@@ -219,9 +241,11 @@ func restoreMetadataArray(old, values []any) ([]any, error) {
 			if i+1 < len(old) {
 				alternative = old[i+1]
 			}
-			if !reflect.DeepEqual(v, alternative) {
+			if !equalMetadataValue(v, alternative) {
 				return nil, ambiguous()
 			}
+		} else if (echo || containsEcho(old[i], true)) && !retainsMetadataPrefix(old[i], v) {
+			return nil, ambiguous()
 		}
 		result[i] = v
 	}
