@@ -14,10 +14,19 @@ import (
 func TestM1R7NestedArrayOrigin(t *testing.T) {
 	db := isolatedDB(t)
 	for _, entry := range []string{"intake", "party"} {
-		for _, op := range []string{"drop_append", "drop_lossless", "drop_agree", "decimal_append", "echo", "append_one", "append_distinct_suffixes"} {
+		for _, op := range []string{"drop_append", "drop_lossless", "drop_agree", "decimal_append", "echo", "append_one", "append_distinct_suffixes",
+			"swap_hidden", "swap_hidden_text", "mixed_prefix", "mixed_suffix"} {
 			t.Run(entry+"/"+op, func(t *testing.T) {
 				original := "[[9007199254740993],[9007199254740992,2]]"
 				switch op {
+				case "swap_hidden":
+					original = `[9007199254740993,{"tag":"a","external_identifier":9007199254740993},{"tag":"b"}]`
+				case "swap_hidden_text":
+					original = `[0,{"tag":"a","external_identifier":"synthetic-hidden"},{"tag":"b"}]`
+				case "mixed_prefix":
+					original = `[{"fixed":9007199254740992},[9007199254740993,1],[9007199254740993,2]]`
+				case "mixed_suffix":
+					original = `[[9007199254740993,1],[9007199254740993,2],{"fixed":9007199254740992}]`
 				case "drop_agree":
 					original = "[[9007199254740993,1],[9007199254740993,2]]"
 				case "decimal_append":
@@ -73,13 +82,22 @@ func TestM1R7NestedArrayOrigin(t *testing.T) {
 				// Compute the expected result in PG from its snapshot, before PUT.
 				expectedSQL := "a"
 				switch op {
+				case "swap_hidden", "swap_hidden_text":
+					if _, visible := a[1].(map[string]any)["external_identifier"]; visible {
+						t.Fatal("GET exposed the hidden object field")
+					}
+					a[1], a[2] = a[2], a[1]
+					expectedSQL = "a"
+				case "mixed_prefix":
+					a[1], a[2] = a[2], []any{7, 9}
+					expectedSQL = "(a - 1) || '[[7,9]]'::jsonb"
 				case "drop_append":
 					meta["numbers"] = append(a[1:], []any{float64(9007199254740992), 2, 9})
 					expectedSQL = "(a - 0) || '[[9007199254740992,2,9]]'::jsonb"
 				case "decimal_append":
 					a[2] = append(a[2].([]any), 7)
 					expectedSQL = "jsonb_set(a,'{2}',(a->2)||'[7]'::jsonb)"
-				case "drop_agree", "drop_lossless":
+				case "drop_agree", "drop_lossless", "mixed_suffix":
 					meta["numbers"] = append(a[1:], []any{7, 9})
 					expectedSQL = "(a - 0) || '[[7,9]]'::jsonb"
 				case "append_one":
@@ -108,7 +126,7 @@ func TestM1R7NestedArrayOrigin(t *testing.T) {
 				}
 				sameRows, sameRevision := after.Rows == before.Rows, after.Revision == before.Revision
 				t.Logf("HTTP=%d prior=%s expected=%s actual=%s same_revision=%t same_rows=%t", put.Code, prior, want, actual, sameRevision, sameRows)
-				if op == "drop_append" {
+				if op == "drop_append" || op == "swap_hidden" || op == "swap_hidden_text" {
 					var rejected struct{ Error string }
 					if put.Code != 409 || json.Unmarshal(put.Body.Bytes(), &rejected) != nil || rejected.Error != "INTAKE_METADATA_ARRAY_AMBIGUOUS" || !sameRows || !sameRevision {
 						t.Fatal("ambiguous edit must leave both rows and the revision untouched")
