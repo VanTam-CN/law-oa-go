@@ -4,8 +4,9 @@ package m1_test
 
 import (
 	"encoding/json"
-	"law-oa-go/internal/security"
 	"testing"
+
+	"law-oa-go/internal/security"
 )
 
 func TestM1R5TruncatedLegacyRoster(t *testing.T) {
@@ -42,7 +43,15 @@ func TestM1R5TruncatedLegacyRoster(t *testing.T) {
 	}
 	before := snapshot()
 	w = send("PUT", p, map[string]any{"expected_revision": detail.Data.Revision, "parties": detail.Data.Parties})
-	if w.Code < 400 || w.Code >= 500 || snapshot() != before {
+	if w.Code != 409 || snapshot() != before {
 		t.Fatalf("truncated roster must reject atomically, HTTP %d", w.Code)
 	}
+	// A caller that really supplies every stored identity can still update this draft.
+	wire := append(detail.Data.Parties, map[string]any{"entity_name": "Fixture-21", "entity_type": "LEGAL_PERSON", "party_role": "related_party"})
+	w = send("PUT", p, map[string]any{"expected_revision": detail.Data.Revision, "parties": wire})
+	var count int64
+	if err := db.Table("case_intake_parties").Where("intake_id=?", f.intakeID).Count(&count).Error; err != nil || w.Code != 200 || count != 21 {
+		t.Fatalf("full roster HTTP %d, count %d, err=%v", w.Code, count, err)
+	}
+
 }
