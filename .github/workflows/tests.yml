@@ -5,20 +5,53 @@ name: 🧪 Test Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, codex/np-main-m2 ]
   pull_request:
     branches: [ main, develop ]
   workflow_dispatch:
+    inputs:
+      np_m2_probe:
+        description: 'M2 PG validation (negative runs three intentionally red jobs on the M2 branch)'
+        type: choice
+        options: [normal, negative]
+        default: normal
 
 env:
   GO_VERSION: '1.25.0'
   NODE_VERSION: '20'
 
 jobs:
+  np-m2-early:
+    if: github.ref == 'refs/heads/codex/np-main-m2'
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        probe: ${{ fromJSON(inputs.np_m2_probe == 'negative' && '["missing-pg","skip","none"]' || '["normal"]') }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Build root application
+        if: matrix.probe == 'normal'
+        run: go build ./...
+      - name: Verify mandatory PostgreSQL test events
+        env:
+          PROBE: ${{ matrix.probe }}
+        run: bash scripts/np-ci/early-pg.sh "$PROBE"
+
   # ================================
   # Go 后端测试
   # ================================
   go-tests:
+    if: github.ref != 'refs/heads/codex/np-main-m2'
     name: 🐹 Go Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -128,6 +161,7 @@ jobs:
   # 前端单元测试
   # ================================
   frontend-tests:
+    if: github.ref != 'refs/heads/codex/np-main-m2'
     name: 🎨 Frontend Tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -184,7 +218,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: [go-tests, frontend-tests]
-    if: always()
+    if: always() && github.ref != 'refs/heads/codex/np-main-m2'
 
     services:
       postgres:
@@ -314,7 +348,7 @@ jobs:
     name: 📋 Test Summary
     runs-on: ubuntu-latest
     needs: [go-tests, frontend-tests, e2e-tests]
-    if: always()
+    if: always() && github.ref != 'refs/heads/codex/np-main-m2'
 
     steps:
       - name: 📋 生成测试汇总
