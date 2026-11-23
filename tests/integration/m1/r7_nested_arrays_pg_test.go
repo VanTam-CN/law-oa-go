@@ -4,7 +4,6 @@ package m1_test
 
 import (
 	"encoding/json"
-	"strings"
 	"testing"
 
 	"law-oa-go/internal/security"
@@ -15,10 +14,15 @@ import (
 func TestM1R7NestedArrayOrigin(t *testing.T) {
 	db := isolatedDB(t)
 	for _, entry := range []string{"intake", "party"} {
-		for _, op := range []string{"drop_append", "drop_lossless", "echo", "append_one", "append_distinct_suffixes"} {
+		for _, op := range []string{"drop_append", "drop_lossless", "drop_agree", "decimal_append", "echo", "append_one", "append_distinct_suffixes"} {
 			t.Run(entry+"/"+op, func(t *testing.T) {
 				original := "[[9007199254740993],[9007199254740992,2]]"
-				if op == "drop_lossless" {
+				switch op {
+				case "drop_agree":
+					original = "[[9007199254740993,1],[9007199254740993,2]]"
+				case "decimal_append":
+					original = "[[9007199254740993],[0.0000001],[0.0000001]]"
+				case "drop_lossless":
 					original = "[[9007199254740993],[9007199254740989,2]]"
 				}
 				f := seedConflictPGFixture(t, db, false, "")
@@ -72,7 +76,10 @@ func TestM1R7NestedArrayOrigin(t *testing.T) {
 				case "drop_append":
 					meta["numbers"] = append(a[1:], []any{float64(9007199254740992), 2, 9})
 					expectedSQL = "(a - 0) || '[[9007199254740992,2,9]]'::jsonb"
-				case "drop_lossless":
+				case "decimal_append":
+					a[2] = append(a[2].([]any), 7)
+					expectedSQL = "jsonb_set(a,'{2}',(a->2)||'[7]'::jsonb)"
+				case "drop_agree", "drop_lossless":
 					meta["numbers"] = append(a[1:], []any{7, 9})
 					expectedSQL = "(a - 0) || '[[7,9]]'::jsonb"
 				case "append_one":
@@ -101,10 +108,14 @@ func TestM1R7NestedArrayOrigin(t *testing.T) {
 				}
 				sameRows, sameRevision := after.Rows == before.Rows, after.Revision == before.Revision
 				t.Logf("HTTP=%d prior=%s expected=%s actual=%s same_revision=%t same_rows=%t", put.Code, prior, want, actual, sameRevision, sameRows)
-				if put.Code == 200 && actual == want && otherUnchanged && !sameRevision {
+				if op == "drop_append" {
+					var rejected struct{ Error struct{ Code string } }
+					if put.Code != 409 || json.Unmarshal(put.Body.Bytes(), &rejected) != nil || rejected.Error.Code != "INTAKE_METADATA_ARRAY_AMBIGUOUS" || !sameRows || !sameRevision {
+						t.Fatal("ambiguous edit must leave both rows and the revision untouched")
+					}
 					return
 				}
-				if op == "drop_append" && put.Code == 409 && sameRows && sameRevision && strings.Contains(put.Body.String(), "INTAKE_METADATA_ARRAY_AMBIGUOUS") {
+				if put.Code == 200 && actual == want && otherUnchanged && !sameRevision {
 					return
 				}
 				t.Fatal("unexpected save outcome")
