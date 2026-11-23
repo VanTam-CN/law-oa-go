@@ -12,7 +12,10 @@ func approvalIntakeParties(tx *gorm.DB, intakeID string, clientID interface{}) (
 		Role, Name, EntityType, IdentityType string
 		Metadata                             []byte
 	}
-	err := tx.Table("case_intake_parties").Select("party_role AS role, entity_name AS name, entity_type, identity_type, metadata").Where("intake_id = ?", intakeID).Order("id").Find(&rows).Error
+	err := tx.Table("case_intake_parties").Select("party_role AS role, entity_name AS name, entity_type, identity_type, metadata").
+		Where("intake_id = ?", intakeID).
+		Order("CASE LOWER(TRIM(party_role)) WHEN 'client' THEN 0 WHEN 'opponent' THEN 1 WHEN 'opposing_party' THEN 1 ELSE 2 END, id").
+		Find(&rows).Error
 	if err != nil {
 		return nil, err
 	}

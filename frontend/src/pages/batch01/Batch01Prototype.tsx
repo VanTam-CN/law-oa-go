@@ -4418,9 +4418,9 @@ export function CaseIntakeWorkbench() {
           return parsed.map((item) => String(item ?? '').trim()).filter(Boolean).join('、')
         }
       } catch {
-        // Plain-text aliases are kept as-is.
+        // Plain text shares the detector's comma separators.
       }
-      return raw.trim()
+      return raw.split(/[,，、]/).map((item) => item.trim()).filter(Boolean).join('、')
     }
     return ''
   }
