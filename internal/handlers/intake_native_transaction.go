@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"math/big"
 	"reflect"
+	"slices"
 
 	"gorm.io/gorm"
 	"law-oa-go/internal/repositories"
@@ -88,17 +90,19 @@ func preserveBrowserNumbers(stored, incoming any) (any, error) {
 		}
 	case map[string]any:
 		if patch, ok := incoming.(map[string]any); ok {
+			result := maps.Clone(patch)
 			for key, value := range patch {
 				restored, err := preserveBrowserNumbers(old[key], value)
 				if err != nil {
 					return nil, err
 				}
-				patch[key] = restored
+				result[key] = restored
 			}
 			// Keep a redacted object's hidden fields on an unchanged echo.
-			if reflect.DeepEqual(patch, redactAggregateSensitiveValue(old)) {
+			if reflect.DeepEqual(result, redactAggregateSensitiveValue(old)) {
 				return old, nil
 			}
+			return result, nil
 		}
 	case []any:
 		if values, ok := incoming.([]any); ok {
@@ -184,6 +188,13 @@ func restoreMetadataArray(old, values []any) ([]any, error) {
 	ambiguous := func() error {
 		return services.NewSubjectWorkflowError("INTAKE_METADATA_ARRAY_AMBIGUOUS", "数组顺序或内容已变化，无法核对原数值精度，已停止保存")
 	}
+	// Compare both interpretations against the original wire document; child
+	// restorations return fresh containers and never change that document.
+	drop := -1
+	if len(echoes) != 0 {
+		drop = possibleMetadataDrop(old, values)
+	}
+	result := slices.Clone(values)
 	for i, value := range values {
 		echo := containsEcho(value, false)
 		// A rounded survivor in a shortened array, or a rounded token in the
@@ -201,9 +212,82 @@ func restoreMetadataArray(old, values []any) ([]any, error) {
 		if (echo || containsEcho(old[i], true)) && !retainsMetadataPrefix(old[i], v) {
 			return nil, ambiguous()
 		}
-		values[i] = v
+		if drop >= 0 && i >= drop {
+			// A shifted survivor retains its exact PG value. An appended item
+			// is new, so it retains the value actually supplied on the wire.
+			alternative := value
+			if i+1 < len(old) {
+				alternative = old[i+1]
+			}
+			if !reflect.DeepEqual(v, alternative) {
+				return nil, ambiguous()
+			}
+		}
+		result[i] = v
 	}
-	return values, nil
+	return result, nil
+}
+
+// Find the earliest deletion compatible with an unchanged prefix, surviving
+// neighbours shifted left by one, and a new tail. Every later compatible
+// deletion shares a suffix of this shift, so one comparison covers them all.
+func possibleMetadataDrop(old, wire []any) int {
+	if len(old) < 2 || len(wire) < len(old) {
+		return -1
+	}
+	aligned := 0
+	for aligned < len(old) && matchesMetadataEcho(old[aligned], wire[aligned]) {
+		aligned++
+	}
+	if aligned == len(old) && len(old) == len(wire) {
+		return -1 // A complete unchanged echo preserves its original order.
+	}
+	drop := len(old) - 1
+	for drop > 0 && matchesMetadataEcho(old[drop], wire[drop-1]) {
+		drop--
+	}
+	if drop == len(old)-1 || drop > aligned {
+		return -1
+	}
+	return drop
+}
+
+// A surviving item may return losslessly or with browser-rounded numbers
+// and the same field redactions as the legacy GET.
+func matchesMetadataEcho(old, wire any) bool {
+	switch original := old.(type) {
+	case json.Number:
+		if wire == original {
+			return true
+		}
+		n := browserNumber(original)
+		if n == "" {
+			return wire == nil
+		}
+		return wire == n
+	case []any:
+		incoming, ok := wire.([]any)
+		return ok && slices.EqualFunc(original, incoming, matchesMetadataEcho)
+	case map[string]any:
+		incoming, ok := wire.(map[string]any)
+		if !ok {
+			return false
+		}
+		matched := 0
+		for key, value := range original {
+			next, present := incoming[key]
+			if !present && isAggregateSecretKey(key) {
+				continue
+			}
+			if !present || !matchesMetadataEcho(value, next) {
+				return false
+			}
+			matched++
+		}
+		return matched == len(incoming)
+	default:
+		return reflect.DeepEqual(original, wire)
+	}
 }
 
 const (

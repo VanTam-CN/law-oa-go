@@ -10,14 +10,17 @@ import (
 	"law-oa-go/internal/security"
 )
 
-// Each case starts from the same two exact PG integers, indistinguishable
-// after a legacy client parses the GET document as IEEE-754 doubles.
+// Parse the actual GET with the same binary64 precision as a legacy browser.
+// Read exact expected values independently from the pre-save PG snapshot.
 func TestM1R7NestedArrayOrigin(t *testing.T) {
 	db := isolatedDB(t)
-	const original = "[[9007199254740993],[9007199254740992,2]]"
 	for _, entry := range []string{"intake", "party"} {
-		for _, op := range []string{"drop_append", "echo", "append_one", "append_distinct_suffixes"} {
+		for _, op := range []string{"drop_append", "drop_lossless", "echo", "append_one", "append_distinct_suffixes"} {
 			t.Run(entry+"/"+op, func(t *testing.T) {
+				original := "[[9007199254740993],[9007199254740992,2]]"
+				if op == "drop_lossless" {
+					original = "[[9007199254740993],[9007199254740989,2]]"
+				}
 				f := seedConflictPGFixture(t, db, false, "")
 				send := nativePartyRequest(t, db, f)
 				path := "/api/v1/case-intakes/" + f.intakeID
@@ -69,6 +72,9 @@ func TestM1R7NestedArrayOrigin(t *testing.T) {
 				case "drop_append":
 					meta["numbers"] = append(a[1:], []any{float64(9007199254740992), 2, 9})
 					expectedSQL = "(a - 0) || '[[9007199254740992,2,9]]'::jsonb"
+				case "drop_lossless":
+					meta["numbers"] = append(a[1:], []any{7, 9})
+					expectedSQL = "(a - 0) || '[[7,9]]'::jsonb"
 				case "append_one":
 					a[0] = append(a[0].([]any), 7)
 					expectedSQL = "jsonb_set(a,'{0}',(a->0)||'[7]'::jsonb)"
