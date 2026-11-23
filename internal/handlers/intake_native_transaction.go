@@ -196,14 +196,18 @@ func restoreMetadataArray(old, values []any) ([]any, error) {
 			}
 		})
 	}
+	// Raw null represents both a literal null and a non-finite browser number.
+	echoKey := func(n json.Number, stored bool) json.Number {
+		if stored && n != "" {
+			return browserNumber(n)
+		}
+		return n
+	}
 	containsEcho := func(value any, stored bool) bool {
 		found := false
 		if len(echoes) != 0 {
 			visitMetadataNumbers(value, func(n json.Number) {
-				if stored && n != "" {
-					n = browserNumber(n)
-				}
-				if echoes[n] {
+				if echoes[echoKey(n, stored)] {
 					found = true
 				}
 			})
@@ -220,6 +224,9 @@ func restoreMetadataArray(old, values []any) ([]any, error) {
 		drop = possibleMetadataDrop(old, values)
 	}
 	result := slices.Clone(values)
+	// If an old slot changes shape, the wire might also be a reorder.
+	// Only relax its prefix check for echoes with one exact interpretation.
+	var needsConsensus map[json.Number]bool
 	for i, value := range values {
 		echo := containsEcho(value, false)
 		// A rounded survivor in a shortened array, or a rounded token in the
@@ -244,10 +251,46 @@ func restoreMetadataArray(old, values []any) ([]any, error) {
 			if !equalMetadataValue(v, alternative) {
 				return nil, ambiguous()
 			}
-		} else if (echo || containsEcho(old[i], true)) && !retainsMetadataPrefix(old[i], v) {
-			return nil, ambiguous()
+		}
+		if (echo || containsEcho(old[i], true)) && !retainsMetadataPrefix(old[i], v) {
+			if drop < 0 || i < drop {
+				return nil, ambiguous()
+			}
+			if needsConsensus == nil {
+				needsConsensus = make(map[json.Number]bool)
+			}
+			visitMetadataNumbers(old[i], func(n json.Number) {
+				if key := echoKey(n, true); echoes[key] {
+					needsConsensus[key] = true
+				}
+			})
+			visitMetadataNumbers(value, func(n json.Number) {
+				if echoes[n] {
+					needsConsensus[n] = true
+				}
+			})
 		}
 		result[i] = v
+	}
+	if len(needsConsensus) != 0 {
+		exact := make(map[json.Number]json.Number)
+		agrees := true
+		check := func(n json.Number) {
+			key := echoKey(n, true)
+			if !needsConsensus[key] {
+				return
+			}
+			if prior, found := exact[key]; found && !metadataNumbersEqual(prior, n) {
+				agrees = false
+			} else {
+				exact[key] = n
+			}
+		}
+		visitMetadataNumbers(old, check)
+		visitMetadataNumbers(result, check)
+		if !agrees {
+			return nil, ambiguous()
+		}
 	}
 	return result, nil
 }
