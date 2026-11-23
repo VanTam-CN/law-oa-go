@@ -174,6 +174,34 @@ func retainsMetadataPrefix(old, restored any) bool {
 	}
 }
 
+// Use the legacy GET representation to locate whole array elements that could
+// have moved. Only complete stored elements carry hidden fields and exact numbers.
+func metadataArrayProjection(value any) any {
+	switch v := value.(type) {
+	case json.Number:
+		if wire := browserNumber(v); wire != "" {
+			return wire
+		}
+		return nil
+	case map[string]any:
+		out := make(map[string]any, len(v))
+		for k, x := range v {
+			if !isAggregateSecretKey(k) {
+				out[k] = metadataArrayProjection(x)
+			}
+		}
+		return out
+	case []any:
+		out := make([]any, len(v))
+		for i, x := range v {
+			out[i] = metadataArrayProjection(x)
+		}
+		return out
+	default:
+		return v
+	}
+}
+
 func restoreMetadataArray(old, values []any) ([]any, error) {
 	// Compare before recursively restoring values in-place. A matching rounded
 	// token may have moved to another element during an insert or reorder.
@@ -214,9 +242,7 @@ func restoreMetadataArray(old, values []any) ([]any, error) {
 		}
 		return found
 	}
-	ambiguous := func() error {
-		return services.NewSubjectWorkflowError("INTAKE_METADATA_ARRAY_AMBIGUOUS", "数组顺序或内容已变化，无法核对原数值精度，已停止保存")
-	}
+
 	// Compare both interpretations against the original wire document; child
 	// restorations return fresh containers and never change that document.
 	drop := -1
@@ -224,15 +250,13 @@ func restoreMetadataArray(old, values []any) ([]any, error) {
 		drop = possibleMetadataDrop(old, values)
 	}
 	result := slices.Clone(values)
-	// If an old slot changes shape, the wire might also be a reorder.
-	// Only relax its prefix check for echoes with one exact interpretation.
-	var needsConsensus map[json.Number]bool
+
 	for i, value := range values {
 		echo := containsEcho(value, false)
 		// A rounded survivor in a shortened array, or a rounded token in the
 		// new tail, could belong to a different occurrence of the old value.
 		if echo && (len(values) < len(old) || i >= len(old)) {
-			return nil, ambiguous()
+			return nil, ambiguousMetadataArray()
 		}
 		if i >= len(old) {
 			continue
@@ -249,50 +273,65 @@ func restoreMetadataArray(old, values []any) ([]any, error) {
 				alternative = old[i+1]
 			}
 			if !equalMetadataValue(v, alternative) {
-				return nil, ambiguous()
+				return nil, ambiguousMetadataArray()
 			}
 		}
-		if (echo || containsEcho(old[i], true)) && !retainsMetadataPrefix(old[i], v) {
-			if drop < 0 || i < drop {
-				return nil, ambiguous()
-			}
-			if needsConsensus == nil {
-				needsConsensus = make(map[json.Number]bool)
-			}
-			visitMetadataNumbers(old[i], func(n json.Number) {
-				if key := echoKey(n, true); echoes[key] {
-					needsConsensus[key] = true
-				}
-			})
-			visitMetadataNumbers(value, func(n json.Number) {
-				if echoes[n] {
-					needsConsensus[n] = true
-				}
-			})
+		if (drop < 0 || i < drop) && (echo || containsEcho(old[i], true)) && !retainsMetadataPrefix(old[i], v) {
+			return nil, ambiguousMetadataArray()
 		}
 		result[i] = v
 	}
-	if len(needsConsensus) != 0 {
-		exact := make(map[json.Number]json.Number)
-		agrees := true
-		check := func(n json.Number) {
-			key := echoKey(n, true)
-			if !needsConsensus[key] {
-				return
-			}
-			if prior, found := exact[key]; found && !metadataNumbersEqual(prior, n) {
-				agrees = false
-			} else {
-				exact[key] = n
-			}
-		}
-		visitMetadataNumbers(old, check)
-		visitMetadataNumbers(result, check)
-		if !agrees {
-			return nil, ambiguous()
-		}
+	if err := checkDisplacedMetadataSlots(old, values, result); err != nil {
+		return nil, err
 	}
 	return result, nil
+}
+
+func ambiguousMetadataArray() error {
+	return services.NewSubjectWorkflowError("INTAKE_METADATA_ARRAY_AMBIGUOUS", "数组顺序或内容已变化，无法确定原数据的对应关系，已停止保存")
+}
+
+// Compare only whole elements whose original position no longer matches the GET
+// projection. Their exact values include keys that the client could not see.
+func checkDisplacedMetadataSlots(old, values, result []any) error {
+	displaced := make(map[string][]any)
+	for i, original := range old {
+		if i < len(values) && matchesMetadataEcho(original, values[i]) {
+			continue
+		}
+		encoded, err := json.Marshal(metadataArrayProjection(original))
+		if err != nil {
+			return err
+		}
+		key := string(encoded)
+		group := displaced[key]
+		if len(group) == 0 || !equalMetadataValue(group[0], original) {
+			displaced[key] = append(group, original)
+		}
+	}
+	if len(displaced) == 0 {
+		return nil
+	}
+	for i, value := range values {
+		projection := metadataArrayProjection(value)
+		key, err := json.Marshal(projection)
+		if err != nil {
+			return err
+		}
+		group := displaced[string(key)]
+		// Distinct originals with this exact browser projection all match.
+		if len(group) > 1 && equalMetadataValue(value, projection) {
+			return ambiguousMetadataArray()
+		}
+		// A lossless client can discriminate numbers sharing a browser key.
+		for _, original := range group {
+			if matchesMetadataEcho(original, value) && !equalMetadataValue(original, result[i]) {
+				return ambiguousMetadataArray()
+			}
+		}
+	}
+
+	return nil
 }
 
 // Find the earliest deletion compatible with an unchanged prefix, surviving

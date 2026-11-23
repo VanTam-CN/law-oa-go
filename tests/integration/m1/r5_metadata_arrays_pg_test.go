@@ -27,6 +27,7 @@ func TestM1R5ArrayEditPreservesOriginalNumbers(t *testing.T) {
 		{"safe_sibling_edit", "[9007199254740993,2]", "[9007199254740992,3]", "[9007199254740993,3]", true},
 		{"ordinary_decimal_reorder", "[1.00,2]", "[2,1]", "[2,1]", true},
 		{"ordinary_insert", "[1,2]", "[1,7,2]", "[1,7,2]", true},
+		{"explicit_lossless_reorder", "[36028797018963969,36028797018963971,0]", "[0,36028797018963969,36028797018963971]", "[0,36028797018963969,36028797018963971]", true},
 		{"explicit_lossless_edit", "[9007199254740993]", "[9007199254740995]", "[9007199254740995]", true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
