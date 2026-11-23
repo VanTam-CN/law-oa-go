@@ -109,8 +109,8 @@ func TestM1R7NestedArrayOrigin(t *testing.T) {
 				sameRows, sameRevision := after.Rows == before.Rows, after.Revision == before.Revision
 				t.Logf("HTTP=%d prior=%s expected=%s actual=%s same_revision=%t same_rows=%t", put.Code, prior, want, actual, sameRevision, sameRows)
 				if op == "drop_append" {
-					var rejected struct{ Error struct{ Code string } }
-					if put.Code != 409 || json.Unmarshal(put.Body.Bytes(), &rejected) != nil || rejected.Error.Code != "INTAKE_METADATA_ARRAY_AMBIGUOUS" || !sameRows || !sameRevision {
+					var rejected struct{ Error string }
+					if put.Code != 409 || json.Unmarshal(put.Body.Bytes(), &rejected) != nil || rejected.Error != "INTAKE_METADATA_ARRAY_AMBIGUOUS" || !sameRows || !sameRevision {
 						t.Fatal("ambiguous edit must leave both rows and the revision untouched")
 					}
 					return
