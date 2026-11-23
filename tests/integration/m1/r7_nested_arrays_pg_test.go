@@ -15,10 +15,12 @@ func TestM1R7NestedArrayOrigin(t *testing.T) {
 	db := isolatedDB(t)
 	for _, entry := range []string{"intake", "party"} {
 		for _, op := range []string{"drop_append", "drop_lossless", "drop_agree", "decimal_append", "echo", "append_one", "append_distinct_suffixes",
-			"swap_hidden", "swap_hidden_text", "mixed_prefix", "mixed_suffix"} {
+			"swap_hidden", "swap_hidden_text", "mixed_prefix", "mixed_suffix", "nested_hidden_echo", "nested_hidden_edit", "nested_hidden_sibling"} {
 			t.Run(entry+"/"+op, func(t *testing.T) {
 				original := "[[9007199254740993],[9007199254740992,2]]"
 				switch op {
+				case "nested_hidden_echo", "nested_hidden_edit", "nested_hidden_sibling":
+					original = `[{"tag":"a","external_identifier":"outer","child":{"label":"k","external_identifier":"inner"}},1]`
 				case "swap_hidden":
 					original = `[9007199254740993,{"tag":"a","external_identifier":9007199254740993},{"tag":"b"}]`
 				case "swap_hidden_text":
@@ -82,6 +84,12 @@ func TestM1R7NestedArrayOrigin(t *testing.T) {
 				// Compute the expected result in PG from its snapshot, before PUT.
 				expectedSQL := "a"
 				switch op {
+				case "nested_hidden_edit":
+					a[0].(map[string]any)["tag"] = "changed"
+					expectedSQL = `jsonb_set(a,'{0,tag}','"changed"'::jsonb)`
+				case "nested_hidden_sibling":
+					a[1] = 2
+					expectedSQL = "jsonb_set(a,'{1}','2'::jsonb)"
 				case "swap_hidden", "swap_hidden_text":
 					if _, visible := a[1].(map[string]any)["external_identifier"]; visible {
 						t.Fatal("GET exposed the hidden object field")
@@ -126,7 +134,7 @@ func TestM1R7NestedArrayOrigin(t *testing.T) {
 				}
 				sameRows, sameRevision := after.Rows == before.Rows, after.Revision == before.Revision
 				t.Logf("HTTP=%d prior=%s expected=%s actual=%s same_revision=%t same_rows=%t", put.Code, prior, want, actual, sameRevision, sameRows)
-				if op == "drop_append" || op == "swap_hidden" || op == "swap_hidden_text" {
+				if (op == "nested_hidden_edit" && put.Code == 409) || op == "drop_append" || op == "swap_hidden" || op == "swap_hidden_text" {
 					var rejected struct{ Error string }
 					if put.Code != 409 || json.Unmarshal(put.Body.Bytes(), &rejected) != nil || rejected.Error != "INTAKE_METADATA_ARRAY_AMBIGUOUS" || !sameRows || !sameRevision {
 						t.Fatal("ambiguous edit must leave both rows and the revision untouched")
