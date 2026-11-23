@@ -16,7 +16,7 @@ func TestM1R7NestedArrayOrigin(t *testing.T) {
 	for _, entry := range []string{"intake", "party"} {
 		for _, op := range []string{"drop_append", "drop_lossless", "drop_agree", "decimal_append", "echo", "append_one", "append_distinct_suffixes",
 			"swap_hidden", "swap_hidden_text", "mixed_prefix", "mixed_suffix", "nested_hidden_echo", "nested_hidden_edit", "nested_hidden_sibling",
-			"rotate_append", "rotate_exact", "cross_objects", "swap_visible_siblings", "cut_hidden", "cut_visible", "delete_hidden"} {
+			"rotate_append", "rotate_exact", "cross_objects", "swap_visible_siblings", "cut_hidden", "cut_visible", "delete_hidden", "cross_hidden_child", "delete_with_empty_peer"} {
 			t.Run(entry+"/"+op, func(t *testing.T) {
 				original := "[[9007199254740993],[9007199254740992,2]]"
 				switch op {
@@ -26,6 +26,10 @@ func TestM1R7NestedArrayOrigin(t *testing.T) {
 					original = `[[9007199254740993,1],[9007199254740993,2],0]`
 				case "rotate_exact":
 					original = `[[11,1],[11,2],0]`
+				case "cross_hidden_child":
+					original = `[[0,{"tag":"a","child":{"external_identifier":"h"}}],[1,{"tag":"b"}]]`
+				case "delete_with_empty_peer":
+					original = `[[0,{"tag":"a","child":{"external_identifier":"h"}}],[1,{"tag":"b","child":{}}]]`
 				case "cut_visible":
 					original = `[[0,{"tag":"a"}],[1,{"tag":"b"}]]`
 				case "cross_objects", "cut_hidden", "delete_hidden":
@@ -99,15 +103,15 @@ func TestM1R7NestedArrayOrigin(t *testing.T) {
 					tail := append(a[0].([]any), 7)
 					meta["numbers"] = append(a[1:], tail)
 					expectedSQL = "jsonb_build_array(a->1,a->2,(a->0)||'[7]'::jsonb)"
-				case "cut_hidden", "cut_visible", "delete_hidden":
+				case "cut_hidden", "cut_visible", "delete_hidden", "delete_with_empty_peer":
 					left, right := a[0].([]any), a[1].([]any)
 					a[0] = left[:1]
 					expectedSQL = "jsonb_build_array((a->0)-1,a->1)"
-					if op != "delete_hidden" {
+					if op != "delete_hidden" && op != "delete_with_empty_peer" {
 						a[1] = append(right, left[1])
 						expectedSQL = "jsonb_build_array((a->0)-1,(a->1)||jsonb_build_array(a#>'{0,1}'))"
 					}
-				case "cross_objects":
+				case "cross_objects", "cross_hidden_child":
 					left, right := a[0].([]any), a[1].([]any)
 					left[1], right[1] = right[1], left[1]
 				case "swap_visible_siblings":
@@ -163,7 +167,7 @@ func TestM1R7NestedArrayOrigin(t *testing.T) {
 				}
 				sameRows, sameRevision := after.Rows == before.Rows, after.Revision == before.Revision
 				t.Logf("HTTP=%d prior=%s expected=%s actual=%s same_revision=%t same_rows=%t", put.Code, prior, want, actual, sameRevision, sameRows)
-				if op == "cut_hidden" || op == "rotate_append" || op == "cross_objects" || (op == "nested_hidden_edit" && put.Code == 409) || op == "drop_append" || op == "swap_hidden" || op == "swap_hidden_text" {
+				if op == "cross_hidden_child" || op == "cut_hidden" || op == "rotate_append" || op == "cross_objects" || (op == "nested_hidden_edit" && put.Code == 409) || op == "drop_append" || op == "swap_hidden" || op == "swap_hidden_text" {
 					var rejected struct{ Error string }
 					if put.Code != 409 || json.Unmarshal(put.Body.Bytes(), &rejected) != nil || rejected.Error != "INTAKE_METADATA_ARRAY_AMBIGUOUS" || !sameRows || !sameRevision {
 						t.Fatal("ambiguous edit must leave both rows and the revision untouched")
