@@ -120,6 +120,16 @@ func preserveBrowserNumbers(stored, incoming any) (any, error) {
 		}
 	case map[string]any:
 		if patch, ok := incoming.(map[string]any); ok {
+			// Test the untouched GET projection before restoring any nested keys.
+			if matchesMetadataEcho(old, patch) {
+				return old, nil
+			}
+			for key := range old {
+				if _, sent := patch[key]; !sent && isAggregateSecretKey(key) {
+					// The full-save protocol cannot identify a replacement object.
+					return nil, ambiguousMetadataArray()
+				}
+			}
 			result := maps.Clone(patch)
 			for key, value := range patch {
 				restored, err := preserveBrowserNumbers(old[key], value)
@@ -127,10 +137,6 @@ func preserveBrowserNumbers(stored, incoming any) (any, error) {
 					return nil, err
 				}
 				result[key] = restored
-			}
-			// Keep a redacted object's hidden fields on an unchanged echo.
-			if reflect.DeepEqual(result, redactAggregateSensitiveValue(old)) {
-				return old, nil
 			}
 			return result, nil
 		}
@@ -170,7 +176,7 @@ func retainsMetadataPrefix(old, restored any) bool {
 		}
 		return true
 	default:
-		return reflect.DeepEqual(old, restored)
+		return equalMetadataValue(old, restored)
 	}
 }
 
@@ -281,6 +287,14 @@ func restoreMetadataArray(old, values []any) ([]any, error) {
 		}
 		result[i] = v
 	}
+	if drop >= 0 {
+		// The deleted slot could instead have moved to the tail and then grown.
+		for i := len(old) - 1; i < len(values); i++ {
+			if matchesMetadataProjection(old[drop], values[i], true) && !retainsMetadataPrefix(old[drop], result[i]) {
+				return nil, ambiguousMetadataArray()
+			}
+		}
+	}
 	if err := checkDisplacedMetadataSlots(old, values, result); err != nil {
 		return nil, err
 	}
@@ -361,6 +375,10 @@ func possibleMetadataDrop(old, wire []any) int {
 // A surviving item may return losslessly or with browser-rounded numbers
 // and the same field redactions as the legacy GET.
 func matchesMetadataEcho(old, wire any) bool {
+	return matchesMetadataProjection(old, wire, false)
+}
+
+func matchesMetadataProjection(old, wire any, allowAppend bool) bool {
 	switch original := old.(type) {
 	case json.Number:
 		if wire == original {
@@ -373,7 +391,15 @@ func matchesMetadataEcho(old, wire any) bool {
 		return wire == n
 	case []any:
 		incoming, ok := wire.([]any)
-		return ok && slices.EqualFunc(original, incoming, matchesMetadataEcho)
+		if !ok || len(incoming) < len(original) || (!allowAppend && len(incoming) != len(original)) {
+			return false
+		}
+		for i, item := range original {
+			if !matchesMetadataProjection(item, incoming[i], allowAppend) {
+				return false
+			}
+		}
+		return true
 	case map[string]any:
 		incoming, ok := wire.(map[string]any)
 		if !ok {
@@ -385,7 +411,7 @@ func matchesMetadataEcho(old, wire any) bool {
 			if !present && isAggregateSecretKey(key) {
 				continue
 			}
-			if !present || !matchesMetadataEcho(value, next) {
+			if !present || !matchesMetadataProjection(value, next, allowAppend) {
 				return false
 			}
 			matched++
