@@ -1,0 +1,2 @@
+$ ~/go/bin/gofumpt -l -s .
+files-listed=0 (0 = no drift)

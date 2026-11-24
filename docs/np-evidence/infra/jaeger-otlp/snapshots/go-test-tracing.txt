@@ -1,0 +1,89 @@
+$ go test -race -count=1 -v ./internal/tracing/...
+=== RUN   TestDefaultTracerConfigUsesOTLP
+--- PASS: TestDefaultTracerConfigUsesOTLP (0.00s)
+=== RUN   TestProductionTracerConfigUsesOTLPOnly
+--- PASS: TestProductionTracerConfigUsesOTLPOnly (0.00s)
+=== RUN   TestResolveOTLPEndpoint
+=== RUN   TestResolveOTLPEndpoint/显式配置完整_URL
+=== RUN   TestResolveOTLPEndpoint/显式配置_host:port_补全协议
+=== RUN   TestResolveOTLPEndpoint/traces_专用环境变量优先于通用环境变量
+=== RUN   TestResolveOTLPEndpoint/通用环境变量兜底
+=== RUN   TestResolveOTLPEndpoint/旧_jaeger_端点兜底
+=== RUN   TestResolveOTLPEndpoint/无任何配置报错
+=== RUN   TestResolveOTLPEndpoint/非_http(s)_协议报错
+=== RUN   TestResolveOTLPEndpoint/显式配置优先于环境变量
+--- PASS: TestResolveOTLPEndpoint (0.01s)
+    --- PASS: TestResolveOTLPEndpoint/显式配置完整_URL (0.00s)
+    --- PASS: TestResolveOTLPEndpoint/显式配置_host:port_补全协议 (0.00s)
+    --- PASS: TestResolveOTLPEndpoint/traces_专用环境变量优先于通用环境变量 (0.00s)
+    --- PASS: TestResolveOTLPEndpoint/通用环境变量兜底 (0.00s)
+    --- PASS: TestResolveOTLPEndpoint/旧_jaeger_端点兜底 (0.00s)
+    --- PASS: TestResolveOTLPEndpoint/无任何配置报错 (0.00s)
+    --- PASS: TestResolveOTLPEndpoint/非_http(s)_协议报错 (0.00s)
+    --- PASS: TestResolveOTLPEndpoint/显式配置优先于环境变量 (0.00s)
+=== RUN   TestResolveOTLPProtocol
+=== RUN   TestResolveOTLPProtocol/默认_http
+=== RUN   TestResolveOTLPProtocol/显式_http
+=== RUN   TestResolveOTLPProtocol/显式_http/protobuf
+=== RUN   TestResolveOTLPProtocol/显式_grpc
+=== RUN   TestResolveOTLPProtocol/环境变量_grpc
+=== RUN   TestResolveOTLPProtocol/显式配置优先于环境变量
+=== RUN   TestResolveOTLPProtocol/非法协议报错
+--- PASS: TestResolveOTLPProtocol (0.00s)
+    --- PASS: TestResolveOTLPProtocol/默认_http (0.00s)
+    --- PASS: TestResolveOTLPProtocol/显式_http (0.00s)
+    --- PASS: TestResolveOTLPProtocol/显式_http/protobuf (0.00s)
+    --- PASS: TestResolveOTLPProtocol/显式_grpc (0.00s)
+    --- PASS: TestResolveOTLPProtocol/环境变量_grpc (0.00s)
+    --- PASS: TestResolveOTLPProtocol/显式配置优先于环境变量 (0.00s)
+    --- PASS: TestResolveOTLPProtocol/非法协议报错 (0.00s)
+=== RUN   TestLegacyJaegerOTLPEndpoint
+=== RUN   TestLegacyJaegerOTLPEndpoint/collector_14268_映射到_4318
+=== RUN   TestLegacyJaegerOTLPEndpoint/无端口默认_4318
+=== RUN   TestLegacyJaegerOTLPEndpoint/https_保留协议
+=== RUN   TestLegacyJaegerOTLPEndpoint/自定义端口保留
+=== RUN   TestLegacyJaegerOTLPEndpoint/空值返回空
+=== RUN   TestLegacyJaegerOTLPEndpoint/非法端点返回空
+2026/11/24 22:27:15 tracing: ignore invalid jaegerEndpoint "ftp://jaeger:14268/api/traces": invalid endpoint "ftp://jaeger:14268/api/traces": unsupported scheme "ftp"
+--- PASS: TestLegacyJaegerOTLPEndpoint (0.00s)
+    --- PASS: TestLegacyJaegerOTLPEndpoint/collector_14268_映射到_4318 (0.00s)
+    --- PASS: TestLegacyJaegerOTLPEndpoint/无端口默认_4318 (0.00s)
+    --- PASS: TestLegacyJaegerOTLPEndpoint/https_保留协议 (0.00s)
+    --- PASS: TestLegacyJaegerOTLPEndpoint/自定义端口保留 (0.00s)
+    --- PASS: TestLegacyJaegerOTLPEndpoint/空值返回空 (0.00s)
+    --- PASS: TestLegacyJaegerOTLPEndpoint/非法端点返回空 (0.00s)
+=== RUN   TestCreateExportersSupportedNames
+=== RUN   TestCreateExportersSupportedNames/otlp
+=== RUN   TestCreateExportersSupportedNames/otel
+=== RUN   TestCreateExportersSupportedNames/jaeger
+2026/11/24 22:27:15 tracing: exporter "jaeger" is deprecated and now exports via OTLP; set exporters: [otlp] to silence this warning
+=== RUN   TestCreateExportersSupportedNames/zipkin
+=== RUN   TestCreateExportersSupportedNames/noop
+=== RUN   TestCreateExportersSupportedNames/none
+--- PASS: TestCreateExportersSupportedNames (0.01s)
+    --- PASS: TestCreateExportersSupportedNames/otlp (0.00s)
+    --- PASS: TestCreateExportersSupportedNames/otel (0.00s)
+    --- PASS: TestCreateExportersSupportedNames/jaeger (0.00s)
+    --- PASS: TestCreateExportersSupportedNames/zipkin (0.00s)
+    --- PASS: TestCreateExportersSupportedNames/noop (0.00s)
+    --- PASS: TestCreateExportersSupportedNames/none (0.00s)
+=== RUN   TestCreateExportersJaegerAliasUsesLegacyEndpoint
+2026/11/24 22:27:15 tracing: exporter "jaeger" is deprecated and now exports via OTLP; set exporters: [otlp] to silence this warning
+--- PASS: TestCreateExportersJaegerAliasUsesLegacyEndpoint (0.00s)
+=== RUN   TestCreateOTLPExporterProtocols
+=== RUN   TestCreateOTLPExporterProtocols/protocol=
+=== RUN   TestCreateOTLPExporterProtocols/protocol=http
+=== RUN   TestCreateOTLPExporterProtocols/protocol=http/protobuf
+=== RUN   TestCreateOTLPExporterProtocols/protocol=grpc
+--- PASS: TestCreateOTLPExporterProtocols (0.01s)
+    --- PASS: TestCreateOTLPExporterProtocols/protocol= (0.00s)
+    --- PASS: TestCreateOTLPExporterProtocols/protocol=http (0.00s)
+    --- PASS: TestCreateOTLPExporterProtocols/protocol=http/protobuf (0.00s)
+    --- PASS: TestCreateOTLPExporterProtocols/protocol=grpc (0.01s)
+=== RUN   TestCreateExportersRejectsUnsupported
+--- PASS: TestCreateExportersRejectsUnsupported (0.00s)
+=== RUN   TestCreateExportersRejectsEmpty
+--- PASS: TestCreateExportersRejectsEmpty (0.00s)
+PASS
+ok  	law-oa-go/internal/tracing	4.638s
+RC=0
