@@ -39,6 +39,12 @@ type CacheResponse struct {
 // CacheMiddleware 优化的缓存中间件
 func CacheMiddleware(config CacheConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if isIntakeBusinessPath(c.Request.URL.Path) {
+			c.Header("Cache-Control", "private, no-store")
+			c.Next()
+			return
+		}
+
 		// 检查是否应该跳过缓存
 		if shouldSkipCache(c, config) {
 			c.Next()
@@ -57,6 +63,16 @@ func CacheMiddleware(config CacheConfig) gin.HandlerFunc {
 		// 记录响应以便缓存
 		captureResponse(c, cacheKey, config)
 	}
+}
+
+// isIntakeBusinessPath 判断是否为接案业务路径（缓存零读写）
+func isIntakeBusinessPath(path string) bool {
+	for _, prefix := range []string{"/api/v1/case-intakes", "/api/v1/case-intake-assist", "/api/v1/cases/intake-workbench"} {
+		if path == prefix || strings.HasPrefix(path, prefix+"/") {
+			return true
+		}
+	}
+	return false
 }
 
 // shouldSkipCache 检查是否应该跳过缓存

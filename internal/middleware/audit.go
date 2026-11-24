@@ -3,7 +3,6 @@ package middleware
 import (
 	"bytes"
 	"io"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -114,10 +113,8 @@ func AuditMiddleware() gin.HandlerFunc {
 
 // containsSensitiveData 检查路径是否包含敏感数据
 func containsSensitiveData(path string) bool {
-	for _, prefix := range []string{"/api/v1/case-intakes", "/api/v1/case-intake-assist", "/api/v1/cases/intake-workbench"} {
-		if path == prefix || strings.HasPrefix(path, prefix+"/") {
-			return true
-		}
+	if isIntakeBusinessPath(path) {
+		return true
 	}
 	sensitivePaths := []string{
 		"/auth/login",
