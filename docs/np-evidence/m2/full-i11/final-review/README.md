@@ -24,8 +24,8 @@
 
 | # | Run / 事件 | 失败 | 分类 | 依据与链接 |
 | --- | --- | --- | --- | --- |
-| F4 | [45334857440](https://github.com/VanTam-CN/law-oa-go/actions/runs/45334857440) PR #49（m2→main 探针，head `448047e3`，现已 closed）pull_request | ci.yml「Code Quality / 代码格式检查」`gofumpt -w -s . && git diff --exit-code` 退出 1；diff 为 `tests/integration/m1/workbench_approval_browser_test.go`（`0600`→`0o600`）及 M1 期测试文件长 `[]string` 折行 | **pre-existing（历史遗留）** | `448047e3` 为纯 docs 提交未触碰 Go；本地第一手复现（工作树 `bfcb7de1`，Go 内容与 `448047e3` 一致）：`gofumpt -l` 命中 tests/ 5 文件 + internal/ 139 个遗留文件，裸 `gofmt -l tests/` 零告警（漂移为 gofumpt 特有规则）；失败文件最后改动为 M1 期提交（f72b1aa、54f826c）。该 job 是试点 PR 隔离设计中**保留**的既有质量检查，不属 np-i11 门禁。snapshots/pr49-run-45334857440.json、pr49-…-failed.tail220.log、gofumpt-local-reproduction.txt |
-| F5 | [45334868179](https://github.com/VanTam-CN/law-oa-go/actions/runs/45334868179) PR #50（m3→main 探针，head `c9415b81`，现已 closed）pull_request | 同一步骤、同一工具、同签名失败（日志含 `0o600` diff 与 exit code 1） | **pre-existing（与 F4 同源）** | 同上；snapshots/pr50-run-45334868179.json、pr50-…-failed.tail220.log |
+| F4 | [45334857440](https://github.com/VanTam-CN/law-oa-go/actions/runs/45334857440) PR #49（m2→main 探针，head `448047e3`，现已 closed）pull_request | ci.yml「Code Quality / 代码格式检查」`gofumpt -w -s . && git diff --exit-code` 退出 1；diff 为 `tests/integration/m1/workbench_approval_browser_test.go`（`0600`→`0o600`）及 M1 期测试文件长 `[]string` 折行 | **pre-existing（历史遗留）** | `448047e3` 为纯 docs 提交未触碰 Go；本地第一手复现（工作树 `bfcb7de1`，Go 内容与 `448047e3` 一致）：`gofumpt -l` 命中 tests/ 5 文件 + internal/ 139 个遗留文件，裸 `gofmt -l tests/` 零告警（漂移为 gofumpt 特有规则）；失败文件最后改动为 M1 期提交（f72b1aa、54f826c）。该 job 是试点 PR 隔离设计中**保留**的既有质量检查，不属 np-i11 门禁。snapshots/pr49-run-45334857440.json、pr49-…-failed.tail220.txt、gofumpt-local-reproduction.txt |
+| F5 | [45334868179](https://github.com/VanTam-CN/law-oa-go/actions/runs/45334868179) PR #50（m3→main 探针，head `c9415b81`，现已 closed）pull_request | 同一步骤、同一工具、同签名失败（日志含 `0o600` diff 与 exit code 1） | **pre-existing（与 F4 同源）** | 同上；snapshots/pr50-run-45334868179.json、pr50-…-failed.tail220.txt |
 | — | 同两事件的 3+5 个 cancelled run（ci-cd/fuzzing/security 等） | cancelled，非失败 | 不分类（记录在案） | runs-pull-request.json |
 
 ### C 组 · 比对基准：历史 PGO/CI 故障记录
@@ -55,7 +55,7 @@
 | plans_np_main_integration | docs/plans/np-main-integration/ | 4 | fuzzing 44508335288 历史记录、CI 评审、验收计划 |
 | final_review | docs/np-evidence/m2/full-i11/final-review/（本任务） | 18（另含本清单自身） | 本报告、verification.json、清单、snapshots/（15 份 UTC 快照） |
 
-不可变性：全部文件以 SHA-256 校验清单固化；`i11-browser-chain-verify` 与 `final-review` 两目录由本任务证据提交绑入 git 历史；远端快照带 UTC 时间戳（snapshots/snapshot-time.txt，2026-11-24T11:37Z 起）。
+不可变性：全部文件以 SHA-256 校验清单固化；`i11-browser-chain-verify` 与 `final-review` 两目录由本任务证据提交绑入 git 历史；远端快照带 UTC 时间戳（snapshots/snapshot-time.txt，2026-11-24T11:37Z 起）。日志固定位说明：仓库 .gitignore 忽略 `*.log`（全仓零跟踪先例），hosted raw 的 diag 日志与 run2/my-window 的原始 .log 留在工作区并由 MANIFEST.sha256 记录哈希；本裁定依赖的关键失败签名均已转为可跟踪文件入库（defect-signature-diag157.txt、pr49/pr50 失败日志尾部 .txt、gofumpt-local-reproduction.txt）。
 
 ## 四、遗留风险与后续跟进
 

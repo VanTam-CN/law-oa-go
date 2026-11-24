@@ -1,0 +1,220 @@
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8958353Z +
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8958414Z +	return nil
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8958474Z +}
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8958530Z +
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8958642Z +// ValidateTestCaseID 验证测试用例ID
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8958796Z +func (v *SimpleTestValidator) ValidateTestCaseID(caseID string) error {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8958866Z +	if caseID == "" {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8958971Z +		return fmt.Errorf("test case ID cannot be empty")
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8959098Z +	}
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8959162Z +
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8959234Z +	if len(caseID) > 100 {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8959372Z +		return fmt.Errorf("test case ID too long (max 100 characters)")
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8959430Z +	}
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8959493Z +
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8959609Z +	return nil
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8959667Z +}
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8959727Z +
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8959832Z +// ValidateResultID 验证结果ID
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8959989Z +func (v *SimpleTestValidator) ValidateResultID(resultID string) error {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8960068Z +	if resultID == "" {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8960181Z +		return fmt.Errorf("result ID cannot be empty")
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8960244Z +	}
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8960313Z +
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8960395Z +	if len(resultID) > 100 {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8960524Z +		return fmt.Errorf("result ID too long (max 100 characters)")
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8960590Z +	}
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8960650Z +
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8960721Z +	return nil
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8960778Z +}
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8960845Z +
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8960954Z +// ValidatePagination 验证分页参数
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8961137Z +func (v *SimpleTestValidator) ValidatePagination(page, pageSize int) error {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8961211Z +	if page < 1 {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8961315Z +		return fmt.Errorf("page must be at least 1")
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8961382Z +	}
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8961440Z +
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8961580Z +	if pageSize < 1 || pageSize > 100 {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8961706Z +		return fmt.Errorf("page size must be between 1 and 100")
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8961810Z +	}
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8961870Z +
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8961936Z +	return nil
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8961996Z +}
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8962055Z +
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8962169Z +// ValidateTimeRange 验证时间范围
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8962348Z +func (v *SimpleTestValidator) ValidateTimeRange(startStr, endStr string) error {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8962446Z +	// 这里可以添加时间范围验证逻辑
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8962539Z +	// 暂时返回nil，表示验证通过
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8962608Z +	return nil
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8962672Z +}
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8962738Z +
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8962845Z +// ValidatePageSize 验证页面大小
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8962996Z +func (v *SimpleTestValidator) ValidatePageSize(pageSize int) error {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8963084Z +	if pageSize < 1 || pageSize > 100 {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8963209Z +		return fmt.Errorf("page size must be between 1 and 100")
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8963269Z +	}
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8963426Z +
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8963493Z +	return nil
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8963555Z +}
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8963613Z +
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8963728Z +// ValidateOffset 验证偏移量
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8963866Z +func (v *SimpleTestValidator) ValidateOffset(offset int) error {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8963941Z +	if offset < 0 {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8964041Z +		return fmt.Errorf("offset cannot be negative")
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8964107Z +	}
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8964170Z +
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8964265Z +	return nil
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8964328Z +}
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8964388Z +
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8964504Z +// ValidateSortField 验证排序字段
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8964746Z +func (v *SimpleTestValidator) ValidateSortField(field string, allowedFields []string) error {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8964824Z +	if field == "" {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8964922Z +		return nil // 空字段表示默认排序
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8964991Z +	}
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8965116Z +
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8965219Z +	for _, allowedField := range allowedFields {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8965309Z +		if field == allowedField {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8965377Z +			return nil
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8965442Z +		}
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8965502Z +	}
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8965575Z +
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8965686Z +	return fmt.Errorf("invalid sort field: %s", field)
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8965754Z +}
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8965819Z +
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8965933Z +// ValidateSortOrder 验证排序顺序
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8966095Z +func (v *SimpleTestValidator) ValidateSortOrder(order string) error {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8966168Z +	if order == "" {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8966275Z +		return nil // 空顺序表示默认排序
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8966335Z +	}
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8966460Z +
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8966555Z +	validOrders := []string{"asc", "desc"}
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8966648Z +	for _, validOrder := range validOrders {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8966729Z +		if order == validOrder {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8966794Z +			return nil
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8966862Z +		}
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8966921Z +	}
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8966988Z +
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8967094Z +	return fmt.Errorf("invalid sort order: %s", order)
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8967157Z +}
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8967389Z diff --git a/tests/integration/m1/native_pg_test.go b/tests/integration/m1/native_pg_test.go
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8967470Z index eb5b461..61ffe17 100644
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8967574Z --- a/tests/integration/m1/native_pg_test.go
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8967666Z +++ b/tests/integration/m1/native_pg_test.go
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8967759Z @@ -6,12 +6,14 @@ import (
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8967829Z  	"bytes"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8967916Z  	"encoding/json"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8967990Z  	"errors"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8968078Z -	"law-oa-go/internal/database"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8968151Z  	"net/http"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8968234Z  	"net/http/httptest"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8968308Z +	"strings"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8968374Z  	"testing"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8968451Z  	"time"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8968508Z  
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8968596Z +	"law-oa-go/internal/database"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8968662Z +
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8968753Z  	"github.com/gin-gonic/gin"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8968900Z  	"github.com/google/uuid"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8968995Z  	"gorm.io/driver/postgres"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8969121Z @@ -21,7 +23,6 @@ import (
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8969219Z  	"law-oa-go/internal/middleware"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8969315Z  	"law-oa-go/internal/models"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8969398Z  	"law-oa-go/internal/router"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8969468Z -	"strings"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8969533Z  )
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8969592Z  
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8969794Z  // This target is run explicitly against the dedicated, bootstrapped M1 database.
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8970057Z diff --git a/tests/integration/m1/party_recovery_pg_test.go b/tests/integration/m1/party_recovery_pg_test.go
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8970142Z index 2eec4a4..bc842cb 100644
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8970254Z --- a/tests/integration/m1/party_recovery_pg_test.go
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8970366Z +++ b/tests/integration/m1/party_recovery_pg_test.go
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8970445Z @@ -8,13 +8,14 @@ import (
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8970525Z  	"encoding/json"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8970602Z  	"errors"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8970671Z  	"fmt"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8970748Z -	"gorm.io/gorm"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8970840Z -	"law-oa-go/internal/repositories"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8970921Z  	"net/http"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8971001Z  	"net/http/httptest"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8971079Z  	"strings"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8971155Z  	"testing"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8971216Z  
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8971291Z +	"gorm.io/gorm"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8971374Z +	"law-oa-go/internal/repositories"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8971440Z +
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8971529Z  	"github.com/gin-gonic/gin"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8971625Z  	"law-oa-go/internal/config"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8971718Z  	"law-oa-go/internal/middleware"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8971972Z diff --git a/tests/integration/m1/r3_regression_test.go b/tests/integration/m1/r3_regression_test.go
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8972094Z index accc0cf..71a0081 100644
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8972205Z --- a/tests/integration/m1/r3_regression_test.go
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8972309Z +++ b/tests/integration/m1/r3_regression_test.go
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8972398Z @@ -6,10 +6,11 @@ import (
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8972479Z  	"context"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8972552Z  	"encoding/json"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8972621Z  	"fmt"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8972690Z +	"testing"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8972750Z +
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8972842Z  	"law-oa-go/internal/models"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8972936Z  	"law-oa-go/internal/repositories"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8973031Z  	"law-oa-go/internal/security"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8973096Z -	"testing"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8973161Z  )
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8973220Z  
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8973486Z  func TestM1R3IndexIncomingAlias(t *testing.T) {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8973629Z @@ -48,6 +49,7 @@ func TestM1R3IndexIncomingAlias(t *testing.T) {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8973884Z  		t.Fatal("main name matched, incoming alias alone failed to select same historical client")
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8973951Z  	}
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8974011Z  }
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8974078Z +
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8974189Z  func TestM1R3SameIdentityEcho(t *testing.T) {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8974348Z  	for _, role := range []string{"opponent", "opposing_party"} {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8974453Z  		t.Run(role, func(t *testing.T) {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8974718Z diff --git a/tests/integration/m1/r7_nested_arrays_pg_test.go b/tests/integration/m1/r7_nested_arrays_pg_test.go
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8974805Z index e2d7048..5bbb11d 100644
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8974916Z --- a/tests/integration/m1/r7_nested_arrays_pg_test.go
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8975025Z +++ b/tests/integration/m1/r7_nested_arrays_pg_test.go
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8975095Z @@ -14,9 +14,11 @@ import (
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8975212Z  func TestM1R7NestedArrayOrigin(t *testing.T) {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8975297Z  	db := isolatedDB(t)
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8975420Z  	for _, entry := range []string{"intake", "party"} {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8975745Z -		for _, op := range []string{"drop_append", "drop_lossless", "drop_agree", "decimal_append", "echo", "append_one", "append_distinct_suffixes",
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8975877Z +		for _, op := range []string{
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8976142Z +			"drop_append", "drop_lossless", "drop_agree", "decimal_append", "echo", "append_one", "append_distinct_suffixes",
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8976589Z  			"swap_hidden", "swap_hidden_text", "mixed_prefix", "mixed_suffix", "nested_hidden_echo", "nested_hidden_edit", "nested_hidden_sibling",
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8976981Z -			"rotate_append", "rotate_exact", "cross_objects", "swap_visible_siblings", "cut_hidden", "cut_visible", "delete_hidden", "cross_hidden_child", "delete_with_empty_peer"} {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8977374Z +			"rotate_append", "rotate_exact", "cross_objects", "swap_visible_siblings", "cut_hidden", "cut_visible", "delete_hidden", "cross_hidden_child", "delete_with_empty_peer",
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8977440Z +		} {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8977579Z  			t.Run(entry+"/"+op, func(t *testing.T) {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8977749Z  				original := "[[9007199254740993],[9007199254740992,2]]"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8977834Z  				switch op {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8978170Z diff --git a/tests/integration/m1/workbench_approval_browser_test.go b/tests/integration/m1/workbench_approval_browser_test.go
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8978248Z index 3cce89d..c19325d 100644
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8978393Z --- a/tests/integration/m1/workbench_approval_browser_test.go
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8978518Z +++ b/tests/integration/m1/workbench_approval_browser_test.go
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8978670Z @@ -61,7 +61,7 @@ func TestM1R4WorkbenchApprovalBrowser(t *testing.T) {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8978868Z  		t.Fatal("run scripts/np-first-slice/verify-m1-browser-approval.sh")
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8978924Z  	}
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8979040Z  	tmp := filepath.Join(dir, "pending.json")
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8979160Z -	if err := os.WriteFile(tmp, fixture, 0600); err != nil {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8979282Z +	if err := os.WriteFile(tmp, fixture, 0o600); err != nil {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8979436Z  		t.Fatal(err)
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8979504Z  	}
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8979689Z  	if err := os.Rename(tmp, filepath.Join(dir, "ready.json")); err != nil {
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.8988603Z ##[error]Process completed with exit code 1.
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.9114464Z Post job cleanup.
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.9809048Z [command]/usr/bin/git version
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.9847006Z git version 2.56.1
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.9875699Z Temporarily overriding HOME='/home/runner/work/_temp/438c74ec-3c26-4ba7-9204-340c34241893' before making global git config changes
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.9876127Z Adding repository directory to the temporary git global config as a safe directory
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.9888102Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/law-oa-go/law-oa-go
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.9924164Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:04.9957702Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:05.0221109Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:05.0243546Z http.https://github.com/.extraheader
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:05.0272617Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:05.0304596Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:05.0564950Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:05.0593951Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:05.0974541Z Cleaning up orphan processes
+🔍 Code Quality	UNKNOWN STEP	2026-11-24T05:40:05.1294950Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-go@v5. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

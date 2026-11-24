@@ -45,7 +45,7 @@
       "signature": "gofumpt -w -s . && git diff --exit-code returned exit 1: formatting diffs in tests/integration/m1/workbench_approval_browser_test.go (0600 -> 0o600) and long []string literal wrapping in M1-era test files",
       "classification": "pre-existing (historical legacy formatting drift)",
       "basis": "448047e3 is a docs-only commit and did not touch Go sources; local first-hand reproduction at bfcb7de1 (same Go content as 448047e3): gofumpt -l flags 5 tests/ files and 139 internal/ legacy files, while plain gofmt -l tests/ is clean (drift is gofumpt-specific rules); failing files last modified by M1-era commits (e.g. f72b1aa, 54f826c); drift predates every commit in the observed window; job is the retained legacy quality check of the pilot-PR isolation design, not part of the np-i11 gate.",
-      "evidence": "snapshots/pr49-run-45334857440.json, snapshots/pr49-run-45334857440-failed.tail220.log, snapshots/gofumpt-local-reproduction.txt",
+      "evidence": "snapshots/pr49-run-45334857440.json, snapshots/pr49-run-45334857440-failed.tail220.txt, snapshots/gofumpt-local-reproduction.txt",
       "resolution": "not fixed on this line (legacy check, out of I11 scope); registered as follow-up"
     },
     {
@@ -54,7 +54,7 @@
       "signature": "identical gofumpt -w -s . failure; log contains 0o600 diffs and exit code 1",
       "classification": "pre-existing (same historical legacy drift as F4)",
       "basis": "same step, same tool, same legacy drift; head c9415b81 is an M3-era probe head; no historical record entry matches a format-check failure, but the drift source (legacy Go tree) predates the window",
-      "evidence": "snapshots/pr50-run-45334868179.json, snapshots/pr50-run-45334868179-failed.tail220.log",
+      "evidence": "snapshots/pr50-run-45334868179.json, snapshots/pr50-run-45334868179-failed.tail220.txt",
       "resolution": "not fixed on this line; registered as follow-up"
     }
   ],

@@ -1,5 +1,5 @@
 # 归档范围: M2/I11 前置任务全部证据 + 历史 PGO/CI 故障记录载体 + 本裁定
-# 生成时间(UTC): 2026-11-24T11:42:41Z
+# 生成时间(UTC): 2026-11-24T11:45:20Z
 # 工作树基线: bfcb7de19713139fd73fa6c3230eba8ff0c1e634 (codex/np-main-m2)
 # 说明: 本清单不含其自身; 对归档内容的再修改应重生成本清单
 097b1f2e674eb652aa12c879ef75d12ded55cc9a2399eb39f7fadd062624b2ba  docs/np-evidence/m1/README.md
@@ -13,24 +13,24 @@ b7b329c706680b4b822e0e2a84d1dc7bb864b3c010f221c83fa8ae5cf1e212c4  docs/np-eviden
 86b4d921ca21c79b5ce9f4701b400497169352d1c7e5bbe68bf4b7d587adf772  docs/np-evidence/m1/review-r9/README.md
 45bc296b6b9cf9f9929a88cb2899f0a27f099aee900000df1cbb71352178e8f0  docs/np-evidence/m2/early-ci/README.md
 980f127560c5fad4479ef9624ed7d9972aa1a6945e90339f03e475864a59d4c6  docs/np-evidence/m2/early-ci/verification.json
-9676d2d09d690ca259ac3958cb65a320b495b8c617ba65c98c50dd7651197913  docs/np-evidence/m2/full-i11/final-review/README.md
+311c4844d8f542599c5b23b1088168232f6068c04e4fb804bdd9e228cce88adf  docs/np-evidence/m2/full-i11/final-review/README.md
 400883cc83c0fc34525f69335df4c478bd8fa2157aee75b6d59d3efacf671ad9  docs/np-evidence/m2/full-i11/final-review/inventory.json
 911becd8621a0642b4457f0b67f898e74cec9d67d5d78c86de3917aa39823532  docs/np-evidence/m2/full-i11/final-review/snapshots/byproduct-run-45381532273-i11.json
 bec63e87c9cdf0cb0efaf93722abefdb6cd35e053a4dd32ae9048891849a05f1  docs/np-evidence/m2/full-i11/final-review/snapshots/byproduct-run-45382638826-m2.json
 3f6ae79fec563cee888ef5de0cb95ee14d2106ec742909b4eaebd6d912bbb856  docs/np-evidence/m2/full-i11/final-review/snapshots/defect-signature-diag157.txt
 04c0e1430521645cd8cef7fdeb4bae7babe1738676b7d488c3c7425a7e469873  docs/np-evidence/m2/full-i11/final-review/snapshots/gofumpt-local-reproduction.txt
 40c6730d0482be05c04f1a609686f58a49b5759ddad0c66ef89c637d8aeaa9a9  docs/np-evidence/m2/full-i11/final-review/snapshots/pr49-fresh.json
-2aaedbba85293a1257f0a2743fb2d91e68e58ca653f8754e3513f30abcb1683a  docs/np-evidence/m2/full-i11/final-review/snapshots/pr49-run-45334857440-failed.tail220.log
+2aaedbba85293a1257f0a2743fb2d91e68e58ca653f8754e3513f30abcb1683a  docs/np-evidence/m2/full-i11/final-review/snapshots/pr49-run-45334857440-failed.tail220.txt
 db546b4a922bd940eb51817ea2817d68ed6d0110cdca532162782fc704e36b19  docs/np-evidence/m2/full-i11/final-review/snapshots/pr49-run-45334857440.json
 845a36602a7c7eb5eb01c4e14ecca8f2fecc00bd6220472a72a524ade3adf569  docs/np-evidence/m2/full-i11/final-review/snapshots/pr50-fresh.json
-0719064a576b9f7ac4d48cd8fbc6a36e188716440c99ee1bfeedfd557c5960e9  docs/np-evidence/m2/full-i11/final-review/snapshots/pr50-run-45334868179-failed.tail220.log
+0719064a576b9f7ac4d48cd8fbc6a36e188716440c99ee1bfeedfd557c5960e9  docs/np-evidence/m2/full-i11/final-review/snapshots/pr50-run-45334868179-failed.tail220.txt
 c6d73c9a0e63316b9e3e5a7cc3740b2429950a4a8339f8c558f54106136697ec  docs/np-evidence/m2/full-i11/final-review/snapshots/pr50-run-45334868179.json
 eda337b9ac335815815d647f21564689b924bd779987e858ed70a37f33e6e632  docs/np-evidence/m2/full-i11/final-review/snapshots/pr51-fresh.json
 d6a1f5b47b699bd11a557590e8d4096853c2e00eee638086fcd7080a6d8d0c01  docs/np-evidence/m2/full-i11/final-review/snapshots/runs-i11-branch.json
 97d47b386c0b935c20d5d5d196c1d3d4099a265621e6f09d915ae8dc7871c9dd  docs/np-evidence/m2/full-i11/final-review/snapshots/runs-m2-branch.json
 6e14da5055f11f9eeef9d29dba87a72bda99372baebdc1bba0d733fd94968176  docs/np-evidence/m2/full-i11/final-review/snapshots/runs-pull-request.json
 77060595f45679646bd981db4a0e792a18537a875606bcea7983049cd8446253  docs/np-evidence/m2/full-i11/final-review/snapshots/snapshot-time.txt
-62dcde0c8f2156af48d5ce057d78e61a043d40c14c1de3b19f43ee95fe4e9de9  docs/np-evidence/m2/full-i11/final-review/verification.json
+912f365728befbe590050332f759ef3f8346cfb9e45ac10f17e2f65612e5eccd  docs/np-evidence/m2/full-i11/final-review/verification.json
 af82c5ccfaf2a35f98ff10f8adfd61db3c97b0a64808b1dd3c4fdffaae605eed  docs/np-evidence/m2/full-i11/hosted/README.md
 06883407d5fcbc27ea76b90f7da76f68e87b1069da83cbc97bca88d4599a4003  docs/np-evidence/m2/full-i11/hosted/build-verify.py
 e28048ac9cad63fd505bd9ebf1d909b4f23394ac5b5a913eddc32462e8b45f91  docs/np-evidence/m2/full-i11/hosted/extract-diag2.sh
