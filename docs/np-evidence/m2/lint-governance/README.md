@@ -64,14 +64,17 @@
 | gosec 多用户部署收紧 | G301/G306/G115（排除中） | 安全卡（多用户部署前收紧） |
 | 基础设施 | jaeger→OTLP（SA1019 排除中）、dev-api-key 后门（G101 排除中，修复或移除） | 基础设施/安全卡 |
 | main.go | run() error 模式改造（exitAfterDefer 排除中） | 架构卡 |
-| 工具 | mnd 采纳、gosec/govulncheck 是否固定版本 | 工具卡 |
+| 工具 | gosec 固定 v2.30.0 / govulncheck 保持 latest / mnd 暂缓采纳 | 已决策（t_4dfa464a，见 §6/§10） |
 
 ## 6. 工具版本固定决策（验收 3）
 
 **决策：gofumpt/golangci-lint 固定版本，已落地 ci.yml。**
 - `gofumpt@v0.12.0`：与本地修复、CI 下载版本一致（run 45390618050 实证：`go: downloading mvdan.cc/gofumpt v0.12.0`；且 @latest 曾在运行中把工具链切到 go1.26.11——浮动成本实证）；
 - `golangci-lint@v1.64.8`：与 `.golangci.yml` 治理版（v1 配置格式）和本轮全部本地验证一致；v1 模块路径的 `@latest` 一旦上游切 v2（新配置格式不兼容）会直接挂；
-- gosec/govulncheck 保持 @latest：漏洞库时效优先，是否固定列入工具卡。
+- ~~gosec/govulncheck 保持 @latest~~ → 已决策（t_4dfa464a，2026-11-24 回填）：
+  - **gosec 固定 `@v2.30.0`**（已落地 ci.yml）：静态规则扫描器，无漏洞库时效约束，门禁要求发现集可复现（同版本=同发现集）；v2.30.0（2026-10-23 release）即基线 run 45405844993 时 `@latest` 的解析版本，与 gosec 161 条存量债基线**同版本、零漂移**。维护策略：跟随上游 release 每周 bump（`go install ...@vX.Y.Z` 单行改动），升级动作并入 gosec 收紧卡跟踪；bump 后需核对新增规则的发现增量。
+  - **govulncheck 保持 `@latest`**：价值在漏洞库时效（DB 每次运行实时拉取），工具本体迭代慢（最新 release v1.1.4，2025-01），固定收益低、反受漂移；「周期性全量重扫」由 security.yml 既有每日 schedule（cron `0 3 * * *`，dependency-scan 报告态）承接，策略成立无需新增 workflow。
+  - **mnd 暂缓采纳**（门禁集不含；gomnd 在 golangci-lint v1.64 已 no-op 移除）：启用前置是清存量魔法数字（存量规模未盘点），先 shadow-run 盘点再启用，已立独立卡跟踪（与复杂度族批修卡解耦——mnd 是 lint 配置采纳，不是复杂度重构）。
 
 ## 7. 验证（全部真实执行）
 
@@ -96,3 +99,26 @@
 ## 9. 快照清单
 
 见 `MANIFEST.sha256`（16 个文件：治理前基线、round1-8 全过程、PR #53 run 45390618050 与 PR #54 run 45405844993 quality job 原始日志、fuzz job 日志）。
+
+## 10. 治理携入 main 承载决策（卡 t_4dfa464a，2026-11-24）
+
+**决策：PR #52（i11→main 集成载体）先合，governance 线 rebase 后经 PR #54 转正式合入。**
+
+事实基础（2026-11-24 实测）：
+- `merge-base(main, codex/np-lint-governance) = d9c92fbd = main tip`：main 尚无任何 NP 内容；
+- lint-gov 栈于 codex/np-main-m2（祖先关系 YES），但 m2 非 i11 祖先、i11 非 gov 祖先——i11 线以**内容重放**方式承载 M0–M4（如 gofumpt 清理在 m2 线为 11a3db0、在 i11 线重放为 e2034e9，同内容不同 SHA）；
+- PR #52 是唯一把 NP 全量内容（M0–M4+I11）送进 main 的载体；PR #53（gofumpt 探针）已 CLOSED；PR #54 现为 draft 探针。
+
+**路径（顺序即决策）**：
+1. PR #52 合入 main（i11 载体，np-i11 门禁已在真实 PR 事件 GREEN）；
+2. `codex/np-lint-governance` rebase 到合并后的 main：治理三连（573d328+50bdf87+191bb6b）及后续提交重放；
+3. t_745060c0 完成 gosec 161 条治理、安全扫描步转绿后，PR #54 转 ready 合入——`.golangci.yml` 治理版与 ci.yml 全部固定版本由此真正落到 main。
+
+**拒绝备选（PR #54 先于 #52 合入）**：会把 m2 线历史先于 i11 载体注入 main，与 #52 形成同内容双载体（11a3db0 vs e2034e9 两份 gofumpt 清理），后续合并必爆冲突风暴，且提前固化未经 i11 载体决策的树。
+
+**预期冲突点与消解规则（rebase 时执行）**：
+- ci.yml 缓存条件区（setup-go cache / actions-cache if / codecov if / notification if）：m2 线是 `!= 'codex/np-main-m2'` 单分支条件，i11 线是含 m2/m3/i11 的三分支超集——**取 i11 侧（承载超集）**；
+- security.yml PILOT_PR/cache 条件区：同规则，取 i11 侧；
+- ci.yml 格式/静态分析/安全扫描步的工具固定与策略注释：**取 governance 侧**；`.golangci.yml` 全文件：取 governance 侧（i11 线未触碰该文件）。
+
+PR #54 保持 draft 直至第 3 步条件满足；合入前需复核 base/main 状态与 rebase 后的 quality job 真实事件。

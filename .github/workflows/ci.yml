@@ -106,8 +106,16 @@ jobs:
 
       - name: 🔒 安全扫描
         run: |
-          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          # gosec 固定版本（t_4dfa464a 决策）：静态规则扫描器，无漏洞库时效约束，
+          # 门禁要求发现集可复现（同版本=同发现集）。v2.30.0（2026-10-23 release）即
+          # 基线 run 45405844993 时 @latest 的解析版本，与 gosec 161 条存量债基线同版本；
+          # 跟随上游 release 每周 bump，升级动作由 gosec 收紧卡跟踪
+          go install github.com/securego/gosec/v2/cmd/gosec@v2.30.0
           gosec ./...
+          # govulncheck 保持 @latest（t_4dfa464a 决策）：价值在漏洞库时效（DB 每次运行
+          # 实时拉取），工具本体迭代慢（最新 release v1.1.4/2025-01）固定收益低；
+          # 周期性全量重扫由 security.yml 每日 schedule（cron 0 3 * * *，dependency-scan
+          # 报告态）承接，无需新增 workflow
           go install golang.org/x/vuln/cmd/govulncheck@latest
           govulncheck ./...
 
