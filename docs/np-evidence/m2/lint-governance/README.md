@@ -122,6 +122,19 @@ enable 列表不含 goheader、无 goheader settings 残留（治理版本就未
 - 归因：静态分析/格式两步为 **pre-existing 红灯修复**（本卡目标）；安全扫描步是静态分析修绿后**新近可达**的同款存量债（旧树从未执行到该步），gosec 独立运行的 161 条与 golangci-lint 门禁集内的 gosec 0 findings 不冲突（门禁集含逐条理由排除 + G104 重复项策略），已立卡治理。
 - 同 run 其他 workflow：fuzzing.yml 5 个 fuzz 目标全红——与 i11 分支当日 5 连红（11:59–12:54，早于本分支存在）同款，且 fuzz 输出重定向至 runner temp 从未归档（观测缺陷），判为 pre-existing 流水线问题，已立卡；PGO「检查PGO支持」红为 m2 线已知分类。
 
+## 8.1 goheader 决策探针 PR（t_5644e59b，2026-11-24）
+
+- 探针 PR：**#55**（draft，`codex/np-goheader-decision` → main，head f5c68fe，基于 lint-governance tip 191bb6b）
+- CI/CD Pipeline run：**45411504960**（2026-11-24T14:12Z，PR 事件触发；job 138506224280，日志归档 `snapshots/ci-run-45411504960-quality.log`）
+- quality job「🔍 Code Quality」step 结论（真实托管事件）：
+  | step | 结论 |
+  |---|---|
+  | 🔍 代码格式检查（gofumpt@v0.12.0） | **success** |
+  | 📋 静态分析（go vet + go mod verify「all modules verified」+ golangci-lint@v1.64.8 **静默完成 = 0 findings**） | **success** ← 本卡验收目标保持绿 |
+  | 🔒 安全扫描 | failure：gosec 161 issues——与 PR #54 run 45405844993 完全同款存量债（t_745060c0），非本卡引入 |
+- 归因：本卡变更仅 .golangci.yml 注释 + evidence 文档（无 Go 代码/测试改动）；静态分析步在带本决策的树上保持 0 findings RC=0。
+- 同 run 其他 workflow：安全测试工作流 **success**；Test Pipeline failure——PR #54 同款栈连续 3 次 failure（run 45405845179/45407953008/45410087449，本卡未触碰任何测试与 Go 代码，pre-existing）；fuzzing.yml failure 与 PGO failure 均为 §8 已归类的 pre-existing（t_46d9c62d / m2 线已知分类）。
+
 ## 9. 快照清单
 
-见 `MANIFEST.sha256`（16 个文件：治理前基线、round1-8 全过程、PR #53 run 45390618050 与 PR #54 run 45405844993 quality job 原始日志、fuzz job 日志）。
+见 `MANIFEST.sha256`（18 个文件：治理前基线、round1-8 全过程、PR #53 run 45390618050、PR #54 run 45405844993 与 PR #55 run 45411504960 quality job 原始日志、fuzz job 日志、goheader 决策探针复现）。
