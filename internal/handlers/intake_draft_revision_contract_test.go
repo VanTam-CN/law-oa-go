@@ -21,7 +21,8 @@ import (
 
 func intakeContractRequest(t *testing.T, r interface {
 	ServeHTTP(http.ResponseWriter, *http.Request)
-}, method, path, body, revisionHeader, userID string) (int, map[string]interface{}) {
+}, method, path, body, revisionHeader, userID string,
+) (int, map[string]interface{}) {
 	t.Helper()
 	req := httptest.NewRequest(method, path, strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")

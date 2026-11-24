@@ -1,0 +1,30 @@
+2026-11-24T12:01:53.9461665Z See the typescript-eslint docs for more info: https://typescript-eslint.io/linting/troubleshooting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-11-24T12:01:53.9463096Z 
+2026-11-24T12:01:53.9463453Z /home/runner/work/law-oa-go/law-oa-go/frontend/np-m4/editing.spec.ts
+2026-11-24T12:01:53.9464934Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/np-m4/editing.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-11-24T12:01:53.9466461Z However, that TSConfig does not include this file. Either:
+2026-11-24T12:01:53.9467238Z - Change ESLint's list of included files to not include this file
+2026-11-24T12:01:53.9467821Z - Change that TSConfig to include this file
+2026-11-24T12:01:53.9468557Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-11-24T12:01:53.9470637Z See the typescript-eslint docs for more info: https://typescript-eslint.io/linting/troubleshooting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-11-24T12:01:53.9472006Z 
+2026-11-24T12:01:53.9472365Z /home/runner/work/law-oa-go/law-oa-go/frontend/np-m4/legacy.spec.ts
+2026-11-24T12:01:53.9473818Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/np-m4/legacy.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+--
+2026-11-24T12:02:14.5511872Z   ✓ 切换后又返回同一草稿，旧 GET 仍失效且不能调用应用回调 (301 ms)
+2026-11-24T12:02:14.5512339Z 
+2026-11-24T12:02:14.6837925Z FAIL Law OA Frontend np-m4/editing.spec.ts
+2026-11-24T12:02:14.6868264Z   ● Test suite failed to run
+2026-11-24T12:02:14.6927091Z 
+2026-11-24T12:02:14.6957728Z     TypeError: Class extends value undefined is not a constructor or null
+2026-11-24T12:02:14.6958648Z 
+2026-11-24T12:02:14.6968393Z     [0m[31m[1m>[22m[39m[90m 1 |[39m [36mimport[39m { expect[33m,[39m test[33m,[39m type [33mRoute[39m } [36mfrom[39m [32m'@playwright/test'[39m
+2026-11-24T12:02:14.6969622Z      [90m   |[39m [31m[1m^[22m[39m
+2026-11-24T12:02:14.6971103Z      [90m 2 |[39m [36mimport[39m { applyCandidate[33m,[39m loginAndOpenDraft[33m,[39m seed[33m,[39m uuid } [36mfrom[39m [32m'../e2e/utils/np-live-draft'[39m
+2026-11-24T12:02:14.6972218Z      [90m 3 |[39m
+--
+2026-11-24T12:02:14.6983247Z       at Object.<anonymous> (node_modules/playwright/test.js:17:13)
+2026-11-24T12:02:14.6984259Z       at Object.<anonymous> (node_modules/@playwright/test/index.js:17:18)
+2026-11-24T12:02:14.6984808Z       at Object.<anonymous> (np-m4/editing.spec.ts:1:1)
+2026-11-24T12:02:14.6985040Z 
+2026-11-24T12:02:15.0648190Z PASS Law OA Frontend src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts

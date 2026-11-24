@@ -1,0 +1,3 @@
+2026-11-24T10:51:32.6415355Z   File "/home/runner/work/law-oa-go/law-oa-go/scripts/np-ci/check-i11-tests.py", line 48, in <module>
+2026-11-24T10:51:32.6422206Z     raise JSONDecodeError("Expecting value", s, err.value) from None
+2026-11-24T10:51:32.6428393Z json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)

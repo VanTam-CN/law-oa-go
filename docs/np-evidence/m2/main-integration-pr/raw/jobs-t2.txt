@@ -1,0 +1,51 @@
+=== run 45389286869 ===
+🧪 Test Pipeline pull_request branch=codex/np-main-i11 head=309d1dd4559a434ae9f65b82d3a6154499b3b95f
+  np-i11 (full)	in_progress/
+  🎨 Frontend Tests	in_progress/
+  🐹 Go Tests	in_progress/
+  np-m2-early	completed/skipped
+=== run 45389286968 ===
+Law OA Go CI/CD Pipeline pull_request branch=codex/np-main-i11 head=309d1dd4559a434ae9f65b82d3a6154499b3b95f
+  集成静态分析	in_progress/
+=== run 45389287032 ===
+安全测试工作流 pull_request branch=codex/np-main-i11 head=309d1dd4559a434ae9f65b82d3a6154499b3b95f
+  安全组件冒烟测试	in_progress/
+  依赖安全扫描	completed/success
+  扩展安全测试	completed/skipped
+=== run 45389286887 ===
+PGO优化工作流 pull_request branch=codex/np-main-i11 head=309d1dd4559a434ae9f65b82d3a6154499b3b95f
+  检查PGO支持	completed/failure
+  PGO local profiles and builds	in_progress/
+  生成工作负载数据	completed/skipped
+  PGO优化构建	completed/skipped
+  收集性能数据	completed/skipped
+  性能基准测试	completed/skipped
+  生成PGO构建报告	completed/skipped
+=== run 45389287095 ===
+🚀 CI/CD Pipeline pull_request branch=codex/np-main-i11 head=309d1dd4559a434ae9f65b82d3a6154499b3b95f
+  🔍 Code Quality	completed/failure
+  🎨 Frontend Build	completed/skipped
+  🏗️ Multi-Arch Build	completed/skipped
+  🚀 Deploy to Production	completed/skipped
+  📢 Notification & Report	completed/skipped
+  🚀 Deploy to Staging	completed/skipped
+=== run 45389286873 ===
+Fuzzing测试工作流 pull_request branch=codex/np-main-i11 head=309d1dd4559a434ae9f65b82d3a6154499b3b95f
+  参数校验	completed/success
+  检查Fuzzing支持	completed/success
+  安全组件Fuzzing (jwt-validation)	completed/failure
+  完整Fuzzing测试	completed/failure
+  并发Fuzzing (Fuzz_ConcurrentService_SubmitTask)	in_progress/
+  数据库Fuzzing (Fuzz_QueryBuilder_Order)	completed/failure
+  并发Fuzzing (Fuzz_WorkerPool_SubmitTask)	in_progress/
+  验证器Fuzzing (Fuzz_LawyerValidator_Validate)	in_progress/
+  并发Fuzzing (Fuzz_CircuitBreaker_Execute)	in_progress/
+  数据库Fuzzing (Fuzz_QueryBuilder_Like)	completed/cancelled
+  验证器Fuzzing (Fuzz_CaseValidator_Validate)	in_progress/
+  缓存Fuzzing (Fuzz_CacheService_ConcurrentAccess)	completed/cancelled
+  并发Fuzzing (Fuzz_RateLimiter_Allow)	in_progress/
+  数据库Fuzzing (Fuzz_QueryBuilder_Where)	completed/cancelled
+  缓存Fuzzing (Fuzz_LayeredCache_Get)	completed/failure
+  缓存Fuzzing (Fuzz_CacheService_SetWithExpiration)	completed/cancelled
+  验证器Fuzzing (Fuzz_ClientValidator_Validate)	in_progress/
+  缓存Fuzzing (Fuzz_CacheService_SetAndGet)	completed/cancelled

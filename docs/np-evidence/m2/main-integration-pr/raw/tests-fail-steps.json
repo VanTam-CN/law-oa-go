@@ -1,0 +1,3 @@
+{"name":"🎨 Frontend Tests","steps":["🧪 运行单元测试"]}
+{"name":"🐹 Go Tests","steps":["🧪 运行集成测试","📋 生成测试报告"]}
+{"name":"🎭 E2E Tests","steps":["🎭 安装Playwright浏览器"]}

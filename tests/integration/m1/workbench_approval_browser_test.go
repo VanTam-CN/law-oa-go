@@ -61,7 +61,7 @@ func TestM1R4WorkbenchApprovalBrowser(t *testing.T) {
 		t.Fatal("run scripts/np-first-slice/verify-m1-browser-approval.sh")
 	}
 	tmp := filepath.Join(dir, "pending.json")
-	if err := os.WriteFile(tmp, fixture, 0600); err != nil {
+	if err := os.WriteFile(tmp, fixture, 0o600); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.Rename(tmp, filepath.Join(dir, "ready.json")); err != nil {

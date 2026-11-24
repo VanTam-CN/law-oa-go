@@ -2,8 +2,9 @@ package repositories
 
 import (
 	"context"
-	"law-oa-go/internal/models"
+
 	"gorm.io/gorm"
+	"law-oa-go/internal/models"
 )
 
 type LawyerRepository interface {
