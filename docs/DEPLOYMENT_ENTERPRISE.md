@@ -335,7 +335,11 @@ func (l *StructuredLogger) LogError(err error, message string, fields ...zap.Fie
 
 ### 5.4 分布式追踪
 
-#### Jaeger配置
+> 追踪导出已从 2023-07 起停止维护的 Jaeger 导出器迁移到 OTLP（otlptracehttp / otlptracegrpc）。
+> Jaeger all-in-one >= 1.35 原生接收 OTLP：需设置 `COLLECTOR_OTLP_ENABLED=true` 并开放 4317/4318 端口。
+> 旧配置 `exporters: [jaeger]` 仍可用（按 OTLP 端点导出，14268 -> 4318），但会输出弃用告警；建议改为 `[otlp]`。
+
+#### Jaeger配置（OTLP 接收）
 ```yaml
 # jaeger-deployment.yaml
 apiVersion: apps/v1
@@ -355,13 +359,19 @@ spec:
     spec:
       containers:
       - name: jaeger
-        image: jaegertracing/all-in-one:1.47
+        image: jaegertracing/all-in-one:1.50
         ports:
         - containerPort: 16686
           name: ui
+        - containerPort: 4317
+          name: otlp-grpc
+        - containerPort: 4318
+          name: otlp-http
         - containerPort: 14268
           name: collector
         env:
+        - name: COLLECTOR_OTLP_ENABLED
+          value: "true"
         - name: SPAN_STORAGE_TYPE
           value: elasticsearch
         - name: ES_SERVER_URLS
@@ -372,24 +382,29 @@ spec:
           value: "9411"
 ```
 
-#### OpenTelemetry集成
+#### OpenTelemetry集成（OTLP/HTTP）
 ```go
 // internal/tracing/tracer.go
 package tracing
 
 import (
     "context"
+
     "go.opentelemetry.io/otel"
-    "go.opentelemetry.io/otel/exporters/jaeger"
+    "go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+    "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
     "go.opentelemetry.io/otel/sdk/resource"
     "go.opentelemetry.io/otel/sdk/trace"
     semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 )
 
-// InitTracer 初始化分布式追踪
-func InitTracer(serviceName, jaegerEndpoint string) (*trace.TracerProvider, error) {
-    // 创建 Jaeger exporter
-    exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(jaegerEndpoint)))
+// InitTracer 初始化分布式追踪（OTLP/HTTP）
+func InitTracer(serviceName, otlpEndpoint string) (*trace.TracerProvider, error) {
+    // 创建 OTLP exporter；endpoint 形如 http://jaeger:4318/v1/traces
+    client := otlptracehttp.NewClient(
+        otlptracehttp.WithEndpointURL(otlpEndpoint),
+    )
+    exp, err := otlptrace.New(context.Background(), client)
     if err != nil {
         return nil, err
     }
@@ -422,7 +437,9 @@ func StartSpan(ctx context.Context, name string) (context.Context, trace.Span) {
 }
 ```
 
----
+> gRPC 传输：把 `otlptracehttp.NewClient` 换成 `otlptracegrpc.NewClient`，端点使用 4317（如 `jaeger:4317`）；
+> 项目内配置 `TracerConfig.otlpProtocol = "grpc"` 即可切换。
+
 
 ## 6. 安全配置
 

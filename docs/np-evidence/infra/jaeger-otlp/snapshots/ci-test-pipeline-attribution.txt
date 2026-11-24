@@ -1,0 +1,12 @@
+# Source: gh run view 45411804595 --log (🧪 Test Pipeline, head e931f17)
+## Go Tests / 运行单元测试 — tracing 包通过
+🐹 Go Tests	🧪 运行单元测试	2026-11-24T14:19:01.6900143Z ok  	law-oa-go/internal/tracing	1.041s	coverage: 31.5% of statements
+## Go Tests / 运行单元测试 — 失败点（pre-existing flaky）
+🐹 Go Tests	🧪 运行单元测试	2026-11-24T14:18:45.2392386Z === RUN   TestConflictP0ReadinessCheck_ProductionBadCanonicalHashFailsClosed
+🐹 Go Tests	🧪 运行单元测试	2026-11-24T14:18:45.2397614Z         	Test:       	TestConflictP0ReadinessCheck_ProductionBadCanonicalHashFailsClosed
+🐹 Go Tests	🧪 运行单元测试	2026-11-24T14:18:45.2400053Z         	Test:       	TestConflictP0ReadinessCheck_ProductionBadCanonicalHashFailsClosed
+🐹 Go Tests	🧪 运行单元测试	2026-11-24T14:18:45.2400532Z --- FAIL: TestConflictP0ReadinessCheck_ProductionBadCanonicalHashFailsClosed (0.24s)
+🐹 Go Tests	🧪 运行单元测试	2026-11-24T14:18:45.2435980Z FAIL	law-oa-go/internal/health	2.233s
+## E2E — Playwright 浏览器安装失败（环境）
+🎭 E2E Tests	🎭 安装Playwright浏览器	2026-11-24T14:22:13.6026102Z Error: ERROR: Playwright does not support chromium on ubuntu26.04-x64
+🎭 E2E Tests	🎭 安装Playwright浏览器	2026-11-24T14:22:13.6275201Z ##[error]Process completed with exit code 1.

@@ -10,6 +10,7 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
 	"law-oa-go/internal/config"
 )
 
@@ -111,15 +112,7 @@ func NewOptimizedDatabase(cfg *config.Config) (*OptimizedDatabase, error) {
 	sqlDB.SetConnMaxLifetime(poolConfig.ConnMaxLifetime)
 	sqlDB.SetConnMaxIdleTime(poolConfig.ConnMaxIdleTime)
 
-	// 配置连接池监控
-	go func() {
-		ticker := time.NewTicker(30 * time.Second)
-		defer ticker.Stop()
-
-		for range ticker.C {
-			// 连接监控已移至performance_optimizer.go
-		}
-	}()
+	// 连接池监控已移至 performance_optimizer.go（原空转 ticker 循环已删除）
 
 	// 测试连接
 	if err := sqlDB.Ping(); err != nil {

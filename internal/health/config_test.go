@@ -9,6 +9,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"law-oa-go/internal/concurrency"
 )
 
@@ -351,7 +352,7 @@ func TestHealthCheckManager_GetHealthChecker(t *testing.T) {
 	require.NoError(t, err)
 
 	// 构建并启动
-	healthChecker, err = manager.BuildAndStart()
+	_, err = manager.BuildAndStart()
 	require.NoError(t, err)
 
 	// 现在应该返回健康检查器

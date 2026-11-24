@@ -1,0 +1,5 @@
+{"name":"安全组件Fuzzing (jwt-validation)","steps":["设置Redis"]}
+{"name":"完整Fuzzing测试","steps":["设置Redis"]}
+{"name":"数据库Fuzzing (Fuzz_QueryBuilder_Order)","steps":["设置数据库"]}
+{"name":"缓存Fuzzing (Fuzz_LayeredCache_Get)","steps":["设置Redis"]}
+{"name":"Fuzzing测试汇总报告","steps":["按选中类型核对job 完成状态"]}

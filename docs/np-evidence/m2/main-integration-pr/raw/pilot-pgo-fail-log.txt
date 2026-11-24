@@ -1,0 +1,2 @@
+2026-11-24T12:09:19.9823679Z ##[error]Process completed with exit code 1.
+2026-11-24T12:09:20.1897271Z  2026-11-24 12:00:08.618 UTC [48] LOG:  background worker "logical replication launcher" (PID 54) exited with exit code 1

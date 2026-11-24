@@ -115,18 +115,18 @@ func newTrustServiceFromDB(t *testing.T, db *gorm.DB) *TrustTransactionService {
 // -------------------------------------------------------------------
 
 // TestApproveTransactionRollsBackWhenTransactionUpdateFails
-// 初始余额 100，withdraw 80；当交易状态条件更新失败（被外部并发改为 cancelled）时，
+// 初始余额 100，withdraw 80；当交易状态条件更新失败（被外部并发改为 canceled）时，
 // 余额必须回滚回 100，且交易不得变为 completed。
 func TestApproveTransactionRollsBackWhenTransactionUpdateFails(t *testing.T) {
 	db := setupTrustTestDB(t)
 	acct := seedTrustAccount(t, db, 100, 0)
 	txn := seedPendingWithdraw(t, db, acct.ID, 80)
 
-	// 模拟「状态条件更新」失败：在调用 Approve 之前，先把状态改为 cancelled
+	// 模拟「状态条件更新」失败：在调用 Approve 之前，先把状态改为 canceled
 	// 这样 UpdateStatusIfPending (WHERE status='pending') 会返回 RowsAffected=0
 	require.NoError(t, db.Model(&models.ClientTrustTransaction{}).
 		Where("id = ?", txn.ID).
-		Update("status", "cancelled").Error)
+		Update("status", "canceled").Error)
 
 	svc := newTrustServiceFromDB(t, db)
 	_, err := svc.ApproveTransaction(context.Background(), txn.ID, 99)
@@ -140,10 +140,10 @@ func TestApproveTransactionRollsBackWhenTransactionUpdateFails(t *testing.T) {
 	assert.InDelta(t, 100.0, finalAcct.Balance, 0.0001,
 		"余额必须回滚为 100，实际: %v", finalAcct.Balance)
 
-	// 交易仍为 cancelled（未被 Approve 改回 completed）
+	// 交易仍为 canceled（未被 Approve 改回 completed）
 	var finalTxn models.ClientTrustTransaction
 	require.NoError(t, db.First(&finalTxn, txn.ID).Error)
-	assert.Equal(t, "cancelled", finalTxn.Status)
+	assert.Equal(t, "canceled", finalTxn.Status)
 }
 
 // TestApproveTransactionConcurrentOnlyAppliesOnce

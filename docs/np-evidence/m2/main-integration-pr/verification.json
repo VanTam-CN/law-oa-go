@@ -1,0 +1,80 @@
+{
+  "task_id": "t_ddd82725",
+  "verdict": "PASS (main-target PR event registered and verified)",
+  "created_at_local": "2026-11-24 19:59 CST",
+  "pr": {
+    "number": 52,
+    "url": "https://github.com/VanTam-CN/law-oa-go/pull/52",
+    "state": "OPEN",
+    "is_draft": true,
+    "mergeable": "MERGEABLE",
+    "created_at": "2026-11-24T11:59:49Z",
+    "title": "[Draft] NP 主干集成载体：M0–M4 + 完整 I11 候选 309d1dd → main",
+    "base_ref": "main",
+    "head_ref": "codex/np-main-i11"
+  },
+  "three_timepoint_shas": {
+    "head_sha": "309d1dd4559a434ae9f65b82d3a6154499b3b95f",
+    "base_sha": "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
+    "test_merge_sha": "4c5db35c62c3ebc49345ce0fd3691a00128e30db",
+    "cross_check": "I11_REFS(job log) == pulls/52 API (head/base) == merge_commit_sha; GITHUB_SHA/checkout == test_merge_sha",
+    "note": "PR 事件 GITHUB_SHA 是合并测试提交，非分支 head（计划 §5 合同兑现）"
+  },
+  "main_baseline": {
+    "tip": "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
+    "advanced_since_plan": false,
+    "merge_base_with_i11": "d9c92fbd",
+    "commits_i11_ahead": 116,
+    "commits_main_ahead": 0
+  },
+  "np_i11_job_on_pull_request_event": {
+    "verdict": "GREEN",
+    "refs_line": "I11_REFS head=309d1dd... base=d9c92fbd...",
+    "event_line": "I11_EVENT pull_request checkout=4c5db35c...",
+    "groups": "go=32 tagged=11 jest=124 I11_FULL_PASS",
+    "gate_provenance": "52f9d40a job condition extended for same-repo PR events; first real PR-event exercise"
+  },
+  "runs": [
+    {"id": 45389286869, "workflow": "tests.yml", "conclusion": "failure", "np_i11": "success", "others": "go-tests=failure(pre-existing env/perf), frontend-tests=failure(NEW integration gap), e2e=failure(pre-existing runner drift), np-m2-early=skipped, coverage-check=skipped, test-summary=success"},
+    {"id": 45389287095, "workflow": "ci.yml", "conclusion": "failure", "detail": "Code Quality=gofumpt(pre-existing F4/F5); build/build-frontend/deploy-staging/deploy-production/notify all skipped"},
+    {"id": 45389286968, "workflow": "ci-cd.yml", "conclusion": "failure", "detail": "static-analysis=success; unit=failure(mysql unit missing, runner drift); integration=cancelled(fail-fast); benchmark=failure(TestPerformanceMonitoring contagion); fuzzing=failure(Go-version probe fragility, pre-existing); docker/deploy/report skipped"},
+    {"id": 45389286887, "workflow": "pgo.yml", "conclusion": "failure", "detail": "check-pgo=failure(go build --help probe, pre-existing: main schedule 5 consecutive same-signature failures); collect-profile/report skipped; pilot-pgo=failure(profiling tests/performance contagion)"},
+    {"id": 45389287032, "workflow": "security.yml", "conclusion": "success", "detail": "smoke+dependency-scan+report all green, artifacts disabled"},
+    {"id": 45389286873, "workflow": "fuzzing.yml", "conclusion": "failure", "detail": "preflight(默认all路由)=success, check-fuzzing=success; 4 fuzz jobs=failure(redis-server/mysql unit missing, runner drift); fuzzing-summary=failure(BY-DESIGN correct red: selected jobs failed -> summary must not green-wash)"}
+  ],
+  "side_effect_boundary": {
+    "artifacts": "0 across all 6 runs (final check)",
+    "caches": "repo total 3, all on refs/heads/main (historical); PR ref refs/pull/52/merge = 0; zero read/write (setup-go cache:false + actions/cache skipped on i11 PR events)",
+    "codecov": "0 uploads (condition-gated)",
+    "pr_comments": "0 (0 issue + 0 review comments)",
+    "deployments": 0,
+    "releases": 0,
+    "notification_jobs": "skipped (ci.yml notify gated by 52f9d40a)",
+    "docker_push": "skipped (docker-build job push/release-only)"
+  },
+  "failure_classification": {
+    "pre_existing": [
+      "tests.yml Go Tests: TestPerformanceMonitoring (tests/performance untouched by i11: diff d9c92fb..309d1dd4 empty; reproduced locally on darwin/go1.25.6; main 09-21 run on same SHA d9c92fb already failure)",
+      "tests.yml E2E: Playwright does not support chromium on ubuntu26.04-x64 (runner image drift)",
+      "ci.yml + ci-cd.yml Code Quality: gofumpt drift (F4/F5 signature, PR #49/#50 first-hand; followup t_7cecb4f1)",
+      "ci-cd.yml 运行测试(unit): mysql systemd unit missing on runner (drift)",
+      "ci-cd.yml Fuzzing测试: 'Go版本不支持Fuzzing' probe fragility (main workflow, untouched by i11)",
+      "pgo.yml 检查PGO支持: go build --help lacks 'pgo' on go1.25 (probe broken; main schedule failed 5 consecutive runs 10-25..11-22; local repro)",
+      "pgo.yml pilot-pgo: 'PGO profiling failed for law-oa-go/tests/performance' (TestPerformanceMonitoring contagion)",
+      "ci-cd.yml 基准测试: go test -bench=. ./... exit 1 (same pre-existing failing-package contagion family)",
+      "fuzzing.yml 4 fuzz jobs: redis-server.service / DB setup missing on runner (drift; fuzzing.yml M2-fixed routing worked: preflight default-all OK)"
+    ],
+    "new": [
+      "tests.yml Frontend Tests: np-m4/*.spec.ts + np-entry/c10-sw (Playwright specs added by m3/m4 lines under frontend/) are picked up by main-era Jest testMatch -> 'Class extends value undefined' suite failure; ESLint tsconfig.eslint.json does not include np-*/ dirs -> parsing errors. Integration adaptation gap for main's original frontend job; np-i11's own jest group (124) unaffected. Followup card created."
+    ],
+    "by_design_red": [
+      "fuzzing-summary: selected jobs failed -> summary correctly red (I11 summary semantics verified on a real PR event)",
+      "np-m2-early / coverage-check / build / deploy / notify / docker / report: gated skips as designed"
+    ],
+    "unclassified": 0
+  },
+  "evidence_dir": "docs/np-evidence/m2/main-integration-pr/ (README.md + verification.json + raw/)",
+  "raw_files": ["pr-snapshot-t1.json", "merge-api-final.json", "jobs-t2.txt", "i11-refs-t4.txt", "caches-final.json", "artifacts-final.txt", "tests-fail-steps.json", "frontend-detail-t4.txt", "e2e-fail-t4.txt", "pgo-check-fail-t2b.txt", "pilot-pgo-steps.json", "pilot-pgo-full.log", "fuzz-fail-steps.json", "cicd-fail-steps-final.json", "benchmark-detail.txt", "main-0921-fails.txt", "tests-main-history.txt", "fuzz-history.txt", "go-tests-fail-t4.txt"],
+  "observation_window": "2026-11-24T11:59:49Z (PR created) to 12:2xZ (all 6 runs terminal, boundary final check)",
+  "worker_session_id": "local-0f31e5c8280730b9ef3cd94a7a5530fff0c29d7c3e634cc71e7957bb4af13709"
+}

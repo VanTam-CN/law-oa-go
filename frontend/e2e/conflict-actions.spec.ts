@@ -1,5 +1,5 @@
 import { expect, Page, test } from '@playwright/test'
-import { seedAuthenticatedUser, waitForAppShell, waitForPageLoad } from './utils/test-helpers'
+import { selectIntakeOption, seedAuthenticatedUser, waitForAppShell, waitForPageLoad } from './utils/test-helpers'
 
 type Scenario =
   | 'WAIVED'
@@ -192,19 +192,14 @@ async function openConflictScenario(page: Page, scenario: Scenario, user: 'lawye
 
 async function fillCaseIntakeBasics(page: Page) {
   await page.getByRole('textbox', { name: '案件名称 *' }).fill('冲突门禁 E2E 案件')
-  await page.getByRole('combobox', { name: '案件类型 *' }).click()
-  await page.getByTitle('商事诉讼').click()
-  await page.getByRole('combobox', { name: '业务领域 *' }).click()
-  await page.getByTitle('公司与并购').click()
-  await page.getByRole('combobox', { name: '子领域 *' }).click()
-  await page.getByTitle('投资与融资').click()
-  await page.getByRole('combobox', { name: '我方当事人（客户）' }).click()
-  await page.getByTitle('上海示例科技有限公司').click()
+  await selectIntakeOption(page.getByRole('combobox', { name: '案件类型 *' }), '商事诉讼')
+  await selectIntakeOption(page.getByRole('combobox', { name: '业务领域 *' }), '公司与并购')
+  await selectIntakeOption(page.getByRole('combobox', { name: '子领域 *' }), '投资与融资')
+  await selectIntakeOption(page.getByRole('combobox', { name: '我方当事人（客户）' }), '上海示例科技有限公司')
   await page.getByPlaceholder('输入对方当事人名称').fill('冲突测试对方')
   await page.getByPlaceholder('输入证件号或统一社会信用代码').fill('91310000TESTCONFLICT01')
   await page.getByRole('textbox', { name: '案情摘要 *' }).fill('验证冲突结果对立案提交的前置门禁。')
-  await page.getByRole('combobox', { name: '负责律师预览' }).click()
-  await page.getByTitle('张律师 · 争议解决部').click()
+  await selectIntakeOption(page.getByRole('combobox', { name: '负责律师预览' }), '张律师 · 争议解决部')
 }
 
 test.describe('冲突决策单一状态', () => {

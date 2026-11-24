@@ -26,7 +26,7 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
-        cache: true
+        cache: ${{ github.head_ref != 'codex/np-main-m2' }}
 
     - name: 检查Go版本和PGO支持
       run: |
@@ -52,7 +52,7 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
-        cache: true
+        cache: ${{ github.head_ref != 'codex/np-main-m2' }}
 
     - name: 下载依赖
       run: |
@@ -83,6 +83,7 @@ jobs:
 
   # 收集性能数据
   collect-profile:
+    if: github.head_ref != 'codex/np-main-m2'
     name: 收集性能数据
     runs-on: ubuntu-latest
     needs: generate-workload
@@ -332,7 +333,7 @@ jobs:
     name: 生成PGO构建报告
     runs-on: ubuntu-latest
     needs: [pgo-optimized-build, performance-benchmark]
-    if: always()
+    if: always() && github.head_ref != 'codex/np-main-m2'
     steps:
     - name: 检出代码
       uses: actions/checkout@v4
@@ -384,3 +385,80 @@ jobs:
       with:
         name: pgo-build-report
         path: pgo-build-report.md
+
+  pilot-pgo:
+    name: PGO local profiles and builds
+    if: github.head_ref == 'codex/np-main-m2'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:16.14
+        ports: ['18790:5432']
+        env:
+          POSTGRES_USER: np_m1
+          POSTGRES_DB: np_first_slice_dev
+          POSTGRES_PASSWORD: synthetic-runner-only
+        options: --health-cmd pg_isready --health-interval 3s --health-retries 15
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+    - uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        cache: false
+    - name: Profile existing Go test and benchmark packages
+      run: |
+        go list -f '{{if or .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' ./... > "$RUNNER_TEMP/packages"
+        mapfile -t packages < "$RUNNER_TEMP/packages"
+        (( ${#packages[@]} > 0 ))
+        bash scripts/np-ci/pgo-profiles.sh "$RUNNER_TEMP/profiles" "${packages[@]}"
+    - name: Build and exercise both application binaries
+      env:
+        DB_DRIVER: postgres
+        DB_HOST: 127.0.0.1
+        DB_PORT: '18790'
+        DB_USERNAME: np_m1
+        DB_DATABASE: np_first_slice_dev
+        DB_SSLMODE: disable
+        DB_PASSWORD: synthetic-runner-only
+        PGPASSWORD: synthetic-runner-only
+        REDIS_HOST: 127.0.0.1
+        REDIS_PORT: '6379'
+        ENVIRONMENT: development
+        PORT: '18080'
+      run: |
+        JWT_SECRET=$(openssl rand -hex 32)
+        export JWT_SECRET
+        go run ./cmd/migrate -command bootstrap >"$RUNNER_TEMP/bootstrap.log" 2>&1
+        bash scripts/np-first-slice/apply-main-np86.sh >"$RUNNER_TEMP/schema.log" 2>&1
+        # Start with a synthetic user so development startup skips its unrelated demo seed.
+        psql -X -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USERNAME" -d "$DB_DATABASE" -c "INSERT INTO users (username,name,email,password,role,status) VALUES ('pgo-fixture','PGO fixture','pgo@synthetic.invalid','!','lawyer','inactive')" >/dev/null
+        for mode in standard optimized; do
+          profile=off
+          if [[ "$mode" == optimized ]]; then profile="$RUNNER_TEMP/profiles/cpu.prof"; fi
+          binary="$RUNNER_TEMP/app-$mode"
+          go build -pgo="$profile" -ldflags="-s -w" -o "$binary" .
+          "$binary" >"$RUNNER_TEMP/app-$mode.log" 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true' EXIT
+          ready=false
+          for attempt in {1..30}; do
+            kill -0 "$pid"
+            if curl --max-time 2 -fsS -o /dev/null http://127.0.0.1:18080/health/live; then ready=true; break; fi
+            sleep 1
+          done
+          [[ "$ready" == true ]]
+          for request in {1..50}; do
+            curl --max-time 2 -fsS -o /dev/null http://127.0.0.1:18080/health/live
+          done
+          kill "$pid"
+          wait "$pid" || [[ $? -eq 143 ]]
+          trap - EXIT
+          printf '%s: %s bytes, 50 successful health requests\n' "$mode" "$(stat -c %s "$binary")" >> "$GITHUB_STEP_SUMMARY"
+        done

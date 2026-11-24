@@ -29,13 +29,13 @@ func (CaseFolder) TableName() string {
 
 // FolderNode 文件夹树节点（用于返回层级结构）
 type FolderNode struct {
-	ID           uint          `json:"id"`
-	CaseID       uint          `json:"case_id"`
-	ParentID     *uint         `json:"parent_id,omitempty"`
-	Name         string        `json:"name"`
-	DisplayOrder int           `json:"display_order"`
-	Description  string        `json:"description"`
-	TemplatePath string        `json:"template_path,omitempty"`
-	DocumentCount int          `json:"document_count"`
-	Children     []*FolderNode `json:"children,omitempty"`
+	ID            uint          `json:"id"`
+	CaseID        uint          `json:"case_id"`
+	ParentID      *uint         `json:"parent_id,omitempty"`
+	Name          string        `json:"name"`
+	DisplayOrder  int           `json:"display_order"`
+	Description   string        `json:"description"`
+	TemplatePath  string        `json:"template_path,omitempty"`
+	DocumentCount int           `json:"document_count"`
+	Children      []*FolderNode `json:"children,omitempty"`
 }

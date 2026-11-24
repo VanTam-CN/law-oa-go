@@ -1,0 +1,6 @@
+$ go test -race -count=1 ./internal/services/...
+# law-oa-go/internal/services.test
+ld: warning: '/private/var/folders/4p/bng36r_s65d26yqk0lfpw2rh0000gn/T/go-link-379703087/000023.o' has malformed LC_DYSYMTAB, expected 98 undefined symbols to start at index 884, found 95 undefined symbols starting at index 884
+ok  	law-oa-go/internal/services	7.040s
+ok  	law-oa-go/internal/services/test	26.293s
+RC=0

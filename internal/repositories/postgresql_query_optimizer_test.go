@@ -86,8 +86,8 @@ func TestPostgreSQL_QueryOptimizerStats(t *testing.T) {
 	// 创建不同状态的测试案件
 	cases := []*models.Case{
 		{Title: "统计测试1", CaseType: "民事", Priority: "high", Status: "pending", ClientID: client.ID, LawyerID: user.ID, CreatedAt: time.Now(), UpdatedAt: time.Now()},
-		{Title: "统计测试2", CaseType: "刑事", Priority: "medium", Status: "in_progress", ClientID: client.ID, LawyerID: user.ID, CreatedAt: time.Now(), UpdatedAt: time.Now()},  // 修改为in_progress而不是active
-		{Title: "统计测试3", CaseType: "民事", Priority: "low", Status: "completed", ClientID: client.ID, LawyerID: user.ID, CreatedAt: time.Now(), UpdatedAt: time.Now()},   // 修改为completed而不是closed
+		{Title: "统计测试2", CaseType: "刑事", Priority: "medium", Status: "in_progress", ClientID: client.ID, LawyerID: user.ID, CreatedAt: time.Now(), UpdatedAt: time.Now()}, // 修改为in_progress而不是active
+		{Title: "统计测试3", CaseType: "民事", Priority: "low", Status: "completed", ClientID: client.ID, LawyerID: user.ID, CreatedAt: time.Now(), UpdatedAt: time.Now()},      // 修改为completed而不是closed
 	}
 
 	for _, caseModel := range cases {

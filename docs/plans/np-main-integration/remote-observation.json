@@ -1,0 +1,70 @@
+{
+  "observed_utc": "2026-11-19T10:25:34.187421+00:00",
+  "read_only": true,
+  "main_sha": "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
+  "actions_permissions": {
+    "enabled": true,
+    "allowed_actions": "all",
+    "sha_pinning_required": false
+  },
+  "recent_existing_runs": {
+    "runs": [
+      {
+        "conclusion": "failure",
+        "event": "schedule",
+        "head_sha": "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
+        "html_url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/44497924113",
+        "id": 44497924113,
+        "name": "Law OA Go CI/CD Pipeline",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "event": "schedule",
+        "head_sha": "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
+        "html_url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/44289829962",
+        "id": 44289829962,
+        "name": "\u5b89\u5168\u6d4b\u8bd5\u5de5\u4f5c\u6d41",
+        "status": "completed"
+      },
+      {
+        "conclusion": "failure",
+        "event": "schedule",
+        "head_sha": "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
+        "html_url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/44275446547",
+        "id": 44275446547,
+        "name": "Law OA Go CI/CD Pipeline",
+        "status": "completed"
+      }
+    ],
+    "total_count": 1517
+  },
+  "pr47": {
+    "number": 47,
+    "html_url": "https://github.com/VanTam-CN/law-oa-go/pull/47",
+    "draft": true,
+    "merged": false,
+    "state": "open",
+    "base": "bcd1b8992b3f3450d5ab406afd74336cc282eece",
+    "head": "2d659d9dd750f49ddb1f517746e22851392231a6"
+  },
+  "note": "Existing scheduled runs were observed only; branch publication also produced the automatic zero-job fuzzing failure recorded below. No manual workflow, merge or deployment.",
+  "post_publish_observation": {
+    "observed_utc": "2026-11-19T10:46:37.044867+00:00",
+    "run": {
+      "id": 44508335288,
+      "html_url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/44508335288",
+      "name": ".github/workflows/fuzzing.yml",
+      "path": ".github/workflows/fuzzing.yml",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "failure",
+      "head_branch": "codex/np-main-integration-prep",
+      "head_sha": "26355fca95d424e0d0401e06922313f06a9719b3"
+    },
+    "job_count": 0,
+    "check_run_count": 0,
+    "manual_dispatch": false,
+    "note": "Automatic run after branch publication; zero jobs. CLI says likely workflow file issue; exact validator error not retrieved. Not business test evidence."
+  }
+}

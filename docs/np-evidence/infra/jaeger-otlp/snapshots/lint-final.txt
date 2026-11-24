@@ -1,0 +1,2 @@
+$ ~/go/bin/golangci-lint run --allow-parallel-runners --timeout=10m
+RC=0

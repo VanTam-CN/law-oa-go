@@ -1,0 +1,100 @@
+$ go test -count=100 -run TestConflictP0ReadinessCheck_ProductionBadCanonicalHashFailsClosed ./internal/health/
+--- FAIL: TestConflictP0ReadinessCheck_ProductionBadCanonicalHashFailsClosed (0.16s)
+    conflict_p0_check_test.go:390: 
+        	Error Trace:	/Users/mac/Desktop/FT/law-oa-go/output/np-jaeger-otlp/internal/health/conflict_p0_check_test.go:390
+        	Error:      	Not equal: 
+        	            	expected: "unhealthy"
+        	            	actual  : "healthy"
+        	            	
+        	            	Diff:
+        	            	--- Expected
+        	            	+++ Actual
+        	            	@@ -1,2 +1,2 @@
+        	            	-(health.HealthStatus) (len=9) "unhealthy"
+        	            	+(health.HealthStatus) (len=7) "healthy"
+        	            	 
+        	Test:       	TestConflictP0ReadinessCheck_ProductionBadCanonicalHashFailsClosed
+    conflict_p0_check_test.go:391: 
+        	Error Trace:	/Users/mac/Desktop/FT/law-oa-go/output/np-jaeger-otlp/internal/health/conflict_p0_check_test.go:391
+        	Error:      	"生产数据库前置条件和 G0-G7 外部证据登记复核通过：冲突档案覆盖完整，active=4" does not contain "G1(完整性哈希与登记内容不匹配"
+        	Test:       	TestConflictP0ReadinessCheck_ProductionBadCanonicalHashFailsClosed
+--- FAIL: TestConflictP0ReadinessCheck_ProductionBadCanonicalHashFailsClosed (0.07s)
+    conflict_p0_check_test.go:390: 
+        	Error Trace:	/Users/mac/Desktop/FT/law-oa-go/output/np-jaeger-otlp/internal/health/conflict_p0_check_test.go:390
+        	Error:      	Not equal: 
+        	            	expected: "unhealthy"
+        	            	actual  : "healthy"
+        	            	
+        	            	Diff:
+        	            	--- Expected
+        	            	+++ Actual
+        	            	@@ -1,2 +1,2 @@
+        	            	-(health.HealthStatus) (len=9) "unhealthy"
+        	            	+(health.HealthStatus) (len=7) "healthy"
+        	            	 
+        	Test:       	TestConflictP0ReadinessCheck_ProductionBadCanonicalHashFailsClosed
+    conflict_p0_check_test.go:391: 
+        	Error Trace:	/Users/mac/Desktop/FT/law-oa-go/output/np-jaeger-otlp/internal/health/conflict_p0_check_test.go:391
+        	Error:      	"生产数据库前置条件和 G0-G7 外部证据登记复核通过：冲突档案覆盖完整，active=4" does not contain "G1(完整性哈希与登记内容不匹配"
+        	Test:       	TestConflictP0ReadinessCheck_ProductionBadCanonicalHashFailsClosed
+--- FAIL: TestConflictP0ReadinessCheck_ProductionBadCanonicalHashFailsClosed (0.08s)
+    conflict_p0_check_test.go:390: 
+        	Error Trace:	/Users/mac/Desktop/FT/law-oa-go/output/np-jaeger-otlp/internal/health/conflict_p0_check_test.go:390
+        	Error:      	Not equal: 
+        	            	expected: "unhealthy"
+        	            	actual  : "healthy"
+        	            	
+        	            	Diff:
+        	            	--- Expected
+        	            	+++ Actual
+        	            	@@ -1,2 +1,2 @@
+        	            	-(health.HealthStatus) (len=9) "unhealthy"
+        	            	+(health.HealthStatus) (len=7) "healthy"
+        	            	 
+        	Test:       	TestConflictP0ReadinessCheck_ProductionBadCanonicalHashFailsClosed
+    conflict_p0_check_test.go:391: 
+        	Error Trace:	/Users/mac/Desktop/FT/law-oa-go/output/np-jaeger-otlp/internal/health/conflict_p0_check_test.go:391
+        	Error:      	"生产数据库前置条件和 G0-G7 外部证据登记复核通过：冲突档案覆盖完整，active=4" does not contain "G1(完整性哈希与登记内容不匹配"
+        	Test:       	TestConflictP0ReadinessCheck_ProductionBadCanonicalHashFailsClosed
+--- FAIL: TestConflictP0ReadinessCheck_ProductionBadCanonicalHashFailsClosed (0.07s)
+    conflict_p0_check_test.go:390: 
+        	Error Trace:	/Users/mac/Desktop/FT/law-oa-go/output/np-jaeger-otlp/internal/health/conflict_p0_check_test.go:390
+        	Error:      	Not equal: 
+        	            	expected: "unhealthy"
+        	            	actual  : "healthy"
+        	            	
+        	            	Diff:
+        	            	--- Expected
+        	            	+++ Actual
+        	            	@@ -1,2 +1,2 @@
+        	            	-(health.HealthStatus) (len=9) "unhealthy"
+        	            	+(health.HealthStatus) (len=7) "healthy"
+        	            	 
+        	Test:       	TestConflictP0ReadinessCheck_ProductionBadCanonicalHashFailsClosed
+    conflict_p0_check_test.go:391: 
+        	Error Trace:	/Users/mac/Desktop/FT/law-oa-go/output/np-jaeger-otlp/internal/health/conflict_p0_check_test.go:391
+        	Error:      	"生产数据库前置条件和 G0-G7 外部证据登记复核通过：冲突档案覆盖完整，active=4" does not contain "G1(完整性哈希与登记内容不匹配"
+        	Test:       	TestConflictP0ReadinessCheck_ProductionBadCanonicalHashFailsClosed
+--- FAIL: TestConflictP0ReadinessCheck_ProductionBadCanonicalHashFailsClosed (0.07s)
+    conflict_p0_check_test.go:390: 
+        	Error Trace:	/Users/mac/Desktop/FT/law-oa-go/output/np-jaeger-otlp/internal/health/conflict_p0_check_test.go:390
+        	Error:      	Not equal: 
+        	            	expected: "unhealthy"
+        	            	actual  : "healthy"
+        	            	
+        	            	Diff:
+        	            	--- Expected
+        	            	+++ Actual
+        	            	@@ -1,2 +1,2 @@
+        	            	-(health.HealthStatus) (len=9) "unhealthy"
+        	            	+(health.HealthStatus) (len=7) "healthy"
+        	            	 
+        	Test:       	TestConflictP0ReadinessCheck_ProductionBadCanonicalHashFailsClosed
+    conflict_p0_check_test.go:391: 
+        	Error Trace:	/Users/mac/Desktop/FT/law-oa-go/output/np-jaeger-otlp/internal/health/conflict_p0_check_test.go:391
+        	Error:      	"生产数据库前置条件和 G0-G7 外部证据登记复核通过：冲突档案覆盖完整，active=4" does not contain "G1(完整性哈希与登记内容不匹配"
+        	Test:       	TestConflictP0ReadinessCheck_ProductionBadCanonicalHashFailsClosed
+FAIL
+FAIL	law-oa-go/internal/health	11.920s
+FAIL
+RC=1

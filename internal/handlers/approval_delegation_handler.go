@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+
 	"law-oa-go/internal/common"
 	"law-oa-go/internal/repositories"
 	"law-oa-go/internal/services"
@@ -230,9 +231,8 @@ func (h *ApprovalDelegationHandler) RevokeDelegation(c *gin.Context) {
 	}
 
 	// 检查权限：管理员、委托人本人、或创建者可撤销
-	canRevoke := false
 	userIDStr := strconv.FormatUint(uint64(actor.UserID), 10)
-	canRevoke = services.IsPrivilegedRole(actor.Role) || delegation.DelegatorID == userIDStr || delegation.CreatedBy == userIDStr
+	canRevoke := services.IsPrivilegedRole(actor.Role) || delegation.DelegatorID == userIDStr || delegation.CreatedBy == userIDStr
 	if !canRevoke {
 		common.APIForbidden(c, "无权操作", "只能撤销自己的代理配置")
 		return

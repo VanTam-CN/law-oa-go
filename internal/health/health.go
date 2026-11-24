@@ -569,7 +569,7 @@ func (ec *ExternalAPIHealthCheck) Check(ctx context.Context) *HealthCheckResult 
 		return result
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", ec.url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, ec.url, nil)
 	if err != nil {
 		result.Status = StatusDegraded
 		result.Message = fmt.Sprintf("创建请求失败: %v", err)

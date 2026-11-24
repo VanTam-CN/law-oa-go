@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/config"
 )
 
@@ -30,10 +31,10 @@ type CacheEntry struct {
 
 // CacheStrategy 缓存策略
 type CacheStrategy struct {
-	TTL        time.Duration
-	KeyPrefix  string
-	Enabled    bool
-	MaxSize    int64
+	TTL       time.Duration
+	KeyPrefix string
+	Enabled   bool
+	MaxSize   int64
 }
 
 // NewCacheManager 创建新的缓存管理器

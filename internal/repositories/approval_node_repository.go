@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"errors"
 	"fmt"
 
 	"law-oa-go/internal/models"
@@ -39,7 +40,7 @@ func (r *ApprovalNodeRepository) FindByID(id uint) (*models.ApprovalNode, error)
 	var node models.ApprovalNode
 	err := r.db.Preload("Children").First(&node, id).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("查找审批节点失败: %w", err)

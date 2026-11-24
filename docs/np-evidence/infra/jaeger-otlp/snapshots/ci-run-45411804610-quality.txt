@@ -1,0 +1,29 @@
+# gh run view 45411804610 --json status,conclusion,jobs
+completed
+failure
+🔍 Code Quality
+Set up job	completed	success
+📥 检出代码	completed	success
+🐹 设置Go环境	completed	success
+📦 缓存Go模块	completed	success
+🔍 代码格式检查	completed	success
+📋 静态分析	completed	success
+🔒 安全扫描	completed	failure
+📊 测试覆盖率	completed	skipped
+🧪 运行测试	completed	skipped
+📈 上传覆盖率报告	completed	skipped
+Post 📦 缓存Go模块	completed	skipped
+Post 🐹 设置Go环境	completed	skipped
+Post 📥 检出代码	completed	success
+Complete job	completed	success
+📢 Notification & Report
+Set up job	completed	success
+🔔 生成部署报告	completed	success
+📧 上传部署报告	completed	success
+💬 Slack通知	completed	skipped
+📧 发送邮件通知	completed	skipped
+Complete job	completed	success
+🚀 Deploy to Staging
+🏗️ Multi-Arch Build
+🎨 Frontend Build
+🚀 Deploy to Production

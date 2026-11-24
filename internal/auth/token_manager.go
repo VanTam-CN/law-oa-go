@@ -13,6 +13,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/cache"
 	"law-oa-go/internal/config"
 	"law-oa-go/internal/models"
@@ -229,7 +230,6 @@ func (tm *TokenManager) VerifyToken(ctx context.Context, tokenString string) (*j
 		}
 		return tm.secret, nil
 	})
-
 	if err != nil {
 		jwtAuthErrors.WithLabelValues("verify").Inc()
 		return nil, fmt.Errorf("failed to parse token: %w", err)
@@ -582,7 +582,6 @@ func (tm *TokenManager) getTokenUUIDFromToken(tokenString string) string {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return tm.secret, nil
 	})
-
 	if err != nil {
 		return ""
 	}
