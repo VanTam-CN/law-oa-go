@@ -1,41 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { readFileSync } from 'node:fs'
-
-const password = process.env.NP_BROWSER_PASSWORD
-if (!password || password.length < 12) throw new Error('NP_BROWSER_PASSWORD must be set for the local fixture')
-
-const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i
-const seedPath = process.env.NP_BROWSER_SEED
-if (!seedPath) throw new Error('NP_BROWSER_SEED must point to the generated manifest')
-const seed = JSON.parse(readFileSync(seedPath, 'utf8'))
-if (!uuid.test(seed.target) || !uuid.test(seed.control) || seed.target === seed.control ||
-    !/^[1-9][0-9]*$/.test(seed.actor_id) || !seed.username || !seed.target_title) {
-  throw new Error('invalid synthetic browser manifest')
-}
-
-async function loginAndOpenDraft(page: Page) {
-  await page.goto('/login')
-  await page.getByPlaceholder('账号或邮箱').fill(seed.username)
-  await page.getByPlaceholder('密码').fill(password!)
-  await page.locator('button[type=submit]').click()
-  await expect(page).toHaveURL(/dashboard/)
-  await page.getByRole('button', { name: /新建立案$/ }).click()
-  await page.getByRole('button', { name: '打开服务端草稿', exact: true }).click()
-  const restored = page.waitForResponse(r => r.request().method() === 'GET' &&
-    new URL(r.url()).pathname === '/api/v1/case-intakes/' + seed.target)
-  await page.getByRole('button', { name: seed.target_title, exact: true }).click()
-  expect((await restored).status()).toBe(200)
-  await expect(page.locator('#intake-title')).toHaveValue(seed.target_title)
-  await expect(page.locator('#intake-description')).not.toHaveValue('')
-}
-
-async function applyCandidate(page: Page, text: string) {
-  await page.getByRole('textbox', { name: '摘要对话输入', exact: true }).fill(text)
-  await page.getByRole('button', { name: '开始摘要整理', exact: true }).click()
-  await page.getByRole('checkbox', { name: '已核对来源', exact: true }).check()
-  await page.getByRole('button', { name: '应用摘要', exact: true }).click()
-  await expect(page.locator('#intake-description')).toHaveValue(new RegExp(text))
-}
+import { applyCandidate, loginAndOpenDraft, seed, uuid } from './utils/np-live-draft'
 
 async function saveResponse(page: Page) {
   const response = page.waitForResponse(r => r.request().method() === 'PUT' && r.url().endsWith('/case-intakes/' + seed.target))
@@ -69,6 +33,13 @@ test('真实服务：多轮核对，仅应用摘要，原生保存后新会话�
   await expect(reopened.locator('#intake-title')).toHaveValue(originalTitle)
   await expect(reopened.getByText('已保存摘要来源', { exact: true })).toBeVisible()
   await expect(reopened.getByText('补充：交付日期尚未核对，不能写成已确认。', { exact: true }).first()).toBeVisible()
+  let redundantWrites = 0
+  reopened.on('request', request => {
+    if (request.method() === 'PUT' && new URL(request.url()).pathname === '/api/v1/case-intakes/' + seed.target) redundantWrites++
+  })
+  await reopened.getByRole('button', { name: '保存并退出', exact: true }).click()
+  await expect(reopened).toHaveURL(/\/case$/)
+  expect(redundantWrites).toBe(0)
   await fresh.close()
 })
 
@@ -135,7 +106,7 @@ test('真实上游断线：提交后断开TCP，重登按原键回查且重开�
   await fresh.close()
 })
 
-test('生成期间保留未发送输入；人工摘要不被候选静默覆盖', async ({ page }) => {
+test('生成期间保留未发送输入；人工摘要不被候选静默覆盖', async ({ page, browser }) => {
   await loginAndOpenDraft(page)
   let release!: () => void
   let arrived!: () => void
@@ -193,5 +164,10 @@ test('生成期间保留未发送输入；人工摘要不被候选静默覆盖',
   expect(writes).toBe(0)
   await expect(page.locator('#intake-title')).toHaveValue('虚构的未保存标题')
   page.off('request', listener)
-
+  const fresh = await browser.newContext()
+  const reopened = await fresh.newPage()
+  await loginAndOpenDraft(reopened)
+  await expect(reopened.locator('#intake-description')).toHaveValue('人工修改后的摘要须明确解除候选来源')
+  await expect(reopened.getByText('当前版本尚无已保存来源', { exact: true })).toBeVisible()
+  await fresh.close()
 })

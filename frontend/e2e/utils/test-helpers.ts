@@ -495,6 +495,7 @@ export async function installApiMocks(page: Page) {
         id: 801,
         intake_code: 'IN-2026-001',
         status: 'draft',
+        has_source_history: false,
         revision: intakeWriteState.revisions[intakeWriteState.revisions.length - 1],
       }))
       return
@@ -515,6 +516,7 @@ export async function installApiMocks(page: Page) {
           metadata: intakeWriteState.metadata,
         },
         revision,
+        has_source_history: false,
         parties: intakeWriteState.parties,
         materials: intakeWriteState.materials,
       }))
@@ -662,6 +664,16 @@ export async function installApiMocks(page: Page) {
           checkStatistics: { totalCasesChecked: 2, relatedPartiesChecked: 1 },
         },
       }))
+      return
+    }
+
+    if (path === '/conflict/tasks/CHK-2026-ASYNC-001/review') {
+      await route.fulfill(ok(null))
+      return
+    }
+
+    if (path === '/conflict/tasks/CHK-2026-ASYNC-001/waiver') {
+      await route.fulfill({ status: 404, json: { success: false, error: { code: 'WAIVER_NOT_FOUND' } } })
       return
     }
 

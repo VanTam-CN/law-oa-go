@@ -409,6 +409,41 @@ func intakeSourceHistory(db *gorm.DB, id string) (bool, error) {
 	return exists, err
 }
 
+// Revision and source history must describe the same read of the replayed row.
+func (h *DemoAggregateHandler) respondIntakeCreateReplay(c *gin.Context, key, actor string) bool {
+	lookup := func() *gorm.DB {
+		return h.db.Table("case_intakes").Where("idempotency_key = ? AND created_by = ?", key, actor)
+	}
+	var row map[string]interface{}
+	err := lookup().Select(`case_intakes.*, CASE WHEN EXISTS (
+		SELECT 1 FROM case_intake_source_snapshots s WHERE s.intake_id = case_intakes.id
+	) THEN 'present' ELSE 'absent' END AS np_replay_history`).Take(&row).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return false
+	}
+	if err != nil {
+		// Older schemas may lack the source table. Return the row with history unknown.
+		row = nil
+		if err := lookup().Take(&row).Error; err != nil {
+			return false
+		}
+	}
+	if client := intakeClientID(row["client_id"]); client > 0 && !h.authorizeIntakeClient(c, client) {
+		return true
+	}
+	switch valueString(row, "np_replay_history") {
+	case "present":
+		row["has_source_history"] = true
+	case "absent":
+		row["has_source_history"] = valueString(objectValue(row["metadata"]), npDescriptionSourceRevisionKey) != ""
+	}
+	delete(row, "np_replay_history")
+	row["revision"] = intakeDraftRevisionFor(valueString(row, "id"), row["metadata"])
+	row["idempotent_replay"] = true
+	common.APISuccess(c, sanitizeAggregateRow("case_intakes", row))
+	return true
+}
+
 func (h *DemoAggregateHandler) ApprovalsWorkbench(c *gin.Context) {
 	where := "deleted_at IS NULL"
 	args := []interface{}{}
@@ -1864,18 +1899,8 @@ func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
 		common.APIBadRequest(c, "幂等键无效", "Idempotency-Key 长度不能超过 120 个字符")
 		return
 	}
-	if idempotencyKey != "" && h.hasColumn("case_intakes", "idempotency_key") {
-		var existing map[string]interface{}
-		if err := h.db.Table("case_intakes").
-			Where("idempotency_key = ? AND created_by = ?", idempotencyKey, createdBy).
-			Take(&existing).Error; err == nil {
-			if clientID := intakeClientID(existing["client_id"]); clientID > 0 && !h.authorizeIntakeClient(c, clientID) {
-				return
-			}
-			existing["revision"] = intakeDraftRevisionFor(valueString(existing, "id"), existing["metadata"])
-			common.APISuccess(c, sanitizeAggregateRow("case_intakes", existing))
-			return
-		}
+	if idempotencyKey != "" && h.hasColumn("case_intakes", "idempotency_key") && h.respondIntakeCreateReplay(c, idempotencyKey, createdBy) {
+		return
 	}
 	parties := mapSliceValue(payload["parties"])
 	materials := mapSliceValue(payload["materials"])
@@ -1992,18 +2017,8 @@ func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
 		if c.Writer.Written() {
 			return
 		}
-		if idempotencyKey != "" && h.hasColumn("case_intakes", "idempotency_key") {
-			var existing map[string]interface{}
-			if findErr := h.db.Table("case_intakes").
-				Where("idempotency_key = ? AND created_by = ?", idempotencyKey, createdBy).
-				Take(&existing).Error; findErr == nil {
-				if clientID := intakeClientID(existing["client_id"]); clientID > 0 && !h.authorizeIntakeClient(c, clientID) {
-					return
-				}
-				existing["revision"] = intakeDraftRevisionFor(valueString(existing, "id"), existing["metadata"])
-				common.APISuccess(c, sanitizeAggregateRow("case_intakes", existing))
-				return
-			}
+		if idempotencyKey != "" && h.hasColumn("case_intakes", "idempotency_key") && h.respondIntakeCreateReplay(c, idempotencyKey, createdBy) {
+			return
 		}
 		if isSubjectWorkflowError(err) {
 			writeSubjectWorkflowError(c, err)
@@ -2366,6 +2381,17 @@ func (h *DemoAggregateHandler) ConfirmIntakeFacts(c *gin.Context) {
 		if !canViewAllMatterData(c) && valueString(intake, "created_by") != actorID && valueString(intake, "status") != "assistant_draft" {
 			forbidObjectAccess(c)
 			return gorm.ErrInvalidTransaction
+		}
+		// The access token may predate a role change. Hold the live role until the confirmation commits.
+		var lawyer models.User
+		err := tx.Select("id").Clauses(clause.Locking{Strength: "SHARE"}).
+			Where("id = ? AND role = ? AND status = ?", actorID, "lawyer", "active").Take(&lawyer).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			common.NewAPIError(c, http.StatusForbidden, "INTAKE_FACT_CONFIRMATION_FORBIDDEN", "仅在职执业律师可以确认当事人事实")
+			return gorm.ErrInvalidTransaction
+		}
+		if err != nil {
+			return err
 		}
 		if !h.intakeWriteTransaction(tx).authorizeIntakeClient(c, intakeClientID(intake["client_id"])) {
 			return gorm.ErrInvalidTransaction

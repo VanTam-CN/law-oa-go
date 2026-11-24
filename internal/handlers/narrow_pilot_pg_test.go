@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -31,13 +32,15 @@ import (
 //   - AuthorizationService is built from four repositories (no WithDB variant here).
 //   - Matter-collaboration material routes are I09-FILES scope and are omitted,
 //     so materialVersions and the two file-stream checks are out of scope.
-//   - preserved() drops the material_files join to match the smaller snapshot.
+//   - preserved() implements the frozen I09-MAIN whole-row contract from
+//     route-b-test-split.md §五 instead of the dropped material_files join.
 //   - NP_ASSISTANT_ACTORS must be set before NewNarrowPilotHandler reads the env.
 type npPGFixture struct {
 	db                  *gorm.DB
 	handler             *NarrowPilotHandler
 	server              *httptest.Server
 	token, id, revision string
+	controlID           string
 	owner               uint
 }
 
@@ -74,13 +77,31 @@ func npPostgresFixture(t *testing.T) *npPGFixture {
 	}
 	id := uuid.NewString()
 	revision := uuid.NewString()
-	if err := db.Table("case_intakes").Create(map[string]interface{}{"id": id, "intake_code": "NP-" + tag, "title": "虚构接案·甲", "client_id": client.ID, "created_by": user.ID, "description": "原摘要标记", "status": "draft", "metadata": fmt.Sprintf(`{"draft_revision":%q,"np_unrelated":{"keep":true,"big":9007199254740993,"decimal":0.12345678901234567890123456789},"lawyer_id":%d}`, revision, user.ID)}).Error; err != nil {
+	if err := db.Table("case_intakes").Create(map[string]interface{}{"id": id, "intake_code": "NP-" + tag, "title": "虚构接案·甲", "case_type": "civil", "client_id": client.ID, "created_by": user.ID, "description": "原摘要标记", "status": "draft", "metadata": fmt.Sprintf(`{"draft_revision":%q,"np_unrelated":{"keep":true,"big":9007199254740993,"decimal":0.12345678901234567890123456789},"lawyer_id":%d}`, revision, user.ID)}).Error; err != nil {
 		t.Fatal(err)
 	}
 	if err := db.Table("case_intake_parties").Create(map[string]interface{}{"intake_id": id, "entity_name": "虚构对方", "entity_type": "LEGAL_PERSON", "party_role": "opposing_party", "identity_type": "SOCIAL_CREDIT_CODE", "identity_number_ciphertext": "test-only-cipher", "identity_number_digest": "test-only-digest", "metadata": `{"relationship":"keep"}`}).Error; err != nil {
 		t.Fatal(err)
 	}
 	if err := db.Table("case_materials").Create(map[string]interface{}{"intake_id": id, "name": "虚构材料", "material_type": "other", "metadata": `{"preserve":true}`}).Error; err != nil {
+		t.Fatal(err)
+	}
+	// I09-MAIN contract (route-b-test-split.md §五): the comparator needs a
+	// control draft owned by the same lawyer, both sides' parties/materials,
+	// one shared client, and at least two target materials plus the unknown
+	// large integer. IDs travel on the fixture; nothing is guessed.
+	controlID := uuid.NewString()
+	controlRevision := uuid.NewString()
+	if err := db.Table("case_intakes").Create(map[string]interface{}{"id": controlID, "intake_code": "NP-C-" + tag, "title": "虚构接案·对照", "client_id": client.ID, "created_by": user.ID, "description": "对照摘要原文", "status": "draft", "metadata": fmt.Sprintf(`{"draft_revision":%q}`, controlRevision)}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Table("case_intake_parties").Create(map[string]interface{}{"intake_id": controlID, "entity_name": "虚构对照对方", "entity_type": "LEGAL_PERSON", "party_role": "opposing_party", "identity_type": "SOCIAL_CREDIT_CODE", "identity_number_ciphertext": "test-only-cipher", "identity_number_digest": "test-only-digest", "metadata": `{"relationship":"keep"}`}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Table("case_materials").Create(map[string]interface{}{"intake_id": controlID, "name": "虚构对照材料", "material_type": "other", "metadata": `{"preserve":true}`}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Table("case_materials").Create(map[string]interface{}{"intake_id": id, "name": "虚构材料二", "material_type": "other", "metadata": `{"preserve":true}`}).Error; err != nil {
 		t.Fatal(err)
 	}
 	middleware.InitJWT(&config.Config{JWT: config.JWTConfig{Secret: strings.Repeat("n", 40)}})
@@ -109,7 +130,7 @@ func npPostgresFixture(t *testing.T) *npPGFixture {
 	r.GET("/api/v1/case-intake-assist/contexts/:id", n.GetContext)
 	server := httptest.NewServer(r)
 	t.Cleanup(server.Close)
-	return &npPGFixture{db, n, server, token, id, revision, user.ID}
+	return &npPGFixture{db, n, server, token, id, revision, controlID, user.ID}
 }
 
 func (f *npPGFixture) request(t *testing.T, method, path, key string, body interface{}) (int, map[string]interface{}) {
@@ -160,16 +181,34 @@ func (f *npPGFixture) body(text string, source interface{}) map[string]interface
 	return body
 }
 
-// ADAPT: the frozen query also joined material_files; that table belongs to
-// the I09-FILES scope and is excluded from the M3 preserved() snapshot.
+// preserved returns the I09-MAIN protected snapshot digest (route-b-test-split.md
+// §五): whole-row target/control/parties/materials/clients ordered by primary
+// key, canonical PostgreSQL jsonb text, UTC pinned inside one transaction to
+// match compare-main-browser-db.py's SET LOCAL TIME ZONE 'UTC' guard.
 func (f *npPGFixture) preserved(t *testing.T) string {
 	t.Helper()
-	var result string
-	err := f.db.Raw(`SELECT jsonb_build_object('title',title,'client',client_id,'status',status,'unknown',metadata->'np_unrelated','parties',(SELECT jsonb_agg(to_jsonb(p) ORDER BY id) FROM case_intake_parties p WHERE intake_id=i.id),'materials',(SELECT jsonb_agg(to_jsonb(m) ORDER BY id) FROM case_materials m WHERE intake_id=i.id))::text FROM case_intakes i WHERE id=?`, f.id).Scan(&result).Error
+	var canonical string
+	err := f.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("SET LOCAL TIME ZONE 'UTC'").Error; err != nil {
+			return err
+		}
+		return tx.Raw(`SELECT jsonb_build_array(
+  (to_jsonb(t)-ARRAY['description','updated_at','metadata']) || jsonb_build_object('metadata',t.metadata-ARRAY['draft_revision','np_description_source_revision']),
+  to_jsonb(c),
+  (SELECT jsonb_agg(to_jsonb(p) ORDER BY id) FROM case_intake_parties p WHERE intake_id IN (t.id,c.id)),
+  (SELECT jsonb_agg(to_jsonb(m) ORDER BY id) FROM case_materials m WHERE intake_id IN (t.id,c.id)),
+  (SELECT jsonb_agg(to_jsonb(cl) ORDER BY id) FROM clients cl WHERE cl.id IN (t.client_id, c.client_id))
+)::text
+FROM case_intakes t, case_intakes c
+WHERE t.id=? AND c.id=?`, f.id, f.controlID).Scan(&canonical).Error
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	return result
+	if canonical == "" {
+		t.Fatal("target or control row missing")
+	}
+	return fmt.Sprintf("%x", sha256.Sum256([]byte(canonical)))
 }
 
 func TestNPPostgresSaveReopenConcurrencyAndReceipts(t *testing.T) {
@@ -488,7 +527,33 @@ func TestNPPostgresSourcePermissionsAndStrictBoundary(t *testing.T) {
 	if code != 403 {
 		t.Fatal("admin bypassed protected legacy guard", code)
 	}
-	if err := f.db.Model(&models.User{}).Where("id=?", f.owner).Update("role", "lawyer").Error; err != nil {
+	// The open editor still holds the original lawyer token after the account changes.
+	router := gin.New()
+	router.Use(middleware.AuthMiddleware())
+	router.POST("/confirm/:id", f.handler.h.ConfirmIntakeFacts)
+	var before string
+	rowSQL := "SELECT to_jsonb(i)::text FROM case_intakes i WHERE id=?"
+	if err := f.db.Raw(rowSQL, f.id).Scan(&before).Error; err != nil {
+		t.Fatal(err)
+	}
+	for _, account := range []map[string]any{{"role": "admin"}, {"role": "lawyer", "status": "inactive"}} {
+		if err := f.db.Table("users").Where("id=?", f.owner).Updates(account).Error; err != nil {
+			t.Fatal(err)
+		}
+		req := httptest.NewRequest(http.MethodPost, "/confirm/"+f.id, nil)
+		req.Header.Set("Authorization", "Bearer "+f.token)
+		req.Header.Set("X-Intake-Revision", revision)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+		var after string
+		if err := f.db.Raw(rowSQL, f.id).Scan(&after).Error; err != nil {
+			t.Fatal(err)
+		}
+		if w.Code != 403 || before != after {
+			t.Fatalf("revoked confirmation status=%d rowChanged=%t", w.Code, before != after)
+		}
+	}
+	if err := f.db.Model(&models.User{}).Where("id=?", f.owner).Updates(map[string]any{"role": "lawyer", "status": "active"}).Error; err != nil {
 		t.Fatal(err)
 	}
 	f.handler.allowed = map[string]bool{}
@@ -533,5 +598,62 @@ func TestNPPostgresDescriptionWhitespaceIsExact(t *testing.T) {
 	var stored string
 	if err := f.db.Table("case_intakes").Select("description").Where("id=?", f.id).Scan(&stored).Error; err != nil || stored != "字段原文" {
 		t.Fatal("not exact stored text", stored, err)
+	}
+}
+
+func TestNPPostgresProtectedDigestDetectsControlAndMemberChanges(t *testing.T) {
+	f := npPostgresFixture(t)
+	var ready bool
+	if err := f.db.Raw(`SELECT metadata#>'{np_unrelated,big}' = '9007199254740993'::jsonb
+		AND (SELECT count(*) FROM case_materials WHERE intake_id=?) >= 2
+		AND EXISTS (SELECT 1 FROM case_materials WHERE intake_id=?)
+		AND (SELECT count(DISTINCT intake_id) FROM case_intake_parties WHERE intake_id IN (?,?))=2
+		AND EXISTS (SELECT 1 FROM clients c JOIN case_intakes ctrl ON ctrl.client_id=c.id WHERE ctrl.id=? AND c.id=t.client_id)
+		FROM case_intakes t WHERE id=?`, f.id, f.controlID, f.id, f.controlID, f.controlID, f.id).Scan(&ready).Error; err != nil || !ready {
+		t.Fatalf("incomplete protected fixture: %v", err)
+	}
+	baseline := f.preserved(t)
+	if err := f.db.Exec("UPDATE case_intakes SET description='synthetic edit', updated_at=now() WHERE id=?", f.id).Error; err != nil {
+		t.Fatal(err)
+	}
+	if f.preserved(t) != baseline {
+		t.Fatal("target-only exclusions changed digest")
+	}
+	if err := f.db.Exec("UPDATE case_intakes SET description='control edit' WHERE id=?", f.controlID).Error; err != nil {
+		t.Fatal(err)
+	}
+	afterControl := f.preserved(t)
+	if afterControl == baseline {
+		t.Fatal("missed control change")
+	}
+	if err := f.db.Exec("DELETE FROM case_intake_parties WHERE intake_id=?", f.controlID).Error; err != nil {
+		t.Fatal(err)
+	}
+	if f.preserved(t) == afterControl {
+		t.Fatal("missed deleted member")
+	}
+}
+
+func TestNPGoDigestMatchesBrowserManifest(t *testing.T) {
+	path := os.Getenv("NP_GO_SHA_MANIFEST")
+	if path == "" {
+		t.Skip("requires the isolated browser before snapshot")
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var before struct {
+		Target  string
+		Control string
+		Digest  string `json:"protected_sha256"`
+	}
+	if err := json.Unmarshal(raw, &before); err != nil {
+		t.Fatal(err)
+	}
+	f := npPostgresFixture(t)
+	f.id, f.controlID = before.Target, before.Control
+	if got := f.preserved(t); got != before.Digest {
+		t.Fatalf("Go %s differs from Python %s", got, before.Digest)
 	}
 }

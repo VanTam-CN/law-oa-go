@@ -498,7 +498,7 @@ test.describe('立案冲突门禁', () => {
         body: JSON.stringify({
           success: true,
           data: {
-            taskId: 'CHK-2026-ASYNC-001', status: 'COMPLETED', result: {
+            taskId: 'CHK-2026-ASYNC-001', status: 'COMPLETED', revision: 'rev-801-3', result: {
               checkId: 'CHK-2026-ASYNC-001',
               record: { id: 'CHK-2026-ASYNC-001' },
               hasConflict: true,

@@ -197,6 +197,74 @@ test.describe('新建立案工作台', () => {
     expect(intakeWrites.filter((write) => write.method === 'PUT')).toHaveLength(1)
   })
 
+  for (const failure of ['none', 'save', 'result', 'review', 'waiver']) {
+    test(`摘要修改后直接审批：${failure}`, async ({ page }) => {
+      await fillCaseIntakeBasics(page)
+      await page.getByRole('button', { name: '保存并进行利益冲突检查' }).click()
+      await expect(page.locator('.ant-message')).toContainText('利益冲突检查已完成')
+      await page.getByRole('button', { name: '返回基本信息' }).click()
+      const summary = '合成资料：律师核对后的第二版摘要'
+      await page.locator('#intake-description').fill(summary)
+      if (failure === 'save') await page.route('**/api/v1/case-intakes/801', async route => {
+        if (route.request().method() !== 'PUT') return route.fallback()
+        await route.fulfill({ status: 409, json: { success: false, error: { message: '合成草稿版本冲突' } } })
+      })
+      if (['result', 'review', 'waiver'].includes(failure)) {
+        await page.route('**/api/v1/conflict/tasks/*/' + failure, route =>
+          route.fulfill({ status: 503, json: { success: false, error: { message: '合成读取故障 ' + failure } } }))
+      }
+      const writes: string[][] = []
+      page.on('request', request => {
+        if (!['POST', 'PUT'].includes(request.method())) return
+        const path = new URL(request.url()).pathname.split('/').pop()!
+        const body = request.postDataJSON() || {}
+        if (path === '801') writes.push([path, body.expected_revision, body.description])
+        if (['facts-confirmation', 'conflict-check'].includes(path)) writes.push([path, request.headers()['x-intake-revision']])
+        if (path === 'with-conflict') writes.push([path, body.metadata.intake_revision, body.content])
+      })
+      await page.getByRole('button', { name: '提交审批并等待成案' }).click()
+      if (failure === 'save') {
+        await expect(page.locator('.ant-message')).toContainText('合成草稿版本冲突')
+        await expect(page.locator('#intake-description')).toHaveValue(summary)
+        expect(writes).toEqual([['801', 'rev-801-3', summary]])
+      } else if (failure !== 'none') {
+        await expect(page.locator('.ant-message')).toContainText('合成读取故障 ' + failure)
+        await expect(page.locator('#intake-description')).toHaveValue(summary)
+        expect(writes.map(([action]) => action)).toEqual(['801', 'facts-confirmation', 'conflict-check'])
+      } else {
+        await expect(page).toHaveURL(/\/approval\/701$/)
+        expect(writes).toEqual([
+          ['801', 'rev-801-3', summary], ['facts-confirmation', 'rev-801-4'],
+          ['conflict-check', 'rev-801-5'], ['with-conflict', 'rev-801-6', summary],
+        ])
+      }
+    })
+  }
+
+  test('创建重放保留本地输入，重开前不能用服务端新版本继续写', async ({ page }) => {
+    let creates = 0
+    let writes = 0
+    await page.route('**/api/v1/case-intakes', async route => {
+      if (route.request().method() !== 'POST') return route.fallback()
+      creates++
+      await route.fulfill({ json: { success: true, data: {
+        id: 801, intake_code: 'IN-2026-001', revision: '10000000-0000-4000-8000-000000000003',
+        title: '服务端较新标题', description: '其他标签已保存', status: 'draft',
+        created_by: 2, has_source_history: false, idempotent_replay: true,
+      } } })
+    })
+    page.on('request', request => {
+      if (request.method() === 'PUT' || request.url().endsWith('/facts-confirmation')) writes++
+    })
+    await fillCaseIntakeBasics(page)
+    await page.getByRole('button', { name: '保存草稿', exact: true }).click()
+    await expect(page.locator('.ant-message')).toContainText('此创建请求已有草稿')
+    await page.getByRole('button', { name: '保存并进行利益冲突检查' }).click()
+    await expect(page.locator('.ant-message')).toContainText('本机草稿缺少版本号')
+    await expect(page.locator('#intake-title')).toHaveValue('示例科技服务合同纠纷案')
+    expect([creates, writes]).toEqual([1, 0])
+  })
+
   test('缺少版本的旧本机草稿保留输入并阻止原生 PUT', async ({ page }) => {
     await fillCaseIntakeBasics(page)
     await page.getByRole('button', { name: '保存草稿' }).click()

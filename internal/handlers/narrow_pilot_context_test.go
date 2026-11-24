@@ -20,9 +20,6 @@ import (
 func npContextFixture(t *testing.T) (*NarrowPilotHandler, *gin.Engine, string, *gorm.DB) {
 	t.Helper()
 	h, db := newDraftRevisionDB(t)
-	if err := db.Exec("ALTER TABLE users ADD COLUMN deleted_at DATETIME").Error; err != nil {
-		t.Fatal(err)
-	}
 	if err := db.AutoMigrate(&models.AuthTokenSession{}); err != nil {
 		t.Fatal(err)
 	}

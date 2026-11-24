@@ -43,7 +43,7 @@ func newDraftRevisionDB(t *testing.T) (*DemoAggregateHandler, *gorm.DB) {
 		"CREATE TABLE case_intakes (id TEXT PRIMARY KEY, intake_code TEXT, title TEXT, case_type TEXT, description TEXT, priority TEXT, client_id INTEGER, created_by TEXT, status TEXT, metadata TEXT, created_at DATETIME, updated_at DATETIME)",
 		"CREATE TABLE case_intake_parties (id INTEGER PRIMARY KEY AUTOINCREMENT, intake_id TEXT, entity_name TEXT, entity_type TEXT, party_role TEXT, relation_depth INTEGER, identity_type TEXT, identity_number_ciphertext TEXT, identity_number_digest TEXT, aliases TEXT, metadata TEXT, created_at DATETIME)",
 		"CREATE TABLE case_intake_source_snapshots (intake_id TEXT, saved_revision TEXT)",
-		"CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, role TEXT, status TEXT, department TEXT)",
+		"CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, role TEXT, status TEXT, department TEXT, deleted_at DATETIME)",
 		"CREATE TABLE cases (id INTEGER PRIMARY KEY AUTOINCREMENT, client_id INTEGER, lawyer_id TEXT, created_by TEXT, deleted_at DATETIME, ethical_wall_enabled BOOLEAN DEFAULT FALSE)",
 		"CREATE TABLE case_ethical_wall_whitelist (id INTEGER PRIMARY KEY AUTOINCREMENT, case_id INTEGER, user_id TEXT)",
 	}
