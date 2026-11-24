@@ -32,6 +32,7 @@ s AS (SELECT * FROM case_intake_source_snapshots WHERE intake_id=:'target'),
 w AS (SELECT * FROM case_intake_write_requests WHERE intake_id=:'target')
 SELECT jsonb_build_object(
  'target', t.id, 'control', c.id, 'revision', t.metadata->>'draft_revision',
+ 'target_sha256', encode(sha256(convert_to(to_jsonb(t)::text, 'UTF8')), 'hex'),
  'source_revision', t.metadata->>'np_description_source_revision',
  'large_number', t.metadata#>'{np_unrelated,big}' = '9007199254740993'::jsonb,
  'owned', t.created_by=:'actor_id'::bigint AND c.created_by=t.created_by,
@@ -89,7 +90,7 @@ def snapshot(seed):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('mode', choices=['seed', 'before', 'after'])
+    parser.add_argument('mode', choices=['seed', 'before', 'after', 'unchanged'])
     parser.add_argument('manifest', type=Path)
     parser.add_argument('baseline', nargs='?', type=Path)
     args = parser.parse_args()
@@ -106,6 +107,9 @@ def main():
             if row['sources'] or row['receipts'] or row['source_revision'] is not None:
                 raise ValueError('dirty four-scenario window')
             write_new(args.baseline, row)
+        elif args.mode == 'unchanged':
+            if row != json.loads(args.baseline.read_text()):
+                raise ValueError('read-only window changed target, protected rows, source or receipt state')
         else:
             before = json.loads(args.baseline.read_text())
             if any(before[k] != row[k] for k in ('target', 'control', 'protected_sha256')):
