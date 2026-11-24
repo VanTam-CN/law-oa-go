@@ -1,0 +1,170 @@
+{
+  "base": "448047e3df80d598cf0dbd0855b00edc71c40a66",
+  "fixture_commit": "c8b3162a790f79e418113aa91a694006bd40e5d8",
+  "review": {
+    "independent_model": "gpt-6.2-astra",
+    "coordinator_log_recheck": true,
+    "pr": 48,
+    "actual_pr_runs": 0,
+    "hypothetical_m2_to_main_jobs": 25,
+    "pilot_external_steps": [],
+    "mutation_detected": [
+      [
+        "ci.yml",
+        "quality",
+        "tool-cache"
+      ],
+      [
+        "ci.yml",
+        "notify",
+        "actions/upload-artifact"
+      ],
+      [
+        "ci.yml",
+        "notify",
+        "8398a7/action-slack"
+      ],
+      [
+        "ci.yml",
+        "notify",
+        "dawidd6/action-send-mail"
+      ],
+      [
+        "tests.yml",
+        "e2e-tests",
+        "actions/upload-artifact"
+      ]
+    ],
+    "m3_to_main_external_points": 45,
+    "hosted_runs": [
+      {
+        "run": 45317907862,
+        "head": "b070323a413768c76ec2ffaa904bfa8009d5ef91",
+        "artifact_count": 0,
+        "gates": [
+          {
+            "id": 138189127276,
+            "marker": "M2_PG_UNAVAILABLE",
+            "gate_step": "failure"
+          },
+          {
+            "id": 138189127483,
+            "marker": "M2_REQUIRED_TEST_MISSING",
+            "gate_step": "failure"
+          },
+          {
+            "id": 138189127697,
+            "marker": "M2_REQUIRED_TEST_SKIPPED",
+            "gate_step": "failure"
+          },
+          {
+            "id": 138189127961,
+            "marker": "M2_DSN_MISSING",
+            "gate_step": "failure"
+          },
+          {
+            "id": 138189131168,
+            "marker": "M2_NO_TESTS",
+            "gate_step": "failure"
+          }
+        ]
+      },
+      {
+        "run": 45317903182,
+        "head": "b070323a413768c76ec2ffaa904bfa8009d5ef91",
+        "artifact_count": 0,
+        "gates": [
+          {
+            "id": 138189103491,
+            "marker": "M2_PG_PASS required=5 passed=5",
+            "gate_step": "success"
+          }
+        ]
+      },
+      {
+        "run": 45318673293,
+        "head": "448047e3df80d598cf0dbd0855b00edc71c40a66",
+        "artifact_count": 0,
+        "gates": [
+          {
+            "id": 138191604124,
+            "marker": "M2_PG_PASS required=5 passed=5",
+            "gate_step": "success"
+          }
+        ]
+      }
+    ]
+  },
+  "fixture": {
+    "database": "isolated PostgreSQL 16.14, v14+86",
+    "seed": {
+      "target_materials": 2,
+      "all_materials": 3,
+      "clients": 1,
+      "parties": 2,
+      "large_number_exact": true
+    },
+    "comparator_cli": "python3 scripts/np-first-slice/test-main-browser-comparator.py",
+    "comparator_exit": 0,
+    "self_checks": [
+      "four-linked-and-manual",
+      "legacy-unlinked-receipt",
+      "no-business-writes",
+      "target-title",
+      "control-summary",
+      "unknown-big-rounding",
+      "client-row",
+      "party-row",
+      "material-row",
+      "empty-materials",
+      "wrong-receipt-actor",
+      "final-still-linked"
+    ],
+    "discovery": {
+      "dedicated": 4,
+      "general": 109,
+      "m1": 109
+    },
+    "dedicated_typescript_strict_exit": 0
+  },
+  "reference_browser": {
+    "product": "2d659d9dd750f49ddb1f517746e22851392231a6",
+    "argv": [
+      "playwright",
+      "test",
+      "-c",
+      "playwright.np.config.ts"
+    ],
+    "browser": "system Chrome",
+    "log_opened_utc": "2026-11-24T03:44:06.368122+00:00",
+    "log_closed_utc": "2026-11-24T03:44:22.227313+00:00",
+    "exit": 1,
+    "cases": [
+      "PASS",
+      "PASS",
+      "FAIL_EXPECTED_MISSING_V2_RECORD",
+      "PASS"
+    ],
+    "post_disconnect_v2_query": "NOT_REACHED",
+    "pg_before": {
+      "protected_sha256": "73efcd8ebc94d658e959cbee750d9889d76c39c833c0e24b2afecc756f313128",
+      "sources": 0,
+      "receipts": 0
+    },
+    "pg_after": {
+      "protected_sha256": "73efcd8ebc94d658e959cbee750d9889d76c39c833c0e24b2afecc756f313128",
+      "sources": 3,
+      "receipts": 4,
+      "linked": 3,
+      "manual": 1
+    },
+    "pg_comparator_exit": 0
+  },
+  "gates": {
+    "M3_route_B_fixture_preparation": "PASS",
+    "M4_target_product_browser": "NOT_RUN",
+    "full_I11": "NOT_RUN",
+    "M3_to_main_hosted_run": "HOLD",
+    "I09_FILES": "DEFERRED"
+  }
+}
