@@ -37,13 +37,13 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
-        cache: true
+        cache: ${{ github.head_ref != 'codex/np-main-m2' }}
 
     - name: 设置Node.js环境
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
+        cache: ${{ github.head_ref != 'codex/np-main-m2' && 'npm' || '' }}
         cache-dependency-path: frontend/package-lock.json
 
     - name: 检查Go版本
@@ -116,7 +116,7 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
-        cache: true
+        cache: ${{ github.head_ref != 'codex/np-main-m2' }}
 
     - name: 设置数据库
       run: |
@@ -169,7 +169,7 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
-        cache: true
+        cache: ${{ github.head_ref != 'codex/np-main-m2' }}
 
     - name: 下载依赖
       run: |
@@ -260,7 +260,7 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
-        cache: true
+        cache: ${{ github.head_ref != 'codex/np-main-m2' }}
 
     - name: 下载依赖
       run: |

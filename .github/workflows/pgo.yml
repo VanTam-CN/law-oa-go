@@ -26,7 +26,7 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
-        cache: true
+        cache: ${{ github.head_ref != 'codex/np-main-m2' }}
 
     - name: 检查Go版本和PGO支持
       run: |
@@ -52,7 +52,7 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
-        cache: true
+        cache: ${{ github.head_ref != 'codex/np-main-m2' }}
 
     - name: 下载依赖
       run: |

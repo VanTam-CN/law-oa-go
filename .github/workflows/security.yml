@@ -37,7 +37,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-          cache: true
+          cache: ${{ github.head_ref != 'codex/np-main-m2' }}
 
       - name: 下载并校验依赖
         run: |
@@ -59,7 +59,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-          cache: true
+          cache: ${{ github.head_ref != 'codex/np-main-m2' }}
 
       - name: 下载并校验依赖
         run: |

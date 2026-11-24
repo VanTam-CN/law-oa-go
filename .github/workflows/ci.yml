@@ -73,10 +73,11 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-          cache: true
+          cache: ${{ github.head_ref != 'codex/np-main-m2' }}
           cache-dependency-path: go.sum
 
       - name: 📦 缓存Go模块
+        if: github.head_ref != 'codex/np-main-m2'
         uses: actions/cache@v4
         with:
           path: ~/go/pkg/mod
@@ -110,6 +111,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
+          cache: ${{ github.head_ref != 'codex/np-main-m2' }}
 
       - name: 🧪 运行测试
         run: |
