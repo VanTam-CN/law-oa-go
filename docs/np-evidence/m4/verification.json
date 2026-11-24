@@ -1,0 +1,229 @@
+{
+  "scope": "M4 author and coordinator isolated verification",
+  "source": "a9da0d2e235cab8349c0a08f273e4c4057ca9f00",
+  "branch": "codex/np-main-m4",
+  "hermes": "t_a5754212",
+  "environment": {
+    "postgres": "16.14 / bootstrap v14 + frozen 86",
+    "browser": "Chrome / same-origin fixtures / synthetic-only / workers=1 / retries=0",
+    "runtime": "tagged np-local-check with registered router; separate production Gin early chain and instrumented response-cache component",
+    "frontend": "VITE_NP_MEMORY_ONLY=true; production assets on loopback static host; no trace or screenshot stored here"
+  },
+  "runs": {
+    "root-build": {
+      "argv": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "sha": "a9da0d2e235cab8349c0a08f273e4c4057ca9f00",
+      "started": "2026-11-24T10:32:33+00:00",
+      "ended": "2026-11-24T10:32:56+00:00",
+      "exit": 0,
+      "workdir": "."
+    },
+    "ts": {
+      "argv": [
+        "node",
+        "node_modules/typescript/bin/tsc",
+        "--noEmit"
+      ],
+      "sha": "945cb5d2d95ffee5e4ff460a2a8992156cb35c1e",
+      "started": "2026-11-24T10:28:34+00:00",
+      "ended": "2026-11-24T10:28:38+00:00",
+      "exit": 0,
+      "workdir": "frontend"
+    },
+    "build": {
+      "argv": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "sha": "945cb5d2d95ffee5e4ff460a2a8992156cb35c1e",
+      "started": "2026-11-24T10:28:26+00:00",
+      "ended": "2026-11-24T10:28:34+00:00",
+      "exit": 0,
+      "workdir": "frontend"
+    },
+    "jest": {
+      "argv": [
+        "node",
+        "node_modules/jest/bin/jest.js",
+        "--runInBand",
+        "src/components/intake",
+        "src/pages/auth/__tests__",
+        "src/pages/batch01/__tests__/narrowPilotI13.test.ts",
+        "src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts",
+        "src/components/layout/__tests__/Header.test.tsx",
+        "src/utils/__tests__/storage.test.ts",
+        "--coverage=false",
+        "--json",
+        "--outputFile=$PRIVATE_TMP/r2-jest.json"
+      ],
+      "sha": "a9da0d2e235cab8349c0a08f273e4c4057ca9f00",
+      "started": "2026-11-24T10:31:07+00:00",
+      "ended": "2026-11-24T10:31:19+00:00",
+      "exit": 0,
+      "workdir": "frontend",
+      "suites": 12,
+      "passed": 124,
+      "pending": 0,
+      "failed": 0
+    },
+    "cache-fixed": {
+      "argv": [
+        "go",
+        "test",
+        "-race",
+        "-count=1",
+        ".",
+        "./internal/middleware",
+        "-run",
+        "^Test(IntakeEarlyResponsesNoStore|NarrowPilotCacheZeroReadWrite)$",
+        "-json"
+      ],
+      "sha": "a9da0d2e235cab8349c0a08f273e4c4057ca9f00",
+      "started": "2026-11-24T10:32:56+00:00",
+      "ended": "2026-11-24T10:33:06+00:00",
+      "exit": 0,
+      "workdir": "."
+    },
+    "route-b": {
+      "argv": [
+        "bash",
+        "scripts/np-first-slice/run-m4-browser.sh",
+        "route-b"
+      ],
+      "sha": "945cb5d2d95ffee5e4ff460a2a8992156cb35c1e",
+      "started": "2026-11-24T10:28:38+00:00",
+      "ended": "2026-11-24T10:29:43+00:00",
+      "exit": 0,
+      "workdir": ".",
+      "chrome_cases": 4,
+      "pg": {
+        "protected_sha256": "ee3e4880a36f0534a1f5193cb696f642a916ed409354a0dd28d8a403fa0cc2e3",
+        "sources": 3,
+        "receipts": 4,
+        "linked": 3,
+        "manual": 1
+      },
+      "same_window_go_digest": "MATCH"
+    },
+    "storage": {
+      "argv": [
+        "bash",
+        "scripts/np-first-slice/run-m4-browser.sh",
+        "storage"
+      ],
+      "sha": "945cb5d2d95ffee5e4ff460a2a8992156cb35c1e",
+      "started": "2026-11-24T10:29:43+00:00",
+      "ended": "2026-11-24T10:30:07+00:00",
+      "exit": 0,
+      "workdir": ".",
+      "chrome_cases": 5,
+      "read_only_pg": "MATCH"
+    },
+    "navigation": {
+      "argv": [
+        "bash",
+        "scripts/np-first-slice/run-m4-browser.sh",
+        "navigation"
+      ],
+      "sha": "945cb5d2d95ffee5e4ff460a2a8992156cb35c1e",
+      "started": "2026-11-24T10:30:07+00:00",
+      "ended": "2026-11-24T10:30:32+00:00",
+      "exit": 0,
+      "workdir": ".",
+      "chrome_cases": 5,
+      "read_only_pg": "MATCH"
+    },
+    "editing": {
+      "argv": [
+        "bash",
+        "scripts/np-first-slice/run-m4-browser.sh",
+        "editing"
+      ],
+      "sha": "945cb5d2d95ffee5e4ff460a2a8992156cb35c1e",
+      "started": "2026-11-24T10:30:32+00:00",
+      "ended": "2026-11-24T10:31:12+00:00",
+      "exit": 0,
+      "workdir": ".",
+      "chrome_cases": 3
+    },
+    "tabs": {
+      "argv": [
+        "bash",
+        "scripts/np-first-slice/run-m4-browser.sh",
+        "tabs"
+      ],
+      "sha": "a9da0d2e235cab8349c0a08f273e4c4057ca9f00",
+      "started": "2026-11-24T10:31:13+00:00",
+      "ended": "2026-11-24T10:32:03+00:00",
+      "exit": 0,
+      "workdir": ".",
+      "chrome_cases": 1
+    },
+    "legacy": {
+      "argv": [
+        "bash",
+        "scripts/np-first-slice/run-m4-browser.sh",
+        "legacy"
+      ],
+      "sha": "a9da0d2e235cab8349c0a08f273e4c4057ca9f00",
+      "started": "2026-11-24T10:32:03+00:00",
+      "ended": "2026-11-24T10:32:30+00:00",
+      "exit": 0,
+      "workdir": ".",
+      "chrome_cases": 2
+    },
+    "prod": {
+      "argv": [
+        "bash",
+        "scripts/np-first-slice/run-m4-browser.sh",
+        "prod"
+      ],
+      "sha": "a9da0d2e235cab8349c0a08f273e4c4057ca9f00",
+      "started": "2026-11-24T10:32:30+00:00",
+      "ended": "2026-11-24T10:32:59+00:00",
+      "exit": 0,
+      "workdir": ".",
+      "chrome_cases": 2,
+      "read_only_pg": "MATCH",
+      "served_entry_js_sha256": "b5ce782bf8287d47020fea335c48662825546988d012efd9b617bf1d61d96946"
+    }
+  },
+  "asset_tree": {
+    "algorithm": "sha256 of concatenated (UTF-8 relative POSIX path, NUL, raw SHA256 of file) in path order",
+    "files": 7,
+    "sha256": "d43889c0b9d74dd67c6c2cc5f05d68d39712d430bdf007c2b93c44f6a7e9a174"
+  },
+  "first_red": {
+    "internal_step": "draft utterance became empty after step switch",
+    "object_switch": "unadded related party survived change to another intake",
+    "tag_only": "zero departure confirmations after adding a tag to a new intake",
+    "early_responses": {
+      "before": {
+        "argv": [
+          "go",
+          "test",
+          "-count=1",
+          ".",
+          "-run",
+          "^TestIntakeEarlyResponsesNoStore$"
+        ],
+        "sha": "945cb5d2d95ffee5e4ff460a2a8992156cb35c1e",
+        "started": "2026-11-24T10:30:01+00:00",
+        "ended": "2026-11-24T10:30:11+00:00",
+        "exit": 1
+      },
+      "observed": "three sensitive routes lacked Cache-Control on HTTP 429 and OPTIONS 204; root-order harness extracted before fixing"
+    }
+  },
+  "stage_boundaries": {
+    "M5_root_PG_Redis": "NOT_RUN",
+    "M6_trial_cutover": "NOT_RUN",
+    "I09_FILES": "DEFERRED",
+    "hosted_I11": "separate M2 evidence"
+  }
+}
