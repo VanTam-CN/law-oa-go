@@ -4260,6 +4260,7 @@ function IntakeEditor() {
   const [draftActive, setDraftActive] = React.useState(false)
   const narrowPilotAssistantInputRef = React.useRef('')
   const unappliedContext = React.useRef(false)
+  const [restoreGeneration, setRestoreGeneration] = React.useState(0)
   const discardApproved = React.useRef(false)
   const [serverDrafts, setServerDrafts] = React.useState<IntakeFormState[]>([])
   const [serverDraftsLoading, setServerDraftsLoading] = React.useState(false)
@@ -4333,10 +4334,11 @@ function IntakeEditor() {
     apiRequest,
   })
   const intakeDirty = draftActive && currentProjection !== lastServerSavedProjection
-  const auxiliaryInput = Boolean(relatedPartyDraft || tagDraft || relatedPartyIdentityNumber)
+  const auxiliaryInput = Boolean(relatedPartyDraft || tagDraft || relatedPartyIdentityNumber) ||
+    relatedPartyEntityType !== 'LEGAL_PERSON' || relatedPartyIdentityType !== 'SOCIAL_CREDIT_CODE'
   const hasPendingInput = () => intakeDirty || auxiliaryInput || Boolean(narrowPilotAssistantInputRef.current) || unappliedContext.current
   const editVersion = React.useRef(0)
-  const editState = JSON.stringify([currentProjection, relatedPartyDraft, tagDraft, relatedPartyIdentityNumber])
+  const editState = JSON.stringify([currentProjection, relatedPartyDraft, tagDraft, relatedPartyIdentityNumber, relatedPartyEntityType, relatedPartyIdentityType])
   const previousEdit = React.useRef(editState)
   if (previousEdit.current !== editState) {
     previousEdit.current = editState
@@ -4570,6 +4572,14 @@ function IntakeEditor() {
   const applyServerDraftPayload = (payload: Record<string, any>) => {
     changeEditor()
     const restored = intakeDraftFromServer(payload)
+    if (intakeMemoryOnly) {
+      setRelatedPartyDraft('')
+      setRelatedPartyIdentityNumber('')
+      setRelatedPartyEntityType('LEGAL_PERSON')
+      setRelatedPartyIdentityType('SOCIAL_CREDIT_CODE')
+      setTagDraft('')
+      setRestoreGeneration(n => n + 1)
+    }
     setForm(restored)
     setStoredDraft(null)
     // The server-owned source-history fact and a fresh anchor travel
@@ -5155,6 +5165,7 @@ function IntakeEditor() {
       message.error('请填写相关方名称和可核验身份标识后再添加')
       return
     }
+    setDraftActive(true)
     setRelatedParties((current) => [
       ...current,
       {
@@ -5176,6 +5187,7 @@ function IntakeEditor() {
       message.warning('标签已存在')
       return
     }
+    setDraftActive(true)
     setCaseTags((current) => [...current, name])
     setTagDraft('')
     message.success('已添加标签')
@@ -5442,8 +5454,8 @@ function IntakeEditor() {
 
       <div className='batch-intake-layout'>
         <main>
-          {activeStep === 0 && (
-            <>
+          {(activeStep === 0 || intakeMemoryOnly) && (
+            <div style={{ display: activeStep === 0 ? 'contents' : 'none' }}>
               <SectionCard title='案件基本信息'>
                 <div className='batch-tabs compact'>
                   <button className='active'>{currentStep.title}</button>
@@ -5585,7 +5597,7 @@ function IntakeEditor() {
                 </div>
               {!isAssistant && !isSupplementMode && form.intakeId && form.revision && (
                 <NarrowPilotAssistant
-                  key={intakeMemoryOnly ? `${currentUserID}:${form.intakeId}` : `${currentUserID}:${form.intakeId}:${form.revision}`}
+                  key={intakeMemoryOnly ? `${currentUserID}:${form.intakeId}:${restoreGeneration}` : `${currentUserID}:${form.intakeId}:${form.revision}`}
                   intakeId={form.intakeId} revision={form.revision} description={form.description}
                   apiRequest={apiRequest} onInvalidate={narrowPilot.invalidate}
                   onUnsentInputChange={handleAssistantUnsentInput}
@@ -5892,7 +5904,7 @@ function IntakeEditor() {
                   </div>
                 </SectionCard>
               )}
-            </>
+            </div>
           )}
 
           {activeStep === 1 && (

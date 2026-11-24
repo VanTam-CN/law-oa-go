@@ -205,7 +205,7 @@ export function useNarrowPilotSave(props: {
       }
       if (['committed', 'no_change', 'abandoned'].includes(result.state)) {
         clearResolved(requestId, generation)
-        if (generationRef.current === generation) setNotice(result.state === "abandoned" ? "原保存已明确结束；未提交内容可核对后另存。" : "已查到原保存结果；当前输入保留，请点击“重新加载服务端草稿”核对。")
+        if (generationRef.current === generation) setNotice(result.state === "abandoned" ? "原保存已明确结束；未提交内容可核对后另存。" : "已查到原保存结果。当前输入已保留，后续编辑尚未保存。请重新加载服务端草稿核对。")
       } else if (generationRef.current === generation) setNotice('尚无终态回执，结果仍未知；不能换键。可继续回查或明确结束原保存。')
     } catch { if (generationRef.current === generation) setNotice("结果尚未核实，请保留原请求标识并稍后回查。") }
     finally { inFlight.current = false; setBusy(false) }

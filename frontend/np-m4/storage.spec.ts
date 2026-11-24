@@ -12,17 +12,18 @@ for (const remember of [false, true]) {
         keys.forEach((key, i) => (i === 2 ? sessionStorage : localStorage).setItem(key, 'old-' + i))
       }, oldKeys)
       // Count business access as well as checking the final state. A write followed by delete still fails.
-      await page.addInitScript(keys => {
+      await page.addInitScript(({ keys, fixtureValues }) => {
         const touched: string[] = []
         Object.assign(window, { npLegacyAccess: touched })
         for (const method of ['getItem', 'setItem', 'removeItem'] as const) {
           const original = Storage.prototype[method]
           Storage.prototype[method] = function (key: string, ...args: string[]) {
-            if (keys.includes(key) || (method === 'setItem' && String(args[0]).includes('M4正文'))) touched.push(method)
+            const value = method === 'setItem' ? String(args[0]) : ''
+            if (keys.includes(key) || fixtureValues.some(marker => value.includes(marker))) touched.push(method)
             return Reflect.apply(original, this, [key, ...args])
           }
         }
-      }, oldKeys)
+      }, { keys: oldKeys, fixtureValues: ['M4正文', account.target_title, '虚构初始摘要', '虚构对方', 'source_selection', 'conflictFingerprint'] })
       const capability = page.waitForResponse(r => new URL(r.url()).pathname === '/api/v1/case-intake-assist/capabilities')
       await loginAndOpenDraft(page, { manifest: account, remember })
       expect((await (await capability).json()).data.enabled).toBe(assistant)

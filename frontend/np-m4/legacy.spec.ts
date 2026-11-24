@@ -26,8 +26,19 @@ test('C08 换律师登录隔离来源与未决标识，原律师可再登录回�
   const stored = await page.evaluate(k => localStorage.getItem(k), record)
   expect(JSON.parse(stored!)).toEqual({ request_id: key, action: 'update', intake_id: seed.target })
 
-  page.on('dialog', dialog => dialog.accept())
+  let confirmations = 0
+  page.on('dialog', async dialog => {
+    expect(dialog.type()).toBe('confirm')
+    if (++confirmations === 1) await dialog.dismiss()
+    else await dialog.accept()
+  })
+  await page.getByRole('button', { name: /^用户菜单/ }).click()
+  await page.getByRole('menuitem', { name: '退出登录' }).click()
+  await expect.poll(() => confirmations).toBe(1)
+  await expect(page.locator('#intake-description')).toHaveValue(text)
+  expect(await page.evaluate(k => localStorage.getItem(k), record)).toBe(stored)
   await logout(page)
+  expect(confirmations).toBe(2)
   await loginAndOpenDraft(page, { manifest: other })
   await expect(page.getByRole('button', { name: '回查原保存结果' })).toHaveCount(0)
   await expect(page.locator('#intake-title')).toHaveValue(other.target_title)

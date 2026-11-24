@@ -79,7 +79,7 @@ test('C13：断线保存回查期间输入B不丢；放行回执后重开证实�
   await expect(page.locator('#intake-description')).toHaveValue(inputB)
   releaseQuery()
   expect((await query).status()).toBe(200)
-  await expect(page.getByText(/已查到原保存结果/).first()).toBeVisible()
+  await expect(page.getByText(/已查到原保存结果.*未保存/).first()).toBeVisible()
   await expect(page.locator('#intake-description')).toHaveValue(inputB)
   const recoveryKey = `np-save-v2:${seed.actor_id}:${seed.target}:${droppedKey}`
   await expect.poll(() => page.evaluate(key => localStorage.getItem(key), recoveryKey)).toBeNull()
