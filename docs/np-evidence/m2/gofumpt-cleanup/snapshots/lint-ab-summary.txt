@@ -1,0 +1,41 @@
+# golangci-lint A/B 归因：格式修复是否引入 lint 发现
+# 工具: golangci-lint v1.64.8（与 CI run 45390618050 实际下载版本一致），--out-format=line-number
+# A 树: 4e83cc0（修复前，detach checkout 于同目录）/ B 树: 11a3db0（修复后）
+# 归一化: (仓库相对路径, linter, 消息文本) 多重集，忽略格式化引起的行号位移
+
+pre total findings: 4067
+post total findings: 4036
+only-in-pre (removed by reformat): 137
+only-in-post (added by reformat): 106
+added findings by linter: {'goconst': 9, 'revive': 1, 'gci': 3, 'goheader': 76, 'goimports': 17}
+added findings by file (top 20):
+  internal/services/authorization_service.go 2
+  internal/handlers/conflict_handler_simple.go 2
+  internal/services/commission_service.go 2
+  internal/middleware/v2/v2_performance_middleware.go 2
+  internal/middleware/v2/v2_security_middleware.go 2
+  internal/database/performance_monitor.go 2
+  internal/database/performance_optimizer.go 2
+  internal/handlers/trust_account_handler.go 2
+  internal/middleware/trust_balance_middleware.go 2
+  internal/repositories/conflict_extended_repository.go 2
+  internal/repositories/contract_repository.go 2
+  internal/repositories/trust_account_repository.go 2
+  internal/services/mcp_client.go 2
+  internal/services/pdf_report_service.go 2
+  internal/services/v2_conflict_detection_service.go 2
+  internal/services/conflict_check_service.go 1
+  internal/middleware/audit.go 1
+  internal/handlers/dashboard_handler.go 1
+  internal/handlers/auth_handler.go 1
+  internal/handlers/approval_handler.go 1
+
+## 附注
+- CI 侧同一现象：run 45390618050 质量作业『📋 静态分析』步失败，uniq-by-line 后
+  约 4400 条发现（revive 1202 / errcheck 513 / wrapcheck 439 / goheader 329 等），
+  命中文件绝大多数不在本次 147 文件改动集内（如 test/testutils.go、
+  tests/integration/conflict_dialects/、trust_atomicity/ 等）。
+- .golangci.yml 自初始提交启用约 60 个 linter 且 new: false；此前每次 PR 都死在
+  『代码格式检查』步，『静态分析』步首次可达即红——属存量债首次暴露，非本次引入。
+- golangci-lint v1.64.8 在 git linked-worktree 中包发现异常（go list ./... 正常，
+  显式子包模式正常，裸 ./... 只分析根包），故 A 树改用同目录 detach checkout 实测。

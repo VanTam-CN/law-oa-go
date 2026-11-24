@@ -1,0 +1,21 @@
+# m1 受影响 tagged 测试组复跑（修复后树 11a3db0）
+# 环境: 一次性 postgres:16.14 (tmpfs) 127.0.0.1:18790, identity=np_first_slice_dev:np_m1:160014
+# 命令: go test -json -race -count=1 -tags np_m1_pg -run '^(11 个受影响测试名)$' ./tests/integration/m1
+# 结果: GO-TEST-RC=0, check-go-events.py: M2_PG_PASS required=5 passed=64 (rc=0)
+
+M2_PG_PASS required=5 passed=64
+
+## 逐测试最终状态（恰一次执行）
+TestNativeConcurrentDraftAndHistory [('pass', 0.3)]
+TestSchemaRequiresFrozenKeysAndTypes [('pass', 0.0)]
+TestNativeRecoveredOpponentPreservesPartyAndMaterialRows [('pass', 0.1)]
+TestNativeCreateRejectsNormalizedEmptyIdentityAtomically [('pass', 0.1)]
+TestNativeFullSaveOnlyChangesExplicitAlias [('pass', 0.1)]
+TestNativeLegacyFullEchoPreservesRows [('pass', 0.1)]
+TestNativeRecheckAfterSameMatterIsReconfirmed [('pass', 0.1)]
+TestM1R3IndexIncomingAlias [('pass', 0.1)]
+TestM1R3SameIdentityEcho [('pass', 0.1)]
+TestM1R3NativeCheckUsesEditedAlias [('pass', 0.7)]
+TestM1R7NestedArrayOrigin [('pass', 1.5)]
+total fail events: 0
+package-level: [('start', None), ('output', None), ('output', None), ('output', None), ('pass', 6.893)]
