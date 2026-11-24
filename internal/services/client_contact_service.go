@@ -10,6 +10,7 @@ import (
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/security"
 )
@@ -124,10 +125,7 @@ func (s *ClientContactService) SavePrimaryContact(ctx context.Context, clientID,
 		if result.RowsAffected != 1 {
 			return ErrClientContactVersionConflict
 		}
-		if err := tx.First(&saved, existing.ID).Error; err != nil {
-			return err
-		}
-		return nil
+		return tx.First(&saved, existing.ID).Error
 	})
 	if err != nil {
 		return nil, err

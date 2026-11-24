@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/json"
@@ -11,9 +12,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/security"
 )
@@ -26,6 +30,12 @@ type BasicConflictRepository interface {
 	GetCheckRecord(ctx context.Context, checkID string) (*models.ConflictCheckRecord, error)
 	// 更新冲突检测记录
 	UpdateCheckRecord(ctx context.Context, record *models.ConflictCheckRecord) error
+	// 将 QUEUED 任务条件更新为 RUNNING，未命中已有行时报错
+	ClaimConflictCheckRun(ctx context.Context, checkID string) error
+	// 将 RUNNING 任务条件更新为终态或失败回执，未命中已有行时报错
+	FinalizeConflictCheck(ctx context.Context, record *models.ConflictCheckRecord) error
+	// 在同一事务内先关联案件/接案，再将 RUNNING 任务条件更新为终态
+	FinalizeConflictCheckWithAssociation(ctx context.Context, record *models.ConflictCheckRecord, association ConflictSubjectAssociation) error
 	// 获取冲突检测历史
 	GetCheckHistory(ctx context.Context, clientID string, limit int) ([]*models.ConflictCheckRecord, error)
 	// 获取冲突案例
@@ -55,14 +65,18 @@ type BasicConflictRepository interface {
 // only accepted with an explicit case ID; title-only matching is deliberately
 // unsupported.
 type ConflictSubjectAssociation struct {
-	CheckID           string
-	SubjectCaseID     string
-	SubjectCaseNumber string
-	IntakeID          string
-	ClientID          string
-	CoverageStatus    string
-	CheckedAt         time.Time
+	IntakeRevision     string
+	CompletionRevision string
+	CheckID            string
+	SubjectCaseID      string
+	SubjectCaseNumber  string
+	IntakeID           string
+	ClientID           string
+	CoverageStatus     string
+	CheckedAt          time.Time
 }
+
+var ErrIntakeRevisionConflict = errors.New("接案事实版本已变化，请重新确认并检测")
 
 // ConflictSubjectLinker is optional on BasicConflictRepository so existing
 // repository test doubles remain source-compatible. Production repositories
@@ -145,6 +159,93 @@ func NewConflictRepository(db *gorm.DB, redis *redis.Client) BasicConflictReposi
 // or missing case is a hard error because silently attaching a result to the
 // wrong matter would be worse than leaving it unlinked.
 func (r *conflictRepository) LinkConflictCheckToCase(ctx context.Context, association ConflictSubjectAssociation) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		return linkConflictCheckInTx(tx, association)
+	})
+}
+
+// Async task states stored in conflict_check_records. The service layer owns
+// the exported names; the repository keeps its own literals to avoid an
+// import cycle.
+const (
+	conflictCheckStatusQueued  = "QUEUED"
+	conflictCheckStatusRunning = "RUNNING"
+)
+
+// ClaimConflictCheckRun transitions a queued task to RUNNING with a row-count
+// guard so a requeue race cannot create two concurrent runs of one check.
+func (r *conflictRepository) ClaimConflictCheckRun(ctx context.Context, checkID string) error {
+	result := r.db.WithContext(ctx).Model(&models.ConflictCheckRecord{}).
+		Where("check_id = ? AND check_status = ?", strings.TrimSpace(checkID), conflictCheckStatusQueued).
+		Updates(map[string]interface{}{"check_status": conflictCheckStatusRunning, "updated_at": time.Now()})
+	if result.Error != nil {
+		return fmt.Errorf("认领冲突检测任务失败: %w", result.Error)
+	}
+	if result.RowsAffected != 1 {
+		return errors.New("冲突检测任务认领失败：任务不存在或已被处理")
+	}
+	return nil
+}
+
+// finalizeRunningCheck applies the terminal state guarded by RUNNING so
+// a failure receipt can never overwrite an already-committed terminal result
+// of the same task.
+func finalizeRunningCheck(tx *gorm.DB, record *models.ConflictCheckRecord) error {
+	if record == nil || strings.TrimSpace(record.CheckID) == "" {
+		return errors.New("冲突检测记录缺少不可变检测编号")
+	}
+	if record.CheckStatus != "FAILED" && record.CheckStatus != "COMPLETED" {
+		return errors.New("无效的检测终态")
+	}
+	record.UpdatedAt = time.Now()
+	result := tx.Model(&models.ConflictCheckRecord{}).
+		Where("check_id = ? AND check_status = ?", record.CheckID, conflictCheckStatusRunning).
+		Updates(map[string]interface{}{
+			"check_status": record.CheckStatus,
+			"has_conflict": record.HasConflict,
+			"risk_level":   record.RiskLevel,
+			"check_result": record.CheckResult,
+			"duration":     record.Duration,
+			"check_time":   record.CheckTime,
+			"updated_at":   record.UpdatedAt,
+		})
+	if result.Error != nil {
+		return fmt.Errorf("更新冲突检测记录失败: %w", result.Error)
+	}
+	if result.RowsAffected != 1 {
+		return errors.New("冲突检测终态失败：任务不存在或已不在 RUNNING 状态")
+	}
+	return nil
+}
+
+// FinalizeConflictCheck commits a terminal state or failure receipt only
+// while the task is still RUNNING, with a row-count guard against upsert.
+func (r *conflictRepository) FinalizeConflictCheck(ctx context.Context, record *models.ConflictCheckRecord) error {
+	return finalizeRunningCheck(r.db.WithContext(ctx), record)
+}
+
+// FinalizeConflictCheckWithAssociation commits the case/intake association
+// and the RUNNING-guarded terminal state in one transaction. A rejected
+// terminal write also rolls back the association.
+func (r *conflictRepository) FinalizeConflictCheckWithAssociation(ctx context.Context, record *models.ConflictCheckRecord, association ConflictSubjectAssociation) error {
+	if record == nil || strings.TrimSpace(record.CheckID) == "" {
+		return errors.New("冲突检测记录缺少不可变检测编号")
+	}
+	if strings.TrimSpace(association.CheckID) != record.CheckID {
+		return errors.New("冲突检测终态失败：关联检测编号与终态记录不一致")
+	}
+	if record.CheckStatus != "COMPLETED" {
+		return errors.New("冲突检测终态失败：带关联终态必须为 COMPLETED")
+	}
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := linkConflictCheckInTx(tx, association); err != nil {
+			return err
+		}
+		return finalizeRunningCheck(tx, record)
+	})
+}
+
+func linkConflictCheckInTx(tx *gorm.DB, association ConflictSubjectAssociation) error {
 	association.CheckID = strings.TrimSpace(association.CheckID)
 	association.SubjectCaseID = strings.TrimSpace(association.SubjectCaseID)
 	association.SubjectCaseNumber = strings.TrimSpace(association.SubjectCaseNumber)
@@ -160,7 +261,7 @@ func (r *conflictRepository) LinkConflictCheckToCase(ctx context.Context, associ
 		return errors.New("案件关联失败：客户绑定不能为空")
 	}
 
-	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	{
 		var record struct {
 			ClientID         string
 			SearchParameters string
@@ -174,14 +275,7 @@ func (r *conflictRepository) LinkConflictCheckToCase(ctx context.Context, associ
 		if strings.TrimSpace(record.ClientID) == "" || record.ClientID != association.ClientID {
 			return fmt.Errorf("案件关联失败：检测记录客户与关联客户不一致")
 		}
-		var context struct {
-			ClientID           string `json:"clientId"`
-			ClientIDSnake      string `json:"client_id"`
-			SubjectCaseID      string `json:"subjectCaseId"`
-			SubjectCaseIDSnake string `json:"subject_case_id"`
-			IntakeID           string `json:"intakeId"`
-			IntakeIDSnake      string `json:"intake_id"`
-		}
+		var context recordedAssociation
 		if raw := strings.TrimSpace(record.SearchParameters); raw != "" {
 			if err := json.Unmarshal([]byte(raw), &context); err != nil {
 				return fmt.Errorf("案件关联失败：检测记录上下文无效")
@@ -196,66 +290,49 @@ func (r *conflictRepository) LinkConflictCheckToCase(ctx context.Context, associ
 				return fmt.Errorf("案件关联失败：案件 ID 与检测记录上下文不一致")
 			}
 		}
-		if association.IntakeID != "" {
+		if association.IntakeID != "" || firstAssociationValue(context.IntakeID, context.IntakeIDSnake) != "" {
 			recordedIntakeID := firstAssociationValue(context.IntakeID, context.IntakeIDSnake)
 			if recordedIntakeID == "" || recordedIntakeID != association.IntakeID {
 				return fmt.Errorf("接案关联失败：接案 ID 与检测记录上下文不一致")
 			}
 		}
 
-		if association.SubjectCaseID != "" {
-			caseID, err := strconv.ParseUint(association.SubjectCaseID, 10, 32)
-			if err != nil || caseID == 0 {
-				return fmt.Errorf("案件关联失败：案件 ID 无效")
-			}
-
-			var target struct {
-				ID              uint
-				CaseNumber      string
-				ClientID        uint
-				ConflictCheckID string
-			}
-			if err := tx.Table("cases").Select("id, case_number, client_id, conflict_check_id").Where("id = ? AND deleted_at IS NULL", caseID).Take(&target).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return fmt.Errorf("案件关联失败：案件不存在或已归档")
-				}
-				return fmt.Errorf("读取案件关联失败: %w", err)
-			}
-			if association.SubjectCaseNumber != "" && association.SubjectCaseNumber != target.CaseNumber {
-				return fmt.Errorf("案件关联失败：案件编号与案件 ID 不一致")
-			}
-			if association.ClientID != "" {
-				expectedClientID, err := strconv.ParseUint(association.ClientID, 10, 32)
-				if err != nil || expectedClientID == 0 || uint(expectedClientID) != target.ClientID {
-					return fmt.Errorf("案件关联失败：案件客户与检测客户不一致")
-				}
-			}
-			if existingCheckID := strings.TrimSpace(target.ConflictCheckID); existingCheckID != "" && existingCheckID != association.CheckID {
-				return fmt.Errorf("案件关联失败：案件已绑定其他冲突检测记录")
-			}
-
-			updates := map[string]interface{}{"conflict_check_id": association.CheckID}
-			if coverageStatus := strings.TrimSpace(association.CoverageStatus); coverageStatus != "" {
-				updates["conflict_coverage_status"] = coverageStatus
-			}
-			if err := tx.Table("cases").Where("id = ?", target.ID).Updates(updates).Error; err != nil {
-				return fmt.Errorf("保存案件冲突检测关联失败: %w", err)
-			}
-		}
-
 		if association.IntakeID != "" {
-			var intake map[string]interface{}
-			if err := tx.Table("case_intakes").Where("id = ?", association.IntakeID).Take(&intake).Error; err != nil {
+			var intake struct {
+				ClientID string
+				Status   string
+				Metadata []byte
+			}
+			if err := tx.Table("case_intakes").Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", association.IntakeID).Take(&intake).Error; err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					return fmt.Errorf("接案关联失败：接案记录不存在")
 				}
 				return fmt.Errorf("读取接案关联失败: %w", err)
 			}
-			intakeClientID := strings.TrimSpace(fmt.Sprint(intake["client_id"]))
+			intakeClientID := intake.ClientID
 			if intakeClientID == "" || intakeClientID != association.ClientID {
 				return fmt.Errorf("接案关联失败：接案客户与检测客户不一致")
 			}
-			metadata := decodeJSONMap(intake["metadata"])
+			metadata := map[string]interface{}{}
+			if len(intake.Metadata) > 0 {
+				decoder := json.NewDecoder(bytes.NewReader(intake.Metadata))
+				decoder.UseNumber()
+				if err := decoder.Decode(&metadata); err != nil || metadata == nil {
+					return errors.New("接案版本信息不可读")
+				}
+			}
+			revision, _ := metadata["draft_revision"].(string)
+			if revision == "" {
+				revision = "legacy-" + association.IntakeID
+			}
+			if association.IntakeRevision == "" || association.IntakeRevision != context.IntakeRevision || association.IntakeRevision != revision || intake.Status != "lawyer_facts_confirmed" {
+				return ErrIntakeRevisionConflict
+			}
+			next := association.CompletionRevision
+			if next == "" {
+				next = uuid.NewString()
+			}
+			metadata["draft_revision"] = next
 			if existingCheckID := firstAssociationValue(associationMapValue(metadata, "conflict_check_id"), associationMapValue(metadata, "conflictCheckId")); existingCheckID != "" && existingCheckID != association.CheckID {
 				return fmt.Errorf("接案关联失败：接案记录已绑定其他冲突检测记录")
 			}
@@ -272,16 +349,101 @@ func (r *conflictRepository) LinkConflictCheckToCase(ctx context.Context, associ
 			if association.SubjectCaseNumber != "" {
 				metadata["subject_case_number"] = association.SubjectCaseNumber
 			}
+			encoded, err := json.Marshal(metadata)
+			if err != nil {
+				return err
+			}
 			if err := tx.Table("case_intakes").Where("id = ?", association.IntakeID).Updates(map[string]interface{}{
 				"status":     "conflict_ready",
-				"metadata":   encodeJSONMap(metadata),
+				"metadata":   string(encoded),
 				"updated_at": time.Now(),
 			}).Error; err != nil {
 				return fmt.Errorf("保存接案冲突检测关联失败: %w", err)
 			}
 		}
+		if association.SubjectCaseID != "" {
+			caseID, err := strconv.ParseUint(association.SubjectCaseID, 10, 32)
+			if err != nil || caseID == 0 {
+				return fmt.Errorf("案件关联失败：案件 ID 无效")
+			}
+
+			var target struct {
+				ID              uint
+				CaseNumber      string
+				ClientID        uint
+				ConflictCheckID string
+			}
+			if err := tx.Table("cases").Clauses(clause.Locking{Strength: "UPDATE"}).Select("id, case_number, client_id, conflict_check_id").Where("id = ? AND deleted_at IS NULL", caseID).Take(&target).Error; err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					return fmt.Errorf("案件关联失败：案件不存在或已归档")
+				}
+				return fmt.Errorf("读取案件关联失败: %w", err)
+			}
+			if association.SubjectCaseNumber != "" && association.SubjectCaseNumber != target.CaseNumber {
+				return fmt.Errorf("案件关联失败：案件编号与案件 ID 不一致")
+			}
+			if association.ClientID != "" {
+				expectedClientID, err := strconv.ParseUint(association.ClientID, 10, 32)
+				if err != nil || expectedClientID == 0 || uint(expectedClientID) != target.ClientID {
+					return fmt.Errorf("案件关联失败：案件客户与检测客户不一致")
+				}
+			}
+			if existingCheckID := strings.TrimSpace(target.ConflictCheckID); existingCheckID != "" && existingCheckID != association.CheckID {
+				allowed, err := mayReplaceIntakeCheck(tx, existingCheckID, association)
+				if err != nil {
+					return err
+				}
+				if !allowed {
+					return fmt.Errorf("案件关联失败：案件已绑定其他冲突检测记录")
+				}
+			}
+
+			updates := map[string]interface{}{"conflict_check_id": association.CheckID}
+			if coverageStatus := strings.TrimSpace(association.CoverageStatus); coverageStatus != "" {
+				updates["conflict_coverage_status"] = coverageStatus
+			}
+			if err := tx.Table("cases").Where("id = ?", target.ID).Updates(updates).Error; err != nil {
+				return fmt.Errorf("保存案件冲突检测关联失败: %w", err)
+			}
+		}
+
 		return nil
-	})
+	}
+}
+
+type recordedAssociation struct {
+	IntakeRevision     string `json:"intakeRevision"`
+	ClientID           string `json:"clientId"`
+	ClientIDSnake      string `json:"client_id"`
+	SubjectCaseID      string `json:"subjectCaseId"`
+	SubjectCaseIDSnake string `json:"subject_case_id"`
+	IntakeID           string `json:"intakeId"`
+	IntakeIDSnake      string `json:"intake_id"`
+}
+
+// A case pointer can be superseded only by a fresh check for the same intake.
+// The caller holds the case and intake locks and has validated the new input revision.
+func mayReplaceIntakeCheck(tx *gorm.DB, previousID string, current ConflictSubjectAssociation) (bool, error) {
+	if current.IntakeID == "" || current.IntakeRevision == "" {
+		return false, nil
+	}
+	var prior struct{ SearchParameters string }
+	err := tx.Table("conflict_check_records").Select("search_parameters").
+		Where("check_id = ? AND client_id = ? AND check_status = ?", previousID, current.ClientID, "COMPLETED").Take(&prior).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("读取原检测上下文失败: %w", err)
+	}
+	var origin recordedAssociation
+	if err := json.Unmarshal([]byte(prior.SearchParameters), &origin); err != nil {
+		return false, err
+	}
+	return origin.IntakeRevision != "" && origin.IntakeRevision != current.IntakeRevision &&
+		firstAssociationValue(origin.IntakeID, origin.IntakeIDSnake) == current.IntakeID &&
+		firstAssociationValue(origin.SubjectCaseID, origin.SubjectCaseIDSnake) == current.SubjectCaseID &&
+		firstAssociationValue(origin.ClientID, origin.ClientIDSnake) == current.ClientID, nil
 }
 
 func firstAssociationValue(values ...string) string {
@@ -307,41 +469,6 @@ func LinkConflictCheckToCase(ctx context.Context, db *gorm.DB, association Confl
 		return errors.New("冲突检测案件关联服务未初始化")
 	}
 	return (&conflictRepository{db: db}).LinkConflictCheckToCase(ctx, association)
-}
-
-func decodeJSONMap(value interface{}) map[string]interface{} {
-	if value == nil {
-		return map[string]interface{}{}
-	}
-	if values, ok := value.(map[string]interface{}); ok {
-		return values
-	}
-	var raw []byte
-	switch typed := value.(type) {
-	case []byte:
-		raw = typed
-	case string:
-		raw = []byte(typed)
-	default:
-		encoded, err := json.Marshal(typed)
-		if err != nil {
-			return map[string]interface{}{}
-		}
-		raw = encoded
-	}
-	var values map[string]interface{}
-	if json.Unmarshal(raw, &values) != nil || values == nil {
-		return map[string]interface{}{}
-	}
-	return values
-}
-
-func encodeJSONMap(values map[string]interface{}) string {
-	encoded, err := json.Marshal(values)
-	if err != nil {
-		return "{}"
-	}
-	return string(encoded)
 }
 
 // SaveCheckRecord 保存冲突检测记录
@@ -662,6 +789,9 @@ func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID
 		seenCaseIDs[conflictCase.CaseID] = struct{}{}
 		log.Printf("✅ 创建冲突案例: %s", conflictCase.ID)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("读取潜在冲突案例结果失败: %w", err)
+	}
 
 	// 如果提供了其他当事人信息，也查询全所相关案件。
 	if len(otherParties) > 0 {
@@ -700,6 +830,8 @@ func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID
 			if err != nil {
 				return nil, fmt.Errorf("查询对方当事人冲突失败 (party=%q): %w", party, err)
 			}
+			// 循环内错误路径已有手工 Close；defer 在函数收尾兜底（sql.Rows.Close 幂等）
+			defer partyRows.Close()
 
 			for partyRows.Next() {
 				var caseModel models.Case
@@ -751,6 +883,9 @@ func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID
 
 				conflictCases = append(conflictCases, conflictCase)
 				seenCaseIDs[caseID] = struct{}{}
+			}
+			if err := partyRows.Err(); err != nil {
+				return nil, fmt.Errorf("读取当事人案件结果失败: %w", err)
 			}
 			partyRows.Close()
 		}
@@ -826,10 +961,7 @@ func classifyDirectOpposingPartyMatch(clientName, party string) PartyMatchKind {
 // isMeaningfulConflictName 规范化后是否仍有有效辨识内容。
 // 太短（<2 字符）视为无意义，避免单字"华"命中"华为技术有限公司"。
 func isMeaningfulConflictName(name string) bool {
-	if len(strings.TrimSpace(name)) < 2 {
-		return false
-	}
-	return true
+	return len(strings.TrimSpace(name)) >= 2
 }
 
 func normalizeConflictPartyName(name string) string {

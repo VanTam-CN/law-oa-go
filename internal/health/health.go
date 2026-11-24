@@ -14,6 +14,7 @@ import (
 
 	"law-oa-go/internal/cache"
 	"law-oa-go/internal/concurrency"
+	"law-oa-go/internal/safeconv"
 )
 
 // HealthStatus 健康状态
@@ -569,7 +570,7 @@ func (ec *ExternalAPIHealthCheck) Check(ctx context.Context) *HealthCheckResult 
 		return result
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", ec.url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, ec.url, nil)
 	if err != nil {
 		result.Status = StatusDegraded
 		result.Message = fmt.Sprintf("创建请求失败: %v", err)
@@ -660,8 +661,9 @@ func (sc *StorageHealthCheck) Check(ctx context.Context) *HealthCheckResult {
 	}
 
 	// 计算可用空间
-	totalSpace := stat.Blocks * uint64(stat.Bsize)
-	availableSpace := stat.Bavail * uint64(stat.Bsize)
+	// stat.Bsize 在 Linux 为 int64、BSD/macOS 为 uint32，统一经 int64 后再钳制
+	totalSpace := stat.Blocks * safeconv.Uint64(int64(stat.Bsize))
+	availableSpace := stat.Bavail * safeconv.Uint64(int64(stat.Bsize))
 	usedSpace := totalSpace - availableSpace
 	usagePercentage := float64(0)
 	if totalSpace > 0 {

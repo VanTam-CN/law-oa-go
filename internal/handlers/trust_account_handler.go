@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+
 	"law-oa-go/internal/common"
 	"law-oa-go/internal/services"
 )
@@ -550,8 +551,8 @@ func (h *TrustAccountHandler) GetAccountStats(c *gin.Context) {
 
 	common.APISuccess(c, gin.H{
 		"total_accounts":  totalAccounts,
-		"total_balance":  totalBalance,
-		"total_frozen":   totalFrozen,
+		"total_balance":   totalBalance,
+		"total_frozen":    totalFrozen,
 		"active_accounts": activeAccounts,
 	})
 }

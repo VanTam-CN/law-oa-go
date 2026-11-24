@@ -1,0 +1,2 @@
+2026-11-24T12:09:12.7907996Z Error: ERROR: Playwright does not support chromium on ubuntu26.04-x64
+2026-11-24T12:09:12.8037759Z ##[error]Process completed with exit code 1.

@@ -1,0 +1,150 @@
+=== RUN   TestNewConcurrentService
+--- PASS: TestNewConcurrentService (0.00s)
+=== RUN   TestConcurrentService_StartStop
+--- PASS: TestConcurrentService_StartStop (0.01s)
+=== RUN   TestConcurrentService_SubmitTask
+Task test_task completed successfully
+--- PASS: TestConcurrentService_SubmitTask (0.21s)
+=== RUN   TestConcurrentService_SubmitTaskAndWait
+Task wait_task completed successfully
+--- PASS: TestConcurrentService_SubmitTaskAndWait (0.02s)
+=== RUN   TestConcurrentService_SubmitBatchTasks
+Task batch_1795529785515129000 completed successfully
+Task batch_1795529785515129000 completed successfully
+--- PASS: TestConcurrentService_SubmitBatchTasks (0.38s)
+=== RUN   TestConcurrentService_SubmitDatabaseTask
+Task db_1795529785890577000 completed successfully
+Task db_1795529785890577000 completed successfully
+--- PASS: TestConcurrentService_SubmitDatabaseTask (0.01s)
+=== RUN   TestConcurrentService_SubmitFileTask
+Task file_1795529785903687000 completed successfully
+Task file_1795529785903687000 completed successfully
+--- PASS: TestConcurrentService_SubmitFileTask (0.01s)
+=== RUN   TestConcurrentService_SubmitAPITask
+Task api_1795529785914738000 completed successfully
+--- PASS: TestConcurrentService_SubmitAPITask (0.01s)
+=== RUN   TestConcurrentService_GetMetrics
+Task api_1795529785914738000 completed successfully
+Task metrics_task_1 completed successfully
+Task metrics_task_2 completed successfully
+Task metrics_task_0 completed successfully
+--- PASS: TestConcurrentService_GetMetrics (0.20s)
+=== RUN   TestConcurrentService_IsRunning
+--- PASS: TestConcurrentService_IsRunning (0.00s)
+=== RUN   TestConcurrentService_GetActiveTasksCount
+Task long_task completed successfully
+--- PASS: TestConcurrentService_GetActiveTasksCount (0.46s)
+=== RUN   TestConcurrentService_UpdateConfig
+--- PASS: TestConcurrentService_UpdateConfig (0.00s)
+=== RUN   TestConcurrentService_GetConfig
+--- PASS: TestConcurrentService_GetConfig (0.00s)
+=== RUN   TestConcurrentService_ConcurrentTaskSubmission
+Task concurrent_task_9 completed successfully
+Task concurrent_task_0 completed successfully
+Task concurrent_task_1 completed successfully
+Task concurrent_task_2 completed successfully
+Task concurrent_task_5 completed successfully
+Task concurrent_task_3 completed successfully
+Task concurrent_task_6 completed successfully
+--- PASS: TestConcurrentService_ConcurrentTaskSubmission (0.00s)
+Task concurrent_task_8 completed successfully
+=== RUN   TestNewCircuitBreaker
+--- PASS: TestNewCircuitBreaker (0.00s)
+=== RUN   TestCircuitBreaker_ExecuteSuccess
+--- PASS: TestCircuitBreaker_ExecuteSuccess (0.00s)
+=== RUN   TestCircuitBreaker_ExecuteFailure
+--- PASS: TestCircuitBreaker_ExecuteFailure (0.00s)
+=== RUN   TestCircuitBreaker_TripToOpen
+--- PASS: TestCircuitBreaker_TripToOpen (0.00s)
+=== RUN   TestCircuitBreaker_ResetTimeout
+--- PASS: TestCircuitBreaker_ResetTimeout (0.15s)
+=== RUN   TestCircuitBreaker_HalfOpenFailure
+--- PASS: TestCircuitBreaker_HalfOpenFailure (0.15s)
+=== RUN   TestNewRateLimiter
+--- PASS: TestNewRateLimiter (0.00s)
+=== RUN   TestRateLimiter_Allow
+--- PASS: TestRateLimiter_Allow (1.00s)
+=== RUN   TestRateLimiter_Wait
+--- PASS: TestRateLimiter_Wait (1.01s)
+=== RUN   TestRateLimiter_WaitContextTimeout
+--- PASS: TestRateLimiter_WaitContextTimeout (0.10s)
+=== RUN   TestRateLimiter_TokenRefill
+--- PASS: TestRateLimiter_TokenRefill (1.00s)
+=== RUN   TestNewConcurrentSafe
+--- PASS: TestNewConcurrentSafe (0.00s)
+=== RUN   TestConcurrentSafe_ExecuteDisabled
+--- PASS: TestConcurrentSafe_ExecuteDisabled (0.00s)
+=== RUN   TestConcurrentSafe_ExecuteWithCircuitBreaker
+--- PASS: TestConcurrentSafe_ExecuteWithCircuitBreaker (0.00s)
+=== RUN   TestConcurrentSafe_ExecuteWithRateLimiter
+--- PASS: TestConcurrentSafe_ExecuteWithRateLimiter (0.10s)
+=== RUN   TestConcurrentSafe_ExecuteWithBoth
+--- PASS: TestConcurrentSafe_ExecuteWithBoth (0.00s)
+=== RUN   TestConcurrentSafe_ConcurrentExecution
+--- PASS: TestConcurrentSafe_ConcurrentExecution (1.01s)
+=== RUN   TestConcurrentSafe_GetStatusMethods
+--- PASS: TestConcurrentSafe_GetStatusMethods (0.00s)
+=== RUN   TestNewWorkerPool
+--- PASS: TestNewWorkerPool (0.00s)
+=== RUN   TestWorkerPool_StartStop
+--- PASS: TestWorkerPool_StartStop (0.00s)
+=== RUN   TestWorkerPool_SubmitTask
+Task test_task completed successfully
+--- PASS: TestWorkerPool_SubmitTask (0.20s)
+=== RUN   TestWorkerPool_SubmitWithResult
+Task test_result_task completed successfully
+--- PASS: TestWorkerPool_SubmitWithResult (0.10s)
+=== RUN   TestWorkerPool_ConcurrentTasks
+Task concurrent_task_4 completed successfully
+Task concurrent_task_1 completed successfully
+Task concurrent_task_2 completed successfully
+Task concurrent_task_3 completed successfully
+Task concurrent_task_0 completed successfully
+Task concurrent_task_9 completed successfully
+Task concurrent_task_8 completed successfully
+Task concurrent_task_6 completed successfully
+Task concurrent_task_5 completed successfully
+Task concurrent_task_7 completed successfully
+--- PASS: TestWorkerPool_ConcurrentTasks (0.23s)
+=== RUN   TestWorkerPool_TaskErrorHandling
+Task error_task failed: task failed intentionally
+--- PASS: TestWorkerPool_TaskErrorHandling (1.22s)
+=== RUN   TestWorkerPool_ContextCancellation
+--- PASS: TestWorkerPool_ContextCancellation (0.50s)
+=== RUN   TestWorkerPool_RetryMechanism
+Task retry_task completed successfully
+--- PASS: TestWorkerPool_RetryMechanism (0.06s)
+=== RUN   TestWorkerPool_Metrics
+Task metrics_task_2 completed successfully
+Task metrics_task_1 completed successfully
+Task metrics_task_0 completed successfully
+Task metrics_task_3 completed successfully
+Task metrics_task_4 completed successfully
+--- PASS: TestWorkerPool_Metrics (0.20s)
+=== RUN   TestWorkerPool_FullQueue
+Task queue_task_1 completed successfully
+--- PASS: TestWorkerPool_FullQueue (0.00s)
+=== RUN   Fuzz_CircuitBreaker_Execute
+--- PASS: Fuzz_CircuitBreaker_Execute (0.00s)
+=== RUN   Fuzz_RateLimiter_Allow
+=== RUN   Fuzz_RateLimiter_Allow/seed#0
+--- PASS: Fuzz_RateLimiter_Allow (0.00s)
+    --- PASS: Fuzz_RateLimiter_Allow/seed#0 (0.00s)
+=== RUN   Fuzz_ConcurrentService_SubmitTask
+=== RUN   Fuzz_ConcurrentService_SubmitTask/seed#0
+--- PASS: Fuzz_ConcurrentService_SubmitTask (0.00s)
+    --- PASS: Fuzz_ConcurrentService_SubmitTask/seed#0 (0.00s)
+=== RUN   Fuzz_WorkerPool_SubmitTask
+fuzz: elapsed: 0s, gathering baseline coverage: 0/4 completed
+fuzz: elapsed: 0s, gathering baseline coverage: 4/4 completed, now fuzzing with 4 workers
+fuzz: elapsed: 3s, execs: 43601 (14518/sec), new interesting: 0 (total: 4)
+fuzz: elapsed: 6s, execs: 75634 (10689/sec), new interesting: 0 (total: 4)
+fuzz: elapsed: 9s, execs: 117179 (13665/sec), new interesting: 0 (total: 4)
+fuzz: elapsed: 12s, execs: 145537 (9570/sec), new interesting: 0 (total: 4)
+fuzz: elapsed: 15s, execs: 184653 (13049/sec), new interesting: 0 (total: 4)
+fuzz: elapsed: 18s, execs: 214714 (10023/sec), new interesting: 0 (total: 4)
+fuzz: elapsed: 20s, execs: 238986 (10795/sec), new interesting: 0 (total: 4)
+--- PASS: Fuzz_WorkerPool_SubmitTask (20.27s)
+=== NAME  
+PASS
+ok  	law-oa-go/internal/concurrency	29.371s

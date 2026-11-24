@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
 	"law-oa-go/internal/models"
 )
 
@@ -259,10 +260,12 @@ func trimConflictPolicyInput(input *ConflictPolicyPackageInput) {
 }
 
 func validateConflictPolicyInput(input ConflictPolicyPackageInput, now time.Time) error {
-	required := []string{input.PolicyVersion, input.Jurisdiction, input.ApplicableRuleName, input.ApplicableRuleVersion,
+	required := []string{
+		input.PolicyVersion, input.Jurisdiction, input.ApplicableRuleName, input.ApplicableRuleVersion,
 		input.ApplicableRuleAuthority, input.ApplicableRuleReference, input.DataSourcePolicyReference,
 		input.PrivacyBasisMatrixReference, input.RetentionPolicyReference, input.WaiverPolicyReference,
-		input.ControlledActionsReference, input.ExternalReviewReference}
+		input.ControlledActionsReference, input.ExternalReviewReference,
+	}
 	for _, value := range required {
 		if value == "" {
 			return NewSubjectWorkflowError("POLICY_MATERIAL_REQUIRED", "政策版本、适用规则及全部决策材料引用均不能为空")

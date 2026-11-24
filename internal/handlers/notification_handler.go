@@ -2,12 +2,14 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/common"
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/repositories"
@@ -469,7 +471,7 @@ func (h *NotificationHandler) ApproveNotification(c *gin.Context) {
 	}
 
 	if err := h.queueRepo.Approve(c.Request.Context(), uint(id), actor.UserID); err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			common.APINotFound(c, "通知不存在或状态不允许审批")
 			return
 		}
@@ -526,7 +528,7 @@ func (h *NotificationHandler) RejectNotification(c *gin.Context) {
 	}
 
 	// 更新为取消状态，记录拒绝原因
-	notification.Status = "cancelled"
+	notification.Status = "canceled"
 	notification.ErrorMessage = "审批拒绝: " + req.Reason
 
 	if err := h.queueRepo.Update(c.Request.Context(), notification); err != nil {
@@ -605,7 +607,7 @@ func (h *NotificationHandler) BatchCancelNotification(c *gin.Context) {
 		}
 	}
 
-	if err := h.queueRepo.BatchUpdateStatus(c.Request.Context(), req.IDs, "cancelled"); err != nil {
+	if err := h.queueRepo.BatchUpdateStatus(c.Request.Context(), req.IDs, "canceled"); err != nil {
 		common.APIInternalServerError(c, "批量取消失败: "+err.Error())
 		return
 	}
@@ -661,7 +663,7 @@ func (h *NotificationHandler) SendNotification(c *gin.Context) {
 	now := time.Now()
 	err = h.queueRepo.UpdateSentInfo(c.Request.Context(), uint(id), now, "", "")
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			common.APINotFound(c, "通知不存在")
 			return
 		}
@@ -920,7 +922,7 @@ func (h *NotificationHandler) DeleteTemplate(c *gin.Context) {
 	}
 
 	if err := h.templateRepo.Delete(context.Background(), uint(id)); err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			common.APINotFound(c, "模板不存在")
 			return
 		}

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/concurrency"
 	"law-oa-go/internal/models"
 )
@@ -112,7 +113,8 @@ func (s *BatchService) BatchFindByIDs(ctx context.Context, model interface{}, id
 func (s *BatchService) BatchProcessWithCallback(ctx context.Context,
 	query *gorm.DB,
 	batchSize int,
-	callback func(batch interface{}) error) error {
+	callback func(batch interface{}) error,
+) error {
 	if batchSize <= 0 {
 		batchSize = 1000
 	}
@@ -351,7 +353,8 @@ func (s *BatchService) BatchProcessWithCallbackConcurrent(ctx context.Context,
 	query *gorm.DB,
 	batchSize int,
 	maxConcurrency int,
-	callback func(batch interface{}) error) error {
+	callback func(batch interface{}) error,
+) error {
 	if batchSize <= 0 {
 		batchSize = 1000
 	}

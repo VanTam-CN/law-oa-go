@@ -1,0 +1,2318 @@
+level=warning msg="[config_reader] The configuration option `run.skip-files` is deprecated, please use `issues.exclude-files`."
+level=warning msg="[config_reader] The configuration option `run.skip-dirs` is deprecated, please use `issues.exclude-dirs`."
+level=warning msg="[config_reader] The configuration option `output.uniq-by-line` is deprecated, please use `issues.uniq-by-line`"
+level=warning msg="[config_reader] The configuration option `output.format` is deprecated, please use `output.formats`"
+level=warning msg="The linter 'gomnd' is deprecated (since v1.58.0) due to: The linter has been renamed. Replaced by mnd."
+level=warning msg="[linters_context] gocritic: no need to enable check \"appendAssign\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"assignOp\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"badCall\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"badCond\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"captLocal\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"caseOrder\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"defaultCaseOrder\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"dupArg\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"dupBranchBody\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"dupCase\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"dupSubExpr\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"elseif\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"flagDeref\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"regexpMust\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"singleCaseSwitch\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"sloppyLen\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"switchTrue\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"typeSwitchVar\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"underef\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"unlambda\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"unslice\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"valSwap\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"wrapperFunc\": it's already enabled"
+level=error msg="[linters_context] gomnd: This linter is fully inactivated: it will not produce any reports."
+internal/handlers/intake_native_transaction.go:68:14: G113: Potential uncontrolled memory consumption in Rat.SetString (CVE-2022-23772) (gosec)
+	left, ok := new(big.Rat).SetString(a.String())
+	            ^
+internal/handlers/intake_native_transaction.go:72:18: G113: Potential uncontrolled memory consumption in Rat.SetString (CVE-2022-23772) (gosec)
+	right, valid := new(big.Rat).SetString(b.String())
+	                ^
+internal/concurrency/worker_pool_test.go:369:49: empty-block: this block is empty, you can remove it (revive)
+		if task.TaskID != "" && task.Operation != nil {
+			// 任务创建成功
+		}
+internal/concurrency/safety.go:248:1: redefines-builtin-id: redefinition of the built-in function min (revive)
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+internal/middleware/v2/v2_security_middleware.go:365:59: empty-block: this block is empty, you can remove it (revive)
+		if c.Request.Body != nil && c.Request.ContentLength > 0 {
+			// 注意：这里只是示例，实际应该基于Content-Type处理
+			// 因为中间件不应该修改请求体
+		}
+internal/security/security_test.go:155:17: empty-block: this block is empty, you can remove it (revive)
+			if parts > 0 {
+				// Token有内容
+			}
+internal/tracing/tracer.go:360:9: context-keys-type: should not use basic type string as key in context.WithValue (revive)
+	return context.WithValue(ctx, "trace_id", traceID)
+	       ^
+internal/tracing/tracer.go:365:9: context-keys-type: should not use basic type string as key in context.WithValue (revive)
+	return context.WithValue(ctx, "span_id", spanID)
+	       ^
+internal/validation/validator.go:869:50: redefines-builtin-id: redefinition of the built-in function min (revive)
+func (v *Validator) ValidateLength(value string, min, max int) bool {
+                                                 ^
+internal/models/legal_statutes.go:254:70: empty-block: this block is empty, you can remove it (revive)
+	if tx.Statement.Changed("Content") || tx.Statement.Changed("Title") {
+		// 这里可以添加版本记录逻辑
+	}
+internal/validators/case_validator.go:415:2: if-return: redundant if ...; err != nil check, just return error instead. (revive)
+	if err := v.ValidateSortParams(sortBy, sortOrder); err != nil {
+		return err
+	}
+internal/database/connection_pool.go:119:3: empty-block: this block is empty, you can remove it (revive)
+		for range ticker.C {
+			// 连接监控已移至performance_optimizer.go
+		}
+internal/database/migrator.go:16:2: blank-imports: a blank import should be only in a main or test package, or have a comment justifying it (revive)
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	^
+internal/services/client_contact_service.go:127:3: if-return: redundant if ...; err != nil check, just return error instead. (revive)
+		if err := tx.First(&saved, existing.ID).Error; err != nil {
+			return err
+		}
+internal/services/subject_recheck_service.go:1266:2: if-return: redundant if ...; err != nil check, just return error instead. (revive)
+	if err := s.RequireConflictDisposition(ctx, caseModel.ConflictCheckID, action); err != nil {
+		return err
+	}
+internal/services/conflict_reviewer_service.go:238:4: if-return: redundant if ...; err != nil check, just return error instead. (revive)
+			if err := syncOpenConflictApprovalApprover(tx, checkID, reviewer, actor.UserID, time.Now()); err != nil {
+				return err
+			}
+internal/services/approval_template_service.go:311:10: indent-error-flow: if block ends with a return statement, so drop this else and outdent its block (revive)
+		} else {
+			// 没有下一步，审批完成
+			return s.updateApprovalStatus(node.ApprovalID, models.ApprovalStatusApproved)
+		}
+internal/services/conflict_hook_service.go:62:12: context-keys-type: should not use basic type string as key in context.WithValue (revive)
+		bgCtx := context.WithValue(context.Background(), "trace_id", ctx.Value("trace_id"))
+		         ^
+internal/services/conflict_hook_service.go:75:13: context-keys-type: should not use basic type string as key in context.WithValue (revive)
+			bgCtx := context.WithValue(context.Background(), "trace_id", ctx.Value("trace_id"))
+			         ^
+internal/services/conflict_hook_service.go:84:12: context-keys-type: should not use basic type string as key in context.WithValue (revive)
+		bgCtx := context.WithValue(context.Background(), "trace_id", ctx.Value("trace_id"))
+		         ^
+internal/services/approval_state_machine.go:239:12: indent-error-flow: if block ends with a return statement, so drop this else and outdent its block (revive)
+				} else {
+					// 流程结束
+					return nil, nil
+				}
+internal/services/risk_assessor.go:383:9: indent-error-flow: if block ends with a return statement, so drop this else and outdent its block (revive)
+	} else {
+		return 0.2 // 超过6个月
+	}
+internal/services/v2_conflict_detection_service.go:552:9: indent-error-flow: if block ends with a return statement, so drop this else and outdent its block (revive)
+	} else {
+		return "related"
+	}
+internal/services/enhanced_case_service.go:330:3: unexported-return: exported func NewEnhancedCaseService returns unexported type *services.enhancedCaseService, which can be annoying to use (revive)
+) *enhancedCaseService {
+  ^
+internal/services/conflict_pool_service.go:556:9: indent-error-flow: if block ends with a return statement, so drop this else and outdent its block (revive)
+	} else {
+		return "部分匹配"
+	}
+internal/services/company_api_service.go:774:1: redefines-builtin-id: redefinition of the built-in function max (revive)
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+internal/services/bad_debt_service.go:221:35: empty-block: this block is empty, you can remove it (revive)
+		if badDebt.RemainingAmount <= 0 {
+			// 可以考虑将发票标记为已核销
+		}
+internal/services/user_service.go:113:54: empty-block: this block is empty, you can remove it (revive)
+		if stderrors.Is(err, repositories.ErrUserNotFound) {
+			// 用户不存在，可以创建
+		} else {
+internal/services/user_service.go:195:55: empty-block: this block is empty, you can remove it (revive)
+			if stderrors.Is(err, repositories.ErrUserNotFound) {
+				// 邮箱不存在，可以使用
+			} else {
+internal/services/user_service.go:435:54: empty-block: this block is empty, you can remove it (revive)
+		if stderrors.Is(err, repositories.ErrUserNotFound) {
+			// 用户不存在，可以创建
+		} else {
+internal/services/user_service.go:543:55: empty-block: this block is empty, you can remove it (revive)
+			if stderrors.Is(err, repositories.ErrUserNotFound) {
+				// 邮箱不存在，可以使用
+			} else {
+internal/services/conflict_detection_service.go:1425:9: indent-error-flow: if block ends with a return statement, so drop this else and outdent its block (revive)
+	} else {
+		return "HIGH_TIME_FACTOR"
+	}
+cmd/qa-fixture/main.go:351:3: if-return: redundant if ...; err != nil check, just return error instead. (revive)
+		if err := upsertApproval(tx, result); err != nil {
+			return err
+		}
+main.go:665:2: if-return: redundant if ...; err != nil check, just return error instead. (revive)
+	if err := database.ValidateProductionSchemaContract(db); err != nil {
+		return err
+	}
+tests/integration/production_external_evidence_test.go:116:42: context-as-argument: context.Context should be the first parameter of a function (revive)
+func executeMigrationFiles(t *testing.T, ctx context.Context, conn *sql.Conn, filenames ...string) {
+                                         ^
+tests/integration/production_external_evidence_test.go:130:47: context-as-argument: context.Context should be the first parameter of a function (revive)
+func seedExternalEvidenceReview(t *testing.T, ctx context.Context, conn *sql.Conn, gate, reviewer, role, timestamp string) {
+                                              ^
+tests/integration/production_external_evidence_test.go:150:50: context-as-argument: context.Context should be the first parameter of a function (revive)
+func setPostgresEvidenceSearchPath(t *testing.T, ctx context.Context, conn *sql.Conn, schema string) {
+                                                 ^
+tests/integration/production_external_evidence_test.go:157:50: context-as-argument: context.Context should be the first parameter of a function (revive)
+func assertProductionSchemaVersion(t *testing.T, ctx context.Context, conn *sql.Conn, expected string) {
+                                                 ^
+tests/integration/production_external_evidence_test.go:168:54: context-as-argument: context.Context should be the first parameter of a function (revive)
+func assertExternalEvidenceUniqueIndex(t *testing.T, ctx context.Context, conn *sql.Conn) {
+                                                     ^
+tests/integration/production_external_evidence_test.go:189:60: context-as-argument: context.Context should be the first parameter of a function (revive)
+func assertExternalEvidenceDuplicateRejected(t *testing.T, ctx context.Context, conn *sql.Conn, gate, reviewer string) {
+                                                           ^
+tests/integration/production_external_evidence_test.go:203:51: context-as-argument: context.Context should be the first parameter of a function (revive)
+func assertExternalEvidenceRowCount(t *testing.T, ctx context.Context, conn *sql.Conn, gate string, expected int) {
+                                                  ^
+tests/integration/production_external_evidence_test.go:214:57: context-as-argument: context.Context should be the first parameter of a function (revive)
+func assertExternalEvidenceReadinessQuery(t *testing.T, ctx context.Context, conn *sql.Conn, gate, reviewer string) {
+                                                        ^
+tests/integration/production_external_evidence_test.go:230:53: context-as-argument: context.Context should be the first parameter of a function (revive)
+func assertAppendOnlyMutationRejected(t *testing.T, ctx context.Context, conn *sql.Conn, statement string) {
+                                                    ^
+internal/monitoring/performance.go:228:18: unnecessary conversion (unconvert)
+	status := string(statusCode)
+	                ^
+internal/services/analytics_service.go:156:27: unnecessary conversion (unconvert)
+		session.Duration = int64(req.EndTime.Sub(session.StartTime).Milliseconds())
+		                        ^
+internal/database/performance_monitor.go:239:28: unnecessary conversion (unconvert)
+	pm.stats.WaitCount = int64(stats.WaitCount)
+	                          ^
+internal/services/mcp_client.go:114:34: response body must be closed (bodyclose)
+		response, err = c.httpClient.Do(req)
+		                               ^
+internal/models/elasticsearch/legal_statutes.go:178:18: Error return value of `encoding/json.Marshal` is not checked: unsafe type `interface{}` found (errchkjson)
+		metaJSON, _ := json.Marshal(indexMeta)
+		               ^
+internal/models/elasticsearch/legal_statutes.go:183:17: Error return value of `encoding/json.Marshal` is not checked: unsafe type `float64` found (errchkjson)
+		docJSON, _ := json.Marshal(doc)
+		              ^
+internal/models/elasticsearch/legal_statutes.go:386:20: Error return value of `encoding/json.Marshal` is not checked: unsafe type `interface{}` found (errchkjson)
+		sourceJSON, _ := json.Marshal(source)
+		                 ^
+internal/errors/error_handler.go:160:21: Error return value of `encoding/json.Marshal` is not checked: unsafe type `interface{}` found (errchkjson)
+		contextJSON, _ := json.Marshal(err.Context())
+		                  ^
+internal/handlers/intake_native_transaction.go:60:16: Error return value of `encoding/json.Marshal` is not checked: unsafe type `float64` found (errchkjson)
+	encoded, _ := json.Marshal(f)
+	              ^
+internal/handlers/onlyoffice_handler.go:710:17: Error return value of `encoding/json.Marshal` is not checked (errchkjson)
+		payload, _ := json.Marshal(convertReq)
+		              ^
+internal/handlers/onlyoffice_handler.go:716:16: Error return value of `encoding/json.Marshal` is not checked (errchkjson)
+	reqBody, _ := json.Marshal(convertReq)
+	              ^
+internal/models/json_types.go:57:13: Error return value of `encoding/json.Marshal` is not checked: unsafe type `interface{}` found (errchkjson)
+	data, _ := json.Marshal(j)
+	           ^
+internal/models/json_types.go:126:13: Error return value of `encoding/json.Marshal` is not checked (errchkjson)
+	data, _ := json.Marshal(j)
+	           ^
+internal/services/approval_service.go:284:26: Error return value of `encoding/json.Marshal` is not checked: unsafe type `interface{}` found (errchkjson)
+		attachmentsBytes, _ := json.Marshal(req.Attachments)
+		                       ^
+internal/services/approval_service.go:288:23: Error return value of `encoding/json.Marshal` is not checked: unsafe type `interface{}` found (errchkjson)
+		metadataBytes, _ := json.Marshal(req.Metadata)
+		                    ^
+internal/services/approval_service.go:536:22: Error return value of `encoding/json.Marshal` is not checked: unsafe type `interface{}` found (errchkjson)
+	metadataBytes, _ := json.Marshal(metadata)
+	                    ^
+internal/services/approval_template_service.go:76:22: Error return value of `encoding/json.Marshal` is not checked (errchkjson)
+	sealStepsJSON, _ := json.Marshal(sealApprovalSteps)
+	                    ^
+internal/services/approval_template_service.go:77:27: Error return value of `encoding/json.Marshal` is not checked: unsafe type `interface{}` found (errchkjson)
+	sealConditionsJSON, _ := json.Marshal(sealConditions)
+	                         ^
+internal/services/approval_template_service.go:106:22: Error return value of `encoding/json.Marshal` is not checked (errchkjson)
+	caseStepsJSON, _ := json.Marshal(caseFilingSteps)
+	                    ^
+internal/services/conflict_p0_service.go:368:12: Error return value of `encoding/json.Marshal` is not checked (errchkjson)
+	raw, _ := json.Marshal(items)
+	          ^
+internal/services/conflict_policy_service.go:337:12: Error return value of `encoding/json.Marshal` is not checked: unsafe type `any` found (errchkjson)
+	raw, _ := json.Marshal(payload)
+	          ^
+internal/services/conflict_pool_service.go:590:15: Error return value of `encoding/json.Marshal` is not checked: unsafe type `float64` found (errchkjson)
+			data, _ := json.Marshal(shareholdingData)
+			           ^
+internal/services/conflict_pool_service.go:602:15: Error return value of `encoding/json.Marshal` is not checked: unsafe type `float64` found (errchkjson)
+			data, _ := json.Marshal(relatedData)
+			           ^
+internal/services/content_filter_service.go:314:22: Error return value of `encoding/json.Marshal` is not checked: unsafe type `interface{}` found (errchkjson)
+	hitsJSONBytes, _ := json.Marshal(hitsMap)
+	                    ^
+internal/services/subject_recheck_service.go:1292:12: Error return value of `encoding/json.Marshal` is not checked: unsafe type `interface{}` found (errchkjson)
+	raw, _ := json.Marshal(record.CheckResult)
+	          ^
+internal/services/subject_recheck_service.go:1439:12: Error return value of `encoding/json.Marshal` is not checked: unsafe type `interface{}` found (errchkjson)
+	raw, _ := json.Marshal(payload)
+	          ^
+internal/services/team_permission_service.go:220:19: Error return value of `encoding/json.Marshal` is not checked: unsafe type `interface{}` found (errchkjson)
+	resultJSON, _ := json.Marshal(result)
+	                 ^
+internal/validation/validator.go:69:6: the error type name `ValidationErrors` should conform to the `XxxError` format (errname)
+type ValidationErrors struct {
+     ^
+internal/models/elasticsearch/legal_statutes.go:94:53: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("加载索引映射失败: %v", err)
+		                                                  ^
+internal/models/elasticsearch/legal_statutes.go:104:47: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("创建索引失败: %v", err)
+		                                            ^
+internal/models/elasticsearch/legal_statutes.go:124:47: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("删除索引失败: %v", err)
+		                                            ^
+internal/models/elasticsearch/legal_statutes.go:140:50: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("序列化文档失败: %v", err)
+		                                               ^
+internal/models/elasticsearch/legal_statutes.go:152:47: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("索引文档失败: %v", err)
+		                                            ^
+internal/models/elasticsearch/legal_statutes.go:195:47: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("批量索引失败: %v", err)
+		                                            ^
+internal/models/elasticsearch/legal_statutes.go:210:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("构建搜索查询失败: %v", err)
+		                                                       ^
+internal/models/elasticsearch/legal_statutes.go:215:55: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("序列化查询失败: %v", err)
+		                                                    ^
+internal/models/elasticsearch/legal_statutes.go:225:52: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("执行搜索失败: %v", err)
+		                                                 ^
+internal/models/elasticsearch/legal_statutes.go:235:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("解析搜索结果失败: %v", err)
+		                                                       ^
+internal/validation/validator.go:101:23: type assertion on error will fail on wrapped errors. Use errors.As to check for specific errors (errorlint)
+		for _, err := range err.(validator.ValidationErrors) {
+		                    ^
+internal/validation/validator.go:800:27: type assertion on error will fail on wrapped errors. Use errors.As to check for specific errors (errorlint)
+	if validationErrs, ok := err.(validator.ValidationErrors); ok {
+	                         ^
+cmd/qa-fixture/main.go:854:87: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("A 的冲突检测记录不符合预期: count=%d err=%v", count, err)
+		                                                                                    ^
+cmd/qa-fixture/main.go:857:82: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("独立复核指定不符合预期: count=%d err=%v", count, err)
+		                                                                               ^
+cmd/qa-fixture/main.go:860:82: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("审批门禁夹具不符合预期: count=%d err=%v", count, err)
+		                                                                               ^
+cmd/qa-fixture/main.go:864:99: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("四类冲突范围未全部登记: active_complete=%d err=%v", activeScopes, err)
+		                                                                                                ^
+cmd/qa-fixture/main.go:871:108: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("律所级核查人任命夹具不符合预期: active=%d err=%v", activeAppointments, err)
+		                                                                                                         ^
+frontend/migrate/main.go:132:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == migrate.ErrNoChange {
+		   ^
+frontend/migrate/main.go:155:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == migrate.ErrNoChange {
+		   ^
+internal/auth/token_revocation.go:353:12: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	} else if err != redis.Nil {
+	          ^
+internal/cache/advanced_cache.go:118:5: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	if err == redis.Nil {
+	   ^
+internal/config/config.go:222:15: type assertion on error will fail on wrapped errors. Use errors.As to check for specific errors (errorlint)
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+		            ^
+internal/database/migrator.go:266:19: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	if err != nil && err != migrate.ErrNoChange {
+	                 ^
+internal/database/migrator.go:270:5: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	if err == migrate.ErrNoChange {
+	   ^
+internal/database/migrator.go:284:19: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	if err != nil && err != migrate.ErrNoChange {
+	                 ^
+internal/database/migrator.go:288:5: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	if err == migrate.ErrNoChange {
+	   ^
+internal/database/migrator.go:306:19: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	if err != nil && err != migrate.ErrNoChange {
+	                 ^
+internal/database/migrator.go:310:5: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	if err == migrate.ErrNoChange {
+	   ^
+internal/database/migrator.go:324:19: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	if err != nil && err != migrate.ErrNoChange {
+	                 ^
+internal/database/migrator.go:328:5: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	if err == migrate.ErrNoChange {
+	   ^
+internal/handlers/approval_handler.go:224:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound || strings.Contains(err.Error(), "record not found") {
+		   ^
+internal/handlers/approval_handler.go:255:13: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		} else if err == gorm.ErrRecordNotFound || strings.Contains(err.Error(), "record not found") {
+		          ^
+internal/handlers/conflict_reviewer_handler.go:80:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/handlers/content_filter_handler.go:111:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/handlers/content_filter_handler.go:144:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/handlers/content_filter_handler.go:204:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/handlers/demo_aggregate_handler.go:2657:25: type assertion on error will fail on wrapped errors. Use errors.As to check for specific errors (errorlint)
+		if businessErr, ok := err.(conflictApprovalError); ok {
+		                      ^
+internal/handlers/demo_aggregate_handler.go:2685:7: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+			if err == gorm.ErrRecordNotFound {
+			   ^
+internal/handlers/demo_aggregate_handler.go:2723:14: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+			} else if waiverErr != gorm.ErrRecordNotFound {
+			          ^
+internal/handlers/demo_aggregate_handler.go:2744:7: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+			if existingErr != gorm.ErrRecordNotFound {
+			   ^
+internal/handlers/demo_aggregate_handler.go:3003:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/handlers/ethical_wall.go:93:3: switch on an error will fail on wrapped errors. Use errors.Is to check for specific errors (errorlint)
+		case services.ErrCaseNotFound:
+		^
+internal/handlers/ethical_wall.go:140:3: switch on an error will fail on wrapped errors. Use errors.Is to check for specific errors (errorlint)
+		case services.ErrCaseNotFound:
+		^
+internal/handlers/ethical_wall.go:186:3: switch on an error will fail on wrapped errors. Use errors.Is to check for specific errors (errorlint)
+		case services.ErrCaseNotFound:
+		^
+internal/handlers/ethical_wall.go:242:3: switch on an error will fail on wrapped errors. Use errors.Is to check for specific errors (errorlint)
+		case services.ErrCaseNotFound:
+		^
+internal/handlers/ethical_wall.go:308:3: switch on an error will fail on wrapped errors. Use errors.Is to check for specific errors (errorlint)
+		case services.ErrCaseNotFound:
+		^
+internal/handlers/intake_party_identity_guard.go:192:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/handlers/notification_handler.go:472:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/handlers/notification_handler.go:664:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/handlers/notification_handler.go:923:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/middleware/cache.go:152:6: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err != redis.Nil {
+		   ^
+internal/repositories/approval_delegation_repository.go:54:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/approval_delegation_repository.go:110:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/approval_node_repository.go:42:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/approval_repository.go:29:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/approval_repository.go:32:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("查找审批记录失败: %v", err)
+		                                                       ^
+internal/repositories/approval_repository.go:46:64: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("查找用户审批记录失败: %v", err)
+		                                                             ^
+internal/repositories/approval_repository.go:63:61: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("查找待审批记录失败: %v", err)
+		                                                          ^
+internal/repositories/approval_repository.go:79:62: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return 0, fmt.Errorf("统计用户审批记录失败: %v", err)
+		                                                           ^
+internal/repositories/approval_repository.go:94:59: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return 0, fmt.Errorf("统计待审批记录失败: %v", err)
+		                                                        ^
+internal/repositories/approval_repository.go:113:65: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return 0, fmt.Errorf("统计用户待审批记录失败: %v", err)
+		                                                              ^
+internal/repositories/approval_repository.go:128:59: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return 0, fmt.Errorf("统计待审批记录失败: %v", err)
+		                                                        ^
+internal/repositories/approval_repository.go:136:53: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("创建审批记录失败: %v", err)
+		                                                  ^
+internal/repositories/approval_repository.go:144:53: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("更新审批记录失败: %v", err)
+		                                                  ^
+internal/repositories/approval_repository.go:152:53: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("删除审批记录失败: %v", err)
+		                                                  ^
+internal/repositories/approval_repository.go:164:55: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("查找工作流失败: %v", err)
+		                                                    ^
+internal/repositories/approval_repository.go:184:52: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("查找模板失败: %v", err)
+		                                                 ^
+internal/repositories/approval_repository.go:192:53: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("创建审批记录失败: %v", err)
+		                                                  ^
+internal/repositories/approval_repository.go:204:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("查找审批记录失败: %v", err)
+		                                                       ^
+internal/repositories/approval_repository.go:221:66: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return false, fmt.Errorf("检查审批处理记录失败: %v", err)
+		                                                               ^
+internal/repositories/approval_template_repository.go:27:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/approval_workflow_repository.go:27:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/approval_workflow_repository.go:30:55: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("查找工作流失败: %v", err)
+		                                                    ^
+internal/repositories/approval_workflow_repository.go:40:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/approval_workflow_repository.go:43:55: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("查找工作流失败: %v", err)
+		                                                    ^
+internal/repositories/approval_workflow_repository.go:55:61: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("查找工作流列表失败: %v", err)
+		                                                          ^
+internal/repositories/approval_workflow_repository.go:63:50: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("创建工作流失败: %v", err)
+		                                               ^
+internal/repositories/approval_workflow_repository.go:71:50: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("更新工作流失败: %v", err)
+		                                               ^
+internal/repositories/approval_workflow_repository.go:79:50: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("删除工作流失败: %v", err)
+		                                               ^
+internal/repositories/elasticsearch_legal_statutes.go:271:54: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+			return fmt.Errorf("获取法条数据失败: %v", err)
+			                                                  ^
+internal/repositories/elasticsearch_legal_statutes.go:287:48: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+			return fmt.Errorf("批量索引失败: %v", err)
+			                                            ^
+internal/repositories/elasticsearch_legal_statutes.go:360:47: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("创建索引失败: %v", err)
+		                                            ^
+internal/repositories/elasticsearch_legal_statutes.go:365:47: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("同步数据失败: %v", err)
+		                                            ^
+internal/repositories/enhanced_conflict_repository.go:249:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/enhanced_conflict_repository.go:282:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/enhanced_conflict_repository.go:403:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/enhanced_conflict_repository.go:545:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/enhanced_conflict_repository.go:590:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/enhanced_conflict_repository.go:604:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/enhanced_conflict_repository.go:700:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/entity_repository.go:99:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/entity_repository.go:643:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/folder_template_repository.go:57:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/folder_template_repository.go:125:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/folder_template_repository.go:173:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/integration_repository.go:133:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/integration_repository.go:148:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/integration_repository.go:204:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/integration_repository.go:270:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/integration_repository.go:287:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/integration_repository.go:310:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/professional_conflict_detection_repository.go:28:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/professional_conflict_detection_repository.go:42:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/professional_conflict_detection_repository.go:139:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/professional_conflict_detection_repository.go:233:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/professional_conflict_detection_repository.go:245:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/professional_conflict_detection_repository.go:372:46: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		First(&lastExecution).Error; err != nil && err != gorm.ErrRecordNotFound {
+		                                           ^
+internal/repositories/waiver_repository.go:28:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/waiver_repository.go:43:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/waiver_repository.go:156:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/waiver_repository.go:194:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/waiver_repository.go:214:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/waiver_repository.go:256:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/waiver_repository.go:294:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/waiver_repository.go:306:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/services/approval_assigner.go:45:50: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("获取工作流失败: %v", err)
+		                                               ^
+internal/services/approval_assigner.go:56:56: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("解析工作流阶段失败: %v", err)
+		                                                     ^
+internal/services/approval_assigner.go:69:50: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("分配审批人失败: %v", err)
+		                                               ^
+internal/services/approval_business_hooks.go:96:56: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("解析用印元数据失败: %v", err)
+		                                                     ^
+internal/services/approval_business_hooks.go:122:53: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("创建用印记录失败: %v", err)
+		                                                  ^
+internal/services/approval_business_hooks.go:153:56: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("解析立案元数据失败: %v", err)
+		                                                     ^
+internal/services/approval_business_hooks.go:169:53: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("生成案件编号失败: %v", err)
+		                                                  ^
+internal/services/approval_business_hooks.go:194:48: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+			return fmt.Errorf("创建案件失败: %v", err)
+			                                            ^
+internal/services/approval_business_hooks.go:208:57: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+			return fmt.Errorf("更新审批元数据失败: %v", err)
+			                                                     ^
+internal/services/approval_service.go:49:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("获取总申请数失败: %v", err)
+		                                                       ^
+internal/services/approval_service.go:56:64: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("获取待处理审批数失败: %v", err)
+		                                                             ^
+internal/services/approval_service.go:67:65: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+			return nil, fmt.Errorf("获取全部待审批数失败: %v", err)
+			                                                             ^
+internal/services/approval_service.go:72:65: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+			return nil, fmt.Errorf("获取用户待审批数失败: %v", err)
+			                                                             ^
+internal/services/approval_service.go:80:64: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("获取已通过申请数失败: %v", err)
+		                                                             ^
+internal/services/approval_service.go:87:64: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("获取已拒绝申请数失败: %v", err)
+		                                                             ^
+internal/services/approval_service.go:98:61: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("获取待审批列表失败: %v", err)
+		                                                          ^
+internal/services/approval_service.go:103:61: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("获取待审批总数失败: %v", err)
+		                                                          ^
+internal/services/approval_service.go:126:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("获取审批列表失败: %v", err)
+		                                                       ^
+internal/services/approval_service.go:131:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("获取审批总数失败: %v", err)
+		                                                       ^
+internal/services/approval_service.go:163:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("获取审批详情失败: %v", err)
+		                                                       ^
+internal/services/approval_service.go:204:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("获取审批详情失败: %v", err)
+		                                                       ^
+internal/services/approval_service.go:213:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("获取审批记录失败: %v", err)
+		                                                       ^
+internal/services/approval_service.go:223:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("生成申请编号失败: %v", err)
+		                                                       ^
+internal/services/approval_service.go:306:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("保存审批申请失败: %v", err)
+		                                                       ^
+internal/services/approval_service.go:316:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("查找审批记录失败: %v", err)
+		                                                       ^
+internal/services/approval_service.go:336:55: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("分配审批人失败: %v", err)
+		                                                    ^
+internal/services/approval_service.go:346:52: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("提交审批失败: %v", err)
+		                                                 ^
+internal/services/approval_service.go:357:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("查找审批记录失败: %v", err)
+		                                                       ^
+internal/services/approval_service.go:448:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("保存审批记录失败: %v", err)
+		                                                       ^
+internal/services/approval_service.go:457:62: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+			return nil, fmt.Errorf("移动到下一阶段失败: %v", err)
+			                                                          ^
+internal/services/approval_service.go:493:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("更新审批状态失败: %v", err)
+		                                                       ^
+internal/services/approval_service.go:499:64: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("重新加载审批数据失败: %v", err)
+		                                                             ^
+internal/services/approval_service.go:509:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("查找审批记录失败: %v", err)
+		                                                       ^
+internal/services/approval_service.go:541:61: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("重新分配审批人失败: %v", err)
+		                                                          ^
+internal/services/approval_service.go:549:52: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("重新提交失败: %v", err)
+		                                                 ^
+internal/services/approval_service.go:562:53: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("查找审批记录失败: %v", err)
+		                                                  ^
+internal/services/approval_service.go:573:53: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("检查审批记录失败: %v", err)
+		                                                  ^
+internal/services/approval_service.go:593:47: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("撤回审批失败: %v", err)
+		                                            ^
+internal/services/approval_service.go:603:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("查找审批记录失败: %v", err)
+		                                                       ^
+internal/services/approval_service.go:640:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("更新审批申请失败: %v", err)
+		                                                       ^
+internal/services/approval_service.go:651:53: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("查找审批记录失败: %v", err)
+		                                                  ^
+internal/services/approval_service.go:665:53: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("删除审批记录失败: %v", err)
+		                                                  ^
+internal/services/approval_service.go:675:61: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("获取审批工作流失败: %v", err)
+		                                                          ^
+internal/services/approval_service.go:684:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("获取审批模板失败: %v", err)
+		                                                       ^
+internal/services/authorization_service.go:265:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == repositories.ErrDocumentNotFound {
+		   ^
+internal/services/conflict_check_service.go:330:101: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("冲突检索失败且无法记录待复核状态: %v; 状态更新失败: %w", cause, err)
+		                                                                                                  ^
+internal/services/conflict_pool_service.go:156:12: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	} else if err == gorm.ErrRecordNotFound {
+	          ^
+internal/services/conflict_scan_service.go:258:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/services/document_lock_service.go:79:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/services/document_lock_service.go:339:5: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	if err == gorm.ErrRecordNotFound {
+	   ^
+internal/services/document_preview_service.go:80:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == repositories.ErrDocumentNotFound {
+		   ^
+internal/services/document_preview_service.go:134:19: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	if err != nil && err != io.EOF {
+	                 ^
+internal/services/document_preview_service.go:228:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == repositories.ErrDocumentNotFound {
+		   ^
+internal/services/document_service.go:174:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == repositories.ErrDocumentNotFound {
+		   ^
+internal/services/document_service.go:227:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == repositories.ErrDocumentNotFound {
+		   ^
+internal/services/document_service.go:263:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == repositories.ErrDocumentNotFound {
+		   ^
+internal/services/document_service.go:310:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == repositories.ErrDocumentNotFound {
+		   ^
+internal/services/elasticsearch_sync_service.go:81:54: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+			return fmt.Errorf("获取法条数据失败: %v", err)
+			                                                  ^
+internal/services/elasticsearch_sync_service.go:97:48: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+			return fmt.Errorf("批量索引失败: %v", err)
+			                                            ^
+internal/services/elasticsearch_sync_service.go:119:47: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("获取法条失败: %v", err)
+		                                            ^
+internal/services/elasticsearch_sync_service.go:127:47: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("索引法条失败: %v", err)
+		                                            ^
+internal/services/elasticsearch_sync_service.go:144:53: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("获取法条总数失败: %v", err)
+		                                                  ^
+internal/services/elasticsearch_sync_service.go:172:47: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("创建索引失败: %v", err)
+		                                            ^
+internal/services/elasticsearch_sync_service.go:177:47: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("同步数据失败: %v", err)
+		                                            ^
+internal/services/elasticsearch_sync_service.go:273:67: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("获取数据库法条总数失败: %v", err)
+		                                                                ^
+internal/services/elasticsearch_sync_service.go:316:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("获取法条总数失败: %v", err)
+		                                                       ^
+internal/services/legal_statutes.go:89:52: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("请求验证失败: %v", err)
+		                                                 ^
+internal/services/legal_statutes.go:99:49: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("分类不存在: %v", err)
+		                                              ^
+internal/services/legal_statutes.go:125:52: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("创建法条失败: %v", err)
+		                                                 ^
+internal/services/legal_statutes.go:154:52: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("获取法条失败: %v", err)
+		                                                 ^
+internal/services/legal_statutes.go:168:52: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("获取法条失败: %v", err)
+		                                                 ^
+internal/services/legal_statutes.go:180:52: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("请求验证失败: %v", err)
+		                                                 ^
+internal/services/legal_statutes.go:186:49: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("法条不存在: %v", err)
+		                                              ^
+internal/services/legal_statutes.go:225:52: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("更新法条失败: %v", err)
+		                                                 ^
+internal/services/legal_statutes.go:257:44: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("法条不存在: %v", err)
+		                                         ^
+internal/services/legal_statutes.go:262:47: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("删除法条失败: %v", err)
+		                                            ^
+internal/services/legal_statutes.go:290:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("获取法条列表失败: %v", err)
+		                                                       ^
+internal/services/legal_statutes.go:296:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("获取法条总数失败: %v", err)
+		                                                       ^
+internal/services/legal_statutes.go:320:52: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("请求验证失败: %v", err)
+		                                                 ^
+internal/services/legal_statutes.go:400:56: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+			return nil, fmt.Errorf("关键词搜索失败: %v", err)
+			                                                    ^
+internal/services/legal_statutes.go:407:53: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+			return nil, fmt.Errorf("分类搜索失败: %v", err)
+			                                                 ^
+internal/services/legal_statutes.go:414:59: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+			return nil, fmt.Errorf("法律名称搜索失败: %v", err)
+			                                                       ^
+internal/services/legal_statutes.go:420:59: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+			return nil, fmt.Errorf("获取法条列表失败: %v", err)
+			                                                       ^
+internal/services/legal_statutes.go:424:59: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+			return nil, fmt.Errorf("获取法条总数失败: %v", err)
+			                                                       ^
+internal/services/legal_statutes.go:453:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("获取搜索建议失败: %v", err)
+		                                                       ^
+internal/services/legal_statutes.go:508:59: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+			return nil, fmt.Errorf("获取当前法条失败: %v", err)
+			                                                       ^
+internal/services/legal_statutes.go:514:59: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+			return nil, fmt.Errorf("查找相关法条失败: %v", err)
+			                                                       ^
+internal/services/legal_statutes.go:541:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("获取分类列表失败: %v", err)
+		                                                       ^
+internal/services/legal_statutes.go:582:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("获取分类法条失败: %v", err)
+		                                                       ^
+internal/services/legal_statutes.go:608:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("获取标签列表失败: %v", err)
+		                                                       ^
+internal/services/legal_statutes.go:631:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("获取热门标签失败: %v", err)
+		                                                       ^
+internal/services/legal_statutes.go:655:44: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("法条不存在: %v", err)
+		                                         ^
+internal/services/legal_statutes.go:661:53: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return fmt.Errorf("检查收藏状态失败: %v", err)
+		                                                  ^
+internal/services/legal_statutes.go:689:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("获取收藏列表失败: %v", err)
+		                                                       ^
+internal/services/legal_statutes.go:716:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("获取搜索历史失败: %v", err)
+		                                                       ^
+internal/services/legal_statutes.go:750:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("获取热门法条失败: %v", err)
+		                                                       ^
+internal/services/legal_statutes.go:766:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("获取最近更新失败: %v", err)
+		                                                       ^
+internal/services/legal_statutes.go:792:58: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+		return nil, fmt.Errorf("获取分类信息失败: %v", err)
+		                                                       ^
+internal/services/mcp_client.go:236:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == redis.Nil {
+		   ^
+internal/services/offboarding_service.go:89:6: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err != gorm.ErrRecordNotFound {
+		   ^
+internal/services/pdf_report_service.go:206:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/services/pdf_report_service.go:220:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/services/subject_recheck_service.go:1315:32: type assertion on error will fail on wrapped errors. Use errors.As to check for specific errors (errorlint)
+		} else if workflowErr, ok := err.(*SubjectWorkflowError); ok && workflowErr.Code != "WAIVER_PENDING" {
+		                             ^
+tests/performance/benchmark_test.go:239:21: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+			if err != nil && err != redis.Nil {
+			                 ^
+internal/models/elasticsearch/legal_statutes.go:254:2: type assertion must be checked (forcetypeassert)
+	mustQueries := query["query"].(map[string]interface{})["bool"].(map[string]interface{})["must"].([]map[string]interface{})
+	^
+internal/models/elasticsearch/legal_statutes.go:312:4: type assertion must be checked (forcetypeassert)
+			dateRange["range"].(map[string]interface{})["effective_date"].(map[string]interface{})["gte"] = req.EffectiveDateFrom
+			^
+internal/models/elasticsearch/legal_statutes.go:315:4: type assertion must be checked (forcetypeassert)
+			dateRange["range"].(map[string]interface{})["effective_date"].(map[string]interface{})["lte"] = req.EffectiveDateTo
+			^
+internal/models/elasticsearch/legal_statutes.go:330:2: type assertion must be checked (forcetypeassert)
+	query["query"].(map[string]interface{})["bool"].(map[string]interface{})["must"] = mustQueries
+	^
+internal/models/elasticsearch/legal_statutes.go:376:2: type assertion must be checked (forcetypeassert)
+	hits := result["hits"].(map[string]interface{})
+	^
+internal/models/elasticsearch/legal_statutes.go:377:2: type assertion must be checked (forcetypeassert)
+	total := hits["total"].(map[string]interface{})["value"].(float64)
+	^
+internal/models/elasticsearch/legal_statutes.go:378:2: type assertion must be checked (forcetypeassert)
+	hitsList := hits["hits"].([]interface{})
+	^
+internal/models/elasticsearch/legal_statutes.go:382:3: type assertion must be checked (forcetypeassert)
+		hitMap := hit.(map[string]interface{})
+		^
+internal/models/elasticsearch/legal_statutes.go:383:3: type assertion must be checked (forcetypeassert)
+		source := hitMap["_source"].(map[string]interface{})
+		^
+internal/logger/logger.go:364:3: right hand must be only type assertion (forcetypeassert)
+		fields = append(fields, zap.String("request_id", requestID.(string)))
+		^
+internal/logger/logger.go:368:3: right hand must be only type assertion (forcetypeassert)
+		fields = append(fields, zap.String("trace_id", traceID.(string)))
+		^
+internal/logger/logger.go:372:3: right hand must be only type assertion (forcetypeassert)
+		fields = append(fields, zap.String("span_id", spanID.(string)))
+		^
+internal/logger/logger.go:380:3: right hand must be only type assertion (forcetypeassert)
+		fields = append(fields, zap.String("client_ip", clientIP.(string)))
+		^
+internal/logger/logger.go:384:3: right hand must be only type assertion (forcetypeassert)
+		fields = append(fields, zap.String("user_agent", userAgent.(string)))
+		^
+internal/logger/logger.go:388:3: right hand must be only type assertion (forcetypeassert)
+		fields = append(fields, zap.String("module", module.(string)))
+		^
+internal/logger/logger.go:392:3: right hand must be only type assertion (forcetypeassert)
+		fields = append(fields, zap.String("function", function.(string)))
+		^
+internal/logger/logger.go:728:3: right hand must be only type assertion (forcetypeassert)
+		fields = append(fields, zap.String("request_id", requestID.(string)))
+		^
+internal/logger/logger.go:732:3: right hand must be only type assertion (forcetypeassert)
+		fields = append(fields, zap.String("client_ip", clientIP.(string)))
+		^
+internal/logger/logger.go:736:3: right hand must be only type assertion (forcetypeassert)
+		fields = append(fields, zap.String("user_agent", userAgent.(string)))
+		^
+internal/logger/logger.go:770:3: right hand must be only type assertion (forcetypeassert)
+		fields = append(fields, zap.String("request_id", requestID.(string)))
+		^
+internal/logger/logger.go:774:3: right hand must be only type assertion (forcetypeassert)
+		fields = append(fields, zap.String("client_ip", clientIP.(string)))
+		^
+internal/logger/logger.go:813:3: right hand must be only type assertion (forcetypeassert)
+		fields = append(fields, zap.String("request_id", requestID.(string)))
+		^
+internal/logger/logger.go:830:3: right hand must be only type assertion (forcetypeassert)
+		fields = append(fields, zap.String("request_id", requestID.(string)))
+		^
+internal/metrics/fuzzing_metrics.go:604:5: type assertion must be checked (forcetypeassert)
+	if maxCritical := thresholds["max_critical_crashes"].(int); metrics.CriticalCrashes > int64(maxCritical) {
+	   ^
+internal/metrics/fuzzing_metrics.go:609:5: type assertion must be checked (forcetypeassert)
+	if maxHigh := thresholds["max_high_crashes"].(int); metrics.HighCrashes > int64(maxHigh) {
+	   ^
+internal/metrics/fuzzing_metrics.go:614:5: type assertion must be checked (forcetypeassert)
+	if minCoverage := thresholds["min_coverage"].(float64); metrics.Coverage < minCoverage {
+	   ^
+internal/metrics/fuzzing_metrics.go:619:5: type assertion must be checked (forcetypeassert)
+	if maxDuration := thresholds["max_execution_time"].(string); metrics.Duration > parseDuration(maxDuration) {
+	   ^
+internal/api/crud_handler.go:88:4: type assertion must be checked (forcetypeassert)
+			id = any(uintID).(ID)
+			^
+internal/api/crud_handler.go:90:4: type assertion must be checked (forcetypeassert)
+			id = any(fmt.Sprintf("%d", uintID)).(ID)
+			^
+internal/api/crud_handler.go:117:4: type assertion must be checked (forcetypeassert)
+			id = any(uintID).(ID)
+			^
+internal/api/crud_handler.go:119:4: type assertion must be checked (forcetypeassert)
+			id = any(fmt.Sprintf("%d", uintID)).(ID)
+			^
+internal/api/crud_handler.go:156:4: type assertion must be checked (forcetypeassert)
+			id = any(uintID).(ID)
+			^
+internal/api/crud_handler.go:158:4: type assertion must be checked (forcetypeassert)
+			id = any(fmt.Sprintf("%d", uintID)).(ID)
+			^
+internal/rbac/rbac_service.go:140:3: right hand must be only type assertion (forcetypeassert)
+		hasPermission, err := s.CheckUserPermission(c.Request.Context(), userID.(uint), permissionKey)
+		^
+internal/cache/advanced_cache.go:284:7: right hand must be only type assertion (forcetypeassert)
+			if err := json.Unmarshal([]byte(value.(string)), &data); err == nil {
+			   ^
+internal/cache/advanced_cache.go:373:9: type assertion must be checked (forcetypeassert)
+	return c.mutexPool.Get().(*sync.Mutex)
+	       ^
+internal/cache/layered_cache.go:46:3: type assertion must be checked (forcetypeassert)
+		cacheItem := item.(*CacheItem)
+		^
+internal/concurrency/worker_pool.go:205:5: type assertion must be checked (forcetypeassert)
+				taskResult := result.(TaskResult)
+				^
+internal/errors/error_handler.go:382:3: type assertion must be checked (forcetypeassert)
+		response["error"].(gin.H)["details"] = err.Details()
+		^
+internal/errors/error_handler.go:387:3: type assertion must be checked (forcetypeassert)
+		response["error"].(gin.H)["context"] = err.Context()
+		^
+internal/errors/error_handler.go:392:3: type assertion must be checked (forcetypeassert)
+		response["error"].(gin.H)["stack_trace"] = err.StackTrace()
+		^
+internal/errors/error_handler.go:397:3: type assertion must be checked (forcetypeassert)
+		response["error"].(gin.H)["suggestions"] = err.Suggestions()
+		^
+internal/errors/error_handler.go:399:3: type assertion must be checked (forcetypeassert)
+		response["error"].(gin.H)["suggestions"] = ehm.getDefaultSuggestions(err)
+		^
+internal/errors/error_handler.go:404:3: type assertion must be checked (forcetypeassert)
+		response["error"].(gin.H)["source"] = gin.H{
+		^
+internal/handlers/approval_conflict_redaction.go:101:2: type assertion must be checked (forcetypeassert)
+	projected := redactApprovalConflictPayload(record).(map[string]interface{})
+	^
+internal/handlers/conflict_review_handler.go:78:2: type assertion must be checked (forcetypeassert)
+	checkReq := &services.ConflictCheckRequest{
+	^
+internal/handlers/content_filter_handler.go:60:2: type assertion must be checked (forcetypeassert)
+	word := &models.SensitiveWord{
+	^
+internal/handlers/content_filter_handler.go:161:3: type assertion must be checked (forcetypeassert)
+		word.UpdatedBy = userID.(uint)
+		^
+internal/handlers/demo_aggregate_handler.go:799:3: type assertion must be checked (forcetypeassert)
+		left := result[i]["count"].(int64)
+		^
+internal/handlers/demo_aggregate_handler.go:800:3: type assertion must be checked (forcetypeassert)
+		right := result[j]["count"].(int64)
+		^
+internal/handlers/document_version_handler.go:65:2: type assertion must be checked (forcetypeassert)
+	versionReq := &services.CreateVersionRequest{
+	^
+internal/handlers/document_version_handler.go:199:2: right hand must be only type assertion (forcetypeassert)
+	canEdit, _, err := h.lockService.ValidateEditPermission(ctx, uint(documentID), userID.(uint))
+	^
+internal/handlers/document_version_handler.go:210:5: right hand must be only type assertion (forcetypeassert)
+	if err := h.versionService.RestoreVersion(ctx, int(documentID), version, userID.(uint)); err != nil {
+	   ^
+internal/handlers/document_version_handler.go:310:2: right hand must be only type assertion (forcetypeassert)
+	status, err := h.lockService.GetLockStatus(ctx, uint(documentID), userID.(uint))
+	^
+internal/handlers/document_version_handler.go:351:2: type assertion must be checked (forcetypeassert)
+	lockReq := &services.AcquireLockRequest{
+	^
+internal/handlers/document_version_handler.go:394:2: type assertion must be checked (forcetypeassert)
+	releaseReq := &services.ReleaseLockRequest{
+	^
+internal/handlers/document_version_handler.go:426:2: type assertion must be checked (forcetypeassert)
+	renewReq := &services.RenewLockRequest{
+	^
+internal/handlers/document_version_handler.go:451:2: right hand must be only type assertion (forcetypeassert)
+	locks, err := h.lockService.GetUserLocks(ctx, userID.(uint))
+	^
+internal/handlers/intake_opponent_identity_update.go:42:2: right hand must be only type assertion (forcetypeassert)
+	suppliedType := strings.ToUpper(strings.TrimSpace(payload["entity_type"].(string)))
+	^
+internal/handlers/rbac_handler.go:642:2: right hand must be only type assertion (forcetypeassert)
+	roles, err := h.rbacService.GetUserRoles(c.Request.Context(), userID.(uint))
+	^
+internal/handlers/rbac_handler.go:669:2: right hand must be only type assertion (forcetypeassert)
+	permissions, err := h.rbacService.GetUserPermissions(c.Request.Context(), userID.(uint))
+	^
+internal/handlers/trust_account_handler.go:273:2: right hand must be only type assertion (forcetypeassert)
+	transaction, err := h.transactionService.CreateTransaction(
+	^
+internal/handlers/trust_account_handler.go:406:2: right hand must be only type assertion (forcetypeassert)
+	transaction, err := h.transactionService.ApproveTransaction(
+	^
+internal/health/middleware.go:138:4: type assertion must be checked (forcetypeassert)
+			metrics["healthy_checks"] = metrics["healthy_checks"].(int) + 1
+			^
+internal/health/middleware.go:140:4: type assertion must be checked (forcetypeassert)
+			metrics["degraded_checks"] = metrics["degraded_checks"].(int) + 1
+			^
+internal/health/middleware.go:142:4: type assertion must be checked (forcetypeassert)
+			metrics["unhealthy_checks"] = metrics["unhealthy_checks"].(int) + 1
+			^
+internal/middleware/audit.go:52:4: type assertion must be checked (forcetypeassert)
+			userID = uid.(uint)
+			^
+internal/security/types.go:275:2: type assertion must be checked (forcetypeassert)
+	record := value.(*ipRequestRecord)
+	^
+internal/security/types.go:307:2: type assertion must be checked (forcetypeassert)
+	record := value.(*ipRequestRecord)
+	^
+internal/security/types.go:321:5: type assertion must be checked (forcetypeassert)
+				record := value.(*ipRequestRecord)
+				^
+internal/services/offboarding_service.go:132:4: type assertion must be checked (forcetypeassert)
+			detail := &models.OffboardingTransferDetail{
+			^
+internal/services/offboarding_service.go:145:4: type assertion must be checked (forcetypeassert)
+			detail := &models.OffboardingTransferDetail{
+			^
+internal/services/search_service.go:337:3: type assertion must be checked (forcetypeassert)
+		boolQuery["bool"].(map[string]interface{})["filter"] = filter
+		^
+internal/services/search_service.go:432:2: type assertion must be checked (forcetypeassert)
+	result := &SearchResult{
+	^
+internal/logger/logger.go:120:3: ifElseChain: rewrite if-else to switch statement (gocritic)
+		if path == "stdout" {
+		^
+internal/logger/logger.go:145:3: ifElseChain: rewrite if-else to switch statement (gocritic)
+		if path == "stdout" {
+		^
+internal/logger/logger.go:519:2: ifElseChain: rewrite if-else to switch statement (gocritic)
+	if err != nil {
+	^
+internal/metrics/performance_monitor.go:233:2: ifElseChain: rewrite if-else to switch statement (gocritic)
+	if ns < 1000 {
+	^
+main.go:197:4: exitAfterDefer: log.Fatal will exit, and `defer healthChecker.Stop()` will not run (gocritic)
+			log.Fatal("生产数据库结构门禁失败:", err)
+			^
+internal/optimizations/query_optimizer.go:168:15: appendAssign: append result not assigned to the same slice (gocritic)
+	finalArgs := append(args, query.PageSize, offset)
+	             ^
+internal/tracing/middleware.go:216:3: ifElseChain: rewrite if-else to switch statement (gocritic)
+		if c.Errors != nil && len(c.Errors) > 0 {
+		^
+cmd/backfill-conflict-index/main.go:44:3: exitAfterDefer: log.Fatal will exit, and `defer sqlDB.Close()` will not run (gocritic)
+		log.Fatal("当前冲突仓储未提供历史主体索引对账能力")
+		^
+cmd/backfill-sensitive-identities/main.go:47:3: exitAfterDefer: log.Fatalf will exit, and `defer sqlDB.Close()` will not run (gocritic)
+		log.Fatalf("身份信息回填失败: %v", err)
+		^
+cmd/migrate/main.go:53:4: exitAfterDefer: log.Fatalf will exit, and `defer sqlDB.Close()` will not run (gocritic)
+			log.Fatalf("生产 schema bootstrap 失败: %v", bootstrapErr)
+			^
+cmd/qa-fixture/main.go:471:2: ifElseChain: rewrite if-else to switch statement (gocritic)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+	^
+internal/database/connection_pool.go:72:2: ifElseChain: rewrite if-else to switch statement (gocritic)
+	if cfg.Database.Driver == "sqlite" {
+	^
+internal/handlers/approval_handler.go:253:3: ifElseChain: rewrite if-else to switch statement (gocritic)
+		if strings.Contains(err.Error(), "无权") {
+		^
+internal/handlers/demo_aggregate_handler.go:584:4: ifElseChain: rewrite if-else to switch statement (gocritic)
+			if isNoConflictQueueRecord(row, checkResult, conflictCases) {
+			^
+internal/handlers/demo_aggregate_handler.go:2446:2: ifElseChain: rewrite if-else to switch statement (gocritic)
+	if clientType == "企业" || clientType == "公司" || clientType == "COMPANY" {
+	^
+internal/handlers/onlyoffice_handler.go:762:2: ifElseChain: rewrite if-else to switch statement (gocritic)
+	if convertResp.Status == 3 && convertResp.URL != "" {
+	^
+internal/health/health.go:256:2: ifElseChain: rewrite if-else to switch statement (gocritic)
+	if unhealthyChecks > 0 {
+	^
+internal/middleware/performance_cache.go:350:2: ifElseChain: rewrite if-else to switch statement (gocritic)
+	if strings.HasPrefix(path, "/cases") {
+	^
+internal/retry/retry.go:221:3: assignOp: replace `delay = delay * (0.5 + 0.5*rand.Float64())` with `delay *= (0.5 + 0.5*rand.Float64())` (gocritic)
+		delay = delay * (0.5 + 0.5*rand.Float64())
+		^
+internal/services/analytics_service.go:530:2: ifElseChain: rewrite if-else to switch statement (gocritic)
+	if strings.Contains(userAgent, "mobile") || strings.Contains(userAgent, "android") || strings.Contains(userAgent, "iphone") {
+	^
+internal/services/analytics_service.go:539:2: ifElseChain: rewrite if-else to switch statement (gocritic)
+	if strings.Contains(userAgent, "windows") {
+	^
+internal/services/analytics_service.go:554:2: ifElseChain: rewrite if-else to switch statement (gocritic)
+	if strings.Contains(userAgent, "chrome") && !strings.Contains(userAgent, "edg") {
+	^
+internal/services/analytics_service.go:603:2: ifElseChain: rewrite if-else to switch statement (gocritic)
+	if strings.Contains(domain, "google") {
+	^
+internal/services/approval_state_machine.go:233:5: ifElseChain: rewrite if-else to switch statement (gocritic)
+				if sp.evaluateCondition(condition.Expression, metadata) {
+				^
+internal/services/commission_service.go:277:3: ifElseChain: rewrite if-else to switch statement (gocritic)
+		if amount < 10000 {
+		^
+internal/services/commission_service.go:286:3: ifElseChain: rewrite if-else to switch statement (gocritic)
+		if amount < 10000 {
+		^
+internal/services/commission_service.go:295:3: ifElseChain: rewrite if-else to switch statement (gocritic)
+		if amount < 10000 {
+		^
+internal/services/conflict_detection_service.go:582:3: ifElseChain: rewrite if-else to switch statement (gocritic)
+		if ruleCode == "STRUCTURED_IDENTITY_EXACT" {
+		^
+internal/services/conflict_detection_service.go:1421:2: ifElseChain: rewrite if-else to switch statement (gocritic)
+	if hoursPassed > 8760 { // 1年
+	^
+internal/services/conflict_detection_service.go:1297:10: wrapperFunc: use strings.ReplaceAll method in `strings.Replace(name, suffix, "", -1)` (gocritic)
+		name = strings.Replace(name, suffix, "", -1)
+		       ^
+internal/services/conflict_pool_service.go:454:2: ifElseChain: rewrite if-else to switch statement (gocritic)
+	if strings.Contains(caseType, "民事") || strings.Contains(caseType, "civil") {
+	^
+internal/services/conflict_pool_service.go:548:2: ifElseChain: rewrite if-else to switch statement (gocritic)
+	if score >= 1.0 {
+	^
+internal/services/conflict_subject_index_service.go:67:3: ifElseChain: rewrite if-else to switch statement (gocritic)
+		if ruleCode == "STRUCTURED_IDENTITY_EXACT" {
+		^
+internal/services/content_filter_service.go:320:2: ifElseChain: rewrite if-else to switch statement (gocritic)
+	if result.IsBlocked {
+	^
+internal/services/document_search_service.go:625:3: assignOp: replace `end = end + 20` with `end += 20` (gocritic)
+		end = end + 20
+		^
+internal/services/document_search_service.go:621:3: assignOp: replace `start = start - 20` with `start -= 20` (gocritic)
+		start = start - 20
+		^
+internal/services/inbox_service.go:321:2: ifElseChain: rewrite if-else to switch statement (gocritic)
+	if req.Until != "" {
+	^
+internal/services/lawyer_service.go:95:2: ifElseChain: rewrite if-else to switch statement (gocritic)
+	if strings.Contains(lawyer.Name, "刑事") || strings.Contains(lawyer.Name, "刑法") {
+	^
+internal/services/legal_statutes.go:397:2: ifElseChain: rewrite if-else to switch statement (gocritic)
+	if req.Query != "" {
+	^
+internal/services/risk_assessor.go:242:2: ifElseChain: rewrite if-else to switch statement (gocritic)
+	if score >= r.config.HighRiskThreshold {
+	^
+internal/services/risk_assessor.go:375:2: ifElseChain: rewrite if-else to switch statement (gocritic)
+	if hoursPassed < 24 {
+	^
+internal/services/v2_conflict_detection_service.go:548:2: ifElseChain: rewrite if-else to switch statement (gocritic)
+	if pr.MatchScore >= 0.9 {
+	^
+internal/metrics/application_metrics.go:8:1: File is not properly formatted (goimports)
+	"github.com/prometheus/client_golang/prometheus/promauto"
+^
+main.go:40:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/logging/logging.go:18:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/middleware/v2/v2_middleware_factory.go:9:1: File is not properly formatted (goimports)
+	"go.uber.org/zap"
+^
+internal/middleware/v2/v2_performance_middleware.go:16:1: File is not properly formatted (goimports)
+	"go.uber.org/zap"
+^
+internal/middleware/v2/v2_security_middleware.go:15:1: File is not properly formatted (goimports)
+	"go.uber.org/zap"
+^
+internal/monitoring/monitoring.go:16:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/monitoring/performance.go:10:1: File is not properly formatted (goimports)
+	"github.com/prometheus/client_golang/prometheus/promauto"
+^
+internal/rbac/rbac_service.go:11:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/server/server.go:12:1: File is not properly formatted (goimports)
+	"github.com/gin-gonic/gin"
+^
+internal/validation/validator.go:18:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+cmd/qa-fixture/main.go:20:1: File is not properly formatted (goimports)
+	"gorm.io/gorm/clause"
+^
+cmd/server/main.go:9:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/auth/middleware.go:12:1: File is not properly formatted (goimports)
+	"github.com/prometheus/client_golang/prometheus/promauto"
+^
+internal/auth/test_utils.go:10:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/auth/token_manager.go:15:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/auth/token_revocation.go:12:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/auth/token_session_store.go:10:1: File is not properly formatted (goimports)
+	"gorm.io/gorm/clause"
+^
+internal/database/cache_manager.go:11:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/database/connection_pool.go:12:1: File is not properly formatted (goimports)
+	"gorm.io/gorm/logger"
+^
+internal/database/database.go:14:1: File is not properly formatted (goimports)
+	"gorm.io/gorm/logger"
+^
+internal/database/migrator.go:17:1: File is not properly formatted (goimports)
+	_ "github.com/lib/pq"
+^
+internal/database/mysql_connector.go:9:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/database/optimized_components.go:10:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/database/performance_monitor.go:9:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/database/performance_optimizer.go:12:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/database/production_schema.go:8:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/database/rbac_init.go:9:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/database/mysql_connector_test.go:6:1: File is not properly formatted (goimports)
+	drivermysql "github.com/go-sql-driver/mysql"
+^
+internal/handlers/api_handler.go:6:1: File is not properly formatted (goimports)
+	"github.com/gin-gonic/gin"
+^
+internal/handlers/approval_delegation_handler.go:6:1: File is not properly formatted (goimports)
+	"github.com/gin-gonic/gin"
+^
+internal/handlers/approval_subject_authorization.go:7:1: File is not properly formatted (goimports)
+	"github.com/gin-gonic/gin"
+^
+internal/handlers/auth_handler.go:11:1: File is not properly formatted (goimports)
+	"github.com/gin-gonic/gin"
+^
+internal/handlers/authz_helpers.go:6:1: File is not properly formatted (goimports)
+	"github.com/gin-gonic/gin"
+^
+internal/handlers/case_handler.go:7:1: File is not properly formatted (goimports)
+	"github.com/gin-gonic/gin"
+^
+internal/handlers/client_handler.go:8:1: File is not properly formatted (goimports)
+	"github.com/gin-gonic/gin"
+^
+internal/handlers/commission_rule_handler.go:6:1: File is not properly formatted (goimports)
+	"github.com/gin-gonic/gin"
+^
+internal/handlers/conflict_policy_handler.go:7:1: File is not properly formatted (goimports)
+	"github.com/gin-gonic/gin"
+^
+internal/handlers/conflict_reviewer_handler.go:9:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/handlers/conflict_scope_handler.go:7:1: File is not properly formatted (goimports)
+	"github.com/gin-gonic/gin"
+^
+internal/handlers/content_filter_handler.go:10:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/handlers/dashboard_handler.go:9:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/handlers/deadline_handler.go:7:1: File is not properly formatted (goimports)
+	"github.com/gin-gonic/gin"
+^
+internal/handlers/document_handler_enhanced.go:8:1: File is not properly formatted (goimports)
+	"github.com/gin-gonic/gin"
+^
+internal/handlers/document_stats_handler.go:6:1: File is not properly formatted (goimports)
+	"github.com/gin-gonic/gin"
+^
+internal/handlers/enhanced_case_handler.go:7:1: File is not properly formatted (goimports)
+	"github.com/gin-gonic/gin"
+^
+internal/handlers/ethical_wall.go:7:1: File is not properly formatted (goimports)
+	"github.com/gin-gonic/gin"
+^
+internal/handlers/finance_handler.go:10:1: File is not properly formatted (goimports)
+	"github.com/gin-gonic/gin"
+^
+internal/handlers/folder_template_handler.go:8:1: File is not properly formatted (goimports)
+	"github.com/gin-gonic/gin"
+^
+internal/handlers/handoff_handler.go:6:1: File is not properly formatted (goimports)
+	"github.com/gin-gonic/gin"
+^
+internal/handlers/inbox_handler.go:7:1: File is not properly formatted (goimports)
+	"github.com/gin-gonic/gin"
+^
+internal/handlers/intake_material_noop_guard.go:8:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/handlers/intake_native_transaction.go:13:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/handlers/intake_opponent_identity_update.go:7:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/handlers/mvp_unavailable.go:6:1: File is not properly formatted (goimports)
+	"github.com/gin-gonic/gin"
+^
+internal/handlers/notification_handler.go:10:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/handlers/rbac_handler.go:7:1: File is not properly formatted (goimports)
+	"github.com/gin-gonic/gin"
+^
+internal/handlers/role_handler.go:4:1: File is not properly formatted (goimports)
+	"github.com/gin-gonic/gin"
+^
+internal/handlers/subject_recheck_handler.go:11:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/handlers/team_handler.go:7:1: File is not properly formatted (goimports)
+	"github.com/gin-gonic/gin"
+^
+internal/handlers/tools_handler.go:7:1: File is not properly formatted (goimports)
+	"github.com/gin-gonic/gin"
+^
+internal/handlers/trust_account_handler.go:6:1: File is not properly formatted (goimports)
+	"github.com/gin-gonic/gin"
+^
+internal/handlers/user_handler.go:10:1: File is not properly formatted (goimports)
+	"github.com/gin-gonic/gin"
+^
+internal/handlers/waiver_handler.go:10:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/handlers/case_handler_test.go:6:1: File is not properly formatted (goimports)
+	"github.com/stretchr/testify/mock"
+^
+internal/handlers/conflict_approval_workbench_test.go:12:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/handlers/conflict_handler_simple_test.go:18:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/handlers/inbox_handler_security_test.go:11:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/handlers/intake_party_identity_guard_test.go:16:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/handlers/intake_party_metadata_role_guard_test.go:7:1: File is not properly formatted (goimports)
+	"github.com/gin-gonic/gin"
+^
+internal/health/config_test.go:11:1: File is not properly formatted (goimports)
+	"github.com/stretchr/testify/require"
+^
+internal/health/conflict_p0_check_test.go:17:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/middleware/audit.go:8:1: File is not properly formatted (goimports)
+	"github.com/gin-gonic/gin"
+^
+internal/middleware/cache.go:16:1: File is not properly formatted (goimports)
+	"go.uber.org/zap"
+^
+internal/middleware/common.go:10:1: File is not properly formatted (goimports)
+	"go.uber.org/zap"
+^
+internal/middleware/ethical_wall.go:15:1: File is not properly formatted (goimports)
+	"github.com/prometheus/client_golang/prometheus/promauto"
+^
+internal/middleware/jwt.go:15:1: File is not properly formatted (goimports)
+	"github.com/golang-jwt/jwt/v5"
+^
+internal/middleware/rate_limit.go:11:1: File is not properly formatted (goimports)
+	"go.uber.org/zap"
+^
+internal/middleware/signature.go:11:1: File is not properly formatted (goimports)
+	"go.uber.org/zap"
+^
+internal/middleware/trust_balance_middleware.go:9:1: File is not properly formatted (goimports)
+	"github.com/gin-gonic/gin"
+^
+internal/middleware/ethical_wall_test.go:18:1: File is not properly formatted (goimports)
+	"github.com/stretchr/testify/require"
+^
+internal/models/entity.go:9:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/models/models.go:8:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/repositories/case_repository.go:8:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/repositories/client_repository.go:10:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/repositories/commission_rule_repository.go:6:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/repositories/conflict_extended_repository.go:10:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/repositories/conflict_repository.go:19:1: File is not properly formatted (goimports)
+	"gorm.io/gorm/clause"
+^
+internal/repositories/conflict_subject_index_repository.go:13:1: File is not properly formatted (goimports)
+	"gorm.io/gorm/clause"
+^
+internal/repositories/contract_repository.go:8:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/repositories/document_repository_impl.go:9:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/repositories/entity_repository.go:9:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/repositories/ethical_wall_repository.go:10:1: File is not properly formatted (goimports)
+	"gorm.io/gorm/clause"
+^
+internal/repositories/fee_template_repository.go:6:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/repositories/inbox_repository.go:8:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/repositories/interfaces.go:9:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/repositories/lawyer_repository.go:6:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/repositories/notification_repository.go:9:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/repositories/payment_aggregation.go:7:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/repositories/rbac_repository.go:7:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/repositories/trust_account_repository.go:9:1: File is not properly formatted (goimports)
+	"gorm.io/gorm/clause"
+^
+internal/repositories/user_repository.go:8:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/retry/retry_test.go:10:1: File is not properly formatted (goimports)
+	"github.com/stretchr/testify/require"
+^
+internal/router/analytics_routes.go:4:1: File is not properly formatted (goimports)
+	"github.com/gin-gonic/gin"
+^
+internal/router/router_authorization_test.go:9:1: File is not properly formatted (goimports)
+	"github.com/stretchr/testify/assert"
+^
+internal/services/approval_business_hooks.go:9:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/services/approval_service.go:10:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/services/async_conflict_check_service.go:13:1: File is not properly formatted (goimports)
+	"github.com/google/uuid"
+^
+internal/services/batch_service.go:9:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/services/client_contact_service.go:12:1: File is not properly formatted (goimports)
+	"gorm.io/gorm/clause"
+^
+internal/services/client_service.go:10:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/services/conflict_context.go:11:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/services/conflict_officer_appointment_service.go:14:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/services/conflict_policy_service.go:15:1: File is not properly formatted (goimports)
+	"gorm.io/gorm/clause"
+^
+internal/services/conflict_pool_service.go:11:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/services/conflict_reviewer_service.go:16:1: File is not properly formatted (goimports)
+	"gorm.io/gorm/clause"
+^
+internal/services/conflict_scan_service.go:10:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/services/conflict_scope_service.go:13:1: File is not properly formatted (goimports)
+	"github.com/google/uuid"
+^
+internal/services/content_filter_service.go:12:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/services/lawyer_service.go:9:1: File is not properly formatted (goimports)
+	stderrors "errors"
+^
+internal/services/mcp_client.go:14:1: File is not properly formatted (goimports)
+	"github.com/redis/go-redis/v9"
+^
+internal/services/offboarding_service.go:9:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/services/pdf_report_service.go:20:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/services/rbac_service.go:8:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/services/search_service.go:11:1: File is not properly formatted (goimports)
+	"github.com/elastic/go-elasticsearch/v8"
+^
+internal/services/subject_recheck_service.go:20:1: File is not properly formatted (goimports)
+	"github.com/google/uuid"
+^
+internal/services/token_revocation_service.go:8:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/services/user_service.go:10:1: File is not properly formatted (goimports)
+	stderrors "errors"
+^
+internal/services/v2_conflict_detection_service.go:10:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/services/waiver_workflow_service.go:11:1: File is not properly formatted (goimports)
+	"github.com/google/uuid"
+^
+internal/services/conflict_reviewer_service_test.go:12:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+test/testutils.go:18:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+test/swagger_test.go:13:1: File is not properly formatted (goimports)
+	ginSwagger "github.com/swaggo/gin-swagger"
+^
+tests/integration/postgresql_elasticsearch_test.go:11:1: File is not properly formatted (goimports)
+	"gorm.io/gorm"
+^
+internal/middleware/cache.go:286:2: S1008: should use 'return shouldCacheContentType(contentType)' instead of 'if !shouldCacheContentType(contentType) { return false }; return true' (gosimple)
+	if !shouldCacheContentType(contentType) {
+	^
+internal/repositories/conflict_repository.go:955:2: S1008: should use 'return len(strings.TrimSpace(name)) >= 2' instead of 'if len(strings.TrimSpace(name)) < 2 { return false }; return true' (gosimple)
+	if len(strings.TrimSpace(name)) < 2 {
+	^
+internal/services/conflict_detection_service.go:1201:2: S1008: should use 'return len(strings.TrimSpace(name)) >= 2' instead of 'if len(strings.TrimSpace(name)) < 2 { return false }; return true' (gosimple)
+	if len(strings.TrimSpace(name)) < 2 {
+	^
+internal/services/security_control_test.go:92:2: S1008: should use 'return digitCount >= 11' instead of 'if digitCount >= 11 { return true }; return false' (gosimple)
+	if digitCount >= 11 {
+	^
+tests/integration/business_workflow_test.go:228:2: S1023: redundant `return` statement (gosimple)
+	return
+	^
+internal/services/async_conflict_check_service.go:286:61: S1025: the argument's underlying type is a slice of bytes, should use a simple conversion instead of fmt.Sprintf (gosimple)
+		return models.JSON{"unmarshal_error": err.Error(), "raw": fmt.Sprintf("%s", data)}
+		                                                          ^
+internal/services/search_service.go:464:2: S1031: unnecessary nil check around range (gosimple)
+	if highlights != nil {
+	^
+internal/services/deadline_calculator.go:97:15: S1039: unnecessary use of fmt.Sprintf (gosimple)
+		Title:      fmt.Sprintf("上诉期截止提醒"),
+		            ^
+internal/auth/token_revocation.go:452:3: ineffectual assignment to notes (ineffassign)
+		notes += ", note: " + data.HandoverNote
+		^
+internal/handlers/intake_draft_revision_contract_test.go:373:10: ineffectual assignment to response (ineffassign)
+			code, response = draftRevisionRequest(t, r, http.MethodPut, path, string(body), "")
+			      ^
+internal/health/config_test.go:354:2: ineffectual assignment to healthChecker (ineffassign)
+	healthChecker, err = manager.BuildAndStart()
+	^
+internal/repositories/folder_template_repository.go:209:2: ineffectual assignment to query (ineffassign)
+	query := `
+	^
+internal/services/conflict_detection_service.go:1318:2: ineffectual assignment to opponent (ineffassign)
+	opponent = strings.ToLower(opponent)
+	^
+internal/services/trust_account_service.go:550:3: ineffectual assignment to newBalance (ineffassign)
+		newBalance := account.Balance
+		^
+internal/services/document_lock_service_test.go:46:2: ineffectual assignment to renewed (ineffassign)
+	renewed, err := service.RenewLock(ctx, &RenewLockRequest{DocumentID: 1, UserID: 11})
+	^
+main.go:55:1: Function name: main, Cyclomatic Complexity: 52, Halstead Volume: 12818.96, Maintainability Index: 5 (maintidx)
+func main() {
+^
+internal/database/production_schema.go:250:1: Function name: validateProductionSchemaContract, Cyclomatic Complexity: 16, Halstead Volume: 7433.90, Maintainability Index: 19 (maintidx)
+func validateProductionSchemaContract(db *gorm.DB) error {
+^
+internal/database/rbac_init.go:15:1: Function name: InitRBACData, Cyclomatic Complexity: 21, Halstead Volume: 13089.88, Maintainability Index: 15 (maintidx)
+func InitRBACData(db *gorm.DB) error {
+^
+internal/handlers/demo_aggregate_handler.go:1838:1: Function name: CreateCaseIntake, Cyclomatic Complexity: 51, Halstead Volume: 7145.03, Maintainability Index: 17 (maintidx)
+func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
+^
+internal/handlers/demo_aggregate_handler.go:2017:1: Function name: UpdateCaseIntake, Cyclomatic Complexity: 85, Halstead Volume: 9271.03, Maintainability Index: 8 (maintidx)
+func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
+^
+internal/handlers/demo_aggregate_handler.go:2396:1: Function name: StartIntakeConflictCheck, Cyclomatic Complexity: 58, Halstead Volume: 10286.42, Maintainability Index: 12 (maintidx)
+func (h *DemoAggregateHandler) StartIntakeConflictCheck(c *gin.Context) {
+^
+internal/handlers/demo_aggregate_handler.go:2676:1: Function name: createConflictApproval, Cyclomatic Complexity: 38, Halstead Volume: 8640.00, Maintainability Index: 18 (maintidx)
+func (h *DemoAggregateHandler) createConflictApproval(c *gin.Context, taskID, applicantID string, payload map[string]interface{}) (gin.H, error) {
+^
+internal/repositories/conflict_repository.go:247:1: Function name: linkConflictCheckInTx, Cyclomatic Complexity: 59, Halstead Volume: 6157.74, Maintainability Index: 17 (maintidx)
+func linkConflictCheckInTx(tx *gorm.DB, association ConflictSubjectAssociation) error {
+^
+internal/repositories/conflict_subject_index_repository.go:58:1: Function name: collectConflictSubjectIndexSources, Cyclomatic Complexity: 40, Halstead Volume: 8739.13, Maintainability Index: 18 (maintidx)
+func (r *conflictRepository) collectConflictSubjectIndexSources(ctx context.Context) ([]conflictSubjectIndexSource, error) {
+^
+internal/router/router.go:23:1: Function name: Init, Cyclomatic Complexity: 15, Halstead Volume: 39678.55, Maintainability Index: 0 (maintidx)
+func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client) error {
+^
+internal/services/conflict_detection_service.go:401:1: Function name: checkStructuredPartyConflicts, Cyclomatic Complexity: 44, Halstead Volume: 7771.03, Maintainability Index: 15 (maintidx)
+func (s *conflictDetectionService) checkStructuredPartyConflicts(ctx context.Context, request *models.ConflictCheckRequest, since time.Time) ([]*models.ConflictCase, error) {
+^
+internal/handlers/finance_handler.go:193:89: `cancelled` is a misspelling of `canceled` (misspell)
+// @Param status query string false "状态" Enums(draft, active, suspended, completed, cancelled)
+                                                                                        ^
+internal/handlers/finance_handler.go:643:98: `cancelled` is a misspelling of `canceled` (misspell)
+// @Param status query string false "状态" Enums(draft, submitted, approved, issued, received, cancelled)
+                                                                                                 ^
+internal/handlers/finance_handler.go:1478:79: `cancelled` is a misspelling of `canceled` (misspell)
+// @Param status query string false "状态" Enums(pending, calculated, paid, cancelled)
+                                                                              ^
+internal/handlers/finance_handler.go:1932:89: `cancelled` is a misspelling of `canceled` (misspell)
+// @Param status query string false "状态" Enums(draft, active, suspended, completed, cancelled)
+                                                                                        ^
+internal/handlers/finance_handler.go:2010:98: `cancelled` is a misspelling of `canceled` (misspell)
+// @Param status query string false "状态" Enums(draft, submitted, approved, issued, received, cancelled)
+                                                                                                 ^
+internal/handlers/finance_handler.go:2176:79: `cancelled` is a misspelling of `canceled` (misspell)
+// @Param status query string false "状态" Enums(pending, calculated, paid, cancelled)
+                                                                              ^
+internal/handlers/finance_handler.go:2225:4: `cancelled` is a misspelling of `canceled` (misspell)
+		"cancelled":  "已取消",
+		 ^
+internal/handlers/intake_native_transaction.go:235:5: `neighbour` is a misspelling of `neighbor` (misspell)
+	// neighbour. Guard every possible source slot as well as its destination.
+	   ^
+internal/handlers/intake_native_transaction.go:343:4: `neighbours` is a misspelling of `neighbors` (misspell)
+// neighbours shifted left by one, and a new tail. Every later compatible
+   ^
+internal/handlers/notification_handler.go:529:25: `cancelled` is a misspelling of `canceled` (misspell)
+	notification.Status = "cancelled"
+	                       ^
+internal/handlers/notification_handler.go:608:73: `cancelled` is a misspelling of `canceled` (misspell)
+	if err := h.queueRepo.BatchUpdateStatus(c.Request.Context(), req.IDs, "cancelled"); err != nil {
+	                                                                       ^
+internal/models/analytics_models.go:403:66: `analyses` is a misspelling of `analyzes` (misspell)
+func (FunnelAnalysis) TableName() string        { return "funnel_analyses" }
+                                                                 ^
+internal/models/analytics_models.go:404:69: `analyses` is a misspelling of `analyzes` (misspell)
+func (RetentionAnalysis) TableName() string     { return "retention_analyses" }
+                                                                    ^
+internal/models/approval_models.go:378:31: `cancelled` is a misspelling of `canceled` (misspell)
+	ApprovalStatusCancelled   = "cancelled"
+	                             ^
+internal/models/approval_models.go:447:25: `cancelled` is a misspelling of `canceled` (misspell)
+	SendStatusCancelled = "cancelled"
+	                       ^
+internal/models/testing_models.go:101:45: `cancelled` is a misspelling of `canceled` (misspell)
+	TestStatusCancelled TestExecutionStatus = "cancelled"
+	                                           ^
+internal/models/v2_2_0_models.go:351:116: `cancelled` is a misspelling of `canceled` (misspell)
+	Status string `json:"status" gorm:"size:20;default:'draft';index;comment:状态: draft/active/suspended/completed/cancelled"`
+	                                                                                                                  ^
+internal/models/v2_2_0_models.go:431:141: `cancelled` is a misspelling of `canceled` (misspell)
+	Status              string     `json:"status" gorm:"size:20;default:'draft';index;comment:状态: draft/submitted/approved/issued/received/cancelled"`
+	                                                                                                                                           ^
+internal/models/v2_2_0_models.go:555:130: `cancelled` is a misspelling of `canceled` (misspell)
+	Status       string     `json:"status" gorm:"size:20;default:'pending';index,priority:3;comment:状态: pending/calculated/paid/cancelled"`
+	                                                                                                                                ^
+internal/models/v2_2_0_models.go:619:109: `cancelled` is a misspelling of `canceled` (misspell)
+	Status   string `json:"status" gorm:"size:20;default:'pending';index;comment:状态: pending/approved/sent/cancelled/failed"`
+	                                                                                                           ^
+internal/models/v2_2_0_models.go:787:110: `cancelled` is a misspelling of `canceled` (misspell)
+	Status string `json:"status" gorm:"size:20;default:'pending';index;comment:状态: pending/accepted/expired/cancelled"`
+	                                                                                                            ^
+internal/models/v2_2_0_models.go:896:113: `cancelled` is a misspelling of `canceled` (misspell)
+	Status       string     `json:"status" gorm:"size:20;default:'pending';index;comment:状态: pending/completed/cancelled"`
+	                                                                                                               ^
+internal/models/v2_2_0_models.go:938:115: `cancelled` is a misspelling of `canceled` (misspell)
+	Status string `json:"status" gorm:"size:20;default:'pending';index;comment:状态: pending/in_progress/completed/cancelled"`
+	                                                                                                                 ^
+internal/repositories/analytics_repository.go:500:17: `analyses` is a misspelling of `analyzes` (misspell)
+		Table("funnel_analyses").
+		              ^
+internal/repositories/notification_repository.go:388:2: `Cancelled` is a misspelling of `Canceled` (misspell)
+	Cancelled       int64 `json:"cancelled"`
+	^
+internal/repositories/notification_repository.go:435:9: `cancelled` is a misspelling of `canceled` (misspell)
+		case "cancelled":
+		      ^
+internal/repositories/notification_repository.go:436:10: `Cancelled` is a misspelling of `Canceled` (misspell)
+			stats.Cancelled = sc.Count
+			      ^
+internal/services/commission_service.go:110:103: `cancelled` is a misspelling of `canceled` (misspell)
+	Status          string `json:"status" form:"status" binding:"omitempty,oneof=pending calculated paid cancelled"`
+	                                                                                                     ^
+internal/services/commission_service.go:401:23: `cancelled` is a misspelling of `canceled` (misspell)
+	commission.Status = "cancelled"
+	                     ^
+internal/services/commission_service.go:486:9: `cancelled` is a misspelling of `canceled` (misspell)
+		case "cancelled":
+		      ^
+internal/services/commission_service.go:513:41: `cancelled` is a misspelling of `canceled` (misspell)
+	CancelledCommissions    int64   `json:"cancelled_commissions"`
+	                                       ^
+internal/services/contract_service.go:138:110: `cancelled` is a misspelling of `canceled` (misspell)
+	Status        string `json:"status" form:"status" binding:"omitempty,oneof=draft active suspended completed cancelled"`
+	                                                                                                            ^
+internal/services/contract_service.go:708:9: `cancelled` is a misspelling of `canceled` (misspell)
+		case "cancelled":
+		      ^
+internal/services/contract_service.go:747:39: `cancelled` is a misspelling of `canceled` (misspell)
+	CancelledContracts    int64   `json:"cancelled_contracts"`
+	                                     ^
+internal/services/invoice_service.go:145:116: `cancelled` is a misspelling of `canceled` (misspell)
+	Status      string `json:"status" form:"status" binding:"omitempty,oneof=draft submitted approved issued received cancelled"`
+	                                                                                                                  ^
+internal/services/invoice_service.go:531:24: `cancelled` is a misspelling of `canceled` (misspell)
+	if invoice.Status == "cancelled" {
+	                      ^
+internal/services/invoice_service.go:540:20: `cancelled` is a misspelling of `canceled` (misspell)
+	invoice.Status = "cancelled"
+	                  ^
+internal/services/notification_queue_service.go:105:99: `cancelled` is a misspelling of `canceled` (misspell)
+	Status        string `json:"status" form:"status" binding:"omitempty,oneof=pending approved sent cancelled failed"`
+	                                                                                                 ^
+internal/services/notification_queue_service.go:360:25: `cancelled` is a misspelling of `canceled` (misspell)
+	notification.Status = "cancelled"
+	                       ^
+internal/services/notification_queue_service.go:539:65: `cancelled` is a misspelling of `canceled` (misspell)
+	if notification.Status != "pending" && notification.Status != "cancelled" {
+	                                                               ^
+internal/services/notification_queue_service.go:645:9: `cancelled` is a misspelling of `canceled` (misspell)
+		case "cancelled":
+		      ^
+internal/services/notification_queue_service.go:664:38: `cancelled` is a misspelling of `canceled` (misspell)
+	CancelledNotifications int64 `json:"cancelled_notifications"`
+	                                    ^
+internal/services/offboarding_service.go:243:15: `cancelled` is a misspelling of `canceled` (misspell)
+			"status": "cancelled",
+			           ^
+internal/services/search_service.go:562:47: `defence` is a misspelling of `defense` (misspell)
+	// controlled error here as a second line of defence for direct callers.
+	                                             ^
+internal/services/trust_account_service.go:610:24: `cancelled` is a misspelling of `canceled` (misspell)
+	transaction.Status = "cancelled"
+	                      ^
+internal/services/trust_account_service_test.go:118:95: `cancelled` is a misspelling of `canceled` (misspell)
+// 初始余额 100，withdraw 80；当交易状态条件更新失败（被外部并发改为 cancelled）时，
+                                                                                              ^
+internal/services/trust_account_service_test.go:125:90: `cancelled` is a misspelling of `canceled` (misspell)
+	// 模拟「状态条件更新」失败：在调用 Approve 之前，先把状态改为 cancelled
+	                                                                                        ^
+internal/services/trust_account_service_test.go:129:21: `cancelled` is a misspelling of `canceled` (misspell)
+		Update("status", "cancelled").Error)
+		                  ^
+internal/services/trust_account_service_test.go:143:18: `cancelled` is a misspelling of `canceled` (misspell)
+	// 交易仍为 cancelled（未被 Approve 改回 completed）
+	                ^
+internal/services/trust_account_service_test.go:146:19: `cancelled` is a misspelling of `canceled` (misspell)
+	assert.Equal(t, "cancelled", finalTxn.Status)
+	                 ^
+internal/repositories/payment_aggregation.go:53:4: naked return in func `GetPaymentAggregation` with 47 lines of code (nakedret)
+			return
+			^
+internal/repositories/payment_aggregation.go:58:2: naked return in func `GetPaymentAggregation` with 47 lines of code (nakedret)
+	return
+	^
+main.go:554:33: should rewrite http.NewRequestWithContext or add (*Request).WithContext (noctx)
+	request, err := http.NewRequest(http.MethodGet, "http://127.0.0.1:"+port+path, nil)
+	                               ^
+internal/handlers/onlyoffice_handler.go:583:31: (*net/http.Client).Get must not be called (noctx)
+	resp, err := h.httpClient.Get(downloadURL)
+	                             ^
+internal/handlers/onlyoffice_handler.go:910:35: (*net/http.Client).Get must not be called (noctx)
+	httpResp, err := h.httpClient.Get(resp.URL)
+	                                 ^
+internal/handlers/onlyoffice_handler.go:988:32: (*net/http.Client).Get must not be called (noctx)
+		resp, err := h.httpClient.Get(checkURL)
+		                             ^
+internal/database/migrator.go:439:25: rows.Err must be checked (rowserrcheck)
+	rows, err := m.db.Query(query)
+	                       ^
+internal/repositories/conflict_extended_repository.go:172:32: rows.Err must be checked (rowserrcheck)
+	rows, err := r.db.QueryContext(ctx, query, industryID)
+	                              ^
+internal/repositories/conflict_extended_repository.go:235:32: rows.Err must be checked (rowserrcheck)
+	rows, err := r.db.QueryContext(ctx, query)
+	                              ^
+internal/repositories/conflict_extended_repository.go:344:32: rows.Err must be checked (rowserrcheck)
+	rows, err := r.db.QueryContext(ctx, query, request.LawyerID, request.OpposingParty)
+	                              ^
+internal/repositories/conflict_extended_repository.go:399:32: rows.Err must be checked (rowserrcheck)
+	rows, err := r.db.QueryContext(ctx, query, request.LawyerID, request.IndustryID)
+	                              ^
+internal/repositories/conflict_extended_repository.go:454:32: rows.Err must be checked (rowserrcheck)
+	rows, err := r.db.QueryContext(ctx, query, request.LawyerID, request.OpposingParty, request.ClientName)
+	                              ^
+internal/repositories/conflict_extended_repository.go:533:32: rows.Err must be checked (rowserrcheck)
+	rows, err := r.db.QueryContext(ctx, query, args...)
+	                              ^
+internal/repositories/conflict_extended_repository.go:584:32: rows.Err must be checked (rowserrcheck)
+	rows, err := r.db.QueryContext(ctx, query, clientID, limit)
+	                              ^
+internal/repositories/conflict_repository.go:725:61: rows.Err must be checked (rowserrcheck)
+	rows, err := r.db.WithContext(ctx).Raw(query, args...).Rows()
+	                                                           ^
+internal/repositories/conflict_repository.go:825:78: rows.Err must be checked (rowserrcheck)
+			partyRows, err := r.db.WithContext(ctx).Raw(partyQuery, partyArgs...).Rows()
+			                                                                          ^
+internal/repositories/document_repository_impl.go:232:7: rows.Err must be checked (rowserrcheck)
+		Rows()
+		    ^
+internal/repositories/document_repository_impl.go:257:7: rows.Err must be checked (rowserrcheck)
+		Rows()
+		    ^
+internal/services/conflict_detection_service.go:828:76: rows.Err must be checked (rowserrcheck)
+		rows, err := s.caseRepo.GetDB().WithContext(ctx).Raw(query, args...).Rows()
+		                                                                         ^
+internal/services/conflict_detection_service.go:926:75: rows.Err must be checked (rowserrcheck)
+	rows, err := s.caseRepo.GetDB().WithContext(ctx).Raw(query, args...).Rows()
+	                                                                         ^
+internal/services/subject_recheck_service.go:674:7: rows.Err must be checked (rowserrcheck)
+		Rows()
+		    ^
+internal/repositories/conflict_repository.go:849:21: Close should use defer (sqlclosecheck)
+					partyRows.Close()
+					               ^
+internal/services/conflict_detection_service.go:323:15: Close should use defer (sqlclosecheck)
+				rows.Close()
+				          ^
+internal/services/conflict_detection_service.go:880:13: Close should use defer (sqlclosecheck)
+		rows.Close()
+		          ^
+internal/tracing/tracer.go:118:26: SA1019: trace.NewNoopTracerProvider is deprecated: Use [go.opentelemetry.io/otel/trace/noop.NewTracerProvider] instead. (staticcheck)
+		otel.SetTracerProvider(trace.NewNoopTracerProvider())
+		                       ^
+internal/tracing/tracer.go:17:2: SA1019: "go.opentelemetry.io/otel/exporters/jaeger" is deprecated: This module is no longer supported. OpenTelemetry dropped support for Jaeger exporter in July 2023. Jaeger officially accepts and recommends using OTLP. Use [go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp] or [go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc] instead. (staticcheck)
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	^
+internal/optimizations/query_optimizer.go:91:3: SA4006: this value of `dbQuery` is never used (staticcheck)
+		dbQuery = dbQuery.Where(strings.Join(whereConditions, " AND "), args...)
+		^
+internal/services/user_service.go:719:11: SA4010: this result of append is never used, except maybe in other appends (staticcheck)
+		tasks = append(tasks, task)
+		        ^
+internal/validators/test_validator_simple.go:188:17: SA6000: calling regexp.MatchString in a loop has poor performance, consider using regexp.Compile (staticcheck)
+		matched, _ := regexp.MatchString(`^[a-zA-Z0-9_-]+$`, tag)
+		              ^
+internal/errors/enhanced_errors.go:264:22: SA9005: struct type 'law-oa-go/internal/errors.EnhancedError' doesn't have any exported fields, nor custom marshaling (staticcheck)
+	return json.Marshal(e)
+	                    ^
+internal/tracing/tracer.go:236:15: ST1005: error strings should not be capitalized (stylecheck)
+		return nil, fmt.Errorf("Jaeger endpoint not configured")
+		            ^
+internal/tracing/tracer.go:245:15: ST1005: error strings should not be capitalized (stylecheck)
+		return nil, fmt.Errorf("Zipkin endpoint not configured")
+		            ^
+cmd/qa-fixture/main.go:847:10: ST1005: error strings should not be capitalized (stylecheck)
+		return fmt.Errorf("A 案不存在: %w", err)
+		       ^
+cmd/qa-fixture/main.go:850:10: ST1005: error strings should not be capitalized (stylecheck)
+		return fmt.Errorf("B 隔离案件不存在或隔离墙未开启: %w", err)
+		       ^
+internal/database/elasticsearch_optimizer.go:200:15: ST1005: error strings should not be capitalized (stylecheck)
+		return nil, fmt.Errorf("Elasticsearch returned error: %s", res.Status())
+		            ^
+internal/database/elasticsearch_optimizer.go:359:44: ST1005: error strings should not be capitalized (stylecheck)
+		eso.recordSearchError("search_response", fmt.Errorf("Elasticsearch error: %s", res.Status()))
+		                                         ^
+internal/database/elasticsearch_optimizer.go:360:10: ST1005: error strings should not be capitalized (stylecheck)
+		return fmt.Errorf("Elasticsearch returned error: %s", res.Status())
+		       ^
+internal/database/elasticsearch_optimizer.go:422:49: ST1005: error strings should not be capitalized (stylecheck)
+		eso.recordSearchError("aggregation_response", fmt.Errorf("Elasticsearch error: %s", res.Status()))
+		                                              ^
+internal/database/elasticsearch_optimizer.go:423:10: ST1005: error strings should not be capitalized (stylecheck)
+		return fmt.Errorf("Elasticsearch returned error: %s", res.Status())
+		       ^
+internal/services/elasticsearch_sync_service.go:263:15: ST1005: error strings should not be capitalized (stylecheck)
+		return nil, fmt.Errorf("Elasticsearch 未配置")
+		            ^
+internal/handlers/auth_handler_test.go:16:2: ST1019: package "github.com/stretchr/testify/mock" is being imported more than once (stylecheck)
+	"github.com/stretchr/testify/mock"
+	^
+internal/handlers/auth_handler_test.go:17:2: ST1019(related information): other import of "github.com/stretchr/testify/mock" (stylecheck)
+	testifymock "github.com/stretchr/testify/mock"
+	^
+internal/models/elasticsearch/legal_statutes.go:128:40: "404" can be replaced by http.StatusNotFound (usestdlibvars)
+	if res.IsError() && res.StatusCode != 404 {
+	                                      ^
+internal/elasticsearch/client.go:187:23: "200" can be replaced by http.StatusOK (usestdlibvars)
+	if res.StatusCode == 200 {
+	                     ^
+internal/elasticsearch/client.go:190:23: "404" can be replaced by http.StatusNotFound (usestdlibvars)
+	if res.StatusCode == 404 {
+	                     ^
+internal/middleware/v2/v2_security_middleware.go:472:25: "POST" can be replaced by http.MethodPost (usestdlibvars)
+	if c.Request.Method == "POST" || c.Request.Method == "PUT" {
+	                       ^
+internal/validation/validator.go:436:26: "POST" can be replaced by http.MethodPost (usestdlibvars)
+		if c.Request.Method == "POST" || c.Request.Method == "PUT" {
+		                       ^
+internal/validation/validator.go:496:26: "POST" can be replaced by http.MethodPost (usestdlibvars)
+		if c.Request.Method == "POST" || c.Request.Method == "PUT" {
+		                       ^
+internal/auth/middleware.go:293:26: "GET" can be replaced by http.MethodGet (usestdlibvars)
+		if c.Request.Method == "GET" || c.Request.Method == "HEAD" || c.Request.Method == "OPTIONS" {
+		                       ^
+internal/handlers/onlyoffice_handler.go:718:50: "POST" can be replaced by http.MethodPost (usestdlibvars)
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", convertURL, strings.NewReader(string(reqBody)))
+	                                                ^
+internal/handlers/auth_handler_test.go:128:29: "POST" can be replaced by http.MethodPost (usestdlibvars)
+		req, _ := http.NewRequest("POST", "/auth/login", bytes.NewBuffer(jsonData))
+		                          ^
+internal/handlers/auth_handler_test.go:177:29: "POST" can be replaced by http.MethodPost (usestdlibvars)
+		req, _ := http.NewRequest("POST", "/auth/login", bytes.NewBuffer(jsonData))
+		                          ^
+internal/handlers/auth_handler_test.go:210:29: "POST" can be replaced by http.MethodPost (usestdlibvars)
+		req, _ := http.NewRequest("POST", "/auth/login", bytes.NewBuffer(jsonData))
+		                          ^
+internal/handlers/auth_handler_test.go:259:29: "POST" can be replaced by http.MethodPost (usestdlibvars)
+		req, _ := http.NewRequest("POST", "/auth/login", bytes.NewBuffer(jsonData))
+		                          ^
+internal/handlers/auth_handler_test.go:305:31: "POST" can be replaced by http.MethodPost (usestdlibvars)
+		req, err := http.NewRequest("POST", "/auth/login", bytes.NewBuffer(jsonData))
+		                            ^
+internal/handlers/auth_handler_test.go:351:31: "POST" can be replaced by http.MethodPost (usestdlibvars)
+		req, err := http.NewRequest("POST", "/auth/login", bytes.NewBuffer(jsonData))
+		                            ^
+internal/handlers/auth_handler_test.go:388:31: "POST" can be replaced by http.MethodPost (usestdlibvars)
+		req, err := http.NewRequest("POST", "/auth/login", bytes.NewBuffer(jsonData))
+		                            ^
+internal/handlers/auth_handler_test.go:490:29: "POST" can be replaced by http.MethodPost (usestdlibvars)
+		req, _ := http.NewRequest("POST", "/auth/register", bytes.NewBuffer(jsonData))
+		                          ^
+internal/handlers/auth_handler_test.go:531:29: "POST" can be replaced by http.MethodPost (usestdlibvars)
+		req, _ := http.NewRequest("POST", "/auth/register", bytes.NewBuffer(jsonData))
+		                          ^
+internal/handlers/auth_handler_test.go:561:29: "POST" can be replaced by http.MethodPost (usestdlibvars)
+		req, _ := http.NewRequest("POST", "/auth/register", bytes.NewBuffer(jsonData))
+		                          ^
+internal/handlers/auth_handler_test.go:598:29: "POST" can be replaced by http.MethodPost (usestdlibvars)
+		req, _ := http.NewRequest("POST", "/auth/register", bytes.NewBuffer(jsonData))
+		                          ^
+internal/handlers/auth_handler_test.go:691:29: "PUT" can be replaced by http.MethodPut (usestdlibvars)
+		req, _ := http.NewRequest("PUT", "/users/profile", bytes.NewBuffer(jsonData))
+		                          ^
+internal/handlers/auth_handler_test.go:722:29: "PUT" can be replaced by http.MethodPut (usestdlibvars)
+		req, _ := http.NewRequest("PUT", "/users/profile", bytes.NewBuffer(jsonData))
+		                          ^
+internal/handlers/auth_handler_test.go:811:29: "POST" can be replaced by http.MethodPost (usestdlibvars)
+		req, _ := http.NewRequest("POST", "/users/change-password", bytes.NewBuffer(jsonData))
+		                          ^
+internal/handlers/auth_handler_test.go:858:29: "POST" can be replaced by http.MethodPost (usestdlibvars)
+		req, _ := http.NewRequest("POST", "/users/change-password", bytes.NewBuffer(jsonData))
+		                          ^
+internal/handlers/auth_handler_test.go:909:29: "POST" can be replaced by http.MethodPost (usestdlibvars)
+		req, _ := http.NewRequest("POST", "/users/change-password", bytes.NewBuffer(jsonData))
+		                          ^
+internal/handlers/auth_handler_test.go:1013:29: "POST" can be replaced by http.MethodPost (usestdlibvars)
+		req, _ := http.NewRequest("POST", "/auth/refresh", bytes.NewBuffer(jsonData))
+		                          ^
+internal/handlers/auth_handler_test.go:1043:29: "POST" can be replaced by http.MethodPost (usestdlibvars)
+		req, _ := http.NewRequest("POST", "/auth/refresh", bytes.NewBuffer(jsonData))
+		                          ^
+internal/handlers/auth_handler_test.go:1123:29: "POST" can be replaced by http.MethodPost (usestdlibvars)
+		req, _ := http.NewRequest("POST", "/auth/logout", bytes.NewBuffer(body))
+		                          ^
+internal/handlers/auth_handler_test.go:1220:28: "POST" can be replaced by http.MethodPost (usestdlibvars)
+	req, _ := http.NewRequest("POST", "/auth/register", bytes.NewBuffer(jsonData))
+	                          ^
+internal/handlers/auth_handler_test.go:1298:28: "POST" can be replaced by http.MethodPost (usestdlibvars)
+	req, _ := http.NewRequest("POST", "/auth/revoke/user", bytes.NewBuffer(body))
+	                          ^
+internal/handlers/auth_handler_test.go:1330:28: "POST" can be replaced by http.MethodPost (usestdlibvars)
+	req, _ := http.NewRequest("POST", "/auth/revoke/user", bytes.NewBuffer(body))
+	                          ^
+internal/handlers/client_handler_test.go:27:29: "GET" can be replaced by http.MethodGet (usestdlibvars)
+		req, _ := http.NewRequest("GET", "/clients/1", nil)
+		                          ^
+internal/handlers/client_handler_test.go:48:29: "GET" can be replaced by http.MethodGet (usestdlibvars)
+		req, _ := http.NewRequest("GET", "/clients/999", nil)
+		                          ^
+internal/handlers/document_handler_test.go:354:29: "POST" can be replaced by http.MethodPost (usestdlibvars)
+	req := httptest.NewRequest("POST", "/documents", body)
+	                           ^
+internal/handlers/document_handler_test.go:387:29: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	req := httptest.NewRequest("GET", "/documents/1", nil)
+	                           ^
+internal/handlers/document_handler_test.go:410:29: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	req := httptest.NewRequest("GET", "/documents/invalid", nil)
+	                           ^
+internal/handlers/document_handler_test.go:435:29: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	req := httptest.NewRequest("GET", "/documents/999", nil)
+	                           ^
+internal/handlers/document_handler_test.go:476:29: "PUT" can be replaced by http.MethodPut (usestdlibvars)
+	req := httptest.NewRequest("PUT", "/documents/1", bytes.NewBuffer(jsonData))
+	                           ^
+internal/handlers/document_handler_test.go:507:29: "DELETE" can be replaced by http.MethodDelete (usestdlibvars)
+	req := httptest.NewRequest("DELETE", "/documents/1", nil)
+	                           ^
+internal/handlers/document_handler_test.go:540:29: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	req := httptest.NewRequest("GET", "/documents?page=1&page_size=10&category=合同", nil)
+	                           ^
+internal/handlers/document_handler_test.go:574:29: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	req := httptest.NewRequest("GET", "/documents/stats", nil)
+	                           ^
+internal/handlers/document_handler_test.go:598:29: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	req := httptest.NewRequest("GET", "/documents/1/download", nil)
+	                           ^
+internal/handlers/document_handler_test.go:630:29: "POST" can be replaced by http.MethodPost (usestdlibvars)
+	req := httptest.NewRequest("POST", "/documents", body)
+	                           ^
+internal/handlers/document_handler_test.go:665:29: "POST" can be replaced by http.MethodPost (usestdlibvars)
+	req := httptest.NewRequest("POST", "/documents", body)
+	                           ^
+internal/handlers/document_handler_test.go:687:29: "PUT" can be replaced by http.MethodPut (usestdlibvars)
+	req := httptest.NewRequest("PUT", "/documents/1", strings.NewReader("invalid json"))
+	                           ^
+internal/handlers/document_handler_test.go:709:29: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	req := httptest.NewRequest("GET", "/documents?page=invalid", nil)
+	                           ^
+internal/handlers/document_handler_test.go:729:29: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	req := httptest.NewRequest("GET", "/documents/invalid/download", nil)
+	                           ^
+internal/handlers/document_handler_test.go:748:29: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	req := httptest.NewRequest("GET", "/documents/1", nil)
+	                           ^
+internal/handlers/document_handler_test.go:791:30: "POST" can be replaced by http.MethodPost (usestdlibvars)
+		req := httptest.NewRequest("POST", "/documents", body)
+		                           ^
+internal/handlers/document_handler_test.go:824:30: "POST" can be replaced by http.MethodPost (usestdlibvars)
+		req := httptest.NewRequest("POST", "/documents", body)
+		                           ^
+internal/handlers/document_handler_test.go:860:30: "POST" can be replaced by http.MethodPost (usestdlibvars)
+		req := httptest.NewRequest("POST", "/documents", body)
+		                           ^
+internal/handlers/document_handler_test.go:884:30: "GET" can be replaced by http.MethodGet (usestdlibvars)
+		req := httptest.NewRequest("GET", "/documents/1", nil)
+		                           ^
+internal/handlers/onlyoffice_handler_test.go:304:33: "POST" can be replaced by http.MethodPost (usestdlibvars)
+	c.Request, _ = http.NewRequest("POST", "/api/documents/onlyoffice/callback", bytes.NewReader(bodyBytes))
+	                               ^
+internal/handlers/onlyoffice_handler_test.go:366:33: "POST" can be replaced by http.MethodPost (usestdlibvars)
+	c.Request, _ = http.NewRequest("POST", "/api/documents/onlyoffice/convert", strings.NewReader(body))
+	                               ^
+internal/handlers/onlyoffice_handler_test.go:383:34: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	c.Request = httptest.NewRequest("GET", "/api/documents/onlyoffice/convert/status?task_id=nonexistent", nil)
+	                                ^
+internal/handlers/user_handler_test.go:28:29: "GET" can be replaced by http.MethodGet (usestdlibvars)
+		req, _ := http.NewRequest("GET", "/users/1", nil)
+		                          ^
+internal/handlers/user_handler_test.go:49:29: "GET" can be replaced by http.MethodGet (usestdlibvars)
+		req, _ := http.NewRequest("GET", "/users/999", nil)
+		                          ^
+internal/health/health.go:572:46: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	req, err := http.NewRequestWithContext(ctx, "GET", ec.url, nil)
+	                                            ^
+internal/health/middleware_test.go:39:28: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	req, _ := http.NewRequest("GET", "/health", nil)
+	                          ^
+internal/health/middleware_test.go:78:28: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	req, _ := http.NewRequest("GET", "/health/detailed", nil)
+	                          ^
+internal/health/middleware_test.go:130:28: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	req, _ := http.NewRequest("GET", "/health/metrics", nil)
+	                          ^
+internal/health/middleware_test.go:157:28: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	req, _ := http.NewRequest("GET", "/ready", nil)
+	                          ^
+internal/health/middleware_test.go:189:28: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	req, _ := http.NewRequest("GET", "/ready", nil)
+	                          ^
+internal/health/middleware_test.go:218:28: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	req, _ := http.NewRequest("GET", "/ready", nil)
+	                          ^
+internal/health/middleware_test.go:263:28: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	req, _ := http.NewRequest("GET", "/ready", nil)
+	                          ^
+internal/health/middleware_test.go:291:28: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	req, _ := http.NewRequest("GET", "/ready", nil)
+	                          ^
+internal/health/middleware_test.go:331:28: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	req, _ := http.NewRequest("GET", "/ready", nil)
+	                          ^
+internal/health/middleware_test.go:371:28: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	req, _ := http.NewRequest("GET", "/ready", nil)
+	                          ^
+internal/health/middleware_test.go:399:28: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	req, _ := http.NewRequest("GET", "/live", nil)
+	                          ^
+internal/health/middleware_test.go:443:28: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	req, _ := http.NewRequest("GET", "/health/dependencies", nil)
+	                          ^
+internal/health/middleware_test.go:473:28: "POST" can be replaced by http.MethodPost (usestdlibvars)
+	req, _ := http.NewRequest("POST", "/shutdown", nil)
+	                          ^
+internal/health/middleware_test.go:521:28: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	req, _ := http.NewRequest("GET", "/health/status", nil)
+	                          ^
+internal/health/middleware_test.go:556:28: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	req, _ := http.NewRequest("GET", "/metrics/health", nil)
+	                          ^
+internal/health/middleware_test.go:585:28: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	req, _ := http.NewRequest("GET", "/api/test", nil)
+	                          ^
+internal/health/middleware_test.go:632:28: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	req, _ := http.NewRequest("GET", "/health", nil)
+	                          ^
+internal/health/middleware_test.go:670:28: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	req, _ := http.NewRequest("GET", "/health/detailed", nil)
+	                          ^
+internal/middleware/audit.go:26:26: "POST" can be replaced by http.MethodPost (usestdlibvars)
+		if c.Request.Method == "POST" || c.Request.Method == "PUT" || c.Request.Method == "PATCH" {
+		                       ^
+internal/middleware/business_metrics.go:98:27: "POST" can be replaced by http.MethodPost (usestdlibvars)
+			if c.Request.Method == "POST" {
+			                       ^
+internal/middleware/business_metrics.go:114:27: "POST" can be replaced by http.MethodPost (usestdlibvars)
+			if c.Request.Method == "POST" {
+			                       ^
+internal/middleware/common.go:221:26: "OPTIONS" can be replaced by http.MethodOptions (usestdlibvars)
+		if c.Request.Method == "OPTIONS" {
+		                       ^
+internal/middleware/performance_cache.go:64:26: "GET" can be replaced by http.MethodGet (usestdlibvars)
+		if c.Request.Method != "GET" {
+		                       ^
+internal/middleware/performance_cache.go:308:29: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	return c.Request.Method == "GET"
+	                           ^
+internal/security/types.go:228:26: "OPTIONS" can be replaced by http.MethodOptions (usestdlibvars)
+		if c.Request.Method == "OPTIONS" {
+		                       ^
+internal/services/company_api_service.go:369:46: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	req, err := http.NewRequestWithContext(ctx, "GET", fullURL, nil)
+	                                            ^
+internal/services/mcp_client.go:98:46: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	                                            ^
+internal/services/mcp_client.go:188:46: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	                                            ^
+tests/integration/business_workflow_test.go:388:29: "GET" can be replaced by http.MethodGet (usestdlibvars)
+	req := httptest.NewRequest("GET", "/api/v1/clients?page=1&page_size=10", nil)
+	                           ^
+tests/performance/benchmark_test.go:132:31: "GET" can be replaced by http.MethodGet (usestdlibvars)
+			req := httptest.NewRequest("GET", "/api/test", nil)
+			                           ^
+tests/performance/benchmark_test.go:143:31: "GET" can be replaced by http.MethodGet (usestdlibvars)
+			req := httptest.NewRequest("GET", "/api/test-miss", nil)
+			                           ^
+tests/performance/benchmark_test.go:273:31: "GET" can be replaced by http.MethodGet (usestdlibvars)
+			req := httptest.NewRequest("GET", "/api/test", nil)
+			                           ^
+tests/performance/benchmark_test.go:284:31: "GET" can be replaced by http.MethodGet (usestdlibvars)
+			req := httptest.NewRequest("GET", "/api/test", nil)
+			                           ^
+tests/performance/benchmark_test.go:295:31: "OPTIONS" can be replaced by http.MethodOptions (usestdlibvars)
+			req := httptest.NewRequest("OPTIONS", "/api/test", nil)
+			                           ^
+tests/performance/benchmark_test.go:316:33: "GET" can be replaced by http.MethodGet (usestdlibvars)
+					req := httptest.NewRequest("GET", "/api/dashboard/statistics", nil)
+					                           ^
+internal/handlers/approval_delegation_handler.go:233:2: assigned to canRevoke, but reassigned without using the value (wastedassign)
+	canRevoke := false
+	^
+internal/router/router.go:265:2: unnecessary trailing newline (whitespace)
+	}
+	^

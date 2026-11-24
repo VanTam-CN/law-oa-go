@@ -14,8 +14,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
+
 	"law-oa-go/internal/config"
 	"law-oa-go/internal/logger"
+	"law-oa-go/internal/safeconv"
 )
 
 // V2PerformanceMiddleware 基于最新Gin v2性能最佳实践的中间件
@@ -31,17 +33,17 @@ type V2PerformanceMiddleware struct {
 
 // AtomicMetrics 使用原子操作的性能指标
 type AtomicMetrics struct {
-	totalRequests   int64
-	slowRequests    int64
-	errorRequests   int64
-	totalLatency    int64 // 纳秒
-	activeRequests  int32
-	maxConcurrent   int32
-	memoryUsage     int64 // 最大内存使用
-	mu              sync.RWMutex
-	lastGC          time.Time
-	gcCount         uint32
-	startTime       time.Time
+	totalRequests  int64
+	slowRequests   int64
+	errorRequests  int64
+	totalLatency   int64 // 纳秒
+	activeRequests int32
+	maxConcurrent  int32
+	memoryUsage    int64 // 最大内存使用
+	mu             sync.RWMutex
+	lastGC         time.Time
+	gcCount        uint32
+	startTime      time.Time
 }
 
 // NewV2PerformanceMiddleware 创建性能中间件
@@ -140,10 +142,10 @@ func (pm *V2PerformanceMiddleware) MemoryMonitoringMiddleware() gin.HandlerFunc 
 		// 更新最大内存使用
 		for {
 			currentMax := atomic.LoadInt64(&pm.metrics.memoryUsage)
-			if currentMax >= int64(finalMemory) {
+			if currentMax >= safeconv.Int64(finalMemory) {
 				break
 			}
-			if atomic.CompareAndSwapInt64(&pm.metrics.memoryUsage, currentMax, int64(finalMemory)) {
+			if atomic.CompareAndSwapInt64(&pm.metrics.memoryUsage, currentMax, safeconv.Int64(finalMemory)) {
 				break
 			}
 		}
@@ -159,7 +161,7 @@ func (pm *V2PerformanceMiddleware) MemoryMonitoringMiddleware() gin.HandlerFunc 
 
 		// 内存使用警告
 		if memoryDelta > 50*1024*1024 { // 50MB
-			pm.logHighMemoryUsage(c, int64(memoryDelta), finalMemory)
+			pm.logHighMemoryUsage(c, safeconv.Int64(memoryDelta), finalMemory)
 		}
 	}
 }
@@ -227,8 +229,8 @@ func (pm *V2PerformanceMiddleware) TimeoutMiddleware(timeout time.Duration) gin.
 
 			if !c.Writer.Written() {
 				c.JSON(http.StatusRequestTimeout, gin.H{
-					"error": "Request timeout",
-					"code":  http.StatusRequestTimeout,
+					"error":   "Request timeout",
+					"code":    http.StatusRequestTimeout,
 					"timeout": timeout.String(),
 				})
 				c.Abort()
@@ -330,8 +332,8 @@ func (pm *V2PerformanceMiddleware) RecoveryMiddleware() gin.HandlerFunc {
 			)
 
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Internal server error",
-				"code":  http.StatusInternalServerError,
+				"error":      "Internal server error",
+				"code":       http.StatusInternalServerError,
 				"request_id": c.GetHeader("X-Request-ID"),
 			})
 		} else {
@@ -377,19 +379,19 @@ func (pm *V2PerformanceMiddleware) GetMetrics() map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"total_requests":      totalReqs,
-		"slow_requests":       slowReqs,
-		"error_requests":      errorReqs,
-		"active_requests":     activeReqs,
-		"max_concurrent":      maxConc,
-		"average_latency":     avgLatency.String(),
-		"slow_request_rate":   fmt.Sprintf("%.2f%%", slowRate),
-		"error_rate":          fmt.Sprintf("%.2f%%", errorRate),
-		"memory_usage_mb":     memUsage / (1024 * 1024),
-		"gc_count":           gcCount,
-		"uptime":             time.Since(pm.metrics.startTime).String(),
-		"enabled":             pm.enabled,
-		"slow_threshold":      pm.slowThreshold.String(),
+		"total_requests":    totalReqs,
+		"slow_requests":     slowReqs,
+		"error_requests":    errorReqs,
+		"active_requests":   activeReqs,
+		"max_concurrent":    maxConc,
+		"average_latency":   avgLatency.String(),
+		"slow_request_rate": fmt.Sprintf("%.2f%%", slowRate),
+		"error_rate":        fmt.Sprintf("%.2f%%", errorRate),
+		"memory_usage_mb":   memUsage / (1024 * 1024),
+		"gc_count":          gcCount,
+		"uptime":            time.Since(pm.metrics.startTime).String(),
+		"enabled":           pm.enabled,
+		"slow_threshold":    pm.slowThreshold.String(),
 	}
 }
 
@@ -446,7 +448,7 @@ func (pm *V2PerformanceMiddleware) getClientIP(c *gin.Context) string {
 func (pm *V2PerformanceMiddleware) getCurrentMemoryUsage() int {
 	var mStats runtime.MemStats
 	runtime.ReadMemStats(&mStats)
-	return int(mStats.Alloc / (1024 * 1024)) // MB
+	return int(safeconv.Int64(mStats.Alloc / (1024 * 1024))) // MB
 }
 
 func (pm *V2PerformanceMiddleware) calculateQueueLength(semaphoreLen int) time.Duration {
@@ -524,16 +526,16 @@ func (pm *V2PerformanceMiddleware) recordMetricsAsync(c *gin.Context, writer *re
 	key := fmt.Sprintf("metrics:%s", time.Now().Format("2006-01-02"))
 
 	metrics := map[string]interface{}{
-		"timestamp":    time.Now().Unix(),
-		"method":       c.Request.Method,
-		"path":         c.Request.URL.Path,
-		"status":       writer.status,
-		"duration_ms":  duration.Milliseconds(),
-		"bytes_in":     c.Request.ContentLength,
-		"bytes_out":    int64(writer.size),
-		"user_agent":   c.GetHeader("User-Agent"),
-		"client_ip":    pm.getClientIP(c),
-		"request_id":   requestID,
+		"timestamp":   time.Now().Unix(),
+		"method":      c.Request.Method,
+		"path":        c.Request.URL.Path,
+		"status":      writer.status,
+		"duration_ms": duration.Milliseconds(),
+		"bytes_in":    c.Request.ContentLength,
+		"bytes_out":   int64(writer.size),
+		"user_agent":  c.GetHeader("User-Agent"),
+		"client_ip":   pm.getClientIP(c),
+		"request_id":  requestID,
 	}
 
 	// 使用Redis管道提高性能

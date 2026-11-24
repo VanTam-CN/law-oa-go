@@ -1,0 +1,304 @@
+mnd shadow-run 盘点快照（卡 t_e885372e，2026-11-24）
+=====================================================
+
+目的：mnd 采纳前置盘点——存量魔法数字总量与分布快照（不启用门禁，不改 .golangci.yml）。
+
+工具与命令（真实执行）：
+- golangci-lint v1.64.8（go1.25.6 构建，本地 ~/go/bin/golangci-lint，与 ci.yml 固定版一致）
+- 配置：.golangci-mnd-shadow.yml = 治理版 .golangci.yml（3254a6d）唯一差异为门禁集 enable 追加 - mnd；
+  未配置 linters-settings.mnd（default 策略：checks = assign/argument/case/condition/operation/return 全开，
+  ignored-numbers 为空）；配置文件不入库（workspace 临时产物）
+- 命令：cd <worktree @3254a6d> && golangci-lint run --config ../.golangci-mnd-shadow.yml --out-format json
+- 原始输出：mnd-shadow-run-20261124.json（golangci-lint json 全量 1114 条）
+
+总量：1114 条，全部 FromLinter=mnd；
+门禁集一致性：同次运行其余门禁 linter（govet/staticcheck/revive/gosec/…）0 findings，
+与门禁基线（README §7：round8-final 0 findings）一致——shadow 配置未引入额外发现源。
+
+按检查项（default 策略，mnd Text 归一化）：
+  assign     455  (40.8%)
+  argument   350  (31.4%)
+  condition  159  (14.3%)
+  operation   72  (6.5%)
+  return      63  (5.7%)
+  case        15  (1.3%)
+  合计      1114
+
+分布广度：36 个目录、174 个文件有命中（below per-file 全列表）。
+
+热区（目录，前 8）：
+  internal/services        406  (36.4%)
+  internal/database        105
+  internal/handlers         98
+  internal/repositories     51
+  internal/middleware       48
+  internal/middleware/v2    46
+  internal/validators       32
+  internal/health           32
+（完整 36 目录列表见 DIRDIST 段）
+
+热区（文件，前 10）：
+  internal/services/pdf_report_service.go            55
+  internal/services/risk_assessor.go                 43
+  internal/services/document_stats_service.go        36
+  internal/database/rbac_init.go                     35
+  internal/handlers/demo_aggregate_handler.go        29
+  internal/middleware/v2/v2_middleware_factory.go    28
+  internal/logger/logger.go                          28
+  internal/services/commission_service.go            24
+  internal/services/document_search_service.go       22
+  internal/repositories/elasticsearch_legal_statutes.go 21
+（完整 174 文件列表见 FILEDIST 段）
+
+高频值（前 15）：100×105、2×87、5×80、3×74、10×72、30×53、1024×36、20×34、4×29、
+1000×26、8×23、50×22、15×22、200×19、500×18。
+批修观察：高频值以小整数（页大小/阈值/倍数）与容量/超时常量（1024/1000/200/500）为主；
+另存在 POSIX 权限族（0o755×9、0o644×4、0o600/0o700/0o750 各×1）与浮点比例族（0.1–1.2 区间约 40 条），
+批修卡需先定排除策略（named const vs mnd ignored-numbers）再动代码。
+
+=== 启用路径决策（依任务书阈值 <100 且集中 → 一次批修；否则分批） ===
+
+决策：**路径 b) 存量大 → 分批修复 + 台账跟踪，全清后入门禁集（ratchet 先例 t_088ba214）**。
+依据：1114 >> 100 阈值，且分散于 174 文件/36 目录（top1 热文件也仅 55 条，无"一次批修"可行性）；
+门禁集不因此次盘点变更（mnd 不启用，仅台账登记）。
+执行：立 mnd 批修卡（与复杂度族重构解耦；热区文件与 errcheck/revive 族批修重叠处遵循
+path-scoped add 纪律）；建议按包分批（services → database/handlers → 其余），每批门禁外
+shadow 复跑核对余量递减，全清后再将 mnd 加入 .golangci.yml 门禁集（随 golangci-lint v1.64.8
+固定版生效，无独立版本问题）并经真实 PR 事件核验 0 findings。
+
+以下为本次运行完整分布数据（机器生成，jq 汇总自 mnd-shadow-run-20261124.json）：
+CHECKDIST
+350	argument
+455	assign
+15	case
+159	condition
+72	operation
+63	return
+DIRDIST
+406	internal/services
+105	internal/database
+98	internal/handlers
+51	internal/repositories
+48	internal/middleware
+46	internal/middleware/v2
+32	internal/validators
+32	internal/health
+30	internal/metrics
+28	internal/logger
+21	test
+21	internal/auth
+20	internal/models
+19	internal/concurrency
+17	internal/config
+16	internal/validation
+16	internal/tracing
+11	internal/errors
+11	cmd/qa-fixture
+10	main.go
+10	internal/monitoring
+9	internal/shutdown
+9	internal/cache
+8	internal/logging
+5	internal/server
+5	internal/security
+5	internal/retry
+5	internal/common
+4	internal/models/elasticsearch
+3	internal/router
+3	internal/optimizations
+3	frontend/migrate
+3	cmd/migrate
+2	internal/rbac
+1	internal/elasticsearch
+1	internal/api
+FILEDIST
+55	internal/services/pdf_report_service.go
+43	internal/services/risk_assessor.go
+36	internal/services/document_stats_service.go
+35	internal/database/rbac_init.go
+29	internal/handlers/demo_aggregate_handler.go
+28	internal/middleware/v2/v2_middleware_factory.go
+28	internal/logger/logger.go
+24	internal/services/commission_service.go
+22	internal/services/document_search_service.go
+21	internal/repositories/elasticsearch_legal_statutes.go
+18	test/test_suite.go
+18	internal/health/health.go
+16	internal/validation/validator.go
+16	internal/services/company_api_service.go
+16	internal/database/elasticsearch_optimizer.go
+16	internal/auth/middleware.go
+15	internal/handlers/integration_test_handler.go
+15	internal/database/database.go
+15	internal/database/connection_pool.go
+15	internal/config/config.go
+14	internal/services/deadline_calculator.go
+14	internal/models/approval_template.go
+13	internal/services/risk_assessment_service_v2.go
+13	internal/services/conflict_check_service.go
+13	internal/middleware/v2/v2_performance_middleware.go
+12	internal/validators/case_validator.go
+12	internal/metrics/performance_monitor.go
+11	internal/validators/test_validator_simple.go
+11	internal/services/v2_conflict_detection_service.go
+11	internal/services/batch_service.go
+11	internal/handlers/onlyoffice_handler.go
+11	cmd/qa-fixture/main.go
+10	main.go
+10	internal/services/user_service.go
+10	internal/database/cache_manager.go
+10	internal/concurrency/concurrent_service.go
+9	internal/tracing/tracer.go
+9	internal/shutdown/shutdown.go
+9	internal/services/conflict_detection_service.go
+9	internal/middleware/performance_cache.go
+9	internal/middleware/jwt.go
+9	internal/metrics/fuzzing_metrics.go
+8	internal/services/conflict_pool_service.go
+8	internal/metrics/metrics.go
+8	internal/logging/logging.go
+8	internal/database/performance_optimizer.go
+7	internal/tracing/middleware.go
+7	internal/services/document_preview_service.go
+7	internal/services/analytics_service.go
+7	internal/middleware/common.go
+7	internal/health/conflict_p0_check.go
+7	internal/handlers/tools_handler.go
+7	internal/errors/enhanced_errors.go
+7	internal/concurrency/worker_pool.go
+6	internal/validators/client_validator.go
+6	internal/services/mcp_client.go
+6	internal/services/escalation_service.go
+6	internal/services/elasticsearch_sync_service.go
+6	internal/services/conflict_scan_service.go
+6	internal/repositories/statistics_repository.go
+6	internal/monitoring/monitoring.go
+6	internal/middleware/cache.go
+6	internal/cache/advanced_cache.go
+5	internal/services/subject_recheck_service.go
+5	internal/services/legal_statutes.go
+5	internal/server/server.go
+5	internal/retry/retry.go
+5	internal/repositories/entity_repository.go
+5	internal/middleware/v2/v2_security_middleware.go
+5	internal/middleware/audit.go
+5	internal/database/performance_monitor.go
+4	internal/services/search_service.go
+4	internal/services/conflict_scope_service.go
+4	internal/services/conflict_p0_service.go
+4	internal/services/conflict_hook_service.go
+4	internal/services/client_service.go
+4	internal/services/approval_template_service.go
+4	internal/services/approval_assigner.go
+4	internal/security/identity.go
+4	internal/repositories/professional_conflict_detection_repository.go
+4	internal/models/elasticsearch/legal_statutes.go
+4	internal/models/conflict.go
+4	internal/health/config.go
+4	internal/handlers/subject_recheck_handler.go
+4	internal/errors/error_handler.go
+3	test/testutils.go
+3	internal/validators/lawyer_validator.go
+3	internal/services/waiver_workflow_service.go
+3	internal/services/invoice_service.go
+3	internal/services/content_filter_service.go
+3	internal/services/conflict_classification_service.go
+3	internal/services/async_conflict_check_service.go
+3	internal/repositories/test_repository.go
+3	internal/repositories/client_repository.go
+3	internal/optimizations/query_optimizer.go
+3	internal/monitoring/performance.go
+3	internal/middleware/rate_limit.go
+3	internal/health/middleware.go
+3	internal/handlers/role_handler.go
+3	internal/handlers/auth_handler.go
+3	internal/common/response.go
+3	frontend/migrate/main.go
+3	cmd/migrate/main.go
+2	internal/services/trust_account_service.go
+2	internal/services/scheduler_service.go
+2	internal/services/inbox_service.go
+2	internal/services/fee_template_service.go
+2	internal/services/entity_service.go
+2	internal/services/enhanced_case_service.go
+2	internal/services/document_version_service.go
+2	internal/services/document_service.go
+2	internal/services/conflict_officer_appointment_service.go
+2	internal/services/approval_state_machine.go
+2	internal/repositories/user_repository.go
+2	internal/repositories/conflict_subject_index_repository.go
+2	internal/repositories/conflict_repository.go
+2	internal/repositories/case_repository.go
+2	internal/rbac/rbac_service.go
+2	internal/models/client.go
+2	internal/middleware/metrics.go
+2	internal/middleware/business_metrics.go
+2	internal/middleware/admin.go
+2	internal/handlers/notification_handler.go
+2	internal/handlers/enhanced_case_handler.go
+2	internal/handlers/deadline_handler.go
+2	internal/handlers/dashboard_handler.go
+2	internal/handlers/approval_delegation_handler.go
+2	internal/config/conflict_detection.go
+2	internal/concurrency/safety.go
+2	internal/common/stream.go
+2	internal/cache/layered_cache.go
+2	internal/auth/token_revocation.go
+2	internal/auth/test_utils.go
+1	internal/services/team_permission_service.go
+1	internal/services/sensitive_word_filter_service.go
+1	internal/services/payment_service.go
+1	internal/services/notification_queue_service.go
+1	internal/services/lawyer_service.go
+1	internal/services/handoff_service.go
+1	internal/services/document_recycle_service.go
+1	internal/services/conflict_reviewer_service.go
+1	internal/services/conflict_context.go
+1	internal/services/approval_conflict_integration_service.go
+1	internal/security/types.go
+1	internal/router/router_minimal.go
+1	internal/router/router.go
+1	internal/router/analytics_routes.go
+1	internal/repositories/conflict_extended_repository.go
+1	internal/monitoring/metrics.go
+1	internal/middleware/signature.go
+1	internal/middleware/logging.go
+1	internal/middleware/ethical_wall.go
+1	internal/metrics/application_metrics.go
+1	internal/handlers/waiver_handler.go
+1	internal/handlers/user_handler.go
+1	internal/handlers/trust_account_handler.go
+1	internal/handlers/legal_statutes.go
+1	internal/handlers/intake_party_identity_guard.go
+1	internal/handlers/intake_opponent_identity_update.go
+1	internal/handlers/intake_draft_revision.go
+1	internal/handlers/inbox_handler.go
+1	internal/handlers/handoff_handler.go
+1	internal/handlers/folder_template_handler.go
+1	internal/handlers/finance_handler.go
+1	internal/handlers/demo_aggregate_helpers.go
+1	internal/handlers/conflict_review_handler.go
+1	internal/handlers/conflict_handler_simple.go
+1	internal/handlers/approval_handler.go
+1	internal/handlers/analytics_handler.go
+1	internal/elasticsearch/client.go
+1	internal/database/optimized_components.go
+1	internal/cache/cache.go
+1	internal/auth/token_manager.go
+1	internal/api/response.go
+VALUETOP15
+105	100
+87	2
+80	5
+74	3
+72	10
+53	30
+36	1024
+34	20
+29	4
+26	1000
+23	8
+22	50
+22	15
+19	200
+18	500

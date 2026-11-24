@@ -14,13 +14,13 @@ import (
 
 // AnalyticsHandler 用户行为分析HTTP处理器
 type AnalyticsHandler struct {
-	sessionService        *services.SessionService
-	pageViewService       *services.PageViewService
-	eventTrackingService  *services.EventTrackingService
-	journeyService        *services.JourneyService
-	behaviorAnalysis      *services.BehaviorAnalysisService
-	realTimeStatsService  *services.RealTimeStatsService
-	validator             *validators.SimpleTestValidator
+	sessionService       *services.SessionService
+	pageViewService      *services.PageViewService
+	eventTrackingService *services.EventTrackingService
+	journeyService       *services.JourneyService
+	behaviorAnalysis     *services.BehaviorAnalysisService
+	realTimeStatsService *services.RealTimeStatsService
+	validator            *validators.SimpleTestValidator
 }
 
 // NewAnalyticsHandler 创建分析HTTP处理器
@@ -52,7 +52,7 @@ func (h *AnalyticsHandler) CreateSession(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": gin.H{"message": "Invalid request format", "code": "INVALID_REQUEST"},
-			"data": nil,
+			"data":  nil,
 		})
 		return
 	}
@@ -61,7 +61,7 @@ func (h *AnalyticsHandler) CreateSession(c *gin.Context) {
 	if err := h.validateCreateSessionRequest(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": gin.H{"message": err.Error(), "code": "VALIDATION_ERROR"},
-			"data": nil,
+			"data":  nil,
 		})
 		return
 	}
@@ -71,7 +71,7 @@ func (h *AnalyticsHandler) CreateSession(c *gin.Context) {
 	if userID == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error": gin.H{"message": "User not authenticated", "code": "UNAUTHORIZED"},
-			"data": nil,
+			"data":  nil,
 		})
 		return
 	}
@@ -80,7 +80,7 @@ func (h *AnalyticsHandler) CreateSession(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": gin.H{"message": "Failed to create session", "code": "SESSION_CREATE_ERROR"},
-			"data": nil,
+			"data":  nil,
 		})
 		return
 	}
@@ -97,7 +97,7 @@ func (h *AnalyticsHandler) GetSession(c *gin.Context) {
 	if err := h.validator.ValidateExecutionID(sessionID); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": gin.H{"message": "Invalid session ID", "code": "INVALID_SESSION_ID"},
-			"data": nil,
+			"data":  nil,
 		})
 		return
 	}
@@ -106,7 +106,7 @@ func (h *AnalyticsHandler) GetSession(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": gin.H{"message": "Session not found", "code": "SESSION_NOT_FOUND"},
-			"data": nil,
+			"data":  nil,
 		})
 		return
 	}
@@ -123,7 +123,7 @@ func (h *AnalyticsHandler) UpdateSession(c *gin.Context) {
 	if err := h.validator.ValidateExecutionID(sessionID); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": gin.H{"message": "Invalid session ID", "code": "INVALID_SESSION_ID"},
-			"data": nil,
+			"data":  nil,
 		})
 		return
 	}
@@ -132,7 +132,7 @@ func (h *AnalyticsHandler) UpdateSession(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": gin.H{"message": "Invalid request format", "code": "INVALID_REQUEST"},
-			"data": nil,
+			"data":  nil,
 		})
 		return
 	}
@@ -140,7 +140,7 @@ func (h *AnalyticsHandler) UpdateSession(c *gin.Context) {
 	if err := h.sessionService.UpdateSession(c.Request.Context(), sessionID, &req); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": gin.H{"message": "Failed to update session", "code": "SESSION_UPDATE_ERROR"},
-			"data": nil,
+			"data":  nil,
 		})
 		return
 	}
@@ -159,7 +159,7 @@ func (h *AnalyticsHandler) TrackPageView(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": gin.H{"message": "Invalid request format", "code": "INVALID_REQUEST"},
-			"data": nil,
+			"data":  nil,
 		})
 		return
 	}
@@ -168,7 +168,7 @@ func (h *AnalyticsHandler) TrackPageView(c *gin.Context) {
 	if err := h.validateTrackPageViewRequest(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": gin.H{"message": err.Error(), "code": "VALIDATION_ERROR"},
-			"data": nil,
+			"data":  nil,
 		})
 		return
 	}
@@ -176,7 +176,7 @@ func (h *AnalyticsHandler) TrackPageView(c *gin.Context) {
 	if err := h.pageViewService.TrackPageView(c.Request.Context(), &req); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": gin.H{"message": "Failed to track page view", "code": "PAGE_VIEW_TRACK_ERROR"},
-			"data": nil,
+			"data":  nil,
 		})
 		return
 	}
@@ -195,7 +195,7 @@ func (h *AnalyticsHandler) TrackEvent(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": gin.H{"message": "Invalid request format", "code": "INVALID_REQUEST"},
-			"data": nil,
+			"data":  nil,
 		})
 		return
 	}
@@ -204,7 +204,7 @@ func (h *AnalyticsHandler) TrackEvent(c *gin.Context) {
 	if err := h.validateTrackEventRequest(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": gin.H{"message": err.Error(), "code": "VALIDATION_ERROR"},
-			"data": nil,
+			"data":  nil,
 		})
 		return
 	}
@@ -212,7 +212,7 @@ func (h *AnalyticsHandler) TrackEvent(c *gin.Context) {
 	if err := h.eventTrackingService.TrackEvent(c.Request.Context(), &req); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": gin.H{"message": "Failed to track event", "code": "EVENT_TRACK_ERROR"},
-			"data": nil,
+			"data":  nil,
 		})
 		return
 	}
@@ -231,7 +231,7 @@ func (h *AnalyticsHandler) CreateJourney(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": gin.H{"message": "Invalid request format", "code": "INVALID_REQUEST"},
-			"data": nil,
+			"data":  nil,
 		})
 		return
 	}
@@ -240,7 +240,7 @@ func (h *AnalyticsHandler) CreateJourney(c *gin.Context) {
 	if err := h.validateCreateJourneyRequest(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": gin.H{"message": err.Error(), "code": "VALIDATION_ERROR"},
-			"data": nil,
+			"data":  nil,
 		})
 		return
 	}
@@ -248,7 +248,7 @@ func (h *AnalyticsHandler) CreateJourney(c *gin.Context) {
 	if err := h.journeyService.CreateJourney(c.Request.Context(), &req); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": gin.H{"message": "Failed to create journey", "code": "JOURNEY_CREATE_ERROR"},
-			"data": nil,
+			"data":  nil,
 		})
 		return
 	}
@@ -267,7 +267,7 @@ func (h *AnalyticsHandler) GetUserBehaviorAnalysis(c *gin.Context) {
 	if err := h.validator.ValidateExecutionID(userID); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": gin.H{"message": "Invalid user ID", "code": "INVALID_USER_ID"},
-			"data": nil,
+			"data":  nil,
 		})
 		return
 	}
@@ -277,7 +277,7 @@ func (h *AnalyticsHandler) GetUserBehaviorAnalysis(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": gin.H{"message": err.Error(), "code": "INVALID_DATE_RANGE"},
-			"data": nil,
+			"data":  nil,
 		})
 		return
 	}
@@ -286,7 +286,7 @@ func (h *AnalyticsHandler) GetUserBehaviorAnalysis(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": gin.H{"message": "Failed to analyze user behavior", "code": "ANALYSIS_ERROR"},
-			"data": nil,
+			"data":  nil,
 		})
 		return
 	}
@@ -303,7 +303,7 @@ func (h *AnalyticsHandler) DetectBehaviorPatterns(c *gin.Context) {
 	if err := h.validator.ValidateExecutionID(userID); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": gin.H{"message": "Invalid user ID", "code": "INVALID_USER_ID"},
-			"data": nil,
+			"data":  nil,
 		})
 		return
 	}
@@ -311,7 +311,7 @@ func (h *AnalyticsHandler) DetectBehaviorPatterns(c *gin.Context) {
 	if err := h.behaviorAnalysis.DetectBehaviorPatterns(c.Request.Context(), userID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": gin.H{"message": "Failed to detect behavior patterns", "code": "PATTERN_DETECTION_ERROR"},
-			"data": nil,
+			"data":  nil,
 		})
 		return
 	}
@@ -330,7 +330,7 @@ func (h *AnalyticsHandler) GetRealTimeDashboard(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": gin.H{"message": "Failed to get real-time dashboard", "code": "DASHBOARD_ERROR"},
-			"data": nil,
+			"data":  nil,
 		})
 		return
 	}
@@ -346,7 +346,7 @@ func (h *AnalyticsHandler) UpdateRealTimeStats(c *gin.Context) {
 	if err := h.realTimeStatsService.UpdateRealTimeStats(c.Request.Context()); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": gin.H{"message": "Failed to update real-time stats", "code": "STATS_UPDATE_ERROR"},
-			"data": nil,
+			"data":  nil,
 		})
 		return
 	}
@@ -363,7 +363,7 @@ func (h *AnalyticsHandler) GetDailyActiveUsers(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": gin.H{"message": err.Error(), "code": "INVALID_DATE_RANGE"},
-			"data": nil,
+			"data":  nil,
 		})
 		return
 	}
@@ -383,7 +383,7 @@ func (h *AnalyticsHandler) GetPageViewStats(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": gin.H{"message": err.Error(), "code": "INVALID_DATE_RANGE"},
-			"data": nil,
+			"data":  nil,
 		})
 		return
 	}
@@ -410,7 +410,7 @@ func (h *AnalyticsHandler) GetEventStats(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": gin.H{"message": err.Error(), "code": "INVALID_DATE_RANGE"},
-			"data": nil,
+			"data":  nil,
 		})
 		return
 	}
@@ -440,7 +440,7 @@ func (h *AnalyticsHandler) BatchTrackEvents(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": gin.H{"message": "Invalid request format", "code": "INVALID_REQUEST"},
-			"data": nil,
+			"data":  nil,
 		})
 		return
 	}
@@ -449,7 +449,7 @@ func (h *AnalyticsHandler) BatchTrackEvents(c *gin.Context) {
 	if len(req.Events) == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": gin.H{"message": "No events provided", "code": "NO_EVENTS"},
-			"data": nil,
+			"data":  nil,
 		})
 		return
 	}
@@ -457,7 +457,7 @@ func (h *AnalyticsHandler) BatchTrackEvents(c *gin.Context) {
 	if len(req.Events) > 100 {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": gin.H{"message": "Too many events (max 100 per batch)", "code": "TOO_MANY_EVENTS"},
-			"data": nil,
+			"data":  nil,
 		})
 		return
 	}

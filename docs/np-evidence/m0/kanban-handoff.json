@@ -1,0 +1,74 @@
+{
+  "observed_at": "2026-11-20T03:51:47.949497+00:00",
+  "first_red": {
+    "operation": "request-review with expired setup run_id=4",
+    "result": "REJECTED",
+    "correction": "read ready/no current owner, claim fresh actual run; no force"
+  },
+  "operator_note": "re-blocking already blocked exit card was refused; readback confirmed blocked, appended reason as comment instead",
+  "reviewed_tasks": [
+    {
+      "task_id": "t_9fe3809b",
+      "status_at_read": "done",
+      "actual_run_id": 10,
+      "summary": "Codex复核本卡M0产物完成，不代表业务安全门禁或M1已通过。证据：docs/plans/np-main-integration/m0/baseline-report.md",
+      "metadata": null,
+      "events": [
+        "created",
+        "blocked",
+        "commented",
+        "unblocked",
+        "claimed",
+        "commented",
+        "commented",
+        "reclaimed",
+        "claimed",
+        "review_requested",
+        "completed"
+      ]
+    },
+    {
+      "task_id": "t_edb90c67",
+      "status_at_read": "done",
+      "actual_run_id": 12,
+      "summary": "Codex复核本卡M0产物完成，不代表业务安全门禁或M1已通过。证据：docs/plans/np-main-integration/m0/backend-closure.md",
+      "metadata": null,
+      "events": [
+        "created",
+        "blocked",
+        "commented",
+        "unblocked",
+        "claimed",
+        "commented",
+        "reclaimed",
+        "claimed",
+        "review_requested",
+        "completed"
+      ]
+    },
+    {
+      "task_id": "t_a56dfe09",
+      "status_at_read": "done",
+      "actual_run_id": 14,
+      "summary": "Codex复核本卡M0产物完成，不代表业务安全门禁或M1已通过。证据：docs/plans/np-main-integration/m0/frontend-ci-closure.md",
+      "metadata": null,
+      "events": [
+        "created",
+        "blocked",
+        "commented",
+        "unblocked",
+        "claimed",
+        "commented",
+        "reclaimed",
+        "claimed",
+        "review_requested",
+        "completed"
+      ]
+    }
+  ],
+  "exit_card": {
+    "id": "t_cbf2406f",
+    "status_at_read": "blocked"
+  },
+  "scope": "fixed handoff receipt, not live task mirror"
+}

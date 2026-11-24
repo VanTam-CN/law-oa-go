@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+
 	_ "law-oa-go/docs"
 )
 

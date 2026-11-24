@@ -375,7 +375,7 @@ const (
 	ApprovalStatusUnderReview = "under_review"
 	ApprovalStatusApproved    = "approved"
 	ApprovalStatusRejected    = "rejected"
-	ApprovalStatusCancelled   = "cancelled"
+	ApprovalStatusCancelled   = "canceled"
 	ApprovalStatusExpired     = "expired"
 	// 新增：支持审批闭环
 	ApprovalStatusNeedsRevision = "needs_revision" // 需要修改
@@ -444,5 +444,5 @@ const (
 	SendStatusPending   = "pending"
 	SendStatusSent      = "sent"
 	SendStatusFailed    = "failed"
-	SendStatusCancelled = "cancelled"
+	SendStatusCancelled = "canceled"
 )

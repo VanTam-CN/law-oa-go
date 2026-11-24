@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
 	"io"
 	"mime"
@@ -77,7 +78,7 @@ func (s *DocumentPreviewService) GetDocumentPreview(ctx context.Context, req *Pr
 	// Get document from database
 	docModel, err := s.docRepo.FindByID(ctx, req.DocumentID)
 	if err != nil {
-		if err == repositories.ErrDocumentNotFound {
+		if stderrors.Is(err, repositories.ErrDocumentNotFound) {
 			return nil, errors.NotFoundError("document", "Document not found", req.DocumentID)
 		}
 		return nil, errors.DatabaseError("get_document", "Failed to get document", err)
@@ -131,7 +132,7 @@ func (s *DocumentPreviewService) generateTextPreview(doc *models.Document, respo
 
 	buf := make([]byte, 1000)
 	n, err := file.Read(buf)
-	if err != nil && err != io.EOF {
+	if err != nil && !stderrors.Is(err, io.EOF) {
 		return nil, fmt.Errorf("failed to read text file: %w", err)
 	}
 
@@ -225,7 +226,7 @@ func (s *DocumentPreviewService) generateGenericPreview(doc *models.Document, re
 func (s *DocumentPreviewService) GetDocumentContent(ctx context.Context, documentID uint) (io.ReadCloser, *models.Document, error) {
 	docModel, err := s.docRepo.FindByID(ctx, documentID)
 	if err != nil {
-		if err == repositories.ErrDocumentNotFound {
+		if stderrors.Is(err, repositories.ErrDocumentNotFound) {
 			return nil, nil, errors.NotFoundError("document", "Document not found", documentID)
 		}
 		return nil, nil, errors.DatabaseError("get_document", "Failed to get document", err)

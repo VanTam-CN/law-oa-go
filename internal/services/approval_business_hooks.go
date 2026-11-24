@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/models"
 )
 
@@ -93,7 +94,7 @@ func (h *SealApprovalHook) OnApproved(approval *models.ApprovalRequest) error {
 	// 解析元数据
 	var metadata models.SealApprovalMetadata
 	if err := json.Unmarshal([]byte(approval.Metadata), &metadata); err != nil {
-		return fmt.Errorf("解析用印元数据失败: %v", err)
+		return fmt.Errorf("解析用印元数据失败: %w", err)
 	}
 
 	// 创建用印记录
@@ -119,7 +120,7 @@ func (h *SealApprovalHook) OnApproved(approval *models.ApprovalRequest) error {
 	}
 
 	if err := h.db.Create(record).Error; err != nil {
-		return fmt.Errorf("创建用印记录失败: %v", err)
+		return fmt.Errorf("创建用印记录失败: %w", err)
 	}
 
 	return nil
@@ -150,7 +151,7 @@ func (h *CaseCreationApprovalHook) OnApproved(approval *models.ApprovalRequest) 
 	// 解析元数据
 	var metadata models.CaseCreationMetadata
 	if err := json.Unmarshal([]byte(approval.Metadata), &metadata); err != nil {
-		return fmt.Errorf("解析立案元数据失败: %v", err)
+		return fmt.Errorf("解析立案元数据失败: %w", err)
 	}
 	checkID := conflictCheckIDFromMetadata(parseMetadata(approval.Metadata))
 	if h.subjectRecheck == nil {
@@ -166,7 +167,7 @@ func (h *CaseCreationApprovalHook) OnApproved(approval *models.ApprovalRequest) 
 	// 生成案件编号
 	caseNumber, err := h.generateCaseNumber()
 	if err != nil {
-		return fmt.Errorf("生成案件编号失败: %v", err)
+		return fmt.Errorf("生成案件编号失败: %w", err)
 	}
 
 	// 创建案件
@@ -191,7 +192,7 @@ func (h *CaseCreationApprovalHook) OnApproved(approval *models.ApprovalRequest) 
 	// 开启事务创建案件
 	err = h.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(newCase).Error; err != nil {
-			return fmt.Errorf("创建案件失败: %v", err)
+			return fmt.Errorf("创建案件失败: %w", err)
 		}
 
 		// 更新审批元数据，关联案件ID
@@ -205,7 +206,7 @@ func (h *CaseCreationApprovalHook) OnApproved(approval *models.ApprovalRequest) 
 		approval.UpdatedBy = approval.ApplicantID
 
 		if err := tx.Save(approval).Error; err != nil {
-			return fmt.Errorf("更新审批元数据失败: %v", err)
+			return fmt.Errorf("更新审批元数据失败: %w", err)
 		}
 
 		return nil

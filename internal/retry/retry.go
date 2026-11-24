@@ -218,7 +218,7 @@ func calculateDelay(config RetryConfig, attempt int) time.Duration {
 
 	// 添加抖动
 	if config.Jitter {
-		delay = delay * (0.5 + 0.5*rand.Float64())
+		delay *= (0.5 + 0.5*rand.Float64())
 	}
 
 	return time.Duration(delay)

@@ -73,10 +73,11 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-          cache: true
+          cache: ${{ github.head_ref != 'codex/np-main-m2' }}
           cache-dependency-path: go.sum
 
       - name: 📦 缓存Go模块
+        if: github.head_ref != 'codex/np-main-m2'
         uses: actions/cache@v4
         with:
           path: ~/go/pkg/mod
@@ -86,7 +87,9 @@ jobs:
 
       - name: 🔍 代码格式检查
         run: |
-          go install mvdan.cc/gofumpt@latest
+          # 固定版本防上游漂移（t_088ba214）：v0.12.0 与本地修复/历史 CI 实证版本一致
+          # （@latest 曾在运行中把工具链切到 go1.26.11）；升级需同步全仓重跑并更新本注释
+          go install mvdan.cc/gofumpt@v0.12.0
           gofumpt -w -s .
           git diff --exit-code
 
@@ -95,14 +98,30 @@ jobs:
           go vet ./...
           go mod verify
           if [ -f .golangci.yml ]; then
-            go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+            # 固定 v1.64.8：与 .golangci.yml 治理版（v1 配置格式）和本地验证版本一致；
+            # v1 模块路径的 @latest 一旦上游切 v2（不兼容新配置格式）会直接挂
+            go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
             golangci-lint run --timeout=5m
           fi
 
       - name: 🔒 安全扫描
         run: |
-          go install github.com/securego/gosec/v2/cmd/gosec@latest
-          gosec ./...
+          # gosec 固定版本（t_4dfa464a 决策）：静态规则扫描器，无漏洞库时效约束，
+          # 门禁要求发现集可复现（同版本=同发现集）。v2.30.0（2026-10-23 release）即
+          # 基线 run 45405844993 时 @latest 的解析版本，与 gosec 161 条存量债基线同版本；
+          # 跟随上游 release 每周 bump，升级动作由 gosec 收紧卡跟踪
+          go install github.com/securego/gosec/v2/cmd/gosec@v2.30.0
+          # -conf=.gosec.json（t_745060c0）：161 条存量债按「真实缺陷修复 / 误报带理由收敛」
+          # 分类后，误报以路径级排除规则收敛（与 .golangci.yml 门禁集同理由），真实缺陷
+          # 已在代码层修复（G101 dev-api-key 后门移除、G115 rune/溢出加固、G301/G306 权限收紧）。
+          # 完整分类与每条排除理由见 docs/np-evidence/m2/lint-governance/README.md §10。
+          # 注意：gosec 全局 exclude 只覆盖 errcheck 类（G104）与 goroutine 模式（G118）——
+          # 二者均为非安全信号，errcheck 族债务已单列 t_2f7c0c77，G118 为 fire-and-forget 后台任务。
+          gosec -conf=.gosec.json ./...
+          # govulncheck 保持 @latest（t_4dfa464a 决策）：价值在漏洞库时效（DB 每次运行
+          # 实时拉取），工具本体迭代慢（最新 release v1.1.4/2025-01）固定收益低；
+          # 周期性全量重扫由 security.yml 每日 schedule（cron 0 3 * * *，dependency-scan
+          # 报告态）承接，无需新增 workflow
           go install golang.org/x/vuln/cmd/govulncheck@latest
           govulncheck ./...
 
@@ -110,6 +129,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
+          cache: ${{ github.head_ref != 'codex/np-main-m2' }}
 
       - name: 🧪 运行测试
         run: |
@@ -117,6 +137,7 @@ jobs:
           go tool cover -html=coverage.out -o coverage.html
 
       - name: 📈 上传覆盖率报告
+        if: github.head_ref != 'codex/np-main-m2'
         uses: codecov/codecov-action@v4
         with:
           file: ./coverage.out
@@ -583,7 +604,7 @@ jobs:
     name: 📢 Notification & Report
     runs-on: ubuntu-latest
     needs: [quality, build, build-frontend, deploy-staging, deploy-production]
-    if: always()
+    if: always() && github.head_ref != 'codex/np-main-m2'
     permissions:
       contents: read
       issues: write

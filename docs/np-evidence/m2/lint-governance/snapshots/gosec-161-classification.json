@@ -1,0 +1,2836 @@
+{
+ "source": "ci-run-45405844993-quality-full.log (PR #54, gosec v2.30.0 baseline)",
+ "total_issues": 161,
+ "summary": {
+  "G101": 4,
+  "G104": 84,
+  "G115": 11,
+  "G118": 15,
+  "G201": 2,
+  "G301": 9,
+  "G304": 11,
+  "G306": 4,
+  "G401": 3,
+  "G402": 1,
+  "G404": 1,
+  "G501": 1,
+  "G704": 14,
+  "G706": 1
+ },
+ "by_disposition": {
+  "fix": 24,
+  "exclude": 122,
+  "fix+exclude": 4,
+  "exclude+fix": 11
+ },
+ "issues": [
+  {
+   "file": "internal/middleware/v2/v2_performance_middleware.go",
+   "line": 163,
+   "end": 163,
+   "gcode": "G115",
+   "cwe": "CWE-190",
+   "desc": "integer overflow conversion uint64 -> int64",
+   "conf": "MEDIUM",
+   "sev": "HIGH",
+   "code": [
+    "162: \t\tif memoryDelta > 50*1024*1024 { // 50MB",
+    "> 163: \t\t\tpm.logHighMemoryUsage(c, int64(memoryDelta), finalMemory)",
+    "164: \t\t}"
+   ],
+   "disposition": "fix",
+   "rationale": "integer overflow conversion: 2 rune/status bugs fixed to strconv; 9 bounded metrics hardened via safeconv saturation"
+  },
+  {
+   "file": "internal/middleware/v2/v2_performance_middleware.go",
+   "line": 147,
+   "end": 147,
+   "gcode": "G115",
+   "cwe": "CWE-190",
+   "desc": "integer overflow conversion uint64 -> int64",
+   "conf": "MEDIUM",
+   "sev": "HIGH",
+   "code": [
+    "146: \t\t\t}",
+    "> 147: \t\t\tif atomic.CompareAndSwapInt64(&pm.metrics.memoryUsage, currentMax, int64(finalMemory)) {",
+    "148: \t\t\t\tbreak"
+   ],
+   "disposition": "fix",
+   "rationale": "integer overflow conversion: 2 rune/status bugs fixed to strconv; 9 bounded metrics hardened via safeconv saturation"
+  },
+  {
+   "file": "internal/middleware/v2/v2_performance_middleware.go",
+   "line": 144,
+   "end": 144,
+   "gcode": "G115",
+   "cwe": "CWE-190",
+   "desc": "integer overflow conversion uint64 -> int64",
+   "conf": "MEDIUM",
+   "sev": "HIGH",
+   "code": [
+    "143: \t\t\tcurrentMax := atomic.LoadInt64(&pm.metrics.memoryUsage)",
+    "> 144: \t\t\tif currentMax >= int64(finalMemory) {",
+    "145: \t\t\t\tbreak"
+   ],
+   "disposition": "fix",
+   "rationale": "integer overflow conversion: 2 rune/status bugs fixed to strconv; 9 bounded metrics hardened via safeconv saturation"
+  },
+  {
+   "file": "internal/metrics/performance_monitor.go",
+   "line": 194,
+   "end": 194,
+   "gcode": "G115",
+   "cwe": "CWE-190",
+   "desc": "integer overflow conversion uint64 -> int64",
+   "conf": "MEDIUM",
+   "sev": "HIGH",
+   "code": [
+    "193: \t\tLastGCPause:   time.Duration(memStats.PauseNs[(memStats.NumGC+255)%256]),",
+    "> 194: \t\tTotalGCPause:  time.Duration(memStats.PauseTotalNs),",
+    "195: \t}"
+   ],
+   "disposition": "fix",
+   "rationale": "integer overflow conversion: 2 rune/status bugs fixed to strconv; 9 bounded metrics hardened via safeconv saturation"
+  },
+  {
+   "file": "internal/metrics/performance_monitor.go",
+   "line": 193,
+   "end": 193,
+   "gcode": "G115",
+   "cwe": "CWE-190",
+   "desc": "integer overflow conversion uint64 -> int64",
+   "conf": "MEDIUM",
+   "sev": "HIGH",
+   "code": [
+    "192: \t\tGCCPUFraction: memStats.GCCPUFraction,",
+    "> 193: \t\tLastGCPause:   time.Duration(memStats.PauseNs[(memStats.NumGC+255)%256]),",
+    "194: \t\tTotalGCPause:  time.Duration(memStats.PauseTotalNs),"
+   ],
+   "disposition": "fix",
+   "rationale": "integer overflow conversion: 2 rune/status bugs fixed to strconv; 9 bounded metrics hardened via safeconv saturation"
+  },
+  {
+   "file": "internal/middleware/v2/v2_performance_middleware.go",
+   "line": 450,
+   "end": 450,
+   "gcode": "G115",
+   "cwe": "CWE-190",
+   "desc": "integer overflow conversion uint64 -> int",
+   "conf": "MEDIUM",
+   "sev": "HIGH",
+   "code": [
+    "449: \truntime.ReadMemStats(&mStats)",
+    "> 450: \treturn int(mStats.Alloc / (1024 * 1024)) // MB",
+    "451: }"
+   ],
+   "disposition": "fix",
+   "rationale": "integer overflow conversion: 2 rune/status bugs fixed to strconv; 9 bounded metrics hardened via safeconv saturation"
+  },
+  {
+   "file": "internal/auth/context.go",
+   "line": 73,
+   "end": 73,
+   "gcode": "G115",
+   "cwe": "CWE-190",
+   "desc": "integer overflow conversion uint -> rune",
+   "conf": "MEDIUM",
+   "sev": "HIGH",
+   "code": [
+    "72: \t// 简单的 uint 转 string",
+    "> 73: \treturn string(rune(userID))",
+    "74: }"
+   ],
+   "disposition": "fix",
+   "rationale": "integer overflow conversion: 2 rune/status bugs fixed to strconv; 9 bounded metrics hardened via safeconv saturation"
+  },
+  {
+   "file": "internal/health/health.go",
+   "line": 664,
+   "end": 664,
+   "gcode": "G115",
+   "cwe": "CWE-190",
+   "desc": "integer overflow conversion int64 -> uint64",
+   "conf": "MEDIUM",
+   "sev": "HIGH",
+   "code": [
+    "663: \ttotalSpace := stat.Blocks * uint64(stat.Bsize)",
+    "> 664: \tavailableSpace := stat.Bavail * uint64(stat.Bsize)",
+    "665: \tusedSpace := totalSpace - availableSpace"
+   ],
+   "disposition": "fix",
+   "rationale": "integer overflow conversion: 2 rune/status bugs fixed to strconv; 9 bounded metrics hardened via safeconv saturation"
+  },
+  {
+   "file": "internal/health/health.go",
+   "line": 663,
+   "end": 663,
+   "gcode": "G115",
+   "cwe": "CWE-190",
+   "desc": "integer overflow conversion int64 -> uint64",
+   "conf": "MEDIUM",
+   "sev": "HIGH",
+   "code": [
+    "662: \t// 计算可用空间",
+    "> 663: \ttotalSpace := stat.Blocks * uint64(stat.Bsize)",
+    "664: \tavailableSpace := stat.Bavail * uint64(stat.Bsize)"
+   ],
+   "disposition": "fix",
+   "rationale": "integer overflow conversion: 2 rune/status bugs fixed to strconv; 9 bounded metrics hardened via safeconv saturation"
+  },
+  {
+   "file": "internal/auth/context.go",
+   "line": 17,
+   "end": 17,
+   "gcode": "G115",
+   "cwe": "CWE-190",
+   "desc": "integer overflow conversion int64 -> uint",
+   "conf": "MEDIUM",
+   "sev": "HIGH",
+   "code": [
+    "16: \t\tcase int64:",
+    "> 17: \t\t\treturn uint(v)",
+    "18: \t\tcase float64:"
+   ],
+   "disposition": "fix",
+   "rationale": "integer overflow conversion: 2 rune/status bugs fixed to strconv; 9 bounded metrics hardened via safeconv saturation"
+  },
+  {
+   "file": "internal/metrics/metrics.go",
+   "line": 737,
+   "end": 737,
+   "gcode": "G115",
+   "cwe": "CWE-190",
+   "desc": "integer overflow conversion int -> rune",
+   "conf": "MEDIUM",
+   "sev": "HIGH",
+   "code": [
+    "736: \t\tduration := time.Since(start)",
+    "> 737: \t\tstatusCode := string(rune(c.Writer.Status()))",
+    "738:"
+   ],
+   "disposition": "fix",
+   "rationale": "integer overflow conversion: 2 rune/status bugs fixed to strconv; 9 bounded metrics hardened via safeconv saturation"
+  },
+  {
+   "file": "internal/retry/retry.go",
+   "line": 221,
+   "end": 221,
+   "gcode": "G404",
+   "cwe": "CWE-338",
+   "desc": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+   "conf": "MEDIUM",
+   "sev": "HIGH",
+   "code": [
+    "220: \tif config.Jitter {",
+    "> 221: \t\tdelay *= (0.5 + 0.5*rand.Float64())",
+    "222: \t}"
+   ],
+   "disposition": "exclude",
+   "rationale": "math/rand for retry jitter, non-crypto (gate rationale)"
+  },
+  {
+   "file": "internal/elasticsearch/client.go",
+   "line": 34,
+   "end": 34,
+   "gcode": "G402",
+   "cwe": "CWE-295",
+   "desc": "TLS InsecureSkipVerify set to true.",
+   "conf": "HIGH",
+   "sev": "HIGH",
+   "code": [
+    "33: \t\t\tTLSClientConfig: &tls.Config{",
+    "> 34: \t\t\t\tInsecureSkipVerify: true,",
+    "35: \t\t\t},"
+   ],
+   "disposition": "exclude",
+   "rationale": "elasticsearch fixed http:// (no TLS in use); tracked for https migration"
+  },
+  {
+   "file": "main.go",
+   "line": 555,
+   "end": 555,
+   "gcode": "G704",
+   "cwe": "CWE-918",
+   "desc": "SSRF via taint analysis: net/http.NewRequestWithContext",
+   "conf": "HIGH",
+   "sev": "HIGH",
+   "code": [
+    "554: \t}",
+    "> 555: \trequest, err := http.NewRequestWithContext(context.Background(), http.MethodGet, \"http://127.0.0.1:\"+port+path, nil)",
+    "556: \tif err != nil {"
+   ],
+   "disposition": "exclude",
+   "rationale": "runHealthcheck self-probe: host hardcoded literal 127.0.0.1, path env-controlled + validated /health/ prefix, not attacker-controlled"
+  },
+  {
+   "file": "main.go",
+   "line": 555,
+   "end": 555,
+   "gcode": "G704",
+   "cwe": "CWE-918",
+   "desc": "SSRF via taint analysis: net/http.NewRequestWithContext",
+   "conf": "HIGH",
+   "sev": "HIGH",
+   "code": [
+    "554: \t}",
+    "> 555: \trequest, err := http.NewRequestWithContext(context.Background(), http.MethodGet, \"http://127.0.0.1:\"+port+path, nil)",
+    "556: \tif err != nil {"
+   ],
+   "disposition": "exclude",
+   "rationale": "runHealthcheck self-probe: host hardcoded literal 127.0.0.1, path env-controlled + validated /health/ prefix, not attacker-controlled"
+  },
+  {
+   "file": "main.go",
+   "line": 555,
+   "end": 555,
+   "gcode": "G704",
+   "cwe": "CWE-918",
+   "desc": "SSRF via taint analysis: net/http.NewRequestWithContext",
+   "conf": "HIGH",
+   "sev": "HIGH",
+   "code": [
+    "554: \t}",
+    "> 555: \trequest, err := http.NewRequestWithContext(context.Background(), http.MethodGet, \"http://127.0.0.1:\"+port+path, nil)",
+    "556: \tif err != nil {"
+   ],
+   "disposition": "exclude",
+   "rationale": "runHealthcheck self-probe: host hardcoded literal 127.0.0.1, path env-controlled + validated /health/ prefix, not attacker-controlled"
+  },
+  {
+   "file": "main.go",
+   "line": 555,
+   "end": 555,
+   "gcode": "G704",
+   "cwe": "CWE-918",
+   "desc": "SSRF via taint analysis: net/http.NewRequestWithContext",
+   "conf": "HIGH",
+   "sev": "HIGH",
+   "code": [
+    "554: \t}",
+    "> 555: \trequest, err := http.NewRequestWithContext(context.Background(), http.MethodGet, \"http://127.0.0.1:\"+port+path, nil)",
+    "556: \tif err != nil {"
+   ],
+   "disposition": "exclude",
+   "rationale": "runHealthcheck self-probe: host hardcoded literal 127.0.0.1, path env-controlled + validated /health/ prefix, not attacker-controlled"
+  },
+  {
+   "file": "main.go",
+   "line": 555,
+   "end": 555,
+   "gcode": "G704",
+   "cwe": "CWE-918",
+   "desc": "SSRF via taint analysis: net/http.NewRequestWithContext",
+   "conf": "HIGH",
+   "sev": "HIGH",
+   "code": [
+    "554: \t}",
+    "> 555: \trequest, err := http.NewRequestWithContext(context.Background(), http.MethodGet, \"http://127.0.0.1:\"+port+path, nil)",
+    "556: \tif err != nil {"
+   ],
+   "disposition": "exclude",
+   "rationale": "runHealthcheck self-probe: host hardcoded literal 127.0.0.1, path env-controlled + validated /health/ prefix, not attacker-controlled"
+  },
+  {
+   "file": "main.go",
+   "line": 555,
+   "end": 555,
+   "gcode": "G704",
+   "cwe": "CWE-918",
+   "desc": "SSRF via taint analysis: net/http.NewRequestWithContext",
+   "conf": "HIGH",
+   "sev": "HIGH",
+   "code": [
+    "554: \t}",
+    "> 555: \trequest, err := http.NewRequestWithContext(context.Background(), http.MethodGet, \"http://127.0.0.1:\"+port+path, nil)",
+    "556: \tif err != nil {"
+   ],
+   "disposition": "exclude",
+   "rationale": "runHealthcheck self-probe: host hardcoded literal 127.0.0.1, path env-controlled + validated /health/ prefix, not attacker-controlled"
+  },
+  {
+   "file": "main.go",
+   "line": 555,
+   "end": 555,
+   "gcode": "G704",
+   "cwe": "CWE-918",
+   "desc": "SSRF via taint analysis: net/http.NewRequestWithContext",
+   "conf": "HIGH",
+   "sev": "HIGH",
+   "code": [
+    "554: \t}",
+    "> 555: \trequest, err := http.NewRequestWithContext(context.Background(), http.MethodGet, \"http://127.0.0.1:\"+port+path, nil)",
+    "556: \tif err != nil {"
+   ],
+   "disposition": "exclude",
+   "rationale": "runHealthcheck self-probe: host hardcoded literal 127.0.0.1, path env-controlled + validated /health/ prefix, not attacker-controlled"
+  },
+  {
+   "file": "main.go",
+   "line": 560,
+   "end": 560,
+   "gcode": "G704",
+   "cwe": "CWE-918",
+   "desc": "SSRF via taint analysis: (*net/http.Client).Do",
+   "conf": "HIGH",
+   "sev": "HIGH",
+   "code": [
+    "559: \tclient := &http.Client{Timeout: 3 * time.Second}",
+    "> 560: \tresponse, err := client.Do(request)",
+    "561: \tif err != nil {"
+   ],
+   "disposition": "exclude",
+   "rationale": "runHealthcheck self-probe: host hardcoded literal 127.0.0.1, path env-controlled + validated /health/ prefix, not attacker-controlled"
+  },
+  {
+   "file": "main.go",
+   "line": 560,
+   "end": 560,
+   "gcode": "G704",
+   "cwe": "CWE-918",
+   "desc": "SSRF via taint analysis: (*net/http.Client).Do",
+   "conf": "HIGH",
+   "sev": "HIGH",
+   "code": [
+    "559: \tclient := &http.Client{Timeout: 3 * time.Second}",
+    "> 560: \tresponse, err := client.Do(request)",
+    "561: \tif err != nil {"
+   ],
+   "disposition": "exclude",
+   "rationale": "runHealthcheck self-probe: host hardcoded literal 127.0.0.1, path env-controlled + validated /health/ prefix, not attacker-controlled"
+  },
+  {
+   "file": "main.go",
+   "line": 560,
+   "end": 560,
+   "gcode": "G704",
+   "cwe": "CWE-918",
+   "desc": "SSRF via taint analysis: (*net/http.Client).Do",
+   "conf": "HIGH",
+   "sev": "HIGH",
+   "code": [
+    "559: \tclient := &http.Client{Timeout: 3 * time.Second}",
+    "> 560: \tresponse, err := client.Do(request)",
+    "561: \tif err != nil {"
+   ],
+   "disposition": "exclude",
+   "rationale": "runHealthcheck self-probe: host hardcoded literal 127.0.0.1, path env-controlled + validated /health/ prefix, not attacker-controlled"
+  },
+  {
+   "file": "main.go",
+   "line": 560,
+   "end": 560,
+   "gcode": "G704",
+   "cwe": "CWE-918",
+   "desc": "SSRF via taint analysis: (*net/http.Client).Do",
+   "conf": "HIGH",
+   "sev": "HIGH",
+   "code": [
+    "559: \tclient := &http.Client{Timeout: 3 * time.Second}",
+    "> 560: \tresponse, err := client.Do(request)",
+    "561: \tif err != nil {"
+   ],
+   "disposition": "exclude",
+   "rationale": "runHealthcheck self-probe: host hardcoded literal 127.0.0.1, path env-controlled + validated /health/ prefix, not attacker-controlled"
+  },
+  {
+   "file": "main.go",
+   "line": 560,
+   "end": 560,
+   "gcode": "G704",
+   "cwe": "CWE-918",
+   "desc": "SSRF via taint analysis: (*net/http.Client).Do",
+   "conf": "HIGH",
+   "sev": "HIGH",
+   "code": [
+    "559: \tclient := &http.Client{Timeout: 3 * time.Second}",
+    "> 560: \tresponse, err := client.Do(request)",
+    "561: \tif err != nil {"
+   ],
+   "disposition": "exclude",
+   "rationale": "runHealthcheck self-probe: host hardcoded literal 127.0.0.1, path env-controlled + validated /health/ prefix, not attacker-controlled"
+  },
+  {
+   "file": "main.go",
+   "line": 560,
+   "end": 560,
+   "gcode": "G704",
+   "cwe": "CWE-918",
+   "desc": "SSRF via taint analysis: (*net/http.Client).Do",
+   "conf": "HIGH",
+   "sev": "HIGH",
+   "code": [
+    "559: \tclient := &http.Client{Timeout: 3 * time.Second}",
+    "> 560: \tresponse, err := client.Do(request)",
+    "561: \tif err != nil {"
+   ],
+   "disposition": "exclude",
+   "rationale": "runHealthcheck self-probe: host hardcoded literal 127.0.0.1, path env-controlled + validated /health/ prefix, not attacker-controlled"
+  },
+  {
+   "file": "main.go",
+   "line": 560,
+   "end": 560,
+   "gcode": "G704",
+   "cwe": "CWE-918",
+   "desc": "SSRF via taint analysis: (*net/http.Client).Do",
+   "conf": "HIGH",
+   "sev": "HIGH",
+   "code": [
+    "559: \tclient := &http.Client{Timeout: 3 * time.Second}",
+    "> 560: \tresponse, err := client.Do(request)",
+    "561: \tif err != nil {"
+   ],
+   "disposition": "exclude",
+   "rationale": "runHealthcheck self-probe: host hardcoded literal 127.0.0.1, path env-controlled + validated /health/ prefix, not attacker-controlled"
+  },
+  {
+   "file": "test/testutils.go",
+   "line": 218,
+   "end": 228,
+   "gcode": "G101",
+   "cwe": "CWE-798",
+   "desc": "Potential hardcoded credentials",
+   "conf": "LOW",
+   "sev": "HIGH",
+   "code": [
+    "217: func CreateTestUserB(b *testing.B) *models.User {",
+    "> 218: \treturn &models.User{",
+    "> 219: \t\tID:        uint(1),",
+    "> 220: \t\tName:      \"测试用户\",",
+    "> 221: \t\tEmail:     \"test@example.com\",",
+    "> 222: \t\tPassword:  \"$2a$10$hashedpassword\", // bcrypt hash",
+    "> 223: \t\tRole:      \"user\",",
+    "> 224: \t\tPhone:     \"1234567890\",",
+    "> 225: \t\tStatus:    \"active\",",
+    "> 226: \t\tCreatedAt: TestTime(),",
+    "> 227: \t\tUpdatedAt: TestTime(),",
+    "> 228: \t}",
+    "229: }"
+   ],
+   "disposition": "fix+exclude",
+   "rationale": "dev-api-key backdoor removed (real defect); bcrypt-hash test/seed constants excluded"
+  },
+  {
+   "file": "test/testutils.go",
+   "line": 203,
+   "end": 213,
+   "gcode": "G101",
+   "cwe": "CWE-798",
+   "desc": "Potential hardcoded credentials",
+   "conf": "LOW",
+   "sev": "HIGH",
+   "code": [
+    "202: func CreateTestUser(t *testing.T) *models.User {",
+    "> 203: \treturn &models.User{",
+    "> 204: \t\tID:        uint(1),",
+    "> 205: \t\tName:      \"测试用户\",",
+    "> 206: \t\tEmail:     \"test@example.com\",",
+    "> 207: \t\tPassword:  \"$2a$10$hashedpassword\", // bcrypt hash",
+    "> 208: \t\tRole:      \"user\",",
+    "> 209: \t\tPhone:     \"1234567890\",",
+    "> 210: \t\tStatus:    \"active\",",
+    "> 211: \t\tCreatedAt: TestTime(),",
+    "> 212: \t\tUpdatedAt: TestTime(),",
+    "> 213: \t}",
+    "214: }"
+   ],
+   "disposition": "fix+exclude",
+   "rationale": "dev-api-key backdoor removed (real defect); bcrypt-hash test/seed constants excluded"
+  },
+  {
+   "file": "internal/middleware/v2/v2_middleware_factory.go",
+   "line": 335,
+   "end": 335,
+   "gcode": "G101",
+   "cwe": "CWE-798",
+   "desc": "Potential hardcoded credentials",
+   "conf": "LOW",
+   "sev": "HIGH",
+   "code": [
+    "334: \t// 验证API密钥（使用 JWT secret 作为 API secret）",
+    "> 335: \treturn apiKey == f.config.JWT.Secret || apiKey == \"dev-api-key\"",
+    "336: }"
+   ],
+   "disposition": "fix+exclude",
+   "rationale": "dev-api-key backdoor removed (real defect); bcrypt-hash test/seed constants excluded"
+  },
+  {
+   "file": "internal/database/optimized_components.go",
+   "line": 321,
+   "end": 321,
+   "gcode": "G101",
+   "cwe": "CWE-798",
+   "desc": "Potential hardcoded credentials",
+   "conf": "LOW",
+   "sev": "HIGH",
+   "code": [
+    "320: \t// 生成密码哈希",
+    "> 321: \tpasswordHash := \"$2a$12$G.DTHR2xYdtpmqvjjNJGYOjLIRp2FGWI.sKZDWlD4BN7bDHWQy9eG\" // password",
+    "322:"
+   ],
+   "disposition": "fix+exclude",
+   "rationale": "dev-api-key backdoor removed (real defect); bcrypt-hash test/seed constants excluded"
+  },
+  {
+   "file": "internal/services/legal_statutes.go",
+   "line": 917,
+   "end": 917,
+   "gcode": "G118",
+   "cwe": "CWE-400",
+   "desc": "Goroutine uses context.Background/TODO while request-scoped context is available",
+   "conf": "MEDIUM",
+   "sev": "HIGH",
+   "code": [
+    "916: \t\t// 异步同步到Elasticsearch",
+    "> 917: \t\tgo func(stat *models.LegalStatute) {",
+    "918: \t\t\tctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)"
+   ],
+   "disposition": "exclude",
+   "rationale": "goroutine uses context.Background() in fire-and-forget background task; request-context would cancel prematurely; non-security signal"
+  },
+  {
+   "file": "internal/services/legal_statutes.go",
+   "line": 229,
+   "end": 229,
+   "gcode": "G118",
+   "cwe": "CWE-400",
+   "desc": "Goroutine uses context.Background/TODO while request-scoped context is available",
+   "conf": "MEDIUM",
+   "sev": "HIGH",
+   "code": [
+    "228: \t// 同步到Elasticsearch",
+    "> 229: \tgo func() {",
+    "230: \t\tctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)"
+   ],
+   "disposition": "exclude",
+   "rationale": "goroutine uses context.Background() in fire-and-forget background task; request-context would cancel prematurely; non-security signal"
+  },
+  {
+   "file": "internal/services/legal_statutes.go",
+   "line": 129,
+   "end": 129,
+   "gcode": "G118",
+   "cwe": "CWE-400",
+   "desc": "Goroutine uses context.Background/TODO while request-scoped context is available",
+   "conf": "MEDIUM",
+   "sev": "HIGH",
+   "code": [
+    "128: \t// 同步到Elasticsearch",
+    "> 129: \tgo func() {",
+    "130: \t\tctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)"
+   ],
+   "disposition": "exclude",
+   "rationale": "goroutine uses context.Background() in fire-and-forget background task; request-context would cancel prematurely; non-security signal"
+  },
+  {
+   "file": "internal/services/content_filter_service.go",
+   "line": 244,
+   "end": 244,
+   "gcode": "G118",
+   "cwe": "CWE-400",
+   "desc": "Goroutine uses context.Background/TODO while request-scoped context is available",
+   "conf": "MEDIUM",
+   "sev": "HIGH",
+   "code": [
+    "243: \t// 记录过滤日志",
+    "> 244: \tgo s.logFilter(context.Background(), contentType, 0, result)",
+    "245:"
+   ],
+   "disposition": "exclude",
+   "rationale": "goroutine uses context.Background() in fire-and-forget background task; request-context would cancel prematurely; non-security signal"
+  },
+  {
+   "file": "internal/services/content_filter_service.go",
+   "line": 220,
+   "end": 220,
+   "gcode": "G118",
+   "cwe": "CWE-400",
+   "desc": "Goroutine uses context.Background/TODO while request-scoped context is available",
+   "conf": "MEDIUM",
+   "sev": "HIGH",
+   "code": [
+    "219: \t\t// 异步更新命中次数",
+    "> 220: \t\tgo func(wordID uint) {",
+    "221: \t\t\ts.wordRepo.IncrementHitCount(context.Background(), wordID)"
+   ],
+   "disposition": "exclude",
+   "rationale": "goroutine uses context.Background() in fire-and-forget background task; request-context would cancel prematurely; non-security signal"
+  },
+  {
+   "file": "internal/services/conflict_scan_service.go",
+   "line": 656,
+   "end": 656,
+   "gcode": "G118",
+   "cwe": "CWE-400",
+   "desc": "Goroutine uses context.Background/TODO while request-scoped context is available",
+   "conf": "MEDIUM",
+   "sev": "HIGH",
+   "code": [
+    "655: \t// 启动每周扫描定时器",
+    "> 656: \tgo s.weeklyScanTicker(ctx)",
+    "657: }"
+   ],
+   "disposition": "exclude",
+   "rationale": "goroutine uses context.Background() in fire-and-forget background task; request-context would cancel prematurely; non-security signal"
+  },
+  {
+   "file": "internal/services/conflict_scan_service.go",
+   "line": 653,
+   "end": 653,
+   "gcode": "G118",
+   "cwe": "CWE-400",
+   "desc": "Goroutine uses context.Background/TODO while request-scoped context is available",
+   "conf": "MEDIUM",
+   "sev": "HIGH",
+   "code": [
+    "652: \t// 启动每日扫描定时器",
+    "> 653: \tgo s.dailyScanTicker(ctx)",
+    "654:"
+   ],
+   "disposition": "exclude",
+   "rationale": "goroutine uses context.Background() in fire-and-forget background task; request-context would cancel prematurely; non-security signal"
+  },
+  {
+   "file": "internal/services/conflict_scan_service.go",
+   "line": 251,
+   "end": 251,
+   "gcode": "G118",
+   "cwe": "CWE-400",
+   "desc": "Goroutine uses context.Background/TODO while request-scoped context is available",
+   "conf": "MEDIUM",
+   "sev": "HIGH",
+   "code": [
+    "250: \t// 异步执行扫描",
+    "> 251: \tgo s.executeScan(context.Background(), job)",
+    "252:"
+   ],
+   "disposition": "exclude",
+   "rationale": "goroutine uses context.Background() in fire-and-forget background task; request-context would cancel prematurely; non-security signal"
+  },
+  {
+   "file": "internal/services/conflict_scan_service.go",
+   "line": 230,
+   "end": 230,
+   "gcode": "G118",
+   "cwe": "CWE-400",
+   "desc": "Goroutine uses context.Background/TODO while request-scoped context is available",
+   "conf": "MEDIUM",
+   "sev": "HIGH",
+   "code": [
+    "229: \t// 异步执行扫描",
+    "> 230: \tgo s.executeIncrementalScan(context.Background(), job, since)",
+    "231:"
+   ],
+   "disposition": "exclude",
+   "rationale": "goroutine uses context.Background() in fire-and-forget background task; request-context would cancel prematurely; non-security signal"
+  },
+  {
+   "file": "internal/services/conflict_scan_service.go",
+   "line": 209,
+   "end": 209,
+   "gcode": "G118",
+   "cwe": "CWE-400",
+   "desc": "Goroutine uses context.Background/TODO while request-scoped context is available",
+   "conf": "MEDIUM",
+   "sev": "HIGH",
+   "code": [
+    "208: \t// 异步执行扫描",
+    "> 209: \tgo s.executeScan(context.Background(), job)",
+    "210:"
+   ],
+   "disposition": "exclude",
+   "rationale": "goroutine uses context.Background() in fire-and-forget background task; request-context would cancel prematurely; non-security signal"
+  },
+  {
+   "file": "internal/services/conflict_scan_service.go",
+   "line": 175,
+   "end": 175,
+   "gcode": "G118",
+   "cwe": "CWE-400",
+   "desc": "Goroutine uses context.Background/TODO while request-scoped context is available",
+   "conf": "MEDIUM",
+   "sev": "HIGH",
+   "code": [
+    "174: \t// 异步执行扫描",
+    "> 175: \tgo s.executeScan(context.Background(), job)",
+    "176:"
+   ],
+   "disposition": "exclude",
+   "rationale": "goroutine uses context.Background() in fire-and-forget background task; request-context would cancel prematurely; non-security signal"
+  },
+  {
+   "file": "internal/services/conflict_scan_service.go",
+   "line": 141,
+   "end": 141,
+   "gcode": "G118",
+   "cwe": "CWE-400",
+   "desc": "Goroutine uses context.Background/TODO while request-scoped context is available",
+   "conf": "MEDIUM",
+   "sev": "HIGH",
+   "code": [
+    "140: \t// 异步执行扫描",
+    "> 141: \tgo s.executeScan(context.Background(), job)",
+    "142:"
+   ],
+   "disposition": "exclude",
+   "rationale": "goroutine uses context.Background() in fire-and-forget background task; request-context would cancel prematurely; non-security signal"
+  },
+  {
+   "file": "internal/services/conflict_pool_service.go",
+   "line": 182,
+   "end": 182,
+   "gcode": "G118",
+   "cwe": "CWE-400",
+   "desc": "Goroutine uses context.Background/TODO while request-scoped context is available",
+   "conf": "MEDIUM",
+   "sev": "HIGH",
+   "code": [
+    "181: \t\tif entityType == \"company\" {",
+    "> 182: \t\t\tgo s.enrichCompanyData(context.Background(), newEntry.ID, client.Name, identityNumber)",
+    "183: \t\t}"
+   ],
+   "disposition": "exclude",
+   "rationale": "goroutine uses context.Background() in fire-and-forget background task; request-context would cancel prematurely; non-security signal"
+  },
+  {
+   "file": "internal/services/company_api_service.go",
+   "line": 684,
+   "end": 684,
+   "gcode": "G118",
+   "cwe": "CWE-400",
+   "desc": "Goroutine uses context.Background/TODO while request-scoped context is available",
+   "conf": "MEDIUM",
+   "sev": "HIGH",
+   "code": [
+    "683: \t// 异步记录，不影响主流程",
+    "> 684: \tgo func() {",
+    "685: \t\tif recordErr := s.callRecorder.RecordCall(context.Background(), record); recordErr != nil {"
+   ],
+   "disposition": "exclude",
+   "rationale": "goroutine uses context.Background() in fire-and-forget background task; request-context would cancel prematurely; non-security signal"
+  },
+  {
+   "file": "internal/services/async_conflict_check_service.go",
+   "line": 112,
+   "end": 112,
+   "gcode": "G118",
+   "cwe": "CWE-400",
+   "desc": "Goroutine uses context.Background/TODO while request-scoped context is available",
+   "conf": "MEDIUM",
+   "sev": "HIGH",
+   "code": [
+    "111: \ttaskRequest := *request",
+    "> 112: \tgo s.runTask(record.CheckID, &taskRequest)",
+    "113:"
+   ],
+   "disposition": "exclude",
+   "rationale": "goroutine uses context.Background() in fire-and-forget background task; request-context would cancel prematurely; non-security signal"
+  },
+  {
+   "file": "internal/middleware/performance_cache.go",
+   "line": 379,
+   "end": 379,
+   "gcode": "G401",
+   "cwe": "CWE-328",
+   "desc": "Use of weak cryptographic primitive",
+   "conf": "HIGH",
+   "sev": "MEDIUM",
+   "code": [
+    "378: \t// 预热案件列表",
+    "> 379: \tcasesKey := fmt.Sprintf(\"%s:cache:%x\", pc.config.KeyPrefix, md5.Sum([]byte(\"/cases\")))",
+    "380:"
+   ],
+   "disposition": "exclude",
+   "rationale": "md5 cache-key/ETag fingerprint, non-crypto (gate rationale)"
+  },
+  {
+   "file": "internal/middleware/performance_cache.go",
+   "line": 313,
+   "end": 313,
+   "gcode": "G401",
+   "cwe": "CWE-328",
+   "desc": "Use of weak cryptographic primitive",
+   "conf": "HIGH",
+   "sev": "MEDIUM",
+   "code": [
+    "312: func (pc *PerformanceCache) generateETag(data []byte) string {",
+    "> 313: \thash := md5.Sum(data)",
+    "314: \treturn fmt.Sprintf(`\"%x\"`, hash)"
+   ],
+   "disposition": "exclude",
+   "rationale": "md5 cache-key/ETag fingerprint, non-crypto (gate rationale)"
+  },
+  {
+   "file": "internal/middleware/performance_cache.go",
+   "line": 193,
+   "end": 193,
+   "gcode": "G401",
+   "cwe": "CWE-328",
+   "desc": "Use of weak cryptographic primitive",
+   "conf": "HIGH",
+   "sev": "MEDIUM",
+   "code": [
+    "192: \t// 生成MD5哈希",
+    "> 193: \thash := md5.Sum([]byte(path))",
+    "194: \treturn fmt.Sprintf(\"%s:cache:%x\", pc.config.KeyPrefix, hash)"
+   ],
+   "disposition": "exclude",
+   "rationale": "md5 cache-key/ETag fingerprint, non-crypto (gate rationale)"
+  },
+  {
+   "file": "internal/health/conflict_p0_check.go",
+   "line": 220,
+   "end": 223,
+   "gcode": "G201",
+   "cwe": "CWE-89",
+   "desc": "SQL string formatting",
+   "conf": "HIGH",
+   "sev": "MEDIUM",
+   "code": [
+    "219: \t}",
+    "> 220: \tquery := fmt.Sprintf(",
+    "> 221: \t\t\"SELECT event_type, COUNT(*) FROM compliance_audit_events WHERE event_type IN (%s) AND integrity_hash IS NOT NULL AND LENGTH(TRIM(integrity_hash)) = 64 GROUP BY event_type\",",
+    "> 222: \t\tstrings.Join(placeholders, \",\"),",
+    "> 223: \t)",
+    "224: \trows, err := c.db.QueryContext(ctx, query, args...)"
+   ],
+   "disposition": "exclude",
+   "rationale": "SQL placeholders + constant columns only, values parameterized via args (gate rationale)"
+  },
+  {
+   "file": "internal/health/conflict_p0_check.go",
+   "line": 179,
+   "end": 179,
+   "gcode": "G201",
+   "cwe": "CWE-89",
+   "desc": "SQL string formatting",
+   "conf": "HIGH",
+   "sev": "MEDIUM",
+   "code": [
+    "178: \t\tvar count int64",
+    "> 179: \t\tquery := fmt.Sprintf(\"SELECT COUNT(*) FROM conflict_search_scopes s JOIN conflict_index_build_runs r ON r.id = s.index_run_id WHERE s.scope_type = %s AND \"+completeConflictScopePredicate, c.placeholder(1))",
+    "180: \t\tif err := c.db.QueryRowContext(ctx, query, scopeType).Scan(&count); err != nil {"
+   ],
+   "disposition": "exclude",
+   "rationale": "SQL placeholders + constant columns only, values parameterized via args (gate rationale)"
+  },
+  {
+   "file": "internal/services/pdf_report_service.go",
+   "line": 698,
+   "end": 698,
+   "gcode": "G304",
+   "cwe": "CWE-22",
+   "desc": "Potential file inclusion via variable",
+   "conf": "HIGH",
+   "sev": "MEDIUM",
+   "code": [
+    "697: func (s *pdfReportService) calculateFileHash(filepath string) (string, error) {",
+    "> 698: \tdata, err := os.ReadFile(filepath)",
+    "699: \tif err != nil {"
+   ],
+   "disposition": "exclude+fix",
+   "rationale": "server-controlled internal paths (DB-stored/migrations/logs); upload filename hardened via filepath.Base; analyzer-level exclusion (gosec cannot prove taint-clean)"
+  },
+  {
+   "file": "internal/services/pdf_report_service.go",
+   "line": 289,
+   "end": 289,
+   "gcode": "G304",
+   "cwe": "CWE-22",
+   "desc": "Potential file inclusion via variable",
+   "conf": "HIGH",
+   "sev": "MEDIUM",
+   "code": [
+    "288: \t// 读取文件",
+    "> 289: \tdata, err := os.ReadFile(filepath)",
+    "290: \tif err != nil {"
+   ],
+   "disposition": "exclude+fix",
+   "rationale": "server-controlled internal paths (DB-stored/migrations/logs); upload filename hardened via filepath.Base; analyzer-level exclusion (gosec cannot prove taint-clean)"
+  },
+  {
+   "file": "internal/services/document_version_service.go",
+   "line": 444,
+   "end": 444,
+   "gcode": "G304",
+   "cwe": "CWE-22",
+   "desc": "Potential file inclusion via variable",
+   "conf": "HIGH",
+   "sev": "MEDIUM",
+   "code": [
+    "443: \t// Create destination file",
+    "> 444: \tdstFile, err := os.Create(dst)",
+    "445: \tif err != nil {"
+   ],
+   "disposition": "exclude+fix",
+   "rationale": "server-controlled internal paths (DB-stored/migrations/logs); upload filename hardened via filepath.Base; analyzer-level exclusion (gosec cannot prove taint-clean)"
+  },
+  {
+   "file": "internal/services/document_service.go",
+   "line": 413,
+   "end": 413,
+   "gcode": "G304",
+   "cwe": "CWE-22",
+   "desc": "Potential file inclusion via variable",
+   "conf": "HIGH",
+   "sev": "MEDIUM",
+   "code": [
+    "412: func (s *DocumentService) openFile(filepath string) (io.ReadCloser, error) {",
+    "> 413: \tfile, err := os.Open(filepath)",
+    "414: \tif err != nil {"
+   ],
+   "disposition": "exclude+fix",
+   "rationale": "server-controlled internal paths (DB-stored/migrations/logs); upload filename hardened via filepath.Base; analyzer-level exclusion (gosec cannot prove taint-clean)"
+  },
+  {
+   "file": "internal/services/document_service.go",
+   "line": 383,
+   "end": 383,
+   "gcode": "G304",
+   "cwe": "CWE-22",
+   "desc": "Potential file inclusion via variable",
+   "conf": "HIGH",
+   "sev": "MEDIUM",
+   "code": [
+    "382: \t// Create destination file",
+    "> 383: \tdstFile, err := os.Create(dst)",
+    "384: \tif err != nil {"
+   ],
+   "disposition": "exclude+fix",
+   "rationale": "server-controlled internal paths (DB-stored/migrations/logs); upload filename hardened via filepath.Base; analyzer-level exclusion (gosec cannot prove taint-clean)"
+  },
+  {
+   "file": "internal/logger/logger.go",
+   "line": 1004,
+   "end": 1004,
+   "gcode": "G304",
+   "cwe": "CWE-22",
+   "desc": "Potential file inclusion via variable",
+   "conf": "HIGH",
+   "sev": "MEDIUM",
+   "code": [
+    "1003:",
+    "> 1004: \tdir, err := os.Open(logDir)",
+    "1005: \tif err != nil {"
+   ],
+   "disposition": "exclude+fix",
+   "rationale": "server-controlled internal paths (DB-stored/migrations/logs); upload filename hardened via filepath.Base; analyzer-level exclusion (gosec cannot prove taint-clean)"
+  },
+  {
+   "file": "internal/handlers/onlyoffice_handler.go",
+   "line": 1170,
+   "end": 1170,
+   "gcode": "G304",
+   "cwe": "CWE-22",
+   "desc": "Potential file inclusion via variable",
+   "conf": "HIGH",
+   "sev": "MEDIUM",
+   "code": [
+    "1169:",
+    "> 1170: \tdstFile, err := os.Create(dst)",
+    "1171: \tif err != nil {"
+   ],
+   "disposition": "exclude+fix",
+   "rationale": "server-controlled internal paths (DB-stored/migrations/logs); upload filename hardened via filepath.Base; analyzer-level exclusion (gosec cannot prove taint-clean)"
+  },
+  {
+   "file": "internal/handlers/onlyoffice_handler.go",
+   "line": 1164,
+   "end": 1164,
+   "gcode": "G304",
+   "cwe": "CWE-22",
+   "desc": "Potential file inclusion via variable",
+   "conf": "HIGH",
+   "sev": "MEDIUM",
+   "code": [
+    "1163: func copyFile(src, dst string) error {",
+    "> 1164: \tsrcFile, err := os.Open(src)",
+    "1165: \tif err != nil {"
+   ],
+   "disposition": "exclude+fix",
+   "rationale": "server-controlled internal paths (DB-stored/migrations/logs); upload filename hardened via filepath.Base; analyzer-level exclusion (gosec cannot prove taint-clean)"
+  },
+  {
+   "file": "internal/handlers/onlyoffice_handler.go",
+   "line": 952,
+   "end": 952,
+   "gcode": "G304",
+   "cwe": "CWE-22",
+   "desc": "Potential file inclusion via variable",
+   "conf": "HIGH",
+   "sev": "MEDIUM",
+   "code": [
+    "951: \toutputPath := filepath.Join(convertDir, fmt.Sprintf(\"document.%s\", task.OutputType))",
+    "> 952: \toutFile, err := os.Create(outputPath)",
+    "953: \tif err != nil {"
+   ],
+   "disposition": "exclude+fix",
+   "rationale": "server-controlled internal paths (DB-stored/migrations/logs); upload filename hardened via filepath.Base; analyzer-level exclusion (gosec cannot prove taint-clean)"
+  },
+  {
+   "file": "internal/database/migrator.go",
+   "line": 147,
+   "end": 147,
+   "gcode": "G304",
+   "cwe": "CWE-22",
+   "desc": "Potential file inclusion via variable",
+   "conf": "HIGH",
+   "sev": "MEDIUM",
+   "code": [
+    "146: \t\tpath := filepath.Join(migrationsPath, entry.Name())",
+    "> 147: \t\tcontents, err := os.ReadFile(path)",
+    "148: \t\tif err != nil {"
+   ],
+   "disposition": "exclude+fix",
+   "rationale": "server-controlled internal paths (DB-stored/migrations/logs); upload filename hardened via filepath.Base; analyzer-level exclusion (gosec cannot prove taint-clean)"
+  },
+  {
+   "file": "frontend/migrate/main.go",
+   "line": 248,
+   "end": 248,
+   "gcode": "G304",
+   "cwe": "CWE-22",
+   "desc": "Potential file inclusion via variable",
+   "conf": "HIGH",
+   "sev": "MEDIUM",
+   "code": [
+    "247: func isDirEmpty(dir string) (bool, error) {",
+    "> 248: \tf, err := os.Open(dir)",
+    "249: \tif err != nil {"
+   ],
+   "disposition": "exclude+fix",
+   "rationale": "server-controlled internal paths (DB-stored/migrations/logs); upload filename hardened via filepath.Base; analyzer-level exclusion (gosec cannot prove taint-clean)"
+  },
+  {
+   "file": "internal/services/pdf_report_service.go",
+   "line": 108,
+   "end": 108,
+   "gcode": "G301",
+   "cwe": "CWE-276",
+   "desc": "Expect directory permissions to be 0750 or less",
+   "conf": "HIGH",
+   "sev": "MEDIUM",
+   "code": [
+    "107: \t// 确保输出目录存在",
+    "> 108: \tif err := os.MkdirAll(config.OutputDir, 0o755); err != nil {",
+    "109: \t\treturn nil, fmt.Errorf(\"创建输出目录失败: %w\", err)"
+   ],
+   "disposition": "fix",
+   "rationale": "MkdirAll 0755 -> 0750 (card t_2ebe3c13)"
+  },
+  {
+   "file": "internal/services/document_version_service.go",
+   "line": 439,
+   "end": 439,
+   "gcode": "G301",
+   "cwe": "CWE-276",
+   "desc": "Expect directory permissions to be 0750 or less",
+   "conf": "HIGH",
+   "sev": "MEDIUM",
+   "code": [
+    "438: \tdir := filepath.Dir(dst)",
+    "> 439: \tif err := os.MkdirAll(dir, 0o755); err != nil {",
+    "440: \t\treturn fmt.Errorf(\"failed to create directory %s: %w\", dir, err)"
+   ],
+   "disposition": "fix",
+   "rationale": "MkdirAll 0755 -> 0750 (card t_2ebe3c13)"
+  },
+  {
+   "file": "internal/services/document_service.go",
+   "line": 378,
+   "end": 378,
+   "gcode": "G301",
+   "cwe": "CWE-276",
+   "desc": "Expect directory permissions to be 0750 or less",
+   "conf": "HIGH",
+   "sev": "MEDIUM",
+   "code": [
+    "377: \tdir := filepath.Dir(dst)",
+    "> 378: \tif err := os.MkdirAll(dir, 0o755); err != nil {",
+    "379: \t\treturn fmt.Errorf(\"failed to create directory %s: %w\", dir, err)"
+   ],
+   "disposition": "fix",
+   "rationale": "MkdirAll 0755 -> 0750 (card t_2ebe3c13)"
+  },
+  {
+   "file": "internal/services/document_recycle_service.go",
+   "line": 500,
+   "end": 500,
+   "gcode": "G301",
+   "cwe": "CWE-276",
+   "desc": "Expect directory permissions to be 0750 or less",
+   "conf": "HIGH",
+   "sev": "MEDIUM",
+   "code": [
+    "499: \tdir := filepath.Dir(to)",
+    "> 500: \tif err := os.MkdirAll(dir, 0o755); err != nil {",
+    "501: \t\treturn fmt.Errorf(\"failed to create directory %s: %w\", dir, err)"
+   ],
+   "disposition": "fix",
+   "rationale": "MkdirAll 0755 -> 0750 (card t_2ebe3c13)"
+  },
+  {
+   "file": "internal/logger/logger.go",
+   "line": 154,
+   "end": 154,
+   "gcode": "G301",
+   "cwe": "CWE-276",
+   "desc": "Expect directory permissions to be 0750 or less",
+   "conf": "HIGH",
+   "sev": "MEDIUM",
+   "code": [
+    "153: \t\t\tdir := filepath.Dir(path)",
+    "> 154: \t\t\tif err := os.MkdirAll(dir, 0o755); err != nil {",
+    "155: \t\t\t\treturn nil, nil, fmt.Errorf(\"failed to create error log directory %s: %w\", dir, err)"
+   ],
+   "disposition": "fix",
+   "rationale": "MkdirAll 0755 -> 0750 (card t_2ebe3c13)"
+  },
+  {
+   "file": "internal/logger/logger.go",
+   "line": 129,
+   "end": 129,
+   "gcode": "G301",
+   "cwe": "CWE-276",
+   "desc": "Expect directory permissions to be 0750 or less",
+   "conf": "HIGH",
+   "sev": "MEDIUM",
+   "code": [
+    "128: \t\t\tdir := filepath.Dir(path)",
+    "> 129: \t\t\tif err := os.MkdirAll(dir, 0o755); err != nil {",
+    "130: \t\t\t\treturn nil, nil, fmt.Errorf(\"failed to create log directory %s: %w\", dir, err)"
+   ],
+   "disposition": "fix",
+   "rationale": "MkdirAll 0755 -> 0750 (card t_2ebe3c13)"
+  },
+  {
+   "file": "internal/handlers/user_handler.go",
+   "line": 289,
+   "end": 289,
+   "gcode": "G301",
+   "cwe": "CWE-276",
+   "desc": "Expect directory permissions to be 0750 or less",
+   "conf": "HIGH",
+   "sev": "MEDIUM",
+   "code": [
+    "288: \tuploadDir := filepath.Join(\"uploads\", \"avatars\")",
+    "> 289: \tif err := os.MkdirAll(uploadDir, 0o755); err != nil {",
+    "290: \t\tcommon.APIInternalServerError(c, \"创建上传目录失败\", err.Error())"
+   ],
+   "disposition": "fix",
+   "rationale": "MkdirAll 0755 -> 0750 (card t_2ebe3c13)"
+  },
+  {
+   "file": "internal/handlers/onlyoffice_handler.go",
+   "line": 943,
+   "end": 943,
+   "gcode": "G301",
+   "cwe": "CWE-276",
+   "desc": "Expect directory permissions to be 0750 or less",
+   "conf": "HIGH",
+   "sev": "MEDIUM",
+   "code": [
+    "942: \tconvertDir := filepath.Join(h.storageDir, \"converted\", fmt.Sprintf(\"doc_%d\", task.DocumentID))",
+    "> 943: \tif err := os.MkdirAll(convertDir, 0o755); err != nil {",
+    "944: \t\th.conversionMu.Lock()"
+   ],
+   "disposition": "fix",
+   "rationale": "MkdirAll 0755 -> 0750 (card t_2ebe3c13)"
+  },
+  {
+   "file": "internal/handlers/onlyoffice_handler.go",
+   "line": 600,
+   "end": 600,
+   "gcode": "G301",
+   "cwe": "CWE-276",
+   "desc": "Expect directory permissions to be 0750 or less",
+   "conf": "HIGH",
+   "sev": "MEDIUM",
+   "code": [
+    "599: \tversionDir := filepath.Join(h.storageDir, \"versions\", fmt.Sprintf(\"doc_%d\", documentID))",
+    "> 600: \tif err := os.MkdirAll(versionDir, 0o755); err != nil {",
+    "601: \t\treturn fmt.Errorf(\"failed to create version directory: %w\", err)"
+   ],
+   "disposition": "fix",
+   "rationale": "MkdirAll 0755 -> 0750 (card t_2ebe3c13)"
+  },
+  {
+   "file": "frontend/migrate/main.go",
+   "line": 216,
+   "end": 216,
+   "gcode": "G306",
+   "cwe": "CWE-276",
+   "desc": "Expect WriteFile permissions to be 0600 or less",
+   "conf": "HIGH",
+   "sev": "MEDIUM",
+   "code": [
+    "215: \tdownFile := filepath.Join(migrationsDir, fmt.Sprintf(\"%s_%s.down.sql\", timestamp, name))",
+    "> 216: \tif err := os.WriteFile(downFile, []byte(\"-- Down migration\\n\"), 0o644); err != nil {",
+    "217: \t\treturn fmt.Errorf(\"创建向下迁移文件失败: %w\", err)"
+   ],
+   "disposition": "fix",
+   "rationale": "WriteFile 0644 -> 0600 (card t_2ebe3c13)"
+  },
+  {
+   "file": "frontend/migrate/main.go",
+   "line": 210,
+   "end": 210,
+   "gcode": "G306",
+   "cwe": "CWE-276",
+   "desc": "Expect WriteFile permissions to be 0600 or less",
+   "conf": "HIGH",
+   "sev": "MEDIUM",
+   "code": [
+    "209: \tupFile := filepath.Join(migrationsDir, fmt.Sprintf(\"%s_%s.up.sql\", timestamp, name))",
+    "> 210: \tif err := os.WriteFile(upFile, []byte(\"-- Up migration\\n\"), 0o644); err != nil {",
+    "211: \t\treturn fmt.Errorf(\"创建向上迁移文件失败: %w\", err)"
+   ],
+   "disposition": "fix",
+   "rationale": "WriteFile 0644 -> 0600 (card t_2ebe3c13)"
+  },
+  {
+   "file": "cmd/migrate/main.go",
+   "line": 191,
+   "end": 191,
+   "gcode": "G306",
+   "cwe": "CWE-276",
+   "desc": "Expect WriteFile permissions to be 0600 or less",
+   "conf": "HIGH",
+   "sev": "MEDIUM",
+   "code": [
+    "190:",
+    "> 191: \tif err := os.WriteFile(downFile, []byte(downContent), 0o644); err != nil {",
+    "192: \t\treturn fmt.Errorf(\"创建down文件失败: %w\", err)"
+   ],
+   "disposition": "fix",
+   "rationale": "WriteFile 0644 -> 0600 (card t_2ebe3c13)"
+  },
+  {
+   "file": "cmd/migrate/main.go",
+   "line": 183,
+   "end": 183,
+   "gcode": "G306",
+   "cwe": "CWE-276",
+   "desc": "Expect WriteFile permissions to be 0600 or less",
+   "conf": "HIGH",
+   "sev": "MEDIUM",
+   "code": [
+    "182:",
+    "> 183: \tif err := os.WriteFile(upFile, []byte(upContent), 0o644); err != nil {",
+    "184: \t\treturn fmt.Errorf(\"创建up文件失败: %w\", err)"
+   ],
+   "disposition": "fix",
+   "rationale": "WriteFile 0644 -> 0600 (card t_2ebe3c13)"
+  },
+  {
+   "file": "internal/middleware/performance_cache.go",
+   "line": 5,
+   "end": 5,
+   "gcode": "G501",
+   "cwe": "CWE-327",
+   "desc": "Blocklisted import crypto/md5: weak cryptographic primitive",
+   "conf": "HIGH",
+   "sev": "MEDIUM",
+   "code": [
+    "4: \t\"context\"",
+    "> 5: \t\"crypto/md5\"",
+    "6: \t\"encoding/json\""
+   ],
+   "disposition": "exclude",
+   "rationale": "md5 import for cache-key fingerprint, non-crypto (gate rationale)"
+  },
+  {
+   "file": "internal/services/company_api_service.go",
+   "line": 189,
+   "end": 189,
+   "gcode": "G706",
+   "cwe": "CWE-117",
+   "desc": "Log injection via taint analysis: log.Printf",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "188:",
+    "> 189: \tlog.Printf(\"[API] %s %s - Status: %d, Duration: %v\",",
+    "190: \t\treq.Method,"
+   ],
+   "disposition": "exclude",
+   "rationale": "log.Printf of server-derived HTTP method string, log injection not exploitable (LOW)"
+  },
+  {
+   "file": "test/testutils.go",
+   "line": 50,
+   "end": 50,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "49: \t\tClose: func() {",
+    "> 50: \t\t\tdb.Close()",
+    "51: \t\t},"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "test/mock/mock.go",
+   "line": 46,
+   "end": 46,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "45: \t\tClose: func() {",
+    "> 46: \t\t\tdb.Close()",
+    "47: \t\t},"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/validation/validator.go",
+   "line": 61,
+   "end": 61,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "60: \tv.RegisterValidation(\"file_path\", validateFilePath)",
+    "> 61: \tv.RegisterValidation(\"email_domain\", validateEmailDomain)",
+    "62:"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/validation/validator.go",
+   "line": 60,
+   "end": 60,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "59: \tv.RegisterValidation(\"no_xss\", validateNoXSS)",
+    "> 60: \tv.RegisterValidation(\"file_path\", validateFilePath)",
+    "61: \tv.RegisterValidation(\"email_domain\", validateEmailDomain)"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/validation/validator.go",
+   "line": 59,
+   "end": 59,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "58: \tv.RegisterValidation(\"no_sql_injection\", validateNoSQLInjection)",
+    "> 59: \tv.RegisterValidation(\"no_xss\", validateNoXSS)",
+    "60: \tv.RegisterValidation(\"file_path\", validateFilePath)"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/validation/validator.go",
+   "line": 58,
+   "end": 58,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "57: \tv.RegisterValidation(\"safe_string\", validateSafeString)",
+    "> 58: \tv.RegisterValidation(\"no_sql_injection\", validateNoSQLInjection)",
+    "59: \tv.RegisterValidation(\"no_xss\", validateNoXSS)"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/validation/validator.go",
+   "line": 57,
+   "end": 57,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "56: \tv.RegisterValidation(\"id_card\", validateIDCard)",
+    "> 57: \tv.RegisterValidation(\"safe_string\", validateSafeString)",
+    "58: \tv.RegisterValidation(\"no_sql_injection\", validateNoSQLInjection)"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/validation/validator.go",
+   "line": 56,
+   "end": 56,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "55: \tv.RegisterValidation(\"phone_number\", validatePhoneNumber)",
+    "> 56: \tv.RegisterValidation(\"id_card\", validateIDCard)",
+    "57: \tv.RegisterValidation(\"safe_string\", validateSafeString)"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/validation/validator.go",
+   "line": 55,
+   "end": 55,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "54: \tv.RegisterValidation(\"password_strength\", validatePasswordStrength)",
+    "> 55: \tv.RegisterValidation(\"phone_number\", validatePhoneNumber)",
+    "56: \tv.RegisterValidation(\"id_card\", validateIDCard)"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/validation/validator.go",
+   "line": 54,
+   "end": 54,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "53: \t// 注册自定义验证函数",
+    "> 54: \tv.RegisterValidation(\"password_strength\", validatePasswordStrength)",
+    "55: \tv.RegisterValidation(\"phone_number\", validatePhoneNumber)"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/team_permission_service.go",
+   "line": 447,
+   "end": 447,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "446: \tfor _, pattern := range patterns {",
+    "> 447: \t\ts.cacheRepo.DeletePattern(ctx, pattern)",
+    "448: \t}"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/team_permission_service.go",
+   "line": 221,
+   "end": 221,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "220: \tresultJSON, _ := json.Marshal(result)",
+    "> 221: \ts.cacheRepo.Set(ctx, cacheKey, string(resultJSON), 5*time.Minute)",
+    "222:"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/sensitive_word_filter_service.go",
+   "line": 365,
+   "end": 365,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "364: \tnow := time.Now()",
+    "> 365: \ts.wordRepo.UpdateHitCount(ctx, wordID, now)",
+    "366: }"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/scheduler_service.go",
+   "line": 439,
+   "end": 439,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "438:",
+    "> 439: \ts.checkApprovalTimeouts(context.Background())",
+    "440:"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/scheduler_service.go",
+   "line": 139,
+   "end": 139,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "138: \t// 启动时立即执行一次",
+    "> 139: \ts.checkEscalations(context.Background())",
+    "140:"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/scheduler_service.go",
+   "line": 116,
+   "end": 116,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "115: \t// 启动时立即执行一次",
+    "> 116: \ts.checkReminders(context.Background())",
+    "117:"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/pdf_report_service.go",
+   "line": 196,
+   "end": 196,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "195: \t\t// 清理已生成的文件",
+    "> 196: \t\tos.Remove(filepath)",
+    "197: \t\treturn nil, fmt.Errorf(\"保存报告记录失败: %w\", err)"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/payment_service.go",
+   "line": 325,
+   "end": 325,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "324:",
+    "> 325: \t\t\ts.milestoneRepo.Update(ctx, milestone)",
+    "326: \t\t}"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/offboarding_service.go",
+   "line": 113,
+   "end": 113,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "112: \t\tjson.Unmarshal(casesJSON, &casesData)",
+    "> 113: \t\tjson.Unmarshal(inboxJSON, &inboxData)",
+    "114:"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/offboarding_service.go",
+   "line": 112,
+   "end": 112,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "111: \t\tvar casesData, inboxData map[string]interface{}",
+    "> 112: \t\tjson.Unmarshal(casesJSON, &casesData)",
+    "113: \t\tjson.Unmarshal(inboxJSON, &inboxData)"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/mcp_client.go",
+   "line": 120,
+   "end": 120,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "119: \t\tif resp != nil && err != nil {",
+    "> 120: \t\t\tresp.Body.Close() // 请求失败（含重定向错误）时立即释放响应体",
+    "121: \t\t\treturn err"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/mcp_client.go",
+   "line": 116,
+   "end": 116,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "115: \t\tif response != nil && response.Body != nil {",
+    "> 116: \t\t\tresponse.Body.Close()",
+    "117: \t\t}"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/invoice_service.go",
+   "line": 548,
+   "end": 548,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "547: \tif invoice.MilestoneID != nil {",
+    "> 548: \t\ts.milestoneRepo.UpdateStatus(ctx, *invoice.MilestoneID, \"pending\")",
+    "549: \t}"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/invoice_service.go",
+   "line": 462,
+   "end": 462,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "461: \tif invoice.MilestoneID != nil {",
+    "> 462: \t\ts.milestoneRepo.UpdateStatus(ctx, *invoice.MilestoneID, \"pending\")",
+    "463: \t}"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/invoice_service.go",
+   "line": 406,
+   "end": 406,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "405: \tif invoice.MilestoneID != nil {",
+    "> 406: \t\ts.milestoneRepo.UpdateStatus(ctx, *invoice.MilestoneID, \"billed\")",
+    "407: \t}"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/folder_template_service.go",
+   "line": 91,
+   "end": 91,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "90: \t\t\t// 回滚：删除刚创建的模板",
+    "> 91: \t\t\ts.repo.DeleteTemplate(ctx, template.ID)",
+    "92: \t\t\treturn nil, fmt.Errorf(\"设置默认模板失败: %w\", err)"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/escalation_service.go",
+   "line": 178,
+   "end": 188,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "177: \t// 发布升级事件",
+    "> 178: \ts.dispatcher.Dispatch(ctx, &Event{",
+    "> 179: \t\tType:      \"inbox.escalated\",",
+    "> 180: \t\tTimestamp: time.Now(),",
+    "> 181: \t\tSourceID:  item.ID,",
+    "> 182: \t\tMetadata: map[string]interface{}{",
+    "> 183: \t\t\t\"user_id\":           item.UserID,",
+    "> 184: \t\t\t\"supervisor_id\":     supervisorID,",
+    "> 185: \t\t\t\"escalation_reason\": reason,",
+    "> 186: \t\t\t\"original_due_date\": item.DueDate,",
+    "> 187: \t\t},",
+    "> 188: \t})",
+    "189:"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/document_version_service.go",
+   "line": 454,
+   "end": 454,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "453: \t\t// Clean up the file if copy fails",
+    "> 454: \t\tos.Remove(dst)",
+    "455: \t\treturn fmt.Errorf(\"failed to copy file content: %w\", err)"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/document_service.go",
+   "line": 393,
+   "end": 393,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "392: \t\t// Clean up the file if copy fails",
+    "> 393: \t\tos.Remove(dst)",
+    "394: \t\treturn fmt.Errorf(\"failed to copy file content: %w\", err)"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/document_service.go",
+   "line": 163,
+   "end": 163,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "162: \t\t// Clean up database record if file save fails",
+    "> 163: \t\ts.docRepo.Delete(ctx, docModel.ID)",
+    "164: \t\treturn nil, errors.InternalError(\"Failed to save file\", err)"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/document_service.go",
+   "line": 155,
+   "end": 155,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "154: \t\t// Clean up database record if file save fails",
+    "> 155: \t\ts.docRepo.Delete(ctx, docModel.ID)",
+    "156: \t\treturn nil, errors.InternalError(\"Failed to open uploaded file\", err)"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/document_recycle_service.go",
+   "line": 335,
+   "end": 335,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "334: \t\t// Try to move file back to recycle bin if restoration fails",
+    "> 335: \t\ts.moveToRecycleBin(docModel.Filepath, matches[0])",
+    "336: \t\treturn errors.DatabaseError(\"update_document\", \"Failed to restore document\", err)"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/contract_service.go",
+   "line": 966,
+   "end": 966,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "965: \t\tm.Sequence = i + 1",
+    "> 966: \t\ts.milestoneRepo.Update(ctx, m)",
+    "967: \t}"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/content_filter_service.go",
+   "line": 463,
+   "end": 463,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "462: \t// 刷新缓存",
+    "> 463: \ts.refreshCache(ctx)",
+    "464:"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/content_filter_service.go",
+   "line": 317,
+   "end": 317,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "316: \tvar hitsParsed map[string]interface{}",
+    "> 317: \tjson.Unmarshal(hitsJSONBytes, &hitsParsed)",
+    "318: \tlog.Hits = models.JSON(hitsParsed)"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/content_filter_service.go",
+   "line": 221,
+   "end": 221,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "220: \t\tgo func(wordID uint) {",
+    "> 221: \t\t\ts.wordRepo.IncrementHitCount(context.Background(), wordID)",
+    "222: \t\t}(word.ID)"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/conflict_scan_service.go",
+   "line": 700,
+   "end": 700,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "699: \t\t\tif now.After(nextRun) && now.Before(nextRun.Add(5*time.Minute)) {",
+    "> 700: \t\t\t\ts.RunWeeklyScan(context.Background())",
+    "701: \t\t\t\tnextRun = s.calculateNextWeeklyRun()"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/conflict_scan_service.go",
+   "line": 676,
+   "end": 676,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "675: \t\t\tif now.After(nextRun) && now.Before(nextRun.Add(5*time.Minute)) {",
+    "> 676: \t\t\t\ts.RunDailyScan(context.Background())",
+    "677: \t\t\t\t// 计算下次执行时间"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/conflict_detection_service.go",
+   "line": 385,
+   "end": 385,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "384: \t\t}",
+    "> 385: \t\trows.Close()",
+    "386: \t}"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/conflict_detection_service.go",
+   "line": 382,
+   "end": 382,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "381: \t\tif err := rows.Err(); err != nil {",
+    "> 382: \t\t\trows.Close()",
+    "383: \t\t\treturn nil, fmt.Errorf(\"迭代对方当事人冲突结果集失败 (opponent=%q): %w\", opponent, err)"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/conflict_detection_service.go",
+   "line": 325,
+   "end": 325,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "324: \t\t\tif err := rows.Scan(&caseID, &caseNo, &caseName, &caseType, &description, &clientName, &lawyerName, &createdAt, &lawyerID, &relevanceScore); err != nil {",
+    "> 325: \t\t\t\trows.Close()",
+    "326: \t\t\t\treturn nil, fmt.Errorf(\"扫描对方当事人冲突行失败 (opponent=%q): %w\", opponent, err)"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/services/approval_service.go",
+   "line": 531,
+   "end": 531,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "530: \tif approval.Metadata != \"{}\" && approval.Metadata != \"\" {",
+    "> 531: \t\tjson.Unmarshal([]byte(approval.Metadata), &metadata)",
+    "532: \t} else {"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/repositories/conflict_repository.go",
+   "line": 890,
+   "end": 890,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "889: \t\t\t}",
+    "> 890: \t\t\tpartyRows.Close()",
+    "891: \t\t}"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/repositories/conflict_repository.go",
+   "line": 855,
+   "end": 855,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "854: \t\t\t\tif err != nil {",
+    "> 855: \t\t\t\t\tpartyRows.Close()",
+    "856: \t\t\t\t\treturn nil, fmt.Errorf(\"扫描对方当事人冲突行失败 (party=%q): %w\", party, err)"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/rbac/rbac_service.go",
+   "line": 68,
+   "end": 68,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "67: \t\tcacheKey := fmt.Sprintf(\"user_permissions:%d\", userID)",
+    "> 68: \t\ts.cache.Set(ctx, cacheKey, permissions)",
+    "69: \t\treturn true, nil"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/models/elasticsearch/legal_statutes.go",
+   "line": 388,
+   "end": 388,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "387: \t\tsourceJSON, _ := json.Marshal(source)",
+    "> 388: \t\tjson.Unmarshal(sourceJSON, &doc)",
+    "389:"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/middleware/v2/v2_security_middleware.go",
+   "line": 383,
+   "end": 383,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "382: \t\t\tif ginEngine, ok := engine.(*gin.Engine); ok {",
+    "> 383: \t\t\t\tginEngine.SetTrustedProxies(sm.trustedProxies)",
+    "384: \t\t\t}"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/middleware/v2/v2_performance_middleware.go",
+   "line": 544,
+   "end": 544,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "543: \tpipe.Expire(ctx, key, 24*time.Hour)",
+    "> 544: \tpipe.Exec(ctx)",
+    "545: }"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/middleware/cache.go",
+   "line": 326,
+   "end": 326,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "325: \t\tif err := json.Unmarshal(w.buffer.Bytes(), &responseData); err == nil {",
+    "> 326: \t\t\tcache.DefaultCacheService.Set(key, responseData, config.TTL)",
+    "327: \t\t}"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/middleware/cache.go",
+   "line": 193,
+   "end": 193,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "192: \t// 写入主体",
+    "> 193: \tc.Writer.Write(cached.Body)",
+    "194:"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/health/health.go",
+   "line": 430,
+   "end": 430,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "429: \t// 清理测试数据",
+    "> 430: \tcc.cache.Delete(testKey)",
+    "431:"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/handlers/onlyoffice_handler.go",
+   "line": 1011,
+   "end": 1011,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "1010: \t\tbody, err := io.ReadAll(io.LimitReader(resp.Body, 4096))",
+    "> 1011: \t\tresp.Body.Close()",
+    "1012: \t\tif err != nil {"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/handlers/onlyoffice_handler.go",
+   "line": 974,
+   "end": 974,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "973: \tif written > MaxOnlyOfficeDownloadBytes {",
+    "> 974: \t\tos.Remove(outputPath)",
+    "975: \t\th.conversionMu.Lock()"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/handlers/onlyoffice_handler.go",
+   "line": 966,
+   "end": 966,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "965: \tif err != nil {",
+    "> 966: \t\tos.Remove(outputPath)",
+    "967: \t\th.conversionMu.Lock()"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/handlers/onlyoffice_handler.go",
+   "line": 963,
+   "end": 963,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "962: \twritten, err := io.Copy(outFile, limited)",
+    "> 963: \toutFile.Close()",
+    "964:"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/handlers/onlyoffice_handler.go",
+   "line": 643,
+   "end": 643,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "642: \tif err := os.Rename(tmpPath, doc.Filepath); err != nil {",
+    "> 643: \t\tos.Remove(tmpPath)",
+    "644: \t\treturn fmt.Errorf(\"failed to replace document file: %w\", err)"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/handlers/onlyoffice_handler.go",
+   "line": 637,
+   "end": 637,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "636: \tif written > MaxOnlyOfficeDownloadBytes {",
+    "> 637: \t\tos.Remove(tmpPath)",
+    "638: \t\treturn fmt.Errorf(\"download exceeds %d bytes\", MaxOnlyOfficeDownloadBytes)"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/handlers/onlyoffice_handler.go",
+   "line": 633,
+   "end": 633,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "632: \tif err != nil {",
+    "> 633: \t\tos.Remove(tmpPath)",
+    "634: \t\treturn fmt.Errorf(\"failed to write document: %w\", err)"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/handlers/onlyoffice_handler.go",
+   "line": 629,
+   "end": 629,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "628: \t}",
+    "> 629: \toutFile.Close()",
+    "630: \ttmpPath := outFile.Name()"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/handlers/finance_handler.go",
+   "line": 2304,
+   "end": 2304,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "2303: \tcsvWriter := csv.NewWriter(c.Writer)",
+    "> 2304: \tcsvWriter.WriteAll(sanitizeCSVRecords(records))",
+    "2305: \tcsvWriter.Flush()"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/handlers/document_version_handler.go",
+   "line": 390,
+   "end": 390,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "389:",
+    "> 390: \tc.ShouldBindJSON(&req)",
+    "391:"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/handlers/document_version_handler.go",
+   "line": 347,
+   "end": 347,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "346:",
+    "> 347: \tc.ShouldBindJSON(&req)",
+    "348:"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/database/repository.go",
+   "line": 45,
+   "end": 45,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "44: \t// 缓存结果",
+    "> 45: \tr.cache.SmartSet(\"find_by_id\", cacheKey, result)",
+    "46:"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/database/performance_monitor.go",
+   "line": 159,
+   "end": 166,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "158:",
+    "> 159: \tpm.db.Callback().Delete().After(\"gorm:delete\").Register(\"delete_tracker_after\", func(db *gorm.DB) {",
+    "> 160: \t\tif start, exists := db.InstanceGet(\"delete_start\"); exists {",
+    "> 161: \t\t\tif startTime, ok := start.(time.Time); ok {",
+    "> 162: \t\t\t\tduration := time.Since(startTime)",
+    "> 163: \t\t\t\tpm.recordQueryMetrics(\"DELETE\", duration, db.RowsAffected, nil)",
+    "> 164: \t\t\t}",
+    "> 165: \t\t}",
+    "> 166: \t})",
+    "167: }"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/database/performance_monitor.go",
+   "line": 155,
+   "end": 157,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "154:",
+    "> 155: \tpm.db.Callback().Delete().Before(\"gorm:delete\").Register(\"delete_tracker_before\", func(db *gorm.DB) {",
+    "> 156: \t\tdb.InstanceSet(\"delete_start\", time.Now())",
+    "> 157: \t})",
+    "158:"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/database/performance_monitor.go",
+   "line": 146,
+   "end": 153,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "145:",
+    "> 146: \tpm.db.Callback().Update().After(\"gorm:update\").Register(\"update_tracker_after\", func(db *gorm.DB) {",
+    "> 147: \t\tif start, exists := db.InstanceGet(\"update_start\"); exists {",
+    "> 148: \t\t\tif startTime, ok := start.(time.Time); ok {",
+    "> 149: \t\t\t\tduration := time.Since(startTime)",
+    "> 150: \t\t\t\tpm.recordQueryMetrics(\"UPDATE\", duration, db.RowsAffected, nil)",
+    "> 151: \t\t\t}",
+    "> 152: \t\t}",
+    "> 153: \t})",
+    "154:"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/database/performance_monitor.go",
+   "line": 142,
+   "end": 144,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "141:",
+    "> 142: \tpm.db.Callback().Update().Before(\"gorm:update\").Register(\"update_tracker_before\", func(db *gorm.DB) {",
+    "> 143: \t\tdb.InstanceSet(\"update_start\", time.Now())",
+    "> 144: \t})",
+    "145:"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/database/performance_monitor.go",
+   "line": 133,
+   "end": 140,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "132:",
+    "> 133: \tpm.db.Callback().Create().After(\"gorm:create\").Register(\"create_tracker_after\", func(db *gorm.DB) {",
+    "> 134: \t\tif start, exists := db.InstanceGet(\"create_start\"); exists {",
+    "> 135: \t\t\tif startTime, ok := start.(time.Time); ok {",
+    "> 136: \t\t\t\tduration := time.Since(startTime)",
+    "> 137: \t\t\t\tpm.recordQueryMetrics(\"CREATE\", duration, db.RowsAffected, nil)",
+    "> 138: \t\t\t}",
+    "> 139: \t\t}",
+    "> 140: \t})",
+    "141:"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/database/performance_monitor.go",
+   "line": 129,
+   "end": 131,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "128:",
+    "> 129: \tpm.db.Callback().Create().Before(\"gorm:create\").Register(\"create_tracker_before\", func(db *gorm.DB) {",
+    "> 130: \t\tdb.InstanceSet(\"create_start\", time.Now())",
+    "> 131: \t})",
+    "132:"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/database/performance_monitor.go",
+   "line": 119,
+   "end": 127,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "118:",
+    "> 119: \tpm.db.Callback().Query().After(\"gorm:query\").Register(\"query_tracker_after\", func(db *gorm.DB) {",
+    "> 120: \t\t// 记录查询结束时间和统计",
+    "> 121: \t\tif start, exists := db.InstanceGet(\"query_start\"); exists {",
+    "> 122: \t\t\tif startTime, ok := start.(time.Time); ok {",
+    "> 123: \t\t\t\tduration := time.Since(startTime)",
+    "> 124: \t\t\t\tpm.recordQueryMetrics(db.Statement.SQL.String(), duration, db.RowsAffected, nil)",
+    "> 125: \t\t\t}",
+    "> 126: \t\t}",
+    "> 127: \t})",
+    "128:"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/database/performance_monitor.go",
+   "line": 114,
+   "end": 117,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "113: \t// 使用GORM的回调来跟踪查询",
+    "> 114: \tpm.db.Callback().Query().Before(\"gorm:query\").Register(\"query_tracker_before\", func(db *gorm.DB) {",
+    "> 115: \t\t// 记录查询开始时间",
+    "> 116: \t\tdb.InstanceSet(\"query_start\", time.Now())",
+    "> 117: \t})",
+    "118:"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/database/cache_manager.go",
+   "line": 165,
+   "end": 165,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "164: \t\t\t\tcacheKey := cm.GetCacheKey(query.KeyPrefix, query.Params...)",
+    "> 165: \t\t\t\tcm.Set(cacheKey, result, query.TTL)",
+    "166: \t\t\t}"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/database/cache_manager.go",
+   "line": 141,
+   "end": 141,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "140: \t\t// 注意：这里简化处理，实际应用中需要更复杂的缓存逻辑",
+    "> 141: \t\tcm.Set(cacheKey, result, ttl)",
+    "142: \t}"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/common/stream.go",
+   "line": 179,
+   "end": 179,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "178:",
+    "> 179: \tw.Write([]byte(`]}}`))",
+    "180:"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/common/stream.go",
+   "line": 166,
+   "end": 166,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "165: \t\tif !first {",
+    "> 166: \t\t\tw.Write([]byte(\",\"))",
+    "167: \t\t}"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/common/stream.go",
+   "line": 159,
+   "end": 159,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "158: \tw.Write(headerData[:len(headerData)-2]) // 去掉最后的\"]}",
+    "> 159: \tw.Write([]byte(`,\"data\":[`))",
+    "160:"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/common/stream.go",
+   "line": 158,
+   "end": 158,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "157:",
+    "> 158: \tw.Write(headerData[:len(headerData)-2]) // 去掉最后的\"]}",
+    "159: \tw.Write([]byte(`,\"data\":[`))"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/common/stream.go",
+   "line": 74,
+   "end": 74,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "73:",
+    "> 74: \tw.Write([]byte(`]}`))",
+    "75:"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/common/stream.go",
+   "line": 60,
+   "end": 60,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "59: \t\tif !first {",
+    "> 60: \t\t\tw.Write([]byte(\",\"))",
+    "61: \t\t}"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/common/stream.go",
+   "line": 53,
+   "end": 53,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "52: \t// 写入响应头",
+    "> 53: \tw.Write([]byte(`{\"data\": [`))",
+    "54:"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/auth/middleware.go",
+   "line": 424,
+   "end": 424,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "423: \t\tdeviceInfo[\"last_active\"] = time.Now()",
+    "> 424: \t\tcacheService.Set(deviceKey, deviceInfo, time.Hour*24)",
+    "425: \t}"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/auth/middleware.go",
+   "line": 410,
+   "end": 410,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "409: \t// 增加计数",
+    "> 410: \tcacheService.Set(rateLimitKey, count+1, time.Minute)",
+    "411:"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "internal/api/crud_handler.go",
+   "line": 182,
+   "end": 182,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "181: \t\t// 验证和设置默认值",
+    "> 182: \t\tValidateListRequest(&req)",
+    "183:"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  },
+  {
+   "file": "cmd/migrate/main.go",
+   "line": 107,
+   "end": 107,
+   "gcode": "G104",
+   "cwe": "CWE-703",
+   "desc": "Errors unhandled",
+   "conf": "HIGH",
+   "sev": "LOW",
+   "code": [
+    "106: \t\tvar confirm string",
+    "> 107: \t\tfmt.Scanln(&confirm)",
+    "108: \t\tif confirm != \"yes\" {"
+   ],
+   "disposition": "exclude",
+   "rationale": "errcheck-class: error unhandled; deferred to errcheck debt ledger t_2f7c0c77; gate does not gate errcheck; non-security signal"
+  }
+ ]
+}

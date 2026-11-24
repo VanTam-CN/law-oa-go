@@ -98,7 +98,7 @@ const (
 	TestStatusRunning   TestExecutionStatus = "running"
 	TestStatusCompleted TestExecutionStatus = "completed"
 	TestStatusFailed    TestExecutionStatus = "failed"
-	TestStatusCancelled TestExecutionStatus = "cancelled"
+	TestStatusCancelled TestExecutionStatus = "canceled"
 )
 
 // TriggerType 触发类型

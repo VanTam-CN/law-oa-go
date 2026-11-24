@@ -184,10 +184,10 @@ func (c *Client) IndexExists(ctx context.Context, index string) (bool, error) {
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode == 200 {
+	if res.StatusCode == http.StatusOK {
 		return true, nil
 	}
-	if res.StatusCode == 404 {
+	if res.StatusCode == http.StatusNotFound {
 		return false, nil
 	}
 

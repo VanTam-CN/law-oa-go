@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"runtime"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -734,7 +735,7 @@ func PrometheusMiddleware() gin.HandlerFunc {
 		c.Next()
 
 		duration := time.Since(start)
-		statusCode := string(rune(c.Writer.Status()))
+		statusCode := strconv.Itoa(c.Writer.Status())
 
 		// 获取响应大小
 		responseSize := int64(c.Writer.Size())

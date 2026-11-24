@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"law-oa-go/internal/models"
@@ -24,7 +25,7 @@ func (r *ApprovalTemplateRepository) FindByName(name string) (*models.ApprovalTe
 	var template models.ApprovalTemplate
 	err := r.db.Where("name = ? AND is_active = ?", name, true).First(&template).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("查找审批模板失败: %w", err)

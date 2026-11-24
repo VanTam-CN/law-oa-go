@@ -275,9 +275,9 @@ func TestLinkConflictCheckToCaseRequiresExplicitConsistentContext(t *testing.T) 
 		check_id TEXT PRIMARY KEY, client_id TEXT, search_parameters TEXT
 	)`).Error)
 	require.NoError(t, db.Exec(`INSERT INTO conflict_check_records (check_id, client_id, search_parameters) VALUES (?, ?, ?)`,
-		"CCT-LINK-001", fmt.Sprint(client.ID), fmt.Sprintf(`{"clientId":"%d","subjectCaseId":"%d","intakeId":"%s"}`, client.ID, caseModel.ID, "intake-link-001")).Error)
+		"CCT-LINK-001", fmt.Sprint(client.ID), fmt.Sprintf(`{"clientId":"%d","subjectCaseId":"%d","intakeId":"%s","intakeRevision":"rev-1"}`, client.ID, caseModel.ID, "intake-link-001")).Error)
 	require.NoError(t, db.Exec(`CREATE TABLE case_intakes (id TEXT PRIMARY KEY, client_id TEXT, status TEXT, metadata TEXT, updated_at DATETIME)`).Error)
-	require.NoError(t, db.Exec(`INSERT INTO case_intakes (id, client_id, status, metadata, updated_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)`, "intake-link-001", client.ID, "draft", `{"source":"test"}`).Error)
+	require.NoError(t, db.Exec(`INSERT INTO case_intakes (id, client_id, status, metadata, updated_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)`, "intake-link-001", client.ID, "lawyer_facts_confirmed", `{"source":"test","draft_revision":"rev-1"}`).Error)
 
 	repo := NewConflictRepository(db, nil)
 	require.NoError(t, repo.(ConflictSubjectLinker).LinkConflictCheckToCase(context.Background(), ConflictSubjectAssociation{
@@ -285,6 +285,7 @@ func TestLinkConflictCheckToCaseRequiresExplicitConsistentContext(t *testing.T) 
 		SubjectCaseID:     fmt.Sprint(caseModel.ID),
 		SubjectCaseNumber: caseModel.CaseNumber,
 		IntakeID:          "intake-link-001",
+		IntakeRevision:    "rev-1",
 		ClientID:          fmt.Sprint(client.ID),
 		CoverageStatus:    "COMPLETE",
 		CheckedAt:         time.Now(),

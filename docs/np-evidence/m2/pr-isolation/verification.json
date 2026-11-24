@@ -1,0 +1,289 @@
+{
+  "base": "c01670f904dbcd89480cbf32503d1541bbe1e852",
+  "source": "b070323a413768c76ec2ffaa904bfa8009d5ef91",
+  "hosted_pg": [
+    {
+      "id": 45317903182,
+      "run_attempt": 1,
+      "event": "push",
+      "head_sha": "b070323a413768c76ec2ffaa904bfa8009d5ef91",
+      "head_branch": "codex/np-main-m2",
+      "path": ".github/workflows/tests.yml",
+      "created_at": "2026-11-24T03:12:50Z",
+      "updated_at": "2026-11-24T03:17:25Z",
+      "conclusion": "success",
+      "html_url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45317903182",
+      "jobs": [
+        {
+          "id": 138189103491,
+          "name": "np-m2-early (normal)",
+          "conclusion": "success",
+          "started_at": "2026-11-24T03:12:53Z",
+          "completed_at": "2026-11-24T03:17:25Z",
+          "marker": "M2_PG_PASS required=5 passed=5",
+          "gate_step": "success"
+        },
+        {
+          "id": 138189103878,
+          "name": "🐹 Go Tests",
+          "conclusion": "skipped",
+          "started_at": "2026-11-24T03:12:51Z",
+          "completed_at": "2026-11-24T03:12:50Z"
+        },
+        {
+          "id": 138189104508,
+          "name": "📋 Test Summary",
+          "conclusion": "skipped",
+          "started_at": "2026-11-24T03:12:51Z",
+          "completed_at": "2026-11-24T03:12:50Z"
+        },
+        {
+          "id": 138189104526,
+          "name": "📊 Coverage Check",
+          "conclusion": "skipped",
+          "started_at": "2026-11-24T03:12:51Z",
+          "completed_at": "2026-11-24T03:12:50Z"
+        },
+        {
+          "id": 138189104971,
+          "name": "🎭 E2E Tests",
+          "conclusion": "skipped",
+          "started_at": "2026-11-24T03:12:51Z",
+          "completed_at": "2026-11-24T03:12:50Z"
+        },
+        {
+          "id": 138189152321,
+          "name": "🎨 Frontend Tests",
+          "conclusion": "skipped",
+          "started_at": "2026-11-24T03:12:59Z",
+          "completed_at": "2026-11-24T03:12:50Z"
+        }
+      ],
+      "artifact_count": 0
+    },
+    {
+      "id": 45317907862,
+      "run_attempt": 1,
+      "event": "workflow_dispatch",
+      "head_sha": "b070323a413768c76ec2ffaa904bfa8009d5ef91",
+      "head_branch": "codex/np-main-m2",
+      "path": ".github/workflows/tests.yml",
+      "created_at": "2026-11-24T03:12:53Z",
+      "updated_at": "2026-11-24T03:16:52Z",
+      "conclusion": "failure",
+      "html_url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45317907862",
+      "jobs": [
+        {
+          "id": 138189127276,
+          "name": "np-m2-early (missing-pg)",
+          "conclusion": "failure",
+          "started_at": "2026-11-24T03:12:58Z",
+          "completed_at": "2026-11-24T03:13:13Z",
+          "marker": "M2_PG_UNAVAILABLE",
+          "gate_step": "failure"
+        },
+        {
+          "id": 138189127483,
+          "name": "np-m2-early (partial)",
+          "conclusion": "failure",
+          "started_at": "2026-11-24T03:12:58Z",
+          "completed_at": "2026-11-24T03:16:51Z",
+          "marker": "M2_REQUIRED_TEST_MISSING",
+          "gate_step": "failure"
+        },
+        {
+          "id": 138189127697,
+          "name": "np-m2-early (skip)",
+          "conclusion": "failure",
+          "started_at": "2026-11-24T03:12:57Z",
+          "completed_at": "2026-11-24T03:16:23Z",
+          "marker": "M2_REQUIRED_TEST_SKIPPED",
+          "gate_step": "failure"
+        },
+        {
+          "id": 138189127961,
+          "name": "np-m2-early (missing-dsn)",
+          "conclusion": "failure",
+          "started_at": "2026-11-24T03:12:59Z",
+          "completed_at": "2026-11-24T03:13:18Z",
+          "marker": "M2_DSN_MISSING",
+          "gate_step": "failure"
+        },
+        {
+          "id": 138189128839,
+          "name": "🐹 Go Tests",
+          "conclusion": "skipped",
+          "started_at": "2026-11-24T03:12:55Z",
+          "completed_at": "2026-11-24T03:12:54Z"
+        },
+        {
+          "id": 138189131168,
+          "name": "np-m2-early (none)",
+          "conclusion": "failure",
+          "started_at": "2026-11-24T03:12:59Z",
+          "completed_at": "2026-11-24T03:15:51Z",
+          "marker": "M2_NO_TESTS",
+          "gate_step": "failure"
+        },
+        {
+          "id": 138189132447,
+          "name": "📊 Coverage Check",
+          "conclusion": "skipped",
+          "started_at": "2026-11-24T03:12:55Z",
+          "completed_at": "2026-11-24T03:12:55Z"
+        },
+        {
+          "id": 138189132704,
+          "name": "🎭 E2E Tests",
+          "conclusion": "skipped",
+          "started_at": "2026-11-24T03:12:56Z",
+          "completed_at": "2026-11-24T03:12:55Z"
+        },
+        {
+          "id": 138189140249,
+          "name": "📋 Test Summary",
+          "conclusion": "skipped",
+          "started_at": "2026-11-24T03:12:57Z",
+          "completed_at": "2026-11-24T03:12:56Z"
+        },
+        {
+          "id": 138189169292,
+          "name": "🎨 Frontend Tests",
+          "conclusion": "skipped",
+          "started_at": "2026-11-24T03:13:01Z",
+          "completed_at": "2026-11-24T03:12:54Z"
+        }
+      ],
+      "artifact_count": 0
+    }
+  ],
+  "offline_reviewer": {
+    "files": [
+      "ci-cd.yml",
+      "ci.yml",
+      "fuzzing.yml",
+      "pgo.yml",
+      "security.yml",
+      "tests.yml"
+    ],
+    "pilot_jobs": [
+      "ci-cd.yml/integrated-static-analysis",
+      "ci-cd.yml/test",
+      "ci-cd.yml/benchmark",
+      "ci-cd.yml/fuzzing",
+      "ci.yml/quality",
+      "fuzzing.yml/preflight",
+      "fuzzing.yml/check-fuzzing",
+      "fuzzing.yml/security-fuzzing",
+      "fuzzing.yml/validators-fuzzing",
+      "fuzzing.yml/repositories-fuzzing",
+      "fuzzing.yml/cache-fuzzing",
+      "fuzzing.yml/concurrency-fuzzing",
+      "fuzzing.yml/comprehensive-fuzzing",
+      "fuzzing.yml/fuzzing-summary",
+      "pgo.yml/check-pgo",
+      "pgo.yml/generate-workload",
+      "pgo.yml/pilot-pgo",
+      "security.yml/security-smoke",
+      "security.yml/dependency-scan",
+      "security.yml/security-report",
+      "tests.yml/np-m2-early",
+      "tests.yml/go-tests",
+      "tests.yml/frontend-tests",
+      "tests.yml/e2e-tests",
+      "tests.yml/test-summary"
+    ],
+    "pilot_external_steps": [],
+    "ordinary_pr_external_step_count": 45,
+    "main_push_external_step_count": 65,
+    "mutation_detected": [
+      [
+        "ci.yml",
+        "quality",
+        "tool-cache"
+      ],
+      [
+        "ci.yml",
+        "notify",
+        "actions/upload-artifact"
+      ],
+      [
+        "ci.yml",
+        "notify",
+        "8398a7/action-slack"
+      ],
+      [
+        "ci.yml",
+        "notify",
+        "dawidd6/action-send-mail"
+      ],
+      [
+        "tests.yml",
+        "e2e-tests",
+        "actions/upload-artifact"
+      ]
+    ]
+  },
+  "worker": {
+    "model": "glm-flash",
+    "independently_rerun": true,
+    "baseline_assertions": {
+      "pilot_zero_pilot-success": true,
+      "pilot_zero_pilot-failure": true,
+      "pilot_zero_pilot-cancel": true,
+      "negative_normal_pr_has_uploads_and_comments": true,
+      "negative_normal_push_has_image_push": true,
+      "delta_uploads_blocked_only_in_pilot": true,
+      "baseline_screenshot_blocked_in_pilot": true,
+      "baseline_notify_blocked_in_pilot": true
+    },
+    "expected_mutations_detected": {
+      "mutation_screenshot_detected": true,
+      "mutation_notify_detected": true
+    }
+  },
+  "local": {
+    "actionlint_version": "1.7.9",
+    "baseline_exit": 1,
+    "candidate_exit": 1,
+    "same_setup_go_v4_notices": 10,
+    "new_diagnostics": 0,
+    "profile_packages": [
+      "./internal/benchmark",
+      "./internal/config"
+    ],
+    "merged_cpu_and_mem": true,
+    "empty_package_list_exit": 1,
+    "isolated_startup": {
+      "os_arch": "linux/arm64",
+      "network": "none; PG/Redis/application share loopback",
+      "published_ports": 0,
+      "postgres": "16.14",
+      "redis": "7-alpine",
+      "startup_fixture": "inactive user, disabled login",
+      "cpu_profile_for_binary": "single synthetic benchmark package",
+      "application_probes": [
+        "standard 50/50",
+        "optimized 50/50"
+      ]
+    }
+  },
+  "file_sha256": {
+    ".github/workflows/ci-cd.yml": "311e4733780fc72acf95e005eceb12de97016febb75a69381357312070f39b1a",
+    ".github/workflows/ci.yml": "a42722debca88823bb605dce6e43a1fc086602d28128fb9e1bc5fb1fdbb1f518",
+    ".github/workflows/fuzzing.yml": "c19a62bb1493067fffbc280ff30b9d37fa30a6209344b797359adae97938e6e5",
+    ".github/workflows/pgo.yml": "e408ec10745da6e17fe7fe162ed4a8694fe8b3d08cf2a7e02479bfbc54e9ade9",
+    ".github/workflows/security.yml": "f3771e4e4c92b3feda224cb377c03ca519d30b91974df99bbdb8e6811e2cb4a7",
+    ".github/workflows/tests.yml": "e3c7d377345d21b8068981869abdfc54d35ea8c5b5a32b103cdf129e8481ce99",
+    "docs/np-evidence/m2/pr-isolation/check-routes.mjs": "f574ed97f46bd1a9e009bd9f0e679a27da59958f5301b67a8111fe785c657e2e",
+    "scripts/np-ci/early-pg.sh": "a0836d7eb82b2aa4bafe46b623c5b1157d1301bd39aee9414da3039d1972d5af",
+    "scripts/np-ci/pgo-profiles.sh": "e588bc3f2612ba141f8d6d7e796186fcee01379ef8008cbc554a2b8ddac15616"
+  },
+  "status": {
+    "main_target_pr_runtime": "NOT_RUN",
+    "all_package_pgo": "NOT_RUN",
+    "complete_I11": "NOT_RUN",
+    "merge": "NOT_RUN",
+    "deployment": "NOT_RUN"
+  }
+}

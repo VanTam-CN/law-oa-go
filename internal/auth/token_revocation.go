@@ -10,6 +10,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/models"
 )
 
@@ -267,7 +268,6 @@ func (s *TokenRevocationService) GetRevocationHistory(ctx context.Context, userI
 		Order("revoked_at DESC").
 		Limit(limit).
 		Find(&logs).Error
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to query revocation history: %w", err)
 	}
@@ -351,7 +351,7 @@ func (s *TokenRevocationService) isTokenStringRevoked(ctx context.Context, token
 	}
 	if _, err := s.redisClient.Get(ctx, tokenHashKey(tokenString)).Result(); err == nil {
 		return true
-	} else if err != redis.Nil {
+	} else if !errors.Is(err, redis.Nil) {
 		return true
 	}
 	return s.tokenManager.IsTokenBlacklisted(ctx, tokenString)
@@ -392,7 +392,10 @@ func userIDFromClaims(claims map[string]interface{}) (uint, bool) {
 	case uint:
 		return value, value > 0
 	case int:
-		return uint(value), value > 0
+		if value > 0 {
+			return uint(value), true
+		}
+		return 0, false
 	default:
 		return 0, false
 	}
@@ -448,11 +451,6 @@ func (s *TokenRevocationService) recordRevocationEvent(ctx context.Context, user
 
 // recordOffboardingEvent 记录离职事件
 func (s *TokenRevocationService) recordOffboardingEvent(ctx context.Context, userID uint, data *OffboardingData, ipAddress string) error {
-	notes := fmt.Sprintf("Offboarding: successor=%d, transferred_cases=%d", data.SuccessorID, data.TransferredCaseCount)
-	if data.HandoverNote != "" {
-		notes += ", note: " + data.HandoverNote
-	}
-
 	log := &models.TokenRevocationLog{
 		UserID:         userID,
 		RevocationType: string(RevokeAll),

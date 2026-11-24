@@ -1,0 +1,47 @@
+{
+  "global": {
+    "exclude": "G104,G118"
+  },
+  "exclude-rules": [
+    {
+      "path": "internal/services/(pdf_report_service|document_version_service|document_service)\\.go|internal/logger/logger\\.go|internal/handlers/onlyoffice_handler\\.go|internal/database/migrator\\.go",
+      "rules": ["G304"]
+    },
+    {
+      "path": "frontend/migrate/main\\.go",
+      "rules": ["G304"]
+    },
+    {
+      "path": "test/testutils\\.go",
+      "rules": ["G101"]
+    },
+    {
+      "path": "internal/database/optimized_components\\.go",
+      "rules": ["G101"]
+    },
+    {
+      "path": "internal/middleware/performance_cache\\.go",
+      "rules": ["G401", "G501"]
+    },
+    {
+      "path": "internal/health/conflict_p0_check\\.go",
+      "rules": ["G201"]
+    },
+    {
+      "path": "internal/retry/retry\\.go",
+      "rules": ["G404"]
+    },
+    {
+      "path": "internal/elasticsearch/client\\.go",
+      "rules": ["G402"]
+    },
+    {
+      "path": "main\\.go",
+      "rules": ["G704"]
+    },
+    {
+      "path": "internal/services/company_api_service\\.go",
+      "rules": ["G706"]
+    }
+  ]
+}

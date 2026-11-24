@@ -10,6 +10,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -18,6 +19,7 @@ import (
 
 	"github.com/jung-kurt/gofpdf"
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/common"
 	"law-oa-go/internal/models"
 )
@@ -103,7 +105,7 @@ func NewPDFReportService(db *gorm.DB, config *PDFReportConfig) (PDFReportService
 	}
 
 	// 确保输出目录存在
-	if err := os.MkdirAll(config.OutputDir, 0755); err != nil {
+	if err := os.MkdirAll(config.OutputDir, 0o750); err != nil {
 		return nil, fmt.Errorf("创建输出目录失败: %w", err)
 	}
 
@@ -203,7 +205,7 @@ func (s *pdfReportService) GenerateReport(ctx context.Context, req *ReportGenera
 func (s *pdfReportService) GetReport(ctx context.Context, reportID uint) (*models.ConflictReport, error) {
 	var report models.ConflictReport
 	if err := s.db.WithContext(ctx).First(&report, reportID).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("报告不存在")
 		}
 		return nil, fmt.Errorf("获取报告失败: %w", err)
@@ -217,7 +219,7 @@ func (s *pdfReportService) GetReportByNumber(ctx context.Context, reportNumber s
 	if err := s.db.WithContext(ctx).
 		Where("report_number = ?", reportNumber).
 		First(&report).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("报告不存在")
 		}
 		return nil, fmt.Errorf("获取报告失败: %w", err)
@@ -759,12 +761,12 @@ func (s *pdfReportService) generateKeyPair() error {
 	}
 
 	// 确保目录存在
-	if err := os.MkdirAll(filepath.Dir(s.config.SignatureKeyFile), 0700); err != nil {
+	if err := os.MkdirAll(filepath.Dir(s.config.SignatureKeyFile), 0o700); err != nil {
 		return err
 	}
 
 	// 保存私钥
-	privateKeyFile, err := os.OpenFile(s.config.SignatureKeyFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	privateKeyFile, err := os.OpenFile(s.config.SignatureKeyFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600)
 	if err != nil {
 		return err
 	}

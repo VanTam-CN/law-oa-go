@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/security"
 
@@ -689,6 +690,9 @@ func findEntityByNormalizedIdentityTx(tx *gorm.DB, candidate *subjectRegistratio
 			return &entity, nil
 		}
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	return nil, nil
 }
 
@@ -1263,10 +1267,7 @@ func (s *SubjectRecheckService) RequireEffectiveSubject(ctx context.Context, cas
 	if strings.TrimSpace(caseModel.ConflictCheckID) == "" {
 		return NewSubjectWorkflowError("CONFLICT_CHECK_REQUIRED", fmt.Sprintf("案件尚未关联可用的冲突复核记录，已阻止：%s", action))
 	}
-	if err := s.RequireConflictDisposition(ctx, caseModel.ConflictCheckID, action); err != nil {
-		return err
-	}
-	return nil
+	return s.RequireConflictDisposition(ctx, caseModel.ConflictCheckID, action)
 }
 
 // RequireConflictDisposition is the final gate used immediately before an
@@ -1312,7 +1313,7 @@ func (s *SubjectRecheckService) RequireConflictDisposition(ctx context.Context, 
 	case "waiver_requested":
 		if err := s.requireCurrentApprovedWaiver(ctx, checkID, &record); err == nil {
 			return nil
-		} else if workflowErr, ok := err.(*SubjectWorkflowError); ok && workflowErr.Code != "WAIVER_PENDING" {
+		} else if workflowErr := (*SubjectWorkflowError)(nil); errors.As(err, &workflowErr) && workflowErr.Code != "WAIVER_PENDING" {
 			return workflowErr
 		}
 		return NewSubjectWorkflowError("WAIVER_PENDING", fmt.Sprintf("豁免处置尚未生效，已阻止：%s", action))

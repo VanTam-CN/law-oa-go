@@ -3,10 +3,12 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/models"
 )
 
@@ -86,7 +88,7 @@ func (s *OffboardingServiceImpl) InitiateOffboarding(ctx context.Context, req *O
 		if err == nil {
 			return fmt.Errorf("该用户已有未完成的交接记录")
 		}
-		if err != gorm.ErrRecordNotFound {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
 		}
 
@@ -168,7 +170,6 @@ func (s *OffboardingServiceImpl) InitiateOffboarding(ctx context.Context, req *O
 		result = record
 		return nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -241,7 +242,7 @@ func (s *OffboardingServiceImpl) CancelOffboarding(ctx context.Context, id uint,
 	return s.db.WithContext(ctx).Model(&models.OffboardingRecord{}).
 		Where("id = ? AND status IN ?", id, []string{"pending", "in_progress"}).
 		Updates(map[string]interface{}{
-			"status": "cancelled",
+			"status": "canceled",
 			"notes":  gorm.Expr("CONCAT(IFNULL(notes, ''), '\\n取消原因: ', ?)", reason),
 		}).Error
 }

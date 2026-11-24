@@ -1,0 +1,8 @@
+--- job 138432773759 ---
+2026-11-24T12:13:07.7418803Z ##[error]Process completed with exit code 1.
+--- job 138432773814 ---
+2026-11-24T12:08:03.0654106Z ##[error]Process completed with exit code 1.
+--- job 138432773896 ---
+2026-11-24T12:07:56.9593200Z [36;1msudo systemctl start mysql[0m
+2026-11-24T12:07:56.9593578Z [36;1mmysql -u root -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"[0m
+2026-11-24T12:08:04.4001072Z ##[error]Process completed with exit code 1.

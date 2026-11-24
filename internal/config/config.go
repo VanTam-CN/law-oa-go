@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/base64"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -219,7 +220,8 @@ func load(validateApplication bool) (*Config, error) {
 
 	// 如果配置文件存在，则读取
 	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+		var cfgNotFound viper.ConfigFileNotFoundError
+		if !errors.As(err, &cfgNotFound) {
 			return nil, fmt.Errorf("failed to read config file: %w", err)
 		}
 	}

@@ -12,22 +12,22 @@ import (
 
 // Testing Repository Errors
 var (
-	ErrTestSuiteNotFound       = errors.New("test suite not found")
+	ErrTestSuiteNotFound      = errors.New("test suite not found")
 	ErrTestSuiteAlreadyExists = errors.New("test suite already exists")
 	ErrTestSuiteInvalid       = errors.New("invalid test suite data")
 
-	ErrTestExecutionNotFound  = errors.New("test execution not found")
-	ErrTestExecutionInvalid   = errors.New("invalid test execution data")
+	ErrTestExecutionNotFound = errors.New("test execution not found")
+	ErrTestExecutionInvalid  = errors.New("invalid test execution data")
 
-	ErrTestResultNotFound     = errors.New("test result not found")
-	ErrTestResultInvalid      = errors.New("invalid test result data")
+	ErrTestResultNotFound = errors.New("test result not found")
+	ErrTestResultInvalid  = errors.New("invalid test result data")
 
-	ErrUserSessionNotFound    = errors.New("user session not found")
-	ErrUserEventNotFound      = errors.New("user event not found")
+	ErrUserSessionNotFound = errors.New("user session not found")
+	ErrUserEventNotFound   = errors.New("user event not found")
 
 	ErrAnalyticsReportNotFound = errors.New("analytics report not found")
-	ErrSystemMetricNotFound   = errors.New("system metric not found")
-	ErrAlertNotFound          = errors.New("alert not found")
+	ErrSystemMetricNotFound    = errors.New("system metric not found")
+	ErrAlertNotFound           = errors.New("alert not found")
 )
 
 // TestRepository 测试数据仓库接口
@@ -915,12 +915,12 @@ type TestExecutionListParams struct {
 }
 
 type TestResultListParams struct {
-	Page         int
-	PageSize     int
-	ExecutionID  string
-	Status       models.TestResultStatus
-	TestType     string
-	OrderBy      string
+	Page        int
+	PageSize    int
+	ExecutionID string
+	Status      models.TestResultStatus
+	TestType    string
+	OrderBy     string
 }
 
 type UserEventListParams struct {
@@ -946,14 +946,14 @@ type UserSessionListParams struct {
 }
 
 type AnalyticsReportListParams struct {
-	Page       int
-	PageSize   int
-	ReportType models.ReportType
-	Status     models.ReportStatus
+	Page        int
+	PageSize    int
+	ReportType  models.ReportType
+	Status      models.ReportStatus
 	GeneratedBy string
-	StartTime  time.Time
-	EndTime    time.Time
-	OrderBy    string
+	StartTime   time.Time
+	EndTime     time.Time
+	OrderBy     string
 }
 
 type SystemMetricListParams struct {

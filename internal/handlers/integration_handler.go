@@ -16,6 +16,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // IntegrationHandler 集成处理器
@@ -208,8 +209,34 @@ func (h *IntegrationHandler) validateCaseIntakeApproval(c *gin.Context, req *ser
 		common.NewAPIError(c, http.StatusConflict, "INTAKE_CONFLICT_CHECK_MUST_PRECEDE_APPROVAL", "接案审批必须使用已绑定的冲突检测结果，不支持审批接口自动补跑检测")
 		return false
 	}
+	// Authorize before borrowing the transaction connection. The locked read
+	// below pins the authorized client even if another save switches it.
+	var scoped struct{ ClientID uint }
+	if err := h.db.WithContext(c.Request.Context()).Table("case_intakes").Select("client_id").Where("id = ?", intakeID).Take(&scoped).Error; err != nil {
+		common.NewAPIError(c, http.StatusConflict, "INTAKE_NOT_FOUND", "关联接案记录不存在，已阻止提交")
+		return false
+	}
+	if !authorizeIntakeClient(c, h.authz, scoped.ClientID) {
+		return false
+	}
+	// Native saves lock the same parent before changing its parties.
+	var accepted bool
+	err := h.db.WithContext(c.Request.Context()).Transaction(func(tx *gorm.DB) error {
+		accepted = validateStoredIntakeApproval(c, req, actorID, intakeID, scoped.ClientID, tx)
+		return nil
+	})
+	if err != nil {
+		if !c.Writer.Written() {
+			common.NewAPIError(c, http.StatusServiceUnavailable, "INTAKE_APPROVAL_GATE_UNAVAILABLE", "接案快照读取失败，请稍后重试")
+		}
+		return false
+	}
+	return accepted
+}
+
+func validateStoredIntakeApproval(c *gin.Context, req *services.IntegrationRequest, actorID, intakeID string, authorizedClient uint, tx *gorm.DB) bool {
 	var intake map[string]interface{}
-	if err := h.db.Table("case_intakes").Where("id = ?", intakeID).Take(&intake).Error; err != nil {
+	if err := tx.Clauses(clause.Locking{Strength: "SHARE"}).Table("case_intakes").Where("id = ? AND client_id = ?", intakeID, authorizedClient).Take(&intake).Error; err != nil {
 		common.NewAPIError(c, http.StatusConflict, "INTAKE_NOT_FOUND", "关联接案记录不存在，已阻止提交")
 		return false
 	}
@@ -220,6 +247,11 @@ func (h *IntegrationHandler) validateCaseIntakeApproval(c *gin.Context, req *ser
 	}
 	if strings.TrimSpace(fmt.Sprint(intake["status"])) != "conflict_ready" {
 		common.NewAPIError(c, http.StatusConflict, "INTAKE_CONFLICT_RESULT_STALE", "接案事实已变化或尚未完成检测，请重新确认并运行利益冲突检查")
+		return false
+	}
+	revision := intakeDraftRevisionFor(intakeID, intake["metadata"])
+	if expected, exists := req.Metadata["intake_revision"]; exists && expected != revision {
+		common.NewAPIError(c, http.StatusConflict, "INTAKE_CONFLICT_RESULT_STALE", "接案版本已更新，请重新打开后核对")
 		return false
 	}
 	if req.CaseCreationConfig != nil {
@@ -237,10 +269,19 @@ func (h *IntegrationHandler) validateCaseIntakeApproval(c *gin.Context, req *ser
 		}
 	}
 	checkID := integrationMetadataString(req.Metadata, "conflict_check_id")
+	nestedCheckID := ""
+	if result, ok := req.Metadata["conflict_result"].(map[string]interface{}); ok {
+		nestedCheckID = firstIntegrationMetadataString(result, "checkId", "check_id", "id")
+	}
+	// The flat key and the frozen result each identify one check. When both
+	// are present they must name the same check, otherwise the payload is
+	// ambiguous and must fail closed instead of silently picking one.
+	if nestedCheckID != "" && checkID != "" && nestedCheckID != checkID {
+		common.NewAPIError(c, http.StatusConflict, "CONFLICT_CHECK_LINK_AMBIGUOUS", "提交的冲突检测编号存在歧义，已阻止提交")
+		return false
+	}
 	if checkID == "" {
-		if result, ok := req.Metadata["conflict_result"].(map[string]interface{}); ok {
-			checkID = firstIntegrationMetadataString(result, "checkId", "check_id", "id")
-		}
+		checkID = nestedCheckID
 	}
 	intakeMetadata := integrationJSONMap(intake["metadata"])
 	if checkID == "" || integrationMetadataString(intakeMetadata, "conflict_check_id") != checkID {
@@ -252,7 +293,7 @@ func (h *IntegrationHandler) validateCaseIntakeApproval(c *gin.Context, req *ser
 		CheckStatus string
 		CheckResult string
 	}
-	if err := h.db.Table("conflict_check_records").Select("check_id, check_status, check_result").Where("check_id = ?", checkID).Take(&record).Error; err != nil || !strings.EqualFold(strings.TrimSpace(record.CheckStatus), "COMPLETED") {
+	if err := tx.Table("conflict_check_records").Select("check_id, check_status, check_result").Where("check_id = ?", checkID).Take(&record).Error; err != nil || !strings.EqualFold(strings.TrimSpace(record.CheckStatus), "COMPLETED") {
 		common.NewAPIError(c, http.StatusConflict, "CONFLICT_RESULT_NOT_COMPLETED", "关联冲突检测尚未完成，已阻止提交")
 		return false
 	}
@@ -264,6 +305,13 @@ func (h *IntegrationHandler) validateCaseIntakeApproval(c *gin.Context, req *ser
 	if req.Metadata == nil {
 		req.Metadata = map[string]interface{}{}
 	}
+	parties, err := approvalIntakeParties(tx, intakeID, intake["client_id"])
+	if err != nil {
+		common.NewAPIError(c, http.StatusServiceUnavailable, "INTAKE_PARTIES_UNAVAILABLE", "无法核对接案主体，请稍后重试")
+		return false
+	}
+	req.Metadata["parties"] = parties
+	req.Metadata["intake_revision"] = revision
 	req.Metadata["conflict_check_id"] = record.CheckID
 	req.Metadata["conflict_result"] = canonicalResult
 	return true
@@ -286,7 +334,13 @@ func integrationMetadataString(metadata map[string]interface{}, key string) stri
 	if metadata == nil {
 		return ""
 	}
-	return strings.TrimSpace(fmt.Sprint(metadata[key]))
+	value := metadata[key]
+	if value == nil {
+		// A present-but-null key carries no identity. Treating it as a
+		// non-empty "<nil>" string would silently disable matching gates.
+		return ""
+	}
+	return strings.TrimSpace(fmt.Sprint(value))
 }
 
 func firstIntegrationMetadataString(metadata map[string]interface{}, keys ...string) string {

@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -262,7 +263,7 @@ func (s *AuthorizationService) canAccessDocument(ctx context.Context, actor Auth
 	}
 	doc, err := s.docRepo.FindByID(ctx, documentID)
 	if err != nil {
-		if err == repositories.ErrDocumentNotFound {
+		if errors.Is(err, repositories.ErrDocumentNotFound) {
 			return false, nil
 		}
 		return false, err

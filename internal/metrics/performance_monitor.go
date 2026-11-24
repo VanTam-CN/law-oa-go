@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"runtime"
 	"time"
+
+	"law-oa-go/internal/safeconv"
 )
 
 // PerformanceMonitor 性能监控器
@@ -190,8 +192,8 @@ func (pm *PerformanceMonitor) GetGCStats() GCStats {
 	return GCStats{
 		NumGC:         memStats.NumGC,
 		GCCPUFraction: memStats.GCCPUFraction,
-		LastGCPause:   time.Duration(memStats.PauseNs[(memStats.NumGC+255)%256]),
-		TotalGCPause:  time.Duration(memStats.PauseTotalNs),
+		LastGCPause:   time.Duration(safeconv.Int64(memStats.PauseNs[(memStats.NumGC+255)%256])),
+		TotalGCPause:  time.Duration(safeconv.Int64(memStats.PauseTotalNs)),
 	}
 }
 

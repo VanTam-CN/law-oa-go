@@ -1,0 +1,19 @@
+参数校验: success
+检查Fuzzing支持: success
+数据库Fuzzing (Fuzz_QueryBuilder_Where): success
+验证器Fuzzing (Fuzz_CaseValidator_Validate): success
+安全组件Fuzzing (jwt-validation): success
+验证器Fuzzing (Fuzz_ClientValidator_Validate): success
+验证器Fuzzing (Fuzz_LawyerValidator_Validate): success
+数据库Fuzzing (Fuzz_QueryBuilder_Order): success
+并发Fuzzing (Fuzz_WorkerPool_SubmitTask): success
+缓存Fuzzing (Fuzz_CacheService_SetAndGet): success
+并发Fuzzing (Fuzz_ConcurrentService_SubmitTask): success
+完整Fuzzing测试: success
+数据库Fuzzing (Fuzz_QueryBuilder_Like): success
+缓存Fuzzing (Fuzz_LayeredCache_Get): success
+并发Fuzzing (Fuzz_RateLimiter_Allow): success
+并发Fuzzing (Fuzz_CircuitBreaker_Execute): success
+缓存Fuzzing (Fuzz_CacheService_ConcurrentAccess): success
+缓存Fuzzing (Fuzz_CacheService_SetWithExpiration): success
+Fuzzing测试汇总报告: success

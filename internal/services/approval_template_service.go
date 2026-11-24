@@ -308,10 +308,9 @@ func (s *ApprovalTemplateService) processNextStep(node *models.ApprovalNode) err
 		if len(nextStepNodes) > 0 {
 			// 有下一步，更新审批的当前审批人
 			return s.updateCurrentApprover(node.ApprovalID, nextStepNodes[0])
-		} else {
-			// 没有下一步，审批完成
-			return s.updateApprovalStatus(node.ApprovalID, models.ApprovalStatusApproved)
 		}
+		// 没有下一步，审批完成
+		return s.updateApprovalStatus(node.ApprovalID, models.ApprovalStatusApproved)
 	}
 
 	return nil

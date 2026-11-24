@@ -135,7 +135,7 @@ type PaymentMilestoneResponse struct {
 type ListContractsRequest struct {
 	Page          int    `json:"page" form:"page" binding:"min=1"`
 	PageSize      int    `json:"page_size" form:"page_size" binding:"min=1,max=100"`
-	Status        string `json:"status" form:"status" binding:"omitempty,oneof=draft active suspended completed cancelled"`
+	Status        string `json:"status" form:"status" binding:"omitempty,oneof=draft active suspended completed canceled"`
 	ContractType  string `json:"contract_type" form:"contract_type" binding:"omitempty,oneof=original supplementary"`
 	ClientID      uint   `json:"client_id" form:"client_id"`
 	CaseID        uint   `json:"case_id" form:"case_id"`
@@ -705,7 +705,7 @@ func (s *ContractService) GetContractStats(ctx context.Context) (*ContractStats,
 			stats.SuspendedContracts = sc.Count
 		case "completed":
 			stats.CompletedContracts = sc.Count
-		case "cancelled":
+		case "canceled":
 			stats.CancelledContracts = sc.Count
 		}
 	}
@@ -744,7 +744,7 @@ type ContractStats struct {
 	ActiveContracts       int64   `json:"active_contracts"`
 	SuspendedContracts    int64   `json:"suspended_contracts"`
 	CompletedContracts    int64   `json:"completed_contracts"`
-	CancelledContracts    int64   `json:"cancelled_contracts"`
+	CancelledContracts    int64   `json:"canceled_contracts"`
 	TotalContractAmount   float64 `json:"total_contract_amount"`
 	NewContractsThisMonth int64   `json:"new_contracts_this_month"`
 }

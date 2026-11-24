@@ -2,11 +2,13 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/security"
 )
@@ -96,7 +98,7 @@ func (r *entityRepository) GetByID(ctx context.Context, id uint) (*models.Entity
 		Preload("NameHistory").
 		First(&entity, id).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrRecordNotFound
 		}
 		return nil, fmt.Errorf("获取实体失败: %w", err)
@@ -640,7 +642,7 @@ func (r *conflictCheckRepository) GetConflictCheck(ctx context.Context, id uint)
 		Preload("ConflictDetails.MatchedCase").
 		First(&check, id).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrRecordNotFound
 		}
 		return nil, fmt.Errorf("获取冲突检查记录失败: %w", err)

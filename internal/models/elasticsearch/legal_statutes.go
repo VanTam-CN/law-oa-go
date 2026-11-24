@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"strings"
 
 	"github.com/elastic/go-elasticsearch/v8"
@@ -13,30 +14,30 @@ import (
 
 // LegalStatuteDocument 法条ES文档结构
 type LegalStatuteDocument struct {
-	ID                 int    `json:"id"`
-	StatuteNumber      string `json:"statute_number"`
-	Title              string `json:"title"`
-	Content            string `json:"content"`
-	LawName            string `json:"law_name"`
-	Chapter            string `json:"chapter"`
-	Section            string `json:"section"`
-	Part               string `json:"part"`
-	Category           Category `json:"category"`
-	EffectiveDate      string `json:"effective_date"`
-	ExpiryDate         string `json:"expiry_date"`
-	PublishingAuthority string `json:"publishing_authority"`
-	Status             string `json:"status"`
-	HierarchyLevel     int    `json:"hierarchy_level"`
-	ParentStatuteID    int    `json:"parent_statute_id"`
-	OrderInHierarchy   int    `json:"order_in_hierarchy"`
-	Tags               []string `json:"tags"`
-	Keywords           []string `json:"keywords"`
-	CreatedAt          string `json:"created_at"`
-	UpdatedAt          string `json:"updated_at"`
-	ContentLength      int    `json:"content_length"`
-	ViewCount          int    `json:"view_count"`
-	FavoriteCount      int    `json:"favorite_count"`
-	SearchWeight       float64 `json:"search_weight"`
+	ID                  int      `json:"id"`
+	StatuteNumber       string   `json:"statute_number"`
+	Title               string   `json:"title"`
+	Content             string   `json:"content"`
+	LawName             string   `json:"law_name"`
+	Chapter             string   `json:"chapter"`
+	Section             string   `json:"section"`
+	Part                string   `json:"part"`
+	Category            Category `json:"category"`
+	EffectiveDate       string   `json:"effective_date"`
+	ExpiryDate          string   `json:"expiry_date"`
+	PublishingAuthority string   `json:"publishing_authority"`
+	Status              string   `json:"status"`
+	HierarchyLevel      int      `json:"hierarchy_level"`
+	ParentStatuteID     int      `json:"parent_statute_id"`
+	OrderInHierarchy    int      `json:"order_in_hierarchy"`
+	Tags                []string `json:"tags"`
+	Keywords            []string `json:"keywords"`
+	CreatedAt           string   `json:"created_at"`
+	UpdatedAt           string   `json:"updated_at"`
+	ContentLength       int      `json:"content_length"`
+	ViewCount           int      `json:"view_count"`
+	FavoriteCount       int      `json:"favorite_count"`
+	SearchWeight        float64  `json:"search_weight"`
 }
 
 // Category 法条分类
@@ -64,25 +65,25 @@ type LegalSearchRequest struct {
 
 // LegalSearchResponse 法条搜索响应
 type LegalSearchResponse struct {
-	Total      int64                  `json:"total"`
-	Page       int                    `json:"page"`
-	PageSize   int                    `json:"page_size"`
-	Documents  []LegalStatuteDocument `json:"documents"`
+	Total        int64                  `json:"total"`
+	Page         int                    `json:"page"`
+	PageSize     int                    `json:"page_size"`
+	Documents    []LegalStatuteDocument `json:"documents"`
 	Aggregations map[string]interface{} `json:"aggregations,omitempty"`
-	Suggestions []string              `json:"suggestions,omitempty"`
-	SearchTime  int                   `json:"search_time_ms"`
+	Suggestions  []string               `json:"suggestions,omitempty"`
+	SearchTime   int                    `json:"search_time_ms"`
 }
 
 // LegalStatuteIndexManager 法条索引管理器
 type LegalStatuteIndexManager struct {
-	client   *elasticsearch.Client
+	client    *elasticsearch.Client
 	indexName string
 }
 
 // NewLegalStatuteIndexManager 创建法条索引管理器
 func NewLegalStatuteIndexManager(client *elasticsearch.Client) *LegalStatuteIndexManager {
 	return &LegalStatuteIndexManager{
-		client:   client,
+		client:    client,
 		indexName: "legal_statutes",
 	}
 }
@@ -91,7 +92,7 @@ func NewLegalStatuteIndexManager(client *elasticsearch.Client) *LegalStatuteInde
 func (m *LegalStatuteIndexManager) CreateIndex() error {
 	mapping, err := m.loadMapping()
 	if err != nil {
-		return fmt.Errorf("加载索引映射失败: %v", err)
+		return fmt.Errorf("加载索引映射失败: %w", err)
 	}
 
 	req := esapi.IndicesCreateRequest{
@@ -101,7 +102,7 @@ func (m *LegalStatuteIndexManager) CreateIndex() error {
 
 	res, err := req.Do(context.Background(), m.client)
 	if err != nil {
-		return fmt.Errorf("创建索引失败: %v", err)
+		return fmt.Errorf("创建索引失败: %w", err)
 	}
 	defer res.Body.Close()
 
@@ -121,11 +122,11 @@ func (m *LegalStatuteIndexManager) DeleteIndex() error {
 
 	res, err := req.Do(context.Background(), m.client)
 	if err != nil {
-		return fmt.Errorf("删除索引失败: %v", err)
+		return fmt.Errorf("删除索引失败: %w", err)
 	}
 	defer res.Body.Close()
 
-	if res.IsError() && res.StatusCode != 404 {
+	if res.IsError() && res.StatusCode != http.StatusNotFound {
 		return fmt.Errorf("删除索引失败: %s", res.Status())
 	}
 
@@ -137,7 +138,7 @@ func (m *LegalStatuteIndexManager) DeleteIndex() error {
 func (m *LegalStatuteIndexManager) IndexDocument(doc *LegalStatuteDocument) error {
 	docJSON, err := json.Marshal(doc)
 	if err != nil {
-		return fmt.Errorf("序列化文档失败: %v", err)
+		return fmt.Errorf("序列化文档失败: %w", err)
 	}
 
 	req := esapi.IndexRequest{
@@ -149,7 +150,7 @@ func (m *LegalStatuteIndexManager) IndexDocument(doc *LegalStatuteDocument) erro
 
 	res, err := req.Do(context.Background(), m.client)
 	if err != nil {
-		return fmt.Errorf("索引文档失败: %v", err)
+		return fmt.Errorf("索引文档失败: %w", err)
 	}
 	defer res.Body.Close()
 
@@ -192,7 +193,7 @@ func (m *LegalStatuteIndexManager) BulkIndexDocuments(docs []*LegalStatuteDocume
 
 	res, err := req.Do(context.Background(), m.client)
 	if err != nil {
-		return fmt.Errorf("批量索引失败: %v", err)
+		return fmt.Errorf("批量索引失败: %w", err)
 	}
 	defer res.Body.Close()
 
@@ -207,12 +208,12 @@ func (m *LegalStatuteIndexManager) BulkIndexDocuments(docs []*LegalStatuteDocume
 func (m *LegalStatuteIndexManager) Search(req *LegalSearchRequest) (*LegalSearchResponse, error) {
 	query, err := m.buildSearchQuery(req)
 	if err != nil {
-		return nil, fmt.Errorf("构建搜索查询失败: %v", err)
+		return nil, fmt.Errorf("构建搜索查询失败: %w", err)
 	}
 
 	queryJSON, err := json.Marshal(query)
 	if err != nil {
-		return nil, fmt.Errorf("序列化查询失败: %v", err)
+		return nil, fmt.Errorf("序列化查询失败: %w", err)
 	}
 
 	esReq := esapi.SearchRequest{
@@ -222,7 +223,7 @@ func (m *LegalStatuteIndexManager) Search(req *LegalSearchRequest) (*LegalSearch
 
 	res, err := esReq.Do(context.Background(), m.client)
 	if err != nil {
-		return nil, fmt.Errorf("执行搜索失败: %v", err)
+		return nil, fmt.Errorf("执行搜索失败: %w", err)
 	}
 	defer res.Body.Close()
 
@@ -232,7 +233,7 @@ func (m *LegalStatuteIndexManager) Search(req *LegalSearchRequest) (*LegalSearch
 
 	var searchResult map[string]interface{}
 	if err := json.NewDecoder(res.Body).Decode(&searchResult); err != nil {
-		return nil, fmt.Errorf("解析搜索结果失败: %v", err)
+		return nil, fmt.Errorf("解析搜索结果失败: %w", err)
 	}
 
 	return m.parseSearchResponse(searchResult, req)
@@ -256,7 +257,7 @@ func (m *LegalStatuteIndexManager) buildSearchQuery(req *LegalSearchRequest) (ma
 	if req.Query != "" {
 		mainQuery := map[string]interface{}{
 			"multi_match": map[string]interface{}{
-				"query":  req.Query,
+				"query": req.Query,
 				"fields": []string{
 					"title^3",
 					"statute_number^2",
@@ -264,7 +265,7 @@ func (m *LegalStatuteIndexManager) buildSearchQuery(req *LegalSearchRequest) (ma
 					"keywords^2",
 					"law_name^1.5",
 				},
-				"type":   "best_fields",
+				"type":      "best_fields",
 				"fuzziness": "AUTO",
 			},
 		}
@@ -355,11 +356,11 @@ func (m *LegalStatuteIndexManager) buildSearchQuery(req *LegalSearchRequest) (ma
 		query["highlight"] = map[string]interface{}{
 			"fields": map[string]interface{}{
 				"title": map[string]interface{}{
-					"fragment_size": 150,
+					"fragment_size":       150,
 					"number_of_fragments": 3,
 				},
 				"content": map[string]interface{}{
-					"fragment_size": 200,
+					"fragment_size":       200,
 					"number_of_fragments": 5,
 				},
 			},

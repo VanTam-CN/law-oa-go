@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+
 	"law-oa-go/internal/config"
 )
 
@@ -22,10 +24,12 @@ type JWTManager struct {
 	mu     sync.RWMutex
 }
 
-var jwtManager *JWTManager
-var once sync.Once
-var revocationChecker TokenRevocationCheckFunc
-var revocationMu sync.RWMutex
+var (
+	jwtManager        *JWTManager
+	once              sync.Once
+	revocationChecker TokenRevocationCheckFunc
+	revocationMu      sync.RWMutex
+)
 
 type TokenRevocationCheckFunc func(ctx context.Context, tokenString string, claims *JWTClaims) bool
 
@@ -122,7 +126,6 @@ func ParseToken(tokenString string) (*JWTClaims, error) {
 		}
 		return manager.getSecret(), nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +210,10 @@ func GetUserID(c *gin.Context) int {
 	if userID, exists := c.Get("user_id"); exists {
 		switch v := userID.(type) {
 		case uint:
-			return int(v)
+			if v <= math.MaxInt64 {
+				return int(v)
+			}
+			return 0
 		case int:
 			return v
 		}

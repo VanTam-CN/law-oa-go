@@ -1,7 +1,11 @@
 package auth
 
 import (
+	"strconv"
+
 	"github.com/gin-gonic/gin"
+
+	"law-oa-go/internal/safeconv"
 )
 
 // GetUserID 从 Gin 上下文中获取用户ID
@@ -12,9 +16,12 @@ func GetUserID(c *gin.Context) uint {
 		case uint:
 			return v
 		case int:
-			return uint(v)
+			if v >= 0 {
+				return uint(v)
+			}
+			return 0
 		case int64:
-			return uint(v)
+			return uint(safeconv.Uint64(v))
 		case float64:
 			return uint(v)
 		}
@@ -69,8 +76,9 @@ func GetUserIDAsString(c *gin.Context) string {
 	if userID == 0 {
 		return ""
 	}
-	// 简单的 uint 转 string
-	return string(rune(userID))
+	// uint 转十进制字符串（t_745060c0：原 string(rune(userID)) 对 >127 的 ID
+	// 会生成非法 UTF-8 单字节，属真实缺陷，改用 FormatUint）
+	return strconv.FormatUint(uint64(userID), 10)
 }
 
 // IsAuthenticated 检查当前请求是否已认证

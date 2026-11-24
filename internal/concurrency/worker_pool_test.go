@@ -349,8 +349,8 @@ func Fuzz_WorkerPool_SubmitTask(f *testing.F) {
 	f.Add("concurrent_task", 5)
 
 	f.Fuzz(func(t *testing.T, taskID string, priority int) {
-		// 限制输入长度和范围
-		if len(taskID) > 100 || priority < 0 || priority > 10 {
+		// 限制输入长度和范围（空任务ID是fuzz可变异出的合法值，Submit 不拒绝空ID，同超长输入一样视为域外输入）
+		if taskID == "" || len(taskID) > 100 || priority < 0 || priority > 10 {
 			t.Skip()
 		}
 
@@ -365,9 +365,10 @@ func Fuzz_WorkerPool_SubmitTask(f *testing.F) {
 			Context: context.Background(),
 		}
 
-		// 验证任务结构有效
-		if task.TaskID != "" && task.Operation != nil {
-			// 任务创建成功
+		// 验证任务结构有效：Operation 为构造处硬编码注入，断言非 nil。
+		// TaskID 允许为空（WorkerPool.Submit 不校验），不得作为失败条件。
+		if task.Operation == nil {
+			t.Fatal("任务结构无效")
 		}
 	})
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -115,7 +116,7 @@ func (c *AdvancedCacheService) GetWithCacheThroughput(ctx context.Context, key s
 
 	// 2. 尝试从缓存获取
 	val, err := c.client.Get(ctx, fullKey).Result()
-	if err == redis.Nil {
+	if errors.Is(err, redis.Nil) {
 		// 缓存未命中，添加到布隆过滤器
 		c.bloomFilter.Add(cacheKeyData)
 		return &CacheResult{

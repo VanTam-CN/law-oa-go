@@ -42,7 +42,7 @@ func (a *ApprovalAssigner) AssignApprover(approval *models.ApprovalRequest) erro
 	// 获取工作流配置
 	workflow, err := a.workflowRepo.FindByType(approval.WorkflowType)
 	if err != nil {
-		return fmt.Errorf("获取工作流失败: %v", err)
+		return fmt.Errorf("获取工作流失败: %w", err)
 	}
 
 	if workflow == nil {
@@ -53,7 +53,7 @@ func (a *ApprovalAssigner) AssignApprover(approval *models.ApprovalRequest) erro
 	// 解析工作流阶段配置
 	var stages []WorkflowStage
 	if err := json.Unmarshal([]byte(workflow.Stages), &stages); err != nil {
-		return fmt.Errorf("解析工作流阶段失败: %v", err)
+		return fmt.Errorf("解析工作流阶段失败: %w", err)
 	}
 
 	if len(stages) == 0 {
@@ -66,7 +66,7 @@ func (a *ApprovalAssigner) AssignApprover(approval *models.ApprovalRequest) erro
 	// 根据阶段配置分配审批人
 	approver, err := a.findApproverForStage(&firstStage, approval)
 	if err != nil {
-		return fmt.Errorf("分配审批人失败: %v", err)
+		return fmt.Errorf("分配审批人失败: %w", err)
 	}
 	if err := validateIndependentApprover(approval, approver); err != nil {
 		return err

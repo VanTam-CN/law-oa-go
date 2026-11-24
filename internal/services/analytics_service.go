@@ -153,7 +153,7 @@ func (s *SessionService) UpdateSession(ctx context.Context, sessionID string, re
 	// 更新会话信息
 	if req.EndTime != nil {
 		session.EndTime = req.EndTime
-		session.Duration = int64(req.EndTime.Sub(session.StartTime).Milliseconds())
+		session.Duration = req.EndTime.Sub(session.StartTime).Milliseconds()
 		session.IsActive = false
 	}
 

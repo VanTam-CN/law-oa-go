@@ -1,0 +1,18 @@
+# 修复边界：go drift 清单与改动集合一致性
+# 工具: mvdan.cc/gofumpt v0.12.0（本地 go1.26.11 工具链，与 CI run 45390618050 实际下载版本一致）
+# 命令: gofumpt -w -s . （提交 11a3db0，树 4e83cc0 -> 11a3db0）
+
+## 修复提交改动文件数 (git diff --name-only 4e83cc0 11a3db0 | wc -l)
+     147
+
+## 按目录分布
+   2 cmd
+   1 frontend
+ 139 internal
+   5 tests
+
+## 修复后 gofumpt -l . （应为空）
+(exit=0, empty above = clean)
+
+## 修复后 gofmt -l . （应为空）
+(exit=0, empty above = clean)

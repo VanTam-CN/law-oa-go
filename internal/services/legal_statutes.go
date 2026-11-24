@@ -86,7 +86,7 @@ func NewLegalStatuteService(
 func (s *legalStatuteService) CreateStatute(ctx context.Context, req *models.LegalStatuteCreateRequest, userID int) (*models.LegalStatuteResponse, error) {
 	// 验证请求
 	if err := req.Validate(); err != nil {
-		return nil, fmt.Errorf("请求验证失败: %v", err)
+		return nil, fmt.Errorf("请求验证失败: %w", err)
 	}
 
 	// 检查法条编号是否已存在
@@ -96,7 +96,7 @@ func (s *legalStatuteService) CreateStatute(ctx context.Context, req *models.Leg
 
 	// 验证分类是否存在
 	if _, err := s.categoryRepo.GetByID(ctx, req.CategoryID); err != nil {
-		return nil, fmt.Errorf("分类不存在: %v", err)
+		return nil, fmt.Errorf("分类不存在: %w", err)
 	}
 
 	// 创建法条对象
@@ -122,7 +122,7 @@ func (s *legalStatuteService) CreateStatute(ctx context.Context, req *models.Leg
 
 	// 保存到数据库
 	if err := s.statuteRepo.Create(ctx, statute); err != nil {
-		return nil, fmt.Errorf("创建法条失败: %v", err)
+		return nil, fmt.Errorf("创建法条失败: %w", err)
 	}
 
 	// 同步到Elasticsearch
@@ -151,7 +151,7 @@ func (s *legalStatuteService) CreateStatute(ctx context.Context, req *models.Leg
 func (s *legalStatuteService) GetStatuteByID(ctx context.Context, id int, userID int) (*models.LegalStatuteResponse, error) {
 	statute, err := s.statuteRepo.GetByID(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("获取法条失败: %v", err)
+		return nil, fmt.Errorf("获取法条失败: %w", err)
 	}
 
 	// 更新浏览量（这里可以添加浏览量统计逻辑）
@@ -165,7 +165,7 @@ func (s *legalStatuteService) GetStatuteByID(ctx context.Context, id int, userID
 func (s *legalStatuteService) GetStatuteByNumber(ctx context.Context, number string, userID int) (*models.LegalStatuteResponse, error) {
 	statute, err := s.statuteRepo.GetByStatuteNumber(ctx, number)
 	if err != nil {
-		return nil, fmt.Errorf("获取法条失败: %v", err)
+		return nil, fmt.Errorf("获取法条失败: %w", err)
 	}
 
 	// 转换为响应格式
@@ -177,13 +177,13 @@ func (s *legalStatuteService) GetStatuteByNumber(ctx context.Context, number str
 func (s *legalStatuteService) UpdateStatute(ctx context.Context, id int, req *models.LegalStatuteUpdateRequest, userID int) (*models.LegalStatuteResponse, error) {
 	// 验证请求
 	if err := req.Validate(); err != nil {
-		return nil, fmt.Errorf("请求验证失败: %v", err)
+		return nil, fmt.Errorf("请求验证失败: %w", err)
 	}
 
 	// 获取现有法条
 	statute, err := s.statuteRepo.GetByID(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("法条不存在: %v", err)
+		return nil, fmt.Errorf("法条不存在: %w", err)
 	}
 
 	// 检查是否有变更
@@ -222,7 +222,7 @@ func (s *legalStatuteService) UpdateStatute(ctx context.Context, id int, req *mo
 
 	// 更新法条
 	if err := s.statuteRepo.Update(ctx, statute); err != nil {
-		return nil, fmt.Errorf("更新法条失败: %v", err)
+		return nil, fmt.Errorf("更新法条失败: %w", err)
 	}
 
 	// 同步到Elasticsearch
@@ -254,12 +254,12 @@ func (s *legalStatuteService) DeleteStatute(ctx context.Context, id int, userID 
 	// 检查法条是否存在
 	_, err := s.statuteRepo.GetByID(ctx, id)
 	if err != nil {
-		return fmt.Errorf("法条不存在: %v", err)
+		return fmt.Errorf("法条不存在: %w", err)
 	}
 
 	// 删除法条
 	if err := s.statuteRepo.Delete(ctx, id); err != nil {
-		return fmt.Errorf("删除法条失败: %v", err)
+		return fmt.Errorf("删除法条失败: %w", err)
 	}
 
 	// 从Elasticsearch删除
@@ -287,13 +287,13 @@ func (s *legalStatuteService) ListStatutes(ctx context.Context, page, pageSize i
 	// 获取法条列表
 	statutes, err := s.statuteRepo.List(ctx, offset, pageSize)
 	if err != nil {
-		return nil, fmt.Errorf("获取法条列表失败: %v", err)
+		return nil, fmt.Errorf("获取法条列表失败: %w", err)
 	}
 
 	// 获取总数
 	total, err := s.statuteRepo.Count(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("获取法条总数失败: %v", err)
+		return nil, fmt.Errorf("获取法条总数失败: %w", err)
 	}
 
 	// 转换为响应格式
@@ -317,7 +317,7 @@ func (s *legalStatuteService) ListStatutes(ctx context.Context, page, pageSize i
 func (s *legalStatuteService) SearchStatutes(ctx context.Context, req *models.LegalSearchRequest, userID int) (*models.LegalSearchResponse, error) {
 	// 验证请求
 	if err := req.Validate(); err != nil {
-		return nil, fmt.Errorf("请求验证失败: %v", err)
+		return nil, fmt.Errorf("请求验证失败: %w", err)
 	}
 
 	start := time.Now()
@@ -397,31 +397,31 @@ func (s *legalStatuteService) searchWithDatabase(ctx context.Context, req *model
 	if req.Query != "" {
 		statutes, err = s.statuteRepo.SearchByKeyword(ctx, req.Query, offset, req.PageSize)
 		if err != nil {
-			return nil, fmt.Errorf("关键词搜索失败: %v", err)
+			return nil, fmt.Errorf("关键词搜索失败: %w", err)
 		}
 		// 估算总数（简化实现）
 		total = int64(len(statutes))
 	} else if req.CategoryID > 0 {
 		statutes, err = s.statuteRepo.FindByCategory(ctx, req.CategoryID, offset, req.PageSize)
 		if err != nil {
-			return nil, fmt.Errorf("分类搜索失败: %v", err)
+			return nil, fmt.Errorf("分类搜索失败: %w", err)
 		}
 		// 获取分类下的法条总数（简化实现）
 		total = int64(len(statutes))
 	} else if req.LawName != "" {
 		statutes, err = s.statuteRepo.FindByLawName(ctx, req.LawName, offset, req.PageSize)
 		if err != nil {
-			return nil, fmt.Errorf("法律名称搜索失败: %v", err)
+			return nil, fmt.Errorf("法律名称搜索失败: %w", err)
 		}
 		total = int64(len(statutes))
 	} else {
 		statutes, err = s.statuteRepo.List(ctx, offset, req.PageSize)
 		if err != nil {
-			return nil, fmt.Errorf("获取法条列表失败: %v", err)
+			return nil, fmt.Errorf("获取法条列表失败: %w", err)
 		}
 		total, err = s.statuteRepo.Count(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("获取法条总数失败: %v", err)
+			return nil, fmt.Errorf("获取法条总数失败: %w", err)
 		}
 	}
 
@@ -450,7 +450,7 @@ func (s *legalStatuteService) GetSearchSuggestions(ctx context.Context, query st
 
 	statutes, err := s.statuteRepo.SearchByKeyword(ctx, query, 0, 10)
 	if err != nil {
-		return nil, fmt.Errorf("获取搜索建议失败: %v", err)
+		return nil, fmt.Errorf("获取搜索建议失败: %w", err)
 	}
 
 	seen := make(map[string]struct{})
@@ -505,13 +505,13 @@ func (s *legalStatuteService) GetRelatedStatutes(ctx context.Context, statuteID 
 		// 获取当前法条
 		current, err := s.statuteRepo.GetByID(ctx, statuteID)
 		if err != nil {
-			return nil, fmt.Errorf("获取当前法条失败: %v", err)
+			return nil, fmt.Errorf("获取当前法条失败: %w", err)
 		}
 
 		// 查找同分类的其他法条
 		statutes, err = s.statuteRepo.FindByCategory(ctx, current.CategoryID, 0, limit+1)
 		if err != nil {
-			return nil, fmt.Errorf("查找相关法条失败: %v", err)
+			return nil, fmt.Errorf("查找相关法条失败: %w", err)
 		}
 
 		// 过滤掉当前法条
@@ -538,7 +538,7 @@ func (s *legalStatuteService) GetRelatedStatutes(ctx context.Context, statuteID 
 func (s *legalStatuteService) GetCategories(ctx context.Context) ([]*models.LegalCategoryResponse, error) {
 	categories, err := s.categoryRepo.List(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("获取分类列表失败: %v", err)
+		return nil, fmt.Errorf("获取分类列表失败: %w", err)
 	}
 
 	responses := make([]*models.LegalCategoryResponse, 0, len(categories))
@@ -579,7 +579,7 @@ func (s *legalStatuteService) GetStatutesByCategory(ctx context.Context, categor
 
 	statutes, err := s.statuteRepo.FindByCategory(ctx, categoryID, offset, pageSize)
 	if err != nil {
-		return nil, fmt.Errorf("获取分类法条失败: %v", err)
+		return nil, fmt.Errorf("获取分类法条失败: %w", err)
 	}
 
 	// 简化总数计算
@@ -605,7 +605,7 @@ func (s *legalStatuteService) GetStatutesByCategory(ctx context.Context, categor
 func (s *legalStatuteService) GetTags(ctx context.Context) ([]*models.LegalTagResponse, error) {
 	tags, err := s.tagRepo.List(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("获取标签列表失败: %v", err)
+		return nil, fmt.Errorf("获取标签列表失败: %w", err)
 	}
 
 	responses := make([]*models.LegalTagResponse, 0, len(tags))
@@ -628,7 +628,7 @@ func (s *legalStatuteService) GetTags(ctx context.Context) ([]*models.LegalTagRe
 func (s *legalStatuteService) GetPopularTags(ctx context.Context, limit int) ([]*models.LegalTagResponse, error) {
 	tags, err := s.tagRepo.GetPopularTags(ctx, limit)
 	if err != nil {
-		return nil, fmt.Errorf("获取热门标签失败: %v", err)
+		return nil, fmt.Errorf("获取热门标签失败: %w", err)
 	}
 
 	responses := make([]*models.LegalTagResponse, 0, len(tags))
@@ -652,13 +652,13 @@ func (s *legalStatuteService) AddToFavorites(ctx context.Context, statuteID int,
 	// 检查法条是否存在
 	_, err := s.statuteRepo.GetByID(ctx, statuteID)
 	if err != nil {
-		return fmt.Errorf("法条不存在: %v", err)
+		return fmt.Errorf("法条不存在: %w", err)
 	}
 
 	// 检查是否已收藏
 	favorited, err := s.statuteRepo.IsFavorited(ctx, userID, statuteID)
 	if err != nil {
-		return fmt.Errorf("检查收藏状态失败: %v", err)
+		return fmt.Errorf("检查收藏状态失败: %w", err)
 	}
 	if favorited {
 		return fmt.Errorf("法条已在收藏中")
@@ -686,7 +686,7 @@ func (s *legalStatuteService) GetUserFavorites(ctx context.Context, userID int, 
 
 	statutes, err := s.statuteRepo.GetUserFavorites(ctx, userID, offset, pageSize)
 	if err != nil {
-		return nil, fmt.Errorf("获取收藏列表失败: %v", err)
+		return nil, fmt.Errorf("获取收藏列表失败: %w", err)
 	}
 
 	// 简化总数计算
@@ -713,7 +713,7 @@ func (s *legalStatuteService) GetUserFavorites(ctx context.Context, userID int, 
 func (s *legalStatuteService) GetSearchHistory(ctx context.Context, userID int, limit int) ([]*models.SearchHistoryResponse, error) {
 	histories, err := s.statuteRepo.GetUserSearchHistory(ctx, userID, limit)
 	if err != nil {
-		return nil, fmt.Errorf("获取搜索历史失败: %v", err)
+		return nil, fmt.Errorf("获取搜索历史失败: %w", err)
 	}
 
 	responses := make([]*models.SearchHistoryResponse, 0, len(histories))
@@ -747,7 +747,7 @@ func (s *legalStatuteService) GetCategoryStats(ctx context.Context) ([]*models.C
 func (s *legalStatuteService) GetPopularStatutes(ctx context.Context, limit int, userID int) ([]*models.LegalStatuteResponse, error) {
 	statutes, err := s.statuteRepo.GetPopularStatutes(ctx, limit)
 	if err != nil {
-		return nil, fmt.Errorf("获取热门法条失败: %v", err)
+		return nil, fmt.Errorf("获取热门法条失败: %w", err)
 	}
 
 	responses := make([]*models.LegalStatuteResponse, 0, len(statutes))
@@ -763,7 +763,7 @@ func (s *legalStatuteService) GetPopularStatutes(ctx context.Context, limit int,
 func (s *legalStatuteService) GetRecentUpdates(ctx context.Context, days int) ([]*models.LegalStatuteResponse, error) {
 	statutes, err := s.statuteRepo.GetRecentUpdates(ctx, days)
 	if err != nil {
-		return nil, fmt.Errorf("获取最近更新失败: %v", err)
+		return nil, fmt.Errorf("获取最近更新失败: %w", err)
 	}
 
 	responses := make([]*models.LegalStatuteResponse, 0, len(statutes))
@@ -789,7 +789,7 @@ func (s *legalStatuteService) BulkImportStatutes(ctx context.Context, req *model
 	// 预加载分类映射（category code -> category id）
 	categoryMap, err := s.buildCategoryMap(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("获取分类信息失败: %v", err)
+		return nil, fmt.Errorf("获取分类信息失败: %w", err)
 	}
 
 	for _, item := range req.Statutes {

@@ -351,7 +351,7 @@ func TestDocumentHandler_UploadDocumentSuccess(t *testing.T) {
 	writer.Close()
 
 	// 创建请求
-	req := httptest.NewRequest("POST", "/documents", body)
+	req := httptest.NewRequest(http.MethodPost, "/documents", body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
 	w := httptest.NewRecorder()
@@ -384,7 +384,7 @@ func TestDocumentHandler_GetDocumentSuccess(t *testing.T) {
 
 	router := createTestRouter(handler)
 
-	req := httptest.NewRequest("GET", "/documents/1", nil)
+	req := httptest.NewRequest(http.MethodGet, "/documents/1", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
@@ -407,7 +407,7 @@ func TestDocumentHandler_GetDocumentInvalidID(t *testing.T) {
 	handler := NewTestableDocumentHandler(dummyService)
 	router := createTestRouter(handler)
 
-	req := httptest.NewRequest("GET", "/documents/invalid", nil)
+	req := httptest.NewRequest(http.MethodGet, "/documents/invalid", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
@@ -432,7 +432,7 @@ func TestDocumentHandler_GetDocumentNotFound(t *testing.T) {
 
 	router := createTestRouter(handler)
 
-	req := httptest.NewRequest("GET", "/documents/999", nil)
+	req := httptest.NewRequest(http.MethodGet, "/documents/999", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
@@ -473,7 +473,7 @@ func TestDocumentHandler_UpdateDocumentSuccess(t *testing.T) {
 	}
 	jsonData, _ := json.Marshal(updateReq)
 
-	req := httptest.NewRequest("PUT", "/documents/1", bytes.NewBuffer(jsonData))
+	req := httptest.NewRequest(http.MethodPut, "/documents/1", bytes.NewBuffer(jsonData))
 	req.Header.Set("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
@@ -504,7 +504,7 @@ func TestDocumentHandler_DeleteDocumentSuccess(t *testing.T) {
 
 	router := createTestRouter(handler)
 
-	req := httptest.NewRequest("DELETE", "/documents/1", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/documents/1", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
@@ -537,7 +537,7 @@ func TestDocumentHandler_ListDocumentsSuccess(t *testing.T) {
 
 	router := createTestRouter(handler)
 
-	req := httptest.NewRequest("GET", "/documents?page=1&page_size=10&category=合同", nil)
+	req := httptest.NewRequest(http.MethodGet, "/documents?page=1&page_size=10&category=合同", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
@@ -571,7 +571,7 @@ func TestDocumentHandler_GetDocumentStatsSuccess(t *testing.T) {
 
 	router := createTestRouter(handler)
 
-	req := httptest.NewRequest("GET", "/documents/stats", nil)
+	req := httptest.NewRequest(http.MethodGet, "/documents/stats", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
@@ -595,7 +595,7 @@ func TestDocumentHandler_DownloadDocumentSuccess(t *testing.T) {
 	handler := NewTestableDocumentHandler(dummyService)
 	router := createTestRouter(handler)
 
-	req := httptest.NewRequest("GET", "/documents/1/download", nil)
+	req := httptest.NewRequest(http.MethodGet, "/documents/1/download", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
@@ -627,7 +627,7 @@ func TestDocumentHandler_UploadDocumentMissingFile(t *testing.T) {
 
 	writer.Close()
 
-	req := httptest.NewRequest("POST", "/documents", body)
+	req := httptest.NewRequest(http.MethodPost, "/documents", body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
 	w := httptest.NewRecorder()
@@ -662,7 +662,7 @@ func TestDocumentHandler_UploadDocumentInvalidEntityID(t *testing.T) {
 
 	writer.Close()
 
-	req := httptest.NewRequest("POST", "/documents", body)
+	req := httptest.NewRequest(http.MethodPost, "/documents", body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
 	w := httptest.NewRecorder()
@@ -684,7 +684,7 @@ func TestDocumentHandler_UpdateDocumentInvalidJSON(t *testing.T) {
 	handler := NewTestableDocumentHandler(dummyService)
 	router := createTestRouter(handler)
 
-	req := httptest.NewRequest("PUT", "/documents/1", strings.NewReader("invalid json"))
+	req := httptest.NewRequest(http.MethodPut, "/documents/1", strings.NewReader("invalid json"))
 	req.Header.Set("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
@@ -706,7 +706,7 @@ func TestDocumentHandler_ListDocumentsInvalidQuery(t *testing.T) {
 	handler := NewTestableDocumentHandler(dummyService)
 	router := createTestRouter(handler)
 
-	req := httptest.NewRequest("GET", "/documents?page=invalid", nil)
+	req := httptest.NewRequest(http.MethodGet, "/documents?page=invalid", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
@@ -726,7 +726,7 @@ func TestDocumentHandler_DownloadDocumentInvalidID(t *testing.T) {
 	handler := NewTestableDocumentHandler(dummyService)
 	router := createTestRouter(handler)
 
-	req := httptest.NewRequest("GET", "/documents/invalid/download", nil)
+	req := httptest.NewRequest(http.MethodGet, "/documents/invalid/download", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
@@ -745,7 +745,7 @@ func TestDocumentHandler_ServiceError(t *testing.T) {
 
 	router := createTestRouter(handler)
 
-	req := httptest.NewRequest("GET", "/documents/1", nil)
+	req := httptest.NewRequest(http.MethodGet, "/documents/1", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
@@ -788,7 +788,7 @@ func TestDocumentHandler_BoundaryCases(t *testing.T) {
 
 		writer.Close()
 
-		req := httptest.NewRequest("POST", "/documents", body)
+		req := httptest.NewRequest(http.MethodPost, "/documents", body)
 		req.Header.Set("Content-Type", writer.FormDataContentType())
 
 		w := httptest.NewRecorder()
@@ -821,7 +821,7 @@ func TestDocumentHandler_BoundaryCases(t *testing.T) {
 
 		writer.Close()
 
-		req := httptest.NewRequest("POST", "/documents", body)
+		req := httptest.NewRequest(http.MethodPost, "/documents", body)
 		req.Header.Set("Content-Type", writer.FormDataContentType())
 
 		w := httptest.NewRecorder()
@@ -857,7 +857,7 @@ func TestDocumentHandler_BoundaryCases(t *testing.T) {
 
 		writer.Close()
 
-		req := httptest.NewRequest("POST", "/documents", body)
+		req := httptest.NewRequest(http.MethodPost, "/documents", body)
 		req.Header.Set("Content-Type", writer.FormDataContentType())
 
 		w := httptest.NewRecorder()
@@ -881,7 +881,7 @@ func TestDocumentHandler_Performance(t *testing.T) {
 
 	// 批量测试获取文档
 	for i := 0; i < 100; i++ {
-		req := httptest.NewRequest("GET", "/documents/1", nil)
+		req := httptest.NewRequest(http.MethodGet, "/documents/1", nil)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
