@@ -321,7 +321,11 @@ docker compose up -d --build
 | `PROMETHEUS_ENABLED` | true | 启用 Prometheus 指标 |
 | `PROMETHEUS_PATH` | /metrics | 指标采集路径 |
 | `TRACING_ENABLED` | true | 启用分布式追踪 |
-| `JAEGER_ENDPOINT` | http://jaeger:14268/api/traces | Jaeger 采集端点 |
+| `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` | http://jaeger:4318/v1/traces | OTLP 追踪端点（优先；未设置时回退 `OTEL_EXPORTER_OTLP_ENDPOINT`） |
+| `OTEL_EXPORTER_OTLP_PROTOCOL` | http | OTLP 传输协议：`http`（4318）或 `grpc`（4317） |
+| `JAEGER_ENDPOINT` | （已弃用） | 仅旧配置兼容：exporter=jaeger 时映射为 OTLP（14268 → 4318） |
+
+> 追踪导出已从 Jaeger 导出器迁移到 OTLP。`TracerConfig.exporters` 支持 `otlp`（默认）、`otel`（同 `otlp`）、`jaeger`（兼容别名，走 OTLP）、`zipkin`、`noop`；`otlpProtocol` 可选 `http`/`grpc`。Jaeger all-in-one 需设置 `COLLECTOR_OTLP_ENABLED=true` 并开放 4317/4318 端口。
 
 ### 5.7 OnlyOffice 配置
 

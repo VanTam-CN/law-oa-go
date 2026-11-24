@@ -95,11 +95,6 @@ issues:
       linters:
         - gosec
       text: "G101"
-    # SA1019 tracer: jaeger 导出器仍在默认 exporter 链路中使用，迁移 OTLP 属基础设施改造（跟踪卡）
-    - path: internal/tracing/tracer\.go
-      linters:
-        - staticcheck
-      text: "SA1019"
     # G113 intake_native_transaction: big.Rat.SetString 的 CVE-2022-23772 已在 Go 1.17 stdlib 修复，
     # 模块目标 go 1.25；且该函数已加 >64 字符入参护栏（t_088ba214 代码加固）。跟踪卡复核后移除本排除
     - path: internal/handlers/intake_native_transaction\.go
