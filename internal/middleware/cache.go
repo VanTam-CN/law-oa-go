@@ -36,6 +36,14 @@ type CacheResponse struct {
 	Body    []byte            `json:"body"`
 }
 
+// IntakeNoStore covers responses returned before the response-cache middleware runs.
+func IntakeNoStore(c *gin.Context) {
+	if isIntakeBusinessPath(c.Request.URL.Path) {
+		c.Header("Cache-Control", "private, no-store")
+	}
+	c.Next()
+}
+
 // CacheMiddleware 优化的缓存中间件
 func CacheMiddleware(config CacheConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
