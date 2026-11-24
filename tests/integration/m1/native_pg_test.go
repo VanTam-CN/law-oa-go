@@ -6,11 +6,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"law-oa-go/internal/database"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
+
+	"law-oa-go/internal/database"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -21,7 +23,6 @@ import (
 	"law-oa-go/internal/middleware"
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/router"
-	"strings"
 )
 
 // This target is run explicitly against the dedicated, bootstrapped M1 database.

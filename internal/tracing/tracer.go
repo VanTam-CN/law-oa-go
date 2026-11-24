@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/zipkin"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
-sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -31,8 +31,8 @@ type TracerConfig struct {
 	ServiceVersion     string            `json:"serviceVersion" yaml:"serviceVersion"`
 	Environment        string            `json:"environment" yaml:"environment"`
 	Enabled            bool              `json:"enabled" yaml:"enabled"`
-	SamplingRate       float64           `json:"samplingRate" yaml:"samplingRate"`       // 采样率 0.0-1.0
-	Exporters          []string          `json:"exporters" yaml:"exporters"`             // 导出器: jaeger, zipkin, otlp
+	SamplingRate       float64           `json:"samplingRate" yaml:"samplingRate"` // 采样率 0.0-1.0
+	Exporters          []string          `json:"exporters" yaml:"exporters"`       // 导出器: jaeger, zipkin, otlp
 	JaegerEndpoint     string            `json:"jaegerEndpoint" yaml:"jaegerEndpoint"`
 	ZipkinEndpoint     string            `json:"zipkinEndpoint" yaml:"zipkinEndpoint"`
 	OTLPEndpoint       string            `json:"otlpEndpoint" yaml:"otlpEndpoint"`
@@ -62,7 +62,7 @@ func DefaultTracerConfig() *TracerConfig {
 		MaxExportBatchSize: 512,
 		MaxQueueSize:       2048,
 		ResourceAttributes: map[string]string{
-			"service.namespace": "law-oa",
+			"service.namespace":   "law-oa",
 			"service.instance.id": getInstanceID(),
 		},
 	}
@@ -71,15 +71,15 @@ func DefaultTracerConfig() *TracerConfig {
 // ProductionTracerConfig 返回生产环境追踪器配置
 func ProductionTracerConfig() *TracerConfig {
 	return &TracerConfig{
-		ServiceName:        "law-oa-go",
-		ServiceVersion:     "2.1.0",
-		Environment:        "production",
-		Enabled:            true,
-		SamplingRate:       0.1, // 生产环境10%采样
-		Exporters:          []string{"otlp", "jaeger"},
-		JaegerEndpoint:     "http://jaeger:14268/api/traces",
-		ZipkinEndpoint:     "http://zipkin:9411/api/v2/spans",
-		OTLPEndpoint:       "http://otel-collector:4318/v1/traces",
+		ServiceName:    "law-oa-go",
+		ServiceVersion: "2.1.0",
+		Environment:    "production",
+		Enabled:        true,
+		SamplingRate:   0.1, // 生产环境10%采样
+		Exporters:      []string{"otlp", "jaeger"},
+		JaegerEndpoint: "http://jaeger:14268/api/traces",
+		ZipkinEndpoint: "http://zipkin:9411/api/v2/spans",
+		OTLPEndpoint:   "http://otel-collector:4318/v1/traces",
 		Headers: map[string]string{
 			"authorization": "Bearer ${OTEL_TOKEN}",
 		},
@@ -88,12 +88,12 @@ func ProductionTracerConfig() *TracerConfig {
 		MaxExportBatchSize: 1024,
 		MaxQueueSize:       4096,
 		ResourceAttributes: map[string]string{
-			"service.namespace":     "law-oa",
-			"service.instance.id":   getInstanceID(),
+			"service.namespace":      "law-oa",
+			"service.instance.id":    getInstanceID(),
 			"deployment.environment": "production",
-			"telemetry.sdk.name":    "opentelemetry",
+			"telemetry.sdk.name":     "opentelemetry",
 			"telemetry.sdk.language": "go",
-			"telemetry.sdk.version": "1.28.0",
+			"telemetry.sdk.version":  "1.28.0",
 		},
 	}
 }

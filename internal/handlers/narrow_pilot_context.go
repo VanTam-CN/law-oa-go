@@ -154,9 +154,11 @@ func npExpiry(x *npContext) time.Time {
 	}
 	return expires
 }
+
 func npView(x *npContext) gin.H {
 	return gin.H{"id": x.ID, "context_version": x.Version, "expires_at": npExpiry(x), "candidate": x.Candidate, "saving": x.Saving}
 }
+
 func (n *NarrowPilotHandler) CreateContext(c *gin.Context) {
 	var body struct {
 		Intake   string `json:"intake_id"`
@@ -244,6 +246,7 @@ func (n *NarrowPilotHandler) contextAccess(c *gin.Context) (string, string, *npE
 	}
 	return actor, access, nil
 }
+
 func (n *NarrowPilotHandler) GetContext(c *gin.Context) {
 	actor, access, e := n.contextAccess(c)
 	if e != nil {
@@ -263,6 +266,7 @@ func (n *NarrowPilotHandler) GetContext(c *gin.Context) {
 	}
 	response.data = view
 }
+
 func (n *NarrowPilotHandler) DeleteContext(c *gin.Context) {
 	var body struct {
 		Version int `json:"expected_context_version"`
@@ -285,6 +289,7 @@ func (n *NarrowPilotHandler) DeleteContext(c *gin.Context) {
 	n.dropContext(x.ID)
 	response.data = gin.H{"ended": true}
 }
+
 func (n *NarrowPilotHandler) Turn(c *gin.Context) {
 	var body struct {
 		Request string `json:"request_id"`
@@ -370,6 +375,7 @@ func (n *NarrowPilotHandler) prepareSource(c *gin.Context, row map[string]interf
 	x.Saving = true
 	return &npSourcePack{ContextID: x.ID, ContextVersion: x.Version, CandidateID: field.CandidateID, OriginalRevision: x.Revision, Description: description, Sources: append([]npSource(nil), x.Candidate.Sources...), ReviewedBy: actor, ReviewedAt: time.Now().UTC()}, nil
 }
+
 func (n *NarrowPilotHandler) finishSource(pack *npSourcePack, committed bool) {
 	if pack == nil {
 		return

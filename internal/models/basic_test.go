@@ -73,13 +73,13 @@ func TestBasicModels(t *testing.T) {
 
 	t.Run("UserEvent basic CRUD", func(t *testing.T) {
 		type SimpleUserEvent struct {
-			ID         string `gorm:"primaryKey"`
-			UserID     string `gorm:"size:36;index"`
-			SessionID  string `gorm:"size:36;not null;index"`
-			EventType  string `gorm:"size:100;not null;index"`
-			Element    string `gorm:"size:255"`
-			PageURL    string `gorm:"size:500;index"`
-			Timestamp  string `gorm:"type:datetime;not null;index"`
+			ID        string `gorm:"primaryKey"`
+			UserID    string `gorm:"size:36;index"`
+			SessionID string `gorm:"size:36;not null;index"`
+			EventType string `gorm:"size:100;not null;index"`
+			Element   string `gorm:"size:255"`
+			PageURL   string `gorm:"size:500;index"`
+			Timestamp string `gorm:"type:datetime;not null;index"`
 		}
 
 		err := db.AutoMigrate(&SimpleUserEvent{})
