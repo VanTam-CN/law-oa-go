@@ -430,11 +430,15 @@ jobs:
         PGPASSWORD: synthetic-runner-only
         REDIS_HOST: 127.0.0.1
         REDIS_PORT: '6379'
-        JWT_SECRET: synthetic-isolated-pgo-runner-only
+        ENVIRONMENT: development
         PORT: '18080'
       run: |
+        JWT_SECRET=$(openssl rand -hex 32)
+        export JWT_SECRET
         go run ./cmd/migrate -command bootstrap >"$RUNNER_TEMP/bootstrap.log" 2>&1
         bash scripts/np-first-slice/apply-main-np86.sh >"$RUNNER_TEMP/schema.log" 2>&1
+        # Start with a synthetic user so development startup skips its unrelated demo seed.
+        psql -X -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USERNAME" -d "$DB_DATABASE" -c "INSERT INTO users (username,name,email,password,role,status) VALUES ('pgo-fixture','PGO fixture','pgo@synthetic.invalid','!','lawyer','inactive')" >/dev/null
         for mode in standard optimized; do
           profile=off
           if [[ "$mode" == optimized ]]; then profile="$RUNNER_TEMP/profiles/cpu.prof"; fi
