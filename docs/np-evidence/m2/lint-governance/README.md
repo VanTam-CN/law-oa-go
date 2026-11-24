@@ -65,6 +65,7 @@
 | 基础设施 | jaeger→OTLP（SA1019 排除中）、dev-api-key 后门（G101 排除中，修复或移除） | 基础设施/安全卡 |
 | main.go | run() error 模式改造（exitAfterDefer 排除中） | 架构卡 |
 | 工具 | gosec 固定 v2.30.0 / govulncheck 保持 latest / mnd 暂缓采纳 | 已决策（t_4dfa464a，见 §6/§10） |
+| mnd（魔法数字，default 策略） | 1114（盘点实测 2026-11-24） | 批修卡 t_3e044775（盘点快照见 §6 与 snapshots/mnd-shadow-run-20261124.*，全清后入门禁集） |
 
 ## 6. 工具版本固定决策（验收 3）
 
@@ -75,6 +76,7 @@
   - **gosec 固定 `@v2.30.0`**（已落地 ci.yml）：静态规则扫描器，无漏洞库时效约束，门禁要求发现集可复现（同版本=同发现集）；v2.30.0（2026-10-23 release）即基线 run 45405844993 时 `@latest` 的解析版本，与 gosec 161 条存量债基线**同版本、零漂移**。维护策略：跟随上游 release 每周 bump（`go install ...@vX.Y.Z` 单行改动），升级动作并入 gosec 收紧卡跟踪；bump 后需核对新增规则的发现增量。
   - **govulncheck 保持 `@latest`**：价值在漏洞库时效（DB 每次运行实时拉取），工具本体迭代慢（最新 release v1.1.4，2025-01），固定收益低、反受漂移；「周期性全量重扫」由 security.yml 既有每日 schedule（cron `0 3 * * *`，dependency-scan 报告态）承接，策略成立无需新增 workflow。
   - **mnd 暂缓采纳**（门禁集不含；gomnd 在 golangci-lint v1.64 已 no-op 移除）：启用前置是清存量魔法数字（存量规模未盘点），先 shadow-run 盘点再启用，已立独立卡跟踪（与复杂度族批修卡解耦——mnd 是 lint 配置采纳，不是复杂度重构）。
+  - **mnd 盘点完成 → 路径 b（分批批修后启用）**（t_e885372e，2026-11-24 回填）：shadow-run @3254a6d（golangci-lint v1.64.8 + mnd default 策略，shadow 配置=治理版唯一差异 +mnd，未改门禁文件）实测存量 **1114 条**——assign 455 / argument 350 / condition 159 / operation 72 / return 63 / case 15，分布于 174 文件 / 36 目录，热区 internal/services 406（36.4%）/ internal/database 105 / internal/handlers 98；同次运行门禁集其余 linter 保持 0 findings（与 round8-final 基线一致，shadow 未引入额外发现源）。依阈值（<100 且集中 → 一次批修；否则分批）判**存量过大且分散**：走路径 b 分批修复 + 台账跟踪（ratchet 先例），批修卡 **t_3e044775**；门禁集本次不变，全清后 mnd 加入门禁集（随 golangci-lint v1.64.8 固定版生效，无独立版本问题）并经真实 PR 事件核验 0 findings。快照：`snapshots/mnd-shadow-run-20261124.{txt,json}`（含工具版本、命令与全量分布）。
 
 ## 7. 验证（全部真实执行）
 
@@ -98,7 +100,7 @@
 
 ## 9. 快照清单
 
-见 `MANIFEST.sha256`（16 个文件：治理前基线、round1-8 全过程、PR #53 run 45390618050 与 PR #54 run 45405844993 quality job 原始日志、fuzz job 日志）。
+见 `MANIFEST.sha256`（治理前基线、round1-8 全过程、mnd shadow-run 盘点快照）。注：MANIFEST 中 3 个 `ci-run-*.log`（run 45390618050 / 45405844638 fuzz / 45405844993 quality-full）为 t_088ba214 当时归档于卡附件的 CI 原始日志条目，未入库（仓库内不存在），故库内实际快照 15 个（13 历史 + mnd 盘点 2）；哈希对库内文件全部校验通过。
 
 ## 10. 治理携入 main 承载决策（卡 t_4dfa464a，2026-11-24）
 
