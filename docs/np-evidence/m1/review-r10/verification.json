@@ -1,0 +1,922 @@
+{
+  "baseline": "ce8c79c02f43290d9b7c7e273559ca3804afee7c",
+  "source_and_tests": "89bb420075a18467b1d7651cdf19844888e9e5e3",
+  "environment": "loopback-only disposable PostgreSQL 16.14, synthetic v14 bootstrap + 000086; new disposable database for independent PG rerun",
+  "hermes": {
+    "r9_review": "t_9f7f8a37",
+    "r10_repair": "t_8d64d0d6",
+    "r10_review": "t_b22c48de"
+  },
+  "r9_independent_report_sha256": "7aac620fba8f6c227f12845ebe339beea23cf4a4efd202cd39bf3fe5e5576ca8",
+  "red": {
+    "first-red": {
+      "sha": "5ce60fa573c28991890259066b733f0d6f64fbc2",
+      "argv": [
+        "go",
+        "test",
+        "-race",
+        "-tags",
+        "np_m1_pg",
+        "-count=1",
+        "-json",
+        "./tests/integration/m1",
+        "-run",
+        "^TestM1R7NestedArrayOrigin$"
+      ],
+      "start": "2026-11-23T09:50:35.732286+00:00",
+      "end": "2026-11-23T09:50:46.074085+00:00",
+      "exit": 1,
+      "log_sha256": "09f1e19bee5aff8302638fd48ef6311134be8d3835a95f0b65c9ede34a310e94",
+      "counts": {
+        "pass": 22,
+        "fail": 7,
+        "skip": 0
+      },
+      "failed": [
+        "TestM1R7NestedArrayOrigin/intake/nested_hidden_echo",
+        "TestM1R7NestedArrayOrigin/intake/nested_hidden_edit",
+        "TestM1R7NestedArrayOrigin/intake/nested_hidden_sibling",
+        "TestM1R7NestedArrayOrigin/party/nested_hidden_echo",
+        "TestM1R7NestedArrayOrigin/party/nested_hidden_edit",
+        "TestM1R7NestedArrayOrigin/party/nested_hidden_sibling",
+        "TestM1R7NestedArrayOrigin"
+      ],
+      "array_results": {
+        "TestM1R7NestedArrayOrigin/intake/drop_append": "HTTP=409 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740992, 2], [9007199254740992, 2, 9]] actual=[[9007199254740993], [9007199254740992, 2]] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/intake/drop_lossless": "HTTP=200 prior=[[9007199254740993], [9007199254740989, 2]] expected=[[9007199254740989, 2], [7, 9]] actual=[[9007199254740989, 2], [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/drop_agree": "HTTP=200 prior=[[9007199254740993, 1], [9007199254740993, 2]] expected=[[9007199254740993, 2], [7, 9]] actual=[[9007199254740993, 2], [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/decimal_append": "HTTP=200 prior=[[9007199254740993], [0.0000001], [0.0000001]] expected=[[9007199254740993], [0.0000001], [0.0000001, 7]] actual=[[9007199254740993], [0.0000001], [0.0000001, 7]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/echo": "HTTP=200 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740993], [9007199254740992, 2]] actual=[[9007199254740993], [9007199254740992, 2]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/append_one": "HTTP=200 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740993, 7], [9007199254740992, 2]] actual=[[9007199254740993, 7], [9007199254740992, 2]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/append_distinct_suffixes": "HTTP=200 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740993, 7], [9007199254740992, 2, 9]] actual=[[9007199254740993, 7], [9007199254740992, 2, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/swap_hidden": "HTTP=409 prior=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] expected=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] actual=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/intake/swap_hidden_text": "HTTP=409 prior=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic-hidden\"}, {\"tag\": \"b\"}] expected=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic-hidden\"}, {\"tag\": \"b\"}] actual=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic-hidden\"}, {\"tag\": \"b\"}] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/intake/mixed_prefix": "HTTP=200 prior=[{\"fixed\": 9007199254740992}, [9007199254740993, 1], [9007199254740993, 2]] expected=[{\"fixed\": 9007199254740992}, [9007199254740993, 2], [7, 9]] actual=[{\"fixed\": 9007199254740992}, [9007199254740993, 2], [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/mixed_suffix": "HTTP=200 prior=[[9007199254740993, 1], [9007199254740993, 2], {\"fixed\": 9007199254740992}] expected=[[9007199254740993, 2], {\"fixed\": 9007199254740992}, [7, 9]] actual=[[9007199254740993, 2], {\"fixed\": 9007199254740992}, [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/nested_hidden_echo": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] expected=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}}, 1] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/nested_hidden_edit": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] expected=[{\"tag\": \"changed\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] actual=[{\"tag\": \"changed\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}}, 1] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/nested_hidden_sibling": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] expected=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 2] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}}, 2] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/drop_append": "HTTP=409 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740992, 2], [9007199254740992, 2, 9]] actual=[[9007199254740993], [9007199254740992, 2]] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/party/drop_lossless": "HTTP=200 prior=[[9007199254740993], [9007199254740989, 2]] expected=[[9007199254740989, 2], [7, 9]] actual=[[9007199254740989, 2], [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/drop_agree": "HTTP=200 prior=[[9007199254740993, 1], [9007199254740993, 2]] expected=[[9007199254740993, 2], [7, 9]] actual=[[9007199254740993, 2], [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/decimal_append": "HTTP=200 prior=[[9007199254740993], [0.0000001], [0.0000001]] expected=[[9007199254740993], [0.0000001], [0.0000001, 7]] actual=[[9007199254740993], [0.0000001], [0.0000001, 7]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/echo": "HTTP=200 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740993], [9007199254740992, 2]] actual=[[9007199254740993], [9007199254740992, 2]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/append_one": "HTTP=200 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740993, 7], [9007199254740992, 2]] actual=[[9007199254740993, 7], [9007199254740992, 2]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/append_distinct_suffixes": "HTTP=200 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740993, 7], [9007199254740992, 2, 9]] actual=[[9007199254740993, 7], [9007199254740992, 2, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/swap_hidden": "HTTP=409 prior=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] expected=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] actual=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/party/swap_hidden_text": "HTTP=409 prior=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic-hidden\"}, {\"tag\": \"b\"}] expected=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic-hidden\"}, {\"tag\": \"b\"}] actual=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic-hidden\"}, {\"tag\": \"b\"}] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/party/mixed_prefix": "HTTP=200 prior=[{\"fixed\": 9007199254740992}, [9007199254740993, 1], [9007199254740993, 2]] expected=[{\"fixed\": 9007199254740992}, [9007199254740993, 2], [7, 9]] actual=[{\"fixed\": 9007199254740992}, [9007199254740993, 2], [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/mixed_suffix": "HTTP=200 prior=[[9007199254740993, 1], [9007199254740993, 2], {\"fixed\": 9007199254740992}] expected=[[9007199254740993, 2], {\"fixed\": 9007199254740992}, [7, 9]] actual=[[9007199254740993, 2], {\"fixed\": 9007199254740992}, [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/nested_hidden_echo": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] expected=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}}, 1] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/nested_hidden_edit": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] expected=[{\"tag\": \"changed\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] actual=[{\"tag\": \"changed\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}}, 1] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/nested_hidden_sibling": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] expected=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 2] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}}, 2] same_revision=false same_rows=false"
+      }
+    },
+    "all-red": {
+      "sha": "ccef6f151662611704c054c3c925e4303736e9e7",
+      "argv": [
+        "go",
+        "test",
+        "-race",
+        "-tags",
+        "np_m1_pg",
+        "-count=1",
+        "-json",
+        "./tests/integration/m1",
+        "-run",
+        "^TestM1R7NestedArrayOrigin$"
+      ],
+      "start": "2026-11-23T09:53:32.427260+00:00",
+      "end": "2026-11-23T09:53:52.066286+00:00",
+      "exit": 1,
+      "log_sha256": "229239ac0487f5ee9bc70a175d21c8e6ddc82e961ace579ed7cb27e67d03a8eb",
+      "counts": {
+        "pass": 24,
+        "fail": 13,
+        "skip": 0
+      },
+      "failed": [
+        "TestM1R7NestedArrayOrigin/intake/nested_hidden_echo",
+        "TestM1R7NestedArrayOrigin/intake/nested_hidden_edit",
+        "TestM1R7NestedArrayOrigin/intake/nested_hidden_sibling",
+        "TestM1R7NestedArrayOrigin/intake/rotate_append",
+        "TestM1R7NestedArrayOrigin/intake/cross_objects",
+        "TestM1R7NestedArrayOrigin/intake/swap_visible_siblings",
+        "TestM1R7NestedArrayOrigin/party/nested_hidden_echo",
+        "TestM1R7NestedArrayOrigin/party/nested_hidden_edit",
+        "TestM1R7NestedArrayOrigin/party/nested_hidden_sibling",
+        "TestM1R7NestedArrayOrigin/party/rotate_append",
+        "TestM1R7NestedArrayOrigin/party/cross_objects",
+        "TestM1R7NestedArrayOrigin/party/swap_visible_siblings",
+        "TestM1R7NestedArrayOrigin"
+      ],
+      "array_results": {
+        "TestM1R7NestedArrayOrigin/intake/drop_append": "HTTP=409 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740992, 2], [9007199254740992, 2, 9]] actual=[[9007199254740993], [9007199254740992, 2]] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/intake/drop_lossless": "HTTP=200 prior=[[9007199254740993], [9007199254740989, 2]] expected=[[9007199254740989, 2], [7, 9]] actual=[[9007199254740989, 2], [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/drop_agree": "HTTP=200 prior=[[9007199254740993, 1], [9007199254740993, 2]] expected=[[9007199254740993, 2], [7, 9]] actual=[[9007199254740993, 2], [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/decimal_append": "HTTP=200 prior=[[9007199254740993], [0.0000001], [0.0000001]] expected=[[9007199254740993], [0.0000001], [0.0000001, 7]] actual=[[9007199254740993], [0.0000001], [0.0000001, 7]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/echo": "HTTP=200 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740993], [9007199254740992, 2]] actual=[[9007199254740993], [9007199254740992, 2]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/append_one": "HTTP=200 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740993, 7], [9007199254740992, 2]] actual=[[9007199254740993, 7], [9007199254740992, 2]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/append_distinct_suffixes": "HTTP=200 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740993, 7], [9007199254740992, 2, 9]] actual=[[9007199254740993, 7], [9007199254740992, 2, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/swap_hidden": "HTTP=409 prior=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] expected=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] actual=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/intake/swap_hidden_text": "HTTP=409 prior=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic-hidden\"}, {\"tag\": \"b\"}] expected=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic-hidden\"}, {\"tag\": \"b\"}] actual=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic-hidden\"}, {\"tag\": \"b\"}] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/intake/mixed_prefix": "HTTP=200 prior=[{\"fixed\": 9007199254740992}, [9007199254740993, 1], [9007199254740993, 2]] expected=[{\"fixed\": 9007199254740992}, [9007199254740993, 2], [7, 9]] actual=[{\"fixed\": 9007199254740992}, [9007199254740993, 2], [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/mixed_suffix": "HTTP=200 prior=[[9007199254740993, 1], [9007199254740993, 2], {\"fixed\": 9007199254740992}] expected=[[9007199254740993, 2], {\"fixed\": 9007199254740992}, [7, 9]] actual=[[9007199254740993, 2], {\"fixed\": 9007199254740992}, [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/nested_hidden_echo": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] expected=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}}, 1] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/nested_hidden_edit": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] expected=[{\"tag\": \"changed\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] actual=[{\"tag\": \"changed\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}}, 1] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/nested_hidden_sibling": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] expected=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 2] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}}, 2] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/rotate_append": "HTTP=200 prior=[[9007199254740993, 1], [9007199254740993, 2], 0] expected=[[9007199254740993, 2], 0, [9007199254740993, 1, 7]] actual=[[9007199254740993, 2], 0, [9007199254740992, 1, 7]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/rotate_exact": "HTTP=200 prior=[[11, 1], [11, 2], 0] expected=[[11, 2], 0, [11, 1, 7]] actual=[[11, 2], 0, [11, 1, 7]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/cross_objects": "HTTP=200 prior=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] expected=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] actual=[[0, {\"tag\": \"b\"}], [1, {\"tag\": \"a\"}]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/swap_visible_siblings": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, {\"tag\": \"b\"}, {\"tag\": \"c\"}] expected=[{\"tag\": \"a\", \"child\": {\"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, {\"tag\": \"c\"}, {\"tag\": \"b\"}] actual=[{\"tag\": \"a\", \"child\": {\"external_identifier\": \"inner\"}}, {\"tag\": \"c\"}, {\"tag\": \"b\"}] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/drop_append": "HTTP=409 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740992, 2], [9007199254740992, 2, 9]] actual=[[9007199254740993], [9007199254740992, 2]] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/party/drop_lossless": "HTTP=200 prior=[[9007199254740993], [9007199254740989, 2]] expected=[[9007199254740989, 2], [7, 9]] actual=[[9007199254740989, 2], [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/drop_agree": "HTTP=200 prior=[[9007199254740993, 1], [9007199254740993, 2]] expected=[[9007199254740993, 2], [7, 9]] actual=[[9007199254740993, 2], [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/decimal_append": "HTTP=200 prior=[[9007199254740993], [0.0000001], [0.0000001]] expected=[[9007199254740993], [0.0000001], [0.0000001, 7]] actual=[[9007199254740993], [0.0000001], [0.0000001, 7]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/echo": "HTTP=200 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740993], [9007199254740992, 2]] actual=[[9007199254740993], [9007199254740992, 2]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/append_one": "HTTP=200 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740993, 7], [9007199254740992, 2]] actual=[[9007199254740993, 7], [9007199254740992, 2]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/append_distinct_suffixes": "HTTP=200 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740993, 7], [9007199254740992, 2, 9]] actual=[[9007199254740993, 7], [9007199254740992, 2, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/swap_hidden": "HTTP=409 prior=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] expected=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] actual=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/party/swap_hidden_text": "HTTP=409 prior=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic-hidden\"}, {\"tag\": \"b\"}] expected=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic-hidden\"}, {\"tag\": \"b\"}] actual=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic-hidden\"}, {\"tag\": \"b\"}] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/party/mixed_prefix": "HTTP=200 prior=[{\"fixed\": 9007199254740992}, [9007199254740993, 1], [9007199254740993, 2]] expected=[{\"fixed\": 9007199254740992}, [9007199254740993, 2], [7, 9]] actual=[{\"fixed\": 9007199254740992}, [9007199254740993, 2], [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/mixed_suffix": "HTTP=200 prior=[[9007199254740993, 1], [9007199254740993, 2], {\"fixed\": 9007199254740992}] expected=[[9007199254740993, 2], {\"fixed\": 9007199254740992}, [7, 9]] actual=[[9007199254740993, 2], {\"fixed\": 9007199254740992}, [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/nested_hidden_echo": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] expected=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}}, 1] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/nested_hidden_edit": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] expected=[{\"tag\": \"changed\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] actual=[{\"tag\": \"changed\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}}, 1] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/nested_hidden_sibling": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] expected=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 2] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}}, 2] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/rotate_append": "HTTP=200 prior=[[9007199254740993, 1], [9007199254740993, 2], 0] expected=[[9007199254740993, 2], 0, [9007199254740993, 1, 7]] actual=[[9007199254740993, 2], 0, [9007199254740992, 1, 7]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/rotate_exact": "HTTP=200 prior=[[11, 1], [11, 2], 0] expected=[[11, 2], 0, [11, 1, 7]] actual=[[11, 2], 0, [11, 1, 7]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/cross_objects": "HTTP=200 prior=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] expected=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] actual=[[0, {\"tag\": \"b\"}], [1, {\"tag\": \"a\"}]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/swap_visible_siblings": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, {\"tag\": \"b\"}, {\"tag\": \"c\"}] expected=[{\"tag\": \"a\", \"child\": {\"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, {\"tag\": \"c\"}, {\"tag\": \"b\"}] actual=[{\"tag\": \"a\", \"child\": {\"external_identifier\": \"inner\"}}, {\"tag\": \"c\"}, {\"tag\": \"b\"}] same_revision=false same_rows=false"
+      }
+    },
+    "cut-red": {
+      "sha": "7de7a8c39a1d6566bef936fe155155c395568dfa",
+      "argv": [
+        "go",
+        "test",
+        "-race",
+        "-tags",
+        "np_m1_pg",
+        "-count=1",
+        "-json",
+        "./tests/integration/m1",
+        "-run",
+        "^TestM1R7NestedArrayOrigin$"
+      ],
+      "start": "2026-11-23T10:03:25.600748+00:00",
+      "end": "2026-11-23T10:03:33.344218+00:00",
+      "exit": 1,
+      "log_sha256": "71923426dc017c229d5316ad61507ed2c1742e60c11f11c15843659e74f13dbc",
+      "counts": {
+        "pass": 40,
+        "fail": 3,
+        "skip": 0
+      },
+      "failed": [
+        "TestM1R7NestedArrayOrigin/intake/cut_hidden",
+        "TestM1R7NestedArrayOrigin/party/cut_hidden",
+        "TestM1R7NestedArrayOrigin"
+      ],
+      "array_results": {
+        "TestM1R7NestedArrayOrigin/intake/drop_append": "HTTP=409 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740992, 2], [9007199254740992, 2, 9]] actual=[[9007199254740993], [9007199254740992, 2]] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/intake/drop_lossless": "HTTP=200 prior=[[9007199254740993], [9007199254740989, 2]] expected=[[9007199254740989, 2], [7, 9]] actual=[[9007199254740989, 2], [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/drop_agree": "HTTP=200 prior=[[9007199254740993, 1], [9007199254740993, 2]] expected=[[9007199254740993, 2], [7, 9]] actual=[[9007199254740993, 2], [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/decimal_append": "HTTP=200 prior=[[9007199254740993], [0.0000001], [0.0000001]] expected=[[9007199254740993], [0.0000001], [0.0000001, 7]] actual=[[9007199254740993], [0.0000001], [0.0000001, 7]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/echo": "HTTP=200 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740993], [9007199254740992, 2]] actual=[[9007199254740993], [9007199254740992, 2]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/append_one": "HTTP=200 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740993, 7], [9007199254740992, 2]] actual=[[9007199254740993, 7], [9007199254740992, 2]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/append_distinct_suffixes": "HTTP=200 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740993, 7], [9007199254740992, 2, 9]] actual=[[9007199254740993, 7], [9007199254740992, 2, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/swap_hidden": "HTTP=409 prior=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] expected=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] actual=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/intake/swap_hidden_text": "HTTP=409 prior=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic-hidden\"}, {\"tag\": \"b\"}] expected=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic-hidden\"}, {\"tag\": \"b\"}] actual=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic-hidden\"}, {\"tag\": \"b\"}] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/intake/mixed_prefix": "HTTP=200 prior=[{\"fixed\": 9007199254740992}, [9007199254740993, 1], [9007199254740993, 2]] expected=[{\"fixed\": 9007199254740992}, [9007199254740993, 2], [7, 9]] actual=[{\"fixed\": 9007199254740992}, [9007199254740993, 2], [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/mixed_suffix": "HTTP=200 prior=[[9007199254740993, 1], [9007199254740993, 2], {\"fixed\": 9007199254740992}] expected=[[9007199254740993, 2], {\"fixed\": 9007199254740992}, [7, 9]] actual=[[9007199254740993, 2], {\"fixed\": 9007199254740992}, [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/nested_hidden_echo": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] expected=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/nested_hidden_edit": "HTTP=409 prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] expected=[{\"tag\": \"changed\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/intake/nested_hidden_sibling": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] expected=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 2] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 2] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/rotate_append": "HTTP=409 prior=[[9007199254740993, 1], [9007199254740993, 2], 0] expected=[[9007199254740993, 2], 0, [9007199254740993, 1, 7]] actual=[[9007199254740993, 1], [9007199254740993, 2], 0] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/intake/rotate_exact": "HTTP=200 prior=[[11, 1], [11, 2], 0] expected=[[11, 2], 0, [11, 1, 7]] actual=[[11, 2], 0, [11, 1, 7]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/cross_objects": "HTTP=409 prior=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] expected=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] actual=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/intake/swap_visible_siblings": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, {\"tag\": \"b\"}, {\"tag\": \"c\"}] expected=[{\"tag\": \"a\", \"child\": {\"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, {\"tag\": \"c\"}, {\"tag\": \"b\"}] actual=[{\"tag\": \"a\", \"child\": {\"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, {\"tag\": \"c\"}, {\"tag\": \"b\"}] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/cut_hidden": "HTTP=200 prior=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] expected=[[0], [1, {\"tag\": \"b\"}, {\"tag\": \"a\", \"external_identifier\": \"h\"}]] actual=[[0], [1, {\"tag\": \"b\"}, {\"tag\": \"a\"}]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/cut_visible": "HTTP=200 prior=[[0, {\"tag\": \"a\"}], [1, {\"tag\": \"b\"}]] expected=[[0], [1, {\"tag\": \"b\"}, {\"tag\": \"a\"}]] actual=[[0], [1, {\"tag\": \"b\"}, {\"tag\": \"a\"}]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/delete_hidden": "HTTP=200 prior=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] expected=[[0], [1, {\"tag\": \"b\"}]] actual=[[0], [1, {\"tag\": \"b\"}]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/drop_append": "HTTP=409 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740992, 2], [9007199254740992, 2, 9]] actual=[[9007199254740993], [9007199254740992, 2]] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/party/drop_lossless": "HTTP=200 prior=[[9007199254740993], [9007199254740989, 2]] expected=[[9007199254740989, 2], [7, 9]] actual=[[9007199254740989, 2], [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/drop_agree": "HTTP=200 prior=[[9007199254740993, 1], [9007199254740993, 2]] expected=[[9007199254740993, 2], [7, 9]] actual=[[9007199254740993, 2], [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/decimal_append": "HTTP=200 prior=[[9007199254740993], [0.0000001], [0.0000001]] expected=[[9007199254740993], [0.0000001], [0.0000001, 7]] actual=[[9007199254740993], [0.0000001], [0.0000001, 7]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/echo": "HTTP=200 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740993], [9007199254740992, 2]] actual=[[9007199254740993], [9007199254740992, 2]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/append_one": "HTTP=200 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740993, 7], [9007199254740992, 2]] actual=[[9007199254740993, 7], [9007199254740992, 2]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/append_distinct_suffixes": "HTTP=200 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740993, 7], [9007199254740992, 2, 9]] actual=[[9007199254740993, 7], [9007199254740992, 2, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/swap_hidden": "HTTP=409 prior=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] expected=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] actual=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/party/swap_hidden_text": "HTTP=409 prior=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic-hidden\"}, {\"tag\": \"b\"}] expected=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic-hidden\"}, {\"tag\": \"b\"}] actual=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic-hidden\"}, {\"tag\": \"b\"}] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/party/mixed_prefix": "HTTP=200 prior=[{\"fixed\": 9007199254740992}, [9007199254740993, 1], [9007199254740993, 2]] expected=[{\"fixed\": 9007199254740992}, [9007199254740993, 2], [7, 9]] actual=[{\"fixed\": 9007199254740992}, [9007199254740993, 2], [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/mixed_suffix": "HTTP=200 prior=[[9007199254740993, 1], [9007199254740993, 2], {\"fixed\": 9007199254740992}] expected=[[9007199254740993, 2], {\"fixed\": 9007199254740992}, [7, 9]] actual=[[9007199254740993, 2], {\"fixed\": 9007199254740992}, [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/nested_hidden_echo": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] expected=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/nested_hidden_edit": "HTTP=409 prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] expected=[{\"tag\": \"changed\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/party/nested_hidden_sibling": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] expected=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 2] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 2] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/rotate_append": "HTTP=409 prior=[[9007199254740993, 1], [9007199254740993, 2], 0] expected=[[9007199254740993, 2], 0, [9007199254740993, 1, 7]] actual=[[9007199254740993, 1], [9007199254740993, 2], 0] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/party/rotate_exact": "HTTP=200 prior=[[11, 1], [11, 2], 0] expected=[[11, 2], 0, [11, 1, 7]] actual=[[11, 2], 0, [11, 1, 7]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/cross_objects": "HTTP=409 prior=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] expected=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] actual=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/party/swap_visible_siblings": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, {\"tag\": \"b\"}, {\"tag\": \"c\"}] expected=[{\"tag\": \"a\", \"child\": {\"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, {\"tag\": \"c\"}, {\"tag\": \"b\"}] actual=[{\"tag\": \"a\", \"child\": {\"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, {\"tag\": \"c\"}, {\"tag\": \"b\"}] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/cut_hidden": "HTTP=200 prior=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] expected=[[0], [1, {\"tag\": \"b\"}, {\"tag\": \"a\", \"external_identifier\": \"h\"}]] actual=[[0], [1, {\"tag\": \"b\"}, {\"tag\": \"a\"}]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/cut_visible": "HTTP=200 prior=[[0, {\"tag\": \"a\"}], [1, {\"tag\": \"b\"}]] expected=[[0], [1, {\"tag\": \"b\"}, {\"tag\": \"a\"}]] actual=[[0], [1, {\"tag\": \"b\"}, {\"tag\": \"a\"}]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/delete_hidden": "HTTP=200 prior=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] expected=[[0], [1, {\"tag\": \"b\"}]] actual=[[0], [1, {\"tag\": \"b\"}]] same_revision=false same_rows=false"
+      }
+    }
+  },
+  "intermediate": {
+    "b774a29_cut": {
+      "log_sha256": "c012943c1779c5fd76b550abad39a9448c1a51aaf4c296e5435abd14ab3b0a4b",
+      "start": "2026-11-23T18:02:26.012549+08:00",
+      "end": "2026-11-23T18:02:28.804242+08:00",
+      "failures": [
+        "TestIndependentR7ArrayGate/intake_move_one",
+        "TestIndependentR7ArrayGate/party_move_one",
+        "TestIndependentR7ArrayGate"
+      ],
+      "observations": {
+        "TestIndependentR7ArrayGate/intake_move_one": "independent_r7_gate_test.go:143: prior=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] GET_wire=[[0,{\"tag\":\"a\"}],[1,{\"tag\":\"b\"}]] PUT_wire=[[0],[1,{\"tag\":\"b\"},{\"tag\":\"a\"}]] HTTP=200 expected=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] actual=[[0], [1, {\"tag\": \"b\"}, {\"tag\": \"a\"}]] same_revision=false same_both_rows=false",
+        "TestIndependentR7ArrayGate/party_move_one": "independent_r7_gate_test.go:143: prior=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] GET_wire=[[0,{\"tag\":\"a\"}],[1,{\"tag\":\"b\"}]] PUT_wire=[[0],[1,{\"tag\":\"b\"},{\"tag\":\"a\"}]] HTTP=200 expected=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] actual=[[0], [1, {\"tag\": \"b\"}, {\"tag\": \"a\"}]] same_revision=false same_both_rows=false"
+      }
+    },
+    "b774a29_nested_hidden": {
+      "log_sha256": "cd8a82d1c5f755a2297d5e283d20afb65a5a257537b7b478b791d4219f3c124f",
+      "start": "2026-11-23T18:06:03.3567+08:00",
+      "end": "2026-11-23T18:06:06.456275+08:00",
+      "failures": [
+        "TestM1R7NestedArrayOrigin/intake/cross_hidden_child",
+        "TestM1R7NestedArrayOrigin/party/cross_hidden_child",
+        "TestM1R7NestedArrayOrigin"
+      ],
+      "observations": {
+        "TestM1R7NestedArrayOrigin/intake/cross_hidden_child": "r7_nested_arrays_pg_test.go:169: HTTP=200 prior=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\"}]] expected=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\"}]] actual=[[0, {\"tag\": \"b\"}], [1, {\"tag\": \"a\", \"child\": {}}]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/delete_with_empty_peer": "r7_nested_arrays_pg_test.go:169: HTTP=200 prior=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\", \"child\": {}}]] expected=[[0], [1, {\"tag\": \"b\", \"child\": {}}]] actual=[[0], [1, {\"tag\": \"b\", \"child\": {}}]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/cross_hidden_child": "r7_nested_arrays_pg_test.go:169: HTTP=200 prior=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\"}]] expected=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\"}]] actual=[[0, {\"tag\": \"b\"}], [1, {\"tag\": \"a\", \"child\": {}}]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/delete_with_empty_peer": "r7_nested_arrays_pg_test.go:169: HTTP=200 prior=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\", \"child\": {}}]] expected=[[0], [1, {\"tag\": \"b\", \"child\": {}}]] actual=[[0], [1, {\"tag\": \"b\", \"child\": {}}]] same_revision=false same_rows=false"
+      }
+    },
+    "uncommitted_false_reject_control": {
+      "log_sha256": "0ce1fa7f6f7ded18c4ce49eb9b5c656d332c548fce08b4dc4df1635429674984",
+      "start": "2026-11-23T18:06:10.382973+08:00",
+      "end": "2026-11-23T18:06:13.157265+08:00",
+      "failures": [
+        "TestM1R7NestedArrayOrigin/intake/delete_with_empty_peer",
+        "TestM1R7NestedArrayOrigin/party/delete_with_empty_peer",
+        "TestM1R7NestedArrayOrigin"
+      ],
+      "observations": {
+        "TestM1R7NestedArrayOrigin/intake/cross_hidden_child": "r7_nested_arrays_pg_test.go:169: HTTP=409 prior=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\"}]] expected=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\"}]] actual=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\"}]] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/intake/delete_with_empty_peer": "r7_nested_arrays_pg_test.go:169: HTTP=409 prior=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\", \"child\": {}}]] expected=[[0], [1, {\"tag\": \"b\", \"child\": {}}]] actual=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\", \"child\": {}}]] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/party/cross_hidden_child": "r7_nested_arrays_pg_test.go:169: HTTP=409 prior=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\"}]] expected=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\"}]] actual=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\"}]] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/party/delete_with_empty_peer": "r7_nested_arrays_pg_test.go:169: HTTP=409 prior=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\", \"child\": {}}]] expected=[[0], [1, {\"tag\": \"b\", \"child\": {}}]] actual=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\", \"child\": {}}]] same_revision=true same_rows=true"
+      }
+    }
+  },
+  "runs": {
+    "final": {
+      "sha": "89bb420075a18467b1d7651cdf19844888e9e5e3",
+      "argv": [
+        "go",
+        "test",
+        "-race",
+        "-p",
+        "3",
+        "-tags",
+        "np_m1_pg",
+        "-count=1",
+        "-timeout=120s",
+        "-json",
+        "./tests/integration/m1",
+        "./internal/handlers",
+        "./internal/repositories",
+        "./internal/services",
+        "-run",
+        "^(TestAsyncPG|TestNative|TestSchemaRequiresFrozen|TestConflictPG|TestUpdateIntake|TestLegacyDraft|TestConfirmIntake|TestConfirmAndConflict|TestDraftRestore|TestDraftList|TestAggregateMetadata|TestIntakeDraft(List|Detail)|TestLinkConflictCheckToCase|TestStartIntakeConflictCheck|TestAsyncConflictCheckService|TestAuditSafeConflictRequest|TestM1R2|TestAsyncTerminal|TestM1R3|TestMatchConflictIndex|TestConflictSubjectIndex|TestNormalizeConflictSubjects|TestM1R4|TestM1R5|TestM1R7)"
+      ],
+      "start": "2026-11-23T10:07:35.758548+00:00",
+      "end": "2026-11-23T10:08:30.485154+00:00",
+      "exit": 0,
+      "log_sha256": "2079ad329564aedacfb9342b4a9856458b9fcfaa6deb50b6e9b1ff962848bb00",
+      "counts": {
+        "pass": 189,
+        "fail": 0,
+        "skip": 0
+      },
+      "failed": [],
+      "array_results": {
+        "TestM1R5ArrayEditPreservesOriginalNumbers/delete_first_then_append_collision": "HTTP=409 stored=[9007199254740993, 9007199254740992, 1] exact=false same_row=true same_revision=true",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/nested_pure_append": "HTTP=200 stored=[[9007199254740993, 2, 7]] exact=true same_row=false same_revision=false",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/delete_first_reverse_collision": "HTTP=409 stored=[9007199254740992, 9007199254740993, 1] exact=false same_row=true same_revision=true",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/unchanged_collision_echo": "HTTP=200 stored=[9007199254740993, 9007199254740992, 1] exact=true same_row=false same_revision=false",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/append": "HTTP=200 stored=[9007199254740993, 2, 7] exact=true same_row=false same_revision=false",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/overflow_echo_append": "HTTP=200 stored=[10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000, 7] exact=true same_row=false same_revision=false",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/prepend": "HTTP=409 stored=[9007199254740993, 2] exact=false same_row=true same_revision=true",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/reorder": "HTTP=409 stored=[9007199254740993, 2] exact=false same_row=true same_revision=true",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/remove_first": "HTTP=409 stored=[2, 9007199254740993] exact=false same_row=true same_revision=true",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/safe_sibling_edit": "HTTP=200 stored=[9007199254740993, 3] exact=true same_row=false same_revision=false",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/ordinary_decimal_reorder": "HTTP=200 stored=[2, 1] exact=true same_row=false same_revision=false",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/ordinary_insert": "HTTP=200 stored=[1, 7, 2] exact=true same_row=false same_revision=false",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/explicit_lossless_reorder": "HTTP=200 stored=[0, 36028797018963969, 36028797018963971] exact=true same_row=false same_revision=false",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/explicit_lossless_edit": "HTTP=200 stored=[9007199254740995] exact=true same_row=false same_revision=false",
+        "TestM1R7NestedArrayOrigin/intake/drop_append": "HTTP=409 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740992, 2], [9007199254740992, 2, 9]] actual=[[9007199254740993], [9007199254740992, 2]] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/intake/drop_lossless": "HTTP=200 prior=[[9007199254740993], [9007199254740989, 2]] expected=[[9007199254740989, 2], [7, 9]] actual=[[9007199254740989, 2], [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/drop_agree": "HTTP=200 prior=[[9007199254740993, 1], [9007199254740993, 2]] expected=[[9007199254740993, 2], [7, 9]] actual=[[9007199254740993, 2], [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/decimal_append": "HTTP=200 prior=[[9007199254740993], [0.0000001], [0.0000001]] expected=[[9007199254740993], [0.0000001], [0.0000001, 7]] actual=[[9007199254740993], [0.0000001], [0.0000001, 7]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/echo": "HTTP=200 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740993], [9007199254740992, 2]] actual=[[9007199254740993], [9007199254740992, 2]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/append_one": "HTTP=200 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740993, 7], [9007199254740992, 2]] actual=[[9007199254740993, 7], [9007199254740992, 2]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/append_distinct_suffixes": "HTTP=200 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740993, 7], [9007199254740992, 2, 9]] actual=[[9007199254740993, 7], [9007199254740992, 2, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/swap_hidden": "HTTP=409 prior=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] expected=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] actual=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/intake/swap_hidden_text": "HTTP=409 prior=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic-hidden\"}, {\"tag\": \"b\"}] expected=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic-hidden\"}, {\"tag\": \"b\"}] actual=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic-hidden\"}, {\"tag\": \"b\"}] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/intake/mixed_prefix": "HTTP=200 prior=[{\"fixed\": 9007199254740992}, [9007199254740993, 1], [9007199254740993, 2]] expected=[{\"fixed\": 9007199254740992}, [9007199254740993, 2], [7, 9]] actual=[{\"fixed\": 9007199254740992}, [9007199254740993, 2], [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/mixed_suffix": "HTTP=200 prior=[[9007199254740993, 1], [9007199254740993, 2], {\"fixed\": 9007199254740992}] expected=[[9007199254740993, 2], {\"fixed\": 9007199254740992}, [7, 9]] actual=[[9007199254740993, 2], {\"fixed\": 9007199254740992}, [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/nested_hidden_echo": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] expected=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/nested_hidden_edit": "HTTP=409 prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] expected=[{\"tag\": \"changed\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/intake/nested_hidden_sibling": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] expected=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 2] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 2] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/rotate_append": "HTTP=409 prior=[[9007199254740993, 1], [9007199254740993, 2], 0] expected=[[9007199254740993, 2], 0, [9007199254740993, 1, 7]] actual=[[9007199254740993, 1], [9007199254740993, 2], 0] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/intake/rotate_exact": "HTTP=200 prior=[[11, 1], [11, 2], 0] expected=[[11, 2], 0, [11, 1, 7]] actual=[[11, 2], 0, [11, 1, 7]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/cross_objects": "HTTP=409 prior=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] expected=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] actual=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/intake/swap_visible_siblings": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, {\"tag\": \"b\"}, {\"tag\": \"c\"}] expected=[{\"tag\": \"a\", \"child\": {\"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, {\"tag\": \"c\"}, {\"tag\": \"b\"}] actual=[{\"tag\": \"a\", \"child\": {\"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, {\"tag\": \"c\"}, {\"tag\": \"b\"}] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/cut_hidden": "HTTP=409 prior=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] expected=[[0], [1, {\"tag\": \"b\"}, {\"tag\": \"a\", \"external_identifier\": \"h\"}]] actual=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/intake/cut_visible": "HTTP=200 prior=[[0, {\"tag\": \"a\"}], [1, {\"tag\": \"b\"}]] expected=[[0], [1, {\"tag\": \"b\"}, {\"tag\": \"a\"}]] actual=[[0], [1, {\"tag\": \"b\"}, {\"tag\": \"a\"}]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/delete_hidden": "HTTP=200 prior=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] expected=[[0], [1, {\"tag\": \"b\"}]] actual=[[0], [1, {\"tag\": \"b\"}]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/cross_hidden_child": "HTTP=409 prior=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\"}]] expected=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\"}]] actual=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\"}]] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/intake/delete_with_empty_peer": "HTTP=200 prior=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\", \"child\": {}}]] expected=[[0], [1, {\"tag\": \"b\", \"child\": {}}]] actual=[[0], [1, {\"tag\": \"b\", \"child\": {}}]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/drop_append": "HTTP=409 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740992, 2], [9007199254740992, 2, 9]] actual=[[9007199254740993], [9007199254740992, 2]] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/party/drop_lossless": "HTTP=200 prior=[[9007199254740993], [9007199254740989, 2]] expected=[[9007199254740989, 2], [7, 9]] actual=[[9007199254740989, 2], [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/drop_agree": "HTTP=200 prior=[[9007199254740993, 1], [9007199254740993, 2]] expected=[[9007199254740993, 2], [7, 9]] actual=[[9007199254740993, 2], [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/decimal_append": "HTTP=200 prior=[[9007199254740993], [0.0000001], [0.0000001]] expected=[[9007199254740993], [0.0000001], [0.0000001, 7]] actual=[[9007199254740993], [0.0000001], [0.0000001, 7]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/echo": "HTTP=200 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740993], [9007199254740992, 2]] actual=[[9007199254740993], [9007199254740992, 2]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/append_one": "HTTP=200 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740993, 7], [9007199254740992, 2]] actual=[[9007199254740993, 7], [9007199254740992, 2]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/append_distinct_suffixes": "HTTP=200 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740993, 7], [9007199254740992, 2, 9]] actual=[[9007199254740993, 7], [9007199254740992, 2, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/swap_hidden": "HTTP=409 prior=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] expected=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] actual=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/party/swap_hidden_text": "HTTP=409 prior=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic-hidden\"}, {\"tag\": \"b\"}] expected=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic-hidden\"}, {\"tag\": \"b\"}] actual=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic-hidden\"}, {\"tag\": \"b\"}] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/party/mixed_prefix": "HTTP=200 prior=[{\"fixed\": 9007199254740992}, [9007199254740993, 1], [9007199254740993, 2]] expected=[{\"fixed\": 9007199254740992}, [9007199254740993, 2], [7, 9]] actual=[{\"fixed\": 9007199254740992}, [9007199254740993, 2], [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/mixed_suffix": "HTTP=200 prior=[[9007199254740993, 1], [9007199254740993, 2], {\"fixed\": 9007199254740992}] expected=[[9007199254740993, 2], {\"fixed\": 9007199254740992}, [7, 9]] actual=[[9007199254740993, 2], {\"fixed\": 9007199254740992}, [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/nested_hidden_echo": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] expected=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/nested_hidden_edit": "HTTP=409 prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] expected=[{\"tag\": \"changed\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/party/nested_hidden_sibling": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] expected=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 2] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 2] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/rotate_append": "HTTP=409 prior=[[9007199254740993, 1], [9007199254740993, 2], 0] expected=[[9007199254740993, 2], 0, [9007199254740993, 1, 7]] actual=[[9007199254740993, 1], [9007199254740993, 2], 0] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/party/rotate_exact": "HTTP=200 prior=[[11, 1], [11, 2], 0] expected=[[11, 2], 0, [11, 1, 7]] actual=[[11, 2], 0, [11, 1, 7]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/cross_objects": "HTTP=409 prior=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] expected=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] actual=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/party/swap_visible_siblings": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, {\"tag\": \"b\"}, {\"tag\": \"c\"}] expected=[{\"tag\": \"a\", \"child\": {\"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, {\"tag\": \"c\"}, {\"tag\": \"b\"}] actual=[{\"tag\": \"a\", \"child\": {\"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, {\"tag\": \"c\"}, {\"tag\": \"b\"}] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/cut_hidden": "HTTP=409 prior=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] expected=[[0], [1, {\"tag\": \"b\"}, {\"tag\": \"a\", \"external_identifier\": \"h\"}]] actual=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/party/cut_visible": "HTTP=200 prior=[[0, {\"tag\": \"a\"}], [1, {\"tag\": \"b\"}]] expected=[[0], [1, {\"tag\": \"b\"}, {\"tag\": \"a\"}]] actual=[[0], [1, {\"tag\": \"b\"}, {\"tag\": \"a\"}]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/delete_hidden": "HTTP=200 prior=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] expected=[[0], [1, {\"tag\": \"b\"}]] actual=[[0], [1, {\"tag\": \"b\"}]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/cross_hidden_child": "HTTP=409 prior=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\"}]] expected=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\"}]] actual=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\"}]] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/party/delete_with_empty_peer": "HTTP=200 prior=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\", \"child\": {}}]] expected=[[0], [1, {\"tag\": \"b\", \"child\": {}}]] actual=[[0], [1, {\"tag\": \"b\", \"child\": {}}]] same_revision=false same_rows=false"
+      }
+    },
+    "v8": {
+      "sha": "89bb420075a18467b1d7651cdf19844888e9e5e3",
+      "argv": [
+        "go",
+        "test",
+        "-overlay",
+        "/tmp/lawoa-r9-independent.Ai6iIU/release/probe-overlay.json",
+        "-race",
+        "-tags",
+        "np_m1_pg",
+        "-count=1",
+        "-json",
+        "./tests/integration/m1",
+        "-run",
+        "^TestIndependentR7ArrayGate$/^(intake|party)_(control_prefix|control_suffix|fixed_prefix|fixed_suffix|swap_redacted|hidden_interior|hidden_nested|hidden_echo)$"
+      ],
+      "start": "2026-11-23T10:08:30.571487+00:00",
+      "end": "2026-11-23T10:08:46.915722+00:00",
+      "exit": 0,
+      "log_sha256": "2dd46035a58acecdfcf785571857a3c6da44b2fd1f11142bf1c098e9b3a6a176",
+      "counts": {
+        "pass": 17,
+        "fail": 0,
+        "skip": 0
+      },
+      "failed": [],
+      "array_results": {
+        "TestIndependentR7ArrayGate/intake_fixed_prefix": "prior=[{\"fixed\": 9007199254740992}, [9007199254740993, 1], [9007199254740993, 2]] GET_wire=[{\"fixed\":9007199254740992},[9007199254740992,1],[9007199254740992,2]] PUT_wire=[{\"fixed\":9007199254740992},[9007199254740992,2],[7,9]] HTTP=200 expected=[{\"fixed\": 9007199254740992}, [9007199254740993, 2], [7, 9]] actual=[{\"fixed\": 9007199254740992}, [9007199254740993, 2], [7, 9]] same_revision=false same_both_rows=false",
+        "TestIndependentR7ArrayGate/intake_control_prefix": "prior=[{\"fixed\": 11}, [9007199254740993, 1], [9007199254740993, 2]] GET_wire=[{\"fixed\":11},[9007199254740992,1],[9007199254740992,2]] PUT_wire=[{\"fixed\":11},[9007199254740992,2],[7,9]] HTTP=200 expected=[{\"fixed\": 11}, [9007199254740993, 2], [7, 9]] actual=[{\"fixed\": 11}, [9007199254740993, 2], [7, 9]] same_revision=false same_both_rows=false",
+        "TestIndependentR7ArrayGate/intake_fixed_suffix": "prior=[[9007199254740993, 1], [9007199254740993, 2], {\"fixed\": 9007199254740992}] GET_wire=[[9007199254740992,1],[9007199254740992,2],{\"fixed\":9007199254740992}] PUT_wire=[[9007199254740992,2],{\"fixed\":9007199254740992},[7,9]] HTTP=200 expected=[[9007199254740993, 2], {\"fixed\": 9007199254740992}, [7, 9]] actual=[[9007199254740993, 2], {\"fixed\": 9007199254740992}, [7, 9]] same_revision=false same_both_rows=false",
+        "TestIndependentR7ArrayGate/intake_control_suffix": "prior=[[9007199254740993, 1], [9007199254740993, 2], {\"fixed\": 11}] GET_wire=[[9007199254740992,1],[9007199254740992,2],{\"fixed\":11}] PUT_wire=[[9007199254740992,2],{\"fixed\":11},[7,9]] HTTP=200 expected=[[9007199254740993, 2], {\"fixed\": 11}, [7, 9]] actual=[[9007199254740993, 2], {\"fixed\": 11}, [7, 9]] same_revision=false same_both_rows=false",
+        "TestIndependentR7ArrayGate/intake_hidden_interior": "prior=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic\"}, {\"tag\": \"b\"}, {\"tag\": \"c\"}] GET_wire=[0,{\"tag\":\"a\"},{\"tag\":\"b\"},{\"tag\":\"c\"}] PUT_wire=[0,{\"tag\":\"b\"},{\"tag\":\"a\"},{\"tag\":\"c\"}] HTTP=409 expected=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic\"}, {\"tag\": \"b\"}, {\"tag\": \"c\"}] actual=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic\"}, {\"tag\": \"b\"}, {\"tag\": \"c\"}] same_revision=true same_both_rows=true",
+        "TestIndependentR7ArrayGate/intake_hidden_nested": "prior=[0, [{\"tag\": \"a\", \"external_identifier\": \"synthetic\"}], [{\"tag\": \"b\"}]] GET_wire=[0,[{\"tag\":\"a\"}],[{\"tag\":\"b\"}]] PUT_wire=[0,[{\"tag\":\"b\"}],[{\"tag\":\"a\"}]] HTTP=409 expected=[0, [{\"tag\": \"a\", \"external_identifier\": \"synthetic\"}], [{\"tag\": \"b\"}]] actual=[0, [{\"tag\": \"a\", \"external_identifier\": \"synthetic\"}], [{\"tag\": \"b\"}]] same_revision=true same_both_rows=true",
+        "TestIndependentR7ArrayGate/intake_hidden_echo": "prior=[{\"tag\": \"a\", \"external_identifier\": \"synthetic\"}, {\"tag\": \"a\", \"external_identifier\": \"other\"}] GET_wire=[{\"tag\":\"a\"},{\"tag\":\"a\"}] PUT_wire=[{\"tag\":\"a\"},{\"tag\":\"a\"}] HTTP=200 expected=[{\"tag\": \"a\", \"external_identifier\": \"synthetic\"}, {\"tag\": \"a\", \"external_identifier\": \"other\"}] actual=[{\"tag\": \"a\", \"external_identifier\": \"synthetic\"}, {\"tag\": \"a\", \"external_identifier\": \"other\"}] same_revision=false same_both_rows=false",
+        "TestIndependentR7ArrayGate/intake_swap_redacted": "prior=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] GET_wire=[9007199254740992,{\"tag\":\"a\"},{\"tag\":\"b\"}] PUT_wire=[9007199254740992,{\"tag\":\"b\"},{\"tag\":\"a\"}] HTTP=409 expected=[9007199254740993, {\"tag\": \"b\"}, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}] actual=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] same_revision=true same_both_rows=true",
+        "TestIndependentR7ArrayGate/party_fixed_prefix": "prior=[{\"fixed\": 9007199254740992}, [9007199254740993, 1], [9007199254740993, 2]] GET_wire=[{\"fixed\":9007199254740992},[9007199254740992,1],[9007199254740992,2]] PUT_wire=[{\"fixed\":9007199254740992},[9007199254740992,2],[7,9]] HTTP=200 expected=[{\"fixed\": 9007199254740992}, [9007199254740993, 2], [7, 9]] actual=[{\"fixed\": 9007199254740992}, [9007199254740993, 2], [7, 9]] same_revision=false same_both_rows=false",
+        "TestIndependentR7ArrayGate/party_control_prefix": "prior=[{\"fixed\": 11}, [9007199254740993, 1], [9007199254740993, 2]] GET_wire=[{\"fixed\":11},[9007199254740992,1],[9007199254740992,2]] PUT_wire=[{\"fixed\":11},[9007199254740992,2],[7,9]] HTTP=200 expected=[{\"fixed\": 11}, [9007199254740993, 2], [7, 9]] actual=[{\"fixed\": 11}, [9007199254740993, 2], [7, 9]] same_revision=false same_both_rows=false",
+        "TestIndependentR7ArrayGate/party_fixed_suffix": "prior=[[9007199254740993, 1], [9007199254740993, 2], {\"fixed\": 9007199254740992}] GET_wire=[[9007199254740992,1],[9007199254740992,2],{\"fixed\":9007199254740992}] PUT_wire=[[9007199254740992,2],{\"fixed\":9007199254740992},[7,9]] HTTP=200 expected=[[9007199254740993, 2], {\"fixed\": 9007199254740992}, [7, 9]] actual=[[9007199254740993, 2], {\"fixed\": 9007199254740992}, [7, 9]] same_revision=false same_both_rows=false",
+        "TestIndependentR7ArrayGate/party_control_suffix": "prior=[[9007199254740993, 1], [9007199254740993, 2], {\"fixed\": 11}] GET_wire=[[9007199254740992,1],[9007199254740992,2],{\"fixed\":11}] PUT_wire=[[9007199254740992,2],{\"fixed\":11},[7,9]] HTTP=200 expected=[[9007199254740993, 2], {\"fixed\": 11}, [7, 9]] actual=[[9007199254740993, 2], {\"fixed\": 11}, [7, 9]] same_revision=false same_both_rows=false",
+        "TestIndependentR7ArrayGate/party_hidden_interior": "prior=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic\"}, {\"tag\": \"b\"}, {\"tag\": \"c\"}] GET_wire=[0,{\"tag\":\"a\"},{\"tag\":\"b\"},{\"tag\":\"c\"}] PUT_wire=[0,{\"tag\":\"b\"},{\"tag\":\"a\"},{\"tag\":\"c\"}] HTTP=409 expected=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic\"}, {\"tag\": \"b\"}, {\"tag\": \"c\"}] actual=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic\"}, {\"tag\": \"b\"}, {\"tag\": \"c\"}] same_revision=true same_both_rows=true",
+        "TestIndependentR7ArrayGate/party_hidden_nested": "prior=[0, [{\"tag\": \"a\", \"external_identifier\": \"synthetic\"}], [{\"tag\": \"b\"}]] GET_wire=[0,[{\"tag\":\"a\"}],[{\"tag\":\"b\"}]] PUT_wire=[0,[{\"tag\":\"b\"}],[{\"tag\":\"a\"}]] HTTP=409 expected=[0, [{\"tag\": \"a\", \"external_identifier\": \"synthetic\"}], [{\"tag\": \"b\"}]] actual=[0, [{\"tag\": \"a\", \"external_identifier\": \"synthetic\"}], [{\"tag\": \"b\"}]] same_revision=true same_both_rows=true",
+        "TestIndependentR7ArrayGate/party_hidden_echo": "prior=[{\"tag\": \"a\", \"external_identifier\": \"synthetic\"}, {\"tag\": \"a\", \"external_identifier\": \"other\"}] GET_wire=[{\"tag\":\"a\"},{\"tag\":\"a\"}] PUT_wire=[{\"tag\":\"a\"},{\"tag\":\"a\"}] HTTP=200 expected=[{\"tag\": \"a\", \"external_identifier\": \"synthetic\"}, {\"tag\": \"a\", \"external_identifier\": \"other\"}] actual=[{\"tag\": \"a\", \"external_identifier\": \"synthetic\"}, {\"tag\": \"a\", \"external_identifier\": \"other\"}] same_revision=false same_both_rows=false",
+        "TestIndependentR7ArrayGate/party_swap_redacted": "prior=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] GET_wire=[9007199254740992,{\"tag\":\"a\"},{\"tag\":\"b\"}] PUT_wire=[9007199254740992,{\"tag\":\"b\"},{\"tag\":\"a\"}] HTTP=409 expected=[9007199254740993, {\"tag\": \"b\"}, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}] actual=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] same_revision=true same_both_rows=true"
+      }
+    },
+    "r10": {
+      "sha": "89bb420075a18467b1d7651cdf19844888e9e5e3",
+      "argv": [
+        "go",
+        "test",
+        "-overlay",
+        "/tmp/lawoa-r9-independent.Ai6iIU/release/r10-overlay.json",
+        "-race",
+        "-tags",
+        "np_m1_pg",
+        "-count=1",
+        "-json",
+        "./tests/integration/m1",
+        "-run",
+        "^TestIndependentR7ArrayGate$/^(intake|party)_(rotate_append|cross_objects|swap_siblings|echo_two_levels|echo_inner|echo_outer)$"
+      ],
+      "start": "2026-11-23T10:08:47.010488+00:00",
+      "end": "2026-11-23T10:08:58.522784+00:00",
+      "exit": 0,
+      "log_sha256": "4429050bb6c3239953d57192defa84025f27106e77fe84d77ac3c9546e0226c5",
+      "counts": {
+        "pass": 13,
+        "fail": 0,
+        "skip": 0
+      },
+      "failed": [],
+      "array_results": {
+        "TestIndependentR7ArrayGate/intake_rotate_append": "prior=[[9007199254740993, 1], [9007199254740993, 2], 0] GET_wire=[[9007199254740992,1],[9007199254740992,2],0] PUT_wire=[[9007199254740992,2],0,[9007199254740992,1,7]] HTTP=409 expected=[[9007199254740993, 1], [9007199254740993, 2], 0] actual=[[9007199254740993, 1], [9007199254740993, 2], 0] same_revision=true same_both_rows=true",
+        "TestIndependentR7ArrayGate/intake_cross_objects": "prior=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] GET_wire=[[0,{\"tag\":\"a\"}],[1,{\"tag\":\"b\"}]] PUT_wire=[[0,{\"tag\":\"b\"}],[1,{\"tag\":\"a\"}]] HTTP=409 expected=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] actual=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] same_revision=true same_both_rows=true",
+        "TestIndependentR7ArrayGate/intake_swap_siblings": "prior=[{\"tag\": \"a\", \"child\": {\"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, {\"tag\": \"b\"}, {\"tag\": \"c\"}] GET_wire=[{\"child\":{},\"tag\":\"a\"},{\"tag\":\"b\"},{\"tag\":\"c\"}] PUT_wire=[{\"child\":{},\"tag\":\"a\"},{\"tag\":\"c\"},{\"tag\":\"b\"}] HTTP=200 expected=[{\"tag\": \"a\", \"child\": {\"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, {\"tag\": \"c\"}, {\"tag\": \"b\"}] actual=[{\"tag\": \"a\", \"child\": {\"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, {\"tag\": \"c\"}, {\"tag\": \"b\"}] same_revision=false same_both_rows=false",
+        "TestIndependentR7ArrayGate/intake_echo_two_levels": "prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}] GET_wire=[{\"child\":{\"label\":\"k\"},\"tag\":\"a\"}] PUT_wire=[{\"child\":{\"label\":\"k\"},\"tag\":\"a\"}] HTTP=200 expected=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}] same_revision=false same_both_rows=false",
+        "TestIndependentR7ArrayGate/intake_echo_outer": "prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\"}, \"external_identifier\": \"outer\"}] GET_wire=[{\"child\":{\"label\":\"k\"},\"tag\":\"a\"}] PUT_wire=[{\"child\":{\"label\":\"k\"},\"tag\":\"a\"}] HTTP=200 expected=[{\"tag\": \"a\", \"child\": {\"label\": \"k\"}, \"external_identifier\": \"outer\"}] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\"}, \"external_identifier\": \"outer\"}] same_revision=false same_both_rows=false",
+        "TestIndependentR7ArrayGate/intake_echo_inner": "prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}}] GET_wire=[{\"child\":{\"label\":\"k\"},\"tag\":\"a\"}] PUT_wire=[{\"child\":{\"label\":\"k\"},\"tag\":\"a\"}] HTTP=200 expected=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}}] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}}] same_revision=false same_both_rows=false",
+        "TestIndependentR7ArrayGate/party_rotate_append": "prior=[[9007199254740993, 1], [9007199254740993, 2], 0] GET_wire=[[9007199254740992,1],[9007199254740992,2],0] PUT_wire=[[9007199254740992,2],0,[9007199254740992,1,7]] HTTP=409 expected=[[9007199254740993, 1], [9007199254740993, 2], 0] actual=[[9007199254740993, 1], [9007199254740993, 2], 0] same_revision=true same_both_rows=true",
+        "TestIndependentR7ArrayGate/party_cross_objects": "prior=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] GET_wire=[[0,{\"tag\":\"a\"}],[1,{\"tag\":\"b\"}]] PUT_wire=[[0,{\"tag\":\"b\"}],[1,{\"tag\":\"a\"}]] HTTP=409 expected=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] actual=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] same_revision=true same_both_rows=true",
+        "TestIndependentR7ArrayGate/party_swap_siblings": "prior=[{\"tag\": \"a\", \"child\": {\"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, {\"tag\": \"b\"}, {\"tag\": \"c\"}] GET_wire=[{\"child\":{},\"tag\":\"a\"},{\"tag\":\"b\"},{\"tag\":\"c\"}] PUT_wire=[{\"child\":{},\"tag\":\"a\"},{\"tag\":\"c\"},{\"tag\":\"b\"}] HTTP=200 expected=[{\"tag\": \"a\", \"child\": {\"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, {\"tag\": \"c\"}, {\"tag\": \"b\"}] actual=[{\"tag\": \"a\", \"child\": {\"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, {\"tag\": \"c\"}, {\"tag\": \"b\"}] same_revision=false same_both_rows=false",
+        "TestIndependentR7ArrayGate/party_echo_two_levels": "prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}] GET_wire=[{\"child\":{\"label\":\"k\"},\"tag\":\"a\"}] PUT_wire=[{\"child\":{\"label\":\"k\"},\"tag\":\"a\"}] HTTP=200 expected=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}] same_revision=false same_both_rows=false",
+        "TestIndependentR7ArrayGate/party_echo_outer": "prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\"}, \"external_identifier\": \"outer\"}] GET_wire=[{\"child\":{\"label\":\"k\"},\"tag\":\"a\"}] PUT_wire=[{\"child\":{\"label\":\"k\"},\"tag\":\"a\"}] HTTP=200 expected=[{\"tag\": \"a\", \"child\": {\"label\": \"k\"}, \"external_identifier\": \"outer\"}] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\"}, \"external_identifier\": \"outer\"}] same_revision=false same_both_rows=false",
+        "TestIndependentR7ArrayGate/party_echo_inner": "prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}}] GET_wire=[{\"child\":{\"label\":\"k\"},\"tag\":\"a\"}] PUT_wire=[{\"child\":{\"label\":\"k\"},\"tag\":\"a\"}] HTTP=200 expected=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}}] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}}] same_revision=false same_both_rows=false"
+      }
+    },
+    "relocate": {
+      "sha": "89bb420075a18467b1d7651cdf19844888e9e5e3",
+      "argv": [
+        "go",
+        "test",
+        "-overlay",
+        "/tmp/lawoa-r9-independent.Ai6iIU/release/relocate-overlay.json",
+        "-race",
+        "-tags",
+        "np_m1_pg",
+        "-count=1",
+        "-json",
+        "./tests/integration/m1",
+        "-run",
+        "^TestIndependentR7ArrayGate$/^(intake|party)_move_one$"
+      ],
+      "start": "2026-11-23T10:08:58.641396+00:00",
+      "end": "2026-11-23T10:09:08.009877+00:00",
+      "exit": 0,
+      "log_sha256": "d572b734ddca69c6c6af15763651b5a5493c45dd2d04a62488b4ca00ebea21ca",
+      "counts": {
+        "pass": 3,
+        "fail": 0,
+        "skip": 0
+      },
+      "failed": [],
+      "array_results": {
+        "TestIndependentR7ArrayGate/intake_move_one": "prior=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] GET_wire=[[0,{\"tag\":\"a\"}],[1,{\"tag\":\"b\"}]] PUT_wire=[[0],[1,{\"tag\":\"b\"},{\"tag\":\"a\"}]] HTTP=409 expected=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] actual=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] same_revision=true same_both_rows=true",
+        "TestIndependentR7ArrayGate/party_move_one": "prior=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] GET_wire=[[0,{\"tag\":\"a\"}],[1,{\"tag\":\"b\"}]] PUT_wire=[[0],[1,{\"tag\":\"b\"},{\"tag\":\"a\"}]] HTTP=409 expected=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] actual=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] same_revision=true same_both_rows=true"
+      }
+    },
+    "family-green": {
+      "sha": "89bb420075a18467b1d7651cdf19844888e9e5e3",
+      "argv": [
+        "go",
+        "test",
+        "-race",
+        "-overlay",
+        "/tmp/lawoa-r9-independent.Ai6iIU/release/family-overlay.json",
+        "-count=1",
+        "-json",
+        "./internal/handlers",
+        "-run",
+        "^TestR7ShiftFamily$"
+      ],
+      "start": "2026-11-23T10:09:08.106969+00:00",
+      "end": "2026-11-23T10:09:17.789301+00:00",
+      "exit": 0,
+      "log_sha256": "23ef08f89f886a3f675cadd3fd9dccc56c792ae9a31de75fbf240a886c563b2c",
+      "counts": {
+        "pass": 1,
+        "fail": 0,
+        "skip": 0
+      },
+      "failed": [],
+      "array_results": {
+        "TestR7ShiftFamily": "OBS shift_family precise=0 refused=84"
+      }
+    },
+    "party-green": {
+      "sha": "89bb420075a18467b1d7651cdf19844888e9e5e3",
+      "argv": [
+        "go",
+        "test",
+        "-overlay",
+        "/tmp/lawoa-r9-independent.Ai6iIU/release/party-overlay.json",
+        "-race",
+        "-tags",
+        "np_m1_pg",
+        "-count=1",
+        "-json",
+        "./tests/integration/m1",
+        "-run",
+        "^TestReviewR6PartyArrayEcho$"
+      ],
+      "start": "2026-11-23T10:09:17.883408+00:00",
+      "end": "2026-11-23T10:09:27.449260+00:00",
+      "exit": 0,
+      "log_sha256": "d40c8b8f38a067e140acfec0113afed20fc4dcb24ea79b7b9144dfd96a3866a0",
+      "counts": {
+        "pass": 3,
+        "fail": 0,
+        "skip": 0
+      },
+      "failed": [],
+      "array_results": {
+        "TestReviewR6PartyArrayEcho/collision": "HTTP=409 stored=[9007199254740993, 9007199254740992, 1] exact=false same_intake_and_party=true",
+        "TestReviewR6PartyArrayEcho/nested": "HTTP=200 stored=[[9007199254740993, 2, 7]] exact=true same_intake_and_party=false"
+      }
+    },
+    "variants": {
+      "sha": "89bb420075a18467b1d7651cdf19844888e9e5e3",
+      "argv": [
+        "go",
+        "test",
+        "-overlay",
+        "/tmp/lawoa-r9-independent.Ai6iIU/release/variants-overlay.json",
+        "-race",
+        "-tags",
+        "np_m1_pg",
+        "-count=1",
+        "-json",
+        "./tests/integration/m1",
+        "-run",
+        "^TestM1R5ArrayEditPreservesOriginalNumbers$/^review_"
+      ],
+      "start": "2026-11-23T10:09:27.540039+00:00",
+      "end": "2026-11-23T10:09:35.856166+00:00",
+      "exit": 0,
+      "log_sha256": "7447ca750799f6f2d2bcf833b8e6a76e595720a4d9f588ae164370b64110438f",
+      "counts": {
+        "pass": 5,
+        "fail": 0,
+        "skip": 0
+      },
+      "failed": [],
+      "array_results": {
+        "TestM1R5ArrayEditPreservesOriginalNumbers/review_distinct_rounded": "HTTP=409 stored=[9007199254740995, 9007199254740997, 1] exact=false same_row=true same_revision=true",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/review_overflow_null": "HTTP=409 stored=[10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000, null, 1] exact=false same_row=true same_revision=true",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/review_deep_append": "HTTP=200 stored=[[[9007199254740993, 2, 7]]] exact=true same_row=false same_revision=false",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/review_sibling_arrays": "HTTP=409 stored=[[9007199254740993], [9007199254740992], 1] exact=false same_row=true same_revision=true"
+      }
+    },
+    "review": {
+      "sha": "89bb420075a18467b1d7651cdf19844888e9e5e3",
+      "argv": [
+        "go",
+        "test",
+        "-overlay",
+        "/tmp/lawoa-r9-independent.Ai6iIU/release/review-overlay.json",
+        "-race",
+        "-tags",
+        "np_m1_pg",
+        "-count=1",
+        "-json",
+        "./tests/integration/m1",
+        "-run",
+        "^TestIndependentR6ArrayGate$"
+      ],
+      "start": "2026-11-23T10:09:35.930596+00:00",
+      "end": "2026-11-23T10:09:43.920691+00:00",
+      "exit": 0,
+      "log_sha256": "c8dc4844c611845fc9e3e20f29f37ba6a1f463ed9abb10e45a1d9dd0e29d7beb",
+      "counts": {
+        "pass": 11,
+        "fail": 0,
+        "skip": 0
+      },
+      "failed": [],
+      "array_results": {
+        "TestIndependentR6ArrayGate/intake_drop": "prior=[9007199254740993, 9007199254740992, 1] GET_wire=[9007199254740992,9007199254740992,1] PUT_wire=[9007199254740992,1,7] HTTP=409 expected=[9007199254740992, 1, 7] actual=[9007199254740993, 9007199254740992, 1] same_revision=true same_both_rows=true",
+        "TestIndependentR6ArrayGate/intake_reverse": "prior=[9007199254740992, 9007199254740993, 1] GET_wire=[9007199254740992,9007199254740992,1] PUT_wire=[9007199254740992,1,7] HTTP=409 expected=[9007199254740993, 1, 7] actual=[9007199254740992, 9007199254740993, 1] same_revision=true same_both_rows=true",
+        "TestIndependentR6ArrayGate/intake_append": "prior=[[9007199254740993, 2]] GET_wire=[[9007199254740992,2]] PUT_wire=[[9007199254740992,2,7]] HTTP=200 expected=[[9007199254740993, 2, 7]] actual=[[9007199254740993, 2, 7]] same_revision=false same_both_rows=false",
+        "TestIndependentR6ArrayGate/intake_echo": "prior=[9007199254740993, 9007199254740992, 1] GET_wire=[9007199254740992,9007199254740992,1] PUT_wire=[9007199254740992,9007199254740992,1] HTTP=200 expected=[9007199254740993, 9007199254740992, 1] actual=[9007199254740993, 9007199254740992, 1] same_revision=false same_both_rows=false",
+        "TestIndependentR6ArrayGate/intake_drop_nested": "prior=[[9007199254740993], [9007199254740992, 2]] GET_wire=[[9007199254740992],[9007199254740992,2]] PUT_wire=[[9007199254740992,2],[9007199254740992,2,9]] HTTP=409 expected=[[9007199254740992, 2], [9007199254740992, 2, 9]] actual=[[9007199254740993], [9007199254740992, 2]] same_revision=true same_both_rows=true",
+        "TestIndependentR6ArrayGate/party_drop": "prior=[9007199254740993, 9007199254740992, 1] GET_wire=[9007199254740992,9007199254740992,1] PUT_wire=[9007199254740992,1,7] HTTP=409 expected=[9007199254740992, 1, 7] actual=[9007199254740993, 9007199254740992, 1] same_revision=true same_both_rows=true",
+        "TestIndependentR6ArrayGate/party_reverse": "prior=[9007199254740992, 9007199254740993, 1] GET_wire=[9007199254740992,9007199254740992,1] PUT_wire=[9007199254740992,1,7] HTTP=409 expected=[9007199254740993, 1, 7] actual=[9007199254740992, 9007199254740993, 1] same_revision=true same_both_rows=true",
+        "TestIndependentR6ArrayGate/party_append": "prior=[[9007199254740993, 2]] GET_wire=[[9007199254740992,2]] PUT_wire=[[9007199254740992,2,7]] HTTP=200 expected=[[9007199254740993, 2, 7]] actual=[[9007199254740993, 2, 7]] same_revision=false same_both_rows=false",
+        "TestIndependentR6ArrayGate/party_echo": "prior=[9007199254740993, 9007199254740992, 1] GET_wire=[9007199254740992,9007199254740992,1] PUT_wire=[9007199254740992,9007199254740992,1] HTTP=200 expected=[9007199254740993, 9007199254740992, 1] actual=[9007199254740993, 9007199254740992, 1] same_revision=false same_both_rows=false",
+        "TestIndependentR6ArrayGate/party_drop_nested": "prior=[[9007199254740993], [9007199254740992, 2]] GET_wire=[[9007199254740992],[9007199254740992,2]] PUT_wire=[[9007199254740992,2],[9007199254740992,2,9]] HTTP=409 expected=[[9007199254740992, 2], [9007199254740992, 2, 9]] actual=[[9007199254740993], [9007199254740992, 2]] same_revision=true same_both_rows=true"
+      }
+    },
+    "review-r7": {
+      "sha": "89bb420075a18467b1d7651cdf19844888e9e5e3",
+      "argv": [
+        "go",
+        "test",
+        "-overlay",
+        "/tmp/lawoa-r9-independent.Ai6iIU/release/review-r7-overlay.json",
+        "-race",
+        "-tags",
+        "np_m1_pg",
+        "-count=1",
+        "-json",
+        "./tests/integration/m1",
+        "-run",
+        "^TestIndependentR7ArrayGate$/^(intake|party)_(decimal_append|drop_nested|lossless|agree|echo|append|singleton_append)$"
+      ],
+      "start": "2026-11-23T10:09:43.991747+00:00",
+      "end": "2026-11-23T10:09:52.312390+00:00",
+      "exit": 0,
+      "log_sha256": "e5f86bc9e1d7378ac504ff39d8e45ccd1bcf2f4638746c39101d816a9c482a17",
+      "counts": {
+        "pass": 15,
+        "fail": 0,
+        "skip": 0
+      },
+      "failed": [],
+      "array_results": {
+        "TestIndependentR7ArrayGate/intake_decimal_append": "prior=[[9007199254740993], [0.0000001], [0.0000001]] GET_wire=[[9007199254740992],[1e-7],[1e-7]] PUT_wire=[[9007199254740992],[1e-7],[1e-7,7]] HTTP=200 expected=[[9007199254740993], [0.0000001], [0.0000001, 7]] actual=[[9007199254740993], [0.0000001], [0.0000001, 7]] same_revision=false same_both_rows=false",
+        "TestIndependentR7ArrayGate/intake_singleton_append": "prior=[[9007199254740993]] GET_wire=[[9007199254740992]] PUT_wire=[[9007199254740992,7]] HTTP=200 expected=[[9007199254740993, 7]] actual=[[9007199254740993, 7]] same_revision=false same_both_rows=false",
+        "TestIndependentR7ArrayGate/intake_drop_nested": "prior=[[9007199254740993], [9007199254740992, 2]] GET_wire=[[9007199254740992],[9007199254740992,2]] PUT_wire=[[9007199254740992,2],[9007199254740992,2,9]] HTTP=409 expected=[[9007199254740992, 2], [9007199254740992, 2, 9]] actual=[[9007199254740993], [9007199254740992, 2]] same_revision=true same_both_rows=true",
+        "TestIndependentR7ArrayGate/intake_lossless": "prior=[[9007199254740993], [9007199254740989, 2]] GET_wire=[[9007199254740992],[9007199254740989,2]] PUT_wire=[[9007199254740989,2],[7,9]] HTTP=200 expected=[[9007199254740989, 2], [7, 9]] actual=[[9007199254740989, 2], [7, 9]] same_revision=false same_both_rows=false",
+        "TestIndependentR7ArrayGate/intake_agree": "prior=[[9007199254740993, 1], [9007199254740993, 2]] GET_wire=[[9007199254740992,1],[9007199254740992,2]] PUT_wire=[[9007199254740992,2],[7,9]] HTTP=200 expected=[[9007199254740993, 2], [7, 9]] actual=[[9007199254740993, 2], [7, 9]] same_revision=false same_both_rows=false",
+        "TestIndependentR7ArrayGate/intake_echo": "prior=[[9007199254740993], [9007199254740992, 2]] GET_wire=[[9007199254740992],[9007199254740992,2]] PUT_wire=[[9007199254740992],[9007199254740992,2]] HTTP=200 expected=[[9007199254740993], [9007199254740992, 2]] actual=[[9007199254740993], [9007199254740992, 2]] same_revision=false same_both_rows=false",
+        "TestIndependentR7ArrayGate/intake_append": "prior=[[9007199254740993], [9007199254740992, 2]] GET_wire=[[9007199254740992],[9007199254740992,2]] PUT_wire=[[9007199254740992,7],[9007199254740992,2]] HTTP=200 expected=[[9007199254740993, 7], [9007199254740992, 2]] actual=[[9007199254740993, 7], [9007199254740992, 2]] same_revision=false same_both_rows=false",
+        "TestIndependentR7ArrayGate/party_decimal_append": "prior=[[9007199254740993], [0.0000001], [0.0000001]] GET_wire=[[9007199254740992],[1e-7],[1e-7]] PUT_wire=[[9007199254740992],[1e-7],[1e-7,7]] HTTP=200 expected=[[9007199254740993], [0.0000001], [0.0000001, 7]] actual=[[9007199254740993], [0.0000001], [0.0000001, 7]] same_revision=false same_both_rows=false",
+        "TestIndependentR7ArrayGate/party_singleton_append": "prior=[[9007199254740993]] GET_wire=[[9007199254740992]] PUT_wire=[[9007199254740992,7]] HTTP=200 expected=[[9007199254740993, 7]] actual=[[9007199254740993, 7]] same_revision=false same_both_rows=false",
+        "TestIndependentR7ArrayGate/party_drop_nested": "prior=[[9007199254740993], [9007199254740992, 2]] GET_wire=[[9007199254740992],[9007199254740992,2]] PUT_wire=[[9007199254740992,2],[9007199254740992,2,9]] HTTP=409 expected=[[9007199254740992, 2], [9007199254740992, 2, 9]] actual=[[9007199254740993], [9007199254740992, 2]] same_revision=true same_both_rows=true",
+        "TestIndependentR7ArrayGate/party_lossless": "prior=[[9007199254740993], [9007199254740989, 2]] GET_wire=[[9007199254740992],[9007199254740989,2]] PUT_wire=[[9007199254740989,2],[7,9]] HTTP=200 expected=[[9007199254740989, 2], [7, 9]] actual=[[9007199254740989, 2], [7, 9]] same_revision=false same_both_rows=false",
+        "TestIndependentR7ArrayGate/party_agree": "prior=[[9007199254740993, 1], [9007199254740993, 2]] GET_wire=[[9007199254740992,1],[9007199254740992,2]] PUT_wire=[[9007199254740992,2],[7,9]] HTTP=200 expected=[[9007199254740993, 2], [7, 9]] actual=[[9007199254740993, 2], [7, 9]] same_revision=false same_both_rows=false",
+        "TestIndependentR7ArrayGate/party_echo": "prior=[[9007199254740993], [9007199254740992, 2]] GET_wire=[[9007199254740992],[9007199254740992,2]] PUT_wire=[[9007199254740992],[9007199254740992,2]] HTTP=200 expected=[[9007199254740993], [9007199254740992, 2]] actual=[[9007199254740993], [9007199254740992, 2]] same_revision=false same_both_rows=false",
+        "TestIndependentR7ArrayGate/party_append": "prior=[[9007199254740993], [9007199254740992, 2]] GET_wire=[[9007199254740992],[9007199254740992,2]] PUT_wire=[[9007199254740992,7],[9007199254740992,2]] HTTP=200 expected=[[9007199254740993, 7], [9007199254740992, 2]] actual=[[9007199254740993, 7], [9007199254740992, 2]] same_revision=false same_both_rows=false"
+      }
+    },
+    "stress": {
+      "sha": "89bb420075a18467b1d7651cdf19844888e9e5e3",
+      "argv": [
+        "go",
+        "test",
+        "-overlay",
+        "/tmp/lawoa-r9-independent.Ai6iIU/release/stress-overlay.json",
+        "-race",
+        "-tags",
+        "np_m1_pg",
+        "-count=1",
+        "-json",
+        "./tests/integration/m1",
+        "-run",
+        "^TestIndependentR7ArrayGate$/^(intake|party)_(decimal_object|collision|collision_reverse)$"
+      ],
+      "start": "2026-11-23T10:09:52.382865+00:00",
+      "end": "2026-11-23T10:09:59.939285+00:00",
+      "exit": 0,
+      "log_sha256": "ab79826c408a9fe697fd3c6d52f6bba606384c57c21635fd71f5c793a713da48",
+      "counts": {
+        "pass": 7,
+        "fail": 0,
+        "skip": 0
+      },
+      "failed": [],
+      "array_results": {
+        "TestIndependentR7ArrayGate/intake_collision": "prior=[[9007199254740993, 1], [9007199254740992, 2]] GET_wire=[[9007199254740992,1],[9007199254740992,2]] PUT_wire=[[9007199254740992,2],[7,9]] HTTP=409 expected=[[9007199254740992, 2], [7, 9]] actual=[[9007199254740993, 1], [9007199254740992, 2]] same_revision=true same_both_rows=true",
+        "TestIndependentR7ArrayGate/intake_collision_reverse": "prior=[[9007199254740992, 1], [9007199254740993, 2]] GET_wire=[[9007199254740992,1],[9007199254740992,2]] PUT_wire=[[9007199254740992,2],[7,9]] HTTP=409 expected=[[9007199254740993, 2], [7, 9]] actual=[[9007199254740992, 1], [9007199254740993, 2]] same_revision=true same_both_rows=true",
+        "TestIndependentR7ArrayGate/intake_decimal_object": "prior=[[9007199254740993], [{\"v\": 0.0000001}], [{\"v\": 0.0000001}]] GET_wire=[[9007199254740992],[{\"v\":1e-7}],[{\"v\":1e-7}]] PUT_wire=[[9007199254740992],[{\"v\":1e-7}],[{\"v\":1e-7},7]] HTTP=200 expected=[[9007199254740993], [{\"v\": 0.0000001}], [{\"v\": 0.0000001}, 7]] actual=[[9007199254740993], [{\"v\": 0.0000001}], [{\"v\": 0.0000001}, 7]] same_revision=false same_both_rows=false",
+        "TestIndependentR7ArrayGate/party_collision": "prior=[[9007199254740993, 1], [9007199254740992, 2]] GET_wire=[[9007199254740992,1],[9007199254740992,2]] PUT_wire=[[9007199254740992,2],[7,9]] HTTP=409 expected=[[9007199254740992, 2], [7, 9]] actual=[[9007199254740993, 1], [9007199254740992, 2]] same_revision=true same_both_rows=true",
+        "TestIndependentR7ArrayGate/party_collision_reverse": "prior=[[9007199254740992, 1], [9007199254740993, 2]] GET_wire=[[9007199254740992,1],[9007199254740992,2]] PUT_wire=[[9007199254740992,2],[7,9]] HTTP=409 expected=[[9007199254740993, 2], [7, 9]] actual=[[9007199254740992, 1], [9007199254740993, 2]] same_revision=true same_both_rows=true",
+        "TestIndependentR7ArrayGate/party_decimal_object": "prior=[[9007199254740993], [{\"v\": 0.0000001}], [{\"v\": 0.0000001}]] GET_wire=[[9007199254740992],[{\"v\":1e-7}],[{\"v\":1e-7}]] PUT_wire=[[9007199254740992],[{\"v\":1e-7}],[{\"v\":1e-7},7]] HTTP=200 expected=[[9007199254740993], [{\"v\": 0.0000001}], [{\"v\": 0.0000001}, 7]] actual=[[9007199254740993], [{\"v\": 0.0000001}], [{\"v\": 0.0000001}, 7]] same_revision=false same_both_rows=false"
+      }
+    },
+    "singleton-boundary": {
+      "sha": "89bb420075a18467b1d7651cdf19844888e9e5e3",
+      "argv": [
+        "go",
+        "test",
+        "-overlay",
+        "/tmp/lawoa-r9-independent.Ai6iIU/release/review-r7-overlay.json",
+        "-race",
+        "-tags",
+        "np_m1_pg",
+        "-count=1",
+        "-json",
+        "./tests/integration/m1",
+        "-run",
+        "^TestIndependentR7ArrayGate$/^(intake|party)_(singleton_replace)$"
+      ],
+      "start": "2026-11-23T10:10:00.014396+00:00",
+      "end": "2026-11-23T10:10:05.755433+00:00",
+      "exit": 1,
+      "log_sha256": "41923383fa88ff5fb63c0973d89352d97f35894f44773e15b277e96d32884a23",
+      "counts": {
+        "pass": 0,
+        "fail": 3,
+        "skip": 0
+      },
+      "failed": [
+        "TestIndependentR7ArrayGate/intake_singleton_replace",
+        "TestIndependentR7ArrayGate/party_singleton_replace",
+        "TestIndependentR7ArrayGate"
+      ],
+      "array_results": {
+        "TestIndependentR7ArrayGate/intake_singleton_replace": "prior=[[9007199254740993]] GET_wire=[[9007199254740992]] PUT_wire=[[9007199254740992,7]] HTTP=200 expected=[[9007199254740992, 7]] actual=[[9007199254740993, 7]] same_revision=false same_both_rows=false",
+        "TestIndependentR7ArrayGate/party_singleton_replace": "prior=[[9007199254740993]] GET_wire=[[9007199254740992]] PUT_wire=[[9007199254740992,7]] HTTP=200 expected=[[9007199254740992, 7]] actual=[[9007199254740993, 7]] same_revision=false same_both_rows=false"
+      }
+    },
+    "go-build": {
+      "sha": "89bb420075a18467b1d7651cdf19844888e9e5e3",
+      "argv": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "cwd": ".",
+      "start": "2026-11-23T10:07:35.758492+00:00",
+      "end": "2026-11-23T10:08:07.195863+00:00",
+      "exit": 0,
+      "summary": [],
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "type-check": {
+      "sha": "89bb420075a18467b1d7651cdf19844888e9e5e3",
+      "argv": [
+        "npm",
+        "run",
+        "type-check"
+      ],
+      "cwd": "frontend",
+      "start": "2026-11-23T10:07:35.758530+00:00",
+      "end": "2026-11-23T10:07:49.310873+00:00",
+      "exit": 0,
+      "summary": [],
+      "log_sha256": "3d0a7528399a250a68017a4179ef123c402206346106b4b766bd2f386b5b559f"
+    },
+    "jest": {
+      "sha": "89bb420075a18467b1d7651cdf19844888e9e5e3",
+      "argv": [
+        "npm",
+        "test",
+        "--",
+        "--runInBand",
+        "--runTestsByPath",
+        "src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts",
+        "src/pages/batch01/__tests__/DashboardPermission.test.tsx",
+        "--coverage=false"
+      ],
+      "cwd": "frontend",
+      "start": "2026-11-23T10:07:54.927070+00:00",
+      "end": "2026-11-23T10:08:07.692877+00:00",
+      "exit": 0,
+      "summary": [
+        "Test Suites: 2 passed, 2 total",
+        "Tests:       16 passed, 16 total"
+      ],
+      "log_sha256": "1afdd4ffd50d3e5c424cbcd15e33c429e683c8da7b157911a11e64ef156714b0"
+    },
+    "vite-build": {
+      "sha": "89bb420075a18467b1d7651cdf19844888e9e5e3",
+      "argv": [
+        "npm",
+        "run",
+        "build",
+        "--",
+        "--outDir",
+        "/tmp/lawoa-r9-independent.Ai6iIU/release/vite-build"
+      ],
+      "cwd": "frontend",
+      "start": "2026-11-23T10:08:07.782997+00:00",
+      "end": "2026-11-23T10:08:16.484260+00:00",
+      "exit": 0,
+      "summary": [],
+      "log_sha256": "c40c87b8f59b658a83c7071fd50f2e8b34c8a3405da3e86a8ce47556bccdd11d"
+    },
+    "chrome": {
+      "sha": "89bb420075a18467b1d7651cdf19844888e9e5e3",
+      "argv": [
+        "./node_modules/.bin/playwright",
+        "test",
+        "--config",
+        "playwright.m1.config.ts",
+        "cases.spec.ts",
+        "case-create-full-workflow.spec.ts",
+        "conflict-actions.spec.ts",
+        "m1-save-order.spec.ts",
+        "m1-repair.spec.ts",
+        "m1-r3-restore.spec.ts",
+        "-g",
+        "重复保存|应该能运行利益冲突检查|应该能暂存|缺少版本的旧|冲突检查后应留在|必填项缺失时|STALE 在步骤区|BLOCKED 检测完成后|切换草稿后忽略|恢复后以原生 PUT|M1 R3|M1 R4|M1 R5",
+        "--output",
+        "/tmp/lawoa-r9-independent.Ai6iIU/release/chrome"
+      ],
+      "cwd": "frontend",
+      "start": "2026-11-23T10:08:16.564426+00:00",
+      "end": "2026-11-23T10:08:59.090571+00:00",
+      "exit": 0,
+      "summary": [
+        "27 passed (42.1s)"
+      ],
+      "log_sha256": "71304152ad2496183fb10f2f518d1c3ee2eca37ad27b477261ded5defb7d7917"
+    },
+    "bridge": {
+      "sha": "89bb420075a18467b1d7651cdf19844888e9e5e3",
+      "argv": [
+        "bash",
+        "scripts/np-first-slice/verify-m1-browser-approval.sh"
+      ],
+      "cwd": ".",
+      "start": "2026-11-23T10:10:19.276014+00:00",
+      "end": "2026-11-23T10:10:30.641258+00:00",
+      "exit": 0,
+      "summary": [
+        "1 passed (4.1s)"
+      ],
+      "log_sha256": "be3e34cfaaf653226cda9313d82da0383ecb03d59a42e9076cfc1e76c74213a0"
+    }
+  },
+  "supplemental_sha256": {
+    "review-probe.go": "7ef32e27e9a929aad84fe335c7f4c8cd1feb893619e864b364bcba6fd0885aa3",
+    "relocate.go": "f86af40b289fecedba53db288218a2fca98c40f431ad6c7e48d688fd7e6da970"
+  },
+  "independent_review": {
+    "model": "gpt-6.2-astra",
+    "code_and_function_verdict": "PASS",
+    "pg": {
+      "sha": "89bb420075a18467b1d7651cdf19844888e9e5e3",
+      "argv": [
+        "go",
+        "test",
+        "-race",
+        "-tags",
+        "np_m1_pg",
+        "-count=1",
+        "-json",
+        "./tests/integration/m1",
+        "-run",
+        "^TestM1R7NestedArrayOrigin$"
+      ],
+      "start": "2026-11-23T10:11:03.359129+00:00",
+      "end": "2026-11-23T10:11:13.752744+00:00",
+      "exit": 0,
+      "log_sha256": "edb8a1e829b1df70aad8b21b3a5744bc6f4209f38490c470395f59af54a75bd1",
+      "counts": {
+        "pass": 47,
+        "fail": 0,
+        "skip": 0
+      },
+      "failed": [],
+      "array_results": {
+        "TestM1R7NestedArrayOrigin/intake/drop_append": "HTTP=409 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740992, 2], [9007199254740992, 2, 9]] actual=[[9007199254740993], [9007199254740992, 2]] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/intake/drop_lossless": "HTTP=200 prior=[[9007199254740993], [9007199254740989, 2]] expected=[[9007199254740989, 2], [7, 9]] actual=[[9007199254740989, 2], [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/drop_agree": "HTTP=200 prior=[[9007199254740993, 1], [9007199254740993, 2]] expected=[[9007199254740993, 2], [7, 9]] actual=[[9007199254740993, 2], [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/decimal_append": "HTTP=200 prior=[[9007199254740993], [0.0000001], [0.0000001]] expected=[[9007199254740993], [0.0000001], [0.0000001, 7]] actual=[[9007199254740993], [0.0000001], [0.0000001, 7]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/echo": "HTTP=200 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740993], [9007199254740992, 2]] actual=[[9007199254740993], [9007199254740992, 2]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/append_one": "HTTP=200 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740993, 7], [9007199254740992, 2]] actual=[[9007199254740993, 7], [9007199254740992, 2]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/append_distinct_suffixes": "HTTP=200 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740993, 7], [9007199254740992, 2, 9]] actual=[[9007199254740993, 7], [9007199254740992, 2, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/swap_hidden": "HTTP=409 prior=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] expected=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] actual=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/intake/swap_hidden_text": "HTTP=409 prior=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic-hidden\"}, {\"tag\": \"b\"}] expected=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic-hidden\"}, {\"tag\": \"b\"}] actual=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic-hidden\"}, {\"tag\": \"b\"}] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/intake/mixed_prefix": "HTTP=200 prior=[{\"fixed\": 9007199254740992}, [9007199254740993, 1], [9007199254740993, 2]] expected=[{\"fixed\": 9007199254740992}, [9007199254740993, 2], [7, 9]] actual=[{\"fixed\": 9007199254740992}, [9007199254740993, 2], [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/mixed_suffix": "HTTP=200 prior=[[9007199254740993, 1], [9007199254740993, 2], {\"fixed\": 9007199254740992}] expected=[[9007199254740993, 2], {\"fixed\": 9007199254740992}, [7, 9]] actual=[[9007199254740993, 2], {\"fixed\": 9007199254740992}, [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/nested_hidden_echo": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] expected=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/nested_hidden_edit": "HTTP=409 prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] expected=[{\"tag\": \"changed\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/intake/nested_hidden_sibling": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] expected=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 2] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 2] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/rotate_append": "HTTP=409 prior=[[9007199254740993, 1], [9007199254740993, 2], 0] expected=[[9007199254740993, 2], 0, [9007199254740993, 1, 7]] actual=[[9007199254740993, 1], [9007199254740993, 2], 0] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/intake/rotate_exact": "HTTP=200 prior=[[11, 1], [11, 2], 0] expected=[[11, 2], 0, [11, 1, 7]] actual=[[11, 2], 0, [11, 1, 7]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/cross_objects": "HTTP=409 prior=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] expected=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] actual=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/intake/swap_visible_siblings": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, {\"tag\": \"b\"}, {\"tag\": \"c\"}] expected=[{\"tag\": \"a\", \"child\": {\"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, {\"tag\": \"c\"}, {\"tag\": \"b\"}] actual=[{\"tag\": \"a\", \"child\": {\"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, {\"tag\": \"c\"}, {\"tag\": \"b\"}] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/cut_hidden": "HTTP=409 prior=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] expected=[[0], [1, {\"tag\": \"b\"}, {\"tag\": \"a\", \"external_identifier\": \"h\"}]] actual=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/intake/cut_visible": "HTTP=200 prior=[[0, {\"tag\": \"a\"}], [1, {\"tag\": \"b\"}]] expected=[[0], [1, {\"tag\": \"b\"}, {\"tag\": \"a\"}]] actual=[[0], [1, {\"tag\": \"b\"}, {\"tag\": \"a\"}]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/delete_hidden": "HTTP=200 prior=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] expected=[[0], [1, {\"tag\": \"b\"}]] actual=[[0], [1, {\"tag\": \"b\"}]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/intake/cross_hidden_child": "HTTP=409 prior=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\"}]] expected=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\"}]] actual=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\"}]] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/intake/delete_with_empty_peer": "HTTP=200 prior=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\", \"child\": {}}]] expected=[[0], [1, {\"tag\": \"b\", \"child\": {}}]] actual=[[0], [1, {\"tag\": \"b\", \"child\": {}}]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/drop_append": "HTTP=409 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740992, 2], [9007199254740992, 2, 9]] actual=[[9007199254740993], [9007199254740992, 2]] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/party/drop_lossless": "HTTP=200 prior=[[9007199254740993], [9007199254740989, 2]] expected=[[9007199254740989, 2], [7, 9]] actual=[[9007199254740989, 2], [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/drop_agree": "HTTP=200 prior=[[9007199254740993, 1], [9007199254740993, 2]] expected=[[9007199254740993, 2], [7, 9]] actual=[[9007199254740993, 2], [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/decimal_append": "HTTP=200 prior=[[9007199254740993], [0.0000001], [0.0000001]] expected=[[9007199254740993], [0.0000001], [0.0000001, 7]] actual=[[9007199254740993], [0.0000001], [0.0000001, 7]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/echo": "HTTP=200 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740993], [9007199254740992, 2]] actual=[[9007199254740993], [9007199254740992, 2]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/append_one": "HTTP=200 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740993, 7], [9007199254740992, 2]] actual=[[9007199254740993, 7], [9007199254740992, 2]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/append_distinct_suffixes": "HTTP=200 prior=[[9007199254740993], [9007199254740992, 2]] expected=[[9007199254740993, 7], [9007199254740992, 2, 9]] actual=[[9007199254740993, 7], [9007199254740992, 2, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/swap_hidden": "HTTP=409 prior=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] expected=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] actual=[9007199254740993, {\"tag\": \"a\", \"external_identifier\": 9007199254740993}, {\"tag\": \"b\"}] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/party/swap_hidden_text": "HTTP=409 prior=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic-hidden\"}, {\"tag\": \"b\"}] expected=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic-hidden\"}, {\"tag\": \"b\"}] actual=[0, {\"tag\": \"a\", \"external_identifier\": \"synthetic-hidden\"}, {\"tag\": \"b\"}] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/party/mixed_prefix": "HTTP=200 prior=[{\"fixed\": 9007199254740992}, [9007199254740993, 1], [9007199254740993, 2]] expected=[{\"fixed\": 9007199254740992}, [9007199254740993, 2], [7, 9]] actual=[{\"fixed\": 9007199254740992}, [9007199254740993, 2], [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/mixed_suffix": "HTTP=200 prior=[[9007199254740993, 1], [9007199254740993, 2], {\"fixed\": 9007199254740992}] expected=[[9007199254740993, 2], {\"fixed\": 9007199254740992}, [7, 9]] actual=[[9007199254740993, 2], {\"fixed\": 9007199254740992}, [7, 9]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/nested_hidden_echo": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] expected=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/nested_hidden_edit": "HTTP=409 prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] expected=[{\"tag\": \"changed\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/party/nested_hidden_sibling": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 1] expected=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 2] actual=[{\"tag\": \"a\", \"child\": {\"label\": \"k\", \"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, 2] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/rotate_append": "HTTP=409 prior=[[9007199254740993, 1], [9007199254740993, 2], 0] expected=[[9007199254740993, 2], 0, [9007199254740993, 1, 7]] actual=[[9007199254740993, 1], [9007199254740993, 2], 0] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/party/rotate_exact": "HTTP=200 prior=[[11, 1], [11, 2], 0] expected=[[11, 2], 0, [11, 1, 7]] actual=[[11, 2], 0, [11, 1, 7]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/cross_objects": "HTTP=409 prior=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] expected=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] actual=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/party/swap_visible_siblings": "HTTP=200 prior=[{\"tag\": \"a\", \"child\": {\"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, {\"tag\": \"b\"}, {\"tag\": \"c\"}] expected=[{\"tag\": \"a\", \"child\": {\"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, {\"tag\": \"c\"}, {\"tag\": \"b\"}] actual=[{\"tag\": \"a\", \"child\": {\"external_identifier\": \"inner\"}, \"external_identifier\": \"outer\"}, {\"tag\": \"c\"}, {\"tag\": \"b\"}] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/cut_hidden": "HTTP=409 prior=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] expected=[[0], [1, {\"tag\": \"b\"}, {\"tag\": \"a\", \"external_identifier\": \"h\"}]] actual=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/party/cut_visible": "HTTP=200 prior=[[0, {\"tag\": \"a\"}], [1, {\"tag\": \"b\"}]] expected=[[0], [1, {\"tag\": \"b\"}, {\"tag\": \"a\"}]] actual=[[0], [1, {\"tag\": \"b\"}, {\"tag\": \"a\"}]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/delete_hidden": "HTTP=200 prior=[[0, {\"tag\": \"a\", \"external_identifier\": \"h\"}], [1, {\"tag\": \"b\"}]] expected=[[0], [1, {\"tag\": \"b\"}]] actual=[[0], [1, {\"tag\": \"b\"}]] same_revision=false same_rows=false",
+        "TestM1R7NestedArrayOrigin/party/cross_hidden_child": "HTTP=409 prior=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\"}]] expected=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\"}]] actual=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\"}]] same_revision=true same_rows=true",
+        "TestM1R7NestedArrayOrigin/party/delete_with_empty_peer": "HTTP=200 prior=[[0, {\"tag\": \"a\", \"child\": {\"external_identifier\": \"h\"}}], [1, {\"tag\": \"b\", \"child\": {}}]] expected=[[0], [1, {\"tag\": \"b\", \"child\": {}}]] actual=[[0], [1, {\"tag\": \"b\", \"child\": {}}]] same_revision=false same_rows=false"
+      }
+    }
+  },
+  "M2": "NOT_STARTED",
+  "singleton_boundary": "Two replacement intent probes plus parent failed as expected on identical request bodies; not included in green totals."
+}

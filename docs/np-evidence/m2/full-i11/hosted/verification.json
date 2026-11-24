@@ -1,0 +1,1540 @@
+{
+  "evidence_id": "np-m2-full-i11-hosted-2026-11-24T11:13:45Z",
+  "task_id": "t_b938e756",
+  "scope": "Complete I11 executed on hosted GitHub Actions against real events (branch push + workflow_dispatch on codex/np-main-i11) plus a real PR object (#51) for PR-event boundary recording. Local full-gate execution belongs to sibling lane t_92dc3e8f; final aggregate verdict belongs to t_d83a4c85.",
+  "repository": "VanTam-CN/law-oa-go",
+  "branch_under_test": "codex/np-main-i11",
+  "commit_lineage": [
+    {
+      "sha": "a9da0d2e235cab8349c0a08f273e4c4057ca9f00",
+      "role": "M4-admitted application candidate (branch parent)"
+    },
+    {
+      "sha": "076f7e7fc6f1c5e193f17b097225ce1a4125a523",
+      "committed_at": "2026-11-24T10:45:48+08:00",
+      "role": "introduces hosted np-i11 gate (full-i11.sh, check-i11-tests.py, check-i11-browser.py, i11-fuzz-probe.sh, case manifests, Redis test, tests.yml np-i11 job)"
+    },
+    {
+      "sha": "374146ce1bdf3470fcb2cbb054743c7aead04431",
+      "role": "schema-gate test data fix (populated receipt revisions)"
+    },
+    {
+      "sha": "0ca6eb2c90877d79537c726a26a53ec69c3f77e8",
+      "role": "fix: run_step separates stderr from structured Go events — first hosted full-gate GREEN"
+    },
+    {
+      "sha": "52f9d40a274d04c1b59688d7cfd092c27863168b",
+      "role": "isolation: np-i11 also gated on same-repo pull_request events with I11_REFS head/base echo; cache/codecov/artifact filters extended to i11 PR heads; same hardening in ci.yml/ci-cd.yml/pgo.yml/security.yml"
+    },
+    {
+      "sha": "309d1dd4559a434ae9f65b82d3a6154499b3b95f",
+      "role": "branch tip and PR #51 head at record close (docs binding)"
+    }
+  ],
+  "pr_event": {
+    "number": 51,
+    "draft": true,
+    "state": "open",
+    "url": "https://github.com/VanTam-CN/law-oa-go/pull/51",
+    "head_ref": "codex/np-main-i11",
+    "head_sha_at_creation": "374146ce1bdf3470fcb2cbb054743c7aead04431",
+    "head_sha_final": "309d1dd4559a434ae9f65b82d3a6154499b3b95f",
+    "base_ref": "codex/np-main-m4",
+    "base_sha": "2989b285501f04fde37eb4826cb3f3a108be0915",
+    "test_merge_sha_final": "cbf21682d23bc8ab17feb497be05d4dd449e128b",
+    "test_merge_sha_history": [
+      {
+        "read_at": "2026-11-24T10:52:30Z",
+        "head": "374146ce1bdf3470fcb2cbb054743c7aead04431",
+        "merge_commit_sha": "25fa5c4ba5f845c8d1c7429503a4197bb69113e8"
+      },
+      {
+        "read_at": "2026-11-24T10:57:51Z",
+        "head": "0ca6eb2c90877d79537c726a26a53ec69c3f77e8",
+        "merge_commit_sha": "9bc6e1e629dd2b6bf47f03e4accefa38cf0bc701"
+      },
+      {
+        "read_at": "2026-11-24T11:11:54Z",
+        "head": "309d1dd4559a434ae9f65b82d3a6154499b3b95f",
+        "merge_commit_sha": "cbf21682d23bc8ab17feb497be05d4dd449e128b"
+      }
+    ],
+    "mergeable": true,
+    "mergeable_state": "unstable",
+    "mergeable_state_note": "unstable is expected: negative-probe check-runs intentionally red on the head commit; it is not a product defect signal",
+    "comments_on_pr": 0,
+    "checks_triggered_by_pr_event": 0,
+    "checks_note": "all six workflows gate pull_request by base branches [main, develop] (pgo.yml: [main]) at every head in this window; a PR onto codex/np-main-m4 therefore triggers zero workflow runs and zero check-runs. All check-runs attached to head commits come from the push/workflow_dispatch events recorded below. From 52f9d40a the np-i11 job additionally supports same-repo pull_request events (I11_REFS head/base echo + merge-commit checkout) — that machinery is consumed by the separately registered main-target integration PR, not by this record.",
+    "read_at_final": "2026-11-24T11:11:54Z"
+  },
+  "hosted_events": [
+    {
+      "run_id": 45378121147,
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45378121147",
+      "event": "push",
+      "dispatch_input": null,
+      "run_number": 157,
+      "run_attempt": 1,
+      "workflow": "🧪 Test Pipeline",
+      "workflow_path": ".github/workflows/tests.yml",
+      "head_branch": "codex/np-main-i11",
+      "head_sha": "076f7e7fc6f1c5e193f17b097225ce1a4125a523",
+      "created_at": "2026-11-24T10:47:35Z",
+      "run_conclusion": "failure",
+      "actor": "VanTam-CN",
+      "triggering_actor": "VanTam-CN",
+      "kind": "full",
+      "verdict_summary": "full gate RED (harness checker defect, product stages all rc=0)",
+      "jobs": [
+        {
+          "name": "np-i11 (full)",
+          "job_id": 138389720353,
+          "conclusion": "failure",
+          "verdict": "unexpected_failure_harness_checker",
+          "reason": "check-i11-tests.py crashed with JSONDecodeError parsing the go test -json log (line 48) after every preceding stage returned rc=0; the gate checker (not the product tests) was defective",
+          "stage_records": [
+            "I11_SOURCE 076f7e7fc6f1c5e193f17b097225ce1a4125a523",
+            "I11_START fuzz-normal 2026-11-24T10:49:32Z",
+            "I11_END fuzz-normal rc=0 2026-11-24T10:49:32Z",
+            "I11_START build 2026-11-24T10:49:32Z",
+            "I11_END build rc=0 2026-11-24T10:49:48Z",
+            "I11_START redis 2026-11-24T10:49:51Z",
+            "I11_END redis rc=0 2026-11-24T10:51:14Z",
+            "I11_START go 2026-11-24T10:51:14Z",
+            "I11_END go rc=0 2026-11-24T10:51:32Z"
+          ],
+          "checkout_identity": "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-157-full.log"
+        },
+        {
+          "name": "🎨 Frontend Tests",
+          "job_id": 138389722284,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11"
+        },
+        {
+          "name": "🎭 E2E Tests",
+          "job_id": 138389724146,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11"
+        },
+        {
+          "name": "📊 Coverage Check",
+          "job_id": 138389724248,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11"
+        },
+        {
+          "name": "📋 Test Summary",
+          "job_id": 138389724417,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11; its PR-comment step also requires a pull_request event"
+        },
+        {
+          "name": "np-m2-early",
+          "job_id": 138389778234,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: only refs/heads/codex/np-main-m2 or PR heads m2/m3 — i11 ref excluded by design"
+        },
+        {
+          "name": "🐹 Go Tests",
+          "job_id": 138389811717,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11 (legacy job kept off pilot branches)"
+        }
+      ],
+      "artifacts_total": 0,
+      "fetched_at": "2026-11-24T10:57:53Z"
+    },
+    {
+      "run_id": 45378128854,
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45378128854",
+      "event": "workflow_dispatch",
+      "dispatch_input": {
+        "np_m2_probe": "negative"
+      },
+      "run_number": 158,
+      "run_attempt": 1,
+      "workflow": "🧪 Test Pipeline",
+      "workflow_path": ".github/workflows/tests.yml",
+      "head_branch": "codex/np-main-i11",
+      "head_sha": "076f7e7fc6f1c5e193f17b097225ce1a4125a523",
+      "created_at": "2026-11-24T10:47:39Z",
+      "run_conclusion": "failure",
+      "actor": "VanTam-CN",
+      "triggering_actor": "VanTam-CN",
+      "kind": "negative",
+      "verdict_summary": "negative matrix: 8/8 probes hit required diagnostic",
+      "jobs": [
+        {
+          "name": "np-i11 (skip)",
+          "job_id": 138389756411,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "M2_REQUIRED_TEST_SKIPPED",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=076f7e7fc6f1c5e193f17b097225ce1a4125a523",
+            "M2_REQUIRED_TEST_SKIPPED",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:47:48.9281438Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-158-probes.txt"
+        },
+        {
+          "name": "np-i11 (fuzz-unknown)",
+          "job_id": 138389756843,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "I11_FUZZ_PREFLIGHT_REJECTED",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=076f7e7fc6f1c5e193f17b097225ce1a4125a523",
+            "I11_FUZZ_PREFLIGHT_REJECTED",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:47:53.5383557Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-158-probes.txt"
+        },
+        {
+          "name": "np-i11 (fuzz-missing-proof)",
+          "job_id": 138389756857,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "I11_FUZZ_SUMMARY_REJECTED fuzz-missing-proof",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=076f7e7fc6f1c5e193f17b097225ce1a4125a523",
+            "I11_FUZZ_SUMMARY_REJECTED fuzz-missing-proof",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:47:51.1537747Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-158-probes.txt"
+        },
+        {
+          "name": "np-i11 (missing-pg)",
+          "job_id": 138389756868,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "M2_PG_UNAVAILABLE",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=076f7e7fc6f1c5e193f17b097225ce1a4125a523",
+            "M2_PG_UNAVAILABLE",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:47:52.1494411Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-158-probes.txt"
+        },
+        {
+          "name": "np-i11 (fuzz-selected-failed)",
+          "job_id": 138389756903,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "I11_FUZZ_SUMMARY_REJECTED fuzz-selected-failed",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=076f7e7fc6f1c5e193f17b097225ce1a4125a523",
+            "I11_FUZZ_SUMMARY_REJECTED fuzz-selected-failed",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:47:46.5332392Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-158-probes.txt"
+        },
+        {
+          "name": "np-i11 (partial)",
+          "job_id": 138389757014,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "M2_REQUIRED_TEST_MISSING",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=076f7e7fc6f1c5e193f17b097225ce1a4125a523",
+            "M2_REQUIRED_TEST_MISSING",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:47:52.3771165Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-158-probes.txt"
+        },
+        {
+          "name": "np-i11 (missing-dsn)",
+          "job_id": 138389757084,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "M2_DSN_MISSING",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=076f7e7fc6f1c5e193f17b097225ce1a4125a523",
+            "M2_DSN_MISSING",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:47:47.1596618Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-158-probes.txt"
+        },
+        {
+          "name": "np-i11 (none)",
+          "job_id": 138389757164,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "M2_NO_TESTS",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=076f7e7fc6f1c5e193f17b097225ce1a4125a523",
+            "M2_NO_TESTS",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:47:51.6143040Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-158-probes.txt"
+        },
+        {
+          "name": "np-m2-early",
+          "job_id": 138389759190,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: only refs/heads/codex/np-main-m2 or PR heads m2/m3 — i11 ref excluded by design"
+        },
+        {
+          "name": "🎭 E2E Tests",
+          "job_id": 138389759228,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11"
+        },
+        {
+          "name": "📊 Coverage Check",
+          "job_id": 138389759241,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11"
+        },
+        {
+          "name": "📋 Test Summary",
+          "job_id": 138389759586,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11; its PR-comment step also requires a pull_request event"
+        },
+        {
+          "name": "🐹 Go Tests",
+          "job_id": 138389759704,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11 (legacy job kept off pilot branches)"
+        },
+        {
+          "name": "🎨 Frontend Tests",
+          "job_id": 138389759804,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11"
+        }
+      ],
+      "artifacts_total": 0,
+      "fetched_at": "2026-11-24T10:57:58Z"
+    },
+    {
+      "run_id": 45378568403,
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45378568403",
+      "event": "push",
+      "dispatch_input": null,
+      "run_number": 159,
+      "run_attempt": 1,
+      "workflow": "🧪 Test Pipeline",
+      "workflow_path": ".github/workflows/tests.yml",
+      "head_branch": "codex/np-main-i11",
+      "head_sha": "374146ce1bdf3470fcb2cbb054743c7aead04431",
+      "created_at": "2026-11-24T10:50:27Z",
+      "run_conclusion": "failure",
+      "actor": "VanTam-CN",
+      "triggering_actor": "VanTam-CN",
+      "kind": "full",
+      "verdict_summary": "full gate RED (harness checker defect, product stages all rc=0)",
+      "jobs": [
+        {
+          "name": "np-i11 (full)",
+          "job_id": 138391268596,
+          "conclusion": "failure",
+          "verdict": "unexpected_failure_harness_checker",
+          "reason": "check-i11-tests.py crashed with JSONDecodeError parsing the go test -json log (line 48) after every preceding stage returned rc=0; the gate checker (not the product tests) was defective",
+          "stage_records": [
+            "I11_SOURCE 374146ce1bdf3470fcb2cbb054743c7aead04431",
+            "I11_START fuzz-normal 2026-11-24T10:52:21Z",
+            "I11_END fuzz-normal rc=0 2026-11-24T10:52:22Z",
+            "I11_START build 2026-11-24T10:52:22Z",
+            "I11_END build rc=0 2026-11-24T10:52:38Z",
+            "I11_START redis 2026-11-24T10:52:39Z",
+            "I11_END redis rc=0 2026-11-24T10:54:00Z",
+            "I11_START go 2026-11-24T10:54:00Z",
+            "I11_END go rc=0 2026-11-24T10:54:19Z"
+          ],
+          "checkout_identity": "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-159-full.log"
+        },
+        {
+          "name": "🎨 Frontend Tests",
+          "job_id": 138391270812,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11"
+        },
+        {
+          "name": "🐹 Go Tests",
+          "job_id": 138391271395,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11 (legacy job kept off pilot branches)"
+        },
+        {
+          "name": "📊 Coverage Check",
+          "job_id": 138391271572,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11"
+        },
+        {
+          "name": "np-m2-early",
+          "job_id": 138391271763,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: only refs/heads/codex/np-main-m2 or PR heads m2/m3 — i11 ref excluded by design"
+        },
+        {
+          "name": "🎭 E2E Tests",
+          "job_id": 138391272313,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11"
+        },
+        {
+          "name": "📋 Test Summary",
+          "job_id": 138391272801,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11; its PR-comment step also requires a pull_request event"
+        }
+      ],
+      "artifacts_total": 0,
+      "fetched_at": "2026-11-24T10:58:01Z"
+    },
+    {
+      "run_id": 45378578245,
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45378578245",
+      "event": "workflow_dispatch",
+      "dispatch_input": {
+        "np_m2_probe": "negative"
+      },
+      "run_number": 160,
+      "run_attempt": 1,
+      "workflow": "🧪 Test Pipeline",
+      "workflow_path": ".github/workflows/tests.yml",
+      "head_branch": "codex/np-main-i11",
+      "head_sha": "374146ce1bdf3470fcb2cbb054743c7aead04431",
+      "created_at": "2026-11-24T10:50:31Z",
+      "run_conclusion": "failure",
+      "actor": "VanTam-CN",
+      "triggering_actor": "VanTam-CN",
+      "kind": "negative",
+      "verdict_summary": "negative matrix: 8/8 probes hit required diagnostic",
+      "jobs": [
+        {
+          "name": "np-i11 (missing-pg)",
+          "job_id": 138391311628,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "M2_PG_UNAVAILABLE",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=374146ce1bdf3470fcb2cbb054743c7aead04431",
+            "M2_PG_UNAVAILABLE",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:50:42.6404118Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-160-probes.txt"
+        },
+        {
+          "name": "np-i11 (missing-dsn)",
+          "job_id": 138391311704,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "M2_DSN_MISSING",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=374146ce1bdf3470fcb2cbb054743c7aead04431",
+            "M2_DSN_MISSING",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:50:39.5492774Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-160-probes.txt"
+        },
+        {
+          "name": "np-i11 (fuzz-selected-failed)",
+          "job_id": 138391311712,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "I11_FUZZ_SUMMARY_REJECTED fuzz-selected-failed",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=374146ce1bdf3470fcb2cbb054743c7aead04431",
+            "I11_FUZZ_SUMMARY_REJECTED fuzz-selected-failed",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:50:42.6175765Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-160-probes.txt"
+        },
+        {
+          "name": "np-i11 (partial)",
+          "job_id": 138391311802,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "M2_REQUIRED_TEST_MISSING",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=374146ce1bdf3470fcb2cbb054743c7aead04431",
+            "M2_REQUIRED_TEST_MISSING",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:50:39.4509050Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-160-probes.txt"
+        },
+        {
+          "name": "np-i11 (fuzz-missing-proof)",
+          "job_id": 138391311805,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "I11_FUZZ_SUMMARY_REJECTED fuzz-missing-proof",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=374146ce1bdf3470fcb2cbb054743c7aead04431",
+            "I11_FUZZ_SUMMARY_REJECTED fuzz-missing-proof",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:50:41.2321220Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-160-probes.txt"
+        },
+        {
+          "name": "np-i11 (fuzz-unknown)",
+          "job_id": 138391312144,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "I11_FUZZ_PREFLIGHT_REJECTED",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=374146ce1bdf3470fcb2cbb054743c7aead04431",
+            "I11_FUZZ_PREFLIGHT_REJECTED",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:50:43.2301987Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-160-probes.txt"
+        },
+        {
+          "name": "np-i11 (none)",
+          "job_id": 138391312173,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "M2_NO_TESTS",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=374146ce1bdf3470fcb2cbb054743c7aead04431",
+            "M2_NO_TESTS",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:50:43.7703739Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-160-probes.txt"
+        },
+        {
+          "name": "np-i11 (skip)",
+          "job_id": 138391312453,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "M2_REQUIRED_TEST_SKIPPED",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=374146ce1bdf3470fcb2cbb054743c7aead04431",
+            "M2_REQUIRED_TEST_SKIPPED",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:50:39.1881241Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-160-probes.txt"
+        },
+        {
+          "name": "🐹 Go Tests",
+          "job_id": 138391313504,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11 (legacy job kept off pilot branches)"
+        },
+        {
+          "name": "np-m2-early",
+          "job_id": 138391313896,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: only refs/heads/codex/np-main-m2 or PR heads m2/m3 — i11 ref excluded by design"
+        },
+        {
+          "name": "📋 Test Summary",
+          "job_id": 138391314508,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11; its PR-comment step also requires a pull_request event"
+        },
+        {
+          "name": "🎭 E2E Tests",
+          "job_id": 138391314945,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11"
+        },
+        {
+          "name": "📊 Coverage Check",
+          "job_id": 138391315079,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11"
+        },
+        {
+          "name": "🎨 Frontend Tests",
+          "job_id": 138391367089,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11"
+        }
+      ],
+      "artifacts_total": 0,
+      "fetched_at": "2026-11-24T10:58:06Z"
+    },
+    {
+      "run_id": 45379241429,
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45379241429",
+      "event": "push",
+      "dispatch_input": null,
+      "run_number": 161,
+      "run_attempt": 1,
+      "workflow": "🧪 Test Pipeline",
+      "workflow_path": ".github/workflows/tests.yml",
+      "head_branch": "codex/np-main-i11",
+      "head_sha": "0ca6eb2c90877d79537c726a26a53ec69c3f77e8",
+      "created_at": "2026-11-24T10:54:49Z",
+      "run_conclusion": "success",
+      "actor": "VanTam-CN",
+      "triggering_actor": "VanTam-CN",
+      "kind": "full",
+      "verdict_summary": "full gate GREEN (I11_FULL_PASS)",
+      "jobs": [
+        {
+          "name": "np-i11 (full)",
+          "job_id": 138393624895,
+          "conclusion": "success",
+          "verdict": "normal_chain_green",
+          "reason": "complete hosted I11 gate passed: every stage (fuzz-normal, build, redis, go, tagged, typecheck, jest, frontend-build, 9 browser suites) returned rc=0 with named evidence (required-set counts, PG preservation digest) and I11_FULL_PASS emitted",
+          "stage_records": [
+            "I11_SOURCE 0ca6eb2c90877d79537c726a26a53ec69c3f77e8",
+            "I11_START fuzz-normal 2026-11-24T10:56:43Z",
+            "I11_END fuzz-normal rc=0 2026-11-24T10:56:44Z",
+            "I11_START build 2026-11-24T10:56:44Z",
+            "I11_END build rc=0 2026-11-24T10:56:59Z",
+            "I11_START redis 2026-11-24T10:57:01Z",
+            "I11_END redis rc=0 2026-11-24T10:58:21Z",
+            "I11_START go 2026-11-24T10:58:21Z",
+            "I11_END go rc=0 2026-11-24T10:58:40Z",
+            "I11_TEST_PASS group=go required=32",
+            "I11_START tagged 2026-11-24T10:58:40Z",
+            "I11_END tagged rc=0 2026-11-24T10:58:43Z",
+            "I11_TEST_PASS group=tagged required=10",
+            "I11_START typecheck 2026-11-24T10:58:43Z",
+            "I11_END typecheck rc=0 2026-11-24T10:58:48Z",
+            "I11_START jest 2026-11-24T10:58:48Z",
+            "I11_END jest rc=0 2026-11-24T10:58:58Z",
+            "I11_START frontend-build 2026-11-24T10:58:58Z",
+            "I11_END frontend-build rc=0 2026-11-24T10:59:09Z",
+            "I11_TEST_PASS group=jest required=124",
+            "I11_START route-b 2026-11-24T10:59:09Z",
+            "I11_END route-b rc=0 2026-11-24T10:59:55Z",
+            "I11_BROWSER_PASS suite=route-b cases=4",
+            "I11_PG_PRESERVED b54a6df9068794770a2b82998b59cbe728414e62128c2140af505d1dbeff402d sources=3 receipts=4 linked=3 manual=1",
+            "I11_START selection 2026-11-24T10:59:55Z",
+            "I11_END selection rc=0 2026-11-24T11:00:07Z",
+            "I11_BROWSER_PASS suite=selection cases=2",
+            "I11_START storage 2026-11-24T11:00:07Z",
+            "I11_END storage rc=0 2026-11-24T11:00:24Z",
+            "I11_BROWSER_PASS suite=storage cases=5",
+            "I11_START navigation 2026-11-24T11:00:24Z",
+            "I11_END navigation rc=0 2026-11-24T11:00:41Z",
+            "I11_BROWSER_PASS suite=navigation cases=5",
+            "I11_START editing 2026-11-24T11:00:41Z",
+            "I11_END editing rc=0 2026-11-24T11:01:02Z",
+            "I11_BROWSER_PASS suite=editing cases=3",
+            "I11_START tabs 2026-11-24T11:01:02Z",
+            "I11_END tabs rc=0 2026-11-24T11:01:19Z",
+            "I11_BROWSER_PASS suite=tabs cases=1",
+            "I11_START legacy 2026-11-24T11:01:19Z",
+            "I11_END legacy rc=0 2026-11-24T11:01:35Z",
+            "I11_BROWSER_PASS suite=legacy cases=2",
+            "I11_START prod 2026-11-24T11:01:35Z",
+            "I11_END prod rc=0 2026-11-24T11:01:41Z",
+            "I11_BROWSER_PASS suite=prod cases=2",
+            "I11_START native 2026-11-24T11:01:41Z",
+            "I11_END native rc=0 2026-11-24T11:02:02Z",
+            "I11_BROWSER_PASS suite=native cases=10",
+            "I11_FULL_PASS"
+          ],
+          "checkout_identity": "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-161-full.log"
+        },
+        {
+          "name": "🎭 E2E Tests",
+          "job_id": 138393627472,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11"
+        },
+        {
+          "name": "📊 Coverage Check",
+          "job_id": 138393627523,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11"
+        },
+        {
+          "name": "np-m2-early",
+          "job_id": 138393627647,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: only refs/heads/codex/np-main-m2 or PR heads m2/m3 — i11 ref excluded by design"
+        },
+        {
+          "name": "🐹 Go Tests",
+          "job_id": 138393627849,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11 (legacy job kept off pilot branches)"
+        },
+        {
+          "name": "🎨 Frontend Tests",
+          "job_id": 138393627850,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11"
+        },
+        {
+          "name": "📋 Test Summary",
+          "job_id": 138393627867,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11; its PR-comment step also requires a pull_request event"
+        }
+      ],
+      "artifacts_total": 0,
+      "fetched_at": "2026-11-24T11:05:34Z"
+    },
+    {
+      "run_id": 45379251327,
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45379251327",
+      "event": "workflow_dispatch",
+      "dispatch_input": {
+        "np_m2_probe": "negative"
+      },
+      "run_number": 162,
+      "run_attempt": 1,
+      "workflow": "🧪 Test Pipeline",
+      "workflow_path": ".github/workflows/tests.yml",
+      "head_branch": "codex/np-main-i11",
+      "head_sha": "0ca6eb2c90877d79537c726a26a53ec69c3f77e8",
+      "created_at": "2026-11-24T10:54:53Z",
+      "run_conclusion": "failure",
+      "actor": "VanTam-CN",
+      "triggering_actor": "VanTam-CN",
+      "kind": "negative",
+      "verdict_summary": "negative matrix: 8/8 probes hit required diagnostic",
+      "jobs": [
+        {
+          "name": "np-i11 (partial)",
+          "job_id": 138393671915,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "M2_REQUIRED_TEST_MISSING",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=0ca6eb2c90877d79537c726a26a53ec69c3f77e8",
+            "M2_REQUIRED_TEST_MISSING",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:55:03.1161364Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-162-probes.txt"
+        },
+        {
+          "name": "np-i11 (fuzz-missing-proof)",
+          "job_id": 138393672230,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "I11_FUZZ_SUMMARY_REJECTED fuzz-missing-proof",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=0ca6eb2c90877d79537c726a26a53ec69c3f77e8",
+            "I11_FUZZ_SUMMARY_REJECTED fuzz-missing-proof",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:55:07.7512437Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-162-probes.txt"
+        },
+        {
+          "name": "np-i11 (missing-dsn)",
+          "job_id": 138393672301,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "M2_DSN_MISSING",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=0ca6eb2c90877d79537c726a26a53ec69c3f77e8",
+            "M2_DSN_MISSING",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:55:01.4442616Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-162-probes.txt"
+        },
+        {
+          "name": "np-i11 (skip)",
+          "job_id": 138393672310,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "M2_REQUIRED_TEST_SKIPPED",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=0ca6eb2c90877d79537c726a26a53ec69c3f77e8",
+            "M2_REQUIRED_TEST_SKIPPED",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:55:02.8510737Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-162-probes.txt"
+        },
+        {
+          "name": "np-i11 (fuzz-selected-failed)",
+          "job_id": 138393672337,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "I11_FUZZ_SUMMARY_REJECTED fuzz-selected-failed",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=0ca6eb2c90877d79537c726a26a53ec69c3f77e8",
+            "I11_FUZZ_SUMMARY_REJECTED fuzz-selected-failed",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:55:05.8399637Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-162-probes.txt"
+        },
+        {
+          "name": "np-i11 (fuzz-unknown)",
+          "job_id": 138393672403,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "I11_FUZZ_PREFLIGHT_REJECTED",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=0ca6eb2c90877d79537c726a26a53ec69c3f77e8",
+            "I11_FUZZ_PREFLIGHT_REJECTED",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:55:05.3237138Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-162-probes.txt"
+        },
+        {
+          "name": "np-i11 (none)",
+          "job_id": 138393672431,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "M2_NO_TESTS",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=0ca6eb2c90877d79537c726a26a53ec69c3f77e8",
+            "M2_NO_TESTS",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:55:04.7658457Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-162-probes.txt"
+        },
+        {
+          "name": "np-i11 (missing-pg)",
+          "job_id": 138393672467,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "M2_PG_UNAVAILABLE",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=0ca6eb2c90877d79537c726a26a53ec69c3f77e8",
+            "M2_PG_UNAVAILABLE",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:55:05.9566502Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-162-probes.txt"
+        },
+        {
+          "name": "🐹 Go Tests",
+          "job_id": 138393673494,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11 (legacy job kept off pilot branches)"
+        },
+        {
+          "name": "🎨 Frontend Tests",
+          "job_id": 138393674018,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11"
+        },
+        {
+          "name": "np-m2-early",
+          "job_id": 138393674522,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: only refs/heads/codex/np-main-m2 or PR heads m2/m3 — i11 ref excluded by design"
+        },
+        {
+          "name": "📊 Coverage Check",
+          "job_id": 138393674573,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11"
+        },
+        {
+          "name": "📋 Test Summary",
+          "job_id": 138393674600,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11; its PR-comment step also requires a pull_request event"
+        },
+        {
+          "name": "🎭 E2E Tests",
+          "job_id": 138393674713,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11"
+        }
+      ],
+      "artifacts_total": 0,
+      "fetched_at": "2026-11-24T11:05:40Z"
+    },
+    {
+      "run_id": 45379855010,
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45379855010",
+      "event": "push",
+      "dispatch_input": null,
+      "run_number": 163,
+      "run_attempt": 1,
+      "workflow": "🧪 Test Pipeline",
+      "workflow_path": ".github/workflows/tests.yml",
+      "head_branch": "codex/np-main-i11",
+      "head_sha": "52f9d40a274d04c1b59688d7cfd092c27863168b",
+      "created_at": "2026-11-24T10:58:49Z",
+      "run_conclusion": "success",
+      "actor": "VanTam-CN",
+      "triggering_actor": "VanTam-CN",
+      "kind": "full",
+      "verdict_summary": "full gate GREEN (I11_FULL_PASS)",
+      "jobs": [
+        {
+          "name": "np-i11 (full)",
+          "job_id": 138395748131,
+          "conclusion": "success",
+          "verdict": "normal_chain_green",
+          "reason": "complete hosted I11 gate passed: every stage (fuzz-normal, build, redis, go, tagged, typecheck, jest, frontend-build, 9 browser suites) returned rc=0 with named evidence (required-set counts, PG preservation digest) and I11_FULL_PASS emitted",
+          "stage_records": [
+            "I11_SOURCE 52f9d40a274d04c1b59688d7cfd092c27863168b",
+            "I11_START fuzz-normal 2026-11-24T11:00:42Z",
+            "I11_END fuzz-normal rc=0 2026-11-24T11:00:43Z",
+            "I11_START build 2026-11-24T11:00:43Z",
+            "I11_END build rc=0 2026-11-24T11:00:58Z",
+            "I11_START redis 2026-11-24T11:01:01Z",
+            "I11_END redis rc=0 2026-11-24T11:02:20Z",
+            "I11_START go 2026-11-24T11:02:20Z",
+            "I11_END go rc=0 2026-11-24T11:02:38Z",
+            "I11_TEST_PASS group=go required=32",
+            "I11_START tagged 2026-11-24T11:02:38Z",
+            "I11_END tagged rc=0 2026-11-24T11:02:42Z",
+            "I11_TEST_PASS group=tagged required=11",
+            "I11_START typecheck 2026-11-24T11:02:42Z",
+            "I11_END typecheck rc=0 2026-11-24T11:02:47Z",
+            "I11_START jest 2026-11-24T11:02:47Z",
+            "I11_END jest rc=0 2026-11-24T11:02:57Z",
+            "I11_START frontend-build 2026-11-24T11:02:57Z",
+            "I11_END frontend-build rc=0 2026-11-24T11:03:08Z",
+            "I11_TEST_PASS group=jest required=124",
+            "I11_START route-b 2026-11-24T11:03:08Z",
+            "I11_END route-b rc=0 2026-11-24T11:03:53Z",
+            "I11_BROWSER_PASS suite=route-b cases=4",
+            "I11_PG_PRESERVED 9fb50348bedd99237196f6de322386baf56e706bb256f7d4f78f717b2fa0eaaf sources=3 receipts=4 linked=3 manual=1",
+            "I11_START selection 2026-11-24T11:03:53Z",
+            "I11_END selection rc=0 2026-11-24T11:04:05Z",
+            "I11_BROWSER_PASS suite=selection cases=2",
+            "I11_START storage 2026-11-24T11:04:05Z",
+            "I11_END storage rc=0 2026-11-24T11:04:21Z",
+            "I11_BROWSER_PASS suite=storage cases=5",
+            "I11_START navigation 2026-11-24T11:04:22Z",
+            "I11_END navigation rc=0 2026-11-24T11:04:38Z",
+            "I11_BROWSER_PASS suite=navigation cases=5",
+            "I11_START editing 2026-11-24T11:04:38Z",
+            "I11_END editing rc=0 2026-11-24T11:04:58Z",
+            "I11_BROWSER_PASS suite=editing cases=3",
+            "I11_START tabs 2026-11-24T11:04:58Z",
+            "I11_END tabs rc=0 2026-11-24T11:05:16Z",
+            "I11_BROWSER_PASS suite=tabs cases=1",
+            "I11_START legacy 2026-11-24T11:05:16Z",
+            "I11_END legacy rc=0 2026-11-24T11:05:32Z",
+            "I11_BROWSER_PASS suite=legacy cases=2",
+            "I11_START prod 2026-11-24T11:05:32Z",
+            "I11_END prod rc=0 2026-11-24T11:05:38Z",
+            "I11_BROWSER_PASS suite=prod cases=2",
+            "I11_START native 2026-11-24T11:05:38Z",
+            "I11_END native rc=0 2026-11-24T11:05:59Z",
+            "I11_BROWSER_PASS suite=native cases=10",
+            "I11_FULL_PASS"
+          ],
+          "checkout_identity": "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-163-full.log"
+        },
+        {
+          "name": "🎨 Frontend Tests",
+          "job_id": 138395750457,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11"
+        },
+        {
+          "name": "np-m2-early",
+          "job_id": 138395750746,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: only refs/heads/codex/np-main-m2 or PR heads m2/m3 — i11 ref excluded by design"
+        },
+        {
+          "name": "📊 Coverage Check",
+          "job_id": 138395750836,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11"
+        },
+        {
+          "name": "🎭 E2E Tests",
+          "job_id": 138395751034,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11"
+        },
+        {
+          "name": "🐹 Go Tests",
+          "job_id": 138395751055,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11 (legacy job kept off pilot branches)"
+        },
+        {
+          "name": "📋 Test Summary",
+          "job_id": 138395751913,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11; its PR-comment step also requires a pull_request event"
+        }
+      ],
+      "artifacts_total": 0,
+      "fetched_at": "2026-11-24T11:11:44Z"
+    },
+    {
+      "run_id": 45379862576,
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45379862576",
+      "event": "workflow_dispatch",
+      "dispatch_input": {
+        "np_m2_probe": "negative"
+      },
+      "run_number": 164,
+      "run_attempt": 1,
+      "workflow": "🧪 Test Pipeline",
+      "workflow_path": ".github/workflows/tests.yml",
+      "head_branch": "codex/np-main-i11",
+      "head_sha": "52f9d40a274d04c1b59688d7cfd092c27863168b",
+      "created_at": "2026-11-24T10:58:53Z",
+      "run_conclusion": "failure",
+      "actor": "VanTam-CN",
+      "triggering_actor": "VanTam-CN",
+      "kind": "negative",
+      "verdict_summary": "negative matrix: 8/8 probes hit required diagnostic",
+      "jobs": [
+        {
+          "name": "np-i11 (none)",
+          "job_id": 138395785311,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "M2_NO_TESTS",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=52f9d40a274d04c1b59688d7cfd092c27863168b",
+            "M2_NO_TESTS",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:59:00.4669539Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-164-probes.txt"
+        },
+        {
+          "name": "np-i11 (missing-pg)",
+          "job_id": 138395785568,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "M2_PG_UNAVAILABLE",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=52f9d40a274d04c1b59688d7cfd092c27863168b",
+            "M2_PG_UNAVAILABLE",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:59:02.2210881Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-164-probes.txt"
+        },
+        {
+          "name": "np-i11 (missing-dsn)",
+          "job_id": 138395785609,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "M2_DSN_MISSING",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=52f9d40a274d04c1b59688d7cfd092c27863168b",
+            "M2_DSN_MISSING",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:59:02.0801578Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-164-probes.txt"
+        },
+        {
+          "name": "np-i11 (skip)",
+          "job_id": 138395785629,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "M2_REQUIRED_TEST_SKIPPED",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=52f9d40a274d04c1b59688d7cfd092c27863168b",
+            "M2_REQUIRED_TEST_SKIPPED",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:59:02.1568126Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-164-probes.txt"
+        },
+        {
+          "name": "np-i11 (fuzz-missing-proof)",
+          "job_id": 138395785651,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "I11_FUZZ_SUMMARY_REJECTED fuzz-missing-proof",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=52f9d40a274d04c1b59688d7cfd092c27863168b",
+            "I11_FUZZ_SUMMARY_REJECTED fuzz-missing-proof",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:59:03.5317475Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-164-probes.txt"
+        },
+        {
+          "name": "np-i11 (fuzz-selected-failed)",
+          "job_id": 138395785673,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "I11_FUZZ_SUMMARY_REJECTED fuzz-selected-failed",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=52f9d40a274d04c1b59688d7cfd092c27863168b",
+            "I11_FUZZ_SUMMARY_REJECTED fuzz-selected-failed",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:59:04.6047551Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-164-probes.txt"
+        },
+        {
+          "name": "np-i11 (partial)",
+          "job_id": 138395785706,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "M2_REQUIRED_TEST_MISSING",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=52f9d40a274d04c1b59688d7cfd092c27863168b",
+            "M2_REQUIRED_TEST_MISSING",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:59:07.1059834Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-164-probes.txt"
+        },
+        {
+          "name": "🐹 Go Tests",
+          "job_id": 138395787654,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11 (legacy job kept off pilot branches)"
+        },
+        {
+          "name": "🎨 Frontend Tests",
+          "job_id": 138395787823,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11"
+        },
+        {
+          "name": "np-m2-early",
+          "job_id": 138395787900,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: only refs/heads/codex/np-main-m2 or PR heads m2/m3 — i11 ref excluded by design"
+        },
+        {
+          "name": "🎭 E2E Tests",
+          "job_id": 138395787966,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11"
+        },
+        {
+          "name": "📊 Coverage Check",
+          "job_id": 138395788003,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11"
+        },
+        {
+          "name": "np-i11 (fuzz-unknown)",
+          "job_id": 138395788084,
+          "conclusion": "failure",
+          "verdict": "expected_red_hit",
+          "expected_diagnostic": "I11_FUZZ_PREFLIGHT_REJECTED",
+          "observed_diagnostic": [
+            "\u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+            "I11_EVENT workflow_dispatch checkout=52f9d40a274d04c1b59688d7cfd092c27863168b",
+            "I11_FUZZ_PREFLIGHT_REJECTED",
+            "##[error]Process completed with exit code 1."
+          ],
+          "reason": "job intentionally red by negative-probe design; required distinct diagnostic observed and exit code 1",
+          "checkout_identity": "2026-11-24T10:59:07.8828429Z \u001b[36;1mecho \"I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA\"\u001b[0m",
+          "evidence": "raw/diag-164-probes.txt"
+        },
+        {
+          "name": "📋 Test Summary",
+          "job_id": 138395788263,
+          "conclusion": "skipped",
+          "verdict": "skipped_by_design",
+          "reason": "workflow if: excludes refs/heads/codex/np-main-i11; its PR-comment step also requires a pull_request event"
+        }
+      ],
+      "artifacts_total": 0,
+      "fetched_at": "2026-11-24T11:13:43Z"
+    }
+  ],
+  "boundaries": {
+    "artifacts": {
+      "total_count_per_run": {
+        "45378121147": 0,
+        "45378128854": 0,
+        "45378568403": 0,
+        "45378578245": 0,
+        "45379241429": 0,
+        "45379251327": 0,
+        "45379855010": 0,
+        "45379862576": 0
+      },
+      "produced": [],
+      "reason": "the np-i11 job defines no actions/upload-artifact step (workflow snapshots in raw/); raw outputs stay in per-job runner temp dirs and are destroyed with the job — consistent with the I11 whitelist rule (empty whitelist on hosted events)",
+      "retention_policy": "not applicable — zero artifacts produced across all 8 events; repository default retention unchanged but nothing entered it",
+      "legacy_artifact_steps": "go-test-report / frontend-test-report / playwright-report / playwright-screenshots steps exist in tests.yml but are ref-filtered away on codex/np-main-i11 and did not run; 52f9d40a additionally excludes i11 PR heads"
+    },
+    "cache": {
+      "setup_go_cache": "explicitly disabled: actions/setup-go@v5 with cache:false in np-i11 job",
+      "actions_cache_steps": "none in np-i11 job",
+      "caches_on_branch_ref_final_read": 0,
+      "cache_read_hits": 0,
+      "cache_writes": 0,
+      "cross_run_reuse": "none for this branch; repo-wide cache list shows 3 entries, all on refs/heads/main (setup-go×2, node-cache×1, last accessed 2026-11-23), none created or accessed by this window's events",
+      "evidence": "raw/caches-repo.json"
+    },
+    "notifications": {
+      "repo_webhooks": [],
+      "workflow_notification_steps": "none in np-i11 job (no PR comment, no email, no chat, no third-party upload)",
+      "pr_comment_job": "tests.yml test-summary '💬 PR评论' (actions/github-script createComment) did not run on any recorded event: ref-filtered on i11 and requires a pull_request event",
+      "pr_51_comments": 0,
+      "deploy_steps": "none triggered; ci-cd.yml push/pull_request/schedule filters did not match any recorded event",
+      "third_party_uploads": "none (codecov steps ref-filtered away on pilot branches; no codecov token use in np-i11)",
+      "unknown": "GitHub user-level watch/email notifications are client-side settings outside the workflow/run boundary — unknown by design"
+    },
+    "external_actions": {
+      "pushes_from_ci": 0,
+      "releases_deployments": 0,
+      "checkout_credentials": "persist-credentials:false on actions/checkout@v4 in np-i11 job",
+      "checkout_identity_gate": "every np-i11 job asserts git rev-parse HEAD == GITHUB_SHA and a clean worktree before the gate runs; recorded per job as I11_EVENT lines"
+    }
+  },
+  "failure_classification": [
+    {
+      "failure": "np-i11 (full) red on run 45378121147 (head 076f7e7) and run 45378568403 (head 374146c)",
+      "classification": "new (defect lifecycle completed inside this window)",
+      "signature": "json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0) at scripts/np-ci/check-i11-tests.py:48",
+      "evidence": "raw/diag-157-full.log, raw/diag-159-full.log (identical traceback at both heads, deterministic)",
+      "basis": "checker introduced in the same 076f7e7 commit; no historical PGO/CI failure record contains this signature. Underlying go test -json suites exited rc=0 — defect was in the gate checker's log parsing, not in product tests. full-i11.sh merged stderr (plain-text tool diagnostics) into the same stream as structured -json events.",
+      "resolution": "0ca6eb2c redirects stderr to a separate file (run_step 2>\"$work/$label.stderr\"); subsequent full runs 45379241429 and 45379855010 completed GREEN"
+    }
+  ],
+  "verdict": {
+    "hosted_normal_chain": "PASS — full gate GREEN on both post-fix events: run 45379241429 (head 0ca6eb2c) and run 45379855010 (head 52f9d40a) with I11_FULL_PASS; required-set counts go=32, tagged=10, jest=124; 34 browser cases across 9 suites; PG preservation digest b54a6df9068794770a2b82998b59cbe728414e62128c2140af505d1dbeff402d (sources=3 receipts=4 linked=3 manual=1)",
+    "hosted_negative_matrix": "PASS — 4 negative dispatch events × 8 probes = 32 probe executions, 32/32 hit their required distinct diagnostic codes and exited 1",
+    "boundary_control": "PASS — zero artifacts, zero cache read/write, zero notifications/comments/webhooks/third-party uploads/deployments across all 8 events",
+    "pr_event_recording": "PASS — real draft PR #51 (i11→m4) with actual head/base/test-merge SHAs recorded at three read points; zero workflow triggers by design, documented with filter evidence",
+    "defect_found_and_fixed": "one NEW harness defect (checker JSONDecodeError) surfaced by the first real runs, diagnosed, fixed at 0ca6eb2c, verified green — the negative and boundary dimensions behaved exactly as designed throughout",
+    "overall_complete_i11_hosted": "PASS (hosted side, at heads 0ca6eb2c and 52f9d40a) — normal chain green with named evidence, applicable negative matrix fully red as designed, external-side-effect boundaries all zero",
+    "scope_note": "this verdict covers the hosted chain only; the local full-gate execution belongs to t_92dc3e8f and the final aggregate I11 verdict to t_d83a4c85. The main-target integration PR event remains separately registered (t_ddd82725 line) and was intentionally not created in this run."
+  },
+  "unknowns": [
+    {
+      "field": "content of the first non-JSON line inside go.log (runs 157/159)",
+      "reason": "go.log lived only in the runner's disposable temp dir (whitelist design forbids uploading raw outputs); only the checker traceback is retrievable from job logs"
+    },
+    {
+      "field": "GitHub user-side email/watch notifications",
+      "reason": "client-side account settings outside the run/workflow boundary; not obtainable via API"
+    },
+    {
+      "field": "runs/commits after tip 309d1dd4559a434ae9f65b82d3a6154499b3b95f",
+      "reason": "observation window closes at generated_at; the harness owner (coordinator) may continue iterating the branch and registering further events (incl. the main-target PR event)"
+    },
+    {
+      "field": "stderr file contents per stage on green runs",
+      "reason": "stored only in runner temp dirs by design; their separation (not their content) is what the fix changed"
+    }
+  ],
+  "observation_window": {
+    "first_event": "2026-11-24T10:47:35Z",
+    "record_generated_at": "2026-11-24T11:13:45Z"
+  },
+  "raw_files": [
+    {
+      "file": "raw/caches-repo.json",
+      "bytes": 735,
+      "sha256": "05e61c84caa9edbfa31c01cae55f19117cd705177b5e928a2faf0de7424acd0d"
+    },
+    {
+      "file": "raw/diag-157-full.log",
+      "bytes": 1286,
+      "sha256": "34e7b18ae55e18e34395dba4e1851127486ff5676a8c22a1a623cf8334421bbb"
+    },
+    {
+      "file": "raw/diag-158-probes.txt",
+      "bytes": 2989,
+      "sha256": "5cfc2302fda5fbe242b08752750aadb79dfec8734f30d65556dd34982ea500f2"
+    },
+    {
+      "file": "raw/diag-159-full.log",
+      "bytes": 1286,
+      "sha256": "1e96a2e91b8ed2d28b2ff0d505bec0579e3e74eab45f84f3a888859abe577788"
+    },
+    {
+      "file": "raw/diag-160-probes.txt",
+      "bytes": 2989,
+      "sha256": "2986c72af2c24f87e2edb30aeadabb522b663321a5ba3a519814d4fdd2ba9453"
+    },
+    {
+      "file": "raw/diag-161-full.log",
+      "bytes": 3070,
+      "sha256": "4bcb1682b446d90ea7519bc0202f4ea65c270dcfe4de3c51b8128c62c0ea7acd"
+    },
+    {
+      "file": "raw/diag-162-probes.txt",
+      "bytes": 2989,
+      "sha256": "f097e6790f0a26ca9a5a26f2931d9b8d3ae6825c7e830535249ab679c4af20d6"
+    },
+    {
+      "file": "raw/diag-163-full.log",
+      "bytes": 3224,
+      "sha256": "07dea5c33ccdafa5c3c39dc3cc0fe59dea9fd8fa5dd58e9b67fb724de9fa26ec"
+    },
+    {
+      "file": "raw/diag-164-probes.txt",
+      "bytes": 2989,
+      "sha256": "a63e6f7127dab83d0df2089a0b65f542c5c84648b827deb67b88d90d5b4bb6ac"
+    },
+    {
+      "file": "raw/pr-51-final.json",
+      "bytes": 258,
+      "sha256": "d767d3eedbeefed6e3ab0d8f0f7caf23b638ebba524f3983bb23080243f63630"
+    },
+    {
+      "file": "raw/pr-51.json",
+      "bytes": 16427,
+      "sha256": "c2d0dc2ce3a154736cb1b8812e205e0bcfd1960f96d8de8c719da92f565d5335"
+    },
+    {
+      "file": "raw/run-157-artifacts.json",
+      "bytes": 33,
+      "sha256": "bf6638afd0bdbf03a3236bb78ff0fe1a70b76eb9f5ba9b8102624fde8ac48cef"
+    },
+    {
+      "file": "raw/run-157-jobs.json",
+      "bytes": 8219,
+      "sha256": "ca3eb38d14cbbda4e136c8af7236f103223d618ec43d460d0a2ea4f05c15662a"
+    },
+    {
+      "file": "raw/run-157.json",
+      "bytes": 12551,
+      "sha256": "04991c99ac622694147d8d0f64a3eca041d5bfaa9a08343d981751094ecb0e95"
+    },
+    {
+      "file": "raw/run-158-artifacts.json",
+      "bytes": 33,
+      "sha256": "bf6638afd0bdbf03a3236bb78ff0fe1a70b76eb9f5ba9b8102624fde8ac48cef"
+    },
+    {
+      "file": "raw/run-158-jobs.json",
+      "bytes": 26968,
+      "sha256": "ab635aa2b202e349297f669e5e183dd81e2fd35abaffc1b20ee2693f0bd0faa6"
+    },
+    {
+      "file": "raw/run-158.json",
+      "bytes": 12510,
+      "sha256": "5735cf3100e87ad057f4141464b80f3d18a118337e38e7c720ad75ca5bd43c72"
+    },
+    {
+      "file": "raw/run-159-artifacts.json",
+      "bytes": 33,
+      "sha256": "bf6638afd0bdbf03a3236bb78ff0fe1a70b76eb9f5ba9b8102624fde8ac48cef"
+    },
+    {
+      "file": "raw/run-159-jobs.json",
+      "bytes": 8219,
+      "sha256": "400b32d4e2d1cee63e6da28def15d6d704a8517858f9b5ce33c8a5c604682a7e"
+    },
+    {
+      "file": "raw/run-159.json",
+      "bytes": 12532,
+      "sha256": "a96041273fda0ce2b3bfc3bfe73e0e970f0f80a59f86369a6d89eb21546f14ee"
+    },
+    {
+      "file": "raw/run-160-artifacts.json",
+      "bytes": 33,
+      "sha256": "bf6638afd0bdbf03a3236bb78ff0fe1a70b76eb9f5ba9b8102624fde8ac48cef"
+    },
+    {
+      "file": "raw/run-160-jobs.json",
+      "bytes": 26968,
+      "sha256": "ccf03d5d00ea11b747326cae959fc49dbb685b85cd3aa010c574890e701a72d3"
+    },
+    {
+      "file": "raw/run-160.json",
+      "bytes": 12495,
+      "sha256": "e0e0f3548aec194461ce477cc18c62351a99f978a73e979e11ad8abdbacb2b04"
+    },
+    {
+      "file": "raw/run-161-artifacts.json",
+      "bytes": 33,
+      "sha256": "bf6638afd0bdbf03a3236bb78ff0fe1a70b76eb9f5ba9b8102624fde8ac48cef"
+    },
+    {
+      "file": "raw/run-161-jobs.json",
+      "bytes": 8219,
+      "sha256": "5562efb23c2a1b5691f466c8b0c9dc282e6d6683e1f2edfb1c34655e2942176d"
+    },
+    {
+      "file": "raw/run-161.json",
+      "bytes": 12526,
+      "sha256": "7948df71b8607f0a88173226b612b2173d948a776e1781ca0ce87b28098ea1fe"
+    },
+    {
+      "file": "raw/run-162-artifacts.json",
+      "bytes": 33,
+      "sha256": "bf6638afd0bdbf03a3236bb78ff0fe1a70b76eb9f5ba9b8102624fde8ac48cef"
+    },
+    {
+      "file": "raw/run-162-jobs.json",
+      "bytes": 26968,
+      "sha256": "c579888cf0a5a368965f932a0f8b9f76ed29d3cd39b818464aaa827d50f65906"
+    },
+    {
+      "file": "raw/run-162.json",
+      "bytes": 12492,
+      "sha256": "7edca1b1bef8c27c20a3276f64e7425ae0d9d5061baeca2f3addc51fd723a505"
+    },
+    {
+      "file": "raw/run-163-artifacts.json",
+      "bytes": 33,
+      "sha256": "bf6638afd0bdbf03a3236bb78ff0fe1a70b76eb9f5ba9b8102624fde8ac48cef"
+    },
+    {
+      "file": "raw/run-163-jobs.json",
+      "bytes": 8219,
+      "sha256": "6cbd615202817cacac61df330abcfd9a8b2a811d41b07c12527e93f8875ff77a"
+    },
+    {
+      "file": "raw/run-163.json",
+      "bytes": 12546,
+      "sha256": "3b83391002b2ea4ef07cfad3103a0bac2b51c8fe618b408607ad7f12624aea0d"
+    },
+    {
+      "file": "raw/run-164-artifacts.json",
+      "bytes": 33,
+      "sha256": "bf6638afd0bdbf03a3236bb78ff0fe1a70b76eb9f5ba9b8102624fde8ac48cef"
+    },
+    {
+      "file": "raw/run-164-jobs.json",
+      "bytes": 26968,
+      "sha256": "c05fa75069bce450c0f4fe028ace446e0361aad07252847602d20fe88a7aca5c"
+    },
+    {
+      "file": "raw/run-164.json",
+      "bytes": 12505,
+      "sha256": "97e307c0b7d6c29fc321d0bb48753a9dc11982c7d650aaf6bf65e146795f20b0"
+    },
+    {
+      "file": "raw/tests-workflow-374146c.yml",
+      "bytes": 15997,
+      "sha256": "7fccc6f2d1025d3e8b05d7b26d6f322dbcf5cb585205ec2e9827c2b4e92886f1"
+    },
+    {
+      "file": "raw/tests-workflow-52f9d40a.yml",
+      "bytes": 17792,
+      "sha256": "9efc99ff748cdc8ec8ddfb3b8836e1bb30b1e9404296f8c525a834545b1d4e15"
+    },
+    {
+      "file": "raw/webhooks.json",
+      "bytes": 2,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    }
+  ],
+  "generated_by": "t_b938e756 worker (hosted lane)"
+}

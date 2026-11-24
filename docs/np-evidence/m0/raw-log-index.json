@@ -1,0 +1,257 @@
+{
+  "purpose": "raw local evidence retained outside Git; committed records are structural only",
+  "logs": {
+    "frontend-build.stderr.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/frontend-build.stderr.log",
+      "sha256": "5e158e4336b34f91dc8cae16c6ef30be3a2fbc5c1c10564bcab407b44e4e241b",
+      "bytes": 333,
+      "committed": false
+    },
+    "frontend-build.stdout.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/frontend-build.stdout.log",
+      "sha256": "e019412372f80c6f5561399c9981e49e5514a5bdf4ebeda9a3c71f4052887066",
+      "bytes": 641,
+      "committed": false
+    },
+    "frontend-jest.stderr.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/frontend-jest.stderr.log",
+      "sha256": "2712783917c68f8150c4024fec72b2513bb6e18fd15c7ba8b76a6e9ceefce739",
+      "bytes": 775,
+      "committed": false
+    },
+    "frontend-jest.stdout.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/frontend-jest.stdout.log",
+      "sha256": "f43a7212d47a24836d3baefe95c8a4984e4dba7deb21e228719a0e2e55577c1f",
+      "bytes": 1243,
+      "committed": false
+    },
+    "frontend-typecheck.stderr.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/frontend-typecheck.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "committed": false
+    },
+    "frontend-typecheck.stdout.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/frontend-typecheck.stdout.log",
+      "sha256": "3d0a7528399a250a68017a4179ef123c402206346106b4b766bd2f386b5b559f",
+      "bytes": 52,
+      "committed": false
+    },
+    "go-build.stderr.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/go-build.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "committed": false
+    },
+    "go-build.stdout.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/go-build.stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "committed": false
+    },
+    "go-regression.stderr.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/go-regression.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "committed": false
+    },
+    "go-regression.stdout.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/go-regression.stdout.log",
+      "sha256": "31f2c7494078b27bf8a4939facc68e94b09e1fecb8ce81b88a87f890d91863b1",
+      "bytes": 120199,
+      "committed": false
+    },
+    "npm-ci.stderr.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/npm-ci.stderr.log",
+      "sha256": "cc80a3951cc4115a3232f00fe6623fbc53eeb15402a0b681e8be80c5ddb57bbf",
+      "bytes": 727,
+      "committed": false
+    },
+    "npm-ci.stdout.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/npm-ci.stdout.log",
+      "sha256": "29193ac352e8f39e17b5de61c53ce6450f05b6744eed6ba3992666e03cc88724",
+      "bytes": 90,
+      "committed": false
+    },
+    "pg-bootstrap.stderr.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg-bootstrap.stderr.log",
+      "sha256": "eef0a23577d9e41a1c08d9425bf75489ccd4b169b44c9568d327385ce51b4003",
+      "bytes": 498,
+      "committed": false
+    },
+    "pg-bootstrap.stdout.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg-bootstrap.stdout.log",
+      "sha256": "28313f6dcf2333f63eccbf6289aa31f0d1696575525e62bf665184c676ec0292",
+      "bytes": 58,
+      "committed": false
+    },
+    "pg-container-cleanup.stderr.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg-container-cleanup.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "committed": false
+    },
+    "pg-container-cleanup.stdout.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg-container-cleanup.stdout.log",
+      "sha256": "a646bb737a9849d85570ad28631671331c3150f4270c36f4b5394328efec767d",
+      "bytes": 21,
+      "committed": false
+    },
+    "pg-container-create.stderr.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg-container-create.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "committed": false
+    },
+    "pg-container-create.stdout.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg-container-create.stdout.log",
+      "sha256": "3ac68e9263963fc1607f22ffd630314b5926961f0c441a9b051277c0f004036c",
+      "bytes": 65,
+      "committed": false
+    },
+    "pg-image.stderr.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg-image.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "committed": false
+    },
+    "pg-image.stdout.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg-image.stdout.log",
+      "sha256": "f839f9a10185d1d4e3de382514597ba4e66046a7defa2f57ba1972b6ba29651b",
+      "bytes": 157,
+      "committed": false
+    },
+    "pg-network-cleanup.stderr.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg-network-cleanup.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "committed": false
+    },
+    "pg-network-cleanup.stdout.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg-network-cleanup.stdout.log",
+      "sha256": "c956fed4d54499d45db8113204576e70a23acc0ba1da4ca534a080a57bf45b95",
+      "bytes": 22,
+      "committed": false
+    },
+    "pg-network-create.stderr.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg-network-create.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "committed": false
+    },
+    "pg-network-create.stdout.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg-network-create.stdout.log",
+      "sha256": "694cf6693d875a78710d37282fdd47535d651bc6627ab16b57d0e98708566ae8",
+      "bytes": 65,
+      "committed": false
+    },
+    "pg2-bootstrap.stderr.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg2-bootstrap.stderr.log",
+      "sha256": "db0235cff03de1d6e7eb882b89a727f53ff3f91998470ad68083ef0a230f02e2",
+      "bytes": 144,
+      "committed": false
+    },
+    "pg2-bootstrap.stdout.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg2-bootstrap.stdout.log",
+      "sha256": "28313f6dcf2333f63eccbf6289aa31f0d1696575525e62bf665184c676ec0292",
+      "bytes": 58,
+      "committed": false
+    },
+    "pg2-container-cleanup.stderr.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg2-container-cleanup.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "committed": false
+    },
+    "pg2-container-cleanup.stdout.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg2-container-cleanup.stdout.log",
+      "sha256": "a646bb737a9849d85570ad28631671331c3150f4270c36f4b5394328efec767d",
+      "bytes": 21,
+      "committed": false
+    },
+    "pg2-container-create.stderr.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg2-container-create.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "committed": false
+    },
+    "pg2-container-create.stdout.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg2-container-create.stdout.log",
+      "sha256": "2669d6089f42e15d888fedce631c246253ac53f83d3987276926c7f04296cf76",
+      "bytes": 65,
+      "committed": false
+    },
+    "pg2-network-cleanup.stderr.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg2-network-cleanup.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "committed": false
+    },
+    "pg2-network-cleanup.stdout.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg2-network-cleanup.stdout.log",
+      "sha256": "c956fed4d54499d45db8113204576e70a23acc0ba1da4ca534a080a57bf45b95",
+      "bytes": 22,
+      "committed": false
+    },
+    "pg2-network-create.stderr.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg2-network-create.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "committed": false
+    },
+    "pg2-network-create.stdout.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg2-network-create.stdout.log",
+      "sha256": "60dee7bd8c56af79985d087fa2b71059c7018f92522cdbb6cca26681b918beaf",
+      "bytes": 65,
+      "committed": false
+    },
+    "pg3-bootstrap.stderr.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg3-bootstrap.stderr.log",
+      "sha256": "be1ed78917f6b4314cedb75ee33e0bb2f78c2765ea12e3f1a0ce20fee2216a07",
+      "bytes": 283,
+      "committed": false
+    },
+    "pg3-bootstrap.stdout.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg3-bootstrap.stdout.log",
+      "sha256": "3ffd95b6d0a37a6df676680136ded5cd10645580bee5f53e966126267628a1ec",
+      "bytes": 138,
+      "committed": false
+    },
+    "pg3-cleanup.stderr.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg3-cleanup.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "committed": false
+    },
+    "pg3-cleanup.stdout.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg3-cleanup.stdout.log",
+      "sha256": "a646bb737a9849d85570ad28631671331c3150f4270c36f4b5394328efec767d",
+      "bytes": 21,
+      "committed": false
+    },
+    "pg3-container-create.stderr.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg3-container-create.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "committed": false
+    },
+    "pg3-container-create.stdout.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg3-container-create.stdout.log",
+      "sha256": "a537cf7728d0e30f32b7be788fdb5454d1d3e5c7215de2b155219397f9b1b246",
+      "bytes": 65,
+      "committed": false
+    },
+    "pg3-schema.stderr.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg3-schema.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "committed": false
+    },
+    "pg3-schema.stdout.log": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg3-schema.stdout.log",
+      "sha256": "f61a02e6f6043a0be8e306efef3e9e7c2524063e825fbd72f1319fc8fb5e7d28",
+      "bytes": 6715,
+      "committed": false
+    }
+  }
+}

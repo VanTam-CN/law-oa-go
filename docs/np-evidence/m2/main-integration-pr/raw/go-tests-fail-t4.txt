@@ -1,0 +1,10 @@
+2026-11-24T12:06:27.7633740Z --- SKIP: TestConflictDetectionDialects_ServicePropagatesDBError (0.00s)
+2026-11-24T12:06:27.7634634Z ok  	law-oa-go/tests/integration/conflict_dialects	1.029s	coverage: [no statements]
+2026-11-24T12:06:27.7636762Z --- SKIP: TestTrustTransactionAtomicity_ConcurrentApprovesOnlyOneSucceeds (0.00s)
+2026-11-24T12:06:27.7638639Z --- SKIP: TestTrustTransactionAtomicity_RollsBackOnInsufficientBalance (0.00s)
+2026-11-24T12:06:27.7639617Z ok  	law-oa-go/tests/integration/trust_atomicity	1.027s	coverage: [no statements]
+2026-11-24T12:06:27.7640897Z --- FAIL: TestPerformanceMonitoring (0.00s)
+2026-11-24T12:06:27.7652619Z FAIL	law-oa-go/tests/performance	0.034s
+2026-11-24T12:06:27.7652860Z FAIL
+2026-11-24T12:06:27.8709902Z ##[error]Process completed with exit code 1.
+2026-11-24T12:07:13.9272522Z ##[error]Process completed with exit code 1.

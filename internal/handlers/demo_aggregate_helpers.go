@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -113,6 +114,18 @@ func stringListValue(value interface{}) []string {
 		}
 	}
 	return result
+}
+
+// Native forms display multiple aliases separated by a Chinese enumeration comma.
+func intakeAliasList(raw interface{}) []string {
+	if text, ok := raw.(string); ok {
+		var list []string
+		if strings.HasPrefix(strings.TrimSpace(text), "[") && json.Unmarshal([]byte(text), &list) == nil {
+			return stringListValue(list)
+		}
+		raw = strings.NewReplacer("、", ",", "，", ",").Replace(text)
+	}
+	return stringListValue(raw)
 }
 
 func stringMapValue(value interface{}) map[string]string {
@@ -450,7 +463,7 @@ func sanitizeAggregateRow(table string, row map[string]interface{}) map[string]i
 		result = sanitizeClientAggregateRow(result)
 	case "case_intake_parties", "case_materials", "case_intakes":
 		if value, ok := result["metadata"]; ok {
-			result["metadata"] = redactAggregateSensitiveValue(value)
+			result["metadata"] = redactAggregateMetadataValue(value)
 		}
 		identityPresent := false
 		for _, key := range []string{
@@ -545,12 +558,50 @@ func redactAggregateSensitiveValue(value interface{}) interface{} {
 	}
 }
 
+// redactAggregateMetadataValue closes the string form of a metadata column.
+// GORM map scans return jsonb columns as raw JSON text on PostgreSQL and as
+// TEXT on SQLite, and drivers may also hand over []byte. The previous default
+// branch echoed those values verbatim, so key-level secret filtering never
+// ran and a nested identity_number sentinel survived every read path. A value
+// that decodes into a JSON object or array is redacted structurally with leaf
+// precision preserved; a scalar, an unknown shape, or JSON that fails to
+// decode is replaced by a fixed placeholder so nothing unread is echoed.
+func redactAggregateMetadataValue(value interface{}) interface{} {
+	switch typed := value.(type) {
+	case nil:
+		return nil
+	case string:
+		var decoded interface{}
+		if err := decodeIntakeMetadataJSON([]byte(typed), &decoded); err != nil {
+			return "已脱敏"
+		}
+		return redactAggregateSensitiveValue(decoded)
+	case []byte:
+		var decoded interface{}
+		if err := decodeIntakeMetadataJSON(typed, &decoded); err != nil {
+			return "已脱敏"
+		}
+		return redactAggregateSensitiveValue(decoded)
+	default:
+		return redactAggregateSensitiveValue(value)
+	}
+}
+
 func maskAggregatePhone(value string) string {
 	value = strings.TrimSpace(value)
 	if len(value) <= 7 {
 		return "***"
 	}
 	return value[:3] + "****" + value[len(value)-4:]
+}
+
+func decodeIntakeMetadataJSON(data []byte, target *interface{}) error {
+	if !json.Valid(data) {
+		return fmt.Errorf("invalid metadata JSON")
+	}
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.UseNumber()
+	return decoder.Decode(target)
 }
 
 func (h *DemoAggregateHandler) isAllowedSumColumn(table, column string) bool {

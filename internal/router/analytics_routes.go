@@ -2,6 +2,7 @@ package router
 
 import (
 	"github.com/gin-gonic/gin"
+
 	"law-oa-go/internal/handlers"
 )
 
@@ -15,9 +16,9 @@ func SetupAnalyticsRoutes(r *gin.Engine, analyticsHandler *handlers.AnalyticsHan
 		// 会话管理
 		sessions := analyticsGroup.Group("/sessions")
 		{
-			sessions.POST("", analyticsHandler.CreateSession)           // 创建会话
-			sessions.GET("/:id", analyticsHandler.GetSession)          // 获取会话详情
-			sessions.PUT("/:id", analyticsHandler.UpdateSession)       // 更新会话
+			sessions.POST("", analyticsHandler.CreateSession)    // 创建会话
+			sessions.GET("/:id", analyticsHandler.GetSession)    // 获取会话详情
+			sessions.PUT("/:id", analyticsHandler.UpdateSession) // 更新会话
 		}
 
 		// 页面浏览追踪
@@ -29,7 +30,7 @@ func SetupAnalyticsRoutes(r *gin.Engine, analyticsHandler *handlers.AnalyticsHan
 		// 事件追踪
 		events := analyticsGroup.Group("/events")
 		{
-			events.POST("", analyticsHandler.TrackEvent)        // 追踪单个事件
+			events.POST("", analyticsHandler.TrackEvent)             // 追踪单个事件
 			events.POST("/batch", analyticsHandler.BatchTrackEvents) // 批量追踪事件
 		}
 

@@ -1,0 +1,160 @@
+{
+  "scope": "disposable native v14 + unmodified source migration86 only; no M1 code",
+  "source_repository": "/Users/mac/Desktop/FT/law-oa-go/output/np-v04-first-slice",
+  "source_sha": "2d659d9dd750f49ddb1f517746e22851392231a6",
+  "migration_sha256": "415ef4f4b4a0437a403988810c52c3dca213fd0f6a9d9654d8161106fb7c3be2",
+  "harness_correction": "first object lookup used main repository which lacks source object; corrected git -C source; no database was created in that failed lookup",
+  "commands": [
+    {
+      "key": "np86-container",
+      "argv": [
+        "docker",
+        "run",
+        "-d",
+        "--name",
+        "law-oa-m0-np86-probe",
+        "--label",
+        "law-oa.scope=m0",
+        "-p",
+        "127.0.0.1:18894:5432",
+        "-e",
+        "POSTGRES_USER=np_m0",
+        "-e",
+        "POSTGRES_DB=law_oa_m0",
+        "-e",
+        "POSTGRES_HOST_AUTH_METHOD=trust",
+        "postgres:16.14"
+      ],
+      "started_at": "2026-11-20T03:45:20.405191+00:00",
+      "ended_at": "2026-11-20T03:45:22.863473+00:00",
+      "exit_code": 0,
+      "stdout": {
+        "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/np86-container.stdout.log",
+        "sha256": "f0d277ae9d9086ee485b6ed331ba81832b30b13500b5eb1cb7a940978409ea4f",
+        "bytes": 65,
+        "committed": false
+      },
+      "stderr": {
+        "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/np86-container.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0,
+        "committed": false
+      }
+    },
+    {
+      "key": "np86-bootstrap",
+      "argv": [
+        "go",
+        "run",
+        "./cmd/migrate",
+        "-command",
+        "bootstrap"
+      ],
+      "started_at": "2026-11-20T03:45:24.137308+00:00",
+      "ended_at": "2026-11-20T03:45:49.066424+00:00",
+      "exit_code": 0,
+      "stdout": {
+        "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/np86-bootstrap.stdout.log",
+        "sha256": "3ffd95b6d0a37a6df676680136ded5cd10645580bee5f53e966126267628a1ec",
+        "bytes": 138,
+        "committed": false
+      },
+      "stderr": {
+        "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/np86-bootstrap.stderr.log",
+        "sha256": "9c155741dd699b898cd9947e31d708e80282ca68e4014e325ded85cba5f621d2",
+        "bytes": 283,
+        "committed": false
+      }
+    },
+    {
+      "key": "np86-apply",
+      "argv": [
+        "docker",
+        "exec",
+        "-i",
+        "law-oa-m0-np86-probe",
+        "psql",
+        "-U",
+        "np_m0",
+        "-d",
+        "law_oa_m0",
+        "-X",
+        "-v",
+        "ON_ERROR_STOP=1"
+      ],
+      "started_at": "2026-11-20T03:45:49.066726+00:00",
+      "ended_at": "2026-11-20T03:45:49.146205+00:00",
+      "exit_code": 0,
+      "stdout": {
+        "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/np86-apply.stdout.log",
+        "sha256": "227bb305117655c114b620c300a5c435a26b6a00ca2abeb782ed3090bfacf629",
+        "bytes": 26,
+        "committed": false
+      },
+      "stderr": {
+        "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/np86-apply.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0,
+        "committed": false
+      }
+    },
+    {
+      "key": "np86-verify",
+      "argv": [
+        "docker",
+        "exec",
+        "law-oa-m0-np86-probe",
+        "psql",
+        "-U",
+        "np_m0",
+        "-d",
+        "law_oa_m0",
+        "-X",
+        "-v",
+        "ON_ERROR_STOP=1",
+        "-c",
+        "SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename IN ('case_intake_source_snapshots','case_intake_write_requests','material_files'); SELECT tablename,indexname FROM pg_indexes WHERE indexname IN ('np_source_intake_revision_unique','np_write_actor_request_unique'); SELECT conrelid::regclass,confrelid::regclass,conname FROM pg_constraint WHERE contype='f' AND conrelid IN ('case_intake_source_snapshots'::regclass,'case_intake_write_requests'::regclass);"
+      ],
+      "started_at": "2026-11-20T03:45:49.146482+00:00",
+      "ended_at": "2026-11-20T03:45:49.216214+00:00",
+      "exit_code": 0,
+      "stdout": {
+        "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/np86-verify.stdout.log",
+        "sha256": "2122badb328a9f75141b9f477aa4c3848969ef9c622cda04ad255862962256cb",
+        "bytes": 773,
+        "committed": false
+      },
+      "stderr": {
+        "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/np86-verify.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0,
+        "committed": false
+      }
+    },
+    {
+      "key": "np86-cleanup",
+      "argv": [
+        "docker",
+        "rm",
+        "-f",
+        "-v",
+        "law-oa-m0-np86-probe"
+      ],
+      "started_at": "2026-11-20T03:45:49.216877+00:00",
+      "ended_at": "2026-11-20T03:45:49.448130+00:00",
+      "exit_code": 0,
+      "stdout": {
+        "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/np86-cleanup.stdout.log",
+        "sha256": "ed931eb087ccbed795cadfce23ff2b807f6ee787afc01f5702cbdd15ba369d31",
+        "bytes": 21,
+        "committed": false
+      },
+      "stderr": {
+        "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/np86-cleanup.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0,
+        "committed": false
+      }
+    }
+  ]
+}

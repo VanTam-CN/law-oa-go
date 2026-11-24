@@ -24,7 +24,7 @@ func TestClientHandler_GetClient(t *testing.T) {
 			})
 		})
 
-		req, _ := http.NewRequest("GET", "/clients/1", nil)
+		req, _ := http.NewRequest(http.MethodGet, "/clients/1", nil)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -45,7 +45,7 @@ func TestClientHandler_GetClient(t *testing.T) {
 			})
 		})
 
-		req, _ := http.NewRequest("GET", "/clients/999", nil)
+		req, _ := http.NewRequest(http.MethodGet, "/clients/999", nil)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 

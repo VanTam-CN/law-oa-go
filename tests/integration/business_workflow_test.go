@@ -3,6 +3,7 @@ package integration
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
@@ -225,7 +226,6 @@ func (suite *BusinessWorkflowTestSuite) TestCompleteCaseWorkflow() {
 	suite.Require().Nil(createdCase)
 	suite.Assert().Contains(err.Error(), "立案工作台")
 	// 当前 MVP 要求案件先经过接案工作台和冲突检查，旧的直接建案路径在这里终止。
-	return
 }
 
 // TestCompleteDocumentWorkflow 测试完整的文档管理工作流
@@ -385,7 +385,7 @@ func (suite *BusinessWorkflowTestSuite) TestIntegratedClientCaseWorkflow() {
 // TestAPIEndpoints 测试API端点集成
 func (suite *BusinessWorkflowTestSuite) TestAPIEndpoints() {
 	// 2. 测试获取客户端列表
-	req := httptest.NewRequest("GET", "/api/v1/clients?page=1&page_size=10", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/clients?page=1&page_size=10", nil)
 	req.Header.Set("Authorization", suite.authToken)
 	w := httptest.NewRecorder()
 	suite.router.ServeHTTP(w, req)

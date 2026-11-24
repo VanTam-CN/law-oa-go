@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8"
+
 	"law-oa-go/internal/errors"
 )
 
@@ -461,17 +462,15 @@ func (s *SearchService) parseSingleHit(hit map[string]interface{}) *SearchResult
 	}
 
 	// Parse highlights
-	if highlights != nil {
-		for field, highlightList := range highlights {
-			if list, ok := highlightList.([]interface{}); ok {
-				var stringList []string
-				for _, item := range list {
-					if str, ok := item.(string); ok {
-						stringList = append(stringList, str)
-					}
+	for field, highlightList := range highlights {
+		if list, ok := highlightList.([]interface{}); ok {
+			var stringList []string
+			for _, item := range list {
+				if str, ok := item.(string); ok {
+					stringList = append(stringList, str)
 				}
-				result.Highlights[field] = stringList
 			}
+			result.Highlights[field] = stringList
 		}
 	}
 
@@ -559,7 +558,7 @@ func (s *SearchService) prepareDocument(entityType string, entityID string, data
 func (s *SearchService) fallbackSearch(ctx context.Context, req *SearchRequest, startTime time.Time) (*SearchResponse, error) {
 	// A missing Elasticsearch connection must never produce synthetic records.
 	// The legacy handler is disabled in the production router; return a
-	// controlled error here as a second line of defence for direct callers.
+	// controlled error here as a second line of defense for direct callers.
 	return nil, errors.InternalError("Search backend is unavailable", fmt.Errorf("elasticsearch client is not configured"))
 }
 

@@ -365,9 +365,9 @@ func Fuzz_WorkerPool_SubmitTask(f *testing.F) {
 			Context: context.Background(),
 		}
 
-		// 验证任务结构有效
-		if task.TaskID != "" && task.Operation != nil {
-			// 任务创建成功
+		// 验证任务结构有效（原空转占位改为显式断言）
+		if task.TaskID == "" || task.Operation == nil {
+			t.Fatal("任务结构无效")
 		}
 	})
 }

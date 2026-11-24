@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+
 	"law-oa-go/internal/auth"
 	"law-oa-go/internal/common"
 	"law-oa-go/internal/repositories"
@@ -89,10 +91,10 @@ func (h *EthicalWallHandler) EnableEthicalWall(c *gin.Context) {
 
 	err = h.ethicalWallService.EnableEthicalWall(c.Request.Context(), uint(caseID), userID, req.Description)
 	if err != nil {
-		switch err {
-		case services.ErrCaseNotFound:
+		switch {
+		case errors.Is(err, services.ErrCaseNotFound):
 			common.APINotFound(c, "案件不存在", "指定的案件ID不存在")
-		case services.ErrEthicalWallAlreadyEnabled:
+		case errors.Is(err, services.ErrEthicalWallAlreadyEnabled):
 			common.NewAPIError(c, http.StatusForbidden, "ETHICAL_WALL_ALREADY_ENABLED", "该案件已启用隔离墙")
 		default:
 			common.APIInternalServerError(c, "启用隔离墙失败", err.Error())
@@ -136,10 +138,10 @@ func (h *EthicalWallHandler) DisableEthicalWall(c *gin.Context) {
 
 	err = h.ethicalWallService.DisableEthicalWall(c.Request.Context(), uint(caseID))
 	if err != nil {
-		switch err {
-		case services.ErrCaseNotFound:
+		switch {
+		case errors.Is(err, services.ErrCaseNotFound):
 			common.APINotFound(c, "案件不存在", "指定的案件ID不存在")
-		case services.ErrEthicalWallNotEnabled:
+		case errors.Is(err, services.ErrEthicalWallNotEnabled):
 			common.NewAPIError(c, http.StatusForbidden, "ETHICAL_WALL_NOT_ENABLED", "该案件未启用隔离墙")
 		default:
 			common.APIInternalServerError(c, "禁用隔离墙失败", err.Error())
@@ -182,8 +184,8 @@ func (h *EthicalWallHandler) GetWhitelist(c *gin.Context) {
 
 	whitelist, err := h.ethicalWallService.GetWhitelist(c.Request.Context(), uint(caseID))
 	if err != nil {
-		switch err {
-		case services.ErrCaseNotFound:
+		switch {
+		case errors.Is(err, services.ErrCaseNotFound):
 			common.APINotFound(c, "案件不存在", "指定的案件ID不存在")
 		default:
 			common.APIInternalServerError(c, "获取白名单失败", err.Error())
@@ -238,14 +240,14 @@ func (h *EthicalWallHandler) AddToWhitelist(c *gin.Context) {
 
 	err = h.ethicalWallService.AddToWhitelist(c.Request.Context(), uint(caseID), req.UserID, grantedBy, req.Reason)
 	if err != nil {
-		switch err {
-		case services.ErrCaseNotFound:
+		switch {
+		case errors.Is(err, services.ErrCaseNotFound):
 			common.APINotFound(c, "案件不存在", "指定的案件ID不存在")
-		case services.ErrUserNotFound:
+		case errors.Is(err, services.ErrUserNotFound):
 			common.APINotFound(c, "用户不存在", "指定的用户ID不存在")
-		case services.ErrEthicalWallNotEnabled:
+		case errors.Is(err, services.ErrEthicalWallNotEnabled):
 			common.NewAPIError(c, http.StatusForbidden, "ETHICAL_WALL_NOT_ENABLED", "该案件未启用隔离墙，无法添加白名单")
-		case repositories.ErrWhitelistEntryExists:
+		case errors.Is(err, repositories.ErrWhitelistEntryExists):
 			common.NewAPIError(c, http.StatusConflict, "WHITELIST_ENTRY_EXISTS", "该用户已在案件白名单中")
 		default:
 			common.APIInternalServerError(c, "添加白名单失败", err.Error())
@@ -304,10 +306,10 @@ func (h *EthicalWallHandler) RemoveFromWhitelist(c *gin.Context) {
 
 	err = h.ethicalWallService.RemoveFromWhitelist(c.Request.Context(), uint(caseID), uint(userID))
 	if err != nil {
-		switch err {
-		case services.ErrCaseNotFound:
+		switch {
+		case errors.Is(err, services.ErrCaseNotFound):
 			common.APINotFound(c, "案件不存在", "指定的案件ID不存在")
-		case repositories.ErrWhitelistEntryNotFound:
+		case errors.Is(err, repositories.ErrWhitelistEntryNotFound):
 			common.APINotFound(c, "白名单条目不存在", "指定的用户不在该案件的白名单中")
 		default:
 			common.APIInternalServerError(c, "移除白名单失败", err.Error())

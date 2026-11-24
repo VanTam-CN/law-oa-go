@@ -1,0 +1,166 @@
+### frontend/migrate/main.go:132:6
+		if err == migrate.ErrNoChange {
+### frontend/migrate/main.go:155:6
+		if err == migrate.ErrNoChange {
+### internal/auth/token_revocation.go:353:12
+		return true
+### internal/cache/advanced_cache.go:118:5
+	if err == redis.Nil {
+### internal/database/migrator.go:266:19
+	err := m.migrate.Up()
+### internal/database/migrator.go:270:5
+
+### internal/database/migrator.go:284:19
+	err := m.migrate.Down()
+### internal/database/migrator.go:288:5
+
+### internal/database/migrator.go:306:19
+	err := m.migrate.Steps(n)
+### internal/database/migrator.go:310:5
+
+### internal/database/migrator.go:324:19
+	err := m.migrate.Migrate(version)
+### internal/database/migrator.go:328:5
+
+### internal/handlers/approval_handler.go:224:6
+		if err == gorm.ErrRecordNotFound || strings.Contains(err.Error(), "record not found") {
+### internal/handlers/approval_handler.go:255:13
+		} else if err == gorm.ErrRecordNotFound || strings.Contains(err.Error(), "record not found") {
+### internal/handlers/conflict_reviewer_handler.go:80:6
+	if err != nil {
+### internal/handlers/content_filter_handler.go:111:6
+	if err := h.db.First(&word, id).Error; err != nil {
+### internal/handlers/content_filter_handler.go:144:6
+	if err := h.db.First(&word, id).Error; err != nil {
+### internal/handlers/content_filter_handler.go:204:6
+	if err := h.filterService.DeleteSensitiveWord(context.Background(), uint(id)); err != nil {
+### internal/handlers/demo_aggregate_handler.go:2685:7
+			if err == gorm.ErrRecordNotFound {
+### internal/handlers/demo_aggregate_handler.go:2723:14
+			} else if waiverErr != gorm.ErrRecordNotFound {
+### internal/handlers/demo_aggregate_handler.go:2744:7
+			if existingErr != gorm.ErrRecordNotFound {
+### internal/handlers/demo_aggregate_handler.go:3003:6
+		if err == gorm.ErrRecordNotFound {
+### internal/handlers/intake_party_identity_guard.go:192:6
+		if err == gorm.ErrRecordNotFound {
+### internal/handlers/notification_handler.go:472:6
+	if err := h.queueRepo.Approve(c.Request.Context(), uint(id), actor.UserID); err != nil {
+### internal/handlers/notification_handler.go:664:6
+	if err != nil {
+### internal/handlers/notification_handler.go:923:6
+	if err := h.templateRepo.Delete(context.Background(), uint(id)); err != nil {
+### internal/middleware/cache.go:152:6
+	if err != nil {
+### internal/repositories/approval_delegation_repository.go:54:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/approval_delegation_repository.go:110:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/approval_node_repository.go:42:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/approval_repository.go:29:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/approval_template_repository.go:27:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/approval_workflow_repository.go:27:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/approval_workflow_repository.go:40:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/enhanced_conflict_repository.go:249:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/enhanced_conflict_repository.go:282:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/enhanced_conflict_repository.go:403:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/enhanced_conflict_repository.go:545:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/enhanced_conflict_repository.go:590:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/enhanced_conflict_repository.go:604:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/enhanced_conflict_repository.go:700:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/entity_repository.go:99:6
+	if err != nil {
+### internal/repositories/entity_repository.go:643:6
+	if err != nil {
+### internal/repositories/folder_template_repository.go:57:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/folder_template_repository.go:125:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/folder_template_repository.go:173:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/integration_repository.go:133:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/integration_repository.go:148:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/integration_repository.go:204:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/integration_repository.go:270:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/integration_repository.go:287:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/integration_repository.go:310:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/professional_conflict_detection_repository.go:28:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/professional_conflict_detection_repository.go:42:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/professional_conflict_detection_repository.go:139:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/professional_conflict_detection_repository.go:233:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/professional_conflict_detection_repository.go:245:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/professional_conflict_detection_repository.go:372:46
+		First(&lastExecution).Error; err != nil && err != gorm.ErrRecordNotFound {
+### internal/repositories/waiver_repository.go:28:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/waiver_repository.go:43:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/waiver_repository.go:156:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/waiver_repository.go:194:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/waiver_repository.go:214:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/waiver_repository.go:256:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/waiver_repository.go:294:6
+		if err == gorm.ErrRecordNotFound {
+### internal/repositories/waiver_repository.go:306:6
+		if err == gorm.ErrRecordNotFound {
+### internal/services/authorization_service.go:265:6
+		if err == repositories.ErrDocumentNotFound {
+### internal/services/conflict_pool_service.go:156:12
+		log.Printf("✅ 更新冲突池记录: ID=%d", existingPool.ID)
+### internal/services/conflict_scan_service.go:258:6
+	if err := s.db.WithContext(ctx).First(&job, jobID).Error; err != nil {
+### internal/services/document_lock_service.go:79:6
+		if err == gorm.ErrRecordNotFound {
+### internal/services/document_lock_service.go:339:5
+	if err == gorm.ErrRecordNotFound {
+### internal/services/document_preview_service.go:80:6
+		if err == repositories.ErrDocumentNotFound {
+### internal/services/document_preview_service.go:134:19
+	if err != nil && err != io.EOF {
+### internal/services/document_preview_service.go:228:6
+		if err == repositories.ErrDocumentNotFound {
+### internal/services/document_service.go:174:6
+		if err == repositories.ErrDocumentNotFound {
+### internal/services/document_service.go:227:6
+		if err == repositories.ErrDocumentNotFound {
+### internal/services/document_service.go:263:6
+		if err == repositories.ErrDocumentNotFound {
+### internal/services/document_service.go:310:6
+		if err == repositories.ErrDocumentNotFound {
+### internal/services/mcp_client.go:236:6
+	if err != nil {
+### internal/services/offboarding_service.go:89:6
+		}
+### internal/services/pdf_report_service.go:206:6
+	if err := s.db.WithContext(ctx).First(&report, reportID).Error; err != nil {
+### internal/services/pdf_report_service.go:220:6
+		First(&report).Error; err != nil {
+### tests/performance/benchmark_test.go:239:21
+			if err != nil && err != redis.Nil {

@@ -1,0 +1,12 @@
+🔍 Code Quality	🔍 代码格式检查	﻿2026-11-24T12:00:16.4392310Z ##[group]Run go install mvdan.cc/gofumpt@latest
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:00:16.4392884Z [36;1mgo install mvdan.cc/gofumpt@latest[0m
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:00:16.4393655Z [36;1mgofumpt -w -s .[0m
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:00:16.7216520Z go: downloading mvdan.cc/gofumpt v0.12.0
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:00:16.8280071Z go: mvdan.cc/gofumpt@v0.12.0 requires go >= 1.26.0; switching to go1.26.11
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:00:28.1536509Z  		return nil, fmt.Errorf("failed to parse token: %w", err)
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:00:28.1543822Z  		return nil, fmt.Errorf("failed to query revocation history: %w", err)
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:00:28.1890504Z -		return nil, fmt.Errorf("failed to create Elasticsearch client: %w", err)
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:00:28.1891590Z -		return nil, fmt.Errorf("failed to connect to Elasticsearch: %w", err)
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:00:28.1900860Z -		return fmt.Errorf("failed to create bulk indexer: %w", err)
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:00:28.1908550Z -		return fmt.Errorf("failed to close bulk indexer: %w", err)
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:00:28.1911892Z -		return fmt.Errorf("failed to marshal search query: %w", err)

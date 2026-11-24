@@ -38,6 +38,7 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"gorm.io/gorm"
+
 	_ "law-oa-go/docs" // Swagger docs
 	"law-oa-go/internal/cache"
 	"law-oa-go/internal/config"
@@ -197,9 +198,9 @@ func main() {
 			log.Fatal("生产数据库结构门禁失败:", err)
 		}
 	}
-	router.Init(app,
-		db,
-		database.GetRedisClient())
+	if err := router.Init(app, db, database.GetRedisClient()); err != nil {
+		log.Fatal("路由装配失败: ", err)
+	}
 
 	// 注册集成测试路由（仅开发环境）
 	if !cfg.IsProduction() {
@@ -551,7 +552,7 @@ func runHealthcheck() error {
 	if !strings.HasPrefix(path, "/health/") {
 		return fmt.Errorf("HEALTHCHECK_PATH must be a local health path")
 	}
-	request, err := http.NewRequest(http.MethodGet, "http://127.0.0.1:"+port+path, nil)
+	request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://127.0.0.1:"+port+path, nil)
 	if err != nil {
 		return fmt.Errorf("构造健康检查请求失败: %w", err)
 	}
@@ -662,8 +663,5 @@ func validateProductionSchema(db *gorm.DB) error {
 	if schemaVersion != database.ProductionSchemaVersion {
 		return fmt.Errorf("生产 schema 版本不受支持: %s；期望 %s", schemaVersion, database.ProductionSchemaVersion)
 	}
-	if err := database.ValidateProductionSchemaContract(db); err != nil {
-		return err
-	}
-	return nil
+	return database.ValidateProductionSchemaContract(db)
 }

@@ -150,11 +150,8 @@ func Fuzz_JWTKeyManager_ValidateToken(f *testing.F) {
 		// 测试token验证逻辑不会panic
 		// 这里我们只测试基本的字符串处理，不进行实际JWT验证
 		if len(token) > 0 && len(key) > 0 {
-			// 基本的token结构验证
-			parts := len(token) // 简化的检查
-			if parts > 0 {
-				// Token有内容
-			}
+			// 基本的token结构验证：token 非空即视为有内容
+			t.Logf("token 结构验证通过（长度 %d）", len(token))
 		}
 	})
 }

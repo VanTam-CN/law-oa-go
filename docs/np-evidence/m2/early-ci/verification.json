@@ -1,0 +1,596 @@
+{
+  "scope": "M2 early native PG and fuzz routing",
+  "base": "a0acf3544dcf2e47e4d7168df1531b976234d00e",
+  "source": "fa4a7902fecf62a1a4a68e4d890ecdcdc82f784f",
+  "hermes": "law-oa-np-main/t_022c83e3",
+  "file_sha256": {
+    ".github/workflows/fuzzing.yml": "c19a62bb1493067fffbc280ff30b9d37fa30a6209344b797359adae97938e6e5",
+    ".github/workflows/tests.yml": "886207eb25eaa3ce652a4129c54ca253cee257f36d6528b8ba7f995887a78510",
+    "scripts/np-ci/check-fuzz-result.sh": "06c27d72fab715609b48dc26bd6019b465d951bbc38629486fa5e2b3f12fb1b0",
+    "scripts/np-ci/check-go-events.py": "134862de5a801b94eed491f072d45f64e80f42bdede7080541cf022448c7e06b",
+    "scripts/np-ci/early-pg.sh": "0121d0df01586e4fd2b57685a63a0cc69686d66770eeeb77630800b807d6d62f"
+  },
+  "local": {
+    "environment": "darwin/amd64 go1.25.6; PG 16.14 temporary Docker; actionlint 1.7.9",
+    "build": {
+      "argv": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "exit_code": 0
+    },
+    "lint": {
+      "argv": [
+        "actionlint",
+        "-shellcheck=",
+        "-pyflakes=",
+        ".github/workflows/fuzzing.yml",
+        ".github/workflows/tests.yml"
+      ],
+      "exit_code": 0,
+      "baseline_invalid_job_if_lines": [
+        73,
+        126,
+        175,
+        229,
+        287,
+        341
+      ]
+    },
+    "pg_cases": [
+      {
+        "argv": [
+          "bash",
+          "scripts/np-ci/early-pg.sh",
+          "normal"
+        ],
+        "started_at": "2026-11-23T10:49:40Z",
+        "completed_at": "2026-11-23T10:49:51Z",
+        "exit_code": 0,
+        "marker": "M2_PG_PASS required=5 passed=5"
+      },
+      {
+        "argv": [
+          "bash",
+          "scripts/np-ci/early-pg.sh",
+          "missing-pg"
+        ],
+        "started_at": "2026-11-23T10:49:51Z",
+        "completed_at": "2026-11-23T10:49:51Z",
+        "exit_code": 1,
+        "marker": "M2_PG_UNAVAILABLE"
+      },
+      {
+        "argv": [
+          "bash",
+          "scripts/np-ci/early-pg.sh",
+          "skip"
+        ],
+        "started_at": "2026-11-23T10:49:51Z",
+        "completed_at": "2026-11-23T10:50:02Z",
+        "exit_code": 1,
+        "marker": "M2_REQUIRED_TEST_SKIPPED"
+      },
+      {
+        "argv": [
+          "bash",
+          "scripts/np-ci/early-pg.sh",
+          "none"
+        ],
+        "started_at": "2026-11-23T10:50:02Z",
+        "completed_at": "2026-11-23T10:50:11Z",
+        "exit_code": 1,
+        "marker": "M2_NO_TESTS"
+      }
+    ],
+    "workflow_shell_checks": [
+      {
+        "case": "preflight-default",
+        "exit_code": 0
+      },
+      {
+        "case": "summary-default",
+        "exit_code": 0
+      },
+      {
+        "case": "preflight-all",
+        "exit_code": 0
+      },
+      {
+        "case": "summary-all",
+        "exit_code": 0
+      },
+      {
+        "case": "preflight-security",
+        "exit_code": 0
+      },
+      {
+        "case": "summary-security",
+        "exit_code": 0
+      },
+      {
+        "case": "preflight-validators",
+        "exit_code": 0
+      },
+      {
+        "case": "summary-validators",
+        "exit_code": 0
+      },
+      {
+        "case": "summary-failure",
+        "exit_code": 1
+      },
+      {
+        "case": "summary-skipped",
+        "exit_code": 1
+      },
+      {
+        "case": "summary-cancelled",
+        "exit_code": 1
+      },
+      {
+        "case": "summary-missing-proof",
+        "exit_code": 1
+      },
+      {
+        "case": "preflight-repositories",
+        "exit_code": 0
+      },
+      {
+        "case": "summary-repositories",
+        "exit_code": 0
+      },
+      {
+        "case": "preflight-cache",
+        "exit_code": 0
+      },
+      {
+        "case": "summary-cache",
+        "exit_code": 0
+      },
+      {
+        "case": "preflight-concurrency",
+        "exit_code": 0
+      },
+      {
+        "case": "summary-concurrency",
+        "exit_code": 0
+      },
+      {
+        "case": "preflight-unknown",
+        "exit_code": 1
+      },
+      {
+        "case": "raw_duration-out-of-range",
+        "exit_code": 1
+      },
+      {
+        "case": "raw_fuzzers-out-of-range",
+        "exit_code": 1
+      },
+      {
+        "case": "proof-absent",
+        "exit_code": 1
+      },
+      {
+        "case": "proof-other",
+        "exit_code": 1
+      },
+      {
+        "case": "proof-skipped",
+        "exit_code": 1
+      },
+      {
+        "case": "proof-passed",
+        "exit_code": 0
+      }
+    ],
+    "pg_checker_negative": {
+      "partial_manifest": "M2_REQUIRED_TEST_MISSING",
+      "compiler_exit_failure": "M2_GO_FAILED"
+    }
+  },
+  "remote": {
+    "first_push_and_rehearsal": [
+      {
+        "id": 45159753188,
+        "run_attempt": 1,
+        "event": "push",
+        "head_sha": "9e94e0a014a9c59cc85d99a7e1e375107cd9420b",
+        "head_branch": "codex/np-main-m2",
+        "path": ".github/workflows/fuzzing.yml",
+        "created_at": "2026-11-23T10:50:37Z",
+        "updated_at": "2026-11-23T10:50:37Z",
+        "conclusion": "failure",
+        "html_url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45159753188",
+        "jobs": [],
+        "artifact_count": 0
+      },
+      {
+        "id": 45159756498,
+        "run_attempt": 1,
+        "event": "push",
+        "head_sha": "9e94e0a014a9c59cc85d99a7e1e375107cd9420b",
+        "head_branch": "codex/np-main-m2",
+        "path": ".github/workflows/tests.yml",
+        "created_at": "2026-11-23T10:50:38Z",
+        "updated_at": "2026-11-23T10:55:30Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45159756498",
+        "jobs": [
+          {
+            "id": 137641796057,
+            "name": "np-m2-early (normal)",
+            "conclusion": "success",
+            "started_at": "2026-11-23T10:50:42Z",
+            "completed_at": "2026-11-23T10:55:29Z",
+            "marker": "M2_PG_PASS required=5 passed=5",
+            "gate_step": "success"
+          },
+          {
+            "id": 137641798456,
+            "name": "🐹 Go Tests",
+            "conclusion": "skipped",
+            "started_at": "2026-11-23T10:50:39Z",
+            "completed_at": "2026-11-23T10:50:39Z"
+          },
+          {
+            "id": 137641798877,
+            "name": "🎨 Frontend Tests",
+            "conclusion": "skipped",
+            "started_at": "2026-11-23T10:50:39Z",
+            "completed_at": "2026-11-23T10:50:39Z"
+          },
+          {
+            "id": 137641799208,
+            "name": "🎭 E2E Tests",
+            "conclusion": "skipped",
+            "started_at": "2026-11-23T10:50:39Z",
+            "completed_at": "2026-11-23T10:50:39Z"
+          },
+          {
+            "id": 137641799571,
+            "name": "📋 Test Summary",
+            "conclusion": "skipped",
+            "started_at": "2026-11-23T10:50:39Z",
+            "completed_at": "2026-11-23T10:50:39Z"
+          },
+          {
+            "id": 137641799678,
+            "name": "📊 Coverage Check",
+            "conclusion": "skipped",
+            "started_at": "2026-11-23T10:50:39Z",
+            "completed_at": "2026-11-23T10:50:39Z"
+          }
+        ],
+        "artifact_count": 0
+      },
+      {
+        "id": 45159830057,
+        "run_attempt": 1,
+        "event": "workflow_dispatch",
+        "head_sha": "9e94e0a014a9c59cc85d99a7e1e375107cd9420b",
+        "head_branch": "codex/np-main-m2",
+        "path": ".github/workflows/tests.yml",
+        "created_at": "2026-11-23T10:51:08Z",
+        "updated_at": "2026-11-23T10:54:31Z",
+        "conclusion": "failure",
+        "html_url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45159830057",
+        "jobs": [
+          {
+            "id": 137642063318,
+            "name": "np-m2-early (missing-pg)",
+            "conclusion": "failure",
+            "started_at": "2026-11-23T10:51:13Z",
+            "completed_at": "2026-11-23T10:51:26Z",
+            "marker": "M2_PG_UNAVAILABLE",
+            "gate_step": "failure"
+          },
+          {
+            "id": 137642063979,
+            "name": "np-m2-early (none)",
+            "conclusion": "failure",
+            "started_at": "2026-11-23T10:51:13Z",
+            "completed_at": "2026-11-23T10:54:30Z",
+            "marker": "M2_NO_TESTS",
+            "gate_step": "failure"
+          },
+          {
+            "id": 137642064140,
+            "name": "np-m2-early (skip)",
+            "conclusion": "failure",
+            "started_at": "2026-11-23T10:51:12Z",
+            "completed_at": "2026-11-23T10:54:12Z",
+            "marker": "M2_REQUIRED_TEST_SKIPPED",
+            "gate_step": "failure"
+          },
+          {
+            "id": 137642065130,
+            "name": "🎨 Frontend Tests",
+            "conclusion": "skipped",
+            "started_at": "2026-11-23T10:51:10Z",
+            "completed_at": "2026-11-23T10:51:10Z"
+          },
+          {
+            "id": 137642065266,
+            "name": "🎭 E2E Tests",
+            "conclusion": "skipped",
+            "started_at": "2026-11-23T10:51:10Z",
+            "completed_at": "2026-11-23T10:51:10Z"
+          },
+          {
+            "id": 137642065301,
+            "name": "🐹 Go Tests",
+            "conclusion": "skipped",
+            "started_at": "2026-11-23T10:51:10Z",
+            "completed_at": "2026-11-23T10:51:10Z"
+          },
+          {
+            "id": 137642065580,
+            "name": "📊 Coverage Check",
+            "conclusion": "skipped",
+            "started_at": "2026-11-23T10:51:10Z",
+            "completed_at": "2026-11-23T10:51:10Z"
+          },
+          {
+            "id": 137642065914,
+            "name": "📋 Test Summary",
+            "conclusion": "skipped",
+            "started_at": "2026-11-23T10:51:10Z",
+            "completed_at": "2026-11-23T10:51:10Z"
+          }
+        ],
+        "artifact_count": 0
+      }
+    ],
+    "accepted_source_runs": [
+      {
+        "id": 45160569000,
+        "run_attempt": 1,
+        "event": "push",
+        "head_sha": "fa4a7902fecf62a1a4a68e4d890ecdcdc82f784f",
+        "head_branch": "codex/np-main-m2",
+        "path": ".github/workflows/tests.yml",
+        "created_at": "2026-11-23T10:56:14Z",
+        "updated_at": "2026-11-23T11:00:30Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45160569000",
+        "jobs": [
+          {
+            "id": 137644617782,
+            "name": "np-m2-early (normal)",
+            "conclusion": "success",
+            "started_at": "2026-11-23T10:56:17Z",
+            "completed_at": "2026-11-23T11:00:29Z",
+            "marker": "M2_PG_PASS required=5 passed=5",
+            "gate_step": "success"
+          },
+          {
+            "id": 137644620064,
+            "name": "🐹 Go Tests",
+            "conclusion": "skipped",
+            "started_at": "2026-11-23T10:56:14Z",
+            "completed_at": "2026-11-23T10:56:14Z"
+          },
+          {
+            "id": 137644620492,
+            "name": "🎨 Frontend Tests",
+            "conclusion": "skipped",
+            "started_at": "2026-11-23T10:56:14Z",
+            "completed_at": "2026-11-23T10:56:14Z"
+          },
+          {
+            "id": 137644620597,
+            "name": "📊 Coverage Check",
+            "conclusion": "skipped",
+            "started_at": "2026-11-23T10:56:14Z",
+            "completed_at": "2026-11-23T10:56:14Z"
+          },
+          {
+            "id": 137644620932,
+            "name": "📋 Test Summary",
+            "conclusion": "skipped",
+            "started_at": "2026-11-23T10:56:14Z",
+            "completed_at": "2026-11-23T10:56:14Z"
+          },
+          {
+            "id": 137644622153,
+            "name": "🎭 E2E Tests",
+            "conclusion": "skipped",
+            "started_at": "2026-11-23T10:56:15Z",
+            "completed_at": "2026-11-23T10:56:14Z"
+          }
+        ],
+        "artifact_count": 0
+      },
+      {
+        "id": 45160694603,
+        "run_attempt": 1,
+        "event": "workflow_dispatch",
+        "head_sha": "fa4a7902fecf62a1a4a68e4d890ecdcdc82f784f",
+        "head_branch": "codex/np-main-m2",
+        "path": ".github/workflows/tests.yml",
+        "created_at": "2026-11-23T10:57:02Z",
+        "updated_at": "2026-11-23T11:01:06Z",
+        "conclusion": "failure",
+        "html_url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45160694603",
+        "jobs": [
+          {
+            "id": 137645050674,
+            "name": "np-m2-early (none)",
+            "conclusion": "failure",
+            "started_at": "2026-11-23T10:57:06Z",
+            "completed_at": "2026-11-23T11:00:36Z",
+            "marker": "M2_NO_TESTS",
+            "gate_step": "failure"
+          },
+          {
+            "id": 137645051143,
+            "name": "np-m2-early (skip)",
+            "conclusion": "failure",
+            "started_at": "2026-11-23T10:57:06Z",
+            "completed_at": "2026-11-23T11:01:05Z",
+            "marker": "M2_REQUIRED_TEST_SKIPPED",
+            "gate_step": "failure"
+          },
+          {
+            "id": 137645051195,
+            "name": "np-m2-early (missing-pg)",
+            "conclusion": "failure",
+            "started_at": "2026-11-23T10:57:06Z",
+            "completed_at": "2026-11-23T10:57:19Z",
+            "marker": "M2_PG_UNAVAILABLE",
+            "gate_step": "failure"
+          },
+          {
+            "id": 137645053007,
+            "name": "📊 Coverage Check",
+            "conclusion": "skipped",
+            "started_at": "2026-11-23T10:57:04Z",
+            "completed_at": "2026-11-23T10:57:04Z"
+          },
+          {
+            "id": 137645053141,
+            "name": "🎨 Frontend Tests",
+            "conclusion": "skipped",
+            "started_at": "2026-11-23T10:57:04Z",
+            "completed_at": "2026-11-23T10:57:03Z"
+          },
+          {
+            "id": 137645053233,
+            "name": "🐹 Go Tests",
+            "conclusion": "skipped",
+            "started_at": "2026-11-23T10:57:04Z",
+            "completed_at": "2026-11-23T10:57:03Z"
+          },
+          {
+            "id": 137645053404,
+            "name": "🎭 E2E Tests",
+            "conclusion": "skipped",
+            "started_at": "2026-11-23T10:57:04Z",
+            "completed_at": "2026-11-23T10:57:04Z"
+          },
+          {
+            "id": 137645053418,
+            "name": "📋 Test Summary",
+            "conclusion": "skipped",
+            "started_at": "2026-11-23T10:57:04Z",
+            "completed_at": "2026-11-23T10:57:04Z"
+          }
+        ],
+        "artifact_count": 0
+      },
+      {
+        "id": 45160571800,
+        "run_attempt": 1,
+        "event": "workflow_dispatch",
+        "head_sha": "fa4a7902fecf62a1a4a68e4d890ecdcdc82f784f",
+        "head_branch": "codex/np-main-m2",
+        "path": ".github/workflows/fuzzing.yml",
+        "created_at": "2026-11-23T10:56:14Z",
+        "updated_at": "2026-11-23T10:58:07Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45160571800",
+        "jobs": [
+          {
+            "id": 137644636836,
+            "name": "参数校验",
+            "conclusion": "success",
+            "started_at": "2026-11-23T10:56:19Z",
+            "completed_at": "2026-11-23T10:56:21Z",
+            "target_proof_steps": []
+          },
+          {
+            "id": 137644680290,
+            "name": "检查Fuzzing支持",
+            "conclusion": "success",
+            "started_at": "2026-11-23T10:56:24Z",
+            "completed_at": "2026-11-23T10:56:39Z",
+            "target_proof_steps": []
+          },
+          {
+            "id": 137644835780,
+            "name": "验证器Fuzzing (Fuzz_LawyerValidator_Validate)",
+            "conclusion": "success",
+            "started_at": "2026-11-23T10:56:41Z",
+            "completed_at": "2026-11-23T10:57:57Z",
+            "target_proof_steps": [
+              "success"
+            ]
+          },
+          {
+            "id": 137644835874,
+            "name": "验证器Fuzzing (Fuzz_CaseValidator_Validate)",
+            "conclusion": "success",
+            "started_at": "2026-11-23T10:56:41Z",
+            "completed_at": "2026-11-23T10:58:00Z",
+            "target_proof_steps": [
+              "success"
+            ]
+          },
+          {
+            "id": 137644835957,
+            "name": "验证器Fuzzing (Fuzz_ClientValidator_Validate)",
+            "conclusion": "success",
+            "started_at": "2026-11-23T10:56:41Z",
+            "completed_at": "2026-11-23T10:57:59Z",
+            "target_proof_steps": [
+              "success"
+            ]
+          },
+          {
+            "id": 137644838253,
+            "name": "数据库Fuzzing",
+            "conclusion": "skipped",
+            "started_at": "2026-11-23T10:56:39Z",
+            "completed_at": "2026-11-23T10:56:39Z"
+          },
+          {
+            "id": 137644838360,
+            "name": "缓存Fuzzing",
+            "conclusion": "skipped",
+            "started_at": "2026-11-23T10:56:39Z",
+            "completed_at": "2026-11-23T10:56:39Z"
+          },
+          {
+            "id": 137644838490,
+            "name": "并发Fuzzing",
+            "conclusion": "skipped",
+            "started_at": "2026-11-23T10:56:39Z",
+            "completed_at": "2026-11-23T10:56:39Z"
+          },
+          {
+            "id": 137644839087,
+            "name": "完整Fuzzing测试",
+            "conclusion": "skipped",
+            "started_at": "2026-11-23T10:56:39Z",
+            "completed_at": "2026-11-23T10:56:39Z"
+          },
+          {
+            "id": 137644839942,
+            "name": "安全组件Fuzzing",
+            "conclusion": "skipped",
+            "started_at": "2026-11-23T10:56:40Z",
+            "completed_at": "2026-11-23T10:56:39Z"
+          },
+          {
+            "id": 137645529437,
+            "name": "Fuzzing测试汇总报告",
+            "conclusion": "success",
+            "started_at": "2026-11-23T10:58:03Z",
+            "completed_at": "2026-11-23T10:58:06Z",
+            "target_proof_steps": []
+          }
+        ],
+        "artifact_count": 0
+      }
+    ]
+  },
+  "next_gates": {
+    "full_I11": "NOT_RUN; awaits M3/M4 fixtures",
+    "pull_request_event": "NOT_RUN",
+    "merge": "NOT_RUN",
+    "deployment": "NOT_RUN"
+  }
+}

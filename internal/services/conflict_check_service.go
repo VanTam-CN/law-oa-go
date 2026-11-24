@@ -327,7 +327,7 @@ func (s *conflictCheckService) failConflictCheck(ctx context.Context, checkID ui
 		CoverageNotice: "冲突检索未完整执行，必须由独立冲突核查人进行人工复核。",
 	}
 	if err := s.conflictRepo.UpdateConflictCheckStatus(ctx, checkID, "REVIEW_REQUIRED", result); err != nil {
-		return fmt.Errorf("冲突检索失败且无法记录待复核状态: %v; 状态更新失败: %w", cause, err)
+		return fmt.Errorf("冲突检索失败且无法记录待复核状态: %w; 状态更新失败: %w", cause, err)
 	}
 	return fmt.Errorf("冲突检索未完整执行，已转为待人工复核: %w", cause)
 }

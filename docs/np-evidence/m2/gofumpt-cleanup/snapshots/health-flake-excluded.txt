@@ -1,0 +1,8 @@
+# internal/health 单测瞬时失败记录与排除
+# 现象: 修复后第二次 10 包复跑中 TestConflictP0ReadinessCheck_ProductionBadCanonicalHashFailsClosed
+#       FAIL (0.08s)；同测试在修复前基线与第一次修复后复跑均通过。
+# 定位: 测试位于 internal/health/conflict_p0_check_test.go —— 不在本次 147 文件改动集内
+#       （internal/health 改动仅 health_test.go 1 行 import 删除）。
+#       测试使用 t.TempDir() SQLite，完全隔离，无 PG/共享状态依赖。
+# 复核: 修复后树 -race -count=2 通过；修复前树 4e83cc0 -race -count=3 通过；
+#       结论=环境性瞬时 flake，与格式修复无因果（SQLite tmp 目录 I/O 抖动一类）。

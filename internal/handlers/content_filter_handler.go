@@ -2,12 +2,14 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/common"
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/services"
@@ -15,14 +17,14 @@ import (
 
 // ContentFilterHandler 内容过滤处理器
 type ContentFilterHandler struct {
-	db                *gorm.DB
-	filterService      *services.ContentFilterService
+	db            *gorm.DB
+	filterService *services.ContentFilterService
 }
 
 // NewContentFilterHandler 创建内容过滤处理器
 func NewContentFilterHandler(db *gorm.DB) *ContentFilterHandler {
 	return &ContentFilterHandler{
-		db:           db,
+		db:            db,
 		filterService: services.NewContentFilterService(db),
 	}
 }
@@ -108,7 +110,7 @@ func (h *ContentFilterHandler) GetSensitiveWordByID(c *gin.Context) {
 
 	var word models.SensitiveWord
 	if err := h.db.First(&word, id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			common.APINotFound(c, "敏感词不存在")
 			return
 		}
@@ -141,7 +143,7 @@ func (h *ContentFilterHandler) UpdateSensitiveWord(c *gin.Context) {
 
 	var word models.SensitiveWord
 	if err := h.db.First(&word, id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			common.APINotFound(c, "敏感词不存在")
 			return
 		}
@@ -201,7 +203,7 @@ func (h *ContentFilterHandler) DeleteSensitiveWord(c *gin.Context) {
 	}
 
 	if err := h.filterService.DeleteSensitiveWord(context.Background(), uint(id)); err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			common.APINotFound(c, "敏感词不存在")
 			return
 		}
@@ -265,8 +267,8 @@ func (h *ContentFilterHandler) CheckContent(c *gin.Context) {
 
 	common.APISuccess(c, gin.H{
 		"has_sensitive_words": hasSensitive,
-		"found_words":          foundWords,
-		"word_count":           len(foundWords),
+		"found_words":         foundWords,
+		"word_count":          len(foundWords),
 	})
 }
 
@@ -276,9 +278,9 @@ func (h *ContentFilterHandler) CheckContent(c *gin.Context) {
 
 // BatchImportWordsRequest 批量导入请求
 type BatchImportWordsRequest struct {
-	Words     []string `json:"words" binding:"required"`
-	WordType  string   `json:"word_type" binding:"required"`
-	Severity  string   `json:"severity" binding:"required,oneof=low medium high critical"`
+	Words    []string `json:"words" binding:"required"`
+	WordType string   `json:"word_type" binding:"required"`
+	Severity string   `json:"severity" binding:"required,oneof=low medium high critical"`
 }
 
 // BatchImportWords 批量导入敏感词
@@ -352,7 +354,7 @@ func (h *ContentFilterHandler) BatchToggleWords(c *gin.Context) {
 	}
 
 	common.APISuccess(c, gin.H{
-		"message":      "批量更新成功",
+		"message":       "批量更新成功",
 		"affected_rows": result.RowsAffected,
 	})
 }
@@ -377,7 +379,7 @@ func (h *ContentFilterHandler) BatchDeleteWords(c *gin.Context) {
 	}
 
 	common.APISuccess(c, gin.H{
-		"message":      "批量删除成功",
+		"message":       "批量删除成功",
 		"affected_rows": result.RowsAffected,
 	})
 }

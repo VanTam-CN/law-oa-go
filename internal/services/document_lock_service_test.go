@@ -43,10 +43,10 @@ func TestDocumentLockLifecycleWithoutRedis(t *testing.T) {
 	assert.False(t, second.CanEdit)
 	assert.Equal(t, uint(10), second.LockedBy)
 
-	renewed, err := service.RenewLock(ctx, &RenewLockRequest{DocumentID: 1, UserID: 11})
+	_, err = service.RenewLock(ctx, &RenewLockRequest{DocumentID: 1, UserID: 11})
 	require.Error(t, err)
 
-	renewed, err = service.RenewLock(ctx, &RenewLockRequest{DocumentID: 1, UserID: 10})
+	renewed, err := service.RenewLock(ctx, &RenewLockRequest{DocumentID: 1, UserID: 10})
 	require.NoError(t, err)
 	assert.True(t, renewed.CanEdit)
 	assert.True(t, renewed.ExpiresAt.After(first.ExpiresAt.Add(-time.Second)))

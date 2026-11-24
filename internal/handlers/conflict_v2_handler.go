@@ -13,11 +13,11 @@ import (
 
 // ConflictHandlerV2 v2 冲突检测处理器
 type ConflictHandlerV2 struct {
-	conflictService    services.V2ConflictDetectionService
+	conflictService     services.V2ConflictDetectionService
 	conflictPoolService services.ConflictPoolService
-	pdfReportService   services.PDFReportService
-	scanService        services.ConflictScanService
-	companyAPIService  services.CompanyAPIService
+	pdfReportService    services.PDFReportService
+	scanService         services.ConflictScanService
+	companyAPIService   services.CompanyAPIService
 }
 
 // NewConflictHandlerV2 创建新的 v2 冲突检测处理器
@@ -29,23 +29,23 @@ func NewConflictHandlerV2(
 	companyAPIService services.CompanyAPIService,
 ) *ConflictHandlerV2 {
 	return &ConflictHandlerV2{
-		conflictService:    conflictService,
+		conflictService:     conflictService,
 		conflictPoolService: conflictPoolService,
-		pdfReportService:   pdfReportService,
-		scanService:        scanService,
-		companyAPIService:  companyAPIService,
+		pdfReportService:    pdfReportService,
+		scanService:         scanService,
+		companyAPIService:   companyAPIService,
 	}
 }
 
 // QuickCheckRequest 快速检测请求
 type QuickCheckRequest struct {
-	LawyerID       uint     `json:"lawyerId" binding:"required"`
-	ClientName     string   `json:"clientName" binding:"required"`
-	ClientTaxID    string   `json:"clientTaxId"`
-	CaseID         uint     `json:"caseId"`
+	LawyerID        uint     `json:"lawyerId" binding:"required"`
+	ClientName      string   `json:"clientName" binding:"required"`
+	ClientTaxID     string   `json:"clientTaxId"`
+	CaseID          uint     `json:"caseId"`
 	OpposingParties []string `json:"opposingParties"`
-	SearchDepth    string   `json:"searchDepth"`
-	IncludeRelated bool     `json:"includeRelated"`
+	SearchDepth     string   `json:"searchDepth"`
+	IncludeRelated  bool     `json:"includeRelated"`
 }
 
 // QuickCheck 快速冲突检测
@@ -58,13 +58,13 @@ func (h *ConflictHandlerV2) QuickCheck(c *gin.Context) {
 
 	// 构建服务请求
 	serviceReq := &services.ConflictCheckRequestV2{
-		LawyerID:       req.LawyerID,
-		ClientName:     req.ClientName,
-		ClientTaxID:    req.ClientTaxID,
-		CaseID:         req.CaseID,
+		LawyerID:        req.LawyerID,
+		ClientName:      req.ClientName,
+		ClientTaxID:     req.ClientTaxID,
+		CaseID:          req.CaseID,
 		OpposingParties: req.OpposingParties,
-		SearchDepth:    req.SearchDepth,
-		IncludeRelated: req.IncludeRelated,
+		SearchDepth:     req.SearchDepth,
+		IncludeRelated:  req.IncludeRelated,
 	}
 
 	// 执行检测
@@ -86,13 +86,13 @@ func (h *ConflictHandlerV2) DetailedCheck(c *gin.Context) {
 	}
 
 	serviceReq := &services.ConflictCheckRequestV2{
-		LawyerID:       req.LawyerID,
-		ClientName:     req.ClientName,
-		ClientTaxID:    req.ClientTaxID,
-		CaseID:         req.CaseID,
+		LawyerID:        req.LawyerID,
+		ClientName:      req.ClientName,
+		ClientTaxID:     req.ClientTaxID,
+		CaseID:          req.CaseID,
 		OpposingParties: req.OpposingParties,
-		SearchDepth:    req.SearchDepth,
-		IncludeRelated: req.IncludeRelated,
+		SearchDepth:     req.SearchDepth,
+		IncludeRelated:  req.IncludeRelated,
 	}
 
 	result, err := h.conflictService.DetailedCheck(c.Request.Context(), serviceReq)
@@ -292,9 +292,9 @@ func (h *ConflictHandlerV2) GetPoolStats(c *gin.Context) {
 	// 这里需要创建一个获取 pool stats 的方法
 	// 暂时返回基础统计
 	common.APISuccess(c, gin.H{
-		"totalEntries": 0,
-		"byRelationship": map[string]int64{},
-		"byEntityType": map[string]int64{},
+		"totalEntries":    0,
+		"byRelationship":  map[string]int64{},
+		"byEntityType":    map[string]int64{},
 		"apiDataCoverage": 0.0,
 	})
 }
@@ -351,7 +351,7 @@ func (h *ConflictHandlerV2) BatchSyncPool(c *gin.Context) {
 	// 创建冲突池服务的批量同步方法
 	// 这里需要调用 poolService 的批量同步方法
 	common.APISuccess(c, gin.H{
-		"message": "批量同步已启动",
+		"message":   "批量同步已启动",
 		"lawyerIds": req.LawyerIDs,
 	})
 }

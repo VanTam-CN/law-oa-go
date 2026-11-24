@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -129,7 +130,7 @@ func BenchmarkCacheMiddleware(b *testing.B) {
 		b.ResetTimer()
 
 		for i := 0; i < b.N; i++ {
-			req := httptest.NewRequest("GET", "/api/test", nil)
+			req := httptest.NewRequest(http.MethodGet, "/api/test", nil)
 			w := httptest.NewRecorder()
 			app.ServeHTTP(w, req)
 		}
@@ -140,7 +141,7 @@ func BenchmarkCacheMiddleware(b *testing.B) {
 		b.ResetTimer()
 
 		for i := 0; i < b.N; i++ {
-			req := httptest.NewRequest("GET", "/api/test-miss", nil)
+			req := httptest.NewRequest(http.MethodGet, "/api/test-miss", nil)
 			w := httptest.NewRecorder()
 			app.ServeHTTP(w, req)
 		}
@@ -236,7 +237,7 @@ func BenchmarkRedisOperations(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			key := fmt.Sprintf("test:key:%d", i%1000)
 			_, err := rdb.Get(ctx, key).Result()
-			if err != nil && err != redis.Nil {
+			if err != nil && !errors.Is(err, redis.Nil) {
 				b.Fatal(err)
 			}
 		}
@@ -270,7 +271,7 @@ func BenchmarkMiddlewarePerformance(b *testing.B) {
 		b.ResetTimer()
 
 		for i := 0; i < b.N; i++ {
-			req := httptest.NewRequest("GET", "/api/test", nil)
+			req := httptest.NewRequest(http.MethodGet, "/api/test", nil)
 			w := httptest.NewRecorder()
 			app.ServeHTTP(w, req)
 		}
@@ -281,7 +282,7 @@ func BenchmarkMiddlewarePerformance(b *testing.B) {
 		b.ResetTimer()
 
 		for i := 0; i < b.N; i++ {
-			req := httptest.NewRequest("GET", "/api/test", nil)
+			req := httptest.NewRequest(http.MethodGet, "/api/test", nil)
 			w := httptest.NewRecorder()
 			app.ServeHTTP(w, req)
 		}
@@ -292,7 +293,7 @@ func BenchmarkMiddlewarePerformance(b *testing.B) {
 		b.ResetTimer()
 
 		for i := 0; i < b.N; i++ {
-			req := httptest.NewRequest("OPTIONS", "/api/test", nil)
+			req := httptest.NewRequest(http.MethodOptions, "/api/test", nil)
 			req.Header.Set("Origin", "http://localhost:3000")
 			w := httptest.NewRecorder()
 			app.ServeHTTP(w, req)
@@ -313,7 +314,7 @@ func BenchmarkConcurrentRequests(b *testing.B) {
 
 			b.RunParallel(func(pb *testing.PB) {
 				for pb.Next() {
-					req := httptest.NewRequest("GET", "/api/dashboard/statistics", nil)
+					req := httptest.NewRequest(http.MethodGet, "/api/dashboard/statistics", nil)
 					w := httptest.NewRecorder()
 					app.ServeHTTP(w, req)
 				}

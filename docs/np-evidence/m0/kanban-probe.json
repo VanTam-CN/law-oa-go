@@ -1,0 +1,178 @@
+{
+  "schema": "law-oa.m0.kanban-probe.v3",
+  "board": "law-oa-np-main",
+  "result": "PASS",
+  "scope": "operator-mediated task read/write, not native autonomous worker acceptance",
+  "steps": [
+    {
+      "argv": [
+        "/Users/mac/.local/bin/hermes",
+        "kanban",
+        "--board",
+        "law-oa-np-main",
+        "create",
+        "M0-00 操作员读写闭环",
+        "--body",
+        "虚构探针：create/comment/block-state/unblock/request-review/complete/show，验证主调度代记流程；不验证原生worker自治或权限隔离。",
+        "--initial-status",
+        "blocked",
+        "--workspace",
+        "dir:/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0",
+        "--created-by",
+        "codex-coordinator",
+        "--idempotency-key",
+        "law-oa-m0-kanban-probe-2481a47-v3",
+        "--json"
+      ],
+      "started_at": "2026-11-20T03:28:26.306352+00:00",
+      "ended_at": "2026-11-20T03:28:33.005103+00:00",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"t_562fd924\",\n  \"title\": \"M0-00 操作员读写闭环\",\n  \"body\": \"虚构探针：create/comment/block-state/unblock/request-review/complete/show，验证主调度代记流程；不验证原生worker自治或权限隔离。\",\n  \"assignee\": null,\n  \"status\": \"blocked\",\n  \"priority\": 0,\n  \"tenant\": null,\n  \"workspace_kind\": \"dir\",\n  \"workspace_path\": \"/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0\",\n  \"branch_name\": null,\n  \"project_id\": null,\n  \"created_by\": \"codex-coordinator\",\n  \"created_at\": 1795145312,\n  \"started_at\": null,\n  \"completed_at\": null,\n  \"result\": null,\n  \"skills\": [],\n  \"max_runtime_seconds\": null,\n  \"max_retries\": null,\n  \"model_override\": null,\n  \"provider_override\": null,\n  \"session_id\": null,\n  \"workflow_template_id\": null,\n  \"current_step_key\": null,\n  \"completion_contract\": \"local-only\",\n  \"last_failure_error\": null\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/Users/mac/.local/bin/hermes",
+        "kanban",
+        "--board",
+        "law-oa-np-main",
+        "create",
+        "M0-00 操作员读写闭环",
+        "--idempotency-key",
+        "law-oa-m0-kanban-probe-2481a47-v3",
+        "--json"
+      ],
+      "started_at": "2026-11-20T03:28:33.006092+00:00",
+      "ended_at": "2026-11-20T03:28:33.927715+00:00",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"t_562fd924\",\n  \"title\": \"M0-00 操作员读写闭环\",\n  \"body\": \"虚构探针：create/comment/block-state/unblock/request-review/complete/show，验证主调度代记流程；不验证原生worker自治或权限隔离。\",\n  \"assignee\": null,\n  \"status\": \"blocked\",\n  \"priority\": 0,\n  \"tenant\": null,\n  \"workspace_kind\": \"dir\",\n  \"workspace_path\": \"/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0\",\n  \"branch_name\": null,\n  \"project_id\": null,\n  \"created_by\": \"codex-coordinator\",\n  \"created_at\": 1795145312,\n  \"started_at\": null,\n  \"completed_at\": null,\n  \"result\": null,\n  \"skills\": [],\n  \"max_runtime_seconds\": null,\n  \"max_retries\": null,\n  \"model_override\": null,\n  \"provider_override\": null,\n  \"session_id\": null,\n  \"workflow_template_id\": null,\n  \"current_step_key\": null,\n  \"completion_contract\": \"local-only\",\n  \"last_failure_error\": null\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/Users/mac/.local/bin/hermes",
+        "kanban",
+        "--board",
+        "law-oa-np-main",
+        "comment",
+        "t_562fd924",
+        "synthetic only: structured result written by coordinator",
+        "--author",
+        "codex-coordinator"
+      ],
+      "started_at": "2026-11-20T03:28:33.928099+00:00",
+      "ended_at": "2026-11-20T03:28:34.981416+00:00",
+      "exit_code": 0,
+      "stdout": "Comment added to t_562fd924\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/Users/mac/.local/bin/hermes",
+        "kanban",
+        "--board",
+        "law-oa-np-main",
+        "show",
+        "t_562fd924",
+        "--json"
+      ],
+      "started_at": "2026-11-20T03:28:34.981877+00:00",
+      "ended_at": "2026-11-20T03:28:35.834631+00:00",
+      "exit_code": 0,
+      "stdout": "{\n  \"task\": {\n    \"id\": \"t_562fd924\",\n    \"title\": \"M0-00 操作员读写闭环\",\n    \"body\": \"虚构探针：create/comment/block-state/unblock/request-review/complete/show，验证主调度代记流程；不验证原生worker自治或权限隔离。\",\n    \"assignee\": null,\n    \"status\": \"blocked\",\n    \"priority\": 0,\n    \"tenant\": null,\n    \"workspace_kind\": \"dir\",\n    \"workspace_path\": \"/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0\",\n    \"branch_name\": null,\n    \"project_id\": null,\n    \"created_by\": \"codex-coordinator\",\n    \"created_at\": 1795145312,\n    \"started_at\": null,\n    \"completed_at\": null,\n    \"result\": null,\n    \"skills\": [],\n    \"max_runtime_seconds\": null,\n    \"max_retries\": null,\n    \"model_override\": null,\n    \"provider_override\": null,\n    \"session_id\": null,\n    \"workflow_template_id\": null,\n    \"current_step_key\": null,\n    \"completion_contract\": \"local-only\",\n    \"last_failure_error\": null\n  },\n  \"latest_summary\": null,\n  \"parents\": [],\n  \"children\": [],\n  \"comments\": [\n    {\n      \"author\": \"codex-coordinator\",\n      \"body\": \"synthetic only: structured result written by coordinator\",\n      \"created_at\": 1795145314\n    }\n  ],\n  \"events\": [\n    {\n      \"kind\": \"created\",\n      \"payload\": {\n        \"assignee\": null,\n        \"status\": \"blocked\",\n        \"parents\": [],\n        \"creator_task_id\": null,\n        \"tenant\": null,\n        \"workspace_kind\": \"dir\",\n        \"workspace_path\": \"/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0\",\n        \"branch_name\": null,\n        \"project_id\": null,\n        \"skills\": null,\n        \"goal_mode\": null,\n        \"model_override\": null,\n        \"provider_override\": null\n      },\n      \"created_at\": 1795145312,\n      \"run_id\": null\n    },\n    {\n      \"kind\": \"blocked\",\n      \"payload\": {\n        \"reason\": \"initial_status\",\n        \"status\": \"blocked\",\n        \"actor\": \"codex-coordinator\"\n      },\n      \"created_at\": 1795145312,\n      \"run_id\": null\n    },\n    {\n      \"kind\": \"commented\",\n      \"payload\": {\n        \"author\": \"codex-coordinator\",\n        \"len\": 56\n      },\n      \"created_at\": 1795145314,\n      \"run_id\": null\n    }\n  ],\n  \"runs\": []\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/Users/mac/.local/bin/hermes",
+        "kanban",
+        "--board",
+        "law-oa-np-main",
+        "unblock",
+        "--reason",
+        "主调度执行合成接入检查",
+        "t_562fd924"
+      ],
+      "started_at": "2026-11-20T03:28:35.835203+00:00",
+      "ended_at": "2026-11-20T03:28:36.961188+00:00",
+      "exit_code": 0,
+      "stdout": "Unblocked t_562fd924: 主调度执行合成接入检查\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/Users/mac/.local/bin/hermes",
+        "kanban",
+        "--board",
+        "law-oa-np-main",
+        "request-review",
+        "t_562fd924",
+        "--summary",
+        "操作员已写入虚构结果；进入复审，非业务验收。",
+        "--metadata",
+        "{\"scope\": \"operator-only\", \"product_tests\": \"NOT_RUN\"}"
+      ],
+      "started_at": "2026-11-20T03:28:36.961702+00:00",
+      "ended_at": "2026-11-20T03:28:37.792439+00:00",
+      "exit_code": 0,
+      "stdout": "Requested review for t_562fd924: 操作员已写入虚构结果；进入复审，非业务验收。\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/Users/mac/.local/bin/hermes",
+        "kanban",
+        "--board",
+        "law-oa-np-main",
+        "show",
+        "t_562fd924",
+        "--json"
+      ],
+      "started_at": "2026-11-20T03:28:37.792926+00:00",
+      "ended_at": "2026-11-20T03:28:38.567893+00:00",
+      "exit_code": 0,
+      "stdout": "{\n  \"task\": {\n    \"id\": \"t_562fd924\",\n    \"title\": \"M0-00 操作员读写闭环\",\n    \"body\": \"虚构探针：create/comment/block-state/unblock/request-review/complete/show，验证主调度代记流程；不验证原生worker自治或权限隔离。\",\n    \"assignee\": null,\n    \"status\": \"review\",\n    \"priority\": 0,\n    \"tenant\": null,\n    \"workspace_kind\": \"dir\",\n    \"workspace_path\": \"/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0\",\n    \"branch_name\": null,\n    \"project_id\": null,\n    \"created_by\": \"codex-coordinator\",\n    \"created_at\": 1795145312,\n    \"started_at\": null,\n    \"completed_at\": null,\n    \"result\": null,\n    \"skills\": [],\n    \"max_runtime_seconds\": null,\n    \"max_retries\": null,\n    \"model_override\": null,\n    \"provider_override\": null,\n    \"session_id\": null,\n    \"workflow_template_id\": null,\n    \"current_step_key\": null,\n    \"completion_contract\": \"local-only\",\n    \"last_failure_error\": null\n  },\n  \"latest_summary\": \"操作员已写入虚构结果；进入复审，非业务验收。\",\n  \"parents\": [],\n  \"children\": [],\n  \"comments\": [\n    {\n      \"author\": \"codex-coordinator\",\n      \"body\": \"synthetic only: structured result written by coordinator\",\n      \"created_at\": 1795145314\n    },\n    {\n      \"author\": \"default\",\n      \"body\": \"UNBLOCK: 主调度执行合成接入检查\",\n      \"created_at\": 1795145316\n    }\n  ],\n  \"events\": [\n    {\n      \"kind\": \"created\",\n      \"payload\": {\n        \"assignee\": null,\n        \"status\": \"blocked\",\n        \"parents\": [],\n        \"creator_task_id\": null,\n        \"tenant\": null,\n        \"workspace_kind\": \"dir\",\n        \"workspace_path\": \"/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0\",\n        \"branch_name\": null,\n        \"project_id\": null,\n        \"skills\": null,\n        \"goal_mode\": null,\n        \"model_override\": null,\n        \"provider_override\": null\n      },\n      \"created_at\": 1795145312,\n      \"run_id\": null\n    },\n    {\n      \"kind\": \"blocked\",\n      \"payload\": {\n        \"reason\": \"initial_status\",\n        \"status\": \"blocked\",\n        \"actor\": \"codex-coordinator\"\n      },\n      \"created_at\": 1795145312,\n      \"run_id\": null\n    },\n    {\n      \"kind\": \"commented\",\n      \"payload\": {\n        \"author\": \"codex-coordinator\",\n        \"len\": 56\n      },\n      \"created_at\": 1795145314,\n      \"run_id\": null\n    },\n    {\n      \"kind\": \"commented\",\n      \"payload\": {\n        \"author\": \"default\",\n        \"len\": 20\n      },\n      \"created_at\": 1795145316,\n      \"run_id\": null\n    },\n    {\n      \"kind\": \"unblocked\",\n      \"payload\": null,\n      \"created_at\": 1795145316,\n      \"run_id\": null\n    },\n    {\n      \"kind\": \"review_requested\",\n      \"payload\": {\n        \"summary\": \"操作员已写入虚构结果；进入复审，非业务验收。\",\n        \"implementer\": null,\n        \"reviewer\": null\n      },\n      \"created_at\": 1795145317,\n      \"run_id\": 7\n    }\n  ],\n  \"runs\": [\n    {\n      \"id\": 7,\n      \"profile\": null,\n      \"step_key\": null,\n      \"status\": \"review_requested\",\n      \"outcome\": \"review_requested\",\n      \"summary\": \"操作员已写入虚构结果；进入复审，非业务验收。\",\n      \"error\": null,\n      \"metadata\": {\n        \"scope\": \"operator-only\",\n        \"product_tests\": \"NOT_RUN\"\n      },\n      \"worker_pid\": null,\n      \"started_at\": 1795145317,\n      \"ended_at\": 1795145317\n    }\n  ]\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/Users/mac/.local/bin/hermes",
+        "kanban",
+        "--board",
+        "law-oa-np-main",
+        "complete",
+        "t_562fd924",
+        "--result",
+        "主调度按readback复核：操作员读写闭环PASS；原生worker权限/自治NOT_RUN。"
+      ],
+      "started_at": "2026-11-20T03:28:38.568438+00:00",
+      "ended_at": "2026-11-20T03:28:40.049279+00:00",
+      "exit_code": 0,
+      "stdout": "Completed t_562fd924\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/Users/mac/.local/bin/hermes",
+        "kanban",
+        "--board",
+        "law-oa-np-main",
+        "show",
+        "t_562fd924",
+        "--json"
+      ],
+      "started_at": "2026-11-20T03:28:40.049996+00:00",
+      "ended_at": "2026-11-20T03:28:40.884911+00:00",
+      "exit_code": 0,
+      "stdout": "{\n  \"task\": {\n    \"id\": \"t_562fd924\",\n    \"title\": \"M0-00 操作员读写闭环\",\n    \"body\": \"虚构探针：create/comment/block-state/unblock/request-review/complete/show，验证主调度代记流程；不验证原生worker自治或权限隔离。\",\n    \"assignee\": null,\n    \"status\": \"done\",\n    \"priority\": 0,\n    \"tenant\": null,\n    \"workspace_kind\": \"dir\",\n    \"workspace_path\": \"/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0\",\n    \"branch_name\": null,\n    \"project_id\": null,\n    \"created_by\": \"codex-coordinator\",\n    \"created_at\": 1795145312,\n    \"started_at\": null,\n    \"completed_at\": 1795145319,\n    \"result\": \"主调度按readback复核：操作员读写闭环PASS；原生worker权限/自治NOT_RUN。\",\n    \"skills\": [],\n    \"max_runtime_seconds\": null,\n    \"max_retries\": null,\n    \"model_override\": null,\n    \"provider_override\": null,\n    \"session_id\": null,\n    \"workflow_template_id\": null,\n    \"current_step_key\": null,\n    \"completion_contract\": \"local-only\",\n    \"last_failure_error\": null\n  },\n  \"latest_summary\": \"主调度按readback复核：操作员读写闭环PASS；原生worker权限/自治NOT_RUN。\",\n  \"parents\": [],\n  \"children\": [],\n  \"comments\": [\n    {\n      \"author\": \"codex-coordinator\",\n      \"body\": \"synthetic only: structured result written by coordinator\",\n      \"created_at\": 1795145314\n    },\n    {\n      \"author\": \"default\",\n      \"body\": \"UNBLOCK: 主调度执行合成接入检查\",\n      \"created_at\": 1795145316\n    }\n  ],\n  \"events\": [\n    {\n      \"kind\": \"created\",\n      \"payload\": {\n        \"assignee\": null,\n        \"status\": \"blocked\",\n        \"parents\": [],\n        \"creator_task_id\": null,\n        \"tenant\": null,\n        \"workspace_kind\": \"dir\",\n        \"workspace_path\": \"/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0\",\n        \"branch_name\": null,\n        \"project_id\": null,\n        \"skills\": null,\n        \"goal_mode\": null,\n        \"model_override\": null,\n        \"provider_override\": null\n      },\n      \"created_at\": 1795145312,\n      \"run_id\": null\n    },\n    {\n      \"kind\": \"blocked\",\n      \"payload\": {\n        \"reason\": \"initial_status\",\n        \"status\": \"blocked\",\n        \"actor\": \"codex-coordinator\"\n      },\n      \"created_at\": 1795145312,\n      \"run_id\": null\n    },\n    {\n      \"kind\": \"commented\",\n      \"payload\": {\n        \"author\": \"codex-coordinator\",\n        \"len\": 56\n      },\n      \"created_at\": 1795145314,\n      \"run_id\": null\n    },\n    {\n      \"kind\": \"commented\",\n      \"payload\": {\n        \"author\": \"default\",\n        \"len\": 20\n      },\n      \"created_at\": 1795145316,\n      \"run_id\": null\n    },\n    {\n      \"kind\": \"unblocked\",\n      \"payload\": null,\n      \"created_at\": 1795145316,\n      \"run_id\": null\n    },\n    {\n      \"kind\": \"review_requested\",\n      \"payload\": {\n        \"summary\": \"操作员已写入虚构结果；进入复审，非业务验收。\",\n        \"implementer\": null,\n        \"reviewer\": null\n      },\n      \"created_at\": 1795145317,\n      \"run_id\": 7\n    },\n    {\n      \"kind\": \"completed\",\n      \"payload\": {\n        \"result_len\": 48,\n        \"summary\": \"主调度按readback复核：操作员读写闭环PASS；原生worker权限/自治NOT_RUN。\"\n      },\n      \"created_at\": 1795145319,\n      \"run_id\": 8\n    }\n  ],\n  \"runs\": [\n    {\n      \"id\": 7,\n      \"profile\": null,\n      \"step_key\": null,\n      \"status\": \"review_requested\",\n      \"outcome\": \"review_requested\",\n      \"summary\": \"操作员已写入虚构结果；进入复审，非业务验收。\",\n      \"error\": null,\n      \"metadata\": {\n        \"scope\": \"operator-only\",\n        \"product_tests\": \"NOT_RUN\"\n      },\n      \"worker_pid\": null,\n      \"started_at\": 1795145317,\n      \"ended_at\": 1795145317\n    },\n    {\n      \"id\": 8,\n      \"profile\": null,\n      \"step_key\": null,\n      \"status\": \"completed\",\n      \"outcome\": \"completed\",\n      \"summary\": \"主调度按readback复核：操作员读写闭环PASS；原生worker权限/自治NOT_RUN。\",\n      \"error\": null,\n      \"metadata\": null,\n      \"worker_pid\": null,\n      \"started_at\": 1795145319,\n      \"ended_at\": 1795145319\n    }\n  ]\n}\n",
+      "stderr": ""
+    }
+  ],
+  "prior_attempts": [
+    "kanban-probe-first-red.json",
+    "kanban-probe-v2-partial.json"
+  ],
+  "task_id": "t_562fd924",
+  "final_status": "done",
+  "native_worker_acceptance": "NOT_RUN"
+}

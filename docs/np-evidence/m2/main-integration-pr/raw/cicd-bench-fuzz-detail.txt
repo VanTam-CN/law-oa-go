@@ -1,0 +1,10 @@
+=== job 138432773759 ===
+2026-11-24T12:09:51.6800568Z sqlite3-binding.c:123133:9: warning: assignment discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+2026-11-24T12:09:51.6801507Z 123133 |   zTail = strrchr(zName, '_');
+2026-11-24T12:09:51.6801837Z        |         ^
+2026-11-24T12:13:07.7418803Z ##[error]Process completed with exit code 1.
+=== job 138432773814 ===
+2026-11-24T12:08:03.0515216Z   IMAGE_NAME: VanTam-CN/law-oa-go
+2026-11-24T12:08:03.0515545Z ##[endgroup]
+2026-11-24T12:08:03.0639516Z Go版本不支持Fuzzing
+2026-11-24T12:08:03.0654106Z ##[error]Process completed with exit code 1.

@@ -22,6 +22,9 @@ type EnhancedCaseService interface {
 	// 冲突检测集成
 	TriggerConflictDetection(ctx context.Context, caseID uint) error
 	GetConflictDetectionStatus(ctx context.Context, caseID uint) (*ConflictDetectionStatus, error)
+
+	// 主体复核闸门装配（router 装配期调用）
+	SetSubjectRecheckService(service *SubjectRecheckService)
 }
 
 // EnhancedCreateCaseRequest 增强的创建案例请求
@@ -327,7 +330,7 @@ func NewEnhancedCaseService(
 	caseRepo repositories.CaseRepository,
 	clientRepo repositories.ClientRepository,
 	userRepo repositories.UserRepository,
-) *enhancedCaseService {
+) EnhancedCaseService {
 	return &enhancedCaseService{
 		caseRepo:   caseRepo,
 		clientRepo: clientRepo,
