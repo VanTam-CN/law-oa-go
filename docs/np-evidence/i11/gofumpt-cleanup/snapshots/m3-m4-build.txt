@@ -1,0 +1,4 @@
+== go build ./... on codex/np-main-m3 (3cb6737)
+BUILD_OK
+== go build ./... on codex/np-main-m4 (c4dbc3d)
+BUILD_OK

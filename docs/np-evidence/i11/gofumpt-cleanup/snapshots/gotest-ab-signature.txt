@@ -1,0 +1,14 @@
+# Go Tests job A/B: old head 309d1dd (run 45389286869) vs fixed head e2034e9 (run 45395793181)
+# identical pre-existing failure signature both sides -> unrelated to formatting change
+-- OLD (309d1dd, run 45389286869, 2026-11-24T12:06Z):
+🐹 Go Tests	🧪 运行集成测试	2026-11-24T12:06:27.7640895Z --- FAIL: TestPerformanceMonitoring (0.00s)
+🐹 Go Tests	🧪 运行集成测试	2026-11-24T12:06:27.7652618Z FAIL	law-oa-go/tests/performance	0.034s
+🐹 Go Tests	🧪 运行集成测试	2026-11-24T12:06:27.7652858Z FAIL
+🐹 Go Tests	🧪 运行集成测试	2026-11-24T12:06:27.8709863Z ##[error]Process completed with exit code 1.
+🐹 Go Tests	📋 生成测试报告	2026-11-24T12:07:13.9272491Z ##[error]Process completed with exit code 1.
+-- NEW (e2034e9, run 45395793181, 2026-11-24T12:47Z):
+🐹 Go Tests	🧪 运行集成测试	2026-11-24T12:47:16.7700811Z --- FAIL: TestPerformanceMonitoring (0.00s)
+🐹 Go Tests	🧪 运行集成测试	2026-11-24T12:47:16.7714176Z FAIL	law-oa-go/tests/performance	0.036s
+🐹 Go Tests	🧪 运行集成测试	2026-11-24T12:47:16.8792791Z ##[error]Process completed with exit code 1.
+🐹 Go Tests	📋 生成测试报告	2026-11-24T12:48:10.3722908Z ##[error]Process completed with exit code 1.
+-- E2E: fail on both heads (old: run 45389286869 1m58s; new: run 45395793181) - chronic category
