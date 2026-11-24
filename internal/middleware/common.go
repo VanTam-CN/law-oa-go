@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -237,6 +238,9 @@ func Logger() gin.HandlerFunc {
 // LoggerWithFormatter 格式化日志中间件（符合Gin最佳实践）
 func LoggerWithFormatter() gin.HandlerFunc {
 	return gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
+		if containsSensitiveData(param.Request.URL.Path) {
+			return fmt.Sprintf("%s %s %d %s\n", param.Method, param.Request.URL.Path, param.StatusCode, param.Latency)
+		}
 		// 使用结构化日志格式，便于日志分析工具处理
 		return fmt.Sprintf("%s - [%s] \"%s %s %s\" %d %s \"%s\" %s\n",
 			param.ClientIP,
@@ -254,9 +258,9 @@ func LoggerWithFormatter() gin.HandlerFunc {
 
 // Recovery 恢复中间件（改进版本，符合Gin最佳实践）
 func Recovery() gin.HandlerFunc {
-	return gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
+	handle := func(c *gin.Context, recovered interface{}) {
 		// 记录详细的错误信息
-		if logger.Logger != nil {
+		if logger.Logger != nil && !containsSensitiveData(c.Request.URL.Path) {
 			if err, ok := recovered.(error); ok {
 				logger.Logger.Error("Panic recovered",
 					zap.Error(err),
@@ -291,7 +295,16 @@ func Recovery() gin.HandlerFunc {
 		}
 
 		c.Abort()
-	})
+	}
+	ordinary := gin.CustomRecovery(handle)
+	sensitive := gin.CustomRecoveryWithWriter(io.Discard, handle)
+	return func(c *gin.Context) {
+		if containsSensitiveData(c.Request.URL.Path) {
+			sensitive(c)
+			return
+		}
+		ordinary(c)
+	}
 }
 
 // SecurityHeaders 安全头部中间件
