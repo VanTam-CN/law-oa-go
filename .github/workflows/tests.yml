@@ -22,7 +22,7 @@ env:
 
 jobs:
   np-m2-early:
-    if: github.ref == 'refs/heads/codex/np-main-m2' || github.head_ref == 'codex/np-main-m2'
+    if: github.ref == 'refs/heads/codex/np-main-m2' || (github.head_ref == 'codex/np-main-m2' || github.head_ref == 'codex/np-main-m3')
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -90,10 +90,10 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-          cache: ${{ github.head_ref != 'codex/np-main-m2' }}
+          cache: ${{ (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3') }}
 
       - name: 📦 缓存Go模块
-        if: github.head_ref != 'codex/np-main-m2'
+        if: (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3')
         uses: actions/cache@v4
         with:
           path: ~/go/pkg/mod
@@ -138,12 +138,12 @@ jobs:
           gocovmerge coverage-unit.out coverage-integration.out > coverage.out
 
       - name: Record pilot Go coverage
-        if: github.head_ref == 'codex/np-main-m2'
+        if: (github.head_ref == 'codex/np-main-m2' || github.head_ref == 'codex/np-main-m3')
         run: |
           go tool cover -func=coverage.out | awk '$1 == "total:" && $3 ~ /^[0-9]+([.][0-9]+)?%$/ { print "Go coverage", $3; found=1 } END { exit !found }' >> "$GITHUB_STEP_SUMMARY"
 
       - name: 📈 上传覆盖率到Codecov
-        if: github.head_ref != 'codex/np-main-m2'
+        if: (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3')
         uses: codecov/codecov-action@v4
         with:
           files: ./coverage.out
@@ -160,7 +160,7 @@ jobs:
 
       - name: 📊 上传测试报告
         uses: actions/upload-artifact@v4
-        if: always() && github.head_ref != 'codex/np-main-m2'
+        if: always() && (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3')
         with:
           name: go-test-report
           path: report.xml
@@ -203,12 +203,12 @@ jobs:
         run: npm run test:ci -- --coverage --coverageReporters=lcov --coverageReporters=text
 
       - name: Record pilot frontend coverage
-        if: github.head_ref == 'codex/np-main-m2'
+        if: (github.head_ref == 'codex/np-main-m2' || github.head_ref == 'codex/np-main-m3')
         run: |
           awk -F: '$1 == "LF" { lines += $2 } $1 == "LH" { hit += $2 } END { if (!lines || hit > lines) exit 1; printf "Frontend line coverage %.1f%%\n", 100 * hit / lines }' frontend/coverage/lcov.info >> "$GITHUB_STEP_SUMMARY"
 
       - name: 📈 上传覆盖率到Codecov
-        if: github.head_ref != 'codex/np-main-m2'
+        if: (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3')
         uses: codecov/codecov-action@v4
         with:
           files: ./frontend/coverage/lcov.info
@@ -219,7 +219,7 @@ jobs:
 
       - name: 📊 上传测试报告
         uses: actions/upload-artifact@v4
-        if: always() && github.head_ref != 'codex/np-main-m2'
+        if: always() && (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3')
         with:
           name: frontend-test-report
           path: frontend/coverage/
@@ -263,7 +263,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-          cache: ${{ github.head_ref != 'codex/np-main-m2' }}
+          cache: ${{ (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3') }}
 
       - name: 📥 安装前端依赖
         working-directory: ./frontend
@@ -305,7 +305,7 @@ jobs:
 
       - name: 📊 上传Playwright报告
         uses: actions/upload-artifact@v4
-        if: always() && github.head_ref != 'codex/np-main-m2'
+        if: always() && (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3')
         with:
           name: playwright-report
           path: frontend/playwright-report/
@@ -313,7 +313,7 @@ jobs:
 
       - name: 📸 上传测试截图
         uses: actions/upload-artifact@v4
-        if: failure() && github.head_ref != 'codex/np-main-m2'
+        if: failure() && (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3')
         with:
           name: playwright-screenshots
           path: frontend/test-results/
@@ -323,7 +323,7 @@ jobs:
   # 测试覆盖率检查
   # ================================
   coverage-check:
-    if: github.head_ref != 'codex/np-main-m2'
+    if: (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3')
     name: 📊 Coverage Check
     runs-on: ubuntu-latest
     needs: [go-tests, frontend-tests]
@@ -379,7 +379,7 @@ jobs:
           echo "### ✅ 所有测试已完成" >> $GITHUB_STEP_SUMMARY
 
       - name: 💬 PR评论
-        if: github.event_name == 'pull_request' && github.head_ref != 'codex/np-main-m2'
+        if: github.event_name == 'pull_request' && (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3')
         uses: actions/github-script@v7
         with:
           script: |
