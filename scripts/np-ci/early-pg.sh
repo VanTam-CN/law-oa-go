@@ -2,7 +2,7 @@
 # Run only against a disposable container owned by this invocation.
 set -euo pipefail
 probe=${1:-normal}
-case "$probe" in normal|missing-pg|skip|none) ;; *) exit 2 ;; esac
+case "$probe" in normal|missing-pg|missing-dsn|skip|partial|none) ;; *) exit 2 ;; esac
 cd "$(git rev-parse --show-toplevel)"
 tmp=$(mktemp -d)
 cleanup() {
@@ -14,7 +14,13 @@ umask 077
 export DB_DRIVER=postgres DB_HOST=127.0.0.1 DB_PORT=18790 DB_DATABASE=np_first_slice_dev DB_USERNAME=np_m1 DB_SSLMODE=disable
 PGPASSWORD=$(openssl rand -hex 24)
 export PGPASSWORD DB_PASSWORD="$PGPASSWORD" POSTGRES_PASSWORD="$PGPASSWORD" POSTGRES_USER="$DB_USERNAME" POSTGRES_DB="$DB_DATABASE"
-export NP_TEST_DSN="host=$DB_HOST port=$DB_PORT dbname=$DB_DATABASE user=$DB_USERNAME sslmode=disable"
+expected_dsn="host=$DB_HOST port=$DB_PORT dbname=$DB_DATABASE user=$DB_USERNAME sslmode=disable"
+# Hosted jobs must supply the fixture identity; keep standalone local invocation convenient.
+if [[ ${GITHUB_ACTIONS:-} != true && -z ${NP_TEST_DSN+x} ]]; then NP_TEST_DSN=$expected_dsn; fi
+if [[ "$probe" == missing-dsn ]]; then unset NP_TEST_DSN; fi
+[[ -n ${NP_TEST_DSN:-} ]] || { echo M2_DSN_MISSING; exit 1; }
+[[ "$NP_TEST_DSN" == "$expected_dsn" ]] || { echo M2_WRONG_DSN; exit 1; }
+export NP_TEST_DSN
 unset PGSERVICE PGHOSTADDR PGOPTIONS
 psql_bin=${NP86_PSQL:-$(command -v psql || echo /usr/local/opt/libpq/bin/psql)}
 [[ -x "$psql_bin" ]] || { echo M2_PSQL_MISSING; exit 1; }
@@ -46,6 +52,8 @@ overlay.write_text(body.replace(signature, signature + '\n\tt.Skip("M2 synthetic
 (tmp / "overlay.json").write_text(json.dumps({"Replace": {str(src): str(overlay)}}))
 PY
   args+=("-overlay=$tmp/overlay.json")
+elif [[ "$probe" == partial ]]; then
+  selector='^TestSchemaRequiresFrozenKeysAndTypes$'
 elif [[ "$probe" == none ]]; then
   selector='^TestM2DeliberatelyAbsent$'
 fi
