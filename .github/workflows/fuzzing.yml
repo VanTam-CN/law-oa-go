@@ -92,7 +92,7 @@ jobs:
         go help testflag > "$RUNNER_TEMP/testflags"
         grep -Eq '^[[:space:]]*-fuzz regexp' "$RUNNER_TEMP/testflags"
 
-  # 安全组件Fuzzing
+  # 安全组件Fuzzing（security 包及其 fuzz 目标不依赖 Redis/MySQL，无需服务步骤）
   security-fuzzing:
     name: 安全组件Fuzzing
     outputs:
@@ -122,10 +122,6 @@ jobs:
       run: |
         go mod download
 
-    - name: 设置Redis
-      run: |
-        sudo systemctl start redis-server
-
     - name: 设置脚本权限
       run: |
         chmod +x scripts/fuzzing_test.sh
@@ -133,7 +129,21 @@ jobs:
     - name: 运行JWT验证Fuzzing
       if: matrix.test == 'jwt-validation'
       run: |
-        ./scripts/fuzzing_test.sh -s -t "${FUZZ_SECONDS}s" -f "$FUZZERS" -o "$RUNNER_TEMP/security-fuzzing-results" >"$RUNNER_TEMP/fuzz-run.log" 2>&1
+        rc=0
+        ./scripts/fuzzing_test.sh -s -t "${FUZZ_SECONDS}s" -f "$FUZZERS" -o "$RUNNER_TEMP/security-fuzzing-results" >"$RUNNER_TEMP/fuzz-run.log" 2>&1 || rc=$?
+        tail -80 "$RUNNER_TEMP/fuzz-run.log" || true
+        exit $rc
+
+    - name: 归档Fuzz输出与crasher
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: fuzz-logs-${{ matrix.test }}
+        path: |
+          ${{ runner.temp }}/fuzz-*.log
+          internal/**/testdata/fuzz/
+        if-no-files-found: ignore
+        retention-days: 7
 
     - name: 核实目标执行证据
       id: proof
@@ -178,7 +188,21 @@ jobs:
       env:
         TARGET: ${{ matrix.test }}
       run: |
-        go test -v -fuzz="^${TARGET}$" -parallel="$FUZZERS" -fuzztime="${FUZZ_SECONDS}s" ./internal/validators/ >"$RUNNER_TEMP/fuzz-$TARGET.log" 2>&1
+        rc=0
+        go test -v -fuzz="^${TARGET}$" -parallel="$FUZZERS" -fuzztime="${FUZZ_SECONDS}s" ./internal/validators/ >"$RUNNER_TEMP/fuzz-$TARGET.log" 2>&1 || rc=$?
+        tail -80 "$RUNNER_TEMP/fuzz-$TARGET.log" || true
+        exit $rc
+
+    - name: 归档Fuzz输出与crasher
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: fuzz-logs-${{ matrix.test }}
+        path: |
+          ${{ runner.temp }}/fuzz-*.log
+          internal/**/testdata/fuzz/
+        if-no-files-found: ignore
+        retention-days: 7
 
     - name: 核实目标执行证据
       id: proof
@@ -187,7 +211,7 @@ jobs:
       run: |
         bash scripts/np-ci/check-fuzz-result.sh "$RUNNER_TEMP" "$TARGET"
 
-  # 数据库Fuzzing
+  # 数据库Fuzzing（编译参与 fuzz 的目标为纯构建占位，包内编译测试用 sqlite :memory:，无需 MySQL 服务）
   repositories-fuzzing:
     name: 数据库Fuzzing
     outputs:
@@ -217,11 +241,6 @@ jobs:
       run: |
         go mod download
 
-    - name: 设置数据库
-      run: |
-        sudo systemctl start mysql
-        mysql -u root -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
-
     - name: 设置脚本权限
       run: |
         chmod +x scripts/fuzzing_test.sh
@@ -230,7 +249,21 @@ jobs:
       env:
         TARGET: ${{ matrix.test }}
       run: |
-        go test -v -fuzz="^${TARGET}$" -parallel="$FUZZERS" -fuzztime="${FUZZ_SECONDS}s" ./internal/repositories/ >"$RUNNER_TEMP/fuzz-$TARGET.log" 2>&1
+        rc=0
+        go test -v -fuzz="^${TARGET}$" -parallel="$FUZZERS" -fuzztime="${FUZZ_SECONDS}s" ./internal/repositories/ >"$RUNNER_TEMP/fuzz-$TARGET.log" 2>&1 || rc=$?
+        tail -80 "$RUNNER_TEMP/fuzz-$TARGET.log" || true
+        exit $rc
+
+    - name: 归档Fuzz输出与crasher
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: fuzz-logs-${{ matrix.test }}
+        path: |
+          ${{ runner.temp }}/fuzz-*.log
+          internal/**/testdata/fuzz/
+        if-no-files-found: ignore
+        retention-days: 7
 
     - name: 核实目标执行证据
       id: proof
@@ -239,7 +272,7 @@ jobs:
       run: |
         bash scripts/np-ci/check-fuzz-result.sh "$RUNNER_TEMP" "$TARGET"
 
-  # 缓存Fuzzing
+  # 缓存Fuzzing（cache 测试直连 127.0.0.1:6379，需安装并启动 Redis；ubuntu-26.04 镜像无 redis-server 服务单元）
   cache-fuzzing:
     name: 缓存Fuzzing
     outputs:
@@ -269,9 +302,17 @@ jobs:
       run: |
         go mod download
 
-    - name: 设置Redis
+    - name: 安装并启动Redis
       run: |
-        sudo systemctl start redis-server
+        if ! command -v redis-server >/dev/null 2>&1 && ! command -v valkey-server >/dev/null 2>&1; then
+          sudo apt-get update -qq || true
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq redis-server || \
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq valkey
+        fi
+        sudo systemctl start redis-server 2>/dev/null || sudo systemctl start valkey-server 2>/dev/null || \
+          sudo redis-server --daemonize yes 2>/dev/null || sudo valkey-server --daemonize yes
+        for i in $(seq 1 30); do (echo > /dev/tcp/127.0.0.1/6379) 2>/dev/null && break; sleep 1; done
+        (echo > /dev/tcp/127.0.0.1/6379) || { echo 'Redis 未就绪 (127.0.0.1:6379)' >&2; exit 1; }
 
     - name: 设置脚本权限
       run: |
@@ -281,7 +322,21 @@ jobs:
       env:
         TARGET: ${{ matrix.test }}
       run: |
-        go test -v -fuzz="^${TARGET}$" -parallel="$FUZZERS" -fuzztime="${FUZZ_SECONDS}s" ./internal/cache/ >"$RUNNER_TEMP/fuzz-$TARGET.log" 2>&1
+        rc=0
+        go test -v -fuzz="^${TARGET}$" -parallel="$FUZZERS" -fuzztime="${FUZZ_SECONDS}s" ./internal/cache/ >"$RUNNER_TEMP/fuzz-$TARGET.log" 2>&1 || rc=$?
+        tail -80 "$RUNNER_TEMP/fuzz-$TARGET.log" || true
+        exit $rc
+
+    - name: 归档Fuzz输出与crasher
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: fuzz-logs-${{ matrix.test }}
+        path: |
+          ${{ runner.temp }}/fuzz-*.log
+          internal/**/testdata/fuzz/
+        if-no-files-found: ignore
+        retention-days: 7
 
     - name: 核实目标执行证据
       id: proof
@@ -328,7 +383,21 @@ jobs:
       env:
         TARGET: ${{ matrix.test }}
       run: |
-        go test -v -fuzz="^${TARGET}$" -parallel="$FUZZERS" -fuzztime="${FUZZ_SECONDS}s" ./internal/concurrency/ >"$RUNNER_TEMP/fuzz-$TARGET.log" 2>&1
+        rc=0
+        go test -v -fuzz="^${TARGET}$" -parallel="$FUZZERS" -fuzztime="${FUZZ_SECONDS}s" ./internal/concurrency/ >"$RUNNER_TEMP/fuzz-$TARGET.log" 2>&1 || rc=$?
+        tail -80 "$RUNNER_TEMP/fuzz-$TARGET.log" || true
+        exit $rc
+
+    - name: 归档Fuzz输出与crasher
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: fuzz-logs-${{ matrix.test }}
+        path: |
+          ${{ runner.temp }}/fuzz-*.log
+          internal/**/testdata/fuzz/
+        if-no-files-found: ignore
+        retention-days: 7
 
     - name: 核实目标执行证据
       id: proof
@@ -337,7 +406,7 @@ jobs:
       run: |
         bash scripts/np-ci/check-fuzz-result.sh "$RUNNER_TEMP" "$TARGET"
 
-  # 完整Fuzzing测试
+  # 完整Fuzzing测试（15 目标串行；cache 目标依赖 Redis，其余目标无需外部服务）
   comprehensive-fuzzing:
     name: 完整Fuzzing测试
     outputs:
@@ -364,14 +433,17 @@ jobs:
       run: |
         go mod download
 
-    - name: 设置Redis
+    - name: 安装并启动Redis
       run: |
-        sudo systemctl start redis-server
-
-    - name: 设置数据库
-      run: |
-        sudo systemctl start mysql
-        mysql -u root -e "CREATE DATABASE IF NOT EXISTS law_oa_test;"
+        if ! command -v redis-server >/dev/null 2>&1 && ! command -v valkey-server >/dev/null 2>&1; then
+          sudo apt-get update -qq || true
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq redis-server || \
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq valkey
+        fi
+        sudo systemctl start redis-server 2>/dev/null || sudo systemctl start valkey-server 2>/dev/null || \
+          sudo redis-server --daemonize yes 2>/dev/null || sudo valkey-server --daemonize yes
+        for i in $(seq 1 30); do (echo > /dev/tcp/127.0.0.1/6379) 2>/dev/null && break; sleep 1; done
+        (echo > /dev/tcp/127.0.0.1/6379) || { echo 'Redis 未就绪 (127.0.0.1:6379)' >&2; exit 1; }
 
     - name: 设置脚本权限
       run: |
@@ -379,7 +451,23 @@ jobs:
 
     - name: 运行完整Fuzzing测试
       run: |
-        ./scripts/fuzzing_test.sh -a -t "${FUZZ_SECONDS}s" -f "$FUZZERS" -o "$RUNNER_TEMP/comprehensive-fuzzing-results" >"$RUNNER_TEMP/fuzz-run.log" 2>&1
+        rc=0
+        ./scripts/fuzzing_test.sh -a -t "${FUZZ_SECONDS}s" -f "$FUZZERS" -o "$RUNNER_TEMP/comprehensive-fuzzing-results" >"$RUNNER_TEMP/fuzz-run.log" 2>&1 || rc=$?
+        tail -80 "$RUNNER_TEMP/fuzz-run.log" || true
+        exit $rc
+
+    - name: 归档Fuzz输出与crasher
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: fuzz-logs-comprehensive
+        path: |
+          ${{ runner.temp }}/fuzz-*.log
+          ${{ runner.temp }}/security-fuzzing-results/
+          ${{ runner.temp }}/comprehensive-fuzzing-results/
+          internal/**/testdata/fuzz/
+        if-no-files-found: ignore
+        retention-days: 7
 
     - name: 核实目标执行证据
       id: proof
