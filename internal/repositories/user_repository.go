@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/models"
 )
 
@@ -163,7 +164,6 @@ func (r *UserRepositoryImpl) FindExistingEmails(ctx context.Context, emails []st
 		Model(&models.User{}).
 		Where("email IN ?", emails).
 		Pluck("email", &existingEmails).Error
-
 	if err != nil {
 		return nil, NewRepositoryError("find_existing_emails", "user", err)
 	}
@@ -220,7 +220,6 @@ func (r *UserRepositoryImpl) GetLawyers(ctx context.Context, page, pageSize int)
 		Limit(pageSize).
 		Order("created_at DESC").
 		Find(&lawyers).Error
-
 	if err != nil {
 		return nil, NewRepositoryError("get_lawyers", "user", err)
 	}

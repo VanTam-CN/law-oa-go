@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -25,7 +26,7 @@ func (r *enhancedConflictRepository) GetWaiverApplication(ctx context.Context, i
 		Preload("Signatures").
 		Preload("MonitoringRecords").
 		First(&application, "id = ?", id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("豁免申请不存在: %s", id)
 		}
 		return nil, fmt.Errorf("获取豁免申请失败: %w", err)
@@ -40,7 +41,7 @@ func (r *enhancedConflictRepository) GetWaiverApplicationByNumber(ctx context.Co
 		Preload("Signatures").
 		Preload("MonitoringRecords").
 		First(&application, "application_number = ?", applicationNumber).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("豁免申请不存在: %s", applicationNumber)
 		}
 		return nil, fmt.Errorf("获取豁免申请失败: %w", err)
@@ -153,7 +154,7 @@ func (r *enhancedConflictRepository) GetLatestWaiverApprovalRecord(ctx context.C
 		Where("waiver_application_id = ?", applicationID).
 		Order("approval_date DESC").
 		First(&record).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("豁免审批记录不存在: %s", applicationID)
 		}
 		return nil, fmt.Errorf("获取最新豁免审批记录失败: %w", err)
@@ -191,7 +192,7 @@ func (r *enhancedConflictRepository) GetWaiverSignature(ctx context.Context, id 
 	var signature models.WaiverSignature
 	if err := r.db.WithContext(ctx).
 		First(&signature, "id = ?", id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("豁免签名不存在: %s", id)
 		}
 		return nil, fmt.Errorf("获取豁免签名失败: %w", err)
@@ -211,7 +212,7 @@ func (r *enhancedConflictRepository) VerifyWaiverSignature(ctx context.Context, 
 	if err := r.db.WithContext(ctx).
 		Where("id = ? AND verification_status = 'PENDING'", id).
 		First(&signature).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("待验证的豁免签名不存在: %s", id)
 		}
 		return nil, fmt.Errorf("获取待验证豁免签名失败: %w", err)
@@ -253,7 +254,7 @@ func (r *enhancedConflictRepository) GetLatestWaiverMonitoringRecord(ctx context
 		Where("waiver_application_id = ?", applicationID).
 		Order("monitoring_date DESC").
 		First(&record).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("豁免监控记录不存在: %s", applicationID)
 		}
 		return nil, fmt.Errorf("获取最新豁免监控记录失败: %w", err)
@@ -291,7 +292,7 @@ func (r *enhancedConflictRepository) GetWaiverTemplate(ctx context.Context, id s
 	var template models.WaiverTemplate
 	if err := r.db.WithContext(ctx).
 		First(&template, "id = ?", id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("豁免模板不存在: %s", id)
 		}
 		return nil, fmt.Errorf("获取豁免模板失败: %w", err)
@@ -303,7 +304,7 @@ func (r *enhancedConflictRepository) GetWaiverTemplateByCode(ctx context.Context
 	var template models.WaiverTemplate
 	if err := r.db.WithContext(ctx).
 		First(&template, "template_code = ?", templateCode).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("豁免模板不存在: %s", templateCode)
 		}
 		return nil, fmt.Errorf("获取豁免模板失败: %w", err)

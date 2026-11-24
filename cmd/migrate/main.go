@@ -22,68 +22,76 @@ func main() {
 	)
 	flag.Parse()
 
+	if err := run(*command, *migrationsPath, *steps, *version); err != nil {
+		log.Fatalf("迁移命令执行失败: %v", err)
+	}
+}
+
+// run 承载命令完整流程；返回 error 交由 main 统一退出，
+// 确保 defer 的连接/迁移器释放先于进程退出（gocritic exitAfterDefer 门禁）。
+func run(command, migrationsPath string, steps, version int) error {
 	// 加载配置
 	// Bootstrap only needs the database connection. The application runtime
 	// keeps the stricter JWT/OnlyOffice/production checks in config.Load().
 	cfg, err := config.LoadForMigration()
 	if err != nil {
-		log.Fatalf("加载配置失败: %v", err)
+		return fmt.Errorf("加载配置失败: %w", err)
 	}
-	if cfg.IsProduction() && *command != "bootstrap" {
-		log.Fatalf("生产环境只允许执行 -command bootstrap；历史迁移、回滚、drop 和状态命令必须在非生产环境或离线副本执行")
+	if cfg.IsProduction() && command != "bootstrap" {
+		return fmt.Errorf("生产环境只允许执行 -command bootstrap；历史迁移、回滚、drop 和状态命令必须在非生产环境或离线副本执行")
 	}
 
 	// Production uses an explicit, transactional PostgreSQL bootstrap. The
 	// historical SQL directory contains mixed dialects and is intentionally not
 	// used as the production installation path.
-	if *command == "bootstrap" {
+	if command == "bootstrap" {
 		if driver := strings.ToLower(strings.TrimSpace(cfg.Database.Driver)); driver != "postgres" && driver != "postgresql" {
-			log.Fatalf("生产 schema bootstrap 仅支持 PostgreSQL，当前驱动为 %q", cfg.Database.Driver)
+			return fmt.Errorf("生产 schema bootstrap 仅支持 PostgreSQL，当前驱动为 %q", cfg.Database.Driver)
 		}
 		db, bootstrapErr := database.InitWithConfig(cfg)
 		if bootstrapErr != nil {
-			log.Fatalf("初始化数据库连接失败: %v", bootstrapErr)
+			return fmt.Errorf("初始化数据库连接失败: %w", bootstrapErr)
 		}
 		sqlDB, dbErr := db.DB()
 		if dbErr != nil {
-			log.Fatalf("获取数据库连接失败: %v", dbErr)
+			return fmt.Errorf("获取数据库连接失败: %w", dbErr)
 		}
 		defer sqlDB.Close()
 		if bootstrapErr = database.BootstrapProductionSchema(db); bootstrapErr != nil {
-			log.Fatalf("生产 schema bootstrap 失败: %v", bootstrapErr)
+			return fmt.Errorf("生产 schema bootstrap 失败: %w", bootstrapErr)
 		}
 		fmt.Printf("生产 PostgreSQL schema bootstrap 完成，版本: %s\n", database.ProductionSchemaVersion)
-		return
+		return nil
 	}
 
 	// 创建迁移器
-	migrator, err := database.NewMigrator(&cfg.Database, *migrationsPath)
+	migrator, err := database.NewMigrator(&cfg.Database, migrationsPath)
 	if err != nil {
-		log.Fatalf("创建迁移器失败: %v", err)
+		return fmt.Errorf("创建迁移器失败: %w", err)
 	}
 	defer migrator.Close()
 
 	// 验证数据库
 	if err := migrator.ValidateDatabase(); err != nil {
-		log.Fatalf("数据库验证失败: %v", err)
+		return fmt.Errorf("数据库验证失败: %w", err)
 	}
 
 	// 执行命令
-	switch *command {
+	switch command {
 	case "up":
 		err = migrator.Up()
 	case "down":
 		err = migrator.Down()
 	case "steps":
-		if *steps == 0 {
-			log.Fatal("steps命令需要指定步数")
+		if steps == 0 {
+			return fmt.Errorf("steps命令需要指定步数")
 		}
-		err = migrator.Steps(*steps)
+		err = migrator.Steps(steps)
 	case "goto":
-		if *version == 0 {
-			log.Fatal("goto命令需要指定版本号")
+		if version == 0 {
+			return fmt.Errorf("goto命令需要指定版本号")
 		}
-		err = migrator.Goto(uint(*version))
+		err = migrator.Goto(uint(version))
 	case "version":
 		var v uint
 		var dirty bool
@@ -97,23 +105,23 @@ func main() {
 			}
 		}
 	case "force":
-		if *version < 0 {
-			log.Fatal("force命令需要指定有效的版本号")
+		if version < 0 {
+			return fmt.Errorf("force命令需要指定有效的版本号")
 		}
-		err = migrator.Force(*version)
+		err = migrator.Force(version)
 	case "drop":
 		fmt.Print("警告：此操作将删除所有数据库表！确认请输入 'yes': ")
 		var confirm string
 		fmt.Scanln(&confirm)
 		if confirm != "yes" {
 			fmt.Println("操作已取消")
-			return
+			return nil
 		}
 		err = migrator.Drop()
 	case "status":
 		status, statusErr := migrator.Status()
 		if statusErr != nil {
-			log.Fatalf("获取状态失败: %v", statusErr)
+			return fmt.Errorf("获取状态失败: %w", statusErr)
 		}
 		fmt.Printf("数据库迁移状态:\n")
 		fmt.Printf("  版本: %d\n", status.Version)
@@ -133,21 +141,20 @@ func main() {
 		}
 	case "create":
 		if len(flag.Args()) == 0 {
-			log.Fatal("create命令需要指定迁移名称")
+			return fmt.Errorf("create命令需要指定迁移名称")
 		}
 		migrationName := flag.Args()[0]
-		err = createMigrationFiles(*migrationsPath, migrationName)
+		err = createMigrationFiles(migrationsPath, migrationName)
 	default:
-		fmt.Printf("未知命令: %s\n", *command)
-		fmt.Println("可用命令: bootstrap, up, down, steps, goto, version, force, drop, status, create")
-		os.Exit(1)
+		return fmt.Errorf("未知命令: %s（可用命令: bootstrap, up, down, steps, goto, version, force, drop, status, create）", command)
 	}
 
 	if err != nil {
-		log.Fatalf("执行命令失败: %v", err)
+		return fmt.Errorf("执行命令失败: %w", err)
 	}
 
 	fmt.Println("命令执行成功")
+	return nil
 }
 
 // createMigrationFiles 创建迁移文件
@@ -180,7 +187,7 @@ func createMigrationFiles(migrationsPath, name string) error {
 	upFile := fmt.Sprintf("%s/%s_%s.up.sql", migrationsPath, versionStr, name)
 	upContent := fmt.Sprintf("-- %s up migration\n\n-- Add your SQL statements here\n", name)
 
-	if err := os.WriteFile(upFile, []byte(upContent), 0644); err != nil {
+	if err := os.WriteFile(upFile, []byte(upContent), 0o644); err != nil {
 		return fmt.Errorf("创建up文件失败: %w", err)
 	}
 
@@ -188,7 +195,7 @@ func createMigrationFiles(migrationsPath, name string) error {
 	downFile := fmt.Sprintf("%s/%s_%s.down.sql", migrationsPath, versionStr, name)
 	downContent := fmt.Sprintf("-- %s down migration\n\n-- Add your rollback SQL statements here\n", name)
 
-	if err := os.WriteFile(downFile, []byte(downContent), 0644); err != nil {
+	if err := os.WriteFile(downFile, []byte(downContent), 0o644); err != nil {
 		return fmt.Errorf("创建down文件失败: %w", err)
 	}
 

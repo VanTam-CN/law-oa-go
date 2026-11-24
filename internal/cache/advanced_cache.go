@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -115,7 +116,7 @@ func (c *AdvancedCacheService) GetWithCacheThroughput(ctx context.Context, key s
 
 	// 2. 尝试从缓存获取
 	val, err := c.client.Get(ctx, fullKey).Result()
-	if err == redis.Nil {
+	if errors.Is(err, redis.Nil) {
 		// 缓存未命中，添加到布隆过滤器
 		c.bloomFilter.Add(cacheKeyData)
 		return &CacheResult{
@@ -300,7 +301,10 @@ func (c *AdvancedCacheService) DeletePattern(ctx context.Context, pattern string
 	}
 
 	if len(keys) > 0 {
-		return c.client.Del(ctx, keys...).Err()
+		if err := c.client.Del(ctx, keys...).Err(); err != nil {
+			return fmt.Errorf("删除缓存: %w", err)
+		}
+		return nil
 	}
 
 	return nil
@@ -393,7 +397,10 @@ func (c *AdvancedCacheService) Set(key string, value interface{}, ttl time.Durat
 func (c *AdvancedCacheService) Delete(key string) error {
 	ctx := context.Background()
 	fullKey := c.buildKey(key)
-	return c.client.Del(ctx, fullKey).Err()
+	if err := c.client.Del(ctx, fullKey).Err(); err != nil {
+		return fmt.Errorf("删除缓存: %w", err)
+	}
+	return nil
 }
 
 func (c *AdvancedCacheService) GetClient() *redis.Client {

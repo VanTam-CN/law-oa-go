@@ -7,6 +7,7 @@ import (
 	"log"
 
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/services"
 )
@@ -311,7 +312,11 @@ func ensureRBACRole(ctx context.Context, tx *gorm.DB, rbacService *services.RBAC
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, err
 	}
-	return rbacService.CreateRole(ctx, req)
+	callRes1, err := rbacService.CreateRole(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("创建: %w", err)
+	}
+	return callRes1, nil
 }
 
 func ensureRBACPermission(ctx context.Context, tx *gorm.DB, rbacService *services.RBACService, req *services.CreatePermissionRequest) (*models.Permission, error) {
@@ -342,7 +347,11 @@ func ensureRBACPermission(ctx context.Context, tx *gorm.DB, rbacService *service
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, err
 	}
-	return rbacService.CreatePermission(ctx, req)
+	callRes1, err := rbacService.CreatePermission(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("创建: %w", err)
+	}
+	return callRes1, nil
 }
 
 func syncExistingUserRoles(ctx context.Context, tx *gorm.DB, roles map[string]*models.Role) error {

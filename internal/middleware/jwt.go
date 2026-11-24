@@ -13,6 +13,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+
 	"law-oa-go/internal/config"
 )
 
@@ -22,10 +23,12 @@ type JWTManager struct {
 	mu     sync.RWMutex
 }
 
-var jwtManager *JWTManager
-var once sync.Once
-var revocationChecker TokenRevocationCheckFunc
-var revocationMu sync.RWMutex
+var (
+	jwtManager        *JWTManager
+	once              sync.Once
+	revocationChecker TokenRevocationCheckFunc
+	revocationMu      sync.RWMutex
+)
 
 type TokenRevocationCheckFunc func(ctx context.Context, tokenString string, claims *JWTClaims) bool
 
@@ -105,7 +108,10 @@ func GenerateToken(userID uint, username, role string) (string, time.Time, error
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	manager := getJWTManager()
 	tokenString, err := token.SignedString(manager.getSecret())
-	return tokenString, expiresAt, err
+	if err != nil {
+		return "", time.Time{}, fmt.Errorf("签名令牌: %w", err)
+	}
+	return tokenString, expiresAt, nil
 }
 
 // ValidateToken 验证 JWT 令牌
@@ -122,9 +128,8 @@ func ParseToken(tokenString string) (*JWTClaims, error) {
 		}
 		return manager.getSecret(), nil
 	})
-
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("解析令牌: %w", err)
 	}
 
 	if claims, ok := token.Claims.(*JWTClaims); ok && token.Valid {
@@ -197,7 +202,7 @@ func isTokenRevoked(ctx context.Context, tokenString string, claims *JWTClaims) 
 func generateTokenID() (string, error) {
 	buf := make([]byte, 16)
 	if _, err := rand.Read(buf); err != nil {
-		return "", err
+		return "", fmt.Errorf("读取随机数: %w", err)
 	}
 	return hex.EncodeToString(buf), nil
 }

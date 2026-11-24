@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/config"
 	"law-oa-go/internal/database"
 	"law-oa-go/internal/middleware"
@@ -79,7 +81,9 @@ func main() {
 	app.Use(security.RateLimiterMiddleware())
 
 	// 初始化路由系统
-	router.Init(app, db, redisClient)
+	if err := router.Init(app, db, redisClient); err != nil {
+		log.Fatal("路由装配失败: ", err)
+	}
 
 	// 启动服务器
 	addr := ":" + cfg.GetPort()
@@ -92,7 +96,11 @@ func main() {
 
 // initDatabase 初始化数据库连接
 func initDatabase(cfg *config.Config) (*gorm.DB, error) {
-	return database.InitWithConfig(cfg)
+	callRes1, err := database.InitWithConfig(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("初始化数据库连接: %w", err)
+	}
+	return callRes1, nil
 }
 
 // initRedis 初始化Redis连接

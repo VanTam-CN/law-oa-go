@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/models"
 )
 
@@ -123,7 +124,7 @@ func NewContentFilterService(db *gorm.DB) *ContentFilterService {
 func (s *ContentFilterService) refreshCache(ctx context.Context) error {
 	words, err := s.wordRepo.GetActiveWords(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("查询: %w", err)
 	}
 
 	s.cacheMutex.Lock()
@@ -356,7 +357,7 @@ func (s *ContentFilterService) CheckContent(ctx context.Context, content string)
 // AddSensitiveWord 添加敏感词
 func (s *ContentFilterService) AddSensitiveWord(ctx context.Context, word *models.SensitiveWord) error {
 	if err := s.wordRepo.Create(ctx, word); err != nil {
-		return err
+		return fmt.Errorf("创建: %w", err)
 	}
 	// 刷新缓存
 	return s.refreshCache(ctx)
@@ -365,7 +366,7 @@ func (s *ContentFilterService) AddSensitiveWord(ctx context.Context, word *model
 // UpdateSensitiveWord 更新敏感词
 func (s *ContentFilterService) UpdateSensitiveWord(ctx context.Context, word *models.SensitiveWord) error {
 	if err := s.wordRepo.Update(ctx, word); err != nil {
-		return err
+		return fmt.Errorf("更新: %w", err)
 	}
 	// 刷新缓存
 	return s.refreshCache(ctx)
@@ -374,7 +375,7 @@ func (s *ContentFilterService) UpdateSensitiveWord(ctx context.Context, word *mo
 // DeleteSensitiveWord 删除敏感词
 func (s *ContentFilterService) DeleteSensitiveWord(ctx context.Context, id uint) error {
 	if err := s.wordRepo.Delete(ctx, id); err != nil {
-		return err
+		return fmt.Errorf("删除: %w", err)
 	}
 	// 刷新缓存
 	return s.refreshCache(ctx)

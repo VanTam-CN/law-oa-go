@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+
 	"law-oa-go/internal/cache"
 )
 
@@ -290,7 +291,7 @@ func SecurityHeadersMiddleware() gin.HandlerFunc {
 func CSRFProtectionMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 对于GET、HEAD、OPTIONS请求，跳过CSRF检查
-		if c.Request.Method == "GET" || c.Request.Method == "HEAD" || c.Request.Method == "OPTIONS" {
+		if c.Request.Method == http.MethodGet || c.Request.Method == http.MethodHead || c.Request.Method == http.MethodOptions {
 			c.Next()
 			return
 		}

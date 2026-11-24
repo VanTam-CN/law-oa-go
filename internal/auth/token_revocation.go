@@ -10,6 +10,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/models"
 )
 
@@ -267,7 +268,6 @@ func (s *TokenRevocationService) GetRevocationHistory(ctx context.Context, userI
 		Order("revoked_at DESC").
 		Limit(limit).
 		Find(&logs).Error
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to query revocation history: %w", err)
 	}
@@ -283,11 +283,11 @@ func (s *TokenRevocationService) blacklistToken(ctx context.Context, tokenString
 		ttl = time.Hour
 	}
 	if err := s.redisClient.Set(ctx, tokenHashKey(tokenString), "1", ttl).Err(); err != nil {
-		return err
+		return fmt.Errorf("写入令牌黑名单: %w", err)
 	}
 	if uuid != "" {
 		if err := s.redisClient.Set(ctx, fmt.Sprintf("blacklist:%s", uuid), "1", ttl).Err(); err != nil {
-			return err
+			return fmt.Errorf("写入会话黑名单: %w", err)
 		}
 	}
 	return nil
@@ -351,7 +351,7 @@ func (s *TokenRevocationService) isTokenStringRevoked(ctx context.Context, token
 	}
 	if _, err := s.redisClient.Get(ctx, tokenHashKey(tokenString)).Result(); err == nil {
 		return true
-	} else if err != redis.Nil {
+	} else if !errors.Is(err, redis.Nil) {
 		return true
 	}
 	return s.tokenManager.IsTokenBlacklisted(ctx, tokenString)
@@ -361,7 +361,10 @@ func (s *TokenRevocationService) markUserTokensRevoked(ctx context.Context, user
 	if s.redisClient == nil {
 		return nil
 	}
-	return s.redisClient.Set(ctx, userRevokedAfterKey(userID), revokedAt.Unix(), 0).Err()
+	if err := s.redisClient.Set(ctx, userRevokedAfterKey(userID), revokedAt.Unix(), 0).Err(); err != nil {
+		return fmt.Errorf("写入缓存: %w", err)
+	}
+	return nil
 }
 
 func tokenHashKey(tokenString string) string {
@@ -448,11 +451,6 @@ func (s *TokenRevocationService) recordRevocationEvent(ctx context.Context, user
 
 // recordOffboardingEvent 记录离职事件
 func (s *TokenRevocationService) recordOffboardingEvent(ctx context.Context, userID uint, data *OffboardingData, ipAddress string) error {
-	notes := fmt.Sprintf("Offboarding: successor=%d, transferred_cases=%d", data.SuccessorID, data.TransferredCaseCount)
-	if data.HandoverNote != "" {
-		notes += ", note: " + data.HandoverNote
-	}
-
 	log := &models.TokenRevocationLog{
 		UserID:         userID,
 		RevocationType: string(RevokeAll),

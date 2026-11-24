@@ -20,45 +20,53 @@ func main() {
 	apply := flag.Bool("apply", false, "确认执行加密回填；默认只盘点")
 	flag.Parse()
 
+	if err := run(*apply); err != nil {
+		log.Fatalf("身份信息加密回填失败: %v", err)
+	}
+}
+
+// run 承载命令完整流程；返回 error 交由 main 统一退出，确保 defer 的连接释放先于进程退出。
+func run(apply bool) error {
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("加载配置失败: %v", err)
+		return fmt.Errorf("加载配置失败: %w", err)
 	}
 	if _, err := security.SubjectDataKey(); err != nil {
-		log.Fatalf("身份信息密钥不可用: %v", err)
+		return fmt.Errorf("身份信息密钥不可用: %w", err)
 	}
 	db, err := database.InitWithConfig(cfg)
 	if err != nil {
-		log.Fatalf("连接数据库失败: %v", err)
+		return fmt.Errorf("连接数据库失败: %w", err)
 	}
 	sqlDB, err := db.DB()
 	if err != nil {
-		log.Fatalf("获取数据库连接失败: %v", err)
+		return fmt.Errorf("获取数据库连接失败: %w", err)
 	}
 	defer sqlDB.Close()
 
-	if *apply {
+	if apply {
 		log.Println("开始执行身份信息加密回填；日志不会输出身份原文")
 	} else {
 		log.Println("当前为只读盘点模式；如需写入请显式传入 --apply")
 	}
-	entityCount, clientCount, err := backfill(db, *apply)
+	entityCount, clientCount, err := backfill(db, apply)
 	if err != nil {
-		log.Fatalf("身份信息回填失败: %v", err)
+		return fmt.Errorf("身份信息回填失败: %w", err)
 	}
 	log.Printf("盘点完成: 主体记录=%d, 客户记录=%d", entityCount, clientCount)
 
 	var entityPlaintext, clientPlaintext int64
 	if err := db.Raw("SELECT COUNT(*) FROM entities WHERE identity_number IS NOT NULL AND TRIM(identity_number) <> ''").Scan(&entityPlaintext).Error; err != nil {
-		log.Fatalf("复核主体明文失败: %v", err)
+		return fmt.Errorf("复核主体明文失败: %w", err)
 	}
 	if err := db.Raw("SELECT COUNT(*) FROM clients WHERE id_card IS NOT NULL AND TRIM(id_card) <> ''").Scan(&clientPlaintext).Error; err != nil {
-		log.Fatalf("复核客户明文失败: %v", err)
+		return fmt.Errorf("复核客户明文失败: %w", err)
 	}
 	log.Printf("回填后复核: 主体明文=%d, 客户明文=%d", entityPlaintext, clientPlaintext)
-	if *apply && (entityPlaintext != 0 || clientPlaintext != 0) {
-		log.Fatal("回填后仍存在明文身份字段，生产门禁不能通过")
+	if apply && (entityPlaintext != 0 || clientPlaintext != 0) {
+		return fmt.Errorf("回填后仍存在明文身份字段，生产门禁不能通过")
 	}
+	return nil
 }
 
 func backfill(db *gorm.DB, apply bool) (int64, int64, error) {

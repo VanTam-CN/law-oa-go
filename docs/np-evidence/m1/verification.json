@@ -1,0 +1,360 @@
+{
+  "stage": "M1",
+  "board_task": "law-oa-np-main/t_bee02828",
+  "frozen_base": "292805cfb6dd62c7ced3834947955b0375b9e8cf",
+  "application_commit": "c44f43ed0675ac5fbc7d4eda84f1e5adde072895",
+  "browser_test_commit": "a9019ea21364102a7edc645790d62505e2c7f027",
+  "evidence_level": "author isolated execution plus coordinator review",
+  "fixture": "loopback PostgreSQL 16.14, v14 bootstrap, synthetic only. Browser has mocked HTTP; real PG uses the shared Gin router or service/repository directly.",
+  "migration_sha256": "415ef4f4b4a0437a403988810c52c3dca213fd0f6a9d9654d8161106fb7c3be2",
+  "first_red_and_harness_history": [
+    {
+      "sha": "292805cfb6dd62c7ced3834947955b0375b9e8cf",
+      "started_at": "2026-11-22T08:03:12.575283+00:00",
+      "ended_at": "2026-11-22T08:03:17.766789+00:00",
+      "exit_code": 1,
+      "argv": [
+        "go",
+        "test",
+        "-tags",
+        "np_m1_pg",
+        "-count=1",
+        "-timeout=25s",
+        "-json",
+        "./tests/integration/m1"
+      ],
+      "observation": "Pre-fix working tree based on M0, concurrent PUTs both returned 200."
+    },
+    {
+      "sha": "292805cfb6dd62c7ced3834947955b0375b9e8cf",
+      "started_at": "2026-11-22T08:13:51.166038+00:00",
+      "ended_at": "2026-11-22T08:13:58.164248+00:00",
+      "exit_code": 1,
+      "argv": [
+        "go",
+        "test",
+        "-tags",
+        "np_m1_pg",
+        "-timeout",
+        "35s",
+        "-count=1",
+        "-json",
+        "./tests/integration/m1",
+        "-run",
+        "TestNativeConcurrent"
+      ],
+      "observation": "Pre-fix shared router also returned 200/200; regression probe was uncommitted."
+    },
+    {
+      "sha": "c9084ae0365d897cafefb06932108afa1af84205",
+      "started_at": "2026-11-22T08:51:47.313557+00:00",
+      "ended_at": "2026-11-22T08:51:52.911671+00:00",
+      "exit_code": 1,
+      "argv": [
+        "go",
+        "test",
+        "-count=1",
+        "-json",
+        "./internal/handlers",
+        "-run",
+        "TestDraftRestoreRequiresReadableParties"
+      ],
+      "observation": "Working-tree regression probe: unreadable parties returned HTTP 200 before the fix."
+    },
+    {
+      "sha": "c44f43ed0675ac5fbc7d4eda84f1e5adde072895",
+      "started_at": "2026-11-22T08:52:45.447836+00:00",
+      "ended_at": "2026-11-22T08:52:49.507137+00:00",
+      "exit_code": 1,
+      "argv": [
+        "go",
+        "run",
+        "./cmd/migrate",
+        "-command",
+        "bootstrap"
+      ],
+      "observation": "Fixture bootstrap lacked a nonempty synthetic password; corrected invocation used the same binary."
+    },
+    {
+      "sha": "c44f43ed0675ac5fbc7d4eda84f1e5adde072895",
+      "started_at": "2026-11-22T08:52:24.796916+00:00",
+      "ended_at": "2026-11-22T08:52:25.803796+00:00",
+      "exit_code": 1,
+      "argv": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "observation": "Concurrent browser cleanup removed its test-results directory during Go package enumeration; rerun passed after directory cleanup."
+    },
+    {
+      "sha": "c44f43ed0675ac5fbc7d4eda84f1e5adde072895",
+      "started_at": "2026-11-22T08:53:51.595452+00:00",
+      "ended_at": "2026-11-22T08:55:26.960214+00:00",
+      "exit_code": 1,
+      "argv": [
+        "./node_modules/.bin/playwright",
+        "test",
+        "--config",
+        "playwright.m1.config.ts",
+        "case-create-full-workflow.spec.ts",
+        "conflict-actions.spec.ts",
+        "-g",
+        "冲突检查后应留在|必填项缺失时|STALE 在步骤区"
+      ],
+      "observation": "Two existing workflow tests timed out clicking the scrolling option before submitting. Shared keyboard selection preserves the business assertions. All nine browser scenarios passed in the final run."
+    }
+  ],
+  "checks": {
+    "bootstrap-ok": {
+      "argv": [
+        "go",
+        "run",
+        "./cmd/migrate",
+        "-command",
+        "bootstrap"
+      ],
+      "working_directory": ".",
+      "sha": "c44f43ed0675ac5fbc7d4eda84f1e5adde072895",
+      "started_at": "2026-11-22T08:53:39.346763+00:00",
+      "ended_at": "2026-11-22T08:53:43.622912+00:00",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    "first": {
+      "argv": [
+        "scripts/np-first-slice/apply-main-np86.sh"
+      ],
+      "working_directory": ".",
+      "sha": "c44f43ed0675ac5fbc7d4eda84f1e5adde072895",
+      "started_at": "2026-11-22T08:53:43.663431+00:00",
+      "ended_at": "2026-11-22T08:53:43.787068+00:00",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    "repeat": {
+      "argv": [
+        "scripts/np-first-slice/apply-main-np86.sh"
+      ],
+      "working_directory": ".",
+      "sha": "c44f43ed0675ac5fbc7d4eda84f1e5adde072895",
+      "started_at": "2026-11-22T08:53:43.838745+00:00",
+      "ended_at": "2026-11-22T08:53:43.930557+00:00",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    "partial": {
+      "argv": [
+        "scripts/np-first-slice/apply-main-np86.sh"
+      ],
+      "working_directory": ".",
+      "sha": "c44f43ed0675ac5fbc7d4eda84f1e5adde072895",
+      "started_at": "2026-11-22T08:53:44.073785+00:00",
+      "ended_at": "2026-11-22T08:53:44.205251+00:00",
+      "exit_code": 3,
+      "result": "EXPECTED_REJECTION",
+      "condition": "Only the source table was present. The script aborted before any DDL."
+    },
+    "restored": {
+      "argv": [
+        "scripts/np-first-slice/apply-main-np86.sh"
+      ],
+      "working_directory": ".",
+      "sha": "c44f43ed0675ac5fbc7d4eda84f1e5adde072895",
+      "started_at": "2026-11-22T08:53:44.290505+00:00",
+      "ended_at": "2026-11-22T08:53:44.410550+00:00",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    "race": {
+      "argv": [
+        "go",
+        "test",
+        "-race",
+        "-p",
+        "3",
+        "-tags",
+        "np_m1_pg",
+        "-count=1",
+        "-timeout=120s",
+        "-json",
+        "./tests/integration/m1",
+        "./internal/handlers",
+        "./internal/repositories",
+        "./internal/services",
+        "-run",
+        "^(TestAsyncPG|TestNative|TestSchemaRequiresFrozen|TestConflictPG|TestUpdateIntake|TestLegacyDraft|TestConfirmIntake|TestConfirmAndConflict|TestDraftRestore|TestDraftList|TestAggregateMetadata|TestIntakeDraft(List|Detail)|TestLinkConflictCheckToCase|TestStartIntakeConflictCheck|TestAsyncConflictCheckService)"
+      ],
+      "working_directory": ".",
+      "sha": "c44f43ed0675ac5fbc7d4eda84f1e5adde072895",
+      "started_at": "2026-11-22T08:53:44.481242+00:00",
+      "ended_at": "2026-11-22T08:54:01.128985+00:00",
+      "exit_code": 0,
+      "tests": {
+        "law-oa-go/internal/repositories/TestLinkConflictCheckToCaseRequiresExplicitConsistentContext": "pass",
+        "law-oa-go/internal/handlers/TestStartIntakeConflictCheckFreshRevisionLinksOnce": "pass",
+        "law-oa-go/internal/handlers/TestStartIntakeConflictCheckRejectsStaleRevisionAfterNativeEdit": "pass",
+        "law-oa-go/internal/handlers/TestStartIntakeConflictCheckRejectsSecondSubmissionWithOldRevision": "pass",
+        "law-oa-go/internal/handlers/TestStartIntakeConflictCheckLateResultAfterNativeEdit": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeInvalidatesConfirmedSnapshotAndRotatesRevision/lawyer_facts_confirmed": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeInvalidatesConfirmedSnapshotAndRotatesRevision/conflict_ready": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeInvalidatesConfirmedSnapshotAndRotatesRevision": "pass",
+        "law-oa-go/internal/handlers/TestLegacyDraftWithoutStoredRevisionLoadsAndSavesOnce": "pass",
+        "law-oa-go/internal/handlers/TestConfirmAndConflictCheckAuthorizeBeforeRevisionHint": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeWithoutMetadataKeepsStoredBusinessFields": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeMergesProvidedMetadataWithoutErasingStoredFields": "pass",
+        "law-oa-go/internal/handlers/TestNativeHistoryLookupFailureBlocksFullSave": "pass",
+        "law-oa-go/internal/handlers/TestNativeRejectedClientSourcePointer": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeRejectsMissingExpectedRevisionWithoutMutation": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeRejectsStaleRevisionWithoutOverwrite": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeSwitchClientUsesNewMasterIdentity": "pass",
+        "law-oa-go/internal/handlers/TestConfirmIntakeFactsRotatesRevisionAndRejectsStaleHeader": "pass",
+        "law-oa-go/internal/handlers/TestDraftRestoreReturnsRevisionAndProtectedIdentityStatus": "pass",
+        "law-oa-go/internal/handlers/TestDraftListCarriesRevisionTokens": "pass",
+        "law-oa-go/internal/handlers/TestDraftRestoreRequiresReadableParties": "pass",
+        "law-oa-go/internal/handlers/TestIntakeDraftListMasksWalledClientFromManagement": "pass",
+        "law-oa-go/internal/handlers/TestIntakeDraftDetailForbidsWalledClientFromManagement": "pass",
+        "law-oa-go/internal/handlers/TestAggregateMetadataStringFormIsRedacted": "pass",
+        "law-oa-go/internal/handlers/TestAggregateMetadataUndecodableAndByteFormsClose": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeTransactionFailureRollsBackFullSave": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeClientSwitchWithoutClientPartyKeepsOldDraftUsable": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeDraftInheritsProtectedIdentityWhenInputEmpty": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeDraftKeepsNewIdentityWhenProvided": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeDraftStillRequiresIdentityForNewParty": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeDraftIdentityInheritanceRequiresExactNameAndRole/name_from_one_row_and_role_from_another_must_not_inherit": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeDraftIdentityInheritanceRequiresExactNameAndRole/same_name_with_different_role_must_not_inherit": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeDraftIdentityInheritanceRequiresExactNameAndRole/exact_name_and_role_inherits_its_own_protected_identity": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeDraftIdentityInheritanceRequiresExactNameAndRole": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeDraftIdentityInheritanceFailsClosed/handler_duplicate_exact_matches_are_rejected": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeDraftIdentityInheritanceFailsClosed/handler_mismatched_entity_type_is_rejected": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeDraftIdentityInheritanceFailsClosed/handler_digest_missing_is_rejected": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeDraftIdentityInheritanceFailsClosed/helper_inherits_only_a_single_fully_guarded_exact_match": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeDraftIdentityInheritanceFailsClosed/helper_duplicate_exact_matches_fail_closed": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeDraftIdentityInheritanceFailsClosed/helper_mismatched_entity_type_fails_closed": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeDraftIdentityInheritanceFailsClosed/helper_missing_digest_fails_closed": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeDraftIdentityInheritanceFailsClosed": "pass",
+        "law-oa-go/tests/integration/m1/TestAsyncPGCompletionAfterNativeEdit": "pass",
+        "law-oa-go/tests/integration/m1/TestConflictPGLinkAdvancesRevisionOnce": "pass",
+        "law-oa-go/tests/integration/m1/TestConflictPGRejectsStaleIntakeRevision": "pass",
+        "law-oa-go/tests/integration/m1/TestConflictPGRejectsMissingIntakeRevision": "pass",
+        "law-oa-go/tests/integration/m1/TestConflictPGLinkRollsBackAcrossIntakeAndCases": "pass",
+        "law-oa-go/tests/integration/m1/TestNativeConcurrentDraftAndHistory": "pass",
+        "law-oa-go/tests/integration/m1/TestSchemaRequiresFrozenKeysAndTypes/wrong-index-columns": "pass",
+        "law-oa-go/tests/integration/m1/TestSchemaRequiresFrozenKeysAndTypes/missing-fk": "pass",
+        "law-oa-go/tests/integration/m1/TestSchemaRequiresFrozenKeysAndTypes/wrong-column-type": "pass",
+        "law-oa-go/tests/integration/m1/TestSchemaRequiresFrozenKeysAndTypes": "pass",
+        "law-oa-go/internal/services/TestAsyncConflictCheckServiceLinksFreshRevisionOnce": "pass",
+        "law-oa-go/internal/services/TestAsyncConflictCheckServiceFailsStaleInFlightRevision": "pass",
+        "law-oa-go/internal/services/TestAsyncConflictCheckService_CreateTaskAndGetResult": "pass"
+      },
+      "result": "PASS",
+      "counts": {
+        "pass_including_subtests": 55,
+        "top_level": 40,
+        "fail": 0,
+        "skip": 0
+      }
+    },
+    "go-build-ok": {
+      "argv": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "working_directory": ".",
+      "sha": "c44f43ed0675ac5fbc7d4eda84f1e5adde072895",
+      "started_at": "2026-11-22T08:53:39.803806+00:00",
+      "ended_at": "2026-11-22T08:53:50.731167+00:00",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    "ts": {
+      "argv": [
+        "npm",
+        "run",
+        "type-check"
+      ],
+      "working_directory": "frontend",
+      "sha": "c44f43ed0675ac5fbc7d4eda84f1e5adde072895",
+      "started_at": "2026-11-22T08:52:24.804186+00:00",
+      "ended_at": "2026-11-22T08:52:30.049726+00:00",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    "jest": {
+      "argv": [
+        "npm",
+        "test",
+        "--",
+        "--runInBand",
+        "--runTestsByPath",
+        "src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts",
+        "src/pages/batch01/__tests__/DashboardPermission.test.tsx",
+        "--coverage=false"
+      ],
+      "working_directory": "frontend",
+      "sha": "c44f43ed0675ac5fbc7d4eda84f1e5adde072895",
+      "started_at": "2026-11-22T08:52:24.804187+00:00",
+      "ended_at": "2026-11-22T08:52:30.563230+00:00",
+      "exit_code": 0,
+      "result": "PASS",
+      "suites_passed": 2,
+      "tests_passed": 16
+    },
+    "ui-build": {
+      "argv": [
+        "npm",
+        "run",
+        "build",
+        "--",
+        "--outDir",
+        "/tmp/lawoa-m1-c44f43e-ui"
+      ],
+      "working_directory": "frontend",
+      "sha": "c44f43ed0675ac5fbc7d4eda84f1e5adde072895",
+      "started_at": "2026-11-22T08:52:24.803204+00:00",
+      "ended_at": "2026-11-22T08:52:32.790331+00:00",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    "browser-all": {
+      "argv": [
+        "./node_modules/.bin/playwright",
+        "test",
+        "--config",
+        "playwright.m1.config.ts",
+        "cases.spec.ts",
+        "case-create-full-workflow.spec.ts",
+        "conflict-actions.spec.ts",
+        "-g",
+        "重复保存|应该能运行利益冲突检查|应该能暂存|缺少版本的旧|冲突检查后应留在|必填项缺失时|STALE 在步骤区|BLOCKED 检测完成后"
+      ],
+      "working_directory": "frontend",
+      "sha": "a9019ea21364102a7edc645790d62505e2c7f027",
+      "started_at": "2026-11-22T08:55:38.497485+00:00",
+      "ended_at": "2026-11-22T08:55:51.030149+00:00",
+      "exit_code": 0,
+      "result": "PASS",
+      "passed_scenarios": [
+        "立案工作流：冲突检查留在当前上下文 › 冲突检查后应留在 /case/create 并可进入团队与费用",
+        "立案工作流：冲突检查留在当前上下文 › 必填项缺失时运行冲突检查不得创建草稿",
+        "新建立案工作台 › 应该能暂存接案草稿",
+        "新建立案工作台 › 重复保存应更新同一接案且刷新后可恢复完整草稿",
+        "新建立案工作台 › 缺少版本的旧本机草稿保留输入并阻止原生 PUT",
+        "新建立案工作台 › 重复保存后服务端草稿恢复不应回传身份号或覆盖主体与材料",
+        "新建立案工作台 › 应该能运行利益冲突检查并进入团队与费用",
+        "立案冲突门禁 › BLOCKED 检测完成后提交按钮预先禁用并显示原因",
+        "立案冲突门禁 › STALE 在步骤区和底栏统一过期，并可保存最新输入重新检测"
+      ]
+    }
+  },
+  "outstanding": [
+    "independent review",
+    "M2 branch CI",
+    "M3 NP strict writes and source linkage",
+    "M4 cache and in-flight edits",
+    "M5 root main + Redis",
+    "M6 upgrade/rollback and real caller inventory",
+    "pilot and deployment"
+  ]
+}

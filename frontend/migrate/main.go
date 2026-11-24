@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -43,7 +44,7 @@ func main() {
 	// 确保迁移目录存在
 	if _, err := os.Stat(*migrationsDir); os.IsNotExist(err) {
 		log.Printf("创建迁移目录: %s", *migrationsDir)
-		if err := os.MkdirAll(*migrationsDir, 0750); err != nil {
+		if err := os.MkdirAll(*migrationsDir, 0o750); err != nil {
 			log.Fatalf("创建迁移目录失败: %v", err)
 		}
 	}
@@ -129,7 +130,7 @@ func migrateUp(dsn, migrationsDir string) error {
 
 	// 执行迁移
 	if err := m.Up(); err != nil {
-		if err == migrate.ErrNoChange {
+		if errors.Is(err, migrate.ErrNoChange) {
 			log.Println("数据库已经是最新版本")
 			return nil
 		}
@@ -152,7 +153,7 @@ func migrateDown(dsn, migrationsDir string) error {
 
 	// 执行向下迁移
 	if err := m.Down(); err != nil {
-		if err == migrate.ErrNoChange {
+		if errors.Is(err, migrate.ErrNoChange) {
 			log.Println("数据库已经是初始版本")
 			return nil
 		}
@@ -206,13 +207,13 @@ func createMigration(migrationsDir, name string) error {
 
 	// 创建向上迁移文件
 	upFile := filepath.Join(migrationsDir, fmt.Sprintf("%s_%s.up.sql", timestamp, name))
-	if err := os.WriteFile(upFile, []byte("-- Up migration\n"), 0644); err != nil {
+	if err := os.WriteFile(upFile, []byte("-- Up migration\n"), 0o644); err != nil {
 		return fmt.Errorf("创建向上迁移文件失败: %w", err)
 	}
 
 	// 创建向下迁移文件
 	downFile := filepath.Join(migrationsDir, fmt.Sprintf("%s_%s.down.sql", timestamp, name))
-	if err := os.WriteFile(downFile, []byte("-- Down migration\n"), 0644); err != nil {
+	if err := os.WriteFile(downFile, []byte("-- Down migration\n"), 0o644); err != nil {
 		return fmt.Errorf("创建向下迁移文件失败: %w", err)
 	}
 
@@ -246,7 +247,7 @@ func getMigrateInstance(dsn, migrationsDir string) (*migrate.Migrate, error) {
 func isDirEmpty(dir string) (bool, error) {
 	f, err := os.Open(dir)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("打开文件: %w", err)
 	}
 	defer f.Close()
 
@@ -257,13 +258,13 @@ func isDirEmpty(dir string) (bool, error) {
 	if err.Error() == "EOF" {
 		return true, nil
 	}
-	return false, err
+	return false, fmt.Errorf("读取目录项: %w", err)
 }
 
 func runInitScript(dsn string) error {
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		return err
+		return fmt.Errorf("打开数据库连接: %w", err)
 	}
 	defer db.Close()
 

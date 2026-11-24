@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"strings"
 
 	"law-oa-go/internal/security"
@@ -33,6 +34,18 @@ func MaskPhone(phone string) string {
 		return "***" // 太短，全部脱敏
 	}
 	return phone[:3] + "****" + phone[len(phone)-4:]
+}
+
+// MaskContactPerson masks a contact person name for reads. Only the first
+// character stays visible so a masked echo remains distinguishable from an
+// empty value.
+func MaskContactPerson(name string) string {
+	trimmed := strings.TrimSpace(name)
+	if trimmed == "" {
+		return ""
+	}
+	runes := []rune(trimmed)
+	return string(runes[0]) + "**"
 }
 
 // ClientSafeResponse 用于API响应的安全客户端信息，敏感字段已脱敏
@@ -137,12 +150,20 @@ func (c *Client) DecryptedIdentity() (string, error) {
 		return security.NormalizeIdentityNumber(string(c.EffectiveIdentityType()), c.IdentityNumber), nil
 	}
 	if strings.TrimSpace(c.IdentityNumberCiphertext) != "" {
-		return security.DecryptIdentityNumber(c.IdentityNumberCiphertext)
+		callRes1, err := security.DecryptIdentityNumber(c.IdentityNumberCiphertext)
+		if err != nil {
+			return "", fmt.Errorf("解密身份号码: %w", err)
+		}
+		return callRes1, nil
 	}
 	if strings.TrimSpace(c.IDCard) != "" {
 		return security.NormalizeIdentityNumber(string(c.EffectiveIdentityType()), c.IDCard), nil
 	}
-	return security.DecryptIdentityNumber(c.IDCardCiphertext)
+	callRes1, err := security.DecryptIdentityNumber(c.IDCardCiphertext)
+	if err != nil {
+		return "", fmt.Errorf("解密身份号码: %w", err)
+	}
+	return callRes1, nil
 }
 
 func (c *Client) IdentityDigestValue() string {

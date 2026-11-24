@@ -308,7 +308,7 @@ func (s *DocumentRecycleService) restoreDocument(ctx context.Context, documentID
 	// Get deleted document
 	docModel, err := s.docRepo.FindByID(ctx, documentID)
 	if err != nil {
-		return err
+		return fmt.Errorf("查询文档: %w", err)
 	}
 
 	if docModel.Status != "deleted" {
@@ -386,7 +386,7 @@ func (s *DocumentRecycleService) permanentlyDeleteDocument(ctx context.Context, 
 	// Get document info
 	docModel, err := s.docRepo.FindByID(ctx, documentID)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("查询文档: %w", err)
 	}
 
 	fileSize := docModel.Filesize
@@ -402,7 +402,7 @@ func (s *DocumentRecycleService) permanentlyDeleteDocument(ctx context.Context, 
 
 	// Delete from database (hard delete)
 	if err := s.docRepo.Delete(ctx, documentID); err != nil {
-		return 0, err
+		return 0, fmt.Errorf("删除文档: %w", err)
 	}
 
 	return fileSize, nil
@@ -497,7 +497,7 @@ func (s *DocumentRecycleService) GetRecycleStats(ctx context.Context) (*RecycleS
 func (s *DocumentRecycleService) moveToRecycleBin(from, to string) error {
 	// Create destination directory if it doesn't exist
 	dir := filepath.Dir(to)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 

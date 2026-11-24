@@ -198,7 +198,10 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 		duration,
 	)
 
-	return resp, err
+	if err != nil {
+		return resp, fmt.Errorf("调用企业信息接口: %w", err)
+	}
+	return resp, nil
 }
 
 // SearchCompany 搜索公司信息
@@ -366,7 +369,7 @@ func (s *companyAPIService) searchQichacha(ctx context.Context, keyword string) 
 	fullURL := apiURL + "?" + params.Encode()
 
 	// 创建请求
-	req, err := http.NewRequestWithContext(ctx, "GET", fullURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fullURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("创建请求失败: %w", err)
 	}
@@ -719,7 +722,10 @@ func NewDatabaseAPICallRecorder(db APICallRecordDB) APICallRecorder {
 
 // RecordCall 记录 API 调用
 func (r *DatabaseAPICallRecorder) RecordCall(ctx context.Context, record *models.CompanyAPICall) error {
-	return r.db.Create(ctx, record)
+	if err := r.db.Create(ctx, record); err != nil {
+		return fmt.Errorf("创建: %w", err)
+	}
+	return nil
 }
 
 // ============================================================================
@@ -768,14 +774,6 @@ func CalculatePenetrationDepth(shareholders []*Shareholder) int {
 		}
 	}
 	return maxDepth
-}
-
-// max 返回两个整数中的较大值
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
 }
 
 // GetRiskLevelByShareholding 根据持股比例获取风险等级

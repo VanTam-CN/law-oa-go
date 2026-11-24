@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/models"
 )
 
@@ -787,14 +788,14 @@ func (r *PaymentRepositoryImpl) Delete(ctx context.Context, id uint) error {
 
 // PaymentListParams 回款记录列表查询参数
 type PaymentListParams struct {
-	Page        int
-	PageSize    int
-	Status      string
-	InvoiceID   uint
-	ClientID    uint
-	Search      string
-	DateFrom    string
-	DateTo      string
+	Page      int
+	PageSize  int
+	Status    string
+	InvoiceID uint
+	ClientID  uint
+	Search    string
+	DateFrom  string
+	DateTo    string
 }
 
 // List 回款记录列表查询

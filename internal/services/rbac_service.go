@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/repositories"
 )
@@ -97,7 +98,7 @@ func (s *RBACService) CreateRole(ctx context.Context, req *CreateRoleRequest) (*
 func (s *RBACService) GetRoleById(ctx context.Context, id uint) (*models.Role, error) {
 	role, err := s.roleRepo.FindByID(ctx, id)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询角色: %w", err)
 	}
 	return role, nil
 }
@@ -113,7 +114,7 @@ func (s *RBACService) GetRoleList(ctx context.Context, params *RoleQueryParams) 
 
 	roles, total, err := s.roleRepo.FindByParams(ctx, params)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询角色: %w", err)
 	}
 
 	return &RolePageResponse{
@@ -128,7 +129,7 @@ func (s *RBACService) GetRoleList(ctx context.Context, params *RoleQueryParams) 
 func (s *RBACService) GetAllRoles(ctx context.Context) ([]models.Role, error) {
 	roles, err := s.roleRepo.FindAll(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询角色: %w", err)
 	}
 	return roles, nil
 }
@@ -137,7 +138,7 @@ func (s *RBACService) GetAllRoles(ctx context.Context) ([]models.Role, error) {
 func (s *RBACService) UpdateRole(ctx context.Context, id uint, req *UpdateRoleRequest) (*models.Role, error) {
 	role, err := s.roleRepo.FindByID(ctx, id)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询角色: %w", err)
 	}
 
 	// 检查角色名称是否已存在（排除自己）
@@ -163,7 +164,7 @@ func (s *RBACService) DeleteRole(ctx context.Context, id uint) error {
 	// 检查是否有用户使用该角色
 	userCount, err := s.userRoleRepo.CountByRoleID(ctx, id)
 	if err != nil {
-		return err
+		return fmt.Errorf("统计用户: %w", err)
 	}
 	if userCount > 0 {
 		return errors.New("cannot delete role: users are still assigned to this role")
@@ -184,7 +185,7 @@ func (s *RBACService) DeleteRole(ctx context.Context, id uint) error {
 func (s *RBACService) UpdateRoleStatus(ctx context.Context, id uint, status string) error {
 	role, err := s.roleRepo.FindByID(ctx, id)
 	if err != nil {
-		return err
+		return fmt.Errorf("查询角色: %w", err)
 	}
 
 	role.Status = status
@@ -264,7 +265,7 @@ func (s *RBACService) CreatePermission(ctx context.Context, req *CreatePermissio
 func (s *RBACService) GetPermissionList(ctx context.Context, params *PermissionQueryParams) ([]models.Permission, error) {
 	permissions, err := s.permissionRepo.FindByParams(ctx, params)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询权限: %w", err)
 	}
 
 	// 构建树形结构
@@ -275,7 +276,7 @@ func (s *RBACService) GetPermissionList(ctx context.Context, params *PermissionQ
 func (s *RBACService) GetAllPermissions(ctx context.Context) ([]models.Permission, error) {
 	permissions, err := s.permissionRepo.FindAll(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询权限: %w", err)
 	}
 	return permissions, nil
 }
@@ -284,7 +285,7 @@ func (s *RBACService) GetAllPermissions(ctx context.Context) ([]models.Permissio
 func (s *RBACService) GetPermissionById(ctx context.Context, id uint) (*models.Permission, error) {
 	permission, err := s.permissionRepo.FindByID(ctx, id)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询权限: %w", err)
 	}
 	return permission, nil
 }
@@ -293,7 +294,7 @@ func (s *RBACService) GetPermissionById(ctx context.Context, id uint) (*models.P
 func (s *RBACService) UpdatePermission(ctx context.Context, id uint, req *UpdatePermissionRequest) (*models.Permission, error) {
 	permission, err := s.permissionRepo.FindByID(ctx, id)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询权限: %w", err)
 	}
 
 	// 检查权限代码是否已存在（排除自己）
@@ -323,7 +324,7 @@ func (s *RBACService) DeletePermission(ctx context.Context, id uint) error {
 	// 检查是否有子权限
 	childCount, err := s.permissionRepo.CountByParentID(ctx, id)
 	if err != nil {
-		return err
+		return fmt.Errorf("统计权限: %w", err)
 	}
 	if childCount > 0 {
 		return errors.New("cannot delete permission: it has child permissions")
@@ -332,7 +333,7 @@ func (s *RBACService) DeletePermission(ctx context.Context, id uint) error {
 	// 检查是否有角色使用该权限
 	roleCount, err := s.rolePermissionRepo.CountByPermissionID(ctx, id)
 	if err != nil {
-		return err
+		return fmt.Errorf("统计角色: %w", err)
 	}
 	if roleCount > 0 {
 		return errors.New("cannot delete permission: roles are still assigned to this permission")
@@ -380,7 +381,7 @@ func (s *RBACService) buildPermissionTree(permissions []models.Permission) []mod
 func (s *RBACService) GetRolePermissions(ctx context.Context, roleID uint) ([]uint, error) {
 	permissionIDs, err := s.rolePermissionRepo.FindPermissionIDsByRoleID(ctx, roleID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询角色: %w", err)
 	}
 	return permissionIDs, nil
 }
@@ -412,7 +413,7 @@ func (s *RBACService) AssignRolePermissions(ctx context.Context, roleID uint, pe
 func (s *RBACService) GetUserRoles(ctx context.Context, userID uint) ([]models.Role, error) {
 	roles, err := s.userRoleRepo.FindRolesByUserID(ctx, userID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询用户: %w", err)
 	}
 	return roles, nil
 }
@@ -451,14 +452,14 @@ func (s *RBACService) CheckUserPermission(ctx context.Context, userID uint, perm
 	// 获取权限
 	permission, err := s.permissionRepo.FindByCode(ctx, permissionCode)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("查询权限: %w", err)
 	}
 
 	// 检查每个角色是否有该权限
 	for _, role := range roles {
 		hasPermission, err := s.rolePermissionRepo.ExistsByRoleIDAndPermissionID(ctx, role.ID, permission.ID)
 		if err != nil {
-			return false, err
+			return false, fmt.Errorf("检查角色: %w", err)
 		}
 		if hasPermission {
 			return true, nil
@@ -497,7 +498,7 @@ func (s *RBACService) GetUserPermissions(ctx context.Context, userID uint) ([]mo
 	for id := range permissionIDMap {
 		permission, err := s.permissionRepo.FindByID(ctx, id)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("查询权限: %w", err)
 		}
 		permissions = append(permissions, *permission)
 	}

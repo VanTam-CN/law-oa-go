@@ -94,7 +94,7 @@ func (s *DeadlineCalculator) CreateAppealDeadlineInbox(ctx context.Context, case
 		UserID:     lawyerID,
 		SourceType: "deadline",
 		SourceID:   caseID,
-		Title:      fmt.Sprintf("上诉期截止提醒"),
+		Title:      "上诉期截止提醒",
 		Content: fmt.Sprintf("案件类型: %s, 判决日期: %s, 上诉期: %d天, 截止日期: %s",
 			caseType, judgmentDate.Format("2006-01-02"), days, deadline.Format("2006-01-02")),
 		Priority:    "critical",
@@ -264,7 +264,7 @@ func (s *DeadlineCalculator) GetUpcomingDeadlines(ctx context.Context, userID ui
 
 	items, _, err := s.inboxRepo.List(ctx, params)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询列表收件箱: %w", err)
 	}
 
 	// 过滤出期限相关的待办

@@ -1,0 +1,136 @@
+[
+  {
+    "key": "npm-ci",
+    "argv": [
+      "npm",
+      "ci",
+      "--no-audit",
+      "--no-fund"
+    ],
+    "started_at": "2026-11-20T03:28:45.103485+00:00",
+    "ended_at": "2026-11-20T03:28:56.417948+00:00",
+    "elapsed_seconds": 11.314,
+    "exit_code": 0,
+    "result": "PASS",
+    "head_sha": "2481a47fb8bc628a73449ba57e721311a7030eb8",
+    "node": "v22.17.0",
+    "npm": "11.13.0",
+    "environment_controls": {
+      "HUSKY": "0 (preserve shared Git hook config)",
+      "PUPPETEER_SKIP_DOWNLOAD": "true (no browser run claimed)"
+    },
+    "stdout": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/npm-ci.stdout.log",
+      "sha256": "29193ac352e8f39e17b5de61c53ce6450f05b6744eed6ba3992666e03cc88724",
+      "bytes": 90,
+      "committed": false
+    },
+    "stderr": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/npm-ci.stderr.log",
+      "sha256": "cc80a3951cc4115a3232f00fe6623fbc53eeb15402a0b681e8be80c5ddb57bbf",
+      "bytes": 727,
+      "committed": false
+    }
+  },
+  {
+    "key": "frontend-typecheck",
+    "argv": [
+      "npm",
+      "run",
+      "type-check"
+    ],
+    "started_at": "2026-11-20T03:28:56.418230+00:00",
+    "ended_at": "2026-11-20T03:29:00.739126+00:00",
+    "elapsed_seconds": 4.321,
+    "exit_code": 0,
+    "result": "PASS",
+    "head_sha": "2481a47fb8bc628a73449ba57e721311a7030eb8",
+    "node": "v22.17.0",
+    "npm": "11.13.0",
+    "environment_controls": {
+      "HUSKY": "0 (preserve shared Git hook config)",
+      "PUPPETEER_SKIP_DOWNLOAD": "true (no browser run claimed)"
+    },
+    "stdout": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/frontend-typecheck.stdout.log",
+      "sha256": "3d0a7528399a250a68017a4179ef123c402206346106b4b766bd2f386b5b559f",
+      "bytes": 52,
+      "committed": false
+    },
+    "stderr": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/frontend-typecheck.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "committed": false
+    }
+  },
+  {
+    "key": "frontend-jest",
+    "argv": [
+      "npm",
+      "test",
+      "--",
+      "--runInBand",
+      "--runTestsByPath",
+      "src/pages/auth/__tests__/Login.accessibility.test.tsx",
+      "src/pages/auth/__tests__/Login.failure.test.tsx",
+      "--coverage=false"
+    ],
+    "started_at": "2026-11-20T03:29:00.739356+00:00",
+    "ended_at": "2026-11-20T03:29:06.920856+00:00",
+    "elapsed_seconds": 6.181,
+    "exit_code": 0,
+    "result": "PASS",
+    "head_sha": "2481a47fb8bc628a73449ba57e721311a7030eb8",
+    "node": "v22.17.0",
+    "npm": "11.13.0",
+    "environment_controls": {
+      "HUSKY": "0 (preserve shared Git hook config)",
+      "PUPPETEER_SKIP_DOWNLOAD": "true (no browser run claimed)"
+    },
+    "stdout": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/frontend-jest.stdout.log",
+      "sha256": "f43a7212d47a24836d3baefe95c8a4984e4dba7deb21e228719a0e2e55577c1f",
+      "bytes": 1243,
+      "committed": false
+    },
+    "stderr": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/frontend-jest.stderr.log",
+      "sha256": "2712783917c68f8150c4024fec72b2513bb6e18fd15c7ba8b76a6e9ceefce739",
+      "bytes": 775,
+      "committed": false
+    }
+  },
+  {
+    "key": "frontend-build",
+    "argv": [
+      "npm",
+      "run",
+      "build"
+    ],
+    "started_at": "2026-11-20T03:29:06.921089+00:00",
+    "ended_at": "2026-11-20T03:29:14.224183+00:00",
+    "elapsed_seconds": 7.303,
+    "exit_code": 0,
+    "result": "PASS",
+    "head_sha": "2481a47fb8bc628a73449ba57e721311a7030eb8",
+    "node": "v22.17.0",
+    "npm": "11.13.0",
+    "environment_controls": {
+      "HUSKY": "0 (preserve shared Git hook config)",
+      "PUPPETEER_SKIP_DOWNLOAD": "true (no browser run claimed)"
+    },
+    "stdout": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/frontend-build.stdout.log",
+      "sha256": "e019412372f80c6f5561399c9981e49e5514a5bdf4ebeda9a3c71f4052887066",
+      "bytes": 641,
+      "committed": false
+    },
+    "stderr": {
+      "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/frontend-build.stderr.log",
+      "sha256": "5e158e4336b34f91dc8cae16c6ef30be3a2fbc5c1c10564bcab407b44e4e241b",
+      "bytes": 333,
+      "committed": false
+    }
+  }
+]

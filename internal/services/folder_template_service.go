@@ -81,7 +81,7 @@ func (s *folderTemplateService) CreateTemplate(ctx context.Context, req *CreateF
 	}
 
 	if err := s.repo.CreateTemplate(ctx, template); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("创建卷宗模板: %w", err)
 	}
 
 	// 如果设为默认，取消其他同类型模板的默认标记（在同一事务中）
@@ -98,7 +98,11 @@ func (s *folderTemplateService) CreateTemplate(ctx context.Context, req *CreateF
 
 // GetTemplate 获取模板详情
 func (s *folderTemplateService) GetTemplate(ctx context.Context, id uint) (*models.CaseFolderTemplate, error) {
-	return s.repo.GetTemplateByID(ctx, id)
+	callRes1, err := s.repo.GetTemplateByID(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("查询卷宗模板: %w", err)
+	}
+	return callRes1, nil
 }
 
 // UpdateTemplate 更新模板
@@ -134,17 +138,27 @@ func (s *folderTemplateService) UpdateTemplate(ctx context.Context, id uint, req
 		updates["template_files"] = models.JSON(req.TemplateFiles)
 	}
 
-	return s.repo.UpdateTemplate(ctx, id, updates)
+	if err := s.repo.UpdateTemplate(ctx, id, updates); err != nil {
+		return fmt.Errorf("更新卷宗模板: %w", err)
+	}
+	return nil
 }
 
 // DeleteTemplate 删除模板
 func (s *folderTemplateService) DeleteTemplate(ctx context.Context, id uint) error {
-	return s.repo.DeleteTemplate(ctx, id)
+	if err := s.repo.DeleteTemplate(ctx, id); err != nil {
+		return fmt.Errorf("删除卷宗模板: %w", err)
+	}
+	return nil
 }
 
 // ListTemplates 列表查询模板
 func (s *folderTemplateService) ListTemplates(ctx context.Context, params *repositories.FolderTemplateListParams) ([]*models.CaseFolderTemplate, int64, error) {
-	return s.repo.ListTemplates(ctx, params)
+	callRes1, callRes2, err := s.repo.ListTemplates(ctx, params)
+	if err != nil {
+		return nil, 0, fmt.Errorf("查询列表卷宗模板: %w", err)
+	}
+	return callRes1, callRes2, nil
 }
 
 // ApplyTemplate 将模板应用到案件，创建实际文件夹结构
@@ -195,7 +209,7 @@ func (s *folderTemplateService) ApplyTemplate(ctx context.Context, caseID uint, 
 func (s *folderTemplateService) GetCaseFolders(ctx context.Context, caseID uint) ([]*models.FolderNode, error) {
 	folders, err := s.repo.GetFoldersByCaseID(ctx, caseID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询卷宗模板: %w", err)
 	}
 	return buildFolderTree(ctx, folders), nil
 }
@@ -208,7 +222,7 @@ func (s *folderTemplateService) CreateCustomFolder(ctx context.Context, req *Cre
 	if req.ParentID != nil && *req.ParentID > 0 {
 		parent, err := s.repo.GetFolderByID(ctx, *req.ParentID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("查询卷宗模板: %w", err)
 		}
 		if parent == nil {
 			return nil, ErrFolderNotFound
@@ -226,7 +240,7 @@ func (s *folderTemplateService) CreateCustomFolder(ctx context.Context, req *Cre
 	}
 
 	if err := s.repo.CreateFolder(ctx, folder); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("创建卷宗模板: %w", err)
 	}
 	return folder, nil
 }
@@ -239,7 +253,7 @@ func (s *folderTemplateService) DeleteCaseFolder(ctx context.Context, caseID, fo
 	}
 	folder, err := s.repo.GetFolderByID(ctx, folderID)
 	if err != nil {
-		return err
+		return fmt.Errorf("查询卷宗模板: %w", err)
 	}
 	if folder == nil {
 		return ErrFolderNotFound
@@ -247,7 +261,10 @@ func (s *folderTemplateService) DeleteCaseFolder(ctx context.Context, caseID, fo
 	if folder.CaseID != caseID {
 		return ErrFolderCaseMismatch
 	}
-	return s.repo.DeleteFolder(ctx, folderID)
+	if err := s.repo.DeleteFolder(ctx, folderID); err != nil {
+		return fmt.Errorf("删除卷宗模板: %w", err)
+	}
+	return nil
 }
 
 // createFolderFromTemplate 递归创建文件夹
@@ -293,7 +310,10 @@ func (s *folderTemplateService) createFolderFromTemplate(ctx context.Context, ca
 
 // clearOtherDefaults 清除同类型其他模板的默认标记
 func (s *folderTemplateService) clearOtherDefaults(ctx context.Context, currentID uint, caseType string) error {
-	return s.repo.ClearOtherDefaults(ctx, caseType, currentID)
+	if err := s.repo.ClearOtherDefaults(ctx, caseType, currentID); err != nil {
+		return fmt.Errorf("ClearOtherDefaults卷宗模板: %w", err)
+	}
+	return nil
 }
 
 // buildFolderTree 将扁平文件夹列表构建为树形结构

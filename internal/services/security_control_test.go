@@ -89,11 +89,7 @@ func detectSensitiveInfo(text string) bool {
 			digitCount++
 		}
 	}
-	if digitCount >= 11 {
-		return true
-	}
-
-	return false
+	return digitCount >= 11
 }
 
 // maskSensitiveInfo 脱敏处理

@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+
 	"law-oa-go/internal/models"
 
 	"gorm.io/gorm"
@@ -65,7 +66,7 @@ func (sm *CaseStateMachine) GetAvailableTransitions(status string) []models.Case
 
 // Transition 执行状态转换并记录历史
 func (sm *CaseStateMachine) Transition(caseID uint, to string, operatorID uint, reason string) error {
-	return sm.db.Transaction(func(tx *gorm.DB) error {
+	if err := sm.db.Transaction(func(tx *gorm.DB) error {
 		var c models.Case
 		if err := tx.First(&c, caseID).Error; err != nil {
 			return fmt.Errorf("未找到案件 ID %d: %w", caseID, err)
@@ -96,7 +97,10 @@ func (sm *CaseStateMachine) Transition(caseID uint, to string, operatorID uint, 
 		}
 
 		return nil
-	})
+	}); err != nil {
+		return fmt.Errorf("流转案件状态事务失败: %w", err)
+	}
+	return nil
 }
 
 // validateBusinessRules 验证特定状态转换的业务规则

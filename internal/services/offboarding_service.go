@@ -3,10 +3,12 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/models"
 )
 
@@ -86,7 +88,7 @@ func (s *OffboardingServiceImpl) InitiateOffboarding(ctx context.Context, req *O
 		if err == nil {
 			return fmt.Errorf("该用户已有未完成的交接记录")
 		}
-		if err != gorm.ErrRecordNotFound {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
 		}
 
@@ -168,9 +170,8 @@ func (s *OffboardingServiceImpl) InitiateOffboarding(ctx context.Context, req *O
 		result = record
 		return nil
 	})
-
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("InitiateOffboarding 事务失败: %w", err)
 	}
 	return result, nil
 }
@@ -212,7 +213,7 @@ func (s *OffboardingServiceImpl) UpdateOffboarding(ctx context.Context, record *
 // CompleteOffboarding 完成交接
 func (s *OffboardingServiceImpl) CompleteOffboarding(ctx context.Context, id uint) error {
 	now := time.Now()
-	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// 更新交接记录状态
 		if err := tx.Model(&models.OffboardingRecord{}).
 			Where("id = ?", id).
@@ -233,7 +234,10 @@ func (s *OffboardingServiceImpl) CompleteOffboarding(ctx context.Context, id uin
 		return tx.Model(&models.User{}).
 			Where("id = ?", record.UserID).
 			Update("offboarding_status", "deactivated").Error
-	})
+	}); err != nil {
+		return fmt.Errorf("CompleteOffboarding 事务失败: %w", err)
+	}
+	return nil
 }
 
 // CancelOffboarding 取消交接
@@ -241,7 +245,7 @@ func (s *OffboardingServiceImpl) CancelOffboarding(ctx context.Context, id uint,
 	return s.db.WithContext(ctx).Model(&models.OffboardingRecord{}).
 		Where("id = ? AND status IN ?", id, []string{"pending", "in_progress"}).
 		Updates(map[string]interface{}{
-			"status": "cancelled",
+			"status": "canceled",
 			"notes":  gorm.Expr("CONCAT(IFNULL(notes, ''), '\\n取消原因: ', ?)", reason),
 		}).Error
 }
@@ -249,7 +253,7 @@ func (s *OffboardingServiceImpl) CancelOffboarding(ctx context.Context, id uint,
 // TransferCases 移交案件
 func (s *OffboardingServiceImpl) TransferCases(ctx context.Context, offboardingID uint, newLawyerID uint, caseIDs []uint) error {
 	now := time.Now()
-	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// 批量更新案件负责人
 		if err := tx.Model(&models.Case{}).
 			Where("id IN ? AND lead_lawyer_id = ?", caseIDs, offboardingID).
@@ -268,13 +272,16 @@ func (s *OffboardingServiceImpl) TransferCases(ctx context.Context, offboardingI
 				"transfer_status": "completed",
 				"transferred_at":  &now,
 			}).Error
-	})
+	}); err != nil {
+		return fmt.Errorf("TransferCases 事务失败: %w", err)
+	}
+	return nil
 }
 
 // TransferInboxItems 移交待办事项
 func (s *OffboardingServiceImpl) TransferInboxItems(ctx context.Context, offboardingID uint, newAssistantID uint, inboxIDs []uint) error {
 	now := time.Now()
-	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// 批量更新待办负责人
 		if err := tx.Model(&models.InboxItem{}).
 			Where("id IN ? AND user_id = ?", inboxIDs, offboardingID).
@@ -293,13 +300,16 @@ func (s *OffboardingServiceImpl) TransferInboxItems(ctx context.Context, offboar
 				"transfer_status": "completed",
 				"transferred_at":  &now,
 			}).Error
-	})
+	}); err != nil {
+		return fmt.Errorf("TransferInboxItems 事务失败: %w", err)
+	}
+	return nil
 }
 
 // HandleDocuments 处理文档
 func (s *OffboardingServiceImpl) HandleDocuments(ctx context.Context, offboardingID uint, method string) error {
 	now := time.Now()
-	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// 更新交接记录
 		if err := tx.Model(&models.OffboardingRecord{}).
 			Where("id = ?", offboardingID).
@@ -324,7 +334,10 @@ func (s *OffboardingServiceImpl) HandleDocuments(ctx context.Context, offboardin
 		return tx.Model(&models.OffboardingRecord{}).
 			Where("id = ?", offboardingID).
 			Update("document_disposal_completed_at", &now).Error
-	})
+	}); err != nil {
+		return fmt.Errorf("HandleDocuments 事务失败: %w", err)
+	}
+	return nil
 }
 
 // GetUserCases 获取用户的案件列表

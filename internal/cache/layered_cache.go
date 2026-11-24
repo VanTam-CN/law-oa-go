@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"sync"
 	"time"
@@ -84,7 +85,7 @@ func (lc *LayeredCache) Set(ctx context.Context, key string, value interface{}) 
 	// 序列化
 	data, err := json.Marshal(value)
 	if err != nil {
-		return err
+		return fmt.Errorf("序列化 JSON: %w", err)
 	}
 
 	// 设置L1缓存
@@ -97,7 +98,7 @@ func (lc *LayeredCache) Set(ctx context.Context, key string, value interface{}) 
 	err = lc.l2Cache.Set(ctx, key, data, lc.ttl).Err()
 	if err != nil {
 		lc.logger.Error("Failed to set L2 cache", "key", key, "error", err)
-		return err
+		return fmt.Errorf("写入二级缓存: %w", err)
 	}
 
 	lc.logger.Debug("Cache set", "key", key, "ttl", lc.ttl)
@@ -119,7 +120,7 @@ func (lc *LayeredCache) Delete(ctx context.Context, key string) error {
 	err := lc.l2Cache.Del(ctx, key).Err()
 	if err != nil {
 		lc.logger.Error("Failed to delete L2 cache", "key", key, "error", err)
-		return err
+		return fmt.Errorf("删除二级缓存: %w", err)
 	}
 
 	lc.logger.Debug("Cache deleted", "key", key)

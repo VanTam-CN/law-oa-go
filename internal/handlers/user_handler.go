@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+
 	"law-oa-go/internal/common"
 	"law-oa-go/internal/middleware"
 	"law-oa-go/internal/services"
@@ -285,7 +286,7 @@ func (h *UserHandler) UploadAvatar(c *gin.Context) {
 	}
 
 	uploadDir := filepath.Join("uploads", "avatars")
-	if err := os.MkdirAll(uploadDir, 0755); err != nil {
+	if err := os.MkdirAll(uploadDir, 0o755); err != nil {
 		common.APIInternalServerError(c, "创建上传目录失败", err.Error())
 		return
 	}

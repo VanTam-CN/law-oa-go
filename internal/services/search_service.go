@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8"
+
 	"law-oa-go/internal/errors"
 )
 
@@ -163,7 +164,7 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, query string, 
 	// Execute suggest query using raw ES client
 	var suggestBuf bytes.Buffer
 	if err := json.NewEncoder(&suggestBuf).Encode(suggestQuery); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("编码: %w", err)
 	}
 
 	suggestRes, err := s.esClient.Search(
@@ -172,7 +173,7 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, query string, 
 		s.esClient.Search.WithBody(&suggestBuf),
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("搜索 ES 索引: %w", err)
 	}
 	defer suggestRes.Body.Close()
 
@@ -183,7 +184,7 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, query string, 
 	// Parse suggestions
 	var suggestResult map[string]interface{}
 	if err := json.NewDecoder(suggestRes.Body).Decode(&suggestResult); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("解析: %w", err)
 	}
 	suggestions := s.parseSuggestions(suggestResult, limit)
 	return suggestions, nil
@@ -202,7 +203,7 @@ func (s *SearchService) IndexEntity(ctx context.Context, entityType string, enti
 	// Index document using raw ES client
 	var docBuf bytes.Buffer
 	if err := json.NewEncoder(&docBuf).Encode(doc); err != nil {
-		return err
+		return fmt.Errorf("编码: %w", err)
 	}
 
 	res, err := s.esClient.Index(
@@ -212,7 +213,7 @@ func (s *SearchService) IndexEntity(ctx context.Context, entityType string, enti
 		s.esClient.Index.WithDocumentID(entityID),
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("写入 ES 索引: %w", err)
 	}
 	defer res.Body.Close()
 
@@ -238,7 +239,7 @@ func (s *SearchService) DeleteEntityFromIndex(ctx context.Context, entityType st
 		s.esClient.Delete.WithContext(ctx),
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("删除 ES 文档: %w", err)
 	}
 	defer res.Body.Close()
 
@@ -461,17 +462,15 @@ func (s *SearchService) parseSingleHit(hit map[string]interface{}) *SearchResult
 	}
 
 	// Parse highlights
-	if highlights != nil {
-		for field, highlightList := range highlights {
-			if list, ok := highlightList.([]interface{}); ok {
-				var stringList []string
-				for _, item := range list {
-					if str, ok := item.(string); ok {
-						stringList = append(stringList, str)
-					}
+	for field, highlightList := range highlights {
+		if list, ok := highlightList.([]interface{}); ok {
+			var stringList []string
+			for _, item := range list {
+				if str, ok := item.(string); ok {
+					stringList = append(stringList, str)
 				}
-				result.Highlights[field] = stringList
 			}
+			result.Highlights[field] = stringList
 		}
 	}
 
@@ -559,7 +558,7 @@ func (s *SearchService) prepareDocument(entityType string, entityID string, data
 func (s *SearchService) fallbackSearch(ctx context.Context, req *SearchRequest, startTime time.Time) (*SearchResponse, error) {
 	// A missing Elasticsearch connection must never produce synthetic records.
 	// The legacy handler is disabled in the production router; return a
-	// controlled error here as a second line of defence for direct callers.
+	// controlled error here as a second line of defense for direct callers.
 	return nil, errors.InternalError("Search backend is unavailable", fmt.Errorf("elasticsearch client is not configured"))
 }
 

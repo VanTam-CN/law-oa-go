@@ -1,0 +1,1380 @@
+internal/tracing/middleware.go:90:9: error returned from interface method should be wrapped: sig: func (net/http.ResponseWriter).Write([]byte) (int, error) (wrapcheck)
+	return r.ResponseWriter.Write(b)
+	       ^
+internal/tracing/tracer.go:189:9: error returned from external package is unwrapped: sig: func go.opentelemetry.io/otel/sdk/resource.Merge(a *go.opentelemetry.io/otel/sdk/resource.Resource, b *go.opentelemetry.io/otel/sdk/resource.Resource) (*go.opentelemetry.io/otel/sdk/resource.Resource, error) (wrapcheck)
+	return resource.Merge(
+	       ^
+internal/tracing/tracer.go:240:9: error returned from external package is unwrapped: sig: func go.opentelemetry.io/otel/exporters/jaeger.New(endpointOption go.opentelemetry.io/otel/exporters/jaeger.EndpointOption) (*go.opentelemetry.io/otel/exporters/jaeger.Exporter, error) (wrapcheck)
+	return jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(config.JaegerEndpoint)))
+	       ^
+internal/tracing/tracer.go:249:9: error returned from external package is unwrapped: sig: func go.opentelemetry.io/otel/exporters/zipkin.New(collectorURL string, opts ...go.opentelemetry.io/otel/exporters/zipkin.Option) (*go.opentelemetry.io/otel/exporters/zipkin.Exporter, error) (wrapcheck)
+	return zipkin.New(config.ZipkinEndpoint)
+	       ^
+internal/tracing/tracer.go:273:9: error returned from external package is unwrapped: sig: func go.opentelemetry.io/otel/exporters/otlp/otlptrace.New(ctx context.Context, client go.opentelemetry.io/otel/exporters/otlp/otlptrace.Client) (*go.opentelemetry.io/otel/exporters/otlp/otlptrace.Exporter, error) (wrapcheck)
+	return otlptrace.New(context.Background(), client)
+	       ^
+internal/tracing/tracer.go:485:11: error returned from external package is unwrapped: sig: func (*go.opentelemetry.io/otel/sdk/trace.TracerProvider).ForceFlush(ctx context.Context) error (wrapcheck)
+			return provider.ForceFlush(ctx)
+			       ^
+internal/tracing/tracer.go:495:11: error returned from external package is unwrapped: sig: func (*go.opentelemetry.io/otel/sdk/trace.TracerProvider).Shutdown(ctx context.Context) error (wrapcheck)
+			return provider.Shutdown(ctx)
+			       ^
+main.go:666:9: error returned from external package is unwrapped: sig: func law-oa-go/internal/database.ValidateProductionSchemaContract(db *gorm.io/gorm.DB) error (wrapcheck)
+	return database.ValidateProductionSchemaContract(db)
+	       ^
+cmd/qa-fixture/main.go:355:18: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+		return result, err
+		               ^
+cmd/server/main.go:98:9: error returned from external package is unwrapped: sig: func law-oa-go/internal/database.InitWithConfig(appConfig *law-oa-go/internal/config.Config) (*gorm.io/gorm.DB, error) (wrapcheck)
+	return database.InitWithConfig(cfg)
+	       ^
+frontend/migrate/main.go:250:17: error returned from external package is unwrapped: sig: func os.Open(name string) (*os.File, error) (wrapcheck)
+		return false, err
+		              ^
+frontend/migrate/main.go:261:16: error returned from external package is unwrapped: sig: func (*os.File).Readdirnames(n int) (names []string, err error) (wrapcheck)
+	return false, err
+	              ^
+frontend/migrate/main.go:267:10: error returned from external package is unwrapped: sig: func database/sql.Open(driverName string, dataSourceName string) (*database/sql.DB, error) (wrapcheck)
+		return err
+		       ^
+internal/elasticsearch/client.go:47:15: error returned from external package is unwrapped: sig: func github.com/elastic/go-elasticsearch/v8.NewClient(cfg github.com/elastic/go-elasticsearch/v8.Config) (*github.com/elastic/go-elasticsearch/v8.Client, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/elasticsearch/client.go:58:15: error returned from external package is unwrapped: sig: field Info github.com/elastic/go-elasticsearch/v8/esapi.Info (wrapcheck)
+		return nil, err
+		            ^
+internal/elasticsearch/client.go:63:15: error returned from external package is unwrapped: sig: field Info github.com/elastic/go-elasticsearch/v8/esapi.Info (wrapcheck)
+		return nil, err
+		            ^
+internal/elasticsearch/client.go:80:10: error returned from external package is unwrapped: sig: field Index github.com/elastic/go-elasticsearch/v8/esapi.Index (wrapcheck)
+		return err
+		       ^
+internal/elasticsearch/client.go:99:15: error returned from external package is unwrapped: sig: field Search github.com/elastic/go-elasticsearch/v8/esapi.Search (wrapcheck)
+		return nil, err
+		            ^
+internal/elasticsearch/client.go:110:15: error returned from external package is unwrapped: sig: func (*encoding/json.Decoder).Decode(v any) error (wrapcheck)
+		return nil, err
+		            ^
+internal/elasticsearch/client.go:124:10: error returned from external package is unwrapped: sig: field Delete github.com/elastic/go-elasticsearch/v8/esapi.Delete (wrapcheck)
+		return err
+		       ^
+internal/elasticsearch/client.go:147:10: error returned from external package is unwrapped: sig: field Create github.com/elastic/go-elasticsearch/v8/esapi.IndicesCreate (wrapcheck)
+		return err
+		       ^
+internal/elasticsearch/client.go:165:10: error returned from external package is unwrapped: sig: field Delete github.com/elastic/go-elasticsearch/v8/esapi.IndicesDelete (wrapcheck)
+		return err
+		       ^
+internal/elasticsearch/client.go:183:17: error returned from external package is unwrapped: sig: field Exists github.com/elastic/go-elasticsearch/v8/esapi.IndicesExists (wrapcheck)
+		return false, err
+		              ^
+internal/elasticsearch/client.go:204:15: error returned from external package is unwrapped: sig: field GetMapping github.com/elastic/go-elasticsearch/v8/esapi.IndicesGetMapping (wrapcheck)
+		return nil, err
+		            ^
+internal/elasticsearch/client.go:214:15: error returned from external package is unwrapped: sig: func (*encoding/json.Decoder).Decode(v any) error (wrapcheck)
+		return nil, err
+		            ^
+internal/logging/logging.go:657:9: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).AutoMigrate(dst ...interface{}) error (wrapcheck)
+	return s.db.AutoMigrate(&LogEntry{})
+	       ^
+internal/middleware/v2/v2_performance_middleware.go:420:15: error returned from interface method should be wrapped: sig: func (net/http.ResponseWriter).Write([]byte) (int, error) (wrapcheck)
+	return size, err
+	             ^
+internal/server/server.go:88:10: error returned from external package is unwrapped: sig: func (*net/http.Server).Shutdown(ctx context.Context) error (wrapcheck)
+		return err
+		       ^
+internal/validation/validator.go:795:9: error returned from external package is unwrapped: sig: func (*github.com/go-playground/validator/v10.Validate).RegisterValidation(tag string, fn github.com/go-playground/validator/v10.Func, callValidationEvenIfNull ...bool) error (wrapcheck)
+	return v.validator.RegisterValidation(tag, fn)
+	       ^
+internal/auth/token_manager.go:216:9: error returned from external package is unwrapped: sig: func (*github.com/golang-jwt/jwt/v5.Token).SignedString(key interface{}) (string, error) (wrapcheck)
+	return token.SignedString(tm.secret)
+	       ^
+internal/auth/token_revocation.go:286:10: error returned from external package is unwrapped: sig: func (*github.com/redis/go-redis/v9.baseCmd).Err() error (wrapcheck)
+		return err
+		       ^
+internal/auth/token_revocation.go:290:11: error returned from external package is unwrapped: sig: func (*github.com/redis/go-redis/v9.baseCmd).Err() error (wrapcheck)
+			return err
+			       ^
+internal/auth/token_revocation.go:364:9: error returned from external package is unwrapped: sig: func (*github.com/redis/go-redis/v9.baseCmd).Err() error (wrapcheck)
+	return s.redisClient.Set(ctx, userRevokedAfterKey(userID), revokedAt.Unix(), 0).Err()
+	       ^
+internal/cache/advanced_cache.go:304:10: error returned from external package is unwrapped: sig: func (*github.com/redis/go-redis/v9.baseCmd).Err() error (wrapcheck)
+		return c.client.Del(ctx, keys...).Err()
+		       ^
+internal/cache/advanced_cache.go:397:9: error returned from external package is unwrapped: sig: func (*github.com/redis/go-redis/v9.baseCmd).Err() error (wrapcheck)
+	return c.client.Del(ctx, fullKey).Err()
+	       ^
+internal/cache/cache.go:31:10: error returned from external package is unwrapped: sig: func (*github.com/redis/go-redis/v9.StringCmd).Result() (string, error) (wrapcheck)
+		return err
+		       ^
+internal/cache/cache.go:51:9: error returned from external package is unwrapped: sig: func (*github.com/redis/go-redis/v9.baseCmd).Err() error (wrapcheck)
+	return c.client.Set(ctx, fullKey, value, ttl).Err()
+	       ^
+internal/cache/cache.go:58:9: error returned from external package is unwrapped: sig: func (*github.com/redis/go-redis/v9.baseCmd).Err() error (wrapcheck)
+	return c.client.Del(ctx, fullKey).Err()
+	       ^
+internal/cache/cache.go:67:10: error returned from external package is unwrapped: sig: func (*github.com/redis/go-redis/v9.StringSliceCmd).Result() ([]string, error) (wrapcheck)
+		return err
+		       ^
+internal/cache/cache.go:71:10: error returned from external package is unwrapped: sig: func (*github.com/redis/go-redis/v9.baseCmd).Err() error (wrapcheck)
+		return c.client.Del(ctx, keys...).Err()
+		       ^
+internal/cache/layered_cache.go:87:10: error returned from external package is unwrapped: sig: func encoding/json.Marshal(v any) ([]byte, error) (wrapcheck)
+		return err
+		       ^
+internal/cache/layered_cache.go:100:10: error returned from external package is unwrapped: sig: func (*github.com/redis/go-redis/v9.baseCmd).Err() error (wrapcheck)
+		return err
+		       ^
+internal/cache/layered_cache.go:122:10: error returned from external package is unwrapped: sig: func (*github.com/redis/go-redis/v9.baseCmd).Err() error (wrapcheck)
+		return err
+		       ^
+internal/common/stream.go:65:11: error returned from external package is unwrapped: sig: func (*encoding/json.Encoder).Encode(v any) error (wrapcheck)
+			return err
+			       ^
+internal/common/stream.go:155:10: error returned from external package is unwrapped: sig: func encoding/json.Marshal(v any) ([]byte, error) (wrapcheck)
+		return err
+		       ^
+internal/common/stream.go:171:11: error returned from external package is unwrapped: sig: func (*encoding/json.Encoder).Encode(v any) error (wrapcheck)
+			return err
+			       ^
+internal/concurrency/safety.go:166:11: error returned from interface method should be wrapped: sig: func (context.Context).Err() error (wrapcheck)
+			return ctx.Err()
+			       ^
+internal/concurrency/worker_pool.go:222:16: error returned from interface method should be wrapped: sig: func (context.Context).Err() error (wrapcheck)
+			return nil, ctx.Err()
+			            ^
+internal/database/connection_pool.go:144:10: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).DB() (*database/sql.DB, error) (wrapcheck)
+		return err
+		       ^
+internal/database/connection_pool.go:146:9: error returned from external package is unwrapped: sig: func (*database/sql.DB).Ping() error (wrapcheck)
+	return sqlDB.Ping()
+	       ^
+internal/database/connection_pool.go:172:10: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).DB() (*database/sql.DB, error) (wrapcheck)
+		return err
+		       ^
+internal/database/connection_pool.go:174:9: error returned from external package is unwrapped: sig: func (*database/sql.DB).Close() error (wrapcheck)
+	return sqlDB.Close()
+	       ^
+internal/database/migrator.go:240:26: error returned from external package is unwrapped: sig: func database/sql.Open(driverName string, dataSourceName string) (*database/sql.DB, error) (wrapcheck)
+		return db, "postgres", err
+		                       ^
+internal/database/migrator.go:258:15: error returned from external package is unwrapped: sig: func github.com/golang-migrate/migrate/v4/database/mysql.WithInstance(instance *database/sql.DB, config *github.com/golang-migrate/migrate/v4/database/mysql.Config) (github.com/golang-migrate/migrate/v4/database.Driver, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/database/migrator.go:388:10: error returned from external package is unwrapped: sig: func (*database/sql.DB).Close() error (wrapcheck)
+		return m.db.Close()
+		       ^
+internal/database/mysql_connector.go:20:15: error returned from external package is unwrapped: sig: func (law-oa-go/internal/config.DatabaseConfig).MySQLDriverConfig() (*github.com/go-sql-driver/mysql.Config, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/database/mysql_connector.go:26:9: error returned from external package is unwrapped: sig: func gorm.io/gorm.Open(dialector gorm.io/gorm.Dialector, opts ...gorm.io/gorm.Option) (db *gorm.io/gorm.DB, err error) (wrapcheck)
+	return gorm.Open(mysql.New(mysql.Config{Conn: sql.OpenDB(conn)}), gormConfig)
+	       ^
+internal/database/mysql_connector.go:34:15: error returned from external package is unwrapped: sig: func (law-oa-go/internal/config.DatabaseConfig).MySQLDriverConfig() (*github.com/go-sql-driver/mysql.Config, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/database/optimized_components.go:111:9: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+	return qo.db.Transaction(func(tx *gorm.DB) error {
+	       ^
+internal/database/performance_monitor.go:302:15: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).DB() (*database/sql.DB, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/database/performance_optimizer.go:295:10: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+		return po.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		       ^
+internal/database/production_schema.go:187:9: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+	return db.Transaction(func(tx *gorm.DB) error {
+	       ^
+internal/database/query_builder.go:286:9: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+	return qb.db.WithContext(qb.ctx).Transaction(fn)
+	       ^
+internal/database/query_builder.go:313:15: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).DB() (*database/sql.DB, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/database/query_builder.go:333:10: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).DB() (*database/sql.DB, error) (wrapcheck)
+		return err
+		       ^
+internal/database/query_builder.go:335:9: error returned from external package is unwrapped: sig: func (*database/sql.DB).Close() error (wrapcheck)
+	return sqlDB.Close()
+	       ^
+internal/database/rbac_init.go:315:9: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/services.RBACService).CreateRole(ctx context.Context, req *law-oa-go/internal/services.CreateRoleRequest) (*law-oa-go/internal/models.Role, error) (wrapcheck)
+	return rbacService.CreateRole(ctx, req)
+	       ^
+internal/database/rbac_init.go:346:9: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/services.RBACService).CreatePermission(ctx context.Context, req *law-oa-go/internal/services.CreatePermissionRequest) (*law-oa-go/internal/models.Permission, error) (wrapcheck)
+	return rbacService.CreatePermission(ctx, req)
+	       ^
+internal/errors/enhanced_errors.go:265:9: error returned from external package is unwrapped: sig: func encoding/json.Marshal(v any) ([]byte, error) (wrapcheck)
+	return json.Marshal(map[string]interface{}{
+	       ^
+internal/errors/enhanced_errors.go:284:9: error returned from external package is unwrapped: sig: func encoding/json.Marshal(v any) ([]byte, error) (wrapcheck)
+	return json.Marshal(e)
+	       ^
+internal/errors/error_handler.go:324:11: error returned from interface method should be wrapped: sig: func (context.Context).Err() error (wrapcheck)
+			return ctx.Err()
+			       ^
+internal/errors/error_handler.go:350:11: error returned from interface method should be wrapped: sig: func (context.Context).Err() error (wrapcheck)
+			return ctx.Err()
+			       ^
+internal/handlers/approval_handler.go:60:9: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/services.ApprovalService).CreateApproval(userID string, userName string, req *law-oa-go/internal/models.CreateApprovalRequest) (*law-oa-go/internal/models.ApprovalRequest, error) (wrapcheck)
+	return a.service.CreateApproval(userID, userName, req)
+	       ^
+internal/handlers/approval_handler.go:64:9: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/services.ApprovalService).GetApproval(userID string, id string) (*law-oa-go/internal/models.ApprovalRequest, error) (wrapcheck)
+	return a.service.GetApproval(userID, id)
+	       ^
+internal/handlers/approval_handler.go:68:9: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/services.ApprovalService).GetApprovalByID(id string) (*law-oa-go/internal/models.ApprovalRequest, error) (wrapcheck)
+	return a.service.GetApprovalByID(id)
+	       ^
+internal/handlers/approval_handler.go:72:9: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/services.ApprovalService).SubmitApproval(userID string, approvalID string) (*law-oa-go/internal/models.ApprovalRequest, error) (wrapcheck)
+	return a.service.SubmitApproval(userID, id)
+	       ^
+internal/handlers/approval_handler.go:76:9: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/services.ApprovalService).ProcessApprovalDecision(userID string, approvalID string, req *law-oa-go/internal/models.ApprovalDecisionRequest) (*law-oa-go/internal/models.ApprovalRequest, error) (wrapcheck)
+	return a.service.ProcessApprovalDecision(userID, id, decisionReq)
+	       ^
+internal/handlers/demo_aggregate_handler.go:2842:19: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+	return response, err
+	                 ^
+internal/handlers/demo_aggregate_helpers.go:604:9: error returned from external package is unwrapped: sig: func (*encoding/json.Decoder).Decode(v any) error (wrapcheck)
+	return decoder.Decode(target)
+	       ^
+internal/handlers/intake_metadata_origins.go:11:10: error returned from external package is unwrapped: sig: func encoding/json.Marshal(v any) ([]byte, error) (wrapcheck)
+		return err
+		       ^
+internal/handlers/intake_metadata_origins.go:24:10: error returned from external package is unwrapped: sig: func encoding/json.Marshal(v any) ([]byte, error) (wrapcheck)
+		return err
+		       ^
+internal/handlers/notification_handler.go:992:10: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/services.AuthorizationService).CanReadCase(ctx context.Context, actor law-oa-go/internal/services.AuthActor, caseID uint) (bool, error) (wrapcheck)
+		return h.authz.CanReadCase(ctx, actor, *notification.CaseID)
+		       ^
+internal/handlers/notification_handler.go:1009:10: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/services.AuthorizationService).CanManageCase(ctx context.Context, actor law-oa-go/internal/services.AuthActor, caseID uint) (bool, error) (wrapcheck)
+		return h.authz.CanManageCase(ctx, actor, *notification.CaseID)
+		       ^
+internal/handlers/onlyoffice_handler.go:137:9: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/services.SubjectRecheckService).RequireEffectiveSubject(ctx context.Context, caseID uint, action string) error (wrapcheck)
+	return h.subjectRecheck.RequireEffectiveSubject(ctx, document.EntityID, action)
+	       ^
+internal/handlers/onlyoffice_handler.go:1079:13: error returned from external package is unwrapped: sig: func strconv.Atoi(s string) (int, error) (wrapcheck)
+		return 0, err
+		          ^
+internal/handlers/onlyoffice_handler.go:1129:15: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+		return nil, err
+		            ^
+internal/handlers/onlyoffice_handler.go:1132:9: error returned from external package is unwrapped: sig: func encoding/json.Marshal(v any) ([]byte, error) (wrapcheck)
+	return json.Marshal(body)
+	       ^
+internal/handlers/onlyoffice_handler.go:1166:10: error returned from external package is unwrapped: sig: func os.Open(name string) (*os.File, error) (wrapcheck)
+		return err
+		       ^
+internal/handlers/onlyoffice_handler.go:1172:10: error returned from external package is unwrapped: sig: func os.Create(name string) (*os.File, error) (wrapcheck)
+		return err
+		       ^
+internal/handlers/onlyoffice_handler.go:1177:9: error returned from external package is unwrapped: sig: func io.Copy(dst io.Writer, src io.Reader) (written int64, err error) (wrapcheck)
+	return err
+	       ^
+internal/handlers/tools_handler.go:207:9: error returned from external package is unwrapped: sig: func time.Parse(layout string, value string) (time.Time, error) (wrapcheck)
+	return time.Parse(time.RFC3339, value)
+	       ^
+internal/handlers/case_handler_test.go:19:15: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+		return nil, args.Error(1)
+		            ^
+internal/handlers/case_handler_test.go:21:47: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+	return args.Get(0).(*services.CaseResponse), args.Error(1)
+	                                             ^
+internal/handlers/case_handler_test.go:27:15: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+		return nil, args.Error(1)
+		            ^
+internal/handlers/case_handler_test.go:29:47: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+	return args.Get(0).(*services.CaseResponse), args.Error(1)
+	                                             ^
+internal/handlers/case_handler_test.go:35:15: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+		return nil, args.Error(1)
+		            ^
+internal/handlers/case_handler_test.go:37:47: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+	return args.Get(0).(*services.CaseResponse), args.Error(1)
+	                                             ^
+internal/handlers/case_handler_test.go:42:9: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+	return args.Error(0)
+	       ^
+internal/handlers/case_handler_test.go:48:18: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+		return nil, 0, args.Error(1)
+		               ^
+internal/handlers/case_handler_test.go:50:70: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+	return args.Get(0).([]*services.CaseResponse), args.Get(1).(int64), args.Error(2)
+	                                                                    ^
+internal/handlers/intake_conflict_revision_test.go:47:15: error returned from external package is unwrapped: sig: func encoding/json.Marshal(v any) ([]byte, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/health/conflict_p0_check_test.go:253:10: error returned from external package is unwrapped: sig: func encoding/json.Marshal(v any) ([]byte, error) (wrapcheck)
+		return err
+		       ^
+internal/middleware/cache.go:232:9: error returned from interface method should be wrapped: sig: func (net/http.ResponseWriter).Write([]byte) (int, error) (wrapcheck)
+	return w.ResponseWriter.Write(data)
+	       ^
+internal/middleware/ethical_wall.go:189:14: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/middleware.DocumentResolver).ResolveDocumentCase(ctx context.Context, documentID uint) (caseID uint, applies bool, err error) (wrapcheck)
+			return 0, err
+			          ^
+internal/middleware/ethical_wall.go:223:13: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/middleware.DocumentResolver).ResolveDocumentCase(ctx context.Context, documentID uint) (caseID uint, applies bool, err error) (wrapcheck)
+		return 0, err
+		          ^
+internal/middleware/jwt.go:111:33: error returned from external package is unwrapped: sig: func (*github.com/golang-jwt/jwt/v5.Token).SignedString(key interface{}) (string, error) (wrapcheck)
+	return tokenString, expiresAt, err
+	                               ^
+internal/middleware/jwt.go:129:15: error returned from external package is unwrapped: sig: func github.com/golang-jwt/jwt/v5.ParseWithClaims(tokenString string, claims github.com/golang-jwt/jwt/v5.Claims, keyFunc github.com/golang-jwt/jwt/v5.Keyfunc, options ...github.com/golang-jwt/jwt/v5.ParserOption) (*github.com/golang-jwt/jwt/v5.Token, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/middleware/jwt.go:202:14: error returned from external package is unwrapped: sig: func crypto/rand.Read(b []byte) (n int, err error) (wrapcheck)
+		return "", err
+		           ^
+internal/middleware/logging.go:19:9: error returned from interface method should be wrapped: sig: func (net/http.ResponseWriter).Write([]byte) (int, error) (wrapcheck)
+	return r.ResponseWriter.Write(b)
+	       ^
+internal/middleware/performance_cache.go:125:9: error returned from interface method should be wrapped: sig: func (net/http.ResponseWriter).Write([]byte) (int, error) (wrapcheck)
+	return w.ResponseWriter.Write(data)
+	       ^
+internal/middleware/rate_limit.go:103:33: error returned from interface method should be wrapped: sig: func (github.com/redis/go-redis/v9.Pipeliner).Exec(ctx context.Context) ([]github.com/redis/go-redis/v9.Cmder, error) (wrapcheck)
+		return false, 0, time.Time{}, err
+		                              ^
+internal/middleware/trust_balance_middleware.go:237:19: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.TrustAccountRepository).FindByID(ctx context.Context, id uint) (*law-oa-go/internal/models.ClientTrustAccount, error) (wrapcheck)
+		return 0, 0, 0, err
+		                ^
+internal/middleware/ethical_wall_test.go:35:9: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+	return m.Called(ctx, caseID, userID, description).Error(0)
+	       ^
+internal/middleware/ethical_wall_test.go:39:9: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+	return m.Called(ctx, caseID).Error(0)
+	       ^
+internal/middleware/ethical_wall_test.go:48:9: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+	return m.Called(ctx, caseID, userID, grantedBy, reason).Error(0)
+	       ^
+internal/middleware/ethical_wall_test.go:52:9: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+	return m.Called(ctx, caseID, userID).Error(0)
+	       ^
+internal/middleware/ethical_wall_test.go:58:15: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+		return nil, args.Error(1)
+		            ^
+internal/middleware/ethical_wall_test.go:60:59: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+	return args.Get(0).([]*models.CaseEthicalWallWhitelist), args.Error(1)
+	                                                         ^
+internal/middleware/ethical_wall_test.go:66:15: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+		return nil, args.Error(1)
+		            ^
+internal/middleware/ethical_wall_test.go:68:59: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+	return args.Get(0).([]*models.CaseEthicalWallWhitelist), args.Error(1)
+	                                                         ^
+internal/middleware/ethical_wall_test.go:72:9: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+	return m.Called(ctx, caseID, userID, accessType, accessResult, ipAddress, userAgent).Error(0)
+	       ^
+internal/middleware/ethical_wall_test.go:78:15: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+		return nil, args.Error(1)
+		            ^
+internal/middleware/ethical_wall_test.go:80:55: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+	return args.Get(0).([]*models.EthicalWallAccessLog), args.Error(1)
+	                                                     ^
+internal/middleware/ethical_wall_test.go:84:9: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+	return m.Called(ctx, caseID).Error(0)
+	       ^
+internal/models/approval_conflict_integration.go:19:9: error returned from external package is unwrapped: sig: func encoding/json.Marshal(v any) ([]byte, error) (wrapcheck)
+	return json.Marshal(s)
+	       ^
+internal/models/approval_conflict_integration.go:31:10: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+		return json.Unmarshal(v, s)
+		       ^
+internal/models/approval_conflict_integration.go:33:10: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+		return json.Unmarshal([]byte(v), s)
+		       ^
+internal/models/approval_conflict_integration.go:47:9: error returned from external package is unwrapped: sig: func encoding/json.Marshal(v any) ([]byte, error) (wrapcheck)
+	return json.Marshal(m)
+	       ^
+internal/models/approval_conflict_integration.go:59:10: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+		return json.Unmarshal(v, m)
+		       ^
+internal/models/approval_conflict_integration.go:61:10: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+		return json.Unmarshal([]byte(v), m)
+		       ^
+internal/models/approval_template.go:43:9: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+	return json.Unmarshal(bytes, c)
+	       ^
+internal/models/approval_template.go:51:9: error returned from external package is unwrapped: sig: func encoding/json.Marshal(v any) ([]byte, error) (wrapcheck)
+	return json.Marshal(c)
+	       ^
+internal/models/client.go:152:10: error returned from external package is unwrapped: sig: func law-oa-go/internal/security.DecryptIdentityNumber(encoded string) (string, error) (wrapcheck)
+		return security.DecryptIdentityNumber(c.IdentityNumberCiphertext)
+		       ^
+internal/models/client.go:157:9: error returned from external package is unwrapped: sig: func law-oa-go/internal/security.DecryptIdentityNumber(encoded string) (string, error) (wrapcheck)
+	return security.DecryptIdentityNumber(c.IDCardCiphertext)
+	       ^
+internal/models/enhanced_case_models.go:148:9: error returned from external package is unwrapped: sig: func encoding/json.Marshal(v any) ([]byte, error) (wrapcheck)
+	return json.Marshal(c)
+	       ^
+internal/models/enhanced_case_models.go:159:10: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+		return json.Unmarshal(v, c)
+		       ^
+internal/models/enhanced_case_models.go:161:10: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+		return json.Unmarshal([]byte(v), c)
+		       ^
+internal/models/enhanced_case_models.go:290:9: error returned from external package is unwrapped: sig: func encoding/json.Marshal(v any) ([]byte, error) (wrapcheck)
+	return json.Marshal(c)
+	       ^
+internal/models/enhanced_case_models.go:301:10: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+		return json.Unmarshal(v, c)
+		       ^
+internal/models/enhanced_case_models.go:303:10: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+		return json.Unmarshal([]byte(v), c)
+		       ^
+internal/models/enhanced_case_models.go:333:9: error returned from external package is unwrapped: sig: func encoding/json.Marshal(v any) ([]byte, error) (wrapcheck)
+	return json.Marshal(a)
+	       ^
+internal/models/enhanced_case_models.go:344:10: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+		return json.Unmarshal(v, a)
+		       ^
+internal/models/enhanced_case_models.go:346:10: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+		return json.Unmarshal([]byte(v), a)
+		       ^
+internal/models/enhanced_case_models.go:368:9: error returned from external package is unwrapped: sig: func encoding/json.Marshal(v any) ([]byte, error) (wrapcheck)
+	return json.Marshal(r)
+	       ^
+internal/models/enhanced_case_models.go:379:10: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+		return json.Unmarshal(v, r)
+		       ^
+internal/models/enhanced_case_models.go:381:10: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+		return json.Unmarshal([]byte(v), r)
+		       ^
+internal/models/enhanced_case_models.go:394:9: error returned from external package is unwrapped: sig: func encoding/json.Marshal(v any) ([]byte, error) (wrapcheck)
+	return json.Marshal(d)
+	       ^
+internal/models/enhanced_case_models.go:405:10: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+		return json.Unmarshal(v, d)
+		       ^
+internal/models/enhanced_case_models.go:407:10: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+		return json.Unmarshal([]byte(v), d)
+		       ^
+internal/models/enhanced_case_models.go:448:9: error returned from external package is unwrapped: sig: func encoding/json.Marshal(v any) ([]byte, error) (wrapcheck)
+	return json.Marshal(s)
+	       ^
+internal/models/enhanced_case_models.go:459:10: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+		return json.Unmarshal(v, s)
+		       ^
+internal/models/enhanced_case_models.go:461:10: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+		return json.Unmarshal([]byte(v), s)
+		       ^
+internal/models/enhanced_case_models.go:485:9: error returned from external package is unwrapped: sig: func encoding/json.Marshal(v any) ([]byte, error) (wrapcheck)
+	return json.Marshal(s)
+	       ^
+internal/models/enhanced_case_models.go:496:10: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+		return json.Unmarshal(v, s)
+		       ^
+internal/models/enhanced_case_models.go:498:10: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+		return json.Unmarshal([]byte(v), s)
+		       ^
+internal/models/json_types.go:17:9: error returned from external package is unwrapped: sig: func encoding/json.Marshal(v any) ([]byte, error) (wrapcheck)
+	return json.Marshal(j)
+	       ^
+internal/models/json_types.go:46:10: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+		return err
+		       ^
+internal/models/json_types.go:101:9: error returned from external package is unwrapped: sig: func encoding/json.Marshal(v any) ([]byte, error) (wrapcheck)
+	return json.Marshal(j)
+	       ^
+internal/models/json_types.go:113:10: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+		return json.Unmarshal(v, j)
+		       ^
+internal/models/json_types.go:115:10: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+		return json.Unmarshal([]byte(v), j)
+		       ^
+internal/models/json_types.go:154:9: error returned from external package is unwrapped: sig: func encoding/json.Marshal(v any) ([]byte, error) (wrapcheck)
+	return json.Marshal(j)
+	       ^
+internal/models/json_types.go:166:10: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+		return json.Unmarshal(v, j)
+		       ^
+internal/models/json_types.go:168:10: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+		return json.Unmarshal([]byte(v), j)
+		       ^
+internal/models/legal_statutes.go:153:9: error returned from external package is unwrapped: sig: func encoding/json.Marshal(v any) ([]byte, error) (wrapcheck)
+	return json.Marshal(sa)
+	       ^
+internal/models/legal_statutes.go:181:11: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+			return json.Unmarshal(v, sa)
+			       ^
+internal/models/legal_statutes.go:199:11: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+			return json.Unmarshal([]byte(v), sa)
+			       ^
+internal/repositories/base_repository.go:144:9: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+	return r.db.WithContext(ctx).Transaction(fn)
+	       ^
+internal/repositories/client_repository.go:82:11: error returned from external package is unwrapped: sig: func law-oa-go/internal/security.ProtectIdentityNumber(value string) (string, string, error) (wrapcheck)
+			return err
+			       ^
+internal/repositories/conflict_extended_repository.go:651:15: error returned from external package is unwrapped: sig: func (*database/sql.Row).Scan(dest ...any) error (wrapcheck)
+		return nil, err
+		            ^
+internal/repositories/conflict_repository.go:162:9: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	       ^
+internal/repositories/conflict_repository.go:240:9: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	       ^
+internal/repositories/conflict_repository.go:354:12: error returned from external package is unwrapped: sig: func encoding/json.Marshal(v any) ([]byte, error) (wrapcheck)
+				return err
+				       ^
+internal/repositories/conflict_repository.go:441:17: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+		return false, err
+		              ^
+internal/repositories/conflict_repository.go:510:9: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	       ^
+internal/repositories/conflict_subject_index_repository.go:49:9: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	       ^
+internal/repositories/conflict_subject_index_repository.go:327:15: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+		return nil, err
+		            ^
+internal/repositories/document_repository_impl.go:235:15: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Rows() (*database/sql.Rows, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/repositories/document_repository_impl.go:254:15: error returned from external package is unwrapped: sig: func (*database/sql.Rows).Err() error (wrapcheck)
+		return nil, err
+		            ^
+internal/repositories/document_repository_impl.go:263:15: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Rows() (*database/sql.Rows, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/repositories/document_repository_impl.go:282:15: error returned from external package is unwrapped: sig: func (*database/sql.Rows).Err() error (wrapcheck)
+		return nil, err
+		            ^
+internal/repositories/elasticsearch_legal_statutes.go:31:9: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/models/elasticsearch.LegalStatuteIndexManager).CreateIndex() error (wrapcheck)
+	return r.indexManager.CreateIndex()
+	       ^
+internal/repositories/elasticsearch_legal_statutes.go:36:9: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/models/elasticsearch.LegalStatuteIndexManager).DeleteIndex() error (wrapcheck)
+	return r.indexManager.DeleteIndex()
+	       ^
+internal/repositories/elasticsearch_legal_statutes.go:41:9: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/models/elasticsearch.LegalStatuteIndexManager).IndexDocument(doc *law-oa-go/internal/models/elasticsearch.LegalStatuteDocument) error (wrapcheck)
+	return r.indexManager.IndexDocument(doc)
+	       ^
+internal/repositories/elasticsearch_legal_statutes.go:46:9: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/models/elasticsearch.LegalStatuteIndexManager).BulkIndexDocuments(docs []*law-oa-go/internal/models/elasticsearch.LegalStatuteDocument) error (wrapcheck)
+	return r.indexManager.BulkIndexDocuments(docs)
+	       ^
+internal/repositories/elasticsearch_legal_statutes.go:66:15: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/models/elasticsearch.LegalStatuteIndexManager).Search(req *law-oa-go/internal/models/elasticsearch.LegalSearchRequest) (*law-oa-go/internal/models/elasticsearch.LegalSearchResponse, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/repositories/elasticsearch_legal_statutes.go:151:15: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/models/elasticsearch.LegalStatuteIndexManager).Search(req *law-oa-go/internal/models/elasticsearch.LegalSearchRequest) (*law-oa-go/internal/models/elasticsearch.LegalSearchResponse, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/repositories/ethical_wall_repository.go:80:9: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	       ^
+internal/repositories/trust_account_repository.go:311:9: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+	return u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	       ^
+internal/router/router.go:25:10: error returned from external package is unwrapped: sig: func law-oa-go/internal/database.RequireNarrowPilotSchema(db *gorm.io/gorm.DB) error (wrapcheck)
+		return err
+		       ^
+internal/router/router.go:99:10: error returned from external package is unwrapped: sig: func law-oa-go/internal/config.Load() (*law-oa-go/internal/config.Config, error) (wrapcheck)
+		return err
+		       ^
+internal/services/analytics_service.go:175:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.AnalyticsRepositoryInterface).GetUserSession(ctx context.Context, sessionID string) (*law-oa-go/internal/models.AnalyticsUserSession, error) (wrapcheck)
+	return s.analyticsRepo.GetUserSession(ctx, sessionID)
+	       ^
+internal/services/approval_assigner.go:150:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.UserRepository).FindByRole(role string, limit int) ([]law-oa-go/internal/models.User, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/approval_assigner.go:170:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.UserRepository).FindByStringID(id string) (*law-oa-go/internal/models.User, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/approval_assigner.go:192:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.UserRepository).FindDepartmentHead(deptID string, limit int) ([]law-oa-go/internal/models.User, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/approval_assigner.go:217:17: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.ApprovalWorkflowRepository).FindByType(workflowType string) (*law-oa-go/internal/models.ApprovalWorkflow, error) (wrapcheck)
+		return false, err
+		              ^
+internal/services/approval_assigner.go:231:17: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+		return false, err
+		              ^
+internal/services/approval_business_hooks.go:64:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/services.ApprovalBusinessHook).OnApproved(approval *law-oa-go/internal/models.ApprovalRequest) error (wrapcheck)
+	return hook.OnApproved(approval)
+	       ^
+internal/services/approval_business_hooks.go:73:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/services.ApprovalBusinessHook).OnRejected(approval *law-oa-go/internal/models.ApprovalRequest) error (wrapcheck)
+	return hook.OnRejected(approval)
+	       ^
+internal/services/approval_business_hooks.go:82:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/services.ApprovalBusinessHook).OnCancelled(approval *law-oa-go/internal/models.ApprovalRequest) error (wrapcheck)
+	return hook.OnCancelled(approval)
+	       ^
+internal/services/approval_business_hooks.go:215:10: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+		return err
+		       ^
+internal/services/approval_conflict_integration_service.go:930:16: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.IntegrationRepositoryInterface).GetConflictCheckRecord(ctx context.Context, checkID string) (*law-oa-go/internal/models.ConflictCheckRecord, error) (wrapcheck)
+			return nil, err
+			            ^
+internal/services/approval_conflict_integration_service.go:1028:10: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.IntegrationRepositoryInterface).GetLatestCaseCreationTracking(ctx context.Context, approvalID string) (*law-oa-go/internal/repositories.CaseCreationTracking, error) (wrapcheck)
+		return err
+		       ^
+internal/services/approval_conflict_integration_service.go:1031:10: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.IntegrationRepositoryInterface).UpdateCaseCreationTracking(ctx context.Context, id string, updates map[string]interface{}) error (wrapcheck)
+		return s.integrationRepo.UpdateCaseCreationTracking(ctx, tracking.ID, map[string]interface{}{
+		       ^
+internal/services/approval_conflict_integration_service.go:1037:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.IntegrationRepositoryInterface).CreateCaseCreationTracking(ctx context.Context, tracking *law-oa-go/internal/repositories.CaseCreationTracking) error (wrapcheck)
+	return s.integrationRepo.CreateCaseCreationTracking(ctx, &repositories.CaseCreationTracking{
+	       ^
+internal/services/approval_conflict_integration_service.go:1148:11: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.IntegrationRepositoryInterface).GetLatestCaseCreationTracking(ctx context.Context, approvalID string) (*law-oa-go/internal/repositories.CaseCreationTracking, error) (wrapcheck)
+			return err
+			       ^
+internal/services/approval_conflict_integration_service.go:1170:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.IntegrationRepositoryInterface).UpdateCaseCreationTracking(ctx context.Context, id string, updates map[string]interface{}) error (wrapcheck)
+	return s.integrationRepo.UpdateCaseCreationTracking(ctx, tracking.ID, updates)
+	       ^
+internal/services/approval_delegation_service.go:123:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.ApprovalDelegationRepository).Create(ctx context.Context, delegation *law-oa-go/internal/models.ApprovalDelegation) error (wrapcheck)
+		return nil, err
+		            ^
+internal/services/approval_delegation_service.go:131:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.ApprovalDelegationRepository).GetActiveDelegations(ctx context.Context, delegatorID string) ([]*law-oa-go/internal/models.ApprovalDelegation, error) (wrapcheck)
+	return s.delegationRepo.GetActiveDelegations(ctx, delegatorID)
+	       ^
+internal/services/approval_delegation_service.go:138:10: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.ApprovalDelegationRepository).GetByID(ctx context.Context, id string) (*law-oa-go/internal/models.ApprovalDelegation, error) (wrapcheck)
+		return err
+		       ^
+internal/services/approval_delegation_service.go:144:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.ApprovalDelegationRepository).Update(ctx context.Context, id string, updates map[string]interface{}) error (wrapcheck)
+	return s.delegationRepo.Update(ctx, id, map[string]interface{}{
+	       ^
+internal/services/approval_delegation_service.go:162:42: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.ApprovalDelegationRepository).GetValidDelegate(ctx context.Context, delegatorID string) (*law-oa-go/internal/models.ApprovalDelegation, error) (wrapcheck)
+			return originalApproverID, "", false, err
+			                                      ^
+internal/services/approval_delegation_service.go:179:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.ApprovalDelegationRepository).List(ctx context.Context, params *law-oa-go/internal/repositories.DelegationListParams) ([]*law-oa-go/internal/models.ApprovalDelegation, int64, error) (wrapcheck)
+	return s.delegationRepo.List(ctx, params)
+	       ^
+internal/services/approval_delegation_service.go:184:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.ApprovalDelegationRepository).GetByID(ctx context.Context, id string) (*law-oa-go/internal/models.ApprovalDelegation, error) (wrapcheck)
+	return s.delegationRepo.GetByID(ctx, id)
+	       ^
+internal/services/approval_service.go:175:17: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.ApprovalRepository).HasApproverRecord(approvalRequestID string, approverID string) (bool, error) (wrapcheck)
+				return nil, historyErr
+				            ^
+internal/services/approval_service.go:196:10: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.ApprovalRepository).FindRecordsByApprovalID(approvalRequestID string) ([]law-oa-go/internal/models.ApprovalRecord, error) (wrapcheck)
+		return err
+		       ^
+internal/services/approval_service.go:351:9: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.ApprovalRepository).FindByID(id string) (*law-oa-go/internal/models.ApprovalRequest, error) (wrapcheck)
+	return s.approvalRepo.FindByID(approvalID)
+	       ^
+internal/services/approval_service.go:556:9: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.ApprovalRepository).FindByID(id string) (*law-oa-go/internal/models.ApprovalRequest, error) (wrapcheck)
+	return s.approvalRepo.FindByID(approvalID)
+	       ^
+internal/services/approval_service.go:645:9: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.ApprovalRepository).FindByID(id string) (*law-oa-go/internal/models.ApprovalRequest, error) (wrapcheck)
+	return s.approvalRepo.FindByID(id)
+	       ^
+internal/services/approval_template_service.go:300:10: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.ApprovalNodeRepository).FindByApprovalID(approvalID string) ([]law-oa-go/internal/models.ApprovalNode, error) (wrapcheck)
+		return err
+		       ^
+internal/services/approval_template_service.go:323:10: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.ApprovalRepository).FindByID(id string) (*law-oa-go/internal/models.ApprovalRequest, error) (wrapcheck)
+		return err
+		       ^
+internal/services/approval_template_service.go:335:9: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.ApprovalRepository).Update(approval *law-oa-go/internal/models.ApprovalRequest) error (wrapcheck)
+	return s.approvalRepo.Update(approval)
+	       ^
+internal/services/approval_template_service.go:342:10: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.ApprovalRepository).FindByID(id string) (*law-oa-go/internal/models.ApprovalRequest, error) (wrapcheck)
+		return err
+		       ^
+internal/services/approval_template_service.go:351:9: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.ApprovalRepository).Update(approval *law-oa-go/internal/models.ApprovalRequest) error (wrapcheck)
+	return s.approvalRepo.Update(approval)
+	       ^
+internal/services/approval_template_service.go:359:15: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.ApprovalRepository).FindByID(id string) (*law-oa-go/internal/models.ApprovalRequest, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/approval_template_service.go:365:15: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.ApprovalNodeRepository).FindByApprovalID(approvalID string) ([]law-oa-go/internal/models.ApprovalNode, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/approval_template_service.go:388:9: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.ApprovalTemplateRepository).FindAll() ([]law-oa-go/internal/models.ApprovalTemplate, error) (wrapcheck)
+	return s.templateRepo.FindAll()
+	       ^
+internal/services/approval_template_service.go:395:10: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.ApprovalNodeRepository).GetStepNodes(approvalID string, stepOrder int) ([]law-oa-go/internal/models.ApprovalNode, error) (wrapcheck)
+		return err
+		       ^
+internal/services/approval_template_service.go:402:11: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.ApprovalNodeRepository).Update(node *law-oa-go/internal/models.ApprovalNode) error (wrapcheck)
+			return err
+			       ^
+internal/services/approval_template_service.go:413:10: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.ApprovalNodeRepository).GetStepNodes(approvalID string, stepOrder int) ([]law-oa-go/internal/models.ApprovalNode, error) (wrapcheck)
+		return err
+		       ^
+internal/services/approval_template_service.go:420:11: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.ApprovalNodeRepository).Update(node *law-oa-go/internal/models.ApprovalNode) error (wrapcheck)
+			return err
+			       ^
+internal/services/approval_template_service.go:431:10: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.ApprovalNodeRepository).FindByApprovalID(approvalID string) ([]law-oa-go/internal/models.ApprovalNode, error) (wrapcheck)
+		return err
+		       ^
+internal/services/approval_template_service.go:440:11: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.ApprovalNodeRepository).Update(node *law-oa-go/internal/models.ApprovalNode) error (wrapcheck)
+			return err
+			       ^
+internal/services/approval_template_service.go:451:12: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.ApprovalNodeRepository).Update(node *law-oa-go/internal/models.ApprovalNode) error (wrapcheck)
+				return err
+				       ^
+internal/services/async_conflict_check_service.go:74:15: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/models.ConflictCheckRequest).Validate() error (wrapcheck)
+		return nil, err
+		            ^
+internal/services/async_conflict_check_service.go:106:16: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.BasicConflictRepository).SaveCheckRecord(ctx context.Context, record *law-oa-go/internal/models.ConflictCheckRecord) error (wrapcheck)
+			return nil, err
+			            ^
+internal/services/async_conflict_check_service.go:120:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.BasicConflictRepository).GetCheckRecord(ctx context.Context, checkID string) (*law-oa-go/internal/models.ConflictCheckRecord, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/async_conflict_check_service.go:131:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.BasicConflictRepository).GetCheckRecord(ctx context.Context, checkID string) (*law-oa-go/internal/models.ConflictCheckRecord, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/authorization_service.go:187:17: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.ClientRepository).FindByID(ctx context.Context, id uint) (*law-oa-go/internal/models.Client, error) (wrapcheck)
+		return false, err
+		              ^
+internal/services/authorization_service.go:208:17: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.ClientRepository).FindByID(ctx context.Context, id uint) (*law-oa-go/internal/models.Client, error) (wrapcheck)
+		return false, err
+		              ^
+internal/services/authorization_service.go:269:17: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.DocumentRepository).FindByID(ctx context.Context, id uint) (*law-oa-go/internal/models.Document, error) (wrapcheck)
+		return false, err
+		              ^
+internal/services/authorization_service.go:340:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.CaseRepository).FindByID(ctx context.Context, id uint) (*law-oa-go/internal/models.Case, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/batch_service.go:64:9: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	       ^
+internal/services/case_service.go:353:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.CaseRepository).Delete(ctx context.Context, id uint) error (wrapcheck)
+	return s.caseRepo.Delete(ctx, id)
+	       ^
+internal/services/case_service.go:383:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.UserRepository).GetLawyers(ctx context.Context, page int, pageSize int) ([]law-oa-go/internal/models.User, error) (wrapcheck)
+	return s.userRepo.GetLawyers(ctx, page, pageSize)
+	       ^
+internal/services/case_service.go:390:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.UserRepository).FindByID(ctx context.Context, id uint) (*law-oa-go/internal/models.User, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/case_state_machine.go:69:9: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+	return sm.db.Transaction(func(tx *gorm.DB) error {
+	       ^
+internal/services/client_contact_service.go:88:15: error returned from external package is unwrapped: sig: func law-oa-go/internal/security.ProtectSensitiveValue(purpose string, value string) (string, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/client_contact_service.go:92:15: error returned from external package is unwrapped: sig: func law-oa-go/internal/security.ProtectSensitiveValue(purpose string, value string) (string, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/client_contact_service.go:131:15: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/client_contact_service.go:143:15: error returned from external package is unwrapped: sig: func law-oa-go/internal/security.DecryptSensitiveValue(purpose string, encoded string) (string, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/client_contact_service.go:147:15: error returned from external package is unwrapped: sig: func law-oa-go/internal/security.DecryptSensitiveValue(purpose string, encoded string) (string, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/commission_service.go:523:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.CommissionRuleRepository).FindAll(ctx context.Context) ([]*law-oa-go/internal/models.CommissionRule, error) (wrapcheck)
+	return s.commissionRuleRepo.FindAll(ctx)
+	       ^
+internal/services/commission_service.go:528:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.CommissionRuleRepository).Create(ctx context.Context, rule *law-oa-go/internal/models.CommissionRule) error (wrapcheck)
+	return s.commissionRuleRepo.Create(ctx, rule)
+	       ^
+internal/services/commission_service.go:547:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.CommissionRuleRepository).Update(ctx context.Context, rule *law-oa-go/internal/models.CommissionRule) error (wrapcheck)
+	return s.commissionRuleRepo.Update(ctx, existing)
+	       ^
+internal/services/commission_service.go:552:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.CommissionRuleRepository).Delete(ctx context.Context, id uint) error (wrapcheck)
+	return s.commissionRuleRepo.Delete(ctx, id)
+	       ^
+internal/services/company_api_service.go:201:15: error returned from interface method should be wrapped: sig: func (net/http.RoundTripper).RoundTrip(*net/http.Request) (*net/http.Response, error) (wrapcheck)
+	return resp, err
+	             ^
+internal/services/company_api_service.go:722:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/services.APICallRecordDB).Create(ctx context.Context, call *law-oa-go/internal/models.CompanyAPICall) error (wrapcheck)
+	return r.db.Create(ctx, record)
+	       ^
+internal/services/conflict_check_service.go:347:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EntityRepository).SearchByIdentityNumber(ctx context.Context, identityNumber string, limit int) ([]*law-oa-go/internal/models.Entity, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/conflict_check_service.go:359:16: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EntityRepository).GetAllCasesByEntity(ctx context.Context, entityID uint) ([]*law-oa-go/internal/models.Case, error) (wrapcheck)
+			return nil, err
+			            ^
+internal/services/conflict_check_service.go:395:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EntityRepository).SearchByName(ctx context.Context, name string, limit int) ([]*law-oa-go/internal/models.Entity, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/conflict_check_service.go:418:16: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EntityRepository).GetAllCasesByEntity(ctx context.Context, entityID uint) ([]*law-oa-go/internal/models.Case, error) (wrapcheck)
+			return nil, err
+			            ^
+internal/services/conflict_check_service.go:452:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EntityRepository).SearchByFormerName(ctx context.Context, name string, limit int) ([]*law-oa-go/internal/models.Entity, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/conflict_check_service.go:461:16: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EntityRepository).GetAllCasesByEntity(ctx context.Context, entityID uint) ([]*law-oa-go/internal/models.Case, error) (wrapcheck)
+			return nil, err
+			            ^
+internal/services/conflict_check_service.go:501:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EntityRepository).GetRelatedEntitiesRecursive(ctx context.Context, entityID uint, maxDepth int) ([]*law-oa-go/internal/repositories.RelatedEntityNode, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/conflict_check_service.go:517:16: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EntityRepository).GetAllCasesByEntity(ctx context.Context, entityID uint) ([]*law-oa-go/internal/models.Case, error) (wrapcheck)
+			return nil, err
+			            ^
+internal/services/conflict_check_service.go:583:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EntityRepository).GetAllCasesByEntity(ctx context.Context, entityID uint) ([]*law-oa-go/internal/models.Case, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/conflict_check_service.go:724:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.ConflictCheckRepository).GetConflictCheck(ctx context.Context, id uint) (*law-oa-go/internal/models.ConflictCheck, error) (wrapcheck)
+	return s.conflictRepo.GetConflictCheck(ctx, id)
+	       ^
+internal/services/conflict_check_service.go:730:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.ConflictCheckRepository).ListConflictChecks(ctx context.Context, offset int, limit int, filters map[string]interface{}) ([]*law-oa-go/internal/models.ConflictCheck, int64, error) (wrapcheck)
+	return s.conflictRepo.ListConflictChecks(ctx, offset, pageSize, filters)
+	       ^
+internal/services/conflict_check_service.go:735:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EntityRepository).SearchByName(ctx context.Context, name string, limit int) ([]*law-oa-go/internal/models.Entity, error) (wrapcheck)
+	return s.entityRepo.SearchByName(ctx, query, 50)
+	       ^
+internal/services/conflict_check_service.go:744:16: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EntityRepository).GetRelations(ctx context.Context, entityID uint, activeOnly bool) ([]*law-oa-go/internal/models.EntityRelation, error) (wrapcheck)
+			return nil, err
+			            ^
+internal/services/conflict_check_service.go:770:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EntityRepository).GetRelatedEntitiesRecursive(ctx context.Context, entityID uint, maxDepth int) ([]*law-oa-go/internal/repositories.RelatedEntityNode, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/conflict_check_service.go:806:9: error returned from external package is unwrapped: sig: func law-oa-go/internal/security.DecryptIdentityNumber(encoded string) (string, error) (wrapcheck)
+	return security.DecryptIdentityNumber(entity.IdentityNumberCiphertext)
+	       ^
+internal/services/conflict_classification_service.go:154:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.ConflictClassificationRepository).GetActiveConflictTypes(ctx context.Context) ([]*law-oa-go/internal/models.ConflictType, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/conflict_classification_service.go:170:10: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.ConflictClassificationRepository).GetActiveConflictTypes(ctx context.Context) ([]*law-oa-go/internal/models.ConflictType, error) (wrapcheck)
+		return s.repo.GetActiveConflictTypes(ctx)
+		       ^
+internal/services/conflict_classification_service.go:172:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.ConflictClassificationRepository).GetActiveConflictTypes(ctx context.Context) ([]*law-oa-go/internal/models.ConflictType, error) (wrapcheck)
+	return s.repo.GetActiveConflictTypes(ctx)
+	       ^
+internal/services/conflict_detection_service.go:564:15: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Rows() (*database/sql.Rows, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/conflict_detection_service.go:575:16: error returned from external package is unwrapped: sig: func (*database/sql.Rows).Scan(dest ...any) error (wrapcheck)
+			return nil, err
+			            ^
+internal/services/conflict_detection_service.go:623:15: error returned from external package is unwrapped: sig: func (*database/sql.Rows).Err() error (wrapcheck)
+		return nil, err
+		            ^
+internal/services/conflict_detection_service.go:1588:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.BasicConflictRepository).SaveCheckRecord(ctx context.Context, record *law-oa-go/internal/models.ConflictCheckRecord) error (wrapcheck)
+	return s.conflictRepo.SaveCheckRecord(ctx, record)
+	       ^
+internal/services/conflict_detection_service.go:1618:10: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.BasicConflictRepository).SaveConflictCases(ctx context.Context, cases []*law-oa-go/internal/models.ConflictCase) error (wrapcheck)
+		return err
+		       ^
+internal/services/conflict_detection_service.go:1770:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.BasicConflictRepository).GetCheckHistory(ctx context.Context, clientID string, limit int) ([]*law-oa-go/internal/models.ConflictCheckRecord, error) (wrapcheck)
+	return s.conflictRepo.GetCheckHistory(ctx, clientID, limit)
+	       ^
+internal/services/conflict_detection_service.go:1775:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.BasicConflictRepository).GetConflictStats(ctx context.Context, clientID string) (*law-oa-go/internal/repositories.ConflictStats, error) (wrapcheck)
+	return s.conflictRepo.GetConflictStats(ctx, clientID)
+	       ^
+internal/services/conflict_officer_appointment_service.go:127:15: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/conflict_p0_service.go:424:15: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/conflict_policy_service.go:114:15: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/conflict_policy_service.go:241:15: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/conflict_reviewer_service.go:279:15: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/conflict_scan_service.go:567:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/services.V2ConflictDetectionService).QuickCheck(ctx context.Context, req *law-oa-go/internal/services.ConflictCheckRequestV2) (*law-oa-go/internal/services.ConflictCheckResultV2, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/conflict_scope_service.go:237:15: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/content_filter_service.go:127:10: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/services.SensitiveWordRepository).GetActiveWords(ctx context.Context) ([]*law-oa-go/internal/models.SensitiveWord, error) (wrapcheck)
+		return err
+		       ^
+internal/services/content_filter_service.go:360:10: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/services.SensitiveWordRepository).Create(ctx context.Context, word *law-oa-go/internal/models.SensitiveWord) error (wrapcheck)
+		return err
+		       ^
+internal/services/content_filter_service.go:369:10: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/services.SensitiveWordRepository).Update(ctx context.Context, word *law-oa-go/internal/models.SensitiveWord) error (wrapcheck)
+		return err
+		       ^
+internal/services/content_filter_service.go:378:10: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/services.SensitiveWordRepository).Delete(ctx context.Context, id uint) error (wrapcheck)
+		return err
+		       ^
+internal/services/deadline_calculator.go:267:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.InboxRepository).List(ctx context.Context, params *law-oa-go/internal/repositories.InboxListParams) ([]*law-oa-go/internal/models.InboxItem, int64, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/document_recycle_service.go:311:10: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.DocumentRepository).FindByID(ctx context.Context, id uint) (*law-oa-go/internal/models.Document, error) (wrapcheck)
+		return err
+		       ^
+internal/services/document_recycle_service.go:389:13: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.DocumentRepository).FindByID(ctx context.Context, id uint) (*law-oa-go/internal/models.Document, error) (wrapcheck)
+		return 0, err
+		          ^
+internal/services/document_recycle_service.go:405:13: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.DocumentRepository).Delete(ctx context.Context, id uint) error (wrapcheck)
+		return 0, err
+		          ^
+internal/services/document_search_service.go:459:21: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.DocumentRepository).List(ctx context.Context, params *law-oa-go/internal/repositories.DocumentListParams) ([]*law-oa-go/internal/models.Document, int64, error) (wrapcheck)
+		return nil, 0, 0, err
+		                  ^
+internal/services/document_service.go:408:9: error returned from external package is unwrapped: sig: func os.Remove(name string) error (wrapcheck)
+	return os.Remove(filepath)
+	       ^
+internal/services/document_stats_service.go:375:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.DocumentRepository).GetStats(ctx context.Context, viewerUserID uint) (*law-oa-go/internal/repositories.DocumentStats, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/document_stats_service.go:400:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.DocumentRepository).GetStats(ctx context.Context, viewerUserID uint) (*law-oa-go/internal/repositories.DocumentStats, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/document_version_service.go:469:9: error returned from external package is unwrapped: sig: func os.Remove(name string) error (wrapcheck)
+	return os.Remove(filepath)
+	       ^
+internal/services/entity_service.go:114:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EntityRepository).Create(ctx context.Context, entity *law-oa-go/internal/models.Entity) error (wrapcheck)
+	return s.entityRepo.Create(ctx, entity)
+	       ^
+internal/services/entity_service.go:119:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EntityRepository).GetByID(ctx context.Context, id uint) (*law-oa-go/internal/models.Entity, error) (wrapcheck)
+	return s.entityRepo.GetByID(ctx, id)
+	       ^
+internal/services/entity_service.go:128:11: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EntityRepository).GetByID(ctx context.Context, id uint) (*law-oa-go/internal/models.Entity, error) (wrapcheck)
+			return err
+			       ^
+internal/services/entity_service.go:142:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EntityRepository).Update(ctx context.Context, id uint, updates map[string]interface{}) error (wrapcheck)
+	return s.entityRepo.Update(ctx, id, updates)
+	       ^
+internal/services/entity_service.go:147:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EntityRepository).Delete(ctx context.Context, id uint) error (wrapcheck)
+	return s.entityRepo.Delete(ctx, id)
+	       ^
+internal/services/entity_service.go:166:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EntityRepository).List(ctx context.Context, offset int, limit int, conditions map[string]interface{}) ([]*law-oa-go/internal/models.Entity, int64, error) (wrapcheck)
+	return s.entityRepo.List(ctx, offset, params.PageSize, conditions)
+	       ^
+internal/services/entity_service.go:225:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EntityRepository).SearchByName(ctx context.Context, name string, limit int) ([]*law-oa-go/internal/models.Entity, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/entity_service.go:237:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EntityRepository).SearchByIdentityNumber(ctx context.Context, identityNumber string, limit int) ([]*law-oa-go/internal/models.Entity, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/entity_service.go:270:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EntityRepository).GetRelations(ctx context.Context, entityID uint, activeOnly bool) ([]*law-oa-go/internal/models.EntityRelation, error) (wrapcheck)
+	return s.entityRepo.GetRelations(ctx, entityID, activeOnly)
+	       ^
+internal/services/entity_service.go:275:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EntityRepository).GetRelatedEntities(ctx context.Context, entityID uint, relationType law-oa-go/internal/models.RelationType, depth int) ([]*law-oa-go/internal/models.Entity, error) (wrapcheck)
+	return s.entityRepo.GetRelatedEntities(ctx, entityID, relationType, maxDepth)
+	       ^
+internal/services/entity_service.go:286:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EntityRepository).AddNameHistory(ctx context.Context, history *law-oa-go/internal/models.EntityNameHistory) error (wrapcheck)
+	return s.entityRepo.AddNameHistory(ctx, history)
+	       ^
+internal/services/entity_service.go:291:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EntityRepository).GetNameHistory(ctx context.Context, entityID uint) ([]*law-oa-go/internal/models.EntityNameHistory, error) (wrapcheck)
+	return s.entityRepo.GetNameHistory(ctx, entityID)
+	       ^
+internal/services/entity_service.go:296:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EntityRepository).AddCaseParty(ctx context.Context, party *law-oa-go/internal/models.CaseParty) error (wrapcheck)
+	return s.entityRepo.AddCaseParty(ctx, party)
+	       ^
+internal/services/entity_service.go:301:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EntityRepository).GetCaseParties(ctx context.Context, caseID uint) ([]*law-oa-go/internal/models.CaseParty, error) (wrapcheck)
+	return s.entityRepo.GetCaseParties(ctx, caseID)
+	       ^
+internal/services/entity_service.go:306:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EntityRepository).RemoveCaseParty(ctx context.Context, caseID uint, entityID uint) error (wrapcheck)
+	return s.entityRepo.RemoveCaseParty(ctx, caseID, entityID)
+	       ^
+internal/services/entity_service.go:311:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EntityRepository).BatchCreate(ctx context.Context, entities []*law-oa-go/internal/models.Entity) error (wrapcheck)
+	return s.entityRepo.BatchCreate(ctx, entities)
+	       ^
+internal/services/entity_service.go:316:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EntityRepository).BatchCreateRelations(ctx context.Context, relations []*law-oa-go/internal/models.EntityRelation) error (wrapcheck)
+	return s.entityRepo.BatchCreateRelations(ctx, relations)
+	       ^
+internal/services/entity_service.go:330:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EntityRepository).GetByID(ctx context.Context, id uint) (*law-oa-go/internal/models.Entity, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/escalation_service.go:78:10: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.InboxRepository).GetOverdueCriticalItems(ctx context.Context, before time.Time) ([]*law-oa-go/internal/models.InboxItem, error) (wrapcheck)
+		return err
+		       ^
+internal/services/escalation_service.go:108:10: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.InboxRepository).List(ctx context.Context, params *law-oa-go/internal/repositories.InboxListParams) ([]*law-oa-go/internal/models.InboxItem, int64, error) (wrapcheck)
+		return err
+		       ^
+internal/services/escalation_service.go:216:10: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.InboxRepository).Create(ctx context.Context, item *law-oa-go/internal/models.InboxItem) error (wrapcheck)
+		return s.inboxRepo.Create(ctx, notifyItem)
+		       ^
+internal/services/escalation_service.go:234:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.InboxRepository).List(ctx context.Context, params *law-oa-go/internal/repositories.InboxListParams) ([]*law-oa-go/internal/models.InboxItem, int64, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/escalation_service.go:254:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.InboxRepository).Update(ctx context.Context, item *law-oa-go/internal/models.InboxItem) error (wrapcheck)
+	return s.inboxRepo.Update(ctx, item)
+	       ^
+internal/services/escalation_service.go:278:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.InboxRepository).List(ctx context.Context, params *law-oa-go/internal/repositories.InboxListParams) ([]*law-oa-go/internal/models.InboxItem, int64, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/ethical_wall_service.go:103:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EthicalWallRepository).EnableEthicalWall(ctx context.Context, caseID uint, userID uint, description string) error (wrapcheck)
+	return s.ethicalWallRepo.EnableEthicalWall(ctx, caseID, userID, description)
+	       ^
+internal/services/ethical_wall_service.go:127:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EthicalWallRepository).DisableEthicalWall(ctx context.Context, caseID uint) error (wrapcheck)
+	return s.ethicalWallRepo.DisableEthicalWall(ctx, caseID)
+	       ^
+internal/services/ethical_wall_service.go:160:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EthicalWallRepository).AddToWhitelist(ctx context.Context, caseID uint, userID uint, grantedBy uint, reason string) error (wrapcheck)
+	return s.ethicalWallRepo.AddToWhitelist(ctx, caseID, userID, grantedBy, reason)
+	       ^
+internal/services/ethical_wall_service.go:175:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EthicalWallRepository).RemoveFromWhitelist(ctx context.Context, caseID uint, userID uint) error (wrapcheck)
+	return s.ethicalWallRepo.RemoveFromWhitelist(ctx, caseID, userID)
+	       ^
+internal/services/ethical_wall_service.go:245:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EthicalWallRepository).LogAccessAttempt(ctx context.Context, caseID uint, userID uint, accessType string, accessResult string, ipAddress string, userAgent string) error (wrapcheck)
+	return s.ethicalWallRepo.LogAccessAttempt(ctx, caseID, userID, accessType, accessResult, ipAddress, userAgent)
+	       ^
+internal/services/ethical_wall_service.go:274:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.EthicalWallRepository).ClearWhitelist(ctx context.Context, caseID uint) error (wrapcheck)
+	return s.ethicalWallRepo.ClearWhitelist(ctx, caseID)
+	       ^
+internal/services/event_dispatcher.go:213:10: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.InboxRepository).Create(ctx context.Context, item *law-oa-go/internal/models.InboxItem) error (wrapcheck)
+		return d.inboxRepo.Create(ctx, item)
+		       ^
+internal/services/event_dispatcher.go:224:10: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.InboxRepository).Create(ctx context.Context, item *law-oa-go/internal/models.InboxItem) error (wrapcheck)
+		return d.inboxRepo.Create(ctx, item)
+		       ^
+internal/services/event_dispatcher.go:478:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.InboxRepository).Create(ctx context.Context, item *law-oa-go/internal/models.InboxItem) error (wrapcheck)
+	return d.inboxRepo.Create(ctx, item)
+	       ^
+internal/services/fee_template_service.go:50:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.FeeTemplateRepository).Create(ctx context.Context, template *law-oa-go/internal/models.FeeTemplate) error (wrapcheck)
+		return nil, err
+		            ^
+internal/services/fee_template_service.go:57:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.FeeTemplateRepository).GetByID(ctx context.Context, id uint) (*law-oa-go/internal/models.FeeTemplate, error) (wrapcheck)
+	return s.feeTemplateRepo.GetByID(ctx, id)
+	       ^
+internal/services/fee_template_service.go:64:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.FeeTemplateRepository).GetByID(ctx context.Context, id uint) (*law-oa-go/internal/models.FeeTemplate, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/fee_template_service.go:75:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.FeeTemplateRepository).Update(ctx context.Context, template *law-oa-go/internal/models.FeeTemplate) error (wrapcheck)
+		return nil, err
+		            ^
+internal/services/fee_template_service.go:82:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.FeeTemplateRepository).Delete(ctx context.Context, id uint) error (wrapcheck)
+	return s.feeTemplateRepo.Delete(ctx, id)
+	       ^
+internal/services/fee_template_service.go:87:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.FeeTemplateRepository).List(ctx context.Context, page int, pageSize int) ([]*law-oa-go/internal/models.FeeTemplate, int64, error) (wrapcheck)
+	return s.feeTemplateRepo.List(ctx, page, pageSize)
+	       ^
+internal/services/fee_template_service.go:92:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.FeeTemplateRepository).GetByCaseType(ctx context.Context, caseType string) ([]*law-oa-go/internal/models.FeeTemplate, error) (wrapcheck)
+	return s.feeTemplateRepo.GetByCaseType(ctx, caseType)
+	       ^
+internal/services/fee_template_service.go:99:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.FeeTemplateRepository).GetByID(ctx context.Context, id uint) (*law-oa-go/internal/models.FeeTemplate, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/folder_template_service.go:84:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.FolderTemplateRepository).CreateTemplate(ctx context.Context, template *law-oa-go/internal/models.CaseFolderTemplate) error (wrapcheck)
+		return nil, err
+		            ^
+internal/services/folder_template_service.go:101:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.FolderTemplateRepository).GetTemplateByID(ctx context.Context, id uint) (*law-oa-go/internal/models.CaseFolderTemplate, error) (wrapcheck)
+	return s.repo.GetTemplateByID(ctx, id)
+	       ^
+internal/services/folder_template_service.go:137:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.FolderTemplateRepository).UpdateTemplate(ctx context.Context, id uint, updates map[string]interface{}) error (wrapcheck)
+	return s.repo.UpdateTemplate(ctx, id, updates)
+	       ^
+internal/services/folder_template_service.go:142:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.FolderTemplateRepository).DeleteTemplate(ctx context.Context, id uint) error (wrapcheck)
+	return s.repo.DeleteTemplate(ctx, id)
+	       ^
+internal/services/folder_template_service.go:147:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.FolderTemplateRepository).ListTemplates(ctx context.Context, params *law-oa-go/internal/repositories.FolderTemplateListParams) ([]*law-oa-go/internal/models.CaseFolderTemplate, int64, error) (wrapcheck)
+	return s.repo.ListTemplates(ctx, params)
+	       ^
+internal/services/folder_template_service.go:198:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.FolderTemplateRepository).GetFoldersByCaseID(ctx context.Context, caseID uint) ([]*law-oa-go/internal/models.CaseFolder, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/folder_template_service.go:211:16: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.FolderTemplateRepository).GetFolderByID(ctx context.Context, id uint) (*law-oa-go/internal/models.CaseFolder, error) (wrapcheck)
+			return nil, err
+			            ^
+internal/services/folder_template_service.go:229:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.FolderTemplateRepository).CreateFolder(ctx context.Context, folder *law-oa-go/internal/models.CaseFolder) error (wrapcheck)
+		return nil, err
+		            ^
+internal/services/folder_template_service.go:242:10: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.FolderTemplateRepository).GetFolderByID(ctx context.Context, id uint) (*law-oa-go/internal/models.CaseFolder, error) (wrapcheck)
+		return err
+		       ^
+internal/services/folder_template_service.go:250:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.FolderTemplateRepository).DeleteFolder(ctx context.Context, id uint) error (wrapcheck)
+	return s.repo.DeleteFolder(ctx, folderID)
+	       ^
+internal/services/folder_template_service.go:296:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.FolderTemplateRepository).ClearOtherDefaults(ctx context.Context, caseType string, excludeID uint) error (wrapcheck)
+	return s.repo.ClearOtherDefaults(ctx, caseType, currentID)
+	       ^
+internal/services/inbox_service.go:236:10: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.InboxRepository).FindByIDAndUserID(ctx context.Context, id uint, userID uint) (*law-oa-go/internal/models.InboxItem, error) (wrapcheck)
+		return err
+		       ^
+internal/services/inbox_service.go:238:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.InboxRepository).DeleteByUserID(ctx context.Context, id uint, userID uint) error (wrapcheck)
+	return s.inboxRepo.DeleteByUserID(ctx, id, userID)
+	       ^
+internal/services/inbox_service.go:307:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.InboxRepository).MarkAsReadByUserID(ctx context.Context, id uint, userID uint) error (wrapcheck)
+	return s.inboxRepo.MarkAsReadByUserID(ctx, id, userID)
+	       ^
+internal/services/inbox_service.go:312:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.InboxRepository).MarkAsCompletedByUserID(ctx context.Context, id uint, userID uint) error (wrapcheck)
+	return s.inboxRepo.MarkAsCompletedByUserID(ctx, id, userID)
+	       ^
+internal/services/inbox_service.go:339:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.InboxRepository).SnoozeByUserID(ctx context.Context, id uint, userID uint, until time.Time) error (wrapcheck)
+	return s.inboxRepo.SnoozeByUserID(ctx, id, userID, until)
+	       ^
+internal/services/lawyer_service.go:65:18: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.LawyerRepository).List(ctx context.Context, params *law-oa-go/internal/repositories.LawyerListParams) ([]*law-oa-go/internal/models.User, int64, error) (wrapcheck)
+		return nil, 0, err
+		               ^
+internal/services/lawyer_service.go:134:10: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.LawyerRepository).Delete(ctx context.Context, id uint) error (wrapcheck)
+		return err
+		       ^
+internal/services/legal_statutes.go:448:10: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.ElasticsearchStatuteRepository).GetSuggestion(ctx context.Context, query string) ([]string, error) (wrapcheck)
+		return s.esRepo.GetSuggestion(ctx, query)
+		       ^
+internal/services/legal_statutes.go:566:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.LegalCategoryRepository).GetTree(ctx context.Context) ([]*law-oa-go/internal/models.CategoryTreeNode, error) (wrapcheck)
+	return s.categoryRepo.GetTree(ctx)
+	       ^
+internal/services/legal_statutes.go:668:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.LegalStatuteRepository).AddToFavorites(ctx context.Context, userID int, statuteID int) error (wrapcheck)
+	return s.statuteRepo.AddToFavorites(ctx, userID, statuteID)
+	       ^
+internal/services/legal_statutes.go:673:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.LegalStatuteRepository).RemoveFromFavorites(ctx context.Context, userID int, statuteID int) error (wrapcheck)
+	return s.statuteRepo.RemoveFromFavorites(ctx, userID, statuteID)
+	       ^
+internal/services/legal_statutes.go:738:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.LegalStatuteRepository).GetPopularSearches(ctx context.Context, limit int) ([]string, error) (wrapcheck)
+	return s.statuteRepo.GetPopularSearches(ctx, limit)
+	       ^
+internal/services/legal_statutes.go:743:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.LegalStatuteRepository).GetCategoryStats(ctx context.Context) ([]*law-oa-go/internal/models.CategoryStat, error) (wrapcheck)
+	return s.statuteRepo.GetCategoryStats(ctx)
+	       ^
+internal/services/legal_statutes.go:942:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.LegalCategoryRepository).List(ctx context.Context) ([]*law-oa-go/internal/models.LegalCategory, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/mcp_client.go:121:11: error returned from external package is unwrapped: sig: func (*net/http.Client).Do(req *net/http.Request) (*net/http.Response, error) (wrapcheck)
+			return err
+			       ^
+internal/services/mcp_client.go:124:10: error returned from external package is unwrapped: sig: func (*net/http.Client).Do(req *net/http.Request) (*net/http.Response, error) (wrapcheck)
+		return err
+		       ^
+internal/services/mcp_client.go:277:12: error returned from interface method should be wrapped: sig: func (context.Context).Err() error (wrapcheck)
+				return ctx.Err()
+				       ^
+internal/services/mcp_client.go:303:15: error returned from external package is unwrapped: sig: func (*github.com/redis/go-redis/v9.StringCmd).Bytes() ([]byte, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/mcp_client.go:308:15: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+		return nil, err
+		            ^
+internal/services/offboarding_service.go:174:15: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/offboarding_service.go:216:9: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	       ^
+internal/services/offboarding_service.go:253:9: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	       ^
+internal/services/offboarding_service.go:278:9: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	       ^
+internal/services/offboarding_service.go:303:9: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	       ^
+internal/services/pdf_report_service.go:577:9: error returned from external package is unwrapped: sig: func (*github.com/jung-kurt/gofpdf.Fpdf).OutputFileAndClose(fileStr string) error (wrapcheck)
+	return pdf.OutputFileAndClose(filepath)
+	       ^
+internal/services/pdf_report_service.go:700:14: error returned from external package is unwrapped: sig: func os.ReadFile(name string) ([]byte, error) (wrapcheck)
+		return "", err
+		           ^
+internal/services/pdf_report_service.go:765:10: error returned from external package is unwrapped: sig: func os.MkdirAll(path string, perm os.FileMode) error (wrapcheck)
+		return err
+		       ^
+internal/services/pdf_report_service.go:771:10: error returned from external package is unwrapped: sig: func os.OpenFile(name string, flag int, perm os.FileMode) (*os.File, error) (wrapcheck)
+		return err
+		       ^
+internal/services/pdf_report_service.go:780:10: error returned from external package is unwrapped: sig: func encoding/pem.Encode(out io.Writer, b *encoding/pem.Block) error (wrapcheck)
+		return err
+		       ^
+internal/services/pdf_report_service.go:786:10: error returned from external package is unwrapped: sig: func os.Create(name string) (*os.File, error) (wrapcheck)
+		return err
+		       ^
+internal/services/pdf_report_service.go:792:10: error returned from external package is unwrapped: sig: func crypto/x509.MarshalPKIXPublicKey(pub any) ([]byte, error) (wrapcheck)
+		return err
+		       ^
+internal/services/pdf_report_service.go:800:10: error returned from external package is unwrapped: sig: func encoding/pem.Encode(out io.Writer, b *encoding/pem.Block) error (wrapcheck)
+		return err
+		       ^
+internal/services/pdf_report_service.go:837:14: error returned from external package is unwrapped: sig: func crypto/rsa.SignPKCS1v15(random io.Reader, priv *crypto/rsa.PrivateKey, hash crypto.Hash, hashed []byte) ([]byte, error) (wrapcheck)
+		return "", err
+		           ^
+internal/services/pdf_report_service.go:846:17: error returned from external package is unwrapped: sig: func (*encoding/base64.Encoding).DecodeString(s string) ([]byte, error) (wrapcheck)
+		return false, err
+		              ^
+internal/services/rbac_service.go:101:15: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.RoleRepository).FindByID(ctx context.Context, id uint) (*law-oa-go/internal/models.Role, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/rbac_service.go:117:15: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.RoleRepository).FindByParams(ctx context.Context, params *law-oa-go/internal/repositories.RoleQueryParams) ([]law-oa-go/internal/models.Role, int64, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/rbac_service.go:132:15: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.RoleRepository).FindAll(ctx context.Context) ([]law-oa-go/internal/models.Role, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/rbac_service.go:141:15: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.RoleRepository).FindByID(ctx context.Context, id uint) (*law-oa-go/internal/models.Role, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/rbac_service.go:167:10: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.UserRoleRepository).CountByRoleID(ctx context.Context, roleID uint) (int64, error) (wrapcheck)
+		return err
+		       ^
+internal/services/rbac_service.go:188:10: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.RoleRepository).FindByID(ctx context.Context, id uint) (*law-oa-go/internal/models.Role, error) (wrapcheck)
+		return err
+		       ^
+internal/services/rbac_service.go:268:15: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.PermissionRepository).FindByParams(ctx context.Context, params *law-oa-go/internal/repositories.PermissionQueryParams) ([]law-oa-go/internal/models.Permission, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/rbac_service.go:279:15: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.PermissionRepository).FindAll(ctx context.Context) ([]law-oa-go/internal/models.Permission, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/rbac_service.go:288:15: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.PermissionRepository).FindByID(ctx context.Context, id uint) (*law-oa-go/internal/models.Permission, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/rbac_service.go:297:15: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.PermissionRepository).FindByID(ctx context.Context, id uint) (*law-oa-go/internal/models.Permission, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/rbac_service.go:327:10: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.PermissionRepository).CountByParentID(ctx context.Context, parentID uint) (int64, error) (wrapcheck)
+		return err
+		       ^
+internal/services/rbac_service.go:336:10: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.RolePermissionRepository).CountByPermissionID(ctx context.Context, permissionID uint) (int64, error) (wrapcheck)
+		return err
+		       ^
+internal/services/rbac_service.go:384:15: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.RolePermissionRepository).FindPermissionIDsByRoleID(ctx context.Context, roleID uint) ([]uint, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/rbac_service.go:416:15: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.UserRoleRepository).FindRolesByUserID(ctx context.Context, userID uint) ([]law-oa-go/internal/models.Role, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/rbac_service.go:455:17: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.PermissionRepository).FindByCode(ctx context.Context, code string) (*law-oa-go/internal/models.Permission, error) (wrapcheck)
+		return false, err
+		              ^
+internal/services/rbac_service.go:462:18: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.RolePermissionRepository).ExistsByRoleIDAndPermissionID(ctx context.Context, roleID uint, permissionID uint) (bool, error) (wrapcheck)
+			return false, err
+			              ^
+internal/services/rbac_service.go:501:16: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/repositories.PermissionRepository).FindByID(ctx context.Context, id uint) (*law-oa-go/internal/models.Permission, error) (wrapcheck)
+			return nil, err
+			            ^
+internal/services/search_service.go:167:15: error returned from external package is unwrapped: sig: func (*encoding/json.Encoder).Encode(v any) error (wrapcheck)
+		return nil, err
+		            ^
+internal/services/search_service.go:176:15: error returned from external package is unwrapped: sig: field Search github.com/elastic/go-elasticsearch/v8/esapi.Search (wrapcheck)
+		return nil, err
+		            ^
+internal/services/search_service.go:187:15: error returned from external package is unwrapped: sig: func (*encoding/json.Decoder).Decode(v any) error (wrapcheck)
+		return nil, err
+		            ^
+internal/services/search_service.go:206:10: error returned from external package is unwrapped: sig: func (*encoding/json.Encoder).Encode(v any) error (wrapcheck)
+		return err
+		       ^
+internal/services/search_service.go:216:10: error returned from external package is unwrapped: sig: field Index github.com/elastic/go-elasticsearch/v8/esapi.Index (wrapcheck)
+		return err
+		       ^
+internal/services/search_service.go:242:10: error returned from external package is unwrapped: sig: field Delete github.com/elastic/go-elasticsearch/v8/esapi.Delete (wrapcheck)
+		return err
+		       ^
+internal/services/subject_recheck_service.go:196:15: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/subject_recheck_service.go:429:15: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/subject_recheck_service.go:677:15: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Rows() (*database/sql.Rows, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/subject_recheck_service.go:683:16: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).ScanRows(rows *database/sql.Rows, dest interface{}) error (wrapcheck)
+			return nil, err
+			            ^
+internal/services/subject_recheck_service.go:694:15: error returned from external package is unwrapped: sig: func (*database/sql.Rows).Err() error (wrapcheck)
+		return nil, err
+		            ^
+internal/services/subject_recheck_service.go:851:15: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/subject_recheck_service.go:919:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/services.ConflictDetectionService).PerformConflictCheck(ctx context.Context, request *law-oa-go/internal/models.ConflictCheckRequest) (*law-oa-go/internal/models.ConflictCheckResponse, error) (wrapcheck)
+		return nil, checkErr
+		            ^
+internal/services/subject_recheck_service.go:961:15: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/subject_recheck_service.go:1065:15: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/subject_recheck_service.go:1203:15: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/subject_recheck_service.go:1428:9: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	       ^
+internal/services/team_permission_service.go:431:10: error returned from external package is unwrapped: sig: func encoding/json.Marshal(v any) ([]byte, error) (wrapcheck)
+		return err
+		       ^
+internal/services/team_permission_service.go:436:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.CacheRepository).Set(ctx context.Context, key string, value string, expiration time.Duration) error (wrapcheck)
+	return s.cacheRepo.Set(ctx, cacheKey, string(logJSON), 30*24*time.Hour) // 保存30天
+	       ^
+internal/services/token_revocation_service.go:43:9: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).Transaction(fc func(tx *gorm.io/gorm.DB) error, opts ...*database/sql.TxOptions) (err error) (wrapcheck)
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	       ^
+internal/services/trust_account_service.go:589:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.TrustUnitOfWork).WithinTransaction(ctx context.Context, fn func(txTxnRepo law-oa-go/internal/repositories.TrustTransactionRepository, txAcctRepo law-oa-go/internal/repositories.TrustAccountRepository) error) error (wrapcheck)
+		return nil, err
+		            ^
+internal/services/user_service.go:517:9: error returned from external package is unwrapped: sig: func (*law-oa-go/internal/concurrency.ConcurrentSafe).Execute(ctx context.Context, operation func() error) error (wrapcheck)
+	return s.concurrentSafe.Execute(ctx, func() error {
+	       ^
+internal/services/v2_conflict_detection_service.go:301:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/services.ConflictPoolService).SearchInPool(ctx context.Context, req *law-oa-go/internal/services.PoolSearchRequest) ([]*law-oa-go/internal/services.PoolMatchResult, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/waiver_workflow_service.go:240:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/services.WaiverWorkflowRepository).CreateWaiverApplication(ctx context.Context, application *law-oa-go/internal/models.WaiverApplication) error (wrapcheck)
+		return nil, err
+		            ^
+internal/services/waiver_workflow_service.go:335:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/services.WaiverWorkflowRepository).CreateWaiverApprovalRecord(ctx context.Context, record *law-oa-go/internal/models.WaiverApprovalRecord) error (wrapcheck)
+		return nil, err
+		            ^
+internal/services/waiver_workflow_service.go:359:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/services.WaiverWorkflowRepository).UpdateWaiverApplication(ctx context.Context, application *law-oa-go/internal/models.WaiverApplication) error (wrapcheck)
+		return nil, err
+		            ^
+internal/services/waiver_workflow_service.go:368:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/services.WaiverWorkflowRepository).GetWaiverApplication(ctx context.Context, id string) (*law-oa-go/internal/models.WaiverApplication, error) (wrapcheck)
+	return s.waiverRepo.GetWaiverApplication(ctx, waiverID)
+	       ^
+internal/services/waiver_workflow_service.go:425:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.BasicConflictRepository).UpdateCheckRecord(ctx context.Context, record *law-oa-go/internal/models.ConflictCheckRecord) error (wrapcheck)
+	return s.conflictRepo.UpdateCheckRecord(ctx, record)
+	       ^
+internal/services/waiver_workflow_service.go:436:16: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/services.WaiverWorkflowRepository).UpdateWaiverApplication(ctx context.Context, application *law-oa-go/internal/models.WaiverApplication) error (wrapcheck)
+			return nil, err
+			            ^
+internal/services/waiver_workflow_service.go:442:15: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/services.WaiverWorkflowRepository).GetWaiverApprovalRecords(ctx context.Context, applicationID string) ([]*law-oa-go/internal/models.WaiverApprovalRecord, error) (wrapcheck)
+		return nil, err
+		            ^
+internal/services/waiver_workflow_service.go:458:16: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/services.WaiverWorkflowRepository).UpdateWaiverApplication(ctx context.Context, application *law-oa-go/internal/models.WaiverApplication) error (wrapcheck)
+			return nil, err
+			            ^
+internal/services/waiver_workflow_service.go:502:9: error returned from interface method should be wrapped: sig: func (law-oa-go/internal/repositories.InboxRepository).Create(ctx context.Context, item *law-oa-go/internal/models.InboxItem) error (wrapcheck)
+	return s.inboxRepo.Create(ctx, &models.InboxItem{
+	       ^
+internal/services/async_conflict_intake_revision_test.go:351:14: error returned from interface method should be wrapped: sig: func (context.Context).Err() error (wrapcheck)
+	return nil, ctx.Err()
+	            ^
+internal/services/async_conflict_intake_revision_test.go:358:10: error returned from interface method should be wrapped: sig: func (context.Context).Err() error (wrapcheck)
+		return err
+		       ^
+internal/services/client_service_comprehensive_test.go:26:9: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+	return args.Error(0)
+	       ^
+internal/services/client_service_comprehensive_test.go:32:15: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+		return nil, args.Error(1)
+		            ^
+internal/services/client_service_comprehensive_test.go:34:39: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+	return args.Get(0).(*models.Client), args.Error(1)
+	                                     ^
+internal/services/client_service_comprehensive_test.go:40:15: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+		return nil, args.Error(1)
+		            ^
+internal/services/client_service_comprehensive_test.go:42:39: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+	return args.Get(0).(*models.Client), args.Error(1)
+	                                     ^
+internal/services/client_service_comprehensive_test.go:47:9: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+	return args.Error(0)
+	       ^
+internal/services/client_service_comprehensive_test.go:52:9: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+	return args.Error(0)
+	       ^
+internal/services/client_service_comprehensive_test.go:57:9: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+	return args.Error(0)
+	       ^
+internal/services/client_service_comprehensive_test.go:62:62: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+	return args.Get(0).([]*models.Client), args.Get(1).(int64), args.Error(2)
+	                                                            ^
+internal/services/client_service_comprehensive_test.go:68:15: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+		return nil, args.Error(1)
+		            ^
+internal/services/client_service_comprehensive_test.go:70:50: error returned from external package is unwrapped: sig: func (github.com/stretchr/testify/mock.Arguments).Error(index int) error (wrapcheck)
+	return args.Get(0).(*repositories.ClientStats), args.Error(1)
+	                                                ^
+test/testutils.go:100:9: error returned from external package is unwrapped: sig: func encoding/json.Marshal(v any) ([]byte, error) (wrapcheck)
+	return json.Marshal(j.data)
+	       ^
+test/testutils.go:108:9: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+	return json.Unmarshal(bytes, &j.data)
+	       ^
+test/testutils.go:180:15: error returned from external package is unwrapped: sig: func encoding/json.Marshal(v any) ([]byte, error) (wrapcheck)
+		return nil, err
+		            ^
+test/testutils.go:185:17: error returned from external package is unwrapped: sig: func encoding/json.Unmarshal(data []byte, v any) error (wrapcheck)
+	return result, err
+	               ^
+tests/integration/postgresql_elasticsearch_test.go:221:10: error returned from external package is unwrapped: sig: func (*gorm.io/gorm.DB).DB() (*database/sql.DB, error) (wrapcheck)
+		return err
+		       ^
+tests/integration/postgresql_elasticsearch_test.go:223:9: error returned from external package is unwrapped: sig: func (*database/sql.DB).Close() error (wrapcheck)
+	return sqlDB.Close()
+	       ^
+tests/integration/conflict_dialects/conflict_detection_dialects_test.go:55:23: error returned from external package is unwrapped: sig: func gorm.io/gorm.Open(dialector gorm.io/gorm.Dialector, opts ...gorm.io/gorm.Option) (db *gorm.io/gorm.DB, err error) (wrapcheck)
+					return nil, nil, err
+					                 ^
+tests/integration/conflict_dialects/conflict_detection_dialects_test.go:73:23: error returned from external package is unwrapped: sig: func gorm.io/gorm.Open(dialector gorm.io/gorm.Dialector, opts ...gorm.io/gorm.Option) (db *gorm.io/gorm.DB, err error) (wrapcheck)
+					return nil, nil, err
+					                 ^
+tests/integration/trust_atomicity/trust_transaction_atomicity_test.go:60:23: error returned from external package is unwrapped: sig: func gorm.io/gorm.Open(dialector gorm.io/gorm.Dialector, opts ...gorm.io/gorm.Option) (db *gorm.io/gorm.DB, err error) (wrapcheck)
+					return nil, nil, err
+					                 ^
+tests/integration/trust_atomicity/trust_transaction_atomicity_test.go:78:23: error returned from external package is unwrapped: sig: func gorm.io/gorm.Open(dialector gorm.io/gorm.Dialector, opts ...gorm.io/gorm.Option) (db *gorm.io/gorm.DB, err error) (wrapcheck)
+					return nil, nil, err
+					                 ^

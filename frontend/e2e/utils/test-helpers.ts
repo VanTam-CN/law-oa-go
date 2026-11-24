@@ -5,7 +5,27 @@
  * on a developer having PostgreSQL, Redis, Elasticsearch, or seeded data running.
  */
 
-import { Page, expect } from '@playwright/test'
+import { Page, type Locator, type Request, expect } from '@playwright/test'
+
+// Select through the keyboard so virtualized popups can move during page scrolling.
+export async function selectIntakeOption(input: Locator, title: string) {
+  await input.focus()
+  await input.press('ArrowDown')
+  const list = await input.getAttribute('aria-controls')
+  const page = input.page()
+  const popup = page.locator('.ant-select-dropdown').filter({ has: page.locator(`[id="${list}"]`) })
+  await expect(popup.getByTitle(title, { exact: true })).toBeVisible()
+  const count = await popup.locator('.ant-select-item-option').count()
+  for (let i = 0; i <= count; i++) {
+    if (await popup.locator('.ant-select-item-option-active').getAttribute('title') === title) {
+      await input.press('Enter')
+      await expect(input).toHaveAttribute('aria-expanded', 'false')
+      return
+    }
+    await input.press('ArrowDown')
+  }
+  throw new Error('未能选中 ' + title)
+}
 
 type TestUserKey = 'admin' | 'lawyer' | 'assistant' | 'finance' | 'conflictOfficer'
 
@@ -306,6 +326,40 @@ function matchLoginUser(emailOrAlias: string): TestUserKey | null {
 
 export async function installApiMocks(page: Page) {
   let pendingSubjectRegistration = false
+  const intakeWriteState = {
+    revisions: ['rev-801-1'] as string[],
+    parties: [] as Array<Record<string, unknown>>,
+    metadata: {} as Record<string, unknown>,
+    title: '',
+    description: '',
+    caseType: '',
+    clientId: 0,
+    priority: 'medium',
+    materials: [] as Array<Record<string, unknown>>,
+  }
+  const recordDraft = (body: Record<string, unknown>) => {
+    intakeWriteState.title = String(body.title ?? '')
+    intakeWriteState.description = String(body.description ?? '')
+    intakeWriteState.caseType = String(body.case_type ?? '')
+    intakeWriteState.clientId = Number(body.client_id ?? 0)
+    intakeWriteState.priority = String(body.priority ?? 'medium')
+    Object.assign(intakeWriteState.metadata, body.metadata)
+    if (Array.isArray(body.parties)) {
+      intakeWriteState.parties = body.parties.map(({ identity_number, ...party }) => party)
+    }
+    if (Array.isArray(body.materials)) intakeWriteState.materials = body.materials
+  }
+  const intakeWriteGuard = (request: Request) => {
+    const method = request.method()
+    const body = request.postDataJSON?.() as Record<string, unknown> | undefined
+    const header = request.headers()['x-intake-revision'] || ''
+    const expected = body?.expected_revision as string | undefined
+    const currentRevision = intakeWriteState.revisions[intakeWriteState.revisions.length - 1]
+    if (method === 'PUT' && expected !== currentRevision) return false
+    if (method === 'POST' && ['facts-confirmation', 'conflict-check'].some((p) => request.url().includes(p)) && header !== currentRevision) return false
+    return true
+  }
+
   await page.route('**/api/v1/**', async (route) => {
     const request = route.request()
     const url = new URL(request.url())
@@ -425,26 +479,102 @@ export async function installApiMocks(page: Page) {
       return
     }
 
+    // Intake mock behaves like the real M1 write contract: every write is
+    // revision-bound, every receipt rotates the token, and detail GETs are
+    // seeded from the write history so a page refresh can restore the exact
+    // saved draft. This state lives per page, matching one browser session.
+    if (path === '/case-intakes' && request.method() === 'GET') {
+      const items = intakeWriteState.title ? [{ id: 801, title: intakeWriteState.title }] : []
+      await route.fulfill(ok({ items, total: items.length }))
+      return
+    }
+
     if (path === '/case-intakes' && request.method() === 'POST') {
-      await route.fulfill(ok({ id: 801, intake_code: 'IN-2026-001' }))
+      recordDraft(request.postDataJSON())
+      await route.fulfill(ok({
+        id: 801,
+        intake_code: 'IN-2026-001',
+        status: 'draft',
+        revision: intakeWriteState.revisions[intakeWriteState.revisions.length - 1],
+      }))
+      return
+    }
+
+    if (path.match(/^\/case-intakes\/\d+$/) && request.method() === 'GET') {
+      const revision = intakeWriteState.revisions[intakeWriteState.revisions.length - 1]
+      await route.fulfill(ok({
+        intake: {
+          id: 801,
+          intake_code: 'IN-2026-001',
+          title: intakeWriteState.title,
+          case_type: intakeWriteState.caseType,
+          priority: intakeWriteState.priority,
+          description: intakeWriteState.description,
+          client_id: intakeWriteState.clientId,
+          status: 'draft',
+          metadata: intakeWriteState.metadata,
+        },
+        revision,
+        parties: intakeWriteState.parties,
+        materials: intakeWriteState.materials,
+      }))
       return
     }
 
     if (path.match(/^\/case-intakes\/\d+$/) && request.method() === 'PUT') {
-      await route.fulfill(ok({ id: 801, intake_code: 'IN-2026-001', status: 'conflict_ready' }))
+      const body = request.postDataJSON() as Record<string, unknown>
+      if (!intakeWriteGuard(request)) {
+        await route.fulfill({
+          status: 409,
+          contentType: 'application/json',
+          body: JSON.stringify({ success: false, error: { message: '草稿版本已过期，请重新打开草稿核对' } }),
+        })
+        return
+      }
+      intakeWriteState.revisions.push(`rev-801-${intakeWriteState.revisions.length + 1}`)
+      recordDraft(body)
+      await route.fulfill(ok({
+        id: 801,
+        intake_code: 'IN-2026-001',
+        status: 'draft',
+        revision: intakeWriteState.revisions[intakeWriteState.revisions.length - 1],
+      }))
       return
     }
 
     if (path === '/case-intakes/801/facts-confirmation' && request.method() === 'POST') {
-      await route.fulfill(ok({ id: 801, status: 'lawyer_facts_confirmed' }))
+      if (!intakeWriteGuard(request)) {
+        await route.fulfill({
+          status: 409,
+          contentType: 'application/json',
+          body: JSON.stringify({ success: false, error: { message: '草稿版本已过期，请重新打开草稿核对' } }),
+        })
+        return
+      }
+      intakeWriteState.revisions.push(`rev-801-${intakeWriteState.revisions.length + 1}`)
+      await route.fulfill(ok({
+        id: 801,
+        status: 'lawyer_facts_confirmed',
+        revision: intakeWriteState.revisions[intakeWriteState.revisions.length - 1],
+      }))
       return
     }
 
     if (path === '/case-intakes/801/conflict-check' && request.method() === 'POST') {
+      if (!intakeWriteGuard(request)) {
+        await route.fulfill({
+          status: 409,
+          contentType: 'application/json',
+          body: JSON.stringify({ success: false, error: { message: '草稿版本已过期，请重新打开草稿核对' } }),
+        })
+        return
+      }
+      intakeWriteState.revisions.push(`rev-801-${intakeWriteState.revisions.length + 1}`)
       await route.fulfill(ok({
         taskId: 'CHK-2026-ASYNC-001',
         checkId: 'CHK-2026-ASYNC-001',
         status: 'COMPLETED',
+        revision: intakeWriteState.revisions[intakeWriteState.revisions.length - 1],
         result: {
           checkId: 'CHK-2026-ASYNC-001',
           hasConflict: false,

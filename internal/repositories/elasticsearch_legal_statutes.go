@@ -14,8 +14,8 @@ import (
 
 // elasticsearchStatuteRepository Elasticsearch法条搜索仓储实现
 type elasticsearchStatuteRepository struct {
-	client           *esv8.Client
-	indexManager     *elasticsearch.LegalStatuteIndexManager
+	client       *esv8.Client
+	indexManager *elasticsearch.LegalStatuteIndexManager
 }
 
 // NewElasticsearchStatuteRepository 创建Elasticsearch法条仓储实例
@@ -28,22 +28,34 @@ func NewElasticsearchStatuteRepository(client *esv8.Client) ElasticsearchStatute
 
 // CreateIndex 创建索引
 func (r *elasticsearchStatuteRepository) CreateIndex(ctx context.Context) error {
-	return r.indexManager.CreateIndex()
+	if err := r.indexManager.CreateIndex(); err != nil {
+		return fmt.Errorf("创建法规: %w", err)
+	}
+	return nil
 }
 
 // DeleteIndex 删除索引
 func (r *elasticsearchStatuteRepository) DeleteIndex(ctx context.Context) error {
-	return r.indexManager.DeleteIndex()
+	if err := r.indexManager.DeleteIndex(); err != nil {
+		return fmt.Errorf("删除法规: %w", err)
+	}
+	return nil
 }
 
 // IndexDocument 索引单个文档
 func (r *elasticsearchStatuteRepository) IndexDocument(ctx context.Context, doc *elasticsearch.LegalStatuteDocument) error {
-	return r.indexManager.IndexDocument(doc)
+	if err := r.indexManager.IndexDocument(doc); err != nil {
+		return fmt.Errorf("索引法规: %w", err)
+	}
+	return nil
 }
 
 // BulkIndexDocuments 批量索引文档
 func (r *elasticsearchStatuteRepository) BulkIndexDocuments(ctx context.Context, docs []*elasticsearch.LegalStatuteDocument) error {
-	return r.indexManager.BulkIndexDocuments(docs)
+	if err := r.indexManager.BulkIndexDocuments(docs); err != nil {
+		return fmt.Errorf("BulkIndexDocuments法规: %w", err)
+	}
+	return nil
 }
 
 // Search 搜索法条
@@ -63,7 +75,7 @@ func (r *elasticsearchStatuteRepository) Search(ctx context.Context, req *elasti
 
 	response, err := r.indexManager.Search(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("搜索法规: %w", err)
 	}
 
 	// 计算搜索时间
@@ -134,13 +146,13 @@ func (r *elasticsearchStatuteRepository) GetRelatedStatutes(ctx context.Context,
 
 	// 基于当前法条的类别、关键词等查找相关法条
 	relatedReq := &elasticsearch.LegalSearchRequest{
-		Query:         fmt.Sprintf("category.code:%s OR law_name:%s",
+		Query: fmt.Sprintf("category.code:%s OR law_name:%s",
 			currentDoc.Category.Code, currentDoc.LawName),
-		Page:          1,
-		PageSize:      limit,
-		SortBy:        "relevance",
-		SortOrder:     "desc",
-		Highlight:     false,
+		Page:      1,
+		PageSize:  limit,
+		SortBy:    "relevance",
+		SortOrder: "desc",
+		Highlight: false,
 	}
 
 	// 排除当前法条
@@ -148,7 +160,7 @@ func (r *elasticsearchStatuteRepository) GetRelatedStatutes(ctx context.Context,
 
 	relatedResp, err := r.indexManager.Search(relatedReq)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("搜索法规: %w", err)
 	}
 
 	// 过滤掉当前法条
@@ -216,11 +228,11 @@ func (r *elasticsearchStatuteRepository) GetLawNameAggregation(ctx context.Conte
 	// 这里需要实现实际的ES聚合查询逻辑
 	// 为了简化，返回模拟数据
 	result := map[string]int64{
-		"中华人民共和国民法典":       89,
-		"中华人民共和国公司法":       67,
-		"中华人民共和国劳动合同法":   45,
-		"中华人民共和国刑法":         78,
-		"中华人民共和国民事诉讼法":   34,
+		"中华人民共和国民法典":   89,
+		"中华人民共和国公司法":   67,
+		"中华人民共和国劳动合同法": 45,
+		"中华人民共和国刑法":    78,
+		"中华人民共和国民事诉讼法": 34,
 	}
 
 	return result, nil
@@ -248,11 +260,11 @@ func (r *elasticsearchStatuteRepository) GetTagAggregation(ctx context.Context) 
 	// 这里需要实现实际的ES聚合查询逻辑
 	// 为了简化，返回模拟数据
 	result := map[string]int64{
-		"常用":   120,
-		"重要":   89,
-		"最新":   45,
-		"基础":   67,
-		"专业":   34,
+		"常用": 120,
+		"重要": 89,
+		"最新": 45,
+		"基础": 67,
+		"专业": 34,
 	}
 
 	return result, nil
@@ -268,7 +280,7 @@ func (r *elasticsearchStatuteRepository) SyncFromPostgreSQL(ctx context.Context,
 	for {
 		statutes, err := postgresRepo.List(ctx, offset, batchSize)
 		if err != nil {
-			return fmt.Errorf("获取法条数据失败: %v", err)
+			return fmt.Errorf("获取法条数据失败: %w", err)
 		}
 
 		if len(statutes) == 0 {
@@ -284,7 +296,7 @@ func (r *elasticsearchStatuteRepository) SyncFromPostgreSQL(ctx context.Context,
 
 		// 批量索引到ES
 		if err := r.BulkIndexDocuments(ctx, esDocs); err != nil {
-			return fmt.Errorf("批量索引失败: %v", err)
+			return fmt.Errorf("批量索引失败: %w", err)
 		}
 
 		totalSynced += len(esDocs)
@@ -300,27 +312,27 @@ func (r *elasticsearchStatuteRepository) SyncFromPostgreSQL(ctx context.Context,
 // convertToESDocument 将数据库模型转换为ES文档
 func (r *elasticsearchStatuteRepository) convertToESDocument(statute *models.LegalStatute) *elasticsearch.LegalStatuteDocument {
 	doc := &elasticsearch.LegalStatuteDocument{
-		ID:                 statute.ID,
-		StatuteNumber:      statute.StatuteNumber,
-		Title:              statute.Title,
-		Content:            statute.Content,
-		LawName:            statute.LawName,
-		Chapter:            statute.Chapter,
-		Section:            statute.Section,
-		Part:               statute.Part,
-		EffectiveDate:      "",
-		ExpiryDate:         "",
+		ID:                  statute.ID,
+		StatuteNumber:       statute.StatuteNumber,
+		Title:               statute.Title,
+		Content:             statute.Content,
+		LawName:             statute.LawName,
+		Chapter:             statute.Chapter,
+		Section:             statute.Section,
+		Part:                statute.Part,
+		EffectiveDate:       "",
+		ExpiryDate:          "",
 		PublishingAuthority: statute.PublishingAuthority,
-		Status:             statute.Status,
-		HierarchyLevel:     statute.HierarchyLevel,
-		Tags:               statute.Tags,
-		Keywords:           statute.Keywords,
-		CreatedAt:          statute.CreatedAt.Format("2006-01-02T15:04:05Z"),
-		UpdatedAt:          statute.UpdatedAt.Format("2006-01-02T15:04:05Z"),
-		ContentLength:      len(statute.Content),
-		ViewCount:          0,
-		FavoriteCount:      0,
-		SearchWeight:       1.0,
+		Status:              statute.Status,
+		HierarchyLevel:      statute.HierarchyLevel,
+		Tags:                statute.Tags,
+		Keywords:            statute.Keywords,
+		CreatedAt:           statute.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		UpdatedAt:           statute.UpdatedAt.Format("2006-01-02T15:04:05Z"),
+		ContentLength:       len(statute.Content),
+		ViewCount:           0,
+		FavoriteCount:       0,
+		SearchWeight:        1.0,
 	}
 
 	// 处理可选字段
@@ -357,12 +369,12 @@ func (r *elasticsearchStatuteRepository) RebuildIndex(ctx context.Context, postg
 
 	// 2. 创建新索引
 	if err := r.CreateIndex(ctx); err != nil {
-		return fmt.Errorf("创建索引失败: %v", err)
+		return fmt.Errorf("创建索引失败: %w", err)
 	}
 
 	// 3. 同步数据
 	if err := r.SyncFromPostgreSQL(ctx, postgresRepo); err != nil {
-		return fmt.Errorf("同步数据失败: %v", err)
+		return fmt.Errorf("同步数据失败: %w", err)
 	}
 
 	log.Println("法条搜索索引重建完成")

@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
+
 	"law-oa-go/internal/config"
 	"law-oa-go/internal/logger"
 )
@@ -25,7 +26,7 @@ type V2SecurityMiddleware struct {
 	blacklistedIPs map[string]bool
 	whitelistedIPs map[string]bool
 	rateLimitStore map[string]*RateLimitTracker
-	mu            sync.RWMutex
+	mu             sync.RWMutex
 }
 
 // RateLimitTracker 速率限制跟踪器
@@ -55,7 +56,7 @@ func NewV2SecurityMiddleware(config *config.Config, redisClient *redis.Client) *
 // SecurityHeadersMiddleware 安全头中间件 - 基于最新OWASP推荐
 func (sm *V2SecurityMiddleware) SecurityHeadersMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-	// 防止点击劫持
+		// 防止点击劫持
 		c.Header("X-Frame-Options", "DENY")
 
 		// 防止MIME类型嗅探
@@ -124,13 +125,13 @@ func (sm *V2SecurityMiddleware) CORSMiddleware() gin.HandlerFunc {
 	switch sm.config.Environment {
 	case "production":
 		corsConfig = cors.Config{
-			AllowOrigins:     []string{"https://your-domain.com", "https://app.your-domain.com"},
-			AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
-			AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With", "X-Request-ID"},
-			ExposeHeaders:    []string{"X-Total-Count", "X-Request-ID", "X-Page-Count"},
-			AllowCredentials: true,
-			MaxAge:           12 * time.Hour,
-			AllowWildcard:    false,
+			AllowOrigins:           []string{"https://your-domain.com", "https://app.your-domain.com"},
+			AllowMethods:           []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
+			AllowHeaders:           []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With", "X-Request-ID"},
+			ExposeHeaders:          []string{"X-Total-Count", "X-Request-ID", "X-Page-Count"},
+			AllowCredentials:       true,
+			MaxAge:                 12 * time.Hour,
+			AllowWildcard:          false,
 			AllowBrowserExtensions: false,
 			AllowWebSockets:        false,
 			AllowFiles:             false,
@@ -139,13 +140,13 @@ func (sm *V2SecurityMiddleware) CORSMiddleware() gin.HandlerFunc {
 		}
 	case "development":
 		corsConfig = cors.Config{
-			AllowOrigins:     []string{"http://localhost:3000", "http://localhost:3003", "http://localhost:8080"},
-			AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
-			AllowHeaders:     []string{"*"},
-			ExposeHeaders:    []string{"*"},
-			AllowCredentials: false,
-			MaxAge:           2 * time.Hour,
-			AllowWildcard:    true,
+			AllowOrigins:           []string{"http://localhost:3000", "http://localhost:3003", "http://localhost:8080"},
+			AllowMethods:           []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
+			AllowHeaders:           []string{"*"},
+			ExposeHeaders:          []string{"*"},
+			AllowCredentials:       false,
+			MaxAge:                 2 * time.Hour,
+			AllowWildcard:          true,
 			AllowBrowserExtensions: true,
 			AllowWebSockets:        true,
 			AllowFiles:             true,
@@ -178,7 +179,7 @@ func (sm *V2SecurityMiddleware) RequestValidationMiddleware() gin.HandlerFunc {
 			})
 			c.Abort()
 			return
-			}
+		}
 
 		// 验证URL长度
 		if len(c.Request.URL.RequestURI()) > 2048 {
@@ -318,9 +319,9 @@ func (sm *V2SecurityMiddleware) RateLimitingMiddleware(maxRequests int, window t
 		// 检查是否超过限制
 		if tracker.Count > maxRequests {
 			sm.logSecurityEvent("rate_limit_exceeded", c, map[string]interface{}{
-				"ip":         clientIP,
-				"count":      tracker.Count,
-				"limit":      maxRequests,
+				"ip":    clientIP,
+				"count": tracker.Count,
+				"limit": maxRequests,
 			})
 
 			c.Header("X-RateLimit-Limit", fmt.Sprintf("%d", maxRequests))
@@ -361,11 +362,7 @@ func (sm *V2SecurityMiddleware) InputSanitizationMiddleware() gin.HandlerFunc {
 			c.Params[i].Value = sm.sanitizeInput(param.Value)
 		}
 
-		// 如果有POST数据，进行基本清理
-		if c.Request.Body != nil && c.Request.ContentLength > 0 {
-			// 注意：这里只是示例，实际应该基于Content-Type处理
-			// 因为中间件不应该修改请求体
-		}
+		// 中间件不修改请求体（原空转判断已删除；基于 Content-Type 的清理见债台账）
 
 		c.Next()
 	}
@@ -469,13 +466,13 @@ func (sm *V2SecurityMiddleware) validateHeadersSize(c *gin.Context) error {
 
 func (sm *V2SecurityMiddleware) validateContentType(c *gin.Context) error {
 	// 对于POST/PUT请求，验证Content-Type
-	if c.Request.Method == "POST" || c.Request.Method == "PUT" {
+	if c.Request.Method == http.MethodPost || c.Request.Method == http.MethodPut {
 		contentType := c.GetHeader("Content-Type")
 		if contentType == "" {
 			return fmt.Errorf("Content-Type header is required for %s requests", c.Request.Method)
 		}
 
-	// 检查是否是允许的Content-Type
+		// 检查是否是允许的Content-Type
 		allowedTypes := []string{
 			"application/json",
 			"application/x-www-form-urlencoded",
@@ -585,10 +582,10 @@ func (sm *V2SecurityMiddleware) GetSecurityStats() map[string]interface{} {
 	defer sm.mu.RUnlock()
 
 	return map[string]interface{}{
-		"whitelisted_ips_count":   len(sm.whitelistedIPs),
-		"blacklisted_ips_count":   len(sm.blacklistedIPs),
-		"rate_limit_entries":       len(sm.rateLimitStore),
-		"trusted_proxies_count":    len(sm.trustedProxies),
-		"timestamp":               time.Now().Unix(),
+		"whitelisted_ips_count": len(sm.whitelistedIPs),
+		"blacklisted_ips_count": len(sm.blacklistedIPs),
+		"rate_limit_entries":    len(sm.rateLimitStore),
+		"trusted_proxies_count": len(sm.trustedProxies),
+		"timestamp":             time.Now().Unix(),
 	}
 }

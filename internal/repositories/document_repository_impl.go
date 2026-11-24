@@ -3,10 +3,12 @@ package repositories
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/models"
 )
 
@@ -231,7 +233,7 @@ func (r *documentRepository) GetStats(ctx context.Context, viewerUserID uint) (*
 		Group("category").
 		Rows()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询原始行: %w", err)
 	}
 	defer rows.Close()
 
@@ -249,6 +251,9 @@ func (r *documentRepository) GetStats(ctx context.Context, viewerUserID uint) (*
 			Count    int64
 		}{category, count})
 	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("读取 Redis 结果: %w", err)
+	}
 
 	// 按实体类型统计（独立 session 复用 scope 条件）
 	entityRows, err := applyEthicalWallScope(r.db.WithContext(ctx).Model(&models.Document{}), viewerUserID).
@@ -256,7 +261,7 @@ func (r *documentRepository) GetStats(ctx context.Context, viewerUserID uint) (*
 		Group("entity_type").
 		Rows()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询原始行: %w", err)
 	}
 	defer entityRows.Close()
 
@@ -273,6 +278,9 @@ func (r *documentRepository) GetStats(ctx context.Context, viewerUserID uint) (*
 			EntityType string
 			Count      int64
 		}{entityType, count})
+	}
+	if err := entityRows.Err(); err != nil {
+		return nil, fmt.Errorf("读取 Redis 结果: %w", err)
 	}
 
 	// 最近上传统计（过去7天）

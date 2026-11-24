@@ -111,12 +111,19 @@ func (s *entityService) CreateEntity(ctx context.Context, entity *models.Entity)
 		}
 	}
 
-	return s.entityRepo.Create(ctx, entity)
+	if err := s.entityRepo.Create(ctx, entity); err != nil {
+		return fmt.Errorf("创建实体: %w", err)
+	}
+	return nil
 }
 
 // GetEntity 获取实体
 func (s *entityService) GetEntity(ctx context.Context, id uint) (*models.Entity, error) {
-	return s.entityRepo.GetByID(ctx, id)
+	callRes1, err := s.entityRepo.GetByID(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("查询实体: %w", err)
+	}
+	return callRes1, nil
 }
 
 // UpdateEntity 更新实体
@@ -125,7 +132,7 @@ func (s *entityService) UpdateEntity(ctx context.Context, id uint, updates map[s
 	if newName, ok := updates["name"].(string); ok {
 		entity, err := s.entityRepo.GetByID(ctx, id)
 		if err != nil {
-			return err
+			return fmt.Errorf("查询实体: %w", err)
 		}
 		if entity.Name != newName {
 			history := &models.EntityNameHistory{
@@ -139,12 +146,18 @@ func (s *entityService) UpdateEntity(ctx context.Context, id uint, updates map[s
 		}
 	}
 
-	return s.entityRepo.Update(ctx, id, updates)
+	if err := s.entityRepo.Update(ctx, id, updates); err != nil {
+		return fmt.Errorf("更新实体: %w", err)
+	}
+	return nil
 }
 
 // DeleteEntity 删除实体
 func (s *entityService) DeleteEntity(ctx context.Context, id uint) error {
-	return s.entityRepo.Delete(ctx, id)
+	if err := s.entityRepo.Delete(ctx, id); err != nil {
+		return fmt.Errorf("删除实体: %w", err)
+	}
+	return nil
 }
 
 // ListEntities 列出实体
@@ -163,7 +176,11 @@ func (s *entityService) ListEntities(ctx context.Context, params *EntityListPara
 		conditions["name LIKE"] = "%" + params.Search + "%"
 	}
 
-	return s.entityRepo.List(ctx, offset, params.PageSize, conditions)
+	callRes1, callRes2, err := s.entityRepo.List(ctx, offset, params.PageSize, conditions)
+	if err != nil {
+		return nil, 0, fmt.Errorf("查询列表实体: %w", err)
+	}
+	return callRes1, callRes2, nil
 }
 
 // SearchEntities 搜索实体
@@ -222,7 +239,7 @@ func (s *entityService) SearchEntities(ctx context.Context, params *EntitySearch
 func (s *entityService) FindByName(ctx context.Context, name string) (*models.Entity, error) {
 	entities, err := s.entityRepo.SearchByName(ctx, name, 1)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("搜索实体: %w", err)
 	}
 	if len(entities) == 0 {
 		return nil, repositories.ErrRecordNotFound
@@ -234,7 +251,7 @@ func (s *entityService) FindByName(ctx context.Context, name string) (*models.En
 func (s *entityService) FindByIdentityNumber(ctx context.Context, identityNumber string) (*models.Entity, error) {
 	entities, err := s.entityRepo.SearchByIdentityNumber(ctx, identityNumber, 1)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("搜索实体: %w", err)
 	}
 	if len(entities) == 0 {
 		return nil, repositories.ErrRecordNotFound
@@ -267,12 +284,20 @@ func (s *entityService) AddRelation(ctx context.Context, relation *models.Entity
 
 // GetRelations 获取关联关系
 func (s *entityService) GetRelations(ctx context.Context, entityID uint, activeOnly bool) ([]*models.EntityRelation, error) {
-	return s.entityRepo.GetRelations(ctx, entityID, activeOnly)
+	callRes1, err := s.entityRepo.GetRelations(ctx, entityID, activeOnly)
+	if err != nil {
+		return nil, fmt.Errorf("查询实体: %w", err)
+	}
+	return callRes1, nil
 }
 
 // GetRelatedEntities 获取关联实体
 func (s *entityService) GetRelatedEntities(ctx context.Context, entityID uint, relationType models.RelationType, maxDepth int) ([]*models.Entity, error) {
-	return s.entityRepo.GetRelatedEntities(ctx, entityID, relationType, maxDepth)
+	callRes1, err := s.entityRepo.GetRelatedEntities(ctx, entityID, relationType, maxDepth)
+	if err != nil {
+		return nil, fmt.Errorf("查询实体: %w", err)
+	}
+	return callRes1, nil
 }
 
 // RemoveRelation 移除关联关系
@@ -283,37 +308,60 @@ func (s *entityService) RemoveRelation(ctx context.Context, relationID uint) err
 
 // AddNameHistory 添加名称历史
 func (s *entityService) AddNameHistory(ctx context.Context, history *models.EntityNameHistory) error {
-	return s.entityRepo.AddNameHistory(ctx, history)
+	if err := s.entityRepo.AddNameHistory(ctx, history); err != nil {
+		return fmt.Errorf("添加实体: %w", err)
+	}
+	return nil
 }
 
 // GetNameHistory 获取名称历史
 func (s *entityService) GetNameHistory(ctx context.Context, entityID uint) ([]*models.EntityNameHistory, error) {
-	return s.entityRepo.GetNameHistory(ctx, entityID)
+	callRes1, err := s.entityRepo.GetNameHistory(ctx, entityID)
+	if err != nil {
+		return nil, fmt.Errorf("查询实体: %w", err)
+	}
+	return callRes1, nil
 }
 
 // AddCaseParty 添加案件当事人
 func (s *entityService) AddCaseParty(ctx context.Context, party *models.CaseParty) error {
-	return s.entityRepo.AddCaseParty(ctx, party)
+	if err := s.entityRepo.AddCaseParty(ctx, party); err != nil {
+		return fmt.Errorf("添加实体: %w", err)
+	}
+	return nil
 }
 
 // GetCaseParties 获取案件当事人
 func (s *entityService) GetCaseParties(ctx context.Context, caseID uint) ([]*models.CaseParty, error) {
-	return s.entityRepo.GetCaseParties(ctx, caseID)
+	callRes1, err := s.entityRepo.GetCaseParties(ctx, caseID)
+	if err != nil {
+		return nil, fmt.Errorf("查询实体: %w", err)
+	}
+	return callRes1, nil
 }
 
 // RemoveCaseParty 移除案件当事人
 func (s *entityService) RemoveCaseParty(ctx context.Context, caseID, entityID uint) error {
-	return s.entityRepo.RemoveCaseParty(ctx, caseID, entityID)
+	if err := s.entityRepo.RemoveCaseParty(ctx, caseID, entityID); err != nil {
+		return fmt.Errorf("删除实体: %w", err)
+	}
+	return nil
 }
 
 // BatchCreateEntities 批量创建实体
 func (s *entityService) BatchCreateEntities(ctx context.Context, entities []*models.Entity) error {
-	return s.entityRepo.BatchCreate(ctx, entities)
+	if err := s.entityRepo.BatchCreate(ctx, entities); err != nil {
+		return fmt.Errorf("BatchCreate实体: %w", err)
+	}
+	return nil
 }
 
 // BatchCreateRelations 批量创建关联关系
 func (s *entityService) BatchCreateRelations(ctx context.Context, relations []*models.EntityRelation) error {
-	return s.entityRepo.BatchCreateRelations(ctx, relations)
+	if err := s.entityRepo.BatchCreateRelations(ctx, relations); err != nil {
+		return fmt.Errorf("BatchCreateRelations实体: %w", err)
+	}
+	return nil
 }
 
 // FindPotentialConflicts 查找潜在冲突
@@ -327,7 +375,7 @@ func (s *entityService) FindPotentialConflicts(ctx context.Context, entityID uin
 	// 获取实体信息
 	entity, err := s.entityRepo.GetByID(ctx, entityID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询实体: %w", err)
 	}
 
 	// 1. 按名称搜索

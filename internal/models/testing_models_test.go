@@ -136,11 +136,11 @@ func TestTestingModels(t *testing.T) {
 	t.Run("UserEvent and UserSession", func(t *testing.T) {
 		// Create user session
 		session := &UserSession{
-			UserID:      "user123",
-			StartedAt:   time.Now(),
-			Browser:     "Chrome",
-			DeviceType:  "desktop",
-			IPAddress:   "192.168.1.1",
+			UserID:     "user123",
+			StartedAt:  time.Now(),
+			Browser:    "Chrome",
+			DeviceType: "desktop",
+			IPAddress:  "192.168.1.1",
 		}
 		err := db.Create(session).Error
 		if err != nil {
@@ -267,11 +267,11 @@ func TestTestingModels(t *testing.T) {
 	t.Run("AnalyticsReport with JSON data", func(t *testing.T) {
 		reportData := map[string]interface{}{
 			"summary": map[string]interface{}{
-				"total_tests":    10,
-				"passed_tests":   8,
-				"failed_tests":   2,
-				"success_rate":   0.8,
-				"avg_duration":   150.5,
+				"total_tests":  10,
+				"passed_tests": 8,
+				"failed_tests": 2,
+				"success_rate": 0.8,
+				"avg_duration": 150.5,
 			},
 			"details": []map[string]interface{}{
 				{
@@ -288,11 +288,11 @@ func TestTestingModels(t *testing.T) {
 		}
 
 		report := &AnalyticsReport{
-			ReportType: ReportTypeTestSummary,
-			Title:      "Daily Test Report",
+			ReportType:  ReportTypeTestSummary,
+			Title:       "Daily Test Report",
 			Description: "Automated daily test execution report",
-			Data:       reportData,
-			Status:     ReportStatusCompleted,
+			Data:        reportData,
+			Status:      ReportStatusCompleted,
 			GeneratedBy: "system",
 			GeneratedAt: &[]time.Time{time.Now()}[0],
 		}

@@ -62,14 +62,14 @@ func DefaultMiddlewareConfig() *MiddlewareConfig {
 			"/favicon.ico",
 			"/robots.txt",
 		},
-		LogRequestBody:      false,
-		LogResponseBody:     false,
-		MaxRequestBodySize:  1024 * 1024, // 1MB
-		MaxResponseBodySize: 1024 * 1024, // 1MB
-		LogUserAgent:        true,
-		LogClientIP:         true,
+		LogRequestBody:       false,
+		LogResponseBody:      false,
+		MaxRequestBodySize:   1024 * 1024, // 1MB
+		MaxResponseBodySize:  1024 * 1024, // 1MB
+		LogUserAgent:         true,
+		LogClientIP:          true,
 		SlowRequestThreshold: time.Second,
-		SpanNameFunc:        defaultSpanNameFunc,
+		SpanNameFunc:         defaultSpanNameFunc,
 	}
 }
 
@@ -87,7 +87,11 @@ type responseBodyWriter struct {
 
 func (r responseBodyWriter) Write(b []byte) (int, error) {
 	r.body.Write(b)
-	return r.ResponseWriter.Write(b)
+	callRes1, err := r.ResponseWriter.Write(b)
+	if err != nil {
+		return 0, fmt.Errorf("写入: %w", err)
+	}
+	return callRes1, nil
 }
 
 // TracingMiddleware 创建追踪中间件
@@ -213,7 +217,7 @@ func TracingMiddleware(serviceName string, config *MiddlewareConfig) gin.Handler
 		}
 
 		// 设置span状态
-		if c.Errors != nil && len(c.Errors) > 0 {
+		if len(c.Errors) > 0 {
 			// 有错误
 			SetSpanStatus(span, codes.Error, c.Errors.String())
 			for i := range c.Errors {

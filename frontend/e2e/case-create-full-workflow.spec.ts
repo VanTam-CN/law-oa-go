@@ -3,7 +3,7 @@
  */
 
 import { test, expect } from '@playwright/test'
-import { seedAuthenticatedUser, waitForAppShell, waitForPageLoad } from './utils/test-helpers'
+import { selectIntakeOption, seedAuthenticatedUser, waitForAppShell, waitForPageLoad } from './utils/test-helpers'
 
 test.describe('立案工作流：冲突检查留在当前上下文', () => {
   test.beforeEach(async ({ page }) => {
@@ -24,20 +24,16 @@ test.describe('立案工作流：冲突检查留在当前上下文', () => {
 
     // Step 0 基本信息：案件类型
     const caseTypeField = page.locator('.batch-field').filter({ hasText: /^案件类型/ })
-    await caseTypeField.locator('.ant-select-selector').click()
-    await page.getByTitle('商事诉讼').click()
+    await selectIntakeOption(caseTypeField.getByRole('combobox'), '商事诉讼')
 
     const businessAreaField = page.locator('.batch-field').filter({ hasText: /^业务领域/ })
-    await businessAreaField.locator('.ant-select-selector').click()
-    await page.getByTitle('公司与并购').click()
+    await selectIntakeOption(businessAreaField.getByRole('combobox'), '公司与并购')
 
     const subAreaField = page.locator('.batch-field').filter({ hasText: /^子领域/ })
-    await subAreaField.locator('.ant-select-selector').click()
-    await page.getByTitle('投资与融资').click()
+    await selectIntakeOption(subAreaField.getByRole('combobox'), '投资与融资')
 
     // Step 0 当事人：选择客户
-    await page.locator('.batch-party-card.green .ant-select-selector').click()
-    await page.getByTitle('上海示例科技有限公司').click()
+    await selectIntakeOption(page.locator('.batch-party-card.green').getByRole('combobox'), '上海示例科技有限公司')
 
     // Step 0 当事人：对方当事人
     await page.getByPlaceholder('输入对方当事人名称').fill('测试对方当事人')
@@ -49,8 +45,7 @@ test.describe('立案工作流：冲突检查留在当前上下文', () => {
 
     // Step 2：选择负责律师
     const lawyerField = page.locator('.batch-field').filter({ hasText: /^负责律师/ })
-    await lawyerField.locator('.ant-select-selector').click()
-    await page.getByTitle(/张律师/).first().click()
+    await selectIntakeOption(lawyerField.getByRole('combobox'), '张律师 · 争议解决部')
 
     // 通过 stepper 回到 step 1（利益冲突检查）
     await stepper.nth(1).click()
@@ -98,15 +93,13 @@ test.describe('立案工作流：冲突检查留在当前上下文', () => {
     const stepper = page.locator('.batch-stepper button')
 
     // 只选择客户，不填案件名称和对方当事人
-    await page.locator('.batch-party-card.green .ant-select-selector').click()
-    await page.getByTitle('上海示例科技有限公司').click()
+    await selectIntakeOption(page.locator('.batch-party-card.green').getByRole('combobox'), '上海示例科技有限公司')
 
     // 选择负责律师
     await stepper.nth(2).click()
     await expect(page.getByRole('heading', { name: '团队与费用' })).toBeVisible()
     const lawyerField = page.locator('.batch-field').filter({ hasText: /^负责律师/ })
-    await lawyerField.locator('.ant-select-selector').click()
-    await page.getByTitle(/张律师/).first().click()
+    await selectIntakeOption(lawyerField.getByRole('combobox'), '张律师 · 争议解决部')
 
     // 回到冲突检查
     await stepper.nth(1).click()

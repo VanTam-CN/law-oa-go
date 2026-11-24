@@ -119,13 +119,13 @@ func normalizeConflictSubjects(request *models.ConflictCheckRequest) []models.Co
 			}
 		}
 		cleanAliases := make([]string, 0, len(aliases))
-		seenAliases := map[string]struct{}{}
+		aliasLabels := map[string]string{}
 		for _, alias := range aliases {
 			if cleaned := normalizeLegalSubjectName(alias, entityType); cleaned != "" && cleaned != normalized {
-				if _, exists := seenAliases[cleaned]; exists {
+				if _, exists := aliasLabels[cleaned]; exists {
 					continue
 				}
-				seenAliases[cleaned] = struct{}{}
+				aliasLabels[cleaned] = strings.TrimSpace(alias)
 				cleanAliases = append(cleanAliases, cleaned)
 				identityKeys = append(identityKeys, "name:"+cleaned)
 			}
@@ -156,6 +156,7 @@ func normalizeConflictSubjects(request *models.ConflictCheckRequest) []models.Co
 			for _, alias := range cleanAliases {
 				if alias != existing.NormalizedName && !containsString(existing.Aliases, alias) {
 					existing.Aliases = append(existing.Aliases, alias)
+					existing.AliasLabels[alias] = aliasLabels[alias]
 				}
 			}
 			for _, key := range identityKeys {
@@ -167,7 +168,7 @@ func normalizeConflictSubjects(request *models.ConflictCheckRequest) []models.Co
 		index := len(subjects)
 		subjects = append(subjects, models.ConflictNormalizedSubject{
 			OriginalName: strings.TrimSpace(name), NormalizedName: normalized, Role: role,
-			EntityType: entityType, Identifiers: cleanIdentifiers, Aliases: cleanAliases,
+			EntityType: entityType, Identifiers: cleanIdentifiers, Aliases: cleanAliases, AliasLabels: aliasLabels,
 		})
 		subjectAuthority = append(subjectAuthority, authority)
 		for _, key := range identityKeys {
@@ -420,7 +421,7 @@ func (s *conflictDetectionService) ReviewConflict(ctx context.Context, checkID, 
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ReviewConflict 事务失败: %w", err)
 	}
 	// The original check evidence is immutable. The review is stored in its
 	// own append-only row and is read through GetConflictReview; do not rewrite

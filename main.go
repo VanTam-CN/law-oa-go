@@ -23,6 +23,7 @@ package main
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
 	"log"
 	"log/slog"
@@ -38,6 +39,7 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"gorm.io/gorm"
+
 	_ "law-oa-go/docs" // Swagger docs
 	"law-oa-go/internal/cache"
 	"law-oa-go/internal/config"
@@ -61,18 +63,26 @@ func main() {
 		return
 	}
 
+	if err := run(); err != nil {
+		log.Fatalf("服务器启动失败: %v", err)
+	}
+}
+
+// run 承载服务完整启动与优雅关闭生命周期，返回 error 交由 main 统一退出，
+// 避免启动期 log.Fatal 跳过 defer（gocritic exitAfterDefer 门禁）。
+func run() error {
 	// 加载配置
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatal("加载配置失败:", err)
+		return fmt.Errorf("加载配置失败: %w", err)
 	}
 	if err := cfg.ValidateProductionReadiness(); err != nil {
-		log.Fatal("生产环境门禁校验失败:", err)
+		return fmt.Errorf("生产环境门禁校验失败: %w", err)
 	}
 
 	// 初始化优化组件
 	if err := database.InitOptimizedComponents(cfg); err != nil {
-		log.Fatal("性能优化组件初始化失败:", err)
+		return fmt.Errorf("性能优化组件初始化失败: %w", err)
 	}
 
 	// 初始化全局缓存服务（用于中间件）- 使用数据库模块的缓存服务
@@ -113,7 +123,7 @@ func main() {
 	}
 
 	if err := metrics.InitDefaultMonitorService(monitorConfig); err != nil {
-		log.Fatal("监控服务初始化失败:", err)
+		return fmt.Errorf("监控服务初始化失败: %w", err)
 	}
 
 	// 获取监控服务实例
@@ -194,12 +204,12 @@ func main() {
 	db := database.GetOptimizedDB().DB
 	if cfg.IsProduction() {
 		if err := validateProductionSchema(db); err != nil {
-			log.Fatal("生产数据库结构门禁失败:", err)
+			return fmt.Errorf("生产数据库结构门禁失败: %w", err)
 		}
 	}
-	router.Init(app,
-		db,
-		database.GetRedisClient())
+	if err := router.Init(app, db, database.GetRedisClient()); err != nil {
+		return fmt.Errorf("路由装配失败: %w", err)
+	}
 
 	// 注册集成测试路由（仅开发环境）
 	if !cfg.IsProduction() {
@@ -504,18 +514,23 @@ func main() {
 		ReadHeaderTimeout: 20 * time.Second, // 防止 Slowloris 攻击
 	}
 
-	// 启动服务器
+	// 启动服务器；启动失败经 channel 回传给 run 的主流程统一处理
+	serverErr := make(chan error, 1)
 	go func() {
 		log.Printf("服务器启动在端口 %s", cfg.Port)
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatal("服务器启动失败:", err)
+		if err := server.ListenAndServe(); err != nil && !stderrors.Is(err, http.ErrServerClosed) {
+			serverErr <- fmt.Errorf("HTTP 服务器监听失败: %w", err)
 		}
 	}()
 
-	// 等待中断信号
+	// 等待中断信号或启动失败
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
+	select {
+	case err := <-serverErr:
+		return err
+	case <-quit:
+	}
 	log.Println("正在关闭服务器...")
 
 	// 优雅关闭
@@ -523,15 +538,16 @@ func main() {
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
-		log.Fatal("服务器关闭失败:", err)
+		return fmt.Errorf("服务器关闭失败: %w", err)
 	}
 
 	// 关闭数据库连接
 	if err := database.Close(); err != nil {
-		log.Fatal("数据库关闭失败:", err)
+		return fmt.Errorf("数据库关闭失败: %w", err)
 	}
 
 	log.Println("服务器已关闭")
+	return nil
 }
 
 // runHealthcheck is used by the scratch production image. It must not load
@@ -551,7 +567,7 @@ func runHealthcheck() error {
 	if !strings.HasPrefix(path, "/health/") {
 		return fmt.Errorf("HEALTHCHECK_PATH must be a local health path")
 	}
-	request, err := http.NewRequest(http.MethodGet, "http://127.0.0.1:"+port+path, nil)
+	request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://127.0.0.1:"+port+path, nil)
 	if err != nil {
 		return fmt.Errorf("构造健康检查请求失败: %w", err)
 	}
@@ -663,7 +679,7 @@ func validateProductionSchema(db *gorm.DB) error {
 		return fmt.Errorf("生产 schema 版本不受支持: %s；期望 %s", schemaVersion, database.ProductionSchemaVersion)
 	}
 	if err := database.ValidateProductionSchemaContract(db); err != nil {
-		return err
+		return fmt.Errorf("校验生产 schema 契约: %w", err)
 	}
 	return nil
 }

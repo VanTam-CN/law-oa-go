@@ -134,7 +134,10 @@ func (h *OnlyOfficeHandler) requireCaseSubject(ctx context.Context, document *mo
 	if h.subjectRecheck == nil {
 		return services.NewSubjectWorkflowError("SUBJECT_GATE_UNAVAILABLE", "案件文档受控动作门禁未初始化，已阻止操作")
 	}
-	return h.subjectRecheck.RequireEffectiveSubject(ctx, document.EntityID, action)
+	if err := h.subjectRecheck.RequireEffectiveSubject(ctx, document.EntityID, action); err != nil {
+		return fmt.Errorf("校验主体复核: %w", err)
+	}
+	return nil
 }
 
 // EditorConfig OnlyOffice 编辑器配置
@@ -580,7 +583,11 @@ func (h *OnlyOfficeHandler) saveDocument(ctx context.Context, documentID uint, d
 	}
 
 	// 从 OnlyOffice 下载编辑后的文档
-	resp, err := h.httpClient.Get(downloadURL)
+	downloadReq, err := http.NewRequestWithContext(ctx, http.MethodGet, downloadURL, nil)
+	if err != nil {
+		return fmt.Errorf("构造下载请求失败: %w", err)
+	}
+	resp, err := h.httpClient.Do(downloadReq)
 	if err != nil {
 		return fmt.Errorf("failed to download from OnlyOffice: %w", err)
 	}
@@ -593,7 +600,7 @@ func (h *OnlyOfficeHandler) saveDocument(ctx context.Context, documentID uint, d
 
 	// 创建版本备份目录
 	versionDir := filepath.Join(h.storageDir, "versions", fmt.Sprintf("doc_%d", documentID))
-	if err := os.MkdirAll(versionDir, 0755); err != nil {
+	if err := os.MkdirAll(versionDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create version directory: %w", err)
 	}
 
@@ -715,7 +722,7 @@ func (h *OnlyOfficeHandler) ConvertDocument(c *gin.Context) {
 	convertURL := fmt.Sprintf("%s/CoAuthoring/CommandService.ashx", h.onlyOfficeURL)
 	reqBody, _ := json.Marshal(convertReq)
 
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", convertURL, strings.NewReader(string(reqBody)))
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, convertURL, strings.NewReader(string(reqBody)))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to create request: %v", err)})
 		return
@@ -760,10 +767,11 @@ func (h *OnlyOfficeHandler) ConvertDocument(c *gin.Context) {
 
 	// 如果 OnlyOffice 直接返回结果（同步）
 	if convertResp.Status == 3 && convertResp.URL != "" {
-		go h.processConversionResult(taskID, &convertResp)
+		// detach goroutine：脱离请求生命周期，使用 Background
+		go h.processConversionResult(context.Background(), taskID, &convertResp)
 	} else if convertResp.Status == 6 {
 		// 异步模式，需要轮询
-		go h.pollConversionStatus(taskID, key)
+		go h.pollConversionStatus(context.Background(), taskID, key)
 	} else if convertResp.Status >= 4 {
 		task.Status = ConversionStatusError
 		task.Error = fmt.Sprintf("Conversion failed with status %d", convertResp.Status)
@@ -866,7 +874,7 @@ func (h *OnlyOfficeHandler) DownloadConverted(c *gin.Context) {
 }
 
 // processConversionResult 处理转换结果（下载转换后的文件）
-func (h *OnlyOfficeHandler) processConversionResult(taskID string, resp *ConversionResponse) {
+func (h *OnlyOfficeHandler) processConversionResult(ctx context.Context, taskID string, resp *ConversionResponse) {
 	h.conversionMu.Lock()
 	task, exists := h.conversionTasks[taskID]
 	if !exists {
@@ -907,7 +915,15 @@ func (h *OnlyOfficeHandler) processConversionResult(taskID string, resp *Convers
 	}
 
 	// 下载转换后的文件
-	httpResp, err := h.httpClient.Get(resp.URL)
+	downloadReq, err := http.NewRequestWithContext(ctx, http.MethodGet, resp.URL, nil)
+	if err != nil {
+		h.conversionMu.Lock()
+		task.Status = ConversionStatusError
+		task.Error = fmt.Sprintf("Failed to build download request: %v", err)
+		h.conversionMu.Unlock()
+		return
+	}
+	httpResp, err := h.httpClient.Do(downloadReq)
 	if err != nil {
 		h.conversionMu.Lock()
 		task.Status = ConversionStatusError
@@ -927,7 +943,7 @@ func (h *OnlyOfficeHandler) processConversionResult(taskID string, resp *Convers
 
 	// 保存转换后的文件
 	convertDir := filepath.Join(h.storageDir, "converted", fmt.Sprintf("doc_%d", task.DocumentID))
-	if err := os.MkdirAll(convertDir, 0755); err != nil {
+	if err := os.MkdirAll(convertDir, 0o755); err != nil {
 		h.conversionMu.Lock()
 		task.Status = ConversionStatusError
 		task.Error = fmt.Sprintf("Failed to create directory: %v", err)
@@ -977,7 +993,7 @@ func (h *OnlyOfficeHandler) processConversionResult(taskID string, resp *Convers
 }
 
 // pollConversionStatus 轮询异步转换状态
-func (h *OnlyOfficeHandler) pollConversionStatus(taskID string, key string) {
+func (h *OnlyOfficeHandler) pollConversionStatus(ctx context.Context, taskID string, key string) {
 	maxRetries := 30
 	interval := 2 * time.Second
 
@@ -985,7 +1001,11 @@ func (h *OnlyOfficeHandler) pollConversionStatus(taskID string, key string) {
 		time.Sleep(interval)
 
 		checkURL := fmt.Sprintf("%s/CoAuthoring/CommandService.ashx?key=%s", h.onlyOfficeURL, key)
-		resp, err := h.httpClient.Get(checkURL)
+		checkReq, err := http.NewRequestWithContext(ctx, http.MethodGet, checkURL, nil)
+		if err != nil {
+			continue
+		}
+		resp, err := h.httpClient.Do(checkReq)
 		if err != nil {
 			continue
 		}
@@ -1002,7 +1022,7 @@ func (h *OnlyOfficeHandler) pollConversionStatus(taskID string, key string) {
 		}
 
 		if result.Status == 3 && result.URL != "" {
-			h.processConversionResult(taskID, &result)
+			h.processConversionResult(ctx, taskID, &result)
 			return
 		}
 
@@ -1059,7 +1079,7 @@ func (h *OnlyOfficeHandler) parseDocKey(key string) (uint, error) {
 	}
 	documentID, err := strconv.Atoi(parts[0])
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("解析整数: %w", err)
 	}
 	return uint(documentID), nil
 }
@@ -1109,10 +1129,14 @@ func (h *OnlyOfficeHandler) validateCallbackPayload(payload []byte, token string
 func canonicalCallbackSigningPayload(payload []byte) ([]byte, error) {
 	var body map[string]interface{}
 	if err := json.Unmarshal(payload, &body); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("解析 JSON: %w", err)
 	}
 	delete(body, "token")
-	return json.Marshal(body)
+	callRes1, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("序列化 JSON: %w", err)
+	}
+	return callRes1, nil
 }
 
 // validateCallbackToken 验证回调 token（兼容 header 传递方式）
@@ -1146,16 +1170,19 @@ func (h *OnlyOfficeHandler) GenerateCallbackToken(payload string) string {
 func copyFile(src, dst string) error {
 	srcFile, err := os.Open(src)
 	if err != nil {
-		return err
+		return fmt.Errorf("打开文件: %w", err)
 	}
 	defer srcFile.Close()
 
 	dstFile, err := os.Create(dst)
 	if err != nil {
-		return err
+		return fmt.Errorf("创建文件: %w", err)
 	}
 	defer dstFile.Close()
 
 	_, err = io.Copy(dstFile, srcFile)
-	return err
+	if err != nil {
+		return fmt.Errorf("复制数据流: %w", err)
+	}
+	return nil
 }

@@ -120,7 +120,7 @@ func (s *approvalDelegationService) CreateDelegation(ctx context.Context, req *C
 	}
 
 	if err := s.delegationRepo.Create(ctx, delegation); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("创建审批委托: %w", err)
 	}
 
 	return delegation, nil
@@ -128,22 +128,29 @@ func (s *approvalDelegationService) CreateDelegation(ctx context.Context, req *C
 
 // GetActiveDelegations 获取活跃的代理配置
 func (s *approvalDelegationService) GetActiveDelegations(ctx context.Context, delegatorID string) ([]*models.ApprovalDelegation, error) {
-	return s.delegationRepo.GetActiveDelegations(ctx, delegatorID)
+	callRes1, err := s.delegationRepo.GetActiveDelegations(ctx, delegatorID)
+	if err != nil {
+		return nil, fmt.Errorf("查询审批委托: %w", err)
+	}
+	return callRes1, nil
 }
 
 // RevokeDelegation 撤销代理配置
 func (s *approvalDelegationService) RevokeDelegation(ctx context.Context, id string) error {
 	delegation, err := s.delegationRepo.GetByID(ctx, id)
 	if err != nil {
-		return err
+		return fmt.Errorf("查询审批委托: %w", err)
 	}
 	if delegation == nil {
 		return fmt.Errorf("代理配置不存在")
 	}
 
-	return s.delegationRepo.Update(ctx, id, map[string]interface{}{
+	if err := s.delegationRepo.Update(ctx, id, map[string]interface{}{
 		"is_active": false,
-	})
+	}); err != nil {
+		return fmt.Errorf("更新审批委托: %w", err)
+	}
+	return nil
 }
 
 // GetEffectiveApprover 获取有效的审批人（考虑代理替换）
@@ -159,7 +166,7 @@ func (s *approvalDelegationService) GetEffectiveApprover(ctx context.Context, or
 	for i := 0; i < maxDepth; i++ {
 		delegation, err := s.delegationRepo.GetValidDelegate(ctx, currentID)
 		if err != nil {
-			return originalApproverID, "", false, err
+			return originalApproverID, "", false, fmt.Errorf("查询审批委托: %w", err)
 		}
 		if delegation == nil {
 			// 没有更多代理，返回当前找到的审批人
@@ -176,10 +183,18 @@ func (s *approvalDelegationService) GetEffectiveApprover(ctx context.Context, or
 
 // ListDelegations 列表查询代理配置
 func (s *approvalDelegationService) ListDelegations(ctx context.Context, params *repositories.DelegationListParams) ([]*models.ApprovalDelegation, int64, error) {
-	return s.delegationRepo.List(ctx, params)
+	callRes1, callRes2, err := s.delegationRepo.List(ctx, params)
+	if err != nil {
+		return nil, 0, fmt.Errorf("查询列表审批委托: %w", err)
+	}
+	return callRes1, callRes2, nil
 }
 
 // GetDelegation 获取代理配置详情
 func (s *approvalDelegationService) GetDelegation(ctx context.Context, id string) (*models.ApprovalDelegation, error) {
-	return s.delegationRepo.GetByID(ctx, id)
+	callRes1, err := s.delegationRepo.GetByID(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("查询审批委托: %w", err)
+	}
+	return callRes1, nil
 }

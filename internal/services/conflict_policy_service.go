@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
 	"law-oa-go/internal/models"
 )
 
@@ -110,7 +112,7 @@ func (s *ConflictPolicyService) CreatePackage(ctx context.Context, actor AuthAct
 		}
 		return createPolicyAudit(tx, actor, "CONFLICT_POLICY_PACKAGE_CREATED", policy.ID, "", "PENDING_ENDORSEMENTS", policy)
 	}); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("创建冲突事务失败: %w", err)
 	}
 	return &ConflictPolicyPackageView{Package: policy, Endorsements: []ConflictPolicyEndorsementView{}, Status: "PENDING_ENDORSEMENTS"}, nil
 }
@@ -237,7 +239,7 @@ func (s *ConflictPolicyService) Endorse(ctx context.Context, actor AuthActor, pa
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Endorse 事务失败: %w", err)
 	}
 	return &result, nil
 }
@@ -259,10 +261,12 @@ func trimConflictPolicyInput(input *ConflictPolicyPackageInput) {
 }
 
 func validateConflictPolicyInput(input ConflictPolicyPackageInput, now time.Time) error {
-	required := []string{input.PolicyVersion, input.Jurisdiction, input.ApplicableRuleName, input.ApplicableRuleVersion,
+	required := []string{
+		input.PolicyVersion, input.Jurisdiction, input.ApplicableRuleName, input.ApplicableRuleVersion,
 		input.ApplicableRuleAuthority, input.ApplicableRuleReference, input.DataSourcePolicyReference,
 		input.PrivacyBasisMatrixReference, input.RetentionPolicyReference, input.WaiverPolicyReference,
-		input.ControlledActionsReference, input.ExternalReviewReference}
+		input.ControlledActionsReference, input.ExternalReviewReference,
+	}
 	for _, value := range required {
 		if value == "" {
 			return NewSubjectWorkflowError("POLICY_MATERIAL_REQUIRED", "政策版本、适用规则及全部决策材料引用均不能为空")

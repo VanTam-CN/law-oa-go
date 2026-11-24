@@ -2,12 +2,14 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
 	"time"
 
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/models"
 )
 
@@ -255,7 +257,7 @@ func (s *conflictScanService) RunFullScan(ctx context.Context) (*models.Conflict
 func (s *conflictScanService) GetScanJob(ctx context.Context, jobID uint) (*models.ConflictScanJob, error) {
 	var job models.ConflictScanJob
 	if err := s.db.WithContext(ctx).First(&job, jobID).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("扫描任务不存在")
 		}
 		return nil, fmt.Errorf("获取扫描任务失败: %w", err)
@@ -562,7 +564,7 @@ func (s *conflictScanService) scanCase(ctx context.Context, case_ *models.Case) 
 	// 执行检测
 	result, err := s.conflictService.QuickCheck(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("QuickCheck: %w", err)
 	}
 
 	// 收集冲突信息

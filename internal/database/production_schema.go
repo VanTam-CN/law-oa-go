@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/repositories"
 )
@@ -183,7 +184,7 @@ func BootstrapProductionSchema(db *gorm.DB) error {
 		return fmt.Errorf("生产 schema bootstrap 仅支持 PostgreSQL，当前驱动为 %s", db.Dialector.Name())
 	}
 
-	return db.Transaction(func(tx *gorm.DB) error {
+	if err := db.Transaction(func(tx *gorm.DB) error {
 		// Every application replica may run the bootstrap init container. Hold a
 		// transaction-scoped PostgreSQL advisory lock so concurrent first starts
 		// cannot race while creating the same tables, indexes, or guards.
@@ -240,7 +241,10 @@ func BootstrapProductionSchema(db *gorm.DB) error {
 			return fmt.Errorf("写入生产 schema 版本失败: %w", err)
 		}
 		return nil
-	})
+	}); err != nil {
+		return fmt.Errorf("引导初始化事务失败: %w", err)
+	}
+	return nil
 }
 
 // validateProductionSchemaContract verifies the columns used by the P0

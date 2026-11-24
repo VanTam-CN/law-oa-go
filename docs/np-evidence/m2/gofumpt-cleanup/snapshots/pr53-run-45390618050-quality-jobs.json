@@ -1,0 +1,6 @@
+{"conclusion":"failure","job":"🔍 Code Quality","steps":[{"conclusion":"success","name":"Set up job"},{"conclusion":"success","name":"📥 检出代码"},{"conclusion":"success","name":"🐹 设置Go环境"},{"conclusion":"success","name":"📦 缓存Go模块"},{"conclusion":"success","name":"🔍 代码格式检查"},{"conclusion":"failure","name":"📋 静态分析"},{"conclusion":"skipped","name":"🔒 安全扫描"},{"conclusion":"skipped","name":"📊 测试覆盖率"},{"conclusion":"skipped","name":"🧪 运行测试"},{"conclusion":"skipped","name":"📈 上传覆盖率报告"},{"conclusion":"skipped","name":"Post 📦 缓存Go模块"},{"conclusion":"skipped","name":"Post 🐹 设置Go环境"},{"conclusion":"success","name":"Post 📥 检出代码"},{"conclusion":"success","name":"Complete job"}]}
+{"conclusion":"success","job":"📢 Notification \u0026 Report","steps":[{"conclusion":"success","name":"Set up job"},{"conclusion":"success","name":"🔔 生成部署报告"},{"conclusion":"success","name":"📧 上传部署报告"},{"conclusion":"skipped","name":"💬 Slack通知"},{"conclusion":"skipped","name":"📧 发送邮件通知"},{"conclusion":"success","name":"Complete job"}]}
+{"conclusion":"skipped","job":"🏗️ Multi-Arch Build","steps":[]}
+{"conclusion":"skipped","job":"🎨 Frontend Build","steps":[]}
+{"conclusion":"skipped","job":"🚀 Deploy to Staging","steps":[]}
+{"conclusion":"skipped","job":"🚀 Deploy to Production","steps":[]}

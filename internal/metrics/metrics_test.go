@@ -8,10 +8,11 @@ import (
 	"testing"
 	"time"
 
+	"law-oa-go/internal/concurrency"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"law-oa-go/internal/concurrency"
 )
 
 func TestApplicationMetrics_NewApplicationMetrics(t *testing.T) {

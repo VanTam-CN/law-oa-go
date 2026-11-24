@@ -3,10 +3,12 @@ package repositories
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
 	"law-oa-go/internal/models"
 )
 
@@ -307,9 +309,12 @@ func (u *trustUnitOfWorkImpl) WithinTransaction(
 	ctx context.Context,
 	fn func(txTxnRepo TrustTransactionRepository, txAcctRepo TrustAccountRepository) error,
 ) error {
-	return u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	if err := u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		txTxnRepo := NewTrustTransactionRepository(tx)
 		txAcctRepo := NewTrustAccountRepository(tx)
 		return fn(txTxnRepo, txAcctRepo)
-	})
+	}); err != nil {
+		return fmt.Errorf("WithinTransaction 事务失败: %w", err)
+	}
+	return nil
 }

@@ -423,7 +423,6 @@ func (r *AnalyticsRepository) GetUserSessionSummary(ctx context.Context, userID 
 		`).
 		Where("user_id = ? AND start_time BETWEEN ? AND ?", userID, startDate, endDate).
 		Scan(&summary).Error
-
 	if err != nil {
 		return nil, err
 	}
@@ -445,7 +444,6 @@ func (r *AnalyticsRepository) GetUserSessionSummary(ctx context.Context, userID 
 		`).
 		Where("us.user_id = ? AND pv.timestamp BETWEEN ? AND ?", userID, startDate, endDate).
 		Scan(&pageViewStats).Error
-
 	if err != nil {
 		return nil, err
 	}
@@ -471,7 +469,6 @@ func (r *AnalyticsRepository) GetUserSessionSummary(ctx context.Context, userID 
 		`).
 		Where("us.user_id = ? AND ue.timestamp BETWEEN ? AND ?", userID, startDate, endDate).
 		Scan(&eventStats).Error
-
 	if err != nil {
 		return nil, err
 	}
@@ -500,7 +497,7 @@ func (r *AnalyticsRepository) GetFunnelConversionRate(ctx context.Context, funne
 	var results []map[string]interface{}
 
 	err := r.db.WithContext(ctx).
-		Table("funnel_analyses").
+		Table("funnel_analyzes").
 		Select(`
 			step_name,
 			step_order,

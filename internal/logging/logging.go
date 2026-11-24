@@ -16,6 +16,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/config"
 )
 
@@ -653,7 +654,10 @@ func (s *LoggingService) GetLogStats(startTime, endTime time.Time) (*LogStats, e
 
 // autoMigrate 自动迁移
 func (s *LoggingService) autoMigrate() error {
-	return s.db.AutoMigrate(&LogEntry{})
+	if err := s.db.AutoMigrate(&LogEntry{}); err != nil {
+		return fmt.Errorf("自动迁移表结构: %w", err)
+	}
+	return nil
 }
 
 // Close 关闭日志服务

@@ -100,7 +100,10 @@ func (s *EthicalWallService) EnableEthicalWall(ctx context.Context, caseID uint,
 	}
 
 	// 启用隔离墙
-	return s.ethicalWallRepo.EnableEthicalWall(ctx, caseID, userID, description)
+	if err := s.ethicalWallRepo.EnableEthicalWall(ctx, caseID, userID, description); err != nil {
+		return fmt.Errorf("EnableEthicalWall道德墙: %w", err)
+	}
+	return nil
 }
 
 // DisableEthicalWall 禁用案件隔离墙
@@ -124,7 +127,10 @@ func (s *EthicalWallService) DisableEthicalWall(ctx context.Context, caseID uint
 	}
 
 	// 禁用隔离墙
-	return s.ethicalWallRepo.DisableEthicalWall(ctx, caseID)
+	if err := s.ethicalWallRepo.DisableEthicalWall(ctx, caseID); err != nil {
+		return fmt.Errorf("DisableEthicalWall道德墙: %w", err)
+	}
+	return nil
 }
 
 // AddToWhitelist 添加用户到案件白名单
@@ -157,7 +163,10 @@ func (s *EthicalWallService) AddToWhitelist(ctx context.Context, caseID, userID,
 	}
 
 	// 添加到白名单
-	return s.ethicalWallRepo.AddToWhitelist(ctx, caseID, userID, grantedBy, reason)
+	if err := s.ethicalWallRepo.AddToWhitelist(ctx, caseID, userID, grantedBy, reason); err != nil {
+		return fmt.Errorf("添加道德墙: %w", err)
+	}
+	return nil
 }
 
 // RemoveFromWhitelist 从案件白名单移除用户
@@ -172,7 +181,10 @@ func (s *EthicalWallService) RemoveFromWhitelist(ctx context.Context, caseID, us
 	}
 
 	// 从白名单移除
-	return s.ethicalWallRepo.RemoveFromWhitelist(ctx, caseID, userID)
+	if err := s.ethicalWallRepo.RemoveFromWhitelist(ctx, caseID, userID); err != nil {
+		return fmt.Errorf("删除道德墙: %w", err)
+	}
+	return nil
 }
 
 // GetWhitelist 获取案件白名单
@@ -242,7 +254,10 @@ func (s *EthicalWallService) CheckAccess(ctx context.Context, caseID, userID uin
 
 // LogAccessAttempt 记录访问尝试
 func (s *EthicalWallService) LogAccessAttempt(ctx context.Context, caseID, userID uint, accessType, accessResult, ipAddress, userAgent string) error {
-	return s.ethicalWallRepo.LogAccessAttempt(ctx, caseID, userID, accessType, accessResult, ipAddress, userAgent)
+	if err := s.ethicalWallRepo.LogAccessAttempt(ctx, caseID, userID, accessType, accessResult, ipAddress, userAgent); err != nil {
+		return fmt.Errorf("记录道德墙: %w", err)
+	}
+	return nil
 }
 
 // GetAccessLogs 获取访问日志
@@ -271,7 +286,10 @@ func (s *EthicalWallService) GetAccessLogs(ctx context.Context, caseID uint, lim
 
 // ClearWhitelist 清空案件白名单
 func (s *EthicalWallService) ClearWhitelist(ctx context.Context, caseID uint) error {
-	return s.ethicalWallRepo.ClearWhitelist(ctx, caseID)
+	if err := s.ethicalWallRepo.ClearWhitelist(ctx, caseID); err != nil {
+		return fmt.Errorf("ClearWhitelist道德墙: %w", err)
+	}
+	return nil
 }
 
 // convertWhitelistEntry 转换白名单条目为响应格式

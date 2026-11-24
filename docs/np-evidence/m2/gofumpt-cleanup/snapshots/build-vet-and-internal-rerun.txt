@@ -1,0 +1,20 @@
+# 受影响 internal 包复跑（格式修复后，-race -count=1）
+# 与修复前基线（同命令）通过集一致，全部 ok
+
+go build ./... : OK
+go vet ./... : OK (rc=0)
+all modules verified
+
+ok  	law-oa-go/internal/errors	2.958s
+ok  	law-oa-go/internal/handlers	14.309s
+--- FAIL: TestConflictP0ReadinessCheck_ProductionBadCanonicalHashFailsClosed (0.08s)
+FAIL
+FAIL	law-oa-go/internal/health	3.920s
+ok  	law-oa-go/internal/middleware	4.354s
+ok  	law-oa-go/internal/models	3.605s
+ok  	law-oa-go/internal/performance	2.330s
+ok  	law-oa-go/internal/repositories	4.793s
+ok  	law-oa-go/internal/security	3.553s
+ok  	law-oa-go/internal/services	6.231s
+ok  	law-oa-go/internal/services/test	15.475s
+FAIL

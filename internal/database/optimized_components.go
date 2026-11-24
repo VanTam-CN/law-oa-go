@@ -8,6 +8,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/cache"
 	"law-oa-go/internal/config"
 	"law-oa-go/internal/models"
@@ -107,7 +108,7 @@ func (qo *QueryOptimizer) BatchInsert(ctx context.Context, tableName string, dat
 	operation := "batch_insert"
 
 	// 使用事务确保数据一致性
-	return qo.db.Transaction(func(tx *gorm.DB) error {
+	if err := qo.db.Transaction(func(tx *gorm.DB) error {
 		// 批量插入
 		if err := tx.Table(tableName).CreateInBatches(data, batchSize).Error; err != nil {
 			dbQueryErrors.WithLabelValues(operation, tableName).Inc()
@@ -125,7 +126,10 @@ func (qo *QueryOptimizer) BatchInsert(ctx context.Context, tableName string, dat
 		}
 
 		return nil
-	})
+	}); err != nil {
+		return fmt.Errorf("批量插入事务失败: %w", err)
+	}
+	return nil
 }
 
 // OptimizedUpdate 优化更新操作

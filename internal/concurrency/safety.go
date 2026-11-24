@@ -49,7 +49,6 @@ func (cb *CircuitBreaker) Execute(ctx context.Context, operation func() error) e
 	cb.mu.Unlock()
 
 	err := operation()
-
 	if err != nil {
 		cb.RecordFailure()
 		return err
@@ -164,7 +163,10 @@ func (rl *RateLimiter) Wait(ctx context.Context) error {
 	for !rl.Allow() {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			if err := ctx.Err(); err != nil {
+				return fmt.Errorf("上下文已取消: %w", err)
+			}
+			return nil
 		case <-time.After(10 * time.Millisecond):
 			// 等待一小段时间后重试
 		}
@@ -243,12 +245,4 @@ func (cs *ConcurrentSafe) GetRateLimiterTokens() int {
 // IsEnabled 检查是否启用
 func (cs *ConcurrentSafe) IsEnabled() bool {
 	return cs.enabled
-}
-
-// Helper functions
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }

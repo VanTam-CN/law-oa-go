@@ -1,0 +1,171 @@
+{
+  "result": "HARNESS_FAILURE",
+  "observed": "connection refused; APP_ENV did not bind Environment, so first attempt used development; no application defect concluded",
+  "commands": [
+    {
+      "key": "pg-network-create",
+      "argv": [
+        "docker",
+        "network",
+        "create",
+        "--internal",
+        "--label",
+        "law-oa.scope=m0",
+        "law-oa-m0-2481a47-net"
+      ],
+      "started_at": "2026-11-20T03:29:21.782064+00:00",
+      "ended_at": "2026-11-20T03:29:24.545768+00:00",
+      "exit_code": 0,
+      "stdout": {
+        "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg-network-create.stdout.log",
+        "sha256": "694cf6693d875a78710d37282fdd47535d651bc6627ab16b57d0e98708566ae8",
+        "bytes": 65,
+        "committed": false
+      },
+      "stderr": {
+        "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg-network-create.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0,
+        "committed": false
+      }
+    },
+    {
+      "key": "pg-container-create",
+      "argv": [
+        "docker",
+        "run",
+        "-d",
+        "--name",
+        "law-oa-m0-2481a47-pg",
+        "--network",
+        "law-oa-m0-2481a47-net",
+        "--label",
+        "law-oa.scope=m0",
+        "-p",
+        "127.0.0.1:18894:5432",
+        "-e",
+        "POSTGRES_USER=np_m0",
+        "-e",
+        "POSTGRES_DB=law_oa_m0",
+        "-e",
+        "POSTGRES_HOST_AUTH_METHOD=trust",
+        "postgres:16.14"
+      ],
+      "started_at": "2026-11-20T03:29:24.546071+00:00",
+      "ended_at": "2026-11-20T03:29:24.698899+00:00",
+      "exit_code": 0,
+      "stdout": {
+        "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg-container-create.stdout.log",
+        "sha256": "3ac68e9263963fc1607f22ffd630314b5926961f0c441a9b051277c0f004036c",
+        "bytes": 65,
+        "committed": false
+      },
+      "stderr": {
+        "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg-container-create.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0,
+        "committed": false
+      }
+    },
+    {
+      "key": "pg-image",
+      "argv": [
+        "docker",
+        "image",
+        "inspect",
+        "postgres:16.14",
+        "--format",
+        "{{.Id}} {{json .RepoDigests}}"
+      ],
+      "started_at": "2026-11-20T03:29:27.788341+00:00",
+      "ended_at": "2026-11-20T03:29:27.842448+00:00",
+      "exit_code": 0,
+      "stdout": {
+        "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg-image.stdout.log",
+        "sha256": "f839f9a10185d1d4e3de382514597ba4e66046a7defa2f57ba1972b6ba29651b",
+        "bytes": 157,
+        "committed": false
+      },
+      "stderr": {
+        "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg-image.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0,
+        "committed": false
+      }
+    },
+    {
+      "key": "pg-bootstrap",
+      "argv": [
+        "go",
+        "run",
+        "./cmd/migrate",
+        "-command",
+        "bootstrap"
+      ],
+      "started_at": "2026-11-20T03:29:27.842773+00:00",
+      "ended_at": "2026-11-20T03:29:33.901478+00:00",
+      "exit_code": 1,
+      "stdout": {
+        "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg-bootstrap.stdout.log",
+        "sha256": "28313f6dcf2333f63eccbf6289aa31f0d1696575525e62bf665184c676ec0292",
+        "bytes": 58,
+        "committed": false
+      },
+      "stderr": {
+        "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg-bootstrap.stderr.log",
+        "sha256": "eef0a23577d9e41a1c08d9425bf75489ccd4b169b44c9568d327385ce51b4003",
+        "bytes": 498,
+        "committed": false
+      }
+    },
+    {
+      "key": "pg-container-cleanup",
+      "argv": [
+        "docker",
+        "rm",
+        "-f",
+        "-v",
+        "law-oa-m0-2481a47-pg"
+      ],
+      "started_at": "2026-11-20T03:29:33.901773+00:00",
+      "ended_at": "2026-11-20T03:29:34.041591+00:00",
+      "exit_code": 0,
+      "stdout": {
+        "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg-container-cleanup.stdout.log",
+        "sha256": "a646bb737a9849d85570ad28631671331c3150f4270c36f4b5394328efec767d",
+        "bytes": 21,
+        "committed": false
+      },
+      "stderr": {
+        "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg-container-cleanup.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0,
+        "committed": false
+      }
+    },
+    {
+      "key": "pg-network-cleanup",
+      "argv": [
+        "docker",
+        "network",
+        "rm",
+        "law-oa-m0-2481a47-net"
+      ],
+      "started_at": "2026-11-20T03:29:34.041832+00:00",
+      "ended_at": "2026-11-20T03:29:34.163287+00:00",
+      "exit_code": 0,
+      "stdout": {
+        "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg-network-cleanup.stdout.log",
+        "sha256": "c956fed4d54499d45db8113204576e70a23acc0ba1da4ca534a080a57bf45b95",
+        "bytes": 22,
+        "committed": false
+      },
+      "stderr": {
+        "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg-network-cleanup.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0,
+        "committed": false
+      }
+    }
+  ]
+}

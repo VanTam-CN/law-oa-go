@@ -1,0 +1,8 @@
+2026-11-24T12:00:28.1393611Z  		return fmt.Errorf("创建up文件失败: %w", err)
+2026-11-24T12:00:28.1401272Z  		return fmt.Errorf("创建down文件失败: %w", err)
+2026-11-24T12:00:28.1413882Z  		return fmt.Errorf("创建向上迁移文件失败: %w", err)
+2026-11-24T12:00:28.1416653Z  		return fmt.Errorf("创建向下迁移文件失败: %w", err)
+2026-11-24T12:00:28.1536121Z  		jwtAuthErrors.WithLabelValues("verify").Inc()
+2026-11-24T12:00:28.1536512Z  		return nil, fmt.Errorf("failed to parse token: %w", err)
+2026-11-24T12:00:28.1542695Z  		Find(&logs).Error
+2026-11-24T12:00:28.1543826Z  		return nil, fmt.Errorf("failed to query revocation history: %w", err)

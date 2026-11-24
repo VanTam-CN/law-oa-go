@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/models"
 )
 
@@ -60,7 +61,10 @@ func (s *ApprovalBusinessHookService) ExecuteOnApproved(approval *models.Approva
 		// 没有注册的钩子，跳过
 		return nil
 	}
-	return hook.OnApproved(approval)
+	if err := hook.OnApproved(approval); err != nil {
+		return fmt.Errorf("OnApproved审批: %w", err)
+	}
+	return nil
 }
 
 // ExecuteOnRejected 执行审批拒绝钩子
@@ -69,7 +73,10 @@ func (s *ApprovalBusinessHookService) ExecuteOnRejected(approval *models.Approva
 	if !exists {
 		return nil
 	}
-	return hook.OnRejected(approval)
+	if err := hook.OnRejected(approval); err != nil {
+		return fmt.Errorf("OnRejected审批: %w", err)
+	}
+	return nil
 }
 
 // ExecuteOnCancelled 执行审批撤回钩子
@@ -78,7 +85,10 @@ func (s *ApprovalBusinessHookService) ExecuteOnCancelled(approval *models.Approv
 	if !exists {
 		return nil
 	}
-	return hook.OnCancelled(approval)
+	if err := hook.OnCancelled(approval); err != nil {
+		return fmt.Errorf("OnCancelled审批: %w", err)
+	}
+	return nil
 }
 
 // ==================== 用印审批钩子 ====================
@@ -93,7 +103,7 @@ func (h *SealApprovalHook) OnApproved(approval *models.ApprovalRequest) error {
 	// 解析元数据
 	var metadata models.SealApprovalMetadata
 	if err := json.Unmarshal([]byte(approval.Metadata), &metadata); err != nil {
-		return fmt.Errorf("解析用印元数据失败: %v", err)
+		return fmt.Errorf("解析用印元数据失败: %w", err)
 	}
 
 	// 创建用印记录
@@ -119,7 +129,7 @@ func (h *SealApprovalHook) OnApproved(approval *models.ApprovalRequest) error {
 	}
 
 	if err := h.db.Create(record).Error; err != nil {
-		return fmt.Errorf("创建用印记录失败: %v", err)
+		return fmt.Errorf("创建用印记录失败: %w", err)
 	}
 
 	return nil
@@ -150,7 +160,7 @@ func (h *CaseCreationApprovalHook) OnApproved(approval *models.ApprovalRequest) 
 	// 解析元数据
 	var metadata models.CaseCreationMetadata
 	if err := json.Unmarshal([]byte(approval.Metadata), &metadata); err != nil {
-		return fmt.Errorf("解析立案元数据失败: %v", err)
+		return fmt.Errorf("解析立案元数据失败: %w", err)
 	}
 	checkID := conflictCheckIDFromMetadata(parseMetadata(approval.Metadata))
 	if h.subjectRecheck == nil {
@@ -166,7 +176,7 @@ func (h *CaseCreationApprovalHook) OnApproved(approval *models.ApprovalRequest) 
 	// 生成案件编号
 	caseNumber, err := h.generateCaseNumber()
 	if err != nil {
-		return fmt.Errorf("生成案件编号失败: %v", err)
+		return fmt.Errorf("生成案件编号失败: %w", err)
 	}
 
 	// 创建案件
@@ -191,7 +201,7 @@ func (h *CaseCreationApprovalHook) OnApproved(approval *models.ApprovalRequest) 
 	// 开启事务创建案件
 	err = h.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(newCase).Error; err != nil {
-			return fmt.Errorf("创建案件失败: %v", err)
+			return fmt.Errorf("创建案件失败: %w", err)
 		}
 
 		// 更新审批元数据，关联案件ID
@@ -205,13 +215,13 @@ func (h *CaseCreationApprovalHook) OnApproved(approval *models.ApprovalRequest) 
 		approval.UpdatedBy = approval.ApplicantID
 
 		if err := tx.Save(approval).Error; err != nil {
-			return fmt.Errorf("更新审批元数据失败: %v", err)
+			return fmt.Errorf("更新审批元数据失败: %w", err)
 		}
 
 		return nil
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("OnApproved 事务失败: %w", err)
 	}
 
 	return nil

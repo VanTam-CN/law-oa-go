@@ -3,11 +3,13 @@ package repositories
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/security"
 )
@@ -78,7 +80,7 @@ func (r *ClientRepositoryImpl) UpdateWithVersion(ctx context.Context, client *mo
 		identityNumber = security.NormalizeIdentityNumber(string(identityType), identityNumber)
 		identityCiphertext, identityDigest, err = security.ProtectIdentityNumber(identityNumber)
 		if err != nil {
-			return err
+			return fmt.Errorf("加密身份号码: %w", err)
 		}
 	}
 	emailValue := interface{}(strings.TrimSpace(client.Email))

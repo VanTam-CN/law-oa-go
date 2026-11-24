@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/security"
 
@@ -192,7 +193,7 @@ func (s *SubjectRecheckService) CreateRevision(ctx context.Context, caseID, acto
 		})
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("创建主体复核事务失败: %w", err)
 	}
 	return &SubjectRevisionResult{
 		Revision:           revision,
@@ -425,7 +426,7 @@ func (s *SubjectRecheckService) ReviewEntityRegistration(ctx context.Context, ca
 		})
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ReviewEntityRegistration 事务失败: %w", err)
 	}
 	if decision == "REJECT" {
 		revision.Status = models.SubjectStateChangeRejected
@@ -673,13 +674,13 @@ func findEntityByNormalizedIdentityTx(tx *gorm.DB, candidate *subjectRegistratio
 		Where("entity_type = ? AND identity_type = ? AND identity_number_ciphertext <> '' AND deleted_at IS NULL", candidate.EntityType, candidate.IdentityType).
 		Rows()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询原始行: %w", err)
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var entity models.Entity
 		if err := tx.ScanRows(rows, &entity); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("扫描结果: %w", err)
 		}
 		matches, err := entityMatchesRegistrationCandidate(entity, candidate)
 		if err != nil {
@@ -688,6 +689,9 @@ func findEntityByNormalizedIdentityTx(tx *gorm.DB, candidate *subjectRegistratio
 		if matches {
 			return &entity, nil
 		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("读取 Redis 结果: %w", err)
 	}
 	return nil, nil
 }
@@ -844,7 +848,7 @@ func (s *SubjectRecheckService) RunRecheck(ctx context.Context, caseID uint, rev
 		}).Error
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("执行主体复核事务失败: %w", err)
 	}
 
 	// The revision payload is the authoritative subject change. Never trust a
@@ -912,7 +916,7 @@ func (s *SubjectRecheckService) RunRecheck(ctx context.Context, caseID uint, rev
 	result, checkErr := s.conflictService.PerformConflictCheck(ctx, request)
 	if checkErr != nil {
 		_ = s.restoreRecheckRequired(ctx, caseID, revision.ID, actorID, actorRole, checkErr.Error())
-		return nil, checkErr
+		return nil, fmt.Errorf("执行冲突: %w", checkErr)
 	}
 	if result == nil || strings.TrimSpace(result.CheckID) == "" {
 		err := NewSubjectWorkflowError("CONFLICT_RESULT_UNAVAILABLE", "重检未返回可追溯的冲突检测记录，已阻止主体变更生效")
@@ -954,7 +958,7 @@ func (s *SubjectRecheckService) RunRecheck(ctx context.Context, caseID uint, rev
 			"requires_review": requiresReview,
 		})
 	}); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("执行主体复核事务失败: %w", err)
 	}
 	revision.Status = models.SubjectStateRecheckRequired
 	revision.ConflictCheckID = result.CheckID
@@ -1058,7 +1062,7 @@ func (s *SubjectRecheckService) ApplyReviewDecision(ctx context.Context, caseID 
 		})
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("应用主体复核事务失败: %w", err)
 	}
 	revision.Status = revisionStatusAfterDecision(decision)
 	if decision == "no_conflict" || decision == "false_positive" {
@@ -1196,7 +1200,7 @@ func (s *SubjectRecheckService) ReviewAndApply(ctx context.Context, caseID uint,
 		})
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ReviewAndApply 事务失败: %w", err)
 	}
 
 	revision.Status = revisionStatusAfterDecision(decision)
@@ -1263,10 +1267,7 @@ func (s *SubjectRecheckService) RequireEffectiveSubject(ctx context.Context, cas
 	if strings.TrimSpace(caseModel.ConflictCheckID) == "" {
 		return NewSubjectWorkflowError("CONFLICT_CHECK_REQUIRED", fmt.Sprintf("案件尚未关联可用的冲突复核记录，已阻止：%s", action))
 	}
-	if err := s.RequireConflictDisposition(ctx, caseModel.ConflictCheckID, action); err != nil {
-		return err
-	}
-	return nil
+	return s.RequireConflictDisposition(ctx, caseModel.ConflictCheckID, action)
 }
 
 // RequireConflictDisposition is the final gate used immediately before an
@@ -1312,7 +1313,7 @@ func (s *SubjectRecheckService) RequireConflictDisposition(ctx context.Context, 
 	case "waiver_requested":
 		if err := s.requireCurrentApprovedWaiver(ctx, checkID, &record); err == nil {
 			return nil
-		} else if workflowErr, ok := err.(*SubjectWorkflowError); ok && workflowErr.Code != "WAIVER_PENDING" {
+		} else if workflowErr := (*SubjectWorkflowError)(nil); errors.As(err, &workflowErr) && workflowErr.Code != "WAIVER_PENDING" {
 			return workflowErr
 		}
 		return NewSubjectWorkflowError("WAIVER_PENDING", fmt.Sprintf("豁免处置尚未生效，已阻止：%s", action))
@@ -1424,7 +1425,7 @@ func validateConflictReviewEvidence(review *models.ConflictReview, response *mod
 }
 
 func (s *SubjectRecheckService) restoreRecheckRequired(ctx context.Context, caseID uint, revisionID string, actorID uint, actorRole, reason string) error {
-	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Model(&models.CaseSubjectRevision{}).Where("id = ? AND case_id = ?", revisionID, caseID).Updates(map[string]interface{}{"status": models.SubjectStateRecheckRequired, "updated_at": time.Now()}).Error; err != nil {
 			return err
 		}
@@ -1432,7 +1433,10 @@ func (s *SubjectRecheckService) restoreRecheckRequired(ctx context.Context, case
 			return err
 		}
 		return s.appendAuditTx(tx, actorID, actorRole, "SUBJECT_RECHECK_FAILED", "CASE_SUBJECT_REVISION", revisionID, models.SubjectStateRecheckRunning, models.SubjectStateRecheckRequired, 0, map[string]interface{}{"reason": reason})
-	})
+	}); err != nil {
+		return fmt.Errorf("restoreRecheckRequired 事务失败: %w", err)
+	}
+	return nil
 }
 
 func (s *SubjectRecheckService) appendAuditTx(tx *gorm.DB, actorID uint, actorRole, eventType, objectType, objectID, fromState, toState string, subjectVersion int, payload map[string]interface{}) error {

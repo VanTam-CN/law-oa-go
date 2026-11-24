@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/models"
 )
 
@@ -297,7 +298,7 @@ func (s *v2ConflictDetectionService) searchInPool(ctx context.Context, req *Conf
 	// 调用冲突池服务搜索
 	poolResults, err := s.poolService.SearchInPool(ctx, poolReq)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("搜索冲突: %w", err)
 	}
 
 	// 转换为 ConflictMatchV2
@@ -549,9 +550,8 @@ func (s *v2ConflictDetectionService) determineMatchType(pr *PoolMatchResult) str
 		return "direct"
 	} else if pr.MatchScore >= 0.5 {
 		return "indirect"
-	} else {
-		return "related"
 	}
+	return "related"
 }
 
 // extractRiskFactors 提取风险因素

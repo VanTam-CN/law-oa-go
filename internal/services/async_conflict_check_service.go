@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	stderrors "errors"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
+
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/repositories"
 )
@@ -69,7 +71,7 @@ func NewAsyncConflictCheckService(conflictRepo repositories.BasicConflictReposit
 
 func (s *asyncConflictCheckService) CreateTask(ctx context.Context, request *models.ConflictCheckRequest) (*ConflictCheckTaskResponse, error) {
 	if err := request.Validate(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("校验冲突核查: %w", err)
 	}
 	if request.CheckID == "" {
 		request.CheckID = "CCT_" + uuid.NewString()
@@ -101,7 +103,7 @@ func (s *asyncConflictCheckService) CreateTask(ctx context.Context, request *mod
 		// second case/intake authorization check before serializing it.
 		existing, getErr := s.conflictRepo.GetCheckRecord(ctx, record.CheckID)
 		if getErr != nil || existing == nil || (existing.UserID != uint(userID) && !IsConflictReviewRole(request.ActorRole)) {
-			return nil, err
+			return nil, fmt.Errorf("保存: %w", err)
 		}
 		return s.toTaskResponse(existing), nil
 	}
@@ -115,7 +117,7 @@ func (s *asyncConflictCheckService) CreateTask(ctx context.Context, request *mod
 func (s *asyncConflictCheckService) GetTask(ctx context.Context, taskID string) (*ConflictCheckTaskResponse, error) {
 	record, err := s.conflictRepo.GetCheckRecord(ctx, taskID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询: %w", err)
 	}
 	if record == nil {
 		return nil, ErrConflictTaskNotFound
@@ -126,7 +128,7 @@ func (s *asyncConflictCheckService) GetTask(ctx context.Context, taskID string) 
 func (s *asyncConflictCheckService) GetTaskResult(ctx context.Context, taskID string) (*ConflictCheckTaskResultResponse, error) {
 	record, err := s.conflictRepo.GetCheckRecord(ctx, taskID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询: %w", err)
 	}
 	if record == nil {
 		return nil, ErrConflictTaskNotFound
@@ -154,37 +156,53 @@ func (s *asyncConflictCheckService) runTask(taskID string, request *models.Confl
 		return
 	}
 
-	record.CheckStatus = ConflictTaskStatusRunning
-	record.UpdatedAt = time.Now()
-	_ = s.conflictRepo.UpdateCheckRecord(ctx, record)
+	if err := s.conflictRepo.ClaimConflictCheckRun(ctx, taskID); err != nil {
+		return
+	}
 
-	if s.conflictService == nil {
+	initialRisk := record.RiskLevel
+	fail := func(cause error) {
+		// After a detector timeout its context cannot persist the failure receipt.
+		receiptCtx, done := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+		defer done()
 		record.CheckStatus = ConflictTaskStatusFailed
-		record.CheckResult = models.JSON{"error": "conflict detection service is not initialized"}
+		record.HasConflict = false
+		record.RiskLevel = initialRisk
+		record.CheckResult = models.JSON{"error": cause.Error()}
 		record.Duration = time.Since(startTime).Milliseconds()
-		record.UpdatedAt = time.Now()
-		_ = s.conflictRepo.UpdateCheckRecord(ctx, record)
+		if err := s.conflictRepo.FinalizeConflictCheck(receiptCtx, record); err != nil {
+			log.Print("无法写入冲突检测失败终态，请核对任务记录")
+		}
+	}
+	if s.conflictService == nil {
+		fail(stderrors.New("conflict detection service is not initialized"))
 		return
 	}
 
-	result, err := s.conflictService.PerformConflictCheck(ctx, request)
-	record, getErr := s.conflictRepo.GetCheckRecord(ctx, taskID)
-	if getErr != nil || record == nil {
-		return
+	var result *models.ConflictCheckResponse
+	if formal, ok := s.conflictService.(*conflictDetectionService); ok {
+		result, err = formal.performConflictCheck(ctx, request, true)
+	} else {
+		result, err = s.conflictService.PerformConflictCheck(ctx, request)
 	}
-
-	record.Duration = time.Since(startTime).Milliseconds()
-	record.UpdatedAt = time.Now()
 	if err != nil {
-		record.CheckStatus = ConflictTaskStatusFailed
-		record.CheckResult = models.JSON{"error": err.Error()}
-		_ = s.conflictRepo.UpdateCheckRecord(ctx, record)
+		fail(err)
 		return
 	}
-
+	if ctx.Err() != nil {
+		fail(ctx.Err())
+		return
+	}
+	if result == nil {
+		fail(stderrors.New("conflict detector returned no result"))
+		return
+	}
+	record.Duration = time.Since(startTime).Milliseconds()
 	record.CheckStatus = ConflictTaskStatusCompleted
 	record.HasConflict = result.HasConflict
-	record.CheckResult = toModelJSON(result)
+	auditResult := *result
+	auditResult.NormalizedSubjects = auditSafeNormalizedSubjects(result.NormalizedSubjects)
+	record.CheckResult = toModelJSON(&auditResult)
 	if result.RiskAssessment != nil {
 		record.RiskLevel = result.RiskAssessment.OverallRisk
 	}
@@ -194,23 +212,23 @@ func (s *asyncConflictCheckService) runTask(taskID string, request *models.Confl
 		if result.Decision != nil {
 			coverageStatus = result.Decision.CoverageStatus
 		}
-		linker, _ := s.conflictRepo.(repositories.ConflictSubjectLinker)
-		if err := linker.LinkConflictCheckToCase(ctx, repositories.ConflictSubjectAssociation{
+		association := repositories.ConflictSubjectAssociation{
 			CheckID:           record.CheckID,
 			SubjectCaseID:     request.SubjectCaseID,
 			SubjectCaseNumber: request.SubjectCaseNumber,
 			IntakeID:          request.IntakeID,
+			IntakeRevision:    request.IntakeRevision,
 			ClientID:          request.ClientID,
 			CoverageStatus:    coverageStatus,
 			CheckedAt:         record.CheckTime,
-		}); err != nil {
-			record.CheckStatus = ConflictTaskStatusFailed
-			record.CheckResult = models.JSON{"error": err.Error()}
-			_ = s.conflictRepo.UpdateCheckRecord(ctx, record)
-			return
 		}
+		err = s.conflictRepo.FinalizeConflictCheckWithAssociation(ctx, record, association)
+	} else {
+		err = s.conflictRepo.FinalizeConflictCheck(ctx, record)
 	}
-	_ = s.conflictRepo.UpdateCheckRecord(ctx, record)
+	if err != nil {
+		fail(err)
+	}
 }
 
 func hasConflictSubjectLinker(repo repositories.BasicConflictRepository) bool {
@@ -266,7 +284,7 @@ func toModelJSON(value interface{}) models.JSON {
 
 	var generic interface{}
 	if err := json.Unmarshal(data, &generic); err != nil {
-		return models.JSON{"unmarshal_error": err.Error(), "raw": fmt.Sprintf("%s", data)}
+		return models.JSON{"unmarshal_error": err.Error(), "raw": string(data)}
 	}
 	return models.JSON{"items": generic}
 }

@@ -372,7 +372,7 @@ func (s *DocumentStatsService) ExportStats(ctx context.Context, statsType string
 func (s *DocumentStatsService) getCategoryStats(ctx context.Context) ([]CategoryStats, error) {
 	stats, err := s.docRepo.GetStats(ctx, s.viewerUserID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询文档: %w", err)
 	}
 
 	var categoryStats []CategoryStats
@@ -397,7 +397,7 @@ func (s *DocumentStatsService) getCategoryStats(ctx context.Context) ([]Category
 func (s *DocumentStatsService) getTypeStats(ctx context.Context) ([]TypeStats, error) {
 	stats, err := s.docRepo.GetStats(ctx, s.viewerUserID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询文档: %w", err)
 	}
 
 	var typeStats []TypeStats

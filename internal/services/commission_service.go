@@ -107,7 +107,7 @@ type UserSummary struct {
 type ListCommissionsRequest struct {
 	Page            int    `json:"page" form:"page" binding:"min=1"`
 	PageSize        int    `json:"page_size" form:"page_size" binding:"min=1,max=100"`
-	Status          string `json:"status" form:"status" binding:"omitempty,oneof=pending calculated paid cancelled"`
+	Status          string `json:"status" form:"status" binding:"omitempty,oneof=pending calculated paid canceled"`
 	BeneficiaryID   uint   `json:"beneficiary_id" form:"beneficiary_id"`
 	BeneficiaryRole string `json:"beneficiary_role" form:"beneficiary_role" binding:"omitempty,oneof=source lawyer assistant"`
 	ContractID      uint   `json:"contract_id" form:"contract_id"`
@@ -398,7 +398,7 @@ func (s *CommissionService) CancelCommission(ctx context.Context, id uint) (*Com
 		return nil, errors.New("已支付的提成不能取消")
 	}
 
-	commission.Status = "cancelled"
+	commission.Status = "canceled"
 
 	if err := s.commissionRepo.Update(ctx, commission); err != nil {
 		return nil, fmt.Errorf("取消提成记录失败: %w", err)
@@ -483,7 +483,7 @@ func (s *CommissionService) GetCommissionStats(ctx context.Context) (*Commission
 			stats.CalculatedCommissions++
 		case "paid":
 			stats.PaidCommissions++
-		case "cancelled":
+		case "canceled":
 			stats.CancelledCommissions++
 		}
 
@@ -510,7 +510,7 @@ type CommissionStats struct {
 	PendingCommissions      int64   `json:"pending_commissions"`
 	CalculatedCommissions   int64   `json:"calculated_commissions"`
 	PaidCommissions         int64   `json:"paid_commissions"`
-	CancelledCommissions    int64   `json:"cancelled_commissions"`
+	CancelledCommissions    int64   `json:"canceled_commissions"`
 	TotalCommissionAmount   float64 `json:"total_commission_amount"`
 	PendingCommissionAmount float64 `json:"pending_commission_amount"`
 	MonthCommissionAmount   float64 `json:"month_commission_amount"`
@@ -520,12 +520,19 @@ type CommissionStats struct {
 
 // ListCommissionRules 获取所有分成规则
 func (s *CommissionService) ListCommissionRules(ctx context.Context) ([]*models.CommissionRule, error) {
-	return s.commissionRuleRepo.FindAll(ctx)
+	callRes1, err := s.commissionRuleRepo.FindAll(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("查询佣金: %w", err)
+	}
+	return callRes1, nil
 }
 
 // CreateCommissionRule 创建分成规则
 func (s *CommissionService) CreateCommissionRule(ctx context.Context, rule *models.CommissionRule) error {
-	return s.commissionRuleRepo.Create(ctx, rule)
+	if err := s.commissionRuleRepo.Create(ctx, rule); err != nil {
+		return fmt.Errorf("创建佣金: %w", err)
+	}
+	return nil
 }
 
 // UpdateCommissionRule 更新分成规则
@@ -544,10 +551,16 @@ func (s *CommissionService) UpdateCommissionRule(ctx context.Context, rule *mode
 	existing.Active = rule.Active
 	existing.EffectiveDate = rule.EffectiveDate
 	existing.ExpiryDate = rule.ExpiryDate
-	return s.commissionRuleRepo.Update(ctx, existing)
+	if err := s.commissionRuleRepo.Update(ctx, existing); err != nil {
+		return fmt.Errorf("更新佣金: %w", err)
+	}
+	return nil
 }
 
 // DeleteCommissionRule 删除分成规则
 func (s *CommissionService) DeleteCommissionRule(ctx context.Context, id uint) error {
-	return s.commissionRuleRepo.Delete(ctx, id)
+	if err := s.commissionRuleRepo.Delete(ctx, id); err != nil {
+		return fmt.Errorf("删除佣金: %w", err)
+	}
+	return nil
 }

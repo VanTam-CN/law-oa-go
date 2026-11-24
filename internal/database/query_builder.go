@@ -283,7 +283,10 @@ func (qb *QueryBuilder) OptimizedCount(table string, conditions map[string]inter
 
 // TransactionalOperation 事务操作优化
 func (qb *QueryBuilder) TransactionalOperation(fn func(*gorm.DB) error) error {
-	return qb.db.WithContext(qb.ctx).Transaction(fn)
+	if err := qb.db.WithContext(qb.ctx).Transaction(fn); err != nil {
+		return fmt.Errorf("事务操作失败: %w", err)
+	}
+	return nil
 }
 
 // ExplainQuery 查询计划分析
@@ -310,7 +313,7 @@ func (qb *QueryBuilder) GetQueryStats() (map[string]interface{}, error) {
 	// 获取连接池状态
 	sqlDB, err := qb.db.DB()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("获取底层 sql 连接: %w", err)
 	}
 
 	dbStats := sqlDB.Stats()
@@ -330,7 +333,10 @@ func (qb *QueryBuilder) GetQueryStats() (map[string]interface{}, error) {
 func (qb *QueryBuilder) Close() error {
 	sqlDB, err := qb.db.DB()
 	if err != nil {
-		return err
+		return fmt.Errorf("获取底层 sql 连接: %w", err)
 	}
-	return sqlDB.Close()
+	if err := sqlDB.Close(); err != nil {
+		return fmt.Errorf("关闭: %w", err)
+	}
+	return nil
 }

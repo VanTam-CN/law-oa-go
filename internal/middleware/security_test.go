@@ -11,11 +11,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/assert"
 	"law-oa-go/internal/config"
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/security"
+
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSecurityMiddleware_Init(t *testing.T) {

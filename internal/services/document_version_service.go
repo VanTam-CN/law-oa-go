@@ -436,7 +436,7 @@ func (s *DocumentVersionService) saveVersionFile(file *multipart.FileHeader, dst
 
 	// Create directory if it doesn't exist
 	dir := filepath.Dir(dst)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 
@@ -466,5 +466,8 @@ func (s *DocumentVersionService) deleteVersionFile(filepath string) error {
 		return nil
 	}
 
-	return os.Remove(filepath)
+	if err := os.Remove(filepath); err != nil {
+		return fmt.Errorf("删除文件: %w", err)
+	}
+	return nil
 }

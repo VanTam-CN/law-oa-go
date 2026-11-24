@@ -18,6 +18,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
 	"law-oa-go/internal/config"
 	"law-oa-go/internal/database"
 	"law-oa-go/internal/models"
@@ -348,13 +349,10 @@ func seedFixture(ctx context.Context, db *gorm.DB, passwordHash string) (seedRes
 		if err := upsertReviewerAssignment(tx, result); err != nil {
 			return err
 		}
-		if err := upsertApproval(tx, result); err != nil {
-			return err
-		}
-		return nil
+		return upsertApproval(tx, result)
 	})
 	if err != nil {
-		return result, err
+		return result, fmt.Errorf("写入种子数据事务失败: %w", err)
 	}
 
 	// Build the immutable firm-wide index only after all source entities and
@@ -844,31 +842,31 @@ func verifyFixture(ctx context.Context, db *gorm.DB) error {
 	}
 	var caseA, caseB models.Case
 	if err := db.WithContext(ctx).Where("case_number = ?", caseANumber).First(&caseA).Error; err != nil {
-		return fmt.Errorf("A 案不存在: %w", err)
+		return fmt.Errorf("案件 A 不存在: %w", err)
 	}
 	if err := db.WithContext(ctx).Where("case_number = ? AND ethical_wall_enabled = ?", caseBNumber, true).First(&caseB).Error; err != nil {
-		return fmt.Errorf("B 隔离案件不存在或隔离墙未开启: %w", err)
+		return fmt.Errorf("隔离案件 B 不存在或隔离墙未开启: %w", err)
 	}
 	var count int64
 	if err := db.WithContext(ctx).Model(&models.ConflictCheckRecord{}).Where("check_id = ? AND user_id = ? AND check_status = ?", checkID, caseA.LawyerID, "COMPLETED").Count(&count).Error; err != nil || count != 1 {
-		return fmt.Errorf("A 的冲突检测记录不符合预期: count=%d err=%v", count, err)
+		return fmt.Errorf("案件 A 的冲突检测记录不符合预期: count=%d err=%w", count, err)
 	}
 	if err := db.WithContext(ctx).Model(&models.ConflictReviewerAssignment{}).Where("check_id = ? AND status = ? AND recusal_declared = ?", checkID, models.ConflictReviewerAssignmentActive, true).Count(&count).Error; err != nil || count != 1 {
-		return fmt.Errorf("独立复核指定不符合预期: count=%d err=%v", count, err)
+		return fmt.Errorf("独立复核指定不符合预期: count=%d err=%w", count, err)
 	}
 	if err := db.WithContext(ctx).Model(&models.ApprovalRequest{}).Where("id = ? AND status = ? AND case_created = ? AND created_case_id = ''", approvalID, "submitted", false).Count(&count).Error; err != nil || count != 1 {
-		return fmt.Errorf("审批门禁夹具不符合预期: count=%d err=%v", count, err)
+		return fmt.Errorf("审批门禁夹具不符合预期: count=%d err=%w", count, err)
 	}
 	var activeScopes int64
 	if err := db.WithContext(ctx).Model(&models.ConflictSearchScope{}).Where("status = ? AND coverage_status = ?", services.ConflictScopeActive, services.ConflictCoverageComplete).Count(&activeScopes).Error; err != nil || activeScopes < 4 {
-		return fmt.Errorf("四类冲突范围未全部登记: active_complete=%d err=%v", activeScopes, err)
+		return fmt.Errorf("四类冲突范围未全部登记: active_complete=%d err=%w", activeScopes, err)
 	}
 	var activeAppointments int64
 	now := time.Now().UTC()
 	if err := db.WithContext(ctx).Model(&models.ConflictOfficerAppointment{}).
 		Where("effective_from <= ? AND effective_to > ? AND officer_id <> appointed_by AND deputy_id IS NOT NULL", now, now).
 		Count(&activeAppointments).Error; err != nil || activeAppointments < 1 {
-		return fmt.Errorf("律所级核查人任命夹具不符合预期: active=%d err=%v", activeAppointments, err)
+		return fmt.Errorf("律所级核查人任命夹具不符合预期: active=%d err=%w", activeAppointments, err)
 	}
 	return nil
 }

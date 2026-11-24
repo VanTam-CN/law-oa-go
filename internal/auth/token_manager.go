@@ -13,6 +13,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/cache"
 	"law-oa-go/internal/config"
 	"law-oa-go/internal/models"
@@ -212,7 +213,11 @@ func (tm *TokenManager) createToken(user *models.User, uuid string, expires int6
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(tm.secret)
+	callRes1, err := token.SignedString(tm.secret)
+	if err != nil {
+		return "", fmt.Errorf("签名令牌: %w", err)
+	}
+	return callRes1, nil
 }
 
 // VerifyToken 验证JWT令牌
@@ -229,7 +234,6 @@ func (tm *TokenManager) VerifyToken(ctx context.Context, tokenString string) (*j
 		}
 		return tm.secret, nil
 	})
-
 	if err != nil {
 		jwtAuthErrors.WithLabelValues("verify").Inc()
 		return nil, fmt.Errorf("failed to parse token: %w", err)
@@ -582,7 +586,6 @@ func (tm *TokenManager) getTokenUUIDFromToken(tokenString string) string {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return tm.secret, nil
 	})
-
 	if err != nil {
 		return ""
 	}

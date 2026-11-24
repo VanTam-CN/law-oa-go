@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -182,8 +183,11 @@ func (s *AuthorizationService) CanCreateCase(ctx context.Context, actor AuthActo
 		return false, nil
 	}
 	client, err := s.clientRepo.FindByID(ctx, req.ClientID)
-	if err != nil || client == nil {
-		return false, err
+	if err != nil {
+		return false, fmt.Errorf("查询客户: %w", err)
+	}
+	if client == nil {
+		return false, nil
 	}
 	count, err := s.countCasesForClient(ctx, req.ClientID, 0)
 	if err != nil {
@@ -203,8 +207,11 @@ func (s *AuthorizationService) CanReadClient(ctx context.Context, actor AuthActo
 		return s.canReadClientWithinEthicalWall(ctx, actor, clientID)
 	}
 	client, err := s.clientRepo.FindByID(ctx, clientID)
-	if err != nil || client == nil {
-		return false, err
+	if err != nil {
+		return false, fmt.Errorf("查询客户: %w", err)
+	}
+	if client == nil {
+		return false, nil
 	}
 	if client.CreatedBy != 0 && client.CreatedBy == actor.UserID {
 		// Creation grants access before the first matter exists, but it must
@@ -262,10 +269,10 @@ func (s *AuthorizationService) canAccessDocument(ctx context.Context, actor Auth
 	}
 	doc, err := s.docRepo.FindByID(ctx, documentID)
 	if err != nil {
-		if err == repositories.ErrDocumentNotFound {
+		if errors.Is(err, repositories.ErrDocumentNotFound) {
 			return false, nil
 		}
-		return false, err
+		return false, fmt.Errorf("查询文档: %w", err)
 	}
 	if doc == nil {
 		return false, nil
@@ -336,7 +343,7 @@ func (s *AuthorizationService) findCase(ctx context.Context, caseID uint) (*mode
 	}
 	caseModel, err := s.caseRepo.FindByID(ctx, caseID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询案件: %w", err)
 	}
 	return caseModel, nil
 }

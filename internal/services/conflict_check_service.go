@@ -327,7 +327,7 @@ func (s *conflictCheckService) failConflictCheck(ctx context.Context, checkID ui
 		CoverageNotice: "冲突检索未完整执行，必须由独立冲突核查人进行人工复核。",
 	}
 	if err := s.conflictRepo.UpdateConflictCheckStatus(ctx, checkID, "REVIEW_REQUIRED", result); err != nil {
-		return fmt.Errorf("冲突检索失败且无法记录待复核状态: %v; 状态更新失败: %w", cause, err)
+		return fmt.Errorf("冲突检索失败且无法记录待复核状态: %w; 状态更新失败: %w", cause, err)
 	}
 	return fmt.Errorf("冲突检索未完整执行，已转为待人工复核: %w", cause)
 }
@@ -344,7 +344,7 @@ func (s *conflictCheckService) detectByIdentityMatchChecked(ctx context.Context,
 	// 查询相同证件号的实体
 	matchedEntities, err := s.entityRepo.SearchByIdentityNumber(ctx, checkEntity.IdentityNumber, 100)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("搜索实体: %w", err)
 	}
 
 	for _, matched := range matchedEntities {
@@ -356,7 +356,7 @@ func (s *conflictCheckService) detectByIdentityMatchChecked(ctx context.Context,
 		// 查找该实体的活跃案件
 		cases, err := s.entityRepo.GetAllCasesByEntity(ctx, matched.ID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("查询全部实体: %w", err)
 		}
 
 		for _, caseInfo := range cases {
@@ -392,7 +392,7 @@ func (s *conflictCheckService) detectByNameSimilarityChecked(ctx context.Context
 	// 按名称搜索
 	matchedEntities, err := s.entityRepo.SearchByName(ctx, checkEntity.EntityName, 50)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("搜索实体: %w", err)
 	}
 
 	for _, matched := range matchedEntities {
@@ -415,7 +415,7 @@ func (s *conflictCheckService) detectByNameSimilarityChecked(ctx context.Context
 		// 查找该实体的全部历史案件
 		cases, err := s.entityRepo.GetAllCasesByEntity(ctx, matched.ID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("查询全部实体: %w", err)
 		}
 
 		for _, caseInfo := range cases {
@@ -449,7 +449,7 @@ func (s *conflictCheckService) detectByNameSimilarityChecked(ctx context.Context
 	// 检查曾用名
 	formerMatches, err := s.entityRepo.SearchByFormerName(ctx, checkEntity.EntityName, 50)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("搜索实体: %w", err)
 	}
 	for _, matched := range formerMatches {
 		if matched.ID == checkEntity.EntityID {
@@ -458,7 +458,7 @@ func (s *conflictCheckService) detectByNameSimilarityChecked(ctx context.Context
 
 		cases, err := s.entityRepo.GetAllCasesByEntity(ctx, matched.ID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("查询全部实体: %w", err)
 		}
 
 		for _, caseInfo := range cases {
@@ -498,7 +498,7 @@ func (s *conflictCheckService) detectByRelationshipChecked(ctx context.Context, 
 	// 使用递归 CTE 双向穿透获取所有关联实体
 	relatedNodes, err := s.entityRepo.GetRelatedEntitiesRecursive(ctx, checkEntity.EntityID, depth)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询关联实体(递归)实体: %w", err)
 	}
 
 	checked := make(map[uint]bool)
@@ -514,7 +514,7 @@ func (s *conflictCheckService) detectByRelationshipChecked(ctx context.Context, 
 		// 查找关联实体的活跃案件
 		cases, err := s.entityRepo.GetAllCasesByEntity(ctx, node.EntityID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("查询全部实体: %w", err)
 		}
 
 		// 构建穿透路径描述
@@ -580,7 +580,7 @@ func (s *conflictCheckService) detectByCaseAssociationChecked(ctx context.Contex
 	// 查找该实体参与的案件
 	cases, err := s.entityRepo.GetAllCasesByEntity(ctx, checkEntity.EntityID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询全部实体: %w", err)
 	}
 
 	// 检查是否与已拒绝或撤案的案件有关联
@@ -721,18 +721,30 @@ func (s *conflictCheckService) GenerateReport(ctx context.Context, checkID uint)
 
 // GetConflictCheck 获取冲突审查记录
 func (s *conflictCheckService) GetConflictCheck(ctx context.Context, id uint) (*models.ConflictCheck, error) {
-	return s.conflictRepo.GetConflictCheck(ctx, id)
+	callRes1, err := s.conflictRepo.GetConflictCheck(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("查询冲突核查: %w", err)
+	}
+	return callRes1, nil
 }
 
 // ListConflictChecks 列表查询冲突审查记录
 func (s *conflictCheckService) ListConflictChecks(ctx context.Context, page, pageSize int, filters map[string]interface{}) ([]*models.ConflictCheck, int64, error) {
 	offset := (page - 1) * pageSize
-	return s.conflictRepo.ListConflictChecks(ctx, offset, pageSize, filters)
+	callRes1, callRes2, err := s.conflictRepo.ListConflictChecks(ctx, offset, pageSize, filters)
+	if err != nil {
+		return nil, 0, fmt.Errorf("查询列表冲突核查: %w", err)
+	}
+	return callRes1, callRes2, nil
 }
 
 // SearchEntity 搜索实体
 func (s *conflictCheckService) SearchEntity(ctx context.Context, query string, entityType string) ([]*models.Entity, error) {
-	return s.entityRepo.SearchByName(ctx, query, 50)
+	callRes1, err := s.entityRepo.SearchByName(ctx, query, 50)
+	if err != nil {
+		return nil, fmt.Errorf("搜索实体: %w", err)
+	}
+	return callRes1, nil
 }
 
 // GetEntityRelations 获取实体关联关系（支持递归穿透）
@@ -741,7 +753,7 @@ func (s *conflictCheckService) GetEntityRelations(ctx context.Context, entityID 
 		// 深度为1时只获取直接关联
 		relations, err := s.entityRepo.GetRelations(ctx, entityID, true)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("查询实体: %w", err)
 		}
 
 		entityIDs := make([]uint, 0)
@@ -767,7 +779,7 @@ func (s *conflictCheckService) GetEntityRelations(ctx context.Context, entityID 
 	// 深度>1时使用递归 CTE 穿透
 	nodes, err := s.entityRepo.GetRelatedEntitiesRecursive(ctx, entityID, depth)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询关联实体(递归)实体: %w", err)
 	}
 
 	entities := make([]*models.Entity, 0, len(nodes))
@@ -803,7 +815,11 @@ func entityIdentityNumberForDisplay(entity *models.Entity) (string, error) {
 	if entity == nil {
 		return "", nil
 	}
-	return security.DecryptIdentityNumber(entity.IdentityNumberCiphertext)
+	callRes1, err := security.DecryptIdentityNumber(entity.IdentityNumberCiphertext)
+	if err != nil {
+		return "", fmt.Errorf("解密身份号码: %w", err)
+	}
+	return callRes1, nil
 }
 
 // toCaseInfo 转换为案件信息

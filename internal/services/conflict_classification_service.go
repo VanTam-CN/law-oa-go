@@ -151,7 +151,7 @@ func (s *conflictClassificationService) GetConflictTypeDetails(ctx context.Conte
 	// 临时实现，需要根据实际仓库接口调整
 	conflictTypes, err := s.repo.GetActiveConflictTypes(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询冲突分类: %w", err)
 	}
 
 	for _, ct := range conflictTypes {
@@ -167,9 +167,17 @@ func (s *conflictClassificationService) GetConflictTypeDetails(ctx context.Conte
 func (s *conflictClassificationService) GetConflictTypes(ctx context.Context, filters *ConflictTypeFilters) ([]*models.ConflictType, error) {
 	if filters != nil && (filters.Category != "" || filters.RiskLevel != "") {
 		// 实现过滤逻辑
-		return s.repo.GetActiveConflictTypes(ctx)
+		callRes1, err := s.repo.GetActiveConflictTypes(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("查询冲突分类: %w", err)
+		}
+		return callRes1, nil
 	}
-	return s.repo.GetActiveConflictTypes(ctx)
+	callRes1, err := s.repo.GetActiveConflictTypes(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("查询冲突分类: %w", err)
+	}
+	return callRes1, nil
 }
 
 // AssessRiskLevel 评估风险等级

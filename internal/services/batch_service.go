@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/concurrency"
 	"law-oa-go/internal/models"
 )
@@ -60,7 +61,7 @@ func (s *BatchService) BatchUpdateClients(ctx context.Context, updates []map[str
 	}
 
 	// 使用事务确保数据一致性
-	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		for i := 0; i < len(updates); i += batchSize {
 			end := i + batchSize
 			if end > len(updates) {
@@ -78,7 +79,10 @@ func (s *BatchService) BatchUpdateClients(ctx context.Context, updates []map[str
 			}
 		}
 		return nil
-	})
+	}); err != nil {
+		return fmt.Errorf("BatchUpdateClients 事务失败: %w", err)
+	}
+	return nil
 }
 
 // BatchCreateCases 批量创建案件
@@ -112,7 +116,8 @@ func (s *BatchService) BatchFindByIDs(ctx context.Context, model interface{}, id
 func (s *BatchService) BatchProcessWithCallback(ctx context.Context,
 	query *gorm.DB,
 	batchSize int,
-	callback func(batch interface{}) error) error {
+	callback func(batch interface{}) error,
+) error {
 	if batchSize <= 0 {
 		batchSize = 1000
 	}
@@ -351,7 +356,8 @@ func (s *BatchService) BatchProcessWithCallbackConcurrent(ctx context.Context,
 	query *gorm.DB,
 	batchSize int,
 	maxConcurrency int,
-	callback func(batch interface{}) error) error {
+	callback func(batch interface{}) error,
+) error {
 	if batchSize <= 0 {
 		batchSize = 1000
 	}

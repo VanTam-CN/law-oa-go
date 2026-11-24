@@ -75,7 +75,7 @@ func (s *EscalationService) checkCriticalItems(ctx context.Context, config Escal
 
 	items, err := s.inboxRepo.GetOverdueCriticalItems(ctx, threshold)
 	if err != nil {
-		return err
+		return fmt.Errorf("查询收件箱: %w", err)
 	}
 
 	for _, item := range items {
@@ -105,7 +105,7 @@ func (s *EscalationService) checkHighItems(ctx context.Context, config Escalatio
 
 	items, _, err := s.inboxRepo.List(ctx, params)
 	if err != nil {
-		return err
+		return fmt.Errorf("查询列表收件箱: %w", err)
 	}
 
 	for _, item := range items {
@@ -213,7 +213,10 @@ func (s *EscalationService) ManualEscalate(ctx context.Context, itemID uint, rea
 			DueDateType: "manual_escalation",
 		}
 
-		return s.inboxRepo.Create(ctx, notifyItem)
+		if err := s.inboxRepo.Create(ctx, notifyItem); err != nil {
+			return fmt.Errorf("创建收件箱: %w", err)
+		}
+		return nil
 	}
 
 	// 完整升级流程
@@ -231,7 +234,7 @@ func (s *EscalationService) GetEscalationHistory(ctx context.Context, userID uin
 
 	items, _, err := s.inboxRepo.List(ctx, params)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询列表收件箱: %w", err)
 	}
 
 	return items, nil
@@ -251,7 +254,10 @@ func (s *EscalationService) CancelEscalation(ctx context.Context, itemID uint) e
 	item.Escalated = false
 	item.EscalatedAt = nil
 
-	return s.inboxRepo.Update(ctx, item)
+	if err := s.inboxRepo.Update(ctx, item); err != nil {
+		return fmt.Errorf("更新收件箱: %w", err)
+	}
+	return nil
 }
 
 // getSupervisorID 获取上级律师ID
@@ -275,7 +281,7 @@ func (s *EscalationService) GetEscalationStats(ctx context.Context) (*Escalation
 
 	items, total, err := s.inboxRepo.List(ctx, params)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询列表收件箱: %w", err)
 	}
 
 	stats := &EscalationStats{

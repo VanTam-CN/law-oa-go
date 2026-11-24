@@ -3,11 +3,13 @@ package repositories
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
 	"law-oa-go/internal/models"
 )
 
@@ -76,7 +78,7 @@ func (r *EthicalWallRepositoryImpl) IsEthicalWallEnabled(ctx context.Context, ca
 // EnableEthicalWall 启用案件隔离墙
 func (r *EthicalWallRepositoryImpl) EnableEthicalWall(ctx context.Context, caseID, userID uint, description string) error {
 	now := time.Now()
-	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	if err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		result := tx.Model(&models.Case{}).
 			Where("id = ?", caseID).
 			Updates(map[string]interface{}{
@@ -125,7 +127,10 @@ func (r *EthicalWallRepositoryImpl) EnableEthicalWall(ctx context.Context, caseI
 			}
 		}
 		return nil
-	})
+	}); err != nil {
+		return fmt.Errorf("EnableEthicalWall 事务失败: %w", err)
+	}
+	return nil
 }
 
 // DisableEthicalWall 禁用案件隔离墙

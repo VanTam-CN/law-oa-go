@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
 	"law-oa-go/internal/models"
 )
 
@@ -235,10 +236,7 @@ func AssignConflictReviewer(ctx context.Context, db *gorm.DB, actor AuthActor, c
 			Where("effective_to IS NULL OR effective_to > ?", time.Now()).
 			Order("created_at DESC").First(&existing).Error; err == nil {
 			result = existing
-			if err := syncOpenConflictApprovalApprover(tx, checkID, reviewer, actor.UserID, time.Now()); err != nil {
-				return err
-			}
-			return nil
+			return syncOpenConflictApprovalApprover(tx, checkID, reviewer, actor.UserID, time.Now())
 		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
 		}
@@ -278,7 +276,7 @@ func AssignConflictReviewer(ctx context.Context, db *gorm.DB, actor AuthActor, c
 		}).Error
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("分配事务失败: %w", err)
 	}
 	return &result, nil
 }

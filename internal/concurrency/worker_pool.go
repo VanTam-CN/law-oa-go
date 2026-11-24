@@ -219,7 +219,7 @@ func (p *WorkerPool) SubmitWithResult(ctx context.Context, task Task) (*TaskResu
 		case <-timeout:
 			return nil, fmt.Errorf("timeout waiting for result")
 		case <-ctx.Done():
-			return nil, ctx.Err()
+			return nil, fmt.Errorf("上下文已取消: %w", ctx.Err())
 		}
 	}
 }

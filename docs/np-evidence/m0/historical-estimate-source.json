@@ -1,0 +1,10 @@
+{
+  "path": "/Users/mac/Desktop/FT/law-oa-go/docs/plans/2026-11-18-law-firm-assistant-i0-readonly-baseline-v0.4.md",
+  "sha256": "ae87fd6b6ff6839d1871be9819cd581b822ff5efdd0320b25d5d8a70fd446650",
+  "role": "historical planning reference only, not frozen main/source code or new quote",
+  "ranges": {
+    "base": "50-80 person-days",
+    "with_buffer": "60-96 person-days"
+  },
+  "current_main_total": "NOT_ESTIMATED"
+}

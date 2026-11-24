@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/common"
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/services"
@@ -77,7 +78,7 @@ func (h *ConflictReviewerHandler) canAccessConflictTask(c *gin.Context, taskID s
 	var record models.ConflictCheckRecord
 	err := h.db.WithContext(c.Request.Context()).Where("check_id = ?", strings.TrimSpace(taskID)).First(&record).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			common.APINotFound(c, "冲突检测记录不存在", "指定的冲突检测记录不存在")
 			return false
 		}

@@ -11,10 +11,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"law-oa-go/internal/errors"
+
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"law-oa-go/internal/errors"
 )
 
 func setupEnhancedTestGin() *gin.Engine {

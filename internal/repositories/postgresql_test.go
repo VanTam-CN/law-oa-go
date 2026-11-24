@@ -8,9 +8,10 @@ import (
 	"testing"
 	"time"
 
+	"law-oa-go/internal/models"
+
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"law-oa-go/internal/models"
 )
 
 // setupPostgreSQLTestDB 创建PostgreSQL测试数据库连接

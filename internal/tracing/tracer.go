@@ -14,15 +14,16 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/exporters/jaeger" // SA1019 排除：jaeger 导出器仍在默认链路使用，迁移 OTLP 见跟踪卡
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/exporters/zipkin"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
-sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 )
 
 // TracerConfig 追踪器配置
@@ -31,8 +32,8 @@ type TracerConfig struct {
 	ServiceVersion     string            `json:"serviceVersion" yaml:"serviceVersion"`
 	Environment        string            `json:"environment" yaml:"environment"`
 	Enabled            bool              `json:"enabled" yaml:"enabled"`
-	SamplingRate       float64           `json:"samplingRate" yaml:"samplingRate"`       // 采样率 0.0-1.0
-	Exporters          []string          `json:"exporters" yaml:"exporters"`             // 导出器: jaeger, zipkin, otlp
+	SamplingRate       float64           `json:"samplingRate" yaml:"samplingRate"` // 采样率 0.0-1.0
+	Exporters          []string          `json:"exporters" yaml:"exporters"`       // 导出器: jaeger, zipkin, otlp
 	JaegerEndpoint     string            `json:"jaegerEndpoint" yaml:"jaegerEndpoint"`
 	ZipkinEndpoint     string            `json:"zipkinEndpoint" yaml:"zipkinEndpoint"`
 	OTLPEndpoint       string            `json:"otlpEndpoint" yaml:"otlpEndpoint"`
@@ -62,7 +63,7 @@ func DefaultTracerConfig() *TracerConfig {
 		MaxExportBatchSize: 512,
 		MaxQueueSize:       2048,
 		ResourceAttributes: map[string]string{
-			"service.namespace": "law-oa",
+			"service.namespace":   "law-oa",
 			"service.instance.id": getInstanceID(),
 		},
 	}
@@ -71,15 +72,15 @@ func DefaultTracerConfig() *TracerConfig {
 // ProductionTracerConfig 返回生产环境追踪器配置
 func ProductionTracerConfig() *TracerConfig {
 	return &TracerConfig{
-		ServiceName:        "law-oa-go",
-		ServiceVersion:     "2.1.0",
-		Environment:        "production",
-		Enabled:            true,
-		SamplingRate:       0.1, // 生产环境10%采样
-		Exporters:          []string{"otlp", "jaeger"},
-		JaegerEndpoint:     "http://jaeger:14268/api/traces",
-		ZipkinEndpoint:     "http://zipkin:9411/api/v2/spans",
-		OTLPEndpoint:       "http://otel-collector:4318/v1/traces",
+		ServiceName:    "law-oa-go",
+		ServiceVersion: "2.1.0",
+		Environment:    "production",
+		Enabled:        true,
+		SamplingRate:   0.1, // 生产环境10%采样
+		Exporters:      []string{"otlp", "jaeger"},
+		JaegerEndpoint: "http://jaeger:14268/api/traces",
+		ZipkinEndpoint: "http://zipkin:9411/api/v2/spans",
+		OTLPEndpoint:   "http://otel-collector:4318/v1/traces",
 		Headers: map[string]string{
 			"authorization": "Bearer ${OTEL_TOKEN}",
 		},
@@ -88,12 +89,12 @@ func ProductionTracerConfig() *TracerConfig {
 		MaxExportBatchSize: 1024,
 		MaxQueueSize:       4096,
 		ResourceAttributes: map[string]string{
-			"service.namespace":     "law-oa",
-			"service.instance.id":   getInstanceID(),
+			"service.namespace":      "law-oa",
+			"service.instance.id":    getInstanceID(),
 			"deployment.environment": "production",
-			"telemetry.sdk.name":    "opentelemetry",
+			"telemetry.sdk.name":     "opentelemetry",
 			"telemetry.sdk.language": "go",
-			"telemetry.sdk.version": "1.28.0",
+			"telemetry.sdk.version":  "1.28.0",
 		},
 	}
 }
@@ -115,7 +116,7 @@ func InitTracer(config *TracerConfig) error {
 	}
 
 	if !config.Enabled {
-		otel.SetTracerProvider(trace.NewNoopTracerProvider())
+		otel.SetTracerProvider(noop.NewTracerProvider())
 		return nil
 	}
 
@@ -185,10 +186,14 @@ func createResource(config *TracerConfig) (*resource.Resource, error) {
 		attributes = append(attributes, attribute.String(k, v))
 	}
 
-	return resource.Merge(
+	callRes1, err := resource.Merge(
 		resource.Default(),
 		resource.NewWithAttributes(semconv.SchemaURL, attributes...),
 	)
+	if err != nil {
+		return nil, fmt.Errorf("合并 OTel 资源: %w", err)
+	}
+	return callRes1, nil
 }
 
 // createExporters 创建导出器
@@ -233,19 +238,27 @@ func createExporters(config *TracerConfig) ([]sdktrace.SpanExporter, error) {
 // createJaegerExporter 创建Jaeger导出器
 func createJaegerExporter(config *TracerConfig) (sdktrace.SpanExporter, error) {
 	if config.JaegerEndpoint == "" {
-		return nil, fmt.Errorf("Jaeger endpoint not configured")
+		return nil, fmt.Errorf("jaeger endpoint not configured")
 	}
 
-	return jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(config.JaegerEndpoint)))
+	callRes1, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(config.JaegerEndpoint)))
+	if err != nil {
+		return nil, fmt.Errorf("创建 Jaeger 导出器: %w", err)
+	}
+	return callRes1, nil
 }
 
 // createZipkinExporter 创建Zipkin导出器
 func createZipkinExporter(config *TracerConfig) (sdktrace.SpanExporter, error) {
 	if config.ZipkinEndpoint == "" {
-		return nil, fmt.Errorf("Zipkin endpoint not configured")
+		return nil, fmt.Errorf("zipkin endpoint not configured")
 	}
 
-	return zipkin.New(config.ZipkinEndpoint)
+	callRes1, err := zipkin.New(config.ZipkinEndpoint)
+	if err != nil {
+		return nil, fmt.Errorf("创建 Zipkin 导出器: %w", err)
+	}
+	return callRes1, nil
 }
 
 // createOTLPExporter 创建OTLP导出器
@@ -269,7 +282,11 @@ func createOTLPExporter(config *TracerConfig) (sdktrace.SpanExporter, error) {
 	}
 
 	client := otlptracehttp.NewClient(clientOptions...)
-	return otlptrace.New(context.Background(), client)
+	callRes1, err := otlptrace.New(context.Background(), client)
+	if err != nil {
+		return nil, fmt.Errorf("创建 OTLP 导出器: %w", err)
+	}
+	return callRes1, nil
 }
 
 // createSampler 创建采样器
@@ -355,19 +372,29 @@ func GetSpanID(span trace.Span) string {
 // 上下文工具函数
 // ==============================
 
+// contextKey 私有键类型：避免以基础类型作 context key（revive context-keys-type）
+type contextKey string
+
+const (
+	// TraceIDKey 上下文中的追踪 ID 键
+	TraceIDKey contextKey = "trace_id"
+	// SpanIDKey 上下文中的 span ID 键
+	SpanIDKey contextKey = "span_id"
+)
+
 // ContextWithTraceID 向上下文添加追踪ID
 func ContextWithTraceID(ctx context.Context, traceID string) context.Context {
-	return context.WithValue(ctx, "trace_id", traceID)
+	return context.WithValue(ctx, TraceIDKey, traceID)
 }
 
 // ContextWithSpanID 向上下文添加span ID
 func ContextWithSpanID(ctx context.Context, spanID string) context.Context {
-	return context.WithValue(ctx, "span_id", spanID)
+	return context.WithValue(ctx, SpanIDKey, spanID)
 }
 
 // GetTraceIDFromContext 从上下文获取追踪ID
 func GetTraceIDFromContext(ctx context.Context) string {
-	if traceID, ok := ctx.Value("trace_id").(string); ok {
+	if traceID, ok := ctx.Value(TraceIDKey).(string); ok {
 		return traceID
 	}
 	if span := trace.SpanFromContext(ctx); span != nil {
@@ -378,7 +405,7 @@ func GetTraceIDFromContext(ctx context.Context) string {
 
 // GetSpanIDFromContext 从上下文获取span ID
 func GetSpanIDFromContext(ctx context.Context) string {
-	if spanID, ok := ctx.Value("span_id").(string); ok {
+	if spanID, ok := ctx.Value(SpanIDKey).(string); ok {
 		return spanID
 	}
 	if span := trace.SpanFromContext(ctx); span != nil {
@@ -471,7 +498,10 @@ func getInstanceID() string {
 func Flush(ctx context.Context) error {
 	if globalTracer != nil {
 		if provider, ok := globalTracer.provider.(*sdktrace.TracerProvider); ok {
-			return provider.ForceFlush(ctx)
+			if err := provider.ForceFlush(ctx); err != nil {
+				return fmt.Errorf("刷新链路数据: %w", err)
+			}
+			return nil
 		}
 	}
 	return nil
@@ -481,7 +511,10 @@ func Flush(ctx context.Context) error {
 func Shutdown(ctx context.Context) error {
 	if globalTracer != nil {
 		if provider, ok := globalTracer.provider.(*sdktrace.TracerProvider); ok {
-			return provider.Shutdown(ctx)
+			if err := provider.Shutdown(ctx); err != nil {
+				return fmt.Errorf("关闭链路: %w", err)
+			}
+			return nil
 		}
 	}
 	return nil

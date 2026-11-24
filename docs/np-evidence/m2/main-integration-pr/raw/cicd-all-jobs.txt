@@ -1,0 +1,6 @@
+🔍 Code Quality	completed/failure
+🎨 Frontend Build	completed/skipped
+🏗️ Multi-Arch Build	completed/skipped
+🚀 Deploy to Production	completed/skipped
+📢 Notification & Report	completed/skipped
+🚀 Deploy to Staging	completed/skipped

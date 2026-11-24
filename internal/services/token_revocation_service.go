@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/models"
 )
 
@@ -39,7 +40,7 @@ func NewTokenRevocationService(db *gorm.DB) TokenRevocationService {
 
 // RevokeAllTokens 撤销用户所有令牌
 func (s *TokenRevocationServiceImpl) RevokeAllTokens(ctx context.Context, userID uint, revokedBy uint, reason string) error {
-	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// 记录撤销日志
 		log := &models.TokenRevocationLog{
 			UserID:         userID,
@@ -58,7 +59,10 @@ func (s *TokenRevocationServiceImpl) RevokeAllTokens(ctx context.Context, userID
 		// 例如: 清除 Redis 中的 session、删除 JWT 黑名单等
 
 		return nil
-	})
+	}); err != nil {
+		return fmt.Errorf("吊销令牌事务失败: %w", err)
+	}
+	return nil
 }
 
 // RevokeTokenType 撤销特定类型的令牌

@@ -44,7 +44,7 @@ func NewClient(host, port, username, password string) (*Client, error) {
 
 	client, err := elasticsearch.NewClient(esConfig)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("创建 ES 客户端: %w", err)
 	}
 
 	// 测试连接
@@ -55,12 +55,12 @@ func NewClient(host, port, username, password string) (*Client, error) {
 		client.Info.WithContext(ctx),
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("获取 ES 集群信息: %w", err)
 	}
 	defer res.Body.Close()
 
 	if res.IsError() {
-		return nil, err
+		return nil, fmt.Errorf("获取 ES 集群信息: 响应返回错误状态 %s", res.Status())
 	}
 
 	return &Client{
@@ -77,7 +77,7 @@ func (c *Client) IndexDocument(ctx context.Context, index string, id string, bod
 		c.client.Index.WithDocumentID(id),
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("写入 ES 索引: %w", err)
 	}
 	defer res.Body.Close()
 
@@ -96,7 +96,7 @@ func (c *Client) Search(ctx context.Context, index string, query map[string]inte
 		c.client.Search.WithBody(strings.NewReader(toJSON(query))),
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("搜索 ES 索引: %w", err)
 	}
 	defer res.Body.Close()
 
@@ -107,7 +107,7 @@ func (c *Client) Search(ctx context.Context, index string, query map[string]inte
 	// 解析响应
 	var result map[string]interface{}
 	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("解析: %w", err)
 	}
 
 	return result, nil
@@ -121,7 +121,7 @@ func (c *Client) DeleteDocument(ctx context.Context, index string, id string) er
 		c.client.Delete.WithContext(ctx),
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("删除 ES 文档: %w", err)
 	}
 	defer res.Body.Close()
 
@@ -144,7 +144,7 @@ func (c *Client) CreateIndex(ctx context.Context, index string, mapping map[stri
 		c.client.Indices.Create.WithBody(strings.NewReader(toJSON(body))),
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("创建 ES 索引: %w", err)
 	}
 	defer res.Body.Close()
 
@@ -162,7 +162,7 @@ func (c *Client) DeleteIndex(ctx context.Context, index string) error {
 		c.client.Indices.Delete.WithContext(ctx),
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("删除 ES 索引: %w", err)
 	}
 	defer res.Body.Close()
 
@@ -180,14 +180,14 @@ func (c *Client) IndexExists(ctx context.Context, index string) (bool, error) {
 		c.client.Indices.Exists.WithContext(ctx),
 	)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("检查 ES 索引: %w", err)
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode == 200 {
+	if res.StatusCode == http.StatusOK {
 		return true, nil
 	}
-	if res.StatusCode == 404 {
+	if res.StatusCode == http.StatusNotFound {
 		return false, nil
 	}
 
@@ -201,7 +201,7 @@ func (c *Client) GetIndexMapping(ctx context.Context, index string) (map[string]
 		c.client.Indices.GetMapping.WithIndex(index),
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("读取 ES 映射: %w", err)
 	}
 	defer res.Body.Close()
 
@@ -211,7 +211,7 @@ func (c *Client) GetIndexMapping(ctx context.Context, index string) (map[string]
 
 	var result map[string]interface{}
 	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("解析: %w", err)
 	}
 
 	return result, nil

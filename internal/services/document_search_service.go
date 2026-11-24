@@ -456,7 +456,7 @@ func (s *DocumentSearchService) performSearch(ctx context.Context, req *Document
 	// Apply additional filters
 	docModels, total, err := s.docRepo.List(ctx, params)
 	if err != nil {
-		return nil, 0, 0, err
+		return nil, 0, 0, fmt.Errorf("查询列表文档: %w", err)
 	}
 
 	// Convert to search items and apply additional filtering
@@ -618,11 +618,11 @@ func (s *DocumentSearchService) highlightText(text, query string) string {
 	}
 
 	if start > 20 {
-		start = start - 20
+		start -= 20
 	}
 
 	if end < len(text)-20 {
-		end = end + 20
+		end += 20
 	}
 
 	if start < 0 {

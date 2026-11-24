@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -14,18 +15,19 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
+
 	"law-oa-go/internal/cache"
 	"law-oa-go/internal/logger"
 )
 
 // CacheConfig 缓存配置
 type CacheConfig struct {
-	TTL            time.Duration
-	SkipHeader     string
-	RedisClient    *redis.Client
-	KeyPrefix      string
-	MaxBodySize    int64
-	SkipRoutes     []string
+	TTL             time.Duration
+	SkipHeader      string
+	RedisClient     *redis.Client
+	KeyPrefix       string
+	MaxBodySize     int64
+	SkipRoutes      []string
 	CacheableRoutes []string
 }
 
@@ -131,7 +133,7 @@ func getCachedResponse(c *gin.Context, key string, config CacheConfig) (*CacheRe
 		if err := cache.DefaultCacheService.Get(key, &cachedData); err == nil {
 			// 转换为新的格式
 			cached := &CacheResponse{
-				Status: 200,
+				Status:  200,
 				Headers: map[string]string{"Content-Type": "application/json"},
 				Body:    mustMarshalJSON(cachedData),
 			}
@@ -149,7 +151,7 @@ func getCachedResponseFromRedis(c *gin.Context, key string, config CacheConfig) 
 
 	data, err := config.RedisClient.Get(ctx, key).Result()
 	if err != nil {
-		if err != redis.Nil {
+		if !errors.Is(err, redis.Nil) {
 			logger.Logger.Error("Cache get error",
 				zap.Error(err),
 				zap.String("key", key),
@@ -227,7 +229,11 @@ type responseWriter struct {
 
 func (w *responseWriter) Write(data []byte) (int, error) {
 	w.buffer.Write(data)
-	return w.ResponseWriter.Write(data)
+	callRes1, err := w.ResponseWriter.Write(data)
+	if err != nil {
+		return 0, fmt.Errorf("写入: %w", err)
+	}
+	return callRes1, nil
 }
 
 func (w *responseWriter) WriteHeader(code int) {
@@ -262,9 +268,9 @@ func shouldCacheHeader(key string) bool {
 		"Content-Type":     true,
 		"Content-Encoding": true,
 		"Cache-Control":    true,
-		"ETag":            true,
-		"Last-Modified":   true,
-		"Vary":            true,
+		"ETag":             true,
+		"Last-Modified":    true,
+		"Vary":             true,
 	}
 	return cacheableHeaders[strings.ToLower(key)]
 }
@@ -283,11 +289,7 @@ func shouldCacheResponse(c *gin.Context, w *responseWriter, config CacheConfig) 
 
 	// 检查响应类型
 	contentType := w.headers["Content-Type"]
-	if !shouldCacheContentType(contentType) {
-		return false
-	}
-
-	return true
+	return shouldCacheContentType(contentType)
 }
 
 // shouldCacheContentType 检查是否应该缓存内容类型
@@ -526,7 +528,6 @@ func (rl *OptimizedRateLimiter) checkRedisLimit(key string) bool {
 	incr := pipe.Incr(ctx, key)
 	pipe.Expire(ctx, key, rl.window)
 	_, err := pipe.Exec(ctx)
-
 	if err != nil {
 		logger.Logger.Error("Rate limit check error", zap.Error(err))
 		return false // 出错时不限流

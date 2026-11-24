@@ -215,13 +215,8 @@ func (s *BadDebtService) ApproveBadDebt(ctx context.Context, id uint, approvedBy
 		return nil, fmt.Errorf("审批坏账核销失败: %w", err)
 	}
 
-	// 如果是针对特定发票的坏账核销，更新发票状态
-	if badDebt.InvoiceID != nil {
-		// 检查是否全部核销
-		if badDebt.RemainingAmount <= 0 {
-			// 可以考虑将发票标记为已核销
-		}
-	}
+	// 针对特定发票的坏账核销：发票核销状态联动尚未实现
+	// （lint 治理移除空转判断；功能补齐见债台账跟踪卡）
 
 	return s.GetBadDebtByID(ctx, id)
 }
