@@ -56,7 +56,7 @@
 |---|---|---|
 | errcheck | 513 | 批修卡（与 errchkjson 23 / forcetypeassert 74 同卡） |
 | wrapcheck | 439 | 决策卡（错误包装策略先定，再批修） |
-| goheader | 329 | 决策卡（统一 license 头模板后一次性补齐） |
+| goheader | 329 | **决策完成：废弃，不补文件头**（t_5644e59b，见 §5.1；不回门禁，终态） |
 | revive 风格规则 | exported 749 / unused-parameter 314 / var-naming 59 / package-comments 40 | 批修卡（恢复规则后按包分批） |
 | 复杂度/可维护性 | gocognit 114 / dupl 87 / nestif 42 / gocyclo 33 / funlen 25 / maintidx 11 | 批修卡 |
 | goconst | 132 | 批修卡 |
@@ -65,6 +65,35 @@
 | 基础设施 | jaeger→OTLP（SA1019 排除中）、dev-api-key 后门（G101 排除中，修复或移除） | 基础设施/安全卡 |
 | main.go | run() error 模式改造（exitAfterDefer 排除中） | 架构卡 |
 | 工具 | mnd 采纳、gosec/govulncheck 是否固定版本 | 工具卡 |
+
+### 5.1 goheader 决策：废弃，不补文件头（t_5644e59b，2026-11-24）
+
+**决策：不引入统一文件头/license 头模板；goheader 不回门禁集（终态，非未偿债务）。**
+
+依据（全部在库证据或实测，无假设）：
+
+1. **许可声明的唯一事实源是仓库根 `LICENSE`（Apache-2.0 全文）+ README badge**。
+   Apache-2.0 附录的 per-file notice 官方定位为 recommended-optional（§4(c) 仅要求分发时附许可副本）；
+   本仓库为私有产品（小型律所 OA，Docker Compose 内部部署），无第三方分发场景，per-file 头无合规必要。
+2. **治理前旧模板自始错误**（fb73a7d `.golangci.yml`）：`values.const.LICENSE: MIT` +
+   版权主体 "Law OA Go Project" 与仓库 Apache-2.0 直接矛盾；全仓无 AUTHORS/COPYRIGHT/NOTICE，
+   无既定版权主体——按旧模板补齐会把 MIT 字样写进 Apache-2.0 项目的每个文件；
+   改用正确模板则需先虚构版权归属，法律产品仓库不可取。
+3. **全仓 0 个既有文件头**：grep `Copyright|License|SPDX` 命中 9 个 .go 文件，逐一核实
+   全部为 `BusinessLicense`/`LicenseNo` 等业务标识符；该约定从未被采用。
+4. **成本收益不成立**：探针复现（golangci-lint v1.64.8 + 治理前模板原样，见
+   `snapshots/goheader-probe-decision.txt`）——决策时 **372 个文件缺头**
+   （365 条 Missed header + 7 条首行为包注释的 Actual 变体，同属缺头）。
+   台账「329」为基线快照的遮蔽值：revive `package-comments`（当时在门禁集）在同文件
+   `1:1` 报告，`uniq-by-line: true` 每行仅保留一条，挤掉了 goheader 的 1:1 发现
+   （36 个文件逐一核实均有该遮挡对）；治理将 package-comments 移出门禁集后遮蔽消失，
+   真实缺头数恢复可见。两树（fb73a7d ↔ 191bb6b）409 个 .go 文件集逐名比对完全一致、
+   0 增删，从未有任何文件头。372 文件纯样板 churn 与在飞分支
+   （np-complexity-batch / np-wrapcheck / i11 / m3 / m4）全线冲突；goheader 属样板策略，
+   不在门禁集范围定义（编译正确性/错误处理/安全/格式）内，且启用后每个新文件永久增加门槛成本。
+
+落地：`.golangci.yml` 注释中 goheader 从「移出门禁集待恢复」改判「已决策废弃（不回门禁，终态）」，
+enable 列表不含 goheader、无 goheader settings 残留（治理版本就未保留）。新文件无需文件头。
 
 ## 6. 工具版本固定决策（验收 3）
 

@@ -162,13 +162,23 @@ linters:
     - gofmt
     - goimports
   # 已移出门禁集（存量债台账 + follow-up 卡，逐批修复后恢复）：
-  #   errcheck(513) wrapcheck(439) goheader(329) goconst(132) nilnil(67)
+  #   errcheck(513) wrapcheck(439) goconst(132) nilnil(67)
   #   unused(79, 结构体字段可能被 gorm/JSON 反射引用，需逐项甄别)
   #   unparam(13) promlinter(13) nonamedreturns(12) containedctx(9) prealloc(14)
   #   gocognit(114) gocyclo(33) funlen(25) nestif(42) dupl(87)
   #   revive 风格规则: exported(749) package-comments(40) unused-parameter(314) var-naming(59)
   #   未检查值族(与 errcheck 同卡批修): errchkjson(23) forcetypeassert(74)
   #   复杂度/可维护性族(同卡批修): maintidx(11) gocognit(114) gocyclo(33) funlen(25) nestif(42) dupl(87)
+  # 已决策废弃（不回门禁，终态）：goheader(台账 329 为 uniq-by-line 遮蔽值 /
+  #   决策时实测 372 个文件缺头，机理见 evidence README §5.1)——t_5644e59b：
+  #   1) 许可声明的唯一事实源是仓库根 LICENSE（Apache-2.0 全文）；Apache-2.0 附录 per-file
+  #      notice 官方定位 recommended-optional，私有产品无第三方分发场景，per-file 头无合规必要；
+  #   2) 治理前旧模板(fb73a7d)声明 LICENSE: MIT + 主体 "Law OA Go Project"，与仓库
+  #      Apache-2.0 自始矛盾；全仓无 AUTHORS/COPYRIGHT/NOTICE 既定版权主体，
+  #      补齐即需虚构法律归属，不可取；
+  #   3) 全仓 0 个既有文件头（grep 命中均为 BusinessLicense 等标识符），该约定从未被采用；
+  #      补齐属纯样板 churn，与多在飞分支冲突；goheader 属样板策略，不在门禁集范围
+  #      （编译正确性/错误处理/安全/格式），且每个新文件永久增加门槛成本。
   # 已废弃（上游 deprecation，不再回归）：contextcheck tenv exportloopref
   # 已移除（local-prefixes 指向不存在的 github.com/your-org 占位、与 goimports 重复）：gci
 

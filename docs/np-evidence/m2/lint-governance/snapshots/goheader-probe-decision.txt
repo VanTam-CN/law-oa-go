@@ -1,0 +1,1123 @@
+internal/models/elasticsearch/legal_statutes.go:1:1: Missed header for check (goheader)
+package elasticsearch
+^
+internal/tracing/middleware.go:1:2: Actual: *
+Expected:Copyright (c) {{ YEAR }} {{ COMPANY }} (goheader)
+/**
+ ^
+internal/tracing/tracer.go:1:2: Actual: *
+Expected:Copyright (c) {{ YEAR }} {{ COMPANY }} (goheader)
+/**
+ ^
+internal/infrastructure/database.go:1:1: Missed header for check (goheader)
+package infrastructure
+^
+internal/logger/logger.go:1:2: Actual: *
+Expected:Copyright (c) {{ YEAR }} {{ COMPANY }} (goheader)
+/**
+ ^
+internal/metrics/application_metrics.go:1:1: Missed header for check (goheader)
+package metrics
+^
+internal/metrics/fuzzing_metrics.go:1:1: Missed header for check (goheader)
+package metrics
+^
+internal/metrics/metrics.go:1:2: Actual: *
+Expected:Copyright (c) {{ YEAR }} {{ COMPANY }} (goheader)
+/**
+ ^
+internal/metrics/performance_monitor.go:1:1: Missed header for check (goheader)
+package metrics
+^
+main.go:1:4: Actual: Package main 示例律师事务所OA
+Expected:Copyright (c) {{ YEAR }} {{ COMPANY }} (goheader)
+// Package main 示例律师事务所OA
+   ^
+cmd/backfill-conflict-index/main.go:1:1: Missed header for check (goheader)
+package main
+^
+cmd/backfill-sensitive-identities/main.go:1:1: Missed header for check (goheader)
+package main
+^
+cmd/gen_password/gen_password.go:1:1: Missed header for check (goheader)
+package main
+^
+cmd/migrate/main.go:1:1: Missed header for check (goheader)
+package main
+^
+cmd/qa-fixture/main.go:1:4: Actual: qa-fixture provisions fictional, repeatable acceptance data for a non-production
+Expected:Copyright (c) {{ YEAR }} {{ COMPANY }} (goheader)
+// qa-fixture provisions fictional, repeatable acceptance data for a non-production
+   ^
+cmd/server/main.go:1:1: Missed header for check (goheader)
+package main
+^
+frontend/migrate/main.go:1:1: Missed header for check (goheader)
+package main
+^
+internal/api/base_handler.go:1:1: Missed header for check (goheader)
+package api
+^
+internal/api/crud_handler.go:1:1: Missed header for check (goheader)
+package api
+^
+internal/api/response.go:1:1: Missed header for check (goheader)
+package api
+^
+internal/elasticsearch/client.go:1:1: Missed header for check (goheader)
+package elasticsearch
+^
+internal/logging/logging.go:1:1: Missed header for check (goheader)
+package logging
+^
+internal/middleware/v2/v2_middleware_factory.go:1:1: Missed header for check (goheader)
+package v2
+^
+internal/middleware/v2/v2_performance_middleware.go:1:1: Missed header for check (goheader)
+package v2
+^
+internal/middleware/v2/v2_security_middleware.go:1:1: Missed header for check (goheader)
+package v2
+^
+internal/monitoring/metrics.go:1:1: Missed header for check (goheader)
+package monitoring
+^
+internal/monitoring/monitoring.go:1:1: Missed header for check (goheader)
+package monitoring
+^
+internal/monitoring/performance.go:1:1: Missed header for check (goheader)
+package monitoring
+^
+internal/optimizations/query_optimizer.go:1:1: Missed header for check (goheader)
+package optimizations
+^
+internal/rbac/rbac_service.go:1:1: Missed header for check (goheader)
+package rbac
+^
+internal/server/server.go:1:1: Missed header for check (goheader)
+package server
+^
+internal/shutdown/shutdown.go:1:4: Actual: Package shutdown 提供优雅关闭功能
+Expected:Copyright (c) {{ YEAR }} {{ COMPANY }} (goheader)
+// Package shutdown 提供优雅关闭功能
+   ^
+internal/validation/validator.go:1:1: Missed header for check (goheader)
+package validation
+^
+internal/auth/claims.go:1:1: Missed header for check (goheader)
+package auth
+^
+internal/auth/context.go:1:1: Missed header for check (goheader)
+package auth
+^
+internal/auth/middleware.go:1:1: Missed header for check (goheader)
+package auth
+^
+internal/auth/test_utils.go:1:1: Missed header for check (goheader)
+package auth
+^
+internal/auth/token_manager.go:1:1: Missed header for check (goheader)
+package auth
+^
+internal/auth/token_revocation.go:1:1: Missed header for check (goheader)
+package auth
+^
+internal/auth/token_session_store.go:1:1: Missed header for check (goheader)
+package auth
+^
+internal/auth/auth_simple_test.go:1:1: Missed header for check (goheader)
+package auth
+^
+internal/auth/token_session_store_test.go:1:1: Missed header for check (goheader)
+package auth
+^
+internal/benchmark/simple_benchmark_test.go:1:1: Missed header for check (goheader)
+package benchmark
+^
+internal/cache/advanced_cache.go:1:1: Missed header for check (goheader)
+package cache
+^
+internal/cache/cache.go:1:1: Missed header for check (goheader)
+package cache
+^
+internal/cache/layered_cache.go:1:1: Missed header for check (goheader)
+package cache
+^
+internal/cache/cache_test.go:1:1: Missed header for check (goheader)
+package cache
+^
+internal/common/env.go:1:1: Missed header for check (goheader)
+package common
+^
+internal/common/errors.go:1:1: Missed header for check (goheader)
+package common
+^
+internal/common/response.go:1:1: Missed header for check (goheader)
+package common
+^
+internal/common/stream.go:1:1: Missed header for check (goheader)
+package common
+^
+internal/common/common_test.go:1:1: Missed header for check (goheader)
+package common
+^
+internal/common/response_test.go:1:1: Missed header for check (goheader)
+package common
+^
+internal/concurrency/concurrent_service.go:1:1: Missed header for check (goheader)
+package concurrency
+^
+internal/concurrency/safety.go:1:1: Missed header for check (goheader)
+package concurrency
+^
+internal/concurrency/worker_pool.go:1:1: Missed header for check (goheader)
+package concurrency
+^
+internal/concurrency/concurrent_service_test.go:1:1: Missed header for check (goheader)
+package concurrency
+^
+internal/concurrency/safety_test.go:1:1: Missed header for check (goheader)
+package concurrency
+^
+internal/concurrency/worker_pool_test.go:1:1: Missed header for check (goheader)
+package concurrency
+^
+internal/config/config.go:1:1: Missed header for check (goheader)
+package config
+^
+internal/config/conflict_detection.go:1:1: Missed header for check (goheader)
+package config
+^
+internal/config/config_test.go:1:1: Missed header for check (goheader)
+package config
+^
+internal/config/mysql_dsn_test.go:1:1: Missed header for check (goheader)
+package config
+^
+internal/database/cache_manager.go:1:1: Missed header for check (goheader)
+package database
+^
+internal/database/connection_pool.go:1:1: Missed header for check (goheader)
+package database
+^
+internal/database/database.go:1:1: Missed header for check (goheader)
+package database
+^
+internal/database/elasticsearch_optimizer.go:1:1: Missed header for check (goheader)
+package database
+^
+internal/database/migrator.go:1:1: Missed header for check (goheader)
+package database
+^
+internal/database/mysql_connector.go:1:1: Missed header for check (goheader)
+package database
+^
+internal/database/narrow_pilot_schema.go:1:1: Missed header for check (goheader)
+package database
+^
+internal/database/optimized_components.go:1:1: Missed header for check (goheader)
+package database
+^
+internal/database/performance_monitor.go:1:1: Missed header for check (goheader)
+package database
+^
+internal/database/performance_optimizer.go:1:1: Missed header for check (goheader)
+package database
+^
+internal/database/production_schema.go:1:1: Missed header for check (goheader)
+package database
+^
+internal/database/query_builder.go:1:1: Missed header for check (goheader)
+package database
+^
+internal/database/rbac_init.go:1:1: Missed header for check (goheader)
+package database
+^
+internal/database/repository.go:1:1: Missed header for check (goheader)
+package database
+^
+internal/database/mysql_connector_test.go:1:1: Missed header for check (goheader)
+package database
+^
+internal/errors/enhanced_errors.go:1:1: Missed header for check (goheader)
+package errors
+^
+internal/errors/error_handler.go:1:1: Missed header for check (goheader)
+package errors
+^
+internal/errors/simple_test.go:1:1: Missed header for check (goheader)
+package errors
+^
+internal/handlers/analytics_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/api_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/approval_conflict_redaction.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/approval_delegation_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/approval_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/approval_subject_authorization.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/auth_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/authz_helpers.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/case_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/client_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/commission_rule_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/conflict_check_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/conflict_handler_simple.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/conflict_policy_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/conflict_review_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/conflict_reviewer_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/conflict_scope_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/conflict_v2_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/content_filter_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/dashboard_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/deadline_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/demo_aggregate_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/demo_aggregate_helpers.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/document_handler_enhanced.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/document_stats_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/document_version_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/enhanced_case_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/ethical_wall.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/finance_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/folder_template_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/handoff_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/inbox_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/intake_approval_parties.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/intake_draft_revision.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/intake_material_noop_guard.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/intake_metadata_origins.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/intake_native_transaction.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/intake_opponent_identity_update.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/intake_party_identity_guard.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/integration_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/integration_test_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/legal_statutes.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/mvp_unavailable.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/notification_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/onlyoffice_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/rbac_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/role_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/subject_recheck_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/team_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/tools_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/trust_account_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/user_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/waiver_handler.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/approval_conflict_redaction_test.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/auth_handler_test.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/case_handler_test.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/client_handler_test.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/conflict_approval_workbench_test.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/conflict_handler_simple_test.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/document_handler_test.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/inbox_handler_security_test.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/intake_conflict_revision_test.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/intake_draft_revision_contract_test.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/intake_draft_revision_test.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/intake_draft_wall_test.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/intake_metadata_redaction_test.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/intake_mutation_rollback_test.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/intake_party_identity_guard_test.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/intake_party_inplace_update_test.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/intake_party_metadata_role_guard_test.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/normalize_aliases_test.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/onlyoffice_handler_test.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/handlers/user_handler_test.go:1:1: Missed header for check (goheader)
+package handlers
+^
+internal/health/config.go:1:1: Missed header for check (goheader)
+package health
+^
+internal/health/conflict_p0_check.go:1:1: Missed header for check (goheader)
+package health
+^
+internal/health/health.go:1:1: Missed header for check (goheader)
+package health
+^
+internal/health/middleware.go:1:1: Missed header for check (goheader)
+package health
+^
+internal/health/config_test.go:1:1: Missed header for check (goheader)
+package health
+^
+internal/health/conflict_p0_check_test.go:1:1: Missed header for check (goheader)
+package health
+^
+internal/health/health_test.go:1:1: Missed header for check (goheader)
+package health
+^
+internal/health/middleware_test.go:1:1: Missed header for check (goheader)
+package health
+^
+internal/middleware/admin.go:1:1: Missed header for check (goheader)
+package middleware
+^
+internal/middleware/audit.go:1:1: Missed header for check (goheader)
+package middleware
+^
+internal/middleware/business_metrics.go:1:1: Missed header for check (goheader)
+package middleware
+^
+internal/middleware/cache.go:1:1: Missed header for check (goheader)
+package middleware
+^
+internal/middleware/common.go:1:1: Missed header for check (goheader)
+package middleware
+^
+internal/middleware/document_resolver.go:1:1: Missed header for check (goheader)
+package middleware
+^
+internal/middleware/ethical_wall.go:1:1: Missed header for check (goheader)
+package middleware
+^
+internal/middleware/jwt.go:1:1: Missed header for check (goheader)
+package middleware
+^
+internal/middleware/logging.go:1:1: Missed header for check (goheader)
+package middleware
+^
+internal/middleware/metrics.go:1:1: Missed header for check (goheader)
+package middleware
+^
+internal/middleware/performance_cache.go:1:1: Missed header for check (goheader)
+package middleware
+^
+internal/middleware/rate_limit.go:1:1: Missed header for check (goheader)
+package middleware
+^
+internal/middleware/signature.go:1:1: Missed header for check (goheader)
+package middleware
+^
+internal/middleware/trust_balance_middleware.go:1:1: Missed header for check (goheader)
+package middleware
+^
+internal/middleware/authorization_test.go:1:1: Missed header for check (goheader)
+package middleware
+^
+internal/middleware/ethical_wall_test.go:1:1: Missed header for check (goheader)
+package middleware
+^
+internal/models/analytics_models.go:1:1: Missed header for check (goheader)
+package models
+^
+internal/models/approval_conflict_integration.go:1:1: Missed header for check (goheader)
+package models
+^
+internal/models/approval_delegation.go:1:1: Missed header for check (goheader)
+package models
+^
+internal/models/approval_models.go:1:1: Missed header for check (goheader)
+package models
+^
+internal/models/approval_node.go:1:1: Missed header for check (goheader)
+package models
+^
+internal/models/approval_template.go:1:1: Missed header for check (goheader)
+package models
+^
+internal/models/auth_token_session.go:1:1: Missed header for check (goheader)
+package models
+^
+internal/models/case_folder.go:1:1: Missed header for check (goheader)
+package models
+^
+internal/models/case_status.go:1:1: Missed header for check (goheader)
+package models
+^
+internal/models/client.go:1:1: Missed header for check (goheader)
+package models
+^
+internal/models/complete_models.go:1:1: Missed header for check (goheader)
+package models
+^
+internal/models/conflict.go:1:1: Missed header for check (goheader)
+package models
+^
+internal/models/conflict_p0_foundation.go:1:1: Missed header for check (goheader)
+package models
+^
+internal/models/conflict_reviewer.go:1:1: Missed header for check (goheader)
+package models
+^
+internal/models/conflict_rules.go:1:1: Missed header for check (goheader)
+package models
+^
+internal/models/conflict_subject.go:1:1: Missed header for check (goheader)
+package models
+^
+internal/models/document.go:1:1: Missed header for check (goheader)
+package models
+^
+internal/models/enhanced_case_models.go:1:1: Missed header for check (goheader)
+package models
+^
+internal/models/enhanced_conflict_models.go:1:1: Missed header for check (goheader)
+package models
+^
+internal/models/entity.go:1:1: Missed header for check (goheader)
+package models
+^
+internal/models/fee_template.go:1:1: Missed header for check (goheader)
+package models
+^
+internal/models/json_types.go:1:1: Missed header for check (goheader)
+package models
+^
+internal/models/legal_statutes.go:1:1: Missed header for check (goheader)
+package models
+^
+internal/models/legal_statutes_helpers.go:1:1: Missed header for check (goheader)
+package models
+^
+internal/models/models.go:1:1: Missed header for check (goheader)
+package models
+^
+internal/models/rbac_models.go:1:1: Missed header for check (goheader)
+package models
+^
+internal/models/testing_models.go:1:1: Missed header for check (goheader)
+package models
+^
+internal/models/v2_2_0_models.go:1:1: Missed header for check (goheader)
+package models
+^
+internal/models/basic_test.go:1:1: Missed header for check (goheader)
+package models
+^
+internal/models/testing_models_test.go:1:1: Missed header for check (goheader)
+package models
+^
+internal/performance/performance_test.go:1:1: Missed header for check (goheader)
+package performance
+^
+internal/repositories/analytics_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/approval_delegation_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/approval_node_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/approval_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/approval_template_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/approval_workflow_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/base_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/case_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/client_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/commission_rule_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/conflict_extended_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/conflict_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/conflict_requests.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/conflict_subject_index_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/contract_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/db_adapter.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/document_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/document_repository_impl.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/elasticsearch_legal_statutes.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/enhanced_conflict_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/entity_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/ethical_wall_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/fee_template_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/folder_template_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/inbox_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/integration_interfaces.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/integration_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/interfaces.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/lawyer_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/legal_categories.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/legal_statutes.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/legal_tags.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/memory_cache_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/notification_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/payment_aggregation.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/professional_conflict_detection_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/rbac_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/repositories.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/statistics_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/test_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/trust_account_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/user_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/waiver_repository.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/conflict_repository_test.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/repositories/conflict_subject_index_match_test.go:1:1: Missed header for check (goheader)
+package repositories
+^
+internal/retry/retry.go:1:1: Missed header for check (goheader)
+package retry
+^
+internal/retry/retry_test.go:1:1: Missed header for check (goheader)
+package retry
+^
+internal/router/analytics_routes.go:1:1: Missed header for check (goheader)
+package router
+^
+internal/router/router.go:1:1: Missed header for check (goheader)
+package router
+^
+internal/router/router_minimal.go:1:1: Missed header for check (goheader)
+package router
+^
+internal/router/router_authorization_test.go:1:1: Missed header for check (goheader)
+package router
+^
+internal/security/identity.go:1:1: Missed header for check (goheader)
+package security
+^
+internal/security/types.go:1:1: Missed header for check (goheader)
+package security
+^
+internal/security/security_test.go:1:1: Missed header for check (goheader)
+package security
+^
+internal/services/analytics_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/approval_assigner.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/approval_business_hooks.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/approval_conflict_integration_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/approval_delegation_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/approval_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/approval_state_machine.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/approval_template_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/async_conflict_check_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/authorization_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/bad_debt_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/batch_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/case_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/case_state_machine.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/client_contact_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/client_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/commission_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/common_types.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/company_api_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/conflict_check_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/conflict_classification_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/conflict_context.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/conflict_detection_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/conflict_hook_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/conflict_officer_appointment_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/conflict_p0_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/conflict_policy_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/conflict_pool_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/conflict_reviewer_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/conflict_scan_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/conflict_scope_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/conflict_subject_index_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/content_filter_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/contract_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/deadline_calculator.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/document_lock_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/document_permission_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/document_preview_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/document_recycle_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/document_search_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/document_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/document_stats_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/document_version_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/elasticsearch_sync_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/enhanced_case_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/enhanced_conflict_detection_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/entity_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/escalation_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/ethical_wall_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/event_dispatcher.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/fee_template_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/finance_types.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/folder_template_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/handoff_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/inbox_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/invoice_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/lawyer_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/legal_statutes.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/mcp_client.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/notification_queue_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/notification_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/notification_template_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/offboarding_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/payment_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/pdf_report_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/rbac_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/risk_assessment_service_v2.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/risk_assessor.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/scheduler_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/search_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/sensitive_word_filter_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/subject_recheck_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/team_permission_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/token_revocation_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/trust_account_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/types.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/user_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/v2_conflict_detection_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/waiver_workflow_service.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/approval_delegation_test.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/async_conflict_intake_revision_test.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/case_state_machine_test.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/client_service_comprehensive_test.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/commission_rule_test.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/conflict_detection_service_test.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/conflict_hook_test.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/conflict_reviewer_service_test.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/deadline_calculator_test.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/document_lock_service_test.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/entity_recursive_test.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/risk_assessor_test.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/security_control_test.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/trust_account_service_test.go:1:1: Missed header for check (goheader)
+package services
+^
+internal/services/basic_test.go:1:1: Missed header for check (goheader)
+package services_test
+^
+internal/services/test/user_service_test.go:1:1: Missed header for check (goheader)
+package services_test
+^
+internal/validators/case_validator.go:1:1: Missed header for check (goheader)
+package validators
+^
+internal/validators/client_validator.go:1:1: Missed header for check (goheader)
+package validators
+^
+internal/validators/lawyer_validator.go:1:1: Missed header for check (goheader)
+package validators
+^
+internal/validators/test_validator_simple.go:1:1: Missed header for check (goheader)
+package validators
+^
+internal/validators/case_validator_test.go:1:1: Missed header for check (goheader)
+package validators
+^
+test/test_suite.go:1:1: Missed header for check (goheader)
+package test
+^
+test/testutils.go:1:1: Missed header for check (goheader)
+package test
+^
+test/coverage_test.go:1:1: Missed header for check (goheader)
+package test
+^
+test/swagger_test.go:1:1: Missed header for check (goheader)
+package test
+^
+test/integration/simple_test.go:1:1: Missed header for check (goheader)
+package main
+^
+tests/integration/business_workflow_test.go:1:1: Missed header for check (goheader)
+package integration
+^
+tests/integration/postgresql_elasticsearch_test.go:1:1: Missed header for check (goheader)
+package integration
+^
+tests/integration/production_external_evidence_test.go:1:1: Missed header for check (goheader)
+package integration
+^
+tests/performance/benchmark_test.go:1:1: Missed header for check (goheader)
+package performance
+^
