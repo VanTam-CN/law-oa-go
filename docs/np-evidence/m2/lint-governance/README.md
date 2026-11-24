@@ -122,3 +122,38 @@
 - ci.yml 格式/静态分析/安全扫描步的工具固定与策略注释：**取 governance 侧**；`.golangci.yml` 全文件：取 governance 侧（i11 线未触碰该文件）。
 
 PR #54 保持 draft 直至第 3 步条件满足；合入前需复核 base/main 状态与 rebase 后的 quality job 真实事件。
+
+## 11. 安全扫描步治理：gosec 161 条存量债分类修复（卡 t_745060c0，2026-11-24）
+
+**问题**：ci.yml「🔒 安全扫描」步 = `gosec -conf=.gosec.json ./...` + `govulncheck ./...`。静态分析步修绿后该步首次可达即红：gosec(dev=v2.30.0) **161 issues**（311 files/130124 lines），gosec 未过导致 govulncheck 未执行。注意 golangci-lint 门禁集内 gosec 为 0 findings（门禁集含逐条理由排除），161 条为独立 gosec 全量运行的存量债。
+
+**分类（gosec v2.30.0，run 45405844993 日志逐条解析，161 条）**：
+
+| 规则 | CWE | 数量 | 性质 | 处置 |
+|---|---|---|---|---|
+| G104 | CWE-703 | 84 | errcheck 类「error 未处理」（DB 写/缓存/Close/Unmarshal/Write 等） | **排除**（errcheck 族债务单列 t_2f7c0c77；门禁集不启用 errcheck；非安全信号） |
+| G118 | CWE-400 | 15 | goroutine 用 context.Background()（调度 ticker、异步 ES 同步/富化/记录） | **排除**（fire-and-forget 后台任务，request ctx 会提前取消；非安全信号） |
+| G704 | CWE-918 | 14 | `main.go:555` runHealthcheck SSRF | **排除**（host 硬编码字面量 127.0.0.1 自检；path 为 env 且校验 `/health/` 前缀；非攻击者可控） |
+| G115 | CWE-190 | 11 | int 溢出转换 | **修复**（2 处 `string(rune(...))` 真缺陷→strconv；9 处 uint64/int64 监控统计→safeconv 饱和钳制） |
+| G304 | CWE-22 | 11 | 变量路径文件读（DB 存储路径/迁移/日志/拷贝目标） | **排除 + 根因加固**（路径为服务端受控；上传文件名已 `filepath.Base` 加固；gosec 无法证明 taint-clean，排除为分析器级） |
+| G301 | CWE-276 | 9 | MkdirAll 0755 | **修复**（→0750，卡 t_2ebe3c13） |
+| G101 | CWE-798 | 4 | 硬编码凭据 | **修复 1 + 排除 3**（v2_middleware_factory `dev-api-key` 后门已移除——真实缺陷；testutils×2/optimized_components×1 为 bcrypt 哈希测试/种子常量，非明文凭据） |
+| G306 | CWE-276 | 4 | WriteFile 0644 | **修复**（→0600，卡 t_2ebe3c13） |
+| G401/G501 | CWE-328/CWE-327 | 4 | md5 弱密码学 | **排除**（缓存键/ETag 指纹，非密码学用途；门禁集同理由） |
+| G201 | CWE-89 | 2 | SQL 字符串拼接 | **排除**（仅拼占位符与常量列名，值全走参数化 args；门禁集同理由） |
+| G404 | CWE-338 | 1 | math/rand | **排除**（重试抖动，非密码学；门禁集同理由） |
+| G402 | CWE-295 | 1 | TLS InsecureSkipVerify | **排除**（elasticsearch 当前固定 http:// 无 TLS；该校验位未生效；跟踪卡） |
+| G706 | CWE-117 | 1 | 日志注入 | **排除**（log.Printf 服务端派生 HTTP method 串，非攻击者自由文本，LOW） |
+
+**真实缺陷修复（代码层，均以 v2.30.0 全量重跑验证）**：
+- G101 `v2_middleware_factory.go`：移除 `apiKey == "dev-api-key"` 后门（非开发环境不再接受任何静态内置密钥，须提供与 `JWT.Secret` 一致的密钥；开发环境仍由 `Environment == "development"` 放行）。
+- G115 `auth/context.go` `GetUserIDAsString`：`string(rune(userID))` → `strconv.FormatUint`（原实现对 >127 的 ID 产生非法 UTF-8 单字节，真缺陷）。
+- G115 `metrics/metrics.go:737`：`string(rune(c.Writer.Status()))` → `strconv.Itoa`（原实现对任意 >127 状态码产生错误字符串）。
+- G115 其余 9 处（v2_performance_middleware、performance_monitor、health、auth/context 类型开关）：新增 `internal/safeconv`（`Int64` 饱和 / `Uint64` 钳制）防监控统计溢出回绕，消除负读数。
+- G301/G306 权限收紧（0755→0750、0644→0600）：由卡 t_2ebe3c13 处理（本卡验证依赖）。
+
+**误报收敛（`.gosec.json`，`-conf` 显式加载；全局排除仅 2 类非安全信号，其余路径级）**：见 `.gosec.json` 与 ci.yml 安全扫描步注释。要点：全局 `exclude: G104,G118`（errcheck 族 + goroutine 模式，均非安全信号且各有归口）；路径级 `exclude-rules` 覆盖 G304（受控路径）、G101（测试/种子常量）、G401/G501（md5）、G201（参数化）、G404（抖动）、G402（http://）、G704（自检）、G706（日志）——与 `.golangci.yml` 门禁集理由一致。
+
+**验证（gosec v2.30.0 与本步 CI 同版本）**：`gosec -conf=.gosec.json ./...` → **0 issues，RC=0**；无配置基线 161→136（G115 修复 -11、G301 -9、G306 -4、G101 后门 -1 均为真实代码变更，非排除隐藏——排除后仍为 0 的 136 条全为文档化误报）。受影响包 `go vet` 通过、`-race` 测试通过（auth/health/middleware-v2）。
+
+**govulncheck 49 条（新近可达，独立债务）**：gosec 修复后 govulncheck 首次执行即报 **49 条影响代码的漏洞**（9 模块 + stdlib）。分类：依赖升级（jwt v5.0→5.2.2、pgx、go-redis v9.0.5→9.6.3、otel v1.38→1.47、x/net 0.43→0.60、x/text 0.28→0.41、grpc）+ Go 工具链升级（stdlib net/http/crypto/x509/crypto/tls/html/template 需 go1.26.9+，CI GO_VERSION 1.25.0）。此为**依赖卫生债**（非代码缺陷），需依赖整体刷新 + 工具链决策（与 jaeger→OTLP 卡交互），已立 follow-up 卡；在依赖刷新落地前，本步为 gosec-绿 / govulncheck-红，属诚实状态（govulncheck 从未在 CI 到达过，属新近暴露）。

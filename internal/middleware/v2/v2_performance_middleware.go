@@ -17,6 +17,7 @@ import (
 
 	"law-oa-go/internal/config"
 	"law-oa-go/internal/logger"
+	"law-oa-go/internal/safeconv"
 )
 
 // V2PerformanceMiddleware 基于最新Gin v2性能最佳实践的中间件
@@ -141,10 +142,10 @@ func (pm *V2PerformanceMiddleware) MemoryMonitoringMiddleware() gin.HandlerFunc 
 		// 更新最大内存使用
 		for {
 			currentMax := atomic.LoadInt64(&pm.metrics.memoryUsage)
-			if currentMax >= int64(finalMemory) {
+			if currentMax >= safeconv.Int64(finalMemory) {
 				break
 			}
-			if atomic.CompareAndSwapInt64(&pm.metrics.memoryUsage, currentMax, int64(finalMemory)) {
+			if atomic.CompareAndSwapInt64(&pm.metrics.memoryUsage, currentMax, safeconv.Int64(finalMemory)) {
 				break
 			}
 		}
@@ -160,7 +161,7 @@ func (pm *V2PerformanceMiddleware) MemoryMonitoringMiddleware() gin.HandlerFunc 
 
 		// 内存使用警告
 		if memoryDelta > 50*1024*1024 { // 50MB
-			pm.logHighMemoryUsage(c, int64(memoryDelta), finalMemory)
+			pm.logHighMemoryUsage(c, safeconv.Int64(memoryDelta), finalMemory)
 		}
 	}
 }
@@ -447,7 +448,7 @@ func (pm *V2PerformanceMiddleware) getClientIP(c *gin.Context) string {
 func (pm *V2PerformanceMiddleware) getCurrentMemoryUsage() int {
 	var mStats runtime.MemStats
 	runtime.ReadMemStats(&mStats)
-	return int(mStats.Alloc / (1024 * 1024)) // MB
+	return int(safeconv.Int64(mStats.Alloc / (1024 * 1024))) // MB
 }
 
 func (pm *V2PerformanceMiddleware) calculateQueueLength(semaphoreLen int) time.Duration {

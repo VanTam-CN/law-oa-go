@@ -111,7 +111,13 @@ jobs:
           # 基线 run 45405844993 时 @latest 的解析版本，与 gosec 161 条存量债基线同版本；
           # 跟随上游 release 每周 bump，升级动作由 gosec 收紧卡跟踪
           go install github.com/securego/gosec/v2/cmd/gosec@v2.30.0
-          gosec ./...
+          # -conf=.gosec.json（t_745060c0）：161 条存量债按「真实缺陷修复 / 误报带理由收敛」
+          # 分类后，误报以路径级排除规则收敛（与 .golangci.yml 门禁集同理由），真实缺陷
+          # 已在代码层修复（G101 dev-api-key 后门移除、G115 rune/溢出加固、G301/G306 权限收紧）。
+          # 完整分类与每条排除理由见 docs/np-evidence/m2/lint-governance/README.md §10。
+          # 注意：gosec 全局 exclude 只覆盖 errcheck 类（G104）与 goroutine 模式（G118）——
+          # 二者均为非安全信号，errcheck 族债务已单列 t_2f7c0c77，G118 为 fire-and-forget 后台任务。
+          gosec -conf=.gosec.json ./...
           # govulncheck 保持 @latest（t_4dfa464a 决策）：价值在漏洞库时效（DB 每次运行
           # 实时拉取），工具本体迭代慢（最新 release v1.1.4/2025-01）固定收益低；
           # 周期性全量重扫由 security.yml 每日 schedule（cron 0 3 * * *，dependency-scan

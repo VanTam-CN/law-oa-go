@@ -331,8 +331,11 @@ func (f *V2MiddlewareFactory) checkMetricsAuth(c *gin.Context) bool {
 		return true
 	}
 
-	// 验证API密钥（使用 JWT secret 作为 API secret）
-	return apiKey == f.config.JWT.Secret || apiKey == "dev-api-key"
+	// 验证API密钥（使用 JWT secret 作为 API secret）。
+	// 注：dev-api-key 后门已移除（t_745060c0，gosec G101 真实缺陷）。
+	// 开发环境由上方 Environment == "development" 放行；非开发环境必须提供
+	// 与 JWT.Secret 一致的 API 密钥，不再接受任何静态内置密钥。
+	return apiKey == f.config.JWT.Secret
 }
 
 func (f *V2MiddlewareFactory) getMiddlewareFeatures() []string {

@@ -1,0 +1,1453 @@
+[gosec] 2026/11/24 22:24:25 Including rules: default
+[gosec] 2026/11/24 22:24:25 Excluding rules: default
+[gosec] 2026/11/24 22:24:25 Including analyzers: default
+[gosec] 2026/11/24 22:24:25 Excluding analyzers: default
+[gosec] 2026/11/24 22:24:25 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/server
+[gosec] 2026/11/24 22:24:25 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/validation
+[gosec] 2026/11/24 22:24:25 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/cmd/server
+[gosec] 2026/11/24 22:24:25 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/shutdown
+[gosec] 2026/11/24 22:24:25 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/concurrency
+[gosec] 2026/11/24 22:24:25 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers
+[gosec] 2026/11/24 22:24:25 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/middleware
+[gosec] 2026/11/24 22:24:25 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/retry
+[gosec] 2026/11/24 22:24:25 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/security
+[gosec] 2026/11/24 22:24:25 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal
+[gosec] 2026/11/24 22:24:25 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/validators
+[gosec] 2026/11/24 22:24:25 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/cmd/backfill-conflict-index
+[gosec] 2026/11/24 22:24:25 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/cmd/migrate
+[gosec] 2026/11/24 22:24:27 Checking package: concurrency
+[gosec] 2026/11/24 22:24:27 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/concurrency/concurrent_service.go
+[gosec] 2026/11/24 22:24:27 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/concurrency/safety.go
+[gosec] 2026/11/24 22:24:27 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/concurrency/worker_pool.go
+[gosec] 2026/11/24 22:24:27 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/frontend/migrate
+[gosec] 2026/11/24 22:24:27 Checking package: security
+[gosec] 2026/11/24 22:24:27 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/security/identity.go
+[gosec] 2026/11/24 22:24:27 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/security/types.go
+[gosec] 2026/11/24 22:24:27 Checking package: shutdown
+[gosec] 2026/11/24 22:24:27 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/shutdown/shutdown.go
+[gosec] 2026/11/24 22:24:27 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/api
+[gosec] 2026/11/24 22:24:27 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/common
+[gosec] 2026/11/24 22:24:27 Checking package: retry
+[gosec] 2026/11/24 22:24:27 Checking package: validators
+[gosec] 2026/11/24 22:24:27 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/validators/case_validator.go
+[gosec] 2026/11/24 22:24:27 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/validators/client_validator.go
+[gosec] 2026/11/24 22:24:27 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/validators/lawyer_validator.go
+[gosec] 2026/11/24 22:24:27 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/validators/test_validator_simple.go
+[gosec] 2026/11/24 22:24:27 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/retry/retry.go
+[gosec] 2026/11/24 22:24:27 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/logging
+[gosec] 2026/11/24 22:24:27 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/rbac
+[gosec] 2026/11/24 22:24:27 Checking package: validation
+[gosec] 2026/11/24 22:24:27 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/validation/validator.go
+[gosec] 2026/11/24 22:24:28 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories
+[gosec] 2026/11/24 22:24:28 Checking package: main
+[gosec] 2026/11/24 22:24:28 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/frontend/migrate/main.go
+[gosec] 2026/11/24 22:24:28 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/logger
+[gosec] 2026/11/24 22:24:30 Checking package: common
+[gosec] 2026/11/24 22:24:30 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/common/env.go
+[gosec] 2026/11/24 22:24:30 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/common/errors.go
+[gosec] 2026/11/24 22:24:30 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/common/response.go
+[gosec] 2026/11/24 22:24:30 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/common/stream.go
+[gosec] 2026/11/24 22:24:30 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/tracing
+[gosec] 2026/11/24 22:24:30 Checking package: api
+[gosec] 2026/11/24 22:24:30 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/api/base_handler.go
+[gosec] 2026/11/24 22:24:30 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/api/crud_handler.go
+[gosec] 2026/11/24 22:24:30 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/api/response.go
+[gosec] 2026/11/24 22:24:30 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/test
+[gosec] 2026/11/24 22:24:31 Checking package: rbac
+[gosec] 2026/11/24 22:24:31 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/rbac/rbac_service.go
+[gosec] 2026/11/24 22:24:31 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/tests/integration/trust_atomicity
+[gosec] 2026/11/24 22:24:31 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/cmd/qa-fixture
+[gosec] 2026/11/24 22:24:31 Checking package: main
+[gosec] 2026/11/24 22:24:31 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/cmd/server/main.go
+[gosec] 2026/11/24 22:24:32 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/cache
+[gosec] 2026/11/24 22:24:32 Checking package: main
+[gosec] 2026/11/24 22:24:32 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/cmd/migrate/main.go
+[gosec] 2026/11/24 22:24:32 Checking package: middleware
+[gosec] 2026/11/24 22:24:32 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/middleware/admin.go
+[gosec] 2026/11/24 22:24:32 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/metrics
+[gosec] 2026/11/24 22:24:32 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/middleware/audit.go
+[gosec] 2026/11/24 22:24:32 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/middleware/business_metrics.go
+[gosec] 2026/11/24 22:24:32 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/middleware/cache.go
+[gosec] 2026/11/24 22:24:32 Checking package: logging
+[gosec] 2026/11/24 22:24:32 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/logging/logging.go
+[gosec] 2026/11/24 22:24:32 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/middleware/common.go
+[gosec] 2026/11/24 22:24:33 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/middleware/document_resolver.go
+[gosec] 2026/11/24 22:24:33 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/middleware/ethical_wall.go
+[gosec] 2026/11/24 22:24:33 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/middleware/jwt.go
+[gosec] 2026/11/24 22:24:33 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/middleware/logging.go
+[gosec] 2026/11/24 22:24:33 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/middleware/metrics.go
+[gosec] 2026/11/24 22:24:33 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/middleware/performance_cache.go
+[gosec] 2026/11/24 22:24:33 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/middleware/rate_limit.go
+[gosec] 2026/11/24 22:24:33 Checking package: server
+[gosec] 2026/11/24 22:24:33 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/server/server.go
+[gosec] 2026/11/24 22:24:33 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/middleware/signature.go
+[gosec] 2026/11/24 22:24:33 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/middleware/trust_balance_middleware.go
+[gosec] 2026/11/24 22:24:33 Checking package: main
+[gosec] 2026/11/24 22:24:33 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/cmd/backfill-conflict-index/main.go
+[gosec] 2026/11/24 22:24:33 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/optimizations
+[gosec] 2026/11/24 22:24:33 Checking package: logger
+[gosec] 2026/11/24 22:24:33 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/logger/logger.go
+[gosec] 2026/11/24 22:24:33 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services
+[gosec] 2026/11/24 22:24:33 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov
+[gosec] 2026/11/24 22:24:34 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/test/integration
+[gosec] 2026/11/24 22:24:34 Checking package: cache
+[gosec] 2026/11/24 22:24:34 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/cache/advanced_cache.go
+[gosec] 2026/11/24 22:24:34 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/cache/cache.go
+[gosec] 2026/11/24 22:24:34 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/cache/layered_cache.go
+[gosec] 2026/11/24 22:24:34 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/test/mock
+[gosec] 2026/11/24 22:24:34 Checking package: tracing
+[gosec] 2026/11/24 22:24:34 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/tracing/middleware.go
+[gosec] 2026/11/24 22:24:34 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/tracing/tracer.go
+[gosec] 2026/11/24 22:24:34 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models/elasticsearch
+[gosec] 2026/11/24 22:24:34 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/cmd/gen_password
+[gosec] 2026/11/24 22:24:34 Checking package: optimizations
+[gosec] 2026/11/24 22:24:34 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/optimizations/query_optimizer.go
+[gosec] 2026/11/24 22:24:35 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/docs
+[gosec] 2026/11/24 22:24:35 Checking package: handlers
+[gosec] 2026/11/24 22:24:35 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/analytics_handler.go
+[gosec] 2026/11/24 22:24:35 Checking package: metrics
+[gosec] 2026/11/24 22:24:35 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/metrics/application_metrics.go
+[gosec] 2026/11/24 22:24:35 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/api_handler.go
+[gosec] 2026/11/24 22:24:35 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/approval_conflict_redaction.go
+[gosec] 2026/11/24 22:24:35 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/approval_delegation_handler.go
+[gosec] 2026/11/24 22:24:35 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/approval_handler.go
+[gosec] 2026/11/24 22:24:35 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/approval_subject_authorization.go
+[gosec] 2026/11/24 22:24:35 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/auth_handler.go
+[gosec] 2026/11/24 22:24:35 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/authz_helpers.go
+[gosec] 2026/11/24 22:24:35 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/case_handler.go
+[gosec] 2026/11/24 22:24:35 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/client_handler.go
+[gosec] 2026/11/24 22:24:35 Checking package: repositories
+[gosec] 2026/11/24 22:24:35 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/analytics_repository.go
+[gosec] 2026/11/24 22:24:35 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/approval_delegation_repository.go
+[gosec] 2026/11/24 22:24:35 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/approval_node_repository.go
+[gosec] 2026/11/24 22:24:35 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/approval_repository.go
+[gosec] 2026/11/24 22:24:35 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/approval_template_repository.go
+[gosec] 2026/11/24 22:24:35 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/approval_workflow_repository.go
+[gosec] 2026/11/24 22:24:35 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/base_repository.go
+[gosec] 2026/11/24 22:24:35 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/case_repository.go
+[gosec] 2026/11/24 22:24:35 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/client_repository.go
+[gosec] 2026/11/24 22:24:35 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/commission_rule_repository.go
+[gosec] 2026/11/24 22:24:35 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/conflict_extended_repository.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/conflict_repository.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/metrics/fuzzing_metrics.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/metrics/metrics.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/commission_rule_handler.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/conflict_check_handler.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/metrics/performance_monitor.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/conflict_handler_simple.go
+[gosec] 2026/11/24 22:24:36 Checking package: main
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/cmd/gen_password/gen_password.go
+[gosec] 2026/11/24 22:24:36 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/auth
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/conflict_requests.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/conflict_subject_index_repository.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/conflict_policy_handler.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/conflict_review_handler.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/conflict_reviewer_handler.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/conflict_scope_handler.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/conflict_v2_handler.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/content_filter_handler.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/dashboard_handler.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/deadline_handler.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/demo_aggregate_handler.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/contract_repository.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/db_adapter.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/document_repository.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/document_repository_impl.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/elasticsearch_legal_statutes.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/enhanced_conflict_repository.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/entity_repository.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/ethical_wall_repository.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/fee_template_repository.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/folder_template_repository.go
+[gosec] 2026/11/24 22:24:36 Checking package: test
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/test/test_suite.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/test/testutils.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/inbox_repository.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/integration_interfaces.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/integration_repository.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/interfaces.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/lawyer_repository.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/legal_categories.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/legal_statutes.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/legal_tags.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/memory_cache_repository.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/notification_repository.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/payment_aggregation.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/professional_conflict_detection_repository.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/rbac_repository.go
+[gosec] 2026/11/24 22:24:36 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/middleware/v2
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/repositories.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/statistics_repository.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/test_repository.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/trust_account_repository.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/user_repository.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/waiver_repository.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/demo_aggregate_helpers.go
+[gosec] 2026/11/24 22:24:36 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/document_handler_enhanced.go
+[gosec] 2026/11/24 22:24:36 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/test
+[gosec] 2026/11/24 22:24:37 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/document_stats_handler.go
+[gosec] 2026/11/24 22:24:37 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/document_version_handler.go
+[gosec] 2026/11/24 22:24:37 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/enhanced_case_handler.go
+[gosec] 2026/11/24 22:24:37 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/ethical_wall.go
+[gosec] 2026/11/24 22:24:37 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/finance_handler.go
+[gosec] 2026/11/24 22:24:37 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/folder_template_handler.go
+[gosec] 2026/11/24 22:24:37 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/handoff_handler.go
+[gosec] 2026/11/24 22:24:37 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/inbox_handler.go
+[gosec] 2026/11/24 22:24:37 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/intake_approval_parties.go
+[gosec] 2026/11/24 22:24:37 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/intake_draft_revision.go
+[gosec] 2026/11/24 22:24:37 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/intake_material_noop_guard.go
+[gosec] 2026/11/24 22:24:37 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/intake_metadata_origins.go
+[gosec] 2026/11/24 22:24:37 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/intake_native_transaction.go
+[gosec] 2026/11/24 22:24:37 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/intake_opponent_identity_update.go
+[gosec] 2026/11/24 22:24:37 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/intake_party_identity_guard.go
+[gosec] 2026/11/24 22:24:37 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/integration_handler.go
+[gosec] 2026/11/24 22:24:37 Checking package: docs
+[gosec] 2026/11/24 22:24:37 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/docs/docs.go
+[gosec] 2026/11/24 22:24:37 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/integration_test_handler.go
+[gosec] 2026/11/24 22:24:37 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/legal_statutes.go
+[gosec] 2026/11/24 22:24:37 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/mvp_unavailable.go
+[gosec] 2026/11/24 22:24:37 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/notification_handler.go
+[gosec] 2026/11/24 22:24:37 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/onlyoffice_handler.go
+[gosec] 2026/11/24 22:24:37 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/tests/performance
+[gosec] 2026/11/24 22:24:38 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/rbac_handler.go
+[gosec] 2026/11/24 22:24:38 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/role_handler.go
+[gosec] 2026/11/24 22:24:38 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/subject_recheck_handler.go
+[gosec] 2026/11/24 22:24:38 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/team_handler.go
+[gosec] 2026/11/24 22:24:38 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/tools_handler.go
+[gosec] 2026/11/24 22:24:38 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/trust_account_handler.go
+[gosec] 2026/11/24 22:24:38 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/user_handler.go
+[gosec] 2026/11/24 22:24:38 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/waiver_handler.go
+[gosec] 2026/11/24 22:24:39 Checking package: main
+[gosec] 2026/11/24 22:24:39 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/cmd/qa-fixture/main.go
+[gosec] 2026/11/24 22:24:39 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/benchmark
+[gosec] 2026/11/24 22:24:40 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/database
+[gosec] 2026/11/24 22:24:40 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/health
+[gosec] 2026/11/24 22:24:41 Checking package: elasticsearch
+[gosec] 2026/11/24 22:24:41 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models/elasticsearch/legal_statutes.go
+[gosec] 2026/11/24 22:24:41 Checking package: v2
+[gosec] 2026/11/24 22:24:41 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/middleware/v2/v2_middleware_factory.go
+[gosec] 2026/11/24 22:24:41 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/middleware/v2/v2_performance_middleware.go
+[gosec] 2026/11/24 22:24:41 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/middleware/v2/v2_security_middleware.go
+[gosec] 2026/11/24 22:24:41 Checking package: mock
+[gosec] 2026/11/24 22:24:41 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/test/mock/assertions.go
+[gosec] 2026/11/24 22:24:41 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/infrastructure
+[gosec] 2026/11/24 22:24:41 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/test/mock/factory.go
+[gosec] 2026/11/24 22:24:41 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/test/mock/mock.go
+[gosec] 2026/11/24 22:24:42 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/performance
+[gosec] 2026/11/24 22:24:42 Checking package: auth
+[gosec] 2026/11/24 22:24:42 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/auth/claims.go
+[gosec] 2026/11/24 22:24:42 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/auth/context.go
+[gosec] 2026/11/24 22:24:42 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/auth/middleware.go
+[gosec] 2026/11/24 22:24:42 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/auth/test_utils.go
+[gosec] 2026/11/24 22:24:42 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/auth/token_manager.go
+[gosec] 2026/11/24 22:24:42 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/auth/token_revocation.go
+[gosec] 2026/11/24 22:24:42 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/auth/token_session_store.go
+[gosec] 2026/11/24 22:24:42 Checking package: main
+[gosec] 2026/11/24 22:24:42 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/main.go
+[gosec] 2026/11/24 22:24:43 Checking package: services
+[gosec] 2026/11/24 22:24:43 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/analytics_service.go
+[gosec] 2026/11/24 22:24:43 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/router
+[gosec] 2026/11/24 22:24:43 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/tests/integration
+[gosec] 2026/11/24 22:24:43 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/approval_assigner.go
+[gosec] 2026/11/24 22:24:43 Checking package: infrastructure
+[gosec] 2026/11/24 22:24:43 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/approval_business_hooks.go
+[gosec] 2026/11/24 22:24:43 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/infrastructure/database.go
+[gosec] 2026/11/24 22:24:43 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/approval_conflict_integration_service.go
+[gosec] 2026/11/24 22:24:43 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/cmd/backfill-sensitive-identities
+[gosec] 2026/11/24 22:24:43 Checking package: main
+[gosec] 2026/11/24 22:24:43 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/main.go
+[gosec] 2026/11/24 22:24:43 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/approval_delegation_service.go
+[gosec] 2026/11/24 22:24:43 Checking package: health
+[gosec] 2026/11/24 22:24:43 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/health/config.go
+[gosec] 2026/11/24 22:24:43 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/health/conflict_p0_check.go
+[gosec] 2026/11/24 22:24:43 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/approval_service.go
+[gosec] 2026/11/24 22:24:43 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/approval_state_machine.go
+[gosec] 2026/11/24 22:24:43 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/approval_template_service.go
+[gosec] 2026/11/24 22:24:43 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/health/health.go
+[gosec] 2026/11/24 22:24:43 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/async_conflict_check_service.go
+[gosec] 2026/11/24 22:24:43 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/authorization_service.go
+[gosec] 2026/11/24 22:24:43 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/bad_debt_service.go
+[gosec] 2026/11/24 22:24:43 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/health/middleware.go
+[gosec] 2026/11/24 22:24:43 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/batch_service.go
+[gosec] 2026/11/24 22:24:43 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/case_service.go
+[gosec] 2026/11/24 22:24:43 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/case_state_machine.go
+[gosec] 2026/11/24 22:24:43 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/client_contact_service.go
+[gosec] 2026/11/24 22:24:43 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/client_service.go
+[gosec] 2026/11/24 22:24:43 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/commission_service.go
+[gosec] 2026/11/24 22:24:43 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/common_types.go
+[gosec] 2026/11/24 22:24:43 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/company_api_service.go
+[gosec] 2026/11/24 22:24:43 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/elasticsearch
+[gosec] 2026/11/24 22:24:43 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/conflict_check_service.go
+[gosec] 2026/11/24 22:24:44 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/conflict_classification_service.go
+[gosec] 2026/11/24 22:24:44 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/conflict_context.go
+[gosec] 2026/11/24 22:24:44 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/tests/integration/conflict_dialects
+[gosec] 2026/11/24 22:24:44 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/tests/integration/m1
+[gosec] 2026/11/24 22:24:44 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/conflict_detection_service.go
+[gosec] 2026/11/24 22:24:44 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/config
+[gosec] 2026/11/24 22:24:44 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/conflict_hook_service.go
+[gosec] 2026/11/24 22:24:44 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/conflict_officer_appointment_service.go
+[gosec] 2026/11/24 22:24:44 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/conflict_p0_service.go
+[gosec] 2026/11/24 22:24:44 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/conflict_policy_service.go
+[gosec] 2026/11/24 22:24:44 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/conflict_pool_service.go
+[gosec] 2026/11/24 22:24:44 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/conflict_reviewer_service.go
+[gosec] 2026/11/24 22:24:44 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/conflict_scan_service.go
+[gosec] 2026/11/24 22:24:44 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/errors
+[gosec] 2026/11/24 22:24:44 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/conflict_scope_service.go
+[gosec] 2026/11/24 22:24:44 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/conflict_subject_index_service.go
+[gosec] 2026/11/24 22:24:44 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/content_filter_service.go
+[gosec] 2026/11/24 22:24:44 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/contract_service.go
+[gosec] 2026/11/24 22:24:44 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/deadline_calculator.go
+[gosec] 2026/11/24 22:24:44 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/document_lock_service.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/document_permission_service.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/document_preview_service.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/document_recycle_service.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/document_search_service.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/document_service.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/document_stats_service.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/document_version_service.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/elasticsearch_sync_service.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/enhanced_case_service.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/enhanced_conflict_detection_service.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/entity_service.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/escalation_service.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/ethical_wall_service.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/event_dispatcher.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/fee_template_service.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/finance_types.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/folder_template_service.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/handoff_service.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/inbox_service.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/invoice_service.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/lawyer_service.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/legal_statutes.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/mcp_client.go
+[gosec] 2026/11/24 22:24:45 Checking package: main
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/main.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/notification_queue_service.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/notification_service.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/notification_template_service.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/offboarding_service.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/payment_service.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/pdf_report_service.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/rbac_service.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/risk_assessment_service_v2.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/risk_assessor.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/scheduler_service.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/search_service.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/sensitive_word_filter_service.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/subject_recheck_service.go
+[gosec] 2026/11/24 22:24:45 Checking package: config
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/config/config.go
+[gosec] 2026/11/24 22:24:45 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/config/conflict_detection.go
+[gosec] 2026/11/24 22:24:46 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models
+[gosec] 2026/11/24 22:24:46 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/team_permission_service.go
+[gosec] 2026/11/24 22:24:46 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/token_revocation_service.go
+[gosec] 2026/11/24 22:24:46 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/monitoring
+[gosec] 2026/11/24 22:24:46 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/trust_account_service.go
+[gosec] 2026/11/24 22:24:46 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/types.go
+[gosec] 2026/11/24 22:24:46 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/user_service.go
+[gosec] 2026/11/24 22:24:46 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/v2_conflict_detection_service.go
+[gosec] 2026/11/24 22:24:46 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/waiver_workflow_service.go
+[gosec] 2026/11/24 22:24:46 Checking package: main
+[gosec] 2026/11/24 22:24:46 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/main.go
+[gosec] 2026/11/24 22:24:46 Checking package: errors
+[gosec] 2026/11/24 22:24:46 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/errors/enhanced_errors.go
+[gosec] 2026/11/24 22:24:46 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/errors/error_handler.go
+[gosec] 2026/11/24 22:24:47 Import directory: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/safeconv
+[gosec] 2026/11/24 22:24:47 Checking package: database
+[gosec] 2026/11/24 22:24:47 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/database/cache_manager.go
+[gosec] 2026/11/24 22:24:47 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/database/connection_pool.go
+[gosec] 2026/11/24 22:24:47 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/database/database.go
+[gosec] 2026/11/24 22:24:47 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/database/elasticsearch_optimizer.go
+[gosec] 2026/11/24 22:24:47 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/database/migrator.go
+[gosec] 2026/11/24 22:24:47 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/database/mysql_connector.go
+[gosec] 2026/11/24 22:24:47 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/database/narrow_pilot_schema.go
+[gosec] 2026/11/24 22:24:47 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/database/optimized_components.go
+[gosec] 2026/11/24 22:24:47 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/database/performance_monitor.go
+[gosec] 2026/11/24 22:24:47 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/database/performance_optimizer.go
+[gosec] 2026/11/24 22:24:47 Checking package: safeconv
+[gosec] 2026/11/24 22:24:47 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/safeconv/safeconv.go
+[gosec] 2026/11/24 22:24:47 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/database/production_schema.go
+[gosec] 2026/11/24 22:24:47 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/database/query_builder.go
+[gosec] 2026/11/24 22:24:47 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/database/rbac_init.go
+[gosec] 2026/11/24 22:24:47 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/database/repository.go
+[gosec] 2026/11/24 22:24:47 Checking package: elasticsearch
+[gosec] 2026/11/24 22:24:47 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/elasticsearch/client.go
+[gosec] 2026/11/24 22:24:47 Checking package: main
+[gosec] 2026/11/24 22:24:47 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/main.go
+[gosec] 2026/11/24 22:24:48 Checking package: models
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models/analytics_models.go
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models/approval_conflict_integration.go
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models/approval_delegation.go
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models/approval_models.go
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models/approval_node.go
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models/approval_template.go
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models/auth_token_session.go
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models/case_folder.go
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models/case_status.go
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models/client.go
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models/complete_models.go
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models/conflict.go
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models/conflict_p0_foundation.go
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models/conflict_reviewer.go
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models/conflict_rules.go
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models/conflict_subject.go
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models/document.go
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models/enhanced_case_models.go
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models/enhanced_conflict_models.go
+[gosec] 2026/11/24 22:24:48 Checking package: main
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/cmd/backfill-sensitive-identities/main.go
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models/entity.go
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models/fee_template.go
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models/json_types.go
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models/legal_statutes.go
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models/legal_statutes_helpers.go
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models/models.go
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models/rbac_models.go
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models/testing_models.go
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models/v2_2_0_models.go
+[gosec] 2026/11/24 22:24:48 Checking package: router
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/router/analytics_routes.go
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/router/router.go
+[gosec] 2026/11/24 22:24:48 Checking package: main
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/main.go
+[gosec] 2026/11/24 22:24:48 Checking package: monitoring
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/monitoring/metrics.go
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/router/router_minimal.go
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/monitoring/monitoring.go
+[gosec] 2026/11/24 22:24:48 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/monitoring/performance.go
+[gosec] 2026/11/24 22:24:49 Checking package: main
+[gosec] 2026/11/24 22:24:49 Checking file: /Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/main.go
+Results:
+
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/retry/retry.go:221] - G404 (CWE-338): Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand) (Confidence: MEDIUM, Severity: HIGH)
+    220: 	if config.Jitter {
+  > 221: 		delay *= (0.5 + 0.5*rand.Float64())
+    222: 	}
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/elasticsearch/client.go:34] - G402 (CWE-295): TLS InsecureSkipVerify set to true. (Confidence: HIGH, Severity: HIGH)
+    33: 			TLSClientConfig: &tls.Config{
+  > 34: 				InsecureSkipVerify: true,
+    35: 			},
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/main.go:555] - G704 (CWE-918): SSRF via taint analysis: net/http.NewRequestWithContext (Confidence: HIGH, Severity: HIGH)
+    554: 	}
+  > 555: 	request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://127.0.0.1:"+port+path, nil)
+    556: 	if err != nil {
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/main.go:555] - G704 (CWE-918): SSRF via taint analysis: net/http.NewRequestWithContext (Confidence: HIGH, Severity: HIGH)
+    554: 	}
+  > 555: 	request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://127.0.0.1:"+port+path, nil)
+    556: 	if err != nil {
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/main.go:555] - G704 (CWE-918): SSRF via taint analysis: net/http.NewRequestWithContext (Confidence: HIGH, Severity: HIGH)
+    554: 	}
+  > 555: 	request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://127.0.0.1:"+port+path, nil)
+    556: 	if err != nil {
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/main.go:555] - G704 (CWE-918): SSRF via taint analysis: net/http.NewRequestWithContext (Confidence: HIGH, Severity: HIGH)
+    554: 	}
+  > 555: 	request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://127.0.0.1:"+port+path, nil)
+    556: 	if err != nil {
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/main.go:555] - G704 (CWE-918): SSRF via taint analysis: net/http.NewRequestWithContext (Confidence: HIGH, Severity: HIGH)
+    554: 	}
+  > 555: 	request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://127.0.0.1:"+port+path, nil)
+    556: 	if err != nil {
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/main.go:555] - G704 (CWE-918): SSRF via taint analysis: net/http.NewRequestWithContext (Confidence: HIGH, Severity: HIGH)
+    554: 	}
+  > 555: 	request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://127.0.0.1:"+port+path, nil)
+    556: 	if err != nil {
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/main.go:555] - G704 (CWE-918): SSRF via taint analysis: net/http.NewRequestWithContext (Confidence: HIGH, Severity: HIGH)
+    554: 	}
+  > 555: 	request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://127.0.0.1:"+port+path, nil)
+    556: 	if err != nil {
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/main.go:560] - G704 (CWE-918): SSRF via taint analysis: (*net/http.Client).Do (Confidence: HIGH, Severity: HIGH)
+    559: 	client := &http.Client{Timeout: 3 * time.Second}
+  > 560: 	response, err := client.Do(request)
+    561: 	if err != nil {
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/main.go:560] - G704 (CWE-918): SSRF via taint analysis: (*net/http.Client).Do (Confidence: HIGH, Severity: HIGH)
+    559: 	client := &http.Client{Timeout: 3 * time.Second}
+  > 560: 	response, err := client.Do(request)
+    561: 	if err != nil {
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/main.go:560] - G704 (CWE-918): SSRF via taint analysis: (*net/http.Client).Do (Confidence: HIGH, Severity: HIGH)
+    559: 	client := &http.Client{Timeout: 3 * time.Second}
+  > 560: 	response, err := client.Do(request)
+    561: 	if err != nil {
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/main.go:560] - G704 (CWE-918): SSRF via taint analysis: (*net/http.Client).Do (Confidence: HIGH, Severity: HIGH)
+    559: 	client := &http.Client{Timeout: 3 * time.Second}
+  > 560: 	response, err := client.Do(request)
+    561: 	if err != nil {
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/main.go:560] - G704 (CWE-918): SSRF via taint analysis: (*net/http.Client).Do (Confidence: HIGH, Severity: HIGH)
+    559: 	client := &http.Client{Timeout: 3 * time.Second}
+  > 560: 	response, err := client.Do(request)
+    561: 	if err != nil {
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/main.go:560] - G704 (CWE-918): SSRF via taint analysis: (*net/http.Client).Do (Confidence: HIGH, Severity: HIGH)
+    559: 	client := &http.Client{Timeout: 3 * time.Second}
+  > 560: 	response, err := client.Do(request)
+    561: 	if err != nil {
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/main.go:560] - G704 (CWE-918): SSRF via taint analysis: (*net/http.Client).Do (Confidence: HIGH, Severity: HIGH)
+    559: 	client := &http.Client{Timeout: 3 * time.Second}
+  > 560: 	response, err := client.Do(request)
+    561: 	if err != nil {
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/test/testutils.go:218-228] - G101 (CWE-798): Potential hardcoded credentials (Confidence: LOW, Severity: HIGH)
+    217: func CreateTestUserB(b *testing.B) *models.User {
+  > 218: 	return &models.User{
+  > 219: 		ID:        uint(1),
+  > 220: 		Name:      "测试用户",
+  > 221: 		Email:     "test@example.com",
+  > 222: 		Password:  "$2a$10$hashedpassword", // bcrypt hash
+  > 223: 		Role:      "user",
+  > 224: 		Phone:     "1234567890",
+  > 225: 		Status:    "active",
+  > 226: 		CreatedAt: TestTime(),
+  > 227: 		UpdatedAt: TestTime(),
+  > 228: 	}
+    229: }
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/test/testutils.go:203-213] - G101 (CWE-798): Potential hardcoded credentials (Confidence: LOW, Severity: HIGH)
+    202: func CreateTestUser(t *testing.T) *models.User {
+  > 203: 	return &models.User{
+  > 204: 		ID:        uint(1),
+  > 205: 		Name:      "测试用户",
+  > 206: 		Email:     "test@example.com",
+  > 207: 		Password:  "$2a$10$hashedpassword", // bcrypt hash
+  > 208: 		Role:      "user",
+  > 209: 		Phone:     "1234567890",
+  > 210: 		Status:    "active",
+  > 211: 		CreatedAt: TestTime(),
+  > 212: 		UpdatedAt: TestTime(),
+  > 213: 	}
+    214: }
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/database/optimized_components.go:321] - G101 (CWE-798): Potential hardcoded credentials (Confidence: LOW, Severity: HIGH)
+    320: 	// 生成密码哈希
+  > 321: 	passwordHash := "$2a$12$G.DTHR2xYdtpmqvjjNJGYOjLIRp2FGWI.sKZDWlD4BN7bDHWQy9eG" // password
+    322: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/legal_statutes.go:917] - G118 (CWE-400): Goroutine uses context.Background/TODO while request-scoped context is available (Confidence: MEDIUM, Severity: HIGH)
+    916: 		// 异步同步到Elasticsearch
+  > 917: 		go func(stat *models.LegalStatute) {
+    918: 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/legal_statutes.go:229] - G118 (CWE-400): Goroutine uses context.Background/TODO while request-scoped context is available (Confidence: MEDIUM, Severity: HIGH)
+    228: 	// 同步到Elasticsearch
+  > 229: 	go func() {
+    230: 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/legal_statutes.go:129] - G118 (CWE-400): Goroutine uses context.Background/TODO while request-scoped context is available (Confidence: MEDIUM, Severity: HIGH)
+    128: 	// 同步到Elasticsearch
+  > 129: 	go func() {
+    130: 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/content_filter_service.go:244] - G118 (CWE-400): Goroutine uses context.Background/TODO while request-scoped context is available (Confidence: MEDIUM, Severity: HIGH)
+    243: 	// 记录过滤日志
+  > 244: 	go s.logFilter(context.Background(), contentType, 0, result)
+    245: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/content_filter_service.go:220] - G118 (CWE-400): Goroutine uses context.Background/TODO while request-scoped context is available (Confidence: MEDIUM, Severity: HIGH)
+    219: 		// 异步更新命中次数
+  > 220: 		go func(wordID uint) {
+    221: 			s.wordRepo.IncrementHitCount(context.Background(), wordID)
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/conflict_scan_service.go:656] - G118 (CWE-400): Goroutine uses context.Background/TODO while request-scoped context is available (Confidence: MEDIUM, Severity: HIGH)
+    655: 	// 启动每周扫描定时器
+  > 656: 	go s.weeklyScanTicker(ctx)
+    657: }
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/conflict_scan_service.go:653] - G118 (CWE-400): Goroutine uses context.Background/TODO while request-scoped context is available (Confidence: MEDIUM, Severity: HIGH)
+    652: 	// 启动每日扫描定时器
+  > 653: 	go s.dailyScanTicker(ctx)
+    654: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/conflict_scan_service.go:251] - G118 (CWE-400): Goroutine uses context.Background/TODO while request-scoped context is available (Confidence: MEDIUM, Severity: HIGH)
+    250: 	// 异步执行扫描
+  > 251: 	go s.executeScan(context.Background(), job)
+    252: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/conflict_scan_service.go:230] - G118 (CWE-400): Goroutine uses context.Background/TODO while request-scoped context is available (Confidence: MEDIUM, Severity: HIGH)
+    229: 	// 异步执行扫描
+  > 230: 	go s.executeIncrementalScan(context.Background(), job, since)
+    231: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/conflict_scan_service.go:209] - G118 (CWE-400): Goroutine uses context.Background/TODO while request-scoped context is available (Confidence: MEDIUM, Severity: HIGH)
+    208: 	// 异步执行扫描
+  > 209: 	go s.executeScan(context.Background(), job)
+    210: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/conflict_scan_service.go:175] - G118 (CWE-400): Goroutine uses context.Background/TODO while request-scoped context is available (Confidence: MEDIUM, Severity: HIGH)
+    174: 	// 异步执行扫描
+  > 175: 	go s.executeScan(context.Background(), job)
+    176: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/conflict_scan_service.go:141] - G118 (CWE-400): Goroutine uses context.Background/TODO while request-scoped context is available (Confidence: MEDIUM, Severity: HIGH)
+    140: 	// 异步执行扫描
+  > 141: 	go s.executeScan(context.Background(), job)
+    142: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/conflict_pool_service.go:182] - G118 (CWE-400): Goroutine uses context.Background/TODO while request-scoped context is available (Confidence: MEDIUM, Severity: HIGH)
+    181: 		if entityType == "company" {
+  > 182: 			go s.enrichCompanyData(context.Background(), newEntry.ID, client.Name, identityNumber)
+    183: 		}
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/company_api_service.go:684] - G118 (CWE-400): Goroutine uses context.Background/TODO while request-scoped context is available (Confidence: MEDIUM, Severity: HIGH)
+    683: 	// 异步记录，不影响主流程
+  > 684: 	go func() {
+    685: 		if recordErr := s.callRecorder.RecordCall(context.Background(), record); recordErr != nil {
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/async_conflict_check_service.go:112] - G118 (CWE-400): Goroutine uses context.Background/TODO while request-scoped context is available (Confidence: MEDIUM, Severity: HIGH)
+    111: 	taskRequest := *request
+  > 112: 	go s.runTask(record.CheckID, &taskRequest)
+    113: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/middleware/performance_cache.go:379] - G401 (CWE-328): Use of weak cryptographic primitive (Confidence: HIGH, Severity: MEDIUM)
+    378: 	// 预热案件列表
+  > 379: 	casesKey := fmt.Sprintf("%s:cache:%x", pc.config.KeyPrefix, md5.Sum([]byte("/cases")))
+    380: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/middleware/performance_cache.go:313] - G401 (CWE-328): Use of weak cryptographic primitive (Confidence: HIGH, Severity: MEDIUM)
+    312: func (pc *PerformanceCache) generateETag(data []byte) string {
+  > 313: 	hash := md5.Sum(data)
+    314: 	return fmt.Sprintf(`"%x"`, hash)
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/middleware/performance_cache.go:193] - G401 (CWE-328): Use of weak cryptographic primitive (Confidence: HIGH, Severity: MEDIUM)
+    192: 	// 生成MD5哈希
+  > 193: 	hash := md5.Sum([]byte(path))
+    194: 	return fmt.Sprintf("%s:cache:%x", pc.config.KeyPrefix, hash)
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/health/conflict_p0_check.go:220-223] - G201 (CWE-89): SQL string formatting (Confidence: HIGH, Severity: MEDIUM)
+    219: 	}
+  > 220: 	query := fmt.Sprintf(
+  > 221: 		"SELECT event_type, COUNT(*) FROM compliance_audit_events WHERE event_type IN (%s) AND integrity_hash IS NOT NULL AND LENGTH(TRIM(integrity_hash)) = 64 GROUP BY event_type",
+  > 222: 		strings.Join(placeholders, ","),
+  > 223: 	)
+    224: 	rows, err := c.db.QueryContext(ctx, query, args...)
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/health/conflict_p0_check.go:179] - G201 (CWE-89): SQL string formatting (Confidence: HIGH, Severity: MEDIUM)
+    178: 		var count int64
+  > 179: 		query := fmt.Sprintf("SELECT COUNT(*) FROM conflict_search_scopes s JOIN conflict_index_build_runs r ON r.id = s.index_run_id WHERE s.scope_type = %s AND "+completeConflictScopePredicate, c.placeholder(1))
+    180: 		if err := c.db.QueryRowContext(ctx, query, scopeType).Scan(&count); err != nil {
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/pdf_report_service.go:698] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    697: func (s *pdfReportService) calculateFileHash(filepath string) (string, error) {
+  > 698: 	data, err := os.ReadFile(filepath)
+    699: 	if err != nil {
+
+Autofix: Consider using os.Root to scope file access under a fixed root (Go >=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal.
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/pdf_report_service.go:289] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    288: 	// 读取文件
+  > 289: 	data, err := os.ReadFile(filepath)
+    290: 	if err != nil {
+
+Autofix: Consider using os.Root to scope file access under a fixed root (Go >=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal.
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/document_version_service.go:444] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    443: 	// Create destination file
+  > 444: 	dstFile, err := os.Create(dst)
+    445: 	if err != nil {
+
+Autofix: Consider using os.Root to scope file access under a fixed root (Go >=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal.
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/document_service.go:413] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    412: func (s *DocumentService) openFile(filepath string) (io.ReadCloser, error) {
+  > 413: 	file, err := os.Open(filepath)
+    414: 	if err != nil {
+
+Autofix: Consider using os.Root to scope file access under a fixed root (Go >=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal.
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/document_service.go:383] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    382: 	// Create destination file
+  > 383: 	dstFile, err := os.Create(dst)
+    384: 	if err != nil {
+
+Autofix: Consider using os.Root to scope file access under a fixed root (Go >=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal.
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/logger/logger.go:1004] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    1003: 
+  > 1004: 	dir, err := os.Open(logDir)
+    1005: 	if err != nil {
+
+Autofix: Consider using os.Root to scope file access under a fixed root (Go >=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal.
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/onlyoffice_handler.go:1170] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    1169: 
+  > 1170: 	dstFile, err := os.Create(dst)
+    1171: 	if err != nil {
+
+Autofix: Consider using os.Root to scope file access under a fixed root (Go >=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal.
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/onlyoffice_handler.go:1164] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    1163: func copyFile(src, dst string) error {
+  > 1164: 	srcFile, err := os.Open(src)
+    1165: 	if err != nil {
+
+Autofix: Consider using os.Root to scope file access under a fixed root (Go >=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal.
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/onlyoffice_handler.go:952] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    951: 	outputPath := filepath.Join(convertDir, fmt.Sprintf("document.%s", task.OutputType))
+  > 952: 	outFile, err := os.Create(outputPath)
+    953: 	if err != nil {
+
+Autofix: Consider using os.Root to scope file access under a fixed root (Go >=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal.
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/database/migrator.go:147] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    146: 		path := filepath.Join(migrationsPath, entry.Name())
+  > 147: 		contents, err := os.ReadFile(path)
+    148: 		if err != nil {
+
+Autofix: Consider using os.Root to scope file access under a fixed root (Go >=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal.
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/frontend/migrate/main.go:248] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    247: func isDirEmpty(dir string) (bool, error) {
+  > 248: 	f, err := os.Open(dir)
+    249: 	if err != nil {
+
+Autofix: Consider using os.Root to scope file access under a fixed root (Go >=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal.
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/middleware/performance_cache.go:5] - G501 (CWE-327): Blocklisted import crypto/md5: weak cryptographic primitive (Confidence: HIGH, Severity: MEDIUM)
+    4: 	"context"
+  > 5: 	"crypto/md5"
+    6: 	"encoding/json"
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/company_api_service.go:189] - G706 (CWE-117): Log injection via taint analysis: log.Printf (Confidence: HIGH, Severity: LOW)
+    188: 
+  > 189: 	log.Printf("[API] %s %s - Status: %d, Duration: %v",
+    190: 		req.Method,
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/test/testutils.go:50] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    49: 		Close: func() {
+  > 50: 			db.Close()
+    51: 		},
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/test/mock/mock.go:46] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    45: 		Close: func() {
+  > 46: 			db.Close()
+    47: 		},
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/validation/validator.go:61] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    60: 	v.RegisterValidation("file_path", validateFilePath)
+  > 61: 	v.RegisterValidation("email_domain", validateEmailDomain)
+    62: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/validation/validator.go:60] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    59: 	v.RegisterValidation("no_xss", validateNoXSS)
+  > 60: 	v.RegisterValidation("file_path", validateFilePath)
+    61: 	v.RegisterValidation("email_domain", validateEmailDomain)
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/validation/validator.go:59] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    58: 	v.RegisterValidation("no_sql_injection", validateNoSQLInjection)
+  > 59: 	v.RegisterValidation("no_xss", validateNoXSS)
+    60: 	v.RegisterValidation("file_path", validateFilePath)
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/validation/validator.go:58] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    57: 	v.RegisterValidation("safe_string", validateSafeString)
+  > 58: 	v.RegisterValidation("no_sql_injection", validateNoSQLInjection)
+    59: 	v.RegisterValidation("no_xss", validateNoXSS)
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/validation/validator.go:57] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    56: 	v.RegisterValidation("id_card", validateIDCard)
+  > 57: 	v.RegisterValidation("safe_string", validateSafeString)
+    58: 	v.RegisterValidation("no_sql_injection", validateNoSQLInjection)
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/validation/validator.go:56] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    55: 	v.RegisterValidation("phone_number", validatePhoneNumber)
+  > 56: 	v.RegisterValidation("id_card", validateIDCard)
+    57: 	v.RegisterValidation("safe_string", validateSafeString)
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/validation/validator.go:55] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    54: 	v.RegisterValidation("password_strength", validatePasswordStrength)
+  > 55: 	v.RegisterValidation("phone_number", validatePhoneNumber)
+    56: 	v.RegisterValidation("id_card", validateIDCard)
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/validation/validator.go:54] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    53: 	// 注册自定义验证函数
+  > 54: 	v.RegisterValidation("password_strength", validatePasswordStrength)
+    55: 	v.RegisterValidation("phone_number", validatePhoneNumber)
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/team_permission_service.go:447] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    446: 	for _, pattern := range patterns {
+  > 447: 		s.cacheRepo.DeletePattern(ctx, pattern)
+    448: 	}
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/team_permission_service.go:221] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    220: 	resultJSON, _ := json.Marshal(result)
+  > 221: 	s.cacheRepo.Set(ctx, cacheKey, string(resultJSON), 5*time.Minute)
+    222: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/sensitive_word_filter_service.go:365] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    364: 	now := time.Now()
+  > 365: 	s.wordRepo.UpdateHitCount(ctx, wordID, now)
+    366: }
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/scheduler_service.go:439] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    438: 
+  > 439: 	s.checkApprovalTimeouts(context.Background())
+    440: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/scheduler_service.go:139] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    138: 	// 启动时立即执行一次
+  > 139: 	s.checkEscalations(context.Background())
+    140: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/scheduler_service.go:116] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    115: 	// 启动时立即执行一次
+  > 116: 	s.checkReminders(context.Background())
+    117: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/pdf_report_service.go:196] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    195: 		// 清理已生成的文件
+  > 196: 		os.Remove(filepath)
+    197: 		return nil, fmt.Errorf("保存报告记录失败: %w", err)
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/payment_service.go:325] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    324: 
+  > 325: 			s.milestoneRepo.Update(ctx, milestone)
+    326: 		}
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/offboarding_service.go:113] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    112: 		json.Unmarshal(casesJSON, &casesData)
+  > 113: 		json.Unmarshal(inboxJSON, &inboxData)
+    114: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/offboarding_service.go:112] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    111: 		var casesData, inboxData map[string]interface{}
+  > 112: 		json.Unmarshal(casesJSON, &casesData)
+    113: 		json.Unmarshal(inboxJSON, &inboxData)
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/mcp_client.go:120] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    119: 		if resp != nil && err != nil {
+  > 120: 			resp.Body.Close() // 请求失败（含重定向错误）时立即释放响应体
+    121: 			return err
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/mcp_client.go:116] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    115: 		if response != nil && response.Body != nil {
+  > 116: 			response.Body.Close()
+    117: 		}
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/invoice_service.go:548] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    547: 	if invoice.MilestoneID != nil {
+  > 548: 		s.milestoneRepo.UpdateStatus(ctx, *invoice.MilestoneID, "pending")
+    549: 	}
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/invoice_service.go:462] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    461: 	if invoice.MilestoneID != nil {
+  > 462: 		s.milestoneRepo.UpdateStatus(ctx, *invoice.MilestoneID, "pending")
+    463: 	}
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/invoice_service.go:406] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    405: 	if invoice.MilestoneID != nil {
+  > 406: 		s.milestoneRepo.UpdateStatus(ctx, *invoice.MilestoneID, "billed")
+    407: 	}
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/folder_template_service.go:91] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    90: 			// 回滚：删除刚创建的模板
+  > 91: 			s.repo.DeleteTemplate(ctx, template.ID)
+    92: 			return nil, fmt.Errorf("设置默认模板失败: %w", err)
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/escalation_service.go:178-188] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    177: 	// 发布升级事件
+  > 178: 	s.dispatcher.Dispatch(ctx, &Event{
+  > 179: 		Type:      "inbox.escalated",
+  > 180: 		Timestamp: time.Now(),
+  > 181: 		SourceID:  item.ID,
+  > 182: 		Metadata: map[string]interface{}{
+  > 183: 			"user_id":           item.UserID,
+  > 184: 			"supervisor_id":     supervisorID,
+  > 185: 			"escalation_reason": reason,
+  > 186: 			"original_due_date": item.DueDate,
+  > 187: 		},
+  > 188: 	})
+    189: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/document_version_service.go:454] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    453: 		// Clean up the file if copy fails
+  > 454: 		os.Remove(dst)
+    455: 		return fmt.Errorf("failed to copy file content: %w", err)
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/document_service.go:393] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    392: 		// Clean up the file if copy fails
+  > 393: 		os.Remove(dst)
+    394: 		return fmt.Errorf("failed to copy file content: %w", err)
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/document_service.go:163] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    162: 		// Clean up database record if file save fails
+  > 163: 		s.docRepo.Delete(ctx, docModel.ID)
+    164: 		return nil, errors.InternalError("Failed to save file", err)
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/document_service.go:155] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    154: 		// Clean up database record if file save fails
+  > 155: 		s.docRepo.Delete(ctx, docModel.ID)
+    156: 		return nil, errors.InternalError("Failed to open uploaded file", err)
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/document_recycle_service.go:335] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    334: 		// Try to move file back to recycle bin if restoration fails
+  > 335: 		s.moveToRecycleBin(docModel.Filepath, matches[0])
+    336: 		return errors.DatabaseError("update_document", "Failed to restore document", err)
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/contract_service.go:966] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    965: 		m.Sequence = i + 1
+  > 966: 		s.milestoneRepo.Update(ctx, m)
+    967: 	}
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/content_filter_service.go:463] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    462: 	// 刷新缓存
+  > 463: 	s.refreshCache(ctx)
+    464: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/content_filter_service.go:317] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    316: 	var hitsParsed map[string]interface{}
+  > 317: 	json.Unmarshal(hitsJSONBytes, &hitsParsed)
+    318: 	log.Hits = models.JSON(hitsParsed)
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/content_filter_service.go:221] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    220: 		go func(wordID uint) {
+  > 221: 			s.wordRepo.IncrementHitCount(context.Background(), wordID)
+    222: 		}(word.ID)
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/conflict_scan_service.go:700] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    699: 			if now.After(nextRun) && now.Before(nextRun.Add(5*time.Minute)) {
+  > 700: 				s.RunWeeklyScan(context.Background())
+    701: 				nextRun = s.calculateNextWeeklyRun()
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/conflict_scan_service.go:676] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    675: 			if now.After(nextRun) && now.Before(nextRun.Add(5*time.Minute)) {
+  > 676: 				s.RunDailyScan(context.Background())
+    677: 				// 计算下次执行时间
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/conflict_detection_service.go:385] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    384: 		}
+  > 385: 		rows.Close()
+    386: 	}
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/conflict_detection_service.go:382] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    381: 		if err := rows.Err(); err != nil {
+  > 382: 			rows.Close()
+    383: 			return nil, fmt.Errorf("迭代对方当事人冲突结果集失败 (opponent=%q): %w", opponent, err)
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/conflict_detection_service.go:325] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    324: 			if err := rows.Scan(&caseID, &caseNo, &caseName, &caseType, &description, &clientName, &lawyerName, &createdAt, &lawyerID, &relevanceScore); err != nil {
+  > 325: 				rows.Close()
+    326: 				return nil, fmt.Errorf("扫描对方当事人冲突行失败 (opponent=%q): %w", opponent, err)
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/services/approval_service.go:531] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    530: 	if approval.Metadata != "{}" && approval.Metadata != "" {
+  > 531: 		json.Unmarshal([]byte(approval.Metadata), &metadata)
+    532: 	} else {
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/conflict_repository.go:890] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    889: 			}
+  > 890: 			partyRows.Close()
+    891: 		}
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/repositories/conflict_repository.go:855] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    854: 				if err != nil {
+  > 855: 					partyRows.Close()
+    856: 					return nil, fmt.Errorf("扫描对方当事人冲突行失败 (party=%q): %w", party, err)
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/rbac/rbac_service.go:68] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    67: 		cacheKey := fmt.Sprintf("user_permissions:%d", userID)
+  > 68: 		s.cache.Set(ctx, cacheKey, permissions)
+    69: 		return true, nil
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/models/elasticsearch/legal_statutes.go:388] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    387: 		sourceJSON, _ := json.Marshal(source)
+  > 388: 		json.Unmarshal(sourceJSON, &doc)
+    389: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/middleware/v2/v2_security_middleware.go:383] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    382: 			if ginEngine, ok := engine.(*gin.Engine); ok {
+  > 383: 				ginEngine.SetTrustedProxies(sm.trustedProxies)
+    384: 			}
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/middleware/v2/v2_performance_middleware.go:545] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    544: 	pipe.Expire(ctx, key, 24*time.Hour)
+  > 545: 	pipe.Exec(ctx)
+    546: }
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/middleware/cache.go:326] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    325: 		if err := json.Unmarshal(w.buffer.Bytes(), &responseData); err == nil {
+  > 326: 			cache.DefaultCacheService.Set(key, responseData, config.TTL)
+    327: 		}
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/middleware/cache.go:193] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    192: 	// 写入主体
+  > 193: 	c.Writer.Write(cached.Body)
+    194: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/health/health.go:431] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    430: 	// 清理测试数据
+  > 431: 	cc.cache.Delete(testKey)
+    432: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/onlyoffice_handler.go:1011] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    1010: 		body, err := io.ReadAll(io.LimitReader(resp.Body, 4096))
+  > 1011: 		resp.Body.Close()
+    1012: 		if err != nil {
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/onlyoffice_handler.go:974] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    973: 	if written > MaxOnlyOfficeDownloadBytes {
+  > 974: 		os.Remove(outputPath)
+    975: 		h.conversionMu.Lock()
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/onlyoffice_handler.go:966] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    965: 	if err != nil {
+  > 966: 		os.Remove(outputPath)
+    967: 		h.conversionMu.Lock()
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/onlyoffice_handler.go:963] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    962: 	written, err := io.Copy(outFile, limited)
+  > 963: 	outFile.Close()
+    964: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/onlyoffice_handler.go:643] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    642: 	if err := os.Rename(tmpPath, doc.Filepath); err != nil {
+  > 643: 		os.Remove(tmpPath)
+    644: 		return fmt.Errorf("failed to replace document file: %w", err)
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/onlyoffice_handler.go:637] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    636: 	if written > MaxOnlyOfficeDownloadBytes {
+  > 637: 		os.Remove(tmpPath)
+    638: 		return fmt.Errorf("download exceeds %d bytes", MaxOnlyOfficeDownloadBytes)
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/onlyoffice_handler.go:633] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    632: 	if err != nil {
+  > 633: 		os.Remove(tmpPath)
+    634: 		return fmt.Errorf("failed to write document: %w", err)
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/onlyoffice_handler.go:629] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    628: 	}
+  > 629: 	outFile.Close()
+    630: 	tmpPath := outFile.Name()
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/finance_handler.go:2304] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    2303: 	csvWriter := csv.NewWriter(c.Writer)
+  > 2304: 	csvWriter.WriteAll(sanitizeCSVRecords(records))
+    2305: 	csvWriter.Flush()
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/document_version_handler.go:390] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    389: 
+  > 390: 	c.ShouldBindJSON(&req)
+    391: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/handlers/document_version_handler.go:347] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    346: 
+  > 347: 	c.ShouldBindJSON(&req)
+    348: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/database/repository.go:45] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    44: 	// 缓存结果
+  > 45: 	r.cache.SmartSet("find_by_id", cacheKey, result)
+    46: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/database/performance_monitor.go:159-166] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    158: 
+  > 159: 	pm.db.Callback().Delete().After("gorm:delete").Register("delete_tracker_after", func(db *gorm.DB) {
+  > 160: 		if start, exists := db.InstanceGet("delete_start"); exists {
+  > 161: 			if startTime, ok := start.(time.Time); ok {
+  > 162: 				duration := time.Since(startTime)
+  > 163: 				pm.recordQueryMetrics("DELETE", duration, db.RowsAffected, nil)
+  > 164: 			}
+  > 165: 		}
+  > 166: 	})
+    167: }
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/database/performance_monitor.go:155-157] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    154: 
+  > 155: 	pm.db.Callback().Delete().Before("gorm:delete").Register("delete_tracker_before", func(db *gorm.DB) {
+  > 156: 		db.InstanceSet("delete_start", time.Now())
+  > 157: 	})
+    158: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/database/performance_monitor.go:146-153] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    145: 
+  > 146: 	pm.db.Callback().Update().After("gorm:update").Register("update_tracker_after", func(db *gorm.DB) {
+  > 147: 		if start, exists := db.InstanceGet("update_start"); exists {
+  > 148: 			if startTime, ok := start.(time.Time); ok {
+  > 149: 				duration := time.Since(startTime)
+  > 150: 				pm.recordQueryMetrics("UPDATE", duration, db.RowsAffected, nil)
+  > 151: 			}
+  > 152: 		}
+  > 153: 	})
+    154: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/database/performance_monitor.go:142-144] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    141: 
+  > 142: 	pm.db.Callback().Update().Before("gorm:update").Register("update_tracker_before", func(db *gorm.DB) {
+  > 143: 		db.InstanceSet("update_start", time.Now())
+  > 144: 	})
+    145: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/database/performance_monitor.go:133-140] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    132: 
+  > 133: 	pm.db.Callback().Create().After("gorm:create").Register("create_tracker_after", func(db *gorm.DB) {
+  > 134: 		if start, exists := db.InstanceGet("create_start"); exists {
+  > 135: 			if startTime, ok := start.(time.Time); ok {
+  > 136: 				duration := time.Since(startTime)
+  > 137: 				pm.recordQueryMetrics("CREATE", duration, db.RowsAffected, nil)
+  > 138: 			}
+  > 139: 		}
+  > 140: 	})
+    141: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/database/performance_monitor.go:129-131] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    128: 
+  > 129: 	pm.db.Callback().Create().Before("gorm:create").Register("create_tracker_before", func(db *gorm.DB) {
+  > 130: 		db.InstanceSet("create_start", time.Now())
+  > 131: 	})
+    132: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/database/performance_monitor.go:119-127] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    118: 
+  > 119: 	pm.db.Callback().Query().After("gorm:query").Register("query_tracker_after", func(db *gorm.DB) {
+  > 120: 		// 记录查询结束时间和统计
+  > 121: 		if start, exists := db.InstanceGet("query_start"); exists {
+  > 122: 			if startTime, ok := start.(time.Time); ok {
+  > 123: 				duration := time.Since(startTime)
+  > 124: 				pm.recordQueryMetrics(db.Statement.SQL.String(), duration, db.RowsAffected, nil)
+  > 125: 			}
+  > 126: 		}
+  > 127: 	})
+    128: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/database/performance_monitor.go:114-117] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    113: 	// 使用GORM的回调来跟踪查询
+  > 114: 	pm.db.Callback().Query().Before("gorm:query").Register("query_tracker_before", func(db *gorm.DB) {
+  > 115: 		// 记录查询开始时间
+  > 116: 		db.InstanceSet("query_start", time.Now())
+  > 117: 	})
+    118: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/database/cache_manager.go:165] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    164: 				cacheKey := cm.GetCacheKey(query.KeyPrefix, query.Params...)
+  > 165: 				cm.Set(cacheKey, result, query.TTL)
+    166: 			}
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/database/cache_manager.go:141] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    140: 		// 注意：这里简化处理，实际应用中需要更复杂的缓存逻辑
+  > 141: 		cm.Set(cacheKey, result, ttl)
+    142: 	}
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/common/stream.go:179] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    178: 
+  > 179: 	w.Write([]byte(`]}}`))
+    180: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/common/stream.go:166] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    165: 		if !first {
+  > 166: 			w.Write([]byte(","))
+    167: 		}
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/common/stream.go:159] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    158: 	w.Write(headerData[:len(headerData)-2]) // 去掉最后的"]}
+  > 159: 	w.Write([]byte(`,"data":[`))
+    160: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/common/stream.go:158] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    157: 
+  > 158: 	w.Write(headerData[:len(headerData)-2]) // 去掉最后的"]}
+    159: 	w.Write([]byte(`,"data":[`))
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/common/stream.go:74] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    73: 
+  > 74: 	w.Write([]byte(`]}`))
+    75: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/common/stream.go:60] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    59: 		if !first {
+  > 60: 			w.Write([]byte(","))
+    61: 		}
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/common/stream.go:53] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    52: 	// 写入响应头
+  > 53: 	w.Write([]byte(`{"data": [`))
+    54: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/auth/middleware.go:424] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    423: 		deviceInfo["last_active"] = time.Now()
+  > 424: 		cacheService.Set(deviceKey, deviceInfo, time.Hour*24)
+    425: 	}
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/auth/middleware.go:410] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    409: 	// 增加计数
+  > 410: 	cacheService.Set(rateLimitKey, count+1, time.Minute)
+    411: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/internal/api/crud_handler.go:182] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    181: 		// 验证和设置默认值
+  > 182: 		ValidateListRequest(&req)
+    183: 
+
+Autofix: 
+
+[/Users/mac/Desktop/FT/law-oa-go/output/np-lint-gov/cmd/migrate/main.go:107] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    106: 		var confirm string
+  > 107: 		fmt.Scanln(&confirm)
+    108: 		if confirm != "yes" {
+
+Autofix: 
+
+Summary:
+  Gosec  : dev
+  Files  : 312
+  Lines  : 130167
+  Nosec  : 0
+  Issues : 136
+
