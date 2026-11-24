@@ -9,6 +9,7 @@ config=playwright.np-m4.config.ts
 spec=()
 case "$suite" in
   route-b) : "${NP_TEST_DSN:?route-b requires isolated PostgreSQL}"; config=playwright.np.config.ts ;;
+  selection) config=playwright.np-first-selection.config.ts ;;
   prod) config=np-entry/c10-sw/playwright.c10-sw.config.ts ;;
   storage|navigation|editing|tabs|legacy) spec=("$suite.spec.ts") ;;
   *) echo "Unknown M4 suite" >&2; exit 2 ;;
@@ -40,7 +41,9 @@ for _ in {1..100}; do
   sleep 0.1
 done
 [[ $ready == true ]] && kill -0 "$server_pid" || { echo "Isolated server unavailable" >&2; exit 1; }
-(cd frontend && node node_modules/@playwright/test/cli.js test -c "$config" ${spec[@]+"${spec[@]}"})
+reporter=()
+if [[ -n ${PLAYWRIGHT_JSON_OUTPUT_FILE:-} ]]; then reporter=(--reporter=json); fi
+(cd frontend && node node_modules/@playwright/test/cli.js test -c "$config" ${spec[@]+"${spec[@]}"} ${reporter[@]+"${reporter[@]}"})
 case "$suite" in
   route-b)
     "${compare[@]}" after "$NP_BROWSER_SEED" "$work/before.json"

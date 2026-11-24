@@ -2,7 +2,7 @@
 # Run only against a disposable container owned by this invocation.
 set -euo pipefail
 probe=${1:-normal}
-case "$probe" in normal|missing-pg|missing-dsn|skip|partial|none) ;; *) exit 2 ;; esac
+case "$probe" in normal|full|missing-pg|missing-dsn|skip|partial|none) ;; *) exit 2 ;; esac
 cd "$(git rev-parse --show-toplevel)"
 tmp=$(mktemp -d)
 cleanup() {
@@ -36,6 +36,10 @@ identity=$("$psql_bin" -XAt "$NP_TEST_DSN" -c "select current_database() || ':' 
 [[ "$identity" == "np_first_slice_dev:np_m1:160014" && -s "$tmp/cid" ]] || { echo M2_WRONG_DATABASE; exit 1; }
 go run ./cmd/migrate -command bootstrap >"$tmp/bootstrap" 2>&1 || { echo M2_BOOTSTRAP_FAILED; exit 1; }
 bash scripts/np-first-slice/apply-main-np86.sh >"$tmp/schema" 2>&1 || { echo M2_SCHEMA_FAILED; exit 1; }
+if [[ "$probe" == full ]]; then
+  bash scripts/np-ci/full-i11.sh "$tmp"
+  exit
+fi
 selector='^(TestNativeConcurrentDraftAndHistory|TestSchemaRequiresFrozenKeysAndTypes)$'
 args=()
 if [[ "$probe" == skip ]]; then
