@@ -2135,15 +2135,6 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 				}
 			}
 		}
-		current := intakeDraftRevisionFor(id, existing["metadata"])
-		if expected == "" {
-			common.NewAPIError(c, http.StatusConflict, "INTAKE_DRAFT_REVISION_REQUIRED", "请重新打开草稿后保存")
-			return gorm.ErrInvalidTransaction
-		}
-		if expected != current {
-			common.APIErrorWithContext(c, http.StatusConflict, "INTAKE_DRAFT_REVISION_CONFLICT", "草稿已被其他页面更新", map[string]interface{}{"current_revision": current})
-			return gorm.ErrInvalidTransaction
-		}
 		history, err := intakeSourceHistory(tx, id)
 		if err != nil {
 			common.NewAPIError(c, http.StatusServiceUnavailable, "SAVE_RESULT_UNKNOWN", "无法核实来源历史，已停止保存")
@@ -2153,7 +2144,23 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 		if err != nil {
 			return err
 		}
-		if history || valueString(metadata, npDescriptionSourceRevisionKey) != "" {
+		protected := history || valueString(metadata, npDescriptionSourceRevisionKey) != ""
+		if protected && h.narrowPilot != nil {
+			if _, denied := h.narrowPilot.authorize(c, tx, id, false); denied != nil {
+				npFail(c, denied)
+				return gorm.ErrInvalidTransaction
+			}
+		}
+		current := intakeDraftRevisionFor(id, existing["metadata"])
+		if expected == "" {
+			common.NewAPIError(c, http.StatusConflict, "INTAKE_DRAFT_REVISION_REQUIRED", "请重新打开草稿后保存")
+			return gorm.ErrInvalidTransaction
+		}
+		if expected != current {
+			common.APIErrorWithContext(c, http.StatusConflict, "INTAKE_DRAFT_REVISION_CONFLICT", "草稿已被其他页面更新", map[string]interface{}{"current_revision": current})
+			return gorm.ErrInvalidTransaction
+		}
+		if protected {
 			common.NewAPIError(c, http.StatusConflict, "UPDATE_PROTOCOL_REQUIRED", "此草稿已有来源历史，不能使用全量保存")
 			return gorm.ErrInvalidTransaction
 		}

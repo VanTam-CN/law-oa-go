@@ -43,6 +43,18 @@ func isolatedDB(t *testing.T) *gorm.DB {
 	return db
 }
 
+func registerIntakeTestSession(t *testing.T, db *gorm.DB, userID uint, token string) {
+	t.Helper()
+	claims, err := middleware.ValidateToken(token)
+	if err != nil {
+		t.Fatal(err)
+	}
+	session := models.AuthTokenSession{ID: uuid.NewString(), UserID: userID, AccessTokenUUID: claims.UUID, RefreshTokenUUID: uuid.NewString(), AccessTokenExpires: time.Now().Add(time.Hour), RefreshTokenExpires: time.Now().Add(2 * time.Hour)}
+	if err := db.Create(&session).Error; err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestNativeConcurrentDraftAndHistory(t *testing.T) {
 	db := isolatedDB(t)
 	var err error
@@ -77,6 +89,7 @@ func TestNativeConcurrentDraftAndHistory(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		registerIntakeTestSession(t, db, id, token)
 		return token
 	}
 	owner := tokenFor(user.ID)
