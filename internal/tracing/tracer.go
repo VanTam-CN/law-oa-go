@@ -14,15 +14,16 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/exporters/jaeger" // SA1019 排除：jaeger 导出器仍在默认链路使用，迁移 OTLP 见跟踪卡
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/exporters/zipkin"
+	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
-	"go.opentelemetry.io/otel/trace"
 )
 
 // TracerConfig 追踪器配置
@@ -115,7 +116,7 @@ func InitTracer(config *TracerConfig) error {
 	}
 
 	if !config.Enabled {
-		otel.SetTracerProvider(trace.NewNoopTracerProvider())
+		otel.SetTracerProvider(noop.NewTracerProvider())
 		return nil
 	}
 

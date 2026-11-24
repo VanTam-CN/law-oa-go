@@ -547,7 +547,7 @@ func (s *TrustTransactionService) ApproveTransaction(ctx context.Context, id uin
 		}
 
 		// 步骤 4：验证余额 + 步骤 5：计算新余额
-		newBalance := account.Balance
+		var newBalance float64
 		switch transaction.TransactionType {
 		case "deposit":
 			newBalance = account.Balance + transaction.Amount
@@ -607,7 +607,7 @@ func (s *TrustTransactionService) RejectTransaction(ctx context.Context, id uint
 		return nil, errors.New("只有待审批状态的交易可以拒绝")
 	}
 
-	transaction.Status = "cancelled"
+	transaction.Status = "canceled"
 
 	if err := s.transactionRepo.Update(ctx, transaction); err != nil {
 		return nil, fmt.Errorf("拒绝交易失败: %w", err)

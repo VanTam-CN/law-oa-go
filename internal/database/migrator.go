@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -15,6 +16,7 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
+
 	"law-oa-go/internal/config"
 )
 
@@ -267,7 +269,7 @@ func (m *Migrator) Up() error {
 		return fmt.Errorf("failed to run migrations: %w", err)
 	}
 
-	if err == migrate.ErrNoChange {
+	if errors.Is(err, migrate.ErrNoChange) {
 		log.Println("数据库已是最新版本，无需迁移")
 	} else {
 		log.Println("数据库迁移完成")
@@ -285,7 +287,7 @@ func (m *Migrator) Down() error {
 		return fmt.Errorf("failed to rollback migrations: %w", err)
 	}
 
-	if err == migrate.ErrNoChange {
+	if errors.Is(err, migrate.ErrNoChange) {
 		log.Println("没有可回滚的迁移")
 	} else {
 		log.Println("数据库迁移回滚完成")
@@ -307,7 +309,7 @@ func (m *Migrator) Steps(n int) error {
 		return fmt.Errorf("failed to run %d steps: %w", n, err)
 	}
 
-	if err == migrate.ErrNoChange {
+	if errors.Is(err, migrate.ErrNoChange) {
 		log.Println("没有可执行的迁移步骤")
 	} else {
 		log.Printf("迁移步骤执行完成")
@@ -325,7 +327,7 @@ func (m *Migrator) Goto(version uint) error {
 		return fmt.Errorf("failed to migrate to version %d: %w", version, err)
 	}
 
-	if err == migrate.ErrNoChange {
+	if errors.Is(err, migrate.ErrNoChange) {
 		log.Printf("数据库已是版本 %d", version)
 	} else {
 		log.Printf("成功迁移到版本 %d", version)

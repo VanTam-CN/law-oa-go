@@ -8,7 +8,9 @@ import (
 	"time"
 
 	stderrors "errors"
+
 	"golang.org/x/crypto/bcrypt"
+
 	"law-oa-go/internal/concurrency"
 	"law-oa-go/internal/errors"
 	"law-oa-go/internal/models"
@@ -693,7 +695,6 @@ func (s *UserService) BatchChangePassword(ctx context.Context, changes map[uint]
 		return errors.ValidationErrorWithDetails("changes", "empty_request", "No password changes to process", []string{"Batch password change request is empty"})
 	}
 
-	tasks := make([]concurrency.Task, 0, len(changes))
 	var wg sync.WaitGroup
 	errChan := make(chan error, len(changes))
 
@@ -716,7 +717,6 @@ func (s *UserService) BatchChangePassword(ctx context.Context, changes map[uint]
 			},
 			Context: ctx,
 		}
-		tasks = append(tasks, task)
 
 		go func(task concurrency.Task) {
 			defer wg.Done()

@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -129,7 +130,7 @@ func migrateUp(dsn, migrationsDir string) error {
 
 	// 执行迁移
 	if err := m.Up(); err != nil {
-		if err == migrate.ErrNoChange {
+		if errors.Is(err, migrate.ErrNoChange) {
 			log.Println("数据库已经是最新版本")
 			return nil
 		}
@@ -152,7 +153,7 @@ func migrateDown(dsn, migrationsDir string) error {
 
 	// 执行向下迁移
 	if err := m.Down(); err != nil {
-		if err == migrate.ErrNoChange {
+		if errors.Is(err, migrate.ErrNoChange) {
 			log.Println("数据库已经是初始版本")
 			return nil
 		}

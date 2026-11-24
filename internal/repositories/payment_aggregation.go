@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/models"
 )
 
@@ -50,12 +51,12 @@ func (r *PaymentRepositoryImpl) GetPaymentAggregation(ctx context.Context, month
 			Where("status = ? AND payment_date >= ? AND payment_date < ?", "confirmed", monthStart, monthEnd).
 			Scan(&monthSum).Error
 		if err != nil {
-			return
+			return total, pendingCount, confirmedCount, rejectedCount, totalAmount, monthAmount, pendingAmount, err
 		}
 		monthAmount = monthSum.Sum
 	}
 
-	return
+	return total, pendingCount, confirmedCount, rejectedCount, totalAmount, monthAmount, pendingAmount, err
 }
 
 // ensure compile-time interface satisfaction

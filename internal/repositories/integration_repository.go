@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"law-oa-go/internal/models"
@@ -130,7 +131,7 @@ func (r *IntegrationRepository) GetConflictAssociationByApprovalID(ctx context.C
 		Where("approval_request_id = ? AND association_status = ?", approvalID, "active").
 		First(&association).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, NewRepositoryError("get conflict association by approval id", "ConflictAssociation", err)
@@ -145,7 +146,7 @@ func (r *IntegrationRepository) GetConflictAssociationByCheckID(ctx context.Cont
 		Where("conflict_check_id = ? AND association_status = ?", checkID, "active").
 		First(&association).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, NewRepositoryError("get conflict association by check id", "ConflictAssociation", err)
@@ -201,7 +202,7 @@ func (r *IntegrationRepository) GetLatestCaseCreationTracking(ctx context.Contex
 		Order("created_at DESC").
 		First(&tracking).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, NewRepositoryError("get latest case creation tracking", "CaseCreationTracking", err)
@@ -267,7 +268,7 @@ func (r *IntegrationRepository) GetConflictCheckRecord(ctx context.Context, chec
 	var record models.ConflictCheckRecord
 	err := r.db.WithContext(ctx).Where("check_id = ?", checkID).First(&record).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, NewRepositoryError("get conflict check record", "ConflictCheckRecord", err)
@@ -284,7 +285,7 @@ func (r *IntegrationRepository) GetLatestConflictReview(ctx context.Context, che
 		Order("created_at DESC").
 		First(&review).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, NewRepositoryError("get latest conflict review", "ConflictReview", err)
@@ -307,7 +308,7 @@ func (r *IntegrationRepository) GetIntegrationConfigByName(ctx context.Context, 
 		Where("config_name = ? AND status = ?", name, "active").
 		First(&config).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, NewRepositoryError("get integration config by name", "IntegrationConfig", err)

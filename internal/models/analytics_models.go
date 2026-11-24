@@ -400,8 +400,8 @@ func (UserSegment) TableName() string           { return "user_segments" }
 func (UserSegmentMembership) TableName() string { return "user_segment_memberships" }
 func (BehaviorPattern) TableName() string       { return "behavior_patterns" }
 func (UserBehaviorRecord) TableName() string    { return "user_behavior_records" }
-func (FunnelAnalysis) TableName() string        { return "funnel_analyses" }
-func (RetentionAnalysis) TableName() string     { return "retention_analyses" }
+func (FunnelAnalysis) TableName() string        { return "funnel_analyzes" }
+func (RetentionAnalysis) TableName() string     { return "retention_analyzes" }
 func (AnalyticsReportData) TableName() string   { return "analytics_reports" }
 func (HeatmapData) TableName() string           { return "heatmap_data" }
 func (ClickstreamRecord) TableName() string     { return "clickstream_records" }

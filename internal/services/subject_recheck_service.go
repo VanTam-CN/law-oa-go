@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/security"
 
@@ -1312,7 +1313,7 @@ func (s *SubjectRecheckService) RequireConflictDisposition(ctx context.Context, 
 	case "waiver_requested":
 		if err := s.requireCurrentApprovedWaiver(ctx, checkID, &record); err == nil {
 			return nil
-		} else if workflowErr, ok := err.(*SubjectWorkflowError); ok && workflowErr.Code != "WAIVER_PENDING" {
+		} else if workflowErr := (*SubjectWorkflowError)(nil); errors.As(err, &workflowErr) && workflowErr.Code != "WAIVER_PENDING" {
 			return workflowErr
 		}
 		return NewSubjectWorkflowError("WAIVER_PENDING", fmt.Sprintf("豁免处置尚未生效，已阻止：%s", action))

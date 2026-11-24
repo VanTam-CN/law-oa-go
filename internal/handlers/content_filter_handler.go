@@ -2,12 +2,14 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/common"
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/services"
@@ -108,7 +110,7 @@ func (h *ContentFilterHandler) GetSensitiveWordByID(c *gin.Context) {
 
 	var word models.SensitiveWord
 	if err := h.db.First(&word, id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			common.APINotFound(c, "敏感词不存在")
 			return
 		}
@@ -141,7 +143,7 @@ func (h *ContentFilterHandler) UpdateSensitiveWord(c *gin.Context) {
 
 	var word models.SensitiveWord
 	if err := h.db.First(&word, id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			common.APINotFound(c, "敏感词不存在")
 			return
 		}
@@ -201,7 +203,7 @@ func (h *ContentFilterHandler) DeleteSensitiveWord(c *gin.Context) {
 	}
 
 	if err := h.filterService.DeleteSensitiveWord(context.Background(), uint(id)); err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			common.APINotFound(c, "敏感词不存在")
 			return
 		}

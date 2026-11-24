@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -76,7 +77,7 @@ func (s *DocumentLockService) AcquireLock(ctx context.Context, req *AcquireLockR
 	// 首先检查文档是否存在
 	var doc models.Document
 	if err := s.db.WithContext(ctx).First(&doc, req.DocumentID).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("document not found")
 		}
 		return nil, fmt.Errorf("failed to check document: %w", err)
@@ -336,7 +337,7 @@ func (s *DocumentLockService) ValidateEditPermission(ctx context.Context, docume
 func (s *DocumentLockService) getActiveLock(ctx context.Context, documentID uint, now time.Time) (*models.DocumentLock, error) {
 	var lock models.DocumentLock
 	err := s.db.WithContext(ctx).Where("document_id = ?", documentID).First(&lock).Error
-	if err == gorm.ErrRecordNotFound {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
 	if err != nil {

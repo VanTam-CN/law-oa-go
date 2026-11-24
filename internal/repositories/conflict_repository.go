@@ -17,6 +17,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/security"
 )
@@ -826,6 +827,8 @@ func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID
 			if err != nil {
 				return nil, fmt.Errorf("查询对方当事人冲突失败 (party=%q): %w", party, err)
 			}
+			// 循环内错误路径已有手工 Close；defer 在函数收尾兜底（sql.Rows.Close 幂等）
+			defer partyRows.Close()
 
 			for partyRows.Next() {
 				var caseModel models.Case
@@ -952,10 +955,7 @@ func classifyDirectOpposingPartyMatch(clientName, party string) PartyMatchKind {
 // isMeaningfulConflictName 规范化后是否仍有有效辨识内容。
 // 太短（<2 字符）视为无意义，避免单字"华"命中"华为技术有限公司"。
 func isMeaningfulConflictName(name string) bool {
-	if len(strings.TrimSpace(name)) < 2 {
-		return false
-	}
-	return true
+	return len(strings.TrimSpace(name)) >= 2
 }
 
 func normalizeConflictPartyName(name string) string {

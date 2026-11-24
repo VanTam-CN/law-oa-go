@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"errors"
 	"fmt"
 
 	"law-oa-go/internal/models"
@@ -26,10 +27,10 @@ func (r *ApprovalRepository) FindByID(id string) (*models.ApprovalRequest, error
 	var approval models.ApprovalRequest
 	err := r.db.Where("id = ?", id).First(&approval).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("查找审批记录失败: %v", err)
+		return nil, fmt.Errorf("查找审批记录失败: %w", err)
 	}
 	return &approval, nil
 }
@@ -43,7 +44,7 @@ func (r *ApprovalRepository) FindByUserID(userID string, limit, offset int) ([]m
 		Offset(offset).
 		Find(&approvals).Error
 	if err != nil {
-		return nil, fmt.Errorf("查找用户审批记录失败: %v", err)
+		return nil, fmt.Errorf("查找用户审批记录失败: %w", err)
 	}
 	return approvals, nil
 }
@@ -60,7 +61,7 @@ func (r *ApprovalRepository) FindPendingByApproverID(approverID string, limit, o
 		Offset(offset).
 		Find(&approvals).Error
 	if err != nil {
-		return nil, fmt.Errorf("查找待审批记录失败: %v", err)
+		return nil, fmt.Errorf("查找待审批记录失败: %w", err)
 	}
 	return approvals, nil
 }
@@ -76,7 +77,7 @@ func (r *ApprovalRepository) CountByUserID(userID string, status string) (int64,
 
 	err := query.Count(&count).Error
 	if err != nil {
-		return 0, fmt.Errorf("统计用户审批记录失败: %v", err)
+		return 0, fmt.Errorf("统计用户审批记录失败: %w", err)
 	}
 	return count, nil
 }
@@ -91,7 +92,7 @@ func (r *ApprovalRepository) CountPendingByApproverID(approverID string) (int64,
 		}).
 		Count(&count).Error
 	if err != nil {
-		return 0, fmt.Errorf("统计待审批记录失败: %v", err)
+		return 0, fmt.Errorf("统计待审批记录失败: %w", err)
 	}
 	return count, nil
 }
@@ -110,7 +111,7 @@ func (r *ApprovalRepository) CountPendingByApplicantID(applicantID string) (int6
 		}).
 		Count(&count).Error
 	if err != nil {
-		return 0, fmt.Errorf("统计用户待审批记录失败: %v", err)
+		return 0, fmt.Errorf("统计用户待审批记录失败: %w", err)
 	}
 	return count, nil
 }
@@ -125,7 +126,7 @@ func (r *ApprovalRepository) CountPending() (int64, error) {
 		}).
 		Count(&count).Error
 	if err != nil {
-		return 0, fmt.Errorf("统计待审批记录失败: %v", err)
+		return 0, fmt.Errorf("统计待审批记录失败: %w", err)
 	}
 	return count, nil
 }
@@ -133,7 +134,7 @@ func (r *ApprovalRepository) CountPending() (int64, error) {
 // Create 创建审批记录
 func (r *ApprovalRepository) Create(approval *models.ApprovalRequest) error {
 	if err := r.db.Create(approval).Error; err != nil {
-		return fmt.Errorf("创建审批记录失败: %v", err)
+		return fmt.Errorf("创建审批记录失败: %w", err)
 	}
 	return nil
 }
@@ -141,7 +142,7 @@ func (r *ApprovalRepository) Create(approval *models.ApprovalRequest) error {
 // Update 更新审批记录
 func (r *ApprovalRepository) Update(approval *models.ApprovalRequest) error {
 	if err := r.db.Save(approval).Error; err != nil {
-		return fmt.Errorf("更新审批记录失败: %v", err)
+		return fmt.Errorf("更新审批记录失败: %w", err)
 	}
 	return nil
 }
@@ -149,7 +150,7 @@ func (r *ApprovalRepository) Update(approval *models.ApprovalRequest) error {
 // Delete 删除审批记录
 func (r *ApprovalRepository) Delete(id string) error {
 	if err := r.db.Delete(&models.ApprovalRequest{}, "id = ?", id).Error; err != nil {
-		return fmt.Errorf("删除审批记录失败: %v", err)
+		return fmt.Errorf("删除审批记录失败: %w", err)
 	}
 	return nil
 }
@@ -161,7 +162,7 @@ func (r *ApprovalRepository) FindWorkflows() ([]models.ApprovalWorkflow, error) 
 		Order("created_at DESC").
 		Find(&workflows).Error
 	if err != nil {
-		return nil, fmt.Errorf("查找工作流失败: %v", err)
+		return nil, fmt.Errorf("查找工作流失败: %w", err)
 	}
 	return workflows, nil
 }
@@ -181,7 +182,7 @@ func (r *ApprovalRepository) FindTemplates(templateType, category string) ([]mod
 	err := query.Order("usage_count DESC, created_at DESC").
 		Find(&templates).Error
 	if err != nil {
-		return nil, fmt.Errorf("查找模板失败: %v", err)
+		return nil, fmt.Errorf("查找模板失败: %w", err)
 	}
 	return templates, nil
 }
@@ -189,7 +190,7 @@ func (r *ApprovalRepository) FindTemplates(templateType, category string) ([]mod
 // CreateApprovalRecord 创建审批记录
 func (r *ApprovalRepository) CreateRecord(record *models.ApprovalRecord) error {
 	if err := r.db.Create(record).Error; err != nil {
-		return fmt.Errorf("创建审批记录失败: %v", err)
+		return fmt.Errorf("创建审批记录失败: %w", err)
 	}
 	return nil
 }
@@ -201,7 +202,7 @@ func (r *ApprovalRepository) FindRecordsByApprovalID(approvalRequestID string) (
 		Order("created_at ASC").
 		Find(&records).Error
 	if err != nil {
-		return nil, fmt.Errorf("查找审批记录失败: %v", err)
+		return nil, fmt.Errorf("查找审批记录失败: %w", err)
 	}
 	return records, nil
 }
@@ -218,7 +219,7 @@ func (r *ApprovalRepository) HasApproverRecord(approvalRequestID, approverID str
 		Where("approval_request_id = ? AND approver_id = ?", approvalRequestID, approverID).
 		Count(&count).Error
 	if err != nil {
-		return false, fmt.Errorf("检查审批处理记录失败: %v", err)
+		return false, fmt.Errorf("检查审批处理记录失败: %w", err)
 	}
 	return count > 0, nil
 }

@@ -2654,7 +2654,8 @@ func (h *DemoAggregateHandler) CreateConflictApproval(c *gin.Context) {
 	}
 	response, err := h.createConflictApproval(c, taskID, applicantID, payload)
 	if err != nil {
-		if businessErr, ok := err.(conflictApprovalError); ok {
+		var businessErr conflictApprovalError
+		if errors.As(err, &businessErr) {
 			common.NewAPIError(c, businessErr.status, businessErr.code, businessErr.message, businessErr.details)
 			return
 		}
@@ -2682,7 +2683,7 @@ func (h *DemoAggregateHandler) createConflictApproval(c *gin.Context, taskID, ap
 	err := h.db.Transaction(func(tx *gorm.DB) error {
 		var row map[string]interface{}
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Table("conflict_check_records").Where("check_id = ?", taskID).Take(&row).Error; err != nil {
-			if err == gorm.ErrRecordNotFound {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return conflictApprovalError{status: http.StatusNotFound, code: "CONFLICT_TASK_NOT_FOUND", message: "冲突检测记录不存在"}
 			}
 			return err
@@ -2720,7 +2721,7 @@ func (h *DemoAggregateHandler) createConflictApproval(c *gin.Context, taskID, ap
 				case "SUBMITTED", "UNDER_REVIEW":
 					return conflictApprovalError{status: http.StatusConflict, code: "CONFLICT_WAIVER_IN_PROGRESS", message: "冲突豁免正在复核，不能并行创建冲突审批"}
 				}
-			} else if waiverErr != gorm.ErrRecordNotFound {
+			} else if !errors.Is(waiverErr, gorm.ErrRecordNotFound) {
 				return waiverErr
 			}
 		}
@@ -2741,7 +2742,7 @@ func (h *DemoAggregateHandler) createConflictApproval(c *gin.Context, taskID, ap
 				}
 				return conflictApprovalError{status: http.StatusConflict, code: "CONFLICT_APPROVAL_FINAL", message: "该冲突任务已有终态审批，不能重复创建同类审批"}
 			}
-			if existingErr != gorm.ErrRecordNotFound {
+			if !errors.Is(existingErr, gorm.ErrRecordNotFound) {
 				return existingErr
 			}
 		}
@@ -3000,7 +3001,7 @@ func (h *DemoAggregateHandler) findConflictApproverDB(db *gorm.DB, applicantID s
 		Order("id ASC").
 		Take(&approver).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("请先配置合规、风控、主任、合伙人或冲突核查人账号")
 		}
 		return nil, err

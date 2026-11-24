@@ -311,6 +311,8 @@ func (s *conflictDetectionService) checkOpponentConflicts(ctx context.Context, r
 		if err != nil {
 			return nil, fmt.Errorf("查询对方当事人冲突失败 (opponent=%q): %w", opponent, err)
 		}
+		// 循环内错误路径已有手工 Close；defer 在函数收尾兜底（sql.Rows.Close 幂等）
+		defer rows.Close()
 
 		for rows.Next() {
 			var caseID uint
@@ -1198,10 +1200,7 @@ func (s *conflictDetectionService) classifyPartyMatch(name1, name2 string) Party
 // isMeaningfulPartyName 规范化后是否含有有效辨识内容。
 // 太短（<2 字符）视为无意义，避免单字触发 CRITICAL。
 func isMeaningfulPartyName(name string) bool {
-	if len(strings.TrimSpace(name)) < 2 {
-		return false
-	}
-	return true
+	return len(strings.TrimSpace(name)) >= 2
 }
 
 // isPartyNameMatch 仅在 Exact 规范化相等时返回 true。
@@ -1294,7 +1293,7 @@ func (s *conflictDetectionService) cleanCompanyName(name string) string {
 	suffixes := []string{"有限公司", "股份有限公司", "集团", "控股", "科技", "网络", "信息", "数据", "云", "服务", "投资", "管理", "咨询"}
 
 	for _, suffix := range suffixes {
-		name = strings.Replace(name, suffix, "", -1)
+		name = strings.ReplaceAll(name, suffix, "")
 	}
 
 	return strings.TrimSpace(name)
@@ -1315,7 +1314,6 @@ func (s *conflictDetectionService) containsAny(text string, keywords []string) b
 func (s *conflictDetectionService) determineConflictType(caseName, description, opponent string) string {
 	caseName = strings.ToLower(caseName)
 	description = strings.ToLower(description)
-	opponent = strings.ToLower(opponent)
 
 	// 1. 法律对立冲突 - 最高风险
 	if strings.Contains(caseName, "离婚") || strings.Contains(description, "离婚") ||

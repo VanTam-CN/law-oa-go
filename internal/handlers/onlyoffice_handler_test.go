@@ -301,7 +301,7 @@ func TestHandleCallback_MustSave(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Request, _ = http.NewRequest("POST", "/api/documents/onlyoffice/callback", bytes.NewReader(bodyBytes))
+	c.Request, _ = http.NewRequest(http.MethodPost, "/api/documents/onlyoffice/callback", bytes.NewReader(bodyBytes))
 	c.Request.Header.Set("Content-Type", "application/json")
 
 	h.HandleCallback(c)
@@ -363,7 +363,7 @@ func TestConvertDocument_InvalidOutputType(t *testing.T) {
 	body := `{"document_id": 1, "output_type": "exe"}`
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Request, _ = http.NewRequest("POST", "/api/documents/onlyoffice/convert", strings.NewReader(body))
+	c.Request, _ = http.NewRequest(http.MethodPost, "/api/documents/onlyoffice/convert", strings.NewReader(body))
 	c.Request.Header.Set("Content-Type", "application/json")
 
 	h.ConvertDocument(c)
@@ -380,7 +380,7 @@ func TestCheckConversionStatus_NotFound(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest("GET", "/api/documents/onlyoffice/convert/status?task_id=nonexistent", nil)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/documents/onlyoffice/convert/status?task_id=nonexistent", nil)
 
 	h.CheckConversionStatus(c)
 
@@ -672,7 +672,7 @@ func TestProcessConversionResult_RejectsNonOnlyOfficeURL(t *testing.T) {
 		CreatedAt:  time.Now(),
 	}
 
-	h.processConversionResult("task-1", &ConversionResponse{Status: 3, URL: ts.URL + "/converted.pdf"})
+	h.processConversionResult(context.Background(), "task-1", &ConversionResponse{Status: 3, URL: ts.URL + "/converted.pdf"})
 
 	task := h.conversionTasks["task-1"]
 	if task.Status != ConversionStatusError {

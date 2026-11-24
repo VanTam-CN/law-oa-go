@@ -11,6 +11,7 @@ import (
 	"slices"
 
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/repositories"
 	"law-oa-go/internal/services"
 )
@@ -232,7 +233,7 @@ func restoreMetadataArray(old, values []any) ([]any, error) {
 		}
 	})
 	// A raw wire number can denote either a rounded old value or its exact
-	// neighbour. Guard every possible source slot as well as its destination.
+	// neighbor. Guard every possible source slot as well as its destination.
 	echoes := make(map[json.Number]bool)
 	if len(rounded) != 0 {
 		visitMetadataNumbers(values, func(n json.Number) {
@@ -340,7 +341,7 @@ func checkDisplacedMetadataSlots(old, values, result []any) error {
 }
 
 // Find the earliest deletion compatible with an unchanged prefix, surviving
-// neighbours shifted left by one, and a new tail. Every later compatible
+// neighbors shifted left by one, and a new tail. Every later compatible
 // deletion shares a suffix of this shift, so one comparison covers them all.
 func possibleMetadataDrop(old, wire []any) int {
 	if len(old) < 2 || len(wire) < len(old) {

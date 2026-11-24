@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"errors"
 	"fmt"
 
 	"law-oa-go/internal/models"
@@ -24,10 +25,10 @@ func (r *ApprovalWorkflowRepository) FindByType(workflowType string) (*models.Ap
 	err := r.db.Where("workflow_type = ? AND status = ?", workflowType, models.WorkflowStatusActive).
 		First(&workflow).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("查找工作流失败: %v", err)
+		return nil, fmt.Errorf("查找工作流失败: %w", err)
 	}
 	return &workflow, nil
 }
@@ -37,10 +38,10 @@ func (r *ApprovalWorkflowRepository) FindByID(id string) (*models.ApprovalWorkfl
 	var workflow models.ApprovalWorkflow
 	err := r.db.Where("id = ?", id).First(&workflow).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("查找工作流失败: %v", err)
+		return nil, fmt.Errorf("查找工作流失败: %w", err)
 	}
 	return &workflow, nil
 }
@@ -52,7 +53,7 @@ func (r *ApprovalWorkflowRepository) FindAll() ([]models.ApprovalWorkflow, error
 		Order("created_at DESC").
 		Find(&workflows).Error
 	if err != nil {
-		return nil, fmt.Errorf("查找工作流列表失败: %v", err)
+		return nil, fmt.Errorf("查找工作流列表失败: %w", err)
 	}
 	return workflows, nil
 }
@@ -60,7 +61,7 @@ func (r *ApprovalWorkflowRepository) FindAll() ([]models.ApprovalWorkflow, error
 // Create 创建工作流
 func (r *ApprovalWorkflowRepository) Create(workflow *models.ApprovalWorkflow) error {
 	if err := r.db.Create(workflow).Error; err != nil {
-		return fmt.Errorf("创建工作流失败: %v", err)
+		return fmt.Errorf("创建工作流失败: %w", err)
 	}
 	return nil
 }
@@ -68,7 +69,7 @@ func (r *ApprovalWorkflowRepository) Create(workflow *models.ApprovalWorkflow) e
 // Update 更新工作流
 func (r *ApprovalWorkflowRepository) Update(workflow *models.ApprovalWorkflow) error {
 	if err := r.db.Save(workflow).Error; err != nil {
-		return fmt.Errorf("更新工作流失败: %v", err)
+		return fmt.Errorf("更新工作流失败: %w", err)
 	}
 	return nil
 }
@@ -76,7 +77,7 @@ func (r *ApprovalWorkflowRepository) Update(workflow *models.ApprovalWorkflow) e
 // Delete 删除工作流
 func (r *ApprovalWorkflowRepository) Delete(id string) error {
 	if err := r.db.Delete(&models.ApprovalWorkflow{}, "id = ?", id).Error; err != nil {
-		return fmt.Errorf("删除工作流失败: %v", err)
+		return fmt.Errorf("删除工作流失败: %w", err)
 	}
 	return nil
 }

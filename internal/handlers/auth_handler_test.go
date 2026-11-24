@@ -125,7 +125,7 @@ func TestAuthHandler_Login(t *testing.T) {
 			"password": "password123", // 与生成哈希时使用的密码相同
 		}
 		jsonData, _ := json.Marshal(loginData)
-		req, _ := http.NewRequest("POST", "/auth/login", bytes.NewBuffer(jsonData))
+		req, _ := http.NewRequest(http.MethodPost, "/auth/login", bytes.NewBuffer(jsonData))
 		req.Header.Set("Content-Type", "application/json")
 
 		// 执行请求
@@ -174,7 +174,7 @@ func TestAuthHandler_Login(t *testing.T) {
 			"password": "wrongpassword", // 错误的密码
 		}
 		jsonData, _ := json.Marshal(loginData)
-		req, _ := http.NewRequest("POST", "/auth/login", bytes.NewBuffer(jsonData))
+		req, _ := http.NewRequest(http.MethodPost, "/auth/login", bytes.NewBuffer(jsonData))
 		req.Header.Set("Content-Type", "application/json")
 
 		// 执行请求
@@ -207,7 +207,7 @@ func TestAuthHandler_Login(t *testing.T) {
 			"email": "invalid-email",
 		}
 		jsonData, _ := json.Marshal(loginData)
-		req, _ := http.NewRequest("POST", "/auth/login", bytes.NewBuffer(jsonData))
+		req, _ := http.NewRequest(http.MethodPost, "/auth/login", bytes.NewBuffer(jsonData))
 		req.Header.Set("Content-Type", "application/json")
 
 		// 执行请求
@@ -256,7 +256,7 @@ func TestAuthHandler_Login(t *testing.T) {
 			"password": "password123", // 与生成哈希时使用的密码相同
 		}
 		jsonData, _ := json.Marshal(loginData)
-		req, _ := http.NewRequest("POST", "/auth/login", bytes.NewBuffer(jsonData))
+		req, _ := http.NewRequest(http.MethodPost, "/auth/login", bytes.NewBuffer(jsonData))
 		req.Header.Set("Content-Type", "application/json")
 
 		// 执行请求
@@ -302,7 +302,7 @@ func TestAuthHandler_Login(t *testing.T) {
 		}
 		jsonData, err := json.Marshal(loginData)
 		require.NoError(t, err)
-		req, err := http.NewRequest("POST", "/auth/login", bytes.NewBuffer(jsonData))
+		req, err := http.NewRequest(http.MethodPost, "/auth/login", bytes.NewBuffer(jsonData))
 		require.NoError(t, err)
 		req.Header.Set("Content-Type", "application/json")
 
@@ -348,7 +348,7 @@ func TestAuthHandler_Login(t *testing.T) {
 		}
 		jsonData, err := json.Marshal(loginData)
 		require.NoError(t, err)
-		req, err := http.NewRequest("POST", "/auth/login", bytes.NewBuffer(jsonData))
+		req, err := http.NewRequest(http.MethodPost, "/auth/login", bytes.NewBuffer(jsonData))
 		require.NoError(t, err)
 		req.Header.Set("Content-Type", "application/json")
 
@@ -385,7 +385,7 @@ func TestAuthHandler_Login(t *testing.T) {
 		}
 		jsonData, err := json.Marshal(loginData)
 		require.NoError(t, err)
-		req, err := http.NewRequest("POST", "/auth/login", bytes.NewBuffer(jsonData))
+		req, err := http.NewRequest(http.MethodPost, "/auth/login", bytes.NewBuffer(jsonData))
 		require.NoError(t, err)
 		req.Header.Set("Content-Type", "application/json")
 
@@ -487,7 +487,7 @@ func TestAuthHandler_Register(t *testing.T) {
 			"phone":    "1234567890",
 		}
 		jsonData, _ := json.Marshal(registerData)
-		req, _ := http.NewRequest("POST", "/auth/register", bytes.NewBuffer(jsonData))
+		req, _ := http.NewRequest(http.MethodPost, "/auth/register", bytes.NewBuffer(jsonData))
 		req.Header.Set("Content-Type", "application/json")
 
 		// 执行请求
@@ -528,7 +528,7 @@ func TestAuthHandler_Register(t *testing.T) {
 			"role":     "user",
 		}
 		jsonData, _ := json.Marshal(registerData)
-		req, _ := http.NewRequest("POST", "/auth/register", bytes.NewBuffer(jsonData))
+		req, _ := http.NewRequest(http.MethodPost, "/auth/register", bytes.NewBuffer(jsonData))
 		req.Header.Set("Content-Type", "application/json")
 
 		// 执行请求
@@ -558,7 +558,7 @@ func TestAuthHandler_Register(t *testing.T) {
 			"email": "newuser@example.com",
 		}
 		jsonData, _ := json.Marshal(registerData)
-		req, _ := http.NewRequest("POST", "/auth/register", bytes.NewBuffer(jsonData))
+		req, _ := http.NewRequest(http.MethodPost, "/auth/register", bytes.NewBuffer(jsonData))
 		req.Header.Set("Content-Type", "application/json")
 
 		// 执行请求
@@ -595,7 +595,7 @@ func TestAuthHandler_Register(t *testing.T) {
 			"role":     "invalid_role", // 必须被忽略
 		}
 		jsonData, _ := json.Marshal(registerData)
-		req, _ := http.NewRequest("POST", "/auth/register", bytes.NewBuffer(jsonData))
+		req, _ := http.NewRequest(http.MethodPost, "/auth/register", bytes.NewBuffer(jsonData))
 		req.Header.Set("Content-Type", "application/json")
 
 		w := httptest.NewRecorder()
@@ -688,7 +688,7 @@ func TestAuthHandler_UpdateProfile(t *testing.T) {
 			"phone": "9876543210",
 		}
 		jsonData, _ := json.Marshal(updateData)
-		req, _ := http.NewRequest("PUT", "/users/profile", bytes.NewBuffer(jsonData))
+		req, _ := http.NewRequest(http.MethodPut, "/users/profile", bytes.NewBuffer(jsonData))
 		req.Header.Set("Content-Type", "application/json")
 		// 不需要token，因为我们模拟了中间件
 
@@ -719,7 +719,7 @@ func TestAuthHandler_UpdateProfile(t *testing.T) {
 			"email": "invalid-email",
 		}
 		jsonData, _ := json.Marshal(updateData)
-		req, _ := http.NewRequest("PUT", "/users/profile", bytes.NewBuffer(jsonData))
+		req, _ := http.NewRequest(http.MethodPut, "/users/profile", bytes.NewBuffer(jsonData))
 		req.Header.Set("Content-Type", "application/json")
 		// 不需要token，因为我们模拟了中间件
 
@@ -808,7 +808,7 @@ func TestAuthHandler_ChangePassword(t *testing.T) {
 			"new_password":     "NewPassword123!",
 		}
 		jsonData, _ := json.Marshal(changePasswordData)
-		req, _ := http.NewRequest("POST", "/users/change-password", bytes.NewBuffer(jsonData))
+		req, _ := http.NewRequest(http.MethodPost, "/users/change-password", bytes.NewBuffer(jsonData))
 		req.Header.Set("Content-Type", "application/json")
 		// 不需要token，因为我们模拟了中间件
 
@@ -855,7 +855,7 @@ func TestAuthHandler_ChangePassword(t *testing.T) {
 			"new_password":     "NewPassword123!",
 		}
 		jsonData, _ := json.Marshal(changePasswordData)
-		req, _ := http.NewRequest("POST", "/users/change-password", bytes.NewBuffer(jsonData))
+		req, _ := http.NewRequest(http.MethodPost, "/users/change-password", bytes.NewBuffer(jsonData))
 		req.Header.Set("Content-Type", "application/json")
 		// 不需要token，因为我们模拟了中间件
 
@@ -906,7 +906,7 @@ func TestAuthHandler_ChangePassword(t *testing.T) {
 			"new_password":     "weak",
 		}
 		jsonData, _ := json.Marshal(changePasswordData)
-		req, _ := http.NewRequest("POST", "/users/change-password", bytes.NewBuffer(jsonData))
+		req, _ := http.NewRequest(http.MethodPost, "/users/change-password", bytes.NewBuffer(jsonData))
 		req.Header.Set("Content-Type", "application/json")
 		// 不需要token，因为我们模拟了中间件
 
@@ -1010,7 +1010,7 @@ func TestAuthHandler_RefreshToken(t *testing.T) {
 			"refresh_token": validToken,
 		}
 		jsonData, _ := json.Marshal(refreshTokenData)
-		req, _ := http.NewRequest("POST", "/auth/refresh", bytes.NewBuffer(jsonData))
+		req, _ := http.NewRequest(http.MethodPost, "/auth/refresh", bytes.NewBuffer(jsonData))
 		req.Header.Set("Content-Type", "application/json")
 
 		// 执行请求
@@ -1040,7 +1040,7 @@ func TestAuthHandler_RefreshToken(t *testing.T) {
 			"refresh_token": "invalid_token",
 		}
 		jsonData, _ := json.Marshal(refreshTokenData)
-		req, _ := http.NewRequest("POST", "/auth/refresh", bytes.NewBuffer(jsonData))
+		req, _ := http.NewRequest(http.MethodPost, "/auth/refresh", bytes.NewBuffer(jsonData))
 		req.Header.Set("Content-Type", "application/json")
 
 		// 执行请求
@@ -1120,7 +1120,7 @@ func TestAuthHandler_Logout(t *testing.T) {
 		require.NoError(t, err)
 		token := details.AccessToken
 		body, _ := json.Marshal(map[string]string{"token": token})
-		req, _ := http.NewRequest("POST", "/auth/logout", bytes.NewBuffer(body))
+		req, _ := http.NewRequest(http.MethodPost, "/auth/logout", bytes.NewBuffer(body))
 		req.Header.Set("Content-Type", "application/json")
 
 		// 执行请求
@@ -1217,7 +1217,7 @@ func TestRegisterAlwaysCreatesUnprivilegedUser(t *testing.T) {
 		"phone":    "13800000000",
 	}
 	jsonData, _ := json.Marshal(body)
-	req, _ := http.NewRequest("POST", "/auth/register", bytes.NewBuffer(jsonData))
+	req, _ := http.NewRequest(http.MethodPost, "/auth/register", bytes.NewBuffer(jsonData))
 	req.Header.Set("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
@@ -1295,7 +1295,7 @@ func TestAdminCanRevokeAnotherUsersTokens(t *testing.T) {
 	router.POST("/auth/revoke/user", authHandler.RevokeUserTokens)
 
 	body, _ := json.Marshal(map[string]interface{}{"user_id": 2})
-	req, _ := http.NewRequest("POST", "/auth/revoke/user", bytes.NewBuffer(body))
+	req, _ := http.NewRequest(http.MethodPost, "/auth/revoke/user", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
@@ -1327,7 +1327,7 @@ func TestNonAdminCannotRevokeAnotherUsersTokens(t *testing.T) {
 	router.POST("/auth/revoke/user", authHandler.RevokeUserTokens)
 
 	body, _ := json.Marshal(map[string]interface{}{"user_id": 2})
-	req, _ := http.NewRequest("POST", "/auth/revoke/user", bytes.NewBuffer(body))
+	req, _ := http.NewRequest(http.MethodPost, "/auth/revoke/user", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()

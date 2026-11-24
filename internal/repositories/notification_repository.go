@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/models"
 )
 
@@ -385,7 +386,7 @@ type NotificationStats struct {
 	Approved        int64 `json:"approved"`
 	Sent            int64 `json:"sent"`
 	Failed          int64 `json:"failed"`
-	Cancelled       int64 `json:"cancelled"`
+	Canceled        int64 `json:"canceled"`
 	PendingApproval int64 `json:"pending_approval"` // 待审批（包含敏感信息的pending）
 	AutoSendCount   int64 `json:"auto_send_count"`  // 自动发送数量
 }
@@ -432,8 +433,8 @@ func (r *NotificationQueueRepositoryImpl) getStats(ctx context.Context, viewerUs
 			stats.Sent = sc.Count
 		case "failed":
 			stats.Failed = sc.Count
-		case "cancelled":
-			stats.Cancelled = sc.Count
+		case "canceled":
+			stats.Canceled = sc.Count
 		}
 	}
 

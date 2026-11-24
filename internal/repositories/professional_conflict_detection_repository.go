@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -25,7 +26,7 @@ func (r *enhancedConflictRepository) GetConflictCheckRequest(ctx context.Context
 		Preload("ConflictResults").
 		Preload("RuleExecutions").
 		First(&request, "id = ?", id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("冲突检查请求不存在: %s", id)
 		}
 		return nil, fmt.Errorf("获取冲突检查请求失败: %w", err)
@@ -39,7 +40,7 @@ func (r *enhancedConflictRepository) GetConflictCheckRequestByNumber(ctx context
 		Preload("ConflictResults").
 		Preload("RuleExecutions").
 		First(&request, "check_number = ?", checkNumber).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("冲突检查请求不存在: %s", checkNumber)
 		}
 		return nil, fmt.Errorf("获取冲突检查请求失败: %w", err)
@@ -136,7 +137,7 @@ func (r *enhancedConflictRepository) GetMultidimensionalConflictResult(ctx conte
 	var result models.MultidimensionalConflictResult
 	if err := r.db.WithContext(ctx).
 		First(&result, "id = ?", id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("多维度冲突结果不存在: %s", id)
 		}
 		return nil, fmt.Errorf("获取多维度冲突结果失败: %w", err)
@@ -230,7 +231,7 @@ func (r *enhancedConflictRepository) GetConflictDetectionRule(ctx context.Contex
 	if err := r.db.WithContext(ctx).
 		Preload("RuleExecutions").
 		First(&rule, "id = ?", id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("冲突检测规则不存在: %s", id)
 		}
 		return nil, fmt.Errorf("获取冲突检测规则失败: %w", err)
@@ -242,7 +243,7 @@ func (r *enhancedConflictRepository) GetConflictDetectionRuleByCode(ctx context.
 	var rule models.ConflictDetectionRule
 	if err := r.db.WithContext(ctx).
 		First(&rule, "rule_code = ?", ruleCode).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("冲突检测规则不存在: %s", ruleCode)
 		}
 		return nil, fmt.Errorf("获取冲突检测规则失败: %w", err)
@@ -369,7 +370,7 @@ func (r *enhancedConflictRepository) GetRuleExecutionStatistics(ctx context.Cont
 	if err := r.db.WithContext(ctx).
 		Where("rule_id = ?", ruleID).
 		Order("executed_at DESC").
-		First(&lastExecution).Error; err != nil && err != gorm.ErrRecordNotFound {
+		First(&lastExecution).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, fmt.Errorf("获取规则最后执行时间失败: %w", err)
 	}
 

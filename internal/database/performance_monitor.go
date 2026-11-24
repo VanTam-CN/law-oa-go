@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/config"
 )
 
@@ -236,7 +237,7 @@ func (pm *PerformanceMonitor) updateConnectionStats() {
 	pm.stats.OpenConnections = stats.OpenConnections
 	pm.stats.InUseConnections = stats.InUse
 	pm.stats.IdleConnections = stats.Idle
-	pm.stats.WaitCount = int64(stats.WaitCount)
+	pm.stats.WaitCount = stats.WaitCount
 	pm.stats.WaitDuration = stats.WaitDuration.String()
 	pm.mu.Unlock()
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+
 	"law-oa-go/internal/errors"
 	"law-oa-go/internal/infrastructure"
 	"law-oa-go/internal/logger"
@@ -218,7 +219,7 @@ func CORSWithConfig(config CORSConfig) gin.HandlerFunc {
 		c.Header("Vary", "Origin")
 		c.Header("X-Content-Type-Options", "nosniff")
 
-		if c.Request.Method == "OPTIONS" {
+		if c.Request.Method == http.MethodOptions {
 			// 预检请求不缓存太久，增加安全性
 			c.Header("Cache-Control", "no-cache")
 			c.AbortWithStatus(204)

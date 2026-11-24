@@ -261,7 +261,6 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client) error {
 			legal.GET("/stats/recent", legalStatuteHandler.GetRecentUpdates)
 		}
 		log.Println("✅ 法条搜索路由注册完成")
-
 	}
 	log.Println("✅ 公开路由组注册完成")
 

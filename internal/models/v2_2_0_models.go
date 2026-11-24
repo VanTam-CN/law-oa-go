@@ -348,7 +348,7 @@ type Contract struct {
 	EndDate      *time.Time `json:"end_date" gorm:"comment:结束日期"`
 
 	// 合同状态
-	Status string `json:"status" gorm:"size:20;default:'draft';index;comment:状态: draft/active/suspended/completed/cancelled"`
+	Status string `json:"status" gorm:"size:20;default:'draft';index;comment:状态: draft/active/suspended/completed/canceled"`
 
 	// 补充协议
 	ParentContractID *uint  `json:"parent_contract_id" gorm:"index;comment:主合同ID(补充协议时使用)"`
@@ -428,7 +428,7 @@ type Invoice struct {
 	WriteOffAmount    float64 `json:"write_off_amount" gorm:"type:decimal(15,2);comment:核销金额"`
 
 	// 开票流程
-	Status              string     `json:"status" gorm:"size:20;default:'draft';index;comment:状态: draft/submitted/approved/issued/received/cancelled"`
+	Status              string     `json:"status" gorm:"size:20;default:'draft';index;comment:状态: draft/submitted/approved/issued/received/canceled"`
 	SubmittedAt         *time.Time `json:"submitted_at" gorm:"comment:提交时间"`
 	ApprovedByFinanceAt *time.Time `json:"approved_by_finance_at" gorm:"comment:财务复核时间"`
 	IssuedAt            *time.Time `json:"issued_at" gorm:"comment:开票时间"`
@@ -552,7 +552,7 @@ type CommissionRecord struct {
 
 	// 计算/支付状态
 	CalculatedAt *time.Time `json:"calculated_at" gorm:"comment:计算时间"`
-	Status       string     `json:"status" gorm:"size:20;default:'pending';index,priority:3;comment:状态: pending/calculated/paid/cancelled"`
+	Status       string     `json:"status" gorm:"size:20;default:'pending';index,priority:3;comment:状态: pending/calculated/paid/canceled"`
 
 	// 支付信息
 	PaidDate       *time.Time `json:"paid_date" gorm:"comment:支付日期"`
@@ -616,7 +616,7 @@ type NotificationQueue struct {
 	TemplateID string `json:"template_id" gorm:"size:50;comment:模板ID"`
 
 	// 状态
-	Status   string `json:"status" gorm:"size:20;default:'pending';index;comment:状态: pending/approved/sent/cancelled/failed"`
+	Status   string `json:"status" gorm:"size:20;default:'pending';index;comment:状态: pending/approved/sent/canceled/failed"`
 	Priority string `json:"priority" gorm:"size:20;default:'normal';comment:优先级: urgent/normal/low"`
 
 	// 审核信息
@@ -784,7 +784,7 @@ type WechatInvitation struct {
 	AuthorizedCases JSON `json:"authorized_cases" gorm:"type:json;comment:授权的案件列表"`
 
 	// 状态
-	Status string `json:"status" gorm:"size:20;default:'pending';index;comment:状态: pending/accepted/expired/cancelled"`
+	Status string `json:"status" gorm:"size:20;default:'pending';index;comment:状态: pending/accepted/expired/canceled"`
 
 	// 时间
 	ExpiresAt    time.Time  `json:"expires_at" gorm:"not null;comment:过期时间"`
@@ -893,7 +893,7 @@ type ClientTrustTransaction struct {
 	RecipientBankName    string `json:"recipient_bank_name" gorm:"size:100;comment:收款银行"`
 
 	// 状态
-	Status       string     `json:"status" gorm:"size:20;default:'pending';index;comment:状态: pending/completed/cancelled"`
+	Status       string     `json:"status" gorm:"size:20;default:'pending';index;comment:状态: pending/completed/canceled"`
 	CompletedAt  *time.Time `json:"completed_at" gorm:"comment:完成时间"`
 	AttachmentID *uint      `json:"attachment_id" gorm:"comment:凭证附件ID"`
 
@@ -935,7 +935,7 @@ type OffboardingRecord struct {
 	SettlementPaid       bool    `json:"settlement_paid" gorm:"default:false;comment:是否已支付"`
 
 	// 状态
-	Status string `json:"status" gorm:"size:20;default:'pending';index;comment:状态: pending/in_progress/completed/cancelled"`
+	Status string `json:"status" gorm:"size:20;default:'pending';index;comment:状态: pending/in_progress/completed/canceled"`
 	Notes  string `json:"notes" gorm:"type:text;comment:备注"`
 
 	CompletedAt *time.Time `json:"completed_at" gorm:"comment:完成时间"`

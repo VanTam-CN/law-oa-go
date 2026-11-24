@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"law-oa-go/internal/models"
@@ -54,7 +55,7 @@ func (r *folderTemplateRepository) CreateTemplate(ctx context.Context, template 
 func (r *folderTemplateRepository) GetTemplateByID(ctx context.Context, id uint) (*models.CaseFolderTemplate, error) {
 	var t models.CaseFolderTemplate
 	if err := r.db.WithContext(ctx).First(&t, id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("获取模板失败: %w", err)
@@ -122,7 +123,7 @@ func (r *folderTemplateRepository) GetDefaultTemplate(ctx context.Context, caseT
 	}
 	// 优先返回默认模板
 	if err := query.Order("is_default DESC, created_at DESC").First(&t).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("获取默认模板失败: %w", err)
@@ -170,7 +171,7 @@ func (r *folderTemplateRepository) GetFoldersByCaseID(ctx context.Context, caseI
 func (r *folderTemplateRepository) GetFolderByID(ctx context.Context, id uint) (*models.CaseFolder, error) {
 	var f models.CaseFolder
 	if err := r.db.WithContext(ctx).First(&f, id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("获取文件夹失败: %w", err)
@@ -206,18 +207,8 @@ func (r *folderTemplateRepository) GetFolderPath(ctx context.Context, id uint) (
 	}
 	var rows []pathRow
 
-	query := `
-		WITH RECURSIVE folder_path AS (
-			SELECT name, 0 AS depth FROM case_folders WHERE id = ?
-			UNION ALL
-			SELECT cf.name, fp.depth + 1
-			FROM case_folders cf
-			INNER JOIN folder_path fp ON cf.id = fp.name  -- placeholder, fixed below
-		)
-		SELECT name, depth FROM folder_path ORDER BY depth DESC
-	`
 	// 正确的递归 CTE：从子节点向上遍历 parent_id
-	query = `
+	query := `
 		WITH RECURSIVE folder_path AS (
 			SELECT id, name, parent_id, 0 AS depth FROM case_folders WHERE id = ?
 			UNION ALL

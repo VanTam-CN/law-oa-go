@@ -618,11 +618,11 @@ func (s *DocumentSearchService) highlightText(text, query string) string {
 	}
 
 	if start > 20 {
-		start = start - 20
+		start -= 20
 	}
 
 	if end < len(text)-20 {
-		end = end + 20
+		end += 20
 	}
 
 	if start < 0 {

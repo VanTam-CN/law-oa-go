@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
+
 	"law-oa-go/internal/config"
 	"law-oa-go/internal/logger"
 )
@@ -469,7 +470,7 @@ func (sm *V2SecurityMiddleware) validateHeadersSize(c *gin.Context) error {
 
 func (sm *V2SecurityMiddleware) validateContentType(c *gin.Context) error {
 	// 对于POST/PUT请求，验证Content-Type
-	if c.Request.Method == "POST" || c.Request.Method == "PUT" {
+	if c.Request.Method == http.MethodPost || c.Request.Method == http.MethodPut {
 		contentType := c.GetHeader("Content-Type")
 		if contentType == "" {
 			return fmt.Errorf("Content-Type header is required for %s requests", c.Request.Method)

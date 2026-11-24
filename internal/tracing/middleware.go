@@ -213,7 +213,7 @@ func TracingMiddleware(serviceName string, config *MiddlewareConfig) gin.Handler
 		}
 
 		// 设置span状态
-		if c.Errors != nil && len(c.Errors) > 0 {
+		if len(c.Errors) > 0 {
 			// 有错误
 			SetSpanStatus(span, codes.Error, c.Errors.String())
 			for i := range c.Errors {

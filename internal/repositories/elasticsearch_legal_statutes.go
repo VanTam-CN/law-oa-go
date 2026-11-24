@@ -268,7 +268,7 @@ func (r *elasticsearchStatuteRepository) SyncFromPostgreSQL(ctx context.Context,
 	for {
 		statutes, err := postgresRepo.List(ctx, offset, batchSize)
 		if err != nil {
-			return fmt.Errorf("获取法条数据失败: %v", err)
+			return fmt.Errorf("获取法条数据失败: %w", err)
 		}
 
 		if len(statutes) == 0 {
@@ -284,7 +284,7 @@ func (r *elasticsearchStatuteRepository) SyncFromPostgreSQL(ctx context.Context,
 
 		// 批量索引到ES
 		if err := r.BulkIndexDocuments(ctx, esDocs); err != nil {
-			return fmt.Errorf("批量索引失败: %v", err)
+			return fmt.Errorf("批量索引失败: %w", err)
 		}
 
 		totalSynced += len(esDocs)
@@ -357,12 +357,12 @@ func (r *elasticsearchStatuteRepository) RebuildIndex(ctx context.Context, postg
 
 	// 2. 创建新索引
 	if err := r.CreateIndex(ctx); err != nil {
-		return fmt.Errorf("创建索引失败: %v", err)
+		return fmt.Errorf("创建索引失败: %w", err)
 	}
 
 	// 3. 同步数据
 	if err := r.SyncFromPostgreSQL(ctx, postgresRepo); err != nil {
-		return fmt.Errorf("同步数据失败: %v", err)
+		return fmt.Errorf("同步数据失败: %w", err)
 	}
 
 	log.Println("法条搜索索引重建完成")

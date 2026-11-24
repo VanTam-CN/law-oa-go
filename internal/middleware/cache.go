@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -14,6 +15,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
+
 	"law-oa-go/internal/cache"
 	"law-oa-go/internal/logger"
 )
@@ -149,7 +151,7 @@ func getCachedResponseFromRedis(c *gin.Context, key string, config CacheConfig) 
 
 	data, err := config.RedisClient.Get(ctx, key).Result()
 	if err != nil {
-		if err != redis.Nil {
+		if !errors.Is(err, redis.Nil) {
 			logger.Logger.Error("Cache get error",
 				zap.Error(err),
 				zap.String("key", key),
@@ -283,11 +285,7 @@ func shouldCacheResponse(c *gin.Context, w *responseWriter, config CacheConfig) 
 
 	// 检查响应类型
 	contentType := w.headers["Content-Type"]
-	if !shouldCacheContentType(contentType) {
-		return false
-	}
-
-	return true
+	return shouldCacheContentType(contentType)
 }
 
 // shouldCacheContentType 检查是否应该缓存内容类型

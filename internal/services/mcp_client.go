@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+
 	"law-oa-go/internal/models"
 )
 
@@ -95,7 +96,7 @@ func (c *mcpClient) FetchLatestStandards(ctx context.Context) (*models.MCPStanda
 	url := fmt.Sprintf("%s/api/v1/standards/latest", c.config.BaseURL)
 
 	// 创建请求
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("创建请求失败: %w", err)
 	}
@@ -110,6 +111,10 @@ func (c *mcpClient) FetchLatestStandards(ctx context.Context) (*models.MCPStanda
 	// 发送请求
 	var response *http.Response
 	err = c.retryRequest(ctx, func() error {
+		// 重试前关闭上一次成功的响应体，避免覆盖泄漏
+		if response != nil && response.Body != nil {
+			response.Body.Close()
+		}
 		var err error
 		response, err = c.httpClient.Do(req)
 		return err
@@ -185,7 +190,7 @@ func (c *mcpClient) HealthCheck(ctx context.Context) error {
 
 	url := fmt.Sprintf("%s/health", c.config.BaseURL)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return fmt.Errorf("创建健康检查请求失败: %w", err)
 	}
@@ -233,7 +238,7 @@ func (c *mcpClient) GetServiceStatus(ctx context.Context) (*MCPServiceStatus, er
 	statusKey := "mcp:service:status"
 	data, err := c.redis.Get(ctx, statusKey).Bytes()
 	if err != nil {
-		if err == redis.Nil {
+		if errors.Is(err, redis.Nil) {
 			// 没有缓存的状态，执行健康检查
 			healthErr := c.HealthCheck(ctx)
 			if healthErr != nil {

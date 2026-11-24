@@ -497,7 +497,7 @@ func (r *AnalyticsRepository) GetFunnelConversionRate(ctx context.Context, funne
 	var results []map[string]interface{}
 
 	err := r.db.WithContext(ctx).
-		Table("funnel_analyses").
+		Table("funnel_analyzes").
 		Select(`
 			step_name,
 			step_order,

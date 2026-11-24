@@ -46,8 +46,6 @@ func (qo *QueryOptimizer) ExecuteOptimizedCaseList(ctx context.Context, query *O
 	}
 
 	// 构建基础查询
-	dbQuery := qo.db.WithContext(ctx).Table("cases")
-
 	// 添加筛选条件
 	whereConditions := make([]string, 0)
 	args := make([]interface{}, 0)
@@ -86,10 +84,7 @@ func (qo *QueryOptimizer) ExecuteOptimizedCaseList(ctx context.Context, query *O
 		}
 	}
 
-	// 构建WHERE子句
-	if len(whereConditions) > 0 {
-		dbQuery = dbQuery.Where(strings.Join(whereConditions, " AND "), args...)
-	}
+	// WHERE 条件统一在下方原生 SQL 分页查询中应用（计数查询同样使用）
 
 	// 获取总数（使用优化的计数查询）
 	var total int64
@@ -165,7 +160,9 @@ func (qo *QueryOptimizer) ExecuteOptimizedCaseList(ctx context.Context, query *O
 	// 添加排序和分页
 	querySQL += " ORDER BY " + orderBy
 	querySQL += " LIMIT ? OFFSET ?"
-	finalArgs := append(args, query.PageSize, offset)
+	finalArgs := make([]interface{}, 0, len(args)+2)
+	finalArgs = append(finalArgs, args...)
+	finalArgs = append(finalArgs, query.PageSize, offset)
 
 	if err := qo.db.WithContext(ctx).Raw(querySQL, finalArgs...).Scan(&results).Error; err != nil {
 		return nil, 0, fmt.Errorf("failed to list cases: %w", err)

@@ -142,7 +142,7 @@ type PaymentSummary struct {
 type ListInvoicesRequest struct {
 	Page        int    `json:"page" form:"page" binding:"min=1"`
 	PageSize    int    `json:"page_size" form:"page_size" binding:"min=1,max=100"`
-	Status      string `json:"status" form:"status" binding:"omitempty,oneof=draft submitted approved issued received cancelled"`
+	Status      string `json:"status" form:"status" binding:"omitempty,oneof=draft submitted approved issued received canceled"`
 	InvoiceType string `json:"invoice_type" form:"invoice_type" binding:"omitempty,oneof=normal credit"`
 	ClientID    uint   `json:"client_id" form:"client_id"`
 	ContractID  uint   `json:"contract_id" form:"contract_id"`
@@ -528,7 +528,7 @@ func (s *InvoiceService) CancelInvoice(ctx context.Context, id uint) (*InvoiceRe
 		return nil, errors.New("发票不存在")
 	}
 
-	if invoice.Status == "cancelled" {
+	if invoice.Status == "canceled" {
 		return nil, errors.New("发票已作废")
 	}
 
@@ -537,7 +537,7 @@ func (s *InvoiceService) CancelInvoice(ctx context.Context, id uint) (*InvoiceRe
 		return nil, errors.New("已开票的发票需要先红冲才能作废")
 	}
 
-	invoice.Status = "cancelled"
+	invoice.Status = "canceled"
 
 	if err := s.invoiceRepo.Update(ctx, invoice); err != nil {
 		return nil, fmt.Errorf("作废发票失败: %w", err)

@@ -366,7 +366,7 @@ func (s *companyAPIService) searchQichacha(ctx context.Context, keyword string) 
 	fullURL := apiURL + "?" + params.Encode()
 
 	// 创建请求
-	req, err := http.NewRequestWithContext(ctx, "GET", fullURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fullURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("创建请求失败: %w", err)
 	}

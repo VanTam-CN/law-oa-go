@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -246,7 +247,7 @@ func (r *enhancedConflictRepository) GetClientProfile(ctx context.Context, id st
 		Preload("IndustryClassifications").
 		Preload("RiskProfile").
 		First(&profile, "id = ?", id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("客户档案不存在: %s", id)
 		}
 		return nil, fmt.Errorf("获取客户档案失败: %w", err)
@@ -279,7 +280,7 @@ func (r *enhancedConflictRepository) GetClientProfileByNumber(ctx context.Contex
 		Preload("IndustryClassifications").
 		Preload("RiskProfile").
 		First(&profile, "client_number = ?", clientNumber).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("客户档案不存在: %s", clientNumber)
 		}
 		return nil, fmt.Errorf("获取客户档案失败: %w", err)
@@ -400,7 +401,7 @@ func (r *enhancedConflictRepository) GetClientsWithRelationships(ctx context.Con
 		Preload("IndustryClassifications").
 		Preload("RiskProfile").
 		First(&profile, "id = ?", clientID).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("客户档案不存在: %s", clientID)
 		}
 		return nil, fmt.Errorf("获取客户档案失败: %w", err)
@@ -542,7 +543,7 @@ func (r *enhancedConflictRepository) GetClientRiskProfile(ctx context.Context, c
 	var riskProfile models.ClientRiskProfile
 	if err := r.db.WithContext(ctx).
 		First(&riskProfile, "client_id = ?", clientID).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("客户风险档案不存在: %s", clientID)
 		}
 		return nil, fmt.Errorf("获取客户风险档案失败: %w", err)
@@ -587,7 +588,7 @@ func (r *enhancedConflictRepository) GetConflictType(ctx context.Context, id str
 	if err := r.db.WithContext(ctx).
 		Preload("ClassificationRefs").
 		First(&conflictType, "id = ?", id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("冲突类型不存在: %s", id)
 		}
 		return nil, fmt.Errorf("获取冲突类型失败: %w", err)
@@ -601,7 +602,7 @@ func (r *enhancedConflictRepository) GetConflictTypeByCode(ctx context.Context, 
 	if err := r.db.WithContext(ctx).
 		Preload("ClassificationRefs").
 		First(&conflictType, "code = ?", code).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("冲突类型不存在: %s", code)
 		}
 		return nil, fmt.Errorf("获取冲突类型失败: %w", err)
@@ -697,7 +698,7 @@ func (r *enhancedConflictRepository) GetRiskLevelDefinition(ctx context.Context,
 	var definition models.RiskLevelDefinition
 	if err := r.db.WithContext(ctx).
 		First(&definition, "level = ?", level).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("风险等级定义不存在: %s", level)
 		}
 		return nil, fmt.Errorf("获取风险等级定义失败: %w", err)

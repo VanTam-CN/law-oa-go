@@ -38,6 +38,7 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"gorm.io/gorm"
+
 	_ "law-oa-go/docs" // Swagger docs
 	"law-oa-go/internal/cache"
 	"law-oa-go/internal/config"
@@ -551,7 +552,7 @@ func runHealthcheck() error {
 	if !strings.HasPrefix(path, "/health/") {
 		return fmt.Errorf("HEALTHCHECK_PATH must be a local health path")
 	}
-	request, err := http.NewRequest(http.MethodGet, "http://127.0.0.1:"+port+path, nil)
+	request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://127.0.0.1:"+port+path, nil)
 	if err != nil {
 		return fmt.Errorf("构造健康检查请求失败: %w", err)
 	}

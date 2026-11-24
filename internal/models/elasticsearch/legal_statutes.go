@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"strings"
 
 	"github.com/elastic/go-elasticsearch/v8"
@@ -91,7 +92,7 @@ func NewLegalStatuteIndexManager(client *elasticsearch.Client) *LegalStatuteInde
 func (m *LegalStatuteIndexManager) CreateIndex() error {
 	mapping, err := m.loadMapping()
 	if err != nil {
-		return fmt.Errorf("加载索引映射失败: %v", err)
+		return fmt.Errorf("加载索引映射失败: %w", err)
 	}
 
 	req := esapi.IndicesCreateRequest{
@@ -101,7 +102,7 @@ func (m *LegalStatuteIndexManager) CreateIndex() error {
 
 	res, err := req.Do(context.Background(), m.client)
 	if err != nil {
-		return fmt.Errorf("创建索引失败: %v", err)
+		return fmt.Errorf("创建索引失败: %w", err)
 	}
 	defer res.Body.Close()
 
@@ -121,11 +122,11 @@ func (m *LegalStatuteIndexManager) DeleteIndex() error {
 
 	res, err := req.Do(context.Background(), m.client)
 	if err != nil {
-		return fmt.Errorf("删除索引失败: %v", err)
+		return fmt.Errorf("删除索引失败: %w", err)
 	}
 	defer res.Body.Close()
 
-	if res.IsError() && res.StatusCode != 404 {
+	if res.IsError() && res.StatusCode != http.StatusNotFound {
 		return fmt.Errorf("删除索引失败: %s", res.Status())
 	}
 
@@ -137,7 +138,7 @@ func (m *LegalStatuteIndexManager) DeleteIndex() error {
 func (m *LegalStatuteIndexManager) IndexDocument(doc *LegalStatuteDocument) error {
 	docJSON, err := json.Marshal(doc)
 	if err != nil {
-		return fmt.Errorf("序列化文档失败: %v", err)
+		return fmt.Errorf("序列化文档失败: %w", err)
 	}
 
 	req := esapi.IndexRequest{
@@ -149,7 +150,7 @@ func (m *LegalStatuteIndexManager) IndexDocument(doc *LegalStatuteDocument) erro
 
 	res, err := req.Do(context.Background(), m.client)
 	if err != nil {
-		return fmt.Errorf("索引文档失败: %v", err)
+		return fmt.Errorf("索引文档失败: %w", err)
 	}
 	defer res.Body.Close()
 
@@ -192,7 +193,7 @@ func (m *LegalStatuteIndexManager) BulkIndexDocuments(docs []*LegalStatuteDocume
 
 	res, err := req.Do(context.Background(), m.client)
 	if err != nil {
-		return fmt.Errorf("批量索引失败: %v", err)
+		return fmt.Errorf("批量索引失败: %w", err)
 	}
 	defer res.Body.Close()
 
@@ -207,12 +208,12 @@ func (m *LegalStatuteIndexManager) BulkIndexDocuments(docs []*LegalStatuteDocume
 func (m *LegalStatuteIndexManager) Search(req *LegalSearchRequest) (*LegalSearchResponse, error) {
 	query, err := m.buildSearchQuery(req)
 	if err != nil {
-		return nil, fmt.Errorf("构建搜索查询失败: %v", err)
+		return nil, fmt.Errorf("构建搜索查询失败: %w", err)
 	}
 
 	queryJSON, err := json.Marshal(query)
 	if err != nil {
-		return nil, fmt.Errorf("序列化查询失败: %v", err)
+		return nil, fmt.Errorf("序列化查询失败: %w", err)
 	}
 
 	esReq := esapi.SearchRequest{
@@ -222,7 +223,7 @@ func (m *LegalStatuteIndexManager) Search(req *LegalSearchRequest) (*LegalSearch
 
 	res, err := esReq.Do(context.Background(), m.client)
 	if err != nil {
-		return nil, fmt.Errorf("执行搜索失败: %v", err)
+		return nil, fmt.Errorf("执行搜索失败: %w", err)
 	}
 	defer res.Body.Close()
 
@@ -232,7 +233,7 @@ func (m *LegalStatuteIndexManager) Search(req *LegalSearchRequest) (*LegalSearch
 
 	var searchResult map[string]interface{}
 	if err := json.NewDecoder(res.Body).Decode(&searchResult); err != nil {
-		return nil, fmt.Errorf("解析搜索结果失败: %v", err)
+		return nil, fmt.Errorf("解析搜索结果失败: %w", err)
 	}
 
 	return m.parseSearchResponse(searchResult, req)

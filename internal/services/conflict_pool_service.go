@@ -3,12 +3,14 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
 	"time"
 
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/models"
 )
 
@@ -153,7 +155,7 @@ func (s *conflictPoolService) SyncLawyerPool(ctx context.Context, lawyerID uint,
 		}
 
 		log.Printf("✅ 更新冲突池记录: ID=%d", existingPool.ID)
-	} else if err == gorm.ErrRecordNotFound {
+	} else if errors.Is(err, gorm.ErrRecordNotFound) {
 		// 创建新记录
 		identityNumber, _ := client.DecryptedIdentity()
 		newEntry := &models.LawyerConflictPool{

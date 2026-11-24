@@ -370,7 +370,7 @@ func TestUpdateIntakeExplicitNullClearsConfirmation(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			code, response = draftRevisionRequest(t, r, http.MethodPut, path, string(body), "")
+			code, _ = draftRevisionRequest(t, r, http.MethodPut, path, string(body), "")
 			var row map[string]interface{}
 			if err := db.Table("case_intakes").Where("id=?", "intake-rev").Take(&row).Error; err != nil {
 				t.Fatal(err)

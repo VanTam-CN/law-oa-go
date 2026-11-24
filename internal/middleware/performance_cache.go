@@ -61,7 +61,7 @@ func NewPerformanceCache(config PerformanceCacheConfig) *PerformanceCache {
 func (pc *PerformanceCache) CacheMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 只处理GET请求
-		if c.Request.Method != "GET" {
+		if c.Request.Method != http.MethodGet {
 			c.Next()
 			return
 		}
@@ -305,7 +305,7 @@ func (pc *PerformanceCache) isCacheable(c *gin.Context, writer *CacheResponseWri
 	}
 
 	// 默认情况下，GET请求都可以缓存
-	return c.Request.Method == "GET"
+	return c.Request.Method == http.MethodGet
 }
 
 // generateETag 生成ETag

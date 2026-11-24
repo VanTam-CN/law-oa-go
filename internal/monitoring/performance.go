@@ -8,6 +8,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+
 	"law-oa-go/internal/logger"
 )
 
@@ -225,7 +226,7 @@ func NewPerformanceMetrics() *PerformanceMetrics {
 
 // RecordHTTPRequest 记录HTTP请求指标
 func (pm *PerformanceMetrics) RecordHTTPRequest(method, endpoint, statusCode string, duration time.Duration, requestSize, responseSize int64) {
-	status := string(statusCode)
+	status := statusCode
 	pm.httpRequestsTotal.WithLabelValues(method, endpoint, status).Inc()
 	pm.httpRequestDuration.WithLabelValues(method, endpoint).Observe(duration.Seconds())
 

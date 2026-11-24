@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -189,7 +190,7 @@ func (h *DemoAggregateHandler) prepareCaseIntakeClientPartyRow(tx *gorm.DB, clie
 	}
 	var client models.Client
 	if err := tx.First(&client, clientID).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, services.NewSubjectWorkflowError("INTAKE_CLIENT_REQUIRED", "客户档案不存在，已阻止客户方当事人落库")
 		}
 		return nil, err

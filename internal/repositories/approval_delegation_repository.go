@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -51,7 +52,7 @@ func (r *approvalDelegationRepository) GetByID(ctx context.Context, id string) (
 	var d models.ApprovalDelegation
 	err := r.db.WithContext(ctx).Where("id = ?", id).First(&d).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("获取代理配置失败: %w", err)
@@ -107,7 +108,7 @@ func (r *approvalDelegationRepository) GetValidDelegate(ctx context.Context, del
 		Order("created_at DESC").
 		First(&d).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("获取有效代理失败: %w", err)

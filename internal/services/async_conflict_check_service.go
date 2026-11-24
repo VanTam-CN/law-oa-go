@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/repositories"
 )
@@ -283,7 +284,7 @@ func toModelJSON(value interface{}) models.JSON {
 
 	var generic interface{}
 	if err := json.Unmarshal(data, &generic); err != nil {
-		return models.JSON{"unmarshal_error": err.Error(), "raw": fmt.Sprintf("%s", data)}
+		return models.JSON{"unmarshal_error": err.Error(), "raw": string(data)}
 	}
 	return models.JSON{"items": generic}
 }

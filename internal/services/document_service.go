@@ -1,6 +1,7 @@
 package services
 
 import (
+	stderrors "errors"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -171,7 +172,7 @@ func (s *DocumentService) UploadDocument(ctx context.Context, req *DocumentUploa
 func (s *DocumentService) GetDocumentByID(ctx context.Context, id uint) (*Document, error) {
 	docModel, err := s.docRepo.FindByID(ctx, id)
 	if err != nil {
-		if err == repositories.ErrDocumentNotFound {
+		if stderrors.Is(err, repositories.ErrDocumentNotFound) {
 			return nil, errors.NotFoundError("document", "Document not found", id)
 		}
 		return nil, errors.DatabaseError("get_document", "Failed to get document", err)
@@ -224,7 +225,7 @@ func (s *DocumentService) ListDocuments(ctx context.Context, req *DocumentListRe
 func (s *DocumentService) UpdateDocument(ctx context.Context, id uint, req *DocumentUpdateRequest) (*Document, error) {
 	docModel, err := s.docRepo.FindByID(ctx, id)
 	if err != nil {
-		if err == repositories.ErrDocumentNotFound {
+		if stderrors.Is(err, repositories.ErrDocumentNotFound) {
 			return nil, errors.NotFoundError("document", "Document not found", id)
 		}
 		return nil, errors.DatabaseError("get_document", "Failed to get document", err)
@@ -260,7 +261,7 @@ func (s *DocumentService) UpdateDocument(ctx context.Context, id uint, req *Docu
 func (s *DocumentService) DeleteDocument(ctx context.Context, id uint) error {
 	docModel, err := s.docRepo.FindByID(ctx, id)
 	if err != nil {
-		if err == repositories.ErrDocumentNotFound {
+		if stderrors.Is(err, repositories.ErrDocumentNotFound) {
 			return errors.NotFoundError("document", "Document not found", id)
 		}
 		return errors.DatabaseError("get_document", "Failed to get document", err)
@@ -307,7 +308,7 @@ func (s *DocumentService) GetDocumentStats(ctx context.Context, viewerUserID uin
 func (s *DocumentService) DownloadDocument(ctx context.Context, id uint) (io.ReadCloser, *Document, error) {
 	docModel, err := s.docRepo.FindByID(ctx, id)
 	if err != nil {
-		if err == repositories.ErrDocumentNotFound {
+		if stderrors.Is(err, repositories.ErrDocumentNotFound) {
 			return nil, nil, errors.NotFoundError("document", "Document not found", id)
 		}
 		return nil, nil, errors.DatabaseError("get_document", "Failed to get document", err)
