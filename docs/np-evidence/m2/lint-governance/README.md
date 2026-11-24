@@ -124,7 +124,9 @@ enable 列表不含 goheader、无 goheader settings 残留（治理版本就未
 
 ## 8.1 goheader 决策探针 PR（t_5644e59b，2026-11-24）
 
-- 探针 PR：**#55**（draft，`codex/np-goheader-decision` → main，head f5c68fe，基于 lint-governance tip 191bb6b）
+- 探针 PR：**#55**（draft，`codex/np-goheader-decision` → main，基于 lint-governance tip 191bb6b）
+- 时点 1：决策提交 f5c68fe → run **45411504960**（job 138506224280，日志归档 `snapshots/ci-run-45411504960-quality.log`）
+- 时点 2（PR 最终 head）：证据归档提交 9bda24b → run **45413463909**，格式/静态分析两步再次 **success**、安全扫描 failure=gosec 同款——双时点确认门禁不回退
 - CI/CD Pipeline run：**45411504960**（2026-11-24T14:12Z，PR 事件触发；job 138506224280，日志归档 `snapshots/ci-run-45411504960-quality.log`）
 - quality job「🔍 Code Quality」step 结论（真实托管事件）：
   | step | 结论 |
