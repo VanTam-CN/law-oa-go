@@ -53,11 +53,11 @@ var (
 
 // ElasticsearchOptimizer Elasticsearch优化器
 type ElasticsearchOptimizer struct {
-	client      *elasticsearch.Client
-	indexer     esutil.BulkIndexer
-	config      *ESConfig
-	stats       *ESStats
-	httpClient  *http.Client
+	client     *elasticsearch.Client
+	indexer    esutil.BulkIndexer
+	config     *ESConfig
+	stats      *ESStats
+	httpClient *http.Client
 }
 
 // ESConfig Elasticsearch配置
@@ -71,7 +71,7 @@ type ESConfig struct {
 	CompressRequestBody bool            `json:"compress_request_body"`
 	DiscoverNodes       bool            `json:"discover_nodes"`
 	DiscoverInterval    time.Duration   `json:"discover_interval"`
-	Transport           *http.Transport  `json:"transport"`
+	Transport           *http.Transport `json:"transport"`
 	BulkWorkers         int             `json:"bulk_workers"`
 	BulkFlushBytes      int             `json:"bulk_flush_bytes"`
 	BulkFlushInterval   time.Duration   `json:"bulk_flush_interval"`
@@ -81,38 +81,38 @@ type ESConfig struct {
 
 // ESStats Elasticsearch统计
 type ESStats struct {
-	TotalIndexOps     int64         `json:"total_index_ops"`
-	TotalSearchOps    int64         `json:"total_search_ops"`
-	IndexErrors       int64         `json:"index_errors"`
-	SearchErrors      int64         `json:"search_errors"`
-	BulkErrors        int64         `json:"bulk_errors"`
-	AvgIndexLatency   time.Duration `json:"avg_index_latency"`
-	AvgSearchLatency  time.Duration `json:"avg_search_latency"`
-	TotalIndexTime    time.Duration `json:"total_index_time"`
-	TotalSearchTime   time.Duration `json:"total_search_time"`
+	TotalIndexOps    int64         `json:"total_index_ops"`
+	TotalSearchOps   int64         `json:"total_search_ops"`
+	IndexErrors      int64         `json:"index_errors"`
+	SearchErrors     int64         `json:"search_errors"`
+	BulkErrors       int64         `json:"bulk_errors"`
+	AvgIndexLatency  time.Duration `json:"avg_index_latency"`
+	AvgSearchLatency time.Duration `json:"avg_search_latency"`
+	TotalIndexTime   time.Duration `json:"total_index_time"`
+	TotalSearchTime  time.Duration `json:"total_search_time"`
 }
 
 // BulkIndexOptions 批量索引选项
 type BulkIndexOptions struct {
-	Index          string        `json:"index"`
-	Workers        int           `json:"workers"`
-	FlushBytes     int           `json:"flush_bytes"`
-	FlushInterval  time.Duration `json:"flush_interval"`
-	Timeout        time.Duration `json:"timeout"`
-	Routing        string        `json:"routing"`
-	Pipeline       string        `json:"pipeline"`
+	Index         string        `json:"index"`
+	Workers       int           `json:"workers"`
+	FlushBytes    int           `json:"flush_bytes"`
+	FlushInterval time.Duration `json:"flush_interval"`
+	Timeout       time.Duration `json:"timeout"`
+	Routing       string        `json:"routing"`
+	Pipeline      string        `json:"pipeline"`
 }
 
 // SearchOptions 搜索选项
 type SearchOptions struct {
 	Index          []string      `json:"index"`
-	QueryType       string        `json:"query_type"`
-	Timeout         time.Duration `json:"timeout"`
-	TrackTotalHits  bool          `json:"track_total_hits"`
-	PrefetchSearch  bool          `json:"prefetch_search"`
-	MinScore        float64       `json:"min_score"`
-	MaxResults      int           `json:"max_results"`
-	RequestCache    bool          `json:"request_cache"`
+	QueryType      string        `json:"query_type"`
+	Timeout        time.Duration `json:"timeout"`
+	TrackTotalHits bool          `json:"track_total_hits"`
+	PrefetchSearch bool          `json:"prefetch_search"`
+	MinScore       float64       `json:"min_score"`
+	MaxResults     int           `json:"max_results"`
+	RequestCache   bool          `json:"request_cache"`
 }
 
 // DefaultESConfig 默认ES配置
@@ -147,7 +147,7 @@ func DefaultSearchOptions() SearchOptions {
 	return SearchOptions{
 		Timeout:        10 * time.Second,
 		TrackTotalHits: true,
-		MaxResults:    10000,
+		MaxResults:     10000,
 		RequestCache:   true,
 	}
 }
@@ -170,18 +170,18 @@ func NewElasticsearchOptimizer(cfg *ESConfig) (*ElasticsearchOptimizer, error) {
 
 	// 创建Elasticsearch客户端
 	esConfig := elasticsearch.Config{
-		Addresses:         cfg.Addresses,
-		Username:          cfg.Username,
-		Password:          cfg.Password,
-		MaxRetries:        cfg.MaxRetries,
-		RetryOnStatus:     cfg.RetryOnStatus,
+		Addresses:     cfg.Addresses,
+		Username:      cfg.Username,
+		Password:      cfg.Password,
+		MaxRetries:    cfg.MaxRetries,
+		RetryOnStatus: cfg.RetryOnStatus,
 		RetryBackoff: func(i int) time.Duration {
 			return time.Duration(i) * cfg.RetryBackoff
 		},
-		CompressRequestBody: cfg.CompressRequestBody,
-		DiscoverNodesOnStart: cfg.DiscoverNodes,
+		CompressRequestBody:   cfg.CompressRequestBody,
+		DiscoverNodesOnStart:  cfg.DiscoverNodes,
 		DiscoverNodesInterval: cfg.DiscoverInterval,
-		Transport:          transport,
+		Transport:             transport,
 	}
 
 	client, err := elasticsearch.NewClient(esConfig)
@@ -202,7 +202,7 @@ func NewElasticsearchOptimizer(cfg *ESConfig) (*ElasticsearchOptimizer, error) {
 
 	// 创建HTTP客户端
 	httpClient := &http.Client{
-		Timeout: cfg.BulkTimeout,
+		Timeout:   cfg.BulkTimeout,
 		Transport: transport,
 	}
 
@@ -253,7 +253,6 @@ func (eso *ElasticsearchOptimizer) InitializeBulkIndexer(index string, options B
 			}
 		},
 	})
-
 	if err != nil {
 		return fmt.Errorf("failed to create bulk indexer: %w", err)
 	}
@@ -301,7 +300,6 @@ func (eso *ElasticsearchOptimizer) BulkIndexDocument(ctx context.Context, index 
 			Body:       bytes.NewReader(data),
 			Routing:    options.Routing,
 		})
-
 		if err != nil {
 			eso.recordBulkError("add_to_indexer", err)
 			continue
@@ -330,14 +328,13 @@ func (eso *ElasticsearchOptimizer) SearchDocument(ctx context.Context, options S
 
 	// 构建搜索请求
 	searchBody, err := json.Marshal(map[string]interface{}{
-		"query":           query,
-		"from":            0,
-		"size":            options.MaxResults,
-		"min_score":       options.MinScore,
-		"request_cache":   options.RequestCache,
+		"query":            query,
+		"from":             0,
+		"size":             options.MaxResults,
+		"min_score":        options.MinScore,
+		"request_cache":    options.RequestCache,
 		"track_total_hits": options.TrackTotalHits,
 	})
-
 	if err != nil {
 		eso.recordSearchError("marshal_query", err)
 		return fmt.Errorf("failed to marshal search query: %w", err)
@@ -352,7 +349,6 @@ func (eso *ElasticsearchOptimizer) SearchDocument(ctx context.Context, options S
 		eso.client.Search.WithTrackTotalHits(options.TrackTotalHits),
 		eso.client.Search.WithRequestCache(options.RequestCache),
 	)
-
 	if err != nil {
 		eso.recordSearchError("search", err)
 		return fmt.Errorf("search failed: %w", err)
@@ -386,13 +382,13 @@ func (eso *ElasticsearchOptimizer) SearchWithAggregation(ctx context.Context, op
 
 	// 构建搜索请求
 	searchQuery := map[string]interface{}{
-		"query":           query["query"],
-		"from":            0,
-		"size":            0, // 不返回文档，只返回聚合结果
-		"min_score":       options.MinScore,
-		"request_cache":   options.RequestCache,
+		"query":            query["query"],
+		"from":             0,
+		"size":             0, // 不返回文档，只返回聚合结果
+		"min_score":        options.MinScore,
+		"request_cache":    options.RequestCache,
 		"track_total_hits": options.TrackTotalHits,
-		"aggs":            aggregations,
+		"aggs":             aggregations,
 	}
 
 	// 如果有分页参数，包含在查询中
@@ -416,7 +412,6 @@ func (eso *ElasticsearchOptimizer) SearchWithAggregation(ctx context.Context, op
 		eso.client.Search.WithBody(bytes.NewReader(searchBody)),
 		eso.client.Search.WithTimeout(options.Timeout),
 	)
-
 	if err != nil {
 		eso.recordSearchError("search_aggregation", err)
 		return fmt.Errorf("aggregation search failed: %w", err)
@@ -448,7 +443,6 @@ func (eso *ElasticsearchOptimizer) GetIndexHealth(ctx context.Context, indices [
 		eso.client.Cluster.Health.WithWaitForStatus("yellow"),
 		eso.client.Cluster.Health.WithTimeout(10*time.Second),
 	)
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to get cluster health: %w", err)
 	}
