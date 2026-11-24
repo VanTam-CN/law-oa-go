@@ -66,6 +66,10 @@ func metadataNumbersEqual(a, b json.Number) bool {
 	if a == b {
 		return true
 	}
+	// 超长数字串直接拒绝：防 big.Rat 解析指数放大内存（gosec G113 加固）
+	if len(a.String()) > 64 || len(b.String()) > 64 {
+		return false
+	}
 	left, ok := new(big.Rat).SetString(a.String())
 	if !ok {
 		return false

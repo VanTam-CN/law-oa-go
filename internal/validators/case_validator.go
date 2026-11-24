@@ -412,9 +412,5 @@ func (v *CaseValidator) ValidateSearchRequest(searchTerm string, filters map[str
 	}
 
 	// 验证排序参数
-	if err := v.ValidateSortParams(sortBy, sortOrder); err != nil {
-		return err
-	}
-
-	return nil
+	return v.ValidateSortParams(sortBy, sortOrder)
 }

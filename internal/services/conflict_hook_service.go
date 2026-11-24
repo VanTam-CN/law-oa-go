@@ -9,6 +9,7 @@ import (
 
 	"law-oa-go/internal/repositories"
 	"law-oa-go/internal/security"
+	"law-oa-go/internal/tracing"
 )
 
 // safeGo 安全启动 goroutine，捕获 panic 防止进程崩溃
@@ -17,7 +18,7 @@ func safeGo(ctx context.Context, name string, f func(context.Context)) {
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				traceID := ctx.Value("trace_id")
+				traceID := ctx.Value(tracing.TraceIDKey)
 				log.Printf("[ConflictHook] panic recovered in %s (traceID: %v): %v", name, traceID, r)
 			}
 		}()
@@ -59,7 +60,7 @@ func NewConflictHookService(
 // OnCaseCreated 案件创建后自动触发冲突检测
 func (s *conflictHookService) OnCaseCreated(ctx context.Context, caseID uint, clientID uint) {
 	safeGo(ctx, "runConflictCheck", func(ctx context.Context) {
-		bgCtx := context.WithValue(context.Background(), "trace_id", ctx.Value("trace_id"))
+		bgCtx := context.WithValue(context.Background(), tracing.TraceIDKey, ctx.Value(tracing.TraceIDKey))
 		s.runConflictCheck(bgCtx, caseID, clientID, "case_created")
 	})
 }
@@ -72,7 +73,7 @@ func (s *conflictHookService) OnCaseUpdated(ctx context.Context, caseID uint) {
 	}
 	if caseData.ClientID > 0 {
 		safeGo(ctx, "runConflictCheck", func(ctx context.Context) {
-			bgCtx := context.WithValue(context.Background(), "trace_id", ctx.Value("trace_id"))
+			bgCtx := context.WithValue(context.Background(), tracing.TraceIDKey, ctx.Value(tracing.TraceIDKey))
 			s.runConflictCheck(bgCtx, caseID, caseData.ClientID, "case_updated")
 		})
 	}
@@ -81,7 +82,7 @@ func (s *conflictHookService) OnCaseUpdated(ctx context.Context, caseID uint) {
 // OnEntityAddedToCase 新当事人关联到案件时触发检测
 func (s *conflictHookService) OnEntityAddedToCase(ctx context.Context, caseID uint, entityID uint) {
 	safeGo(ctx, "checkEntityConflict", func(ctx context.Context) {
-		bgCtx := context.WithValue(context.Background(), "trace_id", ctx.Value("trace_id"))
+		bgCtx := context.WithValue(context.Background(), tracing.TraceIDKey, ctx.Value(tracing.TraceIDKey))
 		s.checkEntityConflict(bgCtx, caseID, entityID, "party_added")
 	})
 }
@@ -97,7 +98,7 @@ func (s *conflictHookService) runConflictCheck(ctx context.Context, caseID uint,
 	bgCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
-	traceID := ctx.Value("trace_id")
+	traceID := ctx.Value(tracing.TraceIDKey)
 
 	caseData, err := s.caseRepo.FindByID(bgCtx, caseID)
 	if err != nil || caseData == nil {
@@ -144,7 +145,7 @@ func (s *conflictHookService) checkEntityConflict(ctx context.Context, caseID ui
 	bgCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
-	traceID := ctx.Value("trace_id")
+	traceID := ctx.Value(tracing.TraceIDKey)
 
 	caseData, err := s.caseRepo.FindByID(bgCtx, caseID)
 	if err != nil || caseData == nil {

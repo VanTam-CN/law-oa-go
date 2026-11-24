@@ -1,0 +1,62 @@
+level=warning msg="[config_reader] The configuration option `run.skip-files` is deprecated, please use `issues.exclude-files`."
+level=warning msg="[config_reader] The configuration option `run.skip-dirs` is deprecated, please use `issues.exclude-dirs`."
+level=warning msg="[config_reader] The configuration option `output.uniq-by-line` is deprecated, please use `issues.uniq-by-line`"
+level=warning msg="[config_reader] The configuration option `output.format` is deprecated, please use `output.formats`"
+level=warning msg="The linter 'gomnd' is deprecated (since v1.58.0) due to: The linter has been renamed. Replaced by mnd."
+level=warning msg="[linters_context] gocritic: no need to enable check \"appendAssign\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"assignOp\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"badCall\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"badCond\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"captLocal\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"caseOrder\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"defaultCaseOrder\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"dupArg\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"dupBranchBody\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"dupCase\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"dupSubExpr\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"elseif\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"flagDeref\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"regexpMust\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"singleCaseSwitch\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"sloppyLen\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"switchTrue\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"typeSwitchVar\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"underef\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"unlambda\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"unslice\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"valSwap\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"wrapperFunc\": it's already enabled"
+level=error msg="[linters_context] gomnd: This linter is fully inactivated: it will not produce any reports."
+internal/handlers/intake_native_transaction.go:73:14: G113: Potential uncontrolled memory consumption in Rat.SetString (CVE-2022-23772) (gosec)
+	left, ok := new(big.Rat).SetString(a.String())
+	            ^
+internal/handlers/intake_native_transaction.go:77:18: G113: Potential uncontrolled memory consumption in Rat.SetString (CVE-2022-23772) (gosec)
+	right, valid := new(big.Rat).SetString(b.String())
+	                ^
+tests/integration/production_external_evidence_test.go:116:42: context-as-argument: context.Context should be the first parameter of a function (revive)
+func executeMigrationFiles(t *testing.T, ctx context.Context, conn *sql.Conn, filenames ...string) {
+                                         ^
+tests/integration/production_external_evidence_test.go:130:47: context-as-argument: context.Context should be the first parameter of a function (revive)
+func seedExternalEvidenceReview(t *testing.T, ctx context.Context, conn *sql.Conn, gate, reviewer, role, timestamp string) {
+                                              ^
+tests/integration/production_external_evidence_test.go:150:50: context-as-argument: context.Context should be the first parameter of a function (revive)
+func setPostgresEvidenceSearchPath(t *testing.T, ctx context.Context, conn *sql.Conn, schema string) {
+                                                 ^
+tests/integration/production_external_evidence_test.go:157:50: context-as-argument: context.Context should be the first parameter of a function (revive)
+func assertProductionSchemaVersion(t *testing.T, ctx context.Context, conn *sql.Conn, expected string) {
+                                                 ^
+tests/integration/production_external_evidence_test.go:168:54: context-as-argument: context.Context should be the first parameter of a function (revive)
+func assertExternalEvidenceUniqueIndex(t *testing.T, ctx context.Context, conn *sql.Conn) {
+                                                     ^
+tests/integration/production_external_evidence_test.go:189:60: context-as-argument: context.Context should be the first parameter of a function (revive)
+func assertExternalEvidenceDuplicateRejected(t *testing.T, ctx context.Context, conn *sql.Conn, gate, reviewer string) {
+                                                           ^
+tests/integration/production_external_evidence_test.go:203:51: context-as-argument: context.Context should be the first parameter of a function (revive)
+func assertExternalEvidenceRowCount(t *testing.T, ctx context.Context, conn *sql.Conn, gate string, expected int) {
+                                                  ^
+tests/integration/production_external_evidence_test.go:214:57: context-as-argument: context.Context should be the first parameter of a function (revive)
+func assertExternalEvidenceReadinessQuery(t *testing.T, ctx context.Context, conn *sql.Conn, gate, reviewer string) {
+                                                        ^
+tests/integration/production_external_evidence_test.go:230:53: context-as-argument: context.Context should be the first parameter of a function (revive)
+func assertAppendOnlyMutationRejected(t *testing.T, ctx context.Context, conn *sql.Conn, statement string) {
+                                                    ^

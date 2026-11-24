@@ -197,7 +197,7 @@ func NewElasticsearchOptimizer(cfg *ESConfig) (*ElasticsearchOptimizer, error) {
 	defer res.Body.Close()
 
 	if res.IsError() {
-		return nil, fmt.Errorf("Elasticsearch returned error: %s", res.Status())
+		return nil, fmt.Errorf("elasticsearch returned error: %s", res.Status())
 	}
 
 	// 创建HTTP客户端
@@ -356,8 +356,8 @@ func (eso *ElasticsearchOptimizer) SearchDocument(ctx context.Context, options S
 	defer res.Body.Close()
 
 	if res.IsError() {
-		eso.recordSearchError("search_response", fmt.Errorf("Elasticsearch error: %s", res.Status()))
-		return fmt.Errorf("Elasticsearch returned error: %s", res.Status())
+		eso.recordSearchError("search_response", fmt.Errorf("elasticsearch error: %s", res.Status()))
+		return fmt.Errorf("elasticsearch returned error: %s", res.Status())
 	}
 
 	// 解析结果
@@ -419,8 +419,8 @@ func (eso *ElasticsearchOptimizer) SearchWithAggregation(ctx context.Context, op
 	defer res.Body.Close()
 
 	if res.IsError() {
-		eso.recordSearchError("aggregation_response", fmt.Errorf("Elasticsearch error: %s", res.Status()))
-		return fmt.Errorf("Elasticsearch returned error: %s", res.Status())
+		eso.recordSearchError("aggregation_response", fmt.Errorf("elasticsearch error: %s", res.Status()))
+		return fmt.Errorf("elasticsearch returned error: %s", res.Status())
 	}
 
 	// 解析结果

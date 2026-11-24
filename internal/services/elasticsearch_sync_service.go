@@ -260,7 +260,7 @@ func (s *ElasticsearchSyncService) calculateSearchWeight(statute *models.LegalSt
 // GetSyncStatus 获取同步状态
 func (s *ElasticsearchSyncService) GetSyncStatus(ctx context.Context) (*SyncStatus, error) {
 	if s.esRepo == nil {
-		return nil, fmt.Errorf("Elasticsearch 未配置")
+		return nil, fmt.Errorf("elasticsearch 未配置")
 	}
 
 	// 检查Elasticsearch状态

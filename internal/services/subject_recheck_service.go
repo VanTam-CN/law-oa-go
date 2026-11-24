@@ -690,6 +690,9 @@ func findEntityByNormalizedIdentityTx(tx *gorm.DB, candidate *subjectRegistratio
 			return &entity, nil
 		}
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	return nil, nil
 }
 
@@ -1264,10 +1267,7 @@ func (s *SubjectRecheckService) RequireEffectiveSubject(ctx context.Context, cas
 	if strings.TrimSpace(caseModel.ConflictCheckID) == "" {
 		return NewSubjectWorkflowError("CONFLICT_CHECK_REQUIRED", fmt.Sprintf("案件尚未关联可用的冲突复核记录，已阻止：%s", action))
 	}
-	if err := s.RequireConflictDisposition(ctx, caseModel.ConflictCheckID, action); err != nil {
-		return err
-	}
-	return nil
+	return s.RequireConflictDisposition(ctx, caseModel.ConflictCheckID, action)
 }
 
 // RequireConflictDisposition is the final gate used immediately before an

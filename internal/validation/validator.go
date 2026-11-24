@@ -878,9 +878,9 @@ func (v *Validator) IsValidType(value interface{}, expectedType string) bool {
 }
 
 // ValidateLength 验证长度
-func (v *Validator) ValidateLength(value string, min, max int) bool {
+func (v *Validator) ValidateLength(value string, minLen, maxLen int) bool {
 	length := len(value)
-	return length >= min && length <= max
+	return length >= minLen && length <= maxLen
 }
 
 // ValidateRegex 验证正则表达式

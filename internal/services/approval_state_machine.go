@@ -236,10 +236,9 @@ func (sp *ApprovalStageProcessor) GetNextStage(
 				} else if condition.ElseStageKey != "" && condition.ElseStageKey != "end" {
 					// 不满足条件，跳转到 else_stage
 					return sp.findStageByKey(condition.ElseStageKey, templateConfig.Stages)
-				} else {
-					// 流程结束
-					return nil, nil
 				}
+				// 流程结束
+				return nil, nil
 			}
 		}
 	}

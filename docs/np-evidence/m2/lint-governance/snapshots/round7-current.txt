@@ -1,0 +1,254 @@
+level=warning msg="[config_reader] The configuration option `run.skip-files` is deprecated, please use `issues.exclude-files`."
+level=warning msg="[config_reader] The configuration option `run.skip-dirs` is deprecated, please use `issues.exclude-dirs`."
+level=warning msg="[config_reader] The configuration option `output.uniq-by-line` is deprecated, please use `issues.uniq-by-line`"
+level=warning msg="[config_reader] The configuration option `output.format` is deprecated, please use `output.formats`"
+level=warning msg="The linter 'gomnd' is deprecated (since v1.58.0) due to: The linter has been renamed. Replaced by mnd."
+level=warning msg="[linters_context] gocritic: no need to enable check \"appendAssign\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"assignOp\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"badCall\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"badCond\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"captLocal\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"caseOrder\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"defaultCaseOrder\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"dupArg\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"dupBranchBody\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"dupCase\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"dupSubExpr\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"elseif\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"flagDeref\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"regexpMust\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"singleCaseSwitch\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"sloppyLen\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"switchTrue\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"typeSwitchVar\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"underef\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"unlambda\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"unslice\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"valSwap\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"wrapperFunc\": it's already enabled"
+level=error msg="[linters_context] gomnd: This linter is fully inactivated: it will not produce any reports."
+internal/tracing/tracer.go:361:9: context-keys-type: should not use basic type string as key in context.WithValue (revive)
+	return context.WithValue(ctx, "trace_id", traceID)
+	       ^
+internal/tracing/tracer.go:366:9: context-keys-type: should not use basic type string as key in context.WithValue (revive)
+	return context.WithValue(ctx, "span_id", spanID)
+	       ^
+internal/repositories/conflict_extended_repository.go:173:32: rows.Err must be checked (rowserrcheck)
+	rows, err := r.db.QueryContext(ctx, query, industryID)
+	                              ^
+internal/repositories/conflict_extended_repository.go:236:32: rows.Err must be checked (rowserrcheck)
+	rows, err := r.db.QueryContext(ctx, query)
+	                              ^
+internal/repositories/conflict_extended_repository.go:345:32: rows.Err must be checked (rowserrcheck)
+	rows, err := r.db.QueryContext(ctx, query, request.LawyerID, request.OpposingParty)
+	                              ^
+internal/repositories/conflict_extended_repository.go:400:32: rows.Err must be checked (rowserrcheck)
+	rows, err := r.db.QueryContext(ctx, query, request.LawyerID, request.IndustryID)
+	                              ^
+internal/repositories/conflict_extended_repository.go:455:32: rows.Err must be checked (rowserrcheck)
+	rows, err := r.db.QueryContext(ctx, query, request.LawyerID, request.OpposingParty, request.ClientName)
+	                              ^
+internal/repositories/conflict_extended_repository.go:534:32: rows.Err must be checked (rowserrcheck)
+	rows, err := r.db.QueryContext(ctx, query, args...)
+	                              ^
+internal/repositories/conflict_extended_repository.go:585:32: rows.Err must be checked (rowserrcheck)
+	rows, err := r.db.QueryContext(ctx, query, clientID, limit)
+	                              ^
+internal/repositories/conflict_repository.go:726:61: rows.Err must be checked (rowserrcheck)
+	rows, err := r.db.WithContext(ctx).Raw(query, args...).Rows()
+	                                                           ^
+internal/repositories/conflict_repository.go:826:78: rows.Err must be checked (rowserrcheck)
+			partyRows, err := r.db.WithContext(ctx).Raw(partyQuery, partyArgs...).Rows()
+			                                                                          ^
+internal/repositories/document_repository_impl.go:233:7: rows.Err must be checked (rowserrcheck)
+		Rows()
+		    ^
+internal/repositories/document_repository_impl.go:258:7: rows.Err must be checked (rowserrcheck)
+		Rows()
+		    ^
+internal/concurrency/worker_pool_test.go:369:49: empty-block: this block is empty, you can remove it (revive)
+		if task.TaskID != "" && task.Operation != nil {
+			// 任务创建成功
+		}
+internal/concurrency/safety.go:248:1: redefines-builtin-id: redefinition of the built-in function min (revive)
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+internal/handlers/intake_native_transaction.go:69:14: G113: Potential uncontrolled memory consumption in Rat.SetString (CVE-2022-23772) (gosec)
+	left, ok := new(big.Rat).SetString(a.String())
+	            ^
+internal/handlers/intake_native_transaction.go:73:18: G113: Potential uncontrolled memory consumption in Rat.SetString (CVE-2022-23772) (gosec)
+	right, valid := new(big.Rat).SetString(b.String())
+	                ^
+internal/services/company_api_service.go:774:1: redefines-builtin-id: redefinition of the built-in function max (revive)
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+internal/services/conflict_detection_service.go:1423:9: indent-error-flow: if block ends with a return statement, so drop this else and outdent its block (revive)
+	} else {
+		return "HIGH_TIME_FACTOR"
+	}
+internal/services/approval_state_machine.go:239:12: indent-error-flow: if block ends with a return statement, so drop this else and outdent its block (revive)
+				} else {
+					// 流程结束
+					return nil, nil
+				}
+internal/services/approval_template_service.go:311:10: indent-error-flow: if block ends with a return statement, so drop this else and outdent its block (revive)
+		} else {
+			// 没有下一步，审批完成
+			return s.updateApprovalStatus(node.ApprovalID, models.ApprovalStatusApproved)
+		}
+internal/services/conflict_hook_service.go:62:12: context-keys-type: should not use basic type string as key in context.WithValue (revive)
+		bgCtx := context.WithValue(context.Background(), "trace_id", ctx.Value("trace_id"))
+		         ^
+internal/services/conflict_hook_service.go:75:13: context-keys-type: should not use basic type string as key in context.WithValue (revive)
+			bgCtx := context.WithValue(context.Background(), "trace_id", ctx.Value("trace_id"))
+			         ^
+internal/services/conflict_hook_service.go:84:12: context-keys-type: should not use basic type string as key in context.WithValue (revive)
+		bgCtx := context.WithValue(context.Background(), "trace_id", ctx.Value("trace_id"))
+		         ^
+internal/services/risk_assessor.go:383:9: indent-error-flow: if block ends with a return statement, so drop this else and outdent its block (revive)
+	} else {
+		return 0.2 // 超过6个月
+	}
+internal/services/user_service.go:115:54: empty-block: this block is empty, you can remove it (revive)
+		if stderrors.Is(err, repositories.ErrUserNotFound) {
+			// 用户不存在，可以创建
+		} else {
+internal/services/user_service.go:197:55: empty-block: this block is empty, you can remove it (revive)
+			if stderrors.Is(err, repositories.ErrUserNotFound) {
+				// 邮箱不存在，可以使用
+			} else {
+internal/services/user_service.go:437:54: empty-block: this block is empty, you can remove it (revive)
+		if stderrors.Is(err, repositories.ErrUserNotFound) {
+			// 用户不存在，可以创建
+		} else {
+internal/services/client_contact_service.go:128:3: if-return: redundant if ...; err != nil check, just return error instead. (revive)
+		if err := tx.First(&saved, existing.ID).Error; err != nil {
+			return err
+		}
+internal/services/user_service.go:545:55: empty-block: this block is empty, you can remove it (revive)
+			if stderrors.Is(err, repositories.ErrUserNotFound) {
+				// 邮箱不存在，可以使用
+			} else {
+internal/services/enhanced_case_service.go:330:3: unexported-return: exported func NewEnhancedCaseService returns unexported type *services.enhancedCaseService, which can be annoying to use (revive)
+) *enhancedCaseService {
+  ^
+internal/services/subject_recheck_service.go:1267:2: if-return: redundant if ...; err != nil check, just return error instead. (revive)
+	if err := s.RequireConflictDisposition(ctx, caseModel.ConflictCheckID, action); err != nil {
+		return err
+	}
+internal/services/bad_debt_service.go:221:35: empty-block: this block is empty, you can remove it (revive)
+		if badDebt.RemainingAmount <= 0 {
+			// 可以考虑将发票标记为已核销
+		}
+internal/services/v2_conflict_detection_service.go:553:9: indent-error-flow: if block ends with a return statement, so drop this else and outdent its block (revive)
+	} else {
+		return "related"
+	}
+internal/services/conflict_pool_service.go:558:9: indent-error-flow: if block ends with a return statement, so drop this else and outdent its block (revive)
+	} else {
+		return "部分匹配"
+	}
+internal/services/conflict_reviewer_service.go:239:4: if-return: redundant if ...; err != nil check, just return error instead. (revive)
+			if err := syncOpenConflictApprovalApprover(tx, checkID, reviewer, actor.UserID, time.Now()); err != nil {
+				return err
+			}
+internal/services/mcp_client.go:119:34: response body must be closed (bodyclose)
+		response, err = c.httpClient.Do(req)
+		                               ^
+internal/services/conflict_detection_service.go:830:76: rows.Err must be checked (rowserrcheck)
+		rows, err := s.caseRepo.GetDB().WithContext(ctx).Raw(query, args...).Rows()
+		                                                                         ^
+internal/services/conflict_detection_service.go:928:75: rows.Err must be checked (rowserrcheck)
+	rows, err := s.caseRepo.GetDB().WithContext(ctx).Raw(query, args...).Rows()
+	                                                                         ^
+internal/services/subject_recheck_service.go:675:7: rows.Err must be checked (rowserrcheck)
+		Rows()
+		    ^
+internal/services/conflict_detection_service.go:882:13: Close should use defer (sqlclosecheck)
+		rows.Close()
+		          ^
+internal/validators/case_validator.go:415:2: if-return: redundant if ...; err != nil check, just return error instead. (revive)
+	if err := v.ValidateSortParams(sortBy, sortOrder); err != nil {
+		return err
+	}
+main.go:666:2: if-return: redundant if ...; err != nil check, just return error instead. (revive)
+	if err := database.ValidateProductionSchemaContract(db); err != nil {
+		return err
+	}
+internal/security/security_test.go:155:17: empty-block: this block is empty, you can remove it (revive)
+			if parts > 0 {
+				// Token有内容
+			}
+internal/validation/validator.go:881:50: redefines-builtin-id: redefinition of the built-in function min (revive)
+func (v *Validator) ValidateLength(value string, min, max int) bool {
+                                                 ^
+internal/database/connection_pool.go:120:3: empty-block: this block is empty, you can remove it (revive)
+		for range ticker.C {
+			// 连接监控已移至performance_optimizer.go
+		}
+internal/database/migrator.go:17:2: blank-imports: a blank import should be only in a main or test package, or have a comment justifying it (revive)
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	^
+internal/database/migrator.go:268:19: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	if err != nil && err != migrate.ErrNoChange {
+	                 ^
+internal/database/migrator.go:286:19: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	if err != nil && err != migrate.ErrNoChange {
+	                 ^
+internal/database/migrator.go:308:19: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	if err != nil && err != migrate.ErrNoChange {
+	                 ^
+internal/database/migrator.go:326:19: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	if err != nil && err != migrate.ErrNoChange {
+	                 ^
+internal/database/migrator.go:441:25: rows.Err must be checked (rowserrcheck)
+	rows, err := m.db.Query(query)
+	                       ^
+tests/integration/production_external_evidence_test.go:116:42: context-as-argument: context.Context should be the first parameter of a function (revive)
+func executeMigrationFiles(t *testing.T, ctx context.Context, conn *sql.Conn, filenames ...string) {
+                                         ^
+tests/integration/production_external_evidence_test.go:130:47: context-as-argument: context.Context should be the first parameter of a function (revive)
+func seedExternalEvidenceReview(t *testing.T, ctx context.Context, conn *sql.Conn, gate, reviewer, role, timestamp string) {
+                                              ^
+tests/integration/production_external_evidence_test.go:150:50: context-as-argument: context.Context should be the first parameter of a function (revive)
+func setPostgresEvidenceSearchPath(t *testing.T, ctx context.Context, conn *sql.Conn, schema string) {
+                                                 ^
+tests/integration/production_external_evidence_test.go:157:50: context-as-argument: context.Context should be the first parameter of a function (revive)
+func assertProductionSchemaVersion(t *testing.T, ctx context.Context, conn *sql.Conn, expected string) {
+                                                 ^
+tests/integration/production_external_evidence_test.go:168:54: context-as-argument: context.Context should be the first parameter of a function (revive)
+func assertExternalEvidenceUniqueIndex(t *testing.T, ctx context.Context, conn *sql.Conn) {
+                                                     ^
+tests/integration/production_external_evidence_test.go:189:60: context-as-argument: context.Context should be the first parameter of a function (revive)
+func assertExternalEvidenceDuplicateRejected(t *testing.T, ctx context.Context, conn *sql.Conn, gate, reviewer string) {
+                                                           ^
+tests/integration/production_external_evidence_test.go:203:51: context-as-argument: context.Context should be the first parameter of a function (revive)
+func assertExternalEvidenceRowCount(t *testing.T, ctx context.Context, conn *sql.Conn, gate string, expected int) {
+                                                  ^
+tests/integration/production_external_evidence_test.go:214:57: context-as-argument: context.Context should be the first parameter of a function (revive)
+func assertExternalEvidenceReadinessQuery(t *testing.T, ctx context.Context, conn *sql.Conn, gate, reviewer string) {
+                                                        ^
+tests/integration/production_external_evidence_test.go:230:53: context-as-argument: context.Context should be the first parameter of a function (revive)
+func assertAppendOnlyMutationRejected(t *testing.T, ctx context.Context, conn *sql.Conn, statement string) {
+                                                    ^
+internal/middleware/v2/v2_security_middleware.go:366:59: empty-block: this block is empty, you can remove it (revive)
+		if c.Request.Body != nil && c.Request.ContentLength > 0 {
+			// 注意：这里只是示例，实际应该基于Content-Type处理
+			// 因为中间件不应该修改请求体
+		}
+internal/models/legal_statutes.go:254:70: empty-block: this block is empty, you can remove it (revive)
+	if tx.Statement.Changed("Content") || tx.Statement.Changed("Title") {
+		// 这里可以添加版本记录逻辑
+	}
+cmd/qa-fixture/main.go:352:3: if-return: redundant if ...; err != nil check, just return error instead. (revive)
+		if err := upsertApproval(tx, result); err != nil {
+			return err
+		}

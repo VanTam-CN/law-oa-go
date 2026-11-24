@@ -243,11 +243,3 @@ func (cs *ConcurrentSafe) GetRateLimiterTokens() int {
 func (cs *ConcurrentSafe) IsEnabled() bool {
 	return cs.enabled
 }
-
-// Helper functions
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}

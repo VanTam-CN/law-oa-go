@@ -16,6 +16,8 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
+
+	"law-oa-go/internal/tracing"
 )
 
 var (
@@ -364,11 +366,11 @@ func WithContext(ctx context.Context) *zap.Logger {
 		fields = append(fields, zap.String("request_id", requestID.(string)))
 	}
 
-	if traceID := ctx.Value("trace_id"); traceID != nil {
+	if traceID := ctx.Value(tracing.TraceIDKey); traceID != nil {
 		fields = append(fields, zap.String("trace_id", traceID.(string)))
 	}
 
-	if spanID := ctx.Value("span_id"); spanID != nil {
+	if spanID := ctx.Value(tracing.SpanIDKey); spanID != nil {
 		fields = append(fields, zap.String("span_id", spanID.(string)))
 	}
 

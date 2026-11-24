@@ -1,0 +1,680 @@
+level=warning msg="[config_reader] The configuration option `run.skip-files` is deprecated, please use `issues.exclude-files`."
+level=warning msg="[config_reader] The configuration option `run.skip-dirs` is deprecated, please use `issues.exclude-dirs`."
+level=warning msg="[config_reader] The configuration option `output.uniq-by-line` is deprecated, please use `issues.uniq-by-line`"
+level=warning msg="[config_reader] The configuration option `output.format` is deprecated, please use `output.formats`"
+level=warning msg="The linter 'gomnd' is deprecated (since v1.58.0) due to: The linter has been renamed. Replaced by mnd."
+level=warning msg="[linters_context] gocritic: no need to enable check \"appendAssign\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"assignOp\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"badCall\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"badCond\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"captLocal\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"caseOrder\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"defaultCaseOrder\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"dupArg\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"dupBranchBody\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"dupCase\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"dupSubExpr\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"elseif\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"flagDeref\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"regexpMust\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"singleCaseSwitch\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"sloppyLen\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"switchTrue\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"typeSwitchVar\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"underef\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"unlambda\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"unslice\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"valSwap\": it's already enabled"
+level=warning msg="[linters_context] gocritic: no need to enable check \"wrapperFunc\": it's already enabled"
+level=error msg="[linters_context] gomnd: This linter is fully inactivated: it will not produce any reports."
+internal/handlers/intake_native_transaction.go:68:14: G113: Potential uncontrolled memory consumption in Rat.SetString (CVE-2022-23772) (gosec)
+	left, ok := new(big.Rat).SetString(a.String())
+	            ^
+internal/handlers/intake_native_transaction.go:72:18: G113: Potential uncontrolled memory consumption in Rat.SetString (CVE-2022-23772) (gosec)
+	right, valid := new(big.Rat).SetString(b.String())
+	                ^
+internal/concurrency/worker_pool_test.go:369:49: empty-block: this block is empty, you can remove it (revive)
+		if task.TaskID != "" && task.Operation != nil {
+			// 任务创建成功
+		}
+internal/concurrency/safety.go:248:1: redefines-builtin-id: redefinition of the built-in function min (revive)
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+internal/validation/validator.go:869:50: redefines-builtin-id: redefinition of the built-in function min (revive)
+func (v *Validator) ValidateLength(value string, min, max int) bool {
+                                                 ^
+internal/security/security_test.go:155:17: empty-block: this block is empty, you can remove it (revive)
+			if parts > 0 {
+				// Token有内容
+			}
+internal/middleware/v2/v2_security_middleware.go:365:59: empty-block: this block is empty, you can remove it (revive)
+		if c.Request.Body != nil && c.Request.ContentLength > 0 {
+			// 注意：这里只是示例，实际应该基于Content-Type处理
+			// 因为中间件不应该修改请求体
+		}
+internal/tracing/tracer.go:360:9: context-keys-type: should not use basic type string as key in context.WithValue (revive)
+	return context.WithValue(ctx, "trace_id", traceID)
+	       ^
+internal/tracing/tracer.go:365:9: context-keys-type: should not use basic type string as key in context.WithValue (revive)
+	return context.WithValue(ctx, "span_id", spanID)
+	       ^
+internal/models/legal_statutes.go:254:70: empty-block: this block is empty, you can remove it (revive)
+	if tx.Statement.Changed("Content") || tx.Statement.Changed("Title") {
+		// 这里可以添加版本记录逻辑
+	}
+internal/validators/case_validator.go:415:2: if-return: redundant if ...; err != nil check, just return error instead. (revive)
+	if err := v.ValidateSortParams(sortBy, sortOrder); err != nil {
+		return err
+	}
+internal/services/user_service.go:113:54: empty-block: this block is empty, you can remove it (revive)
+		if stderrors.Is(err, repositories.ErrUserNotFound) {
+			// 用户不存在，可以创建
+		} else {
+internal/services/user_service.go:195:55: empty-block: this block is empty, you can remove it (revive)
+			if stderrors.Is(err, repositories.ErrUserNotFound) {
+				// 邮箱不存在，可以使用
+			} else {
+internal/services/user_service.go:435:54: empty-block: this block is empty, you can remove it (revive)
+		if stderrors.Is(err, repositories.ErrUserNotFound) {
+			// 用户不存在，可以创建
+		} else {
+internal/services/bad_debt_service.go:221:35: empty-block: this block is empty, you can remove it (revive)
+		if badDebt.RemainingAmount <= 0 {
+			// 可以考虑将发票标记为已核销
+		}
+internal/services/user_service.go:543:55: empty-block: this block is empty, you can remove it (revive)
+			if stderrors.Is(err, repositories.ErrUserNotFound) {
+				// 邮箱不存在，可以使用
+			} else {
+internal/services/client_contact_service.go:127:3: if-return: redundant if ...; err != nil check, just return error instead. (revive)
+		if err := tx.First(&saved, existing.ID).Error; err != nil {
+			return err
+		}
+internal/services/company_api_service.go:774:1: redefines-builtin-id: redefinition of the built-in function max (revive)
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+internal/services/approval_template_service.go:311:10: indent-error-flow: if block ends with a return statement, so drop this else and outdent its block (revive)
+		} else {
+			// 没有下一步，审批完成
+			return s.updateApprovalStatus(node.ApprovalID, models.ApprovalStatusApproved)
+		}
+internal/services/conflict_reviewer_service.go:238:4: if-return: redundant if ...; err != nil check, just return error instead. (revive)
+			if err := syncOpenConflictApprovalApprover(tx, checkID, reviewer, actor.UserID, time.Now()); err != nil {
+				return err
+			}
+internal/services/approval_state_machine.go:239:12: indent-error-flow: if block ends with a return statement, so drop this else and outdent its block (revive)
+				} else {
+					// 流程结束
+					return nil, nil
+				}
+internal/services/conflict_detection_service.go:1425:9: indent-error-flow: if block ends with a return statement, so drop this else and outdent its block (revive)
+	} else {
+		return "HIGH_TIME_FACTOR"
+	}
+internal/services/enhanced_case_service.go:330:3: unexported-return: exported func NewEnhancedCaseService returns unexported type *services.enhancedCaseService, which can be annoying to use (revive)
+) *enhancedCaseService {
+  ^
+internal/services/conflict_hook_service.go:62:12: context-keys-type: should not use basic type string as key in context.WithValue (revive)
+		bgCtx := context.WithValue(context.Background(), "trace_id", ctx.Value("trace_id"))
+		         ^
+internal/services/conflict_hook_service.go:75:13: context-keys-type: should not use basic type string as key in context.WithValue (revive)
+			bgCtx := context.WithValue(context.Background(), "trace_id", ctx.Value("trace_id"))
+			         ^
+internal/services/conflict_hook_service.go:84:12: context-keys-type: should not use basic type string as key in context.WithValue (revive)
+		bgCtx := context.WithValue(context.Background(), "trace_id", ctx.Value("trace_id"))
+		         ^
+internal/services/risk_assessor.go:383:9: indent-error-flow: if block ends with a return statement, so drop this else and outdent its block (revive)
+	} else {
+		return 0.2 // 超过6个月
+	}
+internal/services/v2_conflict_detection_service.go:552:9: indent-error-flow: if block ends with a return statement, so drop this else and outdent its block (revive)
+	} else {
+		return "related"
+	}
+internal/services/subject_recheck_service.go:1266:2: if-return: redundant if ...; err != nil check, just return error instead. (revive)
+	if err := s.RequireConflictDisposition(ctx, caseModel.ConflictCheckID, action); err != nil {
+		return err
+	}
+internal/services/conflict_pool_service.go:556:9: indent-error-flow: if block ends with a return statement, so drop this else and outdent its block (revive)
+	} else {
+		return "部分匹配"
+	}
+internal/database/connection_pool.go:119:3: empty-block: this block is empty, you can remove it (revive)
+		for range ticker.C {
+			// 连接监控已移至performance_optimizer.go
+		}
+internal/database/migrator.go:16:2: blank-imports: a blank import should be only in a main or test package, or have a comment justifying it (revive)
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	^
+cmd/qa-fixture/main.go:351:3: if-return: redundant if ...; err != nil check, just return error instead. (revive)
+		if err := upsertApproval(tx, result); err != nil {
+			return err
+		}
+tests/integration/production_external_evidence_test.go:116:42: context-as-argument: context.Context should be the first parameter of a function (revive)
+func executeMigrationFiles(t *testing.T, ctx context.Context, conn *sql.Conn, filenames ...string) {
+                                         ^
+tests/integration/production_external_evidence_test.go:130:47: context-as-argument: context.Context should be the first parameter of a function (revive)
+func seedExternalEvidenceReview(t *testing.T, ctx context.Context, conn *sql.Conn, gate, reviewer, role, timestamp string) {
+                                              ^
+tests/integration/production_external_evidence_test.go:150:50: context-as-argument: context.Context should be the first parameter of a function (revive)
+func setPostgresEvidenceSearchPath(t *testing.T, ctx context.Context, conn *sql.Conn, schema string) {
+                                                 ^
+tests/integration/production_external_evidence_test.go:157:50: context-as-argument: context.Context should be the first parameter of a function (revive)
+func assertProductionSchemaVersion(t *testing.T, ctx context.Context, conn *sql.Conn, expected string) {
+                                                 ^
+tests/integration/production_external_evidence_test.go:168:54: context-as-argument: context.Context should be the first parameter of a function (revive)
+func assertExternalEvidenceUniqueIndex(t *testing.T, ctx context.Context, conn *sql.Conn) {
+                                                     ^
+tests/integration/production_external_evidence_test.go:189:60: context-as-argument: context.Context should be the first parameter of a function (revive)
+func assertExternalEvidenceDuplicateRejected(t *testing.T, ctx context.Context, conn *sql.Conn, gate, reviewer string) {
+                                                           ^
+tests/integration/production_external_evidence_test.go:203:51: context-as-argument: context.Context should be the first parameter of a function (revive)
+func assertExternalEvidenceRowCount(t *testing.T, ctx context.Context, conn *sql.Conn, gate string, expected int) {
+                                                  ^
+tests/integration/production_external_evidence_test.go:214:57: context-as-argument: context.Context should be the first parameter of a function (revive)
+func assertExternalEvidenceReadinessQuery(t *testing.T, ctx context.Context, conn *sql.Conn, gate, reviewer string) {
+                                                        ^
+tests/integration/production_external_evidence_test.go:230:53: context-as-argument: context.Context should be the first parameter of a function (revive)
+func assertAppendOnlyMutationRejected(t *testing.T, ctx context.Context, conn *sql.Conn, statement string) {
+                                                    ^
+main.go:665:2: if-return: redundant if ...; err != nil check, just return error instead. (revive)
+	if err := database.ValidateProductionSchemaContract(db); err != nil {
+		return err
+	}
+internal/monitoring/performance.go:228:18: unnecessary conversion (unconvert)
+	status := string(statusCode)
+	                ^
+internal/services/analytics_service.go:156:27: unnecessary conversion (unconvert)
+		session.Duration = int64(req.EndTime.Sub(session.StartTime).Milliseconds())
+		                        ^
+internal/database/performance_monitor.go:239:28: unnecessary conversion (unconvert)
+	pm.stats.WaitCount = int64(stats.WaitCount)
+	                          ^
+internal/services/mcp_client.go:114:34: response body must be closed (bodyclose)
+		response, err = c.httpClient.Do(req)
+		                               ^
+internal/validation/validator.go:69:6: the error type name `ValidationErrors` should conform to the `XxxError` format (errname)
+type ValidationErrors struct {
+     ^
+internal/validation/validator.go:101:23: type assertion on error will fail on wrapped errors. Use errors.As to check for specific errors (errorlint)
+		for _, err := range err.(validator.ValidationErrors) {
+		                    ^
+internal/validation/validator.go:800:27: type assertion on error will fail on wrapped errors. Use errors.As to check for specific errors (errorlint)
+	if validationErrs, ok := err.(validator.ValidationErrors); ok {
+	                         ^
+frontend/migrate/main.go:132:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == migrate.ErrNoChange {
+		   ^
+frontend/migrate/main.go:155:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == migrate.ErrNoChange {
+		   ^
+internal/auth/token_revocation.go:353:12: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	} else if err != redis.Nil {
+	          ^
+internal/cache/advanced_cache.go:118:5: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	if err == redis.Nil {
+	   ^
+internal/config/config.go:222:15: type assertion on error will fail on wrapped errors. Use errors.As to check for specific errors (errorlint)
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+		            ^
+internal/database/migrator.go:266:19: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	if err != nil && err != migrate.ErrNoChange {
+	                 ^
+internal/database/migrator.go:270:5: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	if err == migrate.ErrNoChange {
+	   ^
+internal/database/migrator.go:284:19: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	if err != nil && err != migrate.ErrNoChange {
+	                 ^
+internal/database/migrator.go:288:5: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	if err == migrate.ErrNoChange {
+	   ^
+internal/database/migrator.go:306:19: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	if err != nil && err != migrate.ErrNoChange {
+	                 ^
+internal/database/migrator.go:310:5: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	if err == migrate.ErrNoChange {
+	   ^
+internal/database/migrator.go:324:19: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	if err != nil && err != migrate.ErrNoChange {
+	                 ^
+internal/database/migrator.go:328:5: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	if err == migrate.ErrNoChange {
+	   ^
+internal/handlers/approval_handler.go:224:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound || strings.Contains(err.Error(), "record not found") {
+		   ^
+internal/handlers/approval_handler.go:255:13: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		} else if err == gorm.ErrRecordNotFound || strings.Contains(err.Error(), "record not found") {
+		          ^
+internal/handlers/conflict_reviewer_handler.go:80:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/handlers/content_filter_handler.go:111:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/handlers/content_filter_handler.go:144:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/handlers/content_filter_handler.go:204:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/handlers/demo_aggregate_handler.go:2657:25: type assertion on error will fail on wrapped errors. Use errors.As to check for specific errors (errorlint)
+		if businessErr, ok := err.(conflictApprovalError); ok {
+		                      ^
+internal/handlers/demo_aggregate_handler.go:2685:7: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+			if err == gorm.ErrRecordNotFound {
+			   ^
+internal/handlers/demo_aggregate_handler.go:2723:14: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+			} else if waiverErr != gorm.ErrRecordNotFound {
+			          ^
+internal/handlers/demo_aggregate_handler.go:2744:7: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+			if existingErr != gorm.ErrRecordNotFound {
+			   ^
+internal/handlers/demo_aggregate_handler.go:3003:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/handlers/ethical_wall.go:93:3: switch on an error will fail on wrapped errors. Use errors.Is to check for specific errors (errorlint)
+		case services.ErrCaseNotFound:
+		^
+internal/handlers/ethical_wall.go:140:3: switch on an error will fail on wrapped errors. Use errors.Is to check for specific errors (errorlint)
+		case services.ErrCaseNotFound:
+		^
+internal/handlers/ethical_wall.go:186:3: switch on an error will fail on wrapped errors. Use errors.Is to check for specific errors (errorlint)
+		case services.ErrCaseNotFound:
+		^
+internal/handlers/ethical_wall.go:242:3: switch on an error will fail on wrapped errors. Use errors.Is to check for specific errors (errorlint)
+		case services.ErrCaseNotFound:
+		^
+internal/handlers/ethical_wall.go:308:3: switch on an error will fail on wrapped errors. Use errors.Is to check for specific errors (errorlint)
+		case services.ErrCaseNotFound:
+		^
+internal/handlers/intake_party_identity_guard.go:192:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/handlers/notification_handler.go:472:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/handlers/notification_handler.go:664:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/handlers/notification_handler.go:923:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/middleware/cache.go:152:6: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err != redis.Nil {
+		   ^
+internal/repositories/approval_delegation_repository.go:54:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/approval_delegation_repository.go:110:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/approval_node_repository.go:42:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/approval_repository.go:29:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/approval_template_repository.go:27:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/approval_workflow_repository.go:27:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/approval_workflow_repository.go:40:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/enhanced_conflict_repository.go:249:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/enhanced_conflict_repository.go:282:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/enhanced_conflict_repository.go:403:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/enhanced_conflict_repository.go:545:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/enhanced_conflict_repository.go:590:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/enhanced_conflict_repository.go:604:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/enhanced_conflict_repository.go:700:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/entity_repository.go:99:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/entity_repository.go:643:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/folder_template_repository.go:57:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/folder_template_repository.go:125:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/folder_template_repository.go:173:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/integration_repository.go:133:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/integration_repository.go:148:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/integration_repository.go:204:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/integration_repository.go:270:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/integration_repository.go:287:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/integration_repository.go:310:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/professional_conflict_detection_repository.go:28:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/professional_conflict_detection_repository.go:42:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/professional_conflict_detection_repository.go:139:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/professional_conflict_detection_repository.go:233:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/professional_conflict_detection_repository.go:245:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/professional_conflict_detection_repository.go:372:46: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		First(&lastExecution).Error; err != nil && err != gorm.ErrRecordNotFound {
+		                                           ^
+internal/repositories/waiver_repository.go:28:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/waiver_repository.go:43:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/waiver_repository.go:156:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/waiver_repository.go:194:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/waiver_repository.go:214:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/waiver_repository.go:256:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/waiver_repository.go:294:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/repositories/waiver_repository.go:306:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/services/authorization_service.go:265:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == repositories.ErrDocumentNotFound {
+		   ^
+internal/services/conflict_pool_service.go:156:12: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	} else if err == gorm.ErrRecordNotFound {
+	          ^
+internal/services/conflict_scan_service.go:258:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/services/document_lock_service.go:79:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/services/document_lock_service.go:339:5: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	if err == gorm.ErrRecordNotFound {
+	   ^
+internal/services/document_preview_service.go:80:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == repositories.ErrDocumentNotFound {
+		   ^
+internal/services/document_preview_service.go:134:19: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	if err != nil && err != io.EOF {
+	                 ^
+internal/services/document_preview_service.go:228:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == repositories.ErrDocumentNotFound {
+		   ^
+internal/services/document_service.go:174:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == repositories.ErrDocumentNotFound {
+		   ^
+internal/services/document_service.go:227:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == repositories.ErrDocumentNotFound {
+		   ^
+internal/services/document_service.go:263:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == repositories.ErrDocumentNotFound {
+		   ^
+internal/services/document_service.go:310:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == repositories.ErrDocumentNotFound {
+		   ^
+internal/services/mcp_client.go:236:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == redis.Nil {
+		   ^
+internal/services/offboarding_service.go:89:6: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err != gorm.ErrRecordNotFound {
+		   ^
+internal/services/pdf_report_service.go:206:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/services/pdf_report_service.go:220:6: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err == gorm.ErrRecordNotFound {
+		   ^
+internal/services/subject_recheck_service.go:1315:32: type assertion on error will fail on wrapped errors. Use errors.As to check for specific errors (errorlint)
+		} else if workflowErr, ok := err.(*SubjectWorkflowError); ok && workflowErr.Code != "WAIVER_PENDING" {
+		                             ^
+tests/performance/benchmark_test.go:239:21: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+			if err != nil && err != redis.Nil {
+			                 ^
+main.go:197:4: exitAfterDefer: log.Fatal will exit, and `defer healthChecker.Stop()` will not run (gocritic)
+			log.Fatal("生产数据库结构门禁失败:", err)
+			^
+internal/optimizations/query_optimizer.go:168:15: appendAssign: append result not assigned to the same slice (gocritic)
+	finalArgs := append(args, query.PageSize, offset)
+	             ^
+cmd/backfill-conflict-index/main.go:44:3: exitAfterDefer: log.Fatal will exit, and `defer sqlDB.Close()` will not run (gocritic)
+		log.Fatal("当前冲突仓储未提供历史主体索引对账能力")
+		^
+cmd/backfill-sensitive-identities/main.go:47:3: exitAfterDefer: log.Fatalf will exit, and `defer sqlDB.Close()` will not run (gocritic)
+		log.Fatalf("身份信息回填失败: %v", err)
+		^
+cmd/migrate/main.go:53:4: exitAfterDefer: log.Fatalf will exit, and `defer sqlDB.Close()` will not run (gocritic)
+			log.Fatalf("生产 schema bootstrap 失败: %v", bootstrapErr)
+			^
+internal/retry/retry.go:221:3: assignOp: replace `delay = delay * (0.5 + 0.5*rand.Float64())` with `delay *= (0.5 + 0.5*rand.Float64())` (gocritic)
+		delay = delay * (0.5 + 0.5*rand.Float64())
+		^
+internal/services/conflict_detection_service.go:1297:10: wrapperFunc: use strings.ReplaceAll method in `strings.Replace(name, suffix, "", -1)` (gocritic)
+		name = strings.Replace(name, suffix, "", -1)
+		       ^
+internal/services/document_search_service.go:625:3: assignOp: replace `end = end + 20` with `end += 20` (gocritic)
+		end = end + 20
+		^
+internal/services/document_search_service.go:621:3: assignOp: replace `start = start - 20` with `start -= 20` (gocritic)
+		start = start - 20
+		^
+internal/middleware/cache.go:286:2: S1008: should use 'return shouldCacheContentType(contentType)' instead of 'if !shouldCacheContentType(contentType) { return false }; return true' (gosimple)
+	if !shouldCacheContentType(contentType) {
+	^
+internal/repositories/conflict_repository.go:955:2: S1008: should use 'return len(strings.TrimSpace(name)) >= 2' instead of 'if len(strings.TrimSpace(name)) < 2 { return false }; return true' (gosimple)
+	if len(strings.TrimSpace(name)) < 2 {
+	^
+internal/services/conflict_detection_service.go:1201:2: S1008: should use 'return len(strings.TrimSpace(name)) >= 2' instead of 'if len(strings.TrimSpace(name)) < 2 { return false }; return true' (gosimple)
+	if len(strings.TrimSpace(name)) < 2 {
+	^
+internal/services/security_control_test.go:92:2: S1008: should use 'return digitCount >= 11' instead of 'if digitCount >= 11 { return true }; return false' (gosimple)
+	if digitCount >= 11 {
+	^
+internal/tracing/middleware.go:216:6: S1009: should omit nil check; len() for nil slices is defined as zero (gosimple)
+		if c.Errors != nil && len(c.Errors) > 0 {
+		   ^
+tests/integration/business_workflow_test.go:228:2: S1023: redundant `return` statement (gosimple)
+	return
+	^
+internal/services/search_service.go:464:2: S1031: unnecessary nil check around range (gosimple)
+	if highlights != nil {
+	^
+internal/auth/token_revocation.go:452:3: ineffectual assignment to notes (ineffassign)
+		notes += ", note: " + data.HandoverNote
+		^
+internal/handlers/intake_draft_revision_contract_test.go:373:10: ineffectual assignment to response (ineffassign)
+			code, response = draftRevisionRequest(t, r, http.MethodPut, path, string(body), "")
+			      ^
+internal/health/config_test.go:354:2: ineffectual assignment to healthChecker (ineffassign)
+	healthChecker, err = manager.BuildAndStart()
+	^
+internal/repositories/folder_template_repository.go:209:2: ineffectual assignment to query (ineffassign)
+	query := `
+	^
+internal/services/conflict_detection_service.go:1318:2: ineffectual assignment to opponent (ineffassign)
+	opponent = strings.ToLower(opponent)
+	^
+internal/services/trust_account_service.go:550:3: ineffectual assignment to newBalance (ineffassign)
+		newBalance := account.Balance
+		^
+internal/services/document_lock_service_test.go:46:2: ineffectual assignment to renewed (ineffassign)
+	renewed, err := service.RenewLock(ctx, &RenewLockRequest{DocumentID: 1, UserID: 11})
+	^
+main.go:554:33: should rewrite http.NewRequestWithContext or add (*Request).WithContext (noctx)
+	request, err := http.NewRequest(http.MethodGet, "http://127.0.0.1:"+port+path, nil)
+	                               ^
+internal/handlers/onlyoffice_handler.go:583:31: (*net/http.Client).Get must not be called (noctx)
+	resp, err := h.httpClient.Get(downloadURL)
+	                             ^
+internal/handlers/onlyoffice_handler.go:910:35: (*net/http.Client).Get must not be called (noctx)
+	httpResp, err := h.httpClient.Get(resp.URL)
+	                                 ^
+internal/handlers/onlyoffice_handler.go:988:32: (*net/http.Client).Get must not be called (noctx)
+		resp, err := h.httpClient.Get(checkURL)
+		                             ^
+internal/database/migrator.go:439:25: rows.Err must be checked (rowserrcheck)
+	rows, err := m.db.Query(query)
+	                       ^
+internal/repositories/conflict_extended_repository.go:172:32: rows.Err must be checked (rowserrcheck)
+	rows, err := r.db.QueryContext(ctx, query, industryID)
+	                              ^
+internal/repositories/conflict_extended_repository.go:235:32: rows.Err must be checked (rowserrcheck)
+	rows, err := r.db.QueryContext(ctx, query)
+	                              ^
+internal/repositories/conflict_extended_repository.go:344:32: rows.Err must be checked (rowserrcheck)
+	rows, err := r.db.QueryContext(ctx, query, request.LawyerID, request.OpposingParty)
+	                              ^
+internal/repositories/conflict_extended_repository.go:399:32: rows.Err must be checked (rowserrcheck)
+	rows, err := r.db.QueryContext(ctx, query, request.LawyerID, request.IndustryID)
+	                              ^
+internal/repositories/conflict_extended_repository.go:454:32: rows.Err must be checked (rowserrcheck)
+	rows, err := r.db.QueryContext(ctx, query, request.LawyerID, request.OpposingParty, request.ClientName)
+	                              ^
+internal/repositories/conflict_extended_repository.go:533:32: rows.Err must be checked (rowserrcheck)
+	rows, err := r.db.QueryContext(ctx, query, args...)
+	                              ^
+internal/repositories/conflict_extended_repository.go:584:32: rows.Err must be checked (rowserrcheck)
+	rows, err := r.db.QueryContext(ctx, query, clientID, limit)
+	                              ^
+internal/repositories/conflict_repository.go:725:61: rows.Err must be checked (rowserrcheck)
+	rows, err := r.db.WithContext(ctx).Raw(query, args...).Rows()
+	                                                           ^
+internal/repositories/conflict_repository.go:825:78: rows.Err must be checked (rowserrcheck)
+			partyRows, err := r.db.WithContext(ctx).Raw(partyQuery, partyArgs...).Rows()
+			                                                                          ^
+internal/repositories/document_repository_impl.go:232:7: rows.Err must be checked (rowserrcheck)
+		Rows()
+		    ^
+internal/repositories/document_repository_impl.go:257:7: rows.Err must be checked (rowserrcheck)
+		Rows()
+		    ^
+internal/services/conflict_detection_service.go:828:76: rows.Err must be checked (rowserrcheck)
+		rows, err := s.caseRepo.GetDB().WithContext(ctx).Raw(query, args...).Rows()
+		                                                                         ^
+internal/services/conflict_detection_service.go:926:75: rows.Err must be checked (rowserrcheck)
+	rows, err := s.caseRepo.GetDB().WithContext(ctx).Raw(query, args...).Rows()
+	                                                                         ^
+internal/services/subject_recheck_service.go:674:7: rows.Err must be checked (rowserrcheck)
+		Rows()
+		    ^
+internal/repositories/conflict_repository.go:849:21: Close should use defer (sqlclosecheck)
+					partyRows.Close()
+					               ^
+internal/services/conflict_detection_service.go:323:15: Close should use defer (sqlclosecheck)
+				rows.Close()
+				          ^
+internal/services/conflict_detection_service.go:880:13: Close should use defer (sqlclosecheck)
+		rows.Close()
+		          ^
+internal/tracing/tracer.go:118:26: SA1019: trace.NewNoopTracerProvider is deprecated: Use [go.opentelemetry.io/otel/trace/noop.NewTracerProvider] instead. (staticcheck)
+		otel.SetTracerProvider(trace.NewNoopTracerProvider())
+		                       ^
+internal/tracing/tracer.go:17:2: SA1019: "go.opentelemetry.io/otel/exporters/jaeger" is deprecated: This module is no longer supported. OpenTelemetry dropped support for Jaeger exporter in July 2023. Jaeger officially accepts and recommends using OTLP. Use [go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp] or [go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc] instead. (staticcheck)
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	^
+internal/optimizations/query_optimizer.go:91:3: SA4006: this value of `dbQuery` is never used (staticcheck)
+		dbQuery = dbQuery.Where(strings.Join(whereConditions, " AND "), args...)
+		^
+internal/services/user_service.go:719:11: SA4010: this result of append is never used, except maybe in other appends (staticcheck)
+		tasks = append(tasks, task)
+		        ^
+internal/validators/test_validator_simple.go:188:17: SA6000: calling regexp.MatchString in a loop has poor performance, consider using regexp.Compile (staticcheck)
+		matched, _ := regexp.MatchString(`^[a-zA-Z0-9_-]+$`, tag)
+		              ^
+internal/errors/enhanced_errors.go:264:22: SA9005: struct type 'law-oa-go/internal/errors.EnhancedError' doesn't have any exported fields, nor custom marshaling (staticcheck)
+	return json.Marshal(e)
+	                    ^
+internal/tracing/tracer.go:236:15: ST1005: error strings should not be capitalized (stylecheck)
+		return nil, fmt.Errorf("Jaeger endpoint not configured")
+		            ^
+internal/tracing/tracer.go:245:15: ST1005: error strings should not be capitalized (stylecheck)
+		return nil, fmt.Errorf("Zipkin endpoint not configured")
+		            ^
+cmd/qa-fixture/main.go:847:10: ST1005: error strings should not be capitalized (stylecheck)
+		return fmt.Errorf("A 案不存在: %w", err)
+		       ^
+cmd/qa-fixture/main.go:850:10: ST1005: error strings should not be capitalized (stylecheck)
+		return fmt.Errorf("B 隔离案件不存在或隔离墙未开启: %w", err)
+		       ^
+cmd/qa-fixture/main.go:854:10: ST1005: error strings should not be capitalized (stylecheck)
+		return fmt.Errorf("A 的冲突检测记录不符合预期: count=%d err=%v", count, err)
+		       ^
+internal/database/elasticsearch_optimizer.go:200:15: ST1005: error strings should not be capitalized (stylecheck)
+		return nil, fmt.Errorf("Elasticsearch returned error: %s", res.Status())
+		            ^
+internal/database/elasticsearch_optimizer.go:359:44: ST1005: error strings should not be capitalized (stylecheck)
+		eso.recordSearchError("search_response", fmt.Errorf("Elasticsearch error: %s", res.Status()))
+		                                         ^
+internal/database/elasticsearch_optimizer.go:360:10: ST1005: error strings should not be capitalized (stylecheck)
+		return fmt.Errorf("Elasticsearch returned error: %s", res.Status())
+		       ^
+internal/database/elasticsearch_optimizer.go:422:49: ST1005: error strings should not be capitalized (stylecheck)
+		eso.recordSearchError("aggregation_response", fmt.Errorf("Elasticsearch error: %s", res.Status()))
+		                                              ^
+internal/database/elasticsearch_optimizer.go:423:10: ST1005: error strings should not be capitalized (stylecheck)
+		return fmt.Errorf("Elasticsearch returned error: %s", res.Status())
+		       ^
+internal/services/elasticsearch_sync_service.go:263:15: ST1005: error strings should not be capitalized (stylecheck)
+		return nil, fmt.Errorf("Elasticsearch 未配置")
+		            ^
+internal/handlers/auth_handler_test.go:16:2: ST1019: package "github.com/stretchr/testify/mock" is being imported more than once (stylecheck)
+	"github.com/stretchr/testify/mock"
+	^
+internal/handlers/auth_handler_test.go:17:2: ST1019(related information): other import of "github.com/stretchr/testify/mock" (stylecheck)
+	testifymock "github.com/stretchr/testify/mock"
+	^
+internal/handlers/approval_delegation_handler.go:233:2: assigned to canRevoke, but reassigned without using the value (wastedassign)
+	canRevoke := false
+	^

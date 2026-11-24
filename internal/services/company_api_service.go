@@ -770,14 +770,6 @@ func CalculatePenetrationDepth(shareholders []*Shareholder) int {
 	return maxDepth
 }
 
-// max 返回两个整数中的较大值
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
-
 // GetRiskLevelByShareholding 根据持股比例获取风险等级
 func GetRiskLevelByShareholding(ratio float64) string {
 	switch {

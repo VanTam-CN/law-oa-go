@@ -14,8 +14,8 @@ import (
 	migratedb "github.com/golang-migrate/migrate/v4/database"
 	"github.com/golang-migrate/migrate/v4/database/mysql"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
-	_ "github.com/lib/pq"
+	_ "github.com/golang-migrate/migrate/v4/source/file" // 注册 file:// 迁移源驱动（golang-migrate 约定）
+	_ "github.com/lib/pq"                                // 注册 postgres 驱动（database/sql 约定）
 
 	"law-oa-go/internal/config"
 )
@@ -265,7 +265,7 @@ func (m *Migrator) Up() error {
 	log.Println("开始执行数据库迁移...")
 
 	err := m.migrate.Up()
-	if err != nil && err != migrate.ErrNoChange {
+	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return fmt.Errorf("failed to run migrations: %w", err)
 	}
 
@@ -283,7 +283,7 @@ func (m *Migrator) Down() error {
 	log.Println("开始回滚数据库迁移...")
 
 	err := m.migrate.Down()
-	if err != nil && err != migrate.ErrNoChange {
+	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return fmt.Errorf("failed to rollback migrations: %w", err)
 	}
 
@@ -305,7 +305,7 @@ func (m *Migrator) Steps(n int) error {
 	}
 
 	err := m.migrate.Steps(n)
-	if err != nil && err != migrate.ErrNoChange {
+	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return fmt.Errorf("failed to run %d steps: %w", n, err)
 	}
 
@@ -323,7 +323,7 @@ func (m *Migrator) Goto(version uint) error {
 	log.Printf("开始迁移到版本 %d...", version)
 
 	err := m.migrate.Migrate(version)
-	if err != nil && err != migrate.ErrNoChange {
+	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return fmt.Errorf("failed to migrate to version %d: %w", version, err)
 	}
 
@@ -451,6 +451,9 @@ func (m *Migrator) GetAppliedMigrations() ([]uint, error) {
 			return nil, fmt.Errorf("failed to scan version: %w", err)
 		}
 		versions = append(versions, version)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed to read migrations: %w", err)
 	}
 
 	return versions, nil

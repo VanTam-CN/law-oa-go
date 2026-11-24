@@ -192,6 +192,9 @@ func (r *ConflictExtendedRepository) GetCompetitiveRelationsByIndustry(ctx conte
 		relations = append(relations, relation)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("读取查询结果失败: %w", err)
+	}
 	return relations, nil
 }
 
@@ -254,6 +257,9 @@ func (r *ConflictExtendedRepository) GetActiveConflictRules(ctx context.Context)
 		rules = append(rules, rule)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("读取查询结果失败: %w", err)
+	}
 	return rules, nil
 }
 
@@ -377,6 +383,9 @@ func (r *ConflictExtendedRepository) getTraditionalConflicts(ctx context.Context
 		conflicts = append(conflicts, &c)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("读取查询结果失败: %w", err)
+	}
 	return conflicts, nil
 }
 
@@ -429,6 +438,9 @@ func (r *ConflictExtendedRepository) getIndustryConflicts(ctx context.Context, r
 			c.ID, c.Title, c.ClientName, clientIndustry.String)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("读取查询结果失败: %w", err)
+	}
 	return conflicts, nil
 }
 
@@ -481,6 +493,9 @@ func (r *ConflictExtendedRepository) getClientNameConflicts(ctx context.Context,
 		conflicts = append(conflicts, &c)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("读取查询结果失败: %w", err)
+	}
 	return conflicts, nil
 }
 
@@ -566,6 +581,9 @@ func (r *ConflictExtendedRepository) scanCasesFromQuery(ctx context.Context, que
 		cases = append(cases, &c)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("读取查询结果失败: %w", err)
+	}
 	return cases, nil
 }
 
@@ -604,6 +622,9 @@ func (r *ConflictExtendedRepository) GetCheckHistory(ctx context.Context, client
 		history = append(history, &record)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("读取查询结果失败: %w", err)
+	}
 	return history, nil
 }
 

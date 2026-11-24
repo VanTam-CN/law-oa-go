@@ -663,8 +663,5 @@ func validateProductionSchema(db *gorm.DB) error {
 	if schemaVersion != database.ProductionSchemaVersion {
 		return fmt.Errorf("生产 schema 版本不受支持: %s；期望 %s", schemaVersion, database.ProductionSchemaVersion)
 	}
-	if err := database.ValidateProductionSchemaContract(db); err != nil {
-		return err
-	}
-	return nil
+	return database.ValidateProductionSchemaContract(db)
 }

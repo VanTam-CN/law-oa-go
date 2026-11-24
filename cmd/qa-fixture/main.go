@@ -349,10 +349,7 @@ func seedFixture(ctx context.Context, db *gorm.DB, passwordHash string) (seedRes
 		if err := upsertReviewerAssignment(tx, result); err != nil {
 			return err
 		}
-		if err := upsertApproval(tx, result); err != nil {
-			return err
-		}
-		return nil
+		return upsertApproval(tx, result)
 	})
 	if err != nil {
 		return result, err
@@ -845,14 +842,14 @@ func verifyFixture(ctx context.Context, db *gorm.DB) error {
 	}
 	var caseA, caseB models.Case
 	if err := db.WithContext(ctx).Where("case_number = ?", caseANumber).First(&caseA).Error; err != nil {
-		return fmt.Errorf("A 案不存在: %w", err)
+		return fmt.Errorf("案件 A 不存在: %w", err)
 	}
 	if err := db.WithContext(ctx).Where("case_number = ? AND ethical_wall_enabled = ?", caseBNumber, true).First(&caseB).Error; err != nil {
-		return fmt.Errorf("B 隔离案件不存在或隔离墙未开启: %w", err)
+		return fmt.Errorf("隔离案件 B 不存在或隔离墙未开启: %w", err)
 	}
 	var count int64
 	if err := db.WithContext(ctx).Model(&models.ConflictCheckRecord{}).Where("check_id = ? AND user_id = ? AND check_status = ?", checkID, caseA.LawyerID, "COMPLETED").Count(&count).Error; err != nil || count != 1 {
-		return fmt.Errorf("A 的冲突检测记录不符合预期: count=%d err=%w", count, err)
+		return fmt.Errorf("案件 A 的冲突检测记录不符合预期: count=%d err=%w", count, err)
 	}
 	if err := db.WithContext(ctx).Model(&models.ConflictReviewerAssignment{}).Where("check_id = ? AND status = ? AND recusal_declared = ?", checkID, models.ConflictReviewerAssignmentActive, true).Count(&count).Error; err != nil || count != 1 {
 		return fmt.Errorf("独立复核指定不符合预期: count=%d err=%w", count, err)

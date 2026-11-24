@@ -115,8 +115,12 @@ func (c *mcpClient) FetchLatestStandards(ctx context.Context) (*models.MCPStanda
 		if response != nil && response.Body != nil {
 			response.Body.Close()
 		}
-		var err error
-		response, err = c.httpClient.Do(req)
+		resp, err := c.httpClient.Do(req)
+		if resp != nil && err != nil {
+			resp.Body.Close() // 请求失败（含重定向错误）时立即释放响应体
+			return err
+		}
+		response = resp
 		return err
 	})
 	if err != nil {

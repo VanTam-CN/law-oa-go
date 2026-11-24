@@ -831,6 +831,7 @@ func (s *conflictDetectionService) checkClientRelationConflictsStrict(ctx contex
 		if err != nil {
 			return nil, fmt.Errorf("查询关联客户历史案件失败: %w", err)
 		}
+		defer rows.Close()
 
 		for rows.Next() {
 			var caseID uint
@@ -879,7 +880,9 @@ func (s *conflictDetectionService) checkClientRelationConflictsStrict(ctx contex
 
 			conflicts = append(conflicts, conflict)
 		}
-		rows.Close()
+		if err := rows.Err(); err != nil {
+			return nil, fmt.Errorf("读取关联客户历史案件结果失败: %w", err)
+		}
 	}
 
 	return conflicts, nil
@@ -963,6 +966,10 @@ func (s *conflictDetectionService) checkIndustryCompetitionConflicts(ctx context
 
 		lawyerCases = append(lawyerCases, caseModel)
 		lawyerClients[caseModel.ClientName] = caseModel.ClientType
+	}
+	if err := rows.Err(); err != nil {
+		log.Printf("⚠️ 读取律师案件查询结果失败: %v", err)
+		return conflicts
 	}
 
 	log.Printf("🔍 律师代理的客户数量: %d", len(lawyerClients))
@@ -1420,9 +1427,8 @@ func (s *conflictDetectionService) calculateTimeRiskFactor(hoursPassed float64) 
 		return "LOW_TIME_FACTOR"
 	} else if hoursPassed > 4380 { // 6个月
 		return "MEDIUM_TIME_FACTOR"
-	} else {
-		return "HIGH_TIME_FACTOR"
 	}
+	return "HIGH_TIME_FACTOR"
 }
 
 // determineFinalRiskLevel 确定最终风险等级

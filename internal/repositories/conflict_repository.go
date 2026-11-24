@@ -789,6 +789,9 @@ func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID
 		seenCaseIDs[conflictCase.CaseID] = struct{}{}
 		log.Printf("✅ 创建冲突案例: %s", conflictCase.ID)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("读取潜在冲突案例结果失败: %w", err)
+	}
 
 	// 如果提供了其他当事人信息，也查询全所相关案件。
 	if len(otherParties) > 0 {
@@ -880,6 +883,9 @@ func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID
 
 				conflictCases = append(conflictCases, conflictCase)
 				seenCaseIDs[caseID] = struct{}{}
+			}
+			if err := partyRows.Err(); err != nil {
+				return nil, fmt.Errorf("读取当事人案件结果失败: %w", err)
 			}
 			partyRows.Close()
 		}

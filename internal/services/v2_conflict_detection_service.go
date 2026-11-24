@@ -550,9 +550,8 @@ func (s *v2ConflictDetectionService) determineMatchType(pr *PoolMatchResult) str
 		return "direct"
 	} else if pr.MatchScore >= 0.5 {
 		return "indirect"
-	} else {
-		return "related"
 	}
+	return "related"
 }
 
 // extractRiskFactors 提取风险因素

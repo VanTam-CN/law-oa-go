@@ -14,7 +14,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	testifymock "github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/sqlite"
@@ -117,7 +116,7 @@ func TestAuthHandler_Login(t *testing.T) {
 		}
 
 		// 设置模拟期望 - 只调用FindByEmail，不需要FindByID
-		mockUserRepo.On("FindByEmail", testifymock.Anything, "test@example.com").Return(user, nil)
+		mockUserRepo.On("FindByEmail", mock.Anything, "test@example.com").Return(user, nil)
 
 		// 准备请求体
 		loginData := map[string]interface{}{
@@ -165,8 +164,8 @@ func TestAuthHandler_Login(t *testing.T) {
 		}
 
 		// 设置模拟期望 - 用户存在但密码错误
-		mockUserRepo.On("FindByEmail", testifymock.Anything, "Wrong.Password").Return(nil, repositories.ErrUserNotFound)
-		mockUserRepo.On("FindByUsername", testifymock.Anything, "Wrong.Password").Return(existingUser, nil)
+		mockUserRepo.On("FindByEmail", mock.Anything, "Wrong.Password").Return(nil, repositories.ErrUserNotFound)
+		mockUserRepo.On("FindByUsername", mock.Anything, "Wrong.Password").Return(existingUser, nil)
 
 		// 准备请求体 - 使用错误的密码
 		loginData := map[string]interface{}{
@@ -247,8 +246,8 @@ func TestAuthHandler_Login(t *testing.T) {
 		}
 
 		// 设置模拟期望
-		mockUserRepo.On("FindByEmail", testifymock.Anything, "Inactive.Account").Return(nil, repositories.ErrUserNotFound)
-		mockUserRepo.On("FindByUsername", testifymock.Anything, "Inactive.Account").Return(inactiveUser, nil)
+		mockUserRepo.On("FindByEmail", mock.Anything, "Inactive.Account").Return(nil, repositories.ErrUserNotFound)
+		mockUserRepo.On("FindByUsername", mock.Anything, "Inactive.Account").Return(inactiveUser, nil)
 
 		// 准备请求体
 		loginData := map[string]interface{}{
@@ -293,8 +292,8 @@ func TestAuthHandler_Login(t *testing.T) {
 			UpdatedAt: time.Now(),
 		}
 
-		mockUserRepo.On("FindByEmail", testifymock.Anything, "Lawyer.Wang").Return(nil, repositories.ErrUserNotFound)
-		mockUserRepo.On("FindByUsername", testifymock.Anything, "Lawyer.Wang").Return(user, nil)
+		mockUserRepo.On("FindByEmail", mock.Anything, "Lawyer.Wang").Return(nil, repositories.ErrUserNotFound)
+		mockUserRepo.On("FindByUsername", mock.Anything, "Lawyer.Wang").Return(user, nil)
 
 		loginData := map[string]interface{}{
 			"account":  "  Lawyer.Wang  ",
@@ -340,7 +339,7 @@ func TestAuthHandler_Login(t *testing.T) {
 			UpdatedAt: time.Now(),
 		}
 
-		mockUserRepo.On("FindByEmail", testifymock.Anything, "shared.account@example.test").Return(user, nil)
+		mockUserRepo.On("FindByEmail", mock.Anything, "shared.account@example.test").Return(user, nil)
 
 		loginData := map[string]interface{}{
 			"account":  "Shared.Account@example.test",
@@ -377,7 +376,7 @@ func TestAuthHandler_Login(t *testing.T) {
 			UpdatedAt: time.Now(),
 		}
 
-		mockUserRepo.On("FindByEmail", testifymock.Anything, "demo.lawyer@example.test").Return(user, nil)
+		mockUserRepo.On("FindByEmail", mock.Anything, "demo.lawyer@example.test").Return(user, nil)
 
 		loginData := map[string]interface{}{
 			"account":  "  Demo.Lawyer@Example.TEST  ",
@@ -475,8 +474,8 @@ func TestAuthHandler_Register(t *testing.T) {
 		}
 
 		// 设置模拟期望
-		mockUserRepo.On("FindByEmail", testifymock.Anything, "newuser@example.com").Return(nil, repositories.ErrUserNotFound)
-		mockUserRepo.On("Create", testifymock.Anything, testifymock.AnythingOfType("*models.User")).Return(nil)
+		mockUserRepo.On("FindByEmail", mock.Anything, "newuser@example.com").Return(nil, repositories.ErrUserNotFound)
+		mockUserRepo.On("Create", mock.Anything, mock.AnythingOfType("*models.User")).Return(nil)
 
 		// 准备请求体
 		registerData := map[string]interface{}{
@@ -518,7 +517,7 @@ func TestAuthHandler_Register(t *testing.T) {
 		}
 
 		// 设置模拟期望
-		mockUserRepo.On("FindByEmail", testifymock.Anything, "existing@example.com").Return(existingUser, nil)
+		mockUserRepo.On("FindByEmail", mock.Anything, "existing@example.com").Return(existingUser, nil)
 
 		// 准备请求体
 		registerData := map[string]interface{}{
@@ -581,9 +580,9 @@ func TestAuthHandler_Register(t *testing.T) {
 
 		// 公开注册不再接受 Role 字段；多余字段必须被忽略且持久化角色固定为 user。
 		var capturedUser *models.User
-		mockUserRepo.On("FindByEmail", testifymock.Anything, "roleuser@example.com").
+		mockUserRepo.On("FindByEmail", mock.Anything, "roleuser@example.com").
 			Return(nil, repositories.ErrUserNotFound)
-		mockUserRepo.On("Create", testifymock.Anything, testifymock.MatchedBy(func(u *models.User) bool {
+		mockUserRepo.On("Create", mock.Anything, mock.MatchedBy(func(u *models.User) bool {
 			capturedUser = u
 			return true
 		})).Return(nil).Once()
@@ -677,9 +676,9 @@ func TestAuthHandler_UpdateProfile(t *testing.T) {
 		}
 
 		// 设置模拟期望 - UpdateUser会调用GetUserProfile → FindByID，然后还会再次调用FindByID
-		mockUserRepo.On("FindByEmail", testifymock.Anything, "newemail@example.com").Return(nil, repositories.ErrUserNotFound)
-		mockUserRepo.On("Update", testifymock.Anything, testifymock.AnythingOfType("*models.User")).Return(nil)
-		mockUserRepo.On("FindByID", testifymock.Anything, uint(1)).Return(user, nil).Twice()
+		mockUserRepo.On("FindByEmail", mock.Anything, "newemail@example.com").Return(nil, repositories.ErrUserNotFound)
+		mockUserRepo.On("Update", mock.Anything, mock.AnythingOfType("*models.User")).Return(nil)
+		mockUserRepo.On("FindByID", mock.Anything, uint(1)).Return(user, nil).Twice()
 
 		// 准备请求体
 		updateData := map[string]interface{}{
@@ -799,8 +798,8 @@ func TestAuthHandler_ChangePassword(t *testing.T) {
 		}
 
 		// 设置模拟期望 - ChangePassword会调用FindByID
-		mockUserRepo.On("FindByID", testifymock.Anything, uint(1)).Return(user, nil)
-		mockUserRepo.On("Update", testifymock.Anything, testifymock.AnythingOfType("*models.User")).Return(nil)
+		mockUserRepo.On("FindByID", mock.Anything, uint(1)).Return(user, nil)
+		mockUserRepo.On("Update", mock.Anything, mock.AnythingOfType("*models.User")).Return(nil)
 
 		// 准备请求体
 		changePasswordData := map[string]interface{}{
@@ -847,7 +846,7 @@ func TestAuthHandler_ChangePassword(t *testing.T) {
 		}
 
 		// 设置模拟期望 - ChangePassword会调用FindByID
-		mockUserRepo.On("FindByID", testifymock.Anything, uint(1)).Return(user, nil)
+		mockUserRepo.On("FindByID", mock.Anything, uint(1)).Return(user, nil)
 
 		// 准备请求体
 		changePasswordData := map[string]interface{}{
@@ -898,7 +897,7 @@ func TestAuthHandler_ChangePassword(t *testing.T) {
 		}
 
 		// 设置模拟期望 - 弱密码验证失败时不会调用FindByID
-		// mockUserRepo.On("FindByID", testifymock.Anything, uint(1)).Return(user, nil)
+		// mockUserRepo.On("FindByID", mock.Anything, uint(1)).Return(user, nil)
 
 		// 准备请求体
 		changePasswordData := map[string]interface{}{

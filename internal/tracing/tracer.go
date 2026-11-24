@@ -18,12 +18,12 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/exporters/zipkin"
-	"go.opentelemetry.io/otel/trace"
-	"go.opentelemetry.io/otel/trace/noop"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 )
 
 // TracerConfig 追踪器配置
@@ -234,7 +234,7 @@ func createExporters(config *TracerConfig) ([]sdktrace.SpanExporter, error) {
 // createJaegerExporter 创建Jaeger导出器
 func createJaegerExporter(config *TracerConfig) (sdktrace.SpanExporter, error) {
 	if config.JaegerEndpoint == "" {
-		return nil, fmt.Errorf("Jaeger endpoint not configured")
+		return nil, fmt.Errorf("jaeger endpoint not configured")
 	}
 
 	return jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(config.JaegerEndpoint)))
@@ -243,7 +243,7 @@ func createJaegerExporter(config *TracerConfig) (sdktrace.SpanExporter, error) {
 // createZipkinExporter 创建Zipkin导出器
 func createZipkinExporter(config *TracerConfig) (sdktrace.SpanExporter, error) {
 	if config.ZipkinEndpoint == "" {
-		return nil, fmt.Errorf("Zipkin endpoint not configured")
+		return nil, fmt.Errorf("zipkin endpoint not configured")
 	}
 
 	return zipkin.New(config.ZipkinEndpoint)
@@ -356,19 +356,29 @@ func GetSpanID(span trace.Span) string {
 // 上下文工具函数
 // ==============================
 
+// contextKey 私有键类型：避免以基础类型作 context key（revive context-keys-type）
+type contextKey string
+
+const (
+	// TraceIDKey 上下文中的追踪 ID 键
+	TraceIDKey contextKey = "trace_id"
+	// SpanIDKey 上下文中的 span ID 键
+	SpanIDKey contextKey = "span_id"
+)
+
 // ContextWithTraceID 向上下文添加追踪ID
 func ContextWithTraceID(ctx context.Context, traceID string) context.Context {
-	return context.WithValue(ctx, "trace_id", traceID)
+	return context.WithValue(ctx, TraceIDKey, traceID)
 }
 
 // ContextWithSpanID 向上下文添加span ID
 func ContextWithSpanID(ctx context.Context, spanID string) context.Context {
-	return context.WithValue(ctx, "span_id", spanID)
+	return context.WithValue(ctx, SpanIDKey, spanID)
 }
 
 // GetTraceIDFromContext 从上下文获取追踪ID
 func GetTraceIDFromContext(ctx context.Context) string {
-	if traceID, ok := ctx.Value("trace_id").(string); ok {
+	if traceID, ok := ctx.Value(TraceIDKey).(string); ok {
 		return traceID
 	}
 	if span := trace.SpanFromContext(ctx); span != nil {
@@ -379,7 +389,7 @@ func GetTraceIDFromContext(ctx context.Context) string {
 
 // GetSpanIDFromContext 从上下文获取span ID
 func GetSpanIDFromContext(ctx context.Context) string {
-	if spanID, ok := ctx.Value("span_id").(string); ok {
+	if spanID, ok := ctx.Value(SpanIDKey).(string); ok {
 		return spanID
 	}
 	if span := trace.SpanFromContext(ctx); span != nil {

@@ -6,28 +6,13 @@
 #     的存量债台账，并以 follow-up 卡分批修复后逐个恢复门禁（ratchet）；
 #   - 所有 gosec 排除均逐条给出理由并立跟踪卡，不用 nolint 滥用、不削弱测试。
 # 基线证据：golangci-lint v1.64.8，治理前全仓 4131 条 findings（快照见 evidence 目录）。
+# gomnd 在 v1.64 已 fully inactivated（no-op），从门禁集移除；mnd 采纳记入债台账。
 
 run:
   # 超时时间 - 增加以支持更全面的分析
   timeout: 10m
   # 并发数 - 根据 CPU 核心数自动调整
   concurrency: 0
-  # 跳过的目录
-  skip-dirs:
-    - vendor
-    - tmp
-    - bin
-    - docs
-    - migrations
-    - node_modules
-    - dist
-    - build
-    - .git
-  # 跳过的文件
-  skip-files:
-    - ".*\\.pb\\.go$"
-    - ".*\\.gen\\.go$"
-    - ".*mock.*\\.go$"
   # 与 go.mod 对齐（原为 1.23 占位）
   go: "1.25"
   # 构建标签
@@ -37,19 +22,36 @@ run:
 
 # 输出配置
 output:
-  # 输出格式: colored-line-number|line-number|json|tab|checkstyle|code-climate
-  format: colored-line-number
+  # 输出格式（v1.64 弃用改名 formats）
+  formats:
+    - format: colored-line-number
   # 打印行号
   print-issued-lines: true
   # 打印检查器名称
   print-linter-name: true
-  # 去重
-  uniq-by-line: true
 
 # 问题配置
 issues:
   # 排除默认的排除规则
   exclude-use-default: false
+  # 跳过的目录（原 run.skip-dirs，v1.64 弃用改名）
+  exclude-dirs:
+    - vendor
+    - tmp
+    - bin
+    - docs
+    - migrations
+    - node_modules
+    - dist
+    - build
+    - .git
+  # 跳过的文件（原 run.skip-files）
+  exclude-files:
+    - ".*\\.pb\\.go$"
+    - ".*\\.gen\\.go$"
+    - ".*mock.*\\.go$"
+  # 去重（原 output.uniq-by-line）
+  uniq-by-line: true
   # 最大问题数量，0表示无限制
   max-issues-per-linter: 0
   max-same-issues: 0
@@ -98,6 +100,18 @@ issues:
       linters:
         - staticcheck
       text: "SA1019"
+    # G113 intake_native_transaction: big.Rat.SetString 的 CVE-2022-23772 已在 Go 1.17 stdlib 修复，
+    # 模块目标 go 1.25；且该函数已加 >64 字符入参护栏（t_088ba214 代码加固）。跟踪卡复核后移除本排除
+    - path: internal/handlers/intake_native_transaction\.go
+      linters:
+        - gosec
+      text: "G113"
+    # context-as-argument: 测试辅助函数 t *testing.T 第一参数是 Go 测试约定（该规则面向生产签名），
+    # 仅对测试文件放行；非测试代码仍强制 ctx 首参
+    - path: _test\.go
+      linters:
+        - revive
+      text: "context-as-argument"
 
 # 启用的检查器 — 治理后的门禁集（正确性/安全/错误处理/格式）
 linters:
@@ -134,7 +148,6 @@ linters:
     - reassign
     - nakedret
     - decorder
-    - gomnd
     - gomoddirectives
     - gomodguard
     - importas
@@ -174,32 +187,10 @@ linters-settings:
 
   # 代码评审配置
   gocritic:
-    # 启用的检查
+    # 启用的检查：仅列非默认项；appendAssign/assignOp/badCall 等约 23 项均为 gocritic
+    # 默认启用集（显式列出只会产生 no-need-to-enable 告警，行为不变）
     enabled-checks:
-      - appendAssign
-      - assignOp
-      - badCall
-      - badCond
-      - captLocal
-      - caseOrder
-      - defaultCaseOrder
-      - dupArg
-      - dupBranchBody
-      - dupCase
-      - dupSubExpr
-      - elseif
       - emptyFallthrough
-      - flagDeref
-      - regexpMust
-      - singleCaseSwitch
-      - sloppyLen
-      - switchTrue
-      - typeSwitchVar
-      - underef
-      - unlambda
-      - unslice
-      - valSwap
-      - wrapperFunc
     # ifElseChain / exitAfterDefer 属 gocritic 默认集，必须显式 disabled 才会真正关闭：
     #   - ifElseChain：纯风格改写、共享热文件 churn 大；债台账跟踪，批改后恢复
     #   - exitAfterDefer：命中点全部为 main/CLI 一次性进程的启动期 Fatal（进程退出即回收，
@@ -251,23 +242,6 @@ linters-settings:
       - colour
       - centre
       - licence
-
-  # 魔法数字检查配置
-  gomnd:
-    # 忽略的数字
-    ignored-numbers:
-      - '0'
-      - '1'
-      - '2'
-      - '3'
-      - '10'
-      - '100'
-      - '1000'
-    # 忽略的函数
-    ignored-functions:
-      - 'math.*'
-      - 'http.StatusText'
-      - 'make'
 
   # 导入别名检查配置 — no-unaliased 改为 false：
   # 代码库从未全面使用 gin/jwt/gorm 别名，no-unaliased: true 自初始提交即不可满足；

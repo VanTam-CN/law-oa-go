@@ -250,6 +250,9 @@ func (r *documentRepository) GetStats(ctx context.Context, viewerUserID uint) (*
 			Count    int64
 		}{category, count})
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	// 按实体类型统计（独立 session 复用 scope 条件）
 	entityRows, err := applyEthicalWallScope(r.db.WithContext(ctx).Model(&models.Document{}), viewerUserID).
@@ -274,6 +277,9 @@ func (r *documentRepository) GetStats(ctx context.Context, viewerUserID uint) (*
 			EntityType string
 			Count      int64
 		}{entityType, count})
+	}
+	if err := entityRows.Err(); err != nil {
+		return nil, err
 	}
 
 	// 最近上传统计（过去7天）

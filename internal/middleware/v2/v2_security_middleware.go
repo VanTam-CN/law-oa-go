@@ -362,11 +362,7 @@ func (sm *V2SecurityMiddleware) InputSanitizationMiddleware() gin.HandlerFunc {
 			c.Params[i].Value = sm.sanitizeInput(param.Value)
 		}
 
-		// 如果有POST数据，进行基本清理
-		if c.Request.Body != nil && c.Request.ContentLength > 0 {
-			// 注意：这里只是示例，实际应该基于Content-Type处理
-			// 因为中间件不应该修改请求体
-		}
+		// 中间件不修改请求体（原空转判断已删除；基于 Content-Type 的清理见债台账）
 
 		c.Next()
 	}

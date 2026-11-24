@@ -250,10 +250,7 @@ func (ls *LegalStatute) BeforeCreate(tx *gorm.DB) error {
 
 // BeforeUpdate GORM钩子 - 更新前
 func (ls *LegalStatute) BeforeUpdate(tx *gorm.DB) error {
-	// 如果内容发生变化，创建版本记录
-	if tx.Statement.Changed("Content") || tx.Statement.Changed("Title") {
-		// 这里可以添加版本记录逻辑
-	}
+	// 内容变化时的版本记录逻辑尚未实现（原空转判断已删除，债台账跟踪）
 	return nil
 }
 

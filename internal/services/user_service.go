@@ -111,13 +111,10 @@ func (s *UserService) CreateUser(ctx context.Context, req *CreateUserRequest) (*
 
 	// 检查邮箱是否已存在
 	existingUser, err := s.userRepo.FindByEmail(ctx, req.Email)
-	if err != nil {
-		if stderrors.Is(err, repositories.ErrUserNotFound) {
-			// 用户不存在，可以创建
-		} else {
-			return nil, errors.DatabaseError("check_email_existence", "Failed to check email existence", err)
-		}
+	if err != nil && !stderrors.Is(err, repositories.ErrUserNotFound) {
+		return nil, errors.DatabaseError("check_email_existence", "Failed to check email existence", err)
 	}
+	// ErrUserNotFound 视为用户不存在，可以创建
 	if existingUser != nil {
 		return nil, errors.BusinessError("email", "exists", "Email address already exists")
 	}
@@ -193,13 +190,10 @@ func (s *UserService) UpdateUser(ctx context.Context, userID uint, req *UpdateUs
 	// 检查邮箱是否已被其他用户使用
 	if req.Email != nil && *req.Email != user.Email {
 		existingUser, err := s.userRepo.FindByEmail(ctx, *req.Email)
-		if err != nil {
-			if stderrors.Is(err, repositories.ErrUserNotFound) {
-				// 邮箱不存在，可以使用
-			} else {
-				return nil, errors.DatabaseError("check_email_existence", "Failed to check email existence", err)
-			}
+		if err != nil && !stderrors.Is(err, repositories.ErrUserNotFound) {
+			return nil, errors.DatabaseError("check_email_existence", "Failed to check email existence", err)
 		}
+		// ErrUserNotFound 视为邮箱不存在，可以使用
 		if existingUser != nil && existingUser.ID != userID {
 			return nil, errors.BusinessError("email", "exists", "Email already exists")
 		}
@@ -433,13 +427,10 @@ func (s *UserService) createSingleUser(ctx context.Context, req *CreateUserReque
 
 	// 检查邮箱是否已存在
 	existingUser, err := s.userRepo.FindByEmail(ctx, req.Email)
-	if err != nil {
-		if stderrors.Is(err, repositories.ErrUserNotFound) {
-			// 用户不存在，可以创建
-		} else {
-			return errors.DatabaseError("check_email_existence", "Failed to check email existence", err)
-		}
+	if err != nil && !stderrors.Is(err, repositories.ErrUserNotFound) {
+		return errors.DatabaseError("check_email_existence", "Failed to check email existence", err)
 	}
+	// ErrUserNotFound 视为用户不存在，可以创建
 	if existingUser != nil {
 		return errors.BusinessError("email", "exists", "Email address already exists")
 	}
@@ -541,13 +532,10 @@ func (s *UserService) updateSingleUser(ctx context.Context, userID uint, req *Up
 	// 检查邮箱是否已被其他用户使用
 	if req.Email != nil && *req.Email != user.Email {
 		existingUser, err := s.userRepo.FindByEmail(ctx, *req.Email)
-		if err != nil {
-			if stderrors.Is(err, repositories.ErrUserNotFound) {
-				// 邮箱不存在，可以使用
-			} else {
-				return errors.DatabaseError("check_email_existence", "Failed to check email existence", err)
-			}
+		if err != nil && !stderrors.Is(err, repositories.ErrUserNotFound) {
+			return errors.DatabaseError("check_email_existence", "Failed to check email existence", err)
 		}
+		// ErrUserNotFound 视为邮箱不存在，可以使用
 		if existingUser != nil && existingUser.ID != userID {
 			return errors.BusinessError("email", "exists", "Email already exists")
 		}
