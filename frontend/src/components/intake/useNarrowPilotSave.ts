@@ -13,6 +13,11 @@ type Receipt = {
 type Pending = { request_id: string; action: 'update'; intake_id: string }
 type Selection = { description: string; value: NarrowPilotApplySelection }
 
+const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i
+export function isIntakeRevision(value: unknown, intakeID: string): boolean {
+  return typeof value === 'string' && (uuid.test(value) || value === 'legacy-' + intakeID)
+}
+
 // MI-R08: a terminal receipt must prove it belongs to this pending request.
 // request_id is required; the receipt object field is `id` and must match the
 // pending intake_id; `action` is optional and compared only when present.
@@ -21,9 +26,7 @@ function receiptMatchesPending(receipt: Receipt, pending: Pending): boolean {
   if (receipt.id !== pending.intake_id) return false
   if (receipt.action !== undefined && receipt.action !== pending.action) return false
   if (receipt.state === 'abandoned') return true
-  return ['committed', 'no_change'].includes(receipt.state) && typeof receipt.revision === 'string' &&
-    (/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(receipt.revision) ||
-      receipt.revision === 'legacy-' + pending.intake_id)
+  return ['committed', 'no_change'].includes(receipt.state) && isIntakeRevision(receipt.revision, pending.intake_id)
 }
 
 export function sameExceptDescription(a: string, b: string): boolean {
@@ -59,7 +62,7 @@ export function useNarrowPilotSave(props: {
     if (raw === null) return null
     const item = JSON.parse(raw)
     if (item?.action !== 'update' || item.intake_id !== intakeID || typeof item.request_id !== 'string' ||
-        !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(item.request_id) ||
+        !uuid.test(item.request_id) ||
         (key !== legacyScope && key !== recordKey(item.request_id))) {
       throw new Error('恢复标识无法核对，请保留原请求标识联系管理员。')
     }

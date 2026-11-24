@@ -19,8 +19,13 @@ async function loginAndOpenDraft(page: Page) {
   await page.getByPlaceholder('密码').fill(password!)
   await page.locator('button[type=submit]').click()
   await expect(page).toHaveURL(/dashboard/)
-  await page.getByRole('button', { name: '继续草稿：' + seed.target_title, exact: true }).click()
-  await expect(page).toHaveURL(new RegExp('draft_id=' + seed.target))
+  await page.getByRole('button', { name: /新建立案$/ }).click()
+  await page.getByRole('button', { name: '打开服务端草稿', exact: true }).click()
+  const restored = page.waitForResponse(r => r.request().method() === 'GET' &&
+    new URL(r.url()).pathname === '/api/v1/case-intakes/' + seed.target)
+  await page.getByRole('button', { name: seed.target_title, exact: true }).click()
+  expect((await restored).status()).toBe(200)
+  await expect(page.locator('#intake-title')).toHaveValue(seed.target_title)
   await expect(page.locator('#intake-description')).not.toHaveValue('')
 }
 
@@ -180,4 +185,13 @@ test('生成期间保留未发送输入；人工摘要不被候选静默覆盖',
   expect(manual.status()).toBe(200)
   expect(manual.request().postDataJSON().source_selection).toBeUndefined()
   await expect(page.getByText('当前版本尚无已保存来源', { exact: true })).toBeVisible()
+  // Even after manual unlink, history still prevents a mixed edit from becoming a full PUT.
+  page.on('request', listener)
+  await page.locator('#intake-title').fill('虚构的未保存标题')
+  await page.getByRole('button', { name: '保存草稿', exact: true }).click()
+  await expect(page.getByText(/此草稿已有来源保护，仅支持严格摘要保存/).first()).toBeVisible()
+  expect(writes).toBe(0)
+  await expect(page.locator('#intake-title')).toHaveValue('虚构的未保存标题')
+  page.off('request', listener)
+
 })

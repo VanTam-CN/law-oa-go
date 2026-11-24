@@ -82,6 +82,7 @@ const LoginPage: React.FC = () => {
           username: userData.username || userData.email,
           realName: userData.name || userData.real_name || userData.username || userData.email,
           email: userData.email,
+          role: userData.role,
           roles: roleCodes,
           permissions: permissionCodes,
           phone: userData.phone,
@@ -94,10 +95,7 @@ const LoginPage: React.FC = () => {
         appStoreLogin(user, token)
         message.success('登录成功')
 
-        // 等待一下让状态更新完成
-        setTimeout(() => {
-          navigate('/')
-        }, 500)
+        navigate('/')
       } else {
         throw new Error('未获取到有效的登录凭证')
       }

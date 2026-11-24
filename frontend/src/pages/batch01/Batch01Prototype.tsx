@@ -15,6 +15,9 @@ import {
   Tooltip,
   Upload,
 } from 'antd'
+import NarrowPilotAssistant from '@/components/intake/NarrowPilotAssistant'
+import { useNarrowPilotSave } from '@/components/intake/useNarrowPilotSave'
+import { narrowPilotIntakeEligibility, projectionWithDescription } from '@/pages/batch01/narrowPilotI13'
 import {
   AlertOutlined,
   ApartmentOutlined,
@@ -263,8 +266,22 @@ interface SettingsOverviewPayload {
 interface ApiEnvelope<T> {
   success?: boolean
   data?: T
-  error?: { message?: string } | string
+  error?: { message?: string; code?: string } | string
   message?: string
+}
+
+// Narrow-pilot resolves use error status and code to distinguish terminal
+// 409 conflicts from unknown failures. Existing catch sites keep working
+// because ApiRequestError still exposes a normal `message`.
+export class ApiRequestError extends Error {
+  status?: number
+  code?: string
+  constructor(message: string, status?: number, code?: string) {
+    super(message)
+    this.name = 'ApiRequestError'
+    this.status = status
+    this.code = code
+  }
 }
 
 function listOf<T>(items: T[] | undefined | null): T[] {
@@ -1281,6 +1298,22 @@ export function persistableCaseIntakeDraft(form: IntakeFormState) {
   }
 }
 
+// Narrow-pilot dirty detection compares this projection against the snapshot
+// anchored at the last successful server save. Every user-editable field
+// participates — including the sensitive identity number, which lives only
+// in memory — so a mixed edit (title, opponent identity, fees, ...) can
+// never pass as a strict description-only change. The server-managed tokens
+// are excluded: they change on every save and restore, which would break
+// the anchor without representing any user content change.
+export function buildIntakeSavedProjection(
+  form: IntakeFormState,
+  relatedParties: IntakeRelatedParty[],
+  caseTags: string[],
+) {
+  const { intakeId, intakeCode, idempotencyKey, revision, ...editable } = form
+  return JSON.stringify({ form: editable, relatedParties, caseTags })
+}
+
 // intakeFormFromServer maps a restored workbench row onto the editable
 // form. Protected identity values are deliberately not copied: the server
 // redacts ciphertext, digest and raw metadata at the API boundary, and the
@@ -1445,7 +1478,8 @@ async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T
   if (!response.ok || body.success === false) {
     const error =
       body.message || (typeof body.error === 'string' ? body.error : body.error?.message)
-    throw new Error(error || `API 请求失败：${response.status}`)
+    throw new ApiRequestError(error || `API 请求失败：${response.status}`, response.status,
+      typeof body.error === 'object' ? body.error?.code : undefined)
   }
   return (body.data ?? body) as T
 }
@@ -4236,6 +4270,14 @@ export function CaseIntakeWorkbench() {
   }, [draftKey])
   const [form, setForm] = React.useState<IntakeFormState>({ ...defaultIntakeForm })
   const [draftActive, setDraftActive] = React.useState(false)
+  // The last payload the server accepted for this draft. It anchors the
+  // narrow-pilot dirty check: only the description diverging from here is
+  // eligible for a description-only save.
+  const [lastServerSavedProjection, setLastServerSavedProjection] = React.useState('')
+  // Whether this draft ever carried a narrow-pilot source, as reported by
+  // the server detail (has_source_history). Unknown until a restore reads it.
+  const sourceHistoryRef = React.useRef(false)
+  const sourceHistoryKnownRef = React.useRef(false)
   const [sourceCase, setSourceCase] = React.useState<Record<string, any> | null>(null)
   const [runtime, setRuntime] = React.useState<IntakeRuntimeState>({ apiTimings: [] })
   const [submitting, setSubmitting] = React.useState(false)
@@ -4254,6 +4296,18 @@ export function CaseIntakeWorkbench() {
   const [tagDraft, setTagDraft] = React.useState('')
   const [clientOptions, setClientOptions] = React.useState<ClientOption[]>([])
   const [lawyerOptions, setLawyerOptions] = React.useState<LawyerOption[]>([])
+  const currentProjection = buildIntakeSavedProjection(form, relatedParties, caseTags)
+  const currentProjectionRef = React.useRef(currentProjection)
+  currentProjectionRef.current = currentProjection
+  const narrowPilot = useNarrowPilotSave({
+    actorID: currentUserID,
+    intakeID: form.intakeId,
+    revision: form.revision,
+    description: form.description,
+    projection: currentProjection,
+    baseline: lastServerSavedProjection,
+    apiRequest,
+  })
 
   const partyInputs = (draft: IntakeFormState, related: IntakeRelatedParty[]) =>
     JSON.stringify([draft.clientId,draft.clientName,draft.opponentName,draft.opponentEntityType,
@@ -4478,6 +4532,11 @@ export function CaseIntakeWorkbench() {
     const restored = intakeDraftFromServer(payload)
     setForm(restored)
     setStoredDraft(null)
+    // The server-owned source-history fact and a fresh anchor travel
+    // together with every restore: unknown history means later saves must
+    // be blocked, and the anchor reflects what the user actually sees.
+    sourceHistoryRef.current = payload.has_source_history === true
+    sourceHistoryKnownRef.current = typeof payload.has_source_history === 'boolean'
     // Restore every editable projection so an unedited save resends the same
     // values instead of wiping stored rows with empty defaults.
     const parties = listOf<Record<string, any>>(payload.parties)
@@ -4496,6 +4555,7 @@ export function CaseIntakeWorkbench() {
       .filter(Boolean)
     savedTags.current = JSON.stringify(restoredTags)
     setCaseTags(restoredTags)
+    setLastServerSavedProjection(buildIntakeSavedProjection(restored, restoredRelated, restoredTags))
     setRuntime((current) => ({
       ...current,
       intake: {
@@ -4503,6 +4563,7 @@ export function CaseIntakeWorkbench() {
         intake_code: restored.intakeCode,
         revision: restored.revision,
         status: payload.intake?.status,
+        created_by: payload.intake?.created_by,
       },
       conflict: undefined,
       conflictTask: undefined,
@@ -4680,26 +4741,62 @@ export function CaseIntakeWorkbench() {
     if (existingIntakeID && localRestore.current && !savedPartyStructure.current) {
       throw new Error('本机内容已保留。请先重新打开服务端草稿，核对对象和版本后再保存。')
     }
-    const body = buildIntakePayload(Boolean(existingIntakeID))
-    const saved = await apiRequest<any>(
+    // I13 strict description-only branch: every gate is re-checked at
+    // click time from live state. The server still enforces identity,
+    // ownership, draft status and revision on the actual request.
+    const decision = narrowPilotIntakeEligibility({
+      isAssistant,
+      isSupplementMode,
+      intakeID: existingIntakeID,
+      revision: form.revision,
+      currentUserID,
+      role: activeUser?.id === currentUserID ? activeUser.role : undefined,
+      userIsActive: activeUser?.isActive === true,
+      ownerID: recordValue(runtime.intake).created_by,
+      intakeStatus: textValue(runtime.intake?.status, '') || undefined,
+      projection: currentProjectionRef.current,
+      baseline: lastServerSavedProjection,
+      hasSourceHistory: sourceHistoryRef.current,
+      sourceHistoryKnown: sourceHistoryKnownRef.current,
+    })
+    const submittedProjection = currentProjectionRef.current
+    const descriptionOnly = decision.mode === 'strict'
+    if (decision.mode === 'blocked') throw new Error(decision.reason)
+    if (narrowPilot.pending && !descriptionOnly) throw new Error('原摘要保存尚待核实，请先回查或明确结束原保存')
+    if (narrowPilot.selection && !descriptionOnly) throw new Error('首切片只支持摘要整理；请先核对其他人工改动，不能混入全量保存')
+    const saved = descriptionOnly && existingIntakeID ? await narrowPilot.save() : await apiRequest<any>(
       existingIntakeID ? `/case-intakes/${existingIntakeID}` : '/case-intakes',
       {
         method: existingIntakeID ? 'PUT' : 'POST',
         headers: existingIntakeID ? undefined : { 'Idempotency-Key': idempotencyKey },
-        body: JSON.stringify(body),
+        body: JSON.stringify(buildIntakePayload(Boolean(existingIntakeID))),
       },
     )
     if (!current()) return
     if (!saved?.id || !saved?.revision || (existingIntakeID && textValue(saved.id, '') !== existingIntakeID)) {
       throw new Error('保存回执缺少草稿编号或版本，请从服务端草稿列表核对。')
     }
+    if (!existingIntakeID) {
+      sourceHistoryKnownRef.current = typeof saved.has_source_history === 'boolean'
+      sourceHistoryRef.current = saved.has_source_history === true
+    } else if (descriptionOnly && saved.source_revision) {
+      sourceHistoryKnownRef.current = true
+      sourceHistoryRef.current = true
+    }
     savedTags.current = JSON.stringify(caseTags)
     savedOpponentAliases.current = form.opponentAliases
     savedPartyStructure.current = partyStructure(form, relatedParties)
     savedPartyInputs.current = partyInputs(form, relatedParties)
+    if (!descriptionOnly) {
+      setLastServerSavedProjection(submittedProjection)
+    } else {
+      // A strict save only moved the description; the next anchor equals the
+      // previous anchor with that description swapped in.
+      setLastServerSavedProjection(projectionWithDescription(lastServerSavedProjection, form.description))
+    }
     const intake = existingIntakeID ? { ...runtime.intake, ...saved, id: existingIntakeID } : saved
     recordTiming(existingIntakeID ? '更新接案' : '创建接案', startedAt)
-    const invalidated = saved.status === 'draft' || saved.status === 'assistant_draft'
+    const invalidated = descriptionOnly || saved.status === 'draft' || saved.status === 'assistant_draft'
     if (invalidated) savedFactsEpoch.current++
     setRuntime((current) => ({
       ...current,
@@ -5039,6 +5136,8 @@ export function CaseIntakeWorkbench() {
     // revision can establish which opponent and aliases had already been saved.
     let baseline: IntakeFormState | undefined
     let restoredRelated: IntakeRelatedParty[] = []
+    let verifiedIntake: Record<string, any> | undefined
+    let verifiedHistory: boolean | undefined
     if (storedDraft.intakeId && storedDraft.revision) {
       try {
         const payload = await apiRequest<any>(`/case-intakes/${encodeURIComponent(storedDraft.intakeId)}`)
@@ -5046,6 +5145,8 @@ export function CaseIntakeWorkbench() {
         if (server.intakeId === storedDraft.intakeId && server.revision === storedDraft.revision) {
           baseline = server
           restoredRelated = relatedFromServer(payload)
+          verifiedIntake = payload.intake
+          verifiedHistory = payload.has_source_history
         }
       } catch {
         // Keep the local edits readable. A save requires a verified revision.
@@ -5055,7 +5156,9 @@ export function CaseIntakeWorkbench() {
           liveEditor.current.relatedParties !== atRequest.relatedParties ||
           liveEditor.current.caseTags !== atRequest.caseTags) return
     }
-    setRuntime({ apiTimings: [] })
+    sourceHistoryRef.current = verifiedHistory === true
+    sourceHistoryKnownRef.current = typeof verifiedHistory === 'boolean'
+    setRuntime({ apiTimings: [], intake: verifiedIntake })
     setRelatedParties(restoredRelated)
     setCaseTags([])
     savedTags.current = '[]'
@@ -5066,6 +5169,9 @@ export function CaseIntakeWorkbench() {
     setForm(storedDraft)
     setDraftActive(true)
     setStoredDraft(null)
+    if (baseline) {
+      setLastServerSavedProjection(buildIntakeSavedProjection(baseline, restoredRelated, []))
+    }
     message.success(storedDraft.opponentIdentityNumber ? '已恢复本机草稿' : firstRunGuidance.restoreNotice)
   }
 
@@ -5411,6 +5517,24 @@ export function CaseIntakeWorkbench() {
                     onChange={(event) => updateForm('description', event.target.value)}
                   />
                 </div>
+              {!isAssistant && !isSupplementMode && form.intakeId && form.revision && (
+                <NarrowPilotAssistant
+                  key={`${currentUserID}:${form.intakeId}:${form.revision}`}
+                  intakeId={form.intakeId} revision={form.revision} description={form.description}
+                  apiRequest={apiRequest} onInvalidate={narrowPilot.invalidate}
+                  onApply={(text, selection) => { updateForm('description', text); narrowPilot.apply(text, selection) }}
+                />
+              )}
+              {(narrowPilot.notice || narrowPilot.pending) && (
+                <Alert type='warning' showIcon message={narrowPilot.notice || '原保存结果待核实'} description={(
+                  <Space wrap>
+                    {narrowPilot.confirmManual && <Button onClick={narrowPilot.acceptManual}>改为人工摘要保存（不关联来源）</Button>}
+                    {narrowPilot.pending && <Button loading={narrowPilot.busy} onClick={() => void narrowPilot.query()}>回查原保存结果</Button>}
+                    {narrowPilot.pending && <Button disabled={narrowPilot.busy} onClick={() => Modal.confirm({ title: '结束原保存并核实结果', content: '这不会撤销已提交内容。若原保存尚未提交，将阻止迟到原请求再写入。', onOk: narrowPilot.abandon })}>结束原保存并核实结果</Button>}
+                    <Button onClick={() => { if (form.intakeId) { apiRequest<any>(`/case-intakes/${form.intakeId}`).then((payload) => applyServerDraftPayload(payload)).catch((error) => message.error(error instanceof Error ? error.message : '恢复服务端草稿失败')) } }}>重新加载服务端草稿</Button>
+                  </Space>
+                )} />
+              )}
                 <div className='batch-form-grid five'>
                   <div className='batch-field'>
                     <label htmlFor='intake-investment-date'>投资协议签署日</label>

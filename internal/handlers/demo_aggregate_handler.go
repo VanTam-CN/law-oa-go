@@ -30,6 +30,7 @@ type DemoAggregateHandler struct {
 	conflictService services.ConflictDetectionService
 	contactService  *services.ClientContactService
 	authz           *services.AuthorizationService
+	narrowPilot     *NarrowPilotHandler
 }
 
 var allowedAssistantDraftFields = map[string]struct{}{
@@ -384,6 +385,8 @@ func (h *DemoAggregateHandler) IntakeWorkbench(c *gin.Context) {
 		}
 		response["related_parties"] = related
 	}
+	// Leave history unknown on read failure. Validate the revision after both reads.
+	hasSourceHistory, hasSourceHistoryErr := intakeSourceHistory(h.db.WithContext(c.Request.Context()), id)
 	// The projection spans multiple queries. Reject a mixed-version read.
 	var current map[string]interface{}
 	if err := h.db.WithContext(c.Request.Context()).Table("case_intakes").Select("metadata").Where("id = ?", id).Take(&current).Error; err != nil {
@@ -394,7 +397,16 @@ func (h *DemoAggregateHandler) IntakeWorkbench(c *gin.Context) {
 		common.NewAPIError(c, http.StatusConflict, "INTAKE_DRAFT_REVISION_CONFLICT", "接案已更新，请重新打开")
 		return
 	}
+	if hasSourceHistoryErr == nil {
+		response["has_source_history"] = hasSourceHistory || valueString(objectValue(current["metadata"]), npDescriptionSourceRevisionKey) != ""
+	}
 	common.APISuccess(c, response)
+}
+
+func intakeSourceHistory(db *gorm.DB, id string) (bool, error) {
+	var exists bool
+	err := db.Raw("SELECT EXISTS(SELECT 1 FROM case_intake_source_snapshots WHERE intake_id = ?)", id).Scan(&exists).Error
+	return exists, err
 }
 
 func (h *DemoAggregateHandler) ApprovalsWorkbench(c *gin.Context) {
@@ -2004,6 +2016,7 @@ func (h *DemoAggregateHandler) CreateCaseIntake(c *gin.Context) {
 	for _, party := range parties {
 		safeParties = append(safeParties, sanitizeAggregateRow("case_intake_parties", party))
 	}
+	intakePayload["has_source_history"] = false
 	intakePayload["revision"] = nextRevision
 	intakePayload["parties"] = safeParties
 	safeMaterials := make([]map[string]interface{}, 0, len(materials))
@@ -2025,6 +2038,9 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 	decoder.UseNumber()
 	if err := decoder.Decode(&rawPayload); err != nil || rawPayload == nil {
 		common.APIBadRequest(c, "请求参数错误", "需要 JSON 对象")
+		return
+	}
+	if h.narrowPilot != nil && h.narrowPilot.HandleUpdate(c, rawPayload) {
 		return
 	}
 	parties := mapSliceValue(rawPayload["parties"])
@@ -2128,8 +2144,8 @@ func (h *DemoAggregateHandler) UpdateCaseIntake(c *gin.Context) {
 			common.APIErrorWithContext(c, http.StatusConflict, "INTAKE_DRAFT_REVISION_CONFLICT", "草稿已被其他页面更新", map[string]interface{}{"current_revision": current})
 			return gorm.ErrInvalidTransaction
 		}
-		var history bool
-		if err := tx.Raw("SELECT EXISTS(SELECT 1 FROM case_intake_source_snapshots WHERE intake_id = ?)", id).Scan(&history).Error; err != nil {
+		history, err := intakeSourceHistory(tx, id)
+		if err != nil {
 			common.NewAPIError(c, http.StatusServiceUnavailable, "SAVE_RESULT_UNKNOWN", "无法核实来源历史，已停止保存")
 			return err
 		}

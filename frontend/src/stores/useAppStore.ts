@@ -14,6 +14,7 @@ export interface User {
   email: string
   realName: string
   avatar?: string
+  role?: string
   roles: string[]
   permissions: string[]
   department?: string
