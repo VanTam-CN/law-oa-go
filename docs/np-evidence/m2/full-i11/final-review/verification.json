@@ -1,0 +1,123 @@
+{
+  "evidence_id": "np-m2-full-i11-final-review",
+  "task_id": "t_d83a4c85",
+  "generated_at": "2026-11-24T11:40:00Z",
+  "repository": "VanTam-CN/law-oa-go",
+  "branch_under_test": "codex/np-main-i11 (gate line), codex/np-main-m2 (evidence line)",
+  "worktree_baseline": "bfcb7de19713139fd73fa6c3230eba8ff0c1e634",
+  "scope": "Aggregate verdict for the complete I11 gate and its real-event execution; classify every failure observed on real PR/push/dispatch event runs as pre-existing (historical) or new, against the recorded historical PGO/CI failure records; archive all prerequisite and early evidence with checksums.",
+  "observation_window": {
+    "hosted_gate_window": "2026-11-24T10:47:35Z to ~11:16Z (t_b938e756)",
+    "this_review_snapshot": "2026-11-24T11:31:48Z to 11:40:00Z",
+    "no_new_runs_after_window_close": true
+  },
+  "failure_classification": [
+    {
+      "id": "F1",
+      "failure": "run 45378121147 (push, head 076f7e7f, np-i11 full) job 'np-i11 (full)' failure",
+      "signature": "json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0) at scripts/np-ci/check-i11-tests.py:48",
+      "classification": "new",
+      "basis": "checker introduced in the same 076f7e7 commit; full-i11.sh merged stderr tool diagnostics into the structured go test -json stream; underlying product go suites exited rc=0. Signature absent from every pre-window evidence file (repo-wide grep: JSONDecodeError only in docs/np-evidence/m2/full-i11 hosted artifacts) and from all historical records H1-H6.",
+      "evidence": "raw snapshot docs/np-evidence/m2/full-i11/hosted/raw/diag-157-full.log lines 13-15",
+      "resolution": "fixed at 0ca6eb2c (run_step separates stderr into its own file); subsequent full runs 45379241429 and 45379855010 GREEN"
+    },
+    {
+      "id": "F2",
+      "failure": "run 45378568403 (push, head 374146ce, np-i11 full) job 'np-i11 (full)' failure",
+      "signature": "identical JSONDecodeError traceback at check-i11-tests.py:48 (deterministic reproduction of F1)",
+      "classification": "new (same defect as F1)",
+      "basis": "identical error signature and stack line; same checker commit lineage; no historical signature match",
+      "evidence": "raw/diag-159-full.log",
+      "resolution": "same fix 0ca6eb2c"
+    },
+    {
+      "id": "F3",
+      "failure": "negative dispatch events 45378128854 / 45378578245 / 45379251327 / 45379862576 (4x8 probes) all failure",
+      "signature": "each job hits its required distinct diagnostic: M2_PG_UNAVAILABLE, M2_DSN_MISSING, M2_REQUIRED_TEST_SKIPPED, M2_REQUIRED_TEST_MISSING, M2_NO_TESTS, I11_FUZZ_PREFLIGHT_REJECTED, I11_FUZZ_SUMMARY_REJECTED fuzz-selected-failed, I11_FUZZ_SUMMARY_REJECTED fuzz-missing-proof; exit code 1",
+      "classification": "by-design expected red (validation instrument, not a defect; excluded from the pre-existing/new defect taxonomy by definition)",
+      "basis": "32/32 probes hit the required distinct diagnostics exactly as the negative matrix demands; readable errors; no collateral failures in the run outputs",
+      "evidence": "docs/np-evidence/m2/full-i11/hosted/README.md event table + verification.json hosted_events",
+      "resolution": "n/a (expected behaviour)"
+    },
+    {
+      "id": "F4",
+      "failure": "run 45334857440 (pull_request event, PR #49 codex/np-main-m2 -> main, head 448047e3, temp probe PR, closed) job 'Code Quality' step 'code format check' failure",
+      "signature": "gofumpt -w -s . && git diff --exit-code returned exit 1: formatting diffs in tests/integration/m1/workbench_approval_browser_test.go (0600 -> 0o600) and long []string literal wrapping in M1-era test files",
+      "classification": "pre-existing (historical legacy formatting drift)",
+      "basis": "448047e3 is a docs-only commit and did not touch Go sources; local first-hand reproduction at bfcb7de1 (same Go content as 448047e3): gofumpt -l flags 5 tests/ files and 139 internal/ legacy files, while plain gofmt -l tests/ is clean (drift is gofumpt-specific rules); failing files last modified by M1-era commits (e.g. f72b1aa, 54f826c); drift predates every commit in the observed window; job is the retained legacy quality check of the pilot-PR isolation design, not part of the np-i11 gate.",
+      "evidence": "snapshots/pr49-run-45334857440.json, snapshots/pr49-run-45334857440-failed.tail220.log, snapshots/gofumpt-local-reproduction.txt",
+      "resolution": "not fixed on this line (legacy check, out of I11 scope); registered as follow-up"
+    },
+    {
+      "id": "F5",
+      "failure": "run 45334868179 (pull_request event, PR #50 codex/np-main-m3 -> main, head c9415b81, temp probe PR, closed) job 'Code Quality' step 'code format check' failure",
+      "signature": "identical gofumpt -w -s . failure; log contains 0o600 diffs and exit code 1",
+      "classification": "pre-existing (same historical legacy drift as F4)",
+      "basis": "same step, same tool, same legacy drift; head c9415b81 is an M3-era probe head; no historical record entry matches a format-check failure, but the drift source (legacy Go tree) predates the window",
+      "evidence": "snapshots/pr50-run-45334868179.json, snapshots/pr50-run-45334868179-failed.tail220.log",
+      "resolution": "not fixed on this line; registered as follow-up"
+    }
+  ],
+  "not_failures_recorded": [
+    {"item": "cancelled runs 45334857552/45334857366/45334857410 (PR #49) and 5 cancelled runs (PR #50)", "reason": "cancelled is not a failure; concurrent sibling workflows cancelled alongside the same event"},
+    {"item": "PR #48 (codex/np-main-m2 -> codex/np-main-m1, head bfcb7de1)", "reason": "zero pull_request workflow triggers by design: ci.yml pull_request filter is [main, develop]; base m1 not matched; documented boundary, not a skipped gate"},
+    {"item": "PR #51 (codex/np-main-i11 -> codex/np-main-m4)", "reason": "zero pull_request workflow triggers by design (filter main/develop, pgo main); head check-runs all originate from the recorded push/dispatch events; mergeable state now CLEAN/MERGEABLE at head 309d1dd4 (fresh snapshot snapshots/pr51-fresh.json)"},
+    {"item": "byproduct run 45382638826 (push bfcb7de1 on codex/np-main-m2, np-m2-early)", "reason": "conclusion success, np-m2-early (normal) job success (fresh snapshot snapshots/byproduct-run-45382638826-m2.json)"},
+    {"item": "byproduct run 45381532273 (push 309d1dd4 docs binding on codex/np-main-i11, np-i11 full)", "reason": "conclusion success (fresh snapshot snapshots/byproduct-run-45381532273-i11.json); first-hand verified by this review, previously unrecorded"}
+  ],
+  "comparison_baseline_historical_records": [
+    {"id": "H1", "record": "fuzzing.yml workflow-file failures", "runs": [44508335288, 45159753188], "signature": "jobs=0 / check-runs=0, 'likely workflow file issue'", "refs": "docs/plans/np-main-integration/remote-observation.json; docs/plans/np-main-integration/ci-review.md; docs/np-evidence/m2/early-ci/verification.json (first_push_and_rehearsal)", "status": "fixed in M2 early-ci (fa4a790 fuzz selection validation); no signature match to F1-F5"},
+    {"id": "H2", "record": "DEFECT-NP-M1-REQNUM-001 approval request number unique-key collision (card t_462633c0)", "signature": "duplicate key violates unique constraint idx_approval_requests_request_number; workbench/TestM1R3ApprovalPartySnapshot HTTP 500", "refs": "docs/np-evidence/m1/review-r5/README.md gate section; kanban card t_462633c0", "status": "registered defect, out of this branch's scope; no signature match to F1-F5 (grep of hosted diag logs: 0 hits for duplicate key / idx_*)"},
+    {"id": "H3", "record": "M1 R3-era snapshot failures (TestM1R3ApprovalPartySnapshot / workbench 500 failing rounds)", "signature": "party snapshot / approval roster mismatches and HTTP 500 rounds during M1 reviews", "refs": "docs/np-evidence/m1/review-r3..r5/README.md", "status": "M1-era product-test failures; no signature match to F1-F5"},
+    {"id": "H4", "record": "idx_users_username empty-DB demo-data initialization collision (found during PGO isolation pilot)", "signature": "duplicate key on idx_users_username at demo seeding", "refs": "docs/np-evidence/m2/pr-isolation/README.md", "status": "separately registered; PGO baseline uses a non-login synthetic user; no signature match to F1-F5"},
+    {"id": "H5", "record": "historical ciphertext/digest mismatch defect (card t_f7991d61)", "signature": "digest-ciphertext pair drift on legacy values", "refs": "docs/np-evidence/m1/review-r5/README.md gate section", "status": "registered defect, out of this branch's scope; no signature match to F1-F5"},
+    {"id": "H6", "record": "repo-wide legacy gofumpt/gofmt drift (the direct baseline for F4/F5)", "signature": "gofumpt-specific rule diffs (0o600, long-literal wrapping)", "refs": "snapshots/gofumpt-local-reproduction.txt (139 internal/ + 5 tests/ files)", "status": "pre-existing; surfaced on any PR event whose filter matches main/develop"}
+  ],
+  "unclassified_failures": [],
+  "verdict": {
+    "complete_i11_gate": "PASS",
+    "basis": [
+      "hosted: I11_FULL_PASS on both post-fix real push events 45379241429 (head 0ca6eb2c) and 45379855010 (head 52f9d40a): go=32, tagged=10, jest=124, 34 browser cases across 9 suites, PG preservation digest b54a6df9068794770a2b82998b59cbe728414e62128c2140af505d1dbeff402d (sources=3 receipts=4 linked=3 manual=1)",
+      "local: t_92dc3e8f GO - browser chain six links pass; mandatory set Go 32 + tagged 11@52f9d40 (incl. first-ever TestAsyncPGCompletionAfterNativeEdit) + Jest 124 + browser 34 cases each executed exactly once; 15 negative cases all materialized expected failures",
+      "negative matrix: 32/32 hosted probes + 15 local cases red exactly as designed",
+      "boundary controls: zero artifacts, zero cache read/write, zero notifications/webhooks/comments across all 8 hosted events"
+    ],
+    "failure_classification_summary": "1 new harness defect (checker JSONDecodeError, introduced and fixed within the window, verified green twice), 32 by-design expected negative reds, 2 pre-existing legacy gofumpt drift failures on temp probe PRs (outside the np-i11 gate), 0 unclassified",
+    "real_event_status": {
+      "former_status": "real events not yet verified (as of the 2026-11-24 11:22 blocked comment)",
+      "current_status": "CLOSED for the I11 branch line: 8 recorded real push/dispatch events + PR #51 event boundary (head/base/test-merge SHAs at three read points, zero pull_request triggers documented with filter evidence) + 2 byproduct runs first-hand verified by this review",
+      "carried_over": "main-target integration PR event has never been created and remains a separate registered acceptance item owned by card t_ddd82725; branch push/dispatch events cannot substitute for it; the same-repo pull_request gate with I11_REFS head/base echo is ready since 52f9d40a"
+    },
+    "overall": "PASS"
+  },
+  "archive": {
+    "manifest": "MANIFEST.sha256",
+    "manifest_sha256_of_itself_note": "MANIFEST.sha256 excludes itself from its own entries; regenerate after any archive change",
+    "inventory": "inventory.json",
+    "file_total": 118,
+    "groups": ["m2_hosted_full_i11 (t_b938e756, 44)", "m2_local_browser_chain_verify (t_92dc3e8f, 38)", "m2_early_ci (2)", "m2_pr_isolation (t_cc50f4c9, 3)", "m1_review_rounds historical failure records (9)", "plans np-main-integration fuzzing history (4)", "final_review this task (18)"],
+    "immutability": "every archived file checksummed (SHA-256) in MANIFEST.sha256; the previously untracked i11-browser-chain-verify tree and this final-review tree are bound by the evidence commit of this task; remote snapshots carry UTC timestamps in snapshots/snapshot-time.txt"
+  },
+  "unknowns": [
+    "GitHub user-side email/watch notification state (client-side account settings; outside API boundary)",
+    "exact concurrency-cancel trigger for the 8 cancelled sibling workflow runs on PRs #49/#50 (cancelled, not failures; no failing step to attribute)",
+    "runs/commits created after the 2026-11-24T11:40:00Z snapshot (coordinator-owned iteration)"
+  ],
+  "leftovers_followups": [
+    "main-target integration PR event registration (t_ddd82725, root card)",
+    "legacy gofumpt drift cleanup: 139 internal/ + 5 tests/ files flagged; will red-light any future PR event matching main/develop filters (registered as follow-up card by this task)",
+    "full-package PGO performance results and M5 real-entry acceptance remain NOT_RUN (pr-isolation scope note)",
+    "run#2 native suite JSON snapshot race: mitigated by t_92dc3e8f first-hand native window (10 cases)",
+    "4 exited containers np-i11-verify-db{,2,3,4} await docker rm",
+    "host /usr/local/bin python3 broken (Killed:9); fixture chain uses /usr/bin/python3 3.9.6",
+    "registered defects outside this branch: DEFECT-NP-M1-REQNUM-001 (t_462633c0), ciphertext/digest mismatch (t_f7991d61)"
+  ],
+  "raw_files": "snapshots/ (14 files, UTC-stamped)",
+  "cross_refs": [
+    "docs/np-evidence/m2/full-i11/hosted/README.md + verification.json (t_b938e756, commit bfcb7de)",
+    "docs/np-evidence/m2/i11-browser-chain-verify/README.md (t_92dc3e8f)",
+    "docs/np-evidence/m2/early-ci/README.md + verification.json",
+    "docs/np-evidence/m2/pr-isolation/README.md + verification.json (t_cc50f4c9)",
+    "https://github.com/VanTam-CN/law-oa-go/pull/51"
+  ]
+}

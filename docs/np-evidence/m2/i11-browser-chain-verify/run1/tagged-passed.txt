@@ -1,0 +1,10 @@
+law-oa-go/tests/integration/m1 TestAsyncPGFormalDetectorCompletesOnce
+law-oa-go/tests/integration/m1 TestConflictPGLinkAdvancesRevisionOnce
+law-oa-go/tests/integration/m1 TestM3ConflictCompletionAfterSourceSave
+law-oa-go/tests/integration/m1 TestM3ConflictCompletionAfterSourceSave/async
+law-oa-go/tests/integration/m1 TestM3ConflictCompletionAfterSourceSave/sync
+law-oa-go/tests/integration/m1 TestNativeConcurrentDraftAndHistory
+law-oa-go/tests/integration/m1 TestSchemaRequiresFrozenKeysAndTypes
+law-oa-go/tests/integration/m1 TestSchemaRequiresFrozenKeysAndTypes/missing-fk
+law-oa-go/tests/integration/m1 TestSchemaRequiresFrozenKeysAndTypes/wrong-column-type
+law-oa-go/tests/integration/m1 TestSchemaRequiresFrozenKeysAndTypes/wrong-index-columns
