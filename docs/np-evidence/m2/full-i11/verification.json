@@ -1,0 +1,466 @@
+{
+  "scope": "I11 / M2 / independent branch isolation",
+  "source": "52f9d40a274d04c1b59688d7cfd092c27863168b",
+  "m4_evidence": "2989b285501f04fde37eb4826cb3f3a108be0915",
+  "branch": "codex/np-main-i11",
+  "hermes": [
+    "t_7072cca9",
+    "t_ddd82725",
+    "t_fbcffe5f"
+  ],
+  "local": {
+    "argv": [
+      "bash",
+      "scripts/np-ci/early-pg.sh",
+      "full"
+    ],
+    "stages": [
+      "I11_SOURCE 52f9d40a274d04c1b59688d7cfd092c27863168b",
+      "I11_START fuzz-normal 2026-11-24T11:00:33Z",
+      "I11_END fuzz-normal rc=0 2026-11-24T11:00:33Z",
+      "I11_START build 2026-11-24T11:00:33Z",
+      "I11_END build rc=0 2026-11-24T11:00:51Z",
+      "I11_START redis 2026-11-24T11:00:52Z",
+      "I11_END redis rc=0 2026-11-24T11:01:01Z",
+      "I11_START go 2026-11-24T11:01:01Z",
+      "I11_END go rc=0 2026-11-24T11:01:38Z",
+      "I11_TEST_PASS group=go required=32",
+      "I11_START tagged 2026-11-24T11:01:38Z",
+      "I11_END tagged rc=0 2026-11-24T11:01:51Z",
+      "I11_TEST_PASS group=tagged required=11",
+      "I11_START typecheck 2026-11-24T11:01:51Z",
+      "I11_END typecheck rc=0 2026-11-24T11:01:57Z",
+      "I11_START jest 2026-11-24T11:01:57Z",
+      "I11_END jest rc=0 2026-11-24T11:02:10Z",
+      "I11_START frontend-build 2026-11-24T11:02:10Z",
+      "I11_END frontend-build rc=0 2026-11-24T11:02:23Z",
+      "I11_TEST_PASS group=jest required=124",
+      "I11_START route-b 2026-11-24T11:02:23Z",
+      "I11_END route-b rc=0 2026-11-24T11:03:31Z",
+      "I11_BROWSER_PASS suite=route-b cases=4",
+      "I11_PG_PRESERVED f309dc10c416a70deee814e15a3c45185fb22f85304f0aa93dc8c1b2e9a199ca sources=3 receipts=4 linked=3 manual=1",
+      "I11_START selection 2026-11-24T11:03:32Z",
+      "I11_END selection rc=0 2026-11-24T11:03:53Z",
+      "I11_BROWSER_PASS suite=selection cases=2",
+      "I11_START storage 2026-11-24T11:03:53Z",
+      "I11_END storage rc=0 2026-11-24T11:04:19Z",
+      "I11_BROWSER_PASS suite=storage cases=5",
+      "I11_START navigation 2026-11-24T11:04:19Z",
+      "I11_END navigation rc=0 2026-11-24T11:04:48Z",
+      "I11_BROWSER_PASS suite=navigation cases=5",
+      "I11_START editing 2026-11-24T11:04:48Z",
+      "I11_END editing rc=0 2026-11-24T11:05:16Z",
+      "I11_BROWSER_PASS suite=editing cases=3",
+      "I11_START tabs 2026-11-24T11:05:16Z",
+      "I11_END tabs rc=0 2026-11-24T11:05:36Z",
+      "I11_BROWSER_PASS suite=tabs cases=1",
+      "I11_START legacy 2026-11-24T11:05:36Z",
+      "I11_END legacy rc=0 2026-11-24T11:06:00Z",
+      "I11_BROWSER_PASS suite=legacy cases=2",
+      "I11_START prod 2026-11-24T11:06:01Z",
+      "I11_END prod rc=0 2026-11-24T11:06:20Z",
+      "I11_BROWSER_PASS suite=prod cases=2",
+      "I11_START native 2026-11-24T11:06:20Z",
+      "I11_END native rc=0 2026-11-24T11:06:39Z",
+      "I11_BROWSER_PASS suite=native cases=10",
+      "I11_FULL_PASS"
+    ],
+    "tagged_named_events": [
+      {
+        "Time": "2026-11-24T19:01:48.18753+08:00",
+        "Action": "run",
+        "Test": "TestAsyncPGCompletionAfterNativeEdit",
+        "Package": "law-oa-go/tests/integration/m1"
+      },
+      {
+        "Time": "2026-11-24T19:01:48.444096+08:00",
+        "Action": "pass",
+        "Test": "TestAsyncPGCompletionAfterNativeEdit",
+        "Package": "law-oa-go/tests/integration/m1"
+      }
+    ],
+    "negative": {
+      "missing-pg": {
+        "argv": [
+          "bash",
+          "scripts/np-ci/early-pg.sh",
+          "missing-pg"
+        ],
+        "started": "2026-11-24T11:06:40.955082+00:00",
+        "ended": "2026-11-24T11:06:41.060731+00:00",
+        "exit": 1,
+        "reason": "M2_PG_UNAVAILABLE"
+      },
+      "missing-dsn": {
+        "argv": [
+          "bash",
+          "scripts/np-ci/early-pg.sh",
+          "missing-dsn"
+        ],
+        "started": "2026-11-24T11:06:41.060750+00:00",
+        "ended": "2026-11-24T11:06:41.108688+00:00",
+        "exit": 1,
+        "reason": "M2_DSN_MISSING"
+      },
+      "skip": {
+        "argv": [
+          "bash",
+          "scripts/np-ci/early-pg.sh",
+          "skip"
+        ],
+        "started": "2026-11-24T11:06:41.108744+00:00",
+        "ended": "2026-11-24T11:06:57.755521+00:00",
+        "exit": 1,
+        "reason": "M2_REQUIRED_TEST_SKIPPED"
+      },
+      "partial": {
+        "argv": [
+          "bash",
+          "scripts/np-ci/early-pg.sh",
+          "partial"
+        ],
+        "started": "2026-11-24T11:06:57.755543+00:00",
+        "ended": "2026-11-24T11:07:54.514527+00:00",
+        "exit": 1,
+        "reason": "M2_REQUIRED_TEST_MISSING"
+      },
+      "none": {
+        "argv": [
+          "bash",
+          "scripts/np-ci/early-pg.sh",
+          "none"
+        ],
+        "started": "2026-11-24T11:07:54.514560+00:00",
+        "ended": "2026-11-24T11:08:09.828991+00:00",
+        "exit": 1,
+        "reason": "M2_NO_TESTS"
+      },
+      "fuzz-unknown": {
+        "argv": [
+          "bash",
+          "scripts/np-ci/i11-fuzz-probe.sh",
+          "fuzz-unknown"
+        ],
+        "started": "2026-11-24T11:08:09.829015+00:00",
+        "ended": "2026-11-24T11:08:10.016637+00:00",
+        "exit": 1,
+        "reason": "I11_FUZZ_PREFLIGHT_REJECTED"
+      },
+      "fuzz-selected-failed": {
+        "argv": [
+          "bash",
+          "scripts/np-ci/i11-fuzz-probe.sh",
+          "fuzz-selected-failed"
+        ],
+        "started": "2026-11-24T11:08:10.016655+00:00",
+        "ended": "2026-11-24T11:08:10.194230+00:00",
+        "exit": 1,
+        "reason": "I11_FUZZ_SUMMARY_REJECTED fuzz-selected-failed"
+      },
+      "fuzz-missing-proof": {
+        "argv": [
+          "bash",
+          "scripts/np-ci/i11-fuzz-probe.sh",
+          "fuzz-missing-proof"
+        ],
+        "started": "2026-11-24T11:08:10.194247+00:00",
+        "ended": "2026-11-24T11:08:10.353056+00:00",
+        "exit": 1,
+        "reason": "I11_FUZZ_SUMMARY_REJECTED fuzz-missing-proof"
+      }
+    }
+  },
+  "hosted": {
+    "normal": {
+      "id": 45379855010,
+      "event": "push",
+      "html_url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45379855010",
+      "head_branch": "codex/np-main-i11",
+      "head_sha": "52f9d40a274d04c1b59688d7cfd092c27863168b",
+      "status": "completed",
+      "conclusion": "success",
+      "run_started_at": "2026-11-24T10:58:49Z",
+      "updated_at": "2026-11-24T11:06:04Z",
+      "jobs": [
+        {
+          "id": 138395748131,
+          "probe": "full",
+          "status": "completed",
+          "conclusion": "success",
+          "started": "2026-11-24T10:58:53Z",
+          "ended": "2026-11-24T11:06:03Z",
+          "checkout_matched": true,
+          "failed_steps": [],
+          "results": [
+            "I11_SOURCE 52f9d40a274d04c1b59688d7cfd092c27863168b",
+            "I11_START fuzz-normal 2026-11-24T11:00:42Z",
+            "I11_END fuzz-normal rc=0 2026-11-24T11:00:43Z",
+            "I11_START build 2026-11-24T11:00:43Z",
+            "I11_END build rc=0 2026-11-24T11:00:58Z",
+            "I11_START redis 2026-11-24T11:01:01Z",
+            "I11_END redis rc=0 2026-11-24T11:02:20Z",
+            "I11_START go 2026-11-24T11:02:20Z",
+            "I11_END go rc=0 2026-11-24T11:02:38Z",
+            "I11_TEST_PASS group=go required=32",
+            "I11_START tagged 2026-11-24T11:02:38Z",
+            "I11_END tagged rc=0 2026-11-24T11:02:42Z",
+            "I11_TEST_PASS group=tagged required=11",
+            "I11_START typecheck 2026-11-24T11:02:42Z",
+            "I11_END typecheck rc=0 2026-11-24T11:02:47Z",
+            "I11_START jest 2026-11-24T11:02:47Z",
+            "I11_END jest rc=0 2026-11-24T11:02:57Z",
+            "I11_START frontend-build 2026-11-24T11:02:57Z",
+            "I11_END frontend-build rc=0 2026-11-24T11:03:08Z",
+            "I11_TEST_PASS group=jest required=124",
+            "I11_START route-b 2026-11-24T11:03:08Z",
+            "I11_END route-b rc=0 2026-11-24T11:03:53Z",
+            "I11_BROWSER_PASS suite=route-b cases=4",
+            "I11_PG_PRESERVED 9fb50348bedd99237196f6de322386baf56e706bb256f7d4f78f717b2fa0eaaf sources=3 receipts=4 linked=3 manual=1",
+            "I11_START selection 2026-11-24T11:03:53Z",
+            "I11_END selection rc=0 2026-11-24T11:04:05Z",
+            "I11_BROWSER_PASS suite=selection cases=2",
+            "I11_START storage 2026-11-24T11:04:05Z",
+            "I11_END storage rc=0 2026-11-24T11:04:21Z",
+            "I11_BROWSER_PASS suite=storage cases=5",
+            "I11_START navigation 2026-11-24T11:04:22Z",
+            "I11_END navigation rc=0 2026-11-24T11:04:38Z",
+            "I11_BROWSER_PASS suite=navigation cases=5",
+            "I11_START editing 2026-11-24T11:04:38Z",
+            "I11_END editing rc=0 2026-11-24T11:04:58Z",
+            "I11_BROWSER_PASS suite=editing cases=3",
+            "I11_START tabs 2026-11-24T11:04:58Z",
+            "I11_END tabs rc=0 2026-11-24T11:05:16Z",
+            "I11_BROWSER_PASS suite=tabs cases=1",
+            "I11_START legacy 2026-11-24T11:05:16Z",
+            "I11_END legacy rc=0 2026-11-24T11:05:32Z",
+            "I11_BROWSER_PASS suite=legacy cases=2",
+            "I11_START prod 2026-11-24T11:05:32Z",
+            "I11_END prod rc=0 2026-11-24T11:05:38Z",
+            "I11_BROWSER_PASS suite=prod cases=2",
+            "I11_START native 2026-11-24T11:05:38Z",
+            "I11_END native rc=0 2026-11-24T11:05:59Z",
+            "I11_BROWSER_PASS suite=native cases=10",
+            "I11_FULL_PASS"
+          ]
+        }
+      ],
+      "other_jobs": {
+        "🎨 Frontend Tests": "skipped",
+        "np-m2-early": "skipped",
+        "📊 Coverage Check": "skipped",
+        "🎭 E2E Tests": "skipped",
+        "🐹 Go Tests": "skipped",
+        "📋 Test Summary": "skipped"
+      },
+      "artifacts": 0
+    },
+    "negative": {
+      "id": 45379862576,
+      "event": "workflow_dispatch",
+      "html_url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45379862576",
+      "head_branch": "codex/np-main-i11",
+      "head_sha": "52f9d40a274d04c1b59688d7cfd092c27863168b",
+      "status": "completed",
+      "conclusion": "failure",
+      "run_started_at": "2026-11-24T10:58:53Z",
+      "updated_at": "2026-11-24T11:03:00Z",
+      "jobs": [
+        {
+          "id": 138395785311,
+          "probe": "none",
+          "status": "completed",
+          "conclusion": "failure",
+          "started": "2026-11-24T10:58:57Z",
+          "ended": "2026-11-24T11:01:51Z",
+          "checkout_matched": true,
+          "failed_steps": [
+            "Run isolated PostgreSQL gate"
+          ],
+          "marker": "M2_NO_TESTS",
+          "runner_exit_1": true
+        },
+        {
+          "id": 138395785568,
+          "probe": "missing-pg",
+          "status": "completed",
+          "conclusion": "failure",
+          "started": "2026-11-24T10:58:57Z",
+          "ended": "2026-11-24T10:59:13Z",
+          "checkout_matched": true,
+          "failed_steps": [
+            "Run isolated PostgreSQL gate"
+          ],
+          "marker": "M2_PG_UNAVAILABLE",
+          "runner_exit_1": true
+        },
+        {
+          "id": 138395785609,
+          "probe": "missing-dsn",
+          "status": "completed",
+          "conclusion": "failure",
+          "started": "2026-11-24T10:58:57Z",
+          "ended": "2026-11-24T10:59:13Z",
+          "checkout_matched": true,
+          "failed_steps": [
+            "Run isolated PostgreSQL gate"
+          ],
+          "marker": "M2_DSN_MISSING",
+          "runner_exit_1": true
+        },
+        {
+          "id": 138395785629,
+          "probe": "skip",
+          "status": "completed",
+          "conclusion": "failure",
+          "started": "2026-11-24T10:58:57Z",
+          "ended": "2026-11-24T11:02:59Z",
+          "checkout_matched": true,
+          "failed_steps": [
+            "Run isolated PostgreSQL gate"
+          ],
+          "marker": "M2_REQUIRED_TEST_SKIPPED",
+          "runner_exit_1": true
+        },
+        {
+          "id": 138395785651,
+          "probe": "fuzz-missing-proof",
+          "status": "completed",
+          "conclusion": "failure",
+          "started": "2026-11-24T10:58:57Z",
+          "ended": "2026-11-24T10:59:07Z",
+          "checkout_matched": true,
+          "failed_steps": [
+            "Run registered fuzz gate with controlled input"
+          ],
+          "marker": "I11_FUZZ_SUMMARY_REJECTED fuzz-missing-proof",
+          "runner_exit_1": true
+        },
+        {
+          "id": 138395785673,
+          "probe": "fuzz-selected-failed",
+          "status": "completed",
+          "conclusion": "failure",
+          "started": "2026-11-24T10:58:57Z",
+          "ended": "2026-11-24T10:59:08Z",
+          "checkout_matched": true,
+          "failed_steps": [
+            "Run registered fuzz gate with controlled input"
+          ],
+          "marker": "I11_FUZZ_SUMMARY_REJECTED fuzz-selected-failed",
+          "runner_exit_1": true
+        },
+        {
+          "id": 138395785706,
+          "probe": "partial",
+          "status": "completed",
+          "conclusion": "failure",
+          "started": "2026-11-24T10:58:57Z",
+          "ended": "2026-11-24T11:01:55Z",
+          "checkout_matched": true,
+          "failed_steps": [
+            "Run isolated PostgreSQL gate"
+          ],
+          "marker": "M2_REQUIRED_TEST_MISSING",
+          "runner_exit_1": true
+        },
+        {
+          "id": 138395788084,
+          "probe": "fuzz-unknown",
+          "status": "completed",
+          "conclusion": "failure",
+          "started": "2026-11-24T10:58:58Z",
+          "ended": "2026-11-24T10:59:12Z",
+          "checkout_matched": true,
+          "failed_steps": [
+            "Run registered fuzz gate with controlled input"
+          ],
+          "marker": "I11_FUZZ_PREFLIGHT_REJECTED",
+          "runner_exit_1": true
+        }
+      ],
+      "other_jobs": {
+        "🐹 Go Tests": "skipped",
+        "🎨 Frontend Tests": "skipped",
+        "np-m2-early": "skipped",
+        "🎭 E2E Tests": "skipped",
+        "📊 Coverage Check": "skipped",
+        "📋 Test Summary": "skipped"
+      },
+      "artifacts": 0
+    }
+  },
+  "validator_controls": {
+    "source": "374146ce1bdf3470fcb2cbb054743c7aead04431",
+    "description": "Mutations of real runner outputs; final tagged addition independently tested as missing and skipped by Astra.",
+    "results": {
+      "go-empty": {
+        "exit": 1,
+        "marker": "I11_GO_REQUIRED_SET_MISMATCH"
+      },
+      "go-wrong-package": {
+        "exit": 1,
+        "marker": "I11_GO_REQUIRED_SET_MISMATCH"
+      },
+      "go-pass-without-run": {
+        "exit": 1,
+        "marker": "I11_GO_REQUIRED_SET_MISMATCH"
+      },
+      "go-skipped": {
+        "exit": 1,
+        "marker": "I11_GO_FAILED_OR_SKIPPED"
+      },
+      "jest-empty": {
+        "exit": 1,
+        "marker": "I11_JEST_REQUIRED_SET_MISMATCH"
+      },
+      "jest-missing": {
+        "exit": 1,
+        "marker": "I11_JEST_REQUIRED_SET_MISMATCH"
+      },
+      "jest-skipped": {
+        "exit": 1,
+        "marker": "I11_JEST_CASE_NOT_PASSED"
+      },
+      "browser-empty": {
+        "exit": 1,
+        "marker": "I11_BROWSER_REQUIRED_SET_MISMATCH"
+      },
+      "browser-missing": {
+        "exit": 1,
+        "marker": "I11_BROWSER_REQUIRED_SET_MISMATCH"
+      },
+      "browser-skipped": {
+        "exit": 1,
+        "marker": "I11_BROWSER_CASE_NOT_PASSED"
+      }
+    }
+  },
+  "fixed_findings": {
+    "schema_variant": "Reproduced 22001 on a populated fixture. Unbounded varchar preserves data and still violates the required text type.",
+    "cold_go": "Hosted structured event parser rejected mixed stdout/stderr. Separated private streams and retained exit handling.",
+    "native_late_check": "Required same-named run and pass in the tagged package; reviewer verified missing/skip both fail.",
+    "pr_isolation": "Same-repo candidate PR selects full gate. Existing eligible PR jobs inherit pilot conditions. Main/develop 2016 expression comparisons; actual candidate PR not run."
+  },
+  "independent_review": {
+    "model": "gpt-6.2-astra",
+    "source": "52f9d40a274d04c1b59688d7cfd092c27863168b",
+    "status": "two previous blockers closed at configuration level",
+    "execution": "named-event checker positive, missing, deliberately skipped; workflow and branch diff review. Hosted runtime separately verified by coordinator."
+  },
+  "limits": {
+    "main_target_PR_event": "NOT_RUN",
+    "case_variant_P2": "t_fbcffe5f",
+    "M5_real_root_PG_Redis_external_fault_proxy": "NOT_RUN",
+    "M6_rollout_and_rollback": "NOT_RUN",
+    "I09_FILES": "DEFERRED"
+  },
+  "pr_routing": {
+    "evaluator": "@actions/expressions 0.3.62 and yaml 2.9.1",
+    "comparisons": 2016,
+    "result": "PASS",
+    "base": "0ca6eb2",
+    "actionlint": "1.7.9; 10 existing diagnostics before and after, zero new",
+    "real_main_target_pr": "NOT_RUN"
+  },
+  "decision": "I11_PASS_M5_ISOLATED_INTEGRATION_ADMITTED"
+}
