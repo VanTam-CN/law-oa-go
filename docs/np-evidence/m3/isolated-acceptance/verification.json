@@ -1,0 +1,162 @@
+{
+  "scope": "M3 local isolated acceptance",
+  "branch": "codex/np-main-m3",
+  "source_commit": "c4b644c41ed68599cf63c943483f6bb92579154a",
+  "source_reference": "2d659d9dd750f49ddb1f517746e22851392231a6",
+  "hermes": {
+    "implementation": "t_3cb90121",
+    "ci_p2": "t_fbcffe5f"
+  },
+  "baseline_go": {
+    "start": "2026-11-24T06:55:56.033394+00:00",
+    "end": "2026-11-24T06:56:21.796436+00:00",
+    "argv": [
+      "go",
+      "test",
+      "-p",
+      "1",
+      "-race",
+      "-count=1",
+      "-json",
+      "./internal/handlers",
+      "./internal/database",
+      "./internal/middleware",
+      "./internal/router",
+      "-run",
+      "^(TestConfirmAndConflictCheckAuthorizeBeforeRevisionHint|TestConfirmIntakeFactsRotatesRevisionAndRejectsStaleHeader|TestDraftListCarriesRevisionTokens|TestDraftRestoreReturnsRevisionAndProtectedIdentityStatus|TestLegacyDraftWithoutStoredRevisionLoadsAndSavesOnce|TestNPContextEndReleasesExpiryTimer|TestNPContextExpiryAndChangedDraft|TestNPMultiTurnInvalidationAndSessionExpiry|TestNPPostgresActualDisconnectAfterCommit|TestNPPostgresActualDisconnectBeforeCommit|TestNPPostgresDescriptionWhitespaceIsExact|TestNPPostgresLegacyNullMetadataIsInitialized|TestNPPostgresLegacySaveAfterStrictManualStillChecksRevision|TestNPPostgresMalformedIntakeIDIsBadRequest|TestNPPostgresNativeCannotForgeSourcePointer|TestNPPostgresParallelWritersAndBusyAbandon|TestNPPostgresSaveReopenConcurrencyAndReceipts|TestNPPostgresSourcePermissionsAndStrictBoundary|TestNarrowPilotAuditSkipsSensitiveBodyBeforeRead|TestNativeHistoryLookupFailureBlocksFullSave|TestOptimizedDatabaseSlowQueryLogDoesNotLeakParameters|TestStartIntakeConflictCheckLateResultAfterNativeEdit|TestUpdateIntakeInvalidatesConfirmedSnapshotAndRotatesRevision|TestUpdateIntakeMergesProvidedMetadataWithoutErasingStoredFields|TestUpdateIntakeRejectsMissingExpectedRevisionWithoutMutation|TestUpdateIntakeRejectsStaleRevisionWithoutOverwrite|TestUpdateIntakeSwitchClientUsesNewMasterIdentity|TestUpdateIntakeWithoutMetadataKeepsStoredBusinessFields)$"
+    ],
+    "exit": 0,
+    "expected": [
+      "TestConfirmAndConflictCheckAuthorizeBeforeRevisionHint",
+      "TestConfirmIntakeFactsRotatesRevisionAndRejectsStaleHeader",
+      "TestDraftListCarriesRevisionTokens",
+      "TestDraftRestoreReturnsRevisionAndProtectedIdentityStatus",
+      "TestLegacyDraftWithoutStoredRevisionLoadsAndSavesOnce",
+      "TestNPContextEndReleasesExpiryTimer",
+      "TestNPContextExpiryAndChangedDraft",
+      "TestNPMultiTurnInvalidationAndSessionExpiry",
+      "TestNPPostgresActualDisconnectAfterCommit",
+      "TestNPPostgresActualDisconnectBeforeCommit",
+      "TestNPPostgresDescriptionWhitespaceIsExact",
+      "TestNPPostgresLegacyNullMetadataIsInitialized",
+      "TestNPPostgresLegacySaveAfterStrictManualStillChecksRevision",
+      "TestNPPostgresMalformedIntakeIDIsBadRequest",
+      "TestNPPostgresNativeCannotForgeSourcePointer",
+      "TestNPPostgresParallelWritersAndBusyAbandon",
+      "TestNPPostgresSaveReopenConcurrencyAndReceipts",
+      "TestNPPostgresSourcePermissionsAndStrictBoundary",
+      "TestNarrowPilotAuditSkipsSensitiveBodyBeforeRead",
+      "TestNativeHistoryLookupFailureBlocksFullSave",
+      "TestOptimizedDatabaseSlowQueryLogDoesNotLeakParameters",
+      "TestStartIntakeConflictCheckLateResultAfterNativeEdit",
+      "TestUpdateIntakeInvalidatesConfirmedSnapshotAndRotatesRevision",
+      "TestUpdateIntakeMergesProvidedMetadataWithoutErasingStoredFields",
+      "TestUpdateIntakeRejectsMissingExpectedRevisionWithoutMutation",
+      "TestUpdateIntakeRejectsStaleRevisionWithoutOverwrite",
+      "TestUpdateIntakeSwitchClientUsesNewMasterIdentity",
+      "TestUpdateIntakeWithoutMetadataKeepsStoredBusinessFields"
+    ],
+    "test_count": 35,
+    "missing": [],
+    "failed": [],
+    "skipped": []
+  },
+  "tagged_pg": {
+    "argv": [
+      "go",
+      "test",
+      "-tags",
+      "np_m1_pg",
+      "-race",
+      "-count=1",
+      "./tests/integration/m1",
+      "-run",
+      "^(TestNativeConcurrentDraftAndHistory|TestAsyncPGFormalDetectorCompletesOnce|TestConflictPGLinkAdvancesRevisionOnce|TestM3ConflictCompletionAfterSourceSave)$",
+      "-json"
+    ],
+    "exit": 0,
+    "start": "2026-11-24T14:56:35.346122+08:00",
+    "end": "2026-11-24T14:56:39.883655+08:00",
+    "passed": [
+      "TestAsyncPGFormalDetectorCompletesOnce",
+      "TestConflictPGLinkAdvancesRevisionOnce",
+      "TestM3ConflictCompletionAfterSourceSave/sync",
+      "TestM3ConflictCompletionAfterSourceSave/async",
+      "TestM3ConflictCompletionAfterSourceSave",
+      "TestNativeConcurrentDraftAndHistory"
+    ]
+  },
+  "frontend": {
+    "argv": [
+      "jest",
+      "--runInBand",
+      "src/components/intake",
+      "src/pages/auth/__tests__",
+      "src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts",
+      "src/pages/batch01/__tests__/narrowPilotI13.test.ts",
+      "--coverage=false",
+      "--json",
+      "--outputFile=<private>/jest.json"
+    ],
+    "exit": 0,
+    "counts": {
+      "Login.failure.test.tsx": 3,
+      "CaseIntakeConflictAction.test.ts": 14,
+      "Login.accessibility.test.tsx": 1,
+      "Login.navigation.test.tsx": 1,
+      "NarrowPilotAssistantScope.test.tsx": 4,
+      "NarrowPilotAssistant.test.tsx": 3,
+      "useNarrowPilotSave.test.tsx": 28,
+      "receiptIdentity.test.tsx": 20,
+      "narrowPilotI13.test.ts": 21
+    },
+    "passed": 95,
+    "skipped": 0,
+    "frozen_33_verified": true
+  },
+  "browser": {
+    "argv": [
+      "playwright",
+      "test",
+      "-c",
+      "playwright.np.config.ts"
+    ],
+    "cwd": "frontend",
+    "exit": 0,
+    "start": "2026-11-24T06:57:30Z",
+    "end": "2026-11-24T06:57:47Z",
+    "cases": [
+      "e2e/np-first-slice.live.spec.ts:46:1 › 真实服务：多轮核对，仅应用摘要，原生保存后新会话从原菜单重开来源",
+      "e2e/np-first-slice.live.spec.ts:75:1 › 真实服务：A来源保存后，B旧版纯手工摘要不得覆盖并保留输入",
+      "e2e/np-first-slice.live.spec.ts:93:1 › 真实上游断线：提交后断开TCP，重登按原键回查且重开来源",
+      "e2e/np-first-slice.live.spec.ts:138:1 › 生成期间保留未发送输入；人工摘要不被候选静默覆盖"
+    ],
+    "runner": "local target tagged np_local_check, router.Init + Vite/Chrome",
+    "retries": 0,
+    "pg_before": {
+      "sources": 0,
+      "receipts": 0,
+      "protected_sha256": "8abeae661dfd3097ae461a63ca271232da1a98e6491246cb047f2781018e3c12",
+      "target_materials": 2,
+      "large_number": true
+    },
+    "pg_after": {
+      "protected_sha256": "8abeae661dfd3097ae461a63ca271232da1a98e6491246cb047f2781018e3c12",
+      "sources": 3,
+      "receipts": 4,
+      "linked": 3,
+      "manual": 1
+    },
+    "all_materials": 3,
+    "all_parties": 2,
+    "clients": 1
+  },
+  "checks_passed": [
+    "go build ./...",
+    "go vet ./internal/handlers",
+    "frontend: tsc --noEmit"
+  ],
+  "full_I11": "NOT_RUN pending M4",
+  "I09_FILES": "DEFERRED",
+  "M5_M6": "NOT_RUN"
+}
