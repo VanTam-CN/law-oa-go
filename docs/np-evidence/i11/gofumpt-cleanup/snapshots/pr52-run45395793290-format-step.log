@@ -1,0 +1,22 @@
+🔍 Code Quality	🔍 代码格式检查	﻿2026-11-24T12:40:52.9663900Z ##[group]Run go install mvdan.cc/gofumpt@latest
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:40:52.9664318Z [36;1mgo install mvdan.cc/gofumpt@latest[0m
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:40:52.9664635Z [36;1mgofumpt -w -s .[0m
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:40:52.9664879Z [36;1mgit diff --exit-code[0m
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:40:52.9704607Z shell: /usr/bin/bash -e {0}
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:40:52.9704871Z env:
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:40:52.9705072Z   REGISTRY: law-registry.com
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:40:52.9705328Z   IMAGE_NAME: law-oa-go
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:40:52.9705576Z   FRONTEND_IMAGE_NAME: law-oa-frontend
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:40:52.9705842Z   GO_VERSION: 1.25.0
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:40:52.9706045Z   NODE_VERSION: 20
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:40:52.9706241Z   DOCKER_BUILDKIT: 1
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:40:52.9706448Z   DOCKER_DRIVER: overlay2
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:40:52.9706682Z   DOCKER_CLI_EXPERIMENTAL: enabled
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:40:52.9706929Z ##[endgroup]
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:40:53.0988651Z go: downloading mvdan.cc/gofumpt v0.12.0
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:40:53.1745461Z go: mvdan.cc/gofumpt@v0.12.0 requires go >= 1.26.0; switching to go1.26.11
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:40:53.1746480Z go: downloading go1.26.11 (linux/amd64)
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:40:56.9910269Z go: downloading golang.org/x/mod v0.40.0
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:40:56.9911941Z go: downloading golang.org/x/sync v0.22.0
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:40:57.0035327Z go: downloading golang.org/x/tools v0.49.0
+🔍 Code Quality	🔍 代码格式检查	2026-11-24T12:41:04.4015879Z warning: -s is deprecated as it is always enabled
