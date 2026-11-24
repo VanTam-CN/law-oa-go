@@ -80,12 +80,19 @@
 - `gofumpt -l internal/ cmd/ main.go tests/`：0 漂移（格式步不会回红）；
 - 受影响包测试 `-race -count=1`：services、services/test、repositories、database、handlers（-skip WorkbenchApprovalBrowser，本地缺 playwright 栈，沿用 t_7cecb4f1 先例且本轮未触碰该文件）、concurrency、security、validators、middleware、models **全部 ok**；无测试削弱（empty-block 占位两处改为显式断言/t.Log 为加强）。
 
-## 8. 探针 PR 与托管核验
+## 8. 探针 PR 与托管核验（真实事件）
 
-- 探针 PR：<!-- PROBE_PR -->（draft，→ main）
-- 「📋 静态分析」步转绿 run：<!-- RUN_LINK -->
-- 核验方法：run 的 quality job 内逐 step 结论 + 日志尾部归档。
+- 探针 PR：**#54**（draft，`codex/np-lint-governance` → main，head 50bdf87）
+- CI/CD Pipeline run：**45405844993**（2026-11-24T13:40Z，PR 事件触发）
+- quality job「🔍 Code Quality」step 结论（真实托管事件）：
+  | step | 结论 |
+  |---|---|
+  | 🔍 代码格式检查（gofumpt@v0.12.0 固定版） | **success** |
+  | 📋 静态分析（go vet + go mod verify + golangci-lint@v1.64.8） | **success** ← 本卡验收目标转绿 |
+  | 🔒 安全扫描 | failure：gosec@latest(dev) **161 issues**（311 files/130k lines，gosec 通过后才会跑 govulncheck，未达） |
+- 归因：静态分析/格式两步为 **pre-existing 红灯修复**（本卡目标）；安全扫描步是静态分析修绿后**新近可达**的同款存量债（旧树从未执行到该步），gosec 独立运行的 161 条与 golangci-lint 门禁集内的 gosec 0 findings 不冲突（门禁集含逐条理由排除 + G104 重复项策略），已立卡治理。
+- 同 run 其他 workflow：fuzzing.yml 5 个 fuzz 目标全红——与 i11 分支当日 5 连红（11:59–12:54，早于本分支存在）同款，且 fuzz 输出重定向至 runner temp 从未归档（观测缺陷），判为 pre-existing 流水线问题，已立卡；PGO「检查PGO支持」红为 m2 线已知分类。
 
 ## 9. 快照清单
 
-见 `MANIFEST.sha256`（14 个文件，含治理前基线、round1-8 全过程、CI run 45390618050 原始日志）。
+见 `MANIFEST.sha256`（16 个文件：治理前基线、round1-8 全过程、PR #53 run 45390618050 与 PR #54 run 45405844993 quality job 原始日志、fuzz job 日志）。
