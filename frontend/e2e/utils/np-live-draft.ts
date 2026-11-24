@@ -13,19 +13,24 @@ if (!uuid.test(seed.target) || !uuid.test(seed.control) || seed.target === seed.
   throw new Error('invalid synthetic browser manifest')
 }
 
-export async function loginAndOpenDraft(page: Page) {
+export async function loginAndOpenDraft(page: Page, options: {
+  remember?: boolean
+  manifest?: { username: string; target: string; target_title: string }
+} = {}) {
+  const draft = options.manifest ?? seed
   await page.goto('/login')
-  await page.getByPlaceholder('账号或邮箱').fill(seed.username)
+  await page.getByPlaceholder('账号或邮箱').fill(draft.username)
   await page.getByPlaceholder('密码').fill(password!)
+  if (options.remember) await page.getByRole('checkbox', { name: '记住我' }).check()
   await page.locator('button[type=submit]').click()
   await expect(page).toHaveURL(/dashboard/)
   await page.getByRole('button', { name: /新建立案$/ }).click()
   await page.getByRole('button', { name: '打开服务端草稿', exact: true }).click()
   const restored = page.waitForResponse(r => r.request().method() === 'GET' &&
-    new URL(r.url()).pathname === '/api/v1/case-intakes/' + seed.target)
-  await page.getByRole('button', { name: seed.target_title, exact: true }).click()
+    new URL(r.url()).pathname === '/api/v1/case-intakes/' + draft.target)
+  await page.getByRole('button', { name: draft.target_title, exact: true }).click()
   expect((await restored).status()).toBe(200)
-  await expect(page.locator('#intake-title')).toHaveValue(seed.target_title)
+  await expect(page.locator('#intake-title')).toHaveValue(draft.target_title)
   await expect(page.locator('#intake-description')).not.toHaveValue('')
 }
 
