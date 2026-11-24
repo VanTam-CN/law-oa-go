@@ -105,7 +105,7 @@ func NewPDFReportService(db *gorm.DB, config *PDFReportConfig) (PDFReportService
 	}
 
 	// 确保输出目录存在
-	if err := os.MkdirAll(config.OutputDir, 0o755); err != nil {
+	if err := os.MkdirAll(config.OutputDir, 0o750); err != nil {
 		return nil, fmt.Errorf("创建输出目录失败: %w", err)
 	}
 

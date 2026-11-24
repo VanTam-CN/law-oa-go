@@ -207,13 +207,13 @@ func createMigration(migrationsDir, name string) error {
 
 	// 创建向上迁移文件
 	upFile := filepath.Join(migrationsDir, fmt.Sprintf("%s_%s.up.sql", timestamp, name))
-	if err := os.WriteFile(upFile, []byte("-- Up migration\n"), 0o644); err != nil {
+	if err := os.WriteFile(upFile, []byte("-- Up migration\n"), 0o600); err != nil {
 		return fmt.Errorf("创建向上迁移文件失败: %w", err)
 	}
 
 	// 创建向下迁移文件
 	downFile := filepath.Join(migrationsDir, fmt.Sprintf("%s_%s.down.sql", timestamp, name))
-	if err := os.WriteFile(downFile, []byte("-- Down migration\n"), 0o644); err != nil {
+	if err := os.WriteFile(downFile, []byte("-- Down migration\n"), 0o600); err != nil {
 		return fmt.Errorf("创建向下迁移文件失败: %w", err)
 	}
 

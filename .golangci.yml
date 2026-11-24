@@ -90,18 +90,17 @@ issues:
       linters:
         - gosec
       text: "G101"
-    # G101 v2_middleware_factory: dev-api-key 后门属真实待办——修复或移除（跟踪卡，不静默）
-    - path: internal/middleware/v2/v2_middleware_factory\.go
-      linters:
-        - gosec
-      text: "G101"
+    # G101 v2_middleware_factory: dev-api-key 硬编码后门已移除（checkMetricsAuth 仅比对
+    # JWT.Secret）+ 回归测试 v2_middleware_factory_test.go；随修复删除本排除，G101 不再命中该文件。
     # SA1019 tracer: jaeger 导出器仍在默认 exporter 链路中使用，迁移 OTLP 属基础设施改造（跟踪卡）
     - path: internal/tracing/tracer\.go
       linters:
         - staticcheck
       text: "SA1019"
-    # G113 intake_native_transaction: big.Rat.SetString 的 CVE-2022-23772 已在 Go 1.17 stdlib 修复，
-    # 模块目标 go 1.25；且该函数已加 >64 字符入参护栏（t_088ba214 代码加固）。跟踪卡复核后移除本排除
+    # G113 intake_native_transaction: big.Rat.SetString 的 CVE-2022-23772 已在 Go 1.17 stdlib 修复
+    # （模块目标 go 1.25）；且该函数已加 >64 字符入参护栏（t_088ba214 代码加固）。
+    # t_2ebe3c13 跟踪复核结论：gosec 仍静态命中 SetString 模式，但 stdlib 修复 + 代码护栏
+    # 双重缓解成立，本排除保留（理由成立，非静默）。
     - path: internal/handlers/intake_native_transaction\.go
       linters:
         - gosec
@@ -176,14 +175,11 @@ linters:
 linters-settings:
   # 安全检查配置
   gosec:
-    # 排除的规则（逐条理由见注释；G301/G115 恢复前需完成对应跟踪卡）
+    # 排除的规则（逐条理由见注释）
     excludes:
       - G204  # 子进程启动（既有）
       - G304  # 文件路径（既有）
       - G104  # 与 errcheck 重复的未处理错误检查；errcheck 本体在债台账（513），G104 随之不入双份门禁
-      - G301  # 目录权限：日志/上传目录按 0755 约定，单用户容器无越权面；多用户部署前需收紧（跟踪卡）
-      - G306  # WriteFile 权限：同 G301 理由（0644 导出/日志文件，单用户容器），多用户部署前收紧（跟踪卡）
-      - G115  # 整型溢出转换：当前 amd64/int64 平台安全；批量补范围检查后恢复（跟踪卡）
 
   # 代码评审配置
   gocritic:

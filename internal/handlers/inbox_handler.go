@@ -46,7 +46,7 @@ func (h *InboxHandler) CreateInboxItem(c *gin.Context) {
 
 	// 从上下文获取用户ID
 	userID := middleware.GetUserID(c)
-	if userID == 0 {
+	if userID <= 0 {
 		common.APIUnauthorized(c, "未授权", "用户未登录")
 		return
 	}
@@ -207,7 +207,7 @@ func (h *InboxHandler) ListInboxItems(c *gin.Context) {
 
 	// 从上下文获取用户ID
 	userID := middleware.GetUserID(c)
-	if userID == 0 {
+	if userID <= 0 {
 		common.APIUnauthorized(c, "未授权", "用户未登录")
 		return
 	}
@@ -350,7 +350,7 @@ func (h *InboxHandler) SnoozeInboxItem(c *gin.Context) {
 func (h *InboxHandler) GetInboxStats(c *gin.Context) {
 	// 从上下文获取用户ID
 	userID := middleware.GetUserID(c)
-	if userID == 0 {
+	if userID <= 0 {
 		common.APIUnauthorized(c, "未授权", "用户未登录")
 		return
 	}
@@ -366,7 +366,7 @@ func (h *InboxHandler) GetInboxStats(c *gin.Context) {
 
 func currentInboxUserID(c *gin.Context) (uint, bool) {
 	userID := middleware.GetUserID(c)
-	if userID == 0 {
+	if userID <= 0 {
 		common.APIUnauthorized(c, "未授权", "用户未登录")
 		return 0, false
 	}

@@ -432,7 +432,7 @@ func (h *OnlyOfficeHandler) OpenEditor(c *gin.Context) {
 				ToolbarHideFileName: false,
 			},
 			User: User{
-				ID:    strconv.Itoa(int(req.UserID)),
+				ID:    strconv.FormatUint(uint64(req.UserID), 10),
 				Name:  user.Name,
 				Group: h.getUserGroup(&user),
 			},
@@ -597,7 +597,7 @@ func (h *OnlyOfficeHandler) saveDocument(ctx context.Context, documentID uint, d
 
 	// 创建版本备份目录
 	versionDir := filepath.Join(h.storageDir, "versions", fmt.Sprintf("doc_%d", documentID))
-	if err := os.MkdirAll(versionDir, 0o755); err != nil {
+	if err := os.MkdirAll(versionDir, 0o750); err != nil {
 		return fmt.Errorf("failed to create version directory: %w", err)
 	}
 
@@ -940,7 +940,7 @@ func (h *OnlyOfficeHandler) processConversionResult(ctx context.Context, taskID 
 
 	// 保存转换后的文件
 	convertDir := filepath.Join(h.storageDir, "converted", fmt.Sprintf("doc_%d", task.DocumentID))
-	if err := os.MkdirAll(convertDir, 0o755); err != nil {
+	if err := os.MkdirAll(convertDir, 0o750); err != nil {
 		h.conversionMu.Lock()
 		task.Status = ConversionStatusError
 		task.Error = fmt.Sprintf("Failed to create directory: %v", err)
@@ -1077,6 +1077,9 @@ func (h *OnlyOfficeHandler) parseDocKey(key string) (uint, error) {
 	documentID, err := strconv.Atoi(parts[0])
 	if err != nil {
 		return 0, err
+	}
+	if documentID < 0 {
+		return 0, fmt.Errorf("invalid document id")
 	}
 	return uint(documentID), nil
 }

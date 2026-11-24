@@ -392,7 +392,10 @@ func userIDFromClaims(claims map[string]interface{}) (uint, bool) {
 	case uint:
 		return value, value > 0
 	case int:
-		return uint(value), value > 0
+		if value > 0 {
+			return uint(value), true
+		}
+		return 0, false
 	default:
 		return 0, false
 	}

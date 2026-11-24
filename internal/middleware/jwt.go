@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -209,7 +210,10 @@ func GetUserID(c *gin.Context) int {
 	if userID, exists := c.Get("user_id"); exists {
 		switch v := userID.(type) {
 		case uint:
-			return int(v)
+			if v <= math.MaxInt64 {
+				return int(v)
+			}
+			return 0
 		case int:
 			return v
 		}

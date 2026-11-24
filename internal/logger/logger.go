@@ -126,7 +126,7 @@ func createWriteSyncers(cfg *LogConfig) ([]zapcore.WriteSyncer, []zapcore.WriteS
 		} else {
 			// 创建日志目录
 			dir := filepath.Dir(path)
-			if err := os.MkdirAll(dir, 0o755); err != nil {
+			if err := os.MkdirAll(dir, 0o750); err != nil {
 				return nil, nil, fmt.Errorf("failed to create log directory %s: %w", dir, err)
 			}
 
@@ -151,7 +151,7 @@ func createWriteSyncers(cfg *LogConfig) ([]zapcore.WriteSyncer, []zapcore.WriteS
 		} else {
 			// 创建日志目录
 			dir := filepath.Dir(path)
-			if err := os.MkdirAll(dir, 0o755); err != nil {
+			if err := os.MkdirAll(dir, 0o750); err != nil {
 				return nil, nil, fmt.Errorf("failed to create error log directory %s: %w", dir, err)
 			}
 
