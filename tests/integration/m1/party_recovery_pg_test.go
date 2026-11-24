@@ -8,12 +8,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gorm.io/gorm"
-	"law-oa-go/internal/repositories"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"gorm.io/gorm"
+	"law-oa-go/internal/repositories"
 
 	"github.com/gin-gonic/gin"
 	"law-oa-go/internal/config"

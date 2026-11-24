@@ -45,6 +45,7 @@ func npContextFixture(t *testing.T) (*NarrowPilotHandler, *gin.Engine, string, *
 	r.POST("/contexts/:id/turns", n.Turn)
 	return n, r, token, db
 }
+
 func npCall(t *testing.T, r http.Handler, token, method, path string, body interface{}) (int, map[string]interface{}) {
 	t.Helper()
 	raw, err := json.Marshal(body)
@@ -62,6 +63,7 @@ func npCall(t *testing.T, r http.Handler, token, method, path string, body inter
 	}
 	return w.Code, out
 }
+
 func npData(t *testing.T, code int, out map[string]interface{}) map[string]interface{} {
 	t.Helper()
 	if code != 200 {

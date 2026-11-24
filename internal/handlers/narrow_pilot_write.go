@@ -148,25 +148,30 @@ func npParseUpdate(raw map[string]interface{}) (*npWriteRequest, *npError) {
 	}
 	return &req, nil
 }
+
 func npValidKey(key string) bool {
 	parsed, err := uuid.Parse(key)
 	return err == nil && parsed.String() == key
 }
+
 func npAdvisoryKey(actor, key string) int64 {
 	sum := sha256.Sum256([]byte(actor + "\x00" + key))
 	return int64(binary.BigEndian.Uint64(sum[:8]))
 }
+
 func npRequestDigest(id string, req *npWriteRequest) string {
 	raw, _ := json.Marshal([]interface{}{"update", id, req})
 	sum := sha256.Sum256(raw)
 	return hex.EncodeToString(sum[:])
 }
+
 func npDeref(p *string) string {
 	if p == nil {
 		return ""
 	}
 	return *p
 }
+
 func npResult(row *npReceiptRow) *npWriteResult {
 	return &npWriteResult{ID: row.IntakeID, Revision: npDeref(row.ResultRev), State: row.State, RequestID: row.RequestID, SourceRevision: npDeref(row.SourceRev)}
 }
@@ -204,6 +209,7 @@ func (n *NarrowPilotHandler) keyTransaction(c *gin.Context, actor, key string, f
 	}
 	return nil
 }
+
 func (n *NarrowPilotHandler) strictUpdate(c *gin.Context, actor, key string, req *npWriteRequest) (*npWriteResult, *npError) {
 	id := c.Param("id")
 	digest := npRequestDigest(id, req)
@@ -321,6 +327,7 @@ func (n *NarrowPilotHandler) WriteResult(c *gin.Context) {
 	}
 	common.APISuccess(c, npResult(&row))
 }
+
 func (n *NarrowPilotHandler) Abandon(c *gin.Context) {
 	var body struct {
 		Action   string `json:"action"`
@@ -374,6 +381,7 @@ func (n *NarrowPilotHandler) Abandon(c *gin.Context) {
 	}
 	common.APISuccess(c, result)
 }
+
 func (n *NarrowPilotHandler) SourceSnapshot(c *gin.Context) {
 	row, e := n.authorize(c, n.db, c.Param("id"), false)
 	if e != nil {

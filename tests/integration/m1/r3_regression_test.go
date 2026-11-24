@@ -6,10 +6,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"testing"
+
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/repositories"
 	"law-oa-go/internal/security"
-	"testing"
 )
 
 func TestM1R3IndexIncomingAlias(t *testing.T) {
@@ -48,6 +49,7 @@ func TestM1R3IndexIncomingAlias(t *testing.T) {
 		t.Fatal("main name matched, incoming alias alone failed to select same historical client")
 	}
 }
+
 func TestM1R3SameIdentityEcho(t *testing.T) {
 	for _, role := range []string{"opponent", "opposing_party"} {
 		t.Run(role, func(t *testing.T) {

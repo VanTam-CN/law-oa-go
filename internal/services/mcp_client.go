@@ -114,7 +114,6 @@ func (c *mcpClient) FetchLatestStandards(ctx context.Context) (*models.MCPStanda
 		response, err = c.httpClient.Do(req)
 		return err
 	})
-
 	if err != nil {
 		c.updateServiceStatus(ctx, false, err)
 		return nil, fmt.Errorf("请求MCP服务失败: %w", err)

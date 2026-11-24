@@ -14,9 +14,11 @@ import (
 func TestM1R7NestedArrayOrigin(t *testing.T) {
 	db := isolatedDB(t)
 	for _, entry := range []string{"intake", "party"} {
-		for _, op := range []string{"drop_append", "drop_lossless", "drop_agree", "decimal_append", "echo", "append_one", "append_distinct_suffixes",
+		for _, op := range []string{
+			"drop_append", "drop_lossless", "drop_agree", "decimal_append", "echo", "append_one", "append_distinct_suffixes",
 			"swap_hidden", "swap_hidden_text", "mixed_prefix", "mixed_suffix", "nested_hidden_echo", "nested_hidden_edit", "nested_hidden_sibling",
-			"rotate_append", "rotate_exact", "cross_objects", "swap_visible_siblings", "cut_hidden", "cut_visible", "delete_hidden", "cross_hidden_child", "delete_with_empty_peer"} {
+			"rotate_append", "rotate_exact", "cross_objects", "swap_visible_siblings", "cut_hidden", "cut_visible", "delete_hidden", "cross_hidden_child", "delete_with_empty_peer",
+		} {
 			t.Run(entry+"/"+op, func(t *testing.T) {
 				original := "[[9007199254740993],[9007199254740992,2]]"
 				switch op {
