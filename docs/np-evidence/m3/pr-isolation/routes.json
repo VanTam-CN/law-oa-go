@@ -1,0 +1,171 @@
+{
+  "baseline": "34099b75ddc5d6cc276a51a47a1f157065842e1f",
+  "profiles": [
+    {
+      "head": "codex/np-main-m2",
+      "phase": "success",
+      "eligible_jobs": 25,
+      "possible_external_steps": 0
+    },
+    {
+      "head": "codex/np-main-m2",
+      "phase": "failure",
+      "eligible_jobs": 25,
+      "possible_external_steps": 0
+    },
+    {
+      "head": "codex/np-main-m2",
+      "phase": "cancelled",
+      "eligible_jobs": 25,
+      "possible_external_steps": 0
+    },
+    {
+      "head": "codex/np-main-m2",
+      "phase": "failure+cancelled",
+      "eligible_jobs": 25,
+      "possible_external_steps": 0
+    },
+    {
+      "head": "codex/np-main-m3",
+      "phase": "success",
+      "eligible_jobs": 25,
+      "possible_external_steps": 0
+    },
+    {
+      "head": "codex/np-main-m3",
+      "phase": "failure",
+      "eligible_jobs": 25,
+      "possible_external_steps": 0
+    },
+    {
+      "head": "codex/np-main-m3",
+      "phase": "cancelled",
+      "eligible_jobs": 25,
+      "possible_external_steps": 0
+    },
+    {
+      "head": "codex/np-main-m3",
+      "phase": "failure+cancelled",
+      "eligible_jobs": 25,
+      "possible_external_steps": 0
+    },
+    {
+      "head": "feature/example",
+      "phase": "success",
+      "eligible_jobs": 29,
+      "possible_external_steps": 44
+    },
+    {
+      "head": "feature/example",
+      "phase": "failure",
+      "eligible_jobs": 29,
+      "possible_external_steps": 45
+    },
+    {
+      "head": "feature/example",
+      "phase": "cancelled",
+      "eligible_jobs": 29,
+      "possible_external_steps": 44
+    },
+    {
+      "head": "feature/example",
+      "phase": "failure+cancelled",
+      "eligible_jobs": 29,
+      "possible_external_steps": 45
+    },
+    {
+      "head": "codex/np-main-m3-followup",
+      "phase": "success",
+      "eligible_jobs": 29,
+      "possible_external_steps": 44
+    },
+    {
+      "head": "codex/np-main-m3-followup",
+      "phase": "failure",
+      "eligible_jobs": 29,
+      "possible_external_steps": 45
+    },
+    {
+      "head": "codex/np-main-m3-followup",
+      "phase": "cancelled",
+      "eligible_jobs": 29,
+      "possible_external_steps": 44
+    },
+    {
+      "head": "codex/np-main-m3-followup",
+      "phase": "failure+cancelled",
+      "eligible_jobs": 29,
+      "possible_external_steps": 45
+    },
+    {
+      "head": "codex/np-main-m30",
+      "phase": "success",
+      "eligible_jobs": 29,
+      "possible_external_steps": 44
+    },
+    {
+      "head": "codex/np-main-m30",
+      "phase": "failure",
+      "eligible_jobs": 29,
+      "possible_external_steps": 45
+    },
+    {
+      "head": "codex/np-main-m30",
+      "phase": "cancelled",
+      "eligible_jobs": 29,
+      "possible_external_steps": 44
+    },
+    {
+      "head": "codex/np-main-m30",
+      "phase": "failure+cancelled",
+      "eligible_jobs": 29,
+      "possible_external_steps": 45
+    }
+  ],
+  "negative_controls": [
+    {
+      "head": "codex/np-main-m2",
+      "phase": "failure",
+      "detected": [
+        "ci.yml/quality tool-cache",
+        "ci.yml/notify actions/upload-artifact",
+        "ci.yml/notify 8398a7/action-slack",
+        "ci.yml/notify dawidd6/action-send-mail",
+        "tests.yml/e2e-tests actions/upload-artifact"
+      ]
+    },
+    {
+      "head": "codex/np-main-m2",
+      "phase": "cancelled",
+      "detected": [
+        "ci.yml/quality tool-cache",
+        "ci.yml/notify actions/upload-artifact",
+        "ci.yml/notify 8398a7/action-slack",
+        "ci.yml/notify dawidd6/action-send-mail",
+        "tests.yml/e2e-tests actions/upload-artifact"
+      ]
+    },
+    {
+      "head": "codex/np-main-m3",
+      "phase": "failure",
+      "detected": [
+        "ci.yml/quality tool-cache",
+        "ci.yml/notify actions/upload-artifact",
+        "ci.yml/notify 8398a7/action-slack",
+        "ci.yml/notify dawidd6/action-send-mail",
+        "tests.yml/e2e-tests actions/upload-artifact"
+      ]
+    },
+    {
+      "head": "codex/np-main-m3",
+      "phase": "cancelled",
+      "detected": [
+        "ci.yml/quality tool-cache",
+        "ci.yml/notify actions/upload-artifact",
+        "ci.yml/notify 8398a7/action-slack",
+        "ci.yml/notify dawidd6/action-send-mail",
+        "tests.yml/e2e-tests actions/upload-artifact"
+      ]
+    }
+  ]
+}
