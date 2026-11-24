@@ -588,10 +588,14 @@ func (s *conflictPoolService) enrichCompanyData(ctx context.Context, entryID uin
 	if taxID != "" {
 		shareholdingData, err := s.companyAPI.GetShareholding(ctx, taxID, ProviderMock)
 		if err == nil {
-			data, _ := json.Marshal(shareholdingData)
-			shareholdingInfo = models.JSON(map[string]interface{}{
-				"data": string(data),
-			})
+			data, marshalErr := json.Marshal(shareholdingData)
+			if marshalErr != nil {
+				log.Printf("⚠️ 序列化股权穿透数据失败: %v", marshalErr)
+			} else {
+				shareholdingInfo = models.JSON(map[string]interface{}{
+					"data": string(data),
+				})
+			}
 		}
 	}
 
@@ -600,10 +604,14 @@ func (s *conflictPoolService) enrichCompanyData(ctx context.Context, entryID uin
 	if taxID != "" {
 		relatedData, err := s.companyAPI.GetRelatedCompanies(ctx, taxID, ProviderMock)
 		if err == nil {
-			data, _ := json.Marshal(relatedData)
-			relatedCompanies = models.JSON(map[string]interface{}{
-				"data": string(data),
-			})
+			data, marshalErr := json.Marshal(relatedData)
+			if marshalErr != nil {
+				log.Printf("⚠️ 序列化关联公司数据失败: %v", marshalErr)
+			} else {
+				relatedCompanies = models.JSON(map[string]interface{}{
+					"data": string(data),
+				})
+			}
 		}
 	}
 

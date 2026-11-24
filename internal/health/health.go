@@ -427,7 +427,9 @@ func (cc *CacheHealthCheck) Check(ctx context.Context) *HealthCheckResult {
 	}
 
 	// 清理测试数据
-	cc.cache.Delete(testKey)
+	if err := cc.cache.Delete(testKey); err != nil {
+		slog.Warn("清理缓存健康检查测试数据失败", "key", testKey, "error", err)
+	}
 
 	result.Details = map[string]interface{}{
 		"test_passed": true,
@@ -584,7 +586,8 @@ func (ec *ExternalAPIHealthCheck) Check(ctx context.Context) *HealthCheckResult 
 		result.Duration = time.Since(start).Milliseconds()
 		return result
 	}
-	defer resp.Body.Close()
+	// resp.Body.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode >= 500 {
 		result.Status = StatusUnhealthy

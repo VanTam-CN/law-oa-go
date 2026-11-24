@@ -432,7 +432,8 @@ func (s *DocumentVersionService) saveVersionFile(file *multipart.FileHeader, dst
 	if err != nil {
 		return fmt.Errorf("failed to open uploaded file: %w", err)
 	}
-	defer src.Close()
+	// src.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = src.Close() }()
 
 	// Create directory if it doesn't exist
 	dir := filepath.Dir(dst)
@@ -445,13 +446,14 @@ func (s *DocumentVersionService) saveVersionFile(file *multipart.FileHeader, dst
 	if err != nil {
 		return fmt.Errorf("failed to create file %s: %w", dst, err)
 	}
-	defer dstFile.Close()
+	// dstFile.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = dstFile.Close() }()
 
 	// Copy content
 	_, err = io.Copy(dstFile, src)
 	if err != nil {
-		// Clean up the file if copy fails
-		os.Remove(dst)
+		// 清理拷贝失败的半成品文件；主错误是拷贝失败，删除失败不覆盖主错误。
+		_ = os.Remove(dst)
 		return fmt.Errorf("failed to copy file content: %w", err)
 	}
 

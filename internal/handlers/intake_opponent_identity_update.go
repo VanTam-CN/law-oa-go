@@ -40,7 +40,11 @@ func applyOpponentIdentityUpdate(tx *gorm.DB, intakeID string, input interface{}
 	if entityName == "" {
 		return services.NewSubjectWorkflowError("INTAKE_PARTY_NAME_REQUIRED", "接案当事人名称不能为空")
 	}
-	suppliedType := strings.ToUpper(strings.TrimSpace(payload["entity_type"].(string)))
+	rawEntityType, ok := payload["entity_type"].(string)
+	if !ok {
+		return services.NewSubjectWorkflowError("INTAKE_PROTOCOL_INVALID", "entity_type 需要字符串")
+	}
+	suppliedType := strings.ToUpper(strings.TrimSpace(rawEntityType))
 	switch suppliedType {
 	case "PERSON", "INDIVIDUAL", "个人", "自然人", "ORGANIZATION", "组织", "其他组织", "LEGAL_PERSON", "COMPANY", "企业", "法人":
 	default:

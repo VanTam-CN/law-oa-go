@@ -51,7 +51,9 @@ func AuditMiddleware() gin.HandlerFunc {
 		// 获取用户ID（如果已认证）
 		var userID uint
 		if uid, exists := c.Get("user_id"); exists {
-			userID = uid.(uint)
+			if id, ok := uid.(uint); ok {
+				userID = id
+			}
 		}
 
 		// 记录审计日志

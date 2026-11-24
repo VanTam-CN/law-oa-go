@@ -128,7 +128,8 @@ func (s *DocumentPreviewService) generateTextPreview(doc *models.Document, respo
 	if err != nil {
 		return nil, fmt.Errorf("failed to open text file: %w", err)
 	}
-	defer file.Close()
+	// file.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = file.Close() }()
 
 	buf := make([]byte, 1000)
 	n, err := file.Read(buf)

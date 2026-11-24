@@ -270,7 +270,7 @@ func TestWorkerPool_Metrics(t *testing.T) {
 			},
 			Context: context.Background(),
 		}
-		pool.Submit(task)
+		require.NoError(t, pool.Submit(task))
 	}
 
 	// 等待任务完成

@@ -194,7 +194,8 @@ func NewElasticsearchOptimizer(cfg *ESConfig) (*ElasticsearchOptimizer, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to Elasticsearch: %w", err)
 	}
-	defer res.Body.Close()
+	// res.Body.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
 		return nil, fmt.Errorf("elasticsearch returned error: %s", res.Status())
@@ -353,7 +354,8 @@ func (eso *ElasticsearchOptimizer) SearchDocument(ctx context.Context, options S
 		eso.recordSearchError("search", err)
 		return fmt.Errorf("search failed: %w", err)
 	}
-	defer res.Body.Close()
+	// res.Body.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
 		eso.recordSearchError("search_response", fmt.Errorf("elasticsearch error: %s", res.Status()))
@@ -416,7 +418,8 @@ func (eso *ElasticsearchOptimizer) SearchWithAggregation(ctx context.Context, op
 		eso.recordSearchError("search_aggregation", err)
 		return fmt.Errorf("aggregation search failed: %w", err)
 	}
-	defer res.Body.Close()
+	// res.Body.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
 		eso.recordSearchError("aggregation_response", fmt.Errorf("elasticsearch error: %s", res.Status()))
@@ -446,7 +449,8 @@ func (eso *ElasticsearchOptimizer) GetIndexHealth(ctx context.Context, indices [
 	if err != nil {
 		return nil, fmt.Errorf("failed to get cluster health: %w", err)
 	}
-	defer res.Body.Close()
+	// res.Body.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = res.Body.Close() }()
 
 	var health map[string]interface{}
 	if err := json.NewDecoder(res.Body).Decode(&health); err != nil {

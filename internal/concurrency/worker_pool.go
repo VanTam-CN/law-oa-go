@@ -201,8 +201,11 @@ func (p *WorkerPool) SubmitWithResult(ctx context.Context, task Task) (*TaskResu
 		select {
 		case <-ticker.C:
 			// 检查任务是否完成
-			if result, ok := p.taskResults.Load(task.ID()); ok {
-				taskResult := result.(TaskResult)
+			if stored, ok := p.taskResults.Load(task.ID()); ok {
+				taskResult, typeOK := stored.(TaskResult)
+				if !typeOK {
+					return nil, fmt.Errorf("任务结果类型断言失败: %T", stored)
+				}
 				p.taskResults.Delete(task.ID()) // 清理结果
 				return &taskResult, nil
 			}

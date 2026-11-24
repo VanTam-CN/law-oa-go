@@ -7,6 +7,8 @@
 #   - 所有 gosec 排除均逐条给出理由并立跟踪卡，不用 nolint 滥用、不削弱测试。
 # 基线证据：golangci-lint v1.64.8，治理前全仓 4131 条 findings（快照见 evidence 目录）。
 # gomnd 在 v1.64 已 fully inactivated（no-op），从门禁集移除；mnd 采纳记入债台账。
+# errcheck 族（errcheck/errchkjson/forcetypeassert）已于 t_2f7c0c77 批修存量 363 发现后
+# 恢复进门禁集（2026-11-24），当前 0 findings。
 
 run:
   # 超时时间 - 增加以支持更全面的分析
@@ -127,6 +129,9 @@ linters:
     - ineffassign
     - wastedassign
     # 错误处理（真实缺陷类）
+    - errcheck
+    - errchkjson
+    - forcetypeassert
     - errorlint
     - errname
     - rowserrcheck
@@ -162,13 +167,14 @@ linters:
     - gofmt
     - goimports
   # 已移出门禁集（存量债台账 + follow-up 卡，逐批修复后恢复）：
-  #   errcheck(513) wrapcheck(439) goheader(329) goconst(132) nilnil(67)
+  #   wrapcheck(439) goheader(329) goconst(132) nilnil(67)
   #   unused(79, 结构体字段可能被 gorm/JSON 反射引用，需逐项甄别)
   #   unparam(13) promlinter(13) nonamedreturns(12) containedctx(9) prealloc(14)
   #   gocognit(114) gocyclo(33) funlen(25) nestif(42) dupl(87)
   #   revive 风格规则: exported(749) package-comments(40) unused-parameter(314) var-naming(59)
-  #   未检查值族(与 errcheck 同卡批修): errchkjson(23) forcetypeassert(74)
   #   复杂度/可维护性族(同卡批修): maintidx(11) gocognit(114) gocyclo(33) funlen(25) nestif(42) dupl(87)
+  # 已恢复门禁（t_2f7c0c77 批修完成，存量 363 发现清零）：
+  #   errcheck(216) errchkjson(31) forcetypeassert(116) — 2026-11-24 恢复，0 findings
   # 已废弃（上游 deprecation，不再回归）：contextcheck tenv exportloopref
   # 已移除（local-prefixes 指向不存在的 github.com/your-org 占位、与 goimports 重复）：gci
 
@@ -180,7 +186,7 @@ linters-settings:
     excludes:
       - G204  # 子进程启动（既有）
       - G304  # 文件路径（既有）
-      - G104  # 与 errcheck 重复的未处理错误检查；errcheck 本体在债台账（513），G104 随之不入双份门禁
+      - G104  # 与 errcheck 重复的未处理错误检查；errcheck 已在门禁集（t_2f7c0c77 恢复），G104 不入双份门禁
       - G301  # 目录权限：日志/上传目录按 0755 约定，单用户容器无越权面；多用户部署前需收紧（跟踪卡）
       - G306  # WriteFile 权限：同 G301 理由（0644 导出/日志文件，单用户容器），多用户部署前收紧（跟踪卡）
       - G115  # 整型溢出转换：当前 amd64/int64 平台安全；批量补范围检查后恢复（跟踪卡）

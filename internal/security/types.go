@@ -272,7 +272,11 @@ func (rl *SlidingWindowRateLimiter) Allow(ip string) bool {
 		count:     0,
 		windowEnd: windowEnd,
 	})
-	record := value.(*ipRequestRecord)
+	record, ok := value.(*ipRequestRecord)
+	if !ok {
+		// 内部不变量：records 仅存储 *ipRequestRecord，断言失败说明内部状态被破坏
+		panic(fmt.Sprintf("SlidingWindowRateLimiter: records 中存在非 *ipRequestRecord 值: %T", value))
+	}
 
 	// 使用细粒度锁保护该IP的记录
 	record.mu.Lock()
@@ -304,7 +308,11 @@ func (rl *SlidingWindowRateLimiter) GetRateLimitInfo(ip string) (current int, li
 	if !ok {
 		return 0, rl.maxReqs, time.Now().Add(rl.window).Unix()
 	}
-	record := value.(*ipRequestRecord)
+	record, ok := value.(*ipRequestRecord)
+	if !ok {
+		// 内部不变量：records 仅存储 *ipRequestRecord，断言失败说明内部状态被破坏
+		panic(fmt.Sprintf("SlidingWindowRateLimiter: records 中存在非 *ipRequestRecord 值: %T", value))
+	}
 	return record.count, rl.maxReqs, record.windowEnd
 }
 
@@ -318,7 +326,11 @@ func (rl *SlidingWindowRateLimiter) StartCleanupTimer() {
 		for range ticker.C {
 			now := time.Now().Unix()
 			rl.records.Range(func(key, value interface{}) bool {
-				record := value.(*ipRequestRecord)
+				record, ok := value.(*ipRequestRecord)
+				if !ok {
+					// 内部不变量：records 仅存储 *ipRequestRecord，断言失败说明内部状态被破坏
+					panic(fmt.Sprintf("SlidingWindowRateLimiter: records 中存在非 *ipRequestRecord 值: %T", value))
+				}
 				// 清理窗口结束后超过1分钟的记录
 				if now > record.windowEnd+60 {
 					rl.records.Delete(key)

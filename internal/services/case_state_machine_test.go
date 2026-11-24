@@ -132,9 +132,10 @@ func TestCaseStateMachine_Transition(t *testing.T) {
 	t.Run("庭审发回重审", func(t *testing.T) {
 		// 直接通过DB重置状态到 in_progress（完整生命周期后案件已归档）
 		db.Model(&models.Case{}).Where("id = ?", c.ID).Update("status", models.CaseStatusInProgress)
-		sm.Transition(c.ID, models.CaseStatusTrial, user.ID, "二次开庭")
+		err := sm.Transition(c.ID, models.CaseStatusTrial, user.ID, "二次开庭")
+		assert.NoError(t, err, "庭审转换失败")
 
-		err := sm.Transition(c.ID, models.CaseStatusInProgress, user.ID, "法院发回重审")
+		err = sm.Transition(c.ID, models.CaseStatusInProgress, user.ID, "法院发回重审")
 		assert.NoError(t, err)
 
 		var updated models.Case

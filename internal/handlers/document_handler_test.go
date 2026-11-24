@@ -346,9 +346,11 @@ func TestDocumentHandler_UploadDocumentSuccess(t *testing.T) {
 
 	// 添加文件
 	part, _ := writer.CreateFormFile("file", "test.pdf")
-	part.Write([]byte("mock pdf content"))
+	if _, err := part.Write([]byte("mock pdf content")); err != nil {
+		t.Fatalf("写入测试文件内容失败: %v", err)
+	}
 
-	writer.Close()
+	require.NoError(t, writer.Close())
 
 	// 创建请求
 	req := httptest.NewRequest(http.MethodPost, "/documents", body)
@@ -365,7 +367,8 @@ func TestDocumentHandler_UploadDocumentSuccess(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, true, response["success"])
 
-	data := response["data"].(map[string]interface{})
+	data, ok := response["data"].(map[string]interface{})
+	require.True(t, ok, "响应 data 字段应为对象")
 	assert.Equal(t, float64(1), data["id"])
 	assert.Equal(t, "测试文档.pdf", data["name"])
 	assert.Equal(t, "合同", data["category"])
@@ -396,7 +399,8 @@ func TestDocumentHandler_GetDocumentSuccess(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, true, response["success"])
 
-	data := response["data"].(map[string]interface{})
+	data, ok := response["data"].(map[string]interface{})
+	require.True(t, ok, "响应 data 字段应为对象")
 	assert.Equal(t, float64(1), data["id"])
 	assert.Equal(t, "测试文档.pdf", data["name"])
 }
@@ -471,7 +475,8 @@ func TestDocumentHandler_UpdateDocumentSuccess(t *testing.T) {
 		"category":    "更新类别",
 		"tags":        []string{"更新", "标签"},
 	}
-	jsonData, _ := json.Marshal(updateReq)
+	jsonData, marshalErr := json.Marshal(updateReq)
+	require.NoError(t, marshalErr)
 
 	req := httptest.NewRequest(http.MethodPut, "/documents/1", bytes.NewBuffer(jsonData))
 	req.Header.Set("Content-Type", "application/json")
@@ -487,7 +492,8 @@ func TestDocumentHandler_UpdateDocumentSuccess(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, true, response["success"])
 
-	data := response["data"].(map[string]interface{})
+	data, ok := response["data"].(map[string]interface{})
+	require.True(t, ok, "响应 data 字段应为对象")
 	assert.Equal(t, "更新的文档.pdf", data["name"])
 	assert.Equal(t, "更新的描述", data["description"])
 }
@@ -549,11 +555,13 @@ func TestDocumentHandler_ListDocumentsSuccess(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, true, response["success"])
 
-	data := response["data"].([]interface{})
+	data, ok := response["data"].([]interface{})
+	require.True(t, ok, "响应 data 字段应为数组")
 	assert.Len(t, data, 2)
 
 	assert.Contains(t, response, "pagination")
-	pagination := response["pagination"].(map[string]interface{})
+	pagination, ok := response["pagination"].(map[string]interface{})
+	require.True(t, ok, "响应 pagination 字段应为对象")
 	assert.Equal(t, float64(1), pagination["page"])
 	assert.Equal(t, float64(10), pagination["page_size"])
 	assert.Equal(t, float64(2), pagination["total"])
@@ -583,7 +591,8 @@ func TestDocumentHandler_GetDocumentStatsSuccess(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, true, response["success"])
 
-	data := response["data"].(map[string]interface{})
+	data, ok := response["data"].(map[string]interface{})
+	require.True(t, ok, "响应 data 字段应为对象")
 	assert.Equal(t, float64(100), data["total_documents"])
 	assert.Contains(t, data, "by_category")
 	assert.Contains(t, data, "by_entity_type")
@@ -625,7 +634,7 @@ func TestDocumentHandler_UploadDocumentMissingFile(t *testing.T) {
 	_ = writer.WriteField("name", "测试文档.pdf")
 	_ = writer.WriteField("description", "这是一个测试文档")
 
-	writer.Close()
+	require.NoError(t, writer.Close())
 
 	req := httptest.NewRequest(http.MethodPost, "/documents", body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
@@ -658,9 +667,11 @@ func TestDocumentHandler_UploadDocumentInvalidEntityID(t *testing.T) {
 	_ = writer.WriteField("entity_type", "case")
 
 	part, _ := writer.CreateFormFile("file", "test.pdf")
-	part.Write([]byte("mock pdf content"))
+	if _, err := part.Write([]byte("mock pdf content")); err != nil {
+		t.Fatalf("写入测试文件内容失败: %v", err)
+	}
 
-	writer.Close()
+	require.NoError(t, writer.Close())
 
 	req := httptest.NewRequest(http.MethodPost, "/documents", body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
@@ -784,9 +795,11 @@ func TestDocumentHandler_BoundaryCases(t *testing.T) {
 		_ = writer.WriteField("entity_type", "case")
 
 		part, _ := writer.CreateFormFile("file", "test.pdf")
-		part.Write([]byte("mock pdf content"))
+		if _, err := part.Write([]byte("mock pdf content")); err != nil {
+			t.Fatalf("写入测试文件内容失败: %v", err)
+		}
 
-		writer.Close()
+		require.NoError(t, writer.Close())
 
 		req := httptest.NewRequest(http.MethodPost, "/documents", body)
 		req.Header.Set("Content-Type", writer.FormDataContentType())
@@ -817,9 +830,11 @@ func TestDocumentHandler_BoundaryCases(t *testing.T) {
 
 		// 只添加必需的文件字段
 		part, _ := writer.CreateFormFile("file", "test.pdf")
-		part.Write([]byte("mock pdf content"))
+		if _, err := part.Write([]byte("mock pdf content")); err != nil {
+			t.Fatalf("写入测试文件内容失败: %v", err)
+		}
 
-		writer.Close()
+		require.NoError(t, writer.Close())
 
 		req := httptest.NewRequest(http.MethodPost, "/documents", body)
 		req.Header.Set("Content-Type", writer.FormDataContentType())
@@ -853,9 +868,11 @@ func TestDocumentHandler_BoundaryCases(t *testing.T) {
 		_ = writer.WriteField("tags", "标签1,标签2,标签3")
 
 		part, _ := writer.CreateFormFile("file", "test.pdf")
-		part.Write([]byte("mock pdf content"))
+		if _, err := part.Write([]byte("mock pdf content")); err != nil {
+			t.Fatalf("写入测试文件内容失败: %v", err)
+		}
 
-		writer.Close()
+		require.NoError(t, writer.Close())
 
 		req := httptest.NewRequest(http.MethodPost, "/documents", body)
 		req.Header.Set("Content-Type", writer.FormDataContentType())

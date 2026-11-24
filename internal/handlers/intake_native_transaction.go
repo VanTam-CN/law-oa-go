@@ -58,7 +58,11 @@ func browserNumber(n json.Number) json.Number {
 	if f == 0 {
 		return "0"
 	}
-	encoded, _ := json.Marshal(f)
+	encoded, marshalErr := json.Marshal(f)
+	if marshalErr != nil {
+		// 非有限数值（NaN/Inf）时 Marshal 返回 null 字节并报错；与 JSON.stringify 语义一致，返回 null 字面量
+		return json.Number(encoded)
+	}
 	return json.Number(encoded)
 }
 

@@ -57,7 +57,11 @@ func (m *MockEthicalWallRepository) GetWhitelistByCase(ctx context.Context, case
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]*models.CaseEthicalWallWhitelist), args.Error(1)
+	list, ok := args.Get(0).([]*models.CaseEthicalWallWhitelist)
+	if !ok {
+		return nil, errors.New("mock 返回类型断言失败: 期望 []*models.CaseEthicalWallWhitelist")
+	}
+	return list, args.Error(1)
 }
 
 func (m *MockEthicalWallRepository) GetWhitelistByUser(ctx context.Context, userID uint) ([]*models.CaseEthicalWallWhitelist, error) {
@@ -65,7 +69,11 @@ func (m *MockEthicalWallRepository) GetWhitelistByUser(ctx context.Context, user
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]*models.CaseEthicalWallWhitelist), args.Error(1)
+	list, ok := args.Get(0).([]*models.CaseEthicalWallWhitelist)
+	if !ok {
+		return nil, errors.New("mock 返回类型断言失败: 期望 []*models.CaseEthicalWallWhitelist")
+	}
+	return list, args.Error(1)
 }
 
 func (m *MockEthicalWallRepository) LogAccessAttempt(ctx context.Context, caseID, userID uint, accessType, accessResult, ipAddress, userAgent string) error {
@@ -77,7 +85,11 @@ func (m *MockEthicalWallRepository) GetAccessLogs(ctx context.Context, caseID ui
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]*models.EthicalWallAccessLog), args.Error(1)
+	logs, ok := args.Get(0).([]*models.EthicalWallAccessLog)
+	if !ok {
+		return nil, errors.New("mock 返回类型断言失败: 期望 []*models.EthicalWallAccessLog")
+	}
+	return logs, args.Error(1)
 }
 
 func (m *MockEthicalWallRepository) ClearWhitelist(ctx context.Context, caseID uint) error {

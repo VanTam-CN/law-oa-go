@@ -1,0 +1,4 @@
+# t_2f7c0c77 门禁恢复验证快照
+# 命令: golangci-lint run -c .golangci.yml --timeout=10m --allow-parallel-runners (v1.64.8)
+# 结果: 0 findings, RC=0, 0 告警（errcheck/errchkjson/forcetypeassert 恢复门禁后全仓 lint 全绿）
+# 时间: 2026-11-24

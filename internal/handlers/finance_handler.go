@@ -2301,7 +2301,10 @@ func dateStringPtr(dateStr *string) string {
 
 func writeCSVRecords(c *gin.Context, records [][]string) {
 	csvWriter := csv.NewWriter(c.Writer)
-	csvWriter.WriteAll(sanitizeCSVRecords(records))
+	if err := csvWriter.WriteAll(sanitizeCSVRecords(records)); err != nil {
+		common.APIInternalServerError(c, "生成CSV文件失败", err.Error())
+		return
+	}
 	csvWriter.Flush()
 	if err := csvWriter.Error(); err != nil {
 		common.APIInternalServerError(c, "生成CSV文件失败", err.Error())

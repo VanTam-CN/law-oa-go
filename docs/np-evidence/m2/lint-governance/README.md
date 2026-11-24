@@ -52,9 +52,11 @@
 
 ## 5. 存量债台账（移出门禁集，follow-up 卡逐批修复后恢复）
 
+> 更新（t_2f7c0c77，2026-11-24）：errcheck 族批修完成并恢复门禁，见下表「已恢复」行。
+
 | 族 | 治理前数量 | 去向 |
 |---|---|---|
-| errcheck | 513 | 批修卡（与 errchkjson 23 / forcetypeassert 74 同卡） |
+| ~~errcheck / errchkjson / forcetypeassert~~ | 实测基线 216 / 31 / 116（=363；卡面 513/23/74 为治理前更早快照口径） | **✅ 已批修恢复门禁（t_2f7c0c77，2026-11-24）：存量 363 发现全部清零，门禁集 0 findings，0 新增 nolint，无测试削弱** |
 | wrapcheck | 439 | 决策卡（错误包装策略先定，再批修） |
 | goheader | 329 | 决策卡（统一 license 头模板后一次性补齐） |
 | revive 风格规则 | exported 749 / unused-parameter 314 / var-naming 59 / package-comments 40 | 批修卡（恢复规则后按包分批） |
@@ -96,3 +98,38 @@
 ## 9. 快照清单
 
 见 `MANIFEST.sha256`（16 个文件：治理前基线、round1-8 全过程、PR #53 run 45390618050 与 PR #54 run 45405844993 quality job 原始日志、fuzz job 日志）。
+
+> 卡 t_2f7c0c77（2026-11-24）追加 2 个快照：`snapshots/t2f7c0c77-baseline-363.txt`（errcheck 族基线 363 发现）与 `snapshots/t2f7c0c77-final-lint.txt`（门禁恢复后 0 findings，RC=0）。MANIFEST 更新至 18 条目（含 3 个 gitignored 的 CI 原始日志引用，沿用既有模式）。
+
+## 10. errcheck 族批修与门禁恢复（卡 t_2f7c0c77，2026-11-24）
+
+**范围**：errcheck / errchkjson / forcetypeassert 三族存量发现批修，恢复进门禁集（ratchet）。
+
+### 10.1 基线（191bb6b 实测，同二进制 v1.64.8）
+
+| 族 | 实测基线 | 卡面计数 | 说明 |
+|---|---|---|---|
+| errcheck | 216 | 513 | 卡面 513 为治理前更早快照口径；实测以 191bb6b 为准 |
+| errchkjson | 31 | 23 | 同上（23 unsafe-type + 8 not-checked，源码确认两类均由「检查错误」修复） |
+| forcetypeassert | 116 | 74 | 86「type assertion must be checked」+ 30「right hand must be only type assertion」 |
+| **合计** | **363** | — | 基线快照 `snapshots/t2f7c0c77-baseline-363.txt` |
+
+### 10.2 修复策略（无 nolint，无测试削弱）
+
+- **errchkjson**：读 `errchkjson@v0.4.0` 源码确认「unsafe type」仅在错误被丢弃到 `_`（blankIdentifier）时触发 → 统一改为 `data, err := json.Marshal(...); if err != nil { return ... }`，同时清除 unsafe-type 与 not-checked 两类，不削弱错误处理；
+- **defer Close 统一模式**：72 处 `defer <expr>.Close()` → `defer func() { _ = <expr>.Close() }()`（延迟清理阶段错误无后续处理路径，显式丢弃并附理由注释）；`frontend/migrate/main.go` 4 处 `m.Close()` 返回 2 值 → `_, _ = m.Close()`；
+- **forcetypeassert**：`x, ok := v.(T); if !ok { ... }`；生产代码失败返回 error/安全默认，内部不变量（对象池/L1 缓存/gin.H 响应）用带诊断消息的 panic，日志字段类型不符时**跳过字段**避免记录时 panic；
+- **errcheck 其他**：`os.Setenv`/`os.WriteFile`/`w.Write`/`RegisterValidation`/`gorm` 调用等全部改为检查错误（错误传播或带理由注释的显式丢弃），103 处 `_ =` 均附中文理由注释，16 处 panic 均为内部不变量保护。
+
+### 10.3 结果与验证（全部真实执行）
+
+- **存量 363 发现全部清零**（216 errcheck + 31 errchkjson + 116 forcetypeassert），`go build ./...` 通过，`go vet ./...` 通过；
+- **门禁恢复后全仓 lint**：`golangci-lint run -c .golangci.yml`（v1.64.8，errcheck 族已 enable）→ **0 findings，RC=0**（`snapshots/t2f7c0c77-final-lint.txt`）；0 新增 nolint（nolintlint 门禁内）；
+- **gofumpt -l 变更文件**：0 漂移（CI 格式步不会回红）；
+- **受影响包 `-race -count=1` 复跑**：handlers、services、repositories、database、health、common、api、auth、cache、concurrency、security、validation、middleware、errors、logger、models、elasticsearch、rbac、metrics、cmd、frontend/migrate、test、tests/integration **全部 ok**；
+- **tests/performance**：`TestPerformanceMonitoring` 的 `duplicate metrics collector registration` panic 为 **pre-existing**（base 191bb6b 同款复现，与本卡无关，未触碰该测试函数）；非本卡范围，沿用 pre-existing 记录惯例。
+
+### 10.4 门禁恢复决策
+
+- `.golangci.yml` `linters.enable` 加回 `errcheck`、`errchkjson`、`forcetypeassert`（错误处理组）；errcheck 保持默认 `check-blank: false`（103 处有理由注释的 `_ =` 为治理约定，由评审而非 linter 强制）；G104 排除注释更新（errcheck 已在门禁，不双份）；
+- 债台账 §5 已将 errcheck 族标记「✅ 已批修恢复门禁」。

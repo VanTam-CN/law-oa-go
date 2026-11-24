@@ -322,7 +322,9 @@ func (s *PaymentService) ConfirmPayment(ctx context.Context, id uint, confirmedB
 				milestone.Status = "partial_paid"
 			}
 
-			s.milestoneRepo.Update(ctx, milestone)
+			if err := s.milestoneRepo.Update(ctx, milestone); err != nil {
+				return nil, fmt.Errorf("更新付款计划状态失败: %w", err)
+			}
 		}
 	}
 

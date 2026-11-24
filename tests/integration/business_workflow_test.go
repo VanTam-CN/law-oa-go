@@ -82,7 +82,12 @@ func (suite *BusinessWorkflowTestSuite) SetupSuite() {
 
 	// 初始化路由
 	suite.router = gin.New()
-	router.Init(suite.router, db, nil)
+	// router.Init 的窄域 schema 守卫要求 PostgreSQL，而本套件使用 SQLite 内存库，
+	// 因此该错误是测试环境的预期结果（路由未实际注册；本套件断言均直接走 service 层，
+	// 唯一的 router.ServeHTTP 调用未断言响应码）。记录而非失败，不削弱任何断言。
+	if err := router.Init(suite.router, db, nil); err != nil {
+		suite.T().Logf("router.Init 预期错误(SQLite 测试环境，路由未注册): %v", err)
+	}
 
 	// 创建测试数据
 	suite.setupTestData()
@@ -92,7 +97,7 @@ func (suite *BusinessWorkflowTestSuite) SetupSuite() {
 func (suite *BusinessWorkflowTestSuite) TearDownSuite() {
 	sqlDB, err := suite.db.DB()
 	if err == nil {
-		sqlDB.Close()
+		suite.Require().NoError(sqlDB.Close(), "关闭测试数据库连接失败")
 	}
 }
 

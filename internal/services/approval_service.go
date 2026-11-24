@@ -282,11 +282,17 @@ func (s *ApprovalService) CreateApproval(userID string, userName string, req *mo
 
 	// 处理附件和元数据
 	if len(req.Attachments) > 0 {
-		attachmentsBytes, _ := json.Marshal(req.Attachments)
+		attachmentsBytes, err := json.Marshal(req.Attachments)
+		if err != nil {
+			return nil, fmt.Errorf("序列化审批附件失败: %w", err)
+		}
 		approval.Attachments = string(attachmentsBytes)
 	}
 	if req.Metadata != nil {
-		metadataBytes, _ := json.Marshal(req.Metadata)
+		metadataBytes, err := json.Marshal(req.Metadata)
+		if err != nil {
+			return nil, fmt.Errorf("序列化审批元数据失败: %w", err)
+		}
 		approval.Metadata = string(metadataBytes)
 	}
 
@@ -528,13 +534,18 @@ func (s *ApprovalService) ResubmitApproval(userID string, approvalID string, rev
 	// 更新元数据，添加修改说明
 	var metadata map[string]interface{}
 	if approval.Metadata != "{}" && approval.Metadata != "" {
-		json.Unmarshal([]byte(approval.Metadata), &metadata)
+		if err := json.Unmarshal([]byte(approval.Metadata), &metadata); err != nil {
+			return nil, fmt.Errorf("解析审批元数据失败: %w", err)
+		}
 	} else {
 		metadata = make(map[string]interface{})
 	}
 	metadata["revision_note"] = revisionNote
 	metadata["resubmitted_at"] = time.Now().Format(time.RFC3339)
-	metadataBytes, _ := json.Marshal(metadata)
+	metadataBytes, err := json.Marshal(metadata)
+	if err != nil {
+		return nil, fmt.Errorf("序列化审批元数据失败: %w", err)
+	}
 	approval.Metadata = string(metadataBytes)
 
 	// 重新分配审批人

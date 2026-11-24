@@ -75,11 +75,17 @@ func (h *ConflictReviewHandler) CreateConflictCheck(c *gin.Context) {
 		return
 	}
 
+	userIDUint, ok := userID.(uint)
+	if !ok {
+		common.APIUnauthorized(c, "用户身份无效")
+		return
+	}
+
 	checkReq := &services.ConflictCheckRequest{
 		CaseID:        req.CaseID,
 		CheckEntities: checkEntities,
 		SearchDepth:   searchDepth,
-		RequestedBy:   userID.(uint),
+		RequestedBy:   userIDUint,
 	}
 
 	result, err := h.conflictCheckService.CheckConflict(c.Request.Context(), checkReq)

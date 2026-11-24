@@ -541,5 +541,8 @@ func (pm *V2PerformanceMiddleware) recordMetricsAsync(c *gin.Context, writer *re
 	pipe := pm.redisClient.Pipeline()
 	pipe.HMSet(ctx, key, metrics)
 	pipe.Expire(ctx, key, 24*time.Hour)
-	pipe.Exec(ctx)
+	if _, err := pipe.Exec(ctx); err != nil {
+		// 指标落库失败不影响请求主流程，仅记录日志。
+		logger.Logger.Warn("性能指标写入 Redis 失败", zap.String("key", key), zap.Error(err))
+	}
 }

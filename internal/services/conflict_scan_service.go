@@ -673,7 +673,9 @@ func (s *conflictScanService) dailyScanTicker(ctx context.Context) {
 			now := time.Now()
 			// 检查是否到了执行时间（允许5分钟误差）
 			if now.After(nextRun) && now.Before(nextRun.Add(5*time.Minute)) {
-				s.RunDailyScan(context.Background())
+				if _, err := s.RunDailyScan(context.Background()); err != nil {
+					log.Printf("每日扫描执行失败: %v", err)
+				}
 				// 计算下次执行时间
 				nextRun = s.calculateNextDailyRun()
 				log.Printf("📅 下次每日扫描: %s", nextRun.Format("2006-01-02 15:04:05"))
@@ -697,7 +699,9 @@ func (s *conflictScanService) weeklyScanTicker(ctx context.Context) {
 		case <-ticker.C:
 			now := time.Now()
 			if now.After(nextRun) && now.Before(nextRun.Add(5*time.Minute)) {
-				s.RunWeeklyScan(context.Background())
+				if _, err := s.RunWeeklyScan(context.Background()); err != nil {
+					log.Printf("每周扫描执行失败: %v", err)
+				}
 				nextRun = s.calculateNextWeeklyRun()
 				log.Printf("📅 下次每周扫描: %s", nextRun.Format("2006-01-02 15:04:05"))
 			}

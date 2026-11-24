@@ -47,7 +47,9 @@ func NewTestDB(t *testing.T) *TestDB {
 		DB:   gormDB,
 		Mock: mock,
 		Close: func() {
-			db.Close()
+			if err := db.Close(); err != nil {
+				t.Errorf("关闭测试数据库失败: %v", err)
+			}
 		},
 	}
 }

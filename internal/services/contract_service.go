@@ -963,7 +963,9 @@ func (s *PaymentMilestoneService) DeleteMilestone(ctx context.Context, id uint) 
 	milestones, _ := s.milestoneRepo.GetByContractID(ctx, milestone.ContractID)
 	for i, m := range milestones {
 		m.Sequence = i + 1
-		s.milestoneRepo.Update(ctx, m)
+		if err := s.milestoneRepo.Update(ctx, m); err != nil {
+			return fmt.Errorf("重新排序付款计划失败: %w", err)
+		}
 	}
 
 	return nil

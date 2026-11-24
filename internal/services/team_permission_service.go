@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"law-oa-go/internal/models"
@@ -217,8 +218,13 @@ func (s *TeamPermissionService) isCaseTeamMember(ctx context.Context, userID, ca
 		"is_member": isMember,
 		"role":      role,
 	}
-	resultJSON, _ := json.Marshal(result)
-	s.cacheRepo.Set(ctx, cacheKey, string(resultJSON), 5*time.Minute)
+	resultJSON, err := json.Marshal(result)
+	if err != nil {
+		return false, "", fmt.Errorf("序列化团队成员缓存失败: %w", err)
+	}
+	if err := s.cacheRepo.Set(ctx, cacheKey, string(resultJSON), 5*time.Minute); err != nil {
+		return false, "", fmt.Errorf("写入团队成员缓存失败: %w", err)
+	}
 
 	return isMember, role, nil
 }
@@ -444,7 +450,10 @@ func (s *TeamPermissionService) clearTeamCache(ctx context.Context, caseID uint)
 	}
 
 	for _, pattern := range patterns {
-		s.cacheRepo.DeletePattern(ctx, pattern)
+		if err := s.cacheRepo.DeletePattern(ctx, pattern); err != nil {
+			// 清缓存失败不阻断主流程，记录日志便于排查缓存不一致
+			log.Printf("清除团队缓存失败 pattern=%s: %v", pattern, err)
+		}
 	}
 }
 

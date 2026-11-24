@@ -125,7 +125,8 @@ func (c *ConflictP0ReadinessCheck) Check(ctx context.Context) *HealthCheckResult
 	if err != nil {
 		return conflictP0Unhealthy(result, fmt.Sprintf("冲突档案同步时效不可用: %v", err))
 	}
-	defer rows.Close()
+	// rows.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = rows.Close() }()
 	for rows.Next() {
 		var scopeType string
 		var lastSync time.Time
@@ -225,7 +226,8 @@ func (c *ConflictP0ReadinessCheck) verifyG5GovernanceAuditEvidence(ctx context.C
 	if err != nil {
 		return fmt.Errorf("生产治理审计证据不可用: %w", err)
 	}
-	defer rows.Close()
+	// rows.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = rows.Close() }()
 
 	counts := make(map[string]int64, len(eventTypes))
 	for rows.Next() {
@@ -261,7 +263,8 @@ func (c *ConflictP0ReadinessCheck) verifyExternalEvidenceRegistrations(ctx conte
 	if err != nil {
 		return fmt.Errorf("生产外部证据登记不可用: %w", err)
 	}
-	defer rows.Close()
+	// rows.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = rows.Close() }()
 
 	registrationsByGate := make(map[string][]productionExternalEvidenceRegistration)
 	for rows.Next() {

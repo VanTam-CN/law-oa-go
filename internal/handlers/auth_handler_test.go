@@ -1215,7 +1215,8 @@ func TestRegisterAlwaysCreatesUnprivilegedUser(t *testing.T) {
 		"role":     "admin",
 		"phone":    "13800000000",
 	}
-	jsonData, _ := json.Marshal(body)
+	jsonData, err := json.Marshal(body)
+	require.NoError(t, err)
 	req, _ := http.NewRequest(http.MethodPost, "/auth/register", bytes.NewBuffer(jsonData))
 	req.Header.Set("Content-Type", "application/json")
 
@@ -1293,7 +1294,8 @@ func TestAdminCanRevokeAnotherUsersTokens(t *testing.T) {
 	})
 	router.POST("/auth/revoke/user", authHandler.RevokeUserTokens)
 
-	body, _ := json.Marshal(map[string]interface{}{"user_id": 2})
+	body, err := json.Marshal(map[string]interface{}{"user_id": 2})
+	require.NoError(t, err)
 	req, _ := http.NewRequest(http.MethodPost, "/auth/revoke/user", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 
@@ -1325,7 +1327,8 @@ func TestNonAdminCannotRevokeAnotherUsersTokens(t *testing.T) {
 	})
 	router.POST("/auth/revoke/user", authHandler.RevokeUserTokens)
 
-	body, _ := json.Marshal(map[string]interface{}{"user_id": 2})
+	body, err := json.Marshal(map[string]interface{}{"user_id": 2})
+	require.NoError(t, err)
 	req, _ := http.NewRequest(http.MethodPost, "/auth/revoke/user", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 

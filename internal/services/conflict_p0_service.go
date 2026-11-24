@@ -361,11 +361,21 @@ func conflictEvidenceHash(response *models.ConflictCheckResponse) string {
 		}
 	}
 	sort.Slice(items, func(i, j int) bool {
-		left, _ := json.Marshal(items[i])
-		right, _ := json.Marshal(items[j])
+		left, err := json.Marshal(items[i])
+		if err != nil {
+			return false
+		}
+		right, err := json.Marshal(items[j])
+		if err != nil {
+			return false
+		}
 		return string(left) < string(right)
 	})
-	raw, _ := json.Marshal(items)
+	raw, err := json.Marshal(items)
+	if err != nil {
+		// items 仅含 string/bool 字段，json.Marshal 实际不会失败；失败时返回空哈希以保持确定性
+		return ""
+	}
 	sum := sha256.Sum256(raw)
 	return hex.EncodeToString(sum[:])
 }
@@ -398,7 +408,10 @@ func (s *conflictDetectionService) ReviewConflict(ctx context.Context, checkID, 
 			return err
 		}
 		var response models.ConflictCheckResponse
-		raw, _ := json.Marshal(record.CheckResult)
+		raw, err := json.Marshal(record.CheckResult)
+		if err != nil {
+			return fmt.Errorf("冲突检测证据序列化失败: %w", err)
+		}
 		if err := json.Unmarshal(raw, &response); err != nil {
 			return newConflictReviewerError("REVIEW_EVIDENCE_INVALID", "冲突检测证据无法解析，已阻止形成复核结论")
 		}

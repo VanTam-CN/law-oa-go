@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -362,7 +363,10 @@ func (s *SensitiveWordFilterService) GetCategories(ctx context.Context) ([]*Cate
 // updateHitCount 更新命中统计
 func (s *SensitiveWordFilterService) updateHitCount(ctx context.Context, wordID uint) {
 	now := time.Now()
-	s.wordRepo.UpdateHitCount(ctx, wordID, now)
+	if err := s.wordRepo.UpdateHitCount(ctx, wordID, now); err != nil {
+		// 命中统计为尽力而为的后台更新，失败不影响过滤主流程
+		log.Printf("更新敏感词命中统计失败 wordID=%d: %v", wordID, err)
+	}
 }
 
 // CategoryInfo 分类信息

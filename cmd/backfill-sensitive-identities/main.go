@@ -35,7 +35,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("获取数据库连接失败: %v", err)
 	}
-	defer sqlDB.Close()
+	// sqlDB.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = sqlDB.Close() }()
 
 	if *apply {
 		log.Println("开始执行身份信息加密回填；日志不会输出身份原文")
@@ -79,7 +80,8 @@ func backfillTable(db *gorm.DB, table, plaintextColumn, digestColumn, ciphertext
 	if err != nil {
 		return 0, fmt.Errorf("读取%s明文记录失败: %w", table, err)
 	}
-	defer rows.Close()
+	// rows.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = rows.Close() }()
 
 	var count int64
 	for rows.Next() {

@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -335,7 +336,10 @@ func findPolicyEndorsements(endorsements []models.LawFirmCompliancePolicyEndorse
 }
 
 func createPolicyAudit(tx *gorm.DB, actor AuthActor, eventType, objectID, fromState, toState string, payload any) error {
-	raw, _ := json.Marshal(payload)
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("序列化合规策略审计载荷失败: %w", err)
+	}
 	sum := sha256.Sum256(raw)
 	actorID := actor.UserID
 	return tx.Create(&models.ComplianceAuditEvent{

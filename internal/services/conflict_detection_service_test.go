@@ -585,7 +585,9 @@ func TestWaiverWorkflowPersistsWithActualRepositories(t *testing.T) {
 	assert.Equal(t, WaiverStatusApproved, decided.Status)
 	record, err := conflictRepo.GetCheckRecord(context.Background(), "actual-waiver-check")
 	require.NoError(t, err)
-	assert.Equal(t, "WAIVED", record.CheckResult["decision"].(map[string]interface{})["status"])
+	decision, ok := record.CheckResult["decision"].(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, "WAIVED", decision["status"])
 }
 
 func TestWaiverWorkflowRejectsConfirmedDirectConflict(t *testing.T) {

@@ -29,7 +29,8 @@ func TestPostgreSQL_ProductionExternalEvidenceMigrationAndBootstrap(t *testing.T
 	if err != nil {
 		t.Fatalf("连接专用 PostgreSQL 测试库失败: %v", err)
 	}
-	defer db.Close()
+	// db.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = db.Close() }()
 	if err := db.Ping(); err != nil {
 		t.Fatalf("专用 PostgreSQL 测试库不可用: %v", err)
 	}
@@ -46,7 +47,8 @@ func TestPostgreSQL_ProductionExternalEvidenceMigrationAndBootstrap(t *testing.T
 		if err != nil {
 			t.Fatalf("获取 PostgreSQL 连接失败: %v", err)
 		}
-		defer conn.Close()
+		// conn.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+		defer func() { _ = conn.Close() }()
 		setPostgresEvidenceSearchPath(t, ctx, conn, schema)
 		for _, table := range []string{"compliance_audit_events", "conflict_reviews", "case_subject_revisions"} {
 			if _, err := conn.ExecContext(ctx, "CREATE TABLE "+table+" (id INTEGER PRIMARY KEY)"); err != nil {
@@ -83,12 +85,14 @@ func TestPostgreSQL_ProductionExternalEvidenceMigrationAndBootstrap(t *testing.T
 		if err != nil {
 			t.Fatalf("初始化 pgx PostgreSQL 连接失败: %v", err)
 		}
-		defer pgxDB.Close()
+		// pgxDB.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+		defer func() { _ = pgxDB.Close() }()
 		conn, err := pgxDB.Conn(ctx)
 		if err != nil {
 			t.Fatalf("获取 pgx PostgreSQL 连接失败: %v", err)
 		}
-		defer conn.Close()
+		// conn.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+		defer func() { _ = conn.Close() }()
 		setPostgresEvidenceSearchPath(t, ctx, conn, schema)
 		gormDB, err := gorm.Open(postgres.New(postgres.Config{Conn: conn, DriverName: "pgx"}), &gorm.Config{DisableAutomaticPing: true})
 		if err != nil {

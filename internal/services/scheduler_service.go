@@ -113,7 +113,9 @@ func (s *SchedulerService) reminderChecker() {
 	defer ticker.Stop()
 
 	// 启动时立即执行一次
-	s.checkReminders(context.Background())
+	if err := s.checkReminders(context.Background()); err != nil {
+		log.Printf("提醒检查错误: %v", err)
+	}
 
 	for {
 		select {
@@ -136,7 +138,9 @@ func (s *SchedulerService) escalationChecker() {
 	defer ticker.Stop()
 
 	// 启动时立即执行一次
-	s.checkEscalations(context.Background())
+	if err := s.checkEscalations(context.Background()); err != nil {
+		log.Printf("升级检查错误: %v", err)
+	}
 
 	for {
 		select {
@@ -436,7 +440,9 @@ func (s *SchedulerService) approvalTimeoutChecker() {
 	ticker := time.NewTicker(s.timeoutCheckInterval)
 	defer ticker.Stop()
 
-	s.checkApprovalTimeouts(context.Background())
+	if err := s.checkApprovalTimeouts(context.Background()); err != nil {
+		log.Printf("审批超时检查错误: %v", err)
+	}
 
 	for {
 		select {

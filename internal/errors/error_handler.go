@@ -157,8 +157,15 @@ func (ehm *ErrorHandlerManager) logError(ctx context.Context, err *EnhancedError
 
 	// 添加上下文信息
 	if ehm.config.EnableContext && len(err.Context()) > 0 {
-		contextJSON, _ := json.Marshal(err.Context())
-		attrs = append(attrs, slog.String("context", string(contextJSON)))
+		contextJSON, marshalErr := json.Marshal(err.Context())
+		if marshalErr != nil {
+			ehm.logger.Warn("序列化错误上下文失败，日志中跳过上下文字段",
+				slog.String("error_id", err.ID()),
+				slog.Any("marshal_error", marshalErr),
+			)
+		} else {
+			attrs = append(attrs, slog.String("context", string(contextJSON)))
+		}
 	}
 
 	// 添加堆栈跟踪
@@ -377,31 +384,38 @@ func (ehm *ErrorHandlerManager) FormatErrorResponse(err *EnhancedError, requestI
 		},
 	}
 
+	// response["error"] 在上方刚以 gin.H 构造，类型断言失败意味着内部不变量被破坏，
+	// 保持原有断言崩溃语义，但给出可诊断消息
+	errH, ok := response["error"].(gin.H)
+	if !ok {
+		panic("errors: FormatErrorResponse 内部不变量被破坏：response[\"error\"] 不是 gin.H")
+	}
+
 	// 添加详细信息
 	if err.Details() != "" {
-		response["error"].(gin.H)["details"] = err.Details()
+		errH["details"] = err.Details()
 	}
 
 	// 添加上下文信息
 	if ehm.config.EnableContext && len(err.Context()) > 0 {
-		response["error"].(gin.H)["context"] = err.Context()
+		errH["context"] = err.Context()
 	}
 
 	// 添加堆栈跟踪
 	if ehm.config.EnableStackTrace && ehm.config.DebugMode && err.StackTrace() != "" {
-		response["error"].(gin.H)["stack_trace"] = err.StackTrace()
+		errH["stack_trace"] = err.StackTrace()
 	}
 
 	// 添加建议
 	if ehm.config.EnableSuggestions && len(err.Suggestions()) > 0 {
-		response["error"].(gin.H)["suggestions"] = err.Suggestions()
+		errH["suggestions"] = err.Suggestions()
 	} else {
-		response["error"].(gin.H)["suggestions"] = ehm.getDefaultSuggestions(err)
+		errH["suggestions"] = ehm.getDefaultSuggestions(err)
 	}
 
 	// 添加源码信息
 	if ehm.config.DebugMode && err.File() != "" {
-		response["error"].(gin.H)["source"] = gin.H{
+		errH["source"] = gin.H{
 			"file":     err.File(),
 			"line":     err.Line(),
 			"function": err.Function(),
@@ -473,7 +487,8 @@ func (ehm *ErrorHandlerManager) WrapErrorForGin(err error, c *gin.Context) {
 	ehm.logError(c.Request.Context(), enhancedErr)
 
 	// 添加到Gin错误队列
-	c.Error(enhancedErr)
+	// gin c.Error 仅用于把错误注入响应上下文，返回值即入参本身，无额外处理
+	_ = c.Error(enhancedErr)
 }
 
 // addGinContext 添加Gin请求上下文

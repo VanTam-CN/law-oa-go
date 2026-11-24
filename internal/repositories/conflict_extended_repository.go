@@ -174,7 +174,8 @@ func (r *ConflictExtendedRepository) GetCompetitiveRelationsByIndustry(ctx conte
 	if err != nil {
 		return nil, fmt.Errorf("查询竞争关系失败: %w", err)
 	}
-	defer rows.Close()
+	// rows.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = rows.Close() }()
 
 	var relations []models.CompetitiveRelation
 	for rows.Next() {
@@ -240,7 +241,8 @@ func (r *ConflictExtendedRepository) GetActiveConflictRules(ctx context.Context)
 	if err != nil {
 		return nil, fmt.Errorf("查询冲突规则失败: %w", err)
 	}
-	defer rows.Close()
+	// rows.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = rows.Close() }()
 
 	var rules []models.EnhancedConflictRule
 	for rows.Next() {
@@ -352,7 +354,8 @@ func (r *ConflictExtendedRepository) getTraditionalConflicts(ctx context.Context
 	if err != nil {
 		return nil, fmt.Errorf("查询传统冲突失败: %w", err)
 	}
-	defer rows.Close()
+	// rows.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = rows.Close() }()
 
 	var conflicts []*models.Case
 	for rows.Next() {
@@ -410,7 +413,8 @@ func (r *ConflictExtendedRepository) getIndustryConflicts(ctx context.Context, r
 	if err != nil {
 		return nil, fmt.Errorf("查询行业冲突失败: %w", err)
 	}
-	defer rows.Close()
+	// rows.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = rows.Close() }()
 
 	var conflicts []*models.Case
 	for rows.Next() {
@@ -468,7 +472,8 @@ func (r *ConflictExtendedRepository) getClientNameConflicts(ctx context.Context,
 	if err != nil {
 		return nil, fmt.Errorf("查询客户名称冲突失败: %w", err)
 	}
-	defer rows.Close()
+	// rows.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = rows.Close() }()
 
 	var conflicts []*models.Case
 	for rows.Next() {
@@ -550,7 +555,8 @@ func (r *ConflictExtendedRepository) scanCasesFromQuery(ctx context.Context, que
 	if err != nil {
 		return nil, fmt.Errorf("查询案件失败: %w", err)
 	}
-	defer rows.Close()
+	// rows.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = rows.Close() }()
 
 	var cases []*models.Case
 	for rows.Next() {
@@ -604,7 +610,8 @@ func (r *ConflictExtendedRepository) GetCheckHistory(ctx context.Context, client
 	if err != nil {
 		return nil, fmt.Errorf("查询冲突检测历史失败: %w", err)
 	}
-	defer rows.Close()
+	// rows.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = rows.Close() }()
 
 	var history []*models.ConflictCheckRecord
 	for rows.Next() {

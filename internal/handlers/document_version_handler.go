@@ -32,6 +32,22 @@ func NewDocumentVersionHandler(
 	}
 }
 
+// requireUserID 从 gin 上下文提取认证中间件注入的 user_id 并断言为 uint；
+// 缺失或类型不符时写出 401 并返回 ok=false，调用方应立即 return。
+func requireUserID(c *gin.Context) (uint, bool) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return 0, false
+	}
+	id, ok := userID.(uint)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return 0, false
+	}
+	return id, true
+}
+
 // CreateVersion 创建新版本
 func (h *DocumentVersionHandler) CreateVersion(c *gin.Context) {
 	documentIDStr := c.Param("document_id")
@@ -42,9 +58,8 @@ func (h *DocumentVersionHandler) CreateVersion(c *gin.Context) {
 	}
 
 	// 获取当前用户
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+	userID, ok := requireUserID(c)
+	if !ok {
 		return
 	}
 
@@ -67,7 +82,7 @@ func (h *DocumentVersionHandler) CreateVersion(c *gin.Context) {
 		Name:        fmt.Sprintf("Version %s", req.ChangeType),
 		Description: req.ChangeDescription,
 		Changes:     req.ChangeDescription,
-		CreatedBy:   userID.(uint),
+		CreatedBy:   userID,
 	}
 
 	// 从当前文档创建新版本
@@ -187,16 +202,15 @@ func (h *DocumentVersionHandler) RestoreVersion(c *gin.Context) {
 	}
 
 	// 获取当前用户
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+	userID, ok := requireUserID(c)
+	if !ok {
 		return
 	}
 
 	ctx := c.Request.Context()
 
 	// 验证编辑权限
-	canEdit, _, err := h.lockService.ValidateEditPermission(ctx, uint(documentID), userID.(uint))
+	canEdit, _, err := h.lockService.ValidateEditPermission(ctx, uint(documentID), userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -207,7 +221,7 @@ func (h *DocumentVersionHandler) RestoreVersion(c *gin.Context) {
 	}
 
 	// 恢复版本 - 服务方法需要 int 类型
-	if err := h.versionService.RestoreVersion(ctx, int(documentID), version, userID.(uint)); err != nil {
+	if err := h.versionService.RestoreVersion(ctx, int(documentID), version, userID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -299,15 +313,14 @@ func (h *DocumentVersionHandler) GetLockStatus(c *gin.Context) {
 	}
 
 	// 获取当前用户
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+	userID, ok := requireUserID(c)
+	if !ok {
 		return
 	}
 
 	ctx := c.Request.Context()
 
-	status, err := h.lockService.GetLockStatus(ctx, uint(documentID), userID.(uint))
+	status, err := h.lockService.GetLockStatus(ctx, uint(documentID), userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -326,9 +339,8 @@ func (h *DocumentVersionHandler) AcquireLock(c *gin.Context) {
 	}
 
 	// 获取当前用户
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+	userID, ok := requireUserID(c)
+	if !ok {
 		return
 	}
 
@@ -344,13 +356,16 @@ func (h *DocumentVersionHandler) AcquireLock(c *gin.Context) {
 		IsCheckout bool `json:"is_checkout"`
 	}
 
-	c.ShouldBindJSON(&req)
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
 	ctx := c.Request.Context()
 
 	lockReq := &services.AcquireLockRequest{
 		DocumentID: uint(documentID),
-		UserID:     userID.(uint),
+		UserID:     userID,
 		UserName:   user.Name,
 		IPAddress:  c.ClientIP(),
 		UserAgent:  c.GetHeader("User-Agent"),
@@ -376,9 +391,8 @@ func (h *DocumentVersionHandler) ReleaseLock(c *gin.Context) {
 	}
 
 	// 获取当前用户
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+	userID, ok := requireUserID(c)
+	if !ok {
 		return
 	}
 
@@ -387,13 +401,16 @@ func (h *DocumentVersionHandler) ReleaseLock(c *gin.Context) {
 		Force bool `json:"force"`
 	}
 
-	c.ShouldBindJSON(&req)
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
 	ctx := c.Request.Context()
 
 	releaseReq := &services.ReleaseLockRequest{
 		DocumentID: uint(documentID),
-		UserID:     userID.(uint),
+		UserID:     userID,
 		Force:      req.Force,
 	}
 
@@ -415,9 +432,8 @@ func (h *DocumentVersionHandler) RenewLock(c *gin.Context) {
 	}
 
 	// 获取当前用户
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+	userID, ok := requireUserID(c)
+	if !ok {
 		return
 	}
 
@@ -425,7 +441,7 @@ func (h *DocumentVersionHandler) RenewLock(c *gin.Context) {
 
 	renewReq := &services.RenewLockRequest{
 		DocumentID: uint(documentID),
-		UserID:     userID.(uint),
+		UserID:     userID,
 	}
 
 	status, err := h.lockService.RenewLock(ctx, renewReq)
@@ -440,15 +456,14 @@ func (h *DocumentVersionHandler) RenewLock(c *gin.Context) {
 // GetUserLocks 获取用户持有的所有锁
 func (h *DocumentVersionHandler) GetUserLocks(c *gin.Context) {
 	// 获取当前用户
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+	userID, ok := requireUserID(c)
+	if !ok {
 		return
 	}
 
 	ctx := c.Request.Context()
 
-	locks, err := h.lockService.GetUserLocks(ctx, userID.(uint))
+	locks, err := h.lockService.GetUserLocks(ctx, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

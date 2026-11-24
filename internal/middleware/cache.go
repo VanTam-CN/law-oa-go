@@ -190,7 +190,9 @@ func writeCachedResponse(c *gin.Context, cached *CacheResponse) {
 	}
 
 	// 写入主体
-	c.Writer.Write(cached.Body)
+	if _, err := c.Writer.Write(cached.Body); err != nil {
+		logger.Logger.Warn("写入缓存响应失败", zap.String("path", c.Request.URL.Path), zap.Error(err))
+	}
 
 	logger.Logger.Info("Served from cache",
 		zap.String("path", c.Request.URL.Path),
@@ -323,7 +325,9 @@ func cacheResponse(key string, w *responseWriter, config CacheConfig) {
 	if cache.DefaultCacheService != nil && w.status == 200 {
 		var responseData interface{}
 		if err := json.Unmarshal(w.buffer.Bytes(), &responseData); err == nil {
-			cache.DefaultCacheService.Set(key, responseData, config.TTL)
+			if setErr := cache.DefaultCacheService.Set(key, responseData, config.TTL); setErr != nil {
+				logger.Logger.Warn("写入缓存失败", zap.String("key", key), zap.Error(setErr))
+			}
 		}
 	}
 }

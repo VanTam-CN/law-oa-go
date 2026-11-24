@@ -234,7 +234,8 @@ func (r *documentRepository) GetStats(ctx context.Context, viewerUserID uint) (*
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	// rows.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = rows.Close() }()
 
 	for rows.Next() {
 		var category string
@@ -262,7 +263,8 @@ func (r *documentRepository) GetStats(ctx context.Context, viewerUserID uint) (*
 	if err != nil {
 		return nil, err
 	}
-	defer entityRows.Close()
+	// entityRows.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = entityRows.Close() }()
 
 	for entityRows.Next() {
 		var entityType string

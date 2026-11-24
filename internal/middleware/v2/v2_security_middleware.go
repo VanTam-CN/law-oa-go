@@ -380,7 +380,9 @@ func (sm *V2SecurityMiddleware) TrustedProxyMiddleware() gin.HandlerFunc {
 		engine := c.Request.Context().Value("engine")
 		if engine != nil {
 			if ginEngine, ok := engine.(*gin.Engine); ok {
-				ginEngine.SetTrustedProxies(sm.trustedProxies)
+				if err := ginEngine.SetTrustedProxies(sm.trustedProxies); err != nil {
+					logger.Logger.Warn("配置受信任代理失败", zap.Strings("trusted_proxies", sm.trustedProxies), zap.Error(err))
+				}
 			}
 		}
 

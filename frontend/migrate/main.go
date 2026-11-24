@@ -98,7 +98,8 @@ func migrateUp(dsn, migrationsDir string) error {
 	if err != nil {
 		return fmt.Errorf("连接数据库失败: %w", err)
 	}
-	defer db.Close()
+	// db.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = db.Close() }()
 
 	if err := db.Ping(); err != nil {
 		return fmt.Errorf("数据库连接测试失败: %w", err)
@@ -126,7 +127,8 @@ func migrateUp(dsn, migrationsDir string) error {
 	if err != nil {
 		return fmt.Errorf("创建迁移实例失败: %w", err)
 	}
-	defer m.Close()
+	// m.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _, _ = m.Close() }()
 
 	// 执行迁移
 	if err := m.Up(); err != nil {
@@ -149,7 +151,8 @@ func migrateDown(dsn, migrationsDir string) error {
 	if err != nil {
 		return err
 	}
-	defer m.Close()
+	// m.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _, _ = m.Close() }()
 
 	// 执行向下迁移
 	if err := m.Down(); err != nil {
@@ -172,7 +175,8 @@ func migrateForce(dsn, migrationsDir string, version int) error {
 	if err != nil {
 		return err
 	}
-	defer m.Close()
+	// m.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _, _ = m.Close() }()
 
 	// 执行强制迁移
 	if err := m.Force(version); err != nil {
@@ -189,7 +193,8 @@ func showVersion(dsn, migrationsDir string) error {
 	if err != nil {
 		return err
 	}
-	defer m.Close()
+	// m.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _, _ = m.Close() }()
 
 	// 获取当前版本
 	version, dirty, err := m.Version()
@@ -249,7 +254,8 @@ func isDirEmpty(dir string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	defer f.Close()
+	// f.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = f.Close() }()
 
 	_, err = f.Readdirnames(1)
 	if err == nil {
@@ -266,7 +272,8 @@ func runInitScript(dsn string) error {
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	// db.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = db.Close() }()
 
 	// 读取初始化脚本
 	scriptPath := "./scripts/init.sql"

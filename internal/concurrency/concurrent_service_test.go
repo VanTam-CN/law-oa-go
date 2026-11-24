@@ -247,7 +247,7 @@ func TestConcurrentService_GetMetrics(t *testing.T) {
 			},
 			Context: context.Background(),
 		}
-		service.SubmitTask(task)
+		require.NoError(t, service.SubmitTask(task), "提交任务失败")
 	}
 
 	// 等待任务完成
@@ -295,7 +295,7 @@ func TestConcurrentService_GetActiveTasksCount(t *testing.T) {
 		Context: context.Background(),
 	}
 
-	service.SubmitTask(task)
+	require.NoError(t, service.SubmitTask(task), "提交任务失败")
 
 	// 等待一小段时间让任务启动
 	time.Sleep(50 * time.Millisecond)

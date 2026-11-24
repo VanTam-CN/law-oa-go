@@ -380,7 +380,8 @@ func (s *companyAPIService) searchQichacha(ctx context.Context, keyword string) 
 	if err != nil {
 		return nil, fmt.Errorf("发送请求失败: %w", err)
 	}
-	defer resp.Body.Close()
+	// resp.Body.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = resp.Body.Close() }()
 
 	// 解析响应
 	if resp.StatusCode != http.StatusOK {

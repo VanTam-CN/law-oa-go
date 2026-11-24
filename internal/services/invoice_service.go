@@ -403,7 +403,9 @@ func (s *InvoiceService) SubmitInvoice(ctx context.Context, id uint, submittedBy
 
 	// 如果关联付款计划，更新状态为billed
 	if invoice.MilestoneID != nil {
-		s.milestoneRepo.UpdateStatus(ctx, *invoice.MilestoneID, "billed")
+		if err := s.milestoneRepo.UpdateStatus(ctx, *invoice.MilestoneID, "billed"); err != nil {
+			return nil, fmt.Errorf("提交发票后更新付款计划状态失败: %w", err)
+		}
 	}
 
 	return s.GetInvoiceByID(ctx, id)
@@ -459,7 +461,9 @@ func (s *InvoiceService) RejectInvoice(ctx context.Context, id uint) (*InvoiceRe
 
 	// 如果关联付款计划，恢复状态
 	if invoice.MilestoneID != nil {
-		s.milestoneRepo.UpdateStatus(ctx, *invoice.MilestoneID, "pending")
+		if err := s.milestoneRepo.UpdateStatus(ctx, *invoice.MilestoneID, "pending"); err != nil {
+			return nil, fmt.Errorf("恢复付款计划状态失败: %w", err)
+		}
 	}
 
 	return s.GetInvoiceByID(ctx, id)
@@ -545,7 +549,9 @@ func (s *InvoiceService) CancelInvoice(ctx context.Context, id uint) (*InvoiceRe
 
 	// 如果关联付款计划，恢复状态
 	if invoice.MilestoneID != nil {
-		s.milestoneRepo.UpdateStatus(ctx, *invoice.MilestoneID, "pending")
+		if err := s.milestoneRepo.UpdateStatus(ctx, *invoice.MilestoneID, "pending"); err != nil {
+			return nil, fmt.Errorf("恢复付款计划状态失败: %w", err)
+		}
 	}
 
 	return s.GetInvoiceByID(ctx, id)

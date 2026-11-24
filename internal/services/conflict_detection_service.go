@@ -312,7 +312,8 @@ func (s *conflictDetectionService) checkOpponentConflicts(ctx context.Context, r
 			return nil, fmt.Errorf("查询对方当事人冲突失败 (opponent=%q): %w", opponent, err)
 		}
 		// 循环内错误路径已有手工 Close；defer 在函数收尾兜底（sql.Rows.Close 幂等）
-		defer rows.Close()
+		// rows.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+		defer func() { _ = rows.Close() }()
 
 		for rows.Next() {
 			var caseID uint
@@ -322,7 +323,8 @@ func (s *conflictDetectionService) checkOpponentConflicts(ctx context.Context, r
 			var relevanceScore int
 
 			if err := rows.Scan(&caseID, &caseNo, &caseName, &caseType, &description, &clientName, &lawyerName, &createdAt, &lawyerID, &relevanceScore); err != nil {
-				rows.Close()
+				// 错误路径提前退出；与上方 defer 兜底重复调用（sql.Rows.Close 幂等），关闭错误在此无处理路径，显式丢弃。
+				_ = rows.Close()
 				return nil, fmt.Errorf("扫描对方当事人冲突行失败 (opponent=%q): %w", opponent, err)
 			}
 
@@ -379,10 +381,12 @@ func (s *conflictDetectionService) checkOpponentConflicts(ctx context.Context, r
 		}
 		// rows.Err() 报告迭代期间发生的错误；Rows()+Next() 不会主动返回
 		if err := rows.Err(); err != nil {
-			rows.Close()
+			// 错误路径提前退出；与 defer 兜底重复调用（sql.Rows.Close 幂等），关闭错误在此无处理路径，显式丢弃。
+			_ = rows.Close()
 			return nil, fmt.Errorf("迭代对方当事人冲突结果集失败 (opponent=%q): %w", opponent, err)
 		}
-		rows.Close()
+		// 正常收尾；与 defer 兜底重复调用（sql.Rows.Close 幂等），关闭错误在此无处理路径，显式丢弃。
+		_ = rows.Close()
 	}
 
 	return conflicts, nil
@@ -563,7 +567,8 @@ func (s *conflictDetectionService) checkStructuredPartyConflicts(ctx context.Con
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	// rows.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = rows.Close() }()
 	conflicts := make([]*models.ConflictCase, 0)
 	for rows.Next() {
 		var caseID, historicalClientID uint
@@ -831,7 +836,8 @@ func (s *conflictDetectionService) checkClientRelationConflictsStrict(ctx contex
 		if err != nil {
 			return nil, fmt.Errorf("查询关联客户历史案件失败: %w", err)
 		}
-		defer rows.Close()
+		// rows.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+		defer func() { _ = rows.Close() }()
 
 		for rows.Next() {
 			var caseID uint
@@ -933,7 +939,8 @@ func (s *conflictDetectionService) checkIndustryCompetitionConflicts(ctx context
 		log.Printf("⚠️ 查询律师案件失败: %v", err)
 		return conflicts
 	}
-	defer rows.Close()
+	// rows.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = rows.Close() }()
 
 	// 收集律师的所有客户
 	lawyerClients := make(map[string]string) // clientName -> clientType

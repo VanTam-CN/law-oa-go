@@ -1,0 +1,1089 @@
+internal/cache/advanced_cache.go:285:7: right hand must be only type assertion (forcetypeassert)
+			if err := json.Unmarshal([]byte(value.(string)), &data); err == nil {
+			   ^
+internal/cache/advanced_cache.go:374:9: type assertion must be checked (forcetypeassert)
+	return c.mutexPool.Get().(*sync.Mutex)
+	       ^
+internal/cache/layered_cache.go:46:3: type assertion must be checked (forcetypeassert)
+		cacheItem := item.(*CacheItem)
+		^
+cmd/backfill-sensitive-identities/main.go:38:19: Error return value of `sqlDB.Close` is not checked (errcheck)
+	defer sqlDB.Close()
+	                 ^
+cmd/backfill-sensitive-identities/main.go:82:18: Error return value of `rows.Close` is not checked (errcheck)
+	defer rows.Close()
+	                ^
+internal/common/common_test.go:604:18: Error return value of `os.Setenv` is not checked (errcheck)
+		defer os.Setenv("TEST_STRING_VAR", originalValue)
+		               ^
+internal/common/common_test.go:607:12: Error return value of `os.Setenv` is not checked (errcheck)
+		os.Setenv("TEST_STRING_VAR", "test_value")
+		         ^
+internal/common/common_test.go:612:14: Error return value of `os.Unsetenv` is not checked (errcheck)
+		os.Unsetenv("TEST_STRING_VAR")
+		           ^
+internal/common/common_test.go:620:18: Error return value of `os.Setenv` is not checked (errcheck)
+		defer os.Setenv("TEST_INT_VAR", originalValue)
+		               ^
+internal/common/common_test.go:623:12: Error return value of `os.Setenv` is not checked (errcheck)
+		os.Setenv("TEST_INT_VAR", "42")
+		         ^
+internal/common/common_test.go:628:12: Error return value of `os.Setenv` is not checked (errcheck)
+		os.Setenv("TEST_INT_VAR", "invalid")
+		         ^
+internal/common/common_test.go:633:14: Error return value of `os.Unsetenv` is not checked (errcheck)
+		os.Unsetenv("TEST_INT_VAR")
+		           ^
+internal/common/common_test.go:641:18: Error return value of `os.Setenv` is not checked (errcheck)
+		defer os.Setenv("TEST_BOOL_VAR", originalValue)
+		               ^
+internal/common/common_test.go:659:13: Error return value of `os.Setenv` is not checked (errcheck)
+			os.Setenv("TEST_BOOL_VAR", tc.envValue)
+			         ^
+internal/common/common_test.go:665:14: Error return value of `os.Unsetenv` is not checked (errcheck)
+		os.Unsetenv("TEST_BOOL_VAR")
+		           ^
+internal/common/common_test.go:858:12: Error return value of `os.Setenv` is not checked (errcheck)
+		os.Setenv("BENCHMARK_VAR", "benchmark_value")
+		         ^
+internal/common/common_test.go:866:12: Error return value of `os.Setenv` is not checked (errcheck)
+		os.Setenv("BENCHMARK_INT", "12345")
+		         ^
+internal/common/common_test.go:874:12: Error return value of `os.Setenv` is not checked (errcheck)
+		os.Setenv("BENCHMARK_BOOL", "true")
+		         ^
+internal/common/stream.go:53:9: Error return value of `w.Write` is not checked (errcheck)
+	w.Write([]byte(`{"data": [`))
+	       ^
+internal/common/stream.go:60:11: Error return value of `w.Write` is not checked (errcheck)
+			w.Write([]byte(","))
+			       ^
+internal/common/stream.go:74:9: Error return value of `w.Write` is not checked (errcheck)
+	w.Write([]byte(`]}`))
+	       ^
+internal/common/stream.go:158:9: Error return value of `w.Write` is not checked (errcheck)
+	w.Write(headerData[:len(headerData)-2]) // 去掉最后的"]}
+	       ^
+internal/common/stream.go:159:9: Error return value of `w.Write` is not checked (errcheck)
+	w.Write([]byte(`,"data":[`))
+	       ^
+internal/common/stream.go:166:11: Error return value of `w.Write` is not checked (errcheck)
+			w.Write([]byte(","))
+			       ^
+internal/common/stream.go:179:9: Error return value of `w.Write` is not checked (errcheck)
+	w.Write([]byte(`]}}`))
+	       ^
+internal/database/cache_manager.go:141:9: Error return value of `cm.Set` is not checked (errcheck)
+		cm.Set(cacheKey, result, ttl)
+		      ^
+internal/database/cache_manager.go:165:11: Error return value of `cm.Set` is not checked (errcheck)
+				cm.Set(cacheKey, result, query.TTL)
+				      ^
+internal/database/elasticsearch_optimizer.go:197:22: Error return value of `res.Body.Close` is not checked (errcheck)
+	defer res.Body.Close()
+	                    ^
+internal/database/elasticsearch_optimizer.go:356:22: Error return value of `res.Body.Close` is not checked (errcheck)
+	defer res.Body.Close()
+	                    ^
+internal/database/elasticsearch_optimizer.go:419:22: Error return value of `res.Body.Close` is not checked (errcheck)
+	defer res.Body.Close()
+	                    ^
+internal/database/elasticsearch_optimizer.go:449:22: Error return value of `res.Body.Close` is not checked (errcheck)
+	defer res.Body.Close()
+	                    ^
+internal/database/migrator.go:445:18: Error return value of `rows.Close` is not checked (errcheck)
+	defer rows.Close()
+	                ^
+internal/database/mysql_connector_test.go:67:16: Error return value of `db.Close` is not checked (errcheck)
+	defer db.Close()
+	              ^
+internal/database/performance_monitor.go:114:56: Error return value of `(*gorm.io/gorm.callback).Register` is not checked (errcheck)
+	pm.db.Callback().Query().Before("gorm:query").Register("query_tracker_before", func(db *gorm.DB) {
+	                                                      ^
+internal/database/performance_monitor.go:119:55: Error return value of `(*gorm.io/gorm.callback).Register` is not checked (errcheck)
+	pm.db.Callback().Query().After("gorm:query").Register("query_tracker_after", func(db *gorm.DB) {
+	                                                     ^
+internal/database/performance_monitor.go:129:58: Error return value of `(*gorm.io/gorm.callback).Register` is not checked (errcheck)
+	pm.db.Callback().Create().Before("gorm:create").Register("create_tracker_before", func(db *gorm.DB) {
+	                                                        ^
+internal/database/performance_monitor.go:133:57: Error return value of `(*gorm.io/gorm.callback).Register` is not checked (errcheck)
+	pm.db.Callback().Create().After("gorm:create").Register("create_tracker_after", func(db *gorm.DB) {
+	                                                       ^
+internal/database/performance_monitor.go:142:58: Error return value of `(*gorm.io/gorm.callback).Register` is not checked (errcheck)
+	pm.db.Callback().Update().Before("gorm:update").Register("update_tracker_before", func(db *gorm.DB) {
+	                                                        ^
+internal/database/performance_monitor.go:146:57: Error return value of `(*gorm.io/gorm.callback).Register` is not checked (errcheck)
+	pm.db.Callback().Update().After("gorm:update").Register("update_tracker_after", func(db *gorm.DB) {
+	                                                       ^
+internal/database/performance_monitor.go:155:58: Error return value of `(*gorm.io/gorm.callback).Register` is not checked (errcheck)
+	pm.db.Callback().Delete().Before("gorm:delete").Register("delete_tracker_before", func(db *gorm.DB) {
+	                                                        ^
+internal/database/performance_monitor.go:159:57: Error return value of `(*gorm.io/gorm.callback).Register` is not checked (errcheck)
+	pm.db.Callback().Delete().After("gorm:delete").Register("delete_tracker_after", func(db *gorm.DB) {
+	                                                       ^
+internal/database/repository.go:45:18: Error return value of `r.cache.SmartSet` is not checked (errcheck)
+	r.cache.SmartSet("find_by_id", cacheKey, result)
+	                ^
+test/swagger_test.go:85:16: Error return value of `json.Unmarshal` is not checked (errcheck)
+	json.Unmarshal(body, &swaggerDoc)
+	              ^
+test/swagger_test.go:115:16: Error return value of `json.Unmarshal` is not checked (errcheck)
+	json.Unmarshal(body, &swaggerDoc)
+	              ^
+test/testutils.go:50:12: Error return value of `db.Close` is not checked (errcheck)
+			db.Close()
+			        ^
+test/swagger_test.go:41:49: type assertion must be checked (forcetypeassert)
+	assert.Equal(t, "示例律师事务所OA API", swaggerDoc["info"].(map[string]interface{})["title"])
+	                                               ^
+test/swagger_test.go:42:25: type assertion must be checked (forcetypeassert)
+	assert.Equal(t, "1.0", swaggerDoc["info"].(map[string]interface{})["version"])
+	                       ^
+test/swagger_test.go:87:2: type assertion must be checked (forcetypeassert)
+	paths := swaggerDoc["paths"].(map[string]interface{})
+	^
+test/swagger_test.go:118:2: type assertion must be checked (forcetypeassert)
+	securityDefs := swaggerDoc["securityDefinitions"].(map[string]interface{})
+	^
+test/swagger_test.go:121:2: type assertion must be checked (forcetypeassert)
+	bearerAuth := securityDefs["BearerAuth"].(map[string]interface{})
+	^
+cmd/backfill-conflict-index/main.go:39:19: Error return value of `sqlDB.Close` is not checked (errcheck)
+	defer sqlDB.Close()
+	                 ^
+internal/models/json_types.go:57:13: Error return value of `encoding/json.Marshal` is not checked: unsafe type `interface{}` found (errchkjson)
+	data, _ := json.Marshal(j)
+	           ^
+internal/models/json_types.go:126:13: Error return value of `encoding/json.Marshal` is not checked (errchkjson)
+	data, _ := json.Marshal(j)
+	           ^
+internal/security/types.go:275:2: type assertion must be checked (forcetypeassert)
+	record := value.(*ipRequestRecord)
+	^
+internal/security/types.go:307:2: type assertion must be checked (forcetypeassert)
+	record := value.(*ipRequestRecord)
+	^
+internal/security/types.go:321:5: type assertion must be checked (forcetypeassert)
+				record := value.(*ipRequestRecord)
+				^
+internal/services/approval_service.go:531:17: Error return value of `json.Unmarshal` is not checked (errcheck)
+		json.Unmarshal([]byte(approval.Metadata), &metadata)
+		              ^
+internal/services/case_state_machine_test.go:135:16: Error return value of `sm.Transition` is not checked (errcheck)
+		sm.Transition(c.ID, models.CaseStatusTrial, user.ID, "二次开庭")
+		             ^
+internal/services/company_api_service.go:383:23: Error return value of `resp.Body.Close` is not checked (errcheck)
+	defer resp.Body.Close()
+	                     ^
+internal/services/conflict_detection_service.go:315:19: Error return value of `rows.Close` is not checked (errcheck)
+		defer rows.Close()
+		                ^
+internal/services/conflict_detection_service.go:325:15: Error return value of `rows.Close` is not checked (errcheck)
+				rows.Close()
+				          ^
+internal/services/conflict_detection_service.go:382:14: Error return value of `rows.Close` is not checked (errcheck)
+			rows.Close()
+			          ^
+internal/services/conflict_detection_service.go:385:13: Error return value of `rows.Close` is not checked (errcheck)
+		rows.Close()
+		          ^
+internal/services/conflict_detection_service.go:566:18: Error return value of `rows.Close` is not checked (errcheck)
+	defer rows.Close()
+	                ^
+internal/services/conflict_detection_service.go:834:19: Error return value of `rows.Close` is not checked (errcheck)
+		defer rows.Close()
+		                ^
+internal/services/conflict_detection_service.go:936:18: Error return value of `rows.Close` is not checked (errcheck)
+	defer rows.Close()
+	                ^
+internal/services/conflict_scan_service.go:676:19: Error return value of `s.RunDailyScan` is not checked (errcheck)
+				s.RunDailyScan(context.Background())
+				              ^
+internal/services/conflict_scan_service.go:700:20: Error return value of `s.RunWeeklyScan` is not checked (errcheck)
+				s.RunWeeklyScan(context.Background())
+				               ^
+internal/services/content_filter_service.go:221:32: Error return value of `s.wordRepo.IncrementHitCount` is not checked (errcheck)
+			s.wordRepo.IncrementHitCount(context.Background(), wordID)
+			                            ^
+internal/services/content_filter_service.go:317:16: Error return value of `json.Unmarshal` is not checked (errcheck)
+	json.Unmarshal(hitsJSONBytes, &hitsParsed)
+	              ^
+internal/services/content_filter_service.go:463:16: Error return value of `s.refreshCache` is not checked (errcheck)
+	s.refreshCache(ctx)
+	              ^
+internal/services/contract_service.go:966:25: Error return value of `s.milestoneRepo.Update` is not checked (errcheck)
+		s.milestoneRepo.Update(ctx, m)
+		                      ^
+internal/services/document_preview_service.go:131:18: Error return value of `file.Close` is not checked (errcheck)
+	defer file.Close()
+	                ^
+internal/services/document_recycle_service.go:335:21: Error return value of `s.moveToRecycleBin` is not checked (errcheck)
+		s.moveToRecycleBin(docModel.Filepath, matches[0])
+		                  ^
+internal/services/document_service.go:155:19: Error return value of `s.docRepo.Delete` is not checked (errcheck)
+		s.docRepo.Delete(ctx, docModel.ID)
+		                ^
+internal/services/document_service.go:158:17: Error return value of `src.Close` is not checked (errcheck)
+	defer src.Close()
+	               ^
+internal/services/document_service.go:163:19: Error return value of `s.docRepo.Delete` is not checked (errcheck)
+		s.docRepo.Delete(ctx, docModel.ID)
+		                ^
+internal/services/document_service.go:387:21: Error return value of `dstFile.Close` is not checked (errcheck)
+	defer dstFile.Close()
+	                   ^
+internal/services/document_service.go:393:12: Error return value of `os.Remove` is not checked (errcheck)
+		os.Remove(dst)
+		         ^
+internal/services/document_version_service.go:435:17: Error return value of `src.Close` is not checked (errcheck)
+	defer src.Close()
+	               ^
+internal/services/document_version_service.go:448:21: Error return value of `dstFile.Close` is not checked (errcheck)
+	defer dstFile.Close()
+	                   ^
+internal/services/document_version_service.go:454:12: Error return value of `os.Remove` is not checked (errcheck)
+		os.Remove(dst)
+		         ^
+internal/services/escalation_service.go:178:23: Error return value of `s.dispatcher.Dispatch` is not checked (errcheck)
+	s.dispatcher.Dispatch(ctx, &Event{
+	                     ^
+internal/services/folder_template_service.go:91:25: Error return value of `s.repo.DeleteTemplate` is not checked (errcheck)
+			s.repo.DeleteTemplate(ctx, template.ID)
+			                     ^
+internal/services/invoice_service.go:406:31: Error return value of `s.milestoneRepo.UpdateStatus` is not checked (errcheck)
+		s.milestoneRepo.UpdateStatus(ctx, *invoice.MilestoneID, "billed")
+		                            ^
+internal/services/invoice_service.go:462:31: Error return value of `s.milestoneRepo.UpdateStatus` is not checked (errcheck)
+		s.milestoneRepo.UpdateStatus(ctx, *invoice.MilestoneID, "pending")
+		                            ^
+internal/services/invoice_service.go:548:31: Error return value of `s.milestoneRepo.UpdateStatus` is not checked (errcheck)
+		s.milestoneRepo.UpdateStatus(ctx, *invoice.MilestoneID, "pending")
+		                            ^
+internal/services/mcp_client.go:116:23: Error return value of `response.Body.Close` is not checked (errcheck)
+			response.Body.Close()
+			                   ^
+internal/services/mcp_client.go:120:19: Error return value of `resp.Body.Close` is not checked (errcheck)
+			resp.Body.Close() // 请求失败（含重定向错误）时立即释放响应体
+			               ^
+internal/services/mcp_client.go:130:27: Error return value of `response.Body.Close` is not checked (errcheck)
+	defer response.Body.Close()
+	                         ^
+internal/services/mcp_client.go:210:27: Error return value of `response.Body.Close` is not checked (errcheck)
+	defer response.Body.Close()
+	                         ^
+internal/services/offboarding_service.go:112:17: Error return value of `json.Unmarshal` is not checked (errcheck)
+		json.Unmarshal(casesJSON, &casesData)
+		              ^
+internal/services/offboarding_service.go:113:17: Error return value of `json.Unmarshal` is not checked (errcheck)
+		json.Unmarshal(inboxJSON, &inboxData)
+		              ^
+internal/services/payment_service.go:325:26: Error return value of `s.milestoneRepo.Update` is not checked (errcheck)
+			s.milestoneRepo.Update(ctx, milestone)
+			                      ^
+internal/services/pdf_report_service.go:196:12: Error return value of `os.Remove` is not checked (errcheck)
+		os.Remove(filepath)
+		         ^
+internal/services/pdf_report_service.go:390:11: Error return value of `rand.Read` is not checked (errcheck)
+	rand.Read(randomBytes)
+	         ^
+internal/services/pdf_report_service.go:773:28: Error return value of `privateKeyFile.Close` is not checked (errcheck)
+	defer privateKeyFile.Close()
+	                          ^
+internal/services/pdf_report_service.go:788:27: Error return value of `publicKeyFile.Close` is not checked (errcheck)
+	defer publicKeyFile.Close()
+	                         ^
+internal/services/scheduler_service.go:116:18: Error return value of `s.checkReminders` is not checked (errcheck)
+	s.checkReminders(context.Background())
+	                ^
+internal/services/scheduler_service.go:139:20: Error return value of `s.checkEscalations` is not checked (errcheck)
+	s.checkEscalations(context.Background())
+	                  ^
+internal/services/scheduler_service.go:439:25: Error return value of `s.checkApprovalTimeouts` is not checked (errcheck)
+	s.checkApprovalTimeouts(context.Background())
+	                       ^
+internal/services/search_service.go:112:22: Error return value of `res.Body.Close` is not checked (errcheck)
+	defer res.Body.Close()
+	                    ^
+internal/services/search_service.go:178:29: Error return value of `suggestRes.Body.Close` is not checked (errcheck)
+	defer suggestRes.Body.Close()
+	                           ^
+internal/services/search_service.go:218:22: Error return value of `res.Body.Close` is not checked (errcheck)
+	defer res.Body.Close()
+	                    ^
+internal/services/search_service.go:244:22: Error return value of `res.Body.Close` is not checked (errcheck)
+	defer res.Body.Close()
+	                    ^
+internal/services/sensitive_word_filter_service.go:365:27: Error return value of `s.wordRepo.UpdateHitCount` is not checked (errcheck)
+	s.wordRepo.UpdateHitCount(ctx, wordID, now)
+	                         ^
+internal/services/subject_recheck_service.go:679:18: Error return value of `rows.Close` is not checked (errcheck)
+	defer rows.Close()
+	                ^
+internal/services/team_permission_service.go:221:17: Error return value of `s.cacheRepo.Set` is not checked (errcheck)
+	s.cacheRepo.Set(ctx, cacheKey, string(resultJSON), 5*time.Minute)
+	               ^
+internal/services/team_permission_service.go:447:28: Error return value of `s.cacheRepo.DeletePattern` is not checked (errcheck)
+		s.cacheRepo.DeletePattern(ctx, pattern)
+		                         ^
+internal/services/approval_service.go:285:26: Error return value of `encoding/json.Marshal` is not checked: unsafe type `interface{}` found (errchkjson)
+		attachmentsBytes, _ := json.Marshal(req.Attachments)
+		                       ^
+internal/services/approval_service.go:289:23: Error return value of `encoding/json.Marshal` is not checked: unsafe type `interface{}` found (errchkjson)
+		metadataBytes, _ := json.Marshal(req.Metadata)
+		                    ^
+internal/services/approval_service.go:537:22: Error return value of `encoding/json.Marshal` is not checked: unsafe type `interface{}` found (errchkjson)
+	metadataBytes, _ := json.Marshal(metadata)
+	                    ^
+internal/services/approval_template_service.go:76:22: Error return value of `encoding/json.Marshal` is not checked (errchkjson)
+	sealStepsJSON, _ := json.Marshal(sealApprovalSteps)
+	                    ^
+internal/services/approval_template_service.go:77:27: Error return value of `encoding/json.Marshal` is not checked: unsafe type `interface{}` found (errchkjson)
+	sealConditionsJSON, _ := json.Marshal(sealConditions)
+	                         ^
+internal/services/approval_template_service.go:106:22: Error return value of `encoding/json.Marshal` is not checked (errchkjson)
+	caseStepsJSON, _ := json.Marshal(caseFilingSteps)
+	                    ^
+internal/services/conflict_p0_service.go:368:12: Error return value of `encoding/json.Marshal` is not checked (errchkjson)
+	raw, _ := json.Marshal(items)
+	          ^
+internal/services/conflict_policy_service.go:338:12: Error return value of `encoding/json.Marshal` is not checked: unsafe type `any` found (errchkjson)
+	raw, _ := json.Marshal(payload)
+	          ^
+internal/services/conflict_pool_service.go:591:15: Error return value of `encoding/json.Marshal` is not checked: unsafe type `float64` found (errchkjson)
+			data, _ := json.Marshal(shareholdingData)
+			           ^
+internal/services/conflict_pool_service.go:603:15: Error return value of `encoding/json.Marshal` is not checked: unsafe type `float64` found (errchkjson)
+			data, _ := json.Marshal(relatedData)
+			           ^
+internal/services/content_filter_service.go:315:22: Error return value of `encoding/json.Marshal` is not checked: unsafe type `interface{}` found (errchkjson)
+	hitsJSONBytes, _ := json.Marshal(hitsMap)
+	                    ^
+internal/services/subject_recheck_service.go:1293:12: Error return value of `encoding/json.Marshal` is not checked: unsafe type `interface{}` found (errchkjson)
+	raw, _ := json.Marshal(record.CheckResult)
+	          ^
+internal/services/subject_recheck_service.go:1440:12: Error return value of `encoding/json.Marshal` is not checked: unsafe type `interface{}` found (errchkjson)
+	raw, _ := json.Marshal(payload)
+	          ^
+internal/services/team_permission_service.go:220:19: Error return value of `encoding/json.Marshal` is not checked: unsafe type `interface{}` found (errchkjson)
+	resultJSON, _ := json.Marshal(result)
+	                 ^
+internal/services/offboarding_service.go:134:4: type assertion must be checked (forcetypeassert)
+			detail := &models.OffboardingTransferDetail{
+			^
+internal/services/offboarding_service.go:147:4: type assertion must be checked (forcetypeassert)
+			detail := &models.OffboardingTransferDetail{
+			^
+internal/services/search_service.go:338:3: type assertion must be checked (forcetypeassert)
+		boolQuery["bool"].(map[string]interface{})["filter"] = filter
+		^
+internal/services/search_service.go:433:2: type assertion must be checked (forcetypeassert)
+	result := &SearchResult{
+	^
+internal/services/client_service_comprehensive_test.go:34:9: type assertion must be checked (forcetypeassert)
+	return args.Get(0).(*models.Client), args.Error(1)
+	       ^
+internal/services/client_service_comprehensive_test.go:42:9: type assertion must be checked (forcetypeassert)
+	return args.Get(0).(*models.Client), args.Error(1)
+	       ^
+internal/services/client_service_comprehensive_test.go:62:9: type assertion must be checked (forcetypeassert)
+	return args.Get(0).([]*models.Client), args.Get(1).(int64), args.Error(2)
+	       ^
+internal/services/client_service_comprehensive_test.go:70:9: type assertion must be checked (forcetypeassert)
+	return args.Get(0).(*repositories.ClientStats), args.Error(1)
+	       ^
+internal/services/client_service_comprehensive_test.go:1069:2: type assertion must be checked (forcetypeassert)
+	decision = updatedConflict.CheckResult["decision"].(map[string]interface{})
+	^
+internal/services/client_service_comprehensive_test.go:1112:2: type assertion must be checked (forcetypeassert)
+	decision := record.CheckResult["decision"].(map[string]interface{})
+	^
+internal/services/conflict_detection_service_test.go:588:28: type assertion must be checked (forcetypeassert)
+	assert.Equal(t, "WAIVED", record.CheckResult["decision"].(map[string]interface{})["status"])
+	                          ^
+tests/performance/benchmark_test.go:34:16: Error return value of `db.AutoMigrate` is not checked (errcheck)
+	db.AutoMigrate(&models.User{}, &models.Client{}, &models.Case{})
+	              ^
+tests/performance/benchmark_test.go:47:13: Error return value of `router.Init` is not checked (errcheck)
+	router.Init(app, db, rdb)
+	           ^
+tests/performance/benchmark_test.go:125:21: Error return value of `encoding/json.Marshal` is not checked: unsafe type `interface{}` found (errchkjson)
+	responseData, _ := json.Marshal(testResponse)
+	                   ^
+tests/performance/benchmark_test.go:370:2: type assertion must be checked (forcetypeassert)
+	initialGoroutines := summary1["system"].(map[string]interface{})["goroutines"].(int)
+	^
+tests/performance/benchmark_test.go:391:2: type assertion must be checked (forcetypeassert)
+	finalGoroutines := summary2["system"].(map[string]interface{})["goroutines"].(int)
+	^
+internal/models/elasticsearch/legal_statutes.go:107:22: Error return value of `res.Body.Close` is not checked (errcheck)
+	defer res.Body.Close()
+	                    ^
+internal/models/elasticsearch/legal_statutes.go:127:22: Error return value of `res.Body.Close` is not checked (errcheck)
+	defer res.Body.Close()
+	                    ^
+internal/models/elasticsearch/legal_statutes.go:155:22: Error return value of `res.Body.Close` is not checked (errcheck)
+	defer res.Body.Close()
+	                    ^
+internal/models/elasticsearch/legal_statutes.go:198:22: Error return value of `res.Body.Close` is not checked (errcheck)
+	defer res.Body.Close()
+	                    ^
+internal/models/elasticsearch/legal_statutes.go:228:22: Error return value of `res.Body.Close` is not checked (errcheck)
+	defer res.Body.Close()
+	                    ^
+internal/models/elasticsearch/legal_statutes.go:388:17: Error return value of `json.Unmarshal` is not checked (errcheck)
+		json.Unmarshal(sourceJSON, &doc)
+		              ^
+internal/models/elasticsearch/legal_statutes.go:179:18: Error return value of `encoding/json.Marshal` is not checked: unsafe type `interface{}` found (errchkjson)
+		metaJSON, _ := json.Marshal(indexMeta)
+		               ^
+internal/models/elasticsearch/legal_statutes.go:184:17: Error return value of `encoding/json.Marshal` is not checked: unsafe type `float64` found (errchkjson)
+		docJSON, _ := json.Marshal(doc)
+		              ^
+internal/models/elasticsearch/legal_statutes.go:387:20: Error return value of `encoding/json.Marshal` is not checked: unsafe type `interface{}` found (errchkjson)
+		sourceJSON, _ := json.Marshal(source)
+		                 ^
+internal/models/elasticsearch/legal_statutes.go:255:2: type assertion must be checked (forcetypeassert)
+	mustQueries := query["query"].(map[string]interface{})["bool"].(map[string]interface{})["must"].([]map[string]interface{})
+	^
+internal/models/elasticsearch/legal_statutes.go:313:4: type assertion must be checked (forcetypeassert)
+			dateRange["range"].(map[string]interface{})["effective_date"].(map[string]interface{})["gte"] = req.EffectiveDateFrom
+			^
+internal/models/elasticsearch/legal_statutes.go:316:4: type assertion must be checked (forcetypeassert)
+			dateRange["range"].(map[string]interface{})["effective_date"].(map[string]interface{})["lte"] = req.EffectiveDateTo
+			^
+internal/models/elasticsearch/legal_statutes.go:331:2: type assertion must be checked (forcetypeassert)
+	query["query"].(map[string]interface{})["bool"].(map[string]interface{})["must"] = mustQueries
+	^
+internal/models/elasticsearch/legal_statutes.go:377:2: type assertion must be checked (forcetypeassert)
+	hits := result["hits"].(map[string]interface{})
+	^
+internal/models/elasticsearch/legal_statutes.go:378:2: type assertion must be checked (forcetypeassert)
+	total := hits["total"].(map[string]interface{})["value"].(float64)
+	^
+internal/models/elasticsearch/legal_statutes.go:379:2: type assertion must be checked (forcetypeassert)
+	hitsList := hits["hits"].([]interface{})
+	^
+internal/models/elasticsearch/legal_statutes.go:383:3: type assertion must be checked (forcetypeassert)
+		hitMap := hit.(map[string]interface{})
+		^
+internal/models/elasticsearch/legal_statutes.go:384:3: type assertion must be checked (forcetypeassert)
+		source := hitMap["_source"].(map[string]interface{})
+		^
+internal/logger/logger.go:1008:17: Error return value of `dir.Close` is not checked (errcheck)
+	defer dir.Close()
+	               ^
+internal/logger/logger.go:366:3: right hand must be only type assertion (forcetypeassert)
+		fields = append(fields, zap.String("request_id", requestID.(string)))
+		^
+internal/logger/logger.go:370:3: right hand must be only type assertion (forcetypeassert)
+		fields = append(fields, zap.String("trace_id", traceID.(string)))
+		^
+internal/logger/logger.go:374:3: right hand must be only type assertion (forcetypeassert)
+		fields = append(fields, zap.String("span_id", spanID.(string)))
+		^
+internal/logger/logger.go:382:3: right hand must be only type assertion (forcetypeassert)
+		fields = append(fields, zap.String("client_ip", clientIP.(string)))
+		^
+internal/logger/logger.go:386:3: right hand must be only type assertion (forcetypeassert)
+		fields = append(fields, zap.String("user_agent", userAgent.(string)))
+		^
+internal/logger/logger.go:390:3: right hand must be only type assertion (forcetypeassert)
+		fields = append(fields, zap.String("module", module.(string)))
+		^
+internal/logger/logger.go:394:3: right hand must be only type assertion (forcetypeassert)
+		fields = append(fields, zap.String("function", function.(string)))
+		^
+internal/logger/logger.go:730:3: right hand must be only type assertion (forcetypeassert)
+		fields = append(fields, zap.String("request_id", requestID.(string)))
+		^
+internal/logger/logger.go:734:3: right hand must be only type assertion (forcetypeassert)
+		fields = append(fields, zap.String("client_ip", clientIP.(string)))
+		^
+internal/logger/logger.go:738:3: right hand must be only type assertion (forcetypeassert)
+		fields = append(fields, zap.String("user_agent", userAgent.(string)))
+		^
+internal/logger/logger.go:772:3: right hand must be only type assertion (forcetypeassert)
+		fields = append(fields, zap.String("request_id", requestID.(string)))
+		^
+internal/logger/logger.go:776:3: right hand must be only type assertion (forcetypeassert)
+		fields = append(fields, zap.String("client_ip", clientIP.(string)))
+		^
+internal/logger/logger.go:815:3: right hand must be only type assertion (forcetypeassert)
+		fields = append(fields, zap.String("request_id", requestID.(string)))
+		^
+internal/logger/logger.go:832:3: right hand must be only type assertion (forcetypeassert)
+		fields = append(fields, zap.String("request_id", requestID.(string)))
+		^
+internal/elasticsearch/client.go:60:22: Error return value of `res.Body.Close` is not checked (errcheck)
+	defer res.Body.Close()
+	                    ^
+internal/elasticsearch/client.go:82:22: Error return value of `res.Body.Close` is not checked (errcheck)
+	defer res.Body.Close()
+	                    ^
+internal/elasticsearch/client.go:101:22: Error return value of `res.Body.Close` is not checked (errcheck)
+	defer res.Body.Close()
+	                    ^
+internal/elasticsearch/client.go:126:22: Error return value of `res.Body.Close` is not checked (errcheck)
+	defer res.Body.Close()
+	                    ^
+internal/elasticsearch/client.go:149:22: Error return value of `res.Body.Close` is not checked (errcheck)
+	defer res.Body.Close()
+	                    ^
+internal/elasticsearch/client.go:167:22: Error return value of `res.Body.Close` is not checked (errcheck)
+	defer res.Body.Close()
+	                    ^
+internal/elasticsearch/client.go:185:22: Error return value of `res.Body.Close` is not checked (errcheck)
+	defer res.Body.Close()
+	                    ^
+internal/elasticsearch/client.go:206:22: Error return value of `res.Body.Close` is not checked (errcheck)
+	defer res.Body.Close()
+	                    ^
+internal/concurrency/concurrent_service_test.go:250:21: Error return value of `service.SubmitTask` is not checked (errcheck)
+		service.SubmitTask(task)
+		                  ^
+internal/concurrency/concurrent_service_test.go:298:20: Error return value of `service.SubmitTask` is not checked (errcheck)
+	service.SubmitTask(task)
+	                  ^
+internal/concurrency/worker_pool_test.go:273:14: Error return value of `pool.Submit` is not checked (errcheck)
+		pool.Submit(task)
+		           ^
+internal/concurrency/worker_pool.go:205:5: type assertion must be checked (forcetypeassert)
+				taskResult := result.(TaskResult)
+				^
+internal/errors/error_handler.go:476:9: Error return value of `c.Error` is not checked (errcheck)
+	c.Error(enhancedErr)
+	       ^
+internal/errors/error_handler.go:160:21: Error return value of `encoding/json.Marshal` is not checked: unsafe type `interface{}` found (errchkjson)
+		contextJSON, _ := json.Marshal(err.Context())
+		                  ^
+internal/errors/error_handler.go:382:3: type assertion must be checked (forcetypeassert)
+		response["error"].(gin.H)["details"] = err.Details()
+		^
+internal/errors/error_handler.go:387:3: type assertion must be checked (forcetypeassert)
+		response["error"].(gin.H)["context"] = err.Context()
+		^
+internal/errors/error_handler.go:392:3: type assertion must be checked (forcetypeassert)
+		response["error"].(gin.H)["stack_trace"] = err.StackTrace()
+		^
+internal/errors/error_handler.go:397:3: type assertion must be checked (forcetypeassert)
+		response["error"].(gin.H)["suggestions"] = err.Suggestions()
+		^
+internal/errors/error_handler.go:399:3: type assertion must be checked (forcetypeassert)
+		response["error"].(gin.H)["suggestions"] = ehm.getDefaultSuggestions(err)
+		^
+internal/errors/error_handler.go:404:3: type assertion must be checked (forcetypeassert)
+		response["error"].(gin.H)["source"] = gin.H{
+		^
+internal/middleware/cache.go:193:16: Error return value of `c.Writer.Write` is not checked (errcheck)
+	c.Writer.Write(cached.Body)
+	              ^
+internal/middleware/cache.go:326:33: Error return value of `cache.DefaultCacheService.Set` is not checked (errcheck)
+			cache.DefaultCacheService.Set(key, responseData, config.TTL)
+			                             ^
+internal/middleware/audit.go:54:4: type assertion must be checked (forcetypeassert)
+			userID = uid.(uint)
+			^
+internal/middleware/ethical_wall_test.go:60:9: type assertion must be checked (forcetypeassert)
+	return args.Get(0).([]*models.CaseEthicalWallWhitelist), args.Error(1)
+	       ^
+internal/middleware/ethical_wall_test.go:68:9: type assertion must be checked (forcetypeassert)
+	return args.Get(0).([]*models.CaseEthicalWallWhitelist), args.Error(1)
+	       ^
+internal/middleware/ethical_wall_test.go:80:9: type assertion must be checked (forcetypeassert)
+	return args.Get(0).([]*models.EthicalWallAccessLog), args.Error(1)
+	       ^
+main.go:564:27: Error return value of `response.Body.Close` is not checked (errcheck)
+	defer response.Body.Close()
+	                         ^
+internal/middleware/v2/v2_performance_middleware.go:544:11: Error return value of `pipe.Exec` is not checked (errcheck)
+	pipe.Exec(ctx)
+	         ^
+internal/middleware/v2/v2_security_middleware.go:383:32: Error return value of `ginEngine.SetTrustedProxies` is not checked (errcheck)
+				ginEngine.SetTrustedProxies(sm.trustedProxies)
+				                           ^
+internal/repositories/conflict_extended_repository.go:177:18: Error return value of `rows.Close` is not checked (errcheck)
+	defer rows.Close()
+	                ^
+internal/repositories/conflict_extended_repository.go:243:18: Error return value of `rows.Close` is not checked (errcheck)
+	defer rows.Close()
+	                ^
+internal/repositories/conflict_extended_repository.go:355:18: Error return value of `rows.Close` is not checked (errcheck)
+	defer rows.Close()
+	                ^
+internal/repositories/conflict_extended_repository.go:413:18: Error return value of `rows.Close` is not checked (errcheck)
+	defer rows.Close()
+	                ^
+internal/repositories/conflict_extended_repository.go:471:18: Error return value of `rows.Close` is not checked (errcheck)
+	defer rows.Close()
+	                ^
+internal/repositories/conflict_extended_repository.go:553:18: Error return value of `rows.Close` is not checked (errcheck)
+	defer rows.Close()
+	                ^
+internal/repositories/conflict_extended_repository.go:607:18: Error return value of `rows.Close` is not checked (errcheck)
+	defer rows.Close()
+	                ^
+internal/repositories/conflict_repository.go:730:18: Error return value of `rows.Close` is not checked (errcheck)
+	defer rows.Close()
+	                ^
+internal/repositories/conflict_repository.go:834:25: Error return value of `partyRows.Close` is not checked (errcheck)
+			defer partyRows.Close()
+			                     ^
+internal/repositories/conflict_repository.go:855:21: Error return value of `partyRows.Close` is not checked (errcheck)
+					partyRows.Close()
+					               ^
+internal/repositories/conflict_repository.go:890:19: Error return value of `partyRows.Close` is not checked (errcheck)
+			partyRows.Close()
+			               ^
+internal/repositories/document_repository_impl.go:237:18: Error return value of `rows.Close` is not checked (errcheck)
+	defer rows.Close()
+	                ^
+internal/repositories/document_repository_impl.go:265:24: Error return value of `entityRows.Close` is not checked (errcheck)
+	defer entityRows.Close()
+	                      ^
+internal/repositories/conflict_repository_test.go:283:21: type assertion must be checked (forcetypeassert)
+	require.NoError(t, repo.(ConflictSubjectLinker).LinkConflictCheckToCase(context.Background(), ConflictSubjectAssociation{
+	                   ^
+internal/repositories/conflict_repository_test.go:306:2: right hand must be only type assertion (forcetypeassert)
+	err := repo.(ConflictSubjectLinker).LinkConflictCheckToCase(context.Background(), ConflictSubjectAssociation{
+	^
+internal/repositories/conflict_repository_test.go:317:2: right hand must be only type assertion (forcetypeassert)
+	err = repo.(ConflictSubjectLinker).LinkConflictCheckToCase(context.Background(), ConflictSubjectAssociation{
+	^
+internal/repositories/conflict_repository_test.go:325:2: right hand must be only type assertion (forcetypeassert)
+	err = repo.(ConflictSubjectLinker).LinkConflictCheckToCase(context.Background(), ConflictSubjectAssociation{
+	^
+tests/integration/business_workflow_test.go:85:13: Error return value of `router.Init` is not checked (errcheck)
+	router.Init(suite.router, db, nil)
+	           ^
+tests/integration/business_workflow_test.go:95:14: Error return value of `sqlDB.Close` is not checked (errcheck)
+		sqlDB.Close()
+		           ^
+tests/integration/postgresql_elasticsearch_test.go:31:32: Error return value is not checked (errcheck)
+	defer teardownPostgreSQLTestDB(db)
+	                              ^
+tests/integration/postgresql_elasticsearch_test.go:87:30: Error return value of `esClientWrapper.DeleteIndex` is not checked (errcheck)
+		esClientWrapper.DeleteIndex(ctx, indexName)
+		                           ^
+tests/integration/postgresql_elasticsearch_test.go:198:26: Error return value of `(gorm.io/gorm.Migrator).DropTable` is not checked (errcheck)
+		db.Migrator().DropTable(&models.Case{}, &models.Client{}, &models.User{})
+		                       ^
+tests/integration/production_external_evidence_test.go:32:16: Error return value of `db.Close` is not checked (errcheck)
+	defer db.Close()
+	              ^
+tests/integration/production_external_evidence_test.go:49:19: Error return value of `conn.Close` is not checked (errcheck)
+		defer conn.Close()
+		                ^
+tests/integration/production_external_evidence_test.go:86:20: Error return value of `pgxDB.Close` is not checked (errcheck)
+		defer pgxDB.Close()
+		                 ^
+tests/integration/production_external_evidence_test.go:91:19: Error return value of `conn.Close` is not checked (errcheck)
+		defer conn.Close()
+		                ^
+internal/metrics/fuzzing_metrics.go:604:5: type assertion must be checked (forcetypeassert)
+	if maxCritical := thresholds["max_critical_crashes"].(int); metrics.CriticalCrashes > int64(maxCritical) {
+	   ^
+internal/metrics/fuzzing_metrics.go:609:5: type assertion must be checked (forcetypeassert)
+	if maxHigh := thresholds["max_high_crashes"].(int); metrics.HighCrashes > int64(maxHigh) {
+	   ^
+internal/metrics/fuzzing_metrics.go:614:5: type assertion must be checked (forcetypeassert)
+	if minCoverage := thresholds["min_coverage"].(float64); metrics.Coverage < minCoverage {
+	   ^
+internal/metrics/fuzzing_metrics.go:619:5: type assertion must be checked (forcetypeassert)
+	if maxDuration := thresholds["max_execution_time"].(string); metrics.Duration > parseDuration(maxDuration) {
+	   ^
+cmd/qa-fixture/main.go:104:19: Error return value of `sqlDB.Close` is not checked (errcheck)
+	defer sqlDB.Close()
+	                 ^
+frontend/migrate/main.go:101:16: Error return value of `db.Close` is not checked (errcheck)
+	defer db.Close()
+	              ^
+frontend/migrate/main.go:129:15: Error return value of `m.Close` is not checked (errcheck)
+	defer m.Close()
+	             ^
+frontend/migrate/main.go:152:15: Error return value of `m.Close` is not checked (errcheck)
+	defer m.Close()
+	             ^
+frontend/migrate/main.go:175:15: Error return value of `m.Close` is not checked (errcheck)
+	defer m.Close()
+	             ^
+frontend/migrate/main.go:192:15: Error return value of `m.Close` is not checked (errcheck)
+	defer m.Close()
+	             ^
+frontend/migrate/main.go:252:15: Error return value of `f.Close` is not checked (errcheck)
+	defer f.Close()
+	             ^
+frontend/migrate/main.go:269:16: Error return value of `db.Close` is not checked (errcheck)
+	defer db.Close()
+	              ^
+internal/health/conflict_p0_check.go:128:18: Error return value of `rows.Close` is not checked (errcheck)
+	defer rows.Close()
+	                ^
+internal/health/conflict_p0_check.go:228:18: Error return value of `rows.Close` is not checked (errcheck)
+	defer rows.Close()
+	                ^
+internal/health/conflict_p0_check.go:264:18: Error return value of `rows.Close` is not checked (errcheck)
+	defer rows.Close()
+	                ^
+internal/health/health.go:430:17: Error return value of `cc.cache.Delete` is not checked (errcheck)
+	cc.cache.Delete(testKey)
+	               ^
+internal/health/health.go:587:23: Error return value of `resp.Body.Close` is not checked (errcheck)
+	defer resp.Body.Close()
+	                     ^
+internal/health/middleware.go:138:4: type assertion must be checked (forcetypeassert)
+			metrics["healthy_checks"] = metrics["healthy_checks"].(int) + 1
+			^
+internal/health/middleware.go:140:4: type assertion must be checked (forcetypeassert)
+			metrics["degraded_checks"] = metrics["degraded_checks"].(int) + 1
+			^
+internal/health/middleware.go:142:4: type assertion must be checked (forcetypeassert)
+			metrics["unhealthy_checks"] = metrics["unhealthy_checks"].(int) + 1
+			^
+internal/health/conflict_p0_check_test.go:39:26: type assertion must be checked (forcetypeassert)
+		assert.Equal(t, false, details["external_evidence_gates"].(map[string]bool)[gate])
+		                       ^
+internal/health/conflict_p0_check_test.go:41:90: type assertion must be checked (forcetypeassert)
+	assert.Equal(t, "完成并签署 PD-01 至 PD-07 决策物，登记书面签署凭证", details["next_actions"].(map[string]string)["G0"])
+	                                                                                        ^
+internal/health/conflict_p0_check_test.go:57:26: type assertion must be checked (forcetypeassert)
+		assert.Equal(t, false, details["external_evidence_gates"].(map[string]bool)[gate])
+		                       ^
+internal/health/middleware_test.go:232:90: type assertion must be checked (forcetypeassert)
+	assert.Equal(t, "完成并签署 PD-01 至 PD-07 决策物，登记书面签署凭证", scope["skipped_gates"].(map[string]interface{})["G0"])
+	                                                                                        ^
+internal/health/middleware_test.go:276:2: type assertion must be checked (forcetypeassert)
+	missing := scope["missing"].([]interface{})
+	^
+internal/health/middleware_test.go:279:109: type assertion must be checked (forcetypeassert)
+	assert.Equal(t, "由运维负责人和合规负责人复核前序凭证，登记最终技术放行记录", scope["next_actions"].(map[string]interface{})["G7"])
+	                                                                                                           ^
+internal/health/middleware_test.go:302:2: type assertion must be checked (forcetypeassert)
+	missing := scope["missing"].([]interface{})
+	^
+internal/health/middleware_test.go:454:2: type assertion must be checked (forcetypeassert)
+	dependencies := response["dependencies"].(map[string]interface{})
+	^
+internal/health/middleware_test.go:455:2: type assertion must be checked (forcetypeassert)
+	database := dependencies["database"].(map[string]interface{})
+	^
+cmd/migrate/main.go:51:20: Error return value of `sqlDB.Close` is not checked (errcheck)
+		defer sqlDB.Close()
+		                 ^
+cmd/migrate/main.go:64:22: Error return value of `migrator.Close` is not checked (errcheck)
+	defer migrator.Close()
+	                    ^
+cmd/migrate/main.go:107:13: Error return value of `fmt.Scanln` is not checked (errcheck)
+		fmt.Scanln(&confirm)
+		          ^
+internal/rbac/rbac_service.go:68:14: Error return value of `s.cache.Set` is not checked (errcheck)
+		s.cache.Set(ctx, cacheKey, permissions)
+		           ^
+internal/rbac/rbac_service.go:141:3: right hand must be only type assertion (forcetypeassert)
+		hasPermission, err := s.CheckUserPermission(c.Request.Context(), userID.(uint), permissionKey)
+		^
+internal/auth/middleware.go:410:18: Error return value of `cacheService.Set` is not checked (errcheck)
+	cacheService.Set(rateLimitKey, count+1, time.Minute)
+	                ^
+internal/auth/middleware.go:424:19: Error return value of `cacheService.Set` is not checked (errcheck)
+		cacheService.Set(deviceKey, deviceInfo, time.Hour*24)
+		                ^
+internal/auth/token_session_store_test.go:172:2: right hand must be only type assertion (forcetypeassert)
+	issuedAt := time.Unix(int64((*activeClaims)["iat"].(float64)), 0)
+	^
+internal/auth/token_session_store_test.go:203:2: right hand must be only type assertion (forcetypeassert)
+	issuedAt := time.Unix(int64((*afterClaims)["iat"].(float64)), 0)
+	^
+internal/handlers/document_handler_test.go:349:12: Error return value of `part.Write` is not checked (errcheck)
+	part.Write([]byte("mock pdf content"))
+	          ^
+internal/handlers/document_handler_test.go:351:14: Error return value of `writer.Close` is not checked (errcheck)
+	writer.Close()
+	            ^
+internal/handlers/document_handler_test.go:628:14: Error return value of `writer.Close` is not checked (errcheck)
+	writer.Close()
+	            ^
+internal/handlers/document_handler_test.go:661:12: Error return value of `part.Write` is not checked (errcheck)
+	part.Write([]byte("mock pdf content"))
+	          ^
+internal/handlers/document_handler_test.go:663:14: Error return value of `writer.Close` is not checked (errcheck)
+	writer.Close()
+	            ^
+internal/handlers/document_handler_test.go:787:13: Error return value of `part.Write` is not checked (errcheck)
+		part.Write([]byte("mock pdf content"))
+		          ^
+internal/handlers/document_handler_test.go:789:15: Error return value of `writer.Close` is not checked (errcheck)
+		writer.Close()
+		            ^
+internal/handlers/document_handler_test.go:820:13: Error return value of `part.Write` is not checked (errcheck)
+		part.Write([]byte("mock pdf content"))
+		          ^
+internal/handlers/document_handler_test.go:822:15: Error return value of `writer.Close` is not checked (errcheck)
+		writer.Close()
+		            ^
+internal/handlers/document_handler_test.go:856:13: Error return value of `part.Write` is not checked (errcheck)
+		part.Write([]byte("mock pdf content"))
+		          ^
+internal/handlers/document_handler_test.go:858:15: Error return value of `writer.Close` is not checked (errcheck)
+		writer.Close()
+		            ^
+internal/handlers/document_version_handler.go:347:18: Error return value of `c.ShouldBindJSON` is not checked (errcheck)
+	c.ShouldBindJSON(&req)
+	                ^
+internal/handlers/document_version_handler.go:390:18: Error return value of `c.ShouldBindJSON` is not checked (errcheck)
+	c.ShouldBindJSON(&req)
+	                ^
+internal/handlers/finance_handler.go:2304:20: Error return value of `csvWriter.WriteAll` is not checked (errcheck)
+	csvWriter.WriteAll(sanitizeCSVRecords(records))
+	                  ^
+internal/handlers/onlyoffice_handler.go:591:23: Error return value of `resp.Body.Close` is not checked (errcheck)
+	defer resp.Body.Close()
+	                     ^
+internal/handlers/onlyoffice_handler.go:629:15: Error return value of `outFile.Close` is not checked (errcheck)
+	outFile.Close()
+	             ^
+internal/handlers/onlyoffice_handler.go:633:12: Error return value of `os.Remove` is not checked (errcheck)
+		os.Remove(tmpPath)
+		         ^
+internal/handlers/onlyoffice_handler.go:637:12: Error return value of `os.Remove` is not checked (errcheck)
+		os.Remove(tmpPath)
+		         ^
+internal/handlers/onlyoffice_handler.go:643:12: Error return value of `os.Remove` is not checked (errcheck)
+		os.Remove(tmpPath)
+		         ^
+internal/handlers/onlyoffice_handler.go:737:23: Error return value of `resp.Body.Close` is not checked (errcheck)
+	defer resp.Body.Close()
+	                     ^
+internal/handlers/onlyoffice_handler.go:931:27: Error return value of `httpResp.Body.Close` is not checked (errcheck)
+	defer httpResp.Body.Close()
+	                         ^
+internal/handlers/onlyoffice_handler.go:963:15: Error return value of `outFile.Close` is not checked (errcheck)
+	outFile.Close()
+	             ^
+internal/handlers/onlyoffice_handler.go:966:12: Error return value of `os.Remove` is not checked (errcheck)
+		os.Remove(outputPath)
+		         ^
+internal/handlers/onlyoffice_handler.go:974:12: Error return value of `os.Remove` is not checked (errcheck)
+		os.Remove(outputPath)
+		         ^
+internal/handlers/onlyoffice_handler.go:1011:18: Error return value of `resp.Body.Close` is not checked (errcheck)
+		resp.Body.Close()
+		               ^
+internal/handlers/onlyoffice_handler.go:1168:21: Error return value of `srcFile.Close` is not checked (errcheck)
+	defer srcFile.Close()
+	                   ^
+internal/handlers/onlyoffice_handler.go:1174:21: Error return value of `dstFile.Close` is not checked (errcheck)
+	defer dstFile.Close()
+	                   ^
+internal/handlers/onlyoffice_handler_test.go:197:10: Error return value of `w.Write` is not checked (errcheck)
+		w.Write([]byte(content))
+		       ^
+internal/handlers/onlyoffice_handler_test.go:241:14: Error return value of `os.WriteFile` is not checked (errcheck)
+	os.WriteFile(doc.Filepath, []byte("original"), 0o644)
+	            ^
+internal/handlers/onlyoffice_handler_test.go:244:10: Error return value of `w.Write` is not checked (errcheck)
+		w.Write([]byte("new version"))
+		       ^
+internal/handlers/onlyoffice_handler_test.go:280:14: Error return value of `os.WriteFile` is not checked (errcheck)
+	os.WriteFile(doc.Filepath, []byte("before"), 0o644)
+	            ^
+internal/handlers/onlyoffice_handler_test.go:283:10: Error return value of `w.Write` is not checked (errcheck)
+		w.Write([]byte("after save"))
+		       ^
+internal/handlers/onlyoffice_handler_test.go:442:14: Error return value of `os.WriteFile` is not checked (errcheck)
+	os.WriteFile(doc.Filepath, []byte("orig"), 0o644)
+	            ^
+internal/handlers/onlyoffice_handler_test.go:466:14: Error return value of `os.WriteFile` is not checked (errcheck)
+	os.WriteFile(doc.Filepath, []byte("orig"), 0o644)
+	            ^
+internal/handlers/onlyoffice_handler_test.go:484:14: Error return value of `os.WriteFile` is not checked (errcheck)
+	os.WriteFile(doc.Filepath, []byte("orig"), 0o644)
+	            ^
+internal/handlers/onlyoffice_handler_test.go:503:14: Error return value of `os.WriteFile` is not checked (errcheck)
+	os.WriteFile(doc.Filepath, []byte("orig"), 0o644)
+	            ^
+internal/handlers/onlyoffice_handler_test.go:526:14: Error return value of `os.WriteFile` is not checked (errcheck)
+	os.WriteFile(doc.Filepath, []byte("orig"), 0o644)
+	            ^
+internal/handlers/onlyoffice_handler_test.go:544:14: Error return value of `os.WriteFile` is not checked (errcheck)
+	os.WriteFile(doc.Filepath, []byte("orig"), 0o644)
+	            ^
+internal/handlers/onlyoffice_handler_test.go:550:10: Error return value of `w.Write` is not checked (errcheck)
+		w.Write(make([]byte, MaxOnlyOfficeDownloadBytes+1))
+		       ^
+internal/handlers/onlyoffice_handler_test.go:576:14: Error return value of `os.WriteFile` is not checked (errcheck)
+	os.WriteFile(doc.Filepath, []byte("orig"), 0o644)
+	            ^
+internal/handlers/onlyoffice_handler_test.go:605:14: Error return value of `os.WriteFile` is not checked (errcheck)
+	os.WriteFile(doc.Filepath, []byte("orig"), 0o644)
+	            ^
+internal/handlers/onlyoffice_handler_test.go:635:14: Error return value of `os.WriteFile` is not checked (errcheck)
+	os.WriteFile(doc.Filepath, []byte("orig"), 0o644)
+	            ^
+internal/handlers/onlyoffice_handler_test.go:639:10: Error return value of `w.Write` is not checked (errcheck)
+		w.Write([]byte("new content"))
+		       ^
+internal/handlers/onlyoffice_handler_test.go:661:10: Error return value of `w.Write` is not checked (errcheck)
+		w.Write([]byte("converted"))
+		       ^
+internal/handlers/intake_native_transaction.go:61:16: Error return value of `encoding/json.Marshal` is not checked: unsafe type `float64` found (errchkjson)
+	encoded, _ := json.Marshal(f)
+	              ^
+internal/handlers/onlyoffice_handler.go:714:17: Error return value of `encoding/json.Marshal` is not checked (errchkjson)
+		payload, _ := json.Marshal(convertReq)
+		              ^
+internal/handlers/onlyoffice_handler.go:720:16: Error return value of `encoding/json.Marshal` is not checked (errchkjson)
+	reqBody, _ := json.Marshal(convertReq)
+	              ^
+internal/handlers/auth_handler_test.go:1218:17: Error return value of `encoding/json.Marshal` is not checked: unsafe type `interface{}` found (errchkjson)
+	jsonData, _ := json.Marshal(body)
+	               ^
+internal/handlers/auth_handler_test.go:1296:13: Error return value of `encoding/json.Marshal` is not checked: unsafe type `interface{}` found (errchkjson)
+	body, _ := json.Marshal(map[string]interface{}{"user_id": 2})
+	           ^
+internal/handlers/auth_handler_test.go:1328:13: Error return value of `encoding/json.Marshal` is not checked: unsafe type `interface{}` found (errchkjson)
+	body, _ := json.Marshal(map[string]interface{}{"user_id": 2})
+	           ^
+internal/handlers/conflict_handler_simple_test.go:123:16: Error return value of `encoding/json.Marshal` is not checked: unsafe type `interface{}` found (errchkjson)
+	payload, _ := json.Marshal(body)
+	              ^
+internal/handlers/document_handler_test.go:474:17: Error return value of `encoding/json.Marshal` is not checked: unsafe type `interface{}` found (errchkjson)
+	jsonData, _ := json.Marshal(updateReq)
+	               ^
+internal/handlers/onlyoffice_handler_test.go:320:18: Error return value of `encoding/json.Marshal` is not checked (errchkjson)
+	bodyBytes, _ := json.Marshal(body)
+	                ^
+internal/handlers/onlyoffice_handler_test.go:341:18: Error return value of `encoding/json.Marshal` is not checked (errchkjson)
+	bodyBytes, _ := json.Marshal(body)
+	                ^
+internal/handlers/approval_conflict_redaction.go:101:2: type assertion must be checked (forcetypeassert)
+	projected := redactApprovalConflictPayload(record).(map[string]interface{})
+	^
+internal/handlers/conflict_review_handler.go:78:2: type assertion must be checked (forcetypeassert)
+	checkReq := &services.ConflictCheckRequest{
+	^
+internal/handlers/content_filter_handler.go:62:2: type assertion must be checked (forcetypeassert)
+	word := &models.SensitiveWord{
+	^
+internal/handlers/content_filter_handler.go:163:3: type assertion must be checked (forcetypeassert)
+		word.UpdatedBy = userID.(uint)
+		^
+internal/handlers/demo_aggregate_handler.go:799:3: type assertion must be checked (forcetypeassert)
+		left := result[i]["count"].(int64)
+		^
+internal/handlers/demo_aggregate_handler.go:800:3: type assertion must be checked (forcetypeassert)
+		right := result[j]["count"].(int64)
+		^
+internal/handlers/document_version_handler.go:65:2: type assertion must be checked (forcetypeassert)
+	versionReq := &services.CreateVersionRequest{
+	^
+internal/handlers/document_version_handler.go:199:2: right hand must be only type assertion (forcetypeassert)
+	canEdit, _, err := h.lockService.ValidateEditPermission(ctx, uint(documentID), userID.(uint))
+	^
+internal/handlers/document_version_handler.go:210:5: right hand must be only type assertion (forcetypeassert)
+	if err := h.versionService.RestoreVersion(ctx, int(documentID), version, userID.(uint)); err != nil {
+	   ^
+internal/handlers/document_version_handler.go:310:2: right hand must be only type assertion (forcetypeassert)
+	status, err := h.lockService.GetLockStatus(ctx, uint(documentID), userID.(uint))
+	^
+internal/handlers/document_version_handler.go:351:2: type assertion must be checked (forcetypeassert)
+	lockReq := &services.AcquireLockRequest{
+	^
+internal/handlers/document_version_handler.go:394:2: type assertion must be checked (forcetypeassert)
+	releaseReq := &services.ReleaseLockRequest{
+	^
+internal/handlers/document_version_handler.go:426:2: type assertion must be checked (forcetypeassert)
+	renewReq := &services.RenewLockRequest{
+	^
+internal/handlers/document_version_handler.go:451:2: right hand must be only type assertion (forcetypeassert)
+	locks, err := h.lockService.GetUserLocks(ctx, userID.(uint))
+	^
+internal/handlers/intake_opponent_identity_update.go:43:2: right hand must be only type assertion (forcetypeassert)
+	suppliedType := strings.ToUpper(strings.TrimSpace(payload["entity_type"].(string)))
+	^
+internal/handlers/rbac_handler.go:643:2: right hand must be only type assertion (forcetypeassert)
+	roles, err := h.rbacService.GetUserRoles(c.Request.Context(), userID.(uint))
+	^
+internal/handlers/rbac_handler.go:670:2: right hand must be only type assertion (forcetypeassert)
+	permissions, err := h.rbacService.GetUserPermissions(c.Request.Context(), userID.(uint))
+	^
+internal/handlers/trust_account_handler.go:274:2: right hand must be only type assertion (forcetypeassert)
+	transaction, err := h.transactionService.CreateTransaction(
+	^
+internal/handlers/trust_account_handler.go:407:2: right hand must be only type assertion (forcetypeassert)
+	transaction, err := h.transactionService.ApproveTransaction(
+	^
+internal/handlers/case_handler_test.go:21:9: type assertion must be checked (forcetypeassert)
+	return args.Get(0).(*services.CaseResponse), args.Error(1)
+	       ^
+internal/handlers/case_handler_test.go:29:9: type assertion must be checked (forcetypeassert)
+	return args.Get(0).(*services.CaseResponse), args.Error(1)
+	       ^
+internal/handlers/case_handler_test.go:37:9: type assertion must be checked (forcetypeassert)
+	return args.Get(0).(*services.CaseResponse), args.Error(1)
+	       ^
+internal/handlers/case_handler_test.go:50:9: type assertion must be checked (forcetypeassert)
+	return args.Get(0).([]*services.CaseResponse), args.Get(1).(int64), args.Error(2)
+	       ^
+internal/handlers/document_handler_test.go:368:2: type assertion must be checked (forcetypeassert)
+	data := response["data"].(map[string]interface{})
+	^
+internal/handlers/document_handler_test.go:399:2: type assertion must be checked (forcetypeassert)
+	data := response["data"].(map[string]interface{})
+	^
+internal/handlers/document_handler_test.go:490:2: type assertion must be checked (forcetypeassert)
+	data := response["data"].(map[string]interface{})
+	^
+internal/handlers/document_handler_test.go:552:2: type assertion must be checked (forcetypeassert)
+	data := response["data"].([]interface{})
+	^
+internal/handlers/document_handler_test.go:556:2: type assertion must be checked (forcetypeassert)
+	pagination := response["pagination"].(map[string]interface{})
+	^
+internal/handlers/document_handler_test.go:586:2: type assertion must be checked (forcetypeassert)
+	data := response["data"].(map[string]interface{})
+	^
+internal/api/crud_handler.go:182:22: Error return value is not checked (errcheck)
+		ValidateListRequest(&req)
+		                   ^
+internal/api/crud_handler.go:88:4: type assertion must be checked (forcetypeassert)
+			id = any(uintID).(ID)
+			^
+internal/api/crud_handler.go:90:4: type assertion must be checked (forcetypeassert)
+			id = any(fmt.Sprintf("%d", uintID)).(ID)
+			^
+internal/api/crud_handler.go:117:4: type assertion must be checked (forcetypeassert)
+			id = any(uintID).(ID)
+			^
+internal/api/crud_handler.go:119:4: type assertion must be checked (forcetypeassert)
+			id = any(fmt.Sprintf("%d", uintID)).(ID)
+			^
+internal/api/crud_handler.go:156:4: type assertion must be checked (forcetypeassert)
+			id = any(uintID).(ID)
+			^
+internal/api/crud_handler.go:158:4: type assertion must be checked (forcetypeassert)
+			id = any(fmt.Sprintf("%d", uintID)).(ID)
+			^
+internal/validation/validator.go:54:22: Error return value of `v.RegisterValidation` is not checked (errcheck)
+	v.RegisterValidation("password_strength", validatePasswordStrength)
+	                    ^
+internal/validation/validator.go:55:22: Error return value of `v.RegisterValidation` is not checked (errcheck)
+	v.RegisterValidation("phone_number", validatePhoneNumber)
+	                    ^
+internal/validation/validator.go:56:22: Error return value of `v.RegisterValidation` is not checked (errcheck)
+	v.RegisterValidation("id_card", validateIDCard)
+	                    ^
+internal/validation/validator.go:57:22: Error return value of `v.RegisterValidation` is not checked (errcheck)
+	v.RegisterValidation("safe_string", validateSafeString)
+	                    ^
+internal/validation/validator.go:58:22: Error return value of `v.RegisterValidation` is not checked (errcheck)
+	v.RegisterValidation("no_sql_injection", validateNoSQLInjection)
+	                    ^
+internal/validation/validator.go:59:22: Error return value of `v.RegisterValidation` is not checked (errcheck)
+	v.RegisterValidation("no_xss", validateNoXSS)
+	                    ^
+internal/validation/validator.go:60:22: Error return value of `v.RegisterValidation` is not checked (errcheck)
+	v.RegisterValidation("file_path", validateFilePath)
+	                    ^
+internal/validation/validator.go:61:22: Error return value of `v.RegisterValidation` is not checked (errcheck)
+	v.RegisterValidation("email_domain", validateEmailDomain)
+	                    ^

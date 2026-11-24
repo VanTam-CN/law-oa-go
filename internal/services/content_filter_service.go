@@ -218,7 +218,8 @@ func (s *ContentFilterService) FilterContent(ctx context.Context, content string
 
 		// 异步更新命中次数
 		go func(wordID uint) {
-			s.wordRepo.IncrementHitCount(context.Background(), wordID)
+			// 独立 goroutine 中的统计更新，包内无 logger，失败不可操作且不影响过滤主流程
+			_ = s.wordRepo.IncrementHitCount(context.Background(), wordID)
 		}(word.ID)
 	}
 
@@ -312,9 +313,15 @@ func (s *ContentFilterService) logFilter(ctx context.Context, contentType string
 	}
 	// 将 hitsData 包装为 map 并转换为 models.JSON
 	hitsMap := map[string]interface{}{"hits": hitsData}
-	hitsJSONBytes, _ := json.Marshal(hitsMap)
+	hitsJSONBytes, err := json.Marshal(hitsMap)
 	var hitsParsed map[string]interface{}
-	json.Unmarshal(hitsJSONBytes, &hitsParsed)
+	if err == nil {
+		err = json.Unmarshal(hitsJSONBytes, &hitsParsed)
+	}
+	if err != nil {
+		// 命中详情编解码失败属非关键路径，包内无 logger，降级为空详情继续记录过滤日志
+		hitsParsed = nil
+	}
 	log.Hits = models.JSON(hitsParsed)
 
 	// 确定采取的行动
@@ -460,7 +467,9 @@ func (s *ContentFilterService) BatchImportWords(ctx context.Context, words []str
 	}
 
 	// 刷新缓存
-	s.refreshCache(ctx)
+	if err := s.refreshCache(ctx); err != nil {
+		return successCount, errors, fmt.Errorf("批量导入敏感词后刷新缓存失败: %w", err)
+	}
 
 	return successCount, errors, nil
 }

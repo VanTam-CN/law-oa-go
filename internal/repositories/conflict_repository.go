@@ -727,7 +727,8 @@ func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID
 	if err != nil {
 		return nil, fmt.Errorf("查询潜在冲突案例失败: %w", err)
 	}
-	defer rows.Close()
+	// rows.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = rows.Close() }()
 
 	for rows.Next() {
 		var caseModel models.Case
@@ -831,7 +832,8 @@ func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID
 				return nil, fmt.Errorf("查询对方当事人冲突失败 (party=%q): %w", party, err)
 			}
 			// 循环内错误路径已有手工 Close；defer 在函数收尾兜底（sql.Rows.Close 幂等）
-			defer partyRows.Close()
+			// partyRows.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+			defer func() { _ = partyRows.Close() }()
 
 			for partyRows.Next() {
 				var caseModel models.Case
@@ -852,7 +854,8 @@ func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID
 					&foundLawyerID,
 				)
 				if err != nil {
-					partyRows.Close()
+					// 提前返回的清理阶段：Close 失败无恢复路径（defer 已兜底且 Close 幂等），错误不可操作
+					_ = partyRows.Close()
 					return nil, fmt.Errorf("扫描对方当事人冲突行失败 (party=%q): %w", party, err)
 				}
 
@@ -887,7 +890,8 @@ func (r *conflictRepository) GetPotentialConflicts(ctx context.Context, clientID
 			if err := partyRows.Err(); err != nil {
 				return nil, fmt.Errorf("读取当事人案件结果失败: %w", err)
 			}
-			partyRows.Close()
+			// 遍历结束提前释放连接的清理阶段：Close 幂等且失败不可操作（defer 已兜底）
+			_ = partyRows.Close()
 		}
 	}
 

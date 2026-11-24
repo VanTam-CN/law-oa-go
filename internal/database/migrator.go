@@ -442,7 +442,8 @@ func (m *Migrator) GetAppliedMigrations() ([]uint, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to query migrations: %w", err)
 	}
-	defer rows.Close()
+	// rows.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = rows.Close() }()
 
 	var versions []uint
 	for rows.Next() {

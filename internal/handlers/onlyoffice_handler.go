@@ -588,7 +588,8 @@ func (h *OnlyOfficeHandler) saveDocument(ctx context.Context, documentID uint, d
 	if err != nil {
 		return fmt.Errorf("failed to download from OnlyOffice: %w", err)
 	}
-	defer resp.Body.Close()
+	// resp.Body.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
@@ -626,21 +627,26 @@ func (h *OnlyOfficeHandler) saveDocument(ctx context.Context, documentID uint, d
 	if err == nil {
 		err = outFile.Sync()
 	}
-	outFile.Close()
+	if cerr := outFile.Close(); cerr != nil && err == nil {
+		err = cerr
+	}
 	tmpPath := outFile.Name()
 
 	if err != nil {
-		os.Remove(tmpPath)
+		// 清理临时文件，失败不阻断主流程
+		_ = os.Remove(tmpPath)
 		return fmt.Errorf("failed to write document: %w", err)
 	}
 	if written > MaxOnlyOfficeDownloadBytes {
-		os.Remove(tmpPath)
+		// 清理临时文件，失败不阻断主流程
+		_ = os.Remove(tmpPath)
 		return fmt.Errorf("download exceeds %d bytes", MaxOnlyOfficeDownloadBytes)
 	}
 
 	// 原子替换
 	if err := os.Rename(tmpPath, doc.Filepath); err != nil {
-		os.Remove(tmpPath)
+		// 清理临时文件，失败不阻断主流程
+		_ = os.Remove(tmpPath)
 		return fmt.Errorf("failed to replace document file: %w", err)
 	}
 
@@ -711,13 +717,21 @@ func (h *OnlyOfficeHandler) ConvertDocument(c *gin.Context) {
 	// 生成 token
 	token := ""
 	if h.onlyOfficeSecret != "" {
-		payload, _ := json.Marshal(convertReq)
+		payload, err := json.Marshal(convertReq)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to marshal conversion request: %v", err)})
+			return
+		}
 		token = h.GenerateCallbackToken(string(payload))
 	}
 
 	// 调用 OnlyOffice Conversion API
 	convertURL := fmt.Sprintf("%s/CoAuthoring/CommandService.ashx", h.onlyOfficeURL)
-	reqBody, _ := json.Marshal(convertReq)
+	reqBody, err := json.Marshal(convertReq)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to marshal conversion request: %v", err)})
+		return
+	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, convertURL, strings.NewReader(string(reqBody)))
 	if err != nil {
@@ -734,7 +748,8 @@ func (h *OnlyOfficeHandler) ConvertDocument(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Conversion request failed: %v", err)})
 		return
 	}
-	defer resp.Body.Close()
+	// resp.Body.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -928,7 +943,8 @@ func (h *OnlyOfficeHandler) processConversionResult(ctx context.Context, taskID 
 		h.conversionMu.Unlock()
 		return
 	}
-	defer httpResp.Body.Close()
+	// httpResp.Body.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = httpResp.Body.Close() }()
 
 	if httpResp.StatusCode != http.StatusOK {
 		h.conversionMu.Lock()
@@ -960,10 +976,13 @@ func (h *OnlyOfficeHandler) processConversionResult(ctx context.Context, taskID 
 
 	limited := io.LimitReader(httpResp.Body, MaxOnlyOfficeDownloadBytes+1)
 	written, err := io.Copy(outFile, limited)
-	outFile.Close()
+	if cerr := outFile.Close(); cerr != nil && err == nil {
+		err = cerr
+	}
 
 	if err != nil {
-		os.Remove(outputPath)
+		// 清理临时文件，失败不阻断主流程
+		_ = os.Remove(outputPath)
 		h.conversionMu.Lock()
 		task.Status = ConversionStatusError
 		task.Error = fmt.Sprintf("Failed to save converted file: %v", err)
@@ -971,7 +990,8 @@ func (h *OnlyOfficeHandler) processConversionResult(ctx context.Context, taskID 
 		return
 	}
 	if written > MaxOnlyOfficeDownloadBytes {
-		os.Remove(outputPath)
+		// 清理临时文件，失败不阻断主流程
+		_ = os.Remove(outputPath)
 		h.conversionMu.Lock()
 		task.Status = ConversionStatusError
 		task.Error = fmt.Sprintf("Download exceeds %d bytes", MaxOnlyOfficeDownloadBytes)
@@ -1008,7 +1028,9 @@ func (h *OnlyOfficeHandler) pollConversionStatus(ctx context.Context, taskID str
 		}
 
 		body, err := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		resp.Body.Close()
+		if cerr := resp.Body.Close(); cerr != nil {
+			log.Printf("[OnlyOffice] 关闭轮询响应失败: %v", cerr)
+		}
 		if err != nil {
 			continue
 		}
@@ -1165,13 +1187,15 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer srcFile.Close()
+	// srcFile.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = srcFile.Close() }()
 
 	dstFile, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
-	defer dstFile.Close()
+	// dstFile.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = dstFile.Close() }()
 
 	_, err = io.Copy(dstFile, srcFile)
 	return err

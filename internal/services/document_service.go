@@ -152,15 +152,20 @@ func (s *DocumentService) UploadDocument(ctx context.Context, req *DocumentUploa
 	src, err := req.File.Open()
 	if err != nil {
 		// Clean up database record if file save fails
-		s.docRepo.Delete(ctx, docModel.ID)
+		if delErr := s.docRepo.Delete(ctx, docModel.ID); delErr != nil {
+			err = fmt.Errorf("%w (cleanup: delete record failed: %w)", err, delErr)
+		}
 		return nil, errors.InternalError("Failed to open uploaded file", err)
 	}
-	defer src.Close()
+	// src.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = src.Close() }()
 
 	// Save file to storage
 	if err := s.saveToFile(src, docModel.Filepath); err != nil {
 		// Clean up database record if file save fails
-		s.docRepo.Delete(ctx, docModel.ID)
+		if delErr := s.docRepo.Delete(ctx, docModel.ID); delErr != nil {
+			err = fmt.Errorf("%w (cleanup: delete record failed: %w)", err, delErr)
+		}
 		return nil, errors.InternalError("Failed to save file", err)
 	}
 
@@ -384,13 +389,16 @@ func (s *DocumentService) saveToFile(src multipart.File, dst string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create file %s: %w", dst, err)
 	}
-	defer dstFile.Close()
+	// dstFile.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = dstFile.Close() }()
 
 	// Copy content
 	_, err = io.Copy(dstFile, src)
 	if err != nil {
 		// Clean up the file if copy fails
-		os.Remove(dst)
+		if rmErr := os.Remove(dst); rmErr != nil {
+			return fmt.Errorf("failed to copy file content: %w (cleanup: remove partial file failed: %w)", err, rmErr)
+		}
 		return fmt.Errorf("failed to copy file content: %w", err)
 	}
 

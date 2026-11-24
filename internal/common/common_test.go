@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 	"time"
 
@@ -599,47 +598,36 @@ func BenchmarkErrorChecking(b *testing.B) {
 // TestEnvFunctions 测试环境变量函数
 func TestEnvFunctions(t *testing.T) {
 	t.Run("GetEnv 获取字符串环境变量", func(t *testing.T) {
-		// 保存当前环境变量
-		originalValue := os.Getenv("TEST_STRING_VAR")
-		defer os.Setenv("TEST_STRING_VAR", originalValue)
-
-		// 测试存在的环境变量
-		os.Setenv("TEST_STRING_VAR", "test_value")
+		// t.Setenv 自动在子测试结束后恢复原值
+		t.Setenv("TEST_STRING_VAR", "test_value")
 		result := GetEnv("TEST_STRING_VAR", "default")
 		assert.Equal(t, "test_value", result)
 
-		// 测试不存在的环境变量
-		os.Unsetenv("TEST_STRING_VAR")
+		// 测试不存在的环境变量（t.Setenv 不支持 Unsetenv，用空值清空）
+		t.Setenv("TEST_STRING_VAR", "")
 		result = GetEnv("TEST_STRING_VAR", "default")
 		assert.Equal(t, "default", result)
 	})
 
 	t.Run("GetEnvInt 获取整数环境变量", func(t *testing.T) {
-		// 保存当前环境变量
-		originalValue := os.Getenv("TEST_INT_VAR")
-		defer os.Setenv("TEST_INT_VAR", originalValue)
-
-		// 测试有效的整数
-		os.Setenv("TEST_INT_VAR", "42")
+		// t.Setenv 自动在子测试结束后恢复原值
+		t.Setenv("TEST_INT_VAR", "42")
 		result := GetEnvInt("TEST_INT_VAR", 100)
 		assert.Equal(t, 42, result)
 
 		// 测试无效的整数
-		os.Setenv("TEST_INT_VAR", "invalid")
+		t.Setenv("TEST_INT_VAR", "invalid")
 		result = GetEnvInt("TEST_INT_VAR", 100)
 		assert.Equal(t, 100, result)
 
-		// 测试不存在的环境变量
-		os.Unsetenv("TEST_INT_VAR")
+		// 测试不存在的环境变量（t.Setenv 不支持 Unsetenv，用空值清空）
+		t.Setenv("TEST_INT_VAR", "")
 		result = GetEnvInt("TEST_INT_VAR", 100)
 		assert.Equal(t, 100, result)
 	})
 
 	t.Run("GetEnvBool 获取布尔环境变量", func(t *testing.T) {
-		// 保存当前环境变量
-		originalValue := os.Getenv("TEST_BOOL_VAR")
-		defer os.Setenv("TEST_BOOL_VAR", originalValue)
-
+		// t.Setenv 自动在子测试结束后恢复原值
 		// 测试各种布尔值
 		testCases := []struct {
 			envValue   string
@@ -656,13 +644,13 @@ func TestEnvFunctions(t *testing.T) {
 		}
 
 		for _, tc := range testCases {
-			os.Setenv("TEST_BOOL_VAR", tc.envValue)
+			t.Setenv("TEST_BOOL_VAR", tc.envValue)
 			result := GetEnvBool("TEST_BOOL_VAR", tc.defaultVal)
 			assert.Equal(t, tc.expected, result, "Input: %s", tc.envValue)
 		}
 
-		// 测试不存在的环境变量
-		os.Unsetenv("TEST_BOOL_VAR")
+		// 测试不存在的环境变量（t.Setenv 不支持 Unsetenv，用空值清空）
+		t.Setenv("TEST_BOOL_VAR", "")
 		result := GetEnvBool("TEST_BOOL_VAR", true)
 		assert.Equal(t, true, result)
 	})
@@ -855,7 +843,7 @@ func TestStreamResponse_Concurrent(t *testing.T) {
 // BenchmarkEnvFunctions 性能测试
 func BenchmarkEnvFunctions(b *testing.B) {
 	b.Run("GetEnv", func(b *testing.B) {
-		os.Setenv("BENCHMARK_VAR", "benchmark_value")
+		b.Setenv("BENCHMARK_VAR", "benchmark_value")
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			_ = GetEnv("BENCHMARK_VAR", "default")
@@ -863,7 +851,7 @@ func BenchmarkEnvFunctions(b *testing.B) {
 	})
 
 	b.Run("GetEnvInt", func(b *testing.B) {
-		os.Setenv("BENCHMARK_INT", "12345")
+		b.Setenv("BENCHMARK_INT", "12345")
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			_ = GetEnvInt("BENCHMARK_INT", 0)
@@ -871,7 +859,7 @@ func BenchmarkEnvFunctions(b *testing.B) {
 	})
 
 	b.Run("GetEnvBool", func(b *testing.B) {
-		os.Setenv("BENCHMARK_BOOL", "true")
+		b.Setenv("BENCHMARK_BOOL", "true")
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			_ = GetEnvBool("BENCHMARK_BOOL", false)

@@ -169,7 +169,9 @@ func TestSingleLogoutDoesNotRevokeNewConcurrentSession(t *testing.T) {
 
 	activeClaims, err := tm.VerifyToken(ctx, active.AccessToken)
 	require.NoError(t, err)
-	issuedAt := time.Unix(int64((*activeClaims)["iat"].(float64)), 0)
+	iatVal, ok := (*activeClaims)["iat"].(float64)
+	require.True(t, ok, "iat claim 缺失或类型错误")
+	issuedAt := time.Unix(int64(iatVal), 0)
 	retrieved, err := service.sessions.GetActiveByUUID(ctx, active.AccessUUID)
 	require.NoError(t, err)
 	assert.Equal(t, active.AccessUUID, retrieved.AccessTokenUUID)
@@ -200,7 +202,9 @@ func TestUserLevelRevocationDoesNotRevokeLaterSession(t *testing.T) {
 	require.NoError(t, err)
 	afterClaims, err := tm.VerifyToken(ctx, afterReset.AccessToken)
 	require.NoError(t, err)
-	issuedAt := time.Unix(int64((*afterClaims)["iat"].(float64)), 0)
+	iatVal, ok := (*afterClaims)["iat"].(float64)
+	require.True(t, ok, "iat claim 缺失或类型错误")
+	issuedAt := time.Unix(int64(iatVal), 0)
 	var logs []models.TokenRevocationLog
 	require.NoError(t, db.Where("user_id = ? AND revoke_all = ?", user.ID, true).Find(&logs).Error)
 	require.Len(t, logs, 1)

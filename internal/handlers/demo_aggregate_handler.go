@@ -796,8 +796,12 @@ func (h *DemoAggregateHandler) visibleConflictRiskCounts(c *gin.Context, where s
 		result = append(result, gin.H{"key": key, "count": count})
 	}
 	sort.SliceStable(result, func(i, j int) bool {
-		left := result[i]["count"].(int64)
-		right := result[j]["count"].(int64)
+		// count 均由本函数上方以 int64 写入，类型不变量必须成立。
+		left, leftOK := result[i]["count"].(int64)
+		right, rightOK := result[j]["count"].(int64)
+		if !leftOK || !rightOK {
+			panic("demo_aggregate: conflict risk count 类型断言失败，期望 int64")
+		}
 		if left == right {
 			return fmt.Sprint(result[i]["key"]) < fmt.Sprint(result[j]["key"])
 		}

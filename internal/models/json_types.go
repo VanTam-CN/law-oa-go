@@ -54,7 +54,10 @@ func (j JSON) String() string {
 	if j == nil {
 		return "null"
 	}
-	data, _ := json.Marshal(j)
+	data, err := json.Marshal(j)
+	if err != nil {
+		return "null"
+	}
 	return string(data)
 }
 
@@ -123,7 +126,10 @@ func (j JSONStringArray) String() string {
 	if j == nil {
 		return "null"
 	}
-	data, _ := json.Marshal(j)
+	data, err := json.Marshal(j)
+	if err != nil {
+		return "null"
+	}
 	return string(data)
 }
 

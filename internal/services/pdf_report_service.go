@@ -192,8 +192,8 @@ func (s *pdfReportService) GenerateReport(ctx context.Context, req *ReportGenera
 
 	// 保存到数据库
 	if err := s.db.WithContext(ctx).Create(report).Error; err != nil {
-		// 清理已生成的文件
-		os.Remove(filepath)
+		// 清理已生成的报告文件；主错误是保存记录失败，删除失败不覆盖主错误。
+		_ = os.Remove(filepath)
 		return nil, fmt.Errorf("保存报告记录失败: %w", err)
 	}
 
@@ -387,7 +387,10 @@ func (s *pdfReportService) SignReport(ctx context.Context, reportID uint, signer
 func (s *pdfReportService) generateReportNumber() string {
 	timestamp := time.Now().Format("20060102150405")
 	randomBytes := make([]byte, 3)
-	rand.Read(randomBytes)
+	// 随机源失败时退化为纯时间戳编号，仅记录日志（编号生成无法返回错误）。
+	if _, err := rand.Read(randomBytes); err != nil {
+		log.Printf("⚠️ 生成随机报告编号后缀失败: %v", err)
+	}
 	randomSuffix := hex.EncodeToString(randomBytes)
 	return fmt.Sprintf("%s%s%s", s.config.ReportPrefix, timestamp, randomSuffix)
 }
@@ -770,7 +773,8 @@ func (s *pdfReportService) generateKeyPair() error {
 	if err != nil {
 		return err
 	}
-	defer privateKeyFile.Close()
+	// privateKeyFile.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = privateKeyFile.Close() }()
 
 	privateKeyPEM := &pem.Block{
 		Type:  "RSA PRIVATE KEY",
@@ -785,7 +789,8 @@ func (s *pdfReportService) generateKeyPair() error {
 	if err != nil {
 		return err
 	}
-	defer publicKeyFile.Close()
+	// publicKeyFile.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = publicKeyFile.Close() }()
 
 	publicKeyBytes, err := x509.MarshalPKIXPublicKey(&privateKey.PublicKey)
 	if err != nil {

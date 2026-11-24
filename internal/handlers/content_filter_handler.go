@@ -59,6 +59,13 @@ func (h *ContentFilterHandler) CreateSensitiveWord(c *gin.Context) {
 		return
 	}
 
+	// user_id 由认证中间件写入，类型异常说明中间件配置错误，拒绝请求
+	uid, ok := userID.(uint)
+	if !ok {
+		common.APIInternalServerError(c, "用户ID类型异常")
+		return
+	}
+
 	word := &models.SensitiveWord{
 		Word:        req.Word,
 		WordType:    req.WordType,
@@ -67,8 +74,8 @@ func (h *ContentFilterHandler) CreateSensitiveWord(c *gin.Context) {
 		Replacement: req.Replacement,
 		IsActive:    req.IsActive,
 		Description: req.Description,
-		CreatedBy:   userID.(uint),
-		UpdatedBy:   userID.(uint),
+		CreatedBy:   uid,
+		UpdatedBy:   uid,
 	}
 
 	if err := h.filterService.AddSensitiveWord(context.Background(), word); err != nil {
@@ -160,7 +167,13 @@ func (h *ContentFilterHandler) UpdateSensitiveWord(c *gin.Context) {
 	// 获取当前用户ID
 	userID, exists := c.Get("user_id")
 	if exists {
-		word.UpdatedBy = userID.(uint)
+		uid, ok := userID.(uint)
+		if !ok {
+			// user_id 类型异常说明认证中间件配置错误，拒绝更新
+			common.APIInternalServerError(c, "用户ID类型异常")
+			return
+		}
+		word.UpdatedBy = uid
 	}
 
 	if req.Word != "" {

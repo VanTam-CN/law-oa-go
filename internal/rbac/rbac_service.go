@@ -65,7 +65,9 @@ func (s *RBACService) CheckUserPermission(ctx context.Context, userID uint, perm
 		// 缓存权限
 		permissions := s.getRolePermissions(user.Role)
 		cacheKey := fmt.Sprintf("user_permissions:%d", userID)
-		s.cache.Set(ctx, cacheKey, permissions)
+		if err := s.cache.Set(ctx, cacheKey, permissions); err != nil {
+			return true, fmt.Errorf("缓存用户权限失败: %w", err)
+		}
 		return true, nil
 	}
 	return false, nil
@@ -138,7 +140,17 @@ func (s *RBACService) RequirePermission(permissionKey string) gin.HandlerFunc {
 			return
 		}
 
-		hasPermission, err := s.CheckUserPermission(c.Request.Context(), userID.(uint), permissionKey)
+		userIDValue, ok := userID.(uint)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"code":    401,
+				"message": "未授权访问",
+			})
+			c.Abort()
+			return
+		}
+
+		hasPermission, err := s.CheckUserPermission(c.Request.Context(), userIDValue, permissionKey)
 		if err != nil || !hasPermission {
 			c.JSON(http.StatusForbidden, gin.H{
 				"code":    403,

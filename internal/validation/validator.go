@@ -4,6 +4,7 @@ import (
 	"context"
 	stderrors "errors"
 	"fmt"
+	"log"
 	"net/http"
 	"reflect"
 	"regexp"
@@ -50,15 +51,25 @@ type Validator struct {
 func NewValidator(db *gorm.DB, cacheService *cache.CacheService) *Validator {
 	v := validator.New()
 
-	// 注册自定义验证函数
-	v.RegisterValidation("password_strength", validatePasswordStrength)
-	v.RegisterValidation("phone_number", validatePhoneNumber)
-	v.RegisterValidation("id_card", validateIDCard)
-	v.RegisterValidation("safe_string", validateSafeString)
-	v.RegisterValidation("no_sql_injection", validateNoSQLInjection)
-	v.RegisterValidation("no_xss", validateNoXSS)
-	v.RegisterValidation("file_path", validateFilePath)
-	v.RegisterValidation("email_domain", validateEmailDomain)
+	// 注册自定义验证函数；注册失败记录日志，不中断构造
+	customValidations := []struct {
+		name string
+		fn   validator.Func
+	}{
+		{"password_strength", validatePasswordStrength},
+		{"phone_number", validatePhoneNumber},
+		{"id_card", validateIDCard},
+		{"safe_string", validateSafeString},
+		{"no_sql_injection", validateNoSQLInjection},
+		{"no_xss", validateNoXSS},
+		{"file_path", validateFilePath},
+		{"email_domain", validateEmailDomain},
+	}
+	for _, reg := range customValidations {
+		if err := v.RegisterValidation(reg.name, reg.fn); err != nil {
+			log.Printf("注册校验规则 %s 失败: %v", reg.name, err)
+		}
+	}
 
 	return &Validator{
 		validator:    v,

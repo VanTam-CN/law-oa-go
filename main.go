@@ -561,7 +561,8 @@ func runHealthcheck() error {
 	if err != nil {
 		return fmt.Errorf("访问本地存活探针失败: %w", err)
 	}
-	defer response.Body.Close()
+	// response.Body.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = response.Body.Close() }()
 	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
 		return fmt.Errorf("本地存活探针返回 HTTP %d", response.StatusCode)
 	}

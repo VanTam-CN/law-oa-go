@@ -26,12 +26,14 @@ import (
 )
 
 // setupTestRouter 设置测试路由器
-func setupTestRouter() (*gin.Engine, *gorm.DB, *redis.Client) {
+func setupTestRouter(tb testing.TB) (*gin.Engine, *gorm.DB, *redis.Client) {
 	gin.SetMode(gin.TestMode)
 
 	// 内存数据库
 	db, _ := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
-	db.AutoMigrate(&models.User{}, &models.Client{}, &models.Case{})
+	if err := db.AutoMigrate(&models.User{}, &models.Client{}, &models.Case{}); err != nil {
+		tb.Fatalf("迁移测试数据库失败: %v", err)
+	}
 
 	// 内存Redis（使用redis-go的mock或实际Redis实例）
 	rdb := redis.NewClient(&redis.Options{
@@ -44,13 +46,15 @@ func setupTestRouter() (*gin.Engine, *gorm.DB, *redis.Client) {
 	}
 
 	app := gin.New()
-	router.Init(app, db, rdb)
+	if err := router.Init(app, db, rdb); err != nil {
+		tb.Fatalf("初始化测试路由失败: %v", err)
+	}
 	return app, db, rdb
 }
 
 // BenchmarkAPIRequest API请求性能基准测试
 func BenchmarkAPIRequest(b *testing.B) {
-	app, _, _ := setupTestRouter()
+	app, _, _ := setupTestRouter(b)
 
 	// 测试不同的API端点
 	testCases := []struct {
@@ -113,7 +117,7 @@ func BenchmarkAPIRequest(b *testing.B) {
 
 // BenchmarkCacheMiddleware 缓存中间件性能测试
 func BenchmarkCacheMiddleware(b *testing.B) {
-	app, _, rdb := setupTestRouter()
+	app, _, rdb := setupTestRouter(b)
 
 	// 设置缓存测试数据
 	ctx := context.Background()
@@ -122,7 +126,8 @@ func BenchmarkCacheMiddleware(b *testing.B) {
 		"message":   "Hello, World!",
 		"timestamp": time.Now().Unix(),
 	}
-	responseData, _ := json.Marshal(testResponse)
+	responseData, err := json.Marshal(testResponse)
+	require.NoError(b, err)
 	rdb.Set(ctx, cacheKey, responseData, 5*time.Minute)
 
 	// 测试缓存命中
@@ -150,7 +155,7 @@ func BenchmarkCacheMiddleware(b *testing.B) {
 
 // BenchmarkDatabaseQueries 数据库查询性能测试
 func BenchmarkDatabaseQueries(b *testing.B) {
-	_, db, _ := setupTestRouter()
+	_, db, _ := setupTestRouter(b)
 
 	// 创建测试数据
 	testUsers := make([]models.User, 1000)
@@ -206,7 +211,7 @@ func BenchmarkDatabaseQueries(b *testing.B) {
 
 // BenchmarkRedisOperations Redis操作性能测试
 func BenchmarkRedisOperations(b *testing.B) {
-	_, _, rdb := setupTestRouter()
+	_, _, rdb := setupTestRouter(b)
 	ctx := context.Background()
 
 	// 测试SET操作
@@ -264,7 +269,7 @@ func BenchmarkRedisOperations(b *testing.B) {
 
 // BenchmarkMiddlewarePerformance 中间件性能测试
 func BenchmarkMiddlewarePerformance(b *testing.B) {
-	app, _, _ := setupTestRouter()
+	app, _, _ := setupTestRouter(b)
 
 	// 测试性能监控中间件
 	b.Run("PerformanceMiddleware", func(b *testing.B) {
@@ -303,7 +308,7 @@ func BenchmarkMiddlewarePerformance(b *testing.B) {
 
 // BenchmarkConcurrentRequests 并发请求性能测试
 func BenchmarkConcurrentRequests(b *testing.B) {
-	app, _, _ := setupTestRouter()
+	app, _, _ := setupTestRouter(b)
 
 	concurrencyLevels := []int{1, 10, 50, 100}
 
@@ -349,7 +354,7 @@ func TestPerformanceMonitoring(t *testing.T) {
 
 // TestCacheEfficiency 缓存效率测试
 func TestCacheEfficiency(t *testing.T) {
-	_, _, rdb := setupTestRouter()
+	_, _, rdb := setupTestRouter(t)
 	ctx := context.Background()
 
 	// 测试缓存失效
@@ -367,7 +372,10 @@ func TestMemoryUsage(t *testing.T) {
 
 	// 记录初始内存使用
 	summary1 := metrics.GetMetricsSummary()
-	initialGoroutines := summary1["system"].(map[string]interface{})["goroutines"].(int)
+	systemSummary1, ok := summary1["system"].(map[string]interface{})
+	require.True(t, ok, "metrics summary 缺少 system 键")
+	initialGoroutines, ok := systemSummary1["goroutines"].(int)
+	require.True(t, ok, "metrics summary 的 goroutines 字段应为 int")
 
 	// 创建大量goroutines
 	done := make(chan bool)
@@ -388,7 +396,10 @@ func TestMemoryUsage(t *testing.T) {
 
 	// 检查goroutines数量是否恢复正常
 	summary2 := metrics.GetMetricsSummary()
-	finalGoroutines := summary2["system"].(map[string]interface{})["goroutines"].(int)
+	systemSummary2, ok := summary2["system"].(map[string]interface{})
+	require.True(t, ok, "metrics summary 缺少 system 键")
+	finalGoroutines, ok := systemSummary2["goroutines"].(int)
+	require.True(t, ok, "metrics summary 的 goroutines 字段应为 int")
 
 	// 允许一些goroutines的创建开销
 	assert.True(t, finalGoroutines <= initialGoroutines+10,

@@ -104,7 +104,8 @@ func (m *LegalStatuteIndexManager) CreateIndex() error {
 	if err != nil {
 		return fmt.Errorf("创建索引失败: %w", err)
 	}
-	defer res.Body.Close()
+	// res.Body 关闭错误在请求完成后无进一步处理路径，此处为一次性 cleanup，错误不可操作，显式丢弃。
+	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
 		return fmt.Errorf("创建索引失败: %s", res.Status())
@@ -124,7 +125,8 @@ func (m *LegalStatuteIndexManager) DeleteIndex() error {
 	if err != nil {
 		return fmt.Errorf("删除索引失败: %w", err)
 	}
-	defer res.Body.Close()
+	// res.Body 关闭错误在请求完成后无进一步处理路径，此处为一次性 cleanup，错误不可操作，显式丢弃。
+	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() && res.StatusCode != http.StatusNotFound {
 		return fmt.Errorf("删除索引失败: %s", res.Status())
@@ -152,7 +154,8 @@ func (m *LegalStatuteIndexManager) IndexDocument(doc *LegalStatuteDocument) erro
 	if err != nil {
 		return fmt.Errorf("索引文档失败: %w", err)
 	}
-	defer res.Body.Close()
+	// res.Body 关闭错误在请求完成后无进一步处理路径，此处为一次性 cleanup，错误不可操作，显式丢弃。
+	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
 		return fmt.Errorf("索引文档失败: %s", res.Status())
@@ -176,12 +179,18 @@ func (m *LegalStatuteIndexManager) BulkIndexDocuments(docs []*LegalStatuteDocume
 				"_id":    fmt.Sprintf("%d", doc.ID),
 			},
 		}
-		metaJSON, _ := json.Marshal(indexMeta)
+		metaJSON, err := json.Marshal(indexMeta)
+		if err != nil {
+			return fmt.Errorf("序列化索引元数据失败: %w", err)
+		}
 		buf.WriteString(string(metaJSON))
 		buf.WriteString("\n")
 
 		// 添加文档数据
-		docJSON, _ := json.Marshal(doc)
+		docJSON, err := json.Marshal(doc)
+		if err != nil {
+			return fmt.Errorf("序列化文档失败: %w", err)
+		}
 		buf.WriteString(string(docJSON))
 		buf.WriteString("\n")
 	}
@@ -195,7 +204,8 @@ func (m *LegalStatuteIndexManager) BulkIndexDocuments(docs []*LegalStatuteDocume
 	if err != nil {
 		return fmt.Errorf("批量索引失败: %w", err)
 	}
-	defer res.Body.Close()
+	// res.Body 关闭错误在请求完成后无进一步处理路径，此处为一次性 cleanup，错误不可操作，显式丢弃。
+	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
 		return fmt.Errorf("批量索引失败: %s", res.Status())
@@ -225,7 +235,8 @@ func (m *LegalStatuteIndexManager) Search(req *LegalSearchRequest) (*LegalSearch
 	if err != nil {
 		return nil, fmt.Errorf("执行搜索失败: %w", err)
 	}
-	defer res.Body.Close()
+	// res.Body 关闭错误在请求完成后无进一步处理路径，此处为一次性 cleanup，错误不可操作，显式丢弃。
+	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
 		return nil, fmt.Errorf("搜索失败: %s", res.Status())
@@ -241,19 +252,19 @@ func (m *LegalStatuteIndexManager) Search(req *LegalSearchRequest) (*LegalSearch
 
 // buildSearchQuery 构建ES搜索查询
 func (m *LegalStatuteIndexManager) buildSearchQuery(req *LegalSearchRequest) (map[string]interface{}, error) {
+	mustQueries := []map[string]interface{}{}
+	boolQuery := map[string]interface{}{
+		"must": mustQueries,
+	}
 	query := map[string]interface{}{
 		"query": map[string]interface{}{
-			"bool": map[string]interface{}{
-				"must": []map[string]interface{}{},
-			},
+			"bool": boolQuery,
 		},
 		"from": (req.Page - 1) * req.PageSize,
 		"size": req.PageSize,
 	}
 
 	// 添加主查询
-	mustQueries := query["query"].(map[string]interface{})["bool"].(map[string]interface{})["must"].([]map[string]interface{})
-
 	if req.Query != "" {
 		mainQuery := map[string]interface{}{
 			"multi_match": map[string]interface{}{
@@ -304,16 +315,17 @@ func (m *LegalStatuteIndexManager) buildSearchQuery(req *LegalSearchRequest) (ma
 
 	// 添加生效日期过滤
 	if req.EffectiveDateFrom != "" || req.EffectiveDateTo != "" {
+		effectiveDate := map[string]interface{}{}
 		dateRange := map[string]interface{}{
 			"range": map[string]interface{}{
-				"effective_date": map[string]interface{}{},
+				"effective_date": effectiveDate,
 			},
 		}
 		if req.EffectiveDateFrom != "" {
-			dateRange["range"].(map[string]interface{})["effective_date"].(map[string]interface{})["gte"] = req.EffectiveDateFrom
+			effectiveDate["gte"] = req.EffectiveDateFrom
 		}
 		if req.EffectiveDateTo != "" {
-			dateRange["range"].(map[string]interface{})["effective_date"].(map[string]interface{})["lte"] = req.EffectiveDateTo
+			effectiveDate["lte"] = req.EffectiveDateTo
 		}
 		mustQueries = append(mustQueries, dateRange)
 	}
@@ -328,7 +340,7 @@ func (m *LegalStatuteIndexManager) buildSearchQuery(req *LegalSearchRequest) (ma
 		mustQueries = append(mustQueries, tagsFilter)
 	}
 
-	query["query"].(map[string]interface{})["bool"].(map[string]interface{})["must"] = mustQueries
+	boolQuery["must"] = mustQueries
 
 	// 添加排序
 	if req.SortBy != "" {
@@ -374,18 +386,42 @@ func (m *LegalStatuteIndexManager) buildSearchQuery(req *LegalSearchRequest) (ma
 
 // parseSearchResponse 解析搜索响应
 func (m *LegalStatuteIndexManager) parseSearchResponse(result map[string]interface{}, req *LegalSearchRequest) (*LegalSearchResponse, error) {
-	hits := result["hits"].(map[string]interface{})
-	total := hits["total"].(map[string]interface{})["value"].(float64)
-	hitsList := hits["hits"].([]interface{})
+	hits, ok := result["hits"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("搜索响应缺少 hits: %v", result["hits"])
+	}
+	totalVal, ok := hits["total"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("搜索响应缺少 total: %v", hits["total"])
+	}
+	total, ok := totalVal["value"].(float64)
+	if !ok {
+		return nil, fmt.Errorf("搜索响应 total.value 类型错误: %T", totalVal["value"])
+	}
+	hitsList, ok := hits["hits"].([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("搜索响应 hits.hits 类型错误: %T", hits["hits"])
+	}
 
 	documents := make([]LegalStatuteDocument, 0, len(hitsList))
 	for _, hit := range hitsList {
-		hitMap := hit.(map[string]interface{})
-		source := hitMap["_source"].(map[string]interface{})
+		hitMap, ok := hit.(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("搜索响应 hit 类型错误: %T", hit)
+		}
+		source, ok := hitMap["_source"].(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("搜索响应 _source 类型错误: %T", hitMap["_source"])
+		}
 
 		var doc LegalStatuteDocument
-		sourceJSON, _ := json.Marshal(source)
-		json.Unmarshal(sourceJSON, &doc)
+		sourceJSON, err := json.Marshal(source)
+		if err != nil {
+			return nil, fmt.Errorf("序列化文档源失败: %w", err)
+		}
+		if err := json.Unmarshal(sourceJSON, &doc); err != nil {
+			return nil, fmt.Errorf("解析文档源失败: %w", err)
+		}
 
 		documents = append(documents, doc)
 	}

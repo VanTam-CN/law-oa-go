@@ -31,7 +31,11 @@ func (m *MockClientRepository) FindByID(ctx context.Context, id uint) (*models.C
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*models.Client), args.Error(1)
+	client, ok := args.Get(0).(*models.Client)
+	if !ok {
+		return nil, errors.New("mock 返回类型断言失败: 期望 *models.Client")
+	}
+	return client, args.Error(1)
 }
 
 func (m *MockClientRepository) FindByEmail(ctx context.Context, email string) (*models.Client, error) {
@@ -39,7 +43,11 @@ func (m *MockClientRepository) FindByEmail(ctx context.Context, email string) (*
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*models.Client), args.Error(1)
+	client, ok := args.Get(0).(*models.Client)
+	if !ok {
+		return nil, errors.New("mock 返回类型断言失败: 期望 *models.Client")
+	}
+	return client, args.Error(1)
 }
 
 func (m *MockClientRepository) Update(ctx context.Context, client *models.Client) error {
@@ -59,7 +67,15 @@ func (m *MockClientRepository) Delete(ctx context.Context, id uint) error {
 
 func (m *MockClientRepository) List(ctx context.Context, params *repositories.ClientListParams) ([]*models.Client, int64, error) {
 	args := m.Called(ctx, params)
-	return args.Get(0).([]*models.Client), args.Get(1).(int64), args.Error(2)
+	clients, ok := args.Get(0).([]*models.Client)
+	if !ok {
+		return nil, 0, errors.New("mock 返回类型断言失败: 期望 []*models.Client")
+	}
+	total, ok := args.Get(1).(int64)
+	if !ok {
+		return nil, 0, errors.New("mock 返回类型断言失败: 期望 int64")
+	}
+	return clients, total, args.Error(2)
 }
 
 func (m *MockClientRepository) GetStats(ctx context.Context) (*repositories.ClientStats, error) {
@@ -67,7 +83,11 @@ func (m *MockClientRepository) GetStats(ctx context.Context) (*repositories.Clie
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*repositories.ClientStats), args.Error(1)
+	stats, ok := args.Get(0).(*repositories.ClientStats)
+	if !ok {
+		return nil, errors.New("mock 返回类型断言失败: 期望 *repositories.ClientStats")
+	}
+	return stats, args.Error(1)
 }
 
 // TestNewClientService 测试客户端服务创建
@@ -1066,7 +1086,8 @@ func TestWaiverWorkflowService_StatusTransitions(t *testing.T) {
 	assert.Equal(t, WaiverStatusExpired, expired.Status)
 	updatedConflict, err = conflictRepo.GetCheckRecord(ctx, "check-001")
 	require.NoError(t, err)
-	decision = updatedConflict.CheckResult["decision"].(map[string]interface{})
+	decision, ok = updatedConflict.CheckResult["decision"].(map[string]interface{})
+	require.True(t, ok)
 	assert.Equal(t, "BLOCKED", decision["status"])
 }
 
@@ -1109,7 +1130,8 @@ func TestWaiverWorkflowService_EnforcesOwnershipAndSeparationOfDuties(t *testing
 	require.NoError(t, err)
 	record, err := conflictRepo.GetCheckRecord(ctx, "check-secure")
 	require.NoError(t, err)
-	decision := record.CheckResult["decision"].(map[string]interface{})
+	decision, ok := record.CheckResult["decision"].(map[string]interface{})
+	require.True(t, ok)
 	assert.Equal(t, "WAIVER_PENDING", decision["status"])
 
 	_, err = service.DecideWaiver(ctx, application.ID, "7", "申请律师", "admin", &WaiverDecisionRequest{

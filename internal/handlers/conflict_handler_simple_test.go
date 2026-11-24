@@ -89,11 +89,13 @@ func (f *fakeConflictDetectionService) GetConflictStats(context.Context, string)
 	return &repositories.ConflictStats{}, nil
 }
 
-func performConflictHandlerRequest(handler *ConflictHandlerSimple, role string, jwtUserID uint, requestedUserID string) *httptest.ResponseRecorder {
-	return performConflictHandlerRequestWithSubject(handler, role, jwtUserID, requestedUserID, "")
+func performConflictHandlerRequest(t *testing.T, handler *ConflictHandlerSimple, role string, jwtUserID uint, requestedUserID string) *httptest.ResponseRecorder {
+	t.Helper()
+	return performConflictHandlerRequestWithSubject(t, handler, role, jwtUserID, requestedUserID, "")
 }
 
-func performConflictHandlerRequestWithSubject(handler *ConflictHandlerSimple, role string, jwtUserID uint, requestedUserID, subjectCaseID string) *httptest.ResponseRecorder {
+func performConflictHandlerRequestWithSubject(t *testing.T, handler *ConflictHandlerSimple, role string, jwtUserID uint, requestedUserID, subjectCaseID string) *httptest.ResponseRecorder {
+	t.Helper()
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 	router.POST("/conflict/check", func(c *gin.Context) {
@@ -120,7 +122,8 @@ func performConflictHandlerRequestWithSubject(handler *ConflictHandlerSimple, ro
 	if subjectCaseID != "" {
 		body["subjectCaseId"] = subjectCaseID
 	}
-	payload, _ := json.Marshal(body)
+	payload, err := json.Marshal(body)
+	require.NoError(t, err, "序列化冲突检测请求失败")
 
 	req := httptest.NewRequest(http.MethodPost, "/conflict/check", bytes.NewReader(payload))
 	req.Header.Set("Content-Type", "application/json")
@@ -153,7 +156,7 @@ func TestConflictCheckRejectsForgedLawyerIDForLawyer(t *testing.T) {
 	handler.SetAuthorizationService(authz)
 	handler.SetDatabase(db)
 
-	recorder := performConflictHandlerRequestWithSubject(handler, "lawyer", 7, "9", "99")
+	recorder := performConflictHandlerRequestWithSubject(t, handler, "lawyer", 7, "9", "99")
 
 	if recorder.Code != http.StatusForbidden {
 		t.Fatalf("expected 403, got %d: %s", recorder.Code, recorder.Body.String())
@@ -170,7 +173,7 @@ func TestConflictCheckAllowsCurrentLawyerScope(t *testing.T) {
 	handler.SetAuthorizationService(authz)
 	handler.SetDatabase(db)
 
-	recorder := performConflictHandlerRequestWithSubject(handler, "lawyer", 7, "7", "99")
+	recorder := performConflictHandlerRequestWithSubject(t, handler, "lawyer", 7, "7", "99")
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", recorder.Code, recorder.Body.String())
@@ -202,7 +205,7 @@ func TestConflictCheckRejectsAssistant(t *testing.T) {
 	service := &fakeConflictDetectionService{}
 	handler := NewConflictHandlerSimple(service)
 
-	recorder := performConflictHandlerRequest(handler, "assistant", 7, "7")
+	recorder := performConflictHandlerRequest(t, handler, "assistant", 7, "7")
 	if recorder.Code != http.StatusForbidden {
 		t.Fatalf("expected assistant to be rejected, got %d: %s", recorder.Code, recorder.Body.String())
 	}
@@ -214,7 +217,7 @@ func TestConflictCheckRejectsAssistant(t *testing.T) {
 func TestConflictCheckRejectsIntakeAssistantAlias(t *testing.T) {
 	service := &fakeConflictDetectionService{}
 	handler := NewConflictHandlerSimple(service)
-	recorder := performConflictHandlerRequest(handler, "intake_assistant", 7, "7")
+	recorder := performConflictHandlerRequest(t, handler, "intake_assistant", 7, "7")
 	if recorder.Code != http.StatusForbidden {
 		t.Fatalf("expected intake assistant to be rejected, got %d: %s", recorder.Code, recorder.Body.String())
 	}
@@ -253,7 +256,7 @@ func TestConflictCheckAllowsConflictOfficerToCheckOtherLawyer(t *testing.T) {
 	handler.SetAuthorizationService(authz)
 	handler.SetDatabase(db)
 
-	recorder := performConflictHandlerRequestWithSubject(handler, "conflict_officer", 1, "7", "99")
+	recorder := performConflictHandlerRequestWithSubject(t, handler, "conflict_officer", 1, "7", "99")
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", recorder.Code, recorder.Body.String())
@@ -295,7 +298,7 @@ func TestConflictCheckRequiresCaseContext(t *testing.T) {
 	service := &fakeConflictDetectionService{}
 	handler := NewConflictHandlerSimple(service)
 
-	recorder := performConflictHandlerRequest(handler, "lawyer", 7, "7")
+	recorder := performConflictHandlerRequest(t, handler, "lawyer", 7, "7")
 
 	require.Equal(t, http.StatusConflict, recorder.Code)
 	require.Contains(t, recorder.Body.String(), "CASE_CONTEXT_REQUIRED")

@@ -111,12 +111,14 @@ func (pm *PerformanceMonitor) startMonitoring() {
 // startQueryTracking 启动查询跟踪
 func (pm *PerformanceMonitor) startQueryTracking() {
 	// 使用GORM的回调来跟踪查询
-	pm.db.Callback().Query().Before("gorm:query").Register("query_tracker_before", func(db *gorm.DB) {
+	if err := pm.db.Callback().Query().Before("gorm:query").Register("query_tracker_before", func(db *gorm.DB) {
 		// 记录查询开始时间
 		db.InstanceSet("query_start", time.Now())
-	})
+	}); err != nil {
+		log.Printf("注册 GORM 回调 query_tracker_before 失败: %v", err)
+	}
 
-	pm.db.Callback().Query().After("gorm:query").Register("query_tracker_after", func(db *gorm.DB) {
+	if err := pm.db.Callback().Query().After("gorm:query").Register("query_tracker_after", func(db *gorm.DB) {
 		// 记录查询结束时间和统计
 		if start, exists := db.InstanceGet("query_start"); exists {
 			if startTime, ok := start.(time.Time); ok {
@@ -124,46 +126,60 @@ func (pm *PerformanceMonitor) startQueryTracking() {
 				pm.recordQueryMetrics(db.Statement.SQL.String(), duration, db.RowsAffected, nil)
 			}
 		}
-	})
+	}); err != nil {
+		log.Printf("注册 GORM 回调 query_tracker_after 失败: %v", err)
+	}
 
-	pm.db.Callback().Create().Before("gorm:create").Register("create_tracker_before", func(db *gorm.DB) {
+	if err := pm.db.Callback().Create().Before("gorm:create").Register("create_tracker_before", func(db *gorm.DB) {
 		db.InstanceSet("create_start", time.Now())
-	})
+	}); err != nil {
+		log.Printf("注册 GORM 回调 create_tracker_before 失败: %v", err)
+	}
 
-	pm.db.Callback().Create().After("gorm:create").Register("create_tracker_after", func(db *gorm.DB) {
+	if err := pm.db.Callback().Create().After("gorm:create").Register("create_tracker_after", func(db *gorm.DB) {
 		if start, exists := db.InstanceGet("create_start"); exists {
 			if startTime, ok := start.(time.Time); ok {
 				duration := time.Since(startTime)
 				pm.recordQueryMetrics("CREATE", duration, db.RowsAffected, nil)
 			}
 		}
-	})
+	}); err != nil {
+		log.Printf("注册 GORM 回调 create_tracker_after 失败: %v", err)
+	}
 
-	pm.db.Callback().Update().Before("gorm:update").Register("update_tracker_before", func(db *gorm.DB) {
+	if err := pm.db.Callback().Update().Before("gorm:update").Register("update_tracker_before", func(db *gorm.DB) {
 		db.InstanceSet("update_start", time.Now())
-	})
+	}); err != nil {
+		log.Printf("注册 GORM 回调 update_tracker_before 失败: %v", err)
+	}
 
-	pm.db.Callback().Update().After("gorm:update").Register("update_tracker_after", func(db *gorm.DB) {
+	if err := pm.db.Callback().Update().After("gorm:update").Register("update_tracker_after", func(db *gorm.DB) {
 		if start, exists := db.InstanceGet("update_start"); exists {
 			if startTime, ok := start.(time.Time); ok {
 				duration := time.Since(startTime)
 				pm.recordQueryMetrics("UPDATE", duration, db.RowsAffected, nil)
 			}
 		}
-	})
+	}); err != nil {
+		log.Printf("注册 GORM 回调 update_tracker_after 失败: %v", err)
+	}
 
-	pm.db.Callback().Delete().Before("gorm:delete").Register("delete_tracker_before", func(db *gorm.DB) {
+	if err := pm.db.Callback().Delete().Before("gorm:delete").Register("delete_tracker_before", func(db *gorm.DB) {
 		db.InstanceSet("delete_start", time.Now())
-	})
+	}); err != nil {
+		log.Printf("注册 GORM 回调 delete_tracker_before 失败: %v", err)
+	}
 
-	pm.db.Callback().Delete().After("gorm:delete").Register("delete_tracker_after", func(db *gorm.DB) {
+	if err := pm.db.Callback().Delete().After("gorm:delete").Register("delete_tracker_after", func(db *gorm.DB) {
 		if start, exists := db.InstanceGet("delete_start"); exists {
 			if startTime, ok := start.(time.Time); ok {
 				duration := time.Since(startTime)
 				pm.recordQueryMetrics("DELETE", duration, db.RowsAffected, nil)
 			}
 		}
-	})
+	}); err != nil {
+		log.Printf("注册 GORM 回调 delete_tracker_after 失败: %v", err)
+	}
 }
 
 // recordQueryMetrics 记录查询指标

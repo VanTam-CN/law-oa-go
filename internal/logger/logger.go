@@ -361,17 +361,23 @@ func WithContext(ctx context.Context) *zap.Logger {
 
 	fields := make([]zap.Field, 0, 10) // 预分配容量
 
-	// 从上下文中提取各种追踪信息
+	// 从上下文中提取各种追踪信息；类型不符时跳过对应字段，避免记录日志时 panic
 	if requestID := ctx.Value("request_id"); requestID != nil {
-		fields = append(fields, zap.String("request_id", requestID.(string)))
+		if id, ok := requestID.(string); ok {
+			fields = append(fields, zap.String("request_id", id))
+		}
 	}
 
 	if traceID := ctx.Value(tracing.TraceIDKey); traceID != nil {
-		fields = append(fields, zap.String("trace_id", traceID.(string)))
+		if id, ok := traceID.(string); ok {
+			fields = append(fields, zap.String("trace_id", id))
+		}
 	}
 
 	if spanID := ctx.Value(tracing.SpanIDKey); spanID != nil {
-		fields = append(fields, zap.String("span_id", spanID.(string)))
+		if id, ok := spanID.(string); ok {
+			fields = append(fields, zap.String("span_id", id))
+		}
 	}
 
 	if userID := ctx.Value("user_id"); userID != nil {
@@ -379,19 +385,27 @@ func WithContext(ctx context.Context) *zap.Logger {
 	}
 
 	if clientIP := ctx.Value("client_ip"); clientIP != nil {
-		fields = append(fields, zap.String("client_ip", clientIP.(string)))
+		if ip, ok := clientIP.(string); ok {
+			fields = append(fields, zap.String("client_ip", ip))
+		}
 	}
 
 	if userAgent := ctx.Value("user_agent"); userAgent != nil {
-		fields = append(fields, zap.String("user_agent", userAgent.(string)))
+		if ua, ok := userAgent.(string); ok {
+			fields = append(fields, zap.String("user_agent", ua))
+		}
 	}
 
 	if module := ctx.Value("module"); module != nil {
-		fields = append(fields, zap.String("module", module.(string)))
+		if m, ok := module.(string); ok {
+			fields = append(fields, zap.String("module", m))
+		}
 	}
 
 	if function := ctx.Value("function"); function != nil {
-		fields = append(fields, zap.String("function", function.(string)))
+		if f, ok := function.(string); ok {
+			fields = append(fields, zap.String("function", f))
+		}
 	}
 
 	return Logger.With(fields...)
@@ -727,15 +741,24 @@ func (al *AuditLogger) LogUserAction(ctx context.Context, userID uint, action, r
 
 	// 从上下文中提取额外信息
 	if requestID := ctx.Value("request_id"); requestID != nil {
-		fields = append(fields, zap.String("request_id", requestID.(string)))
+		// 类型不符时跳过该字段，避免记录日志时 panic
+		if id, ok := requestID.(string); ok {
+			fields = append(fields, zap.String("request_id", id))
+		}
 	}
 
 	if clientIP := ctx.Value("client_ip"); clientIP != nil {
-		fields = append(fields, zap.String("client_ip", clientIP.(string)))
+		// 类型不符时跳过该字段，避免记录日志时 panic
+		if ip, ok := clientIP.(string); ok {
+			fields = append(fields, zap.String("client_ip", ip))
+		}
 	}
 
 	if userAgent := ctx.Value("user_agent"); userAgent != nil {
-		fields = append(fields, zap.String("user_agent", userAgent.(string)))
+		// 类型不符时跳过该字段，避免记录日志时 panic
+		if ua, ok := userAgent.(string); ok {
+			fields = append(fields, zap.String("user_agent", ua))
+		}
 	}
 
 	al.logger.Info("User action logged", fields...)
@@ -769,11 +792,17 @@ func (al *AuditLogger) LogSecurityEvent(ctx context.Context, event string, sever
 	}
 
 	if requestID := ctx.Value("request_id"); requestID != nil {
-		fields = append(fields, zap.String("request_id", requestID.(string)))
+		// 类型不符时跳过该字段，避免记录日志时 panic
+		if id, ok := requestID.(string); ok {
+			fields = append(fields, zap.String("request_id", id))
+		}
 	}
 
 	if clientIP := ctx.Value("client_ip"); clientIP != nil {
-		fields = append(fields, zap.String("client_ip", clientIP.(string)))
+		// 类型不符时跳过该字段，避免记录日志时 panic
+		if ip, ok := clientIP.(string); ok {
+			fields = append(fields, zap.String("client_ip", ip))
+		}
 	}
 
 	switch severity {
@@ -812,7 +841,10 @@ func (pl *PerformanceLogger) LogSlowQuery(ctx context.Context, query string, dur
 	}
 
 	if requestID := ctx.Value("request_id"); requestID != nil {
-		fields = append(fields, zap.String("request_id", requestID.(string)))
+		// 类型不符时跳过该字段，避免记录日志时 panic
+		if id, ok := requestID.(string); ok {
+			fields = append(fields, zap.String("request_id", id))
+		}
 	}
 
 	pl.logger.Warn("Slow query detected", fields...)
@@ -829,7 +861,10 @@ func (pl *PerformanceLogger) LogAPIPerformance(ctx context.Context, method, path
 	}
 
 	if requestID := ctx.Value("request_id"); requestID != nil {
-		fields = append(fields, zap.String("request_id", requestID.(string)))
+		// 类型不符时跳过该字段，避免记录日志时 panic
+		if id, ok := requestID.(string); ok {
+			fields = append(fields, zap.String("request_id", id))
+		}
 	}
 
 	if userID := ctx.Value("user_id"); userID != nil {
@@ -1005,7 +1040,8 @@ func CleanupOldLogs(logDir string, maxAge time.Duration) error {
 	if err != nil {
 		return fmt.Errorf("failed to open log directory: %w", err)
 	}
-	defer dir.Close()
+	// dir.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = dir.Close() }()
 
 	files, err := dir.Readdir(-1)
 	if err != nil {

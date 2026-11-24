@@ -113,11 +113,13 @@ func (c *mcpClient) FetchLatestStandards(ctx context.Context) (*models.MCPStanda
 	err = c.retryRequest(ctx, func() error {
 		// 重试前关闭上一次成功的响应体，避免覆盖泄漏
 		if response != nil && response.Body != nil {
-			response.Body.Close()
+			// 重试前的清理步骤：关闭旧响应体失败仅影响连接复用，此时无恢复路径，错误不可操作
+			_ = response.Body.Close()
 		}
 		resp, err := c.httpClient.Do(req)
 		if resp != nil && err != nil {
-			resp.Body.Close() // 请求失败（含重定向错误）时立即释放响应体
+			// 请求失败（含重定向错误）时立即释放响应体；此处主错误是请求错误，Close 失败不可操作
+			_ = resp.Body.Close()
 			return err
 		}
 		response = resp
@@ -127,7 +129,8 @@ func (c *mcpClient) FetchLatestStandards(ctx context.Context) (*models.MCPStanda
 		c.updateServiceStatus(ctx, false, err)
 		return nil, fmt.Errorf("请求MCP服务失败: %w", err)
 	}
-	defer response.Body.Close()
+	// response.Body.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = response.Body.Close() }()
 
 	// 检查响应状态
 	if response.StatusCode != http.StatusOK {
@@ -207,7 +210,8 @@ func (c *mcpClient) HealthCheck(ctx context.Context) error {
 		c.updateServiceStatus(ctx, false, err)
 		return fmt.Errorf("健康检查失败: %w", err)
 	}
-	defer response.Body.Close()
+	// response.Body.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = response.Body.Close() }()
 
 	if response.StatusCode != http.StatusOK {
 		err := fmt.Errorf("健康检查返回状态码: %d", response.StatusCode)
