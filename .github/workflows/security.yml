@@ -37,7 +37,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-          cache: ${{ (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3') }}
+          cache: ${{ (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3' && (github.head_ref != 'codex/np-main-i11' || github.event.pull_request.head.repo.full_name != github.repository)) }}
 
       - name: 下载并校验依赖
         run: |
@@ -59,7 +59,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-          cache: ${{ (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3') }}
+          cache: ${{ (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3' && (github.head_ref != 'codex/np-main-i11' || github.event.pull_request.head.repo.full_name != github.repository)) }}
 
       - name: 下载并校验依赖
         run: |
@@ -68,7 +68,7 @@ jobs:
 
       - name: 运行govulncheck并生成报告
         env:
-          PILOT_PR: ${{ (github.head_ref == 'codex/np-main-m2' || github.head_ref == 'codex/np-main-m3') }}
+          PILOT_PR: ${{ (github.head_ref == 'codex/np-main-m2' || github.head_ref == 'codex/np-main-m3' || (github.head_ref == 'codex/np-main-i11' && github.event.pull_request.head.repo.full_name == github.repository)) }}
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@latest
           set +e
@@ -92,7 +92,7 @@ jobs:
           } > security-report.md
 
       - name: 上传安全扫描报告
-        if: (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3')
+        if: (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3' && (github.head_ref != 'codex/np-main-i11' || github.event.pull_request.head.repo.full_name != github.repository))
         uses: actions/upload-artifact@v4
         with:
           name: security-scan-report
@@ -167,14 +167,14 @@ jobs:
     if: always()
     steps:
       - name: 下载安全测试产物
-        if: (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3')
+        if: (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3' && (github.head_ref != 'codex/np-main-i11' || github.event.pull_request.head.repo.full_name != github.repository))
         uses: actions/download-artifact@v4
         with:
           path: artifacts
         continue-on-error: true
 
       - name: 生成综合安全报告
-        if: (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3')
+        if: (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3' && (github.head_ref != 'codex/np-main-i11' || github.event.pull_request.head.repo.full_name != github.repository))
         run: |
           {
             echo "# 安全测试综合报告"
@@ -196,7 +196,7 @@ jobs:
           } > comprehensive-security-report.md
 
       - name: 上传综合安全报告
-        if: (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3')
+        if: (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3' && (github.head_ref != 'codex/np-main-i11' || github.event.pull_request.head.repo.full_name != github.repository))
         uses: actions/upload-artifact@v4
         with:
           name: comprehensive-security-report

@@ -43,7 +43,7 @@ PY
 )
 run_step go go test -p 1 -race -count=1 -json . ./internal/handlers ./internal/database ./internal/middleware ./internal/router -run "$go_selector"
 "$PYTHON" scripts/np-ci/check-i11-tests.py go "$work/go.log"
-run_step tagged go test -p 1 -json -race -count=1 -tags np_m1_pg ./tests/integration/m1 -run '^(TestNativeConcurrentDraftAndHistory|TestAsyncPGFormalDetectorCompletesOnce|TestConflictPGLinkAdvancesRevisionOnce|TestM3ConflictCompletionAfterSourceSave|TestSchemaRequiresFrozenKeysAndTypes)$'
+run_step tagged go test -p 1 -json -race -count=1 -tags np_m1_pg ./tests/integration/m1 -run '^(TestNativeConcurrentDraftAndHistory|TestAsyncPGCompletionAfterNativeEdit|TestAsyncPGFormalDetectorCompletesOnce|TestConflictPGLinkAdvancesRevisionOnce|TestM3ConflictCompletionAfterSourceSave|TestSchemaRequiresFrozenKeysAndTypes)$'
 "$PYTHON" scripts/np-ci/check-i11-tests.py tagged "$work/tagged.log"
 (
   cd frontend

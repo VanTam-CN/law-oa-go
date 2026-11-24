@@ -26,7 +26,7 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
-        cache: ${{ (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3') }}
+        cache: ${{ (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3' && (github.head_ref != 'codex/np-main-i11' || github.event.pull_request.head.repo.full_name != github.repository)) }}
 
     - name: 检查Go版本和PGO支持
       run: |
@@ -52,7 +52,7 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
-        cache: ${{ (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3') }}
+        cache: ${{ (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3' && (github.head_ref != 'codex/np-main-i11' || github.event.pull_request.head.repo.full_name != github.repository)) }}
 
     - name: 下载依赖
       run: |
@@ -83,7 +83,7 @@ jobs:
 
   # 收集性能数据
   collect-profile:
-    if: (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3')
+    if: (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3' && (github.head_ref != 'codex/np-main-i11' || github.event.pull_request.head.repo.full_name != github.repository))
     name: 收集性能数据
     runs-on: ubuntu-latest
     needs: generate-workload
@@ -333,7 +333,7 @@ jobs:
     name: 生成PGO构建报告
     runs-on: ubuntu-latest
     needs: [pgo-optimized-build, performance-benchmark]
-    if: always() && (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3')
+    if: always() && (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3' && (github.head_ref != 'codex/np-main-i11' || github.event.pull_request.head.repo.full_name != github.repository))
     steps:
     - name: 检出代码
       uses: actions/checkout@v4
@@ -388,7 +388,7 @@ jobs:
 
   pilot-pgo:
     name: PGO local profiles and builds
-    if: (github.head_ref == 'codex/np-main-m2' || github.head_ref == 'codex/np-main-m3')
+    if: (github.head_ref == 'codex/np-main-m2' || github.head_ref == 'codex/np-main-m3' || (github.head_ref == 'codex/np-main-i11' && github.event.pull_request.head.repo.full_name == github.repository))
     runs-on: ubuntu-latest
     permissions:
       contents: read

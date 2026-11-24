@@ -35,7 +35,7 @@ elif mode in {"go", "tagged"}:
         }
         expected = {(overrides.get(n, "law-oa-go/internal/handlers"), n) for n in names.union(overrides)}
     else:
-        names = ["TestNativeConcurrentDraftAndHistory", "TestAsyncPGFormalDetectorCompletesOnce",
+        names = ["TestNativeConcurrentDraftAndHistory", "TestAsyncPGCompletionAfterNativeEdit", "TestAsyncPGFormalDetectorCompletesOnce",
                  "TestConflictPGLinkAdvancesRevisionOnce", "TestM3ConflictCompletionAfterSourceSave",
                  "TestM3ConflictCompletionAfterSourceSave/sync", "TestM3ConflictCompletionAfterSourceSave/async",
                  "TestSchemaRequiresFrozenKeysAndTypes"]
