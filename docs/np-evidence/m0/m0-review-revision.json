@@ -1,0 +1,242 @@
+{
+  "scope": "M0 c8716b7 independent-review document/evidence corrections only",
+  "revision_input_sha": "c8716b7a964e4035b938761b8d4201b28b501cba",
+  "application_sha": "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
+  "source_slice_sha": "2d659d9dd750f49ddb1f517746e22851392231a6",
+  "previous_independent_review": {
+    "actual_model": "gpt-6.2-astra",
+    "agent_id": "01a1f738-9fd8-7660-ae93-4f5da77925a6",
+    "hermes_task": "t_e3878bd1",
+    "findings": {
+      "P0": 0,
+      "P1": 5,
+      "P2": 3
+    },
+    "verdict": "HOLD_DOCUMENT_SEAL_AT_INPUT_SHA"
+  },
+  "workers": [
+    {
+      "agent_id": "01a1f792-9a5e-71e3-b6c3-16a8d84cac26",
+      "actual_model": "zhipu-coding/glm-5.3-flash",
+      "task": "t_5a4a0afa",
+      "write_scope": [
+        "m0/dependency-seal.md",
+        "dependency-seal.json",
+        "m0/backend-closure.md"
+      ],
+      "actual_output": "partial backend-closure.md draft only; coordinator completed dependency seal and JSON"
+    },
+    {
+      "agent_id": "01a1f792-9b2a-7fd0-a74f-d6f359a6e36e",
+      "actual_model": "zhipu-coding/glm-5.3-flash",
+      "task": "t_23c34a57",
+      "write_scope": [
+        "m0/route-b-test-split.md",
+        "route-b-test-inventory.json"
+      ],
+      "actual_output": "route-b-test-split.md and route-b-test-inventory.json drafts, coordinator corrected and integrated"
+    }
+  ],
+  "coordinator_task": "t_2791e279",
+  "resolution_index": [
+    {
+      "id": "M0-R01",
+      "original": "P1-1",
+      "topic": "原生恢复和真实router",
+      "owner": "M1",
+      "gates": "I04/I05",
+      "rule_status": "DOCUMENTED_COORDINATOR_REVIEWED",
+      "implementation": "NOT_STARTED",
+      "runtime": "NOT_RUN"
+    },
+    {
+      "id": "M0-R02",
+      "original": "P1-2",
+      "topic": "主体保全/授权构造最小依赖",
+      "owner": "M1/M3",
+      "gates": "I04/I06/I09-MAIN/I13",
+      "rule_status": "DOCUMENTED_COORDINATOR_REVIEWED",
+      "implementation": "NOT_STARTED",
+      "runtime": "NOT_RUN"
+    },
+    {
+      "id": "M0-R03",
+      "original": "P1-3",
+      "topic": "I15可达路径与阶段拆分",
+      "owner": "M1/M3/M5",
+      "gates": "I15-NATIVE/I15-NP",
+      "rule_status": "DOCUMENTED_COORDINATOR_REVIEWED",
+      "implementation": "NOT_STARTED",
+      "runtime": "NOT_RUN"
+    },
+    {
+      "id": "M0-R04",
+      "original": "P1-4",
+      "topic": "回执fixture和每请求键ADAPT",
+      "owner": "M3/M4",
+      "gates": "I16/C04-C07",
+      "rule_status": "DOCUMENTED_COORDINATOR_REVIEWED",
+      "implementation": "NOT_STARTED",
+      "runtime": "NOT_RUN"
+    },
+    {
+      "id": "M0-R05",
+      "original": "P1-5",
+      "topic": "完整I11与fixture阶段",
+      "owner": "M2/M3/M4",
+      "gates": "I11",
+      "rule_status": "DOCUMENTED_COORDINATOR_REVIEWED",
+      "implementation": "NOT_STARTED",
+      "runtime": "NOT_RUN"
+    },
+    {
+      "id": "M0-R06",
+      "original": "P2-6",
+      "topic": "B非空精度seed及干净计数窗口",
+      "owner": "M3",
+      "gates": "I09-MAIN",
+      "rule_status": "DOCUMENTED_COORDINATOR_REVIEWED",
+      "implementation": "NOT_STARTED",
+      "runtime": "NOT_RUN"
+    },
+    {
+      "id": "M0-R07",
+      "original": "P2-7",
+      "topic": "86追加/已应用状态和备用入口",
+      "owner": "M1/M6",
+      "gates": "I12/I14",
+      "rule_status": "DOCUMENTED_COORDINATOR_REVIEWED",
+      "implementation": "NOT_STARTED",
+      "runtime": "NOT_RUN"
+    },
+    {
+      "id": "M0-R08",
+      "original": "P2-8",
+      "topic": "PROD资产及旧worker证据",
+      "owner": "M4/M5",
+      "gates": "C10-PROD/C10-OLD",
+      "rule_status": "DOCUMENTED_COORDINATOR_REVIEWED",
+      "implementation": "NOT_STARTED",
+      "runtime": "NOT_RUN"
+    }
+  ],
+  "coordinator_corrections": [
+    "Use source native handler 2450–2481 and identity helper file, not strict prepareSource, as party-preservation evidence",
+    "NP draft check is source narrow_pilot_context.go:113; main old production schema check is not NP readiness",
+    "Server receipt id compares to recovery intake_id; abandoned has no saved revision requirement",
+    "Worker file ownership does not narrow the user-authorized eight-finding scope",
+    "M1 gates only native I15; full I11 after M3/M4 fixtures, before M5",
+    "PROD missing sw.js recorded honestly; no new PWA to force 200; controlled old-worker fixture distinct",
+    "Keep historical blob/count/PASS records; no runtime gate promotion"
+  ],
+  "effort": {
+    "old_base": [
+      25,
+      41
+    ],
+    "old_buffered": [
+      30,
+      50
+    ],
+    "revised_base": [
+      26,
+      45
+    ],
+    "revised_buffered": [
+      32,
+      54
+    ],
+    "net_delta": [
+      1,
+      4
+    ],
+    "source": "net-effort-estimate.json",
+    "condition": "engineering judgement, not measured productivity or reliable delivery ceiling"
+  },
+  "review_result": "PASS_DOCUMENT_RULES_AND_COORDINATOR_REVIEW_ONLY",
+  "static_validation": {
+    "result": "PASS_DOCUMENT_STRUCTURE_ONLY",
+    "input_sha": "c8716b7a964e4035b938761b8d4201b28b501cba",
+    "application_sha": "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
+    "source_sha": "2d659d9dd750f49ddb1f517746e22851392231a6",
+    "argv": [
+      "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+      "/tmp/np-m0-doc-revision-check.py"
+    ],
+    "started_at": "2026-11-20T06:31:29.715116+00:00",
+    "ended_at": "2026-11-20T06:31:30.403617+00:00",
+    "exit_code": 0,
+    "changed_files": [
+      "docs/np-evidence/m0/dependency-seal.json",
+      "docs/np-evidence/m0/net-effort-estimate.json",
+      "docs/np-evidence/m0/route-b-test-inventory.json",
+      "docs/plans/np-main-integration/README.md",
+      "docs/plans/np-main-integration/cache-policy-proposal.md",
+      "docs/plans/np-main-integration/draft-pr-body.md",
+      "docs/plans/np-main-integration/implementation-and-acceptance-plan.md",
+      "docs/plans/np-main-integration/m0/backend-closure.md",
+      "docs/plans/np-main-integration/m0/baseline-report.md",
+      "docs/plans/np-main-integration/m0/dependency-seal.md",
+      "docs/plans/np-main-integration/m0/net-effort-estimate.md",
+      "docs/plans/np-main-integration/m0/route-b-test-split.md",
+      "docs/np-evidence/m0/m0-review-revision.json",
+      "docs/plans/np-main-integration/m0/astra-review-resolution.md"
+    ],
+    "file_sha256": {
+      "docs/np-evidence/m0/dependency-seal.json": "416fb9bec2c93fe1599ea47e2aee8fefb0c49ca7faf65c92a27263e04f6f9ad8",
+      "docs/np-evidence/m0/net-effort-estimate.json": "4b3436794e83a6d9885e3249c6caa26b222527403f6c78f1109d0e53bdef9bcc",
+      "docs/np-evidence/m0/route-b-test-inventory.json": "1bbe77a7d38f250ada190ecc30da7a36021062415be6d6f5126a6fd39aabd852",
+      "docs/plans/np-main-integration/README.md": "e63c99573a2d9ccf6a29f0b47eb794c32018c26533232e73c5fbfc7fad9fff81",
+      "docs/plans/np-main-integration/cache-policy-proposal.md": "be642d30fdbb55c03be4a120d19c2910d0bb162476dcbcab1fb6b44aa125b557",
+      "docs/plans/np-main-integration/draft-pr-body.md": "76fbf85decb01cb928caec8789e34ae50619ddf341fad22bc5eeed2211fffe61",
+      "docs/plans/np-main-integration/implementation-and-acceptance-plan.md": "9e9ff33d73598dd67596a51df91da3727cc07f0e5eeab02227c8de60395fc4f6",
+      "docs/plans/np-main-integration/m0/backend-closure.md": "ea6c523aff819dcabf573346f53a3175f73ac96214a0b02b4a61cd45b16c3ff8",
+      "docs/plans/np-main-integration/m0/baseline-report.md": "2e10bc860373c3de8734135c5954dd58f869f92e1e56be792426106beb182aed",
+      "docs/plans/np-main-integration/m0/dependency-seal.md": "bda071a7aa5f7072a88c8bab5071690b38cdf915a10370c8da76568b0f57f39c",
+      "docs/plans/np-main-integration/m0/net-effort-estimate.md": "ee05cd9ef137851336550cf74f6ae78d8110e33bf3d45890c5eb092e8581013d",
+      "docs/plans/np-main-integration/m0/route-b-test-split.md": "e6e8579ae1e9e2ef3db7c10061fc8ec19ea9b8e3066809a9692b7da9abc90db5",
+      "docs/plans/np-main-integration/m0/astra-review-resolution.md": "2720d7cd6b72b4c6c0987cbc3544d5a0af686c3bc2500a9e527bbeb7d834f457"
+    },
+    "checks": [
+      "docs-only; app paths equal fixed main",
+      "JSON parse and relative Markdown links",
+      "33 source mapping blobs and native existing blobs",
+      "historical 26+33+4 counts and exact I09 exclusions",
+      "8 finding IDs and I01-I16/C01-C14 with phase subgates",
+      "old estimate snapshot unchanged; subpackage/total/delta/buffer arithmetic",
+      "git diff --check"
+    ],
+    "base_person_days": [
+      26,
+      45
+    ],
+    "buffered_person_days": [
+      32,
+      54
+    ],
+    "integrated_runtime": "NOT_RUN",
+    "i09_files": "DEFERRED/HOLD"
+  },
+  "runtime_validation": "NOT_RUN",
+  "i09_files": "DEFERRED/HOLD",
+  "authorization": {
+    "docs_and_evidence_commit_push_to": "codex/np-main-m0",
+    "M1": "NOT_STARTED_NOT_AUTHORIZED_THIS_TURN",
+    "merge": "HOLD",
+    "deployment": "HOLD",
+    "new_PR": "NOT_CREATED"
+  },
+  "history_preserved": [
+    "m0-close-review.json",
+    "m0-close-validation.json",
+    "seal-blob-verification.json"
+  ],
+  "worker_handoff": "Two workers produced backend/test-plan drafts; coordinator stopped further expansion, corrected actual source/ID references and completed dependency seal/JSON and final integration. No completed independent effort verdict or renewed Astra approval claimed.",
+  "runtime_m1_release": "HOLD: no M1 implementation authorized this turn, integrated runtime gates NOT_RUN",
+  "dependency_counts": {
+    "source_mapping": 33,
+    "native_existing_targets": 9,
+    "planned_foundation_files": 4,
+    "native_read_hunks": "inside already mapped router/handler, not 34th source mapping; sets may overlap"
+  }
+}

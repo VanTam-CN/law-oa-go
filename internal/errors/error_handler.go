@@ -21,41 +21,41 @@ type ErrorHandlerManager struct {
 
 // ErrorHandlerConfig 错误处理器配置
 type ErrorHandlerConfig struct {
-	EnableStackTrace   bool          `json:"enable_stack_trace"`
-	EnableContext      bool          `json:"enable_context"`
-	EnableSuggestions  bool          `json:"enable_suggestions"`
-	DebugMode           bool          `json:"debug_mode"`
-	LogLevel           string        `json:"log_level"`
-	AlertEnabled       bool          `json:"alert_enabled"`
-	MaxRetries         int           `json:"max_retries"`
-	RetryDelay         time.Duration `json:"retry_delay"`
+	EnableStackTrace  bool          `json:"enable_stack_trace"`
+	EnableContext     bool          `json:"enable_context"`
+	EnableSuggestions bool          `json:"enable_suggestions"`
+	DebugMode         bool          `json:"debug_mode"`
+	LogLevel          string        `json:"log_level"`
+	AlertEnabled      bool          `json:"alert_enabled"`
+	MaxRetries        int           `json:"max_retries"`
+	RetryDelay        time.Duration `json:"retry_delay"`
 }
 
 // DefaultErrorHandlerConfig 默认错误处理器配置
 func DefaultErrorHandlerConfig() ErrorHandlerConfig {
 	return ErrorHandlerConfig{
-		EnableStackTrace:   true,
-		EnableContext:      true,
-		EnableSuggestions:  true,
-		DebugMode:           true,
-		LogLevel:           "info",
-		AlertEnabled:       true,
-		MaxRetries:         3,
-		RetryDelay:         time.Second * 2,
+		EnableStackTrace:  true,
+		EnableContext:     true,
+		EnableSuggestions: true,
+		DebugMode:         true,
+		LogLevel:          "info",
+		AlertEnabled:      true,
+		MaxRetries:        3,
+		RetryDelay:        time.Second * 2,
 	}
 }
 
 // ProductionErrorHandlerConfig 生产环境错误处理器配置
 func ProductionErrorHandlerConfig() ErrorHandlerConfig {
 	return ErrorHandlerConfig{
-		EnableStackTrace:   false,
-		EnableContext:      false,
-		EnableSuggestions:  true,
-		DebugMode:           false,
-		LogLevel:           "error",
-		AlertEnabled:       true,
-		MaxRetries:         3,
-		RetryDelay:         time.Second * 2,
+		EnableStackTrace:  false,
+		EnableContext:     false,
+		EnableSuggestions: true,
+		DebugMode:         false,
+		LogLevel:          "error",
+		AlertEnabled:      true,
+		MaxRetries:        3,
+		RetryDelay:        time.Second * 2,
 	}
 }
 
@@ -70,10 +70,10 @@ func NewErrorHandlerManager(logger *slog.Logger, config ErrorHandlerConfig) *Err
 // HandleError 处理错误
 func (ehm *ErrorHandlerManager) HandleError(ctx context.Context, err error) *ErrorHandlingResult {
 	result := &ErrorHandlingResult{
-		Error:      err,
-		Timestamp:  time.Now(),
-		Context:    make(map[string]interface{}),
-		Metrics:    make(map[string]interface{}),
+		Error:     err,
+		Timestamp: time.Now(),
+		Context:   make(map[string]interface{}),
+		Metrics:   make(map[string]interface{}),
 	}
 
 	if err == nil {
@@ -112,15 +112,15 @@ func (ehm *ErrorHandlerManager) HandleError(ctx context.Context, err error) *Err
 
 // ErrorHandlingResult 错误处理结果
 type ErrorHandlingResult struct {
-	Error           error                `json:"error"`
-	EnhancedError  *EnhancedError        `json:"enhanced_error,omitempty"`
-	Timestamp      time.Time            `json:"timestamp"`
-	Context        map[string]interface{} `json:"context"`
-	Metrics        map[string]interface{} `json:"metrics"`
-	Handled        bool                 `json:"handled"`
-	Recovered       bool                 `json:"recovered"`
-	RecoveryError  error                `json:"recovery_error,omitempty"`
-	Suggestions    []string             `json:"suggestions,omitempty"`
+	Error         error                  `json:"error"`
+	EnhancedError *EnhancedError         `json:"enhanced_error,omitempty"`
+	Timestamp     time.Time              `json:"timestamp"`
+	Context       map[string]interface{} `json:"context"`
+	Metrics       map[string]interface{} `json:"metrics"`
+	Handled       bool                   `json:"handled"`
+	Recovered     bool                   `json:"recovered"`
+	RecoveryError error                  `json:"recovery_error,omitempty"`
+	Suggestions   []string               `json:"suggestions,omitempty"`
 }
 
 // toEnhancedError 转换为增强错误
@@ -157,8 +157,15 @@ func (ehm *ErrorHandlerManager) logError(ctx context.Context, err *EnhancedError
 
 	// 添加上下文信息
 	if ehm.config.EnableContext && len(err.Context()) > 0 {
-		contextJSON, _ := json.Marshal(err.Context())
-		attrs = append(attrs, slog.String("context", string(contextJSON)))
+		contextJSON, marshalErr := json.Marshal(err.Context())
+		if marshalErr != nil {
+			ehm.logger.Warn("序列化错误上下文失败，日志中跳过上下文字段",
+				slog.String("error_id", err.ID()),
+				slog.Any("marshal_error", marshalErr),
+			)
+		} else {
+			attrs = append(attrs, slog.String("context", string(contextJSON)))
+		}
 	}
 
 	// 添加堆栈跟踪
@@ -365,43 +372,50 @@ func (ehm *ErrorHandlerManager) retryDatabaseOperation(ctx context.Context, err 
 // FormatErrorResponse 格式化错误响应
 func (ehm *ErrorHandlerManager) FormatErrorResponse(err *EnhancedError, requestID string) gin.H {
 	response := gin.H{
-		"success":   false,
+		"success":    false,
 		"request_id": requestID,
-		"timestamp": time.Now(),
+		"timestamp":  time.Now(),
 		"error": gin.H{
-			"id":         err.ID(),
-			"code":       err.Code(),
-			"category":   err.Category().String(),
-			"level":      err.Level().String(),
-			"message":    err.Message(),
+			"id":       err.ID(),
+			"code":     err.Code(),
+			"category": err.Category().String(),
+			"level":    err.Level().String(),
+			"message":  err.Message(),
 		},
+	}
+
+	// response["error"] 在上方刚以 gin.H 构造，类型断言失败意味着内部不变量被破坏，
+	// 保持原有断言崩溃语义，但给出可诊断消息
+	errH, ok := response["error"].(gin.H)
+	if !ok {
+		panic("errors: FormatErrorResponse 内部不变量被破坏：response[\"error\"] 不是 gin.H")
 	}
 
 	// 添加详细信息
 	if err.Details() != "" {
-		response["error"].(gin.H)["details"] = err.Details()
+		errH["details"] = err.Details()
 	}
 
 	// 添加上下文信息
 	if ehm.config.EnableContext && len(err.Context()) > 0 {
-		response["error"].(gin.H)["context"] = err.Context()
+		errH["context"] = err.Context()
 	}
 
 	// 添加堆栈跟踪
 	if ehm.config.EnableStackTrace && ehm.config.DebugMode && err.StackTrace() != "" {
-		response["error"].(gin.H)["stack_trace"] = err.StackTrace()
+		errH["stack_trace"] = err.StackTrace()
 	}
 
 	// 添加建议
 	if ehm.config.EnableSuggestions && len(err.Suggestions()) > 0 {
-		response["error"].(gin.H)["suggestions"] = err.Suggestions()
+		errH["suggestions"] = err.Suggestions()
 	} else {
-		response["error"].(gin.H)["suggestions"] = ehm.getDefaultSuggestions(err)
+		errH["suggestions"] = ehm.getDefaultSuggestions(err)
 	}
 
 	// 添加源码信息
 	if ehm.config.DebugMode && err.File() != "" {
-		response["error"].(gin.H)["source"] = gin.H{
+		errH["source"] = gin.H{
 			"file":     err.File(),
 			"line":     err.Line(),
 			"function": err.Function(),
@@ -473,7 +487,8 @@ func (ehm *ErrorHandlerManager) WrapErrorForGin(err error, c *gin.Context) {
 	ehm.logError(c.Request.Context(), enhancedErr)
 
 	// 添加到Gin错误队列
-	c.Error(enhancedErr)
+	// gin c.Error 仅用于把错误注入响应上下文，返回值即入参本身，无额外处理
+	_ = c.Error(enhancedErr)
 }
 
 // addGinContext 添加Gin请求上下文
@@ -514,11 +529,11 @@ func (ehm *ErrorHandlerManager) GetErrorStats() map[string]interface{} {
 		"total_errors":      0,
 		"critical_errors":   0,
 		"system_errors":     0,
-		"network_errors":   0,
-		"database_errors":  0,
+		"network_errors":    0,
+		"database_errors":   0,
 		"validation_errors": 0,
-		"business_errors":  0,
-		"security_errors":  0,
+		"business_errors":   0,
+		"security_errors":   0,
 		"last_error_time":   nil,
 	}
 }

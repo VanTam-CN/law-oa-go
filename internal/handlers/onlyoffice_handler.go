@@ -580,11 +580,16 @@ func (h *OnlyOfficeHandler) saveDocument(ctx context.Context, documentID uint, d
 	}
 
 	// 从 OnlyOffice 下载编辑后的文档
-	resp, err := h.httpClient.Get(downloadURL)
+	downloadReq, err := http.NewRequestWithContext(ctx, http.MethodGet, downloadURL, nil)
+	if err != nil {
+		return fmt.Errorf("构造下载请求失败: %w", err)
+	}
+	resp, err := h.httpClient.Do(downloadReq)
 	if err != nil {
 		return fmt.Errorf("failed to download from OnlyOffice: %w", err)
 	}
-	defer resp.Body.Close()
+	// resp.Body.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
@@ -593,7 +598,7 @@ func (h *OnlyOfficeHandler) saveDocument(ctx context.Context, documentID uint, d
 
 	// 创建版本备份目录
 	versionDir := filepath.Join(h.storageDir, "versions", fmt.Sprintf("doc_%d", documentID))
-	if err := os.MkdirAll(versionDir, 0755); err != nil {
+	if err := os.MkdirAll(versionDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create version directory: %w", err)
 	}
 
@@ -622,21 +627,26 @@ func (h *OnlyOfficeHandler) saveDocument(ctx context.Context, documentID uint, d
 	if err == nil {
 		err = outFile.Sync()
 	}
-	outFile.Close()
+	if cerr := outFile.Close(); cerr != nil && err == nil {
+		err = cerr
+	}
 	tmpPath := outFile.Name()
 
 	if err != nil {
-		os.Remove(tmpPath)
+		// 清理临时文件，失败不阻断主流程
+		_ = os.Remove(tmpPath)
 		return fmt.Errorf("failed to write document: %w", err)
 	}
 	if written > MaxOnlyOfficeDownloadBytes {
-		os.Remove(tmpPath)
+		// 清理临时文件，失败不阻断主流程
+		_ = os.Remove(tmpPath)
 		return fmt.Errorf("download exceeds %d bytes", MaxOnlyOfficeDownloadBytes)
 	}
 
 	// 原子替换
 	if err := os.Rename(tmpPath, doc.Filepath); err != nil {
-		os.Remove(tmpPath)
+		// 清理临时文件，失败不阻断主流程
+		_ = os.Remove(tmpPath)
 		return fmt.Errorf("failed to replace document file: %w", err)
 	}
 
@@ -707,15 +717,23 @@ func (h *OnlyOfficeHandler) ConvertDocument(c *gin.Context) {
 	// 生成 token
 	token := ""
 	if h.onlyOfficeSecret != "" {
-		payload, _ := json.Marshal(convertReq)
+		payload, err := json.Marshal(convertReq)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to marshal conversion request: %v", err)})
+			return
+		}
 		token = h.GenerateCallbackToken(string(payload))
 	}
 
 	// 调用 OnlyOffice Conversion API
 	convertURL := fmt.Sprintf("%s/CoAuthoring/CommandService.ashx", h.onlyOfficeURL)
-	reqBody, _ := json.Marshal(convertReq)
+	reqBody, err := json.Marshal(convertReq)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to marshal conversion request: %v", err)})
+		return
+	}
 
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", convertURL, strings.NewReader(string(reqBody)))
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, convertURL, strings.NewReader(string(reqBody)))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to create request: %v", err)})
 		return
@@ -730,7 +748,8 @@ func (h *OnlyOfficeHandler) ConvertDocument(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Conversion request failed: %v", err)})
 		return
 	}
-	defer resp.Body.Close()
+	// resp.Body.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -760,10 +779,11 @@ func (h *OnlyOfficeHandler) ConvertDocument(c *gin.Context) {
 
 	// 如果 OnlyOffice 直接返回结果（同步）
 	if convertResp.Status == 3 && convertResp.URL != "" {
-		go h.processConversionResult(taskID, &convertResp)
+		// detach goroutine：脱离请求生命周期，使用 Background
+		go h.processConversionResult(context.Background(), taskID, &convertResp)
 	} else if convertResp.Status == 6 {
 		// 异步模式，需要轮询
-		go h.pollConversionStatus(taskID, key)
+		go h.pollConversionStatus(context.Background(), taskID, key)
 	} else if convertResp.Status >= 4 {
 		task.Status = ConversionStatusError
 		task.Error = fmt.Sprintf("Conversion failed with status %d", convertResp.Status)
@@ -866,7 +886,7 @@ func (h *OnlyOfficeHandler) DownloadConverted(c *gin.Context) {
 }
 
 // processConversionResult 处理转换结果（下载转换后的文件）
-func (h *OnlyOfficeHandler) processConversionResult(taskID string, resp *ConversionResponse) {
+func (h *OnlyOfficeHandler) processConversionResult(ctx context.Context, taskID string, resp *ConversionResponse) {
 	h.conversionMu.Lock()
 	task, exists := h.conversionTasks[taskID]
 	if !exists {
@@ -907,7 +927,15 @@ func (h *OnlyOfficeHandler) processConversionResult(taskID string, resp *Convers
 	}
 
 	// 下载转换后的文件
-	httpResp, err := h.httpClient.Get(resp.URL)
+	downloadReq, err := http.NewRequestWithContext(ctx, http.MethodGet, resp.URL, nil)
+	if err != nil {
+		h.conversionMu.Lock()
+		task.Status = ConversionStatusError
+		task.Error = fmt.Sprintf("Failed to build download request: %v", err)
+		h.conversionMu.Unlock()
+		return
+	}
+	httpResp, err := h.httpClient.Do(downloadReq)
 	if err != nil {
 		h.conversionMu.Lock()
 		task.Status = ConversionStatusError
@@ -915,7 +943,8 @@ func (h *OnlyOfficeHandler) processConversionResult(taskID string, resp *Convers
 		h.conversionMu.Unlock()
 		return
 	}
-	defer httpResp.Body.Close()
+	// httpResp.Body.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = httpResp.Body.Close() }()
 
 	if httpResp.StatusCode != http.StatusOK {
 		h.conversionMu.Lock()
@@ -927,7 +956,7 @@ func (h *OnlyOfficeHandler) processConversionResult(taskID string, resp *Convers
 
 	// 保存转换后的文件
 	convertDir := filepath.Join(h.storageDir, "converted", fmt.Sprintf("doc_%d", task.DocumentID))
-	if err := os.MkdirAll(convertDir, 0755); err != nil {
+	if err := os.MkdirAll(convertDir, 0o755); err != nil {
 		h.conversionMu.Lock()
 		task.Status = ConversionStatusError
 		task.Error = fmt.Sprintf("Failed to create directory: %v", err)
@@ -947,10 +976,13 @@ func (h *OnlyOfficeHandler) processConversionResult(taskID string, resp *Convers
 
 	limited := io.LimitReader(httpResp.Body, MaxOnlyOfficeDownloadBytes+1)
 	written, err := io.Copy(outFile, limited)
-	outFile.Close()
+	if cerr := outFile.Close(); cerr != nil && err == nil {
+		err = cerr
+	}
 
 	if err != nil {
-		os.Remove(outputPath)
+		// 清理临时文件，失败不阻断主流程
+		_ = os.Remove(outputPath)
 		h.conversionMu.Lock()
 		task.Status = ConversionStatusError
 		task.Error = fmt.Sprintf("Failed to save converted file: %v", err)
@@ -958,7 +990,8 @@ func (h *OnlyOfficeHandler) processConversionResult(taskID string, resp *Convers
 		return
 	}
 	if written > MaxOnlyOfficeDownloadBytes {
-		os.Remove(outputPath)
+		// 清理临时文件，失败不阻断主流程
+		_ = os.Remove(outputPath)
 		h.conversionMu.Lock()
 		task.Status = ConversionStatusError
 		task.Error = fmt.Sprintf("Download exceeds %d bytes", MaxOnlyOfficeDownloadBytes)
@@ -977,7 +1010,7 @@ func (h *OnlyOfficeHandler) processConversionResult(taskID string, resp *Convers
 }
 
 // pollConversionStatus 轮询异步转换状态
-func (h *OnlyOfficeHandler) pollConversionStatus(taskID string, key string) {
+func (h *OnlyOfficeHandler) pollConversionStatus(ctx context.Context, taskID string, key string) {
 	maxRetries := 30
 	interval := 2 * time.Second
 
@@ -985,13 +1018,19 @@ func (h *OnlyOfficeHandler) pollConversionStatus(taskID string, key string) {
 		time.Sleep(interval)
 
 		checkURL := fmt.Sprintf("%s/CoAuthoring/CommandService.ashx?key=%s", h.onlyOfficeURL, key)
-		resp, err := h.httpClient.Get(checkURL)
+		checkReq, err := http.NewRequestWithContext(ctx, http.MethodGet, checkURL, nil)
+		if err != nil {
+			continue
+		}
+		resp, err := h.httpClient.Do(checkReq)
 		if err != nil {
 			continue
 		}
 
 		body, err := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		resp.Body.Close()
+		if cerr := resp.Body.Close(); cerr != nil {
+			log.Printf("[OnlyOffice] 关闭轮询响应失败: %v", cerr)
+		}
 		if err != nil {
 			continue
 		}
@@ -1002,7 +1041,7 @@ func (h *OnlyOfficeHandler) pollConversionStatus(taskID string, key string) {
 		}
 
 		if result.Status == 3 && result.URL != "" {
-			h.processConversionResult(taskID, &result)
+			h.processConversionResult(ctx, taskID, &result)
 			return
 		}
 
@@ -1148,13 +1187,15 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer srcFile.Close()
+	// srcFile.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = srcFile.Close() }()
 
 	dstFile, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
-	defer dstFile.Close()
+	// dstFile.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = dstFile.Close() }()
 
 	_, err = io.Copy(dstFile, srcFile)
 	return err

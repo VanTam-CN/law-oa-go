@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	drivermysql "github.com/go-sql-driver/mysql"
+
 	"law-oa-go/internal/config"
 )
 
@@ -63,7 +64,8 @@ func TestOpenMySQLSQLSetsMigrationMultiStatements(t *testing.T) {
 	if err != nil {
 		t.Fatalf("openMySQLSQL() error = %v", err)
 	}
-	defer db.Close()
+	// db.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = db.Close() }()
 
 	if value := db.Driver(); value == nil {
 		t.Fatal("driver = nil, want MySQL connector")

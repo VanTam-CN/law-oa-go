@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
+
 	"law-oa-go/internal/services"
 )
 
@@ -17,7 +19,11 @@ func (m *MockCaseService) CreateCase(ctx interface{}, req *services.CreateCaseRe
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*services.CaseResponse), args.Error(1)
+	created, ok := args.Get(0).(*services.CaseResponse)
+	if !ok {
+		return nil, fmt.Errorf("类型断言失败: mock 返回 %T", args.Get(0))
+	}
+	return created, args.Error(1)
 }
 
 func (m *MockCaseService) GetCaseByID(ctx interface{}, id uint) (*services.CaseResponse, error) {
@@ -25,7 +31,11 @@ func (m *MockCaseService) GetCaseByID(ctx interface{}, id uint) (*services.CaseR
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*services.CaseResponse), args.Error(1)
+	created, ok := args.Get(0).(*services.CaseResponse)
+	if !ok {
+		return nil, fmt.Errorf("类型断言失败: mock 返回 %T", args.Get(0))
+	}
+	return created, args.Error(1)
 }
 
 func (m *MockCaseService) UpdateCase(ctx interface{}, id uint, req *services.UpdateCaseRequest) (*services.CaseResponse, error) {
@@ -33,7 +43,11 @@ func (m *MockCaseService) UpdateCase(ctx interface{}, id uint, req *services.Upd
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*services.CaseResponse), args.Error(1)
+	created, ok := args.Get(0).(*services.CaseResponse)
+	if !ok {
+		return nil, fmt.Errorf("类型断言失败: mock 返回 %T", args.Get(0))
+	}
+	return created, args.Error(1)
 }
 
 func (m *MockCaseService) DeleteCase(ctx interface{}, id uint) error {
@@ -46,7 +60,15 @@ func (m *MockCaseService) ListCases(ctx interface{}, req interface{}) ([]*servic
 	if args.Get(0) == nil {
 		return nil, 0, args.Error(1)
 	}
-	return args.Get(0).([]*services.CaseResponse), args.Get(1).(int64), args.Error(2)
+	cases, ok := args.Get(0).([]*services.CaseResponse)
+	if !ok {
+		return nil, 0, fmt.Errorf("类型断言失败: ListCases 返回 %T", args.Get(0))
+	}
+	total, ok := args.Get(1).(int64)
+	if !ok {
+		return nil, 0, fmt.Errorf("类型断言失败: ListCases 返回 %T", args.Get(1))
+	}
+	return cases, total, args.Error(2)
 }
 
 func TestCaseHandler_CreateCase(t *testing.T) {

@@ -275,16 +275,19 @@ func TestLinkConflictCheckToCaseRequiresExplicitConsistentContext(t *testing.T) 
 		check_id TEXT PRIMARY KEY, client_id TEXT, search_parameters TEXT
 	)`).Error)
 	require.NoError(t, db.Exec(`INSERT INTO conflict_check_records (check_id, client_id, search_parameters) VALUES (?, ?, ?)`,
-		"CCT-LINK-001", fmt.Sprint(client.ID), fmt.Sprintf(`{"clientId":"%d","subjectCaseId":"%d","intakeId":"%s"}`, client.ID, caseModel.ID, "intake-link-001")).Error)
+		"CCT-LINK-001", fmt.Sprint(client.ID), fmt.Sprintf(`{"clientId":"%d","subjectCaseId":"%d","intakeId":"%s","intakeRevision":"rev-1"}`, client.ID, caseModel.ID, "intake-link-001")).Error)
 	require.NoError(t, db.Exec(`CREATE TABLE case_intakes (id TEXT PRIMARY KEY, client_id TEXT, status TEXT, metadata TEXT, updated_at DATETIME)`).Error)
-	require.NoError(t, db.Exec(`INSERT INTO case_intakes (id, client_id, status, metadata, updated_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)`, "intake-link-001", client.ID, "draft", `{"source":"test"}`).Error)
+	require.NoError(t, db.Exec(`INSERT INTO case_intakes (id, client_id, status, metadata, updated_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)`, "intake-link-001", client.ID, "lawyer_facts_confirmed", `{"source":"test","draft_revision":"rev-1"}`).Error)
 
 	repo := NewConflictRepository(db, nil)
-	require.NoError(t, repo.(ConflictSubjectLinker).LinkConflictCheckToCase(context.Background(), ConflictSubjectAssociation{
+	linker, ok := repo.(ConflictSubjectLinker)
+	require.True(t, ok)
+	require.NoError(t, linker.LinkConflictCheckToCase(context.Background(), ConflictSubjectAssociation{
 		CheckID:           "CCT-LINK-001",
 		SubjectCaseID:     fmt.Sprint(caseModel.ID),
 		SubjectCaseNumber: caseModel.CaseNumber,
 		IntakeID:          "intake-link-001",
+		IntakeRevision:    "rev-1",
 		ClientID:          fmt.Sprint(client.ID),
 		CoverageStatus:    "COMPLETE",
 		CheckedAt:         time.Now(),
@@ -302,7 +305,7 @@ func TestLinkConflictCheckToCaseRequiresExplicitConsistentContext(t *testing.T) 
 	assert.Equal(t, "conflict_ready", intake.Status)
 	assert.Contains(t, intake.Metadata, "CCT-LINK-001")
 
-	err := repo.(ConflictSubjectLinker).LinkConflictCheckToCase(context.Background(), ConflictSubjectAssociation{
+	err := linker.LinkConflictCheckToCase(context.Background(), ConflictSubjectAssociation{
 		CheckID:           "CCT-LINK-002",
 		SubjectCaseID:     fmt.Sprint(caseModel.ID),
 		SubjectCaseNumber: "CASE-WRONG-001",
@@ -313,7 +316,7 @@ func TestLinkConflictCheckToCaseRequiresExplicitConsistentContext(t *testing.T) 
 	require.NoError(t, db.First(&unchanged, caseModel.ID).Error)
 	assert.Equal(t, "CCT-LINK-001", unchanged.ConflictCheckID, "a stale case number must not overwrite the existing association")
 
-	err = repo.(ConflictSubjectLinker).LinkConflictCheckToCase(context.Background(), ConflictSubjectAssociation{
+	err = linker.LinkConflictCheckToCase(context.Background(), ConflictSubjectAssociation{
 		CheckID:       "CCT-LINK-001",
 		SubjectCaseID: fmt.Sprint(caseModel.ID),
 		ClientID:      "different-client",
@@ -321,7 +324,7 @@ func TestLinkConflictCheckToCaseRequiresExplicitConsistentContext(t *testing.T) 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "客户")
 
-	err = repo.(ConflictSubjectLinker).LinkConflictCheckToCase(context.Background(), ConflictSubjectAssociation{
+	err = linker.LinkConflictCheckToCase(context.Background(), ConflictSubjectAssociation{
 		CheckID:           "CCT-LINK-001",
 		SubjectCaseID:     fmt.Sprint(caseModel.ID + 1),
 		SubjectCaseNumber: caseModel.CaseNumber,

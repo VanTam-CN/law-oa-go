@@ -1,0 +1,3 @@
+2026-11-24T12:08:05.2116928Z ##[group]Run go test -bench=. -benchmem -benchtime=10s ./... > benchmark.txt
+2026-11-24T12:08:05.2117409Z [36;1mgo test -bench=. -benchmem -benchtime=10s ./... > benchmark.txt[0m
+2026-11-24T12:13:07.7418803Z ##[error]Process completed with exit code 1.

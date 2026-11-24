@@ -175,7 +175,7 @@ func (s *EscalationService) escalateItem(ctx context.Context, item *models.Inbox
 	}
 
 	// 发布升级事件
-	s.dispatcher.Dispatch(ctx, &Event{
+	if err := s.dispatcher.Dispatch(ctx, &Event{
 		Type:      "inbox.escalated",
 		Timestamp: time.Now(),
 		SourceID:  item.ID,
@@ -185,7 +185,9 @@ func (s *EscalationService) escalateItem(ctx context.Context, item *models.Inbox
 			"escalation_reason": reason,
 			"original_due_date": item.DueDate,
 		},
-	})
+	}); err != nil {
+		log.Printf("发布升级事件失败: %v", err)
+	}
 
 	return nil
 }

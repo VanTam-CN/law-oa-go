@@ -46,8 +46,6 @@ func (qo *QueryOptimizer) ExecuteOptimizedCaseList(ctx context.Context, query *O
 	}
 
 	// 构建基础查询
-	dbQuery := qo.db.WithContext(ctx).Table("cases")
-
 	// 添加筛选条件
 	whereConditions := make([]string, 0)
 	args := make([]interface{}, 0)
@@ -86,10 +84,7 @@ func (qo *QueryOptimizer) ExecuteOptimizedCaseList(ctx context.Context, query *O
 		}
 	}
 
-	// 构建WHERE子句
-	if len(whereConditions) > 0 {
-		dbQuery = dbQuery.Where(strings.Join(whereConditions, " AND "), args...)
-	}
+	// WHERE 条件统一在下方原生 SQL 分页查询中应用（计数查询同样使用）
 
 	// 获取总数（使用优化的计数查询）
 	var total int64
@@ -107,12 +102,12 @@ func (qo *QueryOptimizer) ExecuteOptimizedCaseList(ctx context.Context, query *O
 	if query.OrderBy != "" {
 		// 验证排序字段
 		allowedOrders := map[string]bool{
-			"created_at":   true,
-			"updated_at":   true,
-			"title":        true,
-			"status":       true,
-			"priority":     true,
-			"case_type":    true,
+			"created_at": true,
+			"updated_at": true,
+			"title":      true,
+			"status":     true,
+			"priority":   true,
+			"case_type":  true,
 		}
 
 		if allowedOrders[query.OrderBy] {
@@ -165,7 +160,9 @@ func (qo *QueryOptimizer) ExecuteOptimizedCaseList(ctx context.Context, query *O
 	// 添加排序和分页
 	querySQL += " ORDER BY " + orderBy
 	querySQL += " LIMIT ? OFFSET ?"
-	finalArgs := append(args, query.PageSize, offset)
+	finalArgs := make([]interface{}, 0, len(args)+2)
+	finalArgs = append(finalArgs, args...)
+	finalArgs = append(finalArgs, query.PageSize, offset)
 
 	if err := qo.db.WithContext(ctx).Raw(querySQL, finalArgs...).Scan(&results).Error; err != nil {
 		return nil, 0, fmt.Errorf("failed to list cases: %w", err)
@@ -365,7 +362,7 @@ func (qo *QueryOptimizer) OptimizedStatsQuery(ctx context.Context) (map[string]i
 	caseTypeStats := make(map[string]int64)
 	var typeResults []struct {
 		CaseType string `json:"case_type"`
-		Count     int64  `json:"count"`
+		Count    int64  `json:"count"`
 	}
 
 	typeQuery := `SELECT case_type, COUNT(*) as count FROM cases WHERE deleted_at IS NULL GROUP BY case_type`
@@ -473,8 +470,8 @@ func (qo *QueryOptimizer) AnalyzeQueryPerformance(ctx context.Context, query str
 
 	// 分析结果
 	analysis := map[string]interface{}{
-		"query":        query,
-		"explain":      explainResults,
+		"query":         query,
+		"explain":       explainResults,
 		"analysis_time": time.Now(),
 	}
 
@@ -489,8 +486,8 @@ func (qo *QueryOptimizer) OptimizeDatabase() error {
 	if driverName == "mysql" {
 		// MySQL优化配置
 		optimizations := []string{
-			"SET GLOBAL innodb_buffer_pool_size = 1073741824",    // 1GB
-			"SET GLOBAL innodb_log_file_size = 268435456",      // 256MB
+			"SET GLOBAL innodb_buffer_pool_size = 1073741824", // 1GB
+			"SET GLOBAL innodb_log_file_size = 268435456",     // 256MB
 			"SET GLOBAL innodb_flush_log_at_trx_commit = 2",
 			"SET GLOBAL sync_binlog = 0",
 			"SET GLOBAL innodb_flush_method = O_DIRECT",

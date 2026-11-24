@@ -88,7 +88,9 @@ func (s *folderTemplateService) CreateTemplate(ctx context.Context, req *CreateF
 	if req.IsDefault {
 		if err := s.clearOtherDefaults(ctx, template.ID, template.CaseType); err != nil {
 			// 回滚：删除刚创建的模板
-			s.repo.DeleteTemplate(ctx, template.ID)
+			if delErr := s.repo.DeleteTemplate(ctx, template.ID); delErr != nil {
+				return nil, fmt.Errorf("设置默认模板失败: %w；回滚删除模板也失败: %w", err, delErr)
+			}
 			return nil, fmt.Errorf("设置默认模板失败: %w", err)
 		}
 	}

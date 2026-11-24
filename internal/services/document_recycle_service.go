@@ -331,8 +331,8 @@ func (s *DocumentRecycleService) restoreDocument(ctx context.Context, documentID
 	docModel.UpdatedAt = time.Now()
 
 	if err := s.docRepo.Update(ctx, docModel); err != nil {
-		// Try to move file back to recycle bin if restoration fails
-		s.moveToRecycleBin(docModel.Filepath, matches[0])
+		// 回滚阶段：尽力把文件移回回收站，其失败不能掩盖数据库更新的主错误，错误不可操作
+		_ = s.moveToRecycleBin(docModel.Filepath, matches[0])
 		return errors.DatabaseError("update_document", "Failed to restore document", err)
 	}
 
@@ -497,7 +497,7 @@ func (s *DocumentRecycleService) GetRecycleStats(ctx context.Context) (*RecycleS
 func (s *DocumentRecycleService) moveToRecycleBin(from, to string) error {
 	// Create destination directory if it doesn't exist
 	dir := filepath.Dir(to)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 

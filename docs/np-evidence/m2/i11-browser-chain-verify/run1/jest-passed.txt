@@ -1,0 +1,124 @@
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/NarrowPilotAssistant.test.tsx 应用等待GET期间人工改摘要：恢复后进入对比确认，不得用旧闭包覆盖
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/NarrowPilotAssistant.test.tsx 开始新一轮立即清除旧来源选择并保留表单文字；原句原样提交
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/NarrowPilotAssistant.test.tsx 来源权限被收回后清除已显示的来源，不再应用候选
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx 切换后又返回同一草稿，旧 GET 仍失效且不能调用应用回调
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx 切换草稿后迟到的生成响应不能显示旧候选，新草稿不被旧 busy 锁住
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx 同挂载切换intakeId：旧 GET 成功或失败均不影响新草稿，拒绝=false
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/NarrowPilotAssistantScope.test.tsx 同挂载切换intakeId：旧 GET 成功或失败均不影响新草稿，拒绝=true
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/narrowPilotSaveStorage.test.tsx A→B→A 迟到终态只清存储不动当前视图
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/narrowPilotSaveStorage.test.tsx clearResolved legacy action不符 时保留旧键
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/narrowPilotSaveStorage.test.tsx clearResolved legacy intake不符 时保留旧键
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/narrowPilotSaveStorage.test.tsx clearResolved legacy 多字段 时保留旧键
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/narrowPilotSaveStorage.test.tsx legacy 三字段一致终态才清旧键
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/narrowPilotSaveStorage.test.tsx 同scope新代允许迟到回包刷新本scope视图
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/narrowPilotSaveStorage.test.tsx 同scope畸形记录跨代保留并保持 blocked
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/narrowPilotSaveStorage.test.tsx 同账号在途记录可发现、互不误清；不同账号只见自己的键空间
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/narrowPilotSaveStorage.test.tsx 恢复标识写入失败阻止保存请求
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/narrowPilotSaveStorage.test.tsx 挂载枚举异常 save 前置拦截时也标 blocked
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/narrowPilotSaveStorage.test.tsx 旧单槽与本页新键同 request 时去重，终态只清该请求
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/narrowPilotSaveStorage.test.tsx 混合字段旧键不能被忽略，也不自动删除
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/narrowPilotSaveStorage.test.tsx 畸形同scope记录 mount 后 storageBlocked 并阻止严格保存
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/narrowPilotSaveStorage.test.tsx 畸形旧单槽不阻断终态清理
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/narrowPilotSaveStorage.test.tsx 终态清理后重新枚举遇畸形：本请求已清且转 blocked 不误报未知
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/narrowPilotSaveStorage.test.tsx 跨账号迟到回包不把旧scope其他在途记录带进新页面
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/receiptIdentity.test.tsx abandon 恢复回执 abandoned 其他请求 保留恢复记录与人工输入
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/receiptIdentity.test.tsx abandon 恢复回执 abandoned 缺少对象 保留恢复记录与人工输入
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/receiptIdentity.test.tsx abandon 恢复回执 abandoned 身份完整仅释放原请求
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/receiptIdentity.test.tsx abandon 恢复回执 abandoned 错误动作 保留恢复记录与人工输入
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/receiptIdentity.test.tsx abandon 恢复回执 committed 其他对象的旧版本 保留恢复记录与人工输入
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/receiptIdentity.test.tsx abandon 恢复回执 committed 缺少对象 保留恢复记录与人工输入
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/receiptIdentity.test.tsx abandon 恢复回执 committed 身份完整仅释放原请求
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/receiptIdentity.test.tsx abandon 恢复回执 committed 非法版本 保留恢复记录与人工输入
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/receiptIdentity.test.tsx abandon 恢复回执 no_change 缺少版本 保留恢复记录与人工输入
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/receiptIdentity.test.tsx abandon 恢复回执 no_change 身份完整仅释放原请求
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/receiptIdentity.test.tsx query 恢复回执 abandoned 其他请求 保留恢复记录与人工输入
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/receiptIdentity.test.tsx query 恢复回执 abandoned 缺少对象 保留恢复记录与人工输入
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/receiptIdentity.test.tsx query 恢复回执 abandoned 身份完整仅释放原请求
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/receiptIdentity.test.tsx query 恢复回执 abandoned 错误动作 保留恢复记录与人工输入
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/receiptIdentity.test.tsx query 恢复回执 committed 其他对象的旧版本 保留恢复记录与人工输入
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/receiptIdentity.test.tsx query 恢复回执 committed 缺少对象 保留恢复记录与人工输入
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/receiptIdentity.test.tsx query 恢复回执 committed 身份完整仅释放原请求
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/receiptIdentity.test.tsx query 恢复回执 committed 非法版本 保留恢复记录与人工输入
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/receiptIdentity.test.tsx query 恢复回执 no_change 缺少版本 保留恢复记录与人工输入
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/receiptIdentity.test.tsx query 恢复回执 no_change 身份完整仅释放原请求
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx 不明保存结果保留原键、冻结体且不把正文存浏览器：400 INVALID_REQUEST
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx 不明保存结果保留原键、冻结体且不把正文存浏览器：400 undefined
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx 不明保存结果保留原键、冻结体且不把正文存浏览器：401 ACCESS_SESSION_REQUIRED
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx 不明保存结果保留原键、冻结体且不把正文存浏览器：401 undefined
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx 不明保存结果保留原键、冻结体且不把正文存浏览器：403 OBJECT_ACCESS_DENIED
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx 不明保存结果保留原键、冻结体且不把正文存浏览器：404 undefined
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx 不明保存结果保留原键、冻结体且不把正文存浏览器：408 SOURCE_SELECTION_STALE
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx 不明保存结果保留原键、冻结体且不把正文存浏览器：408 undefined
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx 不明保存结果保留原键、冻结体且不把正文存浏览器：409 IDEMPOTENCY_PAYLOAD_MISMATCH
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx 不明保存结果保留原键、冻结体且不把正文存浏览器：409 SAVE_GUARD_BUSY
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx 不明保存结果保留原键、冻结体且不把正文存浏览器：409 UNRECOGNIZED
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx 不明保存结果保留原键、冻结体且不把正文存浏览器：429 undefined
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx 不明保存结果保留原键、冻结体且不把正文存浏览器：499 undefined
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx 不明保存结果保留原键、冻结体且不把正文存浏览器：503 SAVE_RESULT_UNKNOWN
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx 不明保存结果保留原键、冻结体且不把正文存浏览器：undefined undefined
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx 带来源的未决请求只缓存恢复标识，正文和选择仅保留在内存
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx 成功回执 committed 清本请求记录且保留其他未决请求
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx 成功回执 no_change 清本请求记录且保留其他未决请求
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx 明确终态 409 INTAKE_DRAFT_REVISION_CONFLICT 才清恢复键
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx 明确终态 409 SAVE_REQUEST_ABANDONED 才清恢复键
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx 明确终态 409 SOURCE_SELECTION_STALE 才清恢复键
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx 重挂载无冻结正文时不能新键保存，unknown 查询不放弃，明确放弃后才解锁
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx 错回执 action 不符 保留记录且不能换键重发
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx 错回执 id 对象不符 保留记录且不能换键重发
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx 错回执 request_id 不符 保留记录且不能换键重发
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx 错回执 缺 request_id 保留记录且不能换键重发
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx 错回执 缺 revision 保留记录且不能换键重发
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/intake/__tests__/useNarrowPilotSave.test.tsx 错回执 非终态 保留记录且不能换键重发
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/layout/__tests__/Header.test.tsx AppHeader keyboard accessibility activates fullscreen from the keyboard
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/layout/__tests__/Header.test.tsx AppHeader keyboard accessibility exposes the three header controls as named buttons in tab order
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/layout/__tests__/Header.test.tsx AppHeader keyboard accessibility opens the notification menu from the keyboard and marks all notifications read
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/layout/__tests__/Header.test.tsx AppHeader keyboard accessibility opens the user menu with Space and exposes menu semantics
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/layout/__tests__/Header.test.tsx AppHeader keyboard accessibility provides a stable action for viewing all notifications
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/layout/__tests__/Header.test.tsx AppHeader keyboard accessibility provides stable reading and deleting actions for notifications
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/layout/__tests__/Header.test.tsx AppHeader keyboard accessibility returns focus to the user-menu trigger after an outside click closes it
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/layout/__tests__/Header.test.tsx AppHeader keyboard accessibility supports the same activation keys for notification and user menus
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/layout/__tests__/Header.test.tsx AppHeader logout revokes the token and clears local auth
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/components/layout/__tests__/Header.test.tsx AppHeader logout still clears local auth when server revocation fails
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/auth/__tests__/Login.accessibility.test.tsx LoginPage keyboard accessibility provides an operable password visibility button with a synchronized name and state
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/auth/__tests__/Login.failure.test.tsx LoginPage login failure normalizes a mixed-case email account for the API
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/auth/__tests__/Login.failure.test.tsx LoginPage login failure renders a visible non-sensitive alert and preserves account case on 401
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/auth/__tests__/Login.failure.test.tsx LoginPage login failure sends the account field for a mixed-case username
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/auth/__tests__/Login.navigation.test.tsx LoginPage navigation 登录成功后立即导航，无 500ms 延迟
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts CaseIntakeWorkbench conflict action does not treat a matched conflict case as the subject case
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts CaseIntakeWorkbench conflict action does not use a historical hit case as the subject context
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts CaseIntakeWorkbench conflict action invalidates a frozen result when a material conflict input changes
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts CaseIntakeWorkbench conflict action isolates local drafts by user and case context
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts CaseIntakeWorkbench conflict action keeps a clear MVP fallback message for unavailable conflict checks
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts CaseIntakeWorkbench conflict action keeps the same fingerprint when related parties are only reordered
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts CaseIntakeWorkbench conflict action labels a coverage-limited record with no evidence as no match
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts CaseIntakeWorkbench conflict action matches only explicit subject case identifiers
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts CaseIntakeWorkbench conflict action matches subject identifiers nested in the persisted search parameters
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts CaseIntakeWorkbench conflict action matches the command-center task title used by a case-context link
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts CaseIntakeWorkbench conflict action never persists an opponent identity number in a browser draft
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts CaseIntakeWorkbench conflict action provides a lawyer-readable first-run path and support guidance
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts CaseIntakeWorkbench conflict action returns no missing fields for a complete conflict-check input
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts CaseIntakeWorkbench conflict action returns stable required fields before any draft or conflict request
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/narrowPilotI13.test.ts admin 的无历史草稿走原生；已保护或未知历史阻止回退
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/narrowPilotI13.test.ts assistant 的无历史草稿走原生；已保护或未知历史阻止回退
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/narrowPilotI13.test.ts projectionWithDescription 仅替换描述且保留敏感字段在投影对象内
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/narrowPilotI13.test.ts 严格资格任一条件缺失时 其他草稿的旧版本 → blocked
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/narrowPilotI13.test.ts 严格资格任一条件缺失时 无服务端锚点 → blocked
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/narrowPilotI13.test.ts 严格资格任一条件缺失时 无版本 → blocked
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/narrowPilotI13.test.ts 严格资格任一条件缺失时 状态未知 → blocked
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/narrowPilotI13.test.ts 严格资格任一条件缺失时 离职律师 → blocked
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/narrowPilotI13.test.ts 严格资格任一条件缺失时 补正模式 → blocked
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/narrowPilotI13.test.ts 严格资格任一条件缺失时 非 draft 状态 → blocked
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/narrowPilotI13.test.ts 严格资格任一条件缺失时 非律师角色 → blocked
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/narrowPilotI13.test.ts 严格资格任一条件缺失时 非本人草稿 → blocked
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/narrowPilotI13.test.ts 在职律师 + 本人 draft + 仅摘要变化 + 有来源历史 → strict
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/narrowPilotI13.test.ts 新建继续使用原生创建
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/narrowPilotI13.test.ts 无来源历史的本人草稿首次整理可走 strict
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/narrowPilotI13.test.ts 有来源历史时 title 混改 不能走 strict
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/narrowPilotI13.test.ts 有来源历史时 对方身份号混改（仅内存投影参与） 不能走 strict
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/narrowPilotI13.test.ts 有来源历史时 新增相关当事人 不能走 strict
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/narrowPilotI13.test.ts 有来源历史时 标签变化 不能走 strict
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/narrowPilotI13.test.ts 来源历史未知时阻止保存，且无历史证据不能当作无历史
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/pages/batch01/__tests__/narrowPilotI13.test.ts 账号信息缺失以及没有真实所有者的草稿均不走严格保存
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/utils/__tests__/storage.test.ts authentication storage persistence ignores malformed user info without deleting local authentication data
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/utils/__tests__/storage.test.ts authentication storage persistence keeps an unremembered login in session storage only
+/Users/mac/Desktop/FT/law-oa-go/output/np-main-i11/frontend/src/utils/__tests__/storage.test.ts authentication storage persistence persists a remembered login and clears both stores on logout

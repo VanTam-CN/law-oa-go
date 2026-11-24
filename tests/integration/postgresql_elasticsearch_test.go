@@ -9,6 +9,7 @@ import (
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+
 	esclient "law-oa-go/internal/elasticsearch"
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/services"
@@ -27,7 +28,11 @@ func TestPostgreSQL_ElasticsearchIntegration(t *testing.T) {
 
 	// 创建PostgreSQL测试数据库连接
 	db := setupPostgreSQLTestDB(t)
-	defer teardownPostgreSQLTestDB(db)
+	defer func() {
+		if err := teardownPostgreSQLTestDB(db); err != nil {
+			t.Errorf("清理PostgreSQL测试数据库失败: %v", err)
+		}
+	}()
 
 	// 尝试创建Elasticsearch客户端
 	esClientWrapper, err := esclient.NewClient("localhost", "9200", "", "")
@@ -83,7 +88,9 @@ func TestPostgreSQL_ElasticsearchIntegration(t *testing.T) {
 
 	// 删除已存在的索引（如果存在）
 	if exists, _ := esClientWrapper.IndexExists(ctx, indexName); exists {
-		esClientWrapper.DeleteIndex(ctx, indexName)
+		if err := esClientWrapper.DeleteIndex(ctx, indexName); err != nil {
+			t.Fatalf("Failed to delete existing Elasticsearch index: %v", err)
+		}
 	}
 
 	// 创建索引
@@ -194,7 +201,9 @@ func setupPostgreSQLTestDB(t *testing.T) *gorm.DB {
 	err = db.AutoMigrate(&models.User{}, &models.Client{}, &models.Case{})
 	if err != nil {
 		// 尝试先删除表再重新创建
-		db.Migrator().DropTable(&models.Case{}, &models.Client{}, &models.User{})
+		if dropErr := db.Migrator().DropTable(&models.Case{}, &models.Client{}, &models.User{}); dropErr != nil {
+			t.Fatalf("Failed to drop existing tables before re-migrating: %v", dropErr)
+		}
 		err = db.AutoMigrate(&models.User{}, &models.Client{}, &models.Case{})
 		if err != nil {
 			t.Fatalf("Failed to migrate models: %v", err)

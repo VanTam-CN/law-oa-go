@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -95,7 +96,7 @@ func BusinessMetricsMiddleware() gin.HandlerFunc {
 		// 根据路由路径记录业务指标
 		switch c.FullPath() {
 		case "/api/v1/cases":
-			if c.Request.Method == "POST" {
+			if c.Request.Method == http.MethodPost {
 				caseType := c.PostForm("case_type")
 				priority := c.PostForm("priority")
 				caseCreationDuration.WithLabelValues(caseType, priority).Observe(duration.Seconds())
@@ -111,7 +112,7 @@ func BusinessMetricsMiddleware() gin.HandlerFunc {
 			role := c.PostForm("role")
 			userRegistrationsTotal.WithLabelValues(role).Inc()
 		case "/api/v1/clients":
-			if c.Request.Method == "POST" {
+			if c.Request.Method == http.MethodPost {
 				clientType := c.PostForm("client_type")
 				clientCreationDuration.WithLabelValues(clientType).Observe(duration.Seconds())
 			}

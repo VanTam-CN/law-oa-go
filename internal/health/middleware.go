@@ -131,15 +131,16 @@ func (hm *HealthMiddleware) HealthCheckMetricsHandler(c *gin.Context) {
 	fastestTime := int64(999999999999)
 	slowestName := ""
 	fastestName := ""
+	var healthyChecks, degradedChecks, unhealthyChecks int
 
 	for name, result := range results {
 		switch result.Status {
 		case StatusHealthy:
-			metrics["healthy_checks"] = metrics["healthy_checks"].(int) + 1
+			healthyChecks++
 		case StatusDegraded:
-			metrics["degraded_checks"] = metrics["degraded_checks"].(int) + 1
+			degradedChecks++
 		case StatusUnhealthy:
-			metrics["unhealthy_checks"] = metrics["unhealthy_checks"].(int) + 1
+			unhealthyChecks++
 		}
 
 		totalTime += result.Duration
@@ -160,6 +161,10 @@ func (hm *HealthMiddleware) HealthCheckMetricsHandler(c *gin.Context) {
 		metrics["slowest_check"] = fmt.Sprintf("%s (%dms)", slowestName, slowestTime)
 		metrics["fastest_check"] = fmt.Sprintf("%s (%dms)", fastestName, fastestTime)
 	}
+
+	metrics["healthy_checks"] = healthyChecks
+	metrics["degraded_checks"] = degradedChecks
+	metrics["unhealthy_checks"] = unhealthyChecks
 
 	c.JSON(http.StatusOK, metrics)
 }

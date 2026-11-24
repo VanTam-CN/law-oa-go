@@ -48,7 +48,8 @@ func main() {
 		if dbErr != nil {
 			log.Fatalf("获取数据库连接失败: %v", dbErr)
 		}
-		defer sqlDB.Close()
+		// sqlDB.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+		defer func() { _ = sqlDB.Close() }()
 		if bootstrapErr = database.BootstrapProductionSchema(db); bootstrapErr != nil {
 			log.Fatalf("生产 schema bootstrap 失败: %v", bootstrapErr)
 		}
@@ -61,7 +62,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("创建迁移器失败: %v", err)
 	}
-	defer migrator.Close()
+	// migrator.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = migrator.Close() }()
 
 	// 验证数据库
 	if err := migrator.ValidateDatabase(); err != nil {
@@ -104,7 +106,10 @@ func main() {
 	case "drop":
 		fmt.Print("警告：此操作将删除所有数据库表！确认请输入 'yes': ")
 		var confirm string
-		fmt.Scanln(&confirm)
+		if _, err := fmt.Scanln(&confirm); err != nil {
+			fmt.Println("读取输入失败，操作已取消")
+			return
+		}
 		if confirm != "yes" {
 			fmt.Println("操作已取消")
 			return
@@ -180,7 +185,7 @@ func createMigrationFiles(migrationsPath, name string) error {
 	upFile := fmt.Sprintf("%s/%s_%s.up.sql", migrationsPath, versionStr, name)
 	upContent := fmt.Sprintf("-- %s up migration\n\n-- Add your SQL statements here\n", name)
 
-	if err := os.WriteFile(upFile, []byte(upContent), 0644); err != nil {
+	if err := os.WriteFile(upFile, []byte(upContent), 0o644); err != nil {
 		return fmt.Errorf("创建up文件失败: %w", err)
 	}
 
@@ -188,7 +193,7 @@ func createMigrationFiles(migrationsPath, name string) error {
 	downFile := fmt.Sprintf("%s/%s_%s.down.sql", migrationsPath, versionStr, name)
 	downContent := fmt.Sprintf("-- %s down migration\n\n-- Add your rollback SQL statements here\n", name)
 
-	if err := os.WriteFile(downFile, []byte(downContent), 0644); err != nil {
+	if err := os.WriteFile(downFile, []byte(downContent), 0o644); err != nil {
 		return fmt.Errorf("创建down文件失败: %w", err)
 	}
 

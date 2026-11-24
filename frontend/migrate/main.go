@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -43,7 +44,7 @@ func main() {
 	// 确保迁移目录存在
 	if _, err := os.Stat(*migrationsDir); os.IsNotExist(err) {
 		log.Printf("创建迁移目录: %s", *migrationsDir)
-		if err := os.MkdirAll(*migrationsDir, 0750); err != nil {
+		if err := os.MkdirAll(*migrationsDir, 0o750); err != nil {
 			log.Fatalf("创建迁移目录失败: %v", err)
 		}
 	}
@@ -97,7 +98,8 @@ func migrateUp(dsn, migrationsDir string) error {
 	if err != nil {
 		return fmt.Errorf("连接数据库失败: %w", err)
 	}
-	defer db.Close()
+	// db.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = db.Close() }()
 
 	if err := db.Ping(); err != nil {
 		return fmt.Errorf("数据库连接测试失败: %w", err)
@@ -125,11 +127,12 @@ func migrateUp(dsn, migrationsDir string) error {
 	if err != nil {
 		return fmt.Errorf("创建迁移实例失败: %w", err)
 	}
-	defer m.Close()
+	// m.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _, _ = m.Close() }()
 
 	// 执行迁移
 	if err := m.Up(); err != nil {
-		if err == migrate.ErrNoChange {
+		if errors.Is(err, migrate.ErrNoChange) {
 			log.Println("数据库已经是最新版本")
 			return nil
 		}
@@ -148,11 +151,12 @@ func migrateDown(dsn, migrationsDir string) error {
 	if err != nil {
 		return err
 	}
-	defer m.Close()
+	// m.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _, _ = m.Close() }()
 
 	// 执行向下迁移
 	if err := m.Down(); err != nil {
-		if err == migrate.ErrNoChange {
+		if errors.Is(err, migrate.ErrNoChange) {
 			log.Println("数据库已经是初始版本")
 			return nil
 		}
@@ -171,7 +175,8 @@ func migrateForce(dsn, migrationsDir string, version int) error {
 	if err != nil {
 		return err
 	}
-	defer m.Close()
+	// m.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _, _ = m.Close() }()
 
 	// 执行强制迁移
 	if err := m.Force(version); err != nil {
@@ -188,7 +193,8 @@ func showVersion(dsn, migrationsDir string) error {
 	if err != nil {
 		return err
 	}
-	defer m.Close()
+	// m.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _, _ = m.Close() }()
 
 	// 获取当前版本
 	version, dirty, err := m.Version()
@@ -206,13 +212,13 @@ func createMigration(migrationsDir, name string) error {
 
 	// 创建向上迁移文件
 	upFile := filepath.Join(migrationsDir, fmt.Sprintf("%s_%s.up.sql", timestamp, name))
-	if err := os.WriteFile(upFile, []byte("-- Up migration\n"), 0644); err != nil {
+	if err := os.WriteFile(upFile, []byte("-- Up migration\n"), 0o644); err != nil {
 		return fmt.Errorf("创建向上迁移文件失败: %w", err)
 	}
 
 	// 创建向下迁移文件
 	downFile := filepath.Join(migrationsDir, fmt.Sprintf("%s_%s.down.sql", timestamp, name))
-	if err := os.WriteFile(downFile, []byte("-- Down migration\n"), 0644); err != nil {
+	if err := os.WriteFile(downFile, []byte("-- Down migration\n"), 0o644); err != nil {
 		return fmt.Errorf("创建向下迁移文件失败: %w", err)
 	}
 
@@ -248,7 +254,8 @@ func isDirEmpty(dir string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	defer f.Close()
+	// f.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = f.Close() }()
 
 	_, err = f.Readdirnames(1)
 	if err == nil {
@@ -265,7 +272,8 @@ func runInitScript(dsn string) error {
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	// db.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = db.Close() }()
 
 	// 读取初始化脚本
 	scriptPath := "./scripts/init.sql"

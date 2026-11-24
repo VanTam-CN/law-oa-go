@@ -119,13 +119,13 @@ func normalizeConflictSubjects(request *models.ConflictCheckRequest) []models.Co
 			}
 		}
 		cleanAliases := make([]string, 0, len(aliases))
-		seenAliases := map[string]struct{}{}
+		aliasLabels := map[string]string{}
 		for _, alias := range aliases {
 			if cleaned := normalizeLegalSubjectName(alias, entityType); cleaned != "" && cleaned != normalized {
-				if _, exists := seenAliases[cleaned]; exists {
+				if _, exists := aliasLabels[cleaned]; exists {
 					continue
 				}
-				seenAliases[cleaned] = struct{}{}
+				aliasLabels[cleaned] = strings.TrimSpace(alias)
 				cleanAliases = append(cleanAliases, cleaned)
 				identityKeys = append(identityKeys, "name:"+cleaned)
 			}
@@ -156,6 +156,7 @@ func normalizeConflictSubjects(request *models.ConflictCheckRequest) []models.Co
 			for _, alias := range cleanAliases {
 				if alias != existing.NormalizedName && !containsString(existing.Aliases, alias) {
 					existing.Aliases = append(existing.Aliases, alias)
+					existing.AliasLabels[alias] = aliasLabels[alias]
 				}
 			}
 			for _, key := range identityKeys {
@@ -167,7 +168,7 @@ func normalizeConflictSubjects(request *models.ConflictCheckRequest) []models.Co
 		index := len(subjects)
 		subjects = append(subjects, models.ConflictNormalizedSubject{
 			OriginalName: strings.TrimSpace(name), NormalizedName: normalized, Role: role,
-			EntityType: entityType, Identifiers: cleanIdentifiers, Aliases: cleanAliases,
+			EntityType: entityType, Identifiers: cleanIdentifiers, Aliases: cleanAliases, AliasLabels: aliasLabels,
 		})
 		subjectAuthority = append(subjectAuthority, authority)
 		for _, key := range identityKeys {
@@ -360,11 +361,21 @@ func conflictEvidenceHash(response *models.ConflictCheckResponse) string {
 		}
 	}
 	sort.Slice(items, func(i, j int) bool {
-		left, _ := json.Marshal(items[i])
-		right, _ := json.Marshal(items[j])
+		left, err := json.Marshal(items[i])
+		if err != nil {
+			return false
+		}
+		right, err := json.Marshal(items[j])
+		if err != nil {
+			return false
+		}
 		return string(left) < string(right)
 	})
-	raw, _ := json.Marshal(items)
+	raw, err := json.Marshal(items)
+	if err != nil {
+		// items 仅含 string/bool 字段，json.Marshal 实际不会失败；失败时返回空哈希以保持确定性
+		return ""
+	}
 	sum := sha256.Sum256(raw)
 	return hex.EncodeToString(sum[:])
 }
@@ -397,7 +408,10 @@ func (s *conflictDetectionService) ReviewConflict(ctx context.Context, checkID, 
 			return err
 		}
 		var response models.ConflictCheckResponse
-		raw, _ := json.Marshal(record.CheckResult)
+		raw, err := json.Marshal(record.CheckResult)
+		if err != nil {
+			return fmt.Errorf("冲突检测证据序列化失败: %w", err)
+		}
 		if err := json.Unmarshal(raw, &response); err != nil {
 			return newConflictReviewerError("REVIEW_EVIDENCE_INVALID", "冲突检测证据无法解析，已阻止形成复核结论")
 		}

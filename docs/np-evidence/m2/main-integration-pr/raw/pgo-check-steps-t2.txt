@@ -1,0 +1,1 @@
+{"name":"检查PGO支持","steps":["Set up job: success","检出代码: success","设置Go环境: success","检查Go版本和PGO支持: failure","Post 检出代码: success","Complete job: success"]}

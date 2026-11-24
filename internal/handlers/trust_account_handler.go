@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+
 	"law-oa-go/internal/common"
 	"law-oa-go/internal/services"
 )
@@ -269,11 +270,16 @@ func (h *TrustAccountHandler) CreateTransaction(c *gin.Context) {
 		common.APIUnauthorized(c, "未认证", "用户信息无效")
 		return
 	}
+	userIDValue, ok := userID.(uint)
+	if !ok {
+		common.APIUnauthorized(c, "未认证", "用户信息类型无效")
+		return
+	}
 
 	transaction, err := h.transactionService.CreateTransaction(
 		c.Request.Context(),
 		&req,
-		userID.(uint),
+		userIDValue,
 	)
 	if err != nil {
 		common.APIInternalServerError(c, "创建交易失败", err.Error())
@@ -402,11 +408,16 @@ func (h *TrustAccountHandler) ApproveTransaction(c *gin.Context) {
 		common.APIUnauthorized(c, "未认证", "用户信息无效")
 		return
 	}
+	userIDValue, ok := userID.(uint)
+	if !ok {
+		common.APIUnauthorized(c, "未认证", "用户信息类型无效")
+		return
+	}
 
 	transaction, err := h.transactionService.ApproveTransaction(
 		c.Request.Context(),
 		uint(id),
-		userID.(uint),
+		userIDValue,
 	)
 	if err != nil {
 		common.APIInternalServerError(c, "审批交易失败", err.Error())
@@ -550,8 +561,8 @@ func (h *TrustAccountHandler) GetAccountStats(c *gin.Context) {
 
 	common.APISuccess(c, gin.H{
 		"total_accounts":  totalAccounts,
-		"total_balance":  totalBalance,
-		"total_frozen":   totalFrozen,
+		"total_balance":   totalBalance,
+		"total_frozen":    totalFrozen,
 		"active_accounts": activeAccounts,
 	})
 }

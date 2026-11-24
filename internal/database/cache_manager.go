@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/config"
 )
 
@@ -30,10 +31,10 @@ type CacheEntry struct {
 
 // CacheStrategy 缓存策略
 type CacheStrategy struct {
-	TTL        time.Duration
-	KeyPrefix  string
-	Enabled    bool
-	MaxSize    int64
+	TTL       time.Duration
+	KeyPrefix string
+	Enabled   bool
+	MaxSize   int64
 }
 
 // NewCacheManager 创建新的缓存管理器
@@ -137,7 +138,8 @@ func (cm *CacheManager) CachedQuery(query func(*gorm.DB) *gorm.DB, cacheKey stri
 	// 对于SELECT查询，可以缓存结果
 	if result.Statement.SQL.String() != "" {
 		// 注意：这里简化处理，实际应用中需要更复杂的缓存逻辑
-		cm.Set(cacheKey, result, ttl)
+		// 缓存写入仅为加速手段，失败不阻断查询结果返回
+		_ = cm.Set(cacheKey, result, ttl)
 	}
 
 	return result
@@ -161,7 +163,9 @@ func (cm *CacheManager) WarmupCache(queries []WarmupQuery) error {
 			if result.Error == nil {
 				// 缓存结果
 				cacheKey := cm.GetCacheKey(query.KeyPrefix, query.Params...)
-				cm.Set(cacheKey, result, query.TTL)
+				if err := cm.Set(cacheKey, result, query.TTL); err != nil {
+					return fmt.Errorf("缓存预热写入失败: %w", err)
+				}
 			}
 		}
 	}

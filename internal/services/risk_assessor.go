@@ -380,9 +380,8 @@ func (r *riskAssessor) calculateSingleTimeDecay(createdAt time.Time) float64 {
 		return 0.6
 	} else if hoursPassed < 4320 { // 6个月内
 		return 0.4
-	} else {
-		return 0.2 // 超过6个月
 	}
+	return 0.2 // 超过6个月
 }
 
 // analyzeConflictRiskFactors 分析冲突风险因素

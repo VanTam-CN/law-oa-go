@@ -73,8 +73,14 @@ func (s *ApprovalTemplateService) InitializeDefaultTemplates() error {
 			ElseStep: 1,       // 自动跳过
 		},
 	}
-	sealStepsJSON, _ := json.Marshal(sealApprovalSteps)
-	sealConditionsJSON, _ := json.Marshal(sealConditions)
+	sealStepsJSON, err := json.Marshal(sealApprovalSteps)
+	if err != nil {
+		return fmt.Errorf("序列化用印审批步骤失败: %w", err)
+	}
+	sealConditionsJSON, err := json.Marshal(sealConditions)
+	if err != nil {
+		return fmt.Errorf("序列化用印审批条件失败: %w", err)
+	}
 
 	sealTemplate := &models.ApprovalTemplate{
 		Name:        models.TemplateSealApproval,
@@ -103,7 +109,10 @@ func (s *ApprovalTemplateService) InitializeDefaultTemplates() error {
 			SignType:     models.SignTypeSingle,
 		},
 	}
-	caseStepsJSON, _ := json.Marshal(caseFilingSteps)
+	caseStepsJSON, err := json.Marshal(caseFilingSteps)
+	if err != nil {
+		return fmt.Errorf("序列化立案审批步骤失败: %w", err)
+	}
 
 	caseTemplate := &models.ApprovalTemplate{
 		Name:        models.TemplateCaseFiling,
@@ -308,10 +317,9 @@ func (s *ApprovalTemplateService) processNextStep(node *models.ApprovalNode) err
 		if len(nextStepNodes) > 0 {
 			// 有下一步，更新审批的当前审批人
 			return s.updateCurrentApprover(node.ApprovalID, nextStepNodes[0])
-		} else {
-			// 没有下一步，审批完成
-			return s.updateApprovalStatus(node.ApprovalID, models.ApprovalStatusApproved)
 		}
+		// 没有下一步，审批完成
+		return s.updateApprovalStatus(node.ApprovalID, models.ApprovalStatusApproved)
 	}
 
 	return nil

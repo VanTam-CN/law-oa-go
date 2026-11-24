@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+
 	"law-oa-go/internal/common"
 	"law-oa-go/internal/services"
 )
@@ -639,7 +640,13 @@ func (h *RBACHandler) GetCurrentUserRoles(c *gin.Context) {
 		return
 	}
 
-	roles, err := h.rbacService.GetUserRoles(c.Request.Context(), userID.(uint))
+	uid, ok := userID.(uint)
+	if !ok {
+		common.NewAPIError(c, http.StatusUnauthorized, "UNAUTHORIZED", "Invalid user identity in context")
+		return
+	}
+
+	roles, err := h.rbacService.GetUserRoles(c.Request.Context(), uid)
 	if err != nil {
 		common.APIInternalServerError(c, "Failed to get current user roles")
 		return
@@ -666,7 +673,13 @@ func (h *RBACHandler) GetCurrentUserPermissions(c *gin.Context) {
 		return
 	}
 
-	permissions, err := h.rbacService.GetUserPermissions(c.Request.Context(), userID.(uint))
+	uid, ok := userID.(uint)
+	if !ok {
+		common.NewAPIError(c, http.StatusUnauthorized, "UNAUTHORIZED", "Invalid user identity in context")
+		return
+	}
+
+	permissions, err := h.rbacService.GetUserPermissions(c.Request.Context(), uid)
 	if err != nil {
 		common.APIInternalServerError(c, "Failed to get current user permissions")
 		return

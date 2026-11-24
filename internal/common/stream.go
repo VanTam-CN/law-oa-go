@@ -2,6 +2,7 @@ package common
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -50,14 +51,18 @@ func (sr *StreamResponse) Render(w http.ResponseWriter) error {
 	w.Header().Set("X-Accel-Buffering", "no") // 禁用Nginx缓冲
 
 	// 写入响应头
-	w.Write([]byte(`{"data": [`))
+	if _, err := w.Write([]byte(`{"data": [`)); err != nil {
+		return fmt.Errorf("写入流式响应起始符失败: %w", err)
+	}
 
 	first := true
 	encoder := json.NewEncoder(w)
 
 	for data := range sr.Data {
 		if !first {
-			w.Write([]byte(","))
+			if _, err := w.Write([]byte(",")); err != nil {
+				return fmt.Errorf("写入流式响应分隔符失败: %w", err)
+			}
 		}
 		first = false
 
@@ -71,7 +76,9 @@ func (sr *StreamResponse) Render(w http.ResponseWriter) error {
 		}
 	}
 
-	w.Write([]byte(`]}`))
+	if _, err := w.Write([]byte(`]}`)); err != nil {
+		return fmt.Errorf("写入流式响应结束符失败: %w", err)
+	}
 
 	if f, ok := w.(http.Flusher); ok {
 		f.Flush()
@@ -155,15 +162,21 @@ func (sr *StreamPaginatedResponse) Render(w http.ResponseWriter) error {
 		return err
 	}
 
-	w.Write(headerData[:len(headerData)-2]) // 去掉最后的"]}
-	w.Write([]byte(`,"data":[`))
+	if _, err := w.Write(headerData[:len(headerData)-2]); err != nil { // 去掉最后的"]}
+		return fmt.Errorf("写入分页流式响应头失败: %w", err)
+	}
+	if _, err := w.Write([]byte(`,"data":[`)); err != nil {
+		return fmt.Errorf("写入分页流式响应数据起始符失败: %w", err)
+	}
 
 	first := true
 	encoder := json.NewEncoder(w)
 
 	for data := range sr.Data {
 		if !first {
-			w.Write([]byte(","))
+			if _, err := w.Write([]byte(",")); err != nil {
+				return fmt.Errorf("写入分页流式响应分隔符失败: %w", err)
+			}
 		}
 		first = false
 
@@ -176,7 +189,9 @@ func (sr *StreamPaginatedResponse) Render(w http.ResponseWriter) error {
 		}
 	}
 
-	w.Write([]byte(`]}}`))
+	if _, err := w.Write([]byte(`]}}`)); err != nil {
+		return fmt.Errorf("写入分页流式响应结束符失败: %w", err)
+	}
 
 	if f, ok := w.(http.Flusher); ok {
 		f.Flush()

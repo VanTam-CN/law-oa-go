@@ -57,7 +57,8 @@ func NewClient(host, port, username, password string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer res.Body.Close()
+	// res.Body.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
 		return nil, err
@@ -79,7 +80,8 @@ func (c *Client) IndexDocument(ctx context.Context, index string, id string, bod
 	if err != nil {
 		return err
 	}
-	defer res.Body.Close()
+	// res.Body.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
 		return fmt.Errorf("index error: %s", res.Status())
@@ -98,7 +100,8 @@ func (c *Client) Search(ctx context.Context, index string, query map[string]inte
 	if err != nil {
 		return nil, err
 	}
-	defer res.Body.Close()
+	// res.Body.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
 		return nil, fmt.Errorf("search error: %s", res.Status())
@@ -123,7 +126,8 @@ func (c *Client) DeleteDocument(ctx context.Context, index string, id string) er
 	if err != nil {
 		return err
 	}
-	defer res.Body.Close()
+	// res.Body.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
 		return fmt.Errorf("delete error: %s", res.Status())
@@ -146,7 +150,8 @@ func (c *Client) CreateIndex(ctx context.Context, index string, mapping map[stri
 	if err != nil {
 		return err
 	}
-	defer res.Body.Close()
+	// res.Body.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
 		return fmt.Errorf("create index error: %s", res.Status())
@@ -164,7 +169,8 @@ func (c *Client) DeleteIndex(ctx context.Context, index string) error {
 	if err != nil {
 		return err
 	}
-	defer res.Body.Close()
+	// res.Body.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
 		return fmt.Errorf("delete index error: %s", res.Status())
@@ -182,12 +188,13 @@ func (c *Client) IndexExists(ctx context.Context, index string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	defer res.Body.Close()
+	// res.Body.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = res.Body.Close() }()
 
-	if res.StatusCode == 200 {
+	if res.StatusCode == http.StatusOK {
 		return true, nil
 	}
-	if res.StatusCode == 404 {
+	if res.StatusCode == http.StatusNotFound {
 		return false, nil
 	}
 
@@ -203,7 +210,8 @@ func (c *Client) GetIndexMapping(ctx context.Context, index string) (map[string]
 	if err != nil {
 		return nil, err
 	}
-	defer res.Body.Close()
+	// res.Body.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
 		return nil, fmt.Errorf("get mapping error: %s", res.Status())

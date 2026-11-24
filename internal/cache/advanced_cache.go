@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -115,7 +116,7 @@ func (c *AdvancedCacheService) GetWithCacheThroughput(ctx context.Context, key s
 
 	// 2. 尝试从缓存获取
 	val, err := c.client.Get(ctx, fullKey).Result()
-	if err == redis.Nil {
+	if errors.Is(err, redis.Nil) {
 		// 缓存未命中，添加到布隆过滤器
 		c.bloomFilter.Add(cacheKeyData)
 		return &CacheResult{
@@ -280,8 +281,13 @@ func (c *AdvancedCacheService) BatchGet(ctx context.Context, keys []string) (map
 	result := make(map[string]interface{})
 	for i, value := range values {
 		if value != nil {
+			// Redis 返回值理论上为字符串，非字符串值跳过（外部数据解析，优雅降级）。
+			strValue, ok := value.(string)
+			if !ok {
+				continue
+			}
 			var data interface{}
-			if err := json.Unmarshal([]byte(value.(string)), &data); err == nil {
+			if err := json.Unmarshal([]byte(strValue), &data); err == nil {
 				originalKey := keyMap[fullKeys[i]]
 				result[originalKey] = data
 			}
@@ -370,7 +376,12 @@ func (c *AdvancedCacheService) buildKey(key string) string {
 
 // GetMutexFromPool 从对象池获取互斥锁
 func (c *AdvancedCacheService) GetMutexFromPool() *sync.Mutex {
-	return c.mutexPool.Get().(*sync.Mutex)
+	mutex, ok := c.mutexPool.Get().(*sync.Mutex)
+	if !ok {
+		// 对象池只允许放入 *sync.Mutex，该内部不变量必须成立，否则池已损坏。
+		panic("advanced_cache: mutexPool 中存在非 *sync.Mutex 值，对象池不变量被破坏")
+	}
+	return mutex
 }
 
 // PutMutexToPool 将互斥锁放回对象池

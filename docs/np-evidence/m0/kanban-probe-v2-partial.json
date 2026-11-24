@@ -1,0 +1,156 @@
+{
+  "schema": "law-oa.m0.kanban-probe.v2",
+  "board": "law-oa-np-main",
+  "result": "PARTIAL_V2",
+  "first_red_ref": "kanban-probe-first-red.json",
+  "steps": [
+    {
+      "argv": [
+        "/Users/mac/.local/bin/hermes",
+        "kanban",
+        "--board",
+        "law-oa-np-main",
+        "create",
+        "M0-00 看板接入闭环 v2",
+        "--body",
+        "虚构探针v2，保留v1失败事件；仅一次block/unblock路径，验证认领、回报、审核与回读；无产品操作。",
+        "--initial-status",
+        "blocked",
+        "--workspace",
+        "dir:/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0",
+        "--created-by",
+        "codex-coordinator",
+        "--idempotency-key",
+        "law-oa-m0-kanban-probe-2481a47-v2",
+        "--completion-contract",
+        "local-only",
+        "--json"
+      ],
+      "started_at": "2026-11-20T03:25:01.123037+00:00",
+      "ended_at": "2026-11-20T03:25:01.911866+00:00",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"t_b1b905bb\",\n  \"title\": \"M0-00 看板接入闭环 v2\",\n  \"body\": \"虚构探针v2，保留v1失败事件；仅一次block/unblock路径，验证认领、回报、审核与回读；无产品操作。\",\n  \"assignee\": null,\n  \"status\": \"blocked\",\n  \"priority\": 0,\n  \"tenant\": null,\n  \"workspace_kind\": \"dir\",\n  \"workspace_path\": \"/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0\",\n  \"branch_name\": null,\n  \"project_id\": null,\n  \"created_by\": \"codex-coordinator\",\n  \"created_at\": 1795145101,\n  \"started_at\": null,\n  \"completed_at\": null,\n  \"result\": null,\n  \"skills\": [],\n  \"max_runtime_seconds\": null,\n  \"max_retries\": null,\n  \"model_override\": null,\n  \"provider_override\": null,\n  \"session_id\": null,\n  \"workflow_template_id\": null,\n  \"current_step_key\": null,\n  \"completion_contract\": \"local-only\",\n  \"last_failure_error\": null\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/Users/mac/.local/bin/hermes",
+        "kanban",
+        "--board",
+        "law-oa-np-main",
+        "create",
+        "M0-00 看板接入闭环 v2",
+        "--idempotency-key",
+        "law-oa-m0-kanban-probe-2481a47-v2",
+        "--json"
+      ],
+      "started_at": "2026-11-20T03:25:01.912274+00:00",
+      "ended_at": "2026-11-20T03:25:02.747879+00:00",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"t_b1b905bb\",\n  \"title\": \"M0-00 看板接入闭环 v2\",\n  \"body\": \"虚构探针v2，保留v1失败事件；仅一次block/unblock路径，验证认领、回报、审核与回读；无产品操作。\",\n  \"assignee\": null,\n  \"status\": \"blocked\",\n  \"priority\": 0,\n  \"tenant\": null,\n  \"workspace_kind\": \"dir\",\n  \"workspace_path\": \"/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0\",\n  \"branch_name\": null,\n  \"project_id\": null,\n  \"created_by\": \"codex-coordinator\",\n  \"created_at\": 1795145101,\n  \"started_at\": null,\n  \"completed_at\": null,\n  \"result\": null,\n  \"skills\": [],\n  \"max_runtime_seconds\": null,\n  \"max_retries\": null,\n  \"model_override\": null,\n  \"provider_override\": null,\n  \"session_id\": null,\n  \"workflow_template_id\": null,\n  \"current_step_key\": null,\n  \"completion_contract\": \"local-only\",\n  \"last_failure_error\": null\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/Users/mac/.local/bin/hermes",
+        "kanban",
+        "--board",
+        "law-oa-np-main",
+        "comment",
+        "t_b1b905bb",
+        "synthetic-only: coordinator read/write roundtrip",
+        "--author",
+        "codex-coordinator"
+      ],
+      "started_at": "2026-11-20T03:25:02.748348+00:00",
+      "ended_at": "2026-11-20T03:25:03.651500+00:00",
+      "exit_code": 0,
+      "stdout": "Comment added to t_b1b905bb\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/Users/mac/.local/bin/hermes",
+        "kanban",
+        "--board",
+        "law-oa-np-main",
+        "unblock",
+        "--reason",
+        "主调度恢复虚构探针",
+        "t_b1b905bb"
+      ],
+      "started_at": "2026-11-20T03:25:03.651978+00:00",
+      "ended_at": "2026-11-20T03:25:04.447369+00:00",
+      "exit_code": 0,
+      "stdout": "Unblocked t_b1b905bb: 主调度恢复虚构探针\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/Users/mac/.local/bin/hermes",
+        "kanban",
+        "--board",
+        "law-oa-np-main",
+        "claim",
+        "t_b1b905bb"
+      ],
+      "started_at": "2026-11-20T03:25:04.447851+00:00",
+      "ended_at": "2026-11-20T03:25:05.421685+00:00",
+      "exit_code": 0,
+      "stdout": "Claimed t_b1b905bb\nWorkspace: /Users/mac/Desktop/FT/law-oa-go/output/np-main-m0\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/Users/mac/.local/bin/hermes",
+        "kanban",
+        "--board",
+        "law-oa-np-main",
+        "show",
+        "t_b1b905bb",
+        "--json"
+      ],
+      "started_at": "2026-11-20T03:25:05.422147+00:00",
+      "ended_at": "2026-11-20T03:25:06.190070+00:00",
+      "exit_code": 0,
+      "stdout": "{\n  \"task\": {\n    \"id\": \"t_b1b905bb\",\n    \"title\": \"M0-00 看板接入闭环 v2\",\n    \"body\": \"虚构探针v2，保留v1失败事件；仅一次block/unblock路径，验证认领、回报、审核与回读；无产品操作。\",\n    \"assignee\": null,\n    \"status\": \"running\",\n    \"priority\": 0,\n    \"tenant\": null,\n    \"workspace_kind\": \"dir\",\n    \"workspace_path\": \"/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0\",\n    \"branch_name\": null,\n    \"project_id\": null,\n    \"created_by\": \"codex-coordinator\",\n    \"created_at\": 1795145101,\n    \"started_at\": 1795145105,\n    \"completed_at\": null,\n    \"result\": null,\n    \"skills\": [],\n    \"max_runtime_seconds\": null,\n    \"max_retries\": null,\n    \"model_override\": null,\n    \"provider_override\": null,\n    \"session_id\": null,\n    \"workflow_template_id\": null,\n    \"current_step_key\": null,\n    \"completion_contract\": \"local-only\",\n    \"last_failure_error\": null\n  },\n  \"latest_summary\": null,\n  \"parents\": [],\n  \"children\": [],\n  \"comments\": [\n    {\n      \"author\": \"codex-coordinator\",\n      \"body\": \"synthetic-only: coordinator read/write roundtrip\",\n      \"created_at\": 1795145103\n    },\n    {\n      \"author\": \"default\",\n      \"body\": \"UNBLOCK: 主调度恢复虚构探针\",\n      \"created_at\": 1795145104\n    }\n  ],\n  \"events\": [\n    {\n      \"kind\": \"created\",\n      \"payload\": {\n        \"assignee\": null,\n        \"status\": \"blocked\",\n        \"parents\": [],\n        \"creator_task_id\": null,\n        \"tenant\": null,\n        \"workspace_kind\": \"dir\",\n        \"workspace_path\": \"/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0\",\n        \"branch_name\": null,\n        \"project_id\": null,\n        \"skills\": null,\n        \"goal_mode\": null,\n        \"model_override\": null,\n        \"provider_override\": null\n      },\n      \"created_at\": 1795145101,\n      \"run_id\": null\n    },\n    {\n      \"kind\": \"blocked\",\n      \"payload\": {\n        \"reason\": \"initial_status\",\n        \"status\": \"blocked\",\n        \"actor\": \"codex-coordinator\"\n      },\n      \"created_at\": 1795145101,\n      \"run_id\": null\n    },\n    {\n      \"kind\": \"commented\",\n      \"payload\": {\n        \"author\": \"codex-coordinator\",\n        \"len\": 48\n      },\n      \"created_at\": 1795145103,\n      \"run_id\": null\n    },\n    {\n      \"kind\": \"commented\",\n      \"payload\": {\n        \"author\": \"default\",\n        \"len\": 18\n      },\n      \"created_at\": 1795145104,\n      \"run_id\": null\n    },\n    {\n      \"kind\": \"unblocked\",\n      \"payload\": null,\n      \"created_at\": 1795145104,\n      \"run_id\": null\n    },\n    {\n      \"kind\": \"claimed\",\n      \"payload\": {\n        \"lock\": \"Vans-MBP-7.local:80885\",\n        \"expires\": 1795146005,\n        \"run_id\": 3\n      },\n      \"created_at\": 1795145105,\n      \"run_id\": 3\n    }\n  ],\n  \"runs\": [\n    {\n      \"id\": 3,\n      \"profile\": null,\n      \"step_key\": null,\n      \"status\": \"running\",\n      \"outcome\": null,\n      \"summary\": null,\n      \"error\": null,\n      \"metadata\": null,\n      \"worker_pid\": null,\n      \"started_at\": 1795145105,\n      \"ended_at\": null\n    }\n  ]\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/Users/mac/.local/bin/hermes",
+        "kanban",
+        "--board",
+        "law-oa-np-main",
+        "show",
+        "t_b1b905bb",
+        "--json"
+      ],
+      "started_at": "2026-11-20T03:26:12.946633+00:00",
+      "ended_at": "2026-11-20T03:26:14.394816+00:00",
+      "exit_code": 0,
+      "stdout": "{\n  \"task\": {\n    \"id\": \"t_b1b905bb\",\n    \"title\": \"M0-00 看板接入闭环 v2\",\n    \"body\": \"虚构探针v2，保留v1失败事件；仅一次block/unblock路径，验证认领、回报、审核与回读；无产品操作。\",\n    \"assignee\": null,\n    \"status\": \"running\",\n    \"priority\": 0,\n    \"tenant\": null,\n    \"workspace_kind\": \"dir\",\n    \"workspace_path\": \"/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0\",\n    \"branch_name\": null,\n    \"project_id\": null,\n    \"created_by\": \"codex-coordinator\",\n    \"created_at\": 1795145101,\n    \"started_at\": 1795145105,\n    \"completed_at\": null,\n    \"result\": null,\n    \"skills\": [],\n    \"max_runtime_seconds\": null,\n    \"max_retries\": null,\n    \"model_override\": null,\n    \"provider_override\": null,\n    \"session_id\": null,\n    \"workflow_template_id\": null,\n    \"current_step_key\": null,\n    \"completion_contract\": \"local-only\",\n    \"last_failure_error\": null\n  },\n  \"latest_summary\": null,\n  \"parents\": [],\n  \"children\": [],\n  \"comments\": [\n    {\n      \"author\": \"codex-coordinator\",\n      \"body\": \"synthetic-only: coordinator read/write roundtrip\",\n      \"created_at\": 1795145103\n    },\n    {\n      \"author\": \"default\",\n      \"body\": \"UNBLOCK: 主调度恢复虚构探针\",\n      \"created_at\": 1795145104\n    }\n  ],\n  \"events\": [\n    {\n      \"kind\": \"created\",\n      \"payload\": {\n        \"assignee\": null,\n        \"status\": \"blocked\",\n        \"parents\": [],\n        \"creator_task_id\": null,\n        \"tenant\": null,\n        \"workspace_kind\": \"dir\",\n        \"workspace_path\": \"/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0\",\n        \"branch_name\": null,\n        \"project_id\": null,\n        \"skills\": null,\n        \"goal_mode\": null,\n        \"model_override\": null,\n        \"provider_override\": null\n      },\n      \"created_at\": 1795145101,\n      \"run_id\": null\n    },\n    {\n      \"kind\": \"blocked\",\n      \"payload\": {\n        \"reason\": \"initial_status\",\n        \"status\": \"blocked\",\n        \"actor\": \"codex-coordinator\"\n      },\n      \"created_at\": 1795145101,\n      \"run_id\": null\n    },\n    {\n      \"kind\": \"commented\",\n      \"payload\": {\n        \"author\": \"codex-coordinator\",\n        \"len\": 48\n      },\n      \"created_at\": 1795145103,\n      \"run_id\": null\n    },\n    {\n      \"kind\": \"commented\",\n      \"payload\": {\n        \"author\": \"default\",\n        \"len\": 18\n      },\n      \"created_at\": 1795145104,\n      \"run_id\": null\n    },\n    {\n      \"kind\": \"unblocked\",\n      \"payload\": null,\n      \"created_at\": 1795145104,\n      \"run_id\": null\n    },\n    {\n      \"kind\": \"claimed\",\n      \"payload\": {\n        \"lock\": \"Vans-MBP-7.local:80885\",\n        \"expires\": 1795146005,\n        \"run_id\": 3\n      },\n      \"created_at\": 1795145105,\n      \"run_id\": 3\n    }\n  ],\n  \"runs\": [\n    {\n      \"id\": 3,\n      \"profile\": null,\n      \"step_key\": null,\n      \"status\": \"running\",\n      \"outcome\": null,\n      \"summary\": null,\n      \"error\": null,\n      \"metadata\": null,\n      \"worker_pid\": null,\n      \"started_at\": 1795145105,\n      \"ended_at\": null\n    }\n  ]\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/Users/mac/.local/bin/hermes",
+        "kanban",
+        "--board",
+        "law-oa-np-main",
+        "complete",
+        "t_b1b905bb",
+        "--result",
+        "negative guard probe"
+      ],
+      "started_at": "2026-11-20T03:26:14.395370+00:00",
+      "ended_at": "2026-11-20T03:26:17.102067+00:00",
+      "exit_code": 0,
+      "stdout": "Completed t_b1b905bb\n",
+      "stderr": ""
+    }
+  ],
+  "task_id": "t_b1b905bb",
+  "field_contract_correction": "show.task omits current_run_id; read own active run from show.runs / runs command",
+  "boundary": "short-lived CLI claim process exited; completion allowed, so live-claim negative test NOT_PROVEN"
+}

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
@@ -221,7 +222,7 @@ func (h *ApprovalHandler) GetApproval(c *gin.Context) {
 
 	approval, err := h.approvalService.GetApprovalForAuthorization(userIDStr, id)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound || strings.Contains(err.Error(), "record not found") {
+		if errors.Is(err, gorm.ErrRecordNotFound) || strings.Contains(err.Error(), "record not found") {
 			common.Error(c, http.StatusNotFound, "审批记录不存在")
 		} else if strings.Contains(err.Error(), "无权") {
 			common.Error(c, http.StatusForbidden, "无权查看此审批记录")
@@ -252,7 +253,7 @@ func (h *ApprovalHandler) authorizeApprovalMutation(c *gin.Context, userID, appr
 	if err != nil {
 		if strings.Contains(err.Error(), "无权") {
 			common.Error(c, http.StatusForbidden, "无权操作此审批记录")
-		} else if err == gorm.ErrRecordNotFound || strings.Contains(err.Error(), "record not found") {
+		} else if errors.Is(err, gorm.ErrRecordNotFound) || strings.Contains(err.Error(), "record not found") {
 			common.Error(c, http.StatusNotFound, "审批记录不存在")
 		} else {
 			log.Printf("获取审批上下文失败: %v", err)

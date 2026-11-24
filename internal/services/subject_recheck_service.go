@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/security"
 
@@ -675,7 +676,8 @@ func findEntityByNormalizedIdentityTx(tx *gorm.DB, candidate *subjectRegistratio
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	// rows.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = rows.Close() }()
 	for rows.Next() {
 		var entity models.Entity
 		if err := tx.ScanRows(rows, &entity); err != nil {
@@ -688,6 +690,9 @@ func findEntityByNormalizedIdentityTx(tx *gorm.DB, candidate *subjectRegistratio
 		if matches {
 			return &entity, nil
 		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return nil, nil
 }
@@ -1005,7 +1010,10 @@ func (s *SubjectRecheckService) ApplyReviewDecision(ctx context.Context, caseID 
 			return NewSubjectWorkflowError("REVIEW_REQUIRED", "关联的冲突检测记录不存在")
 		}
 		var response models.ConflictCheckResponse
-		raw, _ := json.Marshal(record.CheckResult)
+		raw, marshalErr := json.Marshal(record.CheckResult)
+		if marshalErr != nil {
+			return NewSubjectWorkflowError("REVIEW_EVIDENCE_INVALID", "冲突检测证据无法序列化，已阻止受控动作")
+		}
 		if err := json.Unmarshal(raw, &response); err != nil || response.Decision == nil || strings.ToUpper(strings.TrimSpace(response.Decision.CoverageStatus)) != "COMPLETE" {
 			return NewSubjectWorkflowError("COVERAGE_LIMITED", "冲突检索范围尚未由律所确认完整，不能批准主体变更")
 		}
@@ -1141,7 +1149,10 @@ func (s *SubjectRecheckService) ReviewAndApply(ctx context.Context, caseID uint,
 			return err
 		}
 		var response models.ConflictCheckResponse
-		raw, _ := json.Marshal(record.CheckResult)
+		raw, marshalErr := json.Marshal(record.CheckResult)
+		if marshalErr != nil {
+			return NewSubjectWorkflowError("REVIEW_EVIDENCE_INVALID", "检测证据无法序列化，已阻止复核")
+		}
 		if err := json.Unmarshal(raw, &response); err != nil {
 			return NewSubjectWorkflowError("REVIEW_EVIDENCE_INVALID", "检测证据无法解析，已阻止复核")
 		}
@@ -1263,10 +1274,7 @@ func (s *SubjectRecheckService) RequireEffectiveSubject(ctx context.Context, cas
 	if strings.TrimSpace(caseModel.ConflictCheckID) == "" {
 		return NewSubjectWorkflowError("CONFLICT_CHECK_REQUIRED", fmt.Sprintf("案件尚未关联可用的冲突复核记录，已阻止：%s", action))
 	}
-	if err := s.RequireConflictDisposition(ctx, caseModel.ConflictCheckID, action); err != nil {
-		return err
-	}
-	return nil
+	return s.RequireConflictDisposition(ctx, caseModel.ConflictCheckID, action)
 }
 
 // RequireConflictDisposition is the final gate used immediately before an
@@ -1289,7 +1297,10 @@ func (s *SubjectRecheckService) RequireConflictDisposition(ctx context.Context, 
 		return NewSubjectWorkflowError("COVERAGE_LIMITED", "冲突检索范围尚未由律所确认完整，已阻止受控动作")
 	}
 	var response models.ConflictCheckResponse
-	raw, _ := json.Marshal(record.CheckResult)
+	raw, err := json.Marshal(record.CheckResult)
+	if err != nil {
+		return NewSubjectWorkflowError("REVIEW_EVIDENCE_INVALID", "冲突检测证据无法序列化，已阻止受控动作")
+	}
 	if err := json.Unmarshal(raw, &response); err != nil {
 		return NewSubjectWorkflowError("REVIEW_EVIDENCE_INVALID", "冲突检测证据无法解析，已阻止受控动作")
 	}
@@ -1312,7 +1323,7 @@ func (s *SubjectRecheckService) RequireConflictDisposition(ctx context.Context, 
 	case "waiver_requested":
 		if err := s.requireCurrentApprovedWaiver(ctx, checkID, &record); err == nil {
 			return nil
-		} else if workflowErr, ok := err.(*SubjectWorkflowError); ok && workflowErr.Code != "WAIVER_PENDING" {
+		} else if workflowErr := (*SubjectWorkflowError)(nil); errors.As(err, &workflowErr) && workflowErr.Code != "WAIVER_PENDING" {
 			return workflowErr
 		}
 		return NewSubjectWorkflowError("WAIVER_PENDING", fmt.Sprintf("豁免处置尚未生效，已阻止：%s", action))
@@ -1436,7 +1447,10 @@ func (s *SubjectRecheckService) restoreRecheckRequired(ctx context.Context, case
 }
 
 func (s *SubjectRecheckService) appendAuditTx(tx *gorm.DB, actorID uint, actorRole, eventType, objectType, objectID, fromState, toState string, subjectVersion int, payload map[string]interface{}) error {
-	raw, _ := json.Marshal(payload)
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("序列化审计事件载荷失败: %w", err)
+	}
 	sum := sha256.Sum256(raw)
 	actor := actorID
 	event := &models.ComplianceAuditEvent{

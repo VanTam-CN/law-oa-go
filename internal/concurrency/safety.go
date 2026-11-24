@@ -49,7 +49,6 @@ func (cb *CircuitBreaker) Execute(ctx context.Context, operation func() error) e
 	cb.mu.Unlock()
 
 	err := operation()
-
 	if err != nil {
 		cb.RecordFailure()
 		return err
@@ -243,12 +242,4 @@ func (cs *ConcurrentSafe) GetRateLimiterTokens() int {
 // IsEnabled 检查是否启用
 func (cs *ConcurrentSafe) IsEnabled() bool {
 	return cs.enabled
-}
-
-// Helper functions
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }

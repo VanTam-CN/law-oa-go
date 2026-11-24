@@ -1,0 +1,16 @@
+# 本地第一手复现：2026-11-24T11:38:23Z
+# 工具: gofumpt mvdan.cc/gofumpt@latest（与 ci.yml 代码格式检查步一致）
+# 命令: gofumpt -l tests/ internal/（工作树 bfcb7de1…，Go 内容与 PR #49 head 448047e3 一致，bfcb7de 仅增 docs）
+
+## gofumpt -l tests/
+tests/integration/m1/native_pg_test.go
+tests/integration/m1/party_recovery_pg_test.go
+tests/integration/m1/r3_regression_test.go
+tests/integration/m1/r7_nested_arrays_pg_test.go
+tests/integration/m1/workbench_approval_browser_test.go
+
+## gofumpt -l internal/ (count)
+     139
+
+## gofmt -l tests/ (裸 gofmt，无告警=漂移为 gofumpt 特有规则如 0o600)
+(以上为空)

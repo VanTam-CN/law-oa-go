@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+
 	"law-oa-go/internal/common"
 	"law-oa-go/internal/services"
 )
@@ -190,7 +191,7 @@ func (h *FinanceHandler) DeleteContract(c *gin.Context) {
 // @Security BearerAuth
 // @Param page query int false "页码" default(1)
 // @Param page_size query int false "每页数量" default(20)
-// @Param status query string false "状态" Enums(draft, active, suspended, completed, cancelled)
+// @Param status query string false "状态" Enums(draft, active, suspended, completed, canceled)
 // @Param contract_type query string false "合同类型" Enums(original, supplementary)
 // @Param client_id query int false "客户ID"
 // @Param case_id query int false "案件ID"
@@ -640,7 +641,7 @@ func (h *FinanceHandler) DeleteInvoice(c *gin.Context) {
 // @Security BearerAuth
 // @Param page query int false "页码" default(1)
 // @Param page_size query int false "每页数量" default(20)
-// @Param status query string false "状态" Enums(draft, submitted, approved, issued, received, cancelled)
+// @Param status query string false "状态" Enums(draft, submitted, approved, issued, received, canceled)
 // @Param invoice_type query string false "发票类型" Enums(normal, credit)
 // @Param client_id query int false "客户ID"
 // @Param contract_id query int false "合同ID"
@@ -1475,7 +1476,7 @@ func (h *FinanceHandler) GetCommission(c *gin.Context) {
 // @Security BearerAuth
 // @Param page query int false "页码" default(1)
 // @Param page_size query int false "每页数量" default(20)
-// @Param status query string false "状态" Enums(pending, calculated, paid, cancelled)
+// @Param status query string false "状态" Enums(pending, calculated, paid, canceled)
 // @Param beneficiary_id query int false "受益人ID"
 // @Param beneficiary_role query string false "受益人角色" Enums(source, lawyer, assistant)
 // @Param contract_id query int false "合同ID"
@@ -1929,7 +1930,7 @@ func (h *FinanceHandler) CalculateEstimatedFee(c *gin.Context) {
 // @Accept json
 // @Produce text/csv
 // @Security BearerAuth
-// @Param status query string false "状态" Enums(draft, active, suspended, completed, cancelled)
+// @Param status query string false "状态" Enums(draft, active, suspended, completed, canceled)
 // @Param contract_type query string false "合同类型" Enums(original, supplementary)
 // @Param client_id query int false "客户ID"
 // @Param case_id query int false "案件ID"
@@ -2007,7 +2008,7 @@ func (h *FinanceHandler) ExportContracts(c *gin.Context) {
 // @Accept json
 // @Produce text/csv
 // @Security BearerAuth
-// @Param status query string false "状态" Enums(draft, submitted, approved, issued, received, cancelled)
+// @Param status query string false "状态" Enums(draft, submitted, approved, issued, received, canceled)
 // @Param invoice_type query string false "发票类型" Enums(normal, credit)
 // @Param client_id query int false "客户ID"
 // @Param contract_id query int false "合同ID"
@@ -2173,7 +2174,7 @@ func (h *FinanceHandler) ExportPayments(c *gin.Context) {
 // @Accept json
 // @Produce text/csv
 // @Security BearerAuth
-// @Param status query string false "状态" Enums(pending, calculated, paid, cancelled)
+// @Param status query string false "状态" Enums(pending, calculated, paid, canceled)
 // @Param beneficiary_id query int false "受益人ID"
 // @Param beneficiary_role query string false "受益人角色" Enums(source, lawyer, assistant)
 // @Param contract_id query int false "合同ID"
@@ -2222,7 +2223,7 @@ func (h *FinanceHandler) ExportCommissions(c *gin.Context) {
 		"pending":    "待计算",
 		"calculated": "已计算",
 		"paid":       "已支付",
-		"cancelled":  "已取消",
+		"canceled":   "已取消",
 	}
 
 	for _, commission := range result.Commissions {
@@ -2300,7 +2301,10 @@ func dateStringPtr(dateStr *string) string {
 
 func writeCSVRecords(c *gin.Context, records [][]string) {
 	csvWriter := csv.NewWriter(c.Writer)
-	csvWriter.WriteAll(sanitizeCSVRecords(records))
+	if err := csvWriter.WriteAll(sanitizeCSVRecords(records)); err != nil {
+		common.APIInternalServerError(c, "生成CSV文件失败", err.Error())
+		return
+	}
 	csvWriter.Flush()
 	if err := csvWriter.Error(); err != nil {
 		common.APIInternalServerError(c, "生成CSV文件失败", err.Error())

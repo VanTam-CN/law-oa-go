@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"fmt"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -42,7 +43,9 @@ func (r *Repository[T]) FindByID(ctx context.Context, id interface{}) (*T, error
 	}
 
 	// 缓存结果
-	r.cache.SmartSet("find_by_id", cacheKey, result)
+	if err := r.cache.SmartSet("find_by_id", cacheKey, result); err != nil {
+		return nil, fmt.Errorf("缓存查询结果失败: %w", err)
+	}
 
 	return &result, nil
 }

@@ -2,7 +2,9 @@ package validation
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
+	"log"
 	"net/http"
 	"reflect"
 	"regexp"
@@ -16,6 +18,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/cache"
 )
 
@@ -48,15 +51,25 @@ type Validator struct {
 func NewValidator(db *gorm.DB, cacheService *cache.CacheService) *Validator {
 	v := validator.New()
 
-	// 注册自定义验证函数
-	v.RegisterValidation("password_strength", validatePasswordStrength)
-	v.RegisterValidation("phone_number", validatePhoneNumber)
-	v.RegisterValidation("id_card", validateIDCard)
-	v.RegisterValidation("safe_string", validateSafeString)
-	v.RegisterValidation("no_sql_injection", validateNoSQLInjection)
-	v.RegisterValidation("no_xss", validateNoXSS)
-	v.RegisterValidation("file_path", validateFilePath)
-	v.RegisterValidation("email_domain", validateEmailDomain)
+	// 注册自定义验证函数；注册失败记录日志，不中断构造
+	customValidations := []struct {
+		name string
+		fn   validator.Func
+	}{
+		{"password_strength", validatePasswordStrength},
+		{"phone_number", validatePhoneNumber},
+		{"id_card", validateIDCard},
+		{"safe_string", validateSafeString},
+		{"no_sql_injection", validateNoSQLInjection},
+		{"no_xss", validateNoXSS},
+		{"file_path", validateFilePath},
+		{"email_domain", validateEmailDomain},
+	}
+	for _, reg := range customValidations {
+		if err := v.RegisterValidation(reg.name, reg.fn); err != nil {
+			log.Printf("注册校验规则 %s 失败: %v", reg.name, err)
+		}
+	}
 
 	return &Validator{
 		validator:    v,
@@ -65,18 +78,18 @@ func NewValidator(db *gorm.DB, cacheService *cache.CacheService) *Validator {
 	}
 }
 
-// ValidationErrors 验证错误集合
-type ValidationErrors struct {
+// ValidationError 验证错误集合
+type ValidationError struct {
 	Errors map[string]string `json:"errors"`
 }
 
 // Error 实现error接口
-func (ve *ValidationErrors) Error() string {
+func (ve *ValidationError) Error() string {
 	return fmt.Sprintf("validation failed: %v", ve.Errors)
 }
 
 // AddError 添加错误
-func (ve *ValidationErrors) AddError(field, message string) {
+func (ve *ValidationError) AddError(field, message string) {
 	if ve.Errors == nil {
 		ve.Errors = make(map[string]string)
 	}
@@ -84,21 +97,31 @@ func (ve *ValidationErrors) AddError(field, message string) {
 }
 
 // HasErrors 检查是否有错误
-func (ve *ValidationErrors) HasErrors() bool {
+func (ve *ValidationError) HasErrors() bool {
 	return len(ve.Errors) > 0
 }
 
+// asPlaygroundFieldErrors 以 errors.As 安全提取 go-playground 验证错误集合；
+// 对非该类型错误返回空集合（替代直接断言，避免 panic 且支持 wrapped error）。
+func asPlaygroundFieldErrors(err error) validator.ValidationErrors {
+	var ve validator.ValidationErrors
+	if stderrors.As(err, &ve) {
+		return ve
+	}
+	return nil
+}
+
 // ValidateStruct 验证结构体
-func (v *Validator) ValidateStruct(ctx context.Context, s interface{}) *ValidationErrors {
+func (v *Validator) ValidateStruct(ctx context.Context, s interface{}) *ValidationError {
 	start := time.Now()
 	defer func() {
 		validationDuration.WithLabelValues("struct").Observe(time.Since(start).Seconds())
 	}()
 
-	errors := &ValidationErrors{}
+	errors := &ValidationError{}
 
 	if err := v.validator.Struct(s); err != nil {
-		for _, err := range err.(validator.ValidationErrors) {
+		for _, err := range asPlaygroundFieldErrors(err) {
 			fieldName := err.Field()
 			tag := err.Tag()
 
@@ -433,7 +456,7 @@ func (v *Validator) SQLInjectionProtectionMiddleware() gin.HandlerFunc {
 		}
 
 		// 检查POST数据
-		if c.Request.Method == "POST" || c.Request.Method == "PUT" {
+		if c.Request.Method == http.MethodPost || c.Request.Method == http.MethodPut {
 			if err := c.Request.ParseForm(); err == nil {
 				for _, values := range c.Request.PostForm {
 					for _, value := range values {
@@ -493,7 +516,7 @@ func (v *Validator) XSSProtectionMiddleware() gin.HandlerFunc {
 		}
 
 		// 检查POST数据
-		if c.Request.Method == "POST" || c.Request.Method == "PUT" {
+		if c.Request.Method == http.MethodPost || c.Request.Method == http.MethodPut {
 			if err := c.Request.ParseForm(); err == nil {
 				for _, values := range c.Request.PostForm {
 					for _, value := range values {
@@ -790,14 +813,14 @@ func (v *Validator) ValidateField(field interface{}, tag string) bool {
 }
 
 // GetValidationErrors 获取验证错误详情
-func (v *Validator) GetValidationErrors(err error) *ValidationErrors {
+func (v *Validator) GetValidationErrors(err error) *ValidationError {
 	if err == nil {
 		return nil
 	}
 
-	errors := &ValidationErrors{}
+	errors := &ValidationError{}
 
-	if validationErrs, ok := err.(validator.ValidationErrors); ok {
+	if validationErrs := asPlaygroundFieldErrors(err); len(validationErrs) > 0 {
 		for _, fieldErr := range validationErrs {
 			fieldName := fieldErr.Field()
 			tag := fieldErr.Tag()
@@ -866,9 +889,9 @@ func (v *Validator) IsValidType(value interface{}, expectedType string) bool {
 }
 
 // ValidateLength 验证长度
-func (v *Validator) ValidateLength(value string, min, max int) bool {
+func (v *Validator) ValidateLength(value string, minLen, maxLen int) bool {
 	length := len(value)
-	return length >= min && length <= max
+	return length >= minLen && length <= maxLen
 }
 
 // ValidateRegex 验证正则表达式

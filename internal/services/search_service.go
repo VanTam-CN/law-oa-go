@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8"
+
 	"law-oa-go/internal/errors"
 )
 
@@ -108,7 +109,8 @@ func (s *SearchService) Search(ctx context.Context, req *SearchRequest) (*Search
 	if err != nil {
 		return nil, errors.InternalError("Failed to execute search", err)
 	}
-	defer res.Body.Close()
+	// res.Body.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
 		return nil, errors.InternalError("Elasticsearch returned error", fmt.Errorf("status: %s", res.Status()))
@@ -174,7 +176,8 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, query string, 
 	if err != nil {
 		return nil, err
 	}
-	defer suggestRes.Body.Close()
+	// suggestRes.Body.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = suggestRes.Body.Close() }()
 
 	if suggestRes.IsError() {
 		return nil, fmt.Errorf("suggest query failed: %s", suggestRes.Status())
@@ -214,7 +217,8 @@ func (s *SearchService) IndexEntity(ctx context.Context, entityType string, enti
 	if err != nil {
 		return err
 	}
-	defer res.Body.Close()
+	// res.Body.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
 		return fmt.Errorf("index document error: %s", res.Status())
@@ -240,7 +244,8 @@ func (s *SearchService) DeleteEntityFromIndex(ctx context.Context, entityType st
 	if err != nil {
 		return err
 	}
-	defer res.Body.Close()
+	// res.Body.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = res.Body.Close() }()
 
 	if res.IsError() {
 		return fmt.Errorf("delete document error: %s", res.Status())
@@ -334,7 +339,9 @@ func (s *SearchService) buildSearchQuery(req *SearchRequest) interface{} {
 			})
 		}
 
-		boolQuery["bool"].(map[string]interface{})["filter"] = filter
+		if boolSection, ok := boolQuery["bool"].(map[string]interface{}); ok {
+			boolSection["filter"] = filter
+		}
 	}
 
 	// Add sorting
@@ -429,9 +436,12 @@ func (s *SearchService) parseSingleHit(hit map[string]interface{}) *SearchResult
 	source, _ := hit["_source"].(map[string]interface{})
 	highlights, _ := hit["highlight"].(map[string]interface{})
 
+	idVal, _ := hit["_id"].(string)
+	scoreVal, _ := hit["_score"].(float64)
+
 	result := &SearchResult{
-		ID:         hit["_id"].(string),
-		Score:      hit["_score"].(float64),
+		ID:         idVal,
+		Score:      scoreVal,
 		Highlights: make(map[string][]string),
 		Metadata:   make(map[string]interface{}),
 		CreatedAt:  time.Now(),
@@ -461,17 +471,15 @@ func (s *SearchService) parseSingleHit(hit map[string]interface{}) *SearchResult
 	}
 
 	// Parse highlights
-	if highlights != nil {
-		for field, highlightList := range highlights {
-			if list, ok := highlightList.([]interface{}); ok {
-				var stringList []string
-				for _, item := range list {
-					if str, ok := item.(string); ok {
-						stringList = append(stringList, str)
-					}
+	for field, highlightList := range highlights {
+		if list, ok := highlightList.([]interface{}); ok {
+			var stringList []string
+			for _, item := range list {
+				if str, ok := item.(string); ok {
+					stringList = append(stringList, str)
 				}
-				result.Highlights[field] = stringList
 			}
+			result.Highlights[field] = stringList
 		}
 	}
 
@@ -559,7 +567,7 @@ func (s *SearchService) prepareDocument(entityType string, entityID string, data
 func (s *SearchService) fallbackSearch(ctx context.Context, req *SearchRequest, startTime time.Time) (*SearchResponse, error) {
 	// A missing Elasticsearch connection must never produce synthetic records.
 	// The legacy handler is disabled in the production router; return a
-	// controlled error here as a second line of defence for direct callers.
+	// controlled error here as a second line of defense for direct callers.
 	return nil, errors.InternalError("Search backend is unavailable", fmt.Errorf("elasticsearch client is not configured"))
 }
 

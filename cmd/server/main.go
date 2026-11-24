@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/config"
 	"law-oa-go/internal/database"
 	"law-oa-go/internal/middleware"
@@ -79,7 +80,9 @@ func main() {
 	app.Use(security.RateLimiterMiddleware())
 
 	// 初始化路由系统
-	router.Init(app, db, redisClient)
+	if err := router.Init(app, db, redisClient); err != nil {
+		log.Fatal("路由装配失败: ", err)
+	}
 
 	// 启动服务器
 	addr := ":" + cfg.GetPort()

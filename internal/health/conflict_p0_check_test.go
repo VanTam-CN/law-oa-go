@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/repositories"
 	"law-oa-go/internal/services"
@@ -35,9 +36,13 @@ func TestConflictP0ReadinessCheck_QAExplicitlySkipsProductionEvidence(t *testing
 	require.True(t, ok)
 	assert.Equal(t, false, details["production_database_prerequisites_ready"])
 	for _, gate := range requiredProductionEvidenceGates {
-		assert.Equal(t, false, details["external_evidence_gates"].(map[string]bool)[gate])
+		gates, ok := details["external_evidence_gates"].(map[string]bool)
+		require.True(t, ok, "external_evidence_gates 类型断言失败")
+		assert.Equal(t, false, gates[gate])
 	}
-	assert.Equal(t, "完成并签署 PD-01 至 PD-07 决策物，登记书面签署凭证", details["next_actions"].(map[string]string)["G0"])
+	nextActions, ok := details["next_actions"].(map[string]string)
+	require.True(t, ok, "next_actions 类型断言失败")
+	assert.Equal(t, "完成并签署 PD-01 至 PD-07 决策物，登记书面签署凭证", nextActions["G0"])
 }
 
 func TestConflictP0ReadinessCheck_ProductionMissingDatabaseFailsClosed(t *testing.T) {
@@ -53,7 +58,9 @@ func TestConflictP0ReadinessCheck_ProductionMissingDatabaseFailsClosed(t *testin
 	require.True(t, ok)
 	assert.Equal(t, false, details["production_database_prerequisites_ready"])
 	for _, gate := range requiredProductionEvidenceGates {
-		assert.Equal(t, false, details["external_evidence_gates"].(map[string]bool)[gate])
+		gates, ok := details["external_evidence_gates"].(map[string]bool)
+		require.True(t, ok, "external_evidence_gates 类型断言失败")
+		assert.Equal(t, false, gates[gate])
 	}
 	assert.NotEmpty(t, details["next_actions"])
 }

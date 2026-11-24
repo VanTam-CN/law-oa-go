@@ -10,6 +10,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -18,6 +19,7 @@ import (
 
 	"github.com/jung-kurt/gofpdf"
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/common"
 	"law-oa-go/internal/models"
 )
@@ -103,7 +105,7 @@ func NewPDFReportService(db *gorm.DB, config *PDFReportConfig) (PDFReportService
 	}
 
 	// 确保输出目录存在
-	if err := os.MkdirAll(config.OutputDir, 0755); err != nil {
+	if err := os.MkdirAll(config.OutputDir, 0o755); err != nil {
 		return nil, fmt.Errorf("创建输出目录失败: %w", err)
 	}
 
@@ -190,8 +192,8 @@ func (s *pdfReportService) GenerateReport(ctx context.Context, req *ReportGenera
 
 	// 保存到数据库
 	if err := s.db.WithContext(ctx).Create(report).Error; err != nil {
-		// 清理已生成的文件
-		os.Remove(filepath)
+		// 清理已生成的报告文件；主错误是保存记录失败，删除失败不覆盖主错误。
+		_ = os.Remove(filepath)
 		return nil, fmt.Errorf("保存报告记录失败: %w", err)
 	}
 
@@ -203,7 +205,7 @@ func (s *pdfReportService) GenerateReport(ctx context.Context, req *ReportGenera
 func (s *pdfReportService) GetReport(ctx context.Context, reportID uint) (*models.ConflictReport, error) {
 	var report models.ConflictReport
 	if err := s.db.WithContext(ctx).First(&report, reportID).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("报告不存在")
 		}
 		return nil, fmt.Errorf("获取报告失败: %w", err)
@@ -217,7 +219,7 @@ func (s *pdfReportService) GetReportByNumber(ctx context.Context, reportNumber s
 	if err := s.db.WithContext(ctx).
 		Where("report_number = ?", reportNumber).
 		First(&report).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("报告不存在")
 		}
 		return nil, fmt.Errorf("获取报告失败: %w", err)
@@ -385,7 +387,10 @@ func (s *pdfReportService) SignReport(ctx context.Context, reportID uint, signer
 func (s *pdfReportService) generateReportNumber() string {
 	timestamp := time.Now().Format("20060102150405")
 	randomBytes := make([]byte, 3)
-	rand.Read(randomBytes)
+	// 随机源失败时退化为纯时间戳编号，仅记录日志（编号生成无法返回错误）。
+	if _, err := rand.Read(randomBytes); err != nil {
+		log.Printf("⚠️ 生成随机报告编号后缀失败: %v", err)
+	}
 	randomSuffix := hex.EncodeToString(randomBytes)
 	return fmt.Sprintf("%s%s%s", s.config.ReportPrefix, timestamp, randomSuffix)
 }
@@ -759,16 +764,17 @@ func (s *pdfReportService) generateKeyPair() error {
 	}
 
 	// 确保目录存在
-	if err := os.MkdirAll(filepath.Dir(s.config.SignatureKeyFile), 0700); err != nil {
+	if err := os.MkdirAll(filepath.Dir(s.config.SignatureKeyFile), 0o700); err != nil {
 		return err
 	}
 
 	// 保存私钥
-	privateKeyFile, err := os.OpenFile(s.config.SignatureKeyFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	privateKeyFile, err := os.OpenFile(s.config.SignatureKeyFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600)
 	if err != nil {
 		return err
 	}
-	defer privateKeyFile.Close()
+	// privateKeyFile.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = privateKeyFile.Close() }()
 
 	privateKeyPEM := &pem.Block{
 		Type:  "RSA PRIVATE KEY",
@@ -783,7 +789,8 @@ func (s *pdfReportService) generateKeyPair() error {
 	if err != nil {
 		return err
 	}
-	defer publicKeyFile.Close()
+	// publicKeyFile.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = publicKeyFile.Close() }()
 
 	publicKeyBytes, err := x509.MarshalPKIXPublicKey(&privateKey.PublicKey)
 	if err != nil {

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/repositories"
 )
@@ -46,14 +47,14 @@ func (s *ApprovalService) GetApprovalStats(userID string, includeFirmTotals ...b
 	// 获取总申请数
 	totalRequests, err := s.approvalRepo.CountByUserID(userID, "")
 	if err != nil {
-		return nil, fmt.Errorf("获取总申请数失败: %v", err)
+		return nil, fmt.Errorf("获取总申请数失败: %w", err)
 	}
 	stats.TotalRequests = int(totalRequests)
 
 	// 获取待处理审批数（需要当前用户审批的）
 	myPendingRequests, err := s.approvalRepo.CountPendingByApproverID(userID)
 	if err != nil {
-		return nil, fmt.Errorf("获取待处理审批数失败: %v", err)
+		return nil, fmt.Errorf("获取待处理审批数失败: %w", err)
 	}
 	stats.MyPendingRequests = int(myPendingRequests)
 
@@ -64,12 +65,12 @@ func (s *ApprovalService) GetApprovalStats(userID string, includeFirmTotals ...b
 	if showFirmTotals {
 		pendingRequests, err = s.approvalRepo.CountPending()
 		if err != nil {
-			return nil, fmt.Errorf("获取全部待审批数失败: %v", err)
+			return nil, fmt.Errorf("获取全部待审批数失败: %w", err)
 		}
 	} else {
 		pendingRequests, err = s.approvalRepo.CountPendingByApplicantID(userID)
 		if err != nil {
-			return nil, fmt.Errorf("获取用户待审批数失败: %v", err)
+			return nil, fmt.Errorf("获取用户待审批数失败: %w", err)
 		}
 	}
 	stats.PendingRequests = int(pendingRequests)
@@ -77,14 +78,14 @@ func (s *ApprovalService) GetApprovalStats(userID string, includeFirmTotals ...b
 	// 获取已通过申请数
 	approvedRequests, err := s.approvalRepo.CountByUserID(userID, models.ApprovalStatusApproved)
 	if err != nil {
-		return nil, fmt.Errorf("获取已通过申请数失败: %v", err)
+		return nil, fmt.Errorf("获取已通过申请数失败: %w", err)
 	}
 	stats.ApprovedRequests = int(approvedRequests)
 
 	// 获取已拒绝申请数
 	rejectedRequests, err := s.approvalRepo.CountByUserID(userID, models.ApprovalStatusRejected)
 	if err != nil {
-		return nil, fmt.Errorf("获取已拒绝申请数失败: %v", err)
+		return nil, fmt.Errorf("获取已拒绝申请数失败: %w", err)
 	}
 	stats.RejectedRequests = int(rejectedRequests)
 
@@ -95,12 +96,12 @@ func (s *ApprovalService) GetApprovalStats(userID string, includeFirmTotals ...b
 func (s *ApprovalService) GetPendingApprovals(userID string, req *models.ApprovalListRequest) (*models.ApprovalListResponse, error) {
 	approvals, err := s.approvalRepo.FindPendingByApproverID(userID, req.PageSize, (req.Page-1)*req.PageSize)
 	if err != nil {
-		return nil, fmt.Errorf("获取待审批列表失败: %v", err)
+		return nil, fmt.Errorf("获取待审批列表失败: %w", err)
 	}
 
 	total, err := s.approvalRepo.CountPendingByApproverID(userID)
 	if err != nil {
-		return nil, fmt.Errorf("获取待审批总数失败: %v", err)
+		return nil, fmt.Errorf("获取待审批总数失败: %w", err)
 	}
 
 	totalPages := int((total + int64(req.PageSize) - 1) / int64(req.PageSize))
@@ -123,12 +124,12 @@ func (s *ApprovalService) ListApprovals(userID string, req *models.ApprovalListR
 
 	approvals, err := s.approvalRepo.FindByUserID(queryUserID, req.PageSize, (req.Page-1)*req.PageSize)
 	if err != nil {
-		return nil, fmt.Errorf("获取审批列表失败: %v", err)
+		return nil, fmt.Errorf("获取审批列表失败: %w", err)
 	}
 
 	total, err := s.approvalRepo.CountByUserID(queryUserID, req.Status)
 	if err != nil {
-		return nil, fmt.Errorf("获取审批总数失败: %v", err)
+		return nil, fmt.Errorf("获取审批总数失败: %w", err)
 	}
 
 	totalPages := int((total + int64(req.PageSize) - 1) / int64(req.PageSize))
@@ -160,7 +161,7 @@ func (s *ApprovalService) GetApproval(userID string, id string) (*models.Approva
 func (s *ApprovalService) GetApprovalForAuthorization(userID string, id string) (*models.ApprovalRequest, error) {
 	approval, err := s.approvalRepo.FindByID(id)
 	if err != nil {
-		return nil, fmt.Errorf("获取审批详情失败: %v", err)
+		return nil, fmt.Errorf("获取审批详情失败: %w", err)
 	}
 
 	// The approval detail is an object-scoped resource. Technical admin is not
@@ -201,7 +202,7 @@ func (s *ApprovalService) LoadApprovalRecords(approval *models.ApprovalRequest) 
 func (s *ApprovalService) GetApprovalByID(id string) (*models.ApprovalRequest, error) {
 	approval, err := s.approvalRepo.FindByID(id)
 	if err != nil {
-		return nil, fmt.Errorf("获取审批详情失败: %v", err)
+		return nil, fmt.Errorf("获取审批详情失败: %w", err)
 	}
 	return approval, nil
 }
@@ -210,7 +211,7 @@ func (s *ApprovalService) GetApprovalByID(id string) (*models.ApprovalRequest, e
 func (s *ApprovalService) GetApprovalRecords(approvalID string) ([]models.ApprovalRecord, error) {
 	records, err := s.approvalRepo.FindRecordsByApprovalID(approvalID)
 	if err != nil {
-		return nil, fmt.Errorf("获取审批记录失败: %v", err)
+		return nil, fmt.Errorf("获取审批记录失败: %w", err)
 	}
 	return records, nil
 }
@@ -220,7 +221,7 @@ func (s *ApprovalService) CreateApproval(userID string, userName string, req *mo
 	// 生成申请编号
 	requestNumber, err := s.generateRequestNumber()
 	if err != nil {
-		return nil, fmt.Errorf("生成申请编号失败: %v", err)
+		return nil, fmt.Errorf("生成申请编号失败: %w", err)
 	}
 
 	// 如果userName为空，从数据库查询用户信息
@@ -281,11 +282,17 @@ func (s *ApprovalService) CreateApproval(userID string, userName string, req *mo
 
 	// 处理附件和元数据
 	if len(req.Attachments) > 0 {
-		attachmentsBytes, _ := json.Marshal(req.Attachments)
+		attachmentsBytes, err := json.Marshal(req.Attachments)
+		if err != nil {
+			return nil, fmt.Errorf("序列化审批附件失败: %w", err)
+		}
 		approval.Attachments = string(attachmentsBytes)
 	}
 	if req.Metadata != nil {
-		metadataBytes, _ := json.Marshal(req.Metadata)
+		metadataBytes, err := json.Marshal(req.Metadata)
+		if err != nil {
+			return nil, fmt.Errorf("序列化审批元数据失败: %w", err)
+		}
 		approval.Metadata = string(metadataBytes)
 	}
 
@@ -303,7 +310,7 @@ func (s *ApprovalService) CreateApproval(userID string, userName string, req *mo
 
 	// 保存草稿
 	if err := s.approvalRepo.Create(approval); err != nil {
-		return nil, fmt.Errorf("保存审批申请失败: %v", err)
+		return nil, fmt.Errorf("保存审批申请失败: %w", err)
 	}
 
 	return approval, nil
@@ -313,7 +320,7 @@ func (s *ApprovalService) CreateApproval(userID string, userName string, req *mo
 func (s *ApprovalService) SubmitApproval(userID string, approvalID string) (*models.ApprovalRequest, error) {
 	approval, err := s.approvalRepo.FindByID(approvalID)
 	if err != nil {
-		return nil, fmt.Errorf("查找审批记录失败: %v", err)
+		return nil, fmt.Errorf("查找审批记录失败: %w", err)
 	}
 
 	// 确保是申请人本人
@@ -333,7 +340,7 @@ func (s *ApprovalService) SubmitApproval(userID string, approvalID string) (*mod
 
 	// 分配审批人
 	if err := s.assigner.AssignApprover(approval); err != nil {
-		return nil, fmt.Errorf("分配审批人失败: %v", err)
+		return nil, fmt.Errorf("分配审批人失败: %w", err)
 	}
 
 	// 设置提交时间
@@ -343,7 +350,7 @@ func (s *ApprovalService) SubmitApproval(userID string, approvalID string) (*mod
 
 	// 保存更新
 	if err := s.approvalRepo.Update(approval); err != nil {
-		return nil, fmt.Errorf("提交审批失败: %v", err)
+		return nil, fmt.Errorf("提交审批失败: %w", err)
 	}
 
 	// 重新加载数据
@@ -354,7 +361,7 @@ func (s *ApprovalService) SubmitApproval(userID string, approvalID string) (*mod
 func (s *ApprovalService) ProcessApprovalDecision(userID string, approvalID string, req *models.ApprovalDecisionRequest) (*models.ApprovalRequest, error) {
 	approval, err := s.approvalRepo.FindByID(approvalID)
 	if err != nil {
-		return nil, fmt.Errorf("查找审批记录失败: %v", err)
+		return nil, fmt.Errorf("查找审批记录失败: %w", err)
 	}
 
 	// 确保是当前审批人
@@ -445,7 +452,7 @@ func (s *ApprovalService) ProcessApprovalDecision(userID string, approvalID stri
 
 	// 保存审批记录
 	if err := s.approvalRepo.CreateRecord(record); err != nil {
-		return nil, fmt.Errorf("保存审批记录失败: %v", err)
+		return nil, fmt.Errorf("保存审批记录失败: %w", err)
 	}
 
 	// 根据决定处理状态
@@ -454,7 +461,7 @@ func (s *ApprovalService) ProcessApprovalDecision(userID string, approvalID stri
 		// 检查是否有多级审批
 		isComplete, err := s.assigner.MoveToNextStage(approval)
 		if err != nil {
-			return nil, fmt.Errorf("移动到下一阶段失败: %v", err)
+			return nil, fmt.Errorf("移动到下一阶段失败: %w", err)
 		}
 		if !isComplete {
 			// 还有下一级审批，发送通知
@@ -490,13 +497,13 @@ func (s *ApprovalService) ProcessApprovalDecision(userID string, approvalID stri
 
 	// 执行更新
 	if err := s.approvalRepo.Update(approval); err != nil {
-		return nil, fmt.Errorf("更新审批状态失败: %v", err)
+		return nil, fmt.Errorf("更新审批状态失败: %w", err)
 	}
 
 	// 重新加载数据
 	updatedApproval, err := s.GetApproval(userID, approvalID)
 	if err != nil {
-		return nil, fmt.Errorf("重新加载审批数据失败: %v", err)
+		return nil, fmt.Errorf("重新加载审批数据失败: %w", err)
 	}
 
 	return updatedApproval, nil
@@ -506,7 +513,7 @@ func (s *ApprovalService) ProcessApprovalDecision(userID string, approvalID stri
 func (s *ApprovalService) ResubmitApproval(userID string, approvalID string, revisionNote string) (*models.ApprovalRequest, error) {
 	approval, err := s.approvalRepo.FindByID(approvalID)
 	if err != nil {
-		return nil, fmt.Errorf("查找审批记录失败: %v", err)
+		return nil, fmt.Errorf("查找审批记录失败: %w", err)
 	}
 
 	// 确保是申请人本人
@@ -527,18 +534,23 @@ func (s *ApprovalService) ResubmitApproval(userID string, approvalID string, rev
 	// 更新元数据，添加修改说明
 	var metadata map[string]interface{}
 	if approval.Metadata != "{}" && approval.Metadata != "" {
-		json.Unmarshal([]byte(approval.Metadata), &metadata)
+		if err := json.Unmarshal([]byte(approval.Metadata), &metadata); err != nil {
+			return nil, fmt.Errorf("解析审批元数据失败: %w", err)
+		}
 	} else {
 		metadata = make(map[string]interface{})
 	}
 	metadata["revision_note"] = revisionNote
 	metadata["resubmitted_at"] = time.Now().Format(time.RFC3339)
-	metadataBytes, _ := json.Marshal(metadata)
+	metadataBytes, err := json.Marshal(metadata)
+	if err != nil {
+		return nil, fmt.Errorf("序列化审批元数据失败: %w", err)
+	}
 	approval.Metadata = string(metadataBytes)
 
 	// 重新分配审批人
 	if err := s.assigner.AssignApprover(approval); err != nil {
-		return nil, fmt.Errorf("重新分配审批人失败: %v", err)
+		return nil, fmt.Errorf("重新分配审批人失败: %w", err)
 	}
 
 	approval.Status = models.ApprovalStatusResubmitted
@@ -546,7 +558,7 @@ func (s *ApprovalService) ResubmitApproval(userID string, approvalID string, rev
 
 	// 执行更新
 	if err := s.approvalRepo.Update(approval); err != nil {
-		return nil, fmt.Errorf("重新提交失败: %v", err)
+		return nil, fmt.Errorf("重新提交失败: %w", err)
 	}
 
 	// 发送重新提交通知
@@ -559,7 +571,7 @@ func (s *ApprovalService) ResubmitApproval(userID string, approvalID string, rev
 func (s *ApprovalService) CancelApproval(userID string, approvalID string) error {
 	approval, err := s.approvalRepo.FindByID(approvalID)
 	if err != nil {
-		return fmt.Errorf("查找审批记录失败: %v", err)
+		return fmt.Errorf("查找审批记录失败: %w", err)
 	}
 
 	// 确保是申请人本人
@@ -570,7 +582,7 @@ func (s *ApprovalService) CancelApproval(userID string, approvalID string) error
 	// 检查是否有审批记录（如果有则说明已经开始处理）
 	records, err := s.approvalRepo.FindRecordsByApprovalID(approvalID)
 	if err != nil {
-		return fmt.Errorf("检查审批记录失败: %v", err)
+		return fmt.Errorf("检查审批记录失败: %w", err)
 	}
 
 	// 检查是否可以撤回
@@ -590,7 +602,7 @@ func (s *ApprovalService) CancelApproval(userID string, approvalID string) error
 	approval.UpdatedBy = userID
 
 	if err := s.approvalRepo.Update(approval); err != nil {
-		return fmt.Errorf("撤回审批失败: %v", err)
+		return fmt.Errorf("撤回审批失败: %w", err)
 	}
 
 	return nil
@@ -600,7 +612,7 @@ func (s *ApprovalService) CancelApproval(userID string, approvalID string) error
 func (s *ApprovalService) UpdateApproval(userID string, id string, req *models.UpdateApprovalRequest) (*models.ApprovalRequest, error) {
 	approval, err := s.approvalRepo.FindByID(id)
 	if err != nil {
-		return nil, fmt.Errorf("查找审批记录失败: %v", err)
+		return nil, fmt.Errorf("查找审批记录失败: %w", err)
 	}
 
 	// 确保是申请人本人
@@ -637,7 +649,7 @@ func (s *ApprovalService) UpdateApproval(userID string, id string, req *models.U
 
 	// 执行更新
 	if err := s.approvalRepo.Update(approval); err != nil {
-		return nil, fmt.Errorf("更新审批申请失败: %v", err)
+		return nil, fmt.Errorf("更新审批申请失败: %w", err)
 	}
 
 	// 重新加载数据
@@ -648,7 +660,7 @@ func (s *ApprovalService) UpdateApproval(userID string, id string, req *models.U
 func (s *ApprovalService) DeleteApproval(userID string, id string) error {
 	approval, err := s.approvalRepo.FindByID(id)
 	if err != nil {
-		return fmt.Errorf("查找审批记录失败: %v", err)
+		return fmt.Errorf("查找审批记录失败: %w", err)
 	}
 
 	// 确保是申请人本人
@@ -662,7 +674,7 @@ func (s *ApprovalService) DeleteApproval(userID string, id string) error {
 	}
 
 	if err := s.approvalRepo.Delete(id); err != nil {
-		return fmt.Errorf("删除审批记录失败: %v", err)
+		return fmt.Errorf("删除审批记录失败: %w", err)
 	}
 
 	return nil
@@ -672,7 +684,7 @@ func (s *ApprovalService) DeleteApproval(userID string, id string) error {
 func (s *ApprovalService) GetApprovalWorkflows() ([]models.ApprovalWorkflow, error) {
 	workflows, err := s.approvalRepo.FindWorkflows()
 	if err != nil {
-		return nil, fmt.Errorf("获取审批工作流失败: %v", err)
+		return nil, fmt.Errorf("获取审批工作流失败: %w", err)
 	}
 	return workflows, nil
 }
@@ -681,7 +693,7 @@ func (s *ApprovalService) GetApprovalWorkflows() ([]models.ApprovalWorkflow, err
 func (s *ApprovalService) GetApprovalTemplates(templateType string, category string) ([]models.ApprovalTemplateV2, error) {
 	templates, err := s.approvalRepo.FindTemplates(templateType, category)
 	if err != nil {
-		return nil, fmt.Errorf("获取审批模板失败: %v", err)
+		return nil, fmt.Errorf("获取审批模板失败: %w", err)
 	}
 	return templates, nil
 }

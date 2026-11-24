@@ -186,7 +186,7 @@ func TestSaveDocument_Success(t *testing.T) {
 	db.Create(doc)
 
 	// 创建初始文件
-	if err := os.WriteFile(doc.Filepath, []byte("original content"), 0644); err != nil {
+	if err := os.WriteFile(doc.Filepath, []byte("original content"), 0o644); err != nil {
 		t.Fatalf("创建初始文件失败: %v", err)
 	}
 
@@ -194,7 +194,7 @@ func TestSaveDocument_Success(t *testing.T) {
 	content := "edited content from onlyoffice"
 	ts := newIPv4TestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
-		w.Write([]byte(content))
+		_, _ = w.Write([]byte(content)) // test response writer 写入错误不可操作，测试仅关注响应状态/体
 	}))
 	defer ts.Close()
 
@@ -238,10 +238,12 @@ func TestSaveDocument_CreatesVersionBackup(t *testing.T) {
 		Status:   "active",
 	}
 	db.Create(doc)
-	os.WriteFile(doc.Filepath, []byte("original"), 0644)
+	if err := os.WriteFile(doc.Filepath, []byte("original"), 0o644); err != nil {
+		t.Fatalf("写入初始文件失败: %v", err)
+	}
 
 	ts := newIPv4TestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("new version"))
+		_, _ = w.Write([]byte("new version")) // test response writer 写入错误不可操作，测试仅关注响应状态/体
 	}))
 	defer ts.Close()
 
@@ -277,10 +279,12 @@ func TestHandleCallback_MustSave(t *testing.T) {
 		Status:   "active",
 	}
 	db.Create(doc)
-	os.WriteFile(doc.Filepath, []byte("before"), 0644)
+	if err := os.WriteFile(doc.Filepath, []byte("before"), 0o644); err != nil {
+		t.Fatalf("写入初始文件失败: %v", err)
+	}
 
 	ts := newIPv4TestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("after save"))
+		_, _ = w.Write([]byte("after save")) // test response writer 写入错误不可操作，测试仅关注响应状态/体
 	}))
 	defer ts.Close()
 
@@ -301,7 +305,7 @@ func TestHandleCallback_MustSave(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Request, _ = http.NewRequest("POST", "/api/documents/onlyoffice/callback", bytes.NewReader(bodyBytes))
+	c.Request, _ = http.NewRequest(http.MethodPost, "/api/documents/onlyoffice/callback", bytes.NewReader(bodyBytes))
 	c.Request.Header.Set("Content-Type", "application/json")
 
 	h.HandleCallback(c)
@@ -317,7 +321,10 @@ func TestHandleCallback_RejectsMissingSecret(t *testing.T) {
 		Key:    "1_123",
 		Status: StatusEditing,
 	}
-	bodyBytes, _ := json.Marshal(body)
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		t.Fatalf("序列化回调请求失败: %v", err)
+	}
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -338,7 +345,10 @@ func TestHandleCallback_RejectsInvalidToken(t *testing.T) {
 		Status: StatusEditing,
 		Token:  "invalid",
 	}
-	bodyBytes, _ := json.Marshal(body)
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		t.Fatalf("序列化回调请求失败: %v", err)
+	}
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -363,7 +373,7 @@ func TestConvertDocument_InvalidOutputType(t *testing.T) {
 	body := `{"document_id": 1, "output_type": "exe"}`
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Request, _ = http.NewRequest("POST", "/api/documents/onlyoffice/convert", strings.NewReader(body))
+	c.Request, _ = http.NewRequest(http.MethodPost, "/api/documents/onlyoffice/convert", strings.NewReader(body))
 	c.Request.Header.Set("Content-Type", "application/json")
 
 	h.ConvertDocument(c)
@@ -380,7 +390,7 @@ func TestCheckConversionStatus_NotFound(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest("GET", "/api/documents/onlyoffice/convert/status?task_id=nonexistent", nil)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/documents/onlyoffice/convert/status?task_id=nonexistent", nil)
 
 	h.CheckConversionStatus(c)
 
@@ -439,7 +449,9 @@ func TestSaveDocument_SSRF_RejectsDifferentHost(t *testing.T) {
 		Filesize: 10, Status: "active",
 	}
 	db.Create(doc)
-	os.WriteFile(doc.Filepath, []byte("orig"), 0644)
+	if err := os.WriteFile(doc.Filepath, []byte("orig"), 0o644); err != nil {
+		t.Fatalf("写入初始文件失败: %v", err)
+	}
 
 	// 配置 onlyOfficeURL 指向 onlyoffice.example, 但下载 URL 指向 evil.example
 	h := setupOnlyOfficeHandlerWithServer(t, db, "http://onlyoffice.example:9090")
@@ -463,7 +475,9 @@ func TestSaveDocument_SSRF_RejectsDifferentPort(t *testing.T) {
 		Filesize: 10, Status: "active",
 	}
 	db.Create(doc)
-	os.WriteFile(doc.Filepath, []byte("orig"), 0644)
+	if err := os.WriteFile(doc.Filepath, []byte("orig"), 0o644); err != nil {
+		t.Fatalf("写入初始文件失败: %v", err)
+	}
 
 	h := setupOnlyOfficeHandlerWithServer(t, db, "http://onlyoffice.example:9090")
 
@@ -481,7 +495,9 @@ func TestSaveDocument_SSRF_RejectsLoopback(t *testing.T) {
 		Filesize: 10, Status: "active",
 	}
 	db.Create(doc)
-	os.WriteFile(doc.Filepath, []byte("orig"), 0644)
+	if err := os.WriteFile(doc.Filepath, []byte("orig"), 0o644); err != nil {
+		t.Fatalf("写入初始文件失败: %v", err)
+	}
 
 	// 配置 onlyOfficeURL 为公网，下载 URL 指向 127.0.0.1
 	h := setupOnlyOfficeHandlerWithServer(t, db, "http://onlyoffice.example:9090")
@@ -500,7 +516,9 @@ func TestSaveDocument_SSRF_RejectsUnsupportedScheme(t *testing.T) {
 		Filesize: 10, Status: "active",
 	}
 	db.Create(doc)
-	os.WriteFile(doc.Filepath, []byte("orig"), 0644)
+	if err := os.WriteFile(doc.Filepath, []byte("orig"), 0o644); err != nil {
+		t.Fatalf("写入初始文件失败: %v", err)
+	}
 
 	h := setupOnlyOfficeHandlerWithServer(t, db, "http://onlyoffice.example:9090")
 
@@ -523,7 +541,9 @@ func TestSaveDocument_SSRF_RejectsUserInfo(t *testing.T) {
 		Filesize: 10, Status: "active",
 	}
 	db.Create(doc)
-	os.WriteFile(doc.Filepath, []byte("orig"), 0644)
+	if err := os.WriteFile(doc.Filepath, []byte("orig"), 0o644); err != nil {
+		t.Fatalf("写入初始文件失败: %v", err)
+	}
 
 	h := setupOnlyOfficeHandlerWithServer(t, db, "http://onlyoffice.example:9090")
 
@@ -541,13 +561,15 @@ func TestSaveDocument_SizeLimit_50MiB(t *testing.T) {
 		Filesize: 10, Status: "active",
 	}
 	db.Create(doc)
-	os.WriteFile(doc.Filepath, []byte("orig"), 0644)
+	if err := os.WriteFile(doc.Filepath, []byte("orig"), 0o644); err != nil {
+		t.Fatalf("写入初始文件失败: %v", err)
+	}
 
 	// 模拟 OnlyOffice 服务器返回超过 50 MiB 的内容
 	ts := newIPv4TestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 		// 写入 50 MiB + 1 字节，超过 limit
-		w.Write(make([]byte, MaxOnlyOfficeDownloadBytes+1))
+		_, _ = w.Write(make([]byte, MaxOnlyOfficeDownloadBytes+1)) // test response writer 写入错误不可操作，测试仅关注响应状态/体
 	}))
 	defer ts.Close()
 
@@ -573,7 +595,9 @@ func TestSaveDocument_DownloadFailure_PreservesOriginal(t *testing.T) {
 		Filesize: 10, Status: "active",
 	}
 	db.Create(doc)
-	os.WriteFile(doc.Filepath, []byte("orig"), 0644)
+	if err := os.WriteFile(doc.Filepath, []byte("orig"), 0o644); err != nil {
+		t.Fatalf("写入初始文件失败: %v", err)
+	}
 
 	ts := newIPv4TestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -602,7 +626,9 @@ func TestSaveDocument_RedirectRejected(t *testing.T) {
 		Filesize: 10, Status: "active",
 	}
 	db.Create(doc)
-	os.WriteFile(doc.Filepath, []byte("orig"), 0644)
+	if err := os.WriteFile(doc.Filepath, []byte("orig"), 0o644); err != nil {
+		t.Fatalf("写入初始文件失败: %v", err)
+	}
 
 	// 目标 host：allowed.com:9090；重定向到 evil.com
 	ts := newIPv4TestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -632,11 +658,13 @@ func TestSaveDocument_SSRF_AllowedHostSucceeds(t *testing.T) {
 		Filesize: 10, Status: "active",
 	}
 	db.Create(doc)
-	os.WriteFile(doc.Filepath, []byte("orig"), 0644)
+	if err := os.WriteFile(doc.Filepath, []byte("orig"), 0o644); err != nil {
+		t.Fatalf("写入初始文件失败: %v", err)
+	}
 
 	ts := newIPv4TestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
-		w.Write([]byte("new content"))
+		_, _ = w.Write([]byte("new content")) // test response writer 写入错误不可操作，测试仅关注响应状态/体
 	}))
 	defer ts.Close()
 
@@ -658,7 +686,7 @@ func TestProcessConversionResult_RejectsNonOnlyOfficeURL(t *testing.T) {
 	tsHit := false
 	ts := newIPv4TestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tsHit = true
-		w.Write([]byte("converted"))
+		_, _ = w.Write([]byte("converted")) // test response writer 写入错误不可操作，测试仅关注响应状态/体
 	}))
 	defer ts.Close()
 
@@ -672,7 +700,7 @@ func TestProcessConversionResult_RejectsNonOnlyOfficeURL(t *testing.T) {
 		CreatedAt:  time.Now(),
 	}
 
-	h.processConversionResult("task-1", &ConversionResponse{Status: 3, URL: ts.URL + "/converted.pdf"})
+	h.processConversionResult(context.Background(), "task-1", &ConversionResponse{Status: 3, URL: ts.URL + "/converted.pdf"})
 
 	task := h.conversionTasks["task-1"]
 	if task.Status != ConversionStatusError {

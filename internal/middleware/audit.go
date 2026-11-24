@@ -3,9 +3,11 @@ package middleware
 import (
 	"bytes"
 	"io"
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
+
 	"law-oa-go/internal/logger"
 )
 
@@ -23,7 +25,7 @@ func AuditMiddleware() gin.HandlerFunc {
 
 		// 记录请求体（仅对POST/PUT/PATCH请求）
 		var requestBody []byte
-		if c.Request.Method == "POST" || c.Request.Method == "PUT" || c.Request.Method == "PATCH" {
+		if c.Request.Method == http.MethodPost || c.Request.Method == http.MethodPut || c.Request.Method == http.MethodPatch {
 			if c.Request.Body != nil {
 				requestBody, _ = io.ReadAll(c.Request.Body)
 				c.Request.Body = io.NopCloser(bytes.NewBuffer(requestBody))
@@ -49,7 +51,9 @@ func AuditMiddleware() gin.HandlerFunc {
 		// 获取用户ID（如果已认证）
 		var userID uint
 		if uid, exists := c.Get("user_id"); exists {
-			userID = uid.(uint)
+			if id, ok := uid.(uint); ok {
+				userID = id
+			}
 		}
 
 		// 记录审计日志

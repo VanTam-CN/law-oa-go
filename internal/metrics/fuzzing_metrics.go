@@ -601,22 +601,22 @@ func (fm *FuzzingMetrics) ValidateQualityGate(metrics *FuzzingTestMetrics, thres
 	var violations []string
 
 	// 检查Critical crashes
-	if maxCritical := thresholds["max_critical_crashes"].(int); metrics.CriticalCrashes > int64(maxCritical) {
+	if maxCritical, ok := thresholds["max_critical_crashes"].(int); ok && metrics.CriticalCrashes > int64(maxCritical) {
 		violations = append(violations, fmt.Sprintf("Critical crashes exceed threshold: %d > %d", metrics.CriticalCrashes, maxCritical))
 	}
 
 	// 检查High crashes
-	if maxHigh := thresholds["max_high_crashes"].(int); metrics.HighCrashes > int64(maxHigh) {
+	if maxHigh, ok := thresholds["max_high_crashes"].(int); ok && metrics.HighCrashes > int64(maxHigh) {
 		violations = append(violations, fmt.Sprintf("High crashes exceed threshold: %d > %d", metrics.HighCrashes, maxHigh))
 	}
 
 	// 检查覆盖率
-	if minCoverage := thresholds["min_coverage"].(float64); metrics.Coverage < minCoverage {
+	if minCoverage, ok := thresholds["min_coverage"].(float64); ok && metrics.Coverage < minCoverage {
 		violations = append(violations, fmt.Sprintf("Coverage below threshold: %.2f%% < %.2f%%", metrics.Coverage, minCoverage))
 	}
 
 	// 检查执行时间
-	if maxDuration := thresholds["max_execution_time"].(string); metrics.Duration > parseDuration(maxDuration) {
+	if maxDuration, ok := thresholds["max_execution_time"].(string); ok && metrics.Duration > parseDuration(maxDuration) {
 		violations = append(violations, fmt.Sprintf("Execution time exceeds threshold: %v > %s", metrics.Duration, maxDuration))
 	}
 

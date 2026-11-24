@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+
 	"law-oa-go/internal/cache"
 )
 
@@ -290,7 +291,7 @@ func SecurityHeadersMiddleware() gin.HandlerFunc {
 func CSRFProtectionMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 对于GET、HEAD、OPTIONS请求，跳过CSRF检查
-		if c.Request.Method == "GET" || c.Request.Method == "HEAD" || c.Request.Method == "OPTIONS" {
+		if c.Request.Method == http.MethodGet || c.Request.Method == http.MethodHead || c.Request.Method == http.MethodOptions {
 			c.Next()
 			return
 		}
@@ -405,8 +406,8 @@ func checkRateLimit(c *gin.Context, payload *TokenPayload, cacheService *cache.C
 		return false
 	}
 
-	// 增加计数
-	cacheService.Set(rateLimitKey, count+1, time.Minute)
+	// 增加计数。限流计数写入失败不影响本次鉴权决策（旧计数仍在），且本包无 logger，错误不可操作，显式丢弃。
+	_ = cacheService.Set(rateLimitKey, count+1, time.Minute)
 
 	return true
 }
@@ -420,6 +421,7 @@ func updateUserActivity(ctx context.Context, payload *TokenPayload, cacheService
 	err := cacheService.Get(deviceKey, &deviceInfo)
 	if err == nil {
 		deviceInfo["last_active"] = time.Now()
-		cacheService.Set(deviceKey, deviceInfo, time.Hour*24)
+		// 活跃信息写入失败不影响鉴权主流程，且本包无 logger，错误不可操作，显式丢弃。
+		_ = cacheService.Set(deviceKey, deviceInfo, time.Hour*24)
 	}
 }

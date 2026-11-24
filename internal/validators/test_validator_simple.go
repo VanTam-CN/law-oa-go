@@ -7,6 +7,9 @@ import (
 	"strings"
 )
 
+// tagFormatRegex 预编译标签格式正则（循环内使用，避免每次 MatchString 重复编译）。
+var tagFormatRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+
 // SimpleTestValidator 简化的测试验证器
 type SimpleTestValidator struct{}
 
@@ -185,8 +188,7 @@ func (v *SimpleTestValidator) ValidateTags(tags []string) error {
 		}
 
 		// 检查标签格式（只允许字母、数字、连字符、下划线）
-		matched, _ := regexp.MatchString(`^[a-zA-Z0-9_-]+$`, tag)
-		if !matched {
+		if !tagFormatRegex.MatchString(tag) {
 			return fmt.Errorf("invalid tag format (must contain only letters, numbers, hyphens and underscores): %s", tag)
 		}
 	}

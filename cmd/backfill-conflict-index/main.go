@@ -36,7 +36,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("获取数据库连接失败: %v", err)
 	}
-	defer sqlDB.Close()
+	// sqlDB.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = sqlDB.Close() }()
 
 	repo := repositories.NewConflictRepository(db, nil)
 	reconciler, ok := repo.(repositories.ConflictP0SubjectIndexReconciler)

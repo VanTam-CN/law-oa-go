@@ -9,6 +9,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/cache"
 	"law-oa-go/internal/models"
 )
@@ -64,7 +65,9 @@ func (s *RBACService) CheckUserPermission(ctx context.Context, userID uint, perm
 		// 缓存权限
 		permissions := s.getRolePermissions(user.Role)
 		cacheKey := fmt.Sprintf("user_permissions:%d", userID)
-		s.cache.Set(ctx, cacheKey, permissions)
+		if err := s.cache.Set(ctx, cacheKey, permissions); err != nil {
+			return true, fmt.Errorf("缓存用户权限失败: %w", err)
+		}
 		return true, nil
 	}
 	return false, nil
@@ -73,15 +76,19 @@ func (s *RBACService) CheckUserPermission(ctx context.Context, userID uint, perm
 // checkRolePermission 检查角色权限
 func (s *RBACService) checkRolePermission(role, permissionKey string) bool {
 	rolePermissions := map[string][]string{
-		"admin": {"user:view", "user:create", "user:update", "user:delete", "user:assign_role",
+		"admin": {
+			"user:view", "user:create", "user:update", "user:delete", "user:assign_role",
 			"role:view", "role:create", "role:update", "role:delete", "role:assign_permission",
 			"permission:view", "permission:create", "permission:update", "permission:delete",
 			"case:view", "case:create", "case:update", "case:delete", "case:assign",
 			"client:view", "client:create", "client:update", "client:delete",
-			"document:view", "document:upload", "document:update", "document:delete", "document:download"},
-		"lawyer": {"case:view", "case:create", "case:update", "case:assign",
+			"document:view", "document:upload", "document:update", "document:delete", "document:download",
+		},
+		"lawyer": {
+			"case:view", "case:create", "case:update", "case:assign",
 			"client:view", "client:create", "client:update",
-			"document:view", "document:upload", "document:update", "document:download"},
+			"document:view", "document:upload", "document:update", "document:download",
+		},
 		"user": {"case:view", "client:view", "document:view", "document:download"},
 	}
 
@@ -101,15 +108,19 @@ func (s *RBACService) checkRolePermission(role, permissionKey string) bool {
 // getRolePermissions 获取角色权限列表
 func (s *RBACService) getRolePermissions(role string) []string {
 	rolePermissions := map[string][]string{
-		"admin": {"user:view", "user:create", "user:update", "user:delete", "user:assign_role",
+		"admin": {
+			"user:view", "user:create", "user:update", "user:delete", "user:assign_role",
 			"role:view", "role:create", "role:update", "role:delete", "role:assign_permission",
 			"permission:view", "permission:create", "permission:update", "permission:delete",
 			"case:view", "case:create", "case:update", "case:delete", "case:assign",
 			"client:view", "client:create", "client:update", "client:delete",
-			"document:view", "document:upload", "document:update", "document:delete", "document:download"},
-		"lawyer": {"case:view", "case:create", "case:update", "case:assign",
+			"document:view", "document:upload", "document:update", "document:delete", "document:download",
+		},
+		"lawyer": {
+			"case:view", "case:create", "case:update", "case:assign",
 			"client:view", "client:create", "client:update",
-			"document:view", "document:upload", "document:update", "document:download"},
+			"document:view", "document:upload", "document:update", "document:download",
+		},
 		"user": {"case:view", "client:view", "document:view", "document:download"},
 	}
 
@@ -129,7 +140,17 @@ func (s *RBACService) RequirePermission(permissionKey string) gin.HandlerFunc {
 			return
 		}
 
-		hasPermission, err := s.CheckUserPermission(c.Request.Context(), userID.(uint), permissionKey)
+		userIDValue, ok := userID.(uint)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"code":    401,
+				"message": "未授权访问",
+			})
+			c.Abort()
+			return
+		}
+
+		hasPermission, err := s.CheckUserPermission(c.Request.Context(), userIDValue, permissionKey)
 		if err != nil || !hasPermission {
 			c.JSON(http.StatusForbidden, gin.H{
 				"code":    403,

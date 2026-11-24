@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+
 	"law-oa-go/internal/models"
 )
 
@@ -95,7 +96,7 @@ func (c *mcpClient) FetchLatestStandards(ctx context.Context) (*models.MCPStanda
 	url := fmt.Sprintf("%s/api/v1/standards/latest", c.config.BaseURL)
 
 	// 创建请求
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("创建请求失败: %w", err)
 	}
@@ -110,16 +111,26 @@ func (c *mcpClient) FetchLatestStandards(ctx context.Context) (*models.MCPStanda
 	// 发送请求
 	var response *http.Response
 	err = c.retryRequest(ctx, func() error {
-		var err error
-		response, err = c.httpClient.Do(req)
+		// 重试前关闭上一次成功的响应体，避免覆盖泄漏
+		if response != nil && response.Body != nil {
+			// 重试前的清理步骤：关闭旧响应体失败仅影响连接复用，此时无恢复路径，错误不可操作
+			_ = response.Body.Close()
+		}
+		resp, err := c.httpClient.Do(req)
+		if resp != nil && err != nil {
+			// 请求失败（含重定向错误）时立即释放响应体；此处主错误是请求错误，Close 失败不可操作
+			_ = resp.Body.Close()
+			return err
+		}
+		response = resp
 		return err
 	})
-
 	if err != nil {
 		c.updateServiceStatus(ctx, false, err)
 		return nil, fmt.Errorf("请求MCP服务失败: %w", err)
 	}
-	defer response.Body.Close()
+	// response.Body.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = response.Body.Close() }()
 
 	// 检查响应状态
 	if response.StatusCode != http.StatusOK {
@@ -186,7 +197,7 @@ func (c *mcpClient) HealthCheck(ctx context.Context) error {
 
 	url := fmt.Sprintf("%s/health", c.config.BaseURL)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return fmt.Errorf("创建健康检查请求失败: %w", err)
 	}
@@ -199,7 +210,8 @@ func (c *mcpClient) HealthCheck(ctx context.Context) error {
 		c.updateServiceStatus(ctx, false, err)
 		return fmt.Errorf("健康检查失败: %w", err)
 	}
-	defer response.Body.Close()
+	// response.Body.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = response.Body.Close() }()
 
 	if response.StatusCode != http.StatusOK {
 		err := fmt.Errorf("健康检查返回状态码: %d", response.StatusCode)
@@ -234,7 +246,7 @@ func (c *mcpClient) GetServiceStatus(ctx context.Context) (*MCPServiceStatus, er
 	statusKey := "mcp:service:status"
 	data, err := c.redis.Get(ctx, statusKey).Bytes()
 	if err != nil {
-		if err == redis.Nil {
+		if errors.Is(err, redis.Nil) {
 			// 没有缓存的状态，执行健康检查
 			healthErr := c.HealthCheck(ctx)
 			if healthErr != nil {

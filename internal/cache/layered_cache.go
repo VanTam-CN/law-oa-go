@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"sync"
 	"time"
@@ -43,7 +44,11 @@ func (lc *LayeredCache) Get(ctx context.Context, key string) (interface{}, bool)
 
 	// 先查L1缓存
 	if item, ok := lc.l1Cache.Load(key); ok {
-		cacheItem := item.(*CacheItem)
+		cacheItem, isItem := item.(*CacheItem)
+		if !isItem {
+			// L1 缓存仅存储 *CacheItem，此断言失败属于内部不变量被破坏，保持原有崩溃语义
+			panic(fmt.Sprintf("layered cache: L1 缓存项类型异常 %T, key=%s", item, key))
+		}
 		if time.Now().Before(cacheItem.Expiration) {
 			lc.logger.Debug("L1 cache hit", "key", key)
 			return cacheItem.Value, true

@@ -98,7 +98,12 @@ func redactApprovalConflictRecord(value interface{}) interface{} {
 	if !ok {
 		return decoded
 	}
-	projected := redactApprovalConflictPayload(record).(map[string]interface{})
+	payload := redactApprovalConflictPayload(record)
+	projected, ok := payload.(map[string]interface{})
+	if !ok {
+		// 脱敏变换对 map 输入应返回 map；类型不符时原样返回，避免二次断言 panic。
+		return payload
+	}
 	for _, key := range []string{"riskLevel", "risk_level"} {
 		if _, exists := projected[key]; exists {
 			projected[key] = "REVIEW_REQUIRED"

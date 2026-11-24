@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/models"
 )
 
@@ -233,7 +234,8 @@ func (r *documentRepository) GetStats(ctx context.Context, viewerUserID uint) (*
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	// rows.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = rows.Close() }()
 
 	for rows.Next() {
 		var category string
@@ -249,6 +251,9 @@ func (r *documentRepository) GetStats(ctx context.Context, viewerUserID uint) (*
 			Count    int64
 		}{category, count})
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	// 按实体类型统计（独立 session 复用 scope 条件）
 	entityRows, err := applyEthicalWallScope(r.db.WithContext(ctx).Model(&models.Document{}), viewerUserID).
@@ -258,7 +263,8 @@ func (r *documentRepository) GetStats(ctx context.Context, viewerUserID uint) (*
 	if err != nil {
 		return nil, err
 	}
-	defer entityRows.Close()
+	// entityRows.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = entityRows.Close() }()
 
 	for entityRows.Next() {
 		var entityType string
@@ -273,6 +279,9 @@ func (r *documentRepository) GetStats(ctx context.Context, viewerUserID uint) (*
 			EntityType string
 			Count      int64
 		}{entityType, count})
+	}
+	if err := entityRows.Err(); err != nil {
+		return nil, err
 	}
 
 	// 最近上传统计（过去7天）

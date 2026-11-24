@@ -35,6 +35,18 @@ func MaskPhone(phone string) string {
 	return phone[:3] + "****" + phone[len(phone)-4:]
 }
 
+// MaskContactPerson masks a contact person name for reads. Only the first
+// character stays visible so a masked echo remains distinguishable from an
+// empty value.
+func MaskContactPerson(name string) string {
+	trimmed := strings.TrimSpace(name)
+	if trimmed == "" {
+		return ""
+	}
+	runes := []rune(trimmed)
+	return string(runes[0]) + "**"
+}
+
 // ClientSafeResponse 用于API响应的安全客户端信息，敏感字段已脱敏
 type ClientSafeResponse struct {
 	ID             uint         `json:"id"`

@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -246,7 +247,7 @@ func (r *enhancedConflictRepository) GetClientProfile(ctx context.Context, id st
 		Preload("IndustryClassifications").
 		Preload("RiskProfile").
 		First(&profile, "id = ?", id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("客户档案不存在: %s", id)
 		}
 		return nil, fmt.Errorf("获取客户档案失败: %w", err)
@@ -279,7 +280,7 @@ func (r *enhancedConflictRepository) GetClientProfileByNumber(ctx context.Contex
 		Preload("IndustryClassifications").
 		Preload("RiskProfile").
 		First(&profile, "client_number = ?", clientNumber).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("客户档案不存在: %s", clientNumber)
 		}
 		return nil, fmt.Errorf("获取客户档案失败: %w", err)
@@ -400,7 +401,7 @@ func (r *enhancedConflictRepository) GetClientsWithRelationships(ctx context.Con
 		Preload("IndustryClassifications").
 		Preload("RiskProfile").
 		First(&profile, "id = ?", clientID).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("客户档案不存在: %s", clientID)
 		}
 		return nil, fmt.Errorf("获取客户档案失败: %w", err)
@@ -542,7 +543,7 @@ func (r *enhancedConflictRepository) GetClientRiskProfile(ctx context.Context, c
 	var riskProfile models.ClientRiskProfile
 	if err := r.db.WithContext(ctx).
 		First(&riskProfile, "client_id = ?", clientID).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("客户风险档案不存在: %s", clientID)
 		}
 		return nil, fmt.Errorf("获取客户风险档案失败: %w", err)
@@ -587,7 +588,7 @@ func (r *enhancedConflictRepository) GetConflictType(ctx context.Context, id str
 	if err := r.db.WithContext(ctx).
 		Preload("ClassificationRefs").
 		First(&conflictType, "id = ?", id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("冲突类型不存在: %s", id)
 		}
 		return nil, fmt.Errorf("获取冲突类型失败: %w", err)
@@ -601,7 +602,7 @@ func (r *enhancedConflictRepository) GetConflictTypeByCode(ctx context.Context, 
 	if err := r.db.WithContext(ctx).
 		Preload("ClassificationRefs").
 		First(&conflictType, "code = ?", code).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("冲突类型不存在: %s", code)
 		}
 		return nil, fmt.Errorf("获取冲突类型失败: %w", err)
@@ -697,7 +698,7 @@ func (r *enhancedConflictRepository) GetRiskLevelDefinition(ctx context.Context,
 	var definition models.RiskLevelDefinition
 	if err := r.db.WithContext(ctx).
 		First(&definition, "level = ?", level).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("风险等级定义不存在: %s", level)
 		}
 		return nil, fmt.Errorf("获取风险等级定义失败: %w", err)
@@ -825,21 +826,21 @@ type ClientSearchQuery struct {
 // ClientSearchResult 客户搜索结果
 type ClientSearchResult struct {
 	Profiles []*models.ClientProfile `json:"profiles"`
-	Total    int64                  `json:"total"`
-	Page     int                    `json:"page"`
-	PageSize int                    `json:"page_size"`
+	Total    int64                   `json:"total"`
+	Page     int                     `json:"page"`
+	PageSize int                     `json:"page_size"`
 }
 
 // ConflictTypeSearchQuery 冲突类型搜索查询
 type ConflictTypeSearchQuery struct {
-	Keyword       string `json:"keyword"`
-	Category      string `json:"category"`
-	RiskLevel     string `json:"risk_level"`
-	Status        string `json:"status"`
+	Keyword        string `json:"keyword"`
+	Category       string `json:"category"`
+	RiskLevel      string `json:"risk_level"`
+	Status         string `json:"status"`
 	WaiverPossible *bool  `json:"waiver_possible"`
-	Page          int    `json:"page"`
-	PageSize      int    `json:"page_size"`
-	OrderBy       string `json:"order_by"`
+	Page           int    `json:"page"`
+	PageSize       int    `json:"page_size"`
+	OrderBy        string `json:"order_by"`
 }
 
 // ConflictTypeSearchResult 冲突类型搜索结果
@@ -852,26 +853,26 @@ type ConflictTypeSearchResult struct {
 
 // StatisticsQuery 统计查询
 type StatisticsQuery struct {
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
+	StartDate time.Time              `json:"start_date"`
+	EndDate   time.Time              `json:"end_date"`
 	Filters   map[string]interface{} `json:"filters"`
 }
 
 // RuleExecutionStats 规则执行统计
 type RuleExecutionStats struct {
-	TotalExecutions    int64     `json:"total_executions"`
-	SuccessRate        float64 `json:"success_rate"`
-	AvgExecutionTime   int64     `json:"avg_execution_time"`
-	LastExecuted       *time.Time `json:"last_executed"`
-	ErrorRate          float64 `json:"error_rate"`
+	TotalExecutions  int64      `json:"total_executions"`
+	SuccessRate      float64    `json:"success_rate"`
+	AvgExecutionTime int64      `json:"avg_execution_time"`
+	LastExecuted     *time.Time `json:"last_executed"`
+	ErrorRate        float64    `json:"error_rate"`
 }
 
 // ConflictTrend 冲突趋势
 type ConflictTrend struct {
-	Period     string `json:"period"`
-	Conflicts  int64    `json:"conflicts"`
-	Resolutions int64   `json:"resolutions"`
-	Pending    int64    `json:"pending"`
+	Period      string `json:"period"`
+	Conflicts   int64  `json:"conflicts"`
+	Resolutions int64  `json:"resolutions"`
+	Pending     int64  `json:"pending"`
 }
 
 // RiskDistributionFilters 风险分布筛选器
@@ -891,53 +892,53 @@ type RiskDistribution struct {
 
 // WaiverStatistics 豁免统计
 type WaiverStatistics struct {
-	TotalRequests  int64     `json:"total_requests"`
-	ApprovedCount  int64     `json:"approved_count"`
-	RejectedCount  int64     `json:"rejected_count"`
-	PendingCount   int64     `json:"pending_count"`
-	ApprovalRate   float64 `json:"approval_rate"`
-	AvgProcessingDays int64  `json:"avg_processing_days"`
+	TotalRequests     int64   `json:"total_requests"`
+	ApprovedCount     int64   `json:"approved_count"`
+	RejectedCount     int64   `json:"rejected_count"`
+	PendingCount      int64   `json:"pending_count"`
+	ApprovalRate      float64 `json:"approval_rate"`
+	AvgProcessingDays int64   `json:"avg_processing_days"`
 }
 
 // WaiverApprovalTrend 豁免审批趋势
 type WaiverApprovalTrend struct {
-	Period      string `json:"period"`
-	Requests    int64    `json:"requests"`
-	Approvals   int64    `json:"approvals"`
-	Rejections  int64    `json:"rejections"`
+	Period     string `json:"period"`
+	Requests   int64  `json:"requests"`
+	Approvals  int64  `json:"approvals"`
+	Rejections int64  `json:"rejections"`
 }
 
 // ClientRiskStatistics 客户风险统计
 type ClientRiskStatistics struct {
-	TotalClients      int64     `json:"total_clients"`
-	LowRiskClients    int64     `json:"low_risk_clients"`
-	MediumRiskClients int64     `json:"medium_risk_clients"`
-	HighRiskClients   int64     `json:"high_risk_clients"`
-	CriticalRiskClients int64   `json:"critical_risk_clients"`
+	TotalClients              int64 `json:"total_clients"`
+	LowRiskClients            int64 `json:"low_risk_clients"`
+	MediumRiskClients         int64 `json:"medium_risk_clients"`
+	HighRiskClients           int64 `json:"high_risk_clients"`
+	CriticalRiskClients       int64 `json:"critical_risk_clients"`
 	MonitoringRequiredClients int64 `json:"monitoring_required_clients"`
 }
 
 // HighRiskClient 高风险客户
 type HighRiskClient struct {
-	ClientID   string  `json:"client_id"`
-	ClientName string  `json:"client_name"`
-	RiskScore  float64 `json:"risk_score"`
-	RiskLevel  string  `json:"risk_level"`
+	ClientID   string    `json:"client_id"`
+	ClientName string    `json:"client_name"`
+	RiskScore  float64   `json:"risk_score"`
+	RiskLevel  string    `json:"risk_level"`
 	LastUpdate time.Time `json:"last_update"`
 }
 
 // ProcessingEfficiencyStats 处理效率统计
 type ProcessingEfficiencyStats struct {
-	AvgProcessingTime   int64     `json:"avg_processing_time"`
-	FastProcessingRate  float64 `json:"fast_processing_rate"`
+	AvgProcessingTime    int64   `json:"avg_processing_time"`
+	FastProcessingRate   float64 `json:"fast_processing_rate"`
 	OnTimeCompletionRate float64 `json:"on_time_completion_rate"`
-	QueueLength         int64     `json:"queue_length"`
+	QueueLength          int64   `json:"queue_length"`
 }
 
 // SlaComplianceStats SLA合规统计
 type SlaComplianceStats struct {
-	OverallComplianceRate float64 `json:"overall_compliance_rate"`
+	OverallComplianceRate float64            `json:"overall_compliance_rate"`
 	PriorityCompliance    map[string]float64 `json:"priority_compliance"`
-	BreachedRequests     int64     `json:"breached_requests"`
-	TotalRequests        int64     `json:"total_requests"`
+	BreachedRequests      int64              `json:"breached_requests"`
+	TotalRequests         int64              `json:"total_requests"`
 }

@@ -102,7 +102,7 @@ type TemplateInfo struct {
 type ListNotificationsRequest struct {
 	Page          int    `json:"page" form:"page" binding:"min=1"`
 	PageSize      int    `json:"page_size" form:"page_size" binding:"min=1,max=100"`
-	Status        string `json:"status" form:"status" binding:"omitempty,oneof=pending approved sent cancelled failed"`
+	Status        string `json:"status" form:"status" binding:"omitempty,oneof=pending approved sent canceled failed"`
 	Channel       string `json:"channel" form:"channel" binding:"omitempty,oneof=email sms wechat"`
 	RecipientType string `json:"recipient_type" form:"recipient_type" binding:"omitempty,oneof=client lawyer admin"`
 	TriggerType   string `json:"trigger_type" form:"trigger_type"`
@@ -357,7 +357,7 @@ func (s *NotificationQueueService) RejectNotification(ctx context.Context, id ui
 		return nil, errors.New("只有待审批状态的通知可以拒绝")
 	}
 
-	notification.Status = "cancelled"
+	notification.Status = "canceled"
 
 	if err := s.queueRepo.Update(ctx, notification); err != nil {
 		return nil, fmt.Errorf("拒绝通知失败: %w", err)
@@ -536,7 +536,7 @@ func (s *NotificationQueueService) DeleteNotification(ctx context.Context, id ui
 	}
 
 	// 只能删除草稿或已取消的通知
-	if notification.Status != "pending" && notification.Status != "cancelled" {
+	if notification.Status != "pending" && notification.Status != "canceled" {
 		return errors.New("只能删除待审批或已取消的通知")
 	}
 
@@ -642,7 +642,7 @@ func (s *NotificationQueueService) GetNotificationStats(ctx context.Context) (*N
 			stats.SentNotifications++
 		case "failed":
 			stats.FailedNotifications++
-		case "cancelled":
+		case "canceled":
 			stats.CancelledNotifications++
 		}
 
@@ -661,6 +661,6 @@ type NotificationStats struct {
 	ApprovedNotifications  int64 `json:"approved_notifications"`
 	SentNotifications      int64 `json:"sent_notifications"`
 	FailedNotifications    int64 `json:"failed_notifications"`
-	CancelledNotifications int64 `json:"cancelled_notifications"`
+	CancelledNotifications int64 `json:"canceled_notifications"`
 	SensitiveNotifications int64 `json:"sensitive_notifications"`
 }

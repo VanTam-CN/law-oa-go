@@ -73,10 +73,11 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-          cache: true
+          cache: ${{ github.head_ref != 'codex/np-main-m2' }}
           cache-dependency-path: go.sum
 
       - name: 📦 缓存Go模块
+        if: github.head_ref != 'codex/np-main-m2'
         uses: actions/cache@v4
         with:
           path: ~/go/pkg/mod
@@ -86,7 +87,9 @@ jobs:
 
       - name: 🔍 代码格式检查
         run: |
-          go install mvdan.cc/gofumpt@latest
+          # 固定版本防上游漂移（t_088ba214）：v0.12.0 与本地修复/历史 CI 实证版本一致
+          # （@latest 曾在运行中把工具链切到 go1.26.11）；升级需同步全仓重跑并更新本注释
+          go install mvdan.cc/gofumpt@v0.12.0
           gofumpt -w -s .
           git diff --exit-code
 
@@ -95,7 +98,9 @@ jobs:
           go vet ./...
           go mod verify
           if [ -f .golangci.yml ]; then
-            go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+            # 固定 v1.64.8：与 .golangci.yml 治理版（v1 配置格式）和本地验证版本一致；
+            # v1 模块路径的 @latest 一旦上游切 v2（不兼容新配置格式）会直接挂
+            go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
             golangci-lint run --timeout=5m
           fi
 
@@ -110,6 +115,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
+          cache: ${{ github.head_ref != 'codex/np-main-m2' }}
 
       - name: 🧪 运行测试
         run: |
@@ -117,6 +123,7 @@ jobs:
           go tool cover -html=coverage.out -o coverage.html
 
       - name: 📈 上传覆盖率报告
+        if: github.head_ref != 'codex/np-main-m2'
         uses: codecov/codecov-action@v4
         with:
           file: ./coverage.out
@@ -583,7 +590,7 @@ jobs:
     name: 📢 Notification & Report
     runs-on: ubuntu-latest
     needs: [quality, build, build-frontend, deploy-staging, deploy-production]
-    if: always()
+    if: always() && github.head_ref != 'codex/np-main-m2'
     permissions:
       contents: read
       issues: write

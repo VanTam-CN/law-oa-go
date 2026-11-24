@@ -366,7 +366,7 @@ func (s *companyAPIService) searchQichacha(ctx context.Context, keyword string) 
 	fullURL := apiURL + "?" + params.Encode()
 
 	// 创建请求
-	req, err := http.NewRequestWithContext(ctx, "GET", fullURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fullURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("创建请求失败: %w", err)
 	}
@@ -380,7 +380,8 @@ func (s *companyAPIService) searchQichacha(ctx context.Context, keyword string) 
 	if err != nil {
 		return nil, fmt.Errorf("发送请求失败: %w", err)
 	}
-	defer resp.Body.Close()
+	// resp.Body.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = resp.Body.Close() }()
 
 	// 解析响应
 	if resp.StatusCode != http.StatusOK {
@@ -768,14 +769,6 @@ func CalculatePenetrationDepth(shareholders []*Shareholder) int {
 		}
 	}
 	return maxDepth
-}
-
-// max 返回两个整数中的较大值
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
 }
 
 // GetRiskLevelByShareholding 根据持股比例获取风险等级

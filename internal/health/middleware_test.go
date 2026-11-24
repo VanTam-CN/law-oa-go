@@ -36,7 +36,7 @@ func TestHealthMiddleware_HealthCheckHandler(t *testing.T) {
 
 	// 测试健康检查
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/health", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/health", nil)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -75,7 +75,7 @@ func TestHealthMiddleware_DetailedHealthCheckHandler(t *testing.T) {
 
 	// 测试详细健康检查
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/health/detailed", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/health/detailed", nil)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -127,7 +127,7 @@ func TestHealthMiddleware_HealthCheckMetricsHandler(t *testing.T) {
 
 	// 测试健康检查指标
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/health/metrics", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/health/metrics", nil)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -154,7 +154,7 @@ func TestHealthMiddleware_ReadinessHandler(t *testing.T) {
 
 	// 测试就绪状态
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/ready", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/ready", nil)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -186,7 +186,7 @@ func TestHealthMiddleware_ReadinessRejectsDegradedChecks(t *testing.T) {
 	router.GET("/ready", middleware.ReadinessHandler)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/ready", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/ready", nil)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
@@ -215,7 +215,7 @@ func TestHealthMiddleware_ReadinessQAMarksProductionEvidenceSkipped(t *testing.T
 	router.GET("/ready", middleware.ReadinessHandler)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/ready", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/ready", nil)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -229,7 +229,9 @@ func TestHealthMiddleware_ReadinessQAMarksProductionEvidenceSkipped(t *testing.T
 	assert.Equal(t, "environment_technical_readiness", scope["scope"])
 	assert.Equal(t, false, scope["production_ready"])
 	assert.Equal(t, false, scope["production_evidence_evaluated"])
-	assert.Equal(t, "完成并签署 PD-01 至 PD-07 决策物，登记书面签署凭证", scope["skipped_gates"].(map[string]interface{})["G0"])
+	skippedGates, ok := scope["skipped_gates"].(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, "完成并签署 PD-01 至 PD-07 决策物，登记书面签署凭证", skippedGates["G0"])
 	assert.Contains(t, scope["next_actions"], "保持 QA 流量边界；生产放行前在 production 环境逐项完成 G0-G7 证据门禁")
 
 	checks, ok := response["checks"].(map[string]interface{})
@@ -260,7 +262,7 @@ func TestHealthMiddleware_ReadinessProductionMissingEvidenceNotReady(t *testing.
 	router.GET("/ready", middleware.ReadinessHandler)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/ready", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/ready", nil)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
@@ -273,10 +275,13 @@ func TestHealthMiddleware_ReadinessProductionMissingEvidenceNotReady(t *testing.
 	assert.Equal(t, "production_technical_and_governance_readiness", scope["scope"])
 	assert.Equal(t, false, scope["production_ready"])
 	assert.Equal(t, true, scope["production_evidence_evaluated"])
-	missing := scope["missing"].([]interface{})
+	missing, ok := scope["missing"].([]interface{})
+	require.True(t, ok)
 	assert.Equal(t, "QA技术就绪：生产数据库前置条件未执行；ready=true不代表生产可用", missing[0])
 	assert.Len(t, missing, len(requiredProductionEvidenceGates)+1)
-	assert.Equal(t, "由运维负责人和合规负责人复核前序凭证，登记最终技术放行记录", scope["next_actions"].(map[string]interface{})["G7"])
+	nextActions, ok := scope["next_actions"].(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, "由运维负责人和合规负责人复核前序凭证，登记最终技术放行记录", nextActions["G7"])
 }
 
 func TestHealthMiddleware_ReadinessProductionRequiresEvidenceCheck(t *testing.T) {
@@ -288,7 +293,7 @@ func TestHealthMiddleware_ReadinessProductionRequiresEvidenceCheck(t *testing.T)
 	router.GET("/ready", middleware.ReadinessHandler)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/ready", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/ready", nil)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
@@ -299,7 +304,8 @@ func TestHealthMiddleware_ReadinessProductionRequiresEvidenceCheck(t *testing.T)
 	scope, ok := response["readiness_scope"].(map[string]interface{})
 	require.True(t, ok)
 	assert.Equal(t, false, scope["production_ready"])
-	missing := scope["missing"].([]interface{})
+	missing, ok := scope["missing"].([]interface{})
+	require.True(t, ok)
 	assert.Equal(t, "缺少 conflict_p0_readiness 检查：请确认生产数据库连接和健康检查初始化成功", missing[0])
 	assert.Len(t, missing, len(requiredProductionEvidenceGates)+1)
 }
@@ -328,7 +334,7 @@ func TestHealthMiddleware_ReadinessProductionDatabasePrerequisitesNotReadyWithou
 	router.GET("/ready", middleware.ReadinessHandler)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/ready", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/ready", nil)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
@@ -368,7 +374,7 @@ func TestHealthMiddleware_ReadinessProductionCompleteExplicitEvidenceReady(t *te
 	router.GET("/ready", middleware.ReadinessHandler)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/ready", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/ready", nil)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -396,7 +402,7 @@ func TestHealthMiddleware_LivenessHandler(t *testing.T) {
 
 	// 测试存活状态
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/live", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/live", nil)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -440,7 +446,7 @@ func TestHealthMiddleware_DependencyHealthHandler(t *testing.T) {
 
 	// 测试依赖健康状态
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/health/dependencies", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/health/dependencies", nil)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -451,8 +457,10 @@ func TestHealthMiddleware_DependencyHealthHandler(t *testing.T) {
 	assert.Contains(t, response, "dependencies")
 	assert.Equal(t, true, response["all_healthy"])
 
-	dependencies := response["dependencies"].(map[string]interface{})
-	database := dependencies["database"].(map[string]interface{})
+	dependencies, ok := response["dependencies"].(map[string]interface{})
+	require.True(t, ok)
+	database, ok := dependencies["database"].(map[string]interface{})
+	require.True(t, ok)
 	assert.Equal(t, "database", database["name"])
 	assert.Equal(t, "healthy", database["status"])
 	assert.Equal(t, float64(25), database["response_time"])
@@ -470,7 +478,7 @@ func TestHealthMiddleware_GracefulShutdownHandler(t *testing.T) {
 
 	// 测试有效令牌
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/shutdown", nil)
+	req, _ := http.NewRequest(http.MethodPost, "/shutdown", nil)
 	req.Body = http.NoBody
 	router.ServeHTTP(w, req)
 
@@ -518,7 +526,7 @@ func TestHealthMiddleware_HealthStatusPageHandler(t *testing.T) {
 
 	// 测试状态页面
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/health/status", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/health/status", nil)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -553,7 +561,7 @@ func TestHealthMiddleware_ExportHealthMetricsHandler(t *testing.T) {
 
 	// 测试指标导出
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/metrics/health", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/metrics/health", nil)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -582,7 +590,7 @@ func TestHealthMiddleware_HealthCheckMiddleware(t *testing.T) {
 
 	// 测试非健康检查端点
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/api/test", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/api/test", nil)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -629,7 +637,7 @@ func TestHealthMiddleware_UnhealthySystem(t *testing.T) {
 
 	// 测试不健康系统的响应
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/health", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/health", nil)
 	router.ServeHTTP(w, req)
 
 	// 应该返回服务不可用状态
@@ -667,7 +675,7 @@ func TestHealthMiddleware_WithTimeout(t *testing.T) {
 
 	// 测试超时处理
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/health/detailed", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/health/detailed", nil)
 	router.ServeHTTP(w, req)
 
 	// 即使有超时，也应该返回响应

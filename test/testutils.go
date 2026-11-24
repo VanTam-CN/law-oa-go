@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/services"
 )
@@ -46,7 +47,9 @@ func NewTestDB(t *testing.T) *TestDB {
 		DB:   gormDB,
 		Mock: mock,
 		Close: func() {
-			db.Close()
+			if err := db.Close(); err != nil {
+				t.Errorf("关闭测试数据库失败: %v", err)
+			}
 		},
 	}
 }

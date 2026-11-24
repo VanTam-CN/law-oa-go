@@ -1,0 +1,29 @@
+{
+  "board": "law-oa-np-main",
+  "tasks": [
+    {
+      "key": "baseline",
+      "id": "t_9fe3809b",
+      "owner": "Codex coordinator",
+      "coordinator_run_id": 4
+    },
+    {
+      "key": "backend",
+      "id": "t_edb90c67",
+      "owner": "GLM Flash A; coordinator proxy",
+      "coordinator_run_id": 5
+    },
+    {
+      "key": "frontend_ci",
+      "id": "t_a56dfe09",
+      "owner": "GLM Flash B; coordinator proxy",
+      "coordinator_run_id": 6
+    },
+    {
+      "key": "closure",
+      "id": "t_cbf2406f",
+      "owner": "Codex coordinator"
+    }
+  ],
+  "notes": "creation receipt, not live status mirror"
+}

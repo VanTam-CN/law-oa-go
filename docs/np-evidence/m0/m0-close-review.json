@@ -1,0 +1,49 @@
+{
+  "scope": "M0 remaining three document/evidence deliverables only",
+  "tested_application_sha": "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
+  "input_document_sha": "213da4c7c6710c99d660c33a5701a230c674ede9",
+  "source_slice_sha": "2d659d9dd750f49ddb1f517746e22851392231a6",
+  "result": "PASS_DOCUMENT_SEAL",
+  "source_identity_check": "33 source/target pairs and 8 extra native targets verified",
+  "case_inventory": {
+    "go_source": 26,
+    "frontend_expanded": 33,
+    "browser_source": 4,
+    "historical_source_items": 63,
+    "new_planned_groups": "I09-MAIN,I14,I15,I16,C01-C14 plus 2 detail route tests; not counted in 63"
+  },
+  "reviewers": [
+    {
+      "agent": "01a1f71a-f304-7973-9c9c-0e41544565e3",
+      "model": "zhipu-coding/glm-5.3-flash",
+      "cross_review": "route-B/dependency consistency; 2 stale JSON labels corrected by coordinator"
+    },
+    {
+      "agent": "01a1f71a-f395-70f2-806f-563ffc745725",
+      "model": "zhipu-coding/glm-5.3-flash",
+      "cross_review": "estimate arithmetic/overlap; M1 vs M3 native handler split resolved"
+    }
+  ],
+  "coordinator_corrections": [
+    "no old82-85 fixture dependency",
+    "no full continuation/facts platform",
+    "SQL logging guard before NP use, not deferred cache work",
+    "stale write rejection does not block GET reload",
+    "parameterized frontend counts use fixed-source historical evidence",
+    "I09 full-row projection/allowed exclusions and Python/Go canonical digest frozen",
+    "migration86 fixed for pinned base; source helper lives in demo_aggregate_handler, no imaginary source file"
+  ],
+  "runtime_gate_result": "NOT_RUN for integrated candidate; I09-FILES DEFERRED/HOLD",
+  "effort": {
+    "base": [
+      25,
+      41
+    ],
+    "buffered": [
+      30,
+      50
+    ],
+    "basis": "conditional engineering judgment, not measured productivity/fixed promise"
+  },
+  "authorization": "no M1/merge/deploy; push documents to codex/np-main-m0 authorized"
+}

@@ -78,7 +78,7 @@ func (s *ElasticsearchSyncService) SyncAllStatutes(ctx context.Context) error {
 		// 分批获取法条数据
 		statutes, err := s.statuteRepo.List(ctx, offset, s.batchSize)
 		if err != nil {
-			return fmt.Errorf("获取法条数据失败: %v", err)
+			return fmt.Errorf("获取法条数据失败: %w", err)
 		}
 
 		if len(statutes) == 0 {
@@ -94,7 +94,7 @@ func (s *ElasticsearchSyncService) SyncAllStatutes(ctx context.Context) error {
 
 		// 批量索引到ES
 		if err := s.esRepo.BulkIndexDocuments(ctx, esDocs); err != nil {
-			return fmt.Errorf("批量索引失败: %v", err)
+			return fmt.Errorf("批量索引失败: %w", err)
 		}
 
 		totalSynced += len(esDocs)
@@ -116,7 +116,7 @@ func (s *ElasticsearchSyncService) SyncStatute(ctx context.Context, statuteID in
 	// 获取法条数据
 	statute, err := s.statuteRepo.GetByID(ctx, statuteID)
 	if err != nil {
-		return fmt.Errorf("获取法条失败: %v", err)
+		return fmt.Errorf("获取法条失败: %w", err)
 	}
 
 	// 转换为ES文档格式
@@ -124,7 +124,7 @@ func (s *ElasticsearchSyncService) SyncStatute(ctx context.Context, statuteID in
 
 	// 索引到ES
 	if err := s.esRepo.IndexDocument(ctx, esDoc); err != nil {
-		return fmt.Errorf("索引法条失败: %v", err)
+		return fmt.Errorf("索引法条失败: %w", err)
 	}
 
 	log.Printf("法条同步成功: %s", statute.StatuteNumber)
@@ -141,7 +141,7 @@ func (s *ElasticsearchSyncService) SyncRange(ctx context.Context, fromID, toID i
 	// 获取总数量
 	total, err := s.statuteRepo.Count(ctx)
 	if err != nil {
-		return fmt.Errorf("获取法条总数失败: %v", err)
+		return fmt.Errorf("获取法条总数失败: %w", err)
 	}
 
 	syncedCount := 0
@@ -169,12 +169,12 @@ func (s *ElasticsearchSyncService) RebuildIndex(ctx context.Context) error {
 
 	// 2. 创建新索引
 	if err := s.esRepo.CreateIndex(ctx); err != nil {
-		return fmt.Errorf("创建索引失败: %v", err)
+		return fmt.Errorf("创建索引失败: %w", err)
 	}
 
 	// 3. 同步所有数据
 	if err := s.SyncAllStatutes(ctx); err != nil {
-		return fmt.Errorf("同步数据失败: %v", err)
+		return fmt.Errorf("同步数据失败: %w", err)
 	}
 
 	log.Println("搜索索引重建完成")
@@ -260,7 +260,7 @@ func (s *ElasticsearchSyncService) calculateSearchWeight(statute *models.LegalSt
 // GetSyncStatus 获取同步状态
 func (s *ElasticsearchSyncService) GetSyncStatus(ctx context.Context) (*SyncStatus, error) {
 	if s.esRepo == nil {
-		return nil, fmt.Errorf("Elasticsearch 未配置")
+		return nil, fmt.Errorf("elasticsearch 未配置")
 	}
 
 	// 检查Elasticsearch状态
@@ -270,7 +270,7 @@ func (s *ElasticsearchSyncService) GetSyncStatus(ctx context.Context) (*SyncStat
 	// 获取数据库法条总数
 	dbCount, err := s.statuteRepo.Count(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("获取数据库法条总数失败: %v", err)
+		return nil, fmt.Errorf("获取数据库法条总数失败: %w", err)
 	}
 
 	// 获取ES索引中的法条数量（这里需要实现ES查询逻辑）
@@ -313,7 +313,7 @@ func (s *ElasticsearchSyncService) GetSyncProgress(ctx context.Context) (*SyncPr
 
 	total, err := s.statuteRepo.Count(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("获取法条总数失败: %v", err)
+		return nil, fmt.Errorf("获取法条总数失败: %w", err)
 	}
 
 	// 这里可以实现更精确的进度计算

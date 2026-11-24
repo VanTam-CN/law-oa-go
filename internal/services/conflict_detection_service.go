@@ -87,6 +87,11 @@ func NewConflictDetectionService(
 
 // PerformConflictCheck 执行冲突检测
 func (s *conflictDetectionService) PerformConflictCheck(ctx context.Context, request *models.ConflictCheckRequest) (*models.ConflictCheckResponse, error) {
+	return s.performConflictCheck(ctx, request, false)
+}
+
+// A queued task already owns its immutable audit row. Both paths persist the same evidence.
+func (s *conflictDetectionService) performConflictCheck(ctx context.Context, request *models.ConflictCheckRequest, queued bool) (*models.ConflictCheckResponse, error) {
 	startTime := time.Now()
 
 	log.Printf("🔍 开始执行冲突检测，客户端ID: %s, 案件名称: %s", request.ClientID, request.CaseName)
@@ -149,7 +154,12 @@ func (s *conflictDetectionService) PerformConflictCheck(ctx context.Context, req
 	}
 
 	// 保存检测记录
-	if err := s.saveCheckRecord(ctx, request, response); err != nil {
+	if !queued {
+		if err := s.saveCheckRecord(ctx, request, response); err != nil {
+			return nil, fmt.Errorf("保存冲突检测审计记录失败: %w", err)
+		}
+	}
+	if err := s.saveCheckEvidence(ctx, request.CaseType, response); err != nil {
 		log.Printf("❌ 保存检测记录失败: %v", err)
 		return nil, fmt.Errorf("保存冲突检测审计记录失败: %w", err)
 	}
@@ -301,6 +311,9 @@ func (s *conflictDetectionService) checkOpponentConflicts(ctx context.Context, r
 		if err != nil {
 			return nil, fmt.Errorf("查询对方当事人冲突失败 (opponent=%q): %w", opponent, err)
 		}
+		// 循环内错误路径已有手工 Close；defer 在函数收尾兜底（sql.Rows.Close 幂等）
+		// rows.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+		defer func() { _ = rows.Close() }()
 
 		for rows.Next() {
 			var caseID uint
@@ -310,7 +323,8 @@ func (s *conflictDetectionService) checkOpponentConflicts(ctx context.Context, r
 			var relevanceScore int
 
 			if err := rows.Scan(&caseID, &caseNo, &caseName, &caseType, &description, &clientName, &lawyerName, &createdAt, &lawyerID, &relevanceScore); err != nil {
-				rows.Close()
+				// 错误路径提前退出；与上方 defer 兜底重复调用（sql.Rows.Close 幂等），关闭错误在此无处理路径，显式丢弃。
+				_ = rows.Close()
 				return nil, fmt.Errorf("扫描对方当事人冲突行失败 (opponent=%q): %w", opponent, err)
 			}
 
@@ -367,10 +381,12 @@ func (s *conflictDetectionService) checkOpponentConflicts(ctx context.Context, r
 		}
 		// rows.Err() 报告迭代期间发生的错误；Rows()+Next() 不会主动返回
 		if err := rows.Err(); err != nil {
-			rows.Close()
+			// 错误路径提前退出；与 defer 兜底重复调用（sql.Rows.Close 幂等），关闭错误在此无处理路径，显式丢弃。
+			_ = rows.Close()
 			return nil, fmt.Errorf("迭代对方当事人冲突结果集失败 (opponent=%q): %w", opponent, err)
 		}
-		rows.Close()
+		// 正常收尾；与 defer 兜底重复调用（sql.Rows.Close 幂等），关闭错误在此无处理路径，显式丢弃。
+		_ = rows.Close()
 	}
 
 	return conflicts, nil
@@ -551,7 +567,8 @@ func (s *conflictDetectionService) checkStructuredPartyConflicts(ctx context.Con
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	// rows.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = rows.Close() }()
 	conflicts := make([]*models.ConflictCase, 0)
 	for rows.Next() {
 		var caseID, historicalClientID uint
@@ -819,6 +836,8 @@ func (s *conflictDetectionService) checkClientRelationConflictsStrict(ctx contex
 		if err != nil {
 			return nil, fmt.Errorf("查询关联客户历史案件失败: %w", err)
 		}
+		// rows.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+		defer func() { _ = rows.Close() }()
 
 		for rows.Next() {
 			var caseID uint
@@ -867,7 +886,9 @@ func (s *conflictDetectionService) checkClientRelationConflictsStrict(ctx contex
 
 			conflicts = append(conflicts, conflict)
 		}
-		rows.Close()
+		if err := rows.Err(); err != nil {
+			return nil, fmt.Errorf("读取关联客户历史案件结果失败: %w", err)
+		}
 	}
 
 	return conflicts, nil
@@ -918,7 +939,8 @@ func (s *conflictDetectionService) checkIndustryCompetitionConflicts(ctx context
 		log.Printf("⚠️ 查询律师案件失败: %v", err)
 		return conflicts
 	}
-	defer rows.Close()
+	// rows.Close() 关闭错误在延迟清理阶段无后续处理路径，错误不可操作，显式丢弃。
+	defer func() { _ = rows.Close() }()
 
 	// 收集律师的所有客户
 	lawyerClients := make(map[string]string) // clientName -> clientType
@@ -951,6 +973,10 @@ func (s *conflictDetectionService) checkIndustryCompetitionConflicts(ctx context
 
 		lawyerCases = append(lawyerCases, caseModel)
 		lawyerClients[caseModel.ClientName] = caseModel.ClientType
+	}
+	if err := rows.Err(); err != nil {
+		log.Printf("⚠️ 读取律师案件查询结果失败: %v", err)
+		return conflicts
 	}
 
 	log.Printf("🔍 律师代理的客户数量: %d", len(lawyerClients))
@@ -1188,10 +1214,7 @@ func (s *conflictDetectionService) classifyPartyMatch(name1, name2 string) Party
 // isMeaningfulPartyName 规范化后是否含有有效辨识内容。
 // 太短（<2 字符）视为无意义，避免单字触发 CRITICAL。
 func isMeaningfulPartyName(name string) bool {
-	if len(strings.TrimSpace(name)) < 2 {
-		return false
-	}
-	return true
+	return len(strings.TrimSpace(name)) >= 2
 }
 
 // isPartyNameMatch 仅在 Exact 规范化相等时返回 true。
@@ -1284,7 +1307,7 @@ func (s *conflictDetectionService) cleanCompanyName(name string) string {
 	suffixes := []string{"有限公司", "股份有限公司", "集团", "控股", "科技", "网络", "信息", "数据", "云", "服务", "投资", "管理", "咨询"}
 
 	for _, suffix := range suffixes {
-		name = strings.Replace(name, suffix, "", -1)
+		name = strings.ReplaceAll(name, suffix, "")
 	}
 
 	return strings.TrimSpace(name)
@@ -1305,7 +1328,6 @@ func (s *conflictDetectionService) containsAny(text string, keywords []string) b
 func (s *conflictDetectionService) determineConflictType(caseName, description, opponent string) string {
 	caseName = strings.ToLower(caseName)
 	description = strings.ToLower(description)
-	opponent = strings.ToLower(opponent)
 
 	// 1. 法律对立冲突 - 最高风险
 	if strings.Contains(caseName, "离婚") || strings.Contains(description, "离婚") ||
@@ -1412,9 +1434,8 @@ func (s *conflictDetectionService) calculateTimeRiskFactor(hoursPassed float64) 
 		return "LOW_TIME_FACTOR"
 	} else if hoursPassed > 4380 { // 6个月
 		return "MEDIUM_TIME_FACTOR"
-	} else {
-		return "HIGH_TIME_FACTOR"
 	}
+	return "HIGH_TIME_FACTOR"
 }
 
 // determineFinalRiskLevel 确定最终风险等级
@@ -1571,10 +1592,11 @@ func (s *conflictDetectionService) saveCheckRecord(ctx context.Context, request 
 		UpdatedAt:        now,
 	}
 
-	if err := s.conflictRepo.SaveCheckRecord(ctx, record); err != nil {
-		return err
-	}
+	return s.conflictRepo.SaveCheckRecord(ctx, record)
+}
 
+func (s *conflictDetectionService) saveCheckEvidence(ctx context.Context, caseType string, response *models.ConflictCheckResponse) error {
+	now := time.Now()
 	if len(response.ConflictCases) == 0 {
 		return s.saveP0EvidenceIfAvailable(ctx, response.CheckID, response.NormalizedSubjects, response)
 	}
@@ -1586,7 +1608,7 @@ func (s *conflictDetectionService) saveCheckRecord(ctx context.Context, request 
 		conflict.CheckID = response.CheckID
 		conflict.ID = fmt.Sprintf("%s_%s", response.CheckID, conflict.ID)
 		if conflict.CaseType == "" {
-			conflict.CaseType = request.CaseType
+			conflict.CaseType = caseType
 		}
 		if conflict.RiskLevel == "" {
 			conflict.RiskLevel = "LOW"

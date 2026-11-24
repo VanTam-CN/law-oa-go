@@ -1,0 +1,390 @@
+{
+  "stage": "M1 R4 coordinator verification",
+  "base": "2e6fb9ca20e274148d287e6fa18eb5f468c55dd0",
+  "source_and_tests": "c14feaa66075d93890e601f2cdd26aeaff6bff11",
+  "hermes": "law-oa-np-main/t_5666ba7e",
+  "previous_review": "t_394be067",
+  "first_failures": [
+    {
+      "argv": [
+        "go",
+        "test",
+        "-count=1",
+        "-tags",
+        "np_m1_pg",
+        "-json",
+        "./tests/integration/m1",
+        "-run",
+        "^(TestM1R4|TestM1R3NativeCheck|TestM1R3Approval)"
+      ],
+      "working_directory": ".",
+      "sha": "e55c5f3e6ea996471a2711751eadda648e4d3010",
+      "started_at": "2026-11-22T15:39:24.162063+00:00",
+      "ended_at": "2026-11-22T15:39:29.846316+00:00",
+      "exit_code": 1,
+      "tests": {
+        "law-oa-go/tests/integration/m1/TestM1R3ApprovalPartySnapshot/flat": "pass",
+        "law-oa-go/tests/integration/m1/TestM1R3ApprovalPartySnapshot/workbench": "fail",
+        "law-oa-go/tests/integration/m1/TestM1R3ApprovalPartySnapshot": "fail",
+        "law-oa-go/tests/integration/m1/TestM1R3NativeCheckUsesEditedAlias/native_alias_": "pass",
+        "law-oa-go/tests/integration/m1/TestM1R3NativeCheckUsesEditedAlias/native_alias_甲集团控股有限公司": "fail",
+        "law-oa-go/tests/integration/m1/TestM1R3NativeCheckUsesEditedAlias": "fail",
+        "law-oa-go/tests/integration/m1/TestM1R4LegacyMetadataEcho": "fail",
+        "law-oa-go/tests/integration/m1/TestM1R4NarrowSameIdentity": "fail"
+      },
+      "log_sha256": "8dd482b42fd83ff8106533944872e3a79b2245f42b44f390b75a5e4e3fec2ce0"
+    },
+    {
+      "argv": [
+        "./node_modules/.bin/playwright",
+        "test",
+        "--config",
+        "playwright.m1.config.ts",
+        "m1-r3-restore.spec.ts",
+        "-g",
+        "M1 R4",
+        "--output",
+        "/tmp/lawoa-m1-r4.pdchkH/browser-red"
+      ],
+      "working_directory": "frontend",
+      "sha": "e55c5f3e6ea996471a2711751eadda648e4d3010",
+      "started_at": "2026-11-22T15:39:24.163184+00:00",
+      "ended_at": "2026-11-22T15:39:32.936540+00:00",
+      "exit_code": 1,
+      "tests": {},
+      "log_sha256": "8378e3c2da3f54eb5ff3eff99fd995a5c28b3626371cd33b72953d9bd78afb74",
+      "browser_summary": [
+        "1 failed"
+      ]
+    },
+    {
+      "argv": [
+        "go",
+        "test",
+        "-count=1",
+        "-tags",
+        "np_m1_pg",
+        "-json",
+        "./tests/integration/m1",
+        "-run",
+        "^TestM1R3NativeCheckUsesEditedAlias$"
+      ],
+      "working_directory": ".",
+      "sha": "09bb6f21a61b9ef3468f9387a7b9ebd92e477b23",
+      "started_at": "2026-11-22T16:00:57.867572+00:00",
+      "ended_at": "2026-11-22T16:01:03.252285+00:00",
+      "exit_code": 1,
+      "tests": {
+        "law-oa-go/tests/integration/m1/TestM1R3NativeCheckUsesEditedAlias/native_alias_": "fail",
+        "law-oa-go/tests/integration/m1/TestM1R3NativeCheckUsesEditedAlias/native_alias_甲集团控股有限公司": "fail",
+        "law-oa-go/tests/integration/m1/TestM1R3NativeCheckUsesEditedAlias": "fail"
+      },
+      "log_sha256": "6300b31948d01ccdfac758aab58bd6531dd1ff80b58b61baf6db90f2f110195e"
+    }
+  ],
+  "intermediate_check": {
+    "source": "54f826c538e4b12a7686f90458323784d7e57474",
+    "exit_code": 1,
+    "failed_tests": [
+      "law-oa-go/internal/handlers/TestAggregateMetadataStringFormIsRedacted",
+      "law-oa-go/internal/handlers/TestAggregateMetadataUndecodableAndByteFormsClose"
+    ],
+    "disposition": "731adb0 pins numeric JSON on the wire and retains the redaction assertions."
+  },
+  "verified": [
+    {
+      "argv": [
+        "go",
+        "test",
+        "-race",
+        "-p",
+        "3",
+        "-tags",
+        "np_m1_pg",
+        "-count=1",
+        "-timeout=120s",
+        "-json",
+        "./tests/integration/m1",
+        "./internal/handlers",
+        "./internal/repositories",
+        "./internal/services",
+        "-run",
+        "^(TestAsyncPG|TestNative|TestSchemaRequiresFrozen|TestConflictPG|TestUpdateIntake|TestLegacyDraft|TestConfirmIntake|TestConfirmAndConflict|TestDraftRestore|TestDraftList|TestAggregateMetadata|TestIntakeDraft(List|Detail)|TestLinkConflictCheckToCase|TestStartIntakeConflictCheck|TestAsyncConflictCheckService|TestAuditSafeConflictRequest|TestM1R2|TestAsyncTerminal|TestM1R3|TestMatchConflictIndex|TestConflictSubjectIndex|TestNormalizeConflictSubjects|TestM1R4)"
+      ],
+      "working_directory": ".",
+      "sha": "c14feaa66075d93890e601f2cdd26aeaff6bff11",
+      "started_at": "2026-11-22T16:01:29.879223+00:00",
+      "ended_at": "2026-11-22T16:01:49.955521+00:00",
+      "exit_code": 0,
+      "tests": {
+        "law-oa-go/tests/integration/m1/TestM1R3ApprovalPartySnapshot/flat": "pass",
+        "law-oa-go/internal/repositories/TestLinkConflictCheckToCaseRequiresExplicitConsistentContext": "pass",
+        "law-oa-go/internal/repositories/TestMatchConflictIndexSubjectReturnsMatchedRequestedAlias": "pass",
+        "law-oa-go/internal/repositories/TestMatchConflictIndexSubjectPrimaryNameWinsOverAlias": "pass",
+        "law-oa-go/internal/repositories/TestMatchConflictIndexSubjectIDCardExactBeatsNameCandidates": "pass",
+        "law-oa-go/internal/repositories/TestMatchConflictIndexStackedHistoricalAlias": "pass",
+        "law-oa-go/tests/integration/m1/TestM1R3ApprovalPartySnapshot/workbench": "pass",
+        "law-oa-go/tests/integration/m1/TestM1R3ApprovalPartySnapshot": "pass",
+        "law-oa-go/internal/handlers/TestStartIntakeConflictCheckFreshRevisionLinksOnce": "pass",
+        "law-oa-go/internal/handlers/TestStartIntakeConflictCheckRejectsStaleRevisionAfterNativeEdit": "pass",
+        "law-oa-go/internal/handlers/TestStartIntakeConflictCheckRejectsSecondSubmissionWithOldRevision": "pass",
+        "law-oa-go/internal/handlers/TestStartIntakeConflictCheckLateResultAfterNativeEdit": "pass",
+        "law-oa-go/internal/handlers/TestStartIntakeConflictCheckUsesSavedAliases/legacy_without_column_value": "pass",
+        "law-oa-go/internal/handlers/TestStartIntakeConflictCheckUsesSavedAliases/explicit_clear": "pass",
+        "law-oa-go/internal/handlers/TestStartIntakeConflictCheckUsesSavedAliases/explicit_replacement": "pass",
+        "law-oa-go/internal/handlers/TestStartIntakeConflictCheckUsesSavedAliases": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeInvalidatesConfirmedSnapshotAndRotatesRevision/lawyer_facts_confirmed": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeInvalidatesConfirmedSnapshotAndRotatesRevision/conflict_ready": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeInvalidatesConfirmedSnapshotAndRotatesRevision": "pass",
+        "law-oa-go/internal/handlers/TestLegacyDraftWithoutStoredRevisionLoadsAndSavesOnce": "pass",
+        "law-oa-go/internal/handlers/TestConfirmAndConflictCheckAuthorizeBeforeRevisionHint": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeWithoutMetadataKeepsStoredBusinessFields": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeMergesProvidedMetadataWithoutErasingStoredFields": "pass",
+        "law-oa-go/internal/handlers/TestNativeHistoryLookupFailureBlocksFullSave": "pass",
+        "law-oa-go/internal/handlers/TestNativeRejectedClientSourcePointer": "pass",
+        "law-oa-go/internal/handlers/TestConfirmIntakeRequiresObservedRevision": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeExplicitNullClearsConfirmation/lawyer_facts_confirmed": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeExplicitNullClearsConfirmation/conflict_ready": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeExplicitNullClearsConfirmation": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeRejectsMissingExpectedRevisionWithoutMutation": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeRejectsStaleRevisionWithoutOverwrite": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeSwitchClientUsesNewMasterIdentity": "pass",
+        "law-oa-go/internal/handlers/TestConfirmIntakeFactsRotatesRevisionAndRejectsStaleHeader": "pass",
+        "law-oa-go/internal/handlers/TestDraftRestoreReturnsRevisionAndProtectedIdentityStatus": "pass",
+        "law-oa-go/internal/handlers/TestDraftRestoreReturnsOpponentPartyOnlyForTruncatedUniqueOpponent/truncated_unique_opponent_returns_sanitized_projection": "pass",
+        "law-oa-go/internal/handlers/TestDraftRestoreReturnsOpponentPartyOnlyForTruncatedUniqueOpponent/short_projection_omits_opponent_party": "pass",
+        "law-oa-go/internal/handlers/TestDraftRestoreReturnsOpponentPartyOnlyForTruncatedUniqueOpponent/ambiguous_opponents_omit_opponent_party": "pass",
+        "law-oa-go/internal/handlers/TestDraftRestoreReturnsOpponentPartyOnlyForTruncatedUniqueOpponent": "pass",
+        "law-oa-go/internal/handlers/TestDraftListCarriesRevisionTokens": "pass",
+        "law-oa-go/internal/handlers/TestDraftRestoreRequiresReadableParties": "pass",
+        "law-oa-go/internal/handlers/TestIntakeDraftListMasksWalledClientFromManagement": "pass",
+        "law-oa-go/internal/handlers/TestIntakeDraftDetailForbidsWalledClientFromManagement": "pass",
+        "law-oa-go/internal/handlers/TestAggregateMetadataStringFormIsRedacted": "pass",
+        "law-oa-go/internal/handlers/TestAggregateMetadataUndecodableAndByteFormsClose": "pass",
+        "law-oa-go/tests/integration/m1/TestAsyncPGCompletionAfterNativeEdit": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeTransactionFailureRollsBackFullSave": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeClientSwitchWithoutClientPartyKeepsOldDraftUsable": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeDraftInheritsProtectedIdentityWhenInputEmpty": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeDraftKeepsNewIdentityWhenProvided": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeDraftStillRequiresIdentityForNewParty": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeDraftIdentityInheritanceRequiresExactNameAndRole/name_from_one_row_and_role_from_another_must_not_inherit": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeDraftIdentityInheritanceRequiresExactNameAndRole/same_name_with_different_role_must_not_inherit": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeDraftIdentityInheritanceRequiresExactNameAndRole/exact_name_and_role_inherits_its_own_protected_identity": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeDraftIdentityInheritanceRequiresExactNameAndRole": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeDraftIdentityInheritanceFailsClosed/handler_duplicate_exact_matches_are_rejected": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeDraftIdentityInheritanceFailsClosed/handler_mismatched_entity_type_is_rejected": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeDraftIdentityInheritanceFailsClosed/handler_digest_missing_is_rejected": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeDraftIdentityInheritanceFailsClosed/narrow_update_without_aliases_key_preserves_stored_aliases": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeDraftIdentityInheritanceFailsClosed/helper_inherits_only_a_single_fully_guarded_exact_match": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeDraftIdentityInheritanceFailsClosed/helper_duplicate_exact_matches_fail_closed": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeDraftIdentityInheritanceFailsClosed/helper_mismatched_entity_type_fails_closed": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeDraftIdentityInheritanceFailsClosed/helper_missing_digest_fails_closed": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeDraftIdentityInheritanceFailsClosed": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeRejectsDuplicatePointersToSamePartyRow/identical_rows_reject_the_whole_save": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeRejectsDuplicatePointersToSamePartyRow/canonical_and_legacy_opponent_roles_point_at_one_row": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeRejectsDuplicatePointersToSamePartyRow": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeRealIdentityChangeUpdatesSameRow": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeNarrowIdentityRejectsUncertainTarget/missing_party": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeNarrowIdentityRejectsUncertainTarget/ambiguous_party": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeNarrowIdentityRejectsUncertainTarget/wrong_entity_type": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeNarrowIdentityRejectsUncertainTarget/non-string_identity": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeNarrowIdentityRejectsUncertainTarget/non-string_aliases": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeNarrowIdentityRejectsUncertainTarget/unknown_field": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeNarrowIdentityRejectsUncertainTarget/mixed_list": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeNarrowIdentityRejectsUncertainTarget/mixed_null": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeNarrowIdentityRejectsUncertainTarget/null_update": "pass",
+        "law-oa-go/internal/handlers/TestUpdateIntakeNarrowIdentityRejectsUncertainTarget": "pass",
+        "law-oa-go/internal/handlers/TestM1R3IntakeAliasList/nil_sql_null_stays_nil": "pass",
+        "law-oa-go/internal/handlers/TestM1R3IntakeAliasList/explicit_empty_string_yields_no_candidates": "pass",
+        "law-oa-go/internal/handlers/TestM1R3IntakeAliasList/whitespace_only_yields_no_candidates": "pass",
+        "law-oa-go/internal/handlers/TestM1R3IntakeAliasList/comma_text": "pass",
+        "law-oa-go/internal/handlers/TestM1R3IntakeAliasList/mixed_separators_and_blanks": "pass",
+        "law-oa-go/internal/handlers/TestM1R3IntakeAliasList/legacy_array": "pass",
+        "law-oa-go/internal/handlers/TestM1R3IntakeAliasList/typed_array": "pass",
+        "law-oa-go/internal/handlers/TestM1R3IntakeAliasList": "pass",
+        "law-oa-go/tests/integration/m1/TestAsyncPGFormalDetectorCompletesOnce": "pass",
+        "law-oa-go/tests/integration/m1/TestAsyncPGTerminalWriteFailureRollsBack": "pass",
+        "law-oa-go/tests/integration/m1/TestAsyncPGTerminalReplayPreservesOriginalAudit": "pass",
+        "law-oa-go/tests/integration/m1/TestConflictPGLinkAdvancesRevisionOnce": "pass",
+        "law-oa-go/tests/integration/m1/TestConflictPGRejectsStaleIntakeRevision": "pass",
+        "law-oa-go/tests/integration/m1/TestConflictPGRejectsMissingIntakeRevision": "pass",
+        "law-oa-go/tests/integration/m1/TestConflictPGLinkRollsBackAcrossIntakeAndCases": "pass",
+        "law-oa-go/tests/integration/m1/TestConflictPGRecheckRejectsForeignOrUnversionedPriorRecord/other-intake": "pass",
+        "law-oa-go/tests/integration/m1/TestConflictPGRecheckRejectsForeignOrUnversionedPriorRecord/other-case": "pass",
+        "law-oa-go/tests/integration/m1/TestConflictPGRecheckRejectsForeignOrUnversionedPriorRecord/other-client": "pass",
+        "law-oa-go/tests/integration/m1/TestConflictPGRecheckRejectsForeignOrUnversionedPriorRecord/missing-version": "pass",
+        "law-oa-go/tests/integration/m1/TestConflictPGRecheckRejectsForeignOrUnversionedPriorRecord/same-version": "pass",
+        "law-oa-go/tests/integration/m1/TestConflictPGRecheckRejectsForeignOrUnversionedPriorRecord/failed-check": "pass",
+        "law-oa-go/tests/integration/m1/TestConflictPGRecheckRejectsForeignOrUnversionedPriorRecord": "pass",
+        "law-oa-go/tests/integration/m1/TestNativeConcurrentDraftAndHistory": "pass",
+        "law-oa-go/tests/integration/m1/TestSchemaRequiresFrozenKeysAndTypes/wrong-index-columns": "pass",
+        "law-oa-go/tests/integration/m1/TestSchemaRequiresFrozenKeysAndTypes/missing-fk": "pass",
+        "law-oa-go/tests/integration/m1/TestSchemaRequiresFrozenKeysAndTypes/wrong-column-type": "pass",
+        "law-oa-go/tests/integration/m1/TestSchemaRequiresFrozenKeysAndTypes": "pass",
+        "law-oa-go/tests/integration/m1/TestNativeRecoveredOpponentPreservesPartyAndMaterialRows": "pass",
+        "law-oa-go/tests/integration/m1/TestNativeCreateRejectsNormalizedEmptyIdentityAtomically": "pass",
+        "law-oa-go/tests/integration/m1/TestNativeFullSaveOnlyChangesExplicitAlias": "pass",
+        "law-oa-go/tests/integration/m1/TestNativeLegacyFullEchoPreservesRows": "pass",
+        "law-oa-go/tests/integration/m1/TestNativeRecheckAfterSameMatterIsReconfirmed": "pass",
+        "law-oa-go/tests/integration/m1/TestM1R3IndexIncomingAlias": "pass",
+        "law-oa-go/tests/integration/m1/TestM1R3SameIdentityEcho/opponent": "pass",
+        "law-oa-go/tests/integration/m1/TestM1R3SameIdentityEcho/opposing_party": "pass",
+        "law-oa-go/tests/integration/m1/TestM1R3SameIdentityEcho": "pass",
+        "law-oa-go/tests/integration/m1/TestM1R3NativeCheckUsesEditedAlias/native_alias_": "pass",
+        "law-oa-go/internal/services/TestAsyncConflictCheckServiceLinksFreshRevisionOnce": "pass",
+        "law-oa-go/internal/services/TestAsyncConflictCheckServiceFailsStaleInFlightRevision": "pass",
+        "law-oa-go/internal/services/TestAsyncConflictCheckServicePersistsTimeout": "pass",
+        "law-oa-go/internal/services/TestAsyncConflictCheckService_CreateTaskAndGetResult": "pass",
+        "law-oa-go/internal/services/TestNormalizeConflictSubjectsCanonicalizesPunctuationSuffixAndAliases": "pass",
+        "law-oa-go/internal/services/TestNormalizeConflictSubjectsDeduplicatesByAuthoritativeRole": "pass",
+        "law-oa-go/internal/services/TestNormalizeConflictSubjectsDeduplicatesClientAlias": "pass",
+        "law-oa-go/internal/services/TestAuditSafeConflictRequestUsesKeyedIdentityDigest": "pass",
+        "law-oa-go/tests/integration/m1/TestM1R3NativeCheckUsesEditedAlias/native_alias_甲集团控股有限公司": "pass",
+        "law-oa-go/tests/integration/m1/TestM1R3NativeCheckUsesEditedAlias": "pass",
+        "law-oa-go/tests/integration/m1/TestM1R4LegacyMetadataEcho": "pass",
+        "law-oa-go/tests/integration/m1/TestM1R4NarrowSameIdentity": "pass"
+      },
+      "log_sha256": "dbf0b6b5e01a0636ee50f8a036f618fb8231ff7c083ce4c4513f22623618f2d6"
+    },
+    {
+      "argv": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "working_directory": ".",
+      "sha": "c14feaa66075d93890e601f2cdd26aeaff6bff11",
+      "started_at": "2026-11-22T16:01:29.876295+00:00",
+      "ended_at": "2026-11-22T16:01:45.591942+00:00",
+      "exit_code": 0,
+      "tests": {},
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "argv": [
+        "npm",
+        "run",
+        "type-check"
+      ],
+      "working_directory": "frontend",
+      "sha": "c14feaa66075d93890e601f2cdd26aeaff6bff11",
+      "started_at": "2026-11-22T16:01:29.877742+00:00",
+      "ended_at": "2026-11-22T16:01:40.405436+00:00",
+      "exit_code": 0,
+      "tests": {},
+      "log_sha256": "3d0a7528399a250a68017a4179ef123c402206346106b4b766bd2f386b5b559f"
+    },
+    {
+      "argv": [
+        "npm",
+        "test",
+        "--",
+        "--runInBand",
+        "--runTestsByPath",
+        "src/pages/batch01/__tests__/CaseIntakeConflictAction.test.ts",
+        "src/pages/batch01/__tests__/DashboardPermission.test.tsx",
+        "--coverage=false"
+      ],
+      "working_directory": "frontend",
+      "sha": "c14feaa66075d93890e601f2cdd26aeaff6bff11",
+      "started_at": "2026-11-22T16:01:29.876666+00:00",
+      "ended_at": "2026-11-22T16:01:37.236209+00:00",
+      "exit_code": 0,
+      "tests": {},
+      "log_sha256": "e886d89ffa883d2ffaf5a8693d8245e6175b6f6ed4ec670641d4613daeeee1e9",
+      "jest_summary": [
+        "Test Suites: 2 passed, 2 total",
+        "Tests:       16 passed, 16 total"
+      ]
+    },
+    {
+      "argv": [
+        "npm",
+        "run",
+        "build",
+        "--",
+        "--outDir",
+        "/tmp/lawoa-m1-r4.pdchkH/build"
+      ],
+      "working_directory": "frontend",
+      "sha": "c14feaa66075d93890e601f2cdd26aeaff6bff11",
+      "started_at": "2026-11-22T16:01:29.876007+00:00",
+      "ended_at": "2026-11-22T16:01:43.895299+00:00",
+      "exit_code": 0,
+      "tests": {},
+      "log_sha256": "0342ad0b815657c06cef46ce68a54b35df21e48646baee3d3990e70b7874357f"
+    },
+    {
+      "argv": [
+        "./node_modules/.bin/playwright",
+        "test",
+        "--config",
+        "playwright.m1.config.ts",
+        "cases.spec.ts",
+        "case-create-full-workflow.spec.ts",
+        "conflict-actions.spec.ts",
+        "m1-save-order.spec.ts",
+        "m1-repair.spec.ts",
+        "m1-r3-restore.spec.ts",
+        "-g",
+        "重复保存|应该能运行利益冲突检查|应该能暂存|缺少版本的旧|冲突检查后应留在|必填项缺失时|STALE 在步骤区|BLOCKED 检测完成后|切换草稿后忽略|恢复后以原生 PUT|M1 R3|M1 R4",
+        "--output",
+        "/tmp/lawoa-m1-r4.pdchkH/final-browser"
+      ],
+      "working_directory": "frontend",
+      "sha": "c14feaa66075d93890e601f2cdd26aeaff6bff11",
+      "started_at": "2026-11-22T16:01:29.880882+00:00",
+      "ended_at": "2026-11-22T16:02:04.800257+00:00",
+      "exit_code": 0,
+      "tests": {},
+      "log_sha256": "276a7066541aa0d0c57cc9d33aba7b4b563830b83e650279d13605cacf23cfd7",
+      "browser_summary": [
+        "26 passed (34.5s)"
+      ]
+    },
+    {
+      "argv": [
+        "bash",
+        "scripts/np-first-slice/verify-m1-browser-approval.sh"
+      ],
+      "working_directory": ".",
+      "sha": "c14feaa66075d93890e601f2cdd26aeaff6bff11",
+      "started_at": "2026-11-22T16:02:04.855287+00:00",
+      "ended_at": "2026-11-22T16:02:12.560974+00:00",
+      "exit_code": 0,
+      "tests": {},
+      "log_sha256": "cc1a600a7495459dcc5f4a36e730c5de4801c8b6c8fa9a46239dc9ee04697f76",
+      "browser_summary": [
+        "1 passed (2.9s)"
+      ],
+      "postgres_test_summary": [
+        "ok  \tlaw-oa-go/tests/integration/m1\t4.722s"
+      ]
+    }
+  ],
+  "counts": {
+    "go_including_subtests": 126,
+    "go_top_level": 72,
+    "jest": [
+      "Test Suites: 2 passed, 2 total",
+      "Tests:       16 passed, 16 total"
+    ],
+    "browser": [
+      "26 passed (34.5s)"
+    ],
+    "browser_to_postgres": [
+      "1 passed (2.9s)"
+    ]
+  },
+  "scope": {
+    "postgres": "Disposable PG on loopback, bootstrap and migration 86, synthetic actors, native Gin router, production index matcher and repositories.",
+    "browser": "Chrome with synthetic recovery, save and check responses; bridge submits the original approval POST unchanged to Gin with fixture authentication, and checks the persisted PG snapshot.",
+    "gates": {
+      "five_findings_coordinator": "PASS",
+      "independent_review_at_source": "NOT_RUN",
+      "M2": "HOLD",
+      "merge": "HOLD",
+      "deployment": "HOLD"
+    }
+  }
+}

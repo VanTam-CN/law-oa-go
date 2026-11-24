@@ -3,10 +3,12 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
 	"gorm.io/gorm"
+
 	"law-oa-go/internal/models"
 )
 
@@ -86,7 +88,7 @@ func (s *OffboardingServiceImpl) InitiateOffboarding(ctx context.Context, req *O
 		if err == nil {
 			return fmt.Errorf("该用户已有未完成的交接记录")
 		}
-		if err != gorm.ErrRecordNotFound {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
 		}
 
@@ -107,8 +109,12 @@ func (s *OffboardingServiceImpl) InitiateOffboarding(ctx context.Context, req *O
 
 		// 将 JSON 字节反序列化为 map[string]interface{}
 		var casesData, inboxData map[string]interface{}
-		json.Unmarshal(casesJSON, &casesData)
-		json.Unmarshal(inboxJSON, &inboxData)
+		if err := json.Unmarshal(casesJSON, &casesData); err != nil {
+			return fmt.Errorf("反序列化案件数据失败: %w", err)
+		}
+		if err := json.Unmarshal(inboxJSON, &inboxData); err != nil {
+			return fmt.Errorf("反序列化待办数据失败: %w", err)
+		}
 
 		// 5. 创建交接记录
 		record := &models.OffboardingRecord{
@@ -129,25 +135,37 @@ func (s *OffboardingServiceImpl) InitiateOffboarding(ctx context.Context, req *O
 
 		// 6. 创建移交详情记录
 		for _, caseItem := range cases {
+			// getUserCases 返回 map 数据，id/title 缺失或类型不符时中止事务并报错。
+			caseID, idOK := caseItem["id"].(float64)
+			caseTitle, titleOK := caseItem["title"].(string)
+			if !idOK || !titleOK {
+				return fmt.Errorf("案件数据缺少有效的 id/title 字段: %v", caseItem)
+			}
 			detail := &models.OffboardingTransferDetail{
 				OffboardingID:   record.ID,
 				TransferType:    "case",
 				OriginalOwnerID: req.UserID,
 				NewOwnerID:      &req.NewLawyerID,
-				ItemID:          uint(caseItem["id"].(float64)),
-				ItemName:        caseItem["title"].(string),
+				ItemID:          uint(caseID),
+				ItemName:        caseTitle,
 				TransferStatus:  "pending",
 			}
 			tx.Create(detail)
 		}
 
 		for _, inbox := range inboxItems {
+			// getUserInboxItems 返回 map 数据，id/title 缺失或类型不符时中止事务并报错。
+			itemID, idOK := inbox["id"].(float64)
+			itemTitle, titleOK := inbox["title"].(string)
+			if !idOK || !titleOK {
+				return fmt.Errorf("待办数据缺少有效的 id/title 字段: %v", inbox)
+			}
 			detail := &models.OffboardingTransferDetail{
 				OffboardingID:   record.ID,
 				TransferType:    "inbox",
 				OriginalOwnerID: req.UserID,
-				ItemID:          uint(inbox["id"].(float64)),
-				ItemName:        inbox["title"].(string),
+				ItemID:          uint(itemID),
+				ItemName:        itemTitle,
 				TransferStatus:  "pending",
 			}
 			tx.Create(detail)
@@ -168,7 +186,6 @@ func (s *OffboardingServiceImpl) InitiateOffboarding(ctx context.Context, req *O
 		result = record
 		return nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -241,7 +258,7 @@ func (s *OffboardingServiceImpl) CancelOffboarding(ctx context.Context, id uint,
 	return s.db.WithContext(ctx).Model(&models.OffboardingRecord{}).
 		Where("id = ? AND status IN ?", id, []string{"pending", "in_progress"}).
 		Updates(map[string]interface{}{
-			"status": "cancelled",
+			"status": "canceled",
 			"notes":  gorm.Expr("CONCAT(IFNULL(notes, ''), '\\n取消原因: ', ?)", reason),
 		}).Error
 }

@@ -85,9 +85,17 @@ func (h *CRUDHandler[T, ID]) Get(c *gin.Context) {
 		var id ID
 		switch any(id).(type) {
 		case uint:
-			id = any(uintID).(ID)
+			converted, ok := any(uintID).(ID)
+			if !ok {
+				return NewErrorResponse("VALIDATION_ERROR", "Unsupported ID type", "ID 类型断言失败")
+			}
+			id = converted
 		case string:
-			id = any(fmt.Sprintf("%d", uintID)).(ID)
+			converted, ok := any(fmt.Sprintf("%d", uintID)).(ID)
+			if !ok {
+				return NewErrorResponse("VALIDATION_ERROR", "Unsupported ID type", "ID 类型断言失败")
+			}
+			id = converted
 		default:
 			return NewErrorResponse("VALIDATION_ERROR", "Unsupported ID type", "")
 		}
@@ -114,9 +122,17 @@ func (h *CRUDHandler[T, ID]) Update(c *gin.Context) {
 		var id ID
 		switch any(id).(type) {
 		case uint:
-			id = any(uintID).(ID)
+			converted, ok := any(uintID).(ID)
+			if !ok {
+				return NewErrorResponse("VALIDATION_ERROR", "Unsupported ID type", "ID 类型断言失败")
+			}
+			id = converted
 		case string:
-			id = any(fmt.Sprintf("%d", uintID)).(ID)
+			converted, ok := any(fmt.Sprintf("%d", uintID)).(ID)
+			if !ok {
+				return NewErrorResponse("VALIDATION_ERROR", "Unsupported ID type", "ID 类型断言失败")
+			}
+			id = converted
 		default:
 			return NewErrorResponse("VALIDATION_ERROR", "Unsupported ID type", "")
 		}
@@ -153,9 +169,17 @@ func (h *CRUDHandler[T, ID]) Delete(c *gin.Context) {
 		var id ID
 		switch any(id).(type) {
 		case uint:
-			id = any(uintID).(ID)
+			converted, ok := any(uintID).(ID)
+			if !ok {
+				return NewErrorResponse("VALIDATION_ERROR", "Unsupported ID type", "ID 类型断言失败")
+			}
+			id = converted
 		case string:
-			id = any(fmt.Sprintf("%d", uintID)).(ID)
+			converted, ok := any(fmt.Sprintf("%d", uintID)).(ID)
+			if !ok {
+				return NewErrorResponse("VALIDATION_ERROR", "Unsupported ID type", "ID 类型断言失败")
+			}
+			id = converted
 		default:
 			return NewErrorResponse("VALIDATION_ERROR", "Unsupported ID type", "")
 		}
@@ -179,7 +203,9 @@ func (h *CRUDHandler[T, ID]) List(c *gin.Context) {
 		}
 
 		// 验证和设置默认值
-		ValidateListRequest(&req)
+		if err := ValidateListRequest(&req); err != nil {
+			return NewErrorResponse("VALIDATION_ERROR", "Invalid list request", err.Error())
+		}
 
 		// 调用服务层
 		result, total, err := h.service.List(ctx, &req)
