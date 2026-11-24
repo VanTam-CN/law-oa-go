@@ -99,7 +99,7 @@
 
 见 `MANIFEST.sha256`（16 个文件：治理前基线、round1-8 全过程、PR #53 run 45390618050 与 PR #54 run 45405844993 quality job 原始日志、fuzz job 日志）。
 
-> 卡 t_2f7c0c77（2026-11-24）追加 2 个快照：`snapshots/t2f7c0c77-baseline-363.txt`（errcheck 族基线 363 发现）与 `snapshots/t2f7c0c77-final-lint.txt`（门禁恢复后 0 findings，RC=0）。MANIFEST 更新至 18 条目（含 3 个 gitignored 的 CI 原始日志引用，沿用既有模式）。
+> 卡 t_2f7c0c77（2026-11-24）追加 4 个快照：`snapshots/t2f7c0c77-baseline-363.txt`（errcheck 族基线 363 发现）、`snapshots/t2f7c0c77-final-lint.txt`（门禁恢复后 0 findings，RC=0）、PR #58 两个 run 的 job 原始日志（见 §10.5）。MANIFEST 更新至 20 条目（其中 5 个为 `*.log` gitignored 的 CI 原始日志本地留档引用，沿用既有模式）。
 
 ## 10. errcheck 族批修与门禁恢复（卡 t_2f7c0c77，2026-11-24）
 
@@ -133,3 +133,18 @@
 
 - `.golangci.yml` `linters.enable` 加回 `errcheck`、`errchkjson`、`forcetypeassert`（错误处理组）；errcheck 保持默认 `check-blank: false`（103 处有理由注释的 `_ =` 为治理约定，由评审而非 linter 强制）；G104 排除注释更新（errcheck 已在门禁，不双份）；
 - 债台账 §5 已将 errcheck 族标记「✅ 已批修恢复门禁」。
+
+### 10.5 探针 PR 与托管核验（真实事件，PR #58）
+
+- 探针 PR：**#58**（draft，`codex/np-errcheck` → main，head 6463aa9）
+- 「🚀 CI/CD Pipeline」quality job run **45423028839**（2026-11-24T15:13Z，PR 事件触发，job 138547408799）步骤结论：
+  | step | 结论 |
+  |---|---|
+  | 🔍 代码格式检查（gofumpt@v0.12.0 固定版） | **success** |
+  | 📋 静态分析（go vet + go mod verify + golangci-lint@**v1.64.8**，errcheck 族已恢复门禁） | **success** ← 本卡验收目标转绿 |
+  | 🔒 安全扫描 | failure：gosec@latest 报 **78**（滚动版本口径漂移：PR #54 同日为 161，上游 rule/版本变化所致；pre-existing 存量债已由卡 t_745060c0 治理，修复在治理分支待携入 main，载体决策 t_4dfa464a） |
+- 「Law OA Go CI/CD Pipeline」run **45423028817** job「集成静态分析」（job 138547407332）：**conclusion=success**（15 步全绿），`scripts/ci-static-analysis.sh` 输出 `[SUCCESS] golangci-lint CI 分析完成 (问题数: 0)`、gosec 快速扫描 SUCCESS、前端 CI 分析错误数 0、质量门禁检查通过。注：该 workflow 的 golangci-lint 仍为 @latest 口径（pre-existing 工具版本债，t_4dfa464a 范围），本轮 @latest 与 v1.64.8 两口径同时 0 findings。
+- 同 run 其余红灯归因（均与本卡无关）：「运行测试 (unit)」数据库容器 Access denied（Test Pipeline 基础设施）；「Fuzzing测试」5 目标红（pre-existing，t_46d9c62d 已修观测缺陷与 WorkerPool crasher，修复分支未进本 head）；「基准测试」exit 1（非本卡范围）；PGO SKIPPED/成功不受影响。
+- 日志快照：`snapshots/t2f7c0c77-pr58-run45423028839-quality-job.log`、`snapshots/t2f7c0c77-pr58-run45423028817-static-analysis-job.log`。
+
+**结论**：errcheck/errchkjson/forcetypeassert 三族恢复门禁后，「📋 静态分析」步在真实 PR 事件上保持 success（固定 v1.64.8 口径）——门禁恢复闭环。
