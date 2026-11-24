@@ -304,7 +304,6 @@ func (r *InboxRepositoryImpl) FindByUserID(ctx context.Context, userID uint) ([]
 		Where("(snoozed_until IS NULL OR snoozed_until <= NOW())").
 		Order("priority DESC, due_date ASC").
 		Find(&items).Error
-
 	if err != nil {
 		return nil, NewRepositoryError("find_by_user_id", "inbox_item", err)
 	}
@@ -429,7 +428,6 @@ func (r *InboxRepositoryImpl) GetUnreadCount(ctx context.Context, userID uint) (
 		Where("is_read = ?", false).
 		Where("(snoozed_until IS NULL OR snoozed_until <= NOW())").
 		Count(&count).Error
-
 	if err != nil {
 		return 0, NewRepositoryError("get_unread_count", "inbox_item", err)
 	}
@@ -446,7 +444,6 @@ func (r *InboxRepositoryImpl) GetDueItems(ctx context.Context, before time.Time)
 		Where("reminder_sent = ?", false).
 		Where("(snoozed_until IS NULL OR snoozed_until <= NOW())").
 		Find(&items).Error
-
 	if err != nil {
 		return nil, NewRepositoryError("get_due_items", "inbox_item", err)
 	}
@@ -464,7 +461,6 @@ func (r *InboxRepositoryImpl) GetOverdueCriticalItems(ctx context.Context, befor
 		Where("escalated = ?", false).
 		Where("(snoozed_until IS NULL OR snoozed_until <= NOW())").
 		Find(&items).Error
-
 	if err != nil {
 		return nil, NewRepositoryError("get_overdue_critical_items", "inbox_item", err)
 	}
@@ -499,7 +495,6 @@ func (r *InboxRepositoryImpl) GetReminderRuleByTypeAndPriority(ctx context.Conte
 		Where("priority = ?", priority).
 		Where("is_active = ?", true).
 		First(&rule).Error
-
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil

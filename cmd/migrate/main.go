@@ -180,7 +180,7 @@ func createMigrationFiles(migrationsPath, name string) error {
 	upFile := fmt.Sprintf("%s/%s_%s.up.sql", migrationsPath, versionStr, name)
 	upContent := fmt.Sprintf("-- %s up migration\n\n-- Add your SQL statements here\n", name)
 
-	if err := os.WriteFile(upFile, []byte(upContent), 0644); err != nil {
+	if err := os.WriteFile(upFile, []byte(upContent), 0o644); err != nil {
 		return fmt.Errorf("创建up文件失败: %w", err)
 	}
 
@@ -188,7 +188,7 @@ func createMigrationFiles(migrationsPath, name string) error {
 	downFile := fmt.Sprintf("%s/%s_%s.down.sql", migrationsPath, versionStr, name)
 	downContent := fmt.Sprintf("-- %s down migration\n\n-- Add your rollback SQL statements here\n", name)
 
-	if err := os.WriteFile(downFile, []byte(downContent), 0644); err != nil {
+	if err := os.WriteFile(downFile, []byte(downContent), 0o644); err != nil {
 		return fmt.Errorf("创建down文件失败: %w", err)
 	}
 

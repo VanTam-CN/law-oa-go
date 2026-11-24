@@ -103,7 +103,7 @@ func NewPDFReportService(db *gorm.DB, config *PDFReportConfig) (PDFReportService
 	}
 
 	// 确保输出目录存在
-	if err := os.MkdirAll(config.OutputDir, 0755); err != nil {
+	if err := os.MkdirAll(config.OutputDir, 0o755); err != nil {
 		return nil, fmt.Errorf("创建输出目录失败: %w", err)
 	}
 
@@ -759,12 +759,12 @@ func (s *pdfReportService) generateKeyPair() error {
 	}
 
 	// 确保目录存在
-	if err := os.MkdirAll(filepath.Dir(s.config.SignatureKeyFile), 0700); err != nil {
+	if err := os.MkdirAll(filepath.Dir(s.config.SignatureKeyFile), 0o700); err != nil {
 		return err
 	}
 
 	// 保存私钥
-	privateKeyFile, err := os.OpenFile(s.config.SignatureKeyFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	privateKeyFile, err := os.OpenFile(s.config.SignatureKeyFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600)
 	if err != nil {
 		return err
 	}

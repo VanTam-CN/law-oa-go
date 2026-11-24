@@ -73,15 +73,19 @@ func (s *RBACService) CheckUserPermission(ctx context.Context, userID uint, perm
 // checkRolePermission 检查角色权限
 func (s *RBACService) checkRolePermission(role, permissionKey string) bool {
 	rolePermissions := map[string][]string{
-		"admin": {"user:view", "user:create", "user:update", "user:delete", "user:assign_role",
+		"admin": {
+			"user:view", "user:create", "user:update", "user:delete", "user:assign_role",
 			"role:view", "role:create", "role:update", "role:delete", "role:assign_permission",
 			"permission:view", "permission:create", "permission:update", "permission:delete",
 			"case:view", "case:create", "case:update", "case:delete", "case:assign",
 			"client:view", "client:create", "client:update", "client:delete",
-			"document:view", "document:upload", "document:update", "document:delete", "document:download"},
-		"lawyer": {"case:view", "case:create", "case:update", "case:assign",
+			"document:view", "document:upload", "document:update", "document:delete", "document:download",
+		},
+		"lawyer": {
+			"case:view", "case:create", "case:update", "case:assign",
 			"client:view", "client:create", "client:update",
-			"document:view", "document:upload", "document:update", "document:download"},
+			"document:view", "document:upload", "document:update", "document:download",
+		},
 		"user": {"case:view", "client:view", "document:view", "document:download"},
 	}
 
@@ -101,15 +105,19 @@ func (s *RBACService) checkRolePermission(role, permissionKey string) bool {
 // getRolePermissions 获取角色权限列表
 func (s *RBACService) getRolePermissions(role string) []string {
 	rolePermissions := map[string][]string{
-		"admin": {"user:view", "user:create", "user:update", "user:delete", "user:assign_role",
+		"admin": {
+			"user:view", "user:create", "user:update", "user:delete", "user:assign_role",
 			"role:view", "role:create", "role:update", "role:delete", "role:assign_permission",
 			"permission:view", "permission:create", "permission:update", "permission:delete",
 			"case:view", "case:create", "case:update", "case:delete", "case:assign",
 			"client:view", "client:create", "client:update", "client:delete",
-			"document:view", "document:upload", "document:update", "document:delete", "document:download"},
-		"lawyer": {"case:view", "case:create", "case:update", "case:assign",
+			"document:view", "document:upload", "document:update", "document:delete", "document:download",
+		},
+		"lawyer": {
+			"case:view", "case:create", "case:update", "case:assign",
 			"client:view", "client:create", "client:update",
-			"document:view", "document:upload", "document:update", "document:download"},
+			"document:view", "document:upload", "document:update", "document:download",
+		},
 		"user": {"case:view", "client:view", "document:view", "document:download"},
 	}
 
