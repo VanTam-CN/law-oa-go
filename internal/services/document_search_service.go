@@ -456,7 +456,7 @@ func (s *DocumentSearchService) performSearch(ctx context.Context, req *Document
 	// Apply additional filters
 	docModels, total, err := s.docRepo.List(ctx, params)
 	if err != nil {
-		return nil, 0, 0, err
+		return nil, 0, 0, fmt.Errorf("查询列表文档: %w", err)
 	}
 
 	// Convert to search items and apply additional filtering

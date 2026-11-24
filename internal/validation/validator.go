@@ -792,7 +792,10 @@ func (v *Validator) ValidatePagination(c *gin.Context) (page, size int, err erro
 
 // RegisterCustomValidation 注册自定义验证函数
 func (v *Validator) RegisterCustomValidation(tag string, fn validator.Func) error {
-	return v.validator.RegisterValidation(tag, fn)
+	if err := v.validator.RegisterValidation(tag, fn); err != nil {
+		return fmt.Errorf("注册: %w", err)
+	}
+	return nil
 }
 
 // ValidateField 验证单个字段

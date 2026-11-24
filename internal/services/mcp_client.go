@@ -118,10 +118,13 @@ func (c *mcpClient) FetchLatestStandards(ctx context.Context) (*models.MCPStanda
 		resp, err := c.httpClient.Do(req)
 		if resp != nil && err != nil {
 			resp.Body.Close() // 请求失败（含重定向错误）时立即释放响应体
-			return err
+			return fmt.Errorf("执行请求客户: %w", err)
 		}
 		response = resp
-		return err
+		if err != nil {
+			return fmt.Errorf("执行请求客户: %w", err)
+		}
+		return nil
 	})
 	if err != nil {
 		c.updateServiceStatus(ctx, false, err)
@@ -274,7 +277,10 @@ func (c *mcpClient) retryRequest(ctx context.Context, requestFunc func() error) 
 		if i > 0 {
 			select {
 			case <-ctx.Done():
-				return ctx.Err()
+				if err := ctx.Err(); err != nil {
+					return fmt.Errorf("上下文已取消: %w", err)
+				}
+				return nil
 			case <-time.After(c.config.RetryDelay):
 			}
 		}
@@ -300,12 +306,12 @@ func (c *mcpClient) getCachedStandards(ctx context.Context) (*models.MCPStandard
 	cacheKey := "mcp:standards:latest"
 	data, err := c.redis.Get(ctx, cacheKey).Bytes()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("读取标准缓存: %w", err)
 	}
 
 	var standards models.MCPStandards
 	if err := json.Unmarshal(data, &standards); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("解析 JSON: %w", err)
 	}
 
 	return &standards, nil

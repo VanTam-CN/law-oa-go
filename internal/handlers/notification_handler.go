@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -989,7 +990,11 @@ func (h *NotificationHandler) notificationCanRead(ctx context.Context, actor ser
 		if h.authz == nil {
 			return false, nil
 		}
-		return h.authz.CanReadCase(ctx, actor, *notification.CaseID)
+		callRes1, err := h.authz.CanReadCase(ctx, actor, *notification.CaseID)
+		if err != nil {
+			return false, fmt.Errorf("检查案件读取权限: %w", err)
+		}
+		return callRes1, nil
 	}
 	if services.IsBusinessMatterManagementRole(actor.Role) {
 		return true, nil
@@ -1006,7 +1011,11 @@ func (h *NotificationHandler) notificationCanMutate(ctx context.Context, actor s
 		if h.authz == nil {
 			return false, nil
 		}
-		return h.authz.CanManageCase(ctx, actor, *notification.CaseID)
+		callRes1, err := h.authz.CanManageCase(ctx, actor, *notification.CaseID)
+		if err != nil {
+			return false, fmt.Errorf("检查案件管理权限: %w", err)
+		}
+		return callRes1, nil
 	}
 	if services.IsBusinessMatterManagementRole(actor.Role) {
 		return true, nil

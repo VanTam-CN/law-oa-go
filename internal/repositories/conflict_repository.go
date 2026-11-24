@@ -159,9 +159,12 @@ func NewConflictRepository(db *gorm.DB, redis *redis.Client) BasicConflictReposi
 // or missing case is a hard error because silently attaching a result to the
 // wrong matter would be worse than leaving it unlinked.
 func (r *conflictRepository) LinkConflictCheckToCase(ctx context.Context, association ConflictSubjectAssociation) error {
-	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	if err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		return linkConflictCheckInTx(tx, association)
-	})
+	}); err != nil {
+		return fmt.Errorf("LinkConflictCheckToCase 事务失败: %w", err)
+	}
+	return nil
 }
 
 // Async task states stored in conflict_check_records. The service layer owns
@@ -237,12 +240,15 @@ func (r *conflictRepository) FinalizeConflictCheckWithAssociation(ctx context.Co
 	if record.CheckStatus != "COMPLETED" {
 		return errors.New("冲突检测终态失败：带关联终态必须为 COMPLETED")
 	}
-	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	if err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := linkConflictCheckInTx(tx, association); err != nil {
 			return err
 		}
 		return finalizeRunningCheck(tx, record)
-	})
+	}); err != nil {
+		return fmt.Errorf("FinalizeConflictCheckWithAssociation 事务失败: %w", err)
+	}
+	return nil
 }
 
 func linkConflictCheckInTx(tx *gorm.DB, association ConflictSubjectAssociation) error {
@@ -351,7 +357,7 @@ func linkConflictCheckInTx(tx *gorm.DB, association ConflictSubjectAssociation) 
 			}
 			encoded, err := json.Marshal(metadata)
 			if err != nil {
-				return err
+				return fmt.Errorf("序列化 JSON: %w", err)
 			}
 			if err := tx.Table("case_intakes").Where("id = ?", association.IntakeID).Updates(map[string]interface{}{
 				"status":     "conflict_ready",
@@ -438,7 +444,7 @@ func mayReplaceIntakeCheck(tx *gorm.DB, previousID string, current ConflictSubje
 	}
 	var origin recordedAssociation
 	if err := json.Unmarshal([]byte(prior.SearchParameters), &origin); err != nil {
-		return false, err
+		return false, fmt.Errorf("解析 JSON: %w", err)
 	}
 	return origin.IntakeRevision != "" && origin.IntakeRevision != current.IntakeRevision &&
 		firstAssociationValue(origin.IntakeID, origin.IntakeIDSnake) == current.IntakeID &&
@@ -507,7 +513,7 @@ func (r *conflictRepository) SaveConflictP0Evidence(ctx context.Context, checkID
 		return errors.New("P0 冲突证据表未部署")
 	}
 
-	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	if err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		subjectIDs := make(map[string]string, len(subjects))
 		for _, subject := range subjects {
 			if strings.TrimSpace(subject.NormalizedName) == "" {
@@ -590,7 +596,10 @@ func (r *conflictRepository) SaveConflictP0Evidence(ctx context.Context, checkID
 			}
 		}
 		return nil
-	})
+	}); err != nil {
+		return fmt.Errorf("保存事务失败: %w", err)
+	}
+	return nil
 }
 
 func stableConflictP0ID(prefix, value string) string {

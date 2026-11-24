@@ -11,13 +11,12 @@ import (
 	"testing"
 	"time"
 
+	"law-oa-go/internal/config"
+	"law-oa-go/internal/security"
+
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"law-oa-go/internal/cache"
-	"law-oa-go/internal/config"
-	"law-oa-go/internal/security"
 )
 
 // MockConfig 模拟配置

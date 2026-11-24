@@ -100,7 +100,7 @@ func checkRateLimit(c *gin.Context, client *redis.Client, key string, limit int6
 
 	_, err := pipe.Exec(ctx)
 	if err != nil {
-		return false, 0, time.Time{}, err
+		return false, 0, time.Time{}, fmt.Errorf("执行限流计数: %w", err)
 	}
 
 	count := incrCmd.Val()

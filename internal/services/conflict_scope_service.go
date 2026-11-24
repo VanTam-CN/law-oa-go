@@ -234,7 +234,7 @@ func (s *ConflictScopeService) Upsert(ctx context.Context, actor AuthActor, inpu
 		return tx.Create(audit).Error
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("更新或插入冲突事务失败: %w", err)
 	}
 	return &scope, nil
 }

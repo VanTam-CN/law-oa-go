@@ -8,10 +8,11 @@ import (
 	"testing"
 	"time"
 
+	"law-oa-go/internal/models"
+
 	"github.com/stretchr/testify/mock"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"law-oa-go/internal/models"
 )
 
 // MockDB 用于测试的模拟数据库

@@ -514,9 +514,12 @@ func (s *UserService) executeBatchUpdates(ctx context.Context, updates map[uint]
 
 // updateSingleUserSafe 并发安全的单用户更新
 func (s *UserService) updateSingleUserSafe(ctx context.Context, userID uint, req *UpdateUserRequest, results *[]*UserProfile, mu *sync.Mutex) error {
-	return s.concurrentSafe.Execute(ctx, func() error {
+	if err := s.concurrentSafe.Execute(ctx, func() error {
 		return s.updateSingleUser(ctx, userID, req, results, mu)
-	})
+	}); err != nil {
+		return fmt.Errorf("执行: %w", err)
+	}
+	return nil
 }
 
 // updateSingleUser 更新单个用户（内部方法）

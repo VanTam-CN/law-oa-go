@@ -61,7 +61,10 @@ func (s *ApprovalBusinessHookService) ExecuteOnApproved(approval *models.Approva
 		// 没有注册的钩子，跳过
 		return nil
 	}
-	return hook.OnApproved(approval)
+	if err := hook.OnApproved(approval); err != nil {
+		return fmt.Errorf("OnApproved审批: %w", err)
+	}
+	return nil
 }
 
 // ExecuteOnRejected 执行审批拒绝钩子
@@ -70,7 +73,10 @@ func (s *ApprovalBusinessHookService) ExecuteOnRejected(approval *models.Approva
 	if !exists {
 		return nil
 	}
-	return hook.OnRejected(approval)
+	if err := hook.OnRejected(approval); err != nil {
+		return fmt.Errorf("OnRejected审批: %w", err)
+	}
+	return nil
 }
 
 // ExecuteOnCancelled 执行审批撤回钩子
@@ -79,7 +85,10 @@ func (s *ApprovalBusinessHookService) ExecuteOnCancelled(approval *models.Approv
 	if !exists {
 		return nil
 	}
-	return hook.OnCancelled(approval)
+	if err := hook.OnCancelled(approval); err != nil {
+		return fmt.Errorf("OnCancelled审批: %w", err)
+	}
+	return nil
 }
 
 // ==================== 用印审批钩子 ====================
@@ -212,7 +221,7 @@ func (h *CaseCreationApprovalHook) OnApproved(approval *models.ApprovalRequest) 
 		return nil
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("OnApproved 事务失败: %w", err)
 	}
 
 	return nil

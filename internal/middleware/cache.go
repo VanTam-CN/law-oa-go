@@ -229,7 +229,11 @@ type responseWriter struct {
 
 func (w *responseWriter) Write(data []byte) (int, error) {
 	w.buffer.Write(data)
-	return w.ResponseWriter.Write(data)
+	callRes1, err := w.ResponseWriter.Write(data)
+	if err != nil {
+		return 0, fmt.Errorf("写入: %w", err)
+	}
+	return callRes1, nil
 }
 
 func (w *responseWriter) WriteHeader(code int) {

@@ -147,7 +147,7 @@ func (a *ApprovalAssigner) findApproverByRole(role string, approval *models.Appr
 	// 这里简化处理，实际应该查询用户角色表
 	users, err := a.userRepo.FindByRole(role, 20)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询用户: %w", err)
 	}
 
 	if len(users) == 0 {
@@ -167,7 +167,7 @@ func (a *ApprovalAssigner) findApproverByRole(role string, approval *models.Appr
 func (a *ApprovalAssigner) findApproverByID(userID string) (*ApproverInfo, error) {
 	user, err := a.userRepo.FindByStringID(userID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询用户: %w", err)
 	}
 
 	if user == nil {
@@ -189,7 +189,7 @@ func (a *ApprovalAssigner) findApproverByDepartment(deptID string, applicantID s
 	// 查找部门主管
 	users, err := a.userRepo.FindDepartmentHead(deptID, 20)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询用户: %w", err)
 	}
 
 	for _, user := range users {
@@ -214,7 +214,7 @@ func (a *ApprovalAssigner) MoveToNextStage(approval *models.ApprovalRequest) (bo
 
 	workflow, err := a.workflowRepo.FindByType(approval.WorkflowType)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("查询审批: %w", err)
 	}
 
 	if workflow == nil {
@@ -228,7 +228,7 @@ func (a *ApprovalAssigner) MoveToNextStage(approval *models.ApprovalRequest) (bo
 	// 解析工作流阶段
 	var stages []WorkflowStage
 	if err := json.Unmarshal([]byte(workflow.Stages), &stages); err != nil {
-		return false, err
+		return false, fmt.Errorf("解析 JSON: %w", err)
 	}
 
 	// 查找当前阶段索引

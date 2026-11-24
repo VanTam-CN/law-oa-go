@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"math"
 	"time"
 
@@ -204,7 +205,11 @@ func parseToolDate(value string) (time.Time, error) {
 	if parsed, err := time.ParseInLocation("2006-01-02", value, time.Local); err == nil {
 		return parsed, nil
 	}
-	return time.Parse(time.RFC3339, value)
+	callRes1, err := time.Parse(time.RFC3339, value)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("解析时间: %w", err)
+	}
+	return callRes1, nil
 }
 
 func shouldCountToolDate(date time.Time, excludeWeekends, excludeHolidays bool) bool {

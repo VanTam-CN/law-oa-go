@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"gorm.io/gorm"
@@ -40,7 +41,10 @@ func (c *ApprovalTemplateConfig) Scan(value interface{}) error {
 	if !ok {
 		return errors.New("failed to unmarshal ApprovalTemplateConfig value")
 	}
-	return json.Unmarshal(bytes, c)
+	if err := json.Unmarshal(bytes, c); err != nil {
+		return fmt.Errorf("解析 JSON: %w", err)
+	}
+	return nil
 }
 
 // Value 实现 driver.Valuer 接口
@@ -48,7 +52,11 @@ func (c ApprovalTemplateConfig) Value() (driver.Value, error) {
 	if len(c.Stages) == 0 {
 		return "{}", nil
 	}
-	return json.Marshal(c)
+	callRes1, err := json.Marshal(c)
+	if err != nil {
+		return nil, fmt.Errorf("序列化 JSON: %w", err)
+	}
+	return callRes1, nil
 }
 
 // ApprovalStage 审批节点

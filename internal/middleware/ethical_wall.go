@@ -186,7 +186,7 @@ func resolveCaseIDForEthicalWall(c *gin.Context, config EthicalWallConfig) (uint
 		}
 		caseID, applies, err := config.DocumentResolver.ResolveDocumentCase(c.Request.Context(), docID)
 		if err != nil {
-			return 0, err
+			return 0, fmt.Errorf("解析文档: %w", err)
 		}
 		if !applies {
 			return 0, nil
@@ -220,7 +220,7 @@ func resolveOnlyOfficeCaseID(c *gin.Context, config EthicalWallConfig) (uint, er
 
 	caseID, applies, err := config.DocumentResolver.ResolveDocumentCase(c.Request.Context(), docID)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("解析文档: %w", err)
 	}
 	if !applies {
 		return 0, nil

@@ -299,7 +299,7 @@ func (pm *PerformanceMonitor) GetSlowQueries(limit int) []QueryRecord {
 func (pm *PerformanceMonitor) GetConnectionPoolInfo() (map[string]interface{}, error) {
 	sqlDB, err := pm.db.DB()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("获取底层 sql 连接: %w", err)
 	}
 
 	stats := sqlDB.Stats()

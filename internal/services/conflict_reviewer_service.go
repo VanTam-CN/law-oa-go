@@ -276,7 +276,7 @@ func AssignConflictReviewer(ctx context.Context, db *gorm.DB, actor AuthActor, c
 		}).Error
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("分配事务失败: %w", err)
 	}
 	return &result, nil
 }

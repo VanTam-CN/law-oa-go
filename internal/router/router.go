@@ -2,6 +2,7 @@ package router
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -22,7 +23,7 @@ import (
 // Init 初始化完整的路由系统
 func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client) error {
 	if err := database.RequireNarrowPilotSchema(db); err != nil {
-		return err
+		return fmt.Errorf("校验试点 schema 约束: %w", err)
 	}
 	log.Println("初始化完整路由系统...")
 	app.Static("/uploads/avatars", "./uploads/avatars")
@@ -96,7 +97,7 @@ func Init(app *gin.Engine, db *gorm.DB, redisClient *rdb.Client) error {
 	// 初始化令牌管理器
 	cfg, err := config.Load()
 	if err != nil {
-		return err
+		return fmt.Errorf("加载配置: %w", err)
 	}
 	var cacheService *cache.CacheService
 	if redisClient != nil {

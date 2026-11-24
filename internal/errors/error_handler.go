@@ -321,7 +321,10 @@ func (ehm *ErrorHandlerManager) retryNetworkOperation(ctx context.Context, err *
 	for i := 0; i < ehm.config.MaxRetries; i++ {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			if err := ctx.Err(); err != nil {
+				return fmt.Errorf("上下文已取消: %w", err)
+			}
+			return nil
 		case <-time.After(ehm.config.RetryDelay):
 			// 这里可以重新执行网络操作
 			// 为演示目的，只记录重试日志
@@ -347,7 +350,10 @@ func (ehm *ErrorHandlerManager) retryDatabaseOperation(ctx context.Context, err 
 	for i := 0; i < ehm.config.MaxRetries; i++ {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			if err := ctx.Err(); err != nil {
+				return fmt.Errorf("上下文已取消: %w", err)
+			}
+			return nil
 		case <-time.After(ehm.config.RetryDelay):
 			// 这里可以重新执行数据库操作
 			if ehm.logger != nil {

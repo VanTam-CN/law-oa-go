@@ -210,7 +210,10 @@ func (d *EventDispatcher) handleCaseStatusChanged(ctx context.Context, event *Ev
 			Priority:    "medium",
 			DueDateType: "case_active",
 		}
-		return d.inboxRepo.Create(ctx, item)
+		if err := d.inboxRepo.Create(ctx, item); err != nil {
+			return fmt.Errorf("创建收件箱: %w", err)
+		}
+		return nil
 	case "closed":
 		item := &models.InboxItem{
 			UserID:      case_.LawyerID,
@@ -221,7 +224,10 @@ func (d *EventDispatcher) handleCaseStatusChanged(ctx context.Context, event *Ev
 			Priority:    "normal",
 			DueDateType: "case_closing",
 		}
-		return d.inboxRepo.Create(ctx, item)
+		if err := d.inboxRepo.Create(ctx, item); err != nil {
+			return fmt.Errorf("创建收件箱: %w", err)
+		}
+		return nil
 	}
 
 	return nil
@@ -475,5 +481,8 @@ func (d *EventDispatcher) CreateCustomInboxItem(ctx context.Context, userID uint
 		DueDateType: dueDateType,
 	}
 
-	return d.inboxRepo.Create(ctx, item)
+	if err := d.inboxRepo.Create(ctx, item); err != nil {
+		return fmt.Errorf("创建收件箱: %w", err)
+	}
+	return nil
 }

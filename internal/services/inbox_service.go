@@ -233,9 +233,12 @@ func (s *InboxService) DeleteInboxItem(ctx context.Context, id, userID uint) err
 	// Preserve the same ownership/not-found response used by every other
 	// inbox operation before exposing the retention policy.
 	if _, err := s.inboxRepo.FindByIDAndUserID(ctx, id, userID); err != nil {
-		return err
+		return fmt.Errorf("查询收件箱: %w", err)
 	}
-	return s.inboxRepo.DeleteByUserID(ctx, id, userID)
+	if err := s.inboxRepo.DeleteByUserID(ctx, id, userID); err != nil {
+		return fmt.Errorf("删除收件箱: %w", err)
+	}
+	return nil
 }
 
 // ListInboxItems 获取待办事项列表
@@ -304,12 +307,18 @@ func (s *InboxService) ListInboxItems(ctx context.Context, userID uint, req *Lis
 
 // MarkAsRead 标记为已读
 func (s *InboxService) MarkAsRead(ctx context.Context, id, userID uint) error {
-	return s.inboxRepo.MarkAsReadByUserID(ctx, id, userID)
+	if err := s.inboxRepo.MarkAsReadByUserID(ctx, id, userID); err != nil {
+		return fmt.Errorf("标记收件箱: %w", err)
+	}
+	return nil
 }
 
 // MarkAsCompleted 标记为已完成
 func (s *InboxService) MarkAsCompleted(ctx context.Context, id, userID uint) error {
-	return s.inboxRepo.MarkAsCompletedByUserID(ctx, id, userID)
+	if err := s.inboxRepo.MarkAsCompletedByUserID(ctx, id, userID); err != nil {
+		return fmt.Errorf("标记收件箱: %w", err)
+	}
+	return nil
 }
 
 // SnoozeInboxItem 延后待办事项
@@ -336,7 +345,10 @@ func (s *InboxService) SnoozeInboxItem(ctx context.Context, id, userID uint, req
 		return errors.New("必须指定时间或延后天数")
 	}
 
-	return s.inboxRepo.SnoozeByUserID(ctx, id, userID, until)
+	if err := s.inboxRepo.SnoozeByUserID(ctx, id, userID, until); err != nil {
+		return fmt.Errorf("SnoozeByUserID收件箱: %w", err)
+	}
+	return nil
 }
 
 // GetInboxStats 获取待办事项统计

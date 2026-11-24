@@ -298,7 +298,7 @@ func (s *v2ConflictDetectionService) searchInPool(ctx context.Context, req *Conf
 	// 调用冲突池服务搜索
 	poolResults, err := s.poolService.SearchInPool(ctx, poolReq)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("搜索冲突: %w", err)
 	}
 
 	// 转换为 ConflictMatchV2

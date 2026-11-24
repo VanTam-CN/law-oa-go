@@ -172,7 +172,7 @@ func (s *ApprovalService) GetApprovalForAuthorization(userID string, id string) 
 		if !allowed {
 			wasApprover, historyErr := s.approvalRepo.HasApproverRecord(approval.ID, userID)
 			if historyErr != nil {
-				return nil, historyErr
+				return nil, fmt.Errorf("检查审批: %w", historyErr)
 			}
 			allowed = wasApprover
 		}
@@ -193,7 +193,7 @@ func (s *ApprovalService) LoadApprovalRecords(approval *models.ApprovalRequest) 
 	}
 	records, err := s.approvalRepo.FindRecordsByApprovalID(approval.ID)
 	if err != nil {
-		return err
+		return fmt.Errorf("查询审批: %w", err)
 	}
 	approval.Records = records
 	return nil
@@ -348,7 +348,11 @@ func (s *ApprovalService) SubmitApproval(userID string, approvalID string) (*mod
 	}
 
 	// 重新加载数据
-	return s.approvalRepo.FindByID(approvalID)
+	callRes1, err := s.approvalRepo.FindByID(approvalID)
+	if err != nil {
+		return nil, fmt.Errorf("查询审批: %w", err)
+	}
+	return callRes1, nil
 }
 
 // ProcessApprovalDecision 处理审批决定（通过/拒绝/要求修改/转派）
@@ -553,7 +557,11 @@ func (s *ApprovalService) ResubmitApproval(userID string, approvalID string, rev
 	// 发送重新提交通知
 	_ = s.sendApprovalNotification(approval, "重新提交")
 
-	return s.approvalRepo.FindByID(approvalID)
+	callRes1, err := s.approvalRepo.FindByID(approvalID)
+	if err != nil {
+		return nil, fmt.Errorf("查询审批: %w", err)
+	}
+	return callRes1, nil
 }
 
 // CancelApproval 撤回审批
@@ -642,7 +650,11 @@ func (s *ApprovalService) UpdateApproval(userID string, id string, req *models.U
 	}
 
 	// 重新加载数据
-	return s.approvalRepo.FindByID(id)
+	callRes1, err := s.approvalRepo.FindByID(id)
+	if err != nil {
+		return nil, fmt.Errorf("查询审批: %w", err)
+	}
+	return callRes1, nil
 }
 
 // DeleteApproval 删除审批（仅草稿）

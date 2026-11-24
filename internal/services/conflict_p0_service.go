@@ -421,7 +421,7 @@ func (s *conflictDetectionService) ReviewConflict(ctx context.Context, checkID, 
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ReviewConflict 事务失败: %w", err)
 	}
 	// The original check evidence is immutable. The review is stored in its
 	// own append-only row and is read through GetConflictReview; do not rewrite

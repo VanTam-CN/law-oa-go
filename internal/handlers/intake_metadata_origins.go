@@ -1,6 +1,9 @@
 package handlers
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 // A browser projection can stand for several different exact stored values.
 type metadataOrigins map[string][]any
@@ -8,7 +11,7 @@ type metadataOrigins map[string][]any
 func (origins metadataOrigins) add(original any) error {
 	key, err := json.Marshal(metadataArrayProjection(original))
 	if err != nil {
-		return err
+		return fmt.Errorf("序列化 JSON: %w", err)
 	}
 	group := origins[string(key)]
 	if len(group) == 0 || !equalMetadataValue(group[0], original) {
@@ -21,7 +24,7 @@ func (origins metadataOrigins) check(wire, restored any) error {
 	projection := metadataArrayProjection(wire)
 	key, err := json.Marshal(projection)
 	if err != nil {
-		return err
+		return fmt.Errorf("序列化 JSON: %w", err)
 	}
 	group := origins[string(key)]
 	if len(group) > 1 && equalMetadataValue(wire, projection) {

@@ -601,7 +601,10 @@ func decodeIntakeMetadataJSON(data []byte, target *interface{}) error {
 	}
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.UseNumber()
-	return decoder.Decode(target)
+	if err := decoder.Decode(target); err != nil {
+		return fmt.Errorf("解析: %w", err)
+	}
+	return nil
 }
 
 func (h *DemoAggregateHandler) isAllowedSumColumn(table, column string) bool {

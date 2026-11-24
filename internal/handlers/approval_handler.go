@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -57,23 +58,43 @@ type approvalServiceAdapter struct {
 }
 
 func (a *approvalServiceAdapter) CreateApproval(userID string, userName string, req *models.CreateApprovalRequest) (*models.ApprovalRequest, error) {
-	return a.service.CreateApproval(userID, userName, req)
+	callRes1, err := a.service.CreateApproval(userID, userName, req)
+	if err != nil {
+		return nil, fmt.Errorf("创建审批: %w", err)
+	}
+	return callRes1, nil
 }
 
 func (a *approvalServiceAdapter) GetApproval(userID string, id string) (*models.ApprovalRequest, error) {
-	return a.service.GetApproval(userID, id)
+	callRes1, err := a.service.GetApproval(userID, id)
+	if err != nil {
+		return nil, fmt.Errorf("查询审批: %w", err)
+	}
+	return callRes1, nil
 }
 
 func (a *approvalServiceAdapter) GetApprovalByID(id string) (*models.ApprovalRequest, error) {
-	return a.service.GetApprovalByID(id)
+	callRes1, err := a.service.GetApprovalByID(id)
+	if err != nil {
+		return nil, fmt.Errorf("查询审批: %w", err)
+	}
+	return callRes1, nil
 }
 
 func (a *approvalServiceAdapter) SubmitApproval(userID string, id string) (*models.ApprovalRequest, error) {
-	return a.service.SubmitApproval(userID, id)
+	callRes1, err := a.service.SubmitApproval(userID, id)
+	if err != nil {
+		return nil, fmt.Errorf("提交审批: %w", err)
+	}
+	return callRes1, nil
 }
 
 func (a *approvalServiceAdapter) ProcessApproval(userID string, userName string, id string, decisionReq *models.ApprovalDecisionRequest) (*models.ApprovalRequest, error) {
-	return a.service.ProcessApprovalDecision(userID, id, decisionReq)
+	callRes1, err := a.service.ProcessApprovalDecision(userID, id, decisionReq)
+	if err != nil {
+		return nil, fmt.Errorf("处理审批: %w", err)
+	}
+	return callRes1, nil
 }
 
 // GetApprovalStats 获取审批统计

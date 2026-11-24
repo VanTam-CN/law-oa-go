@@ -237,7 +237,7 @@ func (s *WaiverWorkflowService) CreateWaiver(ctx context.Context, approvalID, ac
 	}
 
 	if err := s.waiverRepo.CreateWaiverApplication(ctx, application); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("创建弃权流程: %w", err)
 	}
 	if err := s.updateConflictWaiverState(ctx, conflictRecord, application); err != nil {
 		return nil, err
@@ -332,7 +332,7 @@ func (s *WaiverWorkflowService) DecideWaiver(ctx context.Context, waiverID, acto
 		record.NextReviewDate = &nextReviewAt
 	}
 	if err := s.waiverRepo.CreateWaiverApprovalRecord(ctx, record); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("创建弃权流程: %w", err)
 	}
 
 	switch decision {
@@ -356,7 +356,7 @@ func (s *WaiverWorkflowService) DecideWaiver(ctx context.Context, waiverID, acto
 	application.UpdatedBy = &actorID
 
 	if err := s.waiverRepo.UpdateWaiverApplication(ctx, application); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("更新弃权流程: %w", err)
 	}
 	conflictRecord, _ := s.conflictRepo.GetCheckRecord(ctx, application.ConflictCheckID)
 	if conflictRecord != nil {
@@ -365,7 +365,11 @@ func (s *WaiverWorkflowService) DecideWaiver(ctx context.Context, waiverID, acto
 		}
 	}
 
-	return s.waiverRepo.GetWaiverApplication(ctx, waiverID)
+	callRes1, err := s.waiverRepo.GetWaiverApplication(ctx, waiverID)
+	if err != nil {
+		return nil, fmt.Errorf("查询弃权流程: %w", err)
+	}
+	return callRes1, nil
 }
 
 func (s *WaiverWorkflowService) resolveWaiverReviewer(actorID string) string {
@@ -422,7 +426,10 @@ func (s *WaiverWorkflowService) updateConflictWaiverState(ctx context.Context, r
 	}
 	record.CheckResult["decision"] = decision
 	record.UpdatedAt = time.Now()
-	return s.conflictRepo.UpdateCheckRecord(ctx, record)
+	if err := s.conflictRepo.UpdateCheckRecord(ctx, record); err != nil {
+		return fmt.Errorf("更新: %w", err)
+	}
+	return nil
 }
 
 func (s *WaiverWorkflowService) expireWaiverIfNeeded(ctx context.Context, application *models.WaiverApplication) (*models.WaiverApplication, error) {
@@ -433,13 +440,13 @@ func (s *WaiverWorkflowService) expireWaiverIfNeeded(ctx context.Context, applic
 	if application.RequestedExpiryDate != nil && !application.RequestedExpiryDate.After(now) {
 		application.Status = WaiverStatusExpired
 		if err := s.waiverRepo.UpdateWaiverApplication(ctx, application); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("更新弃权流程: %w", err)
 		}
 		return s.refreshConflictWaiverState(ctx, application)
 	}
 	records, err := s.waiverRepo.GetWaiverApprovalRecords(ctx, application.ID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询弃权流程: %w", err)
 	}
 	var latestApproval *models.WaiverApprovalRecord
 	for _, candidate := range records {
@@ -455,7 +462,7 @@ func (s *WaiverWorkflowService) expireWaiverIfNeeded(ctx context.Context, applic
 	if latestApproval == nil || latestApproval.NextReviewDate == nil || !latestApproval.NextReviewDate.After(now) {
 		application.Status = WaiverStatusReviewOverdue
 		if err := s.waiverRepo.UpdateWaiverApplication(ctx, application); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("更新弃权流程: %w", err)
 		}
 		return s.refreshConflictWaiverState(ctx, application)
 	}
@@ -499,7 +506,7 @@ func (s *WaiverWorkflowService) createWaiverReviewInbox(ctx context.Context, app
 		content += " 关联审批：" + approvalID
 	}
 
-	return s.inboxRepo.Create(ctx, &models.InboxItem{
+	if err := s.inboxRepo.Create(ctx, &models.InboxItem{
 		UserID:      uint(reviewerID),
 		SourceType:  "waiver",
 		SourceID:    0,
@@ -508,7 +515,10 @@ func (s *WaiverWorkflowService) createWaiverReviewInbox(ctx context.Context, app
 		Priority:    waiverPriorityToInbox(application.ReviewPriority),
 		DueDate:     application.ReviewDeadline,
 		DueDateType: "waiver_review",
-	})
+	}); err != nil {
+		return fmt.Errorf("创建收件箱: %w", err)
+	}
+	return nil
 }
 
 func buildConflictSummary(req *CreateWaiverRequest, record *models.ConflictCheckRecord) string {

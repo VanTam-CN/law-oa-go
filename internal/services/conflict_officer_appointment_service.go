@@ -124,7 +124,7 @@ func (s *ConflictOfficerAppointmentService) Create(ctx context.Context, actor Au
 		return nil
 	}, &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("创建冲突事务失败: %w", err)
 	}
 	return &result, nil
 }

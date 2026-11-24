@@ -301,7 +301,10 @@ func (c *AdvancedCacheService) DeletePattern(ctx context.Context, pattern string
 	}
 
 	if len(keys) > 0 {
-		return c.client.Del(ctx, keys...).Err()
+		if err := c.client.Del(ctx, keys...).Err(); err != nil {
+			return fmt.Errorf("删除缓存: %w", err)
+		}
+		return nil
 	}
 
 	return nil
@@ -394,7 +397,10 @@ func (c *AdvancedCacheService) Set(key string, value interface{}, ttl time.Durat
 func (c *AdvancedCacheService) Delete(key string) error {
 	ctx := context.Background()
 	fullKey := c.buildKey(key)
-	return c.client.Del(ctx, fullKey).Err()
+	if err := c.client.Del(ctx, fullKey).Err(); err != nil {
+		return fmt.Errorf("删除缓存: %w", err)
+	}
+	return nil
 }
 
 func (c *AdvancedCacheService) GetClient() *redis.Client {

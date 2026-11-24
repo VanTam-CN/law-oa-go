@@ -262,7 +262,7 @@ func (e *EnhancedError) ID() string {
 // MarshalJSON 自定义序列化：EnhancedError 字段均为非导出，
 // 默认 json.Marshal 会恒输出 "{}"（SA9005 指出的真实缺陷）。
 func (e *EnhancedError) MarshalJSON() ([]byte, error) {
-	return json.Marshal(map[string]interface{}{
+	callRes1, err := json.Marshal(map[string]interface{}{
 		"id":          e.id,
 		"code":        e.code,
 		"category":    e.category,
@@ -277,11 +277,19 @@ func (e *EnhancedError) MarshalJSON() ([]byte, error) {
 		"line":        e.line,
 		"function":    e.function,
 	})
+	if err != nil {
+		return nil, fmt.Errorf("序列化 JSON: %w", err)
+	}
+	return callRes1, nil
 }
 
 // ToJSON 将错误转换为JSON
 func (e *EnhancedError) ToJSON() ([]byte, error) {
-	return json.Marshal(e)
+	callRes1, err := json.Marshal(e)
+	if err != nil {
+		return nil, fmt.Errorf("序列化 JSON: %w", err)
+	}
+	return callRes1, nil
 }
 
 // String 返回简短的字符串表示

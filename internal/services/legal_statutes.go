@@ -445,7 +445,11 @@ func (s *legalStatuteService) searchWithDatabase(ctx context.Context, req *model
 // GetSearchSuggestions 获取搜索建议
 func (s *legalStatuteService) GetSearchSuggestions(ctx context.Context, query string) ([]string, error) {
 	if s.esRepo != nil {
-		return s.esRepo.GetSuggestion(ctx, query)
+		callRes1, err := s.esRepo.GetSuggestion(ctx, query)
+		if err != nil {
+			return nil, fmt.Errorf("查询: %w", err)
+		}
+		return callRes1, nil
 	}
 
 	statutes, err := s.statuteRepo.SearchByKeyword(ctx, query, 0, 10)
@@ -563,7 +567,11 @@ func (s *legalStatuteService) GetCategories(ctx context.Context) ([]*models.Lega
 
 // GetCategoryTree 获取分类树
 func (s *legalStatuteService) GetCategoryTree(ctx context.Context) ([]*models.CategoryTreeNode, error) {
-	return s.categoryRepo.GetTree(ctx)
+	callRes1, err := s.categoryRepo.GetTree(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("查询法规: %w", err)
+	}
+	return callRes1, nil
 }
 
 // GetStatutesByCategory 根据分类获取法条
@@ -665,12 +673,18 @@ func (s *legalStatuteService) AddToFavorites(ctx context.Context, statuteID int,
 	}
 
 	// 添加收藏
-	return s.statuteRepo.AddToFavorites(ctx, userID, statuteID)
+	if err := s.statuteRepo.AddToFavorites(ctx, userID, statuteID); err != nil {
+		return fmt.Errorf("添加法规: %w", err)
+	}
+	return nil
 }
 
 // RemoveFromFavorites 移除收藏
 func (s *legalStatuteService) RemoveFromFavorites(ctx context.Context, statuteID int, userID int) error {
-	return s.statuteRepo.RemoveFromFavorites(ctx, userID, statuteID)
+	if err := s.statuteRepo.RemoveFromFavorites(ctx, userID, statuteID); err != nil {
+		return fmt.Errorf("删除法规: %w", err)
+	}
+	return nil
 }
 
 // GetUserFavorites 获取用户收藏
@@ -735,12 +749,20 @@ func (s *legalStatuteService) GetSearchHistory(ctx context.Context, userID int, 
 
 // GetPopularSearches 获取热门搜索
 func (s *legalStatuteService) GetPopularSearches(ctx context.Context, limit int) ([]string, error) {
-	return s.statuteRepo.GetPopularSearches(ctx, limit)
+	callRes1, err := s.statuteRepo.GetPopularSearches(ctx, limit)
+	if err != nil {
+		return nil, fmt.Errorf("查询法规: %w", err)
+	}
+	return callRes1, nil
 }
 
 // GetCategoryStats 获取分类统计
 func (s *legalStatuteService) GetCategoryStats(ctx context.Context) ([]*models.CategoryStat, error) {
-	return s.statuteRepo.GetCategoryStats(ctx)
+	callRes1, err := s.statuteRepo.GetCategoryStats(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("查询法规: %w", err)
+	}
+	return callRes1, nil
 }
 
 // GetPopularStatutes 获取热门法条
@@ -939,7 +961,7 @@ func (s *legalStatuteService) BulkImportStatutes(ctx context.Context, req *model
 func (s *legalStatuteService) buildCategoryMap(ctx context.Context) (map[string]int, error) {
 	categories, err := s.categoryRepo.List(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询列表法规: %w", err)
 	}
 
 	categoryMap := make(map[string]int)

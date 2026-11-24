@@ -4,7 +4,6 @@
 package metrics
 
 import (
-	"sync"
 	"testing"
 	"time"
 

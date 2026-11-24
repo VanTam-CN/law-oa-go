@@ -2,6 +2,7 @@ package common
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -62,7 +63,7 @@ func (sr *StreamResponse) Render(w http.ResponseWriter) error {
 		first = false
 
 		if err := encoder.Encode(data); err != nil {
-			return err
+			return fmt.Errorf("编码: %w", err)
 		}
 
 		// 立即刷新缓冲区
@@ -152,7 +153,7 @@ func (sr *StreamPaginatedResponse) Render(w http.ResponseWriter) error {
 
 	headerData, err := json.Marshal(header)
 	if err != nil {
-		return err
+		return fmt.Errorf("序列化 JSON: %w", err)
 	}
 
 	w.Write(headerData[:len(headerData)-2]) // 去掉最后的"]}
@@ -168,7 +169,7 @@ func (sr *StreamPaginatedResponse) Render(w http.ResponseWriter) error {
 		first = false
 
 		if err := encoder.Encode(data); err != nil {
-			return err
+			return fmt.Errorf("编码: %w", err)
 		}
 
 		if f, ok := w.(http.Flusher); ok {

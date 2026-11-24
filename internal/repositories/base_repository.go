@@ -141,7 +141,10 @@ func (r *BaseRepository[T]) FindWithPreload(ctx context.Context, id uint, preloa
 
 // Transaction 事务操作 (Go 1.23+ 函数式编程)
 func (r *BaseRepository[T]) Transaction(ctx context.Context, fn func(*gorm.DB) error) error {
-	return r.db.WithContext(ctx).Transaction(fn)
+	if err := r.db.WithContext(ctx).Transaction(fn); err != nil {
+		return fmt.Errorf("Transaction 事务失败: %w", err)
+	}
+	return nil
 }
 
 // QueryBuilder 查询构建器 (Go 1.23+ 链式调用优化)

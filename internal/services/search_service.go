@@ -164,7 +164,7 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, query string, 
 	// Execute suggest query using raw ES client
 	var suggestBuf bytes.Buffer
 	if err := json.NewEncoder(&suggestBuf).Encode(suggestQuery); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("编码: %w", err)
 	}
 
 	suggestRes, err := s.esClient.Search(
@@ -173,7 +173,7 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, query string, 
 		s.esClient.Search.WithBody(&suggestBuf),
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("搜索 ES 索引: %w", err)
 	}
 	defer suggestRes.Body.Close()
 
@@ -184,7 +184,7 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, query string, 
 	// Parse suggestions
 	var suggestResult map[string]interface{}
 	if err := json.NewDecoder(suggestRes.Body).Decode(&suggestResult); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("解析: %w", err)
 	}
 	suggestions := s.parseSuggestions(suggestResult, limit)
 	return suggestions, nil
@@ -203,7 +203,7 @@ func (s *SearchService) IndexEntity(ctx context.Context, entityType string, enti
 	// Index document using raw ES client
 	var docBuf bytes.Buffer
 	if err := json.NewEncoder(&docBuf).Encode(doc); err != nil {
-		return err
+		return fmt.Errorf("编码: %w", err)
 	}
 
 	res, err := s.esClient.Index(
@@ -213,7 +213,7 @@ func (s *SearchService) IndexEntity(ctx context.Context, entityType string, enti
 		s.esClient.Index.WithDocumentID(entityID),
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("写入 ES 索引: %w", err)
 	}
 	defer res.Body.Close()
 
@@ -239,7 +239,7 @@ func (s *SearchService) DeleteEntityFromIndex(ctx context.Context, entityType st
 		s.esClient.Delete.WithContext(ctx),
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("删除 ES 文档: %w", err)
 	}
 	defer res.Body.Close()
 

@@ -150,7 +150,11 @@ func (sa StringArray) Value() (driver.Value, error) {
 	if len(sa) == 0 {
 		return "{}", nil
 	}
-	return json.Marshal(sa)
+	callRes1, err := json.Marshal(sa)
+	if err != nil {
+		return nil, fmt.Errorf("序列化 JSON: %w", err)
+	}
+	return callRes1, nil
 }
 
 // Scan 实现sql.Scanner接口
@@ -178,7 +182,10 @@ func (sa *StringArray) Scan(value interface{}) error {
 			*sa = StringArray(tags)
 		} else {
 			// 尝试JSON解析
-			return json.Unmarshal(v, sa)
+			if err := json.Unmarshal(v, sa); err != nil {
+				return fmt.Errorf("解析 JSON: %w", err)
+			}
+			return nil
 		}
 	case string:
 		// PostgreSQL数组格式：{tag1,tag2}
@@ -196,7 +203,10 @@ func (sa *StringArray) Scan(value interface{}) error {
 			*sa = StringArray(tags)
 		} else {
 			// 尝试JSON解析
-			return json.Unmarshal([]byte(v), sa)
+			if err := json.Unmarshal([]byte(v), sa); err != nil {
+				return fmt.Errorf("解析 JSON: %w", err)
+			}
+			return nil
 		}
 	default:
 		return fmt.Errorf("cannot scan %T into StringArray", value)

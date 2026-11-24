@@ -234,7 +234,7 @@ func (m *TrustBalanceMiddleware) GetAccountBalance(c *gin.Context) (balance, ava
 
 	account, err := m.accountRepo.FindByID(c.Request.Context(), uint(id))
 	if err != nil {
-		return 0, 0, 0, err
+		return 0, 0, 0, fmt.Errorf("查询信托账户: %w", err)
 	}
 	if account == nil {
 		return 0, 0, 0, errors.New("账户不存在")

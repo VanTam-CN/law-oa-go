@@ -283,11 +283,11 @@ func (s *TokenRevocationService) blacklistToken(ctx context.Context, tokenString
 		ttl = time.Hour
 	}
 	if err := s.redisClient.Set(ctx, tokenHashKey(tokenString), "1", ttl).Err(); err != nil {
-		return err
+		return fmt.Errorf("写入令牌黑名单: %w", err)
 	}
 	if uuid != "" {
 		if err := s.redisClient.Set(ctx, fmt.Sprintf("blacklist:%s", uuid), "1", ttl).Err(); err != nil {
-			return err
+			return fmt.Errorf("写入会话黑名单: %w", err)
 		}
 	}
 	return nil
@@ -361,7 +361,10 @@ func (s *TokenRevocationService) markUserTokensRevoked(ctx context.Context, user
 	if s.redisClient == nil {
 		return nil
 	}
-	return s.redisClient.Set(ctx, userRevokedAfterKey(userID), revokedAt.Unix(), 0).Err()
+	if err := s.redisClient.Set(ctx, userRevokedAfterKey(userID), revokedAt.Unix(), 0).Err(); err != nil {
+		return fmt.Errorf("写入缓存: %w", err)
+	}
+	return nil
 }
 
 func tokenHashKey(tokenString string) string {

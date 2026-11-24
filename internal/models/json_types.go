@@ -14,7 +14,11 @@ func (j JSON) Value() (driver.Value, error) {
 	if j == nil {
 		return nil, nil
 	}
-	return json.Marshal(j)
+	callRes1, err := json.Marshal(j)
+	if err != nil {
+		return nil, fmt.Errorf("序列化 JSON: %w", err)
+	}
+	return callRes1, nil
 }
 
 // Scan 实现sql.Scanner接口
@@ -43,7 +47,7 @@ func scanJSONMap(data []byte, target *JSON) error {
 
 	var array []interface{}
 	if err := json.Unmarshal(data, &array); err != nil {
-		return err
+		return fmt.Errorf("解析 JSON: %w", err)
 	}
 	*target = JSON{"uses": array}
 	return nil
@@ -98,7 +102,11 @@ func (j JSONStringArray) Value() (driver.Value, error) {
 	if j == nil {
 		return nil, nil
 	}
-	return json.Marshal(j)
+	callRes1, err := json.Marshal(j)
+	if err != nil {
+		return nil, fmt.Errorf("序列化 JSON: %w", err)
+	}
+	return callRes1, nil
 }
 
 // Scan 实现sql.Scanner接口
@@ -110,9 +118,15 @@ func (j *JSONStringArray) Scan(value interface{}) error {
 
 	switch v := value.(type) {
 	case []byte:
-		return json.Unmarshal(v, j)
+		if err := json.Unmarshal(v, j); err != nil {
+			return fmt.Errorf("解析 JSON: %w", err)
+		}
+		return nil
 	case string:
-		return json.Unmarshal([]byte(v), j)
+		if err := json.Unmarshal([]byte(v), j); err != nil {
+			return fmt.Errorf("解析 JSON: %w", err)
+		}
+		return nil
 	default:
 		return fmt.Errorf("cannot scan %T into JSONStringArray", value)
 	}
@@ -151,7 +165,11 @@ func (j JSONArray) Value() (driver.Value, error) {
 	if j == nil {
 		return "[]", nil
 	}
-	return json.Marshal(j)
+	callRes1, err := json.Marshal(j)
+	if err != nil {
+		return nil, fmt.Errorf("序列化 JSON: %w", err)
+	}
+	return callRes1, nil
 }
 
 // Scan 实现 sql.Scanner 接口
@@ -163,9 +181,15 @@ func (j *JSONArray) Scan(value interface{}) error {
 
 	switch v := value.(type) {
 	case []byte:
-		return json.Unmarshal(v, j)
+		if err := json.Unmarshal(v, j); err != nil {
+			return fmt.Errorf("解析 JSON: %w", err)
+		}
+		return nil
 	case string:
-		return json.Unmarshal([]byte(v), j)
+		if err := json.Unmarshal([]byte(v), j); err != nil {
+			return fmt.Errorf("解析 JSON: %w", err)
+		}
+		return nil
 	default:
 		return fmt.Errorf("cannot scan %T into JSONArray", value)
 	}

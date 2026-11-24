@@ -141,9 +141,12 @@ func (l *SlowQueryLogger) Printf(format string, v ...interface{}) {
 func (od *OptimizedDatabase) Health() error {
 	sqlDB, err := od.DB.DB()
 	if err != nil {
-		return err
+		return fmt.Errorf("获取底层 sql 连接: %w", err)
 	}
-	return sqlDB.Ping()
+	if err := sqlDB.Ping(); err != nil {
+		return fmt.Errorf("探测连接: %w", err)
+	}
+	return nil
 }
 
 // Stats 获取连接池统计信息
@@ -169,9 +172,12 @@ func (od *OptimizedDatabase) Stats() map[string]interface{} {
 func (od *OptimizedDatabase) Close() error {
 	sqlDB, err := od.DB.DB()
 	if err != nil {
-		return err
+		return fmt.Errorf("获取底层 sql 连接: %w", err)
 	}
-	return sqlDB.Close()
+	if err := sqlDB.Close(); err != nil {
+		return fmt.Errorf("关闭: %w", err)
+	}
+	return nil
 }
 
 // WithRetry 带重试的数据库操作

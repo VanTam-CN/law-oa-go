@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"crypto/rand"
+	"fmt"
 	"log/slog"
 	"math/big"
 	"time"
@@ -16,7 +17,11 @@ type responseLogger struct {
 
 func (r *responseLogger) Write(b []byte) (int, error) {
 	*r.body = append(*r.body, b...)
-	return r.ResponseWriter.Write(b)
+	callRes1, err := r.ResponseWriter.Write(b)
+	if err != nil {
+		return 0, fmt.Errorf("写入: %w", err)
+	}
+	return callRes1, nil
 }
 
 // generateRandomString 生成随机字符串

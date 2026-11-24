@@ -62,7 +62,7 @@ func (s *LawyerService) ListLawyers(ctx context.Context, req *LawyerListRequest)
 
 	lawyers, total, err := s.lawyerRepo.List(ctx, params)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("查询列表: %w", err)
 	}
 
 	responses := make([]*LawyerResponse, len(lawyers))
@@ -131,7 +131,7 @@ func (s *LawyerService) DeleteLawyer(ctx context.Context, id uint) error {
 		if stderrors.Is(err, gorm.ErrRecordNotFound) {
 			return errors.NotFoundError("lawyer", "Lawyer not found", id)
 		}
-		return err
+		return fmt.Errorf("删除: %w", err)
 	}
 	return nil
 }

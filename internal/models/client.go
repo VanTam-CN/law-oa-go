@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"strings"
 
 	"law-oa-go/internal/security"
@@ -149,12 +150,20 @@ func (c *Client) DecryptedIdentity() (string, error) {
 		return security.NormalizeIdentityNumber(string(c.EffectiveIdentityType()), c.IdentityNumber), nil
 	}
 	if strings.TrimSpace(c.IdentityNumberCiphertext) != "" {
-		return security.DecryptIdentityNumber(c.IdentityNumberCiphertext)
+		callRes1, err := security.DecryptIdentityNumber(c.IdentityNumberCiphertext)
+		if err != nil {
+			return "", fmt.Errorf("解密身份号码: %w", err)
+		}
+		return callRes1, nil
 	}
 	if strings.TrimSpace(c.IDCard) != "" {
 		return security.NormalizeIdentityNumber(string(c.EffectiveIdentityType()), c.IDCard), nil
 	}
-	return security.DecryptIdentityNumber(c.IDCardCiphertext)
+	callRes1, err := security.DecryptIdentityNumber(c.IDCardCiphertext)
+	if err != nil {
+		return "", fmt.Errorf("解密身份号码: %w", err)
+	}
+	return callRes1, nil
 }
 
 func (c *Client) IdentityDigestValue() string {

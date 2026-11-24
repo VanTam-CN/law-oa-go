@@ -405,7 +405,10 @@ func (s *DocumentService) deleteFile(filepath string) error {
 		return nil
 	}
 
-	return os.Remove(filepath)
+	if err := os.Remove(filepath); err != nil {
+		return fmt.Errorf("删除文件: %w", err)
+	}
+	return nil
 }
 
 // openFile opens a file for reading

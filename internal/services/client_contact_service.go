@@ -85,11 +85,11 @@ func (s *ClientContactService) SavePrimaryContact(ctx context.Context, clientID,
 	}
 	phoneCiphertext, err := security.ProtectSensitiveValue(clientContactCipherPurpose, req.Phone)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("加密敏感字段: %w", err)
 	}
 	emailCiphertext, err := security.ProtectSensitiveValue(clientContactCipherPurpose, req.Email)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("加密敏感字段: %w", err)
 	}
 
 	var saved models.ClientContact
@@ -128,7 +128,7 @@ func (s *ClientContactService) SavePrimaryContact(ctx context.Context, clientID,
 		return tx.First(&saved, existing.ID).Error
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("保存客户联系人事务失败: %w", err)
 	}
 	response, err := contactResponse(&saved)
 	if err != nil {
@@ -140,11 +140,11 @@ func (s *ClientContactService) SavePrimaryContact(ctx context.Context, clientID,
 func contactResponse(contact *models.ClientContact) (*ClientContactResponse, error) {
 	phone, err := security.DecryptSensitiveValue(clientContactCipherPurpose, contact.PhoneCiphertext)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("解密敏感字段: %w", err)
 	}
 	email, err := security.DecryptSensitiveValue(clientContactCipherPurpose, contact.EmailCiphertext)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("解密敏感字段: %w", err)
 	}
 	return &ClientContactResponse{
 		ID: contact.ID, ClientID: contact.ClientID, Name: contact.Name, Position: contact.Position,

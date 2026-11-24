@@ -927,7 +927,7 @@ func (s *approvalConflictIntegrationService) buildCaseDataForApprovedApproval(ct
 	if checkID := conflictCheckIDFromMetadata(metadata); checkID != "" {
 		found, err := s.integrationRepo.GetConflictCheckRecord(ctx, checkID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("查询集成: %w", err)
 		}
 		record = found
 	}
@@ -1025,16 +1025,19 @@ func normalizeCaseCreationConfig(config map[string]interface{}, approval *models
 func (s *approvalConflictIntegrationService) ensureCaseTracking(ctx context.Context, approvalID, status string, caseData map[string]interface{}, userID string) error {
 	tracking, err := s.integrationRepo.GetLatestCaseCreationTracking(ctx, approvalID)
 	if err != nil {
-		return err
+		return fmt.Errorf("查询集成: %w", err)
 	}
 	if tracking != nil {
-		return s.integrationRepo.UpdateCaseCreationTracking(ctx, tracking.ID, map[string]interface{}{
+		if err := s.integrationRepo.UpdateCaseCreationTracking(ctx, tracking.ID, map[string]interface{}{
 			"creation_status": status,
 			"processed_at":    time.Now(),
 			"data_mapping":    jsonString(caseData),
-		})
+		}); err != nil {
+			return fmt.Errorf("更新集成: %w", err)
+		}
+		return nil
 	}
-	return s.integrationRepo.CreateCaseCreationTracking(ctx, &repositories.CaseCreationTracking{
+	if err := s.integrationRepo.CreateCaseCreationTracking(ctx, &repositories.CaseCreationTracking{
 		ID:                  fmt.Sprintf("CASE_TRACK_%s_%d", approvalID, time.Now().UnixNano()),
 		ApprovalRequestID:   approvalID,
 		CreationStatus:      status,
@@ -1048,7 +1051,10 @@ func (s *approvalConflictIntegrationService) ensureCaseTracking(ctx context.Cont
 		WorkflowActions:     "[]",
 		CreatedBy:           coalesce(userID, "0"),
 		CreatedAt:           time.Now(),
-	})
+	}); err != nil {
+		return fmt.Errorf("创建集成: %w", err)
+	}
+	return nil
 }
 
 func parseMetadata(raw string) map[string]interface{} {
@@ -1145,7 +1151,7 @@ func (s *approvalConflictIntegrationService) updateCaseTracking(ctx context.Cont
 	tracking, err := s.integrationRepo.GetLatestCaseCreationTracking(ctx, approvalID)
 	if err != nil || tracking == nil {
 		if err != nil {
-			return err
+			return fmt.Errorf("查询集成: %w", err)
 		}
 		return s.ensureCaseTracking(ctx, approvalID, status, map[string]interface{}{}, userIDFromContext(ctx))
 	}
@@ -1167,7 +1173,10 @@ func (s *approvalConflictIntegrationService) updateCaseTracking(ctx context.Cont
 	if message != "" {
 		updates["error_message"] = message
 	}
-	return s.integrationRepo.UpdateCaseCreationTracking(ctx, tracking.ID, updates)
+	if err := s.integrationRepo.UpdateCaseCreationTracking(ctx, tracking.ID, updates); err != nil {
+		return fmt.Errorf("更新集成: %w", err)
+	}
+	return nil
 }
 
 // userIDFromContext 从上下文获取用户ID

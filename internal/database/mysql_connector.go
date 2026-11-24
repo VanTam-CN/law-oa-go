@@ -17,13 +17,17 @@ import (
 func openMySQLGORM(cfg config.DatabaseConfig, gormConfig *gorm.Config) (*gorm.DB, error) {
 	driverConfig, err := cfg.MySQLDriverConfig()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("构建 MySQL 驱动配置: %w", err)
 	}
 	conn, err := drivermysql.NewConnector(driverConfig)
 	if err != nil {
 		return nil, fmt.Errorf("build MySQL connector: %w", err)
 	}
-	return gorm.Open(mysql.New(mysql.Config{Conn: sql.OpenDB(conn)}), gormConfig)
+	callRes1, err := gorm.Open(mysql.New(mysql.Config{Conn: sql.OpenDB(conn)}), gormConfig)
+	if err != nil {
+		return nil, fmt.Errorf("打开数据库连接: %w", err)
+	}
+	return callRes1, nil
 }
 
 // openMySQLSQL opens MySQL from a structured driver configuration for callers
@@ -31,7 +35,7 @@ func openMySQLGORM(cfg config.DatabaseConfig, gormConfig *gorm.Config) (*gorm.DB
 func openMySQLSQL(cfg config.DatabaseConfig, multiStatements bool) (*sql.DB, error) {
 	driverConfig, err := cfg.MySQLDriverConfig()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("构建 MySQL 驱动配置: %w", err)
 	}
 	driverConfig.MultiStatements = multiStatements
 	conn, err := drivermysql.NewConnector(driverConfig)

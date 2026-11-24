@@ -564,7 +564,7 @@ func (s *conflictScanService) scanCase(ctx context.Context, case_ *models.Case) 
 	// 执行检测
 	result, err := s.conflictService.QuickCheck(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("QuickCheck: %w", err)
 	}
 
 	// 收集冲突信息

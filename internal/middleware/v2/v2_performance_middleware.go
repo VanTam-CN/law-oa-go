@@ -417,7 +417,10 @@ type responseWriter struct {
 func (w *responseWriter) Write(data []byte) (int, error) {
 	size, err := w.ResponseWriter.Write(data)
 	w.size += size
-	return size, err
+	if err != nil {
+		return size, fmt.Errorf("写入响应体: %w", err)
+	}
+	return size, nil
 }
 
 func (w *responseWriter) WriteHeader(statusCode int) {

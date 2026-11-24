@@ -292,9 +292,12 @@ func (po *PerformanceOptimizer) OptimizedBatchInsert(ctx context.Context, opts B
 
 	// 使用事务确保数据一致性
 	if opts.UseTransaction {
-		return po.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := po.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 			return po.executeBatchInsert(ctx, tx, tableName, data, opts, start, operation)
-		})
+		}); err != nil {
+			return fmt.Errorf("批量插入事务失败: %w", err)
+		}
+		return nil
 	}
 
 	return po.executeBatchInsert(ctx, po.db, tableName, data, opts, start, operation)

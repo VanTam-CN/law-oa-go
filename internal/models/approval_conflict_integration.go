@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql/driver"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"gorm.io/gorm"
@@ -16,7 +17,11 @@ func (s StringSlice) Value() (driver.Value, error) {
 	if s == nil {
 		return nil, nil
 	}
-	return json.Marshal(s)
+	callRes1, err := json.Marshal(s)
+	if err != nil {
+		return nil, fmt.Errorf("序列化 JSON: %w", err)
+	}
+	return callRes1, nil
 }
 
 // Scan 实现sql.Scanner接口
@@ -28,9 +33,15 @@ func (s *StringSlice) Scan(value interface{}) error {
 
 	switch v := value.(type) {
 	case []byte:
-		return json.Unmarshal(v, s)
+		if err := json.Unmarshal(v, s); err != nil {
+			return fmt.Errorf("解析 JSON: %w", err)
+		}
+		return nil
 	case string:
-		return json.Unmarshal([]byte(v), s)
+		if err := json.Unmarshal([]byte(v), s); err != nil {
+			return fmt.Errorf("解析 JSON: %w", err)
+		}
+		return nil
 	default:
 		return nil
 	}
@@ -44,7 +55,11 @@ func (m StringMap) Value() (driver.Value, error) {
 	if m == nil {
 		return nil, nil
 	}
-	return json.Marshal(m)
+	callRes1, err := json.Marshal(m)
+	if err != nil {
+		return nil, fmt.Errorf("序列化 JSON: %w", err)
+	}
+	return callRes1, nil
 }
 
 // Scan 实现sql.Scanner接口
@@ -56,9 +71,15 @@ func (m *StringMap) Scan(value interface{}) error {
 
 	switch v := value.(type) {
 	case []byte:
-		return json.Unmarshal(v, m)
+		if err := json.Unmarshal(v, m); err != nil {
+			return fmt.Errorf("解析 JSON: %w", err)
+		}
+		return nil
 	case string:
-		return json.Unmarshal([]byte(v), m)
+		if err := json.Unmarshal([]byte(v), m); err != nil {
+			return fmt.Errorf("解析 JSON: %w", err)
+		}
+		return nil
 	default:
 		return nil
 	}

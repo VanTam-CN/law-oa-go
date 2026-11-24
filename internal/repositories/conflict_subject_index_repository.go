@@ -46,14 +46,17 @@ func (r *conflictRepository) SyncConflictSubjectIndex(ctx context.Context) error
 	if err != nil {
 		return err
 	}
-	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	if err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		for _, source := range sources {
 			if err := persistConflictSubjectIndexSource(tx, source); err != nil {
 				return err
 			}
 		}
 		return nil
-	})
+	}); err != nil {
+		return fmt.Errorf("同步事务失败: %w", err)
+	}
+	return nil
 }
 
 func (r *conflictRepository) collectConflictSubjectIndexSources(ctx context.Context) ([]conflictSubjectIndexSource, error) {
@@ -324,7 +327,7 @@ func (r *conflictRepository) ReconcileConflictSubjectIndex(ctx context.Context, 
 				"status": models.ConflictIndexBuildFailed, "error_message": message, "updated_at": time.Now(),
 			}).Error
 		}
-		return nil, err
+		return nil, fmt.Errorf("对账事务失败: %w", err)
 	}
 
 	for index := range runs {

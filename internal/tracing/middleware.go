@@ -87,7 +87,11 @@ type responseBodyWriter struct {
 
 func (r responseBodyWriter) Write(b []byte) (int, error) {
 	r.body.Write(b)
-	return r.ResponseWriter.Write(b)
+	callRes1, err := r.ResponseWriter.Write(b)
+	if err != nil {
+		return 0, fmt.Errorf("写入: %w", err)
+	}
+	return callRes1, nil
 }
 
 // TracingMiddleware 创建追踪中间件

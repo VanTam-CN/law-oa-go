@@ -8,9 +8,10 @@ import (
 	"testing"
 	"time"
 
+	"law-oa-go/internal/models"
+
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
-	"law-oa-go/internal/models"
 )
 
 func TestBaseRepository_Create(t *testing.T) {

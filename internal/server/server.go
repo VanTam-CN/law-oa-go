@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -85,7 +86,7 @@ func (s *Server) Start() error {
 	// 优雅关闭服务器
 	if err := s.httpServer.Shutdown(ctx); err != nil {
 		s.logger.Error("Server forced to shutdown", "error", err)
-		return err
+		return fmt.Errorf("关闭: %w", err)
 	}
 
 	s.logger.Info("Server exited")

@@ -520,12 +520,19 @@ type CommissionStats struct {
 
 // ListCommissionRules 获取所有分成规则
 func (s *CommissionService) ListCommissionRules(ctx context.Context) ([]*models.CommissionRule, error) {
-	return s.commissionRuleRepo.FindAll(ctx)
+	callRes1, err := s.commissionRuleRepo.FindAll(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("查询佣金: %w", err)
+	}
+	return callRes1, nil
 }
 
 // CreateCommissionRule 创建分成规则
 func (s *CommissionService) CreateCommissionRule(ctx context.Context, rule *models.CommissionRule) error {
-	return s.commissionRuleRepo.Create(ctx, rule)
+	if err := s.commissionRuleRepo.Create(ctx, rule); err != nil {
+		return fmt.Errorf("创建佣金: %w", err)
+	}
+	return nil
 }
 
 // UpdateCommissionRule 更新分成规则
@@ -544,10 +551,16 @@ func (s *CommissionService) UpdateCommissionRule(ctx context.Context, rule *mode
 	existing.Active = rule.Active
 	existing.EffectiveDate = rule.EffectiveDate
 	existing.ExpiryDate = rule.ExpiryDate
-	return s.commissionRuleRepo.Update(ctx, existing)
+	if err := s.commissionRuleRepo.Update(ctx, existing); err != nil {
+		return fmt.Errorf("更新佣金: %w", err)
+	}
+	return nil
 }
 
 // DeleteCommissionRule 删除分成规则
 func (s *CommissionService) DeleteCommissionRule(ctx context.Context, id uint) error {
-	return s.commissionRuleRepo.Delete(ctx, id)
+	if err := s.commissionRuleRepo.Delete(ctx, id); err != nil {
+		return fmt.Errorf("删除佣金: %w", err)
+	}
+	return nil
 }

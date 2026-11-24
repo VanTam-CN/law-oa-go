@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/gin-gonic/gin"
@@ -95,7 +96,11 @@ func main() {
 
 // initDatabase 初始化数据库连接
 func initDatabase(cfg *config.Config) (*gorm.DB, error) {
-	return database.InitWithConfig(cfg)
+	callRes1, err := database.InitWithConfig(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("初始化数据库连接: %w", err)
+	}
+	return callRes1, nil
 }
 
 // initRedis 初始化Redis连接

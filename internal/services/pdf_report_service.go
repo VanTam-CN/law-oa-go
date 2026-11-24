@@ -574,7 +574,10 @@ func (s *pdfReportService) generatePDF(content *ReportContent, filepath string) 
 		fmt.Sprintf("Checked By ID: %d    Check Time: %s", content.CheckedBy, content.CheckTime.Format("2006-01-02 15:04:05")),
 	), "", 1, "L", false, 0, "")
 
-	return pdf.OutputFileAndClose(filepath)
+	if err := pdf.OutputFileAndClose(filepath); err != nil {
+		return fmt.Errorf("OutputFileAndClose: %w", err)
+	}
+	return nil
 }
 
 // loadChineseFont 尝试加载中文字体，返回是否成功
@@ -697,7 +700,7 @@ func (s *pdfReportService) pdfDrawJSONSection(pdf *gofpdf.Fpdf, data models.JSON
 func (s *pdfReportService) calculateFileHash(filepath string) (string, error) {
 	data, err := os.ReadFile(filepath)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("读取文件: %w", err)
 	}
 
 	hash := sha256.Sum256(data)
@@ -762,13 +765,13 @@ func (s *pdfReportService) generateKeyPair() error {
 
 	// 确保目录存在
 	if err := os.MkdirAll(filepath.Dir(s.config.SignatureKeyFile), 0o700); err != nil {
-		return err
+		return fmt.Errorf("创建目录: %w", err)
 	}
 
 	// 保存私钥
 	privateKeyFile, err := os.OpenFile(s.config.SignatureKeyFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600)
 	if err != nil {
-		return err
+		return fmt.Errorf("打开文件: %w", err)
 	}
 	defer privateKeyFile.Close()
 
@@ -777,19 +780,19 @@ func (s *pdfReportService) generateKeyPair() error {
 		Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
 	}
 	if err := pem.Encode(privateKeyFile, privateKeyPEM); err != nil {
-		return err
+		return fmt.Errorf("PEM 编码: %w", err)
 	}
 
 	// 保存公钥
 	publicKeyFile, err := os.Create(s.config.CertificateFile)
 	if err != nil {
-		return err
+		return fmt.Errorf("创建文件: %w", err)
 	}
 	defer publicKeyFile.Close()
 
 	publicKeyBytes, err := x509.MarshalPKIXPublicKey(&privateKey.PublicKey)
 	if err != nil {
-		return err
+		return fmt.Errorf("序列化公钥: %w", err)
 	}
 
 	publicKeyPEM := &pem.Block{
@@ -797,7 +800,7 @@ func (s *pdfReportService) generateKeyPair() error {
 		Bytes: publicKeyBytes,
 	}
 	if err := pem.Encode(publicKeyFile, publicKeyPEM); err != nil {
-		return err
+		return fmt.Errorf("PEM 编码: %w", err)
 	}
 
 	log.Printf("✅ 密钥对生成完成: %s", s.config.SignatureKeyFile)
@@ -834,7 +837,7 @@ func SignData(data []byte, privateKey *rsa.PrivateKey) (string, error) {
 	hash := sha256.Sum256(data)
 	signature, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, hash[:])
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("RSA 签名: %w", err)
 	}
 	return base64.StdEncoding.EncodeToString(signature), nil
 }
@@ -843,7 +846,7 @@ func SignData(data []byte, privateKey *rsa.PrivateKey) (string, error) {
 func VerifySignatureData(data []byte, signature string, publicKey *rsa.PublicKey) (bool, error) {
 	sig, err := base64.StdEncoding.DecodeString(signature)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("解析: %w", err)
 	}
 
 	hash := sha256.Sum256(data)

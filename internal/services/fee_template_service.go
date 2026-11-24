@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 
 	"law-oa-go/internal/models"
 	"law-oa-go/internal/repositories"
@@ -47,21 +48,25 @@ func (s *FeeTemplateService) CreateFeeTemplate(ctx context.Context, req *CreateF
 		Active:               true,
 	}
 	if err := s.feeTemplateRepo.Create(ctx, template); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("创建费用模板: %w", err)
 	}
 	return template, nil
 }
 
 // GetFeeTemplate 获取费率模板
 func (s *FeeTemplateService) GetFeeTemplate(ctx context.Context, id uint) (*models.FeeTemplate, error) {
-	return s.feeTemplateRepo.GetByID(ctx, id)
+	callRes1, err := s.feeTemplateRepo.GetByID(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("查询费用模板: %w", err)
+	}
+	return callRes1, nil
 }
 
 // UpdateFeeTemplate 更新费率模板
 func (s *FeeTemplateService) UpdateFeeTemplate(ctx context.Context, id uint, req *CreateFeeTemplateRequest) (*models.FeeTemplate, error) {
 	template, err := s.feeTemplateRepo.GetByID(ctx, id)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询费用模板: %w", err)
 	}
 	template.Name = req.Name
 	template.CaseType = req.CaseType
@@ -72,31 +77,42 @@ func (s *FeeTemplateService) UpdateFeeTemplate(ctx context.Context, id uint, req
 	template.MaxAmount = req.MaxAmount
 	template.CostRate = req.CostRate
 	if err := s.feeTemplateRepo.Update(ctx, template); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("更新费用模板: %w", err)
 	}
 	return template, nil
 }
 
 // DeleteFeeTemplate 删除费率模板
 func (s *FeeTemplateService) DeleteFeeTemplate(ctx context.Context, id uint) error {
-	return s.feeTemplateRepo.Delete(ctx, id)
+	if err := s.feeTemplateRepo.Delete(ctx, id); err != nil {
+		return fmt.Errorf("删除费用模板: %w", err)
+	}
+	return nil
 }
 
 // ListFeeTemplates 列出费率模板
 func (s *FeeTemplateService) ListFeeTemplates(ctx context.Context, page, pageSize int) ([]*models.FeeTemplate, int64, error) {
-	return s.feeTemplateRepo.List(ctx, page, pageSize)
+	callRes1, callRes2, err := s.feeTemplateRepo.List(ctx, page, pageSize)
+	if err != nil {
+		return nil, 0, fmt.Errorf("查询列表费用模板: %w", err)
+	}
+	return callRes1, callRes2, nil
 }
 
 // GetByCaseType 根据案件类型获取适用模板
 func (s *FeeTemplateService) GetByCaseType(ctx context.Context, caseType string) ([]*models.FeeTemplate, error) {
-	return s.feeTemplateRepo.GetByCaseType(ctx, caseType)
+	callRes1, err := s.feeTemplateRepo.GetByCaseType(ctx, caseType)
+	if err != nil {
+		return nil, fmt.Errorf("查询费用模板: %w", err)
+	}
+	return callRes1, nil
 }
 
 // CalculateFee 根据模板计算预估费用
 func (s *FeeTemplateService) CalculateFee(ctx context.Context, templateID uint, amount float64) (*FeeCalculationResult, error) {
 	template, err := s.feeTemplateRepo.GetByID(ctx, templateID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询费用模板: %w", err)
 	}
 
 	if amount < template.MinAmount {

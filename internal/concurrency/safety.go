@@ -163,7 +163,10 @@ func (rl *RateLimiter) Wait(ctx context.Context) error {
 	for !rl.Allow() {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			if err := ctx.Err(); err != nil {
+				return fmt.Errorf("上下文已取消: %w", err)
+			}
+			return nil
 		case <-time.After(10 * time.Millisecond):
 			// 等待一小段时间后重试
 		}

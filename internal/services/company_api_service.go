@@ -198,7 +198,10 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 		duration,
 	)
 
-	return resp, err
+	if err != nil {
+		return resp, fmt.Errorf("调用企业信息接口: %w", err)
+	}
+	return resp, nil
 }
 
 // SearchCompany 搜索公司信息
@@ -719,7 +722,10 @@ func NewDatabaseAPICallRecorder(db APICallRecordDB) APICallRecorder {
 
 // RecordCall 记录 API 调用
 func (r *DatabaseAPICallRecorder) RecordCall(ctx context.Context, record *models.CompanyAPICall) error {
-	return r.db.Create(ctx, record)
+	if err := r.db.Create(ctx, record); err != nil {
+		return fmt.Errorf("创建: %w", err)
+	}
+	return nil
 }
 
 // ============================================================================

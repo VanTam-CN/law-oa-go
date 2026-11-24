@@ -96,3 +96,50 @@
 ## 9. 快照清单
 
 见 `MANIFEST.sha256`（16 个文件：治理前基线、round1-8 全过程、PR #53 run 45390618050 与 PR #54 run 45405844993 quality job 原始日志、fuzz job 日志）。
+
+---
+
+# M2 wrapcheck 治理与 main run() 模式（卡 t_e74dc833）
+
+日期：2026-11-24 ｜ 分支：`codex/np-wrapcheck`（基于 `codex/np-lint-governance@191bb6b`）
+
+## 10. 错误包装规范（决策，本节即规范文档源）
+
+> 注：任务书允许规范入 AGENTS.md 或本 README；AGENTS.md 为受保护指令文件（无人值守会话不可写），规范以本节为准。后续如需入 AGENTS.md 由人工复制本节。
+
+**原则**：错误跨包边界返回时必须 wrap 上下文；wrapcheck（golangci-lint v1.64.8）恢复为门禁 linter，保持 0 findings。
+
+1. **全量 `%w`**：所有包装一律 `fmt.Errorf("...: %w", err)`，保证 `errors.Is/As` 全链可用（与 errorlint 门禁配套）。不用 `%v`/`errors.New` 重包；需要脱敏的错误在 handler/错误管理器响应层处理，不在包装层截断链。
+2. **分层责任与消息格式**（中文短消息，`: %w` 结尾，句首无大写/标点约束问题）：
+   - repositories / database / cache / elasticsearch / tracing / auth / middleware（对接 gorm/redis/es/otel 最深处）：`fmt.Errorf("<动作><对象>[<标识>]: %w", err)`，作用域内有记录 id 时带上；
+   - services（调用仓储接口/跨包服务的透传点）：`fmt.Errorf("<业务动作>: %w", err)`；
+   - handlers / adapter（调用 service 的透传点）：`fmt.Errorf("<资源><动作>失败: %w", err)`——HTTP 响应仍走既有固定文案/错误管理器，包装只进日志与错误链，不改变响应结构；
+   - models 序列化 helper：`fmt.Errorf("序列化<字段>失败: %w", err)` / `fmt.Errorf("解析<字段>失败: %w", err)`；
+   - 事务：`fmt.Errorf("<业务动作>事务失败: %w", err)`。
+3. **taxonomy 不变**：需要分类/告警的错误继续用 `internal/errors`（EnhancedError category/level）；wrapcheck 包装只加上下文，不改错误类别，`errors.Is` 判定不受影响。
+4. **测试豁免（配置而非 nolint）**：`_test.go` 文件与 `test/` 目录（mock/testutils 测试基建）不要求 wrap——测试脚手架内 testify `args.Error(i)` 等错误管道被包装会破坏错误同一性断言且无诊断价值；沿用 t_088ba214 治理先例（测试文件只放宽有惯例依据的检查）。生产代码不豁免。
+5. **main/CLI 入口**：统一 `run() error` 模式——`main()` 只含参数分支与 `if err := run(); err != nil { log.Fatalf(...) }`；启动/关闭路径禁止 defer 之后 `log.Fatal`（gocritic exitAfterDefer 移出 disabled-checks，恢复门禁）。ifElseChain 仍属复杂度债卡保持 disabled。
+6. **不豁免项决策**：`encoding/json` 族（约 99 处）、gorm `Transaction`（37 处）、redis（10 处）等一律代码修复不走 ignorePackageGlobs/ignoreSigs——json 错误虽自带类型名，但字段/流程上下文有诊断价值；保持门禁集配置最小化，避免豁免清单膨胀侵蚀 ratchet。
+
+## 11. wrapcheck 修复实施（460 → 0）
+
+**基线与口径**：同二进制 v1.64.8、仓库治理配置 + wrapcheck 下实测 **460** 条（台账 439 为 t_088ba214 时点数字，本轮治理修复后略有漂移）；其中测试文件 `_test.go`/`test/` 基建 **46** 条，生产代码 **414** 条。快照：`snapshots/wrapcheck-baseline-460.txt`。
+
+**修复方式**：AST codemod（`wrapmod`，本卡工作产物）单遍改写 + 逐点人工复核：
+- A 型 `return err` 72、B 型多值 `return ..., err` 146、D 型 `return call(...)` 展开为赋值+守卫 195（单值 121 / 多值 74）、C 型多值尾部调用原地包 1（`ctx.Err()`）；
+- 消息按 §10 分层模板生成（实体+动词中文映射，如「查询审批」「写入二级缓存」「创建冲突审批事务失败」），全部 `%w` 保链；
+- codemod 变换纪律：**每个文件只进入一次**（原始行号有效）；分批+复用旧清单二次进入会因行号漂移误伤（本轮踩坑后整体 reset 重放，留痕于卡评论）。
+
+**语义复核（关键验收）**：自研守卫检查器扫描全部改写点，发现 9 处「无 `!= nil` 守卫的透传点被包成错误」的语义破坏（成功路径返回 `%!w(<nil>)`），全部手工恢复守卫语义——`TestBlockedConflictApprovalLifecycle` 运行时先抓住了 `return response, err` 透传点（创建冲突审批事务），其余 8 处（migrator/jwt/v2 响应写入器/company_api RoundTrip/mcp 重试闭包/authz client==nil 分支/es IsError 分支/onlyoffice io.Copy）由守卫检查器定位修复。检查器残留 flag 均核实为预存哨兵错误包装或控制流保证非 nil 的安全点。
+
+**门禁恢复**：wrapcheck 进 `.golangci.yml` 门禁集；测试路径豁免（`_test.go` + `^test/`，理由 §10.4）；gocritic `exitAfterDefer` 移出 disabled-checks（ifElseChain 仍属复杂度债卡保持 disabled）。
+
+**main/CLI run() 改造（exitAfterDefer 4 处清零）**：
+- `main.go`：667 行启动序列收口为 `run() error`，9 处 `log.Fatal` → `return fmt.Errorf`；`ListenAndServe` 失败经 channel 回传，`select` 与中断信号汇合；`defer healthChecker.Stop()` 首次真正可达；
+- `cmd/migrate`、`cmd/backfill-conflict-index`、`cmd/backfill-sensitive-identities`：同模式改造，`defer sqlDB.Close()`/`defer migrator.Close()` 先于进程退出执行。
+
+**验证（全部真实执行）**：
+- `golangci-lint run`（v1.64.8，含恢复后的 wrapcheck + exitAfterDefer）：**0 findings RC=0 0 告警**（`snapshots/wrapcheck-final-gate-0.txt`）；
+- `go build ./...` / `go vet ./...` 通过；`go mod verify` 通过；`gofumpt -l` 0 漂移；
+- 受影响包 `-race -count=1`（15 包含测试）：services、services/test、repositories、database、cache、models、middleware、auth、errors、concurrency、security、validators、router、common、handlers（-skip WorkbenchApprovalBrowser，本地无 playwright 栈，沿用先例）**全部 ok**（`snapshots/wrapcheck-final-race.log`）；
+- 零 nolint 新增；无测试削弱；0 测试文件改动（测试豁免走配置）。

@@ -561,7 +561,7 @@ func (s *conflictDetectionService) checkStructuredPartyConflicts(ctx context.Con
 
 	rows, err := db.Raw(query, args...).Rows()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询原始行: %w", err)
 	}
 	defer rows.Close()
 	conflicts := make([]*models.ConflictCase, 0)
@@ -572,7 +572,7 @@ func (s *conflictDetectionService) checkStructuredPartyConflicts(ctx context.Con
 		var matchedName, matchSource, relationType string
 		var createdAt time.Time
 		if err := rows.Scan(&caseID, &caseNo, &caseName, &caseType, &description, &historicalClientID, &clientName, &lawyerName, &createdAt, &entityName, &entityAlias, &entityType, &identityType, &identityDigest, &partyRole, &matchedName, &matchSource, &relationType); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("扫描结果: %w", err)
 		}
 		kind, matched, ruleCode, matchType := strongestStructuredMatch(s, entityName, entityAlias, entityType, identityType, identityDigest, matchedName, matchSource, subjects)
 		if kind == PartyNoMatch {
@@ -620,7 +620,7 @@ func (s *conflictDetectionService) checkStructuredPartyConflicts(ctx context.Con
 		conflicts = append(conflicts, conflict)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("读取 Redis 结果: %w", err)
 	}
 	return conflicts, nil
 }
@@ -1585,7 +1585,10 @@ func (s *conflictDetectionService) saveCheckRecord(ctx context.Context, request 
 		UpdatedAt:        now,
 	}
 
-	return s.conflictRepo.SaveCheckRecord(ctx, record)
+	if err := s.conflictRepo.SaveCheckRecord(ctx, record); err != nil {
+		return fmt.Errorf("保存: %w", err)
+	}
+	return nil
 }
 
 func (s *conflictDetectionService) saveCheckEvidence(ctx context.Context, caseType string, response *models.ConflictCheckResponse) error {
@@ -1615,7 +1618,7 @@ func (s *conflictDetectionService) saveCheckEvidence(ctx context.Context, caseTy
 	}
 
 	if err := s.conflictRepo.SaveConflictCases(ctx, response.ConflictCases); err != nil {
-		return err
+		return fmt.Errorf("保存: %w", err)
 	}
 	return s.saveP0EvidenceIfAvailable(ctx, response.CheckID, response.NormalizedSubjects, response)
 }
@@ -1767,10 +1770,18 @@ func (s *conflictDetectionService) getIndustryKeywords(industry string) []string
 
 // GetCheckHistory 获取检测历史
 func (s *conflictDetectionService) GetCheckHistory(ctx context.Context, clientID string, limit int) ([]*models.ConflictCheckRecord, error) {
-	return s.conflictRepo.GetCheckHistory(ctx, clientID, limit)
+	callRes1, err := s.conflictRepo.GetCheckHistory(ctx, clientID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("查询: %w", err)
+	}
+	return callRes1, nil
 }
 
 // GetConflictStats 获取冲突统计
 func (s *conflictDetectionService) GetConflictStats(ctx context.Context, clientID string) (*repositories.ConflictStats, error) {
-	return s.conflictRepo.GetConflictStats(ctx, clientID)
+	callRes1, err := s.conflictRepo.GetConflictStats(ctx, clientID)
+	if err != nil {
+		return nil, fmt.Errorf("查询: %w", err)
+	}
+	return callRes1, nil
 }

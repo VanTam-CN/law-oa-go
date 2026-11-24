@@ -428,12 +428,15 @@ func (s *TeamPermissionService) logTeamAssignment(ctx context.Context, req *Team
 
 	logJSON, err := json.Marshal(logData)
 	if err != nil {
-		return err
+		return fmt.Errorf("序列化 JSON: %w", err)
 	}
 
 	// 记录到审计日志
 	cacheKey := fmt.Sprintf("audit:team_assignment:%d:%d", req.CaseID, req.AssignedBy)
-	return s.cacheRepo.Set(ctx, cacheKey, string(logJSON), 30*24*time.Hour) // 保存30天
+	if err := s.cacheRepo.Set(ctx, cacheKey, string(logJSON), 30*24*time.Hour); err != nil {
+		return fmt.Errorf("设置: %w", err)
+	}
+	return nil // 保存30天
 }
 
 // clearTeamCache 清除团队相关缓存

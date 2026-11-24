@@ -648,7 +648,7 @@ func (r *ConflictExtendedRepository) GetConflictStats(ctx context.Context, lawye
 	)
 	if err != nil {
 		log.Printf("获取冲突统计失败: %v", err)
-		return nil, err
+		return nil, fmt.Errorf("扫描结果: %w", err)
 	}
 
 	stats := map[string]interface{}{

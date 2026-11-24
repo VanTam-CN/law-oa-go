@@ -264,7 +264,7 @@ func (s *DeadlineCalculator) GetUpcomingDeadlines(ctx context.Context, userID ui
 
 	items, _, err := s.inboxRepo.List(ctx, params)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询列表收件箱: %w", err)
 	}
 
 	// 过滤出期限相关的待办

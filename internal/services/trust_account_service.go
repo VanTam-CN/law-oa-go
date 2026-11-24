@@ -586,7 +586,7 @@ func (s *TrustTransactionService) ApproveTransaction(ctx context.Context, id uin
 		if approveErr != nil {
 			return nil, approveErr
 		}
-		return nil, err
+		return nil, fmt.Errorf("WithinTransaction信托: %w", err)
 	}
 
 	// 步骤 9：事务提交后重新读取，返回最新视图

@@ -213,7 +213,11 @@ func (tm *TokenManager) createToken(user *models.User, uuid string, expires int6
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(tm.secret)
+	callRes1, err := token.SignedString(tm.secret)
+	if err != nil {
+		return "", fmt.Errorf("签名令牌: %w", err)
+	}
+	return callRes1, nil
 }
 
 // VerifyToken 验证JWT令牌

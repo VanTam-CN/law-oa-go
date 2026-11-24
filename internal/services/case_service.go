@@ -350,7 +350,10 @@ func (s *CaseService) DeleteCase(ctx context.Context, id uint) error {
 	}
 
 	// 软删除案件
-	return s.caseRepo.Delete(ctx, id)
+	if err := s.caseRepo.Delete(ctx, id); err != nil {
+		return fmt.Errorf("删除案件: %w", err)
+	}
+	return nil
 }
 
 // convertToResponse 转换为响应格式
@@ -380,14 +383,18 @@ func (s *CaseService) convertToResponse(case_ *models.Case) *CaseResponse {
 
 // GetLawyers 获取律师列表
 func (s *CaseService) GetLawyers(ctx context.Context, page, pageSize int) ([]models.User, error) {
-	return s.userRepo.GetLawyers(ctx, page, pageSize)
+	callRes1, err := s.userRepo.GetLawyers(ctx, page, pageSize)
+	if err != nil {
+		return nil, fmt.Errorf("查询用户: %w", err)
+	}
+	return callRes1, nil
 }
 
 // GetLawyerByID 获取单个律师用户详情
 func (s *CaseService) GetLawyerByID(ctx context.Context, id uint) (*models.User, error) {
 	user, err := s.userRepo.FindByID(ctx, id)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询用户: %w", err)
 	}
 	if user.Role != "lawyer" && user.Role != "admin" {
 		return nil, repositories.ErrUserNotFound

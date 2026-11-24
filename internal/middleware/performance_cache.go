@@ -122,7 +122,11 @@ func (w *CacheResponseWriter) Write(data []byte) (int, error) {
 		w.written = true
 	}
 	w.buffer = append(w.buffer, data...)
-	return w.ResponseWriter.Write(data)
+	callRes1, err := w.ResponseWriter.Write(data)
+	if err != nil {
+		return 0, fmt.Errorf("写入: %w", err)
+	}
+	return callRes1, nil
 }
 
 // shouldSkipCache 检查是否应该跳过缓存

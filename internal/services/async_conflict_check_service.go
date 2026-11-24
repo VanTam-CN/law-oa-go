@@ -71,7 +71,7 @@ func NewAsyncConflictCheckService(conflictRepo repositories.BasicConflictReposit
 
 func (s *asyncConflictCheckService) CreateTask(ctx context.Context, request *models.ConflictCheckRequest) (*ConflictCheckTaskResponse, error) {
 	if err := request.Validate(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("校验冲突核查: %w", err)
 	}
 	if request.CheckID == "" {
 		request.CheckID = "CCT_" + uuid.NewString()
@@ -103,7 +103,7 @@ func (s *asyncConflictCheckService) CreateTask(ctx context.Context, request *mod
 		// second case/intake authorization check before serializing it.
 		existing, getErr := s.conflictRepo.GetCheckRecord(ctx, record.CheckID)
 		if getErr != nil || existing == nil || (existing.UserID != uint(userID) && !IsConflictReviewRole(request.ActorRole)) {
-			return nil, err
+			return nil, fmt.Errorf("保存: %w", err)
 		}
 		return s.toTaskResponse(existing), nil
 	}
@@ -117,7 +117,7 @@ func (s *asyncConflictCheckService) CreateTask(ctx context.Context, request *mod
 func (s *asyncConflictCheckService) GetTask(ctx context.Context, taskID string) (*ConflictCheckTaskResponse, error) {
 	record, err := s.conflictRepo.GetCheckRecord(ctx, taskID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询: %w", err)
 	}
 	if record == nil {
 		return nil, ErrConflictTaskNotFound
@@ -128,7 +128,7 @@ func (s *asyncConflictCheckService) GetTask(ctx context.Context, taskID string) 
 func (s *asyncConflictCheckService) GetTaskResult(ctx context.Context, taskID string) (*ConflictCheckTaskResultResponse, error) {
 	record, err := s.conflictRepo.GetCheckRecord(ctx, taskID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询: %w", err)
 	}
 	if record == nil {
 		return nil, ErrConflictTaskNotFound

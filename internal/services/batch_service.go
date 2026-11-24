@@ -61,7 +61,7 @@ func (s *BatchService) BatchUpdateClients(ctx context.Context, updates []map[str
 	}
 
 	// 使用事务确保数据一致性
-	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		for i := 0; i < len(updates); i += batchSize {
 			end := i + batchSize
 			if end > len(updates) {
@@ -79,7 +79,10 @@ func (s *BatchService) BatchUpdateClients(ctx context.Context, updates []map[str
 			}
 		}
 		return nil
-	})
+	}); err != nil {
+		return fmt.Errorf("BatchUpdateClients 事务失败: %w", err)
+	}
+	return nil
 }
 
 // BatchCreateCases 批量创建案件

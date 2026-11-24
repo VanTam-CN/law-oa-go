@@ -145,7 +145,11 @@ func (c ClientProfileIDs) Value() (driver.Value, error) {
 	if len(c) == 0 {
 		return "[]", nil
 	}
-	return json.Marshal(c)
+	callRes1, err := json.Marshal(c)
+	if err != nil {
+		return nil, fmt.Errorf("序列化 JSON: %w", err)
+	}
+	return callRes1, nil
 }
 
 func (c *ClientProfileIDs) Scan(value interface{}) error {
@@ -156,9 +160,15 @@ func (c *ClientProfileIDs) Scan(value interface{}) error {
 
 	switch v := value.(type) {
 	case []byte:
-		return json.Unmarshal(v, c)
+		if err := json.Unmarshal(v, c); err != nil {
+			return fmt.Errorf("解析 JSON: %w", err)
+		}
+		return nil
 	case string:
-		return json.Unmarshal([]byte(v), c)
+		if err := json.Unmarshal([]byte(v), c); err != nil {
+			return fmt.Errorf("解析 JSON: %w", err)
+		}
+		return nil
 	default:
 		return fmt.Errorf("cannot scan %T into ClientProfileIDs", value)
 	}
@@ -287,7 +297,11 @@ func (c ConflictTypes) Value() (driver.Value, error) {
 	if len(c) == 0 {
 		return "[]", nil
 	}
-	return json.Marshal(c)
+	callRes1, err := json.Marshal(c)
+	if err != nil {
+		return nil, fmt.Errorf("序列化 JSON: %w", err)
+	}
+	return callRes1, nil
 }
 
 func (c *ConflictTypes) Scan(value interface{}) error {
@@ -298,9 +312,15 @@ func (c *ConflictTypes) Scan(value interface{}) error {
 
 	switch v := value.(type) {
 	case []byte:
-		return json.Unmarshal(v, c)
+		if err := json.Unmarshal(v, c); err != nil {
+			return fmt.Errorf("解析 JSON: %w", err)
+		}
+		return nil
 	case string:
-		return json.Unmarshal([]byte(v), c)
+		if err := json.Unmarshal([]byte(v), c); err != nil {
+			return fmt.Errorf("解析 JSON: %w", err)
+		}
+		return nil
 	default:
 		return fmt.Errorf("cannot scan %T into ConflictTypes", value)
 	}
@@ -330,7 +350,11 @@ func (a AffectedParties) Value() (driver.Value, error) {
 	if len(a) == 0 {
 		return "[]", nil
 	}
-	return json.Marshal(a)
+	callRes1, err := json.Marshal(a)
+	if err != nil {
+		return nil, fmt.Errorf("序列化 JSON: %w", err)
+	}
+	return callRes1, nil
 }
 
 func (a *AffectedParties) Scan(value interface{}) error {
@@ -341,9 +365,15 @@ func (a *AffectedParties) Scan(value interface{}) error {
 
 	switch v := value.(type) {
 	case []byte:
-		return json.Unmarshal(v, a)
+		if err := json.Unmarshal(v, a); err != nil {
+			return fmt.Errorf("解析 JSON: %w", err)
+		}
+		return nil
 	case string:
-		return json.Unmarshal([]byte(v), a)
+		if err := json.Unmarshal([]byte(v), a); err != nil {
+			return fmt.Errorf("解析 JSON: %w", err)
+		}
+		return nil
 	default:
 		return fmt.Errorf("cannot scan %T into AffectedParties", value)
 	}
@@ -365,7 +395,11 @@ func (r RecommendedActions) Value() (driver.Value, error) {
 	if len(r) == 0 {
 		return "[]", nil
 	}
-	return json.Marshal(r)
+	callRes1, err := json.Marshal(r)
+	if err != nil {
+		return nil, fmt.Errorf("序列化 JSON: %w", err)
+	}
+	return callRes1, nil
 }
 
 func (r *RecommendedActions) Scan(value interface{}) error {
@@ -376,9 +410,15 @@ func (r *RecommendedActions) Scan(value interface{}) error {
 
 	switch v := value.(type) {
 	case []byte:
-		return json.Unmarshal(v, r)
+		if err := json.Unmarshal(v, r); err != nil {
+			return fmt.Errorf("解析 JSON: %w", err)
+		}
+		return nil
 	case string:
-		return json.Unmarshal([]byte(v), r)
+		if err := json.Unmarshal([]byte(v), r); err != nil {
+			return fmt.Errorf("解析 JSON: %w", err)
+		}
+		return nil
 	default:
 		return fmt.Errorf("cannot scan %T into RecommendedActions", value)
 	}
@@ -391,7 +431,11 @@ func (d DetectionRulesApplied) Value() (driver.Value, error) {
 	if len(d) == 0 {
 		return "[]", nil
 	}
-	return json.Marshal(d)
+	callRes1, err := json.Marshal(d)
+	if err != nil {
+		return nil, fmt.Errorf("序列化 JSON: %w", err)
+	}
+	return callRes1, nil
 }
 
 func (d *DetectionRulesApplied) Scan(value interface{}) error {
@@ -402,9 +446,15 @@ func (d *DetectionRulesApplied) Scan(value interface{}) error {
 
 	switch v := value.(type) {
 	case []byte:
-		return json.Unmarshal(v, d)
+		if err := json.Unmarshal(v, d); err != nil {
+			return fmt.Errorf("解析 JSON: %w", err)
+		}
+		return nil
 	case string:
-		return json.Unmarshal([]byte(v), d)
+		if err := json.Unmarshal([]byte(v), d); err != nil {
+			return fmt.Errorf("解析 JSON: %w", err)
+		}
+		return nil
 	default:
 		return fmt.Errorf("cannot scan %T into DetectionRulesApplied", value)
 	}
@@ -445,7 +495,11 @@ func (s ScreenedLawyers) Value() (driver.Value, error) {
 	if len(s) == 0 {
 		return "[]", nil
 	}
-	return json.Marshal(s)
+	callRes1, err := json.Marshal(s)
+	if err != nil {
+		return nil, fmt.Errorf("序列化 JSON: %w", err)
+	}
+	return callRes1, nil
 }
 
 func (s *ScreenedLawyers) Scan(value interface{}) error {
@@ -456,9 +510,15 @@ func (s *ScreenedLawyers) Scan(value interface{}) error {
 
 	switch v := value.(type) {
 	case []byte:
-		return json.Unmarshal(v, s)
+		if err := json.Unmarshal(v, s); err != nil {
+			return fmt.Errorf("解析 JSON: %w", err)
+		}
+		return nil
 	case string:
-		return json.Unmarshal([]byte(v), s)
+		if err := json.Unmarshal([]byte(v), s); err != nil {
+			return fmt.Errorf("解析 JSON: %w", err)
+		}
+		return nil
 	default:
 		return fmt.Errorf("cannot scan %T into ScreenedLawyers", value)
 	}
@@ -482,7 +542,11 @@ func (s ScreenedTeams) Value() (driver.Value, error) {
 	if len(s) == 0 {
 		return "[]", nil
 	}
-	return json.Marshal(s)
+	callRes1, err := json.Marshal(s)
+	if err != nil {
+		return nil, fmt.Errorf("序列化 JSON: %w", err)
+	}
+	return callRes1, nil
 }
 
 func (s *ScreenedTeams) Scan(value interface{}) error {
@@ -493,9 +557,15 @@ func (s *ScreenedTeams) Scan(value interface{}) error {
 
 	switch v := value.(type) {
 	case []byte:
-		return json.Unmarshal(v, s)
+		if err := json.Unmarshal(v, s); err != nil {
+			return fmt.Errorf("解析 JSON: %w", err)
+		}
+		return nil
 	case string:
-		return json.Unmarshal([]byte(v), s)
+		if err := json.Unmarshal([]byte(v), s); err != nil {
+			return fmt.Errorf("解析 JSON: %w", err)
+		}
+		return nil
 	default:
 		return fmt.Errorf("cannot scan %T into ScreenedTeams", value)
 	}

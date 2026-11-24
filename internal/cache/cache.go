@@ -28,7 +28,7 @@ func (c *CacheService) Get(key string, dest interface{}) error {
 	ctx := context.Background()
 	val, err := c.client.Get(ctx, fullKey).Result()
 	if err != nil {
-		return err
+		return fmt.Errorf("读取缓存: %w", err)
 	}
 
 	// 简单的类型处理，实际项目中可能需要更复杂的序列化/反序列化
@@ -48,14 +48,20 @@ func (c *CacheService) Get(key string, dest interface{}) error {
 func (c *CacheService) Set(key string, value interface{}, ttl time.Duration) error {
 	fullKey := c.buildKey(key)
 	ctx := context.Background()
-	return c.client.Set(ctx, fullKey, value, ttl).Err()
+	if err := c.client.Set(ctx, fullKey, value, ttl).Err(); err != nil {
+		return fmt.Errorf("写入缓存: %w", err)
+	}
+	return nil
 }
 
 // Delete 删除缓存
 func (c *CacheService) Delete(key string) error {
 	fullKey := c.buildKey(key)
 	ctx := context.Background()
-	return c.client.Del(ctx, fullKey).Err()
+	if err := c.client.Del(ctx, fullKey).Err(); err != nil {
+		return fmt.Errorf("删除缓存: %w", err)
+	}
+	return nil
 }
 
 // ClearPattern 清除匹配模式的缓存
@@ -64,11 +70,14 @@ func (c *CacheService) ClearPattern(pattern string) error {
 	ctx := context.Background()
 	keys, err := c.client.Keys(ctx, fullPattern).Result()
 	if err != nil {
-		return err
+		return fmt.Errorf("列出缓存键: %w", err)
 	}
 
 	if len(keys) > 0 {
-		return c.client.Del(ctx, keys...).Err()
+		if err := c.client.Del(ctx, keys...).Err(); err != nil {
+			return fmt.Errorf("删除缓存: %w", err)
+		}
+		return nil
 	}
 
 	return nil

@@ -186,10 +186,14 @@ func createResource(config *TracerConfig) (*resource.Resource, error) {
 		attributes = append(attributes, attribute.String(k, v))
 	}
 
-	return resource.Merge(
+	callRes1, err := resource.Merge(
 		resource.Default(),
 		resource.NewWithAttributes(semconv.SchemaURL, attributes...),
 	)
+	if err != nil {
+		return nil, fmt.Errorf("合并 OTel 资源: %w", err)
+	}
+	return callRes1, nil
 }
 
 // createExporters 创建导出器
@@ -237,7 +241,11 @@ func createJaegerExporter(config *TracerConfig) (sdktrace.SpanExporter, error) {
 		return nil, fmt.Errorf("jaeger endpoint not configured")
 	}
 
-	return jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(config.JaegerEndpoint)))
+	callRes1, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(config.JaegerEndpoint)))
+	if err != nil {
+		return nil, fmt.Errorf("创建 Jaeger 导出器: %w", err)
+	}
+	return callRes1, nil
 }
 
 // createZipkinExporter 创建Zipkin导出器
@@ -246,7 +254,11 @@ func createZipkinExporter(config *TracerConfig) (sdktrace.SpanExporter, error) {
 		return nil, fmt.Errorf("zipkin endpoint not configured")
 	}
 
-	return zipkin.New(config.ZipkinEndpoint)
+	callRes1, err := zipkin.New(config.ZipkinEndpoint)
+	if err != nil {
+		return nil, fmt.Errorf("创建 Zipkin 导出器: %w", err)
+	}
+	return callRes1, nil
 }
 
 // createOTLPExporter 创建OTLP导出器
@@ -270,7 +282,11 @@ func createOTLPExporter(config *TracerConfig) (sdktrace.SpanExporter, error) {
 	}
 
 	client := otlptracehttp.NewClient(clientOptions...)
-	return otlptrace.New(context.Background(), client)
+	callRes1, err := otlptrace.New(context.Background(), client)
+	if err != nil {
+		return nil, fmt.Errorf("创建 OTLP 导出器: %w", err)
+	}
+	return callRes1, nil
 }
 
 // createSampler 创建采样器
@@ -482,7 +498,10 @@ func getInstanceID() string {
 func Flush(ctx context.Context) error {
 	if globalTracer != nil {
 		if provider, ok := globalTracer.provider.(*sdktrace.TracerProvider); ok {
-			return provider.ForceFlush(ctx)
+			if err := provider.ForceFlush(ctx); err != nil {
+				return fmt.Errorf("刷新链路数据: %w", err)
+			}
+			return nil
 		}
 	}
 	return nil
@@ -492,7 +511,10 @@ func Flush(ctx context.Context) error {
 func Shutdown(ctx context.Context) error {
 	if globalTracer != nil {
 		if provider, ok := globalTracer.provider.(*sdktrace.TracerProvider); ok {
-			return provider.Shutdown(ctx)
+			if err := provider.Shutdown(ctx); err != nil {
+				return fmt.Errorf("关闭链路: %w", err)
+			}
+			return nil
 		}
 	}
 	return nil

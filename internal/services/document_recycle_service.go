@@ -308,7 +308,7 @@ func (s *DocumentRecycleService) restoreDocument(ctx context.Context, documentID
 	// Get deleted document
 	docModel, err := s.docRepo.FindByID(ctx, documentID)
 	if err != nil {
-		return err
+		return fmt.Errorf("查询文档: %w", err)
 	}
 
 	if docModel.Status != "deleted" {
@@ -386,7 +386,7 @@ func (s *DocumentRecycleService) permanentlyDeleteDocument(ctx context.Context, 
 	// Get document info
 	docModel, err := s.docRepo.FindByID(ctx, documentID)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("查询文档: %w", err)
 	}
 
 	fileSize := docModel.Filesize
@@ -402,7 +402,7 @@ func (s *DocumentRecycleService) permanentlyDeleteDocument(ctx context.Context, 
 
 	// Delete from database (hard delete)
 	if err := s.docRepo.Delete(ctx, documentID); err != nil {
-		return 0, err
+		return 0, fmt.Errorf("删除文档: %w", err)
 	}
 
 	return fileSize, nil

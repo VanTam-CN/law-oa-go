@@ -297,7 +297,7 @@ func (s *ApprovalTemplateService) processNextStep(node *models.ApprovalNode) err
 	// 查找同一审批的所有节点
 	nodes, err := s.nodeRepo.FindByApprovalID(node.ApprovalID)
 	if err != nil {
-		return err
+		return fmt.Errorf("查询审批节点: %w", err)
 	}
 
 	// 检查当前步骤是否所有节点都已通过（会签场景）
@@ -320,7 +320,7 @@ func (s *ApprovalTemplateService) processNextStep(node *models.ApprovalNode) err
 func (s *ApprovalTemplateService) updateCurrentApprover(approvalID string, nextNode models.ApprovalNode) error {
 	approval, err := s.approvalRepo.FindByID(approvalID)
 	if err != nil {
-		return err
+		return fmt.Errorf("查询审批: %w", err)
 	}
 
 	approval.CurrentStage = nextNode.NodeName
@@ -332,14 +332,17 @@ func (s *ApprovalTemplateService) updateCurrentApprover(approvalID string, nextN
 		}
 	}
 
-	return s.approvalRepo.Update(approval)
+	if err := s.approvalRepo.Update(approval); err != nil {
+		return fmt.Errorf("更新审批: %w", err)
+	}
+	return nil
 }
 
 // updateApprovalStatus 更新审批状态
 func (s *ApprovalTemplateService) updateApprovalStatus(approvalID string, status string) error {
 	approval, err := s.approvalRepo.FindByID(approvalID)
 	if err != nil {
-		return err
+		return fmt.Errorf("查询审批: %w", err)
 	}
 
 	approval.Status = status
@@ -348,7 +351,10 @@ func (s *ApprovalTemplateService) updateApprovalStatus(approvalID string, status
 		approval.CurrentApproverName = ""
 	}
 
-	return s.approvalRepo.Update(approval)
+	if err := s.approvalRepo.Update(approval); err != nil {
+		return fmt.Errorf("更新审批: %w", err)
+	}
+	return nil
 }
 
 // GetApprovalFlow 获取审批流程可视化数据
@@ -356,13 +362,13 @@ func (s *ApprovalTemplateService) GetApprovalFlow(approvalID string) (map[string
 	// 查找审批
 	approval, err := s.approvalRepo.FindByID(approvalID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询审批: %w", err)
 	}
 
 	// 查找所有节点
 	nodes, err := s.nodeRepo.FindByApprovalID(approvalID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("查询审批节点: %w", err)
 	}
 
 	// 构建流程数据
@@ -385,21 +391,25 @@ func (s *ApprovalTemplateService) GetApprovalFlow(approvalID string) (map[string
 
 // GetAllTemplates 获取所有模板
 func (s *ApprovalTemplateService) GetAllTemplates() ([]models.ApprovalTemplate, error) {
-	return s.templateRepo.FindAll()
+	callRes1, err := s.templateRepo.FindAll()
+	if err != nil {
+		return nil, fmt.Errorf("查询审批模板: %w", err)
+	}
+	return callRes1, nil
 }
 
 // SupportCountersign 支持会签
 func (s *ApprovalTemplateService) SupportCountersign(approvalID string, stepOrder int) error {
 	nodes, err := s.nodeRepo.GetStepNodes(approvalID, stepOrder)
 	if err != nil {
-		return err
+		return fmt.Errorf("查询审批节点: %w", err)
 	}
 
 	// 设置为会签类型
 	for i := range nodes {
 		nodes[i].SignType = models.SignTypeCountersign
 		if err := s.nodeRepo.Update(&nodes[i]); err != nil {
-			return err
+			return fmt.Errorf("更新审批节点: %w", err)
 		}
 	}
 
@@ -410,14 +420,14 @@ func (s *ApprovalTemplateService) SupportCountersign(approvalID string, stepOrde
 func (s *ApprovalTemplateService) SupportOrSign(approvalID string, stepOrder int) error {
 	nodes, err := s.nodeRepo.GetStepNodes(approvalID, stepOrder)
 	if err != nil {
-		return err
+		return fmt.Errorf("查询审批节点: %w", err)
 	}
 
 	// 设置为或签类型
 	for i := range nodes {
 		nodes[i].SignType = models.SignTypeOrSign
 		if err := s.nodeRepo.Update(&nodes[i]); err != nil {
-			return err
+			return fmt.Errorf("更新审批节点: %w", err)
 		}
 	}
 
@@ -428,7 +438,7 @@ func (s *ApprovalTemplateService) SupportOrSign(approvalID string, stepOrder int
 func (s *ApprovalTemplateService) ReturnToPrevious(approvalID string, stepOrder int) error {
 	nodes, err := s.nodeRepo.FindByApprovalID(approvalID)
 	if err != nil {
-		return err
+		return fmt.Errorf("查询审批节点: %w", err)
 	}
 
 	// 重置当前步骤的节点状态
@@ -437,7 +447,7 @@ func (s *ApprovalTemplateService) ReturnToPrevious(approvalID string, stepOrder 
 		currentNodes[i].Action = models.NodeActionPending
 		currentNodes[i].Comment = ""
 		if err := s.nodeRepo.Update(&currentNodes[i]); err != nil {
-			return err
+			return fmt.Errorf("更新审批节点: %w", err)
 		}
 	}
 
@@ -448,7 +458,7 @@ func (s *ApprovalTemplateService) ReturnToPrevious(approvalID string, stepOrder 
 			previousNodes[i].Action = models.NodeActionPending
 			previousNodes[i].Comment = ""
 			if err := s.nodeRepo.Update(&previousNodes[i]); err != nil {
-				return err
+				return fmt.Errorf("更新审批节点: %w", err)
 			}
 		}
 

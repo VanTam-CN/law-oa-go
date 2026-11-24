@@ -172,7 +172,11 @@ func (s *SessionService) UpdateSession(ctx context.Context, sessionID string, re
 
 // GetSession 获取用户会话信息
 func (s *SessionService) GetSession(ctx context.Context, sessionID string) (*models.AnalyticsUserSession, error) {
-	return s.analyticsRepo.GetUserSession(ctx, sessionID)
+	callRes1, err := s.analyticsRepo.GetUserSession(ctx, sessionID)
+	if err != nil {
+		return nil, fmt.Errorf("查询: %w", err)
+	}
+	return callRes1, nil
 }
 
 // TrackPageView 页面浏览追踪服务

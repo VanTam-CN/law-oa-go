@@ -352,7 +352,7 @@ func seedFixture(ctx context.Context, db *gorm.DB, passwordHash string) (seedRes
 		return upsertApproval(tx, result)
 	})
 	if err != nil {
-		return result, err
+		return result, fmt.Errorf("写入种子数据事务失败: %w", err)
 	}
 
 	// Build the immutable firm-wide index only after all source entities and

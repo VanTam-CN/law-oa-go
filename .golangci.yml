@@ -64,6 +64,13 @@ issues:
         - gosec
         - noctx
         - gocritic
+        - wrapcheck
+    # wrapcheck 测试基建豁免（t_e74dc833 决策，理由见 evidence README §10.4）：
+    # test/ 为 mock/testutils 测试脚手架，testify args.Error(i) 等错误管道一旦包装
+    # 会破坏测试对错误同一性的断言，且无诊断价值。生产代码不豁免。
+    - path: ^test/
+      linters:
+        - wrapcheck
     # gosec 逐条排除（每条均有理由 + 跟踪卡，见 evidence README）：
     # G201 conflict_p0_check: 仅拼接占位符与常量列名，值全部走参数化 args，无注入
     - path: internal/health/conflict_p0_check\.go
@@ -131,6 +138,8 @@ linters:
     - errname
     - rowserrcheck
     - noctx
+    # 错误包装（t_e74dc833：460→0 批修后恢复门禁，测试路径豁免理由见 exclude-rules）
+    - wrapcheck
     # 安全
     - gosec
     - bodyclose
@@ -191,13 +200,13 @@ linters-settings:
     # 默认启用集（显式列出只会产生 no-need-to-enable 告警，行为不变）
     enabled-checks:
       - emptyFallthrough
-    # ifElseChain / exitAfterDefer 属 gocritic 默认集，必须显式 disabled 才会真正关闭：
+    # gocritic enabled-checks 仅列非默认项；ifElseChain/exitAfterDefer 属默认集，
+    # 显式 disable 才能真正关闭：
     #   - ifElseChain：纯风格改写、共享热文件 churn 大；债台账跟踪，批改后恢复
-    #   - exitAfterDefer：命中点全部为 main/CLI 一次性进程的启动期 Fatal（进程退出即回收，
-    #     常驻路径的优雅关闭由 shutdown 包负责）；改造为 run() error 模式记债台账
+    #   - exitAfterDefer 已于 t_e74dc833 恢复门禁：main.go 与 cmd/* 全部改造为
+    #     run() error 模式，启动期不再 defer 后 Fatal，故不再 disable
     disabled-checks:
       - ifElseChain
-      - exitAfterDefer
 
   # revive 配置 — 仅保留正确性信号规则；
   # 风格规则（exported/package-comments/unused-parameter/var-naming/var-declaration）移出并进债台账

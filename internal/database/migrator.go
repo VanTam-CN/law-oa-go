@@ -237,7 +237,10 @@ func openMigrationDatabase(cfg *config.DatabaseConfig, driverName string) (*sql.
 			sslMode,
 		)
 		db, err := sql.Open("postgres", dsn)
-		return db, "postgres", err
+		if err != nil {
+			return nil, "", fmt.Errorf("打开数据库连接: %w", err)
+		}
+		return db, "postgres", nil
 	}
 
 	db, err := openMySQLSQL(*cfg, true)
@@ -255,7 +258,7 @@ func newMigrationDriver(db *sql.DB, driverName string) (migratedb.Driver, error)
 
 	driver, err := mysql.WithInstance(db, &mysql.Config{})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("初始化 MySQL 迁移驱动: %w", err)
 	}
 	return driver, nil
 }
@@ -385,7 +388,10 @@ func (m *Migrator) Close() error {
 	}
 
 	if m.db != nil {
-		return m.db.Close()
+		if err := m.db.Close(); err != nil {
+			return fmt.Errorf("关闭: %w", err)
+		}
+		return nil
 	}
 
 	return nil

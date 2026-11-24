@@ -8,8 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"law-oa-go/internal/models"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestQueryBuilder_BasicOperations(t *testing.T) {

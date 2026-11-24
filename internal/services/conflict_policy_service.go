@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -111,7 +112,7 @@ func (s *ConflictPolicyService) CreatePackage(ctx context.Context, actor AuthAct
 		}
 		return createPolicyAudit(tx, actor, "CONFLICT_POLICY_PACKAGE_CREATED", policy.ID, "", "PENDING_ENDORSEMENTS", policy)
 	}); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("创建冲突事务失败: %w", err)
 	}
 	return &ConflictPolicyPackageView{Package: policy, Endorsements: []ConflictPolicyEndorsementView{}, Status: "PENDING_ENDORSEMENTS"}, nil
 }
@@ -238,7 +239,7 @@ func (s *ConflictPolicyService) Endorse(ctx context.Context, actor AuthActor, pa
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Endorse 事务失败: %w", err)
 	}
 	return &result, nil
 }

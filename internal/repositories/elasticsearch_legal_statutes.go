@@ -28,22 +28,34 @@ func NewElasticsearchStatuteRepository(client *esv8.Client) ElasticsearchStatute
 
 // CreateIndex 创建索引
 func (r *elasticsearchStatuteRepository) CreateIndex(ctx context.Context) error {
-	return r.indexManager.CreateIndex()
+	if err := r.indexManager.CreateIndex(); err != nil {
+		return fmt.Errorf("创建法规: %w", err)
+	}
+	return nil
 }
 
 // DeleteIndex 删除索引
 func (r *elasticsearchStatuteRepository) DeleteIndex(ctx context.Context) error {
-	return r.indexManager.DeleteIndex()
+	if err := r.indexManager.DeleteIndex(); err != nil {
+		return fmt.Errorf("删除法规: %w", err)
+	}
+	return nil
 }
 
 // IndexDocument 索引单个文档
 func (r *elasticsearchStatuteRepository) IndexDocument(ctx context.Context, doc *elasticsearch.LegalStatuteDocument) error {
-	return r.indexManager.IndexDocument(doc)
+	if err := r.indexManager.IndexDocument(doc); err != nil {
+		return fmt.Errorf("索引法规: %w", err)
+	}
+	return nil
 }
 
 // BulkIndexDocuments 批量索引文档
 func (r *elasticsearchStatuteRepository) BulkIndexDocuments(ctx context.Context, docs []*elasticsearch.LegalStatuteDocument) error {
-	return r.indexManager.BulkIndexDocuments(docs)
+	if err := r.indexManager.BulkIndexDocuments(docs); err != nil {
+		return fmt.Errorf("BulkIndexDocuments法规: %w", err)
+	}
+	return nil
 }
 
 // Search 搜索法条
@@ -63,7 +75,7 @@ func (r *elasticsearchStatuteRepository) Search(ctx context.Context, req *elasti
 
 	response, err := r.indexManager.Search(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("搜索法规: %w", err)
 	}
 
 	// 计算搜索时间
@@ -148,7 +160,7 @@ func (r *elasticsearchStatuteRepository) GetRelatedStatutes(ctx context.Context,
 
 	relatedResp, err := r.indexManager.Search(relatedReq)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("搜索法规: %w", err)
 	}
 
 	// 过滤掉当前法条

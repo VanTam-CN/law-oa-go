@@ -247,7 +247,7 @@ func getMigrateInstance(dsn, migrationsDir string) (*migrate.Migrate, error) {
 func isDirEmpty(dir string) (bool, error) {
 	f, err := os.Open(dir)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("打开文件: %w", err)
 	}
 	defer f.Close()
 
@@ -258,13 +258,13 @@ func isDirEmpty(dir string) (bool, error) {
 	if err.Error() == "EOF" {
 		return true, nil
 	}
-	return false, err
+	return false, fmt.Errorf("读取目录项: %w", err)
 }
 
 func runInitScript(dsn string) error {
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		return err
+		return fmt.Errorf("打开数据库连接: %w", err)
 	}
 	defer db.Close()
 

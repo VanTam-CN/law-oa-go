@@ -466,5 +466,8 @@ func (s *DocumentVersionService) deleteVersionFile(filepath string) error {
 		return nil
 	}
 
-	return os.Remove(filepath)
+	if err := os.Remove(filepath); err != nil {
+		return fmt.Errorf("删除文件: %w", err)
+	}
+	return nil
 }

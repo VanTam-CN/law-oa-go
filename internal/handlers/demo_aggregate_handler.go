@@ -2839,7 +2839,10 @@ func (h *DemoAggregateHandler) createConflictApproval(c *gin.Context, taskID, ap
 		response["submitted_at"] = now
 		return nil
 	})
-	return response, err
+	if err != nil {
+		return nil, fmt.Errorf("创建冲突审批事务失败: %w", err)
+	}
+	return response, nil
 }
 
 func terminalConflictReview(checkResult map[string]interface{}) bool {
