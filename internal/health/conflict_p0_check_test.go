@@ -382,7 +382,15 @@ func TestConflictP0ReadinessCheck_ProductionBadCanonicalHashFailsClosed(t *testi
 	db, sqlDB := setupConflictP0ProductionDatabase(t)
 	seedCompleteConflictP0ProductionEvidence(t, db)
 	seedCompleteProductionExternalEvidence(t, db)
-	require.NoError(t, db.Exec("UPDATE production_external_evidence SET integrity_hash = replace(integrity_hash, substr(integrity_hash, 1, 1), '0') WHERE gate = 'G1'").Error)
+	var currentHash string
+	require.NoError(t, sqlDB.QueryRow("SELECT integrity_hash FROM production_external_evidence WHERE gate = 'G1'").Scan(&currentHash))
+	flippedFirst := byte('f')
+	if currentHash[0] == 'f' {
+		flippedFirst = '0'
+	}
+	tamperedHash := string(flippedFirst) + currentHash[1:]
+	require.NotEqual(t, currentHash, tamperedHash, "篡改必须改变完整性哈希")
+	require.NoError(t, db.Exec("UPDATE production_external_evidence SET integrity_hash = ? WHERE gate = 'G1'", tamperedHash).Error)
 
 	result := NewConflictP0ReadinessCheck(sqlDB, true).Check(context.Background())
 
