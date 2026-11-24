@@ -1,10 +1,13 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
 const apiProxyTarget = process.env.VITE_API_PROXY_TARGET || 'http://localhost:8080'
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  define: {
+    __NP_INTAKE_MEMORY_ONLY__: loadEnv(mode, process.cwd(), 'VITE_').VITE_NP_MEMORY_ONLY === 'true',
+  },
   plugins: [react()],
   resolve: {
     alias: {
@@ -69,4 +72,4 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
   },
-})
+}))
