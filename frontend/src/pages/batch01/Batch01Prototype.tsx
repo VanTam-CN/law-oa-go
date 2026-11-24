@@ -15,8 +15,10 @@ import {
   Tooltip,
   Upload,
 } from 'antd'
+import { IntakeLeaveGuard, IntakeSessionBoundary } from '@/components/intake/IntakePilotGuards'
 import NarrowPilotAssistant from '@/components/intake/NarrowPilotAssistant'
 import { isIntakeRevision, useNarrowPilotSave } from '@/components/intake/useNarrowPilotSave'
+import { intakeMemoryOnly } from '@/config/intakePilot'
 import { narrowPilotIntakeEligibility, projectionWithDescription } from '@/pages/batch01/narrowPilotI13'
 import {
   AlertOutlined,
@@ -1269,7 +1271,8 @@ export function caseIntakeConflictFingerprint(
 }
 
 function loadCaseIntakeDraft(draftKey: string): IntakeFormState | null {
-  if (typeof window === 'undefined') {
+  // 试用构建：本机草稿正文一律不读；恢复只走服务端草稿入口。
+  if (intakeMemoryOnly || typeof window === 'undefined') {
     return null
   }
   try {
@@ -4226,6 +4229,12 @@ export function CaseDetailCenter() {
 }
 
 export function CaseIntakeWorkbench() {
+  return intakeMemoryOnly
+    ? <IntakeSessionBoundary><IntakeEditor /></IntakeSessionBoundary>
+    : <IntakeEditor />
+}
+
+function IntakeEditor() {
   const navigate = useNavigate()
   const { user: activeUser } = useAppStore()
   const isAssistant =
@@ -4248,6 +4257,10 @@ export function CaseIntakeWorkbench() {
   const [storedDraft, setStoredDraft] = React.useState<IntakeFormState | null>(() =>
     loadCaseIntakeDraft(draftKey),
   )
+  const [draftActive, setDraftActive] = React.useState(false)
+  const narrowPilotAssistantInputRef = React.useRef('')
+  const unappliedContext = React.useRef(false)
+  const discardApproved = React.useRef(false)
   const [serverDrafts, setServerDrafts] = React.useState<IntakeFormState[]>([])
   const [serverDraftsLoading, setServerDraftsLoading] = React.useState(false)
   const [serverDraftsTotal, setServerDraftsTotal] = React.useState(0)
@@ -4281,7 +4294,6 @@ export function CaseIntakeWorkbench() {
     serverRestoreEpochRef.current++
   }, [draftKey])
   const [form, setForm] = React.useState<IntakeFormState>({ ...defaultIntakeForm })
-  const [draftActive, setDraftActive] = React.useState(false)
   // The last payload the server accepted for this draft. It anchors the
   // narrow-pilot dirty check: only the description diverging from here is
   // eligible for a description-only save.
@@ -4320,7 +4332,21 @@ export function CaseIntakeWorkbench() {
     baseline: lastServerSavedProjection,
     apiRequest,
   })
-
+  const intakeDirty = draftActive && currentProjection !== lastServerSavedProjection
+  const auxiliaryInput = Boolean(relatedPartyDraft || tagDraft || relatedPartyIdentityNumber)
+  const hasPendingInput = () => intakeDirty || auxiliaryInput || Boolean(narrowPilotAssistantInputRef.current) || unappliedContext.current
+  const editVersion = React.useRef(0)
+  const editState = JSON.stringify([currentProjection, relatedPartyDraft, tagDraft, relatedPartyIdentityNumber])
+  const previousEdit = React.useRef(editState)
+  if (previousEdit.current !== editState) {
+    previousEdit.current = editState
+    editVersion.current++
+  }
+  const handleAssistantUnsentInput = React.useCallback((text: string, hasContext: boolean) => {
+    if (narrowPilotAssistantInputRef.current !== text || unappliedContext.current !== hasContext) editVersion.current++
+    narrowPilotAssistantInputRef.current = text
+    unappliedContext.current = hasContext
+  }, [])
   const partyInputs = (draft: IntakeFormState, related: IntakeRelatedParty[]) =>
     JSON.stringify([draft.clientId,draft.clientName,draft.opponentName,draft.opponentEntityType,
       draft.opponentIdentityType,draft.opponentIdentityNumber,draft.opponentAliases,related])
@@ -4351,11 +4377,13 @@ export function CaseIntakeWorkbench() {
     conflictCheckMissingSet.has(field) ? '运行利益冲突检查前必须填写' : undefined
 
   React.useEffect(() => {
+    if (intakeMemoryOnly) return
     window.localStorage.removeItem(legacyCaseIntakeDraftKey)
   }, [])
 
   React.useEffect(() => {
-    if (!draftActive) return
+    // 试用构建：编辑正文只留在页面内存，不写入浏览器存储。
+    if (!draftActive || intakeMemoryOnly) return
     window.localStorage.setItem(draftKey, JSON.stringify(persistableCaseIntakeDraft(form)))
   }, [draftActive, draftKey, form])
 
@@ -4592,6 +4620,7 @@ export function CaseIntakeWorkbench() {
     changeEditor()
     const restoreEpoch = ++serverRestoreEpochRef.current
     const atRequest = liveEditor.current
+    const editsAtRequest = editVersion.current
     const isCurrent = () =>
       restoreEpoch === serverRestoreEpochRef.current &&
       atRequest.form === liveEditor.current.form &&
@@ -4599,6 +4628,10 @@ export function CaseIntakeWorkbench() {
       atRequest.caseTags === liveEditor.current.caseTags
     apiRequest<any>(`/case-intakes/${draft.intakeId}`)
       .then((payload) => {
+        if (intakeMemoryOnly && restoreEpoch === serverRestoreEpochRef.current && editsAtRequest !== editVersion.current) {
+          message.warning('加载期间有新编辑。当前输入已保留，请重新核对后再加载。')
+          return
+        }
         if (!isCurrent()) return
         if (textValue(payload?.intake?.id, '') !== draft.intakeId) {
           throw new Error('所选草稿编号无法确认')
@@ -4613,7 +4646,7 @@ export function CaseIntakeWorkbench() {
 
   const restoreServerDraft = (draft: IntakeFormState) => {
     if (!draft.intakeId) return
-    if (draftActive) {
+    if (intakeMemoryOnly ? hasPendingInput() : draftActive) {
       Modal.confirm({
         title: '切换到服务端草稿',
         content: '当前页面有未保存内容，切换后会用所选服务端草稿替换表单。确定切换吗？',
@@ -4753,6 +4786,10 @@ export function CaseIntakeWorkbench() {
     !narrowPilot.pending && !narrowPilot.busy && !narrowPilot.confirmManual && !narrowPilot.selection
 
   const createIntake = async (reuseSaved = false) => {
+    // 恢复标识不可读取/核对时，混合修改也不允许走全量 PUT 兼容路径。
+    if (narrowPilot.storageBlocked) {
+      throw new Error('恢复标识无法核对；严格保存已阻止，请先处置异常恢复标识。')
+    }
     if (narrowPilot.confirmManual) {
       throw new Error('来源已失效，请重新应用候选，或明确改为人工摘要保存（不关联来源）')
     }
@@ -4761,6 +4798,7 @@ export function CaseIntakeWorkbench() {
       throw new Error('请先选择数据库中的客户和负责律师')
     }
     if (reuseSaved && canReuseSavedIntake) return savedIntake
+    const submittedEdits = editVersion.current
     const startedAt = performance.now()
     const existingIntakeID = textValue(runtime.intake?.id || form.intakeId, '')
     const idempotencyKey = form.idempotencyKey || newIntakeIdempotencyKey.current
@@ -4852,7 +4890,9 @@ export function CaseIntakeWorkbench() {
       intakeCode: textValue(intake.intake_code, current.intakeCode),
       revision: saved.revision,
     }))
-    message.success(
+    if (intakeMemoryOnly && submittedEdits !== editVersion.current) {
+      message.info('原请求已保存，当前还有未保存修改。')
+    } else message.success(
       existingIntakeID
         ? `接案草稿已更新：${intake.intake_code}`
         : `接案草稿已创建：${intake.intake_code}`,
@@ -5043,7 +5083,8 @@ export function CaseIntakeWorkbench() {
       recordTiming('提交审批', startedAt)
       setRuntime((current) => ({ ...current, approval }))
       setSubmissionNotice('')
-      window.localStorage.removeItem(draftKey)
+      if (intakeMemoryOnly) setDraftActive(false)
+      if (!intakeMemoryOnly) window.localStorage.removeItem(draftKey)
       message.success('已提交真实审批')
       navigate(`/approval/${approval.approval_id}`)
     } catch (error) {
@@ -5197,7 +5238,7 @@ export function CaseIntakeWorkbench() {
     changeEditor()
     setRuntime({ apiTimings: [] })
     newIntakeIdempotencyKey.current = `case-intake-${currentUserID}-${Date.now()}-${Math.random().toString(36).slice(2)}`
-    window.localStorage.removeItem(draftKey)
+    if (!intakeMemoryOnly) window.localStorage.removeItem(draftKey)
     setStoredDraft(null)
     if (!isSupplementMode) {
       setForm({ ...defaultIntakeForm })
@@ -5255,12 +5296,15 @@ export function CaseIntakeWorkbench() {
 
   const handleCancelIntake = () => {
     Modal.confirm({
-      title: '取消立案',
-      content: '放弃后将清除当前账号在本案件下的本地草稿，未提交信息不会进入正式案件流程。',
-      okText: '放弃草稿并返回',
+      title: intakeMemoryOnly ? '明确丢弃并返回' : '取消立案',
+      content: intakeMemoryOnly
+        ? '试用构建不写本机存储；离开后未提交内容将从内存丢弃，不会进入正式案件流程。'
+        : '放弃后将清除当前账号在本案件下的本地草稿，未提交信息不会进入正式案件流程。',
+      okText: intakeMemoryOnly ? '明确丢弃并返回' : '放弃草稿并返回',
       cancelText: '继续编辑',
       onOk: () => {
-        window.localStorage.removeItem(draftKey)
+        if (!intakeMemoryOnly) window.localStorage.removeItem(draftKey)
+        discardApproved.current = true
         navigate('/case')
       },
     })
@@ -5268,9 +5312,13 @@ export function CaseIntakeWorkbench() {
 
   const handleSaveDraftAndExit = async () => {
     const current = editorGuard()
+    const edits = editVersion.current
     try {
       const saved = await createIntake(true)
-      if (saved && current() && currentProjectionRef.current === currentProjection) navigate('/case')
+      if (!saved || !current() || currentProjectionRef.current !== currentProjection) return
+      if (intakeMemoryOnly && (edits !== editVersion.current || auxiliaryInput || narrowPilotAssistantInputRef.current || unappliedContext.current)) return
+      discardApproved.current = true
+      navigate('/case')
     } catch (error) {
       if (!current()) return
       message.error(
@@ -5320,6 +5368,10 @@ export function CaseIntakeWorkbench() {
           </Button>
         }
       />
+
+      {intakeMemoryOnly && <IntakeLeaveGuard dirty={() =>
+        !discardApproved.current && hasPendingInput()
+      } />}
 
       {!isSupplementMode && !isAssistant && (
         <div className='batch-advice'>
@@ -5533,9 +5585,10 @@ export function CaseIntakeWorkbench() {
                 </div>
               {!isAssistant && !isSupplementMode && form.intakeId && form.revision && (
                 <NarrowPilotAssistant
-                  key={`${currentUserID}:${form.intakeId}:${form.revision}`}
+                  key={intakeMemoryOnly ? `${currentUserID}:${form.intakeId}` : `${currentUserID}:${form.intakeId}:${form.revision}`}
                   intakeId={form.intakeId} revision={form.revision} description={form.description}
                   apiRequest={apiRequest} onInvalidate={narrowPilot.invalidate}
+                  onUnsentInputChange={handleAssistantUnsentInput}
                   onApply={(text, selection) => { updateForm('description', text); narrowPilot.apply(text, selection) }}
                 />
               )}
@@ -5545,7 +5598,7 @@ export function CaseIntakeWorkbench() {
                     {narrowPilot.confirmManual && <Button onClick={narrowPilot.acceptManual}>改为人工摘要保存（不关联来源）</Button>}
                     {narrowPilot.pending && <Button loading={narrowPilot.busy} onClick={() => void narrowPilot.query()}>回查原保存结果</Button>}
                     {narrowPilot.pending && <Button disabled={narrowPilot.busy} onClick={() => Modal.confirm({ title: '结束原保存并核实结果', content: '这不会撤销已提交内容。若原保存尚未提交，将阻止迟到原请求再写入。', onOk: narrowPilot.abandon })}>结束原保存并核实结果</Button>}
-                    <Button onClick={() => { if (form.intakeId) { apiRequest<any>(`/case-intakes/${form.intakeId}`).then((payload) => applyServerDraftPayload(payload)).catch((error) => message.error(error instanceof Error ? error.message : '恢复服务端草稿失败')) } }}>重新加载服务端草稿</Button>
+                    <Button onClick={() => restoreServerDraft(form)}>重新加载服务端草稿</Button>
                   </Space>
                 )} />
               )}
@@ -6205,14 +6258,33 @@ export function CaseIntakeWorkbench() {
             )}
           </SectionCard>
           <SectionCard title='保存状态'>
-            <p>{draftActive ? '系统会随填写保留当前草稿。' : '尚未开始保留本次草稿。'}</p>
-            <p>可在页面底部选择“保存草稿”或“保存并退出”，下次进入本页会提示恢复。</p>
+            {intakeMemoryOnly ? (
+              <>
+                <p>试用构建：编辑内容只留在当前页面内存，不写浏览器存储。</p>
+                <p>离开页面前请用“保存草稿”提交到服务端；未保存内容离开即丢失，页面会先要求确认。</p>
+              </>
+            ) : (
+              <>
+                <p>{draftActive ? '系统会随填写保留当前草稿。' : '尚未开始保留本次草稿。'}</p>
+                <p>可在页面底部选择“保存草稿”或“保存并退出”，下次进入本页会提示恢复。</p>
+              </>
+            )}
           </SectionCard>
         </aside>
       </div>
 
+      {intakeMemoryOnly && (narrowPilot.pending || narrowPilot.busy) && intakeDirty && (
+        <div className='batch-advice' role='status'>
+          <strong>原保存仍在途中；页面内容已更新</strong>
+          <p>
+            已提交内容按原请求回执核实；恢复期间的新输入尚未保存。
+            回执只会确认原请求，不会覆盖或丢弃当前页面文字。
+          </p>
+        </div>
+      )}
+
       <div className='batch-bottom-bar'>
-        <Button onClick={handleCancelIntake}>取消立案</Button>
+        <Button onClick={handleCancelIntake}>{intakeMemoryOnly ? '明确丢弃并返回' : '取消立案'}</Button>
         {isAssistant ? (
           <span>协作草稿：等待负责律师补充当事人信息并确认</span>
         ) : (

@@ -1,6 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { BrowserRouter } from 'react-router'
+import { BrowserRouter, createBrowserRouter, RouterProvider } from 'react-router'
 import { ConfigProvider } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
 import './index.css'
@@ -17,9 +17,9 @@ function startApp() {
   initializeApp()
   root.render(
     <ConfigProvider locale={zhCN}>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      {intakeMemoryOnly
+        ? <RouterProvider router={createBrowserRouter([{ path: '*', element: <App /> }])} />
+        : <BrowserRouter><App /></BrowserRouter>}
     </ConfigProvider>,
   )
 }

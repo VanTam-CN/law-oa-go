@@ -1,4 +1,5 @@
 import React from 'react'
+import { intakeMemoryOnly } from '@/config/intakePilot'
 import { Alert, Button, Checkbox, Input, Tag } from 'antd'
 
 export interface NarrowPilotSource {
@@ -49,6 +50,8 @@ export interface NarrowPilotAssistantProps {
   apiRequest: <T>(path: string, options?: RequestInit) => Promise<T>
   onApply: (description: string, selection: NarrowPilotApplySelection) => void
   onInvalidate?: () => void
+  // 页面需把未发送对话文字纳入离开保护；仅在输入变化时通知。
+  onUnsentInputChange?: (text: string, hasUnappliedContext: boolean) => void
 }
 
 const INVALIDATING_CODES = new Set([
@@ -107,6 +110,7 @@ export function NarrowPilotAssistant({
   apiRequest,
   onApply,
   onInvalidate,
+  onUnsentInputChange,
 }: NarrowPilotAssistantProps) {
   // A monotonic epoch also rejects late responses after switching away and back.
   const scope = `${intakeId}|${revision}`
@@ -121,6 +125,10 @@ export function NarrowPilotAssistant({
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState('')
   const [appliedHint, setAppliedHint] = React.useState('')
+  const hasUnappliedContext = Boolean(ctx && !appliedHint)
+  React.useEffect(() => {
+    onUnsentInputChange?.(input, hasUnappliedContext)
+  }, [input, hasUnappliedContext, onUnsentInputChange])
   const [stalePair, setStalePair] = React.useState<{
     candidate: NarrowPilotCandidate
     pageText: string
@@ -154,7 +162,7 @@ export function NarrowPilotAssistant({
     setSnapshot(null)
     setEnabled(false)
     setCtx(null)
-    setInput('')
+    if (!intakeMemoryOnly) setInput('')
     setReviewed(false)
     setError('')
     setAppliedHint('')
