@@ -4,6 +4,7 @@ const baseURL = 'http://127.0.0.1:18793'
 
 export default defineConfig({
   testDir: './e2e',
+  testIgnore: '**/np-first-slice.live.spec.ts',
   workers: 1,
   timeout: 45_000,
   reporter: 'list',

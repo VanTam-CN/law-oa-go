@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
   testDir: './e2e',
+  testIgnore: '**/np-first-slice.live.spec.ts',
   timeout: 60_000,
   expect: {
     timeout: 8_000,
