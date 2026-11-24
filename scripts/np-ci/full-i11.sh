@@ -16,7 +16,7 @@ run_step() {
   local label=$1 rc=0
   shift
   echo "I11_START $label $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
-  "$@" >"$work/$label.log" 2>&1 || rc=$?
+  "$@" >"$work/$label.log" 2>"$work/$label.stderr" || rc=$?
   echo "I11_END $label rc=$rc $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
   [[ $rc == 0 ]]
 }
