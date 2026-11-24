@@ -228,7 +228,8 @@ func TestSchemaRequiresFrozenKeysAndTypes(t *testing.T) {
 	for _, tc := range []struct{ name, ddl string }{
 		{"wrong-index-columns", "ALTER TABLE case_intake_source_snapshots DROP CONSTRAINT np_source_intake_revision_unique; CREATE UNIQUE INDEX np_source_intake_revision_unique ON case_intake_source_snapshots(id)"},
 		{"missing-fk", "ALTER TABLE case_intake_write_requests DROP CONSTRAINT case_intake_write_requests_intake_id_fkey"},
-		{"wrong-column-type", "ALTER TABLE case_intake_write_requests ALTER COLUMN source_revision TYPE varchar(25)"},
+		// Unbounded varchar preserves existing UUID values while differing from the required text type.
+		{"wrong-column-type", "ALTER TABLE case_intake_write_requests ALTER COLUMN source_revision TYPE varchar"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			rollback := errors.New("rollback temporary schema variant")
