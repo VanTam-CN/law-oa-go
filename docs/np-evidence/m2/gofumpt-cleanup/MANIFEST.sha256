@@ -1,5 +1,5 @@
 # SHA-256 manifest — gofumpt-cleanup evidence (t_7cecb4f1)
-2e8057a73d3fb3bec52415afc715fd730dd09efaa5a0200e729933ed53bad68e  README.md
+ab5990094e0f4711ead7e6798455d1bea25620ff917a2ca5043397bc679ccb9d  README.md
 a74d7bb0ca2ec6bd9b6435d5ca7701d339a76482584d9d8a16ddf309f3d41e31  snapshots/build-vet-and-internal-rerun.txt
 1e399cafb36ac640803c8e5403e82f6c8902e662ba16d8805611fc33cf957bc7  snapshots/drift-and-fix-boundary.txt
 230e061be0e1d3bae75137320f62f222a8b64f81e8617a71bfe25e7bf16a3c60  snapshots/health-flake-excluded.txt

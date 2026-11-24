@@ -45,6 +45,6 @@ CI 步骤：`.github/workflows/ci.yml` quality job「🔍 代码格式检查」=
 
 1. **静态分析存量债（~4 千条）**：格式步已绿后每次 PR 都会撞上它红灯。建议另立卡片专项治理（调 linter 集合或分批修复）。
 2. **浮动版本风险**：ci.yml 用 `gofumpt@latest` / `golangci-lint@latest`，上游发版可能引入新规则再次红灯。建议固定版本（如 v0.12.0 / v1.64.8）并随升级流程显式变更。
-3. m3/m4 等其它工作线分支同样携带漂移，合并回 main 前需各自应用同款 gofumpt 清理（或以 main 为基 rebase 后自动消解）。
+3. 其它工作线分支同样携带漂移，合并回 main 前需各自应用同款 gofumpt 清理（或以 main 为基 rebase 后自动消解）。实证：主干集成载体 PR #52（codex/np-main-i11 → main，head 309d1dd，M0–M4 + I11 候选）的 🔍 Code Quality 仍红于格式步（run [45389287095](https://github.com/VanTam-CN/law-oa-go/actions/runs/45389287095)，2026-11-24 实测）——该线需在集成前应用同款清理，或合入本卡修复提交 11a3db0。
 4. 本机遗留：一次性容器 `np-gofumpt-pg`（postgres:16.14，tmpfs 数据盘，仅绑 127.0.0.1:18790）因执行环境容器生命周期管控未清理，可 `docker rm -f np-gofumpt-pg` 释放。
 5. 协作注意：本工作树 output/np-main-m2 为多任务共用检出。本次曾发生 `git add -A` 误收兄弟任务未跟踪证据文件（未推送即重组修正）；同目录作业请按路径精确 add。
