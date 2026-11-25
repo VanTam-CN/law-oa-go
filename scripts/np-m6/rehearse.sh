@@ -129,15 +129,23 @@ grep -Fq 'shared catalog check returned not-ready' "$work/mismatch.log"
 sql 'ALTER TABLE case_intake_write_requests RENAME COLUMN m6_parked_digest TO request_digest' >/dev/null
 "$py" scripts/np-first-slice/compare-main-browser-db.py seed "$NP_BROWSER_SEED" >/dev/null
 actor=$("$py" -c 'import json,sys;print(json.load(open(sys.argv[1]))["actor_id"])' "$NP_BROWSER_SEED")
+target=$("$py" -c 'import json,sys,uuid;print(uuid.UUID(json.load(open(sys.argv[1]))["target"]))' "$NP_BROWSER_SEED")
+snapshot() {
+  docker exec -i "$pg" psql -XqAtw -v ON_ERROR_STOP=1 -U np_m1 -d np_first_slice_dev -v target="$target" \
+    <scripts/np-m6/snapshot.sql >"$work/$1.pg.json"
+  if [[ "$1" != seeded ]]; then cmp -s "$work/seeded.pg.json" "$work/$1.pg.json"; fi
+}
 start candidate "$actor"
 "$py" scripts/np-m6/boundary.py legacy-verify
 "$py" scripts/np-m6/ledger.py seed >"$work/seed-result.json"
+snapshot seeded
 "$py" scripts/np-m6/boundary.py open
 apply >"$work/repeat.log" 2>&1
 grep -Fq 'repeat: verify-only mode' "$work/repeat.log"
 grep -Fq 'PASS: NP schema verified' "$work/repeat.log"
 [[ $(objects) == "$oids" ]]
 "$py" scripts/np-m6/ledger.py verify >"$work/repeat-result.json"
+snapshot repeated
 stop
 id=$(cat "$work/app")
 docker start "$id" >/dev/null
@@ -148,10 +156,12 @@ stamp restart "$candidate" "$id"
 echo "restart $id" >>"$work/roots.txt"
 "$py" scripts/np-m6/boundary.py restarted
 "$py" scripts/np-m6/ledger.py verify >"$work/restart-result.json"
+snapshot restarted
 stop
 start rollback ''
 "$py" scripts/np-m6/boundary.py disabled
 "$py" scripts/np-m6/ledger.py verify >"$work/rollback-result.json"
+snapshot rolled-back
 "$py" scripts/np-m6/boundary.py legacy-final
 [[ $(objects) == "$oids" && $(wc -l <"$work/steps" | tr -d ' ') == 3 ]]
 stop
