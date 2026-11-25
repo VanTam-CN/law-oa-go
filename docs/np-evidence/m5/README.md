@@ -41,3 +41,10 @@ I08 独立窗口使用只服务于本机的 3004 端口代理，设置 `ROOT_URL
 用独立种子窗口完成四场景后，可用该窗口的两个清单作为 `NP_BROWSER_SEED`、`NP_BROWSER_OTHER_SEED`。运行 `reopened-draft.py` 与 `cache-paths.py` 检查原对象。以显式试点律师名单启动 `history-window.sh init` 和 `history-window.sh root`，随后运行 `history-faults.py`、`session-boundaries.py`。它们分别核对专用克隆中的历史故障和客户撤权，结束后用 `history-window.sh clean` 清理专用实例。I14 旧库对照单独运行 `legacy-baseline.sh`。
 
 I15 的 `source-conflict.py` 读取已授权的合成律师清单，每个模式创建自己的合成对象。分别以 `native`、`source`、`matching` 运行，准备新对象的时间至少错开两秒。同步检测来自真正的根服务；正式异步完成使用同候选的服务级 PG 回归。此宿主的复跑命令使用 `/usr/bin/python3`。第二组访问探针的运行次数和归档边界见 [glm-flash 对照](worker-checks.json)。
+
+
+## 独立复审补跑
+
+在首次总复审 `60ae91b` 之后，补跑了两项。第一项用同一令牌读取已保存的历史来源与已提交回执，撤权前两次 200；将先前的授权投影预置在合成 Redis 中，再次访问原地址，两次均 403、private/no-store，整份拒绝响应无此前摘要及来源原句，恢复授权后读取结果与原投影相同。[撤权后重读](revoked-history.json)
+
+第二项沿用生产前端与真实登录、草稿、上下文入口，仅在浏览器边界为生成请求返回一次合成 503。页面显示生成失败后仍能人工编辑标题与摘要。存储写入观察与两个存储区的最终读取均未发现业务正文，PG 快照与原存储窗口一致。[生成失败](generation-failure.json) · [逐项矩阵](matrix.md)

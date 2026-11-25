@@ -1,0 +1,30 @@
+{
+  "gate": "C12",
+  "test": "C12 生成失败后人工编辑仍只留在内存",
+  "command": [
+    "node",
+    "node_modules/@playwright/test/cli.js",
+    "test",
+    "-c",
+    "playwright.m5.config.ts",
+    "np-m5/generation-failure.spec.ts",
+    "--reporter=json"
+  ],
+  "start": "2026-11-25T03:24:50.875Z",
+  "duration_ms": 2918.329,
+  "exit_code": 0,
+  "expected": 1,
+  "skipped": 0,
+  "flaky": 0,
+  "unexpected": 0,
+  "test_sha256": "5e1c3738fa846939d64ad3b16cc3c4f9f82ae74316b8759355038ce453688604",
+  "production_asset_sha256": "d43889c0b9d74dd67c6c2cc5f05d68d39712d430bdf007c2b93c44f6a7e9a174",
+  "root_session_and_context": "live, context 200",
+  "turn": "one synthetic 503 at browser boundary",
+  "manual_title_and_description": "edited after visible error",
+  "sensitive_Storage_setItem_observed": 0,
+  "marker_in_localStorage": false,
+  "marker_in_sessionStorage": false,
+  "protected_pg_sha256": "cf26f71ce1d49bfb9e0dd8042f69c7640166fff290326fcbe472aa1fedea646f",
+  "pg_snapshot_equal_to_original_storage_baseline": true
+}

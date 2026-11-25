@@ -23,5 +23,22 @@
       "raw_sha256": "be771d0ff9f50177f1cd9c7de8c29b62e1ac867bab8e607931a8530c51947494"
     }
   ],
-  "limits": "Cross-role transition on the unlisted lawyer and timing-limited cache counts are supplemented by coordinator tests on an allowed lawyer, persisted identity canaries, exact route keys and a read control."
+  "limits": "Cross-role transition on the unlisted lawyer and timing-limited cache counts are supplemented by coordinator tests on an allowed lawyer, persisted identity canaries, exact route keys and a read control.",
+  "conflict_reruns": {
+    "native": {
+      "exit_code": 0,
+      "raw_sha256": "eb1465f64a2229415c97dd208bbd96aed92c93098e0e59a3803bcaebff58bea2",
+      "semantic_assertions_agree": true
+    },
+    "matching": {
+      "exit_code": 0,
+      "raw_sha256": "6afe97a01c467e1465aac575f8efbb9f107df519e91c2d658df78e4afeba8ca4",
+      "semantic_assertions_agree": true
+    },
+    "source": {
+      "exit_code": 0,
+      "raw_sha256": "f6eba80ef0a4b1dac5a6fb0a9a2fa61bce391ea202410cbdb99c48a146a80b1b",
+      "semantic_assertions_agree": true
+    }
+  }
 }

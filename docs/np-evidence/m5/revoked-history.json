@@ -1,0 +1,24 @@
+{
+  "gates": [
+    "I10",
+    "C10"
+  ],
+  "same_registered_token": true,
+  "same_paths_and_objects": true,
+  "source": {
+    "before": 200,
+    "granted": 200,
+    "withdrawn": 403,
+    "restored": 200
+  },
+  "committed_receipt": {
+    "before": 200,
+    "granted": 200,
+    "withdrawn": 403,
+    "restored": 200
+  },
+  "preloaded_authorized_projection_redis": true,
+  "prior_summary_and_source_texts_absent_from_entire_denials": true,
+  "denials": "private, no-store; OBJECT_ACCESS_DENIED; no data",
+  "intake_source_receipt_digest_unchanged": "82d59fa7c15e13db85c609f7cab062374cfe450be2569fc15bd9188b9b06018e"
+}

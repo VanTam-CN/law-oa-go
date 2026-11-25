@@ -9,7 +9,7 @@ if (process.env.VITE_NP_MEMORY_ONLY !== 'true') throw new Error('M5 requires the
 export default defineConfig({
   ...isolated,
   testDir: '.',
-  testMatch: ['np-m4/*.spec.ts', 'np-entry/first-selection.spec.ts', 'e2e/np-first-slice.live.spec.ts'],
+  testMatch: ['np-m5/*.spec.ts', 'np-m4/*.spec.ts', 'np-entry/first-selection.spec.ts', 'e2e/np-first-slice.live.spec.ts'],
   use: { ...isolated.use, baseURL: 'http://127.0.0.1:3003' },
   webServer: {
     command: 'node ../scripts/np-m5/static-proxy.mjs',
