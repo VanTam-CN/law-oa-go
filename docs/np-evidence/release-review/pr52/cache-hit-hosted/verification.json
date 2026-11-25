@@ -1,0 +1,105 @@
+{
+  "run": 45602908346,
+  "event": "push",
+  "head": "fa29b2ff60db25c80124de6514968d606725230a",
+  "workflow": ".github/workflows/np-cache-hit-check.yml",
+  "conclusion": "success",
+  "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45602908346",
+  "jobs": [
+    {
+      "job": 139166142876,
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45602908346/job/139166142876",
+      "conclusion": "success",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify checkout and export both fixed trees",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-go@v5",
+          "conclusion": "success"
+        },
+        {
+          "name": "Require the original append failure",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify named candidate tests and package conclusions",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run whole middleware package and build root binary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-go@v5",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "artifacts": 0,
+  "run_attempt": 1,
+  "actual_result_markers": [
+    "CACHE_REFS checkout=fa29b2ff60db25c80124de6514968d606725230a baseline=b22736b693b5d12b521173bed1055245b095a456 candidate=94d531faeb6fa65f76599e3d5c04d83b72fda540 fixture=37d77d617ffef6aa1f8b9ebb53887fde864672e6d92a856485c02b8d656984fb",
+    "CACHE_RED expected_append status=203 test_exit=1",
+    "CACHE_GREEN package=law-oa-go/internal/middleware test=TestCacheMiddlewareHitAbortsDownstream passes=3",
+    "CACHE_GREEN package=law-oa-go/internal/middleware test=TestNarrowPilotCacheZeroReadWrite passes=3",
+    "CACHE_GREEN package=law-oa-go test=TestIntakeEarlyResponsesNoStore passes=1",
+    "CACHE_PACKAGE race=pass root_build=pass"
+  ],
+  "candidate": "94d531faeb6fa65f76599e3d5c04d83b72fda540",
+  "source": "0b58108ec3d32290af9d504dccbe75fbfc9de358",
+  "baseline": "b22736b693b5d12b521173bed1055245b095a456",
+  "ref_cache_count_at_review": 0,
+  "deployment_records_for_workflow_sha": 0,
+  "push_runs_for_sha": 1,
+  "coordinator_local_replay": "six runtime markers match GitHub",
+  "coordinator_local_controls": {
+    "valid": 0,
+    "missing": 1,
+    "wrongpkg": 1,
+    "skip": 1,
+    "no-package-pass": 1,
+    "build-failed": 1
+  },
+  "complete_i11_for_candidate": "NOT_RUN",
+  "release": {
+    "merge": "HOLD",
+    "deployment": "HOLD",
+    "real_trial": "HOLD"
+  },
+  "independent_review": {
+    "reviewer": "6.2 Astra",
+    "result": "PASS: targeted hosted regression",
+    "checked": [
+      "fixed Git objects and fixture digest",
+      "run 45602908346 attempt 1 and job 139166142876",
+      "old expected failure and candidate named counts 3/3/1",
+      "package race and root build",
+      "workflow permissions, artifact count, ref cache and deployment records"
+    ]
+  },
+  "intermediate_run": {
+    "run": 45602790391,
+    "job": 139165729408,
+    "conclusion": "failure",
+    "step": "Verify named candidate tests and package conclusions"
+  }
+}

@@ -48,3 +48,5 @@ PGO 本地采样实际报出性能包失败，其采样脚本把详细输出留�
 `71ebc94` 的接续证据见[普通 Go Tests 覆盖率及 JUnit 整改](go-reports/README.md)。
 
 性能包的 19 项基准、PGO 及真实 PR 作业结果见[性能夹具验收](performance-fixture/README.md)。
+
+独立缓存候选的 [GitHub 定向红绿验证](cache-hit-hosted/README.md) 绑定候选 `94d531f`。该分支的定向通过与 PR #52 本身的检查分别记录。
