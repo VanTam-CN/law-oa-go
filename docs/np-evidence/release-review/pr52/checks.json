@@ -1,0 +1,401 @@
+{
+  "observed_utc": "2026-11-25T06:36:54+00:00",
+  "pr": "https://github.com/VanTam-CN/law-oa-go/pull/52",
+  "base": "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
+  "head": "89f2eb9eace9a2f72f31375a83cc34d97289c4dc",
+  "test_merge": "e75945ff00221540e660738999e975ed6eea6786",
+  "parents": [
+    "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
+    "89f2eb9eace9a2f72f31375a83cc34d97289c4dc"
+  ],
+  "head_and_merge_tree": "051ee9a97c4bf96eb0e99cca3aea79894de175d1",
+  "i11_checkout_and_refs_observed": true,
+  "draft": true,
+  "merge_state": "UNSTABLE",
+  "main_reported_protected": false,
+  "applicable_branch_rules_count": 0,
+  "rollup_counts": {
+    "FAILURE": 13,
+    "SUCCESS": 17,
+    "SKIPPED": 24,
+    "CANCELLED": 6
+  },
+  "runs": [
+    {
+      "id": 45398114699,
+      "attempt": 1,
+      "event": "push",
+      "workflow": "🧪 Test Pipeline",
+      "head_sha": "89f2eb9eace9a2f72f31375a83cc34d97289c4dc",
+      "conclusion": "success",
+      "finished_utc": "2026-11-24T13:02:13Z",
+      "rollup_jobs": {
+        "success": 1,
+        "skipped": 6
+      },
+      "retained_artifacts": 0
+    },
+    {
+      "id": 45398130732,
+      "attempt": 1,
+      "event": "pull_request",
+      "workflow": "PGO优化工作流",
+      "head_sha": "89f2eb9eace9a2f72f31375a83cc34d97289c4dc",
+      "conclusion": "failure",
+      "finished_utc": "2026-11-24T13:06:15Z",
+      "rollup_jobs": {
+        "failure": 2,
+        "skipped": 5
+      },
+      "retained_artifacts": 0
+    },
+    {
+      "id": 45398130739,
+      "attempt": 1,
+      "event": "pull_request",
+      "workflow": "🚀 CI/CD Pipeline",
+      "head_sha": "89f2eb9eace9a2f72f31375a83cc34d97289c4dc",
+      "conclusion": "failure",
+      "finished_utc": "2026-11-24T12:59:10Z",
+      "rollup_jobs": {
+        "failure": 1,
+        "skipped": 5
+      },
+      "retained_artifacts": 0
+    },
+    {
+      "id": 45398130744,
+      "attempt": 1,
+      "event": "pull_request",
+      "workflow": "安全测试工作流",
+      "head_sha": "89f2eb9eace9a2f72f31375a83cc34d97289c4dc",
+      "conclusion": "success",
+      "finished_utc": "2026-11-24T12:58:42Z",
+      "rollup_jobs": {
+        "success": 3,
+        "skipped": 1
+      },
+      "retained_artifacts": 0
+    },
+    {
+      "id": 45398130808,
+      "attempt": 1,
+      "event": "pull_request",
+      "workflow": "Fuzzing测试工作流",
+      "head_sha": "89f2eb9eace9a2f72f31375a83cc34d97289c4dc",
+      "conclusion": "failure",
+      "finished_utc": "2026-11-24T12:59:52Z",
+      "rollup_jobs": {
+        "success": 9,
+        "failure": 5,
+        "cancelled": 5
+      },
+      "retained_artifacts": 0
+    },
+    {
+      "id": 45398130863,
+      "attempt": 1,
+      "event": "pull_request",
+      "workflow": "Law OA Go CI/CD Pipeline",
+      "head_sha": "89f2eb9eace9a2f72f31375a83cc34d97289c4dc",
+      "conclusion": "failure",
+      "finished_utc": "2026-11-24T13:07:03Z",
+      "rollup_jobs": {
+        "success": 1,
+        "cancelled": 1,
+        "failure": 3,
+        "skipped": 5
+      },
+      "retained_artifacts": 0
+    },
+    {
+      "id": 45398131150,
+      "attempt": 1,
+      "event": "pull_request",
+      "workflow": "🧪 Test Pipeline",
+      "head_sha": "89f2eb9eace9a2f72f31375a83cc34d97289c4dc",
+      "conclusion": "failure",
+      "finished_utc": "2026-11-24T13:03:12Z",
+      "rollup_jobs": {
+        "failure": 2,
+        "success": 3,
+        "skipped": 2
+      },
+      "retained_artifacts": 0
+    }
+  ],
+  "unsuccessful_jobs": [
+    {
+      "job": 138459270645,
+      "name": "检查PGO支持",
+      "run": 45398130732,
+      "event": "pull_request",
+      "conclusion": "failure",
+      "unsuccessful_steps": [
+        {
+          "step": 4,
+          "name": "检查Go版本和PGO支持",
+          "conclusion": "failure"
+        }
+      ],
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45398130732/job/138459270645"
+    },
+    {
+      "job": 138459271051,
+      "name": "PGO local profiles and builds",
+      "run": 45398130732,
+      "event": "pull_request",
+      "conclusion": "failure",
+      "unsuccessful_steps": [
+        {
+          "step": 5,
+          "name": "Profile existing Go test and benchmark packages",
+          "conclusion": "failure"
+        }
+      ],
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45398130732/job/138459271051"
+    },
+    {
+      "job": 138459431851,
+      "name": "🔍 Code Quality",
+      "run": 45398130739,
+      "event": "pull_request",
+      "conclusion": "failure",
+      "unsuccessful_steps": [
+        {
+          "step": 6,
+          "name": "📋 静态分析",
+          "conclusion": "failure"
+        }
+      ],
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45398130739/job/138459431851"
+    },
+    {
+      "job": 138460227589,
+      "name": "安全组件Fuzzing (jwt-validation)",
+      "run": 45398130808,
+      "event": "pull_request",
+      "conclusion": "failure",
+      "unsuccessful_steps": [
+        {
+          "step": 5,
+          "name": "设置Redis",
+          "conclusion": "failure"
+        }
+      ],
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45398130808/job/138460227589"
+    },
+    {
+      "job": 138460227598,
+      "name": "完整Fuzzing测试",
+      "run": 45398130808,
+      "event": "pull_request",
+      "conclusion": "failure",
+      "unsuccessful_steps": [
+        {
+          "step": 5,
+          "name": "设置Redis",
+          "conclusion": "failure"
+        }
+      ],
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45398130808/job/138460227598"
+    },
+    {
+      "job": 138460227637,
+      "name": "缓存Fuzzing (Fuzz_CacheService_SetWithExpiration)",
+      "run": 45398130808,
+      "event": "pull_request",
+      "conclusion": "cancelled",
+      "unsuccessful_steps": [
+        {
+          "step": 5,
+          "name": "设置Redis",
+          "conclusion": "failure"
+        }
+      ],
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45398130808/job/138460227637"
+    },
+    {
+      "job": 138460227649,
+      "name": "缓存Fuzzing (Fuzz_CacheService_SetAndGet)",
+      "run": 45398130808,
+      "event": "pull_request",
+      "conclusion": "cancelled",
+      "unsuccessful_steps": [],
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45398130808/job/138460227649"
+    },
+    {
+      "job": 138460227658,
+      "name": "数据库Fuzzing (Fuzz_QueryBuilder_Like)",
+      "run": 45398130808,
+      "event": "pull_request",
+      "conclusion": "failure",
+      "unsuccessful_steps": [
+        {
+          "step": 5,
+          "name": "设置数据库",
+          "conclusion": "failure"
+        }
+      ],
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45398130808/job/138460227658"
+    },
+    {
+      "job": 138460227661,
+      "name": "缓存Fuzzing (Fuzz_CacheService_ConcurrentAccess)",
+      "run": 45398130808,
+      "event": "pull_request",
+      "conclusion": "failure",
+      "unsuccessful_steps": [
+        {
+          "step": 5,
+          "name": "设置Redis",
+          "conclusion": "failure"
+        }
+      ],
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45398130808/job/138460227661"
+    },
+    {
+      "job": 138460227738,
+      "name": "数据库Fuzzing (Fuzz_QueryBuilder_Order)",
+      "run": 45398130808,
+      "event": "pull_request",
+      "conclusion": "cancelled",
+      "unsuccessful_steps": [],
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45398130808/job/138460227738"
+    },
+    {
+      "job": 138460227761,
+      "name": "数据库Fuzzing (Fuzz_QueryBuilder_Where)",
+      "run": 45398130808,
+      "event": "pull_request",
+      "conclusion": "cancelled",
+      "unsuccessful_steps": [],
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45398130808/job/138460227761"
+    },
+    {
+      "job": 138460227766,
+      "name": "缓存Fuzzing (Fuzz_LayeredCache_Get)",
+      "run": 45398130808,
+      "event": "pull_request",
+      "conclusion": "cancelled",
+      "unsuccessful_steps": [
+        {
+          "step": 4,
+          "name": "下载依赖",
+          "conclusion": "cancelled"
+        }
+      ],
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45398130808/job/138460227766"
+    },
+    {
+      "job": 138461968505,
+      "name": "Fuzzing测试汇总报告",
+      "run": 45398130808,
+      "event": "pull_request",
+      "conclusion": "failure",
+      "unsuccessful_steps": [
+        {
+          "step": 2,
+          "name": "按选中类型核对job 完成状态",
+          "conclusion": "failure"
+        }
+      ],
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45398130808/job/138461968505"
+    },
+    {
+      "job": 138463063168,
+      "name": "运行测试 (integration)",
+      "run": 45398130863,
+      "event": "pull_request",
+      "conclusion": "cancelled",
+      "unsuccessful_steps": [
+        {
+          "step": 4,
+          "name": "设置数据库",
+          "conclusion": "cancelled"
+        }
+      ],
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45398130863/job/138463063168"
+    },
+    {
+      "job": 138463063171,
+      "name": "Fuzzing测试",
+      "run": 45398130863,
+      "event": "pull_request",
+      "conclusion": "failure",
+      "unsuccessful_steps": [
+        {
+          "step": 5,
+          "name": "检查Fuzzing支持",
+          "conclusion": "failure"
+        }
+      ],
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45398130863/job/138463063171"
+    },
+    {
+      "job": 138463063246,
+      "name": "基准测试",
+      "run": 45398130863,
+      "event": "pull_request",
+      "conclusion": "failure",
+      "unsuccessful_steps": [
+        {
+          "step": 5,
+          "name": "运行基准测试",
+          "conclusion": "failure"
+        }
+      ],
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45398130863/job/138463063246"
+    },
+    {
+      "job": 138463063396,
+      "name": "运行测试 (unit)",
+      "run": 45398130863,
+      "event": "pull_request",
+      "conclusion": "failure",
+      "unsuccessful_steps": [
+        {
+          "step": 4,
+          "name": "设置数据库",
+          "conclusion": "failure"
+        }
+      ],
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45398130863/job/138463063396"
+    },
+    {
+      "job": 138459274338,
+      "name": "🐹 Go Tests",
+      "run": 45398131150,
+      "event": "pull_request",
+      "conclusion": "failure",
+      "unsuccessful_steps": [
+        {
+          "step": 9,
+          "name": "🧪 运行集成测试",
+          "conclusion": "failure"
+        },
+        {
+          "step": 13,
+          "name": "📋 生成测试报告",
+          "conclusion": "failure"
+        }
+      ],
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45398131150/job/138459274338"
+    },
+    {
+      "job": 138462301035,
+      "name": "🎭 E2E Tests",
+      "run": 45398131150,
+      "event": "pull_request",
+      "conclusion": "failure",
+      "unsuccessful_steps": [
+        {
+          "step": 7,
+          "name": "🎭 安装Playwright浏览器",
+          "conclusion": "failure"
+        }
+      ],
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45398131150/job/138462301035"
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "observed_utc": "2026-11-25T06:38:59+00:00",
+  "test": "TestPerformanceMonitoring",
+  "go_version": "go version go1.25.6 darwin/amd64",
+  "argv": [
+    "go",
+    "test",
+    "-json",
+    "-count=1",
+    "-run",
+    "^TestPerformanceMonitoring$",
+    "./tests/performance"
+  ],
+  "isolated_archive_repetitions": [
+    {
+      "commit": "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
+      "exit": 0,
+      "case": "pass",
+      "internal_database_in_test_imports": false
+    },
+    {
+      "commit": "89f2eb9eace9a2f72f31375a83cc34d97289c4dc",
+      "exit": 1,
+      "case": "fail",
+      "internal_database_in_test_imports": true
+    }
+  ],
+  "linux_hosted_job": 138459274338,
+  "linux_and_local_signature": "panic: duplicate metrics collector registration attempted",
+  "descriptor": "db_connection_wait_seconds",
+  "type": "HistogramVec",
+  "labels": [
+    "database"
+  ],
+  "buckets": "prometheus.DefBuckets",
+  "initializer_locations": [
+    "internal/database/connection_pool.go:18",
+    "internal/monitoring/performance.go:102"
+  ],
+  "new_imports": [
+    "c9084ae:internal/router/router.go",
+    "2464646:internal/handlers/narrow_pilot_write.go"
+  ],
+  "failed_overlay_probe": "first temporary go overlay did not remove the observed original panic; excluded from positive evidence",
+  "counterfactual": {
+    "input_tree": "89f2eb9eace9a2f72f31375a83cc34d97289c4dc",
+    "location": "new disposable archive only",
+    "change": "remove the unused private monitoring field and its duplicate promauto registration; retain the database registration",
+    "original_file_sha256": "993b03766d3d7860778c9452138a81bad9bace8d8107ffdf4e01ab168f43aba0",
+    "alternative_file_sha256": "bfb3aad6a1c1574049885b32e2142f287027b264a9de5a9767a04ff9a92aa35d",
+    "argv": [
+      "go",
+      "test",
+      "-race",
+      "-count=2",
+      "-run",
+      "^TestPerformanceMonitoring$",
+      "-json",
+      "./tests/performance"
+    ],
+    "case_pass_count": 2,
+    "exit": 0
+  },
+  "limits": [
+    "No hosted re-run or application patch",
+    "Cause of hidden package output for benchmark and PGO not established by this check"
+  ]
+}
