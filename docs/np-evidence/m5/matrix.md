@@ -1,6 +1,6 @@
 # M5 作者验收逐项索引
 
-本页依据[冻结矩阵](../../plans/np-main-integration/implementation-and-acceptance-plan.md)分列直接观测、继承证据和待核对项。应用候选为 `49e5c15`。证据提交只增加验证材料。M6 总门禁见[作者结论](README.md)。
+本页依据[冻结矩阵](../../plans/np-main-integration/implementation-and-acceptance-plan.md)分列直接观测、继承证据和待核对项。应用候选为 `49e5c15`。证据提交只增加验证材料。Astra 已复审固定证据提交 `753b5b0`，适用 M5 门禁通过，M6 可进入独立复核与合成演练。M6 的实际结果另行记录。[总裁决](final-review.json)
 
 | 项 | 本轮结果和证据层级 |
 | --- | --- |

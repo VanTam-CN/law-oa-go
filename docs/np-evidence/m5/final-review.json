@@ -1,0 +1,61 @@
+{
+  "stage": "M5 author integration",
+  "status": "PASS",
+  "m6_admission": "GO for independent verification and synthetic rehearsal",
+  "m6_execution": "NOT_RUN",
+  "i11_baseline": "89f2eb9eace9a2f72f31375a83cc34d97289c4dc",
+  "application_revision": "49e5c153c01fd4d21abea99f2792eea279628a5b",
+  "reviewed_evidence_revision": "753b5b0709c6ad616e4bc457117b9c4ee7654cbd",
+  "reviewer": "6.2 Astra",
+  "review_method": "read-only fixed Git source and redacted execution records; no independent Astra runtime rerun",
+  "first_full_verdict": {
+    "revision": "60ae91b843caa8c4b6e252ac79909351bbe5a37f",
+    "decision": "HOLD",
+    "open_items": [
+      "I10/C10 revoked historical source and receipt reads",
+      "C12 generation failure and storage"
+    ]
+  },
+  "final_verdict": "Both gaps closed. No remaining M5 admission blockers under route B.",
+  "pg_route_b": {
+    "source_delta": 3,
+    "receipt_delta": 4,
+    "protected_rows_sha256_equal": true
+  },
+  "browser": {
+    "frozen_live_production_cases": 24,
+    "added_controlled_generation_failure": 1,
+    "failed_generation": "injected 503; actual external model not called"
+  },
+  "scope": {
+    "I12": "M6, NOT_RUN",
+    "I09_FILES": "DEFERRED/HOLD",
+    "ci": "I11 hosted baseline inherited; no new M5 hosted result",
+    "trial": "HOLD",
+    "merge": "HOLD",
+    "deployment": "HOLD"
+  },
+  "hermes_task": "t_5b8b79ec",
+  "native_create_risk": "t_a4646b57",
+  "owned_runtime_cleaned": true,
+  "evidence_sha256": {
+    "browser-controls.json": "1a2d347496d70e743bc5290b71114a197244b37a820dd35fa5c2c174ac126246",
+    "cache-paths.json": "f4c18861f4917d0fcc9377e023609d7358ec1278b58d629715b46bde8cb8f3df",
+    "conflict-matching.json": "6afe97a01c467e1465aac575f8efbb9f107df519e91c2d658df78e4afeba8ca4",
+    "conflict-native.json": "92c3f2c7057a9c444fc1d0af71a7738e6a51136b836d493f9ff575c4ba744694",
+    "conflict-source.json": "7d85f45127e8455f73d9927c91c10f731284a50ad8723abeeb7c3b0bca30e689",
+    "disconnect.json": "fe2ace93d7fb17190201edb2b4b1c8b0e47c4b8793abd2b18e0a3113692cef24",
+    "environment-and-browser.json": "82ce6dc619deef844904480e65f93c963ea8657d30d474ca755a0081547776b0",
+    "generation-failure.json": "dc33574b9e4d2cf6492949e55176667ba7e044b834fdcaba8b7a0298699ef480",
+    "history-faults.json": "0e134d7f4382154e4cadf5aa88a34bc02956677f99ad0d48f9987b2bb1b439cc",
+    "pg-service-checks.json": "3d9e334900ebf805ce6c9041aa7b58dbf7635fcd77b87f56251c254c83d94884",
+    "reopened.json": "6c4e3d14a80f2f4101844512e49d43c5e14cba7db163e6c95f1b6fbb2857e538",
+    "revoked-history.json": "8bd78c40a2010383194b69fdeaf947b2d45afa714f0a0064fed6619ae9f4614b",
+    "root-log-sample.json": "8a7a385e1b026d11967a62d4d43fc695d139603b16c06d30e92d9360cc8dee11",
+    "route-b.json": "d78a63b3a9d60e00bc2a74b08b946bb356ae8dab8bb2c33cbca5f402f9424e8d",
+    "session-boundaries.json": "49afff0b885b33b0155137a43b778057f491ca8820a49ec487b6f544d634e55c",
+    "source-conflict.json": "7640bc88bd7546cd05134adb57ad29cb016ba29671dc4637753c58c6ac22dc89",
+    "unmigrated.json": "05e2c654625afd7f8b99f3b8215d420f939b6c03ef1bfe45964a3ff0aeb9ac82",
+    "worker-checks.json": "e40369245d22a617d0c9db91181259c52db2f21b80894661ba5df4f1ae5e76db"
+  }
+}
