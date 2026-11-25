@@ -16,9 +16,6 @@ def read(name):
     return (work / name).read_text()
 
 
-assert read("passed").strip() == "M6_I12_REHEARSAL_PASS"
-
-
 def read_json(name):
     return json.loads(read(name))
 

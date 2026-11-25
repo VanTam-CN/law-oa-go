@@ -175,4 +175,6 @@ topology
 [[ $(baseline_tables) == "$baseline" ]]
 printf '%s\n' "$baseline" >"$work/baseline-tables.sha256"
 printf '%s\n' "$oids" >"$work/verified-table-oids"
+"$py" scripts/np-m6/evidence.py >"$work/evidence.tmp"
+mv "$work/evidence.tmp" "$work/evidence.json"
 echo M6_I12_REHEARSAL_PASS | tee "$work/passed"
