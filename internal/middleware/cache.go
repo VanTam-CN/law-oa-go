@@ -65,6 +65,7 @@ func CacheMiddleware(config CacheConfig) gin.HandlerFunc {
 		// 尝试从缓存获取
 		if cached, found := getCachedResponse(c, cacheKey, config); found {
 			writeCachedResponse(c, cached)
+			c.Abort()
 			return
 		}
 
