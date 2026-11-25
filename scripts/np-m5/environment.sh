@@ -28,7 +28,7 @@ remove_owned() {
   rm "$file"
 }
 case ${1:-} in
-  init)
+  init|init-v14)
     [[ ! -e "$work/env" && ! -e "$work/network" ]] || exit 2
     docker network create --internal --label "$label" "$network" >"$work/network"
     docker network create --label "$label" "$network-ingress" >"$work/ingress"
@@ -73,14 +73,16 @@ case ${1:-} in
     [[ $("$psql_bin" -XwAt "$NP_TEST_DSN" -c "select current_database() || ':' || current_user || ':' || current_setting('server_version_num')") == np_first_slice_dev:np_m1:160014 ]]
     [[ $(docker exec "$NP_REDIS_CID" redis-cli ping) == PONG ]]
     bash scripts/np-m5/environment.sh build
-    src="$work/source-$(git rev-parse HEAD)"
+    src="$work/source-$(git rev-parse "${NP_M5_BUILD_REVISION:-HEAD}^{commit}")"
     (cd "$src" && go run ./cmd/migrate -command bootstrap) >"$work/bootstrap.log" 2>&1
-    bash "$src/scripts/np-first-slice/apply-main-np86.sh" >"$work/schema.log" 2>&1
+    if [[ "$1" == init ]]; then
+      bash "$src/scripts/np-first-slice/apply-main-np86.sh" >"$work/schema.log" 2>&1
+    fi
     ;;
   build)
     # Go can stamp the enclosing repository when a linked worktree is nested in it.
     # A detached, clean clone makes the embedded revision independently checkable.
-    sha=$(git rev-parse HEAD)
+    sha=$(git rev-parse "${NP_M5_BUILD_REVISION:-HEAD}^{commit}")
     src="$work/source-$sha"
     [[ ! -e "$src" ]] || exit 2
     git clone --quiet --local --no-checkout "$root" "$src"
@@ -136,5 +138,5 @@ case ${1:-} in
     for name in app forward redis pg; do remove_owned container "$work/$name"; done
     remove_owned network "$work/network"
     remove_owned network "$work/ingress" ;;
-  *) echo 'expected init, build, root or clean' >&2; exit 2 ;;
+  *) echo 'expected init, init-v14, build, root or clean' >&2; exit 2 ;;
 esac
