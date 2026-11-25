@@ -72,9 +72,10 @@ case ${1:-} in
     done
     [[ $("$psql_bin" -XwAt "$NP_TEST_DSN" -c "select current_database() || ':' || current_user || ':' || current_setting('server_version_num')") == np_first_slice_dev:np_m1:160014 ]]
     [[ $(docker exec "$NP_REDIS_CID" redis-cli ping) == PONG ]]
-    go run ./cmd/migrate -command bootstrap >"$work/bootstrap.log" 2>&1
-    bash scripts/np-first-slice/apply-main-np86.sh >"$work/schema.log" 2>&1
     bash scripts/np-m5/environment.sh build
+    src="$work/source-$(git rev-parse HEAD)"
+    (cd "$src" && go run ./cmd/migrate -command bootstrap) >"$work/bootstrap.log" 2>&1
+    bash "$src/scripts/np-first-slice/apply-main-np86.sh" >"$work/schema.log" 2>&1
     ;;
   build)
     # Go can stamp the enclosing repository when a linked worktree is nested in it.
@@ -95,12 +96,15 @@ case ${1:-} in
     grep -Fqx "$(printf '\tbuild\tvcs.revision=%s' "$sha")" "$work/build-info"
     grep -Fqx "$(printf '\tbuild\tvcs.modified=false')" "$work/build-info"
     mv "$work/bin/root.next" "$work/bin/root"
+    (cd "$work/bin" && shasum -a 256 root) >"$work/binary.sha256"
 
     ;;
   root)
     . "$work/env"
     : "${NP_ASSISTANT_ACTORS?specify an actor list or an explicitly empty value}"
     [[ -x "$work/bin/root" && -s "$work/network" ]] || exit 2
+    (cd "$work/bin" && shasum -a 256 -c "$work/binary.sha256")
+    diff -q <(go version -m "$work/bin/root" | tail -n +2) <(tail -n +2 "$work/build-info") >/dev/null
     pg=$(cat "$work/pg")
     [[ $(docker inspect -f '{{index .Config.Labels "law-oa-m5"}}' "$pg") == "$(basename "$work")" ]]
     if [[ $(docker exec "$pg" psql -U "$DB_USERNAME" -d "$DB_DATABASE" -Atc 'SHOW ssl') == off ]]; then
@@ -119,7 +123,12 @@ case ${1:-} in
       -e ONLYOFFICE_ENABLED=false -e EXTERNAL_HEALTHCHECK_ENABLED=false "$runtime_image" /fixture/root >/dev/null
     for ((i=0;i<60;i++)); do
       if [[ $(docker inspect -f '{{.State.Running}}' "$(cat "$work/app")") != true ]]; then echo M5_ROOT_EXITED >&2; exit 1; fi
-      if curl -fs --noproxy '*' --max-time 2 http://127.0.0.1:18789/health/live >/dev/null; then echo M5_ROOT_LIVE; exit 0; fi
+      if curl -fs --noproxy '*' --max-time 2 http://127.0.0.1:18789/health/live >/dev/null; then
+        live_sha=$(docker exec "$(cat "$work/app")" sha256sum /fixture/root)
+        [[ "${live_sha%% *}" == "$(cut -d ' ' -f1 "$work/binary.sha256")" ]]
+        echo M5_ROOT_LIVE
+        exit 0
+      fi
       sleep 1
     done
     exit 1 ;;
