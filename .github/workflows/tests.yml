@@ -186,8 +186,15 @@ jobs:
 
       - name: 📊 合并覆盖率报告
         run: |
-          go install github.com/wadey/gocovmerge@latest
-          gocovmerge coverage-unit.out coverage-integration.out > coverage.out
+          tools_dir=$(mktemp -d)
+          trap 'rm -rf "$tools_dir"' EXIT
+          (
+            cd "$tools_dir"
+            go mod init ci-tools
+            go mod edit -go=1.25.0 -require=github.com/wadey/gocovmerge@v0.0.0-20160331181800-b5bfa59ec0ad -require=golang.org/x/tools@v0.35.0
+            GOTOOLCHAIN=local go build -mod=mod -o gocovmerge github.com/wadey/gocovmerge
+          )
+          "$tools_dir/gocovmerge" coverage-unit.out coverage-integration.out > coverage.out
 
       - name: Record pilot Go coverage
         if: (github.head_ref == 'codex/np-main-m2' || github.head_ref == 'codex/np-main-m3' || (github.head_ref == 'codex/np-main-i11' && github.event.pull_request.head.repo.full_name == github.repository))
@@ -207,8 +214,18 @@ jobs:
       - name: 📋 生成测试报告
         if: always()
         run: |
-          go install github.com/jstemmer/go-junit-report/v2@latest
-          go test -v ./... 2>&1 | go-junit-report -set-exit-code > report.xml
+          report_dir=$(mktemp -d)
+          trap 'rm -rf "$report_dir"' EXIT
+          GOTOOLCHAIN=local GOBIN="$report_dir" go install github.com/jstemmer/go-junit-report/v2@v2.1.0
+          test_rc=0
+          junit_rc=0
+          go test -json ./... > "$report_dir/events.jsonl" 2> "$report_dir/test.stderr" || test_rc=$?
+          "$report_dir/go-junit-report" -parser gojson -set-exit-code < "$report_dir/events.jsonl" > report.xml 2> "$report_dir/junit.stderr" || junit_rc=$?
+          echo "Go test exit=$test_rc; JUnit exit=$junit_rc"
+          if (( test_rc != 0 || junit_rc != 0 )); then
+            jq -r 'select(.Action == "fail") | .Package // empty | select(test("^law-oa-go(/[A-Za-z0-9._-]+)*$"))' "$report_dir/events.jsonl" 2>/dev/null | sort -u
+            exit 1
+          fi
 
       - name: 📊 上传测试报告
         uses: actions/upload-artifact@v4
