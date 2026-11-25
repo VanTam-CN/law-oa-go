@@ -13,11 +13,20 @@ groups = {
 required = {f"Benchmark{group}/{name}" for group, names in groups.items() for name in names.split()}
 counts = {}
 failed = False
+pending = None
 with open(sys.argv[1], encoding="utf-8", errors="replace") as output:
     for line in output:
-        result = re.match(r"^(Benchmark[\w/]+?)(?:-\d+)?\s+([1-9]\d*)\s+[\d.]+\s+ns/op\b", line)
-        if result and result[1] in required:
-            counts[result[1]] = int(result[2])
+        # Go prints the name before calibrating. Application logs can separate it from its numeric row.
+        label = re.match(r"^(Benchmark[\w/]+?)(?:-\d+)?(?:\s+|$)", line)
+        if label:
+            pending = label[1] if label[1] in required else None
+        elif re.match(r"^(?:Benchmark|goos:|pkg:|ok\s|PASS\b|FAIL\b|\s*--- (?:FAIL|SKIP):)", line):
+            pending = None
+        metrics = line[label.end():] if label else line
+        result = re.fullmatch(r"\s*([1-9]\d*)\s+[\d.]+\s+ns/op(?:\s+[\d.]+\s+[^\s]+)*\s*", metrics)
+        if pending and result:
+            counts[pending] = int(result[1])
+            pending = None
         failure = re.match(r"^\s*--- FAIL: ([\w/]+)(?: |$)", line)
         if not failed and failure and failure[1] in required:
             print("BENCH_FAILURE", failure[1])
