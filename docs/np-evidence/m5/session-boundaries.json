@@ -43,5 +43,14 @@
   },
   "auth_redis_registration_and_logout_observed": true,
   "sensitive_create_after_logout": 401,
+  "sensitive_create_expired": 401,
+  "sensitive_create_after_revoke": 401,
+  "second_active_lawyer": {
+    "assistant_enabled": false,
+    "self": 200,
+    "other": 403,
+    "missing": 404,
+    "create_context": 403
+  },
   "restored_registration_and_active_role_verified": true
 }

@@ -124,6 +124,27 @@ call("POST","auth/logout",{"token":token})
 call("POST",context,body,401)
 logout_revocation_recorded=redis_exists("blacklist:"+key) or not redis_exists("access_token:"+key)
 assert logout_revocation_recorded
+# Repeat the worker's expiry/revocation on the clone using the approved actor.
+def signin(user):
+    return call("POST","auth/login",{"account":user["username"],"password":os.environ["NP_BROWSER_PASSWORD"]})["data"]["token"]
+token=signin(seed)
+claim=token.split(".")[1]
+current_key=json.loads(base64.urlsafe_b64decode(claim+"="*(-len(claim)%4)))["uuid"]
+assert re.fullmatch("[a-f0-9]{32}", current_key)
+assert sql(f"UPDATE auth_token_sessions SET access_token_expires=now()-interval '1 second' WHERE user_id={actor} AND access_token_uuid='{current_key}' RETURNING user_id")==str(actor)
+call("POST",context,body,401)
+token=signin(seed)
+call("POST","auth/revoke/user",{"user_id":actor})
+call("POST",context,body,401)
+other=json.loads(Path(os.environ["NP_BROWSER_OTHER_SEED"]).read_text())
+assert int(other["actor_id"])!=actor
+token=signin(other)
+assert call("GET","case-intake-assist/capabilities")["data"]["enabled"] is False
+other_detail=call("GET","case-intakes/"+other["target"])["data"]
+assert other_detail["intake"]["id"]==other["target"]
+call("POST",context,{"intake_id":other["target"],"expected_revision":other_detail["revision"]},403)
+call("GET","case-intakes/"+target,expected=403)
+call("GET","case-intakes/"+str(uuid.uuid4()),expected=404)
 print(json.dumps({"gates":["I03","I04","I13"],"root":"dedicated migrated clone, same verified binary",
     "identity_values":{"actual_nonempty_plaintexts":2,"actual_pg_ciphertexts":2,"actual_pg_digests":2,
                        "routes_checked":["canonical","workbench_alias"],"matches_in_full_response":0},
@@ -131,4 +152,6 @@ print(json.dumps({"gates":["I03","I04","I13"],"root":"dedicated migrated clone, 
     "ethical_wall":{"closed":403,"explicit_grant":200,"withdrawn_alias":403,"existing_context":403,"reviewed_source_save":403,
                     "intake_row_sources_and_receipts_unchanged":True,"restored_native_access":200},
     "auth_redis_registration_and_logout_observed":True,"sensitive_create_after_logout":401,
+    "sensitive_create_expired":401,"sensitive_create_after_revoke":401,
+    "second_active_lawyer":{"assistant_enabled":False,"self":200,"other":403,"missing":404,"create_context":403},
     "restored_registration_and_active_role_verified":True},indent=2))
