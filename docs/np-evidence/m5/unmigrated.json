@@ -1,0 +1,17 @@
+{
+  "gate": "I14 unmigrated compatibility control",
+  "scope": "isolated synthetic PG v14, no migration 86, dedicated Redis; native root API",
+  "command": "bash scripts/np-m5/legacy-baseline.sh",
+  "exit_code": 0,
+  "finished_utc": "2026-11-25T02:58:52.426061+00:00",
+  "script_sha256": "6a41b765af2e9a5a9e818c72c6b80da22f6db9c8ef58dc528b0d8422b4a19ae1",
+  "old_root_commit": "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
+  "old_binary_sha256": "d4f96364133c311a7900bbb72bb41588ef76a3a015d772e8d730db10c4a0cfb7",
+  "candidate_commit": "49e5c153c01fd4d21abea99f2792eea279628a5b",
+  "candidate_binary_sha256": "213bb27532851e03bcc17ee630665e6fd2edd914cc1b711b477269decfae48d0",
+  "native_login_create_update_reopen": "PASS",
+  "persisted_expected_rows": 1,
+  "candidate_process_exit": 1,
+  "candidate_rejected_for": "000086 schema mismatch",
+  "baseline_and_absence_of_86_checked_before_and_after": true
+}
