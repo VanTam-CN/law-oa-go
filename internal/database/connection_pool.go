@@ -11,15 +11,12 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"law-oa-go/internal/config"
+	"law-oa-go/internal/dbmetrics"
 )
 
 // 数据库连接池相关的Prometheus指标
 var (
-	dbConnectionWaitTime = promauto.NewHistogramVec(prometheus.HistogramOpts{
-		Name:    "db_connection_wait_seconds",
-		Help:    "Time spent waiting for database connections",
-		Buckets: prometheus.DefBuckets,
-	}, []string{"database"})
+	dbConnectionWaitTime = dbmetrics.DBConnectionWaitTime()
 
 	dbConnectionErrors = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "db_connection_errors_total",
