@@ -172,13 +172,7 @@ func main() {
 	// 应用性能监控中间件
 	app.Use(metrics.PrometheusMiddleware())
 
-	// 应用缓存中间件
-	app.Use(middleware.CacheMiddleware(middleware.CacheConfig{
-		TTL:        5 * time.Minute,
-		SkipHeader: "X-Cache-Skip",
-	}))
-
-	// 初始化路由系统
+	// 路由完成访问检查后才能复用响应，因此不在全局挂载响应缓存。
 	db := database.GetOptimizedDB().DB
 	if cfg.IsProduction() {
 		if err := validateProductionSchema(db); err != nil {
