@@ -1,0 +1,11 @@
+{
+  "gate": "I05",
+  "input": "route B after final manual save",
+  "status": "PASS",
+  "list_detail_alias_pg_revision_equal": true,
+  "canonical_and_alias_description_equal": true,
+  "source_count": 3,
+  "receipt_count": 4,
+  "whole_target_and_protected_records_unchanged": true,
+  "protected_sha256": "e41254200e3e13227b8bec819629116cc11d83174a4a1ce447a8f8cbee7beac7"
+}
