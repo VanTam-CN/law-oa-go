@@ -1,0 +1,201 @@
+{
+  "gate": "I12",
+  "scope": "synthetic root upgrade / restart / protected rollback",
+  "status": "PASS",
+  "app_runtime": [
+    {
+      "stage": "legacy",
+      "embedded_commit": "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
+      "running_binary_sha256": "d4f96364133c311a7900bbb72bb41588ef76a3a015d772e8d730db10c4a0cfb7"
+    },
+    {
+      "stage": "candidate",
+      "embedded_commit": "49e5c153c01fd4d21abea99f2792eea279628a5b",
+      "running_binary_sha256": "213bb27532851e03bcc17ee630665e6fd2edd914cc1b711b477269decfae48d0"
+    },
+    {
+      "stage": "restart",
+      "embedded_commit": "49e5c153c01fd4d21abea99f2792eea279628a5b",
+      "running_binary_sha256": "213bb27532851e03bcc17ee630665e6fd2edd914cc1b711b477269decfae48d0"
+    },
+    {
+      "stage": "rollback",
+      "embedded_commit": "89f2eb9eace9a2f72f31375a83cc34d97289c4dc",
+      "running_binary_sha256": "173483274b1662494ed778cc12c56ee72115d9a07974683f58babf4de45c471a"
+    }
+  ],
+  "migration_observations": {
+    "partial": "partial 000086 state",
+    "permission": "permission denied for table case_intakes",
+    "append": "first apply: appending frozen 000086",
+    "mismatch": "shared catalog check returned not-ready",
+    "repeat": "repeat: verify-only mode"
+  },
+  "frozen_migration_sha256": "415ef4f4b4a0437a403988810c52c3dca213fd0f6a9d9654d8161106fb7c3be2",
+  "shared_catalog_check_sha256": "22e2322716e7945b5b38fff5a9e1991dc129cf5c9f0df35b0c742d6678ddc55a",
+  "baseline_public_table_names_and_oids_sha256": "2f2b7161020d373e7b121e280222f2e815d8a3bf77ec90cd6d1b167a61c52e3d",
+  "np_table_oids_retained": true,
+  "business_api": [
+    {
+      "step": "legacy-create",
+      "old_native_save_and_reopen": true,
+      "pg_row_sha256": "35cb1029e8311a090b1070dbcde80d422705c3a4c66caf83fff19cb31916306f"
+    },
+    {
+      "step": "legacy-verify",
+      "stale_revision": 409,
+      "valid_version_save_on_unprotected_draft": false,
+      "old_tab_native_get": 200,
+      "old_full_save": 409,
+      "whole_pg_row_unchanged_after_rejected_requests": true
+    },
+    {
+      "step": "open",
+      "assistant_enabled": true,
+      "fresh_context_http": 200,
+      "previous_context_http": null
+    },
+    {
+      "step": "restarted",
+      "assistant_enabled": true,
+      "fresh_context_http": 200,
+      "previous_context_http": 409
+    },
+    {
+      "step": "disabled",
+      "assistant_enabled": false,
+      "fresh_context_http": 403,
+      "previous_context_http": 409
+    },
+    {
+      "step": "legacy-final",
+      "stale_revision": 409,
+      "valid_version_save_on_unprotected_draft": true,
+      "old_tab_native_get": 200,
+      "old_full_save": 409,
+      "whole_pg_row_unchanged_after_rejected_requests": true
+    }
+  ],
+  "lifecycle": {
+    "gate": "M6-I12-switch-evidence",
+    "stages": [
+      "legacy",
+      "candidate",
+      "restart",
+      "rollback"
+    ],
+    "lifecycles": 4,
+    "distinct_ids": 3,
+    "restart_reuses_candidate_id": true,
+    "events_after_dedupe": 8,
+    "duplicates_removed": 0,
+    "same_image_all_generations": true,
+    "image": "alpine:3.20",
+    "peak_concurrent_roots": 1,
+    "generations": [
+      {
+        "stage": "legacy",
+        "occurrence": 0,
+        "start_ms": 0.0,
+        "end_ms": 2409.351,
+        "duration_ms": 2409.351
+      },
+      {
+        "stage": "candidate",
+        "occurrence": 0,
+        "start_ms": 5011.972,
+        "end_ms": 8179.207,
+        "duration_ms": 3167.235
+      },
+      {
+        "stage": "restart",
+        "occurrence": 1,
+        "start_ms": 8532.326,
+        "end_ms": 10545.104,
+        "duration_ms": 2012.778
+      },
+      {
+        "stage": "rollback",
+        "occurrence": 0,
+        "start_ms": 11456.385,
+        "end_ms": 14240.091,
+        "duration_ms": 2783.705
+      }
+    ],
+    "transition_gaps_ms": {
+      "legacy:candidate": 2602.621,
+      "candidate:restart": 353.119,
+      "restart:rollback": 911.281
+    },
+    "all_checks_pass": true
+  },
+  "stopped_root_empty_http_windows": 4,
+  "database_snapshots_equal": [
+    "seeded",
+    "verify-only",
+    "restarted",
+    "rolled-back"
+  ],
+  "ledger": {
+    "source_rows": 1,
+    "draft_sha256": "e0cc37b1e1452dcf4492d89346253327b883197189bee55e88a4b00f51d3395f",
+    "receipt_rows": 3,
+    "abandoned_rows": 1,
+    "committed_rows": 2,
+    "sources_sha256": "1d6d4f7942ee6f357e7127b4030a5ab05694296f7b32ba65d85d39d37beb2186",
+    "receipts_sha256": "edc0703054194716653314fb143d42e9c721a734a4bb76430715a3d4c8600baa",
+    "tombstones_sha256": "61f4089ef0fe00d5a3b4cd0322166bc1c75d07692fa8cf0b673d6c7878507a18",
+    "current_pointer_empty": true
+  },
+  "protocol": {
+    "seed": {
+      "passed_checks": [
+        "S01 pristine ledger",
+        "S02 reviewed candidate with source",
+        "S03 source commit identity",
+        "S04 current reviewed source",
+        "S05 manual commit clears current source",
+        "S06 unknown before explicit abandon",
+        "S07 persisted abandon identity"
+      ],
+      "raw_sha256": "5be43af7b23abc1d1ef94a4682eb557b4c416bfb6e24f3c369286a7f9947a8cd"
+    },
+    "repeat": {
+      "passed_checks": [
+        "V01 current draft after manual save",
+        "V02 historical source exact",
+        "V03 original receipt identities and revisions",
+        "V04 replay committed result",
+        "V05 changed payload on same key rejected",
+        "V06 tombstone blocks late original",
+        "V07 legacy save blocked by historical source"
+      ],
+      "raw_sha256": "148636f84c6d80a9ff0155fe8bf28ec05862a3f31472a053585d9ece0a285a90"
+    },
+    "restart": {
+      "passed_checks": [
+        "V01 current draft after manual save",
+        "V02 historical source exact",
+        "V03 original receipt identities and revisions",
+        "V04 replay committed result",
+        "V05 changed payload on same key rejected",
+        "V06 tombstone blocks late original",
+        "V07 legacy save blocked by historical source"
+      ],
+      "raw_sha256": "148636f84c6d80a9ff0155fe8bf28ec05862a3f31472a053585d9ece0a285a90"
+    },
+    "rollback": {
+      "passed_checks": [
+        "V01 current draft after manual save",
+        "V02 historical source exact",
+        "V03 original receipt identities and revisions",
+        "V04 replay committed result",
+        "V05 changed payload on same key rejected",
+        "V06 tombstone blocks late original",
+        "V07 legacy save blocked by historical source"
+      ],
+      "raw_sha256": "148636f84c6d80a9ff0155fe8bf28ec05862a3f31472a053585d9ece0a285a90"
+    }
+  },
+  "container_events_raw_sha256": "8a1f90ddd33252488d15811383e99b985c11f4d17594adb7be1d24f881c56bbd"
+}
