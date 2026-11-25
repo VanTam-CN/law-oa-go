@@ -7,13 +7,13 @@
   "exit_code": 0,
   "harness_sha256": {
     "scripts/np-m5/disconnect.py": "822e2672c5a2dbf99fbb04c3f900ee27bc41e17b8d003a2d0e728846271d93b5",
-    "scripts/np-m5/static-proxy.mjs": "aae748de7d104bcc3c1cfcd12b6d3235052524cbcb7dc98c7f8d83274a2f17a2"
+    "scripts/np-m5/static-proxy.mjs": "fd5aa6248e0f6f72d87a0cde99622b8466252a2ddc223bc307861388e5082876"
   },
   "proxy_events": [
     {
-      "ts": "2026-11-25T02:42:48.439Z",
+      "ts": "2026-11-25T02:47:28.452Z",
       "stage": "before-forward",
-      "key_sha256": "4c5430059dbe8815a33ed63a68a33504cec9302d51328725e0edee002408280a",
+      "key_sha256": "aa8596f487175c878dd4d0f1abf789eab7b27bc7f82983e3a1fef9d976aec6e9",
       "upstream_status": null,
       "client_dropped": true,
       "receipt_status": 200,
@@ -22,9 +22,9 @@
       "receipt_committed": false
     },
     {
-      "ts": "2026-11-25T02:42:48.643Z",
+      "ts": "2026-11-25T02:47:28.653Z",
       "stage": "after-commit",
-      "key_sha256": "d51c2730833a77c806612e810444fd3f8cdfef0dcbd94499d91308e9542f6ff5",
+      "key_sha256": "9ac749f36311279663688eb9f614d0e61bfba39c8f92345f63efd37758732a24",
       "upstream_status": 200,
       "client_dropped": true,
       "receipt_status": 200,
@@ -42,7 +42,7 @@
       "identical_replay": 200,
       "different_replay": 409,
       "receipt_delta": 2,
-      "protected_sha256": "715937ee008884bc9b6b166092e973507b69417f9a134f4cf761584a3c1fd852"
+      "protected_sha256": "bbdd1e7c3ff78788d3a40fb99f8a9914cec070cafd82bf719265f801e2b35e1b"
     },
     {
       "gate": "I08-in-flight",
@@ -55,12 +55,13 @@
     {
       "gate": "I08-correlation",
       "pg_receipt_states": {
-        "10d58d75974815febad2b8dcda2595038bc60d35072e57caf45473186531e711": "abandoned",
-        "4c5430059dbe8815a33ed63a68a33504cec9302d51328725e0edee002408280a": "abandoned",
-        "d51c2730833a77c806612e810444fd3f8cdfef0dcbd94499d91308e9542f6ff5": "committed"
+        "9ac749f36311279663688eb9f614d0e61bfba39c8f92345f63efd37758732a24": "committed",
+        "aa8596f487175c878dd4d0f1abf789eab7b27bc7f82983e3a1fef9d976aec6e9": "abandoned",
+        "e2b9d5ff644b3bfb807f5470423339ba026b923cf27653550685b3e7a05ea814": "abandoned"
       },
       "proxy_events_checked": 2
     }
   ],
-  "scope": "fresh synthetic actor and target. Faults before forwarding, after the real PG waiter has been observed, and after successful root response. PG records identified by object, actor and request-key hash."
+  "scope": "fresh synthetic actor and target. Faults before forwarding, after the real PG waiter has been observed, and after successful root response. PG records identified by object, actor and request-key hash.",
+  "harness_revision": "a0e0e382f41127bfa76c63683c8be2e7b8292fed"
 }

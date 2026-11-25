@@ -59,6 +59,59 @@
       "linked": 1,
       "manual": 0,
       "go_digest_matched": null
+    },
+    {
+      "suite": "editing",
+      "runs": [
+        {
+          "startTime": "2026-11-25T02:45:33.120Z",
+          "duration": 4778.237,
+          "expected": 1
+        },
+        {
+          "startTime": "2026-11-25T02:46:33.346Z",
+          "duration": 7088.279,
+          "expected": 1
+        },
+        {
+          "startTime": "2026-11-25T02:47:35.907Z",
+          "duration": 6492.1720000000005,
+          "expected": 1
+        }
+      ],
+      "protected_sha256": "59b1f869c8853d3a2ce3aa91d2283dc5c9311825f0d9fa122fb1499ada7172c0",
+      "target_whole_row_unchanged": false,
+      "target_materials": 2,
+      "protected_parties": 2,
+      "sources": 1,
+      "receipts": 2,
+      "linked": 1,
+      "manual": 0,
+      "go_digest_matched": null
+    },
+    {
+      "suite": "legacy",
+      "runs": [
+        {
+          "startTime": "2026-11-25T02:48:44.454Z",
+          "duration": 6277.088000000001,
+          "expected": 1
+        },
+        {
+          "startTime": "2026-11-25T02:49:46.140Z",
+          "duration": 3037.632,
+          "expected": 1
+        }
+      ],
+      "protected_sha256": "6e2eb11b2dbfedd3ae9ba549fca07607e38c1d39d01f99d53d162b6a1334cbe1",
+      "target_whole_row_unchanged": false,
+      "target_materials": 2,
+      "protected_parties": 2,
+      "sources": 0,
+      "receipts": 1,
+      "linked": 0,
+      "manual": 1,
+      "go_digest_matched": null
     }
   ],
   "checker": "scripts/np-m5/check-browser.py, duplicate report rejected",
@@ -74,6 +127,23 @@
   "limits": [
     "tabs: B pre-forward abort and collection barrier are controlled by Playwright; I08 needs external TCP evidence",
     "selection: recovery is live; the facts-confirmation and conflict-check responses are UI fixtures. I15 is separate.",
-    "navigation: initial mixed load observed an HTTP 429; final run used the unchanged limiter and all five names passed once."
-  ]
+    "navigation: initial mixed load observed an HTTP 429; final run used the unchanged limiter and all five names passed once.",
+    "editing: first mixed-load run missed the target draft during navigation; the paced final window passed all three cases exactly once. The checker was invoked separately after a concurrent edit of the shell runner; the committed runner passed bash -n and was run unchanged for legacy."
+  ],
+  "backend_controls": {
+    "passed": [
+      "TestNativeHistoryLookupFailureBlocksFullSave",
+      "TestNPPostgresSaveReopenConcurrencyAndReceipts",
+      "TestNPPostgresParallelWritersAndBusyAbandon",
+      "TestNPPostgresSourcePermissionsAndStrictBoundary",
+      "TestNPPostgresNativeCannotForgeSourcePointer",
+      "TestNarrowPilotAuditSkipsSensitiveBodyBeforeRead",
+      "TestOptimizedDatabaseSlowQueryLogDoesNotLeakParameters"
+    ],
+    "scope": "PG handler fixtures, independent middleware and logging tests; not root HTTP",
+    "race": true,
+    "exit_code": 0,
+    "first_test_event_utc": "2026-11-25T10:46:57.361683+08:00",
+    "last_test_event_utc": "2026-11-25T10:47:12.6876+08:00"
+  }
 }
