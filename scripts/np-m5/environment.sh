@@ -74,13 +74,28 @@ case ${1:-} in
     [[ $(docker exec "$NP_REDIS_CID" redis-cli ping) == PONG ]]
     go run ./cmd/migrate -command bootstrap >"$work/bootstrap.log" 2>&1
     bash scripts/np-first-slice/apply-main-np86.sh >"$work/schema.log" 2>&1
+    bash scripts/np-m5/environment.sh build
+    ;;
+  build)
+    # Go can stamp the enclosing repository when a linked worktree is nested in it.
+    # A detached, clean clone makes the embedded revision independently checkable.
+    sha=$(git rev-parse HEAD)
+    src="$work/source-$sha"
+    [[ ! -e "$src" ]] || exit 2
+    git clone --quiet --local --no-checkout "$root" "$src"
+    git -C "$src" checkout --quiet --detach "$sha"
     case $(docker info --format '{{.Architecture}}') in
       aarch64|arm64) arch=arm64 ;;
       x86_64|amd64) arch=amd64 ;;
       *) echo "Unsupported Docker CPU" >&2; exit 2 ;;
     esac
     mkdir -p "$work/bin"
-    CGO_ENABLED=0 GOOS=linux GOARCH="$arch" go build -trimpath -o "$work/bin/root" .
+    (cd "$src" && CGO_ENABLED=0 GOOS=linux GOARCH="$arch" go build -trimpath -o "$work/bin/root.next" .)
+    go version -m "$work/bin/root.next" >"$work/build-info"
+    grep -Fqx "$(printf '\tbuild\tvcs.revision=%s' "$sha")" "$work/build-info"
+    grep -Fqx "$(printf '\tbuild\tvcs.modified=false')" "$work/build-info"
+    mv "$work/bin/root.next" "$work/bin/root"
+
     ;;
   root)
     . "$work/env"
@@ -112,5 +127,5 @@ case ${1:-} in
     for name in app forward redis pg; do remove_owned container "$work/$name"; done
     remove_owned network "$work/network"
     remove_owned network "$work/ingress" ;;
-  *) echo 'expected init, root or clean' >&2; exit 2 ;;
+  *) echo 'expected init, build, root or clean' >&2; exit 2 ;;
 esac
