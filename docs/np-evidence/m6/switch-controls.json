@@ -1,0 +1,17 @@
+{
+  "gate": "M6-I12-switch-self-test",
+  "self_test_pass": true,
+  "cases": {
+    "dedupe_positive": true,
+    "valid_positive": true,
+    "four_stage_names": true,
+    "restart_not_candidate": true,
+    "missing_die": true,
+    "overlap": true,
+    "extra_root": true,
+    "image_mismatch": true,
+    "base_image_root": true,
+    "label_mismatch": true,
+    "restart_reuse_mismatch": true
+  }
+}
