@@ -18,7 +18,7 @@ with open(sys.argv[1], encoding="utf-8", errors="replace") as output:
         result = re.match(r"^(Benchmark[\w/]+?)(?:-\d+)?\s+([1-9]\d*)\s+[\d.]+\s+ns/op\b", line)
         if result and result[1] in required:
             counts[result[1]] = int(result[2])
-        failure = re.match(r"^\s*--- FAIL: ([\w/]+) \(", line)
+        failure = re.match(r"^\s*--- FAIL: ([\w/]+)(?: |$)", line)
         if not failed and failure and failure[1] in required:
             print("BENCH_FAILURE", failure[1])
             failed = True
