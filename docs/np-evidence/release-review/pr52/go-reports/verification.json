@@ -1,0 +1,575 @@
+{
+  "hermes": "t_a397c2ab",
+  "baseline": "596f8480f619e730411d6fc9af0134e74b06ef46",
+  "prior_go_job": 139047819429,
+  "go_version": "1.25.0",
+  "before": {
+    "coverage_install_exit": 1,
+    "dependency": "golang.org/x/tools v0.53.0 requires go >= 1.26.0",
+    "tagged_and_unit_stdout_replay": [
+      {
+        "step": "unit",
+        "input": "full",
+        "rc": 1,
+        "cases": 920,
+        "failures": 0,
+        "errors": 1
+      },
+      {
+        "step": "unit",
+        "input": "without_warning",
+        "rc": 0,
+        "cases": 919,
+        "failures": 0,
+        "errors": 0
+      },
+      {
+        "step": "integration",
+        "input": "full",
+        "rc": 1,
+        "cases": 946,
+        "failures": 0,
+        "errors": 1
+      },
+      {
+        "step": "integration",
+        "input": "without_warning",
+        "rc": 0,
+        "cases": 945,
+        "failures": 0,
+        "errors": 0
+      }
+    ],
+    "original_third_run": {
+      "go_exit": 0,
+      "junit_exit": 0,
+      "result": {
+        "cases": 941,
+        "failures": 0,
+        "errors": 0,
+        "skips": 29
+      },
+      "fresh_go_runs": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "fixtures": {
+    "warning_legacy": {
+      "cases": 3,
+      "failures": 0,
+      "errors": 1,
+      "skips": 0
+    },
+    "warning_json": {
+      "cases": 2,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    },
+    "assertion_json": {
+      "cases": 2,
+      "failures": 1,
+      "errors": 0,
+      "skips": 0
+    },
+    "compiler_error_json": {
+      "cases": 1,
+      "failures": 0,
+      "errors": 1,
+      "skips": 0
+    }
+  },
+  "coverage_reference": {
+    "unit_and_integration_exit_codes": [
+      0,
+      0
+    ],
+    "real_merged_profile_sha256": "a00e2590eb3919c31947d51de23a22dbb24f4418f5bc749368041422f5645b8b",
+    "synthetic_merged_counts": [
+      3,
+      2,
+      1
+    ]
+  },
+  "candidate": "71ebc94dbacd5cda18ddd44e8de2df43c23a3ef9",
+  "pr": {
+    "baseRefOid": "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
+    "headRefOid": "71ebc94dbacd5cda18ddd44e8de2df43c23a3ef9",
+    "isDraft": true,
+    "potentialMergeCommit": {
+      "oid": "989cfdab151cc972fe9b429ebf281a0d05aecdd4"
+    },
+    "state": "OPEN"
+  },
+  "test_merge": {
+    "parents": [
+      "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
+      "71ebc94dbacd5cda18ddd44e8de2df43c23a3ef9"
+    ],
+    "sha": "989cfdab151cc972fe9b429ebf281a0d05aecdd4",
+    "tree": "aa326c57fe4eab14eb44beeebb66849ba037e600"
+  },
+  "local_candidate": {
+    "linux_xml_inventory": {
+      "old": 941,
+      "new": 941,
+      "missing": 0,
+      "added": 0,
+      "results": {
+        "pass": 912,
+        "skipped": 29
+      }
+    },
+    "linux_go_and_junit_exit": [
+      0,
+      0
+    ],
+    "step_tests": [
+      "merge-smoke 0",
+      "merge-real 0",
+      "merge-missing 1",
+      "junit-warning 0",
+      "junit-assertion 1",
+      "junit-build 1"
+    ],
+    "isolated_faults": [
+      [
+        "go",
+        "Go test exit=7; JUnit exit=0",
+        1
+      ],
+      [
+        "converter",
+        "Go test exit=0; JUnit exit=23",
+        1
+      ]
+    ],
+    "coverage_exact": true,
+    "xml_fixtures": {
+      "warning": {
+        "testcase": 2,
+        "failure": 0,
+        "error": 0
+      },
+      "assertion": {
+        "testcase": 2,
+        "failure": 1,
+        "error": 0
+      },
+      "build": {
+        "testcase": 1,
+        "failure": 0,
+        "error": 1
+      }
+    }
+  },
+  "live": {
+    "at": "2026-11-25T08:30:13+00:00",
+    "go_job_steps": [
+      {
+        "name": "Set up job",
+        "conclusion": "success"
+      },
+      {
+        "name": "Initialize containers",
+        "conclusion": "success"
+      },
+      {
+        "name": "📥 检出代码",
+        "conclusion": "success"
+      },
+      {
+        "name": "🐹 设置Go环境",
+        "conclusion": "success"
+      },
+      {
+        "name": "📦 缓存Go模块",
+        "conclusion": "skipped"
+      },
+      {
+        "name": "📥 安装依赖",
+        "conclusion": "success"
+      },
+      {
+        "name": "🔍 代码检查",
+        "conclusion": "success"
+      },
+      {
+        "name": "🧪 运行单元测试",
+        "conclusion": "success"
+      },
+      {
+        "name": "🧪 运行集成测试",
+        "conclusion": "success"
+      },
+      {
+        "name": "📊 合并覆盖率报告",
+        "conclusion": "success"
+      },
+      {
+        "name": "Record pilot Go coverage",
+        "conclusion": "success"
+      },
+      {
+        "name": "📈 上传覆盖率到Codecov",
+        "conclusion": "skipped"
+      },
+      {
+        "name": "📋 生成测试报告",
+        "conclusion": "success"
+      },
+      {
+        "name": "📊 上传测试报告",
+        "conclusion": "skipped"
+      },
+      {
+        "name": "Post 🐹 设置Go环境",
+        "conclusion": "success"
+      },
+      {
+        "name": "Post 📥 检出代码",
+        "conclusion": "success"
+      },
+      {
+        "name": "Stop containers",
+        "conclusion": "success"
+      },
+      {
+        "name": "Complete job",
+        "conclusion": "success"
+      }
+    ],
+    "go_junit_exit_in_log": [
+      [
+        "0",
+        "0"
+      ]
+    ],
+    "jobs": [
+      {
+        "event": "pull_request",
+        "workflow": "Law OA Go CI/CD Pipeline",
+        "run": 45574098806,
+        "job": 139070733228,
+        "name": "基准测试",
+        "conclusion": "failure",
+        "fail_steps": [
+          [
+            "运行基准测试",
+            "failure"
+          ]
+        ],
+        "tests": []
+      },
+      {
+        "event": "pull_request",
+        "workflow": "🧪 Test Pipeline",
+        "run": 45574098703,
+        "job": 139067615606,
+        "name": "np-i11 (full)",
+        "conclusion": "success",
+        "fail_steps": [],
+        "tests": [],
+        "checkout": [
+          [
+            "pull_request",
+            "989cfdab151cc972fe9b429ebf281a0d05aecdd4"
+          ]
+        ],
+        "head_base": [
+          [
+            "71ebc94dbacd5cda18ddd44e8de2df43c23a3ef9",
+            "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7"
+          ]
+        ],
+        "sources": [
+          "989cfdab151cc972fe9b429ebf281a0d05aecdd4"
+        ],
+        "phases": [
+          [
+            "fuzz-normal",
+            "0"
+          ],
+          [
+            "build",
+            "0"
+          ],
+          [
+            "redis",
+            "0"
+          ],
+          [
+            "go",
+            "0"
+          ],
+          [
+            "tagged",
+            "0"
+          ],
+          [
+            "typecheck",
+            "0"
+          ],
+          [
+            "jest",
+            "0"
+          ],
+          [
+            "frontend-build",
+            "0"
+          ],
+          [
+            "route-b",
+            "0"
+          ],
+          [
+            "selection",
+            "0"
+          ],
+          [
+            "storage",
+            "0"
+          ],
+          [
+            "navigation",
+            "0"
+          ],
+          [
+            "editing",
+            "0"
+          ],
+          [
+            "tabs",
+            "0"
+          ],
+          [
+            "legacy",
+            "0"
+          ],
+          [
+            "prod",
+            "0"
+          ],
+          [
+            "native",
+            "0"
+          ]
+        ],
+        "full_pass": true,
+        "route_b_cases": [
+          "4"
+        ]
+      },
+      {
+        "event": "pull_request",
+        "workflow": "🧪 Test Pipeline",
+        "run": 45574098703,
+        "job": 139067615824,
+        "name": "🐹 Go Tests",
+        "conclusion": "success",
+        "fail_steps": [],
+        "tests": [
+          [
+            "PASS",
+            "TestConflictP0ReadinessCheck_ProductionBadCanonicalHashFailsClosed"
+          ],
+          [
+            "PASS",
+            "TestConflictP0ReadinessCheck_ProductionBadCanonicalHashFailsClosed"
+          ],
+          [
+            "PASS",
+            "TestPerformanceMonitoring"
+          ]
+        ]
+      },
+      {
+        "event": "pull_request",
+        "workflow": "PGO优化工作流",
+        "run": 45574098721,
+        "job": 139067615772,
+        "name": "检查PGO支持",
+        "conclusion": "failure",
+        "fail_steps": [
+          [
+            "检查Go版本和PGO支持",
+            "failure"
+          ]
+        ],
+        "tests": [],
+        "profile_failure_package": []
+      },
+      {
+        "event": "pull_request",
+        "workflow": "PGO优化工作流",
+        "run": 45574098721,
+        "job": 139067616163,
+        "name": "PGO local profiles and builds",
+        "conclusion": "failure",
+        "fail_steps": [
+          [
+            "Profile existing Go test and benchmark packages",
+            "failure"
+          ]
+        ],
+        "tests": [],
+        "profile_failure_package": [
+          "law-oa-go/tests/performance"
+        ]
+      },
+      {
+        "event": "pull_request",
+        "workflow": "PGO优化工作流",
+        "run": 45574098721,
+        "job": 139067755280,
+        "name": "性能基准测试",
+        "conclusion": "skipped",
+        "fail_steps": []
+      },
+      {
+        "event": "push",
+        "workflow": "🧪 Test Pipeline",
+        "run": 45574092572,
+        "job": 139067594652,
+        "name": "np-i11 (full)",
+        "conclusion": "success",
+        "fail_steps": [],
+        "tests": [],
+        "checkout": [
+          [
+            "push",
+            "71ebc94dbacd5cda18ddd44e8de2df43c23a3ef9"
+          ]
+        ],
+        "head_base": [
+          [
+            "71ebc94dbacd5cda18ddd44e8de2df43c23a3ef9",
+            ""
+          ]
+        ],
+        "sources": [
+          "71ebc94dbacd5cda18ddd44e8de2df43c23a3ef9"
+        ],
+        "phases": [
+          [
+            "fuzz-normal",
+            "0"
+          ],
+          [
+            "build",
+            "0"
+          ],
+          [
+            "redis",
+            "0"
+          ],
+          [
+            "go",
+            "0"
+          ],
+          [
+            "tagged",
+            "0"
+          ],
+          [
+            "typecheck",
+            "0"
+          ],
+          [
+            "jest",
+            "0"
+          ],
+          [
+            "frontend-build",
+            "0"
+          ],
+          [
+            "route-b",
+            "0"
+          ],
+          [
+            "selection",
+            "0"
+          ],
+          [
+            "storage",
+            "0"
+          ],
+          [
+            "navigation",
+            "0"
+          ],
+          [
+            "editing",
+            "0"
+          ],
+          [
+            "tabs",
+            "0"
+          ],
+          [
+            "legacy",
+            "0"
+          ],
+          [
+            "prod",
+            "0"
+          ],
+          [
+            "native",
+            "0"
+          ]
+        ],
+        "full_pass": true,
+        "route_b_cases": [
+          "4"
+        ]
+      }
+    ]
+  },
+  "release": {
+    "merge": "HOLD",
+    "deployment": "HOLD",
+    "real_trial": "HOLD"
+  },
+  "astra": {
+    "source": "71ebc94dbacd5cda18ddd44e8de2df43c23a3ef9",
+    "decision": "PASS",
+    "independent_go_version": "1.25.0",
+    "merged_block_counts": [
+      3,
+      2,
+      1
+    ],
+    "report_cases_go_converter_step": [
+      [
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        1,
+        1
+      ],
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        7,
+        0,
+        1
+      ]
+    ],
+    "hosted_jobs_reviewed": [
+      139067615824,
+      139067615606
+    ]
+  },
+  "residual_task": "t_597f0f6a"
+}
