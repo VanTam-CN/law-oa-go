@@ -8,7 +8,25 @@
   "frontend_dist": {
     "files": 7,
     "sha256": "d43889c0b9d74dd67c6c2cc5f05d68d39712d430bdf007c2b93c44f6a7e9a174",
-    "inherited_asset_commit": "2989b285501f04fde37eb4826cb3f3a108be0915"
+    "inherited_asset_commit": "2989b285501f04fde37eb4826cb3f3a108be0915",
+    "clean_candidate_rebuild": {
+      "revision": "49e5c153c01fd4d21abea99f2792eea279628a5b",
+      "working_directory": "frontend",
+      "node": "22.17.0",
+      "argv": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "env": {
+        "VITE_NP_MEMORY_ONLY": "true",
+        "VITE_API_PROXY_TARGET": "http://127.0.0.1:18789"
+      },
+      "exit_code": 0,
+      "files": 7,
+      "sha256": "d43889c0b9d74dd67c6c2cc5f05d68d39712d430bdf007c2b93c44f6a7e9a174",
+      "matches_served_assets": true
+    }
   },
   "database": "PG 16.14, v14 + 86; root connects with sslmode=require",
   "suites": {
@@ -37,6 +55,30 @@
   },
   "excluded_from_acceptance": [
     "initial binary had outer worktree VCS stamp",
-    "initial navigation suite hit one HTTP 429; a fresh run is required"
-  ]
+    "initial navigation run hit one HTTP 429; all five cases passed once in the subsequent verified window (browser-controls.json)"
+  ],
+  "go_builds": {
+    "revision": "49e5c153c01fd4d21abea99f2792eea279628a5b",
+    "commands": [
+      [
+        "go",
+        "build",
+        "./..."
+      ],
+      [
+        "go",
+        "build",
+        "-tags",
+        "np_local_check",
+        "-o",
+        "<private-fixture-reference>",
+        "./cmd/np-local-check"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0
+    ],
+    "served_entry": "root main.go"
+  }
 }

@@ -4,7 +4,7 @@
 
 ## 候选与运行环境
 
-以 I11 归档 `89f2eb9` 为开发基线。M5 应用二进制从干净检出 `49e5c15` 的根包构建，内嵌提交和运行容器内外的文件散列均已核对。PG 16.14 使用 v14 加受控 86 迁移，根服务以生产配置连接 PG 和 Redis。前端复用 M4 的七个生产资产。[构建、环境和前端摘要](environment-and-browser.json)
+以 I11 归档 `89f2eb9` 为开发基线。M5 应用二进制从干净检出 `49e5c15` 的根包构建，内嵌提交和运行容器内外的文件散列均已核对。PG 16.14 使用 v14 加受控 86 迁移，根服务以生产配置连接 PG 和 Redis。前端复用 M4 的七个生产资产，并从同一 M5 干净检出重建。全部文件的路径与内容散列均与实际提供给浏览器的资产一致。[构建、环境和前端摘要](environment-and-browser.json)
 
 首轮从嵌套工作树构建时，Go 写入了外层仓库的提交号。该轮仅用于诊断。重新构建后，浏览器在真实服务上重新运行。完整 I11 的托管结果继续按原始运行 SHA 引用。[完整 I11](../m2/full-i11/README.md)
 
@@ -25,7 +25,7 @@
 
 ## 复核方法
 
-在隔离开发工作树中使用私有 `np-m5.*` 临时目录。先运行 `bash scripts/np-m5/environment.sh init` 建立合成库、Redis 和干净构建，再用既有 `compare-main-browser-db.py seed` 分别生成试点律师与对照律师的清单。加载该目录的私有环境，将试点律师 ID 设为 `NP_ASSISTANT_ACTORS` 后运行 `bash scripts/np-m5/environment.sh root`。实际运行前校验生产资产摘要与本文引用的 M4 记录一致。
+在隔离开发工作树中使用私有 `np-m5.*` 临时目录。将目录绝对路径导出为 `NP_M5_WORK`，运行 `bash scripts/np-m5/environment.sh init` 建立合成库、Redis 和干净构建。在当前 shell 加载 `"$NP_M5_WORK/env"`，再用既有 `compare-main-browser-db.py seed` 分别生成试点律师与对照律师的清单。将试点律师 ID 设为 `NP_ASSISTANT_ACTORS` 后运行 `bash scripts/np-m5/environment.sh root`。实际运行前校验生产资产摘要与本文引用的 M4 记录一致。
 
 浏览器执行器 `bash scripts/np-m5/browser.sh <suite> <新的私有结果目录>` 读取 `NP_BROWSER_SEED` 和 `NP_BROWSER_OTHER_SEED`。逐名运行保持生产限流，路线 B 四条使用同一批目标和对照。检查器拒绝缺项、重复、失败、意外跳过与重试后才通过的场景。C10 的受控旧 worker 使用专属静态主机。首次来源选择用例中的确认/检测按钮使用前端夹具，其归属为界面行为。
 
