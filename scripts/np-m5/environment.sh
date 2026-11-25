@@ -49,13 +49,14 @@ case ${1:-} in
         }' >/dev/null
     docker network connect "$network" "$(cat "$work/forward")"
     export POSTGRES_DB=np_first_slice_dev POSTGRES_USER=np_m1
+    if [[ "$1" == init-v14 ]]; then export POSTGRES_USER=np_m6_bootstrap; fi
     POSTGRES_PASSWORD=$(openssl rand -hex 24); export POSTGRES_PASSWORD
     docker run -d --cidfile "$work/pg" --label "$label" --network "$network" --network-alias pg \
       --tmpfs /var/lib/postgresql/data \
       -e POSTGRES_USER -e POSTGRES_DB -e POSTGRES_PASSWORD "$pg_image" >/dev/null
     docker run -d --cidfile "$work/redis" --label "$label" --network "$network" --network-alias redis \
       "$redis_image" redis-server --save '' --appendonly no >/dev/null
-    export DB_USERNAME="$POSTGRES_USER" DB_DATABASE="$POSTGRES_DB" DB_PASSWORD="$POSTGRES_PASSWORD" PGPASSWORD="$POSTGRES_PASSWORD"
+    export DB_USERNAME=np_m1 DB_DATABASE="$POSTGRES_DB" DB_PASSWORD="$POSTGRES_PASSWORD" PGPASSWORD="$POSTGRES_PASSWORD"
     export DB_DRIVER=postgres DB_HOST=127.0.0.1 DB_PORT=18790 DB_SSLMODE=disable
     export NP_LOCAL_CHECK=synthetic-only NP_TEST_DSN='host=127.0.0.1 port=18790 dbname=np_first_slice_dev user=np_m1 sslmode=disable'
     export NP_M5_WORK="$work" NP_REDIS_CID="$(cat "$work/redis")"
@@ -65,6 +66,20 @@ case ${1:-} in
     for key in DB_DRIVER DB_HOST DB_PORT DB_SSLMODE DB_USERNAME DB_DATABASE DB_PASSWORD PGPASSWORD NP_LOCAL_CHECK NP_TEST_DSN NP_BROWSER_PASSWORD JWT_SECRET APP_SECRET SUBJECT_DATA_KEY NP_M5_WORK NP_REDIS_CID; do
       printf 'export %s=%q\n' "$key" "${!key}"
     done >"$work/env"
+    if [[ "$1" == init-v14 ]]; then
+      # The I12 migrator must be able to encounter a real permission error.
+      # A separate fixture owner remains available for restoration.
+      pg=$(cat "$work/pg")
+      for ((i=0;i<60;i++)); do
+        docker exec "$pg" pg_isready -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" >/dev/null 2>&1 && break
+        sleep 1
+      done
+      docker exec -i "$pg" psql -XqAtw -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<'SQL'
+\getenv pw POSTGRES_PASSWORD
+CREATE ROLE np_m1 LOGIN PASSWORD :'pw';
+ALTER DATABASE np_first_slice_dev OWNER TO np_m1;
+SQL
+    fi
     psql_bin=${NP86_PSQL:-$(command -v psql || echo /usr/local/opt/libpq/bin/psql)}
     for ((i=0;i<60;i++)); do
       if "$psql_bin" -XwAt "$NP_TEST_DSN" -c 'SELECT 1' >/dev/null 2>&1; then break; fi

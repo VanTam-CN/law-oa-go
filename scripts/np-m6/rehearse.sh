@@ -111,10 +111,11 @@ grep -Fq 'partial 000086 state' "$work/partial.log"
 sql 'ALTER TABLE case_intake_source_snapshots RENAME TO m6_synthetic_incomplete; DROP TABLE m6_synthetic_incomplete' >/dev/null
 [[ $(objects) == none:none ]]
 # Exercise a real FK privilege failure, repairing only this disposable cluster.
-sql "CREATE ROLE m6_fixture_repair LOGIN SUPERUSER PASSWORD NULL; ALTER TABLE case_intakes OWNER TO m6_fixture_repair; ALTER ROLE np_m1 NOSUPERUSER" >/dev/null
-repair() { docker exec "$pg" psql -XqAtw -v ON_ERROR_STOP=1 -U m6_fixture_repair -d np_first_slice_dev -c "ALTER ROLE np_m1 SUPERUSER; ALTER TABLE case_intakes OWNER TO np_m1" >/dev/null; sql 'DROP ROLE m6_fixture_repair' >/dev/null; }
-if apply >"$work/permission.log" 2>&1; then repair; exit 1; fi
-repair
+admin() { docker exec "$pg" psql -XqAtw -v ON_ERROR_STOP=1 -U np_m6_bootstrap -d np_first_slice_dev -c "$1" >/dev/null; }
+[[ $(sql "SELECT rolsuper FROM pg_roles WHERE rolname=current_user") == f ]]
+admin 'ALTER TABLE case_intakes OWNER TO np_m6_bootstrap'
+if apply >"$work/permission.log" 2>&1; then admin 'ALTER TABLE case_intakes OWNER TO np_m1'; exit 1; fi
+admin 'ALTER TABLE case_intakes OWNER TO np_m1'
 grep -Fq 'permission denied for table case_intakes' "$work/permission.log"
 [[ $(objects) == none:none ]]
 apply >"$work/append.log" 2>&1
