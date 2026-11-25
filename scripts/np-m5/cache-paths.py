@@ -50,6 +50,7 @@ contexts = prefix+"case-intake-assist/contexts"
 s, h, obj = call("POST", contexts, {"intake_id":own["target"],"expected_revision":before["revision"]})
 assert s == 200 and "no-store" in h
 ctx = str(uuid.UUID(obj["data"]["id"]))
+context_version = obj["data"]["context_version"]
 base = prefix+"case-intakes"
 cases = [
     ("neighbor",prefix+"clients/stats",403),("capabilities",prefix+"case-intake-assist/capabilities",200),
@@ -69,6 +70,7 @@ try:
         assert subprocess.check_output(cli+["SET",key,sentinel,"EX","120","NX"],text=True).strip()=="OK"
         mon = subprocess.Popen(cli+["MONITOR"],stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,text=True)
         counts = collections.Counter()
+        sensitive_operations = 0
         try:
             assert mon.stdout.readline().strip()=="OK"
             s, h, obj = call("GET",path+"?"+query)
@@ -80,6 +82,8 @@ try:
                 cmd = re.search(r'\] "([^"]+)" "([^"]+)"',line)
                 if cmd:
                     operation, actual = cmd.groups()
+                    if any(prefix in line for prefix in ('"lawoa::/api/v1/case-intakes', '"lawoa::/api/v1/case-intake-assist', '"lawoa::/api/v1/cases/intake-workbench')):
+                        sensitive_operations += 1
                     if actual == key or actual.startswith(key+":"):
                         counts[operation.lower()]+=1
             else:
@@ -88,6 +92,7 @@ try:
             if label=="neighbor":
                 assert counts["get"]>0, "positive control did not observe neighboring cache GET"
             else:
+                assert sensitive_operations == 0, (label, sensitive_operations)
                 assert not counts and {"private","no-store"}.issubset({v.strip() for v in h.lower().split(",")}), label
                 data = obj.get("data") or {}
                 if label=="historical_source":
@@ -96,13 +101,14 @@ try:
                     assert data["state"]=="committed" and data["request_id"]==rid and data["id"]==own["target"]
                 elif label in ("detail","workbench_alias"):
                     assert data["revision"]==before["revision"]
-            evidence[label] = {"http":s,"exact_key_operations":dict(counts),"cache_control":h}
+            evidence[label] = {"http":s,"exact_key_operations":dict(counts),"sensitive_prefix_operations":sensitive_operations,"cache_control":h}
         finally:
             mon.terminate()
             mon.communicate(timeout=4)
             subprocess.run(cli+["DEL",key],check=True,stdout=subprocess.DEVNULL)
 finally:
-    call("DELETE", contexts+"/"+ctx)
+    s, _, obj = call("DELETE", contexts+"/"+ctx, {"expected_context_version":context_version})
+    assert s == 200 and obj["data"]["ended"] is True
 assert compare["snapshot"](own)==before
 print(json.dumps({"scope":"I10/C10 route-by-route on isolated root and Redis", "routes":evidence,
                   "preseeded_old_value_returned":False,"pg_before_after_equal":True},indent=2))

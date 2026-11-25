@@ -6,51 +6,61 @@
       "exact_key_operations": {
         "get": 1
       },
+      "sensitive_prefix_operations": 0,
       "cache_control": ""
     },
     "capabilities": {
       "http": 200,
       "exact_key_operations": {},
+      "sensitive_prefix_operations": 0,
       "cache_control": "private, no-store"
     },
     "context": {
       "http": 200,
       "exact_key_operations": {},
+      "sensitive_prefix_operations": 0,
       "cache_control": "private, no-store"
     },
     "list": {
       "http": 200,
       "exact_key_operations": {},
+      "sensitive_prefix_operations": 0,
       "cache_control": "private, no-store"
     },
     "detail": {
       "http": 200,
       "exact_key_operations": {},
+      "sensitive_prefix_operations": 0,
       "cache_control": "private, no-store"
     },
     "workbench_alias": {
       "http": 200,
       "exact_key_operations": {},
+      "sensitive_prefix_operations": 0,
       "cache_control": "private, no-store"
     },
     "historical_source": {
       "http": 200,
       "exact_key_operations": {},
+      "sensitive_prefix_operations": 0,
       "cache_control": "private, no-store"
     },
     "committed_receipt": {
       "http": 200,
       "exact_key_operations": {},
+      "sensitive_prefix_operations": 0,
       "cache_control": "private, no-store"
     },
     "other_draft": {
       "http": 403,
       "exact_key_operations": {},
+      "sensitive_prefix_operations": 0,
       "cache_control": "private, no-store"
     },
     "unknown_draft": {
       "http": 404,
       "exact_key_operations": {},
+      "sensitive_prefix_operations": 0,
       "cache_control": "private, no-store"
     }
   },
