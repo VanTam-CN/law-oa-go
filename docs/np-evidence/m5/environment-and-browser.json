@@ -1,0 +1,42 @@
+{
+  "status": "PARTIAL",
+  "m6": "HOLD",
+  "baseline": "89f2eb9eace9a2f72f31375a83cc34d97289c4dc",
+  "binary_revision": "49e5c153c01fd4d21abea99f2792eea279628a5b",
+  "binary_sha256": "213bb27532851e03bcc17ee630665e6fd2edd914cc1b711b477269decfae48d0",
+  "tracked_or_untracked_changes_in_build_checkout": false,
+  "frontend_dist": {
+    "files": 7,
+    "sha256": "d43889c0b9d74dd67c6c2cc5f05d68d39712d430bdf007c2b93c44f6a7e9a174",
+    "inherited_asset_commit": "2989b285501f04fde37eb4826cb3f3a108be0915"
+  },
+  "database": "PG 16.14, v14 + 86; root connects with sslmode=require",
+  "suites": {
+    "prod": {
+      "config": "np-entry/c10-sw/playwright.c10-sw.config.ts",
+      "cases": 2,
+      "skipped": 0,
+      "failed": 0,
+      "flaky": 0,
+      "start_utc": "2026-11-25T02:31:41.890Z",
+      "duration_ms": 3072,
+      "protected_sha256": "59b1f869c8853d3a2ce3aa91d2283dc5c9311825f0d9fa122fb1499ada7172c0",
+      "pg_result": "BROWSER_PG_UNCHANGED_OK"
+    },
+    "storage": {
+      "config": "temporary static-host configuration; same Chromium and production dist",
+      "cases": 5,
+      "skipped": 0,
+      "failed": 0,
+      "flaky": 0,
+      "start_utc": "2026-11-25T02:31:45.497Z",
+      "duration_ms": 10085,
+      "protected_sha256": "cf26f71ce1d49bfb9e0dd8042f69c7640166fff290326fcbe472aa1fedea646f",
+      "pg_result": "BROWSER_PG_UNCHANGED_OK"
+    }
+  },
+  "excluded_from_acceptance": [
+    "initial binary had outer worktree VCS stamp",
+    "initial navigation suite hit one HTTP 429; a fresh run is required"
+  ]
+}
