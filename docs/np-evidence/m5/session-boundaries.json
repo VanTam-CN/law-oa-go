@@ -32,6 +32,15 @@
     "assistant_create": 401,
     "code": "ACCESS_SESSION_REQUIRED"
   },
+  "ethical_wall": {
+    "closed": 403,
+    "explicit_grant": 200,
+    "withdrawn_alias": 403,
+    "existing_context": 403,
+    "reviewed_source_save": 403,
+    "intake_row_sources_and_receipts_unchanged": true,
+    "restored_native_access": 200
+  },
   "auth_redis_registration_and_logout_observed": true,
   "sensitive_create_after_logout": 401,
   "restored_registration_and_active_role_verified": true

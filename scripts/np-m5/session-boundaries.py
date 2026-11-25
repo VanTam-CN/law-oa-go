@@ -21,8 +21,9 @@ token=None
 def sql(q):
     return subprocess.check_output(["docker","exec",pg,"psql","-XqAtw","-v","ON_ERROR_STOP=1","-U","np_m1","-d",db,"-c",q],text=True).strip()
 
-def call(method,path,body=None,expected=200):
+def call(method,path,body=None,expected=200,key=None):
     headers={"Content-Type":"application/json"}
+    if key: headers["Idempotency-Key"]=key
     if token: headers["Authorization"]="Bearer "+token
     conn=http.client.HTTPConnection("127.0.0.1",18791,timeout=10)
     try:
@@ -90,7 +91,35 @@ try:
     assert code=="ACCESS_SESSION_REQUIRED"
 finally:
     assert sql(f"UPDATE auth_token_sessions SET access_token_uuid='{key}' WHERE user_id={actor} AND access_token_uuid='{replacement}' RETURNING user_id")==str(actor)
-assert call("POST",context,body)["data"]["id"]
+restored=call("POST",context,body)["data"]
+assert restored["id"]
+# Use a nonempty source candidate issued before a real client's access changes.
+turn=call("POST",context+"/"+restored["id"]+"/turns",{"expected_context_version":restored["context_version"],
+    "request_id":str(uuid.uuid4()),"text":"Synthetic reviewed facts for permission transition."})["data"]
+candidate=turn["candidate"]
+wall=int(sql(f"""INSERT INTO cases(case_number,title,client_id,lawyer_id,case_type,status,ethical_wall_enabled)
+    VALUES('M5-{nonce[:16]}','M5 synthetic wall',{int(client["id"])},{actor},'civil','pending',true) RETURNING id"""))
+def guard_state():
+    return sql(f"""SELECT encode(sha256(convert_to(to_jsonb(i)::text,'UTF8')),'hex'),
+      (SELECT count(*) FROM case_intake_source_snapshots s WHERE s.intake_id=i.id),
+      (SELECT count(*) FROM case_intake_write_requests w WHERE w.intake_id=i.id)
+      FROM case_intakes i WHERE i.id='{target}'""")
+initial=guard_state()
+try:
+    call("GET","case-intakes/"+target,expected=403)
+    sql(f"INSERT INTO case_ethical_wall_whitelist(case_id,user_id,granted_by,granted_at,reason) VALUES({wall},{actor},{actor},now(),'M5 synthetic')")
+    assert call("GET","case-intakes/"+target)["data"]["intake"]["id"]==target
+    sql(f"DELETE FROM case_ethical_wall_whitelist WHERE case_id={wall} AND user_id={actor}")
+    call("GET","cases/intake-workbench/"+target,expected=403)
+    call("GET",context+"/"+restored["id"],expected=403)
+    sel={"context_id":restored["id"],"expected_context_version":turn["context_version"],"fields":{
+        "description":{"candidate_id":candidate["id"],"reviewed":True,"requested_mode":"candidate_sources"}}}
+    denial=call("PUT","case-intakes/"+target,{"expected_revision":draft["revision"],"description":candidate["description"],
+        "changed_fields":["description"],"source_selection":sel},403,key=str(uuid.uuid4()))
+    assert denial["error"]["code"]=="OBJECT_ACCESS_DENIED" and guard_state()==initial
+finally:
+    sql(f"DELETE FROM case_ethical_wall_whitelist WHERE case_id={wall}; DELETE FROM cases WHERE id={wall}")
+assert call("GET","case-intakes/"+target)["data"]["intake"]["id"]==target
 call("POST","auth/logout",{"token":token})
 call("POST",context,body,401)
 logout_revocation_recorded=redis_exists("blacklist:"+key) or not redis_exists("access_token:"+key)
@@ -99,5 +128,7 @@ print(json.dumps({"gates":["I03","I04","I13"],"root":"dedicated migrated clone, 
     "identity_values":{"actual_nonempty_plaintexts":2,"actual_pg_ciphertexts":2,"actual_pg_digests":2,
                        "routes_checked":["canonical","workbench_alias"],"matches_in_full_response":0},
     "transitions":role_results,"unregistered_normal_login_token":{"native_detail":200,"assistant_create":401,"code":code},
+    "ethical_wall":{"closed":403,"explicit_grant":200,"withdrawn_alias":403,"existing_context":403,"reviewed_source_save":403,
+                    "intake_row_sources_and_receipts_unchanged":True,"restored_native_access":200},
     "auth_redis_registration_and_logout_observed":True,"sensitive_create_after_logout":401,
     "restored_registration_and_active_role_verified":True},indent=2))
