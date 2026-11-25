@@ -11,11 +11,36 @@ groups = {
     "ConcurrentRequests": "Concurrency_1 Concurrency_10 Concurrency_50 Concurrency_100",
 }
 required = {f"Benchmark{group}/{name}" for group, names in groups.items() for name in names.split()}
-counts = {}
-failed = False
-pending = None
-with open(sys.argv[1], encoding="utf-8", errors="replace") as output:
+
+
+def verify(output):
+    counts = {}
+    failed = False
+    pending = None
+    target = "law-oa-go/tests/performance"
+    active = False
+    completed = False
     for line in output:
+        header = re.match(r"^pkg: (\S+)\s*$", line)
+        if header:
+            active = header[1] == target
+            pending = None
+            continue
+        terminal = re.match(r"^(ok|FAIL)\s+(\S+)(?:\s|$)", line)
+        if terminal:
+            if terminal[1] == "FAIL":
+                failed = True
+                if re.fullmatch(r"law-oa-go(?:/[A-Za-z0-9._-]+)*", terminal[2]):
+                    print("BENCH_PACKAGE_FAILURE", terminal[2])
+            if active and terminal[2] == target and terminal[1] == "ok":
+                completed = True
+            active = False
+            pending = None
+            continue
+        if line.startswith("goos:"):
+            active = False
+        if not active:
+            continue
         # Go prints the name before calibrating. Application logs can separate it from its numeric row.
         label = re.match(r"^(Benchmark[\w/]+?)(?:-\d+)?(?:\s+|$)", line)
         if label:
@@ -31,14 +56,16 @@ with open(sys.argv[1], encoding="utf-8", errors="replace") as output:
         if not failed and failure and failure[1] in required:
             print("BENCH_FAILURE", failure[1])
             failed = True
-        package = re.match(r"^FAIL\s+(law-oa-go(?:/[A-Za-z0-9._-]+)*)\s", line)
-        if not failed and package:
-            print("BENCH_PACKAGE_FAILURE", package[1])
-            failed = True
-for name, iterations in sorted(counts.items()):
-    print("BENCH_RESULT", name, iterations)
-missing = sorted(required - counts.keys())
-if missing:
-    print("BENCH_MISSING", *missing)
-if failed or missing:
-    sys.exit(1)
+    for name, iterations in sorted(counts.items()):
+        print("BENCH_RESULT", name, iterations)
+    missing = sorted(required - counts.keys())
+    if missing:
+        print("BENCH_MISSING", *missing)
+    if not completed:
+        print("BENCH_PACKAGE_INCOMPLETE", target)
+    return bool(failed or missing or not completed)
+
+
+if __name__ == "__main__":
+    with open(sys.argv[1], encoding="utf-8", errors="replace") as output:
+        sys.exit(verify(output))
