@@ -160,7 +160,27 @@ jobs:
   benchmark:
     name: 基准测试
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: integrated-static-analysis
+    env:
+      NP_BENCH_PG_DSN: postgres://np_m1:synthetic-runner-only@127.0.0.1:18790/np_benchmark?sslmode=disable
+      NP_BENCH_REDIS_ADDR: 127.0.0.1:18980
+    services:
+      postgres:
+        image: postgres:16.14
+        ports: ['18790:5432']
+        env:
+          POSTGRES_USER: np_m1
+          POSTGRES_DB: np_first_slice_dev
+          POSTGRES_PASSWORD: synthetic-runner-only
+        options: --health-cmd pg_isready --health-interval 3s --health-retries 15
+      redis-bench:
+        image: redis:7-alpine
+        ports: ['18980:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 3s
+          --health-retries 15
     steps:
     - name: 检出代码
       uses: actions/checkout@v4
@@ -176,14 +196,28 @@ jobs:
         go mod download
         go mod verify
 
+    - name: Prepare synthetic benchmark database
+      env:
+        DB_DRIVER: postgres
+        DB_HOST: 127.0.0.1
+        DB_PORT: '18790'
+        DB_USERNAME: np_m1
+        DB_DATABASE: np_first_slice_dev
+        DB_SSLMODE: disable
+        DB_PASSWORD: synthetic-runner-only
+        PGPASSWORD: synthetic-runner-only
+        ENVIRONMENT: development
+      run: |
+        JWT_SECRET=$(openssl rand -hex 32)
+        export JWT_SECRET
+        bash scripts/np-ci/prepare-bench-db.sh
     - name: 运行基准测试
       run: |
-        go test -bench=. -benchmem -benchtime=10s ./... > benchmark.txt
-
-    - name: 生成基准测试报告
-      run: |
-        echo "基准测试结果:"
-        cat benchmark.txt
+        go test -bench=. -benchmem -benchtime=10s ./... > benchmark.txt 2>&1 || {
+          python3 scripts/np-ci/bench-results.py benchmark.txt
+          exit 1
+        }
+        python3 scripts/np-ci/bench-results.py benchmark.txt
 
     - name: 上传基准测试结果
       if: (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3' && (github.head_ref != 'codex/np-main-i11' || github.event.pull_request.head.repo.full_name != github.repository))

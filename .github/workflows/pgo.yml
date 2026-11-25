@@ -392,6 +392,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    timeout-minutes: 60
+    env:
+      NP_BENCH_PG_DSN: postgres://np_m1:synthetic-runner-only@127.0.0.1:18790/np_benchmark?sslmode=disable
+      NP_BENCH_REDIS_ADDR: 127.0.0.1:18980
     services:
       postgres:
         image: postgres:16.14
@@ -404,6 +408,13 @@ jobs:
       redis:
         image: redis:7-alpine
         ports: ['6379:6379']
+      redis-bench:
+        image: redis:7-alpine
+        ports: ['18980:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 3s
+          --health-retries 15
     steps:
     - uses: actions/checkout@v4
       with:
@@ -412,6 +423,21 @@ jobs:
       with:
         go-version: ${{ env.GO_VERSION }}
         cache: false
+    - name: Prepare synthetic benchmark database
+      env:
+        DB_DRIVER: postgres
+        DB_HOST: 127.0.0.1
+        DB_PORT: '18790'
+        DB_USERNAME: np_m1
+        DB_DATABASE: np_first_slice_dev
+        DB_SSLMODE: disable
+        DB_PASSWORD: synthetic-runner-only
+        PGPASSWORD: synthetic-runner-only
+        ENVIRONMENT: development
+      run: |
+        JWT_SECRET=$(openssl rand -hex 32)
+        export JWT_SECRET
+        bash scripts/np-ci/prepare-bench-db.sh
     - name: Profile existing Go test and benchmark packages
       run: |
         go list -f '{{if or .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' ./... > "$RUNNER_TEMP/packages"
@@ -435,9 +461,9 @@ jobs:
       run: |
         JWT_SECRET=$(openssl rand -hex 32)
         export JWT_SECRET
-        go run ./cmd/migrate -command bootstrap >"$RUNNER_TEMP/bootstrap.log" 2>&1
-        bash scripts/np-first-slice/apply-main-np86.sh >"$RUNNER_TEMP/schema.log" 2>&1
-        # Start with a synthetic user so development startup skips its unrelated demo seed.
+        # Reuse the np_first_slice_dev database prepared in the earlier step;
+        # no second bootstrap or 000086 replay, so migrations cannot collide.
+        # Start with a synthetic user so development startup skips its demo seed.
         psql -X -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USERNAME" -d "$DB_DATABASE" -c "INSERT INTO users (username,name,email,password,role,status) VALUES ('pgo-fixture','PGO fixture','pgo@synthetic.invalid','!','lawyer','inactive')" >/dev/null
         for mode in standard optimized; do
           profile=off
