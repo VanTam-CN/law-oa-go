@@ -46,3 +46,5 @@ PGO 本地采样实际报出性能包失败，其采样脚本把详细输出留�
 `596f848` 的后续回归已归入[健康检查测试夹具与托管验收](health-fixture/README.md)。
 
 `71ebc94` 的接续证据见[普通 Go Tests 覆盖率及 JUnit 整改](go-reports/README.md)。
+
+性能包的 19 项基准、PGO 及真实 PR 作业结果见[性能夹具验收](performance-fixture/README.md)。

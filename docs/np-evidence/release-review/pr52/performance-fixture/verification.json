@@ -1,0 +1,558 @@
+{
+  "task": "t_597f0f6a",
+  "refs": {
+    "base": "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
+    "draft": true,
+    "head": "b22736b693b5d12b521173bed1055245b095a456",
+    "merge": "9883cb11b68aa80a9291e55719aef56d29e13aab",
+    "number": 52,
+    "parents": [
+      "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
+      "b22736b693b5d12b521173bed1055245b095a456"
+    ],
+    "tree": "128231bed2704726175e331b1984d63c5bfb1ca2"
+  },
+  "baseline": "71ebc94dbacd5cda18ddd44e8de2df43c23a3ef9",
+  "baseline_local": {
+    "missing": [
+      "BenchmarkAPIRequest/GetCases",
+      "BenchmarkAPIRequest/GetClients",
+      "BenchmarkAPIRequest/GetDashboardStats",
+      "BenchmarkAPIRequest/LoginRequest",
+      "BenchmarkDatabaseQueries/SimpleQuery"
+    ],
+    "observed": {
+      "BenchmarkCacheMiddleware/CacheHit": [
+        1
+      ],
+      "BenchmarkCacheMiddleware/CacheMiss": [
+        1
+      ],
+      "BenchmarkConcurrentRequests/Concurrency_1": [
+        1
+      ],
+      "BenchmarkConcurrentRequests/Concurrency_10": [
+        1
+      ],
+      "BenchmarkConcurrentRequests/Concurrency_100": [
+        1
+      ],
+      "BenchmarkConcurrentRequests/Concurrency_50": [
+        1
+      ],
+      "BenchmarkDatabaseQueries/ComplexQuery": [
+        1
+      ],
+      "BenchmarkDatabaseQueries/PaginatedQuery": [
+        1
+      ],
+      "BenchmarkMiddlewarePerformance/CORSMiddleware": [
+        1
+      ],
+      "BenchmarkMiddlewarePerformance/PerformanceMiddleware": [
+        1
+      ],
+      "BenchmarkMiddlewarePerformance/RateLimitMiddleware": [
+        1
+      ],
+      "BenchmarkRedisOperations/GET": [
+        1
+      ],
+      "BenchmarkRedisOperations/Pipeline": [
+        1
+      ],
+      "BenchmarkRedisOperations/SET": [
+        1
+      ]
+    },
+    "required": 19
+  },
+  "local": {
+    "go": "1.25.0",
+    "os": "linux/arm64",
+    "data": "synthetic",
+    "network": "container-private; no host port",
+    "iterations": {
+      "single": {
+        "BenchmarkAPIRequest/GetCases": 1,
+        "BenchmarkAPIRequest/GetClients": 1,
+        "BenchmarkAPIRequest/GetDashboardStats": 1,
+        "BenchmarkAPIRequest/LoginRequest": 1,
+        "BenchmarkCacheMiddleware/CacheHit": 1,
+        "BenchmarkCacheMiddleware/CacheMiss": 1,
+        "BenchmarkConcurrentRequests/Concurrency_1": 1,
+        "BenchmarkConcurrentRequests/Concurrency_10": 1,
+        "BenchmarkConcurrentRequests/Concurrency_100": 1,
+        "BenchmarkConcurrentRequests/Concurrency_50": 1,
+        "BenchmarkDatabaseQueries/ComplexQuery": 1,
+        "BenchmarkDatabaseQueries/PaginatedQuery": 1,
+        "BenchmarkDatabaseQueries/SimpleQuery": 1,
+        "BenchmarkMiddlewarePerformance/CORSMiddleware": 1,
+        "BenchmarkMiddlewarePerformance/PerformanceMiddleware": 1,
+        "BenchmarkMiddlewarePerformance/RateLimitMiddleware": 1,
+        "BenchmarkRedisOperations/GET": 1,
+        "BenchmarkRedisOperations/Pipeline": 1,
+        "BenchmarkRedisOperations/SET": 1
+      },
+      "race_double": {
+        "BenchmarkAPIRequest/GetCases": 2,
+        "BenchmarkAPIRequest/GetClients": 2,
+        "BenchmarkAPIRequest/GetDashboardStats": 2,
+        "BenchmarkAPIRequest/LoginRequest": 2,
+        "BenchmarkCacheMiddleware/CacheHit": 2,
+        "BenchmarkCacheMiddleware/CacheMiss": 2,
+        "BenchmarkConcurrentRequests/Concurrency_1": 2,
+        "BenchmarkConcurrentRequests/Concurrency_10": 2,
+        "BenchmarkConcurrentRequests/Concurrency_100": 2,
+        "BenchmarkConcurrentRequests/Concurrency_50": 2,
+        "BenchmarkDatabaseQueries/ComplexQuery": 2,
+        "BenchmarkDatabaseQueries/PaginatedQuery": 2,
+        "BenchmarkDatabaseQueries/SimpleQuery": 2,
+        "BenchmarkMiddlewarePerformance/CORSMiddleware": 2,
+        "BenchmarkMiddlewarePerformance/PerformanceMiddleware": 2,
+        "BenchmarkMiddlewarePerformance/RateLimitMiddleware": 2,
+        "BenchmarkRedisOperations/GET": 2,
+        "BenchmarkRedisOperations/Pipeline": 2,
+        "BenchmarkRedisOperations/SET": 2
+      },
+      "profile_250ms": {
+        "BenchmarkAPIRequest/GetCases": 105,
+        "BenchmarkAPIRequest/GetClients": 218,
+        "BenchmarkAPIRequest/GetDashboardStats": 61,
+        "BenchmarkAPIRequest/LoginRequest": 3,
+        "BenchmarkCacheMiddleware/CacheHit": 1120,
+        "BenchmarkCacheMiddleware/CacheMiss": 1450,
+        "BenchmarkConcurrentRequests/Concurrency_1": 57,
+        "BenchmarkConcurrentRequests/Concurrency_10": 212,
+        "BenchmarkConcurrentRequests/Concurrency_100": 253,
+        "BenchmarkConcurrentRequests/Concurrency_50": 180,
+        "BenchmarkDatabaseQueries/ComplexQuery": 2242,
+        "BenchmarkDatabaseQueries/PaginatedQuery": 2334,
+        "BenchmarkDatabaseQueries/SimpleQuery": 10776,
+        "BenchmarkMiddlewarePerformance/CORSMiddleware": 43206,
+        "BenchmarkMiddlewarePerformance/PerformanceMiddleware": 34840,
+        "BenchmarkMiddlewarePerformance/RateLimitMiddleware": 1166,
+        "BenchmarkRedisOperations/GET": 2269,
+        "BenchmarkRedisOperations/Pipeline": 1568,
+        "BenchmarkRedisOperations/SET": 2191
+      }
+    },
+    "calibration_note": "Timer samples only. No latency or capacity goal was tested.",
+    "profiles": {
+      "cpu": 49202,
+      "mem": 26157
+    },
+    "negative": [
+      "missing fixture DSN: exit 1",
+      "empty PostgreSQL 16.14 schema: 000086 rejected; exit 1"
+    ],
+    "normal_tests_without_services": true,
+    "parser_controls": 7,
+    "real_two_package_negative": "go exit 0; checker exit 1; precisely GetCases missing",
+    "real_two_package_positive": "go and checker exit 0; 19 named rows",
+    "go_vet_exit": 0,
+    "unrelated_pg_row_same": true,
+    "unrelated_redis_value_same": true,
+    "synthetic_rows_after": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "synthetic_row_order": [
+      "sessions",
+      "users",
+      "cases",
+      "clients"
+    ],
+    "root_binaries": {
+      "standard": {
+        "bytes": 44743440,
+        "http_200": 50
+      },
+      "optimized": {
+        "bytes": 44875344,
+        "http_200": 50
+      }
+    }
+  },
+  "hosted": [
+    {
+      "event": "pull_request",
+      "workflow": "PGO优化工作流",
+      "run": 45584688151,
+      "job": 139103175374,
+      "name": "PGO local profiles and builds",
+      "conclusion": "success",
+      "fail_steps": [],
+      "tests": [],
+      "profile_failure_package": [],
+      "performance_iterations": {
+        "BenchmarkAPIRequest/GetCases": 42596,
+        "BenchmarkAPIRequest/GetClients": 60469,
+        "BenchmarkAPIRequest/GetDashboardStats": 12309,
+        "BenchmarkAPIRequest/LoginRequest": 561,
+        "BenchmarkCacheMiddleware/CacheHit": 415567,
+        "BenchmarkCacheMiddleware/CacheMiss": 426643,
+        "BenchmarkConcurrentRequests/Concurrency_1": 13126,
+        "BenchmarkConcurrentRequests/Concurrency_10": 47521,
+        "BenchmarkConcurrentRequests/Concurrency_100": 45813,
+        "BenchmarkConcurrentRequests/Concurrency_50": 46585,
+        "BenchmarkDatabaseQueries/ComplexQuery": 326197,
+        "BenchmarkDatabaseQueries/PaginatedQuery": 397026,
+        "BenchmarkDatabaseQueries/SimpleQuery": 1538858,
+        "BenchmarkMiddlewarePerformance/CORSMiddleware": 10626681,
+        "BenchmarkMiddlewarePerformance/PerformanceMiddleware": 11082122,
+        "BenchmarkMiddlewarePerformance/RateLimitMiddleware": 423220,
+        "BenchmarkRedisOperations/GET": 511632,
+        "BenchmarkRedisOperations/Pipeline": 391252,
+        "BenchmarkRedisOperations/SET": 469563
+      },
+      "steps": {
+        "Prepare synthetic benchmark database": "success",
+        "Profile existing Go test and benchmark packages": "success",
+        "Build and exercise both application binaries": "success"
+      },
+      "checkout": "9883cb11b68aa80a9291e55719aef56d29e13aab"
+    },
+    {
+      "event": "pull_request",
+      "workflow": "PGO优化工作流",
+      "run": 45584688151,
+      "job": 139103175887,
+      "name": "检查PGO支持",
+      "conclusion": "failure",
+      "fail_steps": [
+        [
+          "检查Go版本和PGO支持",
+          "failure"
+        ]
+      ],
+      "tests": [],
+      "profile_failure_package": []
+    },
+    {
+      "event": "pull_request",
+      "workflow": "PGO优化工作流",
+      "run": 45584688151,
+      "job": 139103318693,
+      "name": "性能基准测试",
+      "conclusion": "skipped",
+      "fail_steps": []
+    },
+    {
+      "event": "pull_request",
+      "workflow": "🧪 Test Pipeline",
+      "run": 45584687934,
+      "job": 139103174713,
+      "name": "np-i11 (full)",
+      "conclusion": "success",
+      "fail_steps": [],
+      "tests": [],
+      "checkout": [
+        [
+          "pull_request",
+          "9883cb11b68aa80a9291e55719aef56d29e13aab"
+        ]
+      ],
+      "head_base": [
+        [
+          "b22736b693b5d12b521173bed1055245b095a456",
+          "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7"
+        ]
+      ],
+      "sources": [
+        "9883cb11b68aa80a9291e55719aef56d29e13aab"
+      ],
+      "phases": [
+        [
+          "fuzz-normal",
+          "0"
+        ],
+        [
+          "build",
+          "0"
+        ],
+        [
+          "redis",
+          "0"
+        ],
+        [
+          "go",
+          "0"
+        ],
+        [
+          "tagged",
+          "0"
+        ],
+        [
+          "typecheck",
+          "0"
+        ],
+        [
+          "jest",
+          "0"
+        ],
+        [
+          "frontend-build",
+          "0"
+        ],
+        [
+          "route-b",
+          "0"
+        ],
+        [
+          "selection",
+          "0"
+        ],
+        [
+          "storage",
+          "0"
+        ],
+        [
+          "navigation",
+          "0"
+        ],
+        [
+          "editing",
+          "0"
+        ],
+        [
+          "tabs",
+          "0"
+        ],
+        [
+          "legacy",
+          "0"
+        ],
+        [
+          "prod",
+          "0"
+        ],
+        [
+          "native",
+          "0"
+        ]
+      ],
+      "full_pass": true,
+      "route_b_cases": [
+        "4"
+      ]
+    },
+    {
+      "event": "pull_request",
+      "workflow": "🧪 Test Pipeline",
+      "run": 45584687934,
+      "job": 139103175199,
+      "name": "🐹 Go Tests",
+      "conclusion": "success",
+      "fail_steps": [],
+      "tests": [
+        [
+          "PASS",
+          "TestConflictP0ReadinessCheck_ProductionBadCanonicalHashFailsClosed"
+        ],
+        [
+          "PASS",
+          "TestConflictP0ReadinessCheck_ProductionBadCanonicalHashFailsClosed"
+        ],
+        [
+          "PASS",
+          "TestPerformanceMonitoring"
+        ]
+      ],
+      "reported_go_junit_exit_pairs": [
+        [
+          "0",
+          "0"
+        ]
+      ]
+    },
+    {
+      "event": "pull_request",
+      "workflow": "Law OA Go CI/CD Pipeline",
+      "run": 45584687926,
+      "job": 139106193495,
+      "name": "基准测试",
+      "conclusion": "success",
+      "fail_steps": [],
+      "tests": [],
+      "performance_iterations": {
+        "BenchmarkAPIRequest/GetCases": 12762,
+        "BenchmarkAPIRequest/GetClients": 17935,
+        "BenchmarkAPIRequest/GetDashboardStats": 3643,
+        "BenchmarkAPIRequest/LoginRequest": 163,
+        "BenchmarkCacheMiddleware/CacheHit": 115810,
+        "BenchmarkCacheMiddleware/CacheMiss": 126571,
+        "BenchmarkConcurrentRequests/Concurrency_1": 3351,
+        "BenchmarkConcurrentRequests/Concurrency_10": 12894,
+        "BenchmarkConcurrentRequests/Concurrency_100": 12642,
+        "BenchmarkConcurrentRequests/Concurrency_50": 12706,
+        "BenchmarkDatabaseQueries/ComplexQuery": 93192,
+        "BenchmarkDatabaseQueries/PaginatedQuery": 115557,
+        "BenchmarkDatabaseQueries/SimpleQuery": 434358,
+        "BenchmarkMiddlewarePerformance/CORSMiddleware": 2464128,
+        "BenchmarkMiddlewarePerformance/PerformanceMiddleware": 2593804,
+        "BenchmarkMiddlewarePerformance/RateLimitMiddleware": 128533,
+        "BenchmarkRedisOperations/GET": 158454,
+        "BenchmarkRedisOperations/Pipeline": 116932,
+        "BenchmarkRedisOperations/SET": 162073
+      },
+      "steps": {
+        "Prepare synthetic benchmark database": "success",
+        "运行基准测试": "success",
+        "上传基准测试结果": "skipped"
+      },
+      "checkout": "9883cb11b68aa80a9291e55719aef56d29e13aab"
+    },
+    {
+      "event": "push",
+      "workflow": "🧪 Test Pipeline",
+      "run": 45584675005,
+      "job": 139103134191,
+      "name": "np-i11 (full)",
+      "conclusion": "success",
+      "fail_steps": [],
+      "tests": [],
+      "checkout": [
+        [
+          "push",
+          "b22736b693b5d12b521173bed1055245b095a456"
+        ]
+      ],
+      "head_base": [
+        [
+          "b22736b693b5d12b521173bed1055245b095a456",
+          ""
+        ]
+      ],
+      "sources": [
+        "b22736b693b5d12b521173bed1055245b095a456"
+      ],
+      "phases": [
+        [
+          "fuzz-normal",
+          "0"
+        ],
+        [
+          "build",
+          "0"
+        ],
+        [
+          "redis",
+          "0"
+        ],
+        [
+          "go",
+          "0"
+        ],
+        [
+          "tagged",
+          "0"
+        ],
+        [
+          "typecheck",
+          "0"
+        ],
+        [
+          "jest",
+          "0"
+        ],
+        [
+          "frontend-build",
+          "0"
+        ],
+        [
+          "route-b",
+          "0"
+        ],
+        [
+          "selection",
+          "0"
+        ],
+        [
+          "storage",
+          "0"
+        ],
+        [
+          "navigation",
+          "0"
+        ],
+        [
+          "editing",
+          "0"
+        ],
+        [
+          "tabs",
+          "0"
+        ],
+        [
+          "legacy",
+          "0"
+        ],
+        [
+          "prod",
+          "0"
+        ],
+        [
+          "native",
+          "0"
+        ]
+      ],
+      "full_pass": true,
+      "route_b_cases": [
+        "4"
+      ]
+    }
+  ],
+  "other_failed_pr_jobs": {
+    "45584688217": [
+      "数据库Fuzzing (Fuzz_QueryBuilder_Where)",
+      "完整Fuzzing测试",
+      "安全组件Fuzzing (jwt-validation)",
+      "缓存Fuzzing (Fuzz_LayeredCache_Get)",
+      "Fuzzing测试汇总报告"
+    ],
+    "45584688151": [
+      "检查PGO支持"
+    ],
+    "45584687934": [
+      "🎭 E2E Tests"
+    ],
+    "45584687893": [
+      "🔍 Code Quality"
+    ],
+    "45584687926": [
+      "运行测试 (integration)",
+      "Fuzzing测试"
+    ]
+  },
+  "release": {
+    "merge": "HOLD",
+    "deployment": "HOLD",
+    "real_trial": "HOLD"
+  },
+  "records_at_review": {
+    "pr_run_artifacts": {
+      "45584688217": 0,
+      "45584688151": 0,
+      "45584687934": 0,
+      "45584687881": 0,
+      "45584687893": 0,
+      "45584687926": 0
+    },
+    "pr_merge_ref_caches": 0,
+    "test_merge_deployments": 0
+  },
+  "independent_review": {
+    "reviewer": "6.2 Astra",
+    "outcome": "PASS for this fixture and its two hosted jobs",
+    "sha": "b22736b693b5d12b521173bed1055245b095a456",
+    "evidence": [
+      "ordinary tests with race detector without fixture services",
+      "synthetic two-package workload: skipped, duplicate-name, failed package and absent target ok rejected",
+      "hosted steps, 19 names and positive iteration counts in both jobs",
+      "I11 PR/push identities and scope; artifact/cache/deployment records"
+    ]
+  }
+}
