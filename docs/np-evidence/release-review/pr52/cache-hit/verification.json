@@ -1,0 +1,87 @@
+{
+  "hermes": "t_ad5e3fad",
+  "base": "b22736b693b5d12b521173bed1055245b095a456",
+  "source": "0b58108ec3d32290af9d504dccbe75fbfc9de358",
+  "fixture_sha256": "37d77d617ffef6aa1f8b9ebb53887fde864672e6d92a856485c02b8d656984fb",
+  "baseline": {
+    "argv": [
+      "go",
+      "test",
+      "-race",
+      "-count=1",
+      "-run",
+      "^TestCacheMiddlewareHitAbortsDownstream$",
+      "./internal/middleware"
+    ],
+    "exit": 1,
+    "observed": "cached status, header and body followed by downstream marker"
+  },
+  "coordinator": {
+    "go": "1.25.6 darwin/amd64",
+    "fixture": "httptest and miniredis",
+    "runs": [
+      {
+        "argv": [
+          "go",
+          "test",
+          "-race",
+          "-json",
+          "-count=3",
+          "-run",
+          "^Test(CacheMiddlewareHitAbortsDownstream|NarrowPilotCacheZeroReadWrite)$",
+          "./internal/middleware"
+        ],
+        "top_level_passes": 6,
+        "exit": 0
+      },
+      {
+        "argv": [
+          "go",
+          "test",
+          "-race",
+          "-json",
+          "-count=1",
+          "./internal/middleware"
+        ],
+        "top_level_passes": 26,
+        "exit": 0
+      },
+      {
+        "argv": [
+          "go",
+          "test",
+          "-race",
+          "-json",
+          "-count=1",
+          "-run",
+          "^TestIntakeEarlyResponsesNoStore$",
+          "."
+        ],
+        "top_level_passes": 1,
+        "exit": 0
+      }
+    ],
+    "additional_passes": [
+      "go test -race -count=1 . ./tests/performance",
+      "go vet ./internal/middleware .",
+      "go build -o <temporary-output> ."
+    ]
+  },
+  "independent": {
+    "reviewer": "6.2 Astra",
+    "go": "1.25.0",
+    "outcome": "PASS",
+    "scope": [
+      "baseline red",
+      "candidate hit and miss",
+      "six no-store paths",
+      "root engine early responses"
+    ]
+  },
+  "hosted_ci": "NOT_RUN",
+  "release": {
+    "merge": "HOLD",
+    "deploy": "HOLD",
+    "real_trial": "HOLD"
+  }
+}
