@@ -1,0 +1,38 @@
+{
+  "gates": [
+    "I03",
+    "I04",
+    "I13"
+  ],
+  "root": "dedicated migrated clone, same verified binary",
+  "identity_values": {
+    "actual_nonempty_plaintexts": 2,
+    "actual_pg_ciphertexts": 2,
+    "actual_pg_digests": 2,
+    "routes_checked": [
+      "canonical",
+      "workbench_alias"
+    ],
+    "matches_in_full_response": 0
+  },
+  "transitions": {
+    "role_changed": {
+      "context_read": 403,
+      "context_create": 403,
+      "code": "OBJECT_ACCESS_DENIED"
+    },
+    "inactive": {
+      "context_read": 403,
+      "context_create": 403,
+      "code": "OBJECT_ACCESS_DENIED"
+    }
+  },
+  "unregistered_normal_login_token": {
+    "native_detail": 200,
+    "assistant_create": 401,
+    "code": "ACCESS_SESSION_REQUIRED"
+  },
+  "auth_redis_registration_and_logout_observed": true,
+  "sensitive_create_after_logout": 401,
+  "restored_registration_and_active_role_verified": true
+}
