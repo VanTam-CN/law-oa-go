@@ -1,0 +1,38 @@
+{
+  "gate": "I14 migrated history",
+  "dedicated_cloned_database": true,
+  "before": {
+    "sources": 3,
+    "receipts": 4,
+    "current_source_pointer": null
+  },
+  "outcomes": {
+    "legacy_enabled": [
+      409,
+      "UPDATE_PROTOCOL_REQUIRED"
+    ],
+    "legacy_empty_allowlist": [
+      409,
+      "UPDATE_PROTOCOL_REQUIRED"
+    ],
+    "missing_table_legacy": [
+      503,
+      "SAVE_RESULT_UNKNOWN"
+    ],
+    "missing_table_strict": [
+      503,
+      "SAVE_SCHEMA_REQUIRED"
+    ],
+    "query_error_legacy": [
+      503,
+      "SAVE_RESULT_UNKNOWN"
+    ],
+    "query_error_strict": [
+      503,
+      "SAVE_SCHEMA_REQUIRED"
+    ]
+  },
+  "intake_sources_receipts_parties_materials_before_after_equal": true,
+  "restored_schema_and_capability": true,
+  "protected_digest": "0c397b1c362b5461091b5c59bb797808bdda83d3e91d3ad02228f228d8f1c4c3"
+}
