@@ -8,6 +8,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"law-oa-go/internal/dbmetrics"
 	"law-oa-go/internal/logger"
 )
 
@@ -99,14 +100,7 @@ func NewPerformanceMetrics() *PerformanceMetrics {
 				Help: "Number of active database connections",
 			},
 		),
-		dbConnectionWaitTime: promauto.NewHistogramVec(
-			prometheus.HistogramOpts{
-				Name:    "db_connection_wait_seconds",
-				Help:    "Time spent waiting for database connections",
-				Buckets: prometheus.DefBuckets,
-			},
-			[]string{"database"},
-		),
+		dbConnectionWaitTime: dbmetrics.DBConnectionWaitTime(),
 		dbQueryDuration: promauto.NewHistogramVec(
 			prometheus.HistogramOpts{
 				Name:    "db_query_duration_seconds",

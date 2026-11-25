@@ -7,10 +7,20 @@ shift
 mkdir -p "$dir"/parts
 for package in "$@"; do
   part=$(mktemp -d "$dir/parts/pkg.XXXXXX")
-  go test -count=1 -bench=. -benchtime=30s -cpuprofile="$part/cpu.prof" -memprofile="$part/mem.prof" -o "$part/tests" "$package" >"$part/output" 2>&1 || {
+  timeout_args=()
+  if [[ "$package" == law-oa-go/tests/performance ]]; then
+    timeout_args=(-timeout=35m)
+  fi
+  go test "${timeout_args[@]}" -count=1 -bench=. -benchtime=30s -cpuprofile="$part/cpu.prof" -memprofile="$part/mem.prof" -o "$part/tests" "$package" >"$part/output" 2>&1 || {
     echo "PGO profiling failed for $package" >&2
+    if [[ "$package" == law-oa-go/tests/performance ]]; then
+      python3 scripts/np-ci/bench-results.py "$part/output"
+    fi
     exit 1
   }
+  if [[ "$package" == law-oa-go/tests/performance ]]; then
+    python3 scripts/np-ci/bench-results.py "$part/output"
+  fi
   test -s "$part/cpu.prof" && test -s "$part/mem.prof" || { echo "Missing profile for $package" >&2; exit 1; }
   rm "$part/tests"
 done

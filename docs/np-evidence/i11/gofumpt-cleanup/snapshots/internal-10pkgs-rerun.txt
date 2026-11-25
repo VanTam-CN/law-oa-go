@@ -1,0 +1,22 @@
+# law-oa-go/internal/models.test
+ld: warning: '/private/var/folders/4p/bng36r_s65d26yqk0lfpw2rh0000gn/T/go-link-305630586/000023.o' has malformed LC_DYSYMTAB, expected 98 undefined symbols to start at index 884, found 95 undefined symbols starting at index 884
+ok  	law-oa-go/internal/errors	2.348s
+# law-oa-go/internal/health.test
+ld: warning: '/private/var/folders/4p/bng36r_s65d26yqk0lfpw2rh0000gn/T/go-link-3891040860/000023.o' has malformed LC_DYSYMTAB, expected 98 undefined symbols to start at index 884, found 95 undefined symbols starting at index 884
+# law-oa-go/internal/middleware.test
+ld: warning: '/private/var/folders/4p/bng36r_s65d26yqk0lfpw2rh0000gn/T/go-link-1733596978/000023.o' has malformed LC_DYSYMTAB, expected 98 undefined symbols to start at index 884, found 95 undefined symbols starting at index 884
+# law-oa-go/internal/repositories.test
+ld: warning: '/private/var/folders/4p/bng36r_s65d26yqk0lfpw2rh0000gn/T/go-link-471547433/000023.o' has malformed LC_DYSYMTAB, expected 98 undefined symbols to start at index 884, found 95 undefined symbols starting at index 884
+# law-oa-go/internal/services.test
+ld: warning: '/private/var/folders/4p/bng36r_s65d26yqk0lfpw2rh0000gn/T/go-link-670296203/000023.o' has malformed LC_DYSYMTAB, expected 98 undefined symbols to start at index 884, found 95 undefined symbols starting at index 884
+# law-oa-go/internal/handlers.test
+ld: warning: '/private/var/folders/4p/bng36r_s65d26yqk0lfpw2rh0000gn/T/go-link-3954314868/000023.o' has malformed LC_DYSYMTAB, expected 98 undefined symbols to start at index 884, found 95 undefined symbols starting at index 884
+ok  	law-oa-go/internal/handlers	14.824s
+ok  	law-oa-go/internal/health	5.569s
+ok  	law-oa-go/internal/middleware	4.693s
+ok  	law-oa-go/internal/models	3.688s
+ok  	law-oa-go/internal/performance	3.841s
+ok  	law-oa-go/internal/repositories	4.715s
+ok  	law-oa-go/internal/security	4.650s
+ok  	law-oa-go/internal/services	5.848s
+ok  	law-oa-go/internal/services/test	16.889s
