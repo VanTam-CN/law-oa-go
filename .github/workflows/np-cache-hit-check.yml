@@ -1,0 +1,85 @@
+name: np-cache-hit-check
+
+on:
+  push:
+    branches: [codex/np-cache-hit-hosted]
+    paths:
+      - .github/workflows/np-cache-hit-check.yml
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  cache-hit-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      BASE: b22736b693b5d12b521173bed1055245b095a456
+      CANDIDATE: 94d531faeb6fa65f76599e3d5c04d83b72fda540
+      FIXTURE: internal/middleware/cache_hit_abort_test.go
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify checkout and export both fixed trees
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git merge-base --is-ancestor "$CANDIDATE" HEAD
+          test "$(git diff --name-only "$CANDIDATE" HEAD)" = '.github/workflows/np-cache-hit-check.yml'
+          test "$(git rev-parse "$CANDIDATE~2")" = "$BASE"
+          mkdir "$RUNNER_TEMP/base" "$RUNNER_TEMP/candidate"
+          git archive "$BASE" | tar -x -C "$RUNNER_TEMP/base"
+          git archive "$CANDIDATE" | tar -x -C "$RUNNER_TEMP/candidate"
+          cp "$RUNNER_TEMP/candidate/$FIXTURE" "$RUNNER_TEMP/base/$FIXTURE"
+          cmp "$RUNNER_TEMP/base/$FIXTURE" "$RUNNER_TEMP/candidate/$FIXTURE"
+          digest=$(sha256sum "$RUNNER_TEMP/base/$FIXTURE" | cut -d' ' -f1)
+          test "$digest" = 37d77d617ffef6aa1f8b9ebb53887fde864672e6d92a856485c02b8d656984fb
+          echo "CACHE_REFS checkout=$GITHUB_SHA baseline=$BASE candidate=$CANDIDATE fixture=$digest"
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.0'
+          cache: false
+      - name: Require the original append failure
+        run: |
+          cd "$RUNNER_TEMP/base"
+          rc=0
+          go test -race -count=1 -json -run '^TestCacheMiddlewareHitAbortsDownstream$' ./internal/middleware > "$RUNNER_TEMP/red.jsonl" || rc=$?
+          test "$rc" = 1
+          jq -es --arg t TestCacheMiddlewareHitAbortsDownstream --arg p law-oa-go/internal/middleware \
+            --arg msg 'hit: code=203 body="{\"mechanism\":\"cached\"}live" x-mech="hit"' '
+            [.[] | select(.Package==$p)] |
+            (map(select(.Action=="run" and .Test==$t)) | length)==1 and
+            (map(select(.Action=="fail" and .Test==$t)) | length)==1 and
+            (map(select(.Action=="fail" and .Test==null)) | length)==1 and
+            any(.[]; .Test==$t and .Action=="output" and (.Output | contains($msg)))
+            ' "$RUNNER_TEMP/red.jsonl" >/dev/null
+          echo "CACHE_RED expected_append status=203 test_exit=$rc"
+      - name: Verify named candidate tests and package conclusions
+        run: |
+          cd "$RUNNER_TEMP/candidate"
+          go test -race -count=3 -json -run '^Test(CacheMiddlewareHitAbortsDownstream|NarrowPilotCacheZeroReadWrite)$' ./internal/middleware > "$RUNNER_TEMP/middleware.jsonl"
+          go test -race -count=1 -json -run '^TestIntakeEarlyResponsesNoStore$' . > "$RUNNER_TEMP/root.jsonl"
+          check_test() {
+            jq -es --arg p "$2" --arg t "$3" --argjson n "$4" '
+              all(.[]; .Package==$p and .Action!="skip" and .Action!="fail") and
+              (map(select(.Action=="run" and .Test==$t)) | length)==$n and
+              (map(select(.Action=="pass" and .Test==$t)) | length)==$n and
+              (map(select(.Action=="pass" and .Test==null)) | length)==1
+              ' "$RUNNER_TEMP/$1.jsonl" >/dev/null
+            echo "CACHE_GREEN package=$2 test=$3 passes=$4"
+          }
+          check_test middleware law-oa-go/internal/middleware TestCacheMiddlewareHitAbortsDownstream 3
+          check_test middleware law-oa-go/internal/middleware TestNarrowPilotCacheZeroReadWrite 3
+          check_test root law-oa-go TestIntakeEarlyResponsesNoStore 1
+      - name: Run whole middleware package and build root binary
+        run: |
+          cd "$RUNNER_TEMP/candidate"
+          go test -race -count=1 ./internal/middleware > "$RUNNER_TEMP/package.log"
+          go build -o "$RUNNER_TEMP/law-oa-go" .
+          test -x "$RUNNER_TEMP/law-oa-go"
+          echo "CACHE_PACKAGE race=pass root_build=pass"
