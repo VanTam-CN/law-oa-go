@@ -1,0 +1,27 @@
+{
+  "worker": "glm-flash",
+  "scope": "additional same-host isolated worker runs",
+  "reproduction_on_candidate": [
+    "session-boundaries.py",
+    "cache-paths.py",
+    "reopened-draft.py"
+  ],
+  "private_raw_evidence_retained": true,
+  "runs": [
+    {
+      "phase": "auth",
+      "checks": 23,
+      "failed": 0,
+      "skipped": 0,
+      "raw_sha256": "46272b96752f51066ae01e7b4390368f661dd721f51a3db506b907e83527ff3d"
+    },
+    {
+      "phase": "cache",
+      "checks": 11,
+      "failed": 0,
+      "skipped": 0,
+      "raw_sha256": "be771d0ff9f50177f1cd9c7de8c29b62e1ac867bab8e607931a8530c51947494"
+    }
+  ],
+  "limits": "Cross-role transition on the unlisted lawyer and timing-limited cache counts are supplemented by coordinator tests on an allowed lawyer, persisted identity canaries, exact route keys and a read control."
+}
