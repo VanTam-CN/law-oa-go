@@ -374,7 +374,7 @@ func normalizeDocumentTagsForStorage(raw string) string {
 func (s *DocumentService) saveToFile(src multipart.File, dst string) error {
 	// Create directory if it doesn't exist
 	dir := filepath.Dir(dst)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 

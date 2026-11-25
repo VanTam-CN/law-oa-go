@@ -1,0 +1,175 @@
+{
+  "source_sha": "4e4fb84792e9a79948109971f1fafa3477c09092",
+  "review_base": "2d4e6d0383e889ae261bbb6ddb17f5bf280dbe76",
+  "board": "t_540aad13",
+  "environment": {
+    "postgres": "16.14",
+    "backend": "np_local_check / router.Init / loopback / nil Redis",
+    "browser": "system Chrome, Vite, workers=1, retries=0"
+  },
+  "old_baseline_reproductions": {
+    "first_mixed_edit_pg": {
+      "changed_title": true,
+      "changed_summary": true,
+      "source_history_count": 0
+    },
+    "direct_approval": "Old page issued approval carrying R3 without PUT, confirm, or recheck.",
+    "clean_restored_detection": "Test run separately on a fresh target: no successful confirmation/detection after click.",
+    "revoked_confirmation": "Before live-role guard, HTTP 200 and changed PG row.",
+    "approval_dependency_failure": "Before fail-closed reads, injected waiver 503 did not stop the approval."
+  },
+  "static_review": {
+    "model": "gpt-6.2-astra",
+    "verdict": "M3_PASS_M4_ENTRY_GO",
+    "mode": "fixed-source and assertion review; coordinator ran runtime checks"
+  },
+  "go": {
+    "start": "2026-11-24T09:30:23.104149+00:00",
+    "end": "2026-11-24T09:30:58.052279+00:00",
+    "argv": [
+      "go",
+      "test",
+      "-p",
+      "1",
+      "-race",
+      "-count=1",
+      "-json",
+      "./internal/handlers",
+      "./internal/database",
+      "./internal/middleware",
+      "./internal/router",
+      "-run",
+      "^(TestConfirmAndConflictCheckAuthorizeBeforeRevisionHint|TestConfirmIntakeFactsRotatesRevisionAndRejectsStaleHeader|TestDraftListCarriesRevisionTokens|TestDraftRestoreReturnsRevisionAndProtectedIdentityStatus|TestLegacyDraftWithoutStoredRevisionLoadsAndSavesOnce|TestNPContextEndReleasesExpiryTimer|TestNPContextExpiryAndChangedDraft|TestNPGoDigestMatchesBrowserManifest|TestNPMultiTurnInvalidationAndSessionExpiry|TestNPPostgresActualDisconnectAfterCommit|TestNPPostgresActualDisconnectBeforeCommit|TestNPPostgresCreateReplayCarriesSourceHistoryFact|TestNPPostgresDescriptionWhitespaceIsExact|TestNPPostgresLegacyNullMetadataIsInitialized|TestNPPostgresLegacySaveAfterStrictManualStillChecksRevision|TestNPPostgresMalformedIntakeIDIsBadRequest|TestNPPostgresNativeCannotForgeSourcePointer|TestNPPostgresParallelWritersAndBusyAbandon|TestNPPostgresProtectedDigestDetectsControlAndMemberChanges|TestNPPostgresSaveReopenConcurrencyAndReceipts|TestNPPostgresSourcePermissionsAndStrictBoundary|TestNarrowPilotAuditSkipsSensitiveBodyBeforeRead|TestNativeHistoryLookupFailureBlocksFullSave|TestOptimizedDatabaseSlowQueryLogDoesNotLeakParameters|TestStartIntakeConflictCheckLateResultAfterNativeEdit|TestUpdateIntakeInvalidatesConfirmedSnapshotAndRotatesRevision|TestUpdateIntakeMergesProvidedMetadataWithoutErasingStoredFields|TestUpdateIntakeRejectsMissingExpectedRevisionWithoutMutation|TestUpdateIntakeRejectsStaleRevisionWithoutOverwrite|TestUpdateIntakeSwitchClientUsesNewMasterIdentity|TestUpdateIntakeWithoutMetadataKeepsStoredBusinessFields)$"
+    ],
+    "exit": 0,
+    "expected": [
+      "TestConfirmAndConflictCheckAuthorizeBeforeRevisionHint",
+      "TestConfirmIntakeFactsRotatesRevisionAndRejectsStaleHeader",
+      "TestDraftListCarriesRevisionTokens",
+      "TestDraftRestoreReturnsRevisionAndProtectedIdentityStatus",
+      "TestLegacyDraftWithoutStoredRevisionLoadsAndSavesOnce",
+      "TestNPContextEndReleasesExpiryTimer",
+      "TestNPContextExpiryAndChangedDraft",
+      "TestNPGoDigestMatchesBrowserManifest",
+      "TestNPMultiTurnInvalidationAndSessionExpiry",
+      "TestNPPostgresActualDisconnectAfterCommit",
+      "TestNPPostgresActualDisconnectBeforeCommit",
+      "TestNPPostgresCreateReplayCarriesSourceHistoryFact",
+      "TestNPPostgresDescriptionWhitespaceIsExact",
+      "TestNPPostgresLegacyNullMetadataIsInitialized",
+      "TestNPPostgresLegacySaveAfterStrictManualStillChecksRevision",
+      "TestNPPostgresMalformedIntakeIDIsBadRequest",
+      "TestNPPostgresNativeCannotForgeSourcePointer",
+      "TestNPPostgresParallelWritersAndBusyAbandon",
+      "TestNPPostgresProtectedDigestDetectsControlAndMemberChanges",
+      "TestNPPostgresSaveReopenConcurrencyAndReceipts",
+      "TestNPPostgresSourcePermissionsAndStrictBoundary",
+      "TestNarrowPilotAuditSkipsSensitiveBodyBeforeRead",
+      "TestNativeHistoryLookupFailureBlocksFullSave",
+      "TestOptimizedDatabaseSlowQueryLogDoesNotLeakParameters",
+      "TestStartIntakeConflictCheckLateResultAfterNativeEdit",
+      "TestUpdateIntakeInvalidatesConfirmedSnapshotAndRotatesRevision",
+      "TestUpdateIntakeMergesProvidedMetadataWithoutErasingStoredFields",
+      "TestUpdateIntakeRejectsMissingExpectedRevisionWithoutMutation",
+      "TestUpdateIntakeRejectsStaleRevisionWithoutOverwrite",
+      "TestUpdateIntakeSwitchClientUsesNewMasterIdentity",
+      "TestUpdateIntakeWithoutMetadataKeepsStoredBusinessFields"
+    ],
+    "test_count": 38,
+    "missing": [],
+    "failed": [],
+    "skipped": []
+  },
+  "formal_detector": {
+    "argv": [
+      "go",
+      "test",
+      "-tags",
+      "np_m1_pg",
+      "-race",
+      "-count=1",
+      "./tests/integration/m1",
+      "-run",
+      "^(TestNativeConcurrentDraftAndHistory|TestAsyncPGFormalDetectorCompletesOnce|TestConflictPGLinkAdvancesRevisionOnce|TestM3ConflictCompletionAfterSourceSave)$",
+      "-json"
+    ],
+    "passed": [
+      "TestAsyncPGFormalDetectorCompletesOnce",
+      "TestConflictPGLinkAdvancesRevisionOnce",
+      "TestM3ConflictCompletionAfterSourceSave/sync",
+      "TestM3ConflictCompletionAfterSourceSave/async",
+      "TestM3ConflictCompletionAfterSourceSave",
+      "TestNativeConcurrentDraftAndHistory"
+    ]
+  },
+  "frontend": {
+    "type_check": "PASS",
+    "go_build": "PASS",
+    "go_vet_handlers": "PASS",
+    "jest_suites": 12,
+    "jest_passed": 105,
+    "jest_skipped": 0,
+    "jest_patterns": [
+      "src/components/intake",
+      "src/pages/auth/__tests__",
+      "src/pages/batch01/__tests__"
+    ]
+  },
+  "native_buttons": {
+    "runner": "cases.spec.ts and conflict-actions.spec.ts / API fixtures / Chrome, worker=1",
+    "pattern": "创建重放保留|直接审批|重复保存|立案冲突门禁",
+    "cases": [
+      "e2e/cases.spec.ts:155:3 › 新建立案工作台 › 重复保存应更新同一接案且刷新后可恢复完整草稿",
+      "e2e/cases.spec.ts:201:5 › 新建立案工作台 › 摘要修改后直接审批：none",
+      "e2e/cases.spec.ts:201:5 › 新建立案工作台 › 摘要修改后直接审批：save",
+      "e2e/cases.spec.ts:201:5 › 新建立案工作台 › 摘要修改后直接审批：result",
+      "e2e/cases.spec.ts:201:5 › 新建立案工作台 › 摘要修改后直接审批：review",
+      "e2e/cases.spec.ts:201:5 › 新建立案工作台 › 摘要修改后直接审批：waiver",
+      "e2e/cases.spec.ts:244:3 › 新建立案工作台 › 创建重放保留本地输入，重开前不能用服务端新版本继续写",
+      "e2e/cases.spec.ts:292:3 › 新建立案工作台 › 重复保存后服务端草稿恢复不应回传身份号或覆盖主体与材料",
+      "e2e/conflict-actions.spec.ts:494:3 › 立案冲突门禁 › BLOCKED 检测完成后提交按钮预先禁用并显示原因",
+      "e2e/conflict-actions.spec.ts:524:3 › 立案冲突门禁 › STALE 在步骤区和底栏统一过期，并可保存最新输入重新检测"
+    ]
+  },
+  "additional_entry_checks": {
+    "config": "frontend/playwright.np-first-selection.config.ts",
+    "cases": [
+      "np-entry/first-selection.spec.ts:4:1 › 尚无历史来源的首个候选手改后混改标题，保存须停在人工确认",
+      "np-entry/first-selection.spec.ts:19:1 › 来源草稿重开后直接检测沿用已保存版本，空白证件框不触发重写"
+    ],
+    "boundary": "Real source save and restore. Second case adds synthetic registration/classification to detail and stubs facts-confirmation/conflict-check to assert button requests."
+  },
+  "route_b": {
+    "config": "frontend/playwright.np.config.ts",
+    "start_utc": "2026-11-24T09:30:59Z",
+    "end_utc": "2026-11-24T09:31:19Z",
+    "cases": [
+      "e2e/np-first-slice.live.spec.ts:10:1 › 真实服务：多轮核对，仅应用摘要，原生保存后新会话从原菜单重开来源",
+      "e2e/np-first-slice.live.spec.ts:46:1 › 真实服务：A来源保存后，B旧版纯手工摘要不得覆盖并保留输入",
+      "e2e/np-first-slice.live.spec.ts:64:1 › 真实上游断线：提交后断开TCP，重登按原键回查且重开来源",
+      "e2e/np-first-slice.live.spec.ts:109:1 › 生成期间保留未发送输入；人工摘要不被候选静默覆盖"
+    ],
+    "before": {
+      "receipts": 0,
+      "sources": 0,
+      "protected_sha256": "c574048d32a5de1b9de2f7cae993593a325989dc0a6ea9cbca9ccad574f98be6",
+      "large_number": true,
+      "target_materials": 2
+    },
+    "after": {
+      "protected_sha256": "c574048d32a5de1b9de2f7cae993593a325989dc0a6ea9cbca9ccad574f98be6",
+      "sources": 3,
+      "receipts": 4,
+      "linked": 3,
+      "manual": 1
+    },
+    "go_same_fixture": [
+      "TestNPGoDigestMatchesBrowserManifest"
+    ]
+  },
+  "native_create_replay_scope": "Optional 042 column was absent from the isolated v14+86 bootstrap. The PG replay test uses connection-local tables and an actual source save. M3 only handles existing drafts.",
+  "full_I11": "NOT_RUN_PENDING_M4",
+  "CI_classification_P2": "t_fbcffe5f",
+  "I09_FILES": "DEFERRED",
+  "M5_M6": "NOT_RUN"
+}

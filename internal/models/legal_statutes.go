@@ -12,33 +12,33 @@ import (
 
 // LegalStatute 法条基本信息模型
 type LegalStatute struct {
-	ID                 int       `json:"id" gorm:"primaryKey;column:id"`
-	StatuteNumber      string    `json:"statute_number" gorm:"uniqueIndex;not null;column:statute_number;size:100"`
-	Title              string    `json:"title" gorm:"not null;column:title;type:text"`
-	Content            string    `json:"content" gorm:"not null;column:content;type:text"`
-	CategoryID         int       `json:"category_id" gorm:"column:category_id;index"`
-	LawName            string    `json:"law_name" gorm:"not null;column:law_name;size:200"`
-	Chapter            string    `json:"chapter" gorm:"column:chapter;size:200"`
-	Section            string    `json:"section" gorm:"column:section;size:200"`
-	Part               string    `json:"part" gorm:"column:part;size:200"`
-	EffectiveDate      *time.Time `json:"effective_date" gorm:"column:effective_date;index"`
-	ExpiryDate         *time.Time `json:"expiry_date" gorm:"column:expiry_date"`
-	PublishingAuthority string    `json:"publishing_authority" gorm:"column:publishing_authority;size:200"`
-	Status             string    `json:"status" gorm:"column:status;default:active;size:20;index"`
-	HierarchyLevel     int       `json:"hierarchy_level" gorm:"column:hierarchy_level;default:1;index"`
-	ParentStatuteID    *int      `json:"parent_statute_id" gorm:"column:parent_statute_id;index"`
-	OrderInHierarchy   *int      `json:"order_in_hierarchy" gorm:"column:order_in_hierarchy"`
-	Tags               StringArray `json:"tags" gorm:"column:tags;type:text[]"`
-	Keywords           StringArray `json:"keywords" gorm:"column:keywords;type:text[]"`
-	CreatedAt          time.Time `json:"created_at" gorm:"column:created_at;autoCreateTime"`
-	UpdatedAt          time.Time `json:"updated_at" gorm:"column:updated_at;autoUpdateTime"`
+	ID                  int         `json:"id" gorm:"primaryKey;column:id"`
+	StatuteNumber       string      `json:"statute_number" gorm:"uniqueIndex;not null;column:statute_number;size:100"`
+	Title               string      `json:"title" gorm:"not null;column:title;type:text"`
+	Content             string      `json:"content" gorm:"not null;column:content;type:text"`
+	CategoryID          int         `json:"category_id" gorm:"column:category_id;index"`
+	LawName             string      `json:"law_name" gorm:"not null;column:law_name;size:200"`
+	Chapter             string      `json:"chapter" gorm:"column:chapter;size:200"`
+	Section             string      `json:"section" gorm:"column:section;size:200"`
+	Part                string      `json:"part" gorm:"column:part;size:200"`
+	EffectiveDate       *time.Time  `json:"effective_date" gorm:"column:effective_date;index"`
+	ExpiryDate          *time.Time  `json:"expiry_date" gorm:"column:expiry_date"`
+	PublishingAuthority string      `json:"publishing_authority" gorm:"column:publishing_authority;size:200"`
+	Status              string      `json:"status" gorm:"column:status;default:active;size:20;index"`
+	HierarchyLevel      int         `json:"hierarchy_level" gorm:"column:hierarchy_level;default:1;index"`
+	ParentStatuteID     *int        `json:"parent_statute_id" gorm:"column:parent_statute_id;index"`
+	OrderInHierarchy    *int        `json:"order_in_hierarchy" gorm:"column:order_in_hierarchy"`
+	Tags                StringArray `json:"tags" gorm:"column:tags;type:text[]"`
+	Keywords            StringArray `json:"keywords" gorm:"column:keywords;type:text[]"`
+	CreatedAt           time.Time   `json:"created_at" gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt           time.Time   `json:"updated_at" gorm:"column:updated_at;autoUpdateTime"`
 
 	// 关联字段
-	Category     *LegalCategory      `json:"category,omitempty" gorm:"foreignKey:CategoryID"`
-	ParentStatute *LegalStatute     `json:"parent_statute,omitempty" gorm:"foreignKey:ParentStatuteID"`
-	ChildStatutes []LegalStatute    `json:"child_statutes,omitempty" gorm:"foreignKey:ParentStatuteID"`
-	Versions     []LegalStatuteVersion `json:"versions,omitempty" gorm:"foreignKey:StatuteID"`
-	TagsRelation []LegalStatuteTag  `json:"tags_relation,omitempty" gorm:"foreignKey:StatuteID"`
+	Category      *LegalCategory        `json:"category,omitempty" gorm:"foreignKey:CategoryID"`
+	ParentStatute *LegalStatute         `json:"parent_statute,omitempty" gorm:"foreignKey:ParentStatuteID"`
+	ChildStatutes []LegalStatute        `json:"child_statutes,omitempty" gorm:"foreignKey:ParentStatuteID"`
+	Versions      []LegalStatuteVersion `json:"versions,omitempty" gorm:"foreignKey:StatuteID"`
+	TagsRelation  []LegalStatuteTag     `json:"tags_relation,omitempty" gorm:"foreignKey:StatuteID"`
 }
 
 // LegalCategory 法条分类模型
@@ -54,9 +54,9 @@ type LegalCategory struct {
 	UpdatedAt   time.Time `json:"updated_at" gorm:"column:updated_at;autoUpdateTime"`
 
 	// 关联字段
-	Parent   *LegalCategory   `json:"parent,omitempty" gorm:"foreignKey:ParentID"`
-	Children []LegalCategory  `json:"children,omitempty" gorm:"foreignKey:ParentID"`
-	Statutes []LegalStatute   `json:"statutes,omitempty" gorm:"foreignKey:CategoryID"`
+	Parent   *LegalCategory  `json:"parent,omitempty" gorm:"foreignKey:ParentID"`
+	Children []LegalCategory `json:"children,omitempty" gorm:"foreignKey:ParentID"`
+	Statutes []LegalStatute  `json:"statutes,omitempty" gorm:"foreignKey:CategoryID"`
 }
 
 // LegalHierarchy 法条层级关系模型
@@ -75,16 +75,16 @@ type LegalHierarchy struct {
 
 // LegalStatuteVersion 法条版本历史模型
 type LegalStatuteVersion struct {
-	ID                int       `json:"id" gorm:"primaryKey;column:id"`
-	StatuteID         int       `json:"statute_id" gorm:"not null;column:statute_id;index"`
-	VersionNumber     int       `json:"version_number" gorm:"not null;column:version_number"`
-	Title             string    `json:"title" gorm:"not null;column:title;type:text"`
-	Content           string    `json:"content" gorm:"not null;column:content;type:text"`
+	ID                int        `json:"id" gorm:"primaryKey;column:id"`
+	StatuteID         int        `json:"statute_id" gorm:"not null;column:statute_id;index"`
+	VersionNumber     int        `json:"version_number" gorm:"not null;column:version_number"`
+	Title             string     `json:"title" gorm:"not null;column:title;type:text"`
+	Content           string     `json:"content" gorm:"not null;column:content;type:text"`
 	EffectiveDate     *time.Time `json:"effective_date" gorm:"column:effective_date"`
 	ExpiryDate        *time.Time `json:"expiry_date" gorm:"column:expiry_date"`
-	ChangeDescription string    `json:"change_description" gorm:"column:change_description;type:text"`
-	CreatedBy         int       `json:"created_by" gorm:"column:created_by;index"`
-	CreatedAt         time.Time `json:"created_at" gorm:"column:created_at;autoCreateTime"`
+	ChangeDescription string     `json:"change_description" gorm:"column:change_description;type:text"`
+	CreatedBy         int        `json:"created_by" gorm:"column:created_by;index"`
+	CreatedAt         time.Time  `json:"created_at" gorm:"column:created_at;autoCreateTime"`
 
 	// 关联字段
 	Statute *LegalStatute `json:"statute,omitempty" gorm:"foreignKey:StatuteID"`
@@ -105,13 +105,13 @@ type UserLegalFavorite struct {
 
 // LegalSearchHistory 法条搜索历史模型
 type LegalSearchHistory struct {
-	ID            int       `json:"id" gorm:"primaryKey;column:id"`
-	UserID        *int      `json:"user_id" gorm:"column:user_id;index"`
-	SearchQuery   string    `json:"search_query" gorm:"not null;column:search_query;type:text"`
-	SearchFilters JSON      `json:"search_filters" gorm:"column:search_filters;type:jsonb"`
-	ResultCount   int       `json:"result_count" gorm:"column:result_count;default:0"`
-	SearchDuration *int     `json:"search_duration" gorm:"column:search_duration"` // 毫秒
-	CreatedAt     time.Time `json:"created_at" gorm:"column:created_at;autoCreateTime;index"`
+	ID             int       `json:"id" gorm:"primaryKey;column:id"`
+	UserID         *int      `json:"user_id" gorm:"column:user_id;index"`
+	SearchQuery    string    `json:"search_query" gorm:"not null;column:search_query;type:text"`
+	SearchFilters  JSON      `json:"search_filters" gorm:"column:search_filters;type:jsonb"`
+	ResultCount    int       `json:"result_count" gorm:"column:result_count;default:0"`
+	SearchDuration *int      `json:"search_duration" gorm:"column:search_duration"` // 毫秒
+	CreatedAt      time.Time `json:"created_at" gorm:"column:created_at;autoCreateTime;index"`
 
 	// 关联字段
 	User *User `json:"user,omitempty" gorm:"foreignKey:UserID"`
@@ -119,11 +119,11 @@ type LegalSearchHistory struct {
 
 // LegalTag 法条标签模型
 type LegalTag struct {
-	ID          int    `json:"id" gorm:"primaryKey;column:id"`
-	Name        string `json:"name" gorm:"uniqueIndex;not null;column:name;size:50"`
-	Color       string `json:"color" gorm:"column:color;size:7;default:#1890ff"`
-	Description string `json:"description" gorm:"column:description;type:text"`
-	UsageCount  int    `json:"usage_count" gorm:"column:usage_count;default:0"`
+	ID          int       `json:"id" gorm:"primaryKey;column:id"`
+	Name        string    `json:"name" gorm:"uniqueIndex;not null;column:name;size:50"`
+	Color       string    `json:"color" gorm:"column:color;size:7;default:#1890ff"`
+	Description string    `json:"description" gorm:"column:description;type:text"`
+	UsageCount  int       `json:"usage_count" gorm:"column:usage_count;default:0"`
 	CreatedAt   time.Time `json:"created_at" gorm:"column:created_at;autoCreateTime"`
 
 	// 关联字段

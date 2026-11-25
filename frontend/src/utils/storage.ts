@@ -43,17 +43,13 @@ function parseJwtPayload(token: string): Record<string, any> | null {
   }
 }
 
+export function getTokenExpiry(token: string | null): number {
+  const exp = token && parseJwtPayload(token)?.exp
+  return typeof exp === 'number' && Number.isFinite(exp) ? exp * 1000 : 0
+}
+
 export function isTokenExpired(token: string | null, skewSeconds = 30): boolean {
-  if (!token) {
-    return true
-  }
-
-  const payload = parseJwtPayload(token)
-  if (!payload || typeof payload.exp !== 'number') {
-    return true
-  }
-
-  return payload.exp * 1000 <= Date.now() + skewSeconds * 1000
+  return getTokenExpiry(token) <= Date.now() + skewSeconds * 1000
 }
 
 export function getToken(): string | null {

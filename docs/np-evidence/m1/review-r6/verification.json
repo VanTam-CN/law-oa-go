@@ -1,0 +1,209 @@
+{
+  "baseline": "5098ebf6666da7835348645ccc18697a2c395d6f",
+  "source_and_tests": "d22c9c9e19b93e6a4e30fb09a48d733930e5c9c2",
+  "regression_only": "bb04a214f118f696e7bd74f0aa836021df31ee50",
+  "board": "law-oa-np-main",
+  "task": "t_5b5748d2",
+  "database": {
+    "engine": "PostgreSQL 16.14",
+    "isolation": "new tmpfs container on loopback; synthetic PG bootstrap v14 + 000086"
+  },
+  "primary_test": "tests/integration/m1/r5_metadata_arrays_pg_test.go",
+  "supplemental_overlay": "Hermes attachment party_test.go replaces a virtual tests/integration/m1/review_r6_external_test.go; Go -overlay paths resolve under that run’s temporary directory",
+  "variants_source_sha256": "0ec4af0de880738fc1fc4fcca8c88d418119dd15e0521cd42a0f26d2844b1f1f",
+  "supplemental_sha256": "54cbac3a3dc4a41c8ee2e2f7c61f6d3cb13937e11d70b3a0f62a3635b7610531",
+  "runs": {
+    "red": {
+      "sha": "bb04a214f118f696e7bd74f0aa836021df31ee50",
+      "argv": [
+        "go",
+        "test",
+        "-race",
+        "-tags",
+        "np_m1_pg",
+        "-count=1",
+        "-json",
+        "./tests/integration/m1",
+        "-run",
+        "^TestM1R5ArrayEditPreservesOriginalNumbers$"
+      ],
+      "start": "2026-11-23T05:43:26.490125+00:00",
+      "end": "2026-11-23T05:43:48.064544+00:00",
+      "exit": 1,
+      "log_sha256": "430623a1987509b0631a1089144850d2992a994f1449fb729aaa7ce3e944eb5f",
+      "counts": {
+        "pass": 10,
+        "fail": 4,
+        "skip": 0
+      },
+      "failed": [
+        "TestM1R5ArrayEditPreservesOriginalNumbers/delete_first_then_append_collision",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/nested_pure_append",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/delete_first_reverse_collision",
+        "TestM1R5ArrayEditPreservesOriginalNumbers"
+      ],
+      "array_results": {
+        "TestM1R5ArrayEditPreservesOriginalNumbers/delete_first_then_append_collision": "HTTP=200 stored=[9007199254740993, 1, 7] exact=false same_row=false same_revision=false",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/nested_pure_append": "HTTP=409 stored=[[9007199254740993, 2]] exact=false same_row=true same_revision=true",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/delete_first_reverse_collision": "HTTP=200 stored=[9007199254740992, 1, 7] exact=false same_row=false same_revision=false",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/unchanged_collision_echo": "HTTP=200 stored=[9007199254740993, 9007199254740992, 1] exact=true same_row=false same_revision=false",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/append": "HTTP=200 stored=[9007199254740993, 2, 7] exact=true same_row=false same_revision=false",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/overflow_echo_append": "HTTP=200 stored=[10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000, 7] exact=true same_row=false same_revision=false",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/prepend": "HTTP=409 stored=[9007199254740993, 2] exact=false same_row=true same_revision=true",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/reorder": "HTTP=409 stored=[9007199254740993, 2] exact=false same_row=true same_revision=true",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/remove_first": "HTTP=409 stored=[2, 9007199254740993] exact=false same_row=true same_revision=true",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/safe_sibling_edit": "HTTP=200 stored=[9007199254740993, 3] exact=true same_row=false same_revision=false",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/ordinary_decimal_reorder": "HTTP=200 stored=[2, 1] exact=true same_row=false same_revision=false",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/ordinary_insert": "HTTP=200 stored=[1, 7, 2] exact=true same_row=false same_revision=false",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/explicit_lossless_edit": "HTTP=200 stored=[9007199254740995] exact=true same_row=false same_revision=false"
+      }
+    },
+    "party-red": {
+      "sha": "bb04a214f118f696e7bd74f0aa836021df31ee50",
+      "argv": [
+        "go",
+        "test",
+        "-overlay",
+        "/tmp/lawoa-m1-r6.3fQLyI/party-overlay.json",
+        "-race",
+        "-tags",
+        "np_m1_pg",
+        "-count=1",
+        "-json",
+        "./tests/integration/m1",
+        "-run",
+        "^TestReviewR6PartyArrayEcho$"
+      ],
+      "start": "2026-11-23T05:44:30.940020+00:00",
+      "end": "2026-11-23T05:44:38.413917+00:00",
+      "exit": 1,
+      "log_sha256": "ce1f0e4a76b3d2d207a6b942531089aaaa6cd5dcce13f48d99202f249c1b6ecf",
+      "counts": {
+        "pass": 0,
+        "fail": 3,
+        "skip": 0
+      },
+      "failed": [
+        "TestReviewR6PartyArrayEcho/collision",
+        "TestReviewR6PartyArrayEcho/nested",
+        "TestReviewR6PartyArrayEcho"
+      ],
+      "array_results": {
+        "TestReviewR6PartyArrayEcho/collision": "HTTP=200 stored=[9007199254740993, 1, 7] exact=false same_intake_and_party=false",
+        "TestReviewR6PartyArrayEcho/nested": "HTTP=409 stored=[[9007199254740993, 2]] exact=false same_intake_and_party=true"
+      }
+    },
+    "final": {
+      "sha": "d22c9c9e19b93e6a4e30fb09a48d733930e5c9c2",
+      "argv": [
+        "go",
+        "test",
+        "-race",
+        "-p",
+        "3",
+        "-tags",
+        "np_m1_pg",
+        "-count=1",
+        "-timeout=120s",
+        "-json",
+        "./tests/integration/m1",
+        "./internal/handlers",
+        "./internal/repositories",
+        "./internal/services",
+        "-run",
+        "^(TestAsyncPG|TestNative|TestSchemaRequiresFrozen|TestConflictPG|TestUpdateIntake|TestLegacyDraft|TestConfirmIntake|TestConfirmAndConflict|TestDraftRestore|TestDraftList|TestAggregateMetadata|TestIntakeDraft(List|Detail)|TestLinkConflictCheckToCase|TestStartIntakeConflictCheck|TestAsyncConflictCheckService|TestAuditSafeConflictRequest|TestM1R2|TestAsyncTerminal|TestM1R3|TestMatchConflictIndex|TestConflictSubjectIndex|TestNormalizeConflictSubjects|TestM1R4|TestM1R5)"
+      ],
+      "start": "2026-11-23T06:01:35.432049+00:00",
+      "end": "2026-11-23T06:01:49.078269+00:00",
+      "exit": 0,
+      "log_sha256": "c01c267f38cbc37b7fc0c3ebc7367945cf5e3e7072fdb4951b5118785adddb5c",
+      "counts": {
+        "pass": 141,
+        "fail": 0,
+        "skip": 0
+      },
+      "failed": [],
+      "array_results": {
+        "TestM1R5ArrayEditPreservesOriginalNumbers/delete_first_then_append_collision": "HTTP=409 stored=[9007199254740993, 9007199254740992, 1] exact=false same_row=true same_revision=true",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/nested_pure_append": "HTTP=200 stored=[[9007199254740993, 2, 7]] exact=true same_row=false same_revision=false",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/delete_first_reverse_collision": "HTTP=409 stored=[9007199254740992, 9007199254740993, 1] exact=false same_row=true same_revision=true",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/unchanged_collision_echo": "HTTP=200 stored=[9007199254740993, 9007199254740992, 1] exact=true same_row=false same_revision=false",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/append": "HTTP=200 stored=[9007199254740993, 2, 7] exact=true same_row=false same_revision=false",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/overflow_echo_append": "HTTP=200 stored=[10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000, 7] exact=true same_row=false same_revision=false",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/prepend": "HTTP=409 stored=[9007199254740993, 2] exact=false same_row=true same_revision=true",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/reorder": "HTTP=409 stored=[9007199254740993, 2] exact=false same_row=true same_revision=true",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/remove_first": "HTTP=409 stored=[2, 9007199254740993] exact=false same_row=true same_revision=true",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/safe_sibling_edit": "HTTP=200 stored=[9007199254740993, 3] exact=true same_row=false same_revision=false",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/ordinary_decimal_reorder": "HTTP=200 stored=[2, 1] exact=true same_row=false same_revision=false",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/ordinary_insert": "HTTP=200 stored=[1, 7, 2] exact=true same_row=false same_revision=false",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/explicit_lossless_edit": "HTTP=200 stored=[9007199254740995] exact=true same_row=false same_revision=false"
+      }
+    },
+    "party-green": {
+      "sha": "d22c9c9e19b93e6a4e30fb09a48d733930e5c9c2",
+      "argv": [
+        "go",
+        "test",
+        "-overlay",
+        "/tmp/lawoa-m1-r6.3fQLyI/party-overlay.json",
+        "-race",
+        "-tags",
+        "np_m1_pg",
+        "-count=1",
+        "-json",
+        "./tests/integration/m1",
+        "-run",
+        "^TestReviewR6PartyArrayEcho$"
+      ],
+      "start": "2026-11-23T06:01:49.152359+00:00",
+      "end": "2026-11-23T06:01:56.151712+00:00",
+      "exit": 0,
+      "log_sha256": "3dfa5e38ad150fac6d506528e9a67a6af6dfb5ae68f561d27cda384a34b36873",
+      "counts": {
+        "pass": 3,
+        "fail": 0,
+        "skip": 0
+      },
+      "failed": [],
+      "array_results": {
+        "TestReviewR6PartyArrayEcho/collision": "HTTP=409 stored=[9007199254740993, 9007199254740992, 1] exact=false same_intake_and_party=true",
+        "TestReviewR6PartyArrayEcho/nested": "HTTP=200 stored=[[9007199254740993, 2, 7]] exact=true same_intake_and_party=false"
+      }
+    },
+    "variants": {
+      "sha": "d22c9c9e19b93e6a4e30fb09a48d733930e5c9c2",
+      "argv": [
+        "go",
+        "test",
+        "-overlay",
+        "/tmp/lawoa-m1-r6.3fQLyI/variants-overlay.json",
+        "-race",
+        "-tags",
+        "np_m1_pg",
+        "-count=1",
+        "-json",
+        "./tests/integration/m1",
+        "-run",
+        "^TestM1R5ArrayEditPreservesOriginalNumbers$/^review_"
+      ],
+      "start": "2026-11-23T06:01:56.211756+00:00",
+      "end": "2026-11-23T06:02:02.576688+00:00",
+      "exit": 0,
+      "log_sha256": "42fd1a784bfff7a1cd1f29ba2dfc7d7ca07b20a7a518080544953511cdcb4e3f",
+      "counts": {
+        "pass": 5,
+        "fail": 0,
+        "skip": 0
+      },
+      "failed": [],
+      "array_results": {
+        "TestM1R5ArrayEditPreservesOriginalNumbers/review_distinct_rounded": "HTTP=409 stored=[9007199254740995, 9007199254740997, 1] exact=false same_row=true same_revision=true",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/review_overflow_null": "HTTP=409 stored=[10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000, null, 1] exact=false same_row=true same_revision=true",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/review_deep_append": "HTTP=200 stored=[[[9007199254740993, 2, 7]]] exact=true same_row=false same_revision=false",
+        "TestM1R5ArrayEditPreservesOriginalNumbers/review_sibling_arrays": "HTTP=409 stored=[[9007199254740993], [9007199254740992], 1] exact=false same_row=true same_revision=true"
+      }
+    }
+  },
+  "M2": "NOT_STARTED",
+  "independent_review_new_sha": "NOT_RUN"
+}

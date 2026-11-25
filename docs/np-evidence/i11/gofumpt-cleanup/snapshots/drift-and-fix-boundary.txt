@@ -1,0 +1,21 @@
+# i11/m3/m4 gofumpt drift cleanup - drift & fix boundary (t_b453c53f)
+v0.12.0 (go1.26.11)
+
+== post-fix invariants (each line tip after fix)
+-- codex/np-main-i11 @ e2034e9
+gofumpt -l . : []
+gofmt   -l . : []
+-- codex/np-main-m3 @ 3cb6737
+gofumpt -l . : []
+gofmt   -l . : []
+-- codex/np-main-m4 @ c4dbc3d
+gofumpt -l . : []
+gofmt   -l . : []
+
+fix commits:
+  i11: e2034e9 style(i11) 151 files 39417+/39410- (base: sibling 7c34bd0 jest/eslint scoping, frontend-only, authored 20:34 during this run)
+  m3 : 3cb6737 style(m3) 151 files 39418+/39411-
+  m4 : c4dbc3d style(m4) 151 files 39417+/39410-
+
+== pre-fix drift measurement (2026-11-24 20:35, on then-tips i11=309d1dd/m3=de12414/m4=aa91246)
+  each line: gofumpt -l . = 151 files (internal/143 + tests/5 + cmd/2 + frontend/1); gofmt -l . = 112 files

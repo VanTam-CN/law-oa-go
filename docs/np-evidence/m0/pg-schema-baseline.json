@@ -1,0 +1,125 @@
+{
+  "environment": "isolated development migration config; explicit BootstrapProductionSchema v14; no application AutoMigrate",
+  "production_tls_main_redis": "NOT_RUN",
+  "commands": [
+    {
+      "key": "pg3-container-create",
+      "argv": [
+        "docker",
+        "run",
+        "-d",
+        "--name",
+        "law-oa-m0-2481a47-pg",
+        "--label",
+        "law-oa.scope=m0",
+        "-p",
+        "127.0.0.1:18894:5432",
+        "-e",
+        "POSTGRES_USER=np_m0",
+        "-e",
+        "POSTGRES_DB=law_oa_m0",
+        "-e",
+        "POSTGRES_HOST_AUTH_METHOD=trust",
+        "postgres:16.14"
+      ],
+      "started_at": "2026-11-20T03:32:34.060636+00:00",
+      "ended_at": "2026-11-20T03:32:34.265754+00:00",
+      "exit_code": 0,
+      "stdout": {
+        "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg3-container-create.stdout.log",
+        "sha256": "a537cf7728d0e30f32b7be788fdb5454d1d3e5c7215de2b155219397f9b1b246",
+        "bytes": 65,
+        "committed": false
+      },
+      "stderr": {
+        "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg3-container-create.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0,
+        "committed": false
+      }
+    },
+    {
+      "key": "pg3-bootstrap",
+      "argv": [
+        "go",
+        "run",
+        "./cmd/migrate",
+        "-command",
+        "bootstrap"
+      ],
+      "started_at": "2026-11-20T03:32:35.520418+00:00",
+      "ended_at": "2026-11-20T03:32:38.487011+00:00",
+      "exit_code": 0,
+      "stdout": {
+        "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg3-bootstrap.stdout.log",
+        "sha256": "3ffd95b6d0a37a6df676680136ded5cd10645580bee5f53e966126267628a1ec",
+        "bytes": 138,
+        "committed": false
+      },
+      "stderr": {
+        "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg3-bootstrap.stderr.log",
+        "sha256": "be1ed78917f6b4314cedb75ee33e0bb2f78c2765ea12e3f1a0ce20fee2216a07",
+        "bytes": 283,
+        "committed": false
+      }
+    },
+    {
+      "key": "pg3-schema",
+      "argv": [
+        "docker",
+        "exec",
+        "law-oa-m0-2481a47-pg",
+        "psql",
+        "-U",
+        "np_m0",
+        "-d",
+        "law_oa_m0",
+        "-X",
+        "-v",
+        "ON_ERROR_STOP=1",
+        "-c",
+        "SELECT current_database(),current_user,version(); SELECT version FROM schema_bootstrap_state; SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename; SELECT table_name,column_name,data_type FROM information_schema.columns WHERE table_schema='public' AND (table_name LIKE '%intake%' OR table_name LIKE '%conflict%task%' OR table_name IN ('auth_token_sessions','case_materials','material_files')) ORDER BY table_name,ordinal_position;"
+      ],
+      "started_at": "2026-11-20T03:32:38.487216+00:00",
+      "ended_at": "2026-11-20T03:32:38.566238+00:00",
+      "exit_code": 0,
+      "stdout": {
+        "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg3-schema.stdout.log",
+        "sha256": "f61a02e6f6043a0be8e306efef3e9e7c2524063e825fbd72f1319fc8fb5e7d28",
+        "bytes": 6715,
+        "committed": false
+      },
+      "stderr": {
+        "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg3-schema.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0,
+        "committed": false
+      }
+    },
+    {
+      "key": "pg3-cleanup",
+      "argv": [
+        "docker",
+        "rm",
+        "-f",
+        "-v",
+        "law-oa-m0-2481a47-pg"
+      ],
+      "started_at": "2026-11-20T03:32:38.566431+00:00",
+      "ended_at": "2026-11-20T03:32:38.803618+00:00",
+      "exit_code": 0,
+      "stdout": {
+        "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg3-cleanup.stdout.log",
+        "sha256": "a646bb737a9849d85570ad28631671331c3150f4270c36f4b5394328efec767d",
+        "bytes": 21,
+        "committed": false
+      },
+      "stderr": {
+        "local_path": "/Users/mac/Desktop/FT/law-oa-go/output/np-main-m0-raw/pg3-cleanup.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0,
+        "committed": false
+      }
+    }
+  ]
+}

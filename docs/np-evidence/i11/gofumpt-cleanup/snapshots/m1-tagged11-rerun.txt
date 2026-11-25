@@ -1,0 +1,19 @@
+# m1 tagged 11 tests rerun on disposable PG (np-gofumpt-pg, postgres:16.14 tmpfs, 127.0.0.1:18790)
+# cmd: PGPASSWORD=*** go test -json -race -count=1 -tags np_m1_pg -run "^(11 names)$" ./tests/integration/m1
+PG_RC=0
+M2_PG_PASS required=5 passed=64
+
+== per-test final status (jq over events)
+TestM1R3IndexIncomingAlias pass
+TestM1R3NativeCheckUsesEditedAlias pass
+TestM1R3SameIdentityEcho pass
+TestM1R7NestedArrayOrigin pass
+TestNativeConcurrentDraftAndHistory pass
+TestNativeCreateRejectsNormalizedEmptyIdentityAtomically pass
+TestNativeFullSaveOnlyChangesExplicitAlias pass
+TestNativeLegacyFullEchoPreservesRows pass
+TestNativeRecheckAfterSameMatterIsReconfirmed pass
+TestNativeRecoveredOpponentPreservesPartyAndMaterialRows pass
+TestSchemaRequiresFrozenKeysAndTypes pass
+== total pass events:
+65

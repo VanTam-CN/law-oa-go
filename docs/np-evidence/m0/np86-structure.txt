@@ -1,0 +1,17 @@
+          tablename
+------------------------------
+ case_intake_source_snapshots
+ case_intake_write_requests
+(2 rows)
+
+          tablename           |            indexname
+------------------------------+----------------------------------
+ case_intake_source_snapshots | np_source_intake_revision_unique
+ case_intake_write_requests   | np_write_actor_request_unique
+(2 rows)
+
+           conrelid           |  confrelid   |                   conname
+------------------------------+--------------+---------------------------------------------
+ case_intake_source_snapshots | case_intakes | case_intake_source_snapshots_intake_id_fkey
+ case_intake_write_requests   | case_intakes | case_intake_write_requests_intake_id_fkey
+(2 rows)

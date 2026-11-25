@@ -210,7 +210,7 @@ func (sp *ApprovalStageProcessor) GetNextStage(
 ) (*models.ApprovalStage, error) {
 	// 查找当前节点
 	var currentStage *models.ApprovalStage
-	var currentIndex = -1
+	currentIndex := -1
 
 	for i, stage := range templateConfig.Stages {
 		if stage.StageKey == currentStageKey {

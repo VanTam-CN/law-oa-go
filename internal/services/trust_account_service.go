@@ -581,7 +581,6 @@ func (s *TrustTransactionService) ApproveTransaction(ctx context.Context, id uin
 
 		return nil
 	})
-
 	if err != nil {
 		// approveErr 用于向调用方暴露语义化错误；若 fn 内未设置（例如 UoW 内部错误），使用 err
 		if approveErr != nil {

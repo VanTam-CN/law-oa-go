@@ -23,7 +23,7 @@ func AuditMiddleware() gin.HandlerFunc {
 
 		// 记录请求体（仅对POST/PUT/PATCH请求）
 		var requestBody []byte
-		if c.Request.Method == "POST" || c.Request.Method == "PUT" || c.Request.Method == "PATCH" {
+		if !containsSensitiveData(c.Request.URL.Path) && (c.Request.Method == "POST" || c.Request.Method == "PUT" || c.Request.Method == "PATCH") {
 			if c.Request.Body != nil {
 				requestBody, _ = io.ReadAll(c.Request.Body)
 				c.Request.Body = io.NopCloser(bytes.NewBuffer(requestBody))
@@ -62,6 +62,10 @@ func AuditMiddleware() gin.HandlerFunc {
 			"client_ip":    c.ClientIP(),
 			"user_agent":   c.GetHeader("User-Agent"),
 			"content_type": c.GetHeader("Content-Type"),
+		}
+		if containsSensitiveData(c.Request.URL.Path) {
+			delete(auditDetails, "query")
+			delete(auditDetails, "user_agent")
 		}
 
 		// 添加请求体（敏感信息需要过滤）
@@ -109,6 +113,9 @@ func AuditMiddleware() gin.HandlerFunc {
 
 // containsSensitiveData 检查路径是否包含敏感数据
 func containsSensitiveData(path string) bool {
+	if isIntakeBusinessPath(path) {
+		return true
+	}
 	sensitivePaths := []string{
 		"/auth/login",
 		"/auth/register",

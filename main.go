@@ -167,19 +167,7 @@ func main() {
 		gin.SetMode(gin.DebugMode)
 	}
 
-	// 创建 Gin 引擎
-	app := gin.New()
-
-	// 应用核心中间件（按照Gin最佳实践顺序：先处理通用中间件，再处理业务逻辑）
-	app.Use(middleware.RequestIDMiddleware()) // 请求ID追踪
-	app.Use(middleware.LoggerWithFormatter()) // 使用格式化日志中间件
-	app.Use(middleware.Recovery())            // 崩溃恢复
-	app.Use(security.SecurityHeaders())       // 安全头
-	app.Use(security.CORS())                  // 跨域设置
-	app.Use(security.RateLimiterMiddleware()) // 限流控制
-
-	// 注意：不使用 gin.Recovery()，因为自定义 middleware.Recovery() 已在上面注册
-	// gin.Recovery() 会先捕获 panic 并返回空 500 body，覆盖自定义 Recovery 的 JSON 响应
+	app := newHTTPEngine()
 
 	// 应用性能监控中间件
 	app.Use(metrics.PrometheusMiddleware())
@@ -197,9 +185,9 @@ func main() {
 			log.Fatal("生产数据库结构门禁失败:", err)
 		}
 	}
-	router.Init(app,
-		db,
-		database.GetRedisClient())
+	if err := router.Init(app, db, database.GetRedisClient()); err != nil {
+		log.Fatal("路由装配失败: ", err)
+	}
 
 	// 注册集成测试路由（仅开发环境）
 	if !cfg.IsProduction() {
@@ -532,6 +520,24 @@ func main() {
 	}
 
 	log.Println("服务器已关闭")
+}
+
+func newHTTPEngine() *gin.Engine {
+	// 创建 Gin 引擎
+	app := gin.New()
+	app.Use(middleware.IntakeNoStore)
+
+	// 应用核心中间件（按照Gin最佳实践顺序：先处理通用中间件，再处理业务逻辑）
+	app.Use(middleware.RequestIDMiddleware()) // 请求ID追踪
+	app.Use(middleware.LoggerWithFormatter()) // 使用格式化日志中间件
+	app.Use(middleware.Recovery())            // 崩溃恢复
+	app.Use(security.SecurityHeaders())       // 安全头
+	app.Use(security.CORS())                  // 跨域设置
+	app.Use(security.RateLimiterMiddleware()) // 限流控制
+
+	// 注意：不使用 gin.Recovery()，因为自定义 middleware.Recovery() 已在上面注册
+	// gin.Recovery() 会先捕获 panic 并返回空 500 body，覆盖自定义 Recovery 的 JSON 响应
+	return app
 }
 
 // runHealthcheck is used by the scratch production image. It must not load

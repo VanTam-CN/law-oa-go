@@ -266,7 +266,7 @@ func TestPostgreSQL_FullTextSearch_CombinedTerms(t *testing.T) {
 		result, total, err := repo.List(ctx, params)
 		if err != nil {
 			t.Fatalf("Failed to search cases for query '%s': %v", tc.query, err)
-			}
+		}
 
 		if total < int64(tc.expected) {
 			t.Errorf("Expected at least %d results for query '%s', got %d", tc.expected, tc.query, total)

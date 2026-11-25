@@ -20,12 +20,12 @@ import (
 
 // CacheConfig 缓存配置
 type CacheConfig struct {
-	TTL            time.Duration
-	SkipHeader     string
-	RedisClient    *redis.Client
-	KeyPrefix      string
-	MaxBodySize    int64
-	SkipRoutes     []string
+	TTL             time.Duration
+	SkipHeader      string
+	RedisClient     *redis.Client
+	KeyPrefix       string
+	MaxBodySize     int64
+	SkipRoutes      []string
 	CacheableRoutes []string
 }
 
@@ -36,9 +36,23 @@ type CacheResponse struct {
 	Body    []byte            `json:"body"`
 }
 
+// IntakeNoStore covers responses returned before the response-cache middleware runs.
+func IntakeNoStore(c *gin.Context) {
+	if isIntakeBusinessPath(c.Request.URL.Path) {
+		c.Header("Cache-Control", "private, no-store")
+	}
+	c.Next()
+}
+
 // CacheMiddleware 优化的缓存中间件
 func CacheMiddleware(config CacheConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if isIntakeBusinessPath(c.Request.URL.Path) {
+			c.Header("Cache-Control", "private, no-store")
+			c.Next()
+			return
+		}
+
 		// 检查是否应该跳过缓存
 		if shouldSkipCache(c, config) {
 			c.Next()
@@ -57,6 +71,16 @@ func CacheMiddleware(config CacheConfig) gin.HandlerFunc {
 		// 记录响应以便缓存
 		captureResponse(c, cacheKey, config)
 	}
+}
+
+// isIntakeBusinessPath 判断是否为接案业务路径（缓存零读写）
+func isIntakeBusinessPath(path string) bool {
+	for _, prefix := range []string{"/api/v1/case-intakes", "/api/v1/case-intake-assist", "/api/v1/cases/intake-workbench"} {
+		if path == prefix || strings.HasPrefix(path, prefix+"/") {
+			return true
+		}
+	}
+	return false
 }
 
 // shouldSkipCache 检查是否应该跳过缓存
@@ -131,7 +155,7 @@ func getCachedResponse(c *gin.Context, key string, config CacheConfig) (*CacheRe
 		if err := cache.DefaultCacheService.Get(key, &cachedData); err == nil {
 			// 转换为新的格式
 			cached := &CacheResponse{
-				Status: 200,
+				Status:  200,
 				Headers: map[string]string{"Content-Type": "application/json"},
 				Body:    mustMarshalJSON(cachedData),
 			}
@@ -262,9 +286,9 @@ func shouldCacheHeader(key string) bool {
 		"Content-Type":     true,
 		"Content-Encoding": true,
 		"Cache-Control":    true,
-		"ETag":            true,
-		"Last-Modified":   true,
-		"Vary":            true,
+		"ETag":             true,
+		"Last-Modified":    true,
+		"Vary":             true,
 	}
 	return cacheableHeaders[strings.ToLower(key)]
 }
@@ -526,7 +550,6 @@ func (rl *OptimizedRateLimiter) checkRedisLimit(key string) bool {
 	incr := pipe.Incr(ctx, key)
 	pipe.Expire(ctx, key, rl.window)
 	_, err := pipe.Exec(ctx)
-
 	if err != nil {
 		logger.Logger.Error("Rate limit check error", zap.Error(err))
 		return false // 出错时不限流

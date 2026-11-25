@@ -13,10 +13,10 @@ import (
 
 // V2MiddlewareFactory 中间件工厂 - 基于环境自动配置最佳实践
 type V2MiddlewareFactory struct {
-	config       *config.Config
-	redisClient  *redis.Client
-	performance   *V2PerformanceMiddleware
-	security     *V2SecurityMiddleware
+	config      *config.Config
+	redisClient *redis.Client
+	performance *V2PerformanceMiddleware
+	security    *V2SecurityMiddleware
 }
 
 // NewV2MiddlewareFactory 创建中间件工厂
@@ -25,7 +25,7 @@ func NewV2MiddlewareFactory(config *config.Config, redisClient *redis.Client) *V
 		config:      config,
 		redisClient: redisClient,
 		performance: NewV2PerformanceMiddleware(config, redisClient),
-		security:   NewV2SecurityMiddleware(config, redisClient),
+		security:    NewV2SecurityMiddleware(config, redisClient),
 	}
 }
 
@@ -101,7 +101,7 @@ func (f *V2MiddlewareFactory) setupProductionMiddleware(router *gin.Engine) {
 	router.Use(f.performance.ConcurrencyControlMiddleware(1000))
 
 	// 请求超时（生产环境较短）
-	router.Use(f.performance.TimeoutMiddleware(30*time.Second))
+	router.Use(f.performance.TimeoutMiddleware(30 * time.Second))
 
 	// 速率限制（生产环境严格）
 	router.Use(f.security.RateLimitingMiddleware(100, time.Minute))
@@ -124,7 +124,7 @@ func (f *V2MiddlewareFactory) setupDevelopmentMiddleware(router *gin.Engine) {
 	router.Use(f.performance.ConcurrencyControlMiddleware(50))
 
 	// 请求超时（开发环境较长）
-	router.Use(f.performance.TimeoutMiddleware(60*time.Second))
+	router.Use(f.performance.TimeoutMiddleware(60 * time.Second))
 
 	// 开发环境宽松的速率限制
 	router.Use(f.security.RateLimitingMiddleware(1000, time.Minute))
@@ -147,7 +147,7 @@ func (f *V2MiddlewareFactory) setupTestMiddleware(router *gin.Engine) {
 	router.Use(f.performance.ConcurrencyControlMiddleware(10))
 
 	// 测试环境超时
-	router.Use(f.performance.TimeoutMiddleware(30*time.Second))
+	router.Use(f.performance.TimeoutMiddleware(30 * time.Second))
 
 	// 测试环境宽松的速率限制
 	router.Use(f.security.RateLimitingMiddleware(5000, time.Minute))
@@ -170,7 +170,7 @@ func (f *V2MiddlewareFactory) setupDefaultMiddleware(router *gin.Engine) {
 	router.Use(f.performance.ConcurrencyControlMiddleware(100))
 
 	// 默认超时
-	router.Use(f.performance.TimeoutMiddleware(45*time.Second))
+	router.Use(f.performance.TimeoutMiddleware(45 * time.Second))
 
 	// 默认速率限制
 	router.Use(f.security.RateLimitingMiddleware(500, time.Minute))
@@ -205,8 +205,8 @@ func (f *V2MiddlewareFactory) setupHealthEndpoints(router *gin.Engine) {
 
 		c.JSON(200, gin.H{
 			"performance": performanceMetrics,
-			"security":   securityMetrics,
-			"timestamp":  time.Now().Unix(),
+			"security":    securityMetrics,
+			"timestamp":   time.Now().Unix(),
 		})
 	})
 
@@ -244,8 +244,8 @@ func (f *V2MiddlewareFactory) setupHealthEndpoints(router *gin.Engine) {
 			"uptime":      time.Since(appStartTime).String(),
 			"environment": f.config.Environment,
 			"version":     "2.1.0",
-			"build_time":   "unknown",
-			"git_commit":   "unknown",
+			"build_time":  "unknown",
+			"git_commit":  "unknown",
 		})
 	})
 }
@@ -261,7 +261,7 @@ func (f *V2MiddlewareFactory) GetMiddlewareChain() gin.HandlerFunc {
 			middleware(c)
 			if c.IsAborted() {
 				return
-				}
+			}
 		}
 
 		c.Next()
@@ -341,16 +341,16 @@ func (f *V2MiddlewareFactory) getMiddlewareFeatures() []string {
 		"Request Validation",
 		"Input Sanitization",
 		"Rate Limiting",
-	"Performance Monitoring",
+		"Performance Monitoring",
 		"Memory Usage Tracking",
-	"Concurrency Control",
-	"Request Timeout",
-	"Health Checks",
-	"Metrics Collection",
-	"IP Filtering",
-	"Trusted Proxy Support",
-	"Graceful Recovery",
-	"Custom Logging",
+		"Concurrency Control",
+		"Request Timeout",
+		"Health Checks",
+		"Metrics Collection",
+		"IP Filtering",
+		"Trusted Proxy Support",
+		"Graceful Recovery",
+		"Custom Logging",
 	}
 }
 

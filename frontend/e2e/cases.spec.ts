@@ -2,29 +2,25 @@
  * E2E: 当前 MVP 案件流程.
  */
 
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 import {
   seedAuthenticatedUser,
+  selectIntakeOption,
   waitForAppShell,
   waitForNativeTable,
   waitForPageLoad,
 } from './utils/test-helpers'
 
-async function fillCaseIntakeBasics(page: any) {
+async function fillCaseIntakeBasics(page: Page) {
   await page.locator('.batch-field', { hasText: '案件名称' }).getByRole('textbox').fill('示例科技服务合同纠纷案')
-  await page.locator('.batch-field', { hasText: '案件类型' }).locator('.ant-select-selector').click()
-  await page.getByTitle('商事诉讼').click()
-  await page.locator('.batch-field', { hasText: '业务领域' }).locator('.ant-select-selector').click()
-  await page.getByTitle('公司与并购').click()
-  await page.locator('.batch-field', { hasText: '子领域' }).locator('.ant-select-selector').click()
-  await page.getByTitle('投资与融资').click()
-  await page.locator('article', { hasText: '我方当事人' }).locator('.ant-select-selector').click()
-  await page.getByTitle('上海示例科技有限公司').click()
+  await selectIntakeOption(page.locator('.batch-field', { hasText: '案件类型' }).getByRole('combobox'), '商事诉讼')
+  await selectIntakeOption(page.locator('.batch-field', { hasText: '业务领域' }).getByRole('combobox'), '公司与并购')
+  await selectIntakeOption(page.locator('.batch-field', { hasText: '子领域' }).getByRole('combobox'), '投资与融资')
+  await selectIntakeOption(page.locator('article', { hasText: '我方当事人' }).getByRole('combobox'), '上海示例科技有限公司')
   await page.getByRole('textbox', { name: '法定名称或证件姓名' }).fill('上海华信建设集团有限公司')
   await page.getByPlaceholder('输入证件号或统一社会信用代码').fill('91310000TESTCASE0001')
   await page.locator('.batch-wide-label', { hasText: '案情摘要' }).getByRole('textbox').fill('客户拟就服务合同争议提起诉讼。')
-  await page.locator('.batch-intake-aside').locator('.ant-select-selector').click()
-  await page.getByTitle('张律师 · 争议解决部').click()
+  await selectIntakeOption(page.locator('.batch-intake-aside').getByRole('combobox'), '张律师 · 争议解决部')
 }
 
 test.describe('案件管理', () => {
@@ -157,12 +153,22 @@ test.describe('新建立案工作台', () => {
   })
 
   test('重复保存应更新同一接案且刷新后可恢复完整草稿', async ({ page }) => {
-    let createCount = 0
-    let updateCount = 0
+    const intakeWrites: { method: string; url: string; body: any; headers: Record<string, string> }[] = []
     page.on('request', (request) => {
-      const path = new URL(request.url()).pathname
-      if (path === '/api/v1/case-intakes' && request.method() === 'POST') createCount += 1
-      if (path === '/api/v1/case-intakes/801' && request.method() === 'PUT') updateCount += 1
+      const url = new URL(request.url())
+      if (url.pathname === '/api/v1/case-intakes' && request.method() === 'POST') {
+        intakeWrites.push({ method: 'POST', url: url.pathname, body: request.postDataJSON(), headers: request.headers() })
+      }
+      if (url.pathname === '/api/v1/case-intakes/801' && request.method() === 'PUT') {
+        intakeWrites.push({ method: 'PUT', url: url.pathname, body: request.postDataJSON(), headers: request.headers() })
+      }
+      if (
+        (url.pathname === '/api/v1/case-intakes/801/facts-confirmation' ||
+          url.pathname === '/api/v1/case-intakes/801/conflict-check') &&
+        request.method() === 'POST'
+      ) {
+        intakeWrites.push({ method: 'POST', url: url.pathname, body: request.postDataJSON(), headers: request.headers() })
+      }
     })
 
     await fillCaseIntakeBasics(page)
@@ -170,8 +176,13 @@ test.describe('新建立案工作台', () => {
     await expect(page.locator('.ant-message')).toContainText('接案草稿已创建')
     await page.getByRole('button', { name: '保存草稿' }).click()
     await expect(page.locator('.ant-message')).toContainText('接案草稿已更新')
-    expect(createCount).toBe(1)
-    expect(updateCount).toBe(1)
+    // POST creates the row; PUT must carry the exact token returned by the
+    // POST receipt, so a concurrent save cannot be clobbered by this tab.
+    expect(intakeWrites.filter((write) => write.method === 'POST' && write.url === '/api/v1/case-intakes')).toHaveLength(1)
+    const firstPut = intakeWrites.find((write) => write.method === 'PUT')
+    expect(firstPut?.body?.expected_revision).toBe('rev-801-1')
+    expect(firstPut?.body?.parties).toBeUndefined()
+    expect(intakeWrites[0].body.parties.map((party: any) => party.party_role)).toEqual(['client', 'opposing_party'])
 
     await page.reload()
     await page.getByRole('button', { name: '继续未完成草稿' }).click()
@@ -181,6 +192,150 @@ test.describe('新建立案工作台', () => {
     await expect(page.locator('.batch-field', { hasText: '子领域' }).getByTitle('投资与融资')).toBeVisible()
     await expect(page.getByPlaceholder('输入证件号或统一社会信用代码')).toHaveValue('')
     await expect(page.getByText(/恢复后请重新填写/)).toBeVisible()
+
+    // Restoring is read-only until the user explicitly saves.
+    expect(intakeWrites.filter((write) => write.method === 'PUT')).toHaveLength(1)
+  })
+
+  for (const failure of ['none', 'save', 'result', 'review', 'waiver']) {
+    test(`摘要修改后直接审批：${failure}`, async ({ page }) => {
+      await fillCaseIntakeBasics(page)
+      await page.getByRole('button', { name: '保存并进行利益冲突检查' }).click()
+      await expect(page.locator('.ant-message')).toContainText('利益冲突检查已完成')
+      await page.getByRole('button', { name: '返回基本信息' }).click()
+      const summary = '合成资料：律师核对后的第二版摘要'
+      await page.locator('#intake-description').fill(summary)
+      if (failure === 'save') await page.route('**/api/v1/case-intakes/801', async route => {
+        if (route.request().method() !== 'PUT') return route.fallback()
+        await route.fulfill({ status: 409, json: { success: false, error: { message: '合成草稿版本冲突' } } })
+      })
+      if (['result', 'review', 'waiver'].includes(failure)) {
+        await page.route('**/api/v1/conflict/tasks/*/' + failure, route =>
+          route.fulfill({ status: 503, json: { success: false, error: { message: '合成读取故障 ' + failure } } }))
+      }
+      const writes: string[][] = []
+      page.on('request', request => {
+        if (!['POST', 'PUT'].includes(request.method())) return
+        const path = new URL(request.url()).pathname.split('/').pop()!
+        const body = request.postDataJSON() || {}
+        if (path === '801') writes.push([path, body.expected_revision, body.description])
+        if (['facts-confirmation', 'conflict-check'].includes(path)) writes.push([path, request.headers()['x-intake-revision']])
+        if (path === 'with-conflict') writes.push([path, body.metadata.intake_revision, body.content])
+      })
+      await page.getByRole('button', { name: '提交审批并等待成案' }).click()
+      if (failure === 'save') {
+        await expect(page.locator('.ant-message')).toContainText('合成草稿版本冲突')
+        await expect(page.locator('#intake-description')).toHaveValue(summary)
+        expect(writes).toEqual([['801', 'rev-801-3', summary]])
+      } else if (failure !== 'none') {
+        await expect(page.locator('.ant-message')).toContainText('合成读取故障 ' + failure)
+        await expect(page.locator('#intake-description')).toHaveValue(summary)
+        expect(writes.map(([action]) => action)).toEqual(['801', 'facts-confirmation', 'conflict-check'])
+      } else {
+        await expect(page).toHaveURL(/\/approval\/701$/)
+        expect(writes).toEqual([
+          ['801', 'rev-801-3', summary], ['facts-confirmation', 'rev-801-4'],
+          ['conflict-check', 'rev-801-5'], ['with-conflict', 'rev-801-6', summary],
+        ])
+      }
+    })
+  }
+
+  test('创建重放保留本地输入，重开前不能用服务端新版本继续写', async ({ page }) => {
+    let creates = 0
+    let writes = 0
+    await page.route('**/api/v1/case-intakes', async route => {
+      if (route.request().method() !== 'POST') return route.fallback()
+      creates++
+      await route.fulfill({ json: { success: true, data: {
+        id: 801, intake_code: 'IN-2026-001', revision: '10000000-0000-4000-8000-000000000003',
+        title: '服务端较新标题', description: '其他标签已保存', status: 'draft',
+        created_by: 2, has_source_history: false, idempotent_replay: true,
+      } } })
+    })
+    page.on('request', request => {
+      if (request.method() === 'PUT' || request.url().endsWith('/facts-confirmation')) writes++
+    })
+    await fillCaseIntakeBasics(page)
+    await page.getByRole('button', { name: '保存草稿', exact: true }).click()
+    await expect(page.locator('.ant-message')).toContainText('此创建请求已有草稿')
+    await page.getByRole('button', { name: '保存并进行利益冲突检查' }).click()
+    await expect(page.locator('.ant-message')).toContainText('本机草稿缺少版本号')
+    await expect(page.locator('#intake-title')).toHaveValue('示例科技服务合同纠纷案')
+    expect([creates, writes]).toEqual([1, 0])
+  })
+
+  test('缺少版本的旧本机草稿保留输入并阻止原生 PUT', async ({ page }) => {
+    await fillCaseIntakeBasics(page)
+    await page.getByRole('button', { name: '保存草稿' }).click()
+    await expect(page.locator('.ant-message')).toContainText('接案草稿已创建')
+    await page.evaluate(() => {
+      const key = Object.keys(localStorage).find(item => item.startsWith('law-oa-case-intake-draft-v2:'))
+      if (!key) throw new Error('缺少本机草稿')
+      const draft = JSON.parse(localStorage.getItem(key)!)
+      if (!draft.intakeId || !draft.revision) throw new Error('缺少保存回执')
+      delete draft.revision
+      localStorage.setItem(key, JSON.stringify(draft))
+    })
+    await page.reload()
+    await page.getByRole('button', { name: '继续未完成草稿' }).click()
+    const title = page.getByRole('textbox', { name: '案件名称 *' })
+    await title.fill('本机尚未确认的修改')
+    let puts = 0
+    page.on('request', request => { if (request.method() === 'PUT') puts++ })
+    await page.getByRole('button', { name: '保存草稿' }).click()
+    await expect(page.locator('.ant-message')).toContainText('本机草稿缺少版本号')
+    await expect(title).toHaveValue('本机尚未确认的修改')
+    expect(puts).toBe(0)
+  })
+
+  test('重复保存后服务端草稿恢复不应回传身份号或覆盖主体与材料', async ({ page }) => {
+    const serverDetailBodies: any[] = []
+    const savedPutBodies: any[] = []
+    page.on('response', async (response) => {
+      const url = new URL(response.url())
+      if (url.pathname === '/api/v1/case-intakes/801' && response.request().method() === 'GET') {
+        serverDetailBodies.push(await response.json().catch(() => ({})))
+      }
+    })
+    page.on('request', (request) => {
+      const url = new URL(request.url())
+      if (url.pathname === '/api/v1/case-intakes/801' && request.method() === 'PUT') {
+        savedPutBodies.push(request.postDataJSON())
+      }
+    })
+
+    await fillCaseIntakeBasics(page)
+    await page.getByRole('button', { name: '保存草稿' }).click()
+    await expect(page.locator('.ant-message')).toContainText('接案草稿已创建')
+
+    await page.getByRole('button', { name: '打开服务端草稿' }).click()
+    await page.getByRole('button', { name: '示例科技服务合同纠纷案' }).click()
+    await expect(page.getByRole('textbox', { name: '案件名称 *' })).toHaveValue('示例科技服务合同纠纷案')
+
+    // The redacted related row keeps its role tag on the basics step but
+    // must not carry a readable identity number back through the read
+    // boundary; the opponent password field stays empty as before.
+    await page.getByRole('button', { name: '切换并恢复所选草稿' }).click()
+    await expect(page.locator('.ant-message')).toContainText('已恢复所选服务端草稿')
+    await expect(page.getByPlaceholder('输入证件号或统一社会信用代码')).toHaveValue('')
+
+    await expect.poll(() => serverDetailBodies.length).toBeGreaterThanOrEqual(1)
+    const detail = serverDetailBodies[serverDetailBodies.length - 1]?.data
+    const detailParties = detail?.parties ?? []
+    expect(detailParties.map((party: any) => party.party_role)).toEqual(['client', 'opposing_party'])
+    expect(JSON.stringify(detailParties)).not.toContain('91310000TESTCASE0001')
+    expect(detail?.revision).toBe('rev-801-1')
+
+    // An unedited restore keeps its saved projection, so an ordinary save
+    // must not send a partial parties array or reseed the material list.
+    await page.getByRole('button', { name: '保存草稿' }).click()
+    await expect(page.locator('.ant-message')).toContainText('接案草稿已更新')
+    const restoreSave = savedPutBodies.at(-1)
+    expect(restoreSave.expected_revision).toBe(detail.revision)
+    expect(restoreSave.materials).toBeUndefined()
+    expect(restoreSave.parties).toBeUndefined()
+    expect(restoreSave?.metadata?.case_tags).toBeUndefined()
   })
 
   test('必填控件应具备可访问名称并可由标签定位', async ({ page }) => {

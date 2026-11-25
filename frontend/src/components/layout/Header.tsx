@@ -15,6 +15,7 @@ import { useAppStore } from '@/stores/useAppStore'
 import useNotifications from '@/hooks/useNotifications'
 import { useNavigate } from 'react-router'
 import { getToken, logout as logoutRequest } from '@/services/auth'
+import { intakeMemoryOnly, intakeLogoutEvent } from '@/config/intakePilot'
 import type { MenuProps } from 'antd'
 import './header.less'
 
@@ -44,6 +45,7 @@ const AppHeader: React.FC = () => {
   const unreadCount = stats.unread || notifications.filter((item) => !item.isRead).length
 
   const handleLogout = async () => {
+    if (intakeMemoryOnly && !window.dispatchEvent(new Event(intakeLogoutEvent, { cancelable: true }))) return
     const token = getToken()
 
     try {

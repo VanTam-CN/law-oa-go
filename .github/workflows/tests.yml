@@ -5,20 +5,106 @@ name: 🧪 Test Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, codex/np-main-m2, codex/np-main-i11 ]
   pull_request:
     branches: [ main, develop ]
   workflow_dispatch:
+    inputs:
+      np_m2_probe:
+        description: 'M2 PG validation (negative runs intentionally red jobs on the M2 branch)'
+        type: choice
+        options: [normal, negative]
+        default: normal
 
 env:
   GO_VERSION: '1.25.0'
   NODE_VERSION: '20'
 
 jobs:
+  np-i11:
+    if: (github.ref == 'refs/heads/codex/np-main-i11' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')) || (github.head_ref == 'codex/np-main-i11' && github.event.pull_request.head.repo.full_name == github.repository)
+    permissions:
+      contents: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        probe: ${{ fromJSON(inputs.np_m2_probe == 'negative' && '["missing-pg","missing-dsn","skip","partial","none","fuzz-unknown","fuzz-selected-failed","fuzz-missing-proof"]' || '["full"]') }}
+    env:
+      PROBE: ${{ matrix.probe }}
+      NP_TEST_DSN: host=127.0.0.1 port=18790 dbname=np_first_slice_dev user=np_m1 sslmode=disable
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify checkout and probe input
+        env:
+          REQUESTED: ${{ inputs.np_m2_probe }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain)"
+          case "$REQUESTED" in ''|normal|negative) ;; *) exit 2 ;; esac
+          echo "I11_EVENT $GITHUB_EVENT_NAME checkout=$GITHUB_SHA"
+          echo "I11_REFS head=$HEAD_SHA base=$BASE_SHA"
+      - uses: actions/setup-go@v5
+        if: "!startsWith(matrix.probe, 'fuzz-')"
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: actions/setup-node@v4
+        if: matrix.probe == 'full'
+        with:
+          node-version: '22.17.0'
+      - name: Install locked dependencies and verify runner tools
+        if: matrix.probe == 'full'
+        working-directory: frontend
+        run: |
+          npm ci --replace-registry-host=always --registry=https://registry.npmjs.org --no-audit --no-fund
+          google-chrome --version
+          psql --version
+          docker version --format '{{.Server.Version}}'
+      - name: Run isolated PostgreSQL gate
+        if: "!startsWith(matrix.probe, 'fuzz-')"
+        run: bash scripts/np-ci/early-pg.sh "$PROBE"
+      - name: Run registered fuzz gate with controlled input
+        if: startsWith(matrix.probe, 'fuzz-')
+        run: bash scripts/np-ci/i11-fuzz-probe.sh "$PROBE"
+
+  np-m2-early:
+    if: github.ref == 'refs/heads/codex/np-main-m2' || (github.head_ref == 'codex/np-main-m2' || github.head_ref == 'codex/np-main-m3')
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        probe: ${{ fromJSON(inputs.np_m2_probe == 'negative' && '["missing-pg","missing-dsn","skip","partial","none"]' || '["normal"]') }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Build root application
+        if: matrix.probe == 'normal'
+        run: go build ./...
+      - name: Verify mandatory PostgreSQL test events
+        env:
+          PROBE: ${{ matrix.probe }}
+          NP_TEST_DSN: host=127.0.0.1 port=18790 dbname=np_first_slice_dev user=np_m1 sslmode=disable
+        run: bash scripts/np-ci/early-pg.sh "$PROBE"
+
   # ================================
   # Go 后端测试
   # ================================
   go-tests:
+    if: github.ref != 'refs/heads/codex/np-main-m2' && github.ref != 'refs/heads/codex/np-main-i11'
     name: 🐹 Go Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -56,9 +142,10 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-          cache: true
+          cache: ${{ (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3' && (github.head_ref != 'codex/np-main-i11' || github.event.pull_request.head.repo.full_name != github.repository)) }}
 
       - name: 📦 缓存Go模块
+        if: (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3' && (github.head_ref != 'codex/np-main-i11' || github.event.pull_request.head.repo.full_name != github.repository))
         uses: actions/cache@v4
         with:
           path: ~/go/pkg/mod
@@ -99,10 +186,23 @@ jobs:
 
       - name: 📊 合并覆盖率报告
         run: |
-          go install github.com/wadey/gocovmerge@latest
-          gocovmerge coverage-unit.out coverage-integration.out > coverage.out
+          tools_dir=$(mktemp -d)
+          trap 'rm -rf "$tools_dir"' EXIT
+          (
+            cd "$tools_dir"
+            go mod init ci-tools
+            go mod edit -go=1.25.0 -require=github.com/wadey/gocovmerge@v0.0.0-20160331181800-b5bfa59ec0ad -require=golang.org/x/tools@v0.35.0
+            GOTOOLCHAIN=local go build -mod=mod -o gocovmerge github.com/wadey/gocovmerge
+          )
+          "$tools_dir/gocovmerge" coverage-unit.out coverage-integration.out > coverage.out
+
+      - name: Record pilot Go coverage
+        if: (github.head_ref == 'codex/np-main-m2' || github.head_ref == 'codex/np-main-m3' || (github.head_ref == 'codex/np-main-i11' && github.event.pull_request.head.repo.full_name == github.repository))
+        run: |
+          go tool cover -func=coverage.out | awk '$1 == "total:" && $3 ~ /^[0-9]+([.][0-9]+)?%$/ { print "Go coverage", $3; found=1 } END { exit !found }' >> "$GITHUB_STEP_SUMMARY"
 
       - name: 📈 上传覆盖率到Codecov
+        if: (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3' && (github.head_ref != 'codex/np-main-i11' || github.event.pull_request.head.repo.full_name != github.repository))
         uses: codecov/codecov-action@v4
         with:
           files: ./coverage.out
@@ -114,12 +214,22 @@ jobs:
       - name: 📋 生成测试报告
         if: always()
         run: |
-          go install github.com/jstemmer/go-junit-report/v2@latest
-          go test -v ./... 2>&1 | go-junit-report -set-exit-code > report.xml
+          report_dir=$(mktemp -d)
+          trap 'rm -rf "$report_dir"' EXIT
+          GOTOOLCHAIN=local GOBIN="$report_dir" go install github.com/jstemmer/go-junit-report/v2@v2.1.0
+          test_rc=0
+          junit_rc=0
+          go test -json ./... > "$report_dir/events.jsonl" 2> "$report_dir/test.stderr" || test_rc=$?
+          "$report_dir/go-junit-report" -parser gojson -set-exit-code < "$report_dir/events.jsonl" > report.xml 2> "$report_dir/junit.stderr" || junit_rc=$?
+          echo "Go test exit=$test_rc; JUnit exit=$junit_rc"
+          if (( test_rc != 0 || junit_rc != 0 )); then
+            jq -r 'select(.Action == "fail") | .Package // empty | select(test("^law-oa-go(/[A-Za-z0-9._-]+)*$"))' "$report_dir/events.jsonl" 2>/dev/null | sort -u
+            exit 1
+          fi
 
       - name: 📊 上传测试报告
         uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3' && (github.head_ref != 'codex/np-main-i11' || github.event.pull_request.head.repo.full_name != github.repository))
         with:
           name: go-test-report
           path: report.xml
@@ -128,6 +238,7 @@ jobs:
   # 前端单元测试
   # ================================
   frontend-tests:
+    if: github.ref != 'refs/heads/codex/np-main-m2' && github.ref != 'refs/heads/codex/np-main-i11'
     name: 🎨 Frontend Tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -160,7 +271,13 @@ jobs:
         working-directory: ./frontend
         run: npm run test:ci -- --coverage --coverageReporters=lcov --coverageReporters=text
 
+      - name: Record pilot frontend coverage
+        if: (github.head_ref == 'codex/np-main-m2' || github.head_ref == 'codex/np-main-m3' || (github.head_ref == 'codex/np-main-i11' && github.event.pull_request.head.repo.full_name == github.repository))
+        run: |
+          awk -F: '$1 == "LF" { lines += $2 } $1 == "LH" { hit += $2 } END { if (!lines || hit > lines) exit 1; printf "Frontend line coverage %.1f%%\n", 100 * hit / lines }' frontend/coverage/lcov.info >> "$GITHUB_STEP_SUMMARY"
+
       - name: 📈 上传覆盖率到Codecov
+        if: (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3' && (github.head_ref != 'codex/np-main-i11' || github.event.pull_request.head.repo.full_name != github.repository))
         uses: codecov/codecov-action@v4
         with:
           files: ./frontend/coverage/lcov.info
@@ -171,7 +288,7 @@ jobs:
 
       - name: 📊 上传测试报告
         uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3' && (github.head_ref != 'codex/np-main-i11' || github.event.pull_request.head.repo.full_name != github.repository))
         with:
           name: frontend-test-report
           path: frontend/coverage/
@@ -184,7 +301,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: [go-tests, frontend-tests]
-    if: always()
+    if: always() && github.ref != 'refs/heads/codex/np-main-m2' && github.ref != 'refs/heads/codex/np-main-i11'
 
     services:
       postgres:
@@ -215,7 +332,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-          cache: true
+          cache: ${{ (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3' && (github.head_ref != 'codex/np-main-i11' || github.event.pull_request.head.repo.full_name != github.repository)) }}
 
       - name: 📥 安装前端依赖
         working-directory: ./frontend
@@ -257,7 +374,7 @@ jobs:
 
       - name: 📊 上传Playwright报告
         uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3' && (github.head_ref != 'codex/np-main-i11' || github.event.pull_request.head.repo.full_name != github.repository))
         with:
           name: playwright-report
           path: frontend/playwright-report/
@@ -265,7 +382,7 @@ jobs:
 
       - name: 📸 上传测试截图
         uses: actions/upload-artifact@v4
-        if: failure()
+        if: failure() && (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3' && (github.head_ref != 'codex/np-main-i11' || github.event.pull_request.head.repo.full_name != github.repository))
         with:
           name: playwright-screenshots
           path: frontend/test-results/
@@ -275,6 +392,7 @@ jobs:
   # 测试覆盖率检查
   # ================================
   coverage-check:
+    if: github.ref != 'refs/heads/codex/np-main-i11' && (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3' && (github.head_ref != 'codex/np-main-i11' || github.event.pull_request.head.repo.full_name != github.repository))
     name: 📊 Coverage Check
     runs-on: ubuntu-latest
     needs: [go-tests, frontend-tests]
@@ -314,7 +432,7 @@ jobs:
     name: 📋 Test Summary
     runs-on: ubuntu-latest
     needs: [go-tests, frontend-tests, e2e-tests]
-    if: always()
+    if: always() && github.ref != 'refs/heads/codex/np-main-m2' && github.ref != 'refs/heads/codex/np-main-i11'
 
     steps:
       - name: 📋 生成测试汇总
@@ -330,7 +448,7 @@ jobs:
           echo "### ✅ 所有测试已完成" >> $GITHUB_STEP_SUMMARY
 
       - name: 💬 PR评论
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && (github.head_ref != 'codex/np-main-m2' && github.head_ref != 'codex/np-main-m3' && (github.head_ref != 'codex/np-main-i11' || github.event.pull_request.head.repo.full_name != github.repository))
         uses: actions/github-script@v7
         with:
           script: |

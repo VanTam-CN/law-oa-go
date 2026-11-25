@@ -22,7 +22,9 @@ const config: Config.InitialOptions = {
 
   // 测试匹配模式
   testMatch: ['**/__tests__/**/*.(ts|tsx|js|jsx)', '**/*.(test|spec).(ts|tsx|js|jsx)'],
-  testPathIgnorePatterns: ['/node_modules/', '/dist/', '/build/', '/e2e/'],
+  // np-m4/np-entry host Playwright browser specs owned by the np-i11 gate;
+  // they cannot load under Jest (see run 45389286869) and stay covered there.
+  testPathIgnorePatterns: ['/node_modules/', '/dist/', '/build/', '/e2e/', '/np-m4/', '/np-entry/'],
 
   // 转换配置 - 关键修复：使用测试专用TypeScript配置
   transform: {
