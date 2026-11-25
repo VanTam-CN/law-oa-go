@@ -1,0 +1,9 @@
+{
+  "gate": "I15 matching",
+  "root_http": 200,
+  "nonempty_case_and_intake_link_same_check": true,
+  "revision_rotated": true,
+  "stale_repeat_http": 409,
+  "one_persisted_result": true,
+  "case_and_intake_after_repeated_request_equal": true
+}
