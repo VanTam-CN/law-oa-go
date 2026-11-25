@@ -1,0 +1,123 @@
+{
+  "observed_utc": "2026-11-25T04:37:34+00:00",
+  "repository": "VanTam-CN/law-oa-go",
+  "remote_main": "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
+  "application": "49e5c153c01fd4d21abea99f2792eea279628a5b",
+  "review_base": "250bccdc1cae28a3040be58e1756bad13404ba36",
+  "remote_main_vs_application": {
+    "merge_base": "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
+    "left_right": [
+      0,
+      122
+    ],
+    "changed_paths": 364
+  },
+  "remote_main_vs_review_base": {
+    "merge_base": "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
+    "left_right": [
+      0,
+      155
+    ],
+    "changed_paths": 409
+  },
+  "application_vs_review_base": {
+    "merge_base": "49e5c153c01fd4d21abea99f2792eea279628a5b",
+    "left_right": [
+      0,
+      33
+    ],
+    "changed_paths": 46
+  },
+  "application_to_review_changed_paths": [
+    "docs/np-evidence/m5/README.md",
+    "docs/np-evidence/m5/browser-controls.json",
+    "docs/np-evidence/m5/cache-paths.json",
+    "docs/np-evidence/m5/conflict-matching.json",
+    "docs/np-evidence/m5/conflict-native.json",
+    "docs/np-evidence/m5/conflict-source.json",
+    "docs/np-evidence/m5/disconnect.json",
+    "docs/np-evidence/m5/environment-and-browser.json",
+    "docs/np-evidence/m5/final-review.json",
+    "docs/np-evidence/m5/generation-failure.json",
+    "docs/np-evidence/m5/history-faults.json",
+    "docs/np-evidence/m5/matrix.md",
+    "docs/np-evidence/m5/pg-service-checks.json",
+    "docs/np-evidence/m5/reopened.json",
+    "docs/np-evidence/m5/revoked-history.json",
+    "docs/np-evidence/m5/root-log-sample.json",
+    "docs/np-evidence/m5/route-b.json",
+    "docs/np-evidence/m5/session-boundaries.json",
+    "docs/np-evidence/m5/source-conflict.json",
+    "docs/np-evidence/m5/unmigrated.json",
+    "docs/np-evidence/m5/worker-checks.json",
+    "docs/np-evidence/m6/README.md",
+    "docs/np-evidence/m6/author.json",
+    "docs/np-evidence/m6/independent-astra.json",
+    "docs/np-evidence/m6/switch-controls.json",
+    "frontend/np-m5/generation-failure.spec.ts",
+    "frontend/playwright.m5.config.ts",
+    "scripts/np-m5/browser.sh",
+    "scripts/np-m5/cache-paths.py",
+    "scripts/np-m5/check-browser.py",
+    "scripts/np-m5/disconnect.py",
+    "scripts/np-m5/environment.sh",
+    "scripts/np-m5/history-faults.py",
+    "scripts/np-m5/history-window.sh",
+    "scripts/np-m5/legacy-baseline.sh",
+    "scripts/np-m5/reopened-draft.py",
+    "scripts/np-m5/revoked-history.py",
+    "scripts/np-m5/session-boundaries.py",
+    "scripts/np-m5/source-conflict.py",
+    "scripts/np-m5/static-proxy.mjs",
+    "scripts/np-m6/boundary.py",
+    "scripts/np-m6/evidence.py",
+    "scripts/np-m6/ledger.py",
+    "scripts/np-m6/rehearse.sh",
+    "scripts/np-m6/snapshot.sql",
+    "scripts/np-m6/switch-check.py"
+  ],
+  "pr52": {
+    "state": "OPEN",
+    "url": "https://github.com/VanTam-CN/law-oa-go/pull/52",
+    "isDraft": true,
+    "baseRefOid": "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
+    "headRefOid": "89f2eb9eace9a2f72f31375a83cc34d97289c4dc",
+    "potentialMergeCommit": {
+      "oid": "e75945ff00221540e660738999e975ed6eea6786"
+    },
+    "mergeStateStatus": "UNSTABLE"
+  },
+  "pr52_check_rollup_counts": {
+    "FAILURE": 13,
+    "SUCCESS": 17,
+    "SKIPPED": 24,
+    "CANCELLED": 6
+  },
+  "i11_jobs": [
+    {
+      "run": 45398131150,
+      "event": "pull_request",
+      "job": "SUCCESS",
+      "workflow": "FAILURE"
+    },
+    {
+      "run": 45398114699,
+      "event": "push",
+      "job": "SUCCESS",
+      "workflow": "SUCCESS"
+    }
+  ],
+  "collision": {
+    "fix": "a9a51164e9884e3532b2d310c446be4f92cbff86",
+    "regression": "a7ded858f83714c32a24e6c903c9bc6bae424a67",
+    "shared_base": "04bcce9493b89c3d57d335e89763db6963fa97a6",
+    "fixed_commits_in_candidate": false
+  },
+  "cited_packet_sha256": {
+    "m5/final-review.json": "440a631163b030265038f12d8310257f8ebc94c4ee15fe2e42dee432bafead20",
+    "m5/route-b.json": "d78a63b3a9d60e00bc2a74b08b946bb356ae8dab8bb2c33cbca5f402f9424e8d",
+    "m6/author.json": "cf1950a00a4073d643901125d44dffc058bddc36f862f87d5f7c093e7701e078",
+    "m6/independent-astra.json": "15b545fc22388411c569cc465513d9de0b91bee7a1bdb4551e2e70ec79314cb0",
+    "m2/full-i11/verification.json": "e1542a6ddcf2741de0393f9d44a90e88cf19c49c683e3d04c531d578d8428aa2"
+  }
+}

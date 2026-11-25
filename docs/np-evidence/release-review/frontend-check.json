@@ -1,0 +1,42 @@
+{
+  "source": "250bccdc1cae28a3040be58e1756bad13404ba36",
+  "scope": "archived frontend tree, synthetic local tooling, no server/browser/PG",
+  "node": "22.17.0",
+  "lock_sha256": "9efa885d6ea029854c5cb6748e579fd95bb5af6e8679c18fff942b5092840435",
+  "dependencies": "reused installed M5 dependencies after byte comparison of both lock files",
+  "checks": [
+    {
+      "argv": [
+        "jest",
+        "--no-cache",
+        "--runInBand",
+        "--listTests"
+      ],
+      "exit": 0,
+      "selected": "np-m5/generation-failure.spec.ts"
+    },
+    {
+      "argv": [
+        "jest",
+        "--runInBand",
+        "--no-cache",
+        "--runTestsByPath",
+        "np-m5/generation-failure.spec.ts",
+        "--coverage=false"
+      ],
+      "exit": 1,
+      "failed_suites": 1,
+      "executed_tests": 0,
+      "failure": "TypeError: Class extends value undefined is not a constructor or null"
+    },
+    {
+      "argv": [
+        "eslint",
+        "np-m5/generation-failure.spec.ts"
+      ],
+      "exit": 1,
+      "failure": "Parsing error: the file is outside the configured TypeScript project"
+    }
+  ],
+  "hosting": "local reproduction, not a hosted result; file absent at PR 52 head 89f2eb9"
+}
