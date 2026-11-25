@@ -1,0 +1,79 @@
+{
+  "status": "PARTIAL",
+  "binary_revision": "49e5c153c01fd4d21abea99f2792eea279628a5b",
+  "binary_sha256": "213bb27532851e03bcc17ee630665e6fd2edd914cc1b711b477269decfae48d0",
+  "suites": [
+    {
+      "suite": "navigation",
+      "runs": [
+        {
+          "startTime": "2026-11-25T02:32:51.109Z",
+          "duration": 11126.575,
+          "expected": 5
+        }
+      ],
+      "protected_sha256": "713ba1674bc26eb8ea6033cf7953a93546b943e22b3b664246ac49b298993479",
+      "target_whole_row_unchanged": true,
+      "target_materials": 2,
+      "protected_parties": 2,
+      "sources": 0,
+      "receipts": 0,
+      "linked": 0,
+      "manual": 0,
+      "go_digest_matched": null
+    },
+    {
+      "suite": "tabs",
+      "runs": [
+        {
+          "startTime": "2026-11-25T02:34:02.339Z",
+          "duration": 5072.994,
+          "expected": 1
+        }
+      ],
+      "protected_sha256": "9e8cde71c6e697436ef61381b58e762f517e9c20ec4a6a38fb4416cece9ec2e5",
+      "target_whole_row_unchanged": false,
+      "target_materials": 2,
+      "protected_parties": 2,
+      "sources": 0,
+      "receipts": 2,
+      "linked": 0,
+      "manual": 1,
+      "go_digest_matched": null
+    },
+    {
+      "suite": "selection",
+      "runs": [
+        {
+          "startTime": "2026-11-25T02:35:29.221Z",
+          "duration": 6707.421,
+          "expected": 2
+        }
+      ],
+      "protected_sha256": "e3dfedf34a064d8ef56c7b8f7910814a99d0c5189cf87089a4b28b38b2aa7e60",
+      "target_whole_row_unchanged": false,
+      "target_materials": 2,
+      "protected_parties": 2,
+      "sources": 1,
+      "receipts": 1,
+      "linked": 1,
+      "manual": 0,
+      "go_digest_matched": null
+    }
+  ],
+  "checker": "scripts/np-m5/check-browser.py, duplicate report rejected",
+  "jest": {
+    "suites": 12,
+    "passes": 124,
+    "failures": 0,
+    "skips": 0,
+    "manifest": "scripts/np-ci/i11-jest-cases.json",
+    "checker": "scripts/np-ci/check-i11-tests.py jest",
+    "scope": "frontend component and identity checks"
+  },
+  "limits": [
+    "tabs: B pre-forward abort and collection barrier are controlled by Playwright; I08 needs external TCP evidence",
+    "selection: recovery is live; the facts-confirmation and conflict-check responses are UI fixtures. I15 is separate.",
+    "navigation: initial mixed load observed an HTTP 429; final run used the unchanged limiter and all five names passed once."
+  ]
+}
