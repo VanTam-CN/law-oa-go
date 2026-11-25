@@ -1,0 +1,14 @@
+{
+  "gate": "I15-NP",
+  "root_http": "synchronous production detector",
+  "matched_case_rows": 1,
+  "confirmed_detector_wait_before_edit": true,
+  "start_preserved_revision": true,
+  "native_edit_then_reviewed_source_save": true,
+  "source_receipt_intake_pg_linked": true,
+  "late_completion_http": 409,
+  "code": "INTAKE_DRAFT_REVISION_CONFLICT",
+  "intake_and_case_whole_rows_equal_to_post_edit": true,
+  "post_edit_intake_sha256": "a840e3e48aca708bc7067a2680127c91cbd5788a330dc873539e139a4f123801",
+  "post_edit_case_sha256": "3de52ca9035aab442620bbe59b8e727416cef5fc4e87c3b6428f11c83327b467"
+}
