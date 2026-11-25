@@ -1,0 +1,57 @@
+{
+  "status": "PASS",
+  "gate": "I09-MAIN",
+  "application_binary_revision": "49e5c153c01fd4d21abea99f2792eea279628a5b",
+  "running_binary_sha256": "213bb27532851e03bcc17ee630665e6fd2edd914cc1b711b477269decfae48d0",
+  "entry": "production dist :3003 -> external proxy -> root executable :18789 -> PG/Redis",
+  "pre": {
+    "sources": 0,
+    "receipts": 0,
+    "protected_sha256": "e41254200e3e13227b8bec819629116cc11d83174a4a1ce447a8f8cbee7beac7",
+    "target_materials": 2,
+    "large_number": true
+  },
+  "post": {
+    "suite": "route-b",
+    "runs": [
+      {
+        "startTime": "2026-11-25T02:40:11.372Z",
+        "duration": 4733.814,
+        "expected": 1
+      },
+      {
+        "startTime": "2026-11-25T02:41:11.518Z",
+        "duration": 4765.199,
+        "expected": 1
+      },
+      {
+        "startTime": "2026-11-25T02:42:11.749Z",
+        "duration": 5900.845,
+        "expected": 1
+      },
+      {
+        "startTime": "2026-11-25T02:43:13.073Z",
+        "duration": 5507.655000000001,
+        "expected": 1
+      }
+    ],
+    "protected_sha256": "e41254200e3e13227b8bec819629116cc11d83174a4a1ce447a8f8cbee7beac7",
+    "target_whole_row_unchanged": false,
+    "target_materials": 2,
+    "protected_parties": 2,
+    "sources": 3,
+    "receipts": 4,
+    "linked": 3,
+    "manual": 1,
+    "go_digest_matched": true
+  },
+  "drop": {
+    "total_tcp_responses_dropped": 6,
+    "distinct_request_keys": 1,
+    "request_key_sha256": "b228fac4df130cd26f277c57419b2b69b3f78ed01d8adafc35f7b4fc151d7638",
+    "corresponding_pg_receipts": 1,
+    "source_linked": true
+  },
+  "protocol": "4 checked names in one clean seed window, each executed once in order with a fresh browser and a pause between cases; frozen I11 checker compared the combined named result set",
+  "I09-FILES": "DEFERRED/HOLD"
+}

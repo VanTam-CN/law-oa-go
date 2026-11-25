@@ -1,0 +1,33 @@
+{
+  "revision": "49e5c153c01fd4d21abea99f2792eea279628a5b",
+  "kind": "real PG and production detector/service, run under Go tests; root HTTP evidence recorded separately",
+  "gates": [
+    "I14",
+    "I15"
+  ],
+  "argv": [
+    "go",
+    "test",
+    "-p",
+    "1",
+    "-race",
+    "-count=1",
+    "-json",
+    "-tags",
+    "np_m1_pg",
+    "./tests/integration/m1",
+    "-run",
+    "^(TestAsyncPGCompletionAfterNativeEdit|TestAsyncPGFormalDetectorCompletesOnce|TestM3ConflictCompletionAfterSourceSave|TestNativeConcurrentDraftAndHistory)$"
+  ],
+  "first_test_event_utc": "2026-11-25T10:42:18.201313+08:00",
+  "last_test_event_utc": "2026-11-25T10:42:23.185013+08:00",
+  "exit_code": 0,
+  "passed": [
+    "TestAsyncPGCompletionAfterNativeEdit",
+    "TestAsyncPGFormalDetectorCompletesOnce",
+    "TestM3ConflictCompletionAfterSourceSave/sync",
+    "TestM3ConflictCompletionAfterSourceSave/async",
+    "TestM3ConflictCompletionAfterSourceSave",
+    "TestNativeConcurrentDraftAndHistory"
+  ]
+}
