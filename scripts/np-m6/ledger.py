@@ -34,7 +34,7 @@ def write(key, body, status=200):
 
 
 def receipt(key, abandon=False):
-    route = path + "/write-results/" + key
+    route = "case-intakes/write-results/" + key
     if abandon:
         return api(
             "POST", route + "/abandon", {"action": "update", "intake_id": target}

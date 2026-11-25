@@ -29,7 +29,7 @@ if [[ "${1:-}" == prepare ]]; then
 fi
 [[ "${1:-}" == exercise && ! -e "$work/roots.txt" ]] || exit 2
 . "$work/env"
-export NP_BROWSER_SEED="$work/seed.json" NP_M6_EXPECT_ENABLED=true
+export NP_BROWSER_SEED="$work/seed.json"
 pg=$(cat "$work/pg")
 tag=$(basename "$work")
 [[ $(docker inspect -f '{{index .Config.Labels "law-oa-m5"}}' "$pg") == "$tag" ]]
@@ -161,7 +161,7 @@ snapshot restarted
 stop
 start rollback ''
 "$py" scripts/np-m6/boundary.py disabled
-NP_M6_EXPECT_ENABLED=false "$py" scripts/np-m6/ledger.py verify >"$work/rollback-result.json"
+"$py" scripts/np-m6/ledger.py verify >"$work/rollback-result.json"
 snapshot rolled-back
 "$py" scripts/np-m6/boundary.py legacy-final
 [[ $(objects) == "$oids" && $(wc -l <"$work/steps" | tr -d ' ') == 3 ]]
