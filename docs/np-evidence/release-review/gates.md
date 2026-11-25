@@ -96,7 +96,7 @@
 | 载体 PR #52 合并 | Open Draft，UNSTABLE；检查汇总 13 FAILURE，质量与测试等失败或取消的归属须对最终合入树逐条交代 | [refs.json](refs.json)、[gofumpt 清理](../i11/gofumpt-cleanup/README.md) |
 | 原生新建接案同秒碰撞 500（`intake_code` 秒级，23505） | Hermes `t_a4646b57` 分开跟踪；修复 `a9a5116` 与回归 `a7ded85` 未进入候选 `49e5c15` | [M5 README](../m5/README.md)、[refs.json](refs.json) |
 | CI 分流大小写变体 P2 | Hermes `t_fbcffe5f` 未闭合 | [M3 隔离验收](../m3/isolated-acceptance/README.md) |
-| golangci-lint 存量债（约 4 千条）与 TestPerformanceMonitoring、E2E 历史红 | 伴随红灯，非 NP 范围，未闭合；gofumpt`@latest` 浮动版本仍可漂移 | [gofumpt 清理](../i11/gofumpt-cleanup/README.md) |
+| #52 普通质量与测试检查 | 格式步通过。静态分析、E2E 工具链和 Go 性能测试分别处置。后续同机 base/head 对照已将 TestPerformanceMonitoring 确认为候选新增可达回归；此前仅有两个较早 PR head 的对照。 | [冻结格式检查](../i11/gofumpt-cleanup/README.md) · [逐项处置与首项整改](pr52/README.md) |
 | M5 独立复审层级 | Astra 对固定证据提交 `753b5b0` 只读复审，未独立重跑运行时；I12 在 M6 另建空库独立冷跑 | [M5 README](../m5/README.md)、[M6 README](../m6/README.md) |
 | I12 回滚范围 | 仅覆盖 `89f2eb9` ↔ `49e5c15` 构建对；更早无保护版本只允许升级前 v14 阶段运行 | [M6 README](../m6/README.md) |
 | M0 遗留边界 | 六项 Skip 与双包范围不继承为通过；生产 TLS/main+Redis 属 M5 实测，M0 基线不覆盖 | [M0 基线报告](../../plans/np-main-integration/m0/baseline-report.md) |
