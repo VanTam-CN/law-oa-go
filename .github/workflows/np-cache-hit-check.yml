@@ -66,7 +66,8 @@ jobs:
           go test -race -count=1 -json -run '^TestIntakeEarlyResponsesNoStore$' . > "$RUNNER_TEMP/root.jsonl"
           check_test() {
             jq -es --arg p "$2" --arg t "$3" --argjson n "$4" '
-              all(.[]; .Package==$p and .Action!="skip" and .Action!="fail") and
+              if all(.[]; .Action=="build-output" or (.Package==$p and .Action!="skip" and .Action!="fail"))
+              then map(select(.Package==$p)) else [] end |
               (map(select(.Action=="run" and .Test==$t)) | length)==$n and
               (map(select(.Action=="pass" and .Test==$t)) | length)==$n and
               (map(select(.Action=="pass" and .Test==null)) | length)==1
