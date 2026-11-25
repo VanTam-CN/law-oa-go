@@ -1,0 +1,59 @@
+{
+  "scope": "I10/C10 route-by-route on isolated root and Redis",
+  "routes": {
+    "neighbor": {
+      "http": 403,
+      "exact_key_operations": {
+        "get": 1
+      },
+      "cache_control": ""
+    },
+    "capabilities": {
+      "http": 200,
+      "exact_key_operations": {},
+      "cache_control": "private, no-store"
+    },
+    "context": {
+      "http": 200,
+      "exact_key_operations": {},
+      "cache_control": "private, no-store"
+    },
+    "list": {
+      "http": 200,
+      "exact_key_operations": {},
+      "cache_control": "private, no-store"
+    },
+    "detail": {
+      "http": 200,
+      "exact_key_operations": {},
+      "cache_control": "private, no-store"
+    },
+    "workbench_alias": {
+      "http": 200,
+      "exact_key_operations": {},
+      "cache_control": "private, no-store"
+    },
+    "historical_source": {
+      "http": 200,
+      "exact_key_operations": {},
+      "cache_control": "private, no-store"
+    },
+    "committed_receipt": {
+      "http": 200,
+      "exact_key_operations": {},
+      "cache_control": "private, no-store"
+    },
+    "other_draft": {
+      "http": 403,
+      "exact_key_operations": {},
+      "cache_control": "private, no-store"
+    },
+    "unknown_draft": {
+      "http": 404,
+      "exact_key_operations": {},
+      "cache_control": "private, no-store"
+    }
+  },
+  "preseeded_old_value_returned": false,
+  "pg_before_after_equal": true
+}

@@ -1,0 +1,19 @@
+{
+  "scope": "synthetic root container stdout and stderr for observed window",
+  "checked_at_utc": "2026-11-25T03:03:56.919434+00:00",
+  "root_revision": "49e5c153c01fd4d21abea99f2792eea279628a5b",
+  "bytes_checked": 80141,
+  "nonempty_markers_checked": 7,
+  "markers": [
+    "round-one fragment",
+    "clarification fragment",
+    "concurrent edit prefix",
+    "manually typed concurrent prefix",
+    "disconnect prefix",
+    "unique synthetic title",
+    "synthetic account password"
+  ],
+  "literal_match_count": 0,
+  "jwt_shape_matches": 0,
+  "limits": "sampled application log only; fields, encodings or other sinks not exhaustively covered"
+}
