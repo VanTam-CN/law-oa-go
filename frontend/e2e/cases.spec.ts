@@ -132,9 +132,10 @@ test.describe('新建立案工作台', () => {
   test('首次新建应显示最小必填路径并隐藏工程诊断', async ({ page }) => {
     await waitForAppShell(page)
 
-    await expect(page.getByText('首次上手最小路径')).toBeVisible()
-    await expect(page.getByText(/案件名称、客户、对方当事人、对方身份标识/)).toBeVisible()
-    await expect(page.getByText(/先完成上述最小必填项/)).toBeVisible()
+    const guidance = page.getByRole('status').filter({ hasText: '首次上手最小路径' })
+    await expect(guidance).toBeVisible()
+    await expect(guidance.getByText(/案件名称、客户、对方当事人、对方身份标识/)).toBeVisible()
+    await expect(guidance.getByText(/先完成上述最小必填项/)).toBeVisible()
     await expect(page.getByText('加载耗时')).toHaveCount(0)
     await expect(page.getByText('接口响应')).toHaveCount(0)
     await expect(page.getByText('数据保存中')).toHaveCount(0)

@@ -50,6 +50,7 @@ function detailPayload(revision: string, parties: Party[]) {
       metadata: { business_area: '公司与并购', sub_area: '投资与融资', lawyer_id: 2 },
     },
     revision,
+    has_source_history: false,
     parties,
     materials: [],
   }
@@ -114,6 +115,10 @@ for (const source of ['本机草稿', '服务端20行投影', '本机别名', '�
       if (req.method() === 'GET' && url === path) {
         return route.fulfill(ok({ items: [{ id: INTAKE_ID, title: '打开合成样例' }], total: 1 }))
       }
+      if (req.method() === 'GET' && url.startsWith(detail + '/source-snapshots/')) {
+        const requested = url.slice((detail + '/source-snapshots/').length)
+        return route.fulfill(ok({ revision: requested, source_revision: '', source: null, current: true }))
+      }
       if (req.method() === 'GET' && url === detail) {
         reads.push(url)
         const parties = truncatedParties()
@@ -130,7 +135,7 @@ for (const source of ['本机草稿', '服务端20行投影', '本机别名', '�
       }
       if (req.method() === 'POST' && url === path) {
         expect(req.postDataJSON().parties.find((p: Party) => p.party_role === 'opposing_party').identity_number).toBe(ORIGINAL_IDENTITY)
-        return route.fulfill(ok({ id: INTAKE_ID, revision, intake_code: 'IN-801' }))
+        return route.fulfill(ok({ id: INTAKE_ID, revision, has_source_history: false, intake_code: 'IN-801' }))
       }
       if (req.method() === 'PUT' && url === detail) {
         writes.push(req.postDataJSON())

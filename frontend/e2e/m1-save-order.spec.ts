@@ -18,8 +18,13 @@ for (const stage of ['save', 'facts-confirmation', 'conflict-check'] as const) {
     await page.route(url => /^\/api\/v1\/case-intakes\/80[12](\/|$)/.test(url.pathname), async route => {
       const [, id, action = 'save'] = new URL(route.request().url()).pathname.match(/case-intakes\/(80[12])(?:\/(.+))?$/)!
       if (route.request().method() === 'GET') {
+        if (action.startsWith('source-snapshots/')) {
+          const revision = action.slice('source-snapshots/'.length)
+          return route.fulfill(ok({ revision, source_revision: '', source: null, current: true }))
+        }
+        expect(action).toBe('save')
         const parties = [{ party_role: 'opposing_party', entity_name: 'Synthetic opponent', entity_type: 'LEGAL_PERSON' }]
-        await route.fulfill(ok({ intake: draft(id), client: { name: 'Synthetic client' }, parties, revision: 'r' + id }))
+        await route.fulfill(ok({ intake: draft(id), client: { name: 'Synthetic client' }, parties, has_source_history: false, revision: 'r' + id }))
         return
       }
       calls.push(id + '/' + action)
