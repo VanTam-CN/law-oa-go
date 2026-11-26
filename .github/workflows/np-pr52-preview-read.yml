@@ -1,0 +1,157 @@
+---
+name: np-pr52-preview-read
+'on':
+  push:
+    branches:
+    - codex/np-pr52-preview-read
+    paths:
+    - ".github/workflows/np-pr52-preview-read.yml"
+    - scripts/np-ci/preview-auth-read.cjs
+permissions:
+  contents: read
+env:
+  GO_VERSION: 1.25.0
+  NODE_VERSION: '20'
+jobs:
+  preview-read:
+    name: Read synthetic draft through built preview
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: np_m1
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: np_first_slice_dev
+        ports:
+        - 18790:5432
+        options: --health-cmd "pg_isready -U np_m1 -d np_first_slice_dev" --health-interval
+          10s --health-timeout 5s --health-retries 5
+    steps:
+    - name: "\U0001F4E5 检出代码"
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 2
+        persist-credentials: false
+    - name: Pin application checkout and isolate validation code
+      env:
+        CANDIDATE: f3cd764d0bc7f82efb2b012669132f5b89e3d15c
+      run: |
+        set -euo pipefail
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        test "$(git log -1 --format=%P)" = "$CANDIDATE"
+        test -z "$(git status --porcelain)"
+        diff -u <(printf 'A\t%s\n' .github/workflows/np-pr52-preview-read.yml scripts/np-ci/preview-auth-read.cjs) <(git diff --name-status "$CANDIDATE" HEAD)
+        cp scripts/np-ci/preview-auth-read.cjs "$RUNNER_TEMP/preview-auth-read.cjs"
+        git checkout --detach "$CANDIDATE"
+        test "$(git rev-parse HEAD)" = "$CANDIDATE"
+        test -z "$(git status --porcelain)"
+        echo "RUN_SHA=$(git rev-parse HEAD)"
+    - name: "\U0001F4E6 设置Node.js环境"
+      uses: actions/setup-node@v4
+      with:
+        node-version: "${{ env.NODE_VERSION }}"
+    - name: "\U0001F439 设置Go环境"
+      uses: actions/setup-go@v5
+      with:
+        go-version: "${{ env.GO_VERSION }}"
+        cache: false
+    - name: "\U0001F4E5 安装前端依赖"
+      working-directory: "./frontend"
+      run: npm ci
+    - name: "\U0001F3AD 安装Playwright浏览器"
+      working-directory: "./frontend"
+      run: npx playwright install --with-deps chromium
+    - name: "\U0001F3D7️ 构建前端"
+      working-directory: "./frontend"
+      run: npm run build
+    - name: "\U0001F680 启动后端服务"
+      env:
+        DB_DRIVER: postgres
+        DB_HOST: 127.0.0.1
+        DB_PORT: 18790
+        DB_USERNAME: np_m1
+        DB_PASSWORD: test
+        DB_DATABASE: np_first_slice_dev
+        DB_SSLMODE: disable
+        PORT: 8080
+      run: |
+        set -o pipefail
+        export PGPASSWORD="$DB_PASSWORD"
+        go run ./cmd/migrate -command bootstrap
+        bash scripts/np-first-slice/apply-main-np86.sh
+        go build -o server ./cmd/server
+        JWT_SECRET="$(openssl rand -hex 32)"
+        export JWT_SECRET
+        ./server > "$RUNNER_TEMP/e2e-backend.log" 2>&1 &
+        pid=$!
+        for attempt in {1..60}; do
+          kill -0 "$pid" || { echo "::error::E2E backend exited before readiness"; exit 1; }
+          if curl -fsS --max-time 2 http://127.0.0.1:8080/api/v1/health 2>/dev/null | jq -se 'length == 1 and .[0].service == "law-oa" and .[0].status == "ok"' >/dev/null; then
+            echo "BACKEND_READY service=law-oa status=ok"
+            exit 0
+          fi
+          sleep 1
+        done
+        echo "::error::E2E backend health timed out"
+        exit 1
+    - name: "\U0001F680 启动前端服务"
+      working-directory: "./frontend"
+      run: |
+        npm run preview -- --host 127.0.0.1 --port 4173 --strictPort > "$RUNNER_TEMP/e2e-preview.log" 2>&1 &
+        pid=$!
+        for attempt in {1..30}; do
+          kill -0 "$pid" || { echo "::error::E2E preview exited before readiness"; exit 1; }
+          if [[ "$(curl -s --max-time 2 -o /dev/null -w '%{http_code}' http://127.0.0.1:4173/)" == 200 ]]; then
+            echo "FRONTEND_PREVIEW_HTTP=200"
+            exit 0
+          fi
+          sleep 1
+        done
+        echo "::error::E2E preview timed out"
+        exit 1
+    - name: Verify built assets, authenticated browser read and database preservation
+      env:
+        PGPASSWORD: test
+      run: |
+        set -euo pipefail
+        umask 077
+        work=$(mktemp -d "$RUNNER_TEMP/preview-read.XXXXXXXX")
+        trap 'rm -rf -- "$work"' EXIT
+        export NP_BROWSER_SEED="$work/seed.json" NP_PREVIEW_EXPECTED="$work/expected.json"
+        NP_BROWSER_PASSWORD=$(openssl rand -hex 24)
+        export NP_BROWSER_PASSWORD
+        echo "::add-mask::$NP_BROWSER_PASSWORD"
+        compare=(python3 scripts/np-first-slice/compare-main-browser-db.py)
+        "${compare[@]}" seed "$NP_BROWSER_SEED"
+        "${compare[@]}" before "$NP_BROWSER_SEED" "$work/before.json"
+        psql -XqAtw -v ON_ERROR_STOP=1 -h 127.0.0.1 -p 18790 -U np_m1 -d np_first_slice_dev -v id="$(jq -er .target "$NP_BROWSER_SEED")" > "$NP_PREVIEW_EXPECTED" <<'SQL'
+        SELECT jsonb_build_object('id', id, 'title', title, 'description', description, 'revision', metadata->>'draft_revision', 'actor_id', created_by) FROM case_intakes WHERE id = :'id'::uuid;
+        SQL
+        jq -e '.id and .title and .description and .revision and .actor_id' "$NP_PREVIEW_EXPECTED" >/dev/null
+        origin=http://127.0.0.1:4173
+        curl -fsS "$origin/login" > "$work/index.html"
+        cmp frontend/dist/index.html "$work/index.html"
+        asset=$(python3 - <<'PY'
+        from html.parser import HTMLParser
+        import re
+        class Entry(HTMLParser):
+            assets=[]
+            def handle_starttag(self, tag, attrs):
+                a=dict(attrs)
+                if tag=='script' and a.get('type')=='module' and re.fullmatch(r'/assets/[^/]+-[\w-]+\.js',a.get('src','')):
+                    self.assets.append(a['src'])
+        parser=Entry()
+        parser.feed(open('frontend/dist/index.html').read())
+        assert len(parser.assets)==1
+        print(parser.assets[0])
+        PY
+        )
+        curl -fsS "$origin$asset" > "$work/entry.js"
+        cmp "frontend/dist$asset" "$work/entry.js"
+        export NP_PREVIEW_ASSET="$asset"
+        echo "BUILT_HTML_AND_ENTRY_MATCH"
+        (cd frontend && NODE_PATH="$PWD/node_modules" node "$RUNNER_TEMP/preview-auth-read.cjs")
+        "${compare[@]}" unchanged "$NP_BROWSER_SEED" "$work/before.json"
+        jq -r '"PG_READ_PRESERVED protected_sha256=\(.protected_sha256) target_sha256=\(.target_sha256) sources=\(.sources) receipts=\(.receipts)"' "$work/before.json"
