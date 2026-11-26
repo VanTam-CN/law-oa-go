@@ -1,0 +1,145 @@
+{
+  "candidate": "94d531faeb6fa65f76599e3d5c04d83b72fda540",
+  "wrapper": "de33450f8bb7b3fcb0ff2389c8f402f83910eaba",
+  "wrapper_file": ".github/workflows/np-cache-i11-neg8-hosted.yml",
+  "branch": "codex/np-cache-i11-neg8-hosted",
+  "run": 45768562580,
+  "run_attempt": 1,
+  "event": "push",
+  "conclusion": "failure",
+  "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45768562580",
+  "results": [
+    {
+      "probe": "missing-pg",
+      "job": 139735388987,
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45768562580/job/139735388987",
+      "job_conclusion": "failure",
+      "failed_step": "Run frozen probe natively",
+      "marker": "M2_PG_UNAVAILABLE",
+      "exit_code": 1,
+      "identity_lines": [
+        "WRAPPER_SHA=de33450f8bb7b3fcb0ff2389c8f402f83910eaba",
+        "BASE_SHA=94d531faeb6fa65f76599e3d5c04d83b72fda540",
+        "RUN_SHA=94d531faeb6fa65f76599e3d5c04d83b72fda540"
+      ]
+    },
+    {
+      "probe": "missing-dsn",
+      "job": 139735388941,
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45768562580/job/139735388941",
+      "job_conclusion": "failure",
+      "failed_step": "Run frozen probe natively",
+      "marker": "M2_DSN_MISSING",
+      "exit_code": 1,
+      "identity_lines": [
+        "WRAPPER_SHA=de33450f8bb7b3fcb0ff2389c8f402f83910eaba",
+        "BASE_SHA=94d531faeb6fa65f76599e3d5c04d83b72fda540",
+        "RUN_SHA=94d531faeb6fa65f76599e3d5c04d83b72fda540"
+      ]
+    },
+    {
+      "probe": "skip",
+      "job": 139735389164,
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45768562580/job/139735389164",
+      "job_conclusion": "failure",
+      "failed_step": "Run frozen probe natively",
+      "marker": "M2_REQUIRED_TEST_SKIPPED",
+      "exit_code": 1,
+      "identity_lines": [
+        "WRAPPER_SHA=de33450f8bb7b3fcb0ff2389c8f402f83910eaba",
+        "BASE_SHA=94d531faeb6fa65f76599e3d5c04d83b72fda540",
+        "RUN_SHA=94d531faeb6fa65f76599e3d5c04d83b72fda540"
+      ]
+    },
+    {
+      "probe": "partial",
+      "job": 139735389464,
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45768562580/job/139735389464",
+      "job_conclusion": "failure",
+      "failed_step": "Run frozen probe natively",
+      "marker": "M2_REQUIRED_TEST_MISSING",
+      "exit_code": 1,
+      "identity_lines": [
+        "WRAPPER_SHA=de33450f8bb7b3fcb0ff2389c8f402f83910eaba",
+        "BASE_SHA=94d531faeb6fa65f76599e3d5c04d83b72fda540",
+        "RUN_SHA=94d531faeb6fa65f76599e3d5c04d83b72fda540"
+      ]
+    },
+    {
+      "probe": "none",
+      "job": 139735388619,
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45768562580/job/139735388619",
+      "job_conclusion": "failure",
+      "failed_step": "Run frozen probe natively",
+      "marker": "M2_NO_TESTS",
+      "exit_code": 1,
+      "identity_lines": [
+        "WRAPPER_SHA=de33450f8bb7b3fcb0ff2389c8f402f83910eaba",
+        "BASE_SHA=94d531faeb6fa65f76599e3d5c04d83b72fda540",
+        "RUN_SHA=94d531faeb6fa65f76599e3d5c04d83b72fda540"
+      ]
+    },
+    {
+      "probe": "fuzz-unknown",
+      "job": 139735388916,
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45768562580/job/139735388916",
+      "job_conclusion": "failure",
+      "failed_step": "Run frozen probe natively",
+      "marker": "I11_FUZZ_PREFLIGHT_REJECTED",
+      "exit_code": 1,
+      "identity_lines": [
+        "WRAPPER_SHA=de33450f8bb7b3fcb0ff2389c8f402f83910eaba",
+        "BASE_SHA=94d531faeb6fa65f76599e3d5c04d83b72fda540",
+        "RUN_SHA=94d531faeb6fa65f76599e3d5c04d83b72fda540"
+      ]
+    },
+    {
+      "probe": "fuzz-selected-failed",
+      "job": 139735388959,
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45768562580/job/139735388959",
+      "job_conclusion": "failure",
+      "failed_step": "Run frozen probe natively",
+      "marker": "I11_FUZZ_SUMMARY_REJECTED fuzz-selected-failed",
+      "exit_code": 1,
+      "identity_lines": [
+        "WRAPPER_SHA=de33450f8bb7b3fcb0ff2389c8f402f83910eaba",
+        "BASE_SHA=94d531faeb6fa65f76599e3d5c04d83b72fda540",
+        "RUN_SHA=94d531faeb6fa65f76599e3d5c04d83b72fda540"
+      ]
+    },
+    {
+      "probe": "fuzz-missing-proof",
+      "job": 139735388990,
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45768562580/job/139735388990",
+      "job_conclusion": "failure",
+      "failed_step": "Run frozen probe natively",
+      "marker": "I11_FUZZ_SUMMARY_REJECTED fuzz-missing-proof",
+      "exit_code": 1,
+      "identity_lines": [
+        "WRAPPER_SHA=de33450f8bb7b3fcb0ff2389c8f402f83910eaba",
+        "BASE_SHA=94d531faeb6fa65f76599e3d5c04d83b72fda540",
+        "RUN_SHA=94d531faeb6fa65f76599e3d5c04d83b72fda540"
+      ]
+    }
+  ],
+  "artifacts": 0,
+  "release": {
+    "merge": "HOLD",
+    "deployment": "HOLD",
+    "real_trial": "HOLD"
+  },
+  "task": "t_90117f63",
+  "executor": "glm-flash",
+  "coordinator_review": "8/8 independently matched",
+  "independent_review": {
+    "reviewer": "6.2 Astra",
+    "result": "PASS",
+    "method": "independent read of eight original job logs and frozen scripts, same run",
+    "pr_52_checked_separately": "9883cb1"
+  },
+  "side_effect_observation": {
+    "branch_caches": 0,
+    "wrapper_deployments": 0,
+    "wrapper_runs": 1
+  }
+}
