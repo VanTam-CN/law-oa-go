@@ -32,7 +32,7 @@ jobs:
     - name: "\U0001F4E5 检出代码"
       uses: actions/checkout@v4
       with:
-        fetch-depth: 2
+        fetch-depth: 3
         persist-credentials: false
     - name: Pin application checkout and isolate validation code
       env:
@@ -40,7 +40,8 @@ jobs:
       run: |
         set -euo pipefail
         test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-        test "$(git log -1 --format=%P)" = "$CANDIDATE"
+        test "$(git log -1 --format=%P)" = aa31a6479d62e63ce3fe5fb63671a0e4557feb6f
+        test "$(git log -1 --format=%P HEAD^)" = "$CANDIDATE"
         test -z "$(git status --porcelain)"
         diff -u <(printf 'A\t%s\n' .github/workflows/np-pr52-preview-read.yml scripts/np-ci/preview-auth-read.cjs) <(git diff --name-status "$CANDIDATE" HEAD)
         cp scripts/np-ci/preview-auth-read.cjs "$RUNNER_TEMP/preview-auth-read.cjs"
@@ -127,7 +128,9 @@ jobs:
         "${compare[@]}" seed "$NP_BROWSER_SEED"
         "${compare[@]}" before "$NP_BROWSER_SEED" "$work/before.json"
         psql -XqAtw -v ON_ERROR_STOP=1 -h 127.0.0.1 -p 18790 -U np_m1 -d np_first_slice_dev -v id="$(jq -er .target "$NP_BROWSER_SEED")" > "$NP_PREVIEW_EXPECTED" <<'SQL'
-        SELECT jsonb_build_object('id', id, 'title', title, 'description', description, 'revision', metadata->>'draft_revision', 'actor_id', created_by) FROM case_intakes WHERE id = :'id'::uuid;
+        SELECT jsonb_build_object('id', id, 'title', title, 'description', description, 'revision', metadata->>'draft_revision', 'actor_id', created_by,
+          'parties', (SELECT count(*) FROM case_intake_parties WHERE intake_id = :'id'::uuid),
+          'materials', (SELECT count(*) FROM case_materials WHERE intake_id = :'id'::uuid)) FROM case_intakes WHERE id = :'id'::uuid;
         SQL
         jq -e '.id and .title and .description and .revision and .actor_id' "$NP_PREVIEW_EXPECTED" >/dev/null
         origin=http://127.0.0.1:4173

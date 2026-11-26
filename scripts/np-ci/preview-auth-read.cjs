@@ -10,7 +10,6 @@
 //   NP_PREVIEW_EXPECTED  JSON path {id,title,description,revision,actor_id} from a real PG query
 //   NP_PREVIEW_ASSET     same-origin built asset path, e.g. /assets/index-XXXX.js,
 //                        already byte-compared with the dist file by the caller
-//   NP_PREVIEW_BASE      optional preview origin, default http://127.0.0.1:4173
 // Output: NP_PREVIEW_* booleans/counts/hashes only. Any failure exits non-zero
 // with a single NP_PREVIEW_FAIL=<REASON> marker; no response bodies, tokens or logs.
 
@@ -42,7 +41,7 @@ try {
 const seed = readJsonEnv('NP_BROWSER_SEED')
 const expected = readJsonEnv('NP_PREVIEW_EXPECTED')
 const password = process.env.NP_BROWSER_PASSWORD || ''
-const base = process.env.NP_PREVIEW_BASE || 'http://127.0.0.1:4173'
+const base = 'http://127.0.0.1:4173'
 const assetPath = process.env.NP_PREVIEW_ASSET || ''
 
 if (password.length < 12) fail('PASSWORD_ENV_SHORT')
@@ -80,7 +79,7 @@ async function main() {
 
     // 2. Real native login; actor id must match the PG expectation.
     const loginP = page.waitForResponse(r => r.request().method() === 'POST' &&
-      new URL(r.url()).pathname === '/api/v1/auth/login', { timeout: 20000 })
+      r.url() === base + '/api/v1/auth/login', { timeout: 20000 })
     await page.getByPlaceholder('账号或邮箱').fill(seed.username)
     await page.getByPlaceholder('密码').fill(password)
     await page.locator('button[type=submit]').click()
@@ -100,7 +99,7 @@ async function main() {
     await page.getByRole('button', { name: /新建立案$/ }).click()
     await page.getByRole('button', { name: '打开服务端草稿', exact: true }).click()
     const detailP = page.waitForResponse(r => r.request().method() === 'GET' &&
-      new URL(r.url()).pathname === '/api/v1/case-intakes/' + seed.target, { timeout: 20000 })
+      r.url() === base + '/api/v1/case-intakes/' + seed.target, { timeout: 20000 })
     await page.getByRole('button', { name: seed.target_title, exact: true }).click()
     const detailResp = await detailP
     let detail = null
@@ -118,21 +117,21 @@ async function main() {
     if (intake.description !== expected.description) fail('API_DESC_MISMATCH')
     console.log('NP_PREVIEW_DESC_SHA256=' + descHash)
     console.log('NP_PREVIEW_API_DESC_MATCH=true')
-    const revisionMatch = intake.revision !== undefined && intake.revision !== null &&
-      String(intake.revision) === String(expected.revision)
+    const revisionMatch = detail.data.revision !== undefined && detail.data.revision !== null &&
+      String(detail.data.revision) === String(expected.revision)
     if (!revisionMatch) fail('REVISION_MISMATCH')
     console.log('NP_PREVIEW_REVISION_MATCH=true')
     const parties = Array.isArray(detail.data.parties) ? detail.data.parties.length : -1
     const materials = Array.isArray(detail.data.materials) ? detail.data.materials.length : -1
-    const expectedParties = Array.isArray(seed.parties) ? seed.parties.length / 2 : -1
-    const expectedMaterials = Array.isArray(seed.materials) ? seed.materials.length - 1 : -1
+    const expectedParties = expected.parties
+    const expectedMaterials = expected.materials
     if (!(parties === expectedParties && parties > 0)) fail('PARTIES_COUNT_' + parties)
     if (!(materials === expectedMaterials && materials > 0)) fail('MATERIALS_COUNT_' + materials)
     console.log('NP_PREVIEW_PARTIES_COUNT=' + parties)
     console.log('NP_PREVIEW_MATERIALS_COUNT=' + materials)
 
     // 5. Rendered DOM must carry the same selected PG object.
-    await page.waitForSelector('#intake-title', { timeout: 20000 })
+    await page.waitForFunction(title => document.querySelector('#intake-title')?.value === title, expected.title, { timeout: 20000 })
     const domTitle = await page.inputValue('#intake-title')
     const domDesc = await page.inputValue('#intake-description')
     if (domTitle !== expected.title) fail('DOM_TITLE_MISMATCH')
@@ -146,6 +145,5 @@ async function main() {
 }
 
 main().catch(err => {
-  const msg = String((err && err.message) || err).replace(/\s+/g, ' ').slice(0, 300)
-  fail('EXCEPTION ' + msg)
+  fail(err && err.name === 'TimeoutError' ? 'BROWSER_TIMEOUT' : 'BROWSER_EXCEPTION')
 })
