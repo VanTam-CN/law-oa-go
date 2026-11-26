@@ -1,0 +1,143 @@
+name: np-pr52-e2e-full
+
+on:
+  push:
+    branches:
+      - codex/np-pr52-e2e-full
+    paths:
+      - .github/workflows/np-pr52-e2e-full.yml
+
+permissions:
+  contents: read
+
+env:
+  NP_PR52_E2E_FULL_BASE: 8a8fb8a9b8857fc87634561def33a6cc0783c9dc
+
+jobs:
+  e2e-full:
+    name: e2e chromium on pinned 8a8fb8a
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: law_oa_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Verify wrapper commit and detach to pinned business candidate
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = "$NP_PR52_E2E_FULL_BASE"
+          test -z "$(git status --porcelain)"
+          changed=$(git diff --name-only "$NP_PR52_E2E_FULL_BASE" "$GITHUB_SHA")
+          test "$changed" = ".github/workflows/np-pr52-e2e-full.yml"
+          echo "WRAPPER_SHA=$GITHUB_SHA"
+          echo "BASE_SHA=$NP_PR52_E2E_FULL_BASE"
+          git checkout --detach "$NP_PR52_E2E_FULL_BASE"
+          test "$(git rev-parse HEAD)" = "$NP_PR52_E2E_FULL_BASE"
+          test -z "$(git status --porcelain)"
+          echo "RUN_SHA=$(git rev-parse HEAD)"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.0'
+          cache: false
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+      - name: Install Playwright chromium
+        working-directory: ./frontend
+        run: npx playwright install --with-deps chromium
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
+      - name: Start backend and record real listener identity
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: test
+          DB_PASSWORD: test
+          DB_NAME: law_oa_test
+          PORT: 8080
+        run: |
+          go build -o server ./cmd/server
+          ./server > /tmp/np-pr52-server.out 2>&1 &
+          sleep 5
+          code=$(curl -s -o /tmp/np-pr52-health.json -w '%{http_code}' http://localhost:8080/health || true)
+          echo "BACKEND_HEALTH_HTTP=$code"
+          if [[ "$code" == 200 ]]; then
+            echo "BACKEND_HEALTH_BODY_BEGIN"
+            head -c 2000 /tmp/np-pr52-health.json
+            echo "BACKEND_HEALTH_BODY_END"
+          else
+            echo "BACKEND_HEALTH_FAILED code=$code"
+          fi
+          if command -v ss >/dev/null 2>&1; then ss -ltn | grep -F ':8080' || echo "BACKEND_LISTEN_MISSING"; else echo "BACKEND_LISTEN_TOOL_ABSENT"; fi
+      - name: Start frontend preview
+        working-directory: ./frontend
+        run: |
+          npm run preview > /tmp/np-pr52-preview.out 2>&1 &
+          sleep 5
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:4173 || true)
+          echo "FRONTEND_PREVIEW_HTTP=$code"
+      - name: Run Playwright chromium with list and sanitized JSON inventory
+        working-directory: ./frontend
+        env:
+          E2E_BASE_URL: http://localhost:4173
+        run: |
+          results_dir=$(mktemp -d)
+          export PLAYWRIGHT_JSON_OUTPUT_DIR="$results_dir"
+          export PLAYWRIGHT_JSON_OUTPUT_NAME=report.json
+          rc=0
+          npx playwright test --project=chromium --reporter=list,json || rc=$?
+          echo "PLAYWRIGHT_RC=$rc"
+          python3 - "$results_dir/report.json" <<'PY'
+          import json, sys
+          try:
+              report = json.load(open(sys.argv[1]))
+          except Exception as exc:
+              print("JSON_REPORT_UNREADABLE", type(exc).__name__)
+              sys.exit(0)
+          rows = []
+          def walk(suites):
+              for suite in suites or []:
+                  for spec in suite.get("specs") or []:
+                      for test in spec.get("tests") or []:
+                          title = spec.get("title", "")
+                          project = test.get("projectName", "")
+                          status = test.get("status", "")
+                          expected = test.get("expectedStatus", "")
+                          attempts = len(test.get("results") or [])
+                          rows.append((title, project, status, expected, attempts))
+                  walk(suite.get("suites"))
+          walk(report.get("suites"))
+          counts = {}
+          for title, project, status, expected, attempts in rows:
+              counts[status] = counts.get(status, 0) + 1
+              print(f"CASE\t{title}\tproject={project}\tstatus={status}\texpected={expected}\tattempts={attempts}")
+          for key in sorted(counts):
+              print(f"INVENTORY\tstatus={key}\tcount={counts[key]}")
+          failed = [r for r in rows if r[2] not in ("expected", "skipped")]
+          if failed:
+              title, project, status, expected, attempts = failed[0]
+              print(f"FIRST_FAIL\t{title}\tproject={project}\tstatus={status}\texpected={expected}\tattempts={attempts}")
+          print("INVENTORY_TOTAL", len(rows))
+          PY
+          exit "$rc"
