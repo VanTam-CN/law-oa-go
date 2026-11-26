@@ -1,0 +1,69 @@
+name: np-cache-i11-neg8-hosted
+
+on:
+  push:
+    branches:
+      - codex/np-cache-i11-neg8-hosted
+    paths:
+      - .github/workflows/np-cache-i11-neg8-hosted.yml
+
+permissions:
+  contents: read
+
+env:
+  NP_CACHE_NEG8_BASE: 94d531faeb6fa65f76599e3d5c04d83b72fda540
+  NP_TEST_DSN: host=127.0.0.1 port=18790 dbname=np_first_slice_dev user=np_m1 sslmode=disable
+
+jobs:
+  negative:
+    runs-on: ${{ matrix.runs_on || 'ubuntu-24.04' }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        probe: [missing-pg, missing-dsn, skip, partial, none, fuzz-unknown, fuzz-selected-failed, fuzz-missing-proof]
+        include:
+          - { probe: missing-pg,           go: true,  script: early-pg }
+          - { probe: missing-dsn,          go: true,  script: early-pg }
+          - { probe: skip,                 go: true,  script: early-pg }
+          - { probe: partial,              go: true,  script: early-pg }
+          - { probe: none,                 go: true,  script: early-pg }
+          - { probe: fuzz-unknown,         go: false, script: i11-fuzz-probe }
+          - { probe: fuzz-selected-failed, go: false, script: i11-fuzz-probe }
+          - { probe: fuzz-missing-proof,   go: false, script: i11-fuzz-probe }
+    name: negative ${{ matrix.probe }} must stay red
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Verify direct-child wrapper commit and detach to pinned candidate
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = "$NP_CACHE_NEG8_BASE"
+          test "$(git log -1 --format=%P HEAD)" = "$NP_CACHE_NEG8_BASE"
+          test -z "$(git status --porcelain)"
+          changed=$(git diff --name-only "$NP_CACHE_NEG8_BASE" "$GITHUB_SHA")
+          test "$changed" = ".github/workflows/np-cache-i11-neg8-hosted.yml"
+          echo "WRAPPER_SHA=$GITHUB_SHA"
+          echo "BASE_SHA=$NP_CACHE_NEG8_BASE"
+          git checkout --detach "$NP_CACHE_NEG8_BASE"
+          test "$(git rev-parse HEAD)" = "$NP_CACHE_NEG8_BASE"
+          test -z "$(git status --porcelain)"
+          echo "RUN_SHA=$(git rev-parse HEAD)"
+      - uses: actions/setup-go@v5
+        if: matrix.go
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Verify runner tools
+        run: |
+          if [[ "${{ matrix.go }}" == true ]]; then
+            psql --version
+            docker version --format '{{.Server.Version}}'
+          else
+            jq --version
+            ruby --version
+          fi
+      - name: Run frozen probe natively
+        run: bash scripts/np-ci/${{ matrix.script }}.sh "${{ matrix.probe }}"
