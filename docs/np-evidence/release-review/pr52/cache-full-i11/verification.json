@@ -1,0 +1,208 @@
+{
+  "run": 45761969499,
+  "attempt": 1,
+  "job": 139713854340,
+  "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45761969499/job/139713854340",
+  "event": "push",
+  "checkout": "03fd55c6c68060316136030daabd6dd127a3e8b6",
+  "candidate": "94d531faeb6fa65f76599e3d5c04d83b72fda540",
+  "run_state": "success",
+  "job_state": "success",
+  "steps": [
+    [
+      "Set up job",
+      "success"
+    ],
+    [
+      "Run actions/checkout@v4",
+      "success"
+    ],
+    [
+      "Verify wrapper commit and detach to pinned base",
+      "success"
+    ],
+    [
+      "Run actions/setup-go@v5",
+      "success"
+    ],
+    [
+      "Run actions/setup-node@v4",
+      "success"
+    ],
+    [
+      "Install locked dependencies and verify runner tools",
+      "success"
+    ],
+    [
+      "Run np-i11 full gate on pinned base",
+      "success"
+    ],
+    [
+      "Post Run actions/setup-node@v4",
+      "success"
+    ],
+    [
+      "Post Run actions/setup-go@v5",
+      "success"
+    ],
+    [
+      "Post Run actions/checkout@v4",
+      "success"
+    ],
+    [
+      "Complete job",
+      "success"
+    ]
+  ],
+  "artifacts": 0,
+  "branch_cache": 0,
+  "deployments": 0,
+  "push_runs": 1,
+  "tested_checkout": "94d531faeb6fa65f76599e3d5c04d83b72fda540",
+  "stages": [
+    {
+      "phase": "fuzz-normal",
+      "start": "2026-11-26T05:31:41Z",
+      "end": "2026-11-26T05:31:42Z",
+      "exit": 0
+    },
+    {
+      "phase": "build",
+      "start": "2026-11-26T05:31:42Z",
+      "end": "2026-11-26T05:31:58Z",
+      "exit": 0
+    },
+    {
+      "phase": "redis",
+      "start": "2026-11-26T05:32:01Z",
+      "end": "2026-11-26T05:33:20Z",
+      "exit": 0
+    },
+    {
+      "phase": "go",
+      "start": "2026-11-26T05:33:20Z",
+      "end": "2026-11-26T05:33:39Z",
+      "exit": 0
+    },
+    {
+      "phase": "tagged",
+      "start": "2026-11-26T05:33:39Z",
+      "end": "2026-11-26T05:33:42Z",
+      "exit": 0
+    },
+    {
+      "phase": "typecheck",
+      "start": "2026-11-26T05:33:42Z",
+      "end": "2026-11-26T05:33:47Z",
+      "exit": 0
+    },
+    {
+      "phase": "jest",
+      "start": "2026-11-26T05:33:47Z",
+      "end": "2026-11-26T05:33:56Z",
+      "exit": 0
+    },
+    {
+      "phase": "frontend-build",
+      "start": "2026-11-26T05:33:56Z",
+      "end": "2026-11-26T05:34:07Z",
+      "exit": 0
+    },
+    {
+      "phase": "route-b",
+      "start": "2026-11-26T05:34:07Z",
+      "end": "2026-11-26T05:34:53Z",
+      "exit": 0
+    },
+    {
+      "phase": "selection",
+      "start": "2026-11-26T05:34:53Z",
+      "end": "2026-11-26T05:35:06Z",
+      "exit": 0
+    },
+    {
+      "phase": "storage",
+      "start": "2026-11-26T05:35:06Z",
+      "end": "2026-11-26T05:35:23Z",
+      "exit": 0
+    },
+    {
+      "phase": "navigation",
+      "start": "2026-11-26T05:35:23Z",
+      "end": "2026-11-26T05:35:40Z",
+      "exit": 0
+    },
+    {
+      "phase": "editing",
+      "start": "2026-11-26T05:35:40Z",
+      "end": "2026-11-26T05:36:00Z",
+      "exit": 0
+    },
+    {
+      "phase": "tabs",
+      "start": "2026-11-26T05:36:00Z",
+      "end": "2026-11-26T05:36:17Z",
+      "exit": 0
+    },
+    {
+      "phase": "legacy",
+      "start": "2026-11-26T05:36:17Z",
+      "end": "2026-11-26T05:36:33Z",
+      "exit": 0
+    },
+    {
+      "phase": "prod",
+      "start": "2026-11-26T05:36:33Z",
+      "end": "2026-11-26T05:36:39Z",
+      "exit": 0
+    },
+    {
+      "phase": "native",
+      "start": "2026-11-26T05:36:39Z",
+      "end": "2026-11-26T05:37:01Z",
+      "exit": 0
+    }
+  ],
+  "go_jest": {
+    "go": 32,
+    "tagged": 11,
+    "jest": 124
+  },
+  "browser": {
+    "route-b": 4,
+    "storage": 5,
+    "navigation": 5,
+    "editing": 3,
+    "tabs": 1,
+    "legacy": 2,
+    "prod": 2,
+    "selection": 2,
+    "native": 10
+  },
+  "pg": {
+    "protected_sha256": "f18b3f706f86c6040b4bda0f093065d8be6ba1bb9fd8c5b1049728733c46c60b",
+    "sources_delta": 3,
+    "receipts_delta": 4,
+    "linked": 3,
+    "manual": 1
+  },
+  "full_pass": true,
+  "task": "t_b2762d8e",
+  "candidate_source": "0b58108ec3d32290af9d504dccbe75fbfc9de358",
+  "browser_cases": 34,
+  "wrapper_branch": "codex/np-cache-full-i11",
+  "test_entry": "bash scripts/np-ci/early-pg.sh full",
+  "negative_probes": "NOT_RUN in this run",
+  "pr_synthetic_merge": "NOT_RUN for this candidate",
+  "release": {
+    "merge": "HOLD",
+    "deployment": "HOLD",
+    "real_trial": "HOLD"
+  },
+  "independent_review": {
+    "reviewer": "6.2 Astra",
+    "result": "PASS",
+    "method": "独立核对同一次托管执行的日志和固定候选的检查器",
+    "separate_ci_run": false
+  }
+}
