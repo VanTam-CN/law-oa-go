@@ -1,0 +1,54 @@
+# Temporary hosted gate for codex/np-cache-full-i11: one positive run
+# against the pinned base commit 94d531faeb6fa65f76599e3d5c04d83b72fda540.
+
+name: np-cache-full-i11
+
+on:
+  push:
+    branches:
+      - codex/np-cache-full-i11
+    paths:
+      - .github/workflows/np-cache-full-i11.yml
+
+jobs:
+  np-cache-full-i11:
+    permissions:
+      contents: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      NP_TEST_DSN: host=127.0.0.1 port=18790 dbname=np_first_slice_dev user=np_m1 sslmode=disable
+      NP_CACHE_FULL_BASE: 94d531faeb6fa65f76599e3d5c04d83b72fda540
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Verify wrapper commit and detach to pinned base
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = "$NP_CACHE_FULL_BASE"
+          test -z "$(git status --porcelain)"
+          echo "WRAPPER_SHA=$GITHUB_SHA"
+          echo "BASE_SHA=$NP_CACHE_FULL_BASE"
+          test "$(git diff --name-only "$NP_CACHE_FULL_BASE" "$GITHUB_SHA")" = .github/workflows/np-cache-full-i11.yml
+          git checkout --detach "$NP_CACHE_FULL_BASE"
+          test "$(git rev-parse HEAD)" = "$NP_CACHE_FULL_BASE"
+          test -z "$(git status --porcelain)"
+          echo "RUN_SHA=$(git rev-parse HEAD)"
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.17.0'
+      - name: Install locked dependencies and verify runner tools
+        working-directory: frontend
+        run: |
+          npm ci --replace-registry-host=always --registry=https://registry.npmjs.org --no-audit --no-fund
+          google-chrome --version
+          psql --version
+          docker version --format '{{.Server.Version}}'
+      - name: Run np-i11 full gate on pinned base
+        run: bash scripts/np-ci/early-pg.sh full
