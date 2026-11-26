@@ -17,7 +17,7 @@ const nativeApproval = process.env.NP_M1_BROWSER_FIXTURE
   ? JSON.parse(process.env.NP_M1_BROWSER_FIXTURE) as { url: string; intake: string; client: number; check: string }
   : undefined
 const INTAKE_ID = nativeApproval?.intake ?? 801
-const checkID = nativeApproval?.check ?? 'CHECK-801'
+const checkID = nativeApproval?.check ?? 'CHK-2026-ASYNC-001'
 const OPPONENT_NAME = '上海华信建设集团有限公司'
 const ORIGINAL_IDENTITY = '91310000TESTCASE0001'
 const UPDATED_IDENTITY = '91310000TESTCASE0002'
