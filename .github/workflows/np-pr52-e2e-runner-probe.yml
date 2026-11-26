@@ -1,0 +1,76 @@
+name: np-pr52-e2e-runner-probe
+
+on:
+  push:
+    branches:
+      - codex/np-pr52-e2e-runner
+    paths:
+      - .github/workflows/np-pr52-e2e-runner-probe.yml
+
+permissions:
+  contents: read
+
+env:
+  NP_PR52_E2E_PROBE_BASE: 8a8fb8a9b8857fc87634561def33a6cc0783c9dc
+
+jobs:
+  probe:
+    name: chromium launch probe on ubuntu-24.04
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Verify wrapper commit and detach to runner-fix commit
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = "$NP_PR52_E2E_PROBE_BASE"
+          test "$(git log -1 --format=%P HEAD)" = "$NP_PR52_E2E_PROBE_BASE"
+          test -z "$(git status --porcelain)"
+          changed=$(git diff --name-only "$NP_PR52_E2E_PROBE_BASE" "$GITHUB_SHA")
+          test "$changed" = ".github/workflows/np-pr52-e2e-runner-probe.yml"
+          echo "WRAPPER_SHA=$GITHUB_SHA"
+          echo "RUNNER_FIX_SHA=$NP_PR52_E2E_PROBE_BASE"
+          git checkout --detach "$NP_PR52_E2E_PROBE_BASE"
+          test "$(git rev-parse HEAD)" = "$NP_PR52_E2E_PROBE_BASE"
+          test -z "$(git status --porcelain)"
+          echo "RUN_SHA=$(git rev-parse HEAD)"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install locked frontend dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Install Playwright chromium with dependencies
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+      - name: Launch chromium headless and verify blank page title
+        working-directory: frontend
+        run: |
+          node <<'JS'
+          const { chromium } = require('playwright-core');
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            const page = await browser.newPage();
+            await page.goto('data:text/html,<title>np-pr52-e2e-runner-probe</title>');
+            const title = await page.title();
+            if (title !== 'np-pr52-e2e-runner-probe') {
+              console.error('TITLE_MISMATCH ' + title);
+              process.exit(1);
+            }
+            console.log('BROWSER_VERSION ' + browser.version());
+            console.log('PROBE_TITLE_OK ' + title);
+            await browser.close();
+          })().catch((err) => {
+            const msg = err && err.message ? err.message : String(err);
+            console.error('PROBE_LAUNCH_FAILED ' + msg.split('\n')[0]);
+            process.exit(1);
+          });
+          JS
+      - name: Print fixed probe summary
+        run: |
+          echo "Playwright CLI: $(npx playwright --version)"
+          echo "Runner: ubuntu-24.04"
+          echo "Probe: headless chromium launch + data URL title assertion"
