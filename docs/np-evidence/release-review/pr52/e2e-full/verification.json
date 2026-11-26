@@ -1,0 +1,330 @@
+{
+  "task": "t_be69c7bc",
+  "scope": "ordinary Chromium suite, 17 files and 115 unique cases matched to the frozen list",
+  "ordinary_config": {
+    "base_url": "http://127.0.0.1:3003",
+    "server": "vite dev, separate from checked preview on 4173 and real backend on 8080",
+    "excluded_by_config": [
+      "np-first-slice.live.spec.ts"
+    ],
+    "ci_workers": 2,
+    "ci_retries": 1
+  },
+  "runs": [
+    {
+      "run": 45775656049,
+      "attempt": 1,
+      "wrapper": "fc4d8965e88c1a36f06e80a2be5cb3c1fe50be10",
+      "event": "push",
+      "job": 139758583758,
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45775656049/job/139758583758",
+      "status": "failure",
+      "markers": [
+        "WRAPPER_SHA=fc4d8965e88c1a36f06e80a2be5cb3c1fe50be10",
+        "BASE_SHA=8a8fb8a9b8857fc87634561def33a6cc0783c9dc",
+        "RUN_SHA=8a8fb8a9b8857fc87634561def33a6cc0783c9dc",
+        "BACKEND_HEALTH_HTTP=000",
+        "BACKEND_HEALTH_FAILED code=000",
+        "BACKEND_LISTEN_MISSING",
+        "FRONTEND_PREVIEW_HTTP=200",
+        "PLAYWRIGHT_RC=1",
+        "INVENTORY\tstatus=expected\tcount=102",
+        "INVENTORY\tstatus=unexpected\tcount=13",
+        "FIRST_FAIL\t首次新建应显示最小必填路径并隐藏工程诊断\tproject=chromium\tstatus=unexpected\texpected=passed\tattempts=2",
+        "INVENTORY_TOTAL 115"
+      ],
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize containers",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify wrapper commit and detach to pinned business candidate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-go@v5",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install frontend dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install Playwright chromium",
+          "conclusion": "success"
+        },
+        {
+          "name": "Build frontend",
+          "conclusion": "success"
+        },
+        {
+          "name": "Start backend and record real listener identity",
+          "conclusion": "success"
+        },
+        {
+          "name": "Start frontend preview",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run Playwright chromium with list and sanitized JSON inventory",
+          "conclusion": "failure"
+        },
+        {
+          "name": "Post Run actions/setup-go@v5",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Stop containers",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ],
+      "listed": 115,
+      "reported": 115,
+      "counts": {
+        "expected": 102,
+        "unexpected": 13
+      },
+      "unreported_titles": [],
+      "artifacts": 0,
+      "total_attempts": 128
+    },
+    {
+      "run": 45779890027,
+      "attempt": 1,
+      "wrapper": "7d5544e80914a88ebda49482592d068417703897",
+      "event": "push",
+      "job": 139772504707,
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45779890027/job/139772504707",
+      "status": "failure",
+      "markers": [
+        "WRAPPER_SHA=7d5544e80914a88ebda49482592d068417703897",
+        "RUN_SHA=4cb293fcc0c654a3912745bb4c47b45fdef962c6",
+        "BACKEND_READY service=law-oa status=ok",
+        "FRONTEND_PREVIEW_HTTP=200",
+        "PLAYWRIGHT_RC=1",
+        "INVENTORY\tstatus=expected\tcount=114",
+        "INVENTORY\tstatus=unexpected\tcount=1",
+        "INVENTORY_TOTAL 115"
+      ],
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize containers",
+          "conclusion": "success"
+        },
+        {
+          "name": "📥 检出代码",
+          "conclusion": "success"
+        },
+        {
+          "name": "Validate and detach to fixed candidate",
+          "conclusion": "success"
+        },
+        {
+          "name": "📦 设置Node.js环境",
+          "conclusion": "success"
+        },
+        {
+          "name": "🐹 设置Go环境",
+          "conclusion": "success"
+        },
+        {
+          "name": "📥 安装前端依赖",
+          "conclusion": "success"
+        },
+        {
+          "name": "🎭 安装Playwright浏览器",
+          "conclusion": "success"
+        },
+        {
+          "name": "🏗️ 构建前端",
+          "conclusion": "success"
+        },
+        {
+          "name": "🚀 启动后端服务",
+          "conclusion": "success"
+        },
+        {
+          "name": "🚀 启动前端服务",
+          "conclusion": "success"
+        },
+        {
+          "name": "🧪 运行E2E测试",
+          "conclusion": "failure"
+        },
+        {
+          "name": "Post 🐹 设置Go环境",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Post 📦 设置Node.js环境",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Post 📥 检出代码",
+          "conclusion": "success"
+        },
+        {
+          "name": "Stop containers",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ],
+      "listed": 115,
+      "reported": 115,
+      "counts": {
+        "expected": 114,
+        "unexpected": 1
+      },
+      "unreported_titles": [],
+      "artifacts": 0,
+      "total_attempts": 116
+    },
+    {
+      "run": 45782126876,
+      "attempt": 1,
+      "wrapper": "d1efb28ba0fe0fdb740fe42e9d7dfeb9e589a915",
+      "event": "push",
+      "job": 139779880088,
+      "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45782126876/job/139779880088",
+      "status": "success",
+      "markers": [
+        "WRAPPER_SHA=d1efb28ba0fe0fdb740fe42e9d7dfeb9e589a915",
+        "RUN_SHA=f3cd764d0bc7f82efb2b012669132f5b89e3d15c",
+        "BACKEND_READY service=law-oa status=ok",
+        "FRONTEND_PREVIEW_HTTP=200",
+        "PLAYWRIGHT_RC=0",
+        "INVENTORY\tstatus=expected\tcount=115",
+        "INVENTORY_TOTAL 115"
+      ],
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize containers",
+          "conclusion": "success"
+        },
+        {
+          "name": "📥 检出代码",
+          "conclusion": "success"
+        },
+        {
+          "name": "Validate and detach to fixed candidate",
+          "conclusion": "success"
+        },
+        {
+          "name": "📦 设置Node.js环境",
+          "conclusion": "success"
+        },
+        {
+          "name": "🐹 设置Go环境",
+          "conclusion": "success"
+        },
+        {
+          "name": "📥 安装前端依赖",
+          "conclusion": "success"
+        },
+        {
+          "name": "🎭 安装Playwright浏览器",
+          "conclusion": "success"
+        },
+        {
+          "name": "🏗️ 构建前端",
+          "conclusion": "success"
+        },
+        {
+          "name": "🚀 启动后端服务",
+          "conclusion": "success"
+        },
+        {
+          "name": "🚀 启动前端服务",
+          "conclusion": "success"
+        },
+        {
+          "name": "🧪 运行E2E测试",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post 🐹 设置Go环境",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post 📦 设置Node.js环境",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post 📥 检出代码",
+          "conclusion": "success"
+        },
+        {
+          "name": "Stop containers",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ],
+      "listed": 115,
+      "reported": 115,
+      "counts": {
+        "expected": 115
+      },
+      "unreported_titles": [],
+      "artifacts": 0,
+      "total_attempts": 115
+    }
+  ],
+  "compared_cases": "cases.tsv",
+  "release": {
+    "merge": "HOLD",
+    "deployment": "HOLD",
+    "real_trial": "HOLD"
+  },
+  "executor": "glm-flash (baseline hosted run, empty PG fixture verification and 13 targeted Chrome cases)",
+  "coordinator_review": "Three original hosted job logs matched against 115 unique frozen cases. Final 115 passed on the first attempt.",
+  "independent_review": {
+    "reviewer": "6.2 Astra",
+    "verdict": "PASS on f3cd764",
+    "method": "Independent review of the same three hosted runs, test identities and candidate diffs."
+  },
+  "pr52_at_review": {
+    "head": "b22736b693b5d12b521173bed1055245b095a456",
+    "test_merge": "9883cb11b68aa80a9291e55719aef56d29e13aab",
+    "draft": true,
+    "merged": false
+  }
+}

@@ -1,0 +1,116 @@
+spec	chromium_test_id	title	8a8fb8a_outcome	8a8fb8a_attempts	4cb293f_attempts	f3cd764_attempts
+approval-layout.spec.ts	4360dbc8bad73c9e54dd-09e4bd61a6aaeb3ea4d5	在 1366px 下操作列按钮可见或可滚动访问	expected	1	passed	passed
+approval-layout.spec.ts	4360dbc8bad73c9e54dd-78d535d9b14189234a7b	在 1200px 下操作列按钮可见或可滚动访问	expected	1	passed	passed
+approval-layout.spec.ts	4360dbc8bad73c9e54dd-2bcaed78e59e9fd678b1	审批详情不应出现含糊的更多操作按钮	expected	1	passed	passed
+approval-layout.spec.ts	4360dbc8bad73c9e54dd-8e1948c684522380f465	1280px 下申请信息长文本保持可横向阅读	expected	1	passed	passed
+approval-permission-consistency.spec.ts	4abf89bc2f01b29de00a-44725cb9e671db69b106	独立冲突核查人可以进入审批中心处理被分配事项	expected	1	passed	passed
+approval-permission-consistency.spec.ts	4abf89bc2f01b29de00a-81bacdb27b22b4774bf6	非当前审批人的律师应看到只读提示，无决策按钮	expected	1	passed	passed
+approval.spec.ts	d26ed016eadad41b6e49-cfe15ed60fa2fd5664e5	应该显示审批队列	expected	1	passed	passed
+approval.spec.ts	d26ed016eadad41b6e49-b4d61bce1310ad68a5fb	审批分类按钮应该可见	expected	1	passed	passed
+approval.spec.ts	d26ed016eadad41b6e49-cf3a010671c369cf8b54	应该能进入审批详情	expected	1	passed	passed
+approval.spec.ts	d26ed016eadad41b6e49-ea74b3cd97494ca4bd7f	律师不是当前审批人时不应该显示审批决策按钮	expected	1	passed	passed
+approval.spec.ts	d26ed016eadad41b6e49-48577ce0130faddb40f5	当前审批人同意审批后应该显示成案状态	expected	1	passed	passed
+approval.spec.ts	d26ed016eadad41b6e49-c239c760fb707b65910c	拒绝审批必须填写依据并二次确认，首次点击不得直接提交	expected	1	passed	passed
+approval.spec.ts	d26ed016eadad41b6e49-bf46b50fec4bac245a68	检测编号与旧快照不一致时应该显示权威结果并阻止审批	expected	1	passed	passed
+approval.spec.ts	d26ed016eadad41b6e49-d178d049ebfa3c02db1b	终态审批应显示实际核查人和不可删除的处理依据	expected	1	passed	passed
+auth.spec.ts	d748ac400d08b85935ef-d217c3d8195e3f12ba6e	应该显示当前登录页面	expected	1	passed	passed
+auth.spec.ts	d748ac400d08b85935ef-127dea2d8d04b7b3ed8c	登录失败应该显示错误信息	expected	1	passed	passed
+auth.spec.ts	d748ac400d08b85935ef-150bad797e0a483755a1	密码显隐控件应支持键盘操作并同步状态	expected	1	passed	passed
+auth.spec.ts	d748ac400d08b85935ef-c4b697eca81c015dbcbf	律师账号登录后应该进入工作台	expected	1	passed	passed
+auth.spec.ts	d748ac400d08b85935ef-52b60ad0c26c6958bb07	账号登录应该发送保留大小写的 account 字段并返回 username	expected	1	passed	passed
+auth.spec.ts	d748ac400d08b85935ef-55b16d852259a4c06da4	邮箱登录应该发送小写化 account 字段	expected	1	passed	passed
+auth.spec.ts	d748ac400d08b85935ef-18ef4ec8fd86e351dd67	登出后应该返回登录页	expected	1	passed	passed
+auth.spec.ts	d748ac400d08b85935ef-0ed1d1039144ab54ede3	未登录访问受保护页面应该重定向到登录页	expected	1	passed	passed
+auth.spec.ts	d748ac400d08b85935ef-403185d6d54832a7760f	刷新后应该保持登录状态	expected	1	passed	passed
+auth.spec.ts	d748ac400d08b85935ef-86c638321f339cfd6594	空账号应该显示验证错误	expected	1	passed	passed
+auth.spec.ts	d748ac400d08b85935ef-574352450947ec0ddc8b	空密码应该显示验证错误	expected	1	passed	passed
+auth.spec.ts	d748ac400d08b85935ef-dcb8e58aedaaf55da33e	管理员应该能访问用户管理页	expected	1	passed	passed
+auth.spec.ts	d748ac400d08b85935ef-34f1e2e94f067c108537	普通律师不应该能访问用户管理页	expected	1	passed	passed
+auth.spec.ts	d748ac400d08b85935ef-43d580e5f54f92bb2a32	帮助中心入口应该显示帮助反馈	expected	1	passed	passed
+auth.spec.ts	d748ac400d08b85935ef-ac17f9a9e6f9e91649e2	通知为空时不应该展示全部已读动作	expected	1	passed	passed
+auth.spec.ts	d748ac400d08b85935ef-6703ccae3b41f39268e5	用户菜单应支持键盘打开、焦点管理和关闭	expected	1	passed	passed
+auth.spec.ts	d748ac400d08b85935ef-fdbd88272ff4a8854995	用户菜单应支持仅键盘完成退出登录	expected	1	passed	passed
+auth.spec.ts	d748ac400d08b85935ef-17b9a125f9bf634420b4	通知中心应支持键盘打开、关闭和焦点返回	expected	1	passed	passed
+case-create-full-workflow.spec.ts	f326abce95e8116ecf20-3e16ba1d94e8693ace2a	冲突检查后应留在 /case/create 并可进入团队与费用	expected	1	passed	passed
+case-create-full-workflow.spec.ts	f326abce95e8116ecf20-c6ea42117cc153c395f6	必填项缺失时运行冲突检查不得创建草稿	expected	1	passed	passed
+cases.spec.ts	93df20705b4547fc1340-f22bf2343813942b81bf	应该显示案件管理页和数据库案件清单	expected	1	passed	passed
+cases.spec.ts	93df20705b4547fc1340-1f9e3aa5f4b4c42de607	应该能搜索案件	expected	1	passed	passed
+cases.spec.ts	93df20705b4547fc1340-15802caf90d10a473328	应该能按状态筛选案件	expected	1	passed	passed
+cases.spec.ts	93df20705b4547fc1340-53e161eebfa21f774024	点击新建案件应该进入立案工作台	expected	1	passed	passed
+cases.spec.ts	93df20705b4547fc1340-1a47a89d7bce6aa7d9f9	应该能从列表进入案件详情	expected	1	passed	passed
+cases.spec.ts	93df20705b4547fc1340-fe9cfc7bfc31aa648a8c	在办案件可以提报全新对方并进入核查岗确认状态	expected	1	passed	passed
+cases.spec.ts	93df20705b4547fc1340-9ed79c8ed85956464c89	待处理案件详情应提供本案冲突复核下一步	expected	1	passed	passed
+cases.spec.ts	93df20705b4547fc1340-090b31a89c2330bf1e12	应该显示五步立案流程	expected	1	passed	passed
+cases.spec.ts	93df20705b4547fc1340-78994e1232160d0aecc3	初始新建页不应该预填样例案件数据	expected	1	passed	passed
+cases.spec.ts	93df20705b4547fc1340-c1c34b198969a27c7772	首次新建应显示最小必填路径并隐藏工程诊断	unexpected	2	passed	passed
+cases.spec.ts	93df20705b4547fc1340-4e2c71f9b5a24b9f7b29	应该能暂存接案草稿	expected	1	passed	passed
+cases.spec.ts	93df20705b4547fc1340-e5c99c266a174429ccac	重复保存应更新同一接案且刷新后可恢复完整草稿	expected	1	passed	passed
+cases.spec.ts	93df20705b4547fc1340-cf6a5a100af5ebc97699	摘要修改后直接审批：none	expected	1	passed	passed
+cases.spec.ts	93df20705b4547fc1340-1ae4752568ab9c3eca54	摘要修改后直接审批：save	expected	1	passed	passed
+cases.spec.ts	93df20705b4547fc1340-93ab01bacb04648e78f5	摘要修改后直接审批：result	expected	1	passed	passed
+cases.spec.ts	93df20705b4547fc1340-c55c05a9a087c1561f92	摘要修改后直接审批：review	expected	1	passed	passed
+cases.spec.ts	93df20705b4547fc1340-d45d136b3b02a992ff80	摘要修改后直接审批：waiver	expected	1	passed	passed
+cases.spec.ts	93df20705b4547fc1340-e33a10e762714c6548e0	创建重放保留本地输入，重开前不能用服务端新版本继续写	expected	1	passed	passed
+cases.spec.ts	93df20705b4547fc1340-1f428d0603d6c7a52402	缺少版本的旧本机草稿保留输入并阻止原生 PUT	expected	1	passed	passed
+cases.spec.ts	93df20705b4547fc1340-a8e56de47521f03b6d24	重复保存后服务端草稿恢复不应回传身份号或覆盖主体与材料	expected	1	passed	passed
+cases.spec.ts	93df20705b4547fc1340-34e5a690949262523755	必填控件应具备可访问名称并可由标签定位	expected	1	passed	passed
+cases.spec.ts	93df20705b4547fc1340-cbb157b2ee9a1dc46385	应该能运行利益冲突检查并进入团队与费用	expected	1	passed	passed
+cases.spec.ts	93df20705b4547fc1340-0b63695ab3381dcd153c	文档材料归档入口不应该中断当前立案流程	expected	1	passed	passed
+cases.spec.ts	93df20705b4547fc1340-6479efb16fd41e4cbf40	提交审批后应该进入审批详情页	expected	1	passed	passed
+client-profile-actions.spec.ts	66b34fb168613555ba19-afb8f9bcc7e891a99f2b	编辑主联系人应保存到客户主档案	expected	1	passed	passed
+client-profile-actions.spec.ts	66b34fb168613555ba19-857bb7c899dad8ac3b4f	上传附件应调用上传闭环并显示成功反馈	expected	1	passed	passed
+client-profile-actions.spec.ts	66b34fb168613555ba19-8489711f10c0983e83aa	导出客户档案应触发下载或反馈	expected	1	passed	passed
+clients.spec.ts	d7c1ae482dfaaa9065fe-3229122eab826c448528	新增客户入口应该打开新增客户表单	expected	1	passed	passed
+clients.spec.ts	d7c1ae482dfaaa9065fe-e50a114574d55f306c4d	企业客户身份应按统一社会信用代码提交	expected	1	passed	passed
+clients.spec.ts	d7c1ae482dfaaa9065fe-cc22548123a4575e9c72	编辑主联系人应写入独立联系人接口且不污染客户主档案	expected	1	passed	passed
+conflict-actions.spec.ts	927365c80831c454d625-1db7a910e5a93610f420	核查岗可以从冲突清单处理新主体登记	expected	1	passed	passed
+conflict-actions.spec.ts	927365c80831c454d625-d656a34617753331f63c	WAIVED 只允许按批准条件继续，不出现审批或再次豁免	expected	1	passed	passed
+conflict-actions.spec.ts	927365c80831c454d625-6fc7bcc40cff6fb46e02	CLEAR/LOW/零命中明确可提交立案审批且无冲突处置入口	expected	1	passed	passed
+conflict-actions.spec.ts	927365c80831c454d625-2b9264ae45479fd1527b	人工 confirmed_conflict 终态不重复发起复核且只保留一个豁免入口	expected	1	passed	passed
+conflict-actions.spec.ts	927365c80831c454d625-26315d871082171dbed3	STALE 隐藏旧严重处置，只显示结果过期	expected	1	passed	passed
+conflict-actions.spec.ts	927365c80831c454d625-21c3db624a099f15689d	完整 evidence 回填风险汇总且区分冲突类型与匹配方式	expected	1	passed	passed
+conflict-actions.spec.ts	927365c80831c454d625-8e38c98af21e886eea05	范围受限记录明确归入待人工复核，不显示为可忽略提示	expected	1	passed	passed
+conflict-actions.spec.ts	927365c80831c454d625-e06fb4083fa134830e55	普通律师可为机器自动 BLOCKED 发起首次复核并进入后端复用的审批	expected	1	passed	passed
+conflict-actions.spec.ts	927365c80831c454d625-b4c99ef10a4533a0490e	首次创建冲突审批显示新建提示并保持审批导航	expected	1	passed	passed
+conflict-actions.spec.ts	927365c80831c454d625-2473e27e25ec2ae63fe4	打印检测报告包含归档字段并转义动态文本	expected	1	passed	passed
+conflict-actions.spec.ts	927365c80831c454d625-460822163f24cc9dac27	打印窗口被浏览器拦截时显示明确反馈	expected	1	passed	passed
+conflict-actions.spec.ts	927365c80831c454d625-24b28fd3d3d0a9a87ae0	CLEAR/LOW/零命中在清单和打印报告中不把客户显示为命中主体	expected	1	passed	passed
+conflict-actions.spec.ts	927365c80831c454d625-198288eb894fd68cfb1f	具有复核权限的角色对机器 BLOCKED 显示页面内人工复核区	expected	1	passed	passed
+conflict-actions.spec.ts	927365c80831c454d625-a7eef0910857b1bf3fdd	当前核查人从冲突详情直接进入已分配审批，不重复创建审批	expected	1	passed	passed
+conflict-actions.spec.ts	927365c80831c454d625-92ad8aea0558b300ac65	技术管理员不能代替专业冲突复核人查看冲突详情	expected	1	passed	passed
+conflict-actions.spec.ts	927365c80831c454d625-3874aec3db38b5172124	直接访问不可见冲突任务时应给出不泄密提示	expected	1	passed	passed
+conflict-actions.spec.ts	927365c80831c454d625-6c36d0fdf2523340064f	BLOCKED 检测完成后提交按钮预先禁用并显示原因	expected	1	passed	passed
+conflict-actions.spec.ts	927365c80831c454d625-19767b09a9ebe5b47698	STALE 在步骤区和底栏统一过期，并可保存最新输入重新检测	expected	1	passed	passed
+conflict-actions.spec.ts	927365c80831c454d625-5967142aab5b2302715f	优先展示新快照顶层客户、对方和主要来源证据	expected	1	passed	passed
+dashboard-actions.spec.ts	6980b8affed17a7f4634-3c77a74b83aba569e09f	查看全部冲突任务应跳转到冲突页	expected	1	passed	passed
+dashboard-actions.spec.ts	6980b8affed17a7f4634-20f67e599811fdbf3575	查看全部待办应跳转到收件箱	expected	1	passed	passed
+dashboard-actions.spec.ts	6980b8affed17a7f4634-5a3ab834518f83ceb88d	律师工作台不得请求或展示财务指标	expected	1	passed	passed
+dashboard-actions.spec.ts	6980b8affed17a7f4634-5b6defc907e89b363708	全局搜索应展示可进入的业务结果	expected	1	passed	passed
+dashboard.spec.ts	90cda532ab82d274b30b-5efb38ed936c61cd9a8e	快捷入口新建立案应支持键盘直达立案工作台	expected	1	passed	passed
+dashboard.spec.ts	90cda532ab82d274b30b-1c095b26f86d34100486	全局搜索应该展示结果反馈	expected	1	passed	passed
+finance.spec.ts	1d1b0b311adfe43979fc-20aca86bee2c0c34c27b	财务角色访问财务管理时应该看到 MVP 不可用说明	expected	1	passed	passed
+finance.spec.ts	1d1b0b311adfe43979fc-d59754a219d0c1fa1e83	律师访问财务管理时应该看到无权访问	expected	1	passed	passed
+finance.spec.ts	1d1b0b311adfe43979fc-f87839a069149fd2019d	不可用页可以返回工作台	expected	1	passed	passed
+layout.spec.ts	9f98fd8c8d1538f5ebbb-9cb1a8c2ea90f31b1414	冲突检测页面不应该撑破视口	expected	1	passed	passed
+layout.spec.ts	9f98fd8c8d1538f5ebbb-7b689c5e02da3e981d35	窄屏下侧栏自动折叠且冲突清单仍保留可用宽度	expected	1	passed	passed
+layout.spec.ts	9f98fd8c8d1538f5ebbb-97e34fb3b13c1c5b1b42	客户主档案页面不应该撑破视口	expected	1	passed	passed
+layout.spec.ts	9f98fd8c8d1538f5ebbb-1cbc1c8be8951eb82a3a	平板与小窗口下侧栏偏移和正文宽度保持一致	expected	1	passed	passed
+m1-r3-restore.spec.ts	47082fb9ca8deb1664db-3c93193b22af0669311c	M1 R3 historical alias remains visible for lawyer review	expected	1	passed	passed
+m1-r3-restore.spec.ts	47082fb9ca8deb1664db-68e2da2dd984654fafa5	M1 R3 same-revision local recovery retains the related party	expected	1	passed	passed
+m1-r3-restore.spec.ts	47082fb9ca8deb1664db-09f4efcb86f4cc0b1f6a	M1 R4 empty historical alias key falls through to the next legacy key	expected	1	passed	passed
+m1-r3-restore.spec.ts	47082fb9ca8deb1664db-13a5e7093d2877677c5b	M1 R4 serialized empty historical array falls through to the next legacy key	expected	1	passed	passed
+m1-r3-restore.spec.ts	47082fb9ca8deb1664db-cecac9c43221b43e3342	M1 R4 explicit empty column wins over historical aliases	expected	1	passed	passed
+m1-r3-restore.spec.ts	47082fb9ca8deb1664db-f5424b834b10843399fc	M1 R5 separator-only historical field falls through to the next alias	expected	1	passed	passed
+m1-repair.spec.ts	d76b10bf04b8e5c9d13c-45d045d1b42a32a4873d	本机草稿恢复后以原生 PUT 更新指定对方并确认检测	unexpected	2	timedOut,timedOut	passed
+m1-repair.spec.ts	d76b10bf04b8e5c9d13c-6c4819c10ea079ee7957	服务端20行投影恢复后以原生 PUT 更新指定对方并确认检测	unexpected	2	passed	passed
+m1-repair.spec.ts	d76b10bf04b8e5c9d13c-99961cb683b26e719e85	本机别名恢复后以原生 PUT 更新指定对方并确认检测	unexpected	2	passed	passed
+m1-repair.spec.ts	d76b10bf04b8e5c9d13c-23b730b7f35bff12dc4f	投影外对方恢复后以原生 PUT 更新指定对方并确认检测	unexpected	2	passed	passed
+m1-repair.spec.ts	d76b10bf04b8e5c9d13c-9220f86ddc2093f7e2b5	检测后保存恢复后以原生 PUT 更新指定对方并确认检测	unexpected	2	passed	passed
+m1-repair.spec.ts	d76b10bf04b8e5c9d13c-ebb05c01c5291457450c	投影对方有歧义恢复后以原生 PUT 更新指定对方并确认检测	unexpected	2	passed	passed
+m1-repair.spec.ts	d76b10bf04b8e5c9d13c-6c1d6092fb32b1590255	本机版本已过期恢复后以原生 PUT 更新指定对方并确认检测	unexpected	2	passed	passed
+m1-repair.spec.ts	d76b10bf04b8e5c9d13c-bc571d08a975e4d8d84d	本机未保存的对方名称恢复后以原生 PUT 更新指定对方并确认检测	unexpected	2	passed	passed
+m1-repair.spec.ts	d76b10bf04b8e5c9d13c-d365962c20c0152ca7dc	检测回执晚于新保存恢复后以原生 PUT 更新指定对方并确认检测	unexpected	2	passed	passed
+m1-save-order.spec.ts	5f372d39c4c59c35be60-89aef1964a7c498f29d7	切换草稿后忽略旧对象迟到的 save 回执	unexpected	2	passed	passed
+m1-save-order.spec.ts	5f372d39c4c59c35be60-70c68d6feb90c88d0008	切换草稿后忽略旧对象迟到的 facts-confirmation 回执	unexpected	2	passed	passed
+m1-save-order.spec.ts	5f372d39c4c59c35be60-d3d2266f9af869604ddc	切换草稿后忽略旧对象迟到的 conflict-check 回执	unexpected	2	passed	passed
+profile.spec.ts	e8b79b4ee550a37632f1-fdd0d4da31807e595aae	修改密码空表单应该显示字段级校验	expected	1	passed	passed

@@ -58,3 +58,5 @@ PGO 本地采样实际报出性能包失败，其采样脚本把详细输出留�
 [缓存候选 I11 八项负向核验](cache-i11-negatives/README.md)逐项记录了 GitHub 原生红灯、触发原因与退出码。
 
 [普通 E2E 的 Chromium 安装首因与候选验证](e2e-browser-install/README.md)记录了原 PR 失败日志、独立分支单行修订和版本受控的托管验证。
+
+[普通 E2E 完整复跑](e2e-full/README.md)记录了固定候选、两轮修复、后端与 preview 就绪检查，以及 115 个 Chromium 用例的逐项对照。
