@@ -52,3 +52,5 @@ PGO 本地采样实际报出性能包失败，其采样脚本把详细输出留�
 独立缓存候选的 [GitHub 定向红绿验证](cache-hit-hosted/README.md) 绑定候选 `94d531f`。该分支的定向通过与 PR #52 本身的检查分别记录。
 
 同一缓存候选的[完整 I11 托管正向验收与独审](cache-full-i11/README.md)已通过。
+
+[PR #52 测试合并提交的 I11 核验](test-merge-i11/README.md)记录了实际 checkout 的两个父提交、通过的 I11 作业及同一次 PR 流水线中失败的 E2E 作业。

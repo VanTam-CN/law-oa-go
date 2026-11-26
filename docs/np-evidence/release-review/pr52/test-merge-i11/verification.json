@@ -1,0 +1,86 @@
+{
+  "pr": 52,
+  "identity": {
+    "base": "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
+    "draft": true,
+    "head": "b22736b693b5d12b521173bed1055245b095a456",
+    "merge": "9883cb11b68aa80a9291e55719aef56d29e13aab",
+    "state": "open"
+  },
+  "test_merge_tree": {
+    "parents": [
+      "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
+      "b22736b693b5d12b521173bed1055245b095a456"
+    ],
+    "tree": "128231bed2704726175e331b1984d63c5bfb1ca2"
+  },
+  "head_tree_matches": true,
+  "run": {
+    "conclusion": "failure",
+    "event": "pull_request",
+    "head_sha": "b22736b693b5d12b521173bed1055245b095a456",
+    "html_url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45584687934",
+    "id": 45584687934,
+    "run_attempt": 1
+  },
+  "i11_job": {
+    "conclusion": "success",
+    "html_url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45584687934/job/139103174713",
+    "id": 139103174713,
+    "name": "np-i11 (full)",
+    "run_id": 45584687934
+  },
+  "stage_exit_zero": [
+    "fuzz-normal",
+    "build",
+    "redis",
+    "go",
+    "tagged",
+    "typecheck",
+    "jest",
+    "frontend-build",
+    "route-b",
+    "selection",
+    "storage",
+    "navigation",
+    "editing",
+    "tabs",
+    "legacy",
+    "prod",
+    "native"
+  ],
+  "check_markers": [
+    "I11_TEST_PASS group=go required=32",
+    "I11_TEST_PASS group=tagged required=11",
+    "I11_TEST_PASS group=jest required=124",
+    "I11_BROWSER_PASS suite=route-b cases=4",
+    "I11_BROWSER_PASS suite=selection cases=2",
+    "I11_BROWSER_PASS suite=storage cases=5",
+    "I11_BROWSER_PASS suite=navigation cases=5",
+    "I11_BROWSER_PASS suite=editing cases=3",
+    "I11_BROWSER_PASS suite=tabs cases=1",
+    "I11_BROWSER_PASS suite=legacy cases=2",
+    "I11_BROWSER_PASS suite=prod cases=2",
+    "I11_BROWSER_PASS suite=native cases=10"
+  ],
+  "pg_marker": "I11_PG_PRESERVED 689d3cad6fd740b297b3f1c18b02b21e495d59a9f51af495028e9e69871d4eec sources=3 receipts=4 linked=3 manual=1",
+  "failed_sibling_jobs": [
+    {
+      "conclusion": "failure",
+      "id": 139107230670,
+      "name": "🎭 E2E Tests"
+    }
+  ],
+  "source": "existing pull_request event logs, rechecked without rerun",
+  "candidate_delta": [
+    "internal/middleware/cache.go",
+    "internal/middleware/cache_hit_abort_test.go",
+    "main.go",
+    "two cache evidence files"
+  ],
+  "release": {
+    "merge": "HOLD",
+    "deploy": "HOLD",
+    "trial": "HOLD"
+  }
+}
