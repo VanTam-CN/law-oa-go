@@ -11,7 +11,8 @@ permissions:
   contents: read
 
 env:
-  NP_PR52_E2E_PROBE_BASE: 8a8fb8a9b8857fc87634561def33a6cc0783c9dc
+  NP_PR52_E2E_RUNNER_FIX: 8a8fb8a9b8857fc87634561def33a6cc0783c9dc
+  NP_PR52_E2E_PREV_WRAPPER: 57921906968d51d06a7411c150466649b642d6b8
 
 jobs:
   probe:
@@ -22,19 +23,21 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-          fetch-depth: 2
-      - name: Verify wrapper commit and detach to runner-fix commit
+          fetch-depth: 0
+      - name: Verify wrapper ancestry and final diff
         run: |
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git rev-parse HEAD^)" = "$NP_PR52_E2E_PROBE_BASE"
-          test "$(git log -1 --format=%P HEAD)" = "$NP_PR52_E2E_PROBE_BASE"
+          test "$(git rev-parse HEAD^)" = "$NP_PR52_E2E_PREV_WRAPPER"
+          test "$(git rev-parse HEAD^^)" = "$NP_PR52_E2E_RUNNER_FIX"
+          test "$(git rev-parse "$NP_PR52_E2E_PREV_WRAPPER"^)" = "$NP_PR52_E2E_RUNNER_FIX"
           test -z "$(git status --porcelain)"
-          changed=$(git diff --name-only "$NP_PR52_E2E_PROBE_BASE" "$GITHUB_SHA")
+          changed=$(git diff --name-only "$NP_PR52_E2E_RUNNER_FIX" "$GITHUB_SHA")
           test "$changed" = ".github/workflows/np-pr52-e2e-runner-probe.yml"
           echo "WRAPPER_SHA=$GITHUB_SHA"
-          echo "RUNNER_FIX_SHA=$NP_PR52_E2E_PROBE_BASE"
-          git checkout --detach "$NP_PR52_E2E_PROBE_BASE"
-          test "$(git rev-parse HEAD)" = "$NP_PR52_E2E_PROBE_BASE"
+          echo "PREV_WRAPPER_SHA=$NP_PR52_E2E_PREV_WRAPPER"
+          echo "RUNNER_FIX_SHA=$NP_PR52_E2E_RUNNER_FIX"
+          git checkout --detach "$NP_PR52_E2E_RUNNER_FIX"
+          test "$(git rev-parse HEAD)" = "$NP_PR52_E2E_RUNNER_FIX"
           test -z "$(git status --porcelain)"
           echo "RUN_SHA=$(git rev-parse HEAD)"
       - uses: actions/setup-node@v4
@@ -46,11 +49,27 @@ jobs:
       - name: Install Playwright chromium with dependencies
         working-directory: frontend
         run: npx playwright install --with-deps chromium
-      - name: Launch chromium headless and verify blank page title
+      - name: Launch chromium headless and verify locked versions and title
         working-directory: frontend
         run: |
           node <<'JS'
+          const fs = require('fs');
           const { chromium } = require('playwright-core');
+          const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+          const lockCore = lock.packages['node_modules/playwright-core'].version;
+          const lockPw = lock.packages['node_modules/playwright'].version;
+          const installedCore = JSON.parse(fs.readFileSync('node_modules/playwright-core/package.json', 'utf8')).version;
+          const installedPw = JSON.parse(fs.readFileSync('node_modules/playwright/package.json', 'utf8')).version;
+          if (installedCore !== lockCore) {
+            console.error('PLAYWRIGHT_CORE_MISMATCH lock=' + lockCore + ' installed=' + installedCore);
+            process.exit(1);
+          }
+          if (installedPw !== lockPw) {
+            console.error('PLAYWRIGHT_MISMATCH lock=' + lockPw + ' installed=' + installedPw);
+            process.exit(1);
+          }
+          console.log('LOCKED_PLAYWRIGHT=' + lockPw);
+          console.log('LOCKED_PLAYWRIGHT_CORE=' + lockCore);
           (async () => {
             const browser = await chromium.launch({ headless: true });
             const page = await browser.newPage();
@@ -69,8 +88,3 @@ jobs:
             process.exit(1);
           });
           JS
-      - name: Print fixed probe summary
-        run: |
-          echo "Playwright CLI: $(npx playwright --version)"
-          echo "Runner: ubuntu-24.04"
-          echo "Probe: headless chromium launch + data URL title assertion"
