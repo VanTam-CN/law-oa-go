@@ -1,0 +1,63 @@
+{
+  "cloud_thread": "6b080701-4808-83e8-aaa8-9b09e6f63017",
+  "cloud_turn": "01a2175b-63cc-70e7-aa6d-e0444e1afa39",
+  "turn_status": "completed",
+  "started_utc": "2026-11-26T10:16:35.000Z",
+  "completed_utc": "2026-11-26T10:24:29.000Z",
+  "hermes": "t_78181246",
+  "initial": "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
+  "application": "f3cd764d0bc7f82efb2b012669132f5b89e3d15c",
+  "probe": "291616e0e4be6dff21343401e053d90620ef6197",
+  "environment": "law-oa-go",
+  "pg": "15.20",
+  "chromium": "156.0.8078.79 (preinstalled Debian build)",
+  "locked_browser_download": "HTTP 403",
+  "first_browser": {
+    "command_id": "exec-6803d6ad-26f7-412b-b10b-453fd3239a95",
+    "exit": 1,
+    "reason": "LOGIN_HTTP_500",
+    "post_read": "NOT_RUN"
+  },
+  "retry": {
+    "command_id": "exec-eb29b648-0da2-40d9-8f68-ee29cda34d00",
+    "tool_exit": 1,
+    "actual_output": [
+      "BACKEND_RETRY_READY_EXIT=0",
+      "FRONTEND_PREVIEW_HTTP=200",
+      "PREVIEW_RETRY_EXIT=0",
+      "SEED_EXIT=0",
+      "BROWSER_PG_SEED_OK",
+      "BEFORE_EXIT=0",
+      "BROWSER_PG_BEFORE_OK",
+      "HTML_CMP_EXIT=0",
+      "JS_CMP_EXIT=0",
+      "ASSET_SHA256=5c8cd97c918ec36fdc38fda77ebce60269de7d5aaf1a9cc1919549eeb536f89e",
+      "ASSET_SHA256=8f1794d0281d1be68c073d3b9640ef72876df7a162351061e227a7f935051497",
+      "BUILT_HTML_AND_ENTRY_MATCH",
+      "BROWSER_EXIT=0",
+      "NP_PREVIEW_ASSET_LOADED=true",
+      "NP_PREVIEW_ASSET_ORIGIN_SAME=true",
+      "NP_PREVIEW_LOGIN_OK=true",
+      "NP_PREVIEW_ACTOR_MATCH=true",
+      "NP_PREVIEW_INTAKE_ID_MATCH=true",
+      "NP_PREVIEW_TITLE_MATCH=true",
+      "NP_PREVIEW_DESC_SHA256=33b1c8f800835b45f1d2ab3311a4119c7701aaf2bd63c95a179ae3e948c4bf79",
+      "NP_PREVIEW_API_DESC_MATCH=true",
+      "NP_PREVIEW_REVISION_MATCH=true",
+      "NP_PREVIEW_PARTIES_COUNT=1",
+      "NP_PREVIEW_MATERIALS_COUNT=2",
+      "NP_PREVIEW_DOM_TITLE_MATCH=true",
+      "NP_PREVIEW_DOM_DESC_HASH_MATCH=true",
+      "NP_PREVIEW_OK",
+      "UNCHANGED_EXIT=0",
+      "BROWSER_PG_UNCHANGED_OK",
+      "PG_READ_PRESERVED protected_sha256=a123912da024d565115264b90335272ef942f4f4a5d8a9bebdfe26e03dd2bd88 target_sha256=936333f9eb0d98fa9a847f2049e87c0a6b9694036f50ff8810ed294ad0e47801 sources=0 receipts=0",
+      "VERIFY_RETRY_EXIT=0"
+    ]
+  },
+  "cleanup": {
+    "command_id": "exec-eb30d482-d214-40a6-91fc-172fd12a8a13",
+    "exit": 0
+  },
+  "result": "PASS for authenticated synthetic preview read on the recorded system browser; no all-green outer-command or pinned-browser claim"
+}
