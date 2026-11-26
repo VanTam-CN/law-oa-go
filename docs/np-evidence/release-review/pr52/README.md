@@ -60,3 +60,5 @@ PGO 本地采样实际报出性能包失败，其采样脚本把详细输出留�
 [普通 E2E 的 Chromium 安装首因与候选验证](e2e-browser-install/README.md)记录了原 PR 失败日志、独立分支单行修订和版本受控的托管验证。
 
 [普通 E2E 完整复跑](e2e-full/README.md)记录了固定候选、两轮修复、后端与 preview 就绪检查，以及 115 个 Chromium 用例的逐项对照。
+
+[4173 构建预览的真实登录与业务读取](preview-auth-read/README.md)记录 Chromium 经原生登录打开合成接案草稿、与 PostgreSQL 核对的专项验收。

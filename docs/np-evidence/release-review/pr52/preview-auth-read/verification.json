@@ -1,0 +1,153 @@
+{
+  "candidate": "f3cd764d0bc7f82efb2b012669132f5b89e3d15c",
+  "hermes": "law-oa-np-main/t_6189137f",
+  "scope": "One Chromium signed-in read of a synthetic lawyer-owned intake through Vite build preview :4173, real cmd/server :8080, PostgreSQL 15 v14+86.",
+  "coordinator_verification": "GitHub Actions job log retrieved by job ID. Matched 22 unique, ordered runtime output lines after stripping timestamps, excluding displayed shell commands.",
+  "first_red": {
+    "run": 45791095259,
+    "wrapper": "aa31a6479d62e63ce3fe5fb63671a0e4557feb6f",
+    "job_url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45791095259/job/139810016262",
+    "conclusion": "failure",
+    "failed_check": "NP_PREVIEW_FAIL=REVISION_MISMATCH",
+    "cause": "Probe read intake.revision, while the frozen handler returned data.revision. Post-read DB comparison was not reached.",
+    "side_effects_at_review": {
+      "artifacts": 0,
+      "deployments": 0
+    }
+  },
+  "hosted_verification": {
+    "repo": "VanTam-CN/law-oa-go",
+    "run": 45792285627,
+    "attempt": 1,
+    "event": "push",
+    "branch": "codex/np-pr52-preview-read",
+    "wrapper": "291616e0e4be6dff21343401e053d90620ef6197",
+    "conclusion": "success",
+    "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45792285627",
+    "jobs": [
+      {
+        "job": 139814054372,
+        "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45792285627/job/139814054372",
+        "conclusion": "success",
+        "steps": [
+          {
+            "name": "Set up job",
+            "conclusion": "success"
+          },
+          {
+            "name": "Initialize containers",
+            "conclusion": "success"
+          },
+          {
+            "name": "📥 检出代码",
+            "conclusion": "success"
+          },
+          {
+            "name": "Pin application checkout and isolate validation code",
+            "conclusion": "success"
+          },
+          {
+            "name": "📦 设置Node.js环境",
+            "conclusion": "success"
+          },
+          {
+            "name": "🐹 设置Go环境",
+            "conclusion": "success"
+          },
+          {
+            "name": "📥 安装前端依赖",
+            "conclusion": "success"
+          },
+          {
+            "name": "🎭 安装Playwright浏览器",
+            "conclusion": "success"
+          },
+          {
+            "name": "🏗️ 构建前端",
+            "conclusion": "success"
+          },
+          {
+            "name": "🚀 启动后端服务",
+            "conclusion": "success"
+          },
+          {
+            "name": "🚀 启动前端服务",
+            "conclusion": "success"
+          },
+          {
+            "name": "Verify built assets, authenticated browser read and database preservation",
+            "conclusion": "success"
+          },
+          {
+            "name": "Post 🐹 设置Go环境",
+            "conclusion": "success"
+          },
+          {
+            "name": "Post 📦 设置Node.js环境",
+            "conclusion": "success"
+          },
+          {
+            "name": "Post 📥 检出代码",
+            "conclusion": "success"
+          },
+          {
+            "name": "Stop containers",
+            "conclusion": "success"
+          },
+          {
+            "name": "Complete job",
+            "conclusion": "success"
+          }
+        ]
+      }
+    ],
+    "side_effects_at_review": {
+      "artifacts": 0,
+      "deployments": 0
+    },
+    "observed_runtime_lines": [
+      "RUN_SHA=f3cd764d0bc7f82efb2b012669132f5b89e3d15c",
+      "BACKEND_READY service=law-oa status=ok",
+      "FRONTEND_PREVIEW_HTTP=200",
+      "BROWSER_PG_SEED_OK",
+      "BROWSER_PG_BEFORE_OK",
+      "BUILT_HTML_AND_ENTRY_MATCH",
+      "NP_PREVIEW_ASSET_LOADED=true",
+      "NP_PREVIEW_ASSET_ORIGIN_SAME=true",
+      "NP_PREVIEW_LOGIN_OK=true",
+      "NP_PREVIEW_ACTOR_MATCH=true",
+      "NP_PREVIEW_INTAKE_ID_MATCH=true",
+      "NP_PREVIEW_TITLE_MATCH=true",
+      "NP_PREVIEW_DESC_SHA256=33b1c8f800835b45f1d2ab3311a4119c7701aaf2bd63c95a179ae3e948c4bf79",
+      "NP_PREVIEW_API_DESC_MATCH=true",
+      "NP_PREVIEW_REVISION_MATCH=true",
+      "NP_PREVIEW_PARTIES_COUNT=1",
+      "NP_PREVIEW_MATERIALS_COUNT=2",
+      "NP_PREVIEW_DOM_TITLE_MATCH=true",
+      "NP_PREVIEW_DOM_DESC_HASH_MATCH=true",
+      "NP_PREVIEW_OK",
+      "BROWSER_PG_UNCHANGED_OK",
+      "PG_READ_PRESERVED protected_sha256=cfb21a3612f46b30fcbd13771908233f7d97cd5368fc76eb9be42c5b6a5b5e59 target_sha256=c7346df0d48dea270f117c38822adfd14d07c7a600c340756fb2d73fdfa19397 sources=0 receipts=0"
+    ]
+  },
+  "pr_52_before_and_after": {
+    "base": "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
+    "draft": true,
+    "head": "b22736b693b5d12b521173bed1055245b095a456",
+    "merged": false,
+    "test_merge": "9883cb11b68aa80a9291e55719aef56d29e13aab"
+  },
+  "exclusions": [
+    "Production entry and reverse proxy",
+    "Real data and real users",
+    "Other browsers, accounts and objects",
+    "Authenticated write paths",
+    "PR #52 merge/deployment decision"
+  ],
+  "independent_review": {
+    "reviewer": "6.2 Astra",
+    "method": "Independent read-only audit of both hosted jobs, wrapper Git diff, frozen response contract and synthetic SQL",
+    "conclusion": "PASS",
+    "coverage": "One synthetic lawyer reading own draft; control draft has same owner."
+  }
+}
