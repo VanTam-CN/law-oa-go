@@ -298,7 +298,7 @@ jobs:
   # ================================
   e2e-tests:
     name: 🎭 E2E Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     needs: [go-tests, frontend-tests]
     if: always() && github.ref != 'refs/heads/codex/np-main-m2' && github.ref != 'refs/heads/codex/np-main-i11'
