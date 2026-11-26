@@ -1,0 +1,157 @@
+{
+  "task": "t_0df7039f",
+  "pr": {
+    "base": "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
+    "draft": true,
+    "head": "b22736b693b5d12b521173bed1055245b095a456",
+    "test_merge": "9883cb11b68aa80a9291e55719aef56d29e13aab"
+  },
+  "original": {
+    "run": 45584687934,
+    "job": 139107230670,
+    "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45584687934/job/139107230670",
+    "conclusion": "failure",
+    "runner_image": "ubuntu-26.04",
+    "failed_step": "🎭 安装Playwright浏览器",
+    "command": "npx playwright install --with-deps chromium",
+    "marker": "Playwright does not support chromium on ubuntu26.04-x64",
+    "exit_code": 1,
+    "steps": [
+      {
+        "name": "Set up job",
+        "conclusion": "success"
+      },
+      {
+        "name": "Initialize containers",
+        "conclusion": "success"
+      },
+      {
+        "name": "📥 检出代码",
+        "conclusion": "success"
+      },
+      {
+        "name": "📦 设置Node.js环境",
+        "conclusion": "success"
+      },
+      {
+        "name": "🐹 设置Go环境",
+        "conclusion": "success"
+      },
+      {
+        "name": "📥 安装前端依赖",
+        "conclusion": "success"
+      },
+      {
+        "name": "🎭 安装Playwright浏览器",
+        "conclusion": "failure"
+      },
+      {
+        "name": "🏗️ 构建前端",
+        "conclusion": "skipped"
+      },
+      {
+        "name": "🚀 启动后端服务",
+        "conclusion": "skipped"
+      },
+      {
+        "name": "🚀 启动前端服务",
+        "conclusion": "skipped"
+      },
+      {
+        "name": "🧪 运行E2E测试",
+        "conclusion": "skipped"
+      },
+      {
+        "name": "📊 上传Playwright报告",
+        "conclusion": "skipped"
+      },
+      {
+        "name": "📸 上传测试截图",
+        "conclusion": "skipped"
+      },
+      {
+        "name": "Post 🐹 设置Go环境",
+        "conclusion": "skipped"
+      },
+      {
+        "name": "Post 📦 设置Node.js环境",
+        "conclusion": "skipped"
+      },
+      {
+        "name": "Post 📥 检出代码",
+        "conclusion": "success"
+      },
+      {
+        "name": "Stop containers",
+        "conclusion": "success"
+      },
+      {
+        "name": "Complete job",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "locked_versions": {
+    "playwright": "1.60.0",
+    "@playwright/test": "1.60.0",
+    "playwright-core": "1.60.0"
+  },
+  "candidate": {
+    "sha": "8a8fb8a9b8857fc87634561def33a6cc0783c9dc",
+    "base": "b22736b693b5d12b521173bed1055245b095a456",
+    "file": ".github/workflows/tests.yml",
+    "verified_change": "only e2e-tests.runs-on, ubuntu-latest to ubuntu-24.04; exact byte comparison"
+  },
+  "hosted": {
+    "wrapper": "35fadeb6afa1c84d18603043e53834061cd61d1c",
+    "workflow": ".github/workflows/np-pr52-e2e-runner-probe.yml",
+    "run": 45770597811,
+    "attempt": 1,
+    "job": 139742025811,
+    "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45770597811/job/139742025811",
+    "event": "push",
+    "checkout": "8a8fb8a9b8857fc87634561def33a6cc0783c9dc",
+    "image": "ubuntu-24.04",
+    "browser_version_from_launched_process": "148.0.7778.96",
+    "title_assertion": "PROBE_TITLE_OK np-pr52-e2e-runner-probe",
+    "conclusion": "success",
+    "steps": [
+      "Set up job",
+      "Run actions/checkout@v4",
+      "Verify wrapper ancestry and final diff",
+      "Run actions/setup-node@v4",
+      "Install locked frontend dependencies",
+      "Install Playwright chromium with dependencies",
+      "Launch chromium headless and verify locked versions and title",
+      "Post Run actions/setup-node@v4",
+      "Post Run actions/checkout@v4",
+      "Complete job"
+    ],
+    "artifacts": 0
+  },
+  "release": {
+    "full_ordinary_e2e_on_fix": "NOT_RUN",
+    "merge": "HOLD",
+    "deployment": "HOLD",
+    "real_trial": "HOLD"
+  },
+  "executor": "glm-flash",
+  "first_run": {
+    "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45770085878/job/139740362860",
+    "run": 45770085878,
+    "browser_start": "PASS",
+    "summary": "root-level npx fetched playwright 1.65.1; excluded from acceptance"
+  },
+  "coordinator_verified": true,
+  "locked_modules_observed": {
+    "playwright": "1.60.0",
+    "playwright-core": "1.60.0"
+  },
+  "browser_revision": 1223,
+  "independent_review": {
+    "reviewer": "6.2 Astra",
+    "result": "PASS for install and headless launch",
+    "source": "original PR and final candidate hosted logs, git diff, lockfile",
+    "separate_execution": false
+  }
+}

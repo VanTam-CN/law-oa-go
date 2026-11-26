@@ -56,3 +56,5 @@ PGO 本地采样实际报出性能包失败，其采样脚本把详细输出留�
 [PR #52 测试合并提交的 I11 核验](test-merge-i11/README.md)记录了实际 checkout 的两个父提交、通过的 I11 作业及同一次 PR 流水线中失败的 E2E 作业。
 
 [缓存候选 I11 八项负向核验](cache-i11-negatives/README.md)逐项记录了 GitHub 原生红灯、触发原因与退出码。
+
+[普通 E2E 的 Chromium 安装首因与候选验证](e2e-browser-install/README.md)记录了原 PR 失败日志、独立分支单行修订和版本受控的托管验证。
