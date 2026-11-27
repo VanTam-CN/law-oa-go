@@ -34,3 +34,5 @@ GLM 使用全新 Chromium 上下文复跑 `291616e` 探针，退出码为 0。�
 复核时 [PR #52](https://github.com/VanTam-CN/law-oa-go/pull/52) 仍为 Draft，head 为 `b22736b`，测试合并提交为 `9883cb1`。两次独立作业的归档产物数和对应提交的部署记录数均为 0。
 
 命名云环境的独立复验见[Codex Cloud 启动核验](codex-cloud.md)。
+
+[既有 Linux 主机的 SSH 隔离复验](ssh-host.md)记录了 GLM-Flash 在目标主机的实际执行与原实例保护证据。

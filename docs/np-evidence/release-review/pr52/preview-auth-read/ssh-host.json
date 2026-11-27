@@ -1,0 +1,105 @@
+{
+  "hermes": "t_5036b282",
+  "date": "2026-11-27",
+  "result": "PASS",
+  "executor_model": "zhipu-coding/glm-5.3-flash",
+  "executor_host": "authorized ARM64 Linux server over SSH",
+  "application": "f3cd764d0bc7f82efb2b012669132f5b89e3d15c",
+  "wrapper": "291616e0e4be6dff21343401e053d90620ef6197",
+  "checksums_sha256": {
+    "server": "71a93006a9b8f02017386335a55a570ae8d561885c7b7515b7e0470ae0d5da65",
+    "migrate": "c983295c986c5eeccfdfca6752d8eed10581581eea48da85f29a92c9575ba13d",
+    "dist.tar.gz": "4430a137eaae36f788ea58071da6b38efb724b70a1126569688caec2792f722c",
+    "preview-auth-read.cjs": "fefbc7acddf469a78d4a38f84ef5d666f6d6b630f1f92edc484b37a5196b36e0",
+    "chromium1223.zip": "4578d731ef7f2f344ae1d79c0ae2664453fc0848ccaa726856a5e9d34aaa1a0e",
+    "check.sh": "b007bfd8e5f52ba2e2232cdf977b59280936109edcaf92f9a20cb982d7cc5726",
+    "remote-run.sh": "17c6bad1b32db2353d533685158df8b8a728809f2d88a1a090844e1528c00dac",
+    "inside.sh": "a0dcde8fe41e2f311a058849347b64e4b7bbc46cc86add00584195a30cf3e311",
+    "psql": "42333f83206c5c05a95c5ee0edb2701c9302ded0d3394cf6ac82c61955b34d05"
+  },
+  "build": {
+    "host": "local",
+    "go": "1.25.6",
+    "target": "linux/arm64",
+    "cgo": 0,
+    "node": "22.17.0",
+    "npm": "11.13.0"
+  },
+  "run": {
+    "host": "target server",
+    "node": "20.19.5",
+    "browser": "Chromium ARM64 revision 1223",
+    "playwright_core": "1.60.0",
+    "database": "PostgreSQL 15",
+    "network": "none",
+    "host_ports_published": 0,
+    "database_storage": "new tmpfs",
+    "bind_mounts": [
+      "read-only fixture migrations"
+    ]
+  },
+  "first_two_attempts": [
+    {
+      "stage": "start isolated PostgreSQL",
+      "reason": "Docker config ID versus OCI manifest digest",
+      "remote_exit": 1
+    },
+    {
+      "stage": "seed",
+      "reason": "frozen comparator strips PG-prefixed environment variables used by the temporary psql adapter",
+      "remote_exit": 1
+    }
+  ],
+  "final_runtime_output": [
+    "ISOLATED_LOOPBACK_ONLY",
+    "PG15_NEW_EMPTY",
+    "BOOTSTRAP_NP86_OK",
+    "BACKEND_READY",
+    "FRONTEND_PREVIEW_HTTP=200",
+    "v20.19.5",
+    "Chromium 148.0.7778.0",
+    "BROWSER_PG_SEED_OK",
+    "BROWSER_PG_BEFORE_OK",
+    "BUILT_HTML_AND_ENTRY_MATCH",
+    "NP_PREVIEW_ASSET_LOADED=true",
+    "NP_PREVIEW_ASSET_ORIGIN_SAME=true",
+    "NP_PREVIEW_LOGIN_OK=true",
+    "NP_PREVIEW_ACTOR_MATCH=true",
+    "NP_PREVIEW_INTAKE_ID_MATCH=true",
+    "NP_PREVIEW_TITLE_MATCH=true",
+    "NP_PREVIEW_DESC_SHA256=33b1c8f800835b45f1d2ab3311a4119c7701aaf2bd63c95a179ae3e948c4bf79",
+    "NP_PREVIEW_API_DESC_MATCH=true",
+    "NP_PREVIEW_REVISION_MATCH=true",
+    "NP_PREVIEW_PARTIES_COUNT=1",
+    "NP_PREVIEW_MATERIALS_COUNT=2",
+    "NP_PREVIEW_DOM_TITLE_MATCH=true",
+    "NP_PREVIEW_DOM_DESC_HASH_MATCH=true",
+    "NP_PREVIEW_OK",
+    "BROWSER_PG_UNCHANGED_OK",
+    "PG_READ_PRESERVED protected_sha256=4bb10735aeeb81dca9cb4178657d86fa9b61c6dd058027012f3134f2707e11d5 target_sha256=0c56aa377e53ff0013d74ad6ce674413ad5739bdfa63e65e69f19d8d92031407 sources=0 receipts=0",
+    "VALIDATION_EXIT=0",
+    "REMOTE_EXIT=0"
+  ],
+  "original_container_snapshots": {
+    "row_count": 4,
+    "mount_permutations_checked": 48,
+    "canonical_sha256": "4d8be04ed919ce86425a42a0b6795070c43c57b2d49530e71944700af2b118d0",
+    "samples": {
+      "before": "7fc9257b2c81d6a7ae50f128f62f416636559f4398074abf4f064fc98e15eaf1",
+      "post-validation": "b1f07c79c2d3854e003acf87dec3ecfc0d9d0828ec7927f96459a5e0dce3a96c",
+      "after": "7fc9257b2c81d6a7ae50f128f62f416636559f4398074abf4f064fc98e15eaf1"
+    }
+  },
+  "cleanup": {
+    "temporary_directories": 0,
+    "temporary_containers": 0,
+    "test_ports_listening": 0,
+    "untagged_pg_image_cache": "retained; load event observed, prior cache ownership not established"
+  },
+  "pr52": {
+    "draft": true,
+    "head": "b22736b693b5d12b521173bed1055245b095a456",
+    "merged": false,
+    "test_merge": "9883cb11b68aa80a9291e55719aef56d29e13aab"
+  }
+}
