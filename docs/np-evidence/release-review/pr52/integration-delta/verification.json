@@ -1,0 +1,205 @@
+{
+  "date_utc": "2026-11-27T09:12:00.259267+00:00",
+  "hermes": "t_06a23c6d",
+  "source": "GitHub REST pull 52 and synthetic commit, gh pr checks 52, git merge-base/diff/ls-tree/merge-tree --write-tree; remote branch tips from paginated GitHub branches API",
+  "evidence_base": "f9656e0f44aaa5a76d00f01dbe303f3250e881d3",
+  "pr": {
+    "draft": true,
+    "state": "open",
+    "mergeable_state": "unstable",
+    "base": {
+      "sha": "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
+      "tree": "ac258f26db8a2a13edb23636350c1c87b02df48a"
+    },
+    "head": {
+      "sha": "b22736b693b5d12b521173bed1055245b095a456",
+      "tree": "128231bed2704726175e331b1984d63c5bfb1ca2"
+    },
+    "synthetic_merge": {
+      "sha": "9883cb11b68aa80a9291e55719aef56d29e13aab",
+      "tree": "128231bed2704726175e331b1984d63c5bfb1ca2",
+      "parents": [
+        "d9c92fbd583a0cbbf7f9b4c071e1f2329981f4d7",
+        "b22736b693b5d12b521173bed1055245b095a456"
+      ]
+    }
+  },
+  "ordinary_e2e_candidate": {
+    "sha": "f3cd764d0bc7f82efb2b012669132f5b89e3d15c",
+    "tree": "8ec4f67c2a1ffd3459837a7e11c54400668a1800"
+  },
+  "cache_code": {
+    "sha": "0b58108ec3d32290af9d504dccbe75fbfc9de358",
+    "tree": "3b6721129ff1fb115e67733c976bd9e178468e0d"
+  },
+  "cache_tested": {
+    "sha": "94d531faeb6fa65f76599e3d5c04d83b72fda540",
+    "tree": "1aaf190d21d4d7c357d878791d9b86c9ea72b000"
+  },
+  "common_ancestor": "b22736b693b5d12b521173bed1055245b095a456",
+  "pr_to_e2e": [
+    {
+      "status": "M",
+      "path": ".github/workflows/tests.yml"
+    },
+    {
+      "status": "M",
+      "path": "frontend/e2e/cases.spec.ts"
+    },
+    {
+      "status": "M",
+      "path": "frontend/e2e/m1-repair.spec.ts"
+    },
+    {
+      "status": "M",
+      "path": "frontend/e2e/m1-save-order.spec.ts"
+    }
+  ],
+  "pr_to_cache_code": [
+    {
+      "status": "M",
+      "path": "internal/middleware/cache.go"
+    },
+    {
+      "status": "A",
+      "path": "internal/middleware/cache_hit_abort_test.go"
+    },
+    {
+      "status": "M",
+      "path": "main.go"
+    }
+  ],
+  "dry_run": {
+    "tree": "82a38945b80adf59aee952bfd13e1b965bcfc8f2",
+    "parents_used": [
+      "f3cd764d0bc7f82efb2b012669132f5b89e3d15c",
+      "0b58108ec3d32290af9d504dccbe75fbfc9de358"
+    ],
+    "commit_created": false,
+    "runtime": "NOT_RUN",
+    "distinct_remote_branch_tips": 57,
+    "tip_sha_list_sha256": "98b82906d59229f74875d4f98c3a4b1b7b257767cc543269cd22f13aef922436",
+    "seven_path_blob_matches": [],
+    "tree_entries": [
+      "100644 blob 1921b69c6b3439c0cb223b34e034f0659999f049\t.github/workflows/tests.yml",
+      "100644 blob 52f5a81707addbfd1434406ec09df4809703ac56\tfrontend/e2e/cases.spec.ts",
+      "100644 blob 5bfb1e508b2e78e8f9023ac05544d5df8006d059\tfrontend/e2e/m1-repair.spec.ts",
+      "100644 blob 4c92e0c837507e5ee83743c8d7ebc49410d8f767\tfrontend/e2e/m1-save-order.spec.ts",
+      "100644 blob 58fbf96a81bd2ac6e2ab22002f1139f94be4bc18\tinternal/middleware/cache.go",
+      "100644 blob a20bfa0e514a97f7985e1f0a46d8237382841159\tinternal/middleware/cache_hit_abort_test.go",
+      "100644 blob 98c65d9df43836a76c79c65e223d606ee168ffe2\tmain.go"
+    ]
+  },
+  "pr_check_counts": {
+    "skipping": 24,
+    "pass": 20,
+    "fail": 10,
+    "cancel": 6
+  },
+  "failed_or_cancelled_checks": [
+    {
+      "bucket": "fail",
+      "link": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45584687934/job/139107230670",
+      "name": "🎭 E2E Tests",
+      "workflow": "🧪 Test Pipeline"
+    },
+    {
+      "bucket": "fail",
+      "link": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45584687926/job/139106193572",
+      "name": "Fuzzing测试",
+      "workflow": "Law OA Go CI/CD Pipeline"
+    },
+    {
+      "bucket": "cancel",
+      "link": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45584687926/job/139106193542",
+      "name": "运行测试 (unit)",
+      "workflow": "Law OA Go CI/CD Pipeline"
+    },
+    {
+      "bucket": "fail",
+      "link": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45584687926/job/139106193428",
+      "name": "运行测试 (integration)",
+      "workflow": "Law OA Go CI/CD Pipeline"
+    },
+    {
+      "bucket": "fail",
+      "link": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45584688217/job/139104980014",
+      "name": "Fuzzing测试汇总报告",
+      "workflow": ".github/workflows/fuzzing.yml"
+    },
+    {
+      "bucket": "fail",
+      "link": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45584688217/job/139103386201",
+      "name": "完整Fuzzing测试",
+      "workflow": ".github/workflows/fuzzing.yml"
+    },
+    {
+      "bucket": "cancel",
+      "link": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45584688217/job/139103386216",
+      "name": "数据库Fuzzing (Fuzz_QueryBuilder_Order)",
+      "workflow": ".github/workflows/fuzzing.yml"
+    },
+    {
+      "bucket": "fail",
+      "link": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45584688217/job/139103386275",
+      "name": "安全组件Fuzzing (jwt-validation)",
+      "workflow": ".github/workflows/fuzzing.yml"
+    },
+    {
+      "bucket": "fail",
+      "link": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45584688217/job/139103386178",
+      "name": "数据库Fuzzing (Fuzz_QueryBuilder_Where)",
+      "workflow": ".github/workflows/fuzzing.yml"
+    },
+    {
+      "bucket": "fail",
+      "link": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45584688217/job/139103386353",
+      "name": "缓存Fuzzing (Fuzz_LayeredCache_Get)",
+      "workflow": ".github/workflows/fuzzing.yml"
+    },
+    {
+      "bucket": "cancel",
+      "link": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45584688217/job/139103386321",
+      "name": "缓存Fuzzing (Fuzz_CacheService_SetWithExpiration)",
+      "workflow": ".github/workflows/fuzzing.yml"
+    },
+    {
+      "bucket": "cancel",
+      "link": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45584688217/job/139103386405",
+      "name": "缓存Fuzzing (Fuzz_CacheService_SetAndGet)",
+      "workflow": ".github/workflows/fuzzing.yml"
+    },
+    {
+      "bucket": "cancel",
+      "link": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45584688217/job/139103386356",
+      "name": "缓存Fuzzing (Fuzz_CacheService_ConcurrentAccess)",
+      "workflow": ".github/workflows/fuzzing.yml"
+    },
+    {
+      "bucket": "cancel",
+      "link": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45584688217/job/139103386381",
+      "name": "数据库Fuzzing (Fuzz_QueryBuilder_Like)",
+      "workflow": ".github/workflows/fuzzing.yml"
+    },
+    {
+      "bucket": "fail",
+      "link": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45584687893/job/139103174831",
+      "name": "🔍 Code Quality",
+      "workflow": "🚀 CI/CD Pipeline"
+    },
+    {
+      "bucket": "fail",
+      "link": "https://github.com/VanTam-CN/law-oa-go/actions/runs/45584688151/job/139103175887",
+      "name": "检查PGO支持",
+      "workflow": "PGO优化工作流"
+    }
+  ],
+  "review": {
+    "collector": "zhipu-coding/glm-5.3-flash",
+    "independent": "gpt-6.2-astra",
+    "scope": "Git objects, GitHub metadata and frozen evidence; no new runtime execution",
+    "merge": "HOLD",
+    "deployment": "HOLD",
+    "real_pilot": "HOLD"
+  }
+}
