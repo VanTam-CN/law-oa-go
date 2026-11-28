@@ -1,0 +1,145 @@
+---
+name: np-pr52-e2e-full-verify
+'on':
+  push:
+    branches:
+    - codex/np-combined-e2e-115
+    paths:
+    - ".github/workflows/np-pr52-e2e-full-verify.yml"
+permissions:
+  contents: read
+env:
+  GO_VERSION: 1.25.0
+  NODE_VERSION: '20'
+jobs:
+  e2e-verify:
+    name: "\U0001F3AD E2E Tests"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: np_m1
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: np_first_slice_dev
+        ports:
+        - 18790:5432
+        options: --health-cmd "pg_isready -U np_m1 -d np_first_slice_dev" --health-interval
+          10s --health-timeout 5s --health-retries 5
+    steps:
+    - name: "\U0001F4E5 检出代码"
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 2
+        persist-credentials: false
+    - name: Validate and detach to fixed candidate
+      env:
+        CANDIDATE: ee1db311682410653e6129c985c52efa3ef91a97
+      run: |
+        set -eu
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        test "$(git log -1 --format=%P)" = "$CANDIDATE"
+        test "$(git diff --name-status "$CANDIDATE" "$GITHUB_SHA")" = "$(printf 'A\t.github/workflows/np-pr52-e2e-full-verify.yml')"
+        test -z "$(git status --porcelain)"
+        git checkout --detach "$CANDIDATE"
+        test "$(git rev-parse HEAD)" = "$CANDIDATE"
+        test -z "$(git status --porcelain)"
+        echo "WRAPPER_SHA=$GITHUB_SHA"
+        echo "RUN_SHA=$(git rev-parse HEAD)"
+    - name: "\U0001F4E6 设置Node.js环境"
+      uses: actions/setup-node@v4
+      with:
+        node-version: "${{ env.NODE_VERSION }}"
+      continue-on-error: true
+    - name: "\U0001F439 设置Go环境"
+      uses: actions/setup-go@v5
+      with:
+        go-version: "${{ env.GO_VERSION }}"
+        cache: false
+    - name: "\U0001F4E5 安装前端依赖"
+      working-directory: "./frontend"
+      run: npm ci
+    - name: "\U0001F3AD 安装Playwright浏览器"
+      working-directory: "./frontend"
+      run: npx playwright install --with-deps chromium
+    - name: "\U0001F3D7️ 构建前端"
+      working-directory: "./frontend"
+      run: npm run build
+    - name: "\U0001F680 启动后端服务"
+      env:
+        DB_DRIVER: postgres
+        DB_HOST: 127.0.0.1
+        DB_PORT: 18790
+        DB_USERNAME: np_m1
+        DB_PASSWORD: test
+        DB_DATABASE: np_first_slice_dev
+        DB_SSLMODE: disable
+        PORT: 8080
+      run: |
+        set -o pipefail
+        export PGPASSWORD="$DB_PASSWORD"
+        go run ./cmd/migrate -command bootstrap
+        bash scripts/np-first-slice/apply-main-np86.sh
+        go build -o server ./cmd/server
+        JWT_SECRET="$(openssl rand -hex 32)"
+        export JWT_SECRET
+        ./server > "$RUNNER_TEMP/e2e-backend.log" 2>&1 &
+        pid=$!
+        for attempt in {1..60}; do
+          kill -0 "$pid" || { echo "::error::E2E backend exited before readiness"; exit 1; }
+          if curl -fsS --max-time 2 http://127.0.0.1:8080/api/v1/health 2>/dev/null | jq -se 'length == 1 and .[0].service == "law-oa" and .[0].status == "ok"' >/dev/null; then
+            echo "BACKEND_READY service=law-oa status=ok"
+            exit 0
+          fi
+          sleep 1
+        done
+        echo "::error::E2E backend health timed out"
+        exit 1
+    - name: "\U0001F680 启动前端服务"
+      working-directory: "./frontend"
+      run: |
+        npm run preview -- --host 127.0.0.1 --port 4173 --strictPort > "$RUNNER_TEMP/e2e-preview.log" 2>&1 &
+        pid=$!
+        for attempt in {1..30}; do
+          kill -0 "$pid" || { echo "::error::E2E preview exited before readiness"; exit 1; }
+          if [[ "$(curl -s --max-time 2 -o /dev/null -w '%{http_code}' http://127.0.0.1:4173/)" == 200 ]]; then
+            echo "FRONTEND_PREVIEW_HTTP=200"
+            exit 0
+          fi
+          sleep 1
+        done
+        echo "::error::E2E preview timed out"
+        exit 1
+    - name: "\U0001F9EA 运行E2E测试"
+      working-directory: "./frontend"
+      run: |
+        set -eu
+        export PLAYWRIGHT_JSON_OUTPUT_FILE="$RUNNER_TEMP/np-ordinary-report.json"
+        rc=0
+        npx playwright test --project=chromium --reporter=list,json || rc=$?
+        echo "PLAYWRIGHT_RC=$rc"
+        python3 - "$PLAYWRIGHT_JSON_OUTPUT_FILE" <<'PY'
+        import json, sys
+        from collections import Counter
+        report=json.load(open(sys.argv[1]))
+        def walk(suites):
+            for suite in suites:
+                yield from suite.get('specs', [])
+                yield from walk(suite.get('suites', []))
+        rows=[]
+        for spec in walk(report['suites']):
+            for t in spec['tests']:
+                attempts=t.get('results', [])
+                states=','.join(a['status'] for a in attempts)
+                rows.append((spec['id'],t['status']))
+                print('CASE',spec['title'],'project='+t['projectName'],'status='+t['status'],'expected='+t['expectedStatus'],'attempts='+str(len(attempts)),'attempt_states='+states,'spec_id='+spec['id'],sep='\t')
+        for state, count in sorted(Counter(s for _,s in rows).items()):
+            print('INVENTORY','status='+state,'count='+str(count),sep='\t')
+        print('INVENTORY_TOTAL',len(rows))
+        if not rows or len(rows)!=len(set(key for key,_ in rows)):
+            sys.exit('INCOMPLETE_INVENTORY')
+        PY
+        exit "$rc"
+      env:
+        E2E_BASE_URL: http://localhost:4173
