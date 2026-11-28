@@ -64,3 +64,5 @@ PGO 本地采样实际报出性能包失败，其采样脚本把详细输出留�
 [4173 构建预览的真实登录与业务读取](preview-auth-read/README.md)记录 Chromium 经原生登录打开合成接案草稿、与 PostgreSQL 核对的专项验收。
 
 [PR #52 与普通 E2E 候选的集成差异](integration-delta/README.md)列出 PR、缓存和普通 E2E 三份证据分别适用的版本，以及七个工程路径合成后的待验门禁。
+
+[七路径集成候选的普通 Chromium 验收](combined-e2e/README.md)记录固定候选、115 个用例的实跑结果和其余待验门禁。

@@ -1,0 +1,120 @@
+{
+  "task": "t_91c609d0",
+  "candidate": "ee1db311682410653e6129c985c52efa3ef91a97",
+  "tree": "82a38945b80adf59aee952bfd13e1b965bcfc8f2",
+  "wrapper": "f1e5c87c9bb6e30a21dd0bf999d1c88734b8159a",
+  "wrapper_tree": "c3a383182ef991196167bf2b37b185b4f0b83dd3",
+  "run": 46160296336,
+  "url": "https://github.com/VanTam-CN/law-oa-go/actions/runs/46160296336/job/141025887805",
+  "job": 141025887805,
+  "attempt": 1,
+  "event": "push",
+  "started": "2026-11-28T15:31:20Z",
+  "completed": "2026-11-28T15:39:01Z",
+  "conclusion": "success",
+  "workload_reference": "d1efb28",
+  "frozen_case_list": "668cc70:docs/np-evidence/release-review/pr52/e2e-full/cases.tsv",
+  "specs": 17,
+  "expected": 115,
+  "first_attempt_passed": 115,
+  "retry": 0,
+  "skipped": 0,
+  "missing": 0,
+  "extra": 0,
+  "markers": [
+    "WRAPPER_SHA=f1e5c87c9bb6e30a21dd0bf999d1c88734b8159a",
+    "RUN_SHA=ee1db311682410653e6129c985c52efa3ef91a97",
+    "BACKEND_READY service=law-oa status=ok",
+    "FRONTEND_PREVIEW_HTTP=200",
+    "PLAYWRIGHT_RC=0",
+    "INVENTORY\tstatus=expected\tcount=115",
+    "INVENTORY_TOTAL 115"
+  ],
+  "artifact_count": 0,
+  "steps": [
+    [
+      "Set up job",
+      "success"
+    ],
+    [
+      "Initialize containers",
+      "success"
+    ],
+    [
+      "📥 检出代码",
+      "success"
+    ],
+    [
+      "Validate and detach to fixed candidate",
+      "success"
+    ],
+    [
+      "📦 设置Node.js环境",
+      "success"
+    ],
+    [
+      "🐹 设置Go环境",
+      "success"
+    ],
+    [
+      "📥 安装前端依赖",
+      "success"
+    ],
+    [
+      "🎭 安装Playwright浏览器",
+      "success"
+    ],
+    [
+      "🏗️ 构建前端",
+      "success"
+    ],
+    [
+      "🚀 启动后端服务",
+      "success"
+    ],
+    [
+      "🚀 启动前端服务",
+      "success"
+    ],
+    [
+      "🧪 运行E2E测试",
+      "success"
+    ],
+    [
+      "Post 🐹 设置Go环境",
+      "success"
+    ],
+    [
+      "Post 📦 设置Node.js环境",
+      "success"
+    ],
+    [
+      "Post 📥 检出代码",
+      "success"
+    ],
+    [
+      "Stop containers",
+      "success"
+    ],
+    [
+      "Complete job",
+      "success"
+    ]
+  ],
+  "log_sha256": "8b7300b4a35a33e866d090c83a6ac2f08f8bb7b1007b9af3c52271f2a1436413",
+  "remaining": {
+    "cache_targeted": "NOT_RUN",
+    "full_I11_positive": "NOT_RUN",
+    "eight_I11_negative": "NOT_RUN",
+    "4173_authenticated_read": "NOT_RUN",
+    "merge": "HOLD",
+    "deployment": "HOLD",
+    "real_pilot": "HOLD"
+  },
+  "executor": "GLM-Flash",
+  "independent_review": {
+    "reviewer": "6.2 Astra",
+    "result": "PASS for ordinary Chromium only",
+    "evidence": "original job log matched by name and ID against frozen manifest; one passed attempt for every case"
+  }
+}
